@@ -1,0 +1,9 @@
+apiVersion: troubleshoot.replicated.com/v1beta1
+kind: CollectorJob
+metadata:
+  labels:
+    controller-tools.k8s.io: "1.0"
+  name: collectorjob-sample
+spec:
+  # Add fields here
+  foo: bar
