@@ -1,9 +1,23 @@
 apiVersion: troubleshoot.replicated.com/v1beta1
 kind: Collector
 metadata:
-  labels:
-    controller-tools.k8s.io: "1.0"
   name: collector-sample
 spec:
-  # Add fields here
-  foo: bar
+  collectors:
+    - kubernetes.resource-list:
+        output_dir: /kubernetes/resources/jobs
+        kind: jobs
+        namespace: ""
+    - kubernetes.resource-list:
+        output_dir: /kubernetes/resources/deployments
+        kind: deployments
+        namespace: ""
+    - kubernetes.resource-list:
+        output_dir: /kubernetes/resources/pods
+        kind: pods
+        namespace: ""
+    - kubernetes.resource-list:
+        output_dir: /kubernetes/resources/events
+        kind: events
+        namespace: ""
+

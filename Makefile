@@ -8,9 +8,17 @@ all: test manager
 test: generate fmt vet manifests
 	go test ./pkg/... ./cmd/... -coverprofile cover.out
 
-# Build manager binary
+.PHONY: manager
 manager: generate fmt vet
 	go build -o bin/manager github.com/replicatedhq/troubleshoot/cmd/manager
+
+.PHONY: troubleshoot
+troubleshoot: generate fmt vet
+	go build -o bin/troubleshoot github.com/replicatedhq/troubleshoot/cmd/troubleshoot
+
+.PHONY: preflight
+preflight: generate fmt vet
+	go build -o bin/preflight github.com/replicatedhq/troubleshoot/cmd/preflight
 
 # Run against the configured Kubernetes cluster in ~/.kube/config
 run: generate fmt vet
@@ -26,22 +34,21 @@ deploy: manifests
 	kustomize build config/default | kubectl apply -f -
 
 # Generate manifests e.g. CRD, RBAC etc.
-manifests: controller-gen
+manifests:
 	controller-gen paths=./pkg/apis/...
 
-# Run go fmt against code
+.PHONY: fmt
 fmt:
 	go fmt ./pkg/... ./cmd/...
 
-# Run go vet against code
+.PHONY: vet
 vet:
 	go vet ./pkg/... ./cmd/...
 
-
 .PHONY: generate
-generate: controller-gen client-gen
-	controller-gen object:headerFile=./hack/boilerplate.go.txt paths=./api/...
-	client-gen go run ../../vendor/k8s.io/code-generator/cmd/client-gen/main.go --output-package=github.com/replicatedhq/troubleshoot/pkg/client --clientset-name troubleshootclientset --input-base github.com/replicatedhq/troubleshoot/pkg/apis --input troubleshoot/v1beta1 -h ./hack/boilerplate.go.txt
+generate: controller-gen # client-gen
+	controller-gen object:headerFile=./hack/boilerplate.go.txt paths=./pkg/apis/...
+	# client-gen --output-package=github.com/replicatedhq/troubleshoot/pkg/client --clientset-name troubleshootclientset --input-base github.com/replicatedhq/troubleshoot/pkg/apis --input troubleshoot/v1beta1 -h ./hack/boilerplate.go.txt
 
 # Build the docker image
 docker-build: test
