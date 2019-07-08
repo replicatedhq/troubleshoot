@@ -20,11 +20,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// CollectorSpec defines the desired state of Collector
-type CollectorSpec struct {
-	Collectors []*Collect `json:"collectors"`
-}
-
 // CollectorStatus defines the observed state of Collector
 type CollectorStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
@@ -40,7 +35,7 @@ type Collector struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   CollectorSpec   `json:"spec,omitempty"`
+	Spec   []*Collect      `json:"spec,omitempty"`
 	Status CollectorStatus `json:"status,omitempty"`
 }
 

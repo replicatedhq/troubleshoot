@@ -20,7 +20,7 @@ import (
 	"context"
 
 	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
-	appsv1 "k8s.io/api/apps/v1"
+	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -64,16 +64,6 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		return err
 	}
 
-	// TODO(user): Modify this to be the types you create
-	// Uncomment watch a Deployment created by Collector - change this for objects you create
-	err = c.Watch(&source.Kind{Type: &appsv1.Deployment{}}, &handler.EnqueueRequestForOwner{
-		IsController: true,
-		OwnerType:    &troubleshootv1beta1.Collector{},
-	})
-	if err != nil {
-		return err
-	}
-
 	return nil
 }
 
@@ -106,5 +96,15 @@ func (r *ReconcileCollector) Reconcile(request reconcile.Request) (reconcile.Res
 		return reconcile.Result{}, err
 	}
 
+	// The troubleshoot spec doesn't really do anything.  the work
+	// is performed in the troubleshootjob crd. this one is really
+	// primarily used as a packaging format
+
 	return reconcile.Result{}, nil
+}
+
+func (r *ReconcileCollector) getCollectorConfigMapSpec(instance *troubleshootv1beta1.Collector) (*v1.ConfigMap, error) {
+	configMap := v1.ConfigMap{}
+
+	return &configMap, nil
 }

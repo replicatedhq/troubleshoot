@@ -20,13 +20,14 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
+type CollectorRef struct {
+	Name      string `json:"name"`
+	Namespace string `json:"namespace,omitempty"`
+}
 
 // CollectorJobSpec defines the desired state of CollectorJob
 type CollectorJobSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	Collector CollectorRef `json:"collector"`
 }
 
 // CollectorJobStatus defines the observed state of CollectorJob

@@ -390,6 +390,18 @@ spec:
                 type: string
             type: object
           spec:
+            properties:
+              collector:
+                properties:
+                  name:
+                    type: string
+                  namespace:
+                    type: string
+                required:
+                - name
+                type: object
+            required:
+            - collector
             type: object
           status:
             type: object

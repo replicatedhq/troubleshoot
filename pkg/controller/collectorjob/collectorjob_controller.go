@@ -18,18 +18,16 @@ package collectorjob
 
 import (
 	"context"
-	"reflect"
 
 	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
-	appsv1 "k8s.io/api/apps/v1"
+	troubleshootclientv1beta1 "github.com/replicatedhq/troubleshoot/pkg/client/troubleshootclientset/typed/troubleshoot/v1beta1"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/errors"
+	kuberneteserrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
@@ -69,9 +67,7 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		return err
 	}
 
-	// TODO(user): Modify this to be the types you create
-	// Uncomment watch a Deployment created by CollectorJob - change this for objects you create
-	err = c.Watch(&source.Kind{Type: &appsv1.Deployment{}}, &handler.EnqueueRequestForOwner{
+	err = c.Watch(&source.Kind{Type: &corev1.Pod{}}, &handler.EnqueueRequestForOwner{
 		IsController: true,
 		OwnerType:    &troubleshootv1beta1.CollectorJob{},
 	})
@@ -104,7 +100,7 @@ func (r *ReconcileCollectorJob) Reconcile(request reconcile.Request) (reconcile.
 	instance := &troubleshootv1beta1.CollectorJob{}
 	err := r.Get(context.TODO(), request.NamespacedName, instance)
 	if err != nil {
-		if errors.IsNotFound(err) {
+		if kuberneteserrors.IsNotFound(err) {
 			// Object not found, return.  Created objects are automatically garbage collected.
 			// For additional cleanup logic use finalizers.
 			return reconcile.Result{}, nil
@@ -113,55 +109,48 @@ func (r *ReconcileCollectorJob) Reconcile(request reconcile.Request) (reconcile.
 		return reconcile.Result{}, err
 	}
 
-	// TODO(user): Change this to be the object type created by your controller
-	// Define the desired Deployment object
-	deploy := &appsv1.Deployment{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      instance.Name + "-deployment",
-			Namespace: instance.Namespace,
-		},
-		Spec: appsv1.DeploymentSpec{
-			Selector: &metav1.LabelSelector{
-				MatchLabels: map[string]string{"deployment": instance.Name + "-deployment"},
-			},
-			Template: corev1.PodTemplateSpec{
-				ObjectMeta: metav1.ObjectMeta{Labels: map[string]string{"deployment": instance.Name + "-deployment"}},
-				Spec: corev1.PodSpec{
-					Containers: []corev1.Container{
-						{
-							Name:  "nginx",
-							Image: "nginx",
-						},
-					},
-				},
-			},
-		},
+	namespace := instance.Namespace
+	if instance.Spec.Collector.Namespace != "" {
+		namespace = instance.Spec.Collector.Namespace
 	}
-	if err := controllerutil.SetControllerReference(instance, deploy, r.scheme); err != nil {
+
+	collectorSpec, err := r.getCollectorSpec(namespace, instance.Spec.Collector.Name)
+	if err != nil {
 		return reconcile.Result{}, err
 	}
 
-	// TODO(user): Change this for the object type created by your controller
-	// Check if the Deployment already exists
-	found := &appsv1.Deployment{}
-	err = r.Get(context.TODO(), types.NamespacedName{Name: deploy.Name, Namespace: deploy.Namespace}, found)
-	if err != nil && errors.IsNotFound(err) {
-		log.Info("Creating Deployment", "namespace", deploy.Namespace, "name", deploy.Name)
-		err = r.Create(context.TODO(), deploy)
-		return reconcile.Result{}, err
-	} else if err != nil {
-		return reconcile.Result{}, err
-	}
-
-	// TODO(user): Change this for the object type created by your controller
-	// Update the found object and write the result back if there are any changes
-	if !reflect.DeepEqual(deploy.Spec, found.Spec) {
-		found.Spec = deploy.Spec
-		log.Info("Updating Deployment", "namespace", deploy.Namespace, "name", deploy.Name)
-		err = r.Update(context.TODO(), found)
-		if err != nil {
-			return reconcile.Result{}, err
+	for _, collector := range collectorSpec.Spec {
+		if err := r.reconileOneCollectorJob(collector); err != nil {
+			return reconcile.Result{}, nil
 		}
 	}
+
 	return reconcile.Result{}, nil
+}
+
+func (r *ReconcileCollectorJob) getCollectorSpec(namespace string, name string) (*troubleshootv1beta1.Collector, error) {
+	cfg, err := config.GetConfig()
+	if err != nil {
+		return nil, err
+	}
+
+	troubleshootClient, err := troubleshootclientv1beta1.NewForConfig(cfg)
+	if err != nil {
+		return nil, err
+	}
+
+	collector, err := troubleshootClient.Collectors(namespace).Get(name, metav1.GetOptions{})
+	if err != nil {
+		if kuberneteserrors.IsNotFound(err) {
+			return nil, nil
+		}
+
+		return nil, err
+	}
+
+	return collector, nil
+}
+
+func (r *ReconcileCollectorJob) reconileOneCollectorJob(collect *troubleshootv1beta1.Collect) error {
+	return nil
 }

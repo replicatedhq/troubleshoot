@@ -16,6 +16,10 @@ manager: generate fmt vet
 troubleshoot: generate fmt vet
 	go build -o bin/troubleshoot github.com/replicatedhq/troubleshoot/cmd/troubleshoot
 
+.PHONY: collector
+collector: generate fmt vet
+	go build -o bin/collector github.com/replicatedhq/troubleshoot/cmd/collector
+
 .PHONY: preflight
 preflight: generate fmt vet
 	go build -o bin/preflight github.com/replicatedhq/troubleshoot/cmd/preflight
@@ -26,11 +30,11 @@ run: generate fmt vet
 
 # Install CRDs into a cluster
 install: manifests
-	kubectl apply -f config/crds
+	kubectl apply -f config/crd
 
 # Deploy controller in the configured Kubernetes cluster in ~/.kube/config
 deploy: manifests
-	kubectl apply -f config/crds
+	kubectl apply -f config/crd
 	kustomize build config/default | kubectl apply -f -
 
 # Generate manifests e.g. CRD, RBAC etc.

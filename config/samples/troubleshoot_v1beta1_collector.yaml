@@ -3,21 +3,4 @@ kind: Collector
 metadata:
   name: collector-sample
 spec:
-  collectors:
-    - kubernetes.resource-list:
-        output_dir: /kubernetes/resources/jobs
-        kind: jobs
-        namespace: ""
-    - kubernetes.resource-list:
-        output_dir: /kubernetes/resources/deployments
-        kind: deployments
-        namespace: ""
-    - kubernetes.resource-list:
-        output_dir: /kubernetes/resources/pods
-        kind: pods
-        namespace: ""
-    - kubernetes.resource-list:
-        output_dir: /kubernetes/resources/events
-        kind: events
-        namespace: ""
-
+  - cluster-info: {}
