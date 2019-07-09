@@ -32,9 +32,9 @@ type CollectorJobSpec struct {
 
 // CollectorJobStatus defines the observed state of CollectorJob
 type CollectorJobStatus struct {
-	// Running    []string `json:"running"`
-	// Successful []string `json:"successful"`
-	// Failed     []string `json:"failed"`
+	Running    []string `json:"running"`
+	Successful []string `json:"successful"`
+	Failed     []string `json:"failed"`
 }
 
 // +genclient
