@@ -32,8 +32,9 @@ type CollectorJobSpec struct {
 
 // CollectorJobStatus defines the observed state of CollectorJob
 type CollectorJobStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	Running    []string `json:"running"`
+	Successful []string `json:"successful"`
+	Failed     []string `json:"failed"`
 }
 
 // +genclient
