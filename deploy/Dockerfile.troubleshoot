@@ -1,0 +1,12 @@
+FROM debian:buster
+WORKDIR /
+
+RUN apt-get -qq update \
+ && apt-get -qq -y install \
+    ca-certificates
+
+COPY troubleshoot /troubleshoot/troubleshoot
+COPY collector /troubleshoot/collector
+
+ENV PATH="/troubleshoot:${PATH}"
+

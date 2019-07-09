@@ -28,10 +28,18 @@ type CollectorRef struct {
 // CollectorJobSpec defines the desired state of CollectorJob
 type CollectorJobSpec struct {
 	Collector CollectorRef `json:"collector"`
+
+	Image           string `json:"image,omitempty"`
+	ImagePullPolicy string `json:"imagePullPolicy,omitempty"`
 }
 
 // CollectorJobStatus defines the observed state of CollectorJob
 type CollectorJobStatus struct {
+	IsServerReady      bool   `json:"isServerReady"`
+	ServerPodName      string `json:"serverPodName"`
+	ServerPodNamespace string `json:"serverPodNamespace"`
+	ServerPodPort      int    `json:"serverPodPort"`
+
 	Running    []string `json:"running"`
 	Successful []string `json:"successful"`
 	Failed     []string `json:"failed"`
@@ -39,9 +47,9 @@ type CollectorJobStatus struct {
 
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-
 // CollectorJob is the Schema for the collectorjobs API
 // +k8s:openapi-gen=true
+// +kubebuilder:subresource:status
 type CollectorJob struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
@@ -59,6 +67,6 @@ type CollectorJobList struct {
 	Items           []CollectorJob `json:"items"`
 }
 
-// func init() {
-// 	SchemeBuilder.Register(&CollectorJob{}, &CollectorJobList{})
-// }
+func init() {
+	SchemeBuilder.Register(&CollectorJob{}, &CollectorJobList{})
+}

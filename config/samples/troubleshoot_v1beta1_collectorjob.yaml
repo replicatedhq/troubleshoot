@@ -3,6 +3,8 @@ kind: CollectorJob
 metadata:
   name: collectorjob-sample
 spec:
+  image: localhost:32000/troubleshoot:alpha
+  imagePullPolicy: Always
   collector:
     name: collector-sample
     namespace: default

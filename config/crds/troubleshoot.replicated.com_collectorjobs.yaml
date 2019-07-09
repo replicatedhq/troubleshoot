@@ -400,6 +400,10 @@ spec:
                 required:
                 - name
                 type: object
+              image:
+                type: string
+              imagePullPolicy:
+                type: string
             required:
             - collector
             type: object
@@ -409,15 +413,27 @@ spec:
                 items:
                   type: string
                 type: array
+              isServerReady:
+                type: boolean
               running:
                 items:
                   type: string
                 type: array
+              serverPodName:
+                type: string
+              serverPodNamespace:
+                type: string
+              serverPodPort:
+                type: integer
               successful:
                 items:
                   type: string
                 type: array
             required:
+            - isServerReady
+            - serverPodName
+            - serverPodNamespace
+            - serverPodPort
             - running
             - successful
             - failed
@@ -425,6 +441,8 @@ spec:
         type: object
     served: true
     storage: true
+    subresources:
+      status: {}
 status:
   acceptedNames:
     kind: ""
