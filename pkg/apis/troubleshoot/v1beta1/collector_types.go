@@ -48,6 +48,6 @@ type CollectorList struct {
 	Items           []Collector `json:"items"`
 }
 
-func init() {
-	SchemeBuilder.Register(&Collector{}, &CollectorList{})
-}
+// func init() {
+// 	SchemeBuilder.Register(&Collector{}, &CollectorList{})
+// }

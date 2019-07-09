@@ -57,6 +57,6 @@ type AnalyzerJobList struct {
 	Items           []AnalyzerJob `json:"items"`
 }
 
-func init() {
-	SchemeBuilder.Register(&AnalyzerJob{}, &AnalyzerJobList{})
-}
+// func init() {
+// 	SchemeBuilder.Register(&AnalyzerJob{}, &AnalyzerJobList{})
+// }

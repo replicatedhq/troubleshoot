@@ -20,13 +20,13 @@ import (
 	"context"
 
 	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
-	troubleshootclientv1beta1 "github.com/replicatedhq/troubleshoot/pkg/client/troubleshootclientset/typed/troubleshoot/v1beta1"
-	corev1 "k8s.io/api/core/v1"
+	// troubleshootclientv1beta1 "github.com/replicatedhq/troubleshoot/pkg/client/troubleshootclientset/typed/troubleshoot/v1beta1"
+	// corev1 "k8s.io/api/core/v1"
 	kuberneteserrors "k8s.io/apimachinery/pkg/api/errors"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	// metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/client/config"
+	// "sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
@@ -36,11 +36,6 @@ import (
 )
 
 var log = logf.Log.WithName("controller")
-
-/**
-* USER ACTION REQUIRED: This is a scaffold file intended for the user to modify with their own Controller
-* business logic.  Delete these comments after modifying this file.*
- */
 
 // Add creates a new CollectorJob Controller and adds it to the Manager with default RBAC. The Manager will set fields on the Controller
 // and Start it when the Manager is Started.
@@ -67,13 +62,13 @@ func add(mgr manager.Manager, r reconcile.Reconciler) error {
 		return err
 	}
 
-	err = c.Watch(&source.Kind{Type: &corev1.Pod{}}, &handler.EnqueueRequestForOwner{
-		IsController: true,
-		OwnerType:    &troubleshootv1beta1.CollectorJob{},
-	})
-	if err != nil {
-		return err
-	}
+	// err = c.Watch(&source.Kind{Type: &corev1.Pod{}}, &handler.EnqueueRequestForOwner{
+	// 	IsController: true,
+	// 	OwnerType:    &troubleshootv1beta1.CollectorJob{},
+	// })
+	// if err != nil {
+	// 	return err
+	// }
 
 	return nil
 }
@@ -109,48 +104,77 @@ func (r *ReconcileCollectorJob) Reconcile(request reconcile.Request) (reconcile.
 		return reconcile.Result{}, err
 	}
 
-	namespace := instance.Namespace
-	if instance.Spec.Collector.Namespace != "" {
-		namespace = instance.Spec.Collector.Namespace
-	}
+	// namespace := instance.Namespace
+	// if instance.Spec.Collector.Namespace != "" {
+	// 	namespace = instance.Spec.Collector.Namespace
+	// }
 
-	collectorSpec, err := r.getCollectorSpec(namespace, instance.Spec.Collector.Name)
-	if err != nil {
-		return reconcile.Result{}, err
-	}
+	// collectorSpec, err := r.getCollectorSpec(namespace, instance.Spec.Collector.Name)
+	// if err != nil {
+	// 	return reconcile.Result{}, err
+	// }
 
-	for _, collector := range collectorSpec.Spec {
-		if err := r.reconileOneCollectorJob(collector); err != nil {
-			return reconcile.Result{}, nil
-		}
-	}
+	// for _, collector := range collectorSpec.Spec {
+	// 	if err := r.reconileOneCollectorJob(instance, collector); err != nil {
+	// 		return reconcile.Result{}, nil
+	// 	}
+	// }
 
 	return reconcile.Result{}, nil
 }
 
-func (r *ReconcileCollectorJob) getCollectorSpec(namespace string, name string) (*troubleshootv1beta1.Collector, error) {
-	cfg, err := config.GetConfig()
-	if err != nil {
-		return nil, err
-	}
+// func (r *ReconcileCollectorJob) getCollectorSpec(namespace string, name string) (*troubleshootv1beta1.Collector, error) {
+// 	cfg, err := config.GetConfig()
+// 	if err != nil {
+// 		return nil, err
+// 	}
 
-	troubleshootClient, err := troubleshootclientv1beta1.NewForConfig(cfg)
-	if err != nil {
-		return nil, err
-	}
+// 	troubleshootClient, err := troubleshootclientv1beta1.NewForConfig(cfg)
+// 	if err != nil {
+// 		return nil, err
+// 	}
 
-	collector, err := troubleshootClient.Collectors(namespace).Get(name, metav1.GetOptions{})
-	if err != nil {
-		if kuberneteserrors.IsNotFound(err) {
-			return nil, nil
-		}
+// 	collector, err := troubleshootClient.Collectors(namespace).Get(name, metav1.GetOptions{})
+// 	if err != nil {
+// 		if kuberneteserrors.IsNotFound(err) {
+// 			return nil, nil
+// 		}
 
-		return nil, err
-	}
+// 		return nil, err
+// 	}
 
-	return collector, nil
-}
+// 	return collector, nil
+// }
 
-func (r *ReconcileCollectorJob) reconileOneCollectorJob(collect *troubleshootv1beta1.Collect) error {
-	return nil
-}
+// func (r *ReconcileCollectorJob) reconileOneCollectorJob(instance *troubleshootv1beta1.CollectorJob, collect *troubleshootv1beta1.Collect) error {
+// 	// if contains(instance.Status.Successful, idForCollector(collect)) {
+// 	// 	return nil
+// 	// }
+// 	// if contains(instance.Status.Failed, idForCollector(collect)) {
+// 	// 	return nil
+// 	// }
+
+// 	// // if it's running already...
+// 	// if contains(instance.Status.Running, idForCollector(collect)) {
+// 	// 	return nil
+// 	// }
+
+// 	return nil
+// }
+
+// func idForCollector(collector *troubleshootv1beta1.Collect) string {
+// 	if collector.ClusterInfo != nil {
+// 		return "cluster-info"
+// 	}
+
+// 	return ""
+// }
+
+// func contains(s []string, e string) bool {
+// 	for _, a := range s {
+// 		if a == e {
+// 			return true
+// 		}
+// 	}
+// 	return false
+// }

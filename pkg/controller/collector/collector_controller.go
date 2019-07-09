@@ -98,7 +98,7 @@ func (r *ReconcileCollector) Reconcile(request reconcile.Request) (reconcile.Res
 
 	// The troubleshoot spec doesn't really do anything.  the work
 	// is performed in the troubleshootjob crd. this one is really
-	// primarily used as a packaging format
+	// primarily used as a packaging format2
 
 	return reconcile.Result{}, nil
 }
