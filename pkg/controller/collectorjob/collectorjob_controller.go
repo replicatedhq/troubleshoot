@@ -120,7 +120,7 @@ func (r *ReconcileCollectorJob) Reconcile(request reconcile.Request) (reconcile.
 	}
 
 	for _, collector := range collectorSpec.Spec {
-		if err := r.reconileOneCollectorJob(collector); err != nil {
+		if err := r.reconileOneCollectorJob(instance, collector); err != nil {
 			return reconcile.Result{}, nil
 		}
 	}
@@ -151,6 +151,35 @@ func (r *ReconcileCollectorJob) getCollectorSpec(namespace string, name string) 
 	return collector, nil
 }
 
-func (r *ReconcileCollectorJob) reconileOneCollectorJob(collect *troubleshootv1beta1.Collect) error {
+func (r *ReconcileCollectorJob) reconileOneCollectorJob(instance *troubleshootv1beta1.CollectorJob, collect *troubleshootv1beta1.Collect) error {
+	if contains(instance.Status.Successful, idForCollector(collect)) {
+		return nil
+	}
+	if contains(instance.Status.Failed, idForCollector(collect)) {
+		return nil
+	}
+
+	// if it's running already...
+	if contains(instance.Status.Running, idForCollector(collect)) {
+		return nil
+	}
+
 	return nil
+}
+
+func idForCollector(collector *troubleshootv1beta1.Collect) string {
+	if collector.ClusterInfo != nil {
+		return "cluster-info"
+	}
+
+	return ""
+}
+
+func contains(s []string, e string) bool {
+	for _, a := range s {
+		if a == e {
+			return true
+		}
+	}
+	return false
 }
