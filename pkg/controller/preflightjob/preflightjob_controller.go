@@ -117,7 +117,7 @@ func (r *ReconcilePreflightJob) Reconcile(request reconcile.Request) (reconcile.
 			return reconcile.Result{}, err
 		}
 	} else if !instance.Status.IsAnalyzersComplete {
-		if err := r.reconcilePreflightAnalyzers(); err != nil {
+		if err := r.reconcilePreflightAnalyzers(instance, preflightSpec); err != nil {
 			return reconcile.Result{}, err
 		}
 	}

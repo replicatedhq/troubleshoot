@@ -3,7 +3,48 @@ kind: Preflight
 metadata:
   name: preflight-sample
 spec:
-  collectors:
-    - cluster-info: {}
-    - cluster-resources: {}
-  analyzers: []
+  analyzers:
+    - clusterVersion:
+        fail:
+          when: "< 1.13.0"
+          message: You need more kubernetes
+        warn:
+          when: "< 1.15.0"
+          message: You have barely enough kubernetes
+        pass:
+          message: Good job keeping k8s current
+    # - storageClass:
+    #     name: "my-custom-storage-class"
+    #     fail:
+    #       message: The custom storage class thing was not found
+    #     pass:
+    #       message: All good on storage classes
+    # - manifests:
+    #     - secret:
+    #         namespace: default
+    #         name: shhh
+    #         key: top-secret
+    #       fail:
+    #         message: The top secret secret is missing
+    #       pass:
+    #         message: You know the secret
+    #     - ingress:
+    #         namespace: default
+    #         name: connect-to-me
+    #       fail:
+    #         message: The ingress isn't ingressing
+    #       pass:
+    #         message: All systems ok on ingress
+    # - imagePullSecret:
+    #     name: replicated
+    #     namespace: my-app
+    #     fail:
+    #       message: Can't pull the images
+    #     pass:
+    #       message: Connected to docker registry
+    # - customResourceDefinitions:
+    #     name: rook
+    #     fail:
+    #       message: You don't have rook installed
+    #     pass:
+    #       message: Found rook!
