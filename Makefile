@@ -79,9 +79,9 @@ snapshot-release:
 
 .PHONY: local-release
 local-release: snapshot-release
-	docker tag replicatedhq/troubleshoot:alpha localhost:32000/troubleshoot:alpha
-	docker tag replicatedhq/preflight:alpha localhost:32000/preflight:alpha
-	docker tag replicatedhq/troubleshoot-manager:alpha localhost:32000/troubleshoot-manager:alpha
+	docker tag replicated/troubleshoot:alpha localhost:32000/troubleshoot:alpha
+	docker tag replicated/preflight:alpha localhost:32000/preflight:alpha
+	docker tag replicated/troubleshoot-manager:alpha localhost:32000/troubleshoot-manager:alpha
 	docker push localhost:32000/troubleshoot:alpha
 	docker push localhost:32000/preflight:alpha
 	docker push localhost:32000/troubleshoot-manager:alpha

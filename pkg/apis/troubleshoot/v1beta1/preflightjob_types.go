@@ -29,6 +29,8 @@ type PreflightRef struct {
 type PreflightJobSpec struct {
 	Preflight PreflightRef `json:"preflight"`
 
+	Image                    string `json:"preflightImage,omitempty"`
+	ImagePullPolicy          string `json:"imagePullPolicy,omitempty"`
 	CollectorImage           string `json:"collectorImage,omitempty"`
 	CollectorImagePullPolicy string `json:"collectorImagePullPolicy,omitempty"`
 
@@ -51,7 +53,7 @@ type PreflightJobStatus struct {
 	IsAnalyzersComplete bool     `json:"isAnalyzersComplete"`
 	AnalyzersRunning    []string `json:"analyzersRunning"`
 	AnalyzersSuccessful []string `json:"analyzersSuccessful"`
-	AnakyzersFailed     []string `json:"analyzersFailed"`
+	AnalyzersFailed     []string `json:"analyzersFailed"`
 }
 
 // +genclient

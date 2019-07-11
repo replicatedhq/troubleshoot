@@ -606,8 +606,8 @@ func (in *PreflightJobStatus) DeepCopyInto(out *PreflightJobStatus) {
 		*out = make([]string, len(*in))
 		copy(*out, *in)
 	}
-	if in.AnakyzersFailed != nil {
-		in, out := &in.AnakyzersFailed, &out.AnakyzersFailed
+	if in.AnalyzersFailed != nil {
+		in, out := &in.AnalyzersFailed, &out.AnalyzersFailed
 		*out = make([]string, len(*in))
 		copy(*out, *in)
 	}

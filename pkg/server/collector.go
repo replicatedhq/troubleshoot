@@ -10,9 +10,9 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-var queue = make(map[string][]byte)
+var collectorQueue = make(map[string][]byte)
 
-func Serve(ctx context.Context, address string) {
+func ServeCollector(ctx context.Context, address string) {
 	g := gin.New()
 
 	root := g.Group("/")
@@ -35,20 +35,20 @@ func putCollectorOutput(c *gin.Context) {
 		return
 	}
 
-	queue[collectorID] = body
+	collectorQueue[collectorID] = body
 
-	fmt.Printf("queue = %#v\n", queue)
+	fmt.Printf("collectorQueue = %#v\n", collectorQueue)
 	c.Status(201)
 }
 
 func getCollectorOutput(c *gin.Context) {
-	encoded := base64.StdEncoding.EncodeToString(queue[c.Param("id")])
+	encoded := base64.StdEncoding.EncodeToString(collectorQueue[c.Param("id")])
 	c.String(200, encoded)
 }
 
 func getQueuedCollectors(c *gin.Context) {
-	keys := make([]string, 0, len(queue))
-	for k := range queue {
+	keys := make([]string, 0, len(collectorQueue))
+	for k := range collectorQueue {
 		keys = append(keys, k)
 	}
 

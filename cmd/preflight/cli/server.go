@@ -23,7 +23,7 @@ func Server() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			v := viper.GetViper()
 
-			server.ServeCollector(context.Background(), fmt.Sprintf(":%d", v.GetInt("port")))
+			server.ServePreflight(context.Background(), fmt.Sprintf(":%d", v.GetInt("port")))
 
 			c := make(chan os.Signal, 1)
 			signal.Notify(c, os.Interrupt)

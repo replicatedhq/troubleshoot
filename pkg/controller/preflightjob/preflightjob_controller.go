@@ -18,7 +18,6 @@ package preflightjob
 
 import (
 	"context"
-	"fmt"
 
 	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
 	troubleshootclientv1beta1 "github.com/replicatedhq/troubleshoot/pkg/client/troubleshootclientset/typed/troubleshoot/v1beta1"
@@ -112,7 +111,18 @@ func (r *ReconcilePreflightJob) Reconcile(request reconcile.Request) (reconcile.
 		return reconcile.Result{}, err
 	}
 
-	fmt.Printf("preflightSpec = %#v\n", preflightSpec)
+	// the preflight job will be in collector mode or analyzer mode
+	if !instance.Status.IsCollectorsComplete {
+		if err := r.reconcilePreflightCollectors(instance, preflightSpec); err != nil {
+			return reconcile.Result{}, err
+		}
+	} else if !instance.Status.IsAnalyzersComplete {
+		if err := r.reconcilePreflightAnalyzers(); err != nil {
+			return reconcile.Result{}, err
+		}
+	}
+
+	// just finished, nothing to do
 	return reconcile.Result{}, nil
 }
 

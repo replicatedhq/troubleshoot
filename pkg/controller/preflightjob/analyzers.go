@@ -1,5 +1,5 @@
 package preflightjob
 
-func (r *ReconcilePreflightJob) reconcileAnalyzers() error {
+func (r *ReconcilePreflightJob) reconcilePreflightAnalyzers() error {
 	return nil
 }

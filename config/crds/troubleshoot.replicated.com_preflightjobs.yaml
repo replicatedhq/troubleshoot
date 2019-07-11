@@ -399,6 +399,8 @@ spec:
                 type: string
               collectorImagePullPolicy:
                 type: string
+              imagePullPolicy:
+                type: string
               preflight:
                 properties:
                   name:
@@ -408,6 +410,8 @@ spec:
                 required:
                 - name
                 type: object
+              preflightImage:
+                type: string
             required:
             - preflight
             type: object

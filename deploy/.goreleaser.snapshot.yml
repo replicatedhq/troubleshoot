@@ -84,19 +84,21 @@ archives:
 dockers:
   - dockerfile: ./deploy/Dockerfile.troubleshoot
     image_templates:
-      - "replicatedhq/troubleshoot:alpha"
+      - "replicated/troubleshoot:alpha"
     binaries:
       - collector
       - troubleshoot
-  - dockerfile: ./deploy/Dockerfile.preflight
+      - preflight
+  - dockerfile: ./deploy/Dockerfile.troubleshoot
     image_templates:
-      - "replicatedhq/preflight:alpha"
+      - "replicated/preflight:alpha"
     binaries:
       - collector
+      - troubleshoot
       - preflight
   - dockerfile: ./deploy/Dockerfile.manager
     image_templates:
-      - "replicatedhq/troubleshoot-manager:alpha"
+      - "replicated/troubleshoot-manager:alpha"
     binaries:
       - manager
 snapshot:
