@@ -20,7 +20,8 @@ from a server that can be used to assist when troubleshooting a server.`,
 
 	cobra.OnInitialize(initConfig)
 
-	cmd.AddCommand(Collect())
+	cmd.AddCommand(Run())
+	cmd.AddCommand(Retrieve())
 
 	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
 	return cmd
@@ -34,6 +35,6 @@ func InitAndExecute() {
 }
 
 func initConfig() {
-	viper.SetEnvPrefix("TROUBLESHOT")
+	viper.SetEnvPrefix("TROUBLESHOOT")
 	viper.AutomaticEnv()
 }

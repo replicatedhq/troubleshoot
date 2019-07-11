@@ -394,6 +394,8 @@ spec:
               properties:
                 cluster-info:
                   type: object
+                cluster-resources:
+                  type: object
               type: object
             type: array
           status:

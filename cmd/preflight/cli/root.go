@@ -11,16 +11,14 @@ import (
 
 func RootCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:          "collector",
-		Short:        "Run the cluster-side server for bundle collection",
-		Long:         ``,
+		Use:   "troubleshoot",
+		Short: "Generate and manage support bundles",
+		Long: `A support bundle is an archive of files, output, metrics and state
+from a server that can be used to assist when troubleshooting a server.`,
 		SilenceUsage: true,
 	}
 
 	cobra.OnInitialize(initConfig)
-
-	cmd.AddCommand(Run())
-	cmd.AddCommand(Server())
 
 	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
 	return cmd

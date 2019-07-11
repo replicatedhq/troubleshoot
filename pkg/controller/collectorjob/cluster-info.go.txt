@@ -1,9 +1,0 @@
-package collectorjob
-
-import (
-	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
-)
-
-func (r *ReconcileCollectorJob) deployClusterInfo(clusterInfo *troubleshootv1beta1.ClusterInfo) error {
-	return nil
-}

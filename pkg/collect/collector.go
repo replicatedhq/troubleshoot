@@ -1,0 +1,37 @@
+package collect
+
+import (
+	"errors"
+
+	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
+	"gopkg.in/yaml.v2"
+)
+
+type Collector struct {
+	Spec string
+}
+
+func (c *Collector) RunCollectorSync() error {
+	collect, err := parseSpec(c.Spec)
+	if err != nil {
+		return err
+	}
+
+	if collect.ClusterInfo != nil {
+		return ClusterInfo()
+	} else if collect.ClusterResources != nil {
+		return ClusterResources()
+	}
+
+	return errors.New("no spec found to run")
+}
+
+func parseSpec(specContents string) (*troubleshootv1beta1.Collect, error) {
+	collect := troubleshootv1beta1.Collect{}
+
+	if err := yaml.Unmarshal([]byte(specContents), &collect); err != nil {
+		return nil, err
+	}
+
+	return &collect, nil
+}

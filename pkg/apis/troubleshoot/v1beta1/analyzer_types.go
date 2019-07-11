@@ -57,6 +57,6 @@ type AnalyzerList struct {
 	Items           []Analyzer `json:"items"`
 }
 
-// func init() {
-// 	SchemeBuilder.Register(&Analyzer{}, &AnalyzerList{})
-// }
+func init() {
+	SchemeBuilder.Register(&Analyzer{}, &AnalyzerList{})
+}

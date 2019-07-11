@@ -57,6 +57,6 @@ type PreflightJobList struct {
 	Items           []PreflightJob `json:"items"`
 }
 
-// func init() {
-// 	SchemeBuilder.Register(&PreflightJob{}, &PreflightJobList{})
-// }
+func init() {
+	SchemeBuilder.Register(&PreflightJob{}, &PreflightJobList{})
+}
