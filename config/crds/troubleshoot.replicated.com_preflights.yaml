@@ -390,6 +390,20 @@ spec:
                 type: string
             type: object
           spec:
+            properties:
+              analyzers:
+                items:
+                  type: object
+                type: array
+              collectors:
+                items:
+                  properties:
+                    cluster-info:
+                      type: object
+                    cluster-resources:
+                      type: object
+                  type: object
+                type: array
             type: object
           status:
             type: object

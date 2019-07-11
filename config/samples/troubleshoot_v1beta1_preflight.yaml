@@ -1,9 +1,9 @@
 apiVersion: troubleshoot.replicated.com/v1beta1
 kind: Preflight
 metadata:
-  labels:
-    controller-tools.k8s.io: "1.0"
   name: preflight-sample
 spec:
-  # Add fields here
-  foo: bar
+  collectors:
+    - cluster-info: {}
+    - cluster-resources: {}
+  analyzers: []
