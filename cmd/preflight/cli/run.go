@@ -105,9 +105,9 @@ func Run() *cobra.Command {
 				return err
 			}
 
-			// if err := receiveSupportBundle(found.Namespace, found.Name); err != nil {
-			// 	return err
-			// }
+			if err := receivePreflightResults(found.Namespace, found.Name); err != nil {
+				return err
+			}
 
 			// Write
 
