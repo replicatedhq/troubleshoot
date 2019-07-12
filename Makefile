@@ -85,3 +85,11 @@ local-release: snapshot-release
 	docker push localhost:32000/troubleshoot:alpha
 	docker push localhost:32000/preflight:alpha
 	docker push localhost:32000/troubleshoot-manager:alpha
+
+.PHONY: run-preflight
+run-preflight: preflight
+	./bin/preflight run \
+		--collector-image=localhost:32000/troubleshoot:alpha \
+		--collector-pullpolicy=Always \
+		--image=localhost:32000/troubleshoot:alpha \
+		--pullpolicy=Always

@@ -56,10 +56,6 @@ func (r *ReconcilePreflightJob) reconcileOnePreflightCollector(instance *trouble
 		instance.Status.CollectorsSuccessful = append(instance.Status.CollectorsSuccessful, idForCollector(collect))
 		instance.Status.CollectorsRunning = remove(instance.Status.CollectorsRunning, idForCollector(collect))
 
-		if len(instance.Status.CollectorsRunning) == 0 {
-			instance.Status.IsCollectorsComplete = true
-		}
-
 		if err := r.Update(context.Background(), instance); err != nil {
 			return err
 		}

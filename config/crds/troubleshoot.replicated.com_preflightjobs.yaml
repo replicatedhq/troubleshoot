@@ -391,10 +391,6 @@ spec:
             type: object
           spec:
             properties:
-              analyzerImage:
-                type: string
-              analyzerImagePullPolicy:
-                type: string
               collectorImage:
                 type: string
               collectorImagePullPolicy:
@@ -443,8 +439,6 @@ spec:
                 type: array
               isAnalyzersComplete:
                 type: boolean
-              isCollectorsComplete:
-                type: boolean
               isServerReady:
                 type: boolean
               serverPodName:
@@ -458,7 +452,6 @@ spec:
             - serverPodName
             - serverPodNamespace
             - serverPodPort
-            - isCollectorsComplete
             - collectorsRunning
             - collectorsSuccessful
             - collectorsFailed

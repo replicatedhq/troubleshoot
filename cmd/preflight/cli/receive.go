@@ -5,7 +5,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
-	"time"
 
 	kuberneteserrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -32,12 +31,6 @@ func receivePreflightResults(preflightJobNamespace string, preflightJobName stri
 			return nil
 		} else if err != nil {
 			return err
-		}
-
-		// If the collectors are still running, hang tight.
-		if !job.Status.IsCollectorsComplete {
-			time.Sleep(time.Millisecond * 400)
-			continue
 		}
 
 		for _, readyPreflight := range job.Status.AnalyzersSuccessful {
@@ -67,22 +60,8 @@ func receivePreflightResults(preflightJobNamespace string, preflightJobName stri
 			receivedPreflights = append(receivedPreflights, readyPreflight)
 		}
 
-		// if len(job.Status.Running) == 0 {
-		// 	tarGz := archiver.TarGz{
-		// 		Tar: &archiver.Tar{
-		// 			ImplicitTopLevelFolder: false,
-		// 		},
-		// 	}
-
-		// 	paths := make([]string, 0, 0)
-		// 	for _, id := range receivedCollectors {
-		// 		paths = append(paths, filepath.Join(bundlePath, id))
-		// 	}
-
-		// 	if err := tarGz.Archive(paths, "support-bundle.tar.gz"); err != nil {
-		// 		return err
-		// 	}
-		// 	return nil
-		// }
+		if len(job.Status.AnalyzersRunning) == 0 {
+			return nil
+		}
 	}
 }

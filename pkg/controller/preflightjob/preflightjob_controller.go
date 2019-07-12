@@ -111,15 +111,24 @@ func (r *ReconcilePreflightJob) Reconcile(request reconcile.Request) (reconcile.
 		return reconcile.Result{}, err
 	}
 
-	// the preflight job will be in collector mode or analyzer mode
-	if !instance.Status.IsCollectorsComplete {
-		if err := r.reconcilePreflightCollectors(instance, preflightSpec); err != nil {
+	if len(instance.Status.AnalyzersRunning) == 0 && len(instance.Status.AnalyzersSuccessful) == 0 && len(instance.Status.AnalyzersFailed) == 0 {
+		// Add them all!
+		analyzersRunning := []string{}
+		for _, analyzer := range preflightSpec.Spec.Analyzers {
+			analyzersRunning = append(analyzersRunning, idForAnalyzer(analyzer))
+		}
+
+		instance.Status.AnalyzersRunning = analyzersRunning
+		if err := r.Update(context.Background(), instance); err != nil {
 			return reconcile.Result{}, err
 		}
-	} else if !instance.Status.IsAnalyzersComplete {
-		if err := r.reconcilePreflightAnalyzers(instance, preflightSpec); err != nil {
-			return reconcile.Result{}, err
-		}
+	}
+
+	if err := r.reconcilePreflightCollectors(instance, preflightSpec); err != nil {
+		return reconcile.Result{}, err
+	}
+	if err := r.reconcilePreflightAnalyzers(instance, preflightSpec); err != nil {
+		return reconcile.Result{}, err
 	}
 
 	// just finished, nothing to do

@@ -125,8 +125,6 @@ func Run() *cobra.Command {
 	cmd.Flags().String("pullpolicy", "", "the pull policy of the preflight image")
 	cmd.Flags().String("collector-image", "", "the full name of the collector image to use")
 	cmd.Flags().String("collector-pullpolicy", "", "the pull policy of the collector image")
-	cmd.Flags().String("analyzer-image", "", "the full name of the analyzer image to use")
-	cmd.Flags().String("analyzer-pullpolicy", "", "the pull policy of the analyzer image")
 
 	viper.BindPFlags(cmd.Flags())
 

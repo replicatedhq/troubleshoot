@@ -33,9 +33,6 @@ type PreflightJobSpec struct {
 	ImagePullPolicy          string `json:"imagePullPolicy,omitempty"`
 	CollectorImage           string `json:"collectorImage,omitempty"`
 	CollectorImagePullPolicy string `json:"collectorImagePullPolicy,omitempty"`
-
-	AnalyzerImage           string `json:"analyzerImage,omitempty"`
-	AnalyzerImagePullPolicy string `json:"analyzerImagePullPolicy,omitempty"`
 }
 
 // PreflightJobStatus defines the observed state of PreflightJob
@@ -45,7 +42,6 @@ type PreflightJobStatus struct {
 	ServerPodNamespace string `json:"serverPodNamespace"`
 	ServerPodPort      int    `json:"serverPodPort"`
 
-	IsCollectorsComplete bool     `json:"isCollectorsComplete"`
 	CollectorsRunning    []string `json:"collectorsRunning"`
 	CollectorsSuccessful []string `json:"collectorsSuccessful"`
 	CollectorsFailed     []string `json:"collectorsFailed"`

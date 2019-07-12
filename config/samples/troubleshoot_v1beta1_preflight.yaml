@@ -5,14 +5,15 @@ metadata:
 spec:
   analyzers:
     - clusterVersion:
-        fail:
-          when: "< 1.13.0"
-          message: You need more kubernetes
-        warn:
-          when: "< 1.15.0"
-          message: You have barely enough kubernetes
-        pass:
-          message: Good job keeping k8s current
+        outcomes:
+          - fail:
+              when: "< 1.13.0"
+              message: You need more kubernetes
+          - warn:
+              when: "< 1.15.0"
+              message: You have barely enough kubernetes
+          - pass:
+              message: Good job keeping k8s current
     # - storageClass:
     #     name: "my-custom-storage-class"
     #     fail:
