@@ -20,26 +20,43 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
+type PreflightRef struct {
+	Name      string `json:"name"`
+	Namespace string `json:"namespace,omitempty"`
+}
 
 // PreflightJobSpec defines the desired state of PreflightJob
 type PreflightJobSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	Preflight PreflightRef `json:"preflight"`
+
+	Image                    string `json:"preflightImage,omitempty"`
+	ImagePullPolicy          string `json:"imagePullPolicy,omitempty"`
+	CollectorImage           string `json:"collectorImage,omitempty"`
+	CollectorImagePullPolicy string `json:"collectorImagePullPolicy,omitempty"`
 }
 
 // PreflightJobStatus defines the observed state of PreflightJob
 type PreflightJobStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	IsServerReady      bool   `json:"isServerReady"`
+	ServerPodName      string `json:"serverPodName"`
+	ServerPodNamespace string `json:"serverPodNamespace"`
+	ServerPodPort      int    `json:"serverPodPort"`
+
+	CollectorsRunning    []string `json:"collectorsRunning"`
+	CollectorsSuccessful []string `json:"collectorsSuccessful"`
+	CollectorsFailed     []string `json:"collectorsFailed"`
+
+	IsAnalyzersComplete bool     `json:"isAnalyzersComplete"`
+	AnalyzersRunning    []string `json:"analyzersRunning"`
+	AnalyzersSuccessful []string `json:"analyzersSuccessful"`
+	AnalyzersFailed     []string `json:"analyzersFailed"`
 }
 
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-
 // PreflightJob is the Schema for the preflightjobs API
 // +k8s:openapi-gen=true
+// +kubebuilder:subresource:status
 type PreflightJob struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

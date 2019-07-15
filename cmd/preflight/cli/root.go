@@ -11,14 +11,17 @@ import (
 
 func RootCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "troubleshoot",
-		Short: "Generate and manage support bundles",
-		Long: `A support bundle is an archive of files, output, metrics and state
-from a server that can be used to assist when troubleshooting a server.`,
+		Use:   "preflight",
+		Short: "Run and retrieve preflight checks in a cluster",
+		Long: `A preflight check is a set of validations that can and should be run to ensure
+that a cluster meets the requirements to run an application.`,
 		SilenceUsage: true,
 	}
 
 	cobra.OnInitialize(initConfig)
+
+	cmd.AddCommand(Run())
+	cmd.AddCommand(Server())
 
 	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
 	return cmd
@@ -32,6 +35,6 @@ func InitAndExecute() {
 }
 
 func initConfig() {
-	viper.SetEnvPrefix("TROUBLESHOOT")
+	viper.SetEnvPrefix("PREFLIGHT")
 	viper.AutomaticEnv()
 }

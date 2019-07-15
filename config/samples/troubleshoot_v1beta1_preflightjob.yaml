@@ -1,9 +1,10 @@
 apiVersion: troubleshoot.replicated.com/v1beta1
 kind: PreflightJob
 metadata:
-  labels:
-    controller-tools.k8s.io: "1.0"
   name: preflightjob-sample
 spec:
-  # Add fields here
-  foo: bar
+  image: localhost:32000/troubleshoot:alpha
+  imagePullPolicy: Always
+  preflight:
+    name: preflight-sample
+    namespace: default

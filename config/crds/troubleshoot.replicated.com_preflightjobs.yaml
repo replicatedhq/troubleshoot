@@ -390,12 +390,81 @@ spec:
                 type: string
             type: object
           spec:
+            properties:
+              collectorImage:
+                type: string
+              collectorImagePullPolicy:
+                type: string
+              imagePullPolicy:
+                type: string
+              preflight:
+                properties:
+                  name:
+                    type: string
+                  namespace:
+                    type: string
+                required:
+                - name
+                type: object
+              preflightImage:
+                type: string
+            required:
+            - preflight
             type: object
           status:
+            properties:
+              analyzersFailed:
+                items:
+                  type: string
+                type: array
+              analyzersRunning:
+                items:
+                  type: string
+                type: array
+              analyzersSuccessful:
+                items:
+                  type: string
+                type: array
+              collectorsFailed:
+                items:
+                  type: string
+                type: array
+              collectorsRunning:
+                items:
+                  type: string
+                type: array
+              collectorsSuccessful:
+                items:
+                  type: string
+                type: array
+              isAnalyzersComplete:
+                type: boolean
+              isServerReady:
+                type: boolean
+              serverPodName:
+                type: string
+              serverPodNamespace:
+                type: string
+              serverPodPort:
+                type: integer
+            required:
+            - isServerReady
+            - serverPodName
+            - serverPodNamespace
+            - serverPodPort
+            - collectorsRunning
+            - collectorsSuccessful
+            - collectorsFailed
+            - isAnalyzersComplete
+            - analyzersRunning
+            - analyzersSuccessful
+            - analyzersFailed
             type: object
         type: object
     served: true
     storage: true
+    subresources:
+      status: {}
 status:
   acceptedNames:
     kind: ""
