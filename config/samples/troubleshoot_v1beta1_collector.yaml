@@ -3,5 +3,5 @@ kind: Collector
 metadata:
   name: collector-sample
 spec:
-  - cluster-info: {}
-  - cluster-resources: {}
+  - clusterInfo: {}
+  - clusterResources: {}

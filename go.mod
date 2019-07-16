@@ -3,6 +3,7 @@ module github.com/replicatedhq/troubleshoot
 go 1.12
 
 require (
+	github.com/blang/semver v3.5.1+incompatible
 	github.com/docker/spdystream v0.0.0-20181023171402-6480d4af844c // indirect
 	github.com/dsnet/compress v0.0.1 // indirect
 	github.com/gin-gonic/gin v1.4.0

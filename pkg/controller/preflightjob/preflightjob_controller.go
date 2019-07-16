@@ -21,6 +21,7 @@ import (
 
 	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
 	troubleshootclientv1beta1 "github.com/replicatedhq/troubleshoot/pkg/client/troubleshootclientset/typed/troubleshoot/v1beta1"
+	"github.com/replicatedhq/troubleshoot/pkg/preflight"
 	kuberneteserrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -96,9 +97,27 @@ func (r *ReconcilePreflightJob) Reconcile(request reconcile.Request) (reconcile.
 	}
 
 	if !instance.Status.IsServerReady {
-		if err := r.createPreflightServer(instance); err != nil {
+		preflightServerOptions := preflight.PreflightServerOptions{
+			ImageName:      instance.Spec.Image,
+			PullPolicy:     instance.Spec.ImagePullPolicy,
+			Name:           instance.Name,
+			Namespace:      instance.Namespace,
+			OwnerReference: instance,
+		}
+		pod, _, err := preflight.CreatePreflightServer(r.Client, r.scheme, preflightServerOptions)
+		if err != nil {
 			return reconcile.Result{}, err
 		}
+
+		instance.Status.ServerPodName = pod.Name
+		instance.Status.ServerPodNamespace = pod.Namespace
+		instance.Status.ServerPodPort = 8000
+		instance.Status.IsServerReady = true
+
+		if err := r.Update(context.Background(), instance); err != nil {
+			return reconcile.Result{}, err
+		}
+
 	}
 
 	namespace := instance.Namespace

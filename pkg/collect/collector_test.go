@@ -15,8 +15,8 @@ func Test_ParseSpec(t *testing.T) {
 		expectObject interface{}
 	}{
 		{
-			name:        "cluster-info",
-			spec:        "cluster-info: {}",
+			name:        "clusterInfo",
+			spec:        "clusterInfo: {}",
 			expectError: false,
 			expectObject: &troubleshootv1beta1.Collect{
 				ClusterInfo: &troubleshootv1beta1.ClusterInfo{},

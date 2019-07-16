@@ -476,9 +476,9 @@ spec:
               collectors:
                 items:
                   properties:
-                    cluster-info:
+                    clusterInfo:
                       type: object
-                    cluster-resources:
+                    clusterResources:
                       type: object
                   type: object
                 type: array

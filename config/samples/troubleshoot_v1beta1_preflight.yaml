@@ -7,7 +7,7 @@ spec:
     - clusterVersion:
         outcomes:
           - fail:
-              when: "< 1.13.0"
+              when: "< 1.14.0"
               message: You need more kubernetes
           - warn:
               when: "< 1.15.0"

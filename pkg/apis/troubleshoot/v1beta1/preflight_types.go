@@ -22,8 +22,8 @@ import (
 
 // PreflightSpec defines the desired state of Preflight
 type PreflightSpec struct {
-	Collectors []*Collect `json:"collectors,omitempty"`
-	Analyzers  []*Analyze `json:"analyzers,omitempty"`
+	Collectors []*Collect `json:"collectors,omitempty" yaml:"collectors,omitempty"`
+	Analyzers  []*Analyze `json:"analyzers,omitempty" yaml:"analyzers,omitempty"`
 }
 
 // PreflightStatus defines the observed state of Preflight
@@ -38,10 +38,10 @@ type PreflightStatus struct {
 // Preflight is the Schema for the preflights API
 // +k8s:openapi-gen=true
 type Preflight struct {
-	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
+	metav1.TypeMeta   `json:",inline" yaml:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty" yaml:"metadata,omitempty"`
 
-	Spec   PreflightSpec   `json:"spec,omitempty"`
+	Spec   PreflightSpec   `json:"spec,omitempty" yaml:"spec,omitempty"`
 	Status PreflightStatus `json:"status,omitempty"`
 }
 
