@@ -23,6 +23,9 @@ func Analyze(analyzer *troubleshootv1beta1.Analyze, getCollectedFileContents fun
 	if analyzer.StorageClass != nil {
 		return analyzeStorageClass(analyzer.StorageClass, getCollectedFileContents)
 	}
+	if analyzer.CustomResourceDefinition != nil {
+		return analyzeCustomResourceDefinition(analyzer.CustomResourceDefinition, getCollectedFileContents)
+	}
 
 	return nil, errors.New("invalid analyzer")
 }

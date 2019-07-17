@@ -23,11 +23,18 @@ type StorageClass struct {
 	StorageClassName string     `json:"storageClassName" yaml:"storageClassName"`
 }
 
+type CustomResourceDefinition struct {
+	AnalyzeMeta                  `json:",inline" yaml:",inline"`
+	Outcomes                     []*Outcome `json:"outcomes" yaml:"outcomes"`
+	CustomResourceDefinitionName string     `json:"customResourceDefinitionName" yaml:"customResourceDefinitionName"`
+}
+
 type AnalyzeMeta struct {
 	CheckName string `json:"checkName,omitempty" yaml:"checkName,omitempty"`
 }
 
 type Analyze struct {
-	ClusterVersion *ClusterVersion `json:"clusterVersion,omitempty" yaml:"clusterVersion,omitempty"`
-	StorageClass   *StorageClass   `json:"storageClass,omitempty" yaml:"storageClass,omitempty"`
+	ClusterVersion           *ClusterVersion           `json:"clusterVersion,omitempty" yaml:"clusterVersion,omitempty"`
+	StorageClass             *StorageClass             `json:"storageClass,omitempty" yaml:"storageClass,omitempty"`
+	CustomResourceDefinition *CustomResourceDefinition `json:"customResourceDefinition,omitempty" yaml:"customResourceDefinition,omitempty"`
 }

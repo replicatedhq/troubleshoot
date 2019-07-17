@@ -433,6 +433,48 @@ spec:
                       required:
                       - outcomes
                       type: object
+                    customResourceDefinition:
+                      properties:
+                        checkName:
+                          type: string
+                        customResourceDefinitionName:
+                          type: string
+                        outcomes:
+                          items:
+                            properties:
+                              fail:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
+                              pass:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
+                              warn:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
+                            type: object
+                          type: array
+                      required:
+                      - outcomes
+                      - customResourceDefinitionName
+                      type: object
                     storageClass:
                       properties:
                         checkName:

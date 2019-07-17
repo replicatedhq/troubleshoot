@@ -47,9 +47,10 @@ spec:
     #       message: Can't pull the images
     #     pass:
     #       message: Connected to docker registry
-    # - customResourceDefinitions:
-    #     name: rook
-    #     fail:
-    #       message: You don't have rook installed
-    #     pass:
-    #       message: Found rook!
+    - customResourceDefinition:
+        customResourceDefinitionName: rook
+        outcomes:
+          - fail:
+              message: You don't have rook installed
+          - pass:
+              message: Found rook!

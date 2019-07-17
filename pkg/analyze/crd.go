@@ -5,31 +5,31 @@ import (
 	"fmt"
 
 	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
-	storagev1beta1 "k8s.io/api/storage/v1beta1"
+	apiextensionsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 )
 
-func analyzeStorageClass(analyzer *troubleshootv1beta1.StorageClass, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
-	storageClassesData, err := getCollectedFileContents("cluster-resources/storage-classes.json")
+func analyzeCustomResourceDefinition(analyzer *troubleshootv1beta1.CustomResourceDefinition, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
+	crdData, err := getCollectedFileContents("cluster-resources/custom-resource-definitions.json")
 	if err != nil {
 		return nil, err
 	}
 
-	var storageClasses []storagev1beta1.StorageClass
-	if err := json.Unmarshal(storageClassesData, &storageClasses); err != nil {
+	var crds []apiextensionsv1beta1.CustomResourceDefinition
+	if err := json.Unmarshal(crdData, &crds); err != nil {
 		return nil, err
 	}
 
 	title := analyzer.CheckName
 	if title == "" {
-		title = fmt.Sprintf("Storage class %s", analyzer.StorageClassName)
+		title = fmt.Sprintf("Custom resource definition %s", analyzer.CustomResourceDefinitionName)
 	}
 
 	result := AnalyzeResult{
 		Title: title,
 	}
 
-	for _, storageClass := range storageClasses {
-		if storageClass.Name == analyzer.StorageClassName {
+	for _, storageClass := range crds {
+		if storageClass.Name == analyzer.CustomResourceDefinitionName {
 			result.IsPass = true
 			for _, outcome := range analyzer.Outcomes {
 				if outcome.Pass != nil {

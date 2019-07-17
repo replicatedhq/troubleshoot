@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	corev1 "k8s.io/api/core/v1"
-	apiextensionsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	apiextensionsv1beta1clientset "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -82,7 +81,7 @@ func ClusterResources() error {
 	clusterResourcesOutput.StorageClasses = storageClasses
 
 	// crds
-	crdClient, err := apiextensionsv1beta1.NewForConfig(cfg)
+	crdClient, err := apiextensionsv1beta1clientset.NewForConfig(cfg)
 	if err != nil {
 		return err
 	}
