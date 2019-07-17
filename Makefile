@@ -1,6 +1,7 @@
 
 # Image URL to use all building/pushing image targets
 IMG ?= controller:latest
+export GO111MODULE=on
 
 all: test manager
 
@@ -91,5 +92,11 @@ run-preflight: preflight
 	./bin/preflight run \
 		--collector-image=localhost:32000/troubleshoot:alpha \
 		--collector-pullpolicy=Always \
+		--image=localhost:32000/troubleshoot:alpha \
+		--pullpolicy=Always
+
+.PHONY: run-troubleshoot
+run-troubleshoot: troubleshoot
+	./bin/troubleshoot run \
 		--image=localhost:32000/troubleshoot:alpha \
 		--pullpolicy=Always
