@@ -396,6 +396,8 @@ spec:
                   properties:
                     clusterVersion:
                       properties:
+                        checkName:
+                          type: string
                         outcomes:
                           items:
                             properties:
@@ -433,7 +435,7 @@ spec:
                       type: object
                     storageClass:
                       properties:
-                        name:
+                        checkName:
                           type: string
                         outcomes:
                           items:
@@ -467,9 +469,11 @@ spec:
                                 type: object
                             type: object
                           type: array
+                        storageClassName:
+                          type: string
                       required:
                       - outcomes
-                      - name
+                      - storageClassName
                       type: object
                   type: object
                 type: array

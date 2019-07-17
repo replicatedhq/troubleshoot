@@ -823,8 +823,8 @@ func (in *SingleOutcome) DeepCopy() *SingleOutcome {
 func (in *StorageClass) DeepCopyInto(out *StorageClass) {
 	*out = *in
 	out.AnalyzeMeta = in.AnalyzeMeta
-	if in.Outcome != nil {
-		in, out := &in.Outcome, &out.Outcome
+	if in.Outcomes != nil {
+		in, out := &in.Outcomes, &out.Outcomes
 		*out = make([]*Outcome, len(*in))
 		for i := range *in {
 			if (*in)[i] != nil {

@@ -20,6 +20,9 @@ func Analyze(analyzer *troubleshootv1beta1.Analyze, getCollectedFileContents fun
 	if analyzer.ClusterVersion != nil {
 		return analyzeClusterVersion(analyzer.ClusterVersion, getCollectedFileContents)
 	}
+	if analyzer.StorageClass != nil {
+		return analyzeStorageClass(analyzer.StorageClass, getCollectedFileContents)
+	}
 
-	return nil, errors.New("invalid analyer")
+	return nil, errors.New("invalid analyzer")
 }

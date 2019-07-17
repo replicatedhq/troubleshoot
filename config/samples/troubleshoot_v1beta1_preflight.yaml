@@ -9,18 +9,21 @@ spec:
           - fail:
               when: "< 1.14.0"
               message: You need more kubernetes
-              uri:
+              uri: https://help.replicated.com/kubernetes-version
           - warn:
               when: "< 1.15.0"
               message: You have barely enough kubernetes
+              uri: https://help.replicated.com/kubernetes-version
           - pass:
               message: Good job keeping k8s current
-    # - storageClass:
-    #     name: "my-custom-storage-class"
-    #     fail:
-    #       message: The custom storage class thing was not found
-    #     pass:
-    #       message: All good on storage classes
+    - storageClass:
+        checkName: Required storage classes
+        storageClassName: "microk8s-hostpath"
+        outcomes:
+          - fail:
+              message: The micr0k8s storage class thing was not found
+          - pass:
+              message: All good on storage classes
     # - manifests:
     #     - secret:
     #         namespace: default

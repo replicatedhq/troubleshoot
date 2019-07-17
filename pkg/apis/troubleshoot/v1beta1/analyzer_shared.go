@@ -18,16 +18,16 @@ type ClusterVersion struct {
 }
 
 type StorageClass struct {
-	AnalyzeMeta `json:",inline" yaml:",inline"`
-	Outcome     []*Outcome `json:"outcomes" yaml:"outcomes"`
-	Name        string     `json:"name" yaml:"name"`
+	AnalyzeMeta      `json:",inline" yaml:",inline"`
+	Outcomes         []*Outcome `json:"outcomes" yaml:"outcomes"`
+	StorageClassName string     `json:"storageClassName" yaml:"storageClassName"`
 }
 
 type AnalyzeMeta struct {
-	Name string `json:"name,omitempty" yaml:"name,omitempty"`
+	CheckName string `json:"checkName,omitempty" yaml:"checkName,omitempty"`
 }
 
 type Analyze struct {
 	ClusterVersion *ClusterVersion `json:"clusterVersion,omitempty" yaml:"clusterVersion,omitempty"`
-	StorageClass   *StorageClass   `json:"storageClass,omitempty" yaml:"supportBundle,omitempty"`
+	StorageClass   *StorageClass   `json:"storageClass,omitempty" yaml:"storageClass,omitempty"`
 }
