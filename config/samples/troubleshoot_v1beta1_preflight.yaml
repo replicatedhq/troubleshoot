@@ -33,13 +33,14 @@ spec:
     #         message: The top secret secret is missing
     #       pass:
     #         message: You know the secret
-    #     - ingress:
-    #         namespace: default
-    #         name: connect-to-me
-    #       fail:
-    #         message: The ingress isn't ingressing
-    #       pass:
-    #         message: All systems ok on ingress
+    - ingress:
+        namespace: default
+        ingressName: connect-to-me
+        outcomes:
+          - fail:
+              message: The ingress isn't ingressing
+          - pass:
+              message: All systems ok on ingress
     # - imagePullSecret:
     #     name: replicated
     #     namespace: my-app

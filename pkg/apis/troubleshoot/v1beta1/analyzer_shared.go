@@ -29,6 +29,13 @@ type CustomResourceDefinition struct {
 	CustomResourceDefinitionName string     `json:"customResourceDefinitionName" yaml:"customResourceDefinitionName"`
 }
 
+type Ingress struct {
+	AnalyzeMeta `json:",inline" yaml:",inline"`
+	Outcomes    []*Outcome `json:"outcomes" yaml:"outcomes"`
+	IngressName string     `json:"ingressName" yaml:"ingressName"`
+	Namespace   string     `json:"namespace" yaml:"namespace"`
+}
+
 type AnalyzeMeta struct {
 	CheckName string `json:"checkName,omitempty" yaml:"checkName,omitempty"`
 }
@@ -37,4 +44,5 @@ type Analyze struct {
 	ClusterVersion           *ClusterVersion           `json:"clusterVersion,omitempty" yaml:"clusterVersion,omitempty"`
 	StorageClass             *StorageClass             `json:"storageClass,omitempty" yaml:"storageClass,omitempty"`
 	CustomResourceDefinition *CustomResourceDefinition `json:"customResourceDefinition,omitempty" yaml:"customResourceDefinition,omitempty"`
+	Ingress                  *Ingress                  `json:"ingress,omitempty" yaml:"ingress,omitempty"`
 }

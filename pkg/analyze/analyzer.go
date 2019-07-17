@@ -26,6 +26,9 @@ func Analyze(analyzer *troubleshootv1beta1.Analyze, getCollectedFileContents fun
 	if analyzer.CustomResourceDefinition != nil {
 		return analyzeCustomResourceDefinition(analyzer.CustomResourceDefinition, getCollectedFileContents)
 	}
+	if analyzer.Ingress != nil {
+		return analyzeIngress(analyzer.Ingress, getCollectedFileContents)
+	}
 
 	return nil, errors.New("invalid analyzer")
 }
