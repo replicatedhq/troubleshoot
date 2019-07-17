@@ -7,7 +7,9 @@ require (
 	github.com/docker/spdystream v0.0.0-20181023171402-6480d4af844c // indirect
 	github.com/dsnet/compress v0.0.1 // indirect
 	github.com/gin-gonic/gin v1.4.0
+	github.com/gizak/termui/v3 v3.1.0
 	github.com/golang/snappy v0.0.1 // indirect
+	github.com/manifoldco/promptui v0.3.2
 	github.com/mholt/archiver v3.1.1+incompatible
 	github.com/nwaples/rardecode v1.0.0 // indirect
 	github.com/onsi/gomega v1.5.0

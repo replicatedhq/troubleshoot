@@ -13,12 +13,18 @@ type Outcome struct {
 }
 
 type ClusterVersion struct {
-	Outcomes []*Outcome `json:"outcomes" yaml:"outcomes"`
+	AnalyzeMeta `json:",inline" yaml:",inline"`
+	Outcomes    []*Outcome `json:"outcomes" yaml:"outcomes"`
 }
 
 type StorageClass struct {
-	Outcome []*Outcome `json:"outcomes" yaml:"outcomes"`
-	Name    string     `json:"name" yaml:"name"`
+	AnalyzeMeta `json:",inline" yaml:",inline"`
+	Outcome     []*Outcome `json:"outcomes" yaml:"outcomes"`
+	Name        string     `json:"name" yaml:"name"`
+}
+
+type AnalyzeMeta struct {
+	Name string `json:"name,omitempty" yaml:"name,omitempty"`
 }
 
 type Analyze struct {

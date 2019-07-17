@@ -32,7 +32,15 @@ func analyzeClusterVersion(analyzer *troubleshootv1beta1.ClusterVersion, getColl
 		message := ""
 		uri := ""
 
-		result = AnalyzeResult{}
+		title := analyzer.Name
+		if title == "" {
+			title = "Required Kubernetes Version"
+		}
+
+		result = AnalyzeResult{
+			Title: title,
+		}
+
 		if outcome.Fail != nil {
 			result.IsFail = true
 			when = outcome.Fail.When

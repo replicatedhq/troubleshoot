@@ -11,6 +11,7 @@ type AnalyzeResult struct {
 	IsFail bool
 	IsWarn bool
 
+	Title   string
 	Message string
 	URI     string
 }
