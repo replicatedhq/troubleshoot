@@ -5,18 +5,20 @@ import (
 	"fmt"
 
 	corev1 "k8s.io/api/core/v1"
+	apiextensionsv1beta1clientset "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 )
 
 type ClusterResourcesOutput struct {
-	Namespaces     []byte            `json:"cluster-resources/namespaces.json,omitempty"`
-	Pods           map[string][]byte `json:"cluster-resources/pods,omitempty"`
-	Services       map[string][]byte `json:"cluster-resources/services,omitempty"`
-	Deployments    map[string][]byte `json:"cluster-resources/deployments,omitempty"`
-	Ingress        map[string][]byte `json:"cluster-resources/ingress,omitempty"`
-	StorageClasses []byte            `json:"cluster-resources/storage-classes.json,omitempty"`
+	Namespaces                []byte            `json:"cluster-resources/namespaces.json,omitempty"`
+	Pods                      map[string][]byte `json:"cluster-resources/pods,omitempty"`
+	Services                  map[string][]byte `json:"cluster-resources/services,omitempty"`
+	Deployments               map[string][]byte `json:"cluster-resources/deployments,omitempty"`
+	Ingress                   map[string][]byte `json:"cluster-resources/ingress,omitempty"`
+	StorageClasses            []byte            `json:"cluster-resources/storage-classes.json,omitempty"`
+	CustomResourceDefinitions []byte            `json:"cluster-resources/custom-resource-definitions.json,omitempty"`
 }
 
 func ClusterResources() error {
@@ -77,6 +79,17 @@ func ClusterResources() error {
 		return err
 	}
 	clusterResourcesOutput.StorageClasses = storageClasses
+
+	// crds
+	crdClient, err := apiextensionsv1beta1clientset.NewForConfig(cfg)
+	if err != nil {
+		return err
+	}
+	customResourceDefinitions, err := crds(crdClient)
+	if err != nil {
+		return err
+	}
+	clusterResourcesOutput.CustomResourceDefinitions = customResourceDefinitions
 
 	b, err := json.MarshalIndent(clusterResourcesOutput, "", "  ")
 	if err != nil {
@@ -189,6 +202,20 @@ func storageClasses(client *kubernetes.Clientset) ([]byte, error) {
 	}
 
 	b, err := json.MarshalIndent(storageClasses.Items, "", "  ")
+	if err != nil {
+		return nil, err
+	}
+
+	return b, nil
+}
+
+func crds(client *apiextensionsv1beta1clientset.ApiextensionsV1beta1Client) ([]byte, error) {
+	crds, err := client.CustomResourceDefinitions().List(metav1.ListOptions{})
+	if err != nil {
+		return nil, err
+	}
+
+	b, err := json.MarshalIndent(crds.Items, "", "  ")
 	if err != nil {
 		return nil, err
 	}

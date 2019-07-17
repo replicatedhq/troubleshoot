@@ -396,44 +396,7 @@ spec:
                   properties:
                     clusterVersion:
                       properties:
-                        outcomes:
-                          items:
-                            properties:
-                              fail:
-                                properties:
-                                  message:
-                                    type: string
-                                  uri:
-                                    type: string
-                                  when:
-                                    type: string
-                                type: object
-                              pass:
-                                properties:
-                                  message:
-                                    type: string
-                                  uri:
-                                    type: string
-                                  when:
-                                    type: string
-                                type: object
-                              warn:
-                                properties:
-                                  message:
-                                    type: string
-                                  uri:
-                                    type: string
-                                  when:
-                                    type: string
-                                type: object
-                            type: object
-                          type: array
-                      required:
-                      - outcomes
-                      type: object
-                    storageClass:
-                      properties:
-                        name:
+                        checkName:
                           type: string
                         outcomes:
                           items:
@@ -469,7 +432,90 @@ spec:
                           type: array
                       required:
                       - outcomes
-                      - name
+                      type: object
+                    customResourceDefinition:
+                      properties:
+                        checkName:
+                          type: string
+                        customResourceDefinitionName:
+                          type: string
+                        outcomes:
+                          items:
+                            properties:
+                              fail:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
+                              pass:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
+                              warn:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
+                            type: object
+                          type: array
+                      required:
+                      - outcomes
+                      - customResourceDefinitionName
+                      type: object
+                    storageClass:
+                      properties:
+                        checkName:
+                          type: string
+                        outcomes:
+                          items:
+                            properties:
+                              fail:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
+                              pass:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
+                              warn:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
+                            type: object
+                          type: array
+                        storageClassName:
+                          type: string
+                      required:
+                      - outcomes
+                      - storageClassName
                       type: object
                   type: object
                 type: array

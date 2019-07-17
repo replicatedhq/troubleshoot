@@ -11,6 +11,7 @@ type AnalyzeResult struct {
 	IsFail bool
 	IsWarn bool
 
+	Title   string
 	Message string
 	URI     string
 }
@@ -19,6 +20,12 @@ func Analyze(analyzer *troubleshootv1beta1.Analyze, getCollectedFileContents fun
 	if analyzer.ClusterVersion != nil {
 		return analyzeClusterVersion(analyzer.ClusterVersion, getCollectedFileContents)
 	}
+	if analyzer.StorageClass != nil {
+		return analyzeStorageClass(analyzer.StorageClass, getCollectedFileContents)
+	}
+	if analyzer.CustomResourceDefinition != nil {
+		return analyzeCustomResourceDefinition(analyzer.CustomResourceDefinition, getCollectedFileContents)
+	}
 
-	return nil, errors.New("invalid analyer")
+	return nil, errors.New("invalid analyzer")
 }

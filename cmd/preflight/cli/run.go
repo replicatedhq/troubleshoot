@@ -27,6 +27,9 @@ func Run() *cobra.Command {
 		},
 	}
 
+	cmd.Flags().Bool("interactive", true, "interactive preflights")
+	cmd.Flags().String("format", "human", "output format, one of human, json, yaml. only used when interactive is set to false")
+
 	cmd.Flags().String("preflight", "", "name of the preflight to use")
 	cmd.Flags().String("namespace", "default", "namespace the preflight can be found in")
 

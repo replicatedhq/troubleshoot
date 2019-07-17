@@ -13,15 +13,28 @@ type Outcome struct {
 }
 
 type ClusterVersion struct {
-	Outcomes []*Outcome `json:"outcomes" yaml:"outcomes"`
+	AnalyzeMeta `json:",inline" yaml:",inline"`
+	Outcomes    []*Outcome `json:"outcomes" yaml:"outcomes"`
 }
 
 type StorageClass struct {
-	Outcome []*Outcome `json:"outcomes" yaml:"outcomes"`
-	Name    string     `json:"name" yaml:"name"`
+	AnalyzeMeta      `json:",inline" yaml:",inline"`
+	Outcomes         []*Outcome `json:"outcomes" yaml:"outcomes"`
+	StorageClassName string     `json:"storageClassName" yaml:"storageClassName"`
+}
+
+type CustomResourceDefinition struct {
+	AnalyzeMeta                  `json:",inline" yaml:",inline"`
+	Outcomes                     []*Outcome `json:"outcomes" yaml:"outcomes"`
+	CustomResourceDefinitionName string     `json:"customResourceDefinitionName" yaml:"customResourceDefinitionName"`
+}
+
+type AnalyzeMeta struct {
+	CheckName string `json:"checkName,omitempty" yaml:"checkName,omitempty"`
 }
 
 type Analyze struct {
-	ClusterVersion *ClusterVersion `json:"clusterVersion,omitempty" yaml:"clusterVersion,omitempty"`
-	StorageClass   *StorageClass   `json:"storageClass,omitempty" yaml:"supportBundle,omitempty"`
+	ClusterVersion           *ClusterVersion           `json:"clusterVersion,omitempty" yaml:"clusterVersion,omitempty"`
+	StorageClass             *StorageClass             `json:"storageClass,omitempty" yaml:"storageClass,omitempty"`
+	CustomResourceDefinition *CustomResourceDefinition `json:"customResourceDefinition,omitempty" yaml:"customResourceDefinition,omitempty"`
 }

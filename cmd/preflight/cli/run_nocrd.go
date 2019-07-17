@@ -77,14 +77,21 @@ func runPreflightsNoCRD(v *viper.Viper, arg string) error {
 		return contents, nil
 	}
 
+	analyzeResults := []*analyzerunner.AnalyzeResult{}
 	for _, analyzer := range preflight.Spec.Analyzers {
 		analyzeResult, err := analyzerunner.Analyze(analyzer, getCollectedFileContents)
 		if err != nil {
 			return err
 		}
 
-		fmt.Printf("%#v\n", analyzeResult)
+		analyzeResults = append(analyzeResults, analyzeResult)
 	}
+
+	if v.GetBool("interactive") {
+		return showInteractiveResults(analyzeResults)
+	}
+
+	fmt.Printf("only interactive results are supported\n")
 	return nil
 }
 
