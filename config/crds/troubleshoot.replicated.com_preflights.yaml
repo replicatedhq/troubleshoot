@@ -618,6 +618,25 @@ spec:
                       type: object
                     clusterResources:
                       type: object
+                    logs:
+                      properties:
+                        limits:
+                          properties:
+                            maxAge:
+                              type: string
+                            maxLines:
+                              format: int64
+                              type: integer
+                          type: object
+                        namespace:
+                          type: string
+                        selector:
+                          items:
+                            type: string
+                          type: array
+                      required:
+                      - selector
+                      type: object
                     secret:
                       properties:
                         includeValue:

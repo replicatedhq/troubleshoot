@@ -5,7 +5,14 @@ metadata:
 spec:
   # - clusterInfo: {}
   # - clusterResources: {}
-  - secret:
-      name: illmannered-cricket-mysql
+  # - secret:
+  #     name: illmannered-cricket-mysql
+  #     namespace: default
+  #     key: mysql-password
+  - logs:
+      selector:
+        - name=nginx-ingress-microk8s
       namespace: default
-      key: mysql-password
+      limits:
+        maxAge: 30d
+        maxLines: 10000

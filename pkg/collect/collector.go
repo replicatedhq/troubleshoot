@@ -27,6 +27,9 @@ func (c *Collector) RunCollectorSync() error {
 	if collect.Secret != nil {
 		return Secret(collect.Secret)
 	}
+	if collect.Logs != nil {
+		return Logs(collect.Logs)
+	}
 
 	return errors.New("no spec found to run")
 }
