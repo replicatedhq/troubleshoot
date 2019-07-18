@@ -1,0 +1,103 @@
+project_name: troubleshoot
+release:
+  github:
+    owner: replicatedhq
+    name: troubleshoot
+builds:
+  - id: collector
+    goos:
+      - linux
+    goarch:
+      - amd64
+    env:
+      - CGO_ENABLED=0
+    main: cmd/collector/main.go
+    ldflags: -s -w
+      -X github.com/replicatedhq/troubleshoot/pkg/version.version={{.Version}}
+      -X github.com/replicatedhq/troubleshoot/pkg/version.gitSHA={{.Commit}}
+      -X github.com/replicatedhq/troubleshoot/pkg/version.buildTime={{.Date}}
+      -extldflags "-static"
+    flags: -tags netgo -installsuffix netgo
+    binary: collector
+    hooks: {}
+  - id: preflight
+    goos:
+      - linux
+    goarch:
+      - amd64
+    env:
+      - CGO_ENABLED=0
+    main: cmd/preflight/main.go
+    ldflags: -s -w
+      -X github.com/replicatedhq/troubleshoot/pkg/version.version={{.Version}}
+      -X github.com/replicatedhq/troubleshoot/pkg/version.gitSHA={{.Commit}}
+      -X github.com/replicatedhq/troubleshoot/pkg/version.buildTime={{.Date}}
+      -extldflags "-static"
+    flags: -tags netgo -installsuffix netgo
+    binary: preflight
+    hooks: {}
+  - id: troubleshoot
+    goos:
+      - linux
+    goarch:
+      - amd64
+    env:
+      - CGO_ENABLED=0
+    main: cmd/troubleshoot/main.go
+    ldflags: -s -w
+      -X github.com/replicatedhq/troubleshoot/pkg/version.version={{.Version}}
+      -X github.com/replicatedhq/troubleshoot/pkg/version.gitSHA={{.Commit}}
+      -X github.com/replicatedhq/troubleshoot/pkg/version.buildTime={{.Date}}
+      -extldflags "-static"
+    flags: -tags netgo -installsuffix netgo
+    binary: troubleshoot
+    hooks: {}
+  - id: manager
+    goos:
+      - linux
+    goarch:
+      - amd64
+    env:
+      - CGO_ENABLED=0
+    main: cmd/manager/main.go
+    ldflags: -s -w
+      -X github.com/replicatedhq/troubleshoot/pkg/version.version={{.Version}}
+      -X github.com/replicatedhq/troubleshoot/pkg/version.gitSHA={{.Commit}}
+      -X github.com/replicatedhq/troubleshoot/pkg/version.buildTime={{.Date}}
+      -extldflags "-static"
+    flags: -tags netgo -installsuffix netgo
+    binary: manager
+    hooks: {}
+archives:
+  - id: tar
+    format: tar.gz
+    name_template: '{{ .Binary }}_{{.Version}}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{.Arm }}{{ end }}-alpha'
+    files:
+      - licence*
+      - LICENCE*
+      - license*
+      - LICENSE*
+      - readme*
+      - README*
+      - changelog*
+      - CHANGELOG*
+dockers:
+  - dockerfile: ./deploy/Dockerfile.troubleshoot
+    image_templates:
+      - "replicated/troubleshoot:alpha"
+    binaries:
+      - collector
+      - troubleshoot
+      - preflight
+  - dockerfile: ./deploy/Dockerfile.troubleshoot
+    image_templates:
+      - "replicated/preflight:alpha"
+    binaries:
+      - collector
+      - troubleshoot
+      - preflight
+  - dockerfile: ./deploy/Dockerfile.manager
+    image_templates:
+      - "replicated/troubleshoot-manager:alpha"
+    binaries:
+      - manager
