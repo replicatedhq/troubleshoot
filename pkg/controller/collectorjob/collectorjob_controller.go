@@ -387,6 +387,7 @@ func (r *ReconcileCollectorJob) createCollectorPod(instance *troubleshootv1beta1
 					Command:         []string{"collector"},
 					Args: []string{
 						"run",
+						fmt.Sprintf("--redact=%t", instance.Spec.Redact),
 						"--collector",
 						"/troubleshoot/specs/collector.yaml",
 					},

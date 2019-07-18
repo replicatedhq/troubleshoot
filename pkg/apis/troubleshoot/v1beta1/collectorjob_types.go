@@ -31,6 +31,7 @@ type CollectorJobSpec struct {
 
 	Image           string `json:"image,omitempty"`
 	ImagePullPolicy string `json:"imagePullPolicy,omitempty"`
+	Redact          bool   `json:"redact,omitempty"`
 }
 
 // CollectorJobStatus defines the observed state of CollectorJob

@@ -24,6 +24,7 @@ troubleshoot run --collectors application --wait
 			viper.BindPFlag("kubecontext", cmd.Flags().Lookup("kubecontext"))
 			viper.BindPFlag("image", cmd.Flags().Lookup("image"))
 			viper.BindPFlag("pullpolicy", cmd.Flags().Lookup("pullpolicy"))
+			viper.BindPFlag("redact", cmd.Flags().Lookup("redact"))
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			v := viper.GetViper()
@@ -43,6 +44,7 @@ troubleshoot run --collectors application --wait
 
 	cmd.Flags().String("image", "", "the full name of the collector image to use")
 	cmd.Flags().String("pullpolicy", "", "the pull policy of the collector image")
+	cmd.Flags().Bool("redact", true, "enable/disable default redactions")
 
 	viper.BindPFlags(cmd.Flags())
 

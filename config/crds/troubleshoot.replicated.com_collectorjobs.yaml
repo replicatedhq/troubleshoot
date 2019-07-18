@@ -404,6 +404,8 @@ spec:
                 type: string
               imagePullPolicy:
                 type: string
+              redact:
+                type: boolean
             required:
             - collector
             type: object
