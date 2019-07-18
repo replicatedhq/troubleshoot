@@ -2,9 +2,10 @@ package preflightjob
 
 import (
 	"context"
+	"fmt"
 
 	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
-	"github.com/replicatedhq/troubleshoot/pkg/preflight"
+	collectrunner "github.com/replicatedhq/troubleshoot/pkg/collect"
 )
 
 func (r *ReconcilePreflightJob) reconcilePreflightCollectors(instance *troubleshootv1beta1.PreflightJob, preflight *troubleshootv1beta1.Preflight) error {
@@ -57,7 +58,7 @@ func (r *ReconcilePreflightJob) reconcileOnePreflightCollector(instance *trouble
 		return nil
 	}
 
-	_, _, err := preflight.CreateCollector(r.Client, r.scheme, instance, instance.Name, instance.Namespace, collect, instance.Spec.Image, instance.Spec.ImagePullPolicy)
+	_, _, err := collectrunner.CreateCollector(r.Client, r.scheme, instance, instance.Name, instance.Namespace, "preflight", collect, instance.Spec.Image, instance.Spec.ImagePullPolicy)
 	if err != nil {
 		return err
 	}
@@ -94,6 +95,8 @@ func idForCollector(collector *troubleshootv1beta1.Collect) string {
 		return "cluster-info"
 	} else if collector.ClusterResources != nil {
 		return "cluster-resources"
+	} else if collector.Secret != nil {
+		return fmt.Sprintf("secret-%s%s", collector.Secret.Namespace, collector.Secret.Name)
 	}
 
 	return ""

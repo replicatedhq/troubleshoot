@@ -74,6 +74,7 @@ func receiveSupportBundle(collectorJobNamespace string, collectorJobName string)
 			for filename, maybeContents := range files {
 				fileDir, fileName := filepath.Split(filename)
 				outPath := filepath.Join(bundlePath, fileDir)
+
 				if err := os.MkdirAll(outPath, 0777); err != nil {
 					return err
 				}

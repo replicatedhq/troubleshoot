@@ -36,6 +36,14 @@ type Ingress struct {
 	Namespace   string     `json:"namespace" yaml:"namespace"`
 }
 
+type AnalyzeSecret struct {
+	AnalyzeMeta `json:",inline" yaml:",inline"`
+	Outcomes    []*Outcome `json:"outcomes" yaml:"outcomes"`
+	SecretName  string     `json:"secretName" yaml:"secretName"`
+	Namespace   string     `json:"namespace" yaml:"namespace"`
+	Key         string     `json:"key,omitempty" yaml:"key,omitempty"`
+}
+
 type AnalyzeMeta struct {
 	CheckName string `json:"checkName,omitempty" yaml:"checkName,omitempty"`
 }
@@ -45,4 +53,5 @@ type Analyze struct {
 	StorageClass             *StorageClass             `json:"storageClass,omitempty" yaml:"storageClass,omitempty"`
 	CustomResourceDefinition *CustomResourceDefinition `json:"customResourceDefinition,omitempty" yaml:"customResourceDefinition,omitempty"`
 	Ingress                  *Ingress                  `json:"ingress,omitempty" yaml:"ingress,omitempty"`
+	Secret                   *AnalyzeSecret            `json:"secret,omitempty" yaml:"secret,omitempty"`
 }

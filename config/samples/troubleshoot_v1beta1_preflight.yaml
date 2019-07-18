@@ -24,6 +24,17 @@ spec:
               message: The micr0k8s storage class thing was not found
           - pass:
               message: All good on storage classes
+    - secret:
+        checkName: PG URI
+        secretName: postgres
+        namespace: default
+        key: uri
+        outcomes:
+          - fail:
+              message: You don't have a pg uri secret
+          - pass:
+              message: Probably a green light connecting to pg
+
     # - manifests:
     #     - secret:
     #         namespace: default

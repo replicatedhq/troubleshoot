@@ -3,5 +3,9 @@ kind: Collector
 metadata:
   name: collector-sample
 spec:
-  - clusterInfo: {}
-  - clusterResources: {}
+  # - clusterInfo: {}
+  # - clusterResources: {}
+  - secret:
+      name: illmannered-cricket-mysql
+      namespace: default
+      key: mysql-password

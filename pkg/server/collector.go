@@ -3,7 +3,6 @@ package server
 import (
 	"context"
 	"encoding/base64"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 
@@ -36,8 +35,6 @@ func putCollectorOutput(c *gin.Context) {
 	}
 
 	collectorQueue[collectorID] = body
-
-	fmt.Printf("collectorQueue = %#v\n", collectorQueue)
 	c.Status(201)
 }
 
