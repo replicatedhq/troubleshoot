@@ -77,9 +77,17 @@ endif
 .PHONY: snapshot-release
 snapshot-release:
 	curl -sL https://git.io/goreleaser | bash -s -- --rm-dist --snapshot --config deploy/.goreleaser.snapshot.yml
+	docker push replicated/troubleshoot:alpha
+	docker push replicated/preflight:alpha
+	docker push replicated/troubleshoot-manager:alpha
+
+.PHONY: release
+release:
+	curl -sL https://git.io/goreleaser | bash -s -- --rm-dist --config deploy/.goreleaser.yml
 
 .PHONY: local-release
-local-release: snapshot-release
+local-release:
+	curl -sL https://git.io/goreleaser | bash -s -- --rm-dist --snapshot --config deploy/.goreleaser.snapshot.yml
 	docker tag replicated/troubleshoot:alpha localhost:32000/troubleshoot:alpha
 	docker tag replicated/preflight:alpha localhost:32000/preflight:alpha
 	docker tag replicated/troubleshoot-manager:alpha localhost:32000/troubleshoot-manager:alpha
