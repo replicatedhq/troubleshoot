@@ -8,7 +8,8 @@ import (
 )
 
 type Collector struct {
-	Spec string
+	Spec   string
+	Redact bool
 }
 
 func (c *Collector) RunCollectorSync() error {
@@ -21,7 +22,7 @@ func (c *Collector) RunCollectorSync() error {
 		return ClusterInfo()
 	}
 	if collect.ClusterResources != nil {
-		return ClusterResources()
+		return ClusterResources(c.Redact)
 	}
 	if collect.Secret != nil {
 		return Secret(collect.Secret)

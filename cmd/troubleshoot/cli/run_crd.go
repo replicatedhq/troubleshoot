@@ -55,6 +55,7 @@ func runTroubleshootCRD(v *viper.Viper) error {
 			},
 			Image:           v.GetString("image"),
 			ImagePullPolicy: v.GetString("pullpolicy"),
+			Redact:          v.GetBool("redact"),
 		},
 	}
 	if _, err := troubleshootClient.CollectorJobs(v.GetString("namespace")).Create(&collectorJob); err != nil {

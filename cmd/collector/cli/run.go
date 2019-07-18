@@ -15,6 +15,7 @@ func Run() *cobra.Command {
 		Long:  `...`,
 		PreRun: func(cmd *cobra.Command, args []string) {
 			viper.BindPFlag("collector", cmd.Flags().Lookup("collector"))
+			viper.BindPFlag("redact", cmd.Flags().Lookup("redact"))
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			v := viper.GetViper()
@@ -25,7 +26,8 @@ func Run() *cobra.Command {
 			}
 
 			collector := collect.Collector{
-				Spec: string(specContents),
+				Spec:   string(specContents),
+				Redact: v.GetBool("redact"),
 			}
 			if err := collector.RunCollectorSync(); err != nil {
 				return err
@@ -36,6 +38,7 @@ func Run() *cobra.Command {
 	}
 
 	cmd.Flags().String("collector", "", "path to a single collector spec to collect")
+	cmd.Flags().Bool("redact", true, "enable/disable default redactions")
 
 	cmd.MarkFlagRequired("collector")
 

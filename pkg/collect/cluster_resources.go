@@ -22,7 +22,7 @@ type ClusterResourcesOutput struct {
 	CustomResourceDefinitions []byte            `json:"cluster-resources/custom-resource-definitions.json,omitempty"`
 }
 
-func ClusterResources() error {
+func ClusterResources(redact bool) error {
 	cfg, err := config.GetConfig()
 	if err != nil {
 		return err
@@ -92,12 +92,14 @@ func ClusterResources() error {
 	}
 	clusterResourcesOutput.CustomResourceDefinitions = customResourceDefinitions
 
-	redacted, err := clusterResourcesOutput.Redact()
-	if err != nil {
-		return err
+	if redact {
+		clusterResourcesOutput, err = clusterResourcesOutput.Redact()
+		if err != nil {
+			return err
+		}
 	}
 
-	b, err := json.MarshalIndent(redacted, "", "  ")
+	b, err := json.MarshalIndent(clusterResourcesOutput, "", "  ")
 	if err != nil {
 		return err
 	}
