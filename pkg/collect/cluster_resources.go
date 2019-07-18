@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/replicatedhq/troubleshoot/pkg/redact"
 	corev1 "k8s.io/api/core/v1"
 	apiextensionsv1beta1clientset "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -32,7 +33,7 @@ func ClusterResources() error {
 		return err
 	}
 
-	clusterResourcesOutput := ClusterResourcesOutput{}
+	clusterResourcesOutput := &ClusterResourcesOutput{}
 
 	// namespaces
 	namespaces, namespaceList, err := namespaces(client)
@@ -91,7 +92,12 @@ func ClusterResources() error {
 	}
 	clusterResourcesOutput.CustomResourceDefinitions = customResourceDefinitions
 
-	b, err := json.MarshalIndent(clusterResourcesOutput, "", "  ")
+	redacted, err := clusterResourcesOutput.Redact()
+	if err != nil {
+		return err
+	}
+
+	b, err := json.MarshalIndent(redacted, "", "  ")
 	if err != nil {
 		return err
 	}
@@ -221,4 +227,56 @@ func crds(client *apiextensionsv1beta1clientset.ApiextensionsV1beta1Client) ([]b
 	}
 
 	return b, nil
+}
+
+func (c *ClusterResourcesOutput) Redact() (*ClusterResourcesOutput, error) {
+	namespaces, err := redact.Redact(c.Namespaces)
+	if err != nil {
+		return nil, err
+	}
+	pods, err := redactMap(c.Pods)
+	if err != nil {
+		return nil, err
+	}
+	services, err := redactMap(c.Services)
+	if err != nil {
+		return nil, err
+	}
+	deployments, err := redactMap(c.Deployments)
+	if err != nil {
+		return nil, err
+	}
+	ingress, err := redactMap(c.Ingress)
+	if err != nil {
+		return nil, err
+	}
+	storageClasses, err := redact.Redact(c.StorageClasses)
+	if err != nil {
+		return nil, err
+	}
+	crds, err := redact.Redact(c.CustomResourceDefinitions)
+	if err != nil {
+		return nil, err
+	}
+	return &ClusterResourcesOutput{
+		Namespaces:                namespaces,
+		Pods:                      pods,
+		Services:                  services,
+		Deployments:               deployments,
+		Ingress:                   ingress,
+		StorageClasses:            storageClasses,
+		CustomResourceDefinitions: crds,
+	}, nil
+}
+
+func redactMap(input map[string][]byte) (map[string][]byte, error) {
+	result := make(map[string][]byte)
+	for k, v := range input {
+		redacted, err := redact.Redact(v)
+		if err != nil {
+			return nil, err
+		}
+		result[k] = redacted
+	}
+	return result, nil
 }
