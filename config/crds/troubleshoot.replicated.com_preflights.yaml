@@ -637,6 +637,29 @@ spec:
                       required:
                       - selector
                       type: object
+                    run:
+                      properties:
+                        args:
+                          items:
+                            type: string
+                          type: array
+                        command:
+                          items:
+                            type: string
+                          type: array
+                        image:
+                          type: string
+                        name:
+                          type: string
+                        namespace:
+                          type: string
+                        timeout:
+                          type: string
+                      required:
+                      - name
+                      - namespace
+                      - image
+                      type: object
                     secret:
                       properties:
                         includeValue:

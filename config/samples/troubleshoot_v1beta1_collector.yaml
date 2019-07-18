@@ -9,10 +9,17 @@ spec:
   #     name: illmannered-cricket-mysql
   #     namespace: default
   #     key: mysql-password
-  - logs:
-      selector:
-        - name=nginx-ingress-microk8s
+  # - logs:
+  #     selector:
+  #       - name=nginx-ingress-microk8s
+  #     namespace: default
+  #     limits:
+  #       maxAge: 30d
+  #       maxLines: 10000
+  - run:
+      name: ping-google
       namespace: default
-      limits:
-        maxAge: 30d
-        maxLines: 10000
+      image: ubuntu:latest
+      command: ["ping"]
+      args: ["www.google.com"]
+      timeout: 5s

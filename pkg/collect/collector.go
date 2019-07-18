@@ -25,10 +25,13 @@ func (c *Collector) RunCollectorSync() error {
 		return ClusterResources(c.Redact)
 	}
 	if collect.Secret != nil {
-		return Secret(collect.Secret)
+		return Secret(collect.Secret, c.Redact)
 	}
 	if collect.Logs != nil {
-		return Logs(collect.Logs)
+		return Logs(collect.Logs, c.Redact)
+	}
+	if collect.Run != nil {
+		return Run(collect.Run, c.Redact)
 	}
 
 	return errors.New("no spec found to run")

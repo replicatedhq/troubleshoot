@@ -22,7 +22,7 @@ type SecretOutput struct {
 	FoundSecret map[string][]byte `json:"secrets/,omitempty"`
 }
 
-func Secret(secretCollector *troubleshootv1beta1.Secret) error {
+func Secret(secretCollector *troubleshootv1beta1.Secret, redact bool) error {
 	cfg, err := config.GetConfig()
 	if err != nil {
 		return err
@@ -38,10 +38,17 @@ func Secret(secretCollector *troubleshootv1beta1.Secret) error {
 		return err
 	}
 
-	secretOutput := SecretOutput{
+	secretOutput := &SecretOutput{
 		FoundSecret: map[string][]byte{
 			fmt.Sprintf("%s/%s.json", secret.Namespace, secret.Name): encoded,
 		},
+	}
+
+	if redact {
+		secretOutput, err = secretOutput.Redact()
+		if err != nil {
+			return err
+		}
 	}
 
 	b, err := json.MarshalIndent(secretOutput, "", "  ")
@@ -91,4 +98,15 @@ func secret(client *kubernetes.Clientset, secretCollector *troubleshootv1beta1.S
 	}
 
 	return &secret, b, nil
+}
+
+func (s *SecretOutput) Redact() (*SecretOutput, error) {
+	foundSecret, err := redactMap(s.FoundSecret)
+	if err != nil {
+		return nil, err
+	}
+
+	return &SecretOutput{
+		FoundSecret: foundSecret,
+	}, nil
 }

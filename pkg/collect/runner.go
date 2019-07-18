@@ -30,7 +30,7 @@ func CreateCollector(client client.Client, scheme *runtime.Scheme, ownerRef meta
 }
 
 func createCollectorSpecConfigMap(client client.Client, scheme *runtime.Scheme, ownerRef metav1.Object, jobName string, jobNamespace string, collect *troubleshootv1beta1.Collect) (*corev1.ConfigMap, error) {
-	name := fmt.Sprintf("%s-%s", jobName, idForCollector(collect))
+	name := fmt.Sprintf("%s-%s", jobName, DeterministicIDForCollector(collect))
 	namespacedName := types.NamespacedName{
 		Name:      name,
 		Namespace: jobNamespace,
@@ -76,7 +76,7 @@ func createCollectorSpecConfigMap(client client.Client, scheme *runtime.Scheme, 
 }
 
 func createCollectorPod(client client.Client, scheme *runtime.Scheme, ownerRef metav1.Object, jobName string, jobNamespace string, jobType string, collect *troubleshootv1beta1.Collect, configMap *corev1.ConfigMap, image string, pullPolicy string) (*corev1.Pod, error) {
-	name := fmt.Sprintf("%s-%s", jobName, idForCollector(collect))
+	name := fmt.Sprintf("%s-%s", jobName, DeterministicIDForCollector(collect))
 
 	namespacedName := types.NamespacedName{
 		Name:      name,
@@ -120,7 +120,7 @@ func createCollectorPod(client client.Client, scheme *runtime.Scheme, ownerRef m
 				{
 					Image:           imageName,
 					ImagePullPolicy: imagePullPolicy,
-					Name:            idForCollector(collect),
+					Name:            DeterministicIDForCollector(collect),
 					Command:         []string{"collector"},
 					Args: []string{
 						"run",
@@ -161,21 +161,4 @@ func createCollectorPod(client client.Client, scheme *runtime.Scheme, ownerRef m
 	}
 
 	return &pod, nil
-}
-
-func idForCollector(collector *troubleshootv1beta1.Collect) string {
-	if collector.ClusterInfo != nil {
-		return "cluster-info"
-	}
-	if collector.ClusterResources != nil {
-		return "cluster-resources"
-	}
-	if collector.Secret != nil {
-		return fmt.Sprintf("secret-%s%s", collector.Secret.Namespace, collector.Secret.Name)
-	}
-	if collector.Logs != nil {
-		randomString := "abcdef" // TODO
-		return fmt.Sprintf("logs-%s%s", collector.Logs.Namespace, randomString)
-	}
-	return ""
 }

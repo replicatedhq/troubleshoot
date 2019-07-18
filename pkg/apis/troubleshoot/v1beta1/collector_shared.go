@@ -24,9 +24,19 @@ type Logs struct {
 	Limits    *LogLimits `json:"limits,omitempty" yaml:"omitempty"`
 }
 
+type Run struct {
+	Name      string   `json:"name" yaml:"name"`
+	Namespace string   `json:"namespace" yaml:"namespace"`
+	Image     string   `json:"image" yaml:"image"`
+	Command   []string `json:"command,omitempty" yaml:"command,omitempty"`
+	Args      []string `json:"args,omitempty" yaml:"args,omitempty"`
+	Timeout   string   `json:"timeout,omitempty" yaml:"timeout,omitempty"`
+}
+
 type Collect struct {
 	ClusterInfo      *ClusterInfo      `json:"clusterInfo,omitempty" yaml:"clusterInfo,omitempty"`
 	ClusterResources *ClusterResources `json:"clusterResources,omitempty" yaml:"clusterResources,omitempty"`
 	Secret           *Secret           `json:"secret,omitempty" yaml:"secret,omitempty"`
 	Logs             *Logs             `json:"logs,omitempty" yaml:"logs,omitempty"`
+	Run              *Run              `json:"run,omitempty" yaml:"run,omitempty"`
 }

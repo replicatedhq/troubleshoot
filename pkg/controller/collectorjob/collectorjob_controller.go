@@ -30,6 +30,7 @@ import (
 
 	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
 	troubleshootclientv1beta1 "github.com/replicatedhq/troubleshoot/pkg/client/troubleshootclientset/typed/troubleshoot/v1beta1"
+	collectrunner "github.com/replicatedhq/troubleshoot/pkg/collect"
 	"github.com/replicatedhq/troubleshoot/pkg/k8sutil"
 	"gopkg.in/yaml.v2"
 	corev1 "k8s.io/api/core/v1"
@@ -168,15 +169,15 @@ func (r *ReconcileCollectorJob) getCollectorSpec(namespace string, name string) 
 }
 
 func (r *ReconcileCollectorJob) reconileOneCollectorJob(instance *troubleshootv1beta1.CollectorJob, collect *troubleshootv1beta1.Collect) error {
-	if contains(instance.Status.Running, idForCollector(collect)) {
+	if contains(instance.Status.Running, collectrunner.DeterministicIDForCollector(collect)) {
 		collectorPod, err := r.getCollectorPod(instance, collect)
 		if err != nil {
 			return err
 		}
 
 		if collectorPod.Status.Phase == corev1.PodFailed {
-			instance.Status.Failed = append(instance.Status.Failed, idForCollector(collect))
-			instance.Status.Running = remove(instance.Status.Running, idForCollector(collect))
+			instance.Status.Failed = append(instance.Status.Failed, collectrunner.DeterministicIDForCollector(collect))
+			instance.Status.Running = remove(instance.Status.Running, collectrunner.DeterministicIDForCollector(collect))
 
 			if err := r.Update(context.Background(), instance); err != nil {
 				return err
@@ -245,7 +246,7 @@ func (r *ReconcileCollectorJob) reconileOneCollectorJob(instance *troubleshootv1
 				return err
 			}
 			request.ContentLength = int64(len(buf.String()))
-			request.Header.Add("collector-id", idForCollector(collect))
+			request.Header.Add("collector-id", collectrunner.DeterministicIDForCollector(collect))
 			resp, err := client.Do(request)
 			if err != nil {
 				return err
@@ -260,8 +261,8 @@ func (r *ReconcileCollectorJob) reconileOneCollectorJob(instance *troubleshootv1
 				close(stopCh)
 			}
 
-			instance.Status.Successful = append(instance.Status.Successful, idForCollector(collect))
-			instance.Status.Running = remove(instance.Status.Running, idForCollector(collect))
+			instance.Status.Successful = append(instance.Status.Successful, collectrunner.DeterministicIDForCollector(collect))
+			instance.Status.Running = remove(instance.Status.Running, collectrunner.DeterministicIDForCollector(collect))
 
 			if err := r.Update(context.Background(), instance); err != nil {
 				return err
@@ -283,7 +284,7 @@ func (r *ReconcileCollectorJob) reconileOneCollectorJob(instance *troubleshootv1
 }
 
 func (r *ReconcileCollectorJob) createSpecInConfigMap(instance *troubleshootv1beta1.CollectorJob, collector *troubleshootv1beta1.Collect) error {
-	name := fmt.Sprintf("%s-%s", instance.Name, idForCollector(collector))
+	name := fmt.Sprintf("%s-%s", instance.Name, collectrunner.DeterministicIDForCollector(collector))
 
 	namespacedName := types.NamespacedName{
 		Name:      name,
@@ -328,7 +329,7 @@ func (r *ReconcileCollectorJob) createSpecInConfigMap(instance *troubleshootv1be
 }
 
 func (r *ReconcileCollectorJob) getCollectorPod(instance *troubleshootv1beta1.CollectorJob, collector *troubleshootv1beta1.Collect) (*corev1.Pod, error) {
-	name := fmt.Sprintf("%s-%s", instance.Name, idForCollector(collector))
+	name := fmt.Sprintf("%s-%s", instance.Name, collectrunner.DeterministicIDForCollector(collector))
 
 	namespacedName := types.NamespacedName{
 		Name:      name,
@@ -345,7 +346,7 @@ func (r *ReconcileCollectorJob) getCollectorPod(instance *troubleshootv1beta1.Co
 }
 
 func (r *ReconcileCollectorJob) createCollectorPod(instance *troubleshootv1beta1.CollectorJob, collector *troubleshootv1beta1.Collect) error {
-	name := fmt.Sprintf("%s-%s", instance.Name, idForCollector(collector))
+	name := fmt.Sprintf("%s-%s", instance.Name, collectrunner.DeterministicIDForCollector(collector))
 
 	namespacedName := types.NamespacedName{
 		Name:      name,
@@ -383,7 +384,7 @@ func (r *ReconcileCollectorJob) createCollectorPod(instance *troubleshootv1beta1
 				{
 					Image:           imageName,
 					ImagePullPolicy: imagePullPolicy,
-					Name:            idForCollector(collector),
+					Name:            collectrunner.DeterministicIDForCollector(collector),
 					Command:         []string{"collector"},
 					Args: []string{
 						"run",
@@ -422,29 +423,12 @@ func (r *ReconcileCollectorJob) createCollectorPod(instance *troubleshootv1beta1
 		return err
 	}
 
-	instance.Status.Running = append(instance.Status.Running, idForCollector(collector))
+	instance.Status.Running = append(instance.Status.Running, collectrunner.DeterministicIDForCollector(collector))
 	if err := r.Update(context.Background(), instance); err != nil {
 		return err
 	}
 
 	return nil
-}
-
-func idForCollector(collector *troubleshootv1beta1.Collect) string {
-	if collector.ClusterInfo != nil {
-		return "cluster-info"
-	}
-	if collector.ClusterResources != nil {
-		return "cluster-resources"
-	}
-	if collector.Secret != nil {
-		return fmt.Sprintf("secret-%s%s", collector.Secret.Namespace, collector.Secret.Name)
-	}
-	if collector.Logs != nil {
-		randomString := "abcdef" // TODO
-		return fmt.Sprintf("logs-%s%s", collector.Logs.Namespace, randomString)
-	}
-	return ""
 }
 
 func contains(s []string, e string) bool {

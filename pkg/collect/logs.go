@@ -19,7 +19,7 @@ type LogsOutput struct {
 	PodLogs map[string][]byte `json:"logs/,omitempty"`
 }
 
-func Logs(logsCollector *troubleshootv1beta1.Logs) error {
+func Logs(logsCollector *troubleshootv1beta1.Logs, redact bool) error {
 	cfg, err := config.GetConfig()
 	if err != nil {
 		return err
@@ -35,7 +35,7 @@ func Logs(logsCollector *troubleshootv1beta1.Logs) error {
 		return err
 	}
 
-	logsOutput := LogsOutput{
+	logsOutput := &LogsOutput{
 		PodLogs: make(map[string][]byte),
 	}
 	for _, pod := range pods {
@@ -46,6 +46,13 @@ func Logs(logsCollector *troubleshootv1beta1.Logs) error {
 
 		for k, v := range podLogs {
 			logsOutput.PodLogs[k] = v
+		}
+	}
+
+	if redact {
+		logsOutput, err = logsOutput.Redact()
+		if err != nil {
+			return err
 		}
 	}
 
@@ -112,5 +119,16 @@ func getPodLogs(client *kubernetes.Clientset, pod corev1.Pod, limits *troublesho
 
 	return map[string][]byte{
 		fmt.Sprintf("%s/%s.txt", pod.Namespace, pod.Name): buf.Bytes(),
+	}, nil
+}
+
+func (l *LogsOutput) Redact() (*LogsOutput, error) {
+	podLogs, err := redactMap(l.PodLogs)
+	if err != nil {
+		return nil, err
+	}
+
+	return &LogsOutput{
+		PodLogs: podLogs,
 	}, nil
 }
