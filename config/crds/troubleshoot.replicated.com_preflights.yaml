@@ -520,6 +520,53 @@ spec:
                       - ingressName
                       - namespace
                       type: object
+                    secret:
+                      properties:
+                        checkName:
+                          type: string
+                        key:
+                          type: string
+                        namespace:
+                          type: string
+                        outcomes:
+                          items:
+                            properties:
+                              fail:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
+                              pass:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
+                              warn:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
+                            type: object
+                          type: array
+                        secretName:
+                          type: string
+                      required:
+                      - outcomes
+                      - secretName
+                      - namespace
+                      type: object
                     storageClass:
                       properties:
                         checkName:
@@ -570,6 +617,19 @@ spec:
                     clusterInfo:
                       type: object
                     clusterResources:
+                      type: object
+                    secret:
+                      properties:
+                        includeValue:
+                          type: boolean
+                        key:
+                          type: string
+                        name:
+                          type: string
+                        namespace:
+                          type: string
+                      required:
+                      - name
                       type: object
                   type: object
                 type: array

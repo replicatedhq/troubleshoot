@@ -1,4 +1,4 @@
-package preflight
+package collect
 
 import (
 	"context"
@@ -15,13 +15,13 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
-func CreateCollector(client client.Client, scheme *runtime.Scheme, ownerRef metav1.Object, preflightJobName string, preflightJobNamespace string, collect *troubleshootv1beta1.Collect, image string, pullPolicy string) (*corev1.ConfigMap, *corev1.Pod, error) {
-	configMap, err := createCollectorSpecConfigMap(client, scheme, ownerRef, preflightJobName, preflightJobNamespace, collect)
+func CreateCollector(client client.Client, scheme *runtime.Scheme, ownerRef metav1.Object, jobName string, jobNamespace string, jobType string, collect *troubleshootv1beta1.Collect, image string, pullPolicy string) (*corev1.ConfigMap, *corev1.Pod, error) {
+	configMap, err := createCollectorSpecConfigMap(client, scheme, ownerRef, jobName, jobNamespace, collect)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	pod, err := createCollectorPod(client, scheme, ownerRef, preflightJobName, preflightJobNamespace, collect, configMap, image, pullPolicy)
+	pod, err := createCollectorPod(client, scheme, ownerRef, jobName, jobNamespace, jobType, collect, configMap, image, pullPolicy)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -29,12 +29,11 @@ func CreateCollector(client client.Client, scheme *runtime.Scheme, ownerRef meta
 	return configMap, pod, nil
 }
 
-func createCollectorSpecConfigMap(client client.Client, scheme *runtime.Scheme, ownerRef metav1.Object, preflightJobName string, preflightJobNamespace string, collect *troubleshootv1beta1.Collect) (*corev1.ConfigMap, error) {
-	name := fmt.Sprintf("%s-%s", preflightJobName, idForCollector(collect))
-
+func createCollectorSpecConfigMap(client client.Client, scheme *runtime.Scheme, ownerRef metav1.Object, jobName string, jobNamespace string, collect *troubleshootv1beta1.Collect) (*corev1.ConfigMap, error) {
+	name := fmt.Sprintf("%s-%s", jobName, idForCollector(collect))
 	namespacedName := types.NamespacedName{
 		Name:      name,
-		Namespace: preflightJobNamespace,
+		Namespace: jobNamespace,
 	}
 
 	found := &corev1.ConfigMap{}
@@ -54,7 +53,7 @@ func createCollectorSpecConfigMap(client client.Client, scheme *runtime.Scheme, 
 	configMap := corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
-			Namespace: preflightJobNamespace,
+			Namespace: jobNamespace,
 		},
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "v1",
@@ -76,12 +75,12 @@ func createCollectorSpecConfigMap(client client.Client, scheme *runtime.Scheme, 
 	return &configMap, nil
 }
 
-func createCollectorPod(client client.Client, scheme *runtime.Scheme, ownerRef metav1.Object, preflightJobName string, preflightJobNamespace string, collect *troubleshootv1beta1.Collect, configMap *corev1.ConfigMap, image string, pullPolicy string) (*corev1.Pod, error) {
-	name := fmt.Sprintf("%s-%s", preflightJobName, idForCollector(collect))
+func createCollectorPod(client client.Client, scheme *runtime.Scheme, ownerRef metav1.Object, jobName string, jobNamespace string, jobType string, collect *troubleshootv1beta1.Collect, configMap *corev1.ConfigMap, image string, pullPolicy string) (*corev1.Pod, error) {
+	name := fmt.Sprintf("%s-%s", jobName, idForCollector(collect))
 
 	namespacedName := types.NamespacedName{
 		Name:      name,
-		Namespace: preflightJobNamespace,
+		Namespace: jobNamespace,
 	}
 
 	found := &corev1.Pod{}
@@ -101,13 +100,14 @@ func createCollectorPod(client client.Client, scheme *runtime.Scheme, ownerRef m
 	}
 
 	podLabels := make(map[string]string)
-	podLabels["preflight"] = preflightJobName
-	podLabels["troubleshoot-role"] = "preflight"
+
+	podLabels[jobType] = jobName
+	podLabels["troubleshoot-role"] = jobType
 
 	pod := corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
-			Namespace: preflightJobNamespace,
+			Namespace: jobNamespace,
 			Labels:    podLabels,
 		},
 		TypeMeta: metav1.TypeMeta{
@@ -163,13 +163,15 @@ func createCollectorPod(client client.Client, scheme *runtime.Scheme, ownerRef m
 	return &pod, nil
 }
 
-// Todo these will overlap with troubleshoot containers running at the same time
 func idForCollector(collector *troubleshootv1beta1.Collect) string {
 	if collector.ClusterInfo != nil {
 		return "cluster-info"
-	} else if collector.ClusterResources != nil {
+	}
+	if collector.ClusterResources != nil {
 		return "cluster-resources"
 	}
-
+	if collector.Secret != nil {
+		return fmt.Sprintf("secret-%s%s", collector.Secret.Namespace, collector.Secret.Name)
+	}
 	return ""
 }

@@ -13,7 +13,7 @@ import (
 	"path/filepath"
 	"time"
 
-	analyzerunner "github.com/replicatedhq/troubleshoot/pkg/analyze"
+	"github.com/mholt/archiver"
 	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
 	collectrunner "github.com/replicatedhq/troubleshoot/pkg/collect"
 	"github.com/spf13/viper"
@@ -29,8 +29,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 )
 
-func runPreflightsNoCRD(v *viper.Viper, arg string) error {
-	preflightContent := ""
+func runTroubleshootNoCRD(v *viper.Viper, arg string) error {
+	collectorContent := ""
 	if !isURL(arg) {
 		if _, err := os.Stat(arg); os.IsNotExist(err) {
 			return fmt.Errorf("%s was not found", arg)
@@ -41,7 +41,7 @@ func runPreflightsNoCRD(v *viper.Viper, arg string) error {
 			return err
 		}
 
-		preflightContent = string(b)
+		collectorContent = string(b)
 	} else {
 		resp, err := http.Get(arg)
 		if err != nil {
@@ -54,67 +54,44 @@ func runPreflightsNoCRD(v *viper.Viper, arg string) error {
 			return err
 		}
 
-		preflightContent = string(body)
+		collectorContent = string(body)
 	}
 
-	preflight := troubleshootv1beta1.Preflight{}
-	if err := yaml.Unmarshal([]byte(preflightContent), &preflight); err != nil {
-		return fmt.Errorf("unable to parse %s as a preflight", arg)
+	collector := troubleshootv1beta1.Collector{}
+	if err := yaml.Unmarshal([]byte(collectorContent), &collector); err != nil {
+		return fmt.Errorf("unable to parse %s collectors", arg)
 	}
 
-	allCollectedData, err := runCollectors(v, preflight)
+	archivePath, err := runCollectors(v, collector)
 	if err != nil {
 		return err
 	}
 
-	getCollectedFileContents := func(fileName string) ([]byte, error) {
-		contents, ok := allCollectedData[fileName]
-		if !ok {
-			return nil, fmt.Errorf("file %s was not collected", fileName)
-		}
+	fmt.Printf("%s\n", archivePath)
 
-		return contents, nil
-	}
-
-	analyzeResults := []*analyzerunner.AnalyzeResult{}
-	for _, analyzer := range preflight.Spec.Analyzers {
-		analyzeResult, err := analyzerunner.Analyze(analyzer, getCollectedFileContents)
-		if err != nil {
-			fmt.Printf("an analyzer failed to run: %v\n", err)
-			continue
-		}
-
-		analyzeResults = append(analyzeResults, analyzeResult)
-	}
-
-	if v.GetBool("interactive") {
-		return showInteractiveResults(analyzeResults)
-	}
-
-	fmt.Printf("only interactive results are supported\n")
 	return nil
 }
 
-func runCollectors(v *viper.Viper, preflight troubleshootv1beta1.Preflight) (map[string][]byte, error) {
+func runCollectors(v *viper.Viper, collector troubleshootv1beta1.Collector) (string, error) {
 	cfg, err := config.GetConfig()
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
 	client, err := client.New(cfg, client.Options{})
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 	clientset, err := kubernetes.NewForConfig(cfg)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 	restClient := clientset.CoreV1().RESTClient()
 
 	// deploy an object that "owns" everything to aid in cleanup
 	owner := corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      fmt.Sprintf("preflight-%s-owner", preflight.Name),
+			Name:      fmt.Sprintf("troubleshoot-%s-owner", collector.Name),
 			Namespace: v.GetString("namespace"),
 		},
 		TypeMeta: metav1.TypeMeta{
@@ -124,7 +101,7 @@ func runCollectors(v *viper.Viper, preflight troubleshootv1beta1.Preflight) (map
 		Data: make(map[string]string),
 	}
 	if err := client.Create(context.Background(), &owner); err != nil {
-		return nil, err
+		return "", err
 	}
 	defer func() {
 		if err := client.Delete(context.Background(), &owner); err != nil {
@@ -134,7 +111,7 @@ func runCollectors(v *viper.Viper, preflight troubleshootv1beta1.Preflight) (map
 
 	// deploy all collectors
 	desiredCollectors := make([]*troubleshootv1beta1.Collect, 0, 0)
-	for _, definedCollector := range preflight.Spec.Collectors {
+	for _, definedCollector := range collector.Spec {
 		desiredCollectors = append(desiredCollectors, definedCollector)
 	}
 	desiredCollectors = ensureCollectorInList(desiredCollectors, troubleshootv1beta1.Collect{ClusterInfo: &troubleshootv1beta1.ClusterInfo{}})
@@ -142,7 +119,14 @@ func runCollectors(v *viper.Viper, preflight troubleshootv1beta1.Preflight) (map
 
 	podsCreated := make([]*corev1.Pod, 0, 0)
 	podsDeleted := make([]*corev1.Pod, 0, 0)
-	allCollectedData := make(map[string][]byte)
+
+	collectorDirs := []string{}
+
+	bundlePath, err := ioutil.TempDir("", "troubleshoot")
+	if err != nil {
+		return "", err
+	}
+	// defer os.RemoveAll(bundlePath)
 
 	resyncPeriod := time.Second
 	ctx := context.Background()
@@ -159,12 +143,14 @@ func runCollectors(v *viper.Viper, preflight troubleshootv1beta1.Preflight) (map
 					return
 				}
 				labels := newPod.Labels
+
 				troubleshootRole, ok := labels["troubleshoot-role"]
-				if !ok || troubleshootRole != "preflight" {
+				if !ok || troubleshootRole != "troubleshoot" {
 					return
 				}
-				preflightName, ok := labels["preflight"]
-				if !ok || preflightName != preflight.Name {
+
+				collectorName, ok := labels["troubleshoot"]
+				if !ok || collectorName != collector.Name {
 					return
 				}
 
@@ -193,14 +179,13 @@ func runCollectors(v *viper.Viper, preflight troubleshootv1beta1.Preflight) (map
 					return
 				}
 
-				collectedData, err := parseCollectorOutput(buf.String())
+				collectorDir, err := parseAndSaveCollectorOutput(buf.String(), bundlePath)
 				if err != nil {
 					fmt.Printf("parse collected data: %v\n", err)
 					return
 				}
-				for k, v := range collectedData {
-					allCollectedData[k] = v
-				}
+
+				collectorDirs = append(collectorDirs, collectorDir)
 
 				if err := client.Delete(context.Background(), newPod); err != nil {
 					fmt.Println("delete pod")
@@ -214,10 +199,10 @@ func runCollectors(v *viper.Viper, preflight troubleshootv1beta1.Preflight) (map
 
 	s := runtime.NewScheme()
 	s.AddKnownTypes(schema.GroupVersion{Group: "", Version: "v1"}, &corev1.ConfigMap{})
-	for _, collector := range desiredCollectors {
-		_, pod, err := collectrunner.CreateCollector(client, s, &owner, preflight.Name, v.GetString("namespace"), "preflight", collector, v.GetString("image"), v.GetString("pullpolicy"))
+	for _, collect := range desiredCollectors {
+		_, pod, err := collectrunner.CreateCollector(client, s, &owner, collector.Name, v.GetString("namespace"), "troubleshoot", collect, v.GetString("image"), v.GetString("pullpolicy"))
 		if err != nil {
-			return nil, err
+			return "", err
 		}
 		podsCreated = append(podsCreated, pod)
 	}
@@ -225,8 +210,8 @@ func runCollectors(v *viper.Viper, preflight troubleshootv1beta1.Preflight) (map
 	start := time.Now()
 	for {
 		if start.Add(time.Second * 30).Before(time.Now()) {
-			fmt.Println("timeout running preflight")
-			return nil, err
+			fmt.Println("timeout running troubleshoot")
+			return "", err
 		}
 
 		if len(podsDeleted) == len(podsCreated) {
@@ -238,37 +223,69 @@ func runCollectors(v *viper.Viper, preflight troubleshootv1beta1.Preflight) (map
 
 	ctx.Done()
 
-	return allCollectedData, nil
+	tarGz := archiver.TarGz{
+		Tar: &archiver.Tar{
+			ImplicitTopLevelFolder: false,
+		},
+	}
+
+	paths := make([]string, 0, 0)
+	for _, collectorDir := range collectorDirs {
+		paths = append(paths, collectorDir)
+	}
+
+	if err := tarGz.Archive(paths, "support-bundle.tar.gz"); err != nil {
+		return "", err
+	}
+
+	return "support-bundle.tar.gz", nil
 }
 
-func parseCollectorOutput(output string) (map[string][]byte, error) {
+func parseAndSaveCollectorOutput(output string, bundlePath string) (string, error) {
+	dir := ""
+
 	input := make(map[string]interface{})
-	files := make(map[string][]byte)
 	if err := json.Unmarshal([]byte(output), &input); err != nil {
-		return nil, err
+		return "", err
 	}
 
 	for filename, maybeContents := range input {
 		fileDir, fileName := filepath.Split(filename)
+		outPath := filepath.Join(bundlePath, fileDir)
+		dir = outPath
+
+		if err := os.MkdirAll(outPath, 0777); err != nil {
+			return "", err
+		}
 
 		switch maybeContents.(type) {
 		case string:
 			decoded, err := base64.StdEncoding.DecodeString(maybeContents.(string))
 			if err != nil {
-				return nil, err
+				return "", err
 			}
-			files[filepath.Join(fileDir, fileName)] = decoded
+
+			if err := writeFile(filepath.Join(outPath, fileName), decoded); err != nil {
+				return "", err
+			}
 
 		case map[string]interface{}:
 			for k, v := range maybeContents.(map[string]interface{}) {
+				s, _ := filepath.Split(filepath.Join(outPath, fileName, k))
+				if err := os.MkdirAll(s, 0777); err != nil {
+					return "", err
+				}
+
 				decoded, err := base64.StdEncoding.DecodeString(v.(string))
 				if err != nil {
-					return nil, err
+					return "", err
 				}
-				files[filepath.Join(fileDir, fileName, k)] = decoded
+				if err := writeFile(filepath.Join(outPath, fileName, k), decoded); err != nil {
+					return "", err
+				}
 			}
 		}
 	}
 
-	return files, nil
+	return dir, nil
 }

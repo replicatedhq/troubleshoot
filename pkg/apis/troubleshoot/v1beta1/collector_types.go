@@ -32,10 +32,10 @@ type CollectorStatus struct {
 // Collector is the Schema for the collectors API
 // +k8s:openapi-gen=true
 type Collector struct {
-	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
+	metav1.TypeMeta   `json:",inline" yaml:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty" yaml:"metadata,omitempty"`
 
-	Spec   []*Collect      `json:"spec,omitempty"`
+	Spec   []*Collect      `json:"spec,omitempty" yaml:"spec,omitempty"`
 	Status CollectorStatus `json:"status,omitempty"`
 }
 

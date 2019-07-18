@@ -434,6 +434,8 @@ func idForCollector(collector *troubleshootv1beta1.Collect) string {
 		return "cluster-info"
 	} else if collector.ClusterResources != nil {
 		return "cluster-resources"
+	} else if collector.Secret != nil {
+		return fmt.Sprintf("secret-%s%s", collector.Secret.Namespace, collector.Secret.Name)
 	}
 
 	return ""

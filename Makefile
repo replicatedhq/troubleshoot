@@ -90,13 +90,13 @@ local-release: snapshot-release
 .PHONY: run-preflight
 run-preflight: preflight
 	./bin/preflight run \
-		--collector-image=localhost:32000/troubleshoot:alpha \
-		--collector-pullpolicy=Always \
 		--image=localhost:32000/troubleshoot:alpha \
-		--pullpolicy=Always
+		--pullpolicy=Always \
+		./config/samples/troubleshoot_v1beta1_preflight.yaml
 
 .PHONY: run-troubleshoot
 run-troubleshoot: troubleshoot
 	./bin/troubleshoot run \
 		--image=localhost:32000/troubleshoot:alpha \
-		--pullpolicy=Always
+		--pullpolicy=Always \
+		./config/samples/troubleshoot_v1beta1_collector.yaml

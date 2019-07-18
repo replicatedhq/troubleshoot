@@ -29,6 +29,9 @@ func Analyze(analyzer *troubleshootv1beta1.Analyze, getCollectedFileContents fun
 	if analyzer.Ingress != nil {
 		return analyzeIngress(analyzer.Ingress, getCollectedFileContents)
 	}
+	if analyzer.Secret != nil {
+		return analyzeSecret(analyzer.Secret, getCollectedFileContents)
+	}
 
 	return nil, errors.New("invalid analyzer")
 }
