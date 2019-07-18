@@ -433,12 +433,17 @@ func (r *ReconcileCollectorJob) createCollectorPod(instance *troubleshootv1beta1
 func idForCollector(collector *troubleshootv1beta1.Collect) string {
 	if collector.ClusterInfo != nil {
 		return "cluster-info"
-	} else if collector.ClusterResources != nil {
+	}
+	if collector.ClusterResources != nil {
 		return "cluster-resources"
-	} else if collector.Secret != nil {
+	}
+	if collector.Secret != nil {
 		return fmt.Sprintf("secret-%s%s", collector.Secret.Namespace, collector.Secret.Name)
 	}
-
+	if collector.Logs != nil {
+		randomString := "abcdef" // TODO
+		return fmt.Sprintf("logs-%s%s", collector.Logs.Namespace, randomString)
+	}
 	return ""
 }
 
