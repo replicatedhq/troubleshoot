@@ -208,10 +208,6 @@ func drawDetails(analysisResult *analyzerunner.AnalyzeResult) {
 }
 
 func estimateNumberOfLines(text string, width int) int {
-	if len(text) < width {
-		return 1
-	}
-
 	lines := len(text)/width + 1
 	return lines
 }
