@@ -3,6 +3,7 @@ kind: Preflight
 metadata:
   name: shiny-new-ai
 spec:
+  uploadResultsTo: https://hookb.in/Z26mz8R9VpC7q7eYrWob
   analyzers:
     - clusterVersion:
         outcomes:

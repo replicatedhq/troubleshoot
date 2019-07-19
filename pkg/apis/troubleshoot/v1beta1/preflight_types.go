@@ -22,8 +22,9 @@ import (
 
 // PreflightSpec defines the desired state of Preflight
 type PreflightSpec struct {
-	Collectors []*Collect `json:"collectors,omitempty" yaml:"collectors,omitempty"`
-	Analyzers  []*Analyze `json:"analyzers,omitempty" yaml:"analyzers,omitempty"`
+	UploadResultsTo string     `json:"uploadResultsTo,omitempty" yaml:"uploadResultsTo,omitempty"`
+	Collectors      []*Collect `json:"collectors,omitempty" yaml:"collectors,omitempty"`
+	Analyzers       []*Analyze `json:"analyzers,omitempty" yaml:"analyzers,omitempty"`
 }
 
 // PreflightStatus defines the observed state of Preflight
