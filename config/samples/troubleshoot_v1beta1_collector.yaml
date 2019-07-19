@@ -16,10 +16,15 @@ spec:
   #     limits:
   #       maxAge: 30d
   #       maxLines: 10000
-  - run:
-      name: ping-google
+  # - run:
+  #     name: ping-google
+  #     namespace: default
+  #     image: flungo/netutils
+  #     command: ["ping"]
+  #     args: ["www.google.com"]
+  #     # timeout: 5s
+  - copy:
+      selector:
+        - app=illmannered-cricket-mysql
       namespace: default
-      image: flungo/netutils
-      command: ["ping"]
-      args: ["www.google.com"]
-      # timeout: 5s
+      containerPath: /etc/hosts

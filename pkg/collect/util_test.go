@@ -3,20 +3,20 @@ package collect
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
+	"github.com/stretchr/testify/assert"
 )
 
 func Test_selectorToString(t *testing.T) {
 	tests := []struct {
-		name         string
+		name     string
 		selector []string
-		expect string
+		expect   string
 	}{
 		{
-			name:        "app=api",
+			name:     "app=api",
 			selector: []string{"app=api"},
-			expect: "app-api",
+			expect:   "app-api",
 		},
 	}
 
@@ -30,46 +30,45 @@ func Test_selectorToString(t *testing.T) {
 
 func Test_DeterministicIDForCollector(t *testing.T) {
 	tests := []struct {
-		name         string
+		name      string
 		collector *troubleshootv1beta1.Collect
-		expect string
+		expect    string
 	}{
 		{
-			name:        "cluster-info",
+			name: "cluster-info",
 			collector: &troubleshootv1beta1.Collect{
 				ClusterInfo: &troubleshootv1beta1.ClusterInfo{},
 			},
 			expect: "cluster-info",
 		},
 		{
-			name:        "cluster-resources",
+			name: "cluster-resources",
 			collector: &troubleshootv1beta1.Collect{
 				ClusterResources: &troubleshootv1beta1.ClusterResources{},
 			},
 			expect: "cluster-resources",
 		},
 		{
-			name:        "secret",
+			name: "secret",
 			collector: &troubleshootv1beta1.Collect{
 				Secret: &troubleshootv1beta1.Secret{
-					Name: "secret-agent-woman",
+					Name:      "secret-agent-woman",
 					Namespace: "top-secret",
 				},
 			},
 			expect: "secret-top-secret-secret-agent-woman",
 		},
 		{
-			name:        "logs",
+			name: "logs",
 			collector: &troubleshootv1beta1.Collect{
 				Logs: &troubleshootv1beta1.Logs{
 					Namespace: "top-secret",
-					Selector: []string{"this=is", "rather=long", "for=testing", "more=words", "too=many", "abcdef!=123456"},
+					Selector:  []string{"this=is", "rather=long", "for=testing", "more=words", "too=many", "abcdef!=123456"},
 				},
 			},
 			expect: "logs-top-secret-this-is-rather-long-for-testing-more-words-too-",
 		},
 	}
-
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {

@@ -2,8 +2,8 @@ package collect
 
 import (
 	"fmt"
-	"strings"
 	"regexp"
+	"strings"
 
 	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
 )

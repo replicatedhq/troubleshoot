@@ -618,6 +618,23 @@ spec:
                       type: object
                     clusterResources:
                       type: object
+                    copy:
+                      properties:
+                        containerName:
+                          type: string
+                        containerPath:
+                          type: string
+                        namespace:
+                          type: string
+                        selector:
+                          items:
+                            type: string
+                          type: array
+                      required:
+                      - selector
+                      - namespace
+                      - containerPath
+                      type: object
                     logs:
                       properties:
                         limits:
