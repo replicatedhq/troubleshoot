@@ -89,7 +89,7 @@ func createCollectorPod(client client.Client, scheme *runtime.Scheme, ownerRef m
 		return nil, err
 	}
 
-	imageName := "replicatedhq/troubleshoot:latest"
+	imageName := "replicated/troubleshoot:latest"
 	imagePullPolicy := corev1.PullAlways
 
 	if image != "" {

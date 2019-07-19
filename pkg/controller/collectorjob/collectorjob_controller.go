@@ -359,7 +359,7 @@ func (r *ReconcileCollectorJob) createCollectorPod(instance *troubleshootv1beta1
 		return err
 	}
 
-	imageName := "replicatedhq/troubleshoot:latest"
+	imageName := "replicated/troubleshoot:latest"
 	imagePullPolicy := corev1.PullAlways
 
 	if instance.Spec.Image != "" {

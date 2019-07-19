@@ -44,6 +44,12 @@ type AnalyzeSecret struct {
 	Key         string     `json:"key,omitempty" yaml:"key,omitempty"`
 }
 
+type ImagePullSecret struct {
+	AnalyzeMeta  `json:",inline" yaml:",inline"`
+	Outcomes     []*Outcome `json:"outcomes" yaml:"outcomes"`
+	RegistryName string     `json:"registryName" yaml:"registryName"`
+}
+
 type AnalyzeMeta struct {
 	CheckName string `json:"checkName,omitempty" yaml:"checkName,omitempty"`
 }
@@ -54,4 +60,5 @@ type Analyze struct {
 	CustomResourceDefinition *CustomResourceDefinition `json:"customResourceDefinition,omitempty" yaml:"customResourceDefinition,omitempty"`
 	Ingress                  *Ingress                  `json:"ingress,omitempty" yaml:"ingress,omitempty"`
 	Secret                   *AnalyzeSecret            `json:"secret,omitempty" yaml:"secret,omitempty"`
+	ImagePullSecret          *ImagePullSecret          `json:"imagePullSecret,omitempty" yaml:"imagePullSecret,omitempty"`
 }

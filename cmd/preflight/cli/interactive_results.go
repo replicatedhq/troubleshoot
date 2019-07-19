@@ -272,9 +272,11 @@ func showSaved(filename string) {
 func appName(preflightName string) string {
 	words := strings.Split(strings.Title(strings.Replace(preflightName, "-", " ", -1)), " ")
 	casedWords := []string{}
-	for _, word := range words {
+	for i, word := range words {
 		if strings.ToLower(word) == "ai" {
 			casedWords = append(casedWords, "AI")
+		} else if strings.ToLower(word) == "io" && i > 0 {
+			casedWords[i-1] += ".io"
 		} else {
 			casedWords = append(casedWords, word)
 		}

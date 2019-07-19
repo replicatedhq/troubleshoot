@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	analyzerunner "github.com/replicatedhq/troubleshoot/pkg/analyze"
@@ -75,10 +76,20 @@ func runPreflightsNoCRD(v *viper.Viper, arg string) error {
 
 		return contents, nil
 	}
+	getChildCollectedFileContents := func(prefix string) (map[string][]byte, error) {
+		matching := make(map[string][]byte)
+		for k, v := range allCollectedData {
+			if strings.HasPrefix(k, prefix) {
+				matching[k] = v
+			}
+		}
+
+		return matching, nil
+	}
 
 	analyzeResults := []*analyzerunner.AnalyzeResult{}
 	for _, analyzer := range preflight.Spec.Analyzers {
-		analyzeResult, err := analyzerunner.Analyze(analyzer, getCollectedFileContents)
+		analyzeResult, err := analyzerunner.Analyze(analyzer, getCollectedFileContents, getChildCollectedFileContents)
 		if err != nil {
 			fmt.Printf("an analyzer failed to run: %v\n", err)
 			continue

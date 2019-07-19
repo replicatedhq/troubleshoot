@@ -1,8 +1,10 @@
 package collect
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/replicatedhq/troubleshoot/pkg/redact"
 	corev1 "k8s.io/api/core/v1"
@@ -20,6 +22,7 @@ type ClusterResourcesOutput struct {
 	Ingress                   map[string][]byte `json:"cluster-resources/ingress,omitempty"`
 	StorageClasses            []byte            `json:"cluster-resources/storage-classes.json,omitempty"`
 	CustomResourceDefinitions []byte            `json:"cluster-resources/custom-resource-definitions.json,omitempty"`
+	ImagePullSecrets          map[string][]byte `json:"cluster-resources/image-pull-secrets,omitempty"`
 }
 
 func ClusterResources(redact bool) error {
@@ -91,6 +94,13 @@ func ClusterResources(redact bool) error {
 		return err
 	}
 	clusterResourcesOutput.CustomResourceDefinitions = customResourceDefinitions
+
+	// imagepullsecrets
+	imagePullSecrets, err := imagePullSecrets(client, namespaceNames)
+	if err != nil {
+		return err
+	}
+	clusterResourcesOutput.ImagePullSecrets = imagePullSecrets
 
 	if redact {
 		clusterResourcesOutput, err = clusterResourcesOutput.Redact()
@@ -231,6 +241,51 @@ func crds(client *apiextensionsv1beta1clientset.ApiextensionsV1beta1Client) ([]b
 	return b, nil
 }
 
+func imagePullSecrets(client *kubernetes.Clientset, namespaces []string) (map[string][]byte, error) {
+	imagePullSecrets := make(map[string][]byte)
+
+	// better than vendoring in.... kubernetes
+	type DockerConfigEntry struct {
+		Auth string `json:"auth"`
+	}
+	type DockerConfigJSON struct {
+		Auths map[string]DockerConfigEntry `json:"auths"`
+	}
+
+	for _, namespace := range namespaces {
+		secrets, err := client.CoreV1().Secrets(namespace).List(metav1.ListOptions{})
+		if err != nil {
+			return nil, err
+		}
+
+		for _, secret := range secrets.Items {
+			if secret.Type == corev1.SecretTypeDockerConfigJson {
+				dockerConfigJSON := DockerConfigJSON{}
+				if err := json.Unmarshal(secret.Data[corev1.DockerConfigJsonKey], &dockerConfigJSON); err != nil {
+					return nil, err
+				}
+
+				for registry, registryAuth := range dockerConfigJSON.Auths {
+					decoded, err := base64.StdEncoding.DecodeString(registryAuth.Auth)
+					if err != nil {
+						return nil, err
+					}
+
+					registryAndUsername := make(map[string]string)
+					registryAndUsername[registry] = strings.Split(string(decoded), ":")[0]
+					b, err := json.Marshal(registryAndUsername)
+					if err != nil {
+						return nil, err
+					}
+					imagePullSecrets[fmt.Sprintf("%s/%s.json", namespace, secret.Name)] = b
+				}
+			}
+		}
+	}
+
+	return imagePullSecrets, nil
+}
+
 func (c *ClusterResourcesOutput) Redact() (*ClusterResourcesOutput, error) {
 	namespaces, err := redact.Redact(c.Namespaces)
 	if err != nil {
@@ -268,5 +323,6 @@ func (c *ClusterResourcesOutput) Redact() (*ClusterResourcesOutput, error) {
 		Ingress:                   ingress,
 		StorageClasses:            storageClasses,
 		CustomResourceDefinitions: crds,
+		ImagePullSecrets:          c.ImagePullSecrets,
 	}, nil
 }
