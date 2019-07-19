@@ -1,0 +1,39 @@
+apiVersion: krew.googlecontainertools.github.com/v1alpha2
+kind: Plugin
+metadata:
+  name: preflight
+spec:
+  version: "v0.1.0"
+  platforms:
+  - selector:
+      matchLabels:
+        os: linux
+        arch: amd64
+      uri: https://github.com/replicatedhq/troubleshoot/releases/download/v0.1.0/preflight_0.1.0_linux_amd64-alpha.tar.gz
+      sha256: "fcfee994959a4924d0f70817a4b40d2b4df9e21a5a2a106d340784ce77fbbc15"
+      files:
+      - from: "/kubectl-preflight"
+        to: "."
+      bin: "./kubectl-preflight"
+  - selector:
+      matchLabels:
+        os: darwin
+        arch: amd64
+      uri: https://github.com/replicatedhq/troubleshoot/releases/download/v0.1.0/preflight_0.1.0_darwin_amd64-alpha.tar.gz
+      sha256: "fcfee994959a4924d0f70817a4b40d2b4df9e21a5a2a106d340784ce77fbbc15"
+      files:
+      - from: "/kubectl-preflight"
+        to: "."
+      bin: "./kubectl-preflight"
+  - selector:
+      matchLabels:
+        os: windows
+        arch: amd64
+      uri: https://github.com/replicatedhq/troubleshoot/releases/download/v0.1.0/preflight_0.1.0_windows_amd64-alpha.tar.gz
+      sha256: "fcfee994959a4924d0f70817a4b40d2b4df9e21a5a2a106d340784ce77fbbc15"
+      files:
+      - from: "/kubectl-preflight.exe"
+        to: "."
+      bin: "./kubectl-preflight.exe"
+  shortDescription: Executes preflight tests and application conformance verifications on a cluster before installing an application
+  homepage: https://github.com/replicaetdhq/troubleshoot
