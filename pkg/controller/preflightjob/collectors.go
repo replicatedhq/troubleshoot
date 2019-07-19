@@ -2,7 +2,6 @@ package preflightjob
 
 import (
 	"context"
-	"fmt"
 
 	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
 	collectrunner "github.com/replicatedhq/troubleshoot/pkg/collect"
@@ -11,7 +10,7 @@ import (
 func (r *ReconcilePreflightJob) reconcilePreflightCollectors(instance *troubleshootv1beta1.PreflightJob, preflight *troubleshootv1beta1.Preflight) error {
 	requestedCollectorIDs := make([]string, 0, 0)
 	for _, collector := range preflight.Spec.Collectors {
-		requestedCollectorIDs = append(requestedCollectorIDs, idForCollector(collector))
+		requestedCollectorIDs = append(requestedCollectorIDs, collectrunner.DeterministicIDForCollector(collector))
 		if err := r.reconcileOnePreflightCollector(instance, collector); err != nil {
 			return err
 		}
@@ -38,7 +37,7 @@ func (r *ReconcilePreflightJob) reconcilePreflightCollectors(instance *troublesh
 }
 
 func (r *ReconcilePreflightJob) reconcileOnePreflightCollector(instance *troubleshootv1beta1.PreflightJob, collect *troubleshootv1beta1.Collect) error {
-	if contains(instance.Status.CollectorsRunning, idForCollector(collect)) {
+	if contains(instance.Status.CollectorsRunning, collectrunner.DeterministicIDForCollector(collect)) {
 		// preflight just leaves these stopped containers.
 		// it's playing with fire a little, but the analyzers can just
 		// read from the stdout of the stopped container
@@ -48,8 +47,8 @@ func (r *ReconcilePreflightJob) reconcileOnePreflightCollector(instance *trouble
 		// immediately.  this is a longer term problem to solve, maybe something,
 		// the mananger? can broker these collector results.  but, ya know...
 
-		instance.Status.CollectorsSuccessful = append(instance.Status.CollectorsSuccessful, idForCollector(collect))
-		instance.Status.CollectorsRunning = remove(instance.Status.CollectorsRunning, idForCollector(collect))
+		instance.Status.CollectorsSuccessful = append(instance.Status.CollectorsSuccessful, collectrunner.DeterministicIDForCollector(collect))
+		instance.Status.CollectorsRunning = remove(instance.Status.CollectorsRunning, collectrunner.DeterministicIDForCollector(collect))
 
 		if err := r.Update(context.Background(), instance); err != nil {
 			return err
@@ -63,7 +62,7 @@ func (r *ReconcilePreflightJob) reconcileOnePreflightCollector(instance *trouble
 		return err
 	}
 
-	instance.Status.CollectorsRunning = append(instance.Status.CollectorsRunning, idForCollector(collect))
+	instance.Status.CollectorsRunning = append(instance.Status.CollectorsRunning, collectrunner.DeterministicIDForCollector(collect))
 	if err := r.Update(context.Background(), instance); err != nil {
 		return err
 	}
@@ -87,23 +86,4 @@ func remove(s []string, r string) []string {
 		}
 	}
 	return s
-}
-
-// Todo these will overlap with troubleshoot containers running at the same time
-func idForCollector(collector *troubleshootv1beta1.Collect) string {
-	if collector.ClusterInfo != nil {
-		return "cluster-info"
-	}
-	if collector.ClusterResources != nil {
-		return "cluster-resources"
-	}
-	if collector.Secret != nil {
-		return fmt.Sprintf("secret-%s%s", collector.Secret.Namespace, collector.Secret.Name)
-	}
-	if collector.Logs != nil {
-		randomString := "abcdef" // TODO
-		return fmt.Sprintf("logs-%s%s", collector.Logs.Namespace, randomString)
-	}
-
-	return ""
 }

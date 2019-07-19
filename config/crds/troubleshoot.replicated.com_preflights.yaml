@@ -618,6 +618,23 @@ spec:
                       type: object
                     clusterResources:
                       type: object
+                    copy:
+                      properties:
+                        containerName:
+                          type: string
+                        containerPath:
+                          type: string
+                        namespace:
+                          type: string
+                        selector:
+                          items:
+                            type: string
+                          type: array
+                      required:
+                      - selector
+                      - namespace
+                      - containerPath
+                      type: object
                     logs:
                       properties:
                         limits:
@@ -636,6 +653,31 @@ spec:
                           type: array
                       required:
                       - selector
+                      type: object
+                    run:
+                      properties:
+                        args:
+                          items:
+                            type: string
+                          type: array
+                        command:
+                          items:
+                            type: string
+                          type: array
+                        image:
+                          type: string
+                        imagePullPolicy:
+                          type: string
+                        name:
+                          type: string
+                        namespace:
+                          type: string
+                        timeout:
+                          type: string
+                      required:
+                      - name
+                      - namespace
+                      - image
                       type: object
                     secret:
                       properties:

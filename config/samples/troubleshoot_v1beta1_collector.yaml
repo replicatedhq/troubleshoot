@@ -3,16 +3,28 @@ kind: Collector
 metadata:
   name: collector-sample
 spec:
-  # - clusterInfo: {}
-  # - clusterResources: {}
+  - clusterInfo: {}
+  - clusterResources: {}
   # - secret:
   #     name: illmannered-cricket-mysql
   #     namespace: default
   #     key: mysql-password
-  - logs:
+  # - logs:
+  #     selector:
+  #       - name=nginx-ingress-microk8s
+  #     namespace: default
+  #     limits:
+  #       maxAge: 30d
+  #       maxLines: 10000
+  # - run:
+  #     name: ping-google
+  #     namespace: default
+  #     image: flungo/netutils
+  #     command: ["ping"]
+  #     args: ["www.google.com"]
+  #     # timeout: 5s
+  - copy:
       selector:
-        - name=nginx-ingress-microk8s
+        - app=illmannered-cricket-mysql
       namespace: default
-      limits:
-        maxAge: 30d
-        maxLines: 10000
+      containerPath: /etc/hosts

@@ -9,6 +9,7 @@ require (
 	github.com/gin-gonic/gin v1.4.0
 	github.com/gizak/termui/v3 v3.1.0
 	github.com/golang/snappy v0.0.1 // indirect
+	github.com/gorilla/websocket v1.4.0
 	github.com/manifoldco/promptui v0.3.2
 	github.com/mholt/archiver v3.1.1+incompatible
 	github.com/nwaples/rardecode v1.0.0 // indirect
