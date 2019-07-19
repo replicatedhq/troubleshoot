@@ -35,6 +35,10 @@ func DeterministicIDForCollector(collector *troubleshootv1beta1.Collect) string 
 		unsafeID = fmt.Sprintf("copy-%s-%s", selectorToString(collector.Copy.Selector), pathToString(collector.Copy.ContainerPath))
 	}
 
+	if collector.HTTP != nil {
+		unsafeID = fmt.Sprintf("http-%s", strings.ToLower(collector.HTTP.Name))
+	}
+
 	return rfc1035(unsafeID)
 }
 

@@ -22,9 +22,33 @@ spec:
   #     image: flungo/netutils
   #     command: ["ping"]
   #     args: ["www.google.com"]
-  #     # timeout: 5s
-  - copy:
-      selector:
-        - app=illmannered-cricket-mysql
-      namespace: default
-      containerPath: /etc/hosts
+  #     timeout: 5s
+  # - copy:
+  #     selector:
+  #       - app=illmannered-cricket-mysql
+  #     namespace: default
+  #     containerPath: /etc/hosts
+  - http:
+      name: test-get
+      get:
+        url: https://api.staging.replicated.com/market/v1/echo/ip
+        insecureSkipVerify: false
+        headers: {}
+  - http:
+      name: test-post
+      post:
+        url: http://httpbin.org/headers
+        insecureSkipVerify: false
+        headers:
+          X-Custom-Header: "post-request"
+  - http:
+      name: test-put
+      put:
+        url: http://httpbin.org/anything
+        insecureSkipVerify: false
+        headers:
+          X-Custom-Header: "put-request"
+  - http:
+      name: test-broken
+      put:
+        url: ""

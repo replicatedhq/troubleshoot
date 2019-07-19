@@ -36,6 +36,9 @@ func (c *Collector) RunCollectorSync() error {
 	if collect.Copy != nil {
 		return Copy(collect.Copy, c.Redact)
 	}
+	if collect.HTTP != nil {
+		return HTTP(collect.HTTP, c.Redact)
+	}
 
 	return errors.New("no spec found to run")
 }

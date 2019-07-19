@@ -413,6 +413,56 @@ spec:
                   - namespace
                   - containerPath
                   type: object
+                http:
+                  properties:
+                    get:
+                      properties:
+                        headers:
+                          additionalProperties:
+                            type: string
+                          type: object
+                        insecureSkipVerify:
+                          type: boolean
+                        url:
+                          type: string
+                      required:
+                      - url
+                      type: object
+                    name:
+                      type: string
+                    post:
+                      properties:
+                        body:
+                          type: string
+                        headers:
+                          additionalProperties:
+                            type: string
+                          type: object
+                        insecureSkipVerify:
+                          type: boolean
+                        url:
+                          type: string
+                      required:
+                      - url
+                      type: object
+                    put:
+                      properties:
+                        body:
+                          type: string
+                        headers:
+                          additionalProperties:
+                            type: string
+                          type: object
+                        insecureSkipVerify:
+                          type: boolean
+                        url:
+                          type: string
+                      required:
+                      - url
+                      type: object
+                  required:
+                  - name
+                  type: object
                 logs:
                   properties:
                     limits:
