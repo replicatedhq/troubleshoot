@@ -93,7 +93,7 @@ func drawHeader(preflightName string) {
 	termWidth, _ := ui.TerminalDimensions()
 
 	title := widgets.NewParagraph()
-	title.Text = fmt.Sprintf("%s Preflight Checks", strings.Title(strings.Replace(preflightName, "-", " ", -1)))
+	title.Text = fmt.Sprintf("%s Preflight Checks", appName(preflightName))
 	title.TextStyle.Fg = ui.ColorWhite
 	title.TextStyle.Bg = ui.ColorClear
 	title.TextStyle.Modifier = ui.ModifierBold
@@ -223,7 +223,7 @@ func save(preflightName string, analyzeResults []*analyzerunner.AnalyzeResult) (
 		os.Remove(filename)
 	}
 
-	results := fmt.Sprintf("%s Preflight Checks\n\n", strings.Title(strings.Replace(preflightName, "-", " ", -1)))
+	results := fmt.Sprintf("%s Preflight Checks\n\n", appName(preflightName))
 	for _, analyzeResult := range analyzeResults {
 		result := ""
 
@@ -271,4 +271,18 @@ func showSaved(filename string) {
 	ui.Render(savedMessage)
 
 	isShowingSaved = true
+}
+
+func appName(preflightName string) string {
+	words := strings.Split(strings.Title(strings.Replace(preflightName, "-", " ", -1)), " ")
+	casedWords := []string{}
+	for _, word := range words {
+		if strings.ToLower(word) == "ai" {
+			casedWords = append(casedWords, "AI")
+		} else {
+			casedWords = append(casedWords, word)
+		}
+	}
+
+	return strings.Join(casedWords, " ")
 }
