@@ -25,12 +25,13 @@ type Logs struct {
 }
 
 type Run struct {
-	Name      string   `json:"name" yaml:"name"`
-	Namespace string   `json:"namespace" yaml:"namespace"`
-	Image     string   `json:"image" yaml:"image"`
-	Command   []string `json:"command,omitempty" yaml:"command,omitempty"`
-	Args      []string `json:"args,omitempty" yaml:"args,omitempty"`
-	Timeout   string   `json:"timeout,omitempty" yaml:"timeout,omitempty"`
+	Name            string   `json:"name" yaml:"name"`
+	Namespace       string   `json:"namespace" yaml:"namespace"`
+	Image           string   `json:"image" yaml:"image"`
+	Command         []string `json:"command,omitempty" yaml:"command,omitempty"`
+	Args            []string `json:"args,omitempty" yaml:"args,omitempty"`
+	Timeout         string   `json:"timeout,omitempty" yaml:"timeout,omitempty"`
+	ImagePullPolicy string   `json:"imagePullPolicy,omitempty" yaml:"imagePullPolicy,omitempty"`
 }
 
 type Collect struct {

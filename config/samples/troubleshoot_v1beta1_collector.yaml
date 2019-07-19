@@ -19,7 +19,7 @@ spec:
   - run:
       name: ping-google
       namespace: default
-      image: ubuntu:latest
+      image: flungo/netutils
       command: ["ping"]
       args: ["www.google.com"]
-      timeout: 5s
+      # timeout: 5s

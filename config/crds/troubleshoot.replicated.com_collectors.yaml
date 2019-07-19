@@ -427,6 +427,8 @@ spec:
                       type: array
                     image:
                       type: string
+                    imagePullPolicy:
+                      type: string
                     name:
                       type: string
                     namespace:
