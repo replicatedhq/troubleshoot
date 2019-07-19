@@ -87,6 +87,9 @@ func runPreflightsNoCRD(v *viper.Viper, arg string) error {
 		analyzeResults = append(analyzeResults, analyzeResult)
 	}
 
+	if preflight.Spec.UploadResultsTo != "" {
+		tryUploadResults(preflight.Spec.UploadResultsTo, preflight.Name, analyzeResults)
+	}
 	if v.GetBool("interactive") {
 		return showInteractiveResults(preflight.Name, analyzeResults)
 	}
