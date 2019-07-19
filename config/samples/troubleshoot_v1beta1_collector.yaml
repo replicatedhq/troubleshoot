@@ -3,8 +3,8 @@ kind: Collector
 metadata:
   name: collector-sample
 spec:
-  # - clusterInfo: {}
-  # - clusterResources: {}
+  - clusterInfo: {}
+  - clusterResources: {}
   # - secret:
   #     name: illmannered-cricket-mysql
   #     namespace: default
@@ -23,8 +23,8 @@ spec:
   #     command: ["ping"]
   #     args: ["www.google.com"]
   #     # timeout: 5s
-  - copy:
-      selector:
-        - app=illmannered-cricket-mysql
-      namespace: default
-      containerPath: /etc/hosts
+  # - copy:
+  #     selector:
+  #       - app=illmannered-cricket-mysql
+  #     namespace: default
+  #     containerPath: /etc/hosts
