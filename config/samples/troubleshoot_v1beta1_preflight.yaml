@@ -1,68 +1,40 @@
 apiVersion: troubleshoot.replicated.com/v1beta1
 kind: Preflight
 metadata:
-  name: preflight-sample
+  name: shiny-new-ai
 spec:
   analyzers:
     - clusterVersion:
         outcomes:
           - fail:
-              when: "< 1.14.0"
-              message: You need more kubernetes
-              uri: https://help.replicated.com/kubernetes-version
+              when: "< 1.13.0"
+              message: Sorry, ShinyNew.ai requires at least Kubernetes 1.14.0. Please update your Kubernetes cluster before installing.
+              uri: https://enterprise.shinynew.ai/install/requirements/kubernetes
           - warn:
               when: "< 1.15.0"
-              message: You have barely enough kubernetes
-              uri: https://help.replicated.com/kubernetes-version
+              message: The version of Kubernetes you are running meets the minimum requirements to run ShineyNew.ai. It's recommended to run Kubernetes 1.15.0 or later.
+              uri: https://enterprise.shinynew.ai/install/requirements/kubernetes
           - pass:
-              message: Good job keeping k8s current
+              message: The version of Kubernetes you have installed meets the required and recommended versions.
     - storageClass:
         checkName: Required storage classes
         storageClassName: "microk8s-hostpath"
         outcomes:
           - fail:
-              message: The micr0k8s storage class thing was not found
+              message: The required storage class was not found in the cluster.
           - pass:
-              message: All good on storage classes
-    - secret:
-        checkName: PG URI
-        secretName: postgres
-        namespace: default
-        key: uri
-        outcomes:
-          - fail:
-              message: You don't have a pg uri secret
-          - pass:
-              message: Probably a green light connecting to pg
-
-    # - manifests:
-    #     - secret:
-    #         namespace: default
-    #         name: shhh
-    #         key: top-secret
-    #       fail:
-    #         message: The top secret secret is missing
-    #       pass:
-    #         message: You know the secret
+              message: The required storage class was found in the cluster.
     - ingress:
         namespace: default
-        ingressName: connect-to-me
+        ingressName: my-app-ingress
         outcomes:
           - fail:
-              message: The ingress isn't ingressing
+              message: Expected to find an ingress named "my-app-ingress".
           - pass:
-              message: All systems ok on ingress
-    # - imagePullSecret:
-    #     name: replicated
-    #     namespace: my-app
-    #     fail:
-    #       message: Can't pull the images
-    #     pass:
-    #       message: Connected to docker registry
-    - customResourceDefinition:
+              message: Expected ingress was found.
         customResourceDefinitionName: rook
         outcomes:
           - fail:
-              message: You don't have rook installed
+              message: Rook is required for ShinyNew.ai. Rook was not found in the cluster.
           - pass:
-              message: Found rook!
+              message: Found a supported version of Rook installed and running in the cluster.

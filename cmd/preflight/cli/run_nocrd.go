@@ -88,7 +88,7 @@ func runPreflightsNoCRD(v *viper.Viper, arg string) error {
 	}
 
 	if v.GetBool("interactive") {
-		return showInteractiveResults(analyzeResults)
+		return showInteractiveResults(preflight.Name, analyzeResults)
 	}
 
 	fmt.Printf("only interactive results are supported\n")
