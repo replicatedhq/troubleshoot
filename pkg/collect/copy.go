@@ -1,15 +1,15 @@
 package collect
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
-	"net/http"
 
-	"github.com/gorilla/websocket"
 	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/remotecommand"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 )
 
@@ -69,63 +69,47 @@ func copyFiles(client *kubernetes.Clientset, pod corev1.Pod, copyCollector *trou
 	}
 
 	container := pod.Spec.Containers[0].Name
-
 	if copyCollector.ContainerName != "" {
 		container = copyCollector.ContainerName
 	}
 
-	u := client.CoreV1().RESTClient().Get().Namespace(pod.Namespace).Name(pod.Name).
-		Resource("pods").SubResource("exec").
-		Param("command", "/bin/cat").Param("command", copyCollector.ContainerPath).
-		Param("container", container).Param("stderr", "true").Param("stdout", "true").URL()
+	command := []string{"cat", copyCollector.ContainerPath}
 
-	switch u.Scheme {
-	case "https":
-		u.Scheme = "wss"
-	case "http":
-		u.Scheme = "ws"
-	default:
+	output := new(bytes.Buffer)
+
+	req := client.CoreV1().RESTClient().Post().Resource("pods").Name(pod.Name).Namespace(pod.Namespace).SubResource("exec")
+	scheme := runtime.NewScheme()
+	if err := corev1.AddToScheme(scheme); err != nil {
 		return nil, err
 	}
 
-	req := &http.Request{
-		Method: http.MethodGet,
-		URL:    u,
-	}
+	parameterCodec := runtime.NewParameterCodec(scheme)
+	req.VersionedParams(&corev1.PodExecOptions{
+		Command:   command,
+		Container: container,
+		Stdin:     true,
+		Stdout:    false,
+		Stderr:    true,
+		TTY:       false,
+	}, parameterCodec)
 
-	tlsConfig, err := rest.TLSConfigFor(cfg)
+	exec, err := remotecommand.NewSPDYExecutor(cfg, "POST", req.URL())
 	if err != nil {
 		return nil, err
 	}
 
-	dialer := &websocket.Dialer{
-		Proxy:           http.ProxyFromEnvironment,
-		TLSClientConfig: tlsConfig,
-	}
-
-	c, _, err := dialer.Dial(u.String(), req.Header)
+	var stderr bytes.Buffer
+	err = exec.Stream(remotecommand.StreamOptions{
+		Stdin:  nil,
+		Stdout: output,
+		Stderr: &stderr,
+		Tty:    false,
+	})
 	if err != nil {
 		return nil, err
-	}
-	defer c.Close()
-
-	var res []byte
-	for {
-		msgT, p, err := c.ReadMessage()
-		if err != nil {
-			if _, ok := err.(*websocket.CloseError); ok {
-				break
-			}
-			fmt.Printf("err %T %v\n", err, err)
-			break
-		}
-		if msgT != 2 {
-			return nil, fmt.Errorf("unknown message type %d", msgT)
-		}
-		res = append(res, p...)
 	}
 
 	return map[string][]byte{
-		copyCollector.ContainerPath: res,
+		fmt.Sprintf("%s/%s/%s", pod.Namespace, pod.Name, copyCollector.ContainerPath): output.Bytes(),
 	}, nil
 }
