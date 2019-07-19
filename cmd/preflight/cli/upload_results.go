@@ -52,8 +52,12 @@ func tryUploadResults(uri string, preflightName string, analyzeResults []*analyz
 	req.Header.Set("Content-Type", "application/json")
 
 	client := http.DefaultClient
-	_, err = client.Do(req)
+	resp, err := client.Do(req)
 	if err != nil {
+		return err
+	}
+
+	if resp.StatusCode > 290 {
 		return err
 	}
 
