@@ -34,10 +34,17 @@ type Run struct {
 	ImagePullPolicy string   `json:"imagePullPolicy,omitempty" yaml:"imagePullPolicy,omitempty"`
 }
 
+type Copy struct {
+	Selector []string `json:"selector" yaml:"selector"`
+	Namespace string `json:"namespace" yaml:"namespace"`
+	ContainerPath string `json:"containerPath" yaml:"containerPath"`
+}
+
 type Collect struct {
 	ClusterInfo      *ClusterInfo      `json:"clusterInfo,omitempty" yaml:"clusterInfo,omitempty"`
 	ClusterResources *ClusterResources `json:"clusterResources,omitempty" yaml:"clusterResources,omitempty"`
 	Secret           *Secret           `json:"secret,omitempty" yaml:"secret,omitempty"`
 	Logs             *Logs             `json:"logs,omitempty" yaml:"logs,omitempty"`
 	Run              *Run              `json:"run,omitempty" yaml:"run,omitempty"`
+	Copy *Copy `json:"copy,omitempty" yaml:"copy,omitempty"`
 }
