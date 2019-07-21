@@ -23,6 +23,30 @@ spec:
   #     command: ["ping"]
   #     args: ["www.google.com"]
   #     timeout: 5s
+  - exec:
+      name: mysql-vars
+      selector:
+        - app=mysql
+      namespace: default
+      command: ["mysql"]
+      args: ["-ureplicated", "-ppassword", "-e", "show processlist"]
+      timeout: 60m
+  - exec:
+      name: hosts
+      selector:
+        - app=graphql-api
+      namespace: default
+      command: ["cat"]
+      args: ["/etc/hosts"]
+      timeout: 60m
+  - exec:
+      name: broken
+      selector:
+        - app=graphql-api
+      namespace: default
+      command: ["cat"]
+      args: ["/etc/hostdasddsda"]
+      timeout: 60m
   # - copy:
   #     selector:
   #       - app=illmannered-cricket-mysql

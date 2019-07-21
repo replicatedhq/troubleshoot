@@ -413,6 +413,33 @@ spec:
                   - namespace
                   - containerPath
                   type: object
+                exec:
+                  properties:
+                    args:
+                      items:
+                        type: string
+                      type: array
+                    command:
+                      items:
+                        type: string
+                      type: array
+                    containerName:
+                      type: string
+                    name:
+                      type: string
+                    namespace:
+                      type: string
+                    selector:
+                      items:
+                        type: string
+                      type: array
+                    timeout:
+                      type: string
+                  required:
+                  - name
+                  - selector
+                  - namespace
+                  type: object
                 http:
                   properties:
                     get:
