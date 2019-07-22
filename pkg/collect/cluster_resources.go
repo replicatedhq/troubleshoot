@@ -15,14 +15,22 @@ import (
 )
 
 type ClusterResourcesOutput struct {
-	Namespaces                []byte            `json:"cluster-resources/namespaces.json,omitempty"`
-	Pods                      map[string][]byte `json:"cluster-resources/pods,omitempty"`
-	Services                  map[string][]byte `json:"cluster-resources/services,omitempty"`
-	Deployments               map[string][]byte `json:"cluster-resources/deployments,omitempty"`
-	Ingress                   map[string][]byte `json:"cluster-resources/ingress,omitempty"`
-	StorageClasses            []byte            `json:"cluster-resources/storage-classes.json,omitempty"`
-	CustomResourceDefinitions []byte            `json:"cluster-resources/custom-resource-definitions.json,omitempty"`
-	ImagePullSecrets          map[string][]byte `json:"cluster-resources/image-pull-secrets,omitempty"`
+	Namespaces                      []byte            `json:"cluster-resources/namespaces.json,omitempty"`
+	NamespacesErrors                []byte            `json:"cluster-resources/namespaces-errors.json,omitempty"`
+	Pods                            map[string][]byte `json:"cluster-resources/pods,omitempty"`
+	PodsErrors                      []byte            `json:"cluster-resources/pods-errors.json,omitempty"`
+	Services                        map[string][]byte `json:"cluster-resources/services,omitempty"`
+	ServicesErrors                  []byte            `json:"cluster-resources/services-errors.json,omitempty"`
+	Deployments                     map[string][]byte `json:"cluster-resources/deployments,omitempty"`
+	DeploymentsErrors               []byte            `json:"cluster-resources/deployments-errors.json,omitempty"`
+	Ingress                         map[string][]byte `json:"cluster-resources/ingress,omitempty"`
+	IngressErrors                   []byte            `json:"cluster-resources/ingress-errors.json,omitempty"`
+	StorageClasses                  []byte            `json:"cluster-resources/storage-classes.json,omitempty"`
+	StorageErrors                   []byte            `json:"cluster-resources/storage-errors.json,omitempty"`
+	CustomResourceDefinitions       []byte            `json:"cluster-resources/custom-resource-definitions.json,omitempty"`
+	CustomResourceDefinitionsErrors []byte            `json:"cluster-resources/custom-resource-definitions-errors.json,omitempty"`
+	ImagePullSecrets                map[string][]byte `json:"cluster-resources/image-pull-secrets,omitempty"`
+	ImagePullSecretsErrors          []byte            `json:"cluster-resources/image-pull-secrets-errors.json,omitempty"`
 }
 
 func ClusterResources(redact bool) error {
@@ -39,68 +47,76 @@ func ClusterResources(redact bool) error {
 	clusterResourcesOutput := &ClusterResourcesOutput{}
 
 	// namespaces
-	namespaces, namespaceList, err := namespaces(client)
+	namespaces, namespaceList, nsErrors := namespaces(client)
+	clusterResourcesOutput.Namespaces = namespaces
+	clusterResourcesOutput.NamespacesErrors, err = marshalIndent(nsErrors)
 	if err != nil {
 		return err
 	}
-	clusterResourcesOutput.Namespaces = namespaces
 
 	namespaceNames := make([]string, 0, 0)
 	for _, namespace := range namespaceList.Items {
 		namespaceNames = append(namespaceNames, namespace.Name)
 	}
 
-	pods, err := pods(client, namespaceNames)
+	pods, podErrors := pods(client, namespaceNames)
+	clusterResourcesOutput.Pods = pods
+	clusterResourcesOutput.PodsErrors, err = marshalIndent(podErrors)
 	if err != nil {
 		return err
 	}
-	clusterResourcesOutput.Pods = pods
 
 	// services
-	services, err := services(client, namespaceNames)
+	services, servicesErrors := services(client, namespaceNames)
+	clusterResourcesOutput.Services = services
+	clusterResourcesOutput.ServicesErrors, err = marshalIndent(servicesErrors)
 	if err != nil {
 		return err
 	}
-	clusterResourcesOutput.Services = services
 
 	// deployments
-	deployments, err := deployments(client, namespaceNames)
+	deployments, deploymentsErrors := deployments(client, namespaceNames)
+	clusterResourcesOutput.Deployments = deployments
+	clusterResourcesOutput.DeploymentsErrors, err = marshalIndent(deploymentsErrors)
 	if err != nil {
 		return err
 	}
-	clusterResourcesOutput.Deployments = deployments
 
 	// ingress
-	ingress, err := ingress(client, namespaceNames)
+	ingress, ingressErrors := ingress(client, namespaceNames)
+	clusterResourcesOutput.Ingress = ingress
+	clusterResourcesOutput.IngressErrors, err = marshalIndent(ingressErrors)
 	if err != nil {
 		return err
 	}
-	clusterResourcesOutput.Ingress = ingress
 
 	// storage classes
-	storageClasses, err := storageClasses(client)
+	storageClasses, storageErrors := storageClasses(client)
+	clusterResourcesOutput.StorageClasses = storageClasses
+	clusterResourcesOutput.StorageErrors, err = marshalIndent(storageErrors)
 	if err != nil {
 		return err
 	}
-	clusterResourcesOutput.StorageClasses = storageClasses
 
 	// crds
 	crdClient, err := apiextensionsv1beta1clientset.NewForConfig(cfg)
 	if err != nil {
 		return err
 	}
-	customResourceDefinitions, err := crds(crdClient)
+	customResourceDefinitions, crdErrors := crds(crdClient)
+	clusterResourcesOutput.CustomResourceDefinitions = customResourceDefinitions
+	clusterResourcesOutput.CustomResourceDefinitionsErrors, err = marshalIndent(crdErrors)
 	if err != nil {
 		return err
 	}
-	clusterResourcesOutput.CustomResourceDefinitions = customResourceDefinitions
 
 	// imagepullsecrets
-	imagePullSecrets, err := imagePullSecrets(client, namespaceNames)
+	imagePullSecrets, pullSecretsErrors := imagePullSecrets(client, namespaceNames)
+	clusterResourcesOutput.ImagePullSecrets = imagePullSecrets
+	clusterResourcesOutput.ImagePullSecretsErrors, err = marshalIndent(pullSecretsErrors)
 	if err != nil {
 		return err
 	}
-	clusterResourcesOutput.ImagePullSecrets = imagePullSecrets
 
 	if redact {
 		clusterResourcesOutput, err = clusterResourcesOutput.Redact()
@@ -119,130 +135,143 @@ func ClusterResources(redact bool) error {
 	return nil
 }
 
-func namespaces(client *kubernetes.Clientset) ([]byte, *corev1.NamespaceList, error) {
+func namespaces(client *kubernetes.Clientset) ([]byte, *corev1.NamespaceList, []string) {
 	namespaces, err := client.CoreV1().Namespaces().List(metav1.ListOptions{})
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, []string{err.Error()}
 	}
 
-	b, err := json.MarshalIndent(namespaces.Items, "", "  ")
+	b, err := marshalIndent(namespaces.Items)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, []string{err.Error()}
 	}
 
 	return b, namespaces, nil
 }
 
-func pods(client *kubernetes.Clientset, namespaces []string) (map[string][]byte, error) {
+func pods(client *kubernetes.Clientset, namespaces []string) (map[string][]byte, map[string]string) {
 	podsByNamespace := make(map[string][]byte)
+	errorsByNamespace := make(map[string]string)
 
 	for _, namespace := range namespaces {
 		pods, err := client.CoreV1().Pods(namespace).List(metav1.ListOptions{})
 		if err != nil {
-			return nil, err
+			errorsByNamespace[namespace] = err.Error()
+			continue
 		}
 
-		b, err := json.MarshalIndent(pods.Items, "", "  ")
+		b, err := marshalIndent(pods.Items)
 		if err != nil {
-			return nil, err
+			errorsByNamespace[namespace] = err.Error()
+			continue
 		}
 
 		podsByNamespace[namespace+".json"] = b
 	}
 
-	return podsByNamespace, nil
+	return podsByNamespace, errorsByNamespace
 }
 
-func services(client *kubernetes.Clientset, namespaces []string) (map[string][]byte, error) {
+func services(client *kubernetes.Clientset, namespaces []string) (map[string][]byte, map[string]string) {
 	servicesByNamespace := make(map[string][]byte)
+	errorsByNamespace := make(map[string]string)
 
 	for _, namespace := range namespaces {
 		services, err := client.CoreV1().Services(namespace).List(metav1.ListOptions{})
 		if err != nil {
-			return nil, err
+			errorsByNamespace[namespace] = err.Error()
+			continue
 		}
 
 		b, err := json.MarshalIndent(services.Items, "", "  ")
 		if err != nil {
-			return nil, err
+			errorsByNamespace[namespace] = err.Error()
+			continue
 		}
 
 		servicesByNamespace[namespace+".json"] = b
 	}
 
-	return servicesByNamespace, nil
+	return servicesByNamespace, errorsByNamespace
 }
 
-func deployments(client *kubernetes.Clientset, namespaces []string) (map[string][]byte, error) {
+func deployments(client *kubernetes.Clientset, namespaces []string) (map[string][]byte, map[string]string) {
 	deploymentsByNamespace := make(map[string][]byte)
+	errorsByNamespace := make(map[string]string)
 
 	for _, namespace := range namespaces {
 		deployments, err := client.AppsV1().Deployments(namespace).List(metav1.ListOptions{})
 		if err != nil {
-			return nil, err
+			errorsByNamespace[namespace] = err.Error()
+			continue
 		}
 
 		b, err := json.MarshalIndent(deployments.Items, "", "  ")
 		if err != nil {
-			return nil, err
+			errorsByNamespace[namespace] = err.Error()
+			continue
 		}
 
 		deploymentsByNamespace[namespace+".json"] = b
 	}
 
-	return deploymentsByNamespace, nil
+	return deploymentsByNamespace, errorsByNamespace
 }
 
-func ingress(client *kubernetes.Clientset, namespaces []string) (map[string][]byte, error) {
+func ingress(client *kubernetes.Clientset, namespaces []string) (map[string][]byte, map[string]string) {
 	ingressByNamespace := make(map[string][]byte)
+	errorsByNamespace := make(map[string]string)
 
 	for _, namespace := range namespaces {
 		ingress, err := client.ExtensionsV1beta1().Ingresses(namespace).List(metav1.ListOptions{})
 		if err != nil {
-			return nil, err
+			errorsByNamespace[namespace] = err.Error()
+			continue
 		}
 
 		b, err := json.MarshalIndent(ingress.Items, "", "  ")
 		if err != nil {
-			return nil, err
+			errorsByNamespace[namespace] = err.Error()
+			continue
 		}
 
 		ingressByNamespace[namespace+".json"] = b
 	}
 
-	return ingressByNamespace, nil
+	return ingressByNamespace, errorsByNamespace
 }
 
-func storageClasses(client *kubernetes.Clientset) ([]byte, error) {
+func storageClasses(client *kubernetes.Clientset) ([]byte, []string) {
 	storageClasses, err := client.StorageV1beta1().StorageClasses().List(metav1.ListOptions{})
 	if err != nil {
-		return nil, err
+		return nil, []string{err.Error()}
 	}
 
 	b, err := json.MarshalIndent(storageClasses.Items, "", "  ")
 	if err != nil {
-		return nil, err
+		return nil, []string{err.Error()}
 	}
 
 	return b, nil
 }
 
-func crds(client *apiextensionsv1beta1clientset.ApiextensionsV1beta1Client) ([]byte, error) {
+func crds(client *apiextensionsv1beta1clientset.ApiextensionsV1beta1Client) ([]byte, []string) {
 	crds, err := client.CustomResourceDefinitions().List(metav1.ListOptions{})
 	if err != nil {
-		return nil, err
+		return nil, []string{err.Error()}
 	}
 
 	b, err := json.MarshalIndent(crds.Items, "", "  ")
 	if err != nil {
-		return nil, err
+		return nil, []string{err.Error()}
 	}
 
 	return b, nil
 }
 
-func imagePullSecrets(client *kubernetes.Clientset, namespaces []string) (map[string][]byte, error) {
+func imagePullSecrets(client *kubernetes.Clientset, namespaces []string) (map[string][]byte, map[string]string) {
 	imagePullSecrets := make(map[string][]byte)
+	errors := make(map[string]string)
 
 	// better than vendoring in.... kubernetes
 	type DockerConfigEntry struct {
@@ -255,35 +284,41 @@ func imagePullSecrets(client *kubernetes.Clientset, namespaces []string) (map[st
 	for _, namespace := range namespaces {
 		secrets, err := client.CoreV1().Secrets(namespace).List(metav1.ListOptions{})
 		if err != nil {
-			return nil, err
+			errors[namespace] = err.Error()
+			continue
 		}
 
 		for _, secret := range secrets.Items {
-			if secret.Type == corev1.SecretTypeDockerConfigJson {
-				dockerConfigJSON := DockerConfigJSON{}
-				if err := json.Unmarshal(secret.Data[corev1.DockerConfigJsonKey], &dockerConfigJSON); err != nil {
-					return nil, err
+			if secret.Type != corev1.SecretTypeDockerConfigJson {
+				continue
+			}
+
+			dockerConfigJSON := DockerConfigJSON{}
+			if err := json.Unmarshal(secret.Data[corev1.DockerConfigJsonKey], &dockerConfigJSON); err != nil {
+				errors[fmt.Sprintf("%s/%s", namespace, secret.Name)] = err.Error()
+				continue
+			}
+
+			for registry, registryAuth := range dockerConfigJSON.Auths {
+				decoded, err := base64.StdEncoding.DecodeString(registryAuth.Auth)
+				if err != nil {
+					errors[fmt.Sprintf("%s/%s/%s", namespace, secret.Name, registry)] = err.Error()
+					continue
 				}
 
-				for registry, registryAuth := range dockerConfigJSON.Auths {
-					decoded, err := base64.StdEncoding.DecodeString(registryAuth.Auth)
-					if err != nil {
-						return nil, err
-					}
-
-					registryAndUsername := make(map[string]string)
-					registryAndUsername[registry] = strings.Split(string(decoded), ":")[0]
-					b, err := json.Marshal(registryAndUsername)
-					if err != nil {
-						return nil, err
-					}
-					imagePullSecrets[fmt.Sprintf("%s/%s.json", namespace, secret.Name)] = b
+				registryAndUsername := make(map[string]string)
+				registryAndUsername[registry] = strings.Split(string(decoded), ":")[0]
+				b, err := json.Marshal(registryAndUsername)
+				if err != nil {
+					errors[fmt.Sprintf("%s/%s/%s", namespace, secret.Name, registry)] = err.Error()
+					continue
 				}
+				imagePullSecrets[fmt.Sprintf("%s/%s.json", namespace, secret.Name)] = b
 			}
 		}
 	}
 
-	return imagePullSecrets, nil
+	return imagePullSecrets, errors
 }
 
 func (c *ClusterResourcesOutput) Redact() (*ClusterResourcesOutput, error) {
@@ -316,13 +351,21 @@ func (c *ClusterResourcesOutput) Redact() (*ClusterResourcesOutput, error) {
 		return nil, err
 	}
 	return &ClusterResourcesOutput{
-		Namespaces:                namespaces,
-		Pods:                      pods,
-		Services:                  services,
-		Deployments:               deployments,
-		Ingress:                   ingress,
-		StorageClasses:            storageClasses,
-		CustomResourceDefinitions: crds,
-		ImagePullSecrets:          c.ImagePullSecrets,
+		Namespaces:                      namespaces,
+		NamespacesErrors:                c.NamespacesErrors,
+		Pods:                            pods,
+		PodsErrors:                      c.PodsErrors,
+		Services:                        services,
+		ServicesErrors:                  c.ServicesErrors,
+		Deployments:                     deployments,
+		DeploymentsErrors:               c.DeploymentsErrors,
+		Ingress:                         ingress,
+		IngressErrors:                   c.IngressErrors,
+		StorageClasses:                  storageClasses,
+		StorageErrors:                   c.StorageErrors,
+		CustomResourceDefinitions:       crds,
+		CustomResourceDefinitionsErrors: c.CustomResourceDefinitionsErrors,
+		ImagePullSecrets:                c.ImagePullSecrets,
+		ImagePullSecretsErrors:          c.ImagePullSecretsErrors,
 	}, nil
 }
