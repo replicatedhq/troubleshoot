@@ -31,6 +31,10 @@ func DeterministicIDForCollector(collector *troubleshootv1beta1.Collect) string 
 		unsafeID = fmt.Sprintf("run-%s", strings.ToLower(collector.Run.Name))
 	}
 
+	if collector.Exec != nil {
+		unsafeID = fmt.Sprintf("exec-%s", strings.ToLower(collector.Exec.Name))
+	}
+
 	if collector.Copy != nil {
 		unsafeID = fmt.Sprintf("copy-%s-%s", selectorToString(collector.Copy.Selector), pathToString(collector.Copy.ContainerPath))
 	}

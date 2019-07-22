@@ -34,6 +34,16 @@ type Run struct {
 	ImagePullPolicy string   `json:"imagePullPolicy,omitempty" yaml:"imagePullPolicy,omitempty"`
 }
 
+type Exec struct {
+	Name          string   `json:"name" yaml:"name"`
+	Selector      []string `json:"selector" yaml:"selector"`
+	Namespace     string   `json:"namespace" yaml:"namespace"`
+	ContainerName string   `json:"containerName,omitempty" yaml:"containerName,omitempty"`
+	Command       []string `json:"command,omitempty" yaml:"command,omitempty"`
+	Args          []string `json:"args,omitempty" yaml:"args,omitempty"`
+	Timeout       string   `json:"timeout,omitempty" yaml:"timeout,omitempty"`
+}
+
 type Copy struct {
 	Selector      []string `json:"selector" yaml:"selector"`
 	Namespace     string   `json:"namespace" yaml:"namespace"`
@@ -74,6 +84,7 @@ type Collect struct {
 	Secret           *Secret           `json:"secret,omitempty" yaml:"secret,omitempty"`
 	Logs             *Logs             `json:"logs,omitempty" yaml:"logs,omitempty"`
 	Run              *Run              `json:"run,omitempty" yaml:"run,omitempty"`
+	Exec             *Exec             `json:"exec,omitempty" yaml:"exec,omitempty"`
 	Copy             *Copy             `json:"copy,omitempty" yaml:"copy,omitempty"`
 	HTTP             *HTTP             `json:"http,omitempty" yaml:"http,omitempty"`
 }
