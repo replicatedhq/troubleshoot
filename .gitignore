@@ -17,6 +17,9 @@ bin
 
 !vendor/**/zz_generated.*
 
+# Vendored files downloaded with go mod
+vendor
+
 # editor and IDE paraphernalia
 .idea
 *.swp

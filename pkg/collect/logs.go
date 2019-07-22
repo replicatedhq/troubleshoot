@@ -39,7 +39,7 @@ func Logs(logsCollector *troubleshootv1beta1.Logs, redact bool) error {
 		PodLogs: make(map[string][]byte),
 	}
 	for _, pod := range pods {
-		podLogs, err := getPodLogs(client, pod, logsCollector.Limits)
+		podLogs, err := getPodLogs(client, pod, logsCollector.Limits, false)
 		if err != nil {
 			return err
 		}
@@ -81,8 +81,10 @@ func listPodsInSelectors(client *kubernetes.Clientset, namespace string, selecto
 	return pods.Items, nil
 }
 
-func getPodLogs(client *kubernetes.Clientset, pod corev1.Pod, limits *troubleshootv1beta1.LogLimits) (map[string][]byte, error) {
-	podLogOpts := corev1.PodLogOptions{}
+func getPodLogs(client *kubernetes.Clientset, pod corev1.Pod, limits *troubleshootv1beta1.LogLimits, follow bool) (map[string][]byte, error) {
+	podLogOpts := corev1.PodLogOptions{
+		Follow: follow,
+	}
 
 	defaultMaxLines := int64(10000)
 	if limits == nil || limits.MaxLines == 0 {

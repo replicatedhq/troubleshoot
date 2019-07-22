@@ -2,6 +2,7 @@ package collect
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
@@ -32,44 +33,67 @@ func Run(runCollector *troubleshootv1beta1.Run, redact bool) error {
 		return err
 	}
 
-	runOutput := &RunOutput{
-		PodLogs: make(map[string][]byte),
+	defer func() {
+		if err := client.CoreV1().Pods(pod.Namespace).Delete(pod.Name, &metav1.DeleteOptions{}); err != nil {
+			fmt.Printf("Failed to delete pod %s: %v\n", pod.Name, err)
+		}
+	}()
+
+	if runCollector.Timeout == "" {
+		return runWithoutTimeout(pod, runCollector, redact)
 	}
 
-	now := time.Now()
-	then := now.Add(time.Duration(20 * time.Second))
+	timeout, err := time.ParseDuration(runCollector.Timeout)
+	if err != nil {
+		return err
+	}
 
-	if runCollector.Timeout != "" {
-		parsedDuration, err := time.ParseDuration(runCollector.Timeout)
-		if err != nil {
-			fmt.Printf("unable to parse time duration %s\n", runCollector.Timeout)
-		} else {
-			then = now.Add(parsedDuration)
-		}
+	runChan := make(chan error, 1)
+	go func() {
+		runChan <- runWithoutTimeout(pod, runCollector, redact)
+	}()
+
+	select {
+	case <-time.After(timeout):
+		return errors.New("timeout")
+	case err := <-runChan:
+		return err
+	}
+}
+
+func runWithoutTimeout(pod *corev1.Pod, runCollector *troubleshootv1beta1.Run, redact bool) error {
+	cfg, err := config.GetConfig()
+	if err != nil {
+		return err
+	}
+
+	client, err := kubernetes.NewForConfig(cfg)
+	if err != nil {
+		return err
 	}
 
 	for {
-		if time.Now().After(then) {
+		status, err := client.CoreV1().Pods(pod.Namespace).Get(pod.Name, metav1.GetOptions{})
+		if err != nil {
+			return err
+		}
+		if status.Status.Phase == "Running" {
 			break
 		}
+		time.Sleep(time.Second * 1)
+	}
 
-		time.Sleep(time.Second)
+	runOutput := &RunOutput{
+		PodLogs: make(map[string][]byte),
 	}
 
 	limits := troubleshootv1beta1.LogLimits{
 		MaxLines: 10000,
 	}
-	podLogs, err := getPodLogs(client, *pod, &limits)
-	if err != nil {
-		return err
-	}
+	podLogs, err := getPodLogs(client, *pod, &limits, true)
 
 	for k, v := range podLogs {
 		runOutput.PodLogs[k] = v
-	}
-
-	if err := client.CoreV1().Pods(pod.Namespace).Delete(pod.Name, &metav1.DeleteOptions{}); err != nil {
-		return err
 	}
 
 	if redact {
