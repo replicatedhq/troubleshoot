@@ -20,8 +20,8 @@ type ExecOutput struct {
 }
 
 type execResult struct {
-	Stdout string `json:"stdout,omitempty"`
-	Stderr string `json:"stderr,omitempty"`
+	Stdout []byte `json:"-"`
+	Stderr []byte `json:"-"`
 	Error  error  `json:"error,omitempty"`
 }
 
@@ -74,12 +74,21 @@ func execWithoutTimeout(execCollector *troubleshootv1beta1.Exec, redact bool) er
 			return err
 		}
 
-		b, err := json.MarshalIndent(output, "", "  ")
+		execOutput.Results[fmt.Sprintf("%s/%s/%s-stdout.txt", pod.Namespace, pod.Name, execCollector.Name)] = output.Stdout
+		execOutput.Results[fmt.Sprintf("%s/%s/%s-stderr.txt", pod.Namespace, pod.Name, execCollector.Name)] = output.Stderr
+		if output.Error == nil {
+			continue
+		}
+
+		errOutput := map[string]string{
+			"error": output.Error.Error(),
+		}
+		b, err := json.MarshalIndent(errOutput, "", "  ")
 		if err != nil {
 			return err
 		}
 
-		execOutput.Results[fmt.Sprintf("%s/%s/%s", pod.Namespace, pod.Name, execCollector.Name)] = b
+		execOutput.Results[fmt.Sprintf("%s/%s/%s.json", pod.Namespace, pod.Name, execCollector.Name)] = b
 	}
 
 	if redact {
@@ -142,8 +151,8 @@ func getExecOutputs(client *kubernetes.Clientset, pod corev1.Pod, execCollector 
 	})
 
 	return &execResult{
-		Stdout: stdout.String(),
-		Stderr: stderr.String(),
+		Stdout: stdout.Bytes(),
+		Stderr: stderr.Bytes(),
 		Error:  err,
 	}, nil
 }
