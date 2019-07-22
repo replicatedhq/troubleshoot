@@ -28,7 +28,7 @@ func (r *ReconcileCollectorJob) createCollectorServer(instance *troubleshootv1be
 		return err
 	}
 
-	imageName := "replicatedhq/troubleshoot:latest"
+	imageName := "replicated/troubleshoot:latest"
 	imagePullPolicy := corev1.PullAlways
 
 	if instance.Spec.Image != "" {

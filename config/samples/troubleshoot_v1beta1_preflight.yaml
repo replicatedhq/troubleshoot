@@ -1,41 +1,50 @@
 apiVersion: troubleshoot.replicated.com/v1beta1
 kind: Preflight
 metadata:
-  name: shiny-new-ai
+  name: support-io
 spec:
   uploadResultsTo: https://hookb.in/Z26mz8R9VpC7q7eYrWob
   analyzers:
-    - clusterVersion:
+    - imagePullSecret:
+        checkName: "blarg"
+        registryName: quay.io
         outcomes:
           - fail:
-              when: "< 1.13.0"
-              message: Sorry, ShinyNew.ai requires at least Kubernetes 1.14.0. Please update your Kubernetes cluster before installing.
-              uri: https://enterprise.shinynew.ai/install/requirements/kubernetes
-          - warn:
-              when: "< 1.15.0"
-              message: The version of Kubernetes you are running meets the minimum requirements to run ShineyNew.ai. It's recommended to run Kubernetes 1.15.0 or later.
-              uri: https://enterprise.shinynew.ai/install/requirements/kubernetes
+              message: Cannot pull from quay.io
           - pass:
-              message: The version of Kubernetes you have installed meets the required and recommended versions.
-    - storageClass:
-        checkName: Required storage classes
-        storageClassName: "microk8s-hostpath"
-        outcomes:
-          - fail:
-              message: The required storage class was not found in the cluster.
-          - pass:
-              message: The required storage class was found in the cluster.
-    - ingress:
-        namespace: default
-        ingressName: my-app-ingress
-        outcomes:
-          - fail:
-              message: Expected to find an ingress named "my-app-ingress".
-          - pass:
-              message: Expected ingress was found.
-        customResourceDefinitionName: rook
-        outcomes:
-          - fail:
-              message: Rook is required for ShinyNew.ai. Rook was not found in the cluster.
-          - pass:
-              message: Found a supported version of Rook installed and running in the cluster.
+              message: Found credentials to pull from quay.io
+    # - clusterVersion:
+    #     outcomes:
+    #       - fail:
+    #           when: "< 1.13.0"
+    #           message: Sorry, support.io requires at least Kubernetes 1.14.0. Please update your Kubernetes cluster before installing.
+    #           uri: https://enterprise.support.io/install/requirements/kubernetes
+    #       - warn:
+    #           when: "< 1.15.0"
+    #           message: The version of Kubernetes you are running meets the minimum requirements to run support.io. It's recommended to run Kubernetes 1.15.0 or later.
+    #           uri: https://enterprise.support.io/install/requirements/kubernetes
+    #       - pass:
+    #           message: The version of Kubernetes you have installed meets the required and recommended versions.
+    # - storageClass:
+    #     checkName: Required storage classes
+    #     storageClassName: "microk8s-hostpath"
+    #     outcomes:
+    #       - fail:
+    #           message: The required storage class was not found in the cluster.
+    #       - pass:
+    #           message: The required storage class was found in the cluster.
+    # - ingress:
+    #     namespace: default
+    #     ingressName: my-app-ingress
+    #     outcomes:
+    #       - fail:
+    #           message: Expected to find an ingress named "my-app-ingress".
+    #       - pass:
+    #           message: Expected ingress was found.
+    # - customResourceDefinitionName:
+    #     customResourceDefinitionName: rook
+    #     outcomes:
+    #       - fail:
+    #           message: Rook is required for Support.io. Rook was not found in the cluster.
+    #       - pass:
+    #           message: Found a supported version of Rook installed and running in the cluster.

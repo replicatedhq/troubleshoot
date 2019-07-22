@@ -16,21 +16,27 @@ type AnalyzeResult struct {
 	URI     string
 }
 
-func Analyze(analyzer *troubleshootv1beta1.Analyze, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
+type getCollectedFileContents func(string) ([]byte, error)
+type getChildCollectedFileContents func(string) (map[string][]byte, error)
+
+func Analyze(analyzer *troubleshootv1beta1.Analyze, getFile getCollectedFileContents, findFiles getChildCollectedFileContents) (*AnalyzeResult, error) {
 	if analyzer.ClusterVersion != nil {
-		return analyzeClusterVersion(analyzer.ClusterVersion, getCollectedFileContents)
+		return analyzeClusterVersion(analyzer.ClusterVersion, getFile)
 	}
 	if analyzer.StorageClass != nil {
-		return analyzeStorageClass(analyzer.StorageClass, getCollectedFileContents)
+		return analyzeStorageClass(analyzer.StorageClass, getFile)
 	}
 	if analyzer.CustomResourceDefinition != nil {
-		return analyzeCustomResourceDefinition(analyzer.CustomResourceDefinition, getCollectedFileContents)
+		return analyzeCustomResourceDefinition(analyzer.CustomResourceDefinition, getFile)
 	}
 	if analyzer.Ingress != nil {
-		return analyzeIngress(analyzer.Ingress, getCollectedFileContents)
+		return analyzeIngress(analyzer.Ingress, getFile)
 	}
 	if analyzer.Secret != nil {
-		return analyzeSecret(analyzer.Secret, getCollectedFileContents)
+		return analyzeSecret(analyzer.Secret, getFile)
+	}
+	if analyzer.ImagePullSecret != nil {
+		return analyzeImagePullSecret(analyzer.ImagePullSecret, findFiles)
 	}
 
 	return nil, errors.New("invalid analyzer")

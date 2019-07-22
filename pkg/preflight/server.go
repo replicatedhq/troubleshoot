@@ -38,7 +38,7 @@ func CreatePreflightServer(client client.Client, scheme *runtime.Scheme, options
 		return nil, nil, err
 	}
 
-	imageName := "replicatedhq/troubleshoot:latest"
+	imageName := "replicated/troubleshoot:latest"
 	imagePullPolicy := corev1.PullAlways
 
 	if options.ImageName != "" {
