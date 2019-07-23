@@ -1,6 +1,7 @@
 package collect
 
 import (
+	"encoding/json"
 	"fmt"
 	"regexp"
 	"strings"
@@ -63,4 +64,8 @@ func rfc1035(in string) string {
 	}
 
 	return out
+}
+
+func marshalIndent(obj interface{}) ([]byte, error) {
+	return json.MarshalIndent(obj, "", "  ")
 }
