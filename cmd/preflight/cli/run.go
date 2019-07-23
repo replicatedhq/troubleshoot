@@ -40,6 +40,8 @@ func Run() *cobra.Command {
 	cmd.Flags().String("collector-image", "", "the full name of the collector image to use")
 	cmd.Flags().String("collector-pullpolicy", "", "the pull policy of the collector image")
 
+	cmd.Flags().String("serviceaccount", "", "name of the service account to use. if not provided, one will be created")
+
 	viper.BindPFlags(cmd.Flags())
 
 	return cmd

@@ -87,7 +87,7 @@ release:
 
 .PHONY: local-release
 local-release:
-	curl -sL https://git.io/goreleaser | bash -s -- --rm-dist --snapshot --config deploy/.goreleaser.snapshot.yml
+	curl -sL https://git.io/goreleaser | bash -s -- --rm-dist --snapshot --config deploy/.goreleaser.local.yml
 	docker tag replicated/troubleshoot:alpha localhost:32000/troubleshoot:alpha
 	docker tag replicated/preflight:alpha localhost:32000/preflight:alpha
 	docker tag replicated/troubleshoot-manager:alpha localhost:32000/troubleshoot-manager:alpha

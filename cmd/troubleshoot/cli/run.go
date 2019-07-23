@@ -19,12 +19,7 @@ For example:
 troubleshoot run --collectors application --wait
 		`,
 		PreRun: func(cmd *cobra.Command, args []string) {
-			viper.BindPFlag("collectors", cmd.Flags().Lookup("collectors"))
-			viper.BindPFlag("namespace", cmd.Flags().Lookup("namespace"))
-			viper.BindPFlag("kubecontext", cmd.Flags().Lookup("kubecontext"))
-			viper.BindPFlag("image", cmd.Flags().Lookup("image"))
-			viper.BindPFlag("pullpolicy", cmd.Flags().Lookup("pullpolicy"))
-			viper.BindPFlag("redact", cmd.Flags().Lookup("redact"))
+			viper.BindPFlags(cmd.Flags())
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			v := viper.GetViper()
@@ -46,6 +41,7 @@ troubleshoot run --collectors application --wait
 	cmd.Flags().String("pullpolicy", "", "the pull policy of the collector image")
 	cmd.Flags().Bool("redact", true, "enable/disable default redactions")
 
+	cmd.Flags().String("serviceaccount", "", "name of the service account to use. if not provided, one will be created")
 	viper.BindPFlags(cmd.Flags())
 
 	return cmd

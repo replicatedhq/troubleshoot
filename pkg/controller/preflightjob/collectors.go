@@ -57,7 +57,7 @@ func (r *ReconcilePreflightJob) reconcileOnePreflightCollector(instance *trouble
 		return nil
 	}
 
-	_, _, err := collectrunner.CreateCollector(r.Client, r.scheme, instance, instance.Name, instance.Namespace, "preflight", collect, instance.Spec.Image, instance.Spec.ImagePullPolicy)
+	_, _, err := collectrunner.CreateCollector(r.Client, r.scheme, instance, instance.Name, instance.Namespace, "", "preflight", collect, instance.Spec.Image, instance.Spec.ImagePullPolicy)
 	if err != nil {
 		return err
 	}
