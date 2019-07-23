@@ -49,7 +49,7 @@ func ClusterResources(redact bool) error {
 	// namespaces
 	namespaces, namespaceList, nsErrors := namespaces(client)
 	clusterResourcesOutput.Namespaces = namespaces
-	clusterResourcesOutput.NamespacesErrors, err = marshalIndent(nsErrors)
+	clusterResourcesOutput.NamespacesErrors, err = marshalNonNil(nsErrors)
 	if err != nil {
 		return err
 	}
@@ -61,7 +61,7 @@ func ClusterResources(redact bool) error {
 
 	pods, podErrors := pods(client, namespaceNames)
 	clusterResourcesOutput.Pods = pods
-	clusterResourcesOutput.PodsErrors, err = marshalIndent(podErrors)
+	clusterResourcesOutput.PodsErrors, err = marshalNonNil(podErrors)
 	if err != nil {
 		return err
 	}
@@ -69,7 +69,7 @@ func ClusterResources(redact bool) error {
 	// services
 	services, servicesErrors := services(client, namespaceNames)
 	clusterResourcesOutput.Services = services
-	clusterResourcesOutput.ServicesErrors, err = marshalIndent(servicesErrors)
+	clusterResourcesOutput.ServicesErrors, err = marshalNonNil(servicesErrors)
 	if err != nil {
 		return err
 	}
@@ -77,7 +77,7 @@ func ClusterResources(redact bool) error {
 	// deployments
 	deployments, deploymentsErrors := deployments(client, namespaceNames)
 	clusterResourcesOutput.Deployments = deployments
-	clusterResourcesOutput.DeploymentsErrors, err = marshalIndent(deploymentsErrors)
+	clusterResourcesOutput.DeploymentsErrors, err = marshalNonNil(deploymentsErrors)
 	if err != nil {
 		return err
 	}
@@ -85,7 +85,7 @@ func ClusterResources(redact bool) error {
 	// ingress
 	ingress, ingressErrors := ingress(client, namespaceNames)
 	clusterResourcesOutput.Ingress = ingress
-	clusterResourcesOutput.IngressErrors, err = marshalIndent(ingressErrors)
+	clusterResourcesOutput.IngressErrors, err = marshalNonNil(ingressErrors)
 	if err != nil {
 		return err
 	}
@@ -93,7 +93,7 @@ func ClusterResources(redact bool) error {
 	// storage classes
 	storageClasses, storageErrors := storageClasses(client)
 	clusterResourcesOutput.StorageClasses = storageClasses
-	clusterResourcesOutput.StorageErrors, err = marshalIndent(storageErrors)
+	clusterResourcesOutput.StorageErrors, err = marshalNonNil(storageErrors)
 	if err != nil {
 		return err
 	}
@@ -105,7 +105,7 @@ func ClusterResources(redact bool) error {
 	}
 	customResourceDefinitions, crdErrors := crds(crdClient)
 	clusterResourcesOutput.CustomResourceDefinitions = customResourceDefinitions
-	clusterResourcesOutput.CustomResourceDefinitionsErrors, err = marshalIndent(crdErrors)
+	clusterResourcesOutput.CustomResourceDefinitionsErrors, err = marshalNonNil(crdErrors)
 	if err != nil {
 		return err
 	}
@@ -113,7 +113,7 @@ func ClusterResources(redact bool) error {
 	// imagepullsecrets
 	imagePullSecrets, pullSecretsErrors := imagePullSecrets(client, namespaceNames)
 	clusterResourcesOutput.ImagePullSecrets = imagePullSecrets
-	clusterResourcesOutput.ImagePullSecretsErrors, err = marshalIndent(pullSecretsErrors)
+	clusterResourcesOutput.ImagePullSecretsErrors, err = marshalNonNil(pullSecretsErrors)
 	if err != nil {
 		return err
 	}
@@ -141,7 +141,7 @@ func namespaces(client *kubernetes.Clientset) ([]byte, *corev1.NamespaceList, []
 		return nil, nil, []string{err.Error()}
 	}
 
-	b, err := marshalIndent(namespaces.Items)
+	b, err := json.MarshalIndent(namespaces.Items, "", "  ")
 	if err != nil {
 		return nil, nil, []string{err.Error()}
 	}
@@ -160,7 +160,7 @@ func pods(client *kubernetes.Clientset, namespaces []string) (map[string][]byte,
 			continue
 		}
 
-		b, err := marshalIndent(pods.Items)
+		b, err := json.MarshalIndent(pods.Items, "", "  ")
 		if err != nil {
 			errorsByNamespace[namespace] = err.Error()
 			continue

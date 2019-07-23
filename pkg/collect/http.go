@@ -48,7 +48,7 @@ func HTTP(httpCollector *troubleshootv1beta1.HTTP, redact bool) error {
 
 	httpOutput := &HTTPOutput{
 		Response: map[string][]byte{
-			httpCollector.Name + ".json": output,
+			httpCollector.CollectorName + ".json": output,
 		},
 	}
 

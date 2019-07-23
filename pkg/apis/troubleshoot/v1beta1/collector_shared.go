@@ -1,5 +1,9 @@
 package v1beta1
 
+type CollectorMeta struct {
+	CollectorName string `json:"collectorName,omitempty" yaml:"collectorName,omitempty"`
+}
+
 type ClusterInfo struct {
 }
 
@@ -7,10 +11,11 @@ type ClusterResources struct {
 }
 
 type Secret struct {
-	Name         string `json:"name" yaml:"name"`
-	Namespace    string `json:"namespace,omitempty" yaml:"namespace,omitempty"`
-	Key          string `json:"key,omitempty" yaml:"key,omitempty"`
-	IncludeValue bool   `json:"includeValue,omitempty" yaml:"includeValue,omitempty"`
+	CollectorMeta `json:",inline" yaml:",inline"`
+	Name          string `json:"name" yaml:"name"`
+	Namespace     string `json:"namespace,omitempty" yaml:"namespace,omitempty"`
+	Key           string `json:"key,omitempty" yaml:"key,omitempty"`
+	IncludeValue  bool   `json:"includeValue,omitempty" yaml:"includeValue,omitempty"`
 }
 
 type LogLimits struct {
@@ -19,13 +24,14 @@ type LogLimits struct {
 }
 
 type Logs struct {
-	Selector  []string   `json:"selector" yaml:"selector"`
-	Namespace string     `json:"namespace,omitempty" yaml:"namespace,omitempty"`
-	Limits    *LogLimits `json:"limits,omitempty" yaml:"omitempty"`
+	CollectorMeta `json:",inline" yaml:",inline"`
+	Selector      []string   `json:"selector" yaml:"selector"`
+	Namespace     string     `json:"namespace,omitempty" yaml:"namespace,omitempty"`
+	Limits        *LogLimits `json:"limits,omitempty" yaml:"omitempty"`
 }
 
 type Run struct {
-	Name            string   `json:"name" yaml:"name"`
+	CollectorMeta   `json:",inline" yaml:",inline"`
 	Namespace       string   `json:"namespace" yaml:"namespace"`
 	Image           string   `json:"image" yaml:"image"`
 	Command         []string `json:"command,omitempty" yaml:"command,omitempty"`
@@ -35,7 +41,7 @@ type Run struct {
 }
 
 type Exec struct {
-	Name          string   `json:"name" yaml:"name"`
+	CollectorMeta `json:",inline" yaml:",inline"`
 	Selector      []string `json:"selector" yaml:"selector"`
 	Namespace     string   `json:"namespace" yaml:"namespace"`
 	ContainerName string   `json:"containerName,omitempty" yaml:"containerName,omitempty"`
@@ -45,6 +51,7 @@ type Exec struct {
 }
 
 type Copy struct {
+	CollectorMeta `json:",inline" yaml:",inline"`
 	Selector      []string `json:"selector" yaml:"selector"`
 	Namespace     string   `json:"namespace" yaml:"namespace"`
 	ContainerPath string   `json:"containerPath" yaml:"containerPath"`
@@ -52,10 +59,10 @@ type Copy struct {
 }
 
 type HTTP struct {
-	Name string `json:"name" yaml:"name"`
-	Get  *Get   `json:"get,omitempty" yaml:"get,omitempty"`
-	Post *Post  `json:"post,omitempty" yaml:"post,omitempty"`
-	Put  *Put   `json:"put,omitempty" yaml:"put,omitempty"`
+	CollectorMeta `json:",inline" yaml:",inline"`
+	Get           *Get  `json:"get,omitempty" yaml:"get,omitempty"`
+	Post          *Post `json:"post,omitempty" yaml:"post,omitempty"`
+	Put           *Put  `json:"put,omitempty" yaml:"put,omitempty"`
 }
 
 type Get struct {
