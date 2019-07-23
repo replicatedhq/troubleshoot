@@ -88,6 +88,17 @@ func runCollectors(v *viper.Viper, collector troubleshootv1beta1.Collector) (str
 	}
 	restClient := clientset.CoreV1().RESTClient()
 
+	serviceAccountName := v.GetString("serviceaccount")
+	if serviceAccountName == "" {
+		generatedServiceAccountName, err := createServiceAccount(collector, v.GetString("namespace"), clientset)
+		if err != nil {
+			return "", err
+		}
+		defer removeServiceAccount(generatedServiceAccountName, v.GetString("namespace"), clientset)
+
+		serviceAccountName = generatedServiceAccountName
+	}
+
 	// deploy an object that "owns" everything to aid in cleanup
 	owner := corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
@@ -126,7 +137,7 @@ func runCollectors(v *viper.Viper, collector troubleshootv1beta1.Collector) (str
 	if err != nil {
 		return "", err
 	}
-	// defer os.RemoveAll(bundlePath)
+	defer os.RemoveAll(bundlePath)
 
 	resyncPeriod := time.Second
 	ctx := context.Background()
@@ -155,6 +166,11 @@ func runCollectors(v *viper.Viper, collector troubleshootv1beta1.Collector) (str
 				}
 
 				if oldPod.Status.Phase == newPod.Status.Phase {
+					return
+				}
+
+				if newPod.Status.Phase == corev1.PodFailed {
+					podsDeleted = append(podsDeleted, newPod)
 					return
 				}
 
@@ -206,7 +222,8 @@ func runCollectors(v *viper.Viper, collector troubleshootv1beta1.Collector) (str
 	s := runtime.NewScheme()
 	s.AddKnownTypes(schema.GroupVersion{Group: "", Version: "v1"}, &corev1.ConfigMap{})
 	for _, collect := range desiredCollectors {
-		_, pod, err := collectrunner.CreateCollector(client, s, &owner, collector.Name, v.GetString("namespace"), "troubleshoot", collect, v.GetString("image"), v.GetString("pullpolicy"))
+		fmt.Printf("creating collector\n")
+		_, pod, err := collectrunner.CreateCollector(client, s, &owner, collector.Name, v.GetString("namespace"), serviceAccountName, "troubleshoot", collect, v.GetString("image"), v.GetString("pullpolicy"))
 		if err != nil {
 			return "", err
 		}

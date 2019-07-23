@@ -23,8 +23,6 @@ builds:
   - id: preflight
     goos:
       - linux
-      - windows
-      - darwin
     goarch:
       - amd64
     env:
@@ -41,8 +39,6 @@ builds:
   - id: troubleshoot
     goos:
       - linux
-      - windows
-      - darwin
     goarch:
       - amd64
     env:

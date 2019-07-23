@@ -15,13 +15,13 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
-func CreateCollector(client client.Client, scheme *runtime.Scheme, ownerRef metav1.Object, jobName string, jobNamespace string, jobType string, collect *troubleshootv1beta1.Collect, image string, pullPolicy string) (*corev1.ConfigMap, *corev1.Pod, error) {
+func CreateCollector(client client.Client, scheme *runtime.Scheme, ownerRef metav1.Object, jobName string, jobNamespace string, serviceAccountName string, jobType string, collect *troubleshootv1beta1.Collect, image string, pullPolicy string) (*corev1.ConfigMap, *corev1.Pod, error) {
 	configMap, err := createCollectorSpecConfigMap(client, scheme, ownerRef, jobName, jobNamespace, collect)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	pod, err := createCollectorPod(client, scheme, ownerRef, jobName, jobNamespace, jobType, collect, configMap, image, pullPolicy)
+	pod, err := createCollectorPod(client, scheme, ownerRef, jobName, jobNamespace, serviceAccountName, jobType, collect, configMap, image, pullPolicy)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -75,8 +75,12 @@ func createCollectorSpecConfigMap(client client.Client, scheme *runtime.Scheme, 
 	return &configMap, nil
 }
 
-func createCollectorPod(client client.Client, scheme *runtime.Scheme, ownerRef metav1.Object, jobName string, jobNamespace string, jobType string, collect *troubleshootv1beta1.Collect, configMap *corev1.ConfigMap, image string, pullPolicy string) (*corev1.Pod, error) {
+func createCollectorPod(client client.Client, scheme *runtime.Scheme, ownerRef metav1.Object, jobName string, jobNamespace string, serviceAccountName string, jobType string, collect *troubleshootv1beta1.Collect, configMap *corev1.ConfigMap, image string, pullPolicy string) (*corev1.Pod, error) {
 	name := fmt.Sprintf("%s-%s", jobName, DeterministicIDForCollector(collect))
+
+	if serviceAccountName == "" {
+		serviceAccountName = "default"
+	}
 
 	namespacedName := types.NamespacedName{
 		Name:      name,
@@ -115,7 +119,8 @@ func createCollectorPod(client client.Client, scheme *runtime.Scheme, ownerRef m
 			Kind:       "Pod",
 		},
 		Spec: corev1.PodSpec{
-			RestartPolicy: corev1.RestartPolicyNever,
+			ServiceAccountName: serviceAccountName,
+			RestartPolicy:      corev1.RestartPolicyNever,
 			Containers: []corev1.Container{
 				{
 					Image:           imageName,
