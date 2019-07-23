@@ -20,6 +20,7 @@ type FoundSecret struct {
 }
 type SecretOutput struct {
 	FoundSecret map[string][]byte `json:"secrets/,omitempty"`
+	Errors      map[string][]byte `json:"secrets-errors/,omitempty"`
 }
 
 func Secret(secretCollector *troubleshootv1beta1.Secret, redact bool) error {
@@ -33,21 +34,26 @@ func Secret(secretCollector *troubleshootv1beta1.Secret, redact bool) error {
 		return err
 	}
 
+	secretOutput := &SecretOutput{
+		FoundSecret: make(map[string][]byte),
+		Errors:      make(map[string][]byte),
+	}
+
 	secret, encoded, err := secret(client, secretCollector)
 	if err != nil {
-		return err
-	}
-
-	secretOutput := &SecretOutput{
-		FoundSecret: map[string][]byte{
-			fmt.Sprintf("%s/%s.json", secret.Namespace, secret.Name): encoded,
-		},
-	}
-
-	if redact {
-		secretOutput, err = secretOutput.Redact()
+		errorBytes, err := marshalNonNil([]string{err.Error()})
 		if err != nil {
 			return err
+		}
+		secretOutput.Errors[fmt.Sprintf("%s/%s.json", secret.Namespace, secret.Name)] = errorBytes
+	}
+	if encoded != nil {
+		secretOutput.FoundSecret[fmt.Sprintf("%s/%s.json", secret.Namespace, secret.Name)] = encoded
+		if redact {
+			secretOutput, err = secretOutput.Redact()
+			if err != nil {
+				return err
+			}
 		}
 	}
 
@@ -70,9 +76,9 @@ func secret(client *kubernetes.Clientset, secretCollector *troubleshootv1beta1.S
 			SecretExists: false,
 		}
 
-		b, err := json.MarshalIndent(missingSecret, "", "  ")
-		if err != nil {
-			return nil, nil, err
+		b, marshalErr := json.MarshalIndent(missingSecret, "", "  ")
+		if marshalErr != nil {
+			return nil, nil, marshalErr
 		}
 
 		return &missingSecret, b, err
@@ -108,5 +114,6 @@ func (s *SecretOutput) Redact() (*SecretOutput, error) {
 
 	return &SecretOutput{
 		FoundSecret: foundSecret,
+		Errors:      s.Errors,
 	}, nil
 }

@@ -17,14 +17,14 @@ spec:
   #       maxAge: 30d
   #       maxLines: 10000
   # - run:
-  #     name: ping-google
+  #     collectorName: ping-google
   #     namespace: default
   #     image: flungo/netutils
   #     command: ["ping"]
   #     args: ["www.google.com"]
   #     timeout: 5s
   - exec:
-      name: mysql-vars
+      collectorName: mysql-vars
       selector:
         - app=mysql
       namespace: default
@@ -32,7 +32,7 @@ spec:
       args: ["-ureplicated", "-ppassword", "-e", "show processlist"]
       timeout: 60m
   - exec:
-      name: hosts
+      collectorName: hosts
       selector:
         - app=graphql-api
       namespace: default
@@ -40,7 +40,7 @@ spec:
       args: ["/etc/hosts"]
       timeout: 60m
   - exec:
-      name: broken
+      collectorName: broken
       selector:
         - app=graphql-api
       namespace: default
@@ -53,26 +53,26 @@ spec:
   #     namespace: default
   #     containerPath: /etc/hosts
   - http:
-      name: test-get
+      collectorName: test-get
       get:
         url: https://api.staging.replicated.com/market/v1/echo/ip
         insecureSkipVerify: false
         headers: {}
   - http:
-      name: test-post
+      collectorName: test-post
       post:
         url: http://httpbin.org/headers
         insecureSkipVerify: false
         headers:
           X-Custom-Header: "post-request"
   - http:
-      name: test-put
+      collectorName: test-put
       put:
         url: http://httpbin.org/anything
         insecureSkipVerify: false
         headers:
           X-Custom-Header: "put-request"
   - http:
-      name: test-broken
+      collectorName: test-broken
       put:
         url: ""

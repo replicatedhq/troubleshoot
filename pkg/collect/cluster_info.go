@@ -16,6 +16,7 @@ type ClusterVersion struct {
 
 type ClusterInfoOutput struct {
 	ClusterVersion []byte `json:"cluster-info/cluster_version.json,omitempty"`
+	Errors         []byte `json:"cluster-info/errors.json,omitempty"`
 }
 
 func ClusterInfo() error {
@@ -32,11 +33,12 @@ func ClusterInfo() error {
 	clusterInfoOutput := ClusterInfoOutput{}
 
 	// cluster version
-	clusterVersion, err := clusterVersion(client)
+	clusterVersion, clusterErrors := clusterVersion(client)
+	clusterInfoOutput.ClusterVersion = clusterVersion
+	clusterInfoOutput.Errors, err = marshalNonNil(clusterErrors)
 	if err != nil {
 		return err
 	}
-	clusterInfoOutput.ClusterVersion = clusterVersion
 
 	b, err := json.MarshalIndent(clusterInfoOutput, "", "  ")
 	if err != nil {
@@ -48,10 +50,10 @@ func ClusterInfo() error {
 	return nil
 }
 
-func clusterVersion(client *kubernetes.Clientset) ([]byte, error) {
+func clusterVersion(client *kubernetes.Clientset) ([]byte, []string) {
 	k8sVersion, err := client.ServerVersion()
 	if err != nil {
-		return nil, err
+		return nil, []string{err.Error()}
 	}
 
 	clusterVersion := ClusterVersion{
@@ -61,7 +63,7 @@ func clusterVersion(client *kubernetes.Clientset) ([]byte, error) {
 
 	b, err := json.MarshalIndent(clusterVersion, "", "  ")
 	if err != nil {
-		return nil, err
+		return nil, []string{err.Error()}
 	}
 	return b, nil
 }

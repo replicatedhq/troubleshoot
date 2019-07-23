@@ -185,6 +185,12 @@ func runCollectors(v *viper.Viper, collector troubleshootv1beta1.Collector) (str
 					return
 				}
 
+				// empty dir name will make tar fail
+				if collectorDir == "" {
+					fmt.Printf("pod %s did not return any files\n", newPod.Name)
+					return
+				}
+
 				collectorDirs = append(collectorDirs, collectorDir)
 
 				if err := client.Delete(context.Background(), newPod); err != nil {

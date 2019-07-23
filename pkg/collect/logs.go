@@ -17,6 +17,7 @@ import (
 
 type LogsOutput struct {
 	PodLogs map[string][]byte `json:"logs/,omitempty"`
+	Errors  map[string][]byte `json:"logs-errors/,omitempty"`
 }
 
 func Logs(logsCollector *troubleshootv1beta1.Logs, redact bool) error {
@@ -30,29 +31,41 @@ func Logs(logsCollector *troubleshootv1beta1.Logs, redact bool) error {
 		return err
 	}
 
-	pods, err := listPodsInSelectors(client, logsCollector.Namespace, logsCollector.Selector)
-	if err != nil {
-		return err
-	}
-
 	logsOutput := &LogsOutput{
 		PodLogs: make(map[string][]byte),
 	}
-	for _, pod := range pods {
-		podLogs, err := getPodLogs(client, pod, logsCollector.Limits, false)
+
+	pods, podsErrors := listPodsInSelectors(client, logsCollector.Namespace, logsCollector.Selector)
+	if len(podsErrors) > 0 {
+		errorBytes, err := marshalNonNil(podsErrors)
 		if err != nil {
 			return err
 		}
-
-		for k, v := range podLogs {
-			logsOutput.PodLogs[k] = v
-		}
+		logsOutput.Errors[getLogsErrosFileName(logsCollector)] = errorBytes
 	}
 
-	if redact {
-		logsOutput, err = logsOutput.Redact()
-		if err != nil {
-			return err
+	if len(pods) > 0 {
+		for _, pod := range pods {
+			podLogs, err := getPodLogs(client, pod, logsCollector.Limits, false)
+			if err != nil {
+				key := fmt.Sprintf("%s/%s-errors.json", pod.Namespace, pod.Name)
+				logsOutput.Errors[key], err = marshalNonNil([]string{err.Error()})
+				if err != nil {
+					return err
+				}
+				continue
+			}
+
+			for k, v := range podLogs {
+				logsOutput.PodLogs[k] = v
+			}
+		}
+
+		if redact {
+			logsOutput, err = logsOutput.Redact()
+			if err != nil {
+				return err
+			}
 		}
 	}
 
@@ -66,7 +79,7 @@ func Logs(logsCollector *troubleshootv1beta1.Logs, redact bool) error {
 	return nil
 }
 
-func listPodsInSelectors(client *kubernetes.Clientset, namespace string, selector []string) ([]corev1.Pod, error) {
+func listPodsInSelectors(client *kubernetes.Clientset, namespace string, selector []string) ([]corev1.Pod, []string) {
 	serializedLabelSelector := strings.Join(selector, ",")
 
 	listOptions := metav1.ListOptions{
@@ -75,7 +88,7 @@ func listPodsInSelectors(client *kubernetes.Clientset, namespace string, selecto
 
 	pods, err := client.CoreV1().Pods(namespace).List(listOptions)
 	if err != nil {
-		return nil, err
+		return nil, []string{err.Error()}
 	}
 
 	return pods.Items, nil
@@ -132,5 +145,14 @@ func (l *LogsOutput) Redact() (*LogsOutput, error) {
 
 	return &LogsOutput{
 		PodLogs: podLogs,
+		Errors:  l.Errors,
 	}, nil
+}
+
+func getLogsErrosFileName(logsCollector *troubleshootv1beta1.Logs) string {
+	if len(logsCollector.CollectorName) > 0 {
+		return fmt.Sprintf("%s.json", logsCollector.CollectorName)
+	}
+	// TODO: random part
+	return "errors.json"
 }

@@ -124,7 +124,7 @@ func runPod(client *kubernetes.Clientset, runCollector *troubleshootv1beta1.Run)
 
 	pod := corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      runCollector.Name,
+			Name:      runCollector.CollectorName,
 			Namespace: runCollector.Namespace,
 			Labels:    podLabels,
 		},

@@ -3,6 +3,7 @@ package collect
 import (
 	"encoding/json"
 	"fmt"
+	"reflect"
 	"regexp"
 	"strings"
 
@@ -29,11 +30,11 @@ func DeterministicIDForCollector(collector *troubleshootv1beta1.Collect) string 
 	}
 
 	if collector.Run != nil {
-		unsafeID = fmt.Sprintf("run-%s", strings.ToLower(collector.Run.Name))
+		unsafeID = fmt.Sprintf("run-%s", strings.ToLower(collector.Run.CollectorName))
 	}
 
 	if collector.Exec != nil {
-		unsafeID = fmt.Sprintf("exec-%s", strings.ToLower(collector.Exec.Name))
+		unsafeID = fmt.Sprintf("exec-%s", strings.ToLower(collector.Exec.CollectorName))
 	}
 
 	if collector.Copy != nil {
@@ -41,7 +42,7 @@ func DeterministicIDForCollector(collector *troubleshootv1beta1.Collect) string 
 	}
 
 	if collector.HTTP != nil {
-		unsafeID = fmt.Sprintf("http-%s", strings.ToLower(collector.HTTP.Name))
+		unsafeID = fmt.Sprintf("http-%s", strings.ToLower(collector.HTTP.CollectorName))
 	}
 
 	return rfc1035(unsafeID)
@@ -66,6 +67,18 @@ func rfc1035(in string) string {
 	return out
 }
 
-func marshalIndent(obj interface{}) ([]byte, error) {
+func marshalNonNil(obj interface{}) ([]byte, error) {
+	if obj == nil {
+		return nil, nil
+	}
+
+	val := reflect.ValueOf(obj)
+	switch val.Kind() {
+	case reflect.Array, reflect.Slice, reflect.Map:
+		if val.Len() == 0 {
+			return nil, nil
+		}
+	}
+
 	return json.MarshalIndent(obj, "", "  ")
 }

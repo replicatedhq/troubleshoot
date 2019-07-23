@@ -17,12 +17,7 @@ import (
 
 type ExecOutput struct {
 	Results map[string][]byte `json:"exec/,omitempty"`
-}
-
-type execResult struct {
-	Stdout []byte `json:"-"`
-	Stderr []byte `json:"-"`
-	Error  error  `json:"error,omitempty"`
+	Errors  map[string][]byte `json:"exec-errors/,omitempty"`
 }
 
 func Exec(execCollector *troubleshootv1beta1.Exec, redact bool) error {
@@ -59,42 +54,40 @@ func execWithoutTimeout(execCollector *troubleshootv1beta1.Exec, redact bool) er
 		return err
 	}
 
-	pods, err := listPodsInSelectors(client, execCollector.Namespace, execCollector.Selector)
-	if err != nil {
-		return err
-	}
-
 	execOutput := &ExecOutput{
 		Results: make(map[string][]byte),
+		Errors:  make(map[string][]byte),
 	}
 
-	for _, pod := range pods {
-		output, err := getExecOutputs(client, pod, execCollector, redact)
+	pods, podsErrors := listPodsInSelectors(client, execCollector.Namespace, execCollector.Selector)
+	if len(podsErrors) > 0 {
+		errorBytes, err := marshalNonNil(podsErrors)
 		if err != nil {
 			return err
 		}
-
-		execOutput.Results[fmt.Sprintf("%s/%s/%s-stdout.txt", pod.Namespace, pod.Name, execCollector.Name)] = output.Stdout
-		execOutput.Results[fmt.Sprintf("%s/%s/%s-stderr.txt", pod.Namespace, pod.Name, execCollector.Name)] = output.Stderr
-		if output.Error == nil {
-			continue
-		}
-
-		errOutput := map[string]string{
-			"error": output.Error.Error(),
-		}
-		b, err := json.MarshalIndent(errOutput, "", "  ")
-		if err != nil {
-			return err
-		}
-
-		execOutput.Results[fmt.Sprintf("%s/%s/%s.json", pod.Namespace, pod.Name, execCollector.Name)] = b
+		execOutput.Errors[getExecErrosFileName(execCollector)] = errorBytes
 	}
 
-	if redact {
-		execOutput, err = execOutput.Redact()
-		if err != nil {
-			return err
+	if len(pods) > 0 {
+		for _, pod := range pods {
+			stdout, stderr, execErrors := getExecOutputs(client, pod, execCollector, redact)
+			execOutput.Results[fmt.Sprintf("%s/%s/%s-stdout.txt", pod.Namespace, pod.Name, execCollector.CollectorName)] = stdout
+			execOutput.Results[fmt.Sprintf("%s/%s/%s-stderr.txt", pod.Namespace, pod.Name, execCollector.CollectorName)] = stderr
+			if len(execErrors) > 0 {
+				errorBytes, err := marshalNonNil(execErrors)
+				if err != nil {
+					return err
+				}
+				execOutput.Results[fmt.Sprintf("%s/%s/%s-errors.json", pod.Namespace, pod.Name, execCollector.CollectorName)] = errorBytes
+				continue
+			}
+		}
+
+		if redact {
+			execOutput, err = execOutput.Redact()
+			if err != nil {
+				return err
+			}
 		}
 	}
 
@@ -108,10 +101,10 @@ func execWithoutTimeout(execCollector *troubleshootv1beta1.Exec, redact bool) er
 	return nil
 }
 
-func getExecOutputs(client *kubernetes.Clientset, pod corev1.Pod, execCollector *troubleshootv1beta1.Exec, doRedact bool) (*execResult, error) {
+func getExecOutputs(client *kubernetes.Clientset, pod corev1.Pod, execCollector *troubleshootv1beta1.Exec, doRedact bool) ([]byte, []byte, []string) {
 	cfg, err := config.GetConfig()
 	if err != nil {
-		return nil, err
+		return nil, nil, []string{err.Error()}
 	}
 
 	container := pod.Spec.Containers[0].Name
@@ -122,7 +115,7 @@ func getExecOutputs(client *kubernetes.Clientset, pod corev1.Pod, execCollector 
 	req := client.CoreV1().RESTClient().Post().Resource("pods").Name(pod.Name).Namespace(pod.Namespace).SubResource("exec")
 	scheme := runtime.NewScheme()
 	if err := corev1.AddToScheme(scheme); err != nil {
-		return nil, err
+		return nil, nil, []string{err.Error()}
 	}
 
 	parameterCodec := runtime.NewParameterCodec(scheme)
@@ -137,7 +130,7 @@ func getExecOutputs(client *kubernetes.Clientset, pod corev1.Pod, execCollector 
 
 	exec, err := remotecommand.NewSPDYExecutor(cfg, "POST", req.URL())
 	if err != nil {
-		return nil, err
+		return nil, nil, []string{err.Error()}
 	}
 
 	stdout := new(bytes.Buffer)
@@ -150,11 +143,11 @@ func getExecOutputs(client *kubernetes.Clientset, pod corev1.Pod, execCollector 
 		Tty:    false,
 	})
 
-	return &execResult{
-		Stdout: stdout.Bytes(),
-		Stderr: stderr.Bytes(),
-		Error:  err,
-	}, nil
+	if err != nil {
+		return stdout.Bytes(), stderr.Bytes(), []string{err.Error()}
+	}
+
+	return stdout.Bytes(), stderr.Bytes(), nil
 }
 
 func (r *ExecOutput) Redact() (*ExecOutput, error) {
@@ -165,5 +158,14 @@ func (r *ExecOutput) Redact() (*ExecOutput, error) {
 
 	return &ExecOutput{
 		Results: results,
+		Errors:  r.Errors,
 	}, nil
+}
+
+func getExecErrosFileName(execCollector *troubleshootv1beta1.Exec) string {
+	if len(execCollector.CollectorName) > 0 {
+		return fmt.Sprintf("%s.json", execCollector.CollectorName)
+	}
+	// TODO: random part
+	return "errors.json"
 }

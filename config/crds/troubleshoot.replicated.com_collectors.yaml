@@ -398,6 +398,8 @@ spec:
                   type: object
                 copy:
                   properties:
+                    collectorName:
+                      type: string
                     containerName:
                       type: string
                     containerPath:
@@ -419,13 +421,13 @@ spec:
                       items:
                         type: string
                       type: array
+                    collectorName:
+                      type: string
                     command:
                       items:
                         type: string
                       type: array
                     containerName:
-                      type: string
-                    name:
                       type: string
                     namespace:
                       type: string
@@ -436,12 +438,13 @@ spec:
                     timeout:
                       type: string
                   required:
-                  - name
                   - selector
                   - namespace
                   type: object
                 http:
                   properties:
+                    collectorName:
+                      type: string
                     get:
                       properties:
                         headers:
@@ -455,8 +458,6 @@ spec:
                       required:
                       - url
                       type: object
-                    name:
-                      type: string
                     post:
                       properties:
                         body:
@@ -487,11 +488,11 @@ spec:
                       required:
                       - url
                       type: object
-                  required:
-                  - name
                   type: object
                 logs:
                   properties:
+                    collectorName:
+                      type: string
                     limits:
                       properties:
                         maxAge:
@@ -515,6 +516,8 @@ spec:
                       items:
                         type: string
                       type: array
+                    collectorName:
+                      type: string
                     command:
                       items:
                         type: string
@@ -523,19 +526,18 @@ spec:
                       type: string
                     imagePullPolicy:
                       type: string
-                    name:
-                      type: string
                     namespace:
                       type: string
                     timeout:
                       type: string
                   required:
-                  - name
                   - namespace
                   - image
                   type: object
                 secret:
                   properties:
+                    collectorName:
+                      type: string
                     includeValue:
                       type: boolean
                     key:
