@@ -89,7 +89,9 @@ func createCollectorPod(client client.Client, scheme *runtime.Scheme, ownerRef m
 
 	found := &corev1.Pod{}
 	err := client.Get(context.Background(), namespacedName, found)
-	if err == nil || !kuberneteserrors.IsNotFound(err) {
+	if err == nil {
+		return nil, fmt.Errorf("pod %q already exists", name)
+	} else if !kuberneteserrors.IsNotFound(err) {
 		return nil, err
 	}
 
