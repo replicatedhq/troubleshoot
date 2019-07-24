@@ -27,6 +27,11 @@ func receiveSupportBundle(collectorJobNamespace string, collectorJobName string)
 	}
 	defer os.RemoveAll(bundlePath)
 
+	versionFilename, err := writeVersionFile(bundlePath)
+	if err != nil {
+		return err
+	}
+
 	receivedCollectors := []string{}
 	for {
 		job, err := troubleshootClient.CollectorJobs(collectorJobNamespace).Get(collectorJobName, metav1.GetOptions{})
@@ -117,7 +122,10 @@ func receiveSupportBundle(collectorJobNamespace string, collectorJobName string)
 				},
 			}
 
-			paths := make([]string, 0, 0)
+			// version file should be first in tar archive for quick extraction
+			paths := []string{
+				versionFilename,
+			}
 			for _, id := range receivedCollectors {
 				paths = append(paths, filepath.Join(bundlePath, id))
 			}

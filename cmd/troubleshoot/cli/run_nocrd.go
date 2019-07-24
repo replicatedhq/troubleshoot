@@ -144,6 +144,11 @@ func runCollectors(v *viper.Viper, collector troubleshootv1beta1.Collector) (str
 	}
 	defer os.RemoveAll(bundlePath)
 
+	versionFilename, err := writeVersionFile(bundlePath)
+	if err != nil {
+		return "", err
+	}
+
 	resyncPeriod := time.Second
 	ctx := context.Background()
 	watchList := cache.NewListWatchFromClient(restClient, "pods", "", fields.Everything())
@@ -257,7 +262,10 @@ func runCollectors(v *viper.Viper, collector troubleshootv1beta1.Collector) (str
 		},
 	}
 
-	paths := make([]string, 0, 0)
+	// version file should be first in tar archive for quick extraction
+	paths := []string{
+		versionFilename,
+	}
 	for _, collectorDir := range collectorDirs {
 		paths = append(paths, collectorDir)
 	}
