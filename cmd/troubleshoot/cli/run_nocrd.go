@@ -43,7 +43,12 @@ func runTroubleshootNoCRD(v *viper.Viper, arg string) error {
 
 		collectorContent = string(b)
 	} else {
-		resp, err := http.Get(arg)
+		req, err := http.NewRequest("GET", arg, nil)
+		if err != nil {
+			return err
+		}
+		req.Header.Set("User-Agent", "Replicated_Troubleshoot/v1beta1")
+		resp, err := http.DefaultClient.Do(req)
 		if err != nil {
 			return err
 		}
