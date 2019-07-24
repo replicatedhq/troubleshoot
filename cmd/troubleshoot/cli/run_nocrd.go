@@ -210,7 +210,7 @@ func runCollectors(v *viper.Viper, collector troubleshootv1beta1.Collector) (str
 				collectorDirs = append(collectorDirs, collectorDir)
 
 				if err := client.Delete(context.Background(), newPod); err != nil {
-					fmt.Println("delete pod")
+					fmt.Println("delete pod error", err)
 				}
 				podsDeleted = append(podsDeleted, newPod)
 			},
@@ -225,7 +225,8 @@ func runCollectors(v *viper.Viper, collector troubleshootv1beta1.Collector) (str
 		fmt.Printf("creating collector\n")
 		_, pod, err := collectrunner.CreateCollector(client, s, &owner, collector.Name, v.GetString("namespace"), serviceAccountName, "troubleshoot", collect, v.GetString("image"), v.GetString("pullpolicy"))
 		if err != nil {
-			return "", err
+			fmt.Printf("A collector pod cannot be created: %v\n", err)
+			continue
 		}
 		podsCreated = append(podsCreated, pod)
 	}
