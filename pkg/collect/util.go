@@ -30,11 +30,17 @@ func DeterministicIDForCollector(collector *troubleshootv1beta1.Collect) string 
 	}
 
 	if collector.Run != nil {
-		unsafeID = fmt.Sprintf("run-%s", strings.ToLower(collector.Run.CollectorName))
+		unsafeID = "run"
+		if collector.Run.CollectorName != "" {
+			unsafeID = fmt.Sprintf("%s-%s", unsafeID, strings.ToLower(collector.Run.CollectorName))
+		}
 	}
 
 	if collector.Exec != nil {
-		unsafeID = fmt.Sprintf("exec-%s", strings.ToLower(collector.Exec.CollectorName))
+		unsafeID = "exec"
+		if collector.Exec.CollectorName != "" {
+			unsafeID = fmt.Sprintf("%s-%s", unsafeID, strings.ToLower(collector.Exec.CollectorName))
+		}
 	}
 
 	if collector.Copy != nil {
@@ -42,7 +48,10 @@ func DeterministicIDForCollector(collector *troubleshootv1beta1.Collect) string 
 	}
 
 	if collector.HTTP != nil {
-		unsafeID = fmt.Sprintf("http-%s", strings.ToLower(collector.HTTP.CollectorName))
+		unsafeID = "http"
+		if collector.HTTP.CollectorName != "" {
+			unsafeID = fmt.Sprintf("%s-%s", unsafeID, strings.ToLower(collector.HTTP.CollectorName))
+		}
 	}
 
 	return rfc1035(unsafeID)

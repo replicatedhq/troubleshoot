@@ -126,6 +126,5 @@ func removeServiceAccount(name string, namespace string, clientset *kubernetes.C
 		return err
 	}
 
-
 	return nil
 }

@@ -222,7 +222,6 @@ func runCollectors(v *viper.Viper, collector troubleshootv1beta1.Collector) (str
 	s := runtime.NewScheme()
 	s.AddKnownTypes(schema.GroupVersion{Group: "", Version: "v1"}, &corev1.ConfigMap{})
 	for _, collect := range desiredCollectors {
-		fmt.Printf("creating collector\n")
 		_, pod, err := collectrunner.CreateCollector(client, s, &owner, collector.Name, v.GetString("namespace"), serviceAccountName, "troubleshoot", collect, v.GetString("image"), v.GetString("pullpolicy"))
 		if err != nil {
 			fmt.Printf("A collector pod cannot be created: %v\n", err)
