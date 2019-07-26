@@ -98,14 +98,14 @@ local-release:
 
 .PHONY: run-preflight
 run-preflight: preflight
-	./bin/preflight run \
+	./bin/preflight \
 		--image=localhost:32000/troubleshoot:alpha \
 		--pullpolicy=Always \
 		./config/samples/troubleshoot_v1beta1_preflight.yaml
 
 .PHONY: run-troubleshoot
 run-troubleshoot: troubleshoot
-	./bin/troubleshoot run \
+	./bin/troubleshoot \
 		--image=localhost:32000/troubleshoot:alpha \
 		--pullpolicy=Always \
 		./config/samples/troubleshoot_v1beta1_collector.yaml
