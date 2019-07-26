@@ -23,6 +23,8 @@ builds:
   - id: preflight
     goos:
       - linux
+      - darwin
+      - windows
     goarch:
       - amd64
     env:
@@ -39,6 +41,8 @@ builds:
   - id: troubleshoot
     goos:
       - linux
+      - darwin
+      - windows
     goarch:
       - amd64
     env:
@@ -69,9 +73,31 @@ builds:
     binary: manager
     hooks: {}
 archives:
-  - id: tar
+  - id: preflight
+    builds:
+      - preflight
     format: tar.gz
-    name_template: '{{ .Binary }}_{{.Version}}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{.Arm }}{{ end }}-alpha'
+    format_overrides:
+      - goos: windows
+        format: zip
+    name_template: '{{ .Binary }}_{{.Version}}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{.Arm }}{{ end }}-{{ .Major }}.{{ .Minor }}.{{ .Patch }}'
+    files:
+      - licence*
+      - LICENCE*
+      - license*
+      - LICENSE*
+      - readme*
+      - README*
+      - changelog*
+      - CHANGELOG*
+  - id: troubleshoot
+    builds:
+      - troubleshoot
+    format: tar.gz
+    format_overrides:
+      - goos: windows
+        format: zip
+    name_template: '{{ .Binary }}_{{.Version}}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{.Arm }}{{ end }}-{{ .Major }}.{{ .Minor }}.{{ .Patch }}'
     files:
       - licence*
       - LICENCE*
