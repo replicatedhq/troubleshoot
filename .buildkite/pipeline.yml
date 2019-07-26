@@ -35,3 +35,5 @@ steps:
           volumes:
             - "/var/run/docker.sock:/var/run/docker.sock"
             - "/var/lib/buildkite-agent/.docker/config.json:/home/builder/.docker/config.json"
+          environment:
+            - GITHUB_TOKEN_TROUBLESHOOT
