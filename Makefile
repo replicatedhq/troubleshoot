@@ -82,9 +82,8 @@ snapshot-release:
 	docker push replicated/troubleshoot-manager:alpha
 
 .PHONY: release
-release: export GITHUB_TOKEN=$(GITHUB_TOKEN_TROUBLESHOOT)
 release:
-	curl -sL https://git.io/goreleaser | bash -s -- --rm-dist --config deploy/.goreleaser.yml
+	curl -sL https://git.io/goreleaser | GITHUB_TOKEN=$$GITHUB_TOKEN_TROUBLESHOOT bash -s -- --rm-dist --config deploy/.goreleaser.yml
 
 .PHONY: local-release
 local-release:

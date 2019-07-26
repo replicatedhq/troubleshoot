@@ -84,20 +84,29 @@ archives:
 dockers:
   - dockerfile: ./deploy/Dockerfile.troubleshoot
     image_templates:
-      - "replicated/troubleshoot:alpha"
+      - "replicated/troubleshoot:latest"
+      - "replicated/troubleshoot:{{ .Major }}"
+      - "replicated/troubleshoot:{{ .Major }}.{{ .Minor }}"
+      - "replicated/troubleshoot:{{ .Major }}.{{ .Minor }}.{{ .Patch }}"
     binaries:
       - collector
       - troubleshoot
       - preflight
   - dockerfile: ./deploy/Dockerfile.troubleshoot
     image_templates:
-      - "replicated/preflight:alpha"
+      - "replicated/preflight:latest"
+      - "replicated/preflight:{{ .Major }}"
+      - "replicated/preflight:{{ .Major }}.{{ .Minor }}"
+      - "replicated/preflight:{{ .Major }}.{{ .Minor }}.{{ .Patch }}"
     binaries:
       - collector
       - troubleshoot
       - preflight
   - dockerfile: ./deploy/Dockerfile.manager
     image_templates:
-      - "replicated/troubleshoot-manager:alpha"
+      - "replicated/troubleshoot-manager:latest"
+      - "replicated/troubleshoot-manager:{{ .Major }}"
+      - "replicated/troubleshoot-manager:{{ .Major }}.{{ .Minor }}"
+      - "replicated/troubleshoot-manager:{{ .Major }}.{{ .Minor }}.{{ .Patch }}"
     binaries:
       - manager
