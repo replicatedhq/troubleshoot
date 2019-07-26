@@ -1,0 +1,41 @@
+apiVersion: troubleshoot.replicated.com/v1beta1
+kind: Preflight
+metadata:
+  name: check-kubernetes-version
+spec:
+  analyzers:
+    - clusterVersion:
+        outcomes:
+          - fail:
+              when: "< 1.14.0"
+              message: The application requires at Kubernetes 1.14.0 or later, and recommends 1.15.0.
+              uri: https://www.kubernetes.io
+          - warn:
+              when: "< 1.15.0"
+              message: Your cluster meets the minimum version of Kubernetes, but we recommend you update to 1.15.0 or later.
+              uri: https://kubernetes.io
+          - pass:
+              message: Your cluster meets the recommended and required versions of Kubernetes.
+    - customResourceDefinitionName:
+        customResourceDefinitionName: rook
+        outcomes:
+          - fail:
+              message: Rook is required for the application. Rook was not found in the cluster.
+          - pass:
+              message: Found a supported version of Rook installed and running in the cluster.
+    - imagePullSecret:
+        checkName: Registry credneitlas for Quay.io
+        registryName: quay.io
+        outcomes:
+          - fail:
+              message: Cannot pull from quay.io
+          - pass:
+              message: Found credentials to pull from quay.io
+    - storageClass:
+        checkName: Required storage classes
+        storageClassName: "expected-storage-class-name"
+        outcomes:
+          - fail:
+              message: The required storage class was not found in the cluster.
+          - pass:
+              message: The required storage class was found in the cluster.
