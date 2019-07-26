@@ -11,6 +11,7 @@ import (
 )
 
 func analyzeClusterVersion(analyzer *troubleshootv1beta1.ClusterVersion, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
+	// TODO: ++++++++
 	clusterInfo, err := getCollectedFileContents("cluster-info/cluster_version.json")
 	if err != nil {
 		return nil, err

@@ -3,17 +3,31 @@ module github.com/replicatedhq/troubleshoot
 go 1.12
 
 require (
+	github.com/Masterminds/goutils v1.1.0 // indirect
+	github.com/Masterminds/semver v1.4.2 // indirect
+	github.com/Masterminds/sprig v2.20.0+incompatible // indirect
+	github.com/andrewchambers/go-jqpipe v0.0.0-20180509223707-2d54cef8cd94 // indirect
 	github.com/blang/semver v3.5.1+incompatible
+	github.com/docker/distribution v2.7.1+incompatible // indirect
+	github.com/docker/docker v1.13.1 // indirect
+	github.com/docker/go-connections v0.4.0 // indirect
+	github.com/docker/go-units v0.4.0 // indirect
 	github.com/docker/spdystream v0.0.0-20181023171402-6480d4af844c // indirect
 	github.com/dsnet/compress v0.0.1 // indirect
 	github.com/gin-gonic/gin v1.4.0
 	github.com/gizak/termui/v3 v3.1.0
 	github.com/golang/snappy v0.0.1 // indirect
+	github.com/google/uuid v1.1.1 // indirect
+	github.com/hashicorp/go-multierror v1.0.0
+	github.com/huandu/xstrings v1.2.0 // indirect
 	github.com/manifoldco/promptui v0.3.2 // indirect
 	github.com/mholt/archiver v3.1.1+incompatible
 	github.com/nwaples/rardecode v1.0.0 // indirect
 	github.com/onsi/gomega v1.5.0
+	github.com/opencontainers/go-digest v1.0.0-rc1 // indirect
 	github.com/pierrec/lz4 v2.0.5+incompatible // indirect
+	github.com/pkg/errors v0.8.1
+	github.com/replicatedcom/support-bundle v0.27.1 // indirect
 	github.com/sergi/go-diff v1.0.0 // indirect
 	github.com/spf13/cobra v0.0.3
 	github.com/spf13/viper v1.4.0
