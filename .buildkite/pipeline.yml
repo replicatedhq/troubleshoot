@@ -26,7 +26,7 @@ steps:
 
   - label: release
     commands:
-      - if [ -z "$BUILDKITE_TAG" ]; then echo "Not a tag, not releasing"; else git tag -f "$BUILDKITE_TAG" && make release; fi
+      - if [ -z "$BUILDKITE_TAG" ]; then echo "Not a tag, not releasing"; else git tag -f "$BUILDKITE_TAG" && GITHUB_TOKEN=$GITHUB_TOKEN_TROUBLESHOOT make release; fi
     plugins:
       - docker#v3.2.0:
           always-pull: true
@@ -35,5 +35,3 @@ steps:
           volumes:
             - "/var/run/docker.sock:/var/run/docker.sock"
             - "/var/lib/buildkite-agent/.docker/config.json:/home/builder/.docker/config.json"
-          environment:
-            - GITHUB_TOKEN=$GITHUB_TOKEN_TROUBLESHOOT
