@@ -23,51 +23,9 @@ spec:
       command: ["ping"]
       args: ["www.google.com"]
       timeout: 5s
-  - exec:
-      collectorName: mysql-vars
-      selector:
-        - app=mysql
-      namespace: default
-      command: ["mysql"]
-      args: ["-ureplicated", "-ppassword", "-e", "show processlist"]
-      timeout: 60m
-  - exec:
-      collectorName: hosts
-      selector:
-        - app=graphql-api
-      namespace: default
-      command: ["cat"]
-      args: ["/etc/hosts"]
-      timeout: 60m
-  - exec:
-      collectorName: broken
-      selector:
-        - app=graphql-api
-      namespace: default
-      command: ["cat"]
-      args: ["/etc/hostdasddsda"]
-      timeout: 60m
   - http:
       collectorName: test-get
       get:
         url: https://api.staging.replicated.com/market/v1/echo/ip
         insecureSkipVerify: false
         headers: {}
-  - http:
-      collectorName: test-post
-      post:
-        url: http://httpbin.org/headers
-        insecureSkipVerify: false
-        headers:
-          X-Custom-Header: "post-request"
-  - http:
-      collectorName: test-put
-      put:
-        url: http://httpbin.org/anything
-        insecureSkipVerify: false
-        headers:
-          X-Custom-Header: "put-request"
-  - http:
-      collectorName: test-broken
-      put:
-        url: ""

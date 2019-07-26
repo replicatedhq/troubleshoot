@@ -8,7 +8,7 @@ Preflight checks are an easy-to-run set of conformance tests that can be written
 To run a sample preflight check from a sample application, [install the preflight kubectl plugin](https://help.replicated.com/docs/troubleshoot/kubernetes/preflight/running-as-kubectl-plugin/) and run:
 
 ```shell
-kubectl preflight https://git.io/preflight-checks
+kubectl preflight https://preflight.replicated.com
 ```
 
 For a full description of the supported preflight checks, visit the [docs](https://help.replicated.com/docs/troubleshoot/kubernetes/analysis/analysis-phase/).
@@ -19,5 +19,5 @@ A support bundle is an archive that's created in-cluster, by collecting logs, cl
 To collect a sample support bundle, [install the troubleshoot kubectl plugin](/docs/troubleshoot/kubernetes/troubleshoot/running-as-kubectl-plugin/) and run:
 
 ```shell
-kubectl troubleshoot https://git.io/support-bundle
+kubectl troubleshoot https://troubleshoot.replicated.com
 ```
