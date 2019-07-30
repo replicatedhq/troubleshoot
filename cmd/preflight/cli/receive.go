@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/replicatedhq/troubleshoot/pkg/logger"
 	kuberneteserrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -56,7 +57,7 @@ func receivePreflightResults(preflightJobNamespace string, preflightJobName stri
 				return err
 			}
 
-			fmt.Printf("%s\n", body)
+			logger.Printf("%s\n", body)
 			receivedPreflights = append(receivedPreflights, readyPreflight)
 		}
 

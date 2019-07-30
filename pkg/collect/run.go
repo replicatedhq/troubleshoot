@@ -7,6 +7,7 @@ import (
 	"time"
 
 	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
+	"github.com/replicatedhq/troubleshoot/pkg/logger"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -35,7 +36,7 @@ func Run(runCollector *troubleshootv1beta1.Run, redact bool) error {
 
 	defer func() {
 		if err := client.CoreV1().Pods(pod.Namespace).Delete(pod.Name, &metav1.DeleteOptions{}); err != nil {
-			fmt.Printf("Failed to delete pod %s: %v\n", pod.Name, err)
+			logger.Printf("Failed to delete pod %s: %v\n", pod.Name, err)
 		}
 	}()
 

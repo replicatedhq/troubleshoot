@@ -17,6 +17,7 @@ import (
 	analyzerunner "github.com/replicatedhq/troubleshoot/pkg/analyze"
 	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
 	collectrunner "github.com/replicatedhq/troubleshoot/pkg/collect"
+	"github.com/replicatedhq/troubleshoot/pkg/logger"
 	"github.com/spf13/viper"
 	"gopkg.in/yaml.v2"
 	corev1 "k8s.io/api/core/v1"
@@ -96,7 +97,7 @@ func runPreflightsNoCRD(v *viper.Viper, arg string) error {
 	for _, analyzer := range preflight.Spec.Analyzers {
 		analyzeResult, err := analyzerunner.Analyze(analyzer, getCollectedFileContents, getChildCollectedFileContents)
 		if err != nil {
-			fmt.Printf("an analyzer failed to run: %v\n", err)
+			logger.Printf("an analyzer failed to run: %v\n", err)
 			continue
 		}
 
@@ -110,7 +111,7 @@ func runPreflightsNoCRD(v *viper.Viper, arg string) error {
 		return showInteractiveResults(preflight.Name, analyzeResults)
 	}
 
-	fmt.Printf("only interactive results are supported\n")
+	logger.Printf("only interactive results are supported\n")
 	return nil
 }
 
@@ -230,7 +231,7 @@ func runCollectors(v *viper.Viper, preflight troubleshootv1beta1.Preflight) (map
 
 				collectedData, err := parseCollectorOutput(buf.String())
 				if err != nil {
-					fmt.Printf("parse collected data: %v\n", err)
+					logger.Printf("parse collected data: %v\n", err)
 					return
 				}
 				for k, v := range collectedData {

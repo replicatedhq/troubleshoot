@@ -18,6 +18,7 @@ require (
 	github.com/gizak/termui/v3 v3.1.0
 	github.com/golang/snappy v0.0.1 // indirect
 	github.com/google/uuid v1.1.1 // indirect
+	github.com/hashicorp/go-getter v1.3.0
 	github.com/hashicorp/go-multierror v1.0.0
 	github.com/huandu/xstrings v1.2.0 // indirect
 	github.com/manifoldco/promptui v0.3.2 // indirect
@@ -27,7 +28,6 @@ require (
 	github.com/opencontainers/go-digest v1.0.0-rc1 // indirect
 	github.com/pierrec/lz4 v2.0.5+incompatible // indirect
 	github.com/pkg/errors v0.8.1
-	github.com/sergi/go-diff v1.0.0 // indirect
 	github.com/spf13/cobra v0.0.3
 	github.com/spf13/viper v1.4.0
 	github.com/stretchr/testify v1.3.0

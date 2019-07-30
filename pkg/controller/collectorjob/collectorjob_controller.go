@@ -32,6 +32,7 @@ import (
 	troubleshootclientv1beta1 "github.com/replicatedhq/troubleshoot/pkg/client/troubleshootclientset/typed/troubleshoot/v1beta1"
 	collectrunner "github.com/replicatedhq/troubleshoot/pkg/collect"
 	"github.com/replicatedhq/troubleshoot/pkg/k8sutil"
+	"github.com/replicatedhq/troubleshoot/pkg/logger"
 	"gopkg.in/yaml.v2"
 	corev1 "k8s.io/api/core/v1"
 	kuberneteserrors "k8s.io/apimachinery/pkg/api/errors"
@@ -219,7 +220,7 @@ func (r *ReconcileCollectorJob) reconileOneCollectorJob(instance *troubleshootv1
 			// so, we can create a local port-foward to get back into the cluster.
 			stopCh := make(chan struct{}, 1)
 			if os.Getenv("TROUBLESHOOT_EXTERNAL_MANAGER") != "" {
-				fmt.Printf("setting up port forwarding because the manager is not running in the cluster\n")
+				logger.Printf("setting up port forwarding because the manager is not running in the cluster\n")
 
 				// this isn't likely to be very solid
 				r := rand.New(rand.NewSource(time.Now().UnixNano()))
@@ -257,7 +258,7 @@ func (r *ReconcileCollectorJob) reconileOneCollectorJob(instance *troubleshootv1
 			}
 
 			if os.Getenv("TROUBLESHOOT_EXTERNAL_MANAGER") != "" {
-				fmt.Printf("stopping port forwarding\n")
+				logger.Printf("stopping port forwarding\n")
 				close(stopCh)
 			}
 
