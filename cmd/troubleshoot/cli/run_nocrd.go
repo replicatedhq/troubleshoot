@@ -16,6 +16,7 @@ import (
 	"github.com/mholt/archiver"
 	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
 	collectrunner "github.com/replicatedhq/troubleshoot/pkg/collect"
+	"github.com/replicatedhq/troubleshoot/pkg/logger"
 	"github.com/spf13/viper"
 	"gopkg.in/yaml.v2"
 	corev1 "k8s.io/api/core/v1"
@@ -207,13 +208,13 @@ func runCollectors(v *viper.Viper, collector troubleshootv1beta1.Collector) (str
 
 				collectorDir, err := parseAndSaveCollectorOutput(buf.String(), bundlePath)
 				if err != nil {
-					fmt.Printf("parse collected data: %v\n", err)
+					logger.Printf("parse collected data: %v\n", err)
 					return
 				}
 
 				// empty dir name will make tar fail
 				if collectorDir == "" {
-					fmt.Printf("pod %s did not return any files\n", newPod.Name)
+					logger.Printf("pod %s did not return any files\n", newPod.Name)
 					return
 				}
 
@@ -234,7 +235,7 @@ func runCollectors(v *viper.Viper, collector troubleshootv1beta1.Collector) (str
 	for _, collect := range desiredCollectors {
 		_, pod, err := collectrunner.CreateCollector(client, s, &owner, collector.Name, v.GetString("namespace"), serviceAccountName, "troubleshoot", collect, v.GetString("image"), v.GetString("pullpolicy"))
 		if err != nil {
-			fmt.Printf("A collector pod cannot be created: %v\n", err)
+			logger.Printf("A collector pod cannot be created: %v\n", err)
 			continue
 		}
 		podsCreated = append(podsCreated, pod)

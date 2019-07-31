@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 
 	"github.com/mholt/archiver"
+	"github.com/replicatedhq/troubleshoot/pkg/logger"
 	kuberneteserrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -67,13 +68,13 @@ func receiveSupportBundle(collectorJobNamespace string, collectorJobName string)
 
 			decoded, err := base64.StdEncoding.DecodeString(string(body))
 			if err != nil {
-				fmt.Printf("failed to output for collector %s\n", readyCollector)
+				logger.Printf("failed to output for collector %s\n", readyCollector)
 				continue
 			}
 
 			files := make(map[string]interface{})
 			if err := json.Unmarshal(decoded, &files); err != nil {
-				fmt.Printf("failed to unmarshal output for collector %s\n", readyCollector)
+				logger.Printf("failed to unmarshal output for collector %s\n", readyCollector)
 			}
 
 			for filename, maybeContents := range files {

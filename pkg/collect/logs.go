@@ -9,6 +9,7 @@ import (
 	"time"
 
 	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
+	"github.com/replicatedhq/troubleshoot/pkg/logger"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -109,7 +110,7 @@ func getPodLogs(client *kubernetes.Clientset, pod corev1.Pod, limits *troublesho
 	if limits != nil && limits.MaxAge != "" {
 		parsedDuration, err := time.ParseDuration(limits.MaxAge)
 		if err != nil {
-			fmt.Printf("unable to parse time duration %s\n", limits.MaxAge)
+			logger.Printf("unable to parse time duration %s\n", limits.MaxAge)
 		} else {
 			now := time.Now()
 			then := now.Add(0 - parsedDuration)

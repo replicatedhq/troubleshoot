@@ -2,11 +2,11 @@ package cli
 
 import (
 	"errors"
-	"fmt"
 	"path/filepath"
 
 	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
 	"github.com/replicatedhq/troubleshoot/pkg/k8sutil"
+	"github.com/replicatedhq/troubleshoot/pkg/logger"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -47,11 +47,11 @@ func Retrieve() *cobra.Command {
 			}
 
 			if collectorJob == nil {
-				fmt.Printf("unable to find collector job\n")
+				logger.Printf("unable to find collector job\n")
 				return errors.New("no collectors")
 			}
 
-			fmt.Printf("connecting to collector job %s\n", collectorJob.Name)
+			logger.Printf("connecting to collector job %s\n", collectorJob.Name)
 
 			stopChan, err := k8sutil.PortForward(v.GetString("kubecontext"), 8000, 8000, collectorJob.Status.ServerPodNamespace, collectorJob.Status.ServerPodName)
 			if err != nil {

@@ -3,11 +3,11 @@ package server
 import (
 	"context"
 	"encoding/base64"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/replicatedhq/troubleshoot/pkg/logger"
 )
 
 var preflightQueue = make(map[string][]byte)
@@ -37,7 +37,7 @@ func putPreflightOutput(c *gin.Context) {
 
 	preflightQueue[preflightID] = body
 
-	fmt.Printf("preflightQueue = %#v\n", preflightQueue)
+	logger.Printf("preflightQueue = %#v\n", preflightQueue)
 	c.Status(201)
 }
 
