@@ -3,13 +3,14 @@ package analyzer
 import (
 	"encoding/json"
 
+	"github.com/pkg/errors"
 	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
 )
 
 func analyzeImagePullSecret(analyzer *troubleshootv1beta1.ImagePullSecret, getChildCollectedFileContents func(string) (map[string][]byte, error)) (*AnalyzeResult, error) {
 	imagePullSecrets, err := getChildCollectedFileContents("cluster-resources/image-pull-secrets")
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "failed to get file contents for image pull secrets")
 	}
 
 	var failOutcome *troubleshootv1beta1.Outcome
@@ -32,7 +33,7 @@ func analyzeImagePullSecret(analyzer *troubleshootv1beta1.ImagePullSecret, getCh
 	for _, v := range imagePullSecrets {
 		registryAndUsername := make(map[string]string)
 		if err := json.Unmarshal(v, &registryAndUsername); err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "failed to parse registry secret")
 		}
 
 		for registry, _ := range registryAndUsername {

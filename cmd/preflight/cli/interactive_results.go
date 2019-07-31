@@ -10,6 +10,7 @@ import (
 
 	ui "github.com/gizak/termui/v3"
 	"github.com/gizak/termui/v3/widgets"
+	"github.com/pkg/errors"
 	analyzerunner "github.com/replicatedhq/troubleshoot/pkg/analyze"
 )
 
@@ -20,7 +21,7 @@ var (
 
 func showInteractiveResults(preflightName string, analyzeResults []*analyzerunner.AnalyzeResult) error {
 	if err := ui.Init(); err != nil {
-		return err
+		return errors.Wrap(err, "failed to create terminal ui")
 	}
 	defer ui.Close()
 
@@ -244,7 +245,7 @@ func save(preflightName string, analyzeResults []*analyzerunner.AnalyzeResult) (
 	}
 
 	if err := ioutil.WriteFile(filename, []byte(results), 0644); err != nil {
-		return "", err
+		return "", errors.Wrap(err, "failed to save preflight results")
 	}
 
 	return filename, nil

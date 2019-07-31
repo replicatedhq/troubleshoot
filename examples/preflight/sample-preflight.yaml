@@ -1,14 +1,14 @@
 apiVersion: troubleshoot.replicated.com/v1beta1
 kind: Preflight
 metadata:
-  name: check-kubernetes-version
+  name: example-preflight-checks
 spec:
   analyzers:
     - clusterVersion:
         outcomes:
           - fail:
-              when: "< 1.14.0"
-              message: The application requires at Kubernetes 1.14.0 or later, and recommends 1.15.0.
+              when: "< 1.13.0"
+              message: The application requires at Kubernetes 1.13.0 or later, and recommends 1.15.0.
               uri: https://www.kubernetes.io
           - warn:
               when: "< 1.15.0"
@@ -16,26 +16,20 @@ spec:
               uri: https://kubernetes.io
           - pass:
               message: Your cluster meets the recommended and required versions of Kubernetes.
-    - customResourceDefinitionName:
-        customResourceDefinitionName: rook
+    - customResourceDefinition:
+        customResourceDefinitionName: constrainttemplates.templates.gatekeeper.sh
+        checkName: Gatekeeper policy runtime is installed
         outcomes:
           - fail:
-              message: Rook is required for the application. Rook was not found in the cluster.
+              message: Gatekeeper is required for the application, but not found in the cluster.
           - pass:
-              message: Found a supported version of Rook installed and running in the cluster.
+              message: Found a supported version of Gatekeeper installed and running in the cluster.
     - imagePullSecret:
-        checkName: Registry credneitlas for Quay.io
+        checkName: Registry credentials for Quay.io
         registryName: quay.io
         outcomes:
           - fail:
-              message: Cannot pull from quay.io
+              message: |
+                Cannot pull from quay.io. An image pull secret should be deployed to the cluster that has credentials to pull the images. To obtain this secret, please contact your support rep.
           - pass:
               message: Found credentials to pull from quay.io
-    - storageClass:
-        checkName: Required storage classes
-        storageClassName: "expected-storage-class-name"
-        outcomes:
-          - fail:
-              message: The required storage class was not found in the cluster.
-          - pass:
-              message: The required storage class was found in the cluster.

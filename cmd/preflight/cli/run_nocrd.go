@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pkg/errors"
 	analyzerunner "github.com/replicatedhq/troubleshoot/pkg/analyze"
 	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
 	collectrunner "github.com/replicatedhq/troubleshoot/pkg/collect"
@@ -22,10 +23,12 @@ import (
 	"github.com/tj/go-spin"
 	"gopkg.in/yaml.v2"
 	corev1 "k8s.io/api/core/v1"
+	kuberneteserrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	types "k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -76,6 +79,7 @@ func runPreflightsNoCRD(v *viper.Viper, arg string) error {
 		for {
 			select {
 			case <-finishedCh:
+				fmt.Printf("\r")
 				return
 			case <-time.After(time.Millisecond * 100):
 				fmt.Printf("\r  \033[36mRunning Preflight checks\033[m %s ", s.Next())
@@ -162,10 +166,20 @@ func runCollectors(v *viper.Viper, preflight troubleshootv1beta1.Preflight) (map
 	}
 
 	// deploy an object that "owns" everything to aid in cleanup
+	configMapNamespacedName := types.NamespacedName{
+		Name:      fmt.Sprintf("preflight-%s-owner", preflight.Name),
+		Namespace: v.GetString("namespace"),
+	}
+
+	foundConfigMap := &corev1.ConfigMap{}
+	err = client.Get(context.Background(), configMapNamespacedName, foundConfigMap)
+	if err == nil || !kuberneteserrors.IsNotFound(err) {
+		return nil, errors.Wrap(err, "failed to get existing config map")
+	}
 	owner := corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      fmt.Sprintf("preflight-%s-owner", preflight.Name),
-			Namespace: v.GetString("namespace"),
+			Name:      configMapNamespacedName.Name,
+			Namespace: configMapNamespacedName.Namespace,
 		},
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "v1",
@@ -174,7 +188,7 @@ func runCollectors(v *viper.Viper, preflight troubleshootv1beta1.Preflight) (map
 		Data: make(map[string]string),
 	}
 	if err := client.Create(context.Background(), &owner); err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "failed to create config map")
 	}
 	defer func() {
 		if err := client.Delete(context.Background(), &owner); err != nil {
@@ -272,7 +286,7 @@ func runCollectors(v *viper.Viper, preflight troubleshootv1beta1.Preflight) (map
 	for _, collector := range desiredCollectors {
 		_, pod, err := collectrunner.CreateCollector(client, s, &owner, preflight.Name, v.GetString("namespace"), serviceAccountName, "preflight", collector, v.GetString("image"), v.GetString("pullpolicy"))
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "failed to create collector")
 		}
 		podsCreated = append(podsCreated, pod)
 	}
