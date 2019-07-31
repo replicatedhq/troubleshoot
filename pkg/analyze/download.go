@@ -32,6 +32,11 @@ func DownloadAndAnalyze(ctx context.Context, bundleURL string) ([]*AnalyzeResult
 		return nil, err
 	}
 
+	_, err = os.Stat(filepath.Join(tmpDir, "version.yaml"))
+	if err != nil {
+		return nil, err
+	}
+
 	analyzers, err := getTroubleshootAnalyzers()
 	if err != nil {
 		return nil, err
