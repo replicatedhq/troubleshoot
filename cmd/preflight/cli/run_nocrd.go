@@ -19,6 +19,7 @@ import (
 	collectrunner "github.com/replicatedhq/troubleshoot/pkg/collect"
 	"github.com/replicatedhq/troubleshoot/pkg/logger"
 	"github.com/spf13/viper"
+	"github.com/tj/go-spin"
 	"gopkg.in/yaml.v2"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -69,6 +70,22 @@ func runPreflightsNoCRD(v *viper.Viper, arg string) error {
 		return fmt.Errorf("unable to parse %s as a preflight", arg)
 	}
 
+	s := spin.New()
+	finishedCh := make(chan bool, 1)
+	go func() {
+		for {
+			select {
+			case <-finishedCh:
+				return
+			case <-time.After(time.Millisecond * 100):
+				fmt.Printf("\r  \033[36mRunning Preflight checks\033[m %s ", s.Next())
+			}
+		}
+	}()
+	defer func() {
+		finishedCh <- true
+	}()
+
 	allCollectedData, err := runCollectors(v, preflight)
 	if err != nil {
 		return err
@@ -103,6 +120,8 @@ func runPreflightsNoCRD(v *viper.Viper, arg string) error {
 
 		analyzeResults = append(analyzeResults, analyzeResult)
 	}
+
+	finishedCh <- true
 
 	if preflight.Spec.UploadResultsTo != "" {
 		tryUploadResults(preflight.Spec.UploadResultsTo, preflight.Name, analyzeResults)

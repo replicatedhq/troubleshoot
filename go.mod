@@ -31,6 +31,7 @@ require (
 	github.com/spf13/cobra v0.0.3
 	github.com/spf13/viper v1.4.0
 	github.com/stretchr/testify v1.3.0
+	github.com/tj/go-spin v1.1.0
 	github.com/xi2/xz v0.0.0-20171230120015-48954b6210f8 // indirect
 	github.com/xo/dburl v0.0.0-20190203050942-98997a05b24f // indirect
 	golang.org/x/net v0.0.0-20190522155817-f3200d17e092
