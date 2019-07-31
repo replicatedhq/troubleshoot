@@ -2,29 +2,28 @@ package analyzer
 
 import (
 	"encoding/json"
-	"errors"
 	"strings"
 
 	"github.com/blang/semver"
+	"github.com/pkg/errors"
 	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
 	"github.com/replicatedhq/troubleshoot/pkg/collect"
 )
 
 func analyzeClusterVersion(analyzer *troubleshootv1beta1.ClusterVersion, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
-	// TODO: ++++++++
 	clusterInfo, err := getCollectedFileContents("cluster-info/cluster_version.json")
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "failed top get contents of cluster_version.json")
 	}
 
 	collectorClusterVersion := collect.ClusterVersion{}
 	if err := json.Unmarshal(clusterInfo, &collectorClusterVersion); err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "failed to parse cluster_version.json")
 	}
 
 	k8sVersion, err := semver.Make(strings.TrimLeft(collectorClusterVersion.String, "v"))
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "failed to parse semver from cluster_version.json")
 	}
 
 	result := AnalyzeResult{}
@@ -63,7 +62,7 @@ func analyzeClusterVersion(analyzer *troubleshootv1beta1.ClusterVersion, getColl
 
 		whenRange, err := semver.ParseRange(when)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "failed to parse semver range")
 		}
 
 		if whenRange(k8sVersion) {

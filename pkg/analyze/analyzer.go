@@ -1,8 +1,7 @@
 package analyzer
 
 import (
-	"errors"
-
+	"github.com/pkg/errors"
 	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
 )
 
