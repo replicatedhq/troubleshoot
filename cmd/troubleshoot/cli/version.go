@@ -11,7 +11,6 @@ func writeVersionFile(path string) (string, error) {
 	version := troubleshootv1beta1.SupportBundleVersion{
 		ApiVersion:    "troubleshoot.replicated.com/v1beta1",
 		Kind:          "SupportBundle",
-		LayoutVersion: "0.0.1",
 	}
 	b, err := yaml.Marshal(version)
 	if err != nil {

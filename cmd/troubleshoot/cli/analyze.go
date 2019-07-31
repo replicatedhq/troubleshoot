@@ -5,12 +5,12 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"gopkg.in/yaml.v2"
 	analyzer "github.com/replicatedhq/troubleshoot/pkg/analyze"
 	"github.com/replicatedhq/troubleshoot/pkg/convert"
 	"github.com/replicatedhq/troubleshoot/pkg/logger"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"gopkg.in/yaml.v2"
 )
 
 func Analyze() *cobra.Command {
@@ -61,10 +61,11 @@ func Analyze() *cobra.Command {
 	}
 
 	cmd.Flags().String("url", "", "URL of the support bundle to analyze")
+	cmd.MarkFlagRequired("url")
 	cmd.Flags().String("output", "", "output format: json, yaml")
 	cmd.Flags().String("compatibility", "", "output compatibility mode: support-bundle")
+	cmd.Flags().MarkHidden("compatibility")
 	cmd.Flags().Bool("quiet", false, "enable/disable error messaging and only show parseable output")
-	cmd.MarkFlagRequired("url")
 
 	viper.BindPFlags(cmd.Flags())
 
