@@ -3,37 +3,70 @@ kind: Plugin
 metadata:
   name: troubleshoot
 spec:
-  version: "v0.1.0"
+  version: "v0.9.2"
   platforms:
   - selector:
       matchLabels:
         os: linux
         arch: amd64
-      uri: https://github.com/replicatedhq/troubleshoot/releases/download/v0.1.0/troubleshoot_0.1.0_linux_amd64-alpha.tar.gz
-      sha256: "fcfee994959a4924d0f70817a4b40d2b4df9e21a5a2a106d340784ce77fbbc15"
-      files:
-      - from: "/kubectl-troubleshoot"
-        to: "."
-      bin: "./kubectl-troubleshoot"
+    uri: https://github.com/replicatedhq/troubleshoot/releases/download/v0.9.2/troubleshoot_0.9.2_linux_amd64-0.9.2.tar.gz
+    sha256: "7d730975ba9bf2a823a6cb068371e471b2a71078f12f541864a82847a163d4c6"
+    files:
+    - from: "/troubleshoot"
+      to: "."
+    bin: "troubleshoot"
   - selector:
       matchLabels:
         os: darwin
         arch: amd64
-      uri: https://github.com/replicatedhq/troubleshoot/releases/download/v0.1.0/troubleshoot_0.1.0_darwin_amd64-alpha.tar.gz
-      sha256: "fcfee994959a4924d0f70817a4b40d2b4df9e21a5a2a106d340784ce77fbbc15"
-      files:
-      - from: "/kubectl-troubleshoot"
-        to: "."
-      bin: "./kubectl-troubleshoot"
+    uri: https://github.com/replicatedhq/troubleshoot/releases/download/v0.9.2/troubleshoot_0.9.2_darwin_amd64-0.9.2.tar.gz
+    sha256: "f7993391270c780af51d3ce00768801e99792561850f4e07d658047384de64f0"
+    files:
+    - from: "/troubleshoot"
+      to: "."
+    bin: "troubleshoot"
   - selector:
       matchLabels:
         os: windows
         arch: amd64
-      uri: https://github.com/replicatedhq/troubleshoot/releases/download/v0.1.0/troubleshoot_0.1.0_windows_amd64-alpha.tar.gz
-      sha256: "fcfee994959a4924d0f70817a4b40d2b4df9e21a5a2a106d340784ce77fbbc15"
-      files:
-      - from: "/kubectl-troubleshoot.exe"
-        to: "."
-      bin: "./kubectl-troubleshoot.exe"
+    uri: https://github.com/replicatedhq/troubleshoot/releases/download/v0.9.2/troubleshoot_0.9.2_windows_amd64-0.9.2.zip
+    sha256: "58ef1fac44a2c8dc7f6b4cd5170a36109abb5ae242707363dcc147f966fe8d1d"
+    files:
+    - from: "/troubleshoot.exe"
+      to: "."
+    bin: "troubleshoot.exe"
   shortDescription: Creates support bundles for off-cluster analysis
-  homepage: https://github.com/replicaetdhq/troubleshoot
+  homepage: https://github.com/replicatedhq/troubleshoot
+  caveats: |
+    Usage:
+      $ kubectl troubleshoot <uri>
+
+      where <uri> references a set of application collectors
+
+      For example:
+
+      $ kubectl troubleshoot https://troubleshoot.replicated.com
+
+    For additional options:
+      $ kubectl troubleshoot --help
+
+    Documentation:
+      Full documentation on this plugin is available at:
+      https://help.replicated.com/docs/troubleshoot/kubernetes/support-bundle/overview/
+
+      For application developers writing collectors and analyzers:
+      https://help.replicated.com/docs/troubleshoot/kubernetes/collectors/defining-collectors/
+
+  description: |
+    This plugin collects information about the cluster, and automatically
+    redacts sensitive data from being collected. This can optionally include
+    application-specific data.  The plugin writes the collected files into a
+    single archive named support-bundle.tar.gz. This archive can be manually
+    inspected or uploaded to https://vendor.replicated.com for automated
+    analysis.
+
+    Application developers can create and host a Collector manifest that
+    defines information to be collected.
+
+    For information on creating a Collector manifest, view the documentation
+    at https://help.replicated.com/docs/troubleshoot/kubernetes/collectors/defining-collectors/
