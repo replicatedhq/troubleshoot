@@ -104,7 +104,16 @@ func runTroubleshootNoCRD(v *viper.Viper, arg string) error {
 	}
 
 	fmt.Printf("\r%s", cursor.ClearEntireLine())
-	fmt.Printf("%s\n", archivePath)
+
+	msg := archivePath
+	if appName := collector.Labels["applicationName"]; appName != "" {
+		f := `A support bundle for %s has been created in this directory
+named %s. Please upload it on the Troubleshoot page of
+the %s Admin Console to begin analysis.`
+		msg = fmt.Sprintf(f, appName, archivePath, appName)
+	}
+
+	fmt.Printf("%s\n", msg)
 
 	return nil
 }
