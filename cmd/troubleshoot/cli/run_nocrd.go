@@ -13,11 +13,13 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/ahmetalpbalkan/go-cursor"
 	"github.com/mholt/archiver"
 	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
 	collectrunner "github.com/replicatedhq/troubleshoot/pkg/collect"
 	"github.com/replicatedhq/troubleshoot/pkg/logger"
 	"github.com/spf13/viper"
+	"github.com/tj/go-spin"
 	"gopkg.in/yaml.v2"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -31,6 +33,9 @@ import (
 )
 
 func runTroubleshootNoCRD(v *viper.Viper, arg string) error {
+	fmt.Print(cursor.Hide())
+	defer fmt.Print(cursor.Show())
+
 	collectorContent := ""
 	if !isURL(arg) {
 		if _, err := os.Stat(arg); os.IsNotExist(err) {
@@ -68,17 +73,43 @@ func runTroubleshootNoCRD(v *viper.Viper, arg string) error {
 		return fmt.Errorf("unable to parse %s collectors", arg)
 	}
 
-	archivePath, err := runCollectors(v, collector)
+	s := spin.New()
+	finishedCh := make(chan bool, 1)
+	progressChan := make(chan string, 1)
+	go func() {
+		currentDir := ""
+		for {
+			select {
+			case dir := <-progressChan:
+				currentDir = filepath.Base(dir)
+			case <-finishedCh:
+				fmt.Printf("\r")
+				return
+			case <-time.After(time.Millisecond * 100):
+				if currentDir == "" {
+					fmt.Printf("\r%s \033[36mCollecting support bundle\033[m %s", cursor.ClearEntireLine(), s.Next())
+				} else {
+					fmt.Printf("\r%s \033[36mCollecting support bundle\033[m %s: %s", cursor.ClearEntireLine(), s.Next(), currentDir)
+				}
+			}
+		}
+	}()
+	defer func() {
+		finishedCh <- true
+	}()
+
+	archivePath, err := runCollectors(v, collector, progressChan)
 	if err != nil {
 		return err
 	}
 
+	fmt.Printf("\r%s", cursor.ClearEntireLine())
 	fmt.Printf("%s\n", archivePath)
 
 	return nil
 }
 
-func runCollectors(v *viper.Viper, collector troubleshootv1beta1.Collector) (string, error) {
+func runCollectors(v *viper.Viper, collector troubleshootv1beta1.Collector, progressChan chan string) (string, error) {
 	cfg, err := config.GetConfig()
 	if err != nil {
 		return "", err
@@ -218,6 +249,7 @@ func runCollectors(v *viper.Viper, collector troubleshootv1beta1.Collector) (str
 					return
 				}
 
+				progressChan <- collectorDir
 				collectorDirs = append(collectorDirs, collectorDir)
 
 				if err := client.Delete(context.Background(), newPod); err != nil {
