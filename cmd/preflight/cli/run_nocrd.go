@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/ahmetalpbalkan/go-cursor"
 	"github.com/pkg/errors"
 	analyzerunner "github.com/replicatedhq/troubleshoot/pkg/analyze"
 	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
@@ -36,6 +37,9 @@ import (
 )
 
 func runPreflightsNoCRD(v *viper.Viper, arg string) error {
+	fmt.Print(cursor.Hide())
+	defer fmt.Print(cursor.Show())
+
 	preflightContent := ""
 	if !isURL(arg) {
 		if _, err := os.Stat(arg); os.IsNotExist(err) {
