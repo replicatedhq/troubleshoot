@@ -54,7 +54,7 @@ builds:
       -X github.com/replicatedhq/troubleshoot/pkg/version.buildTime={{.Date}}
       -extldflags "-static"
     flags: -tags netgo -installsuffix netgo
-    binary: troubleshoot
+    binary: support-bundle
     hooks: {}
   - id: manager
     goos:
@@ -91,14 +91,14 @@ dockers:
       - "replicated/troubleshoot:alpha"
     binaries:
       - collector
-      - troubleshoot
+      - support-bundle
       - preflight
   - dockerfile: ./deploy/Dockerfile.troubleshoot
     image_templates:
       - "replicated/preflight:alpha"
     binaries:
       - collector
-      - troubleshoot
+      - support-bundle
       - preflight
   - dockerfile: ./deploy/Dockerfile.manager
     image_templates:

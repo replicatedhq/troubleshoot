@@ -5,7 +5,7 @@ RUN apt-get -qq update \
  && apt-get -qq -y install \
     ca-certificates
 
-COPY troubleshoot /troubleshoot/troubleshoot
+COPY support-bundle /troubleshoot/support-bundle
 COPY collector /troubleshoot/collector
 COPY preflight /troubleshoot/preflight
 

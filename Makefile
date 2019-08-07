@@ -13,9 +13,9 @@ test: generate fmt vet manifests
 manager: generate fmt vet
 	go build -o bin/manager github.com/replicatedhq/troubleshoot/cmd/manager
 
-.PHONY: troubleshoot
-troubleshoot: generate fmt vet
-	go build -o bin/troubleshoot github.com/replicatedhq/troubleshoot/cmd/troubleshoot
+.PHONY: support-bundle
+support-bundle: generate fmt vet
+	go build -o bin/support-bundle github.com/replicatedhq/troubleshoot/cmd/troubleshoot
 
 .PHONY: collector
 collector: generate fmt vet
@@ -104,8 +104,8 @@ run-preflight: preflight
 		./config/samples/troubleshoot_v1beta1_preflight.yaml
 
 .PHONY: run-troubleshoot
-run-troubleshoot: troubleshoot
-	./bin/troubleshoot \
+run-troubleshoot: support-bundle
+	./bin/support-bundle \
 		--image=localhost:32000/troubleshoot:alpha \
 		--pullpolicy=Always \
 		./config/samples/troubleshoot_v1beta1_collector.yaml
