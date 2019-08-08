@@ -38,7 +38,7 @@ builds:
     flags: -tags netgo -installsuffix netgo
     binary: preflight
     hooks: {}
-  - id: troubleshoot
+  - id: support-bundle
     goos:
       - linux
       - darwin
@@ -90,7 +90,7 @@ archives:
       - README*
       - changelog*
       - CHANGELOG*
-  - id: troubleshoot
+  - id: support-bundle
     builds:
       - support-bundle
     format: tar.gz
