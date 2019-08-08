@@ -1,7 +1,7 @@
 apiVersion: krew.googlecontainertools.github.com/v1alpha2
 kind: Plugin
 metadata:
-  name: troubleshoot
+  name: support-bundle
 spec:
   version: "v0.9.2"
   platforms:
@@ -9,12 +9,12 @@ spec:
       matchLabels:
         os: linux
         arch: amd64
-    uri: https://github.com/replicatedhq/troubleshoot/releases/download/v0.9.2/troubleshoot_0.9.2_linux_amd64-0.9.2.tar.gz
+    uri: https://github.com/replicatedhq/troubleshoot/releases/download/v0.9.2/support-bundle_0.9.2_linux_amd64-0.9.2.tar.gz
     sha256: "7d730975ba9bf2a823a6cb068371e471b2a71078f12f541864a82847a163d4c6"
     files:
-    - from: "/troubleshoot"
+    - from: "/support-bundle"
       to: "."
-    bin: "troubleshoot"
+    bin: "support-bundle"
   - selector:
       matchLabels:
         os: darwin
@@ -22,9 +22,9 @@ spec:
     uri: https://github.com/replicatedhq/troubleshoot/releases/download/v0.9.2/troubleshoot_0.9.2_darwin_amd64-0.9.2.tar.gz
     sha256: "f7993391270c780af51d3ce00768801e99792561850f4e07d658047384de64f0"
     files:
-    - from: "/troubleshoot"
+    - from: "/support-bundle"
       to: "."
-    bin: "troubleshoot"
+    bin: "support-bundle"
   - selector:
       matchLabels:
         os: windows
@@ -32,23 +32,23 @@ spec:
     uri: https://github.com/replicatedhq/troubleshoot/releases/download/v0.9.2/troubleshoot_0.9.2_windows_amd64-0.9.2.zip
     sha256: "58ef1fac44a2c8dc7f6b4cd5170a36109abb5ae242707363dcc147f966fe8d1d"
     files:
-    - from: "/troubleshoot.exe"
+    - from: "/support-bundle.exe"
       to: "."
-    bin: "troubleshoot.exe"
+    bin: "support-bundle.exe"
   shortDescription: Creates support bundles for off-cluster analysis
   homepage: https://github.com/replicatedhq/troubleshoot
   caveats: |
     Usage:
-      $ kubectl troubleshoot <uri>
+      $ kubectl support-bundle <uri>
 
       where <uri> references a set of application collectors
 
       For example:
 
-      $ kubectl troubleshoot https://troubleshoot.replicated.com
+      $ kubectl support-bundle https://troubleshoot.replicated.com
 
     For additional options:
-      $ kubectl troubleshoot --help
+      $ kubectl support-bundle --help
 
     Documentation:
       Full documentation on this plugin is available at:
