@@ -54,7 +54,7 @@ builds:
       -X github.com/replicatedhq/troubleshoot/pkg/version.buildTime={{.Date}}
       -extldflags "-static"
     flags: -tags netgo -installsuffix netgo
-    binary: troubleshoot
+    binary: support-bundle
     hooks: {}
   - id: manager
     goos:
@@ -92,7 +92,7 @@ archives:
       - CHANGELOG*
   - id: troubleshoot
     builds:
-      - troubleshoot
+      - support-bundle
     format: tar.gz
     format_overrides:
       - goos: windows
@@ -116,7 +116,7 @@ dockers:
       - "replicated/troubleshoot:{{ .Major }}.{{ .Minor }}.{{ .Patch }}"
     binaries:
       - collector
-      - troubleshoot
+      - support-bundle
       - preflight
   - dockerfile: ./deploy/Dockerfile.troubleshoot
     image_templates:
@@ -126,7 +126,7 @@ dockers:
       - "replicated/preflight:{{ .Major }}.{{ .Minor }}.{{ .Patch }}"
     binaries:
       - collector
-      - troubleshoot
+      - support-bundle
       - preflight
   - dockerfile: ./deploy/Dockerfile.manager
     image_templates:
