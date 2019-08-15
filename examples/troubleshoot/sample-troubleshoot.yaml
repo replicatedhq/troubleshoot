@@ -3,16 +3,15 @@ kind: Collector
 metadata:
   name: collector-sample
 spec:
-  - clusterInfo: {}
-  - clusterResources: {}
   - secret:
-      name: illmannered-cricket-mysql
+      name: myapp-postgres
       namespace: default
-      key: mysql-password
+      key: uri
+      includeValue: false
   - logs:
       selector:
-        - name=nginx-ingress-microk8s
-      namespace: default
+        - name=cilium-operator
+      namespace: kube-system
       limits:
         maxAge: 30d
         maxLines: 10000
@@ -24,8 +23,6 @@ spec:
       args: ["www.google.com"]
       timeout: 5s
   - http:
-      collectorName: test-get
+      collectorName: echo-ip
       get:
-        url: https://api.staging.replicated.com/market/v1/echo/ip
-        insecureSkipVerify: false
-        headers: {}
+        url: https://api.replicated.com/market/v1/echo/ip

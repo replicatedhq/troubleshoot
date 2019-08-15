@@ -19,5 +19,5 @@ A support bundle is an archive that's created in-cluster, by collecting logs, cl
 To collect a sample support bundle, [install the troubleshoot kubectl plugin](https://help.replicated.com/docs/troubleshoot/kubernetes/support-bundle/collecting/) and run:
 
 ```shell
-kubectl troubleshoot https://troubleshoot.replicated.com
+kubectl support-bundle https://troubleshoot.replicated.com
 ```

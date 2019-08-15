@@ -34,6 +34,7 @@ func Logs(logsCollector *troubleshootv1beta1.Logs, redact bool) error {
 
 	logsOutput := &LogsOutput{
 		PodLogs: make(map[string][]byte),
+		Errors:  make(map[string][]byte),
 	}
 
 	pods, podsErrors := listPodsInSelectors(client, logsCollector.Namespace, logsCollector.Selector)
@@ -42,7 +43,7 @@ func Logs(logsCollector *troubleshootv1beta1.Logs, redact bool) error {
 		if err != nil {
 			return err
 		}
-		logsOutput.Errors[getLogsErrosFileName(logsCollector)] = errorBytes
+		logsOutput.Errors[getLogsErrorsFileName(logsCollector)] = errorBytes
 	}
 
 	if len(pods) > 0 {
@@ -150,7 +151,7 @@ func (l *LogsOutput) Redact() (*LogsOutput, error) {
 	}, nil
 }
 
-func getLogsErrosFileName(logsCollector *troubleshootv1beta1.Logs) string {
+func getLogsErrorsFileName(logsCollector *troubleshootv1beta1.Logs) string {
 	if len(logsCollector.CollectorName) > 0 {
 		return fmt.Sprintf("%s.json", logsCollector.CollectorName)
 	}

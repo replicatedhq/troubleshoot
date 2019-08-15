@@ -3,6 +3,12 @@ kind: Preflight
 metadata:
   name: example-preflight-checks
 spec:
+  collectors:
+    - secret:
+        name: myapp-postgres
+        namespace: default
+        key: uri
+        includeValue: false
   analyzers:
     - clusterVersion:
         outcomes:
@@ -15,13 +21,15 @@ spec:
               message: Your cluster meets the minimum version of Kubernetes, but we recommend you update to 1.15.0 or later.
               uri: https://kubernetes.io
           - pass:
+              when: ">= 1.15.0"
               message: Your cluster meets the recommended and required versions of Kubernetes.
     - customResourceDefinition:
         customResourceDefinitionName: constrainttemplates.templates.gatekeeper.sh
-        checkName: Gatekeeper policy runtime is installed
+        checkName: Gatekeeper policy runtime
         outcomes:
           - fail:
               message: Gatekeeper is required for the application, but not found in the cluster.
+              uri: https://enterprise.support.io/installing/gatekeeper
           - pass:
               message: Found a supported version of Gatekeeper installed and running in the cluster.
     - imagePullSecret:
@@ -31,5 +39,17 @@ spec:
           - fail:
               message: |
                 Cannot pull from quay.io. An image pull secret should be deployed to the cluster that has credentials to pull the images. To obtain this secret, please contact your support rep.
+              uri: https://enterprise.support.io/installing/registry-credentials
           - pass:
               message: Found credentials to pull from quay.io
+    - secret:
+        checkName: Postgres connection string
+        secretName: myapp-postgres
+        namespace: default
+        key: uri
+        outcomes:
+          - fail:
+              message: A secret named "myapp-postgres" must be deployed with a "uri" key
+              uri: https://enterprise.support.io/installing/postgres
+          - pass:
+              message: Found a valid postgres connection string
