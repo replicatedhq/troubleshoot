@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/version"
 	"k8s.io/client-go/kubernetes"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
@@ -22,12 +23,12 @@ type ClusterInfoOutput struct {
 func ClusterInfo() error {
 	cfg, err := config.GetConfig()
 	if err != nil {
-		return err
+		return errors.Wrap(err, "failed to get kubernetes config")
 	}
 
 	client, err := kubernetes.NewForConfig(cfg)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Failed to create kuberenetes clientset")
 	}
 
 	clusterInfoOutput := ClusterInfoOutput{}
@@ -37,12 +38,12 @@ func ClusterInfo() error {
 	clusterInfoOutput.ClusterVersion = clusterVersion
 	clusterInfoOutput.Errors, err = marshalNonNil(clusterErrors)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "failed to marshal errors")
 	}
 
 	b, err := json.MarshalIndent(clusterInfoOutput, "", "  ")
 	if err != nil {
-		return err
+		return errors.Wrap(err, "failed to marshal cluster info")
 	}
 
 	fmt.Printf("%s\n", b)

@@ -13,7 +13,7 @@ import (
 func analyzeClusterVersion(analyzer *troubleshootv1beta1.ClusterVersion, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
 	clusterInfo, err := getCollectedFileContents("cluster-info/cluster_version.json")
 	if err != nil {
-		return nil, errors.Wrap(err, "failed top get contents of cluster_version.json")
+		return nil, errors.Wrap(err, "failed to get contents of cluster_version.json")
 	}
 
 	collectorClusterVersion := collect.ClusterVersion{}

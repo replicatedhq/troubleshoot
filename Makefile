@@ -101,11 +101,11 @@ run-preflight: preflight
 	./bin/preflight \
 		--image=localhost:32000/troubleshoot:alpha \
 		--pullpolicy=Always \
-		./config/samples/troubleshoot_v1beta1_preflight.yaml
+		./examples/preflight/sample-preflight.yaml
 
 .PHONY: run-troubleshoot
 run-troubleshoot: support-bundle
 	./bin/support-bundle \
 		--image=localhost:32000/troubleshoot:alpha \
 		--pullpolicy=Always \
-		./config/samples/troubleshoot_v1beta1_collector.yaml
+		./examples/troubleshoot/sample-troubleshoot.yaml
