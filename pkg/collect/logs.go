@@ -21,15 +21,15 @@ type LogsOutput struct {
 	Errors  map[string][]byte `json:"logs-errors/,omitempty"`
 }
 
-func Logs(logsCollector *troubleshootv1beta1.Logs, redact bool) error {
+func Logs(logsCollector *troubleshootv1beta1.Logs, redact bool) ([]byte, error) {
 	cfg, err := config.GetConfig()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	client, err := kubernetes.NewForConfig(cfg)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	logsOutput := &LogsOutput{
@@ -41,7 +41,7 @@ func Logs(logsCollector *troubleshootv1beta1.Logs, redact bool) error {
 	if len(podsErrors) > 0 {
 		errorBytes, err := marshalNonNil(podsErrors)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		logsOutput.Errors[getLogsErrorsFileName(logsCollector)] = errorBytes
 	}
@@ -53,7 +53,7 @@ func Logs(logsCollector *troubleshootv1beta1.Logs, redact bool) error {
 				key := fmt.Sprintf("%s/%s-errors.json", pod.Namespace, pod.Name)
 				logsOutput.Errors[key], err = marshalNonNil([]string{err.Error()})
 				if err != nil {
-					return err
+					return nil, err
 				}
 				continue
 			}
@@ -66,19 +66,17 @@ func Logs(logsCollector *troubleshootv1beta1.Logs, redact bool) error {
 		if redact {
 			logsOutput, err = logsOutput.Redact()
 			if err != nil {
-				return err
+				return nil, err
 			}
 		}
 	}
 
 	b, err := json.MarshalIndent(logsOutput, "", "  ")
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	fmt.Printf("%s\n", b)
-
-	return nil
+	return b, nil
 }
 
 func listPodsInSelectors(client *kubernetes.Clientset, namespace string, selector []string) ([]corev1.Pod, []string) {

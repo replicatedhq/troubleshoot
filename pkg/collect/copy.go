@@ -18,15 +18,15 @@ type CopyOutput struct {
 	Errors map[string][]byte `json:"copy-errors/,omitempty"`
 }
 
-func Copy(copyCollector *troubleshootv1beta1.Copy, redact bool) error {
+func Copy(copyCollector *troubleshootv1beta1.Copy, redact bool) ([]byte, error) {
 	cfg, err := config.GetConfig()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	client, err := kubernetes.NewForConfig(cfg)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	copyOutput := &CopyOutput{
@@ -38,7 +38,7 @@ func Copy(copyCollector *troubleshootv1beta1.Copy, redact bool) error {
 	if len(podsErrors) > 0 {
 		errorBytes, err := marshalNonNil(podsErrors)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		copyOutput.Errors[getCopyErrosFileName(copyCollector)] = errorBytes
 	}
@@ -50,7 +50,7 @@ func Copy(copyCollector *troubleshootv1beta1.Copy, redact bool) error {
 				key := fmt.Sprintf("%s/%s/%s-errors.json", pod.Namespace, pod.Name, copyCollector.ContainerPath)
 				copyOutput.Errors[key], err = marshalNonNil(copyErrors)
 				if err != nil {
-					return err
+					return nil, err
 				}
 				continue
 			}
@@ -67,12 +67,10 @@ func Copy(copyCollector *troubleshootv1beta1.Copy, redact bool) error {
 
 	b, err := json.MarshalIndent(copyOutput, "", "  ")
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	fmt.Printf("%s\n", b)
-
-	return nil
+	return b, nil
 }
 
 func copyFiles(client *kubernetes.Clientset, pod corev1.Pod, copyCollector *troubleshootv1beta1.Copy) (map[string][]byte, map[string]string) {

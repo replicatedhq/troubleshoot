@@ -3,7 +3,6 @@ package collect
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"time"
 
 	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
@@ -18,20 +17,20 @@ type RunOutput struct {
 	PodLogs map[string][]byte `json:"run/,omitempty"`
 }
 
-func Run(runCollector *troubleshootv1beta1.Run, redact bool) error {
+func Run(runCollector *troubleshootv1beta1.Run, redact bool) ([]byte, error) {
 	cfg, err := config.GetConfig()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	client, err := kubernetes.NewForConfig(cfg)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	pod, err := runPod(client, runCollector)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	defer func() {
@@ -46,37 +45,45 @@ func Run(runCollector *troubleshootv1beta1.Run, redact bool) error {
 
 	timeout, err := time.ParseDuration(runCollector.Timeout)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	runChan := make(chan error, 1)
+	errCh := make(chan error, 1)
+	resultCh := make(chan []byte, 1)
 	go func() {
-		runChan <- runWithoutTimeout(pod, runCollector, redact)
+		b, err := runWithoutTimeout(pod, runCollector, redact)
+		if err != nil {
+			errCh <- err
+		} else {
+			resultCh <- b
+		}
 	}()
 
 	select {
 	case <-time.After(timeout):
-		return errors.New("timeout")
-	case err := <-runChan:
-		return err
+		return nil, errors.New("timeout")
+	case result := <-resultCh:
+		return result, nil
+	case err := <-errCh:
+		return nil, err
 	}
 }
 
-func runWithoutTimeout(pod *corev1.Pod, runCollector *troubleshootv1beta1.Run, redact bool) error {
+func runWithoutTimeout(pod *corev1.Pod, runCollector *troubleshootv1beta1.Run, redact bool) ([]byte, error) {
 	cfg, err := config.GetConfig()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	client, err := kubernetes.NewForConfig(cfg)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	for {
 		status, err := client.CoreV1().Pods(pod.Namespace).Get(pod.Name, metav1.GetOptions{})
 		if err != nil {
-			return err
+			return nil, err
 		}
 		if status.Status.Phase == "Running" {
 			break
@@ -100,18 +107,16 @@ func runWithoutTimeout(pod *corev1.Pod, runCollector *troubleshootv1beta1.Run, r
 	if redact {
 		runOutput, err = runOutput.Redact()
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
 
 	b, err := json.MarshalIndent(runOutput, "", "  ")
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	fmt.Printf("%s\n", b)
-
-	return nil
+	return b, nil
 }
 
 func runPod(client *kubernetes.Clientset, runCollector *troubleshootv1beta1.Run) (*corev1.Pod, error) {

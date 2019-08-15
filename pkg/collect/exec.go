@@ -20,38 +20,47 @@ type ExecOutput struct {
 	Errors  map[string][]byte `json:"exec-errors/,omitempty"`
 }
 
-func Exec(execCollector *troubleshootv1beta1.Exec, redact bool) error {
+func Exec(execCollector *troubleshootv1beta1.Exec, redact bool) ([]byte, error) {
 	if execCollector.Timeout == "" {
 		return execWithoutTimeout(execCollector, redact)
 	}
 
 	timeout, err := time.ParseDuration(execCollector.Timeout)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	execChan := make(chan error, 1)
+	errCh := make(chan error, 1)
+	resultCh := make(chan []byte, 1)
+
 	go func() {
-		execChan <- execWithoutTimeout(execCollector, redact)
+		b, err := execWithoutTimeout(execCollector, redact)
+		if err != nil {
+			errCh <- err
+		} else {
+			resultCh <- b
+		}
 	}()
 
 	select {
 	case <-time.After(timeout):
-		return errors.New("timeout")
-	case err := <-execChan:
-		return err
+		return nil, errors.New("timeout")
+	case result := <-resultCh:
+		return result, nil
+	case err := <-errCh:
+		return nil, err
 	}
 }
 
-func execWithoutTimeout(execCollector *troubleshootv1beta1.Exec, redact bool) error {
+func execWithoutTimeout(execCollector *troubleshootv1beta1.Exec, redact bool) ([]byte, error) {
 	cfg, err := config.GetConfig()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	client, err := kubernetes.NewForConfig(cfg)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	execOutput := &ExecOutput{
@@ -63,7 +72,7 @@ func execWithoutTimeout(execCollector *troubleshootv1beta1.Exec, redact bool) er
 	if len(podsErrors) > 0 {
 		errorBytes, err := marshalNonNil(podsErrors)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		execOutput.Errors[getExecErrosFileName(execCollector)] = errorBytes
 	}
@@ -76,7 +85,7 @@ func execWithoutTimeout(execCollector *troubleshootv1beta1.Exec, redact bool) er
 			if len(execErrors) > 0 {
 				errorBytes, err := marshalNonNil(execErrors)
 				if err != nil {
-					return err
+					return nil, err
 				}
 				execOutput.Results[fmt.Sprintf("%s/%s/%s-errors.json", pod.Namespace, pod.Name, execCollector.CollectorName)] = errorBytes
 				continue
@@ -86,19 +95,17 @@ func execWithoutTimeout(execCollector *troubleshootv1beta1.Exec, redact bool) er
 		if redact {
 			execOutput, err = execOutput.Redact()
 			if err != nil {
-				return err
+				return nil, err
 			}
 		}
 	}
 
 	b, err := json.MarshalIndent(execOutput, "", "  ")
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	fmt.Printf("%s\n", b)
-
-	return nil
+	return b, nil
 }
 
 func getExecOutputs(client *kubernetes.Clientset, pod corev1.Pod, execCollector *troubleshootv1beta1.Exec, doRedact bool) ([]byte, []byte, []string) {

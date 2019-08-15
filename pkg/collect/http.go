@@ -4,7 +4,6 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -27,7 +26,7 @@ type httpError struct {
 	Message string `json:"message"`
 }
 
-func HTTP(httpCollector *troubleshootv1beta1.HTTP, redact bool) error {
+func HTTP(httpCollector *troubleshootv1beta1.HTTP, redact bool) ([]byte, error) {
 	var response *http.Response
 	var err error
 
@@ -38,12 +37,12 @@ func HTTP(httpCollector *troubleshootv1beta1.HTTP, redact bool) error {
 	} else if httpCollector.Put != nil {
 		response, err = doPut(httpCollector.Put)
 	} else {
-		return errors.New("no supported http request type")
+		return nil, errors.New("no supported http request type")
 	}
 
 	output, err := responseToOutput(response, err, redact)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	httpOutput := &HTTPOutput{
@@ -54,12 +53,10 @@ func HTTP(httpCollector *troubleshootv1beta1.HTTP, redact bool) error {
 
 	b, err := json.MarshalIndent(httpOutput, "", "  ")
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	fmt.Printf("%s\n", b)
-
-	return nil
+	return b, nil
 }
 
 func doGet(get *troubleshootv1beta1.Get) (*http.Response, error) {

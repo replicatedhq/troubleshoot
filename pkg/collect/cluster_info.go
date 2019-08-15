@@ -2,7 +2,6 @@ package collect
 
 import (
 	"encoding/json"
-	"fmt"
 
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/version"
@@ -20,15 +19,15 @@ type ClusterInfoOutput struct {
 	Errors         []byte `json:"cluster-info/errors.json,omitempty"`
 }
 
-func ClusterInfo() error {
+func ClusterInfo() ([]byte, error) {
 	cfg, err := config.GetConfig()
 	if err != nil {
-		return errors.Wrap(err, "failed to get kubernetes config")
+		return nil, errors.Wrap(err, "failed to get kubernetes config")
 	}
 
 	client, err := kubernetes.NewForConfig(cfg)
 	if err != nil {
-		return errors.Wrap(err, "Failed to create kuberenetes clientset")
+		return nil, errors.Wrap(err, "Failed to create kubernetes clientset")
 	}
 
 	clusterInfoOutput := ClusterInfoOutput{}
@@ -38,17 +37,15 @@ func ClusterInfo() error {
 	clusterInfoOutput.ClusterVersion = clusterVersion
 	clusterInfoOutput.Errors, err = marshalNonNil(clusterErrors)
 	if err != nil {
-		return errors.Wrap(err, "failed to marshal errors")
+		return nil, errors.Wrap(err, "failed to marshal errors")
 	}
 
 	b, err := json.MarshalIndent(clusterInfoOutput, "", "  ")
 	if err != nil {
-		return errors.Wrap(err, "failed to marshal cluster info")
+		return nil, errors.Wrap(err, "failed to marshal cluster info")
 	}
 
-	fmt.Printf("%s\n", b)
-
-	return nil
+	return b, nil
 }
 
 func clusterVersion(client *kubernetes.Clientset) ([]byte, []string) {
