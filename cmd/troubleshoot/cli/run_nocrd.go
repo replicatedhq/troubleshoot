@@ -1,12 +1,9 @@
 package cli
 
 import (
-	"bytes"
-	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -16,20 +13,10 @@ import (
 	"github.com/ahmetalpbalkan/go-cursor"
 	"github.com/mholt/archiver"
 	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
-	collectrunner "github.com/replicatedhq/troubleshoot/pkg/collect"
-	"github.com/replicatedhq/troubleshoot/pkg/logger"
+	"github.com/replicatedhq/troubleshoot/pkg/collect"
 	"github.com/spf13/viper"
 	"github.com/tj/go-spin"
 	"gopkg.in/yaml.v2"
-	corev1 "k8s.io/api/core/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/fields"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/tools/cache"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/client/config"
 )
 
 func runTroubleshootNoCRD(v *viper.Viper, arg string) error {
@@ -119,66 +106,6 @@ the %s Admin Console to begin analysis.`
 }
 
 func runCollectors(v *viper.Viper, collector troubleshootv1beta1.Collector, progressChan chan string) (string, error) {
-	cfg, err := config.GetConfig()
-	if err != nil {
-		return "", err
-	}
-
-	client, err := client.New(cfg, client.Options{})
-	if err != nil {
-		return "", err
-	}
-	clientset, err := kubernetes.NewForConfig(cfg)
-	if err != nil {
-		return "", err
-	}
-	restClient := clientset.CoreV1().RESTClient()
-
-	serviceAccountName := v.GetString("serviceaccount")
-	if serviceAccountName == "" {
-		generatedServiceAccountName, err := createServiceAccount(collector, v.GetString("namespace"), clientset)
-		if err != nil {
-			return "", err
-		}
-		defer removeServiceAccount(generatedServiceAccountName, v.GetString("namespace"), clientset)
-
-		serviceAccountName = generatedServiceAccountName
-	}
-
-	// deploy an object that "owns" everything to aid in cleanup
-	owner := corev1.ConfigMap{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      fmt.Sprintf("troubleshoot-%s-owner", collector.Name),
-			Namespace: v.GetString("namespace"),
-		},
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: "v1",
-			Kind:       "ConfigMap",
-		},
-		Data: make(map[string]string),
-	}
-	if err := client.Create(context.Background(), &owner); err != nil {
-		return "", err
-	}
-	defer func() {
-		if err := client.Delete(context.Background(), &owner); err != nil {
-			fmt.Println("failed to clean up preflight.")
-		}
-	}()
-
-	// deploy all collectors
-	desiredCollectors := make([]*troubleshootv1beta1.Collect, 0, 0)
-	for _, definedCollector := range collector.Spec {
-		desiredCollectors = append(desiredCollectors, definedCollector)
-	}
-	desiredCollectors = ensureCollectorInList(desiredCollectors, troubleshootv1beta1.Collect{ClusterInfo: &troubleshootv1beta1.ClusterInfo{}})
-	desiredCollectors = ensureCollectorInList(desiredCollectors, troubleshootv1beta1.Collect{ClusterResources: &troubleshootv1beta1.ClusterResources{}})
-
-	podsCreated := make([]*corev1.Pod, 0, 0)
-	podsDeleted := make([]*corev1.Pod, 0, 0)
-
-	collectorDirs := []string{}
-
 	bundlePath, err := ioutil.TempDir("", "troubleshoot")
 	if err != nil {
 		return "", err
@@ -190,113 +117,41 @@ func runCollectors(v *viper.Viper, collector troubleshootv1beta1.Collector, prog
 		return "", err
 	}
 
-	resyncPeriod := time.Second
-	ctx := context.Background()
-	watchList := cache.NewListWatchFromClient(restClient, "pods", "", fields.Everything())
-	_, controller := cache.NewInformer(watchList, &corev1.Pod{}, resyncPeriod,
-		cache.ResourceEventHandlerFuncs{
-			UpdateFunc: func(oldObj interface{}, newObj interface{}) {
-				newPod, ok := newObj.(*corev1.Pod)
-				if !ok {
-					return
-				}
-				oldPod, ok := oldObj.(*corev1.Pod)
-				if !ok {
-					return
-				}
-				labels := newPod.Labels
+	desiredCollectors := make([]*troubleshootv1beta1.Collect, 0, 0)
+	for _, definedCollector := range collector.Spec {
+		desiredCollectors = append(desiredCollectors, definedCollector)
+	}
+	desiredCollectors = ensureCollectorInList(desiredCollectors, troubleshootv1beta1.Collect{ClusterInfo: &troubleshootv1beta1.ClusterInfo{}})
+	desiredCollectors = ensureCollectorInList(desiredCollectors, troubleshootv1beta1.Collect{ClusterResources: &troubleshootv1beta1.ClusterResources{}})
 
-				troubleshootRole, ok := labels["troubleshoot-role"]
-				if !ok || troubleshootRole != "troubleshoot" {
-					return
-				}
+	collectorDirs := []string{}
 
-				collectorName, ok := labels["troubleshoot"]
-				if !ok || collectorName != collector.Name {
-					return
-				}
+	// Run preflights collectors synchronously
+	for _, desiredCollector := range desiredCollectors {
+		collector := collect.Collector{
+			Redact:  true,
+			Collect: desiredCollector,
+		}
 
-				if oldPod.Status.Phase == newPod.Status.Phase {
-					return
-				}
-
-				if newPod.Status.Phase == corev1.PodFailed {
-					podsDeleted = append(podsDeleted, newPod)
-					return
-				}
-
-				if newPod.Status.Phase != corev1.PodSucceeded {
-					return
-				}
-
-				podLogOpts := corev1.PodLogOptions{}
-
-				req := clientset.CoreV1().Pods(newPod.Namespace).GetLogs(newPod.Name, &podLogOpts)
-				podLogs, err := req.Stream()
-				if err != nil {
-					fmt.Println("get stream")
-					return
-				}
-				defer podLogs.Close()
-
-				buf := new(bytes.Buffer)
-				_, err = io.Copy(buf, podLogs)
-				if err != nil {
-					fmt.Println("copy logs")
-					return
-				}
-
-				collectorDir, err := parseAndSaveCollectorOutput(buf.String(), bundlePath)
-				if err != nil {
-					logger.Printf("parse collected data: %v\n", err)
-					return
-				}
-
-				// empty dir name will make tar fail
-				if collectorDir == "" {
-					logger.Printf("pod %s did not return any files\n", newPod.Name)
-					return
-				}
-
-				progressChan <- collectorDir
-				collectorDirs = append(collectorDirs, collectorDir)
-
-				if err := client.Delete(context.Background(), newPod); err != nil {
-					fmt.Println("delete pod error", err)
-				}
-				podsDeleted = append(podsDeleted, newPod)
-			},
-		})
-	go func() {
-		controller.Run(ctx.Done())
-	}()
-
-	s := runtime.NewScheme()
-	s.AddKnownTypes(schema.GroupVersion{Group: "", Version: "v1"}, &corev1.ConfigMap{})
-	for _, collect := range desiredCollectors {
-		_, pod, err := collectrunner.CreateCollector(client, s, &owner, collector.Name, v.GetString("namespace"), serviceAccountName, "troubleshoot", collect, v.GetString("image"), v.GetString("pullpolicy"))
+		result, err := collector.RunCollectorSync()
 		if err != nil {
-			logger.Printf("A collector pod cannot be created: %v\n", err)
+			progressChan <- fmt.Sprintf("failed to run collector %v", collector)
 			continue
 		}
-		podsCreated = append(podsCreated, pod)
-	}
 
-	start := time.Now()
-	for {
-		if start.Add(time.Second * 30).Before(time.Now()) {
-			fmt.Println("timeout running troubleshoot")
-			return "", err
+		collectorDir, err := parseAndSaveCollectorOutput(string(result), bundlePath)
+		if err != nil {
+			progressChan <- fmt.Sprintf("failed to parse collector spec: %v", collector)
+			continue
 		}
 
-		if len(podsDeleted) == len(podsCreated) {
-			break
+		if collectorDir == "" {
+			continue
 		}
 
-		time.Sleep(time.Millisecond * 200)
+		progressChan <- collectorDir
+		collectorDirs = append(collectorDirs, collectorDir)
 	}
-
-	ctx.Done()
 
 	tarGz := archiver.TarGz{
 		Tar: &archiver.Tar{

@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"fmt"
 	"io/ioutil"
 
 	"github.com/replicatedhq/troubleshoot/pkg/collect"
@@ -25,13 +26,21 @@ func Run() *cobra.Command {
 				return err
 			}
 
-			collector := collect.Collector{
-				Spec:   string(specContents),
-				Redact: v.GetBool("redact"),
-			}
-			if err := collector.RunCollectorSync(); err != nil {
+			c, err := collect.ParseSpec(string(specContents))
+			if err != nil {
 				return err
 			}
+
+			collector := collect.Collector{
+				Collect: c,
+				Redact:  v.GetBool("redact"),
+			}
+			b, err := collector.RunCollectorSync()
+			if err != nil {
+				return err
+			}
+
+			fmt.Printf("%s", b)
 
 			return nil
 		},

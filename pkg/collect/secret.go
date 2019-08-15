@@ -23,15 +23,15 @@ type SecretOutput struct {
 	Errors      map[string][]byte `json:"secrets-errors/,omitempty"`
 }
 
-func Secret(secretCollector *troubleshootv1beta1.Secret, redact bool) error {
+func Secret(secretCollector *troubleshootv1beta1.Secret, redact bool) ([]byte, error) {
 	cfg, err := config.GetConfig()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	client, err := kubernetes.NewForConfig(cfg)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	secretOutput := &SecretOutput{
@@ -43,7 +43,7 @@ func Secret(secretCollector *troubleshootv1beta1.Secret, redact bool) error {
 	if err != nil {
 		errorBytes, err := marshalNonNil([]string{err.Error()})
 		if err != nil {
-			return err
+			return nil, err
 		}
 		secretOutput.Errors[fmt.Sprintf("%s/%s.json", secret.Namespace, secret.Name)] = errorBytes
 	}
@@ -52,19 +52,17 @@ func Secret(secretCollector *troubleshootv1beta1.Secret, redact bool) error {
 		if redact {
 			secretOutput, err = secretOutput.Redact()
 			if err != nil {
-				return err
+				return nil, err
 			}
 		}
 	}
 
 	b, err := json.MarshalIndent(secretOutput, "", "  ")
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	fmt.Printf("%s\n", b)
-
-	return nil
+	return b, nil
 }
 
 func secret(client *kubernetes.Clientset, secretCollector *troubleshootv1beta1.Secret) (*FoundSecret, []byte, error) {

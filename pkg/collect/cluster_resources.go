@@ -33,15 +33,15 @@ type ClusterResourcesOutput struct {
 	ImagePullSecretsErrors          []byte            `json:"cluster-resources/image-pull-secrets-errors.json,omitempty"`
 }
 
-func ClusterResources(redact bool) error {
+func ClusterResources(redact bool) ([]byte, error) {
 	cfg, err := config.GetConfig()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	client, err := kubernetes.NewForConfig(cfg)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	clusterResourcesOutput := &ClusterResourcesOutput{}
@@ -51,7 +51,7 @@ func ClusterResources(redact bool) error {
 	clusterResourcesOutput.Namespaces = namespaces
 	clusterResourcesOutput.NamespacesErrors, err = marshalNonNil(nsErrors)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	namespaceNames := make([]string, 0, 0)
@@ -63,7 +63,7 @@ func ClusterResources(redact bool) error {
 	clusterResourcesOutput.Pods = pods
 	clusterResourcesOutput.PodsErrors, err = marshalNonNil(podErrors)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// services
@@ -71,7 +71,7 @@ func ClusterResources(redact bool) error {
 	clusterResourcesOutput.Services = services
 	clusterResourcesOutput.ServicesErrors, err = marshalNonNil(servicesErrors)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// deployments
@@ -79,7 +79,7 @@ func ClusterResources(redact bool) error {
 	clusterResourcesOutput.Deployments = deployments
 	clusterResourcesOutput.DeploymentsErrors, err = marshalNonNil(deploymentsErrors)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// ingress
@@ -87,7 +87,7 @@ func ClusterResources(redact bool) error {
 	clusterResourcesOutput.Ingress = ingress
 	clusterResourcesOutput.IngressErrors, err = marshalNonNil(ingressErrors)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// storage classes
@@ -95,19 +95,19 @@ func ClusterResources(redact bool) error {
 	clusterResourcesOutput.StorageClasses = storageClasses
 	clusterResourcesOutput.StorageErrors, err = marshalNonNil(storageErrors)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// crds
 	crdClient, err := apiextensionsv1beta1clientset.NewForConfig(cfg)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	customResourceDefinitions, crdErrors := crds(crdClient)
 	clusterResourcesOutput.CustomResourceDefinitions = customResourceDefinitions
 	clusterResourcesOutput.CustomResourceDefinitionsErrors, err = marshalNonNil(crdErrors)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	// imagepullsecrets
@@ -115,24 +115,22 @@ func ClusterResources(redact bool) error {
 	clusterResourcesOutput.ImagePullSecrets = imagePullSecrets
 	clusterResourcesOutput.ImagePullSecretsErrors, err = marshalNonNil(pullSecretsErrors)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if redact {
 		clusterResourcesOutput, err = clusterResourcesOutput.Redact()
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
 
 	b, err := json.MarshalIndent(clusterResourcesOutput, "", "  ")
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	fmt.Printf("%s\n", b)
-
-	return nil
+	return b, nil
 }
 
 func namespaces(client *kubernetes.Clientset) ([]byte, *corev1.NamespaceList, []string) {

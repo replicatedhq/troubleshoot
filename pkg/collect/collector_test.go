@@ -26,7 +26,7 @@ func Test_ParseSpec(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			c, err := parseSpec(test.spec)
+			c, err := ParseSpec(test.spec)
 
 			if test.expectError {
 				assert.Error(t, err)
