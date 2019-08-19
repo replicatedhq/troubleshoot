@@ -137,7 +137,7 @@ func (r *ReconcileCollectorJob) Reconcile(request reconcile.Request) (reconcile.
 		return reconcile.Result{}, err
 	}
 
-	for _, collector := range collectorSpec.Spec {
+	for _, collector := range collectorSpec.Spec.Collectors {
 		if err := r.reconileOneCollectorJob(instance, collector); err != nil {
 			return reconcile.Result{}, err
 		}
