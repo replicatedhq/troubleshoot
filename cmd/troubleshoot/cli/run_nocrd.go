@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/ahmetalpbalkan/go-cursor"
+	"github.com/fatih/color"
 	"github.com/mholt/archiver"
 	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
 	"github.com/replicatedhq/troubleshoot/pkg/collect"
@@ -62,13 +63,19 @@ func runTroubleshootNoCRD(v *viper.Viper, arg string) error {
 
 	s := spin.New()
 	finishedCh := make(chan bool, 1)
-	progressChan := make(chan string, 1)
+	progressChan := make(chan interface{}, 1)
 	go func() {
 		currentDir := ""
 		for {
 			select {
-			case dir := <-progressChan:
-				currentDir = filepath.Base(dir)
+			case msg := <-progressChan:
+				switch msg := msg.(type) {
+				case error:
+					c := color.New(color.FgHiRed)
+					c.Println(fmt.Sprintf("%s * %v", cursor.ClearEntireLine(), msg))
+				case string:
+					currentDir = filepath.Base(msg)
+				}
 			case <-finishedCh:
 				fmt.Printf("\r")
 				return
@@ -105,7 +112,7 @@ the %s Admin Console to begin analysis.`
 	return nil
 }
 
-func runCollectors(v *viper.Viper, collector troubleshootv1beta1.Collector, progressChan chan string) (string, error) {
+func runCollectors(v *viper.Viper, collector troubleshootv1beta1.Collector, progressChan chan interface{}) (string, error) {
 	bundlePath, err := ioutil.TempDir("", "troubleshoot")
 	if err != nil {
 		return "", err
@@ -135,13 +142,13 @@ func runCollectors(v *viper.Viper, collector troubleshootv1beta1.Collector, prog
 
 		result, err := collector.RunCollectorSync()
 		if err != nil {
-			progressChan <- fmt.Sprintf("failed to run collector %v", collector)
+			progressChan <- fmt.Errorf("failed to run collector %q: %v", collector.GetDisplayName(), err)
 			continue
 		}
 
 		collectorDir, err := parseAndSaveCollectorOutput(string(result), bundlePath)
 		if err != nil {
-			progressChan <- fmt.Sprintf("failed to parse collector spec: %v", collector)
+			progressChan <- fmt.Errorf("failed to parse collector spec %q: %v", collector.GetDisplayName(), err)
 			continue
 		}
 

@@ -15,6 +15,7 @@ require (
 	github.com/docker/go-units v0.4.0 // indirect
 	github.com/docker/spdystream v0.0.0-20181023171402-6480d4af844c // indirect
 	github.com/dsnet/compress v0.0.1 // indirect
+	github.com/fatih/color v1.7.0
 	github.com/gin-gonic/gin v1.4.0
 	github.com/gizak/termui/v3 v3.1.0
 	github.com/golang/snappy v0.0.1 // indirect
