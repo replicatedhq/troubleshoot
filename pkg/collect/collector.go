@@ -2,6 +2,8 @@ package collect
 
 import (
 	"errors"
+	"fmt"
+	"strings"
 
 	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
 	"gopkg.in/yaml.v2"
@@ -39,6 +41,54 @@ func (c *Collector) RunCollectorSync() ([]byte, error) {
 	}
 
 	return nil, errors.New("no spec found to run")
+}
+
+func (c *Collector) GetDisplayName() string {
+	var collector, name, selector string
+	if c.Collect.ClusterInfo != nil {
+		collector = "cluster-info"
+	}
+	if c.Collect.ClusterResources != nil {
+		collector = "cluster-resources"
+	}
+	if c.Collect.Secret != nil {
+		collector = "secret"
+		name = c.Collect.Secret.CollectorName
+	}
+	if c.Collect.Logs != nil {
+		collector = "logs"
+		name = c.Collect.Logs.CollectorName
+		selector = strings.Join(c.Collect.Logs.Selector, ",")
+	}
+	if c.Collect.Run != nil {
+		collector = "run"
+		name = c.Collect.Run.CollectorName
+	}
+	if c.Collect.Exec != nil {
+		collector = "exec"
+		name = c.Collect.Exec.CollectorName
+		selector = strings.Join(c.Collect.Exec.Selector, ",")
+	}
+	if c.Collect.Copy != nil {
+		collector = "copy"
+		name = c.Collect.Copy.CollectorName
+		selector = strings.Join(c.Collect.Copy.Selector, ",")
+	}
+	if c.Collect.HTTP != nil {
+		collector = "http"
+		name = c.Collect.HTTP.CollectorName
+	}
+
+	if collector == "" {
+		return "<none>"
+	}
+	if name != "" {
+		return fmt.Sprintf("%s/%s", collector, name)
+	}
+	if selector != "" {
+		return fmt.Sprintf("%s/%s", collector, selector)
+	}
+	return collector
 }
 
 func ParseSpec(specContents string) (*troubleshootv1beta1.Collect, error) {
