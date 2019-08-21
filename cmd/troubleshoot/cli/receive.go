@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 
 	"github.com/mholt/archiver"
+	"github.com/pkg/errors"
 	"github.com/replicatedhq/troubleshoot/pkg/logger"
 	kuberneteserrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -131,7 +132,12 @@ func receiveSupportBundle(collectorJobNamespace string, collectorJobName string)
 				paths = append(paths, filepath.Join(bundlePath, id))
 			}
 
-			if err := tarGz.Archive(paths, "support-bundle.tar.gz"); err != nil {
+			filename, err := findFileName("support-bundle", "tar.gz")
+			if err != nil {
+				return errors.Wrap(err, "find file name")
+			}
+
+			if err := tarGz.Archive(paths, filename); err != nil {
 				return err
 			}
 			return nil
