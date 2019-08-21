@@ -193,11 +193,16 @@ func runCollectors(v *viper.Viper, collector troubleshootv1beta1.Collector, prog
 		paths = append(paths, collectorDir)
 	}
 
-	if err := tarGz.Archive(paths, "support-bundle.tar.gz"); err != nil {
+	filename, err := findFileName("support-bundle", "tar.gz")
+	if err != nil {
+		return "", errors.Wrap(err, "find file name")
+	}
+
+	if err := tarGz.Archive(paths, filename); err != nil {
 		return "", errors.Wrap(err, "create archive")
 	}
 
-	return "support-bundle.tar.gz", nil
+	return filename, nil
 }
 
 func parseAndSaveCollectorOutput(output string, bundlePath string) (string, error) {

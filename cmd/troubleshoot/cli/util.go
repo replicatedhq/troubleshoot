@@ -1,9 +1,11 @@
 package cli
 
 import (
+	"fmt"
 	"net/url"
 	"os"
 
+	"github.com/pkg/errors"
 	troubleshootclientv1beta1 "github.com/replicatedhq/troubleshoot/pkg/client/troubleshootclientset/typed/troubleshoot/v1beta1"
 	"github.com/spf13/viper"
 	"k8s.io/client-go/tools/clientcmd"
@@ -38,4 +40,20 @@ func createTroubleshootK8sClient() (*troubleshootclientv1beta1.TroubleshootV1bet
 	}
 
 	return troubleshootClient, nil
+}
+
+func findFileName(basename, extension string) (string, error) {
+	n := 1
+	name := basename
+	for {
+		filename := name + "." + extension
+		if _, err := os.Stat(filename); os.IsNotExist(err) {
+			return filename, nil
+		} else if err != nil {
+			return "", errors.Wrap(err, "check file exists")
+		}
+
+		name = fmt.Sprintf("%s (%d)", basename, n)
+		n = n + 1
+	}
 }
