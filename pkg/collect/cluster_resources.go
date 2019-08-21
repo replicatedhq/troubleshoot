@@ -11,7 +11,6 @@ import (
 	apiextensionsv1beta1clientset "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	"sigs.k8s.io/controller-runtime/pkg/client/config"
 )
 
 type ClusterResourcesOutput struct {
@@ -33,13 +32,8 @@ type ClusterResourcesOutput struct {
 	ImagePullSecretsErrors          []byte            `json:"cluster-resources/image-pull-secrets-errors.json,omitempty"`
 }
 
-func ClusterResources(redact bool) ([]byte, error) {
-	cfg, err := config.GetConfig()
-	if err != nil {
-		return nil, err
-	}
-
-	client, err := kubernetes.NewForConfig(cfg)
+func ClusterResources(ctx *Context) ([]byte, error) {
+	client, err := kubernetes.NewForConfig(ctx.ClientConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -99,7 +93,7 @@ func ClusterResources(redact bool) ([]byte, error) {
 	}
 
 	// crds
-	crdClient, err := apiextensionsv1beta1clientset.NewForConfig(cfg)
+	crdClient, err := apiextensionsv1beta1clientset.NewForConfig(ctx.ClientConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -118,7 +112,7 @@ func ClusterResources(redact bool) ([]byte, error) {
 		return nil, err
 	}
 
-	if redact {
+	if ctx.Redact {
 		clusterResourcesOutput, err = clusterResourcesOutput.Redact()
 		if err != nil {
 			return nil, err

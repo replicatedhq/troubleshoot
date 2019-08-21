@@ -10,7 +10,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/remotecommand"
-	"sigs.k8s.io/controller-runtime/pkg/client/config"
 )
 
 type CopyOutput struct {
@@ -18,13 +17,8 @@ type CopyOutput struct {
 	Errors map[string][]byte `json:"copy-errors/,omitempty"`
 }
 
-func Copy(copyCollector *troubleshootv1beta1.Copy, redact bool) ([]byte, error) {
-	cfg, err := config.GetConfig()
-	if err != nil {
-		return nil, err
-	}
-
-	client, err := kubernetes.NewForConfig(cfg)
+func Copy(ctx *Context, copyCollector *troubleshootv1beta1.Copy) ([]byte, error) {
+	client, err := kubernetes.NewForConfig(ctx.ClientConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -45,7 +39,7 @@ func Copy(copyCollector *troubleshootv1beta1.Copy, redact bool) ([]byte, error) 
 
 	if len(pods) > 0 {
 		for _, pod := range pods {
-			files, copyErrors := copyFiles(client, pod, copyCollector)
+			files, copyErrors := copyFiles(ctx, client, pod, copyCollector)
 			if len(copyErrors) > 0 {
 				key := fmt.Sprintf("%s/%s/%s-errors.json", pod.Namespace, pod.Name, copyCollector.ContainerPath)
 				copyOutput.Errors[key], err = marshalNonNil(copyErrors)
@@ -60,7 +54,7 @@ func Copy(copyCollector *troubleshootv1beta1.Copy, redact bool) ([]byte, error) 
 			}
 		}
 
-		if redact {
+		if ctx.Redact {
 			// TODO
 		}
 	}
@@ -73,12 +67,7 @@ func Copy(copyCollector *troubleshootv1beta1.Copy, redact bool) ([]byte, error) 
 	return b, nil
 }
 
-func copyFiles(client *kubernetes.Clientset, pod corev1.Pod, copyCollector *troubleshootv1beta1.Copy) (map[string][]byte, map[string]string) {
-	cfg, err := config.GetConfig()
-	if err != nil {
-		return nil, map[string]string{"error": err.Error()}
-	}
-
+func copyFiles(ctx *Context, client *kubernetes.Clientset, pod corev1.Pod, copyCollector *troubleshootv1beta1.Copy) (map[string][]byte, map[string]string) {
 	container := pod.Spec.Containers[0].Name
 	if copyCollector.ContainerName != "" {
 		container = copyCollector.ContainerName
@@ -102,7 +91,7 @@ func copyFiles(client *kubernetes.Clientset, pod corev1.Pod, copyCollector *trou
 		TTY:       false,
 	}, parameterCodec)
 
-	exec, err := remotecommand.NewSPDYExecutor(cfg, "POST", req.URL())
+	exec, err := remotecommand.NewSPDYExecutor(ctx.ClientConfig, "POST", req.URL())
 	if err != nil {
 		return nil, map[string]string{"error": err.Error()}
 	}

@@ -6,7 +6,6 @@ import (
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/version"
 	"k8s.io/client-go/kubernetes"
-	"sigs.k8s.io/controller-runtime/pkg/client/config"
 )
 
 type ClusterVersion struct {
@@ -19,13 +18,8 @@ type ClusterInfoOutput struct {
 	Errors         []byte `json:"cluster-info/errors.json,omitempty"`
 }
 
-func ClusterInfo() ([]byte, error) {
-	cfg, err := config.GetConfig()
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to get kubernetes config")
-	}
-
-	client, err := kubernetes.NewForConfig(cfg)
+func ClusterInfo(ctx *Context) ([]byte, error) {
+	client, err := kubernetes.NewForConfig(ctx.ClientConfig)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to create kubernetes clientset")
 	}

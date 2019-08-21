@@ -26,7 +26,7 @@ type httpError struct {
 	Message string `json:"message"`
 }
 
-func HTTP(httpCollector *troubleshootv1beta1.HTTP, redact bool) ([]byte, error) {
+func HTTP(ctx *Context, httpCollector *troubleshootv1beta1.HTTP) ([]byte, error) {
 	var response *http.Response
 	var err error
 
@@ -40,7 +40,7 @@ func HTTP(httpCollector *troubleshootv1beta1.HTTP, redact bool) ([]byte, error) 
 		return nil, errors.New("no supported http request type")
 	}
 
-	output, err := responseToOutput(response, err, redact)
+	output, err := responseToOutput(response, err, ctx.Redact)
 	if err != nil {
 		return nil, err
 	}

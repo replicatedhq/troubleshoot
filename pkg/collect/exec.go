@@ -12,7 +12,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/remotecommand"
-	"sigs.k8s.io/controller-runtime/pkg/client/config"
 )
 
 type ExecOutput struct {
@@ -20,9 +19,9 @@ type ExecOutput struct {
 	Errors  map[string][]byte `json:"exec-errors/,omitempty"`
 }
 
-func Exec(execCollector *troubleshootv1beta1.Exec, redact bool) ([]byte, error) {
+func Exec(ctx *Context, execCollector *troubleshootv1beta1.Exec) ([]byte, error) {
 	if execCollector.Timeout == "" {
-		return execWithoutTimeout(execCollector, redact)
+		return execWithoutTimeout(ctx, execCollector)
 	}
 
 	timeout, err := time.ParseDuration(execCollector.Timeout)
@@ -34,7 +33,7 @@ func Exec(execCollector *troubleshootv1beta1.Exec, redact bool) ([]byte, error) 
 	resultCh := make(chan []byte, 1)
 
 	go func() {
-		b, err := execWithoutTimeout(execCollector, redact)
+		b, err := execWithoutTimeout(ctx, execCollector)
 		if err != nil {
 			errCh <- err
 		} else {
@@ -52,13 +51,8 @@ func Exec(execCollector *troubleshootv1beta1.Exec, redact bool) ([]byte, error) 
 	}
 }
 
-func execWithoutTimeout(execCollector *troubleshootv1beta1.Exec, redact bool) ([]byte, error) {
-	cfg, err := config.GetConfig()
-	if err != nil {
-		return nil, err
-	}
-
-	client, err := kubernetes.NewForConfig(cfg)
+func execWithoutTimeout(ctx *Context, execCollector *troubleshootv1beta1.Exec) ([]byte, error) {
+	client, err := kubernetes.NewForConfig(ctx.ClientConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -79,7 +73,7 @@ func execWithoutTimeout(execCollector *troubleshootv1beta1.Exec, redact bool) ([
 
 	if len(pods) > 0 {
 		for _, pod := range pods {
-			stdout, stderr, execErrors := getExecOutputs(client, pod, execCollector, redact)
+			stdout, stderr, execErrors := getExecOutputs(ctx, client, pod, execCollector)
 			execOutput.Results[fmt.Sprintf("%s/%s/%s-stdout.txt", pod.Namespace, pod.Name, execCollector.CollectorName)] = stdout
 			execOutput.Results[fmt.Sprintf("%s/%s/%s-stderr.txt", pod.Namespace, pod.Name, execCollector.CollectorName)] = stderr
 			if len(execErrors) > 0 {
@@ -92,7 +86,7 @@ func execWithoutTimeout(execCollector *troubleshootv1beta1.Exec, redact bool) ([
 			}
 		}
 
-		if redact {
+		if ctx.Redact {
 			execOutput, err = execOutput.Redact()
 			if err != nil {
 				return nil, err
@@ -108,12 +102,7 @@ func execWithoutTimeout(execCollector *troubleshootv1beta1.Exec, redact bool) ([
 	return b, nil
 }
 
-func getExecOutputs(client *kubernetes.Clientset, pod corev1.Pod, execCollector *troubleshootv1beta1.Exec, doRedact bool) ([]byte, []byte, []string) {
-	cfg, err := config.GetConfig()
-	if err != nil {
-		return nil, nil, []string{err.Error()}
-	}
-
+func getExecOutputs(ctx *Context, client *kubernetes.Clientset, pod corev1.Pod, execCollector *troubleshootv1beta1.Exec) ([]byte, []byte, []string) {
 	container := pod.Spec.Containers[0].Name
 	if execCollector.ContainerName != "" {
 		container = execCollector.ContainerName
@@ -135,7 +124,7 @@ func getExecOutputs(client *kubernetes.Clientset, pod corev1.Pod, execCollector 
 		TTY:       false,
 	}, parameterCodec)
 
-	exec, err := remotecommand.NewSPDYExecutor(cfg, "POST", req.URL())
+	exec, err := remotecommand.NewSPDYExecutor(ctx.ClientConfig, "POST", req.URL())
 	if err != nil {
 		return nil, nil, []string{err.Error()}
 	}

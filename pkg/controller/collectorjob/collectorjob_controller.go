@@ -25,7 +25,6 @@ import (
 	"math/rand"
 	"net/http"
 	"os"
-	"path/filepath"
 	"time"
 
 	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
@@ -40,8 +39,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
@@ -61,7 +60,11 @@ func Add(mgr manager.Manager) error {
 
 // newReconciler returns a new reconcile.Reconciler
 func newReconciler(mgr manager.Manager) reconcile.Reconciler {
-	return &ReconcileCollectorJob{Client: mgr.GetClient(), scheme: mgr.GetScheme()}
+	return &ReconcileCollectorJob{
+		Client: mgr.GetClient(),
+		config: mgr.GetConfig(),
+		scheme: mgr.GetScheme(),
+	}
 }
 
 // add adds a new Controller to mgr with r as the reconcile.Reconciler
@@ -94,6 +97,7 @@ var _ reconcile.Reconciler = &ReconcileCollectorJob{}
 // ReconcileCollectorJob reconciles a CollectorJob object
 type ReconcileCollectorJob struct {
 	client.Client
+	config *rest.Config
 	scheme *runtime.Scheme
 }
 
@@ -147,12 +151,7 @@ func (r *ReconcileCollectorJob) Reconcile(request reconcile.Request) (reconcile.
 }
 
 func (r *ReconcileCollectorJob) getCollectorSpec(namespace string, name string) (*troubleshootv1beta1.Collector, error) {
-	cfg, err := config.GetConfig()
-	if err != nil {
-		return nil, err
-	}
-
-	troubleshootClient, err := troubleshootclientv1beta1.NewForConfig(cfg)
+	troubleshootClient, err := troubleshootclientv1beta1.NewForConfig(r.config)
 	if err != nil {
 		return nil, err
 	}
@@ -190,12 +189,7 @@ func (r *ReconcileCollectorJob) reconileOneCollectorJob(instance *troubleshootv1
 			// Get the logs
 			podLogOpts := corev1.PodLogOptions{}
 
-			cfg, err := config.GetConfig()
-			if err != nil {
-				return err
-			}
-
-			k8sClient, err := kubernetes.NewForConfig(cfg)
+			k8sClient, err := kubernetes.NewForConfig(r.config)
 			if err != nil {
 				return err
 			}
@@ -223,15 +217,9 @@ func (r *ReconcileCollectorJob) reconileOneCollectorJob(instance *troubleshootv1
 				logger.Printf("setting up port forwarding because the manager is not running in the cluster\n")
 
 				// this isn't likely to be very solid
-				r := rand.New(rand.NewSource(time.Now().UnixNano()))
-				localPort := 3000 + r.Intn(999)
+				localPort := 3000 + rand.New(rand.NewSource(time.Now().UnixNano())).Intn(999)
 
-				homeDir := os.Getenv("HOME")
-				if homeDir == "" {
-					homeDir = os.Getenv("USERPROFILE")
-				}
-				kubeContext := filepath.Join(homeDir, ".kube", "config")
-				ch, err := k8sutil.PortForward(kubeContext, localPort, 8000, instance.Namespace, instance.Name+"-collector")
+				ch, err := k8sutil.PortForward(r.config, localPort, 8000, instance.Namespace, instance.Name+"-collector")
 				if err != nil {
 					return err
 				}
