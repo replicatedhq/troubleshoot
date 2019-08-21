@@ -390,167 +390,195 @@ spec:
                 type: string
             type: object
           spec:
-            items:
-              properties:
-                clusterInfo:
-                  type: object
-                clusterResources:
-                  type: object
-                copy:
+            properties:
+              afterCollection:
+                items:
                   properties:
-                    collectorName:
-                      type: string
-                    containerName:
-                      type: string
-                    containerPath:
-                      type: string
-                    namespace:
-                      type: string
-                    selector:
-                      items:
-                        type: string
-                      type: array
-                  required:
-                  - selector
-                  - namespace
-                  - containerPath
-                  type: object
-                exec:
-                  properties:
-                    args:
-                      items:
-                        type: string
-                      type: array
-                    collectorName:
-                      type: string
-                    command:
-                      items:
-                        type: string
-                      type: array
-                    containerName:
-                      type: string
-                    namespace:
-                      type: string
-                    selector:
-                      items:
-                        type: string
-                      type: array
-                    timeout:
-                      type: string
-                  required:
-                  - selector
-                  - namespace
-                  type: object
-                http:
-                  properties:
-                    collectorName:
-                      type: string
-                    get:
+                    callback:
                       properties:
-                        headers:
-                          additionalProperties:
-                            type: string
-                          type: object
-                        insecureSkipVerify:
-                          type: boolean
-                        url:
+                        method:
+                          type: string
+                        uri:
                           type: string
                       required:
-                      - url
+                      - uri
+                      - method
                       type: object
-                    post:
+                    uploadResultsTo:
                       properties:
-                        body:
+                        method:
                           type: string
-                        headers:
-                          additionalProperties:
-                            type: string
-                          type: object
-                        insecureSkipVerify:
-                          type: boolean
-                        url:
+                        uri:
                           type: string
                       required:
-                      - url
+                      - uri
+                      - method
                       type: object
-                    put:
+                  type: object
+                type: array
+              collectors:
+                items:
+                  properties:
+                    clusterInfo:
+                      type: object
+                    clusterResources:
+                      type: object
+                    copy:
                       properties:
-                        body:
+                        collectorName:
                           type: string
-                        headers:
-                          additionalProperties:
+                        containerName:
+                          type: string
+                        containerPath:
+                          type: string
+                        namespace:
+                          type: string
+                        selector:
+                          items:
                             type: string
-                          type: object
-                        insecureSkipVerify:
-                          type: boolean
-                        url:
+                          type: array
+                      required:
+                      - selector
+                      - namespace
+                      - containerPath
+                      type: object
+                    exec:
+                      properties:
+                        args:
+                          items:
+                            type: string
+                          type: array
+                        collectorName:
+                          type: string
+                        command:
+                          items:
+                            type: string
+                          type: array
+                        containerName:
+                          type: string
+                        namespace:
+                          type: string
+                        selector:
+                          items:
+                            type: string
+                          type: array
+                        timeout:
                           type: string
                       required:
-                      - url
+                      - selector
+                      - namespace
                       type: object
-                  type: object
-                logs:
-                  properties:
-                    collectorName:
-                      type: string
-                    limits:
+                    http:
                       properties:
-                        maxAge:
+                        collectorName:
                           type: string
-                        maxLines:
-                          format: int64
-                          type: integer
+                        get:
+                          properties:
+                            headers:
+                              additionalProperties:
+                                type: string
+                              type: object
+                            insecureSkipVerify:
+                              type: boolean
+                            url:
+                              type: string
+                          required:
+                          - url
+                          type: object
+                        post:
+                          properties:
+                            body:
+                              type: string
+                            headers:
+                              additionalProperties:
+                                type: string
+                              type: object
+                            insecureSkipVerify:
+                              type: boolean
+                            url:
+                              type: string
+                          required:
+                          - url
+                          type: object
+                        put:
+                          properties:
+                            body:
+                              type: string
+                            headers:
+                              additionalProperties:
+                                type: string
+                              type: object
+                            insecureSkipVerify:
+                              type: boolean
+                            url:
+                              type: string
+                          required:
+                          - url
+                          type: object
                       type: object
-                    namespace:
-                      type: string
-                    selector:
-                      items:
-                        type: string
-                      type: array
-                  required:
-                  - selector
+                    logs:
+                      properties:
+                        collectorName:
+                          type: string
+                        limits:
+                          properties:
+                            maxAge:
+                              type: string
+                            maxLines:
+                              format: int64
+                              type: integer
+                          type: object
+                        namespace:
+                          type: string
+                        selector:
+                          items:
+                            type: string
+                          type: array
+                      required:
+                      - selector
+                      type: object
+                    run:
+                      properties:
+                        args:
+                          items:
+                            type: string
+                          type: array
+                        collectorName:
+                          type: string
+                        command:
+                          items:
+                            type: string
+                          type: array
+                        image:
+                          type: string
+                        imagePullPolicy:
+                          type: string
+                        namespace:
+                          type: string
+                        timeout:
+                          type: string
+                      required:
+                      - namespace
+                      - image
+                      type: object
+                    secret:
+                      properties:
+                        collectorName:
+                          type: string
+                        includeValue:
+                          type: boolean
+                        key:
+                          type: string
+                        name:
+                          type: string
+                        namespace:
+                          type: string
+                      required:
+                      - name
+                      type: object
                   type: object
-                run:
-                  properties:
-                    args:
-                      items:
-                        type: string
-                      type: array
-                    collectorName:
-                      type: string
-                    command:
-                      items:
-                        type: string
-                      type: array
-                    image:
-                      type: string
-                    imagePullPolicy:
-                      type: string
-                    namespace:
-                      type: string
-                    timeout:
-                      type: string
-                  required:
-                  - namespace
-                  - image
-                  type: object
-                secret:
-                  properties:
-                    collectorName:
-                      type: string
-                    includeValue:
-                      type: boolean
-                    key:
-                      type: string
-                    name:
-                      type: string
-                    namespace:
-                      type: string
-                  required:
-                  - name
-                  type: object
-              type: object
-            type: array
+                type: array
+            type: object
           status:
             type: object
         type: object
