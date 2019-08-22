@@ -74,7 +74,9 @@ func runWithoutTimeout(ctx *Context, pod *corev1.Pod, runCollector *troubleshoot
 		if err != nil {
 			return nil, err
 		}
-		if status.Status.Phase == "Running" {
+		if status.Status.Phase == corev1.PodRunning ||
+			status.Status.Phase == corev1.PodFailed ||
+			status.Status.Phase == corev1.PodSucceeded {
 			break
 		}
 		time.Sleep(time.Second * 1)
