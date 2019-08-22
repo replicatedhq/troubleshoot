@@ -74,12 +74,12 @@ func runTroubleshootNoCRD(v *viper.Viper, arg string) error {
 				switch msg := msg.(type) {
 				case error:
 					c := color.New(color.FgHiRed)
-					c.Println(fmt.Sprintf("%s * %v", cursor.ClearEntireLine(), msg))
+					c.Println(fmt.Sprintf("%s\r * %v", cursor.ClearEntireLine(), msg))
 				case string:
 					currentDir = filepath.Base(msg)
 				}
 			case <-finishedCh:
-				fmt.Printf("\r")
+				fmt.Printf("\r%s\r", cursor.ClearEntireLine())
 				return
 			case <-time.After(time.Millisecond * 100):
 				if currentDir == "" {
@@ -99,7 +99,7 @@ func runTroubleshootNoCRD(v *viper.Viper, arg string) error {
 		return errors.Wrap(err, "run collectors")
 	}
 
-	fmt.Printf("\r%s", cursor.ClearEntireLine())
+	fmt.Printf("\r%s\r", cursor.ClearEntireLine())
 
 	if len(collector.Spec.AfterCollection) == 0 {
 		msg := archivePath
@@ -127,7 +127,7 @@ the %s Admin Console to begin analysis.`
 		}
 	}
 
-	fmt.Printf("A support bundle has been created in the current directory named %q\n", archivePath)
+	fmt.Printf("\nA support bundle has been created in the current directory named %q\n", archivePath)
 	return nil
 }
 
