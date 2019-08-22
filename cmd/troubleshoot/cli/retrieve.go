@@ -1,9 +1,7 @@
 package cli
 
 import (
-	"errors"
-	"path/filepath"
-
+	"github.com/pkg/errors"
 	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
 	"github.com/replicatedhq/troubleshoot/pkg/k8sutil"
 	"github.com/replicatedhq/troubleshoot/pkg/logger"
@@ -19,13 +17,11 @@ func Retrieve() *cobra.Command {
 		Long:  `...`,
 		PreRun: func(cmd *cobra.Command, args []string) {
 			viper.BindPFlag("collectors", cmd.Flags().Lookup("collectors"))
-			viper.BindPFlag("namespace", cmd.Flags().Lookup("namespace"))
-			viper.BindPFlag("kubecontext", cmd.Flags().Lookup("kubecontext"))
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			v := viper.GetViper()
 
-			troubleshootClient, err := createTroubleshootK8sClient()
+			troubleshootClient, err := createTroubleshootK8sClient(KubernetesConfigFlags)
 			if err != nil {
 				return err
 			}
@@ -53,7 +49,12 @@ func Retrieve() *cobra.Command {
 
 			logger.Printf("connecting to collector job %s\n", collectorJob.Name)
 
-			stopChan, err := k8sutil.PortForward(v.GetString("kubecontext"), 8000, 8000, collectorJob.Status.ServerPodNamespace, collectorJob.Status.ServerPodName)
+			config, err := KubernetesConfigFlags.ToRESTConfig()
+			if err != nil {
+				return errors.Wrap(err, "failed to convert kube flags to rest config")
+			}
+
+			stopChan, err := k8sutil.PortForward(config, 8000, 8000, collectorJob.Status.ServerPodNamespace, collectorJob.Status.ServerPodName)
 			if err != nil {
 				return err
 			}
@@ -70,9 +71,6 @@ func Retrieve() *cobra.Command {
 	}
 
 	cmd.Flags().String("collectors", "", "name of the collectors to use")
-	cmd.Flags().String("namespace", "", "namespace the collectors can be found in")
-
-	cmd.Flags().String("kubecontext", filepath.Join(homeDir(), ".kube", "config"), "the kubecontext to use when connecting")
 
 	viper.BindPFlags(cmd.Flags())
 

@@ -3,12 +3,16 @@ package cli
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 	"strings"
 
 	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"k8s.io/cli-runtime/pkg/genericclioptions"
+)
+
+var (
+	KubernetesConfigFlags *genericclioptions.ConfigFlags
 )
 
 func RootCmd() *cobra.Command {
@@ -35,12 +39,7 @@ that a cluster meets the requirements to run an application.`,
 
 	cmd.Flags().Bool("interactive", true, "interactive preflights")
 	cmd.Flags().String("format", "human", "output format, one of human, json, yaml. only used when interactive is set to false")
-
 	cmd.Flags().String("preflight", "", "name of the preflight to use")
-	cmd.Flags().String("namespace", "default", "namespace the preflight can be found in")
-
-	cmd.Flags().String("kubecontext", filepath.Join(homeDir(), ".kube", "config"), "the kubecontext to use when connecting")
-
 	cmd.Flags().String("image", "", "the full name of the preflight image to use")
 	cmd.Flags().String("pullpolicy", "", "the pull policy of the preflight image")
 	cmd.Flags().String("collector-image", "", "the full name of the collector image to use")
@@ -49,6 +48,10 @@ that a cluster meets the requirements to run an application.`,
 	cmd.Flags().String("serviceaccount", "", "name of the service account to use. if not provided, one will be created")
 
 	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
+
+	KubernetesConfigFlags = genericclioptions.NewConfigFlags(false)
+	KubernetesConfigFlags.AddFlags(cmd.Flags())
+
 	return cmd
 }
 

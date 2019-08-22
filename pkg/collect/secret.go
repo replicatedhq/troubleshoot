@@ -7,7 +7,6 @@ import (
 	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	"sigs.k8s.io/controller-runtime/pkg/client/config"
 )
 
 type FoundSecret struct {
@@ -23,13 +22,8 @@ type SecretOutput struct {
 	Errors      map[string][]byte `json:"secrets-errors/,omitempty"`
 }
 
-func Secret(secretCollector *troubleshootv1beta1.Secret, redact bool) ([]byte, error) {
-	cfg, err := config.GetConfig()
-	if err != nil {
-		return nil, err
-	}
-
-	client, err := kubernetes.NewForConfig(cfg)
+func Secret(ctx *Context, secretCollector *troubleshootv1beta1.Secret) ([]byte, error) {
+	client, err := kubernetes.NewForConfig(ctx.ClientConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -49,7 +43,7 @@ func Secret(secretCollector *troubleshootv1beta1.Secret, redact bool) ([]byte, e
 	}
 	if encoded != nil {
 		secretOutput.FoundSecret[fmt.Sprintf("%s/%s.json", secret.Namespace, secret.Name)] = encoded
-		if redact {
+		if ctx.Redact {
 			secretOutput, err = secretOutput.Redact()
 			if err != nil {
 				return nil, err

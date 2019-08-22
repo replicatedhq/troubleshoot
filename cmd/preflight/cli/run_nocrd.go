@@ -138,11 +138,17 @@ func runCollectors(v *viper.Viper, preflight troubleshootv1beta1.Preflight) (map
 
 	allCollectedData := make(map[string][]byte)
 
+	config, err := KubernetesConfigFlags.ToRESTConfig()
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to convert kube flags to rest config")
+	}
+
 	// Run preflights collectors synchronously
 	for _, desiredCollector := range desiredCollectors {
 		collector := collect.Collector{
-			Redact:  true,
-			Collect: desiredCollector,
+			Redact:       true,
+			Collect:      desiredCollector,
+			ClientConfig: config,
 		}
 
 		result, err := collector.RunCollectorSync()

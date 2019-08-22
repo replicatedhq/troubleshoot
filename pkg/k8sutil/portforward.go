@@ -8,21 +8,17 @@ import (
 	"strings"
 	"time"
 
-	"k8s.io/client-go/tools/clientcmd"
+	restclient "k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/portforward"
 	"k8s.io/client-go/transport/spdy"
 )
 
-func PortForward(kubeContext string, localPort int, remotePort int, namespace string, podName string) (chan struct{}, error) {
-	// port forward
-	config, err := clientcmd.BuildConfigFromFlags("", kubeContext)
-	if err != nil {
-		return nil, err
-	}
+func PortForward(config *restclient.Config, localPort int, remotePort int, namespace string, podName string) (chan struct{}, error) {
 	roundTripper, upgrader, err := spdy.RoundTripperFor(config)
 	if err != nil {
 		return nil, err
 	}
+
 	path := fmt.Sprintf("/api/v1/namespaces/%s/pods/%s/portforward", namespace, podName)
 	hostIP := strings.TrimLeft(config.Host, "htps:/")
 	serverURL := url.URL{Scheme: "http", Path: path, Host: hostIP}

@@ -10,20 +10,14 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	"sigs.k8s.io/controller-runtime/pkg/client/config"
 )
 
 type RunOutput struct {
 	PodLogs map[string][]byte `json:"run/,omitempty"`
 }
 
-func Run(runCollector *troubleshootv1beta1.Run, redact bool) ([]byte, error) {
-	cfg, err := config.GetConfig()
-	if err != nil {
-		return nil, err
-	}
-
-	client, err := kubernetes.NewForConfig(cfg)
+func Run(ctx *Context, runCollector *troubleshootv1beta1.Run) ([]byte, error) {
+	client, err := kubernetes.NewForConfig(ctx.ClientConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -40,7 +34,7 @@ func Run(runCollector *troubleshootv1beta1.Run, redact bool) ([]byte, error) {
 	}()
 
 	if runCollector.Timeout == "" {
-		return runWithoutTimeout(pod, runCollector, redact)
+		return runWithoutTimeout(ctx, pod, runCollector)
 	}
 
 	timeout, err := time.ParseDuration(runCollector.Timeout)
@@ -51,7 +45,7 @@ func Run(runCollector *troubleshootv1beta1.Run, redact bool) ([]byte, error) {
 	errCh := make(chan error, 1)
 	resultCh := make(chan []byte, 1)
 	go func() {
-		b, err := runWithoutTimeout(pod, runCollector, redact)
+		b, err := runWithoutTimeout(ctx, pod, runCollector)
 		if err != nil {
 			errCh <- err
 		} else {
@@ -69,13 +63,8 @@ func Run(runCollector *troubleshootv1beta1.Run, redact bool) ([]byte, error) {
 	}
 }
 
-func runWithoutTimeout(pod *corev1.Pod, runCollector *troubleshootv1beta1.Run, redact bool) ([]byte, error) {
-	cfg, err := config.GetConfig()
-	if err != nil {
-		return nil, err
-	}
-
-	client, err := kubernetes.NewForConfig(cfg)
+func runWithoutTimeout(ctx *Context, pod *corev1.Pod, runCollector *troubleshootv1beta1.Run) ([]byte, error) {
+	client, err := kubernetes.NewForConfig(ctx.ClientConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -104,7 +93,7 @@ func runWithoutTimeout(pod *corev1.Pod, runCollector *troubleshootv1beta1.Run, r
 		runOutput.PodLogs[k] = v
 	}
 
-	if redact {
+	if ctx.Redact {
 		runOutput, err = runOutput.Redact()
 		if err != nil {
 			return nil, err

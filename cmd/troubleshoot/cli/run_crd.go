@@ -1,10 +1,10 @@
 package cli
 
 import (
-	"errors"
 	"fmt"
 	"time"
 
+	"github.com/pkg/errors"
 	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
 	"github.com/replicatedhq/troubleshoot/pkg/k8sutil"
 	"github.com/spf13/viper"
@@ -13,7 +13,7 @@ import (
 )
 
 func runTroubleshootCRD(v *viper.Viper) error {
-	troubleshootClient, err := createTroubleshootK8sClient()
+	troubleshootClient, err := createTroubleshootK8sClient(KubernetesConfigFlags)
 	if err != nil {
 		return err
 	}
@@ -85,8 +85,12 @@ func runTroubleshootCRD(v *viper.Viper) error {
 		time.Sleep(time.Millisecond * 200)
 	}
 
-	// Connect to the callback
-	stopChan, err := k8sutil.PortForward(v.GetString("kubecontext"), 8000, 8000, found.Status.ServerPodNamespace, found.Status.ServerPodName)
+	config, err := KubernetesConfigFlags.ToRESTConfig()
+	if err != nil {
+		return errors.Wrap(err, "failed to convert kube flags to rest config")
+	}
+
+	stopChan, err := k8sutil.PortForward(config, 8000, 8000, found.Status.ServerPodNamespace, found.Status.ServerPodName)
 	if err != nil {
 		return err
 	}

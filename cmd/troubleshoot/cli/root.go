@@ -3,13 +3,17 @@ package cli
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 	"strings"
 
 	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
 	"github.com/replicatedhq/troubleshoot/pkg/logger"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"k8s.io/cli-runtime/pkg/genericclioptions"
+)
+
+var (
+	KubernetesConfigFlags *genericclioptions.ConfigFlags
 )
 
 func RootCmd() *cobra.Command {
@@ -40,10 +44,6 @@ from a server that can be used to assist when troubleshooting a server.`,
 	cmd.AddCommand(Analyze())
 
 	cmd.Flags().String("collectors", "", "name of the collectors to use")
-	cmd.Flags().String("namespace", "default", "namespace the collectors can be found in")
-
-	cmd.Flags().String("kubecontext", filepath.Join(homeDir(), ".kube", "config"), "the kubecontext to use when connecting")
-
 	cmd.Flags().String("image", "", "the full name of the collector image to use")
 	cmd.Flags().String("pullpolicy", "", "the pull policy of the collector image")
 	cmd.Flags().Bool("redact", true, "enable/disable default redactions")
@@ -52,6 +52,10 @@ from a server that can be used to assist when troubleshooting a server.`,
 	viper.BindPFlags(cmd.Flags())
 
 	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
+
+	KubernetesConfigFlags = genericclioptions.NewConfigFlags(false)
+	KubernetesConfigFlags.AddFlags(cmd.Flags())
+
 	return cmd
 }
 

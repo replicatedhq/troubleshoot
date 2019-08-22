@@ -13,7 +13,6 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	"sigs.k8s.io/controller-runtime/pkg/client/config"
 )
 
 type LogsOutput struct {
@@ -21,13 +20,8 @@ type LogsOutput struct {
 	Errors  map[string][]byte `json:"logs-errors/,omitempty"`
 }
 
-func Logs(logsCollector *troubleshootv1beta1.Logs, redact bool) ([]byte, error) {
-	cfg, err := config.GetConfig()
-	if err != nil {
-		return nil, err
-	}
-
-	client, err := kubernetes.NewForConfig(cfg)
+func Logs(ctx *Context, logsCollector *troubleshootv1beta1.Logs) ([]byte, error) {
+	client, err := kubernetes.NewForConfig(ctx.ClientConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -63,7 +57,7 @@ func Logs(logsCollector *troubleshootv1beta1.Logs, redact bool) ([]byte, error) 
 			}
 		}
 
-		if redact {
+		if ctx.Redact {
 			logsOutput, err = logsOutput.Redact()
 			if err != nil {
 				return nil, err

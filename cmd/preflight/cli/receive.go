@@ -13,7 +13,7 @@ import (
 
 func receivePreflightResults(preflightJobNamespace string, preflightJobName string) error {
 	// poll until there are no more "running" collectors
-	troubleshootClient, err := createTroubleshootK8sClient()
+	troubleshootClient, err := createTroubleshootK8sClient(KubernetesConfigFlags)
 	if err != nil {
 		return err
 	}
