@@ -114,6 +114,9 @@ func extractTroubleshootBundle(reader io.Reader, destDir string) error {
 		case tar.TypeReg:
 			name := filepath.Join(destDir, header.Name)
 			file, err := os.OpenFile(name, os.O_RDWR|os.O_CREATE, os.FileMode(header.Mode))
+			if err != nil {
+				return err
+			}
 			_, err = io.Copy(file, tarReader)
 			file.Close()
 			if err != nil {
