@@ -5,6 +5,10 @@ export GO111MODULE=on
 
 all: test manager
 
+.PHONY: ffi
+ffi: fmt vet
+	go build -o bin/troubleshoot.so -buildmode=c-shared ffi/main.go
+
 # Run tests
 test: generate fmt vet manifests
 	go test ./pkg/... ./cmd/... -coverprofile cover.out

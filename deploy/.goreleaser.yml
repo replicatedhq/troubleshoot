@@ -4,6 +4,18 @@ release:
     owner: replicatedhq
     name: troubleshoot
 builds:
+  - id: so
+    goos:
+      - linux
+    goarch:
+      - amd64
+    env:
+      - CGO_ENABLED=1
+      - GO111MODULE=on
+    main: ffi/main.go
+    flags: -buildmode=c-shared
+    binary: troubleshoot.so
+    hooks: {}
   - id: collector
     goos:
       - linux
@@ -73,6 +85,10 @@ builds:
     binary: manager
     hooks: {}
 archives:
+  - id: so
+    builds:
+      - so
+    format: tar.gz
   - id: preflight
     builds:
       - preflight
