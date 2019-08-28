@@ -89,6 +89,7 @@ archives:
     builds:
       - so
     format: tar.gz
+    name_template: 'troubleshoot.so_{{ .Version }}_{{ .Os }}_{{ .Arch }}.tar.gz'
   - id: preflight
     builds:
       - preflight
