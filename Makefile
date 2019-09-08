@@ -2,6 +2,7 @@
 # Image URL to use all building/pushing image targets
 IMG ?= controller:latest
 export GO111MODULE=on
+export GOPROXY=https://proxy.golang.org
 
 all: test manager
 
