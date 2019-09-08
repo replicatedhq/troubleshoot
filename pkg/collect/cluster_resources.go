@@ -41,16 +41,17 @@ func ClusterResources(ctx *Context) ([]byte, error) {
 	clusterResourcesOutput := &ClusterResourcesOutput{}
 
 	// namespaces
-	namespaces, namespaceList, nsErrors := namespaces(client)
+	namespaces, namespaceList, namespaceErrors := namespaces(client)
 	clusterResourcesOutput.Namespaces = namespaces
-	clusterResourcesOutput.NamespacesErrors, err = marshalNonNil(nsErrors)
+	clusterResourcesOutput.NamespacesErrors, err = marshalNonNil(namespaceErrors)
 	if err != nil {
 		return nil, err
 	}
-
 	namespaceNames := make([]string, 0, 0)
-	for _, namespace := range namespaceList.Items {
-		namespaceNames = append(namespaceNames, namespace.Name)
+	if namespaceList != nil {
+		for _, namespace := range namespaceList.Items {
+			namespaceNames = append(namespaceNames, namespace.Name)
+		}
 	}
 
 	pods, podErrors := pods(client, namespaceNames)
