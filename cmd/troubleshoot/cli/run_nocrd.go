@@ -115,11 +115,13 @@ the %s Admin Console to begin analysis.`
 		return nil
 	}
 
+	fileUploaded := false
 	for _, ac := range collector.Spec.AfterCollection {
 		if ac.UploadResultsTo != nil {
 			if err := uploadSupportBundle(ac.UploadResultsTo, archivePath); err != nil {
 				return errors.Wrap(err, "upload support bundle")
 			}
+			fileUploaded = true
 		} else if ac.Callback != nil {
 			if err := callbackSupportBundleAPI(ac.Callback, archivePath); err != nil {
 				return errors.Wrap(err, "execute callback")
@@ -127,7 +129,13 @@ the %s Admin Console to begin analysis.`
 		}
 	}
 
-	fmt.Printf("\nA support bundle has been created in the current directory named %q\n", archivePath)
+	fmt.Printf("\r%s\r", cursor.ClearEntireLine())
+	if fileUploaded {
+		fmt.Printf("A support bundle has been created and uploaded to your cluster for analysis. Please visit the Troubleshoot page to continue.\n")
+		fmt.Printf("A copy of this support bundle was written to the current directory, named %q\n", archivePath)
+	} else {
+		fmt.Printf("A support bundle has been created in the current directory named %q\n", archivePath)
+	}
 	return nil
 }
 
