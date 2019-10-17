@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 
 	getter "github.com/hashicorp/go-getter"
+	"github.com/pkg/errors"
 	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
 	"github.com/replicatedhq/troubleshoot/pkg/logger"
 	"gopkg.in/yaml.v2"
@@ -24,22 +25,22 @@ type fileContentProvider struct {
 func DownloadAndAnalyze(ctx context.Context, bundleURL string) ([]*AnalyzeResult, error) {
 	tmpDir, err := ioutil.TempDir("", "troubleshoot-k8s")
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "failed to create temp dir")
 	}
 	defer os.RemoveAll(tmpDir)
 
-	if err := downLoadTroubleshootBundle(bundleURL, tmpDir); err != nil {
-		return nil, err
+	if err := downloadTroubleshootBundle(bundleURL, tmpDir); err != nil {
+		return nil, errors.Wrap(err, "failed to download bundle")
 	}
 
 	_, err = os.Stat(filepath.Join(tmpDir, "version.yaml"))
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "failed to read version.yaml")
 	}
 
 	analyzers, err := getTroubleshootAnalyzers()
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "failed to get analyzers")
 	}
 
 	fcp := fileContentProvider{rootDir: tmpDir}
@@ -58,15 +59,24 @@ func DownloadAndAnalyze(ctx context.Context, bundleURL string) ([]*AnalyzeResult
 	return analyzeResults, nil
 }
 
-func downLoadTroubleshootBundle(bundleURL, destDir string) error {
+func downloadTroubleshootBundle(bundleURL string, destDir string) error {
+	if bundleURL[0] == os.PathSeparator {
+		f, err := os.Open(bundleURL)
+		if err != nil {
+			return errors.Wrap(err, "failed to open support bundle")
+		}
+		defer f.Close()
+		return extractTroubleshootBundle(f, destDir)
+	}
+
 	pwd, err := os.Getwd()
 	if err != nil {
-		return err
+		return errors.Wrap(err, "failed to get workdir")
 	}
 
 	tmpDir, err := ioutil.TempDir("", "getter")
 	if err != nil {
-		return err
+		return errors.Wrap(err, "failed to create tmp dir")
 	}
 	defer os.RemoveAll(tmpDir)
 
@@ -77,12 +87,12 @@ func downLoadTroubleshootBundle(bundleURL, destDir string) error {
 		return nil
 	})
 	if err != nil {
-		return err
+		return errors.Wrap(err, "failed to read support bundle file")
 	}
 
 	f, err := os.Open(dst)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "failed to open support bundle")
 	}
 	defer f.Close()
 
@@ -92,7 +102,7 @@ func downLoadTroubleshootBundle(bundleURL, destDir string) error {
 func extractTroubleshootBundle(reader io.Reader, destDir string) error {
 	gzReader, err := gzip.NewReader(reader)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "failed to create gzip reader")
 	}
 
 	tarReader := tar.NewReader(gzReader)
@@ -102,25 +112,25 @@ func extractTroubleshootBundle(reader io.Reader, destDir string) error {
 			break
 		}
 		if err != nil {
-			return err
+			return errors.Wrap(err, "failed to read header from tar")
 		}
 
 		switch header.Typeflag {
 		case tar.TypeDir:
 			name := filepath.Join(destDir, header.Name)
 			if err := os.MkdirAll(name, os.FileMode(header.Mode)); err != nil {
-				return err
+				return errors.Wrap(err, "failed to mkdir")
 			}
 		case tar.TypeReg:
 			name := filepath.Join(destDir, header.Name)
 			file, err := os.OpenFile(name, os.O_RDWR|os.O_CREATE, os.FileMode(header.Mode))
 			if err != nil {
-				return err
+				return errors.Wrap(err, "failed to open tar file")
 			}
 			_, err = io.Copy(file, tarReader)
 			file.Close()
 			if err != nil {
-				return err
+				return errors.Wrap(err, "failed to extract file")
 			}
 		}
 	}
