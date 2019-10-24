@@ -89,7 +89,7 @@ func runWithoutTimeout(ctx *Context, pod *corev1.Pod, runCollector *troubleshoot
 	limits := troubleshootv1beta1.LogLimits{
 		MaxLines: 10000,
 	}
-	podLogs, err := getPodLogs(client, *pod, &limits, true)
+	podLogs, err := getPodLogs(client, *pod, "", &limits, true)
 
 	for k, v := range podLogs {
 		runOutput.PodLogs[k] = v

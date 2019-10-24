@@ -42,18 +42,34 @@ func Logs(ctx *Context, logsCollector *troubleshootv1beta1.Logs) ([]byte, error)
 
 	if len(pods) > 0 {
 		for _, pod := range pods {
-			podLogs, err := getPodLogs(client, pod, logsCollector.Limits, false)
-			if err != nil {
-				key := fmt.Sprintf("%s/%s-errors.json", pod.Namespace, pod.Name)
-				logsOutput.Errors[key], err = marshalNonNil([]string{err.Error()})
+			if len(logsCollector.Containers) == 0 {
+				podLogs, err := getPodLogs(client, pod, "", logsCollector.Limits, false)
 				if err != nil {
-					return nil, err
+					key := fmt.Sprintf("%s/%s-errors.json", pod.Namespace, pod.Name)
+					logsOutput.Errors[key], err = marshalNonNil([]string{err.Error()})
+					if err != nil {
+						return nil, err
+					}
+					continue
 				}
-				continue
-			}
-
-			for k, v := range podLogs {
-				logsOutput.PodLogs[k] = v
+				for k, v := range podLogs {
+					logsOutput.PodLogs[k] = v
+				}
+			} else {
+				for _, container := range logsCollector.Containers {
+					containerLogs, err := getPodLogs(client, pod, container, logsCollector.Limits, false)
+					if err != nil {
+						key := fmt.Sprintf("%s/%s/%s-errors.json", pod.Namespace, pod.Name, container)
+						logsOutput.Errors[key], err = marshalNonNil([]string{err.Error()})
+						if err != nil {
+							return nil, err
+						}
+						continue
+					}
+					for k, v := range containerLogs {
+						logsOutput.PodLogs[k] = v
+					}
+				}
 			}
 		}
 
@@ -88,9 +104,10 @@ func listPodsInSelectors(client *kubernetes.Clientset, namespace string, selecto
 	return pods.Items, nil
 }
 
-func getPodLogs(client *kubernetes.Clientset, pod corev1.Pod, limits *troubleshootv1beta1.LogLimits, follow bool) (map[string][]byte, error) {
+func getPodLogs(client *kubernetes.Clientset, pod corev1.Pod, container string, limits *troubleshootv1beta1.LogLimits, follow bool) (map[string][]byte, error) {
 	podLogOpts := corev1.PodLogOptions{
-		Follow: follow,
+		Follow:    follow,
+		Container: container,
 	}
 
 	defaultMaxLines := int64(10000)
@@ -126,8 +143,13 @@ func getPodLogs(client *kubernetes.Clientset, pod corev1.Pod, limits *troublesho
 		return nil, err
 	}
 
+	fileKey := fmt.Sprintf("%s/%s.txt", pod.Namespace, pod.Name)
+	if container != "" {
+		fileKey = fmt.Sprintf("%s/%s/%s.txt", pod.Namespace, pod.Name, container)
+	}
+
 	return map[string][]byte{
-		fmt.Sprintf("%s/%s.txt", pod.Namespace, pod.Name): buf.Bytes(),
+		fileKey: buf.Bytes(),
 	}, nil
 }
 
