@@ -882,6 +882,11 @@ func (in *Logs) DeepCopyInto(out *Logs) {
 		*out = make([]string, len(*in))
 		copy(*out, *in)
 	}
+	if in.Containers != nil {
+		in, out := &in.Containers, &out.Containers
+		*out = make([]string, len(*in))
+		copy(*out, *in)
+	}
 	if in.Limits != nil {
 		in, out := &in.Limits, &out.Limits
 		*out = new(LogLimits)

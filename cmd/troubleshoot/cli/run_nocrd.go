@@ -179,18 +179,21 @@ func runCollectors(v *viper.Viper, collector troubleshootv1beta1.Collector, prog
 			continue
 		}
 
-		collectorDir, err := parseAndSaveCollectorOutput(string(result), bundlePath)
+		newCollectorDirs, err := parseAndSaveCollectorOutput(string(result), bundlePath)
 		if err != nil {
 			progressChan <- fmt.Errorf("failed to parse collector spec %q: %v", collector.GetDisplayName(), err)
 			continue
 		}
 
-		if collectorDir == "" {
+		if len(newCollectorDirs) == 0 {
 			continue
 		}
 
-		progressChan <- collectorDir
-		collectorDirs = append(collectorDirs, collectorDir)
+		// TODO: better progress....
+		for _, d := range newCollectorDirs {
+			progressChan <- d
+		}
+		collectorDirs = append(collectorDirs, newCollectorDirs...)
 	}
 
 	tarGz := archiver.TarGz{
@@ -219,53 +222,58 @@ func runCollectors(v *viper.Viper, collector troubleshootv1beta1.Collector, prog
 	return filename, nil
 }
 
-func parseAndSaveCollectorOutput(output string, bundlePath string) (string, error) {
-	dir := ""
+func parseAndSaveCollectorOutput(output string, bundlePath string) ([]string, error) {
+	rootDirs := make(map[string]bool)
 
 	input := make(map[string]interface{})
 	if err := json.Unmarshal([]byte(output), &input); err != nil {
-		return "", errors.Wrap(err, "unmarshal output")
+		return nil, errors.Wrap(err, "unmarshal output")
 	}
 
 	for filename, maybeContents := range input {
 		fileDir, fileName := filepath.Split(filename)
 		outPath := filepath.Join(bundlePath, fileDir)
-		dir = outPath
+		rootDirs[outPath] = true
 
 		if err := os.MkdirAll(outPath, 0777); err != nil {
-			return "", errors.Wrap(err, "create output file")
+			return nil, errors.Wrap(err, "create output file")
 		}
 
 		switch maybeContents.(type) {
 		case string:
 			decoded, err := base64.StdEncoding.DecodeString(maybeContents.(string))
 			if err != nil {
-				return "", errors.Wrap(err, "decode collector output")
+				return nil, errors.Wrap(err, "decode collector output")
 			}
 
 			if err := writeFile(filepath.Join(outPath, fileName), decoded); err != nil {
-				return "", errors.Wrap(err, "write collector output")
+				return nil, errors.Wrap(err, "write collector output")
 			}
 
 		case map[string]interface{}:
 			for k, v := range maybeContents.(map[string]interface{}) {
 				s, _ := filepath.Split(filepath.Join(outPath, fileName, k))
 				if err := os.MkdirAll(s, 0777); err != nil {
-					return "", errors.Wrap(err, "write output directories")
+					return nil, errors.Wrap(err, "write output directories")
 				}
 
 				decoded, err := base64.StdEncoding.DecodeString(v.(string))
 				if err != nil {
-					return "", errors.Wrap(err, "decode output")
+					return nil, errors.Wrap(err, "decode output")
 				}
 				if err := writeFile(filepath.Join(outPath, fileName, k), decoded); err != nil {
-					return "", errors.Wrap(err, "write output")
+					return nil, errors.Wrap(err, "write output")
 				}
 			}
 		}
 	}
 
-	return dir, nil
+	dirs := make([]string, 0)
+	for dir := range rootDirs {
+		dirs = append(dirs, dir)
+	}
+
+	return dirs, nil
 }
 
 func uploadSupportBundle(r *troubleshootv1beta1.ResultRequest, archivePath string) error {

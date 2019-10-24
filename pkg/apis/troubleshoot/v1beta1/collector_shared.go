@@ -27,6 +27,7 @@ type Logs struct {
 	CollectorMeta `json:",inline" yaml:",inline"`
 	Selector      []string   `json:"selector" yaml:"selector"`
 	Namespace     string     `json:"namespace,omitempty" yaml:"namespace,omitempty"`
+	Containers    []string   `json:"containers,omitempty" yaml:"containers,omitempty"`
 	Limits        *LogLimits `json:"limits,omitempty" yaml:"omitempty"`
 }
 
