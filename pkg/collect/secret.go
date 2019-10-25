@@ -39,10 +39,10 @@ func Secret(ctx *Context, secretCollector *troubleshootv1beta1.Secret) ([]byte, 
 		if err != nil {
 			return nil, err
 		}
-		secretOutput.Errors[fmt.Sprintf("%s/%s.json", secret.Namespace, secret.Name)] = errorBytes
+		secretOutput.Errors[fmt.Sprintf("%s.json", secret.Name)] = errorBytes
 	}
 	if encoded != nil {
-		secretOutput.FoundSecret[fmt.Sprintf("%s/%s.json", secret.Namespace, secret.Name)] = encoded
+		secretOutput.FoundSecret[fmt.Sprintf("%s.json", secret.Name)] = encoded
 		if ctx.Redact {
 			secretOutput, err = secretOutput.Redact()
 			if err != nil {

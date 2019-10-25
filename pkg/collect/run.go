@@ -12,9 +12,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-type RunOutput struct {
-	PodLogs map[string][]byte `json:"run/,omitempty"`
-}
+type RunOutput map[string][]byte
 
 func Run(ctx *Context, runCollector *troubleshootv1beta1.Run) ([]byte, error) {
 	client, err := kubernetes.NewForConfig(ctx.ClientConfig)
@@ -82,17 +80,15 @@ func runWithoutTimeout(ctx *Context, pod *corev1.Pod, runCollector *troubleshoot
 		time.Sleep(time.Second * 1)
 	}
 
-	runOutput := &RunOutput{
-		PodLogs: make(map[string][]byte),
-	}
+	runOutput := RunOutput{}
 
 	limits := troubleshootv1beta1.LogLimits{
 		MaxLines: 10000,
 	}
-	podLogs, err := getPodLogs(client, *pod, "", &limits, true)
+	podLogs, err := getPodLogs(client, *pod, runCollector.Name, "", &limits, true)
 
 	for k, v := range podLogs {
-		runOutput.PodLogs[k] = v
+		runOutput[k] = v
 	}
 
 	if ctx.Redact {
@@ -151,13 +147,11 @@ func runPod(client *kubernetes.Clientset, runCollector *troubleshootv1beta1.Run)
 	return created, nil
 }
 
-func (r *RunOutput) Redact() (*RunOutput, error) {
-	podLogs, err := redactMap(r.PodLogs)
+func (r RunOutput) Redact() (RunOutput, error) {
+	podLogs, err := redactMap(r)
 	if err != nil {
 		return nil, err
 	}
 
-	return &RunOutput{
-		PodLogs: podLogs,
-	}, nil
+	return podLogs, nil
 }

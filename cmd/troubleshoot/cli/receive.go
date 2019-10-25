@@ -9,8 +9,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/mholt/archiver"
-	"github.com/pkg/errors"
 	"github.com/replicatedhq/troubleshoot/pkg/logger"
 	kuberneteserrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -29,8 +27,7 @@ func receiveSupportBundle(collectorJobNamespace string, collectorJobName string)
 	}
 	defer os.RemoveAll(bundlePath)
 
-	versionFilename, err := writeVersionFile(bundlePath)
-	if err != nil {
+	if err = writeVersionFile(bundlePath); err != nil {
 		return err
 	}
 
@@ -118,28 +115,15 @@ func receiveSupportBundle(collectorJobNamespace string, collectorJobName string)
 		}
 
 		if len(job.Status.Running) == 0 {
-			tarGz := archiver.TarGz{
-				Tar: &archiver.Tar{
-					ImplicitTopLevelFolder: false,
-				},
-			}
-
-			// version file should be first in tar archive for quick extraction
-			paths := []string{
-				versionFilename,
-			}
-			for _, id := range receivedCollectors {
-				paths = append(paths, filepath.Join(bundlePath, id))
-			}
-
 			filename, err := findFileName("support-bundle", "tar.gz")
 			if err != nil {
-				return errors.Wrap(err, "find file name")
-			}
-
-			if err := tarGz.Archive(paths, filename); err != nil {
 				return err
 			}
+
+			if err := tarSupportBundleDir(bundlePath, filename); err != nil {
+				return err
+			}
+
 			return nil
 		}
 	}

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"path/filepath"
 
 	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
 	corev1 "k8s.io/api/core/v1"
@@ -12,10 +13,7 @@ import (
 	"k8s.io/client-go/tools/remotecommand"
 )
 
-type CopyOutput struct {
-	Files  map[string][]byte `json:"copy/,omitempty"`
-	Errors map[string][]byte `json:"copy-errors/,omitempty"`
-}
+type CopyOutput map[string][]byte
 
 func Copy(ctx *Context, copyCollector *troubleshootv1beta1.Copy) ([]byte, error) {
 	client, err := kubernetes.NewForConfig(ctx.ClientConfig)
@@ -23,10 +21,7 @@ func Copy(ctx *Context, copyCollector *troubleshootv1beta1.Copy) ([]byte, error)
 		return nil, err
 	}
 
-	copyOutput := &CopyOutput{
-		Files:  make(map[string][]byte),
-		Errors: make(map[string][]byte),
-	}
+	copyOutput := CopyOutput{}
 
 	pods, podsErrors := listPodsInSelectors(client, copyCollector.Namespace, copyCollector.Selector)
 	if len(podsErrors) > 0 {
@@ -34,15 +29,17 @@ func Copy(ctx *Context, copyCollector *troubleshootv1beta1.Copy) ([]byte, error)
 		if err != nil {
 			return nil, err
 		}
-		copyOutput.Errors[getCopyErrosFileName(copyCollector)] = errorBytes
+		copyOutput[getCopyErrosFileName(copyCollector)] = errorBytes
 	}
 
 	if len(pods) > 0 {
 		for _, pod := range pods {
+			bundlePath := filepath.Join(copyCollector.Name, pod.Namespace, pod.Name)
+
 			files, copyErrors := copyFiles(ctx, client, pod, copyCollector)
 			if len(copyErrors) > 0 {
-				key := fmt.Sprintf("%s/%s/%s-errors.json", pod.Namespace, pod.Name, copyCollector.ContainerPath)
-				copyOutput.Errors[key], err = marshalNonNil(copyErrors)
+				key := filepath.Join(bundlePath, copyCollector.ContainerPath+"-errors.json")
+				copyOutput[key], err = marshalNonNil(copyErrors)
 				if err != nil {
 					return nil, err
 				}
@@ -50,12 +47,15 @@ func Copy(ctx *Context, copyCollector *troubleshootv1beta1.Copy) ([]byte, error)
 			}
 
 			for k, v := range files {
-				copyOutput.Files[k] = v
+				copyOutput[filepath.Join(bundlePath, k)] = v
 			}
 		}
 
 		if ctx.Redact {
-			// TODO
+			copyOutput, err = copyOutput.Redact()
+			if err != nil {
+				return nil, err
+			}
 		}
 	}
 
@@ -78,7 +78,9 @@ func copyFiles(ctx *Context, client *kubernetes.Clientset, pod corev1.Pod, copyC
 	req := client.CoreV1().RESTClient().Post().Resource("pods").Name(pod.Name).Namespace(pod.Namespace).SubResource("exec")
 	scheme := runtime.NewScheme()
 	if err := corev1.AddToScheme(scheme); err != nil {
-		return nil, map[string]string{"error": err.Error()}
+		return nil, map[string]string{
+			filepath.Join(copyCollector.ContainerPath, "error"): err.Error(),
+		}
 	}
 
 	parameterCodec := runtime.NewParameterCodec(scheme)
@@ -93,7 +95,9 @@ func copyFiles(ctx *Context, client *kubernetes.Clientset, pod corev1.Pod, copyC
 
 	exec, err := remotecommand.NewSPDYExecutor(ctx.ClientConfig, "POST", req.URL())
 	if err != nil {
-		return nil, map[string]string{"error": err.Error()}
+		return nil, map[string]string{
+			filepath.Join(copyCollector.ContainerPath, "error"): err.Error(),
+		}
 	}
 
 	output := new(bytes.Buffer)
@@ -105,21 +109,38 @@ func copyFiles(ctx *Context, client *kubernetes.Clientset, pod corev1.Pod, copyC
 		Tty:    false,
 	})
 	if err != nil {
-		return nil, map[string]string{
-			"stdout": output.String(),
-			"stderr": stderr.String(),
-			"error":  err.Error(),
+		errors := map[string]string{
+			filepath.Join(copyCollector.ContainerPath, "error"): err.Error(),
 		}
+		if s := output.String(); len(s) > 0 {
+			errors[filepath.Join(copyCollector.ContainerPath, "stdout")] = s
+		}
+		if s := stderr.String(); len(s) > 0 {
+			errors[filepath.Join(copyCollector.ContainerPath, "stderr")] = s
+		}
+		return nil, errors
 	}
 
 	return map[string][]byte{
-		fmt.Sprintf("%s/%s/%s", pod.Namespace, pod.Name, copyCollector.ContainerPath): output.Bytes(),
+		copyCollector.ContainerPath: output.Bytes(),
 	}, nil
 }
 
+func (c CopyOutput) Redact() (CopyOutput, error) {
+	results, err := redactMap(c)
+	if err != nil {
+		return nil, err
+	}
+
+	return results, nil
+}
+
 func getCopyErrosFileName(copyCollector *troubleshootv1beta1.Copy) string {
+	if len(copyCollector.Name) > 0 {
+		return fmt.Sprintf("%s-errors.json", copyCollector.Name)
+	}
 	if len(copyCollector.CollectorName) > 0 {
-		return fmt.Sprintf("%s.json", copyCollector.CollectorName)
+		return fmt.Sprintf("%s-errors.json", copyCollector.CollectorName)
 	}
 	// TODO: random part
 	return "errors.json"

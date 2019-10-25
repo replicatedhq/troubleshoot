@@ -7,21 +7,23 @@ import (
 	"path/filepath"
 )
 
-func writeVersionFile(path string) (string, error) {
+const VersionFilename = "version.yaml"
+
+func writeVersionFile(path string) error {
 	version := troubleshootv1beta1.SupportBundleVersion{
 		ApiVersion: "troubleshoot.replicated.com/v1beta1",
 		Kind:       "SupportBundle",
 	}
 	b, err := yaml.Marshal(version)
 	if err != nil {
-		return "", err
+		return err
 	}
 
-	filename := filepath.Join(path, "version.yaml")
+	filename := filepath.Join(path, VersionFilename)
 	err = ioutil.WriteFile(filename, b, 0644)
 	if err != nil {
-		return "", err
+		return err
 	}
 
-	return filename, nil
+	return nil
 }

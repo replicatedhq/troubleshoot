@@ -25,6 +25,7 @@ type LogLimits struct {
 
 type Logs struct {
 	CollectorMeta `json:",inline" yaml:",inline"`
+	Name          string     `json:"name,omitempty" yaml:"name,omitempty"`
 	Selector      []string   `json:"selector" yaml:"selector"`
 	Namespace     string     `json:"namespace,omitempty" yaml:"namespace,omitempty"`
 	Containers    []string   `json:"containers,omitempty" yaml:"containers,omitempty"`
@@ -33,6 +34,7 @@ type Logs struct {
 
 type Run struct {
 	CollectorMeta   `json:",inline" yaml:",inline"`
+	Name            string   `json:"name,omitempty" yaml:"name,omitempty"`
 	Namespace       string   `json:"namespace" yaml:"namespace"`
 	Image           string   `json:"image" yaml:"image"`
 	Command         []string `json:"command,omitempty" yaml:"command,omitempty"`
@@ -43,6 +45,7 @@ type Run struct {
 
 type Exec struct {
 	CollectorMeta `json:",inline" yaml:",inline"`
+	Name          string   `json:"name,omitempty" yaml:"name,omitempty"`
 	Selector      []string `json:"selector" yaml:"selector"`
 	Namespace     string   `json:"namespace" yaml:"namespace"`
 	ContainerName string   `json:"containerName,omitempty" yaml:"containerName,omitempty"`
@@ -53,6 +56,7 @@ type Exec struct {
 
 type Copy struct {
 	CollectorMeta `json:",inline" yaml:",inline"`
+	Name          string   `json:"name,omitempty" yaml:"name,omitempty"`
 	Selector      []string `json:"selector" yaml:"selector"`
 	Namespace     string   `json:"namespace" yaml:"namespace"`
 	ContainerPath string   `json:"containerPath" yaml:"containerPath"`
@@ -61,9 +65,10 @@ type Copy struct {
 
 type HTTP struct {
 	CollectorMeta `json:",inline" yaml:",inline"`
-	Get           *Get  `json:"get,omitempty" yaml:"get,omitempty"`
-	Post          *Post `json:"post,omitempty" yaml:"post,omitempty"`
-	Put           *Put  `json:"put,omitempty" yaml:"put,omitempty"`
+	Name          string `json:"name,omitempty" yaml:"name,omitempty"`
+	Get           *Get   `json:"get,omitempty" yaml:"get,omitempty"`
+	Post          *Post  `json:"post,omitempty" yaml:"post,omitempty"`
+	Put           *Put   `json:"put,omitempty" yaml:"put,omitempty"`
 }
 
 type Get struct {

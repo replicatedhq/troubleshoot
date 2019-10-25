@@ -146,8 +146,7 @@ func runCollectors(v *viper.Viper, collector troubleshootv1beta1.Collector, prog
 	}
 	defer os.RemoveAll(bundlePath)
 
-	versionFilename, err := writeVersionFile(bundlePath)
-	if err != nil {
+	if err = writeVersionFile(bundlePath); err != nil {
 		return "", errors.Wrap(err, "write version file")
 	}
 
@@ -157,8 +156,6 @@ func runCollectors(v *viper.Viper, collector troubleshootv1beta1.Collector, prog
 	}
 	desiredCollectors = ensureCollectorInList(desiredCollectors, troubleshootv1beta1.Collect{ClusterInfo: &troubleshootv1beta1.ClusterInfo{}})
 	desiredCollectors = ensureCollectorInList(desiredCollectors, troubleshootv1beta1.Collect{ClusterResources: &troubleshootv1beta1.ClusterResources{}})
-
-	collectorDirs := []string{}
 
 	config, err := KubernetesConfigFlags.ToRESTConfig()
 	if err != nil {
@@ -173,41 +170,19 @@ func runCollectors(v *viper.Viper, collector troubleshootv1beta1.Collector, prog
 			ClientConfig: config,
 		}
 
+		progressChan <- collector.GetDisplayName()
+
 		result, err := collector.RunCollectorSync()
 		if err != nil {
 			progressChan <- fmt.Errorf("failed to run collector %q: %v", collector.GetDisplayName(), err)
 			continue
 		}
 
-		newCollectorDirs, err := parseAndSaveCollectorOutput(string(result), bundlePath)
+		err = parseAndSaveCollectorOutput(string(result), bundlePath)
 		if err != nil {
 			progressChan <- fmt.Errorf("failed to parse collector spec %q: %v", collector.GetDisplayName(), err)
 			continue
 		}
-
-		if len(newCollectorDirs) == 0 {
-			continue
-		}
-
-		// TODO: better progress....
-		for _, d := range newCollectorDirs {
-			progressChan <- d
-		}
-		collectorDirs = append(collectorDirs, newCollectorDirs...)
-	}
-
-	tarGz := archiver.TarGz{
-		Tar: &archiver.Tar{
-			ImplicitTopLevelFolder: false,
-		},
-	}
-
-	// version file should be first in tar archive for quick extraction
-	paths := []string{
-		versionFilename,
-	}
-	for _, collectorDir := range collectorDirs {
-		paths = append(paths, collectorDir)
 	}
 
 	filename, err := findFileName("support-bundle", "tar.gz")
@@ -215,65 +190,57 @@ func runCollectors(v *viper.Viper, collector troubleshootv1beta1.Collector, prog
 		return "", errors.Wrap(err, "find file name")
 	}
 
-	if err := tarGz.Archive(paths, filename); err != nil {
-		return "", errors.Wrap(err, "create archive")
+	if err := tarSupportBundleDir(bundlePath, filename); err != nil {
+		return "", errors.Wrap(err, "create bundle file")
 	}
 
 	return filename, nil
 }
 
-func parseAndSaveCollectorOutput(output string, bundlePath string) ([]string, error) {
-	rootDirs := make(map[string]bool)
-
+func parseAndSaveCollectorOutput(output string, bundlePath string) error {
 	input := make(map[string]interface{})
 	if err := json.Unmarshal([]byte(output), &input); err != nil {
-		return nil, errors.Wrap(err, "unmarshal output")
+		return errors.Wrap(err, "unmarshal output")
 	}
 
 	for filename, maybeContents := range input {
 		fileDir, fileName := filepath.Split(filename)
 		outPath := filepath.Join(bundlePath, fileDir)
-		rootDirs[outPath] = true
 
 		if err := os.MkdirAll(outPath, 0777); err != nil {
-			return nil, errors.Wrap(err, "create output file")
+			return errors.Wrap(err, "create output file")
 		}
 
 		switch maybeContents.(type) {
 		case string:
 			decoded, err := base64.StdEncoding.DecodeString(maybeContents.(string))
 			if err != nil {
-				return nil, errors.Wrap(err, "decode collector output")
+				return errors.Wrap(err, "decode collector output")
 			}
 
 			if err := writeFile(filepath.Join(outPath, fileName), decoded); err != nil {
-				return nil, errors.Wrap(err, "write collector output")
+				return errors.Wrap(err, "write collector output")
 			}
 
 		case map[string]interface{}:
 			for k, v := range maybeContents.(map[string]interface{}) {
 				s, _ := filepath.Split(filepath.Join(outPath, fileName, k))
 				if err := os.MkdirAll(s, 0777); err != nil {
-					return nil, errors.Wrap(err, "write output directories")
+					return errors.Wrap(err, "write output directories")
 				}
 
 				decoded, err := base64.StdEncoding.DecodeString(v.(string))
 				if err != nil {
-					return nil, errors.Wrap(err, "decode output")
+					return errors.Wrap(err, "decode output")
 				}
 				if err := writeFile(filepath.Join(outPath, fileName, k), decoded); err != nil {
-					return nil, errors.Wrap(err, "write output")
+					return errors.Wrap(err, "write output")
 				}
 			}
 		}
 	}
 
-	dirs := make([]string, 0)
-	for dir := range rootDirs {
-		dirs = append(dirs, dir)
-	}
-
-	return dirs, nil
+	return nil
 }
 
 func uploadSupportBundle(r *troubleshootv1beta1.ResultRequest, archivePath string) error {
@@ -335,6 +302,35 @@ func callbackSupportBundleAPI(r *troubleshootv1beta1.ResultRequest, archivePath 
 
 	if resp.StatusCode >= 300 {
 		return fmt.Errorf("unexpected status code %d", resp.StatusCode)
+	}
+
+	return nil
+}
+
+func tarSupportBundleDir(inputDir, outputFilename string) error {
+	tarGz := archiver.TarGz{
+		Tar: &archiver.Tar{
+			ImplicitTopLevelFolder: false,
+		},
+	}
+
+	paths := []string{
+		filepath.Join(inputDir, VersionFilename), // version file should be first in tar archive for quick extraction
+	}
+
+	topLevelFiles, err := ioutil.ReadDir(inputDir)
+	if err != nil {
+		return errors.Wrap(err, "list bundle directory contents")
+	}
+	for _, f := range topLevelFiles {
+		if f.Name() == VersionFilename {
+			continue
+		}
+		paths = append(paths, filepath.Join(inputDir, f.Name()))
+	}
+
+	if err := tarGz.Archive(paths, outputFilename); err != nil {
+		return errors.Wrap(err, "create archive")
 	}
 
 	return nil
