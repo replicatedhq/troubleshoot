@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"path/filepath"
 	"time"
 
 	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
@@ -14,10 +15,7 @@ import (
 	"k8s.io/client-go/tools/remotecommand"
 )
 
-type ExecOutput struct {
-	Results map[string][]byte `json:"exec/,omitempty"`
-	Errors  map[string][]byte `json:"exec-errors/,omitempty"`
-}
+type ExecOutput map[string][]byte
 
 func Exec(ctx *Context, execCollector *troubleshootv1beta1.Exec) ([]byte, error) {
 	if execCollector.Timeout == "" {
@@ -57,10 +55,7 @@ func execWithoutTimeout(ctx *Context, execCollector *troubleshootv1beta1.Exec) (
 		return nil, err
 	}
 
-	execOutput := &ExecOutput{
-		Results: make(map[string][]byte),
-		Errors:  make(map[string][]byte),
-	}
+	execOutput := ExecOutput{}
 
 	pods, podsErrors := listPodsInSelectors(client, execCollector.Namespace, execCollector.Selector)
 	if len(podsErrors) > 0 {
@@ -68,20 +63,27 @@ func execWithoutTimeout(ctx *Context, execCollector *troubleshootv1beta1.Exec) (
 		if err != nil {
 			return nil, err
 		}
-		execOutput.Errors[getExecErrosFileName(execCollector)] = errorBytes
+		execOutput[getExecErrosFileName(execCollector)] = errorBytes
 	}
 
 	if len(pods) > 0 {
 		for _, pod := range pods {
 			stdout, stderr, execErrors := getExecOutputs(ctx, client, pod, execCollector)
-			execOutput.Results[fmt.Sprintf("%s/%s/%s-stdout.txt", pod.Namespace, pod.Name, execCollector.CollectorName)] = stdout
-			execOutput.Results[fmt.Sprintf("%s/%s/%s-stderr.txt", pod.Namespace, pod.Name, execCollector.CollectorName)] = stderr
+
+			bundlePath := filepath.Join(execCollector.Name, pod.Namespace, pod.Name)
+			if len(stdout) > 0 {
+				execOutput[filepath.Join(bundlePath, execCollector.CollectorName+"-stdout.txt")] = stdout
+			}
+			if len(stderr) > 0 {
+				execOutput[filepath.Join(bundlePath, execCollector.CollectorName+"-stderr.txt")] = stderr
+			}
+
 			if len(execErrors) > 0 {
 				errorBytes, err := marshalNonNil(execErrors)
 				if err != nil {
 					return nil, err
 				}
-				execOutput.Results[fmt.Sprintf("%s/%s/%s-errors.json", pod.Namespace, pod.Name, execCollector.CollectorName)] = errorBytes
+				execOutput[filepath.Join(bundlePath, execCollector.CollectorName+"-errors.json")] = errorBytes
 				continue
 			}
 		}
@@ -146,21 +148,21 @@ func getExecOutputs(ctx *Context, client *kubernetes.Clientset, pod corev1.Pod, 
 	return stdout.Bytes(), stderr.Bytes(), nil
 }
 
-func (r *ExecOutput) Redact() (*ExecOutput, error) {
-	results, err := redactMap(r.Results)
+func (r ExecOutput) Redact() (ExecOutput, error) {
+	results, err := redactMap(r)
 	if err != nil {
 		return nil, err
 	}
 
-	return &ExecOutput{
-		Results: results,
-		Errors:  r.Errors,
-	}, nil
+	return results, nil
 }
 
 func getExecErrosFileName(execCollector *troubleshootv1beta1.Exec) string {
+	if len(execCollector.Name) > 0 {
+		return fmt.Sprintf("%s-errors.json", execCollector.Name)
+	}
 	if len(execCollector.CollectorName) > 0 {
-		return fmt.Sprintf("%s.json", execCollector.CollectorName)
+		return fmt.Sprintf("%s-errors.json", execCollector.CollectorName)
 	}
 	// TODO: random part
 	return "errors.json"

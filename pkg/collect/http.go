@@ -6,15 +6,14 @@ import (
 	"errors"
 	"io/ioutil"
 	"net/http"
+	"path/filepath"
 	"strings"
 
 	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
 	"github.com/replicatedhq/troubleshoot/pkg/redact"
 )
 
-type HTTPOutput struct {
-	Response map[string][]byte `json:"http/,omitempty"`
-}
+type HTTPOutput map[string][]byte
 
 type httpResponse struct {
 	Status  int               `json:"status"`
@@ -45,10 +44,12 @@ func HTTP(ctx *Context, httpCollector *troubleshootv1beta1.HTTP) ([]byte, error)
 		return nil, err
 	}
 
-	httpOutput := &HTTPOutput{
-		Response: map[string][]byte{
-			httpCollector.CollectorName + ".json": output,
-		},
+	fileName := "result.json"
+	if httpCollector.CollectorName != "" {
+		fileName = httpCollector.CollectorName + ".json"
+	}
+	httpOutput := HTTPOutput{
+		filepath.Join(httpCollector.Name, fileName): output,
 	}
 
 	b, err := json.MarshalIndent(httpOutput, "", "  ")

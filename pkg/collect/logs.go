@@ -15,10 +15,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-type LogsOutput struct {
-	PodLogs map[string][]byte `json:"logs/,omitempty"`
-	Errors  map[string][]byte `json:"logs-errors/,omitempty"`
-}
+type LogsOutput map[string][]byte
 
 func Logs(ctx *Context, logsCollector *troubleshootv1beta1.Logs) ([]byte, error) {
 	client, err := kubernetes.NewForConfig(ctx.ClientConfig)
@@ -26,10 +23,7 @@ func Logs(ctx *Context, logsCollector *troubleshootv1beta1.Logs) ([]byte, error)
 		return nil, err
 	}
 
-	logsOutput := &LogsOutput{
-		PodLogs: make(map[string][]byte),
-		Errors:  make(map[string][]byte),
-	}
+	logsOutput := LogsOutput{}
 
 	pods, podsErrors := listPodsInSelectors(client, logsCollector.Namespace, logsCollector.Selector)
 	if len(podsErrors) > 0 {
@@ -37,37 +31,37 @@ func Logs(ctx *Context, logsCollector *troubleshootv1beta1.Logs) ([]byte, error)
 		if err != nil {
 			return nil, err
 		}
-		logsOutput.Errors[getLogsErrorsFileName(logsCollector)] = errorBytes
+		logsOutput[getLogsErrorsFileName(logsCollector)] = errorBytes
 	}
 
 	if len(pods) > 0 {
 		for _, pod := range pods {
 			if len(logsCollector.Containers) == 0 {
-				podLogs, err := getPodLogs(client, pod, "", logsCollector.Limits, false)
+				podLogs, err := getPodLogs(client, pod, logsCollector.Name, "", logsCollector.Limits, false)
 				if err != nil {
-					key := fmt.Sprintf("%s/%s-errors.json", pod.Namespace, pod.Name)
-					logsOutput.Errors[key], err = marshalNonNil([]string{err.Error()})
+					key := fmt.Sprintf("%s/%s-errors.json", logsCollector.Name, pod.Name)
+					logsOutput[key], err = marshalNonNil([]string{err.Error()})
 					if err != nil {
 						return nil, err
 					}
 					continue
 				}
 				for k, v := range podLogs {
-					logsOutput.PodLogs[k] = v
+					logsOutput[k] = v
 				}
 			} else {
 				for _, container := range logsCollector.Containers {
-					containerLogs, err := getPodLogs(client, pod, container, logsCollector.Limits, false)
+					containerLogs, err := getPodLogs(client, pod, logsCollector.Name, container, logsCollector.Limits, false)
 					if err != nil {
-						key := fmt.Sprintf("%s/%s/%s-errors.json", pod.Namespace, pod.Name, container)
-						logsOutput.Errors[key], err = marshalNonNil([]string{err.Error()})
+						key := fmt.Sprintf("%s/%s/%s-errors.json", logsCollector.Name, pod.Name, container)
+						logsOutput[key], err = marshalNonNil([]string{err.Error()})
 						if err != nil {
 							return nil, err
 						}
 						continue
 					}
 					for k, v := range containerLogs {
-						logsOutput.PodLogs[k] = v
+						logsOutput[k] = v
 					}
 				}
 			}
@@ -104,7 +98,7 @@ func listPodsInSelectors(client *kubernetes.Clientset, namespace string, selecto
 	return pods.Items, nil
 }
 
-func getPodLogs(client *kubernetes.Clientset, pod corev1.Pod, container string, limits *troubleshootv1beta1.LogLimits, follow bool) (map[string][]byte, error) {
+func getPodLogs(client *kubernetes.Clientset, pod corev1.Pod, name, container string, limits *troubleshootv1beta1.LogLimits, follow bool) (map[string][]byte, error) {
 	podLogOpts := corev1.PodLogOptions{
 		Follow:    follow,
 		Container: container,
@@ -143,9 +137,9 @@ func getPodLogs(client *kubernetes.Clientset, pod corev1.Pod, container string, 
 		return nil, err
 	}
 
-	fileKey := fmt.Sprintf("%s/%s.txt", pod.Namespace, pod.Name)
+	fileKey := fmt.Sprintf("%s/%s.txt", name, pod.Name)
 	if container != "" {
-		fileKey = fmt.Sprintf("%s/%s/%s.txt", pod.Namespace, pod.Name, container)
+		fileKey = fmt.Sprintf("%s/%s/%s.txt", name, pod.Name, container)
 	}
 
 	return map[string][]byte{
@@ -153,21 +147,20 @@ func getPodLogs(client *kubernetes.Clientset, pod corev1.Pod, container string, 
 	}, nil
 }
 
-func (l *LogsOutput) Redact() (*LogsOutput, error) {
-	podLogs, err := redactMap(l.PodLogs)
+func (l LogsOutput) Redact() (LogsOutput, error) {
+	podLogs, err := redactMap(l)
 	if err != nil {
 		return nil, err
 	}
 
-	return &LogsOutput{
-		PodLogs: podLogs,
-		Errors:  l.Errors,
-	}, nil
+	return podLogs, nil
 }
 
 func getLogsErrorsFileName(logsCollector *troubleshootv1beta1.Logs) string {
-	if len(logsCollector.CollectorName) > 0 {
-		return fmt.Sprintf("%s.json", logsCollector.CollectorName)
+	if len(logsCollector.Name) > 0 {
+		return fmt.Sprintf("%s/errors.json", logsCollector.Name)
+	} else if len(logsCollector.CollectorName) > 0 {
+		return fmt.Sprintf("%s/errors.json", logsCollector.CollectorName)
 	}
 	// TODO: random part
 	return "errors.json"
