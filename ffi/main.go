@@ -15,10 +15,10 @@ import (
 )
 
 //export Analyze
-func Analyze(bundleURL string, outputFormat string, compatibility string) *C.char { 
+func Analyze(bundleURL string, analyzers string, outputFormat string, compatibility string) *C.char { 
 	logger.SetQuiet(true)
 
-	result, err := analyzer.DownloadAndAnalyze(context.TODO(), bundleURL)
+	result, err := analyzer.DownloadAndAnalyze(bundleURL, analyzers)
 	if err != nil {
 		fmt.Printf("error downloading and analyzing: %s\n", err.Error())
 		return C.CString("")

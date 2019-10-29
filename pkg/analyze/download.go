@@ -3,26 +3,24 @@ package analyzer
 import (
 	"archive/tar"
 	"compress/gzip"
-	"context"
-	"fmt"
 	"io"
 	"io/ioutil"
-	"net/http"
 	"os"
 	"path/filepath"
 
 	getter "github.com/hashicorp/go-getter"
 	"github.com/pkg/errors"
 	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
+	troubleshootscheme "github.com/replicatedhq/troubleshoot/pkg/client/troubleshootclientset/scheme"
 	"github.com/replicatedhq/troubleshoot/pkg/logger"
-	"gopkg.in/yaml.v2"
+	"k8s.io/client-go/kubernetes/scheme"
 )
 
 type fileContentProvider struct {
 	rootDir string
 }
 
-func DownloadAndAnalyze(ctx context.Context, bundleURL string) ([]*AnalyzeResult, error) {
+func DownloadAndAnalyze(analyzersSpec string, bundleURL string) ([]*AnalyzeResult, error) {
 	tmpDir, err := ioutil.TempDir("", "troubleshoot-k8s")
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create temp dir")
@@ -38,9 +36,20 @@ func DownloadAndAnalyze(ctx context.Context, bundleURL string) ([]*AnalyzeResult
 		return nil, errors.Wrap(err, "failed to read version.yaml")
 	}
 
-	analyzers, err := getTroubleshootAnalyzers()
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to get analyzers")
+	analyzers := []*troubleshootv1beta1.Analyze{}
+
+	if analyzersSpec == "" {
+		defaultAnalyzers, err := getDefaultAnalyzers()
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to get default analyzers")
+		}
+		analyzers = defaultAnalyzers
+	} else {
+		parsedAnalyzers, err := parseAnalyzers(analyzersSpec)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to parse analyzers")
+		}
+		analyzers = parsedAnalyzers
 	}
 
 	fcp := fileContentProvider{rootDir: tmpDir}
@@ -138,29 +147,41 @@ func extractTroubleshootBundle(reader io.Reader, destDir string) error {
 	return nil
 }
 
-func getTroubleshootAnalyzers() ([]*troubleshootv1beta1.Analyze, error) {
-	specURL := `https://troubleshoot.replicated.com/`
-	resp, err := http.Get(specURL)
+func parseAnalyzers(spec string) ([]*troubleshootv1beta1.Analyze, error) {
+	troubleshootscheme.AddToScheme(scheme.Scheme)
+	decode := scheme.Codecs.UniversalDeserializer().Decode
+
+	obj, _, err := decode([]byte(spec), nil, nil)
 	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("could not download analyzer spec, status code: %v", resp.StatusCode)
+		return nil, errors.Wrap(err, "failed to decode analyzers")
 	}
 
-	spec, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
-	}
+	analyzer := obj.(*troubleshootv1beta1.Analyzer)
+	return analyzer.Spec.Analyzers, nil
+}
 
-	preflight := troubleshootv1beta1.Preflight{}
-	if err := yaml.Unmarshal([]byte(spec), &preflight); err != nil {
-		return nil, err
-	}
+func getDefaultAnalyzers() ([]*troubleshootv1beta1.Analyze, error) {
+	spec := `apiVersion: troubleshoot.replicated.com/v1beta1
+kind: Analyzer
+metadata:
+  name: defaultAnalyzers
+spec:
+  analyzers:
+    - clusterVersion:
+        outcomes:
+          - fail:
+              when: "< 1.13.0"
+              message: The application requires at Kubernetes 1.13.0 or later, and recommends 1.15.0.
+              uri: https://www.kubernetes.io
+          - warn:
+              when: "< 1.15.0"
+              message: Your cluster meets the minimum version of Kubernetes, but we recommend you update to 1.15.0 or later.
+              uri: https://kubernetes.io
+          - pass:
+              when: ">= 1.15.0"
+              message: Your cluster meets the recommended and required versions of Kubernetes.`
 
-	return preflight.Spec.Analyzers, nil
+	return parseAnalyzers(spec)
 }
 
 func (f fileContentProvider) getFileContents(fileName string) ([]byte, error) {
