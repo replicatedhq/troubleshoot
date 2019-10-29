@@ -22,13 +22,13 @@ manager: generate fmt vet
 support-bundle: generate fmt vet
 	go build -o bin/support-bundle github.com/replicatedhq/troubleshoot/cmd/troubleshoot
 
-.PHONY: collector
-collector: generate fmt vet
-	go build -o bin/collector github.com/replicatedhq/troubleshoot/cmd/collector
-
 .PHONY: preflight
 preflight: generate fmt vet
 	go build -o bin/preflight github.com/replicatedhq/troubleshoot/cmd/preflight
+
+.PHONY: analyze
+analyze: generate fmt vet
+	go build -o bin/analyze github.com/replicatedhq/troubleshoot/cmd/analyze
 
 .PHONY: run
 run: generate fmt vet
@@ -103,14 +103,12 @@ local-release:
 
 .PHONY: run-preflight
 run-preflight: preflight
-	./bin/preflight \
-		--image=localhost:32000/troubleshoot:alpha \
-		--pullpolicy=Always \
-		./examples/preflight/sample-preflight.yaml
+	./bin/preflight ./examples/preflight/sample-preflight.yaml
 
 .PHONY: run-troubleshoot
 run-troubleshoot: support-bundle
-	./bin/support-bundle \
-		--image=localhost:32000/troubleshoot:alpha \
-		--pullpolicy=Always \
-		./examples/troubleshoot/sample-troubleshoot.yaml
+	./bin/support-bundle ./examples/troubleshoot/sample-troubleshoot.yaml
+
+.PHONY: run-analyze
+run-analyze: analyze
+	./bin/analyze --analyzers ./examples/troubleshoot/sample-analyzers.yaml ./support-bundle.tar.gz
