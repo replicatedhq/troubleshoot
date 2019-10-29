@@ -20,7 +20,7 @@ type fileContentProvider struct {
 	rootDir string
 }
 
-func DownloadAndAnalyze(analyzersSpec string, bundleURL string) ([]*AnalyzeResult, error) {
+func DownloadAndAnalyze(bundleURL string, analyzersSpec string) ([]*AnalyzeResult, error) {
 	tmpDir, err := ioutil.TempDir("", "troubleshoot-k8s")
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create temp dir")
