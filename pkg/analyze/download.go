@@ -139,7 +139,7 @@ func extractTroubleshootBundle(reader io.Reader, destDir string) error {
 }
 
 func getTroubleshootAnalyzers() ([]*troubleshootv1beta1.Analyze, error) {
-	specURL := `https://gist.githubusercontent.com/divolgin/92b512ad4697c7255f383a7c1b56fd83/raw`
+	specURL := `https://troubleshoot.replicated.com/`
 	resp, err := http.Get(specURL)
 	if err != nil {
 		return nil, err
