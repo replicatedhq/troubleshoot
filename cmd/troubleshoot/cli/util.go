@@ -18,12 +18,12 @@ func homeDir() string {
 }
 
 func isURL(str string) bool {
-	_, err := url.ParseRequestURI(str)
+	parsed, err := url.ParseRequestURI(str)
 	if err != nil {
 		return false
 	}
 
-	return true
+	return parsed.Scheme != ""
 }
 
 func createTroubleshootK8sClient(configFlags *genericclioptions.ConfigFlags) (*troubleshootclientv1beta1.TroubleshootV1beta1Client, error) {

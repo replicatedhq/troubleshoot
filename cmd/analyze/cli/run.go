@@ -66,10 +66,10 @@ func runAnalyzers(v *viper.Viper, bundlePath string) error {
 }
 
 func isURL(str string) bool {
-	_, err := url.ParseRequestURI(str)
+	parsed, err := url.ParseRequestURI(str)
 	if err != nil {
 		return false
 	}
 
-	return true
+	return parsed.Scheme != ""
 }
