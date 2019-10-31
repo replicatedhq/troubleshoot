@@ -893,8 +893,8 @@ func (in *Logs) DeepCopyInto(out *Logs) {
 		*out = make([]string, len(*in))
 		copy(*out, *in)
 	}
-	if in.Containers != nil {
-		in, out := &in.Containers, &out.Containers
+	if in.ContainerNames != nil {
+		in, out := &in.ContainerNames, &out.ContainerNames
 		*out = make([]string, len(*in))
 		copy(*out, *in)
 	}

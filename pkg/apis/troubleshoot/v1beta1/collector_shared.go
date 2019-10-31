@@ -24,12 +24,12 @@ type LogLimits struct {
 }
 
 type Logs struct {
-	CollectorMeta `json:",inline" yaml:",inline"`
-	Name          string     `json:"name,omitempty" yaml:"name,omitempty"`
-	Selector      []string   `json:"selector" yaml:"selector"`
-	Namespace     string     `json:"namespace,omitempty" yaml:"namespace,omitempty"`
-	Containers    []string   `json:"containers,omitempty" yaml:"containers,omitempty"`
-	Limits        *LogLimits `json:"limits,omitempty" yaml:"omitempty"`
+	CollectorMeta  `json:",inline" yaml:",inline"`
+	Name           string     `json:"name,omitempty" yaml:"name,omitempty"`
+	Selector       []string   `json:"selector" yaml:"selector"`
+	Namespace      string     `json:"namespace,omitempty" yaml:"namespace,omitempty"`
+	ContainerNames []string   `json:"containerNames,omitempty" yaml:"containerNames,omitempty"`
+	Limits         *LogLimits `json:"limits,omitempty" yaml:"omitempty"`
 }
 
 type Run struct {
