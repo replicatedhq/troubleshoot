@@ -36,7 +36,7 @@ func Logs(ctx *Context, logsCollector *troubleshootv1beta1.Logs) ([]byte, error)
 
 	if len(pods) > 0 {
 		for _, pod := range pods {
-			if len(logsCollector.Containers) == 0 {
+			if len(logsCollector.ContainerNames) == 0 {
 				podLogs, err := getPodLogs(client, pod, logsCollector.Name, "", logsCollector.Limits, false)
 				if err != nil {
 					key := fmt.Sprintf("%s/%s-errors.json", logsCollector.Name, pod.Name)
@@ -50,7 +50,7 @@ func Logs(ctx *Context, logsCollector *troubleshootv1beta1.Logs) ([]byte, error)
 					logsOutput[k] = v
 				}
 			} else {
-				for _, container := range logsCollector.Containers {
+				for _, container := range logsCollector.ContainerNames {
 					containerLogs, err := getPodLogs(client, pod, logsCollector.Name, container, logsCollector.Limits, false)
 					if err != nil {
 						key := fmt.Sprintf("%s/%s/%s-errors.json", logsCollector.Name, pod.Name, container)
