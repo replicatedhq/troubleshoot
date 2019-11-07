@@ -16,7 +16,7 @@ func Test_deploymentStatus(t *testing.T) {
 		files        map[string][]byte
 	}{
 		{
-			name: "1/1, = 1",
+			name: "1/1, pass when = 1",
 			analyzer: troubleshootv1beta1.DeploymentStatus{
 				Outcomes: []*troubleshootv1beta1.Outcome{
 					{
@@ -46,7 +46,7 @@ func Test_deploymentStatus(t *testing.T) {
 			},
 		},
 		{
-			name: "1/1, = 2",
+			name: "1/1, pass when = 2",
 			analyzer: troubleshootv1beta1.DeploymentStatus{
 				Outcomes: []*troubleshootv1beta1.Outcome{
 					{
@@ -70,6 +70,42 @@ func Test_deploymentStatus(t *testing.T) {
 				IsFail:  true,
 				Title:   "",
 				Message: "fail",
+			},
+			files: map[string][]byte{
+				"cluster-resources/deployments/default.json": []byte(collectedDeployments),
+			},
+		},
+		{
+			name: "1/1, pass when >= 2, warn when = 1, fail when 0",
+			analyzer: troubleshootv1beta1.DeploymentStatus{
+				Outcomes: []*troubleshootv1beta1.Outcome{
+					{
+						Pass: &troubleshootv1beta1.SingleOutcome{
+							When:    ">= 2",
+							Message: "pass",
+						},
+					},
+					{
+						Warn: &troubleshootv1beta1.SingleOutcome{
+							When:    "= 1",
+							Message: "warn",
+						},
+					},
+					{
+						Fail: &troubleshootv1beta1.SingleOutcome{
+							Message: "fail",
+						},
+					},
+				},
+				Namespace: "default",
+				Name:      "kotsadm-api",
+			},
+			expectResult: AnalyzeResult{
+				IsPass:  false,
+				IsWarn:  true,
+				IsFail:  false,
+				Title:   "",
+				Message: "warn",
 			},
 			files: map[string][]byte{
 				"cluster-resources/deployments/default.json": []byte(collectedDeployments),
