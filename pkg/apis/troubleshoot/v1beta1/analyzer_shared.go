@@ -50,6 +50,22 @@ type ImagePullSecret struct {
 	RegistryName string     `json:"registryName" yaml:"registryName"`
 }
 
+type DeploymentStatus struct {
+	AnalyzeMeta `json:",inline" yaml:",inline"`
+	Outcomes    []*Outcome `json:"outcomes" yaml:"outcomes"`
+	Namespace   string     `json:"namespace" yaml:"namespace"`
+	Name        string     `json:"name,omitempty" yaml:"name,omitempty"`
+	Selector    []string   `json:"selector,omitempty" yaml:"selector,omitempty"`
+}
+
+type StatefulsetStatus struct {
+	AnalyzeMeta `json:",inline" yaml:",inline"`
+	Outcomes    []*Outcome `json:"outcomes" yaml:"outcomes"`
+	Namespace   string     `json:"namespace" yaml:"namespace"`
+	Name        string     `json:"name,omitempty" yaml:"name,omitempty"`
+	Selector    []string   `json:"selector,omitempty" yaml:"selector,omitempty"`
+}
+
 type AnalyzeMeta struct {
 	CheckName string `json:"checkName,omitempty" yaml:"checkName,omitempty"`
 }
@@ -61,4 +77,6 @@ type Analyze struct {
 	Ingress                  *Ingress                  `json:"ingress,omitempty" yaml:"ingress,omitempty"`
 	Secret                   *AnalyzeSecret            `json:"secret,omitempty" yaml:"secret,omitempty"`
 	ImagePullSecret          *ImagePullSecret          `json:"imagePullSecret,omitempty" yaml:"imagePullSecret,omitempty"`
+	DeploymentStatus         *DeploymentStatus         `json:"deploymentStatus,omitempty" yaml:"deploymentStatus,omitempty"`
+	StatefulsetStatus        *StatefulsetStatus        `json:"statefulsetStatus,omitempty" yaml:"statefulsetStatus,omitempty"`
 }
