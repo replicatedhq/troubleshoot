@@ -54,16 +54,14 @@ type DeploymentStatus struct {
 	AnalyzeMeta `json:",inline" yaml:",inline"`
 	Outcomes    []*Outcome `json:"outcomes" yaml:"outcomes"`
 	Namespace   string     `json:"namespace" yaml:"namespace"`
-	Name        string     `json:"name,omitempty" yaml:"name,omitempty"`
-	Selector    []string   `json:"selector,omitempty" yaml:"selector,omitempty"`
+	Name        string     `json:"name" yaml:"name"`
 }
 
 type StatefulsetStatus struct {
 	AnalyzeMeta `json:",inline" yaml:",inline"`
 	Outcomes    []*Outcome `json:"outcomes" yaml:"outcomes"`
 	Namespace   string     `json:"namespace" yaml:"namespace"`
-	Name        string     `json:"name,omitempty" yaml:"name,omitempty"`
-	Selector    []string   `json:"selector,omitempty" yaml:"selector,omitempty"`
+	Name        string     `json:"name" yaml:"name"`
 }
 
 type AnalyzeMeta struct {
