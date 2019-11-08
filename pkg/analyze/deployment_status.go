@@ -10,7 +10,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 )
 
-func deploymentStatus(analyzer *troubleshootv1beta1.DeploymentStatus, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
+func analyzeDeploymentStatus(analyzer *troubleshootv1beta1.DeploymentStatus, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
 	collected, err := getCollectedFileContents(path.Join("cluster-resources", "deployments", fmt.Sprintf("%s.json", analyzer.Namespace)))
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to read collected deployments from namespace")

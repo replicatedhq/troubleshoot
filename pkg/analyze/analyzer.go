@@ -38,10 +38,13 @@ func Analyze(analyzer *troubleshootv1beta1.Analyze, getFile getCollectedFileCont
 		return analyzeImagePullSecret(analyzer.ImagePullSecret, findFiles)
 	}
 	if analyzer.DeploymentStatus != nil {
-		return deploymentStatus(analyzer.DeploymentStatus, getFile)
+		return analyzeDeploymentStatus(analyzer.DeploymentStatus, getFile)
 	}
 	if analyzer.StatefulsetStatus != nil {
-		return statefulsetStatus(analyzer.StatefulsetStatus, getFile)
+		return analyzeStatefulsetStatus(analyzer.StatefulsetStatus, getFile)
+	}
+	if analyzer.ContainerRuntime != nil {
+		return analyzeContainerRuntime(analyzer.ContainerRuntime, getFile)
 	}
 
 	return nil, errors.New("invalid analyzer")

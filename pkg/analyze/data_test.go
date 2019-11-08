@@ -452,3 +452,123 @@ var collectedDeployments = `[
 	  }
 	}
       ]`
+
+var collectedNodes = `[
+	{
+		"apiVersion": "v1",
+		"kind": "Node",
+		"metadata": {
+		    "annotations": {
+			"node.alpha.kubernetes.io/ttl": "0",
+			"volumes.kubernetes.io/controller-managed-attach-detach": "true"
+		    },
+		    "creationTimestamp": "2019-10-23T18:16:43Z",
+		    "labels": {
+			"beta.kubernetes.io/arch": "amd64",
+			"beta.kubernetes.io/os": "linux",
+			"kubernetes.io/arch": "amd64",
+			"kubernetes.io/hostname": "repldev-marc",
+			"kubernetes.io/os": "linux",
+			"microk8s.io/cluster": "true"
+		    },
+		    "name": "repldev-marc",
+		    "resourceVersion": "1769699",
+		    "selfLink": "/api/v1/nodes/repldev-marc",
+		    "uid": "cd30c57f-b445-437f-9473-f13343124030"
+		},
+		"spec": {},
+		"status": {
+		    "addresses": [
+			{
+			    "address": "10.168.0.26",
+			    "type": "InternalIP"
+			},
+			{
+			    "address": "repldev-marc",
+			    "type": "Hostname"
+			}
+		    ],
+		    "allocatable": {
+			"cpu": "8",
+			"ephemeral-storage": "1015018628Ki",
+			"hugepages-1Gi": "0",
+			"hugepages-2Mi": "0",
+			"memory": "30770604Ki",
+			"pods": "110"
+		    },
+		    "capacity": {
+			"cpu": "8",
+			"ephemeral-storage": "1016067204Ki",
+			"hugepages-1Gi": "0",
+			"hugepages-2Mi": "0",
+			"memory": "30873004Ki",
+			"pods": "110"
+		    },
+		    "conditions": [
+			{
+			    "lastHeartbeatTime": "2019-11-08T17:03:39Z",
+			    "lastTransitionTime": "2019-10-31T21:28:36Z",
+			    "message": "kubelet has sufficient memory available",
+			    "reason": "KubeletHasSufficientMemory",
+			    "status": "False",
+			    "type": "MemoryPressure"
+			},
+			{
+			    "lastHeartbeatTime": "2019-11-08T17:03:39Z",
+			    "lastTransitionTime": "2019-10-31T21:28:36Z",
+			    "message": "kubelet has no disk pressure",
+			    "reason": "KubeletHasNoDiskPressure",
+			    "status": "False",
+			    "type": "DiskPressure"
+			},
+			{
+			    "lastHeartbeatTime": "2019-11-08T17:03:39Z",
+			    "lastTransitionTime": "2019-10-31T21:28:36Z",
+			    "message": "kubelet has sufficient PID available",
+			    "reason": "KubeletHasSufficientPID",
+			    "status": "False",
+			    "type": "PIDPressure"
+			},
+			{
+			    "lastHeartbeatTime": "2019-11-08T17:03:39Z",
+			    "lastTransitionTime": "2019-10-31T21:28:36Z",
+			    "message": "kubelet is posting ready status. AppArmor enabled",
+			    "reason": "KubeletReady",
+			    "status": "True",
+			    "type": "Ready"
+			}
+		    ],
+		    "daemonEndpoints": {
+			"kubeletEndpoint": {
+			    "Port": 10250
+			}
+		    },
+		    "images": [
+			{
+			    "names": [
+				"localhost:32000/kotsadm-api@sha256:d4821b65869454dfac53ad01f295740df6fcd52711f0dcf6aa9d7e515f7ebe3c"
+			    ],
+			    "sizeBytes": 755312372
+			},
+			{
+			    "names": [
+				"localhost:32000/kotsadm-api@sha256:fc3c971facc9dbd1b07e19c1ebb33c6361dd219af8efed0616afd1278f81fa4e"
+			    ],
+			    "sizeBytes": 755312032
+			}
+		    ],
+		    "nodeInfo": {
+			"architecture": "amd64",
+			"bootID": "3401cdf2-129c-473d-a50c-723afd7378d3",
+			"containerRuntimeVersion": "containerd://1.2.5",
+			"kernelVersion": "5.0.0-1021-gcp",
+			"kubeProxyVersion": "v1.16.2",
+			"kubeletVersion": "v1.16.2",
+			"machineID": "97f4a34d2aa9e26785177a6b64fb9108",
+			"operatingSystem": "linux",
+			"osImage": "Ubuntu 18.04.2 LTS",
+			"systemUUID": "9dc594e5-ac7b-c649-e61f-cad715a28f79"
+		    }
+		}
+	    }
+]`
