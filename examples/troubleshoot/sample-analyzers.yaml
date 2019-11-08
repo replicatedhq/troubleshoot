@@ -1,19 +1,21 @@
 apiVersion: troubleshoot.replicated.com/v1beta1
 kind: Analyzer
 metadata:
-  name: defaultAnalyzers
+  name: a
 spec:
   analyzers:
-    - clusterVersion:
+    - distribution:
         outcomes:
           - fail:
-              when: "< 1.13.0"
-              message: The application requires at Kubernetes 1.13.0 or later, and recommends 1.15.0.
-              uri: https://www.kubernetes.io
+              when: "= docker desktop"
+              message: "docker for desktop is not allowed"
+          - fail:
+              when: "microk8s"
+              message: "mickrk8s is not prod"
           - warn:
-              when: "< 1.15.0"
-              message: Your cluster meets the minimum version of Kubernetes, but we recommend you update to 1.15.0 or later.
-              uri: https://kubernetes.io
+              when: "!= eks"
+              message: "YMMV on not eks"
           - pass:
-              when: ">= 1.15.0"
-              message: Your cluster meets the recommended and required versions of Kubernetes.
+              message: "good work"
+
+

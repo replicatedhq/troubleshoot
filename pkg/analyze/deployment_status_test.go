@@ -121,7 +121,7 @@ func Test_deploymentStatus(t *testing.T) {
 				return test.files[n], nil
 			}
 
-			actual, err := deploymentStatus(&test.analyzer, getFiles)
+			actual, err := analyzeDeploymentStatus(&test.analyzer, getFiles)
 			req.NoError(err)
 
 			assert.Equal(t, &test.expectResult, actual)

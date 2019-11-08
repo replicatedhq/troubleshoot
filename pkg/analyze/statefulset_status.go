@@ -10,7 +10,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 )
 
-func statefulsetStatus(analyzer *troubleshootv1beta1.StatefulsetStatus, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
+func analyzeStatefulsetStatus(analyzer *troubleshootv1beta1.StatefulsetStatus, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
 	collected, err := getCollectedFileContents(path.Join("cluster-resources", "statefulsets", fmt.Sprintf("%s.json", analyzer.Namespace)))
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to read collected deployments from namespace")
@@ -33,7 +33,7 @@ func statefulsetStatus(analyzer *troubleshootv1beta1.StatefulsetStatus, getColle
 		return &AnalyzeResult{
 			Title:   fmt.Sprintf("%s Statefulset Status", analyzer.Name),
 			IsFail:  true,
-			Message: "not found",
+			Message: fmt.Sprintf("The statefulset %q was not found", analyzer.Name),
 		}, nil
 	}
 

@@ -30,6 +30,8 @@ type ClusterResourcesOutput struct {
 	CustomResourceDefinitionsErrors []byte            `json:"cluster-resources/custom-resource-definitions-errors.json,omitempty"`
 	ImagePullSecrets                map[string][]byte `json:"cluster-resources/image-pull-secrets,omitempty"`
 	ImagePullSecretsErrors          []byte            `json:"cluster-resources/image-pull-secrets-errors.json,omitempty"`
+	Nodes                           []byte            `json:"cluster-resources/nodes.json,omitempty"`
+	NodesErrors                     []byte            `json:"cluster-resources/nodes-errors.json,omitempty"`
 }
 
 func ClusterResources(ctx *Context) ([]byte, error) {
@@ -109,6 +111,14 @@ func ClusterResources(ctx *Context) ([]byte, error) {
 	imagePullSecrets, pullSecretsErrors := imagePullSecrets(client, namespaceNames)
 	clusterResourcesOutput.ImagePullSecrets = imagePullSecrets
 	clusterResourcesOutput.ImagePullSecretsErrors, err = marshalNonNil(pullSecretsErrors)
+	if err != nil {
+		return nil, err
+	}
+
+	// nodes
+	nodes, nodeErrors := nodes(client)
+	clusterResourcesOutput.Nodes = nodes
+	clusterResourcesOutput.NodesErrors, err = marshalNonNil(nodeErrors)
 	if err != nil {
 		return nil, err
 	}
@@ -314,8 +324,26 @@ func imagePullSecrets(client *kubernetes.Clientset, namespaces []string) (map[st
 	return imagePullSecrets, errors
 }
 
+func nodes(client *kubernetes.Clientset) ([]byte, []string) {
+	nodes, err := client.CoreV1().Nodes().List(metav1.ListOptions{})
+	if err != nil {
+		return nil, []string{err.Error()}
+	}
+
+	b, err := json.MarshalIndent(nodes.Items, "", "  ")
+	if err != nil {
+		return nil, []string{err.Error()}
+	}
+
+	return b, nil
+}
+
 func (c *ClusterResourcesOutput) Redact() (*ClusterResourcesOutput, error) {
 	namespaces, err := redact.Redact(c.Namespaces)
+	if err != nil {
+		return nil, err
+	}
+	nodes, err := redact.Redact(c.Nodes)
 	if err != nil {
 		return nil, err
 	}
@@ -346,6 +374,8 @@ func (c *ClusterResourcesOutput) Redact() (*ClusterResourcesOutput, error) {
 	return &ClusterResourcesOutput{
 		Namespaces:                      namespaces,
 		NamespacesErrors:                c.NamespacesErrors,
+		Nodes:                           nodes,
+		NodesErrors:                     c.NodesErrors,
 		Pods:                            pods,
 		PodsErrors:                      c.PodsErrors,
 		Services:                        services,
