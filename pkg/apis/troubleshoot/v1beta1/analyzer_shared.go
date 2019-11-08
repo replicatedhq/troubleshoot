@@ -69,6 +69,11 @@ type ContainerRuntime struct {
 	Outcomes    []*Outcome `json:"outcomes" yaml:"outcomes"`
 }
 
+type Distribution struct {
+	AnalyzeMeta `json:",inline" yaml:",inline"`
+	Outcomes    []*Outcome `json:"outcomes" yaml:"outcomes"`
+}
+
 type AnalyzeMeta struct {
 	CheckName string `json:"checkName,omitempty" yaml:"checkName,omitempty"`
 }
@@ -83,4 +88,5 @@ type Analyze struct {
 	DeploymentStatus         *DeploymentStatus         `json:"deploymentStatus,omitempty" yaml:"deploymentStatus,omitempty"`
 	StatefulsetStatus        *StatefulsetStatus        `json:"statefulsetStatus,omitempty" yaml:"statefulsetStatus,omitempty"`
 	ContainerRuntime         *ContainerRuntime         `json:"containerRuntime,omitempty" yaml:"containerRuntime,omitempty"`
+	Distribution             *Distribution             `json:"distribution,omitempty" yaml:"distribution,omitempty"`
 }

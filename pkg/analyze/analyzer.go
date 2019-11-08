@@ -46,6 +46,9 @@ func Analyze(analyzer *troubleshootv1beta1.Analyze, getFile getCollectedFileCont
 	if analyzer.ContainerRuntime != nil {
 		return analyzeContainerRuntime(analyzer.ContainerRuntime, getFile)
 	}
+	if analyzer.Distribution != nil {
+		return analyzeDistribution(analyzer.Distribution, getFile)
+	}
 
 	return nil, errors.New("invalid analyzer")
 }

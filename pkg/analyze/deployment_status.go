@@ -33,7 +33,7 @@ func analyzeDeploymentStatus(analyzer *troubleshootv1beta1.DeploymentStatus, get
 		return &AnalyzeResult{
 			Title:   fmt.Sprintf("%s Deployment Status", analyzer.Name),
 			IsFail:  true,
-			Message: "not found",
+			Message: fmt.Sprintf("The deployment %q was not found", analyzer.Name),
 		}, nil
 	}
 

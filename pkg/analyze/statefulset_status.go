@@ -33,7 +33,7 @@ func analyzeStatefulsetStatus(analyzer *troubleshootv1beta1.StatefulsetStatus, g
 		return &AnalyzeResult{
 			Title:   fmt.Sprintf("%s Statefulset Status", analyzer.Name),
 			IsFail:  true,
-			Message: "not found",
+			Message: fmt.Sprintf("The statefulset %q was not found", analyzer.Name),
 		}, nil
 	}
 
