@@ -475,6 +475,51 @@ spec:
                       - outcomes
                       - customResourceDefinitionName
                       type: object
+                    deploymentStatus:
+                      properties:
+                        checkName:
+                          type: string
+                        name:
+                          type: string
+                        namespace:
+                          type: string
+                        outcomes:
+                          items:
+                            properties:
+                              fail:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
+                              pass:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
+                              warn:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
+                            type: object
+                          type: array
+                      required:
+                      - outcomes
+                      - namespace
+                      - name
+                      type: object
                     imagePullSecret:
                       properties:
                         checkName:
@@ -609,6 +654,51 @@ spec:
                       - secretName
                       - namespace
                       type: object
+                    statefulsetStatus:
+                      properties:
+                        checkName:
+                          type: string
+                        name:
+                          type: string
+                        namespace:
+                          type: string
+                        outcomes:
+                          items:
+                            properties:
+                              fail:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
+                              pass:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
+                              warn:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
+                            type: object
+                          type: array
+                      required:
+                      - outcomes
+                      - namespace
+                      - name
+                      type: object
                     storageClass:
                       properties:
                         checkName:
@@ -668,6 +758,8 @@ spec:
                           type: string
                         containerPath:
                           type: string
+                        name:
+                          type: string
                         namespace:
                           type: string
                         selector:
@@ -692,6 +784,8 @@ spec:
                             type: string
                           type: array
                         containerName:
+                          type: string
+                        name:
                           type: string
                         namespace:
                           type: string
@@ -722,6 +816,8 @@ spec:
                           required:
                           - url
                           type: object
+                        name:
+                          type: string
                         post:
                           properties:
                             body:
@@ -757,6 +853,10 @@ spec:
                       properties:
                         collectorName:
                           type: string
+                        containerNames:
+                          items:
+                            type: string
+                          type: array
                         limits:
                           properties:
                             maxAge:
@@ -765,6 +865,8 @@ spec:
                               format: int64
                               type: integer
                           type: object
+                        name:
+                          type: string
                         namespace:
                           type: string
                         selector:
@@ -789,6 +891,8 @@ spec:
                         image:
                           type: string
                         imagePullPolicy:
+                          type: string
+                        name:
                           type: string
                         namespace:
                           type: string

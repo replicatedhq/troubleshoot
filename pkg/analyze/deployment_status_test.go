@@ -38,7 +38,7 @@ func Test_deploymentStatus(t *testing.T) {
 				IsPass:  true,
 				IsWarn:  false,
 				IsFail:  false,
-				Title:   "",
+				Title:   "kotsadm-api Status",
 				Message: "pass",
 			},
 			files: map[string][]byte{
@@ -68,7 +68,7 @@ func Test_deploymentStatus(t *testing.T) {
 				IsPass:  false,
 				IsWarn:  false,
 				IsFail:  true,
-				Title:   "",
+				Title:   "kotsadm-api Status",
 				Message: "fail",
 			},
 			files: map[string][]byte{
@@ -104,7 +104,7 @@ func Test_deploymentStatus(t *testing.T) {
 				IsPass:  false,
 				IsWarn:  true,
 				IsFail:  false,
-				Title:   "",
+				Title:   "kotsadm-api Status",
 				Message: "warn",
 			},
 			files: map[string][]byte{
