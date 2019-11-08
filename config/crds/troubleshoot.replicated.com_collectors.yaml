@@ -431,6 +431,8 @@ spec:
                           type: string
                         containerPath:
                           type: string
+                        name:
+                          type: string
                         namespace:
                           type: string
                         selector:
@@ -455,6 +457,8 @@ spec:
                             type: string
                           type: array
                         containerName:
+                          type: string
+                        name:
                           type: string
                         namespace:
                           type: string
@@ -485,6 +489,8 @@ spec:
                           required:
                           - url
                           type: object
+                        name:
+                          type: string
                         post:
                           properties:
                             body:
@@ -520,6 +526,10 @@ spec:
                       properties:
                         collectorName:
                           type: string
+                        containerNames:
+                          items:
+                            type: string
+                          type: array
                         limits:
                           properties:
                             maxAge:
@@ -528,6 +538,8 @@ spec:
                               format: int64
                               type: integer
                           type: object
+                        name:
+                          type: string
                         namespace:
                           type: string
                         selector:
@@ -552,6 +564,8 @@ spec:
                         image:
                           type: string
                         imagePullPolicy:
+                          type: string
+                        name:
                           type: string
                         namespace:
                           type: string
