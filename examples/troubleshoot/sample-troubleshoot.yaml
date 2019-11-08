@@ -3,27 +3,4 @@ kind: Collector
 metadata:
   name: collector-sample
 spec:
-  collectors:
-    - secret:
-        name: myapp-postgres
-        namespace: default
-        key: uri
-        includeValue: false
-    - logs:
-        selector:
-          - name=cilium-operator
-        namespace: kube-system
-        limits:
-          maxAge: 30d
-          maxLines: 10000
-    - run:
-        collectorName: ping-google
-        namespace: default
-        image: flungo/netutils
-        command: ["ping"]
-        args: ["www.google.com"]
-        timeout: 5s
-    - http:
-        collectorName: echo-ip
-        get:
-          url: https://api.replicated.com/market/v1/echo/ip
+  collectors: []
