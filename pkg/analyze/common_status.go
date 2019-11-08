@@ -8,8 +8,10 @@ import (
 	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
 )
 
-func commonStatus(outcomes []*troubleshootv1beta1.Outcome, readyReplicas int) (*AnalyzeResult, error) {
-	result := &AnalyzeResult{}
+func commonStatus(outcomes []*troubleshootv1beta1.Outcome, title string, readyReplicas int) (*AnalyzeResult, error) {
+	result := &AnalyzeResult{
+		Title: title,
+	}
 
 	// ordering from the spec is important, the first one that matches returns
 	for _, outcome := range outcomes {

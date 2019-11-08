@@ -31,10 +31,11 @@ func statefulsetStatus(analyzer *troubleshootv1beta1.StatefulsetStatus, getColle
 	if status == nil {
 		// there's not an error, but maybe the requested statefulset is not even deployed
 		return &AnalyzeResult{
+			Title:   fmt.Sprintf("%s Statefulset Status", analyzer.Name),
 			IsFail:  true,
 			Message: "not found",
 		}, nil
 	}
 
-	return commonStatus(analyzer.Outcomes, int(status.ReadyReplicas))
+	return commonStatus(analyzer.Outcomes, fmt.Sprintf("%s Status", analyzer.Name), int(status.ReadyReplicas))
 }

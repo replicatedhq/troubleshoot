@@ -31,10 +31,11 @@ func deploymentStatus(analyzer *troubleshootv1beta1.DeploymentStatus, getCollect
 	if status == nil {
 		// there's not an error, but maybe the requested deployment is not even deployed
 		return &AnalyzeResult{
+			Title:   fmt.Sprintf("%s Deployment Status", analyzer.Name),
 			IsFail:  true,
 			Message: "not found",
 		}, nil
 	}
 
-	return commonStatus(analyzer.Outcomes, int(status.ReadyReplicas))
+	return commonStatus(analyzer.Outcomes, fmt.Sprintf("%s Status", analyzer.Name), int(status.ReadyReplicas))
 }
