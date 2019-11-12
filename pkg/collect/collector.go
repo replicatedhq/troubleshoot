@@ -40,6 +40,9 @@ func (c *Collector) RunCollectorSync() ([]byte, error) {
 	if c.Collect.Exec != nil {
 		return Exec(c.GetContext(), c.Collect.Exec)
 	}
+	if c.Collect.Data != nil {
+		return Data(c.GetContext(), c.Collect.Data)
+	}
 	if c.Collect.Copy != nil {
 		return Copy(c.GetContext(), c.Collect.Copy)
 	}
