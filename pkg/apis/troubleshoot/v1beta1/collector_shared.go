@@ -32,6 +32,12 @@ type Logs struct {
 	Limits         *LogLimits `json:"limits,omitempty" yaml:"omitempty"`
 }
 
+type Data struct {
+	CollectorMeta `json:",inline" yaml:",inline"`
+	Name          string `json:"name,omitempty" yaml:"name,omitempty"`
+	Data          string `json:"data" yaml:"data"`
+}
+
 type Run struct {
 	CollectorMeta   `json:",inline" yaml:",inline"`
 	Name            string   `json:"name,omitempty" yaml:"name,omitempty"`
@@ -98,6 +104,7 @@ type Collect struct {
 	Logs             *Logs             `json:"logs,omitempty" yaml:"logs,omitempty"`
 	Run              *Run              `json:"run,omitempty" yaml:"run,omitempty"`
 	Exec             *Exec             `json:"exec,omitempty" yaml:"exec,omitempty"`
+	Data             *Data             `json:"data,omitempty" yaml:"data,omitempty"`
 	Copy             *Copy             `json:"copy,omitempty" yaml:"copy,omitempty"`
 	HTTP             *HTTP             `json:"http,omitempty" yaml:"http,omitempty"`
 }
