@@ -89,7 +89,7 @@ archives:
     builds:
       - so
     format: tar.gz
-    name_template: 'troubleshoot.so_{{ .Version }}_{{ .Os }}_{{ .Arch }}'
+    name_template: 'troubleshoot.so_{{ .Os }}_{{ .Arch }}'
   - id: preflight
     builds:
       - preflight
@@ -97,7 +97,7 @@ archives:
     format_overrides:
       - goos: windows
         format: zip
-    name_template: '{{ .Binary }}_{{.Version}}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{.Arm }}{{ end }}-{{ .Major }}.{{ .Minor }}.{{ .Patch }}'
+    name_template: '{{ .Binary }}_{{ .Os }}_{{ .Arch }}'
     files:
       - licence*
       - LICENCE*
@@ -114,7 +114,7 @@ archives:
     format_overrides:
       - goos: windows
         format: zip
-    name_template: '{{ .Binary }}_{{.Version}}_{{ .Os }}_{{ .Arch }}{{ if .Arm }}v{{.Arm }}{{ end }}-{{ .Major }}.{{ .Minor }}.{{ .Patch }}'
+    name_template: '{{ .Binary }}_{{ .Os }}_{{ .Arch }}'
     files:
       - licence*
       - LICENCE*
