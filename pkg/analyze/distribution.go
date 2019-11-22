@@ -185,7 +185,7 @@ func mustNormalizeDistributionName(raw string) Provider {
 	switch strings.ReplaceAll(strings.TrimSpace(strings.ToLower(raw)), "-", "") {
 	case "microk8s":
 		return microk8s
-	case "dockerdesktop":
+	case "dockerdesktop", "docker desktop", "docker-desktop":
 		return dockerDesktop
 	case "eks":
 		return eks
