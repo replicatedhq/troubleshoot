@@ -58,6 +58,9 @@ func analyzeDistribution(analyzer *troubleshootv1beta1.Distribution, getCollecte
 		if strings.HasPrefix(node.Spec.ProviderID, "aws:") {
 			foundProviders.eks = true
 		}
+		if strings.HasPrefix(node.Spec.ProviderID, "gce:") {
+			foundProviders.gke = true
+		}
 	}
 
 	result := &AnalyzeResult{
