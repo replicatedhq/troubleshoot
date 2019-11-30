@@ -18,6 +18,7 @@ var (
 func RootCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "preflight [url]",
+		Args:  cobra.MinimumNArgs(1),
 		Short: "Run and retrieve preflight checks in a cluster",
 		Long: `A preflight check is a set of validations that can and should be run to ensure
 that a cluster meets the requirements to run an application.`,
@@ -36,6 +37,8 @@ that a cluster meets the requirements to run an application.`,
 	}
 
 	cobra.OnInitialize(initConfig)
+
+	cmd.AddCommand(VersionCmd())
 
 	cmd.Flags().Bool("interactive", true, "interactive preflights")
 	cmd.Flags().String("format", "human", "output format, one of human, json, yaml. only used when interactive is set to false")

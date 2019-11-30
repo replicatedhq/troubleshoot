@@ -42,6 +42,7 @@ from a server that can be used to assist when troubleshooting a server.`,
 	cobra.OnInitialize(initConfig)
 
 	cmd.AddCommand(Analyze())
+	cmd.AddCommand(VersionCmd())
 
 	cmd.Flags().String("collectors", "", "name of the collectors to use")
 	cmd.Flags().String("image", "", "the full name of the collector image to use")
