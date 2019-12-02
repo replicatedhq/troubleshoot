@@ -168,6 +168,7 @@ func runCollectors(v *viper.Viper, collector troubleshootv1beta1.Collector, prog
 			Redact:       true,
 			Collect:      desiredCollector,
 			ClientConfig: config,
+			Namespace:    v.GetString("namespace"),
 		}
 
 		progressChan <- collector.GetDisplayName()

@@ -124,8 +124,7 @@ func runPreflightsNoCRD(v *viper.Viper, arg string) error {
 		return showInteractiveResults(preflight.Name, analyzeResults)
 	}
 
-	logger.Printf("only interactive results are supported\n")
-	return nil
+	return showStdoutResults(preflight.Name, analyzeResults)
 }
 
 func runCollectors(v *viper.Viper, preflight troubleshootv1beta1.Preflight) (map[string][]byte, error) {
@@ -149,6 +148,7 @@ func runCollectors(v *viper.Viper, preflight troubleshootv1beta1.Preflight) (map
 			Redact:       true,
 			Collect:      desiredCollector,
 			ClientConfig: config,
+			Namespace:    v.GetString("namespace"),
 		}
 
 		result, err := collector.RunCollectorSync()

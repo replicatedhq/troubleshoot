@@ -14,11 +14,13 @@ type Collector struct {
 	Collect      *troubleshootv1beta1.Collect
 	Redact       bool
 	ClientConfig *rest.Config
+	Namespace    string
 }
 
 type Context struct {
 	Redact       bool
 	ClientConfig *rest.Config
+	Namespace    string
 }
 
 func (c *Collector) RunCollectorSync() ([]byte, error) {
@@ -105,6 +107,7 @@ func (c *Collector) GetContext() *Context {
 	return &Context{
 		Redact:       c.Redact,
 		ClientConfig: c.ClientConfig,
+		Namespace:    c.Namespace,
 	}
 }
 

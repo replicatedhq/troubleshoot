@@ -41,21 +41,29 @@ func ClusterResources(ctx *Context) ([]byte, error) {
 	}
 
 	clusterResourcesOutput := &ClusterResourcesOutput{}
-
 	// namespaces
-	namespaces, namespaceList, namespaceErrors := namespaces(client)
-	clusterResourcesOutput.Namespaces = namespaces
-	clusterResourcesOutput.NamespacesErrors, err = marshalNonNil(namespaceErrors)
-	if err != nil {
-		return nil, err
-	}
-	namespaceNames := make([]string, 0, 0)
-	if namespaceList != nil {
-		for _, namespace := range namespaceList.Items {
-			namespaceNames = append(namespaceNames, namespace.Name)
+	var namespaceNames []string
+	if ctx.Namespace == "" {
+		namespaces, namespaceList, namespaceErrors := namespaces(client)
+		clusterResourcesOutput.Namespaces = namespaces
+		clusterResourcesOutput.NamespacesErrors, err = marshalNonNil(namespaceErrors)
+		if err != nil {
+			return nil, err
 		}
+		if namespaceList != nil {
+			for _, namespace := range namespaceList.Items {
+				namespaceNames = append(namespaceNames, namespace.Name)
+			}
+		}
+	} else {
+		namespaces, namespaceErrors := getNamespace(client, ctx.Namespace)
+		clusterResourcesOutput.Namespaces = namespaces
+		clusterResourcesOutput.NamespacesErrors, err = marshalNonNil(namespaceErrors)
+		if err != nil {
+			return nil, err
+		}
+		namespaceNames = append(namespaceNames, ctx.Namespace)
 	}
-
 	pods, podErrors := pods(client, namespaceNames)
 	clusterResourcesOutput.Pods = pods
 	clusterResourcesOutput.PodsErrors, err = marshalNonNil(podErrors)
@@ -150,6 +158,20 @@ func namespaces(client *kubernetes.Clientset) ([]byte, *corev1.NamespaceList, []
 	}
 
 	return b, namespaces, nil
+}
+
+func getNamespace(client *kubernetes.Clientset, namespace string) ([]byte, []string) {
+	namespaces, err := client.CoreV1().Namespaces().Get(namespace, metav1.GetOptions{})
+	if err != nil {
+		return nil, []string{err.Error()}
+	}
+
+	b, err := json.MarshalIndent(namespaces, "", "  ")
+	if err != nil {
+		return nil, []string{err.Error()}
+	}
+
+	return b, nil
 }
 
 func pods(client *kubernetes.Clientset, namespaces []string) (map[string][]byte, map[string]string) {

@@ -17,7 +17,10 @@ require (
 	github.com/spf13/cobra v0.0.5
 	github.com/spf13/viper v1.4.0
 	github.com/stretchr/testify v1.3.0
+	github.com/timtadh/data-structures v0.5.3 // indirect
+	github.com/timtadh/lexmachine v0.2.2 // indirect
 	github.com/tj/go-spin v1.1.0
+	github.com/ugorji/go v1.1.7 // indirect
 	golang.org/x/net v0.0.0-20190812203447-cdfb69ac37fc
 	gopkg.in/yaml.v2 v2.2.2
 	k8s.io/api v0.0.0-20190409021203-6e4e0e4f393b
