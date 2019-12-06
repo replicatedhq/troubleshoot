@@ -4,11 +4,41 @@ IMG ?= controller:latest
 export GO111MODULE=on
 export GOPROXY=https://proxy.golang.org
 
+SHELL := /bin/bash -o pipefail
+VERSION_PACKAGE = github.com/replicatedhq/troubleshoot/pkg/version
+VERSION ?=`git describe --tags --dirty`
+DATE=`date -u +"%Y-%m-%dT%H:%M:%SZ"`
+
+GIT_TREE = $(shell git rev-parse --is-inside-work-tree 2>/dev/null)
+ifneq "$(GIT_TREE)" ""
+define GIT_UPDATE_INDEX_CMD
+git update-index --assume-unchanged
+endef
+define GIT_SHA
+`git rev-parse HEAD`
+endef
+else
+define GIT_UPDATE_INDEX_CMD
+echo "Not a git repo, skipping git update-index"
+endef
+define GIT_SHA
+""
+endef
+endif
+
+define LDFLAGS
+-ldflags "\
+	-X ${VERSION_PACKAGE}.version=${VERSION} \
+	-X ${VERSION_PACKAGE}.gitSHA=${GIT_SHA} \
+	-X ${VERSION_PACKAGE}.buildTime=${DATE} \
+"
+endef
+
 all: test manager
 
 .PHONY: ffi
 ffi: fmt vet
-	go build -o bin/troubleshoot.so -buildmode=c-shared ffi/main.go
+	go build ${LDFLAGS} -o bin/troubleshoot.so -buildmode=c-shared ffi/main.go
 
 # Run tests
 test: generate fmt vet manifests
@@ -16,19 +46,19 @@ test: generate fmt vet manifests
 
 .PHONY: manager
 manager: generate fmt vet
-	go build -o bin/manager github.com/replicatedhq/troubleshoot/cmd/manager
+	go build ${LDFLAGS} -o bin/manager github.com/replicatedhq/troubleshoot/cmd/manager
 
 .PHONY: support-bundle
 support-bundle: generate fmt vet
-	go build -o bin/support-bundle github.com/replicatedhq/troubleshoot/cmd/troubleshoot
+	go build ${LDFLAGS} -o bin/support-bundle github.com/replicatedhq/troubleshoot/cmd/troubleshoot
 
 .PHONY: preflight
 preflight: generate fmt vet
-	go build -o bin/preflight github.com/replicatedhq/troubleshoot/cmd/preflight
+	go build ${LDFLAGS} -o bin/preflight github.com/replicatedhq/troubleshoot/cmd/preflight
 
 .PHONY: analyze
 analyze: generate fmt vet
-	go build -o bin/analyze github.com/replicatedhq/troubleshoot/cmd/analyze
+	go build ${LDFLAGS} -o bin/analyze github.com/replicatedhq/troubleshoot/cmd/analyze
 
 .PHONY: run
 run: generate fmt vet
