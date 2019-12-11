@@ -49,6 +49,9 @@ func Analyze(analyzer *troubleshootv1beta1.Analyze, getFile getCollectedFileCont
 	if analyzer.Distribution != nil {
 		return analyzeDistribution(analyzer.Distribution, getFile)
 	}
+	if analyzer.TextAnalyze != nil {
+		return analyzeTextAnalyze(analyzer.TextAnalyze, getFile)
+	}
 
 	return nil, errors.New("invalid analyzer")
 }
