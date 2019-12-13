@@ -1,7 +1,6 @@
 package analyzer
 
 import (
-	"fmt"
 	"path"
 	"regexp"
 
@@ -33,7 +32,7 @@ func analyzeTextAnalyze(analyzer *troubleshootv1beta1.TextAnalyze, getCollectedF
 
 	if re.MatchString(string(collected)) {
 		return &AnalyzeResult{
-			Title:  analyzer.CheckName,
+			Title:   analyzer.CheckName,
 			IsPass:  true,
 			Message: passOutcome.Pass.Message,
 			URI:     passOutcome.Pass.URI,
