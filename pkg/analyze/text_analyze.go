@@ -33,14 +33,14 @@ func analyzeTextAnalyze(analyzer *troubleshootv1beta1.TextAnalyze, getCollectedF
 
 	if re.MatchString(string(collected)) {
 		return &AnalyzeResult{
-			Title:   fmt.Sprintf("Text analyze %s", analyzer.CheckName),
+			Title:  analyzer.CheckName,
 			IsPass:  true,
 			Message: passOutcome.Pass.Message,
 			URI:     passOutcome.Pass.URI,
 		}, nil
 	}
 	return &AnalyzeResult{
-		Title:   fmt.Sprintf("Text analyze %s", analyzer.CheckName),
+		Title:   analyzer.CheckName,
 		IsFail:  true,
 		Message: failOutcome.Fail.Message,
 		URI:     failOutcome.Fail.URI,
