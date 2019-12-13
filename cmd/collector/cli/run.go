@@ -32,8 +32,9 @@ func Run() *cobra.Command {
 			}
 
 			collector := collect.Collector{
-				Collect: c,
-				Redact:  v.GetBool("redact"),
+				Collect:   c,
+				Redact:    v.GetBool("redact"),
+				Namespace: v.GetString("namespace"),
 			}
 			b, err := collector.RunCollectorSync()
 			if err != nil {
