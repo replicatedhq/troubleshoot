@@ -1,5 +1,12 @@
 package v1beta1
 
+import (
+	"fmt"
+	"strings"
+
+	authorizationv1 "k8s.io/api/authorization/v1"
+)
+
 type CollectorMeta struct {
 	CollectorName string `json:"collectorName,omitempty" yaml:"collectorName,omitempty"`
 	Exclude       bool   `json:"when,omitmempty" yaml:"when,omitempty"`
@@ -110,4 +117,224 @@ type Collect struct {
 	Data             *Data             `json:"data,omitempty" yaml:"data,omitempty"`
 	Copy             *Copy             `json:"copy,omitempty" yaml:"copy,omitempty"`
 	HTTP             *HTTP             `json:"http,omitempty" yaml:"http,omitempty"`
+}
+
+func (c *Collect) AccessReviewSpecs(overrideNS string) []authorizationv1.SelfSubjectAccessReviewSpec {
+	result := make([]authorizationv1.SelfSubjectAccessReviewSpec, 0)
+
+	if c.ClusterInfo != nil {
+		// NOOP
+	} else if c.ClusterResources != nil {
+		result = append(result, authorizationv1.SelfSubjectAccessReviewSpec{
+			ResourceAttributes: &authorizationv1.ResourceAttributes{
+				Namespace:   "",
+				Verb:        "list",
+				Group:       "",
+				Version:     "",
+				Resource:    "Namespace",
+				Subresource: "",
+				Name:        "",
+			},
+			NonResourceAttributes: nil,
+		})
+		result = append(result, authorizationv1.SelfSubjectAccessReviewSpec{
+			ResourceAttributes: &authorizationv1.ResourceAttributes{
+				Namespace:   "",
+				Verb:        "list",
+				Group:       "",
+				Version:     "",
+				Resource:    "Node",
+				Subresource: "",
+				Name:        "",
+			},
+			NonResourceAttributes: nil,
+		})
+		result = append(result, authorizationv1.SelfSubjectAccessReviewSpec{
+			ResourceAttributes: &authorizationv1.ResourceAttributes{
+				Namespace:   "",
+				Verb:        "list",
+				Group:       "apiextensions.k8s.io",
+				Version:     "",
+				Resource:    "CustomResourceDefinition",
+				Subresource: "",
+				Name:        "",
+			},
+			NonResourceAttributes: nil,
+		})
+		result = append(result, authorizationv1.SelfSubjectAccessReviewSpec{
+			ResourceAttributes: &authorizationv1.ResourceAttributes{
+				Namespace:   "",
+				Verb:        "list",
+				Group:       "storage.k8s.io",
+				Version:     "",
+				Resource:    "StorageClasses",
+				Subresource: "",
+				Name:        "",
+			},
+			NonResourceAttributes: nil,
+		})
+	} else if c.Secret != nil {
+		result = append(result, authorizationv1.SelfSubjectAccessReviewSpec{
+			ResourceAttributes: &authorizationv1.ResourceAttributes{
+				Namespace:   pickNamespaceOrDefault(c.Secret.Namespace, overrideNS),
+				Verb:        "get",
+				Group:       "",
+				Version:     "",
+				Resource:    "Secret",
+				Subresource: "",
+				Name:        c.Secret.SecretName,
+			},
+			NonResourceAttributes: nil,
+		})
+	} else if c.Logs != nil {
+		result = append(result, authorizationv1.SelfSubjectAccessReviewSpec{
+			ResourceAttributes: &authorizationv1.ResourceAttributes{
+				Namespace:   pickNamespaceOrDefault(c.Logs.Namespace, overrideNS),
+				Verb:        "list",
+				Group:       "",
+				Version:     "",
+				Resource:    "Pod",
+				Subresource: "",
+				Name:        "",
+			},
+			NonResourceAttributes: nil,
+		})
+		result = append(result, authorizationv1.SelfSubjectAccessReviewSpec{
+			ResourceAttributes: &authorizationv1.ResourceAttributes{
+				Namespace:   pickNamespaceOrDefault(c.Logs.Namespace, overrideNS),
+				Verb:        "get",
+				Group:       "",
+				Version:     "",
+				Resource:    "Pod",
+				Subresource: "log",
+				Name:        "",
+			},
+			NonResourceAttributes: nil,
+		})
+	} else if c.Run != nil {
+		result = append(result, authorizationv1.SelfSubjectAccessReviewSpec{
+			ResourceAttributes: &authorizationv1.ResourceAttributes{
+				Namespace:   pickNamespaceOrDefault(c.Run.Namespace, overrideNS),
+				Verb:        "create",
+				Group:       "",
+				Version:     "",
+				Resource:    "Pod",
+				Subresource: "",
+				Name:        "",
+			},
+			NonResourceAttributes: nil,
+		})
+	} else if c.Exec != nil {
+		result = append(result, authorizationv1.SelfSubjectAccessReviewSpec{
+			ResourceAttributes: &authorizationv1.ResourceAttributes{
+				Namespace:   pickNamespaceOrDefault(c.Exec.Namespace, overrideNS),
+				Verb:        "list",
+				Group:       "",
+				Version:     "",
+				Resource:    "Pod",
+				Subresource: "",
+				Name:        "",
+			},
+			NonResourceAttributes: nil,
+		})
+		result = append(result, authorizationv1.SelfSubjectAccessReviewSpec{
+			ResourceAttributes: &authorizationv1.ResourceAttributes{
+				Namespace:   pickNamespaceOrDefault(c.Exec.Namespace, overrideNS),
+				Verb:        "get",
+				Group:       "",
+				Version:     "",
+				Resource:    "Pod",
+				Subresource: "exec",
+				Name:        "",
+			},
+			NonResourceAttributes: nil,
+		})
+	} else if c.Copy != nil {
+		result = append(result, authorizationv1.SelfSubjectAccessReviewSpec{
+			ResourceAttributes: &authorizationv1.ResourceAttributes{
+				Namespace:   pickNamespaceOrDefault(c.Copy.Namespace, overrideNS),
+				Verb:        "list",
+				Group:       "",
+				Version:     "",
+				Resource:    "Pod",
+				Subresource: "",
+				Name:        "",
+			},
+			NonResourceAttributes: nil,
+		})
+		result = append(result, authorizationv1.SelfSubjectAccessReviewSpec{
+			ResourceAttributes: &authorizationv1.ResourceAttributes{
+				Namespace:   pickNamespaceOrDefault(c.Copy.Namespace, overrideNS),
+				Verb:        "get",
+				Group:       "",
+				Version:     "",
+				Resource:    "Pod",
+				Subresource: "exec",
+				Name:        "",
+			},
+			NonResourceAttributes: nil,
+		})
+	} else if c.HTTP != nil {
+		// NOOP
+	}
+
+	return result
+}
+
+func (c *Collect) GetName() string {
+	var collector, name, selector string
+	if c.ClusterInfo != nil {
+		collector = "cluster-info"
+	}
+	if c.ClusterResources != nil {
+		collector = "cluster-resources"
+	}
+	if c.Secret != nil {
+		collector = "secret"
+		name = c.Secret.CollectorName
+	}
+	if c.Logs != nil {
+		collector = "logs"
+		name = c.Logs.CollectorName
+		selector = strings.Join(c.Logs.Selector, ",")
+	}
+	if c.Run != nil {
+		collector = "run"
+		name = c.Run.CollectorName
+	}
+	if c.Exec != nil {
+		collector = "exec"
+		name = c.Exec.CollectorName
+		selector = strings.Join(c.Exec.Selector, ",")
+	}
+	if c.Copy != nil {
+		collector = "copy"
+		name = c.Copy.CollectorName
+		selector = strings.Join(c.Copy.Selector, ",")
+	}
+	if c.HTTP != nil {
+		collector = "http"
+		name = c.HTTP.CollectorName
+	}
+
+	if collector == "" {
+		return "<none>"
+	}
+	if name != "" {
+		return fmt.Sprintf("%s/%s", collector, name)
+	}
+	if selector != "" {
+		return fmt.Sprintf("%s/%s", collector, selector)
+	}
+	return collector
+}
+
+func pickNamespaceOrDefault(collectorNS string, overrideNS string) string {
+	if overrideNS != "" {
+		return overrideNS
+	}
+	if collectorNS != "" {
+		return collectorNS
+	}
+	return "default"
 }

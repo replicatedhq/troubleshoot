@@ -1,21 +1,23 @@
 package collect
 
 import (
-	"errors"
-	"fmt"
-	"strings"
-
+	"github.com/pkg/errors"
 	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
 	"gopkg.in/yaml.v2"
+	authorizationv1 "k8s.io/api/authorization/v1"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
 
 type Collector struct {
 	Collect      *troubleshootv1beta1.Collect
 	Redact       bool
+	RBACErrors   []error
 	ClientConfig *rest.Config
 	Namespace    string
 }
+
+type Collectors []*Collector
 
 type Context struct {
 	Redact       bool
@@ -83,51 +85,7 @@ func (c *Collector) RunCollectorSync() ([]byte, error) {
 }
 
 func (c *Collector) GetDisplayName() string {
-	var collector, name, selector string
-	if c.Collect.ClusterInfo != nil {
-		collector = "cluster-info"
-	}
-	if c.Collect.ClusterResources != nil {
-		collector = "cluster-resources"
-	}
-	if c.Collect.Secret != nil {
-		collector = "secret"
-		name = c.Collect.Secret.CollectorName
-	}
-	if c.Collect.Logs != nil {
-		collector = "logs"
-		name = c.Collect.Logs.CollectorName
-		selector = strings.Join(c.Collect.Logs.Selector, ",")
-	}
-	if c.Collect.Run != nil {
-		collector = "run"
-		name = c.Collect.Run.CollectorName
-	}
-	if c.Collect.Exec != nil {
-		collector = "exec"
-		name = c.Collect.Exec.CollectorName
-		selector = strings.Join(c.Collect.Exec.Selector, ",")
-	}
-	if c.Collect.Copy != nil {
-		collector = "copy"
-		name = c.Collect.Copy.CollectorName
-		selector = strings.Join(c.Collect.Copy.Selector, ",")
-	}
-	if c.Collect.HTTP != nil {
-		collector = "http"
-		name = c.Collect.HTTP.CollectorName
-	}
-
-	if collector == "" {
-		return "<none>"
-	}
-	if name != "" {
-		return fmt.Sprintf("%s/%s", collector, name)
-	}
-	if selector != "" {
-		return fmt.Sprintf("%s/%s", collector, selector)
-	}
-	return collector
+	return c.Collect.GetName()
 }
 
 func (c *Collector) GetContext() *Context {
@@ -136,6 +94,49 @@ func (c *Collector) GetContext() *Context {
 		ClientConfig: c.ClientConfig,
 		Namespace:    c.Namespace,
 	}
+}
+
+func (c *Collector) CheckRBAC() error {
+	client, err := kubernetes.NewForConfig(c.ClientConfig)
+	if err != nil {
+		return errors.Wrap(err, "failed to create client from config")
+	}
+
+	forbidden := make([]error, 0)
+
+	specs := c.Collect.AccessReviewSpecs(c.Namespace)
+	for _, spec := range specs {
+
+		sar := &authorizationv1.SelfSubjectAccessReview{
+			Spec: spec,
+		}
+
+		resp, err := client.AuthorizationV1().SelfSubjectAccessReviews().Create(sar)
+		if err != nil {
+			return errors.Wrap(err, "failed to run subject review")
+		}
+
+		if !resp.Status.Allowed { // all other fields of Status are empty...
+			forbidden = append(forbidden, RBACError{
+				DisplayName: c.GetDisplayName(),
+				Namespace:   spec.ResourceAttributes.Namespace,
+				Resource:    spec.ResourceAttributes.Resource,
+				Verb:        spec.ResourceAttributes.Verb,
+			})
+		}
+	}
+	c.RBACErrors = forbidden
+
+	return nil
+}
+
+func (cs Collectors) CheckRBAC() error {
+	for _, c := range cs {
+		if err := c.CheckRBAC(); err != nil {
+			return errors.Wrap(err, "failed to check RBAC")
+		}
+	}
+	return nil
 }
 
 func ParseSpec(specContents string) (*troubleshootv1beta1.Collect, error) {

@@ -11,15 +11,16 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/ahmetalpbalkan/go-cursor"
+	cursor "github.com/ahmetalpbalkan/go-cursor"
 	"github.com/fatih/color"
 	"github.com/mholt/archiver"
 	"github.com/pkg/errors"
+	"github.com/spf13/viper"
+	spin "github.com/tj/go-spin"
+	"gopkg.in/yaml.v2"
+
 	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
 	"github.com/replicatedhq/troubleshoot/pkg/collect"
-	"github.com/spf13/viper"
-	"github.com/tj/go-spin"
-	"gopkg.in/yaml.v2"
 )
 
 func runTroubleshoot(v *viper.Viper, arg string) error {
@@ -65,7 +66,7 @@ func runTroubleshoot(v *viper.Viper, arg string) error {
 
 	s := spin.New()
 	finishedCh := make(chan bool, 1)
-	progressChan := make(chan interface{}, 1)
+	progressChan := make(chan interface{}, 0) // non-zero buffer can result in missed messages
 	go func() {
 		currentDir := ""
 		for {
@@ -91,7 +92,7 @@ func runTroubleshoot(v *viper.Viper, arg string) error {
 		}
 	}()
 	defer func() {
-		finishedCh <- true
+		close(finishedCh)
 	}()
 
 	archivePath, err := runCollectors(v, collector, progressChan)
@@ -150,25 +151,47 @@ func runCollectors(v *viper.Viper, collector troubleshootv1beta1.Collector, prog
 		return "", errors.Wrap(err, "write version file")
 	}
 
-	desiredCollectors := make([]*troubleshootv1beta1.Collect, 0, 0)
-	for _, definedCollector := range collector.Spec.Collectors {
-		desiredCollectors = append(desiredCollectors, definedCollector)
-	}
-	desiredCollectors = ensureCollectorInList(desiredCollectors, troubleshootv1beta1.Collect{ClusterInfo: &troubleshootv1beta1.ClusterInfo{}})
-	desiredCollectors = ensureCollectorInList(desiredCollectors, troubleshootv1beta1.Collect{ClusterResources: &troubleshootv1beta1.ClusterResources{}})
+	collectSpecs := make([]*troubleshootv1beta1.Collect, 0, 0)
+	collectSpecs = append(collectSpecs, collector.Spec.Collectors...)
+	collectSpecs = ensureCollectorInList(collectSpecs, troubleshootv1beta1.Collect{ClusterInfo: &troubleshootv1beta1.ClusterInfo{}})
+	collectSpecs = ensureCollectorInList(collectSpecs, troubleshootv1beta1.Collect{ClusterResources: &troubleshootv1beta1.ClusterResources{}})
 
 	config, err := KubernetesConfigFlags.ToRESTConfig()
 	if err != nil {
 		return "", errors.Wrap(err, "failed to convert kube flags to rest config")
 	}
 
-	// Run preflights collectors synchronously
-	for _, desiredCollector := range desiredCollectors {
+	var collectors collect.Collectors
+	for _, desiredCollector := range collectSpecs {
 		collector := collect.Collector{
 			Redact:       true,
 			Collect:      desiredCollector,
 			ClientConfig: config,
 			Namespace:    v.GetString("namespace"),
+		}
+		collectors = append(collectors, &collector)
+	}
+
+	if err := collectors.CheckRBAC(); err != nil {
+		return "", errors.Wrap(err, "failed to check RBAC for collectors")
+	}
+
+	foundForbidden := false
+	for _, c := range collectors {
+		for _, e := range c.RBACErrors {
+			foundForbidden = true
+			progressChan <- e
+		}
+	}
+
+	if foundForbidden && !v.GetBool("collect-without-permissions") {
+		return "", errors.New("insufficient permissions to run all collectors")
+	}
+
+	// Run preflights collectors synchronously
+	for _, collector := range collectors {
+		if len(collector.RBACErrors) > 0 {
+			continue
 		}
 
 		progressChan <- collector.GetDisplayName()
@@ -337,4 +360,9 @@ func tarSupportBundleDir(inputDir, outputFilename string) error {
 	}
 
 	return nil
+}
+
+type CollectorFailure struct {
+	Collector *troubleshootv1beta1.Collect
+	Failure   string
 }

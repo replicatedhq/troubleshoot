@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/ahmetalpbalkan/go-cursor"
+	"github.com/fatih/color"
 	"github.com/pkg/errors"
 	analyzerunner "github.com/replicatedhq/troubleshoot/pkg/analyze"
 	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
@@ -65,22 +66,35 @@ func runPreflights(v *viper.Viper, arg string) error {
 
 	s := spin.New()
 	finishedCh := make(chan bool, 1)
+	progressChan := make(chan interface{}, 0) // non-zero buffer will result in missed messages
 	go func() {
 		for {
 			select {
-			case <-finishedCh:
-				fmt.Printf("\r")
-				return
+			case msg, ok := <-progressChan:
+				if !ok {
+					continue
+				}
+				switch msg := msg.(type) {
+				case error:
+					c := color.New(color.FgHiRed)
+					c.Println(fmt.Sprintf("%s\r * %v", cursor.ClearEntireLine(), msg))
+				case string:
+					c := color.New(color.FgCyan)
+					c.Println(fmt.Sprintf("%s\r * %s", cursor.ClearEntireLine(), msg))
+				}
 			case <-time.After(time.Millisecond * 100):
 				fmt.Printf("\r  \033[36mRunning Preflight checks\033[m %s ", s.Next())
+			case <-finishedCh:
+				fmt.Printf("\r%s\r", cursor.ClearEntireLine())
+				return
 			}
 		}
 	}()
 	defer func() {
-		finishedCh <- true
+		close(finishedCh)
 	}()
 
-	allCollectedData, err := runCollectors(v, preflight)
+	allCollectedData, err := runCollectors(v, preflight, progressChan)
 	if err != nil {
 		return err
 	}
@@ -117,25 +131,30 @@ func runPreflights(v *viper.Viper, arg string) error {
 		}
 	}
 
+	if preflight.Spec.UploadResultsTo != "" {
+		err := uploadResults(preflight.Spec.UploadResultsTo, analyzeResults)
+		if err != nil {
+			progressChan <- err
+		}
+	}
+
 	finishedCh <- true
 
-	if preflight.Spec.UploadResultsTo != "" {
-		tryUploadResults(preflight.Spec.UploadResultsTo, preflight.Name, analyzeResults)
-	}
 	if v.GetBool("interactive") {
+		if len(analyzeResults) == 0 {
+			return errors.New("no data has been collected")
+		}
 		return showInteractiveResults(preflight.Name, analyzeResults)
 	}
 
 	return showStdoutResults(v.GetString("format"), preflight.Name, analyzeResults)
 }
 
-func runCollectors(v *viper.Viper, preflight troubleshootv1beta1.Preflight) (map[string][]byte, error) {
-	desiredCollectors := make([]*troubleshootv1beta1.Collect, 0, 0)
-	for _, definedCollector := range preflight.Spec.Collectors {
-		desiredCollectors = append(desiredCollectors, definedCollector)
-	}
-	desiredCollectors = ensureCollectorInList(desiredCollectors, troubleshootv1beta1.Collect{ClusterInfo: &troubleshootv1beta1.ClusterInfo{}})
-	desiredCollectors = ensureCollectorInList(desiredCollectors, troubleshootv1beta1.Collect{ClusterResources: &troubleshootv1beta1.ClusterResources{}})
+func runCollectors(v *viper.Viper, preflight troubleshootv1beta1.Preflight, progressChan chan interface{}) (map[string][]byte, error) {
+	collectSpecs := make([]*troubleshootv1beta1.Collect, 0, 0)
+	collectSpecs = append(collectSpecs, preflight.Spec.Collectors...)
+	collectSpecs = ensureCollectorInList(collectSpecs, troubleshootv1beta1.Collect{ClusterInfo: &troubleshootv1beta1.ClusterInfo{}})
+	collectSpecs = ensureCollectorInList(collectSpecs, troubleshootv1beta1.Collect{ClusterResources: &troubleshootv1beta1.ClusterResources{}})
 
 	allCollectedData := make(map[string][]byte)
 
@@ -144,24 +163,56 @@ func runCollectors(v *viper.Viper, preflight troubleshootv1beta1.Preflight) (map
 		return nil, errors.Wrap(err, "failed to convert kube flags to rest config")
 	}
 
-	// Run preflights collectors synchronously
-	for _, desiredCollector := range desiredCollectors {
+	var collectors collect.Collectors
+	for _, desiredCollector := range collectSpecs {
 		collector := collect.Collector{
 			Redact:       true,
 			Collect:      desiredCollector,
 			ClientConfig: config,
 			Namespace:    v.GetString("namespace"),
 		}
+		collectors = append(collectors, &collector)
+	}
+
+	if err := collectors.CheckRBAC(); err != nil {
+		return nil, errors.Wrap(err, "failed to check RBAC for collectors")
+	}
+
+	foundForbidden := false
+	for _, c := range collectors {
+		for _, e := range c.RBACErrors {
+			foundForbidden = true
+			progressChan <- e
+		}
+	}
+
+	if foundForbidden && !v.GetBool("collect-without-permissions") {
+		if preflight.Spec.UploadResultsTo != "" {
+			err := uploadErrors(preflight.Spec.UploadResultsTo, collectors)
+			if err != nil {
+				progressChan <- err
+			}
+		}
+		return nil, errors.New("insufficient permissions to run all collectors")
+	}
+
+	// Run preflights collectors synchronously
+	for _, collector := range collectors {
+		if len(collector.RBACErrors) > 0 {
+			continue
+		}
 
 		result, err := collector.RunCollectorSync()
 		if err != nil {
-			return nil, errors.Wrap(err, "failed to run collector")
+			progressChan <- errors.Errorf("failed to run collector %s: %v\n", collector.GetDisplayName(), err)
+			continue
 		}
 
 		if result != nil {
 			output, err := parseCollectorOutput(string(result))
 			if err != nil {
-				return nil, errors.Wrap(err, "failed to parse collector output")
+				progressChan <- errors.Errorf("failed to parse collector output %s: %v\n", collector.GetDisplayName(), err)
+				continue
 			}
 			for k, v := range output {
 				allCollectedData[k] = v
