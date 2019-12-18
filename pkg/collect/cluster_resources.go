@@ -7,7 +7,9 @@ import (
 	"strings"
 
 	"github.com/replicatedhq/troubleshoot/pkg/redact"
+	authorizationv1 "k8s.io/api/authorization/v1"
 	corev1 "k8s.io/api/core/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	apiextensionsv1beta1clientset "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -32,6 +34,10 @@ type ClusterResourcesOutput struct {
 	ImagePullSecretsErrors          []byte            `json:"cluster-resources/image-pull-secrets-errors.json,omitempty"`
 	Nodes                           []byte            `json:"cluster-resources/nodes.json,omitempty"`
 	NodesErrors                     []byte            `json:"cluster-resources/nodes-errors.json,omitempty"`
+
+	// TODO these should be considered for relocation to an rbac or auth package.  cluster resources might not be the right place
+	AuthCanI       map[string][]byte `json:"cluster-resources/auth-cani-list,omitempty"`
+	AuthCanIErrors []byte            `json:"cluster-resources/auth-cani-list-errors.json,omitempty"`
 }
 
 func ClusterResources(ctx *Context) ([]byte, error) {
@@ -127,6 +133,14 @@ func ClusterResources(ctx *Context) ([]byte, error) {
 	nodes, nodeErrors := nodes(client)
 	clusterResourcesOutput.Nodes = nodes
 	clusterResourcesOutput.NodesErrors, err = marshalNonNil(nodeErrors)
+	if err != nil {
+		return nil, err
+	}
+
+	// auth cani
+	authCanI, authCanIErrors := authCanI(client, namespaceNames)
+	clusterResourcesOutput.AuthCanI = authCanI
+	clusterResourcesOutput.AuthCanIErrors, err = marshalNonNil(authCanIErrors)
 	if err != nil {
 		return nil, err
 	}
@@ -360,6 +374,63 @@ func nodes(client *kubernetes.Clientset) ([]byte, []string) {
 	return b, nil
 }
 
+func authCanI(client *kubernetes.Clientset, namespaces []string) (map[string][]byte, map[string]string) {
+	// https://github.com/kubernetes/kubernetes/blob/master/pkg/kubectl/cmd/auth/cani.go
+
+	authListByNamespace := make(map[string][]byte)
+	errorsByNamespace := make(map[string]string)
+
+	for _, namespace := range namespaces {
+		sar := &authorizationv1.SelfSubjectRulesReview{
+			Spec: authorizationv1.SelfSubjectRulesReviewSpec{
+				Namespace: namespace,
+			},
+		}
+		response, err := client.AuthorizationV1().SelfSubjectRulesReviews().Create(sar)
+		if err != nil {
+			errorsByNamespace[namespace] = err.Error()
+			continue
+		}
+
+		rules := []rbacv1.PolicyRule{}
+		for _, rule := range convertToPolicyRule(response.Status) {
+			rules = append(rules, rule)
+		}
+
+		b, err := json.MarshalIndent(rules, "", "  ")
+		if err != nil {
+			errorsByNamespace[namespace] = err.Error()
+			continue
+		}
+
+		authListByNamespace[namespace+".json"] = b
+	}
+
+	return authListByNamespace, errorsByNamespace
+}
+
+// not exprted from: https://github.com/kubernetes/kubernetes/blob/master/pkg/kubectl/cmd/auth/cani.go#L339
+func convertToPolicyRule(status authorizationv1.SubjectRulesReviewStatus) []rbacv1.PolicyRule {
+	ret := []rbacv1.PolicyRule{}
+	for _, resource := range status.ResourceRules {
+		ret = append(ret, rbacv1.PolicyRule{
+			Verbs:         resource.Verbs,
+			APIGroups:     resource.APIGroups,
+			Resources:     resource.Resources,
+			ResourceNames: resource.ResourceNames,
+		})
+	}
+
+	for _, nonResource := range status.NonResourceRules {
+		ret = append(ret, rbacv1.PolicyRule{
+			Verbs:           nonResource.Verbs,
+			NonResourceURLs: nonResource.NonResourceURLs,
+		})
+	}
+
+	return ret
+}
+
 func (c *ClusterResourcesOutput) Redact() (*ClusterResourcesOutput, error) {
 	namespaces, err := redact.Redact(c.Namespaces)
 	if err != nil {
@@ -393,6 +464,7 @@ func (c *ClusterResourcesOutput) Redact() (*ClusterResourcesOutput, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return &ClusterResourcesOutput{
 		Namespaces:                      namespaces,
 		NamespacesErrors:                c.NamespacesErrors,
@@ -412,5 +484,7 @@ func (c *ClusterResourcesOutput) Redact() (*ClusterResourcesOutput, error) {
 		CustomResourceDefinitionsErrors: c.CustomResourceDefinitionsErrors,
 		ImagePullSecrets:                c.ImagePullSecrets,
 		ImagePullSecretsErrors:          c.ImagePullSecretsErrors,
+		AuthCanI:                        c.AuthCanI,
+		AuthCanIErrors:                  c.AuthCanIErrors,
 	}, nil
 }
