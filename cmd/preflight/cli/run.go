@@ -126,7 +126,7 @@ func runPreflights(v *viper.Viper, arg string) error {
 		return showInteractiveResults(preflight.Name, analyzeResults)
 	}
 
-	return showStdoutResults(preflight.Name, analyzeResults)
+	return showStdoutResults(v.GetString("format"), preflight.Name, analyzeResults)
 }
 
 func runCollectors(v *viper.Viper, preflight troubleshootv1beta1.Preflight) (map[string][]byte, error) {
