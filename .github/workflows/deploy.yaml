@@ -1,0 +1,35 @@
+name: "Run preflights on a cluster"
+on: [pull_request, push]
+
+jobs:
+  compile-preflight:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-go@v1
+        with:
+          go-version: '1.12.14'
+      - name: setup env
+        run: |
+          echo "::set-env name=GOPATH::$(go env GOPATH)"
+          echo "::add-path::$(go env GOPATH)/bin"
+        shell: bash
+      - uses: actions/checkout@master
+      - run: make preflight
+      - uses: actions/upload-artifact@v1
+        with:
+          name: preflight
+          path: bin/preflight
+
+  run-preflights:
+    runs-on: ubuntu-latest
+    needs: compile-preflight
+    steps:
+      - name: Download preflight binary
+        uses: actions/download-artifact@v1
+        with:
+          name: preflight
+          path: bin/
+      - uses: engineerd/setup-kind@v0.2.0
+      - run: chmod +x bin/preflight
+      - run: bin/preflight https://preflight.replicated.com
+
