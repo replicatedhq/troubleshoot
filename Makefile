@@ -34,7 +34,7 @@ define LDFLAGS
 "
 endef
 
-all: test manager
+all: test
 
 .PHONY: ffi
 ffi: fmt vet
@@ -43,10 +43,6 @@ ffi: fmt vet
 # Run tests
 test: generate fmt vet manifests
 	go test ./pkg/... ./cmd/... -coverprofile cover.out
-
-.PHONY: manager
-manager: generate fmt vet
-	go build ${LDFLAGS} -o bin/manager github.com/replicatedhq/troubleshoot/cmd/manager
 
 .PHONY: support-bundle
 support-bundle: generate fmt vet
@@ -59,10 +55,6 @@ preflight: generate fmt vet
 .PHONY: analyze
 analyze: generate fmt vet
 	go build ${LDFLAGS} -o bin/analyze github.com/replicatedhq/troubleshoot/cmd/analyze
-
-.PHONY: run
-run: generate fmt vet
-	TROUBLESHOOT_EXTERNAL_MANAGER=1 go run ./cmd/manager/main.go
 
 .PHONY: install
 install: manifests
@@ -109,13 +101,6 @@ else
 CLIENT_GEN=$(shell which client-gen)
 endif
 
-.PHONY: snapshot-release
-snapshot-release:
-	curl -sL https://git.io/goreleaser | bash -s -- --rm-dist --snapshot --config deploy/.goreleaser.snapshot.yml
-	docker push replicated/troubleshoot:alpha
-	docker push replicated/preflight:alpha
-	docker push replicated/troubleshoot-manager:alpha
-
 .PHONY: release
 release: export GITHUB_TOKEN = $(shell echo ${GITHUB_TOKEN_TROUBLESHOOT})
 release:
@@ -126,10 +111,8 @@ local-release:
 	curl -sL https://git.io/goreleaser | bash -s -- --rm-dist --snapshot --config deploy/.goreleaser.local.yml
 	docker tag replicated/troubleshoot:alpha localhost:32000/troubleshoot:alpha
 	docker tag replicated/preflight:alpha localhost:32000/preflight:alpha
-	docker tag replicated/troubleshoot-manager:alpha localhost:32000/troubleshoot-manager:alpha
 	docker push localhost:32000/troubleshoot:alpha
 	docker push localhost:32000/preflight:alpha
-	docker push localhost:32000/troubleshoot-manager:alpha
 
 .PHONY: run-preflight
 run-preflight: preflight
