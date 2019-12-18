@@ -16,22 +16,6 @@ builds:
     flags: -buildmode=c-shared
     binary: troubleshoot.so
     hooks: {}
-  - id: collector
-    goos:
-      - linux
-    goarch:
-      - amd64
-    env:
-      - CGO_ENABLED=0
-    main: cmd/collector/main.go
-    ldflags: -s -w
-      -X github.com/replicatedhq/troubleshoot/pkg/version.version={{.Version}}
-      -X github.com/replicatedhq/troubleshoot/pkg/version.gitSHA={{.Commit}}
-      -X github.com/replicatedhq/troubleshoot/pkg/version.buildTime={{.Date}}
-      -extldflags "-static"
-    flags: -tags netgo -installsuffix netgo
-    binary: collector
-    hooks: {}
   - id: preflight
     goos:
       - linux
@@ -67,22 +51,6 @@ builds:
       -extldflags "-static"
     flags: -tags netgo -installsuffix netgo
     binary: support-bundle
-    hooks: {}
-  - id: manager
-    goos:
-      - linux
-    goarch:
-      - amd64
-    env:
-      - CGO_ENABLED=0
-    main: cmd/manager/main.go
-    ldflags: -s -w
-      -X github.com/replicatedhq/troubleshoot/pkg/version.version={{.Version}}
-      -X github.com/replicatedhq/troubleshoot/pkg/version.gitSHA={{.Commit}}
-      -X github.com/replicatedhq/troubleshoot/pkg/version.buildTime={{.Date}}
-      -extldflags "-static"
-    flags: -tags netgo -installsuffix netgo
-    binary: manager
     hooks: {}
 archives:
   - id: so
