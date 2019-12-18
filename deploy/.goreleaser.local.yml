@@ -54,20 +54,13 @@ dockers:
     image_templates:
       - "replicated/troubleshoot:alpha"
     binaries:
-      - collector
       - support-bundle
       - preflight
   - dockerfile: ./deploy/Dockerfile.troubleshoot
     image_templates:
       - "replicated/preflight:alpha"
     binaries:
-      - collector
       - support-bundle
       - preflight
-  - dockerfile: ./deploy/Dockerfile.manager
-    image_templates:
-      - "replicated/troubleshoot-manager:alpha"
-    binaries:
-      - manager
 snapshot:
   name_template: SNAPSHOT-{{ .Commit }}
