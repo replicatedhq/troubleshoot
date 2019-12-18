@@ -1,5 +1,5 @@
 name: "Run preflights on a cluster"
-on: [pull_request, push]
+on: [push]
 
 jobs:
   compile-preflight:
