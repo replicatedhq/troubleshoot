@@ -475,6 +475,17 @@ spec:
                       - data
                       - when
                       type: object
+                    data:
+                      properties:
+                        collectorName:
+                          type: string
+                        data:
+                          type: string
+                        name:
+                          type: string
+                      required:
+                      - data
+                      type: object
                     exec:
                       properties:
                         args:
