@@ -27,12 +27,7 @@ that a cluster meets the requirements to run an application.`,
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			v := viper.GetViper()
-
-			if len(args) == 0 {
-				return runPreflightsCRD(v)
-			}
-
-			return runPreflightsNoCRD(v, args[0])
+			return runPreflights(v, args[0])
 		},
 	}
 

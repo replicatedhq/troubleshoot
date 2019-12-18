@@ -2,17 +2,20 @@ package v1beta1
 
 type CollectorMeta struct {
 	CollectorName string `json:"collectorName,omitempty" yaml:"collectorName,omitempty"`
+	Exclude       bool   `json:"when,omitmempty" yaml:"when,omitempty"`
 }
 
 type ClusterInfo struct {
+	CollectorMeta `json:",inline" yaml:",inline"`
 }
 
 type ClusterResources struct {
+	CollectorMeta `json:",inline" yaml:",inline"`
 }
 
 type Secret struct {
 	CollectorMeta `json:",inline" yaml:",inline"`
-	Name          string `json:"name" yaml:"name"`
+	SecretName    string `json:"name" yaml:"name"`
 	Namespace     string `json:"namespace,omitempty" yaml:"namespace,omitempty"`
 	Key           string `json:"key,omitempty" yaml:"key,omitempty"`
 	IncludeValue  bool   `json:"includeValue,omitempty" yaml:"includeValue,omitempty"`

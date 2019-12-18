@@ -420,8 +420,22 @@ spec:
                 items:
                   properties:
                     clusterInfo:
+                      properties:
+                        collectorName:
+                          type: string
+                        when:
+                          type: boolean
+                      required:
+                      - when
                       type: object
                     clusterResources:
+                      properties:
+                        collectorName:
+                          type: string
+                        when:
+                          type: boolean
+                      required:
+                      - when
                       type: object
                     copy:
                       properties:
@@ -439,10 +453,27 @@ spec:
                           items:
                             type: string
                           type: array
+                        when:
+                          type: boolean
                       required:
                       - selector
                       - namespace
                       - containerPath
+                      - when
+                      type: object
+                    data:
+                      properties:
+                        collectorName:
+                          type: string
+                        data:
+                          type: string
+                        name:
+                          type: string
+                        when:
+                          type: boolean
+                      required:
+                      - data
+                      - when
                       type: object
                     exec:
                       properties:
@@ -468,9 +499,12 @@ spec:
                           type: array
                         timeout:
                           type: string
+                        when:
+                          type: boolean
                       required:
                       - selector
                       - namespace
+                      - when
                       type: object
                     http:
                       properties:
@@ -521,6 +555,10 @@ spec:
                           required:
                           - url
                           type: object
+                        when:
+                          type: boolean
+                      required:
+                      - when
                       type: object
                     logs:
                       properties:
@@ -546,8 +584,11 @@ spec:
                           items:
                             type: string
                           type: array
+                        when:
+                          type: boolean
                       required:
                       - selector
+                      - when
                       type: object
                     run:
                       properties:
@@ -571,9 +612,12 @@ spec:
                           type: string
                         timeout:
                           type: string
+                        when:
+                          type: boolean
                       required:
                       - namespace
                       - image
+                      - when
                       type: object
                     secret:
                       properties:
@@ -587,8 +631,11 @@ spec:
                           type: string
                         namespace:
                           type: string
+                        when:
+                          type: boolean
                       required:
                       - name
+                      - when
                       type: object
                   type: object
                 type: array

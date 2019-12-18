@@ -76,6 +76,7 @@ type Distribution struct {
 
 type AnalyzeMeta struct {
 	CheckName string `json:"checkName,omitempty" yaml:"checkName,omitempty"`
+	Exclude   bool   `json:"exclude,omitempty" yaml:"exclude,omitempty"`
 }
 
 type Analyze struct {

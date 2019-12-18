@@ -62,7 +62,9 @@ func DownloadAndAnalyze(bundleURL string, analyzersSpec string) ([]*AnalyzeResul
 			continue
 		}
 
-		analyzeResults = append(analyzeResults, analyzeResult)
+		if analyzeResult != nil {
+			analyzeResults = append(analyzeResults, analyzeResult)
+		}
 	}
 
 	return analyzeResults, nil

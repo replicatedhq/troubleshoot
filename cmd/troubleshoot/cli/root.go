@@ -30,12 +30,7 @@ from a server that can be used to assist when troubleshooting a server.`,
 			v := viper.GetViper()
 
 			logger.SetQuiet(v.GetBool("quiet"))
-
-			if len(args) == 0 {
-				return runTroubleshootCRD(v)
-			}
-
-			return runTroubleshootNoCRD(v, args[0])
+			return runTroubleshoot(v, args[0])
 		},
 	}
 

@@ -22,7 +22,7 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-func runTroubleshootNoCRD(v *viper.Viper, arg string) error {
+func runTroubleshoot(v *viper.Viper, arg string) error {
 	fmt.Print(cursor.Hide())
 	defer fmt.Print(cursor.Show())
 
@@ -179,10 +179,12 @@ func runCollectors(v *viper.Viper, collector troubleshootv1beta1.Collector, prog
 			continue
 		}
 
-		err = parseAndSaveCollectorOutput(string(result), bundlePath)
-		if err != nil {
-			progressChan <- fmt.Errorf("failed to parse collector spec %q: %v", collector.GetDisplayName(), err)
-			continue
+		if result != nil {
+			err = parseAndSaveCollectorOutput(string(result), bundlePath)
+			if err != nil {
+				progressChan <- fmt.Errorf("failed to parse collector spec %q: %v", collector.GetDisplayName(), err)
+				continue
+			}
 		}
 	}
 
