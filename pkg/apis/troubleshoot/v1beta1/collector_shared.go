@@ -12,7 +12,7 @@ type ClusterResources struct {
 
 type Secret struct {
 	CollectorMeta `json:",inline" yaml:",inline"`
-	Name          string `json:"name" yaml:"name"`
+	SecretName    string `json:"name" yaml:"name"`
 	Namespace     string `json:"namespace,omitempty" yaml:"namespace,omitempty"`
 	Key           string `json:"key,omitempty" yaml:"key,omitempty"`
 	IncludeValue  bool   `json:"includeValue,omitempty" yaml:"includeValue,omitempty"`

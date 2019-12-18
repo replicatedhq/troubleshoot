@@ -22,7 +22,7 @@ func DeterministicIDForCollector(collector *troubleshootv1beta1.Collect) string 
 	}
 
 	if collector.Secret != nil {
-		unsafeID = fmt.Sprintf("secret-%s-%s", collector.Secret.Namespace, collector.Secret.Name)
+		unsafeID = fmt.Sprintf("secret-%s-%s", collector.Secret.Namespace, collector.Secret.SecretName)
 	}
 
 	if collector.Logs != nil {

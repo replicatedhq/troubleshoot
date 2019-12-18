@@ -52,8 +52,8 @@ func Test_DeterministicIDForCollector(t *testing.T) {
 			name: "secret",
 			collector: &troubleshootv1beta1.Collect{
 				Secret: &troubleshootv1beta1.Secret{
-					Name:      "secret-agent-woman",
-					Namespace: "top-secret",
+					SecretName: "secret-agent-woman",
+					Namespace:  "top-secret",
 				},
 			},
 			expect: "secret-top-secret-secret-agent-woman",

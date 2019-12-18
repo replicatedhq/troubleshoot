@@ -60,11 +60,11 @@ func Secret(ctx *Context, secretCollector *troubleshootv1beta1.Secret) ([]byte, 
 }
 
 func secret(client *kubernetes.Clientset, secretCollector *troubleshootv1beta1.Secret) (*FoundSecret, []byte, error) {
-	found, err := client.CoreV1().Secrets(secretCollector.Namespace).Get(secretCollector.Name, metav1.GetOptions{})
+	found, err := client.CoreV1().Secrets(secretCollector.Namespace).Get(secretCollector.SecretName, metav1.GetOptions{})
 	if err != nil {
 		missingSecret := FoundSecret{
 			Namespace:    secretCollector.Namespace,
-			Name:         secretCollector.Name,
+			Name:         secretCollector.SecretName,
 			SecretExists: false,
 		}
 
