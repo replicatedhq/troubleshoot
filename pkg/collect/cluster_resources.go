@@ -9,6 +9,7 @@ import (
 	"github.com/replicatedhq/troubleshoot/pkg/redact"
 	authorizationv1 "k8s.io/api/authorization/v1"
 	corev1 "k8s.io/api/core/v1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	apiextensionsv1beta1clientset "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -33,8 +34,10 @@ type ClusterResourcesOutput struct {
 	ImagePullSecretsErrors          []byte            `json:"cluster-resources/image-pull-secrets-errors.json,omitempty"`
 	Nodes                           []byte            `json:"cluster-resources/nodes.json,omitempty"`
 	NodesErrors                     []byte            `json:"cluster-resources/nodes-errors.json,omitempty"`
-	AuthCanI                        map[string][]byte `json:"cluster-resources/auth-cani-list,omitempty"`
-	AuthCanIErrors                  []byte            `json:"cluster-resources/auth-cani-list-errors.json,omitempty"`
+
+	// TODO these should be considered for relocation to an rbac or auth package.  cluster resources might not be the right place
+	AuthCanI       map[string][]byte `json:"cluster-resources/auth-cani-list,omitempty"`
+	AuthCanIErrors []byte            `json:"cluster-resources/auth-cani-list-errors.json,omitempty"`
 }
 
 func ClusterResources(ctx *Context) ([]byte, error) {
@@ -378,7 +381,6 @@ func authCanI(client *kubernetes.Clientset, namespaces []string) (map[string][]b
 	errorsByNamespace := make(map[string]string)
 
 	for _, namespace := range namespaces {
-		fmt.Println(namespace)
 		sar := &authorizationv1.SelfSubjectRulesReview{
 			Spec: authorizationv1.SelfSubjectRulesReviewSpec{
 				Namespace: namespace,
@@ -390,24 +392,17 @@ func authCanI(client *kubernetes.Clientset, namespaces []string) (map[string][]b
 			continue
 		}
 
-		// // breakdownRules := []rbacv1.PolicyRule{}
-		// // for _, rule := range convertToPolicyRule(response.Status) {
-		// // 	breakdownRules = append(breakdownRules, rbacutil.BreakdownRule(rule)...)
-		// // }
+		rules := []rbacv1.PolicyRule{}
+		for _, rule := range convertToPolicyRule(response.Status) {
+			rules = append(rules, rule)
+		}
 
-		// // compactRules, err := rbacutil.CompactRules(breakdownRules)
-		// // if err != nil {
-		// // 	errorsByNamespace[namespace] = err.Error()
-		// // 	continue
-		// // }
-
-		b, err := json.MarshalIndent(response.Status, "", "  ")
+		b, err := json.MarshalIndent(rules, "", "  ")
 		if err != nil {
 			errorsByNamespace[namespace] = err.Error()
 			continue
 		}
 
-		fmt.Printf("%s\n", b)
 		authListByNamespace[namespace+".json"] = b
 	}
 
