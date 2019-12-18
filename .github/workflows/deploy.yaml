@@ -31,5 +31,5 @@ jobs:
           path: bin/
       - uses: engineerd/setup-kind@v0.2.0
       - run: chmod +x bin/preflight
-      - run: bin/preflight https://preflight.replicated.com
+      - run: bin/preflight --interactive=false https://preflight.replicated.com
 
