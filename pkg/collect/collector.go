@@ -25,30 +25,57 @@ type Context struct {
 
 func (c *Collector) RunCollectorSync() ([]byte, error) {
 	if c.Collect.ClusterInfo != nil {
+		if c.Collect.ClusterInfo.Exclude {
+			return nil, nil
+		}
 		return ClusterInfo(c.GetContext())
 	}
 	if c.Collect.ClusterResources != nil {
+		if c.Collect.ClusterResources.Exclude {
+			return nil, nil
+		}
 		return ClusterResources(c.GetContext())
 	}
 	if c.Collect.Secret != nil {
+		if c.Collect.Secret.Exclude {
+			return nil, nil
+		}
 		return Secret(c.GetContext(), c.Collect.Secret)
 	}
 	if c.Collect.Logs != nil {
+		if c.Collect.Logs.Exclude {
+			return nil, nil
+		}
 		return Logs(c.GetContext(), c.Collect.Logs)
 	}
 	if c.Collect.Run != nil {
+		if c.Collect.Run.Exclude {
+			return nil, nil
+		}
 		return Run(c.GetContext(), c.Collect.Run)
 	}
 	if c.Collect.Exec != nil {
+		if c.Collect.Exec.Exclude {
+			return nil, nil
+		}
 		return Exec(c.GetContext(), c.Collect.Exec)
 	}
 	if c.Collect.Data != nil {
+		if c.Collect.Data.Exclude {
+			return nil, nil
+		}
 		return Data(c.GetContext(), c.Collect.Data)
 	}
 	if c.Collect.Copy != nil {
+		if c.Collect.Copy.Exclude {
+			return nil, nil
+		}
 		return Copy(c.GetContext(), c.Collect.Copy)
 	}
 	if c.Collect.HTTP != nil {
+		if c.Collect.HTTP.Exclude {
+			return nil, nil
+		}
 		return HTTP(c.GetContext(), c.Collect.HTTP)
 	}
 

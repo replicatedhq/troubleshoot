@@ -112,7 +112,9 @@ func runPreflights(v *viper.Viper, arg string) error {
 			continue
 		}
 
-		analyzeResults = append(analyzeResults, analyzeResult)
+		if analyzeResult != nil {
+			analyzeResults = append(analyzeResults, analyzeResult)
+		}
 	}
 
 	finishedCh <- true
@@ -156,12 +158,14 @@ func runCollectors(v *viper.Viper, preflight troubleshootv1beta1.Preflight) (map
 			return nil, errors.Wrap(err, "failed to run collector")
 		}
 
-		output, err := parseCollectorOutput(string(result))
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to parse collector output")
-		}
-		for k, v := range output {
-			allCollectedData[k] = v
+		if result != nil {
+			output, err := parseCollectorOutput(string(result))
+			if err != nil {
+				return nil, errors.Wrap(err, "failed to parse collector output")
+			}
+			for k, v := range output {
+				allCollectedData[k] = v
+			}
 		}
 	}
 

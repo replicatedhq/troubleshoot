@@ -2,12 +2,15 @@ package v1beta1
 
 type CollectorMeta struct {
 	CollectorName string `json:"collectorName,omitempty" yaml:"collectorName,omitempty"`
+	Exclude       bool   `json:"when,omitmempty" yaml:"when,omitempty"`
 }
 
 type ClusterInfo struct {
+	CollectorMeta `json:",inline" yaml:",inline"`
 }
 
 type ClusterResources struct {
+	CollectorMeta `json:",inline" yaml:",inline"`
 }
 
 type Secret struct {
