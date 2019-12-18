@@ -6,7 +6,6 @@ RUN apt-get -qq update \
     ca-certificates
 
 COPY support-bundle /troubleshoot/support-bundle
-COPY collector /troubleshoot/collector
 COPY preflight /troubleshoot/preflight
 
 ENV PATH="/troubleshoot:${PATH}"
