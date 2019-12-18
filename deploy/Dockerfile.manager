@@ -1,4 +1,0 @@
-FROM ubuntu:latest
-WORKDIR /
-COPY manager /manager
-ENTRYPOINT ["/manager"]
