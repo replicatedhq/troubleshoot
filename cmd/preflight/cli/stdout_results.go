@@ -1,16 +1,24 @@
 package cli
 
 import (
+	"encoding/json"
 	"fmt"
 
+	"github.com/pkg/errors"
 	analyzerunner "github.com/replicatedhq/troubleshoot/pkg/analyze"
 )
 
-func showStdoutResults(preflightName string, analyzeResults []*analyzerunner.AnalyzeResult) error {
-	fmt.Printf("\n=== TEST   %s\n", preflightName)
-	for _, analyzeResult := range analyzeResults {
-		fmt.Printf("=== RUN:   %s\n", analyzeResult.Title)
+func showStdoutResults(format string, preflightName string, analyzeResults []*analyzerunner.AnalyzeResult) error {
+	if format == "human" {
+		return showStdoutResultsHuman(preflightName, analyzeResults)
+	} else if format == "json" {
+		return showStdoutResultsJSON(preflightName, analyzeResults)
 	}
+
+	return errors.Errorf("unknown output format: %q", format)
+}
+
+func showStdoutResultsHuman(preflightName string, analyzeResults []*analyzerunner.AnalyzeResult) error {
 	var failed bool
 	for _, analyzeResult := range analyzeResults {
 		testResultfailed := outputResult(analyzeResult)
@@ -25,6 +33,50 @@ func showStdoutResults(preflightName string, analyzeResults []*analyzerunner.Ana
 		fmt.Printf("--- PASS   %s\n", preflightName)
 		fmt.Println("PASS")
 	}
+	return nil
+}
+
+func showStdoutResultsJSON(preflightName string, analyzeResults []*analyzerunner.AnalyzeResult) error {
+	type ResultOutput struct {
+		Title   string `json:"title"`
+		Message string `json:"message"`
+		URI     string `json:"uri,omitempty"`
+	}
+	type Output struct {
+		Pass []ResultOutput `json:"pass,omitempty"`
+		Warn []ResultOutput `json:"warn,omitempty"`
+		Fail []ResultOutput `json:"fail,omitempty"`
+	}
+
+	output := Output{
+		Pass: []ResultOutput{},
+		Warn: []ResultOutput{},
+		Fail: []ResultOutput{},
+	}
+
+	for _, analyzeResult := range analyzeResults {
+		resultOutput := ResultOutput{
+			Title:   analyzeResult.Title,
+			Message: analyzeResult.Message,
+			URI:     analyzeResult.URI,
+		}
+
+		if analyzeResult.IsPass {
+			output.Pass = append(output.Pass, resultOutput)
+		} else if analyzeResult.IsWarn {
+			output.Warn = append(output.Warn, resultOutput)
+		} else if analyzeResult.IsFail {
+			output.Fail = append(output.Fail, resultOutput)
+		}
+	}
+
+	b, err := json.MarshalIndent(output, "", "  ")
+	if err != nil {
+		return errors.Wrap(err, "failed to marshal results")
+	}
+
+	fmt.Printf("%s\n", b)
+
 	return nil
 }
 
