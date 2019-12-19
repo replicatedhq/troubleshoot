@@ -74,13 +74,6 @@ type Distribution struct {
 	Outcomes    []*Outcome `json:"outcomes" yaml:"outcomes"`
 }
 
-type RegEx struct {
-	AnalyzeMeta   `json:",inline" yaml:",inline"`
-	CollectorName string     `json:"collectorName" yaml:"collectorName"`
-	Expression    string     `json:"expression" yaml:"expression"`
-	Outcomes      []*Outcome `json:"outcomes" yaml:"outcomes"`
-}
-
 type AnalyzeMeta struct {
 	CheckName string `json:"checkName,omitempty" yaml:"checkName,omitempty"`
 	Exclude   bool   `json:"exclude,omitempty" yaml:"exclude,omitempty"`
@@ -97,5 +90,4 @@ type Analyze struct {
 	StatefulsetStatus        *StatefulsetStatus        `json:"statefulsetStatus,omitempty" yaml:"statefulsetStatus,omitempty"`
 	ContainerRuntime         *ContainerRuntime         `json:"containerRuntime,omitempty" yaml:"containerRuntime,omitempty"`
 	Distribution             *Distribution             `json:"distribution,omitempty" yaml:"distribution,omitempty"`
-	RegEx                    *RegEx                    `json:"regex,omitempty" yaml:"regex,omitempty"`
 }

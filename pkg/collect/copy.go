@@ -34,7 +34,7 @@ func Copy(ctx *Context, copyCollector *troubleshootv1beta1.Copy) ([]byte, error)
 
 	if len(pods) > 0 {
 		for _, pod := range pods {
-			bundlePath := filepath.Join(copyCollector.CollectorName, pod.Namespace, pod.Name)
+			bundlePath := filepath.Join(copyCollector.Name, pod.Namespace, pod.Name)
 
 			files, copyErrors := copyFiles(ctx, client, pod, copyCollector)
 			if len(copyErrors) > 0 {
@@ -136,6 +136,9 @@ func (c CopyOutput) Redact() (CopyOutput, error) {
 }
 
 func getCopyErrosFileName(copyCollector *troubleshootv1beta1.Copy) string {
+	if len(copyCollector.Name) > 0 {
+		return fmt.Sprintf("%s-errors.json", copyCollector.Name)
+	}
 	if len(copyCollector.CollectorName) > 0 {
 		return fmt.Sprintf("%s-errors.json", copyCollector.CollectorName)
 	}
