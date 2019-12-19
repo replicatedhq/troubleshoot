@@ -70,7 +70,7 @@ func execWithoutTimeout(ctx *Context, execCollector *troubleshootv1beta1.Exec) (
 		for _, pod := range pods {
 			stdout, stderr, execErrors := getExecOutputs(ctx, client, pod, execCollector)
 
-			bundlePath := filepath.Join(execCollector.Name, pod.Namespace, pod.Name)
+			bundlePath := filepath.Join(execCollector.CollectorName, pod.Namespace, pod.Name)
 			if len(stdout) > 0 {
 				execOutput[filepath.Join(bundlePath, execCollector.CollectorName+"-stdout.txt")] = stdout
 			}
@@ -158,9 +158,6 @@ func (r ExecOutput) Redact() (ExecOutput, error) {
 }
 
 func getExecErrosFileName(execCollector *troubleshootv1beta1.Exec) string {
-	if len(execCollector.Name) > 0 {
-		return fmt.Sprintf("%s-errors.json", execCollector.Name)
-	}
 	if len(execCollector.CollectorName) > 0 {
 		return fmt.Sprintf("%s-errors.json", execCollector.CollectorName)
 	}
