@@ -43,6 +43,7 @@ type Data struct {
 
 type Run struct {
 	CollectorMeta   `json:",inline" yaml:",inline"`
+	Name            string   `json:"name,omitempty" yaml:"name,omitempty"`
 	Namespace       string   `json:"namespace" yaml:"namespace"`
 	Image           string   `json:"image" yaml:"image"`
 	Command         []string `json:"command,omitempty" yaml:"command,omitempty"`
@@ -53,6 +54,7 @@ type Run struct {
 
 type Exec struct {
 	CollectorMeta `json:",inline" yaml:",inline"`
+	Name          string   `json:"name,omitempty" yaml:"name,omitempty"`
 	Selector      []string `json:"selector" yaml:"selector"`
 	Namespace     string   `json:"namespace" yaml:"namespace"`
 	ContainerName string   `json:"containerName,omitempty" yaml:"containerName,omitempty"`
@@ -63,6 +65,7 @@ type Exec struct {
 
 type Copy struct {
 	CollectorMeta `json:",inline" yaml:",inline"`
+	Name          string   `json:"name,omitempty" yaml:"name,omitempty"`
 	Selector      []string `json:"selector" yaml:"selector"`
 	Namespace     string   `json:"namespace" yaml:"namespace"`
 	ContainerPath string   `json:"containerPath" yaml:"containerPath"`
