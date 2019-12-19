@@ -79,6 +79,12 @@ func Analyze(analyzer *troubleshootv1beta1.Analyze, getFile getCollectedFileCont
 		}
 		return analyzeDistribution(analyzer.Distribution, getFile)
 	}
+	if analyzer.RegEx != nil {
+		if analyzer.RegEx.Exclude {
+			return nil, nil
+		}
+		return analyzeRegex(analyzer.RegEx, getFile)
+	}
 
 	return nil, errors.New("invalid analyzer")
 }
