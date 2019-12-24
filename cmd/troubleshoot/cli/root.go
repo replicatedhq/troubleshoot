@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"fmt"
 	"os"
 	"strings"
 
@@ -23,6 +22,7 @@ func RootCmd() *cobra.Command {
 		Short: "Generate and manage support bundles",
 		Long: `A support bundle is an archive of files, output, metrics and state
 from a server that can be used to assist when troubleshooting a server.`,
+		SilenceUsage: true,
 		PreRun: func(cmd *cobra.Command, args []string) {
 			viper.BindPFlags(cmd.Flags())
 		},
@@ -57,7 +57,6 @@ from a server that can be used to assist when troubleshooting a server.`,
 
 func InitAndExecute() {
 	if err := RootCmd().Execute(); err != nil {
-		fmt.Println(err)
 		os.Exit(1)
 	}
 }

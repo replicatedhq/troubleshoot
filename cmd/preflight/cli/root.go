@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"fmt"
 	"os"
 	"strings"
 
@@ -22,6 +21,7 @@ func RootCmd() *cobra.Command {
 		Short: "Run and retrieve preflight checks in a cluster",
 		Long: `A preflight check is a set of validations that can and should be run to ensure
 that a cluster meets the requirements to run an application.`,
+		SilenceUsage: true,
 		PreRun: func(cmd *cobra.Command, args []string) {
 			viper.BindPFlags(cmd.Flags())
 		},
@@ -55,7 +55,6 @@ that a cluster meets the requirements to run an application.`,
 
 func InitAndExecute() {
 	if err := RootCmd().Execute(); err != nil {
-		fmt.Println(err)
 		os.Exit(1)
 	}
 }

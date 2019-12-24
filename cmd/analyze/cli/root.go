@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"fmt"
 	"os"
 	"strings"
 
@@ -17,10 +16,11 @@ var (
 
 func RootCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "analyze [url]",
-		Args:  cobra.MinimumNArgs(1),
-		Short: "Analyze a support bundle",
-		Long:  `Run a series of analyzers on a support bundle archive`,
+		Use:          "analyze [url]",
+		Args:         cobra.MinimumNArgs(1),
+		Short:        "Analyze a support bundle",
+		Long:         `Run a series of analyzers on a support bundle archive`,
+		SilenceUsage: true,
 		PreRun: func(cmd *cobra.Command, args []string) {
 			viper.BindPFlags(cmd.Flags())
 		},
@@ -49,7 +49,6 @@ func RootCmd() *cobra.Command {
 
 func InitAndExecute() {
 	if err := RootCmd().Execute(); err != nil {
-		fmt.Println(err)
 		os.Exit(1)
 	}
 }
