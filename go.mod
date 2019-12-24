@@ -28,7 +28,7 @@ require (
 	github.com/spf13/viper v1.4.0
 	github.com/stretchr/testify v1.4.0
 	github.com/tj/go-spin v1.1.0
-	github.com/ugorji/go v1.1.7 // indirect
+	github.com/ugorji/go/codec v1.1.7 // indirect
 	github.com/xi2/xz v0.0.0-20171230120015-48954b6210f8 // indirect
 	gopkg.in/yaml.v2 v2.2.4
 	k8s.io/api v0.17.0
@@ -38,3 +38,5 @@ require (
 	k8s.io/client-go v0.17.0
 	sigs.k8s.io/controller-runtime v0.4.0
 )
+
+replace github.com/appscode/jsonpatch => github.com/gomodules/jsonpatch v2.0.1+incompatible
