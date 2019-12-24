@@ -39,6 +39,7 @@ func Test_textAnalyze(t *testing.T) {
 				IsPass:  true,
 				IsWarn:  false,
 				IsFail:  false,
+				Title:   "text-collector-1",
 				Message: "pass",
 			},
 			files: map[string][]byte{
@@ -68,6 +69,7 @@ func Test_textAnalyze(t *testing.T) {
 				IsPass:  false,
 				IsWarn:  false,
 				IsFail:  true,
+				Title:   "text-collector-2",
 				Message: "fail",
 			},
 			files: map[string][]byte{
@@ -94,10 +96,11 @@ func Test_textAnalyze(t *testing.T) {
 				RegexPattern:  "",
 			},
 			expectResult: AnalyzeResult{
-				IsPass:  true,
+				IsPass:  false,
 				IsWarn:  false,
-				IsFail:  false,
-				Message: "success",
+				IsFail:  true,
+				Title:   "",
+				Message: "Invalid analyzer",
 			},
 			files: map[string][]byte{
 				"text-collector-3/cfile-3.txt": []byte("Connection to service succeeded"),
@@ -126,6 +129,7 @@ func Test_textAnalyze(t *testing.T) {
 				IsPass:  true,
 				IsWarn:  false,
 				IsFail:  false,
+				Title:   "text-collector-5",
 				Message: "success",
 			},
 			files: map[string][]byte{
@@ -155,6 +159,7 @@ func Test_textAnalyze(t *testing.T) {
 				IsPass:  false,
 				IsWarn:  false,
 				IsFail:  true,
+				Title:   "text-collector-4",
 				Message: "fail",
 			},
 			files: map[string][]byte{
@@ -184,6 +189,7 @@ func Test_textAnalyze(t *testing.T) {
 				IsPass:  false,
 				IsWarn:  false,
 				IsFail:  true,
+				Title:   "text-collector-6",
 				Message: "fail",
 			},
 			files: map[string][]byte{
