@@ -22,7 +22,6 @@ require (
 	github.com/mholt/archiver v3.1.1+incompatible
 	github.com/mitchellh/go-wordwrap v1.0.0 // indirect
 	github.com/nwaples/rardecode v1.0.0 // indirect
-	github.com/onsi/gomega v1.7.0
 	github.com/pierrec/lz4 v2.2.6+incompatible // indirect
 	github.com/pkg/errors v0.8.1
 	github.com/spf13/cobra v0.0.5
@@ -31,7 +30,6 @@ require (
 	github.com/tj/go-spin v1.1.0
 	github.com/ugorji/go v1.1.7 // indirect
 	github.com/xi2/xz v0.0.0-20171230120015-48954b6210f8 // indirect
-	golang.org/x/net v0.0.0-20191004110552-13f9640d40b9
 	gopkg.in/yaml.v2 v2.2.4
 	k8s.io/api v0.17.0
 	k8s.io/apiextensions-apiserver v0.0.0-20190918161926-8f644eb6e783
