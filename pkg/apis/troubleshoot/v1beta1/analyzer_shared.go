@@ -79,6 +79,7 @@ type TextAnalyze struct {
 	CollectorName string     `json:"collectorName,omitempty" yaml:"collectorName,omitempty"`
 	FileName      string     `json:"fileName,omitempty" yaml:"fileName,omitempty"`
 	RegexPattern  string     `json:"regex,omitempty" yaml:"regex,omitempty"`
+	RegexGroups   string     `json:"regexGroups,omitempty" yaml:"regexGroups,omitempty"`
 	Outcomes      []*Outcome `json:"outcomes" yaml:"outcomes"`
 }
 
