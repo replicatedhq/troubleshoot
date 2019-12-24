@@ -82,7 +82,7 @@ endif
 # find or download client-gen
 client-gen:
 ifeq (, $(shell which client-gen))
-	go get k8s.io/code-generator/cmd/client-gen@kubernetes-1.13.5
+	go get k8s.io/code-generator/cmd/client-gen@kubernetes-1.16.4
 CLIENT_GEN=$(shell go env GOPATH)/bin/client-gen
 else
 CLIENT_GEN=$(shell which client-gen)
