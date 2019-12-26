@@ -117,7 +117,7 @@ func compareRuntimeConditionalToActual(conditional string, actual string) (bool,
 
 	parsedRuntime, err := url.Parse(actual)
 	if err != nil {
-		return false, errors.New("unable to parse url")
+		return false, errors.Wrap(err, "failed to parse url")
 	}
 
 	switch parts[0] {

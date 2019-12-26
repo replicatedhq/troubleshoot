@@ -94,7 +94,7 @@ func compareActualToWhen(when string, actual int) (bool, error) {
 
 	value, err := strconv.Atoi(parts[1])
 	if err != nil {
-		return false, errors.New("unable to parse when value")
+		return false, errors.Wrap(err, "failed to parse when value")
 	}
 
 	switch parts[0] {

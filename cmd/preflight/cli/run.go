@@ -60,7 +60,7 @@ func runPreflights(v *viper.Viper, arg string) error {
 
 	preflight := troubleshootv1beta1.Preflight{}
 	if err := yaml.Unmarshal([]byte(preflightContent), &preflight); err != nil {
-		return fmt.Errorf("unable to parse %s as a preflight", arg)
+		return errors.Wrapf(err, "failed to parse %s as a preflight", arg)
 	}
 
 	s := spin.New()
