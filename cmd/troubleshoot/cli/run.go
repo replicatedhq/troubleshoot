@@ -60,7 +60,7 @@ func runTroubleshoot(v *viper.Viper, arg string) error {
 
 	collector := troubleshootv1beta1.Collector{}
 	if err := yaml.Unmarshal([]byte(collectorContent), &collector); err != nil {
-		return fmt.Errorf("unable to parse %s collectors", arg)
+		return errors.Wrapf(err, "failed to parse %s collectors", arg)
 	}
 
 	s := spin.New()
