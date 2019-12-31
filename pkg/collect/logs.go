@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pkg/errors"
 	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
 	"github.com/replicatedhq/troubleshoot/pkg/logger"
 	corev1 "k8s.io/api/core/v1"
@@ -29,7 +30,7 @@ func Logs(ctx *Context, logsCollector *troubleshootv1beta1.Logs) ([]byte, error)
 	if len(podsErrors) > 0 {
 		errorBytes, err := marshalNonNil(podsErrors)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "failed to list pods")
 		}
 		logsOutput[getLogsErrorsFileName(logsCollector)] = errorBytes
 	}
@@ -127,14 +128,14 @@ func getPodLogs(client *kubernetes.Clientset, pod corev1.Pod, name, container st
 	req := client.CoreV1().Pods(pod.Namespace).GetLogs(pod.Name, &podLogOpts)
 	podLogs, err := req.Stream()
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "failed to get log stream")
 	}
 	defer podLogs.Close()
 
 	buf := new(bytes.Buffer)
 	_, err = io.Copy(buf, podLogs)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "failed to copy log")
 	}
 
 	fileKey := fmt.Sprintf("%s/%s.txt", name, pod.Name)

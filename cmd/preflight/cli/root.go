@@ -42,6 +42,7 @@ that a cluster meets the requirements to run an application.`,
 	cmd.Flags().String("pullpolicy", "", "the pull policy of the preflight image")
 	cmd.Flags().String("collector-image", "", "the full name of the collector image to use")
 	cmd.Flags().String("collector-pullpolicy", "", "the pull policy of the collector image")
+	cmd.Flags().Bool("collect-without-permissions", false, "always run preflight checks even if some require permissions that preflight does not have")
 
 	cmd.Flags().String("serviceaccount", "", "name of the service account to use. if not provided, one will be created")
 

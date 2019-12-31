@@ -2,9 +2,9 @@ package collect
 
 import (
 	"encoding/json"
-	"errors"
 	"time"
 
+	"github.com/pkg/errors"
 	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
 	"github.com/replicatedhq/troubleshoot/pkg/logger"
 	corev1 "k8s.io/api/core/v1"
@@ -17,12 +17,12 @@ type RunOutput map[string][]byte
 func Run(ctx *Context, runCollector *troubleshootv1beta1.Run) ([]byte, error) {
 	client, err := kubernetes.NewForConfig(ctx.ClientConfig)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "failed to create client from config")
 	}
 
-	pod, err := runPod(client, runCollector)
+	pod, err := runPod(client, runCollector, ctx.Namespace)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "failed to run pod")
 	}
 
 	defer func() {
@@ -37,7 +37,7 @@ func Run(ctx *Context, runCollector *troubleshootv1beta1.Run) ([]byte, error) {
 
 	timeout, err := time.ParseDuration(runCollector.Timeout)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "failed to parse timeout")
 	}
 
 	errCh := make(chan error, 1)
@@ -64,13 +64,13 @@ func Run(ctx *Context, runCollector *troubleshootv1beta1.Run) ([]byte, error) {
 func runWithoutTimeout(ctx *Context, pod *corev1.Pod, runCollector *troubleshootv1beta1.Run) ([]byte, error) {
 	client, err := kubernetes.NewForConfig(ctx.ClientConfig)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "failed create client from config")
 	}
 
 	for {
 		status, err := client.CoreV1().Pods(pod.Namespace).Get(pod.Name, metav1.GetOptions{})
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "failed to get pod")
 		}
 		if status.Status.Phase == corev1.PodRunning ||
 			status.Status.Phase == corev1.PodFailed ||
@@ -86,6 +86,9 @@ func runWithoutTimeout(ctx *Context, pod *corev1.Pod, runCollector *troubleshoot
 		MaxLines: 10000,
 	}
 	podLogs, err := getPodLogs(client, *pod, runCollector.Name, "", &limits, true)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get pod logs")
+	}
 
 	for k, v := range podLogs {
 		runOutput[k] = v
@@ -94,19 +97,19 @@ func runWithoutTimeout(ctx *Context, pod *corev1.Pod, runCollector *troubleshoot
 	if ctx.Redact {
 		runOutput, err = runOutput.Redact()
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "failed to redact pod logs")
 		}
 	}
 
 	b, err := json.MarshalIndent(runOutput, "", "  ")
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "failed to marshal logs output")
 	}
 
 	return b, nil
 }
 
-func runPod(client *kubernetes.Clientset, runCollector *troubleshootv1beta1.Run) (*corev1.Pod, error) {
+func runPod(client *kubernetes.Clientset, runCollector *troubleshootv1beta1.Run, namespace string) (*corev1.Pod, error) {
 	podLabels := make(map[string]string)
 	podLabels["troubleshoot-role"] = "run-collector"
 
@@ -115,10 +118,17 @@ func runPod(client *kubernetes.Clientset, runCollector *troubleshootv1beta1.Run)
 		pullPolicy = corev1.PullPolicy(runCollector.ImagePullPolicy)
 	}
 
+	if namespace == "" {
+		namespace = runCollector.Namespace
+	}
+	if namespace == "" {
+		namespace = "default"
+	}
+
 	pod := corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      runCollector.CollectorName,
-			Namespace: runCollector.Namespace,
+			Namespace: namespace,
 			Labels:    podLabels,
 		},
 		TypeMeta: metav1.TypeMeta{
@@ -139,9 +149,9 @@ func runPod(client *kubernetes.Clientset, runCollector *troubleshootv1beta1.Run)
 		},
 	}
 
-	created, err := client.CoreV1().Pods(runCollector.Namespace).Create(&pod)
+	created, err := client.CoreV1().Pods(namespace).Create(&pod)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "failed to create pod")
 	}
 
 	return created, nil
