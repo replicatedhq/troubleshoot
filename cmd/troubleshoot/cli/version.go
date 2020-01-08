@@ -18,7 +18,7 @@ func VersionCmd() *cobra.Command {
 		Short: "Print the current version and exit",
 		Long:  `Print the current version and exit`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			fmt.Printf("Replicated Preflight %s\n", version.Version())
+			fmt.Printf("Replicated Troubleshoot %s\n", version.Version())
 
 			return nil
 		},
@@ -30,8 +30,9 @@ const VersionFilename = "version.yaml"
 
 func writeVersionFile(path string) error {
 	version := troubleshootv1beta1.SupportBundleVersion{
-		ApiVersion: "troubleshoot.replicated.com/v1beta1",
-		Kind:       "SupportBundle",
+		ApiVersion:  "troubleshoot.replicated.com/v1beta1",
+		Kind:        "SupportBundle",
+		VersionInfo: version.GetBuild(),
 	}
 	b, err := yaml.Marshal(version)
 	if err != nil {
