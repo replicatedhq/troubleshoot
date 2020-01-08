@@ -34,6 +34,9 @@ type ClusterResourcesOutput struct {
 	ImagePullSecretsErrors          []byte            `json:"cluster-resources/image-pull-secrets-errors.json,omitempty"`
 	Nodes                           []byte            `json:"cluster-resources/nodes.json,omitempty"`
 	NodesErrors                     []byte            `json:"cluster-resources/nodes-errors.json,omitempty"`
+	Groups                          []byte            `json:"cluster-resources/groups.json,omitempty"`
+	Resources                       []byte            `json:"cluster-resources/resources.json,omitempty"`
+	GroupsResourcesErrors           []byte            `json:"cluster-resources/groups-resources-errors.json,omitempty"`
 
 	// TODO these should be considered for relocation to an rbac or auth package.  cluster resources might not be the right place
 	AuthCanI       map[string][]byte `json:"cluster-resources/auth-cani-list,omitempty"`
@@ -133,6 +136,14 @@ func ClusterResources(ctx *Context) ([]byte, error) {
 	nodes, nodeErrors := nodes(client)
 	clusterResourcesOutput.Nodes = nodes
 	clusterResourcesOutput.NodesErrors, err = marshalNonNil(nodeErrors)
+	if err != nil {
+		return nil, err
+	}
+
+	groups, resources, groupsResourcesErrors := apiResources(client)
+	clusterResourcesOutput.Groups = groups
+	clusterResourcesOutput.Resources = resources
+	clusterResourcesOutput.GroupsResourcesErrors, err = marshalNonNil(groupsResourcesErrors)
 	if err != nil {
 		return nil, err
 	}
@@ -374,6 +385,27 @@ func nodes(client *kubernetes.Clientset) ([]byte, []string) {
 	return b, nil
 }
 
+// get the list of API resources, similar to 'kubectl api-resources'
+func apiResources(client *kubernetes.Clientset) ([]byte, []byte, []string) {
+	var errorArray []string
+	groups, resources, err := client.Discovery().ServerGroupsAndResources()
+	if err != nil {
+		errorArray = append(errorArray, err.Error())
+	}
+
+	groupBytes, err := json.MarshalIndent(groups, "", "  ")
+	if err != nil {
+		errorArray = append(errorArray, err.Error())
+	}
+
+	resourcesBytes, err := json.MarshalIndent(resources, "", "  ")
+	if err != nil {
+		errorArray = append(errorArray, err.Error())
+	}
+
+	return groupBytes, resourcesBytes, errorArray
+}
+
 func authCanI(client *kubernetes.Clientset, namespaces []string) (map[string][]byte, map[string]string) {
 	// https://github.com/kubernetes/kubernetes/blob/master/pkg/kubectl/cmd/auth/cani.go
 
@@ -464,6 +496,14 @@ func (c *ClusterResourcesOutput) Redact() (*ClusterResourcesOutput, error) {
 	if err != nil {
 		return nil, err
 	}
+	groups, err := redact.Redact(c.Groups)
+	if err != nil {
+		return nil, err
+	}
+	resources, err := redact.Redact(c.Resources)
+	if err != nil {
+		return nil, err
+	}
 
 	return &ClusterResourcesOutput{
 		Namespaces:                      namespaces,
@@ -486,5 +526,8 @@ func (c *ClusterResourcesOutput) Redact() (*ClusterResourcesOutput, error) {
 		ImagePullSecretsErrors:          c.ImagePullSecretsErrors,
 		AuthCanI:                        c.AuthCanI,
 		AuthCanIErrors:                  c.AuthCanIErrors,
+		Groups:                          groups,
+		Resources:                       resources,
+		GroupsResourcesErrors:           c.GroupsResourcesErrors,
 	}, nil
 }

@@ -191,7 +191,11 @@ func runCollectors(v *viper.Viper, collector troubleshootv1beta1.Collector, prog
 	// Run preflights collectors synchronously
 	for _, collector := range collectors {
 		if len(collector.RBACErrors) > 0 {
-			continue
+			// don't skip clusterResources collector due to RBAC issues
+			if collector.Collect.ClusterResources == nil {
+				progressChan <- fmt.Sprintf("skipping collector %s with insufficient RBAC permissions", collector.GetDisplayName())
+				continue
+			}
 		}
 
 		progressChan <- collector.GetDisplayName()
