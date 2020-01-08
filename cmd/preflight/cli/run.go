@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ahmetalpbalkan/go-cursor"
+	cursor "github.com/ahmetalpbalkan/go-cursor"
 	"github.com/fatih/color"
 	"github.com/pkg/errors"
 	analyzerunner "github.com/replicatedhq/troubleshoot/pkg/analyze"
@@ -19,7 +19,7 @@ import (
 	"github.com/replicatedhq/troubleshoot/pkg/collect"
 	"github.com/replicatedhq/troubleshoot/pkg/logger"
 	"github.com/spf13/viper"
-	"github.com/tj/go-spin"
+	spin "github.com/tj/go-spin"
 	"gopkg.in/yaml.v2"
 )
 
@@ -199,7 +199,11 @@ func runCollectors(v *viper.Viper, preflight troubleshootv1beta1.Preflight, prog
 	// Run preflights collectors synchronously
 	for _, collector := range collectors {
 		if len(collector.RBACErrors) > 0 {
-			continue
+			// don't skip clusterResources collector due to RBAC issues
+			if collector.Collect.ClusterResources == nil {
+				progressChan <- fmt.Sprintf("skipping collector %s with insufficient RBAC permissions", collector.GetDisplayName())
+				continue
+			}
 		}
 
 		result, err := collector.RunCollectorSync()

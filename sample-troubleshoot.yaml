@@ -1,0 +1,14 @@
+apiVersion: troubleshoot.replicated.com/v1beta1
+kind: Collector
+metadata:
+  name: my-application-name
+spec:
+  collectors:
+  - clusterInfo:
+      collectorName: my-cluster-info
+  - clusterResources:
+      collectorName: my-cluster-resources
+  - http:
+      name: healthz
+      get:
+        url: http://api:3000/healthz
