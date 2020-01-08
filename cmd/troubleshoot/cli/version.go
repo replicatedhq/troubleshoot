@@ -30,9 +30,9 @@ const VersionFilename = "version.yaml"
 
 func writeVersionFile(path string) error {
 	version := troubleshootv1beta1.SupportBundleVersion{
-		ApiVersion:  "troubleshoot.replicated.com/v1beta1",
-		Kind:        "SupportBundle",
-		VersionInfo: version.GetBuild(),
+		ApiVersion:    "troubleshoot.replicated.com/v1beta1",
+		Kind:          "SupportBundle",
+		VersionNumber: version.Version(),
 	}
 	b, err := yaml.Marshal(version)
 	if err != nil {
