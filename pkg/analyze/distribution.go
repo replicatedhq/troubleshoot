@@ -67,16 +67,17 @@ func analyzeDistribution(analyzer *troubleshootv1beta1.Distribution, getCollecte
 	}
 
 	apiResourcesBytes, err := getCollectedFileContents("cluster-resources/resources.json")
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to get contents of resources.json")
-	}
-	var apiResources []*metav1.APIResourceList
-	if err := json.Unmarshal(apiResourcesBytes, &apiResources); err != nil {
-		return nil, errors.Wrap(err, "failed to unmarshal api resource list")
-	}
-	for _, resource := range apiResources {
-		if strings.Contains(resource.GroupVersion, "openshift") {
-			foundProviders.openShift = true
+	// if the file is not found, that is not a fatal error
+	// troubleshoot 0.9.15 and earlier did not collect that file
+	if err == nil {
+		var apiResources []*metav1.APIResourceList
+		if err := json.Unmarshal(apiResourcesBytes, &apiResources); err != nil {
+			return nil, errors.Wrap(err, "failed to unmarshal api resource list")
+		}
+		for _, resource := range apiResources {
+			if strings.Contains(resource.GroupVersion, "openshift") {
+				foundProviders.openShift = true
+			}
 		}
 	}
 
