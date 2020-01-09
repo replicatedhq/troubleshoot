@@ -7,6 +7,7 @@ import (
 	"github.com/pkg/errors"
 	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type providers struct {
@@ -15,6 +16,7 @@ type providers struct {
 	eks           bool
 	gke           bool
 	digitalOcean  bool
+	openShift     bool
 }
 
 type Provider int
@@ -26,6 +28,7 @@ const (
 	eks           Provider = iota
 	gke           Provider = iota
 	digitalOcean  Provider = iota
+	openShift     Provider = iota
 )
 
 func analyzeDistribution(analyzer *troubleshootv1beta1.Distribution, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
@@ -60,6 +63,20 @@ func analyzeDistribution(analyzer *troubleshootv1beta1.Distribution, getCollecte
 		}
 		if strings.HasPrefix(node.Spec.ProviderID, "gce:") {
 			foundProviders.gke = true
+		}
+	}
+
+	apiResourcesBytes, err := getCollectedFileContents("cluster-resources/resources.json")
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get contents of resources.json")
+	}
+	var apiResources []*metav1.APIResourceList
+	if err := json.Unmarshal(apiResourcesBytes, &apiResources); err != nil {
+		return nil, errors.Wrap(err, "failed to unmarshal api resource list")
+	}
+	for _, resource := range apiResources {
+		if strings.Contains(resource.GroupVersion, "openshift") {
+			foundProviders.openShift = true
 		}
 	}
 
@@ -172,6 +189,8 @@ func compareDistributionConditionalToActual(conditional string, actual providers
 		isMatch = actual.gke
 	case digitalOcean:
 		isMatch = actual.digitalOcean
+	case openShift:
+		isMatch = actual.openShift
 	}
 
 	switch parts[0] {
@@ -196,6 +215,8 @@ func mustNormalizeDistributionName(raw string) Provider {
 		return gke
 	case "digitalocean":
 		return digitalOcean
+	case "openshift":
+		return openShift
 	}
 
 	return unknown
