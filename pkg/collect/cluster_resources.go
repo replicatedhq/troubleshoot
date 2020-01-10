@@ -37,6 +37,8 @@ type ClusterResourcesOutput struct {
 	Groups                          []byte            `json:"cluster-resources/groups.json,omitempty"`
 	Resources                       []byte            `json:"cluster-resources/resources.json,omitempty"`
 	GroupsResourcesErrors           []byte            `json:"cluster-resources/groups-resources-errors.json,omitempty"`
+	LimitRanges                     map[string][]byte `json:"cluster-resources/limitranges,omitempty"`
+	LimitRangesErrors               []byte            `json:"cluster-ressources/limitranges-errors.json,omitempty"`
 
 	// TODO these should be considered for relocation to an rbac or auth package.  cluster resources might not be the right place
 	AuthCanI       map[string][]byte `json:"cluster-resources/auth-cani-list,omitempty"`
@@ -144,6 +146,14 @@ func ClusterResources(ctx *Context) ([]byte, error) {
 	clusterResourcesOutput.Groups = groups
 	clusterResourcesOutput.Resources = resources
 	clusterResourcesOutput.GroupsResourcesErrors, err = marshalNonNil(groupsResourcesErrors)
+	if err != nil {
+		return nil, err
+	}
+
+	// limit ranges
+	limitRanges, limitRangesErrors := limitRanges(client, namespaceNames)
+	clusterResourcesOutput.LimitRanges = limitRanges
+	clusterResourcesOutput.LimitRangesErrors, err = marshalNonNil(limitRangesErrors)
 	if err != nil {
 		return nil, err
 	}
@@ -371,6 +381,29 @@ func imagePullSecrets(client *kubernetes.Clientset, namespaces []string) (map[st
 	return imagePullSecrets, errors
 }
 
+func limitRanges(client *kubernetes.Clientset, namespaces []string) (map[string][]byte, map[string]string) {
+	limitRangesByNamespace := make(map[string][]byte)
+	errorsByNamespace := make(map[string]string)
+
+	for _, namespace := range namespaces {
+		limitRanges, err := client.CoreV1().LimitRanges(namespace).List(metav1.ListOptions{})
+		if err != nil {
+			errorsByNamespace[namespace] = err.Error()
+			continue
+		}
+
+		b, err := json.MarshalIndent(limitRanges.Items, "", "  ")
+		if err != nil {
+			errorsByNamespace[namespace] = err.Error()
+			continue
+		}
+
+		limitRangesByNamespace[namespace+".json"] = b
+	}
+
+	return limitRangesByNamespace, errorsByNamespace
+}
+
 func nodes(client *kubernetes.Clientset) ([]byte, []string) {
 	nodes, err := client.CoreV1().Nodes().List(metav1.ListOptions{})
 	if err != nil {
@@ -529,5 +562,7 @@ func (c *ClusterResourcesOutput) Redact() (*ClusterResourcesOutput, error) {
 		Groups:                          groups,
 		Resources:                       resources,
 		GroupsResourcesErrors:           c.GroupsResourcesErrors,
+		LimitRanges:                     c.LimitRanges,
+		LimitRangesErrors:               c.LimitRangesErrors,
 	}, nil
 }
