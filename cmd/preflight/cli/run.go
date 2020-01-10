@@ -17,7 +17,6 @@ import (
 	analyzerunner "github.com/replicatedhq/troubleshoot/pkg/analyze"
 	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
 	"github.com/replicatedhq/troubleshoot/pkg/collect"
-	"github.com/replicatedhq/troubleshoot/pkg/logger"
 	"github.com/spf13/viper"
 	spin "github.com/tj/go-spin"
 	"gopkg.in/yaml.v2"
@@ -122,8 +121,11 @@ func runPreflights(v *viper.Viper, arg string) error {
 	for _, analyzer := range preflight.Spec.Analyzers {
 		analyzeResult, err := analyzerunner.Analyze(analyzer, getCollectedFileContents, getChildCollectedFileContents)
 		if err != nil {
-			logger.Printf("an analyzer failed to run: %v\n", err)
-			continue
+			analyzeResult = &analyzerunner.AnalyzeResult{
+				IsFail:  true,
+				Title:   "Analyzer Failed",
+				Message: err.Error(),
+			}
 		}
 
 		if analyzeResult != nil {
