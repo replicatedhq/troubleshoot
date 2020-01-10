@@ -457,11 +457,7 @@ func authCanI(client *kubernetes.Clientset, namespaces []string) (map[string][]b
 			continue
 		}
 
-		rules := []rbacv1.PolicyRule{}
-		for _, rule := range convertToPolicyRule(response.Status) {
-			rules = append(rules, rule)
-		}
-
+		rules := convertToPolicyRule(response.Status)
 		b, err := json.MarshalIndent(rules, "", "  ")
 		if err != nil {
 			errorsByNamespace[namespace] = err.Error()
