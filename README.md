@@ -35,3 +35,8 @@ curl https://krew.sh/support-bundle | bash
 kubectl support-bundle https://troubleshoot.replicated.com
 ```
 For details on creating the custom resource files that drive support-bundle collection [creating collectors](https://troubleshoot.sh/reference/collectors/overview/) and for analyzers [creating analyzers](https://troubleshoot.sh/reference/analyzers/overview/).
+
+# Community
+
+For questions about using Troubleshoot, there's a [Replicated Community](https://help.replicated.com/community) forum, and a [#app-troubleshoot channel in Kubernetes Slack](https://kubernetes.slack.com/channels/app-troubleshoot).
+
