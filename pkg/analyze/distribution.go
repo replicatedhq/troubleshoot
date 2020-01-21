@@ -43,11 +43,15 @@ func analyzeDistribution(analyzer *troubleshootv1beta1.Distribution, getCollecte
 	}
 
 	foundProviders := providers{}
+	foundMaster := false
 
 	for _, node := range nodes {
 		for k, v := range node.ObjectMeta.Labels {
 			if k == "microk8s.io/cluster" && v == "true" {
 				foundProviders.microk8s = true
+			}
+			if k == "node-role.kubernetes.io/master" {
+				foundMaster = true
 			}
 		}
 
@@ -64,6 +68,11 @@ func analyzeDistribution(analyzer *troubleshootv1beta1.Distribution, getCollecte
 		if strings.HasPrefix(node.Spec.ProviderID, "gce:") {
 			foundProviders.gke = true
 		}
+	}
+
+	if foundMaster {
+		// eks does not have masters within the node list
+		foundProviders.eks = false
 	}
 
 	apiResourcesBytes, err := getCollectedFileContents("cluster-resources/resources.json")
