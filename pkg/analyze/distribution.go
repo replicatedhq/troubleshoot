@@ -17,6 +17,7 @@ type providers struct {
 	gke           bool
 	digitalOcean  bool
 	openShift     bool
+	kurl          bool
 }
 
 type Provider int
@@ -29,6 +30,7 @@ const (
 	gke           Provider = iota
 	digitalOcean  Provider = iota
 	openShift     Provider = iota
+	kurl          Provider = iota
 )
 
 func analyzeDistribution(analyzer *troubleshootv1beta1.Distribution, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
@@ -48,6 +50,8 @@ func analyzeDistribution(analyzer *troubleshootv1beta1.Distribution, getCollecte
 		for k, v := range node.ObjectMeta.Labels {
 			if k == "microk8s.io/cluster" && v == "true" {
 				foundProviders.microk8s = true
+			} else if k == "kurl.sh/cluster" && v == "true" {
+				foundProviders.kurl = true
 			}
 		}
 
@@ -192,6 +196,8 @@ func compareDistributionConditionalToActual(conditional string, actual providers
 		isMatch = actual.digitalOcean
 	case openShift:
 		isMatch = actual.openShift
+	case kurl:
+		isMatch = actual.kurl
 	}
 
 	switch parts[0] {
@@ -218,6 +224,8 @@ func mustNormalizeDistributionName(raw string) Provider {
 		return digitalOcean
 	case "openshift":
 		return openShift
+	case "kurl":
+		return kurl
 	}
 
 	return unknown
