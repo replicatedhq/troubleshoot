@@ -27,7 +27,7 @@ func Analyze() *cobra.Command {
 
 			logger.SetQuiet(v.GetBool("quiet"))
 
-			result, err := analyzer.DownloadAndAnalyze("", v.GetString("url"))
+			result, err := analyzer.DownloadAndAnalyze(v.GetString("url"), "")
 			if err != nil {
 				return err
 			}
