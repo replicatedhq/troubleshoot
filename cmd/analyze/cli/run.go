@@ -47,7 +47,7 @@ func runAnalyzers(v *viper.Viper, bundlePath string) error {
 		specContent = string(body)
 	}
 
-	analyzeResults, err := analyzer.DownloadAndAnalyze(specContent, bundlePath)
+	analyzeResults, err := analyzer.DownloadAndAnalyze(bundlePath, specContent)
 	if err != nil {
 		return errors.Wrap(err, "failed to download and analyze bundle")
 	}
