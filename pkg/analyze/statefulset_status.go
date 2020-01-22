@@ -13,7 +13,7 @@ import (
 func analyzeStatefulsetStatus(analyzer *troubleshootv1beta1.StatefulsetStatus, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
 	collected, err := getCollectedFileContents(path.Join("cluster-resources", "statefulsets", fmt.Sprintf("%s.json", analyzer.Namespace)))
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to read collected deployments from namespace")
+		return nil, errors.Wrap(err, "failed to read collected statefulsets from namespace")
 	}
 
 	var statefulsets []appsv1.StatefulSet
