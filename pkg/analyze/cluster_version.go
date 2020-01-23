@@ -60,6 +60,14 @@ func analyzeClusterVersion(analyzer *troubleshootv1beta1.ClusterVersion, getColl
 			return nil, errors.New("empty outcome")
 		}
 
+		// When is usually empty as the final case and should be treated as true
+		if when == "" {
+			result.Message = message
+			result.URI = uri
+
+			return &result, nil
+		}
+
 		whenRange, err := semver.ParseRange(when)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to parse semver range")
