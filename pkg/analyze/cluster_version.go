@@ -26,13 +26,17 @@ func analyzeClusterVersion(analyzer *troubleshootv1beta1.ClusterVersion, getColl
 		return nil, errors.Wrap(err, "failed to parse semver from cluster_version.json")
 	}
 
+	return analyzeClusterVersionResult(k8sVersion, analyzer.Outcomes, analyzer.CheckName)
+}
+
+func analyzeClusterVersionResult(k8sVersion semver.Version, outcomes []*troubleshootv1beta1.Outcome, checkName string) (*AnalyzeResult, error) {
 	result := AnalyzeResult{}
-	for _, outcome := range analyzer.Outcomes {
+	for _, outcome := range outcomes {
 		when := ""
 		message := ""
 		uri := ""
 
-		title := analyzer.CheckName
+		title := checkName
 		if title == "" {
 			title = "Required Kubernetes Version"
 		}
@@ -58,6 +62,14 @@ func analyzeClusterVersion(analyzer *troubleshootv1beta1.ClusterVersion, getColl
 			uri = outcome.Pass.URI
 		} else {
 			return nil, errors.New("empty outcome")
+		}
+
+		// When is usually empty as the final case and should be treated as true
+		if when == "" {
+			result.Message = message
+			result.URI = uri
+
+			return &result, nil
 		}
 
 		whenRange, err := semver.ParseRange(when)
