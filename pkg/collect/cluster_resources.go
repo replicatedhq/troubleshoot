@@ -24,6 +24,8 @@ type ClusterResourcesOutput struct {
 	ServicesErrors                  []byte            `json:"cluster-resources/services-errors.json,omitempty"`
 	Deployments                     map[string][]byte `json:"cluster-resources/deployments,omitempty"`
 	DeploymentsErrors               []byte            `json:"cluster-resources/deployments-errors.json,omitempty"`
+	StatefulSets                    map[string][]byte `json:"cluster-resources/statefulsets,omitempty"`
+	StatefulSetsErrors              []byte            `json:"cluster-resources/statefulsets-errors.json,omitempty"`
 	Ingress                         map[string][]byte `json:"cluster-resources/ingress,omitempty"`
 	IngressErrors                   []byte            `json:"cluster-resources/ingress-errors.json,omitempty"`
 	StorageClasses                  []byte            `json:"cluster-resources/storage-classes.json,omitempty"`
@@ -94,6 +96,14 @@ func ClusterResources(ctx *Context) ([]byte, error) {
 	deployments, deploymentsErrors := deployments(client, namespaceNames)
 	clusterResourcesOutput.Deployments = deployments
 	clusterResourcesOutput.DeploymentsErrors, err = marshalNonNil(deploymentsErrors)
+	if err != nil {
+		return nil, err
+	}
+
+	// statefulsets
+	statefulsets, statefulsetsErrors := statefulsets(client, namespaceNames)
+	clusterResourcesOutput.StatefulSets = statefulsets
+	clusterResourcesOutput.StatefulSetsErrors, err = marshalNonNil(statefulsetsErrors)
 	if err != nil {
 		return nil, err
 	}
@@ -276,6 +286,29 @@ func deployments(client *kubernetes.Clientset, namespaces []string) (map[string]
 	}
 
 	return deploymentsByNamespace, errorsByNamespace
+}
+
+func statefulsets(client *kubernetes.Clientset, namespaces []string) (map[string][]byte, map[string]string) {
+	statefulsetsByNamespace := make(map[string][]byte)
+	errorsByNamespace := make(map[string]string)
+
+	for _, namespace := range namespaces {
+		statefulsets, err := client.AppsV1().StatefulSets(namespace).List(metav1.ListOptions{})
+		if err != nil {
+			errorsByNamespace[namespace] = err.Error()
+			continue
+		}
+
+		b, err := json.MarshalIndent(statefulsets.Items, "", "  ")
+		if err != nil {
+			errorsByNamespace[namespace] = err.Error()
+			continue
+		}
+
+		statefulsetsByNamespace[namespace+".json"] = b
+	}
+
+	return statefulsetsByNamespace, errorsByNamespace
 }
 
 func ingress(client *kubernetes.Clientset, namespaces []string) (map[string][]byte, map[string]string) {
@@ -513,6 +546,10 @@ func (c *ClusterResourcesOutput) Redact() (*ClusterResourcesOutput, error) {
 	if err != nil {
 		return nil, err
 	}
+	statefulsets, err := redactMap(c.StatefulSets)
+	if err != nil {
+		return nil, err
+	}
 	ingress, err := redactMap(c.Ingress)
 	if err != nil {
 		return nil, err
@@ -545,6 +582,8 @@ func (c *ClusterResourcesOutput) Redact() (*ClusterResourcesOutput, error) {
 		ServicesErrors:                  c.ServicesErrors,
 		Deployments:                     deployments,
 		DeploymentsErrors:               c.DeploymentsErrors,
+		StatefulSets:                    statefulsets,
+		StatefulSetsErrors:              c.StatefulSetsErrors,
 		Ingress:                         ingress,
 		IngressErrors:                   c.IngressErrors,
 		StorageClasses:                  storageClasses,
