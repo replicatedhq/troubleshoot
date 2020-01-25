@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: two-containers
+  labels:
+    app: multi
+spec:
+  restartPolicy: Never
+  containers:
+    - name: one
+      image: debian
+      command: ["/bin/sh"]
+      args: ["-c", "echo one && sleep infinity"]
+
+    - name: two
+      image: debian
+      command: ["/bin/sh"]
+      args: ["-c", "echo two && sleep infinity"]

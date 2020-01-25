@@ -1,0 +1,18 @@
+apiVersion: troubleshoot.replicated.com/v1beta1
+kind: Collector
+metadata:
+  name: test
+spec:
+  collectors:
+    - logs:
+        selector:
+          - app=multi
+        namespace: default
+        name: logs/multiple
+        containerNames:
+          - one
+          - missing
+          - two
+        limits:
+          maxAge: 7d
+          maxLines: 10000
