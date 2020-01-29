@@ -1,5 +1,9 @@
 package v1beta1
 
+import (
+	"k8s.io/apimachinery/pkg/util/intstr"
+)
+
 type SingleOutcome struct {
 	When    string `json:"when,omitempty" yaml:"when,omitempty"`
 	Message string `json:"message,omitempty" yaml:"message,omitempty"`
@@ -74,6 +78,23 @@ type Distribution struct {
 	Outcomes    []*Outcome `json:"outcomes" yaml:"outcomes"`
 }
 
+type NodeResources struct {
+	// AnalyzeMeta `json:",inline" yaml:",inline"`
+	// Outcomes []*Outcome `json:"outcomes" yaml:"outcomes"`
+	// Filters *NodeResourceFilters `json:"filters,omitempty" yaml:"filters,omitempty"`
+}
+
+type NodeResourceFilters struct {
+	// CPUCapacity *intstr.Intstr `json:"cpuCapacity,omitempty" yaml:"cpuCapacity,omitempty"`
+	// CPUAllocatable *intstr.Intstr `json:"cpuAllocatable,omitempty" yaml:"cpuAllocatable,omitempty"`
+	// MemoryCapacity *intstr.Intstr `json:"memoryCapacity,omitempty" yaml:"memoryCapacity,omitempty"`
+	// MemoryAllocatable *intstr.Intstr `json:"memoryAllocatable,omitempty" yaml:"memoryAllocatable,omitempty"`
+	// PodCapacity *intstr.Intstr `json:"podCapacity,omitempty" yaml:"podCapacity,omitempty"`
+	// PodAllocatable *intstr.Intstr `json:"podAllocatable,omitempty" yaml:"podAllocatable,omitempty"`
+	// EphemeralStorageCapacity *intstr.Intstr `json:"ephemeralStorageCapacity,omitempty" yaml:"ephemeralStorageCapacity,omitempty"`
+	// EphemeralStorageAllocatable*intstr.Intstr `json:"ephemeralStorageAllocatable,omitempty" yaml:"ephemeralStorageAllocatable,omitempty"`
+}
+
 type TextAnalyze struct {
 	AnalyzeMeta   `json:",inline" yaml:",inline"`
 	CollectorName string     `json:"collectorName,omitempty" yaml:"collectorName,omitempty"`
@@ -99,5 +120,6 @@ type Analyze struct {
 	StatefulsetStatus        *StatefulsetStatus        `json:"statefulsetStatus,omitempty" yaml:"statefulsetStatus,omitempty"`
 	ContainerRuntime         *ContainerRuntime         `json:"containerRuntime,omitempty" yaml:"containerRuntime,omitempty"`
 	Distribution             *Distribution             `json:"distribution,omitempty" yaml:"distribution,omitempty"`
+	NodeResources            *NodeResources            `json:"nodeResources,omitempty" yaml:"nodeResources,omitempty"`
 	TextAnalyze              *TextAnalyze              `json:"textAnalyze,omitempty" yaml:"textAnalyze,omitempty"`
 }

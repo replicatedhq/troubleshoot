@@ -79,6 +79,12 @@ func Analyze(analyzer *troubleshootv1beta1.Analyze, getFile getCollectedFileCont
 		}
 		return analyzeDistribution(analyzer.Distribution, getFile)
 	}
+	if analyzer.NodeResources != nil {
+		if analyzer.NodeResources.Exclude {
+			return nil, nil
+		}
+		return analyzeNodeResources(analyzer.NodeResources, getFile)
+	}
 	if analyzer.TextAnalyze != nil {
 		return analyzeTextAnalyze(analyzer.TextAnalyze, getFile)
 	}
