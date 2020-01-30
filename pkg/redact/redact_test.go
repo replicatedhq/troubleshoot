@@ -7,9 +7,12 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.undefinedlabs.com/scopeagent"
 )
 
 func Test_Redactors(t *testing.T) {
+	test := scopeagent.StartTest(t)
+	defer test.End()
 	original := `[
 		{
 		  "metadata": {

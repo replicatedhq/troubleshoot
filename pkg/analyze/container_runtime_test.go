@@ -6,9 +6,12 @@ import (
 	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.undefinedlabs.com/scopeagent"
 )
 
 func Test_compareRuntimeConditionalToActual(t *testing.T) {
+	test := scopeagent.StartTest(t)
+	defer test.End()
 	tests := []struct {
 		name        string
 		conditional string
@@ -67,6 +70,8 @@ func Test_compareRuntimeConditionalToActual(t *testing.T) {
 }
 
 func Test_containerRuntime(t *testing.T) {
+	test := scopeagent.StartTest(t)
+	defer test.End()
 	tests := []struct {
 		name         string
 		analyzer     troubleshootv1beta1.ContainerRuntime

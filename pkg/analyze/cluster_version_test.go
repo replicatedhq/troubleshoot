@@ -6,9 +6,12 @@ import (
 
 	"github.com/blang/semver"
 	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
+	"go.undefinedlabs.com/scopeagent"
 )
 
 func Test_analyzeClusterVersionResult(t *testing.T) {
+	test := scopeagent.StartTest(t)
+	defer test.End()
 	outcomes := []*troubleshootv1beta1.Outcome{
 		{
 			Fail: &troubleshootv1beta1.SingleOutcome{

@@ -5,9 +5,12 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.undefinedlabs.com/scopeagent"
 )
 
 func Test_compareDistributionConditionalToActual(t *testing.T) {
+	test := scopeagent.StartTest(t)
+	defer test.End()
 	tests := []struct {
 		name        string
 		conditional string
@@ -49,10 +52,11 @@ func Test_compareDistributionConditionalToActual(t *testing.T) {
 			assert.Equal(t, test.expected, actual)
 		})
 	}
-
 }
 
 func Test_mustNormalizeDistributionName(t *testing.T) {
+	test := scopeagent.StartTest(t)
+	defer test.End()
 	tests := []struct {
 		raw      string
 		expected Provider

@@ -5,10 +5,13 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.undefinedlabs.com/scopeagent"
 	"gopkg.in/yaml.v2"
 )
 
 func TestAnalyze_Unmarshal(t *testing.T) {
+	test := scopeagent.StartTest(t)
+	defer test.End()
 	tests := []struct {
 		name         string
 		spec         string

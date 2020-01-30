@@ -22,6 +22,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"go.undefinedlabs.com/scopeagent"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -49,7 +50,7 @@ func TestMain(m *testing.M) {
 		log.Fatal(err)
 	}
 
-	code := m.Run()
+	code := scopeagent.Run(m)
 	t.Stop()
 	os.Exit(code)
 }
