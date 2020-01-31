@@ -10,8 +10,6 @@ import (
 )
 
 func Test_analyzeClusterVersionResult(t *testing.T) {
-	test := scopeagent.StartTest(t)
-	defer test.End()
 	outcomes := []*troubleshootv1beta1.Outcome{
 		{
 			Fail: &troubleshootv1beta1.SingleOutcome{
@@ -89,6 +87,8 @@ func Test_analyzeClusterVersionResult(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			scopetest := scopeagent.StartTest(t)
+			defer scopetest.End()
 			got, err := analyzeClusterVersionResult(tt.args.k8sVersion, tt.args.outcomes, tt.args.checkName)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("analyzeClusterVersionResult() error = %v, wantErr %v", err, tt.wantErr)

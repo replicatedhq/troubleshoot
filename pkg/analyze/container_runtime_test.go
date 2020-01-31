@@ -10,8 +10,6 @@ import (
 )
 
 func Test_compareRuntimeConditionalToActual(t *testing.T) {
-	test := scopeagent.StartTest(t)
-	defer test.End()
 	tests := []struct {
 		name        string
 		conditional string
@@ -58,6 +56,8 @@ func Test_compareRuntimeConditionalToActual(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			scopetest := scopeagent.StartTest(t)
+			defer scopetest.End()
 			req := require.New(t)
 
 			actual, err := compareRuntimeConditionalToActual(test.conditional, test.actual)
@@ -70,8 +70,6 @@ func Test_compareRuntimeConditionalToActual(t *testing.T) {
 }
 
 func Test_containerRuntime(t *testing.T) {
-	test := scopeagent.StartTest(t)
-	defer test.End()
 	tests := []struct {
 		name         string
 		analyzer     troubleshootv1beta1.ContainerRuntime
@@ -110,6 +108,8 @@ func Test_containerRuntime(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			scopetest := scopeagent.StartTest(t)
+			defer scopetest.End()
 			req := require.New(t)
 
 			getFiles := func(n string) ([]byte, error) {

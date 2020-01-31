@@ -9,8 +9,6 @@ import (
 )
 
 func Test_ParseSpec(t *testing.T) {
-	test := scopeagent.StartTest(t)
-	defer test.End()
 	tests := []struct {
 		name         string
 		spec         string
@@ -29,6 +27,8 @@ func Test_ParseSpec(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			scopetest := scopeagent.StartTest(t)
+			defer scopetest.End()
 			c, err := ParseSpec(test.spec)
 
 			if test.expectError {

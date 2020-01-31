@@ -11,8 +11,6 @@ import (
 )
 
 func Test_Redactors(t *testing.T) {
-	test := scopeagent.StartTest(t)
-	defer test.End()
 	original := `[
 		{
 		  "metadata": {
@@ -1622,6 +1620,8 @@ func Test_Redactors(t *testing.T) {
 	  ]`
 
 	t.Run("test default redactors", func(t *testing.T) {
+		scopetest := scopeagent.StartTest(t)
+		defer scopetest.End()
 		redactors, err := GetRedactors()
 		assert.NoError(t, err)
 

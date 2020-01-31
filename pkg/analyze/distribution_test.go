@@ -9,8 +9,6 @@ import (
 )
 
 func Test_compareDistributionConditionalToActual(t *testing.T) {
-	test := scopeagent.StartTest(t)
-	defer test.End()
 	tests := []struct {
 		name        string
 		conditional string
@@ -44,6 +42,8 @@ func Test_compareDistributionConditionalToActual(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			scopetest := scopeagent.StartTest(t)
+			defer scopetest.End()
 			req := require.New(t)
 
 			actual, err := compareDistributionConditionalToActual(test.conditional, test.input)
@@ -55,8 +55,6 @@ func Test_compareDistributionConditionalToActual(t *testing.T) {
 }
 
 func Test_mustNormalizeDistributionName(t *testing.T) {
-	test := scopeagent.StartTest(t)
-	defer test.End()
 	tests := []struct {
 		raw      string
 		expected Provider
@@ -81,6 +79,8 @@ func Test_mustNormalizeDistributionName(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.raw, func(t *testing.T) {
+			scopetest := scopeagent.StartTest(t)
+			defer scopetest.End()
 			actual := mustNormalizeDistributionName(test.raw)
 
 			assert.Equal(t, test.expected, actual)

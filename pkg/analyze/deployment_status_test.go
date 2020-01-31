@@ -10,8 +10,6 @@ import (
 )
 
 func Test_deploymentStatus(t *testing.T) {
-	test := scopeagent.StartTest(t)
-	defer test.End()
 	tests := []struct {
 		name         string
 		analyzer     troubleshootv1beta1.DeploymentStatus
@@ -118,6 +116,8 @@ func Test_deploymentStatus(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			scopetest := scopeagent.StartTest(t)
+			defer scopetest.End()
 			req := require.New(t)
 
 			getFiles := func(n string) ([]byte, error) {

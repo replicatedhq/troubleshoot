@@ -9,8 +9,6 @@ import (
 )
 
 func Test_selectorToString(t *testing.T) {
-	test := scopeagent.StartTest(t)
-	defer test.End()
 	tests := []struct {
 		name     string
 		selector []string
@@ -25,6 +23,8 @@ func Test_selectorToString(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			scopetest := scopeagent.StartTest(t)
+			defer scopetest.End()
 			actual := selectorToString(test.selector)
 			assert.Equal(t, test.expect, actual)
 		})
@@ -32,8 +32,6 @@ func Test_selectorToString(t *testing.T) {
 }
 
 func Test_DeterministicIDForCollector(t *testing.T) {
-	test := scopeagent.StartTest(t)
-	defer test.End()
 	tests := []struct {
 		name      string
 		collector *troubleshootv1beta1.Collect
@@ -77,6 +75,8 @@ func Test_DeterministicIDForCollector(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			scopetest := scopeagent.StartTest(t)
+			defer scopetest.End()
 			actual := DeterministicIDForCollector(test.collector)
 			assert.Equal(t, test.expect, actual)
 		})
