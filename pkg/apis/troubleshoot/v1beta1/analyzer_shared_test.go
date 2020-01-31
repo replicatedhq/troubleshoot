@@ -5,6 +5,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.undefinedlabs.com/scopeagent"
 	"gopkg.in/yaml.v2"
 )
 
@@ -43,6 +44,8 @@ func TestAnalyze_Unmarshal(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			scopetest := scopeagent.StartTest(t)
+			defer scopetest.End()
 			req := require.New(t)
 
 			a := Analyze{}

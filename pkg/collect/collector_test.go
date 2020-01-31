@@ -5,6 +5,7 @@ import (
 
 	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
 	"github.com/stretchr/testify/assert"
+	"go.undefinedlabs.com/scopeagent"
 )
 
 func Test_ParseSpec(t *testing.T) {
@@ -26,6 +27,8 @@ func Test_ParseSpec(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			scopetest := scopeagent.StartTest(t)
+			defer scopetest.End()
 			c, err := ParseSpec(test.spec)
 
 			if test.expectError {

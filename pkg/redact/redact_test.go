@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"go.undefinedlabs.com/scopeagent"
 )
 
 func Test_Redactors(t *testing.T) {
@@ -1619,6 +1620,8 @@ func Test_Redactors(t *testing.T) {
 	  ]`
 
 	t.Run("test default redactors", func(t *testing.T) {
+		scopetest := scopeagent.StartTest(t)
+		defer scopetest.End()
 		redactors, err := GetRedactors()
 		assert.NoError(t, err)
 

@@ -5,6 +5,7 @@ import (
 
 	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
 	"github.com/stretchr/testify/assert"
+	"go.undefinedlabs.com/scopeagent"
 )
 
 func Test_selectorToString(t *testing.T) {
@@ -22,6 +23,8 @@ func Test_selectorToString(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			scopetest := scopeagent.StartTest(t)
+			defer scopetest.End()
 			actual := selectorToString(test.selector)
 			assert.Equal(t, test.expect, actual)
 		})
@@ -72,6 +75,8 @@ func Test_DeterministicIDForCollector(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			scopetest := scopeagent.StartTest(t)
+			defer scopetest.End()
 			actual := DeterministicIDForCollector(test.collector)
 			assert.Equal(t, test.expect, actual)
 		})

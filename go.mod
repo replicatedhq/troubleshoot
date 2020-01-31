@@ -29,7 +29,9 @@ require (
 	github.com/tj/go-spin v1.1.0
 	github.com/ugorji/go v1.1.7 // indirect
 	github.com/xi2/xz v0.0.0-20171230120015-48954b6210f8 // indirect
+	go.undefinedlabs.com/scopeagent v0.1.6
 	gopkg.in/yaml.v2 v2.2.4
+	honnef.co/go/tools v0.0.0-20190523083050-ea95bdfd59fc // indirect
 	k8s.io/api v0.17.0
 	k8s.io/apiextensions-apiserver v0.0.0-20190918161926-8f644eb6e783
 	k8s.io/apimachinery v0.17.0

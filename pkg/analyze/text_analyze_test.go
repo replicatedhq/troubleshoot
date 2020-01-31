@@ -7,6 +7,7 @@ import (
 	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.undefinedlabs.com/scopeagent"
 )
 
 func Test_textAnalyze(t *testing.T) {
@@ -200,6 +201,8 @@ func Test_textAnalyze(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			scopetest := scopeagent.StartTest(t)
+			defer scopetest.End()
 			req := require.New(t)
 
 			getFiles := func(n string) ([]byte, error) {
@@ -255,6 +258,8 @@ func Test_compareRegex(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			scopetest := scopeagent.StartTest(t)
+			defer scopetest.End()
 			req := require.New(t)
 
 			actual, err := compareRegex(test.conditional, test.foundMatches)
@@ -263,5 +268,4 @@ func Test_compareRegex(t *testing.T) {
 			assert.Equal(t, test.expected, actual)
 		})
 	}
-
 }
