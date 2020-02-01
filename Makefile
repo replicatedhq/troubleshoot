@@ -42,7 +42,7 @@ ffi: fmt vet
 
 # Run tests
 test: generate fmt vet
-	echo ${SCOPE_DSN}
+	env
 	go test ./pkg/... ./cmd/... -coverprofile cover.out
 
 .PHONY: support-bundle
