@@ -9,7 +9,7 @@ steps:
           mount-checkout: true
           workdir: /go/src/github.com/replicatedhq/troubleshoot
 	  environment:
-	    - SCOPE_DSN
+            - SCOPE_DSN
 
   - wait
 
