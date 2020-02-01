@@ -1,16 +1,15 @@
+env:
+    SCOPE_DSN: "${SCOPE_DSN}"
+
 steps:
   - label: build
     command: "make"
-    env:
-      - SCOPE_DSN: "${SCOPE_DSN}"
     plugins:
       - docker#v3.2.0:
           image: replicated/gitops-builder:buildkite-go12-node10
           always-pull: true
           mount-checkout: true
           workdir: /go/src/github.com/replicatedhq/troubleshoot
-          environment:
-            - SCOPE_DSN
 
   - wait
 
