@@ -1,6 +1,3 @@
-env:
-    SCOPE_DSN: "${SCOPE_DSN}"
-
 steps:
   - label: build
     command: "make"

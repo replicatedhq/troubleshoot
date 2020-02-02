@@ -3,7 +3,6 @@
 IMG ?= controller:latest
 export GO111MODULE=on
 export GOPROXY=https://proxy.golang.org
-export SCOPE_DSN=${SCOPE_DSN}
 
 SHELL := /bin/bash -o pipefail
 VERSION_PACKAGE = github.com/replicatedhq/troubleshoot/pkg/version
