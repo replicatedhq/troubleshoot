@@ -9,6 +9,9 @@ steps:
           workdir: /go/src/github.com/replicatedhq/troubleshoot
           environment:
             - SCOPE_DSN
+            - BUILDKITE_REPO
+            - BUILDKITE_COMMIT
+            - BUILDKITE_BUILD_CHECKOUT_PATH
 
   - wait
 
