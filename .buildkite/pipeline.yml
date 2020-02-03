@@ -9,12 +9,12 @@ steps:
           workdir: /go/src/github.com/replicatedhq/troubleshoot
           environment:
             - SCOPE_DSN
-            - SCOPE_REPOSITORY: "${BUILDKITE_REPO}"
-            - SCOPE_COMMIT_SHA: "${BUILDKITE_COMMIT}"
+            - SCOPE_REPOSITORY="${BUILDKITE_REPO}"
+            - SCOPE_COMMIT_SHA="${BUILDKITE_COMMIT}"
             - BUILDKITE_REPO
             - BUILDKITE_COMMIT
             - BUILDKITE_BUILD_CHECKOUT_PATH
-            - BUILDKITE
+            - BUILDKITE="true"
 
   - wait
 
