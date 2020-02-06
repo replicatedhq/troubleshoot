@@ -36,3 +36,19 @@ spec:
               message: This application requires at least 1 node with 16GB available memory
           - pass:
               message: This cluster has a node with enough memory.
+    - nodeResources:
+        checkName: There must be at least 3 nodes in the cluster
+        outcomes:
+          - fail:
+              when: "count() < 3"
+              message: This application requires at least 3 nodes in the cluster
+          - pass:
+              message: This cluster haas sufficient nodes
+    - nodeResources:
+        checkName: There must be a total of at least 32Gi of memory on all nodes
+        outcomes:
+          - fail:
+              when: "sum(memoryCapacity) < 32Gi"
+              message: This application requires that 32Gi or more memory be available to the cluster
+          - pass:
+              message: This cluster haas sufficient memory
