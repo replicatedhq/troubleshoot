@@ -2,8 +2,10 @@ package analyzer
 
 import (
 	"encoding/json"
+	"fmt"
 	"strconv"
 	"strings"
+	"regexp"
 
 	"github.com/pkg/errors"
 	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
@@ -46,7 +48,7 @@ func analyzeNodeResources(analyzer *troubleshootv1beta1.NodeResources, getCollec
 
 	for _, outcome := range analyzer.Outcomes {
 		if outcome.Fail != nil {
-			isWhenMatch, err := compareNodeResourceConditionalToActual(outcome.Fail.When, matchingNodeCount)
+			isWhenMatch, err := compareNodeResourceConditionalToActual(outcome.Fail.When, matchingNodes, len(nodes))
 			if err != nil {
 				return nil, errors.Wrap(err, "failed to parse when")
 			}
@@ -59,7 +61,7 @@ func analyzeNodeResources(analyzer *troubleshootv1beta1.NodeResources, getCollec
 				return result, nil
 			}
 		} else if outcome.Warn != nil {
-			isWhenMatch, err := compareNodeResourceConditionalToActual(outcome.Warn.When, matchingNodeCount)
+			isWhenMatch, err := compareNodeResourceConditionalToActual(outcome.Warn.When, matchingNodes, len(nodes))
 			if err != nil {
 				return nil, errors.Wrap(err, "failed to parse when")
 			}
@@ -72,7 +74,7 @@ func analyzeNodeResources(analyzer *troubleshootv1beta1.NodeResources, getCollec
 				return result, nil
 			}
 		} else if outcome.Pass != nil {
-			isWhenMatch, err := compareNodeResourceConditionalToActual(outcome.Pass.When, matchingNodeCount)
+			isWhenMatch, err := compareNodeResourceConditionalToActual(outcome.Pass.When, matchingNodes, len(nodes))
 			if err != nil {
 				return nil, errors.Wrap(err, "failed to parse when")
 			}
@@ -90,37 +92,58 @@ func analyzeNodeResources(analyzer *troubleshootv1beta1.NodeResources, getCollec
 	return result, nil
 }
 
-func compareNodeResourceConditionalToActual(conditional string, actual int) (bool, error) {
+func compareNodeResourceConditionalToActual(conditional string, matchingNodes []corev1.Node, totalNodeCount int) (bool, error) {
 	if conditional == "" {
 		return true, nil
 	}
 
 	parts := strings.Split(strings.TrimSpace(conditional), " ")
 
-	if len(parts) != 2 {
+	if len(parts) == 2 {
+		parts = append([]string{"count"}, parts...)
+	}
+
+	if len(parts) != 3 {
 		return false, errors.New("unable to parse nodeResources conditional")
 	}
 
-	operator := parts[0]
-	desiredValue, err := strconv.Atoi(parts[1])
+	operator := parts[1]
+	var desiredValue interface{}
+	desiredValue = parts[2]
+
+	parsedDesiredValue, err := strconv.Atoi(parts[2])
 	if err != nil {
-		return false, errors.Wrap(err, "failed to parse nodeResource value")
+		desiredValue = parsedDesiredValue
 	}
 
-	switch operator {
-	case "=", "==", "===":
-		return desiredValue == actual, nil
-	case "<":
-		return actual < desiredValue, nil
-	case "<=":
-		return actual <= desiredValue, nil
-	case ">":
-		return actual > desiredValue, nil
-	case ">=":
-		return actual >= desiredValue, nil
-	}
+	var actualValue interface{}
+	actualValue = len(matchingNodes)
+
+	reg := regexp.MustCompile("(?P<function>.*)\((?P<property>.*)\)")
+	match := reg.FindStringSubmatch(parts[0])
+
+	fmt.Printf("reg = %#v\n", reg)
+	// result := make(map[string]string)
+
+
+	// switch operator {
+	// case "=", "==", "===":
+	// 	return desiredValue == actualValue, nil
+	// case "<":
+	// 	return actualValue < desiredValue, nil
+	// case "<=":
+	// 	return actualValue <= desiredValue, nil
+	// case ">":
+	// 	return actualValue > desiredValue, nil
+	// case ">=":
+	// 	return actualValue >= desiredValue, nil
+	// }
 
 	return false, errors.New("unexpected conditional in nodeResources")
+}
+
+func findMin(nodes []codev1.Node, property string) (string, error) {
+	return "", errors.New("not implemented")
 }
 
 func nodeMatchesFilters(node corev1.Node, filters *troubleshootv1beta1.NodeResourceFilters) (bool, error) {

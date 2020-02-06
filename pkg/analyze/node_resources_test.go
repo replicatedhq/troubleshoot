@@ -12,40 +12,60 @@ import (
 
 func Test_compareNodeResourceConditionalToActual(t *testing.T) {
 	tests := []struct {
-		name        string
-		conditional string
-		actual      int
-		expected    bool
+		name              string
+		conditional       string
+		matchingNodeCount int
+		totalNodeCount    int
+		expected          bool
 	}{
 		{
-			name:        "=",
-			conditional: "= 5",
-			actual:      5,
-			expected:    true,
+			name:              "=",
+			conditional:       "= 5",
+			matchingNodeCount: 5,
+			totalNodeCount:    1,
+			expected:          true,
 		},
 		{
-			name:        "<= (pass)",
-			conditional: "<= 5",
-			actual:      4,
-			expected:    true,
+			name:              "<= (pass)",
+			conditional:       "<= 5",
+			matchingNodeCount: 4,
+			totalNodeCount:    1,
+			expected:          true,
 		},
 		{
-			name:        "<= (fail)",
-			conditional: "<= 5",
-			actual:      6,
-			expected:    false,
+			name:              "<= (fail)",
+			conditional:       "<= 5",
+			matchingNodeCount: 6,
+			totalNodeCount:    1,
+			expected:          false,
 		},
 		{
-			name:        "> (pass)",
-			conditional: "> 5",
-			actual:      6,
-			expected:    true,
+			name:              "> (pass)",
+			conditional:       "> 5",
+			matchingNodeCount: 6,
+			totalNodeCount:    1,
+			expected:          true,
 		},
 		{
-			name:        ">=(fail)",
-			conditional: ">= 5",
-			actual:      4,
-			expected:    false,
+			name:              ">= (fail)",
+			conditional:       ">= 5",
+			matchingNodeCount: 4,
+			totalNodeCount:    1,
+			expected:          false,
+		},
+		{
+			name:              "min(memoryCapacity) <= 16Gi (pass)",
+			conditional:       "min(memoryCapacity) <= 16Gi",
+			matchingNodeCount: 2,
+			totalNodeCount:    2,
+			expected:          true,
+		},
+		{
+			name:              "min(memoryCapacity) <= 16Gi",
+			conditional:       "min(memoryCapacity) <= 16Gi",
+			matchingNodeCount: 1,
+			totalNodeCount:    2,
+			expected:          false,
 		},
 	}
 
@@ -53,7 +73,7 @@ func Test_compareNodeResourceConditionalToActual(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			req := require.New(t)
 
-			actual, err := compareNodeResourceConditionalToActual(test.conditional, test.actual)
+			actual, err := compareNodeResourceConditionalToActual(test.conditional, test.matchingNodeCount, test.totalNodeCount)
 			req.NoError(err)
 
 			assert.Equal(t, test.expected, actual)
