@@ -144,18 +144,45 @@ func compareNodeResourceConditionalToActual(conditional string, matchingNodes []
 			return false, errors.Wrap(err, "failed to find min")
 		}
 		actualValue = av
+	case "max":
+		av, err := findMax(matchingNodes, property)
+		if err != nil {
+			return false, errors.Wrap(err, "failed to find max")
+		}
+		actualValue = av
+	case "sum":
+		sum, err := findSum(matchingNodes, property)
+		if err != nil {
+			return false, errors.Wrap(err, "failed to find sum")
+		}
+		actualValue = sum
 	}
 
 	switch operator {
 	case "=", "==", "===":
-		return desiredValue == actualValue, nil
+		if _, ok := actualValue.(int); ok {
+			if _, ok := desiredValue.(int); ok {
+				return actualValue.(int) == desiredValue.(int), nil
+			}
+		}
+
+		if _, ok := desiredValue.(string); ok {
+			return actualValue.(*resource.Quantity).Cmp(resource.MustParse(desiredValue.(string))) == 0, nil
+		}
+
+		return actualValue.(*resource.Quantity).Cmp(resource.MustParse(strconv.Itoa(desiredValue.(int)))) == 0, nil
+
 	case "<":
 		if _, ok := actualValue.(int); ok {
 			if _, ok := desiredValue.(int); ok {
 				return actualValue.(int) < desiredValue.(int), nil
 			}
 		}
-		return actualValue.(*resource.Quantity).Cmp(resource.MustParse(desiredValue.(string))) == -1, nil
+		if _, ok := desiredValue.(string); ok {
+			return actualValue.(*resource.Quantity).Cmp(resource.MustParse(desiredValue.(string))) == -1, nil
+		}
+
+		return actualValue.(*resource.Quantity).Cmp(resource.MustParse(strconv.Itoa(desiredValue.(int)))) == -1, nil
 
 	case ">":
 		if _, ok := actualValue.(int); ok {
@@ -163,7 +190,11 @@ func compareNodeResourceConditionalToActual(conditional string, matchingNodes []
 				return actualValue.(int) > desiredValue.(int), nil
 			}
 		}
-		return actualValue.(*resource.Quantity).Cmp(resource.MustParse(desiredValue.(string))) == 1, nil
+		if _, ok := desiredValue.(string); ok {
+			return actualValue.(*resource.Quantity).Cmp(resource.MustParse(desiredValue.(string))) == 1, nil
+		}
+
+		return actualValue.(*resource.Quantity).Cmp(resource.MustParse(strconv.Itoa(desiredValue.(int)))) == 1, nil
 
 	case "<=":
 		if _, ok := actualValue.(int); ok {
@@ -171,8 +202,13 @@ func compareNodeResourceConditionalToActual(conditional string, matchingNodes []
 				return actualValue.(int) <= desiredValue.(int), nil
 			}
 		}
-		return actualValue.(*resource.Quantity).Cmp(resource.MustParse(desiredValue.(string))) == -1 ||
-			actualValue.(*resource.Quantity).Cmp(resource.MustParse(desiredValue.(string))) == 0, nil
+		if _, ok := desiredValue.(string); ok {
+			return actualValue.(*resource.Quantity).Cmp(resource.MustParse(desiredValue.(string))) == 0 ||
+				actualValue.(*resource.Quantity).Cmp(resource.MustParse(desiredValue.(string))) == -1, nil
+		}
+
+		return actualValue.(*resource.Quantity).Cmp(resource.MustParse(strconv.Itoa(desiredValue.(int)))) == 0 ||
+			actualValue.(*resource.Quantity).Cmp(resource.MustParse(strconv.Itoa(desiredValue.(int)))) == -1, nil
 
 	case ">=":
 		if _, ok := actualValue.(int); ok {
@@ -180,11 +216,67 @@ func compareNodeResourceConditionalToActual(conditional string, matchingNodes []
 				return actualValue.(int) >= desiredValue.(int), nil
 			}
 		}
-		return actualValue.(*resource.Quantity).Cmp(resource.MustParse(desiredValue.(string))) == 1 ||
-			actualValue.(*resource.Quantity).Cmp(resource.MustParse(desiredValue.(string))) == 0, nil
+		if _, ok := desiredValue.(string); ok {
+			return actualValue.(*resource.Quantity).Cmp(resource.MustParse(desiredValue.(string))) == 0 ||
+				actualValue.(*resource.Quantity).Cmp(resource.MustParse(desiredValue.(string))) == 1, nil
+		}
+
+		return actualValue.(*resource.Quantity).Cmp(resource.MustParse(strconv.Itoa(desiredValue.(int)))) == 0 ||
+			actualValue.(*resource.Quantity).Cmp(resource.MustParse(strconv.Itoa(desiredValue.(int)))) == 1, nil
 	}
 
 	return false, errors.New("unexpected conditional in nodeResources")
+}
+
+func findSum(nodes []corev1.Node, property string) (*resource.Quantity, error) {
+	sum := resource.Quantity{}
+
+	for _, node := range nodes {
+		switch property {
+		case "cpuCapacity":
+			if node.Status.Capacity.Cpu() != nil {
+				sum.Add(*node.Status.Capacity.Cpu())
+			}
+			break
+		case "cpuAllocatable":
+			if node.Status.Allocatable.Cpu() != nil {
+				sum.Add(*node.Status.Allocatable.Cpu())
+			}
+			break
+		case "memoryCapacity":
+			if node.Status.Capacity.Memory() != nil {
+				sum.Add(*node.Status.Capacity.Memory())
+			}
+			break
+		case "memoryAllocatable":
+			if node.Status.Allocatable.Memory() != nil {
+				sum.Add(*node.Status.Allocatable.Cpu())
+			}
+			break
+		case "podCapacity":
+			if node.Status.Capacity.Pods() != nil {
+				sum.Add(*node.Status.Capacity.Pods())
+			}
+			break
+		case "podAllocatable":
+			if node.Status.Allocatable.Pods() != nil {
+				sum.Add(*node.Status.Allocatable.Cpu())
+			}
+			break
+		case "ephemeralStorageCapacity":
+			if node.Status.Capacity.StorageEphemeral() != nil {
+				sum.Add(*node.Status.Capacity.StorageEphemeral())
+			}
+			break
+		case "ephemeralStorageAllocatable":
+			if node.Status.Allocatable.StorageEphemeral() != nil {
+				sum.Add(*node.Status.Allocatable.StorageEphemeral())
+			}
+			break
+		}
+	}
+
+	return &sum, nil
 }
 
 func findMin(nodes []corev1.Node, property string) (*resource.Quantity, error) {
@@ -269,6 +361,90 @@ func findMin(nodes []corev1.Node, property string) (*resource.Quantity, error) {
 	}
 
 	return min, nil
+}
+
+func findMax(nodes []corev1.Node, property string) (*resource.Quantity, error) {
+	var max *resource.Quantity
+
+	for _, node := range nodes {
+		switch property {
+		case "cpuCapacity":
+			if max == nil {
+				max = node.Status.Capacity.Cpu()
+			} else {
+				if node.Status.Capacity.Cpu().Cmp(*max) == 1 {
+					max = node.Status.Capacity.Cpu()
+				}
+			}
+			break
+		case "cpuAllocatable":
+			if max == nil {
+				max = node.Status.Allocatable.Cpu()
+			} else {
+				if node.Status.Allocatable.Cpu().Cmp(*max) == 1 {
+					max = node.Status.Allocatable.Cpu()
+				}
+			}
+			break
+		case "memoryCapacity":
+			if max == nil {
+				max = node.Status.Capacity.Memory()
+			} else {
+				if node.Status.Capacity.Memory().Cmp(*max) == 1 {
+					max = node.Status.Capacity.Memory()
+				}
+			}
+			break
+		case "memoryAllocatable":
+			if max == nil {
+				max = node.Status.Allocatable.Memory()
+			} else {
+				if node.Status.Allocatable.Memory().Cmp(*max) == 1 {
+					max = node.Status.Allocatable.Memory()
+				}
+			}
+			break
+		case "podCapacity":
+			if max == nil {
+				max = node.Status.Capacity.Pods()
+			} else {
+				if node.Status.Capacity.Pods().Cmp(*max) == 1 {
+					max = node.Status.Capacity.Pods()
+				}
+			}
+			break
+		case "podAllocatable":
+			if max == nil {
+				max = node.Status.Allocatable.Pods()
+			} else {
+				if node.Status.Allocatable.Pods().Cmp(*max) == 1 {
+					max = node.Status.Allocatable.Pods()
+				}
+			}
+			break
+		case "ephemeralStorageCapacity":
+			if max == nil {
+				max = node.Status.Capacity.StorageEphemeral()
+			} else {
+				if node.Status.Capacity.StorageEphemeral().Cmp(*max) == 1 {
+					max = node.Status.Capacity.StorageEphemeral()
+				}
+			}
+			break
+		case "ephemeralStorageAllocatable":
+			if max == nil {
+				max = node.Status.Allocatable.StorageEphemeral()
+			} else {
+				if node.Status.Allocatable.StorageEphemeral().Cmp(*max) == 1 {
+					max = node.Status.Allocatable.StorageEphemeral()
+				}
+			}
+			break
+
+		}
+	}
+
+	return max, nil
 }
 
 func nodeMatchesFilters(node corev1.Node, filters *troubleshootv1beta1.NodeResourceFilters) (bool, error) {

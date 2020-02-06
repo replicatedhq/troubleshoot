@@ -361,6 +361,237 @@ func Test_compareNodeResourceConditionalToActual(t *testing.T) {
 			totalNodeCount: 2,
 			expected:       false,
 		},
+		{
+			name:        "max(cpuCapacity) == 12 (false)",
+			conditional: "max(cpuCapacity) == 12",
+			matchingNodes: []corev1.Node{
+				corev1.Node{
+					TypeMeta: metav1.TypeMeta{
+						APIVersion: "v1",
+						Kind:       "Node",
+					},
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "node1",
+					},
+					Status: corev1.NodeStatus{
+						Capacity: corev1.ResourceList{
+							"cpu":               resource.MustParse("2"),
+							"ephemeral-storage": resource.MustParse("20959212Ki"),
+							"memory":            resource.MustParse("17951376Ki"),
+							"pods":              resource.MustParse("29"),
+						},
+						Allocatable: corev1.ResourceList{
+							"cpu":               resource.MustParse("2"),
+							"ephemeral-storage": resource.MustParse("19316009748"),
+							"memory":            resource.MustParse("7848976Ki"),
+							"pods":              resource.MustParse("29"),
+						},
+					},
+				},
+				corev1.Node{
+					TypeMeta: metav1.TypeMeta{
+						APIVersion: "v1",
+						Kind:       "Node",
+					},
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "node2",
+					},
+					Status: corev1.NodeStatus{
+						Capacity: corev1.ResourceList{
+							"cpu":               resource.MustParse("2"),
+							"ephemeral-storage": resource.MustParse("20959212Ki"),
+							"memory":            resource.MustParse("7951376Ki"),
+							"pods":              resource.MustParse("29"),
+						},
+						Allocatable: corev1.ResourceList{
+							"cpu":               resource.MustParse("2"),
+							"ephemeral-storage": resource.MustParse("19316009748"),
+							"memory":            resource.MustParse("7848976Ki"),
+							"pods":              resource.MustParse("29"),
+						},
+					},
+				},
+			},
+			totalNodeCount: 2,
+			expected:       false,
+		},
+		{
+			name:        "max(cpuCapacity) == 2 (true)",
+			conditional: "max(cpuCapacity) == 2",
+			matchingNodes: []corev1.Node{
+				corev1.Node{
+					TypeMeta: metav1.TypeMeta{
+						APIVersion: "v1",
+						Kind:       "Node",
+					},
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "node1",
+					},
+					Status: corev1.NodeStatus{
+						Capacity: corev1.ResourceList{
+							"cpu":               resource.MustParse("2"),
+							"ephemeral-storage": resource.MustParse("20959212Ki"),
+							"memory":            resource.MustParse("17951376Ki"),
+							"pods":              resource.MustParse("29"),
+						},
+						Allocatable: corev1.ResourceList{
+							"cpu":               resource.MustParse("2"),
+							"ephemeral-storage": resource.MustParse("19316009748"),
+							"memory":            resource.MustParse("7848976Ki"),
+							"pods":              resource.MustParse("29"),
+						},
+					},
+				},
+				corev1.Node{
+					TypeMeta: metav1.TypeMeta{
+						APIVersion: "v1",
+						Kind:       "Node",
+					},
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "node2",
+					},
+					Status: corev1.NodeStatus{
+						Capacity: corev1.ResourceList{
+							"cpu":               resource.MustParse("2"),
+							"ephemeral-storage": resource.MustParse("20959212Ki"),
+							"memory":            resource.MustParse("7951376Ki"),
+							"pods":              resource.MustParse("29"),
+						},
+						Allocatable: corev1.ResourceList{
+							"cpu":               resource.MustParse("2"),
+							"ephemeral-storage": resource.MustParse("19316009748"),
+							"memory":            resource.MustParse("7848976Ki"),
+							"pods":              resource.MustParse("29"),
+						},
+					},
+				},
+			},
+			totalNodeCount: 2,
+			expected:       true,
+		},
+		{
+			name:        "sum(cpuCapacity) > 32 (true)",
+			conditional: "sum(cpuCapacity) > 32",
+			matchingNodes: []corev1.Node{
+				corev1.Node{
+					TypeMeta: metav1.TypeMeta{
+						APIVersion: "v1",
+						Kind:       "Node",
+					},
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "node1",
+					},
+					Status: corev1.NodeStatus{
+						Capacity: corev1.ResourceList{
+							"cpu":               resource.MustParse("8"),
+							"ephemeral-storage": resource.MustParse("20959212Ki"),
+							"memory":            resource.MustParse("17951376Ki"),
+							"pods":              resource.MustParse("29"),
+						},
+						Allocatable: corev1.ResourceList{
+							"cpu":               resource.MustParse("8"),
+							"ephemeral-storage": resource.MustParse("19316009748"),
+							"memory":            resource.MustParse("7848976Ki"),
+							"pods":              resource.MustParse("29"),
+						},
+					},
+				},
+				corev1.Node{
+					TypeMeta: metav1.TypeMeta{
+						APIVersion: "v1",
+						Kind:       "Node",
+					},
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "node2",
+					},
+					Status: corev1.NodeStatus{
+						Capacity: corev1.ResourceList{
+							"cpu":               resource.MustParse("8"),
+							"ephemeral-storage": resource.MustParse("20959212Ki"),
+							"memory":            resource.MustParse("7951376Ki"),
+							"pods":              resource.MustParse("29"),
+						},
+						Allocatable: corev1.ResourceList{
+							"cpu":               resource.MustParse("8"),
+							"ephemeral-storage": resource.MustParse("19316009748"),
+							"memory":            resource.MustParse("7848976Ki"),
+							"pods":              resource.MustParse("29"),
+						},
+					},
+				},
+				corev1.Node{
+					TypeMeta: metav1.TypeMeta{
+						APIVersion: "v1",
+						Kind:       "Node",
+					},
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "node3",
+					},
+					Status: corev1.NodeStatus{
+						Capacity: corev1.ResourceList{
+							"cpu":               resource.MustParse("8"),
+							"ephemeral-storage": resource.MustParse("20959212Ki"),
+							"memory":            resource.MustParse("7951376Ki"),
+							"pods":              resource.MustParse("29"),
+						},
+						Allocatable: corev1.ResourceList{
+							"cpu":               resource.MustParse("8"),
+							"ephemeral-storage": resource.MustParse("19316009748"),
+							"memory":            resource.MustParse("7848976Ki"),
+							"pods":              resource.MustParse("29"),
+						},
+					},
+				},
+				corev1.Node{
+					TypeMeta: metav1.TypeMeta{
+						APIVersion: "v1",
+						Kind:       "Node",
+					},
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "node4",
+					},
+					Status: corev1.NodeStatus{
+						Capacity: corev1.ResourceList{
+							"cpu":               resource.MustParse("8"),
+							"ephemeral-storage": resource.MustParse("20959212Ki"),
+							"memory":            resource.MustParse("7951376Ki"),
+							"pods":              resource.MustParse("29"),
+						},
+						Allocatable: corev1.ResourceList{
+							"cpu":               resource.MustParse("8"),
+							"ephemeral-storage": resource.MustParse("19316009748"),
+							"memory":            resource.MustParse("7848976Ki"),
+							"pods":              resource.MustParse("29"),
+						},
+					},
+				},
+				corev1.Node{
+					TypeMeta: metav1.TypeMeta{
+						APIVersion: "v1",
+						Kind:       "Node",
+					},
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "node5",
+					},
+					Status: corev1.NodeStatus{
+						Capacity: corev1.ResourceList{
+							"cpu":               resource.MustParse("8"),
+							"ephemeral-storage": resource.MustParse("20959212Ki"),
+							"memory":            resource.MustParse("7951376Ki"),
+							"pods":              resource.MustParse("29"),
+						},
+						Allocatable: corev1.ResourceList{
+							"cpu":               resource.MustParse("8"),
+							"ephemeral-storage": resource.MustParse("19316009748"),
+							"memory":            resource.MustParse("7848976Ki"),
+							"pods":              resource.MustParse("29"),
+						},
+					},
+				},
+			},
+			totalNodeCount: 2,
+			expected:       true,
+		},
 	}
 
 	for _, test := range tests {
