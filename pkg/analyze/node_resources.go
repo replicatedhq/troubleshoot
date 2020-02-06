@@ -97,7 +97,7 @@ func compareNodeResourceConditionalToActual(conditional string, matchingNodes []
 		return true, nil
 	}
 
-	parts := strings.Split(strings.TrimSpace(conditional), " ")
+	parts := strings.Fields(strings.TrimSpace(conditional))
 
 	if len(parts) == 2 {
 		parts = append([]string{"count"}, parts...)
