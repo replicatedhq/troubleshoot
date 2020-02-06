@@ -3,9 +3,9 @@ package analyzer
 import (
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
-	"regexp"
 
 	"github.com/pkg/errors"
 	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
@@ -19,12 +19,12 @@ func analyzeNodeResources(analyzer *troubleshootv1beta1.NodeResources, getCollec
 		return nil, errors.Wrap(err, "failed to get contents of nodes.json")
 	}
 
-	var nodes []corev1.Node
+	nodes := []corev1.Node{}
 	if err := json.Unmarshal(collected, &nodes); err != nil {
 		return nil, errors.Wrap(err, "failed to unmarshal node list")
 	}
 
-	matchingNodeCount := 0
+	matchingNodes := []corev1.Node{}
 
 	for _, node := range nodes {
 		isMatch, err := nodeMatchesFilters(node, analyzer.Filters)
@@ -33,7 +33,7 @@ func analyzeNodeResources(analyzer *troubleshootv1beta1.NodeResources, getCollec
 		}
 
 		if isMatch {
-			matchingNodeCount++
+			matchingNodes = append(matchingNodes, node)
 		}
 	}
 
@@ -108,42 +108,167 @@ func compareNodeResourceConditionalToActual(conditional string, matchingNodes []
 	}
 
 	operator := parts[1]
+
 	var desiredValue interface{}
 	desiredValue = parts[2]
 
 	parsedDesiredValue, err := strconv.Atoi(parts[2])
-	if err != nil {
+	if err == nil {
 		desiredValue = parsedDesiredValue
 	}
 
-	var actualValue interface{}
-	actualValue = len(matchingNodes)
-
-	reg := regexp.MustCompile("(?P<function>.*)\((?P<property>.*)\)")
+	reg := regexp.MustCompile(`(?P<function>.*)\((?P<property>.*)\)`)
 	match := reg.FindStringSubmatch(parts[0])
 
-	fmt.Printf("reg = %#v\n", reg)
-	// result := make(map[string]string)
+	if match == nil {
+		// We support this as equivalent to the count() function
+		match = reg.FindStringSubmatch(fmt.Sprintf("count() == %s", parts[0]))
+	}
 
+	if match == nil || len(match) != 3 {
+		return false, errors.New("conditional does not match pattern of function(property?)")
+	}
 
-	// switch operator {
-	// case "=", "==", "===":
-	// 	return desiredValue == actualValue, nil
-	// case "<":
-	// 	return actualValue < desiredValue, nil
-	// case "<=":
-	// 	return actualValue <= desiredValue, nil
-	// case ">":
-	// 	return actualValue > desiredValue, nil
-	// case ">=":
-	// 	return actualValue >= desiredValue, nil
-	// }
+	function := match[1]
+	property := match[2]
+
+	var actualValue interface{}
+
+	switch function {
+	case "count":
+		actualValue = len(matchingNodes)
+		break
+	case "min":
+		av, err := findMin(matchingNodes, property)
+		if err != nil {
+			return false, errors.Wrap(err, "failed to find min")
+		}
+		actualValue = av
+	}
+
+	switch operator {
+	case "=", "==", "===":
+		return desiredValue == actualValue, nil
+	case "<":
+		if _, ok := actualValue.(int); ok {
+			if _, ok := desiredValue.(int); ok {
+				return actualValue.(int) < desiredValue.(int), nil
+			}
+		}
+		return actualValue.(*resource.Quantity).Cmp(resource.MustParse(desiredValue.(string))) == -1, nil
+
+	case ">":
+		if _, ok := actualValue.(int); ok {
+			if _, ok := desiredValue.(int); ok {
+				return actualValue.(int) > desiredValue.(int), nil
+			}
+		}
+		return actualValue.(*resource.Quantity).Cmp(resource.MustParse(desiredValue.(string))) == 1, nil
+
+	case "<=":
+		if _, ok := actualValue.(int); ok {
+			if _, ok := desiredValue.(int); ok {
+				return actualValue.(int) <= desiredValue.(int), nil
+			}
+		}
+		return actualValue.(*resource.Quantity).Cmp(resource.MustParse(desiredValue.(string))) == -1 ||
+			actualValue.(*resource.Quantity).Cmp(resource.MustParse(desiredValue.(string))) == 0, nil
+
+	case ">=":
+		if _, ok := actualValue.(int); ok {
+			if _, ok := desiredValue.(int); ok {
+				return actualValue.(int) >= desiredValue.(int), nil
+			}
+		}
+		return actualValue.(*resource.Quantity).Cmp(resource.MustParse(desiredValue.(string))) == 1 ||
+			actualValue.(*resource.Quantity).Cmp(resource.MustParse(desiredValue.(string))) == 0, nil
+	}
 
 	return false, errors.New("unexpected conditional in nodeResources")
 }
 
-func findMin(nodes []codev1.Node, property string) (string, error) {
-	return "", errors.New("not implemented")
+func findMin(nodes []corev1.Node, property string) (*resource.Quantity, error) {
+	var min *resource.Quantity
+
+	for _, node := range nodes {
+		switch property {
+		case "cpuCapacity":
+			if min == nil {
+				min = node.Status.Capacity.Cpu()
+			} else {
+				if node.Status.Capacity.Cpu().Cmp(*min) == -1 {
+					min = node.Status.Capacity.Cpu()
+				}
+			}
+			break
+		case "cpuAllocatable":
+			if min == nil {
+				min = node.Status.Allocatable.Cpu()
+			} else {
+				if node.Status.Allocatable.Cpu().Cmp(*min) == -1 {
+					min = node.Status.Allocatable.Cpu()
+				}
+			}
+			break
+		case "memoryCapacity":
+			if min == nil {
+				min = node.Status.Capacity.Memory()
+			} else {
+				if node.Status.Capacity.Memory().Cmp(*min) == -1 {
+					min = node.Status.Capacity.Memory()
+				}
+			}
+			break
+		case "memoryAllocatable":
+			if min == nil {
+				min = node.Status.Allocatable.Memory()
+			} else {
+				if node.Status.Allocatable.Memory().Cmp(*min) == -1 {
+					min = node.Status.Allocatable.Memory()
+				}
+			}
+			break
+		case "podCapacity":
+			if min == nil {
+				min = node.Status.Capacity.Pods()
+			} else {
+				if node.Status.Capacity.Pods().Cmp(*min) == -1 {
+					min = node.Status.Capacity.Pods()
+				}
+			}
+			break
+		case "podAllocatable":
+			if min == nil {
+				min = node.Status.Allocatable.Pods()
+			} else {
+				if node.Status.Allocatable.Pods().Cmp(*min) == -1 {
+					min = node.Status.Allocatable.Pods()
+				}
+			}
+			break
+		case "ephemeralStorageCapacity":
+			if min == nil {
+				min = node.Status.Capacity.StorageEphemeral()
+			} else {
+				if node.Status.Capacity.StorageEphemeral().Cmp(*min) == -1 {
+					min = node.Status.Capacity.StorageEphemeral()
+				}
+			}
+			break
+		case "ephemeralStorageAllocatable":
+			if min == nil {
+				min = node.Status.Allocatable.StorageEphemeral()
+			} else {
+				if node.Status.Allocatable.StorageEphemeral().Cmp(*min) == -1 {
+					min = node.Status.Allocatable.StorageEphemeral()
+				}
+			}
+			break
+
+		}
+	}
+
+	return min, nil
 }
 
 func nodeMatchesFilters(node corev1.Node, filters *troubleshootv1beta1.NodeResourceFilters) (bool, error) {

@@ -8,64 +8,358 @@ import (
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func Test_compareNodeResourceConditionalToActual(t *testing.T) {
 	tests := []struct {
-		name              string
-		conditional       string
-		matchingNodeCount int
-		totalNodeCount    int
-		expected          bool
+		name           string
+		conditional    string
+		totalNodeCount int
+		matchingNodes  []corev1.Node
+		expected       bool
 	}{
 		{
-			name:              "=",
-			conditional:       "= 5",
-			matchingNodeCount: 5,
-			totalNodeCount:    1,
-			expected:          true,
+			name:        "=",
+			conditional: "= 2",
+			matchingNodes: []corev1.Node{
+				corev1.Node{
+					TypeMeta: metav1.TypeMeta{
+						APIVersion: "v1",
+						Kind:       "Node",
+					},
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "node1",
+					},
+				},
+				corev1.Node{
+					TypeMeta: metav1.TypeMeta{
+						APIVersion: "v1",
+						Kind:       "Node",
+					},
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "node2",
+					},
+				},
+			},
+			totalNodeCount: 2,
+			expected:       true,
 		},
 		{
-			name:              "<= (pass)",
-			conditional:       "<= 5",
-			matchingNodeCount: 4,
-			totalNodeCount:    1,
-			expected:          true,
+			name:        "count()",
+			conditional: "count() == 2",
+			matchingNodes: []corev1.Node{
+				corev1.Node{
+					TypeMeta: metav1.TypeMeta{
+						APIVersion: "v1",
+						Kind:       "Node",
+					},
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "node1",
+					},
+				},
+				corev1.Node{
+					TypeMeta: metav1.TypeMeta{
+						APIVersion: "v1",
+						Kind:       "Node",
+					},
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "node2",
+					},
+				},
+			},
+			totalNodeCount: 2,
+			expected:       true,
 		},
 		{
-			name:              "<= (fail)",
-			conditional:       "<= 5",
-			matchingNodeCount: 6,
-			totalNodeCount:    1,
-			expected:          false,
+			name:        "<",
+			conditional: "< 3",
+			matchingNodes: []corev1.Node{
+				corev1.Node{
+					TypeMeta: metav1.TypeMeta{
+						APIVersion: "v1",
+						Kind:       "Node",
+					},
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "node1",
+					},
+				},
+				corev1.Node{
+					TypeMeta: metav1.TypeMeta{
+						APIVersion: "v1",
+						Kind:       "Node",
+					},
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "node2",
+					},
+				},
+			},
+			totalNodeCount: 2,
+			expected:       true,
 		},
 		{
-			name:              "> (pass)",
-			conditional:       "> 5",
-			matchingNodeCount: 6,
-			totalNodeCount:    1,
-			expected:          true,
+			name:        "count() <",
+			conditional: "count() < 3",
+			matchingNodes: []corev1.Node{
+				corev1.Node{
+					TypeMeta: metav1.TypeMeta{
+						APIVersion: "v1",
+						Kind:       "Node",
+					},
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "node1",
+					},
+				},
+				corev1.Node{
+					TypeMeta: metav1.TypeMeta{
+						APIVersion: "v1",
+						Kind:       "Node",
+					},
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "node2",
+					},
+				},
+			},
+			totalNodeCount: 2,
+			expected:       true,
 		},
 		{
-			name:              ">= (fail)",
-			conditional:       ">= 5",
-			matchingNodeCount: 4,
-			totalNodeCount:    1,
-			expected:          false,
+			name:        ">",
+			conditional: "> 2",
+			matchingNodes: []corev1.Node{
+				corev1.Node{
+					TypeMeta: metav1.TypeMeta{
+						APIVersion: "v1",
+						Kind:       "Node",
+					},
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "node1",
+					},
+				},
+				corev1.Node{
+					TypeMeta: metav1.TypeMeta{
+						APIVersion: "v1",
+						Kind:       "Node",
+					},
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "node2",
+					},
+				},
+			},
+			totalNodeCount: 2,
+			expected:       false,
 		},
 		{
-			name:              "min(memoryCapacity) <= 16Gi (pass)",
-			conditional:       "min(memoryCapacity) <= 16Gi",
-			matchingNodeCount: 2,
-			totalNodeCount:    2,
-			expected:          true,
+			name:        "count() >",
+			conditional: "count() > 1",
+			matchingNodes: []corev1.Node{
+				corev1.Node{
+					TypeMeta: metav1.TypeMeta{
+						APIVersion: "v1",
+						Kind:       "Node",
+					},
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "node1",
+					},
+				},
+				corev1.Node{
+					TypeMeta: metav1.TypeMeta{
+						APIVersion: "v1",
+						Kind:       "Node",
+					},
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "node2",
+					},
+				},
+			},
+			totalNodeCount: 2,
+			expected:       true,
 		},
 		{
-			name:              "min(memoryCapacity) <= 16Gi",
-			conditional:       "min(memoryCapacity) <= 16Gi",
-			matchingNodeCount: 1,
-			totalNodeCount:    2,
-			expected:          false,
+			name:        "count() >= 1 (true)",
+			conditional: "count() > 1",
+			matchingNodes: []corev1.Node{
+				corev1.Node{
+					TypeMeta: metav1.TypeMeta{
+						APIVersion: "v1",
+						Kind:       "Node",
+					},
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "node1",
+					},
+				},
+				corev1.Node{
+					TypeMeta: metav1.TypeMeta{
+						APIVersion: "v1",
+						Kind:       "Node",
+					},
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "node2",
+					},
+				},
+			},
+			totalNodeCount: 2,
+			expected:       true,
+		},
+		{
+			name:        "count() <= 2 (true)",
+			conditional: "count() <= 2",
+			matchingNodes: []corev1.Node{
+				corev1.Node{
+					TypeMeta: metav1.TypeMeta{
+						APIVersion: "v1",
+						Kind:       "Node",
+					},
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "node1",
+					},
+				},
+				corev1.Node{
+					TypeMeta: metav1.TypeMeta{
+						APIVersion: "v1",
+						Kind:       "Node",
+					},
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "node2",
+					},
+				},
+			},
+			totalNodeCount: 2,
+			expected:       true,
+		},
+		{
+			name:        "count() <= 1 (false)",
+			conditional: "count() <= 1",
+			matchingNodes: []corev1.Node{
+				corev1.Node{
+					TypeMeta: metav1.TypeMeta{
+						APIVersion: "v1",
+						Kind:       "Node",
+					},
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "node1",
+					},
+				},
+				corev1.Node{
+					TypeMeta: metav1.TypeMeta{
+						APIVersion: "v1",
+						Kind:       "Node",
+					},
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "node2",
+					},
+				},
+			},
+			totalNodeCount: 2,
+			expected:       false,
+		},
+		{
+			name:        "min(memoryCapacity) <= 4Gi (true)",
+			conditional: "min(memoryCapacity) <= 4Gi",
+			matchingNodes: []corev1.Node{
+				corev1.Node{
+					TypeMeta: metav1.TypeMeta{
+						APIVersion: "v1",
+						Kind:       "Node",
+					},
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "node1",
+					},
+					Status: corev1.NodeStatus{
+						Capacity: corev1.ResourceList{
+							"cpu":               resource.MustParse("2"),
+							"ephemeral-storage": resource.MustParse("20959212Ki"),
+							"memory":            resource.MustParse("3999Ki"),
+							"pods":              resource.MustParse("29"),
+						},
+						Allocatable: corev1.ResourceList{
+							"cpu":               resource.MustParse("2"),
+							"ephemeral-storage": resource.MustParse("19316009748"),
+							"memory":            resource.MustParse("16Ki"),
+							"pods":              resource.MustParse("29"),
+						},
+					},
+				},
+				corev1.Node{
+					TypeMeta: metav1.TypeMeta{
+						APIVersion: "v1",
+						Kind:       "Node",
+					},
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "node2",
+					},
+					Status: corev1.NodeStatus{
+						Capacity: corev1.ResourceList{
+							"cpu":               resource.MustParse("2"),
+							"ephemeral-storage": resource.MustParse("20959212Ki"),
+							"memory":            resource.MustParse("7951376Ki"),
+							"pods":              resource.MustParse("29"),
+						},
+						Allocatable: corev1.ResourceList{
+							"cpu":               resource.MustParse("2"),
+							"ephemeral-storage": resource.MustParse("19316009748"),
+							"memory":            resource.MustParse("7848976Ki"),
+							"pods":              resource.MustParse("29"),
+						},
+					},
+				},
+			},
+			totalNodeCount: 2,
+			expected:       true,
+		},
+		{
+			name:        "min(memoryCapacity) <= 4Gi (false)",
+			conditional: "min(memoryCapacity) <= 4Gi",
+			matchingNodes: []corev1.Node{
+				corev1.Node{
+					TypeMeta: metav1.TypeMeta{
+						APIVersion: "v1",
+						Kind:       "Node",
+					},
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "node1",
+					},
+					Status: corev1.NodeStatus{
+						Capacity: corev1.ResourceList{
+							"cpu":               resource.MustParse("2"),
+							"ephemeral-storage": resource.MustParse("20959212Ki"),
+							"memory":            resource.MustParse("17951376Ki"),
+							"pods":              resource.MustParse("29"),
+						},
+						Allocatable: corev1.ResourceList{
+							"cpu":               resource.MustParse("2"),
+							"ephemeral-storage": resource.MustParse("19316009748"),
+							"memory":            resource.MustParse("7848976Ki"),
+							"pods":              resource.MustParse("29"),
+						},
+					},
+				},
+				corev1.Node{
+					TypeMeta: metav1.TypeMeta{
+						APIVersion: "v1",
+						Kind:       "Node",
+					},
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "node2",
+					},
+					Status: corev1.NodeStatus{
+						Capacity: corev1.ResourceList{
+							"cpu":               resource.MustParse("2"),
+							"ephemeral-storage": resource.MustParse("20959212Ki"),
+							"memory":            resource.MustParse("7951376Ki"),
+							"pods":              resource.MustParse("29"),
+						},
+						Allocatable: corev1.ResourceList{
+							"cpu":               resource.MustParse("2"),
+							"ephemeral-storage": resource.MustParse("19316009748"),
+							"memory":            resource.MustParse("7848976Ki"),
+							"pods":              resource.MustParse("29"),
+						},
+					},
+				},
+			},
+			totalNodeCount: 2,
+			expected:       false,
 		},
 	}
 
@@ -73,7 +367,7 @@ func Test_compareNodeResourceConditionalToActual(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			req := require.New(t)
 
-			actual, err := compareNodeResourceConditionalToActual(test.conditional, test.matchingNodeCount, test.totalNodeCount)
+			actual, err := compareNodeResourceConditionalToActual(test.conditional, test.matchingNodes, test.totalNodeCount)
 			req.NoError(err)
 
 			assert.Equal(t, test.expected, actual)
