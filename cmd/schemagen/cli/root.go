@@ -66,7 +66,7 @@ func generateSchemas(v *viper.Viper) error {
 	if err != nil {
 		return errors.Wrap(err, "failed to read preflight crd")
 	}
-	if err := generateSchemaFromCRD(preflightContents, filepath.Join(workdir, v.GetString("output-dir"), "preflight.json")); err != nil {
+	if err := generateSchemaFromCRD(preflightContents, filepath.Join(workdir, v.GetString("output-dir"), "preflight-troubleshoot-v1beta1.json")); err != nil {
 		return errors.Wrap(err, "failed to write preflight schema")
 	}
 
@@ -74,7 +74,7 @@ func generateSchemas(v *viper.Viper) error {
 	if err != nil {
 		return errors.Wrap(err, "failed to read analyzers crd")
 	}
-	if err := generateSchemaFromCRD(analyzersContents, filepath.Join(workdir, v.GetString("output-dir"), "analyzers.json")); err != nil {
+	if err := generateSchemaFromCRD(analyzersContents, filepath.Join(workdir, v.GetString("output-dir"), "analyzer-troubleshoot-v1beta1.json")); err != nil {
 		return errors.Wrap(err, "failed to write analyzers schema")
 	}
 
@@ -82,7 +82,7 @@ func generateSchemas(v *viper.Viper) error {
 	if err != nil {
 		return errors.Wrap(err, "failed to read collectors crd")
 	}
-	if err := generateSchemaFromCRD(collectorsContents, filepath.Join(workdir, v.GetString("output-dir"), "collectors.json")); err != nil {
+	if err := generateSchemaFromCRD(collectorsContents, filepath.Join(workdir, v.GetString("output-dir"), "collector-troubleshoot-v1beta1.json")); err != nil {
 		return errors.Wrap(err, "failed to write collectors schema")
 	}
 
