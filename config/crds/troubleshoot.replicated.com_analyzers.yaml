@@ -1,0 +1,611 @@
+
+---
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.2.4
+  creationTimestamp: null
+  name: analyzers.troubleshoot.replicated.com
+spec:
+  group: troubleshoot.replicated.com
+  names:
+    kind: Analyzer
+    listKind: AnalyzerList
+    plural: analyzers
+    singular: analyzer
+  scope: Namespaced
+  validation:
+    openAPIV3Schema:
+      description: Analyzer is the Schema for the analyzers API
+      properties:
+        apiVersion:
+          description: 'APIVersion defines the versioned schema of this representation
+            of an object. Servers should convert recognized schemas to the latest
+            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+          type: string
+        kind:
+          description: 'Kind is a string value representing the REST resource this
+            object represents. Servers may infer this from the endpoint the client
+            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+          type: string
+        metadata:
+          type: object
+        spec:
+          description: AnalyzerSpec defines the desired state of Analyzer
+          properties:
+            analyzers:
+              items:
+                properties:
+                  clusterVersion:
+                    properties:
+                      checkName:
+                        type: string
+                      exclude:
+                        type: boolean
+                      outcomes:
+                        items:
+                          properties:
+                            fail:
+                              properties:
+                                message:
+                                  type: string
+                                uri:
+                                  type: string
+                                when:
+                                  type: string
+                              type: object
+                            pass:
+                              properties:
+                                message:
+                                  type: string
+                                uri:
+                                  type: string
+                                when:
+                                  type: string
+                              type: object
+                            warn:
+                              properties:
+                                message:
+                                  type: string
+                                uri:
+                                  type: string
+                                when:
+                                  type: string
+                              type: object
+                          type: object
+                        type: array
+                    required:
+                    - outcomes
+                    type: object
+                  containerRuntime:
+                    properties:
+                      checkName:
+                        type: string
+                      exclude:
+                        type: boolean
+                      outcomes:
+                        items:
+                          properties:
+                            fail:
+                              properties:
+                                message:
+                                  type: string
+                                uri:
+                                  type: string
+                                when:
+                                  type: string
+                              type: object
+                            pass:
+                              properties:
+                                message:
+                                  type: string
+                                uri:
+                                  type: string
+                                when:
+                                  type: string
+                              type: object
+                            warn:
+                              properties:
+                                message:
+                                  type: string
+                                uri:
+                                  type: string
+                                when:
+                                  type: string
+                              type: object
+                          type: object
+                        type: array
+                    required:
+                    - outcomes
+                    type: object
+                  customResourceDefinition:
+                    properties:
+                      checkName:
+                        type: string
+                      customResourceDefinitionName:
+                        type: string
+                      exclude:
+                        type: boolean
+                      outcomes:
+                        items:
+                          properties:
+                            fail:
+                              properties:
+                                message:
+                                  type: string
+                                uri:
+                                  type: string
+                                when:
+                                  type: string
+                              type: object
+                            pass:
+                              properties:
+                                message:
+                                  type: string
+                                uri:
+                                  type: string
+                                when:
+                                  type: string
+                              type: object
+                            warn:
+                              properties:
+                                message:
+                                  type: string
+                                uri:
+                                  type: string
+                                when:
+                                  type: string
+                              type: object
+                          type: object
+                        type: array
+                    required:
+                    - customResourceDefinitionName
+                    - outcomes
+                    type: object
+                  deploymentStatus:
+                    properties:
+                      checkName:
+                        type: string
+                      exclude:
+                        type: boolean
+                      name:
+                        type: string
+                      namespace:
+                        type: string
+                      outcomes:
+                        items:
+                          properties:
+                            fail:
+                              properties:
+                                message:
+                                  type: string
+                                uri:
+                                  type: string
+                                when:
+                                  type: string
+                              type: object
+                            pass:
+                              properties:
+                                message:
+                                  type: string
+                                uri:
+                                  type: string
+                                when:
+                                  type: string
+                              type: object
+                            warn:
+                              properties:
+                                message:
+                                  type: string
+                                uri:
+                                  type: string
+                                when:
+                                  type: string
+                              type: object
+                          type: object
+                        type: array
+                    required:
+                    - name
+                    - namespace
+                    - outcomes
+                    type: object
+                  distribution:
+                    properties:
+                      checkName:
+                        type: string
+                      exclude:
+                        type: boolean
+                      outcomes:
+                        items:
+                          properties:
+                            fail:
+                              properties:
+                                message:
+                                  type: string
+                                uri:
+                                  type: string
+                                when:
+                                  type: string
+                              type: object
+                            pass:
+                              properties:
+                                message:
+                                  type: string
+                                uri:
+                                  type: string
+                                when:
+                                  type: string
+                              type: object
+                            warn:
+                              properties:
+                                message:
+                                  type: string
+                                uri:
+                                  type: string
+                                when:
+                                  type: string
+                              type: object
+                          type: object
+                        type: array
+                    required:
+                    - outcomes
+                    type: object
+                  imagePullSecret:
+                    properties:
+                      checkName:
+                        type: string
+                      exclude:
+                        type: boolean
+                      outcomes:
+                        items:
+                          properties:
+                            fail:
+                              properties:
+                                message:
+                                  type: string
+                                uri:
+                                  type: string
+                                when:
+                                  type: string
+                              type: object
+                            pass:
+                              properties:
+                                message:
+                                  type: string
+                                uri:
+                                  type: string
+                                when:
+                                  type: string
+                              type: object
+                            warn:
+                              properties:
+                                message:
+                                  type: string
+                                uri:
+                                  type: string
+                                when:
+                                  type: string
+                              type: object
+                          type: object
+                        type: array
+                      registryName:
+                        type: string
+                    required:
+                    - outcomes
+                    - registryName
+                    type: object
+                  ingress:
+                    properties:
+                      checkName:
+                        type: string
+                      exclude:
+                        type: boolean
+                      ingressName:
+                        type: string
+                      namespace:
+                        type: string
+                      outcomes:
+                        items:
+                          properties:
+                            fail:
+                              properties:
+                                message:
+                                  type: string
+                                uri:
+                                  type: string
+                                when:
+                                  type: string
+                              type: object
+                            pass:
+                              properties:
+                                message:
+                                  type: string
+                                uri:
+                                  type: string
+                                when:
+                                  type: string
+                              type: object
+                            warn:
+                              properties:
+                                message:
+                                  type: string
+                                uri:
+                                  type: string
+                                when:
+                                  type: string
+                              type: object
+                          type: object
+                        type: array
+                    required:
+                    - ingressName
+                    - namespace
+                    - outcomes
+                    type: object
+                  nodeResources:
+                    properties:
+                      checkName:
+                        type: string
+                      exclude:
+                        type: boolean
+                      filters:
+                        properties:
+                          cpuAllocatable:
+                            type: string
+                          cpuCapacity:
+                            type: string
+                          ephemeralStorageAllocatable:
+                            type: string
+                          ephemeralStorageCapacity:
+                            type: string
+                          memoryAllocatable:
+                            type: string
+                          memoryCapacity:
+                            type: string
+                          podAllocatable:
+                            type: string
+                          podCapacity:
+                            type: string
+                        type: object
+                      outcomes:
+                        items:
+                          properties:
+                            fail:
+                              properties:
+                                message:
+                                  type: string
+                                uri:
+                                  type: string
+                                when:
+                                  type: string
+                              type: object
+                            pass:
+                              properties:
+                                message:
+                                  type: string
+                                uri:
+                                  type: string
+                                when:
+                                  type: string
+                              type: object
+                            warn:
+                              properties:
+                                message:
+                                  type: string
+                                uri:
+                                  type: string
+                                when:
+                                  type: string
+                              type: object
+                          type: object
+                        type: array
+                    required:
+                    - outcomes
+                    type: object
+                  secret:
+                    properties:
+                      checkName:
+                        type: string
+                      exclude:
+                        type: boolean
+                      key:
+                        type: string
+                      namespace:
+                        type: string
+                      outcomes:
+                        items:
+                          properties:
+                            fail:
+                              properties:
+                                message:
+                                  type: string
+                                uri:
+                                  type: string
+                                when:
+                                  type: string
+                              type: object
+                            pass:
+                              properties:
+                                message:
+                                  type: string
+                                uri:
+                                  type: string
+                                when:
+                                  type: string
+                              type: object
+                            warn:
+                              properties:
+                                message:
+                                  type: string
+                                uri:
+                                  type: string
+                                when:
+                                  type: string
+                              type: object
+                          type: object
+                        type: array
+                      secretName:
+                        type: string
+                    required:
+                    - namespace
+                    - outcomes
+                    - secretName
+                    type: object
+                  statefulsetStatus:
+                    properties:
+                      checkName:
+                        type: string
+                      exclude:
+                        type: boolean
+                      name:
+                        type: string
+                      namespace:
+                        type: string
+                      outcomes:
+                        items:
+                          properties:
+                            fail:
+                              properties:
+                                message:
+                                  type: string
+                                uri:
+                                  type: string
+                                when:
+                                  type: string
+                              type: object
+                            pass:
+                              properties:
+                                message:
+                                  type: string
+                                uri:
+                                  type: string
+                                when:
+                                  type: string
+                              type: object
+                            warn:
+                              properties:
+                                message:
+                                  type: string
+                                uri:
+                                  type: string
+                                when:
+                                  type: string
+                              type: object
+                          type: object
+                        type: array
+                    required:
+                    - name
+                    - namespace
+                    - outcomes
+                    type: object
+                  storageClass:
+                    properties:
+                      checkName:
+                        type: string
+                      exclude:
+                        type: boolean
+                      outcomes:
+                        items:
+                          properties:
+                            fail:
+                              properties:
+                                message:
+                                  type: string
+                                uri:
+                                  type: string
+                                when:
+                                  type: string
+                              type: object
+                            pass:
+                              properties:
+                                message:
+                                  type: string
+                                uri:
+                                  type: string
+                                when:
+                                  type: string
+                              type: object
+                            warn:
+                              properties:
+                                message:
+                                  type: string
+                                uri:
+                                  type: string
+                                when:
+                                  type: string
+                              type: object
+                          type: object
+                        type: array
+                      storageClassName:
+                        type: string
+                    required:
+                    - outcomes
+                    - storageClassName
+                    type: object
+                  textAnalyze:
+                    properties:
+                      checkName:
+                        type: string
+                      collectorName:
+                        type: string
+                      exclude:
+                        type: boolean
+                      fileName:
+                        type: string
+                      outcomes:
+                        items:
+                          properties:
+                            fail:
+                              properties:
+                                message:
+                                  type: string
+                                uri:
+                                  type: string
+                                when:
+                                  type: string
+                              type: object
+                            pass:
+                              properties:
+                                message:
+                                  type: string
+                                uri:
+                                  type: string
+                                when:
+                                  type: string
+                              type: object
+                            warn:
+                              properties:
+                                message:
+                                  type: string
+                                uri:
+                                  type: string
+                                when:
+                                  type: string
+                              type: object
+                          type: object
+                        type: array
+                      regex:
+                        type: string
+                      regexGroups:
+                        type: string
+                    required:
+                    - outcomes
+                    type: object
+                type: object
+              type: array
+          type: object
+        status:
+          description: AnalyzerStatus defines the observed state of Analyzer
+          type: object
+      type: object
+  version: v1beta1
+  versions:
+  - name: v1beta1
+    served: true
+    storage: true
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []
