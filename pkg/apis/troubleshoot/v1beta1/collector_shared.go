@@ -9,7 +9,8 @@ import (
 
 type CollectorMeta struct {
 	CollectorName string `json:"collectorName,omitempty" yaml:"collectorName,omitempty"`
-	Exclude       bool   `json:"when,omitmempty" yaml:"when,omitempty"`
+	// +optional
+	Exclude bool `json:"exclude,omitmempty" yaml:"exclude,omitempty"`
 }
 
 type ClusterInfo struct {

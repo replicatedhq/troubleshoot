@@ -62,28 +62,22 @@
             "properties": {
               "clusterInfo": {
                 "type": "object",
-                "required": [
-                  "when"
-                ],
                 "properties": {
                   "collectorName": {
                     "type": "string"
                   },
-                  "when": {
+                  "exclude": {
                     "type": "boolean"
                   }
                 }
               },
               "clusterResources": {
                 "type": "object",
-                "required": [
-                  "when"
-                ],
                 "properties": {
                   "collectorName": {
                     "type": "string"
                   },
-                  "when": {
+                  "exclude": {
                     "type": "boolean"
                   }
                 }
@@ -93,8 +87,7 @@
                 "required": [
                   "containerPath",
                   "namespace",
-                  "selector",
-                  "when"
+                  "selector"
                 ],
                 "properties": {
                   "collectorName": {
@@ -105,6 +98,9 @@
                   },
                   "containerPath": {
                     "type": "string"
+                  },
+                  "exclude": {
+                    "type": "boolean"
                   },
                   "name": {
                     "type": "string"
@@ -117,17 +113,13 @@
                     "items": {
                       "type": "string"
                     }
-                  },
-                  "when": {
-                    "type": "boolean"
                   }
                 }
               },
               "data": {
                 "type": "object",
                 "required": [
-                  "data",
-                  "when"
+                  "data"
                 ],
                 "properties": {
                   "collectorName": {
@@ -136,11 +128,11 @@
                   "data": {
                     "type": "string"
                   },
+                  "exclude": {
+                    "type": "boolean"
+                  },
                   "name": {
                     "type": "string"
-                  },
-                  "when": {
-                    "type": "boolean"
                   }
                 }
               },
@@ -148,8 +140,7 @@
                 "type": "object",
                 "required": [
                   "namespace",
-                  "selector",
-                  "when"
+                  "selector"
                 ],
                 "properties": {
                   "args": {
@@ -170,6 +161,9 @@
                   "containerName": {
                     "type": "string"
                   },
+                  "exclude": {
+                    "type": "boolean"
+                  },
                   "name": {
                     "type": "string"
                   },
@@ -184,20 +178,17 @@
                   },
                   "timeout": {
                     "type": "string"
-                  },
-                  "when": {
-                    "type": "boolean"
                   }
                 }
               },
               "http": {
                 "type": "object",
-                "required": [
-                  "when"
-                ],
                 "properties": {
                   "collectorName": {
                     "type": "string"
+                  },
+                  "exclude": {
+                    "type": "boolean"
                   },
                   "get": {
                     "type": "object",
@@ -267,17 +258,13 @@
                         "type": "string"
                       }
                     }
-                  },
-                  "when": {
-                    "type": "boolean"
                   }
                 }
               },
               "logs": {
                 "type": "object",
                 "required": [
-                  "selector",
-                  "when"
+                  "selector"
                 ],
                 "properties": {
                   "collectorName": {
@@ -288,6 +275,9 @@
                     "items": {
                       "type": "string"
                     }
+                  },
+                  "exclude": {
+                    "type": "boolean"
                   },
                   "limits": {
                     "type": "object",
@@ -312,9 +302,6 @@
                     "items": {
                       "type": "string"
                     }
-                  },
-                  "when": {
-                    "type": "boolean"
                   }
                 }
               },
@@ -322,8 +309,7 @@
                 "type": "object",
                 "required": [
                   "image",
-                  "namespace",
-                  "when"
+                  "namespace"
                 ],
                 "properties": {
                   "args": {
@@ -341,6 +327,9 @@
                       "type": "string"
                     }
                   },
+                  "exclude": {
+                    "type": "boolean"
+                  },
                   "image": {
                     "type": "string"
                   },
@@ -355,21 +344,20 @@
                   },
                   "timeout": {
                     "type": "string"
-                  },
-                  "when": {
-                    "type": "boolean"
                   }
                 }
               },
               "secret": {
                 "type": "object",
                 "required": [
-                  "name",
-                  "when"
+                  "name"
                 ],
                 "properties": {
                   "collectorName": {
                     "type": "string"
+                  },
+                  "exclude": {
+                    "type": "boolean"
                   },
                   "includeValue": {
                     "type": "boolean"
@@ -382,9 +370,6 @@
                   },
                   "namespace": {
                     "type": "string"
-                  },
-                  "when": {
-                    "type": "boolean"
                   }
                 }
               }

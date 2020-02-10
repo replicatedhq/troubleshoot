@@ -600,19 +600,15 @@ spec:
                     properties:
                       collectorName:
                         type: string
-                      when:
+                      exclude:
                         type: boolean
-                    required:
-                    - when
                     type: object
                   clusterResources:
                     properties:
                       collectorName:
                         type: string
-                      when:
+                      exclude:
                         type: boolean
-                    required:
-                    - when
                     type: object
                   copy:
                     properties:
@@ -622,6 +618,8 @@ spec:
                         type: string
                       containerPath:
                         type: string
+                      exclude:
+                        type: boolean
                       name:
                         type: string
                       namespace:
@@ -630,13 +628,10 @@ spec:
                         items:
                           type: string
                         type: array
-                      when:
-                        type: boolean
                     required:
                     - containerPath
                     - namespace
                     - selector
-                    - when
                     type: object
                   data:
                     properties:
@@ -644,13 +639,12 @@ spec:
                         type: string
                       data:
                         type: string
+                      exclude:
+                        type: boolean
                       name:
                         type: string
-                      when:
-                        type: boolean
                     required:
                     - data
-                    - when
                     type: object
                   exec:
                     properties:
@@ -666,6 +660,8 @@ spec:
                         type: array
                       containerName:
                         type: string
+                      exclude:
+                        type: boolean
                       name:
                         type: string
                       namespace:
@@ -676,17 +672,16 @@ spec:
                         type: array
                       timeout:
                         type: string
-                      when:
-                        type: boolean
                     required:
                     - namespace
                     - selector
-                    - when
                     type: object
                   http:
                     properties:
                       collectorName:
                         type: string
+                      exclude:
+                        type: boolean
                       get:
                         properties:
                           headers:
@@ -732,10 +727,6 @@ spec:
                         required:
                         - url
                         type: object
-                      when:
-                        type: boolean
-                    required:
-                    - when
                     type: object
                   logs:
                     properties:
@@ -745,6 +736,8 @@ spec:
                         items:
                           type: string
                         type: array
+                      exclude:
+                        type: boolean
                       limits:
                         properties:
                           maxAge:
@@ -761,11 +754,8 @@ spec:
                         items:
                           type: string
                         type: array
-                      when:
-                        type: boolean
                     required:
                     - selector
-                    - when
                     type: object
                   run:
                     properties:
@@ -779,6 +769,8 @@ spec:
                         items:
                           type: string
                         type: array
+                      exclude:
+                        type: boolean
                       image:
                         type: string
                       imagePullPolicy:
@@ -789,17 +781,16 @@ spec:
                         type: string
                       timeout:
                         type: string
-                      when:
-                        type: boolean
                     required:
                     - image
                     - namespace
-                    - when
                     type: object
                   secret:
                     properties:
                       collectorName:
                         type: string
+                      exclude:
+                        type: boolean
                       includeValue:
                         type: boolean
                       key:
@@ -808,11 +799,8 @@ spec:
                         type: string
                       namespace:
                         type: string
-                      when:
-                        type: boolean
                     required:
                     - name
-                    - when
                     type: object
                 type: object
               type: array
