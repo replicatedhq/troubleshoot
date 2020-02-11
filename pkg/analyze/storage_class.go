@@ -25,7 +25,8 @@ func analyzeStorageClass(analyzer *troubleshootv1beta1.StorageClass, getCollecte
 	}
 
 	result := AnalyzeResult{
-		Title: title,
+		Title:   title,
+		IconKey: "kubernetes_storage_class",
 	}
 
 	for _, storageClass := range storageClasses {

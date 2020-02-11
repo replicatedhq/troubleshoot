@@ -32,10 +32,11 @@ func analyzeStatefulsetStatus(analyzer *troubleshootv1beta1.StatefulsetStatus, g
 		// there's not an error, but maybe the requested statefulset is not even deployed
 		return &AnalyzeResult{
 			Title:   fmt.Sprintf("%s Statefulset Status", analyzer.Name),
+			IconKey: "kubernetes_statefulset_status",
 			IsFail:  true,
 			Message: fmt.Sprintf("The statefulset %q was not found", analyzer.Name),
 		}, nil
 	}
 
-	return commonStatus(analyzer.Outcomes, fmt.Sprintf("%s Status", analyzer.Name), int(status.ReadyReplicas))
+	return commonStatus(analyzer.Outcomes, fmt.Sprintf("%s Status", analyzer.Name), "kubernetes_statefulset_status", int(status.ReadyReplicas))
 }

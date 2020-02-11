@@ -32,10 +32,11 @@ func analyzeDeploymentStatus(analyzer *troubleshootv1beta1.DeploymentStatus, get
 		// there's not an error, but maybe the requested deployment is not even deployed
 		return &AnalyzeResult{
 			Title:   fmt.Sprintf("%s Deployment Status", analyzer.Name),
+			IconKey: "kubernetes_deployment_status",
 			IsFail:  true,
 			Message: fmt.Sprintf("The deployment %q was not found", analyzer.Name),
 		}, nil
 	}
 
-	return commonStatus(analyzer.Outcomes, fmt.Sprintf("%s Status", analyzer.Name), int(status.ReadyReplicas))
+	return commonStatus(analyzer.Outcomes, fmt.Sprintf("%s Status", analyzer.Name), "kubernetes_deployment_status", int(status.ReadyReplicas))
 }

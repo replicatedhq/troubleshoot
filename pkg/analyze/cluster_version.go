@@ -30,7 +30,6 @@ func analyzeClusterVersion(analyzer *troubleshootv1beta1.ClusterVersion, getColl
 }
 
 func analyzeClusterVersionResult(k8sVersion semver.Version, outcomes []*troubleshootv1beta1.Outcome, checkName string) (*AnalyzeResult, error) {
-	result := AnalyzeResult{}
 	for _, outcome := range outcomes {
 		when := ""
 		message := ""
@@ -41,8 +40,9 @@ func analyzeClusterVersionResult(k8sVersion semver.Version, outcomes []*troubles
 			title = "Required Kubernetes Version"
 		}
 
-		result = AnalyzeResult{
-			Title: title,
+		result := AnalyzeResult{
+			Title:   title,
+			IconKey: "kubernetes_cluster_version",
 		}
 
 		if outcome.Fail != nil {

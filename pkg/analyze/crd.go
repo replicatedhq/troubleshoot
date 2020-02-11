@@ -25,7 +25,8 @@ func analyzeCustomResourceDefinition(analyzer *troubleshootv1beta1.CustomResourc
 	}
 
 	result := AnalyzeResult{
-		Title: title,
+		Title:   title,
+		IconKey: "kubernetes_custom_resource_definition",
 	}
 
 	for _, storageClass := range crds {

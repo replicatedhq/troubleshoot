@@ -25,7 +25,8 @@ func analyzeSecret(analyzer *troubleshootv1beta1.AnalyzeSecret, getCollectedFile
 	}
 
 	result := AnalyzeResult{
-		Title: title,
+		Title:   title,
+		IconKey: "kubernetes_analyze_secret",
 	}
 
 	var failOutcome *troubleshootv1beta1.Outcome

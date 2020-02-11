@@ -13,6 +13,7 @@ type AnalyzeResult struct {
 	Title   string
 	Message string
 	URI     string
+	IconKey string
 }
 
 type getCollectedFileContents func(string) ([]byte, error)

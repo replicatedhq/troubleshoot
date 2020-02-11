@@ -95,7 +95,8 @@ func analyzeDistribution(analyzer *troubleshootv1beta1.Distribution, getCollecte
 	}
 
 	result := &AnalyzeResult{
-		Title: "Kubernetes Distribution",
+		Title:   "Kubernetes Distribution",
+		IconKey: "kubernetes_distribution",
 	}
 
 	// ordering is important for passthrough

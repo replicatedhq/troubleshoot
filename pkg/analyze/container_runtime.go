@@ -27,7 +27,8 @@ func analyzeContainerRuntime(analyzer *troubleshootv1beta1.ContainerRuntime, get
 	}
 
 	result := &AnalyzeResult{
-		Title: "Container Runtime",
+		Title:   "Container Runtime",
+		IconKey: "kubernetes_container_runtime",
 	}
 
 	// ordering is important for passthrough
