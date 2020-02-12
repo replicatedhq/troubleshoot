@@ -18,6 +18,7 @@ type providers struct {
 	digitalOcean  bool
 	openShift     bool
 	kurl          bool
+	aks           bool
 }
 
 type Provider int
@@ -31,6 +32,7 @@ const (
 	digitalOcean  Provider = iota
 	openShift     Provider = iota
 	kurl          Provider = iota
+	aks           Provider = iota
 )
 
 func analyzeDistribution(analyzer *troubleshootv1beta1.Distribution, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
@@ -56,6 +58,9 @@ func analyzeDistribution(analyzer *troubleshootv1beta1.Distribution, getCollecte
 			}
 			if k == "node-role.kubernetes.io/master" {
 				foundMaster = true
+			}
+			if k == "kubernetes.azure.com/role" {
+				foundProviders.aks = true
 			}
 		}
 
@@ -207,6 +212,8 @@ func compareDistributionConditionalToActual(conditional string, actual providers
 		isMatch = actual.openShift
 	case kurl:
 		isMatch = actual.kurl
+	case aks:
+		isMatch = actual.aks
 	}
 
 	switch parts[0] {
@@ -235,6 +242,8 @@ func mustNormalizeDistributionName(raw string) Provider {
 		return openShift
 	case "kurl":
 		return kurl
+	case "aks":
+		return aks
 	}
 
 	return unknown
