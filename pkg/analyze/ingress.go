@@ -25,7 +25,8 @@ func analyzeIngress(analyzer *troubleshootv1beta1.Ingress, getCollectedFileConte
 	}
 
 	result := AnalyzeResult{
-		Title: title,
+		Title:   title,
+		IconKey: "kubernetes_ingress",
 	}
 
 	for _, ingress := range ingresses {

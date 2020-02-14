@@ -43,7 +43,8 @@ func analyzeNodeResources(analyzer *troubleshootv1beta1.NodeResources, getCollec
 	}
 
 	result := &AnalyzeResult{
-		Title: title,
+		Title:   title,
+		IconKey: "kubernetes_node_resources",
 	}
 
 	for _, outcome := range analyzer.Outcomes {

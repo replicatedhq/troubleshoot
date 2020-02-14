@@ -25,6 +25,7 @@ func analyzeImagePullSecret(analyzer *troubleshootv1beta1.ImagePullSecret, getCh
 
 	result := AnalyzeResult{
 		Title:   analyzer.CheckName,
+		IconKey: "kubernetes_image_pull_secret",
 		IsFail:  true,
 		Message: failOutcome.Fail.Message,
 		URI:     failOutcome.Fail.URI,
