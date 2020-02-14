@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"crypto/tls"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -23,9 +24,21 @@ import (
 	"github.com/replicatedhq/troubleshoot/pkg/collect"
 )
 
+var (
+	httpClient *http.Client
+)
+
 func runTroubleshoot(v *viper.Viper, arg string) error {
 	fmt.Print(cursor.Hide())
 	defer fmt.Print(cursor.Show())
+
+	if v.GetBool("allow-insecure-connections") {
+		httpClient = &http.Client{Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		}}
+	} else {
+		httpClient = http.DefaultClient
+	}
 
 	collectorContent := ""
 	if !isURL(arg) {
@@ -45,7 +58,7 @@ func runTroubleshoot(v *viper.Viper, arg string) error {
 			return errors.Wrap(err, "make request")
 		}
 		req.Header.Set("User-Agent", "Replicated_Troubleshoot/v1beta1")
-		resp, err := http.DefaultClient.Do(req)
+		resp, err := httpClient.Do(req)
 		if err != nil {
 			return errors.Wrap(err, "execute request")
 		}
@@ -120,12 +133,15 @@ the %s Admin Console to begin analysis.`
 	for _, ac := range collector.Spec.AfterCollection {
 		if ac.UploadResultsTo != nil {
 			if err := uploadSupportBundle(ac.UploadResultsTo, archivePath); err != nil {
-				return errors.Wrap(err, "upload support bundle")
+				c := color.New(color.FgHiRed)
+				c.Printf("%s\r * Failed to upload support bundle: %v\n", cursor.ClearEntireLine(), err)
+			} else {
+				fileUploaded = true
 			}
-			fileUploaded = true
 		} else if ac.Callback != nil {
 			if err := callbackSupportBundleAPI(ac.Callback, archivePath); err != nil {
-				return errors.Wrap(err, "execute callback")
+				c := color.New(color.FgHiRed)
+				c.Printf("%s\r * Failed to notify API that support bundle has been uploaded: %v\n", cursor.ClearEntireLine(), err)
 			}
 		}
 	}
@@ -299,7 +315,7 @@ func uploadSupportBundle(r *troubleshootv1beta1.ResultRequest, archivePath strin
 		req.Header.Set("Content-Type", contentType)
 	}
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return errors.Wrap(err, "execute request")
 	}
@@ -325,7 +341,7 @@ func callbackSupportBundleAPI(r *troubleshootv1beta1.ResultRequest, archivePath 
 		return errors.Wrap(err, "create request")
 	}
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := httpClient.Do(req)
 	if err != nil {
 		return errors.Wrap(err, "execute request")
 	}
