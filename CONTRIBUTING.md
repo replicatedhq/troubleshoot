@@ -1,6 +1,6 @@
 # Development Environment Setup
 
-1. Ensure that you have `go` installed
+1. Ensure that you have `go` installed (>=1.12)
 2. Ensure that your PATH is set to include the GOPATH in your `.bashrc` file. For example: 
 ```
 export GOPATH=/home/username/go
