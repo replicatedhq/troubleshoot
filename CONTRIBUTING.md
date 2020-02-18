@@ -10,7 +10,7 @@ export PATH="${KREW_ROOT:-$HOME/.krew}/bin:$GOPATH:$PATH"
 # Testing Troubleshoot Locally
 
 1. Run `make support-bundle` and `make ffi`
-2. Copy `./bin/support-bundle` to `kotsamd/operator` folder
+2. Copy `./bin/support-bundle` to `kotsadm/operator` folder
 3. In docker.skaffold, uncomment # COPY ./troubleshoot.so /lib/troubleshoot.so
 4. In docker.skaffold, uncomment # COPY ./support-bundle /root/.krew/bin/kubectl-support_bundle
 
