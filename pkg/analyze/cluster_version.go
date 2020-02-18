@@ -43,6 +43,7 @@ func analyzeClusterVersionResult(k8sVersion semver.Version, outcomes []*troubles
 		result := AnalyzeResult{
 			Title:   title,
 			IconKey: "kubernetes_cluster_version",
+			IconURI: "https://troubleshoot.sh/images/analyzer-icons/kubernetes.svg?w=16&h=16",
 		}
 
 		if outcome.Fail != nil {

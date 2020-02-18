@@ -26,6 +26,7 @@ func analyzeImagePullSecret(analyzer *troubleshootv1beta1.ImagePullSecret, getCh
 	result := AnalyzeResult{
 		Title:   analyzer.CheckName,
 		IconKey: "kubernetes_image_pull_secret",
+		IconURI: "https://troubleshoot.sh/images/analyzer-icons/image-pull-secret.svg?w=16&h=14",
 		IsFail:  true,
 		Message: failOutcome.Fail.Message,
 		URI:     failOutcome.Fail.URI,

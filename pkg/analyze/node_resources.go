@@ -45,6 +45,7 @@ func analyzeNodeResources(analyzer *troubleshootv1beta1.NodeResources, getCollec
 	result := &AnalyzeResult{
 		Title:   title,
 		IconKey: "kubernetes_node_resources",
+		IconURI: "https://troubleshoot.sh/images/analyzer-icons/node-resources.svg?w=16&h=18",
 	}
 
 	for _, outcome := range analyzer.Outcomes {

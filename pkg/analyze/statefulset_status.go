@@ -33,10 +33,11 @@ func analyzeStatefulsetStatus(analyzer *troubleshootv1beta1.StatefulsetStatus, g
 		return &AnalyzeResult{
 			Title:   fmt.Sprintf("%s Statefulset Status", analyzer.Name),
 			IconKey: "kubernetes_statefulset_status",
+			IconURI: "https://troubleshoot.sh/images/analyzer-icons/statefulset-status.svg?w=23&h=14",
 			IsFail:  true,
 			Message: fmt.Sprintf("The statefulset %q was not found", analyzer.Name),
 		}, nil
 	}
 
-	return commonStatus(analyzer.Outcomes, fmt.Sprintf("%s Status", analyzer.Name), "kubernetes_statefulset_status", int(status.ReadyReplicas))
+	return commonStatus(analyzer.Outcomes, fmt.Sprintf("%s Status", analyzer.Name), "kubernetes_statefulset_status", "https://troubleshoot.sh/images/analyzer-icons/statefulset-status.svg?w=23&h=14", int(status.ReadyReplicas))
 }

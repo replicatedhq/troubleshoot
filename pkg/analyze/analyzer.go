@@ -14,6 +14,7 @@ type AnalyzeResult struct {
 	Message string
 	URI     string
 	IconKey string
+	IconURI string
 }
 
 type getCollectedFileContents func(string) ([]byte, error)

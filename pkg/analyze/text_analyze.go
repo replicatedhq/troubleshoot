@@ -33,6 +33,7 @@ func analyzeTextAnalyze(analyzer *troubleshootv1beta1.TextAnalyze, getCollectedF
 	return &AnalyzeResult{
 		Title:   analyzer.CheckName,
 		IconKey: "kubernetes_text_analyze",
+		IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg",
 		IsFail:  true,
 		Message: "Invalid analyzer",
 	}, nil
@@ -66,6 +67,7 @@ func analyzeRegexPattern(pattern string, collected []byte, outcomes []*troublesh
 	return &AnalyzeResult{
 		Title:   checkName,
 		IconKey: "kubernetes_text_analyze",
+		IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg",
 		IsFail:  true,
 		Message: failOutcome.Fail.Message,
 		URI:     failOutcome.Fail.URI,
@@ -83,6 +85,7 @@ func analyzeRegexGroups(pattern string, collected []byte, outcomes []*troublesho
 	result := &AnalyzeResult{
 		Title:   checkName,
 		IconKey: "kubernetes_text_analyze",
+		IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg?w=13&h=16",
 	}
 
 	foundMatches := map[string]string{}
