@@ -27,6 +27,7 @@ func analyzeStorageClass(analyzer *troubleshootv1beta1.StorageClass, getCollecte
 	result := AnalyzeResult{
 		Title:   title,
 		IconKey: "kubernetes_storage_class",
+		IconURI: "https://troubleshoot.sh/images/analyzer-icons/storage-class.svg?w=12&h=12",
 	}
 
 	for _, storageClass := range storageClasses {

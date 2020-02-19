@@ -27,6 +27,7 @@ func analyzeIngress(analyzer *troubleshootv1beta1.Ingress, getCollectedFileConte
 	result := AnalyzeResult{
 		Title:   title,
 		IconKey: "kubernetes_ingress",
+		IconURI: "https://troubleshoot.sh/images/analyzer-icons/ingress-controller.svg?w=20&h=13",
 	}
 
 	for _, ingress := range ingresses {

@@ -74,6 +74,7 @@ func FromAnalyzerResult(input []*analyze.AnalyzeResult) []*Result {
 				Labels: map[string]string{
 					"desiredPosition": "1",
 					"iconKey":         i.IconKey,
+					"iconUri":         i.IconURI,
 				},
 			},
 			Insight: &Insight{
@@ -81,6 +82,7 @@ func FromAnalyzerResult(input []*analyze.AnalyzeResult) []*Result {
 					Name: name,
 					Labels: map[string]string{
 						"iconKey": i.IconKey,
+						"iconUri": i.IconURI,
 					},
 				},
 				Primary: i.Title,

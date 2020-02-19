@@ -27,6 +27,7 @@ func analyzeSecret(analyzer *troubleshootv1beta1.AnalyzeSecret, getCollectedFile
 	result := AnalyzeResult{
 		Title:   title,
 		IconKey: "kubernetes_analyze_secret",
+		IconURI: "https://troubleshoot.sh/images/analyzer-icons/secret.svg?w=13&h=16",
 	}
 
 	var failOutcome *troubleshootv1beta1.Outcome

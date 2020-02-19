@@ -8,10 +8,11 @@ import (
 	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
 )
 
-func commonStatus(outcomes []*troubleshootv1beta1.Outcome, title, iconKey string, readyReplicas int) (*AnalyzeResult, error) {
+func commonStatus(outcomes []*troubleshootv1beta1.Outcome, title, iconKey string, iconURI string, readyReplicas int) (*AnalyzeResult, error) {
 	result := &AnalyzeResult{
 		Title:   title,
 		IconKey: iconKey,
+		IconURI: iconURI,
 	}
 
 	// ordering from the spec is important, the first one that matches returns

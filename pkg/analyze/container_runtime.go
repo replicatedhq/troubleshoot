@@ -29,6 +29,7 @@ func analyzeContainerRuntime(analyzer *troubleshootv1beta1.ContainerRuntime, get
 	result := &AnalyzeResult{
 		Title:   "Container Runtime",
 		IconKey: "kubernetes_container_runtime",
+		IconURI: "https://troubleshoot.sh/images/analyzer-icons/container-runtime.svg?w=23&h=16",
 	}
 
 	// ordering is important for passthrough

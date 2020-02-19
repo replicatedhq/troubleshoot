@@ -102,6 +102,7 @@ func analyzeDistribution(analyzer *troubleshootv1beta1.Distribution, getCollecte
 	result := &AnalyzeResult{
 		Title:   "Kubernetes Distribution",
 		IconKey: "kubernetes_distribution",
+		IconURI: "https://troubleshoot.sh/images/analyzer-icons/distribution.svg?w=20&h=14",
 	}
 
 	// ordering is important for passthrough
