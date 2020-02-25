@@ -41,6 +41,8 @@ func Test_deploymentStatus(t *testing.T) {
 				IsFail:  false,
 				Title:   "kotsadm-api Status",
 				Message: "pass",
+				IconKey: "kubernetes_deployment_status",
+				IconURI: "https://troubleshoot.sh/images/analyzer-icons/deployment-status.svg?w=17&h=17",
 			},
 			files: map[string][]byte{
 				"cluster-resources/deployments/default.json": []byte(collectedDeployments),
@@ -71,6 +73,8 @@ func Test_deploymentStatus(t *testing.T) {
 				IsFail:  true,
 				Title:   "kotsadm-api Status",
 				Message: "fail",
+				IconKey: "kubernetes_deployment_status",
+				IconURI: "https://troubleshoot.sh/images/analyzer-icons/deployment-status.svg?w=17&h=17",
 			},
 			files: map[string][]byte{
 				"cluster-resources/deployments/default.json": []byte(collectedDeployments),
@@ -107,6 +111,8 @@ func Test_deploymentStatus(t *testing.T) {
 				IsFail:  false,
 				Title:   "kotsadm-api Status",
 				Message: "warn",
+				IconKey: "kubernetes_deployment_status",
+				IconURI: "https://troubleshoot.sh/images/analyzer-icons/deployment-status.svg?w=17&h=17",
 			},
 			files: map[string][]byte{
 				"cluster-resources/deployments/default.json": []byte(collectedDeployments),

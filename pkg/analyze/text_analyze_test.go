@@ -72,6 +72,8 @@ func Test_textAnalyze(t *testing.T) {
 				IsFail:  true,
 				Title:   "text-collector-2",
 				Message: "fail",
+				IconKey: "kubernetes_text_analyze",
+				IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg",
 			},
 			files: map[string][]byte{
 				"text-collector-2/cfile-2.txt": []byte(""),
@@ -102,6 +104,8 @@ func Test_textAnalyze(t *testing.T) {
 				IsFail:  true,
 				Title:   "",
 				Message: "Invalid analyzer",
+				IconKey: "kubernetes_text_analyze",
+				IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg",
 			},
 			files: map[string][]byte{
 				"text-collector-3/cfile-3.txt": []byte("Connection to service succeeded"),
@@ -162,6 +166,8 @@ func Test_textAnalyze(t *testing.T) {
 				IsFail:  true,
 				Title:   "text-collector-4",
 				Message: "fail",
+				IconKey: "kubernetes_text_analyze",
+				IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg",
 			},
 			files: map[string][]byte{
 				"text-collector-4/cfile-4.txt": []byte("A different message"),
@@ -192,6 +198,8 @@ func Test_textAnalyze(t *testing.T) {
 				IsFail:  true,
 				Title:   "text-collector-6",
 				Message: "fail",
+				IconKey: "kubernetes_text_analyze",
+				IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg",
 			},
 			files: map[string][]byte{
 				"text-collector-6/cfile-6.txt": []byte("A different message"),
