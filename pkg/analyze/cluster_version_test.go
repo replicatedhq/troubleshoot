@@ -55,6 +55,8 @@ func Test_analyzeClusterVersionResult(t *testing.T) {
 				Title:   "Check Fail",
 				Message: "Sentry requires at Kubernetes 1.13.0 or later, and recommends 1.15.0.",
 				URI:     "https://www.kubernetes.io",
+				IconKey: "kubernetes_cluster_version",
+				IconURI: "https://troubleshoot.sh/images/analyzer-icons/kubernetes.svg?w=16&h=16",
 			},
 		},
 		{
@@ -69,6 +71,8 @@ func Test_analyzeClusterVersionResult(t *testing.T) {
 				Title:   "Check Warn",
 				Message: "Your cluster meets the minimum version of Kubernetes, but we recommend you update to 1.15.0 or later.",
 				URI:     "https://www.kubernetes.io",
+				IconKey: "kubernetes_cluster_version",
+				IconURI: "https://troubleshoot.sh/images/analyzer-icons/kubernetes.svg?w=16&h=16",
 			},
 		},
 		{
@@ -82,6 +86,8 @@ func Test_analyzeClusterVersionResult(t *testing.T) {
 				IsPass:  true,
 				Title:   "Check Pass",
 				Message: "Your cluster meets the recommended and required versions of Kubernetes.",
+				IconKey: "kubernetes_cluster_version",
+				IconURI: "https://troubleshoot.sh/images/analyzer-icons/kubernetes.svg?w=16&h=16",
 			},
 		},
 	}

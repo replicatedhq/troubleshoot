@@ -99,6 +99,8 @@ func Test_containerRuntime(t *testing.T) {
 				IsFail:  true,
 				Title:   "Container Runtime",
 				Message: "containerd detected",
+				IconKey: "kubernetes_container_runtime",
+				IconURI: "https://troubleshoot.sh/images/analyzer-icons/container-runtime.svg?w=23&h=16",
 			},
 			files: map[string][]byte{
 				"cluster-resources/nodes.json": []byte(collectedNodes),
