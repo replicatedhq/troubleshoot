@@ -10,10 +10,13 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	cursor "github.com/ahmetalpbalkan/go-cursor"
 	"github.com/fatih/color"
+	"github.com/manifoldco/promptui"
+	"github.com/mattn/go-isatty"
 	"github.com/mholt/archiver"
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
@@ -32,7 +35,7 @@ func runTroubleshoot(v *viper.Viper, arg string) error {
 	fmt.Print(cursor.Hide())
 	defer fmt.Print(cursor.Show())
 
-	if v.GetBool("allow-insecure-connections") {
+	if v.GetBool("allow-insecure-connections") || v.GetBool("insecure-skip-tls-verify") {
 		httpClient = &http.Client{Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 		}}
@@ -40,40 +43,13 @@ func runTroubleshoot(v *viper.Viper, arg string) error {
 		httpClient = http.DefaultClient
 	}
 
-	collectorContent := ""
-	if !isURL(arg) {
-		if _, err := os.Stat(arg); os.IsNotExist(err) {
-			return fmt.Errorf("%s was not found", arg)
-		}
-
-		b, err := ioutil.ReadFile(arg)
-		if err != nil {
-			return errors.Wrap(err, "read spec file")
-		}
-
-		collectorContent = string(b)
-	} else {
-		req, err := http.NewRequest("GET", arg, nil)
-		if err != nil {
-			return errors.Wrap(err, "make request")
-		}
-		req.Header.Set("User-Agent", "Replicated_Troubleshoot/v1beta1")
-		resp, err := httpClient.Do(req)
-		if err != nil {
-			return errors.Wrap(err, "execute request")
-		}
-		defer resp.Body.Close()
-
-		body, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			return errors.Wrap(err, "read responce body")
-		}
-
-		collectorContent = string(body)
+	collectorContent, err := loadSpec(v, arg)
+	if err != nil {
+		return errors.Wrap(err, "failed to load collector spec")
 	}
 
 	collector := troubleshootv1beta1.Collector{}
-	if err := yaml.Unmarshal([]byte(collectorContent), &collector); err != nil {
+	if err := yaml.Unmarshal(collectorContent, &collector); err != nil {
 		return errors.Wrapf(err, "failed to parse %s collectors", arg)
 	}
 
@@ -154,6 +130,65 @@ the %s Admin Console to begin analysis.`
 		fmt.Printf("A support bundle has been created in the current directory named %q\n", archivePath)
 	}
 	return nil
+}
+
+func loadSpec(v *viper.Viper, arg string) ([]byte, error) {
+	if !isURL(arg) {
+		if _, err := os.Stat(arg); os.IsNotExist(err) {
+			return nil, fmt.Errorf("%s was not found", arg)
+		}
+
+		b, err := ioutil.ReadFile(arg)
+		if err != nil {
+			return nil, errors.Wrap(err, "read spec file")
+		}
+
+		return b, nil
+	}
+
+	for {
+		req, err := http.NewRequest("GET", arg, nil)
+		if err != nil {
+			return nil, errors.Wrap(err, "make request")
+		}
+		req.Header.Set("User-Agent", "Replicated_Troubleshoot/v1beta1")
+		req.Header.Set("Bundle-Upload-Host", fmt.Sprintf("%s://%s", req.URL.Scheme, req.URL.Host))
+		resp, err := httpClient.Do(req)
+		if err != nil {
+			if strings.Contains(err.Error(), "x509") && httpClient == http.DefaultClient && canTryInsecure(v) {
+				httpClient = &http.Client{Transport: &http.Transport{
+					TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+				}}
+				continue
+			}
+			return nil, errors.Wrap(err, "execute request")
+		}
+		defer resp.Body.Close()
+
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return nil, errors.Wrap(err, "read responce body")
+		}
+
+		return body, nil
+	}
+}
+
+func canTryInsecure(v *viper.Viper) bool {
+	if !isatty.IsTerminal(os.Stdout.Fd()) {
+		return false
+	}
+	prompt := promptui.Prompt{
+		Label:     "Connection appears to be insecure. Would you like to attempt to create a support bundle anyway?",
+		IsConfirm: true,
+	}
+
+	_, err := prompt.Run()
+	if err != nil {
+		return false
+	}
+
+	return true
 }
 
 func runCollectors(v *viper.Viper, collector troubleshootv1beta1.Collector, progressChan chan interface{}) (string, error) {
