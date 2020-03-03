@@ -44,7 +44,10 @@ from a server that can be used to assist when troubleshooting a server.`,
 	cmd.Flags().String("pullpolicy", "", "the pull policy of the collector image")
 	cmd.Flags().Bool("redact", true, "enable/disable default redactions")
 	cmd.Flags().Bool("collect-without-permissions", false, "always run troubleshoot collectors even if some require permissions that troubleshoot does not have")
+
+	// hidden in favor of the `insecure-skip-tls-verify` flag
 	cmd.Flags().Bool("allow-insecure-connections", false, "don't verify TLS certs when retrieving spec and reporting results")
+	cmd.Flags().MarkHidden("allow-insecure-connections")
 
 	cmd.Flags().String("serviceaccount", "", "name of the service account to use. if not provided, one will be created")
 	viper.BindPFlags(cmd.Flags())

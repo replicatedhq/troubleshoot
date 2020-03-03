@@ -18,6 +18,8 @@ require (
 	github.com/hashicorp/go-getter v1.3.1-0.20190627223108-da0323b9545e
 	github.com/hashicorp/go-multierror v1.0.0
 	github.com/imdario/mergo v0.3.7 // indirect
+	github.com/manifoldco/promptui v0.3.2
+	github.com/mattn/go-isatty v0.0.8
 	github.com/mholt/archiver v3.1.1+incompatible
 	github.com/mitchellh/go-wordwrap v1.0.0 // indirect
 	github.com/nwaples/rardecode v1.0.0 // indirect
