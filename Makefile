@@ -70,6 +70,15 @@ generate: controller-gen client-gen
 	controller-gen object:headerFile=./hack/boilerplate.go.txt paths=./pkg/apis/...
 	client-gen --output-package=github.com/replicatedhq/troubleshoot/pkg/client --clientset-name troubleshootclientset --input-base github.com/replicatedhq/troubleshoot/pkg/apis --input troubleshoot/v1beta1 -h ./hack/boilerplate.go.txt
 
+.PHONY: openapischema
+openapischema: controller-gen
+	controller-gen crd +output:dir=./config/crds  paths=./pkg/apis/troubleshoot/v1beta1
+
+.PHONY: schemas
+schemas: fmt vet openapischema
+	go build ${LDFLAGS} -o bin/schemagen github.com/replicatedhq/troubleshoot/cmd/schemagen
+	./bin/schemagen --output-dir ./schemas
+
 # find or download controller-gen
 # download controller-gen if necessary
 controller-gen:

@@ -1,0 +1,386 @@
+{
+  "description": "Collector is the Schema for the collectors API",
+  "type": "object",
+  "properties": {
+    "apiVersion": {
+      "description": "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources",
+      "type": "string"
+    },
+    "kind": {
+      "description": "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
+      "type": "string"
+    },
+    "metadata": {
+      "type": "object"
+    },
+    "spec": {
+      "description": "CollectorSpec defines the desired state of Collector",
+      "type": "object",
+      "properties": {
+        "afterCollection": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "callback": {
+                "type": "object",
+                "required": [
+                  "method",
+                  "uri"
+                ],
+                "properties": {
+                  "method": {
+                    "type": "string"
+                  },
+                  "uri": {
+                    "type": "string"
+                  }
+                }
+              },
+              "uploadResultsTo": {
+                "type": "object",
+                "required": [
+                  "method",
+                  "uri"
+                ],
+                "properties": {
+                  "method": {
+                    "type": "string"
+                  },
+                  "uri": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "collectors": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "clusterInfo": {
+                "type": "object",
+                "properties": {
+                  "collectorName": {
+                    "type": "string"
+                  },
+                  "exclude": {
+                    "type": "boolean"
+                  }
+                }
+              },
+              "clusterResources": {
+                "type": "object",
+                "properties": {
+                  "collectorName": {
+                    "type": "string"
+                  },
+                  "exclude": {
+                    "type": "boolean"
+                  }
+                }
+              },
+              "copy": {
+                "type": "object",
+                "required": [
+                  "containerPath",
+                  "namespace",
+                  "selector"
+                ],
+                "properties": {
+                  "collectorName": {
+                    "type": "string"
+                  },
+                  "containerName": {
+                    "type": "string"
+                  },
+                  "containerPath": {
+                    "type": "string"
+                  },
+                  "exclude": {
+                    "type": "boolean"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "namespace": {
+                    "type": "string"
+                  },
+                  "selector": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "data": {
+                "type": "object",
+                "required": [
+                  "data"
+                ],
+                "properties": {
+                  "collectorName": {
+                    "type": "string"
+                  },
+                  "data": {
+                    "type": "string"
+                  },
+                  "exclude": {
+                    "type": "boolean"
+                  },
+                  "name": {
+                    "type": "string"
+                  }
+                }
+              },
+              "exec": {
+                "type": "object",
+                "required": [
+                  "namespace",
+                  "selector"
+                ],
+                "properties": {
+                  "args": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "collectorName": {
+                    "type": "string"
+                  },
+                  "command": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "containerName": {
+                    "type": "string"
+                  },
+                  "exclude": {
+                    "type": "boolean"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "namespace": {
+                    "type": "string"
+                  },
+                  "selector": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "timeout": {
+                    "type": "string"
+                  }
+                }
+              },
+              "http": {
+                "type": "object",
+                "properties": {
+                  "collectorName": {
+                    "type": "string"
+                  },
+                  "exclude": {
+                    "type": "boolean"
+                  },
+                  "get": {
+                    "type": "object",
+                    "required": [
+                      "url"
+                    ],
+                    "properties": {
+                      "headers": {
+                        "type": "object",
+                        "additionalProperties": {
+                          "type": "string"
+                        }
+                      },
+                      "insecureSkipVerify": {
+                        "type": "boolean"
+                      },
+                      "url": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "post": {
+                    "type": "object",
+                    "required": [
+                      "url"
+                    ],
+                    "properties": {
+                      "body": {
+                        "type": "string"
+                      },
+                      "headers": {
+                        "type": "object",
+                        "additionalProperties": {
+                          "type": "string"
+                        }
+                      },
+                      "insecureSkipVerify": {
+                        "type": "boolean"
+                      },
+                      "url": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "put": {
+                    "type": "object",
+                    "required": [
+                      "url"
+                    ],
+                    "properties": {
+                      "body": {
+                        "type": "string"
+                      },
+                      "headers": {
+                        "type": "object",
+                        "additionalProperties": {
+                          "type": "string"
+                        }
+                      },
+                      "insecureSkipVerify": {
+                        "type": "boolean"
+                      },
+                      "url": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              },
+              "logs": {
+                "type": "object",
+                "required": [
+                  "selector"
+                ],
+                "properties": {
+                  "collectorName": {
+                    "type": "string"
+                  },
+                  "containerNames": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "exclude": {
+                    "type": "boolean"
+                  },
+                  "limits": {
+                    "type": "object",
+                    "properties": {
+                      "maxAge": {
+                        "type": "string"
+                      },
+                      "maxLines": {
+                        "type": "integer",
+                        "format": "int64"
+                      }
+                    }
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "namespace": {
+                    "type": "string"
+                  },
+                  "selector": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "run": {
+                "type": "object",
+                "required": [
+                  "image",
+                  "namespace"
+                ],
+                "properties": {
+                  "args": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "collectorName": {
+                    "type": "string"
+                  },
+                  "command": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "exclude": {
+                    "type": "boolean"
+                  },
+                  "image": {
+                    "type": "string"
+                  },
+                  "imagePullPolicy": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "namespace": {
+                    "type": "string"
+                  },
+                  "timeout": {
+                    "type": "string"
+                  }
+                }
+              },
+              "secret": {
+                "type": "object",
+                "required": [
+                  "name"
+                ],
+                "properties": {
+                  "collectorName": {
+                    "type": "string"
+                  },
+                  "exclude": {
+                    "type": "boolean"
+                  },
+                  "includeValue": {
+                    "type": "boolean"
+                  },
+                  "key": {
+                    "type": "string"
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "namespace": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "status": {
+      "description": "CollectorStatus defines the observed state of Collector",
+      "type": "object"
+    }
+  }
+}

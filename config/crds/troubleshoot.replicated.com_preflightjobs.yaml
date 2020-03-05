@@ -1,0 +1,120 @@
+
+---
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.2.4
+  creationTimestamp: null
+  name: preflightjobs.troubleshoot.replicated.com
+spec:
+  group: troubleshoot.replicated.com
+  names:
+    kind: PreflightJob
+    listKind: PreflightJobList
+    plural: preflightjobs
+    singular: preflightjob
+  scope: Namespaced
+  subresources:
+    status: {}
+  validation:
+    openAPIV3Schema:
+      description: PreflightJob is the Schema for the preflightjobs API
+      properties:
+        apiVersion:
+          description: 'APIVersion defines the versioned schema of this representation
+            of an object. Servers should convert recognized schemas to the latest
+            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+          type: string
+        kind:
+          description: 'Kind is a string value representing the REST resource this
+            object represents. Servers may infer this from the endpoint the client
+            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+          type: string
+        metadata:
+          type: object
+        spec:
+          description: PreflightJobSpec defines the desired state of PreflightJob
+          properties:
+            collectorImage:
+              type: string
+            collectorImagePullPolicy:
+              type: string
+            imagePullPolicy:
+              type: string
+            preflight:
+              properties:
+                name:
+                  type: string
+                namespace:
+                  type: string
+              required:
+              - name
+              type: object
+            preflightImage:
+              type: string
+          required:
+          - preflight
+          type: object
+        status:
+          description: PreflightJobStatus defines the observed state of PreflightJob
+          properties:
+            analyzersFailed:
+              items:
+                type: string
+              type: array
+            analyzersRunning:
+              items:
+                type: string
+              type: array
+            analyzersSuccessful:
+              items:
+                type: string
+              type: array
+            collectorsFailed:
+              items:
+                type: string
+              type: array
+            collectorsRunning:
+              items:
+                type: string
+              type: array
+            collectorsSuccessful:
+              items:
+                type: string
+              type: array
+            isAnalyzersComplete:
+              type: boolean
+            isServerReady:
+              type: boolean
+            serverPodName:
+              type: string
+            serverPodNamespace:
+              type: string
+            serverPodPort:
+              type: integer
+          required:
+          - analyzersFailed
+          - analyzersRunning
+          - analyzersSuccessful
+          - collectorsFailed
+          - collectorsRunning
+          - collectorsSuccessful
+          - isAnalyzersComplete
+          - isServerReady
+          - serverPodName
+          - serverPodNamespace
+          - serverPodPort
+          type: object
+      type: object
+  version: v1beta1
+  versions:
+  - name: v1beta1
+    served: true
+    storage: true
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []
