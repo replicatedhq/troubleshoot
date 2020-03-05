@@ -1,7 +1,10 @@
 package collect
 
 import (
+	"strconv"
+
 	"github.com/pkg/errors"
+	"github.com/replicatedhq/kots/kotskinds/multitype"
 	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
 	"gopkg.in/yaml.v2"
 	authorizationv1 "k8s.io/api/authorization/v1"
@@ -25,57 +28,106 @@ type Context struct {
 	Namespace    string
 }
 
+func isExcluded(excludeVal multitype.BoolOrString) (bool, error) {
+	if excludeVal.Type == multitype.Bool {
+		return excludeVal.BoolVal, nil
+	}
+
+	parsed, err := strconv.ParseBool(excludeVal.StrVal)
+	if err != nil {
+		return false, errors.Wrap(err, "failed to parse bool string")
+	}
+
+	return parsed, nil
+}
+
 func (c *Collector) RunCollectorSync() ([]byte, error) {
 	if c.Collect.ClusterInfo != nil {
-		if c.Collect.ClusterInfo.Exclude {
+		isExcluded, err := isExcluded(c.Collect.ClusterInfo.Exclude)
+		if err != nil {
+			return nil, err
+		}
+		if isExcluded {
 			return nil, nil
 		}
 		return ClusterInfo(c.GetContext())
 	}
 	if c.Collect.ClusterResources != nil {
-		if c.Collect.ClusterResources.Exclude {
+		isExcluded, err := isExcluded(c.Collect.ClusterResources.Exclude)
+		if err != nil {
+			return nil, err
+		}
+		if isExcluded {
 			return nil, nil
 		}
 		return ClusterResources(c.GetContext())
 	}
 	if c.Collect.Secret != nil {
-		if c.Collect.Secret.Exclude {
+		isExcluded, err := isExcluded(c.Collect.Secret.Exclude)
+		if err != nil {
+			return nil, err
+		}
+		if isExcluded {
 			return nil, nil
 		}
 		return Secret(c.GetContext(), c.Collect.Secret)
 	}
 	if c.Collect.Logs != nil {
-		if c.Collect.Logs.Exclude {
+		isExcluded, err := isExcluded(c.Collect.Logs.Exclude)
+		if err != nil {
+			return nil, err
+		}
+		if isExcluded {
 			return nil, nil
 		}
 		return Logs(c.GetContext(), c.Collect.Logs)
 	}
 	if c.Collect.Run != nil {
-		if c.Collect.Run.Exclude {
+		isExcluded, err := isExcluded(c.Collect.ClusterInfo.Exclude)
+		if err != nil {
+			return nil, err
+		}
+		if isExcluded {
 			return nil, nil
 		}
 		return Run(c.GetContext(), c.Collect.Run)
 	}
 	if c.Collect.Exec != nil {
-		if c.Collect.Exec.Exclude {
+		isExcluded, err := isExcluded(c.Collect.Exec.Exclude)
+		if err != nil {
+			return nil, err
+		}
+		if isExcluded {
 			return nil, nil
 		}
 		return Exec(c.GetContext(), c.Collect.Exec)
 	}
 	if c.Collect.Data != nil {
-		if c.Collect.Data.Exclude {
+		isExcluded, err := isExcluded(c.Collect.Data.Exclude)
+		if err != nil {
+			return nil, err
+		}
+		if isExcluded {
 			return nil, nil
 		}
 		return Data(c.GetContext(), c.Collect.Data)
 	}
 	if c.Collect.Copy != nil {
-		if c.Collect.Copy.Exclude {
+		isExcluded, err := isExcluded(c.Collect.Copy.Exclude)
+		if err != nil {
+			return nil, err
+		}
+		if isExcluded {
 			return nil, nil
 		}
 		return Copy(c.GetContext(), c.Collect.Copy)
 	}
 	if c.Collect.HTTP != nil {
-		if c.Collect.HTTP.Exclude {
+		isExcluded, err := isExcluded(c.Collect.HTTP.Exclude)
+		if err != nil {
+			return nil, err
+		}
+		if isExcluded {
 			return nil, nil
 		}
 		return HTTP(c.GetContext(), c.Collect.HTTP)

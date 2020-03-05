@@ -1,5 +1,9 @@
 package v1beta1
 
+import (
+	"github.com/replicatedhq/kots/kotskinds/multitype"
+)
+
 type SingleOutcome struct {
 	When    string `json:"when,omitempty" yaml:"when,omitempty"`
 	Message string `json:"message,omitempty" yaml:"message,omitempty"`
@@ -101,8 +105,8 @@ type TextAnalyze struct {
 }
 
 type AnalyzeMeta struct {
-	CheckName string `json:"checkName,omitempty" yaml:"checkName,omitempty"`
-	Exclude   bool   `json:"exclude,omitempty" yaml:"exclude,omitempty"`
+	CheckName string                 `json:"checkName,omitempty" yaml:"checkName,omitempty"`
+	Exclude   multitype.BoolOrString `json:"exclude,omitempty" yaml:"exclude,omitempty"`
 }
 
 type Analyze struct {

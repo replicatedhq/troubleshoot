@@ -4,13 +4,14 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/replicatedhq/kots/kotskinds/multitype"
 	authorizationv1 "k8s.io/api/authorization/v1"
 )
 
 type CollectorMeta struct {
 	CollectorName string `json:"collectorName,omitempty" yaml:"collectorName,omitempty"`
 	// +optional
-	Exclude bool `json:"exclude,omitmempty" yaml:"exclude,omitempty"`
+	Exclude multitype.BoolOrString `json:"exclude,omitmempty" yaml:"exclude,omitempty"`
 }
 
 type ClusterInfo struct {
