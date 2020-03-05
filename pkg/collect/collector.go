@@ -83,7 +83,7 @@ func (c *Collector) RunCollectorSync() ([]byte, error) {
 		return Logs(c.GetContext(), c.Collect.Logs)
 	}
 	if c.Collect.Run != nil {
-		isExcluded, err := isExcluded(c.Collect.ClusterInfo.Exclude)
+		isExcluded, err := isExcluded(c.Collect.Run.Exclude)
 		if err != nil {
 			return nil, err
 		}
