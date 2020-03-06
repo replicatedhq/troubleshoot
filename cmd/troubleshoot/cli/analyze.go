@@ -17,10 +17,10 @@ import (
 
 func Analyze() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "analyze [url-or-file]",
+		Use:   "analyze [url]",
 		Args:  cobra.MinimumNArgs(1),
 		Short: "analyze a support bundle",
-		Long:  `Used to analyze an already downloaded support-bundle`,
+		Long:  `Analyze a support bundle using the Analyzer definitions provided`,
 		PreRun: func(cmd *cobra.Command, args []string) {
 			viper.BindPFlag("bundle", cmd.Flags().Lookup("bundle"))
 			viper.BindPFlag("output", cmd.Flags().Lookup("output"))
@@ -69,7 +69,7 @@ func Analyze() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().String("bundle", "", "Filename of the support bundle to analyze")
+	cmd.Flags().String("bundle", "", "filename of the support bundle to analyze")
 	cmd.MarkFlagRequired("bundle")
 	cmd.Flags().String("output", "", "output format: json, yaml")
 	cmd.Flags().String("compatibility", "", "output compatibility mode: support-bundle")

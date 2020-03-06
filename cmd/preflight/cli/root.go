@@ -16,7 +16,7 @@ var (
 
 func RootCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "preflight [url-or-file]",
+		Use:   "preflight [url]",
 		Args:  cobra.MinimumNArgs(1),
 		Short: "Run and retrieve preflight checks in a cluster",
 		Long: `A preflight check is a set of validations that can and should be run to ensure
