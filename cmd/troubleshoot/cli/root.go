@@ -17,7 +17,7 @@ var (
 
 func RootCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "troubleshoot [url]",
+		Use:   "troubleshoot [url-or-file]",
 		Args:  cobra.MinimumNArgs(1),
 		Short: "Generate and manage support bundles",
 		Long: `A support bundle is an archive of files, output, metrics and state

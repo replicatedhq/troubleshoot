@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"net/http"
+	"os"
 
 	analyzer "github.com/replicatedhq/troubleshoot/pkg/analyze"
 	"github.com/replicatedhq/troubleshoot/pkg/convert"
@@ -15,12 +17,12 @@ import (
 
 func Analyze() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "analyze",
+		Use:   "analyze [url-or-file]",
+		Args:  cobra.MinimumNArgs(1),
 		Short: "analyze a support bundle",
-		Long:  `...`,
+		Long:  `Used to analyze an already downloaded support-bundle`,
 		PreRun: func(cmd *cobra.Command, args []string) {
 			viper.BindPFlag("bundle", cmd.Flags().Lookup("bundle"))
-			viper.BindPFlag("spec", cmd.Flags().Lookup("spec"))
 			viper.BindPFlag("output", cmd.Flags().Lookup("output"))
 			viper.BindPFlag("quiet", cmd.Flags().Lookup("quiet"))
 		},
@@ -29,17 +31,13 @@ func Analyze() *cobra.Command {
 
 			logger.SetQuiet(v.GetBool("quiet"))
 
-			filename := v.GetString("spec")
-			var analyzersSpec string
-			if len(filename) > 0 {
-				out, err := ioutil.ReadFile(filename)
-				if err != nil {
-					return err
-				}
-				analyzersSpec = string(out)
+			specPath := args[0]
+			analyzerSpec, err := downloadAnalyzerSpec(specPath)
+			if err != nil {
+				return err
 			}
 
-			result, err := analyzer.DownloadAndAnalyze(v.GetString("bundle"), analyzersSpec)
+			result, err := analyzer.DownloadAndAnalyze(v.GetString("bundle"), analyzerSpec)
 			if err != nil {
 				return err
 			}
@@ -73,8 +71,6 @@ func Analyze() *cobra.Command {
 
 	cmd.Flags().String("bundle", "", "Filename of the support bundle to analyze")
 	cmd.MarkFlagRequired("bundle")
-
-	cmd.Flags().String("spec", "", "Filename of the analyze yaml spec")
 	cmd.Flags().String("output", "", "output format: json, yaml")
 	cmd.Flags().String("compatibility", "", "output compatibility mode: support-bundle")
 	cmd.Flags().MarkHidden("compatibility")
@@ -83,4 +79,39 @@ func Analyze() *cobra.Command {
 	viper.BindPFlags(cmd.Flags())
 
 	return cmd
+}
+
+func downloadAnalyzerSpec(specPath string) (string, error) {
+	specContent := ""
+	if !isURL(specPath) {
+		if _, err := os.Stat(specPath); os.IsNotExist(err) {
+			return "", fmt.Errorf("%s was not found", specPath)
+		}
+
+		b, err := ioutil.ReadFile(specPath)
+		if err != nil {
+			return "", err
+		}
+
+		specContent = string(b)
+	} else {
+		req, err := http.NewRequest("GET", specPath, nil)
+		if err != nil {
+			return "", err
+		}
+		req.Header.Set("User-Agent", "Replicated_Analyzer/v1beta1")
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			return "", err
+		}
+		defer resp.Body.Close()
+
+		body, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return "", err
+		}
+
+		specContent = string(body)
+	}
+	return specContent, nil
 }
