@@ -21,7 +21,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
 	spin "github.com/tj/go-spin"
-	"gopkg.in/yaml.v2"
 
 	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
 	"github.com/replicatedhq/troubleshoot/pkg/collect"
@@ -49,7 +48,7 @@ func runTroubleshoot(v *viper.Viper, arg string) error {
 	}
 
 	collector := troubleshootv1beta1.Collector{}
-	if err := yaml.Unmarshal(collectorContent, &collector); err != nil {
+	if err := json.Unmarshal(collectorContent, &collector); err != nil {
 		return errors.Wrapf(err, "failed to parse %s collectors", arg)
 	}
 

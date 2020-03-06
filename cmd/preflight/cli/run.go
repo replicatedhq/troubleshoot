@@ -19,7 +19,6 @@ import (
 	"github.com/replicatedhq/troubleshoot/pkg/collect"
 	"github.com/spf13/viper"
 	spin "github.com/tj/go-spin"
-	"gopkg.in/yaml.v2"
 )
 
 func runPreflights(v *viper.Viper, arg string) error {
@@ -59,7 +58,7 @@ func runPreflights(v *viper.Viper, arg string) error {
 	}
 
 	preflight := troubleshootv1beta1.Preflight{}
-	if err := yaml.Unmarshal([]byte(preflightContent), &preflight); err != nil {
+	if err := json.Unmarshal([]byte(preflightContent), &preflight); err != nil {
 		return errors.Wrapf(err, "failed to parse %s as a preflight", arg)
 	}
 

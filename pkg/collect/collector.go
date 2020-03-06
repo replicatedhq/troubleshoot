@@ -1,12 +1,12 @@
 package collect
 
 import (
+	"encoding/json"
 	"strconv"
 
 	"github.com/pkg/errors"
 	"github.com/replicatedhq/kots/kotskinds/multitype"
 	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
-	"gopkg.in/yaml.v2"
 	authorizationv1 "k8s.io/api/authorization/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -194,7 +194,7 @@ func (cs Collectors) CheckRBAC() error {
 func ParseSpec(specContents string) (*troubleshootv1beta1.Collect, error) {
 	collect := troubleshootv1beta1.Collect{}
 
-	if err := yaml.Unmarshal([]byte(specContents), &collect); err != nil {
+	if err := json.Unmarshal([]byte(specContents), &collect); err != nil {
 		return nil, err
 	}
 

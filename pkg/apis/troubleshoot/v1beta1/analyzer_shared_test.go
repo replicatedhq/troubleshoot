@@ -1,12 +1,12 @@
 package v1beta1
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.undefinedlabs.com/scopeagent"
-	"gopkg.in/yaml.v2"
 )
 
 func TestAnalyze_Unmarshal(t *testing.T) {
@@ -49,7 +49,7 @@ func TestAnalyze_Unmarshal(t *testing.T) {
 			req := require.New(t)
 
 			a := Analyze{}
-			err := yaml.Unmarshal([]byte(test.spec), &a)
+			err := json.Unmarshal([]byte(test.spec), &a)
 			req.NoError(err)
 
 			assert.Equal(t, test.expectObject, a)
