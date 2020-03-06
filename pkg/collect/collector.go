@@ -1,7 +1,6 @@
 package collect
 
 import (
-	"encoding/json"
 	"strconv"
 
 	"github.com/pkg/errors"
@@ -189,14 +188,4 @@ func (cs Collectors) CheckRBAC() error {
 		}
 	}
 	return nil
-}
-
-func ParseSpec(specContents string) (*troubleshootv1beta1.Collect, error) {
-	collect := troubleshootv1beta1.Collect{}
-
-	if err := json.Unmarshal([]byte(specContents), &collect); err != nil {
-		return nil, err
-	}
-
-	return &collect, nil
 }
