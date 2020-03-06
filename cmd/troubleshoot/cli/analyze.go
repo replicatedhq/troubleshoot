@@ -3,6 +3,7 @@ package cli
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 
 	analyzer "github.com/replicatedhq/troubleshoot/pkg/analyze"
 	"github.com/replicatedhq/troubleshoot/pkg/convert"
@@ -18,7 +19,8 @@ func Analyze() *cobra.Command {
 		Short: "analyze a support bundle",
 		Long:  `...`,
 		PreRun: func(cmd *cobra.Command, args []string) {
-			viper.BindPFlag("url", cmd.Flags().Lookup("url"))
+			viper.BindPFlag("bundle", cmd.Flags().Lookup("bundle"))
+			viper.BindPFlag("spec", cmd.Flags().Lookup("spec"))
 			viper.BindPFlag("output", cmd.Flags().Lookup("output"))
 			viper.BindPFlag("quiet", cmd.Flags().Lookup("quiet"))
 		},
@@ -27,7 +29,17 @@ func Analyze() *cobra.Command {
 
 			logger.SetQuiet(v.GetBool("quiet"))
 
-			result, err := analyzer.DownloadAndAnalyze(v.GetString("url"), "")
+			filename := v.GetString("spec")
+			var analyzersSpec string
+			if len(filename) > 0 {
+				out, err := ioutil.ReadFile(filename)
+				if err != nil {
+					return err
+				}
+				analyzersSpec = string(out)
+			}
+
+			result, err := analyzer.DownloadAndAnalyze(v.GetString("bundle"), analyzersSpec)
 			if err != nil {
 				return err
 			}
@@ -59,8 +71,10 @@ func Analyze() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().String("url", "", "URL of the support bundle to analyze")
-	cmd.MarkFlagRequired("url")
+	cmd.Flags().String("bundle", "", "Filename of the support bundle to analyze")
+	cmd.MarkFlagRequired("bundle")
+
+	cmd.Flags().String("spec", "", "Filename of the analyze yaml spec")
 	cmd.Flags().String("output", "", "output format: json, yaml")
 	cmd.Flags().String("compatibility", "", "output compatibility mode: support-bundle")
 	cmd.Flags().MarkHidden("compatibility")
