@@ -210,6 +210,7 @@ func runCollectors(v *viper.Viper, collector troubleshootv1beta1.Collector, prog
 	collectSpecs = append(collectSpecs, collector.Spec.Collectors...)
 	collectSpecs = ensureCollectorInList(collectSpecs, troubleshootv1beta1.Collect{ClusterInfo: &troubleshootv1beta1.ClusterInfo{}})
 	collectSpecs = ensureCollectorInList(collectSpecs, troubleshootv1beta1.Collect{ClusterResources: &troubleshootv1beta1.ClusterResources{}})
+	collectSpecs = ensureCollectorInList(collectSpecs, troubleshootv1beta1.Collect{Rook: &troubleshootv1beta1.Rook{}})
 
 	config, err := KubernetesConfigFlags.ToRESTConfig()
 	if err != nil {

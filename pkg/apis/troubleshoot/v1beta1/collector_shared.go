@@ -22,6 +22,10 @@ type ClusterResources struct {
 	CollectorMeta `json:",inline" yaml:",inline"`
 }
 
+type Rook struct {
+	CollectorMeta `json:",inline" yaml:",inline"`
+}
+
 type Secret struct {
 	CollectorMeta `json:",inline" yaml:",inline"`
 	SecretName    string `json:"name" yaml:"name"`
@@ -112,6 +116,7 @@ type Put struct {
 type Collect struct {
 	ClusterInfo      *ClusterInfo      `json:"clusterInfo,omitempty" yaml:"clusterInfo,omitempty"`
 	ClusterResources *ClusterResources `json:"clusterResources,omitempty" yaml:"clusterResources,omitempty"`
+	Rook             *Rook             `json:"rook,omitempty" yaml:"rook,omitempty"`
 	Secret           *Secret           `json:"secret,omitempty" yaml:"secret,omitempty"`
 	Logs             *Logs             `json:"logs,omitempty" yaml:"logs,omitempty"`
 	Run              *Run              `json:"run,omitempty" yaml:"run,omitempty"`
@@ -290,6 +295,9 @@ func (c *Collect) GetName() string {
 	}
 	if c.ClusterResources != nil {
 		collector = "cluster-resources"
+	}
+	if c.Rook != nil {
+		collector = "rook"
 	}
 	if c.Secret != nil {
 		collector = "secret"

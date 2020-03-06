@@ -79,6 +79,9 @@ func ensureCollectorInList(list []*troubleshootv1beta1.Collect, collector troubl
 		if collector.ClusterInfo != nil && inList.ClusterInfo != nil {
 			return list
 		}
+		if collector.Rook != nil && inList.Rook != nil {
+			return list
+		}
 	}
 
 	return append(list, &collector)

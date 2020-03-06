@@ -104,6 +104,16 @@ type TextAnalyze struct {
 	Outcomes      []*Outcome `json:"outcomes" yaml:"outcomes"`
 }
 
+type RookStatus struct {
+	AnalyzeMeta `json:",inline" yaml:",inline"`
+	Outcomes    []*Outcome   `json:"outcomes" yaml:"outcomes"`
+	Filters     *RookFilters `json:"filters,omitempty" yaml:"filters,omitempty"`
+}
+
+type RookFilters struct {
+	Status string `json:"status,omitempty" yaml:"status,omitempty"`
+}
+
 type AnalyzeMeta struct {
 	CheckName string                 `json:"checkName,omitempty" yaml:"checkName,omitempty"`
 	Exclude   multitype.BoolOrString `json:"exclude,omitempty" yaml:"exclude,omitempty"`
@@ -121,5 +131,6 @@ type Analyze struct {
 	ContainerRuntime         *ContainerRuntime         `json:"containerRuntime,omitempty" yaml:"containerRuntime,omitempty"`
 	Distribution             *Distribution             `json:"distribution,omitempty" yaml:"distribution,omitempty"`
 	NodeResources            *NodeResources            `json:"nodeResources,omitempty" yaml:"nodeResources,omitempty"`
+	RookStatus               *RookStatus               `json:"rookStatus,omitempty" yaml:"rookStatus,omitempty"`
 	TextAnalyze              *TextAnalyze              `json:"textAnalyze,omitempty" yaml:"textAnalyze,omitempty"`
 }

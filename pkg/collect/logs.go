@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -82,21 +81,6 @@ func Logs(ctx *Context, logsCollector *troubleshootv1beta1.Logs) ([]byte, error)
 	}
 
 	return b, nil
-}
-
-func listPodsInSelectors(client *kubernetes.Clientset, namespace string, selector []string) ([]corev1.Pod, []string) {
-	serializedLabelSelector := strings.Join(selector, ",")
-
-	listOptions := metav1.ListOptions{
-		LabelSelector: serializedLabelSelector,
-	}
-
-	pods, err := client.CoreV1().Pods(namespace).List(listOptions)
-	if err != nil {
-		return nil, []string{err.Error()}
-	}
-
-	return pods.Items, nil
 }
 
 func getPodLogs(client *kubernetes.Clientset, pod corev1.Pod, name, container string, limits *troubleshootv1beta1.LogLimits, follow bool) (map[string][]byte, error) {

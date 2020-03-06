@@ -157,6 +157,9 @@ func Analyze(analyzer *troubleshootv1beta1.Analyze, getFile getCollectedFileCont
 		}
 		return analyzeTextAnalyze(analyzer.TextAnalyze, getFile)
 	}
+	if analyzer.RookStatus != nil {
+		return analyzeRook(analyzer.RookStatus, getFile)
+	}
 
 	return nil, errors.New("invalid analyzer")
 }

@@ -61,6 +61,16 @@ func (c *Collector) RunCollectorSync() ([]byte, error) {
 		}
 		return ClusterResources(c.GetContext())
 	}
+	if c.Collect.Rook != nil {
+		isExcluded, err := isExcluded(c.Collect.Rook.Exclude)
+		if err != nil {
+			return nil, err
+		}
+		if isExcluded {
+			return nil, nil
+		}
+		return Rook(c.GetContext())
+	}
 	if c.Collect.Secret != nil {
 		isExcluded, err := isExcluded(c.Collect.Secret.Exclude)
 		if err != nil {

@@ -8,6 +8,9 @@ import (
 	"strings"
 
 	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 )
 
 func DeterministicIDForCollector(collector *troubleshootv1beta1.Collect) string {
@@ -90,4 +93,19 @@ func marshalNonNil(obj interface{}) ([]byte, error) {
 	}
 
 	return json.MarshalIndent(obj, "", "  ")
+}
+
+func listPodsInSelectors(client *kubernetes.Clientset, namespace string, selector []string) ([]corev1.Pod, []string) {
+	serializedLabelSelector := strings.Join(selector, ",")
+
+	listOptions := metav1.ListOptions{
+		LabelSelector: serializedLabelSelector,
+	}
+
+	pods, err := client.CoreV1().Pods(namespace).List(listOptions)
+	if err != nil {
+		return nil, []string{err.Error()}
+	}
+
+	return pods.Items, nil
 }
