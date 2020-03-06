@@ -16,9 +16,11 @@ import (
 	"github.com/pkg/errors"
 	analyzerunner "github.com/replicatedhq/troubleshoot/pkg/analyze"
 	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
+	troubleshootclientsetscheme "github.com/replicatedhq/troubleshoot/pkg/client/troubleshootclientset/scheme"
 	"github.com/replicatedhq/troubleshoot/pkg/collect"
 	"github.com/spf13/viper"
 	spin "github.com/tj/go-spin"
+	"k8s.io/client-go/kubernetes/scheme"
 )
 
 func runPreflights(v *viper.Viper, arg string) error {
@@ -57,10 +59,14 @@ func runPreflights(v *viper.Viper, arg string) error {
 		preflightContent = string(body)
 	}
 
-	preflight := troubleshootv1beta1.Preflight{}
-	if err := json.Unmarshal([]byte(preflightContent), &preflight); err != nil {
-		return errors.Wrapf(err, "failed to parse %s as a preflight", arg)
+	troubleshootclientsetscheme.AddToScheme(scheme.Scheme)
+	decode := scheme.Codecs.UniversalDeserializer().Decode
+	obj, _, err := decode([]byte(preflightContent), nil, nil)
+	if err != nil {
+		return errors.Wrapf(err, "failed to parse %s", arg)
 	}
+
+	preflight := obj.(*troubleshootv1beta1.Preflight)
 
 	s := spin.New()
 	finishedCh := make(chan bool, 1)
@@ -92,7 +98,7 @@ func runPreflights(v *viper.Viper, arg string) error {
 		close(finishedCh)
 	}()
 
-	allCollectedData, err := runCollectors(v, preflight, progressChan)
+	allCollectedData, err := runCollectors(v, *preflight, progressChan)
 	if err != nil {
 		return err
 	}

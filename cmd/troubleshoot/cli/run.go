@@ -19,11 +19,12 @@ import (
 	"github.com/mattn/go-isatty"
 	"github.com/mholt/archiver"
 	"github.com/pkg/errors"
+	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
+	"github.com/replicatedhq/troubleshoot/pkg/client/troubleshootclientset/scheme"
+	troubleshootclientsetscheme "github.com/replicatedhq/troubleshoot/pkg/client/troubleshootclientset/scheme"
+	"github.com/replicatedhq/troubleshoot/pkg/collect"
 	"github.com/spf13/viper"
 	spin "github.com/tj/go-spin"
-
-	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
-	"github.com/replicatedhq/troubleshoot/pkg/collect"
 )
 
 var (
@@ -47,10 +48,14 @@ func runTroubleshoot(v *viper.Viper, arg string) error {
 		return errors.Wrap(err, "failed to load collector spec")
 	}
 
-	collector := troubleshootv1beta1.Collector{}
-	if err := json.Unmarshal(collectorContent, &collector); err != nil {
-		return errors.Wrapf(err, "failed to parse %s collectors", arg)
+	troubleshootclientsetscheme.AddToScheme(scheme.Scheme)
+	decode := scheme.Codecs.UniversalDeserializer().Decode
+	obj, _, err := decode([]byte(collectorContent), nil, nil)
+	if err != nil {
+		return errors.Wrapf(err, "failed to parse %s", arg)
 	}
+
+	collector := obj.(*troubleshootv1beta1.Collector)
 
 	s := spin.New()
 	finishedCh := make(chan bool, 1)
@@ -83,7 +88,7 @@ func runTroubleshoot(v *viper.Viper, arg string) error {
 		close(finishedCh)
 	}()
 
-	archivePath, err := runCollectors(v, collector, progressChan)
+	archivePath, err := runCollectors(v, *collector, progressChan)
 	if err != nil {
 		return errors.Wrap(err, "run collectors")
 	}
