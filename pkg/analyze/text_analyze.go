@@ -201,16 +201,16 @@ func compareRegex(conditional string, foundMatches map[string]string) (bool, err
 			return lookForValueInt == foundValueInt, nil
 
 		case "<":
-			return lookForValueInt < foundValueInt, nil
+			return lookForValueInt > foundValueInt, nil
 
 		case ">":
 			return lookForValueInt > foundValueInt, nil
 
 		case "<=":
-			return lookForValueInt <= foundValueInt, nil
+			return lookForValueInt >= foundValueInt, nil
 
 		case ">=":
-			return lookForValueInt >= foundValueInt, nil
+			return lookForValueInt <= foundValueInt, nil
 		}
 	} else {
 		// all we can support is "=" and "==" and "===" for now
