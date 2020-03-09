@@ -243,7 +243,7 @@ func Test_compareRegex(t *testing.T) {
 				"Received":    "4",
 				"Loss":        "20",
 			},
-			expected: true,
+			expected: false,
 		},
 		{
 			name:        "Hostname = icecream",
@@ -261,7 +261,7 @@ func Test_compareRegex(t *testing.T) {
 				"day": "5",
 				"Day": "24",
 			},
-			expected: false,
+			expected: true,
 		},
 	}
 	for _, test := range tests {
