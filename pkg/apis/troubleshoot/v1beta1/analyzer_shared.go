@@ -1,7 +1,7 @@
 package v1beta1
 
 import (
-	"github.com/replicatedhq/kots/kotskinds/multitype"
+	"github.com/replicatedhq/troubleshoot/pkg/multitype"
 )
 
 type SingleOutcome struct {
