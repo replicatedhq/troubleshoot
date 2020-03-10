@@ -89,7 +89,12 @@ func Rook(ctx *Context, rookCollector *troubleshootv1beta1.Rook) ([]byte, error)
 
 	rookOutput := make(map[string][]byte)
 	if len(pods) > 0 {
-		container := pods[0].Spec.Containers[0].Name
+		pod, err := findAvailablePod(pods)
+		if err != nil {
+			return nil, err
+		}
+
+		container := pod.Spec.Containers[0].Name
 		if rookCollector.ContainerName != "" {
 			container = rookCollector.ContainerName
 		}
@@ -98,9 +103,7 @@ func Rook(ctx *Context, rookCollector *troubleshootv1beta1.Rook) ([]byte, error)
 			errCh := make(chan error, 1)
 			resultCh := make(chan CmdResult, 1)
 			go func() {
-				// TODO: find pod with 'Running' status, for now use first pod in the array
-				// Handles case where multiple pods which match select, i.e. one pod terminating
-				stdout, stderr, err := execPodCmd(ctx, client, pods[0], container, c.Cmd, c.Args)
+				stdout, stderr, err := execPodCmd(ctx, client, pod, container, c.Cmd, c.Args)
 				if err != nil {
 					errCh <- err
 				} else {

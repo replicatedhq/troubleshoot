@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/pkg/errors"
 	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -113,7 +114,16 @@ func listPodsInSelectors(client *kubernetes.Clientset, namespace string, selecto
 	return pods.Items, nil
 }
 
-func execPodCmd(ctx *Context, client *kubernetes.Clientset, pod corev1.Pod, container string, cmd, args []string) ([]byte, []byte, error) {
+func findAvailablePod(pods []corev1.Pod) (*corev1.Pod, error) {
+	for _, pod := range pods {
+		if pod.Status.Phase == corev1.PodRunning {
+			return &pod, nil
+		}
+	}
+	return &corev1.Pod{}, errors.New("No running pods found")
+}
+
+func execPodCmd(ctx *Context, client *kubernetes.Clientset, pod *corev1.Pod, container string, cmd, args []string) ([]byte, []byte, error) {
 	req := client.CoreV1().RESTClient().Post().
 		Resource("pods").
 		Name(pod.Name).
