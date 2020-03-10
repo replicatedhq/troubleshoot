@@ -69,7 +69,7 @@ func (c *Collector) RunCollectorSync() ([]byte, error) {
 		if isExcluded {
 			return nil, nil
 		}
-		return Rook(c.GetContext())
+		return Rook(c.GetContext(), c.Collect.Rook)
 	}
 	if c.Collect.Secret != nil {
 		isExcluded, err := isExcluded(c.Collect.Secret.Exclude)

@@ -24,6 +24,9 @@ type ClusterResources struct {
 
 type Rook struct {
 	CollectorMeta `json:",inline" yaml:",inline"`
+	Namespace     string   `json:"namespace,omitempty" yaml:"namespace,omitempty"`
+	Selector      []string `json:"selector" yaml:"selector"`
+	ContainerName string   `json:"containerName,omitempty" yaml:"containerName,omitempty"`
 }
 
 type Secret struct {
