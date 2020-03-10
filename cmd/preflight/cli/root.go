@@ -4,7 +4,6 @@ import (
 	"os"
 	"strings"
 
-	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
@@ -63,17 +62,4 @@ func InitAndExecute() {
 func initConfig() {
 	viper.SetEnvPrefix("PREFLIGHT")
 	viper.AutomaticEnv()
-}
-
-func ensureCollectorInList(list []*troubleshootv1beta1.Collect, collector troubleshootv1beta1.Collect) []*troubleshootv1beta1.Collect {
-	for _, inList := range list {
-		if collector.ClusterResources != nil && inList.ClusterResources != nil {
-			return list
-		}
-		if collector.ClusterInfo != nil && inList.ClusterInfo != nil {
-			return list
-		}
-	}
-
-	return append(list, &collector)
 }
