@@ -98,7 +98,7 @@ func runPreflights(v *viper.Viper, arg string) error {
 		close(finishedCh)
 	}()
 
-	allCollectedData, err := runCollectors(v, *preflight, progressChan)
+	allCollectedData, err := RunCollectors(v, *preflight, progressChan)
 	if err != nil {
 		return err
 	}
@@ -157,7 +157,7 @@ func runPreflights(v *viper.Viper, arg string) error {
 	return showStdoutResults(v.GetString("format"), preflight.Name, analyzeResults)
 }
 
-func runCollectors(v *viper.Viper, preflight troubleshootv1beta1.Preflight, progressChan chan interface{}) (map[string][]byte, error) {
+func RunCollectors(v *viper.Viper, preflight troubleshootv1beta1.Preflight, progressChan chan interface{}) (map[string][]byte, error) {
 	collectSpecs := make([]*troubleshootv1beta1.Collect, 0, 0)
 	collectSpecs = append(collectSpecs, preflight.Spec.Collectors...)
 	collectSpecs = ensureCollectorInList(collectSpecs, troubleshootv1beta1.Collect{ClusterInfo: &troubleshootv1beta1.ClusterInfo{}})
