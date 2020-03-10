@@ -87,7 +87,7 @@ func compareRookStatusToActual(conditional string, getRookCollection func(string
 
 	parts := strings.Fields(strings.TrimSpace(conditional))
 	if len(parts) != 3 {
-		return false, errors.New("unable to parse nodeResources conditional")
+		return false, errors.New("unable to parse rookAnalyzer conditional")
 	}
 
 	check := parts[0]
