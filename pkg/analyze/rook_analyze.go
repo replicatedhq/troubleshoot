@@ -30,7 +30,6 @@ func analyzeRook(analyzer *troubleshootv1beta1.RookStatus, getRookCollection fun
 
 	result := &AnalyzeResult{
 		Title:   title,
-		IconKey: "", // TODO: we'll eventually remove the IconKey
 		IconURI: "https://troubleshoot.sh/images/analyzer-icons/rook.svg?w=11&h=16",
 	}
 
