@@ -4,8 +4,8 @@ import (
 	"strconv"
 
 	"github.com/pkg/errors"
-	"github.com/replicatedhq/kots/kotskinds/multitype"
 	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
+	"github.com/replicatedhq/troubleshoot/pkg/multitype"
 	authorizationv1 "k8s.io/api/authorization/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"

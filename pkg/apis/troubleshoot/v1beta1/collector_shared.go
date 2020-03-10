@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/replicatedhq/kots/kotskinds/multitype"
+	"github.com/replicatedhq/troubleshoot/pkg/multitype"
 	authorizationv1 "k8s.io/api/authorization/v1"
 )
 
