@@ -93,7 +93,9 @@ func ParseNodesForProviders(nodes []corev1.Node) (providers, string) {
 	if foundMaster {
 		// eks does not have masters within the node list
 		foundProviders.eks = false
-		stringProvider = ""
+		if stringProvider == "eks" {
+			stringProvider = ""
+		}
 	}
 
 	return foundProviders, stringProvider
