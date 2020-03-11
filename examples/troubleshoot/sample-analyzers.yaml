@@ -7,11 +7,14 @@ spec:
     - distribution:
         outcomes:
           - fail:
-              when: "= docker desktop"
+              when: "= dockerdesktop"
               message: "docker for desktop is not allowed"
+          # - fail:
+          #     when: "microk8s"
+          #     message: "mickrk8s is not prod"
           - fail:
-              when: "microk8s"
-              message: "mickrk8s is not prod"
+              when: "!= openshift"
+              message: "this should fail on anything other than openshift"
           - warn:
               when: "!= eks"
               message: "YMMV on not eks"
