@@ -2,6 +2,7 @@ package analyzer
 
 import (
 	"encoding/json"
+	"fmt"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -35,6 +36,71 @@ const (
 	aks           Provider = iota
 )
 
+func CheckOpenShift(foundProviders *providers, apiResources []*metav1.APIResourceList, provider string) string {
+	for _, resource := range apiResources {
+		if strings.Contains(resource.GroupVersion, "openshift") {
+			foundProviders.openShift = true
+			return "openShift"
+		}
+	}
+
+	return provider
+}
+
+func ParseNodesForProviders(nodes []corev1.Node) (providers, string) {
+	foundProviders := providers{}
+	foundMaster := false
+	stringProvider := ""
+
+	for _, node := range nodes {
+		for k, v := range node.ObjectMeta.Labels {
+
+			if k == "kurl.sh/cluster" && v == "true" {
+				foundProviders.kurl = true
+				stringProvider = "kurl"
+			} else if k == "microk8s.io/cluster" && v == "true" {
+				foundProviders.microk8s = true
+				stringProvider = "microk8s"
+			}
+			if k == "node-role.kubernetes.io/master" {
+				foundMaster = true
+			}
+			if k == "kubernetes.azure.com/role" {
+				foundProviders.aks = true
+				stringProvider = "aks"
+			}
+		}
+
+		if node.Status.NodeInfo.OSImage == "Docker Desktop" {
+			foundProviders.dockerDesktop = true
+			stringProvider = "dockerDesktop"
+		}
+
+		if strings.HasPrefix(node.Spec.ProviderID, "digitalocean:") {
+			foundProviders.digitalOcean = true
+			stringProvider = "digitalOcean"
+		}
+		if strings.HasPrefix(node.Spec.ProviderID, "aws:") {
+			foundProviders.eks = true
+			stringProvider = "eks"
+		}
+		if strings.HasPrefix(node.Spec.ProviderID, "gce:") {
+			foundProviders.gke = true
+			stringProvider = "gke"
+		}
+	}
+
+	if foundMaster {
+		// eks does not have masters within the node list
+		foundProviders.eks = false
+		if stringProvider == "eks" {
+			stringProvider = ""
+		}
+	}
+
+	return foundProviders, stringProvider
+}
+
 func analyzeDistribution(analyzer *troubleshootv1beta1.Distribution, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
 	collected, err := getCollectedFileContents("cluster-resources/nodes.json")
 	if err != nil {
@@ -46,43 +112,7 @@ func analyzeDistribution(analyzer *troubleshootv1beta1.Distribution, getCollecte
 		return nil, errors.Wrap(err, "failed to unmarshal node list")
 	}
 
-	foundProviders := providers{}
-	foundMaster := false
-
-	for _, node := range nodes {
-		for k, v := range node.ObjectMeta.Labels {
-			if k == "microk8s.io/cluster" && v == "true" {
-				foundProviders.microk8s = true
-			} else if k == "kurl.sh/cluster" && v == "true" {
-				foundProviders.kurl = true
-			}
-			if k == "node-role.kubernetes.io/master" {
-				foundMaster = true
-			}
-			if k == "kubernetes.azure.com/role" {
-				foundProviders.aks = true
-			}
-		}
-
-		if node.Status.NodeInfo.OSImage == "Docker Desktop" {
-			foundProviders.dockerDesktop = true
-		}
-
-		if strings.HasPrefix(node.Spec.ProviderID, "digitalocean:") {
-			foundProviders.digitalOcean = true
-		}
-		if strings.HasPrefix(node.Spec.ProviderID, "aws:") {
-			foundProviders.eks = true
-		}
-		if strings.HasPrefix(node.Spec.ProviderID, "gce:") {
-			foundProviders.gke = true
-		}
-	}
-
-	if foundMaster {
-		// eks does not have masters within the node list
-		foundProviders.eks = false
-	}
+	foundProviders, _ := ParseNodesForProviders(nodes)
 
 	apiResourcesBytes, err := getCollectedFileContents("cluster-resources/resources.json")
 	// if the file is not found, that is not a fatal error
@@ -92,11 +122,7 @@ func analyzeDistribution(analyzer *troubleshootv1beta1.Distribution, getCollecte
 		if err := json.Unmarshal(apiResourcesBytes, &apiResources); err != nil {
 			return nil, errors.Wrap(err, "failed to unmarshal api resource list")
 		}
-		for _, resource := range apiResources {
-			if strings.Contains(resource.GroupVersion, "openshift") {
-				foundProviders.openShift = true
-			}
-		}
+		_ = CheckOpenShift(&foundProviders, apiResources, "")
 	}
 
 	result := &AnalyzeResult{
@@ -189,7 +215,8 @@ func compareDistributionConditionalToActual(conditional string, actual providers
 	}
 
 	if len(parts) != 2 {
-		return false, errors.New("unable to parse conditional")
+		return false, fmt.Errorf("unable to parse conditional %v\n", parts)
+		// return false, errors.New("unable to parse conditional")
 	}
 
 	normalizedName := mustNormalizeDistributionName(parts[1])
