@@ -215,8 +215,7 @@ func compareDistributionConditionalToActual(conditional string, actual providers
 	}
 
 	if len(parts) != 2 {
-		return false, fmt.Errorf("unable to parse conditional %v\n", parts)
-		// return false, errors.New("unable to parse conditional")
+		return false, errors.New("unable to parse conditional")
 	}
 
 	normalizedName := mustNormalizeDistributionName(parts[1])
