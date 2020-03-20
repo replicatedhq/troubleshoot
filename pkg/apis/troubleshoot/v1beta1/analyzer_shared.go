@@ -53,7 +53,6 @@ type ImagePullSecret struct {
 	Outcomes     []*Outcome `json:"outcomes" yaml:"outcomes"`
 	RegistryName string     `json:"registryName" yaml:"registryName"`
 }
-
 type DeploymentStatus struct {
 	AnalyzeMeta `json:",inline" yaml:",inline"`
 	Outcomes    []*Outcome `json:"outcomes" yaml:"outcomes"`
@@ -104,6 +103,13 @@ type TextAnalyze struct {
 	Outcomes      []*Outcome `json:"outcomes" yaml:"outcomes"`
 }
 
+type PostgresAnalyze struct {
+	AnalyzeMeta   `json:",inline" yaml:",inline"`
+	Outcomes      []*Outcome `json:"outcomes" yaml:"outcomes"`
+	CollectorName string     `json:"collectorName" yaml:"collectorName"`
+	FileName      string     `json:"fileName,omitempty" yaml:"fileName,omitempty"`
+}
+
 type AnalyzeMeta struct {
 	CheckName string                 `json:"checkName,omitempty" yaml:"checkName,omitempty"`
 	Exclude   multitype.BoolOrString `json:"exclude,omitempty" yaml:"exclude,omitempty"`
@@ -122,4 +128,5 @@ type Analyze struct {
 	Distribution             *Distribution             `json:"distribution,omitempty" yaml:"distribution,omitempty"`
 	NodeResources            *NodeResources            `json:"nodeResources,omitempty" yaml:"nodeResources,omitempty"`
 	TextAnalyze              *TextAnalyze              `json:"textAnalyze,omitempty" yaml:"textAnalyze,omitempty"`
+	PostgresAnalyze          *PostgresAnalyze          `json:"postgres,omitempty" yaml:"postgres,omitempty"`
 }

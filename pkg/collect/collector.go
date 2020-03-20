@@ -131,6 +131,16 @@ func (c *Collector) RunCollectorSync() ([]byte, error) {
 		}
 		return HTTP(c.GetContext(), c.Collect.HTTP)
 	}
+	if c.Collect.Postgres != nil {
+		isExcluded, err := isExcluded(c.Collect.Postgres.Exclude)
+		if err != nil {
+			return nil, err
+		}
+		if isExcluded {
+			return nil, nil
+		}
+		return Postgres(c.GetContext(), c.Collect.Postgres)
+	}
 
 	return nil, errors.New("no spec found to run")
 }

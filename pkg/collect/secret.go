@@ -17,6 +17,7 @@ type FoundSecret struct {
 	KeyExists    bool   `json:"keyExists"`
 	Value        string `json:"value,omitempty"`
 }
+
 type SecretOutput struct {
 	FoundSecret map[string][]byte `json:"secrets/,omitempty"`
 	Errors      map[string][]byte `json:"secrets-errors/,omitempty"`

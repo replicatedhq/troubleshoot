@@ -157,6 +157,16 @@ func Analyze(analyzer *troubleshootv1beta1.Analyze, getFile getCollectedFileCont
 		}
 		return analyzeTextAnalyze(analyzer.TextAnalyze, getFile)
 	}
+	if analyzer.PostgresAnalyze != nil {
+		isExcluded, err := isExcluded(analyzer.PostgresAnalyze.Exclude)
+		if err != nil {
+			return nil, err
+		}
+		if isExcluded {
+			return nil, nil
+		}
+		return analyzePostgresAnalyze(analyzer.PostgresAnalyze, getFile)
+	}
 
 	return nil, errors.New("invalid analyzer")
 }
