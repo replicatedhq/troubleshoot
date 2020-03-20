@@ -36,7 +36,7 @@ func analyzePostgres(analyzer *troubleshootv1beta1.DatabaseAnalyze, getCollected
 	result := &AnalyzeResult{
 		Title:   checkName,
 		IconKey: "kubernetes_postgres_analyze",
-		IconURI: "https://troubleshoot.sh/images/analyzer-icons/postgres-analyze.svg",
+		IconURI: "https://troubleshoot.sh/images/analyzer-icons/postgres.svg?w=19&h=14",
 	}
 
 	for _, outcome := range analyzer.Outcomes {

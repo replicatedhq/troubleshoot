@@ -36,7 +36,7 @@ func analyzeMysql(analyzer *troubleshootv1beta1.DatabaseAnalyze, getCollectedFil
 	result := &AnalyzeResult{
 		Title:   checkName,
 		IconKey: "kubernetes_mysql_analyze",
-		IconURI: "https://troubleshoot.sh/images/analyzer-icons/mysql-analyze.svg",
+		IconURI: "https://troubleshoot.sh/images/analyzer-icons/mysql.svg?w=20&h=13",
 	}
 
 	for _, outcome := range analyzer.Outcomes {
