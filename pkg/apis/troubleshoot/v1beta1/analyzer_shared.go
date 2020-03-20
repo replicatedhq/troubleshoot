@@ -103,7 +103,7 @@ type TextAnalyze struct {
 	Outcomes      []*Outcome `json:"outcomes" yaml:"outcomes"`
 }
 
-type PostgresAnalyze struct {
+type DatabaseAnalyze struct {
 	AnalyzeMeta   `json:",inline" yaml:",inline"`
 	Outcomes      []*Outcome `json:"outcomes" yaml:"outcomes"`
 	CollectorName string     `json:"collectorName" yaml:"collectorName"`
@@ -128,5 +128,6 @@ type Analyze struct {
 	Distribution             *Distribution             `json:"distribution,omitempty" yaml:"distribution,omitempty"`
 	NodeResources            *NodeResources            `json:"nodeResources,omitempty" yaml:"nodeResources,omitempty"`
 	TextAnalyze              *TextAnalyze              `json:"textAnalyze,omitempty" yaml:"textAnalyze,omitempty"`
-	PostgresAnalyze          *PostgresAnalyze          `json:"postgres,omitempty" yaml:"postgres,omitempty"`
+	Postgres                 *DatabaseAnalyze          `json:"postgres,omitempty" yaml:"postgres,omitempty"`
+	Mysql                    *DatabaseAnalyze          `json:"mysql,omitempty" yaml:"mysql,omitempty"`
 }

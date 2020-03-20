@@ -109,7 +109,7 @@ type Put struct {
 	Body               string            `json:"body,omitempty" yaml:"body,omitempty"`
 }
 
-type Postgres struct {
+type Database struct {
 	CollectorMeta `json:",inline" yaml:",inline"`
 	URI           string `json:"uri" yaml:"uri"`
 }
@@ -124,7 +124,8 @@ type Collect struct {
 	Data             *Data             `json:"data,omitempty" yaml:"data,omitempty"`
 	Copy             *Copy             `json:"copy,omitempty" yaml:"copy,omitempty"`
 	HTTP             *HTTP             `json:"http,omitempty" yaml:"http,omitempty"`
-	Postgres         *Postgres         `json:"postgres,omitempty" yaml:"postgres,omitempty"`
+	Postgres         *Database         `json:"postgres,omitempty" yaml:"postgres,omitempty"`
+	Mysql            *Database         `json:"mysql,omitempty" yaml:"mysql,omitempty"`
 }
 
 func (c *Collect) AccessReviewSpecs(overrideNS string) []authorizationv1.SelfSubjectAccessReviewSpec {

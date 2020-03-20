@@ -5,17 +5,17 @@ import (
 	"encoding/json"
 	"fmt"
 
-	_ "github.com/lib/pq"
+	_ "github.com/go-sql-driver/mysql"
 	"github.com/pkg/errors"
 	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
 )
 
-type PostgresOutput map[string][]byte
+type MysqlOutput map[string][]byte
 
-func Postgres(ctx *Context, databaseCollector *troubleshootv1beta1.Database) ([]byte, error) {
+func Mysql(ctx *Context, databaseCollector *troubleshootv1beta1.Database) ([]byte, error) {
 	databaseConnection := DatabaseConnection{}
 
-	db, err := sql.Open("postgres", databaseCollector.URI)
+	db, err := sql.Open("mysql", databaseCollector.URI)
 	if err != nil {
 		databaseConnection.Error = err.Error()
 	} else {
@@ -37,16 +37,16 @@ func Postgres(ctx *Context, databaseCollector *troubleshootv1beta1.Database) ([]
 
 	collectorName := databaseCollector.CollectorName
 	if collectorName == "" {
-		collectorName = "postgres"
+		collectorName = "mysql"
 	}
 
-	postgresOutput := map[string][]byte{
-		fmt.Sprintf("postgres/%s.json", collectorName): b,
+	mysqlOutput := map[string][]byte{
+		fmt.Sprintf("mysql/%s.json", collectorName): b,
 	}
 
-	bb, err := json.Marshal(postgresOutput)
+	bb, err := json.Marshal(mysqlOutput)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to marshal postgres output")
+		return nil, errors.Wrap(err, "failed to marshal mysql output")
 	}
 
 	return bb, nil

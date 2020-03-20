@@ -17,6 +17,7 @@ require (
 	github.com/gizak/termui/v3 v3.1.0
 	github.com/go-openapi/spec v0.19.4 // indirect
 	github.com/go-openapi/validate v0.19.5 // indirect
+	github.com/go-sql-driver/mysql v1.5.0
 	github.com/golang/snappy v0.0.1 // indirect
 	github.com/google/gofuzz v1.1.0
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510 // indirect
