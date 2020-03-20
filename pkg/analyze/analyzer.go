@@ -177,6 +177,16 @@ func Analyze(analyzer *troubleshootv1beta1.Analyze, getFile getCollectedFileCont
 		}
 		return analyzeMysql(analyzer.Mysql, getFile)
 	}
+	if analyzer.Redis != nil {
+		isExcluded, err := isExcluded(analyzer.Redis.Exclude)
+		if err != nil {
+			return nil, err
+		}
+		if isExcluded {
+			return nil, nil
+		}
+		return analyzeRedis(analyzer.Redis, getFile)
+	}
 
 	return nil, errors.New("invalid analyzer")
 }

@@ -126,6 +126,7 @@ type Collect struct {
 	HTTP             *HTTP             `json:"http,omitempty" yaml:"http,omitempty"`
 	Postgres         *Database         `json:"postgres,omitempty" yaml:"postgres,omitempty"`
 	Mysql            *Database         `json:"mysql,omitempty" yaml:"mysql,omitempty"`
+	Redis            *Database         `json:"redis,omitempty" yaml:"redis,omitempty"`
 }
 
 func (c *Collect) AccessReviewSpecs(overrideNS string) []authorizationv1.SelfSubjectAccessReviewSpec {
