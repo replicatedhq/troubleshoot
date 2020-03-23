@@ -68,7 +68,12 @@ vet:
 .PHONY: generate
 generate: controller-gen client-gen
 	$(shell go env GOPATH)/bin/controller-gen object:headerFile=./hack/boilerplate.go.txt paths=./pkg/apis/...
-	$(shell go env GOPATH)/bin/client-gen --output-package=github.com/replicatedhq/troubleshoot/pkg/client --clientset-name troubleshootclientset --input-base github.com/replicatedhq/troubleshoot/pkg/apis --input troubleshoot/v1beta1 -h ./hack/boilerplate.go.txt
+	$(shell go env GOPATH)/bin/client-gen \
+		--output-package=github.com/replicatedhq/troubleshoot/pkg/client \
+		--clientset-name troubleshootclientset \
+		--input-base github.com/replicatedhq/troubleshoot/pkg/apis \
+		--input troubleshoot/v1beta1 \
+		-h ./hack/boilerplate.go.txt
 
 .PHONY: openapischema
 openapischema: controller-gen
