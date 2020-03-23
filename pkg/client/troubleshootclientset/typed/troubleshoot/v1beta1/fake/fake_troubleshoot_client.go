@@ -31,24 +31,12 @@ func (c *FakeTroubleshootV1beta1) Analyzers(namespace string) v1beta1.AnalyzerIn
 	return &FakeAnalyzers{c, namespace}
 }
 
-func (c *FakeTroubleshootV1beta1) AnalyzerJobs(namespace string) v1beta1.AnalyzerJobInterface {
-	return &FakeAnalyzerJobs{c, namespace}
-}
-
 func (c *FakeTroubleshootV1beta1) Collectors(namespace string) v1beta1.CollectorInterface {
 	return &FakeCollectors{c, namespace}
 }
 
-func (c *FakeTroubleshootV1beta1) CollectorJobs(namespace string) v1beta1.CollectorJobInterface {
-	return &FakeCollectorJobs{c, namespace}
-}
-
 func (c *FakeTroubleshootV1beta1) Preflights(namespace string) v1beta1.PreflightInterface {
 	return &FakePreflights{c, namespace}
-}
-
-func (c *FakeTroubleshootV1beta1) PreflightJobs(namespace string) v1beta1.PreflightJobInterface {
-	return &FakePreflightJobs{c, namespace}
 }
 
 // RESTClient returns a RESTClient that is used to communicate
