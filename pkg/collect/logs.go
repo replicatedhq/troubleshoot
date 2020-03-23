@@ -125,6 +125,13 @@ func getPodLogs(client *kubernetes.Clientset, pod corev1.Pod, name, container st
 		}
 	}
 
+	fileKey := fmt.Sprintf("%s/%s", name, pod.Name)
+	if container != "" {
+		fileKey = fmt.Sprintf("%s/%s/%s", name, pod.Name, container)
+	}
+
+	result := make(map[string][]byte)
+
 	req := client.CoreV1().Pods(pod.Namespace).GetLogs(pod.Name, &podLogOpts)
 	podLogs, err := req.Stream()
 	if err != nil {
@@ -137,15 +144,25 @@ func getPodLogs(client *kubernetes.Clientset, pod corev1.Pod, name, container st
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to copy log")
 	}
+	result[fileKey+".log"] = buf.Bytes()
 
-	fileKey := fmt.Sprintf("%s/%s.txt", name, pod.Name)
-	if container != "" {
-		fileKey = fmt.Sprintf("%s/%s/%s.txt", name, pod.Name, container)
+	podLogOpts.Previous = true
+	req = client.CoreV1().Pods(pod.Namespace).GetLogs(pod.Name, &podLogOpts)
+	podLogs, err = req.Stream()
+	if err != nil {
+		// maybe fail on !kuberneteserrors.IsNotFound(err)?
+		return result, nil
 	}
+	defer podLogs.Close()
 
-	return map[string][]byte{
-		fileKey: buf.Bytes(),
-	}, nil
+	buf = new(bytes.Buffer)
+	_, err = io.Copy(buf, podLogs)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to copy previous log")
+	}
+	result[fileKey+"-previous.log"] = buf.Bytes()
+
+	return result, nil
 }
 
 func (l LogsOutput) Redact() (LogsOutput, error) {
