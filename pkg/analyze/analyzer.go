@@ -157,6 +157,36 @@ func Analyze(analyzer *troubleshootv1beta1.Analyze, getFile getCollectedFileCont
 		}
 		return analyzeTextAnalyze(analyzer.TextAnalyze, getFile)
 	}
+	if analyzer.Postgres != nil {
+		isExcluded, err := isExcluded(analyzer.Postgres.Exclude)
+		if err != nil {
+			return nil, err
+		}
+		if isExcluded {
+			return nil, nil
+		}
+		return analyzePostgres(analyzer.Postgres, getFile)
+	}
+	if analyzer.Mysql != nil {
+		isExcluded, err := isExcluded(analyzer.Mysql.Exclude)
+		if err != nil {
+			return nil, err
+		}
+		if isExcluded {
+			return nil, nil
+		}
+		return analyzeMysql(analyzer.Mysql, getFile)
+	}
+	if analyzer.Redis != nil {
+		isExcluded, err := isExcluded(analyzer.Redis.Exclude)
+		if err != nil {
+			return nil, err
+		}
+		if isExcluded {
+			return nil, nil
+		}
+		return analyzeRedis(analyzer.Redis, getFile)
+	}
 
 	return nil, errors.New("invalid analyzer")
 }
