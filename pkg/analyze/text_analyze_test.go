@@ -102,7 +102,7 @@ func Test_textAnalyze(t *testing.T) {
 				IsPass:  false,
 				IsWarn:  false,
 				IsFail:  true,
-				Title:   "",
+				Title:   "text-collector-3",
 				Message: "Invalid analyzer",
 				IconKey: "kubernetes_text_analyze",
 				IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg",

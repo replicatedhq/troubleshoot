@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"io/ioutil"
 	"os"
 	"strings"
 
@@ -82,4 +83,12 @@ func ensureCollectorInList(list []*troubleshootv1beta1.Collect, collector troubl
 	}
 
 	return append(list, &collector)
+}
+
+func writeFile(filename string, contents []byte) error {
+	if err := ioutil.WriteFile(filename, contents, 0644); err != nil {
+		return err
+	}
+
+	return nil
 }
