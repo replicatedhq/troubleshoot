@@ -7,7 +7,6 @@ require (
 	github.com/aws/aws-sdk-go v1.25.18 // indirect
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/chzyer/logex v1.1.11-0.20160617073814-96a4d311aa9b // indirect
-	github.com/coreos/etcd v3.3.15+incompatible // indirect
 	github.com/docker/spdystream v0.0.0-20181023171402-6480d4af844c // indirect
 	github.com/dsnet/compress v0.0.1 // indirect
 	github.com/elazarl/goproxy v0.0.0-20191011121108-aa519ddbe484 // indirect
