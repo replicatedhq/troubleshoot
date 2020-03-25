@@ -10,6 +10,7 @@ import (
 	cursor "github.com/ahmetalpbalkan/go-cursor"
 	"github.com/fatih/color"
 	"github.com/pkg/errors"
+	"github.com/replicatedhq/troubleshoot/cmd/util"
 	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
 	troubleshootclientsetscheme "github.com/replicatedhq/troubleshoot/pkg/client/troubleshootclientset/scheme"
 	"github.com/replicatedhq/troubleshoot/pkg/preflight"
@@ -23,11 +24,8 @@ func runPreflights(v *viper.Viper, arg string) error {
 	defer fmt.Print(cursor.Show())
 
 	preflightContent := ""
-	if !isURL(arg) {
-		if _, err := os.Stat(arg); os.IsNotExist(err) {
-			return fmt.Errorf("%s was not found", arg)
-		}
-
+	var err error
+	if _, err = os.Stat(arg); err == nil {
 		b, err := ioutil.ReadFile(arg)
 		if err != nil {
 			return err
@@ -35,6 +33,10 @@ func runPreflights(v *viper.Viper, arg string) error {
 
 		preflightContent = string(b)
 	} else {
+		if !util.IsURL(arg) {
+			return fmt.Errorf("%s is not a URL and was not found (err %s)", arg, err)
+		}
+
 		req, err := http.NewRequest("GET", arg, nil)
 		if err != nil {
 			return err

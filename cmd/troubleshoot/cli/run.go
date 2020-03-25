@@ -19,6 +19,7 @@ import (
 	"github.com/mattn/go-isatty"
 	"github.com/mholt/archiver"
 	"github.com/pkg/errors"
+	"github.com/replicatedhq/troubleshoot/cmd/util"
 	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
 	"github.com/replicatedhq/troubleshoot/pkg/client/troubleshootclientset/scheme"
 	troubleshootclientsetscheme "github.com/replicatedhq/troubleshoot/pkg/client/troubleshootclientset/scheme"
@@ -137,17 +138,16 @@ the %s Admin Console to begin analysis.`
 }
 
 func loadSpec(v *viper.Viper, arg string) ([]byte, error) {
-	if !isURL(arg) {
-		if _, err := os.Stat(arg); os.IsNotExist(err) {
-			return nil, fmt.Errorf("%s was not found", arg)
-		}
-
+	var err error
+	if _, err = os.Stat(arg); err == nil {
 		b, err := ioutil.ReadFile(arg)
 		if err != nil {
 			return nil, errors.Wrap(err, "read spec file")
 		}
 
 		return b, nil
+	} else if !util.IsURL(arg) {
+		return nil, fmt.Errorf("%s is not a URL and was not found (err %s)", arg, err)
 	}
 
 	for {
