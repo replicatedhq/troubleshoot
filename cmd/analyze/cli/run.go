@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"net/url"
 	"os"
 
 	"github.com/pkg/errors"
+	"github.com/replicatedhq/troubleshoot/cmd/util"
 	analyzer "github.com/replicatedhq/troubleshoot/pkg/analyze"
 	"github.com/spf13/viper"
 )
@@ -16,11 +16,8 @@ func runAnalyzers(v *viper.Viper, bundlePath string) error {
 	specPath := v.GetString("analyzers")
 
 	specContent := ""
-	if !isURL(specPath) {
-		if _, err := os.Stat(specPath); os.IsNotExist(err) {
-			return fmt.Errorf("%s was not found", specPath)
-		}
-
+	var err error
+	if _, err = os.Stat(specPath); err == nil {
 		b, err := ioutil.ReadFile(specPath)
 		if err != nil {
 			return err
@@ -28,6 +25,10 @@ func runAnalyzers(v *viper.Viper, bundlePath string) error {
 
 		specContent = string(b)
 	} else {
+		if !util.IsURL(specPath) {
+			return fmt.Errorf("%s is not a URL and was not found (err %s)", specPath, err)
+		}
+
 		req, err := http.NewRequest("GET", specPath, nil)
 		if err != nil {
 			return err
@@ -63,13 +64,4 @@ func runAnalyzers(v *viper.Viper, bundlePath string) error {
 	}
 
 	return nil
-}
-
-func isURL(str string) bool {
-	parsed, err := url.ParseRequestURI(str)
-	if err != nil {
-		return false
-	}
-
-	return parsed.Scheme != ""
 }

@@ -11,6 +11,7 @@ import (
 	ui "github.com/gizak/termui/v3"
 	"github.com/gizak/termui/v3/widgets"
 	"github.com/pkg/errors"
+	"github.com/replicatedhq/troubleshoot/cmd/util"
 	analyzerunner "github.com/replicatedhq/troubleshoot/pkg/analyze"
 )
 
@@ -214,7 +215,7 @@ func estimateNumberOfLines(text string, width int) int {
 }
 
 func save(preflightName string, analyzeResults []*analyzerunner.AnalyzeResult) (string, error) {
-	filename := path.Join(homeDir(), fmt.Sprintf("%s-results.txt", preflightName))
+	filename := path.Join(util.HomeDir(), fmt.Sprintf("%s-results.txt", preflightName))
 	_, err := os.Stat(filename)
 	if err == nil {
 		os.Remove(filename)
