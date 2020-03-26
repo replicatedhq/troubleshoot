@@ -14,7 +14,7 @@ jobs:
     steps:
       - uses: actions/setup-go@v1
         with:
-          go-version: "1.14.0"
+          go-version: "1.14"
 
       - name: setup env
         run: |
@@ -32,7 +32,7 @@ jobs:
     steps:
       - uses: actions/setup-go@v1
         with:
-          go-version: "1.14.0"
+          go-version: "1.14"
       - name: setup env
         run: |
           echo "::set-env name=GOPATH::$(go env GOPATH)"
@@ -77,7 +77,7 @@ jobs:
   
       - uses: actions/setup-go@v1
         with:
-          go-version: "1.14.0"
+          go-version: "1.14"
    
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v1
