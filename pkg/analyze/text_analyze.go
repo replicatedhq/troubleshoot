@@ -1,7 +1,7 @@
 package analyzer
 
 import (
-	"path"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -11,7 +11,7 @@ import (
 )
 
 func analyzeTextAnalyze(analyzer *troubleshootv1beta1.TextAnalyze, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
-	fullPath := path.Join(analyzer.CollectorName, analyzer.FileName)
+	fullPath := filepath.Join(analyzer.CollectorName, analyzer.FileName)
 	collected, err := getCollectedFileContents(fullPath)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to read collected file name: %s", fullPath)
