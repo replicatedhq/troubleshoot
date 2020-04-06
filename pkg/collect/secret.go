@@ -3,6 +3,7 @@ package collect
 import (
 	"encoding/json"
 	"fmt"
+	"path/filepath"
 
 	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -62,13 +63,7 @@ func Secret(ctx *Context, secretCollector *troubleshootv1beta1.Secret) ([]byte, 
 
 func secret(client *kubernetes.Clientset, secretCollector *troubleshootv1beta1.Secret) (string, []byte, error) {
 	ns := secretCollector.Namespace
-	if ns == "" {
-		ns = "current-namespace"
-	}
-	path := fmt.Sprintf("%s/%s.json", ns, secretCollector.SecretName)
-	if secretCollector.Key != "" {
-		path = fmt.Sprintf("%s/%s/%s.json", ns, secretCollector.SecretName, secretCollector.Key)
-	}
+	path := fmt.Sprintf("%s.json", filepath.Join(ns, secretCollector.SecretName))
 
 	found, err := client.CoreV1().Secrets(secretCollector.Namespace).Get(secretCollector.SecretName, metav1.GetOptions{})
 	if err != nil {
@@ -87,11 +82,7 @@ func secret(client *kubernetes.Clientset, secretCollector *troubleshootv1beta1.S
 	}
 
 	ns = found.Namespace
-	if secretCollector.Key != "" {
-		path = fmt.Sprintf("%s/%s/%s.json", ns, secretCollector.SecretName, secretCollector.Key)
-	} else {
-		path = fmt.Sprintf("%s/%s.json", ns, secretCollector.SecretName)
-	}
+	path = fmt.Sprintf("%s.json", filepath.Join(ns, secretCollector.SecretName, secretCollector.Key))
 
 	keyExists := false
 	keyData := ""
