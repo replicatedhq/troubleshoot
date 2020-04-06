@@ -34,10 +34,6 @@ func Secret(ctx *Context, secretCollector *troubleshootv1beta1.Secret) ([]byte, 
 		Errors:      make(map[string][]byte),
 	}
 
-	if secretCollector.Namespace == "" {
-		secretCollector.Namespace = "default"
-	}
-
 	path, encoded, err := secret(client, secretCollector)
 	if err != nil {
 		errorBytes, err := marshalNonNil([]string{err.Error()})
@@ -65,9 +61,13 @@ func Secret(ctx *Context, secretCollector *troubleshootv1beta1.Secret) ([]byte, 
 }
 
 func secret(client *kubernetes.Clientset, secretCollector *troubleshootv1beta1.Secret) (string, []byte, error) {
-	path := fmt.Sprintf("%s/%s.json", secretCollector.Namespace, secretCollector.SecretName)
+	ns := secretCollector.Namespace
+	if ns == "" {
+		ns = "current-namespace"
+	}
+	path := fmt.Sprintf("%s/%s.json", ns, secretCollector.SecretName)
 	if secretCollector.Key != "" {
-		path = fmt.Sprintf("%s/%s/%s.json", secretCollector.Namespace, secretCollector.SecretName, secretCollector.Key)
+		path = fmt.Sprintf("%s/%s/%s.json", ns, secretCollector.SecretName, secretCollector.Key)
 	}
 
 	found, err := client.CoreV1().Secrets(secretCollector.Namespace).Get(secretCollector.SecretName, metav1.GetOptions{})
@@ -84,6 +84,13 @@ func secret(client *kubernetes.Clientset, secretCollector *troubleshootv1beta1.S
 		}
 
 		return path, b, err
+	}
+
+	ns = found.Namespace
+	if secretCollector.Key != "" {
+		path = fmt.Sprintf("%s/%s/%s.json", ns, secretCollector.SecretName, secretCollector.Key)
+	} else {
+		path = fmt.Sprintf("%s/%s.json", ns, secretCollector.SecretName)
 	}
 
 	keyExists := false
