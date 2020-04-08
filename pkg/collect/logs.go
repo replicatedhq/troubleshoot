@@ -38,17 +38,34 @@ func Logs(ctx *Context, logsCollector *troubleshootv1beta1.Logs) ([]byte, error)
 	if len(pods) > 0 {
 		for _, pod := range pods {
 			if len(logsCollector.ContainerNames) == 0 {
-				podLogs, err := getPodLogs(client, pod, logsCollector.Name, "", logsCollector.Limits, false)
-				if err != nil {
-					key := fmt.Sprintf("%s/%s-errors.json", logsCollector.Name, pod.Name)
-					logsOutput[key], err = marshalNonNil([]string{err.Error()})
-					if err != nil {
-						return nil, err
-					}
-					continue
+				// make a list of all the containers in the pod, so that we can get logs from all of them
+				containerNames := []string{}
+				for _, container := range pod.Spec.Containers {
+					containerNames = append(containerNames, container.Name)
 				}
-				for k, v := range podLogs {
-					logsOutput[k] = v
+				for _, container := range pod.Spec.InitContainers {
+					containerNames = append(containerNames, container.Name)
+				}
+
+				for _, containerName := range containerNames {
+					if len(containerNames) == 1 {
+						containerName = "" // if there was only one container, use the old behavior of not including the container name in the path
+					}
+					podLogs, err := getPodLogs(client, pod, logsCollector.Name, containerName, logsCollector.Limits, false)
+					if err != nil {
+						key := fmt.Sprintf("%s/%s-errors.json", logsCollector.Name, pod.Name)
+						if containerName != "" {
+							key = fmt.Sprintf("%s/%s/%s-errors.json", logsCollector.Name, pod.Name, containerName)
+						}
+						logsOutput[key], err = marshalNonNil([]string{err.Error()})
+						if err != nil {
+							return nil, err
+						}
+						continue
+					}
+					for k, v := range podLogs {
+						logsOutput[k] = v
+					}
 				}
 			} else {
 				for _, container := range logsCollector.ContainerNames {
