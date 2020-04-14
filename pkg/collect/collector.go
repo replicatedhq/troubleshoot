@@ -40,129 +40,142 @@ func isExcluded(excludeVal multitype.BoolOrString) (bool, error) {
 	return parsed, nil
 }
 
-func (c *Collector) RunCollectorSync() (map[string][]byte, error) {
+func (c *Collector) RunCollectorSync(globalRedactors []*troubleshootv1beta1.Redact) (map[string][]byte, error) {
+	var unRedacted map[string][]byte
+	var isExcludedResult bool
+	var err error
+	var redactors []*troubleshootv1beta1.Redact
 	if c.Collect.ClusterInfo != nil {
-		isExcluded, err := isExcluded(c.Collect.ClusterInfo.Exclude)
+		isExcludedResult, err = isExcluded(c.Collect.ClusterInfo.Exclude)
 		if err != nil {
 			return nil, err
 		}
-		if isExcluded {
+		if isExcludedResult {
 			return nil, nil
 		}
-		return ClusterInfo(c.GetContext())
-	}
-	if c.Collect.ClusterResources != nil {
-		isExcluded, err := isExcluded(c.Collect.ClusterResources.Exclude)
+		unRedacted, err = ClusterInfo(c.GetContext())
+		redactors = c.Collect.ClusterInfo.Redactors
+	} else if c.Collect.ClusterResources != nil {
+		isExcludedResult, err = isExcluded(c.Collect.ClusterResources.Exclude)
 		if err != nil {
 			return nil, err
 		}
-		if isExcluded {
+		if isExcludedResult {
 			return nil, nil
 		}
-		return ClusterResources(c.GetContext())
-	}
-	if c.Collect.Secret != nil {
-		isExcluded, err := isExcluded(c.Collect.Secret.Exclude)
+		unRedacted, err = ClusterResources(c.GetContext())
+		redactors = c.Collect.ClusterResources.Redactors
+	} else if c.Collect.Secret != nil {
+		isExcludedResult, err = isExcluded(c.Collect.Secret.Exclude)
 		if err != nil {
 			return nil, err
 		}
-		if isExcluded {
+		if isExcludedResult {
 			return nil, nil
 		}
-		return Secret(c.GetContext(), c.Collect.Secret)
-	}
-	if c.Collect.Logs != nil {
-		isExcluded, err := isExcluded(c.Collect.Logs.Exclude)
+		unRedacted, err = Secret(c.GetContext(), c.Collect.Secret)
+		redactors = c.Collect.Secret.Redactors
+	} else if c.Collect.Logs != nil {
+		isExcludedResult, err = isExcluded(c.Collect.Logs.Exclude)
 		if err != nil {
 			return nil, err
 		}
-		if isExcluded {
+		if isExcludedResult {
 			return nil, nil
 		}
-		return Logs(c.GetContext(), c.Collect.Logs)
-	}
-	if c.Collect.Run != nil {
-		isExcluded, err := isExcluded(c.Collect.Run.Exclude)
+		unRedacted, err = Logs(c.GetContext(), c.Collect.Logs)
+		redactors = c.Collect.Logs.Redactors
+	} else if c.Collect.Run != nil {
+		isExcludedResult, err = isExcluded(c.Collect.Run.Exclude)
 		if err != nil {
 			return nil, err
 		}
-		if isExcluded {
+		if isExcludedResult {
 			return nil, nil
 		}
-		return Run(c.GetContext(), c.Collect.Run)
-	}
-	if c.Collect.Exec != nil {
-		isExcluded, err := isExcluded(c.Collect.Exec.Exclude)
+		unRedacted, err = Run(c.GetContext(), c.Collect.Run)
+		redactors = c.Collect.Run.Redactors
+	} else if c.Collect.Exec != nil {
+		isExcludedResult, err = isExcluded(c.Collect.Exec.Exclude)
 		if err != nil {
 			return nil, err
 		}
-		if isExcluded {
+		if isExcludedResult {
 			return nil, nil
 		}
-		return Exec(c.GetContext(), c.Collect.Exec)
-	}
-	if c.Collect.Data != nil {
-		isExcluded, err := isExcluded(c.Collect.Data.Exclude)
+		unRedacted, err = Exec(c.GetContext(), c.Collect.Exec)
+		redactors = c.Collect.Exec.Redactors
+	} else if c.Collect.Data != nil {
+		isExcludedResult, err = isExcluded(c.Collect.Data.Exclude)
 		if err != nil {
 			return nil, err
 		}
-		if isExcluded {
+		if isExcludedResult {
 			return nil, nil
 		}
-		return Data(c.GetContext(), c.Collect.Data)
-	}
-	if c.Collect.Copy != nil {
-		isExcluded, err := isExcluded(c.Collect.Copy.Exclude)
+		unRedacted, err = Data(c.GetContext(), c.Collect.Data)
+		redactors = c.Collect.Data.Redactors
+	} else if c.Collect.Copy != nil {
+		isExcludedResult, err = isExcluded(c.Collect.Copy.Exclude)
 		if err != nil {
 			return nil, err
 		}
-		if isExcluded {
+		if isExcludedResult {
 			return nil, nil
 		}
-		return Copy(c.GetContext(), c.Collect.Copy)
-	}
-	if c.Collect.HTTP != nil {
-		isExcluded, err := isExcluded(c.Collect.HTTP.Exclude)
+		unRedacted, err = Copy(c.GetContext(), c.Collect.Copy)
+		redactors = c.Collect.Copy.Redactors
+	} else if c.Collect.HTTP != nil {
+		isExcludedResult, err = isExcluded(c.Collect.HTTP.Exclude)
 		if err != nil {
 			return nil, err
 		}
-		if isExcluded {
+		if isExcludedResult {
 			return nil, nil
 		}
-		return HTTP(c.GetContext(), c.Collect.HTTP)
-	}
-	if c.Collect.Postgres != nil {
-		isExcluded, err := isExcluded(c.Collect.Postgres.Exclude)
+		unRedacted, err = HTTP(c.GetContext(), c.Collect.HTTP)
+		redactors = c.Collect.HTTP.Redactors
+	} else if c.Collect.Postgres != nil {
+		isExcludedResult, err = isExcluded(c.Collect.Postgres.Exclude)
 		if err != nil {
 			return nil, err
 		}
-		if isExcluded {
+		if isExcludedResult {
 			return nil, nil
 		}
-		return Postgres(c.GetContext(), c.Collect.Postgres)
-	}
-	if c.Collect.Mysql != nil {
-		isExcluded, err := isExcluded(c.Collect.Mysql.Exclude)
+		unRedacted, err = Postgres(c.GetContext(), c.Collect.Postgres)
+		redactors = c.Collect.Postgres.Redactors
+	} else if c.Collect.Mysql != nil {
+		isExcludedResult, err = isExcluded(c.Collect.Mysql.Exclude)
 		if err != nil {
 			return nil, err
 		}
-		if isExcluded {
+		if isExcludedResult {
 			return nil, nil
 		}
-		return Mysql(c.GetContext(), c.Collect.Mysql)
-	}
-	if c.Collect.Redis != nil {
-		isExcluded, err := isExcluded(c.Collect.Redis.Exclude)
+		unRedacted, err = Mysql(c.GetContext(), c.Collect.Mysql)
+		redactors = c.Collect.Mysql.Redactors
+	} else if c.Collect.Redis != nil {
+		isExcludedResult, err = isExcluded(c.Collect.Redis.Exclude)
 		if err != nil {
 			return nil, err
 		}
-		if isExcluded {
+		if isExcludedResult {
 			return nil, nil
 		}
-		return Redis(c.GetContext(), c.Collect.Redis)
+		unRedacted, err = Redis(c.GetContext(), c.Collect.Redis)
+		redactors = c.Collect.Redis.Redactors
+	} else {
+		return nil, errors.New("no spec found to run")
 	}
 
-	return nil, errors.New("no spec found to run")
+	if err != nil {
+		return nil, err
+	}
+	if c.Redact {
+		return redactMap(unRedacted, append(redactors, globalRedactors...))
+	}
+	return unRedacted, nil
 }
 
 func (c *Collector) GetDisplayName() string {

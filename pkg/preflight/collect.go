@@ -76,7 +76,7 @@ func Collect(opts CollectOpts, p *troubleshootv1beta1.Preflight) (CollectResult,
 			}
 		}
 
-		result, err := collector.RunCollectorSync()
+		result, err := collector.RunCollectorSync(nil)
 		if err != nil {
 			opts.ProgressChan <- errors.Errorf("failed to run collector %s: %v\n", collector.GetDisplayName(), err)
 			continue

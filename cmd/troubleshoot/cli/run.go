@@ -56,6 +56,23 @@ func runTroubleshoot(v *viper.Viper, arg string) error {
 
 	collector := obj.(*troubleshootv1beta1.Collector)
 
+	var additionalRedactors *troubleshootv1beta1.Redactor
+	if v.GetString("redactors") != "" {
+		redactorContent, err := loadSpec(v, v.GetString("redactors"))
+		if err != nil {
+			return errors.Wrap(err, "failed to load redactor spec")
+		}
+		obj, _, err := decode([]byte(redactorContent), nil, nil)
+		if err != nil {
+			return errors.Wrapf(err, "failed to parse redactors %s", v.GetString("redactors"))
+		}
+		var ok bool
+		additionalRedactors, ok = obj.(*troubleshootv1beta1.Redactor)
+		if !ok {
+			return fmt.Errorf("%s is not a troubleshootv1beta1 redactor type", v.GetString("redactors"))
+		}
+	}
+
 	s := spin.New()
 	finishedCh := make(chan bool, 1)
 	progressChan := make(chan interface{}, 0) // non-zero buffer can result in missed messages
@@ -87,7 +104,7 @@ func runTroubleshoot(v *viper.Viper, arg string) error {
 		close(finishedCh)
 	}()
 
-	archivePath, err := runCollectors(v, *collector, progressChan)
+	archivePath, err := runCollectors(v, *collector, additionalRedactors, progressChan)
 	if err != nil {
 		return errors.Wrap(err, "run collectors")
 	}
@@ -193,7 +210,7 @@ func canTryInsecure(v *viper.Viper) bool {
 	return true
 }
 
-func runCollectors(v *viper.Viper, collector troubleshootv1beta1.Collector, progressChan chan interface{}) (string, error) {
+func runCollectors(v *viper.Viper, collector troubleshootv1beta1.Collector, additionalRedactors *troubleshootv1beta1.Redactor, progressChan chan interface{}) (string, error) {
 	bundlePath, err := ioutil.TempDir("", "troubleshoot")
 	if err != nil {
 		return "", errors.Wrap(err, "create temp dir")
@@ -241,6 +258,11 @@ func runCollectors(v *viper.Viper, collector troubleshootv1beta1.Collector, prog
 		return "", errors.New("insufficient permissions to run all collectors")
 	}
 
+	globalRedactors := []*troubleshootv1beta1.Redact{}
+	if additionalRedactors != nil {
+		globalRedactors = additionalRedactors.Spec.Redactors
+	}
+
 	// Run preflights collectors synchronously
 	for _, collector := range collectors {
 		if len(collector.RBACErrors) > 0 {
@@ -253,7 +275,7 @@ func runCollectors(v *viper.Viper, collector troubleshootv1beta1.Collector, prog
 
 		progressChan <- collector.GetDisplayName()
 
-		result, err := collector.RunCollectorSync()
+		result, err := collector.RunCollectorSync(globalRedactors)
 		if err != nil {
 			progressChan <- fmt.Errorf("failed to run collector %q: %v", collector.GetDisplayName(), err)
 			continue

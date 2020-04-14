@@ -28,6 +28,7 @@ type TroubleshootV1beta1Interface interface {
 	AnalyzersGetter
 	CollectorsGetter
 	PreflightsGetter
+	RedactorsGetter
 }
 
 // TroubleshootV1beta1Client is used to interact with features provided by the troubleshoot.replicated.com group.
@@ -45,6 +46,10 @@ func (c *TroubleshootV1beta1Client) Collectors(namespace string) CollectorInterf
 
 func (c *TroubleshootV1beta1Client) Preflights(namespace string) PreflightInterface {
 	return newPreflights(c, namespace)
+}
+
+func (c *TroubleshootV1beta1Client) Redactors(namespace string) RedactorInterface {
+	return newRedactors(c, namespace)
 }
 
 // NewForConfig creates a new TroubleshootV1beta1Client for the given config.

@@ -34,6 +34,7 @@ type AfterCollection struct {
 type CollectorSpec struct {
 	Collectors      []*Collect         `json:"collectors,omitempty" yaml:"collectors,omitempty"`
 	AfterCollection []*AfterCollection `json:"afterCollection,omitempty" yaml:"afterCollection,omitempty"`
+	GlobalRedactors []*Redact          `json:"globalRedactors,omitempty" yaml:"globalRedactors,omitempty"`
 }
 
 // CollectorStatus defines the observed state of Collector

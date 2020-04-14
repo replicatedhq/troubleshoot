@@ -22,3 +22,5 @@ type AnalyzerExpansion interface{}
 type CollectorExpansion interface{}
 
 type PreflightExpansion interface{}
+
+type RedactorExpansion interface{}

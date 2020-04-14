@@ -160,13 +160,6 @@ func ClusterResources(ctx *Context) (map[string][]byte, error) {
 		return nil, err
 	}
 
-	if ctx.Redact {
-		clusterResourcesOutput, err = redactMap(clusterResourcesOutput)
-		if err != nil {
-			return nil, err
-		}
-	}
-
 	return clusterResourcesOutput, nil
 }
 

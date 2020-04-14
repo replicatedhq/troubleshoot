@@ -15,15 +15,13 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-type LogsOutput map[string][]byte
-
 func Logs(ctx *Context, logsCollector *troubleshootv1beta1.Logs) (map[string][]byte, error) {
 	client, err := kubernetes.NewForConfig(ctx.ClientConfig)
 	if err != nil {
 		return nil, err
 	}
 
-	logsOutput := LogsOutput{}
+	logsOutput := map[string][]byte{}
 
 	pods, podsErrors := listPodsInSelectors(client, logsCollector.Namespace, logsCollector.Selector)
 	if len(podsErrors) > 0 {
@@ -81,13 +79,6 @@ func Logs(ctx *Context, logsCollector *troubleshootv1beta1.Logs) (map[string][]b
 						logsOutput[k] = v
 					}
 				}
-			}
-		}
-
-		if ctx.Redact {
-			logsOutput, err = logsOutput.Redact()
-			if err != nil {
-				return nil, err
 			}
 		}
 	}
@@ -174,15 +165,6 @@ func getPodLogs(client *kubernetes.Clientset, pod corev1.Pod, name, container st
 	result[fileKey+"-previous.log"] = buf.Bytes()
 
 	return result, nil
-}
-
-func (l LogsOutput) Redact() (LogsOutput, error) {
-	podLogs, err := redactMap(l)
-	if err != nil {
-		return nil, err
-	}
-
-	return podLogs, nil
 }
 
 func getLogsErrorsFileName(logsCollector *troubleshootv1beta1.Logs) string {

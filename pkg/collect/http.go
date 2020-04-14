@@ -10,10 +10,7 @@ import (
 	"strings"
 
 	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
-	"github.com/replicatedhq/troubleshoot/pkg/redact"
 )
-
-type HTTPOutput map[string][]byte
 
 type httpResponse struct {
 	Status  int               `json:"status"`
@@ -48,7 +45,7 @@ func HTTP(ctx *Context, httpCollector *troubleshootv1beta1.HTTP) (map[string][]b
 	if httpCollector.CollectorName != "" {
 		fileName = httpCollector.CollectorName + ".json"
 	}
-	httpOutput := HTTPOutput{
+	httpOutput := map[string][]byte{
 		filepath.Join(httpCollector.Name, fileName): output,
 	}
 
@@ -133,13 +130,6 @@ func responseToOutput(response *http.Response, err error, doRedact bool) ([]byte
 	b, err := json.MarshalIndent(output, "", "  ")
 	if err != nil {
 		return nil, err
-	}
-
-	if doRedact {
-		b, err = redact.Redact(b)
-		if err != nil {
-			return nil, err
-		}
 	}
 
 	return b, nil

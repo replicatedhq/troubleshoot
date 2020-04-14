@@ -14,8 +14,6 @@ import (
 	"k8s.io/client-go/tools/remotecommand"
 )
 
-type ExecOutput map[string][]byte
-
 func Exec(ctx *Context, execCollector *troubleshootv1beta1.Exec) (map[string][]byte, error) {
 	if execCollector.Timeout == "" {
 		return execWithoutTimeout(ctx, execCollector)
@@ -54,7 +52,7 @@ func execWithoutTimeout(ctx *Context, execCollector *troubleshootv1beta1.Exec) (
 		return nil, err
 	}
 
-	execOutput := ExecOutput{}
+	execOutput := map[string][]byte{}
 
 	pods, podsErrors := listPodsInSelectors(client, execCollector.Namespace, execCollector.Selector)
 	if len(podsErrors) > 0 {
@@ -84,13 +82,6 @@ func execWithoutTimeout(ctx *Context, execCollector *troubleshootv1beta1.Exec) (
 				}
 				execOutput[filepath.Join(bundlePath, execCollector.CollectorName+"-errors.json")] = errorBytes
 				continue
-			}
-		}
-
-		if ctx.Redact {
-			execOutput, err = execOutput.Redact()
-			if err != nil {
-				return nil, err
 			}
 		}
 	}
@@ -140,15 +131,6 @@ func getExecOutputs(ctx *Context, client *kubernetes.Clientset, pod corev1.Pod, 
 	}
 
 	return stdout.Bytes(), stderr.Bytes(), nil
-}
-
-func (r ExecOutput) Redact() (ExecOutput, error) {
-	results, err := redactMap(r)
-	if err != nil {
-		return nil, err
-	}
-
-	return results, nil
 }
 
 func getExecErrosFileName(execCollector *troubleshootv1beta1.Exec) string {
