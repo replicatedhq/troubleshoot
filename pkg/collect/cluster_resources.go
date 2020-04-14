@@ -4,9 +4,9 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"path" // this code uses 'path' and not 'path/filepath' because we don't want backslashes on windows
 	"strings"
 
-	"github.com/replicatedhq/troubleshoot/pkg/redact"
 	authorizationv1 "k8s.io/api/authorization/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
@@ -15,51 +15,19 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-type ClusterResourcesOutput struct {
-	Namespaces                      []byte            `json:"cluster-resources/namespaces.json,omitempty"`
-	NamespacesErrors                []byte            `json:"cluster-resources/namespaces-errors.json,omitempty"`
-	Pods                            map[string][]byte `json:"cluster-resources/pods,omitempty"`
-	PodsErrors                      []byte            `json:"cluster-resources/pods-errors.json,omitempty"`
-	Services                        map[string][]byte `json:"cluster-resources/services,omitempty"`
-	ServicesErrors                  []byte            `json:"cluster-resources/services-errors.json,omitempty"`
-	Deployments                     map[string][]byte `json:"cluster-resources/deployments,omitempty"`
-	DeploymentsErrors               []byte            `json:"cluster-resources/deployments-errors.json,omitempty"`
-	StatefulSets                    map[string][]byte `json:"cluster-resources/statefulsets,omitempty"`
-	StatefulSetsErrors              []byte            `json:"cluster-resources/statefulsets-errors.json,omitempty"`
-	Ingress                         map[string][]byte `json:"cluster-resources/ingress,omitempty"`
-	IngressErrors                   []byte            `json:"cluster-resources/ingress-errors.json,omitempty"`
-	StorageClasses                  []byte            `json:"cluster-resources/storage-classes.json,omitempty"`
-	StorageErrors                   []byte            `json:"cluster-resources/storage-errors.json,omitempty"`
-	CustomResourceDefinitions       []byte            `json:"cluster-resources/custom-resource-definitions.json,omitempty"`
-	CustomResourceDefinitionsErrors []byte            `json:"cluster-resources/custom-resource-definitions-errors.json,omitempty"`
-	ImagePullSecrets                map[string][]byte `json:"cluster-resources/image-pull-secrets,omitempty"`
-	ImagePullSecretsErrors          []byte            `json:"cluster-resources/image-pull-secrets-errors.json,omitempty"`
-	Nodes                           []byte            `json:"cluster-resources/nodes.json,omitempty"`
-	NodesErrors                     []byte            `json:"cluster-resources/nodes-errors.json,omitempty"`
-	Groups                          []byte            `json:"cluster-resources/groups.json,omitempty"`
-	Resources                       []byte            `json:"cluster-resources/resources.json,omitempty"`
-	GroupsResourcesErrors           []byte            `json:"cluster-resources/groups-resources-errors.json,omitempty"`
-	LimitRanges                     map[string][]byte `json:"cluster-resources/limitranges,omitempty"`
-	LimitRangesErrors               []byte            `json:"cluster-ressources/limitranges-errors.json,omitempty"`
-
-	// TODO these should be considered for relocation to an rbac or auth package.  cluster resources might not be the right place
-	AuthCanI       map[string][]byte `json:"cluster-resources/auth-cani-list,omitempty"`
-	AuthCanIErrors []byte            `json:"cluster-resources/auth-cani-list-errors.json,omitempty"`
-}
-
-func ClusterResources(ctx *Context) ([]byte, error) {
+func ClusterResources(ctx *Context) (map[string][]byte, error) {
 	client, err := kubernetes.NewForConfig(ctx.ClientConfig)
 	if err != nil {
 		return nil, err
 	}
 
-	clusterResourcesOutput := &ClusterResourcesOutput{}
+	clusterResourcesOutput := map[string][]byte{}
 	// namespaces
 	var namespaceNames []string
 	if ctx.Namespace == "" {
 		namespaces, namespaceList, namespaceErrors := namespaces(client)
-		clusterResourcesOutput.Namespaces = namespaces
-		clusterResourcesOutput.NamespacesErrors, err = marshalNonNil(namespaceErrors)
+		clusterResourcesOutput["cluster-resources/namespaces.json"] = namespaces
+		clusterResourcesOutput["cluster-resources/namespaces-errors.json"], err = marshalNonNil(namespaceErrors)
 		if err != nil {
 			return nil, err
 		}
@@ -70,56 +38,66 @@ func ClusterResources(ctx *Context) ([]byte, error) {
 		}
 	} else {
 		namespaces, namespaceErrors := getNamespace(client, ctx.Namespace)
-		clusterResourcesOutput.Namespaces = namespaces
-		clusterResourcesOutput.NamespacesErrors, err = marshalNonNil(namespaceErrors)
+		clusterResourcesOutput["cluster-resources/namespaces.json"] = namespaces
+		clusterResourcesOutput["cluster-resources/namespaces-errors.json"], err = marshalNonNil(namespaceErrors)
 		if err != nil {
 			return nil, err
 		}
 		namespaceNames = append(namespaceNames, ctx.Namespace)
 	}
 	pods, podErrors := pods(client, namespaceNames)
-	clusterResourcesOutput.Pods = pods
-	clusterResourcesOutput.PodsErrors, err = marshalNonNil(podErrors)
+	for k, v := range pods {
+		clusterResourcesOutput[path.Join("cluster-resources/pods", k)] = v
+	}
+	clusterResourcesOutput["cluster-resources/pods-errors.json"], err = marshalNonNil(podErrors)
 	if err != nil {
 		return nil, err
 	}
 
 	// services
 	services, servicesErrors := services(client, namespaceNames)
-	clusterResourcesOutput.Services = services
-	clusterResourcesOutput.ServicesErrors, err = marshalNonNil(servicesErrors)
+	for k, v := range services {
+		clusterResourcesOutput[path.Join("cluster-resources/services", k)] = v
+	}
+	clusterResourcesOutput["cluster-resources/services-errors.json"], err = marshalNonNil(servicesErrors)
 	if err != nil {
 		return nil, err
 	}
 
 	// deployments
 	deployments, deploymentsErrors := deployments(client, namespaceNames)
-	clusterResourcesOutput.Deployments = deployments
-	clusterResourcesOutput.DeploymentsErrors, err = marshalNonNil(deploymentsErrors)
+	for k, v := range deployments {
+		clusterResourcesOutput[path.Join("cluster-resources/deployments", k)] = v
+	}
+	clusterResourcesOutput["cluster-resources/deployments-errors.json"], err = marshalNonNil(deploymentsErrors)
 	if err != nil {
 		return nil, err
 	}
 
 	// statefulsets
 	statefulsets, statefulsetsErrors := statefulsets(client, namespaceNames)
-	clusterResourcesOutput.StatefulSets = statefulsets
-	clusterResourcesOutput.StatefulSetsErrors, err = marshalNonNil(statefulsetsErrors)
+	for k, v := range statefulsets {
+		clusterResourcesOutput[path.Join("cluster-resources/statefulsets", k)] = v
+	}
+	clusterResourcesOutput["cluster-resources/statefulsets-errors.json"], err = marshalNonNil(statefulsetsErrors)
 	if err != nil {
 		return nil, err
 	}
 
 	// ingress
 	ingress, ingressErrors := ingress(client, namespaceNames)
-	clusterResourcesOutput.Ingress = ingress
-	clusterResourcesOutput.IngressErrors, err = marshalNonNil(ingressErrors)
+	for k, v := range ingress {
+		clusterResourcesOutput[path.Join("cluster-resources/ingress", k)] = v
+	}
+	clusterResourcesOutput["cluster-resources/ingress-errors.json"], err = marshalNonNil(ingressErrors)
 	if err != nil {
 		return nil, err
 	}
 
 	// storage classes
 	storageClasses, storageErrors := storageClasses(client)
-	clusterResourcesOutput.StorageClasses = storageClasses
-	clusterResourcesOutput.StorageErrors, err = marshalNonNil(storageErrors)
+	clusterResourcesOutput["cluster-resources/storage-classes.json"] = storageClasses
+	clusterResourcesOutput["cluster-resources/storage-errors.json"], err = marshalNonNil(storageErrors)
 	if err != nil {
 		return nil, err
 	}
@@ -130,65 +108,66 @@ func ClusterResources(ctx *Context) ([]byte, error) {
 		return nil, err
 	}
 	customResourceDefinitions, crdErrors := crds(crdClient)
-	clusterResourcesOutput.CustomResourceDefinitions = customResourceDefinitions
-	clusterResourcesOutput.CustomResourceDefinitionsErrors, err = marshalNonNil(crdErrors)
+	clusterResourcesOutput["cluster-resources/custom-resource-definitions.json"] = customResourceDefinitions
+	clusterResourcesOutput["cluster-resources/custom-resource-definitions-errors.json"], err = marshalNonNil(crdErrors)
 	if err != nil {
 		return nil, err
 	}
 
 	// imagepullsecrets
 	imagePullSecrets, pullSecretsErrors := imagePullSecrets(client, namespaceNames)
-	clusterResourcesOutput.ImagePullSecrets = imagePullSecrets
-	clusterResourcesOutput.ImagePullSecretsErrors, err = marshalNonNil(pullSecretsErrors)
+	for k, v := range imagePullSecrets {
+		clusterResourcesOutput[path.Join("cluster-resources/image-pull-secrets", k)] = v
+	}
+	clusterResourcesOutput["cluster-resources/image-pull-secrets-errors.json"], err = marshalNonNil(pullSecretsErrors)
 	if err != nil {
 		return nil, err
 	}
 
 	// nodes
 	nodes, nodeErrors := nodes(client)
-	clusterResourcesOutput.Nodes = nodes
-	clusterResourcesOutput.NodesErrors, err = marshalNonNil(nodeErrors)
+	clusterResourcesOutput["cluster-resources/nodes.json"] = nodes
+	clusterResourcesOutput["cluster-resources/nodes-errors.json"], err = marshalNonNil(nodeErrors)
 	if err != nil {
 		return nil, err
 	}
 
 	groups, resources, groupsResourcesErrors := apiResources(client)
-	clusterResourcesOutput.Groups = groups
-	clusterResourcesOutput.Resources = resources
-	clusterResourcesOutput.GroupsResourcesErrors, err = marshalNonNil(groupsResourcesErrors)
+	clusterResourcesOutput["cluster-resources/groups.json"] = groups
+	clusterResourcesOutput["cluster-resources/resources.json"] = resources
+	clusterResourcesOutput["cluster-resources/groups-resources-errors.json"], err = marshalNonNil(groupsResourcesErrors)
 	if err != nil {
 		return nil, err
 	}
 
 	// limit ranges
 	limitRanges, limitRangesErrors := limitRanges(client, namespaceNames)
-	clusterResourcesOutput.LimitRanges = limitRanges
-	clusterResourcesOutput.LimitRangesErrors, err = marshalNonNil(limitRangesErrors)
+	for k, v := range limitRanges {
+		clusterResourcesOutput[path.Join("cluster-resources/limitranges", k)] = v
+	}
+	clusterResourcesOutput["cluster-resources/limitranges-errors.json"], err = marshalNonNil(limitRangesErrors)
 	if err != nil {
 		return nil, err
 	}
 
 	// auth cani
 	authCanI, authCanIErrors := authCanI(client, namespaceNames)
-	clusterResourcesOutput.AuthCanI = authCanI
-	clusterResourcesOutput.AuthCanIErrors, err = marshalNonNil(authCanIErrors)
+	for k, v := range authCanI {
+		clusterResourcesOutput[path.Join("cluster-resources/auth-cani-list", k)] = v
+	}
+	clusterResourcesOutput["cluster-resources/auth-cani-list-errors.json"], err = marshalNonNil(authCanIErrors)
 	if err != nil {
 		return nil, err
 	}
 
 	if ctx.Redact {
-		clusterResourcesOutput, err = clusterResourcesOutput.Redact()
+		clusterResourcesOutput, err = redactMap(clusterResourcesOutput)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	b, err := json.MarshalIndent(clusterResourcesOutput, "", "  ")
-	if err != nil {
-		return nil, err
-	}
-
-	return b, nil
+	return clusterResourcesOutput, nil
 }
 
 func namespaces(client *kubernetes.Clientset) ([]byte, *corev1.NamespaceList, []string) {
@@ -523,81 +502,4 @@ func convertToPolicyRule(status authorizationv1.SubjectRulesReviewStatus) []rbac
 	}
 
 	return ret
-}
-
-func (c *ClusterResourcesOutput) Redact() (*ClusterResourcesOutput, error) {
-	namespaces, err := redact.Redact(c.Namespaces)
-	if err != nil {
-		return nil, err
-	}
-	nodes, err := redact.Redact(c.Nodes)
-	if err != nil {
-		return nil, err
-	}
-	pods, err := redactMap(c.Pods)
-	if err != nil {
-		return nil, err
-	}
-	services, err := redactMap(c.Services)
-	if err != nil {
-		return nil, err
-	}
-	deployments, err := redactMap(c.Deployments)
-	if err != nil {
-		return nil, err
-	}
-	statefulsets, err := redactMap(c.StatefulSets)
-	if err != nil {
-		return nil, err
-	}
-	ingress, err := redactMap(c.Ingress)
-	if err != nil {
-		return nil, err
-	}
-	storageClasses, err := redact.Redact(c.StorageClasses)
-	if err != nil {
-		return nil, err
-	}
-	crds, err := redact.Redact(c.CustomResourceDefinitions)
-	if err != nil {
-		return nil, err
-	}
-	groups, err := redact.Redact(c.Groups)
-	if err != nil {
-		return nil, err
-	}
-	resources, err := redact.Redact(c.Resources)
-	if err != nil {
-		return nil, err
-	}
-
-	return &ClusterResourcesOutput{
-		Namespaces:                      namespaces,
-		NamespacesErrors:                c.NamespacesErrors,
-		Nodes:                           nodes,
-		NodesErrors:                     c.NodesErrors,
-		Pods:                            pods,
-		PodsErrors:                      c.PodsErrors,
-		Services:                        services,
-		ServicesErrors:                  c.ServicesErrors,
-		Deployments:                     deployments,
-		DeploymentsErrors:               c.DeploymentsErrors,
-		StatefulSets:                    statefulsets,
-		StatefulSetsErrors:              c.StatefulSetsErrors,
-		Ingress:                         ingress,
-		IngressErrors:                   c.IngressErrors,
-		StorageClasses:                  storageClasses,
-		StorageErrors:                   c.StorageErrors,
-		CustomResourceDefinitions:       crds,
-		CustomResourceDefinitionsErrors: c.CustomResourceDefinitionsErrors,
-		ImagePullSecrets:                c.ImagePullSecrets,
-		ImagePullSecretsErrors:          c.ImagePullSecretsErrors,
-		AuthCanI:                        c.AuthCanI,
-		AuthCanIErrors:                  c.AuthCanIErrors,
-		Groups:                          groups,
-		Resources:                       resources,
-		GroupsResourcesErrors:           c.GroupsResourcesErrors,
-		LimitRanges:                     c.LimitRanges,
-		LimitRangesErrors:               c.LimitRangesErrors,
-	}, nil
 }

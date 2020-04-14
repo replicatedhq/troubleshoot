@@ -2,7 +2,6 @@ package collect
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"io"
 	"strings"
@@ -18,7 +17,7 @@ import (
 
 type LogsOutput map[string][]byte
 
-func Logs(ctx *Context, logsCollector *troubleshootv1beta1.Logs) ([]byte, error) {
+func Logs(ctx *Context, logsCollector *troubleshootv1beta1.Logs) (map[string][]byte, error) {
 	client, err := kubernetes.NewForConfig(ctx.ClientConfig)
 	if err != nil {
 		return nil, err
@@ -93,12 +92,7 @@ func Logs(ctx *Context, logsCollector *troubleshootv1beta1.Logs) ([]byte, error)
 		}
 	}
 
-	b, err := json.MarshalIndent(logsOutput, "", "  ")
-	if err != nil {
-		return nil, err
-	}
-
-	return b, nil
+	return logsOutput, nil
 }
 
 func listPodsInSelectors(client *kubernetes.Clientset, namespace string, selector []string) ([]corev1.Pod, []string) {

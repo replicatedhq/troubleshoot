@@ -3,6 +3,7 @@ package collect
 import (
 	"encoding/json"
 	"fmt"
+	"path"
 	"path/filepath"
 
 	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
@@ -24,41 +25,34 @@ type SecretOutput struct {
 	Errors      map[string][]byte `json:"secrets-errors/,omitempty"`
 }
 
-func Secret(ctx *Context, secretCollector *troubleshootv1beta1.Secret) ([]byte, error) {
+func Secret(ctx *Context, secretCollector *troubleshootv1beta1.Secret) (map[string][]byte, error) {
 	client, err := kubernetes.NewForConfig(ctx.ClientConfig)
 	if err != nil {
 		return nil, err
 	}
 
-	secretOutput := &SecretOutput{
-		FoundSecret: make(map[string][]byte),
-		Errors:      make(map[string][]byte),
-	}
+	secretOutput := map[string][]byte{}
 
-	path, encoded, err := secret(client, secretCollector)
+	filePath, encoded, err := secret(client, secretCollector)
 	if err != nil {
 		errorBytes, err := marshalNonNil([]string{err.Error()})
 		if err != nil {
 			return nil, err
 		}
-		secretOutput.Errors[path] = errorBytes
+		secretOutput[path.Join("secrets-errors", filePath)] = errorBytes
 	}
 	if encoded != nil {
-		secretOutput.FoundSecret[path] = encoded
-		if ctx.Redact {
-			secretOutput, err = secretOutput.Redact()
-			if err != nil {
-				return nil, err
-			}
+		secretOutput[path.Join("secrets", filePath)] = encoded
+	}
+
+	if ctx.Redact {
+		secretOutput, err = redactMap(secretOutput)
+		if err != nil {
+			return nil, err
 		}
 	}
 
-	b, err := json.MarshalIndent(secretOutput, "", "  ")
-	if err != nil {
-		return nil, err
-	}
-
-	return b, nil
+	return secretOutput, nil
 }
 
 func secret(client *kubernetes.Clientset, secretCollector *troubleshootv1beta1.Secret) (string, []byte, error) {

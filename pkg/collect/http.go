@@ -25,7 +25,7 @@ type httpError struct {
 	Message string `json:"message"`
 }
 
-func HTTP(ctx *Context, httpCollector *troubleshootv1beta1.HTTP) ([]byte, error) {
+func HTTP(ctx *Context, httpCollector *troubleshootv1beta1.HTTP) (map[string][]byte, error) {
 	var response *http.Response
 	var err error
 
@@ -52,12 +52,7 @@ func HTTP(ctx *Context, httpCollector *troubleshootv1beta1.HTTP) ([]byte, error)
 		filepath.Join(httpCollector.Name, fileName): output,
 	}
 
-	b, err := json.MarshalIndent(httpOutput, "", "  ")
-	if err != nil {
-		return nil, err
-	}
-
-	return b, nil
+	return httpOutput, nil
 }
 
 func doGet(get *troubleshootv1beta1.Get) (*http.Response, error) {
