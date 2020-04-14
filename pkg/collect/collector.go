@@ -40,7 +40,7 @@ func isExcluded(excludeVal multitype.BoolOrString) (bool, error) {
 	return parsed, nil
 }
 
-func (c *Collector) RunCollectorSync() ([]byte, error) {
+func (c *Collector) RunCollectorSync() (map[string][]byte, error) {
 	if c.Collect.ClusterInfo != nil {
 		isExcluded, err := isExcluded(c.Collect.ClusterInfo.Exclude)
 		if err != nil {
