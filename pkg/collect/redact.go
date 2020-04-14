@@ -7,11 +7,13 @@ import (
 func redactMap(input map[string][]byte) (map[string][]byte, error) {
 	result := make(map[string][]byte)
 	for k, v := range input {
-		redacted, err := redact.Redact(v)
-		if err != nil {
-			return nil, err
+		if v != nil {
+			redacted, err := redact.Redact(v)
+			if err != nil {
+				return nil, err
+			}
+			result[k] = redacted
 		}
-		result[k] = redacted
 	}
 	return result, nil
 }
