@@ -2,7 +2,6 @@ package collect
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"path/filepath"
 
@@ -15,7 +14,7 @@ import (
 
 type CopyOutput map[string][]byte
 
-func Copy(ctx *Context, copyCollector *troubleshootv1beta1.Copy) ([]byte, error) {
+func Copy(ctx *Context, copyCollector *troubleshootv1beta1.Copy) (map[string][]byte, error) {
 	client, err := kubernetes.NewForConfig(ctx.ClientConfig)
 	if err != nil {
 		return nil, err
@@ -59,12 +58,7 @@ func Copy(ctx *Context, copyCollector *troubleshootv1beta1.Copy) ([]byte, error)
 		}
 	}
 
-	b, err := json.MarshalIndent(copyOutput, "", "  ")
-	if err != nil {
-		return nil, err
-	}
-
-	return b, nil
+	return copyOutput, nil
 }
 
 func copyFiles(ctx *Context, client *kubernetes.Clientset, pod corev1.Pod, copyCollector *troubleshootv1beta1.Copy) (map[string][]byte, map[string]string) {

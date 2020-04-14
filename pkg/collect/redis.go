@@ -12,7 +12,7 @@ import (
 
 type RedisOutput map[string][]byte
 
-func Redis(ctx *Context, databaseCollector *troubleshootv1beta1.Database) ([]byte, error) {
+func Redis(ctx *Context, databaseCollector *troubleshootv1beta1.Database) (map[string][]byte, error) {
 	databaseConnection := DatabaseConnection{}
 
 	opt, err := redis.ParseURL(databaseCollector.URI)
@@ -55,10 +55,5 @@ func Redis(ctx *Context, databaseCollector *troubleshootv1beta1.Database) ([]byt
 		fmt.Sprintf("redis/%s.json", collectorName): b,
 	}
 
-	bb, err := json.Marshal(redisOutput)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to marshal redis output")
-	}
-
-	return bb, nil
+	return redisOutput, nil
 }

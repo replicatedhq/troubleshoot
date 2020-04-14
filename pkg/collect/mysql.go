@@ -12,7 +12,7 @@ import (
 
 type MysqlOutput map[string][]byte
 
-func Mysql(ctx *Context, databaseCollector *troubleshootv1beta1.Database) ([]byte, error) {
+func Mysql(ctx *Context, databaseCollector *troubleshootv1beta1.Database) (map[string][]byte, error) {
 	databaseConnection := DatabaseConnection{}
 
 	db, err := sql.Open("mysql", databaseCollector.URI)
@@ -44,10 +44,5 @@ func Mysql(ctx *Context, databaseCollector *troubleshootv1beta1.Database) ([]byt
 		fmt.Sprintf("mysql/%s.json", collectorName): b,
 	}
 
-	bb, err := json.Marshal(mysqlOutput)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to marshal mysql output")
-	}
-
-	return bb, nil
+	return mysqlOutput, nil
 }

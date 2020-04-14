@@ -2,7 +2,6 @@ package collect
 
 import (
 	"bytes"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"path/filepath"
@@ -17,7 +16,7 @@ import (
 
 type ExecOutput map[string][]byte
 
-func Exec(ctx *Context, execCollector *troubleshootv1beta1.Exec) ([]byte, error) {
+func Exec(ctx *Context, execCollector *troubleshootv1beta1.Exec) (map[string][]byte, error) {
 	if execCollector.Timeout == "" {
 		return execWithoutTimeout(ctx, execCollector)
 	}
@@ -28,7 +27,7 @@ func Exec(ctx *Context, execCollector *troubleshootv1beta1.Exec) ([]byte, error)
 	}
 
 	errCh := make(chan error, 1)
-	resultCh := make(chan []byte, 1)
+	resultCh := make(chan map[string][]byte, 1)
 
 	go func() {
 		b, err := execWithoutTimeout(ctx, execCollector)
@@ -49,7 +48,7 @@ func Exec(ctx *Context, execCollector *troubleshootv1beta1.Exec) ([]byte, error)
 	}
 }
 
-func execWithoutTimeout(ctx *Context, execCollector *troubleshootv1beta1.Exec) ([]byte, error) {
+func execWithoutTimeout(ctx *Context, execCollector *troubleshootv1beta1.Exec) (map[string][]byte, error) {
 	client, err := kubernetes.NewForConfig(ctx.ClientConfig)
 	if err != nil {
 		return nil, err
@@ -96,12 +95,7 @@ func execWithoutTimeout(ctx *Context, execCollector *troubleshootv1beta1.Exec) (
 		}
 	}
 
-	b, err := json.MarshalIndent(execOutput, "", "  ")
-	if err != nil {
-		return nil, err
-	}
-
-	return b, nil
+	return execOutput, nil
 }
 
 func getExecOutputs(ctx *Context, client *kubernetes.Clientset, pod corev1.Pod, execCollector *troubleshootv1beta1.Exec) ([]byte, []byte, []string) {

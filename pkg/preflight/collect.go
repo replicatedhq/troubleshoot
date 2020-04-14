@@ -1,10 +1,7 @@
 package preflight
 
 import (
-	"encoding/base64"
-	"encoding/json"
 	"fmt"
-	"path/filepath"
 
 	"github.com/pkg/errors"
 	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
@@ -86,12 +83,7 @@ func Collect(opts CollectOpts, p *troubleshootv1beta1.Preflight) (CollectResult,
 		}
 
 		if result != nil {
-			output, err := parseCollectorOutput(string(result))
-			if err != nil {
-				opts.ProgressChan <- errors.Errorf("failed to parse collector output %s: %v\n", collector.GetDisplayName(), err)
-				continue
-			}
-			for k, v := range output {
+			for k, v := range result {
 				allCollectedData[k] = v
 			}
 		}
@@ -99,38 +91,6 @@ func Collect(opts CollectOpts, p *troubleshootv1beta1.Preflight) (CollectResult,
 
 	collectResult.AllCollectedData = allCollectedData
 	return collectResult, nil
-}
-
-func parseCollectorOutput(output string) (map[string][]byte, error) {
-	input := make(map[string]interface{})
-	files := make(map[string][]byte)
-	if err := json.Unmarshal([]byte(output), &input); err != nil {
-		return nil, err
-	}
-
-	for filename, maybeContents := range input {
-		fileDir, fileName := filepath.Split(filename)
-
-		switch maybeContents.(type) {
-		case string:
-			decoded, err := base64.StdEncoding.DecodeString(maybeContents.(string))
-			if err != nil {
-				return nil, err
-			}
-			files[filepath.Join(fileDir, fileName)] = decoded
-
-		case map[string]interface{}:
-			for k, v := range maybeContents.(map[string]interface{}) {
-				decoded, err := base64.StdEncoding.DecodeString(v.(string))
-				if err != nil {
-					return nil, err
-				}
-				files[filepath.Join(fileDir, fileName, k)] = decoded
-			}
-		}
-	}
-
-	return files, nil
 }
 
 func ensureCollectorInList(list []*troubleshootv1beta1.Collect, collector troubleshootv1beta1.Collect) []*troubleshootv1beta1.Collect {

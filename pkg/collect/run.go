@@ -1,7 +1,6 @@
 package collect
 
 import (
-	"encoding/json"
 	"time"
 
 	"github.com/pkg/errors"
@@ -14,7 +13,7 @@ import (
 
 type RunOutput map[string][]byte
 
-func Run(ctx *Context, runCollector *troubleshootv1beta1.Run) ([]byte, error) {
+func Run(ctx *Context, runCollector *troubleshootv1beta1.Run) (map[string][]byte, error) {
 	client, err := kubernetes.NewForConfig(ctx.ClientConfig)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create client from config")
@@ -41,7 +40,7 @@ func Run(ctx *Context, runCollector *troubleshootv1beta1.Run) ([]byte, error) {
 	}
 
 	errCh := make(chan error, 1)
-	resultCh := make(chan []byte, 1)
+	resultCh := make(chan map[string][]byte, 1)
 	go func() {
 		b, err := runWithoutTimeout(ctx, pod, runCollector)
 		if err != nil {
@@ -61,7 +60,7 @@ func Run(ctx *Context, runCollector *troubleshootv1beta1.Run) ([]byte, error) {
 	}
 }
 
-func runWithoutTimeout(ctx *Context, pod *corev1.Pod, runCollector *troubleshootv1beta1.Run) ([]byte, error) {
+func runWithoutTimeout(ctx *Context, pod *corev1.Pod, runCollector *troubleshootv1beta1.Run) (map[string][]byte, error) {
 	client, err := kubernetes.NewForConfig(ctx.ClientConfig)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed create client from config")
@@ -101,12 +100,7 @@ func runWithoutTimeout(ctx *Context, pod *corev1.Pod, runCollector *troubleshoot
 		}
 	}
 
-	b, err := json.MarshalIndent(runOutput, "", "  ")
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to marshal logs output")
-	}
-
-	return b, nil
+	return runOutput, nil
 }
 
 func runPod(client *kubernetes.Clientset, runCollector *troubleshootv1beta1.Run, namespace string) (*corev1.Pod, error) {

@@ -12,7 +12,7 @@ import (
 
 type PostgresOutput map[string][]byte
 
-func Postgres(ctx *Context, databaseCollector *troubleshootv1beta1.Database) ([]byte, error) {
+func Postgres(ctx *Context, databaseCollector *troubleshootv1beta1.Database) (map[string][]byte, error) {
 	databaseConnection := DatabaseConnection{}
 
 	db, err := sql.Open("postgres", databaseCollector.URI)
@@ -44,10 +44,5 @@ func Postgres(ctx *Context, databaseCollector *troubleshootv1beta1.Database) ([]
 		fmt.Sprintf("postgres/%s.json", collectorName): b,
 	}
 
-	bb, err := json.Marshal(postgresOutput)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to marshal postgres output")
-	}
-
-	return bb, nil
+	return postgresOutput, nil
 }

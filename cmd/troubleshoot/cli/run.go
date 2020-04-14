@@ -2,8 +2,6 @@ package cli
 
 import (
 	"crypto/tls"
-	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -262,7 +260,7 @@ func runCollectors(v *viper.Viper, collector troubleshootv1beta1.Collector, prog
 		}
 
 		if result != nil {
-			err = parseAndSaveCollectorOutput(string(result), bundlePath)
+			err = saveCollectorOutput(result, bundlePath)
 			if err != nil {
 				progressChan <- fmt.Errorf("failed to parse collector spec %q: %v", collector.GetDisplayName(), err)
 				continue
@@ -282,13 +280,8 @@ func runCollectors(v *viper.Viper, collector troubleshootv1beta1.Collector, prog
 	return filename, nil
 }
 
-func parseAndSaveCollectorOutput(output string, bundlePath string) error {
-	input := make(map[string]interface{})
-	if err := json.Unmarshal([]byte(output), &input); err != nil {
-		return errors.Wrap(err, "unmarshal output")
-	}
-
-	for filename, maybeContents := range input {
+func saveCollectorOutput(output map[string][]byte, bundlePath string) error {
+	for filename, maybeContents := range output {
 		fileDir, fileName := filepath.Split(filename)
 		outPath := filepath.Join(bundlePath, fileDir)
 
@@ -296,32 +289,8 @@ func parseAndSaveCollectorOutput(output string, bundlePath string) error {
 			return errors.Wrap(err, "create output file")
 		}
 
-		switch maybeContents.(type) {
-		case string:
-			decoded, err := base64.StdEncoding.DecodeString(maybeContents.(string))
-			if err != nil {
-				return errors.Wrap(err, "decode collector output")
-			}
-
-			if err := writeFile(filepath.Join(outPath, fileName), decoded); err != nil {
-				return errors.Wrap(err, "write collector output")
-			}
-
-		case map[string]interface{}:
-			for k, v := range maybeContents.(map[string]interface{}) {
-				s, _ := filepath.Split(filepath.Join(outPath, fileName, k))
-				if err := os.MkdirAll(s, 0777); err != nil {
-					return errors.Wrap(err, "write output directories")
-				}
-
-				decoded, err := base64.StdEncoding.DecodeString(v.(string))
-				if err != nil {
-					return errors.Wrap(err, "decode output")
-				}
-				if err := writeFile(filepath.Join(outPath, fileName, k), decoded); err != nil {
-					return errors.Wrap(err, "write output")
-				}
-			}
+		if err := writeFile(filepath.Join(outPath, fileName), maybeContents); err != nil {
+			return errors.Wrap(err, "write collector output")
 		}
 	}
 

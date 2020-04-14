@@ -18,28 +18,23 @@ type ClusterInfoOutput struct {
 	Errors         []byte `json:"cluster-info/errors.json,omitempty"`
 }
 
-func ClusterInfo(ctx *Context) ([]byte, error) {
+func ClusterInfo(ctx *Context) (map[string][]byte, error) {
 	client, err := kubernetes.NewForConfig(ctx.ClientConfig)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to create kubernetes clientset")
 	}
 
-	clusterInfoOutput := ClusterInfoOutput{}
+	clusterInfoOutput := map[string][]byte{}
 
 	// cluster version
 	clusterVersion, clusterErrors := clusterVersion(client)
-	clusterInfoOutput.ClusterVersion = clusterVersion
-	clusterInfoOutput.Errors, err = marshalNonNil(clusterErrors)
+	clusterInfoOutput["cluster-info/cluster_version.json"] = clusterVersion
+	clusterInfoOutput["cluster-info/errors.json"], err = marshalNonNil(clusterErrors)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to marshal errors")
 	}
 
-	b, err := json.MarshalIndent(clusterInfoOutput, "", "  ")
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to marshal cluster info")
-	}
-
-	return b, nil
+	return clusterInfoOutput, nil
 }
 
 func clusterVersion(client *kubernetes.Clientset) ([]byte, []string) {
