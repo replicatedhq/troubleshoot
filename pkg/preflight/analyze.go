@@ -2,9 +2,9 @@ package preflight
 
 import (
 	"fmt"
+	"path/filepath"
 	"strings"
 
-	"github.com/gobwas/glob"
 	analyze "github.com/replicatedhq/troubleshoot/pkg/analyze"
 )
 
@@ -26,14 +26,8 @@ func (c CollectResult) Analyze() []*analyze.AnalyzeResult {
 			}
 		}
 
-		g, err := glob.Compile(prefix)
-		// don't treat this as a true error as glob is a late addition
-		if err != nil {
-			return matching, nil
-		}
-
 		for k, v := range c.AllCollectedData {
-			if g.Match(k) {
+			if ok, _ := filepath.Match(prefix, k); ok {
 				matching[k] = v
 			}
 		}

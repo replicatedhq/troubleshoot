@@ -2,10 +2,10 @@ package analyzer
 
 import (
 	"fmt"
+	"path/filepath"
 	"strings"
 	"testing"
 
-	"github.com/gobwas/glob"
 	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -314,13 +314,8 @@ func Test_textAnalyze(t *testing.T) {
 					}
 				}
 
-				g, err := glob.Compile(n)
-				if err != nil {
-					return nil, err
-				}
-
 				for k, v := range test.files {
-					if g.Match(k) {
+					if ok, _ := filepath.Match(n, k); ok {
 						matching[k] = v
 					}
 				}

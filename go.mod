@@ -17,7 +17,6 @@ require (
 	github.com/go-openapi/spec v0.19.4 // indirect
 	github.com/go-redis/redis/v7 v7.2.0
 	github.com/go-sql-driver/mysql v1.5.0
-	github.com/gobwas/glob v0.2.3
 	github.com/golang/snappy v0.0.1 // indirect
 	github.com/google/gofuzz v1.1.0
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510 // indirect
