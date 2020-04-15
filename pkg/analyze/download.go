@@ -63,7 +63,7 @@ func DownloadAndAnalyze(bundleURL string, analyzersSpec string) ([]*AnalyzeResul
 		}
 
 		if analyzeResult != nil {
-			analyzeResults = append(analyzeResults, analyzeResult)
+			analyzeResults = append(analyzeResults, analyzeResult...)
 		}
 	}
 
@@ -192,6 +192,6 @@ func (f fileContentProvider) getFileContents(fileName string) ([]byte, error) {
 
 func (f fileContentProvider) getChildFileContents(dirName string) (map[string][]byte, error) {
 	// TODO: walk sub-dirs
-	// return nil, errors.New("not implemnted")
+	// return nil, errors.New("not implemented")
 	return map[string][]byte{}, nil
 }

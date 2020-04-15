@@ -32,15 +32,17 @@ func (c CollectResult) Analyze() []*analyze.AnalyzeResult {
 	for _, analyzer := range c.Spec.Spec.Analyzers {
 		analyzeResult, err := analyze.Analyze(analyzer, getCollectedFileContents, getChildCollectedFileContents)
 		if err != nil {
-			analyzeResult = &analyze.AnalyzeResult{
-				IsFail:  true,
-				Title:   "Analyzer Failed",
-				Message: err.Error(),
+			analyzeResult = []*analyze.AnalyzeResult{
+				{
+					IsFail:  true,
+					Title:   "Analyzer Failed",
+					Message: err.Error(),
+				},
 			}
 		}
 
 		if analyzeResult != nil {
-			analyzeResults = append(analyzeResults, analyzeResult)
+			analyzeResults = append(analyzeResults, analyzeResult...)
 		}
 	}
 
