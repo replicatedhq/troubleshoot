@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/gobwas/glob"
 	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -261,6 +262,42 @@ func Test_textAnalyze(t *testing.T) {
 				"text-collector-2/cfile-3.txt": []byte("Yes it all succeeded"),
 			},
 		},
+		{
+			name: "multiple results case 2 globbing",
+			analyzer: troubleshootv1beta1.TextAnalyze{
+				Outcomes: []*troubleshootv1beta1.Outcome{
+					{
+						Pass: &troubleshootv1beta1.SingleOutcome{
+							Message: "pass",
+						},
+					},
+					{
+						Fail: &troubleshootv1beta1.SingleOutcome{
+							Message: "fail",
+						},
+					},
+				},
+				CollectorName: "text-collector-1",
+				FileName:      "cfile*.log",
+				RegexPattern:  "succeeded",
+			},
+			expectResult: []AnalyzeResult{
+				{
+					IsPass:  false,
+					IsWarn:  false,
+					IsFail:  true,
+					Title:   "text-collector-1",
+					Message: "fail",
+					IconKey: "kubernetes_text_analyze",
+					IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg",
+				},
+			},
+			files: map[string][]byte{
+				"text-collector-1/cfile-1.txt": []byte("Yes it all succeeded"),
+				"text-collector-1/cfile-2.log": []byte("no success here"),
+				"text-collector-2/cfile-3.txt": []byte("Yes it all succeeded"),
+			},
+		},
 	}
 
 	for _, test := range tests {
@@ -276,6 +313,18 @@ func Test_textAnalyze(t *testing.T) {
 						matching[k] = v
 					}
 				}
+
+				g, err := glob.Compile(n)
+				if err != nil {
+					return nil, err
+				}
+
+				for k, v := range test.files {
+					if g.Match(k) {
+						matching[k] = v
+					}
+				}
+
 				if len(matching) == 0 {
 					return nil, fmt.Errorf("File not found: %s", n)
 				}

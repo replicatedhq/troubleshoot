@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/gobwas/glob"
 	analyze "github.com/replicatedhq/troubleshoot/pkg/analyze"
 )
 
@@ -21,6 +22,18 @@ func (c CollectResult) Analyze() []*analyze.AnalyzeResult {
 		matching := make(map[string][]byte)
 		for k, v := range c.AllCollectedData {
 			if strings.HasPrefix(k, prefix) {
+				matching[k] = v
+			}
+		}
+
+		g, err := glob.Compile(prefix)
+		// don't treat this as a true error as glob is a late addition
+		if err != nil {
+			return matching, nil
+		}
+
+		for k, v := range c.AllCollectedData {
+			if g.Match(k) {
 				matching[k] = v
 			}
 		}
