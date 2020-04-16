@@ -20,11 +20,6 @@ type FoundSecret struct {
 	Value        string `json:"value,omitempty"`
 }
 
-type SecretOutput struct {
-	FoundSecret map[string][]byte `json:"secrets/,omitempty"`
-	Errors      map[string][]byte `json:"secrets-errors/,omitempty"`
-}
-
 func Secret(ctx *Context, secretCollector *troubleshootv1beta1.Secret) (map[string][]byte, error) {
 	client, err := kubernetes.NewForConfig(ctx.ClientConfig)
 	if err != nil {
@@ -43,13 +38,6 @@ func Secret(ctx *Context, secretCollector *troubleshootv1beta1.Secret) (map[stri
 	}
 	if encoded != nil {
 		secretOutput[path.Join("secrets", filePath)] = encoded
-	}
-
-	if ctx.Redact {
-		secretOutput, err = redactMap(secretOutput)
-		if err != nil {
-			return nil, err
-		}
 	}
 
 	return secretOutput, nil
@@ -103,16 +91,4 @@ func secret(client *kubernetes.Clientset, secretCollector *troubleshootv1beta1.S
 	}
 
 	return path, b, nil
-}
-
-func (s *SecretOutput) Redact() (*SecretOutput, error) {
-	foundSecret, err := redactMap(s.FoundSecret)
-	if err != nil {
-		return nil, err
-	}
-
-	return &SecretOutput{
-		FoundSecret: foundSecret,
-		Errors:      s.Errors,
-	}, nil
 }

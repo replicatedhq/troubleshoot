@@ -12,15 +12,13 @@ import (
 	"k8s.io/client-go/tools/remotecommand"
 )
 
-type CopyOutput map[string][]byte
-
 func Copy(ctx *Context, copyCollector *troubleshootv1beta1.Copy) (map[string][]byte, error) {
 	client, err := kubernetes.NewForConfig(ctx.ClientConfig)
 	if err != nil {
 		return nil, err
 	}
 
-	copyOutput := CopyOutput{}
+	copyOutput := map[string][]byte{}
 
 	pods, podsErrors := listPodsInSelectors(client, copyCollector.Namespace, copyCollector.Selector)
 	if len(podsErrors) > 0 {
@@ -47,13 +45,6 @@ func Copy(ctx *Context, copyCollector *troubleshootv1beta1.Copy) (map[string][]b
 
 			for k, v := range files {
 				copyOutput[filepath.Join(bundlePath, k)] = v
-			}
-		}
-
-		if ctx.Redact {
-			copyOutput, err = copyOutput.Redact()
-			if err != nil {
-				return nil, err
 			}
 		}
 	}
@@ -118,15 +109,6 @@ func copyFiles(ctx *Context, client *kubernetes.Clientset, pod corev1.Pod, copyC
 	return map[string][]byte{
 		copyCollector.ContainerPath: output.Bytes(),
 	}, nil
-}
-
-func (c CopyOutput) Redact() (CopyOutput, error) {
-	results, err := redactMap(c)
-	if err != nil {
-		return nil, err
-	}
-
-	return results, nil
 }
 
 func getCopyErrosFileName(copyCollector *troubleshootv1beta1.Copy) string {

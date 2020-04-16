@@ -10,8 +10,6 @@ import (
 	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
 )
 
-type PostgresOutput map[string][]byte
-
 func Postgres(ctx *Context, databaseCollector *troubleshootv1beta1.Database) (map[string][]byte, error) {
 	databaseConnection := DatabaseConnection{}
 

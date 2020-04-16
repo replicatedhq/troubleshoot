@@ -11,8 +11,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-type RunOutput map[string][]byte
-
 func Run(ctx *Context, runCollector *troubleshootv1beta1.Run) (map[string][]byte, error) {
 	client, err := kubernetes.NewForConfig(ctx.ClientConfig)
 	if err != nil {
@@ -79,7 +77,7 @@ func runWithoutTimeout(ctx *Context, pod *corev1.Pod, runCollector *troubleshoot
 		time.Sleep(time.Second * 1)
 	}
 
-	runOutput := RunOutput{}
+	runOutput := map[string][]byte{}
 
 	limits := troubleshootv1beta1.LogLimits{
 		MaxLines: 10000,
@@ -91,13 +89,6 @@ func runWithoutTimeout(ctx *Context, pod *corev1.Pod, runCollector *troubleshoot
 
 	for k, v := range podLogs {
 		runOutput[k] = v
-	}
-
-	if ctx.Redact {
-		runOutput, err = runOutput.Redact()
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to redact pod logs")
-		}
 	}
 
 	return runOutput, nil
@@ -149,13 +140,4 @@ func runPod(client *kubernetes.Clientset, runCollector *troubleshootv1beta1.Run,
 	}
 
 	return created, nil
-}
-
-func (r RunOutput) Redact() (RunOutput, error) {
-	podLogs, err := redactMap(r)
-	if err != nil {
-		return nil, err
-	}
-
-	return podLogs, nil
 }

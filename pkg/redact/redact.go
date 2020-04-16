@@ -6,7 +6,11 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"path/filepath"
 	"regexp"
+
+	"github.com/pkg/errors"
+	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
 )
 
 const (
@@ -17,11 +21,17 @@ type Redactor interface {
 	Redact(input io.Reader) io.Reader
 }
 
-func Redact(input []byte) ([]byte, error) {
-	redactors, err := GetRedactors()
+func Redact(input []byte, path string, additionalRedactors []*troubleshootv1beta1.Redact) ([]byte, error) {
+	redactors, err := getRedactors()
 	if err != nil {
 		return nil, err
 	}
+
+	builtRedactors, err := buildAdditionalRedactors(path, additionalRedactors)
+	if err != nil {
+		return nil, errors.Wrap(err, "build custom redactors")
+	}
+	redactors = append(redactors, builtRedactors...)
 
 	nextReader := io.Reader(bytes.NewReader(input))
 	for _, r := range redactors {
@@ -36,7 +46,66 @@ func Redact(input []byte) ([]byte, error) {
 	return redacted, nil
 }
 
-func GetRedactors() ([]Redactor, error) {
+func buildAdditionalRedactors(path string, redacts []*troubleshootv1beta1.Redact) ([]Redactor, error) {
+	additionalRedactors := []Redactor{}
+	for _, redact := range redacts {
+		if redact == nil {
+			continue
+		}
+
+		// check if redact matches path
+		matches, err := redactMatchesPath(path, redact)
+		if err != nil {
+			return nil, err
+		}
+		if !matches {
+			continue
+		}
+
+		for _, re := range redact.Regex {
+			r, err := NewSingleLineRedactor(re, MASK_TEXT)
+			if err != nil {
+				return nil, err // maybe skip broken ones?
+			}
+			additionalRedactors = append(additionalRedactors, r)
+		}
+
+		for _, literal := range redact.Values {
+			additionalRedactors = append(additionalRedactors, literalString(literal))
+		}
+	}
+	return additionalRedactors, nil
+}
+
+func redactMatchesPath(path string, redact *troubleshootv1beta1.Redact) (bool, error) {
+	if redact.File == "" && len(redact.Files) == 0 {
+		return true, nil
+	}
+
+	if redact.File != "" {
+		matches, err := filepath.Match(redact.File, path)
+		if err != nil {
+			return false, errors.Wrapf(err, "invalid file match string %q", redact.File)
+		}
+		if matches {
+			return true, nil
+		}
+	}
+
+	for i, fileGlobString := range redact.Files {
+		matches, err := filepath.Match(fileGlobString, path)
+		if err != nil {
+			return false, errors.Wrapf(err, "invalid file match string %d %q", i, fileGlobString)
+		}
+		if matches {
+			return true, nil
+		}
+	}
+
+	return false, nil
+}
+
+func getRedactors() ([]Redactor, error) {
 	// TODO: Make this configurable
 
 	// (?i) makes it case insensitive

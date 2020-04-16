@@ -6,7 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
+	"github.com/stretchr/testify/require"
 	"go.undefinedlabs.com/scopeagent"
 )
 
@@ -1622,8 +1623,9 @@ func Test_Redactors(t *testing.T) {
 	t.Run("test default redactors", func(t *testing.T) {
 		scopetest := scopeagent.StartTest(t)
 		defer scopetest.End()
-		redactors, err := GetRedactors()
-		assert.NoError(t, err)
+		req := require.New(t)
+		redactors, err := getRedactors()
+		req.NoError(err)
 
 		nextReader := io.Reader(strings.NewReader(original))
 		for _, r := range redactors {
@@ -1631,8 +1633,101 @@ func Test_Redactors(t *testing.T) {
 		}
 
 		redacted, err := ioutil.ReadAll(nextReader)
-		assert.NoError(t, err)
+		req.NoError(err)
 
-		assert.JSONEq(t, expected, string(redacted))
+		req.JSONEq(expected, string(redacted))
 	})
+}
+
+func Test_redactMatchesPath(t *testing.T) {
+	type args struct {
+		path   string
+		redact *troubleshootv1beta1.Redact
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
+	}{
+		{
+			name: "literal path",
+			args: args{
+				path: "/my/test/path",
+				redact: &troubleshootv1beta1.Redact{
+					File:  "/my/test/path",
+					Files: nil,
+				},
+			},
+			want: true,
+		},
+		{
+			name: "no path",
+			args: args{
+				path: "/my/test/path",
+				redact: &troubleshootv1beta1.Redact{
+					File:  "",
+					Files: nil,
+				},
+			},
+			want: true,
+		},
+		{
+			name: "wrong literal path",
+			args: args{
+				path: "/my/test/path",
+				redact: &troubleshootv1beta1.Redact{
+					File:  "/my/test/path/two",
+					Files: nil,
+				},
+			},
+			want: false,
+		},
+		{
+			name: "path with glob",
+			args: args{
+				path: "/my/test/path/two",
+				redact: &troubleshootv1beta1.Redact{
+					File:  "/my/test/path/*",
+					Files: nil,
+				},
+			},
+			want: true,
+		},
+		{
+			name: "path with glob in middle",
+			args: args{
+				path: "/my/test/path/two",
+				redact: &troubleshootv1beta1.Redact{
+					File:  "/my/test/*/*",
+					Files: nil,
+				},
+			},
+			want: true,
+		},
+		{
+			name: "multiple paths",
+			args: args{
+				path: "/my/test/path/two",
+				redact: &troubleshootv1beta1.Redact{
+					File: "",
+					Files: []string{
+						"/not/the/path",
+						"/my/test/*/*",
+					},
+				},
+			},
+			want: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			scopetest := scopeagent.StartTest(t)
+			defer scopetest.End()
+			req := require.New(t)
+
+			got, err := redactMatchesPath(tt.args.path, tt.args.redact)
+			req.NoError(err)
+			req.Equal(tt.want, got)
+		})
+	}
 }
