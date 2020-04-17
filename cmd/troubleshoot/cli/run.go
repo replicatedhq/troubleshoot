@@ -262,6 +262,7 @@ func runCollectors(v *viper.Viper, collector troubleshootv1beta1.Collector, addi
 	if additionalRedactors != nil {
 		globalRedactors = additionalRedactors.Spec.Redactors
 	}
+	globalRedactors = append(globalRedactors, collector.Spec.GlobalRedactors...)
 
 	// Run preflights collectors synchronously
 	for _, collector := range collectors {
