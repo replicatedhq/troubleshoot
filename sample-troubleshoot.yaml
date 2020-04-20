@@ -18,6 +18,3 @@ spec:
       data: |
         my super secret password is abc123
         another redaction will go here
-      redactors:
-        - values:
-          - secret # this will replace the string 'secret' with '***HIDDEN***' in the files produced by this collector

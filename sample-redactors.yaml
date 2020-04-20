@@ -3,7 +3,7 @@ kind: Redactor
 metadata:
   name: my-application-name
 spec:
-  redacts:
+  redactors:
   - name: replace password # names are not used internally, but are useful for recordkeeping
     file: data/my-password-dump # this targets a single file
     values:
