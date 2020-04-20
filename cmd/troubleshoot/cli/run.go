@@ -47,16 +47,18 @@ func runTroubleshoot(v *viper.Viper, arg string) error {
 		return errors.Wrap(err, "failed to load collector spec")
 	}
 
+	multidocs := strings.Split(string(collectorContent), "---")
+
 	troubleshootclientsetscheme.AddToScheme(scheme.Scheme)
 	decode := scheme.Codecs.UniversalDeserializer().Decode
-	obj, _, err := decode([]byte(collectorContent), nil, nil)
+	obj, _, err := decode([]byte(multidocs[0]), nil, nil)
 	if err != nil {
 		return errors.Wrapf(err, "failed to parse %s", arg)
 	}
 
 	collector := obj.(*troubleshootv1beta1.Collector)
 
-	var additionalRedactors *troubleshootv1beta1.Redactor
+	additionalRedactors := &troubleshootv1beta1.Redactor{}
 	if v.GetString("redactors") != "" {
 		redactorContent, err := loadSpec(v, v.GetString("redactors"))
 		if err != nil {
@@ -71,6 +73,18 @@ func runTroubleshoot(v *viper.Viper, arg string) error {
 		if !ok {
 			return fmt.Errorf("%s is not a troubleshootv1beta1 redactor type", v.GetString("redactors"))
 		}
+	}
+
+	for i, additionalDoc := range multidocs[1:] {
+		obj, _, err := decode([]byte(additionalDoc), nil, nil)
+		if err != nil {
+			return errors.Wrapf(err, "failed to parse additional doc %d", i)
+		}
+		multidocRedactors, ok := obj.(*troubleshootv1beta1.Redactor)
+		if !ok {
+			continue
+		}
+		additionalRedactors.Spec.Redactors = append(additionalRedactors.Spec.Redactors, multidocRedactors.Spec.Redactors...)
 	}
 
 	s := spin.New()
