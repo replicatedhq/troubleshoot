@@ -11,9 +11,10 @@ import (
 
 func TestCollector_RunCollectorSyncNoRedact(t *testing.T) {
 	tests := []struct {
-		name    string
-		Collect *troubleshootv1beta1.Collect
-		want    map[string]string
+		name      string
+		Collect   *troubleshootv1beta1.Collect
+		Redactors []*troubleshootv1beta1.Redact
+		want      map[string]string
 	}{
 		{
 			name: "data with custom redactor",
@@ -21,24 +22,24 @@ func TestCollector_RunCollectorSyncNoRedact(t *testing.T) {
 				Data: &troubleshootv1beta1.Data{
 					CollectorMeta: troubleshootv1beta1.CollectorMeta{
 						CollectorName: "datacollectorname",
-						Redactors: []*troubleshootv1beta1.Redact{
-							{
-								Name:   "",
-								File:   "",
-								Files:  nil,
-								Values: nil,
-								Regex: []string{
-									`abc`,
-									`(another)(?P<mask>.*)(here)`,
-								},
-							},
-						},
-						Exclude: multitype.BoolOrString{},
+						Exclude:       multitype.BoolOrString{},
 					},
 					Name: "data",
 					Data: `abc 123
 another line here
 pwd=somethinggoeshere;`,
+				},
+			},
+			Redactors: []*troubleshootv1beta1.Redact{
+				{
+					Name:   "",
+					File:   "",
+					Files:  nil,
+					Values: nil,
+					Regex: []string{
+						`abc`,
+						`(another)(?P<mask>.*)(here)`,
+					},
 				},
 			},
 			want: map[string]string{
@@ -54,22 +55,22 @@ pwd=***HIDDEN***;
 				Data: &troubleshootv1beta1.Data{
 					CollectorMeta: troubleshootv1beta1.CollectorMeta{
 						CollectorName: "datacollectorname",
-						Redactors: []*troubleshootv1beta1.Redact{
-							{
-								Name:   "",
-								File:   "data/*",
-								Values: nil,
-								Regex: []string{
-									`(another)(?P<mask>.*)(here)`,
-								},
-							},
-						},
-						Exclude: multitype.BoolOrString{},
+						Exclude:       multitype.BoolOrString{},
 					},
 					Name: "data",
 					Data: `abc 123
 another line here
 pwd=somethinggoeshere;`,
+				},
+			},
+			Redactors: []*troubleshootv1beta1.Redact{
+				{
+					Name:   "",
+					File:   "data/*",
+					Values: nil,
+					Regex: []string{
+						`(another)(?P<mask>.*)(here)`,
+					},
 				},
 			},
 			want: map[string]string{
@@ -85,22 +86,22 @@ pwd=***HIDDEN***;
 				Data: &troubleshootv1beta1.Data{
 					CollectorMeta: troubleshootv1beta1.CollectorMeta{
 						CollectorName: "datacollectorname",
-						Redactors: []*troubleshootv1beta1.Redact{
-							{
-								Name:   "",
-								File:   "notdata/*",
-								Values: nil,
-								Regex: []string{
-									`(another)(?P<mask>.*)(here)`,
-								},
-							},
-						},
-						Exclude: multitype.BoolOrString{},
+						Exclude:       multitype.BoolOrString{},
 					},
 					Name: "data",
 					Data: `abc 123
 another line here
 pwd=somethinggoeshere;`,
+				},
+			},
+			Redactors: []*troubleshootv1beta1.Redact{
+				{
+					Name:   "",
+					File:   "notdata/*",
+					Values: nil,
+					Regex: []string{
+						`(another)(?P<mask>.*)(here)`,
+					},
 				},
 			},
 			want: map[string]string{
@@ -116,25 +117,25 @@ pwd=***HIDDEN***;
 				Data: &troubleshootv1beta1.Data{
 					CollectorMeta: troubleshootv1beta1.CollectorMeta{
 						CollectorName: "datacollectorname",
-						Redactors: []*troubleshootv1beta1.Redact{
-							{
-								Name: "",
-								Files: []string{
-									"notData/*",
-									"data/*",
-								},
-								Values: nil,
-								Regex: []string{
-									`(another)(?P<mask>.*)(here)`,
-								},
-							},
-						},
-						Exclude: multitype.BoolOrString{},
+						Exclude:       multitype.BoolOrString{},
 					},
 					Name: "data",
 					Data: `abc 123
 another line here
 pwd=somethinggoeshere;`,
+				},
+			},
+			Redactors: []*troubleshootv1beta1.Redact{
+				{
+					Name: "",
+					Files: []string{
+						"notData/*",
+						"data/*",
+					},
+					Values: nil,
+					Regex: []string{
+						`(another)(?P<mask>.*)(here)`,
+					},
 				},
 			},
 			want: map[string]string{
@@ -150,25 +151,25 @@ pwd=***HIDDEN***;
 				Data: &troubleshootv1beta1.Data{
 					CollectorMeta: troubleshootv1beta1.CollectorMeta{
 						CollectorName: "data/collectorname",
-						Redactors: []*troubleshootv1beta1.Redact{
-							{
-								Name: "",
-								Files: []string{
-									"data/*/*",
-								},
-								Values: []string{
-									`abc`,
-									`123`,
-									`another`,
-								},
-							},
-						},
-						Exclude: multitype.BoolOrString{},
+						Exclude:       multitype.BoolOrString{},
 					},
 					Name: "data",
 					Data: `abc 123
 another line here
 pwd=somethinggoeshere;`,
+				},
+			},
+			Redactors: []*troubleshootv1beta1.Redact{
+				{
+					Name: "",
+					Files: []string{
+						"data/*/*",
+					},
+					Values: []string{
+						`abc`,
+						`123`,
+						`another`,
+					},
 				},
 			},
 			want: map[string]string{
@@ -189,7 +190,7 @@ pwd=***HIDDEN***;
 				Collect: tt.Collect,
 				Redact:  true,
 			}
-			got, err := c.RunCollectorSync(nil)
+			got, err := c.RunCollectorSync(tt.Redactors)
 			req.NoError(err)
 
 			// convert to string to make differences easier to see
@@ -204,9 +205,10 @@ pwd=***HIDDEN***;
 
 func TestCollector_RunCollectorSync(t *testing.T) {
 	tests := []struct {
-		name    string
-		Collect *troubleshootv1beta1.Collect
-		want    map[string]string
+		name      string
+		Collect   *troubleshootv1beta1.Collect
+		Redactors []*troubleshootv1beta1.Redact
+		want      map[string]string
 	}{
 		{
 			name: "data with custom redactor - but redaction disabled",
@@ -214,24 +216,24 @@ func TestCollector_RunCollectorSync(t *testing.T) {
 				Data: &troubleshootv1beta1.Data{
 					CollectorMeta: troubleshootv1beta1.CollectorMeta{
 						CollectorName: "datacollectorname",
-						Redactors: []*troubleshootv1beta1.Redact{
-							{
-								Name:   "",
-								File:   "",
-								Files:  nil,
-								Values: nil,
-								Regex: []string{
-									`abc`,
-									`(another)(?P<mask>.*)(here)`,
-								},
-							},
-						},
-						Exclude: multitype.BoolOrString{},
+						Exclude:       multitype.BoolOrString{},
 					},
 					Name: "data",
 					Data: `abc 123
 another line here
 pwd=somethinggoeshere;`,
+				},
+			},
+			Redactors: []*troubleshootv1beta1.Redact{
+				{
+					Name:   "",
+					File:   "",
+					Files:  nil,
+					Values: nil,
+					Regex: []string{
+						`abc`,
+						`(another)(?P<mask>.*)(here)`,
+					},
 				},
 			},
 			want: map[string]string{
@@ -251,7 +253,7 @@ pwd=somethinggoeshere;`,
 				Collect: tt.Collect,
 				Redact:  false,
 			}
-			got, err := c.RunCollectorSync(nil)
+			got, err := c.RunCollectorSync(tt.Redactors)
 			req.NoError(err)
 
 			// convert to string to make differences easier to see

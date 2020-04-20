@@ -9,8 +9,7 @@ import (
 )
 
 type CollectorMeta struct {
-	CollectorName string    `json:"collectorName,omitempty" yaml:"collectorName,omitempty"`
-	Redactors     []*Redact `json:"redactors,omitempty" yaml:"redactors,omitempty"`
+	CollectorName string `json:"collectorName,omitempty" yaml:"collectorName,omitempty"`
 	// +optional
 	Exclude multitype.BoolOrString `json:"exclude,omitempty" yaml:"exclude,omitempty"`
 }
