@@ -18,3 +18,17 @@ spec:
       data: |
         my super secret password is abc123
         another redaction will go here
+---
+apiVersion: troubleshoot.replicated.com/v1beta1
+kind: Redactor
+metadata:
+  name: my-application-name
+spec:
+  redactors:
+  - name: replace password # names are not used internally, but are useful for recordkeeping
+    file: data/my-password-dump # this targets a single file
+    values:
+    - abc123 # this is a very good password, and I don't want it to be exposed
+  - name: all files # as no file is specified, this redactor will run against all files
+    regex:
+    - (another)(?P<mask>.*)(here) # this will replace anything between the strings `another` and `here` with `***HIDDEN***`
