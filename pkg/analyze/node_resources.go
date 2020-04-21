@@ -139,25 +139,12 @@ func compareNodeResourceConditionalToActual(conditional string, matchingNodes []
 	switch function {
 	case "count":
 		actualValue = len(matchingNodes)
-		break
 	case "min":
-		av, err := findMin(matchingNodes, property)
-		if err != nil {
-			return false, errors.Wrap(err, "failed to find min")
-		}
-		actualValue = av
+		actualValue = findMin(matchingNodes, property)
 	case "max":
-		av, err := findMax(matchingNodes, property)
-		if err != nil {
-			return false, errors.Wrap(err, "failed to find max")
-		}
-		actualValue = av
+		actualValue = findMax(matchingNodes, property)
 	case "sum":
-		sum, err := findSum(matchingNodes, property)
-		if err != nil {
-			return false, errors.Wrap(err, "failed to find sum")
-		}
-		actualValue = sum
+		actualValue = findSum(matchingNodes, property)
 	}
 
 	switch operator {
@@ -230,223 +217,70 @@ func compareNodeResourceConditionalToActual(conditional string, matchingNodes []
 	return false, errors.New("unexpected conditional in nodeResources")
 }
 
-func findSum(nodes []corev1.Node, property string) (*resource.Quantity, error) {
+func getQuantity(node corev1.Node, property string) *resource.Quantity {
+	switch property {
+	case "cpuCapacity":
+		return node.Status.Capacity.Cpu()
+	case "cpuAllocatable":
+		return node.Status.Allocatable.Cpu()
+	case "memoryCapacity":
+		return node.Status.Capacity.Memory()
+	case "memoryAllocatable":
+		return node.Status.Allocatable.Memory()
+	case "podCapacity":
+		return node.Status.Capacity.Pods()
+	case "podAllocatable":
+		return node.Status.Allocatable.Pods()
+	case "ephemeralStorageCapacity":
+		return node.Status.Capacity.StorageEphemeral()
+	case "ephemeralStorageAllocatable":
+		return node.Status.Allocatable.StorageEphemeral()
+	}
+	return nil
+}
+
+func findSum(nodes []corev1.Node, property string) *resource.Quantity {
 	sum := resource.Quantity{}
 
 	for _, node := range nodes {
-		switch property {
-		case "cpuCapacity":
-			if node.Status.Capacity.Cpu() != nil {
-				sum.Add(*node.Status.Capacity.Cpu())
-			}
-			break
-		case "cpuAllocatable":
-			if node.Status.Allocatable.Cpu() != nil {
-				sum.Add(*node.Status.Allocatable.Cpu())
-			}
-			break
-		case "memoryCapacity":
-			if node.Status.Capacity.Memory() != nil {
-				sum.Add(*node.Status.Capacity.Memory())
-			}
-			break
-		case "memoryAllocatable":
-			if node.Status.Allocatable.Memory() != nil {
-				sum.Add(*node.Status.Allocatable.Cpu())
-			}
-			break
-		case "podCapacity":
-			if node.Status.Capacity.Pods() != nil {
-				sum.Add(*node.Status.Capacity.Pods())
-			}
-			break
-		case "podAllocatable":
-			if node.Status.Allocatable.Pods() != nil {
-				sum.Add(*node.Status.Allocatable.Cpu())
-			}
-			break
-		case "ephemeralStorageCapacity":
-			if node.Status.Capacity.StorageEphemeral() != nil {
-				sum.Add(*node.Status.Capacity.StorageEphemeral())
-			}
-			break
-		case "ephemeralStorageAllocatable":
-			if node.Status.Allocatable.StorageEphemeral() != nil {
-				sum.Add(*node.Status.Allocatable.StorageEphemeral())
-			}
-			break
+		if quant := getQuantity(node, property); quant != nil {
+			sum.Add(*quant)
 		}
 	}
 
-	return &sum, nil
+	return &sum
 }
 
-func findMin(nodes []corev1.Node, property string) (*resource.Quantity, error) {
+func findMin(nodes []corev1.Node, property string) *resource.Quantity {
 	var min *resource.Quantity
 
 	for _, node := range nodes {
-		switch property {
-		case "cpuCapacity":
+		if quant := getQuantity(node, property); quant != nil {
 			if min == nil {
-				min = node.Status.Capacity.Cpu()
-			} else {
-				if node.Status.Capacity.Cpu().Cmp(*min) == -1 {
-					min = node.Status.Capacity.Cpu()
-				}
+				min = quant
+			} else if quant.Cmp(*min) == -1 {
+				min = quant
 			}
-			break
-		case "cpuAllocatable":
-			if min == nil {
-				min = node.Status.Allocatable.Cpu()
-			} else {
-				if node.Status.Allocatable.Cpu().Cmp(*min) == -1 {
-					min = node.Status.Allocatable.Cpu()
-				}
-			}
-			break
-		case "memoryCapacity":
-			if min == nil {
-				min = node.Status.Capacity.Memory()
-			} else {
-				if node.Status.Capacity.Memory().Cmp(*min) == -1 {
-					min = node.Status.Capacity.Memory()
-				}
-			}
-			break
-		case "memoryAllocatable":
-			if min == nil {
-				min = node.Status.Allocatable.Memory()
-			} else {
-				if node.Status.Allocatable.Memory().Cmp(*min) == -1 {
-					min = node.Status.Allocatable.Memory()
-				}
-			}
-			break
-		case "podCapacity":
-			if min == nil {
-				min = node.Status.Capacity.Pods()
-			} else {
-				if node.Status.Capacity.Pods().Cmp(*min) == -1 {
-					min = node.Status.Capacity.Pods()
-				}
-			}
-			break
-		case "podAllocatable":
-			if min == nil {
-				min = node.Status.Allocatable.Pods()
-			} else {
-				if node.Status.Allocatable.Pods().Cmp(*min) == -1 {
-					min = node.Status.Allocatable.Pods()
-				}
-			}
-			break
-		case "ephemeralStorageCapacity":
-			if min == nil {
-				min = node.Status.Capacity.StorageEphemeral()
-			} else {
-				if node.Status.Capacity.StorageEphemeral().Cmp(*min) == -1 {
-					min = node.Status.Capacity.StorageEphemeral()
-				}
-			}
-			break
-		case "ephemeralStorageAllocatable":
-			if min == nil {
-				min = node.Status.Allocatable.StorageEphemeral()
-			} else {
-				if node.Status.Allocatable.StorageEphemeral().Cmp(*min) == -1 {
-					min = node.Status.Allocatable.StorageEphemeral()
-				}
-			}
-			break
-
 		}
 	}
 
-	return min, nil
+	return min
 }
 
-func findMax(nodes []corev1.Node, property string) (*resource.Quantity, error) {
+func findMax(nodes []corev1.Node, property string) *resource.Quantity {
 	var max *resource.Quantity
 
 	for _, node := range nodes {
-		switch property {
-		case "cpuCapacity":
+		if quant := getQuantity(node, property); quant != nil {
 			if max == nil {
-				max = node.Status.Capacity.Cpu()
-			} else {
-				if node.Status.Capacity.Cpu().Cmp(*max) == 1 {
-					max = node.Status.Capacity.Cpu()
-				}
+				max = quant
+			} else if quant.Cmp(*max) == 1 {
+				max = quant
 			}
-			break
-		case "cpuAllocatable":
-			if max == nil {
-				max = node.Status.Allocatable.Cpu()
-			} else {
-				if node.Status.Allocatable.Cpu().Cmp(*max) == 1 {
-					max = node.Status.Allocatable.Cpu()
-				}
-			}
-			break
-		case "memoryCapacity":
-			if max == nil {
-				max = node.Status.Capacity.Memory()
-			} else {
-				if node.Status.Capacity.Memory().Cmp(*max) == 1 {
-					max = node.Status.Capacity.Memory()
-				}
-			}
-			break
-		case "memoryAllocatable":
-			if max == nil {
-				max = node.Status.Allocatable.Memory()
-			} else {
-				if node.Status.Allocatable.Memory().Cmp(*max) == 1 {
-					max = node.Status.Allocatable.Memory()
-				}
-			}
-			break
-		case "podCapacity":
-			if max == nil {
-				max = node.Status.Capacity.Pods()
-			} else {
-				if node.Status.Capacity.Pods().Cmp(*max) == 1 {
-					max = node.Status.Capacity.Pods()
-				}
-			}
-			break
-		case "podAllocatable":
-			if max == nil {
-				max = node.Status.Allocatable.Pods()
-			} else {
-				if node.Status.Allocatable.Pods().Cmp(*max) == 1 {
-					max = node.Status.Allocatable.Pods()
-				}
-			}
-			break
-		case "ephemeralStorageCapacity":
-			if max == nil {
-				max = node.Status.Capacity.StorageEphemeral()
-			} else {
-				if node.Status.Capacity.StorageEphemeral().Cmp(*max) == 1 {
-					max = node.Status.Capacity.StorageEphemeral()
-				}
-			}
-			break
-		case "ephemeralStorageAllocatable":
-			if max == nil {
-				max = node.Status.Allocatable.StorageEphemeral()
-			} else {
-				if node.Status.Allocatable.StorageEphemeral().Cmp(*max) == 1 {
-					max = node.Status.Allocatable.StorageEphemeral()
-				}
-			}
-			break
-
 		}
 	}
 
-	return max, nil
+	return max
 }
 
 func nodeMatchesFilters(node corev1.Node, filters *troubleshootv1beta1.NodeResourceFilters) (bool, error) {
