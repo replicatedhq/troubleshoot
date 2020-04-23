@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"path/filepath"
 	"regexp"
 
+	"github.com/gobwas/glob"
 	"github.com/pkg/errors"
 	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
 )
@@ -82,22 +82,26 @@ func redactMatchesPath(path string, redact *troubleshootv1beta1.Redact) (bool, e
 		return true, nil
 	}
 
+	globs := []glob.Glob{}
+
 	if redact.File != "" {
-		matches, err := filepath.Match(redact.File, path)
+		newGlob, err := glob.Compile(redact.File, '/')
 		if err != nil {
-			return false, errors.Wrapf(err, "invalid file match string %q", redact.File)
+			return false, errors.Wrapf(err, "invalid file glob string %q", redact.File)
 		}
-		if matches {
-			return true, nil
-		}
+		globs = append(globs, newGlob)
 	}
 
 	for i, fileGlobString := range redact.Files {
-		matches, err := filepath.Match(fileGlobString, path)
+		newGlob, err := glob.Compile(fileGlobString, '/')
 		if err != nil {
-			return false, errors.Wrapf(err, "invalid file match string %d %q", i, fileGlobString)
+			return false, errors.Wrapf(err, "invalid file glob string %d %q", i, fileGlobString)
 		}
-		if matches {
+		globs = append(globs, newGlob)
+	}
+
+	for _, thisGlob := range globs {
+		if thisGlob.Match(path) {
 			return true, nil
 		}
 	}
