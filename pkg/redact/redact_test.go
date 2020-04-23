@@ -1718,6 +1718,28 @@ func Test_redactMatchesPath(t *testing.T) {
 			},
 			want: true,
 		},
+		{
+			name: "double glob matching separator",
+			args: args{
+				path: "/my/test/path/two",
+				redact: &troubleshootv1beta1.Redact{
+					File:  "/my/test/**",
+					Files: nil,
+				},
+			},
+			want: true,
+		},
+		{
+			name: "single glob does NOT match separator",
+			args: args{
+				path: "/my/test/path/two",
+				redact: &troubleshootv1beta1.Redact{
+					File:  "/my/test/*",
+					Files: nil,
+				},
+			},
+			want: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

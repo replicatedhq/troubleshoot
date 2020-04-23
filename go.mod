@@ -7,7 +7,6 @@ require (
 	github.com/aws/aws-sdk-go v1.25.18 // indirect
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/chzyer/logex v1.1.11-0.20160617073814-96a4d311aa9b // indirect
-	github.com/coreos/etcd v3.3.15+incompatible // indirect
 	github.com/docker/spdystream v0.0.0-20181023171402-6480d4af844c // indirect
 	github.com/dsnet/compress v0.0.1 // indirect
 	github.com/elazarl/goproxy v0.0.0-20191011121108-aa519ddbe484 // indirect
@@ -16,10 +15,9 @@ require (
 	github.com/frankban/quicktest v1.7.2 // indirect
 	github.com/gizak/termui/v3 v3.1.0
 	github.com/go-openapi/spec v0.19.4 // indirect
-	github.com/go-openapi/validate v0.19.5 // indirect
 	github.com/go-redis/redis/v7 v7.2.0
 	github.com/go-sql-driver/mysql v1.5.0
-	github.com/gobuffalo/flect v0.2.0 // indirect
+	github.com/gobwas/glob v0.2.3
 	github.com/golang/snappy v0.0.1 // indirect
 	github.com/google/gofuzz v1.1.0
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510 // indirect
@@ -38,6 +36,7 @@ require (
 	github.com/onsi/gomega v1.9.0 // indirect
 	github.com/pierrec/lz4 v2.2.6+incompatible // indirect
 	github.com/pkg/errors v0.9.1
+	github.com/prometheus/client_golang v1.0.0 // indirect
 	github.com/prometheus/client_model v0.2.0 // indirect
 	github.com/prometheus/procfs v0.0.5 // indirect
 	github.com/spf13/cobra v0.0.5
@@ -55,17 +54,11 @@ require (
 	k8s.io/api v0.17.4
 	k8s.io/apiextensions-apiserver v0.15.12-beta.0
 	k8s.io/apimachinery v0.17.4
-	k8s.io/apiserver v0.17.4 // indirect
 	k8s.io/cli-runtime v0.17.4
 	k8s.io/client-go v0.17.4
-	k8s.io/code-generator v0.16.5-beta.1 // indirect
-	k8s.io/gengo v0.0.0-20200114144118-36b2048a9120 // indirect
 	k8s.io/kube-openapi v0.0.0-20200121204235-bf4fb3bd569c // indirect
 	k8s.io/utils v0.0.0-20200324210504-a9aa75ae1b89 // indirect
-	sigs.k8s.io/apiserver-network-proxy/konnectivity-client v0.0.7 // indirect
 	sigs.k8s.io/controller-runtime v0.4.0
-	sigs.k8s.io/controller-tools v0.2.4 // indirect
-	sigs.k8s.io/structured-merge-diff/v3 v3.0.0 // indirect
 	sigs.k8s.io/yaml v1.2.0 // indirect
 )
 
