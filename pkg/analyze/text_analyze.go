@@ -90,7 +90,7 @@ func analyzeRegexGroups(pattern string, collected []byte, outcomes []*troublesho
 
 	foundMatches := map[string]string{}
 	for i, name := range re.SubexpNames() {
-		if i != 0 && name != "" {
+		if i != 0 && name != "" && len(match) > i {
 			foundMatches[name] = match[i]
 		}
 	}
