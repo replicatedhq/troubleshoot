@@ -65,13 +65,21 @@ func buildAdditionalRedactors(path string, redacts []*troubleshootv1beta1.Redact
 		for _, re := range redact.Regex {
 			r, err := NewSingleLineRedactor(re, MASK_TEXT)
 			if err != nil {
-				return nil, err // maybe skip broken ones?
+				return nil, errors.Wrapf(err, "redactor %q", re)
 			}
 			additionalRedactors = append(additionalRedactors, r)
 		}
 
 		for _, literal := range redact.Values {
 			additionalRedactors = append(additionalRedactors, literalString(literal))
+		}
+
+		for _, re := range redact.MultiLine {
+			r, err := NewMultiLineRedactor(re.Selector, re.Redactor, MASK_TEXT)
+			if err != nil {
+				return nil, errors.Wrapf(err, "multiline redactor %+v", re)
+			}
+			additionalRedactors = append(additionalRedactors, r)
 		}
 	}
 	return additionalRedactors, nil
