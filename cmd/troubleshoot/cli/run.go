@@ -59,19 +59,21 @@ func runTroubleshoot(v *viper.Viper, arg string) error {
 	collector := obj.(*troubleshootv1beta1.Collector)
 
 	additionalRedactors := &troubleshootv1beta1.Redactor{}
-	if v.GetString("redactors") != "" {
-		redactorContent, err := loadSpec(v, v.GetString("redactors"))
+	for idx, redactor := range v.GetStringSlice("redactors") {
+		redactorContent, err := loadSpec(v, redactor)
 		if err != nil {
-			return errors.Wrap(err, "failed to load redactor spec")
+			return errors.Wrapf(err, "failed to load redactor spec #%d", idx)
 		}
 		obj, _, err := decode([]byte(redactorContent), nil, nil)
 		if err != nil {
-			return errors.Wrapf(err, "failed to parse redactors %s", v.GetString("redactors"))
+			return errors.Wrapf(err, "failed to parse redactors %s", redactor)
 		}
-		var ok bool
-		additionalRedactors, ok = obj.(*troubleshootv1beta1.Redactor)
+		loopRedactors, ok := obj.(*troubleshootv1beta1.Redactor)
 		if !ok {
-			return fmt.Errorf("%s is not a troubleshootv1beta1 redactor type", v.GetString("redactors"))
+			return fmt.Errorf("%s is not a troubleshootv1beta1 redactor type", redactor)
+		}
+		if loopRedactors != nil {
+			additionalRedactors.Spec.Redactors = append(additionalRedactors.Spec.Redactors, loopRedactors.Spec.Redactors...)
 		}
 	}
 
