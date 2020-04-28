@@ -179,6 +179,32 @@ pwd=***HIDDEN***;
 `,
 			},
 		},
+		{
+			name: "data with custom yaml redactor",
+			Collect: &troubleshootv1beta1.Collect{
+				Data: &troubleshootv1beta1.Data{
+					CollectorMeta: troubleshootv1beta1.CollectorMeta{
+						CollectorName: "datacollectorname",
+						Exclude:       multitype.BoolOrString{},
+					},
+					Name: "data",
+					Data: `abc 123
+another line here`,
+				},
+			},
+			Redactors: []*troubleshootv1beta1.Redact{
+				{
+					Yaml: []string{
+						`abc`,
+					},
+				},
+			},
+			want: map[string]string{
+				"data/datacollectorname": `abc 123
+another line here
+`,
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

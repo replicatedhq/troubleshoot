@@ -81,6 +81,11 @@ func buildAdditionalRedactors(path string, redacts []*troubleshootv1beta1.Redact
 			}
 			additionalRedactors = append(additionalRedactors, r)
 		}
+
+		for _, yaml := range redact.Yaml {
+			r := NewYamlRedactor(yaml)
+			additionalRedactors = append(additionalRedactors, r)
+		}
 	}
 	return additionalRedactors, nil
 }
