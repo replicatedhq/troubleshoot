@@ -18,6 +18,19 @@ spec:
       data: |
         my super secret password is abc123
         another redaction will go here
+  - data:
+      collectorName: yaml-data.yaml
+      name: data
+      data: |
+        abc:
+          xyz:
+          - hello
+          - world: "these are removed"
+        bcd:
+          abc:
+            xyz:
+              - these
+              - remain
 ---
 apiVersion: troubleshoot.replicated.com/v1beta1
 kind: Redactor
@@ -32,3 +45,8 @@ spec:
   - name: all files # as no file is specified, this redactor will run against all files
     regex:
     - (another)(?P<mask>.*)(here) # this will replace anything between the strings `another` and `here` with `***HIDDEN***`
+    multiLine:
+    - selector: 'S3_ENDPOINT' # remove the value in lines following those that contain the string S3_ENDPOINT
+      redactor: '("value": ").*(")'
+    yaml:
+    - "abc.xyz.*" # redact all items in the array at key xyz within key abc in yaml documents
