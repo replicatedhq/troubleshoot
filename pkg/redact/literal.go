@@ -16,7 +16,7 @@ func literalString(matchString string) Redactor {
 }
 
 func (r literalRedactor) Redact(input io.Reader) io.Reader {
-	reader, writer := io.Pipe()
+	out, writer := io.Pipe()
 
 	go func() {
 		var err error
@@ -43,5 +43,5 @@ func (r literalRedactor) Redact(input io.Reader) io.Reader {
 			}
 		}
 	}()
-	return reader
+	return out
 }

@@ -26,7 +26,7 @@ func NewMultiLineRedactor(re1, re2, maskText string) (*MultiLineRedactor, error)
 }
 
 func (r *MultiLineRedactor) Redact(input io.Reader) io.Reader {
-	reader, writer := io.Pipe()
+	out, writer := io.Pipe()
 	go func() {
 		var err error
 		defer func() {
@@ -70,7 +70,7 @@ func (r *MultiLineRedactor) Redact(input io.Reader) io.Reader {
 			fmt.Fprintf(writer, "%s\n", line1)
 		}
 	}()
-	return reader
+	return out
 }
 
 func getNextTwoLines(reader *bufio.Reader, curLine2 *string) (line1 string, line2 string, err error) {

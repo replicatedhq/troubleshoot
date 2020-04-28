@@ -21,7 +21,7 @@ func NewSingleLineRedactor(re, maskText string) (*SingleLineRedactor, error) {
 }
 
 func (r *SingleLineRedactor) Redact(input io.Reader) io.Reader {
-	reader, writer := io.Pipe()
+	out, writer := io.Pipe()
 
 	go func() {
 		var err error
@@ -57,5 +57,5 @@ func (r *SingleLineRedactor) Redact(input io.Reader) io.Reader {
 			}
 		}
 	}()
-	return reader
+	return out
 }
