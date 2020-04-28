@@ -94,6 +94,14 @@ func (r *YamlRedactor) redactYaml(in interface{}, path []string) interface{} {
 		}
 		return typed
 	case map[interface{}]interface{}:
+		if path[0] == "*" && len(typed) > 0 {
+			newMap := map[interface{}]interface{}{}
+			for key, child := range typed {
+				newMap[key] = r.redactYaml(child, path[1:])
+			}
+			return newMap
+		}
+
 		child, ok := typed[path[0]]
 		if ok {
 			newChild := r.redactYaml(child, path[1:])

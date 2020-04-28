@@ -152,6 +152,26 @@ xyz:
 			inputString: `improperly-formatted: yaml`,
 			wantString:  `improperly-formatted: yaml`,
 		},
+		{
+			name: "star index in map",
+			path: []string{"abc", "xyz", "*"},
+			inputString: `
+abc:
+  xyz:
+    a: b
+    c: d
+    e: f
+xyz:
+  hello: {}`,
+			wantString: `abc:
+  xyz:
+    a: '***HIDDEN***'
+    c: '***HIDDEN***'
+    e: '***HIDDEN***'
+xyz:
+  hello: {}
+`,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
