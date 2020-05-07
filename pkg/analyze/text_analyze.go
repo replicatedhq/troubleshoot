@@ -216,7 +216,7 @@ func compareRegex(conditional string, foundMatches map[string]string) (bool, err
 	} else {
 		// all we can support is "=" and "==" and "===" for now
 		if operator != "=" && operator != "==" && operator != "===" {
-			return false, fmt.Errorf("unexpected operator %q in regex comparator", operator)
+			return false, fmt.Errorf("unexpected operator %q in regex comparator, cannot compare %q and %q", operator, foundValue, lookForValue)
 		}
 
 		return foundValue == lookForValue, nil
