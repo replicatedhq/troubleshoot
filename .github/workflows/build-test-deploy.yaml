@@ -86,3 +86,13 @@ jobs:
           args: release --rm-dist --config deploy/.goreleaser.yaml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+
+      - name: Update new preflight version in krew-index
+        uses: rajatjindal/krew-release-bot@v0.0.38
+        with:
+          krew_template_file: deploy/krew/preflight.yaml
+      - name: Update new support-bundle version in krew-index
+        uses: rajatjindal/krew-release-bot@v0.0.38
+        with:
+          krew_template_file: deploy/krew/support-bundle.yaml
