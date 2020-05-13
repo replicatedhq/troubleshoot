@@ -62,4 +62,3 @@ require (
 	sigs.k8s.io/yaml v1.2.0 // indirect
 )
 
-replace github.com/appscode/jsonpatch => github.com/gomodules/jsonpatch v2.0.1+incompatible
