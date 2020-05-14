@@ -3,6 +3,7 @@ package redact
 import (
 	"bufio"
 	"bytes"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"strconv"
@@ -62,6 +63,14 @@ func (r *YamlRedactor) Redact(input io.Reader) io.Reader {
 
 		buf := bytes.NewBuffer(newBytes)
 		buf.WriteTo(writer)
+
+		go addRedaction(Redaction{
+			RedactorName:      fmt.Sprintf("yaml %q", strings.Join(r.maskPath, ".")),
+			CharactersRemoved: len(doc) - len(newBytes),
+			Line:              0, // line 0 because we have no way to tell what line was impacted
+			File:              r.filePath,
+		})
+
 		return
 	}()
 	return reader
