@@ -14,11 +14,12 @@ import (
 type YamlRedactor struct {
 	maskPath   []string
 	foundMatch bool
+	filePath   string
 }
 
-func NewYamlRedactor(yamlPath string) *YamlRedactor {
+func NewYamlRedactor(yamlPath, filePath string) *YamlRedactor {
 	pathComponents := strings.Split(yamlPath, ".")
-	return &YamlRedactor{maskPath: pathComponents}
+	return &YamlRedactor{maskPath: pathComponents, filePath: filePath}
 }
 
 func (r *YamlRedactor) Redact(input io.Reader) io.Reader {

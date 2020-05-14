@@ -3,6 +3,7 @@ package redact
 import (
 	"bytes"
 	"io/ioutil"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -179,7 +180,7 @@ xyz:
 			defer scopetest.End()
 
 			req := require.New(t)
-			yamlRunner := YamlRedactor{maskPath: tt.path}
+			yamlRunner := NewYamlRedactor(strings.Join(tt.path, "."), "testfile")
 
 			outReader := yamlRunner.Redact(bytes.NewReader([]byte(tt.inputString)))
 			gotBytes, err := ioutil.ReadAll(outReader)

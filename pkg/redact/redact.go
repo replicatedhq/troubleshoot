@@ -7,6 +7,7 @@ import (
 	"io"
 	"io/ioutil"
 	"regexp"
+	"sync"
 
 	"github.com/gobwas/glob"
 	"github.com/pkg/errors"
@@ -17,12 +18,42 @@ const (
 	MASK_TEXT = "***HIDDEN***"
 )
 
+var allRedactions RedactionList
+var redactionListMut sync.Mutex
+
+func init() {
+	allRedactions = RedactionList{
+		ByRedactor: map[string][]Redaction{},
+		ByFile:     map[string][]Redaction{},
+	}
+}
+
 type Redactor interface {
 	Redact(input io.Reader) io.Reader
 }
 
+// Redactions are indexed both by the file affected and by the name of the redactor
+type RedactionList struct {
+	ByRedactor map[string][]Redaction
+	ByFile     map[string][]Redaction
+}
+
+type Redaction struct {
+	RedactorName      string
+	CharactersRemoved int
+	Line              int
+	File              string
+}
+
+func addRedaction(redaction Redaction) {
+	redactionListMut.Lock()
+	defer redactionListMut.Unlock()
+	allRedactions.ByRedactor[redaction.RedactorName] = append(allRedactions.ByRedactor[redaction.RedactorName], redaction)
+	allRedactions.ByFile[redaction.File] = append(allRedactions.ByFile[redaction.File], redaction)
+}
+
 func Redact(input []byte, path string, additionalRedactors []*troubleshootv1beta1.Redact) ([]byte, error) {
-	redactors, err := getRedactors()
+	redactors, err := getRedactors(path)
 	if err != nil {
 		return nil, err
 	}
@@ -63,7 +94,7 @@ func buildAdditionalRedactors(path string, redacts []*troubleshootv1beta1.Redact
 		}
 
 		for _, re := range redact.Regex {
-			r, err := NewSingleLineRedactor(re, MASK_TEXT)
+			r, err := NewSingleLineRedactor(re, MASK_TEXT, path)
 			if err != nil {
 				return nil, errors.Wrapf(err, "redactor %q", re)
 			}
@@ -71,11 +102,11 @@ func buildAdditionalRedactors(path string, redacts []*troubleshootv1beta1.Redact
 		}
 
 		for _, literal := range redact.Values {
-			additionalRedactors = append(additionalRedactors, literalString(literal))
+			additionalRedactors = append(additionalRedactors, literalString(literal, path))
 		}
 
 		for _, re := range redact.MultiLine {
-			r, err := NewMultiLineRedactor(re.Selector, re.Redactor, MASK_TEXT)
+			r, err := NewMultiLineRedactor(re.Selector, re.Redactor, MASK_TEXT, path)
 			if err != nil {
 				return nil, errors.Wrapf(err, "multiline redactor %+v", re)
 			}
@@ -83,7 +114,7 @@ func buildAdditionalRedactors(path string, redacts []*troubleshootv1beta1.Redact
 		}
 
 		for _, yaml := range redact.Yaml {
-			r := NewYamlRedactor(yaml)
+			r := NewYamlRedactor(yaml, path)
 			additionalRedactors = append(additionalRedactors, r)
 		}
 	}
@@ -122,7 +153,7 @@ func redactMatchesPath(path string, redact *troubleshootv1beta1.Redact) (bool, e
 	return false, nil
 }
 
-func getRedactors() ([]Redactor, error) {
+func getRedactors(path string) ([]Redactor, error) {
 	// TODO: Make this configurable
 
 	// (?i) makes it case insensitive
@@ -160,7 +191,7 @@ func getRedactors() ([]Redactor, error) {
 
 	redactors := make([]Redactor, 0)
 	for _, re := range singleLines {
-		r, err := NewSingleLineRedactor(re, MASK_TEXT)
+		r, err := NewSingleLineRedactor(re, MASK_TEXT, path)
 		if err != nil {
 			return nil, err // maybe skip broken ones?
 		}
@@ -202,7 +233,7 @@ func getRedactors() ([]Redactor, error) {
 	}
 
 	for _, l := range doubleLines {
-		r, err := NewMultiLineRedactor(l.line1, l.line2, MASK_TEXT)
+		r, err := NewMultiLineRedactor(l.line1, l.line2, MASK_TEXT, path)
 		if err != nil {
 			return nil, err // maybe skip broken ones?
 		}

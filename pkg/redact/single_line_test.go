@@ -41,7 +41,7 @@ func TestNewSingleLineRedactor(t *testing.T) {
 			defer scopetest.End()
 
 			req := require.New(t)
-			reRunner, err := NewSingleLineRedactor(tt.re, MASK_TEXT)
+			reRunner, err := NewSingleLineRedactor(tt.re, MASK_TEXT, "testfile")
 			req.NoError(err)
 
 			outReader := reRunner.Redact(bytes.NewReader([]byte(tt.inputString)))

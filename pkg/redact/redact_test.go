@@ -1624,7 +1624,7 @@ func Test_Redactors(t *testing.T) {
 		scopetest := scopeagent.StartTest(t)
 		defer scopetest.End()
 		req := require.New(t)
-		redactors, err := getRedactors()
+		redactors, err := getRedactors("testpath")
 		req.NoError(err)
 
 		nextReader := io.Reader(strings.NewReader(original))
