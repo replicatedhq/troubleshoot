@@ -10,12 +10,14 @@ import (
 type literalRedactor struct {
 	matchString string
 	filePath    string
+	redactName  string
 }
 
-func literalString(matchString, path string) Redactor {
+func literalString(matchString, path, name string) Redactor {
 	return literalRedactor{
 		matchString: matchString,
 		filePath:    path,
+		redactName:  name,
 	}
 }
 
@@ -52,7 +54,7 @@ func (r literalRedactor) Redact(input io.Reader) io.Reader {
 
 			if clean != line {
 				go addRedaction(Redaction{
-					RedactorName:      fmt.Sprintf("literal %q", r.matchString),
+					RedactorName:      r.redactName,
 					CharactersRemoved: len(line) - len(clean),
 					Line:              lineNum,
 					File:              r.filePath,

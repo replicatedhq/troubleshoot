@@ -180,7 +180,7 @@ xyz:
 			defer scopetest.End()
 
 			req := require.New(t)
-			yamlRunner := NewYamlRedactor(strings.Join(tt.path, "."), "testfile")
+			yamlRunner := NewYamlRedactor(strings.Join(tt.path, "."), "testfile", tt.name)
 
 			outReader := yamlRunner.Redact(bytes.NewReader([]byte(tt.inputString)))
 			gotBytes, err := ioutil.ReadAll(outReader)

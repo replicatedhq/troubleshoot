@@ -79,7 +79,7 @@ func Redact(input []byte, path string, additionalRedactors []*troubleshootv1beta
 
 func buildAdditionalRedactors(path string, redacts []*troubleshootv1beta1.Redact) ([]Redactor, error) {
 	additionalRedactors := []Redactor{}
-	for _, redact := range redacts {
+	for i, redact := range redacts {
 		if redact == nil {
 			continue
 		}
@@ -93,8 +93,10 @@ func buildAdditionalRedactors(path string, redacts []*troubleshootv1beta1.Redact
 			continue
 		}
 
+		withinRedactNum := 0 // give unique redaction names
+
 		for _, re := range redact.Regex {
-			r, err := NewSingleLineRedactor(re, MASK_TEXT, path)
+			r, err := NewSingleLineRedactor(re, MASK_TEXT, path, redactorName(i, withinRedactNum, redact.Name, "regex", ""))
 			if err != nil {
 				return nil, errors.Wrapf(err, "redactor %q", re)
 			}
@@ -102,11 +104,11 @@ func buildAdditionalRedactors(path string, redacts []*troubleshootv1beta1.Redact
 		}
 
 		for _, literal := range redact.Values {
-			additionalRedactors = append(additionalRedactors, literalString(literal, path))
+			additionalRedactors = append(additionalRedactors, literalString(literal, path, redactorName(i, withinRedactNum, redact.Name, "literal", "")))
 		}
 
 		for _, re := range redact.MultiLine {
-			r, err := NewMultiLineRedactor(re.Selector, re.Redactor, MASK_TEXT, path)
+			r, err := NewMultiLineRedactor(re.Selector, re.Redactor, MASK_TEXT, path, redactorName(i, withinRedactNum, redact.Name, "multiLine", ""))
 			if err != nil {
 				return nil, errors.Wrapf(err, "multiline redactor %+v", re)
 			}
@@ -114,7 +116,7 @@ func buildAdditionalRedactors(path string, redacts []*troubleshootv1beta1.Redact
 		}
 
 		for _, yaml := range redact.Yaml {
-			r := NewYamlRedactor(yaml, path)
+			r := NewYamlRedactor(yaml, path, redactorName(i, withinRedactNum, redact.Name, "yaml", ""))
 			additionalRedactors = append(additionalRedactors, r)
 		}
 	}
@@ -190,8 +192,8 @@ func getRedactors(path string) ([]Redactor, error) {
 	}
 
 	redactors := make([]Redactor, 0)
-	for _, re := range singleLines {
-		r, err := NewSingleLineRedactor(re, MASK_TEXT, path)
+	for i, re := range singleLines {
+		r, err := NewSingleLineRedactor(re, MASK_TEXT, path, redactorName(-1, i, "", "defaultRegex", re))
 		if err != nil {
 			return nil, err // maybe skip broken ones?
 		}
@@ -232,8 +234,8 @@ func getRedactors(path string) ([]Redactor, error) {
 		},
 	}
 
-	for _, l := range doubleLines {
-		r, err := NewMultiLineRedactor(l.line1, l.line2, MASK_TEXT, path)
+	for i, l := range doubleLines {
+		r, err := NewMultiLineRedactor(l.line1, l.line2, MASK_TEXT, path, redactorName(-1, i, "", "defaultMultiLine", l.line1))
 		if err != nil {
 			return nil, err // maybe skip broken ones?
 		}
@@ -277,4 +279,14 @@ func readLine(r *bufio.Reader) (string, error) {
 		}
 	}
 	return string(completeLine), nil
+}
+
+func redactorName(redactorNum, withinRedactorNum int, redactorName, redactorType, redactorLiteral string) string {
+	if redactorName != "" {
+		return fmt.Sprintf("%s-%d", redactorName, withinRedactorNum)
+	}
+	if redactorLiteral == "" {
+		return fmt.Sprintf("unnamed-%d.%d-%s", redactorNum, withinRedactorNum, redactorType)
+	}
+	return fmt.Sprintf("%s.%d-%q", redactorType, withinRedactorNum, redactorLiteral)
 }

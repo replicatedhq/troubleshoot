@@ -8,13 +8,14 @@ import (
 )
 
 type MultiLineRedactor struct {
-	re1      *regexp.Regexp
-	re2      *regexp.Regexp
-	maskText string
-	filePath string
+	re1        *regexp.Regexp
+	re2        *regexp.Regexp
+	maskText   string
+	filePath   string
+	redactName string
 }
 
-func NewMultiLineRedactor(re1, re2, maskText, path string) (*MultiLineRedactor, error) {
+func NewMultiLineRedactor(re1, re2, maskText, path, name string) (*MultiLineRedactor, error) {
 	compiled1, err := regexp.Compile(re1)
 	if err != nil {
 		return nil, err
@@ -23,7 +24,7 @@ func NewMultiLineRedactor(re1, re2, maskText, path string) (*MultiLineRedactor, 
 	if err != nil {
 		return nil, err
 	}
-	return &MultiLineRedactor{re1: compiled1, re2: compiled2, maskText: maskText, filePath: path}, nil
+	return &MultiLineRedactor{re1: compiled1, re2: compiled2, maskText: maskText, filePath: path, redactName: name}, nil
 }
 
 func (r *MultiLineRedactor) Redact(input io.Reader) io.Reader {
@@ -70,7 +71,7 @@ func (r *MultiLineRedactor) Redact(input io.Reader) io.Reader {
 			// if clean is not equal to line2, a redaction was performed
 			if clean != line2 {
 				go addRedaction(Redaction{
-					RedactorName:      fmt.Sprintf("multiline %q/%q", r.re1, r.re2),
+					RedactorName:      r.redactName,
 					CharactersRemoved: len(line2) - len(clean),
 					Line:              lineNum,
 					File:              r.filePath,
