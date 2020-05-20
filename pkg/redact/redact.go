@@ -20,6 +20,7 @@ const (
 
 var allRedactions RedactionList
 var redactionListMut sync.Mutex
+var pendingRedactions sync.WaitGroup
 
 func init() {
 	allRedactions = RedactionList{
@@ -45,13 +46,6 @@ type Redaction struct {
 	File              string
 }
 
-func addRedaction(redaction Redaction) {
-	redactionListMut.Lock()
-	defer redactionListMut.Unlock()
-	allRedactions.ByRedactor[redaction.RedactorName] = append(allRedactions.ByRedactor[redaction.RedactorName], redaction)
-	allRedactions.ByFile[redaction.File] = append(allRedactions.ByFile[redaction.File], redaction)
-}
-
 func Redact(input []byte, path string, additionalRedactors []*troubleshootv1beta1.Redact) ([]byte, error) {
 	redactors, err := getRedactors(path)
 	if err != nil {
@@ -75,6 +69,22 @@ func Redact(input []byte, path string, additionalRedactors []*troubleshootv1beta
 	}
 
 	return redacted, nil
+}
+
+func GetRedactionList() RedactionList {
+	pendingRedactions.Wait()
+	redactionListMut.Lock()
+	defer redactionListMut.Unlock()
+	return allRedactions
+}
+
+func ResetRedactionList() {
+	redactionListMut.Lock()
+	defer redactionListMut.Unlock()
+	allRedactions = RedactionList{
+		ByRedactor: map[string][]Redaction{},
+		ByFile:     map[string][]Redaction{},
+	}
 }
 
 func buildAdditionalRedactors(path string, redacts []*troubleshootv1beta1.Redact) ([]Redactor, error) {
@@ -279,6 +289,17 @@ func readLine(r *bufio.Reader) (string, error) {
 		}
 	}
 	return string(completeLine), nil
+}
+
+func addRedaction(redaction Redaction) {
+	pendingRedactions.Add(1)
+	go func(redaction Redaction) {
+		redactionListMut.Lock()
+		defer redactionListMut.Unlock()
+		defer pendingRedactions.Done()
+		allRedactions.ByRedactor[redaction.RedactorName] = append(allRedactions.ByRedactor[redaction.RedactorName], redaction)
+		allRedactions.ByFile[redaction.File] = append(allRedactions.ByFile[redaction.File], redaction)
+	}(redaction)
 }
 
 func redactorName(redactorNum, withinRedactorNum int, redactorName, redactorType, redactorLiteral string) string {

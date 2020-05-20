@@ -64,7 +64,7 @@ func (r *YamlRedactor) Redact(input io.Reader) io.Reader {
 		buf := bytes.NewBuffer(newBytes)
 		buf.WriteTo(writer)
 
-		go addRedaction(Redaction{
+		addRedaction(Redaction{
 			RedactorName:      r.redactName,
 			CharactersRemoved: len(doc) - len(newBytes),
 			Line:              0, // line 0 because we have no way to tell what line was impacted

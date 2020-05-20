@@ -53,7 +53,7 @@ func (r literalRedactor) Redact(input io.Reader) io.Reader {
 			}
 
 			if clean != line {
-				go addRedaction(Redaction{
+				addRedaction(Redaction{
 					RedactorName:      r.redactName,
 					CharactersRemoved: len(line) - len(clean),
 					Line:              lineNum,

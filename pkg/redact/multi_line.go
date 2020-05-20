@@ -70,7 +70,7 @@ func (r *MultiLineRedactor) Redact(input io.Reader) io.Reader {
 
 			// if clean is not equal to line2, a redaction was performed
 			if clean != line2 {
-				go addRedaction(Redaction{
+				addRedaction(Redaction{
 					RedactorName:      r.redactName,
 					CharactersRemoved: len(line2) - len(clean),
 					Line:              lineNum,
