@@ -35,15 +35,15 @@ type Redactor interface {
 
 // Redactions are indexed both by the file affected and by the name of the redactor
 type RedactionList struct {
-	ByRedactor map[string][]Redaction
-	ByFile     map[string][]Redaction
+	ByRedactor map[string][]Redaction `json:"byRedactor" yaml:"byRedactor"`
+	ByFile     map[string][]Redaction `json:"byFile" yaml:"byFile"`
 }
 
 type Redaction struct {
-	RedactorName      string
-	CharactersRemoved int
-	Line              int
-	File              string
+	RedactorName      string `json:"redactorName" yaml:"redactorName"`
+	CharactersRemoved int    `json:"charactersRemoved" yaml:"charactersRemoved"`
+	Line              int    `json:"line" yaml:"line"`
+	File              string `json:"file" yaml:"file"`
 }
 
 func Redact(input []byte, path string, additionalRedactors []*troubleshootv1beta1.Redact) ([]byte, error) {
