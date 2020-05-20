@@ -21,8 +21,9 @@ import (
 )
 
 type ResultRequest struct {
-	URI    string `json:"uri" yaml:"uri"`
-	Method string `json:"method" yaml:"method"`
+	URI       string `json:"uri" yaml:"uri"`
+	Method    string `json:"method" yaml:"method"`
+	RedactURI string `json:"redactUri" yaml:"redactUri"` // the URI to POST redaction reports to
 }
 
 type AfterCollection struct {

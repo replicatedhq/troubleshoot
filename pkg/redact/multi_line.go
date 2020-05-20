@@ -8,12 +8,14 @@ import (
 )
 
 type MultiLineRedactor struct {
-	re1      *regexp.Regexp
-	re2      *regexp.Regexp
-	maskText string
+	re1        *regexp.Regexp
+	re2        *regexp.Regexp
+	maskText   string
+	filePath   string
+	redactName string
 }
 
-func NewMultiLineRedactor(re1, re2, maskText string) (*MultiLineRedactor, error) {
+func NewMultiLineRedactor(re1, re2, maskText, path, name string) (*MultiLineRedactor, error) {
 	compiled1, err := regexp.Compile(re1)
 	if err != nil {
 		return nil, err
@@ -22,7 +24,7 @@ func NewMultiLineRedactor(re1, re2, maskText string) (*MultiLineRedactor, error)
 	if err != nil {
 		return nil, err
 	}
-	return &MultiLineRedactor{re1: compiled1, re2: compiled2, maskText: maskText}, nil
+	return &MultiLineRedactor{re1: compiled1, re2: compiled2, maskText: maskText, filePath: path, redactName: name}, nil
 }
 
 func (r *MultiLineRedactor) Redact(input io.Reader) io.Reader {
@@ -45,7 +47,10 @@ func (r *MultiLineRedactor) Redact(input io.Reader) io.Reader {
 		}
 
 		flushLastLine := false
+		lineNum := 1
 		for err == nil {
+			lineNum++ // the first line that can be redacted is line 2
+
 			// If line1 matches re1, then transform line2 using re2
 			if !r.re1.MatchString(line1) {
 				fmt.Fprintf(writer, "%s\n", line1)
@@ -61,6 +66,16 @@ func (r *MultiLineRedactor) Redact(input io.Reader) io.Reader {
 			fmt.Fprintf(writer, "%s\n%s\n", line1, clean)
 			if err != nil {
 				return
+			}
+
+			// if clean is not equal to line2, a redaction was performed
+			if clean != line2 {
+				addRedaction(Redaction{
+					RedactorName:      r.redactName,
+					CharactersRemoved: len(line2) - len(clean),
+					Line:              lineNum,
+					File:              r.filePath,
+				})
 			}
 
 			line1, line2, err = getNextTwoLines(reader, nil)

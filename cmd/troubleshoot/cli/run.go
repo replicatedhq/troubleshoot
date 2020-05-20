@@ -1,7 +1,9 @@
 package cli
 
 import (
+	"bytes"
 	"crypto/tls"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -22,6 +24,7 @@ import (
 	"github.com/replicatedhq/troubleshoot/pkg/client/troubleshootclientset/scheme"
 	troubleshootclientsetscheme "github.com/replicatedhq/troubleshoot/pkg/client/troubleshootclientset/scheme"
 	"github.com/replicatedhq/troubleshoot/pkg/collect"
+	"github.com/replicatedhq/troubleshoot/pkg/redact"
 	"github.com/spf13/viper"
 	spin "github.com/tj/go-spin"
 )
@@ -368,6 +371,33 @@ func uploadSupportBundle(r *troubleshootv1beta1.ResultRequest, archivePath strin
 
 	if resp.StatusCode >= 300 {
 		return fmt.Errorf("unexpected status code %d", resp.StatusCode)
+	}
+
+	// send redaction report
+	if r.RedactURI != "" {
+		type PutSupportBundleRedactions struct {
+			Redactions redact.RedactionList `json:"redactions"`
+		}
+
+		redactBytes, err := json.Marshal(PutSupportBundleRedactions{Redactions: redact.GetRedactionList()})
+		if err != nil {
+			return errors.Wrap(err, "get redaction report")
+		}
+
+		req, err := http.NewRequest("PUT", r.RedactURI, bytes.NewReader(redactBytes))
+		if err != nil {
+			return errors.Wrap(err, "create redaction report request")
+		}
+		req.ContentLength = int64(len(redactBytes))
+
+		resp, err := httpClient.Do(req)
+		if err != nil {
+			return errors.Wrap(err, "execute redaction request")
+		}
+
+		if resp.StatusCode >= 300 {
+			return fmt.Errorf("unexpected redaction status code %d", resp.StatusCode)
+		}
 	}
 
 	return nil

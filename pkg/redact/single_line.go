@@ -8,16 +8,18 @@ import (
 )
 
 type SingleLineRedactor struct {
-	re       *regexp.Regexp
-	maskText string
+	re         *regexp.Regexp
+	maskText   string
+	filePath   string
+	redactName string
 }
 
-func NewSingleLineRedactor(re, maskText string) (*SingleLineRedactor, error) {
+func NewSingleLineRedactor(re, maskText, path, name string) (*SingleLineRedactor, error) {
 	compiled, err := regexp.Compile(re)
 	if err != nil {
 		return nil, err
 	}
-	return &SingleLineRedactor{re: compiled, maskText: maskText}, nil
+	return &SingleLineRedactor{re: compiled, maskText: maskText, filePath: path, redactName: name}, nil
 }
 
 func (r *SingleLineRedactor) Redact(input io.Reader) io.Reader {
@@ -36,7 +38,9 @@ func (r *SingleLineRedactor) Redact(input io.Reader) io.Reader {
 		substStr := getReplacementPattern(r.re, r.maskText)
 
 		reader := bufio.NewReader(input)
+		lineNum := 0
 		for {
+			lineNum++
 			var line string
 			line, err = readLine(reader)
 			if err != nil {
@@ -54,6 +58,16 @@ func (r *SingleLineRedactor) Redact(input io.Reader) io.Reader {
 			fmt.Fprintf(writer, "%s\n", clean)
 			if err != nil {
 				return
+			}
+
+			// if clean is not equal to line, a redaction was performed
+			if clean != line {
+				addRedaction(Redaction{
+					RedactorName:      r.redactName,
+					CharactersRemoved: len(line) - len(clean),
+					Line:              lineNum,
+					File:              r.filePath,
+				})
 			}
 		}
 	}()
