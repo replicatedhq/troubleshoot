@@ -1620,6 +1620,9 @@ func Test_Redactors(t *testing.T) {
 		}
 	  ]`
 
+	wantRedactionsLen := 38
+	wantRedactionsCount := 25
+
 	t.Run("test default redactors", func(t *testing.T) {
 		scopetest := scopeagent.StartTest(t)
 		defer scopetest.End()
@@ -1636,6 +1639,11 @@ func Test_Redactors(t *testing.T) {
 		req.NoError(err)
 
 		req.JSONEq(expected, string(redacted))
+
+		actualRedactions := GetRedactionList()
+		ResetRedactionList()
+		req.Len(actualRedactions.ByFile["testpath"], wantRedactionsLen)
+		req.Len(actualRedactions.ByRedactor, wantRedactionsCount)
 	})
 }
 

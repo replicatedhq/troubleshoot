@@ -11,28 +11,95 @@ import (
 
 func TestNewSingleLineRedactor(t *testing.T) {
 	tests := []struct {
-		name        string
-		re          string
-		inputString string
-		wantString  string
+		name           string
+		re             string
+		inputString    string
+		wantString     string
+		wantRedactions RedactionList
 	}{
 		{
 			name:        "copied from default redactors",
 			re:          `(?i)(Pwd *= *)(?P<mask>[^\;]+)(;)`,
 			inputString: `pwd = abcdef;`,
 			wantString:  "pwd = ***HIDDEN***;\n",
+			wantRedactions: RedactionList{
+				ByRedactor: map[string][]Redaction{
+					"copied from default redactors": []Redaction{
+						{
+							RedactorName:      "copied from default redactors",
+							CharactersRemoved: -6,
+							Line:              1,
+							File:              "testfile",
+						},
+					},
+				},
+				ByFile: map[string][]Redaction{
+					"testfile": []Redaction{
+						{
+							RedactorName:      "copied from default redactors",
+							CharactersRemoved: -6,
+							Line:              1,
+							File:              "testfile",
+						},
+					},
+				},
+			},
 		},
 		{
 			name:        "no leading matching group", // this is not the ideal behavior - why are we dropping ungrouped match components?
 			re:          `(?i)Pwd *= *(?P<mask>[^\;]+)(;)`,
 			inputString: `pwd = abcdef;`,
 			wantString:  "***HIDDEN***;\n",
+			wantRedactions: RedactionList{
+				ByRedactor: map[string][]Redaction{
+					"no leading matching group": []Redaction{
+						{
+							RedactorName:      "no leading matching group",
+							CharactersRemoved: 0,
+							Line:              1,
+							File:              "testfile",
+						},
+					},
+				},
+				ByFile: map[string][]Redaction{
+					"testfile": []Redaction{
+						{
+							RedactorName:      "no leading matching group",
+							CharactersRemoved: 0,
+							Line:              1,
+							File:              "testfile",
+						},
+					},
+				},
+			},
 		},
 		{
 			name:        "multiple matching literals",
 			re:          `(?i)(Pwd *= *)(?P<mask>[^\;]+)(;)`,
 			inputString: `pwd = abcdef;abcdef`,
 			wantString:  "pwd = ***HIDDEN***;abcdef\n",
+			wantRedactions: RedactionList{
+				ByRedactor: map[string][]Redaction{
+					"multiple matching literals": []Redaction{
+						{
+							RedactorName:      "multiple matching literals",
+							CharactersRemoved: -6,
+							Line:              1,
+							File:              "testfile",
+						},
+					},
+				},
+				ByFile: map[string][]Redaction{
+					"testfile": []Redaction{
+						{
+							RedactorName:      "multiple matching literals",
+							CharactersRemoved: -6,
+							Line:              1,
+							File:              "testfile",
+						},
+					},
+				},
+			},
 		},
 	}
 	for _, tt := range tests {
@@ -48,6 +115,10 @@ func TestNewSingleLineRedactor(t *testing.T) {
 			gotBytes, err := ioutil.ReadAll(outReader)
 			req.NoError(err)
 			req.Equal(tt.wantString, string(gotBytes))
+
+			actualRedactions := GetRedactionList()
+			ResetRedactionList()
+			req.Equal(tt.wantRedactions, actualRedactions)
 		})
 	}
 }
