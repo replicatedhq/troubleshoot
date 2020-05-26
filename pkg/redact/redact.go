@@ -111,10 +111,12 @@ func buildAdditionalRedactors(path string, redacts []*troubleshootv1beta1.Redact
 				return nil, errors.Wrapf(err, "redactor %q", re)
 			}
 			additionalRedactors = append(additionalRedactors, r)
+			withinRedactNum++
 		}
 
 		for _, literal := range redact.Values {
 			additionalRedactors = append(additionalRedactors, literalString(literal, path, redactorName(i, withinRedactNum, redact.Name, "literal")))
+			withinRedactNum++
 		}
 
 		for _, re := range redact.MultiLine {
@@ -123,11 +125,13 @@ func buildAdditionalRedactors(path string, redacts []*troubleshootv1beta1.Redact
 				return nil, errors.Wrapf(err, "multiline redactor %+v", re)
 			}
 			additionalRedactors = append(additionalRedactors, r)
+			withinRedactNum++
 		}
 
 		for _, yaml := range redact.Yaml {
 			r := NewYamlRedactor(yaml, path, redactorName(i, withinRedactNum, redact.Name, "yaml"))
 			additionalRedactors = append(additionalRedactors, r)
+			withinRedactNum++
 		}
 	}
 	return additionalRedactors, nil
