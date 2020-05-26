@@ -106,7 +106,7 @@ func buildAdditionalRedactors(path string, redacts []*troubleshootv1beta1.Redact
 		withinRedactNum := 0 // give unique redaction names
 
 		for _, re := range redact.Regex {
-			r, err := NewSingleLineRedactor(re, MASK_TEXT, path, redactorName(i, withinRedactNum, redact.Name, "regex", ""))
+			r, err := NewSingleLineRedactor(re, MASK_TEXT, path, redactorName(i, withinRedactNum, redact.Name, "regex"))
 			if err != nil {
 				return nil, errors.Wrapf(err, "redactor %q", re)
 			}
@@ -114,11 +114,11 @@ func buildAdditionalRedactors(path string, redacts []*troubleshootv1beta1.Redact
 		}
 
 		for _, literal := range redact.Values {
-			additionalRedactors = append(additionalRedactors, literalString(literal, path, redactorName(i, withinRedactNum, redact.Name, "literal", "")))
+			additionalRedactors = append(additionalRedactors, literalString(literal, path, redactorName(i, withinRedactNum, redact.Name, "literal")))
 		}
 
 		for _, re := range redact.MultiLine {
-			r, err := NewMultiLineRedactor(re.Selector, re.Redactor, MASK_TEXT, path, redactorName(i, withinRedactNum, redact.Name, "multiLine", ""))
+			r, err := NewMultiLineRedactor(re.Selector, re.Redactor, MASK_TEXT, path, redactorName(i, withinRedactNum, redact.Name, "multiLine"))
 			if err != nil {
 				return nil, errors.Wrapf(err, "multiline redactor %+v", re)
 			}
@@ -126,7 +126,7 @@ func buildAdditionalRedactors(path string, redacts []*troubleshootv1beta1.Redact
 		}
 
 		for _, yaml := range redact.Yaml {
-			r := NewYamlRedactor(yaml, path, redactorName(i, withinRedactNum, redact.Name, "yaml", ""))
+			r := NewYamlRedactor(yaml, path, redactorName(i, withinRedactNum, redact.Name, "yaml"))
 			additionalRedactors = append(additionalRedactors, r)
 		}
 	}
@@ -171,39 +171,96 @@ func getRedactors(path string) ([]Redactor, error) {
 	// (?i) makes it case insensitive
 	// groups named with `?P<mask>` will be masked
 	// groups named with `?P<drop>` will be removed (replaced with empty strings)
-	singleLines := []string{
+	singleLines := []struct {
+		regex string
+		name  string
+	}{
 		// ipv4
-		`(?P<mask>\b(?P<drop>25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(?P<drop>25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(?P<drop>25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(?P<drop>25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b)`,
+		{
+			regex: `(?P<mask>\b(?P<drop>25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(?P<drop>25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(?P<drop>25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(?P<drop>25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b)`,
+			name:  "ipv4",
+		},
 		// TODO: ipv6
 		// aws secrets
-		`(?i)(\\\"name\\\":\\\"[^\"]*SECRET_?ACCESS_?KEY\\\",\\\"value\\\":\\\")(?P<mask>[^\"]*)(\\\")`,
-		`(?i)(\\\"name\\\":\\\"[^\"]*ACCESS_?KEY_?ID\\\",\\\"value\\\":\\\")(?P<mask>[^\"]*)(\\\")`,
-		`(?i)(\\\"name\\\":\\\"[^\"]*OWNER_?ACCOUNT\\\",\\\"value\\\":\\\")(?P<mask>[^\"]*)(\\\")`,
+		{
+			regex: `(?i)(\\\"name\\\":\\\"[^\"]*SECRET_?ACCESS_?KEY\\\",\\\"value\\\":\\\")(?P<mask>[^\"]*)(\\\")`,
+			name:  "SECRET_ACCESS_KEY",
+		},
+		{
+			regex: `(?i)(\\\"name\\\":\\\"[^\"]*ACCESS_?KEY_?ID\\\",\\\"value\\\":\\\")(?P<mask>[^\"]*)(\\\")`,
+			name:  "ACCESS_KEY_ID",
+		},
+		{
+			regex: `(?i)(\\\"name\\\":\\\"[^\"]*OWNER_?ACCOUNT\\\",\\\"value\\\":\\\")(?P<mask>[^\"]*)(\\\")`,
+			name:  "OWNER_ACCOUNT",
+		},
 		// passwords in general
-		`(?i)(\\\"name\\\":\\\"[^\"]*password[^\"]*\\\",\\\"value\\\":\\\")(?P<mask>[^\"]*)(\\\")`,
+		{
+			regex: `(?i)(\\\"name\\\":\\\"[^\"]*password[^\"]*\\\",\\\"value\\\":\\\")(?P<mask>[^\"]*)(\\\")`,
+			name:  "password",
+		},
 		// tokens in general
-		`(?i)(\\\"name\\\":\\\"[^\"]*token[^\"]*\\\",\\\"value\\\":\\\")(?P<mask>[^\"]*)(\\\")`,
-		`(?i)(\\\"name\\\":\\\"[^\"]*database[^\"]*\\\",\\\"value\\\":\\\")(?P<mask>[^\"]*)(\\\")`,
-		`(?i)(\\\"name\\\":\\\"[^\"]*user[^\"]*\\\",\\\"value\\\":\\\")(?P<mask>[^\"]*)(\\\")`,
+		{
+			regex: `(?i)(\\\"name\\\":\\\"[^\"]*token[^\"]*\\\",\\\"value\\\":\\\")(?P<mask>[^\"]*)(\\\")`,
+			name:  "token",
+		},
+		{
+			regex: `(?i)(\\\"name\\\":\\\"[^\"]*database[^\"]*\\\",\\\"value\\\":\\\")(?P<mask>[^\"]*)(\\\")`,
+			name:  "database",
+		},
+		{
+			regex: `(?i)(\\\"name\\\":\\\"[^\"]*user[^\"]*\\\",\\\"value\\\":\\\")(?P<mask>[^\"]*)(\\\")`,
+			name:  "user",
+		},
 		// connection strings with username and password
 		// http://user:password@host:8888
-		`(?i)(https?|ftp)(:\/\/)(?P<mask>[^:\"\/]+){1}(:)(?P<mask>[^@\"\/]+){1}(?P<host>@[^:\/\s\"]+){1}(?P<port>:[\d]+)?`,
+		{
+			regex: `(?i)(https?|ftp)(:\/\/)(?P<mask>[^:\"\/]+){1}(:)(?P<mask>[^@\"\/]+){1}(?P<host>@[^:\/\s\"]+){1}(?P<port>:[\d]+)?`,
+			name:  "http://user:password@host:8888",
+		},
 		// user:password@tcp(host:3309)/db-name
-		`\b(?P<mask>[^:\"\/]*){1}(:)(?P<mask>[^:\"\/]*){1}(@tcp\()(?P<mask>[^:\"\/]*){1}(?P<port>:[\d]*)?(\)\/)(?P<mask>[\w\d\S-_]+){1}\b`,
-		// standard postgres and mysql connnection strings
-		`(?i)(Data Source *= *)(?P<mask>[^\;]+)(;)`,
-		`(?i)(location *= *)(?P<mask>[^\;]+)(;)`,
-		`(?i)(User ID *= *)(?P<mask>[^\;]+)(;)`,
-		`(?i)(password *= *)(?P<mask>[^\;]+)(;)`,
-		`(?i)(Server *= *)(?P<mask>[^\;]+)(;)`,
-		`(?i)(Database *= *)(?P<mask>[^\;]+)(;)`,
-		`(?i)(Uid *= *)(?P<mask>[^\;]+)(;)`,
-		`(?i)(Pwd *= *)(?P<mask>[^\;]+)(;)`,
+		{
+			regex: `\b(?P<mask>[^:\"\/]*){1}(:)(?P<mask>[^:\"\/]*){1}(@tcp\()(?P<mask>[^:\"\/]*){1}(?P<port>:[\d]*)?(\)\/)(?P<mask>[\w\d\S-_]+){1}\b`,
+			name:  "user:password@tcp(host:3309)/db-name",
+		},
+		// standard postgres and mysql connection strings
+		{
+			regex: `(?i)(Data Source *= *)(?P<mask>[^\;]+)(;)`,
+			name:  "Data Source",
+		},
+		{
+			regex: `(?i)(location *= *)(?P<mask>[^\;]+)(;)`,
+			name:  "location",
+		},
+		{
+			regex: `(?i)(User ID *= *)(?P<mask>[^\;]+)(;)`,
+			name:  "User ID",
+		},
+		{
+			regex: `(?i)(password *= *)(?P<mask>[^\;]+)(;)`,
+			name:  "db-password",
+		},
+		{
+			regex: `(?i)(Server *= *)(?P<mask>[^\;]+)(;)`,
+			name:  "server",
+		},
+		{
+			regex: `(?i)(Database *= *)(?P<mask>[^\;]+)(;)`,
+			name:  "db-database",
+		},
+		{
+			regex: `(?i)(Uid *= *)(?P<mask>[^\;]+)(;)`,
+			name:  "Uid",
+		},
+		{
+			regex: `(?i)(Pwd *= *)(?P<mask>[^\;]+)(;)`,
+			name:  "Pwd",
+		},
 	}
 
 	redactors := make([]Redactor, 0)
-	for i, re := range singleLines {
-		r, err := NewSingleLineRedactor(re, MASK_TEXT, path, redactorName(-1, i, "", "defaultRegex", re))
+	for _, re := range singleLines {
+		r, err := NewSingleLineRedactor(re.regex, MASK_TEXT, path, redactorName(-1, -1, re.name, "defaultRegex"))
 		if err != nil {
 			return nil, err // maybe skip broken ones?
 		}
@@ -213,39 +270,47 @@ func getRedactors(path string) ([]Redactor, error) {
 	doubleLines := []struct {
 		line1 string
 		line2 string
+		name  string
 	}{
 		{
 			line1: `(?i)"name": *"[^\"]*SECRET_?ACCESS_?KEY[^\"]*"`,
 			line2: `(?i)("value": *")(?P<mask>.*[^\"]*)(")`,
+			name:  "SECRET_ACCESS_KEY",
 		},
 		{
 			line1: `(?i)"name": *"[^\"]*ACCESS_?KEY_?ID[^\"]*"`,
 			line2: `(?i)("value": *")(?P<mask>.*[^\"]*)(")`,
+			name:  "ACCESS_KEY_ID",
 		},
 		{
 			line1: `(?i)"name": *"[^\"]*OWNER_?ACCOUNT[^\"]*"`,
 			line2: `(?i)("value": *")(?P<mask>.*[^\"]*)(")`,
+			name:  "OWNER_ACCOUNT",
 		},
 		{
 			line1: `(?i)"name": *".*password[^\"]*"`,
 			line2: `(?i)("value": *")(?P<mask>.*[^\"]*)(")`,
+			name:  "password",
 		},
 		{
 			line1: `(?i)"name": *".*token[^\"]*"`,
 			line2: `(?i)("value": *")(?P<mask>.*[^\"]*)(")`,
+			name:  "token",
 		},
 		{
 			line1: `(?i)"name": *".*database[^\"]*"`,
 			line2: `(?i)("value": *")(?P<mask>.*[^\"]*)(")`,
+			name:  "database",
 		},
 		{
 			line1: `(?i)"name": *".*user[^\"]*"`,
 			line2: `(?i)("value": *")(?P<mask>.*[^\"]*)(")`,
+			name:  "user",
 		},
 	}
 
-	for i, l := range doubleLines {
-		r, err := NewMultiLineRedactor(l.line1, l.line2, MASK_TEXT, path, redactorName(-1, i, "", "defaultMultiLine", l.line1))
+	for _, l := range doubleLines {
+		r, err := NewMultiLineRedactor(l.line1, l.line2, MASK_TEXT, path, redactorName(-1, -1, l.name, "defaultMultiLine"))
 		if err != nil {
 			return nil, err // maybe skip broken ones?
 		}
@@ -302,12 +367,12 @@ func addRedaction(redaction Redaction) {
 	}(redaction)
 }
 
-func redactorName(redactorNum, withinRedactorNum int, redactorName, redactorType, redactorLiteral string) string {
+func redactorName(redactorNum, withinRedactorNum int, redactorName, redactorType string) string {
+	if withinRedactorNum == -1 {
+		return fmt.Sprintf("%s.%q", redactorType, redactorName)
+	}
 	if redactorName != "" {
 		return fmt.Sprintf("%s-%d", redactorName, withinRedactorNum)
 	}
-	if redactorLiteral == "" {
-		return fmt.Sprintf("unnamed-%d.%d-%s", redactorNum, withinRedactorNum, redactorType)
-	}
-	return fmt.Sprintf("%s.%d-%q", redactorType, withinRedactorNum, redactorLiteral)
+	return fmt.Sprintf("unnamed-%d.%d-%s", redactorNum, withinRedactorNum, redactorType)
 }
