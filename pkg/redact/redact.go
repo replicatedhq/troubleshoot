@@ -176,89 +176,89 @@ func getRedactors(path string) ([]Redactor, error) {
 		// ipv4
 		{
 			regex: `(?P<mask>\b(?P<drop>25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(?P<drop>25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(?P<drop>25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(?P<drop>25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b)`,
-			name:  "ipv4",
+			name:  "default ipv4 redactor",
 		},
 		// TODO: ipv6
 		// aws secrets
 		{
 			regex: `(?i)(\\\"name\\\":\\\"[^\"]*SECRET_?ACCESS_?KEY\\\",\\\"value\\\":\\\")(?P<mask>[^\"]*)(\\\")`,
-			name:  "SECRET_ACCESS_KEY",
+			name:  "default SECRET_ACCESS_KEY redactor",
 		},
 		{
 			regex: `(?i)(\\\"name\\\":\\\"[^\"]*ACCESS_?KEY_?ID\\\",\\\"value\\\":\\\")(?P<mask>[^\"]*)(\\\")`,
-			name:  "ACCESS_KEY_ID",
+			name:  "default ACCESS_KEY_ID redactor",
 		},
 		{
 			regex: `(?i)(\\\"name\\\":\\\"[^\"]*OWNER_?ACCOUNT\\\",\\\"value\\\":\\\")(?P<mask>[^\"]*)(\\\")`,
-			name:  "OWNER_ACCOUNT",
+			name:  "default OWNER_ACCOUNT redactor",
 		},
 		// passwords in general
 		{
 			regex: `(?i)(\\\"name\\\":\\\"[^\"]*password[^\"]*\\\",\\\"value\\\":\\\")(?P<mask>[^\"]*)(\\\")`,
-			name:  "password",
+			name:  "default password redactor",
 		},
 		// tokens in general
 		{
 			regex: `(?i)(\\\"name\\\":\\\"[^\"]*token[^\"]*\\\",\\\"value\\\":\\\")(?P<mask>[^\"]*)(\\\")`,
-			name:  "token",
+			name:  "default token redactor",
 		},
 		{
 			regex: `(?i)(\\\"name\\\":\\\"[^\"]*database[^\"]*\\\",\\\"value\\\":\\\")(?P<mask>[^\"]*)(\\\")`,
-			name:  "database",
+			name:  "default database redactor",
 		},
 		{
 			regex: `(?i)(\\\"name\\\":\\\"[^\"]*user[^\"]*\\\",\\\"value\\\":\\\")(?P<mask>[^\"]*)(\\\")`,
-			name:  "user",
+			name:  "default user redactor",
 		},
 		// connection strings with username and password
 		// http://user:password@host:8888
 		{
 			regex: `(?i)(https?|ftp)(:\/\/)(?P<mask>[^:\"\/]+){1}(:)(?P<mask>[^@\"\/]+){1}(?P<host>@[^:\/\s\"]+){1}(?P<port>:[\d]+)?`,
-			name:  "http://user:password@host:8888",
+			name:  "default connection string redactor",
 		},
 		// user:password@tcp(host:3309)/db-name
 		{
 			regex: `\b(?P<mask>[^:\"\/]*){1}(:)(?P<mask>[^:\"\/]*){1}(@tcp\()(?P<mask>[^:\"\/]*){1}(?P<port>:[\d]*)?(\)\/)(?P<mask>[\w\d\S-_]+){1}\b`,
-			name:  "user:password@tcp(host:3309)/db-name",
+			name:  "default db connection string redactor",
 		},
 		// standard postgres and mysql connection strings
 		{
 			regex: `(?i)(Data Source *= *)(?P<mask>[^\;]+)(;)`,
-			name:  "Data Source",
+			name:  "default Data Source redactor",
 		},
 		{
 			regex: `(?i)(location *= *)(?P<mask>[^\;]+)(;)`,
-			name:  "location",
+			name:  "default location redactor",
 		},
 		{
 			regex: `(?i)(User ID *= *)(?P<mask>[^\;]+)(;)`,
-			name:  "User ID",
+			name:  "default User ID redactor",
 		},
 		{
 			regex: `(?i)(password *= *)(?P<mask>[^\;]+)(;)`,
-			name:  "db-password",
+			name:  "default db-password redactor",
 		},
 		{
 			regex: `(?i)(Server *= *)(?P<mask>[^\;]+)(;)`,
-			name:  "server",
+			name:  "default server redactor",
 		},
 		{
 			regex: `(?i)(Database *= *)(?P<mask>[^\;]+)(;)`,
-			name:  "db-database",
+			name:  "default db-database redactor",
 		},
 		{
 			regex: `(?i)(Uid *= *)(?P<mask>[^\;]+)(;)`,
-			name:  "Uid",
+			name:  "default Uid redactor",
 		},
 		{
 			regex: `(?i)(Pwd *= *)(?P<mask>[^\;]+)(;)`,
-			name:  "Pwd",
+			name:  "default Pwd redactor",
 		},
 	}
 
 	redactors := make([]Redactor, 0)
 	for _, re := range singleLines {
-		r, err := NewSingleLineRedactor(re.regex, MASK_TEXT, path, redactorName(-1, -1, re.name, "defaultRegex"))
+		r, err := NewSingleLineRedactor(re.regex, MASK_TEXT, path, re.name)
 		if err != nil {
 			return nil, err // maybe skip broken ones?
 		}
@@ -273,42 +273,42 @@ func getRedactors(path string) ([]Redactor, error) {
 		{
 			line1: `(?i)"name": *"[^\"]*SECRET_?ACCESS_?KEY[^\"]*"`,
 			line2: `(?i)("value": *")(?P<mask>.*[^\"]*)(")`,
-			name:  "SECRET_ACCESS_KEY",
+			name:  "default multiline SECRET_ACCESS_KEY redactor",
 		},
 		{
 			line1: `(?i)"name": *"[^\"]*ACCESS_?KEY_?ID[^\"]*"`,
 			line2: `(?i)("value": *")(?P<mask>.*[^\"]*)(")`,
-			name:  "ACCESS_KEY_ID",
+			name:  "default multiline ACCESS_KEY_ID redactor",
 		},
 		{
 			line1: `(?i)"name": *"[^\"]*OWNER_?ACCOUNT[^\"]*"`,
 			line2: `(?i)("value": *")(?P<mask>.*[^\"]*)(")`,
-			name:  "OWNER_ACCOUNT",
+			name:  "default multiline OWNER_ACCOUNT redactor",
 		},
 		{
 			line1: `(?i)"name": *".*password[^\"]*"`,
 			line2: `(?i)("value": *")(?P<mask>.*[^\"]*)(")`,
-			name:  "password",
+			name:  "default multiline password redactor",
 		},
 		{
 			line1: `(?i)"name": *".*token[^\"]*"`,
 			line2: `(?i)("value": *")(?P<mask>.*[^\"]*)(")`,
-			name:  "token",
+			name:  "default multiline token redactor",
 		},
 		{
 			line1: `(?i)"name": *".*database[^\"]*"`,
 			line2: `(?i)("value": *")(?P<mask>.*[^\"]*)(")`,
-			name:  "database",
+			name:  "default multiline database redactor",
 		},
 		{
 			line1: `(?i)"name": *".*user[^\"]*"`,
 			line2: `(?i)("value": *")(?P<mask>.*[^\"]*)(")`,
-			name:  "user",
+			name:  "default multiline user redactor",
 		},
 	}
 
 	for _, l := range doubleLines {
-		r, err := NewMultiLineRedactor(l.line1, l.line2, MASK_TEXT, path, redactorName(-1, -1, l.name, "defaultMultiLine"))
+		r, err := NewMultiLineRedactor(l.line1, l.line2, MASK_TEXT, path, l.name)
 		if err != nil {
 			return nil, err // maybe skip broken ones?
 		}
@@ -366,9 +366,6 @@ func addRedaction(redaction Redaction) {
 }
 
 func redactorName(redactorNum, withinRedactorNum int, redactorName, redactorType string) string {
-	if withinRedactorNum == -1 {
-		return fmt.Sprintf("%s.%q", redactorType, redactorName)
-	}
 	if redactorName != "" {
 		return fmt.Sprintf("%s.%s.%d", redactorName, redactorType, withinRedactorNum)
 	}
