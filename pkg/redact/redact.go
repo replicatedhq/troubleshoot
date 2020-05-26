@@ -103,35 +103,29 @@ func buildAdditionalRedactors(path string, redacts []*troubleshootv1beta1.Redact
 			continue
 		}
 
-		withinRedactNum := 0 // give unique redaction names
-
-		for _, re := range redact.Regex {
-			r, err := NewSingleLineRedactor(re, MASK_TEXT, path, redactorName(i, withinRedactNum, redact.Name, "regex"))
+		for j, re := range redact.Regex {
+			r, err := NewSingleLineRedactor(re, MASK_TEXT, path, redactorName(i, j, redact.Name, "regex"))
 			if err != nil {
 				return nil, errors.Wrapf(err, "redactor %q", re)
 			}
 			additionalRedactors = append(additionalRedactors, r)
-			withinRedactNum++
 		}
 
-		for _, literal := range redact.Values {
-			additionalRedactors = append(additionalRedactors, literalString(literal, path, redactorName(i, withinRedactNum, redact.Name, "literal")))
-			withinRedactNum++
+		for j, literal := range redact.Values {
+			additionalRedactors = append(additionalRedactors, literalString(literal, path, redactorName(i, j, redact.Name, "literal")))
 		}
 
-		for _, re := range redact.MultiLine {
-			r, err := NewMultiLineRedactor(re.Selector, re.Redactor, MASK_TEXT, path, redactorName(i, withinRedactNum, redact.Name, "multiLine"))
+		for j, re := range redact.MultiLine {
+			r, err := NewMultiLineRedactor(re.Selector, re.Redactor, MASK_TEXT, path, redactorName(i, j, redact.Name, "multiLine"))
 			if err != nil {
 				return nil, errors.Wrapf(err, "multiline redactor %+v", re)
 			}
 			additionalRedactors = append(additionalRedactors, r)
-			withinRedactNum++
 		}
 
-		for _, yaml := range redact.Yaml {
-			r := NewYamlRedactor(yaml, path, redactorName(i, withinRedactNum, redact.Name, "yaml"))
+		for j, yaml := range redact.Yaml {
+			r := NewYamlRedactor(yaml, path, redactorName(i, j, redact.Name, "yaml"))
 			additionalRedactors = append(additionalRedactors, r)
-			withinRedactNum++
 		}
 	}
 	return additionalRedactors, nil
@@ -376,7 +370,7 @@ func redactorName(redactorNum, withinRedactorNum int, redactorName, redactorType
 		return fmt.Sprintf("%s.%q", redactorType, redactorName)
 	}
 	if redactorName != "" {
-		return fmt.Sprintf("%s-%d", redactorName, withinRedactorNum)
+		return fmt.Sprintf("%s.%s.%d", redactorName, redactorType, withinRedactorNum)
 	}
-	return fmt.Sprintf("unnamed-%d.%d-%s", redactorNum, withinRedactorNum, redactorType)
+	return fmt.Sprintf("unnamed-%d.%s.%d", redactorNum, redactorType, withinRedactorNum)
 }
