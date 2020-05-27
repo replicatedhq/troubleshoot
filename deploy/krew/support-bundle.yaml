@@ -31,7 +31,7 @@ spec:
       matchLabels:
         os: windows
         arch: amd64
-    {{addURIAndSha "https://github.com/replicatedhq/troubleshoot/releases/download/{{ .TagName }}/support-bundle.exe_windows_amd64.zip" .TagName }}
+    {{addURIAndSha "https://github.com/replicatedhq/troubleshoot/releases/download/{{ .TagName }}/support-bundle_windows_amd64.zip" .TagName }}
     files:
     - from: support-bundle.exe
       to: .

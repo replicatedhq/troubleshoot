@@ -31,7 +31,7 @@ spec:
       matchLabels:
         os: windows
         arch: amd64
-    {{addURIAndSha "https://github.com/replicatedhq/troubleshoot/releases/download/{{ .TagName }}/preflight.exe_windows_amd64.zip" .TagName }}
+    {{addURIAndSha "https://github.com/replicatedhq/troubleshoot/releases/download/{{ .TagName }}/preflight_windows_amd64.zip" .TagName }}
     files:
     - from: preflight.exe
       to: .
