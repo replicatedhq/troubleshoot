@@ -11,6 +11,7 @@ type literalRedactor struct {
 	matchString string
 	filePath    string
 	redactName  string
+	isDefault   bool
 }
 
 func literalString(matchString, path, name string) Redactor {
@@ -58,6 +59,7 @@ func (r literalRedactor) Redact(input io.Reader) io.Reader {
 					CharactersRemoved: len(line) - len(clean),
 					Line:              lineNum,
 					File:              r.filePath,
+					IsDefaultRedactor: r.isDefault,
 				})
 			}
 		}

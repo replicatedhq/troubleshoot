@@ -44,6 +44,7 @@ type Redaction struct {
 	CharactersRemoved int    `json:"charactersRemoved" yaml:"charactersRemoved"`
 	Line              int    `json:"line" yaml:"line"`
 	File              string `json:"file" yaml:"file"`
+	IsDefaultRedactor bool   `json:"isDefaultRedactor" yaml:"isDefaultRedactor"`
 }
 
 func Redact(input []byte, path string, additionalRedactors []*troubleshootv1beta1.Redact) ([]byte, error) {
@@ -104,7 +105,7 @@ func buildAdditionalRedactors(path string, redacts []*troubleshootv1beta1.Redact
 		}
 
 		for j, re := range redact.Regex {
-			r, err := NewSingleLineRedactor(re, MASK_TEXT, path, redactorName(i, j, redact.Name, "regex"))
+			r, err := NewSingleLineRedactor(re, MASK_TEXT, path, redactorName(i, j, redact.Name, "regex"), false)
 			if err != nil {
 				return nil, errors.Wrapf(err, "redactor %q", re)
 			}
@@ -116,7 +117,7 @@ func buildAdditionalRedactors(path string, redacts []*troubleshootv1beta1.Redact
 		}
 
 		for j, re := range redact.MultiLine {
-			r, err := NewMultiLineRedactor(re.Selector, re.Redactor, MASK_TEXT, path, redactorName(i, j, redact.Name, "multiLine"))
+			r, err := NewMultiLineRedactor(re.Selector, re.Redactor, MASK_TEXT, path, redactorName(i, j, redact.Name, "multiLine"), false)
 			if err != nil {
 				return nil, errors.Wrapf(err, "multiline redactor %+v", re)
 			}
@@ -258,7 +259,7 @@ func getRedactors(path string) ([]Redactor, error) {
 
 	redactors := make([]Redactor, 0)
 	for _, re := range singleLines {
-		r, err := NewSingleLineRedactor(re.regex, MASK_TEXT, path, re.name)
+		r, err := NewSingleLineRedactor(re.regex, MASK_TEXT, path, re.name, true)
 		if err != nil {
 			return nil, err // maybe skip broken ones?
 		}
@@ -308,7 +309,7 @@ func getRedactors(path string) ([]Redactor, error) {
 	}
 
 	for _, l := range doubleLines {
-		r, err := NewMultiLineRedactor(l.line1, l.line2, MASK_TEXT, path, l.name)
+		r, err := NewMultiLineRedactor(l.line1, l.line2, MASK_TEXT, path, l.name, true)
 		if err != nil {
 			return nil, err // maybe skip broken ones?
 		}

@@ -16,6 +16,7 @@ type YamlRedactor struct {
 	foundMatch bool
 	filePath   string
 	redactName string
+	isDefault  bool
 }
 
 func NewYamlRedactor(yamlPath, filePath, name string) *YamlRedactor {
@@ -69,6 +70,7 @@ func (r *YamlRedactor) Redact(input io.Reader) io.Reader {
 			CharactersRemoved: len(doc) - len(newBytes),
 			Line:              0, // line 0 because we have no way to tell what line was impacted
 			File:              r.filePath,
+			IsDefaultRedactor: r.isDefault,
 		})
 
 		return

@@ -13,9 +13,10 @@ type MultiLineRedactor struct {
 	maskText   string
 	filePath   string
 	redactName string
+	isDefault  bool
 }
 
-func NewMultiLineRedactor(re1, re2, maskText, path, name string) (*MultiLineRedactor, error) {
+func NewMultiLineRedactor(re1, re2, maskText, path, name string, isDefault bool) (*MultiLineRedactor, error) {
 	compiled1, err := regexp.Compile(re1)
 	if err != nil {
 		return nil, err
@@ -24,7 +25,7 @@ func NewMultiLineRedactor(re1, re2, maskText, path, name string) (*MultiLineReda
 	if err != nil {
 		return nil, err
 	}
-	return &MultiLineRedactor{re1: compiled1, re2: compiled2, maskText: maskText, filePath: path, redactName: name}, nil
+	return &MultiLineRedactor{re1: compiled1, re2: compiled2, maskText: maskText, filePath: path, redactName: name, isDefault: isDefault}, nil
 }
 
 func (r *MultiLineRedactor) Redact(input io.Reader) io.Reader {
@@ -75,6 +76,7 @@ func (r *MultiLineRedactor) Redact(input io.Reader) io.Reader {
 					CharactersRemoved: len(line2) - len(clean),
 					Line:              lineNum,
 					File:              r.filePath,
+					IsDefaultRedactor: r.isDefault,
 				})
 			}
 
