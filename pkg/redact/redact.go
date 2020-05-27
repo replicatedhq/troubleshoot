@@ -183,33 +183,33 @@ func getRedactors(path string) ([]Redactor, error) {
 		// aws secrets
 		{
 			regex: `(?i)(\\\"name\\\":\\\"[^\"]*SECRET_?ACCESS_?KEY\\\",\\\"value\\\":\\\")(?P<mask>[^\"]*)(\\\")`,
-			name:  "Redact AWS Secret Access Key values in JSON",
+			name:  "Redact values for environment variables that look like AWS Secret Access Keys",
 		},
 		{
 			regex: `(?i)(\\\"name\\\":\\\"[^\"]*ACCESS_?KEY_?ID\\\",\\\"value\\\":\\\")(?P<mask>[^\"]*)(\\\")`,
-			name:  "Redact AWS Access Key ID values in JSON",
+			name:  "Redact values for environment variables that look like AWS Access Keys",
 		},
 		{
 			regex: `(?i)(\\\"name\\\":\\\"[^\"]*OWNER_?ACCOUNT\\\",\\\"value\\\":\\\")(?P<mask>[^\"]*)(\\\")`,
-			name:  "Redact AWS Owner and Account Numbers in JSON",
+			name:  "Redact values for environment variables that look like AWS Owner or Account numbers",
 		},
 		// passwords in general
 		{
 			regex: `(?i)(\\\"name\\\":\\\"[^\"]*password[^\"]*\\\",\\\"value\\\":\\\")(?P<mask>[^\"]*)(\\\")`,
-			name:  "Redact password environment variables in JSON",
+			name:  "Redact values for environment variables with names beginning with 'password'",
 		},
 		// tokens in general
 		{
 			regex: `(?i)(\\\"name\\\":\\\"[^\"]*token[^\"]*\\\",\\\"value\\\":\\\")(?P<mask>[^\"]*)(\\\")`,
-			name:  "Redact values that look like API tokens in JSON",
+			name:  "Redact values for environment variables with names beginning with 'token'",
 		},
 		{
 			regex: `(?i)(\\\"name\\\":\\\"[^\"]*database[^\"]*\\\",\\\"value\\\":\\\")(?P<mask>[^\"]*)(\\\")`,
-			name:  "Redact database connection strings in JSON",
+			name:  "Redact values for environment variables with names beginning with 'database'",
 		},
 		{
 			regex: `(?i)(\\\"name\\\":\\\"[^\"]*user[^\"]*\\\",\\\"value\\\":\\\")(?P<mask>[^\"]*)(\\\")`,
-			name:  "Redact usernames in JSON",
+			name:  "Redact values for environment variables with names beginning with 'user'",
 		},
 		// connection strings with username and password
 		// http://user:password@host:8888
@@ -225,35 +225,35 @@ func getRedactors(path string) ([]Redactor, error) {
 		// standard postgres and mysql connection strings
 		{
 			regex: `(?i)(Data Source *= *)(?P<mask>[^\;]+)(;)`,
-			name:  "Redact database connection string 'Data Source' values",
+			name:  "Redact 'Data Source' values commonly found in database connection strings",
 		},
 		{
 			regex: `(?i)(location *= *)(?P<mask>[^\;]+)(;)`,
-			name:  "Redact database connection string 'location' values",
+			name:  "Redact 'location' values commonly found in database connection strings",
 		},
 		{
 			regex: `(?i)(User ID *= *)(?P<mask>[^\;]+)(;)`,
-			name:  "Redact database connectin string 'User ID' values",
+			name:  "Redact 'User ID' values commonly found in database connection strings",
 		},
 		{
 			regex: `(?i)(password *= *)(?P<mask>[^\;]+)(;)`,
-			name:  "Redact database connection string 'password' values",
+			name:  "Redact 'password' values commonly found in database connection strings",
 		},
 		{
 			regex: `(?i)(Server *= *)(?P<mask>[^\;]+)(;)`,
-			name:  "Redact database connection string 'Server' values",
+			name:  "Redact 'Server' values commonly found in database connection strings",
 		},
 		{
 			regex: `(?i)(Database *= *)(?P<mask>[^\;]+)(;)`,
-			name:  "Redact database connection string 'Database' values",
+			name:  "Redact 'Database' values commonly found in database connection strings",
 		},
 		{
 			regex: `(?i)(Uid *= *)(?P<mask>[^\;]+)(;)`,
-			name:  "Redact database connection string 'UID' values",
+			name:  "Redact 'UID' values commonly found in database connection strings",
 		},
 		{
 			regex: `(?i)(Pwd *= *)(?P<mask>[^\;]+)(;)`,
-			name:  "Redact database connection string 'PWD' values",
+			name:  "Redact 'Pwd' values commonly found in database connection strings",
 		},
 	}
 
