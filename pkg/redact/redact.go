@@ -177,83 +177,83 @@ func getRedactors(path string) ([]Redactor, error) {
 		// ipv4
 		{
 			regex: `(?P<mask>\b(?P<drop>25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(?P<drop>25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(?P<drop>25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(?P<drop>25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b)`,
-			name:  "default ipv4 redactor",
+			name:  "Redact ipv4 addresses",
 		},
 		// TODO: ipv6
 		// aws secrets
 		{
 			regex: `(?i)(\\\"name\\\":\\\"[^\"]*SECRET_?ACCESS_?KEY\\\",\\\"value\\\":\\\")(?P<mask>[^\"]*)(\\\")`,
-			name:  "default SECRET_ACCESS_KEY redactor",
+			name:  "Redact AWS Secret Access Key values in JSON",
 		},
 		{
 			regex: `(?i)(\\\"name\\\":\\\"[^\"]*ACCESS_?KEY_?ID\\\",\\\"value\\\":\\\")(?P<mask>[^\"]*)(\\\")`,
-			name:  "default ACCESS_KEY_ID redactor",
+			name:  "Redact AWS Access Key ID values in JSON",
 		},
 		{
 			regex: `(?i)(\\\"name\\\":\\\"[^\"]*OWNER_?ACCOUNT\\\",\\\"value\\\":\\\")(?P<mask>[^\"]*)(\\\")`,
-			name:  "default OWNER_ACCOUNT redactor",
+			name:  "Redact AWS Owner and Account Numbers in JSON",
 		},
 		// passwords in general
 		{
 			regex: `(?i)(\\\"name\\\":\\\"[^\"]*password[^\"]*\\\",\\\"value\\\":\\\")(?P<mask>[^\"]*)(\\\")`,
-			name:  "default password redactor",
+			name:  "Redact password environment variables in JSON",
 		},
 		// tokens in general
 		{
 			regex: `(?i)(\\\"name\\\":\\\"[^\"]*token[^\"]*\\\",\\\"value\\\":\\\")(?P<mask>[^\"]*)(\\\")`,
-			name:  "default token redactor",
+			name:  "Redact values that look like API tokens in JSON",
 		},
 		{
 			regex: `(?i)(\\\"name\\\":\\\"[^\"]*database[^\"]*\\\",\\\"value\\\":\\\")(?P<mask>[^\"]*)(\\\")`,
-			name:  "default database redactor",
+			name:  "Redact database connection strings in JSON",
 		},
 		{
 			regex: `(?i)(\\\"name\\\":\\\"[^\"]*user[^\"]*\\\",\\\"value\\\":\\\")(?P<mask>[^\"]*)(\\\")`,
-			name:  "default user redactor",
+			name:  "Redact usernames in JSON",
 		},
 		// connection strings with username and password
 		// http://user:password@host:8888
 		{
 			regex: `(?i)(https?|ftp)(:\/\/)(?P<mask>[^:\"\/]+){1}(:)(?P<mask>[^@\"\/]+){1}(?P<host>@[^:\/\s\"]+){1}(?P<port>:[\d]+)?`,
-			name:  "default connection string redactor",
+			name:  "Redact connection strings with username and password",
 		},
 		// user:password@tcp(host:3309)/db-name
 		{
 			regex: `\b(?P<mask>[^:\"\/]*){1}(:)(?P<mask>[^:\"\/]*){1}(@tcp\()(?P<mask>[^:\"\/]*){1}(?P<port>:[\d]*)?(\)\/)(?P<mask>[\w\d\S-_]+){1}\b`,
-			name:  "default db connection string redactor",
+			name:  "Redact database connection strings that contain username and password",
 		},
 		// standard postgres and mysql connection strings
 		{
 			regex: `(?i)(Data Source *= *)(?P<mask>[^\;]+)(;)`,
-			name:  "default Data Source redactor",
+			name:  "Redact database connection string 'Data Source' values",
 		},
 		{
 			regex: `(?i)(location *= *)(?P<mask>[^\;]+)(;)`,
-			name:  "default location redactor",
+			name:  "Redact database connection string 'location' values",
 		},
 		{
 			regex: `(?i)(User ID *= *)(?P<mask>[^\;]+)(;)`,
-			name:  "default User ID redactor",
+			name:  "Redact database connectin string 'User ID' values",
 		},
 		{
 			regex: `(?i)(password *= *)(?P<mask>[^\;]+)(;)`,
-			name:  "default db-password redactor",
+			name:  "Redact database connection string 'password' values",
 		},
 		{
 			regex: `(?i)(Server *= *)(?P<mask>[^\;]+)(;)`,
-			name:  "default server redactor",
+			name:  "Redact database connection string 'Server' values",
 		},
 		{
 			regex: `(?i)(Database *= *)(?P<mask>[^\;]+)(;)`,
-			name:  "default db-database redactor",
+			name:  "Redact database connection string 'Database' values",
 		},
 		{
 			regex: `(?i)(Uid *= *)(?P<mask>[^\;]+)(;)`,
-			name:  "default Uid redactor",
+			name:  "Redact database connection string 'UID' values",
 		},
 		{
 			regex: `(?i)(Pwd *= *)(?P<mask>[^\;]+)(;)`,
-			name:  "default Pwd redactor",
+			name:  "Redact database connection string 'PWD' values",
 		},
 	}
 
@@ -274,37 +274,37 @@ func getRedactors(path string) ([]Redactor, error) {
 		{
 			line1: `(?i)"name": *"[^\"]*SECRET_?ACCESS_?KEY[^\"]*"`,
 			line2: `(?i)("value": *")(?P<mask>.*[^\"]*)(")`,
-			name:  "default multiline SECRET_ACCESS_KEY redactor",
+			name:  "Redact AWS Secret Access Key values in multiline JSON",
 		},
 		{
 			line1: `(?i)"name": *"[^\"]*ACCESS_?KEY_?ID[^\"]*"`,
 			line2: `(?i)("value": *")(?P<mask>.*[^\"]*)(")`,
-			name:  "default multiline ACCESS_KEY_ID redactor",
+			name:  "Redact AWS Access Key ID values in multiline JSON",
 		},
 		{
 			line1: `(?i)"name": *"[^\"]*OWNER_?ACCOUNT[^\"]*"`,
 			line2: `(?i)("value": *")(?P<mask>.*[^\"]*)(")`,
-			name:  "default multiline OWNER_ACCOUNT redactor",
+			name:  "Redact AWS Owner and Account Numbers in multiline JSON",
 		},
 		{
 			line1: `(?i)"name": *".*password[^\"]*"`,
 			line2: `(?i)("value": *")(?P<mask>.*[^\"]*)(")`,
-			name:  "default multiline password redactor",
+			name:  "Redact password environment variables in multiline JSON",
 		},
 		{
 			line1: `(?i)"name": *".*token[^\"]*"`,
 			line2: `(?i)("value": *")(?P<mask>.*[^\"]*)(")`,
-			name:  "default multiline token redactor",
+			name:  "Redact values that look like API tokens in multiline JSON",
 		},
 		{
 			line1: `(?i)"name": *".*database[^\"]*"`,
 			line2: `(?i)("value": *")(?P<mask>.*[^\"]*)(")`,
-			name:  "default multiline database redactor",
+			name:  "Redact database connection strings in multiline JSON",
 		},
 		{
 			line1: `(?i)"name": *".*user[^\"]*"`,
 			line2: `(?i)("value": *")(?P<mask>.*[^\"]*)(")`,
-			name:  "default multiline user redactor",
+			name:  "Redact usernames in multiline JSON",
 		},
 	}
 
