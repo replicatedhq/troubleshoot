@@ -12,14 +12,15 @@ type SingleLineRedactor struct {
 	maskText   string
 	filePath   string
 	redactName string
+	isDefault  bool
 }
 
-func NewSingleLineRedactor(re, maskText, path, name string) (*SingleLineRedactor, error) {
+func NewSingleLineRedactor(re, maskText, path, name string, isDefault bool) (*SingleLineRedactor, error) {
 	compiled, err := regexp.Compile(re)
 	if err != nil {
 		return nil, err
 	}
-	return &SingleLineRedactor{re: compiled, maskText: maskText, filePath: path, redactName: name}, nil
+	return &SingleLineRedactor{re: compiled, maskText: maskText, filePath: path, redactName: name, isDefault: isDefault}, nil
 }
 
 func (r *SingleLineRedactor) Redact(input io.Reader) io.Reader {
@@ -67,6 +68,7 @@ func (r *SingleLineRedactor) Redact(input io.Reader) io.Reader {
 					CharactersRemoved: len(line) - len(clean),
 					Line:              lineNum,
 					File:              r.filePath,
+					IsDefaultRedactor: r.isDefault,
 				})
 			}
 		}
