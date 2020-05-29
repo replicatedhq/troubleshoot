@@ -16,16 +16,9 @@ func commonStatus(outcomes []*troubleshootv1beta1.Outcome, title, iconKey string
 	}
 
 	// ordering from the spec is important, the first one that matches returns
+	// outcomes with a when are evaluated first, and the ones with a missing when are treated as an "else"
 	for _, outcome := range outcomes {
-		if outcome.Fail != nil {
-			if outcome.Fail.When == "" {
-				result.IsFail = true
-				result.Message = outcome.Fail.Message
-				result.URI = outcome.Fail.URI
-
-				return result, nil
-			}
-
+		if outcome.Fail != nil && outcome.Fail.When != "" {
 			match, err := compareActualToWhen(outcome.Fail.When, readyReplicas)
 			if err != nil {
 				return nil, errors.Wrap(err, "failed to parse fail range")
@@ -38,15 +31,7 @@ func commonStatus(outcomes []*troubleshootv1beta1.Outcome, title, iconKey string
 
 				return result, nil
 			}
-		} else if outcome.Warn != nil {
-			if outcome.Warn.When == "" {
-				result.IsWarn = true
-				result.Message = outcome.Warn.Message
-				result.URI = outcome.Warn.URI
-
-				return result, nil
-			}
-
+		} else if outcome.Warn != nil && outcome.Warn.When != "" {
 			match, err := compareActualToWhen(outcome.Warn.When, readyReplicas)
 			if err != nil {
 				return nil, errors.Wrap(err, "failed to parse warn range")
@@ -59,15 +44,7 @@ func commonStatus(outcomes []*troubleshootv1beta1.Outcome, title, iconKey string
 
 				return result, nil
 			}
-		} else if outcome.Pass != nil {
-			if outcome.Pass.When == "" {
-				result.IsPass = true
-				result.Message = outcome.Pass.Message
-				result.URI = outcome.Pass.URI
-
-				return result, nil
-			}
-
+		} else if outcome.Pass != nil && outcome.Pass.When != "" {
 			match, err := compareActualToWhen(outcome.Pass.When, readyReplicas)
 			if err != nil {
 				return nil, errors.Wrap(err, "failed to parse pass range")
@@ -80,10 +57,28 @@ func commonStatus(outcomes []*troubleshootv1beta1.Outcome, title, iconKey string
 
 				return result, nil
 			}
+		} else if outcome.Fail != nil && outcome.Fail.When == "" {
+			result.IsFail = true
+			result.Message = outcome.Fail.Message
+			result.URI = outcome.Fail.URI
+
+			return result, nil
+		} else if outcome.Warn != nil && outcome.Warn.When == "" {
+			result.IsWarn = true
+			result.Message = outcome.Warn.Message
+			result.URI = outcome.Warn.URI
+
+			return result, nil
+		} else if outcome.Pass != nil && outcome.Pass.When == "" {
+			result.IsPass = true
+			result.Message = outcome.Pass.Message
+			result.URI = outcome.Pass.URI
+
+			return result, nil
 		}
 	}
 
-	return result, nil
+	return defaultResult, nil
 }
 
 func compareActualToWhen(when string, actual int) (bool, error) {
