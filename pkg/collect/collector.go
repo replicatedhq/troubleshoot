@@ -32,6 +32,10 @@ func isExcluded(excludeVal multitype.BoolOrString) (bool, error) {
 		return excludeVal.BoolVal, nil
 	}
 
+	if excludeVal.StrVal == "" {
+		return false, nil
+	}
+
 	parsed, err := strconv.ParseBool(excludeVal.StrVal)
 	if err != nil {
 		return false, errors.Wrap(err, "failed to parse bool string")
