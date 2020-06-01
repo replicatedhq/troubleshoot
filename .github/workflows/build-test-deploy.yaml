@@ -14,7 +14,7 @@ jobs:
     steps:
       - uses: actions/setup-go@v1
         with:
-          go-version: "1.12.14"
+          go-version: "1.14"
 
       - name: setup env
         run: |
@@ -32,7 +32,7 @@ jobs:
     steps:
       - uses: actions/setup-go@v1
         with:
-          go-version: '1.12.14'
+          go-version: '1.14'
       - name: setup env
         run: |
           echo "::set-env name=GOPATH::$(go env GOPATH)"
@@ -77,12 +77,22 @@ jobs:
   
       - uses: actions/setup-go@v1
         with:
-          go-version: "1.12.14"
+          go-version: "1.14"
    
       - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v1
+        uses: goreleaser/goreleaser-action@v2
         with:
           version: latest
           args: release --rm-dist --config deploy/.goreleaser.yaml
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}        
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+
+      - name: Update new preflight version in krew-index
+        uses: rajatjindal/krew-release-bot@v0.0.38
+        with:
+          krew_template_file: deploy/krew/preflight.yaml
+      - name: Update new support-bundle version in krew-index
+        uses: rajatjindal/krew-release-bot@v0.0.38
+        with:
+          krew_template_file: deploy/krew/support-bundle.yaml

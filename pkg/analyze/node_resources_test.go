@@ -67,6 +67,7 @@ func Test_compareNodeResourceConditionalToActual(t *testing.T) {
 		totalNodeCount int
 		matchingNodes  []corev1.Node
 		expected       bool
+		isError        bool
 	}{
 		{
 			name:           "=",
@@ -74,6 +75,7 @@ func Test_compareNodeResourceConditionalToActual(t *testing.T) {
 			matchingNodes:  nodeData,
 			totalNodeCount: len(nodeData),
 			expected:       true,
+			isError:        false,
 		},
 		{
 			name:           "count()",
@@ -81,6 +83,7 @@ func Test_compareNodeResourceConditionalToActual(t *testing.T) {
 			matchingNodes:  nodeData,
 			totalNodeCount: len(nodeData),
 			expected:       true,
+			isError:        false,
 		},
 		{
 			name:           "<",
@@ -88,6 +91,7 @@ func Test_compareNodeResourceConditionalToActual(t *testing.T) {
 			matchingNodes:  nodeData,
 			totalNodeCount: len(nodeData),
 			expected:       true,
+			isError:        false,
 		},
 		{
 			name:           "count() <",
@@ -95,6 +99,7 @@ func Test_compareNodeResourceConditionalToActual(t *testing.T) {
 			matchingNodes:  nodeData,
 			totalNodeCount: len(nodeData),
 			expected:       true,
+			isError:        false,
 		},
 		{
 			name:           ">",
@@ -102,6 +107,7 @@ func Test_compareNodeResourceConditionalToActual(t *testing.T) {
 			matchingNodes:  nodeData,
 			totalNodeCount: len(nodeData),
 			expected:       false,
+			isError:        false,
 		},
 		{
 			name:           "count() >",
@@ -109,6 +115,7 @@ func Test_compareNodeResourceConditionalToActual(t *testing.T) {
 			matchingNodes:  nodeData,
 			totalNodeCount: len(nodeData),
 			expected:       true,
+			isError:        false,
 		},
 		{
 			name:           "count() >= 1 (true)",
@@ -116,6 +123,7 @@ func Test_compareNodeResourceConditionalToActual(t *testing.T) {
 			matchingNodes:  nodeData,
 			totalNodeCount: len(nodeData),
 			expected:       true,
+			isError:        false,
 		},
 		{
 			name:           "count() <= 2 (true)",
@@ -123,6 +131,7 @@ func Test_compareNodeResourceConditionalToActual(t *testing.T) {
 			matchingNodes:  nodeData,
 			totalNodeCount: len(nodeData),
 			expected:       true,
+			isError:        false,
 		},
 		{
 			name:           "count() <= 1 (false)",
@@ -130,6 +139,7 @@ func Test_compareNodeResourceConditionalToActual(t *testing.T) {
 			matchingNodes:  nodeData,
 			totalNodeCount: len(nodeData),
 			expected:       false,
+			isError:        false,
 		},
 		{
 			name:           "min(memoryCapacity) < 4Gi (true)",
@@ -137,6 +147,7 @@ func Test_compareNodeResourceConditionalToActual(t *testing.T) {
 			matchingNodes:  nodeData,
 			totalNodeCount: len(nodeData),
 			expected:       true,
+			isError:        false,
 		},
 		{
 			name:           "min(memoryCapacity) >= 4Gi (false)",
@@ -144,6 +155,7 @@ func Test_compareNodeResourceConditionalToActual(t *testing.T) {
 			matchingNodes:  nodeData,
 			totalNodeCount: len(nodeData),
 			expected:       false,
+			isError:        false,
 		},
 		{
 			name:           "min(memoryAllocatable) == 16Ki (true)",
@@ -151,6 +163,7 @@ func Test_compareNodeResourceConditionalToActual(t *testing.T) {
 			matchingNodes:  nodeData,
 			totalNodeCount: len(nodeData),
 			expected:       true,
+			isError:        false,
 		},
 		{
 			name:           "min(cpuCapacity) == 2 (true)",
@@ -158,6 +171,7 @@ func Test_compareNodeResourceConditionalToActual(t *testing.T) {
 			matchingNodes:  nodeData,
 			totalNodeCount: len(nodeData),
 			expected:       true,
+			isError:        false,
 		},
 		{
 			name:           "min(cpuAllocatable) == 1.5 (true)",
@@ -165,6 +179,7 @@ func Test_compareNodeResourceConditionalToActual(t *testing.T) {
 			matchingNodes:  nodeData,
 			totalNodeCount: len(nodeData),
 			expected:       true,
+			isError:        false,
 		},
 		{
 			name:           "min(podCapacity) == 15 (true)",
@@ -172,6 +187,7 @@ func Test_compareNodeResourceConditionalToActual(t *testing.T) {
 			matchingNodes:  nodeData,
 			totalNodeCount: len(nodeData),
 			expected:       true,
+			isError:        false,
 		},
 		{
 			name:           "min(podAllocatable) == 12 (true)",
@@ -179,6 +195,7 @@ func Test_compareNodeResourceConditionalToActual(t *testing.T) {
 			matchingNodes:  nodeData,
 			totalNodeCount: len(nodeData),
 			expected:       true,
+			isError:        false,
 		},
 		{
 			name:           "min(ephemeralStorageCapacity) <= 20Gi (true)",
@@ -186,6 +203,7 @@ func Test_compareNodeResourceConditionalToActual(t *testing.T) {
 			matchingNodes:  nodeData,
 			totalNodeCount: len(nodeData),
 			expected:       true,
+			isError:        false,
 		},
 		{
 			name:           "min(ephemeralStorageCapacity) > 20Gi (false)",
@@ -193,6 +211,7 @@ func Test_compareNodeResourceConditionalToActual(t *testing.T) {
 			matchingNodes:  nodeData,
 			totalNodeCount: len(nodeData),
 			expected:       false,
+			isError:        false,
 		},
 		{
 			name:           "min(ephemeralStorageAllocatable) == 12316009748 (true)",
@@ -200,6 +219,7 @@ func Test_compareNodeResourceConditionalToActual(t *testing.T) {
 			matchingNodes:  nodeData,
 			totalNodeCount: len(nodeData),
 			expected:       true,
+			isError:        false,
 		},
 		{
 			name:           "max(memoryCapacity) == 7951376Ki (true)",
@@ -207,6 +227,7 @@ func Test_compareNodeResourceConditionalToActual(t *testing.T) {
 			matchingNodes:  nodeData,
 			totalNodeCount: len(nodeData),
 			expected:       true,
+			isError:        false,
 		},
 		{
 			name:           "max(memoryAllocatable) == 7848976Ki (true)",
@@ -214,6 +235,7 @@ func Test_compareNodeResourceConditionalToActual(t *testing.T) {
 			matchingNodes:  nodeData,
 			totalNodeCount: len(nodeData),
 			expected:       true,
+			isError:        false,
 		},
 		{
 			name:           "max(cpuCapacity) == 12 (false)",
@@ -221,6 +243,7 @@ func Test_compareNodeResourceConditionalToActual(t *testing.T) {
 			matchingNodes:  nodeData,
 			totalNodeCount: len(nodeData),
 			expected:       false,
+			isError:        false,
 		},
 		{
 			name:           "max(cpuCapacity) == 4 (true)",
@@ -228,6 +251,7 @@ func Test_compareNodeResourceConditionalToActual(t *testing.T) {
 			matchingNodes:  nodeData,
 			totalNodeCount: len(nodeData),
 			expected:       true,
+			isError:        false,
 		},
 		{
 			name:           "max(cpuAllocatable) == 3 (true)",
@@ -235,6 +259,7 @@ func Test_compareNodeResourceConditionalToActual(t *testing.T) {
 			matchingNodes:  nodeData,
 			totalNodeCount: len(nodeData),
 			expected:       true,
+			isError:        false,
 		},
 		{
 			name:           "max(podCapacity) == 29 (true)",
@@ -242,6 +267,7 @@ func Test_compareNodeResourceConditionalToActual(t *testing.T) {
 			matchingNodes:  nodeData,
 			totalNodeCount: len(nodeData),
 			expected:       true,
+			isError:        false,
 		},
 		{
 			name:           "max(podAllocatable) == 14 (true)",
@@ -249,6 +275,7 @@ func Test_compareNodeResourceConditionalToActual(t *testing.T) {
 			matchingNodes:  nodeData,
 			totalNodeCount: len(nodeData),
 			expected:       true,
+			isError:        false,
 		},
 		{
 			name:           "max(ephemeralStorageCapacity) == 20959212Ki (true)",
@@ -256,6 +283,7 @@ func Test_compareNodeResourceConditionalToActual(t *testing.T) {
 			matchingNodes:  nodeData,
 			totalNodeCount: len(nodeData),
 			expected:       true,
+			isError:        false,
 		},
 		{
 			name:           "max(ephemeralStorageAllocatable) == 19316009748 (true)",
@@ -263,6 +291,7 @@ func Test_compareNodeResourceConditionalToActual(t *testing.T) {
 			matchingNodes:  nodeData,
 			totalNodeCount: len(nodeData),
 			expected:       true,
+			isError:        false,
 		},
 		{
 			name:           "sum(memoryCapacity) > 7951376Ki (true)",
@@ -270,6 +299,7 @@ func Test_compareNodeResourceConditionalToActual(t *testing.T) {
 			matchingNodes:  nodeData,
 			totalNodeCount: len(nodeData),
 			expected:       true,
+			isError:        false,
 		},
 		{
 			name:           "sum(memoryAllocatable) > 7848976Ki (true)",
@@ -277,6 +307,7 @@ func Test_compareNodeResourceConditionalToActual(t *testing.T) {
 			matchingNodes:  nodeData,
 			totalNodeCount: len(nodeData),
 			expected:       true,
+			isError:        false,
 		},
 		{
 			name:           "sum(cpuCapacity) > 5 (true)",
@@ -284,6 +315,7 @@ func Test_compareNodeResourceConditionalToActual(t *testing.T) {
 			matchingNodes:  nodeData,
 			totalNodeCount: len(nodeData),
 			expected:       true,
+			isError:        false,
 		},
 		{
 			name:           "sum(cpuAllocatable) == 4.5 (true)",
@@ -291,6 +323,7 @@ func Test_compareNodeResourceConditionalToActual(t *testing.T) {
 			matchingNodes:  nodeData,
 			totalNodeCount: len(nodeData),
 			expected:       true,
+			isError:        false,
 		},
 		{
 			name:           "sum(podCapacity) == 44 (true)",
@@ -298,6 +331,7 @@ func Test_compareNodeResourceConditionalToActual(t *testing.T) {
 			matchingNodes:  nodeData,
 			totalNodeCount: len(nodeData),
 			expected:       true,
+			isError:        false,
 		},
 		{
 			name:           "sum(podAllocatable) == 26 (true)",
@@ -305,6 +339,7 @@ func Test_compareNodeResourceConditionalToActual(t *testing.T) {
 			matchingNodes:  nodeData,
 			totalNodeCount: len(nodeData),
 			expected:       true,
+			isError:        false,
 		},
 		{
 			name:           "sum(ephemeralStorageCapacity) > 20959212Ki (true)",
@@ -312,6 +347,7 @@ func Test_compareNodeResourceConditionalToActual(t *testing.T) {
 			matchingNodes:  nodeData,
 			totalNodeCount: len(nodeData),
 			expected:       true,
+			isError:        false,
 		},
 		{
 			name:           "sum(ephemeralStorageAllocatable) > 19316009748 (true)",
@@ -319,6 +355,15 @@ func Test_compareNodeResourceConditionalToActual(t *testing.T) {
 			matchingNodes:  nodeData,
 			totalNodeCount: len(nodeData),
 			expected:       true,
+			isError:        false,
+		},
+		{
+			name:           "sum(ephemeralStorageAllocatable) > 19316009748 (error)",
+			conditional:    "sum(ephemeralStorageAllocatable) > \"19316009748\"",
+			matchingNodes:  nodeData,
+			totalNodeCount: len(nodeData),
+			expected:       false,
+			isError:        true,
 		},
 	}
 
@@ -327,7 +372,11 @@ func Test_compareNodeResourceConditionalToActual(t *testing.T) {
 			req := require.New(t)
 
 			actual, err := compareNodeResourceConditionalToActual(test.conditional, test.matchingNodes, test.totalNodeCount)
-			req.NoError(err)
+			if test.isError {
+				req.Error(err)
+			} else {
+				req.NoError(err)
+			}
 
 			assert.Equal(t, test.expected, actual)
 

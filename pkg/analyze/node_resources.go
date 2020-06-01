@@ -94,9 +94,19 @@ func analyzeNodeResources(analyzer *troubleshootv1beta1.NodeResources, getCollec
 	return result, nil
 }
 
-func compareNodeResourceConditionalToActual(conditional string, matchingNodes []corev1.Node, totalNodeCount int) (bool, error) {
+func compareNodeResourceConditionalToActual(conditional string, matchingNodes []corev1.Node, totalNodeCount int) (res bool, err error) {
+	res = false
+	err = nil
+
+	defer func() {
+		if r := recover(); r != nil {
+			err = errors.Errorf("failed to evaluate %q: %v", conditional, r)
+		}
+	}()
+
 	if conditional == "" {
-		return true, nil
+		res = true
+		return
 	}
 
 	parts := strings.Fields(strings.TrimSpace(conditional))
@@ -106,7 +116,8 @@ func compareNodeResourceConditionalToActual(conditional string, matchingNodes []
 	}
 
 	if len(parts) != 3 {
-		return false, errors.New("unable to parse nodeResources conditional")
+		err = errors.New("unable to parse nodeResources conditional")
+		return
 	}
 
 	operator := parts[1]
@@ -117,6 +128,8 @@ func compareNodeResourceConditionalToActual(conditional string, matchingNodes []
 	parsedDesiredValue, err := strconv.Atoi(parts[2])
 	if err == nil {
 		desiredValue = parsedDesiredValue
+	} else {
+		err = nil // try parsing as a resource
 	}
 
 	reg := regexp.MustCompile(`(?P<function>.*)\((?P<property>.*)\)`)
@@ -128,7 +141,8 @@ func compareNodeResourceConditionalToActual(conditional string, matchingNodes []
 	}
 
 	if match == nil || len(match) != 3 {
-		return false, errors.New("conditional does not match pattern of function(property?)")
+		err = errors.New("conditional does not match pattern of function(property?)")
+		return
 	}
 
 	function := match[1]
@@ -151,70 +165,86 @@ func compareNodeResourceConditionalToActual(conditional string, matchingNodes []
 	case "=", "==", "===":
 		if _, ok := actualValue.(int); ok {
 			if _, ok := desiredValue.(int); ok {
-				return actualValue.(int) == desiredValue.(int), nil
+				res = actualValue.(int) == desiredValue.(int)
+				return
 			}
 		}
 
 		if _, ok := desiredValue.(string); ok {
-			return actualValue.(*resource.Quantity).Cmp(resource.MustParse(desiredValue.(string))) == 0, nil
+			res = actualValue.(*resource.Quantity).Cmp(resource.MustParse(desiredValue.(string))) == 0
+			return
 		}
 
-		return actualValue.(*resource.Quantity).Cmp(resource.MustParse(strconv.Itoa(desiredValue.(int)))) == 0, nil
+		res = actualValue.(*resource.Quantity).Cmp(resource.MustParse(strconv.Itoa(desiredValue.(int)))) == 0
+		return
 
 	case "<":
 		if _, ok := actualValue.(int); ok {
 			if _, ok := desiredValue.(int); ok {
-				return actualValue.(int) < desiredValue.(int), nil
+				res = actualValue.(int) < desiredValue.(int)
+				return
 			}
 		}
 		if _, ok := desiredValue.(string); ok {
-			return actualValue.(*resource.Quantity).Cmp(resource.MustParse(desiredValue.(string))) == -1, nil
+			res = actualValue.(*resource.Quantity).Cmp(resource.MustParse(desiredValue.(string))) == -1
+			return
 		}
 
-		return actualValue.(*resource.Quantity).Cmp(resource.MustParse(strconv.Itoa(desiredValue.(int)))) == -1, nil
+		res = actualValue.(*resource.Quantity).Cmp(resource.MustParse(strconv.Itoa(desiredValue.(int)))) == -1
+		return
 
 	case ">":
 		if _, ok := actualValue.(int); ok {
 			if _, ok := desiredValue.(int); ok {
-				return actualValue.(int) > desiredValue.(int), nil
+				res = actualValue.(int) > desiredValue.(int)
+				return
 			}
 		}
 		if _, ok := desiredValue.(string); ok {
-			return actualValue.(*resource.Quantity).Cmp(resource.MustParse(desiredValue.(string))) == 1, nil
+			res = actualValue.(*resource.Quantity).Cmp(resource.MustParse(desiredValue.(string))) == 1
+			return
 		}
 
-		return actualValue.(*resource.Quantity).Cmp(resource.MustParse(strconv.Itoa(desiredValue.(int)))) == 1, nil
+		res = actualValue.(*resource.Quantity).Cmp(resource.MustParse(strconv.Itoa(desiredValue.(int)))) == 1
+		return
 
 	case "<=":
 		if _, ok := actualValue.(int); ok {
 			if _, ok := desiredValue.(int); ok {
-				return actualValue.(int) <= desiredValue.(int), nil
+				res = actualValue.(int) <= desiredValue.(int)
+				return
 			}
 		}
 		if _, ok := desiredValue.(string); ok {
-			return actualValue.(*resource.Quantity).Cmp(resource.MustParse(desiredValue.(string))) == 0 ||
-				actualValue.(*resource.Quantity).Cmp(resource.MustParse(desiredValue.(string))) == -1, nil
+			res = actualValue.(*resource.Quantity).Cmp(resource.MustParse(desiredValue.(string))) == 0 ||
+				actualValue.(*resource.Quantity).Cmp(resource.MustParse(desiredValue.(string))) == -1
+			return
 		}
 
-		return actualValue.(*resource.Quantity).Cmp(resource.MustParse(strconv.Itoa(desiredValue.(int)))) == 0 ||
-			actualValue.(*resource.Quantity).Cmp(resource.MustParse(strconv.Itoa(desiredValue.(int)))) == -1, nil
+		res = actualValue.(*resource.Quantity).Cmp(resource.MustParse(strconv.Itoa(desiredValue.(int)))) == 0 ||
+			actualValue.(*resource.Quantity).Cmp(resource.MustParse(strconv.Itoa(desiredValue.(int)))) == -1
+		return
 
 	case ">=":
 		if _, ok := actualValue.(int); ok {
 			if _, ok := desiredValue.(int); ok {
-				return actualValue.(int) >= desiredValue.(int), nil
+				res = actualValue.(int) >= desiredValue.(int)
+				return
 			}
 		}
 		if _, ok := desiredValue.(string); ok {
-			return actualValue.(*resource.Quantity).Cmp(resource.MustParse(desiredValue.(string))) == 0 ||
-				actualValue.(*resource.Quantity).Cmp(resource.MustParse(desiredValue.(string))) == 1, nil
+			res = actualValue.(*resource.Quantity).Cmp(resource.MustParse(desiredValue.(string))) == 0 ||
+				actualValue.(*resource.Quantity).Cmp(resource.MustParse(desiredValue.(string))) == 1
+			return
 		}
 
-		return actualValue.(*resource.Quantity).Cmp(resource.MustParse(strconv.Itoa(desiredValue.(int)))) == 0 ||
-			actualValue.(*resource.Quantity).Cmp(resource.MustParse(strconv.Itoa(desiredValue.(int)))) == 1, nil
+		res = actualValue.(*resource.Quantity).Cmp(resource.MustParse(strconv.Itoa(desiredValue.(int)))) == 0 ||
+			actualValue.(*resource.Quantity).Cmp(resource.MustParse(strconv.Itoa(desiredValue.(int)))) == 1
+		return
 	}
 
-	return false, errors.New("unexpected conditional in nodeResources")
+	err = errors.New("unexpected conditional in nodeResources")
+	return
 }
 
 func getQuantity(node corev1.Node, property string) *resource.Quantity {

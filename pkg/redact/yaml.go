@@ -14,11 +14,14 @@ import (
 type YamlRedactor struct {
 	maskPath   []string
 	foundMatch bool
+	filePath   string
+	redactName string
+	isDefault  bool
 }
 
-func NewYamlRedactor(yamlPath string) *YamlRedactor {
+func NewYamlRedactor(yamlPath, filePath, name string) *YamlRedactor {
 	pathComponents := strings.Split(yamlPath, ".")
-	return &YamlRedactor{maskPath: pathComponents}
+	return &YamlRedactor{maskPath: pathComponents, filePath: filePath, redactName: name}
 }
 
 func (r *YamlRedactor) Redact(input io.Reader) io.Reader {
@@ -61,6 +64,15 @@ func (r *YamlRedactor) Redact(input io.Reader) io.Reader {
 
 		buf := bytes.NewBuffer(newBytes)
 		buf.WriteTo(writer)
+
+		addRedaction(Redaction{
+			RedactorName:      r.redactName,
+			CharactersRemoved: len(doc) - len(newBytes),
+			Line:              0, // line 0 because we have no way to tell what line was impacted
+			File:              r.filePath,
+			IsDefaultRedactor: r.isDefault,
+		})
+
 		return
 	}()
 	return reader

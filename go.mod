@@ -52,7 +52,7 @@ require (
 	gopkg.in/alecthomas/kingpin.v3-unstable v3.0.0-20191105091915-95d230a53780 // indirect
 	gopkg.in/yaml.v2 v2.2.8
 	k8s.io/api v0.17.4
-	k8s.io/apiextensions-apiserver v0.15.12-beta.0
+	k8s.io/apiextensions-apiserver v0.15.13-beta.0
 	k8s.io/apimachinery v0.17.4
 	k8s.io/cli-runtime v0.17.4
 	k8s.io/client-go v0.17.4
@@ -61,5 +61,3 @@ require (
 	sigs.k8s.io/controller-runtime v0.4.0
 	sigs.k8s.io/yaml v1.2.0 // indirect
 )
-
-replace github.com/appscode/jsonpatch => github.com/gomodules/jsonpatch v2.0.1+incompatible
