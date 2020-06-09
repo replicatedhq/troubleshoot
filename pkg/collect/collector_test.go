@@ -32,13 +32,13 @@ pwd=somethinggoeshere;`,
 			},
 			Redactors: []*troubleshootv1beta1.Redact{
 				{
-					Name:   "",
-					File:   "",
-					Files:  nil,
-					Values: nil,
-					Regex: []string{
-						`abc`,
-						`(another)(?P<mask>.*)(here)`,
+					Name: "",
+					Removals: troubleshootv1beta1.Removals{
+						Values: nil,
+						Regex: []string{
+							`abc`,
+							`(another)(?P<mask>.*)(here)`,
+						},
 					},
 				},
 			},
@@ -65,11 +65,15 @@ pwd=somethinggoeshere;`,
 			},
 			Redactors: []*troubleshootv1beta1.Redact{
 				{
-					Name:   "",
-					File:   "data/*",
-					Values: nil,
-					Regex: []string{
-						`(another)(?P<mask>.*)(here)`,
+					Name: "",
+					FileSelector: troubleshootv1beta1.FileSelector{
+						File: "data/*",
+					},
+					Removals: troubleshootv1beta1.Removals{
+						Values: nil,
+						Regex: []string{
+							`(another)(?P<mask>.*)(here)`,
+						},
 					},
 				},
 			},
@@ -96,11 +100,15 @@ pwd=somethinggoeshere;`,
 			},
 			Redactors: []*troubleshootv1beta1.Redact{
 				{
-					Name:   "",
-					File:   "notdata/*",
-					Values: nil,
-					Regex: []string{
-						`(another)(?P<mask>.*)(here)`,
+					Name: "",
+					FileSelector: troubleshootv1beta1.FileSelector{
+						File: "notdata/*",
+					},
+					Removals: troubleshootv1beta1.Removals{
+						Values: nil,
+						Regex: []string{
+							`(another)(?P<mask>.*)(here)`,
+						},
 					},
 				},
 			},
@@ -128,13 +136,17 @@ pwd=somethinggoeshere;`,
 			Redactors: []*troubleshootv1beta1.Redact{
 				{
 					Name: "",
-					Files: []string{
-						"notData/*",
-						"data/*",
+					FileSelector: troubleshootv1beta1.FileSelector{
+						Files: []string{
+							"notData/*",
+							"data/*",
+						},
 					},
-					Values: nil,
-					Regex: []string{
-						`(another)(?P<mask>.*)(here)`,
+					Removals: troubleshootv1beta1.Removals{
+						Values: nil,
+						Regex: []string{
+							`(another)(?P<mask>.*)(here)`,
+						},
 					},
 				},
 			},
@@ -162,13 +174,17 @@ pwd=somethinggoeshere;`,
 			Redactors: []*troubleshootv1beta1.Redact{
 				{
 					Name: "",
-					Files: []string{
-						"data/*/*",
+					FileSelector: troubleshootv1beta1.FileSelector{
+						Files: []string{
+							"data/*/*",
+						},
 					},
-					Values: []string{
-						`abc`,
-						`123`,
-						`another`,
+					Removals: troubleshootv1beta1.Removals{
+						Values: []string{
+							`abc`,
+							`123`,
+							`another`,
+						},
 					},
 				},
 			},
@@ -194,8 +210,10 @@ another line here`,
 			},
 			Redactors: []*troubleshootv1beta1.Redact{
 				{
-					Yaml: []string{
-						`abc`,
+					Removals: troubleshootv1beta1.Removals{
+						Yaml: []string{
+							`abc`,
+						},
 					},
 				},
 			},
@@ -223,10 +241,12 @@ abc`,
 			},
 			Redactors: []*troubleshootv1beta1.Redact{
 				{
-					MultiLine: []troubleshootv1beta1.MultiLine{
-						{
-							Selector: "abc",
-							Redactor: "xyz(123)",
+					Removals: troubleshootv1beta1.Removals{
+						MultiLine: []troubleshootv1beta1.MultiLine{
+							{
+								Selector: "abc",
+								Redactor: "xyz(123)",
+							},
 						},
 					},
 				},
@@ -287,13 +307,13 @@ pwd=somethinggoeshere;`,
 			},
 			Redactors: []*troubleshootv1beta1.Redact{
 				{
-					Name:   "",
-					File:   "",
-					Files:  nil,
-					Values: nil,
-					Regex: []string{
-						`abc`,
-						`(another)(?P<mask>.*)(here)`,
+					Name: "",
+					Removals: troubleshootv1beta1.Removals{
+						Values: nil,
+						Regex: []string{
+							`abc`,
+							`(another)(?P<mask>.*)(here)`,
+						},
 					},
 				},
 			},
