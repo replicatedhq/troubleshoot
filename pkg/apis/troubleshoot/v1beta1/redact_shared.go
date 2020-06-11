@@ -1,6 +1,6 @@
 package v1beta1
 
-type MultiLine struct {
+type Regex struct {
 	Selector string `json:"selector,omitempty" yaml:"selector,omitempty"`
 	Redactor string `json:"redactor,omitempty" yaml:"redactor,omitempty"`
 }
@@ -11,10 +11,9 @@ type FileSelector struct {
 }
 
 type Removals struct {
-	Values    []string    `json:"values,omitempty" yaml:"values,omitempty"`
-	Regex     []string    `json:"regex,omitempty" yaml:"regex,omitempty"`
-	MultiLine []MultiLine `json:"multiLine,omitempty" yaml:"multiLine,omitempty"`
-	Yaml      []string    `json:"yaml,omitempty" yaml:"yaml,omitempty"`
+	Values []string `json:"values,omitempty" yaml:"values,omitempty"`
+	Regex  []Regex  `json:"regex,omitempty" yaml:"regex,omitempty"`
+	Yaml   []string `json:"yaml,omitempty" yaml:"yaml,omitempty"`
 }
 
 type Redact struct {

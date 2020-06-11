@@ -104,24 +104,24 @@ func buildAdditionalRedactors(path string, redacts []*troubleshootv1beta1.Redact
 			continue
 		}
 
-		for j, re := range redact.Removals.Regex {
-			r, err := NewSingleLineRedactor(re, MASK_TEXT, path, redactorName(i, j, redact.Name, "regex"), false)
-			if err != nil {
-				return nil, errors.Wrapf(err, "redactor %q", re)
-			}
-			additionalRedactors = append(additionalRedactors, r)
-		}
-
 		for j, literal := range redact.Removals.Values {
 			additionalRedactors = append(additionalRedactors, literalString(literal, path, redactorName(i, j, redact.Name, "literal")))
 		}
 
-		for j, re := range redact.Removals.MultiLine {
-			r, err := NewMultiLineRedactor(re.Selector, re.Redactor, MASK_TEXT, path, redactorName(i, j, redact.Name, "multiLine"), false)
-			if err != nil {
-				return nil, errors.Wrapf(err, "multiline redactor %+v", re)
+		for j, re := range redact.Removals.Regex {
+			var newRedactor Redactor
+			if re.Selector != "" {
+				newRedactor, err = NewMultiLineRedactor(re.Selector, re.Redactor, MASK_TEXT, path, redactorName(i, j, redact.Name, "multiLine"), false)
+				if err != nil {
+					return nil, errors.Wrapf(err, "multiline redactor %+v", re)
+				}
+			} else {
+				newRedactor, err = NewSingleLineRedactor(re.Redactor, MASK_TEXT, path, redactorName(i, j, redact.Name, "regex"), false)
+				if err != nil {
+					return nil, errors.Wrapf(err, "redactor %q", re)
+				}
 			}
-			additionalRedactors = append(additionalRedactors, r)
+			additionalRedactors = append(additionalRedactors, newRedactor)
 		}
 
 		for j, yaml := range redact.Removals.Yaml {

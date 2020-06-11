@@ -35,9 +35,9 @@ pwd=somethinggoeshere;`,
 					Name: "",
 					Removals: troubleshootv1beta1.Removals{
 						Values: nil,
-						Regex: []string{
-							`abc`,
-							`(another)(?P<mask>.*)(here)`,
+						Regex: []troubleshootv1beta1.Regex{
+							{Redactor: `abc`},
+							{Redactor: `(another)(?P<mask>.*)(here)`},
 						},
 					},
 				},
@@ -71,8 +71,8 @@ pwd=somethinggoeshere;`,
 					},
 					Removals: troubleshootv1beta1.Removals{
 						Values: nil,
-						Regex: []string{
-							`(another)(?P<mask>.*)(here)`,
+						Regex: []troubleshootv1beta1.Regex{
+							{Redactor: `(another)(?P<mask>.*)(here)`},
 						},
 					},
 				},
@@ -106,8 +106,8 @@ pwd=somethinggoeshere;`,
 					},
 					Removals: troubleshootv1beta1.Removals{
 						Values: nil,
-						Regex: []string{
-							`(another)(?P<mask>.*)(here)`,
+						Regex: []troubleshootv1beta1.Regex{
+							{Redactor: `(another)(?P<mask>.*)(here)`},
 						},
 					},
 				},
@@ -144,8 +144,8 @@ pwd=somethinggoeshere;`,
 					},
 					Removals: troubleshootv1beta1.Removals{
 						Values: nil,
-						Regex: []string{
-							`(another)(?P<mask>.*)(here)`,
+						Regex: []troubleshootv1beta1.Regex{
+							{Redactor: `(another)(?P<mask>.*)(here)`},
 						},
 					},
 				},
@@ -242,7 +242,7 @@ abc`,
 			Redactors: []*troubleshootv1beta1.Redact{
 				{
 					Removals: troubleshootv1beta1.Removals{
-						MultiLine: []troubleshootv1beta1.MultiLine{
+						Regex: []troubleshootv1beta1.Regex{
 							{
 								Selector: "abc",
 								Redactor: "xyz(123)",
@@ -310,9 +310,9 @@ pwd=somethinggoeshere;`,
 					Name: "",
 					Removals: troubleshootv1beta1.Removals{
 						Values: nil,
-						Regex: []string{
-							`abc`,
-							`(another)(?P<mask>.*)(here)`,
+						Regex: []troubleshootv1beta1.Regex{
+							{Redactor: `abc`},
+							{Redactor: `(another)(?P<mask>.*)(here)`},
 						},
 					},
 				},
