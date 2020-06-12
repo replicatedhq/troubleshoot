@@ -10,7 +10,7 @@ import (
 	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
 )
 
-func Mysql(ctx *Context, databaseCollector *troubleshootv1beta1.Database) (map[string][]byte, error) {
+func Mysql(c *Collector, databaseCollector *troubleshootv1beta1.Database) (map[string][]byte, error) {
 	databaseConnection := DatabaseConnection{}
 
 	db, err := sql.Open("mysql", databaseCollector.URI)

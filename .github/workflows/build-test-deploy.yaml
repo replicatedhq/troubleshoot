@@ -56,7 +56,42 @@ jobs:
           path: bin/
       - uses: engineerd/setup-kind@v0.2.0
       - run: chmod +x bin/preflight
-      - run: bin/preflight --interactive=false --format=json https://preflight.replicated.com
+      - run: ./bin/preflight --interactive=false --format=json https://preflight.replicated.com
+
+  compile-supportbundle:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: actions/setup-go@v1
+        with:
+          go-version: '1.14'
+      - name: setup env
+        run: |
+          echo "::set-env name=GOPATH::$(go env GOPATH)"
+          echo "::add-path::$(go env GOPATH)/bin"
+        shell: bash
+      - uses: actions/checkout@master
+      - run: make support-bundle
+      - uses: actions/upload-artifact@v1
+        with:
+          name: support-bundle
+          path: bin/support-bundle
+
+  validate-supportbundle:
+    runs-on: ubuntu-latest
+    needs: compile-supportbundle
+    steps:
+      - uses: actions/checkout@v1
+      - name: Download support-bundle binary
+        uses: actions/download-artifact@v1
+        with:
+          name: support-bundle
+          path: bin/
+      - uses: engineerd/setup-kind@v0.2.0
+      - run: chmod +x bin/support-bundle
+      - run: ./bin/support-bundle ./examples/troubleshoot/sample-collectors.yaml
+      - run: ./bin/support-bundle ./examples/troubleshoot/sample-supportbundle.yaml
+      - run: ./bin/support-bundle https://kots.io
 
   goreleaser:
     runs-on: ubuntu-latest

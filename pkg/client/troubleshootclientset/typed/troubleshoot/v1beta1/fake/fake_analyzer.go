@@ -18,6 +18,8 @@ limitations under the License.
 package fake
 
 import (
+	"context"
+
 	v1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
@@ -38,7 +40,7 @@ var analyzersResource = schema.GroupVersionResource{Group: "troubleshoot.replica
 var analyzersKind = schema.GroupVersionKind{Group: "troubleshoot.replicated.com", Version: "v1beta1", Kind: "Analyzer"}
 
 // Get takes name of the analyzer, and returns the corresponding analyzer object, and an error if there is any.
-func (c *FakeAnalyzers) Get(name string, options v1.GetOptions) (result *v1beta1.Analyzer, err error) {
+func (c *FakeAnalyzers) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1beta1.Analyzer, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewGetAction(analyzersResource, c.ns, name), &v1beta1.Analyzer{})
 
@@ -49,7 +51,7 @@ func (c *FakeAnalyzers) Get(name string, options v1.GetOptions) (result *v1beta1
 }
 
 // List takes label and field selectors, and returns the list of Analyzers that match those selectors.
-func (c *FakeAnalyzers) List(opts v1.ListOptions) (result *v1beta1.AnalyzerList, err error) {
+func (c *FakeAnalyzers) List(ctx context.Context, opts v1.ListOptions) (result *v1beta1.AnalyzerList, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewListAction(analyzersResource, analyzersKind, c.ns, opts), &v1beta1.AnalyzerList{})
 
@@ -71,14 +73,14 @@ func (c *FakeAnalyzers) List(opts v1.ListOptions) (result *v1beta1.AnalyzerList,
 }
 
 // Watch returns a watch.Interface that watches the requested analyzers.
-func (c *FakeAnalyzers) Watch(opts v1.ListOptions) (watch.Interface, error) {
+func (c *FakeAnalyzers) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
 	return c.Fake.
 		InvokesWatch(testing.NewWatchAction(analyzersResource, c.ns, opts))
 
 }
 
 // Create takes the representation of a analyzer and creates it.  Returns the server's representation of the analyzer, and an error, if there is any.
-func (c *FakeAnalyzers) Create(analyzer *v1beta1.Analyzer) (result *v1beta1.Analyzer, err error) {
+func (c *FakeAnalyzers) Create(ctx context.Context, analyzer *v1beta1.Analyzer, opts v1.CreateOptions) (result *v1beta1.Analyzer, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewCreateAction(analyzersResource, c.ns, analyzer), &v1beta1.Analyzer{})
 
@@ -89,7 +91,7 @@ func (c *FakeAnalyzers) Create(analyzer *v1beta1.Analyzer) (result *v1beta1.Anal
 }
 
 // Update takes the representation of a analyzer and updates it. Returns the server's representation of the analyzer, and an error, if there is any.
-func (c *FakeAnalyzers) Update(analyzer *v1beta1.Analyzer) (result *v1beta1.Analyzer, err error) {
+func (c *FakeAnalyzers) Update(ctx context.Context, analyzer *v1beta1.Analyzer, opts v1.UpdateOptions) (result *v1beta1.Analyzer, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewUpdateAction(analyzersResource, c.ns, analyzer), &v1beta1.Analyzer{})
 
@@ -101,7 +103,7 @@ func (c *FakeAnalyzers) Update(analyzer *v1beta1.Analyzer) (result *v1beta1.Anal
 
 // UpdateStatus was generated because the type contains a Status member.
 // Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-func (c *FakeAnalyzers) UpdateStatus(analyzer *v1beta1.Analyzer) (*v1beta1.Analyzer, error) {
+func (c *FakeAnalyzers) UpdateStatus(ctx context.Context, analyzer *v1beta1.Analyzer, opts v1.UpdateOptions) (*v1beta1.Analyzer, error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewUpdateSubresourceAction(analyzersResource, "status", c.ns, analyzer), &v1beta1.Analyzer{})
 
@@ -112,7 +114,7 @@ func (c *FakeAnalyzers) UpdateStatus(analyzer *v1beta1.Analyzer) (*v1beta1.Analy
 }
 
 // Delete takes name of the analyzer and deletes it. Returns an error if one occurs.
-func (c *FakeAnalyzers) Delete(name string, options *v1.DeleteOptions) error {
+func (c *FakeAnalyzers) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
 		Invokes(testing.NewDeleteAction(analyzersResource, c.ns, name), &v1beta1.Analyzer{})
 
@@ -120,15 +122,15 @@ func (c *FakeAnalyzers) Delete(name string, options *v1.DeleteOptions) error {
 }
 
 // DeleteCollection deletes a collection of objects.
-func (c *FakeAnalyzers) DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error {
-	action := testing.NewDeleteCollectionAction(analyzersResource, c.ns, listOptions)
+func (c *FakeAnalyzers) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
+	action := testing.NewDeleteCollectionAction(analyzersResource, c.ns, listOpts)
 
 	_, err := c.Fake.Invokes(action, &v1beta1.AnalyzerList{})
 	return err
 }
 
 // Patch applies the patch and returns the patched analyzer.
-func (c *FakeAnalyzers) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1beta1.Analyzer, err error) {
+func (c *FakeAnalyzers) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1beta1.Analyzer, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewPatchSubresourceAction(analyzersResource, c.ns, name, pt, data, subresources...), &v1beta1.Analyzer{})
 

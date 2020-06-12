@@ -18,6 +18,7 @@ limitations under the License.
 package v1beta1
 
 import (
+	"context"
 	"time"
 
 	v1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
@@ -36,15 +37,15 @@ type PreflightsGetter interface {
 
 // PreflightInterface has methods to work with Preflight resources.
 type PreflightInterface interface {
-	Create(*v1beta1.Preflight) (*v1beta1.Preflight, error)
-	Update(*v1beta1.Preflight) (*v1beta1.Preflight, error)
-	UpdateStatus(*v1beta1.Preflight) (*v1beta1.Preflight, error)
-	Delete(name string, options *v1.DeleteOptions) error
-	DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error
-	Get(name string, options v1.GetOptions) (*v1beta1.Preflight, error)
-	List(opts v1.ListOptions) (*v1beta1.PreflightList, error)
-	Watch(opts v1.ListOptions) (watch.Interface, error)
-	Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1beta1.Preflight, err error)
+	Create(ctx context.Context, preflight *v1beta1.Preflight, opts v1.CreateOptions) (*v1beta1.Preflight, error)
+	Update(ctx context.Context, preflight *v1beta1.Preflight, opts v1.UpdateOptions) (*v1beta1.Preflight, error)
+	UpdateStatus(ctx context.Context, preflight *v1beta1.Preflight, opts v1.UpdateOptions) (*v1beta1.Preflight, error)
+	Delete(ctx context.Context, name string, opts v1.DeleteOptions) error
+	DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error
+	Get(ctx context.Context, name string, opts v1.GetOptions) (*v1beta1.Preflight, error)
+	List(ctx context.Context, opts v1.ListOptions) (*v1beta1.PreflightList, error)
+	Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error)
+	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1beta1.Preflight, err error)
 	PreflightExpansion
 }
 
@@ -63,20 +64,20 @@ func newPreflights(c *TroubleshootV1beta1Client, namespace string) *preflights {
 }
 
 // Get takes name of the preflight, and returns the corresponding preflight object, and an error if there is any.
-func (c *preflights) Get(name string, options v1.GetOptions) (result *v1beta1.Preflight, err error) {
+func (c *preflights) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1beta1.Preflight, err error) {
 	result = &v1beta1.Preflight{}
 	err = c.client.Get().
 		Namespace(c.ns).
 		Resource("preflights").
 		Name(name).
 		VersionedParams(&options, scheme.ParameterCodec).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }
 
 // List takes label and field selectors, and returns the list of Preflights that match those selectors.
-func (c *preflights) List(opts v1.ListOptions) (result *v1beta1.PreflightList, err error) {
+func (c *preflights) List(ctx context.Context, opts v1.ListOptions) (result *v1beta1.PreflightList, err error) {
 	var timeout time.Duration
 	if opts.TimeoutSeconds != nil {
 		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
@@ -87,13 +88,13 @@ func (c *preflights) List(opts v1.ListOptions) (result *v1beta1.PreflightList, e
 		Resource("preflights").
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Timeout(timeout).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }
 
 // Watch returns a watch.Interface that watches the requested preflights.
-func (c *preflights) Watch(opts v1.ListOptions) (watch.Interface, error) {
+func (c *preflights) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
 	var timeout time.Duration
 	if opts.TimeoutSeconds != nil {
 		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
@@ -104,87 +105,90 @@ func (c *preflights) Watch(opts v1.ListOptions) (watch.Interface, error) {
 		Resource("preflights").
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Timeout(timeout).
-		Watch()
+		Watch(ctx)
 }
 
 // Create takes the representation of a preflight and creates it.  Returns the server's representation of the preflight, and an error, if there is any.
-func (c *preflights) Create(preflight *v1beta1.Preflight) (result *v1beta1.Preflight, err error) {
+func (c *preflights) Create(ctx context.Context, preflight *v1beta1.Preflight, opts v1.CreateOptions) (result *v1beta1.Preflight, err error) {
 	result = &v1beta1.Preflight{}
 	err = c.client.Post().
 		Namespace(c.ns).
 		Resource("preflights").
+		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(preflight).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }
 
 // Update takes the representation of a preflight and updates it. Returns the server's representation of the preflight, and an error, if there is any.
-func (c *preflights) Update(preflight *v1beta1.Preflight) (result *v1beta1.Preflight, err error) {
+func (c *preflights) Update(ctx context.Context, preflight *v1beta1.Preflight, opts v1.UpdateOptions) (result *v1beta1.Preflight, err error) {
 	result = &v1beta1.Preflight{}
 	err = c.client.Put().
 		Namespace(c.ns).
 		Resource("preflights").
 		Name(preflight.Name).
+		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(preflight).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }
 
 // UpdateStatus was generated because the type contains a Status member.
 // Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-
-func (c *preflights) UpdateStatus(preflight *v1beta1.Preflight) (result *v1beta1.Preflight, err error) {
+func (c *preflights) UpdateStatus(ctx context.Context, preflight *v1beta1.Preflight, opts v1.UpdateOptions) (result *v1beta1.Preflight, err error) {
 	result = &v1beta1.Preflight{}
 	err = c.client.Put().
 		Namespace(c.ns).
 		Resource("preflights").
 		Name(preflight.Name).
 		SubResource("status").
+		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(preflight).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }
 
 // Delete takes name of the preflight and deletes it. Returns an error if one occurs.
-func (c *preflights) Delete(name string, options *v1.DeleteOptions) error {
+func (c *preflights) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	return c.client.Delete().
 		Namespace(c.ns).
 		Resource("preflights").
 		Name(name).
-		Body(options).
-		Do().
+		Body(&opts).
+		Do(ctx).
 		Error()
 }
 
 // DeleteCollection deletes a collection of objects.
-func (c *preflights) DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error {
+func (c *preflights) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
 	var timeout time.Duration
-	if listOptions.TimeoutSeconds != nil {
-		timeout = time.Duration(*listOptions.TimeoutSeconds) * time.Second
+	if listOpts.TimeoutSeconds != nil {
+		timeout = time.Duration(*listOpts.TimeoutSeconds) * time.Second
 	}
 	return c.client.Delete().
 		Namespace(c.ns).
 		Resource("preflights").
-		VersionedParams(&listOptions, scheme.ParameterCodec).
+		VersionedParams(&listOpts, scheme.ParameterCodec).
 		Timeout(timeout).
-		Body(options).
-		Do().
+		Body(&opts).
+		Do(ctx).
 		Error()
 }
 
 // Patch applies the patch and returns the patched preflight.
-func (c *preflights) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1beta1.Preflight, err error) {
+func (c *preflights) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1beta1.Preflight, err error) {
 	result = &v1beta1.Preflight{}
 	err = c.client.Patch(pt).
 		Namespace(c.ns).
 		Resource("preflights").
-		SubResource(subresources...).
 		Name(name).
+		SubResource(subresources...).
+		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(data).
-		Do().
+		Do(ctx).
 		Into(result)
 	return
 }
