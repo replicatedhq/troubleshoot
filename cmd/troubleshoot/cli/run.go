@@ -99,6 +99,7 @@ func runTroubleshoot(v *viper.Viper, arg string) error {
 	s := spin.New()
 	finishedCh := make(chan bool, 1)
 	progressChan := make(chan interface{}, 0) // non-zero buffer can result in missed messages
+	isFinishedChClosed := false
 	go func() {
 		currentDir := ""
 		for {
@@ -124,7 +125,9 @@ func runTroubleshoot(v *viper.Viper, arg string) error {
 		}
 	}()
 	defer func() {
-		close(finishedCh)
+		if !isFinishedChClosed {
+			close(finishedCh)
+		}
 	}()
 
 	archivePath, err := runCollectors(v, supportBundleSpec.Spec.Collectors, additionalRedactors, progressChan)
@@ -180,14 +183,27 @@ func runTroubleshoot(v *viper.Viper, arg string) error {
 			c.Printf("%s\r * Failed to analyze support bundle: %v\n", cursor.ClearEntireLine(), err)
 		}
 
-		data := convert.FromAnalyzerResult(analyzeResults)
-		formatted, err := json.MarshalIndent(data, "", "    ")
-		if err != nil {
-			c := color.New(color.FgHiRed)
-			c.Printf("%s\r * Failed to format analysis: %v\n", cursor.ClearEntireLine(), err)
+		interactive := isatty.IsTerminal(os.Stdout.Fd())
+
+		if interactive {
+			close(finishedCh) // this removes the spinner
+			isFinishedChClosed = true
+
+			if err := showInteractiveResults(analyzeResults); err != nil {
+				interactive = false
+			}
 		}
 
-		fmt.Printf("%s", formatted)
+		if !interactive {
+			data := convert.FromAnalyzerResult(analyzeResults)
+			formatted, err := json.MarshalIndent(data, "", "    ")
+			if err != nil {
+				c := color.New(color.FgHiRed)
+				c.Printf("%s\r * Failed to format analysis: %v\n", cursor.ClearEntireLine(), err)
+			}
+
+			fmt.Printf("%s", formatted)
+		}
 	}
 
 	if !fileUploaded {
