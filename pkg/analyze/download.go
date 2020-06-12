@@ -20,6 +20,26 @@ type fileContentProvider struct {
 	rootDir string
 }
 
+// Analyze local will analyze a locally available (already downloaded) bundle
+func AnalyzeLocal(localBundlePath string, analyzers []*troubleshootv1beta1.Analyze) ([]*AnalyzeResult, error) {
+	fcp := fileContentProvider{rootDir: localBundlePath}
+
+	analyzeResults := []*AnalyzeResult{}
+	for _, analyzer := range analyzers {
+		analyzeResult, err := Analyze(analyzer, fcp.getFileContents, fcp.getChildFileContents)
+		if err != nil {
+			logger.Printf("an analyzer failed to run: %v\n", err)
+			continue
+		}
+
+		if analyzeResult != nil {
+			analyzeResults = append(analyzeResults, analyzeResult)
+		}
+	}
+
+	return analyzeResults, nil
+}
+
 func DownloadAndAnalyze(bundleURL string, analyzersSpec string) ([]*AnalyzeResult, error) {
 	tmpDir, err := ioutil.TempDir("", "troubleshoot-k8s")
 	if err != nil {
@@ -52,22 +72,7 @@ func DownloadAndAnalyze(bundleURL string, analyzersSpec string) ([]*AnalyzeResul
 		analyzers = parsedAnalyzers
 	}
 
-	fcp := fileContentProvider{rootDir: tmpDir}
-
-	analyzeResults := []*AnalyzeResult{}
-	for _, analyzer := range analyzers {
-		analyzeResult, err := Analyze(analyzer, fcp.getFileContents, fcp.getChildFileContents)
-		if err != nil {
-			logger.Printf("an analyzer failed to run: %v\n", err)
-			continue
-		}
-
-		if analyzeResult != nil {
-			analyzeResults = append(analyzeResults, analyzeResult)
-		}
-	}
-
-	return analyzeResults, nil
+	return AnalyzeLocal(tmpDir, analyzers)
 }
 
 func downloadTroubleshootBundle(bundleURL string, destDir string) error {
@@ -77,7 +82,7 @@ func downloadTroubleshootBundle(bundleURL string, destDir string) error {
 			return errors.Wrap(err, "failed to open support bundle")
 		}
 		defer f.Close()
-		return extractTroubleshootBundle(f, destDir)
+		return ExtractTroubleshootBundle(f, destDir)
 	}
 
 	pwd, err := os.Getwd()
@@ -85,7 +90,7 @@ func downloadTroubleshootBundle(bundleURL string, destDir string) error {
 		return errors.Wrap(err, "failed to get workdir")
 	}
 
-	tmpDir, err := ioutil.TempDir("", "getter")
+	tmpDir, err := ioutil.TempDir("", "troubleshoot")
 	if err != nil {
 		return errors.Wrap(err, "failed to create tmp dir")
 	}
@@ -107,10 +112,10 @@ func downloadTroubleshootBundle(bundleURL string, destDir string) error {
 	}
 	defer f.Close()
 
-	return extractTroubleshootBundle(f, destDir)
+	return ExtractTroubleshootBundle(f, destDir)
 }
 
-func extractTroubleshootBundle(reader io.Reader, destDir string) error {
+func ExtractTroubleshootBundle(reader io.Reader, destDir string) error {
 	gzReader, err := gzip.NewReader(reader)
 	if err != nil {
 		return errors.Wrap(err, "failed to create gzip reader")

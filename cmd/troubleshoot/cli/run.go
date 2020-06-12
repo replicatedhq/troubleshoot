@@ -21,10 +21,12 @@ import (
 	"github.com/mholt/archiver"
 	"github.com/pkg/errors"
 	"github.com/replicatedhq/troubleshoot/cmd/util"
+	analyzer "github.com/replicatedhq/troubleshoot/pkg/analyze"
 	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
 	"github.com/replicatedhq/troubleshoot/pkg/client/troubleshootclientset/scheme"
 	troubleshootclientsetscheme "github.com/replicatedhq/troubleshoot/pkg/client/troubleshootclientset/scheme"
 	"github.com/replicatedhq/troubleshoot/pkg/collect"
+	"github.com/replicatedhq/troubleshoot/pkg/convert"
 	"github.com/replicatedhq/troubleshoot/pkg/redact"
 	"github.com/spf13/viper"
 	spin "github.com/tj/go-spin"
@@ -132,7 +134,63 @@ func runTroubleshoot(v *viper.Viper, arg string) error {
 
 	fmt.Printf("\r%s\r", cursor.ClearEntireLine())
 
-	if len(supportBundleSpec.Spec.AfterCollection) == 0 {
+	// upload if needed
+	fileUploaded := false
+	if len(supportBundleSpec.Spec.AfterCollection) > 0 {
+		for _, ac := range supportBundleSpec.Spec.AfterCollection {
+			if ac.UploadResultsTo != nil {
+				if err := uploadSupportBundle(ac.UploadResultsTo, archivePath); err != nil {
+					c := color.New(color.FgHiRed)
+					c.Printf("%s\r * Failed to upload support bundle: %v\n", cursor.ClearEntireLine(), err)
+				} else {
+					fileUploaded = true
+				}
+			} else if ac.Callback != nil {
+				if err := callbackSupportBundleAPI(ac.Callback, archivePath); err != nil {
+					c := color.New(color.FgHiRed)
+					c.Printf("%s\r * Failed to notify API that support bundle has been uploaded: %v\n", cursor.ClearEntireLine(), err)
+				}
+			}
+		}
+
+	}
+
+	// perform analysis, if possible
+	if len(supportBundleSpec.Spec.Analyzers) > 0 {
+		tmpDir, err := ioutil.TempDir("", "troubleshoot")
+		if err != nil {
+			c := color.New(color.FgHiRed)
+			c.Printf("%s\r * Failed to make directory for analysis: %v\n", cursor.ClearEntireLine(), err)
+		}
+
+		f, err := os.Open(archivePath)
+		if err != nil {
+			c := color.New(color.FgHiRed)
+			c.Printf("%s\r * Failed to open support bundle for analysis: %v\n", cursor.ClearEntireLine(), err)
+
+		}
+		if err := analyzer.ExtractTroubleshootBundle(f, tmpDir); err != nil {
+			c := color.New(color.FgHiRed)
+			c.Printf("%s\r * Failed to extract support bundle for analysis: %v\n", cursor.ClearEntireLine(), err)
+		}
+
+		analyzeResults, err := analyzer.AnalyzeLocal(tmpDir, supportBundleSpec.Spec.Analyzers)
+		if err != nil {
+			c := color.New(color.FgHiRed)
+			c.Printf("%s\r * Failed to analyze support bundle: %v\n", cursor.ClearEntireLine(), err)
+		}
+
+		data := convert.FromAnalyzerResult(analyzeResults)
+		formatted, err := json.MarshalIndent(data, "", "    ")
+		if err != nil {
+			c := color.New(color.FgHiRed)
+			c.Printf("%s\r * Failed to format analysis: %v\n", cursor.ClearEntireLine(), err)
+		}
+
+		fmt.Printf("%s", formatted)
+	}
+
+	if !fileUploaded {
 		msg := archivePath
 		if appName := supportBundleSpec.Labels["applicationName"]; appName != "" {
 			f := `A support bundle for %s has been created in this directory
@@ -144,23 +202,6 @@ the %s Admin Console to begin analysis.`
 		fmt.Printf("%s\n", msg)
 
 		return nil
-	}
-
-	fileUploaded := false
-	for _, ac := range supportBundleSpec.Spec.AfterCollection {
-		if ac.UploadResultsTo != nil {
-			if err := uploadSupportBundle(ac.UploadResultsTo, archivePath); err != nil {
-				c := color.New(color.FgHiRed)
-				c.Printf("%s\r * Failed to upload support bundle: %v\n", cursor.ClearEntireLine(), err)
-			} else {
-				fileUploaded = true
-			}
-		} else if ac.Callback != nil {
-			if err := callbackSupportBundleAPI(ac.Callback, archivePath); err != nil {
-				c := color.New(color.FgHiRed)
-				c.Printf("%s\r * Failed to notify API that support bundle has been uploaded: %v\n", cursor.ClearEntireLine(), err)
-			}
-		}
 	}
 
 	fmt.Printf("\r%s\r", cursor.ClearEntireLine())
