@@ -2,6 +2,7 @@ package collect
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"path/filepath"
 
@@ -12,15 +13,17 @@ import (
 	"k8s.io/client-go/tools/remotecommand"
 )
 
-func Copy(ctx *Context, copyCollector *troubleshootv1beta1.Copy) (map[string][]byte, error) {
-	client, err := kubernetes.NewForConfig(ctx.ClientConfig)
+func Copy(c *Collector, copyCollector *troubleshootv1beta1.Copy) (map[string][]byte, error) {
+	client, err := kubernetes.NewForConfig(c.ClientConfig)
 	if err != nil {
 		return nil, err
 	}
 
 	copyOutput := map[string][]byte{}
 
-	pods, podsErrors := listPodsInSelectors(client, copyCollector.Namespace, copyCollector.Selector)
+	ctx := context.Background()
+
+	pods, podsErrors := listPodsInSelectors(ctx, client, copyCollector.Namespace, copyCollector.Selector)
 	if len(podsErrors) > 0 {
 		errorBytes, err := marshalNonNil(podsErrors)
 		if err != nil {
@@ -33,7 +36,7 @@ func Copy(ctx *Context, copyCollector *troubleshootv1beta1.Copy) (map[string][]b
 		for _, pod := range pods {
 			bundlePath := filepath.Join(copyCollector.Name, pod.Namespace, pod.Name, copyCollector.ContainerName)
 
-			files, copyErrors := copyFiles(ctx, client, pod, copyCollector)
+			files, copyErrors := copyFiles(c, client, pod, copyCollector)
 			if len(copyErrors) > 0 {
 				key := filepath.Join(bundlePath, copyCollector.ContainerPath+"-errors.json")
 				copyOutput[key], err = marshalNonNil(copyErrors)
@@ -52,7 +55,7 @@ func Copy(ctx *Context, copyCollector *troubleshootv1beta1.Copy) (map[string][]b
 	return copyOutput, nil
 }
 
-func copyFiles(ctx *Context, client *kubernetes.Clientset, pod corev1.Pod, copyCollector *troubleshootv1beta1.Copy) (map[string][]byte, map[string]string) {
+func copyFiles(c *Collector, client *kubernetes.Clientset, pod corev1.Pod, copyCollector *troubleshootv1beta1.Copy) (map[string][]byte, map[string]string) {
 	container := pod.Spec.Containers[0].Name
 	if copyCollector.ContainerName != "" {
 		container = copyCollector.ContainerName
@@ -78,7 +81,7 @@ func copyFiles(ctx *Context, client *kubernetes.Clientset, pod corev1.Pod, copyC
 		TTY:       false,
 	}, parameterCodec)
 
-	exec, err := remotecommand.NewSPDYExecutor(ctx.ClientConfig, "POST", req.URL())
+	exec, err := remotecommand.NewSPDYExecutor(c.ClientConfig, "POST", req.URL())
 	if err != nil {
 		return nil, map[string]string{
 			filepath.Join(copyCollector.ContainerPath, "error"): err.Error(),

@@ -43,6 +43,10 @@ func (c *FakeTroubleshootV1beta1) Redactors(namespace string) v1beta1.RedactorIn
 	return &FakeRedactors{c, namespace}
 }
 
+func (c *FakeTroubleshootV1beta1) SupportBundles(namespace string) v1beta1.SupportBundleInterface {
+	return &FakeSupportBundles{c, namespace}
+}
+
 // RESTClient returns a RESTClient that is used to communicate
 // with API server by this client implementation.
 func (c *FakeTroubleshootV1beta1) RESTClient() rest.Interface {

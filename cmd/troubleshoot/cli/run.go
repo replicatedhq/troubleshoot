@@ -2,6 +2,7 @@ package cli
 
 import (
 	"bytes"
+	"context"
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
@@ -27,6 +28,7 @@ import (
 	"github.com/replicatedhq/troubleshoot/pkg/redact"
 	"github.com/spf13/viper"
 	spin "github.com/tj/go-spin"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 var (
@@ -52,14 +54,14 @@ func runTroubleshoot(v *viper.Viper, arg string) error {
 
 	multidocs := strings.Split(string(collectorContent), "---")
 
-	troubleshootclientsetscheme.AddToScheme(scheme.Scheme)
-	decode := scheme.Codecs.UniversalDeserializer().Decode
-	obj, _, err := decode([]byte(multidocs[0]), nil, nil)
+	// we suppory both raw collector kinds and supportbundle kinds here
+	supportBundleSpec, err := parseSupportBundleFromDoc([]byte(multidocs[0]))
 	if err != nil {
-		return errors.Wrapf(err, "failed to parse %s", arg)
+		return errors.Wrap(err, "failed to parse collector")
 	}
 
-	collector := obj.(*troubleshootv1beta1.Collector)
+	troubleshootclientsetscheme.AddToScheme(scheme.Scheme)
+	decode := scheme.Codecs.UniversalDeserializer().Decode
 
 	additionalRedactors := &troubleshootv1beta1.Redactor{}
 	for idx, redactor := range v.GetStringSlice("redactors") {
@@ -123,16 +125,16 @@ func runTroubleshoot(v *viper.Viper, arg string) error {
 		close(finishedCh)
 	}()
 
-	archivePath, err := runCollectors(v, *collector, additionalRedactors, progressChan)
+	archivePath, err := runCollectors(v, supportBundleSpec.Spec.Collectors, additionalRedactors, progressChan)
 	if err != nil {
 		return errors.Wrap(err, "run collectors")
 	}
 
 	fmt.Printf("\r%s\r", cursor.ClearEntireLine())
 
-	if len(collector.Spec.AfterCollection) == 0 {
+	if len(supportBundleSpec.Spec.AfterCollection) == 0 {
 		msg := archivePath
-		if appName := collector.Labels["applicationName"]; appName != "" {
+		if appName := supportBundleSpec.Labels["applicationName"]; appName != "" {
 			f := `A support bundle for %s has been created in this directory
 named %s. Please upload it on the Troubleshoot page of
 the %s Admin Console to begin analysis.`
@@ -145,7 +147,7 @@ the %s Admin Console to begin analysis.`
 	}
 
 	fileUploaded := false
-	for _, ac := range collector.Spec.AfterCollection {
+	for _, ac := range supportBundleSpec.Spec.AfterCollection {
 		if ac.UploadResultsTo != nil {
 			if err := uploadSupportBundle(ac.UploadResultsTo, archivePath); err != nil {
 				c := color.New(color.FgHiRed)
@@ -212,6 +214,41 @@ func loadSpec(v *viper.Viper, arg string) ([]byte, error) {
 	}
 }
 
+func parseSupportBundleFromDoc(doc []byte) (*troubleshootv1beta1.SupportBundle, error) {
+	troubleshootclientsetscheme.AddToScheme(scheme.Scheme)
+	decode := scheme.Codecs.UniversalDeserializer().Decode
+
+	obj, _, err := decode(doc, nil, nil)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to parse document")
+	}
+
+	collector, ok := obj.(*troubleshootv1beta1.Collector)
+	if ok {
+		supportBundle := troubleshootv1beta1.SupportBundle{
+			TypeMeta: metav1.TypeMeta{
+				APIVersion: "troubleshoot.replicated.com/v1beta1",
+				Kind:       "SupportBundle",
+			},
+			ObjectMeta: collector.ObjectMeta,
+			Spec: troubleshootv1beta1.SupportBundleSpec{
+				Collectors:      collector.Spec.Collectors,
+				Analyzers:       []*troubleshootv1beta1.Analyze{},
+				AfterCollection: collector.Spec.AfterCollection,
+			},
+		}
+
+		return &supportBundle, nil
+	}
+
+	supportBundle, ok := obj.(*troubleshootv1beta1.SupportBundle)
+	if ok {
+		return supportBundle, nil
+	}
+
+	return nil, errors.New("spec was not parseable as a troubleshoot kind")
+}
+
 func canTryInsecure(v *viper.Viper) bool {
 	if !isatty.IsTerminal(os.Stdout.Fd()) {
 		return false
@@ -229,7 +266,7 @@ func canTryInsecure(v *viper.Viper) bool {
 	return true
 }
 
-func runCollectors(v *viper.Viper, collector troubleshootv1beta1.Collector, additionalRedactors *troubleshootv1beta1.Redactor, progressChan chan interface{}) (string, error) {
+func runCollectors(v *viper.Viper, collectors []*troubleshootv1beta1.Collect, additionalRedactors *troubleshootv1beta1.Redactor, progressChan chan interface{}) (string, error) {
 	bundlePath, err := ioutil.TempDir("", "troubleshoot")
 	if err != nil {
 		return "", errors.Wrap(err, "create temp dir")
@@ -241,7 +278,7 @@ func runCollectors(v *viper.Viper, collector troubleshootv1beta1.Collector, addi
 	}
 
 	collectSpecs := make([]*troubleshootv1beta1.Collect, 0, 0)
-	collectSpecs = append(collectSpecs, collector.Spec.Collectors...)
+	collectSpecs = append(collectSpecs, collectors...)
 	collectSpecs = ensureCollectorInList(collectSpecs, troubleshootv1beta1.Collect{ClusterInfo: &troubleshootv1beta1.ClusterInfo{}})
 	collectSpecs = ensureCollectorInList(collectSpecs, troubleshootv1beta1.Collect{ClusterResources: &troubleshootv1beta1.ClusterResources{}})
 
@@ -250,7 +287,7 @@ func runCollectors(v *viper.Viper, collector troubleshootv1beta1.Collector, addi
 		return "", errors.Wrap(err, "failed to convert kube flags to rest config")
 	}
 
-	var collectors collect.Collectors
+	var cleanedCollectors collect.Collectors
 	for _, desiredCollector := range collectSpecs {
 		collector := collect.Collector{
 			Redact:       true,
@@ -258,15 +295,15 @@ func runCollectors(v *viper.Viper, collector troubleshootv1beta1.Collector, addi
 			ClientConfig: config,
 			Namespace:    v.GetString("namespace"),
 		}
-		collectors = append(collectors, &collector)
+		cleanedCollectors = append(cleanedCollectors, &collector)
 	}
 
-	if err := collectors.CheckRBAC(); err != nil {
+	if err := cleanedCollectors.CheckRBAC(context.Background()); err != nil {
 		return "", errors.Wrap(err, "failed to check RBAC for collectors")
 	}
 
 	foundForbidden := false
-	for _, c := range collectors {
+	for _, c := range cleanedCollectors {
 		for _, e := range c.RBACErrors {
 			foundForbidden = true
 			progressChan <- e
@@ -283,7 +320,7 @@ func runCollectors(v *viper.Viper, collector troubleshootv1beta1.Collector, addi
 	}
 
 	// Run preflights collectors synchronously
-	for _, collector := range collectors {
+	for _, collector := range cleanedCollectors {
 		if len(collector.RBACErrors) > 0 {
 			// don't skip clusterResources collector due to RBAC issues
 			if collector.Collect.ClusterResources == nil {

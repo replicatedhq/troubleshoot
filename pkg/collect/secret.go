@@ -1,6 +1,7 @@
 package collect
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"path"
@@ -20,15 +21,17 @@ type FoundSecret struct {
 	Value        string `json:"value,omitempty"`
 }
 
-func Secret(ctx *Context, secretCollector *troubleshootv1beta1.Secret) (map[string][]byte, error) {
-	client, err := kubernetes.NewForConfig(ctx.ClientConfig)
+func Secret(c *Collector, secretCollector *troubleshootv1beta1.Secret) (map[string][]byte, error) {
+	client, err := kubernetes.NewForConfig(c.ClientConfig)
 	if err != nil {
 		return nil, err
 	}
 
 	secretOutput := map[string][]byte{}
 
-	filePath, encoded, err := secret(client, secretCollector)
+	ctx := context.Background()
+
+	filePath, encoded, err := secret(ctx, client, secretCollector)
 	if err != nil {
 		errorBytes, err := marshalNonNil([]string{err.Error()})
 		if err != nil {
@@ -43,11 +46,11 @@ func Secret(ctx *Context, secretCollector *troubleshootv1beta1.Secret) (map[stri
 	return secretOutput, nil
 }
 
-func secret(client *kubernetes.Clientset, secretCollector *troubleshootv1beta1.Secret) (string, []byte, error) {
+func secret(ctx context.Context, client *kubernetes.Clientset, secretCollector *troubleshootv1beta1.Secret) (string, []byte, error) {
 	ns := secretCollector.Namespace
 	path := fmt.Sprintf("%s.json", filepath.Join(ns, secretCollector.SecretName))
 
-	found, err := client.CoreV1().Secrets(secretCollector.Namespace).Get(secretCollector.SecretName, metav1.GetOptions{})
+	found, err := client.CoreV1().Secrets(secretCollector.Namespace).Get(ctx, secretCollector.SecretName, metav1.GetOptions{})
 	if err != nil {
 		missingSecret := FoundSecret{
 			Namespace:    secretCollector.Namespace,

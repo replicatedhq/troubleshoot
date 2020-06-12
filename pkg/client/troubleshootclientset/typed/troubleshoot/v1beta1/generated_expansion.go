@@ -24,3 +24,5 @@ type CollectorExpansion interface{}
 type PreflightExpansion interface{}
 
 type RedactorExpansion interface{}
+
+type SupportBundleExpansion interface{}

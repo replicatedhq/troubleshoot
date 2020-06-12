@@ -1,6 +1,7 @@
 package collect
 
 import (
+	"context"
 	"time"
 
 	"github.com/pkg/errors"
@@ -11,25 +12,27 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-func Run(ctx *Context, runCollector *troubleshootv1beta1.Run) (map[string][]byte, error) {
-	client, err := kubernetes.NewForConfig(ctx.ClientConfig)
+func Run(c *Collector, runCollector *troubleshootv1beta1.Run) (map[string][]byte, error) {
+	ctx := context.Background()
+
+	client, err := kubernetes.NewForConfig(c.ClientConfig)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create client from config")
 	}
 
-	pod, err := runPod(client, runCollector, ctx.Namespace)
+	pod, err := runPod(ctx, client, runCollector, c.Namespace)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to run pod")
 	}
 
 	defer func() {
-		if err := client.CoreV1().Pods(pod.Namespace).Delete(pod.Name, &metav1.DeleteOptions{}); err != nil {
+		if err := client.CoreV1().Pods(pod.Namespace).Delete(ctx, pod.Name, metav1.DeleteOptions{}); err != nil {
 			logger.Printf("Failed to delete pod %s: %v\n", pod.Name, err)
 		}
 	}()
 
 	if runCollector.Timeout == "" {
-		return runWithoutTimeout(ctx, pod, runCollector)
+		return runWithoutTimeout(ctx, c, pod, runCollector)
 	}
 
 	timeout, err := time.ParseDuration(runCollector.Timeout)
@@ -40,7 +43,7 @@ func Run(ctx *Context, runCollector *troubleshootv1beta1.Run) (map[string][]byte
 	errCh := make(chan error, 1)
 	resultCh := make(chan map[string][]byte, 1)
 	go func() {
-		b, err := runWithoutTimeout(ctx, pod, runCollector)
+		b, err := runWithoutTimeout(ctx, c, pod, runCollector)
 		if err != nil {
 			errCh <- err
 		} else {
@@ -58,14 +61,14 @@ func Run(ctx *Context, runCollector *troubleshootv1beta1.Run) (map[string][]byte
 	}
 }
 
-func runWithoutTimeout(ctx *Context, pod *corev1.Pod, runCollector *troubleshootv1beta1.Run) (map[string][]byte, error) {
-	client, err := kubernetes.NewForConfig(ctx.ClientConfig)
+func runWithoutTimeout(ctx context.Context, c *Collector, pod *corev1.Pod, runCollector *troubleshootv1beta1.Run) (map[string][]byte, error) {
+	client, err := kubernetes.NewForConfig(c.ClientConfig)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed create client from config")
 	}
 
 	for {
-		status, err := client.CoreV1().Pods(pod.Namespace).Get(pod.Name, metav1.GetOptions{})
+		status, err := client.CoreV1().Pods(pod.Namespace).Get(ctx, pod.Name, metav1.GetOptions{})
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to get pod")
 		}
@@ -82,7 +85,7 @@ func runWithoutTimeout(ctx *Context, pod *corev1.Pod, runCollector *troubleshoot
 	limits := troubleshootv1beta1.LogLimits{
 		MaxLines: 10000,
 	}
-	podLogs, err := getPodLogs(client, *pod, runCollector.Name, "", &limits, true)
+	podLogs, err := getPodLogs(ctx, client, *pod, runCollector.Name, "", &limits, true)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get pod logs")
 	}
@@ -94,7 +97,7 @@ func runWithoutTimeout(ctx *Context, pod *corev1.Pod, runCollector *troubleshoot
 	return runOutput, nil
 }
 
-func runPod(client *kubernetes.Clientset, runCollector *troubleshootv1beta1.Run, namespace string) (*corev1.Pod, error) {
+func runPod(ctx context.Context, client *kubernetes.Clientset, runCollector *troubleshootv1beta1.Run, namespace string) (*corev1.Pod, error) {
 	podLabels := make(map[string]string)
 	podLabels["troubleshoot-role"] = "run-collector"
 
@@ -134,7 +137,7 @@ func runPod(client *kubernetes.Clientset, runCollector *troubleshootv1beta1.Run,
 		},
 	}
 
-	created, err := client.CoreV1().Pods(namespace).Create(&pod)
+	created, err := client.CoreV1().Pods(namespace).Create(ctx, &pod, metav1.CreateOptions{})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create pod")
 	}

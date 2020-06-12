@@ -40,9 +40,6 @@ from a server that can be used to assist when troubleshooting a server.`,
 	cmd.AddCommand(Analyze())
 	cmd.AddCommand(VersionCmd())
 
-	cmd.Flags().String("collectors", "", "name of the collectors to use")
-	cmd.Flags().String("image", "", "the full name of the collector image to use")
-	cmd.Flags().String("pullpolicy", "", "the pull policy of the collector image")
 	cmd.Flags().StringSlice("redactors", []string{}, "names of the additional redactors to use")
 	cmd.Flags().Bool("redact", true, "enable/disable default redactions")
 	cmd.Flags().Bool("collect-without-permissions", false, "always run troubleshoot collectors even if some require permissions that troubleshoot does not have")
@@ -51,7 +48,6 @@ from a server that can be used to assist when troubleshooting a server.`,
 	cmd.Flags().Bool("allow-insecure-connections", false, "don't verify TLS certs when retrieving spec and reporting results")
 	cmd.Flags().MarkHidden("allow-insecure-connections")
 
-	cmd.Flags().String("serviceaccount", "", "name of the service account to use. if not provided, one will be created")
 	viper.BindPFlags(cmd.Flags())
 
 	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))

@@ -67,8 +67,9 @@ vet:
 
 .PHONY: generate
 generate: controller-gen client-gen
-	$(shell go env GOPATH)/bin/controller-gen object:headerFile=./hack/boilerplate.go.txt paths=./pkg/apis/...
-	$(shell go env GOPATH)/bin/client-gen \
+	$(CONTROLLER_GEN) \
+		object:headerFile=./hack/boilerplate.go.txt paths=./pkg/apis/...
+	$(CLIENT_GEN) \
 		--output-package=github.com/replicatedhq/troubleshoot/pkg/client \
 		--clientset-name troubleshootclientset \
 		--input-base github.com/replicatedhq/troubleshoot/pkg/apis \
@@ -84,8 +85,7 @@ schemas: fmt vet openapischema
 	go build ${LDFLAGS} -o bin/schemagen github.com/replicatedhq/troubleshoot/cmd/schemagen
 	./bin/schemagen --output-dir ./schemas
 
-# find or download controller-gen
-# download controller-gen if necessary
+.PHONY: contoller-gen
 controller-gen:
 ifeq (, $(shell which controller-gen))
 	go get sigs.k8s.io/controller-tools/cmd/controller-gen@v0.2.8
@@ -94,10 +94,10 @@ else
 CONTROLLER_GEN=$(shell which controller-gen)
 endif
 
-# find or download client-gen
+.PHONY: client-gen
 client-gen:
 ifeq (, $(shell which client-gen))
-	go get k8s.io/code-generator/cmd/client-gen@kubernetes-1.16.4
+	go get k8s.io/code-generator/cmd/client-gen@kubernetes-1.18.0
 CLIENT_GEN=$(shell go env GOPATH)/bin/client-gen
 else
 CLIENT_GEN=$(shell which client-gen)

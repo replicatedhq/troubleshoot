@@ -1,12 +1,14 @@
 package collect
 
 import (
+	"context"
 	"strconv"
 
 	"github.com/pkg/errors"
 	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
 	"github.com/replicatedhq/troubleshoot/pkg/multitype"
 	authorizationv1 "k8s.io/api/authorization/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
@@ -20,12 +22,6 @@ type Collector struct {
 }
 
 type Collectors []*Collector
-
-type Context struct {
-	Redact       bool
-	ClientConfig *rest.Config
-	Namespace    string
-}
 
 func isExcluded(excludeVal multitype.BoolOrString) (bool, error) {
 	if excludeVal.Type == multitype.Bool {
@@ -56,7 +52,7 @@ func (c *Collector) RunCollectorSync(globalRedactors []*troubleshootv1beta1.Reda
 		if isExcludedResult {
 			return nil, nil
 		}
-		unRedacted, err = ClusterInfo(c.GetContext())
+		unRedacted, err = ClusterInfo(c)
 	} else if c.Collect.ClusterResources != nil {
 		isExcludedResult, err = isExcluded(c.Collect.ClusterResources.Exclude)
 		if err != nil {
@@ -65,7 +61,7 @@ func (c *Collector) RunCollectorSync(globalRedactors []*troubleshootv1beta1.Reda
 		if isExcludedResult {
 			return nil, nil
 		}
-		unRedacted, err = ClusterResources(c.GetContext())
+		unRedacted, err = ClusterResources(c)
 	} else if c.Collect.Secret != nil {
 		isExcludedResult, err = isExcluded(c.Collect.Secret.Exclude)
 		if err != nil {
@@ -74,7 +70,7 @@ func (c *Collector) RunCollectorSync(globalRedactors []*troubleshootv1beta1.Reda
 		if isExcludedResult {
 			return nil, nil
 		}
-		unRedacted, err = Secret(c.GetContext(), c.Collect.Secret)
+		unRedacted, err = Secret(c, c.Collect.Secret)
 	} else if c.Collect.Logs != nil {
 		isExcludedResult, err = isExcluded(c.Collect.Logs.Exclude)
 		if err != nil {
@@ -83,7 +79,7 @@ func (c *Collector) RunCollectorSync(globalRedactors []*troubleshootv1beta1.Reda
 		if isExcludedResult {
 			return nil, nil
 		}
-		unRedacted, err = Logs(c.GetContext(), c.Collect.Logs)
+		unRedacted, err = Logs(c, c.Collect.Logs)
 	} else if c.Collect.Run != nil {
 		isExcludedResult, err = isExcluded(c.Collect.Run.Exclude)
 		if err != nil {
@@ -92,7 +88,7 @@ func (c *Collector) RunCollectorSync(globalRedactors []*troubleshootv1beta1.Reda
 		if isExcludedResult {
 			return nil, nil
 		}
-		unRedacted, err = Run(c.GetContext(), c.Collect.Run)
+		unRedacted, err = Run(c, c.Collect.Run)
 	} else if c.Collect.Exec != nil {
 		isExcludedResult, err = isExcluded(c.Collect.Exec.Exclude)
 		if err != nil {
@@ -101,7 +97,7 @@ func (c *Collector) RunCollectorSync(globalRedactors []*troubleshootv1beta1.Reda
 		if isExcludedResult {
 			return nil, nil
 		}
-		unRedacted, err = Exec(c.GetContext(), c.Collect.Exec)
+		unRedacted, err = Exec(c, c.Collect.Exec)
 	} else if c.Collect.Data != nil {
 		isExcludedResult, err = isExcluded(c.Collect.Data.Exclude)
 		if err != nil {
@@ -110,7 +106,7 @@ func (c *Collector) RunCollectorSync(globalRedactors []*troubleshootv1beta1.Reda
 		if isExcludedResult {
 			return nil, nil
 		}
-		unRedacted, err = Data(c.GetContext(), c.Collect.Data)
+		unRedacted, err = Data(c, c.Collect.Data)
 	} else if c.Collect.Copy != nil {
 		isExcludedResult, err = isExcluded(c.Collect.Copy.Exclude)
 		if err != nil {
@@ -119,7 +115,7 @@ func (c *Collector) RunCollectorSync(globalRedactors []*troubleshootv1beta1.Reda
 		if isExcludedResult {
 			return nil, nil
 		}
-		unRedacted, err = Copy(c.GetContext(), c.Collect.Copy)
+		unRedacted, err = Copy(c, c.Collect.Copy)
 	} else if c.Collect.HTTP != nil {
 		isExcludedResult, err = isExcluded(c.Collect.HTTP.Exclude)
 		if err != nil {
@@ -128,7 +124,7 @@ func (c *Collector) RunCollectorSync(globalRedactors []*troubleshootv1beta1.Reda
 		if isExcludedResult {
 			return nil, nil
 		}
-		unRedacted, err = HTTP(c.GetContext(), c.Collect.HTTP)
+		unRedacted, err = HTTP(c, c.Collect.HTTP)
 	} else if c.Collect.Postgres != nil {
 		isExcludedResult, err = isExcluded(c.Collect.Postgres.Exclude)
 		if err != nil {
@@ -137,7 +133,7 @@ func (c *Collector) RunCollectorSync(globalRedactors []*troubleshootv1beta1.Reda
 		if isExcludedResult {
 			return nil, nil
 		}
-		unRedacted, err = Postgres(c.GetContext(), c.Collect.Postgres)
+		unRedacted, err = Postgres(c, c.Collect.Postgres)
 	} else if c.Collect.Mysql != nil {
 		isExcludedResult, err = isExcluded(c.Collect.Mysql.Exclude)
 		if err != nil {
@@ -146,7 +142,7 @@ func (c *Collector) RunCollectorSync(globalRedactors []*troubleshootv1beta1.Reda
 		if isExcludedResult {
 			return nil, nil
 		}
-		unRedacted, err = Mysql(c.GetContext(), c.Collect.Mysql)
+		unRedacted, err = Mysql(c, c.Collect.Mysql)
 	} else if c.Collect.Redis != nil {
 		isExcludedResult, err = isExcluded(c.Collect.Redis.Exclude)
 		if err != nil {
@@ -155,7 +151,7 @@ func (c *Collector) RunCollectorSync(globalRedactors []*troubleshootv1beta1.Reda
 		if isExcludedResult {
 			return nil, nil
 		}
-		unRedacted, err = Redis(c.GetContext(), c.Collect.Redis)
+		unRedacted, err = Redis(c, c.Collect.Redis)
 	} else {
 		return nil, errors.New("no spec found to run")
 	}
@@ -173,15 +169,7 @@ func (c *Collector) GetDisplayName() string {
 	return c.Collect.GetName()
 }
 
-func (c *Collector) GetContext() *Context {
-	return &Context{
-		Redact:       c.Redact,
-		ClientConfig: c.ClientConfig,
-		Namespace:    c.Namespace,
-	}
-}
-
-func (c *Collector) CheckRBAC() error {
+func (c *Collector) CheckRBAC(ctx context.Context) error {
 	client, err := kubernetes.NewForConfig(c.ClientConfig)
 	if err != nil {
 		return errors.Wrap(err, "failed to create client from config")
@@ -196,7 +184,7 @@ func (c *Collector) CheckRBAC() error {
 			Spec: spec,
 		}
 
-		resp, err := client.AuthorizationV1().SelfSubjectAccessReviews().Create(sar)
+		resp, err := client.AuthorizationV1().SelfSubjectAccessReviews().Create(ctx, sar, metav1.CreateOptions{})
 		if err != nil {
 			return errors.Wrap(err, "failed to run subject review")
 		}
@@ -215,9 +203,9 @@ func (c *Collector) CheckRBAC() error {
 	return nil
 }
 
-func (cs Collectors) CheckRBAC() error {
+func (cs Collectors) CheckRBAC(ctx context.Context) error {
 	for _, c := range cs {
-		if err := c.CheckRBAC(); err != nil {
+		if err := c.CheckRBAC(ctx); err != nil {
 			return errors.Wrap(err, "failed to check RBAC")
 		}
 	}

@@ -1,6 +1,7 @@
 package preflight
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/pkg/errors"
@@ -48,7 +49,7 @@ func Collect(opts CollectOpts, p *troubleshootv1beta1.Preflight) (CollectResult,
 		Spec:       p,
 	}
 
-	if err := collectors.CheckRBAC(); err != nil {
+	if err := collectors.CheckRBAC(context.Background()); err != nil {
 		return collectResult, errors.Wrap(err, "failed to check RBAC for collectors")
 	}
 

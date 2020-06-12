@@ -2,6 +2,7 @@ package collect
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"strings"
@@ -15,15 +16,17 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-func Logs(ctx *Context, logsCollector *troubleshootv1beta1.Logs) (map[string][]byte, error) {
-	client, err := kubernetes.NewForConfig(ctx.ClientConfig)
+func Logs(c *Collector, logsCollector *troubleshootv1beta1.Logs) (map[string][]byte, error) {
+	client, err := kubernetes.NewForConfig(c.ClientConfig)
 	if err != nil {
 		return nil, err
 	}
 
 	logsOutput := map[string][]byte{}
 
-	pods, podsErrors := listPodsInSelectors(client, logsCollector.Namespace, logsCollector.Selector)
+	ctx := context.Background()
+
+	pods, podsErrors := listPodsInSelectors(ctx, client, logsCollector.Namespace, logsCollector.Selector)
 	if len(podsErrors) > 0 {
 		errorBytes, err := marshalNonNil(podsErrors)
 		if err != nil {
@@ -48,7 +51,7 @@ func Logs(ctx *Context, logsCollector *troubleshootv1beta1.Logs) (map[string][]b
 					if len(containerNames) == 1 {
 						containerName = "" // if there was only one container, use the old behavior of not including the container name in the path
 					}
-					podLogs, err := getPodLogs(client, pod, logsCollector.Name, containerName, logsCollector.Limits, false)
+					podLogs, err := getPodLogs(ctx, client, pod, logsCollector.Name, containerName, logsCollector.Limits, false)
 					if err != nil {
 						key := fmt.Sprintf("%s/%s-errors.json", logsCollector.Name, pod.Name)
 						if containerName != "" {
@@ -66,7 +69,7 @@ func Logs(ctx *Context, logsCollector *troubleshootv1beta1.Logs) (map[string][]b
 				}
 			} else {
 				for _, container := range logsCollector.ContainerNames {
-					containerLogs, err := getPodLogs(client, pod, logsCollector.Name, container, logsCollector.Limits, false)
+					containerLogs, err := getPodLogs(ctx, client, pod, logsCollector.Name, container, logsCollector.Limits, false)
 					if err != nil {
 						key := fmt.Sprintf("%s/%s/%s-errors.json", logsCollector.Name, pod.Name, container)
 						logsOutput[key], err = marshalNonNil([]string{err.Error()})
@@ -86,14 +89,14 @@ func Logs(ctx *Context, logsCollector *troubleshootv1beta1.Logs) (map[string][]b
 	return logsOutput, nil
 }
 
-func listPodsInSelectors(client *kubernetes.Clientset, namespace string, selector []string) ([]corev1.Pod, []string) {
+func listPodsInSelectors(ctx context.Context, client *kubernetes.Clientset, namespace string, selector []string) ([]corev1.Pod, []string) {
 	serializedLabelSelector := strings.Join(selector, ",")
 
 	listOptions := metav1.ListOptions{
 		LabelSelector: serializedLabelSelector,
 	}
 
-	pods, err := client.CoreV1().Pods(namespace).List(listOptions)
+	pods, err := client.CoreV1().Pods(namespace).List(ctx, listOptions)
 	if err != nil {
 		return nil, []string{err.Error()}
 	}
@@ -101,7 +104,7 @@ func listPodsInSelectors(client *kubernetes.Clientset, namespace string, selecto
 	return pods.Items, nil
 }
 
-func getPodLogs(client *kubernetes.Clientset, pod corev1.Pod, name, container string, limits *troubleshootv1beta1.LogLimits, follow bool) (map[string][]byte, error) {
+func getPodLogs(ctx context.Context, client *kubernetes.Clientset, pod corev1.Pod, name, container string, limits *troubleshootv1beta1.LogLimits, follow bool) (map[string][]byte, error) {
 	podLogOpts := corev1.PodLogOptions{
 		Follow:    follow,
 		Container: container,
@@ -135,7 +138,7 @@ func getPodLogs(client *kubernetes.Clientset, pod corev1.Pod, name, container st
 	result := make(map[string][]byte)
 
 	req := client.CoreV1().Pods(pod.Namespace).GetLogs(pod.Name, &podLogOpts)
-	podLogs, err := req.Stream()
+	podLogs, err := req.Stream(ctx)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get log stream")
 	}
@@ -150,7 +153,7 @@ func getPodLogs(client *kubernetes.Clientset, pod corev1.Pod, name, container st
 
 	podLogOpts.Previous = true
 	req = client.CoreV1().Pods(pod.Namespace).GetLogs(pod.Name, &podLogOpts)
-	podLogs, err = req.Stream()
+	podLogs, err = req.Stream(ctx)
 	if err != nil {
 		// maybe fail on !kuberneteserrors.IsNotFound(err)?
 		return result, nil
