@@ -11,7 +11,7 @@ import (
 	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
 )
 
-func Postgres(ctx *Context, databaseCollector *troubleshootv1beta1.Database) (map[string][]byte, error) {
+func Postgres(c *Collector, databaseCollector *troubleshootv1beta1.Database) (map[string][]byte, error) {
 	databaseConnection := DatabaseConnection{}
 
 	db, err := sql.Open("postgres", databaseCollector.URI)

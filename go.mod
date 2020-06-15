@@ -32,12 +32,9 @@ require (
 	github.com/mitchellh/go-wordwrap v1.0.0 // indirect
 	github.com/nicksnyder/go-i18n v1.10.1 // indirect
 	github.com/nwaples/rardecode v1.0.0 // indirect
-	github.com/onsi/ginkgo v1.11.0 // indirect
 	github.com/onsi/gomega v1.9.0 // indirect
 	github.com/pierrec/lz4 v2.2.6+incompatible // indirect
 	github.com/pkg/errors v0.9.1
-	github.com/prometheus/client_golang v1.0.0 // indirect
-	github.com/prometheus/client_model v0.2.0 // indirect
 	github.com/prometheus/procfs v0.0.5 // indirect
 	github.com/spf13/cobra v0.0.5
 	github.com/spf13/viper v1.4.0
@@ -51,13 +48,12 @@ require (
 	golang.org/x/tools v0.0.0-20191010075000-0337d82405ff // indirect
 	gopkg.in/alecthomas/kingpin.v3-unstable v3.0.0-20191105091915-95d230a53780 // indirect
 	gopkg.in/yaml.v2 v2.2.8
-	k8s.io/api v0.17.4
-	k8s.io/apiextensions-apiserver v0.15.13-beta.0
-	k8s.io/apimachinery v0.17.4
-	k8s.io/cli-runtime v0.17.4
-	k8s.io/client-go v0.17.4
-	k8s.io/kube-openapi v0.0.0-20200121204235-bf4fb3bd569c // indirect
-	k8s.io/utils v0.0.0-20200324210504-a9aa75ae1b89 // indirect
-	sigs.k8s.io/controller-runtime v0.4.0
-	sigs.k8s.io/yaml v1.2.0 // indirect
+	k8s.io/api v0.18.3
+	k8s.io/apiextensions-apiserver v0.18.0
+	k8s.io/apimachinery v0.18.3
+	k8s.io/cli-runtime v0.18.0
+	k8s.io/client-go v0.18.0
+	k8s.io/code-generator v0.18.3-beta.0 // indirect
+	sigs.k8s.io/controller-runtime v0.5.1-0.20200402191424-df180accb901
+	sigs.k8s.io/controller-tools v0.2.8 // indirect
 )
