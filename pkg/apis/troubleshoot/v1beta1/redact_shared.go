@@ -11,9 +11,9 @@ type FileSelector struct {
 }
 
 type Removals struct {
-	Values []string `json:"values,omitempty" yaml:"values,omitempty"`
-	Regex  []Regex  `json:"regex,omitempty" yaml:"regex,omitempty"`
-	Yaml   []string `json:"yaml,omitempty" yaml:"yaml,omitempty"`
+	Values   []string `json:"values,omitempty" yaml:"values,omitempty"`
+	Regex    []Regex  `json:"regex,omitempty" yaml:"regex,omitempty"`
+	YamlPath []string `json:"yamlPath,omitempty" yaml:"yamlPath,omitempty"`
 }
 
 type Redact struct {

@@ -1312,8 +1312,8 @@ func (in *Removals) DeepCopyInto(out *Removals) {
 		*out = make([]Regex, len(*in))
 		copy(*out, *in)
 	}
-	if in.Yaml != nil {
-		in, out := &in.Yaml, &out.Yaml
+	if in.YamlPath != nil {
+		in, out := &in.YamlPath, &out.YamlPath
 		*out = make([]string, len(*in))
 		copy(*out, *in)
 	}

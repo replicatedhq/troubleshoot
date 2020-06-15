@@ -211,7 +211,7 @@ another line here`,
 			Redactors: []*troubleshootv1beta1.Redact{
 				{
 					Removals: troubleshootv1beta1.Removals{
-						Yaml: []string{
+						YamlPath: []string{
 							`abc`,
 						},
 					},

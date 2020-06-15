@@ -124,7 +124,7 @@ func buildAdditionalRedactors(path string, redacts []*troubleshootv1beta1.Redact
 			additionalRedactors = append(additionalRedactors, newRedactor)
 		}
 
-		for j, yaml := range redact.Removals.Yaml {
+		for j, yaml := range redact.Removals.YamlPath {
 			r := NewYamlRedactor(yaml, path, redactorName(i, j, redact.Name, "yaml"))
 			additionalRedactors = append(additionalRedactors, r)
 		}
