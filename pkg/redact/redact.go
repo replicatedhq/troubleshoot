@@ -104,27 +104,27 @@ func buildAdditionalRedactors(path string, redacts []*troubleshootv1beta1.Redact
 			continue
 		}
 
-		for j, re := range redact.Regex {
-			r, err := NewSingleLineRedactor(re, MASK_TEXT, path, redactorName(i, j, redact.Name, "regex"), false)
-			if err != nil {
-				return nil, errors.Wrapf(err, "redactor %q", re)
-			}
-			additionalRedactors = append(additionalRedactors, r)
-		}
-
-		for j, literal := range redact.Values {
+		for j, literal := range redact.Removals.Values {
 			additionalRedactors = append(additionalRedactors, literalString(literal, path, redactorName(i, j, redact.Name, "literal")))
 		}
 
-		for j, re := range redact.MultiLine {
-			r, err := NewMultiLineRedactor(re.Selector, re.Redactor, MASK_TEXT, path, redactorName(i, j, redact.Name, "multiLine"), false)
-			if err != nil {
-				return nil, errors.Wrapf(err, "multiline redactor %+v", re)
+		for j, re := range redact.Removals.Regex {
+			var newRedactor Redactor
+			if re.Selector != "" {
+				newRedactor, err = NewMultiLineRedactor(re.Selector, re.Redactor, MASK_TEXT, path, redactorName(i, j, redact.Name, "multiLine"), false)
+				if err != nil {
+					return nil, errors.Wrapf(err, "multiline redactor %+v", re)
+				}
+			} else {
+				newRedactor, err = NewSingleLineRedactor(re.Redactor, MASK_TEXT, path, redactorName(i, j, redact.Name, "regex"), false)
+				if err != nil {
+					return nil, errors.Wrapf(err, "redactor %q", re)
+				}
 			}
-			additionalRedactors = append(additionalRedactors, r)
+			additionalRedactors = append(additionalRedactors, newRedactor)
 		}
 
-		for j, yaml := range redact.Yaml {
+		for j, yaml := range redact.Removals.YamlPath {
 			r := NewYamlRedactor(yaml, path, redactorName(i, j, redact.Name, "yaml"))
 			additionalRedactors = append(additionalRedactors, r)
 		}
@@ -133,21 +133,21 @@ func buildAdditionalRedactors(path string, redacts []*troubleshootv1beta1.Redact
 }
 
 func redactMatchesPath(path string, redact *troubleshootv1beta1.Redact) (bool, error) {
-	if redact.File == "" && len(redact.Files) == 0 {
+	if redact.FileSelector.File == "" && len(redact.FileSelector.Files) == 0 {
 		return true, nil
 	}
 
 	globs := []glob.Glob{}
 
-	if redact.File != "" {
-		newGlob, err := glob.Compile(redact.File, '/')
+	if redact.FileSelector.File != "" {
+		newGlob, err := glob.Compile(redact.FileSelector.File, '/')
 		if err != nil {
-			return false, errors.Wrapf(err, "invalid file glob string %q", redact.File)
+			return false, errors.Wrapf(err, "invalid file glob string %q", redact.FileSelector.File)
 		}
 		globs = append(globs, newGlob)
 	}
 
-	for i, fileGlobString := range redact.Files {
+	for i, fileGlobString := range redact.FileSelector.Files {
 		newGlob, err := glob.Compile(fileGlobString, '/')
 		if err != nil {
 			return false, errors.Wrapf(err, "invalid file glob string %d %q", i, fileGlobString)

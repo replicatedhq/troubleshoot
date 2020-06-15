@@ -1662,8 +1662,10 @@ func Test_redactMatchesPath(t *testing.T) {
 			args: args{
 				path: "/my/test/path",
 				redact: &troubleshootv1beta1.Redact{
-					File:  "/my/test/path",
-					Files: nil,
+					FileSelector: troubleshootv1beta1.FileSelector{
+						File:  "/my/test/path",
+						Files: nil,
+					},
 				},
 			},
 			want: true,
@@ -1673,8 +1675,10 @@ func Test_redactMatchesPath(t *testing.T) {
 			args: args{
 				path: "/my/test/path",
 				redact: &troubleshootv1beta1.Redact{
-					File:  "",
-					Files: nil,
+					FileSelector: troubleshootv1beta1.FileSelector{
+						File:  "",
+						Files: nil,
+					},
 				},
 			},
 			want: true,
@@ -1684,8 +1688,10 @@ func Test_redactMatchesPath(t *testing.T) {
 			args: args{
 				path: "/my/test/path",
 				redact: &troubleshootv1beta1.Redact{
-					File:  "/my/test/path/two",
-					Files: nil,
+					FileSelector: troubleshootv1beta1.FileSelector{
+						File:  "/my/test/path/two",
+						Files: nil,
+					},
 				},
 			},
 			want: false,
@@ -1695,8 +1701,10 @@ func Test_redactMatchesPath(t *testing.T) {
 			args: args{
 				path: "/my/test/path/two",
 				redact: &troubleshootv1beta1.Redact{
-					File:  "/my/test/path/*",
-					Files: nil,
+					FileSelector: troubleshootv1beta1.FileSelector{
+						File:  "/my/test/path/*",
+						Files: nil,
+					},
 				},
 			},
 			want: true,
@@ -1706,8 +1714,10 @@ func Test_redactMatchesPath(t *testing.T) {
 			args: args{
 				path: "/my/test/path/two",
 				redact: &troubleshootv1beta1.Redact{
-					File:  "/my/test/*/*",
-					Files: nil,
+					FileSelector: troubleshootv1beta1.FileSelector{
+						File:  "/my/test/*/*",
+						Files: nil,
+					},
 				},
 			},
 			want: true,
@@ -1717,10 +1727,12 @@ func Test_redactMatchesPath(t *testing.T) {
 			args: args{
 				path: "/my/test/path/two",
 				redact: &troubleshootv1beta1.Redact{
-					File: "",
-					Files: []string{
-						"/not/the/path",
-						"/my/test/*/*",
+					FileSelector: troubleshootv1beta1.FileSelector{
+						File: "",
+						Files: []string{
+							"/not/the/path",
+							"/my/test/*/*",
+						},
 					},
 				},
 			},
@@ -1731,8 +1743,10 @@ func Test_redactMatchesPath(t *testing.T) {
 			args: args{
 				path: "/my/test/path/two",
 				redact: &troubleshootv1beta1.Redact{
-					File:  "/my/test/**",
-					Files: nil,
+					FileSelector: troubleshootv1beta1.FileSelector{
+						File:  "/my/test/**",
+						Files: nil,
+					},
 				},
 			},
 			want: true,
@@ -1742,8 +1756,10 @@ func Test_redactMatchesPath(t *testing.T) {
 			args: args{
 				path: "/my/test/path/two",
 				redact: &troubleshootv1beta1.Redact{
-					File:  "/my/test/*",
-					Files: nil,
+					FileSelector: troubleshootv1beta1.FileSelector{
+						File:  "/my/test/*",
+						Files: nil,
+					},
 				},
 			},
 			want: false,

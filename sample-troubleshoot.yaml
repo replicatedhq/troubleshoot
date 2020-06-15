@@ -39,14 +39,16 @@ metadata:
 spec:
   redactors:
   - name: replace password # names are not used internally, but are useful for recordkeeping
-    file: data/my-password-dump # this targets a single file
-    values:
-    - abc123 # this is a very good password, and I don't want it to be exposed
+    fileSelector:
+      file: data/my-password-dump # this targets a single file
+    removals:
+      values:
+      - abc123 # this is a very good password, and I don't want it to be exposed
   - name: all files # as no file is specified, this redactor will run against all files
-    regex:
-    - (another)(?P<mask>.*)(here) # this will replace anything between the strings `another` and `here` with `***HIDDEN***`
-    multiLine:
-    - selector: 'S3_ENDPOINT' # remove the value in lines following those that contain the string S3_ENDPOINT
-      redactor: '("value": ").*(")'
-    yaml:
-    - "abc.xyz.*" # redact all items in the array at key xyz within key abc in yaml documents
+    removals:
+      regex:
+      - redactor: (another)(?P<mask>.*)(here) # this will replace anything between the strings `another` and `here` with `***HIDDEN***`
+      - selector: 'S3_ENDPOINT' # remove the value in lines following those that contain the string S3_ENDPOINT
+        redactor: '("value": ").*(")'
+      yamlPath:
+      - "abc.xyz.*" # redact all items in the array at key xyz within key abc in yaml documents
