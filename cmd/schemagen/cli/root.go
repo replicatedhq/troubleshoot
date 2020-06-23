@@ -86,6 +86,22 @@ func generateSchemas(v *viper.Viper) error {
 		return errors.Wrap(err, "failed to write collectors schema")
 	}
 
+	redactorsContents, err := ioutil.ReadFile(filepath.Join(workdir, "config", "crds", "troubleshoot.replicated.com_redactors.yaml"))
+	if err != nil {
+		return errors.Wrap(err, "failed to read redactors crd")
+	}
+	if err := generateSchemaFromCRD(redactorsContents, filepath.Join(workdir, v.GetString("output-dir"), "redactor-troubleshoot-v1beta1.json")); err != nil {
+		return errors.Wrap(err, "failed to write redactors schema")
+	}
+
+	supportBundlesContents, err := ioutil.ReadFile(filepath.Join(workdir, "config", "crds", "troubleshoot.replicated.com_supportbundles.yaml"))
+	if err != nil {
+		return errors.Wrap(err, "failed to read supportbundles crd")
+	}
+	if err := generateSchemaFromCRD(supportBundlesContents, filepath.Join(workdir, v.GetString("output-dir"), "supportbundle-troubleshoot-v1beta1.json")); err != nil {
+		return errors.Wrap(err, "failed to write supportbundles schema")
+	}
+
 	return nil
 }
 

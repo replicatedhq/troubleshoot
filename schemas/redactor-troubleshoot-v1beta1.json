@@ -1,0 +1,83 @@
+{
+  "description": "Redactor is the Schema for the redaction API",
+  "type": "object",
+  "properties": {
+    "apiVersion": {
+      "description": "APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources",
+      "type": "string"
+    },
+    "kind": {
+      "description": "Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds",
+      "type": "string"
+    },
+    "metadata": {
+      "type": "object"
+    },
+    "spec": {
+      "description": "RedactorSpec defines the desired state of Redactor",
+      "type": "object",
+      "properties": {
+        "redactors": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "fileSelector": {
+                "type": "object",
+                "properties": {
+                  "file": {
+                    "type": "string"
+                  },
+                  "files": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "name": {
+                "type": "string"
+              },
+              "removals": {
+                "type": "object",
+                "properties": {
+                  "regex": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "redactor": {
+                          "type": "string"
+                        },
+                        "selector": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  },
+                  "values": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "yamlPath": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "status": {
+      "description": "RedactorStatus defines the observed state of Redactor",
+      "type": "object"
+    }
+  }
+}
