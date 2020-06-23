@@ -1,5 +1,5 @@
 {
-  "description": "Preflight is the Schema for the preflights API",
+  "description": "SupportBundle is the Schema for the SupportBundles API",
   "type": "object",
   "properties": {
     "apiVersion": {
@@ -14,9 +14,55 @@
       "type": "object"
     },
     "spec": {
-      "description": "PreflightSpec defines the desired state of Preflight",
+      "description": "SupportBundleSpec defines the desired state of SupportBundle",
       "type": "object",
       "properties": {
+        "afterCollection": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "callback": {
+                "type": "object",
+                "required": [
+                  "method",
+                  "redactUri",
+                  "uri"
+                ],
+                "properties": {
+                  "method": {
+                    "type": "string"
+                  },
+                  "redactUri": {
+                    "type": "string"
+                  },
+                  "uri": {
+                    "type": "string"
+                  }
+                }
+              },
+              "uploadResultsTo": {
+                "type": "object",
+                "required": [
+                  "method",
+                  "redactUri",
+                  "uri"
+                ],
+                "properties": {
+                  "method": {
+                    "type": "string"
+                  },
+                  "redactUri": {
+                    "type": "string"
+                  },
+                  "uri": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
         "analyzers": {
           "type": "array",
           "items": {
@@ -1492,14 +1538,11 @@
               }
             }
           }
-        },
-        "uploadResultsTo": {
-          "type": "string"
         }
       }
     },
     "status": {
-      "description": "PreflightStatus defines the observed state of Preflight",
+      "description": "SupportBundleStatus defines the observed state of SupportBundle",
       "type": "object"
     }
   }

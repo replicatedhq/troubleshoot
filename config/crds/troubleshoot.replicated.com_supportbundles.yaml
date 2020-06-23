@@ -6,18 +6,18 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.2.8
   creationTimestamp: null
-  name: preflights.troubleshoot.replicated.com
+  name: supportbundles.troubleshoot.replicated.com
 spec:
   group: troubleshoot.replicated.com
   names:
-    kind: Preflight
-    listKind: PreflightList
-    plural: preflights
-    singular: preflight
+    kind: SupportBundle
+    listKind: SupportBundleList
+    plural: supportbundles
+    singular: supportbundle
   scope: Namespaced
   validation:
     openAPIV3Schema:
-      description: Preflight is the Schema for the preflights API
+      description: SupportBundle is the Schema for the SupportBundles API
       properties:
         apiVersion:
           description: 'APIVersion defines the versioned schema of this representation
@@ -32,8 +32,39 @@ spec:
         metadata:
           type: object
         spec:
-          description: PreflightSpec defines the desired state of Preflight
+          description: SupportBundleSpec defines the desired state of SupportBundle
           properties:
+            afterCollection:
+              items:
+                properties:
+                  callback:
+                    properties:
+                      method:
+                        type: string
+                      redactUri:
+                        type: string
+                      uri:
+                        type: string
+                    required:
+                    - method
+                    - redactUri
+                    - uri
+                    type: object
+                  uploadResultsTo:
+                    properties:
+                      method:
+                        type: string
+                      redactUri:
+                        type: string
+                      uri:
+                        type: string
+                    required:
+                    - method
+                    - redactUri
+                    - uri
+                    type: object
+                type: object
+              type: array
             analyzers:
               items:
                 properties:
@@ -1110,11 +1141,9 @@ spec:
                     type: object
                 type: object
               type: array
-            uploadResultsTo:
-              type: string
           type: object
         status:
-          description: PreflightStatus defines the observed state of Preflight
+          description: SupportBundleStatus defines the observed state of SupportBundle
           type: object
       type: object
   version: v1beta1
