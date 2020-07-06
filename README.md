@@ -34,7 +34,7 @@ curl https://krew.sh/support-bundle | bash
 ```shell
 kubectl support-bundle https://troubleshoot.replicated.com
 ```
-For details on creating the custom resource files that drive support-bundle collection, visit [creating collectors](https://troubleshoot.sh/docs/collect/) and for analyzers, visit [creating analyzers](https://troubleshoot.sh/docs/analyze/).
+For details on creating the custom resource files that drive support-bundle collection, visit [creating collectors](https://troubleshoot.sh/docs/collect/) and [creating analyzers](https://troubleshoot.sh/docs/analyze/).
 
 # Community
 
