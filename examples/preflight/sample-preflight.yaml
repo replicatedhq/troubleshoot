@@ -1,20 +1,14 @@
 apiVersion: troubleshoot.replicated.com/v1beta1
 kind: Preflight
 metadata:
-  name: example-preflight-checks
+  name: example
 spec:
-  collectors:
-    - secret:
-        name: myapp-postgres
-        namespace: default
-        key: uri
-        includeValue: false
   analyzers:
     - clusterVersion:
         outcomes:
           - fail:
               when: "< 1.13.0"
-              message: The application requires at Kubernetes 1.13.0 or later, and recommends 1.15.0.
+              message: This application requires at least Kubernetes 1.13.0 or later, and recommends 1.15.0.
               uri: https://www.kubernetes.io
           - warn:
               when: "< 1.15.0"
@@ -24,32 +18,102 @@ spec:
               when: ">= 1.15.0"
               message: Your cluster meets the recommended and required versions of Kubernetes.
     - customResourceDefinition:
-        customResourceDefinitionName: constrainttemplates.templates.gatekeeper.sh
-        checkName: Gatekeeper policy runtime
+        checkName: Ingress
+        customResourceDefinitionName: ingressroutes.contour.heptio.com
         outcomes:
           - fail:
-              message: Gatekeeper is required for the application, but not found in the cluster.
-              uri: https://enterprise.support.io/installing/gatekeeper
+              message: Contour ingress not found!
           - pass:
-              message: Found a supported version of Gatekeeper installed and running in the cluster.
-    - imagePullSecret:
-        checkName: Registry credentials for Quay.io
-        registryName: quay.io
+              message: Contour ingress found!
+    - containerRuntime:
+        outcomes:
+          - pass:
+              when: "== docker"
+              message: Docker container runtime was found.
+          - fail:
+              message: Did not find Docker container runtime.
+    - storageClass:
+        checkName: Required storage classes
+        storageClassName: "default"
         outcomes:
           - fail:
-              message: |
-                Cannot pull from quay.io. An image pull secret should be deployed to the cluster that has credentials to pull the images. To obtain this secret, please contact your support rep.
-              uri: https://enterprise.support.io/installing/registry-credentials
+              message: Could not find a storage class called default.
           - pass:
-              message: Found credentials to pull from quay.io
-    - secret:
-        checkName: Postgres connection string
-        secretName: myapp-postgres
-        namespace: default
-        key: uri
+              message: All good on storage classes
+    - distribution:
         outcomes:
           - fail:
-              message: A secret named "myapp-postgres" must be deployed with a "uri" key
-              uri: https://enterprise.support.io/installing/postgres
+              when: "== docker-desktop"
+              message: The application does not support Docker Desktop Clusters
+          - fail:
+              when: "== microk8s"
+              message: The application does not support Microk8s Clusters
+          - fail:
+              when: "== minikube"
+              message: The application does not support Minikube Clusters
           - pass:
-              message: Found a valid postgres connection string
+              when: "== eks"
+              message: EKS is a supported distribution
+          - pass:
+              when: "== gke"
+              message: GKE is a supported distribution
+          - pass:
+              when: "== aks"
+              message: AKS is a supported distribution
+          # Will be supported in the future
+          - pass:
+              when: "== kurl"
+              message: KURL is a supported distribution
+          - pass:
+              when: "== digitalocean"
+              message: DigitalOcean is a supported distribution
+          - warn:
+              message: Unable to determine the distribution of Kubernetes
+    - nodeResources:
+        checkName: Must have at least 3 nodes in the cluster, with 5 recommended
+        outcomes:
+        - fail:
+            when: "count() < 3"
+            message: This application requires at least 3 nodes.
+            uri: https://kurl.sh/docs/install-with-kurl/adding-nodes
+        - warn:
+            when: "count() < 5"
+            message: This application recommends at last 5 nodes.
+            uri: https://kurl.sh/docs/install-with-kurl/adding-nodes
+        - pass:
+            message: This cluster has enough nodes.
+    - nodeResources:
+        checkName: Every node in the cluster must have at least 10 GB of memory, with 32 GB recommended
+        outcomes:
+        - fail:
+            when: "min(memoryCapacity) < 10Gi"
+            message: All nodes must have at least 10 GB of memory.
+            uri: https://kurl.sh/docs/install-with-kurl/system-requirements
+        - warn:
+            when: "min(memoryCapacity) < 32Gi"
+            message: All nodes are recommended to have at least 32 GB of memory.
+            uri: https://kurl.sh/docs/install-with-kurl/system-requirements
+        - pass:
+            message: All nodes have at least 32 GB of memory.
+    - nodeResources:
+        checkName: Total CPU Cores in the cluster is 4 or greater
+        outcomes:
+          - fail:
+              when: "sum(cpuCapacity) < 4"
+              message: The cluster must contain at least 4 cores
+              uri: https://kurl.sh/docs/install-with-kurl/system-requirements
+          - pass:
+              message: There are at least 4 cores in the cluster
+    - nodeResources:
+        checkName: Every node in the cluster must have at least 40 GB of ephemeral storage, with 100 GB recommended
+        outcomes:
+        - fail:
+            when: "min(ephemeralStorageCapacity) < 40Gi"
+            message: All nodes must have at least 40 GB of ephemeral storage.
+            uri: https://kurl.sh/docs/install-with-kurl/system-requirements
+        - warn:
+            when: "min(ephemeralStorageCapacity) < 100Gi"
+            message: All nodes are recommended to have at least 100 GB of ephemeral storage.
+            uri: https://kurl.sh/docs/install-with-kurl/system-requirements
+        - pass:
+            message: All nodes have at least 100 GB of ephemeral storage.
