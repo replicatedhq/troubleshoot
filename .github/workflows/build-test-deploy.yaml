@@ -89,8 +89,8 @@ jobs:
           path: bin/
       - uses: engineerd/setup-kind@v0.2.0
       - run: chmod +x bin/support-bundle
-      - run: ./bin/support-bundle ./examples/troubleshoot/sample-collectors.yaml
-      - run: ./bin/support-bundle ./examples/troubleshoot/sample-supportbundle.yaml
+      - run: ./bin/support-bundle ./examples/support-bundle/sample-collectors.yaml
+      - run: ./bin/support-bundle ./examples/support-bundle/sample-supportbundle.yaml
       - run: ./bin/support-bundle https://kots.io
 
   goreleaser:

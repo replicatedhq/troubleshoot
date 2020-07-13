@@ -128,8 +128,8 @@ run-preflight: preflight
 
 .PHONY: run-troubleshoot
 run-troubleshoot: support-bundle
-	./bin/support-bundle ./examples/troubleshoot/sample-supportbundle.yaml
+	./bin/support-bundle ./examples/support-bundle/sample-supportbundle.yaml
 
 .PHONY: run-analyze
 run-analyze: analyze
-	./bin/analyze --analyzers ./examples/troubleshoot/sample-analyzers.yaml ./support-bundle.tar.gz
+	./bin/analyze --analyzers ./examples/support-bundle/sample-analyzers.yaml ./support-bundle.tar.gz
