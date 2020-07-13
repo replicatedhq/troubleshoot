@@ -1,14 +1,14 @@
 apiVersion: troubleshoot.replicated.com/v1beta1
 kind: SupportBundle
 metadata:
-  name: example-support-bundle
+  name: example
 spec:
   analyzers:
     - clusterVersion:
         outcomes:
           - fail:
               when: "< 1.16.0"
-              message: The application requires at Kubernetes 1.16.0 or later
+              message: The application requires at least Kubernetes 1.16.0 or later
               uri: https://kubernetes.io
           - warn:
               when: "< 1.17.0"

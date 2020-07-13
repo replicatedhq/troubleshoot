@@ -1,14 +1,14 @@
 apiVersion: troubleshoot.replicated.com/v1beta1
 kind: Preflight
 metadata:
-  name: example-preflight-check
+  name: example
 spec:
   analyzers:
     - clusterVersion:
         outcomes:
           - fail:
               when: "< 1.13.0"
-              message: This application requires at Kubernetes 1.13.0 or later, and recommends 1.15.0.
+              message: This application requires at least Kubernetes 1.13.0 or later, and recommends 1.15.0.
               uri: https://www.kubernetes.io
           - warn:
               when: "< 1.15.0"
@@ -18,12 +18,13 @@ spec:
               when: ">= 1.15.0"
               message: Your cluster meets the recommended and required versions of Kubernetes.
     - customResourceDefinition:
+        checkName: Ingress
         customResourceDefinitionName: ingressroutes.contour.heptio.com
         outcomes:
           - fail:
-              message: IngressRoutes CRD not found!
+              message: Contour ingress not found!
           - pass:
-              message: IngressRoutes CRD found!
+              message: Contour ingress found!
     - containerRuntime:
         outcomes:
           - pass:
