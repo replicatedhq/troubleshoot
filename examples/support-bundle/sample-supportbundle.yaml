@@ -90,3 +90,4 @@ spec:
               message: The API deployment has only a single ready replica.
           - pass:
               message: There are multiple replicas of the API deployment ready.
+              
