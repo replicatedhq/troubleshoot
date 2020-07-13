@@ -32,7 +32,7 @@ curl https://krew.sh/support-bundle | bash
  and run:
  
 ```shell
-kubectl support-bundle https://troubleshoot.replicated.com
+kubectl support-bundle https://support-bundle.replicated.com
 ```
 For details on creating the custom resource files that drive support-bundle collection, visit [creating collectors](https://troubleshoot.sh/docs/collect/) and [creating analyzers](https://troubleshoot.sh/docs/analyze/).
 
