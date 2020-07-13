@@ -90,11 +90,3 @@ spec:
               message: The API deployment has only a single ready replica.
           - pass:
               message: There are multiple replicas of the API deployment ready.
-    - logs:
-        selector:
-          - app=example
-          - component=nginx
-        namespace: repl{{ Namespace }}
-        limits:
-          maxAge: 30d
-          maxLines: 10000
