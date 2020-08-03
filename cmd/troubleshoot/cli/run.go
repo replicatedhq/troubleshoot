@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -403,7 +404,7 @@ func runCollectors(v *viper.Viper, collectors []*troubleshootv1beta1.Collect, ad
 		}
 	}
 
-	filename, err := findFileName("support-bundle", "tar.gz")
+	filename, err := findFileName("support-bundle"+strconv.FormatInt(time.Now().Unix(), 10), "tar.gz")
 	if err != nil {
 		return "", errors.Wrap(err, "find file name")
 	}
