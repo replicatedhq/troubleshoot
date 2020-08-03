@@ -403,7 +403,7 @@ func runCollectors(v *viper.Viper, collectors []*troubleshootv1beta1.Collect, ad
 		}
 	}
 
-	filename, err := findFileName("support-bundle-"+time.Now().Format("2006-01-02T15:04"), "tar.gz")
+	filename, err := findFileName("support-bundle-"+time.Now().Format("2006-01-02T15:04:05"), "tar.gz")
 	if err != nil {
 		return "", errors.Wrap(err, "find file name")
 	}
