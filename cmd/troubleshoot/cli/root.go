@@ -18,11 +18,11 @@ var (
 
 func RootCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "troubleshoot [url]",
+		Use:   "support-bundle [url]",
 		Args:  cobra.MinimumNArgs(1),
-		Short: "Generate and manage support bundles",
+		Short: "Generate a support bundle",
 		Long: `A support bundle is an archive of files, output, metrics and state
-from a server that can be used to assist when troubleshooting a server.`,
+from a server that can be used to assist when troubleshooting a Kubernetes cluster.`,
 		SilenceUsage: true,
 		PreRun: func(cmd *cobra.Command, args []string) {
 			viper.BindPFlags(cmd.Flags())
@@ -42,10 +42,10 @@ from a server that can be used to assist when troubleshooting a server.`,
 
 	cmd.Flags().StringSlice("redactors", []string{}, "names of the additional redactors to use")
 	cmd.Flags().Bool("redact", true, "enable/disable default redactions")
-	cmd.Flags().Bool("collect-without-permissions", false, "always run troubleshoot collectors even if some require permissions that troubleshoot does not have")
+	cmd.Flags().Bool("collect-without-permissions", false, "always generate a support bundle, even if it some require additional permissions")
 
 	// hidden in favor of the `insecure-skip-tls-verify` flag
-	cmd.Flags().Bool("allow-insecure-connections", false, "don't verify TLS certs when retrieving spec and reporting results")
+	cmd.Flags().Bool("allow-insecure-connections", false, "when set, do not verify TLS certs when retrieving spec and reporting results")
 	cmd.Flags().MarkHidden("allow-insecure-connections")
 
 	viper.BindPFlags(cmd.Flags())
