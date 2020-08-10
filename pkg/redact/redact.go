@@ -259,11 +259,13 @@ func getRedactors(path string) ([]Redactor, error) {
 
 	redactors := make([]Redactor, 0)
 	for _, re := range singleLines {
-		r, err := NewSingleLineRedactor(re.regex, MASK_TEXT, path, re.name, true)
-		if err != nil {
-			return nil, err // maybe skip broken ones?
+		if re.name == "bob" {
+			r, err := NewSingleLineRedactor(re.regex, MASK_TEXT, path, re.name, true)
+			if err != nil {
+				return nil, err // maybe skip broken ones?
+			}
+			redactors = append(redactors, r)
 		}
-		redactors = append(redactors, r)
 	}
 
 	doubleLines := []struct {
