@@ -1,11 +1,14 @@
 package collect
 
 import (
+	"archive/tar"
 	"bytes"
 	"context"
 	"fmt"
+	"io"
+	"path"
+
 	"path/filepath"
-	"strings"
 
 	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
 	corev1 "k8s.io/api/core/v1"
@@ -49,7 +52,7 @@ func Copy(c *Collector, copyCollector *troubleshootv1beta1.Copy) (map[string][]b
 			}
 
 			for k, v := range files {
-				copyOutput[filepath.Join(bundlePath, k)] = v
+				copyOutput[filepath.Join(bundlePath, path.Dir(copyCollector.ContainerPath), k)] = v
 			}
 		}
 	}
@@ -58,14 +61,11 @@ func Copy(c *Collector, copyCollector *troubleshootv1beta1.Copy) (map[string][]b
 }
 
 func copyFiles(c *Collector, client *kubernetes.Clientset, pod corev1.Pod, copyCollector *troubleshootv1beta1.Copy) (map[string][]byte, map[string]string) {
-	files := make(map[string][]byte)
 	container := pod.Spec.Containers[0].Name
 	if copyCollector.ContainerName != "" {
 		container = copyCollector.ContainerName
 	}
-
-	command := []string{"find", copyCollector.ContainerPath, "-type", "f"}
-
+	command := []string{"sh", "-c", fmt.Sprintf("tar -C %v  -cf tmp.tar %v; cat tmp.tar; rm tmp.tar", path.Dir(copyCollector.ContainerPath), path.Base(copyCollector.ContainerPath))}
 	req := client.CoreV1().RESTClient().Post().Resource("pods").Name(pod.Name).Namespace(pod.Namespace).SubResource("exec")
 	scheme := runtime.NewScheme()
 	if err := corev1.AddToScheme(scheme); err != nil {
@@ -99,9 +99,6 @@ func copyFiles(c *Collector, client *kubernetes.Clientset, pod corev1.Pod, copyC
 		Stderr: &stderr,
 		Tty:    false,
 	})
-
-	filepaths := strings.Split(output.String(), "\n")
-
 	if err != nil {
 		errors := map[string]string{
 			filepath.Join(copyCollector.ContainerPath, "error"): err.Error(),
@@ -114,60 +111,35 @@ func copyFiles(c *Collector, client *kubernetes.Clientset, pod corev1.Pod, copyC
 		}
 		return nil, errors
 	}
+	file := make(map[string][]byte)
+	file[path.Base(copyCollector.ContainerPath)+".tar"] = output.Bytes()
+	return file, nil
+}
 
-	for _, file := range filepaths {
-		if file != "" {
-			command := []string{"cat", file}
-
-			req := client.CoreV1().RESTClient().Post().Resource("pods").Name(pod.Name).Namespace(pod.Namespace).SubResource("exec")
-			scheme := runtime.NewScheme()
-			if err := corev1.AddToScheme(scheme); err != nil {
-				return nil, map[string]string{
-					filepath.Join(copyCollector.ContainerPath, "error"): err.Error(),
-				}
-			}
-			parameterCodec := runtime.NewParameterCodec(scheme)
-			req.VersionedParams(&corev1.PodExecOptions{
-				Command:   command,
-				Container: container,
-				Stdin:     true,
-				Stdout:    false,
-				Stderr:    true,
-				TTY:       false,
-			}, parameterCodec)
-
-			exec, err := remotecommand.NewSPDYExecutor(c.ClientConfig, "POST", req.URL())
-			if err != nil {
-				return nil, map[string]string{
-					filepath.Join(copyCollector.ContainerPath, "error"): err.Error(),
-				}
-			}
-
-			output := new(bytes.Buffer)
-			var stderr bytes.Buffer
-			err = exec.Stream(remotecommand.StreamOptions{
-				Stdin:  nil,
-				Stdout: output,
-				Stderr: &stderr,
-				Tty:    false,
-			})
-			files[file] = output.Bytes()
-
-			if err != nil {
+func untarFile(tarFile *bytes.Buffer, path string) (map[string][]byte, map[string]*tar.Header, map[string]string) {
+	tarReader := tar.NewReader(tarFile)
+	fileHeaders := make(map[string]*tar.Header)
+	files := make(map[string][]byte)
+	for {
+		header, err := tarReader.Next()
+		if err != nil {
+			if err != io.EOF {
 				errors := map[string]string{
-					filepath.Join(copyCollector.ContainerPath, "error"): err.Error(),
+					filepath.Join(path, "error:tarReader:"): err.Error(),
 				}
-				if s := output.String(); len(s) > 0 {
-					errors[filepath.Join(copyCollector.ContainerPath, "stdout")] = s
-				}
-				if s := stderr.String(); len(s) > 0 {
-					errors[filepath.Join(copyCollector.ContainerPath, "stderr")] = s
-				}
-				return nil, errors
+				return nil, nil, errors
 			}
+			break
+		}
+
+		if !header.FileInfo().IsDir() {
+			file := new(bytes.Buffer)
+			io.Copy(file, tarReader)
+			files[header.Name] = file.Bytes()
+			fileHeaders[header.Name] = header
 		}
 	}
-	return files, nil
+	return files, fileHeaders, nil
 }
 
 func getCopyErrosFileName(copyCollector *troubleshootv1beta1.Copy) string {
