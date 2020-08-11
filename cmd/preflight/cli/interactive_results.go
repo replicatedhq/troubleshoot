@@ -8,15 +8,16 @@ import (
 	"strings"
 	"time"
 
-	ui "github.com/gizak/termui/v3"
-	"github.com/gizak/termui/v3/widgets"
 	"github.com/pkg/errors"
+	ui "github.com/replicatedhq/termui/v3"
+	"github.com/replicatedhq/termui/v3/widgets"
 	"github.com/replicatedhq/troubleshoot/cmd/util"
 	analyzerunner "github.com/replicatedhq/troubleshoot/pkg/analyze"
 )
 
 var (
 	selectedResult = 0
+	table          = widgets.NewTable()
 	isShowingSaved = false
 )
 
@@ -62,8 +63,10 @@ func showInteractiveResults(preflightName string, analyzeResults []*analyzerunne
 			case "<Down>":
 				if selectedResult < len(analyzeResults)-1 {
 					selectedResult++
+					table.ScrollDown()
 				} else {
 					selectedResult = 0
+					table.SelectedRow = 0
 				}
 				ui.Clear()
 				drawUI(preflightName, analyzeResults)
@@ -72,7 +75,9 @@ func showInteractiveResults(preflightName string, analyzeResults []*analyzerunne
 					selectedResult--
 				} else {
 					selectedResult = len(analyzeResults) - 1
+					table.SelectedRow = len(analyzeResults)
 				}
+				table.ScrollUp()
 				ui.Clear()
 				drawUI(preflightName, analyzeResults)
 			}
@@ -127,7 +132,6 @@ func drawFooter() {
 func drawPreflightTable(analyzeResults []*analyzerunner.AnalyzeResult) {
 	termWidth, termHeight := ui.TerminalDimensions()
 
-	table := widgets.NewTable()
 	table.SetRect(0, 3, termWidth/2, termHeight-6)
 	table.FillRow = true
 	table.Border = true

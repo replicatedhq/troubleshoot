@@ -7,9 +7,9 @@ import (
 	"path"
 	"time"
 
-	ui "github.com/gizak/termui/v3"
-	"github.com/gizak/termui/v3/widgets"
 	"github.com/pkg/errors"
+	ui "github.com/replicatedhq/termui/v3"
+	"github.com/replicatedhq/termui/v3/widgets"
 	"github.com/replicatedhq/troubleshoot/cmd/util"
 	analyzerunner "github.com/replicatedhq/troubleshoot/pkg/analyze"
 )
