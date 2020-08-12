@@ -98,7 +98,7 @@ func getExecOutputs(c *Collector, client *kubernetes.Clientset, pod corev1.Pod, 
 		container = execCollector.ContainerName
 	}
 
-	req := client.CoreV1().RESTClient().Post().Resource("pods").Name(pod.Name).Namespace(pod.Namespace).SubResource("exec")
+	req := client.CoreV1().RESTClient().Post().Resource("pvc").Name(pod.Name).Namespace(pod.Namespace).SubResource("exec")
 	scheme := runtime.NewScheme()
 	if err := corev1.AddToScheme(scheme); err != nil {
 		return nil, nil, []string{err.Error()}
