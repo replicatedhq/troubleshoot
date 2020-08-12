@@ -17,6 +17,8 @@ func redactMap(input map[string][]byte, additionalRedactors []*troubleshootv1bet
 		if v == nil {
 			continue
 		}
+		//If the file is a .tar file, it must not be redacted. Instead it is decompressed and each file inside the
+		//tar is decompressed, redacted and compressed back into the tar.
 		if path.Ext(k) == ".tar" {
 			tarFile := bytes.NewBuffer(v)
 			buff := new(bytes.Buffer)
@@ -37,6 +39,7 @@ func redactMap(input map[string][]byte, additionalRedactors []*troubleshootv1bet
 			}
 			tw.Close()
 			result[k] = buff.Bytes()
+			//Tar file must not be redacted, the files inside were already redacted. Continue to next file.
 			continue
 		}
 		redacted, err := redact.Redact(v, k, additionalRedactors)
