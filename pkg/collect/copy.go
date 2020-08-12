@@ -1,11 +1,9 @@
 package collect
 
 import (
-	"archive/tar"
 	"bytes"
 	"context"
 	"fmt"
-	"io"
 	"path"
 
 	"path/filepath"
@@ -66,6 +64,7 @@ func copyFiles(c *Collector, client *kubernetes.Clientset, pod corev1.Pod, copyC
 		container = copyCollector.ContainerName
 	}
 	command := []string{"sh", "-c", fmt.Sprintf("tar -C %v  -cf tmp.tar %v; cat tmp.tar; rm tmp.tar", path.Dir(copyCollector.ContainerPath), path.Base(copyCollector.ContainerPath))}
+
 	req := client.CoreV1().RESTClient().Post().Resource("pods").Name(pod.Name).Namespace(pod.Namespace).SubResource("exec")
 	scheme := runtime.NewScheme()
 	if err := corev1.AddToScheme(scheme); err != nil {
@@ -111,35 +110,10 @@ func copyFiles(c *Collector, client *kubernetes.Clientset, pod corev1.Pod, copyC
 		}
 		return nil, errors
 	}
-	file := make(map[string][]byte)
-	file[path.Base(copyCollector.ContainerPath)+".tar"] = output.Bytes()
-	return file, nil
-}
 
-func untarFile(tarFile *bytes.Buffer, path string) (map[string][]byte, map[string]*tar.Header, map[string]string) {
-	tarReader := tar.NewReader(tarFile)
-	fileHeaders := make(map[string]*tar.Header)
-	files := make(map[string][]byte)
-	for {
-		header, err := tarReader.Next()
-		if err != nil {
-			if err != io.EOF {
-				errors := map[string]string{
-					filepath.Join(path, "error:tarReader:"): err.Error(),
-				}
-				return nil, nil, errors
-			}
-			break
-		}
-
-		if !header.FileInfo().IsDir() {
-			file := new(bytes.Buffer)
-			io.Copy(file, tarReader)
-			files[header.Name] = file.Bytes()
-			fileHeaders[header.Name] = header
-		}
-	}
-	return files, fileHeaders, nil
+	return map[string][]byte{
+		path.Base(copyCollector.ContainerPath) + ".tar": output.Bytes(),
+	}, nil
 }
 
 func getCopyErrosFileName(copyCollector *troubleshootv1beta1.Copy) string {
