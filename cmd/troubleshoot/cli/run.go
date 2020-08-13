@@ -189,7 +189,7 @@ func runTroubleshoot(v *viper.Viper, arg string) error {
 			close(finishedCh) // this removes the spinner
 			isFinishedChClosed = true
 
-			if err := showInteractiveResults(analyzeResults); err != nil {
+			if err := showInteractiveResults(supportBundleSpec.Name, analyzeResults); err != nil {
 				interactive = false
 			}
 		}

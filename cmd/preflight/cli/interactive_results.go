@@ -63,11 +63,11 @@ func showInteractiveResults(preflightName string, analyzeResults []*analyzerunne
 			case "<Down>":
 				if selectedResult < len(analyzeResults)-1 {
 					selectedResult++
-					table.ScrollDown()
 				} else {
 					selectedResult = 0
 					table.SelectedRow = 0
 				}
+				table.ScrollDown()
 				ui.Clear()
 				drawUI(preflightName, analyzeResults)
 			case "<Up>":

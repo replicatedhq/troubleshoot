@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -16,15 +17,16 @@ import (
 
 var (
 	selectedResult = 0
+	table          = widgets.NewTable()
 	isShowingSaved = false
 )
 
-func showInteractiveResults(analyzeResults []*analyzerunner.AnalyzeResult) error {
+func showInteractiveResults(supportBundleName string, analyzeResults []*analyzerunner.AnalyzeResult) error {
 	if err := ui.Init(); err != nil {
 		return errors.Wrap(err, "failed to create terminal ui")
 	}
 	defer ui.Close()
-	drawUI(analyzeResults)
+	drawUI(supportBundleName, analyzeResults)
 
 	uiEvents := ui.PollEvents()
 	for {
@@ -37,7 +39,7 @@ func showInteractiveResults(analyzeResults []*analyzerunner.AnalyzeResult) error
 				if isShowingSaved == true {
 					isShowingSaved = false
 					ui.Clear()
-					drawUI(analyzeResults)
+					drawUI(supportBundleName, analyzeResults)
 				} else {
 					return nil
 				}
@@ -51,79 +53,63 @@ func showInteractiveResults(analyzeResults []*analyzerunner.AnalyzeResult) error
 						time.Sleep(time.Second * 5)
 						isShowingSaved = false
 						ui.Clear()
-						drawUI(analyzeResults)
+						drawUI(supportBundleName, analyzeResults)
 					}()
 				}
 			case "<Resize>":
 				ui.Clear()
-				drawUI(analyzeResults)
+				drawUI(supportBundleName, analyzeResults)
 			case "<Down>":
 				if selectedResult < len(analyzeResults)-1 {
 					selectedResult++
 				} else {
 					selectedResult = 0
+					table.SelectedRow = 0
 				}
+				table.ScrollDown()
 				ui.Clear()
-				drawUI(analyzeResults)
+				drawUI(supportBundleName, analyzeResults)
 			case "<Up>":
 				if selectedResult > 0 {
 					selectedResult--
 				} else {
 					selectedResult = len(analyzeResults) - 1
+					table.SelectedRow = len(analyzeResults)
 				}
+				table.ScrollUp()
 				ui.Clear()
-				drawUI(analyzeResults)
+				drawUI(supportBundleName, analyzeResults)
 			}
 		}
 	}
 }
 
-func drawUI(analyzeResults []*analyzerunner.AnalyzeResult) {
+func drawUI(supportBundleName string, analyzeResults []*analyzerunner.AnalyzeResult) {
 	drawGrid(analyzeResults)
+	drawHeader(supportBundleName)
 	drawFooter()
 }
 
 func drawGrid(analyzeResults []*analyzerunner.AnalyzeResult) {
+	drawAnalyzersTable(analyzeResults)
+	drawDetails(analyzeResults[selectedResult])
+}
+
+func drawHeader(supportBundleName string) {
 	termWidth, _ := ui.TerminalDimensions()
 
-	tileWidth := 40
-	tileHeight := 10
+	title := widgets.NewParagraph()
+	title.Text = fmt.Sprintf("%s Support Bundle Analysis", appName(supportBundleName))
+	title.TextStyle.Fg = ui.ColorWhite
+	title.TextStyle.Bg = ui.ColorClear
+	title.TextStyle.Modifier = ui.ModifierBold
+	title.Border = false
 
-	columnCount := termWidth / tileWidth
+	left := termWidth/2 - 2*len(title.Text)/3
+	right := termWidth/2 + (termWidth/2 - left)
 
-	row := 0
-	col := 0
-
-	for _, analyzeResult := range analyzeResults {
-		// draw this file
-
-		tile := widgets.NewParagraph()
-		tile.Title = analyzeResult.Title
-		tile.Text = analyzeResult.Message
-		tile.PaddingLeft = 1
-		tile.PaddingBottom = 1
-		tile.PaddingRight = 1
-		tile.PaddingTop = 1
-
-		tile.SetRect(col*tileWidth, row*tileHeight, col*tileWidth+tileWidth, row*tileHeight+tileHeight)
-
-		if analyzeResult.IsFail {
-			tile.BorderStyle.Fg = ui.ColorRed
-		} else if analyzeResult.IsWarn {
-			tile.BorderStyle.Fg = ui.ColorYellow
-		} else {
-			tile.BorderStyle.Fg = ui.ColorGreen
-		}
-
-		ui.Render(tile)
-
-		col++
-
-		if col >= columnCount {
-			col = 0
-			row++
-		}
-	}
+	title.SetRect(left, 0, right, 1)
+	ui.Render(title)
 }
 
 func drawFooter() {
@@ -142,11 +128,143 @@ func drawFooter() {
 	ui.Render(instructions)
 }
 
+func drawAnalyzersTable(analyzeResults []*analyzerunner.AnalyzeResult) {
+	termWidth, termHeight := ui.TerminalDimensions()
+
+	table.SetRect(0, 3, termWidth/2, termHeight-6)
+	table.FillRow = true
+	table.Border = true
+	table.Rows = [][]string{}
+	table.ColumnWidths = []int{termWidth}
+
+	for i, analyzeResult := range analyzeResults {
+		title := analyzeResult.Title
+		if analyzeResult.IsPass {
+			title = fmt.Sprintf("✔  %s", title)
+		} else if analyzeResult.IsWarn {
+			title = fmt.Sprintf("⚠️  %s", title)
+		} else if analyzeResult.IsFail {
+			title = fmt.Sprintf("✘  %s", title)
+		}
+		table.Rows = append(table.Rows, []string{
+			title,
+		})
+
+		if analyzeResult.IsPass {
+			if i == selectedResult {
+				table.RowStyles[i] = ui.NewStyle(ui.ColorGreen, ui.ColorClear, ui.ModifierReverse)
+			} else {
+				table.RowStyles[i] = ui.NewStyle(ui.ColorGreen, ui.ColorClear)
+			}
+		} else if analyzeResult.IsWarn {
+			if i == selectedResult {
+				table.RowStyles[i] = ui.NewStyle(ui.ColorYellow, ui.ColorClear, ui.ModifierReverse)
+			} else {
+				table.RowStyles[i] = ui.NewStyle(ui.ColorYellow, ui.ColorClear)
+			}
+		} else if analyzeResult.IsFail {
+			if i == selectedResult {
+				table.RowStyles[i] = ui.NewStyle(ui.ColorRed, ui.ColorClear, ui.ModifierReverse)
+			} else {
+				table.RowStyles[i] = ui.NewStyle(ui.ColorRed, ui.ColorClear)
+			}
+		}
+	}
+
+	ui.Render(table)
+}
+
+func drawDetails(analysisResult *analyzerunner.AnalyzeResult) {
+	termWidth, _ := ui.TerminalDimensions()
+
+	currentTop := 4
+	title := widgets.NewParagraph()
+	title.Text = analysisResult.Title
+	title.Border = false
+	if analysisResult.IsPass {
+		title.TextStyle = ui.NewStyle(ui.ColorGreen, ui.ColorClear, ui.ModifierBold)
+	} else if analysisResult.IsWarn {
+		title.TextStyle = ui.NewStyle(ui.ColorYellow, ui.ColorClear, ui.ModifierBold)
+	} else if analysisResult.IsFail {
+		title.TextStyle = ui.NewStyle(ui.ColorRed, ui.ColorClear, ui.ModifierBold)
+	}
+	height := estimateNumberOfLines(title.Text, termWidth/2)
+	title.SetRect(termWidth/2, currentTop, termWidth, currentTop+height)
+	ui.Render(title)
+	currentTop = currentTop + height + 1
+
+	message := widgets.NewParagraph()
+	message.Text = analysisResult.Message
+	message.Border = false
+	height = estimateNumberOfLines(message.Text, termWidth/2) + 2
+	message.SetRect(termWidth/2, currentTop, termWidth, currentTop+height)
+	ui.Render(message)
+	currentTop = currentTop + height + 1
+
+	if analysisResult.URI != "" {
+		uri := widgets.NewParagraph()
+		uri.Text = fmt.Sprintf("For more information: %s", analysisResult.URI)
+		uri.Border = false
+		height = estimateNumberOfLines(uri.Text, termWidth/2)
+		uri.SetRect(termWidth/2, currentTop, termWidth, currentTop+height)
+		ui.Render(uri)
+		currentTop = currentTop + height + 1
+	}
+}
+
+func estimateNumberOfLines(text string, width int) int {
+	lines := len(text)/width + 1
+	return lines
+}
+
+// func drawGrid(analyzeResults []*analyzerunner.AnalyzeResult) {
+// 	termWidth, _ := ui.TerminalDimensions()
+
+// 	tileWidth := 40
+// 	tileHeight := 10
+
+// 	columnCount := termWidth / tileWidth
+
+// 	row := 0
+// 	col := 0
+
+// 	for _, analyzeResult := range analyzeResults {
+// 		// draw this file
+
+// 		tile := widgets.NewParagraph()
+// 		tile.Title = analyzeResult.Title
+// 		tile.Text = analyzeResult.Message
+// 		tile.PaddingLeft = 1
+// 		tile.PaddingBottom = 1
+// 		tile.PaddingRight = 1
+// 		tile.PaddingTop = 1
+
+// 		tile.SetRect(col*tileWidth, row*tileHeight, col*tileWidth+tileWidth, row*tileHeight+tileHeight)
+
+// 		if analyzeResult.IsFail {
+// 			tile.BorderStyle.Fg = ui.ColorRed
+// 		} else if analyzeResult.IsWarn {
+// 			tile.BorderStyle.Fg = ui.ColorYellow
+// 		} else {
+// 			tile.BorderStyle.Fg = ui.ColorGreen
+// 		}
+
+// 		ui.Render(tile)
+
+// 		col++
+
+// 		if col >= columnCount {
+// 			col = 0
+// 			row++
+// 		}
+// 	}
+// }
+
 func showSaved(filename string) {
 	termWidth, termHeight := ui.TerminalDimensions()
 
 	savedMessage := widgets.NewParagraph()
-	savedMessage.Text = fmt.Sprintf("Preflight results saved to\n\n%s", filename)
+	savedMessage.Text = fmt.Sprintf("Support Bundle analysis results saved to\n\n%s", filename)
 	savedMessage.WrapText = true
 	savedMessage.Border = true
 
@@ -197,4 +315,20 @@ func save(analyzeResults []*analyzerunner.AnalyzeResult) (string, error) {
 	}
 
 	return filename, nil
+}
+
+func appName(supportBundleName string) string {
+	words := strings.Split(strings.Title(strings.Replace(supportBundleName, "-", " ", -1)), " ")
+	casedWords := []string{}
+	for i, word := range words {
+		if strings.ToLower(word) == "ai" {
+			casedWords = append(casedWords, "AI")
+		} else if strings.ToLower(word) == "io" && i > 0 {
+			casedWords[i-1] += ".io"
+		} else {
+			casedWords = append(casedWords, word)
+		}
+	}
+
+	return strings.Join(casedWords, " ")
 }
