@@ -5,18 +5,18 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
-	"strings"
 	"time"
 
-	ui "github.com/gizak/termui/v3"
-	"github.com/gizak/termui/v3/widgets"
 	"github.com/pkg/errors"
+	ui "github.com/replicatedhq/termui/v3"
+	"github.com/replicatedhq/termui/v3/widgets"
 	"github.com/replicatedhq/troubleshoot/cmd/util"
 	analyzerunner "github.com/replicatedhq/troubleshoot/pkg/analyze"
 )
 
 var (
 	selectedResult = 0
+	table          = widgets.NewTable()
 	isShowingSaved = false
 )
 
@@ -64,7 +64,9 @@ func showInteractiveResults(preflightName string, analyzeResults []*analyzerunne
 					selectedResult++
 				} else {
 					selectedResult = 0
+					table.SelectedRow = 0
 				}
+				table.ScrollDown()
 				ui.Clear()
 				drawUI(preflightName, analyzeResults)
 			case "<Up>":
@@ -72,7 +74,9 @@ func showInteractiveResults(preflightName string, analyzeResults []*analyzerunne
 					selectedResult--
 				} else {
 					selectedResult = len(analyzeResults) - 1
+					table.SelectedRow = len(analyzeResults)
 				}
+				table.ScrollUp()
 				ui.Clear()
 				drawUI(preflightName, analyzeResults)
 			}
@@ -95,7 +99,7 @@ func drawHeader(preflightName string) {
 	termWidth, _ := ui.TerminalDimensions()
 
 	title := widgets.NewParagraph()
-	title.Text = fmt.Sprintf("%s Preflight Checks", appName(preflightName))
+	title.Text = fmt.Sprintf("%s Preflight Checks", util.AppName(preflightName))
 	title.TextStyle.Fg = ui.ColorWhite
 	title.TextStyle.Bg = ui.ColorClear
 	title.TextStyle.Modifier = ui.ModifierBold
@@ -127,7 +131,6 @@ func drawFooter() {
 func drawPreflightTable(analyzeResults []*analyzerunner.AnalyzeResult) {
 	termWidth, termHeight := ui.TerminalDimensions()
 
-	table := widgets.NewTable()
 	table.SetRect(0, 3, termWidth/2, termHeight-6)
 	table.FillRow = true
 	table.Border = true
@@ -221,7 +224,7 @@ func save(preflightName string, analyzeResults []*analyzerunner.AnalyzeResult) (
 		os.Remove(filename)
 	}
 
-	results := fmt.Sprintf("%s Preflight Checks\n\n", appName(preflightName))
+	results := fmt.Sprintf("%s Preflight Checks\n\n", util.AppName(preflightName))
 	for _, analyzeResult := range analyzeResults {
 		result := ""
 
@@ -269,20 +272,4 @@ func showSaved(filename string) {
 	ui.Render(savedMessage)
 
 	isShowingSaved = true
-}
-
-func appName(preflightName string) string {
-	words := strings.Split(strings.Title(strings.Replace(preflightName, "-", " ", -1)), " ")
-	casedWords := []string{}
-	for i, word := range words {
-		if strings.ToLower(word) == "ai" {
-			casedWords = append(casedWords, "AI")
-		} else if strings.ToLower(word) == "io" && i > 0 {
-			casedWords[i-1] += ".io"
-		} else {
-			casedWords = append(casedWords, word)
-		}
-	}
-
-	return strings.Join(casedWords, " ")
 }

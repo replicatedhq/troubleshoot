@@ -13,7 +13,6 @@ require (
 	github.com/emicklei/go-restful v2.9.6+incompatible // indirect
 	github.com/fatih/color v1.7.0
 	github.com/frankban/quicktest v1.7.2 // indirect
-	github.com/gizak/termui/v3 v3.1.0
 	github.com/go-openapi/spec v0.19.4 // indirect
 	github.com/go-redis/redis/v7 v7.2.0
 	github.com/go-sql-driver/mysql v1.5.0
@@ -36,6 +35,7 @@ require (
 	github.com/pierrec/lz4 v2.2.6+incompatible // indirect
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/procfs v0.0.5 // indirect
+	github.com/replicatedhq/termui/v3 v3.1.1-0.20200811145416-f40076d26851
 	github.com/spf13/cobra v0.0.5
 	github.com/spf13/viper v1.4.0
 	github.com/stretchr/testify v1.5.1
@@ -46,14 +46,16 @@ require (
 	golang.org/x/net v0.0.0-20200202094626-16171245cfb2 // indirect
 	golang.org/x/sys v0.0.0-20200202164722-d101bd2416d5 // indirect
 	golang.org/x/tools v0.0.0-20191010075000-0337d82405ff // indirect
+	gonum.org/v1/netlib v0.0.0-20190331212654-76723241ea4e // indirect
 	gopkg.in/alecthomas/kingpin.v3-unstable v3.0.0-20191105091915-95d230a53780 // indirect
 	gopkg.in/yaml.v2 v2.2.8
 	k8s.io/api v0.18.3
-	k8s.io/apiextensions-apiserver v0.18.0
+	k8s.io/apiextensions-apiserver v0.18.2
 	k8s.io/apimachinery v0.18.3
 	k8s.io/cli-runtime v0.18.0
-	k8s.io/client-go v0.18.0
+	k8s.io/client-go v0.18.2
 	k8s.io/code-generator v0.18.3-beta.0 // indirect
 	sigs.k8s.io/controller-runtime v0.5.1-0.20200402191424-df180accb901
-	sigs.k8s.io/controller-tools v0.2.8 // indirect
+	sigs.k8s.io/controller-tools v0.3.0 // indirect
+	sigs.k8s.io/structured-merge-diff v1.0.1-0.20191108220359-b1b620dd3f06 // indirect
 )
