@@ -5,7 +5,6 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
-	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -100,7 +99,7 @@ func drawHeader(preflightName string) {
 	termWidth, _ := ui.TerminalDimensions()
 
 	title := widgets.NewParagraph()
-	title.Text = fmt.Sprintf("%s Preflight Checks", appName(preflightName))
+	title.Text = fmt.Sprintf("%s Preflight Checks", util.AppName(preflightName))
 	title.TextStyle.Fg = ui.ColorWhite
 	title.TextStyle.Bg = ui.ColorClear
 	title.TextStyle.Modifier = ui.ModifierBold
@@ -225,7 +224,7 @@ func save(preflightName string, analyzeResults []*analyzerunner.AnalyzeResult) (
 		os.Remove(filename)
 	}
 
-	results := fmt.Sprintf("%s Preflight Checks\n\n", appName(preflightName))
+	results := fmt.Sprintf("%s Preflight Checks\n\n", util.AppName(preflightName))
 	for _, analyzeResult := range analyzeResults {
 		result := ""
 
@@ -273,20 +272,4 @@ func showSaved(filename string) {
 	ui.Render(savedMessage)
 
 	isShowingSaved = true
-}
-
-func appName(preflightName string) string {
-	words := strings.Split(strings.Title(strings.Replace(preflightName, "-", " ", -1)), " ")
-	casedWords := []string{}
-	for i, word := range words {
-		if strings.ToLower(word) == "ai" {
-			casedWords = append(casedWords, "AI")
-		} else if strings.ToLower(word) == "io" && i > 0 {
-			casedWords[i-1] += ".io"
-		} else {
-			casedWords = append(casedWords, word)
-		}
-	}
-
-	return strings.Join(casedWords, " ")
 }

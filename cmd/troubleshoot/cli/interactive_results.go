@@ -5,7 +5,6 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
-	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -99,7 +98,7 @@ func drawHeader(supportBundleName string) {
 	termWidth, _ := ui.TerminalDimensions()
 
 	title := widgets.NewParagraph()
-	title.Text = fmt.Sprintf("%s Support Bundle Analysis", appName(supportBundleName))
+	title.Text = fmt.Sprintf("%s Support Bundle Analysis", util.AppName(supportBundleName))
 	title.TextStyle.Fg = ui.ColorWhite
 	title.TextStyle.Bg = ui.ColorClear
 	title.TextStyle.Modifier = ui.ModifierBold
@@ -217,49 +216,6 @@ func estimateNumberOfLines(text string, width int) int {
 	return lines
 }
 
-// func drawGrid(analyzeResults []*analyzerunner.AnalyzeResult) {
-// 	termWidth, _ := ui.TerminalDimensions()
-
-// 	tileWidth := 40
-// 	tileHeight := 10
-
-// 	columnCount := termWidth / tileWidth
-
-// 	row := 0
-// 	col := 0
-
-// 	for _, analyzeResult := range analyzeResults {
-// 		// draw this file
-
-// 		tile := widgets.NewParagraph()
-// 		tile.Title = analyzeResult.Title
-// 		tile.Text = analyzeResult.Message
-// 		tile.PaddingLeft = 1
-// 		tile.PaddingBottom = 1
-// 		tile.PaddingRight = 1
-// 		tile.PaddingTop = 1
-
-// 		tile.SetRect(col*tileWidth, row*tileHeight, col*tileWidth+tileWidth, row*tileHeight+tileHeight)
-
-// 		if analyzeResult.IsFail {
-// 			tile.BorderStyle.Fg = ui.ColorRed
-// 		} else if analyzeResult.IsWarn {
-// 			tile.BorderStyle.Fg = ui.ColorYellow
-// 		} else {
-// 			tile.BorderStyle.Fg = ui.ColorGreen
-// 		}
-
-// 		ui.Render(tile)
-
-// 		col++
-
-// 		if col >= columnCount {
-// 			col = 0
-// 			row++
-// 		}
-// 	}
-// }
-
 func showSaved(filename string) {
 	termWidth, termHeight := ui.TerminalDimensions()
 
@@ -315,20 +271,4 @@ func save(analyzeResults []*analyzerunner.AnalyzeResult) (string, error) {
 	}
 
 	return filename, nil
-}
-
-func appName(supportBundleName string) string {
-	words := strings.Split(strings.Title(strings.Replace(supportBundleName, "-", " ", -1)), " ")
-	casedWords := []string{}
-	for i, word := range words {
-		if strings.ToLower(word) == "ai" {
-			casedWords = append(casedWords, "AI")
-		} else if strings.ToLower(word) == "io" && i > 0 {
-			casedWords[i-1] += ".io"
-		} else {
-			casedWords = append(casedWords, word)
-		}
-	}
-
-	return strings.Join(casedWords, " ")
 }
