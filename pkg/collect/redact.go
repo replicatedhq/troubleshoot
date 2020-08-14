@@ -61,7 +61,10 @@ func tarFiles(files map[string][]byte, fileHeaders map[string]*tar.Header) ([]by
 			return nil, err
 		}
 	}
-	tw.Close()
+	err = tw.Close()
+	if err != nil {
+		return nil, err
+	}
 	return buff.Bytes(), err
 
 }
