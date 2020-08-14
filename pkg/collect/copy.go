@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"path"
 	"path/filepath"
 
 	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
@@ -14,8 +13,8 @@ import (
 	"k8s.io/client-go/tools/remotecommand"
 )
 
+//Copy function gets a file or folder from a container specified in the specs.
 func Copy(c *Collector, copyCollector *troubleshootv1beta1.Copy) (map[string][]byte, error) {
-
 	client, err := kubernetes.NewForConfig(c.ClientConfig)
 	if err != nil {
 		return nil, err
@@ -49,7 +48,7 @@ func Copy(c *Collector, copyCollector *troubleshootv1beta1.Copy) (map[string][]b
 			}
 
 			for k, v := range files {
-				copyOutput[filepath.Join(bundlePath, path.Dir(copyCollector.ContainerPath), k)] = v
+				copyOutput[filepath.Join(bundlePath, filepath.Dir(copyCollector.ContainerPath), k)] = v
 			}
 		}
 	}
@@ -62,7 +61,7 @@ func copyFiles(c *Collector, client *kubernetes.Clientset, pod corev1.Pod, copyC
 	if copyCollector.ContainerName != "" {
 		container = copyCollector.ContainerName
 	}
-	command := []string{"sh", "-c", fmt.Sprintf("tar -C %s  -cf - %s | cat ", path.Dir(copyCollector.ContainerPath), path.Base(copyCollector.ContainerPath))}
+	command := []string{"sh", "-c", fmt.Sprintf("tar -C %s  -cf - %s | cat ", filepath.Dir(copyCollector.ContainerPath), filepath.Base(copyCollector.ContainerPath))}
 	req := client.CoreV1().RESTClient().Post().Resource("pods").Name(pod.Name).Namespace(pod.Namespace).SubResource("exec")
 	scheme := runtime.NewScheme()
 	if err := corev1.AddToScheme(scheme); err != nil {
@@ -110,7 +109,7 @@ func copyFiles(c *Collector, client *kubernetes.Clientset, pod corev1.Pod, copyC
 	}
 
 	return map[string][]byte{
-		path.Base(copyCollector.ContainerPath) + ".tar": output.Bytes(),
+		filepath.Base(copyCollector.ContainerPath) + ".tar": output.Bytes(),
 	}, nil
 }
 

@@ -5,7 +5,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"io"
-	"path"
+	"path/filepath"
 
 	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
 	"github.com/replicatedhq/troubleshoot/pkg/redact"
@@ -19,17 +19,17 @@ func redactMap(input map[string][]byte, additionalRedactors []*troubleshootv1bet
 		}
 		//If the file is a .tar file, it must not be redacted. Instead it is decompressed and each file inside the
 		//tar is decompressed, redacted and compressed back into the tar.
-		if path.Ext(k) == ".tar" {
+		if filepath.Ext(k) == ".tar" {
 			tarFile := bytes.NewBuffer(v)
-			unRedacted, fileHeaders, err := untarFile(tarFile)
+			unRedacted, tarHeaders, err := untarFile(tarFile)
 			if err != nil {
 				return nil, err
 			}
-			files, err := redactMap(unRedacted, additionalRedactors)
+			redacted, err := redactMap(unRedacted, additionalRedactors)
 			if err != nil {
 				return nil, err
 			}
-			result[k], err = tarFiles(files, fileHeaders)
+			result[k], err = tarFiles(redacted, tarHeaders)
 			if err != nil {
 				return nil, err
 			}
@@ -45,14 +45,22 @@ func redactMap(input map[string][]byte, additionalRedactors []*troubleshootv1bet
 	return result, nil
 }
 
-func tarFiles(files map[string][]byte, fileHeaders map[string]*tar.Header) ([]byte, error) {
+func tarFiles(tarContent map[string][]byte, tarHeaders map[string]*tar.Header) ([]byte, error) {
 	buff := new(bytes.Buffer)
 	tw := tar.NewWriter(buff)
+	defer tw.Close()
 	var err error
-	for p, f := range files {
+	for p, f := range tarContent {
+		if tarHeaders[p].FileInfo().IsDir() {
+			err = tw.WriteHeader(tarHeaders[p])
+			if err != nil {
+				return nil, err
+			}
+			continue
+		}
 		//File size must be recalculated in case the redactor added some bytes when redacting.
-		fileHeaders[p].Size = int64(binary.Size(f))
-		err = tw.WriteHeader(fileHeaders[p])
+		tarHeaders[p].Size = int64(binary.Size(f))
+		err = tw.WriteHeader(tarHeaders[p])
 		if err != nil {
 			return nil, err
 		}
@@ -65,14 +73,14 @@ func tarFiles(files map[string][]byte, fileHeaders map[string]*tar.Header) ([]by
 	if err != nil {
 		return nil, err
 	}
-	return buff.Bytes(), err
+	return buff.Bytes(), nil
 
 }
 
 func untarFile(tarFile *bytes.Buffer) (map[string][]byte, map[string]*tar.Header, error) {
 	tarReader := tar.NewReader(tarFile)
-	fileHeaders := make(map[string]*tar.Header)
-	files := make(map[string][]byte)
+	tarHeaders := make(map[string]*tar.Header)
+	tarContent := make(map[string][]byte)
 	for {
 		header, err := tarReader.Next()
 		if err != nil {
@@ -81,16 +89,14 @@ func untarFile(tarFile *bytes.Buffer) (map[string][]byte, map[string]*tar.Header
 			}
 			break
 		}
-		if header.FileInfo().IsDir() {
-			continue
-		}
 		file := new(bytes.Buffer)
 		_, err = io.Copy(file, tarReader)
 		if err != nil {
 			return nil, nil, err
 		}
-		files[header.Name] = file.Bytes()
-		fileHeaders[header.Name] = header
+		tarContent[header.Name] = file.Bytes()
+		tarHeaders[header.Name] = header
+
 	}
-	return files, fileHeaders, nil
+	return tarContent, tarHeaders, nil
 }
