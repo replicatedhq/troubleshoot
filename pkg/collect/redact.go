@@ -21,7 +21,6 @@ func redactMap(input map[string][]byte, additionalRedactors []*troubleshootv1bet
 		//tar is decompressed, redacted and compressed back into the tar.
 		if path.Ext(k) == ".tar" {
 			tarFile := bytes.NewBuffer(v)
-			buff := new(bytes.Buffer)
 			unRedacted, fileHeaders, err := untarFile(tarFile)
 			if err != nil {
 				return nil, err
@@ -30,16 +29,11 @@ func redactMap(input map[string][]byte, additionalRedactors []*troubleshootv1bet
 			if err != nil {
 				return nil, err
 			}
-			tw := tar.NewWriter(buff)
-			for p, f := range files {
-				//File size must be recalculated in case the redactor added some bytes when redacting.
-				fileHeaders[p].Size = int64(binary.Size(f))
-				tw.WriteHeader(fileHeaders[p])
-				tw.Write(f)
+			result[k], err = tarFiles(files, fileHeaders)
+			if err != nil {
+				return nil, err
 			}
-			tw.Close()
-			result[k] = buff.Bytes()
-			//Tar file must not be redacted, the files inside were already redacted. Continue to next file.
+			//Content of the tar file was redacted. Continue to next file.
 			continue
 		}
 		redacted, err := redact.Redact(v, k, additionalRedactors)
@@ -49,6 +43,27 @@ func redactMap(input map[string][]byte, additionalRedactors []*troubleshootv1bet
 		result[k] = redacted
 	}
 	return result, nil
+}
+
+func tarFiles(files map[string][]byte, fileHeaders map[string]*tar.Header) ([]byte, error) {
+	buff := new(bytes.Buffer)
+	tw := tar.NewWriter(buff)
+	var err error
+	for p, f := range files {
+		//File size must be recalculated in case the redactor added some bytes when redacting.
+		fileHeaders[p].Size = int64(binary.Size(f))
+		err = tw.WriteHeader(fileHeaders[p])
+		if err != nil {
+			return nil, err
+		}
+		_, err = tw.Write(f)
+		if err != nil {
+			return nil, err
+		}
+	}
+	tw.Close()
+	return buff.Bytes(), err
+
 }
 
 func untarFile(tarFile *bytes.Buffer) (map[string][]byte, map[string]*tar.Header, error) {
@@ -67,7 +82,10 @@ func untarFile(tarFile *bytes.Buffer) (map[string][]byte, map[string]*tar.Header
 			continue
 		}
 		file := new(bytes.Buffer)
-		io.Copy(file, tarReader)
+		_, err = io.Copy(file, tarReader)
+		if err != nil {
+			return nil, nil, err
+		}
 		files[header.Name] = file.Bytes()
 		fileHeaders[header.Name] = header
 	}
