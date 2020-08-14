@@ -49,10 +49,9 @@ func tarFiles(tarContent map[string][]byte, tarHeaders map[string]*tar.Header) (
 	buff := new(bytes.Buffer)
 	tw := tar.NewWriter(buff)
 	defer tw.Close()
-	var err error
 	for p, f := range tarContent {
 		if tarHeaders[p].FileInfo().IsDir() {
-			err = tw.WriteHeader(tarHeaders[p])
+			err := tw.WriteHeader(tarHeaders[p])
 			if err != nil {
 				return nil, err
 			}
@@ -60,7 +59,7 @@ func tarFiles(tarContent map[string][]byte, tarHeaders map[string]*tar.Header) (
 		}
 		//File size must be recalculated in case the redactor added some bytes when redacting.
 		tarHeaders[p].Size = int64(binary.Size(f))
-		err = tw.WriteHeader(tarHeaders[p])
+		err := tw.WriteHeader(tarHeaders[p])
 		if err != nil {
 			return nil, err
 		}
@@ -69,7 +68,7 @@ func tarFiles(tarContent map[string][]byte, tarHeaders map[string]*tar.Header) (
 			return nil, err
 		}
 	}
-	err = tw.Close()
+	err := tw.Close()
 	if err != nil {
 		return nil, err
 	}
