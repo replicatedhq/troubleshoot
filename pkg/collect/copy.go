@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"path"
-
 	"path/filepath"
 
 	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
@@ -63,10 +62,7 @@ func copyFiles(c *Collector, client *kubernetes.Clientset, pod corev1.Pod, copyC
 	if copyCollector.ContainerName != "" {
 		container = copyCollector.ContainerName
 	}
-	//Command cd into the path directory, tars the target file or folder into a temp file, cat-copy it and removes the temp file.
-	//Not using a temp file may end up in error "Refusing to write archive contents to terminal"
-	command := []string{"sh", "-c", fmt.Sprintf("tar -C %v  -cf tmp.tar %v; cat tmp.tar; rm tmp.tar", path.Dir(copyCollector.ContainerPath), path.Base(copyCollector.ContainerPath))}
-
+	command := []string{"sh", "-c", fmt.Sprintf("tar -C %s  -cf - %s | cat ", path.Dir(copyCollector.ContainerPath), path.Base(copyCollector.ContainerPath))}
 	req := client.CoreV1().RESTClient().Post().Resource("pods").Name(pod.Name).Namespace(pod.Namespace).SubResource("exec")
 	scheme := runtime.NewScheme()
 	if err := corev1.AddToScheme(scheme); err != nil {
