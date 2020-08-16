@@ -23,7 +23,7 @@ func redactMap(input map[string][]byte, additionalRedactors []*troubleshootv1bet
 		//tar is decompressed, redacted and compressed back into the tar.
 		if filepath.Ext(k) == ".tar" || filepath.Ext(k) == ".tgz" || strings.HasSuffix(k, ".tar.gz") {
 			tarFile := bytes.NewBuffer(v)
-			unRedacted, tarHeaders, err := untarFile(tarFile, k)
+			unRedacted, tarHeaders, err := decompressFile(tarFile, k)
 			if err != nil {
 				return nil, err
 			}
@@ -31,7 +31,7 @@ func redactMap(input map[string][]byte, additionalRedactors []*troubleshootv1bet
 			if err != nil {
 				return nil, err
 			}
-			result[k], err = tarFiles(redacted, tarHeaders, k)
+			result[k], err = compressFiles(redacted, tarHeaders, k)
 			if err != nil {
 				return nil, err
 			}
@@ -47,11 +47,11 @@ func redactMap(input map[string][]byte, additionalRedactors []*troubleshootv1bet
 	return result, nil
 }
 
-func tarFiles(tarContent map[string][]byte, tarHeaders map[string]*tar.Header, filename string) ([]byte, error) {
+func compressFiles(tarContent map[string][]byte, tarHeaders map[string]*tar.Header, filename string) ([]byte, error) {
 	buff := new(bytes.Buffer)
 	var tw *tar.Writer
 	var zw *gzip.Writer
-	if filepath.Ext(filename) == ".tgz" || strings.HasSuffix(filename, ".tar.gz") {
+	if filepath.Ext(filename) != ".tar" {
 		zw = gzip.NewWriter(buff)
 		tw = tar.NewWriter(zw)
 		defer zw.Close()
@@ -67,7 +67,7 @@ func tarFiles(tarContent map[string][]byte, tarHeaders map[string]*tar.Header, f
 			}
 			continue
 		}
-		//File size must be recalculated in case the redactor added some bytes when redacting.
+		//File size must be recalculated in case the redactor added some bytes while redacting.
 		tarHeaders[p].Size = int64(binary.Size(f))
 		err := tw.WriteHeader(tarHeaders[p])
 		if err != nil {
@@ -82,7 +82,7 @@ func tarFiles(tarContent map[string][]byte, tarHeaders map[string]*tar.Header, f
 	if err != nil {
 		return nil, err
 	}
-	if filepath.Ext(filename) == ".tgz" || strings.HasSuffix(filename, ".tar.gz") {
+	if filepath.Ext(filename) != ".tar" {
 		err = zw.Close()
 		if err != nil {
 			return nil, err
@@ -92,11 +92,11 @@ func tarFiles(tarContent map[string][]byte, tarHeaders map[string]*tar.Header, f
 
 }
 
-func untarFile(tarFile *bytes.Buffer, filename string) (map[string][]byte, map[string]*tar.Header, error) {
+func decompressFile(tarFile *bytes.Buffer, filename string) (map[string][]byte, map[string]*tar.Header, error) {
 	var tarReader *tar.Reader
 	var zr *gzip.Reader
 	var err error
-	if filepath.Ext(filename) == ".tgz" || strings.HasSuffix(filename, ".tar.gz") {
+	if filepath.Ext(filename) != ".tar" {
 		zr, err = gzip.NewReader(tarFile)
 		if err != nil {
 			return nil, nil, err
