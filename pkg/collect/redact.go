@@ -98,6 +98,7 @@ func decompressFile(tarFile *bytes.Buffer, filename string) (map[string][]byte, 
 	var err error
 	if filepath.Ext(filename) != ".tar" {
 		zr, err = gzip.NewReader(tarFile)
+		defer zr.Close()
 		if err != nil {
 			return nil, nil, err
 		}
