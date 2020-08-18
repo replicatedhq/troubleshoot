@@ -26,8 +26,12 @@ func analyzeContainerRuntime(analyzer *troubleshootv1beta1.ContainerRuntime, get
 		foundRuntimes = append(foundRuntimes, node.Status.NodeInfo.ContainerRuntimeVersion)
 	}
 
+	title := analyzer.CheckName
+	if title == "" {
+		title = "Container Runtime"
+	}
 	result := &AnalyzeResult{
-		Title:   "Container Runtime",
+		Title:   title,
 		IconKey: "kubernetes_container_runtime",
 		IconURI: "https://troubleshoot.sh/images/analyzer-icons/container-runtime.svg?w=23&h=16",
 	}

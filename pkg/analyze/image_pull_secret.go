@@ -22,9 +22,13 @@ func analyzeImagePullSecret(analyzer *troubleshootv1beta1.ImagePullSecret, getCh
 			passOutcome = outcome
 		}
 	}
+	title := analyzer.CheckName
+	if title == "" {
+		title = "Image Pull Secrets"
+	}
 
 	result := AnalyzeResult{
-		Title:   analyzer.CheckName,
+		Title:   title,
 		IconKey: "kubernetes_image_pull_secret",
 		IconURI: "https://troubleshoot.sh/images/analyzer-icons/image-pull-secret.svg?w=16&h=14",
 		IsFail:  true,
