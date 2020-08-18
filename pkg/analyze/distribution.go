@@ -123,9 +123,12 @@ func analyzeDistribution(analyzer *troubleshootv1beta1.Distribution, getCollecte
 		}
 		_ = CheckOpenShift(&foundProviders, apiResources, "")
 	}
-
+	title := analyzer.CheckName
+	if title == "" {
+		title = "Kubernetes Distribution"
+	}
 	result := &AnalyzeResult{
-		Title:   "Kubernetes Distribution",
+		Title:   title,
 		IconKey: "kubernetes_distribution",
 		IconURI: "https://troubleshoot.sh/images/analyzer-icons/distribution.svg?w=20&h=14",
 	}

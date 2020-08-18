@@ -28,13 +28,13 @@ func analyzeMysql(analyzer *troubleshootv1beta1.DatabaseAnalyze, getCollectedFil
 		return nil, errors.Wrap(err, "failed to unmarshal databased connection result")
 	}
 
-	checkName := analyzer.CheckName
-	if checkName == "" {
-		checkName = collectorName
+	title := analyzer.CheckName
+	if title == "" {
+		title = collectorName
 	}
 
 	result := &AnalyzeResult{
-		Title:   checkName,
+		Title:   title,
 		IconKey: "kubernetes_mysql_analyze",
 		IconURI: "https://troubleshoot.sh/images/analyzer-icons/mysql-analyze.svg",
 	}
