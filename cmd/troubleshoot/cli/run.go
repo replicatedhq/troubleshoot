@@ -471,6 +471,10 @@ func untarAndSave(tarFile []byte, bundlePath string) error {
 			return fmt.Errorf("Tar file entry %s contained unsupported file type %v", header.Name, header.FileInfo().Mode())
 		}
 	}
+	//Create directories from base path: <namespace>/<pod name>/containerPath
+	if err := os.MkdirAll(filepath.Join(bundlePath), 0777); err != nil {
+		return errors.Wrap(err, "create output file")
+	}
 	//Order folders stored in variable keys to start always by parent folder. That way folder info is preserved.
 	for k := range dirs {
 		keys = append(keys, k)
@@ -478,7 +482,7 @@ func untarAndSave(tarFile []byte, bundlePath string) error {
 	sort.Strings(keys)
 	//Orderly create folders.
 	for _, k := range keys {
-		if err := os.MkdirAll(filepath.Join(bundlePath, k), dirs[k].FileInfo().Mode().Perm()); err != nil {
+		if err := os.Mkdir(filepath.Join(bundlePath, k), dirs[k].FileInfo().Mode().Perm()); err != nil {
 			return errors.Wrap(err, "create output file")
 		}
 	}
