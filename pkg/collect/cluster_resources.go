@@ -27,6 +27,13 @@ func ClusterResources(c *Collector) (map[string][]byte, error) {
 	clusterResourcesOutput := map[string][]byte{}
 	// namespaces
 	var namespaceNames []string
+
+	options := metav1.ListOptions{}
+	//a, err := client.EventsV1beta1().Events("").List(ctx, options)
+	events, err := client.CoreV1().Events("").List(ctx, options)
+	parsedEvents, err := json.MarshalIndent(events.Items, "", "  ")
+	clusterResourcesOutput["cluster-resources/events.json"] = parsedEvents
+
 	if c.Namespace == "" {
 		namespaces, namespaceList, namespaceErrors := namespaces(ctx, client)
 		clusterResourcesOutput["cluster-resources/namespaces.json"] = namespaces
