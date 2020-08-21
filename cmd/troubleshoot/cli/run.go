@@ -420,7 +420,7 @@ func runCollectors(v *viper.Viper, collectors []*troubleshootv1beta1.Collect, ad
 
 func saveCollectorOutput(output map[string][]byte, bundlePath string, c *collect.Collector) error {
 	for filename, maybeContents := range output {
-		if strings.Contains(c.GetDisplayName(), "copy") {
+		if c.Collect.Copy != nil {
 			err := untarAndSave(maybeContents, filepath.Join(bundlePath, filepath.Dir(filename)))
 			if err != nil {
 				return errors.Wrap(err, "extract copied files")

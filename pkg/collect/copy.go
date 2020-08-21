@@ -61,7 +61,7 @@ func copyFiles(c *Collector, client *kubernetes.Clientset, pod corev1.Pod, copyC
 	if copyCollector.ContainerName != "" {
 		container = copyCollector.ContainerName
 	}
-	command := []string{"sh", "-c", fmt.Sprintf("tar -C %s  -cf - %s | cat ", filepath.Dir(copyCollector.ContainerPath), filepath.Base(copyCollector.ContainerPath))}
+	command := []string{"tar", "-C", filepath.Dir(copyCollector.ContainerPath), "-cf", "-", filepath.Base(copyCollector.ContainerPath)}
 	req := client.CoreV1().RESTClient().Post().Resource("pods").Name(pod.Name).Namespace(pod.Namespace).SubResource("exec")
 	scheme := runtime.NewScheme()
 	if err := corev1.AddToScheme(scheme); err != nil {
