@@ -1,16 +1,19 @@
 package cli
 
 import (
+	"archive/tar"
 	"bytes"
 	"context"
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
@@ -395,7 +398,7 @@ func runCollectors(v *viper.Viper, collectors []*troubleshootv1beta1.Collect, ad
 		}
 
 		if result != nil {
-			err = saveCollectorOutput(result, bundlePath)
+			err = saveCollectorOutput(result, bundlePath, collector)
 			if err != nil {
 				progressChan <- fmt.Errorf("failed to parse collector spec %q: %v", collector.GetDisplayName(), err)
 				continue
@@ -415,8 +418,15 @@ func runCollectors(v *viper.Viper, collectors []*troubleshootv1beta1.Collect, ad
 	return filename, nil
 }
 
-func saveCollectorOutput(output map[string][]byte, bundlePath string) error {
+func saveCollectorOutput(output map[string][]byte, bundlePath string, c *collect.Collector) error {
 	for filename, maybeContents := range output {
+		if c.Collect.Copy != nil {
+			err := untarAndSave(maybeContents, filepath.Join(bundlePath, filepath.Dir(filename)))
+			if err != nil {
+				return errors.Wrap(err, "extract copied files")
+			}
+			continue
+		}
 		fileDir, fileName := filepath.Split(filename)
 		outPath := filepath.Join(bundlePath, fileDir)
 
@@ -431,7 +441,59 @@ func saveCollectorOutput(output map[string][]byte, bundlePath string) error {
 
 	return nil
 }
-
+func untarAndSave(tarFile []byte, bundlePath string) error {
+	keys := make([]string, 0)
+	dirs := make(map[string]*tar.Header)
+	files := make(map[string][]byte)
+	fileHeaders := make(map[string]*tar.Header)
+	tarReader := tar.NewReader(bytes.NewBuffer(tarFile))
+	//Extract and separate tar contentes in file and folders, keeping header info from each one.
+	for {
+		header, err := tarReader.Next()
+		if err != nil {
+			if err != io.EOF {
+				return err
+			}
+			break
+		}
+		switch header.Typeflag {
+		case tar.TypeDir:
+			dirs[header.Name] = header
+		case tar.TypeReg:
+			file := new(bytes.Buffer)
+			_, err = io.Copy(file, tarReader)
+			if err != nil {
+				return err
+			}
+			files[header.Name] = file.Bytes()
+			fileHeaders[header.Name] = header
+		default:
+			return fmt.Errorf("Tar file entry %s contained unsupported file type %v", header.Name, header.FileInfo().Mode())
+		}
+	}
+	//Create directories from base path: <namespace>/<pod name>/containerPath
+	if err := os.MkdirAll(filepath.Join(bundlePath), 0777); err != nil {
+		return errors.Wrap(err, "create output file")
+	}
+	//Order folders stored in variable keys to start always by parent folder. That way folder info is preserved.
+	for k := range dirs {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	//Orderly create folders.
+	for _, k := range keys {
+		if err := os.Mkdir(filepath.Join(bundlePath, k), dirs[k].FileInfo().Mode().Perm()); err != nil {
+			return errors.Wrap(err, "create output file")
+		}
+	}
+	//Populate folders with respective files and its permissions stored in the header.
+	for k, v := range files {
+		if err := ioutil.WriteFile(filepath.Join(bundlePath, k), v, fileHeaders[k].FileInfo().Mode().Perm()); err != nil {
+			return err
+		}
+	}
+	return nil
+}
 func uploadSupportBundle(r *troubleshootv1beta1.ResultRequest, archivePath string) error {
 	contentType := getExpectedContentType(r.URI)
 	if contentType != "" && contentType != "application/tar+gzip" {
