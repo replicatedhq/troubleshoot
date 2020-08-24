@@ -27,7 +27,6 @@ func ClusterResources(c *Collector) (map[string][]byte, error) {
 	clusterResourcesOutput := map[string][]byte{}
 	// namespaces
 	var namespaceNames []string
-
 	if c.Namespace == "" {
 		namespaces, namespaceList, namespaceErrors := namespaces(ctx, client)
 		clusterResourcesOutput["cluster-resources/namespaces.json"] = namespaces
