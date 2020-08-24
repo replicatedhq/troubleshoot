@@ -28,12 +28,6 @@ func ClusterResources(c *Collector) (map[string][]byte, error) {
 	// namespaces
 	var namespaceNames []string
 
-	options := metav1.ListOptions{}
-	//a, err := client.EventsV1beta1().Events("").List(ctx, options)
-	events, err := client.CoreV1().Events("").List(ctx, options)
-	parsedEvents, err := json.MarshalIndent(events.Items, "", "  ")
-	clusterResourcesOutput["cluster-resources/events.json"] = parsedEvents
-
 	if c.Namespace == "" {
 		namespaces, namespaceList, namespaceErrors := namespaces(ctx, client)
 		clusterResourcesOutput["cluster-resources/namespaces.json"] = namespaces
@@ -166,6 +160,16 @@ func ClusterResources(c *Collector) (map[string][]byte, error) {
 		clusterResourcesOutput[path.Join("cluster-resources/auth-cani-list", k)] = v
 	}
 	clusterResourcesOutput["cluster-resources/auth-cani-list-errors.json"], err = marshalNonNil(authCanIErrors)
+	if err != nil {
+		return nil, err
+	}
+
+	//Events
+	events, eventsErrors := events(ctx, client, namespaceNames)
+	for k, v := range events {
+		clusterResourcesOutput[path.Join("cluster-resources/events", k)] = v
+	}
+	clusterResourcesOutput["cluster-resources/events-errors.json"], err = marshalNonNil(eventsErrors)
 	if err != nil {
 		return nil, err
 	}
@@ -483,6 +487,29 @@ func authCanI(ctx context.Context, client *kubernetes.Clientset, namespaces []st
 	}
 
 	return authListByNamespace, errorsByNamespace
+}
+
+func events(ctx context.Context, client *kubernetes.Clientset, namespaces []string) (map[string][]byte, map[string]string) {
+	eventsByNamespace := make(map[string][]byte)
+	errorsByNamespace := make(map[string]string)
+
+	for _, namespace := range namespaces {
+		events, err := client.CoreV1().Events(namespace).List(ctx, metav1.ListOptions{})
+		if err != nil {
+			errorsByNamespace[namespace] = err.Error()
+			continue
+		}
+
+		b, err := json.MarshalIndent(events.Items, "", "  ")
+		if err != nil {
+			errorsByNamespace[namespace] = err.Error()
+			continue
+		}
+
+		eventsByNamespace[namespace+".json"] = b
+	}
+
+	return eventsByNamespace, errorsByNamespace
 }
 
 // not exprted from: https://github.com/kubernetes/kubernetes/blob/master/pkg/kubectl/cmd/auth/cani.go#L339
