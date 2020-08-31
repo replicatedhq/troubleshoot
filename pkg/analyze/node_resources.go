@@ -319,6 +319,13 @@ func nodeMatchesFilters(node corev1.Node, filters *troubleshootv1beta1.NodeResou
 	}
 
 	// all filters must pass for this to pass
+	if filters.Selector != nil {
+		for k, v := range filters.Selector.MatchLabel {
+			if l, found := node.Labels[k]; !found || l != v {
+				return false, errors.Errorf("failed to match label %s", k)
+			}
+		}
+	}
 
 	if filters.CPUCapacity != "" {
 		parsed, err := resource.ParseQuantity(filters.CPUCapacity)

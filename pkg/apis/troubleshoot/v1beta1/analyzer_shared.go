@@ -84,14 +84,19 @@ type NodeResources struct {
 }
 
 type NodeResourceFilters struct {
-	CPUCapacity                 string `json:"cpuCapacity,omitempty" yaml:"cpuCapacity,omitempty"`
-	CPUAllocatable              string `json:"cpuAllocatable,omitempty" yaml:"cpuAllocatable,omitempty"`
-	MemoryCapacity              string `json:"memoryCapacity,omitempty" yaml:"memoryCapacity,omitempty"`
-	MemoryAllocatable           string `json:"memoryAllocatable,omitempty" yaml:"memoryAllocatable,omitempty"`
-	PodCapacity                 string `json:"podCapacity,omitempty" yaml:"podCapacity,omitempty"`
-	PodAllocatable              string `json:"podAllocatable,omitempty" yaml:"podAllocatable,omitempty"`
-	EphemeralStorageCapacity    string `json:"ephemeralStorageCapacity,omitempty" yaml:"ephemeralStorageCapacity,omitempty"`
-	EphemeralStorageAllocatable string `json:"ephemeralStorageAllocatable,omitempty" yaml:"ephemeralStorageAllocatable,omitempty"`
+	CPUCapacity                 string                 `json:"cpuCapacity,omitempty" yaml:"cpuCapacity,omitempty"`
+	CPUAllocatable              string                 `json:"cpuAllocatable,omitempty" yaml:"cpuAllocatable,omitempty"`
+	MemoryCapacity              string                 `json:"memoryCapacity,omitempty" yaml:"memoryCapacity,omitempty"`
+	MemoryAllocatable           string                 `json:"memoryAllocatable,omitempty" yaml:"memoryAllocatable,omitempty"`
+	PodCapacity                 string                 `json:"podCapacity,omitempty" yaml:"podCapacity,omitempty"`
+	PodAllocatable              string                 `json:"podAllocatable,omitempty" yaml:"podAllocatable,omitempty"`
+	EphemeralStorageCapacity    string                 `json:"ephemeralStorageCapacity,omitempty" yaml:"ephemeralStorageCapacity,omitempty"`
+	EphemeralStorageAllocatable string                 `json:"ephemeralStorageAllocatable,omitempty" yaml:"ephemeralStorageAllocatable,omitempty"`
+	Selector                    *NodeResourceSelectors `json:"selector,omitempty" yaml:"selector,omitempty"`
+}
+
+type NodeResourceSelectors struct {
+	MatchLabel map[string]string `json:"matchLabel,omitempty" yaml:"matchLabel,omitempty"`
 }
 
 type TextAnalyze struct {
