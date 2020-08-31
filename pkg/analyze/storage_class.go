@@ -31,7 +31,8 @@ func analyzeStorageClass(analyzer *troubleshootv1beta1.StorageClass, getCollecte
 	}
 
 	for _, storageClass := range storageClasses {
-		if storageClass.Name == analyzer.StorageClassName {
+		val, found := storageClass.Annotations["storageclass.kubernetes.io/is-default-class"]
+		if (storageClass.Name == analyzer.StorageClassName) || (analyzer.StorageClassName == "" && found && val == "true") {
 			result.IsPass = true
 			for _, outcome := range analyzer.Outcomes {
 				if outcome.Pass != nil {
