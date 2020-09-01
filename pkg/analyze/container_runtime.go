@@ -6,11 +6,11 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
+	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	corev1 "k8s.io/api/core/v1"
 )
 
-func analyzeContainerRuntime(analyzer *troubleshootv1beta1.ContainerRuntime, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
+func analyzeContainerRuntime(analyzer *troubleshootv1beta2.ContainerRuntime, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
 	collected, err := getCollectedFileContents("cluster-resources/nodes.json")
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get contents of nodes.json")

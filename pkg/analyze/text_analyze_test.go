@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
+	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.undefinedlabs.com/scopeagent"
@@ -13,21 +13,21 @@ import (
 func Test_textAnalyze(t *testing.T) {
 	tests := []struct {
 		name         string
-		analyzer     troubleshootv1beta1.TextAnalyze
+		analyzer     troubleshootv1beta2.TextAnalyze
 		expectResult AnalyzeResult
 		files        map[string][]byte
 	}{
 		{
 			name: "success case 1",
-			analyzer: troubleshootv1beta1.TextAnalyze{
-				Outcomes: []*troubleshootv1beta1.Outcome{
+			analyzer: troubleshootv1beta2.TextAnalyze{
+				Outcomes: []*troubleshootv1beta2.Outcome{
 					{
-						Pass: &troubleshootv1beta1.SingleOutcome{
+						Pass: &troubleshootv1beta2.SingleOutcome{
 							Message: "pass",
 						},
 					},
 					{
-						Fail: &troubleshootv1beta1.SingleOutcome{
+						Fail: &troubleshootv1beta2.SingleOutcome{
 							Message: "fail",
 						},
 					},
@@ -49,15 +49,15 @@ func Test_textAnalyze(t *testing.T) {
 		},
 		{
 			name: "failure case 1",
-			analyzer: troubleshootv1beta1.TextAnalyze{
-				Outcomes: []*troubleshootv1beta1.Outcome{
+			analyzer: troubleshootv1beta2.TextAnalyze{
+				Outcomes: []*troubleshootv1beta2.Outcome{
 					{
-						Pass: &troubleshootv1beta1.SingleOutcome{
+						Pass: &troubleshootv1beta2.SingleOutcome{
 							Message: "success",
 						},
 					},
 					{
-						Fail: &troubleshootv1beta1.SingleOutcome{
+						Fail: &troubleshootv1beta2.SingleOutcome{
 							Message: "fail",
 						},
 					},
@@ -81,15 +81,15 @@ func Test_textAnalyze(t *testing.T) {
 		},
 		{
 			name: "success case 2",
-			analyzer: troubleshootv1beta1.TextAnalyze{
-				Outcomes: []*troubleshootv1beta1.Outcome{
+			analyzer: troubleshootv1beta2.TextAnalyze{
+				Outcomes: []*troubleshootv1beta2.Outcome{
 					{
-						Pass: &troubleshootv1beta1.SingleOutcome{
+						Pass: &troubleshootv1beta2.SingleOutcome{
 							Message: "success",
 						},
 					},
 					{
-						Fail: &troubleshootv1beta1.SingleOutcome{
+						Fail: &troubleshootv1beta2.SingleOutcome{
 							Message: "fail",
 						},
 					},
@@ -113,15 +113,15 @@ func Test_textAnalyze(t *testing.T) {
 		},
 		{
 			name: "success case 3",
-			analyzer: troubleshootv1beta1.TextAnalyze{
-				Outcomes: []*troubleshootv1beta1.Outcome{
+			analyzer: troubleshootv1beta2.TextAnalyze{
+				Outcomes: []*troubleshootv1beta2.Outcome{
 					{
-						Pass: &troubleshootv1beta1.SingleOutcome{
+						Pass: &troubleshootv1beta2.SingleOutcome{
 							Message: "success",
 						},
 					},
 					{
-						Fail: &troubleshootv1beta1.SingleOutcome{
+						Fail: &troubleshootv1beta2.SingleOutcome{
 							Message: "fail",
 						},
 					},
@@ -143,15 +143,15 @@ func Test_textAnalyze(t *testing.T) {
 		},
 		{
 			name: "failure case 3",
-			analyzer: troubleshootv1beta1.TextAnalyze{
-				Outcomes: []*troubleshootv1beta1.Outcome{
+			analyzer: troubleshootv1beta2.TextAnalyze{
+				Outcomes: []*troubleshootv1beta2.Outcome{
 					{
-						Pass: &troubleshootv1beta1.SingleOutcome{
+						Pass: &troubleshootv1beta2.SingleOutcome{
 							Message: "success",
 						},
 					},
 					{
-						Fail: &troubleshootv1beta1.SingleOutcome{
+						Fail: &troubleshootv1beta2.SingleOutcome{
 							Message: "fail",
 						},
 					},
@@ -175,15 +175,15 @@ func Test_textAnalyze(t *testing.T) {
 		},
 		{
 			name: "failure case 4",
-			analyzer: troubleshootv1beta1.TextAnalyze{
-				Outcomes: []*troubleshootv1beta1.Outcome{
+			analyzer: troubleshootv1beta2.TextAnalyze{
+				Outcomes: []*troubleshootv1beta2.Outcome{
 					{
-						Pass: &troubleshootv1beta1.SingleOutcome{
+						Pass: &troubleshootv1beta2.SingleOutcome{
 							Message: "success",
 						},
 					},
 					{
-						Fail: &troubleshootv1beta1.SingleOutcome{
+						Fail: &troubleshootv1beta2.SingleOutcome{
 							Message: "fail",
 						},
 					},

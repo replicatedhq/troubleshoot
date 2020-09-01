@@ -6,11 +6,11 @@ import (
 
 	"github.com/blang/semver"
 	"github.com/pkg/errors"
-	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
+	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/replicatedhq/troubleshoot/pkg/collect"
 )
 
-func analyzeClusterVersion(analyzer *troubleshootv1beta1.ClusterVersion, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
+func analyzeClusterVersion(analyzer *troubleshootv1beta2.ClusterVersion, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
 	clusterInfo, err := getCollectedFileContents("cluster-info/cluster_version.json")
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get contents of cluster_version.json")
@@ -29,7 +29,7 @@ func analyzeClusterVersion(analyzer *troubleshootv1beta1.ClusterVersion, getColl
 	return analyzeClusterVersionResult(k8sVersion, analyzer.Outcomes, analyzer.CheckName)
 }
 
-func analyzeClusterVersionResult(k8sVersion semver.Version, outcomes []*troubleshootv1beta1.Outcome, checkName string) (*AnalyzeResult, error) {
+func analyzeClusterVersionResult(k8sVersion semver.Version, outcomes []*troubleshootv1beta2.Outcome, checkName string) (*AnalyzeResult, error) {
 	for _, outcome := range outcomes {
 		when := ""
 		message := ""

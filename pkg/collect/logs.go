@@ -9,14 +9,14 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
+	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/replicatedhq/troubleshoot/pkg/logger"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
 
-func Logs(c *Collector, logsCollector *troubleshootv1beta1.Logs) (map[string][]byte, error) {
+func Logs(c *Collector, logsCollector *troubleshootv1beta2.Logs) (map[string][]byte, error) {
 	client, err := kubernetes.NewForConfig(c.ClientConfig)
 	if err != nil {
 		return nil, err
@@ -104,7 +104,7 @@ func listPodsInSelectors(ctx context.Context, client *kubernetes.Clientset, name
 	return pods.Items, nil
 }
 
-func getPodLogs(ctx context.Context, client *kubernetes.Clientset, pod corev1.Pod, name, container string, limits *troubleshootv1beta1.LogLimits, follow bool) (map[string][]byte, error) {
+func getPodLogs(ctx context.Context, client *kubernetes.Clientset, pod corev1.Pod, name, container string, limits *troubleshootv1beta2.LogLimits, follow bool) (map[string][]byte, error) {
 	podLogOpts := corev1.PodLogOptions{
 		Follow:    follow,
 		Container: container,
@@ -170,7 +170,7 @@ func getPodLogs(ctx context.Context, client *kubernetes.Clientset, pod corev1.Po
 	return result, nil
 }
 
-func getLogsErrorsFileName(logsCollector *troubleshootv1beta1.Logs) string {
+func getLogsErrorsFileName(logsCollector *troubleshootv1beta2.Logs) string {
 	if len(logsCollector.Name) > 0 {
 		return fmt.Sprintf("%s/errors.json", logsCollector.Name)
 	} else if len(logsCollector.CollectorName) > 0 {

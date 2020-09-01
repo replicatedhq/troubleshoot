@@ -10,8 +10,9 @@ import (
 
 	getter "github.com/hashicorp/go-getter"
 	"github.com/pkg/errors"
-	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
+	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	troubleshootscheme "github.com/replicatedhq/troubleshoot/pkg/client/troubleshootclientset/scheme"
+	"github.com/replicatedhq/troubleshoot/pkg/docrewrite"
 	"github.com/replicatedhq/troubleshoot/pkg/logger"
 	"k8s.io/client-go/kubernetes/scheme"
 )
@@ -21,7 +22,7 @@ type fileContentProvider struct {
 }
 
 // Analyze local will analyze a locally available (already downloaded) bundle
-func AnalyzeLocal(localBundlePath string, analyzers []*troubleshootv1beta1.Analyze) ([]*AnalyzeResult, error) {
+func AnalyzeLocal(localBundlePath string, analyzers []*troubleshootv1beta2.Analyze) ([]*AnalyzeResult, error) {
 	fcp := fileContentProvider{rootDir: localBundlePath}
 
 	analyzeResults := []*AnalyzeResult{}
@@ -56,7 +57,7 @@ func DownloadAndAnalyze(bundleURL string, analyzersSpec string) ([]*AnalyzeResul
 		return nil, errors.Wrap(err, "failed to read version.yaml")
 	}
 
-	analyzers := []*troubleshootv1beta1.Analyze{}
+	analyzers := []*troubleshootv1beta2.Analyze{}
 
 	if analyzersSpec == "" {
 		defaultAnalyzers, err := getDefaultAnalyzers()
@@ -154,21 +155,26 @@ func ExtractTroubleshootBundle(reader io.Reader, destDir string) error {
 	return nil
 }
 
-func parseAnalyzers(spec string) ([]*troubleshootv1beta1.Analyze, error) {
+func parseAnalyzers(spec string) ([]*troubleshootv1beta2.Analyze, error) {
 	troubleshootscheme.AddToScheme(scheme.Scheme)
 	decode := scheme.Codecs.UniversalDeserializer().Decode
 
-	obj, _, err := decode([]byte(spec), nil, nil)
+	convertedSpec, err := docrewrite.ConvertToV1Beta2([]byte(spec))
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to convert to v1beta2")
+	}
+
+	obj, _, err := decode(convertedSpec, nil, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to decode analyzers")
 	}
 
-	analyzer := obj.(*troubleshootv1beta1.Analyzer)
+	analyzer := obj.(*troubleshootv1beta2.Analyzer)
 	return analyzer.Spec.Analyzers, nil
 }
 
-func getDefaultAnalyzers() ([]*troubleshootv1beta1.Analyze, error) {
-	spec := `apiVersion: troubleshoot.replicated.com/v1beta1
+func getDefaultAnalyzers() ([]*troubleshootv1beta2.Analyze, error) {
+	spec := `apiVersion: troubleshoot.sh/v1beta2
 kind: Analyzer
 metadata:
   name: defaultAnalyzers

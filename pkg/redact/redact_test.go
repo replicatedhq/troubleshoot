@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
+	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/stretchr/testify/require"
 	"go.undefinedlabs.com/scopeagent"
 )
@@ -1650,7 +1650,7 @@ func Test_Redactors(t *testing.T) {
 func Test_redactMatchesPath(t *testing.T) {
 	type args struct {
 		path   string
-		redact *troubleshootv1beta1.Redact
+		redact *troubleshootv1beta2.Redact
 	}
 	tests := []struct {
 		name string
@@ -1661,8 +1661,8 @@ func Test_redactMatchesPath(t *testing.T) {
 			name: "literal path",
 			args: args{
 				path: "/my/test/path",
-				redact: &troubleshootv1beta1.Redact{
-					FileSelector: troubleshootv1beta1.FileSelector{
+				redact: &troubleshootv1beta2.Redact{
+					FileSelector: troubleshootv1beta2.FileSelector{
 						File:  "/my/test/path",
 						Files: nil,
 					},
@@ -1674,8 +1674,8 @@ func Test_redactMatchesPath(t *testing.T) {
 			name: "no path",
 			args: args{
 				path: "/my/test/path",
-				redact: &troubleshootv1beta1.Redact{
-					FileSelector: troubleshootv1beta1.FileSelector{
+				redact: &troubleshootv1beta2.Redact{
+					FileSelector: troubleshootv1beta2.FileSelector{
 						File:  "",
 						Files: nil,
 					},
@@ -1687,8 +1687,8 @@ func Test_redactMatchesPath(t *testing.T) {
 			name: "wrong literal path",
 			args: args{
 				path: "/my/test/path",
-				redact: &troubleshootv1beta1.Redact{
-					FileSelector: troubleshootv1beta1.FileSelector{
+				redact: &troubleshootv1beta2.Redact{
+					FileSelector: troubleshootv1beta2.FileSelector{
 						File:  "/my/test/path/two",
 						Files: nil,
 					},
@@ -1700,8 +1700,8 @@ func Test_redactMatchesPath(t *testing.T) {
 			name: "path with glob",
 			args: args{
 				path: "/my/test/path/two",
-				redact: &troubleshootv1beta1.Redact{
-					FileSelector: troubleshootv1beta1.FileSelector{
+				redact: &troubleshootv1beta2.Redact{
+					FileSelector: troubleshootv1beta2.FileSelector{
 						File:  "/my/test/path/*",
 						Files: nil,
 					},
@@ -1713,8 +1713,8 @@ func Test_redactMatchesPath(t *testing.T) {
 			name: "path with glob in middle",
 			args: args{
 				path: "/my/test/path/two",
-				redact: &troubleshootv1beta1.Redact{
-					FileSelector: troubleshootv1beta1.FileSelector{
+				redact: &troubleshootv1beta2.Redact{
+					FileSelector: troubleshootv1beta2.FileSelector{
 						File:  "/my/test/*/*",
 						Files: nil,
 					},
@@ -1726,8 +1726,8 @@ func Test_redactMatchesPath(t *testing.T) {
 			name: "multiple paths",
 			args: args{
 				path: "/my/test/path/two",
-				redact: &troubleshootv1beta1.Redact{
-					FileSelector: troubleshootv1beta1.FileSelector{
+				redact: &troubleshootv1beta2.Redact{
+					FileSelector: troubleshootv1beta2.FileSelector{
 						File: "",
 						Files: []string{
 							"/not/the/path",
@@ -1742,8 +1742,8 @@ func Test_redactMatchesPath(t *testing.T) {
 			name: "double glob matching separator",
 			args: args{
 				path: "/my/test/path/two",
-				redact: &troubleshootv1beta1.Redact{
-					FileSelector: troubleshootv1beta1.FileSelector{
+				redact: &troubleshootv1beta2.Redact{
+					FileSelector: troubleshootv1beta2.FileSelector{
 						File:  "/my/test/**",
 						Files: nil,
 					},
@@ -1755,8 +1755,8 @@ func Test_redactMatchesPath(t *testing.T) {
 			name: "single glob does NOT match separator",
 			args: args{
 				path: "/my/test/path/two",
-				redact: &troubleshootv1beta1.Redact{
-					FileSelector: troubleshootv1beta1.FileSelector{
+				redact: &troubleshootv1beta2.Redact{
+					FileSelector: troubleshootv1beta2.FileSelector{
 						File:  "/my/test/*",
 						Files: nil,
 					},

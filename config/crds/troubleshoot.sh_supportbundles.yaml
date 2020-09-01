@@ -1,0 +1,1166 @@
+
+---
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.3.0
+  creationTimestamp: null
+  name: supportbundles.troubleshoot.sh
+spec:
+  group: troubleshoot.sh
+  names:
+    kind: SupportBundle
+    listKind: SupportBundleList
+    plural: supportbundles
+    singular: supportbundle
+  scope: Namespaced
+  validation:
+    openAPIV3Schema:
+      description: SupportBundle is the Schema for the SupportBundles API
+      properties:
+        apiVersion:
+          description: 'APIVersion defines the versioned schema of this representation
+            of an object. Servers should convert recognized schemas to the latest
+            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+          type: string
+        kind:
+          description: 'Kind is a string value representing the REST resource this
+            object represents. Servers may infer this from the endpoint the client
+            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+          type: string
+        metadata:
+          type: object
+        spec:
+          description: SupportBundleSpec defines the desired state of SupportBundle
+          properties:
+            afterCollection:
+              items:
+                properties:
+                  callback:
+                    properties:
+                      method:
+                        type: string
+                      redactUri:
+                        type: string
+                      uri:
+                        type: string
+                    required:
+                    - method
+                    - redactUri
+                    - uri
+                    type: object
+                  uploadResultsTo:
+                    properties:
+                      method:
+                        type: string
+                      redactUri:
+                        type: string
+                      uri:
+                        type: string
+                    required:
+                    - method
+                    - redactUri
+                    - uri
+                    type: object
+                type: object
+              type: array
+            analyzers:
+              items:
+                properties:
+                  clusterVersion:
+                    properties:
+                      checkName:
+                        type: string
+                      exclude:
+                        description: BoolOrString is a type that can hold an bool
+                          or a string.  When used in JSON or YAML marshalling and
+                          unmarshalling, it produces or consumes the inner type.  This
+                          allows you to have, for example, a JSON field that can accept
+                          a booolean string or raw bool.
+                        type: BoolString
+                      outcomes:
+                        items:
+                          properties:
+                            fail:
+                              properties:
+                                message:
+                                  type: string
+                                uri:
+                                  type: string
+                                when:
+                                  type: string
+                              type: object
+                            pass:
+                              properties:
+                                message:
+                                  type: string
+                                uri:
+                                  type: string
+                                when:
+                                  type: string
+                              type: object
+                            warn:
+                              properties:
+                                message:
+                                  type: string
+                                uri:
+                                  type: string
+                                when:
+                                  type: string
+                              type: object
+                          type: object
+                        type: array
+                    required:
+                    - outcomes
+                    type: object
+                  containerRuntime:
+                    properties:
+                      checkName:
+                        type: string
+                      exclude:
+                        description: BoolOrString is a type that can hold an bool
+                          or a string.  When used in JSON or YAML marshalling and
+                          unmarshalling, it produces or consumes the inner type.  This
+                          allows you to have, for example, a JSON field that can accept
+                          a booolean string or raw bool.
+                        type: BoolString
+                      outcomes:
+                        items:
+                          properties:
+                            fail:
+                              properties:
+                                message:
+                                  type: string
+                                uri:
+                                  type: string
+                                when:
+                                  type: string
+                              type: object
+                            pass:
+                              properties:
+                                message:
+                                  type: string
+                                uri:
+                                  type: string
+                                when:
+                                  type: string
+                              type: object
+                            warn:
+                              properties:
+                                message:
+                                  type: string
+                                uri:
+                                  type: string
+                                when:
+                                  type: string
+                              type: object
+                          type: object
+                        type: array
+                    required:
+                    - outcomes
+                    type: object
+                  customResourceDefinition:
+                    properties:
+                      checkName:
+                        type: string
+                      customResourceDefinitionName:
+                        type: string
+                      exclude:
+                        description: BoolOrString is a type that can hold an bool
+                          or a string.  When used in JSON or YAML marshalling and
+                          unmarshalling, it produces or consumes the inner type.  This
+                          allows you to have, for example, a JSON field that can accept
+                          a booolean string or raw bool.
+                        type: BoolString
+                      outcomes:
+                        items:
+                          properties:
+                            fail:
+                              properties:
+                                message:
+                                  type: string
+                                uri:
+                                  type: string
+                                when:
+                                  type: string
+                              type: object
+                            pass:
+                              properties:
+                                message:
+                                  type: string
+                                uri:
+                                  type: string
+                                when:
+                                  type: string
+                              type: object
+                            warn:
+                              properties:
+                                message:
+                                  type: string
+                                uri:
+                                  type: string
+                                when:
+                                  type: string
+                              type: object
+                          type: object
+                        type: array
+                    required:
+                    - customResourceDefinitionName
+                    - outcomes
+                    type: object
+                  deploymentStatus:
+                    properties:
+                      checkName:
+                        type: string
+                      exclude:
+                        description: BoolOrString is a type that can hold an bool
+                          or a string.  When used in JSON or YAML marshalling and
+                          unmarshalling, it produces or consumes the inner type.  This
+                          allows you to have, for example, a JSON field that can accept
+                          a booolean string or raw bool.
+                        type: BoolString
+                      name:
+                        type: string
+                      namespace:
+                        type: string
+                      outcomes:
+                        items:
+                          properties:
+                            fail:
+                              properties:
+                                message:
+                                  type: string
+                                uri:
+                                  type: string
+                                when:
+                                  type: string
+                              type: object
+                            pass:
+                              properties:
+                                message:
+                                  type: string
+                                uri:
+                                  type: string
+                                when:
+                                  type: string
+                              type: object
+                            warn:
+                              properties:
+                                message:
+                                  type: string
+                                uri:
+                                  type: string
+                                when:
+                                  type: string
+                              type: object
+                          type: object
+                        type: array
+                    required:
+                    - name
+                    - namespace
+                    - outcomes
+                    type: object
+                  distribution:
+                    properties:
+                      checkName:
+                        type: string
+                      exclude:
+                        description: BoolOrString is a type that can hold an bool
+                          or a string.  When used in JSON or YAML marshalling and
+                          unmarshalling, it produces or consumes the inner type.  This
+                          allows you to have, for example, a JSON field that can accept
+                          a booolean string or raw bool.
+                        type: BoolString
+                      outcomes:
+                        items:
+                          properties:
+                            fail:
+                              properties:
+                                message:
+                                  type: string
+                                uri:
+                                  type: string
+                                when:
+                                  type: string
+                              type: object
+                            pass:
+                              properties:
+                                message:
+                                  type: string
+                                uri:
+                                  type: string
+                                when:
+                                  type: string
+                              type: object
+                            warn:
+                              properties:
+                                message:
+                                  type: string
+                                uri:
+                                  type: string
+                                when:
+                                  type: string
+                              type: object
+                          type: object
+                        type: array
+                    required:
+                    - outcomes
+                    type: object
+                  imagePullSecret:
+                    properties:
+                      checkName:
+                        type: string
+                      exclude:
+                        description: BoolOrString is a type that can hold an bool
+                          or a string.  When used in JSON or YAML marshalling and
+                          unmarshalling, it produces or consumes the inner type.  This
+                          allows you to have, for example, a JSON field that can accept
+                          a booolean string or raw bool.
+                        type: BoolString
+                      outcomes:
+                        items:
+                          properties:
+                            fail:
+                              properties:
+                                message:
+                                  type: string
+                                uri:
+                                  type: string
+                                when:
+                                  type: string
+                              type: object
+                            pass:
+                              properties:
+                                message:
+                                  type: string
+                                uri:
+                                  type: string
+                                when:
+                                  type: string
+                              type: object
+                            warn:
+                              properties:
+                                message:
+                                  type: string
+                                uri:
+                                  type: string
+                                when:
+                                  type: string
+                              type: object
+                          type: object
+                        type: array
+                      registryName:
+                        type: string
+                    required:
+                    - outcomes
+                    - registryName
+                    type: object
+                  ingress:
+                    properties:
+                      checkName:
+                        type: string
+                      exclude:
+                        description: BoolOrString is a type that can hold an bool
+                          or a string.  When used in JSON or YAML marshalling and
+                          unmarshalling, it produces or consumes the inner type.  This
+                          allows you to have, for example, a JSON field that can accept
+                          a booolean string or raw bool.
+                        type: BoolString
+                      ingressName:
+                        type: string
+                      namespace:
+                        type: string
+                      outcomes:
+                        items:
+                          properties:
+                            fail:
+                              properties:
+                                message:
+                                  type: string
+                                uri:
+                                  type: string
+                                when:
+                                  type: string
+                              type: object
+                            pass:
+                              properties:
+                                message:
+                                  type: string
+                                uri:
+                                  type: string
+                                when:
+                                  type: string
+                              type: object
+                            warn:
+                              properties:
+                                message:
+                                  type: string
+                                uri:
+                                  type: string
+                                when:
+                                  type: string
+                              type: object
+                          type: object
+                        type: array
+                    required:
+                    - ingressName
+                    - namespace
+                    - outcomes
+                    type: object
+                  mysql:
+                    properties:
+                      checkName:
+                        type: string
+                      collectorName:
+                        type: string
+                      exclude:
+                        description: BoolOrString is a type that can hold an bool
+                          or a string.  When used in JSON or YAML marshalling and
+                          unmarshalling, it produces or consumes the inner type.  This
+                          allows you to have, for example, a JSON field that can accept
+                          a booolean string or raw bool.
+                        type: BoolString
+                      fileName:
+                        type: string
+                      outcomes:
+                        items:
+                          properties:
+                            fail:
+                              properties:
+                                message:
+                                  type: string
+                                uri:
+                                  type: string
+                                when:
+                                  type: string
+                              type: object
+                            pass:
+                              properties:
+                                message:
+                                  type: string
+                                uri:
+                                  type: string
+                                when:
+                                  type: string
+                              type: object
+                            warn:
+                              properties:
+                                message:
+                                  type: string
+                                uri:
+                                  type: string
+                                when:
+                                  type: string
+                              type: object
+                          type: object
+                        type: array
+                    required:
+                    - collectorName
+                    - outcomes
+                    type: object
+                  nodeResources:
+                    properties:
+                      checkName:
+                        type: string
+                      exclude:
+                        description: BoolOrString is a type that can hold an bool
+                          or a string.  When used in JSON or YAML marshalling and
+                          unmarshalling, it produces or consumes the inner type.  This
+                          allows you to have, for example, a JSON field that can accept
+                          a booolean string or raw bool.
+                        type: BoolString
+                      filters:
+                        properties:
+                          cpuAllocatable:
+                            type: string
+                          cpuCapacity:
+                            type: string
+                          ephemeralStorageAllocatable:
+                            type: string
+                          ephemeralStorageCapacity:
+                            type: string
+                          memoryAllocatable:
+                            type: string
+                          memoryCapacity:
+                            type: string
+                          podAllocatable:
+                            type: string
+                          podCapacity:
+                            type: string
+                          selector:
+                            properties:
+                              matchLabel:
+                                additionalProperties:
+                                  type: string
+                                type: object
+                            type: object
+                        type: object
+                      outcomes:
+                        items:
+                          properties:
+                            fail:
+                              properties:
+                                message:
+                                  type: string
+                                uri:
+                                  type: string
+                                when:
+                                  type: string
+                              type: object
+                            pass:
+                              properties:
+                                message:
+                                  type: string
+                                uri:
+                                  type: string
+                                when:
+                                  type: string
+                              type: object
+                            warn:
+                              properties:
+                                message:
+                                  type: string
+                                uri:
+                                  type: string
+                                when:
+                                  type: string
+                              type: object
+                          type: object
+                        type: array
+                    required:
+                    - outcomes
+                    type: object
+                  postgres:
+                    properties:
+                      checkName:
+                        type: string
+                      collectorName:
+                        type: string
+                      exclude:
+                        description: BoolOrString is a type that can hold an bool
+                          or a string.  When used in JSON or YAML marshalling and
+                          unmarshalling, it produces or consumes the inner type.  This
+                          allows you to have, for example, a JSON field that can accept
+                          a booolean string or raw bool.
+                        type: BoolString
+                      fileName:
+                        type: string
+                      outcomes:
+                        items:
+                          properties:
+                            fail:
+                              properties:
+                                message:
+                                  type: string
+                                uri:
+                                  type: string
+                                when:
+                                  type: string
+                              type: object
+                            pass:
+                              properties:
+                                message:
+                                  type: string
+                                uri:
+                                  type: string
+                                when:
+                                  type: string
+                              type: object
+                            warn:
+                              properties:
+                                message:
+                                  type: string
+                                uri:
+                                  type: string
+                                when:
+                                  type: string
+                              type: object
+                          type: object
+                        type: array
+                    required:
+                    - collectorName
+                    - outcomes
+                    type: object
+                  redis:
+                    properties:
+                      checkName:
+                        type: string
+                      collectorName:
+                        type: string
+                      exclude:
+                        description: BoolOrString is a type that can hold an bool
+                          or a string.  When used in JSON or YAML marshalling and
+                          unmarshalling, it produces or consumes the inner type.  This
+                          allows you to have, for example, a JSON field that can accept
+                          a booolean string or raw bool.
+                        type: BoolString
+                      fileName:
+                        type: string
+                      outcomes:
+                        items:
+                          properties:
+                            fail:
+                              properties:
+                                message:
+                                  type: string
+                                uri:
+                                  type: string
+                                when:
+                                  type: string
+                              type: object
+                            pass:
+                              properties:
+                                message:
+                                  type: string
+                                uri:
+                                  type: string
+                                when:
+                                  type: string
+                              type: object
+                            warn:
+                              properties:
+                                message:
+                                  type: string
+                                uri:
+                                  type: string
+                                when:
+                                  type: string
+                              type: object
+                          type: object
+                        type: array
+                    required:
+                    - collectorName
+                    - outcomes
+                    type: object
+                  secret:
+                    properties:
+                      checkName:
+                        type: string
+                      exclude:
+                        description: BoolOrString is a type that can hold an bool
+                          or a string.  When used in JSON or YAML marshalling and
+                          unmarshalling, it produces or consumes the inner type.  This
+                          allows you to have, for example, a JSON field that can accept
+                          a booolean string or raw bool.
+                        type: BoolString
+                      key:
+                        type: string
+                      namespace:
+                        type: string
+                      outcomes:
+                        items:
+                          properties:
+                            fail:
+                              properties:
+                                message:
+                                  type: string
+                                uri:
+                                  type: string
+                                when:
+                                  type: string
+                              type: object
+                            pass:
+                              properties:
+                                message:
+                                  type: string
+                                uri:
+                                  type: string
+                                when:
+                                  type: string
+                              type: object
+                            warn:
+                              properties:
+                                message:
+                                  type: string
+                                uri:
+                                  type: string
+                                when:
+                                  type: string
+                              type: object
+                          type: object
+                        type: array
+                      secretName:
+                        type: string
+                    required:
+                    - namespace
+                    - outcomes
+                    - secretName
+                    type: object
+                  statefulsetStatus:
+                    properties:
+                      checkName:
+                        type: string
+                      exclude:
+                        description: BoolOrString is a type that can hold an bool
+                          or a string.  When used in JSON or YAML marshalling and
+                          unmarshalling, it produces or consumes the inner type.  This
+                          allows you to have, for example, a JSON field that can accept
+                          a booolean string or raw bool.
+                        type: BoolString
+                      name:
+                        type: string
+                      namespace:
+                        type: string
+                      outcomes:
+                        items:
+                          properties:
+                            fail:
+                              properties:
+                                message:
+                                  type: string
+                                uri:
+                                  type: string
+                                when:
+                                  type: string
+                              type: object
+                            pass:
+                              properties:
+                                message:
+                                  type: string
+                                uri:
+                                  type: string
+                                when:
+                                  type: string
+                              type: object
+                            warn:
+                              properties:
+                                message:
+                                  type: string
+                                uri:
+                                  type: string
+                                when:
+                                  type: string
+                              type: object
+                          type: object
+                        type: array
+                    required:
+                    - name
+                    - namespace
+                    - outcomes
+                    type: object
+                  storageClass:
+                    properties:
+                      checkName:
+                        type: string
+                      exclude:
+                        description: BoolOrString is a type that can hold an bool
+                          or a string.  When used in JSON or YAML marshalling and
+                          unmarshalling, it produces or consumes the inner type.  This
+                          allows you to have, for example, a JSON field that can accept
+                          a booolean string or raw bool.
+                        type: BoolString
+                      outcomes:
+                        items:
+                          properties:
+                            fail:
+                              properties:
+                                message:
+                                  type: string
+                                uri:
+                                  type: string
+                                when:
+                                  type: string
+                              type: object
+                            pass:
+                              properties:
+                                message:
+                                  type: string
+                                uri:
+                                  type: string
+                                when:
+                                  type: string
+                              type: object
+                            warn:
+                              properties:
+                                message:
+                                  type: string
+                                uri:
+                                  type: string
+                                when:
+                                  type: string
+                              type: object
+                          type: object
+                        type: array
+                      storageClassName:
+                        type: string
+                    required:
+                    - outcomes
+                    - storageClassName
+                    type: object
+                  textAnalyze:
+                    properties:
+                      checkName:
+                        type: string
+                      collectorName:
+                        type: string
+                      exclude:
+                        description: BoolOrString is a type that can hold an bool
+                          or a string.  When used in JSON or YAML marshalling and
+                          unmarshalling, it produces or consumes the inner type.  This
+                          allows you to have, for example, a JSON field that can accept
+                          a booolean string or raw bool.
+                        type: BoolString
+                      fileName:
+                        type: string
+                      outcomes:
+                        items:
+                          properties:
+                            fail:
+                              properties:
+                                message:
+                                  type: string
+                                uri:
+                                  type: string
+                                when:
+                                  type: string
+                              type: object
+                            pass:
+                              properties:
+                                message:
+                                  type: string
+                                uri:
+                                  type: string
+                                when:
+                                  type: string
+                              type: object
+                            warn:
+                              properties:
+                                message:
+                                  type: string
+                                uri:
+                                  type: string
+                                when:
+                                  type: string
+                              type: object
+                          type: object
+                        type: array
+                      regex:
+                        type: string
+                      regexGroups:
+                        type: string
+                    required:
+                    - outcomes
+                    type: object
+                type: object
+              type: array
+            collectors:
+              items:
+                properties:
+                  clusterInfo:
+                    properties:
+                      collectorName:
+                        type: string
+                      exclude:
+                        description: BoolOrString is a type that can hold an bool
+                          or a string.  When used in JSON or YAML marshalling and
+                          unmarshalling, it produces or consumes the inner type.  This
+                          allows you to have, for example, a JSON field that can accept
+                          a booolean string or raw bool.
+                        type: BoolString
+                    type: object
+                  clusterResources:
+                    properties:
+                      collectorName:
+                        type: string
+                      exclude:
+                        description: BoolOrString is a type that can hold an bool
+                          or a string.  When used in JSON or YAML marshalling and
+                          unmarshalling, it produces or consumes the inner type.  This
+                          allows you to have, for example, a JSON field that can accept
+                          a booolean string or raw bool.
+                        type: BoolString
+                    type: object
+                  copy:
+                    properties:
+                      collectorName:
+                        type: string
+                      containerName:
+                        type: string
+                      containerPath:
+                        type: string
+                      exclude:
+                        description: BoolOrString is a type that can hold an bool
+                          or a string.  When used in JSON or YAML marshalling and
+                          unmarshalling, it produces or consumes the inner type.  This
+                          allows you to have, for example, a JSON field that can accept
+                          a booolean string or raw bool.
+                        type: BoolString
+                      name:
+                        type: string
+                      namespace:
+                        type: string
+                      selector:
+                        items:
+                          type: string
+                        type: array
+                    required:
+                    - containerPath
+                    - namespace
+                    - selector
+                    type: object
+                  data:
+                    properties:
+                      collectorName:
+                        type: string
+                      data:
+                        type: string
+                      exclude:
+                        description: BoolOrString is a type that can hold an bool
+                          or a string.  When used in JSON or YAML marshalling and
+                          unmarshalling, it produces or consumes the inner type.  This
+                          allows you to have, for example, a JSON field that can accept
+                          a booolean string or raw bool.
+                        type: BoolString
+                      name:
+                        type: string
+                    required:
+                    - data
+                    type: object
+                  exec:
+                    properties:
+                      args:
+                        items:
+                          type: string
+                        type: array
+                      collectorName:
+                        type: string
+                      command:
+                        items:
+                          type: string
+                        type: array
+                      containerName:
+                        type: string
+                      exclude:
+                        description: BoolOrString is a type that can hold an bool
+                          or a string.  When used in JSON or YAML marshalling and
+                          unmarshalling, it produces or consumes the inner type.  This
+                          allows you to have, for example, a JSON field that can accept
+                          a booolean string or raw bool.
+                        type: BoolString
+                      name:
+                        type: string
+                      namespace:
+                        type: string
+                      selector:
+                        items:
+                          type: string
+                        type: array
+                      timeout:
+                        type: string
+                    required:
+                    - namespace
+                    - selector
+                    type: object
+                  http:
+                    properties:
+                      collectorName:
+                        type: string
+                      exclude:
+                        description: BoolOrString is a type that can hold an bool
+                          or a string.  When used in JSON or YAML marshalling and
+                          unmarshalling, it produces or consumes the inner type.  This
+                          allows you to have, for example, a JSON field that can accept
+                          a booolean string or raw bool.
+                        type: BoolString
+                      get:
+                        properties:
+                          headers:
+                            additionalProperties:
+                              type: string
+                            type: object
+                          insecureSkipVerify:
+                            type: boolean
+                          url:
+                            type: string
+                        required:
+                        - url
+                        type: object
+                      name:
+                        type: string
+                      post:
+                        properties:
+                          body:
+                            type: string
+                          headers:
+                            additionalProperties:
+                              type: string
+                            type: object
+                          insecureSkipVerify:
+                            type: boolean
+                          url:
+                            type: string
+                        required:
+                        - url
+                        type: object
+                      put:
+                        properties:
+                          body:
+                            type: string
+                          headers:
+                            additionalProperties:
+                              type: string
+                            type: object
+                          insecureSkipVerify:
+                            type: boolean
+                          url:
+                            type: string
+                        required:
+                        - url
+                        type: object
+                    type: object
+                  logs:
+                    properties:
+                      collectorName:
+                        type: string
+                      containerNames:
+                        items:
+                          type: string
+                        type: array
+                      exclude:
+                        description: BoolOrString is a type that can hold an bool
+                          or a string.  When used in JSON or YAML marshalling and
+                          unmarshalling, it produces or consumes the inner type.  This
+                          allows you to have, for example, a JSON field that can accept
+                          a booolean string or raw bool.
+                        type: BoolString
+                      limits:
+                        properties:
+                          maxAge:
+                            type: string
+                          maxLines:
+                            format: int64
+                            type: integer
+                        type: object
+                      name:
+                        type: string
+                      namespace:
+                        type: string
+                      selector:
+                        items:
+                          type: string
+                        type: array
+                    required:
+                    - selector
+                    type: object
+                  mysql:
+                    properties:
+                      collectorName:
+                        type: string
+                      exclude:
+                        description: BoolOrString is a type that can hold an bool
+                          or a string.  When used in JSON or YAML marshalling and
+                          unmarshalling, it produces or consumes the inner type.  This
+                          allows you to have, for example, a JSON field that can accept
+                          a booolean string or raw bool.
+                        type: BoolString
+                      uri:
+                        type: string
+                    required:
+                    - uri
+                    type: object
+                  postgres:
+                    properties:
+                      collectorName:
+                        type: string
+                      exclude:
+                        description: BoolOrString is a type that can hold an bool
+                          or a string.  When used in JSON or YAML marshalling and
+                          unmarshalling, it produces or consumes the inner type.  This
+                          allows you to have, for example, a JSON field that can accept
+                          a booolean string or raw bool.
+                        type: BoolString
+                      uri:
+                        type: string
+                    required:
+                    - uri
+                    type: object
+                  redis:
+                    properties:
+                      collectorName:
+                        type: string
+                      exclude:
+                        description: BoolOrString is a type that can hold an bool
+                          or a string.  When used in JSON or YAML marshalling and
+                          unmarshalling, it produces or consumes the inner type.  This
+                          allows you to have, for example, a JSON field that can accept
+                          a booolean string or raw bool.
+                        type: BoolString
+                      uri:
+                        type: string
+                    required:
+                    - uri
+                    type: object
+                  run:
+                    properties:
+                      args:
+                        items:
+                          type: string
+                        type: array
+                      collectorName:
+                        type: string
+                      command:
+                        items:
+                          type: string
+                        type: array
+                      exclude:
+                        description: BoolOrString is a type that can hold an bool
+                          or a string.  When used in JSON or YAML marshalling and
+                          unmarshalling, it produces or consumes the inner type.  This
+                          allows you to have, for example, a JSON field that can accept
+                          a booolean string or raw bool.
+                        type: BoolString
+                      image:
+                        type: string
+                      imagePullPolicy:
+                        type: string
+                      name:
+                        type: string
+                      namespace:
+                        type: string
+                      timeout:
+                        type: string
+                    required:
+                    - image
+                    - namespace
+                    type: object
+                  secret:
+                    properties:
+                      collectorName:
+                        type: string
+                      exclude:
+                        description: BoolOrString is a type that can hold an bool
+                          or a string.  When used in JSON or YAML marshalling and
+                          unmarshalling, it produces or consumes the inner type.  This
+                          allows you to have, for example, a JSON field that can accept
+                          a booolean string or raw bool.
+                        type: BoolString
+                      includeValue:
+                        type: boolean
+                      key:
+                        type: string
+                      name:
+                        type: string
+                      namespace:
+                        type: string
+                    required:
+                    - name
+                    type: object
+                type: object
+              type: array
+          type: object
+        status:
+          description: SupportBundleStatus defines the observed state of SupportBundle
+          type: object
+      type: object
+  version: v1beta2
+  versions:
+  - name: v1beta2
+    served: true
+    storage: true
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []

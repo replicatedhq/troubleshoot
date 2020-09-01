@@ -3,7 +3,7 @@ package analyzer
 import (
 	"testing"
 
-	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
+	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.undefinedlabs.com/scopeagent"
@@ -12,22 +12,22 @@ import (
 func Test_deploymentStatus(t *testing.T) {
 	tests := []struct {
 		name         string
-		analyzer     troubleshootv1beta1.DeploymentStatus
+		analyzer     troubleshootv1beta2.DeploymentStatus
 		expectResult AnalyzeResult
 		files        map[string][]byte
 	}{
 		{
 			name: "1/1, pass when = 1",
-			analyzer: troubleshootv1beta1.DeploymentStatus{
-				Outcomes: []*troubleshootv1beta1.Outcome{
+			analyzer: troubleshootv1beta2.DeploymentStatus{
+				Outcomes: []*troubleshootv1beta2.Outcome{
 					{
-						Pass: &troubleshootv1beta1.SingleOutcome{
+						Pass: &troubleshootv1beta2.SingleOutcome{
 							When:    "= 1",
 							Message: "pass",
 						},
 					},
 					{
-						Fail: &troubleshootv1beta1.SingleOutcome{
+						Fail: &troubleshootv1beta2.SingleOutcome{
 							Message: "fail",
 						},
 					},
@@ -50,16 +50,16 @@ func Test_deploymentStatus(t *testing.T) {
 		},
 		{
 			name: "1/1, pass when = 2",
-			analyzer: troubleshootv1beta1.DeploymentStatus{
-				Outcomes: []*troubleshootv1beta1.Outcome{
+			analyzer: troubleshootv1beta2.DeploymentStatus{
+				Outcomes: []*troubleshootv1beta2.Outcome{
 					{
-						Pass: &troubleshootv1beta1.SingleOutcome{
+						Pass: &troubleshootv1beta2.SingleOutcome{
 							When:    "= 2",
 							Message: "pass",
 						},
 					},
 					{
-						Fail: &troubleshootv1beta1.SingleOutcome{
+						Fail: &troubleshootv1beta2.SingleOutcome{
 							Message: "fail",
 						},
 					},
@@ -82,22 +82,22 @@ func Test_deploymentStatus(t *testing.T) {
 		},
 		{
 			name: "1/1, pass when >= 2, warn when = 1, fail when 0",
-			analyzer: troubleshootv1beta1.DeploymentStatus{
-				Outcomes: []*troubleshootv1beta1.Outcome{
+			analyzer: troubleshootv1beta2.DeploymentStatus{
+				Outcomes: []*troubleshootv1beta2.Outcome{
 					{
-						Pass: &troubleshootv1beta1.SingleOutcome{
+						Pass: &troubleshootv1beta2.SingleOutcome{
 							When:    ">= 2",
 							Message: "pass",
 						},
 					},
 					{
-						Warn: &troubleshootv1beta1.SingleOutcome{
+						Warn: &troubleshootv1beta2.SingleOutcome{
 							When:    "= 1",
 							Message: "warn",
 						},
 					},
 					{
-						Fail: &troubleshootv1beta1.SingleOutcome{
+						Fail: &troubleshootv1beta2.SingleOutcome{
 							Message: "fail",
 						},
 					},

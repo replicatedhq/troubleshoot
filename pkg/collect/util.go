@@ -7,10 +7,10 @@ import (
 	"regexp"
 	"strings"
 
-	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
+	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 )
 
-func DeterministicIDForCollector(collector *troubleshootv1beta1.Collect) string {
+func DeterministicIDForCollector(collector *troubleshootv1beta2.Collect) string {
 	unsafeID := ""
 
 	if collector.ClusterInfo != nil {

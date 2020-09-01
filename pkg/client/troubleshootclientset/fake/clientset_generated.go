@@ -21,6 +21,8 @@ import (
 	clientset "github.com/replicatedhq/troubleshoot/pkg/client/troubleshootclientset"
 	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/client/troubleshootclientset/typed/troubleshoot/v1beta1"
 	faketroubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/client/troubleshootclientset/typed/troubleshoot/v1beta1/fake"
+	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/client/troubleshootclientset/typed/troubleshoot/v1beta2"
+	faketroubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/client/troubleshootclientset/typed/troubleshoot/v1beta2/fake"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/discovery"
@@ -78,4 +80,9 @@ var _ clientset.Interface = &Clientset{}
 // TroubleshootV1beta1 retrieves the TroubleshootV1beta1Client
 func (c *Clientset) TroubleshootV1beta1() troubleshootv1beta1.TroubleshootV1beta1Interface {
 	return &faketroubleshootv1beta1.FakeTroubleshootV1beta1{Fake: &c.Fake}
+}
+
+// TroubleshootV1beta2 retrieves the TroubleshootV1beta2Client
+func (c *Clientset) TroubleshootV1beta2() troubleshootv1beta2.TroubleshootV1beta2Interface {
+	return &faketroubleshootv1beta2.FakeTroubleshootV1beta2{Fake: &c.Fake}
 }

@@ -6,11 +6,11 @@ import (
 	"path"
 
 	"github.com/pkg/errors"
-	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
+	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	appsv1 "k8s.io/api/apps/v1"
 )
 
-func analyzeDeploymentStatus(analyzer *troubleshootv1beta1.DeploymentStatus, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
+func analyzeDeploymentStatus(analyzer *troubleshootv1beta2.DeploymentStatus, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
 	collected, err := getCollectedFileContents(path.Join("cluster-resources", "deployments", fmt.Sprintf("%s.json", analyzer.Namespace)))
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to read collected deployments from namespace")

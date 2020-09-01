@@ -8,10 +8,10 @@ import (
 
 	_ "github.com/lib/pq"
 	"github.com/pkg/errors"
-	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
+	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 )
 
-func Postgres(c *Collector, databaseCollector *troubleshootv1beta1.Database) (map[string][]byte, error) {
+func Postgres(c *Collector, databaseCollector *troubleshootv1beta2.Database) (map[string][]byte, error) {
 	databaseConnection := DatabaseConnection{}
 
 	db, err := sql.Open("postgres", databaseCollector.URI)

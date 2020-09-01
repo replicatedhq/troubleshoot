@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/pkg/errors"
-	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
+	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/replicatedhq/troubleshoot/pkg/collect"
 	"k8s.io/client-go/rest"
 )
@@ -21,15 +21,15 @@ type CollectResult struct {
 	AllCollectedData map[string][]byte
 	Collectors       collect.Collectors
 	IsRBACAllowed    bool
-	Spec             *troubleshootv1beta1.Preflight
+	Spec             *troubleshootv1beta2.Preflight
 }
 
 // Collect runs the collection phase of preflight checks
-func Collect(opts CollectOpts, p *troubleshootv1beta1.Preflight) (CollectResult, error) {
-	collectSpecs := make([]*troubleshootv1beta1.Collect, 0, 0)
+func Collect(opts CollectOpts, p *troubleshootv1beta2.Preflight) (CollectResult, error) {
+	collectSpecs := make([]*troubleshootv1beta2.Collect, 0, 0)
 	collectSpecs = append(collectSpecs, p.Spec.Collectors...)
-	collectSpecs = ensureCollectorInList(collectSpecs, troubleshootv1beta1.Collect{ClusterInfo: &troubleshootv1beta1.ClusterInfo{}})
-	collectSpecs = ensureCollectorInList(collectSpecs, troubleshootv1beta1.Collect{ClusterResources: &troubleshootv1beta1.ClusterResources{}})
+	collectSpecs = ensureCollectorInList(collectSpecs, troubleshootv1beta2.Collect{ClusterInfo: &troubleshootv1beta2.ClusterInfo{}})
+	collectSpecs = ensureCollectorInList(collectSpecs, troubleshootv1beta2.Collect{ClusterResources: &troubleshootv1beta2.ClusterResources{}})
 
 	allCollectedData := make(map[string][]byte)
 
@@ -94,7 +94,7 @@ func Collect(opts CollectOpts, p *troubleshootv1beta1.Preflight) (CollectResult,
 	return collectResult, nil
 }
 
-func ensureCollectorInList(list []*troubleshootv1beta1.Collect, collector troubleshootv1beta1.Collect) []*troubleshootv1beta1.Collect {
+func ensureCollectorInList(list []*troubleshootv1beta2.Collect, collector troubleshootv1beta2.Collect) []*troubleshootv1beta2.Collect {
 	for _, inList := range list {
 		if collector.ClusterResources != nil && inList.ClusterResources != nil {
 			return list

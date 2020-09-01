@@ -4,11 +4,11 @@ import (
 	"encoding/json"
 	"fmt"
 
-	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
+	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	storagev1beta1 "k8s.io/api/storage/v1beta1"
 )
 
-func analyzeStorageClass(analyzer *troubleshootv1beta1.StorageClass, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
+func analyzeStorageClass(analyzer *troubleshootv1beta2.StorageClass, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
 	storageClassesData, err := getCollectedFileContents("cluster-resources/storage-classes.json")
 	if err != nil {
 		return nil, err

@@ -5,14 +5,14 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
+	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/replicatedhq/troubleshoot/pkg/logger"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
 
-func Run(c *Collector, runCollector *troubleshootv1beta1.Run) (map[string][]byte, error) {
+func Run(c *Collector, runCollector *troubleshootv1beta2.Run) (map[string][]byte, error) {
 	ctx := context.Background()
 
 	client, err := kubernetes.NewForConfig(c.ClientConfig)
@@ -61,7 +61,7 @@ func Run(c *Collector, runCollector *troubleshootv1beta1.Run) (map[string][]byte
 	}
 }
 
-func runWithoutTimeout(ctx context.Context, c *Collector, pod *corev1.Pod, runCollector *troubleshootv1beta1.Run) (map[string][]byte, error) {
+func runWithoutTimeout(ctx context.Context, c *Collector, pod *corev1.Pod, runCollector *troubleshootv1beta2.Run) (map[string][]byte, error) {
 	client, err := kubernetes.NewForConfig(c.ClientConfig)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed create client from config")
@@ -82,7 +82,7 @@ func runWithoutTimeout(ctx context.Context, c *Collector, pod *corev1.Pod, runCo
 
 	runOutput := map[string][]byte{}
 
-	limits := troubleshootv1beta1.LogLimits{
+	limits := troubleshootv1beta2.LogLimits{
 		MaxLines: 10000,
 	}
 	podLogs, err := getPodLogs(ctx, client, *pod, runCollector.Name, "", &limits, true)
@@ -97,7 +97,7 @@ func runWithoutTimeout(ctx context.Context, c *Collector, pod *corev1.Pod, runCo
 	return runOutput, nil
 }
 
-func runPod(ctx context.Context, client *kubernetes.Clientset, runCollector *troubleshootv1beta1.Run, namespace string) (*corev1.Pod, error) {
+func runPod(ctx context.Context, client *kubernetes.Clientset, runCollector *troubleshootv1beta2.Run, namespace string) (*corev1.Pod, error) {
 	podLabels := make(map[string]string)
 	podLabels["troubleshoot-role"] = "run-collector"
 

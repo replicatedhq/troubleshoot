@@ -8,14 +8,14 @@ import (
 	"path/filepath"
 	"time"
 
-	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
+	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/remotecommand"
 )
 
-func Exec(c *Collector, execCollector *troubleshootv1beta1.Exec) (map[string][]byte, error) {
+func Exec(c *Collector, execCollector *troubleshootv1beta2.Exec) (map[string][]byte, error) {
 	if execCollector.Timeout == "" {
 		return execWithoutTimeout(c, execCollector)
 	}
@@ -47,7 +47,7 @@ func Exec(c *Collector, execCollector *troubleshootv1beta1.Exec) (map[string][]b
 	}
 }
 
-func execWithoutTimeout(c *Collector, execCollector *troubleshootv1beta1.Exec) (map[string][]byte, error) {
+func execWithoutTimeout(c *Collector, execCollector *troubleshootv1beta2.Exec) (map[string][]byte, error) {
 	client, err := kubernetes.NewForConfig(c.ClientConfig)
 	if err != nil {
 		return nil, err
@@ -92,7 +92,7 @@ func execWithoutTimeout(c *Collector, execCollector *troubleshootv1beta1.Exec) (
 	return execOutput, nil
 }
 
-func getExecOutputs(c *Collector, client *kubernetes.Clientset, pod corev1.Pod, execCollector *troubleshootv1beta1.Exec) ([]byte, []byte, []string) {
+func getExecOutputs(c *Collector, client *kubernetes.Clientset, pod corev1.Pod, execCollector *troubleshootv1beta2.Exec) ([]byte, []byte, []string) {
 	container := pod.Spec.Containers[0].Name
 	if execCollector.ContainerName != "" {
 		container = execCollector.ContainerName
@@ -136,7 +136,7 @@ func getExecOutputs(c *Collector, client *kubernetes.Clientset, pod corev1.Pod, 
 	return stdout.Bytes(), stderr.Bytes(), nil
 }
 
-func getExecErrosFileName(execCollector *troubleshootv1beta1.Exec) string {
+func getExecErrosFileName(execCollector *troubleshootv1beta2.Exec) string {
 	if len(execCollector.Name) > 0 {
 		return fmt.Sprintf("%s-errors.json", execCollector.Name)
 	}

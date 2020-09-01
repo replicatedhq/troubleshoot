@@ -25,11 +25,12 @@ import (
 	"github.com/pkg/errors"
 	"github.com/replicatedhq/troubleshoot/cmd/util"
 	analyzer "github.com/replicatedhq/troubleshoot/pkg/analyze"
-	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
+	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/replicatedhq/troubleshoot/pkg/client/troubleshootclientset/scheme"
 	troubleshootclientsetscheme "github.com/replicatedhq/troubleshoot/pkg/client/troubleshootclientset/scheme"
 	"github.com/replicatedhq/troubleshoot/pkg/collect"
 	"github.com/replicatedhq/troubleshoot/pkg/convert"
+	"github.com/replicatedhq/troubleshoot/pkg/docrewrite"
 	"github.com/replicatedhq/troubleshoot/pkg/redact"
 	"github.com/spf13/viper"
 	spin "github.com/tj/go-spin"
@@ -57,7 +58,7 @@ func runTroubleshoot(v *viper.Viper, arg string) error {
 		return errors.Wrap(err, "failed to load collector spec")
 	}
 
-	multidocs := strings.Split(string(collectorContent), "---")
+	multidocs := strings.Split(string(collectorContent), "\n---\n")
 
 	// we suppory both raw collector kinds and supportbundle kinds here
 	supportBundleSpec, err := parseSupportBundleFromDoc([]byte(multidocs[0]))
@@ -68,31 +69,42 @@ func runTroubleshoot(v *viper.Viper, arg string) error {
 	troubleshootclientsetscheme.AddToScheme(scheme.Scheme)
 	decode := scheme.Codecs.UniversalDeserializer().Decode
 
-	additionalRedactors := &troubleshootv1beta1.Redactor{}
+	additionalRedactors := &troubleshootv1beta2.Redactor{}
 	for idx, redactor := range v.GetStringSlice("redactors") {
 		redactorContent, err := loadSpec(v, redactor)
 		if err != nil {
 			return errors.Wrapf(err, "failed to load redactor spec #%d", idx)
 		}
+		redactorContent, err = docrewrite.ConvertToV1Beta2(redactorContent)
+		if err != nil {
+			return errors.Wrap(err, "failed to convert to v1beta2")
+		}
 		obj, _, err := decode([]byte(redactorContent), nil, nil)
 		if err != nil {
 			return errors.Wrapf(err, "failed to parse redactors %s", redactor)
 		}
-		loopRedactors, ok := obj.(*troubleshootv1beta1.Redactor)
+		loopRedactors, ok := obj.(*troubleshootv1beta2.Redactor)
 		if !ok {
-			return fmt.Errorf("%s is not a troubleshootv1beta1 redactor type", redactor)
+			return fmt.Errorf("%s is not a troubleshootv1beta2 redactor type", redactor)
 		}
 		if loopRedactors != nil {
 			additionalRedactors.Spec.Redactors = append(additionalRedactors.Spec.Redactors, loopRedactors.Spec.Redactors...)
 		}
 	}
 
-	for i, additionalDoc := range multidocs[1:] {
-		obj, _, err := decode([]byte(additionalDoc), nil, nil)
+	for i, additionalDoc := range multidocs {
+		if i == 0 {
+			continue
+		}
+		additionalDoc, err := docrewrite.ConvertToV1Beta2([]byte(additionalDoc))
+		if err != nil {
+			return errors.Wrap(err, "failed to convert to v1beta2")
+		}
+		obj, _, err := decode(additionalDoc, nil, nil)
 		if err != nil {
 			return errors.Wrapf(err, "failed to parse additional doc %d", i)
 		}
-		multidocRedactors, ok := obj.(*troubleshootv1beta1.Redactor)
+		multidocRedactors, ok := obj.(*troubleshootv1beta2.Redactor)
 		if !ok {
 			continue
 		}
@@ -274,7 +286,12 @@ func loadSpec(v *viper.Viper, arg string) ([]byte, error) {
 	}
 }
 
-func parseSupportBundleFromDoc(doc []byte) (*troubleshootv1beta1.SupportBundle, error) {
+func parseSupportBundleFromDoc(doc []byte) (*troubleshootv1beta2.SupportBundle, error) {
+	doc, err := docrewrite.ConvertToV1Beta2(doc)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to convert to v1beta2")
+	}
+
 	troubleshootclientsetscheme.AddToScheme(scheme.Scheme)
 	decode := scheme.Codecs.UniversalDeserializer().Decode
 
@@ -283,17 +300,17 @@ func parseSupportBundleFromDoc(doc []byte) (*troubleshootv1beta1.SupportBundle, 
 		return nil, errors.Wrap(err, "failed to parse document")
 	}
 
-	collector, ok := obj.(*troubleshootv1beta1.Collector)
+	collector, ok := obj.(*troubleshootv1beta2.Collector)
 	if ok {
-		supportBundle := troubleshootv1beta1.SupportBundle{
+		supportBundle := troubleshootv1beta2.SupportBundle{
 			TypeMeta: metav1.TypeMeta{
-				APIVersion: "troubleshoot.replicated.com/v1beta1",
+				APIVersion: "troubleshoot.sh/v1beta2",
 				Kind:       "SupportBundle",
 			},
 			ObjectMeta: collector.ObjectMeta,
-			Spec: troubleshootv1beta1.SupportBundleSpec{
+			Spec: troubleshootv1beta2.SupportBundleSpec{
 				Collectors:      collector.Spec.Collectors,
-				Analyzers:       []*troubleshootv1beta1.Analyze{},
+				Analyzers:       []*troubleshootv1beta2.Analyze{},
 				AfterCollection: collector.Spec.AfterCollection,
 			},
 		}
@@ -301,7 +318,7 @@ func parseSupportBundleFromDoc(doc []byte) (*troubleshootv1beta1.SupportBundle, 
 		return &supportBundle, nil
 	}
 
-	supportBundle, ok := obj.(*troubleshootv1beta1.SupportBundle)
+	supportBundle, ok := obj.(*troubleshootv1beta2.SupportBundle)
 	if ok {
 		return supportBundle, nil
 	}
@@ -326,7 +343,7 @@ func canTryInsecure(v *viper.Viper) bool {
 	return true
 }
 
-func runCollectors(v *viper.Viper, collectors []*troubleshootv1beta1.Collect, additionalRedactors *troubleshootv1beta1.Redactor, progressChan chan interface{}) (string, error) {
+func runCollectors(v *viper.Viper, collectors []*troubleshootv1beta2.Collect, additionalRedactors *troubleshootv1beta2.Redactor, progressChan chan interface{}) (string, error) {
 	bundlePath, err := ioutil.TempDir("", "troubleshoot")
 	if err != nil {
 		return "", errors.Wrap(err, "create temp dir")
@@ -337,10 +354,10 @@ func runCollectors(v *viper.Viper, collectors []*troubleshootv1beta1.Collect, ad
 		return "", errors.Wrap(err, "write version file")
 	}
 
-	collectSpecs := make([]*troubleshootv1beta1.Collect, 0, 0)
+	collectSpecs := make([]*troubleshootv1beta2.Collect, 0, 0)
 	collectSpecs = append(collectSpecs, collectors...)
-	collectSpecs = ensureCollectorInList(collectSpecs, troubleshootv1beta1.Collect{ClusterInfo: &troubleshootv1beta1.ClusterInfo{}})
-	collectSpecs = ensureCollectorInList(collectSpecs, troubleshootv1beta1.Collect{ClusterResources: &troubleshootv1beta1.ClusterResources{}})
+	collectSpecs = ensureCollectorInList(collectSpecs, troubleshootv1beta2.Collect{ClusterInfo: &troubleshootv1beta2.ClusterInfo{}})
+	collectSpecs = ensureCollectorInList(collectSpecs, troubleshootv1beta2.Collect{ClusterResources: &troubleshootv1beta2.ClusterResources{}})
 
 	config, err := KubernetesConfigFlags.ToRESTConfig()
 	if err != nil {
@@ -374,7 +391,7 @@ func runCollectors(v *viper.Viper, collectors []*troubleshootv1beta1.Collect, ad
 		return "", errors.New("insufficient permissions to run all collectors")
 	}
 
-	globalRedactors := []*troubleshootv1beta1.Redact{}
+	globalRedactors := []*troubleshootv1beta2.Redact{}
 	if additionalRedactors != nil {
 		globalRedactors = additionalRedactors.Spec.Redactors
 	}
@@ -441,6 +458,7 @@ func saveCollectorOutput(output map[string][]byte, bundlePath string, c *collect
 
 	return nil
 }
+
 func untarAndSave(tarFile []byte, bundlePath string) error {
 	keys := make([]string, 0)
 	dirs := make(map[string]*tar.Header)
@@ -494,7 +512,7 @@ func untarAndSave(tarFile []byte, bundlePath string) error {
 	}
 	return nil
 }
-func uploadSupportBundle(r *troubleshootv1beta1.ResultRequest, archivePath string) error {
+func uploadSupportBundle(r *troubleshootv1beta2.ResultRequest, archivePath string) error {
 	contentType := getExpectedContentType(r.URI)
 	if contentType != "" && contentType != "application/tar+gzip" {
 		return fmt.Errorf("cannot upload content type %s", contentType)
@@ -567,7 +585,7 @@ func getExpectedContentType(uploadURL string) string {
 	return parsedURL.Query().Get("Content-Type")
 }
 
-func callbackSupportBundleAPI(r *troubleshootv1beta1.ResultRequest, archivePath string) error {
+func callbackSupportBundleAPI(r *troubleshootv1beta2.ResultRequest, archivePath string) error {
 	req, err := http.NewRequest(r.Method, r.URI, nil)
 	if err != nil {
 		return errors.Wrap(err, "create request")
@@ -615,6 +633,6 @@ func tarSupportBundleDir(inputDir, outputFilename string) error {
 }
 
 type CollectorFailure struct {
-	Collector *troubleshootv1beta1.Collect
+	Collector *troubleshootv1beta2.Collect
 	Failure   string
 }

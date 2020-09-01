@@ -3,7 +3,7 @@ package collect
 import (
 	"testing"
 
-	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
+	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/stretchr/testify/assert"
 	"go.undefinedlabs.com/scopeagent"
 )
@@ -34,27 +34,27 @@ func Test_selectorToString(t *testing.T) {
 func Test_DeterministicIDForCollector(t *testing.T) {
 	tests := []struct {
 		name      string
-		collector *troubleshootv1beta1.Collect
+		collector *troubleshootv1beta2.Collect
 		expect    string
 	}{
 		{
 			name: "cluster-info",
-			collector: &troubleshootv1beta1.Collect{
-				ClusterInfo: &troubleshootv1beta1.ClusterInfo{},
+			collector: &troubleshootv1beta2.Collect{
+				ClusterInfo: &troubleshootv1beta2.ClusterInfo{},
 			},
 			expect: "cluster-info",
 		},
 		{
 			name: "cluster-resources",
-			collector: &troubleshootv1beta1.Collect{
-				ClusterResources: &troubleshootv1beta1.ClusterResources{},
+			collector: &troubleshootv1beta2.Collect{
+				ClusterResources: &troubleshootv1beta2.ClusterResources{},
 			},
 			expect: "cluster-resources",
 		},
 		{
 			name: "secret",
-			collector: &troubleshootv1beta1.Collect{
-				Secret: &troubleshootv1beta1.Secret{
+			collector: &troubleshootv1beta2.Collect{
+				Secret: &troubleshootv1beta2.Secret{
 					SecretName: "secret-agent-woman",
 					Namespace:  "top-secret",
 				},
@@ -63,8 +63,8 @@ func Test_DeterministicIDForCollector(t *testing.T) {
 		},
 		{
 			name: "logs",
-			collector: &troubleshootv1beta1.Collect{
-				Logs: &troubleshootv1beta1.Logs{
+			collector: &troubleshootv1beta2.Collect{
+				Logs: &troubleshootv1beta2.Logs{
 					Namespace: "top-secret",
 					Selector:  []string{"this=is", "rather=long", "for=testing", "more=words", "too=many", "abcdef!=123456"},
 				},

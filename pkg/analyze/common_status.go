@@ -5,10 +5,10 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
+	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 )
 
-func commonStatus(outcomes []*troubleshootv1beta1.Outcome, title, iconKey string, iconURI string, readyReplicas int) (*AnalyzeResult, error) {
+func commonStatus(outcomes []*troubleshootv1beta2.Outcome, title, iconKey string, iconURI string, readyReplicas int) (*AnalyzeResult, error) {
 	result := &AnalyzeResult{
 		Title:   title,
 		IconKey: iconKey,

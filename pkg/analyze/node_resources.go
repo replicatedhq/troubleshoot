@@ -8,12 +8,12 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
+	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 )
 
-func analyzeNodeResources(analyzer *troubleshootv1beta1.NodeResources, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
+func analyzeNodeResources(analyzer *troubleshootv1beta2.NodeResources, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
 	collected, err := getCollectedFileContents("cluster-resources/nodes.json")
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get contents of nodes.json")
@@ -313,7 +313,7 @@ func findMax(nodes []corev1.Node, property string) *resource.Quantity {
 	return max
 }
 
-func nodeMatchesFilters(node corev1.Node, filters *troubleshootv1beta1.NodeResourceFilters) (bool, error) {
+func nodeMatchesFilters(node corev1.Node, filters *troubleshootv1beta2.NodeResourceFilters) (bool, error) {
 	if filters == nil {
 		return true, nil
 	}
