@@ -1,4 +1,4 @@
-apiVersion: troubleshoot.replicated.com/v1beta1
+apiVersion: troubleshoot.sh/v1beta2
 kind: Collector
 metadata:
   name: my-application-name
@@ -32,7 +32,7 @@ spec:
               - these
               - remain
 ---
-apiVersion: troubleshoot.replicated.com/v1beta1
+apiVersion: troubleshoot.sh/v1beta2
 kind: Redactor
 metadata:
   name: my-application-name

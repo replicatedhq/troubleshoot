@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
+	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 )
 
 type httpResponse struct {
@@ -22,7 +22,7 @@ type httpError struct {
 	Message string `json:"message"`
 }
 
-func HTTP(c *Collector, httpCollector *troubleshootv1beta1.HTTP) (map[string][]byte, error) {
+func HTTP(c *Collector, httpCollector *troubleshootv1beta2.HTTP) (map[string][]byte, error) {
 	var response *http.Response
 	var err error
 
@@ -52,7 +52,7 @@ func HTTP(c *Collector, httpCollector *troubleshootv1beta1.HTTP) (map[string][]b
 	return httpOutput, nil
 }
 
-func doGet(get *troubleshootv1beta1.Get) (*http.Response, error) {
+func doGet(get *troubleshootv1beta2.Get) (*http.Response, error) {
 	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{
 		InsecureSkipVerify: get.InsecureSkipVerify,
 	}
@@ -69,7 +69,7 @@ func doGet(get *troubleshootv1beta1.Get) (*http.Response, error) {
 	return http.DefaultClient.Do(req)
 }
 
-func doPost(post *troubleshootv1beta1.Post) (*http.Response, error) {
+func doPost(post *troubleshootv1beta2.Post) (*http.Response, error) {
 	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{
 		InsecureSkipVerify: post.InsecureSkipVerify,
 	}
@@ -86,7 +86,7 @@ func doPost(post *troubleshootv1beta1.Post) (*http.Response, error) {
 	return http.DefaultClient.Do(req)
 }
 
-func doPut(put *troubleshootv1beta1.Put) (*http.Response, error) {
+func doPut(put *troubleshootv1beta2.Put) (*http.Response, error) {
 	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{
 		InsecureSkipVerify: put.InsecureSkipVerify,
 	}

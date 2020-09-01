@@ -8,10 +8,10 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
+	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 )
 
-func analyzeTextAnalyze(analyzer *troubleshootv1beta1.TextAnalyze, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
+func analyzeTextAnalyze(analyzer *troubleshootv1beta2.TextAnalyze, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
 	fullPath := filepath.Join(analyzer.CollectorName, analyzer.FileName)
 	collected, err := getCollectedFileContents(fullPath)
 	if err != nil {
@@ -40,14 +40,14 @@ func analyzeTextAnalyze(analyzer *troubleshootv1beta1.TextAnalyze, getCollectedF
 	}, nil
 }
 
-func analyzeRegexPattern(pattern string, collected []byte, outcomes []*troubleshootv1beta1.Outcome, checkName string) (*AnalyzeResult, error) {
+func analyzeRegexPattern(pattern string, collected []byte, outcomes []*troubleshootv1beta2.Outcome, checkName string) (*AnalyzeResult, error) {
 	re, err := regexp.Compile(pattern)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to compile regex: %s", pattern)
 	}
 
-	var failOutcome *troubleshootv1beta1.Outcome
-	var passOutcome *troubleshootv1beta1.Outcome
+	var failOutcome *troubleshootv1beta2.Outcome
+	var passOutcome *troubleshootv1beta2.Outcome
 	for _, outcome := range outcomes {
 		if outcome.Fail != nil {
 			failOutcome = outcome
@@ -75,7 +75,7 @@ func analyzeRegexPattern(pattern string, collected []byte, outcomes []*troublesh
 	}, nil
 }
 
-func analyzeRegexGroups(pattern string, collected []byte, outcomes []*troubleshootv1beta1.Outcome, checkName string) (*AnalyzeResult, error) {
+func analyzeRegexGroups(pattern string, collected []byte, outcomes []*troubleshootv1beta2.Outcome, checkName string) (*AnalyzeResult, error) {
 	re, err := regexp.Compile(pattern)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to compile regex: %s", pattern)

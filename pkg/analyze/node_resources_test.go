@@ -3,7 +3,7 @@ package analyzer
 import (
 	"testing"
 
-	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
+	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
@@ -411,13 +411,13 @@ func Test_nodeMatchesFilters(t *testing.T) {
 	tests := []struct {
 		name         string
 		node         corev1.Node
-		filters      *troubleshootv1beta1.NodeResourceFilters
+		filters      *troubleshootv1beta2.NodeResourceFilters
 		expectResult bool
 	}{
 		{
 			name:         "true when empty filters",
 			node:         node,
-			filters:      &troubleshootv1beta1.NodeResourceFilters{},
+			filters:      &troubleshootv1beta2.NodeResourceFilters{},
 			expectResult: true,
 		},
 		{
@@ -428,7 +428,7 @@ func Test_nodeMatchesFilters(t *testing.T) {
 		{
 			name: "false when allocatable memory is too high",
 			node: node,
-			filters: &troubleshootv1beta1.NodeResourceFilters{
+			filters: &troubleshootv1beta2.NodeResourceFilters{
 				MemoryAllocatable: "16Gi",
 			},
 			expectResult: false,
@@ -436,7 +436,7 @@ func Test_nodeMatchesFilters(t *testing.T) {
 		{
 			name: "true when allocatable memory is available",
 			node: node,
-			filters: &troubleshootv1beta1.NodeResourceFilters{
+			filters: &troubleshootv1beta2.NodeResourceFilters{
 				MemoryAllocatable: "4Gi",
 			},
 			expectResult: true,

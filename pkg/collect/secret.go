@@ -7,7 +7,7 @@ import (
 	"path"
 	"path/filepath"
 
-	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
+	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
@@ -21,7 +21,7 @@ type FoundSecret struct {
 	Value        string `json:"value,omitempty"`
 }
 
-func Secret(c *Collector, secretCollector *troubleshootv1beta1.Secret) (map[string][]byte, error) {
+func Secret(c *Collector, secretCollector *troubleshootv1beta2.Secret) (map[string][]byte, error) {
 	client, err := kubernetes.NewForConfig(c.ClientConfig)
 	if err != nil {
 		return nil, err
@@ -46,7 +46,7 @@ func Secret(c *Collector, secretCollector *troubleshootv1beta1.Secret) (map[stri
 	return secretOutput, nil
 }
 
-func secret(ctx context.Context, client *kubernetes.Clientset, secretCollector *troubleshootv1beta1.Secret) (string, []byte, error) {
+func secret(ctx context.Context, client *kubernetes.Clientset, secretCollector *troubleshootv1beta2.Secret) (string, []byte, error) {
 	ns := secretCollector.Namespace
 	path := fmt.Sprintf("%s.json", filepath.Join(ns, secretCollector.SecretName))
 

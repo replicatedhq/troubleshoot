@@ -11,7 +11,7 @@ import (
 
 	"github.com/gobwas/glob"
 	"github.com/pkg/errors"
-	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
+	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 )
 
 const (
@@ -47,7 +47,7 @@ type Redaction struct {
 	IsDefaultRedactor bool   `json:"isDefaultRedactor" yaml:"isDefaultRedactor"`
 }
 
-func Redact(input []byte, path string, additionalRedactors []*troubleshootv1beta1.Redact) ([]byte, error) {
+func Redact(input []byte, path string, additionalRedactors []*troubleshootv1beta2.Redact) ([]byte, error) {
 	redactors, err := getRedactors(path)
 	if err != nil {
 		return nil, err
@@ -88,7 +88,7 @@ func ResetRedactionList() {
 	}
 }
 
-func buildAdditionalRedactors(path string, redacts []*troubleshootv1beta1.Redact) ([]Redactor, error) {
+func buildAdditionalRedactors(path string, redacts []*troubleshootv1beta2.Redact) ([]Redactor, error) {
 	additionalRedactors := []Redactor{}
 	for i, redact := range redacts {
 		if redact == nil {
@@ -132,7 +132,7 @@ func buildAdditionalRedactors(path string, redacts []*troubleshootv1beta1.Redact
 	return additionalRedactors, nil
 }
 
-func redactMatchesPath(path string, redact *troubleshootv1beta1.Redact) (bool, error) {
+func redactMatchesPath(path string, redact *troubleshootv1beta2.Redact) (bool, error) {
 	if redact.FileSelector.File == "" && len(redact.FileSelector.Files) == 0 {
 		return true, nil
 	}

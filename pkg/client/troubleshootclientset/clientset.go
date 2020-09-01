@@ -21,6 +21,7 @@ import (
 	"fmt"
 
 	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/client/troubleshootclientset/typed/troubleshoot/v1beta1"
+	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/client/troubleshootclientset/typed/troubleshoot/v1beta2"
 	discovery "k8s.io/client-go/discovery"
 	rest "k8s.io/client-go/rest"
 	flowcontrol "k8s.io/client-go/util/flowcontrol"
@@ -29,6 +30,7 @@ import (
 type Interface interface {
 	Discovery() discovery.DiscoveryInterface
 	TroubleshootV1beta1() troubleshootv1beta1.TroubleshootV1beta1Interface
+	TroubleshootV1beta2() troubleshootv1beta2.TroubleshootV1beta2Interface
 }
 
 // Clientset contains the clients for groups. Each group has exactly one
@@ -36,11 +38,17 @@ type Interface interface {
 type Clientset struct {
 	*discovery.DiscoveryClient
 	troubleshootV1beta1 *troubleshootv1beta1.TroubleshootV1beta1Client
+	troubleshootV1beta2 *troubleshootv1beta2.TroubleshootV1beta2Client
 }
 
 // TroubleshootV1beta1 retrieves the TroubleshootV1beta1Client
 func (c *Clientset) TroubleshootV1beta1() troubleshootv1beta1.TroubleshootV1beta1Interface {
 	return c.troubleshootV1beta1
+}
+
+// TroubleshootV1beta2 retrieves the TroubleshootV1beta2Client
+func (c *Clientset) TroubleshootV1beta2() troubleshootv1beta2.TroubleshootV1beta2Interface {
+	return c.troubleshootV1beta2
 }
 
 // Discovery retrieves the DiscoveryClient
@@ -68,6 +76,10 @@ func NewForConfig(c *rest.Config) (*Clientset, error) {
 	if err != nil {
 		return nil, err
 	}
+	cs.troubleshootV1beta2, err = troubleshootv1beta2.NewForConfig(&configShallowCopy)
+	if err != nil {
+		return nil, err
+	}
 
 	cs.DiscoveryClient, err = discovery.NewDiscoveryClientForConfig(&configShallowCopy)
 	if err != nil {
@@ -81,6 +93,7 @@ func NewForConfig(c *rest.Config) (*Clientset, error) {
 func NewForConfigOrDie(c *rest.Config) *Clientset {
 	var cs Clientset
 	cs.troubleshootV1beta1 = troubleshootv1beta1.NewForConfigOrDie(c)
+	cs.troubleshootV1beta2 = troubleshootv1beta2.NewForConfigOrDie(c)
 
 	cs.DiscoveryClient = discovery.NewDiscoveryClientForConfigOrDie(c)
 	return &cs
@@ -90,6 +103,7 @@ func NewForConfigOrDie(c *rest.Config) *Clientset {
 func New(c rest.Interface) *Clientset {
 	var cs Clientset
 	cs.troubleshootV1beta1 = troubleshootv1beta1.New(c)
+	cs.troubleshootV1beta2 = troubleshootv1beta2.New(c)
 
 	cs.DiscoveryClient = discovery.NewDiscoveryClient(c)
 	return &cs

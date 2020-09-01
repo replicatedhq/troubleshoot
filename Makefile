@@ -74,11 +74,13 @@ generate: controller-gen client-gen
 		--clientset-name troubleshootclientset \
 		--input-base github.com/replicatedhq/troubleshoot/pkg/apis \
 		--input troubleshoot/v1beta1 \
+		--input troubleshoot/v1beta2 \
 		-h ./hack/boilerplate.go.txt
 
 .PHONY: openapischema
 openapischema: controller-gen
 	controller-gen crd +output:dir=./config/crds  paths=./pkg/apis/troubleshoot/v1beta1
+	controller-gen crd +output:dir=./config/crds  paths=./pkg/apis/troubleshoot/v1beta2
 
 .PHONY: schemas
 schemas: fmt vet openapischema

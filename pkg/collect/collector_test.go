@@ -3,7 +3,7 @@ package collect
 import (
 	"testing"
 
-	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
+	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/replicatedhq/troubleshoot/pkg/multitype"
 	"github.com/stretchr/testify/require"
 	"go.undefinedlabs.com/scopeagent"
@@ -12,15 +12,15 @@ import (
 func TestCollector_RunCollectorSyncNoRedact(t *testing.T) {
 	tests := []struct {
 		name      string
-		Collect   *troubleshootv1beta1.Collect
-		Redactors []*troubleshootv1beta1.Redact
+		Collect   *troubleshootv1beta2.Collect
+		Redactors []*troubleshootv1beta2.Redact
 		want      map[string]string
 	}{
 		{
 			name: "data with custom redactor",
-			Collect: &troubleshootv1beta1.Collect{
-				Data: &troubleshootv1beta1.Data{
-					CollectorMeta: troubleshootv1beta1.CollectorMeta{
+			Collect: &troubleshootv1beta2.Collect{
+				Data: &troubleshootv1beta2.Data{
+					CollectorMeta: troubleshootv1beta2.CollectorMeta{
 						CollectorName: "datacollectorname",
 						Exclude:       multitype.BoolOrString{},
 					},
@@ -30,12 +30,12 @@ another line here
 pwd=somethinggoeshere;`,
 				},
 			},
-			Redactors: []*troubleshootv1beta1.Redact{
+			Redactors: []*troubleshootv1beta2.Redact{
 				{
 					Name: "",
-					Removals: troubleshootv1beta1.Removals{
+					Removals: troubleshootv1beta2.Removals{
 						Values: nil,
-						Regex: []troubleshootv1beta1.Regex{
+						Regex: []troubleshootv1beta2.Regex{
 							{Redactor: `abc`},
 							{Redactor: `(another)(?P<mask>.*)(here)`},
 						},
@@ -51,9 +51,9 @@ pwd=***HIDDEN***;
 		},
 		{
 			name: "data with custom redactor at a restricted path",
-			Collect: &troubleshootv1beta1.Collect{
-				Data: &troubleshootv1beta1.Data{
-					CollectorMeta: troubleshootv1beta1.CollectorMeta{
+			Collect: &troubleshootv1beta2.Collect{
+				Data: &troubleshootv1beta2.Data{
+					CollectorMeta: troubleshootv1beta2.CollectorMeta{
 						CollectorName: "datacollectorname",
 						Exclude:       multitype.BoolOrString{},
 					},
@@ -63,15 +63,15 @@ another line here
 pwd=somethinggoeshere;`,
 				},
 			},
-			Redactors: []*troubleshootv1beta1.Redact{
+			Redactors: []*troubleshootv1beta2.Redact{
 				{
 					Name: "",
-					FileSelector: troubleshootv1beta1.FileSelector{
+					FileSelector: troubleshootv1beta2.FileSelector{
 						File: "data/*",
 					},
-					Removals: troubleshootv1beta1.Removals{
+					Removals: troubleshootv1beta2.Removals{
 						Values: nil,
-						Regex: []troubleshootv1beta1.Regex{
+						Regex: []troubleshootv1beta2.Regex{
 							{Redactor: `(another)(?P<mask>.*)(here)`},
 						},
 					},
@@ -86,9 +86,9 @@ pwd=***HIDDEN***;
 		},
 		{
 			name: "data with custom redactor at other path",
-			Collect: &troubleshootv1beta1.Collect{
-				Data: &troubleshootv1beta1.Data{
-					CollectorMeta: troubleshootv1beta1.CollectorMeta{
+			Collect: &troubleshootv1beta2.Collect{
+				Data: &troubleshootv1beta2.Data{
+					CollectorMeta: troubleshootv1beta2.CollectorMeta{
 						CollectorName: "datacollectorname",
 						Exclude:       multitype.BoolOrString{},
 					},
@@ -98,15 +98,15 @@ another line here
 pwd=somethinggoeshere;`,
 				},
 			},
-			Redactors: []*troubleshootv1beta1.Redact{
+			Redactors: []*troubleshootv1beta2.Redact{
 				{
 					Name: "",
-					FileSelector: troubleshootv1beta1.FileSelector{
+					FileSelector: troubleshootv1beta2.FileSelector{
 						File: "notdata/*",
 					},
-					Removals: troubleshootv1beta1.Removals{
+					Removals: troubleshootv1beta2.Removals{
 						Values: nil,
-						Regex: []troubleshootv1beta1.Regex{
+						Regex: []troubleshootv1beta2.Regex{
 							{Redactor: `(another)(?P<mask>.*)(here)`},
 						},
 					},
@@ -121,9 +121,9 @@ pwd=***HIDDEN***;
 		},
 		{
 			name: "data with custom redactor at second path",
-			Collect: &troubleshootv1beta1.Collect{
-				Data: &troubleshootv1beta1.Data{
-					CollectorMeta: troubleshootv1beta1.CollectorMeta{
+			Collect: &troubleshootv1beta2.Collect{
+				Data: &troubleshootv1beta2.Data{
+					CollectorMeta: troubleshootv1beta2.CollectorMeta{
 						CollectorName: "datacollectorname",
 						Exclude:       multitype.BoolOrString{},
 					},
@@ -133,18 +133,18 @@ another line here
 pwd=somethinggoeshere;`,
 				},
 			},
-			Redactors: []*troubleshootv1beta1.Redact{
+			Redactors: []*troubleshootv1beta2.Redact{
 				{
 					Name: "",
-					FileSelector: troubleshootv1beta1.FileSelector{
+					FileSelector: troubleshootv1beta2.FileSelector{
 						Files: []string{
 							"notData/*",
 							"data/*",
 						},
 					},
-					Removals: troubleshootv1beta1.Removals{
+					Removals: troubleshootv1beta2.Removals{
 						Values: nil,
-						Regex: []troubleshootv1beta1.Regex{
+						Regex: []troubleshootv1beta2.Regex{
 							{Redactor: `(another)(?P<mask>.*)(here)`},
 						},
 					},
@@ -159,9 +159,9 @@ pwd=***HIDDEN***;
 		},
 		{
 			name: "data with literal string replacer",
-			Collect: &troubleshootv1beta1.Collect{
-				Data: &troubleshootv1beta1.Data{
-					CollectorMeta: troubleshootv1beta1.CollectorMeta{
+			Collect: &troubleshootv1beta2.Collect{
+				Data: &troubleshootv1beta2.Data{
+					CollectorMeta: troubleshootv1beta2.CollectorMeta{
 						CollectorName: "data/collectorname",
 						Exclude:       multitype.BoolOrString{},
 					},
@@ -171,15 +171,15 @@ another line here
 pwd=somethinggoeshere;`,
 				},
 			},
-			Redactors: []*troubleshootv1beta1.Redact{
+			Redactors: []*troubleshootv1beta2.Redact{
 				{
 					Name: "",
-					FileSelector: troubleshootv1beta1.FileSelector{
+					FileSelector: troubleshootv1beta2.FileSelector{
 						Files: []string{
 							"data/*/*",
 						},
 					},
-					Removals: troubleshootv1beta1.Removals{
+					Removals: troubleshootv1beta2.Removals{
 						Values: []string{
 							`abc`,
 							`123`,
@@ -197,9 +197,9 @@ pwd=***HIDDEN***;
 		},
 		{
 			name: "data with custom yaml redactor",
-			Collect: &troubleshootv1beta1.Collect{
-				Data: &troubleshootv1beta1.Data{
-					CollectorMeta: troubleshootv1beta1.CollectorMeta{
+			Collect: &troubleshootv1beta2.Collect{
+				Data: &troubleshootv1beta2.Data{
+					CollectorMeta: troubleshootv1beta2.CollectorMeta{
 						CollectorName: "datacollectorname",
 						Exclude:       multitype.BoolOrString{},
 					},
@@ -208,9 +208,9 @@ pwd=***HIDDEN***;
 another line here`,
 				},
 			},
-			Redactors: []*troubleshootv1beta1.Redact{
+			Redactors: []*troubleshootv1beta2.Redact{
 				{
-					Removals: troubleshootv1beta1.Removals{
+					Removals: troubleshootv1beta2.Removals{
 						YamlPath: []string{
 							`abc`,
 						},
@@ -225,9 +225,9 @@ another line here
 		},
 		{
 			name: "custom multiline redactor",
-			Collect: &troubleshootv1beta1.Collect{
-				Data: &troubleshootv1beta1.Data{
-					CollectorMeta: troubleshootv1beta1.CollectorMeta{
+			Collect: &troubleshootv1beta2.Collect{
+				Data: &troubleshootv1beta2.Data{
+					CollectorMeta: troubleshootv1beta2.CollectorMeta{
 						CollectorName: "datacollectorname",
 						Exclude:       multitype.BoolOrString{},
 					},
@@ -239,10 +239,10 @@ xyz123
 abc`,
 				},
 			},
-			Redactors: []*troubleshootv1beta1.Redact{
+			Redactors: []*troubleshootv1beta2.Redact{
 				{
-					Removals: troubleshootv1beta1.Removals{
-						Regex: []troubleshootv1beta1.Regex{
+					Removals: troubleshootv1beta2.Removals{
+						Regex: []troubleshootv1beta2.Regex{
 							{
 								Selector: "abc",
 								Redactor: "xyz(123)",
@@ -287,15 +287,15 @@ abc
 func TestCollector_RunCollectorSync(t *testing.T) {
 	tests := []struct {
 		name      string
-		Collect   *troubleshootv1beta1.Collect
-		Redactors []*troubleshootv1beta1.Redact
+		Collect   *troubleshootv1beta2.Collect
+		Redactors []*troubleshootv1beta2.Redact
 		want      map[string]string
 	}{
 		{
 			name: "data with custom redactor - but redaction disabled",
-			Collect: &troubleshootv1beta1.Collect{
-				Data: &troubleshootv1beta1.Data{
-					CollectorMeta: troubleshootv1beta1.CollectorMeta{
+			Collect: &troubleshootv1beta2.Collect{
+				Data: &troubleshootv1beta2.Data{
+					CollectorMeta: troubleshootv1beta2.CollectorMeta{
 						CollectorName: "datacollectorname",
 						Exclude:       multitype.BoolOrString{},
 					},
@@ -305,12 +305,12 @@ another line here
 pwd=somethinggoeshere;`,
 				},
 			},
-			Redactors: []*troubleshootv1beta1.Redact{
+			Redactors: []*troubleshootv1beta2.Redact{
 				{
 					Name: "",
-					Removals: troubleshootv1beta1.Removals{
+					Removals: troubleshootv1beta2.Removals{
 						Values: nil,
-						Regex: []troubleshootv1beta1.Regex{
+						Regex: []troubleshootv1beta2.Regex{
 							{Redactor: `abc`},
 							{Redactor: `(another)(?P<mask>.*)(here)`},
 						},

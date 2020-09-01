@@ -5,7 +5,7 @@ import (
 	"strconv"
 
 	"github.com/pkg/errors"
-	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
+	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/replicatedhq/troubleshoot/pkg/multitype"
 	authorizationv1 "k8s.io/api/authorization/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -14,7 +14,7 @@ import (
 )
 
 type Collector struct {
-	Collect      *troubleshootv1beta1.Collect
+	Collect      *troubleshootv1beta2.Collect
 	Redact       bool
 	RBACErrors   []error
 	ClientConfig *rest.Config
@@ -40,7 +40,7 @@ func isExcluded(excludeVal multitype.BoolOrString) (bool, error) {
 	return parsed, nil
 }
 
-func (c *Collector) RunCollectorSync(globalRedactors []*troubleshootv1beta1.Redact) (map[string][]byte, error) {
+func (c *Collector) RunCollectorSync(globalRedactors []*troubleshootv1beta2.Redact) (map[string][]byte, error) {
 	var unRedacted map[string][]byte
 	var isExcludedResult bool
 	var err error

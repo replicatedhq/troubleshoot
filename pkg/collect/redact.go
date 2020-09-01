@@ -9,11 +9,11 @@ import (
 	"path/filepath"
 	"strings"
 
-	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
+	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/replicatedhq/troubleshoot/pkg/redact"
 )
 
-func redactMap(input map[string][]byte, additionalRedactors []*troubleshootv1beta1.Redact) (map[string][]byte, error) {
+func redactMap(input map[string][]byte, additionalRedactors []*troubleshootv1beta2.Redact) (map[string][]byte, error) {
 	result := make(map[string][]byte)
 	for k, v := range input {
 		if v == nil {

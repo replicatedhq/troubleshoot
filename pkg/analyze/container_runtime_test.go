@@ -3,7 +3,7 @@ package analyzer
 import (
 	"testing"
 
-	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
+	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.undefinedlabs.com/scopeagent"
@@ -72,22 +72,22 @@ func Test_compareRuntimeConditionalToActual(t *testing.T) {
 func Test_containerRuntime(t *testing.T) {
 	tests := []struct {
 		name         string
-		analyzer     troubleshootv1beta1.ContainerRuntime
+		analyzer     troubleshootv1beta2.ContainerRuntime
 		expectResult AnalyzeResult
 		files        map[string][]byte
 	}{
 		{
 			name: "no containerd, when it's containerd",
-			analyzer: troubleshootv1beta1.ContainerRuntime{
-				Outcomes: []*troubleshootv1beta1.Outcome{
+			analyzer: troubleshootv1beta2.ContainerRuntime{
+				Outcomes: []*troubleshootv1beta2.Outcome{
 					{
-						Pass: &troubleshootv1beta1.SingleOutcome{
+						Pass: &troubleshootv1beta2.SingleOutcome{
 							When:    "!= containerd",
 							Message: "pass",
 						},
 					},
 					{
-						Fail: &troubleshootv1beta1.SingleOutcome{
+						Fail: &troubleshootv1beta2.SingleOutcome{
 							Message: "containerd detected",
 						},
 					},

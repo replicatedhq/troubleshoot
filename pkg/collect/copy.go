@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"path/filepath"
 
-	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
+	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
@@ -14,7 +14,7 @@ import (
 )
 
 //Copy function gets a file or folder from a container specified in the specs.
-func Copy(c *Collector, copyCollector *troubleshootv1beta1.Copy) (map[string][]byte, error) {
+func Copy(c *Collector, copyCollector *troubleshootv1beta2.Copy) (map[string][]byte, error) {
 	client, err := kubernetes.NewForConfig(c.ClientConfig)
 	if err != nil {
 		return nil, err
@@ -56,7 +56,7 @@ func Copy(c *Collector, copyCollector *troubleshootv1beta1.Copy) (map[string][]b
 	return copyOutput, nil
 }
 
-func copyFiles(c *Collector, client *kubernetes.Clientset, pod corev1.Pod, copyCollector *troubleshootv1beta1.Copy) (map[string][]byte, map[string]string) {
+func copyFiles(c *Collector, client *kubernetes.Clientset, pod corev1.Pod, copyCollector *troubleshootv1beta2.Copy) (map[string][]byte, map[string]string) {
 	container := pod.Spec.Containers[0].Name
 	if copyCollector.ContainerName != "" {
 		container = copyCollector.ContainerName
@@ -113,7 +113,7 @@ func copyFiles(c *Collector, client *kubernetes.Clientset, pod corev1.Pod, copyC
 	}, nil
 }
 
-func getCopyErrosFileName(copyCollector *troubleshootv1beta1.Copy) string {
+func getCopyErrosFileName(copyCollector *troubleshootv1beta2.Copy) string {
 	if len(copyCollector.Name) > 0 {
 		return fmt.Sprintf("%s-errors.json", copyCollector.Name)
 	}
