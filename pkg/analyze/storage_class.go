@@ -24,7 +24,7 @@ func analyzeStorageClass(analyzer *troubleshootv1beta1.StorageClass, getCollecte
 		if analyzer.StorageClassName != "" {
 			title = fmt.Sprintf("Storage class %s", analyzer.StorageClassName)
 		} else {
-			title = "Default Storage class"
+			title = "Default Storage Class"
 		}
 	}
 
@@ -45,7 +45,7 @@ func analyzeStorageClass(analyzer *troubleshootv1beta1.StorageClass, getCollecte
 				}
 			}
 			if analyzer.StorageClassName == "" && result.Message == "" {
-				result.Message = "Default Storage found"
+				result.Message = "Default Storage Class found"
 			}
 
 			return &result, nil
@@ -60,7 +60,7 @@ func analyzeStorageClass(analyzer *troubleshootv1beta1.StorageClass, getCollecte
 		}
 	}
 	if analyzer.StorageClassName == "" && result.Message == "" {
-		result.Message = "Default Storage not found"
+		result.Message = "No Default Storage Class found"
 	}
 
 	return &result, nil
