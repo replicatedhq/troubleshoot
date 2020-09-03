@@ -24,7 +24,7 @@ func analyzeDeploymentStatus(analyzer *troubleshootv1beta2.DeploymentStatus, get
 	var status *appsv1.DeploymentStatus
 	for _, deployment := range deployments {
 		if deployment.Name == analyzer.Name {
-			status = &deployment.Status
+			status = deployment.Status.DeepCopy()
 		}
 	}
 
