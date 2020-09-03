@@ -24,7 +24,7 @@ func analyzeStatefulsetStatus(analyzer *troubleshootv1beta2.StatefulsetStatus, g
 	var status *appsv1.StatefulSetStatus
 	for _, statefulset := range statefulsets {
 		if statefulset.Name == analyzer.Name {
-			status = &statefulset.Status
+			status = statefulset.Status.DeepCopy()
 		}
 	}
 
