@@ -183,7 +183,7 @@ func createSecret(ctx context.Context, client *kubernetes.Clientset, imagePullSe
 				//Client only accepts Json formated files as data, so we decode and indent it (indentation is required)
 				parsedConfig, err := base64.StdEncoding.DecodeString(v)
 				if err != nil {
-					return errors.Wrap(err, "Secret's config file not found or unable to parse encoded data.")
+					return errors.Wrap(err, "Secret's config file not found or unable to decode data.")
 				}
 				err = json.Indent(&out, parsedConfig, "", "\t")
 				if err != nil {
