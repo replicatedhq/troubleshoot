@@ -152,7 +152,7 @@ func runPod(ctx context.Context, client *kubernetes.Clientset, runCollector *tro
 	if runCollector.ImagePullSecret != nil {
 		err := createSecret(ctx, client, runCollector.ImagePullSecret, &pod)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "failed to create secret")
 		}
 	}
 	created, err := client.CoreV1().Pods(namespace).Create(ctx, &pod, metav1.CreateOptions{})
@@ -183,11 +183,11 @@ func createSecret(ctx context.Context, client *kubernetes.Clientset, imagePullSe
 				//Client only accepts Json formated files as data, so we decode and indent it (indentation is required)
 				parsedConfig, err := base64.StdEncoding.DecodeString(v)
 				if err != nil {
-					return err
+					return errors.Wrap(err, "Secret's config file not found or unable to parse encoded data.")
 				}
 				err = json.Indent(&out, parsedConfig, "", "\t")
 				if err != nil {
-					return errors.Errorf("Secret's config file not found or unable to parse encoded data.")
+					return errors.Wrap(err, "Unable to parse encoded data.")
 				}
 				data[".dockerconfigjson"] = out.Bytes()
 			} else {
@@ -205,7 +205,7 @@ func createSecret(ctx context.Context, client *kubernetes.Clientset, imagePullSe
 			},
 			ObjectMeta: metav1.ObjectMeta{
 				Name:         imagePullSecret.Name,
-				GenerateName: "tmpsecret",
+				GenerateName: "troubleshoot",
 				Namespace:    pod.Namespace,
 			},
 			Data: data,
@@ -213,7 +213,7 @@ func createSecret(ctx context.Context, client *kubernetes.Clientset, imagePullSe
 		}
 		created, err := client.CoreV1().Secrets(pod.Namespace).Create(ctx, &secret, metav1.CreateOptions{})
 		if err != nil {
-			return err
+			return errors.Wrap(err, "failed to create secret")
 		}
 		pod.Spec.ImagePullSecrets = append(pod.Spec.ImagePullSecrets, corev1.LocalObjectReference{Name: created.Name})
 		return nil
