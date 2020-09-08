@@ -21,7 +21,11 @@ func analyzeStorageClass(analyzer *troubleshootv1beta2.StorageClass, getCollecte
 
 	title := analyzer.CheckName
 	if title == "" {
-		title = fmt.Sprintf("Storage class %s", analyzer.StorageClassName)
+		if analyzer.StorageClassName != "" {
+			title = fmt.Sprintf("Storage class %s", analyzer.StorageClassName)
+		} else {
+			title = "Default Storage Class"
+		}
 	}
 
 	result := AnalyzeResult{
@@ -31,13 +35,17 @@ func analyzeStorageClass(analyzer *troubleshootv1beta2.StorageClass, getCollecte
 	}
 
 	for _, storageClass := range storageClasses {
-		if storageClass.Name == analyzer.StorageClassName {
+		val, _ := storageClass.Annotations["storageclass.kubernetes.io/is-default-class"]
+		if (storageClass.Name == analyzer.StorageClassName) || (analyzer.StorageClassName == "" && val == "true") {
 			result.IsPass = true
 			for _, outcome := range analyzer.Outcomes {
 				if outcome.Pass != nil {
 					result.Message = outcome.Pass.Message
 					result.URI = outcome.Pass.URI
 				}
+			}
+			if analyzer.StorageClassName == "" && result.Message == "" {
+				result.Message = "Default Storage Class found"
 			}
 
 			return &result, nil
@@ -50,6 +58,9 @@ func analyzeStorageClass(analyzer *troubleshootv1beta2.StorageClass, getCollecte
 			result.Message = outcome.Fail.Message
 			result.URI = outcome.Fail.URI
 		}
+	}
+	if analyzer.StorageClassName == "" && result.Message == "" {
+		result.Message = "No Default Storage Class found"
 	}
 
 	return &result, nil
