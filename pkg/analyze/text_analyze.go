@@ -11,7 +11,7 @@ import (
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 )
 
-func analyzeTextAnalyze(analyzer *troubleshootv1beta2.TextAnalyze, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
+func analyzeTextAnalyze(analyzer *troubleshootv1beta2.TextAnalyze, getCollectedFileContents func(string) (map[string][]byte, error)) ([]*AnalyzeResult, error) {
 	fullPath := filepath.Join(analyzer.CollectorName, analyzer.FileName)
 	collected, err := getCollectedFileContents(fullPath)
 	if err != nil {
@@ -23,20 +23,56 @@ func analyzeTextAnalyze(analyzer *troubleshootv1beta2.TextAnalyze, getCollectedF
 		checkName = analyzer.CollectorName
 	}
 
+	if len(collected) == 0 {
+		return []*AnalyzeResult{
+			{
+				Title:   checkName,
+				IconKey: "kubernetes_text_analyze",
+				IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg",
+				IsFail:  false,
+				Message: "No matching files",
+			},
+		}, nil
+	}
+
+	results := []*AnalyzeResult{}
+
 	if analyzer.RegexPattern != "" {
-		return analyzeRegexPattern(analyzer.RegexPattern, collected, analyzer.Outcomes, checkName)
+		for _, fileContents := range collected {
+			result, err := analyzeRegexPattern(analyzer.RegexPattern, fileContents, analyzer.Outcomes, checkName)
+			if err != nil {
+				return nil, err
+			}
+			if result != nil {
+				results = append(results, result)
+			}
+		}
 	}
 
 	if analyzer.RegexGroups != "" {
-		return analyzeRegexGroups(analyzer.RegexGroups, collected, analyzer.Outcomes, checkName)
+		for _, fileContents := range collected {
+			result, err := analyzeRegexGroups(analyzer.RegexGroups, fileContents, analyzer.Outcomes, checkName)
+			if err != nil {
+				return nil, err
+			}
+			if result != nil {
+				results = append(results, result)
+			}
+		}
 	}
 
-	return &AnalyzeResult{
-		Title:   checkName,
-		IconKey: "kubernetes_text_analyze",
-		IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg",
-		IsFail:  true,
-		Message: "Invalid analyzer",
+	if len(results) > 0 {
+		return results, nil
+	}
+
+	return []*AnalyzeResult{
+		{
+			Title:   checkName,
+			IconKey: "kubernetes_text_analyze",
+			IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg",
+			IsFail:  true,
+			Message: "Invalid analyzer",
+		},
 	}, nil
 }
 

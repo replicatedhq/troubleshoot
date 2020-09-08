@@ -34,7 +34,7 @@ func AnalyzeLocal(localBundlePath string, analyzers []*troubleshootv1beta2.Analy
 		}
 
 		if analyzeResult != nil {
-			analyzeResults = append(analyzeResults, analyzeResult)
+			analyzeResults = append(analyzeResults, analyzeResult...)
 		}
 	}
 
@@ -202,7 +202,17 @@ func (f fileContentProvider) getFileContents(fileName string) ([]byte, error) {
 }
 
 func (f fileContentProvider) getChildFileContents(dirName string) (map[string][]byte, error) {
-	// TODO: walk sub-dirs
-	// return nil, errors.New("not implemnted")
-	return map[string][]byte{}, nil
+	files, err := filepath.Glob(filepath.Join(f.rootDir, dirName))
+	if err != nil {
+		return nil, errors.Wrapf(err, "invalid glob %q", dirName)
+	}
+	fileArr := map[string][]byte{}
+	for _, filePath := range files {
+		bytes, err := ioutil.ReadFile(filePath)
+		if err != nil {
+			return nil, errors.Wrapf(err, "read %q", filePath)
+		}
+		fileArr[filePath] = bytes
+	}
+	return fileArr, nil
 }
