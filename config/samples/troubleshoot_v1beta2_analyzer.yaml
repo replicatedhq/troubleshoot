@@ -1,0 +1,9 @@
+apiVersion: troubleshoot.sh/v1beta2
+kind: Analyzer
+metadata:
+  labels:
+    controller-tools.k8s.io: "1.0"
+  name: analyzer-sample
+spec:
+  # Add fields here
+  foo: bar

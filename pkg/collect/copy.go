@@ -2,28 +2,29 @@ package collect
 
 import (
 	"bytes"
-	"encoding/json"
+	"context"
 	"fmt"
 	"path/filepath"
 
-	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
+	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/remotecommand"
 )
 
-type CopyOutput map[string][]byte
-
-func Copy(ctx *Context, copyCollector *troubleshootv1beta1.Copy) ([]byte, error) {
-	client, err := kubernetes.NewForConfig(ctx.ClientConfig)
+//Copy function gets a file or folder from a container specified in the specs.
+func Copy(c *Collector, copyCollector *troubleshootv1beta2.Copy) (map[string][]byte, error) {
+	client, err := kubernetes.NewForConfig(c.ClientConfig)
 	if err != nil {
 		return nil, err
 	}
 
-	copyOutput := CopyOutput{}
+	copyOutput := map[string][]byte{}
 
-	pods, podsErrors := listPodsInSelectors(client, copyCollector.Namespace, copyCollector.Selector)
+	ctx := context.Background()
+
+	pods, podsErrors := listPodsInSelectors(ctx, client, copyCollector.Namespace, copyCollector.Selector)
 	if len(podsErrors) > 0 {
 		errorBytes, err := marshalNonNil(podsErrors)
 		if err != nil {
@@ -34,9 +35,9 @@ func Copy(ctx *Context, copyCollector *troubleshootv1beta1.Copy) ([]byte, error)
 
 	if len(pods) > 0 {
 		for _, pod := range pods {
-			bundlePath := filepath.Join(copyCollector.Name, pod.Namespace, pod.Name)
+			bundlePath := filepath.Join(copyCollector.Name, pod.Namespace, pod.Name, copyCollector.ContainerName)
 
-			files, copyErrors := copyFiles(ctx, client, pod, copyCollector)
+			files, copyErrors := copyFiles(c, client, pod, copyCollector)
 			if len(copyErrors) > 0 {
 				key := filepath.Join(bundlePath, copyCollector.ContainerPath+"-errors.json")
 				copyOutput[key], err = marshalNonNil(copyErrors)
@@ -47,34 +48,20 @@ func Copy(ctx *Context, copyCollector *troubleshootv1beta1.Copy) ([]byte, error)
 			}
 
 			for k, v := range files {
-				copyOutput[filepath.Join(bundlePath, k)] = v
-			}
-		}
-
-		if ctx.Redact {
-			copyOutput, err = copyOutput.Redact()
-			if err != nil {
-				return nil, err
+				copyOutput[filepath.Join(bundlePath, filepath.Dir(copyCollector.ContainerPath), k)] = v
 			}
 		}
 	}
 
-	b, err := json.MarshalIndent(copyOutput, "", "  ")
-	if err != nil {
-		return nil, err
-	}
-
-	return b, nil
+	return copyOutput, nil
 }
 
-func copyFiles(ctx *Context, client *kubernetes.Clientset, pod corev1.Pod, copyCollector *troubleshootv1beta1.Copy) (map[string][]byte, map[string]string) {
+func copyFiles(c *Collector, client *kubernetes.Clientset, pod corev1.Pod, copyCollector *troubleshootv1beta2.Copy) (map[string][]byte, map[string]string) {
 	container := pod.Spec.Containers[0].Name
 	if copyCollector.ContainerName != "" {
 		container = copyCollector.ContainerName
 	}
-
-	command := []string{"cat", copyCollector.ContainerPath}
-
+	command := []string{"tar", "-C", filepath.Dir(copyCollector.ContainerPath), "-cf", "-", filepath.Base(copyCollector.ContainerPath)}
 	req := client.CoreV1().RESTClient().Post().Resource("pods").Name(pod.Name).Namespace(pod.Namespace).SubResource("exec")
 	scheme := runtime.NewScheme()
 	if err := corev1.AddToScheme(scheme); err != nil {
@@ -93,7 +80,7 @@ func copyFiles(ctx *Context, client *kubernetes.Clientset, pod corev1.Pod, copyC
 		TTY:       false,
 	}, parameterCodec)
 
-	exec, err := remotecommand.NewSPDYExecutor(ctx.ClientConfig, "POST", req.URL())
+	exec, err := remotecommand.NewSPDYExecutor(c.ClientConfig, "POST", req.URL())
 	if err != nil {
 		return nil, map[string]string{
 			filepath.Join(copyCollector.ContainerPath, "error"): err.Error(),
@@ -122,20 +109,11 @@ func copyFiles(ctx *Context, client *kubernetes.Clientset, pod corev1.Pod, copyC
 	}
 
 	return map[string][]byte{
-		copyCollector.ContainerPath: output.Bytes(),
+		filepath.Base(copyCollector.ContainerPath) + ".tar": output.Bytes(),
 	}, nil
 }
 
-func (c CopyOutput) Redact() (CopyOutput, error) {
-	results, err := redactMap(c)
-	if err != nil {
-		return nil, err
-	}
-
-	return results, nil
-}
-
-func getCopyErrosFileName(copyCollector *troubleshootv1beta1.Copy) string {
+func getCopyErrosFileName(copyCollector *troubleshootv1beta2.Copy) string {
 	if len(copyCollector.Name) > 0 {
 		return fmt.Sprintf("%s-errors.json", copyCollector.Name)
 	}

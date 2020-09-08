@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
+	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -18,6 +18,7 @@ type providers struct {
 	digitalOcean  bool
 	openShift     bool
 	kurl          bool
+	aks           bool
 }
 
 type Provider int
@@ -31,9 +32,75 @@ const (
 	digitalOcean  Provider = iota
 	openShift     Provider = iota
 	kurl          Provider = iota
+	aks           Provider = iota
 )
 
-func analyzeDistribution(analyzer *troubleshootv1beta1.Distribution, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
+func CheckOpenShift(foundProviders *providers, apiResources []*metav1.APIResourceList, provider string) string {
+	for _, resource := range apiResources {
+		if strings.Contains(resource.GroupVersion, "openshift") {
+			foundProviders.openShift = true
+			return "openShift"
+		}
+	}
+
+	return provider
+}
+
+func ParseNodesForProviders(nodes []corev1.Node) (providers, string) {
+	foundProviders := providers{}
+	foundMaster := false
+	stringProvider := ""
+
+	for _, node := range nodes {
+		for k, v := range node.ObjectMeta.Labels {
+
+			if k == "kurl.sh/cluster" && v == "true" {
+				foundProviders.kurl = true
+				stringProvider = "kurl"
+			} else if k == "microk8s.io/cluster" && v == "true" {
+				foundProviders.microk8s = true
+				stringProvider = "microk8s"
+			}
+			if k == "node-role.kubernetes.io/master" {
+				foundMaster = true
+			}
+			if k == "kubernetes.azure.com/role" {
+				foundProviders.aks = true
+				stringProvider = "aks"
+			}
+		}
+
+		if node.Status.NodeInfo.OSImage == "Docker Desktop" {
+			foundProviders.dockerDesktop = true
+			stringProvider = "dockerDesktop"
+		}
+
+		if strings.HasPrefix(node.Spec.ProviderID, "digitalocean:") {
+			foundProviders.digitalOcean = true
+			stringProvider = "digitalOcean"
+		}
+		if strings.HasPrefix(node.Spec.ProviderID, "aws:") {
+			foundProviders.eks = true
+			stringProvider = "eks"
+		}
+		if strings.HasPrefix(node.Spec.ProviderID, "gce:") {
+			foundProviders.gke = true
+			stringProvider = "gke"
+		}
+	}
+
+	if foundMaster {
+		// eks does not have masters within the node list
+		foundProviders.eks = false
+		if stringProvider == "eks" {
+			stringProvider = ""
+		}
+	}
+
+	return foundProviders, stringProvider
+}
+
+func analyzeDistribution(analyzer *troubleshootv1beta2.Distribution, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
 	collected, err := getCollectedFileContents("cluster-resources/nodes.json")
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get contents of nodes.json")
@@ -44,40 +111,7 @@ func analyzeDistribution(analyzer *troubleshootv1beta1.Distribution, getCollecte
 		return nil, errors.Wrap(err, "failed to unmarshal node list")
 	}
 
-	foundProviders := providers{}
-	foundMaster := false
-
-	for _, node := range nodes {
-		for k, v := range node.ObjectMeta.Labels {
-			if k == "microk8s.io/cluster" && v == "true" {
-				foundProviders.microk8s = true
-			} else if k == "kurl.sh/cluster" && v == "true" {
-				foundProviders.kurl = true
-			}
-			if k == "node-role.kubernetes.io/master" {
-				foundMaster = true
-			}
-		}
-
-		if node.Status.NodeInfo.OSImage == "Docker Desktop" {
-			foundProviders.dockerDesktop = true
-		}
-
-		if strings.HasPrefix(node.Spec.ProviderID, "digitalocean:") {
-			foundProviders.digitalOcean = true
-		}
-		if strings.HasPrefix(node.Spec.ProviderID, "aws:") {
-			foundProviders.eks = true
-		}
-		if strings.HasPrefix(node.Spec.ProviderID, "gce:") {
-			foundProviders.gke = true
-		}
-	}
-
-	if foundMaster {
-		// eks does not have masters within the node list
-		foundProviders.eks = false
-	}
+	foundProviders, _ := ParseNodesForProviders(nodes)
 
 	apiResourcesBytes, err := getCollectedFileContents("cluster-resources/resources.json")
 	// if the file is not found, that is not a fatal error
@@ -87,15 +121,16 @@ func analyzeDistribution(analyzer *troubleshootv1beta1.Distribution, getCollecte
 		if err := json.Unmarshal(apiResourcesBytes, &apiResources); err != nil {
 			return nil, errors.Wrap(err, "failed to unmarshal api resource list")
 		}
-		for _, resource := range apiResources {
-			if strings.Contains(resource.GroupVersion, "openshift") {
-				foundProviders.openShift = true
-			}
-		}
+		_ = CheckOpenShift(&foundProviders, apiResources, "")
 	}
-
+	title := analyzer.CheckName
+	if title == "" {
+		title = "Kubernetes Distribution"
+	}
 	result := &AnalyzeResult{
-		Title: "Kubernetes Distribution",
+		Title:   title,
+		IconKey: "kubernetes_distribution",
+		IconURI: "https://troubleshoot.sh/images/analyzer-icons/distribution.svg?w=20&h=14",
 	}
 
 	// ordering is important for passthrough
@@ -207,6 +242,8 @@ func compareDistributionConditionalToActual(conditional string, actual providers
 		isMatch = actual.openShift
 	case kurl:
 		isMatch = actual.kurl
+	case aks:
+		isMatch = actual.aks
 	}
 
 	switch parts[0] {
@@ -235,6 +272,8 @@ func mustNormalizeDistributionName(raw string) Provider {
 		return openShift
 	case "kurl":
 		return kurl
+	case "aks":
+		return aks
 	}
 
 	return unknown

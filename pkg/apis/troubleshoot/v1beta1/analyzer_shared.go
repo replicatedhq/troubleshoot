@@ -1,5 +1,9 @@
 package v1beta1
 
+import (
+	"github.com/replicatedhq/troubleshoot/pkg/multitype"
+)
+
 type SingleOutcome struct {
 	When    string `json:"when,omitempty" yaml:"when,omitempty"`
 	Message string `json:"message,omitempty" yaml:"message,omitempty"`
@@ -49,7 +53,6 @@ type ImagePullSecret struct {
 	Outcomes     []*Outcome `json:"outcomes" yaml:"outcomes"`
 	RegistryName string     `json:"registryName" yaml:"registryName"`
 }
-
 type DeploymentStatus struct {
 	AnalyzeMeta `json:",inline" yaml:",inline"`
 	Outcomes    []*Outcome `json:"outcomes" yaml:"outcomes"`
@@ -74,6 +77,28 @@ type Distribution struct {
 	Outcomes    []*Outcome `json:"outcomes" yaml:"outcomes"`
 }
 
+type NodeResources struct {
+	AnalyzeMeta `json:",inline" yaml:",inline"`
+	Outcomes    []*Outcome           `json:"outcomes" yaml:"outcomes"`
+	Filters     *NodeResourceFilters `json:"filters,omitempty" yaml:"filters,omitempty"`
+}
+
+type NodeResourceFilters struct {
+	CPUCapacity                 string                 `json:"cpuCapacity,omitempty" yaml:"cpuCapacity,omitempty"`
+	CPUAllocatable              string                 `json:"cpuAllocatable,omitempty" yaml:"cpuAllocatable,omitempty"`
+	MemoryCapacity              string                 `json:"memoryCapacity,omitempty" yaml:"memoryCapacity,omitempty"`
+	MemoryAllocatable           string                 `json:"memoryAllocatable,omitempty" yaml:"memoryAllocatable,omitempty"`
+	PodCapacity                 string                 `json:"podCapacity,omitempty" yaml:"podCapacity,omitempty"`
+	PodAllocatable              string                 `json:"podAllocatable,omitempty" yaml:"podAllocatable,omitempty"`
+	EphemeralStorageCapacity    string                 `json:"ephemeralStorageCapacity,omitempty" yaml:"ephemeralStorageCapacity,omitempty"`
+	EphemeralStorageAllocatable string                 `json:"ephemeralStorageAllocatable,omitempty" yaml:"ephemeralStorageAllocatable,omitempty"`
+	Selector                    *NodeResourceSelectors `json:"selector,omitempty" yaml:"selector,omitempty"`
+}
+
+type NodeResourceSelectors struct {
+	MatchLabel map[string]string `json:"matchLabel,omitempty" yaml:"matchLabel,omitempty"`
+}
+
 type TextAnalyze struct {
 	AnalyzeMeta   `json:",inline" yaml:",inline"`
 	CollectorName string     `json:"collectorName,omitempty" yaml:"collectorName,omitempty"`
@@ -83,9 +108,16 @@ type TextAnalyze struct {
 	Outcomes      []*Outcome `json:"outcomes" yaml:"outcomes"`
 }
 
+type DatabaseAnalyze struct {
+	AnalyzeMeta   `json:",inline" yaml:",inline"`
+	Outcomes      []*Outcome `json:"outcomes" yaml:"outcomes"`
+	CollectorName string     `json:"collectorName" yaml:"collectorName"`
+	FileName      string     `json:"fileName,omitempty" yaml:"fileName,omitempty"`
+}
+
 type AnalyzeMeta struct {
-	CheckName string `json:"checkName,omitempty" yaml:"checkName,omitempty"`
-	Exclude   bool   `json:"exclude,omitempty" yaml:"exclude,omitempty"`
+	CheckName string                 `json:"checkName,omitempty" yaml:"checkName,omitempty"`
+	Exclude   multitype.BoolOrString `json:"exclude,omitempty" yaml:"exclude,omitempty"`
 }
 
 type Analyze struct {
@@ -99,5 +131,9 @@ type Analyze struct {
 	StatefulsetStatus        *StatefulsetStatus        `json:"statefulsetStatus,omitempty" yaml:"statefulsetStatus,omitempty"`
 	ContainerRuntime         *ContainerRuntime         `json:"containerRuntime,omitempty" yaml:"containerRuntime,omitempty"`
 	Distribution             *Distribution             `json:"distribution,omitempty" yaml:"distribution,omitempty"`
+	NodeResources            *NodeResources            `json:"nodeResources,omitempty" yaml:"nodeResources,omitempty"`
 	TextAnalyze              *TextAnalyze              `json:"textAnalyze,omitempty" yaml:"textAnalyze,omitempty"`
+	Postgres                 *DatabaseAnalyze          `json:"postgres,omitempty" yaml:"postgres,omitempty"`
+	Mysql                    *DatabaseAnalyze          `json:"mysql,omitempty" yaml:"mysql,omitempty"`
+	Redis                    *DatabaseAnalyze          `json:"redis,omitempty" yaml:"redis,omitempty"`
 }

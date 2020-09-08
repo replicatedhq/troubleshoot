@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
+	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"gopkg.in/yaml.v2"
 	corev1 "k8s.io/api/core/v1"
 	kuberneteserrors "k8s.io/apimachinery/pkg/api/errors"
@@ -15,7 +15,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
-func CreateCollector(client client.Client, scheme *runtime.Scheme, ownerRef metav1.Object, jobName string, jobNamespace string, serviceAccountName string, jobType string, collect *troubleshootv1beta1.Collect, image string, pullPolicy string) (*corev1.ConfigMap, *corev1.Pod, error) {
+func CreateCollector(client client.Client, scheme *runtime.Scheme, ownerRef metav1.Object, jobName string, jobNamespace string, serviceAccountName string, jobType string, collect *troubleshootv1beta2.Collect, image string, pullPolicy string) (*corev1.ConfigMap, *corev1.Pod, error) {
 	configMap, err := createCollectorSpecConfigMap(client, scheme, ownerRef, jobName, jobNamespace, collect)
 	if err != nil {
 		return nil, nil, err
@@ -29,7 +29,7 @@ func CreateCollector(client client.Client, scheme *runtime.Scheme, ownerRef meta
 	return configMap, pod, nil
 }
 
-func createCollectorSpecConfigMap(client client.Client, scheme *runtime.Scheme, ownerRef metav1.Object, jobName string, jobNamespace string, collect *troubleshootv1beta1.Collect) (*corev1.ConfigMap, error) {
+func createCollectorSpecConfigMap(client client.Client, scheme *runtime.Scheme, ownerRef metav1.Object, jobName string, jobNamespace string, collect *troubleshootv1beta2.Collect) (*corev1.ConfigMap, error) {
 	name := fmt.Sprintf("%s-%s", jobName, DeterministicIDForCollector(collect))
 	namespacedName := types.NamespacedName{
 		Name:      name,
@@ -75,7 +75,7 @@ func createCollectorSpecConfigMap(client client.Client, scheme *runtime.Scheme, 
 	return &configMap, nil
 }
 
-func createCollectorPod(client client.Client, scheme *runtime.Scheme, ownerRef metav1.Object, jobName string, jobNamespace string, serviceAccountName string, jobType string, collect *troubleshootv1beta1.Collect, configMap *corev1.ConfigMap, image string, pullPolicy string) (*corev1.Pod, error) {
+func createCollectorPod(client client.Client, scheme *runtime.Scheme, ownerRef metav1.Object, jobName string, jobNamespace string, serviceAccountName string, jobType string, collect *troubleshootv1beta2.Collect, configMap *corev1.ConfigMap, image string, pullPolicy string) (*corev1.Pod, error) {
 	name := fmt.Sprintf("%s-%s", jobName, DeterministicIDForCollector(collect))
 
 	if serviceAccountName == "" {

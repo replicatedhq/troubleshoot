@@ -3,18 +3,17 @@ package main
 import "C"
 
 import (
-	"fmt"
 	"encoding/json"
-	
-	"gopkg.in/yaml.v2"
-	analyzer "github.com/replicatedhq/troubleshoot/pkg/analyze"
-	"github.com/replicatedhq/troubleshoot/pkg/logger"
-	"github.com/replicatedhq/troubleshoot/pkg/convert"
+	"fmt"
 
+	analyzer "github.com/replicatedhq/troubleshoot/pkg/analyze"
+	"github.com/replicatedhq/troubleshoot/pkg/convert"
+	"github.com/replicatedhq/troubleshoot/pkg/logger"
+	"gopkg.in/yaml.v2"
 )
 
 //export Analyze
-func Analyze(bundleURL string, analyzers string, outputFormat string, compatibility string) *C.char { 
+func Analyze(bundleURL string, analyzers string, outputFormat string, compatibility string) *C.char {
 	logger.SetQuiet(true)
 
 	result, err := analyzer.DownloadAndAnalyze(bundleURL, analyzers)

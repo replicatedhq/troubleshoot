@@ -4,11 +4,11 @@ import (
 	"encoding/json"
 	"fmt"
 
-	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
+	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/replicatedhq/troubleshoot/pkg/collect"
 )
 
-func analyzeSecret(analyzer *troubleshootv1beta1.AnalyzeSecret, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
+func analyzeSecret(analyzer *troubleshootv1beta2.AnalyzeSecret, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
 	secretData, err := getCollectedFileContents(fmt.Sprintf("secrets/%s/%s.json", analyzer.Namespace, analyzer.SecretName))
 	if err != nil {
 		return nil, err
@@ -25,10 +25,12 @@ func analyzeSecret(analyzer *troubleshootv1beta1.AnalyzeSecret, getCollectedFile
 	}
 
 	result := AnalyzeResult{
-		Title: title,
+		Title:   title,
+		IconKey: "kubernetes_analyze_secret",
+		IconURI: "https://troubleshoot.sh/images/analyzer-icons/secret.svg?w=13&h=16",
 	}
 
-	var failOutcome *troubleshootv1beta1.Outcome
+	var failOutcome *troubleshootv1beta2.Outcome
 	for _, outcome := range analyzer.Outcomes {
 		if outcome.Fail != nil {
 			failOutcome = outcome

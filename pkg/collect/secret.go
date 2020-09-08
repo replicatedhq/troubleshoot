@@ -1,10 +1,13 @@
 package collect
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
+	"path"
+	"path/filepath"
 
-	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
+	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
@@ -17,50 +20,37 @@ type FoundSecret struct {
 	KeyExists    bool   `json:"keyExists"`
 	Value        string `json:"value,omitempty"`
 }
-type SecretOutput struct {
-	FoundSecret map[string][]byte `json:"secrets/,omitempty"`
-	Errors      map[string][]byte `json:"secrets-errors/,omitempty"`
-}
 
-func Secret(ctx *Context, secretCollector *troubleshootv1beta1.Secret) ([]byte, error) {
-	client, err := kubernetes.NewForConfig(ctx.ClientConfig)
+func Secret(c *Collector, secretCollector *troubleshootv1beta2.Secret) (map[string][]byte, error) {
+	client, err := kubernetes.NewForConfig(c.ClientConfig)
 	if err != nil {
 		return nil, err
 	}
 
-	secretOutput := &SecretOutput{
-		FoundSecret: make(map[string][]byte),
-		Errors:      make(map[string][]byte),
-	}
+	secretOutput := map[string][]byte{}
 
-	secret, encoded, err := secret(client, secretCollector)
+	ctx := context.Background()
+
+	filePath, encoded, err := secret(ctx, client, secretCollector)
 	if err != nil {
 		errorBytes, err := marshalNonNil([]string{err.Error()})
 		if err != nil {
 			return nil, err
 		}
-		secretOutput.Errors[fmt.Sprintf("%s.json", secret.Name)] = errorBytes
+		secretOutput[path.Join("secrets-errors", filePath)] = errorBytes
 	}
 	if encoded != nil {
-		secretOutput.FoundSecret[fmt.Sprintf("%s.json", secret.Name)] = encoded
-		if ctx.Redact {
-			secretOutput, err = secretOutput.Redact()
-			if err != nil {
-				return nil, err
-			}
-		}
+		secretOutput[path.Join("secrets", filePath)] = encoded
 	}
 
-	b, err := json.MarshalIndent(secretOutput, "", "  ")
-	if err != nil {
-		return nil, err
-	}
-
-	return b, nil
+	return secretOutput, nil
 }
 
-func secret(client *kubernetes.Clientset, secretCollector *troubleshootv1beta1.Secret) (*FoundSecret, []byte, error) {
-	found, err := client.CoreV1().Secrets(secretCollector.Namespace).Get(secretCollector.SecretName, metav1.GetOptions{})
+func secret(ctx context.Context, client *kubernetes.Clientset, secretCollector *troubleshootv1beta2.Secret) (string, []byte, error) {
+	ns := secretCollector.Namespace
+	path := fmt.Sprintf("%s.json", filepath.Join(ns, secretCollector.SecretName))
+
+	found, err := client.CoreV1().Secrets(secretCollector.Namespace).Get(ctx, secretCollector.SecretName, metav1.GetOptions{})
 	if err != nil {
 		missingSecret := FoundSecret{
 			Namespace:    secretCollector.Namespace,
@@ -70,16 +60,23 @@ func secret(client *kubernetes.Clientset, secretCollector *troubleshootv1beta1.S
 
 		b, marshalErr := json.MarshalIndent(missingSecret, "", "  ")
 		if marshalErr != nil {
-			return nil, nil, marshalErr
+			return path, nil, marshalErr
 		}
 
-		return &missingSecret, b, err
+		return path, b, err
 	}
 
+	ns = found.Namespace
+	path = fmt.Sprintf("%s.json", filepath.Join(ns, secretCollector.SecretName, secretCollector.Key))
+
 	keyExists := false
+	keyData := ""
 	if secretCollector.Key != "" {
-		if _, ok := found.Data[secretCollector.Key]; ok {
+		if val, ok := found.Data[secretCollector.Key]; ok {
 			keyExists = true
+			if secretCollector.IncludeValue {
+				keyData = string(val)
+			}
 		}
 	}
 
@@ -88,24 +85,13 @@ func secret(client *kubernetes.Clientset, secretCollector *troubleshootv1beta1.S
 		Name:         found.Name,
 		SecretExists: true,
 		KeyExists:    keyExists,
+		Value:        keyData,
 	}
 
 	b, err := json.MarshalIndent(secret, "", "  ")
 	if err != nil {
-		return nil, nil, err
+		return path, nil, err
 	}
 
-	return &secret, b, nil
-}
-
-func (s *SecretOutput) Redact() (*SecretOutput, error) {
-	foundSecret, err := redactMap(s.FoundSecret)
-	if err != nil {
-		return nil, err
-	}
-
-	return &SecretOutput{
-		FoundSecret: foundSecret,
-		Errors:      s.Errors,
-	}, nil
+	return path, b, nil
 }

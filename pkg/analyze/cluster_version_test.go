@@ -5,27 +5,28 @@ import (
 	"testing"
 
 	"github.com/blang/semver"
-	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
+	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
+	"go.undefinedlabs.com/scopeagent"
 )
 
 func Test_analyzeClusterVersionResult(t *testing.T) {
-	outcomes := []*troubleshootv1beta1.Outcome{
+	outcomes := []*troubleshootv1beta2.Outcome{
 		{
-			Fail: &troubleshootv1beta1.SingleOutcome{
+			Fail: &troubleshootv1beta2.SingleOutcome{
 				When:    "< 1.13.0",
 				Message: "Sentry requires at Kubernetes 1.13.0 or later, and recommends 1.15.0.",
 				URI:     "https://www.kubernetes.io",
 			},
 		},
 		{
-			Warn: &troubleshootv1beta1.SingleOutcome{
+			Warn: &troubleshootv1beta2.SingleOutcome{
 				When:    "< 1.15.0",
 				Message: "Your cluster meets the minimum version of Kubernetes, but we recommend you update to 1.15.0 or later.",
 				URI:     "https://www.kubernetes.io",
 			},
 		},
 		{
-			Pass: &troubleshootv1beta1.SingleOutcome{
+			Pass: &troubleshootv1beta2.SingleOutcome{
 				Message: "Your cluster meets the recommended and required versions of Kubernetes.",
 			},
 		},
@@ -33,7 +34,7 @@ func Test_analyzeClusterVersionResult(t *testing.T) {
 
 	type args struct {
 		k8sVersion semver.Version
-		outcomes   []*troubleshootv1beta1.Outcome
+		outcomes   []*troubleshootv1beta2.Outcome
 		checkName  string
 	}
 	tests := []struct {
@@ -54,6 +55,8 @@ func Test_analyzeClusterVersionResult(t *testing.T) {
 				Title:   "Check Fail",
 				Message: "Sentry requires at Kubernetes 1.13.0 or later, and recommends 1.15.0.",
 				URI:     "https://www.kubernetes.io",
+				IconKey: "kubernetes_cluster_version",
+				IconURI: "https://troubleshoot.sh/images/analyzer-icons/kubernetes.svg?w=16&h=16",
 			},
 		},
 		{
@@ -68,6 +71,8 @@ func Test_analyzeClusterVersionResult(t *testing.T) {
 				Title:   "Check Warn",
 				Message: "Your cluster meets the minimum version of Kubernetes, but we recommend you update to 1.15.0 or later.",
 				URI:     "https://www.kubernetes.io",
+				IconKey: "kubernetes_cluster_version",
+				IconURI: "https://troubleshoot.sh/images/analyzer-icons/kubernetes.svg?w=16&h=16",
 			},
 		},
 		{
@@ -81,11 +86,15 @@ func Test_analyzeClusterVersionResult(t *testing.T) {
 				IsPass:  true,
 				Title:   "Check Pass",
 				Message: "Your cluster meets the recommended and required versions of Kubernetes.",
+				IconKey: "kubernetes_cluster_version",
+				IconURI: "https://troubleshoot.sh/images/analyzer-icons/kubernetes.svg?w=16&h=16",
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			scopetest := scopeagent.StartTest(t)
+			defer scopetest.End()
 			got, err := analyzeClusterVersionResult(tt.args.k8sVersion, tt.args.outcomes, tt.args.checkName)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("analyzeClusterVersionResult() error = %v, wantErr %v", err, tt.wantErr)

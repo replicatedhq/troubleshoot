@@ -4,11 +4,11 @@ import (
 	"encoding/json"
 	"fmt"
 
-	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
+	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	storagev1beta1 "k8s.io/api/storage/v1beta1"
 )
 
-func analyzeStorageClass(analyzer *troubleshootv1beta1.StorageClass, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
+func analyzeStorageClass(analyzer *troubleshootv1beta2.StorageClass, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
 	storageClassesData, err := getCollectedFileContents("cluster-resources/storage-classes.json")
 	if err != nil {
 		return nil, err
@@ -21,21 +21,31 @@ func analyzeStorageClass(analyzer *troubleshootv1beta1.StorageClass, getCollecte
 
 	title := analyzer.CheckName
 	if title == "" {
-		title = fmt.Sprintf("Storage class %s", analyzer.StorageClassName)
+		if analyzer.StorageClassName != "" {
+			title = fmt.Sprintf("Storage class %s", analyzer.StorageClassName)
+		} else {
+			title = "Default Storage Class"
+		}
 	}
 
 	result := AnalyzeResult{
-		Title: title,
+		Title:   title,
+		IconKey: "kubernetes_storage_class",
+		IconURI: "https://troubleshoot.sh/images/analyzer-icons/storage-class.svg?w=12&h=12",
 	}
 
 	for _, storageClass := range storageClasses {
-		if storageClass.Name == analyzer.StorageClassName {
+		val, _ := storageClass.Annotations["storageclass.kubernetes.io/is-default-class"]
+		if (storageClass.Name == analyzer.StorageClassName) || (analyzer.StorageClassName == "" && val == "true") {
 			result.IsPass = true
 			for _, outcome := range analyzer.Outcomes {
 				if outcome.Pass != nil {
 					result.Message = outcome.Pass.Message
 					result.URI = outcome.Pass.URI
 				}
+			}
+			if analyzer.StorageClassName == "" && result.Message == "" {
+				result.Message = "Default Storage Class found"
 			}
 
 			return &result, nil
@@ -48,6 +58,9 @@ func analyzeStorageClass(analyzer *troubleshootv1beta1.StorageClass, getCollecte
 			result.Message = outcome.Fail.Message
 			result.URI = outcome.Fail.URI
 		}
+	}
+	if analyzer.StorageClassName == "" && result.Message == "" {
+		result.Message = "No Default Storage Class found"
 	}
 
 	return &result, nil

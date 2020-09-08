@@ -26,11 +26,10 @@ import (
 type TroubleshootV1beta1Interface interface {
 	RESTClient() rest.Interface
 	AnalyzersGetter
-	AnalyzerJobsGetter
 	CollectorsGetter
-	CollectorJobsGetter
 	PreflightsGetter
-	PreflightJobsGetter
+	RedactorsGetter
+	SupportBundlesGetter
 }
 
 // TroubleshootV1beta1Client is used to interact with features provided by the troubleshoot.replicated.com group.
@@ -42,24 +41,20 @@ func (c *TroubleshootV1beta1Client) Analyzers(namespace string) AnalyzerInterfac
 	return newAnalyzers(c, namespace)
 }
 
-func (c *TroubleshootV1beta1Client) AnalyzerJobs(namespace string) AnalyzerJobInterface {
-	return newAnalyzerJobs(c, namespace)
-}
-
 func (c *TroubleshootV1beta1Client) Collectors(namespace string) CollectorInterface {
 	return newCollectors(c, namespace)
-}
-
-func (c *TroubleshootV1beta1Client) CollectorJobs(namespace string) CollectorJobInterface {
-	return newCollectorJobs(c, namespace)
 }
 
 func (c *TroubleshootV1beta1Client) Preflights(namespace string) PreflightInterface {
 	return newPreflights(c, namespace)
 }
 
-func (c *TroubleshootV1beta1Client) PreflightJobs(namespace string) PreflightJobInterface {
-	return newPreflightJobs(c, namespace)
+func (c *TroubleshootV1beta1Client) Redactors(namespace string) RedactorInterface {
+	return newRedactors(c, namespace)
+}
+
+func (c *TroubleshootV1beta1Client) SupportBundles(namespace string) SupportBundleInterface {
+	return newSupportBundles(c, namespace)
 }
 
 // NewForConfig creates a new TroubleshootV1beta1Client for the given config.

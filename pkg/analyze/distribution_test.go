@@ -5,6 +5,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.undefinedlabs.com/scopeagent"
 )
 
 func Test_compareDistributionConditionalToActual(t *testing.T) {
@@ -41,6 +42,8 @@ func Test_compareDistributionConditionalToActual(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			scopetest := scopeagent.StartTest(t)
+			defer scopetest.End()
 			req := require.New(t)
 
 			actual, err := compareDistributionConditionalToActual(test.conditional, test.input)
@@ -49,7 +52,6 @@ func Test_compareDistributionConditionalToActual(t *testing.T) {
 			assert.Equal(t, test.expected, actual)
 		})
 	}
-
 }
 
 func Test_mustNormalizeDistributionName(t *testing.T) {
@@ -77,6 +79,8 @@ func Test_mustNormalizeDistributionName(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.raw, func(t *testing.T) {
+			scopetest := scopeagent.StartTest(t)
+			defer scopetest.End()
 			actual := mustNormalizeDistributionName(test.raw)
 
 			assert.Equal(t, test.expected, actual)

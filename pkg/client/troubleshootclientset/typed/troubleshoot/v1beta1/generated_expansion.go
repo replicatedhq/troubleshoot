@@ -19,12 +19,10 @@ package v1beta1
 
 type AnalyzerExpansion interface{}
 
-type AnalyzerJobExpansion interface{}
-
 type CollectorExpansion interface{}
-
-type CollectorJobExpansion interface{}
 
 type PreflightExpansion interface{}
 
-type PreflightJobExpansion interface{}
+type RedactorExpansion interface{}
+
+type SupportBundleExpansion interface{}

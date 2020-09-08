@@ -1,0 +1,20 @@
+apiVersion: troubleshoot.sh/v1beta2
+kind: Preflight
+metadata:
+  name: example-preflight-checks
+spec:
+  collectors:
+    - data:
+        name: config/replicas.txt
+        data: "2"
+  analyzers:
+    - textAnalyze:
+        checkName: Replica Count
+        fileName: config/replicas.txt
+        regexGroups: '(?P<Replicas>\d+)'
+        outcomes:
+          - fail:
+              when: "Replicas < 5"
+              message: That's not enough replicas!
+          - pass:
+              message: You've selected at leat 5 replicas

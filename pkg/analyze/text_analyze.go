@@ -1,17 +1,18 @@
 package analyzer
 
 import (
-	"path"
+	"fmt"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
 
 	"github.com/pkg/errors"
-	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
+	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 )
 
-func analyzeTextAnalyze(analyzer *troubleshootv1beta1.TextAnalyze, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
-	fullPath := path.Join(analyzer.CollectorName, analyzer.FileName)
+func analyzeTextAnalyze(analyzer *troubleshootv1beta2.TextAnalyze, getCollectedFileContents func(string) (map[string][]byte, error)) ([]*AnalyzeResult, error) {
+	fullPath := filepath.Join(analyzer.CollectorName, analyzer.FileName)
 	collected, err := getCollectedFileContents(fullPath)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to read collected file name: %s", fullPath)
@@ -22,29 +23,67 @@ func analyzeTextAnalyze(analyzer *troubleshootv1beta1.TextAnalyze, getCollectedF
 		checkName = analyzer.CollectorName
 	}
 
+	if len(collected) == 0 {
+		return []*AnalyzeResult{
+			{
+				Title:   checkName,
+				IconKey: "kubernetes_text_analyze",
+				IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg",
+				IsFail:  false,
+				Message: "No matching files",
+			},
+		}, nil
+	}
+
+	results := []*AnalyzeResult{}
+
 	if analyzer.RegexPattern != "" {
-		return analyzeRegexPattern(analyzer.RegexPattern, collected, analyzer.Outcomes, checkName)
+		for _, fileContents := range collected {
+			result, err := analyzeRegexPattern(analyzer.RegexPattern, fileContents, analyzer.Outcomes, checkName)
+			if err != nil {
+				return nil, err
+			}
+			if result != nil {
+				results = append(results, result)
+			}
+		}
 	}
 
 	if analyzer.RegexGroups != "" {
-		return analyzeRegexGroups(analyzer.RegexGroups, collected, analyzer.Outcomes, checkName)
+		for _, fileContents := range collected {
+			result, err := analyzeRegexGroups(analyzer.RegexGroups, fileContents, analyzer.Outcomes, checkName)
+			if err != nil {
+				return nil, err
+			}
+			if result != nil {
+				results = append(results, result)
+			}
+		}
 	}
 
-	return &AnalyzeResult{
-		Title:   analyzer.CheckName,
-		IsFail:  true,
-		Message: "Invalid analyzer",
+	if len(results) > 0 {
+		return results, nil
+	}
+
+	return []*AnalyzeResult{
+		{
+			Title:   checkName,
+			IconKey: "kubernetes_text_analyze",
+			IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg",
+			IsFail:  true,
+			Message: "Invalid analyzer",
+		},
 	}, nil
 }
 
-func analyzeRegexPattern(pattern string, collected []byte, outcomes []*troubleshootv1beta1.Outcome, checkName string) (*AnalyzeResult, error) {
+func analyzeRegexPattern(pattern string, collected []byte, outcomes []*troubleshootv1beta2.Outcome, checkName string) (*AnalyzeResult, error) {
 	re, err := regexp.Compile(pattern)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to compile regex: %s", pattern)
 	}
 
-	var failOutcome *troubleshootv1beta1.Outcome
-	var passOutcome *troubleshootv1beta1.Outcome
+	var failOutcome *troubleshootv1beta2.Outcome
+	var passOutcome *troubleshootv1beta2.Outcome
 	for _, outcome := range outcomes {
 		if outcome.Fail != nil {
 			failOutcome = outcome
@@ -64,13 +103,15 @@ func analyzeRegexPattern(pattern string, collected []byte, outcomes []*troublesh
 
 	return &AnalyzeResult{
 		Title:   checkName,
+		IconKey: "kubernetes_text_analyze",
+		IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg",
 		IsFail:  true,
 		Message: failOutcome.Fail.Message,
 		URI:     failOutcome.Fail.URI,
 	}, nil
 }
 
-func analyzeRegexGroups(pattern string, collected []byte, outcomes []*troubleshootv1beta1.Outcome, checkName string) (*AnalyzeResult, error) {
+func analyzeRegexGroups(pattern string, collected []byte, outcomes []*troubleshootv1beta2.Outcome, checkName string) (*AnalyzeResult, error) {
 	re, err := regexp.Compile(pattern)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to compile regex: %s", pattern)
@@ -79,12 +120,14 @@ func analyzeRegexGroups(pattern string, collected []byte, outcomes []*troublesho
 	match := re.FindStringSubmatch(string(collected))
 
 	result := &AnalyzeResult{
-		Title: checkName,
+		Title:   checkName,
+		IconKey: "kubernetes_text_analyze",
+		IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg?w=13&h=16",
 	}
 
 	foundMatches := map[string]string{}
 	for i, name := range re.SubexpNames() {
-		if i != 0 && name != "" {
+		if i != 0 && name != "" && len(match) > i {
 			foundMatches[name] = match[i]
 		}
 	}
@@ -192,24 +235,24 @@ func compareRegex(conditional string, foundMatches map[string]string) (bool, err
 		case "==":
 			fallthrough
 		case "===":
-			return lookForValueInt == foundValueInt, nil
+			return foundValueInt == lookForValueInt, nil
 
 		case "<":
-			return lookForValueInt < foundValueInt, nil
+			return foundValueInt < lookForValueInt, nil
 
 		case ">":
-			return lookForValueInt > foundValueInt, nil
+			return foundValueInt > lookForValueInt, nil
 
 		case "<=":
-			return lookForValueInt <= foundValueInt, nil
+			return foundValueInt <= lookForValueInt, nil
 
 		case ">=":
-			return lookForValueInt >= foundValueInt, nil
+			return foundValueInt >= lookForValueInt, nil
 		}
 	} else {
 		// all we can support is "=" and "==" and "===" for now
 		if operator != "=" && operator != "==" && operator != "===" {
-			return false, errors.New("unexpected operator in regex comparator")
+			return false, fmt.Errorf("unexpected operator %q in regex comparator, cannot compare %q and %q", operator, foundValue, lookForValue)
 		}
 
 		return foundValue == lookForValue, nil

@@ -6,7 +6,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
+	"github.com/stretchr/testify/require"
+	"go.undefinedlabs.com/scopeagent"
 )
 
 func Test_Redactors(t *testing.T) {
@@ -1618,9 +1620,15 @@ func Test_Redactors(t *testing.T) {
 		}
 	  ]`
 
+	wantRedactionsLen := 38
+	wantRedactionsCount := 25
+
 	t.Run("test default redactors", func(t *testing.T) {
-		redactors, err := GetRedactors()
-		assert.NoError(t, err)
+		scopetest := scopeagent.StartTest(t)
+		defer scopetest.End()
+		req := require.New(t)
+		redactors, err := getRedactors("testpath")
+		req.NoError(err)
 
 		nextReader := io.Reader(strings.NewReader(original))
 		for _, r := range redactors {
@@ -1628,8 +1636,144 @@ func Test_Redactors(t *testing.T) {
 		}
 
 		redacted, err := ioutil.ReadAll(nextReader)
-		assert.NoError(t, err)
+		req.NoError(err)
 
-		assert.JSONEq(t, expected, string(redacted))
+		req.JSONEq(expected, string(redacted))
+
+		actualRedactions := GetRedactionList()
+		ResetRedactionList()
+		req.Len(actualRedactions.ByFile["testpath"], wantRedactionsLen)
+		req.Len(actualRedactions.ByRedactor, wantRedactionsCount)
 	})
+}
+
+func Test_redactMatchesPath(t *testing.T) {
+	type args struct {
+		path   string
+		redact *troubleshootv1beta2.Redact
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
+	}{
+		{
+			name: "literal path",
+			args: args{
+				path: "/my/test/path",
+				redact: &troubleshootv1beta2.Redact{
+					FileSelector: troubleshootv1beta2.FileSelector{
+						File:  "/my/test/path",
+						Files: nil,
+					},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "no path",
+			args: args{
+				path: "/my/test/path",
+				redact: &troubleshootv1beta2.Redact{
+					FileSelector: troubleshootv1beta2.FileSelector{
+						File:  "",
+						Files: nil,
+					},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "wrong literal path",
+			args: args{
+				path: "/my/test/path",
+				redact: &troubleshootv1beta2.Redact{
+					FileSelector: troubleshootv1beta2.FileSelector{
+						File:  "/my/test/path/two",
+						Files: nil,
+					},
+				},
+			},
+			want: false,
+		},
+		{
+			name: "path with glob",
+			args: args{
+				path: "/my/test/path/two",
+				redact: &troubleshootv1beta2.Redact{
+					FileSelector: troubleshootv1beta2.FileSelector{
+						File:  "/my/test/path/*",
+						Files: nil,
+					},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "path with glob in middle",
+			args: args{
+				path: "/my/test/path/two",
+				redact: &troubleshootv1beta2.Redact{
+					FileSelector: troubleshootv1beta2.FileSelector{
+						File:  "/my/test/*/*",
+						Files: nil,
+					},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "multiple paths",
+			args: args{
+				path: "/my/test/path/two",
+				redact: &troubleshootv1beta2.Redact{
+					FileSelector: troubleshootv1beta2.FileSelector{
+						File: "",
+						Files: []string{
+							"/not/the/path",
+							"/my/test/*/*",
+						},
+					},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "double glob matching separator",
+			args: args{
+				path: "/my/test/path/two",
+				redact: &troubleshootv1beta2.Redact{
+					FileSelector: troubleshootv1beta2.FileSelector{
+						File:  "/my/test/**",
+						Files: nil,
+					},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "single glob does NOT match separator",
+			args: args{
+				path: "/my/test/path/two",
+				redact: &troubleshootv1beta2.Redact{
+					FileSelector: troubleshootv1beta2.FileSelector{
+						File:  "/my/test/*",
+						Files: nil,
+					},
+				},
+			},
+			want: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			scopetest := scopeagent.StartTest(t)
+			defer scopetest.End()
+			req := require.New(t)
+
+			got, err := redactMatchesPath(tt.args.path, tt.args.redact)
+			req.NoError(err)
+			req.Equal(tt.want, got)
+		})
+	}
 }

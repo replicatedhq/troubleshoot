@@ -1,0 +1,54 @@
+apiVersion: troubleshoot.sh/v1beta2
+kind: Preflight
+metadata:
+  name: sample
+spec:
+  analyzers:
+    - nodeResources:
+        checkName: Must have at least 3 nodes in the cluster
+        outcomes:
+          - fail:
+              when: "< 3"
+              message: This application requires at least 3 nodes
+          - warn:
+              when: "< 5"
+              message: This application recommends at last 5 nodes.
+          - pass:
+              message: This cluster has enough nodes.
+    - nodeResources:
+        checkName: Must have 3 nodes with at least 6 cores
+        filters:
+          cpuCapacity: "6"
+        outcomes:
+          - fail:
+              when: "< 3"
+              message: This application requires at least 3 nodes with 6 cores each
+          - pass:
+              message: This cluster has enough nodes with enough codes
+    - nodeResources:
+        checkName: Must have 1 node with 16 GB (available) memory and 5 cores (on a single node)
+        filters:
+          allocatableMemory: 16Gi
+          cpuCapacity: "5"
+        outcomes:
+          - fail:
+              when: "< 1"
+              message: This application requires at least 1 node with 16GB available memory
+          - pass:
+              message: This cluster has a node with enough memory.
+    - nodeResources:
+        checkName: There must be at least 3 nodes in the cluster
+        outcomes:
+          - fail:
+              when: "count() < 3"
+              message: This application requires at least 3 nodes in the cluster
+          - pass:
+              message: This cluster haas sufficient nodes
+    - nodeResources:
+        checkName: There must be a total of at least 32Gi of memory on all nodes
+        outcomes:
+          - fail:
+              when: "sum(memoryCapacity) < 32Gi"
+              message: This application requires that 32Gi or more memory be available to the cluster
+          - pass:
+              message: This cluster haas sufficient memory

@@ -4,11 +4,11 @@ import (
 	"encoding/json"
 	"fmt"
 
-	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
+	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	extensionsv1beta1 "k8s.io/api/extensions/v1beta1"
 )
 
-func analyzeIngress(analyzer *troubleshootv1beta1.Ingress, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
+func analyzeIngress(analyzer *troubleshootv1beta2.Ingress, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
 	ingressData, err := getCollectedFileContents("cluster-resources/storage-classes.json")
 	if err != nil {
 		return nil, err
@@ -25,7 +25,9 @@ func analyzeIngress(analyzer *troubleshootv1beta1.Ingress, getCollectedFileConte
 	}
 
 	result := AnalyzeResult{
-		Title: title,
+		Title:   title,
+		IconKey: "kubernetes_ingress",
+		IconURI: "https://troubleshoot.sh/images/analyzer-icons/ingress-controller.svg?w=20&h=13",
 	}
 
 	for _, ingress := range ingresses {

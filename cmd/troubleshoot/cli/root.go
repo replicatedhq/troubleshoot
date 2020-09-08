@@ -1,10 +1,11 @@
 package cli
 
 import (
+	"io/ioutil"
 	"os"
 	"strings"
 
-	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
+	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/replicatedhq/troubleshoot/pkg/logger"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -17,11 +18,11 @@ var (
 
 func RootCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "troubleshoot [url]",
+		Use:   "support-bundle [url]",
 		Args:  cobra.MinimumNArgs(1),
-		Short: "Generate and manage support bundles",
+		Short: "Generate a support bundle",
 		Long: `A support bundle is an archive of files, output, metrics and state
-from a server that can be used to assist when troubleshooting a server.`,
+from a server that can be used to assist when troubleshooting a Kubernetes cluster.`,
 		SilenceUsage: true,
 		PreRun: func(cmd *cobra.Command, args []string) {
 			viper.BindPFlags(cmd.Flags())
@@ -39,13 +40,14 @@ from a server that can be used to assist when troubleshooting a server.`,
 	cmd.AddCommand(Analyze())
 	cmd.AddCommand(VersionCmd())
 
-	cmd.Flags().String("collectors", "", "name of the collectors to use")
-	cmd.Flags().String("image", "", "the full name of the collector image to use")
-	cmd.Flags().String("pullpolicy", "", "the pull policy of the collector image")
+	cmd.Flags().StringSlice("redactors", []string{}, "names of the additional redactors to use")
 	cmd.Flags().Bool("redact", true, "enable/disable default redactions")
-	cmd.Flags().Bool("collect-without-permissions", false, "always run troubleshoot collectors even if some require permissions that troubleshoot does not have")
+	cmd.Flags().Bool("collect-without-permissions", false, "always generate a support bundle, even if it some require additional permissions")
 
-	cmd.Flags().String("serviceaccount", "", "name of the service account to use. if not provided, one will be created")
+	// hidden in favor of the `insecure-skip-tls-verify` flag
+	cmd.Flags().Bool("allow-insecure-connections", false, "when set, do not verify TLS certs when retrieving spec and reporting results")
+	cmd.Flags().MarkHidden("allow-insecure-connections")
+
 	viper.BindPFlags(cmd.Flags())
 
 	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
@@ -67,7 +69,7 @@ func initConfig() {
 	viper.AutomaticEnv()
 }
 
-func ensureCollectorInList(list []*troubleshootv1beta1.Collect, collector troubleshootv1beta1.Collect) []*troubleshootv1beta1.Collect {
+func ensureCollectorInList(list []*troubleshootv1beta2.Collect, collector troubleshootv1beta2.Collect) []*troubleshootv1beta2.Collect {
 	for _, inList := range list {
 		if collector.ClusterResources != nil && inList.ClusterResources != nil {
 			return list
@@ -78,4 +80,12 @@ func ensureCollectorInList(list []*troubleshootv1beta1.Collect, collector troubl
 	}
 
 	return append(list, &collector)
+}
+
+func writeFile(filename string, contents []byte) error {
+	if err := ioutil.WriteFile(filename, contents, 0644); err != nil {
+		return err
+	}
+
+	return nil
 }

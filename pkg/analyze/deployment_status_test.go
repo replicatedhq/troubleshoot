@@ -3,30 +3,31 @@ package analyzer
 import (
 	"testing"
 
-	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
+	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.undefinedlabs.com/scopeagent"
 )
 
 func Test_deploymentStatus(t *testing.T) {
 	tests := []struct {
 		name         string
-		analyzer     troubleshootv1beta1.DeploymentStatus
+		analyzer     troubleshootv1beta2.DeploymentStatus
 		expectResult AnalyzeResult
 		files        map[string][]byte
 	}{
 		{
 			name: "1/1, pass when = 1",
-			analyzer: troubleshootv1beta1.DeploymentStatus{
-				Outcomes: []*troubleshootv1beta1.Outcome{
+			analyzer: troubleshootv1beta2.DeploymentStatus{
+				Outcomes: []*troubleshootv1beta2.Outcome{
 					{
-						Pass: &troubleshootv1beta1.SingleOutcome{
+						Pass: &troubleshootv1beta2.SingleOutcome{
 							When:    "= 1",
 							Message: "pass",
 						},
 					},
 					{
-						Fail: &troubleshootv1beta1.SingleOutcome{
+						Fail: &troubleshootv1beta2.SingleOutcome{
 							Message: "fail",
 						},
 					},
@@ -40,6 +41,8 @@ func Test_deploymentStatus(t *testing.T) {
 				IsFail:  false,
 				Title:   "kotsadm-api Status",
 				Message: "pass",
+				IconKey: "kubernetes_deployment_status",
+				IconURI: "https://troubleshoot.sh/images/analyzer-icons/deployment-status.svg?w=17&h=17",
 			},
 			files: map[string][]byte{
 				"cluster-resources/deployments/default.json": []byte(collectedDeployments),
@@ -47,16 +50,16 @@ func Test_deploymentStatus(t *testing.T) {
 		},
 		{
 			name: "1/1, pass when = 2",
-			analyzer: troubleshootv1beta1.DeploymentStatus{
-				Outcomes: []*troubleshootv1beta1.Outcome{
+			analyzer: troubleshootv1beta2.DeploymentStatus{
+				Outcomes: []*troubleshootv1beta2.Outcome{
 					{
-						Pass: &troubleshootv1beta1.SingleOutcome{
+						Pass: &troubleshootv1beta2.SingleOutcome{
 							When:    "= 2",
 							Message: "pass",
 						},
 					},
 					{
-						Fail: &troubleshootv1beta1.SingleOutcome{
+						Fail: &troubleshootv1beta2.SingleOutcome{
 							Message: "fail",
 						},
 					},
@@ -70,6 +73,8 @@ func Test_deploymentStatus(t *testing.T) {
 				IsFail:  true,
 				Title:   "kotsadm-api Status",
 				Message: "fail",
+				IconKey: "kubernetes_deployment_status",
+				IconURI: "https://troubleshoot.sh/images/analyzer-icons/deployment-status.svg?w=17&h=17",
 			},
 			files: map[string][]byte{
 				"cluster-resources/deployments/default.json": []byte(collectedDeployments),
@@ -77,22 +82,22 @@ func Test_deploymentStatus(t *testing.T) {
 		},
 		{
 			name: "1/1, pass when >= 2, warn when = 1, fail when 0",
-			analyzer: troubleshootv1beta1.DeploymentStatus{
-				Outcomes: []*troubleshootv1beta1.Outcome{
+			analyzer: troubleshootv1beta2.DeploymentStatus{
+				Outcomes: []*troubleshootv1beta2.Outcome{
 					{
-						Pass: &troubleshootv1beta1.SingleOutcome{
+						Pass: &troubleshootv1beta2.SingleOutcome{
 							When:    ">= 2",
 							Message: "pass",
 						},
 					},
 					{
-						Warn: &troubleshootv1beta1.SingleOutcome{
+						Warn: &troubleshootv1beta2.SingleOutcome{
 							When:    "= 1",
 							Message: "warn",
 						},
 					},
 					{
-						Fail: &troubleshootv1beta1.SingleOutcome{
+						Fail: &troubleshootv1beta2.SingleOutcome{
 							Message: "fail",
 						},
 					},
@@ -106,6 +111,8 @@ func Test_deploymentStatus(t *testing.T) {
 				IsFail:  false,
 				Title:   "kotsadm-api Status",
 				Message: "warn",
+				IconKey: "kubernetes_deployment_status",
+				IconURI: "https://troubleshoot.sh/images/analyzer-icons/deployment-status.svg?w=17&h=17",
 			},
 			files: map[string][]byte{
 				"cluster-resources/deployments/default.json": []byte(collectedDeployments),
@@ -115,6 +122,8 @@ func Test_deploymentStatus(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			scopetest := scopeagent.StartTest(t)
+			defer scopetest.End()
 			req := require.New(t)
 
 			getFiles := func(n string) ([]byte, error) {

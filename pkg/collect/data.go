@@ -1,24 +1,16 @@
 package collect
 
 import (
-	"encoding/json"
 	"path/filepath"
 
-	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
+	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 )
 
-type DataOutput map[string][]byte
-
-func Data(ctx *Context, dataCollector *troubleshootv1beta1.Data) ([]byte, error) {
+func Data(c *Collector, dataCollector *troubleshootv1beta2.Data) (map[string][]byte, error) {
 	bundlePath := filepath.Join(dataCollector.Name, dataCollector.CollectorName)
-	dataOutput := DataOutput{
+	dataOutput := map[string][]byte{
 		bundlePath: []byte(dataCollector.Data),
 	}
 
-	b, err := json.MarshalIndent(dataOutput, "", "  ")
-	if err != nil {
-		return nil, err
-	}
-
-	return b, nil
+	return dataOutput, nil
 }

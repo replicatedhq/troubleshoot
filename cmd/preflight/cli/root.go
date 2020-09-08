@@ -4,7 +4,6 @@ import (
 	"os"
 	"strings"
 
-	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
@@ -37,14 +36,9 @@ that a cluster meets the requirements to run an application.`,
 
 	cmd.Flags().Bool("interactive", true, "interactive preflights")
 	cmd.Flags().String("format", "human", "output format, one of human, json, yaml. only used when interactive is set to false")
-	cmd.Flags().String("preflight", "", "name of the preflight to use")
-	cmd.Flags().String("image", "", "the full name of the preflight image to use")
-	cmd.Flags().String("pullpolicy", "", "the pull policy of the preflight image")
 	cmd.Flags().String("collector-image", "", "the full name of the collector image to use")
 	cmd.Flags().String("collector-pullpolicy", "", "the pull policy of the collector image")
 	cmd.Flags().Bool("collect-without-permissions", false, "always run preflight checks even if some require permissions that preflight does not have")
-
-	cmd.Flags().String("serviceaccount", "", "name of the service account to use. if not provided, one will be created")
 
 	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
 
@@ -63,17 +57,4 @@ func InitAndExecute() {
 func initConfig() {
 	viper.SetEnvPrefix("PREFLIGHT")
 	viper.AutomaticEnv()
-}
-
-func ensureCollectorInList(list []*troubleshootv1beta1.Collect, collector troubleshootv1beta1.Collect) []*troubleshootv1beta1.Collect {
-	for _, inList := range list {
-		if collector.ClusterResources != nil && inList.ClusterResources != nil {
-			return list
-		}
-		if collector.ClusterInfo != nil && inList.ClusterInfo != nil {
-			return list
-		}
-	}
-
-	return append(list, &collector)
 }

@@ -1,0 +1,23 @@
+apiVersion: troubleshoot.sh/v1beta2
+kind: Preflight
+metadata:
+  name: sample
+spec:
+  collectors:
+    - redis:
+        collectorName: my-redis
+        uri: rediss://default:password@hostname:6379
+  analyzers:
+    - redis:
+        checkName: Must be redis 5.x or later
+        collectorName: my-redis
+        outcomes:
+          - fail:
+              when: "connected == false"
+              message: Cannot connect to postgres server
+          - fail:
+              when: "version < 5.0.0"
+              message: The redis server must be at least version 5
+          - pass:
+              message: The redis connection checks out
+  
