@@ -52,13 +52,20 @@ type Data struct {
 
 type Run struct {
 	CollectorMeta   `json:",inline" yaml:",inline"`
-	Name            string   `json:"name,omitempty" yaml:"name,omitempty"`
-	Namespace       string   `json:"namespace" yaml:"namespace"`
-	Image           string   `json:"image" yaml:"image"`
-	Command         []string `json:"command,omitempty" yaml:"command,omitempty"`
-	Args            []string `json:"args,omitempty" yaml:"args,omitempty"`
-	Timeout         string   `json:"timeout,omitempty" yaml:"timeout,omitempty"`
-	ImagePullPolicy string   `json:"imagePullPolicy,omitempty" yaml:"imagePullPolicy,omitempty"`
+	Name            string            `json:"name,omitempty" yaml:"name,omitempty"`
+	Namespace       string            `json:"namespace" yaml:"namespace"`
+	Image           string            `json:"image" yaml:"image"`
+	Command         []string          `json:"command,omitempty" yaml:"command,omitempty"`
+	Args            []string          `json:"args,omitempty" yaml:"args,omitempty"`
+	Timeout         string            `json:"timeout,omitempty" yaml:"timeout,omitempty"`
+	ImagePullPolicy string            `json:"imagePullPolicy,omitempty" yaml:"imagePullPolicy,omitempty"`
+	ImagePullSecret *ImagePullSecrets `json:"imagePullSecret,omitempty" yaml:"imagePullSecret,omitempty"`
+}
+
+type ImagePullSecrets struct {
+	Name       string            `json:"name,omitempty" yaml:"name,omitempty"`
+	Data       map[string]string `json:"data,omitempty" yaml:"data,omitempty"`
+	SecretType string            `json:"type,omitempty" yaml:"type,omitempty"`
 }
 
 type Exec struct {

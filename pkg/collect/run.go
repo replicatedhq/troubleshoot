@@ -1,7 +1,11 @@
 package collect
 
 import (
+	"bytes"
 	"context"
+	"encoding/base64"
+	"encoding/json"
+	"io/ioutil"
 	"time"
 
 	"github.com/pkg/errors"
@@ -30,7 +34,15 @@ func Run(c *Collector, runCollector *troubleshootv1beta2.Run) (map[string][]byte
 			logger.Printf("Failed to delete pod %s: %v\n", pod.Name, err)
 		}
 	}()
-
+	if runCollector.ImagePullSecret.Data != nil {
+		defer func() {
+			for _, k := range pod.Spec.ImagePullSecrets {
+				if err := client.CoreV1().Secrets(pod.Namespace).Delete(ctx, k.Name, metav1.DeleteOptions{}); err != nil {
+					logger.Printf("Failed to delete secret %s: %v\n", k.Name, err)
+				}
+			}
+		}()
+	}
 	if runCollector.Timeout == "" {
 		return runWithoutTimeout(ctx, c, pod, runCollector)
 	}
@@ -137,10 +149,79 @@ func runPod(ctx context.Context, client *kubernetes.Clientset, runCollector *tro
 		},
 	}
 
+	if runCollector.ImagePullSecret != nil {
+		err := createSecret(ctx, client, runCollector.ImagePullSecret, &pod)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to create secret")
+		}
+	}
 	created, err := client.CoreV1().Pods(namespace).Create(ctx, &pod, metav1.CreateOptions{})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create pod")
 	}
 
 	return created, nil
+}
+func createSecret(ctx context.Context, client *kubernetes.Clientset, imagePullSecret *troubleshootv1beta2.ImagePullSecrets, pod *corev1.Pod) error {
+	//In case a new secret needs to be created
+	if imagePullSecret.Data != nil {
+		var out bytes.Buffer
+		data := make(map[string][]byte)
+		if imagePullSecret.SecretType == "kubernetes.io/dockerconfigjson" {
+			//If secret type is dockerconfigjson, check if required field in data exists
+			v, found := imagePullSecret.Data[".dockerconfigjson"]
+			if !found {
+				return errors.Errorf("Secret type kubernetes.io/dockerconfigjson requires argument \".dockerconfigjson\"")
+			}
+			if len(imagePullSecret.Data) > 1 {
+				return errors.Errorf("Secret type kubernetes.io/dockerconfigjson accepts only one argument \".dockerconfigjson\"")
+			}
+			//Then, if data is a path to a config file, it is opened
+			configFile, err := ioutil.ReadFile(v)
+			if err != nil {
+				//If data is not a valid path, we assume data is a base64 encoded config.json file
+				//Client only accepts Json formated files as data, so we decode and indent it (indentation is required)
+				parsedConfig, err := base64.StdEncoding.DecodeString(v)
+				if err != nil {
+					return errors.Wrap(err, "Secret's config file not found or unable to decode data.")
+				}
+				err = json.Indent(&out, parsedConfig, "", "\t")
+				if err != nil {
+					return errors.Wrap(err, "Unable to parse encoded data.")
+				}
+				data[".dockerconfigjson"] = out.Bytes()
+			} else {
+				data[".dockerconfigjson"] = configFile
+			}
+		} else {
+			for k, v := range imagePullSecret.Data {
+				data[k] = []byte(v)
+			}
+		}
+		secret := corev1.Secret{
+			TypeMeta: metav1.TypeMeta{
+				APIVersion: "v1",
+				Kind:       "Secret",
+			},
+			ObjectMeta: metav1.ObjectMeta{
+				Name:         imagePullSecret.Name,
+				GenerateName: "troubleshoot",
+				Namespace:    pod.Namespace,
+			},
+			Data: data,
+			Type: corev1.SecretType(imagePullSecret.SecretType),
+		}
+		created, err := client.CoreV1().Secrets(pod.Namespace).Create(ctx, &secret, metav1.CreateOptions{})
+		if err != nil {
+			return errors.Wrap(err, "failed to create secret")
+		}
+		pod.Spec.ImagePullSecrets = append(pod.Spec.ImagePullSecrets, corev1.LocalObjectReference{Name: created.Name})
+		return nil
+	}
+	//In case secret must only be added to the specs.
+	if imagePullSecret.Name != "" {
+		pod.Spec.ImagePullSecrets = append(pod.Spec.ImagePullSecrets, corev1.LocalObjectReference{Name: imagePullSecret.Name})
+		return nil
+	}
+	return errors.Errorf("Secret must at least have a Name")
 }
