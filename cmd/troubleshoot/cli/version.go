@@ -6,7 +6,7 @@ import (
 	"io/ioutil"
 	"path/filepath"
 
-	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
+	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/replicatedhq/troubleshoot/pkg/version"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v2"
@@ -29,10 +29,10 @@ func VersionCmd() *cobra.Command {
 const VersionFilename = "version.yaml"
 
 func writeVersionFile(path string) error {
-	version := troubleshootv1beta1.SupportBundleVersion{
-		ApiVersion: "troubleshoot.replicated.com/v1beta1",
+	version := troubleshootv1beta2.SupportBundleVersion{
+		ApiVersion: "troubleshoot.sh/v1beta2",
 		Kind:       "SupportBundle",
-		Spec: troubleshootv1beta1.SupportBundleVersionSpec{
+		Spec: troubleshootv1beta2.SupportBundleVersionSpec{
 			VersionNumber: version.Version(),
 		},
 	}

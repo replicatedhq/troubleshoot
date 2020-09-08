@@ -4,7 +4,7 @@ import (
 	"strconv"
 
 	"github.com/pkg/errors"
-	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
+	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/replicatedhq/troubleshoot/pkg/multitype"
 )
 
@@ -28,6 +28,10 @@ func isExcluded(excludeVal multitype.BoolOrString) (bool, error) {
 		return excludeVal.BoolVal, nil
 	}
 
+	if excludeVal.StrVal == "" {
+		return false, nil
+	}
+
 	parsed, err := strconv.ParseBool(excludeVal.StrVal)
 	if err != nil {
 		return false, errors.Wrap(err, "failed to parse bool string")
@@ -36,7 +40,7 @@ func isExcluded(excludeVal multitype.BoolOrString) (bool, error) {
 	return parsed, nil
 }
 
-func Analyze(analyzer *troubleshootv1beta1.Analyze, getFile getCollectedFileContents, findFiles getChildCollectedFileContents) ([]*AnalyzeResult, error) {
+func Analyze(analyzer *troubleshootv1beta2.Analyze, getFile getCollectedFileContents, findFiles getChildCollectedFileContents) ([]*AnalyzeResult, error) {
 	if analyzer.ClusterVersion != nil {
 		isExcluded, err := isExcluded(analyzer.ClusterVersion.Exclude)
 		if err != nil {

@@ -11,8 +11,9 @@ import (
 	"github.com/fatih/color"
 	"github.com/pkg/errors"
 	"github.com/replicatedhq/troubleshoot/cmd/util"
-	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
+	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	troubleshootclientsetscheme "github.com/replicatedhq/troubleshoot/pkg/client/troubleshootclientset/scheme"
+	"github.com/replicatedhq/troubleshoot/pkg/docrewrite"
 	"github.com/replicatedhq/troubleshoot/pkg/preflight"
 	"github.com/spf13/viper"
 	spin "github.com/tj/go-spin"
@@ -23,7 +24,7 @@ func runPreflights(v *viper.Viper, arg string) error {
 	fmt.Print(cursor.Hide())
 	defer fmt.Print(cursor.Show())
 
-	preflightContent := ""
+	var preflightContent []byte
 	var err error
 	if _, err = os.Stat(arg); err == nil {
 		b, err := ioutil.ReadFile(arg)
@@ -31,7 +32,7 @@ func runPreflights(v *viper.Viper, arg string) error {
 			return err
 		}
 
-		preflightContent = string(b)
+		preflightContent = b
 	} else {
 		if !util.IsURL(arg) {
 			return fmt.Errorf("%s is not a URL and was not found (err %s)", arg, err)
@@ -41,7 +42,7 @@ func runPreflights(v *viper.Viper, arg string) error {
 		if err != nil {
 			return err
 		}
-		req.Header.Set("User-Agent", "Replicated_Preflight/v1beta1")
+		req.Header.Set("User-Agent", "Replicated_Preflight/v1beta2")
 		resp, err := http.DefaultClient.Do(req)
 		if err != nil {
 			return err
@@ -53,7 +54,12 @@ func runPreflights(v *viper.Viper, arg string) error {
 			return err
 		}
 
-		preflightContent = string(body)
+		preflightContent = body
+	}
+
+	preflightContent, err = docrewrite.ConvertToV1Beta2(preflightContent)
+	if err != nil {
+		return errors.Wrap(err, "failed to convert to v1beta2")
 	}
 
 	troubleshootclientsetscheme.AddToScheme(scheme.Scheme)
@@ -63,7 +69,7 @@ func runPreflights(v *viper.Viper, arg string) error {
 		return errors.Wrapf(err, "failed to parse %s", arg)
 	}
 
-	preflightSpec := obj.(*troubleshootv1beta1.Preflight)
+	preflightSpec := obj.(*troubleshootv1beta2.Preflight)
 
 	s := spin.New()
 	finishedCh := make(chan bool, 1)

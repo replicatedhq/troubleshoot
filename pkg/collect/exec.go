@@ -2,23 +2,22 @@ package collect
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"path/filepath"
 	"time"
 
-	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
+	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/remotecommand"
 )
 
-type ExecOutput map[string][]byte
-
-func Exec(ctx *Context, execCollector *troubleshootv1beta1.Exec) (map[string][]byte, error) {
+func Exec(c *Collector, execCollector *troubleshootv1beta2.Exec) (map[string][]byte, error) {
 	if execCollector.Timeout == "" {
-		return execWithoutTimeout(ctx, execCollector)
+		return execWithoutTimeout(c, execCollector)
 	}
 
 	timeout, err := time.ParseDuration(execCollector.Timeout)
@@ -30,7 +29,7 @@ func Exec(ctx *Context, execCollector *troubleshootv1beta1.Exec) (map[string][]b
 	resultCh := make(chan map[string][]byte, 1)
 
 	go func() {
-		b, err := execWithoutTimeout(ctx, execCollector)
+		b, err := execWithoutTimeout(c, execCollector)
 		if err != nil {
 			errCh <- err
 		} else {
@@ -48,15 +47,17 @@ func Exec(ctx *Context, execCollector *troubleshootv1beta1.Exec) (map[string][]b
 	}
 }
 
-func execWithoutTimeout(ctx *Context, execCollector *troubleshootv1beta1.Exec) (map[string][]byte, error) {
-	client, err := kubernetes.NewForConfig(ctx.ClientConfig)
+func execWithoutTimeout(c *Collector, execCollector *troubleshootv1beta2.Exec) (map[string][]byte, error) {
+	client, err := kubernetes.NewForConfig(c.ClientConfig)
 	if err != nil {
 		return nil, err
 	}
 
-	execOutput := ExecOutput{}
+	execOutput := map[string][]byte{}
 
-	pods, podsErrors := listPodsInSelectors(client, execCollector.Namespace, execCollector.Selector)
+	ctx := context.Background()
+
+	pods, podsErrors := listPodsInSelectors(ctx, client, execCollector.Namespace, execCollector.Selector)
 	if len(podsErrors) > 0 {
 		errorBytes, err := marshalNonNil(podsErrors)
 		if err != nil {
@@ -67,7 +68,7 @@ func execWithoutTimeout(ctx *Context, execCollector *troubleshootv1beta1.Exec) (
 
 	if len(pods) > 0 {
 		for _, pod := range pods {
-			stdout, stderr, execErrors := getExecOutputs(ctx, client, pod, execCollector)
+			stdout, stderr, execErrors := getExecOutputs(c, client, pod, execCollector)
 
 			bundlePath := filepath.Join(execCollector.Name, pod.Namespace, pod.Name)
 			if len(stdout) > 0 {
@@ -86,19 +87,12 @@ func execWithoutTimeout(ctx *Context, execCollector *troubleshootv1beta1.Exec) (
 				continue
 			}
 		}
-
-		if ctx.Redact {
-			execOutput, err = execOutput.Redact()
-			if err != nil {
-				return nil, err
-			}
-		}
 	}
 
 	return execOutput, nil
 }
 
-func getExecOutputs(ctx *Context, client *kubernetes.Clientset, pod corev1.Pod, execCollector *troubleshootv1beta1.Exec) ([]byte, []byte, []string) {
+func getExecOutputs(c *Collector, client *kubernetes.Clientset, pod corev1.Pod, execCollector *troubleshootv1beta2.Exec) ([]byte, []byte, []string) {
 	container := pod.Spec.Containers[0].Name
 	if execCollector.ContainerName != "" {
 		container = execCollector.ContainerName
@@ -120,7 +114,7 @@ func getExecOutputs(ctx *Context, client *kubernetes.Clientset, pod corev1.Pod, 
 		TTY:       false,
 	}, parameterCodec)
 
-	exec, err := remotecommand.NewSPDYExecutor(ctx.ClientConfig, "POST", req.URL())
+	exec, err := remotecommand.NewSPDYExecutor(c.ClientConfig, "POST", req.URL())
 	if err != nil {
 		return nil, nil, []string{err.Error()}
 	}
@@ -142,16 +136,7 @@ func getExecOutputs(ctx *Context, client *kubernetes.Clientset, pod corev1.Pod, 
 	return stdout.Bytes(), stderr.Bytes(), nil
 }
 
-func (r ExecOutput) Redact() (ExecOutput, error) {
-	results, err := redactMap(r)
-	if err != nil {
-		return nil, err
-	}
-
-	return results, nil
-}
-
-func getExecErrosFileName(execCollector *troubleshootv1beta1.Exec) string {
+func getExecErrosFileName(execCollector *troubleshootv1beta2.Exec) string {
 	if len(execCollector.Name) > 0 {
 		return fmt.Sprintf("%s-errors.json", execCollector.Name)
 	}

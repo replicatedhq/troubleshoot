@@ -9,11 +9,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
-	"github.com/replicatedhq/troubleshoot/pkg/redact"
+	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 )
-
-type HTTPOutput map[string][]byte
 
 type httpResponse struct {
 	Status  int               `json:"status"`
@@ -25,7 +22,7 @@ type httpError struct {
 	Message string `json:"message"`
 }
 
-func HTTP(ctx *Context, httpCollector *troubleshootv1beta1.HTTP) (map[string][]byte, error) {
+func HTTP(c *Collector, httpCollector *troubleshootv1beta2.HTTP) (map[string][]byte, error) {
 	var response *http.Response
 	var err error
 
@@ -39,7 +36,7 @@ func HTTP(ctx *Context, httpCollector *troubleshootv1beta1.HTTP) (map[string][]b
 		return nil, errors.New("no supported http request type")
 	}
 
-	output, err := responseToOutput(response, err, ctx.Redact)
+	output, err := responseToOutput(response, err, c.Redact)
 	if err != nil {
 		return nil, err
 	}
@@ -48,14 +45,14 @@ func HTTP(ctx *Context, httpCollector *troubleshootv1beta1.HTTP) (map[string][]b
 	if httpCollector.CollectorName != "" {
 		fileName = httpCollector.CollectorName + ".json"
 	}
-	httpOutput := HTTPOutput{
+	httpOutput := map[string][]byte{
 		filepath.Join(httpCollector.Name, fileName): output,
 	}
 
 	return httpOutput, nil
 }
 
-func doGet(get *troubleshootv1beta1.Get) (*http.Response, error) {
+func doGet(get *troubleshootv1beta2.Get) (*http.Response, error) {
 	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{
 		InsecureSkipVerify: get.InsecureSkipVerify,
 	}
@@ -72,7 +69,7 @@ func doGet(get *troubleshootv1beta1.Get) (*http.Response, error) {
 	return http.DefaultClient.Do(req)
 }
 
-func doPost(post *troubleshootv1beta1.Post) (*http.Response, error) {
+func doPost(post *troubleshootv1beta2.Post) (*http.Response, error) {
 	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{
 		InsecureSkipVerify: post.InsecureSkipVerify,
 	}
@@ -89,7 +86,7 @@ func doPost(post *troubleshootv1beta1.Post) (*http.Response, error) {
 	return http.DefaultClient.Do(req)
 }
 
-func doPut(put *troubleshootv1beta1.Put) (*http.Response, error) {
+func doPut(put *troubleshootv1beta2.Put) (*http.Response, error) {
 	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{
 		InsecureSkipVerify: put.InsecureSkipVerify,
 	}
@@ -133,13 +130,6 @@ func responseToOutput(response *http.Response, err error, doRedact bool) ([]byte
 	b, err := json.MarshalIndent(output, "", "  ")
 	if err != nil {
 		return nil, err
-	}
-
-	if doRedact {
-		b, err = redact.Redact(b)
-		if err != nil {
-			return nil, err
-		}
 	}
 
 	return b, nil

@@ -1,12 +1,13 @@
 package collect
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"path"
 	"path/filepath"
 
-	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
+	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
@@ -20,20 +21,17 @@ type FoundSecret struct {
 	Value        string `json:"value,omitempty"`
 }
 
-type SecretOutput struct {
-	FoundSecret map[string][]byte `json:"secrets/,omitempty"`
-	Errors      map[string][]byte `json:"secrets-errors/,omitempty"`
-}
-
-func Secret(ctx *Context, secretCollector *troubleshootv1beta1.Secret) (map[string][]byte, error) {
-	client, err := kubernetes.NewForConfig(ctx.ClientConfig)
+func Secret(c *Collector, secretCollector *troubleshootv1beta2.Secret) (map[string][]byte, error) {
+	client, err := kubernetes.NewForConfig(c.ClientConfig)
 	if err != nil {
 		return nil, err
 	}
 
 	secretOutput := map[string][]byte{}
 
-	filePath, encoded, err := secret(client, secretCollector)
+	ctx := context.Background()
+
+	filePath, encoded, err := secret(ctx, client, secretCollector)
 	if err != nil {
 		errorBytes, err := marshalNonNil([]string{err.Error()})
 		if err != nil {
@@ -45,21 +43,14 @@ func Secret(ctx *Context, secretCollector *troubleshootv1beta1.Secret) (map[stri
 		secretOutput[path.Join("secrets", filePath)] = encoded
 	}
 
-	if ctx.Redact {
-		secretOutput, err = redactMap(secretOutput)
-		if err != nil {
-			return nil, err
-		}
-	}
-
 	return secretOutput, nil
 }
 
-func secret(client *kubernetes.Clientset, secretCollector *troubleshootv1beta1.Secret) (string, []byte, error) {
+func secret(ctx context.Context, client *kubernetes.Clientset, secretCollector *troubleshootv1beta2.Secret) (string, []byte, error) {
 	ns := secretCollector.Namespace
 	path := fmt.Sprintf("%s.json", filepath.Join(ns, secretCollector.SecretName))
 
-	found, err := client.CoreV1().Secrets(secretCollector.Namespace).Get(secretCollector.SecretName, metav1.GetOptions{})
+	found, err := client.CoreV1().Secrets(secretCollector.Namespace).Get(ctx, secretCollector.SecretName, metav1.GetOptions{})
 	if err != nil {
 		missingSecret := FoundSecret{
 			Namespace:    secretCollector.Namespace,
@@ -103,16 +94,4 @@ func secret(client *kubernetes.Clientset, secretCollector *troubleshootv1beta1.S
 	}
 
 	return path, b, nil
-}
-
-func (s *SecretOutput) Redact() (*SecretOutput, error) {
-	foundSecret, err := redactMap(s.FoundSecret)
-	if err != nil {
-		return nil, err
-	}
-
-	return &SecretOutput{
-		FoundSecret: foundSecret,
-		Errors:      s.Errors,
-	}, nil
 }

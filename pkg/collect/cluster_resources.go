@@ -1,6 +1,7 @@
 package collect
 
 import (
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -15,17 +16,19 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-func ClusterResources(ctx *Context) (map[string][]byte, error) {
-	client, err := kubernetes.NewForConfig(ctx.ClientConfig)
+func ClusterResources(c *Collector) (map[string][]byte, error) {
+	client, err := kubernetes.NewForConfig(c.ClientConfig)
 	if err != nil {
 		return nil, err
 	}
 
+	ctx := context.Background()
+
 	clusterResourcesOutput := map[string][]byte{}
 	// namespaces
 	var namespaceNames []string
-	if ctx.Namespace == "" {
-		namespaces, namespaceList, namespaceErrors := namespaces(client)
+	if c.Namespace == "" {
+		namespaces, namespaceList, namespaceErrors := namespaces(ctx, client)
 		clusterResourcesOutput["cluster-resources/namespaces.json"] = namespaces
 		clusterResourcesOutput["cluster-resources/namespaces-errors.json"], err = marshalNonNil(namespaceErrors)
 		if err != nil {
@@ -37,15 +40,15 @@ func ClusterResources(ctx *Context) (map[string][]byte, error) {
 			}
 		}
 	} else {
-		namespaces, namespaceErrors := getNamespace(client, ctx.Namespace)
+		namespaces, namespaceErrors := getNamespace(ctx, client, c.Namespace)
 		clusterResourcesOutput["cluster-resources/namespaces.json"] = namespaces
 		clusterResourcesOutput["cluster-resources/namespaces-errors.json"], err = marshalNonNil(namespaceErrors)
 		if err != nil {
 			return nil, err
 		}
-		namespaceNames = append(namespaceNames, ctx.Namespace)
+		namespaceNames = append(namespaceNames, c.Namespace)
 	}
-	pods, podErrors := pods(client, namespaceNames)
+	pods, podErrors := pods(ctx, client, namespaceNames)
 	for k, v := range pods {
 		clusterResourcesOutput[path.Join("cluster-resources/pods", k)] = v
 	}
@@ -55,7 +58,7 @@ func ClusterResources(ctx *Context) (map[string][]byte, error) {
 	}
 
 	// services
-	services, servicesErrors := services(client, namespaceNames)
+	services, servicesErrors := services(ctx, client, namespaceNames)
 	for k, v := range services {
 		clusterResourcesOutput[path.Join("cluster-resources/services", k)] = v
 	}
@@ -65,7 +68,7 @@ func ClusterResources(ctx *Context) (map[string][]byte, error) {
 	}
 
 	// deployments
-	deployments, deploymentsErrors := deployments(client, namespaceNames)
+	deployments, deploymentsErrors := deployments(ctx, client, namespaceNames)
 	for k, v := range deployments {
 		clusterResourcesOutput[path.Join("cluster-resources/deployments", k)] = v
 	}
@@ -75,7 +78,7 @@ func ClusterResources(ctx *Context) (map[string][]byte, error) {
 	}
 
 	// statefulsets
-	statefulsets, statefulsetsErrors := statefulsets(client, namespaceNames)
+	statefulsets, statefulsetsErrors := statefulsets(ctx, client, namespaceNames)
 	for k, v := range statefulsets {
 		clusterResourcesOutput[path.Join("cluster-resources/statefulsets", k)] = v
 	}
@@ -85,7 +88,7 @@ func ClusterResources(ctx *Context) (map[string][]byte, error) {
 	}
 
 	// ingress
-	ingress, ingressErrors := ingress(client, namespaceNames)
+	ingress, ingressErrors := ingress(ctx, client, namespaceNames)
 	for k, v := range ingress {
 		clusterResourcesOutput[path.Join("cluster-resources/ingress", k)] = v
 	}
@@ -95,7 +98,7 @@ func ClusterResources(ctx *Context) (map[string][]byte, error) {
 	}
 
 	// storage classes
-	storageClasses, storageErrors := storageClasses(client)
+	storageClasses, storageErrors := storageClasses(ctx, client)
 	clusterResourcesOutput["cluster-resources/storage-classes.json"] = storageClasses
 	clusterResourcesOutput["cluster-resources/storage-errors.json"], err = marshalNonNil(storageErrors)
 	if err != nil {
@@ -103,11 +106,11 @@ func ClusterResources(ctx *Context) (map[string][]byte, error) {
 	}
 
 	// crds
-	crdClient, err := apiextensionsv1beta1clientset.NewForConfig(ctx.ClientConfig)
+	crdClient, err := apiextensionsv1beta1clientset.NewForConfig(c.ClientConfig)
 	if err != nil {
 		return nil, err
 	}
-	customResourceDefinitions, crdErrors := crds(crdClient)
+	customResourceDefinitions, crdErrors := crds(ctx, crdClient)
 	clusterResourcesOutput["cluster-resources/custom-resource-definitions.json"] = customResourceDefinitions
 	clusterResourcesOutput["cluster-resources/custom-resource-definitions-errors.json"], err = marshalNonNil(crdErrors)
 	if err != nil {
@@ -115,7 +118,7 @@ func ClusterResources(ctx *Context) (map[string][]byte, error) {
 	}
 
 	// imagepullsecrets
-	imagePullSecrets, pullSecretsErrors := imagePullSecrets(client, namespaceNames)
+	imagePullSecrets, pullSecretsErrors := imagePullSecrets(ctx, client, namespaceNames)
 	for k, v := range imagePullSecrets {
 		clusterResourcesOutput[path.Join("cluster-resources/image-pull-secrets", k)] = v
 	}
@@ -125,14 +128,14 @@ func ClusterResources(ctx *Context) (map[string][]byte, error) {
 	}
 
 	// nodes
-	nodes, nodeErrors := nodes(client)
+	nodes, nodeErrors := nodes(ctx, client)
 	clusterResourcesOutput["cluster-resources/nodes.json"] = nodes
 	clusterResourcesOutput["cluster-resources/nodes-errors.json"], err = marshalNonNil(nodeErrors)
 	if err != nil {
 		return nil, err
 	}
 
-	groups, resources, groupsResourcesErrors := apiResources(client)
+	groups, resources, groupsResourcesErrors := apiResources(ctx, client)
 	clusterResourcesOutput["cluster-resources/groups.json"] = groups
 	clusterResourcesOutput["cluster-resources/resources.json"] = resources
 	clusterResourcesOutput["cluster-resources/groups-resources-errors.json"], err = marshalNonNil(groupsResourcesErrors)
@@ -141,7 +144,7 @@ func ClusterResources(ctx *Context) (map[string][]byte, error) {
 	}
 
 	// limit ranges
-	limitRanges, limitRangesErrors := limitRanges(client, namespaceNames)
+	limitRanges, limitRangesErrors := limitRanges(ctx, client, namespaceNames)
 	for k, v := range limitRanges {
 		clusterResourcesOutput[path.Join("cluster-resources/limitranges", k)] = v
 	}
@@ -151,7 +154,7 @@ func ClusterResources(ctx *Context) (map[string][]byte, error) {
 	}
 
 	// auth cani
-	authCanI, authCanIErrors := authCanI(client, namespaceNames)
+	authCanI, authCanIErrors := authCanI(ctx, client, namespaceNames)
 	for k, v := range authCanI {
 		clusterResourcesOutput[path.Join("cluster-resources/auth-cani-list", k)] = v
 	}
@@ -160,18 +163,21 @@ func ClusterResources(ctx *Context) (map[string][]byte, error) {
 		return nil, err
 	}
 
-	if ctx.Redact {
-		clusterResourcesOutput, err = redactMap(clusterResourcesOutput)
-		if err != nil {
-			return nil, err
-		}
+	//Events
+	events, eventsErrors := events(ctx, client, namespaceNames)
+	for k, v := range events {
+		clusterResourcesOutput[path.Join("cluster-resources/events", k)] = v
+	}
+	clusterResourcesOutput["cluster-resources/events-errors.json"], err = marshalNonNil(eventsErrors)
+	if err != nil {
+		return nil, err
 	}
 
 	return clusterResourcesOutput, nil
 }
 
-func namespaces(client *kubernetes.Clientset) ([]byte, *corev1.NamespaceList, []string) {
-	namespaces, err := client.CoreV1().Namespaces().List(metav1.ListOptions{})
+func namespaces(ctx context.Context, client *kubernetes.Clientset) ([]byte, *corev1.NamespaceList, []string) {
+	namespaces, err := client.CoreV1().Namespaces().List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return nil, nil, []string{err.Error()}
 	}
@@ -184,8 +190,8 @@ func namespaces(client *kubernetes.Clientset) ([]byte, *corev1.NamespaceList, []
 	return b, namespaces, nil
 }
 
-func getNamespace(client *kubernetes.Clientset, namespace string) ([]byte, []string) {
-	namespaces, err := client.CoreV1().Namespaces().Get(namespace, metav1.GetOptions{})
+func getNamespace(ctx context.Context, client *kubernetes.Clientset, namespace string) ([]byte, []string) {
+	namespaces, err := client.CoreV1().Namespaces().Get(ctx, namespace, metav1.GetOptions{})
 	if err != nil {
 		return nil, []string{err.Error()}
 	}
@@ -198,12 +204,12 @@ func getNamespace(client *kubernetes.Clientset, namespace string) ([]byte, []str
 	return b, nil
 }
 
-func pods(client *kubernetes.Clientset, namespaces []string) (map[string][]byte, map[string]string) {
+func pods(ctx context.Context, client *kubernetes.Clientset, namespaces []string) (map[string][]byte, map[string]string) {
 	podsByNamespace := make(map[string][]byte)
 	errorsByNamespace := make(map[string]string)
 
 	for _, namespace := range namespaces {
-		pods, err := client.CoreV1().Pods(namespace).List(metav1.ListOptions{})
+		pods, err := client.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{})
 		if err != nil {
 			errorsByNamespace[namespace] = err.Error()
 			continue
@@ -221,12 +227,12 @@ func pods(client *kubernetes.Clientset, namespaces []string) (map[string][]byte,
 	return podsByNamespace, errorsByNamespace
 }
 
-func services(client *kubernetes.Clientset, namespaces []string) (map[string][]byte, map[string]string) {
+func services(ctx context.Context, client *kubernetes.Clientset, namespaces []string) (map[string][]byte, map[string]string) {
 	servicesByNamespace := make(map[string][]byte)
 	errorsByNamespace := make(map[string]string)
 
 	for _, namespace := range namespaces {
-		services, err := client.CoreV1().Services(namespace).List(metav1.ListOptions{})
+		services, err := client.CoreV1().Services(namespace).List(ctx, metav1.ListOptions{})
 		if err != nil {
 			errorsByNamespace[namespace] = err.Error()
 			continue
@@ -244,12 +250,12 @@ func services(client *kubernetes.Clientset, namespaces []string) (map[string][]b
 	return servicesByNamespace, errorsByNamespace
 }
 
-func deployments(client *kubernetes.Clientset, namespaces []string) (map[string][]byte, map[string]string) {
+func deployments(ctx context.Context, client *kubernetes.Clientset, namespaces []string) (map[string][]byte, map[string]string) {
 	deploymentsByNamespace := make(map[string][]byte)
 	errorsByNamespace := make(map[string]string)
 
 	for _, namespace := range namespaces {
-		deployments, err := client.AppsV1().Deployments(namespace).List(metav1.ListOptions{})
+		deployments, err := client.AppsV1().Deployments(namespace).List(ctx, metav1.ListOptions{})
 		if err != nil {
 			errorsByNamespace[namespace] = err.Error()
 			continue
@@ -267,12 +273,12 @@ func deployments(client *kubernetes.Clientset, namespaces []string) (map[string]
 	return deploymentsByNamespace, errorsByNamespace
 }
 
-func statefulsets(client *kubernetes.Clientset, namespaces []string) (map[string][]byte, map[string]string) {
+func statefulsets(ctx context.Context, client *kubernetes.Clientset, namespaces []string) (map[string][]byte, map[string]string) {
 	statefulsetsByNamespace := make(map[string][]byte)
 	errorsByNamespace := make(map[string]string)
 
 	for _, namespace := range namespaces {
-		statefulsets, err := client.AppsV1().StatefulSets(namespace).List(metav1.ListOptions{})
+		statefulsets, err := client.AppsV1().StatefulSets(namespace).List(ctx, metav1.ListOptions{})
 		if err != nil {
 			errorsByNamespace[namespace] = err.Error()
 			continue
@@ -290,12 +296,12 @@ func statefulsets(client *kubernetes.Clientset, namespaces []string) (map[string
 	return statefulsetsByNamespace, errorsByNamespace
 }
 
-func ingress(client *kubernetes.Clientset, namespaces []string) (map[string][]byte, map[string]string) {
+func ingress(ctx context.Context, client *kubernetes.Clientset, namespaces []string) (map[string][]byte, map[string]string) {
 	ingressByNamespace := make(map[string][]byte)
 	errorsByNamespace := make(map[string]string)
 
 	for _, namespace := range namespaces {
-		ingress, err := client.ExtensionsV1beta1().Ingresses(namespace).List(metav1.ListOptions{})
+		ingress, err := client.ExtensionsV1beta1().Ingresses(namespace).List(ctx, metav1.ListOptions{})
 		if err != nil {
 			errorsByNamespace[namespace] = err.Error()
 			continue
@@ -313,8 +319,8 @@ func ingress(client *kubernetes.Clientset, namespaces []string) (map[string][]by
 	return ingressByNamespace, errorsByNamespace
 }
 
-func storageClasses(client *kubernetes.Clientset) ([]byte, []string) {
-	storageClasses, err := client.StorageV1beta1().StorageClasses().List(metav1.ListOptions{})
+func storageClasses(ctx context.Context, client *kubernetes.Clientset) ([]byte, []string) {
+	storageClasses, err := client.StorageV1beta1().StorageClasses().List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return nil, []string{err.Error()}
 	}
@@ -327,8 +333,8 @@ func storageClasses(client *kubernetes.Clientset) ([]byte, []string) {
 	return b, nil
 }
 
-func crds(client *apiextensionsv1beta1clientset.ApiextensionsV1beta1Client) ([]byte, []string) {
-	crds, err := client.CustomResourceDefinitions().List(metav1.ListOptions{})
+func crds(ctx context.Context, client *apiextensionsv1beta1clientset.ApiextensionsV1beta1Client) ([]byte, []string) {
+	crds, err := client.CustomResourceDefinitions().List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return nil, []string{err.Error()}
 	}
@@ -341,7 +347,7 @@ func crds(client *apiextensionsv1beta1clientset.ApiextensionsV1beta1Client) ([]b
 	return b, nil
 }
 
-func imagePullSecrets(client *kubernetes.Clientset, namespaces []string) (map[string][]byte, map[string]string) {
+func imagePullSecrets(ctx context.Context, client *kubernetes.Clientset, namespaces []string) (map[string][]byte, map[string]string) {
 	imagePullSecrets := make(map[string][]byte)
 	errors := make(map[string]string)
 
@@ -354,7 +360,7 @@ func imagePullSecrets(client *kubernetes.Clientset, namespaces []string) (map[st
 	}
 
 	for _, namespace := range namespaces {
-		secrets, err := client.CoreV1().Secrets(namespace).List(metav1.ListOptions{})
+		secrets, err := client.CoreV1().Secrets(namespace).List(ctx, metav1.ListOptions{})
 		if err != nil {
 			errors[namespace] = err.Error()
 			continue
@@ -393,12 +399,12 @@ func imagePullSecrets(client *kubernetes.Clientset, namespaces []string) (map[st
 	return imagePullSecrets, errors
 }
 
-func limitRanges(client *kubernetes.Clientset, namespaces []string) (map[string][]byte, map[string]string) {
+func limitRanges(ctx context.Context, client *kubernetes.Clientset, namespaces []string) (map[string][]byte, map[string]string) {
 	limitRangesByNamespace := make(map[string][]byte)
 	errorsByNamespace := make(map[string]string)
 
 	for _, namespace := range namespaces {
-		limitRanges, err := client.CoreV1().LimitRanges(namespace).List(metav1.ListOptions{})
+		limitRanges, err := client.CoreV1().LimitRanges(namespace).List(ctx, metav1.ListOptions{})
 		if err != nil {
 			errorsByNamespace[namespace] = err.Error()
 			continue
@@ -416,8 +422,8 @@ func limitRanges(client *kubernetes.Clientset, namespaces []string) (map[string]
 	return limitRangesByNamespace, errorsByNamespace
 }
 
-func nodes(client *kubernetes.Clientset) ([]byte, []string) {
-	nodes, err := client.CoreV1().Nodes().List(metav1.ListOptions{})
+func nodes(ctx context.Context, client *kubernetes.Clientset) ([]byte, []string) {
+	nodes, err := client.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return nil, []string{err.Error()}
 	}
@@ -431,7 +437,7 @@ func nodes(client *kubernetes.Clientset) ([]byte, []string) {
 }
 
 // get the list of API resources, similar to 'kubectl api-resources'
-func apiResources(client *kubernetes.Clientset) ([]byte, []byte, []string) {
+func apiResources(ctx context.Context, client *kubernetes.Clientset) ([]byte, []byte, []string) {
 	var errorArray []string
 	groups, resources, err := client.Discovery().ServerGroupsAndResources()
 	if err != nil {
@@ -451,7 +457,7 @@ func apiResources(client *kubernetes.Clientset) ([]byte, []byte, []string) {
 	return groupBytes, resourcesBytes, errorArray
 }
 
-func authCanI(client *kubernetes.Clientset, namespaces []string) (map[string][]byte, map[string]string) {
+func authCanI(ctx context.Context, client *kubernetes.Clientset, namespaces []string) (map[string][]byte, map[string]string) {
 	// https://github.com/kubernetes/kubernetes/blob/master/pkg/kubectl/cmd/auth/cani.go
 
 	authListByNamespace := make(map[string][]byte)
@@ -463,7 +469,7 @@ func authCanI(client *kubernetes.Clientset, namespaces []string) (map[string][]b
 				Namespace: namespace,
 			},
 		}
-		response, err := client.AuthorizationV1().SelfSubjectRulesReviews().Create(sar)
+		response, err := client.AuthorizationV1().SelfSubjectRulesReviews().Create(ctx, sar, metav1.CreateOptions{})
 		if err != nil {
 			errorsByNamespace[namespace] = err.Error()
 			continue
@@ -480,6 +486,29 @@ func authCanI(client *kubernetes.Clientset, namespaces []string) (map[string][]b
 	}
 
 	return authListByNamespace, errorsByNamespace
+}
+
+func events(ctx context.Context, client *kubernetes.Clientset, namespaces []string) (map[string][]byte, map[string]string) {
+	eventsByNamespace := make(map[string][]byte)
+	errorsByNamespace := make(map[string]string)
+
+	for _, namespace := range namespaces {
+		events, err := client.CoreV1().Events(namespace).List(ctx, metav1.ListOptions{})
+		if err != nil {
+			errorsByNamespace[namespace] = err.Error()
+			continue
+		}
+
+		b, err := json.MarshalIndent(events.Items, "", "  ")
+		if err != nil {
+			errorsByNamespace[namespace] = err.Error()
+			continue
+		}
+
+		eventsByNamespace[namespace+".json"] = b
+	}
+
+	return eventsByNamespace, errorsByNamespace
 }
 
 // not exprted from: https://github.com/kubernetes/kubernetes/blob/master/pkg/kubectl/cmd/auth/cani.go#L339

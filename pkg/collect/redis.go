@@ -7,12 +7,10 @@ import (
 
 	"github.com/go-redis/redis/v7"
 	"github.com/pkg/errors"
-	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
+	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 )
 
-type RedisOutput map[string][]byte
-
-func Redis(ctx *Context, databaseCollector *troubleshootv1beta1.Database) (map[string][]byte, error) {
+func Redis(c *Collector, databaseCollector *troubleshootv1beta2.Database) (map[string][]byte, error) {
 	databaseConnection := DatabaseConnection{}
 
 	opt, err := redis.ParseURL(databaseCollector.URI)

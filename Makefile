@@ -67,37 +67,39 @@ vet:
 
 .PHONY: generate
 generate: controller-gen client-gen
-	$(shell go env GOPATH)/bin/controller-gen object:headerFile=./hack/boilerplate.go.txt paths=./pkg/apis/...
-	$(shell go env GOPATH)/bin/client-gen \
+	$(CONTROLLER_GEN) \
+		object:headerFile=./hack/boilerplate.go.txt paths=./pkg/apis/...
+	$(CLIENT_GEN) \
 		--output-package=github.com/replicatedhq/troubleshoot/pkg/client \
 		--clientset-name troubleshootclientset \
 		--input-base github.com/replicatedhq/troubleshoot/pkg/apis \
 		--input troubleshoot/v1beta1 \
+		--input troubleshoot/v1beta2 \
 		-h ./hack/boilerplate.go.txt
 
 .PHONY: openapischema
 openapischema: controller-gen
 	controller-gen crd +output:dir=./config/crds  paths=./pkg/apis/troubleshoot/v1beta1
+	controller-gen crd +output:dir=./config/crds  paths=./pkg/apis/troubleshoot/v1beta2
 
 .PHONY: schemas
 schemas: fmt vet openapischema
 	go build ${LDFLAGS} -o bin/schemagen github.com/replicatedhq/troubleshoot/cmd/schemagen
 	./bin/schemagen --output-dir ./schemas
 
-# find or download controller-gen
-# download controller-gen if necessary
+.PHONY: contoller-gen
 controller-gen:
 ifeq (, $(shell which controller-gen))
-	go get sigs.k8s.io/controller-tools/cmd/controller-gen@v0.2.8
+	go get sigs.k8s.io/controller-tools/cmd/controller-gen@v0.3.0
 CONTROLLER_GEN=$(shell go env GOPATH)/bin/controller-gen
 else
 CONTROLLER_GEN=$(shell which controller-gen)
 endif
 
-# find or download client-gen
+.PHONY: client-gen
 client-gen:
 ifeq (, $(shell which client-gen))
-	go get k8s.io/code-generator/cmd/client-gen@kubernetes-1.16.4
+	go get k8s.io/code-generator/cmd/client-gen@kubernetes-1.18.0
 CLIENT_GEN=$(shell go env GOPATH)/bin/client-gen
 else
 CLIENT_GEN=$(shell which client-gen)
@@ -128,8 +130,8 @@ run-preflight: preflight
 
 .PHONY: run-troubleshoot
 run-troubleshoot: support-bundle
-	./bin/support-bundle ./examples/troubleshoot/sample-troubleshoot.yaml
+	./bin/support-bundle ./examples/support-bundle/sample-supportbundle.yaml
 
 .PHONY: run-analyze
 run-analyze: analyze
-	./bin/analyze --analyzers ./examples/troubleshoot/sample-analyzers.yaml ./support-bundle.tar.gz
+	./bin/analyze --analyzers ./examples/support-bundle/sample-analyzers.yaml ./support-bundle.tar.gz

@@ -4,15 +4,14 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"regexp"
 
 	_ "github.com/lib/pq"
 	"github.com/pkg/errors"
-	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
+	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 )
 
-type PostgresOutput map[string][]byte
-
-func Postgres(ctx *Context, databaseCollector *troubleshootv1beta1.Database) (map[string][]byte, error) {
+func Postgres(c *Collector, databaseCollector *troubleshootv1beta2.Database) (map[string][]byte, error) {
 	databaseConnection := DatabaseConnection{}
 
 	db, err := sql.Open("postgres", databaseCollector.URI)
@@ -26,7 +25,14 @@ func Postgres(ctx *Context, databaseCollector *troubleshootv1beta1.Database) (ma
 			databaseConnection.Error = err.Error()
 		} else {
 			databaseConnection.IsConnected = true
-			databaseConnection.Version = version
+
+			postgresVersion, err := parsePostgresVersion(version)
+			if err != nil {
+				databaseConnection.Version = "Unknown"
+				databaseConnection.Error = err.Error()
+			} else {
+				databaseConnection.Version = postgresVersion
+			}
 		}
 	}
 
@@ -45,4 +51,15 @@ func Postgres(ctx *Context, databaseCollector *troubleshootv1beta1.Database) (ma
 	}
 
 	return postgresOutput, nil
+}
+
+func parsePostgresVersion(postgresVersion string) (string, error) {
+	re := regexp.MustCompile("PostgreSQL ([0-9.]*)")
+	matches := re.FindStringSubmatch(postgresVersion)
+	if len(matches) < 2 {
+		return "", errors.Errorf("postgres version did not match regex: %q", postgresVersion)
+	}
+
+	return matches[1], nil
+
 }

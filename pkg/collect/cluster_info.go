@@ -13,13 +13,8 @@ type ClusterVersion struct {
 	String string        `json:"string"`
 }
 
-type ClusterInfoOutput struct {
-	ClusterVersion []byte `json:"cluster-info/cluster_version.json,omitempty"`
-	Errors         []byte `json:"cluster-info/errors.json,omitempty"`
-}
-
-func ClusterInfo(ctx *Context) (map[string][]byte, error) {
-	client, err := kubernetes.NewForConfig(ctx.ClientConfig)
+func ClusterInfo(c *Collector) (map[string][]byte, error) {
+	client, err := kubernetes.NewForConfig(c.ClientConfig)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to create kubernetes clientset")
 	}

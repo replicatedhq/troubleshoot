@@ -7,12 +7,10 @@ import (
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/pkg/errors"
-	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
+	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 )
 
-type MysqlOutput map[string][]byte
-
-func Mysql(ctx *Context, databaseCollector *troubleshootv1beta1.Database) (map[string][]byte, error) {
+func Mysql(c *Collector, databaseCollector *troubleshootv1beta2.Database) (map[string][]byte, error) {
 	databaseConnection := DatabaseConnection{}
 
 	db, err := sql.Open("mysql", databaseCollector.URI)

@@ -18,6 +18,8 @@ limitations under the License.
 package fake
 
 import (
+	"context"
+
 	v1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
@@ -38,7 +40,7 @@ var preflightsResource = schema.GroupVersionResource{Group: "troubleshoot.replic
 var preflightsKind = schema.GroupVersionKind{Group: "troubleshoot.replicated.com", Version: "v1beta1", Kind: "Preflight"}
 
 // Get takes name of the preflight, and returns the corresponding preflight object, and an error if there is any.
-func (c *FakePreflights) Get(name string, options v1.GetOptions) (result *v1beta1.Preflight, err error) {
+func (c *FakePreflights) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1beta1.Preflight, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewGetAction(preflightsResource, c.ns, name), &v1beta1.Preflight{})
 
@@ -49,7 +51,7 @@ func (c *FakePreflights) Get(name string, options v1.GetOptions) (result *v1beta
 }
 
 // List takes label and field selectors, and returns the list of Preflights that match those selectors.
-func (c *FakePreflights) List(opts v1.ListOptions) (result *v1beta1.PreflightList, err error) {
+func (c *FakePreflights) List(ctx context.Context, opts v1.ListOptions) (result *v1beta1.PreflightList, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewListAction(preflightsResource, preflightsKind, c.ns, opts), &v1beta1.PreflightList{})
 
@@ -71,14 +73,14 @@ func (c *FakePreflights) List(opts v1.ListOptions) (result *v1beta1.PreflightLis
 }
 
 // Watch returns a watch.Interface that watches the requested preflights.
-func (c *FakePreflights) Watch(opts v1.ListOptions) (watch.Interface, error) {
+func (c *FakePreflights) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
 	return c.Fake.
 		InvokesWatch(testing.NewWatchAction(preflightsResource, c.ns, opts))
 
 }
 
 // Create takes the representation of a preflight and creates it.  Returns the server's representation of the preflight, and an error, if there is any.
-func (c *FakePreflights) Create(preflight *v1beta1.Preflight) (result *v1beta1.Preflight, err error) {
+func (c *FakePreflights) Create(ctx context.Context, preflight *v1beta1.Preflight, opts v1.CreateOptions) (result *v1beta1.Preflight, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewCreateAction(preflightsResource, c.ns, preflight), &v1beta1.Preflight{})
 
@@ -89,7 +91,7 @@ func (c *FakePreflights) Create(preflight *v1beta1.Preflight) (result *v1beta1.P
 }
 
 // Update takes the representation of a preflight and updates it. Returns the server's representation of the preflight, and an error, if there is any.
-func (c *FakePreflights) Update(preflight *v1beta1.Preflight) (result *v1beta1.Preflight, err error) {
+func (c *FakePreflights) Update(ctx context.Context, preflight *v1beta1.Preflight, opts v1.UpdateOptions) (result *v1beta1.Preflight, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewUpdateAction(preflightsResource, c.ns, preflight), &v1beta1.Preflight{})
 
@@ -101,7 +103,7 @@ func (c *FakePreflights) Update(preflight *v1beta1.Preflight) (result *v1beta1.P
 
 // UpdateStatus was generated because the type contains a Status member.
 // Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-func (c *FakePreflights) UpdateStatus(preflight *v1beta1.Preflight) (*v1beta1.Preflight, error) {
+func (c *FakePreflights) UpdateStatus(ctx context.Context, preflight *v1beta1.Preflight, opts v1.UpdateOptions) (*v1beta1.Preflight, error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewUpdateSubresourceAction(preflightsResource, "status", c.ns, preflight), &v1beta1.Preflight{})
 
@@ -112,7 +114,7 @@ func (c *FakePreflights) UpdateStatus(preflight *v1beta1.Preflight) (*v1beta1.Pr
 }
 
 // Delete takes name of the preflight and deletes it. Returns an error if one occurs.
-func (c *FakePreflights) Delete(name string, options *v1.DeleteOptions) error {
+func (c *FakePreflights) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
 		Invokes(testing.NewDeleteAction(preflightsResource, c.ns, name), &v1beta1.Preflight{})
 
@@ -120,15 +122,15 @@ func (c *FakePreflights) Delete(name string, options *v1.DeleteOptions) error {
 }
 
 // DeleteCollection deletes a collection of objects.
-func (c *FakePreflights) DeleteCollection(options *v1.DeleteOptions, listOptions v1.ListOptions) error {
-	action := testing.NewDeleteCollectionAction(preflightsResource, c.ns, listOptions)
+func (c *FakePreflights) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
+	action := testing.NewDeleteCollectionAction(preflightsResource, c.ns, listOpts)
 
 	_, err := c.Fake.Invokes(action, &v1beta1.PreflightList{})
 	return err
 }
 
 // Patch applies the patch and returns the patched preflight.
-func (c *FakePreflights) Patch(name string, pt types.PatchType, data []byte, subresources ...string) (result *v1beta1.Preflight, err error) {
+func (c *FakePreflights) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1beta1.Preflight, err error) {
 	obj, err := c.Fake.
 		Invokes(testing.NewPatchSubresourceAction(preflightsResource, c.ns, name, pt, data, subresources...), &v1beta1.Preflight{})
 

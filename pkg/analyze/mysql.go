@@ -6,11 +6,11 @@ import (
 	"path"
 
 	"github.com/pkg/errors"
-	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
+	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/replicatedhq/troubleshoot/pkg/collect"
 )
 
-func analyzeMysql(analyzer *troubleshootv1beta1.DatabaseAnalyze, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
+func analyzeMysql(analyzer *troubleshootv1beta2.DatabaseAnalyze, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
 	collectorName := analyzer.CollectorName
 	if collectorName == "" {
 		collectorName = "mysql"
@@ -28,13 +28,13 @@ func analyzeMysql(analyzer *troubleshootv1beta1.DatabaseAnalyze, getCollectedFil
 		return nil, errors.Wrap(err, "failed to unmarshal databased connection result")
 	}
 
-	checkName := analyzer.CheckName
-	if checkName == "" {
-		checkName = collectorName
+	title := analyzer.CheckName
+	if title == "" {
+		title = collectorName
 	}
 
 	result := &AnalyzeResult{
-		Title:   checkName,
+		Title:   title,
 		IconKey: "kubernetes_mysql_analyze",
 		IconURI: "https://troubleshoot.sh/images/analyzer-icons/mysql-analyze.svg",
 	}

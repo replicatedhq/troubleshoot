@@ -1,8 +1,8 @@
 # Replicated Troubleshoot
 
-Replicated Troubleshoot is a framework for collecting, redacting and analyzing highly customizable diagnostic information about a Kubernetes cluster. Troubleshoot specs are created by 3rd-party application developers/maintainers and run by cluster operators in the initial and ongoing operation of those applications.
+Replicated Troubleshoot is a framework for collecting, redacting, and analyzing highly customizable diagnostic information about a Kubernetes cluster. Troubleshoot specs are created by 3rd-party application developers/maintainers and run by cluster operators in the initial and ongoing operation of those applications.
 
-Troubleshoot provides two CLI tools as kubectl plugins (using [Krew](https://krew.dev)) `kubectl preflight` and `kubectl support-bundle`. Preflight provides pre-installation cluster conformance testing and validation (preflight checks) and support-bundle provides post-installation troubleshooting and diagnostics (support bundles).
+Troubleshoot provides two CLI tools as kubectl plugins (using [Krew](https://krew.dev)): `kubectl preflight` and `kubectl support-bundle`. Preflight provides pre-installation cluster conformance testing and validation (preflight checks) and support-bundle provides post-installation troubleshooting and diagnostics (support bundles).
 
 ## Preflight Checks
 Preflight checks are an easy-to-run set of conformance tests that can be written to verify that specific requirements in a cluster are met.
@@ -18,11 +18,11 @@ curl https://krew.sh/preflight | bash
 kubectl preflight https://preflight.replicated.com
 ```
 
-For a details on creating the custom resource files that drive preflight checks, visit [creating preflight checks](https://troubleshoot.sh/docs/preflight/creating/).
+For a details on creating the custom resource files that drive preflight checks, visit [creating preflight checks](https://troubleshoot.sh/docs/preflight/introduction/).
 
 
 ## Support Bundle
-A support bundle is an archive that's created in-cluster, by collecting logs, cluster information and executing specified commands (including redaction of sensitive information). After creating a support bundle, the cluster operator will normally deliver it to the 3rd-party application vendor for analysis and disconnected debugging. Another Replicated project, [Kotsadm](https://github.com/replicatedhq/kotsadm), provides cluster operators with in-cluster UI for processing support bundles and viewing analyzers (as well as support bundle collection).
+A support bundle is an archive that's created in-cluster, by collecting logs and cluster information, and executing specified commands (including redaction of sensitive information). After creating a support bundle, the cluster operator will normally deliver it to the 3rd-party application vendor for analysis and disconnected debugging. Another Replicated project, [Kotsadm](https://github.com/replicatedhq/kotsadm), provides cluster operators with an in-cluster UI for processing support bundles and viewing analyzers (as well as support bundle collection).
 
 To collect a sample support bundle, install the troubleshoot kubectl plugin:
 
@@ -32,9 +32,9 @@ curl https://krew.sh/support-bundle | bash
  and run:
  
 ```shell
-kubectl support-bundle https://troubleshoot.replicated.com
+kubectl support-bundle https://support-bundle.replicated.com
 ```
-For details on creating the custom resource files that drive support-bundle collection [creating collectors](https://troubleshoot.sh/reference/collectors/overview/) and for analyzers [creating analyzers](https://troubleshoot.sh/reference/analyzers/overview/).
+For details on creating the custom resource files that drive support-bundle collection, visit [creating collectors](https://troubleshoot.sh/docs/collect/) and [creating analyzers](https://troubleshoot.sh/docs/analyze/).
 
 # Community
 

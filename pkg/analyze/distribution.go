@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
+	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -100,7 +100,7 @@ func ParseNodesForProviders(nodes []corev1.Node) (providers, string) {
 	return foundProviders, stringProvider
 }
 
-func analyzeDistribution(analyzer *troubleshootv1beta1.Distribution, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
+func analyzeDistribution(analyzer *troubleshootv1beta2.Distribution, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
 	collected, err := getCollectedFileContents("cluster-resources/nodes.json")
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get contents of nodes.json")
@@ -123,9 +123,12 @@ func analyzeDistribution(analyzer *troubleshootv1beta1.Distribution, getCollecte
 		}
 		_ = CheckOpenShift(&foundProviders, apiResources, "")
 	}
-
+	title := analyzer.CheckName
+	if title == "" {
+		title = "Kubernetes Distribution"
+	}
 	result := &AnalyzeResult{
-		Title:   "Kubernetes Distribution",
+		Title:   title,
 		IconKey: "kubernetes_distribution",
 		IconURI: "https://troubleshoot.sh/images/analyzer-icons/distribution.svg?w=20&h=14",
 	}

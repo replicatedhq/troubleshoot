@@ -62,28 +62,60 @@ func generateSchemas(v *viper.Viper) error {
 		return errors.Wrap(err, "failed to get workdir")
 	}
 
-	preflightContents, err := ioutil.ReadFile(filepath.Join(workdir, "config", "crds", "troubleshoot.replicated.com_preflights.yaml"))
-	if err != nil {
-		return errors.Wrap(err, "failed to read preflight crd")
-	}
-	if err := generateSchemaFromCRD(preflightContents, filepath.Join(workdir, v.GetString("output-dir"), "preflight-troubleshoot-v1beta1.json")); err != nil {
-		return errors.Wrap(err, "failed to write preflight schema")
+	files := []struct {
+		inFilename  string
+		outFilename string
+	}{
+		{
+			"troubleshoot.replicated.com_preflights.yaml",
+			"preflight-troubleshoot-v1beta1.json",
+		},
+		{
+			"troubleshoot.replicated.com_analyzers.yaml",
+			"analyzer-troubleshoot-v1beta1.json",
+		},
+		{
+			"troubleshoot.replicated.com_collectors.yaml",
+			"collector-troubleshoot-v1beta1.json",
+		},
+		{
+			"troubleshoot.replicated.com_redactors.yaml",
+			"redactor-troubleshoot-v1beta1.json",
+		},
+		{
+			"troubleshoot.replicated.com_supportbundles.yaml",
+			"supportbundle-troubleshoot-v1beta1.json",
+		},
+		{
+			"troubleshoot.sh_analyzers.yaml",
+			"analyzer-troubleshoot-v1beta2.json",
+		},
+		{
+			"troubleshoot.sh_collectors.yaml",
+			"collector-troubleshoot-v1beta2.json",
+		},
+		{
+			"troubleshoot.sh_preflights.yaml",
+			"preflight-troubleshoot-v1beta2.json",
+		},
+		{
+			"troubleshoot.sh_redactors.yaml",
+			"redactor-troubleshoot-v1beta2.json",
+		},
+		{
+			"troubleshoot.sh_supportbundles.yaml",
+			"supportbundle-troubleshoot-v1beta2.json",
+		},
 	}
 
-	analyzersContents, err := ioutil.ReadFile(filepath.Join(workdir, "config", "crds", "troubleshoot.replicated.com_analyzers.yaml"))
-	if err != nil {
-		return errors.Wrap(err, "failed to read analyzers crd")
-	}
-	if err := generateSchemaFromCRD(analyzersContents, filepath.Join(workdir, v.GetString("output-dir"), "analyzer-troubleshoot-v1beta1.json")); err != nil {
-		return errors.Wrap(err, "failed to write analyzers schema")
-	}
-
-	collectorsContents, err := ioutil.ReadFile(filepath.Join(workdir, "config", "crds", "troubleshoot.replicated.com_collectors.yaml"))
-	if err != nil {
-		return errors.Wrap(err, "failed to read collectors crd")
-	}
-	if err := generateSchemaFromCRD(collectorsContents, filepath.Join(workdir, v.GetString("output-dir"), "collector-troubleshoot-v1beta1.json")); err != nil {
-		return errors.Wrap(err, "failed to write collectors schema")
+	for _, file := range files {
+		contents, err := ioutil.ReadFile(filepath.Join(workdir, "config", "crds", file.inFilename))
+		if err != nil {
+			return errors.Wrapf(err, "failed to read crd from %s", file.inFilename)
+		}
+		if err := generateSchemaFromCRD(contents, filepath.Join(workdir, v.GetString("output-dir"), file.outFilename)); err != nil {
+			return errors.Wrapf(err, "failed to write crd schema to %s", file.outFilename)
+		}
 	}
 
 	return nil
@@ -119,7 +151,12 @@ func generateSchemaFromCRD(crd []byte, outfile string) error {
 		}
 	}
 
-	err = ioutil.WriteFile(outfile, b, 0644)
+	// whoa now
+	// working around the fact that controller-gen doesn't have tags to generate oneOf schemas, so this is hacky.
+	// going to work to add an issue there to support and if they accept, this terrible thing can go away
+	boolStringed := strings.ReplaceAll(string(b), `"type": "BoolString"`, `"oneOf": [{"type": "string"},{"type": "boolean"}]`)
+
+	err = ioutil.WriteFile(outfile, []byte(boolStringed), 0644)
 	if err != nil {
 		return errors.Wrap(err, "failed to write file")
 	}
