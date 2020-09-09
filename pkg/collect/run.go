@@ -34,7 +34,7 @@ func Run(c *Collector, runCollector *troubleshootv1beta2.Run) (map[string][]byte
 			logger.Printf("Failed to delete pod %s: %v\n", pod.Name, err)
 		}
 	}()
-	if runCollector.ImagePullSecret.Data != nil {
+	if runCollector.ImagePullSecret != nil && runCollector.ImagePullSecret.Data != nil {
 		defer func() {
 			for _, k := range pod.Spec.ImagePullSecrets {
 				if err := client.CoreV1().Secrets(pod.Namespace).Delete(ctx, k.Name, metav1.DeleteOptions{}); err != nil {
