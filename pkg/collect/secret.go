@@ -83,6 +83,7 @@ func secret(ctx context.Context, client *kubernetes.Clientset, secretCollector *
 	secret := FoundSecret{
 		Namespace:    found.Namespace,
 		Name:         found.Name,
+		Key:          secretCollector.Key,
 		SecretExists: true,
 		KeyExists:    keyExists,
 		Value:        keyData,
