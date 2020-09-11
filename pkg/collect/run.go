@@ -89,6 +89,13 @@ func runWithoutTimeout(ctx context.Context, c *Collector, pod *corev1.Pod, runCo
 			status.Status.Phase == corev1.PodSucceeded {
 			break
 		}
+		if status.Status.Phase == corev1.PodPending {
+			for k := range status.Status.ContainerStatuses {
+				if status.Status.ContainerStatuses[k].State.Waiting.Reason == "ImagePullBackOff" {
+					return nil, errors.Errorf("run pod aborted after getting pod status 'ImagePullBackOff'")
+				}
+			}
+		}
 		time.Sleep(time.Second * 1)
 	}
 
