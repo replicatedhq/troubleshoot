@@ -25,6 +25,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/replicatedhq/troubleshoot/cmd/util"
 	analyzer "github.com/replicatedhq/troubleshoot/pkg/analyze"
+	"github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/replicatedhq/troubleshoot/pkg/client/troubleshootclientset/scheme"
 	troubleshootclientsetscheme "github.com/replicatedhq/troubleshoot/pkg/client/troubleshootclientset/scheme"
@@ -145,7 +146,7 @@ func runTroubleshoot(v *viper.Viper, arg string) error {
 		}
 	}()
 
-	archivePath, err := runCollectors(v, supportBundleSpec.Spec.Collectors, additionalRedactors, progressChan)
+	archivePath, err := runCollectors(v, supportBundleSpec.Spec, additionalRedactors, progressChan)
 	if err != nil {
 		return errors.Wrap(err, "run collectors")
 	}
@@ -343,7 +344,7 @@ func canTryInsecure(v *viper.Viper) bool {
 	return true
 }
 
-func runCollectors(v *viper.Viper, collectors []*troubleshootv1beta2.Collect, additionalRedactors *troubleshootv1beta2.Redactor, progressChan chan interface{}) (string, error) {
+func runCollectors(v *viper.Viper, specs v1beta2.SupportBundleSpec, additionalRedactors *troubleshootv1beta2.Redactor, progressChan chan interface{}) (string, error) {
 	bundlePath, err := ioutil.TempDir("", "troubleshoot")
 	if err != nil {
 		return "", errors.Wrap(err, "create temp dir")
@@ -355,7 +356,7 @@ func runCollectors(v *viper.Viper, collectors []*troubleshootv1beta2.Collect, ad
 	}
 
 	collectSpecs := make([]*troubleshootv1beta2.Collect, 0, 0)
-	collectSpecs = append(collectSpecs, collectors...)
+	collectSpecs = append(collectSpecs, specs.Collectors...)
 	collectSpecs = ensureCollectorInList(collectSpecs, troubleshootv1beta2.Collect{ClusterInfo: &troubleshootv1beta2.ClusterInfo{}})
 	collectSpecs = ensureCollectorInList(collectSpecs, troubleshootv1beta2.Collect{ClusterResources: &troubleshootv1beta2.ClusterResources{}})
 
@@ -375,7 +376,8 @@ func runCollectors(v *viper.Viper, collectors []*troubleshootv1beta2.Collect, ad
 		cleanedCollectors = append(cleanedCollectors, &collector)
 	}
 
-	if err := cleanedCollectors.CheckRBAC(context.Background()); err != nil {
+	_, err = cleanedCollectors.CheckRBAC(context.Background(), specs.Analyzers)
+	if err != nil {
 		return "", errors.Wrap(err, "failed to check RBAC for collectors")
 	}
 

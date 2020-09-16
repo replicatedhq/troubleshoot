@@ -169,10 +169,11 @@ func (c *Collector) GetDisplayName() string {
 	return c.Collect.GetName()
 }
 
-func (c *Collector) CheckRBAC(ctx context.Context) error {
+func (c *Collector) CheckRBAC(ctx context.Context, analyzers []*troubleshootv1beta2.Analyze) (bool, error) {
 	client, err := kubernetes.NewForConfig(c.ClientConfig)
+	foundForbidden := false
 	if err != nil {
-		return errors.Wrap(err, "failed to create client from config")
+		return false, errors.Wrap(err, "failed to create client from config")
 	}
 
 	forbidden := make([]error, 0)
@@ -186,10 +187,17 @@ func (c *Collector) CheckRBAC(ctx context.Context) error {
 
 		resp, err := client.AuthorizationV1().SelfSubjectAccessReviews().Create(ctx, sar, metav1.CreateOptions{})
 		if err != nil {
-			return errors.Wrap(err, "failed to run subject review")
+			return foundForbidden, errors.Wrap(err, "failed to run subject review")
 		}
 
-		if !resp.Status.Allowed { // all other fields of Status are empty...
+		if !resp.Status.Allowed {
+			if c.Collect.ClusterResources != nil && !foundForbidden {
+				//Prevents RBAC error if collector is not required by any analyzer in preflights spec
+				foundForbidden = isCollectorRequired(spec.ResourceAttributes.Resource, analyzers)
+			} else {
+				foundForbidden = true
+			}
+			// all other fields of Status are empty...
 			forbidden = append(forbidden, RBACError{
 				DisplayName: c.GetDisplayName(),
 				Namespace:   spec.ResourceAttributes.Namespace,
@@ -199,15 +207,39 @@ func (c *Collector) CheckRBAC(ctx context.Context) error {
 		}
 	}
 	c.RBACErrors = forbidden
-
-	return nil
+	return foundForbidden, nil
 }
 
-func (cs Collectors) CheckRBAC(ctx context.Context) error {
-	for _, c := range cs {
-		if err := c.CheckRBAC(ctx); err != nil {
-			return errors.Wrap(err, "failed to check RBAC")
+func isCollectorRequired(resource string, analyzers []*troubleshootv1beta2.Analyze) bool {
+	foundForbidden := false
+	for _, v := range analyzers {
+		if resource == "Node" &&
+			(v.ContainerRuntime != nil || v.NodeResources != nil) {
+			foundForbidden = true
+			break
+		} else if resource == "CustomResourceDefinition" &&
+			v.CustomResourceDefinition != nil {
+			foundForbidden = true
+			break
+		} else if resource == "StorageClasses" &&
+			v.StorageClass != nil {
+			foundForbidden = true
+			break
 		}
 	}
-	return nil
+	return foundForbidden
+}
+
+func (cs Collectors) CheckRBAC(ctx context.Context, analyzers []*troubleshootv1beta2.Analyze) (bool, error) {
+	foundForbidden := false
+	for _, c := range cs {
+		isForbidden, err := c.CheckRBAC(ctx, analyzers)
+		if err != nil {
+			return false, errors.Wrap(err, "failed to check RBAC")
+		}
+		if isForbidden {
+			foundForbidden = true
+		}
+	}
+	return foundForbidden, nil
 }
