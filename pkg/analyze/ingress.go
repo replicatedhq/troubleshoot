@@ -3,13 +3,14 @@ package analyzer
 import (
 	"encoding/json"
 	"fmt"
+	"path/filepath"
 
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	extensionsv1beta1 "k8s.io/api/extensions/v1beta1"
 )
 
 func analyzeIngress(analyzer *troubleshootv1beta2.Ingress, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
-	ingressData, err := getCollectedFileContents("cluster-resources/storage-classes.json")
+	ingressData, err := getCollectedFileContents(filepath.Join("cluster-resources", "ingress", fmt.Sprintf("%s.json", analyzer.Namespace)))
 	if err != nil {
 		return nil, err
 	}

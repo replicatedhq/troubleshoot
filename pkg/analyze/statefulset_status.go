@@ -3,7 +3,7 @@ package analyzer
 import (
 	"encoding/json"
 	"fmt"
-	"path"
+	"path/filepath"
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
@@ -11,7 +11,7 @@ import (
 )
 
 func analyzeStatefulsetStatus(analyzer *troubleshootv1beta2.StatefulsetStatus, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
-	collected, err := getCollectedFileContents(path.Join("cluster-resources", "statefulsets", fmt.Sprintf("%s.json", analyzer.Namespace)))
+	collected, err := getCollectedFileContents(filepath.Join("cluster-resources", "statefulsets", fmt.Sprintf("%s.json", analyzer.Namespace)))
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to read collected statefulsets from namespace")
 	}
