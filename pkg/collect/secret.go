@@ -71,7 +71,9 @@ func secret(ctx context.Context, client *kubernetes.Clientset, secretCollector *
 
 	keyExists := false
 	keyData := ""
+	secretKey := ""
 	if secretCollector.Key != "" {
+		secretKey = secretCollector.Key
 		if val, ok := found.Data[secretCollector.Key]; ok {
 			keyExists = true
 			if secretCollector.IncludeValue {
@@ -83,6 +85,7 @@ func secret(ctx context.Context, client *kubernetes.Clientset, secretCollector *
 	secret := FoundSecret{
 		Namespace:    found.Namespace,
 		Name:         found.Name,
+		Key:          secretKey,
 		SecretExists: true,
 		KeyExists:    keyExists,
 		Value:        keyData,
