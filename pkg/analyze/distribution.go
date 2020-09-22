@@ -2,6 +2,7 @@ package analyzer
 
 import (
 	"encoding/json"
+	"fmt"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -113,6 +114,7 @@ func ParseNodesForProviders(nodes []corev1.Node) (providers, string) {
 }
 
 func analyzeDistribution(analyzer *troubleshootv1beta2.Distribution, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
+	var unknownDistribution string
 	collected, err := getCollectedFileContents("cluster-resources/nodes.json")
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get contents of nodes.json")
@@ -156,7 +158,7 @@ func analyzeDistribution(analyzer *troubleshootv1beta2.Distribution, getCollecte
 				return result, nil
 			}
 
-			isMatch, err := compareDistributionConditionalToActual(outcome.Fail.When, foundProviders)
+			isMatch, err := compareDistributionConditionalToActual(outcome.Fail.When, foundProviders, &unknownDistribution)
 			if err != nil {
 				return result, errors.Wrap(err, "failed to compare distribution conditional")
 			}
@@ -177,7 +179,7 @@ func analyzeDistribution(analyzer *troubleshootv1beta2.Distribution, getCollecte
 				return result, nil
 			}
 
-			isMatch, err := compareDistributionConditionalToActual(outcome.Warn.When, foundProviders)
+			isMatch, err := compareDistributionConditionalToActual(outcome.Warn.When, foundProviders, &unknownDistribution)
 			if err != nil {
 				return result, errors.Wrap(err, "failed to compare distribution conditional")
 			}
@@ -198,7 +200,7 @@ func analyzeDistribution(analyzer *troubleshootv1beta2.Distribution, getCollecte
 				return result, nil
 			}
 
-			isMatch, err := compareDistributionConditionalToActual(outcome.Pass.When, foundProviders)
+			isMatch, err := compareDistributionConditionalToActual(outcome.Pass.When, foundProviders, &unknownDistribution)
 			if err != nil {
 				return result, errors.Wrap(err, "failed to compare distribution conditional")
 			}
@@ -213,14 +215,19 @@ func analyzeDistribution(analyzer *troubleshootv1beta2.Distribution, getCollecte
 
 		}
 	}
+	if unknownDistribution != "" {
+		result.IsWarn = true
+		result.Message = result.Message + unknownDistribution
 
-	result.IsWarn = true
-	result.Message = "None of the conditionals were met"
+	} else {
+		result.IsWarn = true
+		result.Message = "None of the conditionals were met"
+	}
 
 	return result, nil
 }
 
-func compareDistributionConditionalToActual(conditional string, actual providers) (bool, error) {
+func compareDistributionConditionalToActual(conditional string, actual providers, unknownDistribution *string) (bool, error) {
 	parts := strings.Split(strings.TrimSpace(conditional), " ")
 
 	// we can make this a lot more flexible
@@ -238,6 +245,7 @@ func compareDistributionConditionalToActual(conditional string, actual providers
 	normalizedName := mustNormalizeDistributionName(parts[1])
 
 	if normalizedName == unknown {
+		*unknownDistribution = *unknownDistribution + fmt.Sprintf("- Unknown distribution: %s ", parts[1])
 		return false, nil
 	}
 
