@@ -215,12 +215,11 @@ func analyzeDistribution(analyzer *troubleshootv1beta2.Distribution, getCollecte
 
 		}
 	}
-	if unknownDistribution != "" {
-		result.IsWarn = true
-		result.Message = result.Message + unknownDistribution
 
+	result.IsWarn = true
+	if unknownDistribution != "" {
+		result.Message = unknownDistribution
 	} else {
-		result.IsWarn = true
 		result.Message = "None of the conditionals were met"
 	}
 
@@ -245,7 +244,7 @@ func compareDistributionConditionalToActual(conditional string, actual providers
 	normalizedName := mustNormalizeDistributionName(parts[1])
 
 	if normalizedName == unknown {
-		*unknownDistribution = *unknownDistribution + fmt.Sprintf("- Unknown distribution: %s ", parts[1])
+		*unknownDistribution += fmt.Sprintf("- Unknown distribution: %s ", parts[1])
 		return false, nil
 	}
 
