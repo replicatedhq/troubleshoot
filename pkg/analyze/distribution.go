@@ -19,6 +19,8 @@ type providers struct {
 	openShift     bool
 	kurl          bool
 	aks           bool
+	ibm           bool
+	minikube      bool
 }
 
 type Provider int
@@ -33,6 +35,8 @@ const (
 	openShift     Provider = iota
 	kurl          Provider = iota
 	aks           Provider = iota
+	ibm           Provider = iota
+	minikube      Provider = iota
 )
 
 func CheckOpenShift(foundProviders *providers, apiResources []*metav1.APIResourceList, provider string) string {
@@ -68,6 +72,10 @@ func ParseNodesForProviders(nodes []corev1.Node) (providers, string) {
 				foundProviders.aks = true
 				stringProvider = "aks"
 			}
+			if k == "minikube.k8s.io/version" {
+				foundProviders.minikube = true
+				stringProvider = "minikube"
+			}
 		}
 
 		if node.Status.NodeInfo.OSImage == "Docker Desktop" {
@@ -86,6 +94,10 @@ func ParseNodesForProviders(nodes []corev1.Node) (providers, string) {
 		if strings.HasPrefix(node.Spec.ProviderID, "gce:") {
 			foundProviders.gke = true
 			stringProvider = "gke"
+		}
+		if strings.HasPrefix(node.Spec.ProviderID, "ibm:") {
+			foundProviders.ibm = true
+			stringProvider = "ibm"
 		}
 	}
 
@@ -153,7 +165,6 @@ func analyzeDistribution(analyzer *troubleshootv1beta2.Distribution, getCollecte
 				result.IsFail = true
 				result.Message = outcome.Fail.Message
 				result.URI = outcome.Fail.URI
-
 				return result, nil
 			}
 		} else if outcome.Warn != nil {
@@ -202,6 +213,10 @@ func analyzeDistribution(analyzer *troubleshootv1beta2.Distribution, getCollecte
 		}
 	}
 
+	if !result.IsFail && !result.IsPass && !result.IsWarn {
+		result.IsWarn = true
+		result.Message = "None of the conditionals was met"
+	}
 	return result, nil
 }
 
@@ -244,6 +259,10 @@ func compareDistributionConditionalToActual(conditional string, actual providers
 		isMatch = actual.kurl
 	case aks:
 		isMatch = actual.aks
+	case ibm:
+		isMatch = actual.ibm
+	case minikube:
+		isMatch = actual.minikube
 	}
 
 	switch parts[0] {
@@ -274,6 +293,10 @@ func mustNormalizeDistributionName(raw string) Provider {
 		return kurl
 	case "aks":
 		return aks
+	case "ibm", "ibmcloud", "ibm cloud":
+		return ibm
+	case "minikube":
+		return minikube
 	}
 
 	return unknown
