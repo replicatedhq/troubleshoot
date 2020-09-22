@@ -214,10 +214,9 @@ func analyzeDistribution(analyzer *troubleshootv1beta2.Distribution, getCollecte
 		}
 	}
 
-	if !result.IsFail && !result.IsPass && !result.IsWarn {
-		result.IsWarn = true
-		result.Message = "None of the conditionals were met"
-	}
+	result.IsWarn = true
+	result.Message = "None of the conditionals were met"
+
 	return result, nil
 }
 
