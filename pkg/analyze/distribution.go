@@ -165,6 +165,7 @@ func analyzeDistribution(analyzer *troubleshootv1beta2.Distribution, getCollecte
 				result.IsFail = true
 				result.Message = outcome.Fail.Message
 				result.URI = outcome.Fail.URI
+
 				return result, nil
 			}
 		} else if outcome.Warn != nil {
@@ -215,7 +216,7 @@ func analyzeDistribution(analyzer *troubleshootv1beta2.Distribution, getCollecte
 
 	if !result.IsFail && !result.IsPass && !result.IsWarn {
 		result.IsWarn = true
-		result.Message = "None of the conditionals was met"
+		result.Message = "None of the conditionals were met"
 	}
 	return result, nil
 }
