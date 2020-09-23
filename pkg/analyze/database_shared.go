@@ -35,26 +35,18 @@ func compareDatabaseConditionalToActual(conditional string, result *collect.Data
 		return false, errors.New("unable to parse postgres connected analyzer")
 
 	case "version":
-		//semver requires major.minor.patch format to successqfully compare versions.
-		if compVer := strings.Split(parts[2], "."); len(compVer) == 2 {
-			parts[2] = fmt.Sprintf("%s.%s.0", compVer[0], compVer[1])
-		} else if len(compVer) == 1 {
-			parts[2] = fmt.Sprintf("%s.0.0", compVer[0])
+		expected, err := semver.ParseTolerant(strings.Replace(parts[2], "x", "0", -1))
+		if err != nil {
+			return false, errors.Wrap(err, "failed to parse expected version")
 		}
-		if compVer := strings.Split(result.Version, "."); len(compVer) == 2 {
-			result.Version = fmt.Sprintf("%s.%s.0", compVer[0], compVer[1])
-		} else if len(compVer) == 1 {
-			result.Version = fmt.Sprintf("%s.0.0", compVer[0])
+		actual, err := semver.ParseTolerant(strings.Replace(result.Version, "x", "0", -1))
+		if err != nil {
+			return false, errors.Wrap(err, "failed to parse postgres db actual version")
 		}
 
-		expectedRange, err := semver.ParseRange(fmt.Sprintf("%s %s", parts[1], parts[2]))
+		expectedRange, err := semver.ParseRange(fmt.Sprintf("%s %s", parts[1], expected.String()))
 		if err != nil {
 			return false, errors.Wrap(err, "failed to parse semver range")
-		}
-
-		actual, err := semver.Parse(result.Version)
-		if err != nil {
-			return false, errors.Wrap(err, "failed to parse actual postgres version")
 		}
 
 		return expectedRange(actual), nil
