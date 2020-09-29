@@ -170,10 +170,10 @@ func (c *Collector) GetDisplayName() string {
 }
 
 func (c *Collector) CheckRBAC(ctx context.Context, analyzers []*troubleshootv1beta2.Analyze) (bool, error) {
-	client, err := kubernetes.NewForConfig(c.ClientConfig)
 	foundForbidden := false
+	client, err := kubernetes.NewForConfig(c.ClientConfig)
 	if err != nil {
-		return false, errors.Wrap(err, "failed to create client from config")
+		return foundForbidden, errors.Wrap(err, "failed to create client from config")
 	}
 
 	forbidden := make([]error, 0)
@@ -237,6 +237,7 @@ func (cs Collectors) CheckRBAC(ctx context.Context, analyzers []*troubleshootv1b
 		if err != nil {
 			return false, errors.Wrap(err, "failed to check RBAC")
 		}
+		//If there is a RBAC error, found forbidden is set to true, but the permissions check is not interrupted.
 		if isForbidden {
 			foundForbidden = true
 		}
