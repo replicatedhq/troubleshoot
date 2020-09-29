@@ -9,7 +9,7 @@ import (
 )
 
 func analyzeSecret(analyzer *troubleshootv1beta2.AnalyzeSecret, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
-	secretData, err := getCollectedFileContents(fmt.Sprintf("secrets/%s/%s/%s.json", analyzer.Namespace, analyzer.SecretName, analyzer.Key))
+	secretData, err := getCollectedFileContents(fmt.Sprintf("secrets/%s/%s.json", analyzer.Namespace, analyzer.SecretName))
 	if err != nil {
 		return nil, err
 	}
