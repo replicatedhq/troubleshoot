@@ -35,6 +35,7 @@ import (
 	"github.com/spf13/viper"
 	spin "github.com/tj/go-spin"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 )
 
 var (
@@ -247,6 +248,21 @@ the %s Admin Console to begin analysis.`
 
 func loadSpec(v *viper.Viper, arg string) ([]byte, error) {
 	var err error
+	if strings.HasPrefix(arg, "secret/") {
+		// format secret/namespace-name/secret-name
+		pathParts := strings.Split(arg, "/")
+		if len(pathParts) != 3 {
+			return nil, errors.Errorf("path %s must have 3 components", arg)
+		}
+
+		spec, err := loadSpecFromSecret(pathParts[1], pathParts[2])
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to get spec from secret")
+		}
+
+		return spec, nil
+	}
+
 	if _, err = os.Stat(arg); err == nil {
 		b, err := ioutil.ReadFile(arg)
 		if err != nil {
@@ -258,6 +274,38 @@ func loadSpec(v *viper.Viper, arg string) ([]byte, error) {
 		return nil, fmt.Errorf("%s is not a URL and was not found (err %s)", arg, err)
 	}
 
+	spec, err := loadSpecFromURL(v, arg)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get spec from URL")
+	}
+	return spec, nil
+}
+
+func loadSpecFromSecret(namespace string, secretName string) ([]byte, error) {
+	config, err := KubernetesConfigFlags.ToRESTConfig()
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to convert kube flags to rest config")
+	}
+
+	client, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to convert create k8s client")
+	}
+
+	foundSecret, err := client.CoreV1().Secrets(namespace).Get(context.TODO(), secretName, metav1.GetOptions{})
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get secret")
+	}
+
+	spec, ok := foundSecret.Data["support-bundle-spec"]
+	if !ok {
+		return nil, errors.Errorf("spec not found in secret %s", secretName)
+	}
+
+	return spec, nil
+}
+
+func loadSpecFromURL(v *viper.Viper, arg string) ([]byte, error) {
 	for {
 		req, err := http.NewRequest("GET", arg, nil)
 		if err != nil {
