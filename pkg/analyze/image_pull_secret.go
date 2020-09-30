@@ -13,13 +13,13 @@ func analyzeImagePullSecret(analyzer *troubleshootv1beta2.ImagePullSecret, getCh
 		return nil, errors.Wrap(err, "failed to get file contents for image pull secrets")
 	}
 
-	var failOutcome *troubleshootv1beta2.Outcome
-	var passOutcome *troubleshootv1beta2.Outcome
+	var failOutcome *troubleshootv1beta2.SingleOutcome
+	var passOutcome *troubleshootv1beta2.SingleOutcome
 	for _, outcome := range analyzer.Outcomes {
 		if outcome.Fail != nil {
-			failOutcome = outcome
+			failOutcome = outcome.Fail
 		} else if outcome.Pass != nil {
-			passOutcome = outcome
+			passOutcome = outcome.Pass
 		}
 	}
 	title := analyzer.CheckName
@@ -32,8 +32,10 @@ func analyzeImagePullSecret(analyzer *troubleshootv1beta2.ImagePullSecret, getCh
 		IconKey: "kubernetes_image_pull_secret",
 		IconURI: "https://troubleshoot.sh/images/analyzer-icons/image-pull-secret.svg?w=16&h=14",
 		IsFail:  true,
-		Message: failOutcome.Fail.Message,
-		URI:     failOutcome.Fail.URI,
+	}
+	if failOutcome != nil {
+		result.Message = failOutcome.Message
+		result.URI = failOutcome.URI
 	}
 
 	for _, v := range imagePullSecrets {
@@ -46,11 +48,20 @@ func analyzeImagePullSecret(analyzer *troubleshootv1beta2.ImagePullSecret, getCh
 			if registry == analyzer.RegistryName {
 				result.IsPass = true
 				result.IsFail = false
-				result.Message = passOutcome.Pass.Message
-				result.URI = passOutcome.Pass.URI
+				if passOutcome != nil {
+					result.Message = passOutcome.Message
+					result.URI = passOutcome.URI
+				}
 			}
 		}
 	}
 
+	if result.Message == "" {
+		if result.IsPass {
+			result.Message = "Credentials to pull from: " + analyzer.RegistryName + " found"
+		} else {
+			result.Message = "Credentials to pull from " + analyzer.RegistryName + " not found"
+		}
+	}
 	return &result, nil
 }
