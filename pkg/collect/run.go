@@ -182,10 +182,10 @@ func createSecret(ctx context.Context, client *kubernetes.Clientset, imagePullSe
 			if len(imagePullSecret.Data) > 1 {
 				return errors.Errorf("Secret type kubernetes.io/dockerconfigjson accepts only one argument \".dockerconfigjson\"")
 			}
-			//K8s client accepts only Json formated files as data, provided data must be decoded and indented (indentation is required)
+			//K8s client accepts only Json formated files as data, provided data must be decoded and indented
 			parsedConfig, err := base64.StdEncoding.DecodeString(v)
 			if err != nil {
-				return errors.Wrap(err, "Secret's config file not found or unable to decode data.")
+				return errors.Wrap(err, "Unable to decode data.")
 			}
 			err = json.Indent(&out, parsedConfig, "", "\t")
 			if err != nil {
