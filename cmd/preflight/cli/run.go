@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	cursor "github.com/ahmetalpbalkan/go-cursor"
@@ -14,7 +15,9 @@ import (
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	troubleshootclientsetscheme "github.com/replicatedhq/troubleshoot/pkg/client/troubleshootclientset/scheme"
 	"github.com/replicatedhq/troubleshoot/pkg/docrewrite"
+	"github.com/replicatedhq/troubleshoot/pkg/k8sutil"
 	"github.com/replicatedhq/troubleshoot/pkg/preflight"
+	"github.com/replicatedhq/troubleshoot/pkg/specs"
 	"github.com/spf13/viper"
 	spin "github.com/tj/go-spin"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -26,7 +29,20 @@ func runPreflights(v *viper.Viper, arg string) error {
 
 	var preflightContent []byte
 	var err error
-	if _, err = os.Stat(arg); err == nil {
+	if strings.HasPrefix(arg, "secret/") {
+		// format secret/namespace-name/secret-name
+		pathParts := strings.Split(arg, "/")
+		if len(pathParts) != 3 {
+			return errors.Errorf("path %s must have 3 components", arg)
+		}
+
+		spec, err := specs.LoadFromSecret(pathParts[1], pathParts[2], "preflight-spec")
+		if err != nil {
+			return errors.Wrap(err, "failed to get spec from secret")
+		}
+
+		preflightContent = spec
+	} else if _, err = os.Stat(arg); err == nil {
 		b, err := ioutil.ReadFile(arg)
 		if err != nil {
 			return err
@@ -101,7 +117,7 @@ func runPreflights(v *viper.Viper, arg string) error {
 		close(finishedCh)
 	}()
 
-	restConfig, err := KubernetesConfigFlags.ToRESTConfig()
+	restConfig, err := k8sutil.GetRESTConfig()
 	if err != nil {
 		return errors.Wrap(err, "failed to convert kube flags to rest config")
 	}
