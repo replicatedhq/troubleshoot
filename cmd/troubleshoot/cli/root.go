@@ -6,14 +6,10 @@ import (
 	"strings"
 
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
+	"github.com/replicatedhq/troubleshoot/pkg/k8sutil"
 	"github.com/replicatedhq/troubleshoot/pkg/logger"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"k8s.io/cli-runtime/pkg/genericclioptions"
-)
-
-var (
-	KubernetesConfigFlags *genericclioptions.ConfigFlags
 )
 
 func RootCmd() *cobra.Command {
@@ -52,8 +48,7 @@ from a server that can be used to assist when troubleshooting a Kubernetes clust
 
 	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
 
-	KubernetesConfigFlags = genericclioptions.NewConfigFlags(false)
-	KubernetesConfigFlags.AddFlags(cmd.Flags())
+	k8sutil.AddFlags(cmd.Flags())
 
 	return cmd
 }

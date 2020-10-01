@@ -31,11 +31,12 @@ import (
 	"github.com/replicatedhq/troubleshoot/pkg/collect"
 	"github.com/replicatedhq/troubleshoot/pkg/convert"
 	"github.com/replicatedhq/troubleshoot/pkg/docrewrite"
+	"github.com/replicatedhq/troubleshoot/pkg/k8sutil"
 	"github.com/replicatedhq/troubleshoot/pkg/redact"
+	"github.com/replicatedhq/troubleshoot/pkg/specs"
 	"github.com/spf13/viper"
 	spin "github.com/tj/go-spin"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
 )
 
 var (
@@ -255,7 +256,7 @@ func loadSpec(v *viper.Viper, arg string) ([]byte, error) {
 			return nil, errors.Errorf("path %s must have 3 components", arg)
 		}
 
-		spec, err := loadSpecFromSecret(pathParts[1], pathParts[2])
+		spec, err := specs.LoadFromSecret(pathParts[1], pathParts[2], "support-bundle-spec")
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to get spec from secret")
 		}
@@ -278,30 +279,6 @@ func loadSpec(v *viper.Viper, arg string) ([]byte, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get spec from URL")
 	}
-	return spec, nil
-}
-
-func loadSpecFromSecret(namespace string, secretName string) ([]byte, error) {
-	config, err := KubernetesConfigFlags.ToRESTConfig()
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to convert kube flags to rest config")
-	}
-
-	client, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to convert create k8s client")
-	}
-
-	foundSecret, err := client.CoreV1().Secrets(namespace).Get(context.TODO(), secretName, metav1.GetOptions{})
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to get secret")
-	}
-
-	spec, ok := foundSecret.Data["support-bundle-spec"]
-	if !ok {
-		return nil, errors.Errorf("spec not found in secret %s", secretName)
-	}
-
 	return spec, nil
 }
 
@@ -407,7 +384,7 @@ func runCollectors(v *viper.Viper, collectors []*troubleshootv1beta2.Collect, ad
 	collectSpecs = ensureCollectorInList(collectSpecs, troubleshootv1beta2.Collect{ClusterInfo: &troubleshootv1beta2.ClusterInfo{}})
 	collectSpecs = ensureCollectorInList(collectSpecs, troubleshootv1beta2.Collect{ClusterResources: &troubleshootv1beta2.ClusterResources{}})
 
-	config, err := KubernetesConfigFlags.ToRESTConfig()
+	config, err := k8sutil.GetRESTConfig()
 	if err != nil {
 		return "", errors.Wrap(err, "failed to convert kube flags to rest config")
 	}
