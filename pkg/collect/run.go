@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
-	"io/ioutil"
 	"time"
 
 	"github.com/pkg/errors"
@@ -175,7 +174,7 @@ func createSecret(ctx context.Context, client *kubernetes.Clientset, imagePullSe
 		var out bytes.Buffer
 		data := make(map[string][]byte)
 		if imagePullSecret.SecretType == "kubernetes.io/dockerconfigjson" {
-			//If secret type is dockerconfigjson, check if required field in data exists
+			//Check if required field in data exists
 			v, found := imagePullSecret.Data[".dockerconfigjson"]
 			if !found {
 				return errors.Errorf("Secret type kubernetes.io/dockerconfigjson requires argument \".dockerconfigjson\"")
@@ -183,27 +182,19 @@ func createSecret(ctx context.Context, client *kubernetes.Clientset, imagePullSe
 			if len(imagePullSecret.Data) > 1 {
 				return errors.Errorf("Secret type kubernetes.io/dockerconfigjson accepts only one argument \".dockerconfigjson\"")
 			}
-			//Then, if data is a path to a config file, it is opened
-			configFile, err := ioutil.ReadFile(v)
+			//K8s client accepts only Json formated files as data, provided data must be decoded and indented
+			parsedConfig, err := base64.StdEncoding.DecodeString(v)
 			if err != nil {
-				//If data is not a valid path, we assume data is a base64 encoded config.json file
-				//Client only accepts Json formated files as data, so we decode and indent it (indentation is required)
-				parsedConfig, err := base64.StdEncoding.DecodeString(v)
-				if err != nil {
-					return errors.Wrap(err, "Secret's config file not found or unable to decode data.")
-				}
-				err = json.Indent(&out, parsedConfig, "", "\t")
-				if err != nil {
-					return errors.Wrap(err, "Unable to parse encoded data.")
-				}
-				data[".dockerconfigjson"] = out.Bytes()
-			} else {
-				data[".dockerconfigjson"] = configFile
+				return errors.Wrap(err, "Unable to decode data.")
 			}
+			err = json.Indent(&out, parsedConfig, "", "\t")
+			if err != nil {
+				return errors.Wrap(err, "Unable to parse encoded data.")
+			}
+			data[".dockerconfigjson"] = out.Bytes()
+
 		} else {
-			for k, v := range imagePullSecret.Data {
-				data[k] = []byte(v)
-			}
+			return errors.Errorf("ImagePullSecret must be of type: kubernetes.io/dockerconfigjson")
 		}
 		secret := corev1.Secret{
 			TypeMeta: metav1.TypeMeta{
