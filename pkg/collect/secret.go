@@ -67,7 +67,7 @@ func secret(ctx context.Context, client *kubernetes.Clientset, secretCollector *
 	}
 
 	ns = found.Namespace
-	path = fmt.Sprintf("%s.json", filepath.Join(ns, secretCollector.SecretName, secretCollector.Key))
+	path = fmt.Sprintf("%s.json", filepath.Join(ns, secretCollector.SecretName))
 
 	keyExists := false
 	keyData := ""
