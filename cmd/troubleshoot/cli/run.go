@@ -292,10 +292,7 @@ func loadSpecFromURL(v *viper.Viper, arg string) ([]byte, error) {
 		req.Header.Set("Bundle-Upload-Host", fmt.Sprintf("%s://%s", req.URL.Scheme, req.URL.Host))
 		resp, err := httpClient.Do(req)
 		if err != nil {
-			if strings.Contains(err.Error(), "x509") && httpClient == http.DefaultClient && canTryInsecure(v) {
-				httpClient = &http.Client{Transport: &http.Transport{
-					TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-				}}
+			if shouldRetryRequest(err) {
 				continue
 			}
 			return nil, errors.Wrap(err, "execute request")
@@ -351,7 +348,17 @@ func parseSupportBundleFromDoc(doc []byte) (*troubleshootv1beta2.SupportBundle, 
 	return nil, errors.New("spec was not parseable as a troubleshoot kind")
 }
 
-func canTryInsecure(v *viper.Viper) bool {
+func shouldRetryRequest(err error) bool {
+	if strings.Contains(err.Error(), "x509") && httpClient == http.DefaultClient && canTryInsecure() {
+		httpClient = &http.Client{Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		}}
+		return true
+	}
+	return false
+}
+
+func canTryInsecure() bool {
 	if !isatty.IsTerminal(os.Stdout.Fd()) {
 		return false
 	}
@@ -543,33 +550,40 @@ func uploadSupportBundle(r *troubleshootv1beta2.ResultRequest, archivePath strin
 		return fmt.Errorf("cannot upload content type %s", contentType)
 	}
 
-	f, err := os.Open(archivePath)
-	if err != nil {
-		return errors.Wrap(err, "open file")
-	}
-	defer f.Close()
+	for {
+		f, err := os.Open(archivePath)
+		if err != nil {
+			return errors.Wrap(err, "open file")
+		}
+		defer f.Close()
 
-	fileStat, err := f.Stat()
-	if err != nil {
-		return errors.Wrap(err, "stat file")
-	}
+		fileStat, err := f.Stat()
+		if err != nil {
+			return errors.Wrap(err, "stat file")
+		}
 
-	req, err := http.NewRequest(r.Method, r.URI, f)
-	if err != nil {
-		return errors.Wrap(err, "create request")
-	}
-	req.ContentLength = fileStat.Size()
-	if contentType != "" {
-		req.Header.Set("Content-Type", contentType)
-	}
+		req, err := http.NewRequest(r.Method, r.URI, f)
+		if err != nil {
+			return errors.Wrap(err, "create request")
+		}
+		req.ContentLength = fileStat.Size()
+		if contentType != "" {
+			req.Header.Set("Content-Type", contentType)
+		}
 
-	resp, err := httpClient.Do(req)
-	if err != nil {
-		return errors.Wrap(err, "execute request")
-	}
+		resp, err := httpClient.Do(req)
+		if err != nil {
+			if shouldRetryRequest(err) {
+				continue
+			}
+			return errors.Wrap(err, "execute request")
+		}
 
-	if resp.StatusCode >= 300 {
-		return fmt.Errorf("unexpected status code %d", resp.StatusCode)
+		if resp.StatusCode >= 300 {
+			return fmt.Errorf("unexpected status code %d", resp.StatusCode)
+		}
+
+		break
 	}
 
 	// send redaction report
@@ -583,19 +597,26 @@ func uploadSupportBundle(r *troubleshootv1beta2.ResultRequest, archivePath strin
 			return errors.Wrap(err, "get redaction report")
 		}
 
-		req, err := http.NewRequest("PUT", r.RedactURI, bytes.NewReader(redactBytes))
-		if err != nil {
-			return errors.Wrap(err, "create redaction report request")
-		}
-		req.ContentLength = int64(len(redactBytes))
+		for {
+			req, err := http.NewRequest("PUT", r.RedactURI, bytes.NewReader(redactBytes))
+			if err != nil {
+				return errors.Wrap(err, "create redaction report request")
+			}
+			req.ContentLength = int64(len(redactBytes))
 
-		resp, err := httpClient.Do(req)
-		if err != nil {
-			return errors.Wrap(err, "execute redaction request")
-		}
+			resp, err := httpClient.Do(req)
+			if err != nil {
+				if shouldRetryRequest(err) {
+					continue
+				}
+				return errors.Wrap(err, "execute redaction request")
+			}
 
-		if resp.StatusCode >= 300 {
-			return fmt.Errorf("unexpected redaction status code %d", resp.StatusCode)
+			if resp.StatusCode >= 300 {
+				return fmt.Errorf("unexpected redaction status code %d", resp.StatusCode)
+			}
+
+			break
 		}
 	}
 
@@ -611,20 +632,26 @@ func getExpectedContentType(uploadURL string) string {
 }
 
 func callbackSupportBundleAPI(r *troubleshootv1beta2.ResultRequest, archivePath string) error {
-	req, err := http.NewRequest(r.Method, r.URI, nil)
-	if err != nil {
-		return errors.Wrap(err, "create request")
-	}
+	for {
+		req, err := http.NewRequest(r.Method, r.URI, nil)
+		if err != nil {
+			return errors.Wrap(err, "create request")
+		}
 
-	resp, err := httpClient.Do(req)
-	if err != nil {
-		return errors.Wrap(err, "execute request")
-	}
+		resp, err := httpClient.Do(req)
+		if err != nil {
+			if shouldRetryRequest(err) {
+				continue
+			}
+			return errors.Wrap(err, "execute request")
+		}
 
-	if resp.StatusCode >= 300 {
-		return fmt.Errorf("unexpected status code %d", resp.StatusCode)
-	}
+		if resp.StatusCode >= 300 {
+			return fmt.Errorf("unexpected status code %d", resp.StatusCode)
+		}
 
+		break
+	}
 	return nil
 }
 
