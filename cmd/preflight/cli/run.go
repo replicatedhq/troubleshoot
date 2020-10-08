@@ -129,7 +129,7 @@ func runPreflights(v *viper.Viper, arg string) error {
 		KubernetesRestConfig:   restConfig,
 	}
 
-	collectResults, err := preflight.Collect(collectOpts, preflightSpec)
+	collectResults, protected, err := preflight.Collect(collectOpts, preflightSpec)
 	if err != nil {
 		if !collectResults.IsRBACAllowed {
 			if preflightSpec.Spec.UploadResultsTo != "" {
@@ -142,7 +142,7 @@ func runPreflights(v *viper.Viper, arg string) error {
 		return err
 	}
 
-	analyzeResults := collectResults.Analyze()
+	analyzeResults := collectResults.Analyze(protected)
 	if preflightSpec.Spec.UploadResultsTo != "" {
 		err := uploadResults(preflightSpec.Spec.UploadResultsTo, analyzeResults)
 		if err != nil {

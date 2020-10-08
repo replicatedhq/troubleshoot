@@ -40,129 +40,129 @@ func isExcluded(excludeVal multitype.BoolOrString) (bool, error) {
 	return parsed, nil
 }
 
-func (c *Collector) RunCollectorSync(globalRedactors []*troubleshootv1beta2.Redact) (map[string][]byte, error) {
+func (c *Collector) RunCollectorSync(globalRedactors []*troubleshootv1beta2.Redact, analyzers []*troubleshootv1beta2.Analyze) (map[string][]byte, map[string][]byte, error) {
 	var unRedacted map[string][]byte
 	var isExcludedResult bool
 	var err error
 	if c.Collect.ClusterInfo != nil {
 		isExcludedResult, err = isExcluded(c.Collect.ClusterInfo.Exclude)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		if isExcludedResult {
-			return nil, nil
+			return nil, nil, nil
 		}
 		unRedacted, err = ClusterInfo(c)
 	} else if c.Collect.ClusterResources != nil {
 		isExcludedResult, err = isExcluded(c.Collect.ClusterResources.Exclude)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		if isExcludedResult {
-			return nil, nil
+			return nil, nil, nil
 		}
 		unRedacted, err = ClusterResources(c)
 	} else if c.Collect.Secret != nil {
 		isExcludedResult, err = isExcluded(c.Collect.Secret.Exclude)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		if isExcludedResult {
-			return nil, nil
+			return nil, nil, nil
 		}
 		unRedacted, err = Secret(c, c.Collect.Secret)
 	} else if c.Collect.Logs != nil {
 		isExcludedResult, err = isExcluded(c.Collect.Logs.Exclude)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		if isExcludedResult {
-			return nil, nil
+			return nil, nil, nil
 		}
 		unRedacted, err = Logs(c, c.Collect.Logs)
 	} else if c.Collect.Run != nil {
 		isExcludedResult, err = isExcluded(c.Collect.Run.Exclude)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		if isExcludedResult {
-			return nil, nil
+			return nil, nil, nil
 		}
 		unRedacted, err = Run(c, c.Collect.Run)
 	} else if c.Collect.Exec != nil {
 		isExcludedResult, err = isExcluded(c.Collect.Exec.Exclude)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		if isExcludedResult {
-			return nil, nil
+			return nil, nil, nil
 		}
 		unRedacted, err = Exec(c, c.Collect.Exec)
 	} else if c.Collect.Data != nil {
 		isExcludedResult, err = isExcluded(c.Collect.Data.Exclude)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		if isExcludedResult {
-			return nil, nil
+			return nil, nil, nil
 		}
 		unRedacted, err = Data(c, c.Collect.Data)
 	} else if c.Collect.Copy != nil {
 		isExcludedResult, err = isExcluded(c.Collect.Copy.Exclude)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		if isExcludedResult {
-			return nil, nil
+			return nil, nil, nil
 		}
 		unRedacted, err = Copy(c, c.Collect.Copy)
 	} else if c.Collect.HTTP != nil {
 		isExcludedResult, err = isExcluded(c.Collect.HTTP.Exclude)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		if isExcludedResult {
-			return nil, nil
+			return nil, nil, nil
 		}
 		unRedacted, err = HTTP(c, c.Collect.HTTP)
 	} else if c.Collect.Postgres != nil {
 		isExcludedResult, err = isExcluded(c.Collect.Postgres.Exclude)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		if isExcludedResult {
-			return nil, nil
+			return nil, nil, nil
 		}
 		unRedacted, err = Postgres(c, c.Collect.Postgres)
 	} else if c.Collect.Mysql != nil {
 		isExcludedResult, err = isExcluded(c.Collect.Mysql.Exclude)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		if isExcludedResult {
-			return nil, nil
+			return nil, nil, nil
 		}
 		unRedacted, err = Mysql(c, c.Collect.Mysql)
 	} else if c.Collect.Redis != nil {
 		isExcludedResult, err = isExcluded(c.Collect.Redis.Exclude)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		if isExcludedResult {
-			return nil, nil
+			return nil, nil, nil
 		}
 		unRedacted, err = Redis(c, c.Collect.Redis)
 	} else {
-		return nil, errors.New("no spec found to run")
+		return nil, nil, errors.New("no spec found to run")
 	}
 
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if c.Redact {
-		return redactMap(unRedacted, globalRedactors)
+		return redactMap(unRedacted, globalRedactors, analyzers)
 	}
-	return unRedacted, nil
+	return unRedacted, nil, nil
 }
 
 func (c *Collector) GetDisplayName() string {

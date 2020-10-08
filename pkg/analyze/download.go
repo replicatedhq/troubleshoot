@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 
 	getter "github.com/hashicorp/go-getter"
 	"github.com/pkg/errors"
@@ -18,13 +19,13 @@ import (
 )
 
 type fileContentProvider struct {
-	rootDir string
+	rootDir       string
+	collectedData map[string][]byte
 }
 
 // Analyze local will analyze a locally available (already downloaded) bundle
-func AnalyzeLocal(localBundlePath string, analyzers []*troubleshootv1beta2.Analyze) ([]*AnalyzeResult, error) {
-	fcp := fileContentProvider{rootDir: localBundlePath}
-
+func AnalyzeLocal(localBundlePath string, analyzers []*troubleshootv1beta2.Analyze, notRedactedData map[string][]byte) ([]*AnalyzeResult, error) {
+	fcp := fileContentProvider{rootDir: localBundlePath, collectedData: notRedactedData}
 	analyzeResults := []*AnalyzeResult{}
 	for _, analyzer := range analyzers {
 		analyzeResult, err := Analyze(analyzer, fcp.getFileContents, fcp.getChildFileContents)
@@ -72,8 +73,9 @@ func DownloadAndAnalyze(bundleURL string, analyzersSpec string) ([]*AnalyzeResul
 		}
 		analyzers = parsedAnalyzers
 	}
-
-	return AnalyzeLocal(tmpDir, analyzers)
+	//As we are downloading the bundle and not running the collectors, notRedactedData field
+	//in AnalyzeLocal will be empty (nil)
+	return AnalyzeLocal(tmpDir, analyzers, nil)
 }
 
 func downloadTroubleshootBundle(bundleURL string, destDir string) error {
@@ -198,10 +200,41 @@ spec:
 }
 
 func (f fileContentProvider) getFileContents(fileName string) ([]byte, error) {
-	return ioutil.ReadFile(filepath.Join(f.rootDir, fileName))
+	var file []byte
+	var err error
+	ok := false
+	//First we check if there is any unredacted data matching the fileName.
+	if f.collectedData != nil {
+		file, ok = f.collectedData[fileName]
+	}
+	if !ok {
+		file, err = ioutil.ReadFile(filepath.Join(f.rootDir, fileName))
+		if err != nil {
+			return nil, err
+		}
+	}
+	return file, nil
 }
 
 func (f fileContentProvider) getChildFileContents(dirName string) (map[string][]byte, error) {
+	//First we check if there is any unredacted data matching the pattern.
+	matching := make(map[string][]byte)
+	if f.collectedData != nil {
+		for k, v := range f.collectedData {
+			if strings.HasPrefix(k, dirName) {
+				matching[k] = v
+			}
+		}
+
+		for k, v := range f.collectedData {
+			if ok, _ := filepath.Match(dirName, k); ok {
+				matching[k] = v
+			}
+		}
+	}
+	if matching != nil {
+		return matching, nil
+	}
 	files, err := filepath.Glob(filepath.Join(f.rootDir, dirName))
 	if err != nil {
 		return nil, errors.Wrapf(err, "invalid glob %q", dirName)

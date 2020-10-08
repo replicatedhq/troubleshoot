@@ -25,7 +25,10 @@ type CollectResult struct {
 }
 
 // Collect runs the collection phase of preflight checks
-func Collect(opts CollectOpts, p *troubleshootv1beta2.Preflight) (CollectResult, error) {
+func Collect(opts CollectOpts, p *troubleshootv1beta2.Preflight) (CollectResult, map[string][]byte, error) {
+	var result map[string][]byte
+	var protected map[string][]byte
+	var err error
 	collectSpecs := make([]*troubleshootv1beta2.Collect, 0, 0)
 	collectSpecs = append(collectSpecs, p.Spec.Collectors...)
 	collectSpecs = ensureCollectorInList(collectSpecs, troubleshootv1beta2.Collect{ClusterInfo: &troubleshootv1beta2.ClusterInfo{}})
@@ -50,7 +53,7 @@ func Collect(opts CollectOpts, p *troubleshootv1beta2.Preflight) (CollectResult,
 	}
 
 	if err := collectors.CheckRBAC(context.Background()); err != nil {
-		return collectResult, errors.Wrap(err, "failed to check RBAC for collectors")
+		return collectResult, nil, errors.Wrap(err, "failed to check RBAC for collectors")
 	}
 
 	foundForbidden := false
@@ -63,7 +66,7 @@ func Collect(opts CollectOpts, p *troubleshootv1beta2.Preflight) (CollectResult,
 
 	if foundForbidden && !opts.IgnorePermissionErrors {
 		collectResult.IsRBACAllowed = false
-		return collectResult, errors.New("insufficient permissions to run all collectors")
+		return collectResult, nil, errors.New("insufficient permissions to run all collectors")
 	}
 
 	// Run preflights collectors synchronously
@@ -77,7 +80,7 @@ func Collect(opts CollectOpts, p *troubleshootv1beta2.Preflight) (CollectResult,
 			}
 		}
 
-		result, err := collector.RunCollectorSync(nil)
+		result, protected, err = collector.RunCollectorSync(nil, p.Spec.Analyzers)
 		if err != nil {
 			opts.ProgressChan <- errors.Errorf("failed to run collector %s: %v\n", collector.GetDisplayName(), err)
 			continue
@@ -91,7 +94,7 @@ func Collect(opts CollectOpts, p *troubleshootv1beta2.Preflight) (CollectResult,
 	}
 
 	collectResult.AllCollectedData = allCollectedData
-	return collectResult, nil
+	return collectResult, protected, nil
 }
 
 func ensureCollectorInList(list []*troubleshootv1beta2.Collect, collector troubleshootv1beta2.Collect) []*troubleshootv1beta2.Collect {
