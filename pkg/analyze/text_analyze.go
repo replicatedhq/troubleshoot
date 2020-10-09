@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/blang/semver"
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 )
@@ -118,7 +119,9 @@ func analyzeRegexGroups(pattern string, collected []byte, outcomes []*troublesho
 	}
 
 	match := re.FindStringSubmatch(string(collected))
-
+	if match == nil {
+		return nil, errors.Errorf("No matchs found.")
+	}
 	result := &AnalyzeResult{
 		Title:   checkName,
 		IconKey: "kubernetes_text_analyze",
@@ -219,7 +222,21 @@ func compareRegex(conditional string, foundMatches map[string]string) (bool, err
 		// not an error, just wasn't matched
 		return false, nil
 	}
-
+	if strings.ToLower(lookForMatchName) == "version" {
+		expected, err := semver.ParseTolerant(strings.Replace(lookForValue, "x", "0", -1))
+		if err != nil {
+			return false, errors.Wrap(err, "failed to parse expected version")
+		}
+		actual, err := semver.ParseTolerant(strings.Replace(foundValue, "x", "0", -1))
+		if err != nil {
+			return false, errors.Wrap(err, "failed to parse postgres db actual version")
+		}
+		expectedRange, err := semver.ParseRange(fmt.Sprintf("%s %s", parts[1], expected.String()))
+		if err != nil {
+			return false, errors.Wrap(err, "failed to parse semver range")
+		}
+		return expectedRange(actual), nil
+	}
 	// if the value side of the conditional is an int, we assume it's an int
 	lookForValueInt, err := strconv.Atoi(lookForValue)
 	if err == nil {
