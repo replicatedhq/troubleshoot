@@ -119,9 +119,6 @@ func analyzeRegexGroups(pattern string, collected []byte, outcomes []*troublesho
 	}
 
 	match := re.FindStringSubmatch(string(collected))
-	if match == nil {
-		return nil, errors.Errorf("No matchs found.")
-	}
 	result := &AnalyzeResult{
 		Title:   checkName,
 		IconKey: "kubernetes_text_analyze",
