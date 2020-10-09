@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -131,6 +132,11 @@ func runPod(ctx context.Context, client *kubernetes.Clientset, runCollector *tro
 		namespace = "default"
 	}
 
+	ips, err := GetNodesPrivateIpAddresses(ctx, client)
+	if err != nil {
+		return nil, err
+	}
+
 	pod := corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      runCollector.CollectorName,
@@ -150,6 +156,12 @@ func runPod(ctx context.Context, client *kubernetes.Clientset, runCollector *tro
 					Name:            "collector",
 					Command:         runCollector.Command,
 					Args:            runCollector.Args,
+					Env: []corev1.EnvVar{
+						{
+							Name:  "NODES_PRIVATE_IPS",
+							Value: strings.Join(ips, ","),
+						},
+					},
 				},
 			},
 		},

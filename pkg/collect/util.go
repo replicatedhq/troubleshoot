@@ -1,13 +1,17 @@
 package collect
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"reflect"
 	"regexp"
 	"strings"
 
+	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 )
 
 func DeterministicIDForCollector(collector *troubleshootv1beta2.Collect) string {
@@ -90,4 +94,21 @@ func marshalNonNil(obj interface{}) ([]byte, error) {
 	}
 
 	return json.MarshalIndent(obj, "", "  ")
+}
+
+func GetNodesPrivateIpAddresses(ctx context.Context, client *kubernetes.Clientset) ([]string, error) {
+	nodes, err := client.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return nil, errors.Wrap(err, "Can't get the list of nodes")
+	}
+
+	var ips []string
+	for _, node := range nodes.Items {
+		for _, address := range node.Status.Addresses {
+			if address.Type == "InternalIP" {
+				ips = append(ips, address.Address)
+			}
+		}
+	}
+	return ips, nil
 }
