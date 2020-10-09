@@ -149,6 +149,8 @@ func runPod(ctx context.Context, client *kubernetes.Clientset, runCollector *tro
 		},
 		Spec: corev1.PodSpec{
 			RestartPolicy: corev1.RestartPolicyNever,
+			HostNetwork:   runCollector.HostNetwork,
+			HostPID:       runCollector.HostPID,
 			Containers: []corev1.Container{
 				{
 					Image:           runCollector.Image,
