@@ -60,8 +60,9 @@ type Run struct {
 	Timeout         string            `json:"timeout,omitempty" yaml:"timeout,omitempty"`
 	ImagePullPolicy string            `json:"imagePullPolicy,omitempty" yaml:"imagePullPolicy,omitempty"`
 	ImagePullSecret *ImagePullSecrets `json:"imagePullSecret,omitempty" yaml:"imagePullSecret,omitempty"`
-    HostNetwork     bool              `json:"hostNetwork,omitempty" yaml:"hostNetwork,omitempty"`
-    HostPID         bool              `json:"hostPID,omitempty" yaml:"hostPID,omitempty"`
+	NodeSelector    map[string]string `json:"nodeSelector,omitempty" yaml:"nodeSelector,omitempty"`
+	HostNetwork     bool              `json:"hostNetwork,omitempty" yaml:"hostNetwork,omitempty"`
+	HostPID         bool              `json:"hostPID,omitempty" yaml:"hostPID,omitempty"`
 }
 
 type ImagePullSecrets struct {
