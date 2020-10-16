@@ -24,8 +24,12 @@ func Run(c *Collector, runCollector *troubleshootv1beta2.Run) (map[string][]byte
 		return nil, errors.Wrap(err, "failed to create client from config")
 	}
 	if runCollector.PodName == "" {
-		imageName := strings.Split(runCollector.Image, ":")
-		runCollector.PodName = imageName[0]
+		if runCollector.Image != "" {
+			imageName := strings.Split(runCollector.Image, ":")
+			runCollector.PodName = imageName[0]
+		} else {
+			return nil, errors.Errorf("failed to run pod: runcollector.Image field is required")
+		}
 	}
 
 	pod, err := runPod(ctx, client, runCollector, c.Namespace)
