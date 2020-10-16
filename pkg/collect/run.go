@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -21,6 +22,10 @@ func Run(c *Collector, runCollector *troubleshootv1beta2.Run) (map[string][]byte
 	client, err := kubernetes.NewForConfig(c.ClientConfig)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create client from config")
+	}
+	if runCollector.PodName == "" {
+		imageName := strings.Split(runCollector.Image, ":")
+		runCollector.PodName = imageName[0]
 	}
 
 	pod, err := runPod(ctx, client, runCollector, c.Namespace)
@@ -103,7 +108,10 @@ func runWithoutTimeout(ctx context.Context, c *Collector, pod *corev1.Pod, runCo
 	limits := troubleshootv1beta2.LogLimits{
 		MaxLines: 10000,
 	}
-	podLogs, err := getPodLogs(ctx, client, *pod, runCollector.Name, "", &limits, true)
+	if runCollector.CollectorName == "" {
+		runCollector.CollectorName = "run-collector-pod-" + pod.Name
+	}
+	podLogs, err := getPodLogs(ctx, client, *pod, runCollector.CollectorName, "", &limits, true)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get pod logs")
 	}
@@ -133,7 +141,7 @@ func runPod(ctx context.Context, client *kubernetes.Clientset, runCollector *tro
 
 	pod := corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      runCollector.CollectorName,
+			Name:      runCollector.PodName,
 			Namespace: namespace,
 			Labels:    podLabels,
 		},

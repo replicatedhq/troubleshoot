@@ -52,7 +52,7 @@ type Data struct {
 
 type Run struct {
 	CollectorMeta   `json:",inline" yaml:",inline"`
-	Name            string            `json:"name,omitempty" yaml:"name,omitempty"`
+	PodName         string            `json:"podName,omitempty" yaml:"podName,omitempty"`
 	Namespace       string            `json:"namespace" yaml:"namespace"`
 	Image           string            `json:"image" yaml:"image"`
 	Command         []string          `json:"command,omitempty" yaml:"command,omitempty"`
