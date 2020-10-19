@@ -23,7 +23,12 @@ type fileContentProvider struct {
 
 // Analyze local will analyze a locally available (already downloaded) bundle
 func AnalyzeLocal(localBundlePath string, analyzers []*troubleshootv1beta2.Analyze) ([]*AnalyzeResult, error) {
-	fcp := fileContentProvider{rootDir: localBundlePath}
+	rootDir, err := FindBundleRootDir(localBundlePath)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to find root dir")
+	}
+
+	fcp := fileContentProvider{rootDir: rootDir}
 
 	analyzeResults := []*AnalyzeResult{}
 	for _, analyzer := range analyzers {
@@ -52,7 +57,12 @@ func DownloadAndAnalyze(bundleURL string, analyzersSpec string) ([]*AnalyzeResul
 		return nil, errors.Wrap(err, "failed to download bundle")
 	}
 
-	_, err = os.Stat(filepath.Join(tmpDir, "version.yaml"))
+	rootDir, err := FindBundleRootDir(tmpDir)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to find root dir")
+	}
+
+	_, err = os.Stat(filepath.Join(rootDir, "version.yaml"))
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to read version.yaml")
 	}
@@ -73,7 +83,7 @@ func DownloadAndAnalyze(bundleURL string, analyzersSpec string) ([]*AnalyzeResul
 		analyzers = parsedAnalyzers
 	}
 
-	return AnalyzeLocal(tmpDir, analyzers)
+	return AnalyzeLocal(rootDir, analyzers)
 }
 
 func downloadTroubleshootBundle(bundleURL string, destDir string) error {
@@ -195,6 +205,39 @@ spec:
               message: Your cluster meets the recommended and required versions of Kubernetes.`
 
 	return parseAnalyzers(spec)
+}
+
+// FindBundleRootDir detects whether the bundle is stored inside a subdirectory or not.
+// returns the subdirectory path if so, otherwise, returns the path unchanged
+func FindBundleRootDir(localBundlePath string) (string, error) {
+	f, err := os.Open(localBundlePath)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to open bundle dir")
+	}
+	defer f.Close()
+
+	names, err := f.Readdirnames(0)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to read dirnames")
+	}
+
+	if len(names) == 0 {
+		return "", errors.New("bundle directory is empty")
+	}
+
+	isInSubDir := true
+	for _, name := range names {
+		if name == "version.yaml" {
+			isInSubDir = false
+			break
+		}
+	}
+
+	if isInSubDir {
+		return filepath.Join(localBundlePath, names[0]), nil
+	}
+
+	return localBundlePath, nil
 }
 
 func (f fileContentProvider) getFileContents(fileName string) ([]byte, error) {

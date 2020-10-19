@@ -376,11 +376,21 @@ func canTryInsecure() bool {
 }
 
 func runCollectors(v *viper.Viper, collectors []*troubleshootv1beta2.Collect, additionalRedactors *troubleshootv1beta2.Redactor, progressChan chan interface{}) (string, error) {
-	bundlePath, err := ioutil.TempDir("", "troubleshoot")
+	tmpDir, err := ioutil.TempDir("", "troubleshoot")
 	if err != nil {
 		return "", errors.Wrap(err, "create temp dir")
 	}
-	defer os.RemoveAll(bundlePath)
+	defer os.RemoveAll(tmpDir)
+
+	filename, err := findFileName("support-bundle-"+time.Now().Format("2006-01-02T15_04_05"), "tar.gz")
+	if err != nil {
+		return "", errors.Wrap(err, "find file name")
+	}
+
+	bundlePath := filepath.Join(tmpDir, strings.TrimSuffix(filename, ".tar.gz"))
+	if err := os.MkdirAll(bundlePath, 0777); err != nil {
+		return "", errors.Wrap(err, "create bundle dir")
+	}
 
 	if err = writeVersionFile(bundlePath); err != nil {
 		return "", errors.Wrap(err, "write version file")
@@ -403,6 +413,7 @@ func runCollectors(v *viper.Viper, collectors []*troubleshootv1beta2.Collect, ad
 			Collect:      desiredCollector,
 			ClientConfig: config,
 			Namespace:    v.GetString("namespace"),
+			PathPrefix:   filepath.Base(bundlePath),
 		}
 		cleanedCollectors = append(cleanedCollectors, &collector)
 	}
@@ -447,17 +458,13 @@ func runCollectors(v *viper.Viper, collectors []*troubleshootv1beta2.Collect, ad
 		}
 
 		if result != nil {
-			err = saveCollectorOutput(result, bundlePath, collector)
+			// results already contain the bundle dir name in their paths
+			err = saveCollectorOutput(result, filepath.Dir(bundlePath), collector)
 			if err != nil {
 				progressChan <- fmt.Errorf("failed to parse collector spec %q: %v", collector.GetDisplayName(), err)
 				continue
 			}
 		}
-	}
-
-	filename, err := findFileName("support-bundle-"+time.Now().Format("2006-01-02T15_04_05"), "tar.gz")
-	if err != nil {
-		return "", errors.Wrap(err, "find file name")
 	}
 
 	if err := tarSupportBundleDir(bundlePath, filename); err != nil {
@@ -662,22 +669,7 @@ func tarSupportBundleDir(inputDir, outputFilename string) error {
 		},
 	}
 
-	paths := []string{
-		filepath.Join(inputDir, VersionFilename), // version file should be first in tar archive for quick extraction
-	}
-
-	topLevelFiles, err := ioutil.ReadDir(inputDir)
-	if err != nil {
-		return errors.Wrap(err, "list bundle directory contents")
-	}
-	for _, f := range topLevelFiles {
-		if f.Name() == VersionFilename {
-			continue
-		}
-		paths = append(paths, filepath.Join(inputDir, f.Name()))
-	}
-
-	if err := tarGz.Archive(paths, outputFilename); err != nil {
+	if err := tarGz.Archive([]string{inputDir}, outputFilename); err != nil {
 		return errors.Wrap(err, "create archive")
 	}
 
