@@ -129,6 +129,14 @@ func runPreflights(v *viper.Viper, arg string) error {
 		KubernetesRestConfig:   restConfig,
 	}
 
+	if v.GetString("since-time") != "" {
+		for _, collectors := range preflightSpec.Spec.Collectors {
+			if collectors.Logs != nil {
+				collectors.Logs.Limits.SinceTime = v.GetString("since-time")
+			}
+		}
+	}
+
 	collectResults, err := preflight.Collect(collectOpts, preflightSpec)
 	if err != nil {
 		if !collectResults.IsRBACAllowed {

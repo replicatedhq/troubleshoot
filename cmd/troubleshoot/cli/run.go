@@ -439,6 +439,14 @@ func runCollectors(v *viper.Viper, collectors []*troubleshootv1beta2.Collect, ad
 		globalRedactors = additionalRedactors.Spec.Redactors
 	}
 
+	if v.GetString("since-time") != "" {
+		for _, collectors := range cleanedCollectors {
+			if collectors.Collect.Logs != nil {
+				collectors.Collect.Logs.Limits.SinceTime = v.GetString("since-time")
+			}
+		}
+	}
+
 	// Run preflights collectors synchronously
 	for _, collector := range cleanedCollectors {
 		if len(collector.RBACErrors) > 0 {
