@@ -36,7 +36,7 @@ that a cluster meets the requirements to run an application.`,
 	cmd.Flags().String("collector-pullpolicy", "", "the pull policy of the collector image")
 	cmd.Flags().Bool("collect-without-permissions", false, "always run preflight checks even if some require permissions that preflight does not have")
 	cmd.Flags().String("since-time", "", "forces pod's logs collectors to return logs after a specific date (RFC3339)")
-	cmd.Flags().String("since", "", "forces pod's logs collectors to  return logs newer than a relative duration like 5s, 2m, or 3h.")
+	cmd.Flags().String("since", "", "forces pod's logs collectors to return logs newer than a relative duration like 5s, 2m, or 3h.")
 
 	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
 
