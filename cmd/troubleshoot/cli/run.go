@@ -451,7 +451,7 @@ func runCollectors(v *viper.Viper, collectors []*troubleshootv1beta2.Collect, ad
 	} else if v.GetString("since") != "" {
 		for _, collectors := range cleanedCollectors {
 			if collectors.Collect.Logs != nil {
-				collectors.Collect.Logs.Limits.SinceTime = v.GetString("since-time")
+				collectors.Collect.Logs.Limits.Since = v.GetString("since")
 			}
 		}
 	}
