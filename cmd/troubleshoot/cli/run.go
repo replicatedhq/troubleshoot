@@ -440,6 +440,15 @@ func runCollectors(v *viper.Viper, collectors []*troubleshootv1beta2.Collect, ad
 	}
 
 	if v.GetString("since-time") != "" {
+		if v.GetString("since") != "" {
+			progressChan <- errors.Errorf("Only one of since-time / since may be used. The flag since-time will be used.")
+		}
+		for _, collectors := range cleanedCollectors {
+			if collectors.Collect.Logs != nil {
+				collectors.Collect.Logs.Limits.SinceTime = v.GetString("since-time")
+			}
+		}
+	} else if v.GetString("since") != "" {
 		for _, collectors := range cleanedCollectors {
 			if collectors.Collect.Logs != nil {
 				collectors.Collect.Logs.Limits.SinceTime = v.GetString("since-time")

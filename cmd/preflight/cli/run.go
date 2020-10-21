@@ -130,9 +130,18 @@ func runPreflights(v *viper.Viper, arg string) error {
 	}
 
 	if v.GetString("since-time") != "" {
+		if v.GetString("since") != "" {
+			progressChan <- errors.Errorf("Only one of since-time / since may be used. The flag since-time will be used.")
+		}
 		for _, collectors := range preflightSpec.Spec.Collectors {
 			if collectors.Logs != nil {
 				collectors.Logs.Limits.SinceTime = v.GetString("since-time")
+			}
+		}
+	} else if v.GetString("since") != "" {
+		for _, collectors := range preflightSpec.Spec.Collectors {
+			if collectors.Logs != nil {
+				collectors.Logs.Limits.Since = v.GetString("since")
 			}
 		}
 	}

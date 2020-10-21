@@ -34,6 +34,7 @@ type LogLimits struct {
 	MaxAge    string `json:"maxAge,omitempty" yaml:"maxAge,omitempty"`
 	MaxLines  int64  `json:"maxLines,omitempty" yaml:"maxLines,omitempty"`
 	SinceTime string
+	Since     string
 }
 
 type Logs struct {
