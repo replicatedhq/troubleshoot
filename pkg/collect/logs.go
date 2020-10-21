@@ -117,16 +117,7 @@ func getPodLogs(ctx context.Context, client *kubernetes.Clientset, pod corev1.Po
 		podLogOpts.TailLines = &limits.MaxLines
 	}
 
-	if limits != nil && limits.SinceTime != "" {
-		t, err := time.Parse(time.RFC3339, limits.SinceTime)
-		if err != nil {
-			logger.Printf("unable to parse --since-time=%s\n", limits.SinceTime)
-		}
-
-		sinceTime := metav1.NewTime(t)
-		podLogOpts.SinceTime = &sinceTime
-
-	} else if limits != nil && (limits.MaxAge != "" || limits.Since != "") {
+	if limits != nil && (limits.MaxAge != "" || limits.Since != "") {
 		if limits.Since != "" {
 			limits.MaxAge = limits.Since
 		}
@@ -142,6 +133,17 @@ func getPodLogs(ctx context.Context, client *kubernetes.Clientset, pod corev1.Po
 		}
 	}
 
+	if limits != nil && limits.SinceTime != "" {
+		t, err := time.Parse(time.RFC3339, limits.SinceTime)
+		fmt.Println("time", t)
+		if err != nil {
+			logger.Printf("unable to parse --since-time=%s\n", limits.SinceTime)
+		}
+
+		sinceTime := metav1.NewTime(t)
+		podLogOpts.SinceTime = &sinceTime
+
+	}
 	fileKey := fmt.Sprintf("%s/%s", name, pod.Name)
 	if container != "" {
 		fileKey = fmt.Sprintf("%s/%s/%s", name, pod.Name, container)
