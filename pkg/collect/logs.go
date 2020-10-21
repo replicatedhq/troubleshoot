@@ -138,11 +138,10 @@ func getPodLogs(ctx context.Context, client *kubernetes.Clientset, pod corev1.Po
 		fmt.Println("time", t)
 		if err != nil {
 			logger.Printf("unable to parse --since-time=%s\n", limits.SinceTime)
+		} else {
+			sinceTime := metav1.NewTime(t)
+			podLogOpts.SinceTime = &sinceTime
 		}
-
-		sinceTime := metav1.NewTime(t)
-		podLogOpts.SinceTime = &sinceTime
-
 	}
 	fileKey := fmt.Sprintf("%s/%s", name, pod.Name)
 	if container != "" {
