@@ -126,7 +126,7 @@ func getPodLogs(ctx context.Context, client *kubernetes.Clientset, pod corev1.Po
 		sinceTime := metav1.NewTime(t)
 		podLogOpts.SinceTime = &sinceTime
 
-	} else if limits != nil && limits.MaxAge != "" {
+	} else if limits != nil && (limits.MaxAge != "" || limits.Since != "") {
 		if limits.Since != "" {
 			limits.MaxAge = limits.Since
 		}
