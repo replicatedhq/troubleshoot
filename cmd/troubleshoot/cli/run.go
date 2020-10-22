@@ -694,7 +694,7 @@ func parseTimeFlags(v *viper.Viper, progressChan chan interface{}, collectors *c
 	)
 	if v.GetString("since-time") != "" {
 		if v.GetString("since") != "" {
-			return errors.Errorf("Only one of since-time / since may be used. The flag since-time will be used.")
+			return errors.Errorf("at most one of `sinceTime` or `since` may be specified")
 		}
 		sinceTime, err = time.Parse(time.RFC3339, v.GetString("since-time"))
 		if err != nil {

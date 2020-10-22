@@ -177,7 +177,7 @@ func parseTimeFlags(v *viper.Viper, progressChan chan interface{}, collectors []
 	)
 	if v.GetString("since-time") != "" {
 		if v.GetString("since") != "" {
-			return errors.Errorf("at most one of `sinceTime` or `sinceSeconds` may be specified")
+			return errors.Errorf("at most one of `sinceTime` or `since` may be specified")
 		}
 		sinceTime, err = time.Parse(time.RFC3339, v.GetString("since-time"))
 		if err != nil {
