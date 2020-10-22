@@ -713,7 +713,7 @@ func parseTimeFlags(v *viper.Viper, progressChan chan interface{}, collectors *c
 			if collector.Collect.Logs.Limits == nil {
 				collector.Collect.Logs.Limits = new(troubleshootv1beta2.LogLimits)
 			}
-			collector.Collect.Logs.Limits.SinceTime = sinceTime
+			collector.Collect.Logs.Limits.SinceTime = metav1.NewTime(sinceTime)
 		}
 	}
 	return nil

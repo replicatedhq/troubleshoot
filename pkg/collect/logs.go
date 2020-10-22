@@ -117,8 +117,7 @@ func getPodLogs(ctx context.Context, client *kubernetes.Clientset, pod corev1.Po
 		podLogOpts.TailLines = &limits.MaxLines
 	}
 	if limits != nil && !limits.SinceTime.IsZero() {
-		sinceTime := metav1.NewTime(limits.SinceTime)
-		podLogOpts.SinceTime = &sinceTime
+		podLogOpts.SinceTime = &limits.SinceTime
 
 	} else if limits != nil && limits.MaxAge != "" {
 		parsedDuration, err := time.ParseDuration(limits.MaxAge)

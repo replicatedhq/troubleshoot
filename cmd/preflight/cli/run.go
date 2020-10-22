@@ -20,6 +20,7 @@ import (
 	"github.com/replicatedhq/troubleshoot/pkg/specs"
 	"github.com/spf13/viper"
 	spin "github.com/tj/go-spin"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/scheme"
 )
 
@@ -195,7 +196,7 @@ func parseTimeFlags(v *viper.Viper, progressChan chan interface{}, collectors []
 			if collector.Logs.Limits == nil {
 				collector.Logs.Limits = new(troubleshootv1beta2.LogLimits)
 			}
-			collector.Logs.Limits.SinceTime = sinceTime
+			collector.Logs.Limits.SinceTime = metav1.NewTime(sinceTime)
 		}
 	}
 	return nil
