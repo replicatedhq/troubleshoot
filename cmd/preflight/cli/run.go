@@ -181,12 +181,12 @@ func parseTimeFlags(v *viper.Viper, progressChan chan interface{}, collectors []
 		}
 		sinceTime, err = time.Parse(time.RFC3339, v.GetString("since-time"))
 		if err != nil {
-			return errors.Wrap(err, fmt.Sprintf("unable to parse date and time %s as YYYY-MM-DDTHH:MM:SSZHH:MM, e.g.:\"2006-01-02T15:04:05Z07:00\"", v.GetString("since-time")))
+			return errors.Wrap(err, "unable to parse --since-time flag")
 		}
 	} else {
 		parsedDuration, err := time.ParseDuration(v.GetString("since"))
 		if err != nil {
-			return errors.Wrap(err, fmt.Sprintf("unable to parse time duration %s", v.GetString("since")))
+			return errors.Wrap(err, "unable to parse --since flag")
 		}
 		now := time.Now()
 		sinceTime = now.Add(0 - parsedDuration)
