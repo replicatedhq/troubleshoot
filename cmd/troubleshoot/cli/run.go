@@ -438,27 +438,10 @@ func runCollectors(v *viper.Viper, collectors []*troubleshootv1beta2.Collect, ad
 	if additionalRedactors != nil {
 		globalRedactors = additionalRedactors.Spec.Redactors
 	}
-
-	if v.GetString("since-time") != "" {
-		if v.GetString("since") != "" {
-			progressChan <- errors.Errorf("Only one of since-time / since may be used. The flag since-time will be used.")
-		}
-		for _, collector := range cleanedCollectors {
-			if collector.Collect.Logs != nil {
-				if collector.Collect.Logs.Limits == nil {
-					collector.Collect.Logs.Limits = new(troubleshootv1beta2.LogLimits)
-				}
-				collector.Collect.Logs.Limits.SinceTime = v.GetString("since-time")
-			}
-		}
-	} else if v.GetString("since") != "" {
-		for _, collector := range cleanedCollectors {
-			if collector.Collect.Logs != nil {
-				if collector.Collect.Logs.Limits == nil {
-					collector.Collect.Logs.Limits = new(troubleshootv1beta2.LogLimits)
-				}
-				collector.Collect.Logs.Limits.Since = v.GetString("since")
-			}
+	if v.GetString("since-time") != "" || v.GetString("since") != "" {
+		err := parseTimeFlags(v, progressChan, &cleanedCollectors)
+		if err != nil {
+			return "", err
 		}
 	}
 
@@ -702,4 +685,36 @@ func tarSupportBundleDir(inputDir, outputFilename string) error {
 type CollectorFailure struct {
 	Collector *troubleshootv1beta2.Collect
 	Failure   string
+}
+
+func parseTimeFlags(v *viper.Viper, progressChan chan interface{}, collectors *collect.Collectors) error {
+	var (
+		sinceTime time.Time
+		err       error
+	)
+	if v.GetString("since-time") != "" {
+		if v.GetString("since") != "" {
+			progressChan <- errors.Errorf("Only one of since-time / since may be used. The flag since-time will be used.")
+		}
+		sinceTime, err = time.Parse(time.RFC3339, v.GetString("since-time"))
+		if err != nil {
+			return errors.Errorf("unable to parse date and time %s as YYYY-MM-DDTHH:MM:SSZHH:MM, e.g.:\"2006-01-02T15:04:05Z07:00\"", v.GetString("since-time"))
+		}
+	} else {
+		parsedDuration, err := time.ParseDuration(v.GetString("since"))
+		if err != nil {
+			return errors.Errorf("unable to parse time duration %s", v.GetString("since"))
+		}
+		now := time.Now()
+		sinceTime = now.Add(0 - parsedDuration)
+	}
+	for _, collector := range *collectors {
+		if collector.Collect.Logs != nil {
+			if collector.Collect.Logs.Limits == nil {
+				collector.Collect.Logs.Limits = new(troubleshootv1beta2.LogLimits)
+			}
+			collector.Collect.Logs.Limits.SinceTime = sinceTime
+		}
+	}
+	return nil
 }

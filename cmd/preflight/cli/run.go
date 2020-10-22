@@ -129,26 +129,10 @@ func runPreflights(v *viper.Viper, arg string) error {
 		KubernetesRestConfig:   restConfig,
 	}
 
-	if v.GetString("since-time") != "" {
-		if v.GetString("since") != "" {
-			progressChan <- errors.Errorf("Only one of since-time / since may be used. The flag since-time will be used.")
-		}
-		for _, collector := range preflightSpec.Spec.Collectors {
-			if collector.Logs != nil {
-				if collector.Logs.Limits == nil {
-					collector.Logs.Limits = new(troubleshootv1beta2.LogLimits)
-				}
-				collector.Logs.Limits.SinceTime = v.GetString("since-time")
-			}
-		}
-	} else if v.GetString("since") != "" {
-		for _, collector := range preflightSpec.Spec.Collectors {
-			if collector.Logs != nil {
-				if collector.Logs.Limits == nil {
-					collector.Logs.Limits = new(troubleshootv1beta2.LogLimits)
-				}
-				collector.Logs.Limits.Since = v.GetString("since")
-			}
+	if v.GetString("since") != "" || v.GetString("since-time") != "" {
+		err := parseTimeFlags(v, progressChan, preflightSpec.Spec.Collectors)
+		if err != nil {
+			return err
 		}
 	}
 
@@ -183,4 +167,36 @@ func runPreflights(v *viper.Viper, arg string) error {
 	}
 
 	return showStdoutResults(v.GetString("format"), preflightSpec.Name, analyzeResults)
+}
+
+func parseTimeFlags(v *viper.Viper, progressChan chan interface{}, collectors []*troubleshootv1beta2.Collect) error {
+	var (
+		sinceTime time.Time
+		err       error
+	)
+	if v.GetString("since-time") != "" {
+		if v.GetString("since") != "" {
+			progressChan <- errors.Errorf("Only one of since-time / since may be used. The flag since-time will be used.")
+		}
+		sinceTime, err = time.Parse(time.RFC3339, v.GetString("since-time"))
+		if err != nil {
+			return errors.Errorf("unable to parse date and time %s as YYYY-MM-DDTHH:MM:SSZHH:MM, e.g.:\"2006-01-02T15:04:05Z07:00\"", v.GetString("since-time"))
+		}
+	} else {
+		parsedDuration, err := time.ParseDuration(v.GetString("since"))
+		if err != nil {
+			return errors.Errorf("unable to parse time duration %s", v.GetString("since"))
+		}
+		now := time.Now()
+		sinceTime = now.Add(0 - parsedDuration)
+	}
+	for _, collector := range collectors {
+		if collector.Logs != nil {
+			if collector.Logs.Limits == nil {
+				collector.Logs.Limits = new(troubleshootv1beta2.LogLimits)
+			}
+			collector.Logs.Limits.SinceTime = sinceTime
+		}
+	}
+	return nil
 }

@@ -3,6 +3,7 @@ package v1beta2
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/replicatedhq/troubleshoot/pkg/multitype"
 	authorizationv1 "k8s.io/api/authorization/v1"
@@ -33,8 +34,7 @@ type Secret struct {
 type LogLimits struct {
 	MaxAge    string `json:"maxAge,omitempty" yaml:"maxAge,omitempty"`
 	MaxLines  int64  `json:"maxLines,omitempty" yaml:"maxLines,omitempty"`
-	SinceTime string
-	Since     string
+	SinceTime time.Time
 }
 
 type Logs struct {
