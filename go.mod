@@ -54,5 +54,7 @@ require (
 	k8s.io/apimachinery v0.18.3
 	k8s.io/cli-runtime v0.18.0
 	k8s.io/client-go v0.18.2
+	k8s.io/code-generator v0.18.3-beta.0 // indirect
 	sigs.k8s.io/controller-runtime v0.5.1-0.20200402191424-df180accb901
+	sigs.k8s.io/controller-tools v0.3.0 // indirect
 )

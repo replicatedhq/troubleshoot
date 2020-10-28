@@ -64,6 +64,15 @@ func (c *Collector) RunCollectorSync(globalRedactors []*troubleshootv1beta2.Reda
 			return nil, nil
 		}
 		unRedacted, err = ClusterResources(c)
+	} else if c.Collect.KubeletMetrics != nil {
+		isExcludedResult, err = isExcluded(c.Collect.KubeletMetrics.Exclude)
+		if err != nil {
+			return nil, err
+		}
+		if isExcludedResult {
+			return nil, nil
+		}
+		unRedacted, err = KubeletMetrics(c)
 	} else if c.Collect.Secret != nil {
 		isExcludedResult, err = isExcluded(c.Collect.Secret.Exclude)
 		if err != nil {

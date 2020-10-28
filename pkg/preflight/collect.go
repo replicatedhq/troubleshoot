@@ -102,6 +102,9 @@ func ensureCollectorInList(list []*troubleshootv1beta2.Collect, collector troubl
 		if collector.ClusterInfo != nil && inList.ClusterInfo != nil {
 			return list
 		}
+		if collector.KubeletMetrics != nil && inList.KubeletMetrics != nil {
+			return list
+		}
 	}
 
 	return append(list, &collector)

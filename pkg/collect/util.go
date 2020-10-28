@@ -21,6 +21,10 @@ func DeterministicIDForCollector(collector *troubleshootv1beta2.Collect) string 
 		unsafeID = "cluster-resources"
 	}
 
+	if collector.KubeletMetrics != nil {
+		unsafeID = "kubelet-metrics"
+	}
+
 	if collector.Secret != nil {
 		unsafeID = fmt.Sprintf("secret-%s-%s", collector.Secret.Namespace, collector.Secret.SecretName)
 	}
