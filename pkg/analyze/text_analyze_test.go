@@ -45,6 +45,8 @@ func Test_textAnalyze(t *testing.T) {
 					IsFail:  false,
 					Title:   "text-collector-1",
 					Message: "pass",
+					IconKey: "kubernetes_text_analyze",
+					IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg",
 				},
 			},
 			files: map[string][]byte{
@@ -145,6 +147,8 @@ func Test_textAnalyze(t *testing.T) {
 					IsFail:  false,
 					Title:   "text-collector-5",
 					Message: "success",
+					IconKey: "kubernetes_text_analyze",
+					IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg",
 				},
 			},
 			files: map[string][]byte{
@@ -245,6 +249,8 @@ func Test_textAnalyze(t *testing.T) {
 					IsFail:  false,
 					Title:   "text-collector-1",
 					Message: "pass",
+					IconKey: "kubernetes_text_analyze",
+					IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg",
 				},
 				{
 					IsPass:  false,
