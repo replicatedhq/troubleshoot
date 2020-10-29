@@ -30,3 +30,5 @@ vendor
 scope-go-*.log
 
 dist
+
+support-bundle-*.tar.gz

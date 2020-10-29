@@ -400,6 +400,7 @@ func runCollectors(v *viper.Viper, collectors []*troubleshootv1beta2.Collect, ad
 	collectSpecs = append(collectSpecs, collectors...)
 	collectSpecs = ensureCollectorInList(collectSpecs, troubleshootv1beta2.Collect{ClusterInfo: &troubleshootv1beta2.ClusterInfo{}})
 	collectSpecs = ensureCollectorInList(collectSpecs, troubleshootv1beta2.Collect{ClusterResources: &troubleshootv1beta2.ClusterResources{}})
+	collectSpecs = ensureCollectorInList(collectSpecs, troubleshootv1beta2.Collect{KubeletMetrics: &troubleshootv1beta2.KubeletMetrics{}})
 
 	config, err := k8sutil.GetRESTConfig()
 	if err != nil {

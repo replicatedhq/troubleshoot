@@ -22,6 +22,10 @@ type ClusterResources struct {
 	CollectorMeta `json:",inline" yaml:",inline"`
 }
 
+type KubeletMetrics struct {
+	CollectorMeta `json:",inline" yaml:",inline"`
+}
+
 type Secret struct {
 	CollectorMeta `json:",inline" yaml:",inline"`
 	SecretName    string `json:"name" yaml:"name"`
@@ -124,6 +128,7 @@ type Database struct {
 type Collect struct {
 	ClusterInfo      *ClusterInfo      `json:"clusterInfo,omitempty" yaml:"clusterInfo,omitempty"`
 	ClusterResources *ClusterResources `json:"clusterResources,omitempty" yaml:"clusterResources,omitempty"`
+	KubeletMetrics   *KubeletMetrics   `json:"kubeletMetrics,omitempty" yaml:"kubeletMetrics,omitempty"`
 	Secret           *Secret           `json:"secret,omitempty" yaml:"secret,omitempty"`
 	Logs             *Logs             `json:"logs,omitempty" yaml:"logs,omitempty"`
 	Run              *Run              `json:"run,omitempty" yaml:"run,omitempty"`
@@ -190,6 +195,8 @@ func (c *Collect) AccessReviewSpecs(overrideNS string) []authorizationv1.SelfSub
 			},
 			NonResourceAttributes: nil,
 		})
+	} else if c.KubeletMetrics != nil {
+		// NOOP?
 	} else if c.Secret != nil {
 		result = append(result, authorizationv1.SelfSubjectAccessReviewSpec{
 			ResourceAttributes: &authorizationv1.ResourceAttributes{
@@ -302,34 +309,29 @@ func (c *Collect) GetName() string {
 	var collector, name, selector string
 	if c.ClusterInfo != nil {
 		collector = "cluster-info"
-	}
-	if c.ClusterResources != nil {
+	} else if c.ClusterResources != nil {
 		collector = "cluster-resources"
-	}
-	if c.Secret != nil {
+	} else if c.KubeletMetrics != nil {
+		collector = "kubelet-metrics"
+	} else if c.Secret != nil {
 		collector = "secret"
 		name = c.Secret.CollectorName
-	}
-	if c.Logs != nil {
+	} else if c.Logs != nil {
 		collector = "logs"
 		name = c.Logs.CollectorName
 		selector = strings.Join(c.Logs.Selector, ",")
-	}
-	if c.Run != nil {
+	} else if c.Run != nil {
 		collector = "run"
 		name = c.Run.CollectorName
-	}
-	if c.Exec != nil {
+	} else if c.Exec != nil {
 		collector = "exec"
 		name = c.Exec.CollectorName
 		selector = strings.Join(c.Exec.Selector, ",")
-	}
-	if c.Copy != nil {
+	} else if c.Copy != nil {
 		collector = "copy"
 		name = c.Copy.CollectorName
 		selector = strings.Join(c.Copy.Selector, ",")
-	}
-	if c.HTTP != nil {
+	} else if c.HTTP != nil {
 		collector = "http"
 		name = c.HTTP.CollectorName
 	}
