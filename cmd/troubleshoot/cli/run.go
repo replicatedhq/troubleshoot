@@ -438,6 +438,12 @@ func runCollectors(v *viper.Viper, collectors []*troubleshootv1beta2.Collect, ad
 	if additionalRedactors != nil {
 		globalRedactors = additionalRedactors.Spec.Redactors
 	}
+	if v.GetString("since-time") != "" || v.GetString("since") != "" {
+		err := parseTimeFlags(v, progressChan, &cleanedCollectors)
+		if err != nil {
+			return "", err
+		}
+	}
 
 	// Run preflights collectors synchronously
 	for _, collector := range cleanedCollectors {
@@ -679,4 +685,36 @@ func tarSupportBundleDir(inputDir, outputFilename string) error {
 type CollectorFailure struct {
 	Collector *troubleshootv1beta2.Collect
 	Failure   string
+}
+
+func parseTimeFlags(v *viper.Viper, progressChan chan interface{}, collectors *collect.Collectors) error {
+	var (
+		sinceTime time.Time
+		err       error
+	)
+	if v.GetString("since-time") != "" {
+		if v.GetString("since") != "" {
+			return errors.Errorf("at most one of `sinceTime` or `since` may be specified")
+		}
+		sinceTime, err = time.Parse(time.RFC3339, v.GetString("since-time"))
+		if err != nil {
+			return errors.Wrap(err, "unable to parse --since-time flag")
+		}
+	} else {
+		parsedDuration, err := time.ParseDuration(v.GetString("since"))
+		if err != nil {
+			return errors.Wrap(err, "unable to parse --since flag")
+		}
+		now := time.Now()
+		sinceTime = now.Add(0 - parsedDuration)
+	}
+	for _, collector := range *collectors {
+		if collector.Collect.Logs != nil {
+			if collector.Collect.Logs.Limits == nil {
+				collector.Collect.Logs.Limits = new(troubleshootv1beta2.LogLimits)
+			}
+			collector.Collect.Logs.Limits.SinceTime = metav1.NewTime(sinceTime)
+		}
+	}
+	return nil
 }
