@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"strings"
 	"time"
 
@@ -113,7 +114,7 @@ func runWithoutTimeout(ctx context.Context, c *Collector, pod *corev1.Pod, runCo
 		MaxLines: 10000,
 	}
 	if runCollector.CollectorName == "" {
-		runCollector.CollectorName = "run-collector-pod-" + pod.Name
+		runCollector.CollectorName = fmt.Sprintf("run-collector-pod-%s", pod.Name)
 	}
 	podLogs, err := getPodLogs(ctx, client, *pod, runCollector.CollectorName, "", &limits, true)
 	if err != nil {
