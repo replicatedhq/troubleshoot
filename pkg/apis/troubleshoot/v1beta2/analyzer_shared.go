@@ -79,8 +79,16 @@ type Distribution struct {
 
 type NodeResources struct {
 	AnalyzeMeta `json:",inline" yaml:",inline"`
-	Outcomes    []*Outcome           `json:"outcomes" yaml:"outcomes"`
-	Filters     *NodeResourceFilters `json:"filters,omitempty" yaml:"filters,omitempty"`
+	Outcomes    []*Outcome                `json:"outcomes" yaml:"outcomes"`
+	Filters     *NodeResourceFilters      `json:"filters,omitempty" yaml:"filters,omitempty"`
+	Deployment  *DeploymentStatus         `json:"deployment,omitempty" yaml:"deployment,omitempty"`
+	OnInstall   *NodeResourcesConditional `json:"onInstall,omitempty" yaml:"onInstall,omitempty"`
+	OnUpdate    *NodeResourcesConditional `json:"onUpdate,omitempty" yaml:"onUpdate,omitempty"`
+}
+
+type NodeResourcesConditional struct {
+	Outcomes []*Outcome           `json:"outcomes" yaml:"outcomes"`
+	Filters  *NodeResourceFilters `json:"filters,omitempty" yaml:"filters,omitempty"`
 }
 
 type NodeResourceFilters struct {

@@ -3,12 +3,14 @@ package analyzer
 import (
 	"encoding/json"
 	"fmt"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 )
@@ -17,6 +19,41 @@ func analyzeNodeResources(analyzer *troubleshootv1beta2.NodeResources, getCollec
 	collected, err := getCollectedFileContents("cluster-resources/nodes.json")
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get contents of nodes.json")
+	}
+
+	title := analyzer.CheckName
+	if title == "" {
+		title = "Node Resources"
+	}
+
+	result := &AnalyzeResult{
+		Title:   title,
+		IconKey: "kubernetes_node_resources",
+		IconURI: "https://troubleshoot.sh/images/analyzer-icons/node-resources.svg?w=16&h=18",
+	}
+
+	if analyzer.Deployment != nil {
+		exists, err := checkDeployment(analyzer, getCollectedFileContents)
+		if err != nil {
+			return nil, err
+		}
+		if exists {
+			if analyzer.OnUpdate != nil {
+				analyzer.Filters = analyzer.OnUpdate.Filters
+				analyzer.Outcomes = analyzer.OnUpdate.Outcomes
+			} else {
+				result.Title = "Skipped: " + title
+				result.IsWarn = true
+				result.Message = fmt.Sprintf("Test skipped: Deployment %s found in the cluster, but no specs were found for updates, under 'onUpdate:' field", analyzer.Deployment.Name)
+				return result, nil
+			}
+		} else {
+			//If no specs for 'onInstall' are provided, the specs are left as usual.
+			if analyzer.OnInstall != nil {
+				analyzer.Filters = analyzer.OnInstall.Filters
+				analyzer.Outcomes = analyzer.OnInstall.Outcomes
+			}
+		}
 	}
 
 	nodes := []corev1.Node{}
@@ -35,17 +72,6 @@ func analyzeNodeResources(analyzer *troubleshootv1beta2.NodeResources, getCollec
 		if isMatch {
 			matchingNodes = append(matchingNodes, node)
 		}
-	}
-
-	title := analyzer.CheckName
-	if title == "" {
-		title = "Node Resources"
-	}
-
-	result := &AnalyzeResult{
-		Title:   title,
-		IconKey: "kubernetes_node_resources",
-		IconURI: "https://troubleshoot.sh/images/analyzer-icons/node-resources.svg?w=16&h=18",
 	}
 
 	for _, outcome := range analyzer.Outcomes {
@@ -412,4 +438,25 @@ func nodeMatchesFilters(node corev1.Node, filters *troubleshootv1beta2.NodeResou
 	}
 
 	return true, nil
+}
+
+func checkDeployment(analyzer *troubleshootv1beta2.NodeResources, getCollectedFileContents func(string) ([]byte, error)) (bool, error) {
+	//check if deployment name and namespace are not nil
+	collected, err := getCollectedFileContents(filepath.Join("cluster-resources", "deployments", fmt.Sprintf("%s.json", analyzer.Deployment.Namespace)))
+	if err != nil {
+		return false, errors.Wrap(err, "failed to read collected deployments from namespace")
+	}
+
+	var deployments []appsv1.Deployment
+	if err := json.Unmarshal(collected, &deployments); err != nil {
+		return false, errors.Wrap(err, "failed to unmarshal deployment list")
+	}
+
+	for _, deployment := range deployments {
+		if deployment.Name == analyzer.Deployment.Name {
+			return true, nil
+		}
+	}
+	return false, nil
+
 }
