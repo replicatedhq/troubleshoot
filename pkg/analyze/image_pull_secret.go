@@ -2,6 +2,7 @@ package analyzer
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
@@ -58,9 +59,9 @@ func analyzeImagePullSecret(analyzer *troubleshootv1beta2.ImagePullSecret, getCh
 
 	if result.Message == "" {
 		if result.IsPass {
-			result.Message = "Credentials to pull from: " + analyzer.RegistryName + " found"
+			result.Message = fmt.Sprintf("Credentials to pull from: %s found", analyzer.RegistryName)
 		} else {
-			result.Message = "Credentials to pull from " + analyzer.RegistryName + " not found"
+			result.Message = fmt.Sprintf("Credentials to pull from: %s not ound", analyzer.RegistryName)
 		}
 	}
 	return &result, nil
