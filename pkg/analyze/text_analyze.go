@@ -267,6 +267,9 @@ func compareInt(operator string, foundValueInt int, lookForValueInt int) (bool, 
 }
 func compareSemVer(operator string, foundValue string, lookForValue string) (bool, error) {
 	expected, err := semver.ParseTolerant(strings.Replace(lookForValue, "x", "0", -1))
+	if err != nil {
+		return false, errors.Wrap(err, "failed to parse postgres db expected version")
+	}
 	actual, err := semver.ParseTolerant(strings.Replace(foundValue, "x", "0", -1))
 	if err != nil {
 		return false, errors.Wrap(err, "failed to parse postgres db actual version")
