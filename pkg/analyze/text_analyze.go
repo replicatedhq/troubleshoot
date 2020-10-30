@@ -219,58 +219,61 @@ func compareRegex(conditional string, foundMatches map[string]string) (bool, err
 		// not an error, just wasn't matched
 		return false, nil
 	}
-	if strings.ToLower(lookForMatchName) == "version" {
-		expected, err := semver.ParseTolerant(strings.Replace(lookForValue, "x", "0", -1))
-		if err != nil {
-			return false, errors.Wrap(err, "failed to parse expected version")
-		}
-		actual, err := semver.ParseTolerant(strings.Replace(foundValue, "x", "0", -1))
-		if err != nil {
-			return false, errors.Wrap(err, "failed to parse postgres db actual version")
-		}
-		expectedRange, err := semver.ParseRange(fmt.Sprintf("%s %s", parts[1], expected.String()))
-		if err != nil {
-			return false, errors.Wrap(err, "failed to parse semver range")
-		}
-		return expectedRange(actual), nil
-	}
-	// if the value side of the conditional is an int, we assume it's an int
+
 	lookForValueInt, err := strconv.Atoi(lookForValue)
 	if err == nil {
 		foundValueInt, err := strconv.Atoi(foundValue)
-		if err != nil {
-			// not an error but maybe it should be...
-			return false, nil
+		if err == nil {
+			return compareInt(operator, foundValueInt, lookForValueInt)
+		} else if _, err := semver.ParseTolerant(strings.Replace(foundValue, "x", "0", -1)); err == nil {
+			return compareSemVer(operator, foundValue, lookForValue)
 		}
-
-		switch operator {
-		case "=":
-			fallthrough
-		case "==":
-			fallthrough
-		case "===":
-			return foundValueInt == lookForValueInt, nil
-
-		case "<":
-			return foundValueInt < lookForValueInt, nil
-
-		case ">":
-			return foundValueInt > lookForValueInt, nil
-
-		case "<=":
-			return foundValueInt <= lookForValueInt, nil
-
-		case ">=":
-			return foundValueInt >= lookForValueInt, nil
-		}
-	} else {
-		// all we can support is "=" and "==" and "===" for now
-		if operator != "=" && operator != "==" && operator != "===" {
-			return false, fmt.Errorf("unexpected operator %q in regex comparator, cannot compare %q and %q", operator, foundValue, lookForValue)
-		}
-
-		return foundValue == lookForValue, nil
+	}
+	if _, err := semver.ParseTolerant(strings.Replace(lookForValue, "x", "0", -1)); err == nil {
+		return compareSemVer(operator, foundValue, lookForValue)
+	}
+	// all we can support is "=" and "==" and "===" for now
+	if operator != "=" && operator != "==" && operator != "===" {
+		return false, fmt.Errorf("unexpected operator %q in regex comparator, cannot compare %q and %q", operator, foundValue, lookForValue)
 	}
 
+	return foundValue == lookForValue, nil
+
+}
+
+func compareInt(operator string, foundValueInt int, lookForValueInt int) (bool, error) {
+	switch operator {
+	case "=":
+		fallthrough
+	case "==":
+		fallthrough
+	case "===":
+		return foundValueInt == lookForValueInt, nil
+
+	case "<":
+		return foundValueInt < lookForValueInt, nil
+
+	case ">":
+		return foundValueInt > lookForValueInt, nil
+
+	case "<=":
+		return foundValueInt <= lookForValueInt, nil
+
+	case ">=":
+		return foundValueInt >= lookForValueInt, nil
+	}
+	// not an error but maybe it should be...
 	return false, nil
+}
+func compareSemVer(operator string, foundValue string, lookForValue string) (bool, error) {
+	expected, err := semver.ParseTolerant(strings.Replace(lookForValue, "x", "0", -1))
+	actual, err := semver.ParseTolerant(strings.Replace(foundValue, "x", "0", -1))
+	if err != nil {
+		return false, errors.Wrap(err, "failed to parse postgres db actual version")
+	}
+	expectedRange, err := semver.ParseRange(fmt.Sprintf("%s %s", operator, expected.String()))
+	if err != nil {
+		return false, errors.Wrap(err, "failed to parse semver range")
+	}
+	return expectedRange(actual), nil
 }
