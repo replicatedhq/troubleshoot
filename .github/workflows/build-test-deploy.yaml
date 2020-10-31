@@ -11,6 +11,11 @@ on:
 jobs:
   build:
     runs-on: ubuntu-18.04
+    container:
+      image: replicated/troubleshoot-builder:18.04
+      credentials:
+        username: repldeploy2
+        password: ${{ secrets.DOCKERHUB_PASSWORD }}
     steps:
       - uses: actions/setup-go@v1
         with:
@@ -24,10 +29,15 @@ jobs:
 
       - uses: actions/checkout@v2
 
-      - run: make 
+      - run: make
   
   compile-preflight:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-18.04
+    container:
+      image: replicated/troubleshoot-builder:18.04
+      credentials:
+        username: repldeploy2
+        password: ${{ secrets.DOCKERHUB_PASSWORD }}
     needs: build
     steps:
       - uses: actions/setup-go@v1
@@ -46,7 +56,7 @@ jobs:
           path: bin/preflight
         
   validate-preflight:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-18.04
     needs: compile-preflight
     steps:
       - name: Download preflight binary
@@ -54,12 +64,17 @@ jobs:
         with:
           name: preflight
           path: bin/
-      - uses: engineerd/setup-kind@v0.2.0
+      - uses: engineerd/setup-kind@v0.4.0
       - run: chmod +x bin/preflight
       - run: ./bin/preflight --interactive=false --format=json https://preflight.replicated.com
 
   compile-supportbundle:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-18.04
+    container:
+      image: replicated/troubleshoot-builder:18.04
+      credentials:
+        username: repldeploy2
+        password: ${{ secrets.DOCKERHUB_PASSWORD }}
     needs: build
     steps:
       - uses: actions/setup-go@v1
@@ -78,23 +93,28 @@ jobs:
           path: bin/support-bundle
 
   validate-supportbundle:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-18.04
     needs: compile-supportbundle
     steps:
-      - uses: actions/checkout@v1
+      - uses: actions/checkout@master
       - name: Download support-bundle binary
         uses: actions/download-artifact@v1
         with:
           name: support-bundle
           path: bin/
-      - uses: engineerd/setup-kind@v0.2.0
+      - uses: engineerd/setup-kind@v0.4.0
       - run: chmod +x bin/support-bundle
       - run: ./bin/support-bundle ./examples/support-bundle/sample-collectors.yaml
       - run: ./bin/support-bundle ./examples/support-bundle/sample-supportbundle.yaml
       - run: ./bin/support-bundle https://kots.io
 
   goreleaser:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-18.04
+    container:
+      image: replicated/troubleshoot-builder:18.04
+      credentials:
+        username: repldeploy2
+        password: ${{ secrets.DOCKERHUB_PASSWORD }}
     needs:
       - validate-preflight
     if: startsWith(github.ref, 'refs/tags/v')
@@ -109,7 +129,7 @@ jobs:
 
       - name: Unshallow
         run: git fetch --prune --unshallow
-  
+
       - uses: actions/setup-go@v1
         with:
           go-version: "1.14"

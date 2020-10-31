@@ -3,6 +3,7 @@ package cli
 import (
 	"archive/tar"
 	"bytes"
+	"compress/gzip"
 	"context"
 	"crypto/tls"
 	"encoding/json"
@@ -21,7 +22,6 @@ import (
 	"github.com/fatih/color"
 	"github.com/manifoldco/promptui"
 	"github.com/mattn/go-isatty"
-	"github.com/mholt/archiver"
 	"github.com/pkg/errors"
 	"github.com/replicatedhq/troubleshoot/cmd/util"
 	analyzer "github.com/replicatedhq/troubleshoot/pkg/analyze"
@@ -669,14 +669,70 @@ func callbackSupportBundleAPI(r *troubleshootv1beta2.ResultRequest, archivePath 
 }
 
 func tarSupportBundleDir(inputDir, outputFilename string) error {
-	tarGz := archiver.TarGz{
-		Tar: &archiver.Tar{
-			ImplicitTopLevelFolder: false,
-		},
+	fileWriter, err := os.Create(outputFilename)
+	if err != nil {
+		return errors.Wrap(err, "failed to create output file")
 	}
+	defer fileWriter.Close()
 
-	if err := tarGz.Archive([]string{inputDir}, outputFilename); err != nil {
-		return errors.Wrap(err, "create archive")
+	gzipWriter := gzip.NewWriter(fileWriter)
+	defer gzipWriter.Close()
+
+	tarWriter := tar.NewWriter(gzipWriter)
+	defer tarWriter.Close()
+
+	err = filepath.Walk(inputDir, func(filename string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		fileMode := info.Mode()
+		if !fileMode.IsRegular() { // support bundle can have only files
+			return nil
+		}
+
+		nameInArchive, err := filepath.Rel(inputDir, filename)
+		if err != nil {
+			return errors.Wrap(err, "failed to create relative file name")
+		}
+
+		// tar.FileInfoHeader call causes a crash in static builds
+		// https://github.com/golang/go/issues/24787
+		hdr := &tar.Header{
+			Name:     nameInArchive,
+			ModTime:  info.ModTime(),
+			Mode:     int64(fileMode.Perm()),
+			Typeflag: tar.TypeReg,
+			Size:     info.Size(),
+		}
+
+		err = tarWriter.WriteHeader(hdr)
+		if err != nil {
+			return errors.Wrap(err, "failed to write tar header")
+		}
+
+		err = func() error {
+			fileReader, err := os.Open(filename)
+			if err != nil {
+				return errors.Wrap(err, "failed to open source file")
+			}
+			defer fileReader.Close()
+
+			_, err = io.Copy(tarWriter, fileReader)
+			if err != nil {
+				return errors.Wrap(err, "failed to copy file into archive")
+			}
+
+			return nil
+		}()
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
+	if err != nil {
+		return errors.Wrap(err, "failed to walk source dir")
 	}
 
 	return nil

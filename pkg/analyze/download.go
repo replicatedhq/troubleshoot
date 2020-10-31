@@ -150,6 +150,12 @@ func ExtractTroubleshootBundle(reader io.Reader, destDir string) error {
 			}
 		case tar.TypeReg:
 			name := filepath.Join(destDir, header.Name)
+
+			dirName := filepath.Dir(name)
+			if err := os.MkdirAll(dirName, 0755); err != nil {
+				return errors.Wrapf(err, "failed to mkdir for file %s", header.Name)
+			}
+
 			file, err := os.OpenFile(name, os.O_RDWR|os.O_CREATE, os.FileMode(header.Mode))
 			if err != nil {
 				return errors.Wrap(err, "failed to open tar file")

@@ -29,6 +29,8 @@ endif
 
 define LDFLAGS
 -ldflags "\
+	-s -w \
+	-extldflags \"-static\" \
 	-X ${VERSION_PACKAGE}.version=${VERSION} \
 	-X ${VERSION_PACKAGE}.gitSHA=${GIT_SHA} \
 	-X ${VERSION_PACKAGE}.buildTime=${DATE} \
@@ -47,15 +49,15 @@ test: generate fmt vet
 
 .PHONY: support-bundle
 support-bundle: generate fmt vet
-	go build ${LDFLAGS} -o bin/support-bundle github.com/replicatedhq/troubleshoot/cmd/troubleshoot
+	go build -tags netgo ${LDFLAGS} -o bin/support-bundle github.com/replicatedhq/troubleshoot/cmd/troubleshoot
 
 .PHONY: preflight
 preflight: generate fmt vet
-	go build ${LDFLAGS} -o bin/preflight github.com/replicatedhq/troubleshoot/cmd/preflight
+	go build -tags netgo ${LDFLAGS} -o bin/preflight github.com/replicatedhq/troubleshoot/cmd/preflight
 
 .PHONY: analyze
 analyze: generate fmt vet
-	go build ${LDFLAGS} -o bin/analyze github.com/replicatedhq/troubleshoot/cmd/analyze
+	go build -tags netgo ${LDFLAGS} -o bin/analyze github.com/replicatedhq/troubleshoot/cmd/analyze
 
 .PHONY: fmt
 fmt:
@@ -118,7 +120,7 @@ snapshot-release:
 
 .PHONY: local-release
 local-release:
-	curl -sL https://git.io/goreleaser | bash -s -- --rm-dist --snapshot --config deploy/.goreleaser.local.yml
+	curl -sL https://git.io/goreleaser | bash -s -- --rm-dist --snapshot --config deploy/.goreleaser.yaml
 	docker tag replicated/troubleshoot:alpha localhost:32000/troubleshoot:alpha
 	docker tag replicated/preflight:alpha localhost:32000/preflight:alpha
 	docker push localhost:32000/troubleshoot:alpha

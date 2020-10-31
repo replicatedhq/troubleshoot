@@ -42,138 +42,154 @@ func isExcluded(excludeVal multitype.BoolOrString) (bool, error) {
 	return parsed, nil
 }
 
-func (c *Collector) RunCollectorSync(globalRedactors []*troubleshootv1beta2.Redact) (map[string][]byte, error) {
-	var unRedacted map[string][]byte
+func (c *Collector) RunCollectorSync(globalRedactors []*troubleshootv1beta2.Redact) (result map[string][]byte, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = errors.Errorf("recovered rom panic: %v", r)
+		}
+	}()
+
 	var isExcludedResult bool
-	var err error
 	if c.Collect.ClusterInfo != nil {
 		isExcludedResult, err = isExcluded(c.Collect.ClusterInfo.Exclude)
 		if err != nil {
-			return nil, err
+			return
 		}
 		if isExcludedResult {
-			return nil, nil
+			return
 		}
-		unRedacted, err = ClusterInfo(c)
+		result, err = ClusterInfo(c)
 	} else if c.Collect.ClusterResources != nil {
 		isExcludedResult, err = isExcluded(c.Collect.ClusterResources.Exclude)
 		if err != nil {
-			return nil, err
+			return
 		}
 		if isExcludedResult {
-			return nil, nil
+			return
 		}
-		unRedacted, err = ClusterResources(c)
+		result, err = ClusterResources(c)
 	} else if c.Collect.Secret != nil {
 		isExcludedResult, err = isExcluded(c.Collect.Secret.Exclude)
 		if err != nil {
-			return nil, err
+			return
 		}
 		if isExcludedResult {
-			return nil, nil
+			return
 		}
-		unRedacted, err = Secret(c, c.Collect.Secret)
+		result, err = Secret(c, c.Collect.Secret)
 	} else if c.Collect.Logs != nil {
 		isExcludedResult, err = isExcluded(c.Collect.Logs.Exclude)
 		if err != nil {
-			return nil, err
+			return
 		}
 		if isExcludedResult {
-			return nil, nil
+			return
 		}
-		unRedacted, err = Logs(c, c.Collect.Logs)
+		result, err = Logs(c, c.Collect.Logs)
 	} else if c.Collect.Run != nil {
 		isExcludedResult, err = isExcluded(c.Collect.Run.Exclude)
 		if err != nil {
-			return nil, err
+			return
 		}
 		if isExcludedResult {
-			return nil, nil
+			return
 		}
-		unRedacted, err = Run(c, c.Collect.Run)
+		result, err = Run(c, c.Collect.Run)
 	} else if c.Collect.Exec != nil {
 		isExcludedResult, err = isExcluded(c.Collect.Exec.Exclude)
 		if err != nil {
-			return nil, err
+			return
 		}
 		if isExcludedResult {
-			return nil, nil
+			return
 		}
-		unRedacted, err = Exec(c, c.Collect.Exec)
+		result, err = Exec(c, c.Collect.Exec)
 	} else if c.Collect.Data != nil {
 		isExcludedResult, err = isExcluded(c.Collect.Data.Exclude)
 		if err != nil {
-			return nil, err
+			return
 		}
 		if isExcludedResult {
-			return nil, nil
+			return
 		}
-		unRedacted, err = Data(c, c.Collect.Data)
+		result, err = Data(c, c.Collect.Data)
 	} else if c.Collect.Copy != nil {
 		isExcludedResult, err = isExcluded(c.Collect.Copy.Exclude)
 		if err != nil {
-			return nil, err
+			return
 		}
 		if isExcludedResult {
-			return nil, nil
+			return
 		}
-		unRedacted, err = Copy(c, c.Collect.Copy)
+		result, err = Copy(c, c.Collect.Copy)
 	} else if c.Collect.HTTP != nil {
 		isExcludedResult, err = isExcluded(c.Collect.HTTP.Exclude)
 		if err != nil {
-			return nil, err
+			return
 		}
 		if isExcludedResult {
-			return nil, nil
+			return
 		}
-		unRedacted, err = HTTP(c, c.Collect.HTTP)
+		result, err = HTTP(c, c.Collect.HTTP)
 	} else if c.Collect.Postgres != nil {
 		isExcludedResult, err = isExcluded(c.Collect.Postgres.Exclude)
 		if err != nil {
-			return nil, err
+			return
 		}
 		if isExcludedResult {
-			return nil, nil
+			return
 		}
-		unRedacted, err = Postgres(c, c.Collect.Postgres)
+		result, err = Postgres(c, c.Collect.Postgres)
 	} else if c.Collect.Mysql != nil {
 		isExcludedResult, err = isExcluded(c.Collect.Mysql.Exclude)
 		if err != nil {
-			return nil, err
+			return
 		}
 		if isExcludedResult {
-			return nil, nil
+			return
 		}
-		unRedacted, err = Mysql(c, c.Collect.Mysql)
+		result, err = Mysql(c, c.Collect.Mysql)
 	} else if c.Collect.Redis != nil {
 		isExcludedResult, err = isExcluded(c.Collect.Redis.Exclude)
 		if err != nil {
-			return nil, err
+			return
 		}
 		if isExcludedResult {
-			return nil, nil
+			return
 		}
-		unRedacted, err = Redis(c, c.Collect.Redis)
+		result, err = Redis(c, c.Collect.Redis)
+	} else if c.Collect.Collectd != nil {
+		// TODO: see if redaction breaks these
+		isExcludedResult, err = isExcluded(c.Collect.Collectd.Exclude)
+		if err != nil {
+			return
+		}
+		if isExcludedResult {
+			return
+		}
+		result, err = Collectd(c, c.Collect.Collectd)
 	} else {
-		return nil, errors.New("no spec found to run")
+		err = errors.New("no spec found to run")
+		return
 	}
 	if err != nil {
-		return nil, err
+		return
 	}
 
 	if c.PathPrefix != "" {
 		// prefix file paths
 		prefixed := map[string][]byte{}
-		for k, v := range unRedacted {
+		for k, v := range result {
 			prefixed[filepath.Join(c.PathPrefix, k)] = v
 		}
-		unRedacted = prefixed
+		result = prefixed
 	}
 
 	if c.Redact {
-		return redactMap(unRedacted, globalRedactors)
+		result, err = redactMap(result, globalRedactors)
 	}
-	return unRedacted, nil
+
+	return
 }
 
 func (c *Collector) GetDisplayName() string {

@@ -123,6 +123,16 @@ type Database struct {
 	URI           string `json:"uri" yaml:"uri"`
 }
 
+type Collectd struct {
+	CollectorMeta   `json:",inline" yaml:",inline"`
+	Namespace       string            `json:"namespace" yaml:"namespace"`
+	Image           string            `json:"image" yaml:"image"`
+	ImagePullPolicy string            `json:"imagePullPolicy,omitempty" yaml:"imagePullPolicy,omitempty"`
+	ImagePullSecret *ImagePullSecrets `json:"imagePullSecret,omitempty" yaml:"imagePullSecret,omitempty"`
+	Timeout         string            `json:"timeout,omitempty" yaml:"timeout,omitempty"`
+	HostPath        string            `json:"hostPath" yaml:"hostPath"`
+}
+
 type Collect struct {
 	ClusterInfo      *ClusterInfo      `json:"clusterInfo,omitempty" yaml:"clusterInfo,omitempty"`
 	ClusterResources *ClusterResources `json:"clusterResources,omitempty" yaml:"clusterResources,omitempty"`
@@ -136,6 +146,7 @@ type Collect struct {
 	Postgres         *Database         `json:"postgres,omitempty" yaml:"postgres,omitempty"`
 	Mysql            *Database         `json:"mysql,omitempty" yaml:"mysql,omitempty"`
 	Redis            *Database         `json:"redis,omitempty" yaml:"redis,omitempty"`
+	Collectd         *Collectd         `json:"collectd,omitempty" yaml:"collectd,omitempty"`
 }
 
 func (c *Collect) AccessReviewSpecs(overrideNS string) []authorizationv1.SelfSubjectAccessReviewSpec {
@@ -334,6 +345,10 @@ func (c *Collect) GetName() string {
 	if c.HTTP != nil {
 		collector = "http"
 		name = c.HTTP.CollectorName
+	}
+	if c.Collectd != nil {
+		collector = "rrd"
+		name = c.Collectd.CollectorName
 	}
 
 	if collector == "" {
