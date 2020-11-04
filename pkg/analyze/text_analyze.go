@@ -204,12 +204,20 @@ func analyzeRegexGroups(pattern string, collected []byte, outcomes []*troublesho
 }
 
 func compareRegex(conditional string, foundMatches map[string]string) (bool, error) {
+	compare := ""
 	parts := strings.Split(strings.TrimSpace(conditional), " ")
 
 	if len(parts) != 3 {
+		if len(parts) == 4 && parts[0] != "semverCompare" {
+			return false, errors.Errorf("unable to parse regex conditional. %s is not a supported comparison method", parts[0])
+		}
 		return false, errors.New("unable to parse regex conditional")
 	}
 
+	if len(parts) == 4 {
+		compare = parts[0]
+		parts = parts[1:]
+	}
 	lookForMatchName := parts[0]
 	operator := parts[1]
 	lookForValue := parts[2]
@@ -220,51 +228,43 @@ func compareRegex(conditional string, foundMatches map[string]string) (bool, err
 		return false, nil
 	}
 
-	lookForValueInt, err := strconv.Atoi(lookForValue)
-	if err == nil {
+	if compare == "semverCompare" {
+		return compareSemVer(operator, foundValue, lookForValue)
+	} else if lookForValueInt, err := strconv.Atoi(lookForValue); err == nil {
+		// if the value side of the conditional is an int, we assume it's an int
 		foundValueInt, err := strconv.Atoi(foundValue)
-		if err == nil {
-			return compareInt(operator, foundValueInt, lookForValueInt)
-		} else if _, err := semver.ParseTolerant(strings.Replace(foundValue, "x", "0", -1)); err == nil {
-			return compareSemVer(operator, foundValue, lookForValue)
+		if err != nil {
+			// not an error but maybe it should be...
+			return false, nil
+		}
+		switch operator {
+		case "=":
+			fallthrough
+		case "==":
+			fallthrough
+		case "===":
+			return foundValueInt == lookForValueInt, nil
+
+		case "<":
+			return foundValueInt < lookForValueInt, nil
+
+		case ">":
+			return foundValueInt > lookForValueInt, nil
+
+		case "<=":
+			return foundValueInt <= lookForValueInt, nil
+
+		case ">=":
+			return foundValueInt >= lookForValueInt, nil
 		}
 	}
-	if _, err := semver.ParseTolerant(strings.Replace(lookForValue, "x", "0", -1)); err == nil {
-		return compareSemVer(operator, foundValue, lookForValue)
-	}
-	// all we can support is "=" and "==" and "===" for now
 	if operator != "=" && operator != "==" && operator != "===" {
 		return false, fmt.Errorf("unexpected operator %q in regex comparator, cannot compare %q and %q", operator, foundValue, lookForValue)
 	}
 
 	return foundValue == lookForValue, nil
-
 }
 
-func compareInt(operator string, foundValueInt int, lookForValueInt int) (bool, error) {
-	switch operator {
-	case "=":
-		fallthrough
-	case "==":
-		fallthrough
-	case "===":
-		return foundValueInt == lookForValueInt, nil
-
-	case "<":
-		return foundValueInt < lookForValueInt, nil
-
-	case ">":
-		return foundValueInt > lookForValueInt, nil
-
-	case "<=":
-		return foundValueInt <= lookForValueInt, nil
-
-	case ">=":
-		return foundValueInt >= lookForValueInt, nil
-	}
-	// not an error but maybe it should be...
-	return false, nil
-}
 func compareSemVer(operator string, foundValue string, lookForValue string) (bool, error) {
 	expected, err := semver.ParseTolerant(strings.Replace(lookForValue, "x", "0", -1))
 	if err != nil {
