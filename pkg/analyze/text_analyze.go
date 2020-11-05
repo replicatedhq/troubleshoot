@@ -283,7 +283,7 @@ func compareSemVer(operator string, foundValue string, lookForValue string) (boo
 func parseConditional(conditional string) (*Conditional, error) {
 	parsedConditional := new(Conditional)
 	if strings.Contains(conditional, "semverCompare") {
-		rgx := regexp.MustCompile(`semverCompare\((?P<cond>[a-z"|<>=& ,0-9]+)\)`)
+		rgx := regexp.MustCompile(`semverCompare\((?P<cond>[a-z<>= .!0-9]+)\)`)
 		rs := rgx.FindStringSubmatch(conditional)
 		if rs == nil {
 			return nil, errors.Errorf("Unable to parse semverCompare expresion \"%s\". Correct format is \"semverCompare(variable operator expectedVersion)\"", conditional)
@@ -298,7 +298,7 @@ func parseConditional(conditional string) (*Conditional, error) {
 		parsedConditional.lookForValue = parts[2]
 
 	} else if strings.Contains(conditional, "semverRange") {
-		rgx := regexp.MustCompile(`semverRange\((?P<cond>[a-z"|<>=&,0-9]+) ?, ?\"(?P<cond2>[a-z|<>=& .!,0-9]+)\"\)`)
+		rgx := regexp.MustCompile(`semverRange\((?P<var>[a-z\_\-.0-9]+) ?, ?\"(?P<cond>[a-z|<>=& \-.!0-9]+)\"\)`)
 		rs := rgx.FindStringSubmatch(conditional)
 		if rs == nil {
 			return nil, errors.Errorf("Unable to parse semverRange expresion \"%s\". Correct format is \"semverRange(variable, \"expectedRange\")\"", conditional)
