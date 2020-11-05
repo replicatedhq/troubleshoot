@@ -289,6 +289,9 @@ func parseConditional(conditional string) (*Conditional, error) {
 			return nil, errors.Errorf("Unable to parse semverCompare expresion \"%s\". Correct format is \"semverCompare(variable operator expectedVersion)\"", conditional)
 		}
 		parts := strings.Split(strings.TrimSpace(rs[1]), " ")
+		if len(parts) != 3 {
+			return nil, errors.Errorf("unable to parse conditional expresion in semverCompare. Expected \"variable operator version\", found  %s", rs[1])
+		}
 		parsedConditional.method = "semverCompare"
 		parsedConditional.lookForMatchName = parts[0]
 		parsedConditional.operator = parts[1]
@@ -300,7 +303,6 @@ func parseConditional(conditional string) (*Conditional, error) {
 		if rs == nil {
 			return nil, errors.Errorf("Unable to parse semverRange expresion \"%s\". Correct format is \"semverRange(variable, \"expectedRange\")\"", conditional)
 		}
-
 		parsedConditional.method = "semverRange"
 		parsedConditional.lookForMatchName = rs[1]
 		parsedConditional.operator = ""
