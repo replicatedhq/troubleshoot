@@ -283,7 +283,7 @@ func compareSemVer(operator string, foundValue string, lookForValue string) (boo
 func parseConditional(conditional string) (*Conditional, error) {
 	parsedConditional := new(Conditional)
 	if strings.Contains(conditional, "semverCompare") {
-		rgx := regexp.MustCompile(`semverCompare\((?P<cond>[a-z<>= .!0-9]+)\)`)
+		rgx := regexp.MustCompile(`semverCompare\((?P<cond>[a-z<>=\_\- .!0-9]+)\)`)
 		rs := rgx.FindStringSubmatch(conditional)
 		if rs == nil {
 			return nil, errors.Errorf("Unable to parse semverCompare expresion \"%s\". Correct format is \"semverCompare(variable operator expectedVersion)\"", conditional)
