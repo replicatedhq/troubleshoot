@@ -9,17 +9,38 @@ import (
 )
 
 // Analyze runs the analyze phase of preflight checks
-func (c CollectResult) Analyze() []*analyze.AnalyzeResult {
+func (c CollectResult) Analyze(protected map[string][]byte) []*analyze.AnalyzeResult {
 	getCollectedFileContents := func(fileName string) ([]byte, error) {
-		contents, ok := c.AllCollectedData[fileName]
-		if !ok {
-			return nil, fmt.Errorf("file %s was not collected", fileName)
+		var contents []byte
+		ok := false
+		if protected != nil {
+			contents, ok = protected[fileName]
 		}
-
+		if !ok {
+			contents, ok = c.AllCollectedData[fileName]
+			if !ok {
+				return nil, fmt.Errorf("file %s was not collected", fileName)
+			}
+		}
 		return contents, nil
 	}
 	getChildCollectedFileContents := func(prefix string) (map[string][]byte, error) {
 		matching := make(map[string][]byte)
+		if protected != nil {
+			for k, v := range protected {
+				if strings.HasPrefix(k, prefix) {
+					matching[k] = v
+				}
+			}
+			for k, v := range protected {
+				if ok, _ := filepath.Match(prefix, k); ok {
+					matching[k] = v
+				}
+			}
+		}
+		if matching != nil {
+			return matching, nil
+		}
 		for k, v := range c.AllCollectedData {
 			if strings.HasPrefix(k, prefix) {
 				matching[k] = v

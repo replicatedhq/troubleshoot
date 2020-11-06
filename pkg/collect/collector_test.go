@@ -271,7 +271,7 @@ abc
 				Collect: tt.Collect,
 				Redact:  true,
 			}
-			got, err := c.RunCollectorSync(tt.Redactors)
+			got, _, err := c.RunCollectorSync(tt.Redactors, nil)
 			req.NoError(err)
 
 			// convert to string to make differences easier to see
@@ -334,7 +334,7 @@ pwd=somethinggoeshere;`,
 				Collect: tt.Collect,
 				Redact:  false,
 			}
-			got, err := c.RunCollectorSync(tt.Redactors)
+			got, _, err := c.RunCollectorSync(tt.Redactors, nil)
 			req.NoError(err)
 
 			// convert to string to make differences easier to see

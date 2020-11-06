@@ -147,7 +147,7 @@ func runTroubleshoot(v *viper.Viper, arg string) error {
 		}
 	}()
 
-	archivePath, err := runCollectors(v, supportBundleSpec.Spec.Collectors, additionalRedactors, progressChan)
+	archivePath, protected, err := runCollectors(v, supportBundleSpec, additionalRedactors, progressChan)
 	if err != nil {
 		return errors.Wrap(err, "run collectors")
 	}
@@ -194,7 +194,7 @@ func runTroubleshoot(v *viper.Viper, arg string) error {
 			c.Printf("%s\r * Failed to extract support bundle for analysis: %v\n", cursor.ClearEntireLine(), err)
 		}
 
-		analyzeResults, err := analyzer.AnalyzeLocal(tmpDir, supportBundleSpec.Spec.Analyzers)
+		analyzeResults, err := analyzer.AnalyzeLocal(tmpDir, supportBundleSpec.Spec.Analyzers, protected)
 		if err != nil {
 			c := color.New(color.FgHiRed)
 			c.Printf("%s\r * Failed to analyze support bundle: %v\n", cursor.ClearEntireLine(), err)
@@ -375,10 +375,13 @@ func canTryInsecure() bool {
 	return true
 }
 
-func runCollectors(v *viper.Viper, collectors []*troubleshootv1beta2.Collect, additionalRedactors *troubleshootv1beta2.Redactor, progressChan chan interface{}) (string, error) {
+func runCollectors(v *viper.Viper, supportBundle *troubleshootv1beta2.SupportBundle, additionalRedactors *troubleshootv1beta2.Redactor, progressChan chan interface{}) (string, map[string][]byte, error) {
+	protected := make(map[string][]byte)
 	tmpDir, err := ioutil.TempDir("", "troubleshoot")
+
+
 	if err != nil {
-		return "", errors.Wrap(err, "create temp dir")
+		return "", nil, errors.Wrap(err, "create temp dir")
 	}
 	defer os.RemoveAll(tmpDir)
 
@@ -393,17 +396,17 @@ func runCollectors(v *viper.Viper, collectors []*troubleshootv1beta2.Collect, ad
 	}
 
 	if err = writeVersionFile(bundlePath); err != nil {
-		return "", errors.Wrap(err, "write version file")
+		return "", nil, errors.Wrap(err, "write version file")
 	}
 
 	collectSpecs := make([]*troubleshootv1beta2.Collect, 0, 0)
-	collectSpecs = append(collectSpecs, collectors...)
+	collectSpecs = append(collectSpecs, supportBundle.Spec.Collectors...)
 	collectSpecs = ensureCollectorInList(collectSpecs, troubleshootv1beta2.Collect{ClusterInfo: &troubleshootv1beta2.ClusterInfo{}})
 	collectSpecs = ensureCollectorInList(collectSpecs, troubleshootv1beta2.Collect{ClusterResources: &troubleshootv1beta2.ClusterResources{}})
 
 	config, err := k8sutil.GetRESTConfig()
 	if err != nil {
-		return "", errors.Wrap(err, "failed to convert kube flags to rest config")
+		return "", nil, errors.Wrap(err, "failed to convert kube flags to rest config")
 	}
 
 	var cleanedCollectors collect.Collectors
@@ -419,7 +422,7 @@ func runCollectors(v *viper.Viper, collectors []*troubleshootv1beta2.Collect, ad
 	}
 
 	if err := cleanedCollectors.CheckRBAC(context.Background()); err != nil {
-		return "", errors.Wrap(err, "failed to check RBAC for collectors")
+		return "", nil, errors.Wrap(err, "failed to check RBAC for collectors")
 	}
 
 	foundForbidden := false
@@ -431,7 +434,7 @@ func runCollectors(v *viper.Viper, collectors []*troubleshootv1beta2.Collect, ad
 	}
 
 	if foundForbidden && !v.GetBool("collect-without-permissions") {
-		return "", errors.New("insufficient permissions to run all collectors")
+		return "", nil, errors.New("insufficient permissions to run all collectors")
 	}
 
 	globalRedactors := []*troubleshootv1beta2.Redact{}
@@ -454,15 +457,18 @@ func runCollectors(v *viper.Viper, collectors []*troubleshootv1beta2.Collect, ad
 				continue
 			}
 		}
-
 		progressChan <- collector.GetDisplayName()
 
-		result, err := collector.RunCollectorSync(globalRedactors)
+		result, notRedacted, err := collector.RunCollectorSync(globalRedactors, supportBundle.Spec.Analyzers)
 		if err != nil {
 			progressChan <- fmt.Errorf("failed to run collector %q: %v", collector.GetDisplayName(), err)
 			continue
 		}
-
+		if notRedacted != nil {
+			for k, v := range notRedacted {
+				protected[k] = v
+			}
+		}
 		if result != nil {
 			// results already contain the bundle dir name in their paths
 			err = saveCollectorOutput(result, filepath.Dir(bundlePath), collector)
@@ -474,10 +480,10 @@ func runCollectors(v *viper.Viper, collectors []*troubleshootv1beta2.Collect, ad
 	}
 
 	if err := tarSupportBundleDir(bundlePath, filename); err != nil {
-		return "", errors.Wrap(err, "create bundle file")
+		return "", nil, errors.Wrap(err, "create bundle file")
 	}
 
-	return filename, nil
+	return filename, protected, nil
 }
 
 func saveCollectorOutput(output map[string][]byte, bundlePath string, c *collect.Collector) error {

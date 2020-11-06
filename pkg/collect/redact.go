@@ -13,8 +13,9 @@ import (
 	"github.com/replicatedhq/troubleshoot/pkg/redact"
 )
 
-func redactMap(input map[string][]byte, additionalRedactors []*troubleshootv1beta2.Redact) (map[string][]byte, error) {
+func redactMap(input map[string][]byte, additionalRedactors []*troubleshootv1beta2.Redact, analyzers []*troubleshootv1beta2.Analyze) (map[string][]byte, map[string][]byte, error) {
 	result := make(map[string][]byte)
+	protected := make(map[string][]byte)
 	for k, v := range input {
 		if v == nil {
 			continue
@@ -25,26 +26,35 @@ func redactMap(input map[string][]byte, additionalRedactors []*troubleshootv1bet
 			tarFile := bytes.NewBuffer(v)
 			unRedacted, tarHeaders, err := decompressFile(tarFile, k)
 			if err != nil {
-				return nil, err
+				return nil, nil, err
 			}
-			redacted, err := redactMap(unRedacted, additionalRedactors)
+			redacted, _, err := redactMap(unRedacted, additionalRedactors, analyzers)
 			if err != nil {
-				return nil, err
+				return nil, nil, err
 			}
 			result[k], err = compressFiles(redacted, tarHeaders, k)
 			if err != nil {
-				return nil, err
+				return nil, nil, err
 			}
 			//Content of the tar file was redacted. Continue to next file.
 			continue
 		}
+		if strings.Contains(k, "cluster-resources/image-pull-secrets/") {
+			if analyzers != nil {
+				for _, analyzer := range analyzers {
+					if analyzer.ImagePullSecret != nil {
+						protected[k] = v
+					}
+				}
+			}
+		}
 		redacted, err := redact.Redact(v, k, additionalRedactors)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		result[k] = redacted
 	}
-	return result, nil
+	return result, protected, nil
 }
 
 func compressFiles(tarContent map[string][]byte, tarHeaders map[string]*tar.Header, filename string) ([]byte, error) {
