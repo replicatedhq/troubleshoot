@@ -6,6 +6,7 @@ import (
 
 	"github.com/replicatedhq/troubleshoot/pkg/multitype"
 	authorizationv1 "k8s.io/api/authorization/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type CollectorMeta struct {
@@ -31,8 +32,9 @@ type Secret struct {
 }
 
 type LogLimits struct {
-	MaxAge   string `json:"maxAge,omitempty" yaml:"maxAge,omitempty"`
-	MaxLines int64  `json:"maxLines,omitempty" yaml:"maxLines,omitempty"`
+	MaxAge    string `json:"maxAge,omitempty" yaml:"maxAge,omitempty"`
+	MaxLines  int64  `json:"maxLines,omitempty" yaml:"maxLines,omitempty"`
+	SinceTime metav1.Time
 }
 
 type Logs struct {

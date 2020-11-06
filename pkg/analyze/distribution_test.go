@@ -9,6 +9,7 @@ import (
 )
 
 func Test_compareDistributionConditionalToActual(t *testing.T) {
+	var unknownDistribution string
 	tests := []struct {
 		name        string
 		conditional string
@@ -46,7 +47,7 @@ func Test_compareDistributionConditionalToActual(t *testing.T) {
 			defer scopetest.End()
 			req := require.New(t)
 
-			actual, err := compareDistributionConditionalToActual(test.conditional, test.input)
+			actual, err := compareDistributionConditionalToActual(test.conditional, test.input, &unknownDistribution)
 			req.NoError(err)
 
 			assert.Equal(t, test.expected, actual)

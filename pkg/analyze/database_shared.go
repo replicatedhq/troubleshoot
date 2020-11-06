@@ -35,14 +35,18 @@ func compareDatabaseConditionalToActual(conditional string, result *collect.Data
 		return false, errors.New("unable to parse postgres connected analyzer")
 
 	case "version":
-		expectedRange, err := semver.ParseRange(fmt.Sprintf("%s %s", parts[1], parts[2]))
+		expected, err := semver.ParseTolerant(strings.Replace(parts[2], "x", "0", -1))
 		if err != nil {
-			return false, errors.Wrap(err, "failed to parse semver range")
+			return false, errors.Wrap(err, "failed to parse expected version")
+		}
+		actual, err := semver.ParseTolerant(strings.Replace(result.Version, "x", "0", -1))
+		if err != nil {
+			return false, errors.Wrap(err, "failed to parse postgres db actual version")
 		}
 
-		actual, err := semver.Parse(result.Version)
+		expectedRange, err := semver.ParseRange(fmt.Sprintf("%s %s", parts[1], expected.String()))
 		if err != nil {
-			return false, errors.Wrap(err, "failed to parse actual psotgres version")
+			return false, errors.Wrap(err, "failed to parse semver range")
 		}
 
 		return expectedRange(actual), nil

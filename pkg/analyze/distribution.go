@@ -2,6 +2,7 @@ package analyzer
 
 import (
 	"encoding/json"
+	"fmt"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -19,6 +20,8 @@ type providers struct {
 	openShift     bool
 	kurl          bool
 	aks           bool
+	ibm           bool
+	minikube      bool
 }
 
 type Provider int
@@ -33,6 +36,8 @@ const (
 	openShift     Provider = iota
 	kurl          Provider = iota
 	aks           Provider = iota
+	ibm           Provider = iota
+	minikube      Provider = iota
 )
 
 func CheckOpenShift(foundProviders *providers, apiResources []*metav1.APIResourceList, provider string) string {
@@ -68,6 +73,10 @@ func ParseNodesForProviders(nodes []corev1.Node) (providers, string) {
 				foundProviders.aks = true
 				stringProvider = "aks"
 			}
+			if k == "minikube.k8s.io/version" {
+				foundProviders.minikube = true
+				stringProvider = "minikube"
+			}
 		}
 
 		if node.Status.NodeInfo.OSImage == "Docker Desktop" {
@@ -87,6 +96,10 @@ func ParseNodesForProviders(nodes []corev1.Node) (providers, string) {
 			foundProviders.gke = true
 			stringProvider = "gke"
 		}
+		if strings.HasPrefix(node.Spec.ProviderID, "ibm:") {
+			foundProviders.ibm = true
+			stringProvider = "ibm"
+		}
 	}
 
 	if foundMaster {
@@ -101,6 +114,7 @@ func ParseNodesForProviders(nodes []corev1.Node) (providers, string) {
 }
 
 func analyzeDistribution(analyzer *troubleshootv1beta2.Distribution, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
+	var unknownDistribution string
 	collected, err := getCollectedFileContents("cluster-resources/nodes.json")
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get contents of nodes.json")
@@ -144,7 +158,7 @@ func analyzeDistribution(analyzer *troubleshootv1beta2.Distribution, getCollecte
 				return result, nil
 			}
 
-			isMatch, err := compareDistributionConditionalToActual(outcome.Fail.When, foundProviders)
+			isMatch, err := compareDistributionConditionalToActual(outcome.Fail.When, foundProviders, &unknownDistribution)
 			if err != nil {
 				return result, errors.Wrap(err, "failed to compare distribution conditional")
 			}
@@ -165,7 +179,7 @@ func analyzeDistribution(analyzer *troubleshootv1beta2.Distribution, getCollecte
 				return result, nil
 			}
 
-			isMatch, err := compareDistributionConditionalToActual(outcome.Warn.When, foundProviders)
+			isMatch, err := compareDistributionConditionalToActual(outcome.Warn.When, foundProviders, &unknownDistribution)
 			if err != nil {
 				return result, errors.Wrap(err, "failed to compare distribution conditional")
 			}
@@ -186,7 +200,7 @@ func analyzeDistribution(analyzer *troubleshootv1beta2.Distribution, getCollecte
 				return result, nil
 			}
 
-			isMatch, err := compareDistributionConditionalToActual(outcome.Pass.When, foundProviders)
+			isMatch, err := compareDistributionConditionalToActual(outcome.Pass.When, foundProviders, &unknownDistribution)
 			if err != nil {
 				return result, errors.Wrap(err, "failed to compare distribution conditional")
 			}
@@ -202,10 +216,17 @@ func analyzeDistribution(analyzer *troubleshootv1beta2.Distribution, getCollecte
 		}
 	}
 
+	result.IsWarn = true
+	if unknownDistribution != "" {
+		result.Message = unknownDistribution
+	} else {
+		result.Message = "None of the conditionals were met"
+	}
+
 	return result, nil
 }
 
-func compareDistributionConditionalToActual(conditional string, actual providers) (bool, error) {
+func compareDistributionConditionalToActual(conditional string, actual providers, unknownDistribution *string) (bool, error) {
 	parts := strings.Split(strings.TrimSpace(conditional), " ")
 
 	// we can make this a lot more flexible
@@ -223,6 +244,7 @@ func compareDistributionConditionalToActual(conditional string, actual providers
 	normalizedName := mustNormalizeDistributionName(parts[1])
 
 	if normalizedName == unknown {
+		*unknownDistribution += fmt.Sprintf("- Unknown distribution: %s ", parts[1])
 		return false, nil
 	}
 
@@ -244,6 +266,10 @@ func compareDistributionConditionalToActual(conditional string, actual providers
 		isMatch = actual.kurl
 	case aks:
 		isMatch = actual.aks
+	case ibm:
+		isMatch = actual.ibm
+	case minikube:
+		isMatch = actual.minikube
 	}
 
 	switch parts[0] {
@@ -274,6 +300,10 @@ func mustNormalizeDistributionName(raw string) Provider {
 		return kurl
 	case "aks":
 		return aks
+	case "ibm", "ibmcloud", "ibm cloud":
+		return ibm
+	case "minikube":
+		return minikube
 	}
 
 	return unknown

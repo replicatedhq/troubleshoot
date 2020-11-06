@@ -116,8 +116,10 @@ func getPodLogs(ctx context.Context, client *kubernetes.Clientset, pod corev1.Po
 	} else {
 		podLogOpts.TailLines = &limits.MaxLines
 	}
+	if limits != nil && !limits.SinceTime.IsZero() {
+		podLogOpts.SinceTime = &limits.SinceTime
 
-	if limits != nil && limits.MaxAge != "" {
+	} else if limits != nil && limits.MaxAge != "" {
 		parsedDuration, err := time.ParseDuration(limits.MaxAge)
 		if err != nil {
 			logger.Printf("unable to parse time duration %s\n", limits.MaxAge)

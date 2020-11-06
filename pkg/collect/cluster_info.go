@@ -2,6 +2,7 @@ package collect
 
 import (
 	"encoding/json"
+	"path/filepath"
 
 	"github.com/pkg/errors"
 	"k8s.io/apimachinery/pkg/version"
@@ -23,8 +24,8 @@ func ClusterInfo(c *Collector) (map[string][]byte, error) {
 
 	// cluster version
 	clusterVersion, clusterErrors := clusterVersion(client)
-	clusterInfoOutput["cluster-info/cluster_version.json"] = clusterVersion
-	clusterInfoOutput["cluster-info/errors.json"], err = marshalNonNil(clusterErrors)
+	clusterInfoOutput[filepath.Join("cluster-info", "cluster_version.json")] = clusterVersion
+	clusterInfoOutput[filepath.Join("cluster-info", "errors.json")], err = marshalNonNil(clusterErrors)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to marshal errors")
 	}

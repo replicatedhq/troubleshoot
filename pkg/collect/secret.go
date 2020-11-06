@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"path"
 	"path/filepath"
 
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
@@ -37,10 +36,10 @@ func Secret(c *Collector, secretCollector *troubleshootv1beta2.Secret) (map[stri
 		if err != nil {
 			return nil, err
 		}
-		secretOutput[path.Join("secrets-errors", filePath)] = errorBytes
+		secretOutput[filepath.Join("secrets-errors", filePath)] = errorBytes
 	}
 	if encoded != nil {
-		secretOutput[path.Join("secrets", filePath)] = encoded
+		secretOutput[filepath.Join("secrets", filePath)] = encoded
 	}
 
 	return secretOutput, nil
@@ -67,11 +66,13 @@ func secret(ctx context.Context, client *kubernetes.Clientset, secretCollector *
 	}
 
 	ns = found.Namespace
-	path = fmt.Sprintf("%s.json", filepath.Join(ns, secretCollector.SecretName, secretCollector.Key))
+	path = fmt.Sprintf("%s.json", filepath.Join(ns, secretCollector.SecretName))
 
 	keyExists := false
 	keyData := ""
+	secretKey := ""
 	if secretCollector.Key != "" {
+		secretKey = secretCollector.Key
 		if val, ok := found.Data[secretCollector.Key]; ok {
 			keyExists = true
 			if secretCollector.IncludeValue {
@@ -83,6 +84,7 @@ func secret(ctx context.Context, client *kubernetes.Clientset, secretCollector *
 	secret := FoundSecret{
 		Namespace:    found.Namespace,
 		Name:         found.Name,
+		Key:          secretKey,
 		SecretExists: true,
 		KeyExists:    keyExists,
 		Value:        keyData,
