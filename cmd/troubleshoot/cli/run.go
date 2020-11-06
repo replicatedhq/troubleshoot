@@ -292,10 +292,7 @@ func loadSpecFromURL(v *viper.Viper, arg string) ([]byte, error) {
 		req.Header.Set("Bundle-Upload-Host", fmt.Sprintf("%s://%s", req.URL.Scheme, req.URL.Host))
 		resp, err := httpClient.Do(req)
 		if err != nil {
-			if strings.Contains(err.Error(), "x509") && httpClient == http.DefaultClient && canTryInsecure(v) {
-				httpClient = &http.Client{Transport: &http.Transport{
-					TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-				}}
+			if shouldRetryRequest(err) {
 				continue
 			}
 			return nil, errors.Wrap(err, "execute request")
@@ -351,7 +348,17 @@ func parseSupportBundleFromDoc(doc []byte) (*troubleshootv1beta2.SupportBundle, 
 	return nil, errors.New("spec was not parseable as a troubleshoot kind")
 }
 
-func canTryInsecure(v *viper.Viper) bool {
+func shouldRetryRequest(err error) bool {
+	if strings.Contains(err.Error(), "x509") && httpClient == http.DefaultClient && canTryInsecure() {
+		httpClient = &http.Client{Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		}}
+		return true
+	}
+	return false
+}
+
+func canTryInsecure() bool {
 	if !isatty.IsTerminal(os.Stdout.Fd()) {
 		return false
 	}
@@ -370,11 +377,23 @@ func canTryInsecure(v *viper.Viper) bool {
 
 func runCollectors(v *viper.Viper, supportBundle *troubleshootv1beta2.SupportBundle, additionalRedactors *troubleshootv1beta2.Redactor, progressChan chan interface{}) (string, map[string][]byte, error) {
 	protected := make(map[string][]byte)
-	bundlePath, err := ioutil.TempDir("", "troubleshoot")
+	tmpDir, err := ioutil.TempDir("", "troubleshoot")
+
+
 	if err != nil {
 		return "", nil, errors.Wrap(err, "create temp dir")
 	}
-	defer os.RemoveAll(bundlePath)
+	defer os.RemoveAll(tmpDir)
+
+	filename, err := findFileName("support-bundle-"+time.Now().Format("2006-01-02T15_04_05"), "tar.gz")
+	if err != nil {
+		return "", errors.Wrap(err, "find file name")
+	}
+
+	bundlePath := filepath.Join(tmpDir, strings.TrimSuffix(filename, ".tar.gz"))
+	if err := os.MkdirAll(bundlePath, 0777); err != nil {
+		return "", errors.Wrap(err, "create bundle dir")
+	}
 
 	if err = writeVersionFile(bundlePath); err != nil {
 		return "", nil, errors.Wrap(err, "write version file")
@@ -397,6 +416,7 @@ func runCollectors(v *viper.Viper, supportBundle *troubleshootv1beta2.SupportBun
 			Collect:      desiredCollector,
 			ClientConfig: config,
 			Namespace:    v.GetString("namespace"),
+			PathPrefix:   filepath.Base(bundlePath),
 		}
 		cleanedCollectors = append(cleanedCollectors, &collector)
 	}
@@ -421,6 +441,12 @@ func runCollectors(v *viper.Viper, supportBundle *troubleshootv1beta2.SupportBun
 	if additionalRedactors != nil {
 		globalRedactors = additionalRedactors.Spec.Redactors
 	}
+	if v.GetString("since-time") != "" || v.GetString("since") != "" {
+		err := parseTimeFlags(v, progressChan, &cleanedCollectors)
+		if err != nil {
+			return "", err
+		}
+	}
 
 	// Run preflights collectors synchronously
 	for _, collector := range cleanedCollectors {
@@ -444,17 +470,13 @@ func runCollectors(v *viper.Viper, supportBundle *troubleshootv1beta2.SupportBun
 			}
 		}
 		if result != nil {
-			err = saveCollectorOutput(result, bundlePath, collector)
+			// results already contain the bundle dir name in their paths
+			err = saveCollectorOutput(result, filepath.Dir(bundlePath), collector)
 			if err != nil {
 				progressChan <- fmt.Errorf("failed to parse collector spec %q: %v", collector.GetDisplayName(), err)
 				continue
 			}
 		}
-	}
-
-	filename, err := findFileName("support-bundle-"+time.Now().Format("2006-01-02T15:04:05"), "tar.gz")
-	if err != nil {
-		return "", nil, errors.Wrap(err, "find file name")
 	}
 
 	if err := tarSupportBundleDir(bundlePath, filename); err != nil {
@@ -547,33 +569,40 @@ func uploadSupportBundle(r *troubleshootv1beta2.ResultRequest, archivePath strin
 		return fmt.Errorf("cannot upload content type %s", contentType)
 	}
 
-	f, err := os.Open(archivePath)
-	if err != nil {
-		return errors.Wrap(err, "open file")
-	}
-	defer f.Close()
+	for {
+		f, err := os.Open(archivePath)
+		if err != nil {
+			return errors.Wrap(err, "open file")
+		}
+		defer f.Close()
 
-	fileStat, err := f.Stat()
-	if err != nil {
-		return errors.Wrap(err, "stat file")
-	}
+		fileStat, err := f.Stat()
+		if err != nil {
+			return errors.Wrap(err, "stat file")
+		}
 
-	req, err := http.NewRequest(r.Method, r.URI, f)
-	if err != nil {
-		return errors.Wrap(err, "create request")
-	}
-	req.ContentLength = fileStat.Size()
-	if contentType != "" {
-		req.Header.Set("Content-Type", contentType)
-	}
+		req, err := http.NewRequest(r.Method, r.URI, f)
+		if err != nil {
+			return errors.Wrap(err, "create request")
+		}
+		req.ContentLength = fileStat.Size()
+		if contentType != "" {
+			req.Header.Set("Content-Type", contentType)
+		}
 
-	resp, err := httpClient.Do(req)
-	if err != nil {
-		return errors.Wrap(err, "execute request")
-	}
+		resp, err := httpClient.Do(req)
+		if err != nil {
+			if shouldRetryRequest(err) {
+				continue
+			}
+			return errors.Wrap(err, "execute request")
+		}
 
-	if resp.StatusCode >= 300 {
-		return fmt.Errorf("unexpected status code %d", resp.StatusCode)
+		if resp.StatusCode >= 300 {
+			return fmt.Errorf("unexpected status code %d", resp.StatusCode)
+		}
+
+		break
 	}
 
 	// send redaction report
@@ -587,19 +616,26 @@ func uploadSupportBundle(r *troubleshootv1beta2.ResultRequest, archivePath strin
 			return errors.Wrap(err, "get redaction report")
 		}
 
-		req, err := http.NewRequest("PUT", r.RedactURI, bytes.NewReader(redactBytes))
-		if err != nil {
-			return errors.Wrap(err, "create redaction report request")
-		}
-		req.ContentLength = int64(len(redactBytes))
+		for {
+			req, err := http.NewRequest("PUT", r.RedactURI, bytes.NewReader(redactBytes))
+			if err != nil {
+				return errors.Wrap(err, "create redaction report request")
+			}
+			req.ContentLength = int64(len(redactBytes))
 
-		resp, err := httpClient.Do(req)
-		if err != nil {
-			return errors.Wrap(err, "execute redaction request")
-		}
+			resp, err := httpClient.Do(req)
+			if err != nil {
+				if shouldRetryRequest(err) {
+					continue
+				}
+				return errors.Wrap(err, "execute redaction request")
+			}
 
-		if resp.StatusCode >= 300 {
-			return fmt.Errorf("unexpected redaction status code %d", resp.StatusCode)
+			if resp.StatusCode >= 300 {
+				return fmt.Errorf("unexpected redaction status code %d", resp.StatusCode)
+			}
+
+			break
 		}
 	}
 
@@ -615,20 +651,26 @@ func getExpectedContentType(uploadURL string) string {
 }
 
 func callbackSupportBundleAPI(r *troubleshootv1beta2.ResultRequest, archivePath string) error {
-	req, err := http.NewRequest(r.Method, r.URI, nil)
-	if err != nil {
-		return errors.Wrap(err, "create request")
-	}
+	for {
+		req, err := http.NewRequest(r.Method, r.URI, nil)
+		if err != nil {
+			return errors.Wrap(err, "create request")
+		}
 
-	resp, err := httpClient.Do(req)
-	if err != nil {
-		return errors.Wrap(err, "execute request")
-	}
+		resp, err := httpClient.Do(req)
+		if err != nil {
+			if shouldRetryRequest(err) {
+				continue
+			}
+			return errors.Wrap(err, "execute request")
+		}
 
-	if resp.StatusCode >= 300 {
-		return fmt.Errorf("unexpected status code %d", resp.StatusCode)
-	}
+		if resp.StatusCode >= 300 {
+			return fmt.Errorf("unexpected status code %d", resp.StatusCode)
+		}
 
+		break
+	}
 	return nil
 }
 
@@ -639,22 +681,7 @@ func tarSupportBundleDir(inputDir, outputFilename string) error {
 		},
 	}
 
-	paths := []string{
-		filepath.Join(inputDir, VersionFilename), // version file should be first in tar archive for quick extraction
-	}
-
-	topLevelFiles, err := ioutil.ReadDir(inputDir)
-	if err != nil {
-		return errors.Wrap(err, "list bundle directory contents")
-	}
-	for _, f := range topLevelFiles {
-		if f.Name() == VersionFilename {
-			continue
-		}
-		paths = append(paths, filepath.Join(inputDir, f.Name()))
-	}
-
-	if err := tarGz.Archive(paths, outputFilename); err != nil {
+	if err := tarGz.Archive([]string{inputDir}, outputFilename); err != nil {
 		return errors.Wrap(err, "create archive")
 	}
 
@@ -664,4 +691,36 @@ func tarSupportBundleDir(inputDir, outputFilename string) error {
 type CollectorFailure struct {
 	Collector *troubleshootv1beta2.Collect
 	Failure   string
+}
+
+func parseTimeFlags(v *viper.Viper, progressChan chan interface{}, collectors *collect.Collectors) error {
+	var (
+		sinceTime time.Time
+		err       error
+	)
+	if v.GetString("since-time") != "" {
+		if v.GetString("since") != "" {
+			return errors.Errorf("at most one of `sinceTime` or `since` may be specified")
+		}
+		sinceTime, err = time.Parse(time.RFC3339, v.GetString("since-time"))
+		if err != nil {
+			return errors.Wrap(err, "unable to parse --since-time flag")
+		}
+	} else {
+		parsedDuration, err := time.ParseDuration(v.GetString("since"))
+		if err != nil {
+			return errors.Wrap(err, "unable to parse --since flag")
+		}
+		now := time.Now()
+		sinceTime = now.Add(0 - parsedDuration)
+	}
+	for _, collector := range *collectors {
+		if collector.Collect.Logs != nil {
+			if collector.Collect.Logs.Limits == nil {
+				collector.Collect.Logs.Limits = new(troubleshootv1beta2.LogLimits)
+			}
+			collector.Collect.Logs.Limits.SinceTime = metav1.NewTime(sinceTime)
+		}
+	}
+	return nil
 }

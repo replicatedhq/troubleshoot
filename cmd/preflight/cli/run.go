@@ -20,6 +20,7 @@ import (
 	"github.com/replicatedhq/troubleshoot/pkg/specs"
 	"github.com/spf13/viper"
 	spin "github.com/tj/go-spin"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/scheme"
 )
 
@@ -129,7 +130,16 @@ func runPreflights(v *viper.Viper, arg string) error {
 		KubernetesRestConfig:   restConfig,
 	}
 
-	collectResults, protected, err := preflight.Collect(collectOpts, preflightSpec)
+
+	if v.GetString("since") != "" || v.GetString("since-time") != "" {
+		err := parseTimeFlags(v, progressChan, preflightSpec.Spec.Collectors)
+		if err != nil {
+			return err
+		}
+	}
+
+collectResults, protected, err := preflight.Collect(collectOpts, preflightSpec)
+
 	if err != nil {
 		if !collectResults.IsRBACAllowed {
 			if preflightSpec.Spec.UploadResultsTo != "" {
@@ -160,4 +170,36 @@ func runPreflights(v *viper.Viper, arg string) error {
 	}
 
 	return showStdoutResults(v.GetString("format"), preflightSpec.Name, analyzeResults)
+}
+
+func parseTimeFlags(v *viper.Viper, progressChan chan interface{}, collectors []*troubleshootv1beta2.Collect) error {
+	var (
+		sinceTime time.Time
+		err       error
+	)
+	if v.GetString("since-time") != "" {
+		if v.GetString("since") != "" {
+			return errors.Errorf("at most one of `sinceTime` or `since` may be specified")
+		}
+		sinceTime, err = time.Parse(time.RFC3339, v.GetString("since-time"))
+		if err != nil {
+			return errors.Wrap(err, "unable to parse --since-time flag")
+		}
+	} else {
+		parsedDuration, err := time.ParseDuration(v.GetString("since"))
+		if err != nil {
+			return errors.Wrap(err, "unable to parse --since flag")
+		}
+		now := time.Now()
+		sinceTime = now.Add(0 - parsedDuration)
+	}
+	for _, collector := range collectors {
+		if collector.Logs != nil {
+			if collector.Logs.Limits == nil {
+				collector.Logs.Limits = new(troubleshootv1beta2.LogLimits)
+			}
+			collector.Logs.Limits.SinceTime = metav1.NewTime(sinceTime)
+		}
+	}
+	return nil
 }

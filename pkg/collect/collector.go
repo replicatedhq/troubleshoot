@@ -2,6 +2,7 @@ package collect
 
 import (
 	"context"
+	"path/filepath"
 	"strconv"
 
 	"github.com/pkg/errors"
@@ -19,6 +20,7 @@ type Collector struct {
 	RBACErrors   []error
 	ClientConfig *rest.Config
 	Namespace    string
+	PathPrefix   string
 }
 
 type Collectors []*Collector
@@ -155,10 +157,19 @@ func (c *Collector) RunCollectorSync(globalRedactors []*troubleshootv1beta2.Reda
 	} else {
 		return nil, nil, errors.New("no spec found to run")
 	}
-
 	if err != nil {
 		return nil, nil, err
 	}
+
+	if c.PathPrefix != "" {
+		// prefix file paths
+		prefixed := map[string][]byte{}
+		for k, v := range unRedacted {
+			prefixed[filepath.Join(c.PathPrefix, k)] = v
+		}
+		unRedacted = prefixed
+	}
+
 	if c.Redact {
 		return redactMap(unRedacted, globalRedactors, analyzers)
 	}
