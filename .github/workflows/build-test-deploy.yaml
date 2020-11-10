@@ -28,7 +28,6 @@ jobs:
         shell: bash
 
       - uses: actions/checkout@v2
-
       - run: make
   
   compile-preflight:
@@ -126,9 +125,6 @@ jobs:
         with:
           username: repldeploy2
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
-
-      - name: Unshallow
-        run: git fetch --prune --unshallow
 
       - uses: actions/setup-go@v1
         with:
