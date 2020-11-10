@@ -82,33 +82,35 @@ func analyzeRegexPattern(pattern string, collected []byte, outcomes []*troublesh
 		return nil, errors.Wrapf(err, "failed to compile regex: %s", pattern)
 	}
 
-	var failOutcome *troubleshootv1beta2.Outcome
-	var passOutcome *troubleshootv1beta2.Outcome
+	var failOutcome *troubleshootv1beta2.SingleOutcome
+	var passOutcome *troubleshootv1beta2.SingleOutcome
 	for _, outcome := range outcomes {
 		if outcome.Fail != nil {
-			failOutcome = outcome
+			failOutcome = outcome.Fail
 		} else if outcome.Pass != nil {
-			passOutcome = outcome
+			passOutcome = outcome.Pass
 		}
 	}
-
-	if re.MatchString(string(collected)) {
-		return &AnalyzeResult{
-			Title:   checkName,
-			IsPass:  true,
-			Message: passOutcome.Pass.Message,
-			URI:     passOutcome.Pass.URI,
-		}, nil
-	}
-
-	return &AnalyzeResult{
+	result := AnalyzeResult{
 		Title:   checkName,
 		IconKey: "kubernetes_text_analyze",
 		IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg",
-		IsFail:  true,
-		Message: failOutcome.Fail.Message,
-		URI:     failOutcome.Fail.URI,
-	}, nil
+	}
+
+	if re.MatchString(string(collected)) {
+		result.IsPass = true
+		if passOutcome != nil {
+			result.Message = passOutcome.Message
+			result.URI = passOutcome.URI
+		}
+		return &result, nil
+	}
+	result.IsFail = true
+	if failOutcome != nil {
+		result.Message = failOutcome.Message
+		result.URI = failOutcome.URI
+	}
+	return &result, nil
 }
 
 func analyzeRegexGroups(pattern string, collected []byte, outcomes []*troubleshootv1beta2.Outcome, checkName string) (*AnalyzeResult, error) {
