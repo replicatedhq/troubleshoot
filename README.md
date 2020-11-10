@@ -40,3 +40,19 @@ For details on creating the custom resource files that drive support-bundle coll
 
 For questions about using Troubleshoot, there's a [Replicated Community](https://help.replicated.com/community) forum, and a [#app-troubleshoot channel in Kubernetes Slack](https://kubernetes.slack.com/channels/app-troubleshoot).
 
+# Building
+
+The following packages are required for building the project from source code:
+
+pkg-config
+librrd-dev
+libglib2.0-dev
+libcairo2-dev
+libpango1.0-dev
+libpixman-1-dev
+libpng-dev
+libsdl-pango-dev
+libthai-dev
+libpcre3-dev
+
+There are known issues with libc6 2.27-3ubuntu1.2 on Ubuntu 18.  Upgrading to 2.27-3ubuntu1.3 (apt-get install libc6) resolves these.

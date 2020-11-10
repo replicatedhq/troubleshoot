@@ -333,7 +333,7 @@ func Test_textAnalyze(t *testing.T) {
 			for _, v := range actual {
 				unPointered = append(unPointered, *v)
 			}
-			assert.Equal(t, test.expectResult, unPointered)
+			assert.ElementsMatch(t, test.expectResult, unPointered)
 		})
 	}
 }

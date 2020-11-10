@@ -8,16 +8,14 @@ require (
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/chzyer/logex v1.1.11-0.20160617073814-96a4d311aa9b // indirect
 	github.com/docker/spdystream v0.0.0-20181023171402-6480d4af844c // indirect
-	github.com/dsnet/compress v0.0.1 // indirect
 	github.com/elazarl/goproxy v0.0.0-20191011121108-aa519ddbe484 // indirect
 	github.com/emicklei/go-restful v2.9.6+incompatible // indirect
 	github.com/fatih/color v1.7.0
-	github.com/frankban/quicktest v1.7.2 // indirect
 	github.com/go-openapi/spec v0.19.4 // indirect
 	github.com/go-redis/redis/v7 v7.2.0
 	github.com/go-sql-driver/mysql v1.5.0
 	github.com/gobwas/glob v0.2.3
-	github.com/golang/snappy v0.0.1 // indirect
+	github.com/google/go-cmp v0.3.1 // indirect
 	github.com/google/gofuzz v1.1.0
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510 // indirect
 	github.com/hashicorp/go-getter v1.3.1-0.20190627223108-da0323b9545e
@@ -27,21 +25,19 @@ require (
 	github.com/manifoldco/promptui v0.3.2
 	github.com/mattn/go-colorable v0.1.4 // indirect
 	github.com/mattn/go-isatty v0.0.9
-	github.com/mholt/archiver v3.1.1+incompatible
 	github.com/mitchellh/go-wordwrap v1.0.0 // indirect
 	github.com/nicksnyder/go-i18n v1.10.1 // indirect
-	github.com/nwaples/rardecode v1.0.0 // indirect
 	github.com/onsi/gomega v1.9.0 // indirect
-	github.com/pierrec/lz4 v2.2.6+incompatible // indirect
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/procfs v0.0.5 // indirect
 	github.com/replicatedhq/termui/v3 v3.1.1-0.20200811145416-f40076d26851
+	github.com/segmentio/ksuid v1.0.3
 	github.com/spf13/cobra v0.0.5
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.4.0
 	github.com/stretchr/testify v1.5.1
 	github.com/tj/go-spin v1.1.0
-	github.com/xi2/xz v0.0.0-20171230120015-48954b6210f8 // indirect
+	github.com/ulikunitz/xz v0.5.6 // indirect
 	go.opencensus.io v0.22.0 // indirect
 	go.undefinedlabs.com/scopeagent v0.1.7
 	golang.org/x/net v0.0.0-20200202094626-16171245cfb2 // indirect

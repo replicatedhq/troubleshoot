@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"path/filepath"
 
+	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -37,7 +38,7 @@ func Copy(c *Collector, copyCollector *troubleshootv1beta2.Copy) (map[string][]b
 		for _, pod := range pods {
 			bundlePath := filepath.Join(copyCollector.Name, pod.Namespace, pod.Name, copyCollector.ContainerName)
 
-			files, copyErrors := copyFiles(c, client, pod, copyCollector)
+			files, copyErrors := copyFiles(ctx, client, c, pod, copyCollector)
 			if len(copyErrors) > 0 {
 				key := filepath.Join(bundlePath, copyCollector.ContainerPath+"-errors.json")
 				copyOutput[key], err = marshalNonNil(copyErrors)
@@ -56,24 +57,43 @@ func Copy(c *Collector, copyCollector *troubleshootv1beta2.Copy) (map[string][]b
 	return copyOutput, nil
 }
 
-func copyFiles(c *Collector, client *kubernetes.Clientset, pod corev1.Pod, copyCollector *troubleshootv1beta2.Copy) (map[string][]byte, map[string]string) {
-	container := pod.Spec.Containers[0].Name
+func copyFiles(ctx context.Context, client *kubernetes.Clientset, c *Collector, pod corev1.Pod, copyCollector *troubleshootv1beta2.Copy) (map[string][]byte, map[string]string) {
+	containerName := pod.Spec.Containers[0].Name
 	if copyCollector.ContainerName != "" {
-		container = copyCollector.ContainerName
+		containerName = copyCollector.ContainerName
 	}
-	command := []string{"tar", "-C", filepath.Dir(copyCollector.ContainerPath), "-cf", "-", filepath.Base(copyCollector.ContainerPath)}
-	req := client.CoreV1().RESTClient().Post().Resource("pods").Name(pod.Name).Namespace(pod.Namespace).SubResource("exec")
-	scheme := runtime.NewScheme()
-	if err := corev1.AddToScheme(scheme); err != nil {
-		return nil, map[string]string{
+
+	stdout, stderr, err := getFilesFromPod(ctx, client, c, pod.Name, containerName, pod.Namespace, copyCollector.ContainerPath)
+	if err != nil {
+		errors := map[string]string{
 			filepath.Join(copyCollector.ContainerPath, "error"): err.Error(),
 		}
+		if len(stdout) > 0 {
+			errors[filepath.Join(copyCollector.ContainerPath, "stdout")] = string(stdout)
+		}
+		if len(stderr) > 0 {
+			errors[filepath.Join(copyCollector.ContainerPath, "stderr")] = string(stderr)
+		}
+		return nil, errors
+	}
+
+	return map[string][]byte{
+		filepath.Base(copyCollector.ContainerPath) + ".tar": stdout,
+	}, nil
+}
+
+func getFilesFromPod(ctx context.Context, client *kubernetes.Clientset, c *Collector, podName string, containerName string, namespace string, containerPath string) ([]byte, []byte, error) {
+	command := []string{"tar", "-C", filepath.Dir(containerPath), "-cf", "-", filepath.Base(containerPath)}
+	req := client.CoreV1().RESTClient().Post().Resource("pods").Name(podName).Namespace(namespace).SubResource("exec")
+	scheme := runtime.NewScheme()
+	if err := corev1.AddToScheme(scheme); err != nil {
+		return nil, nil, errors.Wrap(err, "failed to add runtime scheme")
 	}
 
 	parameterCodec := runtime.NewParameterCodec(scheme)
 	req.VersionedParams(&corev1.PodExecOptions{
 		Command:   command,
-		Container: container,
+		Container: containerName,
 		Stdin:     true,
 		Stdout:    false,
 		Stderr:    true,
@@ -82,9 +102,7 @@ func copyFiles(c *Collector, client *kubernetes.Clientset, pod corev1.Pod, copyC
 
 	exec, err := remotecommand.NewSPDYExecutor(c.ClientConfig, "POST", req.URL())
 	if err != nil {
-		return nil, map[string]string{
-			filepath.Join(copyCollector.ContainerPath, "error"): err.Error(),
-		}
+		return nil, nil, errors.Wrap(err, "failed to create SPDY executor")
 	}
 
 	output := new(bytes.Buffer)
@@ -96,21 +114,10 @@ func copyFiles(c *Collector, client *kubernetes.Clientset, pod corev1.Pod, copyC
 		Tty:    false,
 	})
 	if err != nil {
-		errors := map[string]string{
-			filepath.Join(copyCollector.ContainerPath, "error"): err.Error(),
-		}
-		if s := output.String(); len(s) > 0 {
-			errors[filepath.Join(copyCollector.ContainerPath, "stdout")] = s
-		}
-		if s := stderr.String(); len(s) > 0 {
-			errors[filepath.Join(copyCollector.ContainerPath, "stderr")] = s
-		}
-		return nil, errors
+		return output.Bytes(), stderr.Bytes(), errors.Wrap(err, "failed to stream command output")
 	}
 
-	return map[string][]byte{
-		filepath.Base(copyCollector.ContainerPath) + ".tar": output.Bytes(),
-	}, nil
+	return output.Bytes(), stderr.Bytes(), nil
 }
 
 func getCopyErrosFileName(copyCollector *troubleshootv1beta2.Copy) string {

@@ -19,8 +19,23 @@ builds:
   - id: preflight
     goos:
       - linux
-      - darwin
       - windows
+    goarch:
+      - amd64
+    env:
+      - CGO_ENABLED=1
+    main: cmd/preflight/main.go
+    ldflags: -s -w
+      -X github.com/replicatedhq/troubleshoot/pkg/version.version={{.Version}}
+      -X github.com/replicatedhq/troubleshoot/pkg/version.gitSHA={{.Commit}}
+      -X github.com/replicatedhq/troubleshoot/pkg/version.buildTime={{.Date}}
+      -extldflags "-static"
+    flags: -tags netgo -installsuffix netgo
+    binary: preflight
+    hooks: {}
+  - id: preflight-darwin
+    goos:
+      - darwin
     goarch:
       - amd64
     env:
@@ -37,8 +52,23 @@ builds:
   - id: support-bundle
     goos:
       - linux
-      - darwin
       - windows
+    goarch:
+      - amd64
+    env:
+      - CGO_ENABLED=1
+    main: cmd/troubleshoot/main.go
+    ldflags: -s -w
+      -X github.com/replicatedhq/troubleshoot/pkg/version.version={{.Version}}
+      -X github.com/replicatedhq/troubleshoot/pkg/version.gitSHA={{.Commit}}
+      -X github.com/replicatedhq/troubleshoot/pkg/version.buildTime={{.Date}}
+      -extldflags "-static"
+    flags: -tags netgo -installsuffix netgo
+    binary: support-bundle
+    hooks: {}
+  - id: support-bundle-darwin
+    goos:
+      - darwin
     goarch:
       - amd64
     env:

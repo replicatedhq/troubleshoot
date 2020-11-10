@@ -115,6 +115,12 @@ type DatabaseAnalyze struct {
 	FileName      string     `json:"fileName,omitempty" yaml:"fileName,omitempty"`
 }
 
+type CollectdAnalyze struct {
+	AnalyzeMeta   `json:",inline" yaml:",inline"`
+	Outcomes      []*Outcome `json:"outcomes" yaml:"outcomes"`
+	CollectorName string     `json:"collectorName" yaml:"collectorName"`
+}
+
 type AnalyzeMeta struct {
 	CheckName string                 `json:"checkName,omitempty" yaml:"checkName,omitempty"`
 	Exclude   multitype.BoolOrString `json:"exclude,omitempty" yaml:"exclude,omitempty"`
@@ -136,4 +142,5 @@ type Analyze struct {
 	Postgres                 *DatabaseAnalyze          `json:"postgres,omitempty" yaml:"postgres,omitempty"`
 	Mysql                    *DatabaseAnalyze          `json:"mysql,omitempty" yaml:"mysql,omitempty"`
 	Redis                    *DatabaseAnalyze          `json:"redis,omitempty" yaml:"redis,omitempty"`
+	Collectd                 *CollectdAnalyze          `json:"collectd,omitempty" yaml:"collectd,omitempty"`
 }
