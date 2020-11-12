@@ -123,8 +123,9 @@ type CollectdAnalyze struct {
 
 type CephStatusAnalyze struct {
 	AnalyzeMeta   `json:",inline" yaml:",inline"`
-	CollectorName string `json:"collectorName,omitempty" yaml:"collectorName,omitempty"`
-	Namespace     string `json:"namespace" yaml:"namespace"`
+	Outcomes      []*Outcome `json:"outcomes" yaml:"outcomes"`
+	CollectorName string     `json:"collectorName,omitempty" yaml:"collectorName,omitempty"`
+	Namespace     string     `json:"namespace" yaml:"namespace"`
 }
 
 type AnalyzeMeta struct {

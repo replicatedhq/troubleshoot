@@ -168,15 +168,15 @@ func (c *Collector) RunCollectorSync(globalRedactors []*troubleshootv1beta2.Reda
 			return
 		}
 		result, err = Collectd(c, c.Collect.Collectd)
-	} else if c.Collect.CephStatus != nil {
-		isExcludedResult, err = isExcluded(c.Collect.CephStatus.Exclude)
+	} else if c.Collect.Ceph != nil {
+		isExcludedResult, err = isExcluded(c.Collect.Ceph.Exclude)
 		if err != nil {
 			return nil, err
 		}
 		if isExcludedResult {
 			return nil, nil
 		}
-		result, err = CephStatus(c, c.Collect.CephStatus)
+		result, err = Ceph(c, c.Collect.Ceph)
 	} else {
 		err = errors.New("no spec found to run")
 		return
