@@ -347,7 +347,7 @@ func (c *Collect) GetName() string {
 		name = c.HTTP.CollectorName
 	}
 	if c.Collectd != nil {
-		collector = "rrd"
+		collector = "collectd"
 		name = c.Collectd.CollectorName
 	}
 

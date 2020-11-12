@@ -30,7 +30,6 @@ endif
 define LDFLAGS
 -ldflags "\
 	-s -w \
-	-extldflags \"-static\" \
 	-X ${VERSION_PACKAGE}.version=${VERSION} \
 	-X ${VERSION_PACKAGE}.gitSHA=${GIT_SHA} \
 	-X ${VERSION_PACKAGE}.buildTime=${DATE} \
