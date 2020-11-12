@@ -121,6 +121,12 @@ type CollectdAnalyze struct {
 	CollectorName string     `json:"collectorName" yaml:"collectorName"`
 }
 
+type CephStatusAnalyze struct {
+	AnalyzeMeta   `json:",inline" yaml:",inline"`
+	CollectorName string `json:"collectorName,omitempty" yaml:"collectorName,omitempty"`
+	Namespace     string `json:"namespace" yaml:"namespace"`
+}
+
 type AnalyzeMeta struct {
 	CheckName string                 `json:"checkName,omitempty" yaml:"checkName,omitempty"`
 	Exclude   multitype.BoolOrString `json:"exclude,omitempty" yaml:"exclude,omitempty"`
@@ -142,4 +148,5 @@ type Analyze struct {
 	Postgres                 *DatabaseAnalyze          `json:"postgres,omitempty" yaml:"postgres,omitempty"`
 	Mysql                    *DatabaseAnalyze          `json:"mysql,omitempty" yaml:"mysql,omitempty"`
 	Redis                    *DatabaseAnalyze          `json:"redis,omitempty" yaml:"redis,omitempty"`
+	CephStatus               *CephStatusAnalyze        `json:"cephStatus,omitempty" yaml:"cephStatus,omitempty"`
 }
