@@ -142,5 +142,4 @@ type Analyze struct {
 	Postgres                 *DatabaseAnalyze          `json:"postgres,omitempty" yaml:"postgres,omitempty"`
 	Mysql                    *DatabaseAnalyze          `json:"mysql,omitempty" yaml:"mysql,omitempty"`
 	Redis                    *DatabaseAnalyze          `json:"redis,omitempty" yaml:"redis,omitempty"`
-	Collectd                 *CollectdAnalyze          `json:"collectd,omitempty" yaml:"collectd,omitempty"`
 }

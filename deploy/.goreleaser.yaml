@@ -10,7 +10,7 @@ builds:
     goarch:
       - amd64
     env:
-      - CGO_ENABLED=1
+      - CGO_ENABLED=0
       - GO111MODULE=on
     main: ffi/main.go
     flags: -buildmode=c-shared
@@ -23,13 +23,12 @@ builds:
     goarch:
       - amd64
     env:
-      - CGO_ENABLED=1
+      - CGO_ENABLED=0
     main: cmd/preflight/main.go
     ldflags: -s -w
       -X github.com/replicatedhq/troubleshoot/pkg/version.version={{.Version}}
       -X github.com/replicatedhq/troubleshoot/pkg/version.gitSHA={{.Commit}}
       -X github.com/replicatedhq/troubleshoot/pkg/version.buildTime={{.Date}}
-      -extldflags "-static"
     flags: -tags netgo -installsuffix netgo
     binary: preflight
     hooks: {}
@@ -45,7 +44,6 @@ builds:
       -X github.com/replicatedhq/troubleshoot/pkg/version.version={{.Version}}
       -X github.com/replicatedhq/troubleshoot/pkg/version.gitSHA={{.Commit}}
       -X github.com/replicatedhq/troubleshoot/pkg/version.buildTime={{.Date}}
-      -extldflags "-static"
     flags: -tags netgo -installsuffix netgo
     binary: preflight
     hooks: {}
@@ -56,13 +54,12 @@ builds:
     goarch:
       - amd64
     env:
-      - CGO_ENABLED=1
+      - CGO_ENABLED=0
     main: cmd/troubleshoot/main.go
     ldflags: -s -w
       -X github.com/replicatedhq/troubleshoot/pkg/version.version={{.Version}}
       -X github.com/replicatedhq/troubleshoot/pkg/version.gitSHA={{.Commit}}
       -X github.com/replicatedhq/troubleshoot/pkg/version.buildTime={{.Date}}
-      -extldflags "-static"
     flags: -tags netgo -installsuffix netgo
     binary: support-bundle
     hooks: {}
@@ -78,7 +75,6 @@ builds:
       -X github.com/replicatedhq/troubleshoot/pkg/version.version={{.Version}}
       -X github.com/replicatedhq/troubleshoot/pkg/version.gitSHA={{.Commit}}
       -X github.com/replicatedhq/troubleshoot/pkg/version.buildTime={{.Date}}
-      -extldflags "-static"
     flags: -tags netgo -installsuffix netgo
     binary: support-bundle
     hooks: {}
