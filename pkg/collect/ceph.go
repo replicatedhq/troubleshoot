@@ -21,6 +21,7 @@ type CephCommand struct {
 	ID      string
 	Command []string
 	Args    []string
+	Format  string
 }
 
 var CephCommands = []CephCommand{
@@ -28,41 +29,49 @@ var CephCommands = []CephCommand{
 		ID:      "status",
 		Command: []string{"ceph", "status"},
 		Args:    []string{"-f", "json-pretty"},
+		Format:  "json",
 	},
 	{
 		ID:      "fs",
 		Command: []string{"ceph", "fs", "status"},
 		Args:    []string{"-f", "json-pretty"},
+		Format:  "json",
 	},
 	{
 		ID:      "fs-ls",
 		Command: []string{"ceph", "fs", "ls"},
 		Args:    []string{"-f", "json-pretty"},
+		Format:  "json",
 	},
 	{
 		ID:      "osd-status",
 		Command: []string{"ceph", "osd", "status"},
 		Args:    []string{"-f", "json-pretty"},
+		Format:  "txt",
 	},
 	{
 		ID:      "osd-tree",
 		Command: []string{"ceph", "osd", "tree"},
 		Args:    []string{"-f", "json-pretty"},
+		Format:  "json",
 	},
 	{
 		ID:      "osd-pool",
 		Command: []string{"ceph", "osd", "pool", "ls", "detail"},
 		Args:    []string{"-f", "json-pretty"},
+		Format:  "json",
 	},
 	{
 		ID:      "health",
 		Command: []string{"ceph", "health", "detail"},
 		Args:    []string{"-f", "json-pretty"},
+		Format:  "json",
 	},
 	{
 		ID:      "auth",
 		Command: []string{"ceph", "auth", "ls"},
 		Args:    []string{"-f", "json-pretty"},
+		Format:  "json",
 	},
 }
 
@@ -108,9 +117,9 @@ func cephCommandExec(ctx context.Context, c *Collector, cephCollector *troublesh
 		pathPrefix := GetCephCollectorFilepath(cephCollector.Name, cephCollector.Namespace)
 		switch {
 		case strings.HasSuffix(filename, "-stdout.txt"):
-			final[path.Join(pathPrefix, fmt.Sprintf("%s.json", command.ID))] = result
+			final[path.Join(pathPrefix, fmt.Sprintf("%s.%s", command.ID, command.Format))] = result
 		case strings.HasSuffix(filename, "-stderr.txt"):
-			final[path.Join(pathPrefix, fmt.Sprintf("%s-stderr.json", command.ID))] = result
+			final[path.Join(pathPrefix, fmt.Sprintf("%s-stderr.txt", command.ID))] = result
 		case strings.HasSuffix(filename, "-errors.json"):
 			final[path.Join(pathPrefix, fmt.Sprintf("%s-errors.json", command.ID))] = result
 		}
