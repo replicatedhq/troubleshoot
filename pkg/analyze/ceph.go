@@ -44,7 +44,7 @@ func (a CephHealth) Compare(b CephHealth) int {
 	}
 }
 
-var CephDefaultOutcomes = []*troubleshootv1beta2.Outcome{
+var CephStatusDefaultOutcomes = []*troubleshootv1beta2.Outcome{
 	{
 		Pass: &troubleshootv1beta2.SingleOutcome{
 			Message: "Ceph is healthy",
@@ -92,7 +92,7 @@ func cephStatus(analyzer *troubleshootv1beta2.CephStatusAnalyze, getCollectedFil
 	}
 
 	if len(analyzer.Outcomes) == 0 {
-		analyzer.Outcomes = CephDefaultOutcomes
+		analyzer.Outcomes = CephStatusDefaultOutcomes
 	}
 
 	for _, outcome := range analyzer.Outcomes {
@@ -102,7 +102,7 @@ func cephStatus(analyzer *troubleshootv1beta2.CephStatusAnalyze, getCollectedFil
 			}
 			match, err := compareCephStatus(status.Health.Status, outcome.Fail.When)
 			if err != nil {
-				return nil, errors.Wrap(err, "compare ceph status")
+				return nil, errors.Wrap(err, "failed to compare ceph status")
 			} else if match {
 				analyzeResult.IsFail = true
 				analyzeResult.Message = outcome.Fail.Message
@@ -115,7 +115,7 @@ func cephStatus(analyzer *troubleshootv1beta2.CephStatusAnalyze, getCollectedFil
 			}
 			match, err := compareCephStatus(status.Health.Status, outcome.Warn.When)
 			if err != nil {
-				return nil, errors.Wrap(err, "compare ceph status")
+				return nil, errors.Wrap(err, "failed to compare ceph status")
 			} else if match {
 				analyzeResult.IsWarn = true
 				analyzeResult.Message = outcome.Warn.Message
@@ -128,7 +128,7 @@ func cephStatus(analyzer *troubleshootv1beta2.CephStatusAnalyze, getCollectedFil
 			}
 			match, err := compareCephStatus(status.Health.Status, outcome.Pass.When)
 			if err != nil {
-				return nil, errors.Wrap(err, "compare ceph status")
+				return nil, errors.Wrap(err, "failed to compare ceph status")
 			} else if match {
 				analyzeResult.IsPass = true
 				analyzeResult.Message = outcome.Pass.Message

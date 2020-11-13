@@ -82,7 +82,7 @@ func Ceph(c *Collector, cephCollector *troubleshootv1beta2.Ceph) (map[string][]b
 	var multiErr *multierror.Error
 	for _, command := range CephCommands {
 		results, err := cephCommandExec(ctx, c, cephCollector, pod, command)
-		multiErr = multierror.Append(multiErr, errors.Wrapf(err, "exec command %s", command.ID))
+		multiErr = multierror.Append(multiErr, errors.Wrapf(err, "failed to exec command %s", command.ID))
 		for fileName, output := range results {
 			final[fileName] = output
 		}
