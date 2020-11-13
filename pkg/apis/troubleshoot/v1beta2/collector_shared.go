@@ -135,7 +135,6 @@ type Collectd struct {
 
 type Ceph struct {
 	CollectorMeta `json:",inline" yaml:",inline"`
-	Name          string `json:"name,omitempty" yaml:"name,omitempty"`
 	Namespace     string `json:"namespace" yaml:"namespace"`
 	Timeout       string `json:"timeout,omitempty" yaml:"timeout,omitempty"`
 }
