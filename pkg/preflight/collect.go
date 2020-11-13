@@ -49,14 +49,13 @@ func Collect(opts CollectOpts, p *troubleshootv1beta2.Preflight) (CollectResult,
 		Spec:       p,
 	}
 
-	if err := collectors.CheckRBAC(context.Background()); err != nil {
+	foundForbidden, err := collectors.CheckRBAC(context.Background(), p.Spec.Analyzers)
+	if err != nil {
 		return collectResult, errors.Wrap(err, "failed to check RBAC for collectors")
 	}
 
-	foundForbidden := false
 	for _, c := range collectors {
 		for _, e := range c.RBACErrors {
-			foundForbidden = true
 			opts.ProgressChan <- e
 		}
 	}
