@@ -133,6 +133,13 @@ type Collectd struct {
 	HostPath        string            `json:"hostPath" yaml:"hostPath"`
 }
 
+type Ceph struct {
+	CollectorMeta `json:",inline" yaml:",inline"`
+	Name          string `json:"name,omitempty" yaml:"name,omitempty"`
+	Namespace     string `json:"namespace" yaml:"namespace"`
+	Timeout       string `json:"timeout,omitempty" yaml:"timeout,omitempty"`
+}
+
 type Collect struct {
 	ClusterInfo      *ClusterInfo      `json:"clusterInfo,omitempty" yaml:"clusterInfo,omitempty"`
 	ClusterResources *ClusterResources `json:"clusterResources,omitempty" yaml:"clusterResources,omitempty"`
@@ -147,6 +154,7 @@ type Collect struct {
 	Mysql            *Database         `json:"mysql,omitempty" yaml:"mysql,omitempty"`
 	Redis            *Database         `json:"redis,omitempty" yaml:"redis,omitempty"`
 	Collectd         *Collectd         `json:"collectd,omitempty" yaml:"collectd,omitempty"`
+	Ceph             *Ceph             `json:"ceph,omitempty" yaml:"ceph,omitempty"`
 }
 
 func (c *Collect) AccessReviewSpecs(overrideNS string) []authorizationv1.SelfSubjectAccessReviewSpec {
@@ -349,6 +357,10 @@ func (c *Collect) GetName() string {
 	if c.Collectd != nil {
 		collector = "collectd"
 		name = c.Collectd.CollectorName
+	}
+	if c.Ceph != nil {
+		collector = "ceph"
+		name = c.Ceph.CollectorName
 	}
 
 	if collector == "" {
