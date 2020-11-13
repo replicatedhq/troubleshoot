@@ -114,7 +114,7 @@ func cephCommandExec(ctx context.Context, c *Collector, cephCollector *troublesh
 
 	final := map[string][]byte{}
 	for filename, result := range results {
-		pathPrefix := GetCephCollectorFilepath(cephCollector.Name, cephCollector.Namespace)
+		pathPrefix := GetCephCollectorFilepath(cephCollector.CollectorName, cephCollector.Namespace)
 		switch {
 		case strings.HasSuffix(filename, "-stdout.txt"):
 			final[path.Join(pathPrefix, fmt.Sprintf("%s.%s", command.ID, command.Format))] = result
