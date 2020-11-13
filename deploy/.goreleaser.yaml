@@ -10,7 +10,7 @@ builds:
     goarch:
       - amd64
     env:
-      - CGO_ENABLED=0
+      - CGO_ENABLED=1
       - GO111MODULE=on
     main: ffi/main.go
     flags: -buildmode=c-shared
@@ -19,6 +19,7 @@ builds:
   - id: preflight
     goos:
       - linux
+      - darwin
       - windows
     goarch:
       - amd64
@@ -29,27 +30,14 @@ builds:
       -X github.com/replicatedhq/troubleshoot/pkg/version.version={{.Version}}
       -X github.com/replicatedhq/troubleshoot/pkg/version.gitSHA={{.Commit}}
       -X github.com/replicatedhq/troubleshoot/pkg/version.buildTime={{.Date}}
-    flags: -tags netgo -installsuffix netgo
-    binary: preflight
-    hooks: {}
-  - id: preflight-darwin
-    goos:
-      - darwin
-    goarch:
-      - amd64
-    env:
-      - CGO_ENABLED=0
-    main: cmd/preflight/main.go
-    ldflags: -s -w
-      -X github.com/replicatedhq/troubleshoot/pkg/version.version={{.Version}}
-      -X github.com/replicatedhq/troubleshoot/pkg/version.gitSHA={{.Commit}}
-      -X github.com/replicatedhq/troubleshoot/pkg/version.buildTime={{.Date}}
+      -extldflags "-static"
     flags: -tags netgo -installsuffix netgo
     binary: preflight
     hooks: {}
   - id: support-bundle
     goos:
       - linux
+      - darwin
       - windows
     goarch:
       - amd64
@@ -60,21 +48,7 @@ builds:
       -X github.com/replicatedhq/troubleshoot/pkg/version.version={{.Version}}
       -X github.com/replicatedhq/troubleshoot/pkg/version.gitSHA={{.Commit}}
       -X github.com/replicatedhq/troubleshoot/pkg/version.buildTime={{.Date}}
-    flags: -tags netgo -installsuffix netgo
-    binary: support-bundle
-    hooks: {}
-  - id: support-bundle-darwin
-    goos:
-      - darwin
-    goarch:
-      - amd64
-    env:
-      - CGO_ENABLED=0
-    main: cmd/troubleshoot/main.go
-    ldflags: -s -w
-      -X github.com/replicatedhq/troubleshoot/pkg/version.version={{.Version}}
-      -X github.com/replicatedhq/troubleshoot/pkg/version.gitSHA={{.Commit}}
-      -X github.com/replicatedhq/troubleshoot/pkg/version.buildTime={{.Date}}
+      -extldflags "-static"
     flags: -tags netgo -installsuffix netgo
     binary: support-bundle
     hooks: {}
@@ -87,7 +61,6 @@ archives:
   - id: preflight
     builds:
       - preflight
-      - preflight-darwin
     format: tar.gz
     format_overrides:
       - goos: windows
@@ -105,7 +78,6 @@ archives:
   - id: support-bundle
     builds:
       - support-bundle
-      - support-bundle-darwin
     format: tar.gz
     format_overrides:
       - goos: windows
