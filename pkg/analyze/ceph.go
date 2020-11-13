@@ -88,7 +88,7 @@ func cephStatus(analyzer *troubleshootv1beta2.CephStatusAnalyze, getCollectedFil
 		} `json:"health"`
 	}{}
 	if err := json.Unmarshal(collected, &status); err != nil {
-		return nil, errors.New("unmarshal status.json")
+		return nil, errors.Wrap(err, "failed to unmarshal status.json")
 	}
 
 	if len(analyzer.Outcomes) == 0 {
