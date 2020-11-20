@@ -260,6 +260,23 @@ abc
 `,
 			},
 		},
+		{
+			name: "excluded data",
+			Collect: &troubleshootv1beta2.Collect{
+				Data: &troubleshootv1beta2.Data{
+					CollectorMeta: troubleshootv1beta2.CollectorMeta{
+						CollectorName: "datacollectorname",
+						Exclude:       multitype.BoolOrString{Type: multitype.String, StrVal: "true"},
+					},
+					Name: "data",
+					Data: `abc 123
+another line here
+pwd=somethinggoeshere;`,
+				},
+			},
+			Redactors: []*troubleshootv1beta2.Redact{},
+			want:      map[string]string{},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

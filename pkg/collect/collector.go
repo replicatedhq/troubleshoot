@@ -42,6 +42,125 @@ func isExcluded(excludeVal multitype.BoolOrString) (bool, error) {
 	return parsed, nil
 }
 
+// checks if a given collector has a spec with 'exclude' that evaluates to true.
+func (c *Collector) IsExcluded() bool {
+	if c.Collect.ClusterInfo != nil {
+		isExcludedResult, err := isExcluded(c.Collect.ClusterInfo.Exclude)
+		if err != nil {
+			return true
+		}
+		if isExcludedResult {
+			return true
+		}
+	} else if c.Collect.ClusterResources != nil {
+		isExcludedResult, err := isExcluded(c.Collect.ClusterResources.Exclude)
+		if err != nil {
+			return true
+		}
+		if isExcludedResult {
+			return true
+		}
+	} else if c.Collect.Secret != nil {
+		isExcludedResult, err := isExcluded(c.Collect.Secret.Exclude)
+		if err != nil {
+			return true
+		}
+		if isExcludedResult {
+			return true
+		}
+	} else if c.Collect.Logs != nil {
+		isExcludedResult, err := isExcluded(c.Collect.Logs.Exclude)
+		if err != nil {
+			return true
+		}
+		if isExcludedResult {
+			return true
+		}
+	} else if c.Collect.Run != nil {
+		isExcludedResult, err := isExcluded(c.Collect.Run.Exclude)
+		if err != nil {
+			return true
+		}
+		if isExcludedResult {
+			return true
+		}
+	} else if c.Collect.Exec != nil {
+		isExcludedResult, err := isExcluded(c.Collect.Exec.Exclude)
+		if err != nil {
+			return true
+		}
+		if isExcludedResult {
+			return true
+		}
+	} else if c.Collect.Data != nil {
+		isExcludedResult, err := isExcluded(c.Collect.Data.Exclude)
+		if err != nil {
+			return true
+		}
+		if isExcludedResult {
+			return true
+		}
+	} else if c.Collect.Copy != nil {
+		isExcludedResult, err := isExcluded(c.Collect.Copy.Exclude)
+		if err != nil {
+			return true
+		}
+		if isExcludedResult {
+			return true
+		}
+	} else if c.Collect.HTTP != nil {
+		isExcludedResult, err := isExcluded(c.Collect.HTTP.Exclude)
+		if err != nil {
+			return true
+		}
+		if isExcludedResult {
+			return true
+		}
+	} else if c.Collect.Postgres != nil {
+		isExcludedResult, err := isExcluded(c.Collect.Postgres.Exclude)
+		if err != nil {
+			return true
+		}
+		if isExcludedResult {
+			return true
+		}
+	} else if c.Collect.Mysql != nil {
+		isExcludedResult, err := isExcluded(c.Collect.Mysql.Exclude)
+		if err != nil {
+			return true
+		}
+		if isExcludedResult {
+			return true
+		}
+	} else if c.Collect.Redis != nil {
+		isExcludedResult, err := isExcluded(c.Collect.Redis.Exclude)
+		if err != nil {
+			return true
+		}
+		if isExcludedResult {
+			return true
+		}
+	} else if c.Collect.Collectd != nil {
+		// TODO: see if redaction breaks these
+		isExcludedResult, err := isExcluded(c.Collect.Collectd.Exclude)
+		if err != nil {
+			return true
+		}
+		if isExcludedResult {
+			return true
+		}
+	} else if c.Collect.Ceph != nil {
+		isExcludedResult, err := isExcluded(c.Collect.Ceph.Exclude)
+		if err != nil {
+			return true
+		}
+		if isExcludedResult {
+			return true
+		}
+	}
+	return false
+}
+
 func (c *Collector) RunCollectorSync(globalRedactors []*troubleshootv1beta2.Redact) (result map[string][]byte, err error) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -49,133 +168,38 @@ func (c *Collector) RunCollectorSync(globalRedactors []*troubleshootv1beta2.Reda
 		}
 	}()
 
-	var isExcludedResult bool
+	if c.IsExcluded() {
+		return
+	}
+
 	if c.Collect.ClusterInfo != nil {
-		isExcludedResult, err = isExcluded(c.Collect.ClusterInfo.Exclude)
-		if err != nil {
-			return
-		}
-		if isExcludedResult {
-			return
-		}
 		result, err = ClusterInfo(c)
 	} else if c.Collect.ClusterResources != nil {
-		isExcludedResult, err = isExcluded(c.Collect.ClusterResources.Exclude)
-		if err != nil {
-			return
-		}
-		if isExcludedResult {
-			return
-		}
 		result, err = ClusterResources(c)
 	} else if c.Collect.Secret != nil {
-		isExcludedResult, err = isExcluded(c.Collect.Secret.Exclude)
-		if err != nil {
-			return
-		}
-		if isExcludedResult {
-			return
-		}
 		result, err = Secret(c, c.Collect.Secret)
 	} else if c.Collect.Logs != nil {
-		isExcludedResult, err = isExcluded(c.Collect.Logs.Exclude)
-		if err != nil {
-			return
-		}
-		if isExcludedResult {
-			return
-		}
 		result, err = Logs(c, c.Collect.Logs)
 	} else if c.Collect.Run != nil {
-		isExcludedResult, err = isExcluded(c.Collect.Run.Exclude)
-		if err != nil {
-			return
-		}
-		if isExcludedResult {
-			return
-		}
 		result, err = Run(c, c.Collect.Run)
 	} else if c.Collect.Exec != nil {
-		isExcludedResult, err = isExcluded(c.Collect.Exec.Exclude)
-		if err != nil {
-			return
-		}
-		if isExcludedResult {
-			return
-		}
 		result, err = Exec(c, c.Collect.Exec)
 	} else if c.Collect.Data != nil {
-		isExcludedResult, err = isExcluded(c.Collect.Data.Exclude)
-		if err != nil {
-			return
-		}
-		if isExcludedResult {
-			return
-		}
 		result, err = Data(c, c.Collect.Data)
 	} else if c.Collect.Copy != nil {
-		isExcludedResult, err = isExcluded(c.Collect.Copy.Exclude)
-		if err != nil {
-			return
-		}
-		if isExcludedResult {
-			return
-		}
 		result, err = Copy(c, c.Collect.Copy)
 	} else if c.Collect.HTTP != nil {
-		isExcludedResult, err = isExcluded(c.Collect.HTTP.Exclude)
-		if err != nil {
-			return
-		}
-		if isExcludedResult {
-			return
-		}
 		result, err = HTTP(c, c.Collect.HTTP)
 	} else if c.Collect.Postgres != nil {
-		isExcludedResult, err = isExcluded(c.Collect.Postgres.Exclude)
-		if err != nil {
-			return
-		}
-		if isExcludedResult {
-			return
-		}
 		result, err = Postgres(c, c.Collect.Postgres)
 	} else if c.Collect.Mysql != nil {
-		isExcludedResult, err = isExcluded(c.Collect.Mysql.Exclude)
-		if err != nil {
-			return
-		}
-		if isExcludedResult {
-			return
-		}
 		result, err = Mysql(c, c.Collect.Mysql)
 	} else if c.Collect.Redis != nil {
-		isExcludedResult, err = isExcluded(c.Collect.Redis.Exclude)
-		if err != nil {
-			return
-		}
-		if isExcludedResult {
-			return
-		}
 		result, err = Redis(c, c.Collect.Redis)
 	} else if c.Collect.Collectd != nil {
 		// TODO: see if redaction breaks these
-		isExcludedResult, err = isExcluded(c.Collect.Collectd.Exclude)
-		if err != nil {
-			return
-		}
-		if isExcludedResult {
-			return
-		}
 		result, err = Collectd(c, c.Collect.Collectd)
 	} else if c.Collect.Ceph != nil {
-		isExcludedResult, err = isExcluded(c.Collect.Ceph.Exclude)
-		if err != nil {
-			return nil, err
-		}
-		if isExcludedResult {
-			return nil, nil
-		}
 		result, err = Ceph(c, c.Collect.Ceph)
 	} else {
 		err = errors.New("no spec found to run")
@@ -206,6 +230,10 @@ func (c *Collector) GetDisplayName() string {
 }
 
 func (c *Collector) CheckRBAC(ctx context.Context) error {
+	if c.IsExcluded() {
+		return nil // excluded collectors require no permissions
+	}
+
 	client, err := kubernetes.NewForConfig(c.ClientConfig)
 	if err != nil {
 		return errors.Wrap(err, "failed to create client from config")
@@ -215,7 +243,6 @@ func (c *Collector) CheckRBAC(ctx context.Context) error {
 
 	specs := c.Collect.AccessReviewSpecs(c.Namespace)
 	for _, spec := range specs {
-
 		sar := &authorizationv1.SelfSubjectAccessReview{
 			Spec: spec,
 		}

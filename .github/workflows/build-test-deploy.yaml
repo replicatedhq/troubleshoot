@@ -18,8 +18,8 @@ jobs:
 
       - name: setup env
         run: |
-          echo "::set-env name=GOPATH::$(go env GOPATH)"
-          echo "::add-path::$(go env GOPATH)/bin"
+          echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
+          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
         shell: bash
 
       - uses: actions/checkout@v2
@@ -35,8 +35,8 @@ jobs:
           go-version: '1.14'
       - name: setup env
         run: |
-          echo "::set-env name=GOPATH::$(go env GOPATH)"
-          echo "::add-path::$(go env GOPATH)/bin"
+          echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
+          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
         shell: bash
       - uses: actions/checkout@master
       - run: make preflight
@@ -54,7 +54,7 @@ jobs:
         with:
           name: preflight
           path: bin/
-      - uses: engineerd/setup-kind@v0.2.0
+      - uses: engineerd/setup-kind@v0.5.0
       - run: chmod +x bin/preflight
       - run: ./bin/preflight --interactive=false --format=json https://preflight.replicated.com
 
@@ -67,8 +67,8 @@ jobs:
           go-version: '1.14'
       - name: setup env
         run: |
-          echo "::set-env name=GOPATH::$(go env GOPATH)"
-          echo "::add-path::$(go env GOPATH)/bin"
+          echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
+          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
         shell: bash
       - uses: actions/checkout@master
       - run: make support-bundle
@@ -87,7 +87,7 @@ jobs:
         with:
           name: support-bundle
           path: bin/
-      - uses: engineerd/setup-kind@v0.2.0
+      - uses: engineerd/setup-kind@v0.5.0
       - run: chmod +x bin/support-bundle
       - run: ./bin/support-bundle ./examples/support-bundle/sample-collectors.yaml
       - run: ./bin/support-bundle ./examples/support-bundle/sample-supportbundle.yaml
