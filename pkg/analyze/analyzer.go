@@ -8,6 +8,7 @@ import (
 	"github.com/replicatedhq/troubleshoot/pkg/multitype"
 )
 
+// blah
 type AnalyzeResult struct {
 	IsPass bool
 	IsFail bool
@@ -40,6 +41,7 @@ func isExcluded(excludeVal multitype.BoolOrString) (bool, error) {
 	return parsed, nil
 }
 
+// blah
 func Analyze(analyzer *troubleshootv1beta2.Analyze, getFile getCollectedFileContents, findFiles getChildCollectedFileContents) ([]*AnalyzeResult, error) {
 	if analyzer.ClusterVersion != nil {
 		isExcluded, err := isExcluded(analyzer.ClusterVersion.Exclude)
