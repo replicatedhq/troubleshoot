@@ -147,7 +147,7 @@ func runTroubleshoot(v *viper.Viper, arg string) error {
 		}
 	}()
 
-	archivePath, err := runCollectors(v, supportBundleSpec.Spec.Collectors, additionalRedactors, progressChan)
+	archivePath, err := runCollectors(v, supportBundleSpec.Spec.Collectors, supportBundleSpec.Spec.Analyzers, additionalRedactors, progressChan)
 	if err != nil {
 		return errors.Wrap(err, "run collectors")
 	}
@@ -375,7 +375,7 @@ func canTryInsecure() bool {
 	return true
 }
 
-func runCollectors(v *viper.Viper, collectors []*troubleshootv1beta2.Collect, additionalRedactors *troubleshootv1beta2.Redactor, progressChan chan interface{}) (string, error) {
+func runCollectors(v *viper.Viper, collectors []*troubleshootv1beta2.Collect, analyzers []*troubleshootv1beta2.Analyze, additionalRedactors *troubleshootv1beta2.Redactor, progressChan chan interface{}) (string, error) {
 	tmpDir, err := ioutil.TempDir("", "troubleshoot")
 	if err != nil {
 		return "", errors.Wrap(err, "create temp dir")
@@ -457,7 +457,7 @@ func runCollectors(v *viper.Viper, collectors []*troubleshootv1beta2.Collect, ad
 
 		progressChan <- collector.GetDisplayName()
 
-		result, err := collector.RunCollectorSync(globalRedactors)
+		result, err := collector.RunCollectorSync(globalRedactors, analyzers, progressChan)
 		if err != nil {
 			progressChan <- fmt.Errorf("failed to run collector %q: %v", collector.GetDisplayName(), err)
 			continue

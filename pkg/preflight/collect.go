@@ -3,6 +3,7 @@ package preflight
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
@@ -56,8 +57,10 @@ func Collect(opts CollectOpts, p *troubleshootv1beta2.Preflight) (CollectResult,
 	foundForbidden := false
 	for _, c := range collectors {
 		for _, e := range c.RBACErrors {
-			foundForbidden = true
-			opts.ProgressChan <- e
+			if c.Collect.ClusterResources == nil || isResourceRequired(e, c.Collect, p.Spec.Analyzers) {
+				foundForbidden = true
+				opts.ProgressChan <- e
+			}
 		}
 	}
 
@@ -77,7 +80,7 @@ func Collect(opts CollectOpts, p *troubleshootv1beta2.Preflight) (CollectResult,
 			}
 		}
 
-		result, err := collector.RunCollectorSync(nil)
+		result, err := collector.RunCollectorSync(nil, p.Spec.Analyzers, opts.ProgressChan)
 		if err != nil {
 			opts.ProgressChan <- errors.Errorf("failed to run collector %s: %v\n", collector.GetDisplayName(), err)
 			continue
@@ -94,6 +97,23 @@ func Collect(opts CollectOpts, p *troubleshootv1beta2.Preflight) (CollectResult,
 	return collectResult, nil
 }
 
+func isResourceRequired(rbacError error, collector *troubleshootv1beta2.Collect, analyzers []*troubleshootv1beta2.Analyze) bool {
+	if rbacError != nil {
+		for _, analyzer := range analyzers {
+			if strings.Contains(rbacError.Error(), "Node") &&
+				(analyzer.ContainerRuntime != nil || analyzer.NodeResources != nil || analyzer.Distribution != nil) {
+				return true
+			} else if strings.Contains(rbacError.Error(), "CustomResourceDefinition") &&
+				analyzer.CustomResourceDefinition != nil {
+				return true
+			} else if strings.Contains(rbacError.Error(), "StorageClasses") &&
+				analyzer.StorageClass != nil {
+				return true
+			}
+		}
+	}
+	return false
+}
 func ensureCollectorInList(list []*troubleshootv1beta2.Collect, collector troubleshootv1beta2.Collect) []*troubleshootv1beta2.Collect {
 	for _, inList := range list {
 		if collector.ClusterResources != nil && inList.ClusterResources != nil {

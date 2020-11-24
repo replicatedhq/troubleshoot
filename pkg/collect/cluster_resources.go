@@ -8,6 +8,7 @@ import (
 	"path" // this code uses 'path' and not 'path/filepath' because we don't want backslashes on windows
 	"strings"
 
+	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	authorizationv1 "k8s.io/api/authorization/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
@@ -16,10 +17,12 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-func ClusterResources(c *Collector) (map[string][]byte, error) {
+func ClusterResources(c *Collector, analyzers []*troubleshootv1beta2.Analyze) (map[string][]byte, map[string]error) {
+	errs := make(map[string]error)
 	client, err := kubernetes.NewForConfig(c.ClientConfig)
 	if err != nil {
-		return nil, err
+		errs["client"] = err
+		return nil, errs
 	}
 
 	ctx := context.Background()
@@ -32,7 +35,7 @@ func ClusterResources(c *Collector) (map[string][]byte, error) {
 		clusterResourcesOutput["cluster-resources/namespaces.json"] = namespaces
 		clusterResourcesOutput["cluster-resources/namespaces-errors.json"], err = marshalNonNil(namespaceErrors)
 		if err != nil {
-			return nil, err
+			errs["namespace"] = err
 		}
 		if namespaceList != nil {
 			for _, namespace := range namespaceList.Items {
@@ -44,7 +47,7 @@ func ClusterResources(c *Collector) (map[string][]byte, error) {
 		clusterResourcesOutput["cluster-resources/namespaces.json"] = namespaces
 		clusterResourcesOutput["cluster-resources/namespaces-errors.json"], err = marshalNonNil(namespaceErrors)
 		if err != nil {
-			return nil, err
+			errs["namespace"] = err
 		}
 		namespaceNames = append(namespaceNames, c.Namespace)
 	}
@@ -54,7 +57,7 @@ func ClusterResources(c *Collector) (map[string][]byte, error) {
 	}
 	clusterResourcesOutput["cluster-resources/pods-errors.json"], err = marshalNonNil(podErrors)
 	if err != nil {
-		return nil, err
+		errs["pods"] = err
 	}
 
 	// services
@@ -64,7 +67,7 @@ func ClusterResources(c *Collector) (map[string][]byte, error) {
 	}
 	clusterResourcesOutput["cluster-resources/services-errors.json"], err = marshalNonNil(servicesErrors)
 	if err != nil {
-		return nil, err
+		errs["services"] = err
 	}
 
 	// deployments
@@ -74,7 +77,7 @@ func ClusterResources(c *Collector) (map[string][]byte, error) {
 	}
 	clusterResourcesOutput["cluster-resources/deployments-errors.json"], err = marshalNonNil(deploymentsErrors)
 	if err != nil {
-		return nil, err
+		errs["deployments"] = err
 	}
 
 	// statefulsets
@@ -84,7 +87,7 @@ func ClusterResources(c *Collector) (map[string][]byte, error) {
 	}
 	clusterResourcesOutput["cluster-resources/statefulsets-errors.json"], err = marshalNonNil(statefulsetsErrors)
 	if err != nil {
-		return nil, err
+		errs["statefulsets"] = err
 	}
 
 	// ingress
@@ -94,7 +97,7 @@ func ClusterResources(c *Collector) (map[string][]byte, error) {
 	}
 	clusterResourcesOutput["cluster-resources/ingress-errors.json"], err = marshalNonNil(ingressErrors)
 	if err != nil {
-		return nil, err
+		errs["ingress"] = err
 	}
 
 	// storage classes
@@ -102,19 +105,19 @@ func ClusterResources(c *Collector) (map[string][]byte, error) {
 	clusterResourcesOutput["cluster-resources/storage-classes.json"] = storageClasses
 	clusterResourcesOutput["cluster-resources/storage-errors.json"], err = marshalNonNil(storageErrors)
 	if err != nil {
-		return nil, err
+		errs["storageclasses"] = err
 	}
 
 	// crds
 	crdClient, err := apiextensionsv1beta1clientset.NewForConfig(c.ClientConfig)
 	if err != nil {
-		return nil, err
+		errs["namespace"] = err
 	}
 	customResourceDefinitions, crdErrors := crds(ctx, crdClient)
 	clusterResourcesOutput["cluster-resources/custom-resource-definitions.json"] = customResourceDefinitions
 	clusterResourcesOutput["cluster-resources/custom-resource-definitions-errors.json"], err = marshalNonNil(crdErrors)
 	if err != nil {
-		return nil, err
+		errs["crds"] = err
 	}
 
 	// imagepullsecrets
@@ -124,7 +127,7 @@ func ClusterResources(c *Collector) (map[string][]byte, error) {
 	}
 	clusterResourcesOutput["cluster-resources/image-pull-secrets-errors.json"], err = marshalNonNil(pullSecretsErrors)
 	if err != nil {
-		return nil, err
+		errs["imagepullsecrets"] = err
 	}
 
 	// nodes
@@ -132,7 +135,7 @@ func ClusterResources(c *Collector) (map[string][]byte, error) {
 	clusterResourcesOutput["cluster-resources/nodes.json"] = nodes
 	clusterResourcesOutput["cluster-resources/nodes-errors.json"], err = marshalNonNil(nodeErrors)
 	if err != nil {
-		return nil, err
+		errs["nodes"] = err
 	}
 
 	groups, resources, groupsResourcesErrors := apiResources(ctx, client)
@@ -140,7 +143,7 @@ func ClusterResources(c *Collector) (map[string][]byte, error) {
 	clusterResourcesOutput["cluster-resources/resources.json"] = resources
 	clusterResourcesOutput["cluster-resources/groups-resources-errors.json"], err = marshalNonNil(groupsResourcesErrors)
 	if err != nil {
-		return nil, err
+		errs["apiresources"] = err
 	}
 
 	// limit ranges
@@ -150,7 +153,7 @@ func ClusterResources(c *Collector) (map[string][]byte, error) {
 	}
 	clusterResourcesOutput["cluster-resources/limitranges-errors.json"], err = marshalNonNil(limitRangesErrors)
 	if err != nil {
-		return nil, err
+		errs["limitranges"] = err
 	}
 
 	// auth cani
@@ -160,7 +163,7 @@ func ClusterResources(c *Collector) (map[string][]byte, error) {
 	}
 	clusterResourcesOutput["cluster-resources/auth-cani-list-errors.json"], err = marshalNonNil(authCanIErrors)
 	if err != nil {
-		return nil, err
+		errs["limitranges"] = err
 	}
 
 	//Events
@@ -170,10 +173,10 @@ func ClusterResources(c *Collector) (map[string][]byte, error) {
 	}
 	clusterResourcesOutput["cluster-resources/events-errors.json"], err = marshalNonNil(eventsErrors)
 	if err != nil {
-		return nil, err
+		errs["events"] = err
 	}
 
-	return clusterResourcesOutput, nil
+	return clusterResourcesOutput, errs
 }
 
 func namespaces(ctx context.Context, client *kubernetes.Clientset) ([]byte, *corev1.NamespaceList, []string) {

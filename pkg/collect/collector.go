@@ -42,8 +42,19 @@ func isExcluded(excludeVal multitype.BoolOrString) (bool, error) {
 	return parsed, nil
 }
 
+<<<<<<< HEAD
 // checks if a given collector has a spec with 'exclude' that evaluates to true.
 func (c *Collector) IsExcluded() bool {
+=======
+func (c *Collector) RunCollectorSync(globalRedactors []*troubleshootv1beta2.Redact, analyzers []*troubleshootv1beta2.Analyze, progressChan chan interface{}) (result map[string][]byte, err error) {
+	defer func() {
+		if r := recover(); r != nil {
+			err = errors.Errorf("recovered from panic: %v", r)
+		}
+	}()
+
+	var isExcludedResult bool
+>>>>>>> prevent failure on not unnecessary collectors
 	if c.Collect.ClusterInfo != nil {
 		isExcludedResult, err := isExcluded(c.Collect.ClusterInfo.Exclude)
 		if err != nil {
@@ -60,6 +71,18 @@ func (c *Collector) IsExcluded() bool {
 		if isExcludedResult {
 			return true
 		}
+<<<<<<< HEAD
+=======
+		errs := make(map[string]error)
+		result, errs = ClusterResources(c, analyzers)
+		for collector, e := range errs {
+			if isCollectorRequired(collector, analyzers) || collector == "client" {
+				return nil, err
+			}
+			progressChan <- errors.Errorf("failed to parse errors to json in default collector %s: %v", collector, e)
+		}
+
+>>>>>>> prevent failure on not unnecessary collectors
 	} else if c.Collect.Secret != nil {
 		isExcludedResult, err := isExcluded(c.Collect.Secret.Exclude)
 		if err != nil {
@@ -273,4 +296,66 @@ func (cs Collectors) CheckRBAC(ctx context.Context) error {
 		}
 	}
 	return nil
+}
+
+func isCollectorRequired(collector string, analyzers []*troubleshootv1beta2.Analyze) bool {
+	if analyzers != nil {
+		if collector == "namespace" {
+			for _, analyzer := range analyzers {
+				if analyzer.ContainerRuntime != nil {
+					return true
+				}
+			}
+		} else if collector == "deployments" {
+			for _, analyzer := range analyzers {
+				if analyzer.DeploymentStatus != nil {
+					return true
+				}
+			}
+		} else if collector == "statefulsets" {
+			for _, analyzer := range analyzers {
+				if analyzer.StatefulsetStatus != nil {
+					return true
+				}
+			}
+		} else if collector == "ingress" {
+			for _, analyzer := range analyzers {
+				if analyzer.Ingress != nil {
+					return true
+				}
+			}
+		} else if collector == "storageclasses" {
+			for _, analyzer := range analyzers {
+				if analyzer.StorageClass != nil {
+					return true
+				}
+			}
+		} else if collector == "crds" {
+			for _, analyzer := range analyzers {
+				if analyzer.CustomResourceDefinition != nil {
+					return true
+				}
+			}
+		} else if collector == "imagePullSecrets" {
+			for _, analyzer := range analyzers {
+				if analyzer.ImagePullSecret != nil {
+					return true
+				}
+			}
+		} else if collector == "nodes" {
+			for _, analyzer := range analyzers {
+				if analyzer.Distribution != nil || analyzer.NodeResources != nil {
+					return true
+				}
+			}
+		} else if collector == "apiresources" {
+			for _, analyzer := range analyzers {
+				if analyzer.Distribution != nil {
+					return true
+				}
+			}
+		}
+
+	}
+	return false
 }
