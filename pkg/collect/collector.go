@@ -284,10 +284,10 @@ func (cs Collectors) CheckRBAC(ctx context.Context) error {
 }
 
 func isCollectorRequired(errs map[string]error, analyzers []*troubleshootv1beta2.Analyze) (string, bool) {
+	if _, ok := errs["client"]; ok {
+		return "client", true
+	}
 	if analyzers != nil {
-		if _, ok := errs["client"]; ok {
-			return "client", true
-		}
 		for _, analyzer := range analyzers {
 			if _, ok := errs["namespace"]; ok && analyzer.ContainerRuntime != nil {
 				return "namespace", true
@@ -309,7 +309,6 @@ func isCollectorRequired(errs map[string]error, analyzers []*troubleshootv1beta2
 				return "apiresources", true
 			}
 		}
-		return "", false
 	}
-
+	return "", false
 }
