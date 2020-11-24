@@ -42,19 +42,8 @@ func isExcluded(excludeVal multitype.BoolOrString) (bool, error) {
 	return parsed, nil
 }
 
-<<<<<<< HEAD
 // checks if a given collector has a spec with 'exclude' that evaluates to true.
 func (c *Collector) IsExcluded() bool {
-=======
-func (c *Collector) RunCollectorSync(globalRedactors []*troubleshootv1beta2.Redact, analyzers []*troubleshootv1beta2.Analyze, progressChan chan interface{}) (result map[string][]byte, err error) {
-	defer func() {
-		if r := recover(); r != nil {
-			err = errors.Errorf("recovered from panic: %v", r)
-		}
-	}()
-
-	var isExcludedResult bool
->>>>>>> prevent failure on not unnecessary collectors
 	if c.Collect.ClusterInfo != nil {
 		isExcludedResult, err := isExcluded(c.Collect.ClusterInfo.Exclude)
 		if err != nil {
@@ -71,18 +60,6 @@ func (c *Collector) RunCollectorSync(globalRedactors []*troubleshootv1beta2.Reda
 		if isExcludedResult {
 			return true
 		}
-<<<<<<< HEAD
-=======
-		errs := make(map[string]error)
-		result, errs = ClusterResources(c, analyzers)
-		for collector, e := range errs {
-			if isCollectorRequired(collector, analyzers) || collector == "client" {
-				return nil, err
-			}
-			progressChan <- errors.Errorf("failed to parse errors to json in default collector %s: %v", collector, e)
-		}
-
->>>>>>> prevent failure on not unnecessary collectors
 	} else if c.Collect.Secret != nil {
 		isExcludedResult, err := isExcluded(c.Collect.Secret.Exclude)
 		if err != nil {
@@ -184,10 +161,10 @@ func (c *Collector) RunCollectorSync(globalRedactors []*troubleshootv1beta2.Reda
 	return false
 }
 
-func (c *Collector) RunCollectorSync(globalRedactors []*troubleshootv1beta2.Redact) (result map[string][]byte, err error) {
+func (c *Collector) RunCollectorSync(globalRedactors []*troubleshootv1beta2.Redact, analyzers []*troubleshootv1beta2.Analyze, progressChan chan interface{}) (result map[string][]byte, err error) {
 	defer func() {
 		if r := recover(); r != nil {
-			err = errors.Errorf("recovered rom panic: %v", r)
+			err = errors.Errorf("recovered from panic: %v", r)
 		}
 	}()
 
@@ -198,7 +175,14 @@ func (c *Collector) RunCollectorSync(globalRedactors []*troubleshootv1beta2.Reda
 	if c.Collect.ClusterInfo != nil {
 		result, err = ClusterInfo(c)
 	} else if c.Collect.ClusterResources != nil {
-		result, err = ClusterResources(c)
+		errs := make(map[string]error)
+		result, errs = ClusterResources(c, analyzers)
+		for collector, e := range errs {
+			if isCollectorRequired(collector, analyzers) || collector == "client" {
+				return nil, err
+			}
+			progressChan <- errors.Errorf("failed to parse errors to json in default collector %s: %v", collector, e)
+		}
 	} else if c.Collect.Secret != nil {
 		result, err = Secret(c, c.Collect.Secret)
 	} else if c.Collect.Logs != nil {
