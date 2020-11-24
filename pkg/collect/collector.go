@@ -178,10 +178,10 @@ func (c *Collector) RunCollectorSync(globalRedactors []*troubleshootv1beta2.Reda
 		errs := make(map[string]error)
 		result, errs = ClusterResources(c, analyzers)
 		for collector, e := range errs {
-			if isCollectorRequired(collector, analyzers) || collector == "client" {
+			if isCollectorRequired(collector, errs, analyzers) || collector == "client" {
 				return nil, err
 			}
-			progressChan <- errors.Errorf("failed to parse errors to json in default collector %s: %v", collector, e)
+			progressChan <- errors.Errorf("default collector %s failed: %v", collector, e)
 		}
 	} else if c.Collect.Secret != nil {
 		result, err = Secret(c, c.Collect.Secret)
@@ -282,64 +282,30 @@ func (cs Collectors) CheckRBAC(ctx context.Context) error {
 	return nil
 }
 
-func isCollectorRequired(collector string, analyzers []*troubleshootv1beta2.Analyze) bool {
+func isCollectorRequired(collector string, errs map[string]error, analyzers []*troubleshootv1beta2.Analyze) bool {
 	if analyzers != nil {
-		if collector == "namespace" {
-			for _, analyzer := range analyzers {
-				if analyzer.ContainerRuntime != nil {
-					return true
-				}
-			}
-		} else if collector == "deployments" {
-			for _, analyzer := range analyzers {
-				if analyzer.DeploymentStatus != nil {
-					return true
-				}
-			}
-		} else if collector == "statefulsets" {
-			for _, analyzer := range analyzers {
-				if analyzer.StatefulsetStatus != nil {
-					return true
-				}
-			}
-		} else if collector == "ingress" {
-			for _, analyzer := range analyzers {
-				if analyzer.Ingress != nil {
-					return true
-				}
-			}
-		} else if collector == "storageclasses" {
-			for _, analyzer := range analyzers {
-				if analyzer.StorageClass != nil {
-					return true
-				}
-			}
-		} else if collector == "crds" {
-			for _, analyzer := range analyzers {
-				if analyzer.CustomResourceDefinition != nil {
-					return true
-				}
-			}
-		} else if collector == "imagePullSecrets" {
-			for _, analyzer := range analyzers {
-				if analyzer.ImagePullSecret != nil {
-					return true
-				}
-			}
-		} else if collector == "nodes" {
-			for _, analyzer := range analyzers {
-				if analyzer.Distribution != nil || analyzer.NodeResources != nil {
-					return true
-				}
-			}
-		} else if collector == "apiresources" {
-			for _, analyzer := range analyzers {
-				if analyzer.Distribution != nil {
-					return true
-				}
+		for _, analyzer := range analyzers {
+			if _, ok := errs["namespace"]; ok && analyzer.ContainerRuntime != nil {
+				return true
+			} else if _, ok := errs["deployments"]; ok && analyzer.DeploymentStatus != nil {
+				return true
+			} else if _, ok := errs["statefulsets"]; ok && analyzer.StatefulsetStatus != nil {
+				return true
+			} else if _, ok := errs["ingress"]; ok && analyzer.Ingress != nil {
+				return true
+			} else if _, ok := errs["storageclasses"]; ok && analyzer.StorageClass != nil {
+				return true
+			} else if _, ok := errs["crds"]; ok && analyzer.CustomResourceDefinition != nil {
+				return true
+			} else if _, ok := errs["imagePullSecrets"]; ok && analyzer.ImagePullSecret != nil {
+				return true
+			} else if _, ok := errs["nodes"]; ok && (analyzer.NodeResources != nil || analyzer.Distribution != nil) {
+				return true
+			} else if _, ok := errs["apiresources"]; ok && analyzer.Distribution != nil {
+				return true
 			}
 		}
-
+		return false
 	}
-	return false
+
 }

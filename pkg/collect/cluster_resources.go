@@ -111,13 +111,14 @@ func ClusterResources(c *Collector, analyzers []*troubleshootv1beta2.Analyze) (m
 	// crds
 	crdClient, err := apiextensionsv1beta1clientset.NewForConfig(c.ClientConfig)
 	if err != nil {
-		errs["namespace"] = err
-	}
-	customResourceDefinitions, crdErrors := crds(ctx, crdClient)
-	clusterResourcesOutput["cluster-resources/custom-resource-definitions.json"] = customResourceDefinitions
-	clusterResourcesOutput["cluster-resources/custom-resource-definitions-errors.json"], err = marshalNonNil(crdErrors)
-	if err != nil {
 		errs["crds"] = err
+	} else {
+		customResourceDefinitions, crdErrors := crds(ctx, crdClient)
+		clusterResourcesOutput["cluster-resources/custom-resource-definitions.json"] = customResourceDefinitions
+		clusterResourcesOutput["cluster-resources/custom-resource-definitions-errors.json"], err = marshalNonNil(crdErrors)
+		if err != nil {
+			errs["crds"] = err
+		}
 	}
 
 	// imagepullsecrets
