@@ -177,11 +177,12 @@ func (c *Collector) RunCollectorSync(globalRedactors []*troubleshootv1beta2.Reda
 	} else if c.Collect.ClusterResources != nil {
 		errs := make(map[string]error)
 		result, errs = ClusterResources(c, analyzers)
-		for collector, e := range errs {
-			if isCollectorRequired(collector, errs, analyzers) || collector == "client" {
-				return nil, err
-			}
-			progressChan <- errors.Errorf("default collector %s failed: %v", collector, e)
+		collector, isRequired := isCollectorRequired(errs, analyzers)
+		if isRequired {
+			return nil, errs[collector]
+		}
+		for collector, err := range errs {
+			progressChan <- errors.Errorf("default collector %s failed: %v", collector, err)
 		}
 	} else if c.Collect.Secret != nil {
 		result, err = Secret(c, c.Collect.Secret)
@@ -282,30 +283,33 @@ func (cs Collectors) CheckRBAC(ctx context.Context) error {
 	return nil
 }
 
-func isCollectorRequired(collector string, errs map[string]error, analyzers []*troubleshootv1beta2.Analyze) bool {
+func isCollectorRequired(errs map[string]error, analyzers []*troubleshootv1beta2.Analyze) (string, bool) {
 	if analyzers != nil {
+		if _, ok := errs["client"]; ok {
+			return "client", true
+		}
 		for _, analyzer := range analyzers {
 			if _, ok := errs["namespace"]; ok && analyzer.ContainerRuntime != nil {
-				return true
+				return "namespace", true
 			} else if _, ok := errs["deployments"]; ok && analyzer.DeploymentStatus != nil {
-				return true
+				return "deployments", true
 			} else if _, ok := errs["statefulsets"]; ok && analyzer.StatefulsetStatus != nil {
-				return true
+				return "statefulsets", true
 			} else if _, ok := errs["ingress"]; ok && analyzer.Ingress != nil {
-				return true
+				return "ingress", true
 			} else if _, ok := errs["storageclasses"]; ok && analyzer.StorageClass != nil {
-				return true
+				return "storageclasses", true
 			} else if _, ok := errs["crds"]; ok && analyzer.CustomResourceDefinition != nil {
-				return true
-			} else if _, ok := errs["imagePullSecrets"]; ok && analyzer.ImagePullSecret != nil {
-				return true
+				return "crds", true
+			} else if _, ok := errs["imagepullsecrets"]; ok && analyzer.ImagePullSecret != nil {
+				return "imagepullsecrets", true
 			} else if _, ok := errs["nodes"]; ok && (analyzer.NodeResources != nil || analyzer.Distribution != nil) {
-				return true
+				return "nodes", true
 			} else if _, ok := errs["apiresources"]; ok && analyzer.Distribution != nil {
-				return true
+				return "apiresources", true
 			}
 		}
-		return false
+		return "", false
 	}
 
 }
