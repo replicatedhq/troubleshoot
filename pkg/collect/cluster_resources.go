@@ -164,7 +164,7 @@ func ClusterResources(c *Collector, analyzers []*troubleshootv1beta2.Analyze) (m
 	}
 	clusterResourcesOutput["cluster-resources/auth-cani-list-errors.json"], err = marshalNonNil(authCanIErrors)
 	if err != nil {
-		errs["limitranges"] = err
+		errs["authcani"] = err
 	}
 
 	//Events
