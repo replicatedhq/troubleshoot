@@ -177,12 +177,14 @@ func (c *Collector) RunCollectorSync(globalRedactors []*troubleshootv1beta2.Reda
 	} else if c.Collect.ClusterResources != nil {
 		errs := make(map[string]error)
 		result, errs = ClusterResources(c, analyzers)
-		collector, isRequired := isCollectorRequired(errs, analyzers)
-		if isRequired {
-			return nil, errs[collector]
-		}
-		for collector, err := range errs {
-			progressChan <- errors.Errorf("default collector %s failed: %v", collector, err)
+		if errs != nil {
+			collector, isRequired := isCollectorRequired(errs, analyzers)
+			if isRequired {
+				return result, errs[collector]
+			}
+			for collector, err := range errs {
+				progressChan <- errors.Errorf("default collector %s failed: %v", collector, err)
+			}
 		}
 	} else if c.Collect.Secret != nil {
 		result, err = Secret(c, c.Collect.Secret)
