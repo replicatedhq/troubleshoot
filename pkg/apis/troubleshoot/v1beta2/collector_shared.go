@@ -120,7 +120,21 @@ type Put struct {
 
 type Database struct {
 	CollectorMeta `json:",inline" yaml:",inline"`
-	URI           string `json:"uri" yaml:"uri"`
+	URI           *URI `json:"uri" yaml:"uri"`
+}
+type URI struct {
+	Value     string     `json:"value" yaml:"value"`
+	ValueFrom *ValueFrom `json:"valueFrom" yaml:"valueFrom"`
+}
+
+type ValueFrom struct {
+	SecretKeyRef *SecretKeyRef `json:"secretKeyRef" yaml:"secretKeyRef"`
+}
+
+type SecretKeyRef struct {
+	Name      string `json:"name" yaml:"name"`
+	Key       string `json:"key" yaml:"key"`
+	Namespace string `json:"namespace" yaml:"namespace"`
 }
 
 type Collectd struct {
@@ -348,6 +362,18 @@ func (c *Collect) GetName() string {
 		collector = "copy"
 		name = c.Copy.CollectorName
 		selector = strings.Join(c.Copy.Selector, ",")
+	}
+	if c.Mysql != nil {
+		collector = "mysql"
+		name = c.Mysql.CollectorName
+	}
+	if c.Postgres != nil {
+		collector = "postgre"
+		name = c.Postgres.CollectorName
+	}
+	if c.Redis != nil {
+		collector = "redis"
+		name = c.Redis.CollectorName
 	}
 	if c.HTTP != nil {
 		collector = "http"

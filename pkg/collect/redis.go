@@ -12,8 +12,11 @@ import (
 
 func Redis(c *Collector, databaseCollector *troubleshootv1beta2.Database) (map[string][]byte, error) {
 	databaseConnection := DatabaseConnection{}
-
-	opt, err := redis.ParseURL(databaseCollector.URI)
+	uri, err := getUri(c.ClientConfig, databaseCollector)
+	if err != nil {
+		return nil, err
+	}
+	opt, err := redis.ParseURL(uri)
 	if err != nil {
 		databaseConnection.Error = err.Error()
 	} else {
