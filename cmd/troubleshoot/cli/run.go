@@ -691,7 +691,8 @@ func tarSupportBundleDir(inputDir, outputFilename string) error {
 			return nil
 		}
 
-		nameInArchive, err := filepath.Rel(inputDir, filename)
+		parentDirName := filepath.Dir(inputDir) // this is to have the files inside a subdirectory
+		nameInArchive, err := filepath.Rel(parentDirName, filename)
 		if err != nil {
 			return errors.Wrap(err, "failed to create relative file name")
 		}
