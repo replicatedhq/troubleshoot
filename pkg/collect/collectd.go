@@ -139,12 +139,12 @@ func createDaemonSet(ctx context.Context, client *kubernetes.Clientset, rrdColle
 		},
 	}
 
-	if rrdCollector.ImagePullSecret != nil && rrdCollector.ImagePullSecret.Name != "" {
-		err := createSecret(ctx, client, namespace, rrdCollector.ImagePullSecret)
+	if rrdCollector.ImagePullSecret != nil && rrdCollector.ImagePullSecret.Data != nil {
+		secretName, err := createSecret(ctx, client, namespace, rrdCollector.ImagePullSecret)
 		if err != nil {
 			return "", errors.Wrap(err, "failed to create secret")
 		}
-		ds.Spec.Template.Spec.ImagePullSecrets = append(ds.Spec.Template.Spec.ImagePullSecrets, corev1.LocalObjectReference{Name: rrdCollector.ImagePullSecret.Name})
+		ds.Spec.Template.Spec.ImagePullSecrets = append(ds.Spec.Template.Spec.ImagePullSecrets, corev1.LocalObjectReference{Name: secretName})
 	}
 
 	createdDS, err := client.AppsV1().DaemonSets(namespace).Create(ctx, &ds, metav1.CreateOptions{})

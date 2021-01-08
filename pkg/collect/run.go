@@ -155,12 +155,12 @@ func runPod(ctx context.Context, client *kubernetes.Clientset, runCollector *tro
 		},
 	}
 
-	if runCollector.ImagePullSecret != nil && runCollector.ImagePullSecret.Name != "" {
-		err := createSecret(ctx, client, pod.Namespace, runCollector.ImagePullSecret)
+	if runCollector.ImagePullSecret != nil && runCollector.ImagePullSecret.Data != nil {
+		secretName, err := createSecret(ctx, client, pod.Namespace, runCollector.ImagePullSecret)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to create secret")
 		}
-		pod.Spec.ImagePullSecrets = append(pod.Spec.ImagePullSecrets, corev1.LocalObjectReference{Name: runCollector.ImagePullSecret.Name})
+		pod.Spec.ImagePullSecrets = append(pod.Spec.ImagePullSecrets, corev1.LocalObjectReference{Name: secretName})
 	}
 	created, err := client.CoreV1().Pods(namespace).Create(ctx, &pod, metav1.CreateOptions{})
 	if err != nil {
@@ -170,33 +170,33 @@ func runPod(ctx context.Context, client *kubernetes.Clientset, runCollector *tro
 	return created, nil
 }
 
-func createSecret(ctx context.Context, client *kubernetes.Clientset, namespace string, imagePullSecret *troubleshootv1beta2.ImagePullSecrets) error {
+func createSecret(ctx context.Context, client *kubernetes.Clientset, namespace string, imagePullSecret *troubleshootv1beta2.ImagePullSecrets) (string, error) {
 	if imagePullSecret.Data == nil {
-		return nil
+		return "", nil
 	}
 
 	var out bytes.Buffer
 	data := make(map[string][]byte)
 	if imagePullSecret.SecretType != "kubernetes.io/dockerconfigjson" {
-		return errors.Errorf("ImagePullSecret must be of type: kubernetes.io/dockerconfigjson")
+		return "", errors.Errorf("ImagePullSecret must be of type: kubernetes.io/dockerconfigjson")
 	}
 
 	// Check if required field in data exists
 	v, found := imagePullSecret.Data[".dockerconfigjson"]
 	if !found {
-		return errors.Errorf("Secret type kubernetes.io/dockerconfigjson requires argument \".dockerconfigjson\"")
+		return "", errors.Errorf("Secret type kubernetes.io/dockerconfigjson requires argument \".dockerconfigjson\"")
 	}
 	if len(imagePullSecret.Data) > 1 {
-		return errors.Errorf("Secret type kubernetes.io/dockerconfigjson accepts only one argument \".dockerconfigjson\"")
+		return "", errors.Errorf("Secret type kubernetes.io/dockerconfigjson accepts only one argument \".dockerconfigjson\"")
 	}
 	// K8s client accepts only Json formated files as data, provided data must be decoded and indented
 	parsedConfig, err := base64.StdEncoding.DecodeString(v)
 	if err != nil {
-		return errors.Wrap(err, "Unable to decode data.")
+		return "", errors.Wrap(err, "Unable to decode data.")
 	}
 	err = json.Indent(&out, parsedConfig, "", "\t")
 	if err != nil {
-		return errors.Wrap(err, "Unable to parse encoded data.")
+		return "", errors.Wrap(err, "Unable to parse encoded data.")
 	}
 	data[".dockerconfigjson"] = out.Bytes()
 
@@ -214,10 +214,10 @@ func createSecret(ctx context.Context, client *kubernetes.Clientset, namespace s
 		Type: corev1.SecretType(imagePullSecret.SecretType),
 	}
 
-	_, err = client.CoreV1().Secrets(namespace).Create(ctx, &secret, metav1.CreateOptions{})
+	created, err := client.CoreV1().Secrets(namespace).Create(ctx, &secret, metav1.CreateOptions{})
 	if err != nil {
-		return errors.Wrap(err, "failed to create secret")
+		return "", errors.Wrap(err, "failed to create secret")
 	}
 
-	return nil
+	return created.Name, nil
 }
