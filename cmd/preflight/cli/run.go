@@ -86,15 +86,16 @@ func runPreflights(v *viper.Viper, arg string) error {
 		return errors.Wrapf(err, "failed to parse %s", arg)
 	}
 
-	preflightSpec := obj.(*troubleshootv1beta2.Preflight)
+	var collectResults preflight.CollectResult
+	preflightSpecName := ""
+	finishedCh := make(chan bool, 1)
+	progressCh := make(chan interface{}, 0) // non-zero buffer will result in missed messages
 
 	s := spin.New()
-	finishedCh := make(chan bool, 1)
-	progressChan := make(chan interface{}, 0) // non-zero buffer will result in missed messages
 	go func() {
 		for {
 			select {
-			case msg, ok := <-progressChan:
+			case msg, ok := <-progressCh:
 				if !ok {
 					continue
 				}
@@ -114,47 +115,40 @@ func runPreflights(v *viper.Viper, arg string) error {
 			}
 		}
 	}()
+
 	defer func() {
 		close(finishedCh)
+		close(progressCh)
 	}()
 
-	restConfig, err := k8sutil.GetRESTConfig()
-	if err != nil {
-		return errors.Wrap(err, "failed to convert kube flags to rest config")
-	}
-
-	collectOpts := preflight.CollectOpts{
-		Namespace:              v.GetString("namespace"),
-		IgnorePermissionErrors: v.GetBool("collect-without-permissions"),
-		ProgressChan:           progressChan,
-		KubernetesRestConfig:   restConfig,
-	}
-
-	if v.GetString("since") != "" || v.GetString("since-time") != "" {
-		err := parseTimeFlags(v, progressChan, preflightSpec.Spec.Collectors)
+	if preflightSpec, ok := obj.(*troubleshootv1beta2.Preflight); ok {
+		r, err := collectInCluster(preflightSpec, finishedCh, progressCh)
 		if err != nil {
-			return err
+			return errors.Wrap(err, "failed to collect in cluster")
 		}
+		collectResults = *r
+		preflightSpecName = preflightSpec.Name
+	} else if hostPreflightSpec, ok := obj.(*troubleshootv1beta2.HostPreflight); ok {
+		r, err := collectHost(hostPreflightSpec, finishedCh, progressCh)
+		if err != nil {
+			return errors.Wrap(err, "failed to collect from host")
+		}
+		collectResults = *r
+		preflightSpecName = hostPreflightSpec.Name
 	}
 
-	collectResults, err := preflight.Collect(collectOpts, preflightSpec)
-	if err != nil {
-		if !collectResults.IsRBACAllowed {
-			if preflightSpec.Spec.UploadResultsTo != "" {
-				err := uploadErrors(preflightSpec.Spec.UploadResultsTo, collectResults.Collectors)
-				if err != nil {
-					progressChan <- err
-				}
-			}
-		}
-		return err
+	if collectResults == nil {
+		return errors.New("no results")
 	}
 
 	analyzeResults := collectResults.Analyze()
-	if preflightSpec.Spec.UploadResultsTo != "" {
-		err := uploadResults(preflightSpec.Spec.UploadResultsTo, analyzeResults)
-		if err != nil {
-			progressChan <- err
+
+	if preflightSpec, ok := obj.(*troubleshootv1beta2.Preflight); ok {
+		if preflightSpec.Spec.UploadResultsTo != "" {
+			err := uploadResults(preflightSpec.Spec.UploadResultsTo, analyzeResults)
+			if err != nil {
+				progressCh <- err
+			}
 		}
 	}
 
@@ -164,10 +158,62 @@ func runPreflights(v *viper.Viper, arg string) error {
 		if len(analyzeResults) == 0 {
 			return errors.New("no data has been collected")
 		}
-		return showInteractiveResults(preflightSpec.Name, analyzeResults)
+		return showInteractiveResults(preflightSpecName, analyzeResults)
 	}
 
-	return showStdoutResults(v.GetString("format"), preflightSpec.Name, analyzeResults)
+	return showStdoutResults(v.GetString("format"), preflightSpecName, analyzeResults)
+}
+
+func collectInCluster(preflightSpec *troubleshootv1beta2.Preflight, finishedCh chan bool, progressCh chan interface{}) (*preflight.CollectResult, error) {
+	v := viper.GetViper()
+
+	restConfig, err := k8sutil.GetRESTConfig()
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to convert kube flags to rest config")
+	}
+
+	collectOpts := preflight.CollectOpts{
+		Namespace:              v.GetString("namespace"),
+		IgnorePermissionErrors: v.GetBool("collect-without-permissions"),
+		ProgressChan:           progressCh,
+		KubernetesRestConfig:   restConfig,
+	}
+
+	if v.GetString("since") != "" || v.GetString("since-time") != "" {
+		err := parseTimeFlags(v, progressCh, preflightSpec.Spec.Collectors)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	collectResults, err := preflight.Collect(collectOpts, preflightSpec)
+	if err != nil {
+		if !collectResults.IsRBACAllowed() {
+			if preflightSpec.Spec.UploadResultsTo != "" {
+				clusterCollectResults := collectResults.(preflight.ClusterCollectResult)
+				err := uploadErrors(preflightSpec.Spec.UploadResultsTo, clusterCollectResults.Collectors)
+				if err != nil {
+					progressCh <- err
+				}
+			}
+		}
+		return nil, err
+	}
+
+	return &collectResults, nil
+}
+
+func collectHost(hostPreflightSpec *troubleshootv1beta2.HostPreflight, finishedCh chan bool, progressCh chan interface{}) (*preflight.CollectResult, error) {
+	collectOpts := preflight.CollectOpts{
+		ProgressChan: progressCh,
+	}
+
+	collectResults, err := preflight.CollectHost(collectOpts, hostPreflightSpec)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to collect from host")
+	}
+
+	return &collectResults, nil
 }
 
 func parseTimeFlags(v *viper.Viper, progressChan chan interface{}, collectors []*troubleshootv1beta2.Collect) error {

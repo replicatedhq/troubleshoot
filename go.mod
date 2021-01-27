@@ -32,6 +32,7 @@ require (
 	github.com/prometheus/procfs v0.0.5 // indirect
 	github.com/replicatedhq/termui/v3 v3.1.1-0.20200811145416-f40076d26851
 	github.com/segmentio/ksuid v1.0.3
+	github.com/shirou/gopsutil v3.20.12+incompatible
 	github.com/spf13/cobra v0.0.5
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.4.0

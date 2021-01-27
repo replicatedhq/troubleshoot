@@ -1,0 +1,17 @@
+apiVersion: troubleshoot.sh/v1beta2
+kind: HostPreflight
+metadata:
+  name: example
+spec:
+  analyzers:
+    - cpu:
+        outcomes:
+          - fail:
+              when: "< 4"
+              message: This server has less than 4 CPU cores, and we require 8, but recommend 16
+          - warn:
+              when: "< 16"
+              message: This server has at least 4 CPU cores, but we recommend 16 or more
+          - pass:
+              message: This server has sufficient CPU cores
+  
