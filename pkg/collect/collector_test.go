@@ -6,7 +6,6 @@ import (
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/replicatedhq/troubleshoot/pkg/multitype"
 	"github.com/stretchr/testify/require"
-	"go.undefinedlabs.com/scopeagent"
 )
 
 func TestCollector_RunCollectorSyncNoRedact(t *testing.T) {
@@ -280,9 +279,6 @@ pwd=somethinggoeshere;`,
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			scopetest := scopeagent.StartTest(t)
-			defer scopetest.End()
-
 			req := require.New(t)
 			c := &Collector{
 				Collect: tt.Collect,
@@ -343,9 +339,6 @@ pwd=somethinggoeshere;`,
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			scopetest := scopeagent.StartTest(t)
-			defer scopetest.End()
-
 			req := require.New(t)
 			c := &Collector{
 				Collect: tt.Collect,

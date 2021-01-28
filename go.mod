@@ -39,7 +39,6 @@ require (
 	github.com/tj/go-spin v1.1.0
 	github.com/ulikunitz/xz v0.5.6 // indirect
 	go.opencensus.io v0.22.0 // indirect
-	go.undefinedlabs.com/scopeagent v0.1.7
 	golang.org/x/net v0.0.0-20200202094626-16171245cfb2 // indirect
 	golang.org/x/sys v0.0.0-20200202164722-d101bd2416d5 // indirect
 	golang.org/x/tools v0.0.0-20191010075000-0337d82405ff // indirect
@@ -51,5 +50,4 @@ require (
 	k8s.io/cli-runtime v0.18.0
 	k8s.io/client-go v0.18.2
 	sigs.k8s.io/controller-runtime v0.5.1-0.20200402191424-df180accb901
-	sigs.k8s.io/controller-tools v0.3.0 // indirect
 )
