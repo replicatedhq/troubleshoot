@@ -26,7 +26,4 @@ vendor
 *.swo
 *~
 
-# scope test logs
-scope-go-*.log
-
 dist

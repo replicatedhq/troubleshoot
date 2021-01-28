@@ -6,7 +6,6 @@ import (
 
 	"github.com/blang/semver"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
-	"go.undefinedlabs.com/scopeagent"
 )
 
 func Test_analyzeClusterVersionResult(t *testing.T) {
@@ -93,8 +92,6 @@ func Test_analyzeClusterVersionResult(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			scopetest := scopeagent.StartTest(t)
-			defer scopetest.End()
 			got, err := analyzeClusterVersionResult(tt.args.k8sVersion, tt.args.outcomes, tt.args.checkName)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("analyzeClusterVersionResult() error = %v, wantErr %v", err, tt.wantErr)

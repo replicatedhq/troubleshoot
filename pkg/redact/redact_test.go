@@ -8,7 +8,6 @@ import (
 
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/stretchr/testify/require"
-	"go.undefinedlabs.com/scopeagent"
 )
 
 func Test_Redactors(t *testing.T) {
@@ -1624,8 +1623,6 @@ func Test_Redactors(t *testing.T) {
 	wantRedactionsCount := 25
 
 	t.Run("test default redactors", func(t *testing.T) {
-		scopetest := scopeagent.StartTest(t)
-		defer scopetest.End()
 		req := require.New(t)
 		redactors, err := getRedactors("testpath")
 		req.NoError(err)
@@ -1767,8 +1764,6 @@ func Test_redactMatchesPath(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			scopetest := scopeagent.StartTest(t)
-			defer scopetest.End()
 			req := require.New(t)
 
 			got, err := redactMatchesPath(tt.args.path, tt.args.redact)
