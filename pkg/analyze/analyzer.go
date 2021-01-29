@@ -48,6 +48,13 @@ func HostAnalyze(hostAnalyzer *troubleshootv1beta2.HostAnalyze, getFile getColle
 		}
 		return []*AnalyzeResult{result}, nil
 	}
+	if hostAnalyzer.TCPLoadBalancer != nil {
+		result, err := analyzeHostTCPLoadBalancer(hostAnalyzer.TCPLoadBalancer, getFile)
+		if err != nil {
+			return nil, err
+		}
+		return []*AnalyzeResult{result}, nil
+	}
 
 	return nil, errors.New("invalid analyzer")
 }

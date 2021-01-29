@@ -11,14 +11,50 @@ type HostCollectorMeta struct {
 }
 
 type CPU struct {
+	HostCollectorMeta `json:",inline" yaml:",inline"`
 }
 
 type Memory struct {
+	HostCollectorMeta `json:",inline" yaml:",inline"`
+}
+
+type TCPLoadBalancer struct {
+	HostCollectorMeta `json:",inline" yaml:",inline"`
+	Address           string `json:"address"`
+	Port              int    `json:"port"`
+	Timeout           string `json:"timeout,omitempty"`
+}
+
+type HTTPLoadBalancer struct {
+	HostCollectorMeta `json:",inline" yaml:",inline"`
+	Address           string `json:"address"`
+	Port              int    `json:"port"`
+	Path              string `json:"path"`
+	Timeout           string `json:"timeout,omitempty"`
+}
+
+type TCPPortStatus struct {
+	HostCollectorMeta `json:",inline" yaml:",inline"`
+	Interface         string `json:"interface,omitempty"`
+	Port              int    `json:"port"`
+}
+
+type Kubernetes struct {
+	HostCollectorMeta `json:",inline" yaml:",inline"`
+}
+
+type IPV4Interfaces struct {
+	HostCollectorMeta `json:",inline" yaml:",inline"`
 }
 
 type HostCollect struct {
-	CPU    *CPU    `json:"cpu,omitempty" yaml:"cpu,omitempty"`
-	Memory *Memory `json:"memory,omitempty" yaml:"memory,omitempty"`
+	CPU              *CPU              `json:"cpu,omitempty" yaml:"cpu,omitempty"`
+	Memory           *Memory           `json:"memory,omitempty" yaml:"memory,omitempty"`
+	TCPLoadBalancer  *TCPLoadBalancer  `json:"tcpLoadBalancer,omitempty" yaml:"tcpLoadBalancer,omitempty"`
+	HTTPLoadBalancer *HTTPLoadBalancer `json:"httpLoadBalancer,omitempty" yaml:"httpLoadBalancer,omitempty"`
+	TCPPortStatus    *TCPPortStatus    `json:"tcpPortStatus,omitempty" yaml:"tcpPortStatus,omitempty"`
+	Kubernetes       *Kubernetes       `json:"kubernetes,omitempty" yaml:"kubernetes,omitempty"`
+	IPV4Interfaces   *IPV4Interfaces   `json:"ipv4Interfaces,omitempty" yaml:"ipv4Interfaces,omitempty"`
 }
 
 func (c *HostCollect) GetName() string {

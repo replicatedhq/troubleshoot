@@ -3,6 +3,12 @@ kind: HostPreflight
 metadata:
   name: example
 spec:
+  collectors:
+    - tcpLoadBalancer:
+        collectorName: LB1
+        address: 10.1.1.1
+        port: 6443
+        timeout: 5000ms
   analyzers:
     - cpu:
         outcomes:
@@ -14,4 +20,17 @@ spec:
               message: This server has at least 4 CPU cores, but we recommend 16 or more
           - pass:
               message: This server has sufficient CPU cores
-  
+    - tcpLoadBalancer:
+        collectorName: LB1
+        outcomes:
+          - fail:
+              when: "timeout"
+              message: The TCP Load Balancer is not forwarding traffic to this server.
+          - warn:
+              when: "other-connection"
+              message: The TCP Load Balancer is configured, but this check is unable to determine if this node is correctly added to the pool.
+          - fail:
+              when: "port-unavailable"
+              message: The local port is not available to validate the Load Balancer configuration.
+          - pass:
+              message: The specified TCP Load Balancer appears to be properly forwarding traffic to this server.
