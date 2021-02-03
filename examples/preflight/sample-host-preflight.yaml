@@ -9,6 +9,9 @@ spec:
         address: 10.1.1.1
         port: 6443
         timeout: 5000ms
+    - diskUsage:
+        collectorName: ephemeral
+        path: /var/lib/kubelet
   analyzers:
     - cpu:
         outcomes:
@@ -34,3 +37,17 @@ spec:
               message: The local port is not available to validate the Load Balancer configuration.
           - pass:
               message: The specified TCP Load Balancer appears to be properly forwarding traffic to this server.
+    - diskUsage:
+        collectorName: ephemeral
+        outcomes:
+          - fail:
+              when: "total < 20Gi"
+              message: /var/lib/kubelet has less than 20Gi of total space
+          - fail:
+              when: "available < 10Gi"
+              message: /var/lib/kubelet has less than 10Gi of disk space available
+          - fail:
+              when: "used/total > 70%"
+              message: /var/lib/kubelet is more than 70% full
+          - pass:
+              message: /var/lib/kubelet has sufficient disk space available
