@@ -62,6 +62,13 @@ func HostAnalyze(hostAnalyzer *troubleshootv1beta2.HostAnalyze, getFile getColle
 		}
 		return []*AnalyzeResult{result}, nil
 	}
+	if hostAnalyzer.Memory != nil {
+		result, err := analyzeHostMemory(hostAnalyzer.Memory, getFile)
+		if err != nil {
+			return nil, err
+		}
+		return []*AnalyzeResult{result}, nil
+	}
 
 	return nil, errors.New("invalid analyzer")
 }

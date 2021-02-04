@@ -5,6 +5,11 @@ type CPUAnalyze struct {
 	Outcomes    []*Outcome `json:"outcomes" yaml:"outcomes"`
 }
 
+type MemoryAnalyze struct {
+	AnalyzeMeta `json:",inline" yaml:",inline"`
+	Outcomes    []*Outcome `json:"outcomes" yaml:"outcomes"`
+}
+
 type TCPLoadBalancerAnalyze struct {
 	AnalyzeMeta   `json:",inline" yaml:",inline"`
 	CollectorName string     `json:"collectorName,omitempty" yaml:"collectorName,omitempty"`
@@ -23,4 +28,6 @@ type HostAnalyze struct {
 	TCPLoadBalancer *TCPLoadBalancerAnalyze `json:"tcpLoadBalancer,omitempty" yaml:"tcpLoadBalancer,omitempty"`
 
 	DiskUsage *DiskUsageAnalyze `json:"diskUsage,omitempty" yaml:"diskUsage,omitempty"`
+
+	Memory *MemoryAnalyze `json:"memory,omitempty" yaml:"memory,omitempty"`
 }
