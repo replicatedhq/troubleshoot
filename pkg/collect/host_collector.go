@@ -26,6 +26,8 @@ func (c *HostCollector) RunCollectorSync() (result map[string][]byte, err error)
 		result, err = HostTCPLoadBalancer(c)
 	} else if c.Collect.DiskUsage != nil {
 		result, err = HostDiskUsage(c)
+	} else if c.Collect.TCPPortStatus != nil {
+		result, err = HostTCPPortStatus(c)
 	} else {
 		err = errors.New("no spec found to run")
 		return

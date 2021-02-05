@@ -16,6 +16,12 @@ type TCPLoadBalancerAnalyze struct {
 	Outcomes      []*Outcome `json:"outcomes" yaml:"outcomes"`
 }
 
+type TCPPortStatusAnalyze struct {
+	AnalyzeMeta   `json:",inline" yaml:",inline"`
+	CollectorName string     `json:"collectorName,omitempty" yaml:"collectorName,omitempty"`
+	Outcomes      []*Outcome `json:"outcomes" yaml:"outcomes"`
+}
+
 type DiskUsageAnalyze struct {
 	AnalyzeMeta   `json:",inline" yaml:",inline"`
 	CollectorName string     `json:"collectorName,omitempty" yaml:"collectorName,omitempty"`
@@ -30,4 +36,6 @@ type HostAnalyze struct {
 	DiskUsage *DiskUsageAnalyze `json:"diskUsage,omitempty" yaml:"diskUsage,omitempty"`
 
 	Memory *MemoryAnalyze `json:"memory,omitempty" yaml:"memory,omitempty"`
+
+	TCPPortStatus *TCPPortStatusAnalyze `json:"tcpPortStatus,omitempty" yaml:"tcpPortStatus,omitempty"`
 }

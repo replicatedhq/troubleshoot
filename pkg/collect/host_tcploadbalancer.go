@@ -135,8 +135,11 @@ func doAttemptTCPConnection(address string, port int, timeout time.Duration, pay
 			return ConnectionTimeout, nil
 		}
 
-		conn, err := net.DialTimeout("tcp", fmt.Sprintf("%s:%d", address, port), time.Millisecond*50)
+		conn, err := net.DialTimeout("tcp", fmt.Sprintf("%s:%d", address, port), timeout)
 		if err != nil {
+			if strings.Contains(err.Error(), "connection refused") {
+				return ConnectionRefused, nil
+			}
 			if !strings.Contains(err.Error(), "i/o timeout") {
 				return ErrorOther, errors.Wrap(err, "failed to dial")
 			}
