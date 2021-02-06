@@ -22,7 +22,7 @@ func analyzeHostTCPLoadBalancer(hostAnalyzer *troubleshootv1beta2.TCPLoadBalance
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to read collected file name: %s", fullPath)
 	}
-	actual := collect.HostTCPLoadBalancerResult{}
+	actual := collect.NetworkStatusResult{}
 	if err := json.Unmarshal(collected, &actual); err != nil {
 		return nil, errors.Wrap(err, "failed to unmarshal collected")
 	}
@@ -45,7 +45,7 @@ func analyzeHostTCPLoadBalancer(hostAnalyzer *troubleshootv1beta2.TCPLoadBalance
 				return &result, nil
 			}
 
-			if actual.Status == outcome.Fail.When {
+			if string(actual.Status) == outcome.Fail.When {
 				result.IsFail = true
 				result.Message = outcome.Fail.Message
 				result.URI = outcome.Fail.URI
@@ -61,7 +61,7 @@ func analyzeHostTCPLoadBalancer(hostAnalyzer *troubleshootv1beta2.TCPLoadBalance
 				return &result, nil
 			}
 
-			if actual.Status == outcome.Warn.When {
+			if string(actual.Status) == outcome.Warn.When {
 				result.IsWarn = true
 				result.Message = outcome.Warn.Message
 				result.URI = outcome.Warn.URI
@@ -77,7 +77,7 @@ func analyzeHostTCPLoadBalancer(hostAnalyzer *troubleshootv1beta2.TCPLoadBalance
 				return &result, nil
 			}
 
-			if actual.Status == outcome.Pass.When {
+			if string(actual.Status) == outcome.Pass.When {
 				result.IsPass = true
 				result.Message = outcome.Pass.Message
 				result.URI = outcome.Pass.URI

@@ -4,31 +4,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"net"
-	"strings"
+	"path"
 	"time"
 
 	"github.com/pkg/errors"
 )
 
-type PortStatus string
-
-const (
-	PortStatusUnavailable = "unavailable"
-	PortStatusRefused     = "refused"
-	PortStatusTimeout     = "timeout"
-	PortStatusOpen        = "open"
-	PortStatusOther       = "other"
-)
-
-type HostPortResult struct {
-	Status PortStatus `json:"status"`
-}
-
 func HostTCPPortStatus(c *HostCollector) (map[string][]byte, error) {
-	result := HostPortResult{}
-	key := fmt.Sprintf("port/%s/tcp.json", c.Collect.TCPPortStatus.CollectorName)
-
-	dialIP := ""
+	dialAddress := ""
 	listenAddress := fmt.Sprintf("0.0.0.0:%d", c.Collect.TCPPortStatus.Port)
 
 	if c.Collect.TCPPortStatus.Interface != "" {
@@ -41,89 +24,36 @@ func HostTCPPortStatus(c *HostCollector) (map[string][]byte, error) {
 			return nil, errors.Wrapf(err, "get ipv4 address for interface %s", c.Collect.TCPPortStatus.Interface)
 		}
 		listenAddress = fmt.Sprintf("%s:%d", ip, c.Collect.TCPPortStatus.Port)
-		dialIP = ip.String()
+		dialAddress = listenAddress
 	}
 
-	if dialIP == "" {
+	if dialAddress == "" {
 		ip, err := getLocalIPv4()
 		if err != nil {
 			return nil, err
 		}
-		dialIP = ip.String()
+		dialAddress = fmt.Sprintf("%s:%d", ip, c.Collect.TCPPortStatus.Port)
 	}
 
-	lstn, err := net.Listen("tcp", listenAddress)
+	networkStatus, err := checkTCPConnection(listenAddress, dialAddress, 10*time.Second)
 	if err != nil {
-		if strings.Contains(err.Error(), "address already in use") {
-			result.Status = PortStatusUnavailable
-
-			b, err := json.Marshal(result)
-			if err != nil {
-				return nil, errors.Wrap(err, "failed to marshal result")
-			}
-
-			return map[string][]byte{
-				key: b,
-			}, nil
-		}
-
-		return nil, errors.Wrap(err, "failed to create listener")
-	}
-	defer lstn.Close()
-
-	payload := "tcp raw data"
-	done := make(chan struct{})
-
-	go func() {
-		for {
-			conn, err := lstn.Accept()
-			if err != nil {
-				return
-			}
-
-			buf := make([]byte, len([]byte(payload)))
-			_, err = conn.Read(buf)
-			if err != nil {
-				fmt.Printf("%s\n", err.Error())
-				return
-			}
-
-			conn.Close()
-
-			if string(buf) == payload {
-				done <- struct{}{}
-				return
-			}
-		}
-	}()
-
-	connectionResult, err := doAttemptTCPConnection(dialIP, c.Collect.TCPPortStatus.Port, 5*time.Second, payload)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to check tcp connection to port")
+		return nil, err
 	}
 
-	switch connectionResult {
-	case Connected:
-		println("blocked")
-		<-done
-		result.Status = PortStatusOpen
-	case ConnectionRefused:
-		result.Status = PortStatusRefused
-	case ConnectionTimeout:
-		result.Status = PortStatusTimeout
-	case ConnectionAddressInUse:
-		result.Status = PortStatusUnavailable
-	case ErrorOther:
-		result.Status = PortStatusOther
+	result := NetworkStatusResult{
+		Status: networkStatus,
 	}
-
 	b, err := json.Marshal(result)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to marshal result")
 	}
 
+	name := path.Join("tcpPortStatus", "tcpPortStatus.json")
+	if c.Collect.TCPPortStatus.CollectorName != "" {
+		name = path.Join("tcpPortStatus", fmt.Sprintf("%s.json", c.Collect.TCPPortStatus.CollectorName))
+	}
 	return map[string][]byte{
-		key: b,
+		name: b,
 	}, nil
 }
 

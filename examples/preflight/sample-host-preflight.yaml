@@ -27,15 +27,13 @@ spec:
         collectorName: LB1
         outcomes:
           - fail:
-              when: "timeout"
+              when: "connection-timeout"
               message: The TCP Load Balancer is not forwarding traffic to this server.
-          - warn:
-              when: "other-connection"
-              message: The TCP Load Balancer is configured, but this check is unable to determine if this node is correctly added to the pool.
           - fail:
-              when: "port-unavailable"
+              when: "address-in-use"
               message: The local port is not available to validate the Load Balancer configuration.
           - pass:
+              when: "connected"
               message: The specified TCP Load Balancer appears to be properly forwarding traffic to this server.
     - diskUsage:
         collectorName: ephemeral

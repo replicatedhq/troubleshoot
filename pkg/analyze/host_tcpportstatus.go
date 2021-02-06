@@ -3,6 +3,7 @@ package analyzer
 import (
 	"encoding/json"
 	"fmt"
+	"path"
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
@@ -10,13 +11,16 @@ import (
 )
 
 func analyzeHostTCPPortStatus(hostAnalyzer *troubleshootv1beta2.TCPPortStatusAnalyze, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
-	fullPath := fmt.Sprintf("port/%s/tcp.json", hostAnalyzer.CollectorName)
+	fullPath := path.Join("tcpPortStatus", "tcpPortStatus.json")
+	if hostAnalyzer.CollectorName != "" {
+		fullPath = path.Join("tcpPortStatus", fmt.Sprintf("%s.json", hostAnalyzer.CollectorName))
+	}
 
 	collected, err := getCollectedFileContents(fullPath)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to read collected file name: %s", fullPath)
 	}
-	actual := collect.HostPortResult{}
+	actual := collect.NetworkStatusResult{}
 	if err := json.Unmarshal(collected, &actual); err != nil {
 		return nil, errors.Wrap(err, "failed to unmarshal collected")
 	}
