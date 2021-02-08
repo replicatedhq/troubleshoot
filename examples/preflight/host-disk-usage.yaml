@@ -25,7 +25,7 @@ spec:
               message: /var/lib/kubelet has less than 40Gi of total space
           - warn:
               when: "used/total > 60%"
-              message: /var/lib/kubelet is more than 50% full
+              message: /var/lib/kubelet is more than 60% full
           - pass:
               when: "available/total >= 90%"
               message: /var/lib/kubelet has more than 90% available
