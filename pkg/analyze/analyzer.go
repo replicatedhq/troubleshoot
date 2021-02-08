@@ -40,6 +40,46 @@ func isExcluded(excludeVal multitype.BoolOrString) (bool, error) {
 	return parsed, nil
 }
 
+func HostAnalyze(hostAnalyzer *troubleshootv1beta2.HostAnalyze, getFile getCollectedFileContents, findFiles getChildCollectedFileContents) ([]*AnalyzeResult, error) {
+	if hostAnalyzer.CPU != nil {
+		result, err := analyzeHostCPU(hostAnalyzer.CPU, getFile)
+		if err != nil {
+			return nil, err
+		}
+		return []*AnalyzeResult{result}, nil
+	}
+	if hostAnalyzer.TCPLoadBalancer != nil {
+		result, err := analyzeHostTCPLoadBalancer(hostAnalyzer.TCPLoadBalancer, getFile)
+		if err != nil {
+			return nil, err
+		}
+		return []*AnalyzeResult{result}, nil
+	}
+	if hostAnalyzer.DiskUsage != nil {
+		result, err := analyzeHostDiskUsage(hostAnalyzer.DiskUsage, getFile)
+		if err != nil {
+			return nil, err
+		}
+		return []*AnalyzeResult{result}, nil
+	}
+	if hostAnalyzer.Memory != nil {
+		result, err := analyzeHostMemory(hostAnalyzer.Memory, getFile)
+		if err != nil {
+			return nil, err
+		}
+		return []*AnalyzeResult{result}, nil
+	}
+	if hostAnalyzer.TCPPortStatus != nil {
+		result, err := analyzeHostTCPPortStatus(hostAnalyzer.TCPPortStatus, getFile)
+		if err != nil {
+			return nil, err
+		}
+		return []*AnalyzeResult{result}, nil
+	}
+
+	return nil, errors.New("invalid analyzer")
+}
+
 func Analyze(analyzer *troubleshootv1beta2.Analyze, getFile getCollectedFileContents, findFiles getChildCollectedFileContents) ([]*AnalyzeResult, error) {
 	if analyzer.ClusterVersion != nil {
 		isExcluded, err := isExcluded(analyzer.ClusterVersion.Exclude)
@@ -265,6 +305,6 @@ func Analyze(analyzer *troubleshootv1beta2.Analyze, getFile getCollectedFileCont
 		}
 		return []*AnalyzeResult{result}, nil
 	}
-	return nil, errors.New("invalid analyzer")
 
+	return nil, errors.New("invalid analyzer")
 }

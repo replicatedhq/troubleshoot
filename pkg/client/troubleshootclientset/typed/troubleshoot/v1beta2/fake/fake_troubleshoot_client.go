@@ -35,6 +35,10 @@ func (c *FakeTroubleshootV1beta2) Collectors(namespace string) v1beta2.Collector
 	return &FakeCollectors{c, namespace}
 }
 
+func (c *FakeTroubleshootV1beta2) HostPreflights(namespace string) v1beta2.HostPreflightInterface {
+	return &FakeHostPreflights{c, namespace}
+}
+
 func (c *FakeTroubleshootV1beta2) Preflights(namespace string) v1beta2.PreflightInterface {
 	return &FakePreflights{c, namespace}
 }
