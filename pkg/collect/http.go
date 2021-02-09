@@ -12,13 +12,13 @@ import (
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 )
 
-type httpResponse struct {
+type HTTPResponse struct {
 	Status  int               `json:"status"`
 	Body    string            `json:"body"`
 	Headers map[string]string `json:"headers"`
 }
 
-type httpError struct {
+type HTTPError struct {
 	Message string `json:"message"`
 }
 
@@ -106,7 +106,7 @@ func doPut(put *troubleshootv1beta2.Put) (*http.Response, error) {
 func responseToOutput(response *http.Response, err error, doRedact bool) ([]byte, error) {
 	output := make(map[string]interface{})
 	if err != nil {
-		output["error"] = httpError{
+		output["error"] = HTTPError{
 			Message: err.Error(),
 		}
 	} else {
@@ -120,7 +120,7 @@ func responseToOutput(response *http.Response, err error, doRedact bool) ([]byte
 			headers[k] = strings.Join(v, ",")
 		}
 
-		output["response"] = httpResponse{
+		output["response"] = HTTPResponse{
 			Status:  response.StatusCode,
 			Body:    string(body),
 			Headers: headers,
