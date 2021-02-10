@@ -52,6 +52,13 @@ type DiskUsage struct {
 	Path              string `json:"path"`
 }
 
+type HostHTTP struct {
+	HostCollectorMeta `json:",inline" yaml:",inline"`
+	Get               *Get  `json:"get,omitempty" yaml:"get,omitempty"`
+	Post              *Post `json:"post,omitempty" yaml:"post,omitempty"`
+	Put               *Put  `json:"put,omitempty" yaml:"put,omitempty"`
+}
+
 type HostCollect struct {
 	CPU              *CPU              `json:"cpu,omitempty" yaml:"cpu,omitempty"`
 	Memory           *Memory           `json:"memory,omitempty" yaml:"memory,omitempty"`
@@ -61,6 +68,7 @@ type HostCollect struct {
 	Kubernetes       *Kubernetes       `json:"kubernetes,omitempty" yaml:"kubernetes,omitempty"`
 	IPV4Interfaces   *IPV4Interfaces   `json:"ipv4Interfaces,omitempty" yaml:"ipv4Interfaces,omitempty"`
 	DiskUsage        *DiskUsage        `json:"diskUsage,omitempty" yaml:"diskUsage,omitempty"`
+	HTTP             *HostHTTP         `json:"http,omitempty" yaml:"http,omitempty"`
 }
 
 func (c *HostCollect) GetName() string {
