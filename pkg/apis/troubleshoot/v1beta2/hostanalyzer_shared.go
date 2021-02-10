@@ -34,6 +34,11 @@ type HTTPAnalyze struct {
 	Outcomes      []*Outcome `json:"outcomes" yaml:"outcomes"`
 }
 
+type TimeAnalyze struct {
+	AnalyzeMeta `json:",inline" yaml:",inline"`
+	Outcomes    []*Outcome `json:"outcomes" yaml:"outcomes"`
+}
+
 type HostAnalyze struct {
 	CPU *CPUAnalyze `json:"cpu,omitempty" yaml:"cpu,omitempty"`
 	//
@@ -46,4 +51,6 @@ type HostAnalyze struct {
 	TCPPortStatus *TCPPortStatusAnalyze `json:"tcpPortStatus,omitempty" yaml:"tcpPortStatus,omitempty"`
 
 	HTTP *HTTPAnalyze `json:"http" yaml:"http"`
+
+	Time *TimeAnalyze `json:"time" yaml:"time"`
 }

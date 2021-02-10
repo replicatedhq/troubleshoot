@@ -15,6 +15,7 @@ require (
 	github.com/go-redis/redis/v7 v7.2.0
 	github.com/go-sql-driver/mysql v1.5.0
 	github.com/gobwas/glob v0.2.3
+	github.com/godbus/dbus v4.1.0+incompatible
 	github.com/google/go-cmp v0.3.1 // indirect
 	github.com/google/gofuzz v1.1.0
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510 // indirect

@@ -30,6 +30,8 @@ func (c *HostCollector) RunCollectorSync() (result map[string][]byte, err error)
 		result, err = HostTCPPortStatus(c)
 	} else if c.Collect.HTTP != nil {
 		result, err = HostHTTP(c)
+	} else if c.Collect.Time != nil {
+		result, err = HostTime(c)
 	} else {
 		err = errors.New("no spec found to run")
 		return
