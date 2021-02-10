@@ -1,0 +1,22 @@
+apiVersion: troubleshoot.sh/v1beta2
+kind: HostPreflight
+metadata:
+  name: ntp
+spec:
+  collectors:
+    - time: {}
+  analyzers:
+    - time:
+        outcomes:
+          - fail:
+              when: "ntp == unsynchronized+inactive"
+              message: System clock not synchronized
+          - warn:
+              when: "ntp == unsynchronized+active"
+              message: System clock not yet synchronized
+          - warn:
+              when: "ntp == synchronized+inactive"
+              message: NTP not active
+          - pass:
+              when: "ntp == synchronized+active"
+              message: System clock is synchronized

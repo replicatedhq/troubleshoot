@@ -59,6 +59,10 @@ type HostHTTP struct {
 	Put               *Put  `json:"put,omitempty" yaml:"put,omitempty"`
 }
 
+type HostTime struct {
+	HostCollectorMeta `json:",inline" yaml:",inline"`
+}
+
 type HostCollect struct {
 	CPU              *CPU              `json:"cpu,omitempty" yaml:"cpu,omitempty"`
 	Memory           *Memory           `json:"memory,omitempty" yaml:"memory,omitempty"`
@@ -69,6 +73,7 @@ type HostCollect struct {
 	IPV4Interfaces   *IPV4Interfaces   `json:"ipv4Interfaces,omitempty" yaml:"ipv4Interfaces,omitempty"`
 	DiskUsage        *DiskUsage        `json:"diskUsage,omitempty" yaml:"diskUsage,omitempty"`
 	HTTP             *HostHTTP         `json:"http,omitempty" yaml:"http,omitempty"`
+	Time             *HostTime         `json:"time,omitempty" yaml:"time,omitempty"`
 }
 
 func (c *HostCollect) GetName() string {
