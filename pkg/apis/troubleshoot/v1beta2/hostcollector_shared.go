@@ -63,6 +63,10 @@ type HostTime struct {
 	HostCollectorMeta `json:",inline" yaml:",inline"`
 }
 
+type HostBlockDevices struct {
+	HostCollectorMeta `json:",inline" yaml:",inline"`
+}
+
 type HostCollect struct {
 	CPU              *CPU              `json:"cpu,omitempty" yaml:"cpu,omitempty"`
 	Memory           *Memory           `json:"memory,omitempty" yaml:"memory,omitempty"`
@@ -74,6 +78,7 @@ type HostCollect struct {
 	DiskUsage        *DiskUsage        `json:"diskUsage,omitempty" yaml:"diskUsage,omitempty"`
 	HTTP             *HostHTTP         `json:"http,omitempty" yaml:"http,omitempty"`
 	Time             *HostTime         `json:"time,omitempty" yaml:"time,omitempty"`
+	BlockDevices     *HostBlockDevices `json:"blockDevices,omitempty" yaml:"blockDevices,omitempty"`
 }
 
 func (c *HostCollect) GetName() string {

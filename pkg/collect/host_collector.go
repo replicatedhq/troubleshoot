@@ -32,6 +32,8 @@ func (c *HostCollector) RunCollectorSync() (result map[string][]byte, err error)
 		result, err = HostHTTP(c)
 	} else if c.Collect.Time != nil {
 		result, err = HostTime(c)
+	} else if c.Collect.BlockDevices != nil {
+		result, err = HostBlockDevices(c)
 	} else {
 		err = errors.New("no spec found to run")
 		return
