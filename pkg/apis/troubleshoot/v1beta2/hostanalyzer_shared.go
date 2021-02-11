@@ -39,6 +39,11 @@ type TimeAnalyze struct {
 	Outcomes    []*Outcome `json:"outcomes" yaml:"outcomes"`
 }
 
+type BlockDevicesAnalyze struct {
+	AnalyzeMeta `json:",inline" yaml:",inline"`
+	Outcomes    []*Outcome `json:"outcomes" yaml:"outcomes"`
+}
+
 type HostAnalyze struct {
 	CPU *CPUAnalyze `json:"cpu,omitempty" yaml:"cpu,omitempty"`
 	//
@@ -53,4 +58,6 @@ type HostAnalyze struct {
 	HTTP *HTTPAnalyze `json:"http" yaml:"http"`
 
 	Time *TimeAnalyze `json:"time" yaml:"time"`
+
+	BlockDevices *BlockDevicesAnalyze `json:"blockDevices" yaml:"blockDevices"`
 }
