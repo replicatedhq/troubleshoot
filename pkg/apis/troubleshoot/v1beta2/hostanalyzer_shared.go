@@ -44,6 +44,12 @@ type BlockDevicesAnalyze struct {
 	Outcomes    []*Outcome `json:"outcomes" yaml:"outcomes"`
 }
 
+type TCPConnectAnalyze struct {
+	AnalyzeMeta   `json:",inline" yaml:",inline"`
+	CollectorName string     `json:"collectorName,omitempty" yaml:"collectorName,omitempty"`
+	Outcomes      []*Outcome `json:"outcomes" yaml:"outcomes"`
+}
+
 type HostAnalyze struct {
 	CPU *CPUAnalyze `json:"cpu,omitempty" yaml:"cpu,omitempty"`
 	//
@@ -60,4 +66,6 @@ type HostAnalyze struct {
 	Time *TimeAnalyze `json:"time" yaml:"time"`
 
 	BlockDevices *BlockDevicesAnalyze `json:"blockDevices" yaml:"blockDevices"`
+
+	TCPConnect *TCPConnectAnalyze `json:"tcpConnect" yaml:"tcpConnect"`
 }
