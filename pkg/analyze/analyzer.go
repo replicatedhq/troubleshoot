@@ -55,6 +55,13 @@ func HostAnalyze(hostAnalyzer *troubleshootv1beta2.HostAnalyze, getFile getColle
 		}
 		return []*AnalyzeResult{result}, nil
 	}
+	if hostAnalyzer.HTTPLoadBalancer != nil {
+		result, err := analyzeHostHTTPLoadBalancer(hostAnalyzer.HTTPLoadBalancer, getFile)
+		if err != nil {
+			return nil, err
+		}
+		return []*AnalyzeResult{result}, nil
+	}
 	if hostAnalyzer.DiskUsage != nil {
 		result, err := analyzeHostDiskUsage(hostAnalyzer.DiskUsage, getFile)
 		if err != nil {

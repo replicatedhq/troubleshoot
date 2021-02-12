@@ -16,6 +16,12 @@ type TCPLoadBalancerAnalyze struct {
 	Outcomes      []*Outcome `json:"outcomes" yaml:"outcomes"`
 }
 
+type HTTPLoadBalancerAnalyze struct {
+	AnalyzeMeta   `json:",inline" yaml:",inline"`
+	CollectorName string     `json:"collectorName,omitempty" yaml:"collectorName,omitempty"`
+	Outcomes      []*Outcome `json:"outcomes" yaml:"outcomes"`
+}
+
 type TCPPortStatusAnalyze struct {
 	AnalyzeMeta   `json:",inline" yaml:",inline"`
 	CollectorName string     `json:"collectorName,omitempty" yaml:"collectorName,omitempty"`
@@ -47,7 +53,8 @@ type BlockDevicesAnalyze struct {
 type HostAnalyze struct {
 	CPU *CPUAnalyze `json:"cpu,omitempty" yaml:"cpu,omitempty"`
 	//
-	TCPLoadBalancer *TCPLoadBalancerAnalyze `json:"tcpLoadBalancer,omitempty" yaml:"tcpLoadBalancer,omitempty"`
+	TCPLoadBalancer  *TCPLoadBalancerAnalyze  `json:"tcpLoadBalancer,omitempty" yaml:"tcpLoadBalancer,omitempty"`
+	HTTPLoadBalancer *HTTPLoadBalancerAnalyze `json:"httpLoadBalancer,omitempty" yaml:"httpLoadBalancer,omitempty"`
 
 	DiskUsage *DiskUsageAnalyze `json:"diskUsage,omitempty" yaml:"diskUsage,omitempty"`
 
