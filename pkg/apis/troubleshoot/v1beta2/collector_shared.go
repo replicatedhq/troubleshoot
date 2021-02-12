@@ -243,7 +243,7 @@ func (c *Collect) AccessReviewSpecs(overrideNS string) []authorizationv1.SelfSub
 				Group:       "",
 				Version:     "",
 				Resource:    "pods",
-				Subresource: "logs",
+				Subresource: "log",
 				Name:        "",
 			},
 			NonResourceAttributes: nil,
