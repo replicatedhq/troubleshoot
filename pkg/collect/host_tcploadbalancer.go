@@ -9,16 +9,6 @@ import (
 	"github.com/pkg/errors"
 )
 
-type ConnectionResult int
-
-const (
-	ConnectionRefused ConnectionResult = iota
-	Connected
-	ConnectionTimeout
-	ConnectionAddressInUse
-	ErrorOther
-)
-
 func HostTCPLoadBalancer(c *HostCollector) (map[string][]byte, error) {
 	listenAddress := fmt.Sprintf("0.0.0.0:%d", c.Collect.TCPLoadBalancer.Port)
 	dialAddress := c.Collect.TCPLoadBalancer.Address

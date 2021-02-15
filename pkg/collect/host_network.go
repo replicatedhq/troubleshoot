@@ -14,11 +14,12 @@ import (
 type NetworkStatus string
 
 const (
-	NetworkStatusAddressInUse      = "address-in-use"
-	NetworkStatusConnectionRefused = "connection-refused"
-	NetworkStatusConnectionTimeout = "connection-timeout"
-	NetworkStatusConnected         = "connected"
-	NetworkStatusErrorOther        = "error"
+	NetworkStatusAddressInUse         = "address-in-use"
+	NetworkStatusConnectionRefused    = "connection-refused"
+	NetworkStatusConnectionTimeout    = "connection-timeout"
+	NetworkStatusConnected            = "connected"
+	NetworkStatusErrorOther           = "error"
+	NetworkStatusBindPermissionDenied = "bind-permission-denied"
 )
 
 type NetworkStatusResult struct {
