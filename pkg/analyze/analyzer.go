@@ -111,6 +111,14 @@ func HostAnalyze(hostAnalyzer *troubleshootv1beta2.HostAnalyze, getFile getColle
 		}
 		return []*AnalyzeResult{result}, nil
 	}
+	if hostAnalyzer.IPV4Interfaces != nil {
+		result, err := analyzeHostIPV4Interfaces(hostAnalyzer.IPV4Interfaces, getFile)
+		if err != nil {
+			return nil, err
+		}
+		return []*AnalyzeResult{result}, nil
+	}
+
 	return nil, errors.New("invalid analyzer")
 }
 
