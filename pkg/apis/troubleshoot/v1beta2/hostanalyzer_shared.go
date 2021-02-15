@@ -56,6 +56,11 @@ type TCPConnectAnalyze struct {
 	Outcomes      []*Outcome `json:"outcomes" yaml:"outcomes"`
 }
 
+type IPV4InterfacesAnalyze struct {
+	AnalyzeMeta `json:",inline" yaml:",inline"`
+	Outcomes    []*Outcome `json:"outcomes" yaml:"outcomes"`
+}
+
 type HostAnalyze struct {
 	CPU *CPUAnalyze `json:"cpu,omitempty" yaml:"cpu,omitempty"`
 	//
@@ -75,4 +80,6 @@ type HostAnalyze struct {
 	BlockDevices *BlockDevicesAnalyze `json:"blockDevices" yaml:"blockDevices"`
 
 	TCPConnect *TCPConnectAnalyze `json:"tcpConnect" yaml:"tcpConnect"`
+
+	IPV4Interfaces *IPV4InterfacesAnalyze `json:"ipv4Interfaces" yaml:"ipv4Interfaces"`
 }
