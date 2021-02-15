@@ -19,6 +19,7 @@ func showStdoutResults(format string, preflightName string, analyzeResults []*an
 }
 
 func showStdoutResultsHuman(preflightName string, analyzeResults []*analyzerunner.AnalyzeResult) error {
+	fmt.Println("")
 	var failed bool
 	for _, analyzeResult := range analyzeResults {
 		testResultfailed := outputResult(analyzeResult)

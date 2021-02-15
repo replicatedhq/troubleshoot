@@ -133,7 +133,6 @@ func verifyConnectionToServer(conn net.Conn, requestToken []byte, responseToken 
 
 	_, err := conn.Write(requestToken)
 	if err != nil {
-		fmt.Printf("Client failed to write: %v", err)
 		return false
 	}
 
@@ -145,7 +144,6 @@ func verifyConnectionToServer(conn net.Conn, requestToken []byte, responseToken 
 	buf := make([]byte, 1024)
 	_, err = conn.Read(buf)
 	if err != nil {
-		fmt.Printf("Client failed to read: %v", err)
 		return false
 	}
 
