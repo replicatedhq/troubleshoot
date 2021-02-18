@@ -40,6 +40,8 @@ func (c *HostCollector) RunCollectorSync() (result map[string][]byte, err error)
 		result, err = HostTCPConnect(c)
 	} else if c.Collect.IPV4Interfaces != nil {
 		result, err = HostIPV4Interfaces(c)
+	} else if c.Collect.FilesystemPerformance != nil {
+		result, err = HostFilesystemPerformance(c)
 	} else {
 		err = errors.New("no spec found to run")
 		return
