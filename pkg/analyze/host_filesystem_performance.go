@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -114,6 +115,14 @@ func compareHostFilesystemPerformanceConditionalToActual(conditional string, fsP
 	keyword := strings.ToLower(parts[0])
 	comparator := parts[1]
 
+	if keyword == "iops" {
+		desiredInt, err := strconv.ParseInt(parts[2], 10, 64)
+		if err != nil {
+			return false, errors.Wrapf(err, "failed to parse desired iops %q as integer", parts[2])
+		}
+		return doCompareHostFilesystemIOPS(comparator, fsPerf.IOPS, int(desiredInt))
+	}
+
 	desiredDuration, err := time.ParseDuration(parts[2])
 	if err != nil {
 		return false, errors.Wrapf(err, "failed to parse duration %q", parts[2])
@@ -124,6 +133,8 @@ func compareHostFilesystemPerformanceConditionalToActual(conditional string, fsP
 		return doCompareHostFilesystemPerformance(comparator, fsPerf.Min, desiredDuration)
 	case "max":
 		return doCompareHostFilesystemPerformance(comparator, fsPerf.Max, desiredDuration)
+	case "average":
+		return doCompareHostFilesystemPerformance(comparator, fsPerf.Average, desiredDuration)
 	case "p1":
 		return doCompareHostFilesystemPerformance(comparator, fsPerf.P1, desiredDuration)
 	case "p5":
@@ -177,5 +188,22 @@ func doCompareHostFilesystemPerformance(operator string, actual time.Duration, d
 		return actual == desired, nil
 	}
 
-	return false, fmt.Errorf("Unknown filesystem performance oeprator %q", operator)
+	return false, fmt.Errorf("Unknown filesystem performance operator %q", operator)
+}
+
+func doCompareHostFilesystemIOPS(operator string, actual int, desired int) (bool, error) {
+	switch operator {
+	case "<":
+		return actual < desired, nil
+	case "<=":
+		return actual <= desired, nil
+	case ">":
+		return actual > desired, nil
+	case ">=":
+		return actual >= desired, nil
+	case "=", "==", "===":
+		return actual == desired, nil
+	}
+
+	return false, fmt.Errorf("Unknown filesystem IOPS operator %q", operator)
 }

@@ -1,13 +1,14 @@
 package collect
 
 import (
-	"crypto/rand"
 	"encoding/json"
 	"log"
 	"math"
+	"math/rand"
 	"os"
 	"path/filepath"
 	"sort"
+	"sync"
 	"syscall"
 	"time"
 
@@ -15,26 +16,32 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 )
 
+func init() {
+	rand.Seed(time.Now().UnixNano())
+}
+
 type FSPerfResults struct {
-	Min   time.Duration
-	Max   time.Duration
-	P1    time.Duration
-	P5    time.Duration
-	P10   time.Duration
-	P20   time.Duration
-	P30   time.Duration
-	P40   time.Duration
-	P50   time.Duration
-	P60   time.Duration
-	P70   time.Duration
-	P80   time.Duration
-	P90   time.Duration
-	P95   time.Duration
-	P99   time.Duration
-	P995  time.Duration
-	P999  time.Duration
-	P9995 time.Duration
-	P9999 time.Duration
+	Min     time.Duration
+	Max     time.Duration
+	Average time.Duration
+	P1      time.Duration
+	P5      time.Duration
+	P10     time.Duration
+	P20     time.Duration
+	P30     time.Duration
+	P40     time.Duration
+	P50     time.Duration
+	P60     time.Duration
+	P70     time.Duration
+	P80     time.Duration
+	P90     time.Duration
+	P95     time.Duration
+	P99     time.Duration
+	P995    time.Duration
+	P999    time.Duration
+	P9995   time.Duration
+	P9999   time.Duration
+	IOPS    int
 }
 
 type Durations []time.Duration
@@ -78,7 +85,7 @@ func HostFilesystemPerformance(c *HostCollector) (map[string][]byte, error) {
 	}
 	filename := filepath.Join(c.Collect.FilesystemPerformance.Directory, "fsperf")
 
-	f, err := os.OpenFile(filename, os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0600)
+	f, err := os.OpenFile(filename, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0600)
 	if err != nil {
 		return nil, errors.Wrapf(err, "open %s", filename)
 	}
@@ -91,6 +98,7 @@ func HostFilesystemPerformance(c *HostCollector) (map[string][]byte, error) {
 		}
 	}()
 
+	// Sequential writes benchmark
 	var written uint64 = 0
 	var results Durations
 
@@ -130,27 +138,99 @@ func HostFilesystemPerformance(c *HostCollector) (map[string][]byte, error) {
 
 	sort.Sort(results)
 
-	fsPerf := &FSPerfResults{
-		Min:   results[0],
-		Max:   results[len(results)-1],
-		P1:    results[getPercentileIndex(.01, len(results))],
-		P5:    results[getPercentileIndex(.05, len(results))],
-		P10:   results[getPercentileIndex(.1, len(results))],
-		P20:   results[getPercentileIndex(.2, len(results))],
-		P30:   results[getPercentileIndex(.3, len(results))],
-		P40:   results[getPercentileIndex(.4, len(results))],
-		P50:   results[getPercentileIndex(.5, len(results))],
-		P60:   results[getPercentileIndex(.6, len(results))],
-		P70:   results[getPercentileIndex(.7, len(results))],
-		P80:   results[getPercentileIndex(.8, len(results))],
-		P90:   results[getPercentileIndex(.9, len(results))],
-		P95:   results[getPercentileIndex(.95, len(results))],
-		P99:   results[getPercentileIndex(.99, len(results))],
-		P995:  results[getPercentileIndex(.995, len(results))],
-		P999:  results[getPercentileIndex(.999, len(results))],
-		P9995: results[getPercentileIndex(.9995, len(results))],
-		P9999: results[getPercentileIndex(.9999, len(results))],
+	var sum time.Duration
+	for _, d := range results {
+		sum += d
 	}
+
+	fsPerf := &FSPerfResults{
+		Min:     results[0],
+		Max:     results[len(results)-1],
+		Average: sum / time.Duration(len(results)),
+		P1:      results[getPercentileIndex(.01, len(results))],
+		P5:      results[getPercentileIndex(.05, len(results))],
+		P10:     results[getPercentileIndex(.1, len(results))],
+		P20:     results[getPercentileIndex(.2, len(results))],
+		P30:     results[getPercentileIndex(.3, len(results))],
+		P40:     results[getPercentileIndex(.4, len(results))],
+		P50:     results[getPercentileIndex(.5, len(results))],
+		P60:     results[getPercentileIndex(.6, len(results))],
+		P70:     results[getPercentileIndex(.7, len(results))],
+		P80:     results[getPercentileIndex(.8, len(results))],
+		P90:     results[getPercentileIndex(.9, len(results))],
+		P95:     results[getPercentileIndex(.95, len(results))],
+		P99:     results[getPercentileIndex(.99, len(results))],
+		P995:    results[getPercentileIndex(.995, len(results))],
+		P999:    results[getPercentileIndex(.999, len(results))],
+		P9995:   results[getPercentileIndex(.9995, len(results))],
+		P9999:   results[getPercentileIndex(.9999, len(results))],
+	}
+
+	// Random IOPS benchmark
+
+	// Re-open the file read+write in direct mode to prevent caching
+	if err := f.Close(); err != nil {
+		return nil, errors.Wrapf(err, "close %s", filename)
+	}
+	f, err = os.OpenFile(filename, os.O_RDWR|syscall.O_DIRECT, 0600)
+	if err != nil {
+		return nil, errors.Wrapf(err, "open direct %s", filename)
+	}
+
+	offsets := make([]int64, len(results))
+
+	for index, p := range rand.Perm(len(results)) {
+		offsets[index] = int64(p) * int64(operationSize)
+	}
+
+	// Use multiple workers to keep the filesystem busy. Since operations are serialized on a single
+	// file, more than 2 does not improve IOPS.
+	workers := 2
+	wg := sync.WaitGroup{}
+	m := sync.Mutex{}
+
+	errs := make(chan error, workers)
+
+	start := time.Now()
+
+	for i := 0; i < workers; i++ {
+		wg.Add(1)
+
+		go func(i int) {
+			defer wg.Done()
+
+			data := make([]byte, int(operationSize))
+			fd := int(f.Fd())
+
+			for idx, offset := range offsets {
+				if idx%workers != i {
+					continue
+				}
+
+				m.Lock()
+				n, err := syscall.Pread(fd, data, offset)
+				m.Unlock()
+
+				if err != nil {
+					errs <- errors.Wrapf(err, "failed to pread %d bytes to %s at offset %d", len(data), filename, offset)
+				}
+				if n != len(data) {
+					errs <- errors.Wrapf(err, "pread %d of %d bytes to %s at offset %d", n, len(data), filename, offset)
+				}
+			}
+		}(i)
+	}
+
+	wg.Wait()
+	if len(errs) > 0 {
+		return nil, <-errs
+	}
+
+	d := time.Now().Sub(start)
+	nsPerIO := d / time.Duration(len(offsets))
+	iops := time.Second / nsPerIO
+
+	fsPerf.IOPS = int(iops)
 
 	collectorName := c.Collect.FilesystemPerformance.CollectorName
 	if collectorName == "" {
@@ -159,7 +239,7 @@ func HostFilesystemPerformance(c *HostCollector) (map[string][]byte, error) {
 	name := filepath.Join("filesystemPerformance", collectorName+".json")
 	b, err := json.Marshal(fsPerf)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to marsh fs perf results")
+		return nil, errors.Wrap(err, "failed to marshal fs perf results")
 	}
 
 	return map[string][]byte{
