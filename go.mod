@@ -3,6 +3,7 @@ module github.com/replicatedhq/troubleshoot
 go 1.12
 
 require (
+	github.com/StackExchange/wmi v0.0.0-20190523213315-cbe66965904d // indirect
 	github.com/ahmetalpbalkan/go-cursor v0.0.0-20131010032410-8136607ea412
 	github.com/aws/aws-sdk-go v1.25.18 // indirect
 	github.com/blang/semver v3.5.1+incompatible
@@ -11,6 +12,7 @@ require (
 	github.com/elazarl/goproxy v0.0.0-20191011121108-aa519ddbe484 // indirect
 	github.com/emicklei/go-restful v2.9.6+incompatible // indirect
 	github.com/fatih/color v1.7.0
+	github.com/go-ole/go-ole v1.2.5 // indirect
 	github.com/go-openapi/spec v0.19.4 // indirect
 	github.com/go-redis/redis/v7 v7.2.0
 	github.com/go-sql-driver/mysql v1.5.0
