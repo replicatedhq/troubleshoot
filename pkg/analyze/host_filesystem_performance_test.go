@@ -20,27 +20,73 @@ func TestAnalyzeHostFilesystemPerformance(t *testing.T) {
 		expectErr    bool
 	}{
 		{
+			name: "IOPS",
+			fsPerf: &collect.FSPerfResults{
+				IOPS: 50,
+			},
+			hostAnalyzer: &troubleshootv1beta2.FilesystemPerformanceAnalyze{
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Fail: &troubleshootv1beta2.SingleOutcome{
+							When:    "iops < 20",
+							Message: "IOPS < 20",
+						},
+					},
+					{
+						Fail: &troubleshootv1beta2.SingleOutcome{
+							When:    "iops <= 20",
+							Message: "IOPS <= 30",
+						},
+					},
+					{
+						Fail: &troubleshootv1beta2.SingleOutcome{
+							When:    "iops > 70",
+							Message: "IOPS > 70",
+						},
+					},
+					{
+						Fail: &troubleshootv1beta2.SingleOutcome{
+							When:    "iops >= 100",
+							Message: "IOPS >= 100",
+						},
+					},
+					{
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							When:    "iops == 50",
+							Message: "IOPS == 50",
+						},
+					},
+				},
+			},
+			result: &AnalyzeResult{
+				Title:   "Filesystem Performance",
+				IsPass:  true,
+				Message: "IOPS == 50",
+			},
+		},
+		{
 			name: "Cover",
 			fsPerf: &collect.FSPerfResults{
-				Min:   200 * time.Nanosecond,
-				Max:   time.Second,
-				P1:    1 * time.Microsecond,
-				P5:    5 * time.Microsecond,
-				P10:   10 * time.Microsecond,
-				P20:   20 * time.Microsecond,
-				P30:   30 * time.Microsecond,
-				P40:   40 * time.Microsecond,
-				P50:   50 * time.Microsecond,
-				P60:   60 * time.Microsecond,
-				P70:   70 * time.Microsecond,
-				P80:   80 * time.Microsecond,
-				P90:   90 * time.Microsecond,
-				P95:   95 * time.Microsecond,
-				P99:   99 * time.Microsecond,
-				P995:  995 * time.Microsecond,
-				P999:  999 * time.Microsecond,
-				P9995: 5 * time.Millisecond,
-				P9999: 9 * time.Millisecond,
+				Min:     200 * time.Nanosecond,
+				Max:     time.Second,
+				Average: 55 * time.Microsecond,
+				P1:      1 * time.Microsecond,
+				P5:      5 * time.Microsecond,
+				P10:     10 * time.Microsecond,
+				P20:     20 * time.Microsecond,
+				P30:     30 * time.Microsecond,
+				P40:     40 * time.Microsecond,
+				P50:     50 * time.Microsecond,
+				P60:     60 * time.Microsecond,
+				P70:     70 * time.Microsecond,
+				P80:     80 * time.Microsecond,
+				P90:     90 * time.Microsecond,
+				P95:     95 * time.Microsecond,
+				P99:     99 * time.Microsecond,
+				P995:    995 * time.Microsecond,
+				P999:    999 * time.Microsecond,
+				P9995:   5 * time.Millisecond,
+				P9999:   9 * time.Millisecond,
 			},
 			hostAnalyzer: &troubleshootv1beta2.FilesystemPerformanceAnalyze{
 				CollectorName: "etcd",
@@ -67,6 +113,12 @@ func TestAnalyzeHostFilesystemPerformance(t *testing.T) {
 						Fail: &troubleshootv1beta2.SingleOutcome{
 							When:    "max >= 1m",
 							Message: "gte operator not working",
+						},
+					},
+					{
+						Fail: &troubleshootv1beta2.SingleOutcome{
+							When:    "average == 0",
+							Message: "average not working",
 						},
 					},
 					{

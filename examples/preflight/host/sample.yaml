@@ -9,6 +9,12 @@ spec:
     - diskUsage:
         collectorName: ephemeral
         path: /var/lib/kubelet
+    - filesystemPerformance:
+        collectorName: etcd-perf
+        directory: /var/lib/etcd
+        fileSize: 22Mi
+        operationSizeBytes: 2300
+        datasync: true
     - httpLoadBalancer:
         collectorName: httploadbalancer
         port: 80
@@ -68,6 +74,24 @@ spec:
               message: /var/lib/kubelet is more than 70% full
           - pass:
               message: /var/lib/kubelet has sufficient disk space available
+    - filesystemPerformance:
+        collectorName: etcd-perf
+        outcomes:
+          - fail:
+              when: "iops < 50"
+              message: Insufficient random read IOPS
+          - pass:
+              when: "p99 < 3ms"
+              message: Write latency is great!
+          - pass:
+              when: "p99 < 5ms"
+              message: Write latency is ok
+          - warn:
+              when: "p99 < 8ms"
+              message: Write latency is high
+          - fail:
+              when: "p99 >= 8ms"
+              message: Write latency is too high
     - httpLoadBalancer:
         collectorName: httploadbalancer
         outcomes:
