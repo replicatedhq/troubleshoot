@@ -60,13 +60,18 @@ spec:
           - pass:
               when: "== aks"
               message: AKS is a supported distribution
-          # Will be supported in the future
           - pass:
               when: "== kurl"
               message: KURL is a supported distribution
           - pass:
               when: "== digitalocean"
               message: DigitalOcean is a supported distribution
+          - pass:
+              when: "== rke2"
+              message: RKE2 is a supported distribution
+          - pass:
+              when: "== k3s"
+              message: K3S is a supported distribution
           - warn:
               message: Unable to determine the distribution of Kubernetes
     - nodeResources:

@@ -22,6 +22,8 @@ type providers struct {
 	aks           bool
 	ibm           bool
 	minikube      bool
+	rke2          bool
+	k3s           bool
 }
 
 type Provider int
@@ -38,6 +40,8 @@ const (
 	aks           Provider = iota
 	ibm           Provider = iota
 	minikube      Provider = iota
+	rke2          Provider = iota
+	k3s           Provider = iota
 )
 
 func CheckOpenShift(foundProviders *providers, apiResources []*metav1.APIResourceList, provider string) string {
@@ -76,6 +80,21 @@ func ParseNodesForProviders(nodes []corev1.Node) (providers, string) {
 			if k == "minikube.k8s.io/version" {
 				foundProviders.minikube = true
 				stringProvider = "minikube"
+			}
+			if k == "node.kubernetes.io/instance-type" && v == "k3s" {
+				foundProviders.k3s = true
+				stringProvider = "k3s"
+			}
+			if k == "beta.kubernetes.io/instance-type" && v == "k3s" {
+				foundProviders.k3s = true
+				stringProvider = "k3s"
+			}
+		}
+
+		for k := range node.ObjectMeta.Annotations {
+			if k == "rke2.io/node-args" {
+				foundProviders.rke2 = true
+				stringProvider = "rke2"
 			}
 		}
 
@@ -270,6 +289,10 @@ func compareDistributionConditionalToActual(conditional string, actual providers
 		isMatch = actual.ibm
 	case minikube:
 		isMatch = actual.minikube
+	case rke2:
+		isMatch = actual.rke2
+	case k3s:
+		isMatch = actual.k3s
 	}
 
 	switch parts[0] {
@@ -304,6 +327,10 @@ func mustNormalizeDistributionName(raw string) Provider {
 		return ibm
 	case "minikube":
 		return minikube
+	case "rke2":
+		return rke2
+	case "k3s":
+		return k3s
 	}
 
 	return unknown
