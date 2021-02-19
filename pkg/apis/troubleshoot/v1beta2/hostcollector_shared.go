@@ -82,6 +82,12 @@ type FilesystemPerformance struct {
 	Datasync           bool   `json:"datasync,omitempty"`
 }
 
+type Certificate struct {
+	HostCollectorMeta `json:",inline" yaml:",inline"`
+	CertificatePath   string `json:"certificatePath" yaml:"certificatepath"`
+	KeyPath           string `json:"keyPath" yaml:"keyPath"`
+}
+
 type HostCollect struct {
 	CPU                   *CPU                   `json:"cpu,omitempty" yaml:"cpu,omitempty"`
 	Memory                *Memory                `json:"memory,omitempty" yaml:"memory,omitempty"`
@@ -96,6 +102,7 @@ type HostCollect struct {
 	BlockDevices          *HostBlockDevices      `json:"blockDevices,omitempty" yaml:"blockDevices,omitempty"`
 	TCPConnect            *TCPConnect            `json:"tcpConnect,omitempty" yaml:"tcpConnect,omitempty"`
 	FilesystemPerformance *FilesystemPerformance `json:"filesystemPerformance" yaml:"filesystemPerformance"`
+	Certificate           *Certificate           `json:"certificate" yaml:"certificate" yaml:"certificate"`
 }
 
 func (c *HostCollect) GetName() string {

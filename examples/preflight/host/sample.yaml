@@ -5,6 +5,9 @@ metadata:
 spec:
   collectors:
     - blockDevices: {}
+    - certificate:
+        certificatePath: /etc/ssl/corp.crt
+        keyPath: /etc/ssl/corp.key
     - cpu: {}
     - diskUsage:
         collectorName: ephemeral
@@ -50,6 +53,26 @@ spec:
               message: Multiple available block devices
           - fail:
               message: No available block devices
+    - certificate:
+        outcomes:
+          - fail:
+              when: "key-pair-missing"
+              message: Certificate key pair not found in /etc/ssl
+          - fail:
+              when: "key-pair-switched"
+              message: Cert and key pair are switched
+          - fail:
+              when: "key-pair-encrypted"
+              message: Private key is encrypted
+          - fail:
+              when: "key-pair-mismatch"
+              message: Cert and key do not match
+          - fail:
+              when: "key-pair-invalid"
+              message: Certificate key pair is invalid
+          - pass:
+              when: "key-pair-valid"
+              message: Certificate key pair is valid
     - cpu:
         outcomes:
           - fail:
