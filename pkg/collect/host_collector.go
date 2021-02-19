@@ -42,6 +42,8 @@ func (c *HostCollector) RunCollectorSync() (result map[string][]byte, err error)
 		result, err = HostIPV4Interfaces(c)
 	} else if c.Collect.FilesystemPerformance != nil {
 		result, err = HostFilesystemPerformance(c)
+	} else if c.Collect.Certificate != nil {
+		result, err = HostCertificate(c)
 	} else {
 		err = errors.New("no spec found to run")
 		return
