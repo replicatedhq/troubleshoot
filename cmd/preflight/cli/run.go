@@ -91,30 +91,32 @@ func runPreflights(v *viper.Viper, arg string) error {
 	finishedCh := make(chan bool, 1)
 	progressCh := make(chan interface{}, 0) // non-zero buffer will result in missed messages
 
-	s := spin.New()
-	go func() {
-		for {
-			select {
-			case msg, ok := <-progressCh:
-				if !ok {
-					continue
-				}
-				switch msg := msg.(type) {
-				case error:
-					c := color.New(color.FgHiRed)
-					c.Println(fmt.Sprintf("%s\r * %v", cursor.ClearEntireLine(), msg))
-				case string:
-					c := color.New(color.FgCyan)
-					c.Println(fmt.Sprintf("%s\r * %s", cursor.ClearEntireLine(), msg))
-				}
-			case <-time.After(time.Millisecond * 100):
-				fmt.Printf("\r  \033[36mRunning Preflight checks\033[m %s ", s.Next())
-			case <-finishedCh:
-				fmt.Printf("\r%s\r", cursor.ClearEntireLine())
-				return
-			}
-		}
-	}()
+	if v.GetBool("interactive") {
+        s := spin.New()
+        go func() {
+            for {
+                select {
+                case msg, ok := <-progressCh:
+                    if !ok {
+                        continue
+                    }
+                    switch msg := msg.(type) {
+                    case error:
+                        c := color.New(color.FgHiRed)
+                        c.Println(fmt.Sprintf("%s\r * %v", cursor.ClearEntireLine(), msg))
+                    case string:
+                        c := color.New(color.FgCyan)
+                        c.Println(fmt.Sprintf("%s\r * %s", cursor.ClearEntireLine(), msg))
+                    }
+                case <-time.After(time.Millisecond * 100):
+                    fmt.Printf("\r  \033[36mRunning Preflight checks\033[m %s ", s.Next())
+                case <-finishedCh:
+                    fmt.Printf("\r%s\r", cursor.ClearEntireLine())
+                    return
+                }
+            }
+        }()
+    }
 
 	defer func() {
 		close(finishedCh)
