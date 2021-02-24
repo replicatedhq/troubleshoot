@@ -55,6 +55,7 @@ func HostFilesystemPerformance(c *HostCollector) (map[string][]byte, error) {
 	if c.Collect.FilesystemPerformance.Directory == "" {
 		return nil, errors.New("Directory is required to collect filesystem performance info")
 	}
+	// TODO: clean up this directory if its created
 	if err := os.MkdirAll(c.Collect.FilesystemPerformance.Directory, 0700); err != nil {
 		return nil, errors.Wrapf(err, "failed to mkdir %q", c.Collect.FilesystemPerformance.Directory)
 	}

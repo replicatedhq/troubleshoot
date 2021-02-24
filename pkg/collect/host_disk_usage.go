@@ -3,6 +3,8 @@ package collect
 import (
 	"encoding/json"
 	"fmt"
+	"os"
+	"path/filepath"
 
 	"github.com/pkg/errors"
 	"github.com/shirou/gopsutil/disk"
@@ -20,9 +22,14 @@ func HostDiskUsage(c *HostCollector) (map[string][]byte, error) {
 		return result, nil
 	}
 
-	du, err := disk.Usage(c.Collect.DiskUsage.Path)
+	pathExists, err := traverseFiletreeDirExists(c.Collect.DiskUsage.Path)
 	if err != nil {
-		return result, errors.Wrapf(err, "collect disk usage for %s", c.Collect.DiskUsage.Path)
+		return result, errors.Wrap(err, "traverse file tree")
+	}
+
+	du, err := disk.Usage(pathExists)
+	if err != nil {
+		return result, errors.Wrapf(err, "collect disk usage for %s", pathExists)
 	}
 	diskSpaceInfo := DiskUsageInfo{
 		TotalBytes: du.Total,
@@ -40,4 +47,22 @@ func HostDiskUsage(c *HostCollector) (map[string][]byte, error) {
 
 func HostDiskUsageKey(name string) string {
 	return fmt.Sprintf("diskUsage/%s.json", name)
+}
+
+func traverseFiletreeDirExists(filename string) (string, error) {
+	filename = filepath.Clean(filename)
+	for i := 0; i < 50; i++ {
+		_, err := os.Stat(filename)
+		if err == nil {
+			return filename, nil
+		} else if os.IsNotExist(err) {
+			filename = filepath.Dir(filename)
+			if filename == "/" {
+				return filename, nil
+			}
+		} else {
+			return "", err
+		}
+	}
+	return "", errors.New("max recursion exceeded")
 }
