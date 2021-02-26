@@ -173,6 +173,24 @@ func ClusterResources(c *Collector) (map[string][]byte, error) {
 		return nil, err
 	}
 
+	//Persistent Volumes
+	pvs, pvsErrors := pvs(ctx, client)
+	clusterResourcesOutput["cluster-resources/pvs.json"] = pvs
+	clusterResourcesOutput["cluster-resources/pvs-errors.json"], err = marshalNonNil(pvsErrors)
+	if err != nil {
+		return nil, err
+	}
+
+	//Persistent Volume Claims
+	pvcs, pvcsErrors := pvcs(ctx, client, namespaceNames)
+	for k, v := range pvcs {
+		clusterResourcesOutput[path.Join("cluster-resources/pvcs", k)] = v
+	}
+	clusterResourcesOutput["cluster-resources/pvcs-errors.json"], err = marshalNonNil(pvcsErrors)
+	if err != nil {
+		return nil, err
+	}
+
 	return clusterResourcesOutput, nil
 }
 
@@ -531,4 +549,40 @@ func convertToPolicyRule(status authorizationv1.SubjectRulesReviewStatus) []rbac
 	}
 
 	return ret
+}
+
+func pvs(ctx context.Context, client *kubernetes.Clientset) ([]byte, []string) {
+	pv, err := client.CoreV1().PersistentVolumes().List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return nil, []string{err.Error()}
+	}
+
+	b, err := json.MarshalIndent(pv.Items, "", "  ")
+	if err != nil {
+		return nil, []string{err.Error()}
+	}
+	return b, nil
+}
+
+func pvcs(ctx context.Context, client *kubernetes.Clientset, namespaces []string) (map[string][]byte, map[string]string) {
+	pvcsByNamespace := make(map[string][]byte)
+	errorsByNamespace := make(map[string]string)
+
+	for _, namespace := range namespaces {
+		pvcs, err := client.CoreV1().PersistentVolumeClaims(namespace).List(ctx, metav1.ListOptions{})
+		if err != nil {
+			errorsByNamespace[namespace] = err.Error()
+			continue
+		}
+
+		b, err := json.MarshalIndent(pvcs.Items, "", "  ")
+		if err != nil {
+			errorsByNamespace[namespace] = err.Error()
+			continue
+		}
+
+		pvcsByNamespace[namespace+".json"] = b
+	}
+
+	return pvcsByNamespace, errorsByNamespace
 }
