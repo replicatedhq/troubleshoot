@@ -1,5 +1,7 @@
 package v1beta2
 
+import "github.com/replicatedhq/troubleshoot/pkg/multitype"
+
 type CPUAnalyze struct {
 	AnalyzeMeta `json:",inline" yaml:",inline"`
 	Outcomes    []*Outcome `json:"outcomes" yaml:"outcomes"`
@@ -85,17 +87,19 @@ type HostAnalyze struct {
 
 	TCPPortStatus *TCPPortStatusAnalyze `json:"tcpPortStatus,omitempty" yaml:"tcpPortStatus,omitempty"`
 
-	HTTP *HTTPAnalyze `json:"http" yaml:"http"`
+	HTTP *HTTPAnalyze `json:"http,omitempty" yaml:"http,omitempty"`
 
-	Time *TimeAnalyze `json:"time" yaml:"time"`
+	Time *TimeAnalyze `json:"time,omitempty" yaml:"time,omitempty"`
 
-	BlockDevices *BlockDevicesAnalyze `json:"blockDevices" yaml:"blockDevices"`
+	BlockDevices *BlockDevicesAnalyze `json:"blockDevices,omitempty" yaml:"blockDevices,omitempty"`
 
-	TCPConnect *TCPConnectAnalyze `json:"tcpConnect" yaml:"tcpConnect"`
+	TCPConnect *TCPConnectAnalyze `json:"tcpConnect,omitempty" yaml:"tcpConnect,omitempty"`
 
-	IPV4Interfaces *IPV4InterfacesAnalyze `json:"ipv4Interfaces" yaml:"ipv4Interfaces"`
+	IPV4Interfaces *IPV4InterfacesAnalyze `json:"ipv4Interfaces,omitempty" yaml:"ipv4Interfaces,omitempty"`
 
-	FilesystemPerformance *FilesystemPerformanceAnalyze `json:"filesystemPerformance" yaml:"filesystemPerformance"`
+	FilesystemPerformance *FilesystemPerformanceAnalyze `json:"filesystemPerformance,omitempty" yaml:"filesystemPerformance,omitempty"`
 
-	Certificate *CertificateAnalyze `json:"certificate" yaml:"certificate"`
+	Certificate *CertificateAnalyze `json:"certificate,omitempty" yaml:"certificate,omitempty"`
+
+	Exclude multitype.BoolOrString `json:"exclude,omitempty" yaml:"exclude,omitempty"`
 }

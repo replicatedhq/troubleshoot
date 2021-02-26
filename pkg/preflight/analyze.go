@@ -3,10 +3,13 @@ package preflight
 import (
 	"fmt"
 	"path/filepath"
+	"strconv"
 	"strings"
 
+	"github.com/pkg/errors"
 	analyze "github.com/replicatedhq/troubleshoot/pkg/analyze"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
+	"github.com/replicatedhq/troubleshoot/pkg/multitype"
 )
 
 // Analyze runs the analyze phase of preflight checks
@@ -64,6 +67,9 @@ func doAnalyze(allCollectedData map[string][]byte, analyzers []*troubleshootv1be
 	}
 
 	for _, hostAnalyzer := range hostAnalyzers {
+		if excluded, _ := isExcluded(hostAnalyzer.Exclude); excluded {
+			continue
+		}
 		analyzeResult, err := analyze.HostAnalyze(hostAnalyzer, getCollectedFileContents, getChildCollectedFileContents)
 		if err != nil {
 			analyzeResult = []*analyze.AnalyzeResult{
@@ -80,4 +86,21 @@ func doAnalyze(allCollectedData map[string][]byte, analyzers []*troubleshootv1be
 		}
 	}
 	return analyzeResults
+}
+
+func isExcluded(excludeVal multitype.BoolOrString) (bool, error) {
+	if excludeVal.Type == multitype.Bool {
+		return excludeVal.BoolVal, nil
+	}
+
+	if excludeVal.StrVal == "" {
+		return false, nil
+	}
+
+	parsed, err := strconv.ParseBool(excludeVal.StrVal)
+	if err != nil {
+		return false, errors.Wrap(err, "failed to parse bool string")
+	}
+
+	return parsed, nil
 }
