@@ -101,8 +101,9 @@ type HostCollect struct {
 	Time                  *HostTime              `json:"time,omitempty" yaml:"time,omitempty"`
 	BlockDevices          *HostBlockDevices      `json:"blockDevices,omitempty" yaml:"blockDevices,omitempty"`
 	TCPConnect            *TCPConnect            `json:"tcpConnect,omitempty" yaml:"tcpConnect,omitempty"`
-	FilesystemPerformance *FilesystemPerformance `json:"filesystemPerformance" yaml:"filesystemPerformance"`
-	Certificate           *Certificate           `json:"certificate" yaml:"certificate" yaml:"certificate"`
+	FilesystemPerformance *FilesystemPerformance `json:"filesystemPerformance,omitempty" yaml:"filesystemPerformance,omitempty"`
+	Certificate           *Certificate           `json:"certificate,omitempty" yaml:"certificate,omitempty"`
+	Exclude               multitype.BoolOrString `json:"exclude,omitempty" yaml:"exclude,omitempty"`
 }
 
 func (c *HostCollect) GetName() string {
