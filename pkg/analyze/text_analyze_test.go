@@ -303,6 +303,74 @@ func Test_textAnalyze(t *testing.T) {
 				"text-collector-2/cfile-3.txt": []byte("Yes it all succeeded"),
 			},
 		},
+		{
+			name: "case insensitive failure case 1", // regexes are not case insensitive by default
+			analyzer: troubleshootv1beta2.TextAnalyze{
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							Message: "pass",
+						},
+					},
+					{
+						Fail: &troubleshootv1beta2.SingleOutcome{
+							Message: "fail",
+						},
+					},
+				},
+				CollectorName: "text-collector-1",
+				FileName:      "cfile-1.txt",
+				RegexPattern:  "succeeded",
+			},
+			expectResult: []AnalyzeResult{
+				{
+					IsPass:  false,
+					IsWarn:  false,
+					IsFail:  true,
+					Title:   "text-collector-1",
+					Message: "fail",
+					IconKey: "kubernetes_text_analyze",
+					IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg",
+				},
+			},
+			files: map[string][]byte{
+				"text-collector-1/cfile-1.txt": []byte("Yes it all SUCCEEDED"),
+			},
+		},
+		{
+			name: "case insensitive success case 1",
+			analyzer: troubleshootv1beta2.TextAnalyze{
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							Message: "pass",
+						},
+					},
+					{
+						Fail: &troubleshootv1beta2.SingleOutcome{
+							Message: "fail",
+						},
+					},
+				},
+				CollectorName: "text-collector-1",
+				FileName:      "cfile-1.txt",
+				RegexPattern:  "(?i)succeeded",
+			},
+			expectResult: []AnalyzeResult{
+				{
+					IsPass:  true,
+					IsWarn:  false,
+					IsFail:  false,
+					Title:   "text-collector-1",
+					Message: "pass",
+					IconKey: "kubernetes_text_analyze",
+					IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg",
+				},
+			},
+			files: map[string][]byte{
+				"text-collector-1/cfile-1.txt": []byte("Yes it all SUCCEEDED"),
+			},
+		},
 	}
 
 	for _, test := range tests {
