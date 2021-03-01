@@ -17,7 +17,21 @@ const (
 	UnsynchronizedInactive = "unsynchronized+inactive"
 )
 
-func analyzeHostTime(hostAnalyzer *troubleshootv1beta2.TimeAnalyze, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
+type AnalyzeHostTime struct {
+	hostAnalyzer *troubleshootv1beta2.TimeAnalyze
+}
+
+func (a *AnalyzeHostTime) Title() string {
+	return hostAnalyzerTitleOrDefault(a.hostAnalyzer.AnalyzeMeta, "Time")
+}
+
+func (a *AnalyzeHostTime) IsExcluded() (bool, error) {
+	return isExcluded(a.hostAnalyzer.Exclude)
+}
+
+func (a *AnalyzeHostTime) Analyze(getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
+	hostAnalyzer := a.hostAnalyzer
+
 	contents, err := getCollectedFileContents("system/time.json")
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get collected file")
@@ -30,11 +44,7 @@ func analyzeHostTime(hostAnalyzer *troubleshootv1beta2.TimeAnalyze, getCollected
 
 	result := AnalyzeResult{}
 
-	title := hostAnalyzer.CheckName
-	if title == "" {
-		title = "Time"
-	}
-	result.Title = title
+	result.Title = a.Title()
 
 	for _, outcome := range hostAnalyzer.Outcomes {
 		if outcome.Fail != nil {

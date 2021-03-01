@@ -17,7 +17,21 @@ type httpResult struct {
 	Response *collect.HTTPResponse
 }
 
-func analyzeHostHTTP(hostAnalyzer *troubleshootv1beta2.HTTPAnalyze, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
+type AnalyzeHostHTTP struct {
+	hostAnalyzer *troubleshootv1beta2.HTTPAnalyze
+}
+
+func (a *AnalyzeHostHTTP) Title() string {
+	return hostAnalyzerTitleOrDefault(a.hostAnalyzer.AnalyzeMeta, "HTTP Request")
+}
+
+func (a *AnalyzeHostHTTP) IsExcluded() (bool, error) {
+	return isExcluded(a.hostAnalyzer.Exclude)
+}
+
+func (a *AnalyzeHostHTTP) Analyze(getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
+	hostAnalyzer := a.hostAnalyzer
+
 	name := filepath.Join("http", "result.json")
 	if hostAnalyzer.CollectorName != "" {
 		name = filepath.Join("http", hostAnalyzer.CollectorName+".json")
@@ -34,11 +48,7 @@ func analyzeHostHTTP(hostAnalyzer *troubleshootv1beta2.HTTPAnalyze, getCollected
 
 	result := AnalyzeResult{}
 
-	title := hostAnalyzer.CheckName
-	if title == "" {
-		title = "HTTP Request"
-	}
-	result.Title = title
+	result.Title = a.Title()
 
 	for _, outcome := range hostAnalyzer.Outcomes {
 		if outcome.Fail != nil {

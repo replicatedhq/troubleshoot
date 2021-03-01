@@ -103,7 +103,6 @@ type HostCollect struct {
 	TCPConnect            *TCPConnect            `json:"tcpConnect,omitempty" yaml:"tcpConnect,omitempty"`
 	FilesystemPerformance *FilesystemPerformance `json:"filesystemPerformance,omitempty" yaml:"filesystemPerformance,omitempty"`
 	Certificate           *Certificate           `json:"certificate,omitempty" yaml:"certificate,omitempty"`
-	Exclude               multitype.BoolOrString `json:"exclude,omitempty" yaml:"exclude,omitempty"`
 }
 
 func (c *HostCollect) GetName() string {

@@ -367,7 +367,7 @@ func TestAnalyzeHostDiskUsage(t *testing.T) {
 				return b, nil
 			}
 
-			result, err := analyzeHostDiskUsage(test.hostAnalyzer, getCollectedFileContents)
+			result, err := (&AnalyzeHostDiskUsage{test.hostAnalyzer}).Analyze(getCollectedFileContents)
 			if test.expectErr {
 				req.Error(err)
 			} else {

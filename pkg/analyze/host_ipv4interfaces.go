@@ -11,7 +11,21 @@ import (
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 )
 
-func analyzeHostIPV4Interfaces(hostAnalyzer *troubleshootv1beta2.IPV4InterfacesAnalyze, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
+type AnalyzeHostIPV4Interfaces struct {
+	hostAnalyzer *troubleshootv1beta2.IPV4InterfacesAnalyze
+}
+
+func (a *AnalyzeHostIPV4Interfaces) Title() string {
+	return hostAnalyzerTitleOrDefault(a.hostAnalyzer.AnalyzeMeta, "IPv4 Interfaces")
+}
+
+func (a *AnalyzeHostIPV4Interfaces) IsExcluded() (bool, error) {
+	return isExcluded(a.hostAnalyzer.Exclude)
+}
+
+func (a *AnalyzeHostIPV4Interfaces) Analyze(getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
+	hostAnalyzer := a.hostAnalyzer
+
 	contents, err := getCollectedFileContents("system/ipv4Interfaces.json")
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get collected file")
@@ -24,11 +38,7 @@ func analyzeHostIPV4Interfaces(hostAnalyzer *troubleshootv1beta2.IPV4InterfacesA
 
 	result := AnalyzeResult{}
 
-	title := hostAnalyzer.CheckName
-	if title == "" {
-		title = "IPv4 Interfaces"
-	}
-	result.Title = title
+	result.Title = a.Title()
 
 	for _, outcome := range hostAnalyzer.Outcomes {
 		if outcome.Fail != nil {

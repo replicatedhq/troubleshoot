@@ -10,7 +10,21 @@ import (
 	"github.com/replicatedhq/troubleshoot/pkg/collect"
 )
 
-func analyzeHostCPU(hostAnalyzer *troubleshootv1beta2.CPUAnalyze, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
+type AnalyzeHostCPU struct {
+	hostAnalyzer *troubleshootv1beta2.CPUAnalyze
+}
+
+func (a *AnalyzeHostCPU) Title() string {
+	return hostAnalyzerTitleOrDefault(a.hostAnalyzer.AnalyzeMeta, "Number of CPUs")
+}
+
+func (a *AnalyzeHostCPU) IsExcluded() (bool, error) {
+	return isExcluded(a.hostAnalyzer.Exclude)
+}
+
+func (a *AnalyzeHostCPU) Analyze(getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
+	hostAnalyzer := a.hostAnalyzer
+
 	contents, err := getCollectedFileContents("system/cpu.json")
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get collected file")
@@ -23,11 +37,7 @@ func analyzeHostCPU(hostAnalyzer *troubleshootv1beta2.CPUAnalyze, getCollectedFi
 
 	result := AnalyzeResult{}
 
-	title := hostAnalyzer.CheckName
-	if title == "" {
-		title = "Number of CPUs"
-	}
-	result.Title = title
+	result.Title = a.Title()
 
 	for _, outcome := range hostAnalyzer.Outcomes {
 		if outcome.Fail != nil {

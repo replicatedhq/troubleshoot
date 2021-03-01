@@ -67,9 +67,6 @@ func CollectHost(opts CollectOpts, p *troubleshootv1beta2.HostPreflight) (Collec
 	}
 
 	for _, collector := range collectors {
-		if excluded, _ := isExcluded(collector.Collect.Exclude); excluded {
-			continue
-		}
 		result, err := collector.RunCollectorSync()
 		if err != nil {
 			opts.ProgressChan <- errors.Errorf("failed to run collector: %s: %v\n", collector.GetDisplayName(), err)
