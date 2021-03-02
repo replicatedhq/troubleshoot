@@ -10,7 +10,21 @@ import (
 	"github.com/replicatedhq/troubleshoot/pkg/collect"
 )
 
-func analyzeHostTCPPortStatus(hostAnalyzer *troubleshootv1beta2.TCPPortStatusAnalyze, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
+type AnalyzeHostTCPPortStatus struct {
+	hostAnalyzer *troubleshootv1beta2.TCPPortStatusAnalyze
+}
+
+func (a *AnalyzeHostTCPPortStatus) Title() string {
+	return hostAnalyzerTitleOrDefault(a.hostAnalyzer.AnalyzeMeta, "TCP Port Status")
+}
+
+func (a *AnalyzeHostTCPPortStatus) IsExcluded() (bool, error) {
+	return isExcluded(a.hostAnalyzer.Exclude)
+}
+
+func (a *AnalyzeHostTCPPortStatus) Analyze(getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
+	hostAnalyzer := a.hostAnalyzer
+
 	fullPath := path.Join("tcpPortStatus", "tcpPortStatus.json")
 	if hostAnalyzer.CollectorName != "" {
 		fullPath = path.Join("tcpPortStatus", fmt.Sprintf("%s.json", hostAnalyzer.CollectorName))
@@ -27,11 +41,7 @@ func analyzeHostTCPPortStatus(hostAnalyzer *troubleshootv1beta2.TCPPortStatusAna
 
 	result := AnalyzeResult{}
 
-	title := hostAnalyzer.CheckName
-	if title == "" {
-		title = "TCP Port Status"
-	}
-	result.Title = title
+	result.Title = a.Title()
 
 	for _, outcome := range hostAnalyzer.Outcomes {
 		if outcome.Fail != nil {

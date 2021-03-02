@@ -219,7 +219,7 @@ func TestAnalyzeHostTime(t *testing.T) {
 				return b, nil
 			}
 
-			result, err := analyzeHostTime(test.hostAnalyzer, getCollectedFileContents)
+			result, err := (&AnalyzeHostTime{test.hostAnalyzer}).Analyze(getCollectedFileContents)
 			if test.expectErr {
 				req.Error(err)
 			} else {

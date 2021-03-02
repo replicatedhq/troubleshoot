@@ -12,7 +12,21 @@ import (
 	"github.com/replicatedhq/troubleshoot/pkg/collect"
 )
 
-func analyzeHostBlockDevices(hostAnalyzer *troubleshootv1beta2.BlockDevicesAnalyze, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
+type AnalyzeHostBlockDevices struct {
+	hostAnalyzer *troubleshootv1beta2.BlockDevicesAnalyze
+}
+
+func (a *AnalyzeHostBlockDevices) Title() string {
+	return hostAnalyzerTitleOrDefault(a.hostAnalyzer.AnalyzeMeta, "Block Devices")
+}
+
+func (a *AnalyzeHostBlockDevices) IsExcluded() (bool, error) {
+	return isExcluded(a.hostAnalyzer.Exclude)
+}
+
+func (a *AnalyzeHostBlockDevices) Analyze(getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
+	hostAnalyzer := a.hostAnalyzer
+
 	contents, err := getCollectedFileContents("system/block_devices.json")
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get collected file")
@@ -25,11 +39,7 @@ func analyzeHostBlockDevices(hostAnalyzer *troubleshootv1beta2.BlockDevicesAnaly
 
 	result := AnalyzeResult{}
 
-	title := hostAnalyzer.CheckName
-	if title == "" {
-		title = "Block Devices"
-	}
-	result.Title = title
+	result.Title = a.Title()
 
 	for _, outcome := range hostAnalyzer.Outcomes {
 		if outcome.Fail != nil {

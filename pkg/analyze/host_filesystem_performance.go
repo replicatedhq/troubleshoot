@@ -13,7 +13,21 @@ import (
 	"github.com/replicatedhq/troubleshoot/pkg/collect"
 )
 
-func analyzeHostFilesystemPerformance(hostAnalyzer *troubleshootv1beta2.FilesystemPerformanceAnalyze, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
+type AnalyzeHostFilesystemPerformance struct {
+	hostAnalyzer *troubleshootv1beta2.FilesystemPerformanceAnalyze
+}
+
+func (a *AnalyzeHostFilesystemPerformance) Title() string {
+	return hostAnalyzerTitleOrDefault(a.hostAnalyzer.AnalyzeMeta, "Filesystem Performance")
+}
+
+func (a *AnalyzeHostFilesystemPerformance) IsExcluded() (bool, error) {
+	return isExcluded(a.hostAnalyzer.Exclude)
+}
+
+func (a *AnalyzeHostFilesystemPerformance) Analyze(getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
+	hostAnalyzer := a.hostAnalyzer
+
 	collectorName := hostAnalyzer.CollectorName
 	if collectorName == "" {
 		collectorName = "filesystemPerformance"
@@ -31,11 +45,7 @@ func analyzeHostFilesystemPerformance(hostAnalyzer *troubleshootv1beta2.Filesyst
 
 	result := AnalyzeResult{}
 
-	title := hostAnalyzer.CheckName
-	if title == "" {
-		title = "Filesystem Performance"
-	}
-	result.Title = title
+	result.Title = a.Title()
 
 	for _, outcome := range hostAnalyzer.Outcomes {
 		if outcome.Fail != nil {

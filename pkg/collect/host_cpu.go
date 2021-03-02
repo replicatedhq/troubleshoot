@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 
 	"github.com/pkg/errors"
+	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/shirou/gopsutil/cpu"
 )
 
@@ -12,7 +13,19 @@ type CPUInfo struct {
 	PhysicalCount int `json:"physicalCount"`
 }
 
-func HostCPU(c *HostCollector) (map[string][]byte, error) {
+type CollectHostCPU struct {
+	hostCollector *troubleshootv1beta2.CPU
+}
+
+func (c *CollectHostCPU) Title() string {
+	return hostCollectorTitleOrDefault(c.hostCollector.HostCollectorMeta, "CPU Info")
+}
+
+func (c *CollectHostCPU) IsExcluded() (bool, error) {
+	return isExcluded(c.hostCollector.Exclude)
+}
+
+func (c *CollectHostCPU) Collect(progressChan chan<- interface{}) (map[string][]byte, error) {
 	cpuInfo := CPUInfo{}
 
 	logicalCount, err := cpu.Counts(true)

@@ -12,7 +12,21 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 )
 
-func analyzeHostDiskUsage(hostAnalyzer *troubleshootv1beta2.DiskUsageAnalyze, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
+type AnalyzeHostDiskUsage struct {
+	hostAnalyzer *troubleshootv1beta2.DiskUsageAnalyze
+}
+
+func (a *AnalyzeHostDiskUsage) Title() string {
+	return hostAnalyzerTitleOrDefault(a.hostAnalyzer.AnalyzeMeta, fmt.Sprintf("Disk Usage %s", a.hostAnalyzer.CollectorName))
+}
+
+func (a *AnalyzeHostDiskUsage) IsExcluded() (bool, error) {
+	return isExcluded(a.hostAnalyzer.Exclude)
+}
+
+func (a *AnalyzeHostDiskUsage) Analyze(getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
+	hostAnalyzer := a.hostAnalyzer
+
 	key := collect.HostDiskUsageKey(hostAnalyzer.CollectorName)
 	contents, err := getCollectedFileContents(key)
 	if err != nil {
@@ -26,11 +40,7 @@ func analyzeHostDiskUsage(hostAnalyzer *troubleshootv1beta2.DiskUsageAnalyze, ge
 
 	result := AnalyzeResult{}
 
-	title := hostAnalyzer.CheckName
-	if title == "" {
-		title = fmt.Sprintf("Disk Usage %s", hostAnalyzer.CollectorName)
-	}
-	result.Title = title
+	result.Title = a.Title()
 
 	for _, outcome := range hostAnalyzer.Outcomes {
 		if outcome.Fail != nil {

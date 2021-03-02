@@ -10,7 +10,21 @@ import (
 	"github.com/replicatedhq/troubleshoot/pkg/collect"
 )
 
-func analyzeHostTCPLoadBalancer(hostAnalyzer *troubleshootv1beta2.TCPLoadBalancerAnalyze, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
+type AnalyzeHostTCPLoadBalancer struct {
+	hostAnalyzer *troubleshootv1beta2.TCPLoadBalancerAnalyze
+}
+
+func (a *AnalyzeHostTCPLoadBalancer) Title() string {
+	return hostAnalyzerTitleOrDefault(a.hostAnalyzer.AnalyzeMeta, "TCP Load Balancer")
+}
+
+func (a *AnalyzeHostTCPLoadBalancer) IsExcluded() (bool, error) {
+	return isExcluded(a.hostAnalyzer.Exclude)
+}
+
+func (a *AnalyzeHostTCPLoadBalancer) Analyze(getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
+	hostAnalyzer := a.hostAnalyzer
+
 	collectorName := hostAnalyzer.CollectorName
 	if collectorName == "" {
 		collectorName = "tcpLoadBalancer"
@@ -29,11 +43,7 @@ func analyzeHostTCPLoadBalancer(hostAnalyzer *troubleshootv1beta2.TCPLoadBalance
 
 	result := AnalyzeResult{}
 
-	title := hostAnalyzer.CheckName
-	if title == "" {
-		title = "TCP Load Balancer"
-	}
-	result.Title = title
+	result.Title = a.Title()
 
 	for _, outcome := range hostAnalyzer.Outcomes {
 		if outcome.Fail != nil {

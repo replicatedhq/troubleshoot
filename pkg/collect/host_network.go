@@ -2,12 +2,12 @@ package collect
 
 import (
 	"bytes"
-	"fmt"
 	"net"
 	"strings"
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/replicatedhq/troubleshoot/pkg/debug"
 	"github.com/segmentio/ksuid"
 )
 
@@ -26,7 +26,7 @@ type NetworkStatusResult struct {
 	Status NetworkStatus `json:"status"`
 }
 
-func checkTCPConnection(listenAddress string, dialAddress string, timeout time.Duration) (NetworkStatus, error) {
+func checkTCPConnection(progressChan chan<- interface{}, listenAddress string, dialAddress string, timeout time.Duration) (NetworkStatus, error) {
 	lstn, err := net.Listen("tcp", listenAddress)
 	if err != nil {
 		if strings.Contains(err.Error(), "address already in use") {
@@ -66,7 +66,8 @@ func checkTCPConnection(listenAddress string, dialAddress string, timeout time.D
 		conn, err := net.DialTimeout("tcp", dialAddress, 50*time.Millisecond)
 		if err != nil {
 			if strings.Contains(err.Error(), "i/o timeout") {
-				time.Sleep(time.Millisecond * 50)
+				progressChan <- err
+				time.Sleep(time.Second)
 				continue
 			}
 			if strings.Contains(err.Error(), "connection refused") {
@@ -79,26 +80,27 @@ func checkTCPConnection(listenAddress string, dialAddress string, timeout time.D
 			return NetworkStatusConnected, nil
 		}
 
-		time.Sleep(time.Millisecond * 50)
+		progressChan <- errors.New("failed to verify connection to server")
+		time.Sleep(time.Second)
 	}
 }
 
 func handleTestConnection(conn net.Conn, requestToken []byte, responseToken []byte) bool {
 	defer func() {
 		if err := conn.Close(); err != nil {
-			fmt.Println(err.Error())
+			debug.Println(err.Error())
 		}
 	}()
 
 	if err := conn.SetReadDeadline(time.Now().Add(50 * time.Millisecond)); err != nil {
-		fmt.Printf("Server failed to set read deadline: %v", err)
+		debug.Printf("Server failed to set read deadline: %v\n", err)
 		return false
 	}
 
 	buf := make([]byte, 1024)
 	_, err := conn.Read(buf)
 	if err != nil {
-		fmt.Printf("Server failed to read: %v", err)
+		debug.Printf("Server failed to read: %v\n", err)
 		return false
 	}
 
@@ -107,12 +109,12 @@ func handleTestConnection(conn net.Conn, requestToken []byte, responseToken []by
 	}
 
 	if err := conn.SetWriteDeadline(time.Now().Add(50 * time.Millisecond)); err != nil {
-		fmt.Printf("Server failed to set write deadline: %v", err)
+		debug.Printf("Server failed to set write deadline: %v\n", err)
 		return false
 	}
 
 	if _, err := conn.Write(responseToken); err != nil {
-		fmt.Printf("Server failed to write: %v", err)
+		debug.Printf("Server failed to write: %v\n", err)
 		return false
 	}
 
@@ -122,12 +124,12 @@ func handleTestConnection(conn net.Conn, requestToken []byte, responseToken []by
 func verifyConnectionToServer(conn net.Conn, requestToken []byte, responseToken []byte) bool {
 	defer func() {
 		if err := conn.Close(); err != nil {
-			fmt.Println(err.Error())
+			debug.Println(err.Error())
 		}
 	}()
 
 	if err := conn.SetWriteDeadline(time.Now().Add(50 * time.Millisecond)); err != nil {
-		fmt.Printf("Client failed to set write deadline: %v", err)
+		debug.Printf("Client failed to set write deadline: %v\n", err)
 		return false
 	}
 
@@ -137,7 +139,7 @@ func verifyConnectionToServer(conn net.Conn, requestToken []byte, responseToken 
 	}
 
 	if err := conn.SetReadDeadline(time.Now().Add(50 * time.Millisecond)); err != nil {
-		fmt.Printf("Client failed to set read deadline: %v", err)
+		debug.Printf("Client failed to set read deadline: %v\n", err)
 		return false
 	}
 

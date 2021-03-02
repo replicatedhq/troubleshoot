@@ -1,6 +1,7 @@
 package analyzer
 
 import (
+	"fmt"
 	"strconv"
 
 	"github.com/pkg/errors"
@@ -40,100 +41,30 @@ func isExcluded(excludeVal multitype.BoolOrString) (bool, error) {
 	return parsed, nil
 }
 
-func HostAnalyze(hostAnalyzer *troubleshootv1beta2.HostAnalyze, getFile getCollectedFileContents, findFiles getChildCollectedFileContents) ([]*AnalyzeResult, error) {
-	if hostAnalyzer.CPU != nil {
-		result, err := analyzeHostCPU(hostAnalyzer.CPU, getFile)
-		if err != nil {
-			return nil, err
-		}
-		return []*AnalyzeResult{result}, nil
-	}
-	if hostAnalyzer.TCPLoadBalancer != nil {
-		result, err := analyzeHostTCPLoadBalancer(hostAnalyzer.TCPLoadBalancer, getFile)
-		if err != nil {
-			return nil, err
-		}
-		return []*AnalyzeResult{result}, nil
-	}
-	if hostAnalyzer.HTTPLoadBalancer != nil {
-		result, err := analyzeHostHTTPLoadBalancer(hostAnalyzer.HTTPLoadBalancer, getFile)
-		if err != nil {
-			return nil, err
-		}
-		return []*AnalyzeResult{result}, nil
-	}
-	if hostAnalyzer.DiskUsage != nil {
-		result, err := analyzeHostDiskUsage(hostAnalyzer.DiskUsage, getFile)
-		if err != nil {
-			return nil, err
-		}
-		return []*AnalyzeResult{result}, nil
-	}
-	if hostAnalyzer.Memory != nil {
-		result, err := analyzeHostMemory(hostAnalyzer.Memory, getFile)
-		if err != nil {
-			return nil, err
-		}
-		return []*AnalyzeResult{result}, nil
-	}
-	if hostAnalyzer.TCPPortStatus != nil {
-		result, err := analyzeHostTCPPortStatus(hostAnalyzer.TCPPortStatus, getFile)
-		if err != nil {
-			return nil, err
-		}
-		return []*AnalyzeResult{result}, nil
-	}
-	if hostAnalyzer.HTTP != nil {
-		result, err := analyzeHostHTTP(hostAnalyzer.HTTP, getFile)
-		if err != nil {
-			return nil, err
-		}
-		return []*AnalyzeResult{result}, nil
-	}
-	if hostAnalyzer.Time != nil {
-		result, err := analyzeHostTime(hostAnalyzer.Time, getFile)
-		if err != nil {
-			return nil, err
-		}
-		return []*AnalyzeResult{result}, nil
-	}
-	if hostAnalyzer.BlockDevices != nil {
-		result, err := analyzeHostBlockDevices(hostAnalyzer.BlockDevices, getFile)
-		if err != nil {
-			return nil, err
-		}
-		return []*AnalyzeResult{result}, nil
-	}
-	if hostAnalyzer.TCPConnect != nil {
-		result, err := analyzeHostTCPConnect(hostAnalyzer.TCPConnect, getFile)
-		if err != nil {
-			return nil, err
-		}
-		return []*AnalyzeResult{result}, nil
-	}
-	if hostAnalyzer.IPV4Interfaces != nil {
-		result, err := analyzeHostIPV4Interfaces(hostAnalyzer.IPV4Interfaces, getFile)
-		if err != nil {
-			return nil, err
-		}
-		return []*AnalyzeResult{result}, nil
-	}
-	if hostAnalyzer.FilesystemPerformance != nil {
-		result, err := analyzeHostFilesystemPerformance(hostAnalyzer.FilesystemPerformance, getFile)
-		if err != nil {
-			return nil, err
-		}
-		return []*AnalyzeResult{result}, nil
-	}
-	if hostAnalyzer.Certificate != nil {
-		result, err := analyzeHostCertificate(hostAnalyzer.Certificate, getFile)
-		if err != nil {
-			return nil, err
-		}
-		return []*AnalyzeResult{result}, nil
+func HostAnalyze(hostAnalyzer *troubleshootv1beta2.HostAnalyze, getFile getCollectedFileContents, findFiles getChildCollectedFileContents) []*AnalyzeResult {
+	analyzer, ok := GetHostAnalyzer(hostAnalyzer)
+	if !ok {
+		return NewAnalyzeResultError(analyzer, errors.New("invalid analyzer"))
 	}
 
-	return nil, errors.New("invalid analyzer")
+	isExcluded, _ := analyzer.IsExcluded()
+	if isExcluded {
+		return nil
+	}
+
+	result, err := analyzer.Analyze(getFile)
+	if err != nil {
+		return NewAnalyzeResultError(analyzer, errors.Wrap(err, "analyze"))
+	}
+	return []*AnalyzeResult{result}
+}
+
+func NewAnalyzeResultError(analyzer HostAnalyzer, err error) []*AnalyzeResult {
+	return []*AnalyzeResult{{
+		IsFail:  true,
+		Title:   analyzer.Title(),
+		Message: fmt.Sprintf("Analyzer Failed: %v", err),
+	}}
 }
 
 func Analyze(analyzer *troubleshootv1beta2.Analyze, getFile getCollectedFileContents, findFiles getChildCollectedFileContents) ([]*AnalyzeResult, error) {

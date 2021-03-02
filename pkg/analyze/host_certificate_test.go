@@ -320,7 +320,7 @@ func TestAnalyzeCertificate(t *testing.T) {
 				return []byte(test.status), nil
 			}
 
-			result, err := analyzeHostCertificate(test.hostAnalyzer, getCollectedFileContents)
+			result, err := (&AnalyzeHostCertificate{test.hostAnalyzer}).Analyze(getCollectedFileContents)
 			if test.expectErr {
 				req.Error(err)
 			} else {

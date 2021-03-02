@@ -8,6 +8,7 @@ import (
 
 	"github.com/godbus/dbus"
 	"github.com/pkg/errors"
+	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 )
 
 type NTPStatus string
@@ -18,7 +19,19 @@ type TimeInfo struct {
 	NTPActive       bool   `json:"ntp_active"`
 }
 
-func HostTime(c *HostCollector) (map[string][]byte, error) {
+type CollectHostTime struct {
+	hostCollector *troubleshootv1beta2.HostTime
+}
+
+func (c *CollectHostTime) Title() string {
+	return hostCollectorTitleOrDefault(c.hostCollector.HostCollectorMeta, "TCP Port Status")
+}
+
+func (c *CollectHostTime) IsExcluded() (bool, error) {
+	return isExcluded(c.hostCollector.Exclude)
+}
+
+func (c *CollectHostTime) Collect(progressChan chan<- interface{}) (map[string][]byte, error) {
 	timeInfo := TimeInfo{}
 
 	conn, err := dbus.SystemBus()

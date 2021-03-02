@@ -5,10 +5,24 @@ import (
 	"path/filepath"
 
 	"github.com/pkg/errors"
+	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 )
 
-func HostHTTP(c *HostCollector) (map[string][]byte, error) {
-	httpCollector := c.Collect.HTTP
+type CollectHostHTTP struct {
+	hostCollector *troubleshootv1beta2.HostHTTP
+}
+
+func (c *CollectHostHTTP) Title() string {
+	return hostCollectorTitleOrDefault(c.hostCollector.HostCollectorMeta, "HTTP Request")
+}
+
+func (c *CollectHostHTTP) IsExcluded() (bool, error) {
+	return isExcluded(c.hostCollector.Exclude)
+}
+
+func (c *CollectHostHTTP) Collect(progressChan chan<- interface{}) (map[string][]byte, error) {
+	httpCollector := c.hostCollector
+
 	var response *http.Response
 	var err error
 

@@ -7,7 +7,21 @@ import (
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 )
 
-func analyzeHostCertificate(hostAnalyzer *troubleshootv1beta2.CertificateAnalyze, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
+type AnalyzeHostCertificate struct {
+	hostAnalyzer *troubleshootv1beta2.CertificateAnalyze
+}
+
+func (a *AnalyzeHostCertificate) Title() string {
+	return hostAnalyzerTitleOrDefault(a.hostAnalyzer.AnalyzeMeta, "Certificate Key Pair")
+}
+
+func (a *AnalyzeHostCertificate) IsExcluded() (bool, error) {
+	return isExcluded(a.hostAnalyzer.Exclude)
+}
+
+func (a *AnalyzeHostCertificate) Analyze(getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
+	hostAnalyzer := a.hostAnalyzer
+
 	collectorName := hostAnalyzer.CollectorName
 	if collectorName == "" {
 		collectorName = "certificate"
@@ -21,11 +35,7 @@ func analyzeHostCertificate(hostAnalyzer *troubleshootv1beta2.CertificateAnalyze
 
 	result := AnalyzeResult{}
 
-	title := hostAnalyzer.CheckName
-	if title == "" {
-		title = "Certificate Key Pair"
-	}
-	result.Title = title
+	result.Title = a.Title()
 
 	for _, outcome := range hostAnalyzer.Outcomes {
 		if outcome.Fail != nil {

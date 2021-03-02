@@ -1,7 +1,5 @@
 package v1beta2
 
-import "github.com/replicatedhq/troubleshoot/pkg/multitype"
-
 type CPUAnalyze struct {
 	AnalyzeMeta `json:",inline" yaml:",inline"`
 	Outcomes    []*Outcome `json:"outcomes" yaml:"outcomes"`
@@ -100,6 +98,4 @@ type HostAnalyze struct {
 	FilesystemPerformance *FilesystemPerformanceAnalyze `json:"filesystemPerformance,omitempty" yaml:"filesystemPerformance,omitempty"`
 
 	Certificate *CertificateAnalyze `json:"certificate,omitempty" yaml:"certificate,omitempty"`
-
-	Exclude multitype.BoolOrString `json:"exclude,omitempty" yaml:"exclude,omitempty"`
 }

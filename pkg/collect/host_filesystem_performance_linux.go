@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"k8s.io/apimachinery/pkg/api/resource"
 )
 
@@ -33,33 +34,33 @@ func (d Durations) Swap(i, j int) {
 	d[i], d[j] = d[j], d[i]
 }
 
-func HostFilesystemPerformance(c *HostCollector) (map[string][]byte, error) {
+func collectHostFilesystemPerformance(hostCollector *troubleshootv1beta2.FilesystemPerformance) (map[string][]byte, error) {
 	var operationSize uint64 = 1024
-	if c.Collect.FilesystemPerformance.OperationSizeBytes != 0 {
-		operationSize = c.Collect.FilesystemPerformance.OperationSizeBytes
+	if hostCollector.OperationSizeBytes != 0 {
+		operationSize = hostCollector.OperationSizeBytes
 	}
 
 	var fileSize uint64 = 10 * 1024 * 1024
-	if c.Collect.FilesystemPerformance.FileSize != "" {
-		quantity, err := resource.ParseQuantity(c.Collect.FilesystemPerformance.FileSize)
+	if hostCollector.FileSize != "" {
+		quantity, err := resource.ParseQuantity(hostCollector.FileSize)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to parse fileSize %q", c.Collect.FilesystemPerformance.FileSize)
+			return nil, errors.Wrapf(err, "failed to parse fileSize %q", hostCollector.FileSize)
 		}
 		fileSizeInt64, ok := quantity.AsInt64()
 		if !ok {
-			return nil, errors.Wrapf(err, "failed to parse fileSize %q", c.Collect.FilesystemPerformance.FileSize)
+			return nil, errors.Wrapf(err, "failed to parse fileSize %q", hostCollector.FileSize)
 		}
 		fileSize = uint64(fileSizeInt64)
 	}
 
-	if c.Collect.FilesystemPerformance.Directory == "" {
+	if hostCollector.Directory == "" {
 		return nil, errors.New("Directory is required to collect filesystem performance info")
 	}
 	// TODO: clean up this directory if its created
-	if err := os.MkdirAll(c.Collect.FilesystemPerformance.Directory, 0700); err != nil {
-		return nil, errors.Wrapf(err, "failed to mkdir %q", c.Collect.FilesystemPerformance.Directory)
+	if err := os.MkdirAll(hostCollector.Directory, 0700); err != nil {
+		return nil, errors.Wrapf(err, "failed to mkdir %q", hostCollector.Directory)
 	}
-	filename := filepath.Join(c.Collect.FilesystemPerformance.Directory, "fsperf")
+	filename := filepath.Join(hostCollector.Directory, "fsperf")
 
 	f, err := os.OpenFile(filename, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0600)
 	if err != nil {
@@ -92,11 +93,11 @@ func HostFilesystemPerformance(c *HostCollector) (map[string][]byte, error) {
 		if err != nil {
 			return nil, errors.Wrapf(err, "write to %s", filename)
 		}
-		if c.Collect.FilesystemPerformance.Sync {
+		if hostCollector.Sync {
 			if err := f.Sync(); err != nil {
 				return nil, errors.Wrapf(err, "sync %s", filename)
 			}
-		} else if c.Collect.FilesystemPerformance.Datasync {
+		} else if hostCollector.Datasync {
 			if err := syscall.Fdatasync(int(f.Fd())); err != nil {
 				return nil, errors.Wrapf(err, "datasync %s", filename)
 			}
@@ -208,7 +209,7 @@ func HostFilesystemPerformance(c *HostCollector) (map[string][]byte, error) {
 
 	fsPerf.IOPS = int(iops)
 
-	collectorName := c.Collect.FilesystemPerformance.CollectorName
+	collectorName := hostCollector.CollectorName
 	if collectorName == "" {
 		collectorName = "filesystemPerformance"
 	}

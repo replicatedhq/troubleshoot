@@ -6,6 +6,8 @@ import (
 	"io/ioutil"
 	"path/filepath"
 	"strings"
+
+	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 )
 
 const KeyPairMissing = "key-pair-missing"
@@ -15,10 +17,22 @@ const KeyPairMismatch = "key-pair-mismatch"
 const KeyPairInvalid = "key-pair-invalid"
 const KeyPairValid = "key-pair-valid"
 
-func HostCertificate(c *HostCollector) (map[string][]byte, error) {
+type CollectHostCertificate struct {
+	hostCollector *troubleshootv1beta2.Certificate
+}
+
+func (c *CollectHostCertificate) Title() string {
+	return hostCollectorTitleOrDefault(c.hostCollector.HostCollectorMeta, "Certificate Key Pair")
+}
+
+func (c *CollectHostCertificate) IsExcluded() (bool, error) {
+	return isExcluded(c.hostCollector.Exclude)
+}
+
+func (c *CollectHostCertificate) Collect(progressChan chan<- interface{}) (map[string][]byte, error) {
 	var result = KeyPairValid
 
-	_, err := tls.LoadX509KeyPair(c.Collect.Certificate.CertificatePath, c.Collect.Certificate.KeyPath)
+	_, err := tls.LoadX509KeyPair(c.hostCollector.CertificatePath, c.hostCollector.KeyPath)
 	if err != nil {
 		if strings.Contains(err.Error(), "no such file") {
 			result = KeyPairMissing
@@ -29,7 +43,7 @@ func HostCertificate(c *HostCollector) (map[string][]byte, error) {
 		} else if strings.Contains(err.Error(), "private key does not match public key") {
 			result = KeyPairMismatch
 		} else if strings.Contains(err.Error(), "failed to parse private key") {
-			if encrypted, _ := isEncryptedKey(c.Collect.Certificate.KeyPath); encrypted {
+			if encrypted, _ := isEncryptedKey(c.hostCollector.KeyPath); encrypted {
 				result = KeyPairEncrypted
 			} else {
 				result = KeyPairInvalid
@@ -39,7 +53,7 @@ func HostCertificate(c *HostCollector) (map[string][]byte, error) {
 		}
 	}
 
-	collectorName := c.Collect.Certificate.CollectorName
+	collectorName := c.hostCollector.CollectorName
 	if collectorName == "" {
 		collectorName = "certificate"
 	}
