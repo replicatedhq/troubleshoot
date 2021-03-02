@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 
 	"github.com/pkg/errors"
+	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/shirou/gopsutil/disk"
 )
 
@@ -15,14 +16,26 @@ type DiskUsageInfo struct {
 	UsedBytes  uint64 `json:"used_bytes"`
 }
 
-func HostDiskUsage(c *HostCollector) (map[string][]byte, error) {
+type CollectHostDiskUsage struct {
+	hostCollector *troubleshootv1beta2.DiskUsage
+}
+
+func (c *CollectHostDiskUsage) Title() string {
+	return hostCollectorTitleOrDefault(c.hostCollector.HostCollectorMeta, fmt.Sprintf("Disk Usage %s", c.hostCollector.CollectorName))
+}
+
+func (c *CollectHostDiskUsage) IsExcluded() (bool, error) {
+	return isExcluded(c.hostCollector.Exclude)
+}
+
+func (c *CollectHostDiskUsage) Collect(progressChan chan<- interface{}) (map[string][]byte, error) {
 	result := map[string][]byte{}
 
-	if c.Collect.DiskUsage == nil {
+	if c.hostCollector == nil {
 		return result, nil
 	}
 
-	pathExists, err := traverseFiletreeDirExists(c.Collect.DiskUsage.Path)
+	pathExists, err := traverseFiletreeDirExists(c.hostCollector.Path)
 	if err != nil {
 		return result, errors.Wrap(err, "traverse file tree")
 	}
@@ -39,7 +52,7 @@ func HostDiskUsage(c *HostCollector) (map[string][]byte, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to marshal disk space info")
 	}
-	key := HostDiskUsageKey(c.Collect.DiskUsage.CollectorName)
+	key := HostDiskUsageKey(c.hostCollector.CollectorName)
 	result[key] = b
 
 	return result, nil

@@ -93,6 +93,7 @@ func runPreflights(v *viper.Viper, arg string) error {
 
 	s := spin.New()
 	go func() {
+		lastMsg := ""
 		for {
 			select {
 			case msg, ok := <-progressCh:
@@ -104,6 +105,10 @@ func runPreflights(v *viper.Viper, arg string) error {
 					c := color.New(color.FgHiRed)
 					c.Println(fmt.Sprintf("%s\r * %v", cursor.ClearEntireLine(), msg))
 				case string:
+					if lastMsg == msg {
+						break
+					}
+					lastMsg = msg
 					c := color.New(color.FgCyan)
 					c.Println(fmt.Sprintf("%s\r * %s", cursor.ClearEntireLine(), msg))
 				}

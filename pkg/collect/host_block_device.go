@@ -8,6 +8,7 @@ import (
 	"os/exec"
 
 	"github.com/pkg/errors"
+	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 )
 
 type BlockDeviceInfo struct {
@@ -28,7 +29,19 @@ type BlockDeviceInfo struct {
 const lsblkColumns = "NAME,KNAME,PKNAME,TYPE,MAJ:MIN,SIZE,FSTYPE,MOUNTPOINT,SERIAL,RO,RM"
 const lsblkFormat = `NAME=%q KNAME=%q PKNAME=%q TYPE=%q MAJ:MIN="%d:%d" SIZE="%d" FSTYPE=%q MOUNTPOINT=%q SERIAL=%q RO="%d" RM="%d0"`
 
-func HostBlockDevices(c *HostCollector) (map[string][]byte, error) {
+type CollectHostBlockDevices struct {
+	hostCollector *troubleshootv1beta2.HostBlockDevices
+}
+
+func (c *CollectHostBlockDevices) Title() string {
+	return hostCollectorTitleOrDefault(c.hostCollector.HostCollectorMeta, "Block Devices")
+}
+
+func (c *CollectHostBlockDevices) IsExcluded() (bool, error) {
+	return isExcluded(c.hostCollector.Exclude)
+}
+
+func (c *CollectHostBlockDevices) Collect(progressChan chan<- interface{}) (map[string][]byte, error) {
 	var devices []BlockDeviceInfo
 
 	cmd := exec.Command("lsblk", "--noheadings", "--bytes", "--pairs", "-o", lsblkColumns)

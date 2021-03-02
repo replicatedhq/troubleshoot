@@ -47,10 +47,8 @@ func HostAnalyze(hostAnalyzer *troubleshootv1beta2.HostAnalyze, getFile getColle
 		return NewAnalyzeResultError(analyzer, errors.New("invalid analyzer"))
 	}
 
-	isExcluded, err := analyzer.IsExcluded()
-	if err != nil {
-		return NewAnalyzeResultError(analyzer, errors.Wrap(err, "is excluded"))
-	} else if isExcluded {
+	isExcluded, _ := analyzer.IsExcluded()
+	if isExcluded {
 		return nil
 	}
 

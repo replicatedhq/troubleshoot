@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 
 	"github.com/pkg/errors"
+	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/shirou/gopsutil/mem"
 )
 
@@ -11,7 +12,19 @@ type MemoryInfo struct {
 	Total uint64 `json:"total"`
 }
 
-func HostMemory(c *HostCollector) (map[string][]byte, error) {
+type CollectHostMemory struct {
+	hostCollector *troubleshootv1beta2.Memory
+}
+
+func (c *CollectHostMemory) Title() string {
+	return hostCollectorTitleOrDefault(c.hostCollector.HostCollectorMeta, "Amount of Memory")
+}
+
+func (c *CollectHostMemory) IsExcluded() (bool, error) {
+	return isExcluded(c.hostCollector.Exclude)
+}
+
+func (c *CollectHostMemory) Collect(progressChan chan<- interface{}) (map[string][]byte, error) {
 	memoryInfo := MemoryInfo{}
 
 	vmstat, err := mem.VirtualMemory()

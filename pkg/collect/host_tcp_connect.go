@@ -9,17 +9,30 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 )
 
-func HostTCPConnect(c *HostCollector) (map[string][]byte, error) {
-	address := c.Collect.TCPConnect.Address
+type CollectHostTCPConnect struct {
+	hostCollector *troubleshootv1beta2.TCPConnect
+}
+
+func (c *CollectHostTCPConnect) Title() string {
+	return hostCollectorTitleOrDefault(c.hostCollector.HostCollectorMeta, "TCP Connection Attempt")
+}
+
+func (c *CollectHostTCPConnect) IsExcluded() (bool, error) {
+	return isExcluded(c.hostCollector.Exclude)
+}
+
+func (c *CollectHostTCPConnect) Collect(progressChan chan<- interface{}) (map[string][]byte, error) {
+	address := c.hostCollector.Address
 
 	timeout := 10 * time.Second
-	if c.Collect.TCPConnect.Timeout != "" {
+	if c.hostCollector.Timeout != "" {
 		var err error
-		timeout, err = time.ParseDuration(c.Collect.TCPConnect.Timeout)
+		timeout, err = time.ParseDuration(c.hostCollector.Timeout)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to parse timeout %q", c.Collect.TCPConnect.Timeout)
+			return nil, errors.Wrapf(err, "failed to parse timeout %q", c.hostCollector.Timeout)
 		}
 	}
 
@@ -32,7 +45,7 @@ func HostTCPConnect(c *HostCollector) (map[string][]byte, error) {
 		return nil, errors.Wrap(err, "failed to marshal result")
 	}
 
-	name := path.Join("connect", fmt.Sprintf("%s.json", c.Collect.TCPConnect.CollectorName))
+	name := path.Join("connect", fmt.Sprintf("%s.json", c.hostCollector.CollectorName))
 
 	return map[string][]byte{
 		name: b,
