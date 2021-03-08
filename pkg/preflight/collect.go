@@ -36,7 +36,7 @@ func (cr ClusterCollectResult) IsRBACAllowed() bool {
 
 type HostCollectResult struct {
 	AllCollectedData map[string][]byte
-	Collectors       collect.HostCollectors
+	Collectors       []collect.HostCollector
 	Spec             *troubleshootv1beta2.HostPreflight
 }
 
@@ -53,12 +53,12 @@ func CollectHost(opts CollectOpts, p *troubleshootv1beta2.HostPreflight) (Collec
 
 	allCollectedData := make(map[string][]byte)
 
-	var collectors collect.HostCollectors
+	var collectors []collect.HostCollector
 	for _, desiredCollector := range collectSpecs {
-		collector := collect.HostCollector{
-			Collect: desiredCollector,
+		collector, ok := collect.GetHostCollector(desiredCollector)
+		if ok {
+			collectors = append(collectors, collector)
 		}
-		collectors = append(collectors, &collector)
 	}
 
 	collectResult := HostCollectResult{
@@ -67,9 +67,15 @@ func CollectHost(opts CollectOpts, p *troubleshootv1beta2.HostPreflight) (Collec
 	}
 
 	for _, collector := range collectors {
-		result, err := collector.RunCollectorSync()
+		isExcluded, _ := collector.IsExcluded()
+		if isExcluded {
+			continue
+		}
+
+		opts.ProgressChan <- fmt.Sprintf("[%s] Running collector...", collector.Title())
+		result, err := collector.Collect(opts.ProgressChan)
 		if err != nil {
-			opts.ProgressChan <- errors.Errorf("failed to run collector: %s: %v\n", collector.GetDisplayName(), err)
+			opts.ProgressChan <- errors.Errorf("failed to run collector: %s: %v", collector.Title(), err)
 			continue
 		}
 

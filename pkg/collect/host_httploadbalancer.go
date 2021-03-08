@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net"
 	"net/http"
 	"path"
@@ -14,18 +13,32 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
+	"github.com/replicatedhq/troubleshoot/pkg/debug"
 	"github.com/segmentio/ksuid"
 )
 
-func HostHTTPLoadBalancer(c *HostCollector) (map[string][]byte, error) {
-	listenAddress := fmt.Sprintf("0.0.0.0:%d", c.Collect.HTTPLoadBalancer.Port)
+type CollectHostHTTPLoadBalancer struct {
+	hostCollector *troubleshootv1beta2.HTTPLoadBalancer
+}
+
+func (c *CollectHostHTTPLoadBalancer) Title() string {
+	return hostCollectorTitleOrDefault(c.hostCollector.HostCollectorMeta, "HTTP Load Balancer")
+}
+
+func (c *CollectHostHTTPLoadBalancer) IsExcluded() (bool, error) {
+	return isExcluded(c.hostCollector.Exclude)
+}
+
+func (c *CollectHostHTTPLoadBalancer) Collect(progressChan chan<- interface{}) (map[string][]byte, error) {
+	listenAddress := fmt.Sprintf("0.0.0.0:%d", c.hostCollector.Port)
 
 	timeout := 60 * time.Minute
-	if c.Collect.HTTPLoadBalancer.Timeout != "" {
+	if c.hostCollector.Timeout != "" {
 		var err error
-		timeout, err = time.ParseDuration(c.Collect.HTTPLoadBalancer.Timeout)
+		timeout, err = time.ParseDuration(c.hostCollector.Timeout)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to parse timeout %q", c.Collect.HTTPLoadBalancer.Timeout)
+			return nil, errors.Wrapf(err, "failed to parse timeout %q", c.hostCollector.Timeout)
 		}
 	}
 
@@ -79,7 +92,7 @@ func HostHTTPLoadBalancer(c *HostCollector) (map[string][]byte, error) {
 				networkStatus = NetworkStatusBindPermissionDenied
 				break
 			}
-			log.Println(err.Error())
+			debug.Println(err.Error())
 			networkStatus = NetworkStatusErrorOther
 			break
 		}
@@ -87,10 +100,11 @@ func HostHTTPLoadBalancer(c *HostCollector) (map[string][]byte, error) {
 			break
 		}
 
-		networkStatus = attemptPOST(c.Collect.HTTPLoadBalancer.Address, requestToken, responseToken)
+		networkStatus = attemptPOST(c.hostCollector.Address, requestToken, responseToken)
 
 		if networkStatus == NetworkStatusErrorOther || networkStatus == NetworkStatusConnectionTimeout {
-			time.Sleep(50 * time.Millisecond)
+			progressChan <- errors.Errorf("http post %s: network status %q", c.hostCollector.Address, networkStatus)
+			time.Sleep(time.Second)
 			continue
 		}
 
@@ -107,8 +121,8 @@ func HostHTTPLoadBalancer(c *HostCollector) (map[string][]byte, error) {
 	}
 
 	name := path.Join("httpLoadBalancer", "httpLoadBalancer.json")
-	if c.Collect.HTTPLoadBalancer.CollectorName != "" {
-		name = path.Join("httpLoadBalancer", fmt.Sprintf("%s.json", c.Collect.HTTPLoadBalancer.CollectorName))
+	if c.hostCollector.CollectorName != "" {
+		name = path.Join("httpLoadBalancer", fmt.Sprintf("%s.json", c.hostCollector.CollectorName))
 	}
 
 	return map[string][]byte{
@@ -137,7 +151,7 @@ func attemptPOST(address string, request []byte, response []byte) NetworkStatus 
 	buf := bytes.NewBuffer(request)
 	req, err := http.NewRequestWithContext(ctx, "POST", address, buf)
 	if err != nil {
-		fmt.Println(err.Error())
+		debug.Println(err.Error())
 		return NetworkStatusErrorOther
 	}
 

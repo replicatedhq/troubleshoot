@@ -5,9 +5,22 @@ import (
 	"net"
 
 	"github.com/pkg/errors"
+	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 )
 
-func HostIPV4Interfaces(c *HostCollector) (map[string][]byte, error) {
+type CollectHostIPV4Interfaces struct {
+	hostCollector *troubleshootv1beta2.IPV4Interfaces
+}
+
+func (c *CollectHostIPV4Interfaces) Title() string {
+	return hostCollectorTitleOrDefault(c.hostCollector.HostCollectorMeta, "IPv4 Interfaces")
+}
+
+func (c *CollectHostIPV4Interfaces) IsExcluded() (bool, error) {
+	return isExcluded(c.hostCollector.Exclude)
+}
+
+func (c *CollectHostIPV4Interfaces) Collect(progressChan chan<- interface{}) (map[string][]byte, error) {
 	var ipv4Interfaces []net.Interface
 
 	interfaces, err := net.Interfaces()

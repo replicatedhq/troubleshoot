@@ -164,7 +164,7 @@ func TestAnalyzeHostMemory(t *testing.T) {
 				return b, nil
 			}
 
-			result, err := analyzeHostMemory(test.hostAnalyzer, getCollectedFileContents)
+			result, err := (&AnalyzeHostMemory{test.hostAnalyzer}).Analyze(getCollectedFileContents)
 			if test.expectErr {
 				req.Error(err)
 			} else {

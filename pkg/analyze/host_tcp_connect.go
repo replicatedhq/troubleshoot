@@ -10,7 +10,21 @@ import (
 	"github.com/replicatedhq/troubleshoot/pkg/collect"
 )
 
-func analyzeHostTCPConnect(hostAnalyzer *troubleshootv1beta2.TCPConnectAnalyze, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
+type AnalyzeHostTCPConnect struct {
+	hostAnalyzer *troubleshootv1beta2.TCPConnectAnalyze
+}
+
+func (a *AnalyzeHostTCPConnect) Title() string {
+	return hostAnalyzerTitleOrDefault(a.hostAnalyzer.AnalyzeMeta, "TCP Connection Attempt")
+}
+
+func (a *AnalyzeHostTCPConnect) IsExcluded() (bool, error) {
+	return isExcluded(a.hostAnalyzer.Exclude)
+}
+
+func (a *AnalyzeHostTCPConnect) Analyze(getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
+	hostAnalyzer := a.hostAnalyzer
+
 	fullPath := path.Join("connect", fmt.Sprintf("%s.json", hostAnalyzer.CollectorName))
 
 	collected, err := getCollectedFileContents(fullPath)
@@ -24,11 +38,7 @@ func analyzeHostTCPConnect(hostAnalyzer *troubleshootv1beta2.TCPConnectAnalyze, 
 
 	result := AnalyzeResult{}
 
-	title := hostAnalyzer.CheckName
-	if title == "" {
-		title = "TCP Connection Attempt"
-	}
-	result.Title = title
+	result.Title = a.Title()
 
 	for _, outcome := range hostAnalyzer.Outcomes {
 		if outcome.Fail != nil {

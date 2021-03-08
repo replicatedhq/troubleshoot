@@ -8,22 +8,35 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 )
 
-func HostTCPPortStatus(c *HostCollector) (map[string][]byte, error) {
-	dialAddress := ""
-	listenAddress := fmt.Sprintf("0.0.0.0:%d", c.Collect.TCPPortStatus.Port)
+type CollectHostTCPPortStatus struct {
+	hostCollector *troubleshootv1beta2.TCPPortStatus
+}
 
-	if c.Collect.TCPPortStatus.Interface != "" {
-		iface, err := net.InterfaceByName(c.Collect.TCPPortStatus.Interface)
+func (c *CollectHostTCPPortStatus) Title() string {
+	return hostCollectorTitleOrDefault(c.hostCollector.HostCollectorMeta, "TCP Port Status")
+}
+
+func (c *CollectHostTCPPortStatus) IsExcluded() (bool, error) {
+	return isExcluded(c.hostCollector.Exclude)
+}
+
+func (c *CollectHostTCPPortStatus) Collect(progressChan chan<- interface{}) (map[string][]byte, error) {
+	dialAddress := ""
+	listenAddress := fmt.Sprintf("0.0.0.0:%d", c.hostCollector.Port)
+
+	if c.hostCollector.Interface != "" {
+		iface, err := net.InterfaceByName(c.hostCollector.Interface)
 		if err != nil {
-			return nil, errors.Wrapf(err, "lookup interface %s", c.Collect.TCPPortStatus.Interface)
+			return nil, errors.Wrapf(err, "lookup interface %s", c.hostCollector.Interface)
 		}
 		ip, err := getIPv4FromInterface(iface)
 		if err != nil {
-			return nil, errors.Wrapf(err, "get ipv4 address for interface %s", c.Collect.TCPPortStatus.Interface)
+			return nil, errors.Wrapf(err, "get ipv4 address for interface %s", c.hostCollector.Interface)
 		}
-		listenAddress = fmt.Sprintf("%s:%d", ip, c.Collect.TCPPortStatus.Port)
+		listenAddress = fmt.Sprintf("%s:%d", ip, c.hostCollector.Port)
 		dialAddress = listenAddress
 	}
 
@@ -32,10 +45,10 @@ func HostTCPPortStatus(c *HostCollector) (map[string][]byte, error) {
 		if err != nil {
 			return nil, err
 		}
-		dialAddress = fmt.Sprintf("%s:%d", ip, c.Collect.TCPPortStatus.Port)
+		dialAddress = fmt.Sprintf("%s:%d", ip, c.hostCollector.Port)
 	}
 
-	networkStatus, err := checkTCPConnection(listenAddress, dialAddress, 10*time.Second)
+	networkStatus, err := checkTCPConnection(progressChan, listenAddress, dialAddress, 10*time.Second)
 	if err != nil {
 		return nil, err
 	}
@@ -49,8 +62,8 @@ func HostTCPPortStatus(c *HostCollector) (map[string][]byte, error) {
 	}
 
 	name := path.Join("tcpPortStatus", "tcpPortStatus.json")
-	if c.Collect.TCPPortStatus.CollectorName != "" {
-		name = path.Join("tcpPortStatus", fmt.Sprintf("%s.json", c.Collect.TCPPortStatus.CollectorName))
+	if c.hostCollector.CollectorName != "" {
+		name = path.Join("tcpPortStatus", fmt.Sprintf("%s.json", c.hostCollector.CollectorName))
 	}
 	return map[string][]byte{
 		name: b,

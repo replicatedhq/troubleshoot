@@ -4,10 +4,28 @@ import (
 	"math"
 	"math/rand"
 	"time"
+
+	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 )
 
 func init() {
 	rand.Seed(time.Now().UnixNano())
+}
+
+type CollectHostFilesystemPerformance struct {
+	hostCollector *troubleshootv1beta2.FilesystemPerformance
+}
+
+func (c *CollectHostFilesystemPerformance) Title() string {
+	return hostCollectorTitleOrDefault(c.hostCollector.HostCollectorMeta, "Filesystem Performance")
+}
+
+func (c *CollectHostFilesystemPerformance) IsExcluded() (bool, error) {
+	return isExcluded(c.hostCollector.Exclude)
+}
+
+func (c *CollectHostFilesystemPerformance) Collect(progressChan chan<- interface{}) (map[string][]byte, error) {
+	return collectHostFilesystemPerformance(c.hostCollector)
 }
 
 type FSPerfResults struct {

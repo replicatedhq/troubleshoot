@@ -1,60 +1,51 @@
 package collect
 
 import (
-	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 )
 
-type HostCollector struct {
-	Collect *troubleshootv1beta2.HostCollect
+type HostCollector interface {
+	Title() string
+	IsExcluded() (bool, error)
+	Collect(progressChan chan<- interface{}) (map[string][]byte, error)
 }
 
-type HostCollectors []*HostCollector
-
-func (c *HostCollector) RunCollectorSync() (result map[string][]byte, err error) {
-	defer func() {
-		if r := recover(); r != nil {
-			err = errors.Errorf("recovered rom panic: %v", r)
-		}
-	}()
-
-	if c.Collect.CPU != nil {
-		result, err = HostCPU(c)
-	} else if c.Collect.Memory != nil {
-		result, err = HostMemory(c)
-	} else if c.Collect.TCPLoadBalancer != nil {
-		result, err = HostTCPLoadBalancer(c)
-	} else if c.Collect.HTTPLoadBalancer != nil {
-		result, err = HostHTTPLoadBalancer(c)
-	} else if c.Collect.DiskUsage != nil {
-		result, err = HostDiskUsage(c)
-	} else if c.Collect.TCPPortStatus != nil {
-		result, err = HostTCPPortStatus(c)
-	} else if c.Collect.HTTP != nil {
-		result, err = HostHTTP(c)
-	} else if c.Collect.Time != nil {
-		result, err = HostTime(c)
-	} else if c.Collect.BlockDevices != nil {
-		result, err = HostBlockDevices(c)
-	} else if c.Collect.TCPConnect != nil {
-		result, err = HostTCPConnect(c)
-	} else if c.Collect.IPV4Interfaces != nil {
-		result, err = HostIPV4Interfaces(c)
-	} else if c.Collect.FilesystemPerformance != nil {
-		result, err = HostFilesystemPerformance(c)
-	} else if c.Collect.Certificate != nil {
-		result, err = HostCertificate(c)
-	} else {
-		err = errors.New("no spec found to run")
-		return
+func GetHostCollector(collector *troubleshootv1beta2.HostCollect) (HostCollector, bool) {
+	switch {
+	case collector.CPU != nil:
+		return &CollectHostCPU{collector.CPU}, true
+	case collector.Memory != nil:
+		return &CollectHostMemory{collector.Memory}, true
+	case collector.TCPLoadBalancer != nil:
+		return &CollectHostTCPLoadBalancer{collector.TCPLoadBalancer}, true
+	case collector.HTTPLoadBalancer != nil:
+		return &CollectHostHTTPLoadBalancer{collector.HTTPLoadBalancer}, true
+	case collector.DiskUsage != nil:
+		return &CollectHostDiskUsage{collector.DiskUsage}, true
+	case collector.TCPPortStatus != nil:
+		return &CollectHostTCPPortStatus{collector.TCPPortStatus}, true
+	case collector.HTTP != nil:
+		return &CollectHostHTTP{collector.HTTP}, true
+	case collector.Time != nil:
+		return &CollectHostTime{collector.Time}, true
+	case collector.BlockDevices != nil:
+		return &CollectHostBlockDevices{collector.BlockDevices}, true
+	case collector.TCPConnect != nil:
+		return &CollectHostTCPConnect{collector.TCPConnect}, true
+	case collector.IPV4Interfaces != nil:
+		return &CollectHostIPV4Interfaces{collector.IPV4Interfaces}, true
+	case collector.FilesystemPerformance != nil:
+		return &CollectHostFilesystemPerformance{collector.FilesystemPerformance}, true
+	case collector.Certificate != nil:
+		return &CollectHostCertificate{collector.Certificate}, true
+	default:
+		return nil, false
 	}
-	if err != nil {
-		return
-	}
-
-	return
 }
 
-func (c *HostCollector) GetDisplayName() string {
-	return c.Collect.GetName()
+func hostCollectorTitleOrDefault(meta troubleshootv1beta2.HostCollectorMeta, defaultTitle string) string {
+	if meta.CollectorName != "" {
+		return meta.CollectorName
+	}
+	return defaultTitle
 }

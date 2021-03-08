@@ -64,20 +64,8 @@ func doAnalyze(allCollectedData map[string][]byte, analyzers []*troubleshootv1be
 	}
 
 	for _, hostAnalyzer := range hostAnalyzers {
-		analyzeResult, err := analyze.HostAnalyze(hostAnalyzer, getCollectedFileContents, getChildCollectedFileContents)
-		if err != nil {
-			analyzeResult = []*analyze.AnalyzeResult{
-				{
-					IsFail:  true,
-					Title:   "Analyzer Failed",
-					Message: err.Error(),
-				},
-			}
-		}
-
-		if analyzeResult != nil {
-			analyzeResults = append(analyzeResults, analyzeResult...)
-		}
+		analyzeResult := analyze.HostAnalyze(hostAnalyzer, getCollectedFileContents, getChildCollectedFileContents)
+		analyzeResults = append(analyzeResults, analyzeResult...)
 	}
 	return analyzeResults
 }

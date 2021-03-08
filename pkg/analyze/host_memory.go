@@ -11,7 +11,21 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 )
 
-func analyzeHostMemory(hostAnalyzer *troubleshootv1beta2.MemoryAnalyze, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
+type AnalyzeHostMemory struct {
+	hostAnalyzer *troubleshootv1beta2.MemoryAnalyze
+}
+
+func (a *AnalyzeHostMemory) Title() string {
+	return hostAnalyzerTitleOrDefault(a.hostAnalyzer.AnalyzeMeta, "Amount of Memory")
+}
+
+func (a *AnalyzeHostMemory) IsExcluded() (bool, error) {
+	return isExcluded(a.hostAnalyzer.Exclude)
+}
+
+func (a *AnalyzeHostMemory) Analyze(getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
+	hostAnalyzer := a.hostAnalyzer
+
 	contents, err := getCollectedFileContents("system/memory.json")
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get collected file")
@@ -24,11 +38,7 @@ func analyzeHostMemory(hostAnalyzer *troubleshootv1beta2.MemoryAnalyze, getColle
 
 	result := AnalyzeResult{}
 
-	title := hostAnalyzer.CheckName
-	if title == "" {
-		title = "Amount of Memory"
-	}
-	result.Title = title
+	result.Title = a.Title()
 
 	for _, outcome := range hostAnalyzer.Outcomes {
 		if outcome.Fail != nil {
