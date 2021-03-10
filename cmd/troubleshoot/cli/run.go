@@ -55,7 +55,7 @@ func runTroubleshoot(v *viper.Viper, arg string) error {
 		httpClient = http.DefaultClient
 	}
 
-	collectorContent, err := loadSpec(v, arg)
+	collectorContent, err := loadSupportBundleSpec(v, arg)
 	if err != nil {
 		return errors.Wrap(err, "failed to load collector spec")
 	}
@@ -73,7 +73,7 @@ func runTroubleshoot(v *viper.Viper, arg string) error {
 
 	additionalRedactors := &troubleshootv1beta2.Redactor{}
 	for idx, redactor := range v.GetStringSlice("redactors") {
-		redactorContent, err := loadSpec(v, redactor)
+		redactorContent, err := loadRedactorSpec(v, redactor)
 		if err != nil {
 			return errors.Wrapf(err, "failed to load redactor spec #%d", idx)
 		}
@@ -247,13 +247,12 @@ the %s Admin Console to begin analysis.`
 	return nil
 }
 
-func loadSpec(v *viper.Viper, arg string) ([]byte, error) {
-	var err error
+func loadSupportBundleSpec(v *viper.Viper, arg string) ([]byte, error) {
 	if strings.HasPrefix(arg, "secret/") {
 		// format secret/namespace-name/secret-name
 		pathParts := strings.Split(arg, "/")
 		if len(pathParts) != 3 {
-			return nil, errors.Errorf("path %s must have 3 components", arg)
+			return nil, errors.Errorf("secret path %s must have 3 components", arg)
 		}
 
 		spec, err := specs.LoadFromSecret(pathParts[1], pathParts[2], "support-bundle-spec")
@@ -264,6 +263,43 @@ func loadSpec(v *viper.Viper, arg string) ([]byte, error) {
 		return spec, nil
 	}
 
+	return loadSpec(v, arg)
+}
+
+func loadRedactorSpec(v *viper.Viper, arg string) ([]byte, error) {
+	if strings.HasPrefix(arg, "configmap/") {
+		// format configmap/namespace-name/configmap-name[/data-key]
+		pathParts := strings.Split(arg, "/")
+		if len(pathParts) > 4 {
+			return nil, errors.Errorf("configmap path %s must have at most 4 components", arg)
+		}
+		if len(pathParts) < 3 {
+			return nil, errors.Errorf("configmap path %s must have at least 3 components", arg)
+		}
+
+		dataKey := "redactor-spec"
+		if len(pathParts) == 4 {
+			dataKey = pathParts[3]
+		}
+
+		spec, err := specs.LoadFromConfigMap(pathParts[1], pathParts[2], dataKey)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to get spec from configmap")
+		}
+
+		return spec, nil
+	}
+
+	spec, err := loadSpec(v, arg)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to load spec")
+	}
+
+	return spec, nil
+}
+
+func loadSpec(v *viper.Viper, arg string) ([]byte, error) {
+	var err error
 	if _, err = os.Stat(arg); err == nil {
 		b, err := ioutil.ReadFile(arg)
 		if err != nil {
