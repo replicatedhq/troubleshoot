@@ -209,6 +209,10 @@ func (c *Collector) RunCollectorSync(globalRedactors []*troubleshootv1beta2.Reda
 		return
 	}
 
+	if c.Redact {
+		result, err = redactMap(result, globalRedactors)
+	}
+
 	if c.PathPrefix != "" {
 		// prefix file paths
 		prefixed := map[string][]byte{}
@@ -216,10 +220,6 @@ func (c *Collector) RunCollectorSync(globalRedactors []*troubleshootv1beta2.Reda
 			prefixed[filepath.Join(c.PathPrefix, k)] = v
 		}
 		result = prefixed
-	}
-
-	if c.Redact {
-		result, err = redactMap(result, globalRedactors)
 	}
 
 	return
