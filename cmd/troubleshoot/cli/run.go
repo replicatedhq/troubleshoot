@@ -449,7 +449,6 @@ func runCollectors(v *viper.Viper, collectors []*troubleshootv1beta2.Collect, ad
 			Collect:      desiredCollector,
 			ClientConfig: config,
 			Namespace:    v.GetString("namespace"),
-			PathPrefix:   filepath.Base(bundlePath),
 		}
 		cleanedCollectors = append(cleanedCollectors, &collector)
 	}
@@ -500,8 +499,7 @@ func runCollectors(v *viper.Viper, collectors []*troubleshootv1beta2.Collect, ad
 		}
 
 		if result != nil {
-			// results already contain the bundle dir name in their paths
-			err = saveCollectorOutput(result, filepath.Dir(bundlePath), collector)
+			err = saveCollectorOutput(result, bundlePath, collector)
 			if err != nil {
 				progressChan <- fmt.Errorf("failed to parse collector spec %q: %v", collector.GetDisplayName(), err)
 				continue
