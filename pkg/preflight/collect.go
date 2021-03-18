@@ -19,8 +19,10 @@ type CollectOpts struct {
 }
 
 type CollectProgress struct {
-	Name   string
-	Status string
+	CurrentName    string
+	CurrentStatus  string
+	CompletedCount int
+	TotalCount     int
 }
 
 type CollectResult interface {
@@ -139,30 +141,46 @@ func Collect(opts CollectOpts, p *troubleshootv1beta2.Preflight) (CollectResult,
 	}
 
 	// Run preflights collectors synchronously
-	for _, collector := range collectors {
+	for i, collector := range collectors {
 		if len(collector.RBACErrors) > 0 {
 			// don't skip clusterResources collector due to RBAC issues
 			if collector.Collect.ClusterResources == nil {
 				collectResult.isRBACAllowed = false // not failing, but going to report this
 				opts.ProgressChan <- fmt.Sprintf("skipping collector %s with insufficient RBAC permissions", collector.GetDisplayName())
+				opts.ProgressChan <- CollectProgress{
+					CurrentName:    collector.GetDisplayName(),
+					CurrentStatus:  "skipped",
+					CompletedCount: i + 1,
+					TotalCount:     len(collectors),
+				}
 				continue
 			}
 		}
 
 		opts.ProgressChan <- CollectProgress{
-			Name:   collector.GetDisplayName(),
-			Status: "running",
+			CurrentName:    collector.GetDisplayName(),
+			CurrentStatus:  "running",
+			CompletedCount: i,
+			TotalCount:     len(collectors),
 		}
 
 		result, err := collector.RunCollectorSync(nil)
 		if err != nil {
 			opts.ProgressChan <- errors.Errorf("failed to run collector %s: %v\n", collector.GetDisplayName(), err)
+			opts.ProgressChan <- CollectProgress{
+				CurrentName:    collector.GetDisplayName(),
+				CurrentStatus:  "failed",
+				CompletedCount: i + 1,
+				TotalCount:     len(collectors),
+			}
 			continue
 		}
 
 		opts.ProgressChan <- CollectProgress{
-			Name:   collector.GetDisplayName(),
-			Status: "completed",
+			CurrentName:    collector.GetDisplayName(),
+			CurrentStatus:  "completed",
+			CompletedCount: i + 1,
+			TotalCount:     len(collectors),
 		}
 
 		if result != nil {
