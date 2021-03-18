@@ -149,6 +149,97 @@ func TestAnalyzeBlockDevices(t *testing.T) {
 				Message: "No block device available",
 			},
 		},
+		{
+			name: ".* > 1, pass with unmounted partition",
+			devices: []collect.BlockDeviceInfo{
+				{
+					Name:       "sdb",
+					KernelName: "sdb",
+					Type:       "disk",
+					Major:      8,
+					Serial:     "disk1",
+				},
+				{
+					Name:             "sdb1",
+					KernelName:       "sdb1",
+					ParentKernelName: "sdb",
+					Type:             "part",
+					Major:            8,
+					Minor:            1,
+				},
+			},
+			hostAnalyzer: &troubleshootv1beta2.BlockDevicesAnalyze{
+				IncludeUnmountedPartitions: true,
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							When:    ".* >= 1",
+							Message: "Block device or partition available",
+						},
+					},
+				},
+			},
+			result: &AnalyzeResult{
+				Title:   "Block Devices",
+				IsPass:  true,
+				Message: "Block device or partition available",
+			},
+		},
+		{
+			name: ".* = 2, pass with two unmounted partitions/devices of at least 10gb in size",
+			devices: []collect.BlockDeviceInfo{
+				{
+					Name:       "sdb",
+					KernelName: "sdb",
+					Type:       "disk",
+					Major:      8,
+					Serial:     "disk1",
+					Size:       1024 * 1024 * 1024 * 128,
+				},
+				{
+					Name:             "sdb1",
+					KernelName:       "sdb1",
+					ParentKernelName: "sdb",
+					Type:             "part",
+					Major:            8,
+					Minor:            1,
+					Size:             1024 * 1024 * 1024 * 128,
+				},
+				{
+					Name:       "sdc",
+					KernelName: "sdc",
+					Type:       "disk",
+					Major:      8,
+					Serial:     "disk2",
+					Size:       1024 * 1024 * 1024 * 16,
+				},
+				{
+					Name:       "sdd",
+					KernelName: "sdd",
+					Type:       "disk",
+					Major:      8,
+					Serial:     "disk3",
+					Size:       1024 * 1024 * 1024 * 8,
+				},
+			},
+			hostAnalyzer: &troubleshootv1beta2.BlockDevicesAnalyze{
+				IncludeUnmountedPartitions: true,
+				MinimumAcceptableSize:      1024 * 1024 * 1024 * 10,
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							When:    ".* = 2",
+							Message: "Two block devices or partitions of >10gb size available",
+						},
+					},
+				},
+			},
+			result: &AnalyzeResult{
+				Title:   "Block Devices",
+				IsPass:  true,
+				Message: "Two block devices or partitions of >10gb size available",
+			},
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {

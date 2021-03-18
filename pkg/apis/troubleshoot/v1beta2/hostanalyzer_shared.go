@@ -46,8 +46,10 @@ type TimeAnalyze struct {
 }
 
 type BlockDevicesAnalyze struct {
-	AnalyzeMeta `json:",inline" yaml:",inline"`
-	Outcomes    []*Outcome `json:"outcomes" yaml:"outcomes"`
+	AnalyzeMeta                `json:",inline" yaml:",inline"`
+	MinimumAcceptableSize      uint64     `json:"minimumAcceptableSize" yaml:"minimumAcceptableSize"`
+	IncludeUnmountedPartitions bool       `json:"includeUnmountedPartitions" yaml:"includeUnmountedPartitions"`
+	Outcomes                   []*Outcome `json:"outcomes" yaml:"outcomes"`
 }
 
 type TCPConnectAnalyze struct {
