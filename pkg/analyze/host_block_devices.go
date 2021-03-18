@@ -51,7 +51,7 @@ func (a *AnalyzeHostBlockDevices) Analyze(getCollectedFileContents func(string) 
 				return &result, nil
 			}
 
-			isMatch, err := compareHostBlockDevicesConditionalToActual(outcome.Fail.When, devices)
+			isMatch, err := compareHostBlockDevicesConditionalToActual(outcome.Fail.When, hostAnalyzer.MinimumAcceptableSize, hostAnalyzer.IncludeUnmountedPartitions, devices)
 			if err != nil {
 				return nil, errors.Wrapf(err, "failed to compare %s", outcome.Fail.When)
 			}
@@ -72,7 +72,7 @@ func (a *AnalyzeHostBlockDevices) Analyze(getCollectedFileContents func(string) 
 				return &result, nil
 			}
 
-			isMatch, err := compareHostBlockDevicesConditionalToActual(outcome.Warn.When, devices)
+			isMatch, err := compareHostBlockDevicesConditionalToActual(outcome.Warn.When, hostAnalyzer.MinimumAcceptableSize, hostAnalyzer.IncludeUnmountedPartitions, devices)
 			if err != nil {
 				return nil, errors.Wrapf(err, "failed to compare %s", outcome.Warn.When)
 			}
@@ -93,7 +93,7 @@ func (a *AnalyzeHostBlockDevices) Analyze(getCollectedFileContents func(string) 
 				return &result, nil
 			}
 
-			isMatch, err := compareHostBlockDevicesConditionalToActual(outcome.Pass.When, devices)
+			isMatch, err := compareHostBlockDevicesConditionalToActual(outcome.Pass.When, hostAnalyzer.MinimumAcceptableSize, hostAnalyzer.IncludeUnmountedPartitions, devices)
 			if err != nil {
 				return nil, errors.Wrapf(err, "failed to compare %s", outcome.Pass.When)
 			}
@@ -113,7 +113,7 @@ func (a *AnalyzeHostBlockDevices) Analyze(getCollectedFileContents func(string) 
 
 // <regexp> <op> <count>
 // example: sdb > 0
-func compareHostBlockDevicesConditionalToActual(conditional string, devices []collect.BlockDeviceInfo) (res bool, err error) {
+func compareHostBlockDevicesConditionalToActual(conditional string, minimumAcceptableSize uint64, includeUnmountedPartitions bool, devices []collect.BlockDeviceInfo) (res bool, err error) {
 	parts := strings.Split(conditional, " ")
 	if len(parts) != 3 {
 		return false, fmt.Errorf("Expected exactly 3 parts, got %d", len(parts))
@@ -123,7 +123,7 @@ func compareHostBlockDevicesConditionalToActual(conditional string, devices []co
 	if err != nil {
 		return false, errors.Wrapf(err, "failed to compile regex %q", parts[0])
 	}
-	count := countEligibleBlockDevices(rx, devices)
+	count := countEligibleBlockDevices(rx, minimumAcceptableSize, includeUnmountedPartitions, devices)
 
 	desiredInt, err := strconv.Atoi(parts[2])
 	if err != nil {
@@ -146,11 +146,11 @@ func compareHostBlockDevicesConditionalToActual(conditional string, devices []co
 	return false, fmt.Errorf("Unexpected operator %q", parts[1])
 }
 
-func countEligibleBlockDevices(rx *regexp.Regexp, devices []collect.BlockDeviceInfo) int {
+func countEligibleBlockDevices(rx *regexp.Regexp, minimumAcceptableSize uint64, includeUnmountedPartitions bool, devices []collect.BlockDeviceInfo) int {
 	count := 0
 
 	for _, device := range devices {
-		if isEligibleBlockDevice(rx, device, devices) {
+		if isEligibleBlockDevice(rx, minimumAcceptableSize, includeUnmountedPartitions, device, devices) {
 			count++
 		}
 	}
@@ -158,13 +158,25 @@ func countEligibleBlockDevices(rx *regexp.Regexp, devices []collect.BlockDeviceI
 	return count
 }
 
-func isEligibleBlockDevice(rx *regexp.Regexp, device collect.BlockDeviceInfo, devices []collect.BlockDeviceInfo) bool {
+func isEligibleBlockDevice(rx *regexp.Regexp, minimumAcceptableSize uint64, includeUnmountedPartitions bool, device collect.BlockDeviceInfo, devices []collect.BlockDeviceInfo) bool {
 	if !rx.MatchString(device.Name) {
 		return false
 	}
 
-	if device.Type != "disk" {
-		return false
+	if includeUnmountedPartitions {
+		if device.Type != "disk" && device.Type != "part" {
+			return false
+		}
+	} else {
+		if device.Type != "disk" {
+			return false
+		}
+	}
+
+	if minimumAcceptableSize != 0 {
+		if device.Size < minimumAcceptableSize {
+			return false
+		}
 	}
 
 	if device.Mountpoint != "" {
