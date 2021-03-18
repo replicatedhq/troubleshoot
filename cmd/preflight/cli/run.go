@@ -121,6 +121,20 @@ func runPreflights(v *viper.Viper, arg string) error {
 				}
 			}
 		}()
+	} else {
+		// make sure we don't block any senders
+		go func() {
+			for {
+				select {
+				case _, ok := <-progressCh:
+					if !ok {
+						return
+					}
+				case <-finishedCh:
+					return
+				}
+			}
+		}()
 	}
 
 	defer func() {

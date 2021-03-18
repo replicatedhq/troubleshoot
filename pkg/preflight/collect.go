@@ -18,6 +18,11 @@ type CollectOpts struct {
 	ProgressChan           chan interface{}
 }
 
+type CollectProgress struct {
+	Name   string
+	Status string
+}
+
 type CollectResult interface {
 	Analyze() []*analyze.AnalyzeResult
 	IsRBACAllowed() bool
@@ -144,10 +149,20 @@ func Collect(opts CollectOpts, p *troubleshootv1beta2.Preflight) (CollectResult,
 			}
 		}
 
+		opts.ProgressChan <- CollectProgress{
+			Name:   collector.GetDisplayName(),
+			Status: "running",
+		}
+
 		result, err := collector.RunCollectorSync(nil)
 		if err != nil {
 			opts.ProgressChan <- errors.Errorf("failed to run collector %s: %v\n", collector.GetDisplayName(), err)
 			continue
+		}
+
+		opts.ProgressChan <- CollectProgress{
+			Name:   collector.GetDisplayName(),
+			Status: "completed",
 		}
 
 		if result != nil {
