@@ -200,7 +200,7 @@ func runTroubleshoot(v *viper.Viper, arg string) error {
 			c.Printf("%s\r * Failed to analyze support bundle: %v\n", cursor.ClearEntireLine(), err)
 		}
 
-		interactive := isatty.IsTerminal(os.Stdout.Fd())
+		interactive := v.GetBool("interactive") && isatty.IsTerminal(os.Stdout.Fd())
 
 		if interactive {
 			close(finishedCh) // this removes the spinner
