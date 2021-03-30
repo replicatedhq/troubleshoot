@@ -38,6 +38,8 @@ func GetHostCollector(collector *troubleshootv1beta2.HostCollect) (HostCollector
 		return &CollectHostFilesystemPerformance{collector.FilesystemPerformance}, true
 	case collector.Certificate != nil:
 		return &CollectHostCertificate{collector.Certificate}, true
+	case collector.HostServices != nil:
+		return &CollectHostServices{collector.HostServices}, true
 	default:
 		return nil, false
 	}

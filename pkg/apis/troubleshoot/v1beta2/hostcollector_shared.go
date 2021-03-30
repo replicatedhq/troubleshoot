@@ -88,6 +88,10 @@ type Certificate struct {
 	KeyPath           string `json:"keyPath" yaml:"keyPath"`
 }
 
+type HostServices struct {
+	HostCollectorMeta `json:",inline" yaml:",inline"`
+}
+
 type HostCollect struct {
 	CPU                   *CPU                   `json:"cpu,omitempty" yaml:"cpu,omitempty"`
 	Memory                *Memory                `json:"memory,omitempty" yaml:"memory,omitempty"`
@@ -103,6 +107,7 @@ type HostCollect struct {
 	TCPConnect            *TCPConnect            `json:"tcpConnect,omitempty" yaml:"tcpConnect,omitempty"`
 	FilesystemPerformance *FilesystemPerformance `json:"filesystemPerformance,omitempty" yaml:"filesystemPerformance,omitempty"`
 	Certificate           *Certificate           `json:"certificate,omitempty" yaml:"certificate,omitempty"`
+	HostServices          *HostServices          `json:"hostServices,omitempty" yaml:"hostServices,omitempty"`
 }
 
 func (c *HostCollect) GetName() string {
