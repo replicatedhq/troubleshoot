@@ -19,6 +19,7 @@ type ServiceInfo struct {
 }
 
 const systemctlFormat = `%s %s %s %s` // this leaves off the description
+const HostServicesPath = `system/systemctl_services.json`
 
 type CollectHostServices struct {
 	hostCollector *troubleshootv1beta2.HostServices
@@ -63,6 +64,6 @@ func (c *CollectHostServices) Collect(progressChan chan<- interface{}) (map[stri
 	}
 
 	return map[string][]byte{
-		"system/systemctl_services.json": b,
+		HostServicesPath: b,
 	}, nil
 }

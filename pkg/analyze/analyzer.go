@@ -60,9 +60,16 @@ func HostAnalyze(hostAnalyzer *troubleshootv1beta2.HostAnalyze, getFile getColle
 }
 
 func NewAnalyzeResultError(analyzer HostAnalyzer, err error) []*AnalyzeResult {
+	if analyzer != nil {
+		return []*AnalyzeResult{{
+			IsFail:  true,
+			Title:   analyzer.Title(),
+			Message: fmt.Sprintf("Analyzer Failed: %v", err),
+		}}
+	}
 	return []*AnalyzeResult{{
 		IsFail:  true,
-		Title:   analyzer.Title(),
+		Title:   "nil analyzer",
 		Message: fmt.Sprintf("Analyzer Failed: %v", err),
 	}}
 }

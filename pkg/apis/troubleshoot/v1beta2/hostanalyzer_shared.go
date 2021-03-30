@@ -75,6 +75,11 @@ type CertificateAnalyze struct {
 	Outcomes      []*Outcome `json:"outcomes" yaml:"outcomes"`
 }
 
+type HostServicesAnalyze struct {
+	AnalyzeMeta `json:",inline" yaml:",inline"`
+	Outcomes    []*Outcome `json:"outcomes" yaml:"outcomes"`
+}
+
 type HostAnalyze struct {
 	CPU *CPUAnalyze `json:"cpu,omitempty" yaml:"cpu,omitempty"`
 	//
@@ -100,4 +105,6 @@ type HostAnalyze struct {
 	FilesystemPerformance *FilesystemPerformanceAnalyze `json:"filesystemPerformance,omitempty" yaml:"filesystemPerformance,omitempty"`
 
 	Certificate *CertificateAnalyze `json:"certificate,omitempty" yaml:"certificate,omitempty"`
+
+	HostServices *HostServicesAnalyze `json:"hostServices,omitempty" yaml:"hostServices,omitempty"`
 }
