@@ -114,7 +114,7 @@ func (a *AnalyzeHostServices) Analyze(getCollectedFileContents func(string) ([]b
 func compareHostServicesConditionalToActual(conditional string, services []collect.ServiceInfo) (res bool, err error) {
 	parts := strings.Split(conditional, " ")
 	if len(parts) != 3 {
-		return false, fmt.Errorf("Expected exactly 3 parts, got %d", len(parts))
+		return false, fmt.Errorf("expected exactly 3 parts, got %d", len(parts))
 	}
 
 	switch parts[1] {
@@ -134,7 +134,7 @@ func compareHostServicesConditionalToActual(conditional string, services []colle
 		return false, nil
 	}
 
-	return false, fmt.Errorf("Unexpected operator %q", parts[1])
+	return false, fmt.Errorf("unexpected operator %q", parts[1])
 }
 
 func isServiceMatch(serviceName string, matchName string) bool {
