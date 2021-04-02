@@ -117,18 +117,51 @@ func compareHostServicesConditionalToActual(conditional string, services []colle
 		return false, fmt.Errorf("expected exactly 3 parts, got %d", len(parts))
 	}
 
+	matchParams := strings.Split(parts[2], ",")
+	activeMatch := matchParams[0]
+	subMatch := ""
+	loadMatch := ""
+	if len(matchParams) > 1 {
+		subMatch = matchParams[1]
+	}
+	if len(matchParams) > 2 {
+		loadMatch = matchParams[2]
+	}
+
 	switch parts[1] {
 	case "=", "==":
 		for _, service := range services {
 			if isServiceMatch(service.Unit, parts[0]) {
-				return service.Active == parts[2], nil
+				isMatch := true
+				if activeMatch != "" && activeMatch != "*" {
+					isMatch = isMatch && (activeMatch == service.Active)
+				}
+				if subMatch != "" && subMatch != "*" {
+					isMatch = isMatch && (subMatch == service.Sub)
+				}
+				if loadMatch != "" && loadMatch != "*" {
+					isMatch = isMatch && (loadMatch == service.Load)
+				}
+
+				return isMatch, nil
 			}
 		}
 		return false, nil
 	case "!=", "<>":
 		for _, service := range services {
 			if isServiceMatch(service.Unit, parts[0]) {
-				return service.Active != parts[2], nil
+				isMatch := false
+				if activeMatch != "" && activeMatch != "*" {
+					isMatch = isMatch || (activeMatch != service.Active)
+				}
+				if subMatch != "" && subMatch != "*" {
+					isMatch = isMatch || (subMatch != service.Sub)
+				}
+				if loadMatch != "" && loadMatch != "*" {
+					isMatch = isMatch || (loadMatch != service.Load)
+				}
+
+				return isMatch, nil
 			}
 		}
 		return false, nil

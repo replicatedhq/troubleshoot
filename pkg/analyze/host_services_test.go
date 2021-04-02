@@ -51,7 +51,7 @@ func TestAnalyzeHostServices(t *testing.T) {
 				},
 				{
 					Unit:   "b.service",
-					Active: "stopped",
+					Active: "inactive",
 				},
 			},
 			hostAnalyzer: &troubleshootv1beta2.HostServicesAnalyze{
@@ -119,6 +119,7 @@ func Test_compareHostServicesConditionalToActual(t *testing.T) {
 				{
 					Unit:   "abc.service",
 					Active: "active",
+					Sub:    "running",
 				},
 			},
 			wantRes: true,
@@ -139,7 +140,8 @@ func Test_compareHostServicesConditionalToActual(t *testing.T) {
 			services: []collect.ServiceInfo{
 				{
 					Unit:   "abc.service",
-					Active: "stopped",
+					Active: "inactive",
+					Sub:    "exited",
 				},
 			},
 			wantRes: false,
@@ -150,10 +152,49 @@ func Test_compareHostServicesConditionalToActual(t *testing.T) {
 			services: []collect.ServiceInfo{
 				{
 					Unit:   "abc.service",
-					Active: "stopped",
+					Active: "inactive",
+					Sub:    "exited",
 				},
 			},
 			wantErr: true,
+		},
+		{
+			name:        "item active matches but not sub",
+			conditional: "abc = active,running",
+			services: []collect.ServiceInfo{
+				{
+					Unit:   "abc.service",
+					Active: "active",
+					Sub:    "exited",
+				},
+			},
+			wantRes: false,
+		},
+		{
+			name:        "item active,sub,load matches",
+			conditional: "abc = active,*,loaded",
+			services: []collect.ServiceInfo{
+				{
+					Unit:   "abc.service",
+					Active: "active",
+					Sub:    "exited",
+					Load:   "loaded",
+				},
+			},
+			wantRes: true,
+		},
+		{
+			name:        "one item active,sub,load does not match with !=",
+			conditional: "abc != active,running,loaded",
+			services: []collect.ServiceInfo{
+				{
+					Unit:   "abc.service",
+					Active: "active",
+					Sub:    "exited",
+					Load:   "loaded",
+				},
+			},
+			wantRes: true,
 		},
 	}
 	for _, tt := range tests {
