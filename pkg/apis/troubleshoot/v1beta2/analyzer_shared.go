@@ -116,6 +116,12 @@ type CephStatusAnalyze struct {
 	Namespace     string     `json:"namespace" yaml:"namespace"`
 }
 
+type RegistryImagesAnalyze struct {
+	AnalyzeMeta   `json:",inline" yaml:",inline"`
+	Outcomes      []*Outcome `json:"outcomes" yaml:"outcomes"`
+	CollectorName string     `json:"collectorName" yaml:"collectorName"`
+}
+
 type AnalyzeMeta struct {
 	CheckName string                 `json:"checkName,omitempty" yaml:"checkName,omitempty"`
 	Exclude   multitype.BoolOrString `json:"exclude,omitempty" yaml:"exclude,omitempty"`
@@ -138,4 +144,5 @@ type Analyze struct {
 	Mysql                    *DatabaseAnalyze          `json:"mysql,omitempty" yaml:"mysql,omitempty"`
 	Redis                    *DatabaseAnalyze          `json:"redis,omitempty" yaml:"redis,omitempty"`
 	CephStatus               *CephStatusAnalyze        `json:"cephStatus,omitempty" yaml:"cephStatus,omitempty"`
+	RegistryImages           *RegistryImagesAnalyze    `json:"registryImages,omitempty" yaml:"registryImages,omitempty"`
 }

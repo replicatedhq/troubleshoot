@@ -199,6 +199,8 @@ func (c *Collector) RunCollectorSync(globalRedactors []*troubleshootv1beta2.Reda
 		result, err = Collectd(c, c.Collect.Collectd)
 	} else if c.Collect.Ceph != nil {
 		result, err = Ceph(c, c.Collect.Ceph)
+	} else if c.Collect.RegistryImages != nil {
+		result, err = Registry(c, c.Collect.RegistryImages)
 	} else {
 		err = errors.New("no spec found to run")
 		return
