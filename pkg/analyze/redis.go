@@ -62,7 +62,7 @@ func analyzeRedis(analyzer *troubleshootv1beta2.DatabaseAnalyze, getCollectedFil
 				return result, nil
 			}
 		} else if outcome.Warn != nil {
-			if outcome.Pass.When == "" {
+			if outcome.Warn.When == "" {
 				result.IsWarn = true
 				result.Message = outcome.Warn.Message
 				result.URI = outcome.Warn.URI

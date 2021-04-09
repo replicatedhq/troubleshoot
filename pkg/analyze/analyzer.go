@@ -300,5 +300,20 @@ func Analyze(analyzer *troubleshootv1beta2.Analyze, getFile getCollectedFileCont
 		return []*AnalyzeResult{result}, nil
 	}
 
+	if analyzer.RegistryImages != nil {
+		isExcluded, err := isExcluded(analyzer.RegistryImages.Exclude)
+		if err != nil {
+			return nil, err
+		}
+		if isExcluded {
+			return nil, nil
+		}
+		result, err := analyzeRegistry(analyzer.RegistryImages, getFile)
+		if err != nil {
+			return nil, err
+		}
+		return []*AnalyzeResult{result}, nil
+	}
+
 	return nil, errors.New("invalid analyzer")
 }

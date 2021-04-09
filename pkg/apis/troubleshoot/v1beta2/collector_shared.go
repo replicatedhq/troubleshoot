@@ -139,6 +139,13 @@ type Ceph struct {
 	Timeout       string `json:"timeout,omitempty" yaml:"timeout,omitempty"`
 }
 
+type RegistryImages struct {
+	CollectorMeta    `json:",inline" yaml:",inline"`
+	Images           []string          `json:"images" yaml:"images"`
+	Namespace        string            `json:"namespace" yaml:"namespace"`
+	ImagePullSecrets *ImagePullSecrets `json:"imagePullSecret,omitempty" yaml:"imagePullSecret,omitempty"`
+}
+
 type Collect struct {
 	ClusterInfo      *ClusterInfo      `json:"clusterInfo,omitempty" yaml:"clusterInfo,omitempty"`
 	ClusterResources *ClusterResources `json:"clusterResources,omitempty" yaml:"clusterResources,omitempty"`
@@ -154,6 +161,7 @@ type Collect struct {
 	Redis            *Database         `json:"redis,omitempty" yaml:"redis,omitempty"`
 	Collectd         *Collectd         `json:"collectd,omitempty" yaml:"collectd,omitempty"`
 	Ceph             *Ceph             `json:"ceph,omitempty" yaml:"ceph,omitempty"`
+	RegistryImages   *RegistryImages   `json:"registryImages,omitempty" yaml:"registryImages,omitempty"`
 }
 
 func (c *Collect) AccessReviewSpecs(overrideNS string) []authorizationv1.SelfSubjectAccessReviewSpec {
