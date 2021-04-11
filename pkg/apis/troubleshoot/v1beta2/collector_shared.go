@@ -321,6 +321,21 @@ func (c *Collect) AccessReviewSpecs(overrideNS string) []authorizationv1.SelfSub
 		})
 	} else if c.HTTP != nil {
 		// NOOP
+	} else if c.RegistryImages != nil &&
+		c.RegistryImages.ImagePullSecrets != nil &&
+		c.RegistryImages.ImagePullSecrets.Data == nil {
+		result = append(result, authorizationv1.SelfSubjectAccessReviewSpec{
+			ResourceAttributes: &authorizationv1.ResourceAttributes{
+				Namespace:   pickNamespaceOrDefault(c.RegistryImages.Namespace, overrideNS),
+				Verb:        "get",
+				Group:       "",
+				Version:     "",
+				Resource:    "secrets",
+				Subresource: "",
+				Name:        c.RegistryImages.ImagePullSecrets.Name,
+			},
+			NonResourceAttributes: nil,
+		})
 	}
 
 	return result
@@ -368,6 +383,10 @@ func (c *Collect) GetName() string {
 	if c.Ceph != nil {
 		collector = "ceph"
 		name = c.Ceph.CollectorName
+	}
+	if c.RegistryImages != nil {
+		collector = "registry-images"
+		name = c.RegistryImages.CollectorName
 	}
 
 	if collector == "" {
