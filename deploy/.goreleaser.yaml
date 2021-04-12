@@ -4,18 +4,6 @@ release:
     owner: replicatedhq
     name: troubleshoot
 builds:
-  - id: so
-    goos:
-      - linux
-    goarch:
-      - amd64
-    env:
-      - CGO_ENABLED=1
-      - GO111MODULE=on
-    main: ffi/main.go
-    flags: -buildmode=c-shared -tags netgo -tags containers_image_ostree_stub -tags exclude_graphdriver_devicemapper -tags exclude_graphdriver_btrfs -tags containers_image_openpgp -installsuffix netgo
-    binary: troubleshoot.so
-    hooks: {}
   - id: preflight
     goos:
       - linux
@@ -53,11 +41,6 @@ builds:
     binary: support-bundle
     hooks: {}
 archives:
-  - id: so
-    builds:
-      - so
-    format: tar.gz
-    name_template: 'troubleshoot.so_{{ .Os }}_{{ .Arch }}'
   - id: preflight
     builds:
       - preflight
