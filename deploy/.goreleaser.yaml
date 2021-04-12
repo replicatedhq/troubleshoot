@@ -31,7 +31,7 @@ builds:
       -X github.com/replicatedhq/troubleshoot/pkg/version.gitSHA={{.Commit}}
       -X github.com/replicatedhq/troubleshoot/pkg/version.buildTime={{.Date}}
       -extldflags "-static"
-    flags: -tags netgo -installsuffix netgo
+    flags: -tags netgo -tags containers_image_ostree_stub -tags exclude_graphdriver_devicemapper -tags exclude_graphdriver_btrfs -tags containers_image_openpgp -installsuffix netgo
     binary: preflight
     hooks: {}
   - id: support-bundle
@@ -49,7 +49,7 @@ builds:
       -X github.com/replicatedhq/troubleshoot/pkg/version.gitSHA={{.Commit}}
       -X github.com/replicatedhq/troubleshoot/pkg/version.buildTime={{.Date}}
       -extldflags "-static"
-    flags: -tags netgo -installsuffix netgo
+    flags: -tags netgo -tags containers_image_ostree_stub -tags exclude_graphdriver_devicemapper -tags exclude_graphdriver_btrfs -tags containers_image_openpgp -installsuffix netgo
     binary: support-bundle
     hooks: {}
 archives:
