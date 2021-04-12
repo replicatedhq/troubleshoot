@@ -3,6 +3,7 @@ package analyzer
 import (
 	"archive/tar"
 	"compress/gzip"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
@@ -14,6 +15,7 @@ import (
 	troubleshootscheme "github.com/replicatedhq/troubleshoot/pkg/client/troubleshootclientset/scheme"
 	"github.com/replicatedhq/troubleshoot/pkg/docrewrite"
 	"github.com/replicatedhq/troubleshoot/pkg/logger"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/scheme"
 )
 
@@ -180,13 +182,35 @@ func parseAnalyzers(spec string) ([]*troubleshootv1beta2.Analyze, error) {
 		return nil, errors.Wrap(err, "failed to convert to v1beta2")
 	}
 
-	obj, _, err := decode(convertedSpec, nil, nil)
+	obj, gvk, err := decode(convertedSpec, nil, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to decode analyzers")
 	}
 
-	analyzer := obj.(*troubleshootv1beta2.Analyzer)
-	return analyzer.Spec.Analyzers, nil
+	// SupportBundle overwrites Analyzer if defined
+	if gvk.String() == "troubleshoot.sh/v1beta2, Kind=SupportBundle" {
+		supportBundle := obj.(*troubleshootv1beta2.SupportBundle)
+		analyzer := supportBundleToAnalyzer(supportBundle)
+		return analyzer.Spec.Analyzers, nil
+	} else {
+		analyzer := obj.(*troubleshootv1beta2.Analyzer)
+		return analyzer.Spec.Analyzers, nil
+	}
+}
+
+func supportBundleToAnalyzer(sb *troubleshootv1beta2.SupportBundle) *troubleshootv1beta2.Analyzer {
+	return &troubleshootv1beta2.Analyzer{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "troubleshoot.sh/v1beta2",
+			Kind:       "Analyzer",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: fmt.Sprintf("%s-analyzer", sb.Name),
+		},
+		Spec: troubleshootv1beta2.AnalyzerSpec{
+			Analyzers: sb.Spec.Analyzers,
+		},
+	}
 }
 
 func getDefaultAnalyzers() ([]*troubleshootv1beta2.Analyze, error) {
