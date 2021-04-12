@@ -20,51 +20,6 @@ func TestAnalyzeHostFilesystemPerformance(t *testing.T) {
 		expectErr    bool
 	}{
 		{
-			name: "IOPS",
-			fsPerf: &collect.FSPerfResults{
-				IOPS: 50,
-			},
-			hostAnalyzer: &troubleshootv1beta2.FilesystemPerformanceAnalyze{
-				Outcomes: []*troubleshootv1beta2.Outcome{
-					{
-						Fail: &troubleshootv1beta2.SingleOutcome{
-							When:    "iops < 20",
-							Message: "IOPS < 20",
-						},
-					},
-					{
-						Fail: &troubleshootv1beta2.SingleOutcome{
-							When:    "iops <= 20",
-							Message: "IOPS <= 30",
-						},
-					},
-					{
-						Fail: &troubleshootv1beta2.SingleOutcome{
-							When:    "iops > 70",
-							Message: "IOPS > 70",
-						},
-					},
-					{
-						Fail: &troubleshootv1beta2.SingleOutcome{
-							When:    "iops >= 100",
-							Message: "IOPS >= 100",
-						},
-					},
-					{
-						Pass: &troubleshootv1beta2.SingleOutcome{
-							When:    "iops == 50",
-							Message: "IOPS == 50",
-						},
-					},
-				},
-			},
-			result: &AnalyzeResult{
-				Title:   "Filesystem Performance",
-				IsPass:  true,
-				Message: "IOPS == 50",
-			},
-		},
-		{
 			name: "Cover",
 			fsPerf: &collect.FSPerfResults{
 				Min:     200 * time.Nanosecond,

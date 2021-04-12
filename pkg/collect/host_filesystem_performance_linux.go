@@ -1,7 +1,10 @@
 package collect
 
 import (
+	"context"
 	"encoding/json"
+	"fmt"
+	"io"
 	"log"
 	"math/rand"
 	"os"
@@ -64,6 +67,7 @@ func collectHostFilesystemPerformance(hostCollector *troubleshootv1beta2.Filesys
 
 	f, err := os.OpenFile(filename, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0600)
 	if err != nil {
+		log.Panic(err)
 		return nil, errors.Wrapf(err, "open %s", filename)
 	}
 	defer func() {
@@ -74,6 +78,40 @@ func collectHostFilesystemPerformance(hostCollector *troubleshootv1beta2.Filesys
 			log.Println(err.Error())
 		}
 	}()
+
+	// Start the background IOPS task and wait for warmup
+	if hostCollector.EnableBackgroundIOPS {
+		// The done channel waits for all jobs to delete their work file after the context is
+		// canceled
+		jobs := hostCollector.BackgroundReadIOPSJobs + hostCollector.BackgroundWriteIOPSJobs
+		done := make(chan bool, jobs)
+
+		ctx, cancel := context.WithCancel(context.Background())
+		defer func() {
+			cancel()
+			for i := 0; i < jobs; i++ {
+				<-done
+			}
+		}()
+
+		opts := backgroundIOPSOpts{
+			read:      true,
+			iopsLimit: hostCollector.BackgroundReadIOPS,
+			jobs:      hostCollector.BackgroundReadIOPSJobs,
+			directory: hostCollector.Directory,
+		}
+		backgroundIOPS(ctx, opts, done)
+
+		opts = backgroundIOPSOpts{
+			read:      false,
+			iopsLimit: hostCollector.BackgroundWriteIOPS,
+			jobs:      hostCollector.BackgroundWriteIOPSJobs,
+			directory: hostCollector.Directory,
+		}
+		backgroundIOPS(ctx, opts, done)
+
+		time.Sleep(time.Second * time.Duration(hostCollector.BackgroundIOPSWarmupSeconds))
+	}
 
 	// Sequential writes benchmark
 	var written uint64 = 0
@@ -143,72 +181,6 @@ func collectHostFilesystemPerformance(hostCollector *troubleshootv1beta2.Filesys
 		P9999:   results[getPercentileIndex(.9999, len(results))],
 	}
 
-	// Random IOPS benchmark
-
-	// Re-open the file read+write in direct mode to prevent caching
-	if err := f.Close(); err != nil {
-		return nil, errors.Wrapf(err, "close %s", filename)
-	}
-	f, err = os.OpenFile(filename, os.O_RDWR|syscall.O_DIRECT, 0600)
-	if err != nil {
-		return nil, errors.Wrapf(err, "open direct %s", filename)
-	}
-
-	offsets := make([]int64, len(results))
-
-	for index, p := range rand.Perm(len(results)) {
-		offsets[index] = int64(p) * int64(operationSize)
-	}
-
-	// Use multiple workers to keep the filesystem busy. Since operations are serialized on a single
-	// file, more than 2 does not improve IOPS.
-	workers := 2
-	wg := sync.WaitGroup{}
-	m := sync.Mutex{}
-
-	errs := make(chan error, workers)
-
-	start := time.Now()
-
-	for i := 0; i < workers; i++ {
-		wg.Add(1)
-
-		go func(i int) {
-			defer wg.Done()
-
-			data := make([]byte, int(operationSize))
-			fd := int(f.Fd())
-
-			for idx, offset := range offsets {
-				if idx%workers != i {
-					continue
-				}
-
-				m.Lock()
-				n, err := syscall.Pread(fd, data, offset)
-				m.Unlock()
-
-				if err != nil {
-					errs <- errors.Wrapf(err, "failed to pread %d bytes to %s at offset %d", len(data), filename, offset)
-				}
-				if n != len(data) {
-					errs <- errors.Wrapf(err, "pread %d of %d bytes to %s at offset %d", n, len(data), filename, offset)
-				}
-			}
-		}(i)
-	}
-
-	wg.Wait()
-	if len(errs) > 0 {
-		return nil, <-errs
-	}
-
-	d := time.Now().Sub(start)
-	nsPerIO := d / time.Duration(len(offsets))
-	iops := time.Second / nsPerIO
-
-	fsPerf.IOPS = int(iops)
-
 	collectorName := hostCollector.CollectorName
 	if collectorName == "" {
 		collectorName = "filesystemPerformance"
@@ -222,4 +194,106 @@ func collectHostFilesystemPerformance(hostCollector *troubleshootv1beta2.Filesys
 	return map[string][]byte{
 		name: b,
 	}, nil
+}
+
+type backgroundIOPSOpts struct {
+	jobs      int
+	iopsLimit int
+	read      bool
+	directory string
+}
+
+func backgroundIOPS(ctx context.Context, opts backgroundIOPSOpts, done chan bool) {
+	r := rand.New(rand.NewSource(time.Now().Unix()))
+
+	// Waits until files are prepared before returning
+	var wg sync.WaitGroup
+
+	// Rate limit IOPS with fixed window. Every second is a new window. All jobs increment
+	// the same counter before performing an operation. If the counter for the current
+	// window has already reached the IOPS limit then sleep until the beginning of the next
+	// window.
+	windows := map[int64]int{}
+	var mtx sync.Mutex
+
+	for i := 0; i < opts.jobs; i++ {
+		wg.Add(1)
+
+		go func(i int) {
+			filename := fmt.Sprintf("background-write-%d", i)
+			if opts.read {
+				filename = fmt.Sprintf("background-read-%d", i)
+			}
+			filename = filepath.Join(opts.directory, filename)
+			f, err := os.OpenFile(filename, os.O_RDWR|os.O_CREATE|os.O_TRUNC|syscall.O_DIRECT, 0600)
+			if err != nil {
+				log.Printf("Failed to create temp file for background IOPS job: %v", err)
+				done <- true
+				return
+			}
+			defer func() {
+				if err := os.Remove(filename); err != nil {
+					log.Println(err.Error())
+				}
+				done <- true
+			}()
+
+			// For O_DIRECT I/O must be aligned on the sector size of the underlying block device.
+			// Usually that's 512 but may also be 4096. Use 4096 since that works in either case.
+			opSize := 4096
+			blocks := 25600
+			fileSize := int64(opSize * blocks)
+
+			if opts.read {
+				_, err := io.Copy(f, io.LimitReader(r, fileSize))
+				if err != nil {
+					log.Printf("Failed to write temp file for background read IOPS jobs: %v", err)
+					return
+				}
+			} else {
+				err := f.Truncate(int64(opSize * blocks))
+				if err != nil {
+					log.Printf("Failed to resize temp file for backgroupd write IOPS jobs: %v", err)
+				}
+			}
+
+			wg.Done()
+			for {
+				if ctx.Err() != nil {
+					return
+				}
+
+				mtx.Lock()
+				windowKey := time.Now().Unix()
+
+				if windows[windowKey] >= opts.iopsLimit {
+					mtx.Unlock()
+
+					nextWindow := windowKey + 1
+					timeUntilNextWindow := time.Until(time.Unix(nextWindow, 0))
+					time.Sleep(timeUntilNextWindow)
+					continue
+				}
+
+				windows[windowKey]++
+				mtx.Unlock()
+
+				blockOffset := rand.Intn(blocks)
+				offset := int64(blockOffset) * int64(opSize)
+				data := make([]byte, opSize)
+
+				if opts.read {
+					syscall.Pread(int(f.Fd()), data, offset)
+				} else {
+					if _, err := rand.Read(data); err != nil {
+						log.Printf("Failed to generate data for background IOPS write job: %v", err)
+						return
+					}
+					syscall.Pwrite(int(f.Fd()), data, offset)
+				}
+			}
+		}(i)
+	}
+
+	wg.Wait()
 }

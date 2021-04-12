@@ -1,10 +1,12 @@
 package analyzer
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"html/template"
+	"log"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"time"
 
@@ -51,7 +53,7 @@ func (a *AnalyzeHostFilesystemPerformance) Analyze(getCollectedFileContents func
 		if outcome.Fail != nil {
 			if outcome.Fail.When == "" {
 				result.IsFail = true
-				result.Message = outcome.Fail.Message
+				result.Message = renderFSPerfOutcome(outcome.Fail.Message, fsPerf)
 				result.URI = outcome.Fail.URI
 
 				return &result, nil
@@ -64,7 +66,7 @@ func (a *AnalyzeHostFilesystemPerformance) Analyze(getCollectedFileContents func
 
 			if isMatch {
 				result.IsFail = true
-				result.Message = outcome.Fail.Message
+				result.Message = renderFSPerfOutcome(outcome.Fail.Message, fsPerf)
 				result.URI = outcome.Fail.URI
 
 				return &result, nil
@@ -72,7 +74,7 @@ func (a *AnalyzeHostFilesystemPerformance) Analyze(getCollectedFileContents func
 		} else if outcome.Warn != nil {
 			if outcome.Warn.When == "" {
 				result.IsWarn = true
-				result.Message = outcome.Warn.Message
+				result.Message = renderFSPerfOutcome(outcome.Warn.Message, fsPerf)
 				result.URI = outcome.Warn.URI
 
 				return &result, nil
@@ -85,7 +87,7 @@ func (a *AnalyzeHostFilesystemPerformance) Analyze(getCollectedFileContents func
 
 			if isMatch {
 				result.IsWarn = true
-				result.Message = outcome.Warn.Message
+				result.Message = renderFSPerfOutcome(outcome.Warn.Message, fsPerf)
 				result.URI = outcome.Warn.URI
 
 				return &result, nil
@@ -93,7 +95,7 @@ func (a *AnalyzeHostFilesystemPerformance) Analyze(getCollectedFileContents func
 		} else if outcome.Pass != nil {
 			if outcome.Pass.When == "" {
 				result.IsPass = true
-				result.Message = outcome.Pass.Message
+				result.Message = renderFSPerfOutcome(outcome.Pass.Message, fsPerf)
 				result.URI = outcome.Pass.URI
 
 				return &result, nil
@@ -106,7 +108,7 @@ func (a *AnalyzeHostFilesystemPerformance) Analyze(getCollectedFileContents func
 
 			if isMatch {
 				result.IsPass = true
-				result.Message = outcome.Pass.Message
+				result.Message = renderFSPerfOutcome(outcome.Pass.Message, fsPerf)
 				result.URI = outcome.Pass.URI
 
 				return &result, nil
@@ -124,14 +126,6 @@ func compareHostFilesystemPerformanceConditionalToActual(conditional string, fsP
 	}
 	keyword := strings.ToLower(parts[0])
 	comparator := parts[1]
-
-	if keyword == "iops" {
-		desiredInt, err := strconv.ParseInt(parts[2], 10, 64)
-		if err != nil {
-			return false, errors.Wrapf(err, "failed to parse desired iops %q as integer", parts[2])
-		}
-		return doCompareHostFilesystemIOPS(comparator, fsPerf.IOPS, int(desiredInt))
-	}
 
 	desiredDuration, err := time.ParseDuration(parts[2])
 	if err != nil {
@@ -201,19 +195,17 @@ func doCompareHostFilesystemPerformance(operator string, actual time.Duration, d
 	return false, fmt.Errorf("Unknown filesystem performance operator %q", operator)
 }
 
-func doCompareHostFilesystemIOPS(operator string, actual int, desired int) (bool, error) {
-	switch operator {
-	case "<":
-		return actual < desired, nil
-	case "<=":
-		return actual <= desired, nil
-	case ">":
-		return actual > desired, nil
-	case ">=":
-		return actual >= desired, nil
-	case "=", "==", "===":
-		return actual == desired, nil
+func renderFSPerfOutcome(outcome string, fsPerf collect.FSPerfResults) string {
+	t, err := template.New("").Parse(outcome)
+	if err != nil {
+		log.Printf("Failed to parse filesystem performance outcome: %v", err)
+		return outcome
 	}
-
-	return false, fmt.Errorf("Unknown filesystem IOPS operator %q", operator)
+	var buf bytes.Buffer
+	err = t.Execute(&buf, fsPerf)
+	if err != nil {
+		log.Printf("Failed to render filesystem performance outcome: %v", err)
+		return outcome
+	}
+	return buf.String()
 }
