@@ -41,7 +41,7 @@ all: test
 
 .PHONY: ffi
 ffi: fmt vet
-	go build ${LDFLAGS} -o bin/troubleshoot.so -buildmode=c-shared ffi/main.go
+	go build ${BUILDFLAGS} ${LDFLAGS} -o bin/troubleshoot.so -buildmode=c-shared ffi/main.go
 
 # Run tests
 test: generate fmt vet
