@@ -35,6 +35,8 @@ define LDFLAGS
 "
 endef
 
+BUILDFLAGS = -tags "netgo containers_image_ostree_stub exclude_graphdriver_devicemapper exclude_graphdriver_btrfs containers_image_openpgp" -installsuffix netgo
+
 all: test
 
 .PHONY: ffi
@@ -43,19 +45,19 @@ ffi: fmt vet
 
 # Run tests
 test: generate fmt vet
-	go test ./pkg/... ./cmd/... -coverprofile cover.out
+	go test ${BUILDFLAGS} ./pkg/... ./cmd/... -coverprofile cover.out
 
 .PHONY: support-bundle
 support-bundle: generate fmt vet
-	go build -tags netgo ${LDFLAGS} -o bin/support-bundle github.com/replicatedhq/troubleshoot/cmd/troubleshoot
+	go build ${BUILDFLAGS} ${LDFLAGS} -o bin/support-bundle github.com/replicatedhq/troubleshoot/cmd/troubleshoot
 
 .PHONY: preflight
 preflight: generate fmt vet
-	go build -tags netgo ${LDFLAGS} -o bin/preflight github.com/replicatedhq/troubleshoot/cmd/preflight
+	go build ${BUILDFLAGS} ${LDFLAGS} -o bin/preflight github.com/replicatedhq/troubleshoot/cmd/preflight
 
 .PHONY: analyze
 analyze: generate fmt vet
-	go build -tags netgo ${LDFLAGS} -o bin/analyze github.com/replicatedhq/troubleshoot/cmd/analyze
+	go build ${BUILDFLAGS} ${LDFLAGS} -o bin/analyze github.com/replicatedhq/troubleshoot/cmd/analyze
 
 .PHONY: fmt
 fmt:
@@ -63,7 +65,7 @@ fmt:
 
 .PHONY: vet
 vet:
-	go vet ./pkg/... ./cmd/...
+	go vet ${BUILDFLAGS} ./pkg/... ./cmd/...
 
 .PHONY: generate
 generate: controller-gen client-gen

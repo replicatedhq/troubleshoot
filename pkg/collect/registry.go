@@ -5,16 +5,15 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"net/http"
-	"runtime"
 	"strings"
 	"time"
 
-	"github.com/google/go-containerregistry/pkg/authn"
-	"github.com/google/go-containerregistry/pkg/name"
-	containerregistryv1 "github.com/google/go-containerregistry/pkg/v1"
-	"github.com/google/go-containerregistry/pkg/v1/remote"
-	"github.com/google/go-containerregistry/pkg/v1/remote/transport"
+	imagedocker "github.com/containers/image/v5/docker"
+	dockerref "github.com/containers/image/v5/docker/reference"
+	"github.com/containers/image/v5/transports/alltransports"
+	"github.com/containers/image/v5/types"
+	"github.com/docker/distribution/registry/api/errcode"
+	registryv2 "github.com/docker/distribution/registry/api/v2"
 	"github.com/pkg/errors"
 	"github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
@@ -29,6 +28,11 @@ type RegistryImage struct {
 
 type RegistryInfo struct {
 	Images map[string]RegistryImage `json:"images"`
+}
+
+type registryAuthConfig struct {
+	username string
+	password string
 }
 
 func Registry(c *Collector, registryCollector *troubleshootv1beta2.RegistryImages) (map[string][]byte, error) {
@@ -67,16 +71,9 @@ func Registry(c *Collector, registryCollector *troubleshootv1beta2.RegistryImage
 }
 
 func imageExists(c *Collector, registryCollector *troubleshootv1beta2.RegistryImages, image string) (bool, error) {
-	opts := []remote.Option{
-		remote.WithPlatform(containerregistryv1.Platform{
-			Architecture: runtime.GOARCH,
-			OS:           runtime.GOOS,
-		}),
-	}
-
-	imageRef, err := name.ParseReference(image)
+	imageRef, err := alltransports.ParseImageName(fmt.Sprintf("docker://%s", image))
 	if err != nil {
-		return false, errors.Wrapf(err, "parsing reference %s", image)
+		return false, errors.Wrapf(err, "failed to parse image name %s", image)
 	}
 
 	authConfig, err := getImageAuthConfig(c, registryCollector, imageRef)
@@ -84,15 +81,34 @@ func imageExists(c *Collector, registryCollector *troubleshootv1beta2.RegistryIm
 		return false, errors.Wrap(err, "failed to get auth config")
 	}
 
-	if authConfig != nil {
-		opts = append(opts, remote.WithAuth(authn.FromConfig(*authConfig)))
-	}
-
 	var lastErr error
 	for i := 0; i < 3; i++ {
-		_, err = remote.Get(imageRef, opts...)
+		sysCtx := types.SystemContext{
+			DockerDisableV1Ping:         true,
+			DockerInsecureSkipTLSVerify: types.OptionalBoolTrue,
+		}
+		if authConfig != nil {
+			sysCtx.DockerAuthConfig = &types.DockerAuthConfig{
+				Username: authConfig.username,
+				Password: authConfig.password,
+			}
+		}
+
+		remoteImage, err := imageRef.NewImage(context.Background(), &sysCtx)
 		if err == nil {
+			remoteImage.Close()
 			return true, nil
+		}
+
+		if strings.Contains(err.Error(), "no image found in manifest list for architecture") {
+			// manifest was downloaded, but no matching architecture found in manifest
+			// should this count as image does not exist?
+			// this binary's architecture is not necessarily what will run in the cluster
+			return true, nil
+		}
+
+		if isNotFound(err) {
+			return false, nil
 		}
 
 		if strings.Contains(err.Error(), "EOF") {
@@ -101,21 +117,13 @@ func imageExists(c *Collector, registryCollector *troubleshootv1beta2.RegistryIm
 			continue
 		}
 
-		transportErr, ok := err.(*transport.Error)
-		if !ok {
-			return false, errors.Wrap(err, "failed to get image manifest")
-		}
-		if transportErr.StatusCode == http.StatusNotFound {
-			return false, nil
-		}
-
 		return false, errors.Wrap(err, "failed to get image manifest")
 	}
 
 	return false, errors.Wrap(lastErr, "failed to retry")
 }
 
-func getImageAuthConfig(c *Collector, registryCollector *troubleshootv1beta2.RegistryImages, imageRef name.Reference) (*authn.AuthConfig, error) {
+func getImageAuthConfig(c *Collector, registryCollector *troubleshootv1beta2.RegistryImages, imageRef types.ImageReference) (*registryAuthConfig, error) {
 	if registryCollector.ImagePullSecrets == nil {
 		return nil, nil
 	}
@@ -146,13 +154,13 @@ func getImageAuthConfig(c *Collector, registryCollector *troubleshootv1beta2.Reg
 	return nil, errors.New("image pull secret spec is not valid")
 }
 
-func getImageAuthConfigFromData(c *Collector, imageRef name.Reference, pullSecrets *v1beta2.ImagePullSecrets) (*authn.AuthConfig, error) {
+func getImageAuthConfigFromData(c *Collector, imageRef types.ImageReference, pullSecrets *v1beta2.ImagePullSecrets) (*registryAuthConfig, error) {
 	if pullSecrets.SecretType != "kubernetes.io/dockerconfigjson" {
 		return nil, errors.Errorf("secret type is not supported: %s", pullSecrets.SecretType)
 	}
 
 	configJsonBase64 := pullSecrets.Data[".dockerconfigjson"]
-	registry := imageRef.Context().RegistryStr()
+	registry := dockerref.Domain(imageRef.DockerReference())
 
 	configJson, err := base64.StdEncoding.DecodeString(configJsonBase64)
 	if err != nil {
@@ -181,15 +189,15 @@ func getImageAuthConfigFromData(c *Collector, imageRef name.Reference, pullSecre
 		return nil, errors.Errorf("expected 2 parts in the string, but found %d", len(parts))
 	}
 
-	authConfig := authn.AuthConfig{
-		Username: parts[0],
-		Password: parts[1],
+	authConfig := registryAuthConfig{
+		username: parts[0],
+		password: parts[1],
 	}
 
 	return &authConfig, nil
 }
 
-func getImageAuthConfigFromSecret(c *Collector, imageRef name.Reference, pullSecrets *v1beta2.ImagePullSecrets, namespace string) (*authn.AuthConfig, error) {
+func getImageAuthConfigFromSecret(c *Collector, imageRef types.ImageReference, pullSecrets *v1beta2.ImagePullSecrets, namespace string) (*registryAuthConfig, error) {
 	ctx := context.Background()
 
 	client, err := kubernetes.NewForConfig(c.ClientConfig)
@@ -216,4 +224,32 @@ func getImageAuthConfigFromSecret(c *Collector, imageRef name.Reference, pullSec
 	}
 
 	return config, nil
+}
+
+func isNotFound(err error) bool {
+	switch err := err.(type) {
+	case errcode.Errors:
+		for _, e := range err {
+			if isNotFound(e) {
+				return true
+			}
+		}
+		return false
+	case errcode.Error:
+		return err.Message == registryv2.ErrorCodeManifestUnknown.Message()
+	}
+
+	// this type will cause panic when compared to error type
+	if _, ok := err.(imagedocker.ErrUnauthorizedForCredentials); ok {
+		return false
+	}
+
+	cause := errors.Cause(err)
+	if cause, ok := cause.(error); ok {
+		if cause == err {
+			return false
+		}
+	}
+
+	return isNotFound(cause)
 }
