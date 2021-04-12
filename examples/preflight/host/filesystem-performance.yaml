@@ -10,22 +10,25 @@ spec:
         fileSize: 22Mi
         operationSizeBytes: 2300
         datasync: true
+        enableBackgroundIOPS: true
+        backgroundIOPSWarmupSeconds: 60
+        backgroundWriteIOPS: 300
+        backgroundWriteIOPSJobs: 6
+        backgroundReadIOPS: 50
+        backgroundReadIOPSJobs: 1
   analyzers:
     - filesystemPerformance:
         collectorName: etcd-perf
         outcomes:
-          - fail:
-              when: "iops < 50"
-              message: Insufficient random read IOPS
           - pass:
               when: "p99 < 3ms"
-              message: Write latency is great!
+              message: "Write latency is great! (p99: {{ .P99 }})"
           - pass:
               when: "p99 < 5ms"
-              message: Write latency is ok
+              message: "Write latency is ok (p99: {{ .P99 }})"
           - warn:
               when: "p99 < 8ms"
-              message: Write latency is high
+              message: "Write latency is high {{ .String }}"
           - fail:
               when: "p99 >= 8ms"
-              message: Write latency is too high
+              message: "Write latency is too high {{ .String }}"

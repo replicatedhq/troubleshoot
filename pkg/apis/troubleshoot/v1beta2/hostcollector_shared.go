@@ -73,13 +73,43 @@ type TCPConnect struct {
 	Timeout           string `json:"timeout,omitempty"`
 }
 
+// FilesystemPerformance benchmarks sequential write latency on a single file.
+// The optional background IOPS feature attempts to mimic real-world conditions by running read and
+// write workloads prior to and during benchmark execution.
 type FilesystemPerformance struct {
-	HostCollectorMeta  `json:",inline" yaml:",inline"`
+	HostCollectorMeta `json:",inline" yaml:",inline"`
+	// The size of each write operation performed while benchmarking. This does not apply to the
+	// background IOPS feature if enabled, since those must be fixed at 4096.
 	OperationSizeBytes uint64 `json:"operationSize,omitempty"`
-	Directory          string `json:"directory,omitempty"`
-	FileSize           string `json:"fileSize,omitempty"`
-	Sync               bool   `json:"sync,omitempty"`
-	Datasync           bool   `json:"datasync,omitempty"`
+	// The directory where the benchmark will create files.
+	Directory string `json:"directory,omitempty"`
+	// The size of the file used in the benchmark. The number of IO operations for the benchmark
+	// will be FileSize / OperationSizeBytes. Accepts valid Kubernetes resource units such as Mi.
+	FileSize string `json:"fileSize,omitempty"`
+	// Whether to call sync on the file after each write. Does not apply to background IOPS task.
+	Sync bool `json:"sync,omitempty"`
+	// Whether to call datasync on the file after each write. Skipped if Sync is also true. Does not
+	// apply to background IOPS task.
+	Datasync bool `json:"datasync,omitempty"`
+
+	// Enable the background IOPS feature.
+	EnableBackgroundIOPS bool `json:"enableBackgroundIOPS"`
+	// How long to run the background IOPS read and write workloads prior to starting the benchmarks.
+	BackgroundIOPSWarmupSeconds int `json:"backgroundIOPSWarmupSeconds"`
+	// The target write IOPS to run while benchmarking. This is a limit and there is no guarantee
+	// it will be reached. This is the total IOPS for all background write jobs.
+	BackgroundWriteIOPS int `json:"backgroundWriteIOPS"`
+	// The target read IOPS to run while benchmarking. This is a limit and there is no guarantee
+	// it will be reached. This is the total IOPS for all background read jobs.
+	BackgroundReadIOPS int `json:"backgroundReadIOPS"`
+	// Number of threads to use for background write IOPS. This should be set high enough to reach
+	// the target specified in BackgroundWriteIOPS.
+	// Example: If BackgroundWriteIOPS is 100 and write latency is 10ms then a single job would
+	// barely be able to reach 100 IOPS so this should be at least 2.
+	BackgroundWriteIOPSJobs int `json:"backgroundWriteIOPSJobs"`
+	// Number of threads to use for background read IOPS. This should be set high enough to reach
+	// the target specified in BackgrounReadIOPS.
+	BackgroundReadIOPSJobs int `json:"backgroundReadIOPSJobs"`
 }
 
 type Certificate struct {
