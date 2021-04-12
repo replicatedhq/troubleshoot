@@ -13,7 +13,7 @@ builds:
       - CGO_ENABLED=1
       - GO111MODULE=on
     main: ffi/main.go
-    flags: -buildmode=c-shared -tags netgo containers_image_ostree_stub -tags exclude_graphdriver_devicemapper -tags exclude_graphdriver_btrfs -tags containers_image_openpgp -installsuffix netgo
+    flags: -buildmode=c-shared -tags netgo -tags containers_image_ostree_stub -tags exclude_graphdriver_devicemapper -tags exclude_graphdriver_btrfs -tags containers_image_openpgp -installsuffix netgo
     binary: troubleshoot.so
     hooks: {}
   - id: preflight
