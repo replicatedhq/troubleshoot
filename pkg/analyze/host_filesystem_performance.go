@@ -4,10 +4,10 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"html/template"
 	"log"
 	"path/filepath"
 	"strings"
+	"text/template"
 	"time"
 
 	"github.com/pkg/errors"
