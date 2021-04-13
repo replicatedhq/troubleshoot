@@ -38,6 +38,17 @@ func (d Durations) Swap(i, j int) {
 }
 
 func collectHostFilesystemPerformance(hostCollector *troubleshootv1beta2.FilesystemPerformance) (map[string][]byte, error) {
+	timeout := time.Minute
+	if hostCollector.Timeout != "" {
+		d, err := time.ParseDuration(hostCollector.Timeout)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to parse timeout %q", hostCollector.Timeout)
+		}
+		timeout = d
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
 	var operationSize uint64 = 1024
 	if hostCollector.OperationSizeBytes != 0 {
 		operationSize = hostCollector.OperationSizeBytes
@@ -85,10 +96,7 @@ func collectHostFilesystemPerformance(hostCollector *troubleshootv1beta2.Filesys
 		// canceled
 		jobs := hostCollector.BackgroundReadIOPSJobs + hostCollector.BackgroundWriteIOPSJobs
 		done := make(chan bool, jobs)
-
-		ctx, cancel := context.WithCancel(context.Background())
 		defer func() {
-			cancel()
 			for i := 0; i < jobs; i++ {
 				<-done
 			}
@@ -145,6 +153,10 @@ func collectHostFilesystemPerformance(hostCollector *troubleshootv1beta2.Filesys
 		results = append(results, d)
 
 		written += uint64(n)
+
+		if ctx.Err() != nil {
+			break
+		}
 	}
 
 	if len(results) == 0 {
