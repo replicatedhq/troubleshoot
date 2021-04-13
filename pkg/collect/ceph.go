@@ -18,10 +18,11 @@ const (
 )
 
 type CephCommand struct {
-	ID      string
-	Command []string
-	Args    []string
-	Format  string
+	ID             string
+	Command        []string
+	Args           []string
+	Format         string
+	DefaultTimeout string
 }
 
 var CephCommands = []CephCommand{
@@ -73,6 +74,13 @@ var CephCommands = []CephCommand{
 		Args:    []string{"-f", "json-pretty"},
 		Format:  "json",
 	},
+	{
+		ID:             "rgw-stats",
+		Command:        []string{"radosgw-admin", "bucket", "stats"},
+		Args:           []string{"--rgw-cache-enabled=false"},
+		Format:         "json",
+		DefaultTimeout: "30s", // include a default timeout because this command will hang if the RGW daemon isn't running/is unhealthy
+	},
 }
 
 func Ceph(c *Collector, cephCollector *troubleshootv1beta2.Ceph) (map[string][]byte, error) {
@@ -100,12 +108,17 @@ func Ceph(c *Collector, cephCollector *troubleshootv1beta2.Ceph) (map[string][]b
 }
 
 func cephCommandExec(ctx context.Context, c *Collector, cephCollector *troubleshootv1beta2.Ceph, pod *corev1.Pod, command CephCommand) (map[string][]byte, error) {
+	timeout := cephCollector.Timeout
+	if timeout == "" {
+		timeout = command.DefaultTimeout
+	}
+
 	execCollector := &troubleshootv1beta2.Exec{
 		Selector:  labelsToSelector(pod.Labels),
 		Namespace: pod.Namespace,
 		Command:   command.Command,
 		Args:      command.Args,
-		Timeout:   cephCollector.Timeout,
+		Timeout:   timeout,
 	}
 	results, err := Exec(c, execCollector)
 	if err != nil {
