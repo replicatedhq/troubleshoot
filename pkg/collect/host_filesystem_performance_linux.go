@@ -97,6 +97,7 @@ func collectHostFilesystemPerformance(hostCollector *troubleshootv1beta2.Filesys
 		jobs := hostCollector.BackgroundReadIOPSJobs + hostCollector.BackgroundWriteIOPSJobs
 		done := make(chan bool, jobs)
 		defer func() {
+			cancel()
 			for i := 0; i < jobs; i++ {
 				<-done
 			}
