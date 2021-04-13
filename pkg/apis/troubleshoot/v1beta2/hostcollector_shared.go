@@ -91,6 +91,8 @@ type FilesystemPerformance struct {
 	// Whether to call datasync on the file after each write. Skipped if Sync is also true. Does not
 	// apply to background IOPS task.
 	Datasync bool `json:"datasync,omitempty"`
+	// Total timeout, including background IOPS setup and warmup if enabled.
+	Timeout string `json:"timeout,omitempty"`
 
 	// Enable the background IOPS feature.
 	EnableBackgroundIOPS bool `json:"enableBackgroundIOPS"`
