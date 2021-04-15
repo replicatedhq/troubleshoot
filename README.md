@@ -22,7 +22,7 @@ For a details on creating the custom resource files that drive preflight checks,
 
 
 ## Support Bundle
-A support bundle is an archive that's created in-cluster, by collecting logs and cluster information, and executing specified commands (including redaction of sensitive information). After creating a support bundle, the cluster operator will normally deliver it to the 3rd-party application vendor for analysis and disconnected debugging. Another Replicated project, [Kotsadm](https://github.com/replicatedhq/kotsadm), provides cluster operators with an in-cluster UI for processing support bundles and viewing analyzers (as well as support bundle collection).
+A support bundle is an archive that's created in-cluster, by collecting logs and cluster information, and executing specified commands (including redaction of sensitive information). After creating a support bundle, the cluster operator will normally deliver it to the 3rd-party application vendor for analysis and disconnected debugging. Another Replicated project, [KOTS](https://github.com/replicatedhq/kots), provides k8s apps an in-cluster UI for processing support bundles and viewing analyzers (as well as support bundle collection).
 
 To collect a sample support bundle, install the troubleshoot kubectl plugin:
 
