@@ -110,27 +110,7 @@ func getPodLogs(ctx context.Context, client *kubernetes.Clientset, pod corev1.Po
 		Container: container,
 	}
 
-	defaultMaxLines := int64(10000)
-	if limits == nil || limits.MaxLines == 0 {
-		podLogOpts.TailLines = &defaultMaxLines
-	} else {
-		podLogOpts.TailLines = &limits.MaxLines
-	}
-	if limits != nil && !limits.SinceTime.IsZero() {
-		podLogOpts.SinceTime = &limits.SinceTime
-
-	} else if limits != nil && limits.MaxAge != "" {
-		parsedDuration, err := time.ParseDuration(limits.MaxAge)
-		if err != nil {
-			logger.Printf("unable to parse time duration %s\n", limits.MaxAge)
-		} else {
-			now := time.Now()
-			then := now.Add(0 - parsedDuration)
-			kthen := metav1.NewTime(then)
-
-			podLogOpts.SinceTime = &kthen
-		}
-	}
+	setLogLimits(&podLogOpts, limits, convertMaxAgeToTime)
 
 	fileKey := fmt.Sprintf("%s/%s", name, pod.Name)
 	if container != "" {
@@ -170,6 +150,48 @@ func getPodLogs(ctx context.Context, client *kubernetes.Clientset, pod corev1.Po
 	result[fileKey+"-previous.log"] = buf.Bytes()
 
 	return result, nil
+}
+
+func convertMaxAgeToTime(maxAge string) *metav1.Time {
+	parsedDuration, err := time.ParseDuration(maxAge)
+	if err != nil {
+		logger.Printf("unable to parse time duration %s\n", maxAge)
+		return nil
+	}
+
+	now := time.Now()
+	then := now.Add(0 - parsedDuration)
+	kthen := metav1.NewTime(then)
+
+	return &kthen
+}
+
+func setLogLimits(podLogOpts *corev1.PodLogOptions, limits *troubleshootv1beta2.LogLimits, maxAgeParser func(maxAge string) *metav1.Time) {
+	if podLogOpts == nil {
+		return
+	}
+
+	defaultMaxLines := int64(10000)
+	if limits == nil {
+		podLogOpts.TailLines = &defaultMaxLines
+		return
+	}
+
+	if !limits.SinceTime.IsZero() {
+		podLogOpts.SinceTime = &limits.SinceTime
+		return
+	}
+
+	if limits.MaxAge != "" {
+		podLogOpts.SinceTime = maxAgeParser(limits.MaxAge)
+		return
+	}
+
+	if limits.MaxLines == 0 {
+		podLogOpts.TailLines = &defaultMaxLines
+	} else {
+		podLogOpts.TailLines = &limits.MaxLines
+	}
 }
 
 func getLogsErrorsFileName(logsCollector *troubleshootv1beta2.Logs) string {
