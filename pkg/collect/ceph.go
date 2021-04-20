@@ -75,11 +75,17 @@ var CephCommands = []CephCommand{
 		Format:  "json",
 	},
 	{
-		ID:             "rgw-stats",
+		ID:             "rgw-stats", // the disk usage (and other stats) of each object store bucket
 		Command:        []string{"radosgw-admin", "bucket", "stats"},
 		Args:           []string{"--rgw-cache-enabled=false"},
-		Format:         "json",
+		Format:         "txt",
 		DefaultTimeout: "30s", // include a default timeout because this command will hang if the RGW daemon isn't running/is unhealthy
+	},
+	{
+		ID:      "rbd-du", // the disk usage of each PVC
+		Command: []string{"rbd", "du"},
+		Args:    []string{"--pool=replicapool"},
+		Format:  "txt",
 	},
 }
 
