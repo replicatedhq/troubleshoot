@@ -83,9 +83,7 @@ func CollectHost(opts CollectOpts, p *troubleshootv1beta2.HostPreflight) (Collec
 		result, err := collector.Collect(opts.ProgressChan)
 		if err != nil {
 			opts.ProgressChan <- errors.Errorf("failed to run collector: %s: %v", collector.Title(), err)
-			continue
 		}
-
 		if result != nil {
 			for k, v := range result {
 				allCollectedData[k] = v
