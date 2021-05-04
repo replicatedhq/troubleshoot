@@ -32,6 +32,7 @@ type SupportBundleResponse struct {
 
 // SupportBundleCollectAnalyzeProcess collects support bundle from start to finish, including running
 // collectors, analyzers and after collection steps. Input arguments are specifications.
+// The support bundle is archived in the OS temp folder (os.TempDir()).
 func SupportBundleCollectAnalyzeProcess(spec *troubleshootv1beta2.SupportBundleSpec, additionalRedactors *troubleshootv1beta2.Redactor, opts SupportBundleCreateOpts) (*SupportBundleResponse, error) {
 
 	resultsResponse := SupportBundleResponse{}
@@ -50,8 +51,8 @@ func SupportBundleCollectAnalyzeProcess(spec *troubleshootv1beta2.SupportBundleS
 	}
 	defer os.RemoveAll(tmpDir)
 
-	// Do we need to put this in some kind of swap space?
-	filename, err := findFileName("support-bundle-"+time.Now().Format("2006-01-02T15_04_05"), "tar.gz")
+	basename := filepath.Join(os.TempDir(), "support-bundle-"+time.Now().Format("2006-01-02T15_04_05"))
+	filename, err := findFileName(basename, "tar.gz")
 	if err != nil {
 		return nil, errors.Wrap(err, "find file name")
 	}
@@ -94,6 +95,7 @@ func SupportBundleCollectAnalyzeProcess(spec *troubleshootv1beta2.SupportBundleS
 
 // CollectSupportBundleFromURI collects support bundle from start to finish, including running
 // collectors, analyzers and after collection steps. Input arguments are the URIs of the support bundle and redactor specs.
+// The support bundle is archived in the OS temp folder (os.TempDir()).
 func CollectSupportBundleFromURI(specURI string, redactorURIs []string, opts SupportBundleCreateOpts) (*SupportBundleResponse, error) {
 
 	supportbundle, err := GetSupportBundleFromURI(specURI)
@@ -117,7 +119,7 @@ func CollectSupportBundleFromURI(specURI string, redactorURIs []string, opts Sup
 }
 
 // CollectSupportBundleFromSpec run the support bundle collectors and creates an archive. The output is the name of the archive on disk
-// (the caller must remove)
+// in the pwd (the caller must remove)
 func CollectSupportBundleFromSpec(spec *troubleshootv1beta2.SupportBundleSpec, additionalRedactors *troubleshootv1beta2.Redactor, opts SupportBundleCreateOpts) (string, error) {
 
 	if opts.KubernetesRestConfig == nil {
