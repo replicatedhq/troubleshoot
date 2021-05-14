@@ -182,7 +182,7 @@ func loadSpecFromURL(arg string) ([]byte, error) {
 		httpClient := httputil.GetHttpClient()
 		resp, err := httpClient.Do(req)
 		if err != nil {
-			if shouldRetryRequest(err, httpClient) {
+			if shouldRetryRequest(err) {
 				continue
 			}
 			return nil, errors.Wrap(err, "execute request")

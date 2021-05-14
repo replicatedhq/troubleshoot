@@ -48,7 +48,7 @@ func uploadSupportBundle(r *troubleshootv1beta2.ResultRequest, archivePath strin
 		httpClient := httputil.GetHttpClient()
 		resp, err := httpClient.Do(req)
 		if err != nil {
-			if shouldRetryRequest(err, httpClient) {
+			if shouldRetryRequest(err) {
 				continue
 			}
 			return errors.Wrap(err, "execute request")
@@ -82,7 +82,7 @@ func uploadSupportBundle(r *troubleshootv1beta2.ResultRequest, archivePath strin
 			httpClient := httputil.GetHttpClient()
 			resp, err := httpClient.Do(req)
 			if err != nil {
-				if shouldRetryRequest(err, httpClient) {
+				if shouldRetryRequest(err) {
 					continue
 				}
 				return errors.Wrap(err, "execute redaction request")
@@ -109,7 +109,7 @@ func callbackSupportBundleAPI(r *troubleshootv1beta2.ResultRequest, archivePath 
 		httpClient := httputil.GetHttpClient()
 		resp, err := httpClient.Do(req)
 		if err != nil {
-			if shouldRetryRequest(err, httpClient) {
+			if shouldRetryRequest(err) {
 				continue
 			}
 			return errors.Wrap(err, "execute request")
@@ -133,11 +133,11 @@ func getExpectedContentType(uploadURL string) string {
 	return parsedURL.Query().Get("Content-Type")
 }
 
-func shouldRetryRequest(err error, httpClient *http.Client) bool {
-	if strings.Contains(err.Error(), "x509") && httpClient == http.DefaultClient && canTryInsecure() {
-		httpClient = &http.Client{Transport: &http.Transport{
+func shouldRetryRequest(err error) bool {
+	if strings.Contains(err.Error(), "x509") && canTryInsecure() {
+		httputil.AddTransport(&http.Transport{
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-		}}
+		})
 		return true
 	}
 	return false

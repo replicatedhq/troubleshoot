@@ -246,11 +246,11 @@ func parseTimeFlags(v *viper.Viper) (*time.Time, error) {
 	return &sinceTime, nil
 }
 
-func shouldRetryRequest(err error, httpClient *http.Client) bool {
-	if strings.Contains(err.Error(), "x509") && httpClient == http.DefaultClient && canTryInsecure() {
-		httpClient = &http.Client{Transport: &http.Transport{
+func shouldRetryRequest(err error) bool {
+	if strings.Contains(err.Error(), "x509") && canTryInsecure() {
+		httputil.AddTransport(&http.Transport{
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-		}}
+		})
 		return true
 	}
 	return false
