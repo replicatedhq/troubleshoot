@@ -14,7 +14,6 @@ func AddTransport(transport *http.Transport) {
 }
 
 func GetHttpClient() *http.Client {
-
 	if httpTransport != nil {
 		httpClient.Transport = httpTransport
 		return httpClient
