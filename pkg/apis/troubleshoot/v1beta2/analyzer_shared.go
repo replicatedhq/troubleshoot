@@ -116,6 +116,13 @@ type CephStatusAnalyze struct {
 	Namespace     string     `json:"namespace" yaml:"namespace"`
 }
 
+type LonghornAnalyze struct {
+	AnalyzeMeta   `json:",inline" yaml:",inline"`
+	Outcomes      []*Outcome `json:"outcomes" yaml:"outcomes"`
+	CollectorName string     `json:"collectorName,omitempty" yaml:"collectorName,omitempty"`
+	Namespace     string     `json:"namespace" yaml:"namespace"`
+}
+
 type RegistryImagesAnalyze struct {
 	AnalyzeMeta   `json:",inline" yaml:",inline"`
 	Outcomes      []*Outcome `json:"outcomes" yaml:"outcomes"`
@@ -144,5 +151,6 @@ type Analyze struct {
 	Mysql                    *DatabaseAnalyze          `json:"mysql,omitempty" yaml:"mysql,omitempty"`
 	Redis                    *DatabaseAnalyze          `json:"redis,omitempty" yaml:"redis,omitempty"`
 	CephStatus               *CephStatusAnalyze        `json:"cephStatus,omitempty" yaml:"cephStatus,omitempty"`
+	Longhorn                 *LonghornAnalyze          `json:"longhorn,omitempty" yaml:"longhorn,omitempty"`
 	RegistryImages           *RegistryImagesAnalyze    `json:"registryImages,omitempty" yaml:"registryImages,omitempty"`
 }
