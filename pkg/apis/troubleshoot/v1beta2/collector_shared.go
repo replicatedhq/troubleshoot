@@ -139,6 +139,12 @@ type Ceph struct {
 	Timeout       string `json:"timeout,omitempty" yaml:"timeout,omitempty"`
 }
 
+type Longhorn struct {
+	CollectorMeta `json:",inline" yaml:",inline"`
+	Namespace     string `json:"namespace" yaml:"namespace"`
+	Timeout       string `json:"timeout,omitempty" yaml:"timeout,omitempty"`
+}
+
 type RegistryImages struct {
 	CollectorMeta    `json:",inline" yaml:",inline"`
 	Images           []string          `json:"images" yaml:"images"`
@@ -161,6 +167,7 @@ type Collect struct {
 	Redis            *Database         `json:"redis,omitempty" yaml:"redis,omitempty"`
 	Collectd         *Collectd         `json:"collectd,omitempty" yaml:"collectd,omitempty"`
 	Ceph             *Ceph             `json:"ceph,omitempty" yaml:"ceph,omitempty"`
+	Longhorn         *Longhorn         `json:"longhorn,omitempty" yaml:"longhorn,omitempty"`
 	RegistryImages   *RegistryImages   `json:"registryImages,omitempty" yaml:"registryImages,omitempty"`
 }
 
@@ -383,6 +390,10 @@ func (c *Collect) GetName() string {
 	if c.Ceph != nil {
 		collector = "ceph"
 		name = c.Ceph.CollectorName
+	}
+	if c.Longhorn != nil {
+		collector = "longhorn"
+		name = c.Longhorn.CollectorName
 	}
 	if c.RegistryImages != nil {
 		collector = "registry-images"

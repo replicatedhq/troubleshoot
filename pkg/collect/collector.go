@@ -155,6 +155,14 @@ func (c *Collector) IsExcluded() bool {
 		if isExcludedResult {
 			return true
 		}
+	} else if c.Collect.Longhorn != nil {
+		isExcludedResult, err := isExcluded(c.Collect.Longhorn.Exclude)
+		if err != nil {
+			return true
+		}
+		if isExcludedResult {
+			return true
+		}
 	}
 	return false
 }
@@ -199,6 +207,8 @@ func (c *Collector) RunCollectorSync(globalRedactors []*troubleshootv1beta2.Reda
 		result, err = Collectd(c, c.Collect.Collectd)
 	} else if c.Collect.Ceph != nil {
 		result, err = Ceph(c, c.Collect.Ceph)
+	} else if c.Collect.Longhorn != nil {
+		result, err = Longhorn(c, c.Collect.Longhorn)
 	} else if c.Collect.RegistryImages != nil {
 		result, err = Registry(c, c.Collect.RegistryImages)
 	} else {

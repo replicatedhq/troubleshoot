@@ -299,6 +299,16 @@ func Analyze(analyzer *troubleshootv1beta2.Analyze, getFile getCollectedFileCont
 		}
 		return []*AnalyzeResult{result}, nil
 	}
+	if analyzer.Longhorn != nil {
+		isExcluded, err := isExcluded(analyzer.Longhorn.Exclude)
+		if err != nil {
+			return nil, err
+		}
+		if isExcluded {
+			return nil, nil
+		}
+		return longhorn(analyzer.Longhorn, getFile, findFiles)
+	}
 
 	if analyzer.RegistryImages != nil {
 		isExcluded, err := isExcluded(analyzer.RegistryImages.Exclude)
