@@ -142,3 +142,65 @@ func TestAnalyzeLonghornReplica(t *testing.T) {
 		})
 	}
 }
+
+func TestAnalyzeLonghornEngine(t *testing.T) {
+	tests := []struct {
+		name   string
+		engine *longhornv1beta1.Engine
+		expect *AnalyzeResult
+	}{
+		{
+			name: "running",
+			engine: &longhornv1beta1.Engine{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "pvc-uuid-1",
+				},
+				Spec: longhorntypes.EngineSpec{
+					InstanceSpec: longhorntypes.InstanceSpec{
+						DesireState: longhorntypes.InstanceStateRunning,
+					},
+				},
+				Status: longhorntypes.EngineStatus{
+					InstanceStatus: longhorntypes.InstanceStatus{
+						CurrentState: longhorntypes.InstanceStateRunning,
+					},
+				},
+			},
+			expect: &AnalyzeResult{
+				Title:   "Longhorn Engine: pvc-uuid-1",
+				IsPass:  true,
+				Message: "Engine is running",
+			},
+		},
+		{
+			name: "stopped",
+			engine: &longhornv1beta1.Engine{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "pvc-uuid-1",
+				},
+				Spec: longhorntypes.EngineSpec{
+					InstanceSpec: longhorntypes.InstanceSpec{
+						DesireState: longhorntypes.InstanceStateRunning,
+					},
+				},
+				Status: longhorntypes.EngineStatus{
+					InstanceStatus: longhorntypes.InstanceStatus{
+						CurrentState: longhorntypes.InstanceStateStopped,
+					},
+				},
+			},
+			expect: &AnalyzeResult{
+				Title:   "Longhorn Engine: pvc-uuid-1",
+				IsWarn:  true,
+				Message: `Longhorn engine pvc-uuid-1 current status "stopped", should be "running"`,
+			},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			got := analyzeLonghornEngine(test.engine)
+
+			assert.Equal(t, test.expect, got)
+		})
+	}
+}
