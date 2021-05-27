@@ -182,6 +182,21 @@ func Longhorn(c *Collector, longhornCollector *troubleshootv1beta2.Longhorn) (ma
 	}
 	final[settingsKey] = settingsB
 
+	// logs of all pods in namespace
+	logsCollector := &troubleshootv1beta2.Logs{
+		Selector:  []string{""},
+		Namespace: ns,
+	}
+	logs, err := Logs(c, logsCollector)
+	if err != nil {
+		return nil, errors.Wrap(err, "collect longhorn logs")
+	}
+	logsDir := GetLonghornLogsDirectory(ns)
+	for key, log := range logs {
+		key = filepath.Join(logsDir, key)
+		final[key] = log
+	}
+
 	return final, nil
 }
 
@@ -253,4 +268,11 @@ func GetLonghornSettingsFile(namespace string) string {
 		return fmt.Sprintf("longhorn/%s/settings.yaml", namespace)
 	}
 	return "longhorn/settings.yaml"
+}
+
+func GetLonghornLogsDirectory(namespace string) string {
+	if namespace != DefaultLonghornNamespace {
+		return fmt.Sprintf("longhorn/%s/logs", namespace)
+	}
+	return "longhorn/logs"
 }
