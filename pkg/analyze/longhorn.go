@@ -58,6 +58,24 @@ func longhorn(analyzer *troubleshootv1beta2.LonghornAnalyze, getCollectedFileCon
 		replicas = append(replicas, replica)
 	}
 
+	// get engines.longhorn.io
+	enginesDir := collect.GetLonghornEnginesDirectory(ns)
+	enginesGlob := filepath.Join(enginesDir, "*")
+	enginesYaml, err := findFiles(enginesGlob)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to find longhorn engines files under %s", enginesDir)
+	}
+	engines := []*longhornv1beta1.Engine{}
+	for key, engineYaml := range enginesYaml {
+		engineYaml = stripRedactedLines(engineYaml)
+		engine := &longhornv1beta1.Engine{}
+		err := yaml.Unmarshal(engineYaml, engine)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to unmarshal engine yaml from %s", key)
+		}
+		engines = append(engines, engine)
+	}
+
 	results := []*AnalyzeResult{}
 
 	for _, node := range nodes {
@@ -66,6 +84,10 @@ func longhorn(analyzer *troubleshootv1beta2.LonghornAnalyze, getCollectedFileCon
 
 	for _, replica := range replicas {
 		results = append(results, analyzeLonghornReplica(replica))
+	}
+
+	for _, engine := range engines {
+		results = append(results, analyzeLonghornEngine(engine))
 	}
 
 	return results, nil
@@ -123,6 +145,26 @@ func analyzeLonghornReplica(replica *longhornv1beta1.Replica) *AnalyzeResult {
 	return result
 }
 
+func analyzeLonghornEngine(engine *longhornv1beta1.Engine) *AnalyzeResult {
+	result := &AnalyzeResult{
+		Title: fmt.Sprintf("Longhorn Engine: %s", engine.Name),
+	}
+
+	desired := engine.Spec.InstanceSpec.DesireState
+	actual := engine.Status.InstanceStatus.CurrentState
+
+	if desired != actual {
+		result.IsWarn = true
+		result.Message = fmt.Sprintf("Longhorn engine %s current status %q, should be %q", engine.Name, actual, desired)
+		return result
+	}
+
+	result.IsPass = true
+	result.Message = fmt.Sprintf("Engine is %s", actual)
+
+	return result
+}
+
 func stripRedactedLines(yaml []byte) []byte {
 	buf := bytes.NewBuffer(yaml)
 	scanner := bufio.NewScanner(buf)
@@ -130,10 +172,8 @@ func stripRedactedLines(yaml []byte) []byte {
 	out := []byte{}
 
 	for scanner.Scan() {
-		if strings.Contains(scanner.Text(), redact.MASK_TEXT) {
-			continue
-		}
-		out = append(out, scanner.Bytes()...)
+		line := strings.ReplaceAll(scanner.Text(), redact.MASK_TEXT, "HIDDEN")
+		out = append(out, []byte(line)...)
 		out = append(out, '\n')
 	}
 
