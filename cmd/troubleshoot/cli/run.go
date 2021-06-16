@@ -196,6 +196,11 @@ func runTroubleshoot(v *viper.Viper, arg string) error {
 named %s. Please upload it on the Troubleshoot page of
 the %s Admin Console to begin analysis.`
 			msg = fmt.Sprintf(f, appName, archivePath, appName)
+		} else {
+			f := `A support bundle has been created in this directory
+named %s. Please upload it on the Troubleshoot page of
+the Admin Console to begin analysis.`
+			msg = fmt.Sprintf(f, archivePath)
 		}
 
 		fmt.Printf("%s\n", msg)
