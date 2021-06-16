@@ -158,7 +158,7 @@ func runTroubleshoot(v *viper.Viper, arg string) error {
 	if err != nil {
 		c := color.New(color.FgHiRed)
 		c.Printf("%s\r * %v\n", cursor.ClearEntireLine(), err)
-		return errors.Wrap(err, "failed to process bundle after collection")
+		// don't die
 	}
 
 	analyzeResults, err := supportbundle.AnalyzeAndExtractSupportBundle(&supportBundle.Spec, archivePath)
