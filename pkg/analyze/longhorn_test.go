@@ -204,3 +204,181 @@ func TestAnalyzeLonghornEngine(t *testing.T) {
 		})
 	}
 }
+
+func TestAnalyzeLonghornReplicaChecksums(t *testing.T) {
+	tests := []struct {
+		name       string
+		checksums  []map[string]string
+		volumeName string
+		expect     *AnalyzeResult
+	}{
+		{
+			name: "3 ok",
+			checksums: []map[string]string{
+				{
+					"revision.counter":         "7cc93e21d84bb7d0db0a72281f21500ba3847dea6467631cca91523d01ace8c9",
+					"volume-head-000.img":      "7637cb563f796f8d6358ff4fc635ce596e5326a7f940cc2ea2eaee0acff843ce",
+					"volume-head-000.img.meta": "ca21027be32ef389de0b21d0c4713e824cad7114a287e05e56de49c948492fc9",
+					"volume.meta":              "e9ce811b3f11dfe3af0bdd46581f23ba2c570be5dc3b807652ad6142322c706b",
+				},
+				{
+					"volume-head-000.img":      "7637cb563f796f8d6358ff4fc635ce596e5326a7f940cc2ea2eaee0acff843ce",
+					"revision.counter":         "7cc93e21d84bb7d0db0a72281f21500ba3847dea6467631cca91523d01ace8c9",
+					"volume-head-000.img.meta": "ca21027be32ef389de0b21d0c4713e824cad7114a287e05e56de49c948492fc9",
+					"volume.meta":              "e9ce811b3f11dfe3af0bdd46581f23ba2c570be5dc3b807652ad6142322c706b",
+				},
+				{
+					"volume.meta":              "e9ce811b3f11dfe3af0bdd46581f23ba2c570be5dc3b807652ad6142322c706b",
+					"volume-head-000.img.meta": "ca21027be32ef389de0b21d0c4713e824cad7114a287e05e56de49c948492fc9",
+					"revision.counter":         "7cc93e21d84bb7d0db0a72281f21500ba3847dea6467631cca91523d01ace8c9",
+					"volume-head-000.img":      "7637cb563f796f8d6358ff4fc635ce596e5326a7f940cc2ea2eaee0acff843ce",
+				},
+			},
+			volumeName: "pvc-uuid-123",
+			expect: &AnalyzeResult{
+				Title:   "Longhorn Volume Replica Corruption: pvc-uuid-123",
+				IsPass:  true,
+				Message: "No replica corruption detected",
+			},
+		},
+		{
+			name: "2 ok",
+			checksums: []map[string]string{
+				{
+					"revision.counter":         "7cc93e21d84bb7d0db0a72281f21500ba3847dea6467631cca91523d01ace8c9",
+					"volume-head-000.img":      "7637cb563f796f8d6358ff4fc635ce596e5326a7f940cc2ea2eaee0acff843ce",
+					"volume-head-000.img.meta": "ca21027be32ef389de0b21d0c4713e824cad7114a287e05e56de49c948492fc9",
+					"volume.meta":              "e9ce811b3f11dfe3af0bdd46581f23ba2c570be5dc3b807652ad6142322c706b",
+				},
+				{
+					"volume-head-000.img.meta": "ca21027be32ef389de0b21d0c4713e824cad7114a287e05e56de49c948492fc9",
+					"volume-head-000.img":      "7637cb563f796f8d6358ff4fc635ce596e5326a7f940cc2ea2eaee0acff843ce",
+					"volume.meta":              "e9ce811b3f11dfe3af0bdd46581f23ba2c570be5dc3b807652ad6142322c706b",
+					"revision.counter":         "7cc93e21d84bb7d0db0a72281f21500ba3847dea6467631cca91523d01ace8c9",
+				},
+			},
+			volumeName: "pvc-uuid-123",
+			expect: &AnalyzeResult{
+				Title:   "Longhorn Volume Replica Corruption: pvc-uuid-123",
+				IsPass:  true,
+				Message: "No replica corruption detected",
+			},
+		},
+		{
+			name: "1 of 3 corrupt",
+			checksums: []map[string]string{
+				{
+					"revision.counter":         "7cc93e21d84bb7d0db0a72281f21500ba3847dea6467631cca91523d01ace8c9",
+					"volume-head-000.img":      "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+					"volume-head-000.img.meta": "ca21027be32ef389de0b21d0c4713e824cad7114a287e05e56de49c948492fc9",
+					"volume.meta":              "e9ce811b3f11dfe3af0bdd46581f23ba2c570be5dc3b807652ad6142322c706b",
+				},
+				{
+					"revision.counter":         "7cc93e21d84bb7d0db0a72281f21500ba3847dea6467631cca91523d01ace8c9",
+					"volume-head-000.img":      "7637cb563f796f8d6358ff4fc635ce596e5326a7f940cc2ea2eaee0acff843ce",
+					"volume-head-000.img.meta": "ca21027be32ef389de0b21d0c4713e824cad7114a287e05e56de49c948492fc9",
+					"volume.meta":              "e9ce811b3f11dfe3af0bdd46581f23ba2c570be5dc3b807652ad6142322c706b",
+				},
+				{
+					"revision.counter":         "7cc93e21d84bb7d0db0a72281f21500ba3847dea6467631cca91523d01ace8c9",
+					"volume-head-000.img":      "7637cb563f796f8d6358ff4fc635ce596e5326a7f940cc2ea2eaee0acff843ce",
+					"volume-head-000.img.meta": "ca21027be32ef389de0b21d0c4713e824cad7114a287e05e56de49c948492fc9",
+					"volume.meta":              "e9ce811b3f11dfe3af0bdd46581f23ba2c570be5dc3b807652ad6142322c706b",
+				},
+			},
+			volumeName: "pvc-uuid-123",
+			expect: &AnalyzeResult{
+				Title:   "Longhorn Volume Replica Corruption: pvc-uuid-123",
+				IsWarn:  true,
+				Message: "Replica corruption detected",
+			},
+		},
+		{
+			name: "2 of 3 corrupt",
+			checksums: []map[string]string{
+				{
+					"revision.counter":         "7cc93e21d84bb7d0db0a72281f21500ba3847dea6467631cca91523d01ace8c9",
+					"volume-head-000.img":      "7637cb563f796f8d6358ff4fc635ce596e5326a7f940cc2ea2eaee0acff843ce",
+					"volume-head-000.img.meta": "ca21027be32ef389de0b21d0c4713e824cad7114a287e05e56de49c948492fc9",
+					"volume.meta":              "e9ce811b3f11dfe3af0bdd46581f23ba2c570be5dc3b807652ad6142322c706b",
+				},
+				{
+					"revision.counter":         "7cc93e21d84bb7d0db0a72281f21500ba3847dea6467631cca91523d01ace8c9",
+					"volume-head-000.img":      "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+					"volume-head-000.img.meta": "ca21027be32ef389de0b21d0c4713e824cad7114a287e05e56de49c948492fc9",
+					"volume.meta":              "e9ce811b3f11dfe3af0bdd46581f23ba2c570be5dc3b807652ad6142322c706b",
+				},
+				{
+					"revision.counter":         "7cc93e21d84bb7d0db0a72281f21500ba3847dea6467631cca91523d01ace8c9",
+					"volume-head-000.img":      "7637cb563f796f8d6358ff4fc635ce596e5326a7f940cc2ea2eaee0acff843ce",
+					"volume-head-000.img.meta": "ca21027be32ef389de0b21d0c4713e824cad7114a287e05e56de49c948492fc9",
+					"volume.meta":              "e9ce811b3f11dfe3af0bdd46581f23ba2c570be5dc3b807652ad6142322c706b",
+				},
+			},
+			volumeName: "pvc-uuid-123",
+			expect: &AnalyzeResult{
+				Title:   "Longhorn Volume Replica Corruption: pvc-uuid-123",
+				IsWarn:  true,
+				Message: "Replica corruption detected",
+			},
+		},
+		{
+			name: "3 of 3 corrupt",
+			checksums: []map[string]string{
+				{
+					"revision.counter":         "7cc93e21d84bb7d0db0a72281f21500ba3847dea6467631cca91523d01ace8c9",
+					"volume-head-000.img":      "7637cb563f796f8d6358ff4fc635ce596e5326a7f940cc2ea2eaee0acff843ce",
+					"volume-head-000.img.meta": "ca21027be32ef389de0b21d0c4713e824cad7114a287e05e56de49c948492fc9",
+					"volume.meta":              "e9ce811b3f11dfe3af0bdd46581f23ba2c570be5dc3b807652ad6142322c706b",
+				},
+				{
+					"revision.counter":         "7cc93e21d84bb7d0db0a72281f21500ba3847dea6467631cca91523d01ace8c9",
+					"volume-head-000.img":      "7637cb563f796f8d6358ff4fc635ce596e5326a7f940cc2ea2eaee0acff843ce",
+					"volume-head-000.img.meta": "ca21027be32ef389de0b21d0c4713e824cad7114a287e05e56de49c948492fc9",
+					"volume.meta":              "e9ce811b3f11dfe3af0bdd46581f23ba2c570be5dc3b807652ad6142322c706b",
+				},
+				{
+					"revision.counter":         "7cc93e21d84bb7d0db0a72281f21500ba3847dea6467631cca91523d01ace8c9",
+					"volume-head-000.img":      "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+					"volume-head-000.img.meta": "ca21027be32ef389de0b21d0c4713e824cad7114a287e05e56de49c948492fc9",
+					"volume.meta":              "e9ce811b3f11dfe3af0bdd46581f23ba2c570be5dc3b807652ad6142322c706b",
+				},
+			},
+			volumeName: "pvc-uuid-123",
+			expect: &AnalyzeResult{
+				Title:   "Longhorn Volume Replica Corruption: pvc-uuid-123",
+				IsWarn:  true,
+				Message: "Replica corruption detected",
+			},
+		},
+		{
+			name: "1 of 2 corrupt",
+			checksums: []map[string]string{
+				{
+					"revision.counter":         "7cc93e21d84bb7d0db0a72281f21500ba3847dea6467631cca91523d01ace8c9",
+					"volume-head-000.img":      "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+					"volume-head-000.img.meta": "ca21027be32ef389de0b21d0c4713e824cad7114a287e05e56de49c948492fc9",
+					"volume.meta":              "e9ce811b3f11dfe3af0bdd46581f23ba2c570be5dc3b807652ad6142322c706b",
+				},
+				{
+					"revision.counter":         "7cc93e21d84bb7d0db0a72281f21500ba3847dea6467631cca91523d01ace8c9",
+					"volume-head-000.img":      "7637cb563f796f8d6358ff4fc635ce596e5326a7f940cc2ea2eaee0acff843ce",
+					"volume-head-000.img.meta": "ca21027be32ef389de0b21d0c4713e824cad7114a287e05e56de49c948492fc9",
+					"volume.meta":              "e9ce811b3f11dfe3af0bdd46581f23ba2c570be5dc3b807652ad6142322c706b",
+				},
+			},
+			volumeName: "pvc-uuid-123",
+			expect: &AnalyzeResult{
+				Title:   "Longhorn Volume Replica Corruption: pvc-uuid-123",
+				IsWarn:  true,
+				Message: "Replica corruption detected",
+			},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			got := analyzeLonghornReplicaChecksums(test.volumeName, test.checksums)
+			assert.Equal(t, test.expect, got)
+		})
+	}
+}
