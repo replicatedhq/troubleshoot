@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"fmt"
 	"path/filepath"
+	"reflect"
 	"strings"
 
 	longhornv1beta1 "github.com/longhorn/longhorn-manager/k8s/pkg/apis/longhorn/v1beta1"
@@ -76,6 +77,24 @@ func longhorn(analyzer *troubleshootv1beta2.LonghornAnalyze, getCollectedFileCon
 		engines = append(engines, engine)
 	}
 
+	// get volumes.longhorn.io
+	volumesDir := collect.GetLonghornVolumesDirectory(ns)
+	volumesGlob := filepath.Join(volumesDir, "*.yaml")
+	volumesYaml, err := findFiles(volumesGlob)
+	if err != nil {
+		return nil, errors.Wrapf(err, "Failed to find longhorn volumes files under %s", volumesDir)
+	}
+	volumes := []*longhornv1beta1.Volume{}
+	for key, volumeYaml := range volumesYaml {
+		volumeYaml = stripRedactedLines(volumeYaml)
+		volume := &longhornv1beta1.Volume{}
+		err := yaml.Unmarshal(volumeYaml, volume)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to unmarshal volume yaml from %s", key)
+		}
+		volumes = append(volumes, volume)
+	}
+
 	results := []*AnalyzeResult{}
 
 	for _, node := range nodes {
@@ -88,6 +107,28 @@ func longhorn(analyzer *troubleshootv1beta2.LonghornAnalyze, getCollectedFileCon
 
 	for _, engine := range engines {
 		results = append(results, analyzeLonghornEngine(engine))
+	}
+
+	// get replica checksums for each volume if provided
+	for _, volume := range volumes {
+		checksumsGlob := filepath.Join(volumesDir, volume.Name, "replicachecksums", "*")
+		checksumFiles, err := findFiles(checksumsGlob)
+		if err != nil {
+			return nil, errors.Wrapf(err, "Failed to find longhorn replica checksums under %s", checksumsGlob)
+		}
+
+		checksums := []map[string]string{}
+		for key, checksumTxt := range checksumFiles {
+			checksum, err := collect.ParseReplicaChecksum(checksumTxt)
+			if err != nil {
+				return nil, errors.Wrapf(err, "Failed to parse %s", key)
+			}
+			checksums = append(checksums, checksum)
+		}
+
+		if len(checksums) > 1 {
+			results = append(results, analyzeLonghornReplicaChecksums(volume.Name, checksums))
+		}
 	}
 
 	return results, nil
@@ -178,4 +219,27 @@ func stripRedactedLines(yaml []byte) []byte {
 	}
 
 	return out
+}
+
+func analyzeLonghornReplicaChecksums(volumeName string, checksums []map[string]string) *AnalyzeResult {
+	result := &AnalyzeResult{
+		Title: fmt.Sprintf("Longhorn Volume Replica Corruption: %s", volumeName),
+	}
+
+	for i, checksum := range checksums {
+		if i == 0 {
+			continue
+		}
+		prior := checksums[i-1]
+		if !reflect.DeepEqual(prior, checksum) {
+			result.IsWarn = true
+			result.Message = "Replica corruption detected"
+			return result
+		}
+	}
+
+	result.IsPass = true
+	result.Message = "No replica corruption detected"
+
+	return result
 }
