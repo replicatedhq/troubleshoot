@@ -55,6 +55,8 @@ func (c *CollectHostTime) Collect(progressChan chan<- interface{}) (map[string][
 		timeInfo.Timezone = "UTC"
 	}
 
+	timeInfo.Timezone = strings.ToUpper(timeInfo.Timezone)
+
 	prop = "org.freedesktop.timedate1.NTPSynchronized"
 	variant, err = conn.Object("org.freedesktop.timedate1", "/org/freedesktop/timedate1").GetProperty(prop)
 	if err != nil {
