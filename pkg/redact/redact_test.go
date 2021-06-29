@@ -65,6 +65,10 @@ func Test_Redactors(t *testing.T) {
 						"value": "Provider=PostgreSQL OLE DB Provider;Data Source=myServerAddress;location=myDataBase;User ID=myUsername;password=myPassword;timeout=1000;"
 					  },
 					  {
+						"name": "POSTGRES_CONNECTION_STRING_2",
+						"value": "postgres://pg_user:pg_password@pg_host:5432/pg_database"
+					  },
+					  {
 						"name": "MYSQL_CONNECTION_STRING",
 						"value": "Server=myServerAddress;Database=myDataBase;Uid=myUsername;Pwd=myPassword;UseProcedureBodies=False;"
 					  },
@@ -869,6 +873,10 @@ func Test_Redactors(t *testing.T) {
 						"value": "Provider=PostgreSQL OLE DB Provider;Data Source=***HIDDEN***;location=***HIDDEN***;User ID=***HIDDEN***;password=***HIDDEN***;timeout=1000;"
 					  },
 					  {
+						"name": "POSTGRES_CONNECTION_STRING_2",
+						"value": "postgres://***HIDDEN***:***HIDDEN***@***HIDDEN***:5432/***HIDDEN***"
+					  },
+					  {
 						"name": "MYSQL_CONNECTION_STRING",
 						"value": "Server=***HIDDEN***;Database=***HIDDEN***;Uid=***HIDDEN***;Pwd=***HIDDEN***;UseProcedureBodies=False;"
 					  },
@@ -1619,7 +1627,7 @@ func Test_Redactors(t *testing.T) {
 		}
 	  ]`
 
-	wantRedactionsLen := 38
+	wantRedactionsLen := 39
 	wantRedactionsCount := 25
 
 	t.Run("test default redactors", func(t *testing.T) {

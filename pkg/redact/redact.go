@@ -223,6 +223,11 @@ func getRedactors(path string) ([]Redactor, error) {
 			name:  "Redact database connection strings that contain username and password",
 		},
 		// standard postgres and mysql connection strings
+		// protocol://user:password@host:5432/db
+		{
+			regex: `\b(\w*:\/\/)(?P<mask>[^:\"\/]*){1}(:)(?P<mask>[^:\"\/]*){1}(@)(?P<mask>[^:\"\/]*){1}(?P<port>:[\d]*)?(\/)(?P<mask>[\w\d\S-_]+){1}\b`,
+			name:  "Redact database connection strings that contain username and password",
+		},
 		{
 			regex: `(?i)(Data Source *= *)(?P<mask>[^\;]+)(;)`,
 			name:  "Redact 'Data Source' values commonly found in database connection strings",
