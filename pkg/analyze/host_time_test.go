@@ -15,7 +15,7 @@ func TestAnalyzeHostTime(t *testing.T) {
 		name         string
 		timeInfo     *collect.TimeInfo
 		hostAnalyzer *troubleshootv1beta2.TimeAnalyze
-		result       *AnalyzeResult
+		result       []*AnalyzeResult
 		expectErr    bool
 	}{
 		{
@@ -41,10 +41,12 @@ func TestAnalyzeHostTime(t *testing.T) {
 					},
 				},
 			},
-			result: &AnalyzeResult{
-				Title:   "Time",
-				IsPass:  true,
-				Message: "System clock synchronized and NTP is active",
+			result: []*AnalyzeResult{
+				{
+					Title:   "Time",
+					IsPass:  true,
+					Message: "System clock synchronized and NTP is active",
+				},
 			},
 		},
 		{
@@ -70,10 +72,12 @@ func TestAnalyzeHostTime(t *testing.T) {
 					},
 				},
 			},
-			result: &AnalyzeResult{
-				Title:   "Time",
-				IsFail:  true,
-				Message: "System clock not synchronized",
+			result: []*AnalyzeResult{
+				{
+					Title:   "Time",
+					IsFail:  true,
+					Message: "System clock not synchronized",
+				},
 			},
 		},
 		{
@@ -105,10 +109,12 @@ func TestAnalyzeHostTime(t *testing.T) {
 					},
 				},
 			},
-			result: &AnalyzeResult{
-				Title:   "Time",
-				IsWarn:  true,
-				Message: "System clock not yet synchronized",
+			result: []*AnalyzeResult{
+				{
+					Title:   "Time",
+					IsWarn:  true,
+					Message: "System clock not yet synchronized",
+				},
 			},
 		},
 		{
@@ -146,10 +152,12 @@ func TestAnalyzeHostTime(t *testing.T) {
 					},
 				},
 			},
-			result: &AnalyzeResult{
-				Title:   "Time",
-				IsWarn:  true,
-				Message: "System clock synchronized for now",
+			result: []*AnalyzeResult{
+				{
+					Title:   "Time",
+					IsWarn:  true,
+					Message: "System clock synchronized for now",
+				},
 			},
 		},
 		{
@@ -169,15 +177,18 @@ func TestAnalyzeHostTime(t *testing.T) {
 					},
 					{
 						Fail: &troubleshootv1beta2.SingleOutcome{
+							When:    "timezone != UTC",
 							Message: "timezone not set to UTC",
 						},
 					},
 				},
 			},
-			result: &AnalyzeResult{
-				Title:   "Time",
-				IsPass:  true,
-				Message: "Timezone is set to UTC",
+			result: []*AnalyzeResult{
+				{
+					Title:   "Time",
+					IsPass:  true,
+					Message: "Timezone is set to UTC",
+				},
 			},
 		},
 		{
@@ -200,10 +211,56 @@ func TestAnalyzeHostTime(t *testing.T) {
 					},
 				},
 			},
-			result: &AnalyzeResult{
-				Title:   "Time",
-				IsFail:  true,
-				Message: "Timezone is not set to UTC",
+			result: []*AnalyzeResult{
+				{
+					Title:   "Time",
+					IsFail:  true,
+					Message: "Timezone is not set to UTC",
+				},
+			},
+		},
+		{
+			name: "multiple issues",
+			timeInfo: &collect.TimeInfo{
+				Timezone:        "PST",
+				NTPSynchronized: false,
+				NTPActive:       true,
+			},
+			hostAnalyzer: &troubleshootv1beta2.TimeAnalyze{
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Fail: &troubleshootv1beta2.SingleOutcome{
+							When:    "timezone != UTC",
+							Message: "timezone is not set to UTC",
+						},
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							When:    "timezone == UTC",
+							Message: "timezone set to UTC",
+						},
+					},
+					{
+						Warn: &troubleshootv1beta2.SingleOutcome{
+							When:    "ntp == unsynchronized+active",
+							Message: "System clock not yet synchronized",
+						},
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							When:    "ntp == synchronized+active",
+							Message: "System clock synchronized",
+						},
+					},
+				},
+			},
+			result: []*AnalyzeResult{
+				{
+					Title:   "Time",
+					IsFail:  true,
+					Message: "timezone is not set to UTC",
+				},
+				{
+					Title:   "Time",
+					IsWarn:  true,
+					Message: "System clock not yet synchronized",
+				},
 			},
 		},
 	}

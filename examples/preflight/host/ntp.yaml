@@ -17,6 +17,13 @@ spec:
           - warn:
               when: "ntp == synchronized+inactive"
               message: NTP not active
+          - warn: 
+              when: "timezone != UTC"
+              message: "Non UTC timezone can interfere with system function"      
           - pass:
               when: "ntp == synchronized+active"
               message: System clock is synchronized
+          - pass: 
+              when: "timezone == UTC"
+              message: "timezone set to UTC"
+        

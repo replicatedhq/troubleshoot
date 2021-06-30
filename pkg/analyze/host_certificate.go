@@ -19,7 +19,7 @@ func (a *AnalyzeHostCertificate) IsExcluded() (bool, error) {
 	return isExcluded(a.hostAnalyzer.Exclude)
 }
 
-func (a *AnalyzeHostCertificate) Analyze(getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
+func (a *AnalyzeHostCertificate) Analyze(getCollectedFileContents func(string) ([]byte, error)) ([]*AnalyzeResult, error) {
 	hostAnalyzer := a.hostAnalyzer
 
 	collectorName := hostAnalyzer.CollectorName
@@ -33,18 +33,18 @@ func (a *AnalyzeHostCertificate) Analyze(getCollectedFileContents func(string) (
 	}
 	status := string(contents)
 
-	result := AnalyzeResult{}
-
-	result.Title = a.Title()
+	var coll resultCollector
 
 	for _, outcome := range hostAnalyzer.Outcomes {
+		result := &AnalyzeResult{Title: a.Title()}
+
 		if outcome.Fail != nil {
 			if outcome.Fail.When == "" || outcome.Fail.When == status {
 				result.IsFail = true
 				result.Message = outcome.Fail.Message
 				result.URI = outcome.Fail.URI
 
-				return &result, nil
+				coll.push(result)
 			}
 		} else if outcome.Warn != nil {
 			if outcome.Warn.When == "" || outcome.Warn.When == status {
@@ -52,7 +52,7 @@ func (a *AnalyzeHostCertificate) Analyze(getCollectedFileContents func(string) (
 				result.Message = outcome.Warn.Message
 				result.URI = outcome.Warn.URI
 
-				return &result, nil
+				coll.push(result)
 			}
 		} else if outcome.Pass != nil {
 			if outcome.Pass.When == "" || outcome.Pass.When == status {
@@ -60,10 +60,10 @@ func (a *AnalyzeHostCertificate) Analyze(getCollectedFileContents func(string) (
 				result.Message = outcome.Pass.Message
 				result.URI = outcome.Pass.URI
 
-				return &result, nil
+				coll.push(result)
 			}
 		}
 	}
 
-	return &result, nil
+	return coll.get(a.Title()), nil
 }

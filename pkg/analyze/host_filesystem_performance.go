@@ -27,7 +27,7 @@ func (a *AnalyzeHostFilesystemPerformance) IsExcluded() (bool, error) {
 	return isExcluded(a.hostAnalyzer.Exclude)
 }
 
-func (a *AnalyzeHostFilesystemPerformance) Analyze(getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
+func (a *AnalyzeHostFilesystemPerformance) Analyze(getCollectedFileContents func(string) ([]byte, error)) ([]*AnalyzeResult, error) {
 	hostAnalyzer := a.hostAnalyzer
 
 	collectorName := hostAnalyzer.CollectorName
@@ -45,18 +45,18 @@ func (a *AnalyzeHostFilesystemPerformance) Analyze(getCollectedFileContents func
 		return nil, errors.Wrapf(err, "failed to unmarshal filesystem performance results from %s", name)
 	}
 
-	result := AnalyzeResult{}
-
-	result.Title = a.Title()
+	var coll resultCollector
 
 	for _, outcome := range hostAnalyzer.Outcomes {
+		result := &AnalyzeResult{Title: a.Title()}
+
 		if outcome.Fail != nil {
 			if outcome.Fail.When == "" {
 				result.IsFail = true
 				result.Message = renderFSPerfOutcome(outcome.Fail.Message, fsPerf)
 				result.URI = outcome.Fail.URI
 
-				return &result, nil
+				coll.push(result)
 			}
 
 			isMatch, err := compareHostFilesystemPerformanceConditionalToActual(outcome.Fail.When, fsPerf)
@@ -69,7 +69,7 @@ func (a *AnalyzeHostFilesystemPerformance) Analyze(getCollectedFileContents func
 				result.Message = renderFSPerfOutcome(outcome.Fail.Message, fsPerf)
 				result.URI = outcome.Fail.URI
 
-				return &result, nil
+				coll.push(result)
 			}
 		} else if outcome.Warn != nil {
 			if outcome.Warn.When == "" {
@@ -77,7 +77,7 @@ func (a *AnalyzeHostFilesystemPerformance) Analyze(getCollectedFileContents func
 				result.Message = renderFSPerfOutcome(outcome.Warn.Message, fsPerf)
 				result.URI = outcome.Warn.URI
 
-				return &result, nil
+				coll.push(result)
 			}
 
 			isMatch, err := compareHostFilesystemPerformanceConditionalToActual(outcome.Warn.When, fsPerf)
@@ -90,7 +90,7 @@ func (a *AnalyzeHostFilesystemPerformance) Analyze(getCollectedFileContents func
 				result.Message = renderFSPerfOutcome(outcome.Warn.Message, fsPerf)
 				result.URI = outcome.Warn.URI
 
-				return &result, nil
+				coll.push(result)
 			}
 		} else if outcome.Pass != nil {
 			if outcome.Pass.When == "" {
@@ -98,7 +98,7 @@ func (a *AnalyzeHostFilesystemPerformance) Analyze(getCollectedFileContents func
 				result.Message = renderFSPerfOutcome(outcome.Pass.Message, fsPerf)
 				result.URI = outcome.Pass.URI
 
-				return &result, nil
+				coll.push(result)
 			}
 
 			isMatch, err := compareHostFilesystemPerformanceConditionalToActual(outcome.Pass.When, fsPerf)
@@ -111,12 +111,12 @@ func (a *AnalyzeHostFilesystemPerformance) Analyze(getCollectedFileContents func
 				result.Message = renderFSPerfOutcome(outcome.Pass.Message, fsPerf)
 				result.URI = outcome.Pass.URI
 
-				return &result, nil
+				coll.push(result)
 			}
 		}
 	}
 
-	return &result, nil
+	return coll.get(a.Title()), nil
 }
 
 func compareHostFilesystemPerformanceConditionalToActual(conditional string, fsPerf collect.FSPerfResults) (res bool, err error) {

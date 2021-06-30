@@ -79,7 +79,7 @@ func TestAnalyzeHostMemory(t *testing.T) {
 		name         string
 		memoryInfo   *collect.MemoryInfo
 		hostAnalyzer *troubleshootv1beta2.MemoryAnalyze
-		result       *AnalyzeResult
+		result       []*AnalyzeResult
 		expectErr    bool
 	}{
 		{
@@ -97,10 +97,12 @@ func TestAnalyzeHostMemory(t *testing.T) {
 					},
 				},
 			},
-			result: &AnalyzeResult{
-				Title:   "Amount of Memory",
-				IsPass:  true,
-				Message: "System has at least 4Gi of memory",
+			result: []*AnalyzeResult{
+				{
+					Title:   "Amount of Memory",
+					IsPass:  true,
+					Message: "System has at least 4Gi of memory",
+				},
 			},
 		},
 		{
@@ -118,10 +120,12 @@ func TestAnalyzeHostMemory(t *testing.T) {
 					},
 				},
 			},
-			result: &AnalyzeResult{
-				Title:   "Amount of Memory",
-				IsFail:  true,
-				Message: "System requires at least 16Gi of memory",
+			result: []*AnalyzeResult{
+				{
+					Title:   "Amount of Memory",
+					IsFail:  true,
+					Message: "System requires at least 16Gi of memory",
+				},
 			},
 		},
 		{
@@ -145,10 +149,12 @@ func TestAnalyzeHostMemory(t *testing.T) {
 					},
 				},
 			},
-			result: &AnalyzeResult{
-				Title:   "Amount of Memory",
-				IsWarn:  true,
-				Message: "System performs best with more than 8Gi of memory",
+			result: []*AnalyzeResult{
+				{
+					Title:   "Amount of Memory",
+					IsWarn:  true,
+					Message: "System performs best with more than 8Gi of memory",
+				},
 			},
 		},
 	}

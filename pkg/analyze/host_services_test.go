@@ -15,7 +15,7 @@ func TestAnalyzeHostServices(t *testing.T) {
 		name         string
 		info         []collect.ServiceInfo
 		hostAnalyzer *troubleshootv1beta2.HostServicesAnalyze
-		result       *AnalyzeResult
+		result       []*AnalyzeResult
 		expectErr    bool
 	}{
 		{
@@ -36,10 +36,12 @@ func TestAnalyzeHostServices(t *testing.T) {
 					},
 				},
 			},
-			result: &AnalyzeResult{
-				Title:   "Host Services",
-				IsFail:  true,
-				Message: "the service 'a' is active",
+			result: []*AnalyzeResult{
+				{
+					Title:   "Host Services",
+					IsFail:  true,
+					Message: "the service 'a' is active",
+				},
 			},
 		},
 		{
@@ -70,10 +72,12 @@ func TestAnalyzeHostServices(t *testing.T) {
 					},
 				},
 			},
-			result: &AnalyzeResult{
-				Title:   "Host Services",
-				IsPass:  true,
-				Message: "service 'b' is not active",
+			result: []*AnalyzeResult{
+				{
+					Title:   "Host Services",
+					IsPass:  true,
+					Message: "service 'b' is not active",
+				},
 			},
 		},
 	}

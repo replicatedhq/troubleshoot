@@ -15,7 +15,7 @@ func TestAnalyzeTCPConnect(t *testing.T) {
 		name         string
 		info         *collect.NetworkStatusResult
 		hostAnalyzer *troubleshootv1beta2.TCPConnectAnalyze
-		result       *AnalyzeResult
+		result       []*AnalyzeResult
 		expectErr    bool
 	}{
 		{
@@ -33,10 +33,12 @@ func TestAnalyzeTCPConnect(t *testing.T) {
 					},
 				},
 			},
-			result: &AnalyzeResult{
-				Title:   "TCP Connection Attempt",
-				IsFail:  true,
-				Message: "Connection was refused",
+			result: []*AnalyzeResult{
+				{
+					Title:   "TCP Connection Attempt",
+					IsFail:  true,
+					Message: "Connection was refused",
+				},
 			},
 		},
 		{
@@ -60,10 +62,12 @@ func TestAnalyzeTCPConnect(t *testing.T) {
 					},
 				},
 			},
-			result: &AnalyzeResult{
-				Title:   "TCP Connection Attempt",
-				IsPass:  true,
-				Message: "Connection was successful",
+			result: []*AnalyzeResult{
+				{
+					Title:   "TCP Connection Attempt",
+					IsPass:  true,
+					Message: "Connection was successful",
+				},
 			},
 		},
 	}

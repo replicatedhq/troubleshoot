@@ -24,7 +24,7 @@ func (a *AnalyzeHostDiskUsage) IsExcluded() (bool, error) {
 	return isExcluded(a.hostAnalyzer.Exclude)
 }
 
-func (a *AnalyzeHostDiskUsage) Analyze(getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
+func (a *AnalyzeHostDiskUsage) Analyze(getCollectedFileContents func(string) ([]byte, error)) ([]*AnalyzeResult, error) {
 	hostAnalyzer := a.hostAnalyzer
 
 	key := collect.HostDiskUsageKey(hostAnalyzer.CollectorName)
@@ -38,18 +38,18 @@ func (a *AnalyzeHostDiskUsage) Analyze(getCollectedFileContents func(string) ([]
 		return nil, errors.Wrapf(err, "failed to unmarshal disk usage info from %s", key)
 	}
 
-	result := AnalyzeResult{}
-
-	result.Title = a.Title()
+	var coll resultCollector
 
 	for _, outcome := range hostAnalyzer.Outcomes {
+		result := &AnalyzeResult{Title: a.Title()}
+
 		if outcome.Fail != nil {
 			if outcome.Fail.When == "" {
 				result.IsFail = true
 				result.Message = outcome.Fail.Message
 				result.URI = outcome.Fail.URI
 
-				return &result, nil
+				coll.push(result)
 			}
 
 			isMatch, err := compareHostDiskUsageConditionalToActual(outcome.Fail.When, diskUsageInfo.TotalBytes, diskUsageInfo.UsedBytes)
@@ -62,7 +62,7 @@ func (a *AnalyzeHostDiskUsage) Analyze(getCollectedFileContents func(string) ([]
 				result.Message = outcome.Fail.Message
 				result.URI = outcome.Fail.URI
 
-				return &result, nil
+				coll.push(result)
 			}
 		} else if outcome.Warn != nil {
 			if outcome.Warn.When == "" {
@@ -70,7 +70,7 @@ func (a *AnalyzeHostDiskUsage) Analyze(getCollectedFileContents func(string) ([]
 				result.Message = outcome.Warn.Message
 				result.URI = outcome.Warn.URI
 
-				return &result, nil
+				coll.push(result)
 			}
 
 			isMatch, err := compareHostDiskUsageConditionalToActual(outcome.Warn.When, diskUsageInfo.TotalBytes, diskUsageInfo.UsedBytes)
@@ -83,7 +83,7 @@ func (a *AnalyzeHostDiskUsage) Analyze(getCollectedFileContents func(string) ([]
 				result.Message = outcome.Warn.Message
 				result.URI = outcome.Warn.URI
 
-				return &result, nil
+				coll.push(result)
 			}
 		} else if outcome.Pass != nil {
 			if outcome.Pass.When == "" {
@@ -91,7 +91,7 @@ func (a *AnalyzeHostDiskUsage) Analyze(getCollectedFileContents func(string) ([]
 				result.Message = outcome.Pass.Message
 				result.URI = outcome.Pass.URI
 
-				return &result, nil
+				coll.push(result)
 			}
 
 			isMatch, err := compareHostDiskUsageConditionalToActual(outcome.Pass.When, diskUsageInfo.TotalBytes, diskUsageInfo.UsedBytes)
@@ -104,12 +104,12 @@ func (a *AnalyzeHostDiskUsage) Analyze(getCollectedFileContents func(string) ([]
 				result.Message = outcome.Pass.Message
 				result.URI = outcome.Pass.URI
 
-				return &result, nil
+				coll.push(result)
 			}
 		}
 	}
 
-	return &result, nil
+	return coll.get(a.Title()), nil
 }
 
 func compareHostDiskUsageConditionalToActual(conditional string, totalBytes uint64, usedBytes uint64) (res bool, err error) {
