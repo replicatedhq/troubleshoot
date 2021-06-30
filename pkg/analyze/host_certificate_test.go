@@ -14,7 +14,7 @@ func TestAnalyzeCertificate(t *testing.T) {
 		name         string
 		status       string
 		hostAnalyzer *troubleshootv1beta2.CertificateAnalyze
-		result       *AnalyzeResult
+		result       []*AnalyzeResult
 		expectErr    bool
 	}{
 		{
@@ -60,10 +60,12 @@ func TestAnalyzeCertificate(t *testing.T) {
 					},
 				},
 			},
-			result: &AnalyzeResult{
-				Title:   "Certificate Key Pair",
-				IsPass:  true,
-				Message: "Certificate key pair is valid",
+			result: []*AnalyzeResult{
+				{
+					Title:   "Certificate Key Pair",
+					IsPass:  true,
+					Message: "Certificate key pair is valid",
+				},
 			},
 		},
 		{
@@ -109,10 +111,12 @@ func TestAnalyzeCertificate(t *testing.T) {
 					},
 				},
 			},
-			result: &AnalyzeResult{
-				Title:   "Certificate Key Pair",
-				IsFail:  true,
-				Message: "Certificate key pair is invalid",
+			result: []*AnalyzeResult{
+				{
+					Title:   "Certificate Key Pair",
+					IsFail:  true,
+					Message: "Certificate key pair is invalid",
+				},
 			},
 		},
 		{
@@ -158,10 +162,12 @@ func TestAnalyzeCertificate(t *testing.T) {
 					},
 				},
 			},
-			result: &AnalyzeResult{
-				Title:   "Certificate Key Pair",
-				IsFail:  true,
-				Message: "Certificate key pair not found",
+			result: []*AnalyzeResult{
+				{
+					Title:   "Certificate Key Pair",
+					IsFail:  true,
+					Message: "Certificate key pair not found",
+				},
 			},
 		},
 		{
@@ -207,10 +213,12 @@ func TestAnalyzeCertificate(t *testing.T) {
 					},
 				},
 			},
-			result: &AnalyzeResult{
-				Title:   "Certificate Key Pair",
-				IsFail:  true,
-				Message: "Public and private keys switched",
+			result: []*AnalyzeResult{
+				{
+					Title:   "Certificate Key Pair",
+					IsFail:  true,
+					Message: "Public and private keys switched",
+				},
 			},
 		},
 		{
@@ -256,10 +264,12 @@ func TestAnalyzeCertificate(t *testing.T) {
 					},
 				},
 			},
-			result: &AnalyzeResult{
-				Title:   "Certificate Key Pair",
-				IsFail:  true,
-				Message: "Private key is encrypted",
+			result: []*AnalyzeResult{
+				{
+					Title:   "Certificate Key Pair",
+					IsFail:  true,
+					Message: "Private key is encrypted",
+				},
 			},
 		},
 		{
@@ -305,10 +315,12 @@ func TestAnalyzeCertificate(t *testing.T) {
 					},
 				},
 			},
-			result: &AnalyzeResult{
-				Title:   "Certificate Key Pair",
-				IsFail:  true,
-				Message: "Public and private keys don't match",
+			result: []*AnalyzeResult{
+				{
+					Title:   "Certificate Key Pair",
+					IsFail:  true,
+					Message: "Public and private keys don't match",
+				},
 			},
 		},
 	}

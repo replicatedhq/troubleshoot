@@ -56,7 +56,7 @@ func HostAnalyze(hostAnalyzer *troubleshootv1beta2.HostAnalyze, getFile getColle
 	if err != nil {
 		return NewAnalyzeResultError(analyzer, errors.Wrap(err, "analyze"))
 	}
-	return []*AnalyzeResult{result}
+	return result
 }
 
 func NewAnalyzeResultError(analyzer HostAnalyzer, err error) []*AnalyzeResult {

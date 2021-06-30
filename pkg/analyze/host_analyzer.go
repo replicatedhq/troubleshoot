@@ -5,7 +5,7 @@ import troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubl
 type HostAnalyzer interface {
 	Title() string
 	IsExcluded() (bool, error)
-	Analyze(getFile func(string) ([]byte, error)) (*AnalyzeResult, error)
+	Analyze(getFile func(string) ([]byte, error)) ([]*AnalyzeResult, error)
 }
 
 func GetHostAnalyzer(analyzer *troubleshootv1beta2.HostAnalyze) (HostAnalyzer, bool) {
@@ -48,4 +48,20 @@ func hostAnalyzerTitleOrDefault(meta troubleshootv1beta2.AnalyzeMeta, defaultTit
 		return meta.CheckName
 	}
 	return defaultTitle
+}
+
+type resultCollector struct {
+	results []*AnalyzeResult
+}
+
+func (c *resultCollector) push(result *AnalyzeResult) {
+	c.results = append(c.results, result)
+}
+
+// We need to return at least one result with a title to preserve compatability
+func (c *resultCollector) get(title string) []*AnalyzeResult {
+	if len(c.results) > 0 {
+		return c.results
+	}
+	return []*AnalyzeResult{{Title: title, IsWarn: true, Message: "no results"}}
 }

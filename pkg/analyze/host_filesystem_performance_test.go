@@ -16,7 +16,7 @@ func TestAnalyzeHostFilesystemPerformance(t *testing.T) {
 		name         string
 		fsPerf       *collect.FSPerfResults
 		hostAnalyzer *troubleshootv1beta2.FilesystemPerformanceAnalyze
-		result       *AnalyzeResult
+		result       []*AnalyzeResult
 		expectErr    bool
 	}{
 		{
@@ -288,10 +288,12 @@ func TestAnalyzeHostFilesystemPerformance(t *testing.T) {
 					},
 				},
 			},
-			result: &AnalyzeResult{
-				Title:   "Filesystem Performance",
-				IsPass:  true,
-				Message: "Acceptable write latency",
+			result: []*AnalyzeResult{
+				{
+					Title:   "Filesystem Performance",
+					IsPass:  true,
+					Message: "Acceptable write latency",
+				},
 			},
 		},
 	}

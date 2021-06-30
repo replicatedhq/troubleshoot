@@ -15,7 +15,7 @@ func TestAnalyzeIPV4Interfaces(t *testing.T) {
 		name         string
 		interfaces   []net.Interface
 		hostAnalyzer *troubleshootv1beta2.IPV4InterfacesAnalyze
-		result       *AnalyzeResult
+		result       []*AnalyzeResult
 		expectErr    bool
 	}{
 		{
@@ -37,10 +37,12 @@ func TestAnalyzeIPV4Interfaces(t *testing.T) {
 					},
 				},
 			},
-			result: &AnalyzeResult{
-				Title:   "IPv4 Interfaces",
-				IsFail:  true,
-				Message: "No IPv4 interfaces detected",
+			result: []*AnalyzeResult{
+				{
+					Title:   "IPv4 Interfaces",
+					IsFail:  true,
+					Message: "No IPv4 interfaces detected",
+				},
 			},
 		},
 		{
@@ -69,10 +71,12 @@ func TestAnalyzeIPV4Interfaces(t *testing.T) {
 					},
 				},
 			},
-			result: &AnalyzeResult{
-				Title:   "IPv4 Interfaces",
-				IsPass:  true,
-				Message: "IPv4 interface available",
+			result: []*AnalyzeResult{
+				{
+					Title:   "IPv4 Interfaces",
+					IsPass:  true,
+					Message: "IPv4 interface available",
+				},
 			},
 		},
 	}

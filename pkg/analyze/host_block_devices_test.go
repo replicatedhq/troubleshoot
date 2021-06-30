@@ -15,7 +15,7 @@ func TestAnalyzeBlockDevices(t *testing.T) {
 		name         string
 		devices      []collect.BlockDeviceInfo
 		hostAnalyzer *troubleshootv1beta2.BlockDevicesAnalyze
-		result       *AnalyzeResult
+		result       []*AnalyzeResult
 		expectErr    bool
 	}{
 		{
@@ -39,10 +39,12 @@ func TestAnalyzeBlockDevices(t *testing.T) {
 					},
 				},
 			},
-			result: &AnalyzeResult{
-				Title:   "Block Devices",
-				IsPass:  true,
-				Message: "Block device available",
+			result: []*AnalyzeResult{
+				{
+					Title:   "Block Devices",
+					IsPass:  true,
+					Message: "Block device available",
+				},
 			},
 		},
 		{
@@ -79,10 +81,12 @@ func TestAnalyzeBlockDevices(t *testing.T) {
 					},
 				},
 			},
-			result: &AnalyzeResult{
-				Title:   "Block Devices",
-				IsFail:  true,
-				Message: "No block device available",
+			result: []*AnalyzeResult{
+				{
+					Title:   "Block Devices",
+					IsFail:  true,
+					Message: "No block device available",
+				},
 			},
 		},
 		{
@@ -112,10 +116,12 @@ func TestAnalyzeBlockDevices(t *testing.T) {
 					},
 				},
 			},
-			result: &AnalyzeResult{
-				Title:   "Block Devices",
-				IsFail:  true,
-				Message: "No block device available",
+			result: []*AnalyzeResult{
+				{
+					Title:   "Block Devices",
+					IsFail:  true,
+					Message: "No block device available",
+				},
 			},
 		},
 		{
@@ -143,10 +149,12 @@ func TestAnalyzeBlockDevices(t *testing.T) {
 					},
 				},
 			},
-			result: &AnalyzeResult{
-				Title:   "Block Devices",
-				IsFail:  true,
-				Message: "No block device available",
+			result: []*AnalyzeResult{
+				{
+					Title:   "Block Devices",
+					IsFail:  true,
+					Message: "No block device available",
+				},
 			},
 		},
 		{
@@ -179,10 +187,12 @@ func TestAnalyzeBlockDevices(t *testing.T) {
 					},
 				},
 			},
-			result: &AnalyzeResult{
-				Title:   "Block Devices",
-				IsPass:  true,
-				Message: "Block device or partition available",
+			result: []*AnalyzeResult{
+				{
+					Title:   "Block Devices",
+					IsPass:  true,
+					Message: "Block device or partition available",
+				},
 			},
 		},
 		{
@@ -234,10 +244,12 @@ func TestAnalyzeBlockDevices(t *testing.T) {
 					},
 				},
 			},
-			result: &AnalyzeResult{
-				Title:   "Block Devices",
-				IsPass:  true,
-				Message: "Two block devices or partitions of >10gb size available",
+			result: []*AnalyzeResult{
+				{
+					Title:   "Block Devices",
+					IsPass:  true,
+					Message: "Two block devices or partitions of >10gb size available",
+				},
 			},
 		},
 	}

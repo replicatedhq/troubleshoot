@@ -235,7 +235,7 @@ func TestAnalyzeHostDiskUsage(t *testing.T) {
 		name          string
 		diskUsageInfo *collect.DiskUsageInfo
 		hostAnalyzer  *troubleshootv1beta2.DiskUsageAnalyze
-		result        *AnalyzeResult
+		result        []*AnalyzeResult
 		expectErr     bool
 	}{
 		{
@@ -261,10 +261,12 @@ func TestAnalyzeHostDiskUsage(t *testing.T) {
 					},
 				},
 			},
-			result: &AnalyzeResult{
-				Title:   "Disk Usage ephemeral",
-				IsFail:  true,
-				Message: "/var/lib/kubelet requires at least 10Gi",
+			result: []*AnalyzeResult{
+				{
+					Title:   "Disk Usage ephemeral",
+					IsFail:  true,
+					Message: "/var/lib/kubelet requires at least 10Gi",
+				},
 			},
 		},
 		{
@@ -290,10 +292,12 @@ func TestAnalyzeHostDiskUsage(t *testing.T) {
 					},
 				},
 			},
-			result: &AnalyzeResult{
-				Title:   "Disk Usage ephemeral",
-				IsFail:  true,
-				Message: "/var/lib/kubelet is more than 80% full",
+			result: []*AnalyzeResult{
+				{
+					Title:   "Disk Usage ephemeral",
+					IsFail:  true,
+					Message: "/var/lib/kubelet is more than 80% full",
+				},
 			},
 		},
 		{
@@ -325,10 +329,12 @@ func TestAnalyzeHostDiskUsage(t *testing.T) {
 					},
 				},
 			},
-			result: &AnalyzeResult{
-				Title:   "Disk Usage ephemeral",
-				IsWarn:  true,
-				Message: "/var/lib/kubelet has more than 100Gi used",
+			result: []*AnalyzeResult{
+				{
+					Title:   "Disk Usage ephemeral",
+					IsWarn:  true,
+					Message: "/var/lib/kubelet has more than 100Gi used",
+				},
 			},
 		},
 		{
@@ -348,10 +354,12 @@ func TestAnalyzeHostDiskUsage(t *testing.T) {
 					},
 				},
 			},
-			result: &AnalyzeResult{
-				Title:   "Disk Usage ephemeral",
-				IsPass:  true,
-				Message: "/var/lib/kubelet has at least 10Gi available",
+			result: []*AnalyzeResult{
+				{
+					Title:   "Disk Usage ephemeral",
+					IsPass:  true,
+					Message: "/var/lib/kubelet has at least 10Gi available",
+				},
 			},
 		},
 	}

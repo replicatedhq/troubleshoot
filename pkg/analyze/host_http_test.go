@@ -15,7 +15,7 @@ func TestAnalyzeHostHTTP(t *testing.T) {
 		name         string
 		httpResult   *httpResult
 		hostAnalyzer *troubleshootv1beta2.HTTPAnalyze
-		result       *AnalyzeResult
+		result       []*AnalyzeResult
 		expectErr    bool
 	}{
 		{
@@ -36,10 +36,12 @@ func TestAnalyzeHostHTTP(t *testing.T) {
 					},
 				},
 			},
-			result: &AnalyzeResult{
-				Title:   "HTTP Request",
-				IsFail:  true,
-				Message: "Failed to reach replicated.registry.com",
+			result: []*AnalyzeResult{
+				{
+					Title:   "HTTP Request",
+					IsFail:  true,
+					Message: "Failed to reach replicated.registry.com",
+				},
 			},
 		},
 		{
@@ -72,10 +74,12 @@ func TestAnalyzeHostHTTP(t *testing.T) {
 					},
 				},
 			},
-			result: &AnalyzeResult{
-				Title:   "HTTP Request",
-				IsPass:  true,
-				Message: "Successfully reached registry",
+			result: []*AnalyzeResult{
+				{
+					Title:   "HTTP Request",
+					IsPass:  true,
+					Message: "Successfully reached registry",
+				},
 			},
 		},
 	}

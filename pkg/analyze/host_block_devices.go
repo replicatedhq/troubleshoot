@@ -24,7 +24,7 @@ func (a *AnalyzeHostBlockDevices) IsExcluded() (bool, error) {
 	return isExcluded(a.hostAnalyzer.Exclude)
 }
 
-func (a *AnalyzeHostBlockDevices) Analyze(getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
+func (a *AnalyzeHostBlockDevices) Analyze(getCollectedFileContents func(string) ([]byte, error)) ([]*AnalyzeResult, error) {
 	hostAnalyzer := a.hostAnalyzer
 
 	contents, err := getCollectedFileContents("system/block_devices.json")
@@ -48,7 +48,7 @@ func (a *AnalyzeHostBlockDevices) Analyze(getCollectedFileContents func(string) 
 				result.Message = outcome.Fail.Message
 				result.URI = outcome.Fail.URI
 
-				return &result, nil
+				return []*AnalyzeResult{&result}, nil
 			}
 
 			isMatch, err := compareHostBlockDevicesConditionalToActual(outcome.Fail.When, hostAnalyzer.MinimumAcceptableSize, hostAnalyzer.IncludeUnmountedPartitions, devices)
@@ -61,7 +61,7 @@ func (a *AnalyzeHostBlockDevices) Analyze(getCollectedFileContents func(string) 
 				result.Message = outcome.Fail.Message
 				result.URI = outcome.Fail.URI
 
-				return &result, nil
+				return []*AnalyzeResult{&result}, nil
 			}
 		} else if outcome.Warn != nil {
 			if outcome.Warn.When == "" {
@@ -69,7 +69,7 @@ func (a *AnalyzeHostBlockDevices) Analyze(getCollectedFileContents func(string) 
 				result.Message = outcome.Warn.Message
 				result.URI = outcome.Warn.URI
 
-				return &result, nil
+				return []*AnalyzeResult{&result}, nil
 			}
 
 			isMatch, err := compareHostBlockDevicesConditionalToActual(outcome.Warn.When, hostAnalyzer.MinimumAcceptableSize, hostAnalyzer.IncludeUnmountedPartitions, devices)
@@ -82,7 +82,7 @@ func (a *AnalyzeHostBlockDevices) Analyze(getCollectedFileContents func(string) 
 				result.Message = outcome.Warn.Message
 				result.URI = outcome.Warn.URI
 
-				return &result, nil
+				return []*AnalyzeResult{&result}, nil
 			}
 		} else if outcome.Pass != nil {
 			if outcome.Pass.When == "" {
@@ -90,7 +90,7 @@ func (a *AnalyzeHostBlockDevices) Analyze(getCollectedFileContents func(string) 
 				result.Message = outcome.Pass.Message
 				result.URI = outcome.Pass.URI
 
-				return &result, nil
+				return []*AnalyzeResult{&result}, nil
 			}
 
 			isMatch, err := compareHostBlockDevicesConditionalToActual(outcome.Pass.When, hostAnalyzer.MinimumAcceptableSize, hostAnalyzer.IncludeUnmountedPartitions, devices)
@@ -103,12 +103,12 @@ func (a *AnalyzeHostBlockDevices) Analyze(getCollectedFileContents func(string) 
 				result.Message = outcome.Pass.Message
 				result.URI = outcome.Pass.URI
 
-				return &result, nil
+				return []*AnalyzeResult{&result}, nil
 			}
 		}
 	}
 
-	return &result, nil
+	return []*AnalyzeResult{&result}, nil
 }
 
 // <regexp> <op> <count>
