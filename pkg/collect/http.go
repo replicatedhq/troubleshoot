@@ -22,6 +22,16 @@ type HTTPError struct {
 	Message string `json:"message"`
 }
 
+var (
+	httpInsecureClient = &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: true,
+			},
+		},
+	}
+)
+
 func HTTP(c *Collector, httpCollector *troubleshootv1beta2.HTTP) (map[string][]byte, error) {
 	var response *http.Response
 	var err error
@@ -53,8 +63,9 @@ func HTTP(c *Collector, httpCollector *troubleshootv1beta2.HTTP) (map[string][]b
 }
 
 func doGet(get *troubleshootv1beta2.Get) (*http.Response, error) {
-	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{
-		InsecureSkipVerify: get.InsecureSkipVerify,
+	httpClient := http.DefaultClient
+	if get.InsecureSkipVerify {
+		httpClient = httpInsecureClient
 	}
 
 	req, err := http.NewRequest("GET", get.URL, nil)
@@ -66,12 +77,13 @@ func doGet(get *troubleshootv1beta2.Get) (*http.Response, error) {
 		req.Header.Set(k, v)
 	}
 
-	return http.DefaultClient.Do(req)
+	return httpClient.Do(req)
 }
 
 func doPost(post *troubleshootv1beta2.Post) (*http.Response, error) {
-	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{
-		InsecureSkipVerify: post.InsecureSkipVerify,
+	httpClient := http.DefaultClient
+	if post.InsecureSkipVerify {
+		httpClient = httpInsecureClient
 	}
 
 	req, err := http.NewRequest("POST", post.URL, strings.NewReader(post.Body))
@@ -83,12 +95,13 @@ func doPost(post *troubleshootv1beta2.Post) (*http.Response, error) {
 		req.Header.Set(k, v)
 	}
 
-	return http.DefaultClient.Do(req)
+	return httpClient.Do(req)
 }
 
 func doPut(put *troubleshootv1beta2.Put) (*http.Response, error) {
-	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{
-		InsecureSkipVerify: put.InsecureSkipVerify,
+	httpClient := http.DefaultClient
+	if put.InsecureSkipVerify {
+		httpClient = httpInsecureClient
 	}
 
 	req, err := http.NewRequest("PUT", put.URL, strings.NewReader(put.Body))
@@ -100,7 +113,7 @@ func doPut(put *troubleshootv1beta2.Put) (*http.Response, error) {
 		req.Header.Set(k, v)
 	}
 
-	return http.DefaultClient.Do(req)
+	return httpClient.Do(req)
 }
 
 func responseToOutput(response *http.Response, err error, doRedact bool) ([]byte, error) {
