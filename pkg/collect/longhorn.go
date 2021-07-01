@@ -7,12 +7,14 @@ import (
 	"fmt"
 	"path/filepath"
 	"regexp"
+	"sync"
 
 	longhornv1beta1types "github.com/longhorn/longhorn-manager/k8s/pkg/apis/longhorn/v1beta1"
 	longhornv1beta1 "github.com/longhorn/longhorn-manager/k8s/pkg/client/clientset/versioned/typed/longhorn/v1beta1"
 	longhorntypes "github.com/longhorn/longhorn-manager/types"
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
+	"github.com/replicatedhq/troubleshoot/pkg/logger"
 	"gopkg.in/yaml.v2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -40,6 +42,7 @@ func Longhorn(c *Collector, longhornCollector *troubleshootv1beta2.Longhorn) (ma
 	}
 
 	final := map[string][]byte{}
+	var mtx sync.Mutex
 
 	// collect nodes.longhorn.io
 	nodes, err := client.Nodes(ns).List(ctx, metav1.ListOptions{})
@@ -213,6 +216,8 @@ func Longhorn(c *Collector, longhornCollector *troubleshootv1beta2.Longhorn) (ma
 	// exec into that pod and get the sha256sum of all files in the replica data directory.
 	var replicaPodsByNode map[string]string
 
+	var wg sync.WaitGroup
+
 	for _, volume := range volumes.Items {
 		if volume.Status.State != longhorntypes.VolumeStateDetached {
 			// cannot checksum volumes in use
@@ -222,6 +227,9 @@ func Longhorn(c *Collector, longhornCollector *troubleshootv1beta2.Longhorn) (ma
 		var volReplicas []longhornv1beta1types.Replica
 		for _, replica := range replicas.Items {
 			if replica.Spec.InstanceSpec.VolumeName != volume.Name {
+				continue
+			}
+			if replica.Spec.InstanceSpec.NodeID == "" {
 				continue
 			}
 			volReplicas = append(volReplicas, replica)
@@ -251,15 +259,24 @@ func Longhorn(c *Collector, longhornCollector *troubleshootv1beta2.Longhorn) (ma
 				continue
 			}
 
-			checksums, err := GetLonghornReplicaChecksum(c.ClientConfig, replica, podName)
-			if err != nil {
-				return nil, err
-			}
-			volsDir := GetLonghornVolumesDirectory(ns)
-			key := filepath.Join(volsDir, volume.Name, "replicachecksums", replica.Name+".txt")
-			final[key] = []byte(checksums)
+			wg.Add(1)
+			go func(replica longhornv1beta1types.Replica) {
+				defer wg.Done()
+				checksums, err := GetLonghornReplicaChecksum(c.ClientConfig, replica, podName)
+				if err != nil {
+					logger.Printf("Failed to get replica %s checksum: %v", replica.Name, err)
+					return
+				}
+				volsDir := GetLonghornVolumesDirectory(ns)
+				key := filepath.Join(volsDir, volume.Name, "replicachecksums", replica.Name+".txt")
+				mtx.Lock()
+				final[key] = []byte(checksums)
+				mtx.Unlock()
+			}(replica)
 		}
 	}
+
+	wg.Wait()
 
 	return final, nil
 }
@@ -313,6 +330,7 @@ func GetLonghornReplicaChecksum(clientConfig *rest.Config, replica longhornv1bet
 	if err != nil {
 		return "", err
 	}
+	dir := fmt.Sprintf("/host/var/lib/longhorn/replicas/%s", replica.Spec.DataDirectoryName)
 
 	req := client.
 		CoreV1().
@@ -327,7 +345,7 @@ func GetLonghornReplicaChecksum(clientConfig *rest.Config, replica longhornv1bet
 		Param("stdin", "true").
 		Param("command", "/bin/bash").
 		Param("command", "-c").
-		Param("command", fmt.Sprintf("sha256sum /host/var/lib/longhorn/replicas/%s/*", replica.Spec.DataDirectoryName))
+		Param("command", fmt.Sprintf("if [ -d %s ]; then md5sum %s/*; fi", dir, dir))
 
 	executor, err := remotecommand.NewSPDYExecutor(clientConfig, "POST", req.URL())
 	if err != nil {
