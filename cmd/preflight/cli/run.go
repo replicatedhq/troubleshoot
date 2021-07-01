@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"os/signal"
 	"strings"
 	"time"
 
@@ -27,6 +28,14 @@ import (
 func runPreflights(v *viper.Viper, arg string) error {
 	fmt.Print(cursor.Hide())
 	defer fmt.Print(cursor.Show())
+
+	go func() {
+		signalChan := make(chan os.Signal, 1)
+		signal.Notify(signalChan, os.Interrupt)
+		<-signalChan
+		fmt.Print(cursor.Show())
+		os.Exit(0)
+	}()
 
 	var preflightContent []byte
 	var err error
