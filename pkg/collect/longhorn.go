@@ -265,80 +265,47 @@ func Longhorn(c *Collector, longhornCollector *troubleshootv1beta2.Longhorn) (ma
 }
 
 func GetLonghornNodesDirectory(namespace string) string {
-	if namespace != DefaultLonghornNamespace {
-		return fmt.Sprintf("longhorn/%s/nodes", namespace)
-	}
-	return "longhorn/nodes"
+	return fmt.Sprintf("longhorn/%s/nodes", namespace)
 }
 
 func GetLonghornVolumesDirectory(namespace string) string {
-	if namespace != DefaultLonghornNamespace {
-		return fmt.Sprintf("longhorn/%s/volumes", namespace)
-	}
-	return "longhorn/volumes"
+	return fmt.Sprintf("longhorn/%s/volumes", namespace)
 }
 
 func GetLonghornReplicasDirectory(namespace string) string {
-	if namespace != DefaultLonghornNamespace {
-		return fmt.Sprintf("longhorn/%s/replicas", namespace)
-	}
-	return "longhorn/replicas"
+	return fmt.Sprintf("longhorn/%s/replicas", namespace)
 }
 
 func GetLonghornEnginesDirectory(namespace string) string {
-	if namespace != DefaultLonghornNamespace {
-		return fmt.Sprintf("longhorn/%s/engines", namespace)
-	}
-	return "longhorn/engines"
+	return fmt.Sprintf("longhorn/%s/engines", namespace)
 }
 
 func GetLonghornEngineImagesDirectory(namespace string) string {
-	if namespace != DefaultLonghornNamespace {
-		return fmt.Sprintf("longhorn/%s/engineimages", namespace)
-	}
-	return "longhorn/engineimages"
+	return fmt.Sprintf("longhorn/%s/engineimages", namespace)
 }
 
 func GetLonghornInstanceManagersDirectory(namespace string) string {
-	if namespace != DefaultLonghornNamespace {
-		return fmt.Sprintf("longhorn/%s/instancemanagers", namespace)
-	}
-	return "longhorn/instancemanagers"
+	return fmt.Sprintf("longhorn/%s/instancemanagers", namespace)
 }
 
 func GetLonghornBackingImageManagersDirectory(namespace string) string {
-	if namespace != DefaultLonghornNamespace {
-		return fmt.Sprintf("longhorn/%s/backingimagemanagers", namespace)
-	}
-	return "longhorn/backingimagemanagers"
+	return fmt.Sprintf("longhorn/%s/backingimagemanagers", namespace)
 }
 
 func GetLonghornBackingImagesDirectory(namespace string) string {
-	if namespace != DefaultLonghornNamespace {
-		return fmt.Sprintf("longhorn/%s/backingimages", namespace)
-	}
-	return "longhorn/backingimages"
+	return fmt.Sprintf("longhorn/%s/backingimages", namespace)
 }
 
 func GetLonghornShareManagersDirectory(namespace string) string {
-	if namespace != DefaultLonghornNamespace {
-		return fmt.Sprintf("longhorn/%s/sharemanagers", namespace)
-	}
-	return "longhorn/sharemanagers"
+	return fmt.Sprintf("longhorn/%s/sharemanagers", namespace)
 }
 
 func GetLonghornSettingsFile(namespace string) string {
-	if namespace != DefaultLonghornNamespace {
-		return fmt.Sprintf("longhorn/%s/settings.yaml", namespace)
-	}
-	return "longhorn/settings.yaml"
+	return fmt.Sprintf("longhorn/%s/settings.yaml", namespace)
 }
 
 func GetLonghornLogsDirectory(namespace string) string {
-	if namespace != DefaultLonghornNamespace {
-		return fmt.Sprintf("longhorn/%s/logs", namespace)
-	}
-	return "longhorn/logs"
+	return fmt.Sprintf("longhorn/%s/logs", namespace)
 }
 
 func GetLonghornReplicaChecksum(clientConfig *rest.Config, replica longhornv1beta1types.Replica, podName string) (string, error) {
