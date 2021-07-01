@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os/signal"
 
 	"net/url"
 	"os"
@@ -32,6 +33,14 @@ import (
 func runTroubleshoot(v *viper.Viper, arg string) error {
 	fmt.Print(cursor.Hide())
 	defer fmt.Print(cursor.Show())
+
+	go func() {
+		signalChan := make(chan os.Signal, 1)
+		signal.Notify(signalChan, os.Interrupt)
+		<-signalChan
+		fmt.Print(cursor.Show())
+		os.Exit(0)
+	}()
 
 	k8sConfig, err := k8sutil.GetRESTConfig()
 	if err != nil {
