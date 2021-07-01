@@ -68,6 +68,27 @@
           "items": {
             "type": "object",
             "properties": {
+              "ceph": {
+                "type": "object",
+                "required": [
+                  "namespace"
+                ],
+                "properties": {
+                  "collectorName": {
+                    "type": "string"
+                  },
+                  "exclude": {
+                    "description": "BoolOrString is a type that can hold an bool or a string.  When used in JSON or YAML marshalling and unmarshalling, it produces or consumes the inner type.  This allows you to have, for example, a JSON field that can accept a booolean string or raw bool.",
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  },
+                  "namespace": {
+                    "type": "string"
+                  },
+                  "timeout": {
+                    "type": "string"
+                  }
+                }
+              },
               "clusterInfo": {
                 "type": "object",
                 "properties": {
@@ -89,6 +110,55 @@
                   "exclude": {
                     "description": "BoolOrString is a type that can hold an bool or a string.  When used in JSON or YAML marshalling and unmarshalling, it produces or consumes the inner type.  This allows you to have, for example, a JSON field that can accept a booolean string or raw bool.",
                     "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  }
+                }
+              },
+              "collectd": {
+                "type": "object",
+                "required": [
+                  "hostPath",
+                  "image",
+                  "namespace"
+                ],
+                "properties": {
+                  "collectorName": {
+                    "type": "string"
+                  },
+                  "exclude": {
+                    "description": "BoolOrString is a type that can hold an bool or a string.  When used in JSON or YAML marshalling and unmarshalling, it produces or consumes the inner type.  This allows you to have, for example, a JSON field that can accept a booolean string or raw bool.",
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  },
+                  "hostPath": {
+                    "type": "string"
+                  },
+                  "image": {
+                    "type": "string"
+                  },
+                  "imagePullPolicy": {
+                    "type": "string"
+                  },
+                  "imagePullSecret": {
+                    "type": "object",
+                    "properties": {
+                      "data": {
+                        "type": "object",
+                        "additionalProperties": {
+                          "type": "string"
+                        }
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "type": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "namespace": {
+                    "type": "string"
+                  },
+                  "timeout": {
+                    "type": "string"
                   }
                 }
               },
@@ -303,6 +373,10 @@
                       "maxLines": {
                         "type": "integer",
                         "format": "int64"
+                      },
+                      "sinceTime": {
+                        "type": "string",
+                        "format": "date-time"
                       }
                     }
                   },
@@ -317,6 +391,27 @@
                     "items": {
                       "type": "string"
                     }
+                  }
+                }
+              },
+              "longhorn": {
+                "type": "object",
+                "required": [
+                  "namespace"
+                ],
+                "properties": {
+                  "collectorName": {
+                    "type": "string"
+                  },
+                  "exclude": {
+                    "description": "BoolOrString is a type that can hold an bool or a string.  When used in JSON or YAML marshalling and unmarshalling, it produces or consumes the inner type.  This allows you to have, for example, a JSON field that can accept a booolean string or raw bool.",
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  },
+                  "namespace": {
+                    "type": "string"
+                  },
+                  "timeout": {
+                    "type": "string"
                   }
                 }
               },
@@ -374,6 +469,48 @@
                   }
                 }
               },
+              "registryImages": {
+                "type": "object",
+                "required": [
+                  "images",
+                  "namespace"
+                ],
+                "properties": {
+                  "collectorName": {
+                    "type": "string"
+                  },
+                  "exclude": {
+                    "description": "BoolOrString is a type that can hold an bool or a string.  When used in JSON or YAML marshalling and unmarshalling, it produces or consumes the inner type.  This allows you to have, for example, a JSON field that can accept a booolean string or raw bool.",
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  },
+                  "imagePullSecret": {
+                    "type": "object",
+                    "properties": {
+                      "data": {
+                        "type": "object",
+                        "additionalProperties": {
+                          "type": "string"
+                        }
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "type": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "images": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "namespace": {
+                    "type": "string"
+                  }
+                }
+              },
               "run": {
                 "type": "object",
                 "required": [
@@ -405,6 +542,23 @@
                   },
                   "imagePullPolicy": {
                     "type": "string"
+                  },
+                  "imagePullSecret": {
+                    "type": "object",
+                    "properties": {
+                      "data": {
+                        "type": "object",
+                        "additionalProperties": {
+                          "type": "string"
+                        }
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "type": {
+                        "type": "string"
+                      }
+                    }
                   },
                   "name": {
                     "type": "string"

@@ -1509,6 +1509,23 @@
                   "imagePullPolicy": {
                     "type": "string"
                   },
+                  "imagePullSecret": {
+                    "type": "object",
+                    "properties": {
+                      "data": {
+                        "type": "object",
+                        "additionalProperties": {
+                          "type": "string"
+                        }
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "type": {
+                        "type": "string"
+                      }
+                    }
+                  },
                   "name": {
                     "type": "string"
                   },
