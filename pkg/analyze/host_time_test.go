@@ -206,6 +206,12 @@ func TestAnalyzeHostTime(t *testing.T) {
 							Message: "Timezone is not set to UTC",
 						},
 					},
+					{
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							When:    "timezone == UTC",
+							Message: "Timezone is set to UTC",
+						},
+					},
 				},
 			},
 			result: []*AnalyzeResult{
@@ -235,6 +241,18 @@ func TestAnalyzeHostTime(t *testing.T) {
 						Warn: &troubleshootv1beta2.SingleOutcome{
 							When:    "ntp == unsynchronized+active",
 							Message: "System clock not yet synchronized",
+						},
+					},
+					{
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							When:    "timezone == UTC",
+							Message: "Timezone is set to UTC",
+						},
+					},
+					{
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							When:    "ntp == synchronized+active",
+							Message: "System clock is synchronized",
 						},
 					},
 				},
