@@ -1,0 +1,33 @@
+apiVersion: troubleshoot.sh/v1beta2
+kind: HostPreflight
+metadata:
+  name: diskUsage
+spec:
+  remoteCollectors:
+    - diskUsage:
+        collectorName: ephemeral
+        path: /var/lib/kubelet
+  analyzers:
+    - diskUsage:
+        collectorName: ephemeral
+        outcomes:
+          - fail:
+              when: "total < 20Gi"
+              message: /var/lib/kubelet has less than 20Gi of total space
+          - fail:
+              when: "available < 10Gi"
+              message: /var/lib/kubelet has less than 10Gi of disk space available
+          - fail:
+              when: "used/total > 70%"
+              message: /var/lib/kubelet is more than 70% full
+          - warn:
+              when: "total < 40Gi"
+              message: /var/lib/kubelet has less than 40Gi of total space
+          - warn:
+              when: "used/total > 60%"
+              message: /var/lib/kubelet is more than 60% full
+          - pass:
+              when: "available/total >= 90%"
+              message: /var/lib/kubelet has more than 90% available
+          - pass:
+              message: /var/lib/kubelet has sufficient disk space available

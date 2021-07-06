@@ -14,6 +14,7 @@ import (
 	"github.com/fatih/color"
 	"github.com/pkg/errors"
 	"github.com/replicatedhq/troubleshoot/cmd/util"
+	analyzer "github.com/replicatedhq/troubleshoot/pkg/analyze"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	troubleshootclientsetscheme "github.com/replicatedhq/troubleshoot/pkg/client/troubleshootclientset/scheme"
 	"github.com/replicatedhq/troubleshoot/pkg/docrewrite"
@@ -24,6 +25,7 @@ import (
 	spin "github.com/tj/go-spin"
 	"golang.org/x/sync/errgroup"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes/scheme"
 )
 
@@ -98,7 +100,7 @@ func runPreflights(v *viper.Viper, arg string) error {
 		return errors.Wrapf(err, "failed to parse %s", arg)
 	}
 
-	var collectResults preflight.CollectResult
+	var collectResults []preflight.CollectResult
 	preflightSpecName := ""
 
 	progressCh := make(chan interface{})
@@ -120,14 +122,23 @@ func runPreflights(v *viper.Viper, arg string) error {
 		if err != nil {
 			return errors.Wrap(err, "failed to collect in cluster")
 		}
-		collectResults = *r
+		collectResults = append(collectResults, *r)
 		preflightSpecName = preflightSpec.Name
 	} else if hostPreflightSpec, ok := obj.(*troubleshootv1beta2.HostPreflight); ok {
-		r, err := collectHost(hostPreflightSpec, progressCh)
-		if err != nil {
-			return errors.Wrap(err, "failed to collect from host")
+		if len(hostPreflightSpec.Spec.Collectors) > 0 {
+			r, err := collectHost(hostPreflightSpec, progressCh)
+			if err != nil {
+				return errors.Wrap(err, "failed to collect from host")
+			}
+			collectResults = append(collectResults, *r)
 		}
-		collectResults = *r
+		if len(hostPreflightSpec.Spec.RemoteCollectors) > 0 {
+			r, err := collectRemote(hostPreflightSpec, progressCh)
+			if err != nil {
+				return errors.Wrap(err, "failed to collect remotely")
+			}
+			collectResults = append(collectResults, *r)
+		}
 		preflightSpecName = hostPreflightSpec.Name
 	}
 
@@ -135,7 +146,10 @@ func runPreflights(v *viper.Viper, arg string) error {
 		return errors.New("no results")
 	}
 
-	analyzeResults := collectResults.Analyze()
+	analyzeResults := []*analyzer.AnalyzeResult{}
+	for _, res := range collectResults {
+		analyzeResults = append(analyzeResults, res.Analyze()...)
+	}
 
 	if preflightSpec, ok := obj.(*troubleshootv1beta2.Preflight); ok {
 		if preflightSpec.Spec.UploadResultsTo != "" {
@@ -246,6 +260,48 @@ func collectInCluster(preflightSpec *troubleshootv1beta2.Preflight, progressCh c
 			}
 		}
 		return nil, err
+	}
+
+	return &collectResults, nil
+}
+
+func collectRemote(preflightSpec *troubleshootv1beta2.HostPreflight, progressCh chan interface{}) (*preflight.CollectResult, error) {
+	v := viper.GetViper()
+
+	restConfig, err := k8sutil.GetRESTConfig()
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to convert kube flags to rest config")
+	}
+
+	labelSelector, err := labels.Parse(v.GetString("selector"))
+	if err != nil {
+		return nil, errors.Wrap(err, "unable to parse selector")
+	}
+
+	namespace := v.GetString("namespace")
+	if namespace == "" {
+		namespace = "default"
+	}
+
+	timeout := v.GetDuration("request-timeout")
+	if timeout == 0 {
+		timeout = 30 * time.Second
+	}
+
+	collectOpts := preflight.CollectOpts{
+		Namespace:              namespace,
+		IgnorePermissionErrors: v.GetBool("collect-without-permissions"),
+		ProgressChan:           progressCh,
+		KubernetesRestConfig:   restConfig,
+		Image:                  v.GetString("collector-image"),
+		PullPolicy:             v.GetString("collector-pullpolicy"),
+		LabelSelector:          labelSelector.String(),
+		Timeout:                timeout,
+	}
+
+	collectResults, err := preflight.CollectRemote(collectOpts, preflightSpec)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to collect from remote")
 	}
 
 	return &collectResults, nil

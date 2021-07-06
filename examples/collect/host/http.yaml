@@ -1,0 +1,10 @@
+apiVersion: troubleshoot.sh/v1beta2
+kind: HostCollector
+metadata:
+  name: http
+spec:
+  collectors:
+    - http:
+        collectorName: registry
+        get:
+          url: https://registry.replicated.com

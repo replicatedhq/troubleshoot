@@ -1,0 +1,22 @@
+apiVersion: troubleshoot.sh/v1beta2
+kind: HostPreflight
+metadata:
+  name: http
+spec:
+  remoteCollectors:
+    - http:
+        collectorName: registry
+        get:
+          url: https://registry.replicated.com
+  analyzers:
+    - http:
+        collectorName: registry
+        outcomes:
+          - fail:
+              when: "error"
+              message: Error connecting to registry
+          - pass:
+              when: "statusCode == 404"
+              message: Connected to registry
+          - fail:
+              message: "Unexpected response"

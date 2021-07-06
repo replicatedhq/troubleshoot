@@ -1,0 +1,239 @@
+apiVersion: troubleshoot.sh/v1beta2
+kind: HostPreflight
+metadata:
+  name: example
+spec:
+  remoteCollectors:
+    - blockDevices: {}
+    - certificate:
+        certificatePath: /etc/ssl/corp.crt
+        keyPath: /etc/ssl/corp.key
+    - cpu: {}
+    - diskUsage:
+        collectorName: ephemeral
+        path: /var/lib/kubelet
+    - filesystemPerformance:
+        collectorName: etcd-perf
+        directory: /var/lib/etcd
+        fileSize: 22Mi
+        operationSizeBytes: 2300
+        datasync: true
+    - httpLoadBalancer:
+        collectorName: httploadbalancer
+        port: 80
+        address: http://app.corporate.internal
+        timeout: 10s
+    - http:
+        collectorName: registry
+        get:
+          url: https://registry.replicated.com
+    - ipv4Interfaces: {}
+    - memory: {}
+    - time: {}
+    - tcpConnect:
+        collectorName: weave host 1
+        address: 10.128.0.2:6783
+        timeout: 2s
+    - tcpLoadBalancer:
+        collectorName: LB1
+        address: 10.128.0.20:6443
+        port: 6443
+        timeout: 5000ms
+    - tcpPortStatus:
+        collectorName: k8s
+        port: 6443
+  analyzers:
+    - blockDevices:
+        outcomes:
+          - pass:
+              when: ".* == 1"
+              message: One available block device
+          - pass:
+              when: ".* > 1"
+              message: Multiple available block devices
+          - fail:
+              message: No available block devices
+    - certificate:
+        outcomes:
+          - fail:
+              when: "key-pair-missing"
+              message: Certificate key pair not found in /etc/ssl
+          - fail:
+              when: "key-pair-switched"
+              message: Cert and key pair are switched
+          - fail:
+              when: "key-pair-encrypted"
+              message: Private key is encrypted
+          - fail:
+              when: "key-pair-mismatch"
+              message: Cert and key do not match
+          - fail:
+              when: "key-pair-invalid"
+              message: Certificate key pair is invalid
+          - pass:
+              when: "key-pair-valid"
+              message: Certificate key pair is valid
+    - cpu:
+        outcomes:
+          - fail:
+              when: "< 4"
+              message: This server has less than 4 CPU cores, and we require 8, but recommend 16
+          - warn:
+              when: "< 16"
+              message: This server has at least 4 CPU cores, but we recommend 16 or more
+          - pass:
+              message: This server has sufficient CPU cores
+    - diskUsage:
+        collectorName: ephemeral
+        outcomes:
+          - fail:
+              when: "total < 20Gi"
+              message: /var/lib/kubelet has less than 20Gi of total space
+          - fail:
+              when: "available < 10Gi"
+              message: /var/lib/kubelet has less than 10Gi of disk space available
+          - fail:
+              when: "used/total > 70%"
+              message: /var/lib/kubelet is more than 70% full
+          - pass:
+              message: /var/lib/kubelet has sufficient disk space available
+    - filesystemPerformance:
+        collectorName: etcd-perf
+        outcomes:
+          - fail:
+              when: "iops < 50"
+              message: Insufficient random read IOPS
+          - pass:
+              when: "p99 < 3ms"
+              message: Write latency is great!
+          - pass:
+              when: "p99 < 5ms"
+              message: Write latency is ok
+          - warn:
+              when: "p99 < 8ms"
+              message: Write latency is high
+          - fail:
+              when: "p99 >= 8ms"
+              message: Write latency is too high
+    - httpLoadBalancer:
+        collectorName: httploadbalancer
+        outcomes:
+          - fail:
+              when: "connection-refused"
+              message: Connection to port 80 via load balancer was refused.
+          - fail:
+              when: "address-in-use"
+              message: Another process was already listening on port 80.
+          - fail:
+              when: "connection-timeout"
+              message: Timed out connecting to port 80 via load balancer. Check your firewall.
+          - fail:
+              when: "bind-permission-denied"
+              message: Bind permission denied. Try running as root.
+          - fail:
+              when: "error"
+              message: Failed to connect to port 80 via load balancer.
+          - pass:
+              when: "connected"
+              message: Successfully connected to port 80 via load balancer.
+    - http:
+        collectorName: registry
+        outcomes:
+          - fail:
+              when: "error"
+              message: Error connecting to registry
+          - pass:
+              when: "statusCode == 404"
+              message: Connected to registry
+          - fail:
+              message: "Unexpected response"
+    - ipv4Interfaces:
+        outcomes:
+          - fail:
+              when: "count == 0"
+              message: No IPv4 interfaces detected
+          - warn:
+              when: "count >= 2"
+              message: Multiple IPv4 interfaces detected
+          - pass:
+              when: "count == 1"
+              message: IPv4 interface detected
+    - memory:
+        outcomes:
+          - fail:
+              when: "< 8Gi"
+              message: At least 8Gi of memory is required
+          - warn:
+              when: "< 32Gi"
+              message: At least 32Gi of memory is recommended
+          - pass:
+              message: The system has as sufficient memory
+    - time:
+        outcomes:
+          - fail:
+              when: "ntp == unsynchronized+inactive"
+              message: System clock not synchronized
+          - warn:
+              when: "ntp == unsynchronized+active"
+              message: System clock not yet synchronized
+          - warn:
+              when: "ntp == synchronized+inactive"
+              message: NTP not active
+          - pass:
+              when: "ntp == synchronized+active"
+              message: System clock is synchronized
+    - tcpConnect:
+        collectorName: weave host 1
+        outcomes:
+          - fail:
+              when: "connection-refused"
+              message: Connection to weave on host 1 was refused
+          - fail:
+              when: "connection-timeout"
+              message: Timed out connecting to weave on host 1
+          - fail:
+              when: "error"
+              message: Unexpected error connecting to weave on host 1
+          - pass:
+              when: "connected"
+              message: Successfully connected to weave on host 1
+    - tcpLoadBalancer:
+        collectorName: LB1
+        outcomes:
+          - fail:
+              when: "connection-timeout"
+              message: The TCP Load Balancer is not forwarding traffic to this server.
+          - fail:
+              when: "address-in-use"
+              message: The local port is not available to validate the Load Balancer configuration.
+          - pass:
+              when: "connected"
+              message: The specified TCP Load Balancer appears to be properly forwarding traffic to this server.
+    - tcpPortStatus:
+        collectorName: k8s
+        outcomes:
+          - fail:
+              when: "connection-refused"
+              message: Connection to port 7443 was refused.
+          - fail:
+              when: "address-in-use"
+              message: Another process was already listening on port 7443.
+          - fail:
+              when: "connection-timeout"
+              message: Timed out connecting to port 7443. Check your firewall.
+          - fail:
+              when: "error"
+              message: Unexpected port status
+          - pass:
+              when: "connected"
+              message: Port 7443 is open
+          - warn:
+              message: Unexpected port status
+    - time:
+        outcomes:
+          - pass:
+              when: "timezone == UTC"
+              message: Timezone is UTC
+          - fail:
+              when: "timezone != UTC"
+              message: Timezone is not UTC

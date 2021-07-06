@@ -51,6 +51,10 @@ type BlockDevicesAnalyze struct {
 	IncludeUnmountedPartitions bool       `json:"includeUnmountedPartitions" yaml:"includeUnmountedPartitions"`
 	Outcomes                   []*Outcome `json:"outcomes" yaml:"outcomes"`
 }
+type KernelModulesAnalyze struct {
+	AnalyzeMeta `json:",inline" yaml:",inline"`
+	Outcomes    []*Outcome `json:"outcomes" yaml:"outcomes"`
+}
 
 type TCPConnectAnalyze struct {
 	AnalyzeMeta   `json:",inline" yaml:",inline"`
@@ -97,6 +101,8 @@ type HostAnalyze struct {
 	Time *TimeAnalyze `json:"time,omitempty" yaml:"time,omitempty"`
 
 	BlockDevices *BlockDevicesAnalyze `json:"blockDevices,omitempty" yaml:"blockDevices,omitempty"`
+
+	KernelModules *KernelModulesAnalyze `json:"kernelModules,omitempty" yaml:"kernelModules,omitempty"`
 
 	TCPConnect *TCPConnectAnalyze `json:"tcpConnect,omitempty" yaml:"tcpConnect,omitempty"`
 

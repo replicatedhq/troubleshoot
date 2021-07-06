@@ -1,0 +1,8 @@
+kind: HostCollector
+apiVersion: troubleshoot.sh/v1beta2
+spec:
+  collectors:
+  - kernelModules:
+      namespace: ""
+status: {}
+

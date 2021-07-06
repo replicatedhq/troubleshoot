@@ -1,0 +1,30 @@
+apiVersion: troubleshoot.sh/v1beta2
+kind: HostPreflight
+metadata:
+  name: certificate
+spec:
+  remoteCollectors:
+    - certificate:
+        certificatePath: /etc/ssl/corp.crt
+        keyPath: /etc/ssl/corp.key
+  analyzers:
+    - certificate:
+        outcomes:
+          - fail:
+              when: "key-pair-missing"
+              message: Certificate key pair not found in /etc/ssl
+          - fail:
+              when: "key-pair-switched"
+              message: Cert and key pair are switched
+          - fail:
+              when: "key-pair-encrypted"
+              message: Private key is encrypted
+          - fail:
+              when: "key-pair-mismatch"
+              message: Cert and key do not match
+          - fail:
+              when: "key-pair-invalid"
+              message: Certificate key pair is invalid
+          - pass:
+              when: "key-pair-valid"
+              message: Certificate key pair is valid
