@@ -57,18 +57,27 @@ func Test_checkValidLBAddress(t *testing.T) {
 			want: false,
 		},
 		{
-			name: "Invalid Port too high",
+			name: "Invalid Port too large",
 			args: args{address: "55.55.51.23:999990"},
 			want: false,
 		},
 		{
-			name: "Invalid Port character",
+			name: "Invalid Port Character",
 			args: args{address: "55.55.51.23:port"},
 			want: false,
 		},
 		{
-			name: "Invalid Port character",
+			name: "Invalid Port Number",
 			args: args{address: "55.55.51.23:32.5"},
+			want: false,
+		},
+		{
+			name: "Codes in addresses",
+			args: args{address: "[34m192.168.0.1[00m"},
+			want: false,
+		}, {
+			name: "Codes in addresses",
+			args: args{address: "\033[34m192.168.0.1\033[00m\n "},
 			want: false,
 		},
 	}
