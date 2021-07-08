@@ -74,17 +74,19 @@ func ConfigMap(ctx context.Context, client kubernetes.Interface, configMapCollec
 
 func configMapToOutput(configMapCollector *troubleshootv1beta2.ConfigMap, configMap *corev1.ConfigMap, configMapName string) (string, []byte, error) {
 	foundConfigMap := ConfigMapOutput{
-		Namespace:       configMapCollector.Namespace,
-		Name:            configMapName,
-		ConfigMapExists: true,
-		Key:             configMapCollector.Key,
+		Namespace: configMapCollector.Namespace,
+		Name:      configMapName,
+		Key:       configMapCollector.Key,
 	}
 
-	if configMap != nil && configMapCollector.Key != "" {
-		if val, ok := configMap.Data[configMapCollector.Key]; ok {
-			foundConfigMap.KeyExists = true
-			if configMapCollector.IncludeValue {
-				foundConfigMap.Value = string(val)
+	if configMap != nil {
+		foundConfigMap.ConfigMapExists = true
+		if configMapCollector.Key != "" {
+			if val, ok := configMap.Data[configMapCollector.Key]; ok {
+				foundConfigMap.KeyExists = true
+				if configMapCollector.IncludeValue {
+					foundConfigMap.Value = string(val)
+				}
 			}
 		}
 	}

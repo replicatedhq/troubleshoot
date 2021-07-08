@@ -74,17 +74,20 @@ func Secret(ctx context.Context, client kubernetes.Interface, secretCollector *t
 
 func secretToOutput(secretCollector *troubleshootv1beta2.Secret, secret *corev1.Secret, secretName string) (string, []byte, error) {
 	foundSecret := SecretOutput{
-		Namespace:    secretCollector.Namespace,
-		Name:         secretName,
-		SecretExists: true,
-		Key:          secretCollector.Key,
+		Namespace: secretCollector.Namespace,
+		Name:      secretName,
+		Key:       secretCollector.Key,
 	}
 
-	if secret != nil && secretCollector.Key != "" {
-		if val, ok := secret.Data[secretCollector.Key]; ok {
-			foundSecret.KeyExists = true
-			if secretCollector.IncludeValue {
-				foundSecret.Value = string(val)
+	if secret != nil {
+		foundSecret.SecretExists = true
+		if secretCollector.Key != "" {
+			if val, ok := secret.Data[secretCollector.Key]; ok {
+				fmt.Println("FOUND")
+				foundSecret.KeyExists = true
+				if secretCollector.IncludeValue {
+					foundSecret.Value = string(val)
+				}
 			}
 		}
 	}
