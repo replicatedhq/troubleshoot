@@ -139,7 +139,7 @@ func runPreflights(v *viper.Viper, arg string) error {
 					if !ok {
 						return
 					}
-					fmt.Fprintln(os.Stderr, msg)
+					fmt.Fprintf(os.Stderr, "%v\n", msg)
 				case <-finishedCh:
 					return
 				}
