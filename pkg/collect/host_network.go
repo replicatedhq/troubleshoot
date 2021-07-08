@@ -2,6 +2,7 @@ package collect
 
 import (
 	"bytes"
+	"fmt"
 	"net"
 	"strings"
 	"time"
@@ -20,14 +21,21 @@ const (
 	NetworkStatusConnected            = "connected"
 	NetworkStatusErrorOther           = "error"
 	NetworkStatusBindPermissionDenied = "bind-permission-denied"
+	NetworkStatusInvalidAddress       = "invalid-address"
 )
 
 type NetworkStatusResult struct {
 	Status NetworkStatus `json:"status"`
 }
 
+func checkValidLBAddress(address string) bool {
+	return true
+}
+
 func checkTCPConnection(progressChan chan<- interface{}, listenAddress string, dialAddress string, timeout time.Duration) (NetworkStatus, error) {
+	fmt.Printf("DialAddress: %s", dialAddress)
 	lstn, err := net.Listen("tcp", listenAddress)
+	fmt.Printf("Starting checkTCPConnection()")
 	if err != nil {
 		if strings.Contains(err.Error(), "address already in use") {
 			return NetworkStatusAddressInUse, nil
@@ -36,13 +44,14 @@ func checkTCPConnection(progressChan chan<- interface{}, listenAddress string, d
 		return NetworkStatusErrorOther, errors.Wrap(err, "failed to create listener")
 	}
 	defer lstn.Close()
+	fmt.Printf("Closed Listener()")
 
 	// The server may receive requests from other clients and the client request may be forwarded to
 	// other servers. The client must continue to initiate new connections and send its request
 	// token until the server responds with its token.
 	requestToken := ksuid.New().Bytes()
 	responseToken := ksuid.New().Bytes()
-
+	fmt.Printf("go func started")
 	go func() {
 		for {
 			conn, err := lstn.Accept()
@@ -57,17 +66,23 @@ func checkTCPConnection(progressChan chan<- interface{}, listenAddress string, d
 	}()
 
 	stopAfter := time.Now().Add(timeout)
+	fmt.Printf("Timeout")
 
 	for {
 		if time.Now().After(stopAfter) {
+			fmt.Printf("Timeout")
+
 			return NetworkStatusConnectionTimeout, nil
 		}
 
 		conn, err := net.DialTimeout("tcp", dialAddress, 50*time.Millisecond)
 		if err != nil {
+			fmt.Printf("Error: %s", err)
+
 			if strings.Contains(err.Error(), "i/o timeout") {
 				progressChan <- err
 				time.Sleep(time.Second)
+
 				continue
 			}
 			if strings.Contains(err.Error(), "connection refused") {
@@ -83,6 +98,7 @@ func checkTCPConnection(progressChan chan<- interface{}, listenAddress string, d
 		progressChan <- errors.New("failed to verify connection to server")
 		time.Sleep(time.Second)
 	}
+
 }
 
 func handleTestConnection(conn net.Conn, requestToken []byte, responseToken []byte) bool {
