@@ -186,14 +186,21 @@ func (c *Collector) RunCollectorSync(globalRedactors []*troubleshootv1beta2.Reda
 		return
 	}
 
+	ctx := context.TODO()
+
+	client, err := kubernetes.NewForConfig(c.ClientConfig)
+	if err != nil {
+		return nil, err
+	}
+
 	if c.Collect.ClusterInfo != nil {
 		result, err = ClusterInfo(c)
 	} else if c.Collect.ClusterResources != nil {
 		result, err = ClusterResources(c)
 	} else if c.Collect.Secret != nil {
-		result, err = Secret(c, c.Collect.Secret)
+		result, err = Secret(ctx, client, c.Collect.Secret)
 	} else if c.Collect.ConfigMap != nil {
-		result, err = ConfigMap(c, c.Collect.ConfigMap)
+		result, err = ConfigMap(ctx, client, c.Collect.ConfigMap)
 	} else if c.Collect.Logs != nil {
 		result, err = Logs(c, c.Collect.Logs)
 	} else if c.Collect.Run != nil {

@@ -24,15 +24,8 @@ type SecretOutput struct {
 	Value        string `json:"value,omitempty"`
 }
 
-func Secret(c *Collector, secretCollector *troubleshootv1beta2.Secret) (map[string][]byte, error) {
-	client, err := kubernetes.NewForConfig(c.ClientConfig)
-	if err != nil {
-		return nil, err
-	}
-
+func Secret(ctx context.Context, client kubernetes.Interface, secretCollector *troubleshootv1beta2.Secret) (map[string][]byte, error) {
 	output := map[string][]byte{}
-
-	ctx := context.Background()
 
 	secrets := []corev1.Secret{}
 	if secretCollector.Name != "" {
@@ -99,7 +92,7 @@ func secretToOutput(secretCollector *troubleshootv1beta2.Secret, secret *corev1.
 	return marshalSecretOutput(secretCollector, foundSecret)
 }
 
-func listSecretsForSelector(ctx context.Context, client *kubernetes.Clientset, namespace string, selector []string) ([]corev1.Secret, error) {
+func listSecretsForSelector(ctx context.Context, client kubernetes.Interface, namespace string, selector []string) ([]corev1.Secret, error) {
 	serializedLabelSelector := strings.Join(selector, ",")
 
 	listOptions := metav1.ListOptions{

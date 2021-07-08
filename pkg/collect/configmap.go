@@ -24,15 +24,8 @@ type ConfigMapOutput struct {
 	Value           string `json:"value,omitempty"`
 }
 
-func ConfigMap(c *Collector, configMapCollector *troubleshootv1beta2.ConfigMap) (map[string][]byte, error) {
-	client, err := kubernetes.NewForConfig(c.ClientConfig)
-	if err != nil {
-		return nil, err
-	}
-
+func ConfigMap(ctx context.Context, client kubernetes.Interface, configMapCollector *troubleshootv1beta2.ConfigMap) (map[string][]byte, error) {
 	output := map[string][]byte{}
-
-	ctx := context.Background()
 
 	configMaps := []corev1.ConfigMap{}
 	if configMapCollector.Name != "" {
@@ -99,7 +92,7 @@ func configMapToOutput(configMapCollector *troubleshootv1beta2.ConfigMap, config
 	return marshalConfigMapOutput(configMapCollector, foundConfigMap)
 }
 
-func listConfigMapsForSelector(ctx context.Context, client *kubernetes.Clientset, namespace string, selector []string) ([]corev1.ConfigMap, error) {
+func listConfigMapsForSelector(ctx context.Context, client kubernetes.Interface, namespace string, selector []string) ([]corev1.ConfigMap, error) {
 	serializedLabelSelector := strings.Join(selector, ",")
 
 	listOptions := metav1.ListOptions{
