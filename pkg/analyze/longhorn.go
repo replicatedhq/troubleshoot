@@ -131,7 +131,7 @@ func longhorn(analyzer *troubleshootv1beta2.LonghornAnalyze, getCollectedFileCon
 		}
 	}
 
-	return results, nil
+	return simplifyLonghornResults(results), nil
 }
 
 func analyzeLonghornNodeSchedulable(node *longhornv1beta1.Node) *AnalyzeResult {
@@ -242,4 +242,26 @@ func analyzeLonghornReplicaChecksums(volumeName string, checksums []map[string]s
 	result.Message = "No replica corruption detected"
 
 	return result
+}
+
+// Keep warn/error results. Return a single pass result if there are no warn/errors.
+func simplifyLonghornResults(results []*AnalyzeResult) []*AnalyzeResult {
+	out := []*AnalyzeResult{}
+
+	for _, result := range results {
+		if result.IsPass {
+			continue
+		}
+		out = append(out, result)
+	}
+
+	if len(out) == 0 {
+		out = append(out, &AnalyzeResult{
+			Title:   "Longhorn Health Status",
+			IsPass:  true,
+			Message: "Longhorn is healthy",
+		})
+	}
+
+	return out
 }
