@@ -12,20 +12,55 @@ func Test_checkValidLBAddress(t *testing.T) {
 		want bool
 	}{
 		{
-			name: "valid1",
+			name: " Valid IP and Port",
 			args: args{address: "1.2.3.4:6443"},
 			want: true,
 		},
 		{
-			name: "valid2",
-			args: args{address: "0.0.0.0:232"},
+			name: "Valid domain and Port ",
+			args: args{address: "replicated.com:80"},
 			want: true,
+		},
+		{
+			name: "Valid subdomain and Port ",
+			args: args{address: "sub.replicated.com:80"},
+			want: true,
+		},
+		{
+			name: "Valid subdomain with '-' and Port ",
+			args: args{address: "sub-domain.replicated.com:80"},
+			want: true,
+		},
+		{
+			name: "Special Character",
+			args: args{address: "sw!$$.com:80"},
+			want: false,
+		},
+		{
+			name: "Too many characters",
+			args: args{address: "howlongcanwemakethiswithoutrunningoutofwordsbecasueweneedtohitatleast64.com:80"},
+			want: false,
+		},
+		{
+			name: "Capital Letters",
+			args: args{address: "testDomain.com:80"},
+			want: false,
+		},
+		{
+			name: "Invalid IP",
+			args: args{address: "55.555.51.23:80"},
+			want: false,
+		},
+		{
+			name: "Invalid Port",
+			args: args{address: "55.555.51.23:0"},
+			want: false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := checkValidLBAddress(tt.args.address); got != tt.want {
-				t.Errorf("checkValidTCPAddress() = %v, want %v", got, tt.want)
+				t.Errorf("checkValidTCPAddress() = %v, want %v for %v", got, tt.want, tt.args.address)
 			}
 		})
 	}
