@@ -175,10 +175,10 @@ func (c *Collector) IsExcluded() bool {
 	return false
 }
 
-func (c *Collector) RunCollectorSync(globalRedactors []*troubleshootv1beta2.Redact) (result map[string][]byte, err error) {
+func (c *Collector) RunCollectorSync(client kubernetes.Interface, globalRedactors []*troubleshootv1beta2.Redact) (result map[string][]byte, err error) {
 	defer func() {
 		if r := recover(); r != nil {
-			err = errors.Errorf("recovered rom panic: %v", r)
+			err = errors.Errorf("recovered from panic: %v", r)
 		}
 	}()
 
@@ -187,11 +187,6 @@ func (c *Collector) RunCollectorSync(globalRedactors []*troubleshootv1beta2.Reda
 	}
 
 	ctx := context.TODO()
-
-	client, err := kubernetes.NewForConfig(c.ClientConfig)
-	if err != nil {
-		return nil, err
-	}
 
 	if c.Collect.ClusterInfo != nil {
 		result, err = ClusterInfo(c)
