@@ -8,26 +8,26 @@ import (
 	"github.com/replicatedhq/troubleshoot/pkg/collect"
 )
 
-func analyzeSecret(analyzer *troubleshootv1beta2.AnalyzeSecret, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
-	secretData, err := getCollectedFileContents(fmt.Sprintf("secrets/%s/%s.json", analyzer.Namespace, analyzer.SecretName))
+func analyzeConfigMap(analyzer *troubleshootv1beta2.AnalyzeConfigMap, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
+	configMapData, err := getCollectedFileContents(fmt.Sprintf("configMaps/%s/%s.json", analyzer.Namespace, analyzer.ConfigMapName))
 	if err != nil {
 		return nil, err
 	}
 
-	var foundSecret collect.SecretOutput
-	if err := json.Unmarshal(secretData, &foundSecret); err != nil {
+	var foundConfigMap collect.ConfigMapOutput
+	if err := json.Unmarshal(configMapData, &foundConfigMap); err != nil {
 		return nil, err
 	}
 
 	title := analyzer.CheckName
 	if title == "" {
-		title = fmt.Sprintf("Secret %s", analyzer.SecretName)
+		title = fmt.Sprintf("ConfigMap %s", analyzer.ConfigMapName)
 	}
 
 	result := AnalyzeResult{
 		Title:   title,
-		IconKey: "kubernetes_analyze_secret",
-		IconURI: "https://troubleshoot.sh/images/analyzer-icons/secret.svg?w=13&h=16",
+		IconKey: "kubernetes_analyze_configMap",
+		IconURI: "https://troubleshoot.sh/images/analyzer-icons/configMap.svg?w=13&h=16",
 	}
 
 	var failOutcome *troubleshootv1beta2.Outcome
@@ -37,7 +37,7 @@ func analyzeSecret(analyzer *troubleshootv1beta2.AnalyzeSecret, getCollectedFile
 		}
 	}
 
-	if !foundSecret.SecretExists {
+	if !foundConfigMap.ConfigMapExists {
 		result.IsFail = true
 		result.Message = failOutcome.Fail.Message
 		result.URI = failOutcome.Fail.URI
@@ -46,7 +46,7 @@ func analyzeSecret(analyzer *troubleshootv1beta2.AnalyzeSecret, getCollectedFile
 	}
 
 	if analyzer.Key != "" {
-		if foundSecret.Key != analyzer.Key || !foundSecret.KeyExists {
+		if foundConfigMap.Key != analyzer.Key || !foundConfigMap.KeyExists {
 			result.IsFail = true
 			result.Message = failOutcome.Fail.Message
 			result.URI = failOutcome.Fail.URI

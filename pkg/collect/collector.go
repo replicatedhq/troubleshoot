@@ -66,6 +66,14 @@ func (c *Collector) IsExcluded() bool {
 		if isExcludedResult {
 			return true
 		}
+	} else if c.Collect.ConfigMap != nil {
+		isExcludedResult, err := isExcluded(c.Collect.ConfigMap.Exclude)
+		if err != nil {
+			return true
+		}
+		if isExcludedResult {
+			return true
+		}
 	} else if c.Collect.Logs != nil {
 		isExcludedResult, err := isExcluded(c.Collect.Logs.Exclude)
 		if err != nil {
@@ -184,6 +192,8 @@ func (c *Collector) RunCollectorSync(globalRedactors []*troubleshootv1beta2.Reda
 		result, err = ClusterResources(c)
 	} else if c.Collect.Secret != nil {
 		result, err = Secret(c, c.Collect.Secret)
+	} else if c.Collect.ConfigMap != nil {
+		result, err = ConfigMap(c, c.Collect.ConfigMap)
 	} else if c.Collect.Logs != nil {
 		result, err = Logs(c, c.Collect.Logs)
 	} else if c.Collect.Run != nil {
