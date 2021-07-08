@@ -127,6 +127,37 @@ func TestConfigMap(t *testing.T) {
 			},
 		},
 		{
+			name: "with key and value",
+			configMapCollector: &troubleshootv1beta2.ConfigMap{
+				Namespace:    "test-namespace",
+				Name:         "test-configmap",
+				Key:          "test-key",
+				IncludeValue: true,
+			},
+			mockConfigMaps: []corev1.ConfigMap{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test-configmap",
+						Namespace: "test-namespace",
+					},
+					Data: map[string]string{
+						"test-key":  "test-value",
+						"other-key": "other-value",
+					},
+				},
+			},
+			want: map[string][]byte{
+				"configmaps/test-namespace/test-configmap/test-key.json": mustJSONMarshalIndent(t, ConfigMapOutput{
+					Namespace:       "test-namespace",
+					Name:            "test-configmap",
+					Key:             "test-key",
+					ConfigMapExists: true,
+					KeyExists:       true,
+					Value:           "test-value",
+				}),
+			},
+		},
+		{
 			name: "not found",
 			configMapCollector: &troubleshootv1beta2.ConfigMap{
 				Namespace: "test-namespace",

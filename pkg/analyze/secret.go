@@ -9,7 +9,14 @@ import (
 )
 
 func analyzeSecret(analyzer *troubleshootv1beta2.AnalyzeSecret, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
-	secretData, err := getCollectedFileContents(fmt.Sprintf("secrets/%s/%s.json", analyzer.Namespace, analyzer.SecretName))
+	var filename string
+	if analyzer.Key != "" {
+		filename = fmt.Sprintf("secrets/%s/%s/%s.json", analyzer.Namespace, analyzer.SecretName, analyzer.Key)
+	} else {
+		filename = fmt.Sprintf("secrets/%s/%s.json", analyzer.Namespace, analyzer.SecretName)
+	}
+
+	secretData, err := getCollectedFileContents(filename)
 	if err != nil {
 		return nil, err
 	}

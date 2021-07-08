@@ -128,6 +128,37 @@ func TestSecret(t *testing.T) {
 			},
 		},
 		{
+			name: "with key and value",
+			secretCollector: &troubleshootv1beta2.Secret{
+				Namespace:    "test-namespace",
+				Name:         "test-secret",
+				Key:          "test-key",
+				IncludeValue: true,
+			},
+			mockSecrets: []corev1.Secret{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test-secret",
+						Namespace: "test-namespace",
+					},
+					Data: map[string][]byte{
+						"test-key":  []byte("test-value"),
+						"other-key": []byte("other-value"),
+					},
+				},
+			},
+			want: map[string][]byte{
+				"secrets/test-namespace/test-secret/test-key.json": mustJSONMarshalIndent(t, SecretOutput{
+					Namespace:    "test-namespace",
+					Name:         "test-secret",
+					Key:          "test-key",
+					SecretExists: true,
+					KeyExists:    true,
+					Value:        "test-value",
+				}),
+			},
+		},
+		{
 			name: "not found",
 			secretCollector: &troubleshootv1beta2.Secret{
 				Namespace: "test-namespace",
