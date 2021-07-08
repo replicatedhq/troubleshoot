@@ -66,6 +66,14 @@ func (c *Collector) IsExcluded() bool {
 		if isExcludedResult {
 			return true
 		}
+	} else if c.Collect.ConfigMap != nil {
+		isExcludedResult, err := isExcluded(c.Collect.ConfigMap.Exclude)
+		if err != nil {
+			return true
+		}
+		if isExcludedResult {
+			return true
+		}
 	} else if c.Collect.Logs != nil {
 		isExcludedResult, err := isExcluded(c.Collect.Logs.Exclude)
 		if err != nil {
@@ -167,10 +175,10 @@ func (c *Collector) IsExcluded() bool {
 	return false
 }
 
-func (c *Collector) RunCollectorSync(globalRedactors []*troubleshootv1beta2.Redact) (result map[string][]byte, err error) {
+func (c *Collector) RunCollectorSync(client kubernetes.Interface, globalRedactors []*troubleshootv1beta2.Redact) (result map[string][]byte, err error) {
 	defer func() {
 		if r := recover(); r != nil {
-			err = errors.Errorf("recovered rom panic: %v", r)
+			err = errors.Errorf("recovered from panic: %v", r)
 		}
 	}()
 
@@ -178,12 +186,16 @@ func (c *Collector) RunCollectorSync(globalRedactors []*troubleshootv1beta2.Reda
 		return
 	}
 
+	ctx := context.TODO()
+
 	if c.Collect.ClusterInfo != nil {
 		result, err = ClusterInfo(c)
 	} else if c.Collect.ClusterResources != nil {
 		result, err = ClusterResources(c)
 	} else if c.Collect.Secret != nil {
-		result, err = Secret(c, c.Collect.Secret)
+		result, err = Secret(ctx, client, c.Collect.Secret)
+	} else if c.Collect.ConfigMap != nil {
+		result, err = ConfigMap(ctx, client, c.Collect.ConfigMap)
 	} else if c.Collect.Logs != nil {
 		result, err = Logs(c, c.Collect.Logs)
 	} else if c.Collect.Run != nil {

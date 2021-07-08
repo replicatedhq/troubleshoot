@@ -145,6 +145,20 @@ func Analyze(analyzer *troubleshootv1beta2.Analyze, getFile getCollectedFileCont
 		}
 		return []*AnalyzeResult{result}, nil
 	}
+	if analyzer.ConfigMap != nil {
+		isExcluded, err := isExcluded(analyzer.ConfigMap.Exclude)
+		if err != nil {
+			return nil, err
+		}
+		if isExcluded {
+			return nil, nil
+		}
+		result, err := analyzeConfigMap(analyzer.ConfigMap, getFile)
+		if err != nil {
+			return nil, err
+		}
+		return []*AnalyzeResult{result}, nil
+	}
 	if analyzer.ImagePullSecret != nil {
 		isExcluded, err := isExcluded(analyzer.ImagePullSecret.Exclude)
 		if err != nil {
