@@ -50,6 +50,7 @@ func (a *AnalyzeHostDiskUsage) Analyze(getCollectedFileContents func(string) ([]
 				result.URI = outcome.Fail.URI
 
 				coll.push(result)
+				continue
 			}
 
 			isMatch, err := compareHostDiskUsageConditionalToActual(outcome.Fail.When, diskUsageInfo.TotalBytes, diskUsageInfo.UsedBytes)
@@ -71,6 +72,7 @@ func (a *AnalyzeHostDiskUsage) Analyze(getCollectedFileContents func(string) ([]
 				result.URI = outcome.Warn.URI
 
 				coll.push(result)
+				continue
 			}
 
 			isMatch, err := compareHostDiskUsageConditionalToActual(outcome.Warn.When, diskUsageInfo.TotalBytes, diskUsageInfo.UsedBytes)
@@ -92,6 +94,7 @@ func (a *AnalyzeHostDiskUsage) Analyze(getCollectedFileContents func(string) ([]
 				result.URI = outcome.Pass.URI
 
 				coll.push(result)
+				continue
 			}
 
 			isMatch, err := compareHostDiskUsageConditionalToActual(outcome.Pass.When, diskUsageInfo.TotalBytes, diskUsageInfo.UsedBytes)
@@ -106,6 +109,7 @@ func (a *AnalyzeHostDiskUsage) Analyze(getCollectedFileContents func(string) ([]
 
 				coll.push(result)
 			}
+
 		}
 	}
 

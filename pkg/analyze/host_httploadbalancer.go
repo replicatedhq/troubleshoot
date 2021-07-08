@@ -52,6 +52,7 @@ func (a *AnalyzeHostHTTPLoadBalancer) Analyze(getCollectedFileContents func(stri
 				result.URI = outcome.Fail.URI
 
 				coll.push(result)
+				continue
 			}
 
 			if string(actual.Status) == outcome.Fail.When {
@@ -68,6 +69,7 @@ func (a *AnalyzeHostHTTPLoadBalancer) Analyze(getCollectedFileContents func(stri
 				result.URI = outcome.Warn.URI
 
 				coll.push(result)
+				continue
 			}
 
 			if string(actual.Status) == outcome.Warn.When {
@@ -84,6 +86,7 @@ func (a *AnalyzeHostHTTPLoadBalancer) Analyze(getCollectedFileContents func(stri
 				result.URI = outcome.Pass.URI
 
 				coll.push(result)
+				continue
 			}
 
 			if string(actual.Status) == outcome.Pass.When {
@@ -93,6 +96,7 @@ func (a *AnalyzeHostHTTPLoadBalancer) Analyze(getCollectedFileContents func(stri
 
 				coll.push(result)
 			}
+
 		}
 	}
 

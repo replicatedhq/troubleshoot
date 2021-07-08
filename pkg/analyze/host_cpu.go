@@ -35,10 +35,11 @@ func (a *AnalyzeHostCPU) Analyze(getCollectedFileContents func(string) ([]byte, 
 		return nil, errors.Wrap(err, "failed to unmarshal cpu info")
 	}
 
-	var coll resultCollector
+	result := AnalyzeResult{
+		Title: a.Title(),
+	}
 
 	for _, outcome := range hostAnalyzer.Outcomes {
-		result := &AnalyzeResult{Title: a.Title()}
 
 		if outcome.Fail != nil {
 			if outcome.Fail.When == "" {
@@ -46,7 +47,7 @@ func (a *AnalyzeHostCPU) Analyze(getCollectedFileContents func(string) ([]byte, 
 				result.Message = outcome.Fail.Message
 				result.URI = outcome.Fail.URI
 
-				coll.push(result)
+				return []*AnalyzeResult{&result}, nil
 			}
 
 			isMatch, err := compareHostCPUConditionalToActual(outcome.Fail.When, cpuInfo.LogicalCount, cpuInfo.PhysicalCount)
@@ -59,7 +60,7 @@ func (a *AnalyzeHostCPU) Analyze(getCollectedFileContents func(string) ([]byte, 
 				result.Message = outcome.Fail.Message
 				result.URI = outcome.Fail.URI
 
-				coll.push(result)
+				return []*AnalyzeResult{&result}, nil
 			}
 		} else if outcome.Warn != nil {
 			if outcome.Warn.When == "" {
@@ -67,7 +68,7 @@ func (a *AnalyzeHostCPU) Analyze(getCollectedFileContents func(string) ([]byte, 
 				result.Message = outcome.Warn.Message
 				result.URI = outcome.Warn.URI
 
-				coll.push(result)
+				return []*AnalyzeResult{&result}, nil
 			}
 
 			isMatch, err := compareHostCPUConditionalToActual(outcome.Warn.When, cpuInfo.LogicalCount, cpuInfo.PhysicalCount)
@@ -80,7 +81,7 @@ func (a *AnalyzeHostCPU) Analyze(getCollectedFileContents func(string) ([]byte, 
 				result.Message = outcome.Warn.Message
 				result.URI = outcome.Warn.URI
 
-				coll.push(result)
+				return []*AnalyzeResult{&result}, nil
 			}
 		} else if outcome.Pass != nil {
 			if outcome.Pass.When == "" {
@@ -88,7 +89,7 @@ func (a *AnalyzeHostCPU) Analyze(getCollectedFileContents func(string) ([]byte, 
 				result.Message = outcome.Pass.Message
 				result.URI = outcome.Pass.URI
 
-				coll.push(result)
+				return []*AnalyzeResult{&result}, nil
 			}
 
 			isMatch, err := compareHostCPUConditionalToActual(outcome.Pass.When, cpuInfo.LogicalCount, cpuInfo.PhysicalCount)
@@ -101,13 +102,12 @@ func (a *AnalyzeHostCPU) Analyze(getCollectedFileContents func(string) ([]byte, 
 				result.Message = outcome.Pass.Message
 				result.URI = outcome.Pass.URI
 
-				coll.push(result)
-
+				return []*AnalyzeResult{&result}, nil
 			}
 		}
 	}
 
-	return coll.get(a.Title()), nil
+	return []*AnalyzeResult{&result}, nil
 }
 
 func compareHostCPUConditionalToActual(conditional string, logicalCount int, physicalCount int) (res bool, err error) {

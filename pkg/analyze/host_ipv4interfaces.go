@@ -48,6 +48,7 @@ func (a *AnalyzeHostIPV4Interfaces) Analyze(getCollectedFileContents func(string
 				result.URI = outcome.Fail.URI
 
 				coll.push(result)
+				continue
 			}
 
 			isMatch, err := compareHostIPV4InterfacesConditionalToActual(outcome.Fail.When, ipv4Interfaces)
@@ -69,6 +70,7 @@ func (a *AnalyzeHostIPV4Interfaces) Analyze(getCollectedFileContents func(string
 				result.URI = outcome.Warn.URI
 
 				coll.push(result)
+				continue
 			}
 
 			isMatch, err := compareHostIPV4InterfacesConditionalToActual(outcome.Warn.When, ipv4Interfaces)
@@ -90,6 +92,7 @@ func (a *AnalyzeHostIPV4Interfaces) Analyze(getCollectedFileContents func(string
 				result.URI = outcome.Pass.URI
 
 				coll.push(result)
+				continue
 			}
 
 			isMatch, err := compareHostIPV4InterfacesConditionalToActual(outcome.Pass.When, ipv4Interfaces)
@@ -104,6 +107,7 @@ func (a *AnalyzeHostIPV4Interfaces) Analyze(getCollectedFileContents func(string
 
 				coll.push(result)
 			}
+
 		}
 	}
 

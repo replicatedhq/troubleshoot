@@ -1,8 +1,11 @@
 package analyzer
 
 import (
+	"encoding/json"
 	"testing"
 
+	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
+	"github.com/replicatedhq/troubleshoot/pkg/collect"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -145,6 +148,69 @@ func Test_compareHostCPUConditionalToActual(t *testing.T) {
 			req.NoError(err)
 
 			assert.Equal(t, test.expected, actual)
+		})
+	}
+}
+
+func TestHostCpuAnalyze(t *testing.T) {
+	tt := []struct {
+		name     string
+		cpuInfo  collect.CPUInfo
+		outcomes []*troubleshootv1beta2.Outcome
+		results  []*AnalyzeResult
+		wantErr  bool
+	}{
+		{
+			name: "fix for passing test with empty when expr",
+			cpuInfo: collect.CPUInfo{
+				LogicalCount:  16,
+				PhysicalCount: 8,
+			},
+			outcomes: []*troubleshootv1beta2.Outcome{
+				{
+					Fail: &troubleshootv1beta2.SingleOutcome{
+						When:    "logical < 8",
+						Message: "oops",
+					},
+				},
+				{
+					Pass: &troubleshootv1beta2.SingleOutcome{
+						When:    "",
+						Message: "it passed",
+					},
+				},
+			},
+			results: []*AnalyzeResult{
+				{
+					IsPass:  true,
+					Message: "it passed",
+					Title:   "Number of CPUs",
+				},
+			},
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			fn := func(_ string) ([]byte, error) {
+				return json.Marshal(&tc.cpuInfo)
+			}
+
+			analyzer := AnalyzeHostCPU{
+				hostAnalyzer: &troubleshootv1beta2.CPUAnalyze{
+					AnalyzeMeta: troubleshootv1beta2.AnalyzeMeta{
+						CheckName: "Number of CPUs",
+					},
+					Outcomes: tc.outcomes,
+				},
+			}
+			results, err := analyzer.Analyze(fn)
+			if tc.wantErr {
+				require.NotNil(t, err)
+				return
+			}
+			require.Nil(t, err)
+			require.Equal(t, tc.results, results)
 		})
 	}
 }

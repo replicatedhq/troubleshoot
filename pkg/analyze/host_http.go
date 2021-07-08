@@ -58,6 +58,7 @@ func (a *AnalyzeHostHTTP) Analyze(getCollectedFileContents func(string) ([]byte,
 				result.URI = outcome.Fail.URI
 
 				coll.push(result)
+				continue
 			}
 
 			isMatch, err := compareHostHTTPConditionalToActual(outcome.Fail.When, httpInfo)
@@ -79,6 +80,7 @@ func (a *AnalyzeHostHTTP) Analyze(getCollectedFileContents func(string) ([]byte,
 				result.URI = outcome.Warn.URI
 
 				coll.push(result)
+				continue
 			}
 
 			isMatch, err := compareHostHTTPConditionalToActual(outcome.Warn.When, httpInfo)
@@ -100,6 +102,7 @@ func (a *AnalyzeHostHTTP) Analyze(getCollectedFileContents func(string) ([]byte,
 				result.URI = outcome.Pass.URI
 
 				coll.push(result)
+				continue
 			}
 
 			isMatch, err := compareHostHTTPConditionalToActual(outcome.Pass.When, httpInfo)
@@ -114,6 +117,7 @@ func (a *AnalyzeHostHTTP) Analyze(getCollectedFileContents func(string) ([]byte,
 
 				coll.push(result)
 			}
+
 		}
 	}
 

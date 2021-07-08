@@ -235,4 +235,5 @@ spec:
               when: "timezone == UTC"
               message: Timezone is UTC
           - fail:
+              when: "timezone != UTC"
               message: Timezone is not UTC

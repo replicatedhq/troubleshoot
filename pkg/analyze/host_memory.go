@@ -36,10 +36,11 @@ func (a *AnalyzeHostMemory) Analyze(getCollectedFileContents func(string) ([]byt
 		return nil, errors.Wrap(err, "failed to unmarshal memory info")
 	}
 
-	var coll resultCollector
+	result := AnalyzeResult{
+		Title: a.Title(),
+	}
 
 	for _, outcome := range hostAnalyzer.Outcomes {
-		result := &AnalyzeResult{Title: a.Title()}
 
 		if outcome.Fail != nil {
 			if outcome.Fail.When == "" {
@@ -47,7 +48,7 @@ func (a *AnalyzeHostMemory) Analyze(getCollectedFileContents func(string) ([]byt
 				result.Message = outcome.Fail.Message
 				result.URI = outcome.Fail.URI
 
-				coll.push(result)
+				return []*AnalyzeResult{&result}, nil
 			}
 
 			isMatch, err := compareHostMemoryConditionalToActual(outcome.Fail.When, memoryInfo.Total)
@@ -60,7 +61,7 @@ func (a *AnalyzeHostMemory) Analyze(getCollectedFileContents func(string) ([]byt
 				result.Message = outcome.Fail.Message
 				result.URI = outcome.Fail.URI
 
-				coll.push(result)
+				return []*AnalyzeResult{&result}, nil
 			}
 		} else if outcome.Warn != nil {
 			if outcome.Warn.When == "" {
@@ -68,7 +69,7 @@ func (a *AnalyzeHostMemory) Analyze(getCollectedFileContents func(string) ([]byt
 				result.Message = outcome.Warn.Message
 				result.URI = outcome.Warn.URI
 
-				coll.push(result)
+				return []*AnalyzeResult{&result}, nil
 			}
 
 			isMatch, err := compareHostMemoryConditionalToActual(outcome.Warn.When, memoryInfo.Total)
@@ -81,7 +82,7 @@ func (a *AnalyzeHostMemory) Analyze(getCollectedFileContents func(string) ([]byt
 				result.Message = outcome.Warn.Message
 				result.URI = outcome.Warn.URI
 
-				coll.push(result)
+				return []*AnalyzeResult{&result}, nil
 			}
 		} else if outcome.Pass != nil {
 			if outcome.Pass.When == "" {
@@ -89,7 +90,7 @@ func (a *AnalyzeHostMemory) Analyze(getCollectedFileContents func(string) ([]byt
 				result.Message = outcome.Pass.Message
 				result.URI = outcome.Pass.URI
 
-				coll.push(result)
+				return []*AnalyzeResult{&result}, nil
 			}
 
 			isMatch, err := compareHostMemoryConditionalToActual(outcome.Pass.When, memoryInfo.Total)
@@ -102,12 +103,12 @@ func (a *AnalyzeHostMemory) Analyze(getCollectedFileContents func(string) ([]byt
 				result.Message = outcome.Pass.Message
 				result.URI = outcome.Pass.URI
 
-				coll.push(result)
+				return []*AnalyzeResult{&result}, nil
 			}
 		}
 	}
 
-	return coll.get(a.Title()), nil
+	return []*AnalyzeResult{&result}, nil
 }
 
 func compareHostMemoryConditionalToActual(conditional string, total uint64) (res bool, err error) {
