@@ -4,12 +4,14 @@ import (
 	"bytes"
 	"fmt"
 	"net"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/pkg/errors"
 	"github.com/replicatedhq/troubleshoot/pkg/debug"
 	"github.com/segmentio/ksuid"
+	validation "k8s.io/apimachinery/pkg/util/validation"
 )
 
 type NetworkStatus string
@@ -29,7 +31,41 @@ type NetworkStatusResult struct {
 }
 
 func checkValidLBAddress(address string) bool {
-	return true
+	splitString := strings.Split(address, ":")
+
+	if len(splitString) != 2 { // should be hostAddress:port
+		return false
+	}
+	hostAddress := splitString[0]
+	port, err := strconv.Atoi(splitString[1])
+	println("HostAddress: ", hostAddress)
+	println("Port: ", port)
+	if err != nil {
+		println("Error converting port to integer")
+		return false
+	}
+	portErrors := validation.IsValidPortNum(port)
+
+	if len(portErrors) > 0 {
+		println("Port Invalid")
+		return false
+	}
+
+	// Checking for uppercase letters
+	if strings.ToLower(hostAddress) != hostAddress {
+		println("Address needs to be lowercase")
+		return false
+	}
+
+	errs := validation.IsQualifiedName(hostAddress)
+	println("Errors For ", hostAddress)
+	for _, err := range errs {
+
+		println("Error:", err)
+
+	}
+
+	return len(errs) == 0
 }
 
 func checkTCPConnection(progressChan chan<- interface{}, listenAddress string, dialAddress string, timeout time.Duration) (NetworkStatus, error) {
