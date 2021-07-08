@@ -37,19 +37,14 @@ func Secret(c *Collector, secretCollector *troubleshootv1beta2.Secret) (map[stri
 	secrets := []corev1.Secret{}
 	if secretCollector.Name != "" {
 		secret, err := client.CoreV1().Secrets(secretCollector.Namespace).Get(ctx, secretCollector.Name, metav1.GetOptions{})
-		if kuberneteserrors.IsNotFound(err) {
-			missingSecret := SecretOutput{
-				Namespace:    secretCollector.Namespace,
-				Name:         secretCollector.Name,
-				SecretExists: false,
+		if err != nil {
+			if kuberneteserrors.IsNotFound(err) {
+				filePath, encoded, err := secretToOutput(secretCollector, nil, secretCollector.Name)
+				if err != nil {
+					return output, errors.Wrapf(err, "collect secret %s", secretCollector.Name)
+				}
+				output[filePath] = encoded
 			}
-			path, b, err := marshalSecretOutput(secretCollector, missingSecret)
-			if err != nil {
-				return output, errors.Wrap(err, "marshal found secret")
-			}
-			output[path] = b
-			return output, nil
-		} else if err != nil {
 			errorBytes, err := marshalNonNil([]string{err.Error()})
 			if err != nil {
 				return nil, errors.Wrapf(err, "marshal secret %s error non nil", secretCollector.Name)
@@ -74,7 +69,7 @@ func Secret(c *Collector, secretCollector *troubleshootv1beta2.Secret) (map[stri
 	}
 
 	for _, secret := range secrets {
-		filePath, encoded, err := secretToOutput(secretCollector, secret)
+		filePath, encoded, err := secretToOutput(secretCollector, &secret, secret.Name)
 		if err != nil {
 			return output, errors.Wrapf(err, "collect secret %s", secret.Name)
 		}
@@ -84,28 +79,23 @@ func Secret(c *Collector, secretCollector *troubleshootv1beta2.Secret) (map[stri
 	return output, nil
 }
 
-func secretToOutput(secretCollector *troubleshootv1beta2.Secret, secret corev1.Secret) (string, []byte, error) {
-	keyExists := false
-	keyData := ""
-	secretKey := ""
-	if secretCollector.Key != "" {
-		secretKey = secretCollector.Key
+func secretToOutput(secretCollector *troubleshootv1beta2.Secret, secret *corev1.Secret, secretName string) (string, []byte, error) {
+	foundSecret := SecretOutput{
+		Namespace:    secretCollector.Namespace,
+		Name:         secretName,
+		SecretExists: true,
+		Key:          secretCollector.Key,
+	}
+
+	if secret != nil && secretCollector.Key != "" {
 		if val, ok := secret.Data[secretCollector.Key]; ok {
-			keyExists = true
+			foundSecret.KeyExists = true
 			if secretCollector.IncludeValue {
-				keyData = string(val)
+				foundSecret.Value = string(val)
 			}
 		}
 	}
 
-	foundSecret := SecretOutput{
-		Namespace:    secret.Namespace,
-		Name:         secret.Name,
-		Key:          secretKey,
-		SecretExists: true,
-		KeyExists:    keyExists,
-		Value:        keyData,
-	}
 	return marshalSecretOutput(secretCollector, foundSecret)
 }
 
@@ -136,21 +126,22 @@ func marshalSecretOutput(secretCollector *troubleshootv1beta2.Secret, secret Sec
 }
 
 func getSecretFileName(secretCollector *troubleshootv1beta2.Secret, name string) string {
-	if secretCollector.CollectorName != "" {
-		return filepath.Join("secrets", secretCollector.CollectorName, secretCollector.Namespace, fmt.Sprintf("%s.json", name))
+	parts := []string{"secrets", secretCollector.Namespace, name}
+	if secretCollector.Key != "" {
+		parts = append(parts, secretCollector.Key)
 	}
-	return filepath.Join("secrets", secretCollector.Namespace, fmt.Sprintf("%s.json", name))
+	return fmt.Sprintf("%s.json", filepath.Join(parts...))
 }
 
 func getSecretErrorsFileName(secretCollector *troubleshootv1beta2.Secret) string {
-	var filename string
+	parts := []string{"secrets-errors", secretCollector.Namespace}
 	if secretCollector.Name != "" {
-		filename = secretCollector.Name
+		parts = append(parts, secretCollector.Name)
 	} else {
-		filename = selectorToString(secretCollector.Selector)
+		parts = append(parts, selectorToString(secretCollector.Selector))
 	}
-	if secretCollector.CollectorName != "" {
-		return filepath.Join("secrets-errors", secretCollector.CollectorName, secretCollector.Namespace, fmt.Sprintf("%s.json", filename))
+	if secretCollector.Key != "" {
+		parts = append(parts, secretCollector.Key)
 	}
-	return filepath.Join("secrets-errors", secretCollector.Namespace, fmt.Sprintf("%s.json", filename))
+	return fmt.Sprintf("%s.json", filepath.Join(parts...))
 }

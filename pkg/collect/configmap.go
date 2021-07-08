@@ -37,22 +37,17 @@ func ConfigMap(c *Collector, configMapCollector *troubleshootv1beta2.ConfigMap) 
 	configMaps := []corev1.ConfigMap{}
 	if configMapCollector.Name != "" {
 		configMap, err := client.CoreV1().ConfigMaps(configMapCollector.Namespace).Get(ctx, configMapCollector.Name, metav1.GetOptions{})
-		if kuberneteserrors.IsNotFound(err) {
-			missingConfigMap := ConfigMapOutput{
-				Namespace:       configMapCollector.Namespace,
-				Name:            configMapCollector.Name,
-				ConfigMapExists: false,
+		if err != nil {
+			if kuberneteserrors.IsNotFound(err) {
+				filePath, encoded, err := configMapToOutput(configMapCollector, nil, configMapCollector.Name)
+				if err != nil {
+					return output, errors.Wrapf(err, "collect secret %s", configMapCollector.Name)
+				}
+				output[filePath] = encoded
 			}
-			path, b, err := marshalConfigMapOutput(configMapCollector, missingConfigMap)
-			if err != nil {
-				return output, errors.Wrap(err, "marshal found configMap")
-			}
-			output[path] = b
-			return output, nil
-		} else if err != nil {
 			errorBytes, err := marshalNonNil([]string{err.Error()})
 			if err != nil {
-				return nil, errors.Wrapf(err, "marshal configMap %s error non nil", configMapCollector.Name)
+				return nil, errors.Wrapf(err, "marshal configmap %s error non nil", configMapCollector.Name)
 			}
 			output[getConfigMapErrorsFileName(configMapCollector)] = errorBytes
 			return output, nil
@@ -74,7 +69,7 @@ func ConfigMap(c *Collector, configMapCollector *troubleshootv1beta2.ConfigMap) 
 	}
 
 	for _, configMap := range configMaps {
-		filePath, encoded, err := configMapToOutput(configMapCollector, configMap)
+		filePath, encoded, err := configMapToOutput(configMapCollector, &configMap, configMap.Name)
 		if err != nil {
 			return output, errors.Wrapf(err, "collect configMap %s", configMap.Name)
 		}
@@ -84,28 +79,23 @@ func ConfigMap(c *Collector, configMapCollector *troubleshootv1beta2.ConfigMap) 
 	return output, nil
 }
 
-func configMapToOutput(configMapCollector *troubleshootv1beta2.ConfigMap, configMap corev1.ConfigMap) (string, []byte, error) {
-	keyExists := false
-	keyData := ""
-	configMapKey := ""
-	if configMapCollector.Key != "" {
-		configMapKey = configMapCollector.Key
+func configMapToOutput(configMapCollector *troubleshootv1beta2.ConfigMap, configMap *corev1.ConfigMap, configMapName string) (string, []byte, error) {
+	foundConfigMap := ConfigMapOutput{
+		Namespace:       configMapCollector.Namespace,
+		Name:            configMapName,
+		ConfigMapExists: true,
+		Key:             configMapCollector.Key,
+	}
+
+	if configMap != nil && configMapCollector.Key != "" {
 		if val, ok := configMap.Data[configMapCollector.Key]; ok {
-			keyExists = true
+			foundConfigMap.KeyExists = true
 			if configMapCollector.IncludeValue {
-				keyData = string(val)
+				foundConfigMap.Value = string(val)
 			}
 		}
 	}
 
-	foundConfigMap := ConfigMapOutput{
-		Namespace:       configMap.Namespace,
-		Name:            configMap.Name,
-		Key:             configMapKey,
-		ConfigMapExists: true,
-		KeyExists:       keyExists,
-		Value:           keyData,
-	}
 	return marshalConfigMapOutput(configMapCollector, foundConfigMap)
 }
 
@@ -136,21 +126,22 @@ func marshalConfigMapOutput(configMapCollector *troubleshootv1beta2.ConfigMap, c
 }
 
 func getConfigMapFileName(configMapCollector *troubleshootv1beta2.ConfigMap, name string) string {
-	if configMapCollector.CollectorName != "" {
-		return filepath.Join("configMaps", configMapCollector.CollectorName, configMapCollector.Namespace, fmt.Sprintf("%s.json", name))
+	parts := []string{"configmaps", configMapCollector.Namespace, name}
+	if configMapCollector.Key != "" {
+		parts = append(parts, configMapCollector.Key)
 	}
-	return filepath.Join("configMaps", configMapCollector.Namespace, fmt.Sprintf("%s.json", name))
+	return fmt.Sprintf("%s.json", filepath.Join(parts...))
 }
 
 func getConfigMapErrorsFileName(configMapCollector *troubleshootv1beta2.ConfigMap) string {
-	var filename string
+	parts := []string{"configmaps-errors", configMapCollector.Namespace}
 	if configMapCollector.Name != "" {
-		filename = configMapCollector.Name
+		parts = append(parts, configMapCollector.Name)
 	} else {
-		filename = selectorToString(configMapCollector.Selector)
+		parts = append(parts, selectorToString(configMapCollector.Selector))
 	}
-	if configMapCollector.CollectorName != "" {
-		return filepath.Join("configmaps-errors", configMapCollector.CollectorName, configMapCollector.Namespace, fmt.Sprintf("%s.json", filename))
+	if configMapCollector.Key != "" {
+		parts = append(parts, configMapCollector.Key)
 	}
-	return filepath.Join("configmaps-errors", configMapCollector.Namespace, fmt.Sprintf("%s.json", filename))
+	return fmt.Sprintf("%s.json", filepath.Join(parts...))
 }
