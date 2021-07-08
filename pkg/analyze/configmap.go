@@ -9,12 +9,14 @@ import (
 )
 
 func analyzeConfigMap(analyzer *troubleshootv1beta2.AnalyzeConfigMap, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
-	var filename string
-	if analyzer.Key != "" {
-		filename = fmt.Sprintf("configmaps/%s/%s/%s.json", analyzer.Namespace, analyzer.ConfigMapName, analyzer.Key)
-	} else {
-		filename = fmt.Sprintf("configmaps/%s/%s.json", analyzer.Namespace, analyzer.ConfigMapName)
-	}
+	filename := collect.GetConfigMapFileName(
+		&troubleshootv1beta2.ConfigMap{
+			Namespace: analyzer.Namespace,
+			Name:      analyzer.ConfigMapName,
+			Key:       analyzer.Key,
+		},
+		analyzer.ConfigMapName,
+	)
 
 	configMapData, err := getCollectedFileContents(filename)
 	if err != nil {
@@ -33,7 +35,7 @@ func analyzeConfigMap(analyzer *troubleshootv1beta2.AnalyzeConfigMap, getCollect
 
 	result := AnalyzeResult{
 		Title:   title,
-		IconKey: "kubernetes_analyze_secret",
+		IconKey: "kubernetes_analyze_secret", // TODO: icon
 		IconURI: "https://troubleshoot.sh/images/analyzer-icons/secret.svg?w=13&h=16",
 	}
 

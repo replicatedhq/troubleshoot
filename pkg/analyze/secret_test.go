@@ -55,6 +55,9 @@ func Test_analyzeSecret(t *testing.T) {
 		{
 			name: "not found",
 			analyzer: &troubleshootv1beta2.AnalyzeSecret{
+				AnalyzeMeta: troubleshootv1beta2.AnalyzeMeta{
+					CheckName: "test secret analyzer",
+				},
 				Namespace:  "test-namespace",
 				SecretName: "test-secret",
 				Outcomes: []*troubleshootv1beta2.Outcome{
@@ -80,7 +83,7 @@ func Test_analyzeSecret(t *testing.T) {
 			want: &AnalyzeResult{
 				IsFail:  true,
 				Message: "Not found",
-				Title:   "Secret test-secret",
+				Title:   "test secret analyzer",
 				IconKey: "kubernetes_analyze_secret",
 				IconURI: "https://troubleshoot.sh/images/analyzer-icons/secret.svg?w=13&h=16",
 			},
@@ -88,6 +91,9 @@ func Test_analyzeSecret(t *testing.T) {
 		{
 			name: "key found",
 			analyzer: &troubleshootv1beta2.AnalyzeSecret{
+				AnalyzeMeta: troubleshootv1beta2.AnalyzeMeta{
+					CheckName: "test secret analyzer",
+				},
 				Namespace:  "test-namespace",
 				SecretName: "test-secret",
 				Key:        "test-key",
@@ -116,7 +122,7 @@ func Test_analyzeSecret(t *testing.T) {
 			want: &AnalyzeResult{
 				IsPass:  true,
 				Message: "Key found",
-				Title:   "Secret test-secret",
+				Title:   "test secret analyzer",
 				IconKey: "kubernetes_analyze_secret",
 				IconURI: "https://troubleshoot.sh/images/analyzer-icons/secret.svg?w=13&h=16",
 			},
@@ -124,6 +130,9 @@ func Test_analyzeSecret(t *testing.T) {
 		{
 			name: "key not found",
 			analyzer: &troubleshootv1beta2.AnalyzeSecret{
+				AnalyzeMeta: troubleshootv1beta2.AnalyzeMeta{
+					CheckName: "test secret analyzer",
+				},
 				Namespace:  "test-namespace",
 				SecretName: "test-secret",
 				Key:        "test-key",
@@ -152,7 +161,7 @@ func Test_analyzeSecret(t *testing.T) {
 			want: &AnalyzeResult{
 				IsFail:  true,
 				Message: "Key not found",
-				Title:   "Secret test-secret",
+				Title:   "test secret analyzer",
 				IconKey: "kubernetes_analyze_secret",
 				IconURI: "https://troubleshoot.sh/images/analyzer-icons/secret.svg?w=13&h=16",
 			},
@@ -160,6 +169,9 @@ func Test_analyzeSecret(t *testing.T) {
 		{
 			name: "key not found secret not found",
 			analyzer: &troubleshootv1beta2.AnalyzeSecret{
+				AnalyzeMeta: troubleshootv1beta2.AnalyzeMeta{
+					CheckName: "test secret analyzer",
+				},
 				Namespace:  "test-namespace",
 				SecretName: "test-secret",
 				Key:        "test-key",

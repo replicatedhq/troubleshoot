@@ -42,7 +42,7 @@ func Secret(ctx context.Context, client kubernetes.Interface, secretCollector *t
 			if err != nil {
 				return nil, errors.Wrapf(err, "marshal secret %s error non nil", secretCollector.Name)
 			}
-			output[getSecretErrorsFileName(secretCollector)] = errorBytes
+			output[GetSecretErrorsFileName(secretCollector)] = errorBytes
 			return output, nil
 		}
 		secrets = append(secrets, *secret)
@@ -53,7 +53,7 @@ func Secret(ctx context.Context, client kubernetes.Interface, secretCollector *t
 			if err != nil {
 				return nil, errors.Wrap(err, "marshal selector error non nil")
 			}
-			output[getSecretErrorsFileName(secretCollector)] = errorBytes
+			output[GetSecretErrorsFileName(secretCollector)] = errorBytes
 			return output, nil
 		}
 		secrets = append(secrets, ss...)
@@ -111,7 +111,7 @@ func listSecretsForSelector(ctx context.Context, client kubernetes.Interface, na
 }
 
 func marshalSecretOutput(secretCollector *troubleshootv1beta2.Secret, secret SecretOutput) (string, []byte, error) {
-	path := getSecretFileName(secretCollector, secret.Name)
+	path := GetSecretFileName(secretCollector, secret.Name)
 
 	b, err := json.MarshalIndent(secret, "", "  ")
 	if err != nil {
@@ -121,7 +121,7 @@ func marshalSecretOutput(secretCollector *troubleshootv1beta2.Secret, secret Sec
 	return path, b, nil
 }
 
-func getSecretFileName(secretCollector *troubleshootv1beta2.Secret, name string) string {
+func GetSecretFileName(secretCollector *troubleshootv1beta2.Secret, name string) string {
 	parts := []string{"secrets", secretCollector.Namespace, name}
 	if secretCollector.Key != "" {
 		parts = append(parts, secretCollector.Key)
@@ -129,7 +129,7 @@ func getSecretFileName(secretCollector *troubleshootv1beta2.Secret, name string)
 	return fmt.Sprintf("%s.json", filepath.Join(parts...))
 }
 
-func getSecretErrorsFileName(secretCollector *troubleshootv1beta2.Secret) string {
+func GetSecretErrorsFileName(secretCollector *troubleshootv1beta2.Secret) string {
 	parts := []string{"secrets-errors", secretCollector.Namespace}
 	if secretCollector.Name != "" {
 		parts = append(parts, secretCollector.Name)

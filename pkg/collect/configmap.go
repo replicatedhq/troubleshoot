@@ -42,7 +42,7 @@ func ConfigMap(ctx context.Context, client kubernetes.Interface, configMapCollec
 			if err != nil {
 				return nil, errors.Wrapf(err, "marshal configmap %s error non nil", configMapCollector.Name)
 			}
-			output[getConfigMapErrorsFileName(configMapCollector)] = errorBytes
+			output[GetConfigMapErrorsFileName(configMapCollector)] = errorBytes
 			return output, nil
 		}
 		configMaps = append(configMaps, *configMap)
@@ -53,7 +53,7 @@ func ConfigMap(ctx context.Context, client kubernetes.Interface, configMapCollec
 			if err != nil {
 				return nil, errors.Wrap(err, "marshal selector error non nil")
 			}
-			output[getConfigMapErrorsFileName(configMapCollector)] = errorBytes
+			output[GetConfigMapErrorsFileName(configMapCollector)] = errorBytes
 			return output, nil
 		}
 		configMaps = append(configMaps, cms...)
@@ -110,7 +110,7 @@ func listConfigMapsForSelector(ctx context.Context, client kubernetes.Interface,
 }
 
 func marshalConfigMapOutput(configMapCollector *troubleshootv1beta2.ConfigMap, configMap ConfigMapOutput) (string, []byte, error) {
-	path := getConfigMapFileName(configMapCollector, configMap.Name)
+	path := GetConfigMapFileName(configMapCollector, configMap.Name)
 
 	b, err := json.MarshalIndent(configMap, "", "  ")
 	if err != nil {
@@ -120,7 +120,7 @@ func marshalConfigMapOutput(configMapCollector *troubleshootv1beta2.ConfigMap, c
 	return path, b, nil
 }
 
-func getConfigMapFileName(configMapCollector *troubleshootv1beta2.ConfigMap, name string) string {
+func GetConfigMapFileName(configMapCollector *troubleshootv1beta2.ConfigMap, name string) string {
 	parts := []string{"configmaps", configMapCollector.Namespace, name}
 	if configMapCollector.Key != "" {
 		parts = append(parts, configMapCollector.Key)
@@ -128,7 +128,7 @@ func getConfigMapFileName(configMapCollector *troubleshootv1beta2.ConfigMap, nam
 	return fmt.Sprintf("%s.json", filepath.Join(parts...))
 }
 
-func getConfigMapErrorsFileName(configMapCollector *troubleshootv1beta2.ConfigMap) string {
+func GetConfigMapErrorsFileName(configMapCollector *troubleshootv1beta2.ConfigMap) string {
 	parts := []string{"configmaps-errors", configMapCollector.Namespace}
 	if configMapCollector.Name != "" {
 		parts = append(parts, configMapCollector.Name)

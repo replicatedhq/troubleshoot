@@ -54,6 +54,9 @@ func Test_analyzeConfigMap(t *testing.T) {
 		{
 			name: "not found",
 			analyzer: &troubleshootv1beta2.AnalyzeConfigMap{
+				AnalyzeMeta: troubleshootv1beta2.AnalyzeMeta{
+					CheckName: "test configmap analyzer",
+				},
 				Namespace:     "test-namespace",
 				ConfigMapName: "test-configmap",
 				Outcomes: []*troubleshootv1beta2.Outcome{
@@ -79,7 +82,7 @@ func Test_analyzeConfigMap(t *testing.T) {
 			want: &AnalyzeResult{
 				IsFail:  true,
 				Message: "Not found",
-				Title:   "ConfigMap test-configmap",
+				Title:   "test configmap analyzer",
 				IconKey: "kubernetes_analyze_secret",
 				IconURI: "https://troubleshoot.sh/images/analyzer-icons/secret.svg?w=13&h=16",
 			},
@@ -87,6 +90,9 @@ func Test_analyzeConfigMap(t *testing.T) {
 		{
 			name: "key found",
 			analyzer: &troubleshootv1beta2.AnalyzeConfigMap{
+				AnalyzeMeta: troubleshootv1beta2.AnalyzeMeta{
+					CheckName: "test configmap analyzer",
+				},
 				Namespace:     "test-namespace",
 				ConfigMapName: "test-configmap",
 				Key:           "test-key",
@@ -115,7 +121,7 @@ func Test_analyzeConfigMap(t *testing.T) {
 			want: &AnalyzeResult{
 				IsPass:  true,
 				Message: "Key found",
-				Title:   "ConfigMap test-configmap",
+				Title:   "test configmap analyzer",
 				IconKey: "kubernetes_analyze_secret",
 				IconURI: "https://troubleshoot.sh/images/analyzer-icons/secret.svg?w=13&h=16",
 			},
@@ -123,6 +129,9 @@ func Test_analyzeConfigMap(t *testing.T) {
 		{
 			name: "key not found",
 			analyzer: &troubleshootv1beta2.AnalyzeConfigMap{
+				AnalyzeMeta: troubleshootv1beta2.AnalyzeMeta{
+					CheckName: "test configmap analyzer",
+				},
 				Namespace:     "test-namespace",
 				ConfigMapName: "test-configmap",
 				Key:           "test-key",
@@ -151,7 +160,7 @@ func Test_analyzeConfigMap(t *testing.T) {
 			want: &AnalyzeResult{
 				IsFail:  true,
 				Message: "Key not found",
-				Title:   "ConfigMap test-configmap",
+				Title:   "test configmap analyzer",
 				IconKey: "kubernetes_analyze_secret",
 				IconURI: "https://troubleshoot.sh/images/analyzer-icons/secret.svg?w=13&h=16",
 			},
@@ -159,6 +168,9 @@ func Test_analyzeConfigMap(t *testing.T) {
 		{
 			name: "key not found configmap not found",
 			analyzer: &troubleshootv1beta2.AnalyzeConfigMap{
+				AnalyzeMeta: troubleshootv1beta2.AnalyzeMeta{
+					CheckName: "test configmap analyzer",
+				},
 				Namespace:     "test-namespace",
 				ConfigMapName: "test-configmap",
 				Key:           "test-key",
