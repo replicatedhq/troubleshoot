@@ -362,6 +362,42 @@ func TestAnalyzeHostDiskUsage(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "Pass with empty When and warning",
+			diskUsageInfo: &collect.DiskUsageInfo{
+				TotalBytes: 9 * 1024 * 1024 * 1024,
+				UsedBytes:  1 * 1024 * 1024 * 1024,
+			},
+			hostAnalyzer: &troubleshootv1beta2.DiskUsageAnalyze{
+				CollectorName: "ephemeral",
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Warn: &troubleshootv1beta2.SingleOutcome{
+							When:    "available < 10Gi",
+							Message: "/var/lib/kubelet less than 10Gi available",
+						},
+					},
+					{
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							When:    "",
+							Message: "/var/lib/kubelet passed",
+						},
+					},
+				},
+			},
+			result: []*AnalyzeResult{
+				{
+					Title:   "Disk Usage ephemeral",
+					IsWarn:  true,
+					Message: "/var/lib/kubelet less than 10Gi available",
+				},
+				{
+					Title:   "Disk Usage ephemeral",
+					IsPass:  true,
+					Message: "/var/lib/kubelet passed",
+				},
+			},
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {

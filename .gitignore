@@ -28,3 +28,6 @@ vendor
 
 dist
 try.sh
+
+.vscode/
+workspace.*

@@ -54,6 +54,7 @@ func (a *AnalyzeHostTime) Analyze(getCollectedFileContents func(string) ([]byte,
 				result.URI = outcome.Fail.URI
 
 				coll.push(result)
+				continue
 			}
 
 			isMatch, err := compareHostTimeStatusToActual(outcome.Fail.When, timeInfo)
@@ -75,6 +76,7 @@ func (a *AnalyzeHostTime) Analyze(getCollectedFileContents func(string) ([]byte,
 				result.URI = outcome.Warn.URI
 
 				coll.push(result)
+				continue
 			}
 
 			isMatch, err := compareHostTimeStatusToActual(outcome.Warn.When, timeInfo)
@@ -89,6 +91,7 @@ func (a *AnalyzeHostTime) Analyze(getCollectedFileContents func(string) ([]byte,
 
 				coll.push(result)
 			}
+
 		} else if outcome.Pass != nil {
 			if outcome.Pass.When == "" {
 				result.IsPass = true
@@ -96,6 +99,7 @@ func (a *AnalyzeHostTime) Analyze(getCollectedFileContents func(string) ([]byte,
 				result.URI = outcome.Pass.URI
 
 				coll.push(result)
+				continue
 			}
 
 			isMatch, err := compareHostTimeStatusToActual(outcome.Pass.When, timeInfo)
@@ -110,6 +114,7 @@ func (a *AnalyzeHostTime) Analyze(getCollectedFileContents func(string) ([]byte,
 
 				coll.push(result)
 			}
+
 		}
 	}
 

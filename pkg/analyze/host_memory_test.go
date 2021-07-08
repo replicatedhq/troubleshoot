@@ -181,3 +181,65 @@ func TestAnalyzeHostMemory(t *testing.T) {
 		})
 	}
 }
+
+func TestHostMemoryAnalyze(t *testing.T) {
+	tt := []struct {
+		name       string
+		memoryInfo collect.MemoryInfo
+		outcomes   []*troubleshootv1beta2.Outcome
+		results    []*AnalyzeResult
+		wantErr    bool
+	}{
+		{
+			name: "fix for empty pass predicate",
+			memoryInfo: collect.MemoryInfo{
+				Total: 16 * 1024 * 1024 * 1024,
+			},
+			outcomes: []*troubleshootv1beta2.Outcome{
+				{
+					Fail: &troubleshootv1beta2.SingleOutcome{
+						When:    "< 8Gi",
+						Message: "oops",
+					},
+				},
+				{
+					Pass: &troubleshootv1beta2.SingleOutcome{
+						When:    "",
+						Message: "it passed",
+					},
+				},
+			},
+			results: []*AnalyzeResult{
+				{
+					IsPass:  true,
+					Message: "it passed",
+					Title:   "Memory Test",
+				},
+			},
+		},
+	}
+
+	for _, tc := range tt {
+		t.Run(tc.name, func(t *testing.T) {
+			fn := func(_ string) ([]byte, error) {
+				return json.Marshal(&tc.memoryInfo)
+			}
+
+			analyzer := AnalyzeHostMemory{
+				hostAnalyzer: &troubleshootv1beta2.MemoryAnalyze{
+					AnalyzeMeta: troubleshootv1beta2.AnalyzeMeta{
+						CheckName: "Memory Test",
+					},
+					Outcomes: tc.outcomes,
+				},
+			}
+			results, err := analyzer.Analyze(fn)
+			if tc.wantErr {
+				require.NotNil(t, err)
+				return
+			}
+			require.Nil(t, err)
+			require.Equal(t, tc.results, results)
+		})
+	}
+}

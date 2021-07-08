@@ -47,6 +47,7 @@ func (a *AnalyzeHostServices) Analyze(getCollectedFileContents func(string) ([]b
 				result.URI = outcome.Fail.URI
 
 				coll.push(result)
+				continue
 			}
 
 			isMatch, err := compareHostServicesConditionalToActual(outcome.Fail.When, services)
@@ -68,6 +69,7 @@ func (a *AnalyzeHostServices) Analyze(getCollectedFileContents func(string) ([]b
 				result.URI = outcome.Warn.URI
 
 				coll.push(result)
+				continue
 			}
 
 			isMatch, err := compareHostServicesConditionalToActual(outcome.Warn.When, services)
@@ -89,6 +91,7 @@ func (a *AnalyzeHostServices) Analyze(getCollectedFileContents func(string) ([]b
 				result.URI = outcome.Pass.URI
 
 				coll.push(result)
+				continue
 			}
 
 			isMatch, err := compareHostServicesConditionalToActual(outcome.Pass.When, services)
@@ -103,6 +106,7 @@ func (a *AnalyzeHostServices) Analyze(getCollectedFileContents func(string) ([]b
 
 				coll.push(result)
 			}
+
 		}
 	}
 
