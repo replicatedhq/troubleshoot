@@ -30,6 +30,16 @@ type NetworkStatusResult struct {
 	Status NetworkStatus `json:"status"`
 }
 
+func isIPCandidate(address string) bool {
+	validChars := "0123456789."
+	for i := range address {
+		if !strings.Contains(validChars, string(address[i])) {
+			return false
+		}
+	}
+	return true
+}
+
 func checkValidLBAddress(address string) bool {
 	splitString := strings.Split(address, ":")
 
@@ -55,6 +65,26 @@ func checkValidLBAddress(address string) bool {
 	if strings.ToLower(hostAddress) != hostAddress {
 		println("Address needs to be lowercase")
 		return false
+	}
+
+	// Checking if it's all numbers and .
+	println("CHECKING FOR VALID IP")
+	if isIPCandidate(hostAddress) {
+		println("Address:", hostAddress, " is a valid IP candidate")
+
+		// Check for isValidIP
+
+		test := validation.IsValidIP(hostAddress)
+		if len(test) > 0 {
+			println("INVALID IP address")
+			for i := range test {
+				println(test[i])
+			}
+			return false
+		} else {
+			println(hostAddress, " Is someohow a valid IP")
+		}
+
 	}
 
 	errs := validation.IsQualifiedName(hostAddress)

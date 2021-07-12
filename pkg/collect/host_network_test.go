@@ -1,6 +1,8 @@
 package collect
 
-import "testing"
+import (
+	"testing"
+)
 
 func Test_checkValidLBAddress(t *testing.T) {
 	type args struct {
@@ -52,6 +54,11 @@ func Test_checkValidLBAddress(t *testing.T) {
 			want: false,
 		},
 		{
+			name: "Too many consecutive .",
+			args: args{address: "55..55.51.23:80"},
+			want: false,
+		},
+		{
 			name: "Invalid Port too low",
 			args: args{address: "55.55.51.23:0"},
 			want: false,
@@ -85,6 +92,50 @@ func Test_checkValidLBAddress(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := checkValidLBAddress(tt.args.address); got != tt.want {
 				t.Errorf("checkValidTCPAddress() = %v, want %v for %v", got, tt.want, tt.args.address)
+			}
+		})
+	}
+}
+
+func Test_isIPCandidate(t *testing.T) {
+	type args struct {
+		address string
+	}
+	tests := []struct {
+		name string
+		args args
+		want bool
+	}{
+		{
+			name: "Basic IP4",
+			args: args{address: "1.2.3.4"},
+			want: true,
+		},
+		{
+			name: "DNS name",
+			args: args{address: "google.com"},
+			want: false,
+		},
+		{
+			name: "IP Jumble",
+			args: args{address: "55.555.14.2"},
+			want: true,
+		},
+		{
+			name: "Invalid Address but good candidate",
+			args: args{address: "55.5..3"},
+			want: true,
+		},
+		{
+			name: "Bad stuff",
+			args: args{address: "t1232123.12123"},
+			want: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := isIPCandidate(tt.args.address); got != tt.want {
+				t.Errorf("isIpCandidate() = %v, want %v", got, tt.want)
 			}
 		})
 	}
