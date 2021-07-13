@@ -382,3 +382,78 @@ func TestAnalyzeLonghornReplicaChecksums(t *testing.T) {
 		})
 	}
 }
+
+func TestSimplifyLonghornResults(t *testing.T) {
+	tests := []struct {
+		name   string
+		input  []*AnalyzeResult
+		expect []*AnalyzeResult
+	}{
+		{
+			name: "All pass",
+			input: []*AnalyzeResult{
+				{
+					Title:   "Replica 1",
+					IsPass:  true,
+					Message: "Replica 1 ok",
+				},
+				{
+					Title:   "Node 1",
+					IsPass:  true,
+					Message: "Node 1 ok",
+				},
+			},
+			expect: []*AnalyzeResult{
+				{
+					Title:   "Longhorn Health Status",
+					IsPass:  true,
+					Message: "Longhorn is healthy",
+				},
+			},
+		},
+		{
+			name: "Mixed results",
+			input: []*AnalyzeResult{
+				{
+					Title:   "Replica 1",
+					IsPass:  true,
+					Message: "Replica 1 ok",
+				},
+				{
+					Title:   "Replica 2",
+					IsWarn:  true,
+					Message: "Replica 1 is down",
+				},
+				{
+					Title:   "Node 1",
+					IsPass:  true,
+					Message: "Node 1 ok",
+				},
+				{
+					Title:   "Node 2",
+					IsFail:  true,
+					Message: "Node 2 is down",
+				},
+			},
+			expect: []*AnalyzeResult{
+				{
+					Title:   "Replica 2",
+					IsWarn:  true,
+					Message: "Replica 1 is down",
+				},
+				{
+					Title:   "Node 2",
+					IsFail:  true,
+					Message: "Node 2 is down",
+				},
+			},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			got := simplifyLonghornResults(test.input)
+
+			assert.Equal(t, test.expect, got)
+		})
+	}
+}

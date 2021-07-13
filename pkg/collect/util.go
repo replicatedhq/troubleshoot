@@ -22,7 +22,19 @@ func DeterministicIDForCollector(collector *troubleshootv1beta2.Collect) string 
 	}
 
 	if collector.Secret != nil {
-		unsafeID = fmt.Sprintf("secret-%s-%s", collector.Secret.Namespace, collector.Secret.SecretName)
+		if collector.Secret.Name != "" {
+			unsafeID = fmt.Sprintf("secret-%s-%s", collector.Secret.Namespace, collector.Secret.Name)
+		} else {
+			unsafeID = fmt.Sprintf("secret-%s-%s", collector.Secret.Namespace, selectorToString(collector.Secret.Selector))
+		}
+	}
+
+	if collector.ConfigMap != nil {
+		if collector.ConfigMap.Name != "" {
+			unsafeID = fmt.Sprintf("configmap-%s-%s", collector.ConfigMap.Namespace, collector.ConfigMap.Name)
+		} else {
+			unsafeID = fmt.Sprintf("configmap-%s-%s", collector.ConfigMap.Namespace, selectorToString(collector.ConfigMap.Selector))
+		}
 	}
 
 	if collector.Logs != nil {

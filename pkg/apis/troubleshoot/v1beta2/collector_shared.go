@@ -25,10 +25,20 @@ type ClusterResources struct {
 
 type Secret struct {
 	CollectorMeta `json:",inline" yaml:",inline"`
-	SecretName    string `json:"name" yaml:"name"`
-	Namespace     string `json:"namespace,omitempty" yaml:"namespace,omitempty"`
-	Key           string `json:"key,omitempty" yaml:"key,omitempty"`
-	IncludeValue  bool   `json:"includeValue,omitempty" yaml:"includeValue,omitempty"`
+	Name          string   `json:"name,omitempty" yaml:"name,omitempty"`
+	Selector      []string `json:"selector,omitempty" yaml:"selector,omitempty"`
+	Namespace     string   `json:"namespace,omitempty" yaml:"namespace,omitempty"`
+	Key           string   `json:"key,omitempty" yaml:"key,omitempty"`
+	IncludeValue  bool     `json:"includeValue,omitempty" yaml:"includeValue,omitempty"`
+}
+
+type ConfigMap struct {
+	CollectorMeta `json:",inline" yaml:",inline"`
+	Name          string   `json:"name,omitempty" yaml:"name,omitempty"`
+	Selector      []string `json:"selector,omitempty" yaml:"selector,omitempty"`
+	Namespace     string   `json:"namespace,omitempty" yaml:"namespace,omitempty"`
+	Key           string   `json:"key,omitempty" yaml:"key,omitempty"`
+	IncludeValue  bool     `json:"includeValue,omitempty" yaml:"includeValue,omitempty"`
 }
 
 type LogLimits struct {
@@ -156,6 +166,7 @@ type Collect struct {
 	ClusterInfo      *ClusterInfo      `json:"clusterInfo,omitempty" yaml:"clusterInfo,omitempty"`
 	ClusterResources *ClusterResources `json:"clusterResources,omitempty" yaml:"clusterResources,omitempty"`
 	Secret           *Secret           `json:"secret,omitempty" yaml:"secret,omitempty"`
+	ConfigMap        *ConfigMap        `json:"configMap,omitempty" yaml:"configMap,omitempty"`
 	Logs             *Logs             `json:"logs,omitempty" yaml:"logs,omitempty"`
 	Run              *Run              `json:"run,omitempty" yaml:"run,omitempty"`
 	Exec             *Exec             `json:"exec,omitempty" yaml:"exec,omitempty"`
@@ -234,7 +245,20 @@ func (c *Collect) AccessReviewSpecs(overrideNS string) []authorizationv1.SelfSub
 				Version:     "",
 				Resource:    "secrets",
 				Subresource: "",
-				Name:        c.Secret.SecretName,
+				Name:        c.Secret.Name,
+			},
+			NonResourceAttributes: nil,
+		})
+	} else if c.ConfigMap != nil {
+		result = append(result, authorizationv1.SelfSubjectAccessReviewSpec{
+			ResourceAttributes: &authorizationv1.ResourceAttributes{
+				Namespace:   pickNamespaceOrDefault(c.ConfigMap.Namespace, overrideNS),
+				Verb:        "get",
+				Group:       "",
+				Version:     "",
+				Resource:    "configmaps",
+				Subresource: "",
+				Name:        c.ConfigMap.Name,
 			},
 			NonResourceAttributes: nil,
 		})
@@ -359,6 +383,12 @@ func (c *Collect) GetName() string {
 	if c.Secret != nil {
 		collector = "secret"
 		name = c.Secret.CollectorName
+		selector = strings.Join(c.Secret.Selector, ",")
+	}
+	if c.ConfigMap != nil {
+		collector = "configmap"
+		name = c.ConfigMap.CollectorName
+		selector = strings.Join(c.ConfigMap.Selector, ",")
 	}
 	if c.Logs != nil {
 		collector = "logs"

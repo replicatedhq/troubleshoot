@@ -19,6 +19,7 @@ import (
 	"github.com/replicatedhq/troubleshoot/pkg/version"
 	"gopkg.in/yaml.v2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 )
 
 // TODO (dan): This is VERY similar to the Preflight collect package and should be refactored.
@@ -38,6 +39,11 @@ func runCollectors(collectors []*troubleshootv1beta2.Collect, additionalRedactor
 			Namespace:    opts.Namespace,
 		}
 		cleanedCollectors = append(cleanedCollectors, &collector)
+	}
+
+	k8sClient, err := kubernetes.NewForConfig(opts.KubernetesRestConfig)
+	if err != nil {
+		return errors.Wrap(err, "failed to instantiate kuberentes client")
 	}
 
 	if err := cleanedCollectors.CheckRBAC(context.Background()); err != nil {
@@ -78,7 +84,7 @@ func runCollectors(collectors []*troubleshootv1beta2.Collect, additionalRedactor
 
 		opts.CollectorProgressCallback(opts.ProgressChan, collector.GetDisplayName())
 
-		result, err := collector.RunCollectorSync(globalRedactors)
+		result, err := collector.RunCollectorSync(k8sClient, globalRedactors)
 		if err != nil {
 			opts.ProgressChan <- fmt.Errorf("failed to run collector %q: %v", collector.GetDisplayName(), err)
 			continue

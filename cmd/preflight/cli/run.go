@@ -135,10 +135,11 @@ func runPreflights(v *viper.Viper, arg string) error {
 		go func() {
 			for {
 				select {
-				case _, ok := <-progressCh:
+				case msg, ok := <-progressCh:
 					if !ok {
 						return
 					}
+					fmt.Fprintf(os.Stderr, "%v\n", msg)
 				case <-finishedCh:
 					return
 				}

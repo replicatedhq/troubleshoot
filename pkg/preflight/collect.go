@@ -8,6 +8,7 @@ import (
 	analyze "github.com/replicatedhq/troubleshoot/pkg/analyze"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/replicatedhq/troubleshoot/pkg/collect"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
 
@@ -121,6 +122,11 @@ func Collect(opts CollectOpts, p *troubleshootv1beta2.Preflight) (CollectResult,
 		Spec:       p,
 	}
 
+	k8sClient, err := kubernetes.NewForConfig(opts.KubernetesRestConfig)
+	if err != nil {
+		return collectResult, errors.Wrap(err, "failed to instantiate kuberentes client")
+	}
+
 	if err := collectors.CheckRBAC(context.Background()); err != nil {
 		return collectResult, errors.Wrap(err, "failed to check RBAC for collectors")
 	}
@@ -162,7 +168,7 @@ func Collect(opts CollectOpts, p *troubleshootv1beta2.Preflight) (CollectResult,
 			TotalCount:     len(collectors),
 		}
 
-		result, err := collector.RunCollectorSync(nil)
+		result, err := collector.RunCollectorSync(k8sClient, nil)
 		if err != nil {
 			opts.ProgressChan <- errors.Errorf("failed to run collector %s: %v\n", collector.GetDisplayName(), err)
 			opts.ProgressChan <- CollectProgress{

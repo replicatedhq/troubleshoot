@@ -36,6 +36,14 @@ type AnalyzeSecret struct {
 	Key         string     `json:"key,omitempty" yaml:"key,omitempty"`
 }
 
+type AnalyzeConfigMap struct {
+	AnalyzeMeta   `json:",inline" yaml:",inline"`
+	Outcomes      []*Outcome `json:"outcomes" yaml:"outcomes"`
+	ConfigMapName string     `json:"configMapName" yaml:"configMapName"`
+	Namespace     string     `json:"namespace" yaml:"namespace"`
+	Key           string     `json:"key,omitempty" yaml:"key,omitempty"`
+}
+
 type ImagePullSecret struct {
 	AnalyzeMeta  `json:",inline" yaml:",inline"`
 	Outcomes     []*Outcome `json:"outcomes" yaml:"outcomes"`
@@ -140,6 +148,7 @@ type Analyze struct {
 	CustomResourceDefinition *CustomResourceDefinition `json:"customResourceDefinition,omitempty" yaml:"customResourceDefinition,omitempty"`
 	Ingress                  *Ingress                  `json:"ingress,omitempty" yaml:"ingress,omitempty"`
 	Secret                   *AnalyzeSecret            `json:"secret,omitempty" yaml:"secret,omitempty"`
+	ConfigMap                *AnalyzeConfigMap         `json:"configMap,omitempty" yaml:"configMap,omitempty"`
 	ImagePullSecret          *ImagePullSecret          `json:"imagePullSecret,omitempty" yaml:"imagePullSecret,omitempty"`
 	DeploymentStatus         *DeploymentStatus         `json:"deploymentStatus,omitempty" yaml:"deploymentStatus,omitempty"`
 	StatefulsetStatus        *StatefulsetStatus        `json:"statefulsetStatus,omitempty" yaml:"statefulsetStatus,omitempty"`

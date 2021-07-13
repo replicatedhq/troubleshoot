@@ -57,6 +57,7 @@ func (a *AnalyzeHostFilesystemPerformance) Analyze(getCollectedFileContents func
 				result.URI = outcome.Fail.URI
 
 				coll.push(result)
+				continue
 			}
 
 			isMatch, err := compareHostFilesystemPerformanceConditionalToActual(outcome.Fail.When, fsPerf)
@@ -78,6 +79,7 @@ func (a *AnalyzeHostFilesystemPerformance) Analyze(getCollectedFileContents func
 				result.URI = outcome.Warn.URI
 
 				coll.push(result)
+				continue
 			}
 
 			isMatch, err := compareHostFilesystemPerformanceConditionalToActual(outcome.Warn.When, fsPerf)
@@ -99,6 +101,7 @@ func (a *AnalyzeHostFilesystemPerformance) Analyze(getCollectedFileContents func
 				result.URI = outcome.Pass.URI
 
 				coll.push(result)
+				continue
 			}
 
 			isMatch, err := compareHostFilesystemPerformanceConditionalToActual(outcome.Pass.When, fsPerf)
@@ -113,6 +116,7 @@ func (a *AnalyzeHostFilesystemPerformance) Analyze(getCollectedFileContents func
 
 				coll.push(result)
 			}
+
 		}
 	}
 

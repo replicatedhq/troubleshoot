@@ -8,34 +8,34 @@ import (
 	"github.com/replicatedhq/troubleshoot/pkg/collect"
 )
 
-func analyzeSecret(analyzer *troubleshootv1beta2.AnalyzeSecret, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
-	filename := collect.GetSecretFileName(
-		&troubleshootv1beta2.Secret{
+func analyzeConfigMap(analyzer *troubleshootv1beta2.AnalyzeConfigMap, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
+	filename := collect.GetConfigMapFileName(
+		&troubleshootv1beta2.ConfigMap{
 			Namespace: analyzer.Namespace,
-			Name:      analyzer.SecretName,
+			Name:      analyzer.ConfigMapName,
 			Key:       analyzer.Key,
 		},
-		analyzer.SecretName,
+		analyzer.ConfigMapName,
 	)
 
-	secretData, err := getCollectedFileContents(filename)
+	configMapData, err := getCollectedFileContents(filename)
 	if err != nil {
 		return nil, err
 	}
 
-	var foundSecret collect.SecretOutput
-	if err := json.Unmarshal(secretData, &foundSecret); err != nil {
+	var foundConfigMap collect.ConfigMapOutput
+	if err := json.Unmarshal(configMapData, &foundConfigMap); err != nil {
 		return nil, err
 	}
 
 	title := analyzer.CheckName
 	if title == "" {
-		title = fmt.Sprintf("Secret %s", analyzer.SecretName)
+		title = fmt.Sprintf("ConfigMap %s", analyzer.ConfigMapName)
 	}
 
 	result := AnalyzeResult{
 		Title:   title,
-		IconKey: "kubernetes_analyze_secret",
+		IconKey: "kubernetes_analyze_secret", // TODO: icon
 		IconURI: "https://troubleshoot.sh/images/analyzer-icons/secret.svg?w=13&h=16",
 	}
 
@@ -46,7 +46,7 @@ func analyzeSecret(analyzer *troubleshootv1beta2.AnalyzeSecret, getCollectedFile
 		}
 	}
 
-	if !foundSecret.SecretExists {
+	if !foundConfigMap.ConfigMapExists {
 		result.IsFail = true
 		result.Message = failOutcome.Fail.Message
 		result.URI = failOutcome.Fail.URI
@@ -55,7 +55,7 @@ func analyzeSecret(analyzer *troubleshootv1beta2.AnalyzeSecret, getCollectedFile
 	}
 
 	if analyzer.Key != "" {
-		if foundSecret.Key != analyzer.Key || !foundSecret.KeyExists {
+		if foundConfigMap.Key != analyzer.Key || !foundConfigMap.KeyExists {
 			result.IsFail = true
 			result.Message = failOutcome.Fail.Message
 			result.URI = failOutcome.Fail.URI
