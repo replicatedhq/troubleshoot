@@ -80,6 +80,12 @@ type HostServicesAnalyze struct {
 	Outcomes    []*Outcome `json:"outcomes" yaml:"outcomes"`
 }
 
+type XFSInfoAnalyze struct {
+	AnalyzeMeta   `json:",inline" yaml:",inline"`
+	CollectorName string     `json:"collectorName,omitempty" yaml:"collectorName,omitempty"`
+	Outcomes      []*Outcome `json:"outcomes" yaml:"outcomes"`
+}
+
 type HostAnalyze struct {
 	CPU *CPUAnalyze `json:"cpu,omitempty" yaml:"cpu,omitempty"`
 	//
@@ -107,4 +113,6 @@ type HostAnalyze struct {
 	Certificate *CertificateAnalyze `json:"certificate,omitempty" yaml:"certificate,omitempty"`
 
 	HostServices *HostServicesAnalyze `json:"hostServices,omitempty" yaml:"hostServices,omitempty"`
+
+	XFSInfo *XFSInfoAnalyze `json:"xfsInfo,omitempty" yaml:"xfsInfo,omitempty"`
 }

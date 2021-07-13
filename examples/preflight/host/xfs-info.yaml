@@ -1,0 +1,20 @@
+apiVersion: troubleshoot.sh/v1beta2
+kind: HostPreflight
+metadata:
+  name: xfs
+spec:
+  collectors:
+    - xfsInfo:
+        path: /
+  analyzers:
+    - xfsInfo:
+        outcomes:
+          - pass:
+              when: XFS_FTYPE_ENABLED
+              message: Filesystem is compatible with overlay2 storage driver
+          - fail:
+              when: XFS_FTYPE_DISABLED
+              message: Filesystem is not compatible with overlay2 storage driver
+          - warn:
+              when: NOT_XFS
+              message: Filesystem is not xfs

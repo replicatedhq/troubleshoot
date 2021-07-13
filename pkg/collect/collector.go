@@ -172,6 +172,7 @@ func (c *Collector) IsExcluded() bool {
 			return true
 		}
 	}
+
 	return false
 }
 

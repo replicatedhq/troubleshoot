@@ -124,6 +124,14 @@ type HostServices struct {
 	HostCollectorMeta `json:",inline" yaml:",inline"`
 }
 
+// XFSInfo checks whether the path is on an XFS filesystem and, if so, whether the
+// XFS_FSOP_GEOM_FLAGS_FTYPE flag is enabled, which is required for docker and containerd to use
+// the overlay2 storage driver.
+type XFSInfo struct {
+	HostCollectorMeta `json:",inline" yaml:",inline"`
+	Path              string `json:"path"`
+}
+
 type HostCollect struct {
 	CPU                   *CPU                   `json:"cpu,omitempty" yaml:"cpu,omitempty"`
 	Memory                *Memory                `json:"memory,omitempty" yaml:"memory,omitempty"`
@@ -140,6 +148,7 @@ type HostCollect struct {
 	FilesystemPerformance *FilesystemPerformance `json:"filesystemPerformance,omitempty" yaml:"filesystemPerformance,omitempty"`
 	Certificate           *Certificate           `json:"certificate,omitempty" yaml:"certificate,omitempty"`
 	HostServices          *HostServices          `json:"hostServices,omitempty" yaml:"hostServices,omitempty"`
+	XFSInfo               *XFSInfo               `json:"xfsInfo,omitempty" yaml:"xfsInfo,omitempty"`
 }
 
 func (c *HostCollect) GetName() string {

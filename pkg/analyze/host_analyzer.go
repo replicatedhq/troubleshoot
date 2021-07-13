@@ -38,6 +38,8 @@ func GetHostAnalyzer(analyzer *troubleshootv1beta2.HostAnalyze) (HostAnalyzer, b
 		return &AnalyzeHostCertificate{analyzer.Certificate}, true
 	case analyzer.HostServices != nil:
 		return &AnalyzeHostServices{analyzer.HostServices}, true
+	case analyzer.XFSInfo != nil:
+		return &AnalyzeXFSInfo{analyzer.XFSInfo}, true
 	default:
 		return nil, false
 	}
