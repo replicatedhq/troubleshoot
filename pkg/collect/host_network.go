@@ -49,66 +49,42 @@ func isValidLoadBalancerAddress(address string) bool {
 	}
 	hostAddress := splitString[0]
 	port, err := strconv.Atoi(splitString[1])
-	println("HostAddress: ", hostAddress)
-	println("Port: ", port)
 	if err != nil {
-		println("Error converting port to integer")
 		return false
 	}
 	portErrors := validation.IsValidPortNum(port)
 
 	if len(portErrors) > 0 {
-		println("Port Invalid")
 		return false
 	}
 
 	// Checking for uppercase letters
 	if strings.ToLower(hostAddress) != hostAddress {
-		println("Address needs to be lowercase")
 		return false
 	}
 
 	// Checking if it's all numbers and .
-	println("CHECKING FOR VALID IP")
 	if isValidIPCandidate(hostAddress) {
-		println("Address:", hostAddress, " is a valid IP candidate")
 
 		// Check for isValidIP
 
 		test := validation.IsValidIP(hostAddress)
-		if len(test) > 0 {
-			println("INVALID IP address")
-			for i := range test {
-				println(test[i])
-			}
-			return false
-		} else {
-			return true
-		}
+		return len(test) == 0
 
 	}
 
 	errs := validation.IsQualifiedName(hostAddress)
-	println("Errors For ", hostAddress)
-	for _, err := range errs {
-
-		println("Error:", err)
-
-	}
 
 	return len(errs) == 0
 }
 
 func checkTCPConnection(progressChan chan<- interface{}, listenAddress string, dialAddress string, timeout time.Duration) (NetworkStatus, error) {
-	println("DialAddress:", dialAddress)
 
 	if !isValidLoadBalancerAddress(dialAddress) {
-		println("Load Balancer Failure")
 		return NetworkStatusInvalidAddress, errors.Errorf("Invalid Load Balancer Address: %v", dialAddress)
 	}
 
 	lstn, err := net.Listen("tcp", listenAddress)
-	fmt.Printf("Starting checkTCPConnection()")
 	if err != nil {
 		if strings.Contains(err.Error(), "address already in use") {
 			return NetworkStatusAddressInUse, nil
@@ -117,14 +93,12 @@ func checkTCPConnection(progressChan chan<- interface{}, listenAddress string, d
 		return NetworkStatusErrorOther, errors.Wrap(err, "failed to create listener")
 	}
 	defer lstn.Close()
-	fmt.Printf("Closed Listener()")
 
 	// The server may receive requests from other clients and the client request may be forwarded to
 	// other servers. The client must continue to initiate new connections and send its request
 	// token until the server responds with its token.
 	requestToken := ksuid.New().Bytes()
 	responseToken := ksuid.New().Bytes()
-	fmt.Printf("go func started")
 	go func() {
 		for {
 			conn, err := lstn.Accept()
