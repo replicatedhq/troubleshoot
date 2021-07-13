@@ -31,16 +31,6 @@ type NetworkStatusResult struct {
 	Message string        `json:"message"`
 }
 
-func isValidIPCandidate(address string) bool {
-	validChars := "0123456789."
-	for i := range address {
-		if !strings.Contains(validChars, string(address[i])) {
-			return false
-		}
-	}
-	return true
-}
-
 func isValidLoadBalancerAddress(address string) bool {
 	splitString := strings.Split(address, ":")
 
@@ -63,14 +53,10 @@ func isValidLoadBalancerAddress(address string) bool {
 		return false
 	}
 
-	// Checking if it's all numbers and .
-	if isValidIPCandidate(hostAddress) {
+	// Check for isValidIP
 
-		// Check for isValidIP
-
-		test := validation.IsValidIP(hostAddress)
-		return len(test) == 0
-
+	if len(validation.IsValidIP(hostAddress)) == 0 {
+		return true
 	}
 
 	errs := validation.IsQualifiedName(hostAddress)
