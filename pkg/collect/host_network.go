@@ -27,8 +27,8 @@ const (
 )
 
 type NetworkStatusResult struct {
-	Status NetworkStatus `json:"status"`
-	Error  string        `json:"error"`
+	Status  NetworkStatus `json:"status"`
+	Message string        `json:"message"`
 }
 
 func isValidIPCandidate(address string) bool {

@@ -26,22 +26,9 @@ func (c *CollectHostTCPLoadBalancer) Collect(progressChan chan<- interface{}) (m
 	listenAddress := fmt.Sprintf("0.0.0.0:%d", c.hostCollector.Port)
 	dialAddress := c.hostCollector.Address
 
-	if !isValidLoadBalancerAddress(dialAddress) {
-		result := NetworkStatusResult{
-			Status: NetworkStatusInvalidAddress,
-			Error:  "Invalid Load Balancer Address",
-		}
-
-		b, err := json.Marshal(result)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to marshal result")
-		}
-		name := path.Join("tcpLoadBalancer", "tcpLoadBalancer.json")
+	name := path.Join("tcpLoadBalancer", "tcpLoadBalancer.json")
+	if c.hostCollector.CollectorName != "" {
 		name = path.Join("tcpLoadBalancer", fmt.Sprintf("%s.json", c.hostCollector.CollectorName))
-		return map[string][]byte{
-			name: b,
-		}, errors.New("Errors")
-
 	}
 
 	timeout := 60 * time.Minute
@@ -54,7 +41,18 @@ func (c *CollectHostTCPLoadBalancer) Collect(progressChan chan<- interface{}) (m
 	}
 	networkStatus, err := checkTCPConnection(progressChan, listenAddress, dialAddress, timeout)
 	if err != nil {
-		return nil, err
+		result := NetworkStatusResult{
+			Status:  networkStatus,
+			Message: err.Error(),
+		}
+		b, err := json.Marshal(result)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to marshal result")
+		}
+
+		return map[string][]byte{
+			name: b,
+		}, err
 	}
 	result := NetworkStatusResult{
 		Status: networkStatus,
@@ -63,11 +61,6 @@ func (c *CollectHostTCPLoadBalancer) Collect(progressChan chan<- interface{}) (m
 	b, err := json.Marshal(result)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to marshal result")
-	}
-
-	name := path.Join("tcpLoadBalancer", "tcpLoadBalancer.json")
-	if c.hostCollector.CollectorName != "" {
-		name = path.Join("tcpLoadBalancer", fmt.Sprintf("%s.json", c.hostCollector.CollectorName))
 	}
 
 	return map[string][]byte{
