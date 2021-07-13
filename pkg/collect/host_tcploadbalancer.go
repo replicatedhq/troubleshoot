@@ -29,6 +29,20 @@ func (c *CollectHostTCPLoadBalancer) Collect(progressChan chan<- interface{}) (m
 	if !isValidLoadBalancerAddress(dialAddress) {
 		// create a structure and return it with error
 		println("Error in validating LB address.")
+		result := NetworkStatusResult{
+			Status: NetworkStatusInvalidAddress,
+			Error:  "Invalid Load Balancer Address",
+		}
+
+		b, err := json.Marshal(result)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to marshal result")
+		}
+		name := path.Join("tcpLoadBalancer", "tcpLoadBalancer.json")
+		name = path.Join("tcpLoadBalancer", fmt.Sprintf("%s.json", c.hostCollector.CollectorName))
+		return map[string][]byte{
+			name: b,
+		}, errors.New("Errors")
 
 	}
 

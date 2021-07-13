@@ -13,6 +13,9 @@ spec:
         collectorName: loadbalancer
         outcomes:
           - fail:
+              when: "invalid-address"
+              message: The Load Balancer address is not valid.
+          - fail:
               when: "connection-refused"
               message: Connection to port 7443 via load balancer was refused.
           - fail:

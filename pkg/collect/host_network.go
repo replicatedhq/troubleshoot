@@ -23,7 +23,7 @@ const (
 	NetworkStatusConnected            = "connected"
 	NetworkStatusErrorOther           = "error"
 	NetworkStatusBindPermissionDenied = "bind-permission-denied"
-	NetworkStatusInvalidAddress       = "invalid address"
+	NetworkStatusInvalidAddress       = "invalid-address"
 )
 
 type NetworkStatusResult struct {
