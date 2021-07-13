@@ -26,20 +26,27 @@ func (c *CollectHostTCPLoadBalancer) Collect(progressChan chan<- interface{}) (m
 	listenAddress := fmt.Sprintf("0.0.0.0:%d", c.hostCollector.Port)
 	dialAddress := c.hostCollector.Address
 
+	if !isValidLoadBalancerAddress(dialAddress) {
+		// create a structure and return it with error
+		println("Error in validating LB address.")
+
+	}
+
 	timeout := 60 * time.Minute
 	if c.hostCollector.Timeout != "" {
 		var err error
 		timeout, err = time.ParseDuration(c.hostCollector.Timeout)
 		if err != nil {
-			return nil, errors.Wrap(err, "failed to parse durection")
+			return nil, errors.Wrap(err, "failed to parse duration")
 		}
 	}
-
+	println("Calling checkTCPConnection(progressChan, listenAddress, dialAddress, timeout)")
 	networkStatus, err := checkTCPConnection(progressChan, listenAddress, dialAddress, timeout)
 	if err != nil {
+		println("Inside error line 40")
 		return nil, err
 	}
-
+	println("Line 43")
 	result := NetworkStatusResult{
 		Status: networkStatus,
 	}

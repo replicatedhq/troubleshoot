@@ -23,14 +23,15 @@ const (
 	NetworkStatusConnected            = "connected"
 	NetworkStatusErrorOther           = "error"
 	NetworkStatusBindPermissionDenied = "bind-permission-denied"
-	NetworkStatusInvalidAddress       = "invalid-address"
+	NetworkStatusInvalidAddress       = "invalid address"
 )
 
 type NetworkStatusResult struct {
 	Status NetworkStatus `json:"status"`
+	Error  string        `json:"error"`
 }
 
-func isIPCandidate(address string) bool {
+func isValidIPCandidate(address string) bool {
 	validChars := "0123456789."
 	for i := range address {
 		if !strings.Contains(validChars, string(address[i])) {
@@ -40,7 +41,7 @@ func isIPCandidate(address string) bool {
 	return true
 }
 
-func checkValidLBAddress(address string) bool {
+func isValidLoadBalancerAddress(address string) bool {
 	splitString := strings.Split(address, ":")
 
 	if len(splitString) != 2 { // should be hostAddress:port
@@ -69,7 +70,7 @@ func checkValidLBAddress(address string) bool {
 
 	// Checking if it's all numbers and .
 	println("CHECKING FOR VALID IP")
-	if isIPCandidate(hostAddress) {
+	if isValidIPCandidate(hostAddress) {
 		println("Address:", hostAddress, " is a valid IP candidate")
 
 		// Check for isValidIP
@@ -82,7 +83,7 @@ func checkValidLBAddress(address string) bool {
 			}
 			return false
 		} else {
-			println(hostAddress, " Is someohow a valid IP")
+			return true
 		}
 
 	}
@@ -99,7 +100,13 @@ func checkValidLBAddress(address string) bool {
 }
 
 func checkTCPConnection(progressChan chan<- interface{}, listenAddress string, dialAddress string, timeout time.Duration) (NetworkStatus, error) {
-	fmt.Printf("DialAddress: %s", dialAddress)
+	println("DialAddress:", dialAddress)
+
+	if !isValidLoadBalancerAddress(dialAddress) {
+		println("Load Balancer Failure")
+		return NetworkStatusInvalidAddress, errors.Errorf("Invalid Load Balancer Address: %v", dialAddress)
+	}
+
 	lstn, err := net.Listen("tcp", listenAddress)
 	fmt.Printf("Starting checkTCPConnection()")
 	if err != nil {

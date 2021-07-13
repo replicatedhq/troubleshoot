@@ -4,7 +4,7 @@ import (
 	"testing"
 )
 
-func Test_checkValidLBAddress(t *testing.T) {
+func Test_isValidLoadBalancerAddress(t *testing.T) {
 	type args struct {
 		address string
 	}
@@ -90,14 +90,14 @@ func Test_checkValidLBAddress(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := checkValidLBAddress(tt.args.address); got != tt.want {
+			if got := isValidLoadBalancerAddress(tt.args.address); got != tt.want {
 				t.Errorf("checkValidTCPAddress() = %v, want %v for %v", got, tt.want, tt.args.address)
 			}
 		})
 	}
 }
 
-func Test_isIPCandidate(t *testing.T) {
+func Test_isValidIPCandidate(t *testing.T) {
 	type args struct {
 		address string
 	}
@@ -134,8 +134,8 @@ func Test_isIPCandidate(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := isIPCandidate(tt.args.address); got != tt.want {
-				t.Errorf("isIpCandidate() = %v, want %v", got, tt.want)
+			if got := isValidIPCandidate(tt.args.address); got != tt.want {
+				t.Errorf("isValidIPCandidate() = %v, want %v", got, tt.want)
 			}
 		})
 	}
