@@ -3,12 +3,15 @@ package collect
 import (
 	"bytes"
 	"net"
+	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/pkg/errors"
 	"github.com/replicatedhq/troubleshoot/pkg/debug"
 	"github.com/segmentio/ksuid"
+	validation "k8s.io/apimachinery/pkg/util/validation"
 )
 
 type NetworkStatus string
@@ -20,13 +23,59 @@ const (
 	NetworkStatusConnected            = "connected"
 	NetworkStatusErrorOther           = "error"
 	NetworkStatusBindPermissionDenied = "bind-permission-denied"
+	NetworkStatusInvalidAddress       = "invalid-address"
 )
 
 type NetworkStatusResult struct {
-	Status NetworkStatus `json:"status"`
+	Status  NetworkStatus `json:"status"`
+	Message string        `json:"message"`
+}
+
+var ipRegexp = regexp.MustCompile(`^[0-9.]+$`)
+
+func isValidLoadBalancerAddress(address string) bool {
+	splitString := strings.Split(address, ":")
+
+	if len(splitString) != 2 { // should be hostAddress:port
+		return false
+	}
+	hostAddress := splitString[0]
+	port, err := strconv.Atoi(splitString[1])
+	if err != nil {
+		return false
+	}
+	portErrors := validation.IsValidPortNum(port)
+
+	if len(portErrors) > 0 {
+		return false
+	}
+
+	// Checking for uppercase letters
+	if strings.ToLower(hostAddress) != hostAddress {
+		return false
+	}
+
+	// Checking if it's all numbers and .
+	if ipRegexp.MatchString(hostAddress) {
+
+		// Check for isValidIP
+
+		test := validation.IsValidIP(hostAddress)
+		return len(test) == 0
+
+	}
+
+	errs := validation.IsQualifiedName(hostAddress)
+
+	return len(errs) == 0
 }
 
 func checkTCPConnection(progressChan chan<- interface{}, listenAddress string, dialAddress string, timeout time.Duration) (NetworkStatus, error) {
+
+	if !isValidLoadBalancerAddress(dialAddress) {
+		return NetworkStatusInvalidAddress, errors.Errorf("Invalid Load Balancer Address: %v", dialAddress)
+	}
+
 	lstn, err := net.Listen("tcp", listenAddress)
 	if err != nil {
 		if strings.Contains(err.Error(), "address already in use") {
@@ -42,7 +91,6 @@ func checkTCPConnection(progressChan chan<- interface{}, listenAddress string, d
 	// token until the server responds with its token.
 	requestToken := ksuid.New().Bytes()
 	responseToken := ksuid.New().Bytes()
-
 	go func() {
 		for {
 			conn, err := lstn.Accept()
@@ -60,14 +108,19 @@ func checkTCPConnection(progressChan chan<- interface{}, listenAddress string, d
 
 	for {
 		if time.Now().After(stopAfter) {
+			debug.Printf("Timeout")
+
 			return NetworkStatusConnectionTimeout, nil
 		}
 
 		conn, err := net.DialTimeout("tcp", dialAddress, 50*time.Millisecond)
 		if err != nil {
+			debug.Printf("Error: %s", err)
+
 			if strings.Contains(err.Error(), "i/o timeout") {
 				progressChan <- err
 				time.Sleep(time.Second)
+
 				continue
 			}
 			if strings.Contains(err.Error(), "connection refused") {
@@ -83,6 +136,7 @@ func checkTCPConnection(progressChan chan<- interface{}, listenAddress string, d
 		progressChan <- errors.New("failed to verify connection to server")
 		time.Sleep(time.Second)
 	}
+
 }
 
 func handleTestConnection(conn net.Conn, requestToken []byte, responseToken []byte) bool {
