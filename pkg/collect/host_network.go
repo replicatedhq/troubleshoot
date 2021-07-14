@@ -2,7 +2,6 @@ package collect
 
 import (
 	"bytes"
-	"fmt"
 	"net"
 	"strconv"
 	"strings"
@@ -113,18 +112,17 @@ func checkTCPConnection(progressChan chan<- interface{}, listenAddress string, d
 	}()
 
 	stopAfter := time.Now().Add(timeout)
-	fmt.Printf("Timeout")
 
 	for {
 		if time.Now().After(stopAfter) {
-			fmt.Printf("Timeout")
+			debug.Printf("Timeout")
 
 			return NetworkStatusConnectionTimeout, nil
 		}
 
 		conn, err := net.DialTimeout("tcp", dialAddress, 50*time.Millisecond)
 		if err != nil {
-			fmt.Printf("Error: %s", err)
+			debug.Printf("Error: %s", err)
 
 			if strings.Contains(err.Error(), "i/o timeout") {
 				progressChan <- err
