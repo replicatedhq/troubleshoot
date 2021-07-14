@@ -31,6 +31,8 @@ type NetworkStatusResult struct {
 	Message string        `json:"message"`
 }
 
+var ipRegexp = regexp.MustCompile(`^[0-9.]+$`)
+
 func isValidLoadBalancerAddress(address string) bool {
 	splitString := strings.Split(address, ":")
 
@@ -54,7 +56,6 @@ func isValidLoadBalancerAddress(address string) bool {
 	}
 
 	// Checking if it's all numbers and .
-	var ipRegexp = regexp.MustCompile(`^[0-9.]+$`)
 	if ipRegexp.MatchString(hostAddress) {
 
 		// Check for isValidIP
