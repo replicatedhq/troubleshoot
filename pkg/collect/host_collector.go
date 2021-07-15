@@ -30,6 +30,8 @@ func GetHostCollector(collector *troubleshootv1beta2.HostCollect) (HostCollector
 		return &CollectHostTime{collector.Time}, true
 	case collector.BlockDevices != nil:
 		return &CollectHostBlockDevices{collector.BlockDevices}, true
+	case collector.KernelModules != nil:
+		return &CollectHostKernelModules{collector.KernelModules}, true
 	case collector.TCPConnect != nil:
 		return &CollectHostTCPConnect{collector.TCPConnect}, true
 	case collector.IPV4Interfaces != nil:

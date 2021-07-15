@@ -1,0 +1,25 @@
+apiVersion: troubleshoot.sh/v1beta2
+kind: HostPreflight
+metadata:
+  name: modules
+spec:
+  collectors:
+    - kernelModules: {}
+  analyzers:
+    - kernelModules:
+        outcomes:
+          - fail:
+              when: "target_core_mod != loaded,loadable"
+              message: The 'target_core_mod' kernel module is not loaded or loadable
+          - fail:
+              when: "target_core_file != loaded,loadable"
+              message: The 'target_core_file' kernel module is not loaded or loadable
+          - fail:
+              when: "tcm_loop != loaded,loadable"
+              message: The 'tcm_loop' kernel module is not loaded or loadable
+          - warn:
+              when: "nvme != loaded"
+              message: The system is not using NVME storage, which will provide better performance
+          - pass:
+              when: "target_core_mod,target_core_file,tcm_loop == loaded,loadable"
+              message: The 'target_core_mod', target_core_file', and 'tcm_loop' kernel modules are loaded or loadable
