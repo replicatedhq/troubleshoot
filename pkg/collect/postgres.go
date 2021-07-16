@@ -13,8 +13,11 @@ import (
 
 func Postgres(c *Collector, databaseCollector *troubleshootv1beta2.Database) (map[string][]byte, error) {
 	databaseConnection := DatabaseConnection{}
-
-	db, err := sql.Open("postgres", databaseCollector.URI)
+	uri, err := getUri(c.ClientConfig, databaseCollector)
+	if err != nil {
+		return nil, err
+	}
+	db, err := sql.Open("postgres", uri)
 	if err != nil {
 		databaseConnection.Error = err.Error()
 	} else {
