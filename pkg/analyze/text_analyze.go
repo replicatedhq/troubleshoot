@@ -7,9 +7,17 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/blang/semver"
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 )
+
+type Conditional struct {
+	method           string
+	lookForMatchName string
+	operator         string
+	lookForValue     string
+}
 
 func analyzeTextAnalyze(analyzer *troubleshootv1beta2.TextAnalyze, getCollectedFileContents func(string) (map[string][]byte, error)) ([]*AnalyzeResult, error) {
 	fullPath := filepath.Join(analyzer.CollectorName, analyzer.FileName)
@@ -120,7 +128,6 @@ func analyzeRegexGroups(pattern string, collected []byte, outcomes []*troublesho
 	}
 
 	match := re.FindStringSubmatch(string(collected))
-
 	result := &AnalyzeResult{
 		Title:   checkName,
 		IconKey: "kubernetes_text_analyze",
@@ -206,32 +213,29 @@ func analyzeRegexGroups(pattern string, collected []byte, outcomes []*troublesho
 }
 
 func compareRegex(conditional string, foundMatches map[string]string) (bool, error) {
-	parts := strings.Split(strings.TrimSpace(conditional), " ")
-
-	if len(parts) != 3 {
-		return false, errors.New("unable to parse regex conditional")
+	parsedConditional, err := parseConditional(conditional)
+	if err != nil {
+		return false, err
 	}
 
-	lookForMatchName := parts[0]
-	operator := parts[1]
-	lookForValue := parts[2]
-
-	foundValue, ok := foundMatches[lookForMatchName]
+	foundValue, ok := foundMatches[parsedConditional.lookForMatchName]
 	if !ok {
 		// not an error, just wasn't matched
 		return false, nil
 	}
 
-	// if the value side of the conditional is an int, we assume it's an int
-	lookForValueInt, err := strconv.Atoi(lookForValue)
-	if err == nil {
+	if parsedConditional.method == "semverCompare" {
+		return compareSemVer(parsedConditional.operator, foundValue, parsedConditional.lookForValue)
+	} else if parsedConditional.method == "semverRange" {
+		return compareSemVer("", foundValue, parsedConditional.lookForValue)
+	} else if lookForValueInt, err := strconv.Atoi(parsedConditional.lookForValue); err == nil {
+		// if the value side of the conditional is an int, we assume it's an int
 		foundValueInt, err := strconv.Atoi(foundValue)
 		if err != nil {
 			// not an error but maybe it should be...
 			return false, nil
 		}
-
-		switch operator {
+		switch parsedConditional.operator {
 		case "=":
 			fallthrough
 		case "==":
@@ -251,14 +255,70 @@ func compareRegex(conditional string, foundMatches map[string]string) (bool, err
 		case ">=":
 			return foundValueInt >= lookForValueInt, nil
 		}
-	} else {
-		// all we can support is "=" and "==" and "===" for now
-		if operator != "=" && operator != "==" && operator != "===" {
-			return false, fmt.Errorf("unexpected operator %q in regex comparator, cannot compare %q and %q", operator, foundValue, lookForValue)
-		}
-
-		return foundValue == lookForValue, nil
+	}
+	if parsedConditional.operator != "=" && parsedConditional.operator != "==" && parsedConditional.operator != "===" {
+		return false, fmt.Errorf("unexpected operator %q in regex comparator, cannot compare %q and %q", parsedConditional.operator, foundValue, parsedConditional.lookForValue)
 	}
 
-	return false, nil
+	return foundValue == parsedConditional.lookForValue, nil
+}
+
+func compareSemVer(operator string, foundValue string, lookForValue string) (bool, error) {
+	if operator != "" {
+		expected, err := semver.ParseTolerant(strings.Replace(lookForValue, "x", "0", -1))
+		if err != nil {
+			return false, errors.Wrap(err, "failed to parse expected semantic version")
+		}
+		lookForValue = fmt.Sprintf("%s %s", operator, expected.String())
+	}
+	actual, err := semver.ParseTolerant(strings.Replace(foundValue, "x", "0", -1))
+	if err != nil {
+		return false, errors.Wrap(err, "failed to parse found semantic version")
+	}
+	expectedRange, err := semver.ParseRange(lookForValue)
+	if err != nil {
+		return false, errors.Wrap(err, "failed to parse semver range")
+	}
+	return expectedRange(actual), nil
+}
+
+func parseConditional(conditional string) (*Conditional, error) {
+	parsedConditional := new(Conditional)
+	if strings.Contains(conditional, "semverCompare") {
+		rgx := regexp.MustCompile(`semverCompare\((?P<cond>[a-z<>=\_\- .!0-9]+)\)`)
+		rs := rgx.FindStringSubmatch(conditional)
+		if rs == nil {
+			return nil, errors.Errorf("Unable to parse semverCompare expresion \"%s\". Correct format is \"semverCompare(variable operator expectedVersion)\"", conditional)
+		}
+		parts := strings.Split(strings.TrimSpace(rs[1]), " ")
+		if len(parts) != 3 {
+			return nil, errors.Errorf("unable to parse conditional expresion in semverCompare. Expected \"variable operator version\", found  %s", rs[1])
+		}
+		parsedConditional.method = "semverCompare"
+		parsedConditional.lookForMatchName = parts[0]
+		parsedConditional.operator = parts[1]
+		parsedConditional.lookForValue = parts[2]
+
+	} else if strings.Contains(conditional, "semverRange") {
+		rgx := regexp.MustCompile(`semverRange\((?P<var>[a-z\_\-.0-9]+) ?, ?\"(?P<cond>[a-z|<>=& \-.!0-9]+)\"\)`)
+		rs := rgx.FindStringSubmatch(conditional)
+		if rs == nil {
+			return nil, errors.Errorf("Unable to parse semverRange expresion \"%s\". Correct format is \"semverRange(variable, \"expectedRange\")\"", conditional)
+		}
+		parsedConditional.method = "semverRange"
+		parsedConditional.lookForMatchName = rs[1]
+		parsedConditional.operator = ""
+		parsedConditional.lookForValue = rs[2]
+
+	} else {
+		parts := strings.Split(strings.TrimSpace(conditional), " ")
+		if len(parts) != 3 {
+			return nil, errors.New("unable to parse regex conditional")
+		}
+		parsedConditional.method = "default"
+		parsedConditional.lookForMatchName = parts[0]
+		parsedConditional.operator = parts[1]
+		parsedConditional.lookForValue = parts[2]
+	}
+	return parsedConditional, nil
 }
