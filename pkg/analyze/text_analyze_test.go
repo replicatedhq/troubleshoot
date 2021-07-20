@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -371,6 +370,77 @@ func Test_textAnalyze(t *testing.T) {
 				"text-collector-1/cfile-1.txt": []byte("Yes it all SUCCEEDED"),
 			},
 		},
+
+		{
+			name: "compare group with integer",
+			analyzer: troubleshootv1beta2.TextAnalyze{
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							When:    "val > 10",
+							Message: "val is greater than 10",
+						},
+					},
+					{
+						Fail: &troubleshootv1beta2.SingleOutcome{
+							Message: "val is not greater than 10",
+						},
+					},
+				},
+				CollectorName: "text-collector-1",
+				FileName:      "cfile-1.txt",
+				RegexGroups:   `value: (?P<val>\d+)`,
+			},
+			expectResult: []AnalyzeResult{
+				{
+					IsPass:  true,
+					IsWarn:  false,
+					IsFail:  false,
+					Title:   "text-collector-1",
+					Message: "val is greater than 10",
+					IconKey: "kubernetes_text_analyze",
+					IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg?w=13&h=16",
+				},
+			},
+			files: map[string][]byte{
+				"text-collector-1/cfile-1.txt": []byte("value: 15\nother: 10"),
+			},
+		},
+		{
+			name: "compare group with integer (failure)",
+			analyzer: troubleshootv1beta2.TextAnalyze{
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							When:    "val > 10",
+							Message: "val is greater than 10",
+						},
+					},
+					{
+						Fail: &troubleshootv1beta2.SingleOutcome{
+							Message: "val is not greater than 10",
+						},
+					},
+				},
+				CollectorName: "text-collector-1",
+				FileName:      "cfile-1.txt",
+				RegexGroups:   `value: (?P<val>\d+)`,
+			},
+			expectResult: []AnalyzeResult{
+				{
+					IsPass:  false,
+					IsWarn:  false,
+					IsFail:  true,
+					Title:   "text-collector-1",
+					Message: "val is not greater than 10",
+					IconKey: "kubernetes_text_analyze",
+					IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg?w=13&h=16",
+				},
+			},
+			files: map[string][]byte{
+				"text-collector-1/cfile-1.txt": []byte("value: 2\nother: 10"),
+			},
+		},
 	}
 
 	for _, test := range tests {
@@ -404,7 +474,7 @@ func Test_textAnalyze(t *testing.T) {
 			for _, v := range actual {
 				unPointered = append(unPointered, *v)
 			}
-			assert.ElementsMatch(t, test.expectResult, unPointered)
+			req.ElementsMatch(test.expectResult, unPointered)
 		})
 	}
 }
@@ -444,6 +514,12 @@ func Test_compareRegex(t *testing.T) {
 			},
 			expected: true,
 		},
+		{
+			name:         "empty conditional",
+			conditional:  "",
+			foundMatches: map[string]string{},
+			expected:     true,
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -452,7 +528,7 @@ func Test_compareRegex(t *testing.T) {
 			actual, err := compareRegex(test.conditional, test.foundMatches)
 			req.NoError(err)
 
-			assert.Equal(t, test.expected, actual)
+			req.Equal(test.expected, actual)
 		})
 	}
 }

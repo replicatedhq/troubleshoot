@@ -137,14 +137,6 @@ func analyzeRegexGroups(pattern string, collected []byte, outcomes []*troublesho
 	// allow fallthrough
 	for _, outcome := range outcomes {
 		if outcome.Fail != nil {
-			if outcome.Fail.When == "" {
-				result.IsFail = true
-				result.Message = outcome.Fail.Message
-				result.URI = outcome.Fail.URI
-
-				return result, nil
-			}
-
 			isMatch, err := compareRegex(outcome.Fail.When, foundMatches)
 			if err != nil {
 				return result, errors.Wrap(err, "failed to compare regex fail conditional")
@@ -158,14 +150,6 @@ func analyzeRegexGroups(pattern string, collected []byte, outcomes []*troublesho
 				return result, nil
 			}
 		} else if outcome.Warn != nil {
-			if outcome.Warn.When == "" {
-				result.IsWarn = true
-				result.Message = outcome.Warn.Message
-				result.URI = outcome.Warn.URI
-
-				return result, nil
-			}
-
 			isMatch, err := compareRegex(outcome.Warn.When, foundMatches)
 			if err != nil {
 				return result, errors.Wrap(err, "failed to compare regex warn conditional")
@@ -179,14 +163,6 @@ func analyzeRegexGroups(pattern string, collected []byte, outcomes []*troublesho
 				return result, nil
 			}
 		} else if outcome.Pass != nil {
-			if outcome.Pass.When == "" {
-				result.IsPass = true
-				result.Message = outcome.Pass.Message
-				result.URI = outcome.Pass.URI
-
-				return result, nil
-			}
-
 			isMatch, err := compareRegex(outcome.Pass.When, foundMatches)
 			if err != nil {
 				return result, errors.Wrap(err, "failed to compare regex pass conditional")
@@ -206,6 +182,9 @@ func analyzeRegexGroups(pattern string, collected []byte, outcomes []*troublesho
 }
 
 func compareRegex(conditional string, foundMatches map[string]string) (bool, error) {
+	if conditional == "" {
+		return true, nil
+	}
 	parts := strings.Split(strings.TrimSpace(conditional), " ")
 
 	if len(parts) != 3 {
