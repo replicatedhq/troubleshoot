@@ -444,6 +444,12 @@ func Test_compareRegex(t *testing.T) {
 			},
 			expected: true,
 		},
+		{
+			name:         "empty conditional",
+			conditional:  "",
+			foundMatches: map[string]string{},
+			expected:     true,
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
