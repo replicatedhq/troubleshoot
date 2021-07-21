@@ -11,6 +11,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
+	restclient "k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/remotecommand"
 )
 
@@ -63,7 +64,7 @@ func copyFiles(ctx context.Context, client *kubernetes.Clientset, c *Collector, 
 		containerName = copyCollector.ContainerName
 	}
 
-	stdout, stderr, err := getFilesFromPod(ctx, client, c, pod.Name, containerName, pod.Namespace, copyCollector.ContainerPath)
+	stdout, stderr, err := getFilesFromPod(ctx, c.ClientConfig, client, pod.Name, containerName, pod.Namespace, copyCollector.ContainerPath)
 	if err != nil {
 		errors := map[string]string{
 			filepath.Join(copyCollector.ContainerPath, "error"): err.Error(),
@@ -82,7 +83,7 @@ func copyFiles(ctx context.Context, client *kubernetes.Clientset, c *Collector, 
 	}, nil
 }
 
-func getFilesFromPod(ctx context.Context, client *kubernetes.Clientset, c *Collector, podName string, containerName string, namespace string, containerPath string) ([]byte, []byte, error) {
+func getFilesFromPod(ctx context.Context, clientConfig *restclient.Config, client kubernetes.Interface, podName string, containerName string, namespace string, containerPath string) ([]byte, []byte, error) {
 	command := []string{"tar", "-C", filepath.Dir(containerPath), "-cf", "-", filepath.Base(containerPath)}
 	req := client.CoreV1().RESTClient().Post().Resource("pods").Name(podName).Namespace(namespace).SubResource("exec")
 	scheme := runtime.NewScheme()
@@ -100,7 +101,7 @@ func getFilesFromPod(ctx context.Context, client *kubernetes.Clientset, c *Colle
 		TTY:       false,
 	}, parameterCodec)
 
-	exec, err := remotecommand.NewSPDYExecutor(c.ClientConfig, "POST", req.URL())
+	exec, err := remotecommand.NewSPDYExecutor(clientConfig, "POST", req.URL())
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "failed to create SPDY executor")
 	}

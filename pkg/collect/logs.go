@@ -155,7 +155,7 @@ func getPodLogs(ctx context.Context, client *kubernetes.Clientset, pod corev1.Po
 func convertMaxAgeToTime(maxAge string) *metav1.Time {
 	parsedDuration, err := time.ParseDuration(maxAge)
 	if err != nil {
-		logger.Printf("unable to parse time duration %s\n", maxAge)
+		logger.Printf("Failed to parse time duration %s", maxAge)
 		return nil
 	}
 

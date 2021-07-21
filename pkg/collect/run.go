@@ -30,14 +30,14 @@ func Run(c *Collector, runCollector *troubleshootv1beta2.Run) (map[string][]byte
 
 	defer func() {
 		if err := client.CoreV1().Pods(pod.Namespace).Delete(ctx, pod.Name, metav1.DeleteOptions{}); err != nil {
-			logger.Printf("Failed to delete pod %s: %v\n", pod.Name, err)
+			logger.Printf("Failed to delete pod %s: %v", pod.Name, err)
 		}
 	}()
 	if runCollector.ImagePullSecret != nil && runCollector.ImagePullSecret.Data != nil {
 		defer func() {
 			for _, k := range pod.Spec.ImagePullSecrets {
 				if err := client.CoreV1().Secrets(pod.Namespace).Delete(ctx, k.Name, metav1.DeleteOptions{}); err != nil {
-					logger.Printf("Failed to delete secret %s: %v\n", k.Name, err)
+					logger.Printf("Failed to delete secret %s: %v", k.Name, err)
 				}
 			}
 		}()
@@ -170,7 +170,7 @@ func runPod(ctx context.Context, client *kubernetes.Clientset, runCollector *tro
 	return created, nil
 }
 
-func createSecret(ctx context.Context, client *kubernetes.Clientset, namespace string, imagePullSecret *troubleshootv1beta2.ImagePullSecrets) (string, error) {
+func createSecret(ctx context.Context, client kubernetes.Interface, namespace string, imagePullSecret *troubleshootv1beta2.ImagePullSecrets) (string, error) {
 	if imagePullSecret.Data == nil {
 		return "", nil
 	}
@@ -209,6 +209,9 @@ func createSecret(ctx context.Context, client *kubernetes.Clientset, namespace s
 			Name:         imagePullSecret.Name,
 			GenerateName: "troubleshoot",
 			Namespace:    namespace,
+			Labels: map[string]string{
+				"app.kubernetes.io/managed-by": "troubleshoot.sh",
+			},
 		},
 		Data: data,
 		Type: corev1.SecretType(imagePullSecret.SecretType),
