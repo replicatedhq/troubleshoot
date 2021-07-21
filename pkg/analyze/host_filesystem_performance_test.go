@@ -296,6 +296,42 @@ func TestAnalyzeHostFilesystemPerformance(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "skip warn if pass first",
+			fsPerf: &collect.FSPerfResults{
+				P99: 9 * time.Millisecond,
+			},
+			hostAnalyzer: &troubleshootv1beta2.FilesystemPerformanceAnalyze{
+				CollectorName: "file system performance",
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							When:    "p99 < 10ms",
+							Message: "Acceptable write latency",
+						},
+					},
+					{
+						Warn: &troubleshootv1beta2.SingleOutcome{
+							When:    "p99 < 20ms",
+							Message: "Warn write latency",
+						},
+					},
+					{
+						Fail: &troubleshootv1beta2.SingleOutcome{
+							When:    "p99 >= 20ms",
+							Message: "fail",
+						},
+					},
+				},
+			},
+			result: []*AnalyzeResult{
+				{
+					Title:   "Filesystem Performance",
+					IsPass:  true,
+					Message: "Acceptable write latency",
+				},
+			},
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {

@@ -10,6 +10,8 @@ import (
 	"github.com/replicatedhq/troubleshoot/pkg/collect"
 )
 
+// AnalyzeHostTCPPortStatus is an analyzer that will return only one matching result, or a warning if nothing matches. The first
+// match that is encountered is the one that is returned.
 type AnalyzeHostTCPPortStatus struct {
 	hostAnalyzer *troubleshootv1beta2.TCPPortStatusAnalyze
 }
@@ -39,10 +41,9 @@ func (a *AnalyzeHostTCPPortStatus) Analyze(getCollectedFileContents func(string)
 		return nil, errors.Wrap(err, "failed to unmarshal collected")
 	}
 
-	var coll resultCollector
+	result := &AnalyzeResult{Title: a.Title()}
 
 	for _, outcome := range hostAnalyzer.Outcomes {
-		result := &AnalyzeResult{Title: a.Title()}
 
 		if outcome.Fail != nil {
 			if outcome.Fail.When == "" {
@@ -50,7 +51,7 @@ func (a *AnalyzeHostTCPPortStatus) Analyze(getCollectedFileContents func(string)
 				result.Message = outcome.Fail.Message
 				result.URI = outcome.Fail.URI
 
-				coll.push(result)
+				return []*AnalyzeResult{result}, nil
 			}
 
 			if string(actual.Status) == outcome.Fail.When {
@@ -58,7 +59,7 @@ func (a *AnalyzeHostTCPPortStatus) Analyze(getCollectedFileContents func(string)
 				result.Message = outcome.Fail.Message
 				result.URI = outcome.Fail.URI
 
-				coll.push(result)
+				return []*AnalyzeResult{result}, nil
 			}
 		} else if outcome.Warn != nil {
 			if outcome.Warn.When == "" {
@@ -66,7 +67,7 @@ func (a *AnalyzeHostTCPPortStatus) Analyze(getCollectedFileContents func(string)
 				result.Message = outcome.Warn.Message
 				result.URI = outcome.Warn.URI
 
-				coll.push(result)
+				return []*AnalyzeResult{result}, nil
 			}
 
 			if string(actual.Status) == outcome.Warn.When {
@@ -74,7 +75,7 @@ func (a *AnalyzeHostTCPPortStatus) Analyze(getCollectedFileContents func(string)
 				result.Message = outcome.Warn.Message
 				result.URI = outcome.Warn.URI
 
-				coll.push(result)
+				return []*AnalyzeResult{result}, nil
 			}
 		} else if outcome.Pass != nil {
 			if outcome.Pass.When == "" {
@@ -82,7 +83,7 @@ func (a *AnalyzeHostTCPPortStatus) Analyze(getCollectedFileContents func(string)
 				result.Message = outcome.Pass.Message
 				result.URI = outcome.Pass.URI
 
-				coll.push(result)
+				return []*AnalyzeResult{result}, nil
 			}
 
 			if string(actual.Status) == outcome.Pass.When {
@@ -90,10 +91,10 @@ func (a *AnalyzeHostTCPPortStatus) Analyze(getCollectedFileContents func(string)
 				result.Message = outcome.Pass.Message
 				result.URI = outcome.Pass.URI
 
-				coll.push(result)
+				return []*AnalyzeResult{result}, nil
 			}
 		}
 	}
 
-	return coll.get(a.Title()), nil
+	return []*AnalyzeResult{result}, nil
 }
