@@ -8,8 +8,8 @@ import (
 	restclient "k8s.io/client-go/rest"
 )
 
-func Collectd(ctx context.Context, clientConfig *restclient.Config, client kubernetes.Interface, collector *troubleshootv1beta2.Collectd) (map[string][]byte, error) {
-	return CopyFromHost(ctx, clientConfig, client, &troubleshootv1beta2.CopyFromHost{
+func Collectd(ctx context.Context, namespace string, clientConfig *restclient.Config, client kubernetes.Interface, collector *troubleshootv1beta2.Collectd) (map[string][]byte, error) {
+	return CopyFromHost(ctx, namespace, clientConfig, client, &troubleshootv1beta2.CopyFromHost{
 		CollectorMeta:   collector.CollectorMeta,
 		Name:            "collectd/rrd",
 		Namespace:       collector.Namespace,

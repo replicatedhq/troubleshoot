@@ -42,9 +42,15 @@ func runTroubleshoot(v *viper.Viper, arg string) error {
 		os.Exit(0)
 	}()
 
-	k8sConfig, err := k8sutil.GetRESTConfig()
+	restConfig, err := k8sutil.GetRESTConfig()
 	if err != nil {
 		return errors.Wrap(err, "failed to convert kube flags to rest config")
+	}
+
+	namespace := v.GetString("namespace")
+	if namespace == "" {
+		kubeconfig := k8sutil.GetKubeconfig()
+		namespace, _, _ = kubeconfig.Namespace()
 	}
 
 	var sinceTime *time.Time
@@ -149,8 +155,8 @@ func runTroubleshoot(v *viper.Viper, arg string) error {
 	createOpts := supportbundle.SupportBundleCreateOpts{
 		CollectorProgressCallback: collectorCB,
 		CollectWithoutPermissions: v.GetBool("collect-without-permissions"),
-		KubernetesRestConfig:      k8sConfig,
-		Namespace:                 v.GetString("namespace"),
+		KubernetesRestConfig:      restConfig,
+		Namespace:                 namespace,
 		ProgressChan:              progressChan,
 		SinceTime:                 sinceTime,
 	}

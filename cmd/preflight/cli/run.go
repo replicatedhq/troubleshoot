@@ -203,8 +203,14 @@ func collectInCluster(preflightSpec *troubleshootv1beta2.Preflight, finishedCh c
 		return nil, errors.Wrap(err, "failed to convert kube flags to rest config")
 	}
 
+	namespace := v.GetString("namespace")
+	if namespace == "" {
+		kubeconfig := k8sutil.GetKubeconfig()
+		namespace, _, _ = kubeconfig.Namespace()
+	}
+
 	collectOpts := preflight.CollectOpts{
-		Namespace:              v.GetString("namespace"),
+		Namespace:              namespace,
 		IgnorePermissionErrors: v.GetBool("collect-without-permissions"),
 		ProgressChan:           progressCh,
 		KubernetesRestConfig:   restConfig,

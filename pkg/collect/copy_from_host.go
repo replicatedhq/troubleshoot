@@ -19,12 +19,7 @@ import (
 )
 
 // CopyFromHost is a function that copies a file or directory from a host or hosts to include in the bundle.
-func CopyFromHost(ctx context.Context, clientConfig *restclient.Config, client kubernetes.Interface, collector *troubleshootv1beta2.CopyFromHost) (map[string][]byte, error) {
-	namespace := collector.Namespace
-	if namespace == "" {
-		namespace = corev1.NamespaceDefault
-	}
-
+func CopyFromHost(ctx context.Context, namespace string, clientConfig *restclient.Config, client kubernetes.Interface, collector *troubleshootv1beta2.CopyFromHost) (map[string][]byte, error) {
 	labels := map[string]string{
 		"app.kubernetes.io/managed-by":    "troubleshoot.sh",
 		"troubleshoot.sh/collector":       "copyfromhost",
