@@ -84,7 +84,7 @@ func runCollectors(collectors []*troubleshootv1beta2.Collect, additionalRedactor
 
 		opts.CollectorProgressCallback(opts.ProgressChan, collector.GetDisplayName())
 
-		result, err := collector.RunCollectorSync(k8sClient, globalRedactors)
+		result, err := collector.RunCollectorSync(opts.KubernetesRestConfig, k8sClient, globalRedactors)
 		if err != nil {
 			opts.ProgressChan <- fmt.Errorf("failed to run collector %q: %v", collector.GetDisplayName(), err)
 			continue

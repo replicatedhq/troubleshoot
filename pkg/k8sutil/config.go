@@ -4,6 +4,7 @@ import (
 	flag "github.com/spf13/pflag"
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
 )
 
 var (
@@ -16,6 +17,10 @@ func init() {
 
 func AddFlags(flags *flag.FlagSet) {
 	kubernetesConfigFlags.AddFlags(flags)
+}
+
+func GetKubeconfig() clientcmd.ClientConfig {
+	return kubernetesConfigFlags.ToRawKubeConfigLoader()
 }
 
 func GetRESTConfig() (*rest.Config, error) {

@@ -168,7 +168,7 @@ func Collect(opts CollectOpts, p *troubleshootv1beta2.Preflight) (CollectResult,
 			TotalCount:     len(collectors),
 		}
 
-		result, err := collector.RunCollectorSync(k8sClient, nil)
+		result, err := collector.RunCollectorSync(opts.KubernetesRestConfig, k8sClient, nil)
 		if err != nil {
 			opts.ProgressChan <- errors.Errorf("failed to run collector %s: %v\n", collector.GetDisplayName(), err)
 			opts.ProgressChan <- CollectProgress{

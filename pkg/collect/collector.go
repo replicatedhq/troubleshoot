@@ -2,6 +2,7 @@ package collect
 
 import (
 	"context"
+	"runtime"
 	"strconv"
 
 	"github.com/pkg/errors"
@@ -114,6 +115,14 @@ func (c *Collector) IsExcluded() bool {
 		if isExcludedResult {
 			return true
 		}
+	} else if c.Collect.CopyFromHost != nil {
+		isExcludedResult, err := isExcluded(c.Collect.CopyFromHost.Exclude)
+		if err != nil {
+			return true
+		}
+		if isExcludedResult {
+			return true
+		}
 	} else if c.Collect.HTTP != nil {
 		isExcludedResult, err := isExcluded(c.Collect.HTTP.Exclude)
 		if err != nil {
@@ -175,10 +184,11 @@ func (c *Collector) IsExcluded() bool {
 	return false
 }
 
-func (c *Collector) RunCollectorSync(client kubernetes.Interface, globalRedactors []*troubleshootv1beta2.Redact) (result map[string][]byte, err error) {
+func (c *Collector) RunCollectorSync(clientConfig *rest.Config, client kubernetes.Interface, globalRedactors []*troubleshootv1beta2.Redact) (result map[string][]byte, err error) {
 	defer func() {
 		if r := recover(); r != nil {
-			err = errors.Errorf("recovered from panic: %v", r)
+			_, file, line, _ := runtime.Caller(4)
+			err = errors.Errorf("recovered from panic at \"%s:%d\": %v", file, line, r)
 		}
 	}()
 
@@ -206,6 +216,12 @@ func (c *Collector) RunCollectorSync(client kubernetes.Interface, globalRedactor
 		result, err = Data(c, c.Collect.Data)
 	} else if c.Collect.Copy != nil {
 		result, err = Copy(c, c.Collect.Copy)
+	} else if c.Collect.CopyFromHost != nil {
+		namespace := c.Collect.CopyFromHost.Namespace
+		if namespace == "" {
+			namespace = c.Namespace
+		}
+		result, err = CopyFromHost(ctx, namespace, clientConfig, client, c.Collect.CopyFromHost)
 	} else if c.Collect.HTTP != nil {
 		result, err = HTTP(c, c.Collect.HTTP)
 	} else if c.Collect.Postgres != nil {
@@ -216,7 +232,11 @@ func (c *Collector) RunCollectorSync(client kubernetes.Interface, globalRedactor
 		result, err = Redis(c, c.Collect.Redis)
 	} else if c.Collect.Collectd != nil {
 		// TODO: see if redaction breaks these
-		result, err = Collectd(c, c.Collect.Collectd)
+		namespace := c.Collect.Collectd.Namespace
+		if namespace == "" {
+			namespace = c.Namespace
+		}
+		result, err = Collectd(ctx, namespace, clientConfig, client, c.Collect.Collectd)
 	} else if c.Collect.Ceph != nil {
 		result, err = Ceph(c, c.Collect.Ceph)
 	} else if c.Collect.Longhorn != nil {
@@ -233,6 +253,7 @@ func (c *Collector) RunCollectorSync(client kubernetes.Interface, globalRedactor
 
 	if c.Redact {
 		result, err = redactMap(result, globalRedactors)
+		err = errors.Wrap(err, "failed to redact")
 	}
 
 	return

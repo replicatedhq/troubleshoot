@@ -34,7 +34,7 @@ func AnalyzeLocal(localBundlePath string, analyzers []*troubleshootv1beta2.Analy
 	for _, analyzer := range analyzers {
 		analyzeResult, err := Analyze(analyzer, fcp.getFileContents, fcp.getChildFileContents)
 		if err != nil {
-			logger.Printf("an analyzer failed to run: %v\n", err)
+			logger.Printf("An analyzer failed to run: %v", err)
 			continue
 		}
 

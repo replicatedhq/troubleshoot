@@ -1,12 +1,18 @@
 package logger
 
 import (
-	"fmt"
+	"log"
+	"os"
 )
 
 var (
-	quiet = false
+	logger *log.Logger
+	quiet  = false
 )
+
+func init() {
+	logger = log.New(os.Stderr, "", log.LstdFlags)
+}
 
 func SetQuiet(s bool) {
 	quiet = s
@@ -16,5 +22,5 @@ func Printf(format string, args ...interface{}) {
 	if quiet {
 		return
 	}
-	fmt.Printf(format, args...)
+	logger.Printf(format, args...)
 }

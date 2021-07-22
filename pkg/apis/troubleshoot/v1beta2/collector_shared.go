@@ -100,6 +100,17 @@ type Copy struct {
 	ContainerName string   `json:"containerName,omitempty" yaml:"containerName,omitempty"`
 }
 
+type CopyFromHost struct {
+	CollectorMeta   `json:",inline" yaml:",inline"`
+	Name            string            `json:"name,omitempty" yaml:"name,omitempty"`
+	Namespace       string            `json:"namespace" yaml:"namespace"`
+	Image           string            `json:"image" yaml:"image"`
+	ImagePullPolicy string            `json:"imagePullPolicy,omitempty" yaml:"imagePullPolicy,omitempty"`
+	ImagePullSecret *ImagePullSecrets `json:"imagePullSecret,omitempty" yaml:"imagePullSecret,omitempty"`
+	Timeout         string            `json:"timeout,omitempty" yaml:"timeout,omitempty"`
+	HostPath        string            `json:"hostPath" yaml:"hostPath"`
+}
+
 type HTTP struct {
 	CollectorMeta `json:",inline" yaml:",inline"`
 	Name          string `json:"name,omitempty" yaml:"name,omitempty"`
@@ -172,6 +183,7 @@ type Collect struct {
 	Exec             *Exec             `json:"exec,omitempty" yaml:"exec,omitempty"`
 	Data             *Data             `json:"data,omitempty" yaml:"data,omitempty"`
 	Copy             *Copy             `json:"copy,omitempty" yaml:"copy,omitempty"`
+	CopyFromHost     *CopyFromHost     `json:"copyFromHost,omitempty" yaml:"copyFromHost,omitempty"`
 	HTTP             *HTTP             `json:"http,omitempty" yaml:"http,omitempty"`
 	Postgres         *Database         `json:"postgres,omitempty" yaml:"postgres,omitempty"`
 	Mysql            *Database         `json:"mysql,omitempty" yaml:"mysql,omitempty"`
@@ -350,6 +362,10 @@ func (c *Collect) AccessReviewSpecs(overrideNS string) []authorizationv1.SelfSub
 			},
 			NonResourceAttributes: nil,
 		})
+	} else if c.CopyFromHost != nil {
+		// TODO
+	} else if c.Collectd != nil {
+		// TODO
 	} else if c.HTTP != nil {
 		// NOOP
 	} else if c.RegistryImages != nil &&
@@ -408,6 +424,10 @@ func (c *Collect) GetName() string {
 		collector = "copy"
 		name = c.Copy.CollectorName
 		selector = strings.Join(c.Copy.Selector, ",")
+	}
+	if c.CopyFromHost != nil {
+		collector = "copy-from-host"
+		name = c.CopyFromHost.CollectorName
 	}
 	if c.HTTP != nil {
 		collector = "http"
