@@ -26,10 +26,12 @@ func CopyFromHost(ctx context.Context, namespace string, clientConfig *restclien
 		"troubleshoot.sh/copyfromhost-id": ksuid.New().String(),
 	}
 
-	hostDir := filepath.Dir(collector.HostPath)
-	fileName := filepath.Base(collector.HostPath)
+	hostPath := filepath.Clean(collector.HostPath) // strip trailing slash
+
+	hostDir := filepath.Dir(hostPath)
+	fileName := filepath.Base(hostPath)
 	if hostDir == filepath.Dir(hostDir) { // is the parent directory the root?
-		hostDir = collector.HostPath
+		hostDir = hostPath
 		fileName = "."
 	}
 
@@ -62,7 +64,7 @@ func CopyFromHost(ctx context.Context, namespace string, clientConfig *restclien
 		if collector.Name != "" {
 			outputFilename = collector.Name
 		} else {
-			outputFilename = collector.HostPath
+			outputFilename = hostPath
 		}
 		b, err := copyFromHostGetFilesFromPods(childCtx, clientConfig, client, collector, fileName, outputFilename, labels, namespace)
 		if err != nil {
@@ -215,15 +217,15 @@ func copyFromHostGetFilesFromPods(ctx context.Context, clientConfig *restclient.
 		outputNodeFilename := filepath.Join(outputFilename, pod.Spec.NodeName)
 		stdout, stderr, err := getFilesFromPod(ctx, clientConfig, client, pod.Name, "collector", namespace, filepath.Join("/host", fileName))
 		if err != nil {
-			runOutput[outputNodeFilename+".error"] = []byte(err.Error())
+			runOutput[filepath.Join(outputNodeFilename, "error.txt")] = []byte(err.Error())
 			if len(stdout) > 0 {
-				runOutput[outputNodeFilename+".stdout"] = stdout
+				runOutput[filepath.Join(outputNodeFilename, "stdout.txt")] = stdout
 			}
 			if len(stderr) > 0 {
-				runOutput[outputNodeFilename+".stderr"] = stderr
+				runOutput[filepath.Join(outputNodeFilename, "stderr.txt")] = stderr
 			}
 		} else {
-			runOutput[outputNodeFilename+".tar"] = stdout
+			runOutput[filepath.Join(outputNodeFilename, "archive.tar")] = stdout
 		}
 	}
 
