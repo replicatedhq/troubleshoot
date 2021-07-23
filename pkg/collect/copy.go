@@ -1,9 +1,12 @@
 package collect
 
 import (
+	"archive/tar"
 	"bytes"
 	"context"
 	"fmt"
+	"io"
+	"io/ioutil"
 	"path/filepath"
 
 	"github.com/pkg/errors"
@@ -64,23 +67,35 @@ func copyFiles(ctx context.Context, client *kubernetes.Clientset, c *Collector, 
 		containerName = copyCollector.ContainerName
 	}
 
+	errs := map[string]string{}
+
 	stdout, stderr, err := getFilesFromPod(ctx, c.ClientConfig, client, pod.Name, containerName, pod.Namespace, copyCollector.ContainerPath)
 	if err != nil {
-		errors := map[string]string{
-			filepath.Join(copyCollector.ContainerPath, "error"): err.Error(),
-		}
+		errs[filepath.Join(copyCollector.ContainerPath, "error")] = err.Error()
 		if len(stdout) > 0 {
-			errors[filepath.Join(copyCollector.ContainerPath, "stdout")] = string(stdout)
+			errs[filepath.Join(copyCollector.ContainerPath, "stdout")] = string(stdout)
 		}
 		if len(stderr) > 0 {
-			errors[filepath.Join(copyCollector.ContainerPath, "stderr")] = string(stderr)
+			errs[filepath.Join(copyCollector.ContainerPath, "stderr")] = string(stderr)
 		}
-		return nil, errors
+		return nil, errs
 	}
 
-	return map[string][]byte{
-		filepath.Base(copyCollector.ContainerPath) + ".tar": stdout,
-	}, nil
+	runOutput := map[string][]byte{}
+
+	if copyCollector.ExtractArchive {
+		files, err := extractTar(bytes.NewReader(stdout))
+		if err != nil {
+			errs[filepath.Join(copyCollector.ContainerPath, "error")] = errors.Wrap(err, "extract tar").Error()
+		}
+		for name, data := range files {
+			runOutput[filepath.Join(filepath.Base(copyCollector.ContainerPath), name)] = data
+		}
+	} else {
+		runOutput[filepath.Base(copyCollector.ContainerPath)+".tar"] = stdout
+	}
+
+	return runOutput, errs
 }
 
 func getFilesFromPod(ctx context.Context, clientConfig *restclient.Config, client kubernetes.Interface, podName string, containerName string, namespace string, containerPath string) ([]byte, []byte, error) {
@@ -130,4 +145,31 @@ func getCopyErrosFileName(copyCollector *troubleshootv1beta2.Copy) string {
 	}
 	// TODO: random part
 	return "errors.json"
+}
+
+func extractTar(reader io.Reader) (map[string][]byte, error) {
+	files := map[string][]byte{}
+
+	tr := tar.NewReader(reader)
+	for {
+		header, err := tr.Next()
+		if err == io.EOF {
+			break
+		} else if err != nil {
+			return files, errors.Wrap(err, "read header")
+		}
+
+		switch header.Typeflag {
+		case tar.TypeReg:
+			data, err := ioutil.ReadAll(tr)
+			if err != nil {
+				return files, errors.Wrapf(err, "read file %s", header.Name)
+			}
+			files[header.Name] = data
+		default:
+			continue
+		}
+	}
+
+	return files, nil
 }

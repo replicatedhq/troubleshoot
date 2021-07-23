@@ -92,12 +92,13 @@ type Exec struct {
 }
 
 type Copy struct {
-	CollectorMeta `json:",inline" yaml:",inline"`
-	Name          string   `json:"name,omitempty" yaml:"name,omitempty"`
-	Selector      []string `json:"selector" yaml:"selector"`
-	Namespace     string   `json:"namespace" yaml:"namespace"`
-	ContainerPath string   `json:"containerPath" yaml:"containerPath"`
-	ContainerName string   `json:"containerName,omitempty" yaml:"containerName,omitempty"`
+	CollectorMeta  `json:",inline" yaml:",inline"`
+	Name           string   `json:"name,omitempty" yaml:"name,omitempty"`
+	Selector       []string `json:"selector" yaml:"selector"`
+	Namespace      string   `json:"namespace" yaml:"namespace"`
+	ContainerPath  string   `json:"containerPath" yaml:"containerPath"`
+	ContainerName  string   `json:"containerName,omitempty" yaml:"containerName,omitempty"`
+	ExtractArchive bool     `json:"extractArchive,omitempty" yaml:"extractArchive,omitempty"`
 }
 
 type CopyFromHost struct {
@@ -109,6 +110,7 @@ type CopyFromHost struct {
 	ImagePullSecret *ImagePullSecrets `json:"imagePullSecret,omitempty" yaml:"imagePullSecret,omitempty"`
 	Timeout         string            `json:"timeout,omitempty" yaml:"timeout,omitempty"`
 	HostPath        string            `json:"hostPath" yaml:"hostPath"`
+	ExtractArchive  bool              `json:"extractArchive,omitempty" yaml:"extractArchive,omitempty"`
 }
 
 type HTTP struct {
