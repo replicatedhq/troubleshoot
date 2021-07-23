@@ -16,12 +16,13 @@ import (
 )
 
 type ConfigMapOutput struct {
-	Namespace       string `json:"namespace"`
-	Name            string `json:"name"`
-	Key             string `json:"key"`
-	ConfigMapExists bool   `json:"configMapExists"`
-	KeyExists       bool   `json:"keyExists"`
-	Value           string `json:"value,omitempty"`
+	Namespace       string            `json:"namespace"`
+	Name            string            `json:"name"`
+	Key             string            `json:"key"`
+	ConfigMapExists bool              `json:"configMapExists"`
+	KeyExists       bool              `json:"keyExists"`
+	Value           string            `json:"value,omitempty"`
+	Data            map[string]string `json:"data,omitonempty"`
 }
 
 func ConfigMap(ctx context.Context, client kubernetes.Interface, configMapCollector *troubleshootv1beta2.ConfigMap) (map[string][]byte, error) {
@@ -81,6 +82,9 @@ func configMapToOutput(configMapCollector *troubleshootv1beta2.ConfigMap, config
 
 	if configMap != nil {
 		foundConfigMap.ConfigMapExists = true
+		if configMapCollector.CollectAllData {
+			foundConfigMap.Data = configMap.Data
+		}
 		if configMapCollector.Key != "" {
 			if val, ok := configMap.Data[configMapCollector.Key]; ok {
 				foundConfigMap.KeyExists = true

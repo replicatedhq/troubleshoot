@@ -1,0 +1,16 @@
+apiVersion: troubleshoot.sh/v1beta2
+kind: SupportBundle
+metadata:
+  name: example-collect-all-configmap-data
+spec:
+    collectors:
+        - configMap:
+            namespace: kurl
+            name: kurl-current-config
+            collectAllData: true
+        - configMap:
+            namespace: kurl
+            name: kurl-last-config
+            collectAllData: true
+    
+    
