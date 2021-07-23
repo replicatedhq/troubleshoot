@@ -110,9 +110,9 @@ func runPreflights(v *viper.Viper, arg string) error {
 	progressCollection, ctx := errgroup.WithContext(ctx)
 
 	if v.GetBool("interactive") {
-		progressCollection.Go(interactiveProgress(ctx, progressCh))
+		progressCollection.Go(collectInteractiveProgress(ctx, progressCh))
 	} else {
-		progressCollection.Go(nonInteractiveProgess(ctx, progressCh))
+		progressCollection.Go(collectNonInteractiveProgess(ctx, progressCh))
 	}
 
 	if preflightSpec, ok := obj.(*troubleshootv1beta2.Preflight); ok {
@@ -159,7 +159,7 @@ func runPreflights(v *viper.Viper, arg string) error {
 	return showStdoutResults(v.GetString("format"), preflightSpecName, analyzeResults)
 }
 
-func interactiveProgress(ctx context.Context, progressCh <-chan interface{}) func() error {
+func collectInteractiveProgress(ctx context.Context, progressCh <-chan interface{}) func() error {
 	return func() error {
 		spinner := spin.New()
 		lastMsg := ""
@@ -191,7 +191,7 @@ func interactiveProgress(ctx context.Context, progressCh <-chan interface{}) fun
 	}
 }
 
-func nonInteractiveProgess(ctx context.Context, progressCh <-chan interface{}) func() error {
+func collectNonInteractiveProgess(ctx context.Context, progressCh <-chan interface{}) func() error {
 	return func() error {
 		for {
 			select {
