@@ -1,6 +1,7 @@
 package collect
 
 import (
+	"bytes"
 	"context"
 	"path/filepath"
 	"time"
@@ -225,7 +226,17 @@ func copyFromHostGetFilesFromPods(ctx context.Context, clientConfig *restclient.
 				runOutput[filepath.Join(outputNodeFilename, "stderr.txt")] = stderr
 			}
 		} else {
-			runOutput[filepath.Join(outputNodeFilename, "archive.tar")] = stdout
+			if collector.ExtractArchive {
+				files, err := extractTar(bytes.NewReader(stdout))
+				if err != nil {
+					runOutput[filepath.Join(outputNodeFilename, "error.txt")] = []byte(errors.Wrap(err, "extract tar").Error())
+				}
+				for name, data := range files {
+					runOutput[filepath.Join(outputNodeFilename, name)] = data
+				}
+			} else {
+				runOutput[filepath.Join(outputNodeFilename, "archive.tar")] = stdout
+			}
 		}
 	}
 
