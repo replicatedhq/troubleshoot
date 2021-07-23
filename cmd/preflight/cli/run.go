@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -21,19 +22,21 @@ import (
 	"github.com/replicatedhq/troubleshoot/pkg/specs"
 	"github.com/spf13/viper"
 	spin "github.com/tj/go-spin"
+	"golang.org/x/sync/errgroup"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/scheme"
 )
 
 func runPreflights(v *viper.Viper, arg string) error {
-	fmt.Print(cursor.Hide())
-	defer fmt.Print(cursor.Show())
+	if v.GetBool("interactive") {
+		fmt.Print(cursor.Hide())
+		defer fmt.Print(cursor.Show())
+	}
 
 	go func() {
 		signalChan := make(chan os.Signal, 1)
 		signal.Notify(signalChan, os.Interrupt)
 		<-signalChan
-		fmt.Print(cursor.Show())
 		os.Exit(0)
 	}()
 
@@ -97,70 +100,30 @@ func runPreflights(v *viper.Viper, arg string) error {
 
 	var collectResults preflight.CollectResult
 	preflightSpecName := ""
-	finishedCh := make(chan bool, 1)
-	progressCh := make(chan interface{}, 0) // non-zero buffer will result in missed messages
+
+	progressCh := make(chan interface{})
+	defer close(progressCh)
+
+	ctx, stopProgressCollection := context.WithCancel(context.Background())
+	// make sure we shut down progress collection goroutines if an error occurs
+	defer stopProgressCollection()
+	progressCollection, ctx := errgroup.WithContext(ctx)
 
 	if v.GetBool("interactive") {
-		s := spin.New()
-		go func() {
-			lastMsg := ""
-			for {
-				select {
-				case msg, ok := <-progressCh:
-					if !ok {
-						continue
-					}
-					switch msg := msg.(type) {
-					case error:
-						c := color.New(color.FgHiRed)
-						c.Println(fmt.Sprintf("%s\r * %v", cursor.ClearEntireLine(), msg))
-					case string:
-						if lastMsg == msg {
-							break
-						}
-						lastMsg = msg
-						c := color.New(color.FgCyan)
-						c.Println(fmt.Sprintf("%s\r * %s", cursor.ClearEntireLine(), msg))
-					}
-				case <-time.After(time.Millisecond * 100):
-					fmt.Printf("\r  \033[36mRunning Preflight checks\033[m %s ", s.Next())
-				case <-finishedCh:
-					fmt.Printf("\r%s\r", cursor.ClearEntireLine())
-					return
-				}
-			}
-		}()
+		progressCollection.Go(collectInteractiveProgress(ctx, progressCh))
 	} else {
-		// make sure we don't block any senders
-		go func() {
-			for {
-				select {
-				case msg, ok := <-progressCh:
-					if !ok {
-						return
-					}
-					fmt.Fprintf(os.Stderr, "%v\n", msg)
-				case <-finishedCh:
-					return
-				}
-			}
-		}()
+		progressCollection.Go(collectNonInteractiveProgess(ctx, progressCh))
 	}
 
-	defer func() {
-		close(finishedCh)
-		close(progressCh)
-	}()
-
 	if preflightSpec, ok := obj.(*troubleshootv1beta2.Preflight); ok {
-		r, err := collectInCluster(preflightSpec, finishedCh, progressCh)
+		r, err := collectInCluster(preflightSpec, progressCh)
 		if err != nil {
 			return errors.Wrap(err, "failed to collect in cluster")
 		}
 		collectResults = *r
 		preflightSpecName = preflightSpec.Name
 	} else if hostPreflightSpec, ok := obj.(*troubleshootv1beta2.HostPreflight); ok {
-		r, err := collectHost(hostPreflightSpec, finishedCh, progressCh)
+		r, err := collectHost(hostPreflightSpec, progressCh)
 		if err != nil {
 			return errors.Wrap(err, "failed to collect from host")
 		}
@@ -183,7 +146,8 @@ func runPreflights(v *viper.Viper, arg string) error {
 		}
 	}
 
-	finishedCh <- true
+	stopProgressCollection()
+	progressCollection.Wait()
 
 	if v.GetBool("interactive") {
 		if len(analyzeResults) == 0 {
@@ -195,7 +159,60 @@ func runPreflights(v *viper.Viper, arg string) error {
 	return showStdoutResults(v.GetString("format"), preflightSpecName, analyzeResults)
 }
 
-func collectInCluster(preflightSpec *troubleshootv1beta2.Preflight, finishedCh chan bool, progressCh chan interface{}) (*preflight.CollectResult, error) {
+func collectInteractiveProgress(ctx context.Context, progressCh <-chan interface{}) func() error {
+	return func() error {
+		spinner := spin.New()
+		lastMsg := ""
+
+		errorTxt := color.New(color.FgHiRed)
+		infoTxt := color.New(color.FgCyan)
+
+		for {
+			select {
+			case msg := <-progressCh:
+				switch msg := msg.(type) {
+				case error:
+					errorTxt.Printf("%s\r * %v\n", cursor.ClearEntireLine(), msg)
+				case string:
+					if lastMsg == msg {
+						break
+					}
+					lastMsg = msg
+					infoTxt.Printf("%s\r * %s\n", cursor.ClearEntireLine(), msg)
+
+				}
+			case <-time.After(time.Millisecond * 100):
+				fmt.Printf("\r  %s %s ", color.CyanString("Running Preflight Checks"), spinner.Next())
+			case <-ctx.Done():
+				fmt.Printf("\r%s\r", cursor.ClearEntireLine())
+				return nil
+			}
+		}
+	}
+}
+
+func collectNonInteractiveProgess(ctx context.Context, progressCh <-chan interface{}) func() error {
+	return func() error {
+		for {
+			select {
+			case msg := <-progressCh:
+				switch msg := msg.(type) {
+				case error:
+					fmt.Fprintf(os.Stderr, "error - %v\n", msg)
+				case string:
+					fmt.Fprintf(os.Stderr, "%s\n", msg)
+				case preflight.CollectProgress:
+					fmt.Fprintf(os.Stderr, "%s\n", msg.String())
+
+				}
+			case <-ctx.Done():
+				return nil
+			}
+		}
+	}
+}
+
+func collectInCluster(preflightSpec *troubleshootv1beta2.Preflight, progressCh chan interface{}) (*preflight.CollectResult, error) {
 	v := viper.GetViper()
 
 	restConfig, err := k8sutil.GetRESTConfig()
@@ -217,7 +234,7 @@ func collectInCluster(preflightSpec *troubleshootv1beta2.Preflight, finishedCh c
 	}
 
 	if v.GetString("since") != "" || v.GetString("since-time") != "" {
-		err := parseTimeFlags(v, progressCh, preflightSpec.Spec.Collectors)
+		err := parseTimeFlags(v, preflightSpec.Spec.Collectors)
 		if err != nil {
 			return nil, err
 		}
@@ -240,7 +257,7 @@ func collectInCluster(preflightSpec *troubleshootv1beta2.Preflight, finishedCh c
 	return &collectResults, nil
 }
 
-func collectHost(hostPreflightSpec *troubleshootv1beta2.HostPreflight, finishedCh chan bool, progressCh chan interface{}) (*preflight.CollectResult, error) {
+func collectHost(hostPreflightSpec *troubleshootv1beta2.HostPreflight, progressCh chan interface{}) (*preflight.CollectResult, error) {
 	collectOpts := preflight.CollectOpts{
 		ProgressChan: progressCh,
 	}
@@ -253,7 +270,7 @@ func collectHost(hostPreflightSpec *troubleshootv1beta2.HostPreflight, finishedC
 	return &collectResults, nil
 }
 
-func parseTimeFlags(v *viper.Viper, progressChan chan interface{}, collectors []*troubleshootv1beta2.Collect) error {
+func parseTimeFlags(v *viper.Viper, collectors []*troubleshootv1beta2.Collect) error {
 	var (
 		sinceTime time.Time
 		err       error

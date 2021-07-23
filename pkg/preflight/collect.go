@@ -26,6 +26,10 @@ type CollectProgress struct {
 	TotalCount     int
 }
 
+func (cp *CollectProgress) String() string {
+	return fmt.Sprintf("name: %-20s status: %-15s completed: %-4d total: %-4d", cp.CurrentName, cp.CurrentStatus, cp.CompletedCount, cp.TotalCount)
+}
+
 type CollectResult interface {
 	Analyze() []*analyze.AnalyzeResult
 	IsRBACAllowed() bool
