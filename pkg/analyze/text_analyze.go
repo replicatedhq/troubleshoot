@@ -125,13 +125,11 @@ func analyzeRegexPattern(pattern string, collected []byte, outcomes []*troublesh
 		}
 		return &result, nil
 	}
-	if reMatch == failWhen {
-		result.IsFail = true
-		if failOutcome != nil {
-			result.Message = failOutcome.Message
-			result.URI = failOutcome.URI
-		}
-		return &result, nil
+
+	result.IsFail = true
+	if failOutcome != nil {
+		result.Message = failOutcome.Message
+		result.URI = failOutcome.URI
 	}
 	return &result, nil
 }
