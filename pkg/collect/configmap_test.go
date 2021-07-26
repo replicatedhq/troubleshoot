@@ -218,7 +218,7 @@ func TestConfigMap(t *testing.T) {
 			configMapCollector: &troubleshootv1beta2.ConfigMap{
 				Namespace:      "test-namespace",
 				Name:           "test-configmap",
-				CollectAllData: true,
+				IncludeAllData: true,
 			},
 			mockConfigMaps: []corev1.ConfigMap{
 				{
@@ -258,7 +258,7 @@ func TestConfigMap(t *testing.T) {
 			configMapCollector: &troubleshootv1beta2.ConfigMap{
 				Namespace:      "test-namespace",
 				Name:           "test-configmap",
-				CollectAllData: true,
+				IncludeAllData: true,
 			},
 			mockConfigMaps: []corev1.ConfigMap{
 				{
@@ -291,7 +291,7 @@ func TestConfigMap(t *testing.T) {
 				Namespace:      "test-namespace",
 				Name:           "test-configmap",
 				Key:            "test-key1",
-				CollectAllData: true,
+				IncludeAllData: true,
 			},
 			mockConfigMaps: []corev1.ConfigMap{
 				{

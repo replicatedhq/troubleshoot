@@ -7,10 +7,10 @@ spec:
         - configMap:
             namespace: kurl
             name: kurl-current-config
-            collectAllData: true
+            includeAllData: true
         - configMap:
             namespace: kurl
             name: kurl-last-config
-            collectAllData: true
+            includeAllData: true
     
     

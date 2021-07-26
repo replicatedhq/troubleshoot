@@ -39,7 +39,7 @@ type ConfigMap struct {
 	Namespace      string   `json:"namespace,omitempty" yaml:"namespace,omitempty"`
 	Key            string   `json:"key,omitempty" yaml:"key,omitempty"`
 	IncludeValue   bool     `json:"includeValue,omitempty" yaml:"includeValue,omitempty"`
-	CollectAllData bool     `json:"collectAllData,omitempty" yaml:"collectAllData,omitempty"`
+	IncludeAllData bool     `json:"includeAllData,omitempty" yaml:"includeAllData,omitempty"`
 }
 
 type LogLimits struct {

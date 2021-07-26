@@ -82,7 +82,7 @@ func configMapToOutput(configMapCollector *troubleshootv1beta2.ConfigMap, config
 
 	if configMap != nil {
 		foundConfigMap.ConfigMapExists = true
-		if configMapCollector.CollectAllData {
+		if configMapCollector.IncludeAllData {
 			foundConfigMap.Data = configMap.Data
 		}
 		if configMapCollector.Key != "" {
