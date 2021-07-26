@@ -97,7 +97,27 @@ func analyzeRegexPattern(pattern string, collected []byte, outcomes []*troublesh
 		IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg",
 	}
 
-	if re.MatchString(string(collected)) {
+	reMatch := re.MatchString(string(collected))
+	failWhen := false
+	if failOutcome.When != "" {
+		failWhen, err = strconv.ParseBool(failOutcome.When)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to process when statement: %s", failOutcome.When)
+		}
+	}
+	passWhen := true
+	if passOutcome.When != "" {
+		passWhen, err = strconv.ParseBool(passOutcome.When)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to process when statement: %s", passOutcome.When)
+		}
+	}
+
+	if passWhen == failWhen {
+		return nil, errors.Wrap(err, "outcome when conditions for fail and pass are equal")
+	}
+
+	if reMatch == passWhen {
 		result.IsPass = true
 		if passOutcome != nil {
 			result.Message = passOutcome.Message
@@ -105,6 +125,7 @@ func analyzeRegexPattern(pattern string, collected []byte, outcomes []*troublesh
 		}
 		return &result, nil
 	}
+
 	result.IsFail = true
 	if failOutcome != nil {
 		result.Message = failOutcome.Message
