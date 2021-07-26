@@ -213,6 +213,112 @@ func TestConfigMap(t *testing.T) {
 				}),
 			},
 		},
+		{
+			name: "collectAll",
+			configMapCollector: &troubleshootv1beta2.ConfigMap{
+				Namespace:      "test-namespace",
+				Name:           "test-configmap",
+				IncludeAllData: true,
+			},
+			mockConfigMaps: []corev1.ConfigMap{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test-configmap",
+						Namespace: "test-namespace",
+					},
+					Data: map[string]string{
+						"test-key1": "test-value1",
+						"test-key2": "test-value2",
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "other-configmap",
+						Namespace: "test-namespace",
+					},
+					Data: map[string]string{
+						"test-key": "test-value",
+					},
+				},
+			},
+			want: map[string][]byte{
+				"configmaps/test-namespace/test-configmap.json": mustJSONMarshalIndent(t, ConfigMapOutput{
+					Namespace:       "test-namespace",
+					Name:            "test-configmap",
+					ConfigMapExists: true,
+					Data: map[string]string{
+						"test-key1": "test-value1",
+						"test-key2": "test-value2",
+					},
+				}),
+			},
+		},
+		{
+			name: "collectAll no data",
+			configMapCollector: &troubleshootv1beta2.ConfigMap{
+				Namespace:      "test-namespace",
+				Name:           "test-configmap",
+				IncludeAllData: true,
+			},
+			mockConfigMaps: []corev1.ConfigMap{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test-configmap",
+						Namespace: "test-namespace",
+					},
+				},
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "other-configmap",
+						Namespace: "test-namespace",
+					},
+					Data: map[string]string{
+						"test-key": "test-value",
+					},
+				},
+			},
+			want: map[string][]byte{
+				"configmaps/test-namespace/test-configmap.json": mustJSONMarshalIndent(t, ConfigMapOutput{
+					Namespace:       "test-namespace",
+					Name:            "test-configmap",
+					ConfigMapExists: true,
+				}),
+			},
+		},
+		{
+			name: "collectAll with slectKey",
+			configMapCollector: &troubleshootv1beta2.ConfigMap{
+				Namespace:      "test-namespace",
+				Name:           "test-configmap",
+				Key:            "test-key1",
+				IncludeAllData: true,
+			},
+			mockConfigMaps: []corev1.ConfigMap{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "test-configmap",
+						Namespace: "test-namespace",
+					},
+					Data: map[string]string{
+						"test-key1": "test-value1",
+						"test-key2": "test-value2",
+					},
+				},
+			},
+			want: map[string][]byte{
+				"configmaps/test-namespace/test-configmap/test-key1.json": mustJSONMarshalIndent(t, ConfigMapOutput{
+					Namespace:       "test-namespace",
+					Name:            "test-configmap",
+					ConfigMapExists: true,
+					Key:             "test-key1",
+					Data: map[string]string{
+						"test-key1": "test-value1",
+						"test-key2": "test-value2",
+					},
+					KeyExists: true,
+				}),
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
