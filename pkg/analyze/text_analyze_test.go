@@ -303,6 +303,42 @@ func Test_textAnalyze(t *testing.T) {
 			},
 		},
 		{
+			name: "Fail on error case 1", // regexes are not case insensitive by default
+			analyzer: troubleshootv1beta2.TextAnalyze{
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							Message: "pass",
+							When:    "false",
+						},
+					},
+					{
+						Fail: &troubleshootv1beta2.SingleOutcome{
+							Message: "fail",
+							When:    "true",
+						},
+					},
+				},
+				CollectorName: "text-collector-1",
+				FileName:      "cfile-1.txt",
+				RegexPattern:  "error",
+			},
+			expectResult: []AnalyzeResult{
+				{
+					IsPass:  false,
+					IsWarn:  false,
+					IsFail:  true,
+					Title:   "text-collector-1",
+					Message: "fail",
+					IconKey: "kubernetes_text_analyze",
+					IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg",
+				},
+			},
+			files: map[string][]byte{
+				"text-collector-1/cfile-1.txt": []byte("There is an error."),
+			},
+		},
+		{
 			name: "case insensitive failure case 1", // regexes are not case insensitive by default
 			analyzer: troubleshootv1beta2.TextAnalyze{
 				Outcomes: []*troubleshootv1beta2.Outcome{
