@@ -83,7 +83,6 @@ func secretToOutput(secretCollector *troubleshootv1beta2.Secret, secret *corev1.
 		foundSecret.SecretExists = true
 		if secretCollector.Key != "" {
 			if val, ok := secret.Data[secretCollector.Key]; ok {
-				fmt.Println("FOUND")
 				foundSecret.KeyExists = true
 				if secretCollector.IncludeValue {
 					foundSecret.Value = string(val)
