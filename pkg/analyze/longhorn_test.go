@@ -412,6 +412,11 @@ func TestSimplifyLonghornResults(t *testing.T) {
 			},
 		},
 		{
+			name:   "No Results",
+			input:  []*AnalyzeResult{},
+			expect: []*AnalyzeResult{},
+		},
+		{
 			name: "Mixed results",
 			input: []*AnalyzeResult{
 				{
