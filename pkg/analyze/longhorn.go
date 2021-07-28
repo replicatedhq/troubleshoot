@@ -247,15 +247,16 @@ func analyzeLonghornReplicaChecksums(volumeName string, checksums []map[string]s
 // Keep warn/error results. Return a single pass result if there are no warn/errors.
 func simplifyLonghornResults(results []*AnalyzeResult) []*AnalyzeResult {
 	out := []*AnalyzeResult{}
-
+	resultPass := false
 	for _, result := range results {
 		if result.IsPass {
+			resultPass = true
 			continue
 		}
 		out = append(out, result)
 	}
 
-	if len(out) == 0 {
+	if resultPass && len(out) == 0 {
 		out = append(out, &AnalyzeResult{
 			Title:   "Longhorn Health Status",
 			IsPass:  true,
