@@ -46,19 +46,18 @@ func (a *AnalyzeHostHTTP) Analyze(getCollectedFileContents func(string) ([]byte,
 		return nil, errors.Wrap(err, "failed to unmarshal http result")
 	}
 
-	var coll resultCollector
+	result := &AnalyzeResult{
+		Title: a.Title(),
+	}
 
 	for _, outcome := range hostAnalyzer.Outcomes {
-		result := &AnalyzeResult{Title: a.Title()}
-
 		if outcome.Fail != nil {
 			if outcome.Fail.When == "" {
 				result.IsFail = true
 				result.Message = outcome.Fail.Message
 				result.URI = outcome.Fail.URI
 
-				coll.push(result)
-				continue
+				return []*AnalyzeResult{result}, nil
 			}
 
 			isMatch, err := compareHostHTTPConditionalToActual(outcome.Fail.When, httpInfo)
@@ -71,7 +70,7 @@ func (a *AnalyzeHostHTTP) Analyze(getCollectedFileContents func(string) ([]byte,
 				result.Message = outcome.Fail.Message
 				result.URI = outcome.Fail.URI
 
-				coll.push(result)
+				return []*AnalyzeResult{result}, nil
 			}
 		} else if outcome.Warn != nil {
 			if outcome.Warn.When == "" {
@@ -79,8 +78,7 @@ func (a *AnalyzeHostHTTP) Analyze(getCollectedFileContents func(string) ([]byte,
 				result.Message = outcome.Warn.Message
 				result.URI = outcome.Warn.URI
 
-				coll.push(result)
-				continue
+				return []*AnalyzeResult{result}, nil
 			}
 
 			isMatch, err := compareHostHTTPConditionalToActual(outcome.Warn.When, httpInfo)
@@ -93,7 +91,7 @@ func (a *AnalyzeHostHTTP) Analyze(getCollectedFileContents func(string) ([]byte,
 				result.Message = outcome.Warn.Message
 				result.URI = outcome.Warn.URI
 
-				coll.push(result)
+				return []*AnalyzeResult{result}, nil
 			}
 		} else if outcome.Pass != nil {
 			if outcome.Pass.When == "" {
@@ -101,8 +99,7 @@ func (a *AnalyzeHostHTTP) Analyze(getCollectedFileContents func(string) ([]byte,
 				result.Message = outcome.Pass.Message
 				result.URI = outcome.Pass.URI
 
-				coll.push(result)
-				continue
+				return []*AnalyzeResult{result}, nil
 			}
 
 			isMatch, err := compareHostHTTPConditionalToActual(outcome.Pass.When, httpInfo)
@@ -115,13 +112,13 @@ func (a *AnalyzeHostHTTP) Analyze(getCollectedFileContents func(string) ([]byte,
 				result.Message = outcome.Pass.Message
 				result.URI = outcome.Pass.URI
 
-				coll.push(result)
+				return []*AnalyzeResult{result}, nil
 			}
 
 		}
 	}
 
-	return coll.get(a.Title()), nil
+	return []*AnalyzeResult{result}, nil
 }
 
 func compareHostHTTPConditionalToActual(conditional string, result *httpResult) (res bool, err error) {

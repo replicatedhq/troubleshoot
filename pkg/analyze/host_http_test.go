@@ -82,6 +82,37 @@ func TestAnalyzeHostHTTP(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "skip default on pass",
+			httpResult: &httpResult{
+				Response: &collect.HTTPResponse{
+					Status: 200,
+				},
+			},
+			hostAnalyzer: &troubleshootv1beta2.HTTPAnalyze{
+				CollectorName: "collector",
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							When:    "statusCode == 200",
+							Message: "passed",
+						},
+					},
+					{
+						Warn: &troubleshootv1beta2.SingleOutcome{
+							Message: "default",
+						},
+					},
+				},
+			},
+			result: []*AnalyzeResult{
+				{
+					Title:   "HTTP Request",
+					IsPass:  true,
+					Message: "passed",
+				},
+			},
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
