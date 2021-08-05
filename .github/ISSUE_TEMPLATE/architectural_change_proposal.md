@@ -1,6 +1,6 @@
 ---
 name: Architecture change proposal
-about: Propose an idea with a fundamental change in the way it works 
+about: Propose an idea for discussion
 title: ''
 labels: 'proposal'
 assignees: ''
