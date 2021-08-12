@@ -48,10 +48,6 @@ func runTroubleshoot(v *viper.Viper, arg string) error {
 	}
 
 	namespace := v.GetString("namespace")
-	if namespace == "" {
-		kubeconfig := k8sutil.GetKubeconfig()
-		namespace, _, _ = kubeconfig.Namespace()
-	}
 
 	var sinceTime *time.Time
 	if v.GetString("since-time") != "" || v.GetString("since") != "" {

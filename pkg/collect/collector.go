@@ -7,6 +7,7 @@ import (
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
+	"github.com/replicatedhq/troubleshoot/pkg/k8sutil"
 	"github.com/replicatedhq/troubleshoot/pkg/multitype"
 	authorizationv1 "k8s.io/api/authorization/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -221,6 +222,10 @@ func (c *Collector) RunCollectorSync(clientConfig *rest.Config, client kubernete
 		if namespace == "" {
 			namespace = c.Namespace
 		}
+		if namespace == "" {
+			kubeconfig := k8sutil.GetKubeconfig()
+			namespace, _, _ = kubeconfig.Namespace()
+		}
 		result, err = CopyFromHost(ctx, namespace, clientConfig, client, c.Collect.CopyFromHost)
 	} else if c.Collect.HTTP != nil {
 		result, err = HTTP(c, c.Collect.HTTP)
@@ -235,6 +240,10 @@ func (c *Collector) RunCollectorSync(clientConfig *rest.Config, client kubernete
 		namespace := c.Collect.Collectd.Namespace
 		if namespace == "" {
 			namespace = c.Namespace
+		}
+		if namespace == "" {
+			kubeconfig := k8sutil.GetKubeconfig()
+			namespace, _, _ = kubeconfig.Namespace()
 		}
 		result, err = Collectd(ctx, namespace, clientConfig, client, c.Collect.Collectd)
 	} else if c.Collect.Ceph != nil {
