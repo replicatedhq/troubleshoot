@@ -33,7 +33,7 @@ func runCollectors(collectors []*troubleshootv1beta2.Collect, additionalRedactor
 	var cleanedCollectors collect.Collectors
 	for _, desiredCollector := range collectSpecs {
 		collector := collect.Collector{
-			Redact:       true,
+			Redact:       opts.Redact,
 			Collect:      desiredCollector,
 			ClientConfig: opts.KubernetesRestConfig,
 			Namespace:    opts.Namespace,
