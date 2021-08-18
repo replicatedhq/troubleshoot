@@ -1,38 +1,27 @@
 ---
 name: Bug report
-about: Create a report to help us improve
-title: ''
+about: Report a problem with Troubleshoot 
 labels: 'bug'
-assignees: ''
 
 ---
 
-**Describe the bug**
-A clear and concise description of what the bug is.
+**Bug Description**
 
-**To Reproduce**
-Steps to reproduce the behavior:
-1. Go to '...'
-2. Click on '....'
-3. Scroll down to '....'
-4. See error
+Write a concise description of the problem here.
 
-**Expected behavior**
-A clear and concise description of what you expected to happen.
+**Expected Behavior**
 
-**Screenshots**
-If applicable, add screenshots to help explain your problem.
+Include a description of the expected behaviour here.
 
-**Desktop (please complete the following information):**
- - OS: [e.g. iOS]
- - Browser [e.g. chrome, safari]
- - Version [e.g. 22]
+**Steps To Reproduce**
 
-**Smartphone (please complete the following information):**
- - Device: [e.g. iPhone6]
- - OS: [e.g. iOS8.1]
- - Browser [e.g. stock browser, safari]
- - Version [e.g. 22]
+Include the commands to reproduce the issue including any output. Any information that will help us to understand the problem is useful.  Feel free to paste long output into a [Github gist](https://gist.github.com) and include the link here.
 
-**Additional context**
-Add any other context about the problem here.
+
+**Additional Context**
+
+Include the following information.
+- Troubleshoot version. If you built from source, note that including the version of Go you used to build with.
+- Operating system
+- Operating system version
+- Other details that might be helpful in diagnosing the problem
