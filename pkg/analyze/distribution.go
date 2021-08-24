@@ -46,7 +46,7 @@ const (
 
 func CheckOpenShift(foundProviders *providers, apiResources []*metav1.APIResourceList, provider string) string {
 	for _, resource := range apiResources {
-		if strings.Contains(resource.GroupVersion, "openshift") {
+		if strings.HasPrefix(resource.GroupVersion, "apps.openshift.io/") {
 			foundProviders.openShift = true
 			return "openShift"
 		}
