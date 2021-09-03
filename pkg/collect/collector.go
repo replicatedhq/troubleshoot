@@ -7,6 +7,7 @@ import (
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
+	"github.com/replicatedhq/troubleshoot/pkg/k8sutil"
 	"github.com/replicatedhq/troubleshoot/pkg/multitype"
 	authorizationv1 "k8s.io/api/authorization/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -218,7 +219,10 @@ func (c *Collector) RunCollectorSync(clientConfig *rest.Config, client kubernete
 		result, err = Copy(c, c.Collect.Copy)
 	} else if c.Collect.CopyFromHost != nil {
 		namespace := c.Collect.CopyFromHost.Namespace
-		if namespace == "" {
+		if namespace == "" && c.Namespace == "" {
+			kubeconfig := k8sutil.GetKubeconfig()
+			namespace, _, _ = kubeconfig.Namespace()
+		} else if namespace == "" {
 			namespace = c.Namespace
 		}
 		result, err = CopyFromHost(ctx, namespace, clientConfig, client, c.Collect.CopyFromHost)
@@ -233,7 +237,10 @@ func (c *Collector) RunCollectorSync(clientConfig *rest.Config, client kubernete
 	} else if c.Collect.Collectd != nil {
 		// TODO: see if redaction breaks these
 		namespace := c.Collect.Collectd.Namespace
-		if namespace == "" {
+		if namespace == "" && c.Namespace == "" {
+			kubeconfig := k8sutil.GetKubeconfig()
+			namespace, _, _ = kubeconfig.Namespace()
+		} else if namespace == "" {
 			namespace = c.Namespace
 		}
 		result, err = Collectd(ctx, namespace, clientConfig, client, c.Collect.Collectd)
