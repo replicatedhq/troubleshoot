@@ -82,7 +82,7 @@ dockers:
       - "replicated/troubleshoot:{{ .Major }}"
       - "replicated/troubleshoot:{{ .Major }}.{{ .Minor }}"
       - "replicated/troubleshoot:{{ .Major }}.{{ .Minor }}.{{ .Patch }}"
-    binaries:
+    ids:
       - support-bundle
       - preflight
   - dockerfile: ./deploy/Dockerfile.troubleshoot
@@ -91,6 +91,6 @@ dockers:
       - "replicated/preflight:{{ .Major }}"
       - "replicated/preflight:{{ .Major }}.{{ .Minor }}"
       - "replicated/preflight:{{ .Major }}.{{ .Minor }}.{{ .Patch }}"
-    binaries:
+    ids:
       - support-bundle
       - preflight
