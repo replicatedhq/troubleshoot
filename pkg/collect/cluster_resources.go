@@ -87,6 +87,26 @@ func ClusterResources(c *Collector) (map[string][]byte, error) {
 		return nil, err
 	}
 
+	// jobs
+	jobs, jobsErrors := jobs(ctx, client, namespaceNames)
+	for k, v := range jobs {
+		clusterResourcesOutput[path.Join("cluster-resources/jobs", k)] = v
+	}
+	clusterResourcesOutput["cluster-resources/jobs-errors.json"], err = marshalNonNil(jobsErrors)
+	if err != nil {
+		return nil, err
+	}
+
+	// cronJobs
+	cronJobs, cronJobsErrors := cronJobs(ctx, client, namespaceNames)
+	for k, v := range cronJobs {
+		clusterResourcesOutput[path.Join("cluster-resources/cronjobs", k)] = v
+	}
+	clusterResourcesOutput["cluster-resources/cronjobs-errors.json"], err = marshalNonNil(cronJobsErrors)
+	if err != nil {
+		return nil, err
+	}
+
 	// ingress
 	ingress, ingressErrors := ingress(ctx, client, namespaceNames)
 	for k, v := range ingress {
@@ -312,6 +332,52 @@ func statefulsets(ctx context.Context, client *kubernetes.Clientset, namespaces 
 	}
 
 	return statefulsetsByNamespace, errorsByNamespace
+}
+
+func jobs(ctx context.Context, client *kubernetes.Clientset, namespaces []string) (map[string][]byte, map[string]string) {
+	jobsByNamespace := make(map[string][]byte)
+	errorsByNamespace := make(map[string]string)
+
+	for _, namespace := range namespaces {
+		nsJobs, err := client.BatchV1().Jobs(namespace).List(ctx, metav1.ListOptions{})
+		if err != nil {
+			errorsByNamespace[namespace] = err.Error()
+			continue
+		}
+
+		b, err := json.MarshalIndent(nsJobs.Items, "", "  ")
+		if err != nil {
+			errorsByNamespace[namespace] = err.Error()
+			continue
+		}
+
+		jobsByNamespace[namespace+".json"] = b
+	}
+
+	return jobsByNamespace, errorsByNamespace
+}
+
+func cronJobs(ctx context.Context, client *kubernetes.Clientset, namespaces []string) (map[string][]byte, map[string]string) {
+	cronJobsByNamespace := make(map[string][]byte)
+	errorsByNamespace := make(map[string]string)
+
+	for _, namespace := range namespaces {
+		nsCronJobs, err := client.BatchV1beta1().CronJobs(namespace).List(ctx, metav1.ListOptions{})
+		if err != nil {
+			errorsByNamespace[namespace] = err.Error()
+			continue
+		}
+
+		b, err := json.MarshalIndent(nsCronJobs.Items, "", "  ")
+		if err != nil {
+			errorsByNamespace[namespace] = err.Error()
+			continue
+		}
+
+		cronJobsByNamespace[namespace+".json"] = b
+	}
+
+	return cronJobsByNamespace, errorsByNamespace
 }
 
 func ingress(ctx context.Context, client *kubernetes.Clientset, namespaces []string) (map[string][]byte, map[string]string) {
