@@ -113,6 +113,15 @@ jobs:
       - uses: actions/setup-go@v1
         with:
           go-version: "1.14"
+
+      - uses: sigstore/cosign-installer@v1.1.0
+
+      - name: Generate SBOM
+        run: |
+          COSIGN_PASSWORD=$COSIGNPASSWORD COSIGN_KEY=$COSIGN_KEY make sbom
+        env:
+          COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
+          COSIGN_KEY: ${{ secrets.COSIGN_KEY }}
    
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v2

@@ -58,6 +58,7 @@ archives:
       - README*
       - changelog*
       - CHANGELOG*
+      - sbom/assets/*
   - id: support-bundle
     builds:
       - support-bundle

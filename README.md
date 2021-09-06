@@ -39,3 +39,16 @@ For details on creating the custom resource files that drive support-bundle coll
 # Community
 
 For questions about using Troubleshoot, there's a [Replicated Community](https://help.replicated.com/community) forum, and a [#app-troubleshoot channel in Kubernetes Slack](https://kubernetes.slack.com/channels/app-troubleshoot).
+
+# Software Bill of Materials 
+A signed SBOM  that includes Troubleshoot dependencies is included in each release. 
+- **troubleshoot-sbom.tgz** contains a software bill of materials for Troubleshoot. 
+- **troubleshoot-sbom.tgz.sig** is the digital signature for troubleshoot-sbom.tgz
+- **key.pub** is the public key from the key pair used to sign troubleshoot-sbom.tgz
+
+The following example illustrates using [cosign](https://github.com/sigstore/cosign) to verify that **troubleshoot-sbom.tgz** has
+not been tampered with.
+```shell
+$ cosign verify-blob -key key.pub -signature troubleshoot-sbom.tgz.sig troubleshoot-sbom.tgz
+Verified OK
+```
