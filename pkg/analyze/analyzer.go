@@ -339,5 +339,20 @@ func Analyze(analyzer *troubleshootv1beta2.Analyze, getFile getCollectedFileCont
 		return []*AnalyzeResult{result}, nil
 	}
 
+	if analyzer.WeaveReport != nil {
+		isExcluded, err := isExcluded(analyzer.WeaveReport.Exclude)
+		if err != nil {
+			return nil, err
+		}
+		if isExcluded {
+			return nil, nil
+		}
+		results, err := analyzeWeaveReport(analyzer.WeaveReport, findFiles)
+		if err != nil {
+			return nil, err
+		}
+		return results, nil
+	}
+
 	return nil, errors.New("invalid analyzer")
 }
