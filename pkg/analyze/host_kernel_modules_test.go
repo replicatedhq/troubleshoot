@@ -6,7 +6,6 @@ import (
 
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/replicatedhq/troubleshoot/pkg/collect"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -128,10 +127,340 @@ func TestAnalyzeKernelModules(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "multiple default conditions, fail first",
+			info: map[string]collect.KernelModuleInfo{
+				"abc": {
+					Status: "loaded",
+				},
+			},
+			hostAnalyzer: &troubleshootv1beta2.KernelModulesAnalyze{
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Fail: &troubleshootv1beta2.SingleOutcome{
+							When:    "",
+							Message: "fail takes priority",
+						},
+					},
+					{
+						Warn: &troubleshootv1beta2.SingleOutcome{
+							When:    "",
+							Message: "warn not matched",
+						},
+					},
+					{
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							When:    "",
+							Message: "pass not matched",
+						},
+					},
+				},
+			},
+			result: []*AnalyzeResult{
+				{
+					Title:   "Kernel Modules",
+					IsFail:  true,
+					Message: "fail takes priority",
+				},
+			},
+			expectErr: false,
+		},
+		{
+			name: "multiple default conditions, pass first",
+			info: map[string]collect.KernelModuleInfo{
+				"abc": {
+					Status: "loaded",
+				},
+			},
+			hostAnalyzer: &troubleshootv1beta2.KernelModulesAnalyze{
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							When:    "",
+							Message: "pass takes priority",
+						},
+					},
+					{
+						Warn: &troubleshootv1beta2.SingleOutcome{
+							When:    "",
+							Message: "warn not matched",
+						},
+					},
+					{
+						Fail: &troubleshootv1beta2.SingleOutcome{
+							When:    "",
+							Message: "fail not matched",
+						},
+					},
+				},
+			},
+			result: []*AnalyzeResult{
+				{
+					Title:   "Kernel Modules",
+					IsPass:  true,
+					Message: "pass takes priority",
+				},
+			},
+			expectErr: false,
+		},
+		{
+			name: "default fail condition",
+			info: map[string]collect.KernelModuleInfo{
+				"abc": {
+					Status: "loaded",
+				},
+			},
+			hostAnalyzer: &troubleshootv1beta2.KernelModulesAnalyze{
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Fail: &troubleshootv1beta2.SingleOutcome{
+							When:    "",
+							Message: "no passes",
+						},
+					},
+					{
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							When:    "xyz == loaded",
+							Message: "the module 'xyz' is loaded",
+						},
+					},
+				},
+			},
+			result: []*AnalyzeResult{
+				{
+					Title:   "Kernel Modules",
+					IsFail:  true,
+					Message: "no passes",
+				},
+			},
+			expectErr: false,
+		},
+		{
+			name: "default fail condition with pass",
+			info: map[string]collect.KernelModuleInfo{
+				"abc": {
+					Status: "loaded",
+				},
+			},
+			hostAnalyzer: &troubleshootv1beta2.KernelModulesAnalyze{
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Fail: &troubleshootv1beta2.SingleOutcome{
+							When:    "",
+							Message: "no passes",
+						},
+					},
+					{
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							When:    "abc == loaded",
+							Message: "the module 'abc' is loaded",
+						},
+					},
+				},
+			},
+			result: []*AnalyzeResult{
+				{
+					Title:   "Kernel Modules",
+					IsPass:  true,
+					Message: "the module 'abc' is loaded",
+				},
+			},
+			expectErr: false,
+		},
+		{
+			name: "default warn condition",
+			info: map[string]collect.KernelModuleInfo{
+				"abc": {
+					Status: "loaded",
+				},
+			},
+			hostAnalyzer: &troubleshootv1beta2.KernelModulesAnalyze{
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Warn: &troubleshootv1beta2.SingleOutcome{
+							When:    "",
+							Message: "warn triggered when no pass or fail",
+						},
+					},
+					{
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							When:    "",
+							Message: "pass not matched",
+						},
+					},
+				},
+			},
+			result: []*AnalyzeResult{
+				{
+					Title:   "Kernel Modules",
+					IsWarn:  true,
+					Message: "warn triggered when no pass or fail",
+				},
+			},
+			expectErr: false,
+		},
+		{
+			name: "default warn condition with fail",
+			info: map[string]collect.KernelModuleInfo{
+				"abc": {
+					Status: "unloaded",
+				},
+			},
+			hostAnalyzer: &troubleshootv1beta2.KernelModulesAnalyze{
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Warn: &troubleshootv1beta2.SingleOutcome{
+							When:    "",
+							Message: "warn not triggered when there is a fail",
+						},
+					},
+					{
+						Fail: &troubleshootv1beta2.SingleOutcome{
+							When:    "abc != loaded",
+							Message: "the module 'abc' is not loaded",
+						},
+					},
+				},
+			},
+			result: []*AnalyzeResult{
+				{
+					Title:   "Kernel Modules",
+					IsFail:  true,
+					Message: "the module 'abc' is not loaded",
+				},
+			},
+			expectErr: false,
+		},
+		{
+			name: "default warn condition with pass",
+			info: map[string]collect.KernelModuleInfo{
+				"abc": {
+					Status: "loaded",
+				},
+			},
+			hostAnalyzer: &troubleshootv1beta2.KernelModulesAnalyze{
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Warn: &troubleshootv1beta2.SingleOutcome{
+							When:    "",
+							Message: "warn not triggered when there is a pass",
+						},
+					},
+					{
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							When:    "abc == loaded",
+							Message: "the module 'abc' is loaded",
+						},
+					},
+				},
+			},
+			result: []*AnalyzeResult{
+				{
+					Title:   "Kernel Modules",
+					IsPass:  true,
+					Message: "the module 'abc' is loaded",
+				},
+			},
+			expectErr: false,
+		},
+		{
+			name: "default pass condition",
+			info: map[string]collect.KernelModuleInfo{
+				"abc": {
+					Status: "loaded",
+				},
+			},
+			hostAnalyzer: &troubleshootv1beta2.KernelModulesAnalyze{
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Fail: &troubleshootv1beta2.SingleOutcome{
+							When:    "abc != loaded",
+							Message: "the module 'abc' is not loaded",
+						},
+					},
+					{
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							When:    "",
+							Message: "all required modules are loaded",
+						},
+					},
+				},
+			},
+			result: []*AnalyzeResult{
+				{
+					Title:   "Kernel Modules",
+					IsPass:  true,
+					Message: "all required modules are loaded",
+				},
+			},
+			expectErr: false,
+		},
+		{
+			name: "default pass condition with fail",
+			info: map[string]collect.KernelModuleInfo{
+				"abc": {
+					Status: "unloaded",
+				},
+			},
+			hostAnalyzer: &troubleshootv1beta2.KernelModulesAnalyze{
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Fail: &troubleshootv1beta2.SingleOutcome{
+							When:    "abc != loaded",
+							Message: "the module 'abc' is not loaded",
+						},
+					},
+					{
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							When:    "",
+							Message: "all required modules are loaded",
+						},
+					},
+				},
+			},
+			result: []*AnalyzeResult{
+				{
+					Title:   "Kernel Modules",
+					IsFail:  true,
+					Message: "the module 'abc' is not loaded",
+				},
+			},
+			expectErr: false,
+		},
+		{
+			name: "multiple pass conditions",
+			info: map[string]collect.KernelModuleInfo{
+				"abc": {
+					Status: "loaded",
+				},
+			},
+			hostAnalyzer: &troubleshootv1beta2.KernelModulesAnalyze{
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							When:    "abc == loaded",
+							Message: "the module 'abc' is loaded",
+						},
+					},
+					{
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							When:    "def == loaded",
+							Message: "the module 'def' is loaded",
+						},
+					},
+				},
+			},
+			result: []*AnalyzeResult{
+				{
+					Title:   "Kernel Modules",
+					IsPass:  true,
+					Message: "the module 'abc' is loaded",
+				},
+			},
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			req := require.New(t)
 			b, err := json.Marshal(test.info)
 			if err != nil {
 				t.Fatal(err)
@@ -143,12 +472,11 @@ func TestAnalyzeKernelModules(t *testing.T) {
 
 			result, err := (&AnalyzeHostKernelModules{test.hostAnalyzer}).Analyze(getCollectedFileContents)
 			if test.expectErr {
-				req.Error(err)
-			} else {
-				req.NoError(err)
+				require.Error(t, err)
+				return
 			}
-
-			assert.Equal(t, test.result, result)
+			require.NoError(t, err)
+			require.Equal(t, test.result, result)
 		})
 	}
 }
@@ -322,14 +650,13 @@ func Test_compareKernelModuleConditionalToActual(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			req := require.New(t)
 			gotRes, err := compareKernelModuleConditionalToActual(tt.conditional, tt.modules)
 			if tt.wantErr {
-				req.Error(err)
-			} else {
-				req.NoError(err)
-				req.Equal(tt.wantRes, gotRes)
+				require.Error(t, err)
+				return
 			}
+			require.NoError(t, err)
+			require.Equal(t, tt.wantRes, gotRes)
 		})
 	}
 }

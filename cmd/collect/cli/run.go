@@ -4,13 +4,11 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"os/signal"
+	"strings"
 	"time"
 
-	"os"
-	"strings"
-
-	cursor "github.com/ahmetalpbalkan/go-cursor"
 	"github.com/pkg/errors"
 	"github.com/replicatedhq/troubleshoot/cmd/util"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
@@ -34,7 +32,6 @@ func runCollect(v *viper.Viper, arg string) error {
 		signalChan := make(chan os.Signal, 1)
 		signal.Notify(signalChan, os.Interrupt)
 		<-signalChan
-		fmt.Print(cursor.Show())
 		os.Exit(0)
 	}()
 
@@ -125,26 +122,11 @@ func runCollect(v *viper.Viper, arg string) error {
 		additionalRedactors.Spec.Redactors = append(additionalRedactors.Spec.Redactors, multidocRedactors.Spec.Redactors...)
 	}
 
-	finishedCh := make(chan bool, 1)
-	progressCh := make(chan interface{}) // non-zero buffer can result in missed messages
-	isFinishedChClosed := false
-
 	// make sure we don't block any senders
+	progressCh := make(chan interface{})
+	defer close(progressCh)
 	go func() {
-		for {
-			select {
-			case <-progressCh:
-				// if being run as a remote collector, output here will break
-				// parsing as stdout and stderr are combined.  This means errors
-				// won't be reported.
-			case <-finishedCh:
-				return
-			}
-		}
-	}()
-	defer func() {
-		if !isFinishedChClosed {
-			close(finishedCh)
+		for range progressCh {
 		}
 	}()
 

@@ -66,21 +66,22 @@ func (c *RemoteCollector) RunCollectorSync(globalRedactors []*troubleshootv1beta
 
 	localCollector := &troubleshootv1beta2.HostCollect{}
 
-	if c.Collect.CPU != nil {
+	switch {
+	case c.Collect.CPU != nil:
 		localCollector.CPU = &troubleshootv1beta2.CPU{
 			HostCollectorMeta: troubleshootv1beta2.HostCollectorMeta{
 				CollectorName: c.Collect.CPU.CollectorName,
 				Exclude:       c.Collect.CPU.Exclude,
 			},
 		}
-	} else if c.Collect.Memory != nil {
+	case c.Collect.Memory != nil:
 		localCollector.Memory = &troubleshootv1beta2.Memory{
 			HostCollectorMeta: troubleshootv1beta2.HostCollectorMeta{
 				CollectorName: c.Collect.Memory.CollectorName,
 				Exclude:       c.Collect.Memory.Exclude,
 			},
 		}
-	} else if c.Collect.TCPLoadBalancer != nil {
+	case c.Collect.TCPLoadBalancer != nil:
 		localCollector.TCPLoadBalancer = &troubleshootv1beta2.TCPLoadBalancer{
 			HostCollectorMeta: troubleshootv1beta2.HostCollectorMeta{
 				CollectorName: c.Collect.TCPLoadBalancer.CollectorName,
@@ -90,7 +91,7 @@ func (c *RemoteCollector) RunCollectorSync(globalRedactors []*troubleshootv1beta
 			Port:    c.Collect.TCPLoadBalancer.Port,
 			Timeout: c.Collect.TCPLoadBalancer.Timeout,
 		}
-	} else if c.Collect.HTTPLoadBalancer != nil {
+	case c.Collect.HTTPLoadBalancer != nil:
 		localCollector.HTTPLoadBalancer = &troubleshootv1beta2.HTTPLoadBalancer{
 			HostCollectorMeta: troubleshootv1beta2.HostCollectorMeta{
 				CollectorName: c.Collect.HTTPLoadBalancer.CollectorName,
@@ -100,7 +101,7 @@ func (c *RemoteCollector) RunCollectorSync(globalRedactors []*troubleshootv1beta
 			Port:    c.Collect.TCPLoadBalancer.Port,
 			Timeout: c.Collect.TCPLoadBalancer.Timeout,
 		}
-	} else if c.Collect.DiskUsage != nil {
+	case c.Collect.DiskUsage != nil:
 		localCollector.DiskUsage = &troubleshootv1beta2.DiskUsage{
 			HostCollectorMeta: troubleshootv1beta2.HostCollectorMeta{
 				CollectorName: c.Collect.DiskUsage.CollectorName,
@@ -108,7 +109,7 @@ func (c *RemoteCollector) RunCollectorSync(globalRedactors []*troubleshootv1beta
 			},
 			Path: c.Collect.DiskUsage.Path,
 		}
-	} else if c.Collect.TCPPortStatus != nil {
+	case c.Collect.TCPPortStatus != nil:
 		localCollector.TCPPortStatus = &troubleshootv1beta2.TCPPortStatus{
 			HostCollectorMeta: troubleshootv1beta2.HostCollectorMeta{
 				CollectorName: c.Collect.TCPPortStatus.CollectorName,
@@ -117,7 +118,7 @@ func (c *RemoteCollector) RunCollectorSync(globalRedactors []*troubleshootv1beta
 			Interface: c.Collect.TCPPortStatus.Interface,
 			Port:      c.Collect.TCPPortStatus.Port,
 		}
-	} else if c.Collect.HTTP != nil {
+	case c.Collect.HTTP != nil:
 		localCollector.HTTP = &troubleshootv1beta2.HostHTTP{
 			HostCollectorMeta: troubleshootv1beta2.HostCollectorMeta{
 				CollectorName: c.Collect.HTTP.CollectorName,
@@ -127,28 +128,28 @@ func (c *RemoteCollector) RunCollectorSync(globalRedactors []*troubleshootv1beta
 			Post: c.Collect.HTTP.Post,
 			Put:  c.Collect.HTTP.Put,
 		}
-	} else if c.Collect.Time != nil {
+	case c.Collect.Time != nil:
 		localCollector.Time = &troubleshootv1beta2.HostTime{
 			HostCollectorMeta: troubleshootv1beta2.HostCollectorMeta{
 				CollectorName: c.Collect.Time.CollectorName,
 				Exclude:       c.Collect.Time.Exclude,
 			},
 		}
-	} else if c.Collect.BlockDevices != nil {
+	case c.Collect.BlockDevices != nil:
 		localCollector.BlockDevices = &troubleshootv1beta2.HostBlockDevices{
 			HostCollectorMeta: troubleshootv1beta2.HostCollectorMeta{
 				CollectorName: c.Collect.BlockDevices.CollectorName,
 				Exclude:       c.Collect.BlockDevices.Exclude,
 			},
 		}
-	} else if c.Collect.KernelModules != nil {
+	case c.Collect.KernelModules != nil:
 		localCollector.KernelModules = &troubleshootv1beta2.HostKernelModules{
 			HostCollectorMeta: troubleshootv1beta2.HostCollectorMeta{
 				CollectorName: c.Collect.KernelModules.CollectorName,
 				Exclude:       c.Collect.KernelModules.Exclude,
 			},
 		}
-	} else if c.Collect.TCPConnect != nil {
+	case c.Collect.TCPConnect != nil:
 		localCollector.TCPConnect = &troubleshootv1beta2.TCPConnect{
 			HostCollectorMeta: troubleshootv1beta2.HostCollectorMeta{
 				CollectorName: c.Collect.TCPConnect.CollectorName,
@@ -157,14 +158,14 @@ func (c *RemoteCollector) RunCollectorSync(globalRedactors []*troubleshootv1beta
 			Address: c.Collect.TCPConnect.Address,
 			Timeout: c.Collect.TCPConnect.Timeout,
 		}
-	} else if c.Collect.IPV4Interfaces != nil {
+	case c.Collect.IPV4Interfaces != nil:
 		localCollector.IPV4Interfaces = &troubleshootv1beta2.IPV4Interfaces{
 			HostCollectorMeta: troubleshootv1beta2.HostCollectorMeta{
 				CollectorName: c.Collect.IPV4Interfaces.CollectorName,
 				Exclude:       c.Collect.IPV4Interfaces.Exclude,
 			},
 		}
-	} else if c.Collect.FilesystemPerformance != nil {
+	case c.Collect.FilesystemPerformance != nil:
 		localCollector.FilesystemPerformance = &troubleshootv1beta2.FilesystemPerformance{
 			HostCollectorMeta: troubleshootv1beta2.HostCollectorMeta{
 				CollectorName: c.Collect.FilesystemPerformance.CollectorName,
@@ -183,7 +184,7 @@ func (c *RemoteCollector) RunCollectorSync(globalRedactors []*troubleshootv1beta
 			BackgroundWriteIOPSJobs:     c.Collect.FilesystemPerformance.BackgroundWriteIOPSJobs,
 			BackgroundReadIOPSJobs:      c.Collect.FilesystemPerformance.BackgroundReadIOPSJobs,
 		}
-	} else if c.Collect.Certificate != nil {
+	case c.Collect.Certificate != nil:
 		localCollector.Certificate = &troubleshootv1beta2.Certificate{
 			HostCollectorMeta: troubleshootv1beta2.HostCollectorMeta{
 				CollectorName: c.Collect.Certificate.CollectorName,
@@ -192,14 +193,14 @@ func (c *RemoteCollector) RunCollectorSync(globalRedactors []*troubleshootv1beta
 			CertificatePath: c.Collect.Certificate.CertificatePath,
 			KeyPath:         c.Collect.Certificate.KeyPath,
 		}
-	} else if c.Collect.HostServices != nil {
+	case c.Collect.HostServices != nil:
 		localCollector.HostServices = &troubleshootv1beta2.HostServices{
 			HostCollectorMeta: troubleshootv1beta2.HostCollectorMeta{
 				CollectorName: c.Collect.HostServices.CollectorName,
 				Exclude:       c.Collect.HostServices.Exclude,
 			},
 		}
-	} else {
+	default:
 		return nil, errors.New("no spec found to run")
 	}
 
@@ -243,9 +244,8 @@ func (c *RemoteCollector) RunRemote(ctx context.Context, collector *troubleshoot
 
 	nameGenerator := names.SimpleNameGenerator
 
+	var errs []error
 	results := make(map[string][]byte)
-	errs := []error{}
-
 	resCh := make(chan map[string][]byte)
 	errCh := make(chan error)
 	waitCh := make(chan struct{})

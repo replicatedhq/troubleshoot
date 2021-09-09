@@ -36,7 +36,7 @@ func RootCmd() *cobra.Command {
 	cmd.Flags().Bool("redact", true, "enable/disable default redactions")
 	cmd.Flags().String("format", "json", "output format, one of json or raw.")
 	cmd.Flags().String("collector-image", "", "the full name of the collector image to use")
-	cmd.Flags().String("collector-pullpolicy", "", "the pull policy of the collector image")
+	cmd.Flags().String("collector-pull-policy", "", "the pull policy of the collector image")
 	cmd.Flags().String("selector", "", "selector (label query) to filter remote collection nodes on.")
 	cmd.Flags().Bool("collect-without-permissions", false, "always generate a support bundle, even if it some require additional permissions")
 

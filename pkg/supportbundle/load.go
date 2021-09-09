@@ -66,24 +66,6 @@ func ParseSupportBundleFromDoc(doc []byte) (*troubleshootv1beta2.SupportBundle, 
 		return &supportBundle, nil
 	}
 
-	// hostCollector, ok := obj.(*troubleshootv1beta2.HostCollector)
-	// if ok {
-	// 	supportBundle := troubleshootv1beta2.SupportBundle{
-	// 		TypeMeta: metav1.TypeMeta{
-	// 			APIVersion: "troubleshoot.sh/v1beta2",
-	// 			Kind:       "SupportBundle",
-	// 		},
-	// 		ObjectMeta: hostCollector.ObjectMeta,
-	// 		Spec: troubleshootv1beta2.SupportBundleSpec{
-	// 			Collectors:      hostCollector.Spec.Collectors,
-	// 			Analyzers:       []*troubleshootv1beta2.Analyze{},
-	// 			AfterCollection: hostCollector.Spec.AfterCollection,
-	// 		},
-	// 	}
-
-	// 	return &supportBundle, nil
-	// }
-
 	supportBundle, ok := obj.(*troubleshootv1beta2.SupportBundle)
 	if ok {
 		return supportBundle, nil

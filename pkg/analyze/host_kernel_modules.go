@@ -22,6 +22,25 @@ func (a *AnalyzeHostKernelModules) IsExcluded() (bool, error) {
 	return isExcluded(a.hostAnalyzer.Exclude)
 }
 
+// Analyze the kernel module collection results.
+//
+// When an outcome is specified, the "when" condition must be empty (for default
+// conditions), or made up of 3 parts:
+//
+//   - comma-separated list of kernel module names, e,g, "target_core_mod,target_core_file,tcm_loop"
+//   - comparison operator ("==", "=", "!=", "<>")
+//   - comma-separated state list ("unknown", "loaded", "loadable", "loading", "unloading")
+//
+// Multiple outcomes can be provided.  Outcomes should not conflict.
+//
+// Default outcomes (with empty when clauses) can be provided for fail, warn and
+// pass.  When multiple defaults are provided, evaluation is processed in the
+// order that they were specified and the first to match is returned.
+//
+//   - a default fail will only trigger if there are no matching non-default pass outcomes.
+//   - a default warn will only trigger if there are no matching non-default pass or fail outcomes.
+//   - a default pass will only trigger if there are no matching non-default fail outcomes.
+//
 func (a *AnalyzeHostKernelModules) Analyze(getCollectedFileContents func(string) ([]byte, error)) ([]*AnalyzeResult, error) {
 	hostAnalyzer := a.hostAnalyzer
 	contents, err := getCollectedFileContents("system/kernel_modules.json")
@@ -34,20 +53,12 @@ func (a *AnalyzeHostKernelModules) Analyze(getCollectedFileContents func(string)
 	}
 
 	var coll resultCollector
+	var passed, failed bool
 
 	for _, outcome := range hostAnalyzer.Outcomes {
 		result := &AnalyzeResult{Title: a.Title()}
 
-		if outcome.Fail != nil {
-			if outcome.Fail.When == "" {
-				result.IsFail = true
-				result.Message = outcome.Fail.Message
-				result.URI = outcome.Fail.URI
-
-				coll.push(result)
-				continue
-			}
-
+		if outcome.Fail != nil && outcome.Fail.When != "" {
 			isMatch, err := compareKernelModuleConditionalToActual(outcome.Fail.When, modules)
 			if err != nil {
 				return nil, errors.Wrapf(err, "failed to compare %s", outcome.Fail.When)
@@ -59,17 +70,9 @@ func (a *AnalyzeHostKernelModules) Analyze(getCollectedFileContents func(string)
 				result.URI = outcome.Fail.URI
 
 				coll.push(result)
+				failed = true
 			}
-		} else if outcome.Warn != nil {
-			if outcome.Warn.When == "" {
-				result.IsWarn = true
-				result.Message = outcome.Warn.Message
-				result.URI = outcome.Warn.URI
-
-				coll.push(result)
-				continue
-			}
-
+		} else if outcome.Warn != nil && outcome.Warn.When != "" {
 			isMatch, err := compareKernelModuleConditionalToActual(outcome.Warn.When, modules)
 			if err != nil {
 				return nil, errors.Wrapf(err, "failed to compare %s", outcome.Warn.When)
@@ -82,16 +85,7 @@ func (a *AnalyzeHostKernelModules) Analyze(getCollectedFileContents func(string)
 
 				coll.push(result)
 			}
-		} else if outcome.Pass != nil {
-			if outcome.Pass.When == "" {
-				result.IsPass = true
-				result.Message = outcome.Pass.Message
-				result.URI = outcome.Pass.URI
-
-				coll.push(result)
-				continue
-			}
-
+		} else if outcome.Pass != nil && outcome.Pass.When != "" {
 			isMatch, err := compareKernelModuleConditionalToActual(outcome.Pass.When, modules)
 			if err != nil {
 				return nil, errors.Wrapf(err, "failed to compare %s", outcome.Pass.When)
@@ -103,7 +97,35 @@ func (a *AnalyzeHostKernelModules) Analyze(getCollectedFileContents func(string)
 				result.URI = outcome.Pass.URI
 
 				coll.push(result)
+				passed = true
 			}
+		}
+	}
+
+	for _, outcome := range hostAnalyzer.Outcomes {
+		result := &AnalyzeResult{Title: a.Title()}
+
+		if outcome.Fail != nil && outcome.Fail.When == "" && !passed {
+			result.IsFail = true
+			result.Message = outcome.Fail.Message
+			result.URI = outcome.Fail.URI
+
+			coll.push(result)
+			break
+		} else if outcome.Warn != nil && outcome.Warn.When == "" && !passed && !failed {
+			result.IsWarn = true
+			result.Message = outcome.Warn.Message
+			result.URI = outcome.Warn.URI
+
+			coll.push(result)
+			break
+		} else if outcome.Pass != nil && outcome.Pass.When == "" && !failed {
+			result.IsPass = true
+			result.Message = outcome.Pass.Message
+			result.URI = outcome.Pass.URI
+
+			coll.push(result)
+			break
 		}
 	}
 

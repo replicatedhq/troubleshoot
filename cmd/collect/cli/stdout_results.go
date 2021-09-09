@@ -8,24 +8,35 @@ import (
 	"github.com/replicatedhq/troubleshoot/pkg/collect"
 )
 
-func showHostStdoutResults(format string, collectName string, results *collect.HostCollectResult) error {
-	if format == "json" {
-		return showHostStdoutResultsJSON(collectName, results.AllCollectedData)
-	} else if format == "raw" {
-		return showHostStdoutResultsRaw(collectName, results.AllCollectedData)
-	}
+const (
+	// FormatJSON is intended for CLI output.
+	FormatJSON = "json"
 
-	return errors.Errorf("unknown output format: %q", format)
+	// FormatRaw is intended for consumption by a remote collector.  Output is a
+	// string of quoted JSON.
+	FormatRaw = "raw"
+)
+
+func showHostStdoutResults(format string, collectName string, results *collect.HostCollectResult) error {
+	switch format {
+	case FormatJSON:
+		return showHostStdoutResultsJSON(collectName, results.AllCollectedData)
+	case FormatRaw:
+		return showHostStdoutResultsRaw(collectName, results.AllCollectedData)
+	default:
+		return errors.Errorf("unknown output format: %q", format)
+	}
 }
 
 func showRemoteStdoutResults(format string, collectName string, results *collect.RemoteCollectResult) error {
-	if format == "json" {
+	switch format {
+	case FormatJSON:
 		return showRemoteStdoutResultsJSON(collectName, results.AllCollectedData)
-	}
-	if format == "raw" {
+	case FormatRaw:
 		return errors.Errorf("raw format not supported for remote collectors")
+	default:
+		return errors.Errorf("unknown output format: %q", format)
 	}
-	return errors.Errorf("unknown output format: %q", format)
 }
 
 func showHostStdoutResultsJSON(collectName string, results map[string][]byte) error {
