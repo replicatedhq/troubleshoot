@@ -61,16 +61,22 @@ func CollectSupportBundleFromSpec(spec *troubleshootv1beta2.SupportBundleSpec, a
 		basename = filepath.Join(os.TempDir(), basename)
 	}
 
+	fmt.Println("basename", basename)
+
 	filename, err := findFileName(basename, "tar.gz")
 	if err != nil {
 		return nil, errors.Wrap(err, "find file name")
 	}
 	resultsResponse.ArchivePath = filename
 
+	fmt.Println("filename", filename)
+
 	bundlePath := filepath.Join(tmpDir, strings.TrimSuffix(filename, ".tar.gz"))
 	if err := os.MkdirAll(bundlePath, 0777); err != nil {
 		return nil, errors.Wrap(err, "create bundle dir")
 	}
+
+	fmt.Println("bundlePath", bundlePath)
 
 	if err = writeVersionFile(bundlePath); err != nil {
 		return nil, errors.Wrap(err, "write version file")
@@ -83,7 +89,7 @@ func CollectSupportBundleFromSpec(spec *troubleshootv1beta2.SupportBundleSpec, a
 	}
 
 	// Run Analyzers
-	analyzeResults, err := AnalyzeSupportBundle(spec, tmpDir)
+	analyzeResults, err := AnalyzeSupportBundle(spec, bundlePath)
 	if err != nil {
 		if opts.FromCLI {
 			c := color.New(color.FgHiRed)
