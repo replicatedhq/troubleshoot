@@ -153,41 +153,29 @@ func runTroubleshoot(v *viper.Viper, arg string) error {
 		Namespace:                 v.GetString("namespace"),
 		ProgressChan:              progressChan,
 		SinceTime:                 sinceTime,
-	}
-
-	archivePath, err := supportbundle.CollectSupportBundleFromSpec(&supportBundle.Spec, additionalRedactors, createOpts)
-	if err != nil {
-		return errors.Wrap(err, "run collectors")
+		FromCLI:                   true,
 	}
 
 	c := color.New()
 	c.Println(fmt.Sprintf("\r%s\r", cursor.ClearEntireLine()))
 
-	fileUploaded, err := supportbundle.ProcessSupportBundleAfterCollection(&supportBundle.Spec, archivePath)
+	response, err := supportbundle.CollectSupportBundleFromSpec(&supportBundle.Spec, additionalRedactors, createOpts)
 	if err != nil {
-		c := color.New(color.FgHiRed)
-		c.Printf("%s\r * %v\n", cursor.ClearEntireLine(), err)
-		// don't die
+		return errors.Wrap(err, "failed to run collect and analyze process")
 	}
 
-	analyzeResults, err := supportbundle.AnalyzeAndExtractSupportBundle(&supportBundle.Spec, archivePath)
-	if err != nil {
-		c := color.New(color.FgHiRed)
-		c.Printf("%s\r * %v\n", cursor.ClearEntireLine(), err)
-		// Don't die
-	} else if len(analyzeResults) > 0 {
-
+	if len(response.AnalyzerResults) > 0 {
 		interactive := v.GetBool("interactive") && isatty.IsTerminal(os.Stdout.Fd())
 
 		if interactive {
 			close(finishedCh) // this removes the spinner
 			isFinishedChClosed = true
 
-			if err := showInteractiveResults(supportBundle.Name, analyzeResults); err != nil {
+			if err := showInteractiveResults(supportBundle.Name, response.AnalyzerResults); err != nil {
 				interactive = false
 			}
 		} else {
-			data := convert.FromAnalyzerResult(analyzeResults)
+			data := convert.FromAnalyzerResult(response.AnalyzerResults)
 			formatted, err := json.MarshalIndent(data, "", "    ")
 			if err != nil {
 				c := color.New(color.FgHiRed)
@@ -198,13 +186,13 @@ func runTroubleshoot(v *viper.Viper, arg string) error {
 		}
 	}
 
-	if !fileUploaded {
-		msg := archivePath
+	if !response.FileUploaded {
+		msg := response.ArchivePath
 		if appName := supportBundle.Labels["applicationName"]; appName != "" {
 			f := `A support bundle for %s has been created in this directory
 named %s. Please upload it on the Troubleshoot page of
 the %s Admin Console to begin analysis.`
-			msg = fmt.Sprintf(f, appName, archivePath, appName)
+			msg = fmt.Sprintf(f, appName, response.ArchivePath, appName)
 		}
 
 		fmt.Printf("%s\n", msg)
@@ -213,11 +201,11 @@ the %s Admin Console to begin analysis.`
 	}
 
 	fmt.Printf("\r%s\r", cursor.ClearEntireLine())
-	if fileUploaded {
+	if response.FileUploaded {
 		fmt.Printf("A support bundle has been created and uploaded to your cluster for analysis. Please visit the Troubleshoot page to continue.\n")
-		fmt.Printf("A copy of this support bundle was written to the current directory, named %q\n", archivePath)
+		fmt.Printf("A copy of this support bundle was written to the current directory, named %q\n", response.ArchivePath)
 	} else {
-		fmt.Printf("A support bundle has been created in the current directory named %q\n", archivePath)
+		fmt.Printf("A support bundle has been created in the current directory named %q\n", response.ArchivePath)
 	}
 	return nil
 }
