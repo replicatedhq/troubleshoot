@@ -1,6 +1,7 @@
 package supportbundle
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -92,6 +93,7 @@ func CollectSupportBundleFromSpec(spec *troubleshootv1beta2.SupportBundleSpec, a
 			return nil, errors.Wrap(err, "failed to run analysis")
 		}
 	}
+	fmt.Println("analyzeResults", analyzeResults)
 	resultsResponse.AnalyzerResults = analyzeResults
 
 	// Add the analysis to the support bundle
@@ -127,6 +129,8 @@ func CollectSupportBundleFromURI(specURI string, redactorURIs []string, opts Sup
 		return nil, errors.Wrap(err, "could not bundle from URI")
 	}
 
+	fmt.Println("specURI", specURI)
+
 	additionalRedactors := &troubleshootv1beta2.Redactor{}
 	for _, redactor := range redactorURIs {
 		redactorObj, err := GetRedactorFromURI(redactor)
@@ -138,6 +142,8 @@ func CollectSupportBundleFromURI(specURI string, redactorURIs []string, opts Sup
 			additionalRedactors.Spec.Redactors = append(additionalRedactors.Spec.Redactors, redactorObj.Spec.Redactors...)
 		}
 	}
+
+	fmt.Println("supportbundle analyzers", supportbundle.Spec.Analyzers)
 
 	return CollectSupportBundleFromSpec(&supportbundle.Spec, additionalRedactors, opts)
 }
@@ -169,6 +175,8 @@ func AnalyzeSupportBundle(spec *troubleshootv1beta2.SupportBundleSpec, tmpDir st
 	if len(spec.Analyzers) == 0 {
 		return nil, nil
 	}
+	test, _ := json.Marshal(spec.Analyzers)
+	fmt.Printf("spec analyzers %s\n", string(test))
 	analyzeResults, err := analyzer.AnalyzeLocal(tmpDir, spec.Analyzers)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to analyze support bundle")

@@ -31,6 +31,8 @@ func GetSupportBundleFromURI(bundleURI string) (*troubleshootv1beta2.SupportBund
 		return nil, errors.Wrap(err, "failed to parse collector")
 	}
 
+	fmt.Println("supportbundle.Spec.Analyzers", supportbundle.Spec.Analyzers)
+
 	return supportbundle, nil
 }
 
