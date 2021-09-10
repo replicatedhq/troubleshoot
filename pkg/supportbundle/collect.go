@@ -163,13 +163,13 @@ const AnalysisFilename = "analysis.json"
 
 func writeAnalysisFile(path string, analyzeResults []*analyze.AnalyzeResult) error {
 	data := convert.FromAnalyzerResult(analyzeResults)
-	insights, err := json.MarshalIndent(data, "", "    ")
+	analysis, err := json.MarshalIndent(data, "", "    ")
 	if err != nil {
-		return errors.Wrap(err, "failed to marshal insights")
+		return errors.Wrap(err, "failed to marshal analysis")
 	}
 
 	filename := filepath.Join(path, AnalysisFilename)
-	err = ioutil.WriteFile(filename, insights, 0644)
+	err = ioutil.WriteFile(filename, analysis, 0644)
 	if err != nil {
 		return errors.Wrap(err, "failed to write file")
 	}
