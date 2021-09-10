@@ -36,7 +36,7 @@ type SupportBundleResponse struct {
 
 // CollectSupportBundleFromSpec collects support bundle from start to finish, including running
 // collectors, analyzers and after collection steps. Input arguments are specifications.
-// if FromCLI option is set to true, the output is the name of the archive on disk in the pwd.
+// if FromCLI option is set to true, the output is the name of the archive on disk in the cwd.
 // if FromCLI option is set to false, the support bundle is archived in the OS temp folder (os.TempDir()).
 func CollectSupportBundleFromSpec(spec *troubleshootv1beta2.SupportBundleSpec, additionalRedactors *troubleshootv1beta2.Redactor, opts SupportBundleCreateOpts) (*SupportBundleResponse, error) {
 	resultsResponse := SupportBundleResponse{}
@@ -55,9 +55,9 @@ func CollectSupportBundleFromSpec(spec *troubleshootv1beta2.SupportBundleSpec, a
 	}
 	defer os.RemoveAll(tmpDir)
 
-	basename := filepath.Join(os.TempDir(), fmt.Sprintf("support-bundle-%s", time.Now().Format("2006-01-02T15_04_05")))
-	if opts.FromCLI {
-		basename = fmt.Sprintf("support-bundle-%s", time.Now().Format("2006-01-02T15_04_05"))
+	basename := fmt.Sprintf("support-bundle-%s", time.Now().Format("2006-01-02T15_04_05"))
+	if !opts.FromCLI {
+		basename = filepath.Join(os.TempDir(), basename)
 	}
 
 	filename, err := findFileName(basename, "tar.gz")
