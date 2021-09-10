@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"compress/gzip"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -14,6 +15,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	analyze "github.com/replicatedhq/troubleshoot/pkg/analyze"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/replicatedhq/troubleshoot/pkg/collect"
 	"github.com/replicatedhq/troubleshoot/pkg/version"
@@ -151,6 +153,23 @@ func writeVersionFile(path string) error {
 	err = ioutil.WriteFile(filename, b, 0644)
 	if err != nil {
 		return err
+	}
+
+	return nil
+}
+
+const AnalysisFilename = "analysis.json"
+
+func writeAnalysisFile(path string, analyzeResults []*analyze.AnalyzeResult) error {
+	b, err := json.MarshalIndent(analyzeResults, "", "    ")
+	if err != nil {
+		return errors.Wrap(err, "failed to marshal analyze results")
+	}
+
+	filename := filepath.Join(path, AnalysisFilename)
+	err = ioutil.WriteFile(filename, b, 0644)
+	if err != nil {
+		return errors.Wrap(err, "failed to write file")
 	}
 
 	return nil
