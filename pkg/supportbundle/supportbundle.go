@@ -1,7 +1,6 @@
 package supportbundle
 
 import (
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -170,8 +169,6 @@ func AnalyzeSupportBundle(spec *troubleshootv1beta2.SupportBundleSpec, tmpDir st
 	if len(spec.Analyzers) == 0 {
 		return nil, nil
 	}
-	test, _ := json.Marshal(spec.Analyzers)
-	fmt.Printf("spec analyzers %s\n", string(test))
 	analyzeResults, err := analyzer.AnalyzeLocal(tmpDir, spec.Analyzers)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to analyze support bundle")
