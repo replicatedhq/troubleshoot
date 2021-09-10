@@ -18,6 +18,7 @@ import (
 	analyze "github.com/replicatedhq/troubleshoot/pkg/analyze"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/replicatedhq/troubleshoot/pkg/collect"
+	"github.com/replicatedhq/troubleshoot/pkg/convert"
 	"github.com/replicatedhq/troubleshoot/pkg/version"
 	"gopkg.in/yaml.v2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -161,13 +162,14 @@ func writeVersionFile(path string) error {
 const AnalysisFilename = "analysis.json"
 
 func writeAnalysisFile(path string, analyzeResults []*analyze.AnalyzeResult) error {
-	b, err := json.MarshalIndent(analyzeResults, "", "    ")
+	data := convert.FromAnalyzerResult(analyzeResults)
+	insights, err := json.MarshalIndent(data, "", "    ")
 	if err != nil {
-		return errors.Wrap(err, "failed to marshal analyze results")
+		return errors.Wrap(err, "failed to marshal insights")
 	}
 
 	filename := filepath.Join(path, AnalysisFilename)
-	err = ioutil.WriteFile(filename, b, 0644)
+	err = ioutil.WriteFile(filename, insights, 0644)
 	if err != nil {
 		return errors.Wrap(err, "failed to write file")
 	}
