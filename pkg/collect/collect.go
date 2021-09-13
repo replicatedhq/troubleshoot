@@ -12,6 +12,12 @@ import (
 	"k8s.io/client-go/rest"
 )
 
+var (
+	// ErrCollectorNotFound is returned when an undefined host collector is
+	// specified by the user.
+	ErrHostCollectorNotFound = errors.New("unrecognized host collector")
+)
+
 type CollectorRunOpts struct {
 	Namespace                 string
 	CollectWithoutPermissions bool
@@ -51,9 +57,10 @@ func CollectHost(c *troubleshootv1beta2.HostCollector, additionalRedactors *trou
 	var collectors []HostCollector
 	for _, desiredCollector := range c.Spec.Collectors {
 		collector, ok := GetHostCollector(desiredCollector)
-		if ok {
-			collectors = append(collectors, collector)
+		if !ok {
+			return nil, ErrHostCollectorNotFound
 		}
+		collectors = append(collectors, collector)
 	}
 
 	collectResult := &HostCollectResult{

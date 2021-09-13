@@ -8,18 +8,59 @@ import (
 	"strings"
 	"time"
 
+	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
+	"github.com/replicatedhq/troubleshoot/pkg/logger"
 	corev1 "k8s.io/api/core/v1"
+	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	kuberneteserrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/util/retry"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
 const (
-	runnerContainerName = "collector"
+	runnerContainerName      = "collector"
+	runnerJobType            = "remote-collector"
+	runnerServiceAccountName = ""
 )
+
+type podRunner struct {
+	client       *kubernetes.Clientset
+	scheme       *runtime.Scheme
+	image        string
+	pullPolicy   string
+	waitInterval time.Duration
+}
+
+func (r *podRunner) run(ctx context.Context, collector *troubleshootv1beta2.HostCollect, namespace string, name string, nodeName string, results chan<- map[string][]byte) error {
+	cm, pod, err := CreateCollector(r.client, r.scheme, nil, name, namespace, nodeName, runnerServiceAccountName, runnerJobType, collector, r.image, r.pullPolicy)
+	if err != nil {
+		return errors.Wrap(err, "failed to create collector")
+	}
+
+	defer func() {
+		if err := r.client.CoreV1().Pods(namespace).Delete(context.Background(), pod.Name, metav1.DeleteOptions{}); err != nil {
+			logger.Printf("Failed to delete pod %s: %v\n", pod.Name, err)
+		}
+		if err := r.client.CoreV1().ConfigMaps(namespace).Delete(context.Background(), cm.Name, metav1.DeleteOptions{}); err != nil {
+			logger.Printf("Failed to delete configmap %s: %v\n", pod.Name, err)
+		}
+	}()
+
+	logs, err := GetContainerLogs(ctx, r.client, namespace, pod.Name, runnerContainerName, true, r.waitInterval)
+	if err != nil {
+		return errors.Wrap(err, "failed to retrieve collector logs")
+	}
+
+	results <- map[string][]byte{
+		nodeName: []byte(logs),
+	}
+
+	return nil
+}
 
 func CreateCollector(client *kubernetes.Clientset, scheme *runtime.Scheme, ownerRef metav1.Object, name string, namespace string, nodeName string, serviceAccountName string, jobType string, collect *troubleshootv1beta2.HostCollect, image string, pullPolicy string) (*corev1.ConfigMap, *corev1.Pod, error) {
 	configMap, err := createCollectorConfigMap(client, scheme, ownerRef, name, namespace, collect)
@@ -82,11 +123,23 @@ func createCollectorConfigMap(client *kubernetes.Clientset, scheme *runtime.Sche
 		}
 	}
 
-	created, err := client.CoreV1().ConfigMaps(namespace).Create(context.Background(), &configMap, metav1.CreateOptions{})
+	var created *corev1.ConfigMap
+	createFn := func() error {
+		created, err = client.CoreV1().ConfigMaps(namespace).Create(context.Background(), &configMap, metav1.CreateOptions{})
+		if err != nil && !kerrors.IsAlreadyExists(err) {
+			return err
+		}
+		return nil
+	}
+
+	retryableFn := func(error) bool {
+		return true
+	}
+
+	err = retry.OnError(retry.DefaultBackoff, retryableFn, createFn)
 	if err != nil {
 		return nil, err
 	}
-
 	return created, nil
 }
 
@@ -202,11 +255,23 @@ func createCollectorPod(client kubernetes.Interface, scheme *runtime.Scheme, own
 		}
 	}
 
-	created, err := client.CoreV1().Pods(namespace).Create(context.Background(), &pod, metav1.CreateOptions{})
+	var created *corev1.Pod
+	createFn := func() error {
+		created, err = client.CoreV1().Pods(namespace).Create(context.Background(), &pod, metav1.CreateOptions{})
+		if err != nil && !kerrors.IsAlreadyExists(err) {
+			return err
+		}
+		return nil
+	}
+
+	retryableFn := func(error) bool {
+		return true
+	}
+
+	err = retry.OnError(retry.DefaultBackoff, retryableFn, createFn)
 	if err != nil {
 		return nil, err
 	}
-
 	return created, nil
 }
 
@@ -262,19 +327,36 @@ func GetContainerLogs(ctx context.Context, client kubernetes.Interface, namespac
 }
 
 func getContainerLogsInternal(ctx context.Context, client kubernetes.Interface, namespace string, podName string, containerName string, previous bool) (string, error) {
-	logs, err := client.CoreV1().RESTClient().Get().
-		Resource("pods").
-		Namespace(namespace).
-		Name(podName).SubResource("log").
-		Param("container", containerName).
-		Param("previous", strconv.FormatBool(previous)).
-		Do(ctx).
-		Raw()
+	var logs []byte
+	var err error
+
+	logsFn := func() error {
+		logs, err = client.CoreV1().RESTClient().Get().
+			Resource("pods").
+			Namespace(namespace).
+			Name(podName).SubResource("log").
+			Param("container", containerName).
+			Param("previous", strconv.FormatBool(previous)).
+			Do(ctx).
+			Raw()
+		if err != nil {
+			return err
+		}
+		return nil
+	}
+
+	// Don't retry if pod not found.
+	retryableFn := func(error) bool {
+		return !kerrors.IsNotFound(err)
+	}
+
+	err = retry.OnError(retry.DefaultBackoff, retryableFn, logsFn)
 	if err != nil {
 		return "", err
 	}
-	if err == nil && strings.Contains(string(logs), "Internal Error") {
+	if strings.Contains(string(logs), "Internal Error") {
 		return "", fmt.Errorf("Fetched log contains \"Internal Error\": %q", string(logs))
 	}
-	return string(logs), err
+
+	return string(logs), nil
 }

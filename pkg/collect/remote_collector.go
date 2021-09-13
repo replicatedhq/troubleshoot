@@ -2,13 +2,11 @@ package collect
 
 import (
 	"context"
-	"fmt"
-	"sync"
 	"time"
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
-	"github.com/replicatedhq/troubleshoot/pkg/logger"
+	"golang.org/x/sync/errgroup"
 	authorizationv1 "k8s.io/api/authorization/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -38,6 +36,10 @@ type RemoteCollector struct {
 
 type RemoteCollectors []*RemoteCollector
 
+type runner interface {
+	run(ctx context.Context, collector *troubleshootv1beta2.HostCollect, namespace string, name string, nodeName string, results chan<- map[string][]byte) error
+}
+
 // checks if a given collector has a spec with 'exclude' that evaluates to true.
 func (c *RemoteCollector) IsExcluded() bool {
 	if c.Collect.KernelModules != nil {
@@ -64,25 +66,110 @@ func (c *RemoteCollector) RunCollectorSync(globalRedactors []*troubleshootv1beta
 		return nil, nil
 	}
 
-	localCollector := &troubleshootv1beta2.HostCollect{}
+	hostCollector, err := c.toHostCollector()
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to convert to host collector")
+	}
+
+	client, err := kubernetes.NewForConfig(c.ClientConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	scheme := runtime.NewScheme()
+	if err := corev1.AddToScheme(scheme); err != nil {
+		return nil, errors.Wrap(err, "failed to add runtime scheme")
+	}
+
+	runner := &podRunner{
+		client:       client,
+		scheme:       scheme,
+		image:        c.Image,
+		pullPolicy:   c.PullPolicy,
+		waitInterval: remoteCollectorDefaultInterval,
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), c.Timeout)
+	defer cancel()
+
+	// Get all the nodes where we should run.
+	nodes, err := listNodesNamesInSelector(ctx, client, c.LabelSelector)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get the list of nodes matching a nodeSelector")
+	}
+
+	result, err := c.RunRemote(ctx, runner, nodes, hostCollector, names.SimpleNameGenerator, remoteCollectorNamePrefix)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to run collector remotely")
+	}
+
+	if !c.Redact {
+		return result, nil
+	}
+
+	if err = redactResult("", result, globalRedactors); err != nil {
+		// Returning result on error to be consistent with local collector.
+		return result, errors.Wrap(err, "failed to redact")
+	}
+	return result, nil
+}
+
+func (c *RemoteCollector) RunRemote(ctx context.Context, runner runner, nodes []string, collector *troubleshootv1beta2.HostCollect, nameGenerator names.NameGenerator, namePrefix string) (map[string][]byte, error) {
+	g, ctx := errgroup.WithContext(ctx)
+	results := make(chan map[string][]byte, len(nodes))
+
+	for _, node := range nodes {
+		node := node
+		g.Go(func() error {
+			// May need to evaluate error and log warning.  Otherwise any error
+			// here will cancel the context of other goroutines and no results
+			// will be returned.
+			return runner.run(ctx, collector, c.Namespace, nameGenerator.GenerateName(namePrefix+"-"), node, results)
+		})
+	}
+
+	// Wait for all collectors to complete or return the first error.
+	if err := g.Wait(); err != nil {
+		return nil, errors.Wrap(err, "failed remote collection")
+	}
+	close(results)
+
+	output := make(map[string][]byte)
+	for result := range results {
+		r := result
+		for k, v := range r {
+			output[k] = v
+		}
+	}
+
+	return output, nil
+}
+
+func (c *RemoteCollector) GetDisplayName() string {
+	return c.Collect.GetName()
+}
+
+// toHostCollector converts the remote collector to a local collector.
+func (c *RemoteCollector) toHostCollector() (*troubleshootv1beta2.HostCollect, error) {
+	hostCollect := &troubleshootv1beta2.HostCollect{}
 
 	switch {
 	case c.Collect.CPU != nil:
-		localCollector.CPU = &troubleshootv1beta2.CPU{
+		hostCollect.CPU = &troubleshootv1beta2.CPU{
 			HostCollectorMeta: troubleshootv1beta2.HostCollectorMeta{
 				CollectorName: c.Collect.CPU.CollectorName,
 				Exclude:       c.Collect.CPU.Exclude,
 			},
 		}
 	case c.Collect.Memory != nil:
-		localCollector.Memory = &troubleshootv1beta2.Memory{
+		hostCollect.Memory = &troubleshootv1beta2.Memory{
 			HostCollectorMeta: troubleshootv1beta2.HostCollectorMeta{
 				CollectorName: c.Collect.Memory.CollectorName,
 				Exclude:       c.Collect.Memory.Exclude,
 			},
 		}
 	case c.Collect.TCPLoadBalancer != nil:
-		localCollector.TCPLoadBalancer = &troubleshootv1beta2.TCPLoadBalancer{
+		hostCollect.TCPLoadBalancer = &troubleshootv1beta2.TCPLoadBalancer{
 			HostCollectorMeta: troubleshootv1beta2.HostCollectorMeta{
 				CollectorName: c.Collect.TCPLoadBalancer.CollectorName,
 				Exclude:       c.Collect.TCPLoadBalancer.Exclude,
@@ -92,7 +179,7 @@ func (c *RemoteCollector) RunCollectorSync(globalRedactors []*troubleshootv1beta
 			Timeout: c.Collect.TCPLoadBalancer.Timeout,
 		}
 	case c.Collect.HTTPLoadBalancer != nil:
-		localCollector.HTTPLoadBalancer = &troubleshootv1beta2.HTTPLoadBalancer{
+		hostCollect.HTTPLoadBalancer = &troubleshootv1beta2.HTTPLoadBalancer{
 			HostCollectorMeta: troubleshootv1beta2.HostCollectorMeta{
 				CollectorName: c.Collect.HTTPLoadBalancer.CollectorName,
 				Exclude:       c.Collect.HTTPLoadBalancer.Exclude,
@@ -102,7 +189,7 @@ func (c *RemoteCollector) RunCollectorSync(globalRedactors []*troubleshootv1beta
 			Timeout: c.Collect.TCPLoadBalancer.Timeout,
 		}
 	case c.Collect.DiskUsage != nil:
-		localCollector.DiskUsage = &troubleshootv1beta2.DiskUsage{
+		hostCollect.DiskUsage = &troubleshootv1beta2.DiskUsage{
 			HostCollectorMeta: troubleshootv1beta2.HostCollectorMeta{
 				CollectorName: c.Collect.DiskUsage.CollectorName,
 				Exclude:       c.Collect.DiskUsage.Exclude,
@@ -110,7 +197,7 @@ func (c *RemoteCollector) RunCollectorSync(globalRedactors []*troubleshootv1beta
 			Path: c.Collect.DiskUsage.Path,
 		}
 	case c.Collect.TCPPortStatus != nil:
-		localCollector.TCPPortStatus = &troubleshootv1beta2.TCPPortStatus{
+		hostCollect.TCPPortStatus = &troubleshootv1beta2.TCPPortStatus{
 			HostCollectorMeta: troubleshootv1beta2.HostCollectorMeta{
 				CollectorName: c.Collect.TCPPortStatus.CollectorName,
 				Exclude:       c.Collect.TCPPortStatus.Exclude,
@@ -119,7 +206,7 @@ func (c *RemoteCollector) RunCollectorSync(globalRedactors []*troubleshootv1beta
 			Port:      c.Collect.TCPPortStatus.Port,
 		}
 	case c.Collect.HTTP != nil:
-		localCollector.HTTP = &troubleshootv1beta2.HostHTTP{
+		hostCollect.HTTP = &troubleshootv1beta2.HostHTTP{
 			HostCollectorMeta: troubleshootv1beta2.HostCollectorMeta{
 				CollectorName: c.Collect.HTTP.CollectorName,
 				Exclude:       c.Collect.HTTP.Exclude,
@@ -129,28 +216,28 @@ func (c *RemoteCollector) RunCollectorSync(globalRedactors []*troubleshootv1beta
 			Put:  c.Collect.HTTP.Put,
 		}
 	case c.Collect.Time != nil:
-		localCollector.Time = &troubleshootv1beta2.HostTime{
+		hostCollect.Time = &troubleshootv1beta2.HostTime{
 			HostCollectorMeta: troubleshootv1beta2.HostCollectorMeta{
 				CollectorName: c.Collect.Time.CollectorName,
 				Exclude:       c.Collect.Time.Exclude,
 			},
 		}
 	case c.Collect.BlockDevices != nil:
-		localCollector.BlockDevices = &troubleshootv1beta2.HostBlockDevices{
+		hostCollect.BlockDevices = &troubleshootv1beta2.HostBlockDevices{
 			HostCollectorMeta: troubleshootv1beta2.HostCollectorMeta{
 				CollectorName: c.Collect.BlockDevices.CollectorName,
 				Exclude:       c.Collect.BlockDevices.Exclude,
 			},
 		}
 	case c.Collect.KernelModules != nil:
-		localCollector.KernelModules = &troubleshootv1beta2.HostKernelModules{
+		hostCollect.KernelModules = &troubleshootv1beta2.HostKernelModules{
 			HostCollectorMeta: troubleshootv1beta2.HostCollectorMeta{
 				CollectorName: c.Collect.KernelModules.CollectorName,
 				Exclude:       c.Collect.KernelModules.Exclude,
 			},
 		}
 	case c.Collect.TCPConnect != nil:
-		localCollector.TCPConnect = &troubleshootv1beta2.TCPConnect{
+		hostCollect.TCPConnect = &troubleshootv1beta2.TCPConnect{
 			HostCollectorMeta: troubleshootv1beta2.HostCollectorMeta{
 				CollectorName: c.Collect.TCPConnect.CollectorName,
 				Exclude:       c.Collect.TCPConnect.Exclude,
@@ -159,14 +246,14 @@ func (c *RemoteCollector) RunCollectorSync(globalRedactors []*troubleshootv1beta
 			Timeout: c.Collect.TCPConnect.Timeout,
 		}
 	case c.Collect.IPV4Interfaces != nil:
-		localCollector.IPV4Interfaces = &troubleshootv1beta2.IPV4Interfaces{
+		hostCollect.IPV4Interfaces = &troubleshootv1beta2.IPV4Interfaces{
 			HostCollectorMeta: troubleshootv1beta2.HostCollectorMeta{
 				CollectorName: c.Collect.IPV4Interfaces.CollectorName,
 				Exclude:       c.Collect.IPV4Interfaces.Exclude,
 			},
 		}
 	case c.Collect.FilesystemPerformance != nil:
-		localCollector.FilesystemPerformance = &troubleshootv1beta2.FilesystemPerformance{
+		hostCollect.FilesystemPerformance = &troubleshootv1beta2.FilesystemPerformance{
 			HostCollectorMeta: troubleshootv1beta2.HostCollectorMeta{
 				CollectorName: c.Collect.FilesystemPerformance.CollectorName,
 				Exclude:       c.Collect.FilesystemPerformance.Exclude,
@@ -185,7 +272,7 @@ func (c *RemoteCollector) RunCollectorSync(globalRedactors []*troubleshootv1beta
 			BackgroundReadIOPSJobs:      c.Collect.FilesystemPerformance.BackgroundReadIOPSJobs,
 		}
 	case c.Collect.Certificate != nil:
-		localCollector.Certificate = &troubleshootv1beta2.Certificate{
+		hostCollect.Certificate = &troubleshootv1beta2.Certificate{
 			HostCollectorMeta: troubleshootv1beta2.HostCollectorMeta{
 				CollectorName: c.Collect.Certificate.CollectorName,
 				Exclude:       c.Collect.Certificate.Exclude,
@@ -194,7 +281,7 @@ func (c *RemoteCollector) RunCollectorSync(globalRedactors []*troubleshootv1beta
 			KeyPath:         c.Collect.Certificate.KeyPath,
 		}
 	case c.Collect.HostServices != nil:
-		localCollector.HostServices = &troubleshootv1beta2.HostServices{
+		hostCollect.HostServices = &troubleshootv1beta2.HostServices{
 			HostCollectorMeta: troubleshootv1beta2.HostCollectorMeta{
 				CollectorName: c.Collect.HostServices.CollectorName,
 				Exclude:       c.Collect.HostServices.Exclude,
@@ -203,130 +290,7 @@ func (c *RemoteCollector) RunCollectorSync(globalRedactors []*troubleshootv1beta
 	default:
 		return nil, errors.New("no spec found to run")
 	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), c.Timeout)
-	defer cancel()
-
-	result, err := c.RunRemote(ctx, localCollector, remoteCollectorNamePrefix, remoteCollectorDefaultInterval)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to run collector remotely")
-	}
-
-	if !c.Redact {
-		return result, nil
-	}
-
-	for path := range result {
-		if err := redactResult(path, result, globalRedactors); err != nil {
-			// Return result on error to match behaviour of standard collector.
-			return result, errors.Wrap(err, "failed to redact")
-		}
-	}
-	return result, nil
-}
-
-func (c *RemoteCollector) RunRemote(ctx context.Context, collector *troubleshootv1beta2.HostCollect, namePrefix string, interval time.Duration) (map[string][]byte, error) {
-	client, err := kubernetes.NewForConfig(c.ClientConfig)
-	if err != nil {
-		return nil, err
-	}
-
-	scheme := runtime.NewScheme()
-	if err := corev1.AddToScheme(scheme); err != nil {
-		return nil, errors.Wrap(err, "failed to add runtime scheme")
-	}
-
-	// Get all the nodes where a Pod should be running
-	nodes, err := listNodesInSelectors(ctx, client, c.LabelSelector)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get the list of nodes matching a nodeSelector, got err: %w", err)
-	}
-
-	nameGenerator := names.SimpleNameGenerator
-
-	var errs []error
-	results := make(map[string][]byte)
-	resCh := make(chan map[string][]byte)
-	errCh := make(chan error)
-	waitCh := make(chan struct{})
-	doneCh := make(chan struct{})
-
-	go func() {
-		for {
-			select {
-			case res := <-resCh:
-				for k, v := range res {
-					results[k] = v
-				}
-			case err := <-errCh:
-				errs = append(errs, err)
-			case <-doneCh:
-				close(waitCh)
-				return
-			}
-		}
-	}()
-
-	var wg sync.WaitGroup
-	for _, node := range nodes {
-		wg.Add(1)
-		go func(nodeName string) {
-			name := nameGenerator.GenerateName(namePrefix + "-")
-			result, err := run(ctx, client, scheme, collector, c.Image, c.PullPolicy, c.Namespace, name, nodeName, interval)
-			if err != nil {
-				errCh <- err
-			}
-			resCh <- result
-			wg.Done()
-		}(node.Name)
-	}
-
-	wg.Wait()
-	close(doneCh)
-	<-waitCh
-
-	if len(errs) > 0 {
-		if len(errs) == len(nodes) {
-			return nil, errors.Wrap(errs[0], "Remote collection failed on all nodes")
-		}
-		logger.Printf("Remote collection failed: %v", err)
-	}
-
-	return results, nil
-}
-
-func run(ctx context.Context, client *kubernetes.Clientset, scheme *runtime.Scheme, collector *troubleshootv1beta2.HostCollect, image string, pullPolicy string, namespace string, name string, nodeName string, interval time.Duration) (map[string][]byte, error) {
-	serviceAccountName := ""
-	jobType := "remote-collector"
-
-	cm, pod, err := CreateCollector(client, scheme, nil, name, namespace, nodeName, serviceAccountName, jobType, collector, image, pullPolicy)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to create collector")
-	}
-
-	defer func() {
-		if err := client.CoreV1().Pods(namespace).Delete(context.Background(), pod.Name, metav1.DeleteOptions{}); err != nil {
-			logger.Printf("Failed to delete pod %s: %v\n", pod.Name, err)
-		}
-		if err := client.CoreV1().ConfigMaps(namespace).Delete(context.Background(), cm.Name, metav1.DeleteOptions{}); err != nil {
-			logger.Printf("Failed to delete configmap %s: %v\n", pod.Name, err)
-		}
-	}()
-
-	logs, err := GetContainerLogs(ctx, client, namespace, pod.Name, runnerContainerName, true, interval)
-	if err != nil {
-		return nil, err
-	}
-
-	output := map[string][]byte{
-		nodeName: []byte(logs),
-	}
-
-	return output, nil
-}
-
-func (c *RemoteCollector) GetDisplayName() string {
-	return c.Collect.GetName()
+	return hostCollect, nil
 }
 
 func (c *RemoteCollector) CheckRBAC(ctx context.Context) error {

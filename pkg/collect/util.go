@@ -112,7 +112,23 @@ func marshalErrors(errors interface{}) io.Reader {
 	return bytes.NewBuffer(m)
 }
 
-func listNodesInSelectors(ctx context.Context, client *kubernetes.Clientset, selector string) ([]corev1.Node, error) {
+// listNodesNamesInSelector returns a list of node names matching the label
+// selector,
+func listNodesNamesInSelector(ctx context.Context, client *kubernetes.Clientset, selector string) ([]string, error) {
+	var names []string
+	nodes, err := listNodesInSelector(ctx, client, selector)
+	if err != nil {
+		return nil, err
+	}
+	for _, node := range nodes {
+		names = append(names, node.GetName())
+	}
+	return names, nil
+}
+
+// listNodesInSelector returns a list of node names matching the label
+// selector,
+func listNodesInSelector(ctx context.Context, client *kubernetes.Clientset, selector string) ([]corev1.Node, error) {
 	listOptions := metav1.ListOptions{
 		LabelSelector: selector,
 	}

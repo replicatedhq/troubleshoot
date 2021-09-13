@@ -30,24 +30,57 @@ type KernelModuleInfo struct {
 	Status    KernelModuleStatus `json:"status"`
 }
 
-type CollectHostKernelModules struct {
-	hostCollector *troubleshootv1beta2.HostKernelModules
+// kernelModuleCollector defines the interface used to collect modules from the
+// underlying host.
+type kernelModuleCollector interface {
+	collect() (map[string]KernelModuleInfo, error)
 }
 
+// CollectHostKernelModules is responsible for collecting kernel module status
+// from the host.
+type CollectHostKernelModules struct {
+	hostCollector *troubleshootv1beta2.HostKernelModules
+	loadable      kernelModuleCollector
+	loaded        kernelModuleCollector
+}
+
+// Title is the name of the collector.
 func (c *CollectHostKernelModules) Title() string {
 	return hostCollectorTitleOrDefault(c.hostCollector.HostCollectorMeta, "Kernel Modules")
 }
 
+// IsExcluded returns true if the collector has been excluded from the results.
 func (c *CollectHostKernelModules) IsExcluded() (bool, error) {
 	return isExcluded(c.hostCollector.Exclude)
 }
 
+// Collect the kernel module status from the host.   Modules are returned as a
+// map keyed on the module name used by the kernel, e.g:
+//
+// {
+//   "system/kernel_modules.json": {
+//     ...
+//     "dm_snapshot": {
+//       "instances": 8,
+//       "size": 45056,
+//       "status": "loaded"
+//     },
+//     ...
+//   },
+// }
+//
+// Module status may be: loaded, loadable, loading, unloading or unknown.  When
+// a module is loaded, it may have one or more instances.  The size represents
+// the amount of memory (in bytes) that the module is using.
 func (c *CollectHostKernelModules) Collect(progressChan chan<- interface{}) (map[string][]byte, error) {
-	modules, err := collectLoadable()
+	modules, err := c.loadable.collect()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to read loadable kernel modules")
 	}
-	loaded, err := collectLoaded()
+	if modules == nil {
+		modules = map[string]KernelModuleInfo{}
+	}
+	loaded, err := c.loaded.collect()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to read loaded kernel modules")
 	}
@@ -67,7 +100,12 @@ func (c *CollectHostKernelModules) Collect(progressChan chan<- interface{}) (map
 	}, nil
 }
 
-func collectLoadable() (map[string]KernelModuleInfo, error) {
+// kernelModulesLoadable retrieves the list of modules that can be loaded by
+// the kernel.
+type kernelModulesLoadable struct{}
+
+// collect the list of modules that can be loaded by the kernel.
+func (l kernelModulesLoadable) collect() (map[string]KernelModuleInfo, error) {
 	modules := make(map[string]KernelModuleInfo)
 
 	out, err := exec.Command("uname", "-r").Output()
@@ -99,7 +137,12 @@ func collectLoadable() (map[string]KernelModuleInfo, error) {
 	return modules, nil
 }
 
-func collectLoaded() (map[string]KernelModuleInfo, error) {
+// kernelModulesLoaded retrieves the list of modules that the kernel is aware of.  The
+// modules will either be in loaded, loading or unloading state.
+type kernelModulesLoaded struct{}
+
+// collect the list of modules that the kernel is aware of.
+func (l kernelModulesLoaded) collect() (map[string]KernelModuleInfo, error) {
 	modules := make(map[string]KernelModuleInfo)
 
 	file, err := os.Open("/proc/modules")
