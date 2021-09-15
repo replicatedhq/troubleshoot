@@ -109,6 +109,7 @@ func runTroubleshoot(v *viper.Viper, arg string) error {
 	}
 
 	s := spin.New()
+	interactive := v.GetBool("interactive") && isatty.IsTerminal(os.Stdout.Fd())
 	finishedCh := make(chan bool, 1)
 	progressChan := make(chan interface{}) // non-zero buffer can result in missed messages
 	isFinishedChClosed := false
@@ -123,15 +124,22 @@ func runTroubleshoot(v *viper.Viper, arg string) error {
 					c.Println(fmt.Sprintf("%s\r * %v", cursor.ClearEntireLine(), msg))
 				case string:
 					currentDir = filepath.Base(msg)
+					if !interactive {
+						fmt.Printf("\rCollecting support bundle %s\n", currentDir)
+					}
 				}
 			case <-finishedCh:
 				fmt.Printf("\r%s\r", cursor.ClearEntireLine())
 				return
 			case <-time.After(time.Millisecond * 100):
 				if currentDir == "" {
-					fmt.Printf("\r%s \033[36mCollecting support bundle\033[m %s", cursor.ClearEntireLine(), s.Next())
+					if interactive {
+						fmt.Printf("\r%s \033[36mCollecting support bundle\033[m %s", cursor.ClearEntireLine(), s.Next())
+					}
 				} else {
-					fmt.Printf("\r%s \033[36mCollecting support bundle\033[m %s %s", cursor.ClearEntireLine(), s.Next(), currentDir)
+					if interactive {
+						fmt.Printf("\r%s \033[36mCollecting support bundle\033[m %s %s", cursor.ClearEntireLine(), s.Next(), currentDir)
+					}
 				}
 			}
 		}
@@ -177,8 +185,6 @@ func runTroubleshoot(v *viper.Viper, arg string) error {
 		// Don't die
 	} else if len(analyzeResults) > 0 {
 
-		interactive := v.GetBool("interactive") && isatty.IsTerminal(os.Stdout.Fd())
-
 		if interactive {
 			close(finishedCh) // this removes the spinner
 			isFinishedChClosed = true
@@ -194,7 +200,7 @@ func runTroubleshoot(v *viper.Viper, arg string) error {
 				c.Printf("%s\r * Failed to format analysis: %v\n", cursor.ClearEntireLine(), err)
 			}
 
-			fmt.Printf("%s", formatted)
+			fmt.Printf("analyzerResults=%s\n", formatted)
 		}
 	}
 
@@ -207,7 +213,7 @@ the %s Admin Console to begin analysis.`
 			msg = fmt.Sprintf(f, appName, archivePath, appName)
 		}
 
-		fmt.Printf("%s\n", msg)
+		fmt.Printf("archivePath=%s\n", msg)
 
 		return nil
 	}
