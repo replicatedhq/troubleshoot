@@ -171,15 +171,8 @@ func runTroubleshoot(v *viper.Viper, arg string) error {
 	if err != nil {
 		return errors.Wrap(err, "failed to run collect and analyze process")
 	}
-
-	analyzeResults, err := supportbundle.AnalyzeAndExtractSupportBundle(&supportBundle.Spec, archivePath)
-	if err != nil {
-		c := color.New(color.FgHiRed)
-		c.Printf("%s\r * %v\n", cursor.ClearEntireLine(), err)
-		// Don't die
-	} else if len(analyzeResults) > 0 {
+	if len(response.AnalyzerResults) > 0 {
 		interactive := v.GetBool("interactive") && isatty.IsTerminal(os.Stdout.Fd())
-
 
 		if interactive {
 			close(finishedCh) // this removes the spinner
