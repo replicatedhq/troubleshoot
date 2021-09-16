@@ -1,0 +1,24 @@
+apiVersion: troubleshoot.sh/v1beta2
+kind: SupportBundle
+metadata:
+  name: collector-sample
+spec:
+  collectors:
+    - exec:
+        collectorName: weave-report
+        command:
+          - /home/weave/weave
+        args:
+          - --local
+          - report
+        containerName: weave
+        exclude: ""
+        name: kots/kurl/weave
+        namespace: kube-system
+        selector:
+          - name=weave-net
+        timeout: 10s
+
+  analyzers:
+    - weaveReport:
+        reportFileGlob: kots/kurl/weave/kube-system/*/weave-report-stdout.txt
