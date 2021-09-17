@@ -282,7 +282,7 @@ type analysisOutput struct {
 
 func (a *analysisOutput) FormattedAnalysisOutput() (outputJson string, err error) {
 	type convertedOutput struct {
-		ConvertedAnalysis []*convert.Result `json:"analysis"`
+		ConvertedAnalysis []*convert.Result `json:"analyzerResults"`
 		ArchivePath       string            `json:"archivePath"`
 	}
 
