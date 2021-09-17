@@ -195,12 +195,17 @@ the %s Admin Console to begin analysis.`
 			return nil
 		}
 
-		nonInteractiveOutput.ArchivePath = response.ArchivePath
-		output, err := nonInteractiveOutput.FormattedAnalysisOutput()
-		if err != nil {
-			return errors.Wrap(err, "failed to format non-interactive output")
+		if !interactive {
+			nonInteractiveOutput.ArchivePath = response.ArchivePath
+			output, err := nonInteractiveOutput.FormattedAnalysisOutput()
+			if err != nil {
+				return errors.Wrap(err, "failed to format non-interactive output")
+			}
+			fmt.Println(output)
+			return nil
 		}
-		fmt.Println(output)
+
+		fmt.Printf("%s\n", response.ArchivePath)
 		return nil
 	}
 
