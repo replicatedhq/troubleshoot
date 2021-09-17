@@ -277,8 +277,8 @@ type analysisOutput struct {
 
 func (a *analysisOutput) FormattedAnalysisOutput() (outputJson string, err error) {
 	type convertedOutput struct {
-		ConvertedAnalysis []*convert.Result
-		ArchivePath       string
+		ConvertedAnalysis []*convert.Result `json:"analysis"`
+		ArchivePath       string            `json:"archivePath"`
 	}
 
 	converted := convert.FromAnalyzerResult(a.Analysis)
