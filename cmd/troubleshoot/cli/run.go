@@ -275,7 +275,7 @@ type analysisOutput struct {
 	ArchivePath string
 }
 
-func (a *analysisOutput) FormattedAnalysisOutput() (outputJson []byte, err error) {
+func (a *analysisOutput) FormattedAnalysisOutput() (outputJson string, err error) {
 	type convertedOutput struct {
 		ConvertedAnalysis []*convert.Result
 		ArchivePath       string
@@ -290,7 +290,7 @@ func (a *analysisOutput) FormattedAnalysisOutput() (outputJson []byte, err error
 
 	formatted, err := json.MarshalIndent(o, "", "    ")
 	if err != nil {
-		return nil, fmt.Errorf("\r * Failed to format analysis: %v\n", err)
+		return "", fmt.Errorf("\r * Failed to format analysis: %v\n", err)
 	}
-	return formatted, nil
+	return string(formatted), nil
 }
