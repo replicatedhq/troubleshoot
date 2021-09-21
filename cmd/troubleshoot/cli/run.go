@@ -4,6 +4,7 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
+	analyzer "github.com/replicatedhq/troubleshoot/pkg/analyze"
 	"net/http"
 	"os/signal"
 
@@ -109,6 +110,7 @@ func runTroubleshoot(v *viper.Viper, arg string) error {
 	}
 
 	s := spin.New()
+	interactive := v.GetBool("interactive") && isatty.IsTerminal(os.Stdout.Fd())
 	finishedCh := make(chan bool, 1)
 	progressChan := make(chan interface{}) // non-zero buffer can result in missed messages
 	isFinishedChClosed := false
@@ -129,9 +131,13 @@ func runTroubleshoot(v *viper.Viper, arg string) error {
 				return
 			case <-time.After(time.Millisecond * 100):
 				if currentDir == "" {
-					fmt.Printf("\r%s \033[36mCollecting support bundle\033[m %s", cursor.ClearEntireLine(), s.Next())
+					if interactive {
+						fmt.Printf("\r%s \033[36mCollecting support bundle\033[m %s", cursor.ClearEntireLine(), s.Next())
+					}
 				} else {
-					fmt.Printf("\r%s \033[36mCollecting support bundle\033[m %s %s", cursor.ClearEntireLine(), s.Next(), currentDir)
+					if interactive {
+						fmt.Printf("\r%s \033[36mCollecting support bundle\033[m %s %s", cursor.ClearEntireLine(), s.Next(), currentDir)
+					}
 				}
 			}
 		}
@@ -156,6 +162,8 @@ func runTroubleshoot(v *viper.Viper, arg string) error {
 		FromCLI:                   true,
 	}
 
+	nonInteractiveOutput := analysisOutput{}
+
 	c := color.New()
 	c.Println(fmt.Sprintf("\r%s\r", cursor.ClearEntireLine()))
 
@@ -163,7 +171,6 @@ func runTroubleshoot(v *viper.Viper, arg string) error {
 	if err != nil {
 		return errors.Wrap(err, "failed to run collect and analyze process")
 	}
-
 	if len(response.AnalyzerResults) > 0 {
 		interactive := v.GetBool("interactive") && isatty.IsTerminal(os.Stdout.Fd())
 
@@ -175,28 +182,30 @@ func runTroubleshoot(v *viper.Viper, arg string) error {
 				interactive = false
 			}
 		} else {
-			data := convert.FromAnalyzerResult(response.AnalyzerResults)
-			formatted, err := json.MarshalIndent(data, "", "    ")
-			if err != nil {
-				c := color.New(color.FgHiRed)
-				c.Printf("%s\r * Failed to format analysis: %v\n", cursor.ClearEntireLine(), err)
-			}
-
-			fmt.Printf("%s", formatted)
+			nonInteractiveOutput.Analysis = response.AnalyzerResults
 		}
 	}
 
 	if !response.FileUploaded {
-		msg := response.ArchivePath
 		if appName := supportBundle.Labels["applicationName"]; appName != "" {
 			f := `A support bundle for %s has been created in this directory
 named %s. Please upload it on the Troubleshoot page of
 the %s Admin Console to begin analysis.`
-			msg = fmt.Sprintf(f, appName, response.ArchivePath, appName)
+			fmt.Printf(f, appName, response.ArchivePath, appName)
+			return nil
 		}
 
-		fmt.Printf("%s\n", msg)
+		if !interactive {
+			nonInteractiveOutput.ArchivePath = response.ArchivePath
+			output, err := nonInteractiveOutput.FormattedAnalysisOutput()
+			if err != nil {
+				return errors.Wrap(err, "failed to format non-interactive output")
+			}
+			fmt.Println(output)
+			return nil
+		}
 
+		fmt.Printf("%s\n", response.ArchivePath)
 		return nil
 	}
 
@@ -264,4 +273,29 @@ func canTryInsecure() bool {
 
 	_, err := prompt.Run()
 	return err == nil
+}
+
+type analysisOutput struct {
+	Analysis    []*analyzer.AnalyzeResult
+	ArchivePath string
+}
+
+func (a *analysisOutput) FormattedAnalysisOutput() (outputJson string, err error) {
+	type convertedOutput struct {
+		ConvertedAnalysis []*convert.Result `json:"analyzerResults"`
+		ArchivePath       string            `json:"archivePath"`
+	}
+
+	converted := convert.FromAnalyzerResult(a.Analysis)
+
+	o := convertedOutput{
+		ConvertedAnalysis: converted,
+		ArchivePath:       a.ArchivePath,
+	}
+
+	formatted, err := json.MarshalIndent(o, "", "    ")
+	if err != nil {
+		return "", fmt.Errorf("\r * Failed to format analysis: %v\n", err)
+	}
+	return string(formatted), nil
 }
