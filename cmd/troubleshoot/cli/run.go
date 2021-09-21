@@ -4,12 +4,10 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
-	analyzer "github.com/replicatedhq/troubleshoot/pkg/analyze"
 	"net/http"
-	"os/signal"
-
 	"net/url"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"strings"
 	"time"
@@ -19,6 +17,7 @@ import (
 	"github.com/manifoldco/promptui"
 	"github.com/mattn/go-isatty"
 	"github.com/pkg/errors"
+	analyzer "github.com/replicatedhq/troubleshoot/pkg/analyze"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/replicatedhq/troubleshoot/pkg/client/troubleshootclientset/scheme"
 	troubleshootclientsetscheme "github.com/replicatedhq/troubleshoot/pkg/client/troubleshootclientset/scheme"
@@ -29,17 +28,24 @@ import (
 	"github.com/replicatedhq/troubleshoot/pkg/supportbundle"
 	"github.com/spf13/viper"
 	spin "github.com/tj/go-spin"
+	"k8s.io/client-go/rest"
 )
 
 func runTroubleshoot(v *viper.Viper, arg string) error {
-	fmt.Print(cursor.Hide())
-	defer fmt.Print(cursor.Show())
+	interactive := v.GetBool("interactive") && isatty.IsTerminal(os.Stdout.Fd())
+
+	if interactive {
+		fmt.Print(cursor.Hide())
+		defer fmt.Print(cursor.Show())
+	}
 
 	go func() {
 		signalChan := make(chan os.Signal, 1)
 		signal.Notify(signalChan, os.Interrupt)
 		<-signalChan
-		fmt.Print(cursor.Show())
+		if interactive {
+			fmt.Print(cursor.Show())
+		}
 		os.Exit(0)
 	}()
 
@@ -109,47 +115,63 @@ func runTroubleshoot(v *viper.Viper, arg string) error {
 		additionalRedactors.Spec.Redactors = append(additionalRedactors.Spec.Redactors, multidocRedactors.Spec.Redactors...)
 	}
 
-	s := spin.New()
-	interactive := v.GetBool("interactive") && isatty.IsTerminal(os.Stdout.Fd())
-	finishedCh := make(chan bool, 1)
+	var collectorCB func(chan interface{}, string)
 	progressChan := make(chan interface{}) // non-zero buffer can result in missed messages
+	finishedCh := make(chan bool, 1)
 	isFinishedChClosed := false
-	go func() {
-		currentDir := ""
-		for {
-			select {
-			case msg := <-progressChan:
-				switch msg := msg.(type) {
-				case error:
-					c := color.New(color.FgHiRed)
-					c.Println(fmt.Sprintf("%s\r * %v", cursor.ClearEntireLine(), msg))
-				case string:
-					currentDir = filepath.Base(msg)
+
+	if !interactive {
+		// TODO (dans): custom warning handler to capture warning in `analysisOutput`
+		restConfig.WarningHandler = rest.NoWarnings{}
+		collectorCB = func(ch chan interface{}, name string) {
+			return
+		}
+
+		// TODO (dans): maybe log to file
+		go func() {
+			for {
+				select {
+				case _ = <-progressChan:
+					// do nothing
 				}
-			case <-finishedCh:
-				fmt.Printf("\r%s\r", cursor.ClearEntireLine())
-				return
-			case <-time.After(time.Millisecond * 100):
-				if currentDir == "" {
-					if interactive {
-						fmt.Printf("\r%s \033[36mCollecting support bundle\033[m %s", cursor.ClearEntireLine(), s.Next())
+			}
+		}()
+	} else {
+		s := spin.New()
+		go func() {
+			currentDir := ""
+			for {
+				select {
+				case msg := <-progressChan:
+					switch msg := msg.(type) {
+					case error:
+						c := color.New(color.FgHiRed)
+						c.Println(fmt.Sprintf("%s\r * %v", cursor.ClearEntireLine(), msg))
+					case string:
+						currentDir = filepath.Base(msg)
 					}
-				} else {
-					if interactive {
+				case <-finishedCh:
+					fmt.Printf("\r%s\r", cursor.ClearEntireLine())
+					return
+				case <-time.After(time.Millisecond * 100):
+					if currentDir == "" {
+						fmt.Printf("\r%s \033[36mCollecting support bundle\033[m %s", cursor.ClearEntireLine(), s.Next())
+					} else {
 						fmt.Printf("\r%s \033[36mCollecting support bundle\033[m %s %s", cursor.ClearEntireLine(), s.Next(), currentDir)
 					}
 				}
 			}
-		}
-	}()
-	defer func() {
-		if !isFinishedChClosed {
-			close(finishedCh)
-		}
-	}()
+		}()
+		defer func() {
+			if !isFinishedChClosed {
+				close(finishedCh)
+			}
+		}()
 
-	collectorCB := func(c chan interface{}, msg string) {
-		c <- fmt.Sprintf("%s", msg)
+		collectorCB = func(c chan interface{}, msg string) {
+			c <- fmt.Sprintf("%s", msg)
+		}
+
 	}
 
 	createOpts := supportbundle.SupportBundleCreateOpts{
@@ -164,16 +186,16 @@ func runTroubleshoot(v *viper.Viper, arg string) error {
 
 	nonInteractiveOutput := analysisOutput{}
 
-	c := color.New()
-	c.Println(fmt.Sprintf("\r%s\r", cursor.ClearEntireLine()))
+	if interactive {
+		c := color.New()
+		c.Println(fmt.Sprintf("\r%s\r", cursor.ClearEntireLine()))
+	}
 
 	response, err := supportbundle.CollectSupportBundleFromSpec(&supportBundle.Spec, additionalRedactors, createOpts)
 	if err != nil {
 		return errors.Wrap(err, "failed to run collect and analyze process")
 	}
 	if len(response.AnalyzerResults) > 0 {
-		interactive := v.GetBool("interactive") && isatty.IsTerminal(os.Stdout.Fd())
-
 		if interactive {
 			close(finishedCh) // this removes the spinner
 			isFinishedChClosed = true
@@ -209,7 +231,9 @@ the %s Admin Console to begin analysis.`
 		return nil
 	}
 
-	fmt.Printf("\r%s\r", cursor.ClearEntireLine())
+	if interactive {
+		fmt.Printf("\r%s\r", cursor.ClearEntireLine())
+	}
 	if response.FileUploaded {
 		fmt.Printf("A support bundle has been created and uploaded to your cluster for analysis. Please visit the Troubleshoot page to continue.\n")
 		fmt.Printf("A copy of this support bundle was written to the current directory, named %q\n", response.ArchivePath)
