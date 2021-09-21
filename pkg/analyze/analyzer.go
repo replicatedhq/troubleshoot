@@ -75,6 +75,10 @@ func NewAnalyzeResultError(analyzer HostAnalyzer, err error) []*AnalyzeResult {
 }
 
 func Analyze(analyzer *troubleshootv1beta2.Analyze, getFile getCollectedFileContents, findFiles getChildCollectedFileContents) ([]*AnalyzeResult, error) {
+	if analyzer == nil {
+		return nil, errors.New("nil analyzer")
+	}
+
 	if analyzer.ClusterVersion != nil {
 		isExcluded, err := isExcluded(analyzer.ClusterVersion.Exclude)
 		if err != nil {
