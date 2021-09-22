@@ -8,6 +8,7 @@ import (
 	"path" // this code uses 'path' and not 'path/filepath' because we don't want backslashes on windows
 	"strings"
 
+	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	authorizationv1 "k8s.io/api/authorization/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
@@ -16,7 +17,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-func ClusterResources(c *Collector) (map[string][]byte, error) {
+func ClusterResources(c *Collector, clusterResourcesCollector *troubleshootv1beta2.ClusterResources) (map[string][]byte, error) {
 	client, err := kubernetes.NewForConfig(c.ClientConfig)
 	if err != nil {
 		return nil, err
@@ -28,20 +29,28 @@ func ClusterResources(c *Collector) (map[string][]byte, error) {
 	// namespaces
 	var namespaceNames []string
 	if c.Namespace == "" {
-		namespaces, namespaceList, namespaceErrors := namespaces(ctx, client)
+		var namespaces []byte
+		var namespaceErrors []string
+		if len(clusterResourcesCollector.Namespaces) > 0 {
+			namespaces, namespaceErrors = getNamespaces(ctx, client, clusterResourcesCollector.Namespaces)
+			namespaceNames = clusterResourcesCollector.Namespaces
+		} else {
+			var namespaceList *corev1.NamespaceList
+			namespaces, namespaceList, namespaceErrors = getAllNamespaces(ctx, client)
+			if namespaceList != nil {
+				for _, namespace := range namespaceList.Items {
+					namespaceNames = append(namespaceNames, namespace.Name)
+				}
+			}
+		}
 		clusterResourcesOutput["cluster-resources/namespaces.json"] = namespaces
 		clusterResourcesOutput["cluster-resources/namespaces-errors.json"], err = marshalNonNil(namespaceErrors)
 		if err != nil {
 			return nil, err
 		}
-		if namespaceList != nil {
-			for _, namespace := range namespaceList.Items {
-				namespaceNames = append(namespaceNames, namespace.Name)
-			}
-		}
 	} else {
-		namespaces, namespaceErrors := getNamespace(ctx, client, c.Namespace)
-		clusterResourcesOutput["cluster-resources/namespaces.json"] = namespaces
+		namespace, namespaceErrors := getNamespace(ctx, client, c.Namespace)
+		clusterResourcesOutput["cluster-resources/namespaces.json"] = namespace
 		clusterResourcesOutput["cluster-resources/namespaces-errors.json"], err = marshalNonNil(namespaceErrors)
 		if err != nil {
 			return nil, err
@@ -214,7 +223,7 @@ func ClusterResources(c *Collector) (map[string][]byte, error) {
 	return clusterResourcesOutput, nil
 }
 
-func namespaces(ctx context.Context, client *kubernetes.Clientset) ([]byte, *corev1.NamespaceList, []string) {
+func getAllNamespaces(ctx context.Context, client *kubernetes.Clientset) ([]byte, *corev1.NamespaceList, []string) {
 	namespaces, err := client.CoreV1().Namespaces().List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return nil, nil, []string{err.Error()}
@@ -228,13 +237,34 @@ func namespaces(ctx context.Context, client *kubernetes.Clientset) ([]byte, *cor
 	return b, namespaces, nil
 }
 
-func getNamespace(ctx context.Context, client *kubernetes.Clientset, namespace string) ([]byte, []string) {
-	namespaces, err := client.CoreV1().Namespaces().Get(ctx, namespace, metav1.GetOptions{})
+func getNamespaces(ctx context.Context, client *kubernetes.Clientset, namespaces []string) ([]byte, []string) {
+	namespacesArr := [][]byte{}
+	errorsArr := []string{}
+
+	for _, namespace := range namespaces {
+		ns, nsErrors := getNamespace(ctx, client, namespace)
+		if len(nsErrors) > 0 {
+			errorsArr = append(errorsArr, nsErrors...)
+			continue
+		}
+		namespacesArr = append(namespacesArr, ns)
+	}
+
+	b, err := json.MarshalIndent(namespacesArr, "", "  ")
 	if err != nil {
 		return nil, []string{err.Error()}
 	}
 
-	b, err := json.MarshalIndent(namespaces, "", "  ")
+	return b, errorsArr
+}
+
+func getNamespace(ctx context.Context, client *kubernetes.Clientset, namespace string) ([]byte, []string) {
+	ns, err := client.CoreV1().Namespaces().Get(ctx, namespace, metav1.GetOptions{})
+	if err != nil {
+		return nil, []string{err.Error()}
+	}
+
+	b, err := json.MarshalIndent(ns, "", "  ")
 	if err != nil {
 		return nil, []string{err.Error()}
 	}

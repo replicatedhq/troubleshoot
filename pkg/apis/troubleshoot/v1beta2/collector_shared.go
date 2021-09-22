@@ -21,6 +21,7 @@ type ClusterInfo struct {
 
 type ClusterResources struct {
 	CollectorMeta `json:",inline" yaml:",inline"`
+	Namespaces    []string `json:"namespaces,omitempty" yaml:"namespaces,omitempty"`
 }
 
 type Secret struct {

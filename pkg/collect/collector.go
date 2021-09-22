@@ -202,7 +202,7 @@ func (c *Collector) RunCollectorSync(clientConfig *rest.Config, client kubernete
 	if c.Collect.ClusterInfo != nil {
 		result, err = ClusterInfo(c)
 	} else if c.Collect.ClusterResources != nil {
-		result, err = ClusterResources(c)
+		result, err = ClusterResources(c, c.Collect.ClusterResources)
 	} else if c.Collect.Secret != nil {
 		result, err = Secret(ctx, client, c.Collect.Secret)
 	} else if c.Collect.ConfigMap != nil {
