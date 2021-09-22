@@ -372,9 +372,15 @@ func TestAnalyzeHostDiskUsage(t *testing.T) {
 				CollectorName: "ephemeral",
 				Outcomes: []*troubleshootv1beta2.Outcome{
 					{
-						Warn: &troubleshootv1beta2.SingleOutcome{
+						Fail: &troubleshootv1beta2.SingleOutcome{
 							When:    "available < 10Gi",
 							Message: "/var/lib/kubelet less than 10Gi available",
+						},
+					},
+					{
+						Warn: &troubleshootv1beta2.SingleOutcome{
+							When:    "available < 25Gi",
+							Message: "/var/lib/kubelet less than 25Gi available",
 						},
 					},
 					{
@@ -388,13 +394,8 @@ func TestAnalyzeHostDiskUsage(t *testing.T) {
 			result: []*AnalyzeResult{
 				{
 					Title:   "Disk Usage ephemeral",
-					IsWarn:  true,
+					IsFail:  true,
 					Message: "/var/lib/kubelet less than 10Gi available",
-				},
-				{
-					Title:   "Disk Usage ephemeral",
-					IsPass:  true,
-					Message: "/var/lib/kubelet passed",
 				},
 			},
 		},
