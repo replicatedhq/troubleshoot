@@ -126,6 +126,13 @@ func copyFromHostCreateDaemonSet(ctx context.Context, client kubernetes.Interfac
 							},
 						},
 					},
+					Tolerations: []corev1.Toleration{
+						{
+							Key:      "node-role.kubernetes.io/master",
+							Operator: "Exists",
+							Effect:   "NoSchedule",
+						},
+					},
 					Volumes: []corev1.Volume{
 						{
 							Name: "host",
