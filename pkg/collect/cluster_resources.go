@@ -36,7 +36,15 @@ func ClusterResources(c *Collector, clusterResourcesCollector *troubleshootv1bet
 		if err != nil {
 			return nil, err
 		}
-	} else if c.Namespace == "" {
+	} else if c.Namespace != "" {
+		namespace, namespaceErrors := getNamespace(ctx, client, c.Namespace)
+		clusterResourcesOutput["cluster-resources/namespaces.json"] = namespace
+		clusterResourcesOutput["cluster-resources/namespaces-errors.json"], err = marshalNonNil(namespaceErrors)
+		if err != nil {
+			return nil, err
+		}
+		namespaceNames = append(namespaceNames, c.Namespace)
+	} else {
 		namespaces, namespaceList, namespaceErrors := getAllNamespaces(ctx, client)
 		clusterResourcesOutput["cluster-resources/namespaces.json"] = namespaces
 		clusterResourcesOutput["cluster-resources/namespaces-errors.json"], err = marshalNonNil(namespaceErrors)
@@ -48,15 +56,9 @@ func ClusterResources(c *Collector, clusterResourcesCollector *troubleshootv1bet
 				namespaceNames = append(namespaceNames, namespace.Name)
 			}
 		}
-	} else {
-		namespace, namespaceErrors := getNamespace(ctx, client, c.Namespace)
-		clusterResourcesOutput["cluster-resources/namespaces.json"] = namespace
-		clusterResourcesOutput["cluster-resources/namespaces-errors.json"], err = marshalNonNil(namespaceErrors)
-		if err != nil {
-			return nil, err
-		}
-		namespaceNames = append(namespaceNames, c.Namespace)
 	}
+
+	// pods
 	pods, podErrors := pods(ctx, client, namespaceNames)
 	for k, v := range pods {
 		clusterResourcesOutput[path.Join("cluster-resources/pods", k)] = v
