@@ -24,29 +24,29 @@ func ClusterResources(c *Collector, clusterResourcesCollector *troubleshootv1bet
 	}
 
 	ctx := context.Background()
-
 	clusterResourcesOutput := map[string][]byte{}
+
 	// namespaces
 	var namespaceNames []string
-	if c.Namespace == "" {
-		var namespaces []byte
-		var namespaceErrors []string
-		if len(clusterResourcesCollector.Namespaces) > 0 {
-			namespaces, namespaceErrors = getNamespaces(ctx, client, clusterResourcesCollector.Namespaces)
-			namespaceNames = clusterResourcesCollector.Namespaces
-		} else {
-			var namespaceList *corev1.NamespaceList
-			namespaces, namespaceList, namespaceErrors = getAllNamespaces(ctx, client)
-			if namespaceList != nil {
-				for _, namespace := range namespaceList.Items {
-					namespaceNames = append(namespaceNames, namespace.Name)
-				}
-			}
-		}
+	if len(clusterResourcesCollector.Namespaces) > 0 {
+		namespaces, namespaceErrors := getNamespaces(ctx, client, clusterResourcesCollector.Namespaces)
+		namespaceNames = clusterResourcesCollector.Namespaces
 		clusterResourcesOutput["cluster-resources/namespaces.json"] = namespaces
 		clusterResourcesOutput["cluster-resources/namespaces-errors.json"], err = marshalNonNil(namespaceErrors)
 		if err != nil {
 			return nil, err
+		}
+	} else if c.Namespace == "" {
+		namespaces, namespaceList, namespaceErrors := getAllNamespaces(ctx, client)
+		clusterResourcesOutput["cluster-resources/namespaces.json"] = namespaces
+		clusterResourcesOutput["cluster-resources/namespaces-errors.json"], err = marshalNonNil(namespaceErrors)
+		if err != nil {
+			return nil, err
+		}
+		if namespaceList != nil {
+			for _, namespace := range namespaceList.Items {
+				namespaceNames = append(namespaceNames, namespace.Name)
+			}
 		}
 	} else {
 		namespace, namespaceErrors := getNamespace(ctx, client, c.Namespace)
