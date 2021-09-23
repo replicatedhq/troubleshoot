@@ -13,9 +13,13 @@ import (
 	authorizationv1 "k8s.io/api/authorization/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
+	apiextensionsv1clientset "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1"
 	apiextensionsv1beta1clientset "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
+
+	"github.com/replicatedhq/troubleshoot/pkg/k8sutil/discovery"
 )
 
 func ClusterResources(c *Collector, clusterResourcesCollector *troubleshootv1beta2.ClusterResources) (CollectorResult, error) {
@@ -105,11 +109,7 @@ func ClusterResources(c *Collector, clusterResourcesCollector *troubleshootv1bet
 	output.SaveResult(c.BundlePath, "cluster-resources/storage-errors.json", marshalErrors(storageErrors))
 
 	// crds
-	crdClient, err := apiextensionsv1beta1clientset.NewForConfig(c.ClientConfig)
-	if err != nil {
-		return nil, err
-	}
-	customResourceDefinitions, crdErrors := crds(ctx, crdClient)
+	customResourceDefinitions, crdErrors := crds(ctx, client, c.ClientConfig)
 	output.SaveResult(c.BundlePath, "cluster-resources/custom-resource-definitions.json", bytes.NewBuffer(customResourceDefinitions))
 	output.SaveResult(c.BundlePath, "cluster-resources/custom-resource-definitions-errors.json", marshalErrors(crdErrors))
 
@@ -355,6 +355,41 @@ func cronJobs(ctx context.Context, client *kubernetes.Clientset, namespaces []st
 }
 
 func ingress(ctx context.Context, client *kubernetes.Clientset, namespaces []string) (map[string][]byte, map[string]string) {
+	ok, err := discovery.HasResource(client, "networking.k8s.io/v1", "Ingress")
+	if err != nil {
+		return nil, map[string]string{"": err.Error()}
+	}
+	if ok {
+		return ingressV1(ctx, client, namespaces)
+	}
+
+	return ingressV1beta(ctx, client, namespaces)
+}
+
+func ingressV1(ctx context.Context, client *kubernetes.Clientset, namespaces []string) (map[string][]byte, map[string]string) {
+	ingressByNamespace := make(map[string][]byte)
+	errorsByNamespace := make(map[string]string)
+
+	for _, namespace := range namespaces {
+		ingress, err := client.NetworkingV1().Ingresses(namespace).List(ctx, metav1.ListOptions{})
+		if err != nil {
+			errorsByNamespace[namespace] = err.Error()
+			continue
+		}
+
+		b, err := json.MarshalIndent(ingress.Items, "", "  ")
+		if err != nil {
+			errorsByNamespace[namespace] = err.Error()
+			continue
+		}
+
+		ingressByNamespace[namespace+".json"] = b
+	}
+
+	return ingressByNamespace, errorsByNamespace
+}
+
+func ingressV1beta(ctx context.Context, client *kubernetes.Clientset, namespaces []string) (map[string][]byte, map[string]string) {
 	ingressByNamespace := make(map[string][]byte)
 	errorsByNamespace := make(map[string]string)
 
@@ -378,6 +413,32 @@ func ingress(ctx context.Context, client *kubernetes.Clientset, namespaces []str
 }
 
 func storageClasses(ctx context.Context, client *kubernetes.Clientset) ([]byte, []string) {
+	ok, err := discovery.HasResource(client, "storage.k8s.io/v1", "StorageClass")
+	if err != nil {
+		return nil, []string{err.Error()}
+	}
+	if ok {
+		return storageClassesV1(ctx, client)
+	}
+
+	return storageClassesV1beta(ctx, client)
+}
+
+func storageClassesV1(ctx context.Context, client *kubernetes.Clientset) ([]byte, []string) {
+	storageClasses, err := client.StorageV1().StorageClasses().List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return nil, []string{err.Error()}
+	}
+
+	b, err := json.MarshalIndent(storageClasses.Items, "", "  ")
+	if err != nil {
+		return nil, []string{err.Error()}
+	}
+
+	return b, nil
+}
+
+func storageClassesV1beta(ctx context.Context, client *kubernetes.Clientset) ([]byte, []string) {
 	storageClasses, err := client.StorageV1beta1().StorageClasses().List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return nil, []string{err.Error()}
@@ -391,7 +452,43 @@ func storageClasses(ctx context.Context, client *kubernetes.Clientset) ([]byte, 
 	return b, nil
 }
 
-func crds(ctx context.Context, client *apiextensionsv1beta1clientset.ApiextensionsV1beta1Client) ([]byte, []string) {
+func crds(ctx context.Context, client *kubernetes.Clientset, config *rest.Config) ([]byte, []string) {
+	ok, err := discovery.HasResource(client, "apiextensions.k8s.io/v1", "CustomResourceDefinition")
+	if err != nil {
+		return nil, []string{err.Error()}
+	}
+	if ok {
+		return crdsV1(ctx, config)
+	}
+
+	return crdsV1beta(ctx, config)
+}
+
+func crdsV1(ctx context.Context, config *rest.Config) ([]byte, []string) {
+	client, err := apiextensionsv1clientset.NewForConfig(config)
+	if err != nil {
+		return nil, []string{err.Error()}
+	}
+
+	crds, err := client.CustomResourceDefinitions().List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return nil, []string{err.Error()}
+	}
+
+	b, err := json.MarshalIndent(crds.Items, "", "  ")
+	if err != nil {
+		return nil, []string{err.Error()}
+	}
+
+	return b, nil
+}
+
+func crdsV1beta(ctx context.Context, config *rest.Config) ([]byte, []string) {
+	client, err := apiextensionsv1beta1clientset.NewForConfig(config)
+	if err != nil {
+		return nil, []string{err.Error()}
+	}
+
 	crds, err := client.CustomResourceDefinitions().List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return nil, []string{err.Error()}
