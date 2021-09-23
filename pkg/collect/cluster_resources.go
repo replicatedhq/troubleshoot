@@ -8,6 +8,7 @@ import (
 	"path" // this code uses 'path' and not 'path/filepath' because we don't want backslashes on windows
 	"strings"
 
+	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	authorizationv1 "k8s.io/api/authorization/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
@@ -16,19 +17,35 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-func ClusterResources(c *Collector) (map[string][]byte, error) {
+func ClusterResources(c *Collector, clusterResourcesCollector *troubleshootv1beta2.ClusterResources) (map[string][]byte, error) {
 	client, err := kubernetes.NewForConfig(c.ClientConfig)
 	if err != nil {
 		return nil, err
 	}
 
 	ctx := context.Background()
-
 	clusterResourcesOutput := map[string][]byte{}
+
 	// namespaces
 	var namespaceNames []string
-	if c.Namespace == "" {
-		namespaces, namespaceList, namespaceErrors := namespaces(ctx, client)
+	if len(clusterResourcesCollector.Namespaces) > 0 {
+		namespaces, namespaceErrors := getNamespaces(ctx, client, clusterResourcesCollector.Namespaces)
+		namespaceNames = clusterResourcesCollector.Namespaces
+		clusterResourcesOutput["cluster-resources/namespaces.json"] = namespaces
+		clusterResourcesOutput["cluster-resources/namespaces-errors.json"], err = marshalNonNil(namespaceErrors)
+		if err != nil {
+			return nil, err
+		}
+	} else if c.Namespace != "" {
+		namespace, namespaceErrors := getNamespace(ctx, client, c.Namespace)
+		clusterResourcesOutput["cluster-resources/namespaces.json"] = namespace
+		clusterResourcesOutput["cluster-resources/namespaces-errors.json"], err = marshalNonNil(namespaceErrors)
+		if err != nil {
+			return nil, err
+		}
+		namespaceNames = append(namespaceNames, c.Namespace)
+	} else {
+		namespaces, namespaceList, namespaceErrors := getAllNamespaces(ctx, client)
 		clusterResourcesOutput["cluster-resources/namespaces.json"] = namespaces
 		clusterResourcesOutput["cluster-resources/namespaces-errors.json"], err = marshalNonNil(namespaceErrors)
 		if err != nil {
@@ -39,15 +56,9 @@ func ClusterResources(c *Collector) (map[string][]byte, error) {
 				namespaceNames = append(namespaceNames, namespace.Name)
 			}
 		}
-	} else {
-		namespaces, namespaceErrors := getNamespace(ctx, client, c.Namespace)
-		clusterResourcesOutput["cluster-resources/namespaces.json"] = namespaces
-		clusterResourcesOutput["cluster-resources/namespaces-errors.json"], err = marshalNonNil(namespaceErrors)
-		if err != nil {
-			return nil, err
-		}
-		namespaceNames = append(namespaceNames, c.Namespace)
 	}
+
+	// pods
 	pods, podErrors := pods(ctx, client, namespaceNames)
 	for k, v := range pods {
 		clusterResourcesOutput[path.Join("cluster-resources/pods", k)] = v
@@ -214,7 +225,7 @@ func ClusterResources(c *Collector) (map[string][]byte, error) {
 	return clusterResourcesOutput, nil
 }
 
-func namespaces(ctx context.Context, client *kubernetes.Clientset) ([]byte, *corev1.NamespaceList, []string) {
+func getAllNamespaces(ctx context.Context, client *kubernetes.Clientset) ([]byte, *corev1.NamespaceList, []string) {
 	namespaces, err := client.CoreV1().Namespaces().List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return nil, nil, []string{err.Error()}
@@ -228,13 +239,35 @@ func namespaces(ctx context.Context, client *kubernetes.Clientset) ([]byte, *cor
 	return b, namespaces, nil
 }
 
+func getNamespaces(ctx context.Context, client *kubernetes.Clientset, namespaces []string) ([]byte, []string) {
+	namespacesArr := []*corev1.Namespace{}
+	errorsArr := []string{}
+
+	for _, namespace := range namespaces {
+		ns, err := client.CoreV1().Namespaces().Get(ctx, namespace, metav1.GetOptions{})
+		if err != nil {
+			errorsArr = append(errorsArr, err.Error())
+			continue
+		}
+		namespacesArr = append(namespacesArr, ns)
+	}
+
+	b, err := json.MarshalIndent(namespacesArr, "", "  ")
+	if err != nil {
+		errorsArr = append(errorsArr, err.Error())
+		return nil, errorsArr
+	}
+
+	return b, errorsArr
+}
+
 func getNamespace(ctx context.Context, client *kubernetes.Clientset, namespace string) ([]byte, []string) {
-	namespaces, err := client.CoreV1().Namespaces().Get(ctx, namespace, metav1.GetOptions{})
+	ns, err := client.CoreV1().Namespaces().Get(ctx, namespace, metav1.GetOptions{})
 	if err != nil {
 		return nil, []string{err.Error()}
 	}
 
-	b, err := json.MarshalIndent(namespaces, "", "  ")
+	b, err := json.MarshalIndent(ns, "", "  ")
 	if err != nil {
 		return nil, []string{err.Error()}
 	}
