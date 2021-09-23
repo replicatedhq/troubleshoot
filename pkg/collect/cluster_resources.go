@@ -238,13 +238,13 @@ func getAllNamespaces(ctx context.Context, client *kubernetes.Clientset) ([]byte
 }
 
 func getNamespaces(ctx context.Context, client *kubernetes.Clientset, namespaces []string) ([]byte, []string) {
-	namespacesArr := [][]byte{}
+	namespacesArr := []*corev1.Namespace{}
 	errorsArr := []string{}
 
 	for _, namespace := range namespaces {
-		ns, nsErrors := getNamespace(ctx, client, namespace)
-		if len(nsErrors) > 0 {
-			errorsArr = append(errorsArr, nsErrors...)
+		ns, err := client.CoreV1().Namespaces().Get(ctx, namespace, metav1.GetOptions{})
+		if err != nil {
+			errorsArr = append(errorsArr, err.Error())
 			continue
 		}
 		namespacesArr = append(namespacesArr, ns)
@@ -252,7 +252,8 @@ func getNamespaces(ctx context.Context, client *kubernetes.Clientset, namespaces
 
 	b, err := json.MarshalIndent(namespacesArr, "", "  ")
 	if err != nil {
-		return nil, []string{err.Error()}
+		errorsArr = append(errorsArr, err.Error())
+		return nil, errorsArr
 	}
 
 	return b, errorsArr
