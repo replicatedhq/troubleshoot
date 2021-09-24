@@ -143,7 +143,7 @@ type RegistryImagesAnalyze struct {
 }
 
 type AnalyzeMeta struct {
-	ID        string                `json:"id,omitempty" yaml:"id,omitempty"`
+	ID        string                 `json:"id,omitempty" yaml:"id,omitempty"`
 	CheckName string                 `json:"checkName,omitempty" yaml:"checkName,omitempty"`
 	Exclude   multitype.BoolOrString `json:"exclude,omitempty" yaml:"exclude,omitempty"`
 }
