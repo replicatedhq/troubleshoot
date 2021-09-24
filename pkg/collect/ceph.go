@@ -1,6 +1,7 @@
 package collect
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"path"
@@ -89,7 +90,7 @@ var CephCommands = []CephCommand{
 	},
 }
 
-func Ceph(c *Collector, cephCollector *troubleshootv1beta2.Ceph) (map[string][]byte, error) {
+func Ceph(c *Collector, cephCollector *troubleshootv1beta2.Ceph) (CollectorResult, error) {
 	ctx := context.TODO()
 
 	if cephCollector.Namespace == "" {
@@ -101,16 +102,16 @@ func Ceph(c *Collector, cephCollector *troubleshootv1beta2.Ceph) (map[string][]b
 		return nil, err
 	}
 
-	final := map[string][]byte{}
+	output := NewResult()
 	var multiErr *multierror.Error
 	for _, command := range CephCommands {
 		results, err := cephCommandExec(ctx, c, cephCollector, pod, command)
 		multiErr = multierror.Append(multiErr, errors.Wrapf(err, "failed to exec command %s", command.ID))
-		for fileName, output := range results {
-			final[fileName] = output
+		for fileName, r := range results {
+			output.SaveResult(c.BundlePath, fileName, bytes.NewBuffer(r))
 		}
 	}
-	return final, nil
+	return output, nil
 }
 
 func cephCommandExec(ctx context.Context, c *Collector, cephCollector *troubleshootv1beta2.Ceph, pod *corev1.Pod, command CephCommand) (map[string][]byte, error) {

@@ -1,6 +1,7 @@
 package collect
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -10,7 +11,7 @@ import (
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 )
 
-func Redis(c *Collector, databaseCollector *troubleshootv1beta2.Database) (map[string][]byte, error) {
+func Redis(c *Collector, databaseCollector *troubleshootv1beta2.Database) (CollectorResult, error) {
 	databaseConnection := DatabaseConnection{}
 
 	opt, err := redis.ParseURL(databaseCollector.URI)
@@ -49,9 +50,8 @@ func Redis(c *Collector, databaseCollector *troubleshootv1beta2.Database) (map[s
 		collectorName = "redis"
 	}
 
-	redisOutput := map[string][]byte{
-		fmt.Sprintf("redis/%s.json", collectorName): b,
-	}
+	output := NewResult()
+	output.SaveResult(c.BundlePath, fmt.Sprintf("redis/%s.json", collectorName), bytes.NewBuffer(b))
 
-	return redisOutput, nil
+	return output, nil
 }

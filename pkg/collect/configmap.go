@@ -1,6 +1,7 @@
 package collect
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -25,8 +26,8 @@ type ConfigMapOutput struct {
 	Data            map[string]string `json:"data,omitonempty"`
 }
 
-func ConfigMap(ctx context.Context, client kubernetes.Interface, configMapCollector *troubleshootv1beta2.ConfigMap) (map[string][]byte, error) {
-	output := map[string][]byte{}
+func ConfigMap(ctx context.Context, c *Collector, configMapCollector *troubleshootv1beta2.ConfigMap, client kubernetes.Interface) (CollectorResult, error) {
+	output := NewResult()
 
 	configMaps := []corev1.ConfigMap{}
 	if configMapCollector.Name != "" {
@@ -37,24 +38,16 @@ func ConfigMap(ctx context.Context, client kubernetes.Interface, configMapCollec
 				if err != nil {
 					return output, errors.Wrapf(err, "collect secret %s", configMapCollector.Name)
 				}
-				output[filePath] = encoded
+				output.SaveResult(c.BundlePath, filePath, bytes.NewBuffer(encoded))
 			}
-			errorBytes, err := marshalNonNil([]string{err.Error()})
-			if err != nil {
-				return nil, errors.Wrapf(err, "marshal configmap %s error non nil", configMapCollector.Name)
-			}
-			output[GetConfigMapErrorsFileName(configMapCollector)] = errorBytes
+			output.SaveResult(c.BundlePath, GetConfigMapErrorsFileName(configMapCollector), marshalErrors([]string{err.Error()}))
 			return output, nil
 		}
 		configMaps = append(configMaps, *configMap)
 	} else if len(configMapCollector.Selector) > 0 {
 		cms, err := listConfigMapsForSelector(ctx, client, configMapCollector.Namespace, configMapCollector.Selector)
 		if err != nil {
-			errorBytes, err := marshalNonNil([]string{err.Error()})
-			if err != nil {
-				return nil, errors.Wrap(err, "marshal selector error non nil")
-			}
-			output[GetConfigMapErrorsFileName(configMapCollector)] = errorBytes
+			output.SaveResult(c.BundlePath, GetConfigMapErrorsFileName(configMapCollector), marshalErrors([]string{err.Error()}))
 			return output, nil
 		}
 		configMaps = append(configMaps, cms...)
@@ -67,7 +60,7 @@ func ConfigMap(ctx context.Context, client kubernetes.Interface, configMapCollec
 		if err != nil {
 			return output, errors.Wrapf(err, "collect configMap %s", configMap.Name)
 		}
-		output[filePath] = encoded
+		output.SaveResult(c.BundlePath, filePath, bytes.NewBuffer(encoded))
 	}
 
 	return output, nil

@@ -1,6 +1,7 @@
 package collect
 
 import (
+	"bytes"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -10,7 +11,7 @@ import (
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 )
 
-func Mysql(c *Collector, databaseCollector *troubleshootv1beta2.Database) (map[string][]byte, error) {
+func Mysql(c *Collector, databaseCollector *troubleshootv1beta2.Database) (CollectorResult, error) {
 	databaseConnection := DatabaseConnection{}
 
 	db, err := sql.Open("mysql", databaseCollector.URI)
@@ -38,9 +39,8 @@ func Mysql(c *Collector, databaseCollector *troubleshootv1beta2.Database) (map[s
 		collectorName = "mysql"
 	}
 
-	mysqlOutput := map[string][]byte{
-		fmt.Sprintf("mysql/%s.json", collectorName): b,
-	}
+	output := NewResult()
+	output.SaveResult(c.BundlePath, fmt.Sprintf("mysql/%s.json", collectorName), bytes.NewBuffer(b))
 
-	return mysqlOutput, nil
+	return output, nil
 }

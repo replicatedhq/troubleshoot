@@ -2,10 +2,8 @@ package redact
 
 import (
 	"bufio"
-	"bytes"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"regexp"
 	"sync"
 
@@ -47,7 +45,7 @@ type Redaction struct {
 	IsDefaultRedactor bool   `json:"isDefaultRedactor" yaml:"isDefaultRedactor"`
 }
 
-func Redact(input []byte, path string, additionalRedactors []*troubleshootv1beta2.Redact) ([]byte, error) {
+func Redact(input io.Reader, path string, additionalRedactors []*troubleshootv1beta2.Redact) (io.Reader, error) {
 	redactors, err := getRedactors(path)
 	if err != nil {
 		return nil, err
@@ -59,17 +57,12 @@ func Redact(input []byte, path string, additionalRedactors []*troubleshootv1beta
 	}
 	redactors = append(redactors, builtRedactors...)
 
-	nextReader := io.Reader(bytes.NewReader(input))
+	nextReader := input
 	for _, r := range redactors {
 		nextReader = r.Redact(nextReader)
 	}
 
-	redacted, err := ioutil.ReadAll(nextReader)
-	if err != nil {
-		return nil, err
-	}
-
-	return redacted, nil
+	return nextReader, nil
 }
 
 func GetRedactionList() RedactionList {

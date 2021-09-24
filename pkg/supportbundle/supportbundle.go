@@ -14,6 +14,7 @@ import (
 	"github.com/pkg/errors"
 	analyzer "github.com/replicatedhq/troubleshoot/pkg/analyze"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
+	"github.com/replicatedhq/troubleshoot/pkg/collect"
 	"k8s.io/client-go/rest"
 )
 
@@ -71,14 +72,20 @@ func CollectSupportBundleFromSpec(spec *troubleshootv1beta2.SupportBundleSpec, a
 		return nil, errors.Wrap(err, "create bundle dir")
 	}
 
-	if err = writeVersionFile(bundlePath); err != nil {
-		return nil, errors.Wrap(err, "write version file")
-	}
-
 	// Run collectors
-	err = runCollectors(spec.Collectors, additionalRedactors, filename, bundlePath, opts)
+	files, err := runCollectors(spec.Collectors, additionalRedactors, bundlePath, opts)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to run collectors")
+	}
+
+	version, err := getVersionFile()
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get version file")
+	}
+
+	err = files.SaveResult(bundlePath, VersionFilename, version)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to write version")
 	}
 
 	// Run Analyzers
@@ -94,12 +101,17 @@ func CollectSupportBundleFromSpec(spec *troubleshootv1beta2.SupportBundleSpec, a
 	}
 	resultsResponse.AnalyzerResults = analyzeResults
 
-	// Add the analysis to the support bundle
-	if err = writeAnalysisFile(bundlePath, analyzeResults); err != nil {
-		return nil, errors.Wrap(err, "write version file")
+	analysis, err := getAnalysisFile(analyzeResults)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get analysis file")
 	}
 
-	if err := tarSupportBundleDir(bundlePath, filename); err != nil {
+	err = files.SaveResult(bundlePath, AnalysisFilename, analysis)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to write analysis")
+	}
+
+	if err := collect.TarSupportBundleDir(bundlePath, files, filename); err != nil {
 		return nil, errors.Wrap(err, "create bundle file")
 	}
 

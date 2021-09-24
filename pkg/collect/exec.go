@@ -15,7 +15,7 @@ import (
 	"k8s.io/client-go/tools/remotecommand"
 )
 
-func Exec(c *Collector, execCollector *troubleshootv1beta2.Exec) (map[string][]byte, error) {
+func Exec(c *Collector, execCollector *troubleshootv1beta2.Exec) (CollectorResult, error) {
 	if execCollector.Timeout == "" {
 		return execWithoutTimeout(c, execCollector)
 	}
@@ -26,7 +26,7 @@ func Exec(c *Collector, execCollector *troubleshootv1beta2.Exec) (map[string][]b
 	}
 
 	errCh := make(chan error, 1)
-	resultCh := make(chan map[string][]byte, 1)
+	resultCh := make(chan CollectorResult, 1)
 
 	go func() {
 		b, err := execWithoutTimeout(c, execCollector)
@@ -47,23 +47,19 @@ func Exec(c *Collector, execCollector *troubleshootv1beta2.Exec) (map[string][]b
 	}
 }
 
-func execWithoutTimeout(c *Collector, execCollector *troubleshootv1beta2.Exec) (map[string][]byte, error) {
+func execWithoutTimeout(c *Collector, execCollector *troubleshootv1beta2.Exec) (CollectorResult, error) {
 	client, err := kubernetes.NewForConfig(c.ClientConfig)
 	if err != nil {
 		return nil, err
 	}
 
-	execOutput := map[string][]byte{}
+	output := NewResult()
 
 	ctx := context.Background()
 
 	pods, podsErrors := listPodsInSelectors(ctx, client, execCollector.Namespace, execCollector.Selector)
 	if len(podsErrors) > 0 {
-		errorBytes, err := marshalNonNil(podsErrors)
-		if err != nil {
-			return nil, err
-		}
-		execOutput[getExecErrosFileName(execCollector)] = errorBytes
+		output.SaveResult(c.BundlePath, getExecErrosFileName(execCollector), marshalErrors(podsErrors))
 	}
 
 	if len(pods) > 0 {
@@ -72,24 +68,20 @@ func execWithoutTimeout(c *Collector, execCollector *troubleshootv1beta2.Exec) (
 
 			bundlePath := filepath.Join(execCollector.Name, pod.Namespace, pod.Name)
 			if len(stdout) > 0 {
-				execOutput[filepath.Join(bundlePath, execCollector.CollectorName+"-stdout.txt")] = stdout
+				output.SaveResult(c.BundlePath, filepath.Join(bundlePath, execCollector.CollectorName+"-stdout.txt"), bytes.NewBuffer(stdout))
 			}
 			if len(stderr) > 0 {
-				execOutput[filepath.Join(bundlePath, execCollector.CollectorName+"-stderr.txt")] = stderr
+				output.SaveResult(c.BundlePath, filepath.Join(bundlePath, execCollector.CollectorName+"-stderr.txt"), bytes.NewBuffer(stderr))
 			}
 
 			if len(execErrors) > 0 {
-				errorBytes, err := marshalNonNil(execErrors)
-				if err != nil {
-					return nil, err
-				}
-				execOutput[filepath.Join(bundlePath, execCollector.CollectorName+"-errors.json")] = errorBytes
+				output.SaveResult(c.BundlePath, filepath.Join(bundlePath, execCollector.CollectorName+"-errors.json"), marshalErrors(execErrors))
 				continue
 			}
 		}
 	}
 
-	return execOutput, nil
+	return output, nil
 }
 
 func getExecOutputs(c *Collector, client *kubernetes.Clientset, pod corev1.Pod, execCollector *troubleshootv1beta2.Exec) ([]byte, []byte, []string) {

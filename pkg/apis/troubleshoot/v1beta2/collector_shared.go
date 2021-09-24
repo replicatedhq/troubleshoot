@@ -424,6 +424,10 @@ func (c *Collect) GetName() string {
 		name = c.Exec.CollectorName
 		selector = strings.Join(c.Exec.Selector, ",")
 	}
+	if c.Data != nil {
+		collector = "data"
+		name = c.Data.CollectorName
+	}
 	if c.Copy != nil {
 		collector = "copy"
 		name = c.Copy.CollectorName

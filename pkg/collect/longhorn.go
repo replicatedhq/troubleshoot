@@ -28,7 +28,7 @@ const (
 
 var checksumRX = regexp.MustCompile(`(\S+)\s+(\S+)`)
 
-func Longhorn(c *Collector, longhornCollector *troubleshootv1beta2.Longhorn) (map[string][]byte, error) {
+func Longhorn(c *Collector, longhornCollector *troubleshootv1beta2.Longhorn) (CollectorResult, error) {
 	ctx := context.TODO()
 
 	ns := DefaultLonghornNamespace
@@ -41,7 +41,7 @@ func Longhorn(c *Collector, longhornCollector *troubleshootv1beta2.Longhorn) (ma
 		return nil, errors.Wrap(err, "failed to create longhorn client")
 	}
 
-	final := map[string][]byte{}
+	output := NewResult()
 	var mtx sync.Mutex
 
 	// collect nodes.longhorn.io
@@ -56,7 +56,7 @@ func Longhorn(c *Collector, longhornCollector *troubleshootv1beta2.Longhorn) (ma
 			return nil, errors.Wrapf(err, "failed to marshal node %s", node.Name)
 		}
 		key := filepath.Join(dir, node.Name+".yaml")
-		final[key] = b
+		output.SaveResult(c.BundlePath, key, bytes.NewBuffer(b))
 	}
 
 	// collect volumes.longhorn.io
@@ -71,7 +71,7 @@ func Longhorn(c *Collector, longhornCollector *troubleshootv1beta2.Longhorn) (ma
 			return nil, errors.Wrapf(err, "failed to marshal volume %s", volume.Name)
 		}
 		key := filepath.Join(dir, volume.Name+".yaml")
-		final[key] = b
+		output.SaveResult(c.BundlePath, key, bytes.NewBuffer(b))
 	}
 
 	// collect replicas.longhorn.io
@@ -86,7 +86,7 @@ func Longhorn(c *Collector, longhornCollector *troubleshootv1beta2.Longhorn) (ma
 			return nil, errors.Wrapf(err, "failed to marshal replica %s", replica.Name)
 		}
 		key := filepath.Join(dir, replica.Name+".yaml")
-		final[key] = b
+		output.SaveResult(c.BundlePath, key, bytes.NewBuffer(b))
 	}
 
 	// collect engines.longhorn.io
@@ -101,7 +101,7 @@ func Longhorn(c *Collector, longhornCollector *troubleshootv1beta2.Longhorn) (ma
 			return nil, errors.Wrapf(err, "failed to marshal engine %s", engine.Name)
 		}
 		key := filepath.Join(dir, engine.Name+".yaml")
-		final[key] = b
+		output.SaveResult(c.BundlePath, key, bytes.NewBuffer(b))
 	}
 
 	// collect engineimages.longhorn.io
@@ -116,7 +116,7 @@ func Longhorn(c *Collector, longhornCollector *troubleshootv1beta2.Longhorn) (ma
 			return nil, errors.Wrapf(err, "failed to marshal engineimage %s", engineImage.Name)
 		}
 		key := filepath.Join(dir, engineImage.Name+".yaml")
-		final[key] = b
+		output.SaveResult(c.BundlePath, key, bytes.NewBuffer(b))
 	}
 
 	// collect instancemanagers.longhorn.io
@@ -131,7 +131,7 @@ func Longhorn(c *Collector, longhornCollector *troubleshootv1beta2.Longhorn) (ma
 			return nil, errors.Wrapf(err, "failed to marshal instancemanager %s", instanceManager.Name)
 		}
 		key := filepath.Join(dir, instanceManager.Name+".yaml")
-		final[key] = b
+		output.SaveResult(c.BundlePath, key, bytes.NewBuffer(b))
 	}
 
 	// collect backingimagemanagers.longhorn.io
@@ -146,7 +146,7 @@ func Longhorn(c *Collector, longhornCollector *troubleshootv1beta2.Longhorn) (ma
 			return nil, errors.Wrapf(err, "failed to marshal backingimagemanager %s", backingImageManager.Name)
 		}
 		key := filepath.Join(dir, backingImageManager.Name+".yaml")
-		final[key] = b
+		output.SaveResult(c.BundlePath, key, bytes.NewBuffer(b))
 	}
 
 	// collect backingimages.longhorn.io
@@ -161,7 +161,7 @@ func Longhorn(c *Collector, longhornCollector *troubleshootv1beta2.Longhorn) (ma
 			return nil, errors.Wrapf(err, "failed to marshal backingimage %s", backingImage.Name)
 		}
 		key := filepath.Join(dir, backingImage.Name+".yaml")
-		final[key] = b
+		output.SaveResult(c.BundlePath, key, bytes.NewBuffer(b))
 	}
 
 	// collect sharemanagers.longhorn.io
@@ -176,7 +176,7 @@ func Longhorn(c *Collector, longhornCollector *troubleshootv1beta2.Longhorn) (ma
 			return nil, errors.Wrapf(err, "failed to marshal sharemanager %s", shareManager.Name)
 		}
 		key := filepath.Join(dir, shareManager.Name+".yaml")
-		final[key] = b
+		output.SaveResult(c.BundlePath, key, bytes.NewBuffer(b))
 	}
 
 	// collect settings
@@ -193,7 +193,7 @@ func Longhorn(c *Collector, longhornCollector *troubleshootv1beta2.Longhorn) (ma
 	if err != nil {
 		return nil, errors.Wrap(err, "marshal longhorn settings")
 	}
-	final[settingsKey] = settingsB
+	output.SaveResult(c.BundlePath, settingsKey, bytes.NewBuffer(settingsB))
 
 	// logs of all pods in namespace
 	logsCollector := &troubleshootv1beta2.Logs{
@@ -207,7 +207,7 @@ func Longhorn(c *Collector, longhornCollector *troubleshootv1beta2.Longhorn) (ma
 	logsDir := GetLonghornLogsDirectory(ns)
 	for key, log := range logs {
 		key = filepath.Join(logsDir, key)
-		final[key] = log
+		output.SaveResult(c.BundlePath, key, bytes.NewBuffer(log))
 	}
 
 	// https://longhorn.io/docs/1.1.1/advanced-resources/data-recovery/corrupted-replica/
@@ -270,7 +270,7 @@ func Longhorn(c *Collector, longhornCollector *troubleshootv1beta2.Longhorn) (ma
 				volsDir := GetLonghornVolumesDirectory(ns)
 				key := filepath.Join(volsDir, volume.Name, "replicachecksums", replica.Name+".txt")
 				mtx.Lock()
-				final[key] = []byte(checksums)
+				output.SaveResult(c.BundlePath, key, bytes.NewBuffer([]byte(checksums)))
 				mtx.Unlock()
 			}(replica)
 		}
@@ -278,7 +278,7 @@ func Longhorn(c *Collector, longhornCollector *troubleshootv1beta2.Longhorn) (ma
 
 	wg.Wait()
 
-	return final, nil
+	return output, nil
 }
 
 func GetLonghornNodesDirectory(namespace string) string {
