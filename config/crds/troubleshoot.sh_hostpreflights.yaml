@@ -45,6 +45,8 @@ spec:
                           type: string
                         exclude:
                           type: BoolString
+                        id:
+                          type: string
                         includeUnmountedPartitions:
                           type: boolean
                         minimumAcceptableSize:
@@ -95,6 +97,8 @@ spec:
                           type: string
                         exclude:
                           type: BoolString
+                        id:
+                          type: string
                         outcomes:
                           items:
                             properties:
@@ -136,6 +140,8 @@ spec:
                           type: string
                         exclude:
                           type: BoolString
+                        id:
+                          type: string
                         outcomes:
                           items:
                             properties:
@@ -179,6 +185,8 @@ spec:
                           type: string
                         exclude:
                           type: BoolString
+                        id:
+                          type: string
                         outcomes:
                           items:
                             properties:
@@ -222,6 +230,8 @@ spec:
                           type: string
                         exclude:
                           type: BoolString
+                        id:
+                          type: string
                         outcomes:
                           items:
                             properties:
@@ -263,6 +273,8 @@ spec:
                           type: string
                         exclude:
                           type: BoolString
+                        id:
+                          type: string
                         outcomes:
                           items:
                             properties:
@@ -306,6 +318,8 @@ spec:
                           type: string
                         exclude:
                           type: BoolString
+                        id:
+                          type: string
                         outcomes:
                           items:
                             properties:
@@ -349,6 +363,8 @@ spec:
                           type: string
                         exclude:
                           type: BoolString
+                        id:
+                          type: string
                         outcomes:
                           items:
                             properties:
@@ -390,6 +406,8 @@ spec:
                           type: string
                         exclude:
                           type: BoolString
+                        id:
+                          type: string
                         outcomes:
                           items:
                             properties:
@@ -431,6 +449,8 @@ spec:
                           type: string
                         exclude:
                           type: BoolString
+                        id:
+                          type: string
                         outcomes:
                           items:
                             properties:
@@ -474,6 +494,8 @@ spec:
                           type: string
                         exclude:
                           type: BoolString
+                        id:
+                          type: string
                         outcomes:
                           items:
                             properties:
@@ -517,6 +539,8 @@ spec:
                           type: string
                         exclude:
                           type: BoolString
+                        id:
+                          type: string
                         outcomes:
                           items:
                             properties:
@@ -560,6 +584,8 @@ spec:
                           type: string
                         exclude:
                           type: BoolString
+                        id:
+                          type: string
                         outcomes:
                           items:
                             properties:
@@ -601,6 +627,8 @@ spec:
                           type: string
                         exclude:
                           type: BoolString
+                        id:
+                          type: string
                         outcomes:
                           items:
                             properties:

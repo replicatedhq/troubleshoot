@@ -38,6 +38,9 @@
                   "exclude": {
                     "oneOf": [{"type": "string"},{"type": "boolean"}]
                   },
+                  "id": {
+                    "type": "string"
+                  },
                   "namespace": {
                     "type": "string"
                   },
@@ -104,6 +107,9 @@
                   },
                   "exclude": {
                     "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  },
+                  "id": {
+                    "type": "string"
                   },
                   "outcomes": {
                     "type": "array",
@@ -173,6 +179,9 @@
                   },
                   "exclude": {
                     "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  },
+                  "id": {
+                    "type": "string"
                   },
                   "key": {
                     "type": "string"
@@ -244,6 +253,9 @@
                   "exclude": {
                     "oneOf": [{"type": "string"},{"type": "boolean"}]
                   },
+                  "id": {
+                    "type": "string"
+                  },
                   "outcomes": {
                     "type": "array",
                     "items": {
@@ -312,6 +324,9 @@
                   "exclude": {
                     "oneOf": [{"type": "string"},{"type": "boolean"}]
                   },
+                  "id": {
+                    "type": "string"
+                  },
                   "outcomes": {
                     "type": "array",
                     "items": {
@@ -377,6 +392,9 @@
                   },
                   "exclude": {
                     "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  },
+                  "id": {
+                    "type": "string"
                   },
                   "name": {
                     "type": "string"
@@ -448,6 +466,9 @@
                   "exclude": {
                     "oneOf": [{"type": "string"},{"type": "boolean"}]
                   },
+                  "id": {
+                    "type": "string"
+                  },
                   "outcomes": {
                     "type": "array",
                     "items": {
@@ -512,6 +533,9 @@
                   },
                   "exclude": {
                     "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  },
+                  "id": {
+                    "type": "string"
                   },
                   "outcomes": {
                     "type": "array",
@@ -581,6 +605,9 @@
                   },
                   "exclude": {
                     "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  },
+                  "id": {
+                    "type": "string"
                   },
                   "ingressName": {
                     "type": "string"
@@ -656,6 +683,9 @@
                   "exclude": {
                     "oneOf": [{"type": "string"},{"type": "boolean"}]
                   },
+                  "id": {
+                    "type": "string"
+                  },
                   "namespace": {
                     "type": "string"
                   },
@@ -728,6 +758,9 @@
                     "oneOf": [{"type": "string"},{"type": "boolean"}]
                   },
                   "fileName": {
+                    "type": "string"
+                  },
+                  "id": {
                     "type": "string"
                   },
                   "outcomes": {
@@ -834,6 +867,9 @@
                       }
                     }
                   },
+                  "id": {
+                    "type": "string"
+                  },
                   "outcomes": {
                     "type": "array",
                     "items": {
@@ -903,6 +939,9 @@
                     "oneOf": [{"type": "string"},{"type": "boolean"}]
                   },
                   "fileName": {
+                    "type": "string"
+                  },
+                  "id": {
                     "type": "string"
                   },
                   "outcomes": {
@@ -976,6 +1015,9 @@
                   "fileName": {
                     "type": "string"
                   },
+                  "id": {
+                    "type": "string"
+                  },
                   "outcomes": {
                     "type": "array",
                     "items": {
@@ -1044,6 +1086,9 @@
                   "exclude": {
                     "oneOf": [{"type": "string"},{"type": "boolean"}]
                   },
+                  "id": {
+                    "type": "string"
+                  },
                   "outcomes": {
                     "type": "array",
                     "items": {
@@ -1109,6 +1154,9 @@
                   },
                   "exclude": {
                     "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  },
+                  "id": {
+                    "type": "string"
                   },
                   "key": {
                     "type": "string"
@@ -1185,6 +1233,9 @@
                   "exclude": {
                     "oneOf": [{"type": "string"},{"type": "boolean"}]
                   },
+                  "id": {
+                    "type": "string"
+                  },
                   "name": {
                     "type": "string"
                   },
@@ -1255,6 +1306,9 @@
                   },
                   "exclude": {
                     "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  },
+                  "id": {
+                    "type": "string"
                   },
                   "outcomes": {
                     "type": "array",
@@ -1329,6 +1383,9 @@
                   "fileName": {
                     "type": "string"
                   },
+                  "id": {
+                    "type": "string"
+                  },
                   "outcomes": {
                     "type": "array",
                     "items": {
@@ -1398,6 +1455,9 @@
                   },
                   "exclude": {
                     "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  },
+                  "id": {
+                    "type": "string"
                   },
                   "reportFileGlob": {
                     "type": "string"
