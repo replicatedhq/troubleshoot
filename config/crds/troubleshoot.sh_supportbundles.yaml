@@ -78,6 +78,8 @@ spec:
                           type: string
                         exclude:
                           type: BoolString
+                        id:
+                          type: string
                         namespace:
                           type: string
                         outcomes:
@@ -122,6 +124,8 @@ spec:
                           type: string
                         exclude:
                           type: BoolString
+                        id:
+                          type: string
                         outcomes:
                           items:
                             properties:
@@ -165,6 +169,8 @@ spec:
                           type: string
                         exclude:
                           type: BoolString
+                        id:
+                          type: string
                         key:
                           type: string
                         namespace:
@@ -212,6 +218,8 @@ spec:
                           type: string
                         exclude:
                           type: BoolString
+                        id:
+                          type: string
                         outcomes:
                           items:
                             properties:
@@ -255,6 +263,8 @@ spec:
                           type: string
                         exclude:
                           type: BoolString
+                        id:
+                          type: string
                         outcomes:
                           items:
                             properties:
@@ -297,6 +307,8 @@ spec:
                           type: string
                         exclude:
                           type: BoolString
+                        id:
+                          type: string
                         name:
                           type: string
                         namespace:
@@ -344,6 +356,8 @@ spec:
                           type: string
                         exclude:
                           type: BoolString
+                        id:
+                          type: string
                         outcomes:
                           items:
                             properties:
@@ -385,6 +399,8 @@ spec:
                           type: string
                         exclude:
                           type: BoolString
+                        id:
+                          type: string
                         outcomes:
                           items:
                             properties:
@@ -429,6 +445,8 @@ spec:
                           type: string
                         exclude:
                           type: BoolString
+                        id:
+                          type: string
                         ingressName:
                           type: string
                         namespace:
@@ -478,6 +496,8 @@ spec:
                           type: string
                         exclude:
                           type: BoolString
+                        id:
+                          type: string
                         namespace:
                           type: string
                         outcomes:
@@ -525,6 +545,8 @@ spec:
                         exclude:
                           type: BoolString
                         fileName:
+                          type: string
+                        id:
                           type: string
                         outcomes:
                           items:
@@ -594,6 +616,8 @@ spec:
                                   type: object
                               type: object
                           type: object
+                        id:
+                          type: string
                         outcomes:
                           items:
                             properties:
@@ -638,6 +662,8 @@ spec:
                         exclude:
                           type: BoolString
                         fileName:
+                          type: string
+                        id:
                           type: string
                         outcomes:
                           items:
@@ -685,6 +711,8 @@ spec:
                           type: BoolString
                         fileName:
                           type: string
+                        id:
+                          type: string
                         outcomes:
                           items:
                             properties:
@@ -729,6 +757,8 @@ spec:
                           type: string
                         exclude:
                           type: BoolString
+                        id:
+                          type: string
                         outcomes:
                           items:
                             properties:
@@ -771,6 +801,8 @@ spec:
                           type: string
                         exclude:
                           type: BoolString
+                        id:
+                          type: string
                         key:
                           type: string
                         namespace:
@@ -820,6 +852,8 @@ spec:
                           type: string
                         exclude:
                           type: BoolString
+                        id:
+                          type: string
                         name:
                           type: string
                         namespace:
@@ -867,6 +901,8 @@ spec:
                           type: string
                         exclude:
                           type: BoolString
+                        id:
+                          type: string
                         outcomes:
                           items:
                             properties:
@@ -915,6 +951,8 @@ spec:
                           type: BoolString
                         fileName:
                           type: string
+                        id:
+                          type: string
                         outcomes:
                           items:
                             properties:
@@ -960,6 +998,8 @@ spec:
                           type: string
                         exclude:
                           type: BoolString
+                        id:
+                          type: string
                         reportFileGlob:
                           type: string
                       required:
