@@ -18,7 +18,7 @@ curl https://krew.sh/preflight | bash
 kubectl preflight https://preflight.replicated.com
 ```
 
-For a details on creating the custom resource files that drive preflight checks, visit [creating preflight checks](https://troubleshoot.sh/docs/preflight/introduction/).
+For more details on creating the custom resource files that drive preflight checks, visit [creating preflight checks](https://troubleshoot.sh/docs/preflight/introduction/).
 
 
 ## Support Bundle
@@ -34,7 +34,7 @@ curl https://krew.sh/support-bundle | bash
 ```shell
 kubectl support-bundle https://support-bundle.replicated.com
 ```
-For details on creating the custom resource files that drive support-bundle collection, visit [creating collectors](https://troubleshoot.sh/docs/collect/) and [creating analyzers](https://troubleshoot.sh/docs/analyze/).
+For more details on creating the custom resource files that drive support-bundle collection, visit [creating collectors](https://troubleshoot.sh/docs/collect/) and [creating analyzers](https://troubleshoot.sh/docs/analyze/).
 
 # Community
 
