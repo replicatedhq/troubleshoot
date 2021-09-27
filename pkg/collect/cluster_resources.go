@@ -137,6 +137,14 @@ func ClusterResources(c *Collector) (map[string][]byte, error) {
 		return nil, err
 	}
 
+	// crs
+	customResources, crErrors := crs(ctx, crdClient)
+	clusterResourcesOutput["cluster-resources/custom-resources.json"] = customResources
+	clusterResourcesOutput["cluster-resources/custom-resources-errors.json"], err = marshalNonNil(crErrors)
+	if err != nil {
+		return nil, err
+	}
+
 	// imagepullsecrets
 	imagePullSecrets, pullSecretsErrors := imagePullSecrets(ctx, client, namespaceNames)
 	for k, v := range imagePullSecrets {
@@ -429,6 +437,37 @@ func crds(ctx context.Context, client *apiextensionsv1beta1clientset.Apiextensio
 	}
 
 	return b, nil
+}
+
+func crs(ctx context.Context, client *apiextensionsv1beta1clientset.ApiextensionsV1beta1Client) ([]byte, []string) {
+	var (
+		errorList       []string
+		customResources []byte
+	)
+	crds, err := client.CustomResourceDefinitions().List(ctx, metav1.ListOptions{})
+	if err != nil {
+		errorList = append(errorList, err.Error())
+		return customResources, errorList
+	}
+	// Loop through CRDs to fetch the CRs
+	for _, v := range crds.Items {
+		data := client.RESTClient().Get().AbsPath("/apis/" + v.Spec.Group + "/" + v.Spec.Version).Do(ctx)
+		apiResourceListObj, err := data.Get()
+		if err != nil {
+			errorList = append(errorList, err.Error())
+		}
+		apiResourceList, _ := apiResourceListObj.(*metav1.APIResourceList)
+		groupVersion := apiResourceList.GroupVersion
+		customResourceName := apiResourceList.APIResources[0].Name
+		if customResourceName != "" {
+			customResources, err = client.RESTClient().Get().AbsPath("/apis/" + groupVersion).Namespace("").Resource(customResourceName).DoRaw(ctx)
+			if err != nil {
+				errorList = append(errorList, err.Error())
+			}
+		}
+	}
+	//TODO: Improve formatting of the custom resources output
+	return customResources, errorList
 }
 
 func imagePullSecrets(ctx context.Context, client *kubernetes.Clientset, namespaces []string) (map[string][]byte, map[string]string) {
