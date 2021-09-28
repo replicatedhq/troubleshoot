@@ -182,7 +182,16 @@ func (c *Collector) IsExcluded() bool {
 		if isExcludedResult {
 			return true
 		}
+	} else if c.Collect.Sysctl != nil {
+		isExcludedResult, err := isExcluded(c.Collect.Sysctl.Exclude)
+		if err != nil {
+			return true
+		}
+		if isExcludedResult {
+			return true
+		}
 	}
+
 	return false
 }
 
@@ -251,6 +260,16 @@ func (c *Collector) RunCollectorSync(clientConfig *rest.Config, client kubernete
 		result, err = Longhorn(c, c.Collect.Longhorn)
 	} else if c.Collect.RegistryImages != nil {
 		result, err = Registry(c, c.Collect.RegistryImages)
+	} else if c.Collect.Sysctl != nil {
+		if c.Collect.Sysctl.Namespace == "" {
+			c.Collect.Sysctl.Namespace = c.Namespace
+		}
+		if c.Collect.Sysctl.Namespace == "" {
+			kubeconfig := k8sutil.GetKubeconfig()
+			namespace, _, _ := kubeconfig.Namespace()
+			c.Collect.Sysctl.Namespace = namespace
+		}
+		result, err = Sysctl(ctx, c, client, c.Collect.Sysctl)
 	} else {
 		err = errors.New("no spec found to run")
 		return

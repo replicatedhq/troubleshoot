@@ -1,0 +1,15 @@
+apiVersion: troubleshoot.sh/v1beta2
+kind: SupportBundle
+metadata:
+  name: sysctl
+spec:
+  collectors:
+  - sysctl:
+      image: debian:buster-slim
+  analyzers:
+  - sysctl:
+      checkName: IP forwarding enabled
+      outcomes:
+      - fail:
+          when: "net.ipv4.ip_forward = 0"
+          message: "IP forwarding is not enabled"

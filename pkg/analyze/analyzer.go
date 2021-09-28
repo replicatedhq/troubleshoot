@@ -358,5 +358,23 @@ func Analyze(analyzer *troubleshootv1beta2.Analyze, getFile getCollectedFileCont
 		return results, nil
 	}
 
+	if analyzer.Sysctl != nil {
+		isExcluded, err := isExcluded(analyzer.Sysctl.Exclude)
+		if err != nil {
+			return nil, err
+		}
+		if isExcluded {
+			return nil, nil
+		}
+		result, err := analyzeSysctl(analyzer.Sysctl, findFiles)
+		if err != nil {
+			return nil, err
+		}
+		if result == nil {
+			return []*AnalyzeResult{}, nil
+		}
+		return []*AnalyzeResult{result}, nil
+	}
+
 	return nil, errors.New("invalid analyzer")
 }
