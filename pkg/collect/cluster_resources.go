@@ -139,8 +139,10 @@ func ClusterResources(c *Collector) (map[string][]byte, error) {
 
 	// crs
 	customResources, crErrors := crs(ctx, crdClient)
-	clusterResourcesOutput["cluster-resources/custom-resources.json"] = customResources
-	clusterResourcesOutput["cluster-resources/custom-resources-errors.json"], err = marshalNonNil(crErrors)
+	for k, v := range customResources {
+		clusterResourcesOutput[path.Join("custom-resources/custom-resources", k)] = v
+	}
+	clusterResourcesOutput["custom-resources/custom-resources-errors.json"], err = marshalNonNil(crErrors)
 	if err != nil {
 		return nil, err
 	}
@@ -439,30 +441,29 @@ func crds(ctx context.Context, client *apiextensionsv1beta1clientset.Apiextensio
 	return b, nil
 }
 
-func crs(ctx context.Context, client *apiextensionsv1beta1clientset.ApiextensionsV1beta1Client) ([]byte, []string) {
-	var (
-		errorList       []string
-		customResources []byte
-	)
+func crs(ctx context.Context, client *apiextensionsv1beta1clientset.ApiextensionsV1beta1Client) (map[string][]byte, map[string]string) {
+	customResources := make(map[string][]byte)
+	errorList := make(map[string]string)
 	crds, err := client.CustomResourceDefinitions().List(ctx, metav1.ListOptions{})
 	if err != nil {
-		errorList = append(errorList, err.Error())
+		errorList[crds.Kind] = err.Error()
 		return customResources, errorList
 	}
 	// Loop through CRDs to fetch the CRs
 	for _, v := range crds.Items {
 		data := client.RESTClient().Get().AbsPath("/apis/" + v.Spec.Group + "/" + v.Spec.Version).Do(ctx)
 		apiResourceListObj, err := data.Get()
+		gv := v.Spec.Group + "/" + v.Spec.Version
 		if err != nil {
-			errorList = append(errorList, err.Error())
+			errorList[gv] = err.Error()
 		}
 		apiResourceList, _ := apiResourceListObj.(*metav1.APIResourceList)
 		groupVersion := apiResourceList.GroupVersion
 		customResourceName := apiResourceList.APIResources[0].Name
 		if customResourceName != "" {
-			customResources, err = client.RESTClient().Get().AbsPath("/apis/" + groupVersion).Namespace("").Resource(customResourceName).DoRaw(ctx)
+			customResources[groupVersion], err = client.RESTClient().Get().AbsPath("/apis/" + groupVersion).Namespace("").Resource(customResourceName).DoRaw(ctx)
 			if err != nil {
-				errorList = append(errorList, err.Error())
+				errorList[gv] = err.Error()
 			}
 		}
 	}
