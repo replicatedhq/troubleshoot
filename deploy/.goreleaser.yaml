@@ -58,7 +58,9 @@ archives:
       - README*
       - changelog*
       - CHANGELOG*
-      - sbom/assets/*
+      - src: 'sbom/assets/*'
+        dst: .
+        strip_parent: true  # this is needed to make up for the way unzips work in krew v0.4.1
   - id: support-bundle
     builds:
       - support-bundle
@@ -76,6 +78,9 @@ archives:
       - README*
       - changelog*
       - CHANGELOG*
+      - src: 'sbom/assets/*'
+        dst: .
+        strip_parent: true # this is needed to make up for the way unzips work in krew v0.4.1
 dockers:
   - dockerfile: ./deploy/Dockerfile.troubleshoot
     image_templates:
