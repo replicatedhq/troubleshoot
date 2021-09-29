@@ -472,6 +472,7 @@ func crs(ctx context.Context, client *apiextensionsv1beta1clientset.Apiextension
 				customResourcesResponse, err := client.RESTClient().Get().AbsPath("/apis/" + groupVersion).Namespace("").Resource(customResourceName).DoRaw(ctx)
 				if err != nil {
 					errorList[fileName] = err.Error()
+					continue
 				}
 				_ = json.Unmarshal(customResourcesResponse, &customResourceItems)
 				if len(customResourceItems.Items) != 0 {
@@ -479,7 +480,6 @@ func crs(ctx context.Context, client *apiextensionsv1beta1clientset.Apiextension
 				}
 			}
 		}
-
 	}
 	//TODO: Improve formatting of the custom resources output
 	return customResources, errorList
