@@ -19,16 +19,16 @@ func NewResult() CollectorResult {
 }
 
 func (r CollectorResult) SaveResult(bundlePath string, relativePath string, reader io.Reader) error {
+	if reader == nil {
+		return nil
+	}
+
 	if bundlePath == "" {
 		data, err := ioutil.ReadAll(reader)
 		if err != nil {
 			return errors.Wrap(err, "failed to read data")
 		}
 		r[relativePath] = data
-		return nil
-	}
-
-	if reader == nil {
 		return nil
 	}
 
