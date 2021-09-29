@@ -451,7 +451,7 @@ func crs(ctx context.Context, client *apiextensionsv1beta1clientset.Apiextension
 	}{}
 	crds, err := client.CustomResourceDefinitions().List(ctx, metav1.ListOptions{})
 	if err != nil {
-		errorList[crds.Kind] = err.Error()
+		errorList["crdList"] = err.Error()
 		return customResources, errorList
 	}
 	// Loop through CRDs to fetch the CRs
@@ -460,7 +460,7 @@ func crs(ctx context.Context, client *apiextensionsv1beta1clientset.Apiextension
 		apiResourceListObj, err := data.Get()
 		group := v.Spec.Group
 		if err != nil {
-			errorList[fmt.Sprintf("%s.json", group)] = err.Error()
+			errorList[group] = err.Error()
 			continue
 		}
 		apiResourceList, _ := apiResourceListObj.(*metav1.APIResourceList)
