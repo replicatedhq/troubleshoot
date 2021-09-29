@@ -1,6 +1,7 @@
 package collect
 
 import (
+	"bytes"
 	"context"
 	"encoding/base64"
 	"encoding/json"
@@ -35,7 +36,7 @@ type registryAuthConfig struct {
 	password string
 }
 
-func Registry(c *Collector, registryCollector *troubleshootv1beta2.RegistryImages) (map[string][]byte, error) {
+func Registry(c *Collector, registryCollector *troubleshootv1beta2.RegistryImages) (CollectorResult, error) {
 	registryInfo := RegistryInfo{
 		Images: map[string]RegistryImage{},
 	}
@@ -63,11 +64,10 @@ func Registry(c *Collector, registryCollector *troubleshootv1beta2.RegistryImage
 		collectorName = "images"
 	}
 
-	registryOutput := map[string][]byte{
-		fmt.Sprintf("registry/%s.json", collectorName): b,
-	}
+	output := NewResult()
+	output.SaveResult(c.BundlePath, fmt.Sprintf("registry/%s.json", collectorName), bytes.NewBuffer(b))
 
-	return registryOutput, nil
+	return output, nil
 }
 
 func imageExists(c *Collector, registryCollector *troubleshootv1beta2.RegistryImages, image string) (bool, error) {

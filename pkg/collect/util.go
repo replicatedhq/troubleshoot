@@ -1,8 +1,10 @@
 package collect
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"reflect"
 	"regexp"
 	"strings"
@@ -88,18 +90,20 @@ func rfc1035(in string) string {
 	return out
 }
 
-func marshalNonNil(obj interface{}) ([]byte, error) {
-	if obj == nil {
-		return nil, nil
+// Use for error maps and arrays. These are guaraneteed to not result in a error when marshaling.
+func marshalErrors(errors interface{}) io.Reader {
+	if errors == nil {
+		return nil
 	}
 
-	val := reflect.ValueOf(obj)
+	val := reflect.ValueOf(errors)
 	switch val.Kind() {
 	case reflect.Array, reflect.Slice, reflect.Map:
 		if val.Len() == 0 {
-			return nil, nil
+			return nil
 		}
 	}
 
-	return json.MarshalIndent(obj, "", "  ")
+	m, _ := json.MarshalIndent(errors, "", "  ")
+	return bytes.NewBuffer(m)
 }

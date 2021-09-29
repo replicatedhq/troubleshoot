@@ -1,6 +1,7 @@
 package collect
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -24,8 +25,8 @@ type SecretOutput struct {
 	Value        string `json:"value,omitempty"`
 }
 
-func Secret(ctx context.Context, client kubernetes.Interface, secretCollector *troubleshootv1beta2.Secret) (map[string][]byte, error) {
-	output := map[string][]byte{}
+func Secret(ctx context.Context, c *Collector, secretCollector *troubleshootv1beta2.Secret, client kubernetes.Interface) (CollectorResult, error) {
+	output := NewResult()
 
 	secrets := []corev1.Secret{}
 	if secretCollector.Name != "" {
@@ -36,24 +37,16 @@ func Secret(ctx context.Context, client kubernetes.Interface, secretCollector *t
 				if err != nil {
 					return output, errors.Wrapf(err, "collect secret %s", secretCollector.Name)
 				}
-				output[filePath] = encoded
+				output.SaveResult(c.BundlePath, filePath, bytes.NewBuffer(encoded))
 			}
-			errorBytes, err := marshalNonNil([]string{err.Error()})
-			if err != nil {
-				return nil, errors.Wrapf(err, "marshal secret %s error non nil", secretCollector.Name)
-			}
-			output[GetSecretErrorsFileName(secretCollector)] = errorBytes
+			output.SaveResult(c.BundlePath, GetSecretErrorsFileName(secretCollector), marshalErrors([]string{err.Error()}))
 			return output, nil
 		}
 		secrets = append(secrets, *secret)
 	} else if len(secretCollector.Selector) > 0 {
 		ss, err := listSecretsForSelector(ctx, client, secretCollector.Namespace, secretCollector.Selector)
 		if err != nil {
-			errorBytes, err := marshalNonNil([]string{err.Error()})
-			if err != nil {
-				return nil, errors.Wrap(err, "marshal selector error non nil")
-			}
-			output[GetSecretErrorsFileName(secretCollector)] = errorBytes
+			output.SaveResult(c.BundlePath, GetSecretErrorsFileName(secretCollector), marshalErrors([]string{err.Error()}))
 			return output, nil
 		}
 		secrets = append(secrets, ss...)
@@ -66,7 +59,7 @@ func Secret(ctx context.Context, client kubernetes.Interface, secretCollector *t
 		if err != nil {
 			return output, errors.Wrapf(err, "collect secret %s", secret.Name)
 		}
-		output[filePath] = encoded
+		output.SaveResult(c.BundlePath, filePath, bytes.NewBuffer(encoded))
 	}
 
 	return output, nil

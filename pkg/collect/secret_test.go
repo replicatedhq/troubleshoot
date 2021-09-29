@@ -23,7 +23,7 @@ func TestSecret(t *testing.T) {
 		name            string
 		secretCollector *troubleshootv1beta2.Secret
 		mockSecrets     []corev1.Secret
-		want            map[string][]byte
+		want            CollectorResult
 		wantErr         bool
 	}{
 		{
@@ -52,7 +52,7 @@ func TestSecret(t *testing.T) {
 					},
 				},
 			},
-			want: map[string][]byte{
+			want: CollectorResult{
 				"secrets/test-namespace/test-secret.json": mustJSONMarshalIndent(t, SecretOutput{
 					Namespace:    "test-namespace",
 					Name:         "test-secret",
@@ -90,7 +90,7 @@ func TestSecret(t *testing.T) {
 					},
 				},
 			},
-			want: map[string][]byte{
+			want: CollectorResult{
 				"secrets/test-namespace/test-secret.json": mustJSONMarshalIndent(t, SecretOutput{
 					Namespace:    "test-namespace",
 					Name:         "test-secret",
@@ -117,7 +117,7 @@ func TestSecret(t *testing.T) {
 					},
 				},
 			},
-			want: map[string][]byte{
+			want: CollectorResult{
 				"secrets/test-namespace/test-secret/test-key.json": mustJSONMarshalIndent(t, SecretOutput{
 					Namespace:    "test-namespace",
 					Name:         "test-secret",
@@ -147,7 +147,7 @@ func TestSecret(t *testing.T) {
 					},
 				},
 			},
-			want: map[string][]byte{
+			want: CollectorResult{
 				"secrets/test-namespace/test-secret/test-key.json": mustJSONMarshalIndent(t, SecretOutput{
 					Namespace:    "test-namespace",
 					Name:         "test-secret",
@@ -175,7 +175,7 @@ func TestSecret(t *testing.T) {
 					},
 				},
 			},
-			want: map[string][]byte{
+			want: CollectorResult{
 				"secrets/test-namespace/test-secret.json": mustJSONMarshalIndent(t, SecretOutput{
 					Namespace:    "test-namespace",
 					Name:         "test-secret",
@@ -204,7 +204,7 @@ func TestSecret(t *testing.T) {
 					},
 				},
 			},
-			want: map[string][]byte{
+			want: CollectorResult{
 				"secrets/test-namespace/test-secret/test-key.json": mustJSONMarshalIndent(t, SecretOutput{
 					Namespace:    "test-namespace",
 					Name:         "test-secret",
@@ -223,7 +223,8 @@ func TestSecret(t *testing.T) {
 				_, err := client.CoreV1().Secrets(secret.Namespace).Create(ctx, &secret, metav1.CreateOptions{})
 				require.NoError(t, err)
 			}
-			got, err := Secret(ctx, client, tt.secretCollector)
+			c := &Collector{}
+			got, err := Secret(ctx, c, tt.secretCollector, client)
 			if tt.wantErr {
 				assert.Error(t, err)
 			} else {

@@ -22,7 +22,7 @@ func TestConfigMap(t *testing.T) {
 		name               string
 		configMapCollector *troubleshootv1beta2.ConfigMap
 		mockConfigMaps     []corev1.ConfigMap
-		want               map[string][]byte
+		want               CollectorResult
 		wantErr            bool
 	}{
 		{
@@ -51,7 +51,7 @@ func TestConfigMap(t *testing.T) {
 					},
 				},
 			},
-			want: map[string][]byte{
+			want: CollectorResult{
 				"configmaps/test-namespace/test-configmap.json": mustJSONMarshalIndent(t, ConfigMapOutput{
 					Namespace:       "test-namespace",
 					Name:            "test-configmap",
@@ -89,7 +89,7 @@ func TestConfigMap(t *testing.T) {
 					},
 				},
 			},
-			want: map[string][]byte{
+			want: CollectorResult{
 				"configmaps/test-namespace/test-configmap.json": mustJSONMarshalIndent(t, ConfigMapOutput{
 					Namespace:       "test-namespace",
 					Name:            "test-configmap",
@@ -116,7 +116,7 @@ func TestConfigMap(t *testing.T) {
 					},
 				},
 			},
-			want: map[string][]byte{
+			want: CollectorResult{
 				"configmaps/test-namespace/test-configmap/test-key.json": mustJSONMarshalIndent(t, ConfigMapOutput{
 					Namespace:       "test-namespace",
 					Name:            "test-configmap",
@@ -146,7 +146,7 @@ func TestConfigMap(t *testing.T) {
 					},
 				},
 			},
-			want: map[string][]byte{
+			want: CollectorResult{
 				"configmaps/test-namespace/test-configmap/test-key.json": mustJSONMarshalIndent(t, ConfigMapOutput{
 					Namespace:       "test-namespace",
 					Name:            "test-configmap",
@@ -174,7 +174,7 @@ func TestConfigMap(t *testing.T) {
 					},
 				},
 			},
-			want: map[string][]byte{
+			want: CollectorResult{
 				"configmaps/test-namespace/test-configmap.json": mustJSONMarshalIndent(t, ConfigMapOutput{
 					Namespace:       "test-namespace",
 					Name:            "test-configmap",
@@ -203,7 +203,7 @@ func TestConfigMap(t *testing.T) {
 					},
 				},
 			},
-			want: map[string][]byte{
+			want: CollectorResult{
 				"configmaps/test-namespace/test-configmap/test-key.json": mustJSONMarshalIndent(t, ConfigMapOutput{
 					Namespace:       "test-namespace",
 					Name:            "test-configmap",
@@ -241,7 +241,7 @@ func TestConfigMap(t *testing.T) {
 					},
 				},
 			},
-			want: map[string][]byte{
+			want: CollectorResult{
 				"configmaps/test-namespace/test-configmap.json": mustJSONMarshalIndent(t, ConfigMapOutput{
 					Namespace:       "test-namespace",
 					Name:            "test-configmap",
@@ -277,7 +277,7 @@ func TestConfigMap(t *testing.T) {
 					},
 				},
 			},
-			want: map[string][]byte{
+			want: CollectorResult{
 				"configmaps/test-namespace/test-configmap.json": mustJSONMarshalIndent(t, ConfigMapOutput{
 					Namespace:       "test-namespace",
 					Name:            "test-configmap",
@@ -305,7 +305,7 @@ func TestConfigMap(t *testing.T) {
 					},
 				},
 			},
-			want: map[string][]byte{
+			want: CollectorResult{
 				"configmaps/test-namespace/test-configmap/test-key1.json": mustJSONMarshalIndent(t, ConfigMapOutput{
 					Namespace:       "test-namespace",
 					Name:            "test-configmap",
@@ -328,7 +328,8 @@ func TestConfigMap(t *testing.T) {
 				_, err := client.CoreV1().ConfigMaps(configMap.Namespace).Create(ctx, &configMap, metav1.CreateOptions{})
 				require.NoError(t, err)
 			}
-			got, err := ConfigMap(ctx, client, tt.configMapCollector)
+			c := &Collector{}
+			got, err := ConfigMap(ctx, c, tt.configMapCollector, client)
 			if tt.wantErr {
 				assert.Error(t, err)
 			} else {

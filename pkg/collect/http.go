@@ -1,6 +1,7 @@
 package collect
 
 import (
+	"bytes"
 	"crypto/tls"
 	"encoding/json"
 	"errors"
@@ -32,7 +33,7 @@ var (
 	}
 )
 
-func HTTP(c *Collector, httpCollector *troubleshootv1beta2.HTTP) (map[string][]byte, error) {
+func HTTP(c *Collector, httpCollector *troubleshootv1beta2.HTTP) (CollectorResult, error) {
 	var response *http.Response
 	var err error
 
@@ -46,7 +47,7 @@ func HTTP(c *Collector, httpCollector *troubleshootv1beta2.HTTP) (map[string][]b
 		return nil, errors.New("no supported http request type")
 	}
 
-	output, err := responseToOutput(response, err, c.Redact)
+	o, err := responseToOutput(response, err, c.Redact)
 	if err != nil {
 		return nil, err
 	}
@@ -55,11 +56,11 @@ func HTTP(c *Collector, httpCollector *troubleshootv1beta2.HTTP) (map[string][]b
 	if httpCollector.CollectorName != "" {
 		fileName = httpCollector.CollectorName + ".json"
 	}
-	httpOutput := map[string][]byte{
-		filepath.Join(httpCollector.Name, fileName): output,
-	}
 
-	return httpOutput, nil
+	output := NewResult()
+	output.SaveResult(c.BundlePath, filepath.Join(httpCollector.Name, fileName), bytes.NewBuffer(o))
+
+	return output, nil
 }
 
 func doGet(get *troubleshootv1beta2.Get) (*http.Response, error) {
