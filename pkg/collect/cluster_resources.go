@@ -140,7 +140,7 @@ func ClusterResources(c *Collector) (map[string][]byte, error) {
 	// crs
 	customResources, crErrors := crs(ctx, crdClient)
 	for k, v := range customResources {
-		clusterResourcesOutput[path.Join("custom-resources/custom-resources", k)] = v
+		clusterResourcesOutput[fmt.Sprintf("custom-resources/%v", k)] = v
 	}
 	clusterResourcesOutput["custom-resources/custom-resources-errors.json"], err = marshalNonNil(crErrors)
 	if err != nil {
@@ -444,6 +444,11 @@ func crds(ctx context.Context, client *apiextensionsv1beta1clientset.Apiextensio
 func crs(ctx context.Context, client *apiextensionsv1beta1clientset.ApiextensionsV1beta1Client) (map[string][]byte, map[string]string) {
 	customResources := make(map[string][]byte)
 	errorList := make(map[string]string)
+	customResourceItems := struct {
+		metav1.TypeMeta `json:",inline"`
+		metav1.ListMeta `json:"metadata,omitempty"`
+		Items           []map[string]interface{} `json:"items"`
+	}{}
 	crds, err := client.CustomResourceDefinitions().List(ctx, metav1.ListOptions{})
 	if err != nil {
 		errorList[crds.Kind] = err.Error()
@@ -453,7 +458,7 @@ func crs(ctx context.Context, client *apiextensionsv1beta1clientset.Apiextension
 	for _, v := range crds.Items {
 		data := client.RESTClient().Get().AbsPath("/apis/" + v.Spec.Group + "/" + v.Spec.Version).Do(ctx)
 		apiResourceListObj, err := data.Get()
-		gv := v.Spec.Group + "/" + v.Spec.Version
+		gv := v.Spec.Group + "-" + v.Spec.Version + ".json"
 		if err != nil {
 			errorList[gv] = err.Error()
 		}
@@ -461,9 +466,13 @@ func crs(ctx context.Context, client *apiextensionsv1beta1clientset.Apiextension
 		groupVersion := apiResourceList.GroupVersion
 		customResourceName := apiResourceList.APIResources[0].Name
 		if customResourceName != "" {
-			customResources[groupVersion], err = client.RESTClient().Get().AbsPath("/apis/" + groupVersion).Namespace("").Resource(customResourceName).DoRaw(ctx)
+			customResourcesResponse, err := client.RESTClient().Get().AbsPath("/apis/" + groupVersion).Namespace("").Resource(customResourceName).DoRaw(ctx)
 			if err != nil {
 				errorList[gv] = err.Error()
+			}
+			_ = json.Unmarshal(customResourcesResponse, &customResourceItems)
+			if len(customResourceItems.Items) != 0 {
+				customResources[gv] = customResourcesResponse
 			}
 		}
 	}
