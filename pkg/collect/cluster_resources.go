@@ -458,26 +458,27 @@ func crs(ctx context.Context, client *apiextensionsv1beta1clientset.Apiextension
 	for _, v := range crds.Items {
 		data := client.RESTClient().Get().AbsPath("/apis/" + v.Spec.Group + "/" + v.Spec.Version).Do(ctx)
 		apiResourceListObj, err := data.Get()
-		gv := v.Spec.Group + "-" + v.Spec.Version
+		group := v.Spec.Group
 		if err != nil {
-			errorList[gv] = err.Error()
+			errorList[group] = err.Error()
 		}
 		apiResourceList, _ := apiResourceListObj.(*metav1.APIResourceList)
 		groupVersion := apiResourceList.GroupVersion
 		for _, v := range apiResourceList.APIResources {
 			customResourceName := v.Name
 			if customResourceName != "" && !strings.ContainsAny(customResourceName, "/") {
-				gv = gv + "-" + customResourceName + ".json"
+				fileName := customResourceName + "." + group + ".json"
 				customResourcesResponse, err := client.RESTClient().Get().AbsPath("/apis/" + groupVersion).Namespace("").Resource(customResourceName).DoRaw(ctx)
 				if err != nil {
-					errorList[gv] = err.Error()
+					errorList[fileName] = err.Error()
 				}
 				_ = json.Unmarshal(customResourcesResponse, &customResourceItems)
 				if len(customResourceItems.Items) != 0 {
-					customResources[gv] = customResourcesResponse
+					customResources[fileName] = customResourcesResponse
 				}
 			}
 		}
+
 	}
 	//TODO: Improve formatting of the custom resources output
 	return customResources, errorList
