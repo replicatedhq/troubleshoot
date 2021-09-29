@@ -458,21 +458,24 @@ func crs(ctx context.Context, client *apiextensionsv1beta1clientset.Apiextension
 	for _, v := range crds.Items {
 		data := client.RESTClient().Get().AbsPath("/apis/" + v.Spec.Group + "/" + v.Spec.Version).Do(ctx)
 		apiResourceListObj, err := data.Get()
-		gv := v.Spec.Group + "-" + v.Spec.Version + ".json"
+		gv := v.Spec.Group + "-" + v.Spec.Version
 		if err != nil {
 			errorList[gv] = err.Error()
 		}
 		apiResourceList, _ := apiResourceListObj.(*metav1.APIResourceList)
 		groupVersion := apiResourceList.GroupVersion
-		customResourceName := apiResourceList.APIResources[0].Name
-		if customResourceName != "" {
-			customResourcesResponse, err := client.RESTClient().Get().AbsPath("/apis/" + groupVersion).Namespace("").Resource(customResourceName).DoRaw(ctx)
-			if err != nil {
-				errorList[gv] = err.Error()
-			}
-			_ = json.Unmarshal(customResourcesResponse, &customResourceItems)
-			if len(customResourceItems.Items) != 0 {
-				customResources[gv] = customResourcesResponse
+		for _, v := range apiResourceList.APIResources {
+			customResourceName := v.Name
+			if customResourceName != "" && !strings.ContainsAny(customResourceName, "/") {
+				gv = gv + "-" + customResourceName + ".json"
+				customResourcesResponse, err := client.RESTClient().Get().AbsPath("/apis/" + groupVersion).Namespace("").Resource(customResourceName).DoRaw(ctx)
+				if err != nil {
+					errorList[gv] = err.Error()
+				}
+				_ = json.Unmarshal(customResourcesResponse, &customResourceItems)
+				if len(customResourceItems.Items) != 0 {
+					customResources[gv] = customResourcesResponse
+				}
 			}
 		}
 	}
