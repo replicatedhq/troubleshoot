@@ -460,7 +460,8 @@ func crs(ctx context.Context, client *apiextensionsv1beta1clientset.Apiextension
 		apiResourceListObj, err := data.Get()
 		group := v.Spec.Group
 		if err != nil {
-			errorList[group] = err.Error()
+			errorList[fmt.Sprintf("%s.json", group)] = err.Error()
+			continue
 		}
 		apiResourceList, _ := apiResourceListObj.(*metav1.APIResourceList)
 		groupVersion := apiResourceList.GroupVersion
