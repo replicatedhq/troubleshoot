@@ -138,6 +138,8 @@ func copyFilesFromPod(ctx context.Context, dstPath string, clientConfig *restcli
 		if err != nil {
 			return nil, nil, errors.Wrap(err, "failed to craete dest file")
 		}
+		defer result.CloseWriter(dstPath, filepath.Base(containerPath)+".tar", w)
+
 		stdoutWriter = w
 	}
 

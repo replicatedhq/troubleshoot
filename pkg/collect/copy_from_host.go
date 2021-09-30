@@ -315,6 +315,8 @@ func copyFilesFromHost(ctx context.Context, dstPath string, clientConfig *restcl
 		if err != nil {
 			return nil, nil, errors.Wrap(err, "failed to craete dest file")
 		}
+		defer result.CloseWriter(dstPath, "archive.tar", w)
+
 		stdoutWriter = w
 	}
 
