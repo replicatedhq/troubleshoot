@@ -125,7 +125,7 @@ func savePodLogs(ctx context.Context, bundlePath string, client *kubernetes.Clie
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get log writer")
 	}
-	defer logWriter.Close()
+	defer result.CloseWriter(bundlePath, fileKey+".log", logWriter)
 
 	_, err = io.Copy(logWriter, podLogs)
 	if err != nil {
@@ -145,7 +145,7 @@ func savePodLogs(ctx context.Context, bundlePath string, client *kubernetes.Clie
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get previous log writer")
 	}
-	defer logWriter.Close()
+	defer result.CloseWriter(bundlePath, fileKey+"-previous.log", logWriter)
 
 	_, err = io.Copy(prevLogWriter, podLogs)
 	if err != nil {

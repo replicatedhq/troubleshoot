@@ -89,6 +89,10 @@ func (r CollectorResult) GetReader(bundlePath string, relativePath string) (io.R
 		return bytes.NewReader(r[relativePath]), nil
 	}
 
+	if bundlePath == "" {
+		return nil, errors.New("cannot create reader, bundle path is empty")
+	}
+
 	filename := filepath.Join(bundlePath, relativePath)
 	f, err := os.Open(filename)
 	if err != nil {
@@ -98,9 +102,10 @@ func (r CollectorResult) GetReader(bundlePath string, relativePath string) (io.R
 	return f, nil
 }
 
-func (r CollectorResult) GetWriter(bundlePath string, relativePath string) (io.WriteCloser, error) {
-	if r[relativePath] != nil {
-		return nil, errors.New("writing to memory is not implemented")
+func (r CollectorResult) GetWriter(bundlePath string, relativePath string) (io.Writer, error) {
+	if bundlePath == "" {
+		var b bytes.Buffer
+		return &b, nil
 	}
 
 	fileDir, _ := filepath.Split(relativePath)
@@ -118,6 +123,19 @@ func (r CollectorResult) GetWriter(bundlePath string, relativePath string) (io.W
 	r[relativePath] = nil // save the the file name referencing the file on disk
 
 	return f, nil
+}
+
+func (r CollectorResult) CloseWriter(bundlePath string, relativePath string, writer interface{}) error {
+	if c, ok := writer.(io.Closer); ok {
+		return errors.Wrap(c.Close(), "failed to close writer")
+	}
+
+	if b, ok := writer.(*bytes.Buffer); ok {
+		r[relativePath] = b.Bytes()
+		return nil
+	}
+
+	return errors.Errorf("cannot close writer of type %T", writer)
 }
 
 func TarSupportBundleDir(bundlePath string, input CollectorResult, outputFilename string) error {
