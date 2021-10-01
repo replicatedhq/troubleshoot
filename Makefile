@@ -90,13 +90,13 @@ schemas: fmt vet openapischema
 	./bin/schemagen --output-dir ./schemas
 
 controller-gen:
-	go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.7.0
+	go get sigs.k8s.io/controller-tools/cmd/controller-gen@v0.7.0
 CONTROLLER_GEN=$(shell which controller-gen)
 
 .PHONY: client-gen
 client-gen:
 ifeq (, $(shell which client-gen))
-	go install k8s.io/code-generator/cmd/client-gen@kubernetes-1.18.0
+	go get k8s.io/code-generator/cmd/client-gen@kubernetes-1.18.0
 CLIENT_GEN=$(shell go env GOPATH)/bin/client-gen
 else
 CLIENT_GEN=$(shell which client-gen)
