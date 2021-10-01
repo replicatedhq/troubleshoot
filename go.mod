@@ -75,4 +75,5 @@ replace (
 	k8s.io/legacy-cloud-providers => k8s.io/legacy-cloud-providers v0.20.2
 	k8s.io/metrics => k8s.io/metrics v0.20.2
 	k8s.io/sample-apiserver => k8s.io/sample-apiserver v0.20.2
+	sigs.k8s.io/controller-runtime => github.com/kubernetes-sigs/controller-runtime v0.8.3
 )
