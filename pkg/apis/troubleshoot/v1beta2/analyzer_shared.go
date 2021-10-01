@@ -142,6 +142,11 @@ type RegistryImagesAnalyze struct {
 	CollectorName string     `json:"collectorName" yaml:"collectorName"`
 }
 
+type SysctlAnalyze struct {
+	AnalyzeMeta `json:",inline" yaml:",inline"`
+	Outcomes    []*Outcome `json:"outcomes" yaml:"outcomes"`
+}
+
 type AnalyzeMeta struct {
 	CheckName string                 `json:"checkName,omitempty" yaml:"checkName,omitempty"`
 	Exclude   multitype.BoolOrString `json:"exclude,omitempty" yaml:"exclude,omitempty"`
@@ -168,4 +173,5 @@ type Analyze struct {
 	Longhorn                 *LonghornAnalyze          `json:"longhorn,omitempty" yaml:"longhorn,omitempty"`
 	RegistryImages           *RegistryImagesAnalyze    `json:"registryImages,omitempty" yaml:"registryImages,omitempty"`
 	WeaveReport              *WeaveReportAnalyze       `json:"weaveReport,omitempty" yaml:"weaveReport,omitempty"`
+	Sysctl                   *SysctlAnalyze            `json:"sysctl,omitempty" yaml:"sysctl,omitempty"`
 }
