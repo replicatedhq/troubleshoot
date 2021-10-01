@@ -2,7 +2,7 @@ package collect
 
 import (
 	"context"
-	"io"
+	"io/ioutil"
 	"sync"
 
 	"github.com/pkg/errors"
@@ -140,5 +140,5 @@ func RunPodLogs(ctx context.Context, client v1.CoreV1Interface, pod *corev1.Pod)
 	}
 	defer logs.Close()
 
-	return io.ReadAll(logs)
+	return ioutil.ReadAll(logs)
 }
