@@ -298,6 +298,47 @@ spec:
                       required:
                       - outcomes
                       type: object
+                    hostos:
+                      properties:
+                        checkName:
+                          type: string
+                        exclude:
+                          type: BoolString
+                        outcomes:
+                          items:
+                            properties:
+                              fail:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
+                              pass:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
+                              warn:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
+                            type: object
+                          type: array
+                      required:
+                      - outcomes
+                      type: object
                     http:
                       properties:
                         checkName:
@@ -759,6 +800,13 @@ spec:
                       - enableBackgroundIOPS
                       type: object
                     hostServices:
+                      properties:
+                        collectorName:
+                          type: string
+                        exclude:
+                          type: BoolString
+                      type: object
+                    hostos:
                       properties:
                         collectorName:
                           type: string
