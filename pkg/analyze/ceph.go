@@ -74,17 +74,7 @@ type CephStatus struct {
 }
 
 type HealthStatus struct {
-	Status string                  `json:"status"`
-	Checks map[string]CheckMessage `json:"checks"`
-}
-
-type CheckMessage struct {
-	Severity string  `json:"severity"`
-	Summary  Summary `json:"summary"`
-}
-
-type Summary struct {
-	Message string `json:"message"`
+	Status string `json:"status"`
 }
 
 type OsdMap struct {
