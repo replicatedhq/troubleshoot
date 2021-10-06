@@ -78,6 +78,8 @@ type HealthStatus struct {
 }
 
 type OsdMap struct {
+	NumOsd   int  `json:"num_osds"`
+	NumUpOsd int  `json:"num_up_osds"`
 	Full     bool `json:"full"`
 	NearFull bool `json:"nearfull"`
 }
@@ -194,6 +196,10 @@ func compareCephStatus(actual, when string) (bool, error) {
 }
 
 func detailedMessage(msg string, status CephStatus) string {
+	if status.OsdMap.OsdMap.NumOsd > 0 {
+		msg = fmt.Sprintf("%s. %v/%v OSDs up", msg, status.OsdMap.OsdMap.NumUpOsd, status.OsdMap.OsdMap.NumOsd)
+	}
+
 	if status.OsdMap.OsdMap.Full {
 		msg = fmt.Sprintf("%s. OSD disk is full", msg)
 	} else if status.OsdMap.OsdMap.NearFull {

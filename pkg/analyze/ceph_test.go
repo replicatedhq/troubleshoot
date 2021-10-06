@@ -36,6 +36,8 @@ func Test_cephStatus(t *testing.T) {
 				},
 				"osdmap": {
 					"osdmap": {
+						"num_osds": 5,
+						"num_up_osds": 5,
 						"full": false,
 						"nearfull": false
 					}
@@ -54,7 +56,7 @@ func Test_cephStatus(t *testing.T) {
 				IsWarn:  true,
 				IsFail:  false,
 				Title:   "Ceph Status",
-				Message: "Ceph status is HEALTH_WARN. OSD disk is nearly full. PG storage usage is 85.0%.",
+				Message: "Ceph status is HEALTH_WARN. 5/5 OSDs up. OSD disk is nearly full. PG storage usage is 85.0%.",
 				URI:     "https://rook.io/docs/rook/v1.4/ceph-common-issues.html",
 				IconKey: "rook",
 				IconURI: "https://troubleshoot.sh/images/analyzer-icons/rook.svg?w=11&h=16",
@@ -67,6 +69,8 @@ func Test_cephStatus(t *testing.T) {
 				},
 				"osdmap": {
 					"osdmap": {
+						"num_osds": 5,
+						"num_up_osds": 5,
 						"full": false,
 						"nearfull": true
 					}
@@ -85,7 +89,7 @@ func Test_cephStatus(t *testing.T) {
 				IsWarn:  false,
 				IsFail:  true,
 				Title:   "Ceph Status",
-				Message: "Ceph status is HEALTH_ERR. OSD disk is full. PG storage usage is 95.0%.",
+				Message: "Ceph status is HEALTH_ERR. 4/5 OSDs up. OSD disk is full. PG storage usage is 95.0%.",
 				URI:     "https://rook.io/docs/rook/v1.4/ceph-common-issues.html",
 				IconKey: "rook",
 				IconURI: "https://troubleshoot.sh/images/analyzer-icons/rook.svg?w=11&h=16",
@@ -98,6 +102,8 @@ func Test_cephStatus(t *testing.T) {
 				},
 				"osdmap": {
 					"osdmap": {
+						"num_osds": 5,
+						"num_up_osds": 4,
 						"full": true,
 						"nearfull": true
 					}
@@ -166,7 +172,7 @@ func Test_cephStatus(t *testing.T) {
 				IsWarn:  false,
 				IsFail:  true,
 				Title:   "Ceph Status",
-				Message: "custom message WARN. OSD disk is nearly full. PG storage usage is 85.0%.",
+				Message: "custom message WARN. 5/5 OSDs up. OSD disk is nearly full. PG storage usage is 85.0%.",
 				URI:     "custom uri WARN",
 				IconKey: "rook",
 				IconURI: "https://troubleshoot.sh/images/analyzer-icons/rook.svg?w=11&h=16",
@@ -179,6 +185,8 @@ func Test_cephStatus(t *testing.T) {
 				},
 				"osdmap": {
 					"osdmap": {
+						"num_osds": 5,
+						"num_up_osds": 5,
 						"full": false,
 						"nearfull": true
 					}
