@@ -2,6 +2,7 @@ package analyzer
 
 import (
 	"encoding/json"
+	"fmt"
 	"path"
 	"strings"
 
@@ -64,6 +65,30 @@ var CephStatusDefaultOutcomes = []*troubleshootv1beta2.Outcome{
 	},
 }
 
+type CephStatus struct {
+	Health HealthStatus `json:"health"`
+	OsdMap struct {
+		OsdMap OsdMap `json:"osdmap"`
+	} `json:"osdmap"`
+	PgMap PgMap `json:"pgmap"`
+}
+
+type HealthStatus struct {
+	Status string `json:"status"`
+}
+
+type OsdMap struct {
+	NumOsd   int  `json:"num_osds"`
+	NumUpOsd int  `json:"num_up_osds"`
+	Full     bool `json:"full"`
+	NearFull bool `json:"nearfull"`
+}
+
+type PgMap struct {
+	UsedBytes  uint64 `json:"bytes_used"`
+	TotalBytes uint64 `json:"bytes_total"`
+}
+
 func cephStatus(analyzer *troubleshootv1beta2.CephStatusAnalyze, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
 	fileName := path.Join(collect.GetCephCollectorFilepath(analyzer.CollectorName, analyzer.Namespace), "status.json")
 	collected, err := getCollectedFileContents(fileName)
@@ -82,11 +107,7 @@ func cephStatus(analyzer *troubleshootv1beta2.CephStatusAnalyze, getCollectedFil
 		IconURI: "https://troubleshoot.sh/images/analyzer-icons/rook.svg?w=11&h=16",
 	}
 
-	status := struct {
-		Health struct {
-			Status string `json:"status"`
-		} `json:"health"`
-	}{}
+	status := CephStatus{}
 	if err := json.Unmarshal(collected, &status); err != nil {
 		return nil, errors.Wrap(err, "failed to unmarshal status.json")
 	}
@@ -105,7 +126,7 @@ func cephStatus(analyzer *troubleshootv1beta2.CephStatusAnalyze, getCollectedFil
 				return nil, errors.Wrap(err, "failed to compare ceph status")
 			} else if match {
 				analyzeResult.IsFail = true
-				analyzeResult.Message = outcome.Fail.Message
+				analyzeResult.Message = detailedCephMessage(outcome.Fail.Message, status)
 				analyzeResult.URI = outcome.Fail.URI
 				return analyzeResult, nil
 			}
@@ -118,7 +139,7 @@ func cephStatus(analyzer *troubleshootv1beta2.CephStatusAnalyze, getCollectedFil
 				return nil, errors.Wrap(err, "failed to compare ceph status")
 			} else if match {
 				analyzeResult.IsWarn = true
-				analyzeResult.Message = outcome.Warn.Message
+				analyzeResult.Message = detailedCephMessage(outcome.Warn.Message, status)
 				analyzeResult.URI = outcome.Warn.URI
 				return analyzeResult, nil
 			}
@@ -172,4 +193,23 @@ func compareCephStatus(actual, when string) (bool, error) {
 	default:
 		return false, errors.New("unknown operator")
 	}
+}
+
+func detailedCephMessage(msg string, status CephStatus) string {
+	if status.OsdMap.OsdMap.NumOsd > 0 {
+		msg = fmt.Sprintf("%s. %v/%v OSDs up", msg, status.OsdMap.OsdMap.NumUpOsd, status.OsdMap.OsdMap.NumOsd)
+	}
+
+	if status.OsdMap.OsdMap.Full {
+		msg = fmt.Sprintf("%s. OSD disk is full", msg)
+	} else if status.OsdMap.OsdMap.NearFull {
+		msg = fmt.Sprintf("%s. OSD disk is nearly full", msg)
+	}
+
+	if status.PgMap.TotalBytes > 0 {
+		pgUsage := 100 * float64(status.PgMap.UsedBytes) / float64(status.PgMap.TotalBytes)
+		msg = fmt.Sprintf("%s. PG storage usage is %.1f%%.", msg, pgUsage)
+	}
+
+	return msg
 }

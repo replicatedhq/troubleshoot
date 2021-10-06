@@ -33,6 +33,18 @@ func Test_cephStatus(t *testing.T) {
 				"fsid": "96a8178c-6aa2-4adf-a309-9e8869a79611",
 				"health": {
 					"status": "HEALTH_OK"
+				},
+				"osdmap": {
+					"osdmap": {
+						"num_osds": 5,
+						"num_up_osds": 5,
+						"full": false,
+						"nearfull": false
+					}
+				},
+				"pgmap": {
+					"bytes_used": 10000,
+					"bytes_total": 100000
 				}
 			}`,
 		},
@@ -44,7 +56,7 @@ func Test_cephStatus(t *testing.T) {
 				IsWarn:  true,
 				IsFail:  false,
 				Title:   "Ceph Status",
-				Message: "Ceph status is HEALTH_WARN",
+				Message: "Ceph status is HEALTH_WARN. 5/5 OSDs up. OSD disk is nearly full. PG storage usage is 85.0%.",
 				URI:     "https://rook.io/docs/rook/v1.4/ceph-common-issues.html",
 				IconKey: "rook",
 				IconURI: "https://troubleshoot.sh/images/analyzer-icons/rook.svg?w=11&h=16",
@@ -54,6 +66,18 @@ func Test_cephStatus(t *testing.T) {
 				"fsid": "96a8178c-6aa2-4adf-a309-9e8869a79611",
 				"health": {
 					"status": "HEALTH_WARN"
+				},
+				"osdmap": {
+					"osdmap": {
+						"num_osds": 5,
+						"num_up_osds": 5,
+						"full": false,
+						"nearfull": true
+					}
+				},
+				"pgmap": {
+					"bytes_used": 85000,
+					"bytes_total": 100000
 				}
 			}`,
 		},
@@ -65,7 +89,7 @@ func Test_cephStatus(t *testing.T) {
 				IsWarn:  false,
 				IsFail:  true,
 				Title:   "Ceph Status",
-				Message: "Ceph status is HEALTH_ERR",
+				Message: "Ceph status is HEALTH_ERR. 4/5 OSDs up. OSD disk is full. PG storage usage is 95.0%.",
 				URI:     "https://rook.io/docs/rook/v1.4/ceph-common-issues.html",
 				IconKey: "rook",
 				IconURI: "https://troubleshoot.sh/images/analyzer-icons/rook.svg?w=11&h=16",
@@ -75,6 +99,18 @@ func Test_cephStatus(t *testing.T) {
 				"fsid": "96a8178c-6aa2-4adf-a309-9e8869a79611",
 				"health": {
 					"status": "HEALTH_ERR"
+				},
+				"osdmap": {
+					"osdmap": {
+						"num_osds": 5,
+						"num_up_osds": 4,
+						"full": true,
+						"nearfull": true
+					}
+				},
+				"pgmap": {
+					"bytes_used": 95000,
+					"bytes_total": 100000
 				}
 			}`,
 		},
@@ -98,6 +134,16 @@ func Test_cephStatus(t *testing.T) {
 				"fsid": "96a8178c-6aa2-4adf-a309-9e8869a79611",
 				"health": {
 					"status": "HEALTH_OK"
+				},
+				"osdmap": {
+					"osdmap": {
+						"full": false,
+						"nearfull": false
+					}
+				},
+				"pgmap": {
+					"bytes_used": 10000,
+					"bytes_total": 100000
 				}
 			}`,
 		},
@@ -126,8 +172,41 @@ func Test_cephStatus(t *testing.T) {
 				IsWarn:  false,
 				IsFail:  true,
 				Title:   "Ceph Status",
-				Message: "custom message WARN",
+				Message: "custom message WARN. 5/5 OSDs up. OSD disk is nearly full. PG storage usage is 85.0%.",
 				URI:     "custom uri WARN",
+				IconKey: "rook",
+				IconURI: "https://troubleshoot.sh/images/analyzer-icons/rook.svg?w=11&h=16",
+			},
+			filePath: "ceph/status.json",
+			file: `{
+				"fsid": "96a8178c-6aa2-4adf-a309-9e8869a79611",
+				"health": {
+					"status": "HEALTH_WARN"
+				},
+				"osdmap": {
+					"osdmap": {
+						"num_osds": 5,
+						"num_up_osds": 5,
+						"full": false,
+						"nearfull": true
+					}
+				},
+				"pgmap": {
+					"bytes_used": 85000,
+					"bytes_total": 100000
+				}
+			}`,
+		},
+		{
+			name:     "warn case with missing osd/pg data",
+			analyzer: troubleshootv1beta2.CephStatusAnalyze{},
+			expectResult: AnalyzeResult{
+				IsPass:  false,
+				IsWarn:  true,
+				IsFail:  false,
+				Title:   "Ceph Status",
+				Message: "Ceph status is HEALTH_WARN",
+				URI:     "https://rook.io/docs/rook/v1.4/ceph-common-issues.html",
 				IconKey: "rook",
 				IconURI: "https://troubleshoot.sh/images/analyzer-icons/rook.svg?w=11&h=16",
 			},
