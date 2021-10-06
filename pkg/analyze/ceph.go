@@ -229,17 +229,16 @@ func compareCephStatus(actual, when string) (bool, error) {
 }
 
 func detailedMessage(msg string, status CephStatus) string {
-	var osdStatus string
 	if status.OsdMap.OsdMap.Full {
-		osdStatus = "OSD is full"
+		msg = fmt.Sprintf("%s: OSD is full", msg)
 	} else if status.OsdMap.OsdMap.NearFull {
-		osdStatus = "OSD is nearly full"
-	} else {
-		osdStatus = "OSD is healthy"
+		msg = fmt.Sprintf("%s: OSD is nearly full", msg)
 	}
 
-	pgUsage := 100 * status.PgMap.UsedBytes / status.PgMap.TotalBytes
-	pgStatus := fmt.Sprintf("PG usage is %v%%", pgUsage)
+	if status.PgMap.TotalBytes > 0 {
+		pgUsage := 100 * float64(status.PgMap.UsedBytes) / float64(status.PgMap.TotalBytes)
+		msg = fmt.Sprintf("%s: PG usage is %.1f%%", msg, pgUsage)
+	}
 
-	return fmt.Sprintf("%s: %s: %s", msg, osdStatus, pgStatus)
+	return msg
 }
