@@ -88,38 +88,13 @@ type Summary struct {
 }
 
 type OsdMap struct {
-	Epoch          int  `json:"epoch"`
-	NumOsd         int  `json:"num_osds"`
-	NumUpOsd       int  `json:"num_up_osds"`
-	NumInOsd       int  `json:"num_in_osds"`
-	Full           bool `json:"full"`
-	NearFull       bool `json:"nearfull"`
-	NumRemappedPgs int  `json:"num_remapped_pgs"`
+	Full     bool `json:"full"`
+	NearFull bool `json:"nearfull"`
 }
 
 type PgMap struct {
-	PgsByState            []PgStateEntry `json:"pgs_by_state"`
-	Version               int            `json:"version"`
-	NumPgs                int            `json:"num_pgs"`
-	DataBytes             uint64         `json:"data_bytes"`
-	UsedBytes             uint64         `json:"bytes_used"`
-	AvailableBytes        uint64         `json:"bytes_avail"`
-	TotalBytes            uint64         `json:"bytes_total"`
-	ReadBps               uint64         `json:"read_bytes_sec"`
-	WriteBps              uint64         `json:"write_bytes_sec"`
-	ReadOps               uint64         `json:"read_op_per_sec"`
-	WriteOps              uint64         `json:"write_op_per_sec"`
-	RecoveryBps           uint64         `json:"recovering_bytes_per_sec"`
-	RecoveryObjectsPerSec uint64         `json:"recovering_objects_per_sec"`
-	RecoveryKeysPerSec    uint64         `json:"recovering_keys_per_sec"`
-	CacheFlushBps         uint64         `json:"flush_bytes_sec"`
-	CacheEvictBps         uint64         `json:"evict_bytes_sec"`
-	CachePromoteBps       uint64         `json:"promote_op_per_sec"`
-}
-
-type PgStateEntry struct {
-	StateName string `json:"state_name"`
-	Count     int    `json:"count"`
+	UsedBytes  uint64 `json:"bytes_used"`
+	TotalBytes uint64 `json:"bytes_total"`
 }
 
 func cephStatus(analyzer *troubleshootv1beta2.CephStatusAnalyze, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
