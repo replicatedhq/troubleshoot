@@ -126,7 +126,7 @@ func cephStatus(analyzer *troubleshootv1beta2.CephStatusAnalyze, getCollectedFil
 				return nil, errors.Wrap(err, "failed to compare ceph status")
 			} else if match {
 				analyzeResult.IsFail = true
-				analyzeResult.Message = detailedMessage(outcome.Fail.Message, status)
+				analyzeResult.Message = detailedCephMessage(outcome.Fail.Message, status)
 				analyzeResult.URI = outcome.Fail.URI
 				return analyzeResult, nil
 			}
@@ -139,7 +139,7 @@ func cephStatus(analyzer *troubleshootv1beta2.CephStatusAnalyze, getCollectedFil
 				return nil, errors.Wrap(err, "failed to compare ceph status")
 			} else if match {
 				analyzeResult.IsWarn = true
-				analyzeResult.Message = detailedMessage(outcome.Warn.Message, status)
+				analyzeResult.Message = detailedCephMessage(outcome.Warn.Message, status)
 				analyzeResult.URI = outcome.Warn.URI
 				return analyzeResult, nil
 			}
@@ -195,7 +195,7 @@ func compareCephStatus(actual, when string) (bool, error) {
 	}
 }
 
-func detailedMessage(msg string, status CephStatus) string {
+func detailedCephMessage(msg string, status CephStatus) string {
 	if status.OsdMap.OsdMap.NumOsd > 0 {
 		msg = fmt.Sprintf("%s. %v/%v OSDs up", msg, status.OsdMap.OsdMap.NumUpOsd, status.OsdMap.OsdMap.NumOsd)
 	}
