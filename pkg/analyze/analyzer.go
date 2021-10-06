@@ -44,7 +44,7 @@ func isExcluded(excludeVal multitype.BoolOrString) (bool, error) {
 func HostAnalyze(hostAnalyzer *troubleshootv1beta2.HostAnalyze, getFile getCollectedFileContents, findFiles getChildCollectedFileContents) []*AnalyzeResult {
 	analyzer, ok := GetHostAnalyzer(hostAnalyzer)
 	if !ok {
-		return NewAnalyzeResultError(analyzer, errors.New("invalid analyzer"))
+		return NewAnalyzeResultError(analyzer, errors.New("invalid host analyzer"))
 	}
 
 	isExcluded, _ := analyzer.IsExcluded()

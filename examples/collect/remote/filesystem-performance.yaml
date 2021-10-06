@@ -1,0 +1,19 @@
+apiVersion: troubleshoot.sh/v1beta2
+kind: RemoteCollector
+metadata:
+  name: fsperf
+spec:
+  collectors:
+    - filesystemPerformance:
+        collectorName: etcd-perf
+        timeout: 2m
+        directory: /var/lib/etcd
+        fileSize: 22Mi
+        operationSizeBytes: 2300
+        datasync: true
+        enableBackgroundIOPS: true
+        backgroundIOPSWarmupSeconds: 10
+        backgroundWriteIOPS: 300
+        backgroundWriteIOPSJobs: 6
+        backgroundReadIOPS: 50
+        backgroundReadIOPSJobs: 1

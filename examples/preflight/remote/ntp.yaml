@@ -1,0 +1,29 @@
+apiVersion: troubleshoot.sh/v1beta2
+kind: HostPreflight
+metadata:
+  name: ntp
+spec:
+  remoteCollectors:
+    - time: {}
+  analyzers:
+    - time:
+        outcomes:
+          - fail:
+              when: "ntp == unsynchronized+inactive"
+              message: System clock not synchronized
+          - warn:
+              when: "ntp == unsynchronized+active"
+              message: System clock not yet synchronized
+          - warn:
+              when: "ntp == synchronized+inactive"
+              message: NTP not active
+          - warn: 
+              when: "timezone != UTC"
+              message: "Non UTC timezone can interfere with system function"      
+          - pass:
+              when: "ntp == synchronized+active"
+              message: System clock is synchronized
+          - pass: 
+              when: "timezone == UTC"
+              message: "timezone set to UTC"
+        

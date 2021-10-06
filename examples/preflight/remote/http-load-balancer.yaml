@@ -1,0 +1,33 @@
+apiVersion: troubleshoot.sh/v1beta2
+kind: HostPreflight
+metadata:
+  name: httploadbalancer
+spec:
+  remoteCollectors:
+    - httpLoadBalancer:
+        collectorName: httploadbalancer
+        port: 80
+        address: http://app.corporate.internal
+        timeout: 10s
+  analyzers:
+    - httpLoadBalancer:
+        collectorName: httploadbalancer
+        outcomes:
+          - fail:
+              when: "connection-refused"
+              message: Connection to port 80 via load balancer was refused.
+          - fail:
+              when: "address-in-use"
+              message: Another process was already listening on port 80.
+          - fail:
+              when: "connection-timeout"
+              message: Timed out connecting to port 80 via load balancer. Check your firewall.
+          - fail:
+              when: "bind-permission-denied"
+              message: Bind permission denied. Try running as root.
+          - fail:
+              when: "error"
+              message: Failed to connect to port 80 via load balancer.
+          - pass:
+              when: "connected"
+              message: Successfully connected to port 80 via load balancer.

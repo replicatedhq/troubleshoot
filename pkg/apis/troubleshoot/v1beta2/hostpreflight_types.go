@@ -22,8 +22,9 @@ import (
 
 // HostPreflightSpec defines the desired state of HostPreflight
 type HostPreflightSpec struct {
-	Collectors []*HostCollect `json:"collectors,omitempty" yaml:"collectors,omitempty"`
-	Analyzers  []*HostAnalyze `json:"analyzers,omitempty" yaml:"analyzers,omitempty"`
+	Collectors       []*HostCollect   `json:"collectors,omitempty" yaml:"collectors,omitempty"`
+	RemoteCollectors []*RemoteCollect `json:"remoteCollectors,omitempty" yaml:"remoteCollectors,omitempty"`
+	Analyzers        []*HostAnalyze   `json:"analyzers,omitempty" yaml:"analyzers,omitempty"`
 }
 
 // HostPreflightStatus defines the observed state of HostPreflight

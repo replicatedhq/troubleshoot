@@ -1,0 +1,8 @@
+apiVersion: troubleshoot.sh/v1beta2
+kind: RemoteCollector
+metadata:
+  name: memory
+spec:
+  collectors:
+    - memory:
+        collectorName: memory

@@ -1,0 +1,38 @@
+apiVersion: troubleshoot.sh/v1beta2
+kind: HostCollector
+metadata:
+  name: example
+spec:
+  collectors:
+    - blockDevices: {}
+    - certificate:
+        certificatePath: /etc/ssl/corp.crt
+        keyPath: /etc/ssl/corp.key
+    - cpu: {}
+    - diskUsage:
+        collectorName: ephemeral
+        path: /var/lib/kubelet
+    - httpLoadBalancer:
+        collectorName: httploadbalancer
+        port: 80
+        address: http://app.corporate.internal
+        timeout: 10s
+    - http:
+        collectorName: registry
+        get:
+          url: https://registry.replicated.com
+    - ipv4Interfaces: {}
+    - memory: {}
+    - time: {}
+    - tcpConnect:
+        collectorName: weave host 1
+        address: 10.128.0.2:6783
+        timeout: 2s
+    - tcpLoadBalancer:
+        collectorName: LB1
+        address: 10.128.0.20:6443
+        port: 6443
+        timeout: 5000ms
+    - tcpPortStatus:
+        collectorName: k8s
+        port: 6443

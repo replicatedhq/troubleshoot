@@ -1,0 +1,10 @@
+apiVersion: troubleshoot.sh/v1beta2
+kind: RemoteCollector
+metadata:
+  name: loadbalancer
+spec:
+  collectors:
+    - tcpLoadBalancer:
+        collectorName: loadbalancer
+        port: 7443
+        address: 10.128.0.29:7444

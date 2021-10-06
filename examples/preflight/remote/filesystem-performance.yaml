@@ -1,0 +1,35 @@
+apiVersion: troubleshoot.sh/v1beta2
+kind: HostPreflight
+metadata:
+  name: fsperf
+spec:
+  remoteCollectors:
+    - filesystemPerformance:
+        collectorName: etcd-perf
+        timeout: 2m
+        directory: /var/lib/etcd
+        fileSize: 22Mi
+        operationSizeBytes: 2300
+        datasync: true
+        enableBackgroundIOPS: true
+        backgroundIOPSWarmupSeconds: 10
+        backgroundWriteIOPS: 300
+        backgroundWriteIOPSJobs: 6
+        backgroundReadIOPS: 50
+        backgroundReadIOPSJobs: 1
+  analyzers:
+    - filesystemPerformance:
+        collectorName: etcd-perf
+        outcomes:
+          - pass:
+              when: "p99 < 3ms"
+              message: "Write latency is great! (p99: {{ .P99 }})"
+          - pass:
+              when: "p99 < 5ms"
+              message: "Write latency is ok (p99: {{ .P99 }})"
+          - warn:
+              when: "p99 < 8ms"
+              message: "Write latency is high {{ .String }}"
+          - fail:
+              when: "p99 >= 8ms"
+              message: "Write latency is too high {{ .String }}"

@@ -58,6 +58,10 @@ preflight: generate fmt vet
 .PHONY: analyze
 analyze: generate fmt vet
 	go build ${BUILDFLAGS} ${LDFLAGS} -o bin/analyze github.com/replicatedhq/troubleshoot/cmd/analyze
+	
+.PHONY: collect
+collect: generate fmt vet
+	go build ${BUILDFLAGS} ${LDFLAGS} -o bin/collect github.com/replicatedhq/troubleshoot/cmd/collect	
 
 .PHONY: fmt
 fmt:

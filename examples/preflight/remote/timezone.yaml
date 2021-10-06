@@ -1,0 +1,16 @@
+apiVersion: troubleshoot.sh/v1beta2
+kind: HostPreflight
+metadata:
+  name: timezone
+spec:
+  remoteCollectors:
+    - time: {}
+  analyzers:
+    - time:
+        outcomes:
+          - pass:
+              when: "timezone == UTC"
+              message: Timezone is UTC
+          - fail:
+              when: "timezone != UTC"
+              message: Timezone is not UTC

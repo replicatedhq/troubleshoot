@@ -1,0 +1,11 @@
+apiVersion: troubleshoot.sh/v1beta2
+kind: RemoteCollector
+metadata:
+  name: httploadbalancer
+spec:
+  collectors:
+    - httpLoadBalancer:
+        collectorName: httploadbalancer
+        port: 80
+        address: http://app.corporate.internal
+        timeout: 10s
