@@ -2,7 +2,6 @@ package collect
 
 import (
 	"encoding/json"
-	"fmt"
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
@@ -33,7 +32,6 @@ func (c *CollectHostOS) Collect(progressChan chan<- interface{}) (map[string][]b
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get os info")
 	}
-	fmt.Println("++++ collector", infoStat)
 	hostInfo := HostOSInfo{}
 	hostInfo.Distribution = infoStat.Platform
 	hostInfo.KernelVersion = infoStat.KernelVersion
