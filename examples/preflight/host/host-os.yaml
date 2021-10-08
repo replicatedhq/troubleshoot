@@ -8,7 +8,7 @@ spec:
   analyzers:
     - hostOS:
         outcomes:
-          - pass:
+          - warn:
               when: "ubuntu == 16.04"
               message: supported distribution
           - pass:

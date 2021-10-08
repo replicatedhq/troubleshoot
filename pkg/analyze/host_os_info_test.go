@@ -114,42 +114,10 @@ func TestAnalyzeHostOS(t *testing.T) {
 		},
 
 		{
-			name: "test amzn supported distribution",
-			hostInfo: collect.HostOSInfo{
-				Name:           "amzn-host",
-				KernelVersion:  "5.4.0",
-				ReleaseVersion: "2.0",
-				Distribution:   "amzn",
-			},
-			hostAnalyzer: &troubleshootv1beta2.HostOSAnalyze{
-				Outcomes: []*troubleshootv1beta2.Outcome{
-					{
-						Pass: &troubleshootv1beta2.SingleOutcome{
-							When:    "amzn == 2.0",
-							Message: "supported distribution",
-						},
-					},
-					{
-						Fail: &troubleshootv1beta2.SingleOutcome{
-							Message: "unsupported distribution",
-						},
-					},
-				},
-			},
-			result: []*AnalyzeResult{
-				{
-					Title:   "Host OS Info",
-					IsPass:  true,
-					Message: "supported distribution",
-				},
-			},
-		},
-		{
-			expectErr: true,
-			name:      "test ubuntu 16 kernel < 4.15",
+			name: "test ubuntu 16 kernel < 4.15",
 			hostInfo: collect.HostOSInfo{
 				Name:           "my-host",
-				KernelVersion:  "2.4.0",
+				KernelVersion:  "4.5.1",
 				ReleaseVersion: "16.04",
 				Distribution:   "ubuntu",
 			},
@@ -157,7 +125,7 @@ func TestAnalyzeHostOS(t *testing.T) {
 				Outcomes: []*troubleshootv1beta2.Outcome{
 					{
 						Fail: &troubleshootv1beta2.SingleOutcome{
-							When:    "ubuntu-16.04-kernel < 4.15",
+							When:    "ubuntu-16.04-kernel >= 4.5.1",
 							Message: "supported distribution",
 						},
 					},

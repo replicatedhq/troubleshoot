@@ -148,7 +148,7 @@ type HostCollect struct {
 	FilesystemPerformance *FilesystemPerformance `json:"filesystemPerformance,omitempty" yaml:"filesystemPerformance,omitempty"`
 	Certificate           *Certificate           `json:"certificate,omitempty" yaml:"certificate,omitempty"`
 	HostServices          *HostServices          `json:"hostServices,omitempty" yaml:"hostServices,omitempty"`
-	HostOS                *HostOS                `json:"hostos,omitempty" yaml:"hostos,omitempty"`
+	HostOS                *HostOS                `json:"hostOS,omitempty" yaml:"hostOS,omitempty"`
 }
 
 func (c *HostCollect) GetName() string {

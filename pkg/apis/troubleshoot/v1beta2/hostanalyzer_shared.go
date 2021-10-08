@@ -117,5 +117,5 @@ type HostAnalyze struct {
 
 	HostServices *HostServicesAnalyze `json:"hostServices,omitempty" yaml:"hostServices,omitempty"`
 
-	HostOS *HostOSAnalyze `json:"hostos,omitempty" yaml:"hostos,omitempty"`
+	HostOS *HostOSAnalyze `json:"hostOS,omitempty" yaml:"hostOS,omitempty"`
 }

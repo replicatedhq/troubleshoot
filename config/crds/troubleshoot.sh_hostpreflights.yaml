@@ -257,7 +257,7 @@ spec:
                       required:
                       - outcomes
                       type: object
-                    hostServices:
+                    hostOS:
                       properties:
                         checkName:
                           type: string
@@ -298,7 +298,7 @@ spec:
                       required:
                       - outcomes
                       type: object
-                    hostos:
+                    hostServices:
                       properties:
                         checkName:
                           type: string
@@ -799,14 +799,14 @@ spec:
                       - backgroundWriteIOPSJobs
                       - enableBackgroundIOPS
                       type: object
-                    hostServices:
+                    hostOS:
                       properties:
                         collectorName:
                           type: string
                         exclude:
                           type: BoolString
                       type: object
-                    hostos:
+                    hostServices:
                       properties:
                         collectorName:
                           type: string
