@@ -9,10 +9,10 @@ import (
 )
 
 type HostOSInfo struct {
-	Name           string `json:"name"`
-	KernelVersion  string `json:"kernelVersion"`
-	ReleaseVersion string `json:"releaseVersion"`
-	Distribution   string `json:"distribution"`
+	Name            string `json:"name"`
+	KernelVersion   string `json:"kernelVersion"`
+	PlatformVersion string `json:"platformVersion"`
+	Platform        string `json:"platform"`
 }
 
 type CollectHostOS struct {
@@ -33,10 +33,10 @@ func (c *CollectHostOS) Collect(progressChan chan<- interface{}) (map[string][]b
 		return nil, errors.Wrap(err, "failed to get os info")
 	}
 	hostInfo := HostOSInfo{}
-	hostInfo.Distribution = infoStat.Platform
+	hostInfo.Platform = infoStat.Platform
 	hostInfo.KernelVersion = infoStat.KernelVersion
 	hostInfo.Name = infoStat.Hostname
-	hostInfo.ReleaseVersion = infoStat.PlatformVersion
+	hostInfo.PlatformVersion = infoStat.PlatformVersion
 	b, err := json.Marshal(hostInfo)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to marshal host os info")

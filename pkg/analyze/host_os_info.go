@@ -84,36 +84,37 @@ func analyzeOSVersionResult(osInfo collect.HostOSInfo, outcomes []*troubleshootv
 
 		parts := strings.Split(when, " ")
 		platform := parts[0]
-		fixedExpectedVer := fixVersion(parts[2])
-		toleratedExpectedVer, err := semver.ParseTolerant(fixedExpectedVer)
+		expectedVer := fixVersion(parts[2])
+		toleratedVer, err := semver.ParseTolerant(expectedVer)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to parse semver range %v", fixedExpectedVer)
+			return nil, errors.Wrapf(err, "failed to parse semver range %v", expectedVer)
 		}
 
-		when = fmt.Sprintf("%s %v", parts[1], toleratedExpectedVer)
+		when = fmt.Sprintf("%s %v", parts[1], toleratedVer)
 		whenRange, err := semver.ParseRange(when)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to parse semver range: %v", toleratedExpectedVer)
+			return nil, errors.Wrapf(err, "failed to parse semver range: %v", toleratedVer)
 		}
 
-		kernelInfo := fmt.Sprintf("%s-%s-kernel", osInfo.Distribution, osInfo.ReleaseVersion)
-		if platform == kernelInfo {
-			fixedKernelVer := fixVersion(osInfo.KernelVersion)
-			toleratedKernelVer, err := semver.ParseTolerant(fixedKernelVer)
-			if err != nil {
-				return nil, errors.Wrap(err, "failed to parse semver range")
-			}
+		kernelInfo := fmt.Sprintf("%s-%s-kernel", osInfo.Platform, osInfo.PlatformVersion)
+		if len(strings.Split(platform, "-")) == 3 && strings.Split(platform, "-")[2] == "kernel" {
+			if platform == kernelInfo {
+				fixedKernelVer := fixVersion(osInfo.KernelVersion)
+				toleratedKernelVer, err := semver.ParseTolerant(fixedKernelVer)
+				if err != nil {
+					return nil, errors.Wrapf(err, "failed to parse semver range: %v", fixedKernelVer)
+				}
 
-			result.Message = message
-			result.URI = uri
-			if whenRange(toleratedKernelVer) {
-				return []*AnalyzeResult{&result}, nil
-			} else {
-				return []*AnalyzeResult{&result}, fmt.Errorf("version not within range %v", toleratedKernelVer)
+				result.Message = message
+				result.URI = uri
+				if whenRange(toleratedKernelVer) {
+					return []*AnalyzeResult{&result}, nil
+				} else {
+					return []*AnalyzeResult{&result}, fmt.Errorf("kernel versions mismatch: desired: %v actual: %v", platform, kernelInfo)
+				}
 			}
-		}
-		if platform == osInfo.Distribution {
-			fixedDistVer := fixVersion(osInfo.ReleaseVersion)
+		} else if platform == osInfo.Platform {
+			fixedDistVer := fixVersion(osInfo.PlatformVersion)
 			toleratedDistVer, err := semver.ParseTolerant(fixedDistVer)
 			if err != nil {
 				return nil, errors.Wrap(err, "failed to parse semver range")
@@ -123,9 +124,10 @@ func analyzeOSVersionResult(osInfo collect.HostOSInfo, outcomes []*troubleshootv
 			if whenRange(toleratedDistVer) {
 				return []*AnalyzeResult{&result}, nil
 			} else {
-				return []*AnalyzeResult{&result}, fmt.Errorf("version out of range %v", toleratedDistVer)
+				return []*AnalyzeResult{&result}, fmt.Errorf("distribution version out of range desired: %v, actual: %v", when, toleratedDistVer)
 			}
 		}
+		return []*AnalyzeResult{&result}, fmt.Errorf("unknown distribution %v : %v", platform, when)
 	}
 
 	return []*AnalyzeResult{&result}, nil

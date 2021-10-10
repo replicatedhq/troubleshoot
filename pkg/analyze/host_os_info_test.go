@@ -21,10 +21,10 @@ func TestAnalyzeHostOS(t *testing.T) {
 		{
 			name: "platform == expected distribution",
 			hostInfo: collect.HostOSInfo{
-				Name:           "myhost",
-				KernelVersion:  "5.4.0-1034-gcp",
-				ReleaseVersion: "18.04",
-				Distribution:   "ubuntu",
+				Name:            "myhost",
+				KernelVersion:   "5.4.0-1034-gcp",
+				PlatformVersion: "18.04",
+				Platform:        "ubuntu",
 			},
 			hostAnalyzer: &troubleshootv1beta2.HostOSAnalyze{
 				Outcomes: []*troubleshootv1beta2.Outcome{
@@ -52,10 +52,10 @@ func TestAnalyzeHostOS(t *testing.T) {
 		{
 			name: "platform == expected distribution",
 			hostInfo: collect.HostOSInfo{
-				Name:           "myhost",
-				KernelVersion:  "5.4.0-1034-gcp",
-				ReleaseVersion: "20.04",
-				Distribution:   "ubuntu",
+				Name:            "myhost",
+				KernelVersion:   "5.4.0-1034-gcp",
+				PlatformVersion: "20.04",
+				Platform:        "ubuntu",
 			},
 			hostAnalyzer: &troubleshootv1beta2.HostOSAnalyze{
 				Outcomes: []*troubleshootv1beta2.Outcome{
@@ -84,10 +84,10 @@ func TestAnalyzeHostOS(t *testing.T) {
 			expectErr: true,
 			name:      "platform == unsupported but distribution",
 			hostInfo: collect.HostOSInfo{
-				Name:           "myhost",
-				KernelVersion:  "5.4.0-1034-gcp",
-				ReleaseVersion: "18.04",
-				Distribution:   "ubuntu",
+				Name:            "myhost",
+				KernelVersion:   "5.4.0-1034-gcp",
+				PlatformVersion: "18.04",
+				Platform:        "ubuntu",
 			},
 			hostAnalyzer: &troubleshootv1beta2.HostOSAnalyze{
 				Outcomes: []*troubleshootv1beta2.Outcome{
@@ -116,10 +116,10 @@ func TestAnalyzeHostOS(t *testing.T) {
 		{
 			name: "test ubuntu 16 kernel < 4.15",
 			hostInfo: collect.HostOSInfo{
-				Name:           "my-host",
-				KernelVersion:  "4.5.1",
-				ReleaseVersion: "16.04",
-				Distribution:   "ubuntu",
+				Name:            "my-host",
+				KernelVersion:   "4.5.1",
+				PlatformVersion: "16.04",
+				Platform:        "ubuntu",
 			},
 			hostAnalyzer: &troubleshootv1beta2.HostOSAnalyze{
 				Outcomes: []*troubleshootv1beta2.Outcome{
