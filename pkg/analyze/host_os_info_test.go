@@ -81,7 +81,6 @@ func TestAnalyzeHostOS(t *testing.T) {
 			},
 		},
 		{
-			expectErr: true,
 			name:      "platform == unsupported but distribution",
 			hostInfo: collect.HostOSInfo{
 				Name:            "myhost",
