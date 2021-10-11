@@ -81,7 +81,7 @@ func TestAnalyzeHostOS(t *testing.T) {
 			},
 		},
 		{
-			name:      "platform == unsupported but distribution",
+			name: "platform == unsupported but distribution",
 			hostInfo: collect.HostOSInfo{
 				Name:            "myhost",
 				KernelVersion:   "5.4.0-1034-gcp",
@@ -124,7 +124,7 @@ func TestAnalyzeHostOS(t *testing.T) {
 				Outcomes: []*troubleshootv1beta2.Outcome{
 					{
 						Fail: &troubleshootv1beta2.SingleOutcome{
-							When:    "ubuntu-16.04-kernel >= 4.5.1",
+							When:    "ubuntu-16.04-kernel < 4.15",
 							Message: "supported distribution",
 						},
 					},
