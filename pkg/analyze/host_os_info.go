@@ -47,11 +47,12 @@ func analyzeOSVersionResult(osInfo collect.HostOSInfo, outcomes []*troubleshootv
 	if title == "" {
 		title = "Host OS Info"
 	}
-	result := AnalyzeResult{
-		Title: title,
-	}
 
 	for _, outcome := range outcomes {
+
+		result := AnalyzeResult{
+			Title: title,
+		}
 		when := ""
 		message := ""
 		uri := ""
@@ -120,15 +121,18 @@ func analyzeOSVersionResult(osInfo collect.HostOSInfo, outcomes []*troubleshootv
 		}
 	}
 
-	return []*AnalyzeResult{&result}, nil
+	return []*AnalyzeResult{nil}, nil
 }
 
 var rx = regexp.MustCompile(`^[0-9]+\.?[0-9]*\.?[0-9]*`)
 
 func fixVersion(versionStr string) string {
+
 	splitStr := strings.Split(versionStr, ".")
 	for i := 0; i < len(splitStr); i++ {
-		splitStr[i] = strings.TrimPrefix(splitStr[i], "0")
+		if splitStr[i] != "0" {
+			splitStr[i] = strings.TrimPrefix(splitStr[i], "0")
+		}
 	}
 	fixTrailZero := strings.Join(splitStr, ".")
 	version := rx.FindString(fixTrailZero)
