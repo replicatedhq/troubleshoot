@@ -257,6 +257,47 @@ spec:
                       required:
                       - outcomes
                       type: object
+                    hostOS:
+                      properties:
+                        checkName:
+                          type: string
+                        exclude:
+                          type: BoolString
+                        outcomes:
+                          items:
+                            properties:
+                              fail:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
+                              pass:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
+                              warn:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
+                            type: object
+                          type: array
+                      required:
+                      - outcomes
+                      type: object
                     hostServices:
                       properties:
                         checkName:
@@ -757,6 +798,13 @@ spec:
                       - backgroundWriteIOPS
                       - backgroundWriteIOPSJobs
                       - enableBackgroundIOPS
+                      type: object
+                    hostOS:
+                      properties:
+                        collectorName:
+                          type: string
+                        exclude:
+                          type: BoolString
                       type: object
                     hostServices:
                       properties:

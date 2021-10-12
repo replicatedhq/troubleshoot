@@ -1,0 +1,135 @@
+apiVersion: troubleshoot.sh/v1beta2
+kind: HostPreflight
+metadata:
+  name: hostos
+spec:
+  collectors:
+    - hostOS : {}
+  analyzers:
+    - hostOS:
+        outcomes:
+          - fail:
+              when: "ubuntu-16.04-kernel < 4.15"
+              message: unsupported distribution
+          - pass:
+              when: "ubuntu-18.04-kernel >= 4.15"
+              message: supported distribution
+          - warn:
+              when: "ubuntu == 16.04"
+              message: supported distribution
+          - pass:
+              when: "ubuntu == 18.04"
+              message: supported distribution
+          - pass:
+              when: "ubuntu == 20.04"
+              message: supported distribution
+          - warn:
+              when: "centos == 7.4"
+              message: supported distribution
+          - warn:
+              when: "centos == 7.5"
+              message: supported distribution
+          - warn:
+              when: "centos == 7.6"
+              message: supported distribution
+          - warn:
+              when: "centos == 7.7"
+              message: supported distribution
+          - warn:
+              when: "centos == 7.8"
+              message: supported distribution
+          - pass:
+              when: "centos == 7.9"
+              message: supported distribution
+          - warn:
+              when: "centos == 8.0"
+              message: supported distribution
+          - pass:
+              when: "centos == 8.1"
+              message: supported distribution
+          - pass:
+              when: "centos == 8.2"
+              message: supported distribution
+          - pass:
+              when: "centos == 8.3"
+              message: supported distribution
+          - pass:
+              when: "centos == 8.4"
+              message: supported distribution
+          - fail:
+              when: "centos > 8.4"
+              message: unsupported distribution
+          - warn:
+              when: "rhel == 7.4"
+              message: supported distribution
+          - warn:
+              when: "rhel == 7.5"
+              message: supported distribution
+          - warn:
+              when: "rhel == 7.6"
+              message: supported distribution
+          - warn:
+              when: "rhel == 7.7"
+              message: supported distribution
+          - warn:
+              when: "rhel == 7.8"
+              message: supported distribution
+          - pass:
+              when: "rhel == 7.9"
+              message: supported distribution
+          - warn:
+              when: "rhel == 8.0"
+              message: supported distribution
+          - pass:
+              when: "rhel == 8.1"
+              message: supported distribution
+          - pass:
+              when: "rhel == 8.2"
+              message: supported distribution
+          - pass:
+              when: "rhel == 8.3"
+              message: supported distribution
+          - pass:
+              when: "rhel == 8.4"
+              message: supported distribution
+          - fail:
+              when: "rhel > 8.4"
+              message: unsupported distribution
+          - warn:
+              when: "ol == 7.4"
+              message: supported distribution
+          - warn:
+              when: "ol == 7.5"
+              message: supported distribution
+          - warn:
+              when: "ol == 7.6"
+              message: supported distribution
+          - warn:
+              when: "ol == 7.7"
+              message: supported distribution
+          - warn:
+              when: "ol == 7.8"
+              message: supported distribution
+          - pass:
+              when: "ol == 7.9"
+              message: supported distribution
+          - warn:
+              when: "ol == 8.0"
+              message: supported distribution
+          - pass:
+              when: "ol == 8.1"
+              message: supported distribution
+          - pass:
+              when: "ol == 8.2"
+              message: supported distribution
+          - pass:
+              when: "ol == 8.3"
+              message: supported distribution
+          - pass:
+              when: "ol == 8.4"
+              message: supported distribution
+          - fail:
+              when: "ol > 8.4"
+              message: unsupported distribution
+          - fail:
+              message: unsupported distribution
