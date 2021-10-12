@@ -249,78 +249,76 @@ func TestAnalyzeHostOS(t *testing.T) {
 				},
 			},
 		},
-		/*
-			{
-				name: "test if centos kernel > 4.15",
-				hostInfo: collect.HostOSInfo{
-					Name:            "my-host",
-					KernelVersion:   "4.15",
-					PlatformVersion: "18.04",
-					Platform:        "centos",
-				},
-				hostAnalyzer: &troubleshootv1beta2.HostOSAnalyze{
-					Outcomes: []*troubleshootv1beta2.Outcome{
-						{
-							Pass: &troubleshootv1beta2.SingleOutcome{
-								When:    "centos-18.04-kernel >= 4.15",
-								Message: "supported distribution matches centos-18.04-kernel >= 4.15",
-							},
-						},
-						{
-							Pass: &troubleshootv1beta2.SingleOutcome{
-								When:    "ubuntu-18.04-kernel > 4.15",
-								Message: "supported distribution matches ubuntu-18.04-kernel >= 4.15",
-							},
-						},
-						{
-							Warn: &troubleshootv1beta2.SingleOutcome{
-								When:    "ubuntu-16.04-kernel == 4.15",
-								Message: "supported distribution matches ubuntu-16.04-kernel == 4.15 ",
-							},
-						},
-						{
-							Fail: &troubleshootv1beta2.SingleOutcome{
-								Message: "None matched, centos-18.04-kernel >= 4.15,ubuntu-18.04-kernel >= 4.15, supported distribution",
-							},
+		{
+			name: "test if centos kernel > 4.15",
+			hostInfo: collect.HostOSInfo{
+				Name:            "my-host",
+				KernelVersion:   "4.15",
+				PlatformVersion: "18.04",
+				Platform:        "centos",
+			},
+			hostAnalyzer: &troubleshootv1beta2.HostOSAnalyze{
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							When:    "centos-18.04-kernel >= 4.15",
+							Message: "supported distribution matches centos-18.04-kernel >= 4.15",
 						},
 					},
-				},
-				result: []*AnalyzeResult{
 					{
-						Title:   "Host OS Info",
-						IsPass:  true,
-						Message: "supported distribution matches centos-18.04-kernel >= 4.15",
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							When:    "ubuntu-18.04-kernel > 4.15",
+							Message: "supported distribution matches ubuntu-18.04-kernel >= 4.15",
+						},
+					},
+					{
+						Warn: &troubleshootv1beta2.SingleOutcome{
+							When:    "ubuntu-16.04-kernel == 4.15",
+							Message: "supported distribution matches ubuntu-16.04-kernel == 4.15 ",
+						},
+					},
+					{
+						Fail: &troubleshootv1beta2.SingleOutcome{
+							Message: "None matched, centos-18.04-kernel >= 4.15,ubuntu-18.04-kernel >= 4.15, supported distribution",
+						},
 					},
 				},
 			},
-			{
-				name: "test ubuntu 16 kernel >= 4.15-abc",
-				hostInfo: collect.HostOSInfo{
-					Name:            "my-host",
-					KernelVersion:   "4.14-abc",
-					PlatformVersion: "16.04",
-					Platform:        "ubuntu",
+			result: []*AnalyzeResult{
+				{
+					Title:   "Host OS Info",
+					IsPass:  true,
+					Message: "supported distribution matches centos-18.04-kernel >= 4.15",
 				},
-				hostAnalyzer: &troubleshootv1beta2.HostOSAnalyze{
-					Outcomes: []*troubleshootv1beta2.Outcome{
-						{
-							Pass: &troubleshootv1beta2.SingleOutcome{
-								When:    "ubuntu-16.04-kernel >= 4.14",
-								Message: "supported distribution match 4.14",
-							},
+			},
+		},
+		{
+			name: "test ubuntu 16 kernel >= 4.15-abc",
+			hostInfo: collect.HostOSInfo{
+				Name:            "my-host",
+				KernelVersion:   "4.14-abc",
+				PlatformVersion: "16.04",
+				Platform:        "ubuntu",
+			},
+			hostAnalyzer: &troubleshootv1beta2.HostOSAnalyze{
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							When:    "ubuntu-16.04-kernel >= 4.14",
+							Message: "supported distribution match 4.14",
 						},
 					},
 				},
+			},
 
-				result: []*AnalyzeResult{
-					{
-						Title:   "Host OS Info",
-						IsPass:  true,
-						Message: "supported distribution match 4.14",
-					},
+			result: []*AnalyzeResult{
+				{
+					Title:   "Host OS Info",
+					IsPass:  true,
+					Message: "supported distribution match 4.14",
 				},
 			},
-		*/
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {

@@ -121,7 +121,7 @@ func analyzeOSVersionResult(osInfo collect.HostOSInfo, outcomes []*troubleshootv
 		}
 	}
 
-	return []*AnalyzeResult{nil}, nil
+	return []*AnalyzeResult{}, nil
 }
 
 var rx = regexp.MustCompile(`^[0-9]+\.?[0-9]*\.?[0-9]*`)
