@@ -8,6 +8,12 @@ spec:
   analyzers:
     - hostOS:
         outcomes:
+          - fail:
+              when: "ubuntu-16.04-kernel < 4.15"
+              message: unsupported distribution
+          - pass:
+              when: "ubuntu-18.04-kernel >= 4.15"
+              message: supported distribution
           - warn:
               when: "ubuntu == 16.04"
               message: supported distribution
@@ -125,11 +131,5 @@ spec:
           - fail:
               when: "ol > 8.4"
               message: unsupported distribution
-          - fail:
-              when: "ubuntu-16.04-kernel < 4.15"
-              message: unsupported distribution
-          - pass:
-              when: "ubuntu-18.04-kernel >= 4.15"
-              message: supported distribution
           - fail:
               message: unsupported distribution

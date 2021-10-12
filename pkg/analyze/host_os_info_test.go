@@ -23,6 +23,38 @@ func TestAnalyzeHostOS(t *testing.T) {
 			hostInfo: collect.HostOSInfo{
 				Name:            "myhost",
 				KernelVersion:   "5.4.0-1034-gcp",
+				PlatformVersion: "1.1.01",
+				Platform:        "ubuntu",
+			},
+			hostAnalyzer: &troubleshootv1beta2.HostOSAnalyze{
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							When:    "ubuntu == 1.1.01",
+							Message: "supported distribution",
+						},
+					},
+					{
+						Fail: &troubleshootv1beta2.SingleOutcome{
+							Message: "unsupported distribution",
+						},
+					},
+				},
+			},
+			result: []*AnalyzeResult{
+				{
+					Title:   "Host OS Info",
+					IsPass:  true,
+					Message: "supported distribution",
+				},
+			},
+		},
+
+		{
+			name: "platform == expected distribution",
+			hostInfo: collect.HostOSInfo{
+				Name:            "myhost",
+				KernelVersion:   "5.4.0-1034-gcp",
 				PlatformVersion: "18.04",
 				Platform:        "ubuntu",
 			},
@@ -138,8 +170,7 @@ func TestAnalyzeHostOS(t *testing.T) {
 			},
 		},
 		{
-			expectErr: true,
-			name:      "test ubuntu 16 kernel < 4.15",
+			name: "test ubuntu 16 kernel < 4",
 			hostInfo: collect.HostOSInfo{
 				Name:            "my-host",
 				KernelVersion:   "4",
@@ -162,6 +193,60 @@ func TestAnalyzeHostOS(t *testing.T) {
 					Title:   "Host OS Info",
 					IsFail:  true,
 					Message: "unsupported distribution",
+				},
+			},
+		},
+		{
+			name: "test ubuntu 16 kernel < 4.15",
+			hostInfo: collect.HostOSInfo{
+				Name:            "my-host",
+				KernelVersion:   "4.14",
+				PlatformVersion: "16.04",
+				Platform:        "ubuntu",
+			},
+			hostAnalyzer: &troubleshootv1beta2.HostOSAnalyze{
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Fail: &troubleshootv1beta2.SingleOutcome{
+							When:    "ubuntu-16.04-kernel < 4.14",
+							Message: "unsupported distribution",
+						},
+					},
+				},
+			},
+
+			result: []*AnalyzeResult{
+				{
+					Title:   "Host OS Info",
+					IsFail:  true,
+					Message: "unsupported distribution",
+				},
+			},
+		},
+		{
+			name: "test ubuntu 16 kernel >= 4.15-abc",
+			hostInfo: collect.HostOSInfo{
+				Name:            "my-host",
+				KernelVersion:   "4.14-abc",
+				PlatformVersion: "16.04",
+				Platform:        "ubuntu",
+			},
+			hostAnalyzer: &troubleshootv1beta2.HostOSAnalyze{
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							When:    "ubuntu-16.04-kernel >= 4.14",
+							Message: "supported distribution",
+						},
+					},
+				},
+			},
+
+			result: []*AnalyzeResult{
+				{
+					Title:   "Host OS Info",
+					IsPass:  true,
+					Message: "supported distribution",
 				},
 			},
 		},

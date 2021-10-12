@@ -3,6 +3,7 @@ package analyzer
 import (
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/blang/semver"
@@ -83,7 +84,7 @@ func analyzeOSVersionResult(osInfo collect.HostOSInfo, outcomes []*troubleshootv
 
 		parts := strings.Split(when, " ")
 		platform := parts[0]
-		expectedVer := fixDistVersion(parts[2])
+		expectedVer := fixVersion(parts[2])
 		toleratedVer, err := semver.ParseTolerant(expectedVer)
 		if err != nil {
 			return []*AnalyzeResult{&result}, errors.Wrapf(err, "failed to parse tolerant: %s", expectedVer)
@@ -98,7 +99,7 @@ func analyzeOSVersionResult(osInfo collect.HostOSInfo, outcomes []*troubleshootv
 		kernelInfo := fmt.Sprintf("%s-%s-kernel", osInfo.Platform, osInfo.PlatformVersion)
 		if len(strings.Split(platform, "-")) == 3 && strings.Split(platform, "-")[2] == "kernel" {
 			if platform == kernelInfo {
-				fixedKernelVer := fixKernelVersion(osInfo.KernelVersion)
+				fixedKernelVer := fixVersion(osInfo.KernelVersion)
 				toleratedKernelVer, err := semver.ParseTolerant(fixedKernelVer)
 				if err != nil {
 					return []*AnalyzeResult{&result}, errors.Wrapf(err, "failed to parse tolerant: %v", fixedKernelVer)
@@ -108,7 +109,7 @@ func analyzeOSVersionResult(osInfo collect.HostOSInfo, outcomes []*troubleshootv
 				}
 			}
 		} else if platform == osInfo.Platform {
-			fixedDistVer := fixDistVersion(osInfo.PlatformVersion)
+			fixedDistVer := fixVersion(osInfo.PlatformVersion)
 			toleratedDistVer, err := semver.ParseTolerant(fixedDistVer)
 			if err != nil {
 				return []*AnalyzeResult{&result}, errors.Wrapf(err, "failed to parse tolerant: %v", fixedDistVer)
@@ -122,25 +123,15 @@ func analyzeOSVersionResult(osInfo collect.HostOSInfo, outcomes []*troubleshootv
 	return []*AnalyzeResult{&result}, nil
 }
 
-func fixDistVersion(versionStr string) string {
+var rx = regexp.MustCompile(`^[0-9]+\.?[0-9]*\.?[0-9]*`)
+
+func fixVersion(versionStr string) string {
 	splitStr := strings.Split(versionStr, ".")
 	for i := 0; i < len(splitStr); i++ {
 		splitStr[i] = strings.TrimPrefix(splitStr[i], "0")
 	}
-
-	return strings.Join(splitStr, ".")
-}
-
-func fixKernelVersion(versionStr string) string {
-	splitStr := strings.Split(versionStr, ".")
-	for i := 0; i < len(splitStr); i++ {
-		splitStr[i] = strings.TrimPrefix(splitStr[i], "0")
-	}
-	// kernel version can be suffixed, for ex., 5.4.0-1034-gcp, parse only the major and minor
-	if len(splitStr) >= 2 {
-		splitStr = splitStr[:2]
-		return strings.Join(splitStr, ".")
-	}
-
-	return ""
+	fixTrailZero := strings.Join(splitStr, ".")
+	version := rx.FindString(fixTrailZero)
+	version = strings.TrimRight(version, ".")
+	return version
 }
