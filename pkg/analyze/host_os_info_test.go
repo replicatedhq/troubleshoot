@@ -111,20 +111,19 @@ func TestAnalyzeHostOS(t *testing.T) {
 				},
 			},
 		},
-
 		{
-			name: "test ubuntu 16 kernel < 4.15",
+			name: "test ubuntu 18 kernel >= 4.15",
 			hostInfo: collect.HostOSInfo{
 				Name:            "my-host",
-				KernelVersion:   "4.15",
-				PlatformVersion: "16.04",
+				KernelVersion:   "5.4",
+				PlatformVersion: "18.04",
 				Platform:        "ubuntu",
 			},
 			hostAnalyzer: &troubleshootv1beta2.HostOSAnalyze{
 				Outcomes: []*troubleshootv1beta2.Outcome{
 					{
-						Fail: &troubleshootv1beta2.SingleOutcome{
-							When:    "ubuntu-16.04-kernel >= 4.15",
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							When:    "ubuntu-18.04-kernel >= 4.15",
 							Message: "supported distribution",
 						},
 					},
@@ -133,7 +132,7 @@ func TestAnalyzeHostOS(t *testing.T) {
 			result: []*AnalyzeResult{
 				{
 					Title:   "Host OS Info",
-					IsFail:  true,
+					IsPass:  true,
 					Message: "supported distribution",
 				},
 			},

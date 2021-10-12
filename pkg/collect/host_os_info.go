@@ -2,7 +2,6 @@ package collect
 
 import (
 	"encoding/json"
-	"fmt"
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
@@ -39,9 +38,7 @@ func (c *CollectHostOS) Collect(progressChan chan<- interface{}) (map[string][]b
 	hostInfo.Name = infoStat.Hostname
 	hostInfo.PlatformVersion = infoStat.PlatformVersion
 
-	fmt.Println("----------- Platform Version", infoStat.PlatformVersion)
-	fmt.Println("----------- Platform infoStat", infoStat)
-	b, err := json.Marshal(hostInfo)
+	b, err := json.MarshalIndent(hostInfo, "", " ")
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to marshal host os info")
 	}

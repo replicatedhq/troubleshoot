@@ -136,6 +136,7 @@ func fixKernelVersion(versionStr string) string {
 	for i := 0; i < len(splitStr); i++ {
 		splitStr[i] = strings.TrimPrefix(splitStr[i], "0")
 	}
+	// kernel version can be suffixed, for ex., 5.4.0-1034-gcp, parse only the major and minor
 	if len(splitStr) >= 2 {
 		splitStr = splitStr[:2]
 		return strings.Join(splitStr, ".")
