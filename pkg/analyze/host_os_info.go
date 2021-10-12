@@ -74,51 +74,45 @@ func analyzeOSVersionResult(osInfo collect.HostOSInfo, outcomes []*troubleshootv
 			return nil, errors.New("empty outcome")
 		}
 
+		result.Message = message
+		result.URI = uri
 		// When is usually empty as the final case and should be treated as true
 		if when == "" {
-			result.Message = message
-			result.URI = uri
-
 			return []*AnalyzeResult{&result}, nil
 		}
 
 		parts := strings.Split(when, " ")
 		platform := parts[0]
-		expectedVer := fixVersion(parts[2])
+		expectedVer := fixDistVersion(parts[2])
 		toleratedVer, err := semver.ParseTolerant(expectedVer)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to parse semver range %v", expectedVer)
+			return []*AnalyzeResult{&result}, errors.Wrapf(err, "failed to parse tolerant: %s", expectedVer)
 		}
 
 		when = fmt.Sprintf("%s %v", parts[1], toleratedVer)
 		whenRange, err := semver.ParseRange(when)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to parse semver range: %s", when)
+			return []*AnalyzeResult{&result}, errors.Wrapf(err, "failed to parse range: %s", when)
 		}
 
 		kernelInfo := fmt.Sprintf("%s-%s-kernel", osInfo.Platform, osInfo.PlatformVersion)
 		if len(strings.Split(platform, "-")) == 3 && strings.Split(platform, "-")[2] == "kernel" {
 			if platform == kernelInfo {
-				fixedKernelVer := fixVersion(osInfo.KernelVersion)
+				fixedKernelVer := fixKernelVersion(osInfo.KernelVersion)
 				toleratedKernelVer, err := semver.ParseTolerant(fixedKernelVer)
 				if err != nil {
-					return nil, errors.Wrapf(err, "failed to parse tolerant: %v", fixedKernelVer)
+					return []*AnalyzeResult{&result}, errors.Wrapf(err, "failed to parse tolerant: %v", fixedKernelVer)
 				}
-
-				result.Message = message
-				result.URI = uri
 				if whenRange(toleratedKernelVer) {
 					return []*AnalyzeResult{&result}, nil
 				}
 			}
 		} else if platform == osInfo.Platform {
-			fixedDistVer := fixVersion(osInfo.PlatformVersion)
+			fixedDistVer := fixDistVersion(osInfo.PlatformVersion)
 			toleratedDistVer, err := semver.ParseTolerant(fixedDistVer)
 			if err != nil {
-				return nil, errors.Wrap(err, "failed to parse semver range")
+				return []*AnalyzeResult{&result}, errors.Wrapf(err, "failed to parse tolerant: %v", fixedDistVer)
 			}
-			result.Message = message
-			result.URI = uri
 			if whenRange(toleratedDistVer) {
 				return []*AnalyzeResult{&result}, nil
 			}
@@ -128,11 +122,24 @@ func analyzeOSVersionResult(osInfo collect.HostOSInfo, outcomes []*troubleshootv
 	return []*AnalyzeResult{&result}, nil
 }
 
-func fixVersion(versionStr string) string {
+func fixDistVersion(versionStr string) string {
 	splitStr := strings.Split(versionStr, ".")
 	for i := 0; i < len(splitStr); i++ {
 		splitStr[i] = strings.TrimPrefix(splitStr[i], "0")
 	}
 
 	return strings.Join(splitStr, ".")
+}
+
+func fixKernelVersion(versionStr string) string {
+	splitStr := strings.Split(versionStr, ".")
+	for i := 0; i < len(splitStr); i++ {
+		splitStr[i] = strings.TrimPrefix(splitStr[i], "0")
+	}
+	if len(splitStr) >= 2 {
+		splitStr = splitStr[:2]
+		return strings.Join(splitStr, ".")
+	}
+
+	return ""
 }
