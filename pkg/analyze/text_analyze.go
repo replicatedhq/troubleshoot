@@ -99,14 +99,14 @@ func analyzeRegexPattern(pattern string, collected []byte, outcomes []*troublesh
 
 	reMatch := re.MatchString(string(collected))
 	failWhen := false
-	if failOutcome.When != "" {
+	if failOutcome != nil && failOutcome.When != "" {
 		failWhen, err = strconv.ParseBool(failOutcome.When)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to process when statement: %s", failOutcome.When)
 		}
 	}
 	passWhen := true
-	if passOutcome.When != "" {
+	if passOutcome != nil && passOutcome.When != "" {
 		passWhen, err = strconv.ParseBool(passOutcome.When)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to process when statement: %s", passOutcome.When)
