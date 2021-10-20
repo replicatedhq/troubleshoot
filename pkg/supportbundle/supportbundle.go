@@ -26,6 +26,7 @@ type SupportBundleCreateOpts struct {
 	Namespace                 string
 	ProgressChan              chan interface{}
 	SinceTime                 *time.Time
+	Redact                    bool
 	FromCLI                   bool
 }
 
