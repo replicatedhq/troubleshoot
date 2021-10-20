@@ -13,6 +13,7 @@ import (
 	authorizationv1 "k8s.io/api/authorization/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	apiextensionsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	apiextensionsv1clientset "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1"
 	apiextensionsv1beta1clientset "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1beta1"
@@ -124,14 +125,11 @@ func ClusterResources(c *Collector, clusterResourcesCollector *troubleshootv1bet
 	output.SaveResult(c.BundlePath, "cluster-resources/custom-resource-definitions-errors.json", marshalErrors(crdErrors))
 
 	// crs
-	customResources, crErrors := crs(ctx, dynamicClient, crdClient, namespaceNames)
+	customResources, crErrors := crs(ctx, dynamicClient, client, c.ClientConfig, namespaceNames)
 	for k, v := range customResources {
-		output.SaveResult(c.BundlePath, fmt.Sprintf("custom-resources/%v", k), bytes.NewBuffer(v))
+		output.SaveResult(c.BundlePath, fmt.Sprintf("cluster-resources/custom-resources/%v", k), bytes.NewBuffer(v))
 	}
-	output.SaveResult(c.BundlePath, "custom-resources/custom-resources-errors.json", marshalErrors(crErrors))
-	if err != nil {
-		return nil, err
-	}
+	output.SaveResult(c.BundlePath, "cluster-resources/custom-resources/custom-resources-errors.json", marshalErrors(crErrors))
 
 	// imagepullsecrets
 	imagePullSecrets, pullSecretsErrors := imagePullSecrets(ctx, client, namespaceNames)
@@ -522,9 +520,126 @@ func crdsV1beta(ctx context.Context, config *rest.Config) ([]byte, []string) {
 	return b, nil
 }
 
-func crs(ctx context.Context, client dynamic.Interface, crdClient *apiextensionsv1beta1clientset.ApiextensionsV1beta1Client, namespaces []string) (map[string][]byte, map[string]string) {
+func crs(ctx context.Context, dyn dynamic.Interface, client *kubernetes.Clientset, config *rest.Config, namespaces []string) (map[string][]byte, map[string]string) {
+	ok, err := discovery.HasResource(client, "apiextensions.k8s.io/v1", "CustomResourceDefinition")
+	if err != nil {
+		return nil, map[string]string{"discover apiextensions.k8s.io/v1": err.Error()}
+	}
+	if ok {
+		return crsV1(ctx, dyn, config, namespaces)
+	}
+
+	return crsV1beta(ctx, dyn, config, namespaces)
+}
+
+func crsV1(ctx context.Context, client dynamic.Interface, config *rest.Config, namespaces []string) (map[string][]byte, map[string]string) {
 	customResources := make(map[string][]byte)
 	errorList := make(map[string]string)
+
+	crdClient, err := apiextensionsv1clientset.NewForConfig(config)
+	if err != nil {
+		errorList["crdClient"] = err.Error()
+		return customResources, errorList
+	}
+
+	crds, err := crdClient.CustomResourceDefinitions().List(ctx, metav1.ListOptions{})
+	if err != nil {
+		errorList["crdList"] = err.Error()
+		return customResources, errorList
+	}
+
+	metaAccessor := meta.NewAccessor()
+
+	// Loop through CRDs to fetch the CRs
+	for _, crd := range crds.Items {
+		// A resource that contains '/' is a subresource type and it has no
+		// object instances
+		if strings.ContainsAny(crd.Name, "/") {
+			continue
+		}
+
+		var version string
+		if len(crd.Spec.Versions) > 0 {
+			version = crd.Spec.Versions[0].Name
+		}
+		gvr := schema.GroupVersionResource{
+			Group:    crd.Spec.Group,
+			Version:  version,
+			Resource: crd.Spec.Names.Plural,
+		}
+		isNamespacedResource := crd.Spec.Scope == apiextensionsv1.NamespaceScoped
+
+		// Fetch all resources of given type
+		customResourceList, err := client.Resource(gvr).List(ctx, metav1.ListOptions{})
+		if err != nil {
+			errorList[crd.Name] = err.Error()
+			continue
+		}
+
+		if len(customResourceList.Items) == 0 {
+			continue
+		}
+
+		if !isNamespacedResource {
+			b, err := json.MarshalIndent(customResourceList.Items, "", "  ")
+			if err != nil {
+				errorList[crd.Name] = err.Error()
+				continue
+			}
+			customResources[fmt.Sprintf("%s.json", crd.Name)] = b
+		} else {
+			// Group fetched resources by the namespace
+			perNamespace := map[string][]runtime.Object{}
+			errors := []string{}
+
+			customResourceList.EachListItem(func(obj runtime.Object) error {
+				ns, err := metaAccessor.Namespace(obj)
+				if err != nil {
+					errors = append(errors, err.Error())
+					return nil
+				}
+
+				if perNamespace[ns] == nil {
+					perNamespace[ns] = []runtime.Object{}
+				}
+				perNamespace[ns] = append(perNamespace[ns], obj)
+				return nil
+			})
+
+			if len(errors) > 0 {
+				errorList[crd.Name] = strings.Join(errors, "\n")
+			}
+
+			// Only include resources from requested namespaces
+			for _, ns := range namespaces {
+				if len(perNamespace[ns]) == 0 {
+					continue
+				}
+
+				namespacedName := fmt.Sprintf("%s/%s", crd.Name, ns)
+				b, err := json.MarshalIndent(perNamespace[ns], "", "  ")
+				if err != nil {
+					errorList[namespacedName] = err.Error()
+					continue
+				}
+
+				customResources[fmt.Sprintf("%s.json", namespacedName)] = b
+			}
+		}
+	}
+
+	return customResources, errorList
+}
+
+func crsV1beta(ctx context.Context, client dynamic.Interface, config *rest.Config, namespaces []string) (map[string][]byte, map[string]string) {
+	customResources := make(map[string][]byte)
+	errorList := make(map[string]string)
+
+	crdClient, err := apiextensionsv1beta1clientset.NewForConfig(config)
+	if err != nil {
+		errorList["crdClient"] = err.Error()
+		return customResources, errorList
+	}
 
 	crds, err := crdClient.CustomResourceDefinitions().List(ctx, metav1.ListOptions{})
 	if err != nil {
