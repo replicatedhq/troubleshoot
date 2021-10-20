@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
+	"gopkg.in/yaml.v2"
 	authorizationv1 "k8s.io/api/authorization/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
@@ -581,12 +582,12 @@ func crsV1(ctx context.Context, client dynamic.Interface, config *rest.Config, n
 		}
 
 		if !isNamespacedResource {
-			b, err := json.MarshalIndent(customResourceList.Items, "", "  ")
+			b, err := yaml.Marshal(customResourceList.Items)
 			if err != nil {
 				errorList[crd.Name] = err.Error()
 				continue
 			}
-			customResources[fmt.Sprintf("%s.json", crd.Name)] = b
+			customResources[fmt.Sprintf("%s.yaml", crd.Name)] = b
 		} else {
 			// Group fetched resources by the namespace
 			perNamespace := map[string][]runtime.Object{}
@@ -617,13 +618,13 @@ func crsV1(ctx context.Context, client dynamic.Interface, config *rest.Config, n
 				}
 
 				namespacedName := fmt.Sprintf("%s/%s", crd.Name, ns)
-				b, err := json.MarshalIndent(perNamespace[ns], "", "  ")
+				b, err := yaml.Marshal(perNamespace[ns])
 				if err != nil {
 					errorList[namespacedName] = err.Error()
 					continue
 				}
 
-				customResources[fmt.Sprintf("%s.json", namespacedName)] = b
+				customResources[fmt.Sprintf("%s.yaml", namespacedName)] = b
 			}
 		}
 	}
@@ -676,12 +677,12 @@ func crsV1beta(ctx context.Context, client dynamic.Interface, config *rest.Confi
 		}
 
 		if !isNamespacedResource {
-			b, err := json.MarshalIndent(customResourceList.Items, "", "  ")
+			b, err := yaml.Marshal(customResourceList.Items)
 			if err != nil {
 				errorList[crd.Name] = err.Error()
 				continue
 			}
-			customResources[fmt.Sprintf("%s.json", crd.Name)] = b
+			customResources[fmt.Sprintf("%s.yaml", crd.Name)] = b
 		} else {
 			// Group fetched resources by the namespace
 			perNamespace := map[string][]runtime.Object{}
@@ -712,13 +713,13 @@ func crsV1beta(ctx context.Context, client dynamic.Interface, config *rest.Confi
 				}
 
 				namespacedName := fmt.Sprintf("%s/%s", crd.Name, ns)
-				b, err := json.MarshalIndent(perNamespace[ns], "", "  ")
+				b, err := yaml.Marshal(perNamespace[ns])
 				if err != nil {
 					errorList[namespacedName] = err.Error()
 					continue
 				}
 
-				customResources[fmt.Sprintf("%s.json", namespacedName)] = b
+				customResources[fmt.Sprintf("%s.yaml", namespacedName)] = b
 			}
 		}
 	}
