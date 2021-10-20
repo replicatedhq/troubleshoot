@@ -314,6 +314,40 @@ func getRedactors(path string) ([]Redactor, error) {
 		redactors = append(redactors, r)
 	}
 
+	customResources := []struct {
+		resource string
+		yamlPath string
+	}{
+		{
+			resource: "installers.cluster.kurl.sh",
+			yamlPath: "*.spec.kubernetes.bootstrapToken",
+		},
+		{
+			resource: "installers.cluster.kurl.sh",
+			yamlPath: "*.spec.kubernetes.certKey",
+		},
+		{
+			resource: "installers.cluster.kurl.sh",
+			yamlPath: "*.spec.kubernetes.kubeadmToken",
+		},
+	}
+
+	uniqueCRs := map[string]bool{}
+	for _, cr := range customResources {
+		fileglob := fmt.Sprintf("cluster-resources/custom-resources/%s/*", cr.resource)
+		redactors = append(redactors, NewYamlRedactor(cr.yamlPath, fileglob, ""))
+
+		// redact kubectl last applied annotation once for each resource since it contains copies of
+		// redacted fields
+		if !uniqueCRs[cr.resource] {
+			uniqueCRs[cr.resource] = true
+			redactors = append(redactors, &YamlRedactor{
+				filePath: fileglob,
+				maskPath: []string{"*", "metadata", "annotations", "kubectl.kubernetes.io/last-applied-configuration"},
+			})
+		}
+	}
+
 	return redactors, nil
 }
 
