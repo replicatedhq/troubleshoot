@@ -1,0 +1,25 @@
+apiVersion: troubleshoot.sh/v1beta2
+kind: HostPreflight
+metadata:
+  name: connect
+spec:
+  remoteCollectors:
+    - tcpConnect:
+        collectorName: weave host 1
+        address: 10.128.0.2:6783
+  analyzers:
+    - tcpConnect:
+        collectorName: weave host 1
+        outcomes:
+          - fail:
+              when: "connection-refused"
+              message: Connection to weave on host 1 was refused
+          - fail:
+              when: "connection-timeout"
+              message: Timed out connecting to weave on host 1
+          - fail:
+              when: "error"
+              message: Unexpected error connecting to weave on host 1
+          - pass:
+              when: "connected"
+              message: Successfully connected to weave on host 1

@@ -21,6 +21,7 @@ type ClusterInfo struct {
 
 type ClusterResources struct {
 	CollectorMeta `json:",inline" yaml:",inline"`
+	Namespaces    []string `json:"namespaces,omitempty" yaml:"namespaces,omitempty"`
 }
 
 type Secret struct {
@@ -114,6 +115,16 @@ type CopyFromHost struct {
 	ExtractArchive  bool              `json:"extractArchive,omitempty" yaml:"extractArchive,omitempty"`
 }
 
+type Sysctl struct {
+	CollectorMeta   `json:",inline" yaml:",inline"`
+	Name            string            `json:"name,omitempty" yaml:"name,omitempty"`
+	Namespace       string            `json:"namespace" yaml:"namespace"`
+	Image           string            `json:"image" yaml:"image"`
+	ImagePullPolicy string            `json:"imagePullPolicy,omitempty" yaml:"imagePullPolicy,omitempty"`
+	ImagePullSecret *ImagePullSecrets `json:"imagePullSecret,omitempty" yaml:"imagePullSecret,omitempty"`
+	Timeout         string            `json:"timeout,omitempty" yaml:"timeout,omitempty"`
+}
+
 type HTTP struct {
 	CollectorMeta `json:",inline" yaml:",inline"`
 	Name          string `json:"name,omitempty" yaml:"name,omitempty"`
@@ -195,6 +206,7 @@ type Collect struct {
 	Ceph             *Ceph             `json:"ceph,omitempty" yaml:"ceph,omitempty"`
 	Longhorn         *Longhorn         `json:"longhorn,omitempty" yaml:"longhorn,omitempty"`
 	RegistryImages   *RegistryImages   `json:"registryImages,omitempty" yaml:"registryImages,omitempty"`
+	Sysctl           *Sysctl           `json:"sysctl,omitempty" yaml:"sysctl,omitempty"`
 }
 
 func (c *Collect) AccessReviewSpecs(overrideNS string) []authorizationv1.SelfSubjectAccessReviewSpec {
@@ -386,6 +398,8 @@ func (c *Collect) AccessReviewSpecs(overrideNS string) []authorizationv1.SelfSub
 			},
 			NonResourceAttributes: nil,
 		})
+	} else if c.Sysctl != nil {
+		// TODO
 	}
 
 	return result
@@ -423,6 +437,10 @@ func (c *Collect) GetName() string {
 		name = c.Exec.CollectorName
 		selector = strings.Join(c.Exec.Selector, ",")
 	}
+	if c.Data != nil {
+		collector = "data"
+		name = c.Data.CollectorName
+	}
 	if c.Copy != nil {
 		collector = "copy"
 		name = c.Copy.CollectorName
@@ -451,6 +469,10 @@ func (c *Collect) GetName() string {
 	if c.RegistryImages != nil {
 		collector = "registry-images"
 		name = c.RegistryImages.CollectorName
+	}
+	if c.Sysctl != nil {
+		collector = "sysctl"
+		name = c.Sysctl.Name
 	}
 
 	if collector == "" {

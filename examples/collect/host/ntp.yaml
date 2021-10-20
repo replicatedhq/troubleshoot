@@ -1,0 +1,7 @@
+apiVersion: troubleshoot.sh/v1beta2
+kind: HostCollector
+metadata:
+  name: ntp
+spec:
+  collectors:
+    - time: {}

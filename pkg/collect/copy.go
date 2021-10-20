@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"os"
 	"path/filepath"
 
 	"github.com/pkg/errors"
@@ -19,86 +20,58 @@ import (
 )
 
 //Copy function gets a file or folder from a container specified in the specs.
-func Copy(c *Collector, copyCollector *troubleshootv1beta2.Copy) (map[string][]byte, error) {
+func Copy(c *Collector, copyCollector *troubleshootv1beta2.Copy) (CollectorResult, error) {
 	client, err := kubernetes.NewForConfig(c.ClientConfig)
 	if err != nil {
 		return nil, err
 	}
 
-	copyOutput := map[string][]byte{}
+	output := NewResult()
 
 	ctx := context.Background()
 
 	pods, podsErrors := listPodsInSelectors(ctx, client, copyCollector.Namespace, copyCollector.Selector)
 	if len(podsErrors) > 0 {
-		errorBytes, err := marshalNonNil(podsErrors)
-		if err != nil {
-			return nil, err
-		}
-		copyOutput[getCopyErrosFileName(copyCollector)] = errorBytes
+		output.SaveResult(c.BundlePath, getCopyErrosFileName(copyCollector), marshalErrors(podsErrors))
 	}
 
 	if len(pods) > 0 {
 		for _, pod := range pods {
-			bundlePath := filepath.Join(copyCollector.Name, pod.Namespace, pod.Name, copyCollector.ContainerName)
 
-			files, copyErrors := copyFiles(ctx, client, c, pod, copyCollector)
-			if len(copyErrors) > 0 {
-				key := filepath.Join(bundlePath, copyCollector.ContainerPath+"-errors.json")
-				copyOutput[key], err = marshalNonNil(copyErrors)
-				if err != nil {
-					return nil, err
+			containerName := pod.Spec.Containers[0].Name
+			if copyCollector.ContainerName != "" {
+				containerName = copyCollector.ContainerName
+			}
+
+			subPath := filepath.Join(copyCollector.Name, pod.Namespace, pod.Name, copyCollector.ContainerName)
+
+			copyCollector.ExtractArchive = true // TODO: existing regression. this flag is always ignored and this matches current behaviour
+
+			copyErrors := map[string]string{}
+
+			dstPath := filepath.Join(c.BundlePath, subPath, filepath.Dir(copyCollector.ContainerPath))
+			files, stderr, err := copyFilesFromPod(ctx, dstPath, c.ClientConfig, client, pod.Name, containerName, pod.Namespace, copyCollector.ContainerPath, copyCollector.ExtractArchive)
+			if err != nil {
+				copyErrors[filepath.Join(copyCollector.ContainerPath, "error")] = err.Error()
+				if len(stderr) > 0 {
+					copyErrors[filepath.Join(copyCollector.ContainerPath, "stderr")] = string(stderr)
 				}
+
+				key := filepath.Join(subPath, copyCollector.ContainerPath+"-errors.json")
+				output.SaveResult(c.BundlePath, key, marshalErrors(copyErrors))
 				continue
 			}
 
 			for k, v := range files {
-				copyOutput[filepath.Join(bundlePath, filepath.Dir(copyCollector.ContainerPath), k)] = v
+				output[filepath.Join(subPath, filepath.Dir(copyCollector.ContainerPath), k)] = v
 			}
 		}
 	}
 
-	return copyOutput, nil
+	return output, nil
 }
 
-func copyFiles(ctx context.Context, client *kubernetes.Clientset, c *Collector, pod corev1.Pod, copyCollector *troubleshootv1beta2.Copy) (map[string][]byte, map[string]string) {
-	containerName := pod.Spec.Containers[0].Name
-	if copyCollector.ContainerName != "" {
-		containerName = copyCollector.ContainerName
-	}
-
-	errs := map[string]string{}
-
-	stdout, stderr, err := getFilesFromPod(ctx, c.ClientConfig, client, pod.Name, containerName, pod.Namespace, copyCollector.ContainerPath)
-	if err != nil {
-		errs[filepath.Join(copyCollector.ContainerPath, "error")] = err.Error()
-		if len(stdout) > 0 {
-			errs[filepath.Join(copyCollector.ContainerPath, "stdout")] = string(stdout)
-		}
-		if len(stderr) > 0 {
-			errs[filepath.Join(copyCollector.ContainerPath, "stderr")] = string(stderr)
-		}
-		return nil, errs
-	}
-
-	runOutput := map[string][]byte{}
-
-	if copyCollector.ExtractArchive {
-		files, err := extractTar(bytes.NewReader(stdout))
-		if err != nil {
-			errs[filepath.Join(copyCollector.ContainerPath, "error")] = errors.Wrap(err, "extract tar").Error()
-		}
-		for name, data := range files {
-			runOutput[filepath.Join(filepath.Base(copyCollector.ContainerPath), name)] = data
-		}
-	} else {
-		runOutput[filepath.Base(copyCollector.ContainerPath)+".tar"] = stdout
-	}
-
-	return runOutput, errs
-}
-
-func getFilesFromPod(ctx context.Context, clientConfig *restclient.Config, client kubernetes.Interface, podName string, containerName string, namespace string, containerPath string) ([]byte, []byte, error) {
+func copyFilesFromPod(ctx context.Context, dstPath string, clientConfig *restclient.Config, client kubernetes.Interface, podName string, containerName string, namespace string, containerPath string, extract bool) (CollectorResult, []byte, error) {
 	command := []string{"tar", "-C", filepath.Dir(containerPath), "-cf", "-", filepath.Base(containerPath)}
 	req := client.CoreV1().RESTClient().Post().Resource("pods").Name(podName).Namespace(namespace).SubResource("exec")
 	scheme := runtime.NewScheme()
@@ -121,19 +94,67 @@ func getFilesFromPod(ctx context.Context, clientConfig *restclient.Config, clien
 		return nil, nil, errors.Wrap(err, "failed to create SPDY executor")
 	}
 
-	output := new(bytes.Buffer)
+	result := NewResult()
+
+	var stdoutWriter io.Writer
+	var copyError error
+	if extract {
+		pipeReader, pipeWriter := io.Pipe()
+		tarReader := tar.NewReader(pipeReader)
+		stdoutWriter = pipeWriter
+
+		go func() {
+			// this can cause "read/write on closed pipe" error, but without this exec.Stream blocks
+			defer pipeWriter.Close()
+
+			for {
+				header, err := tarReader.Next()
+				if err == io.EOF {
+					return
+				}
+				if err != nil {
+					pipeWriter.CloseWithError(errors.Wrap(err, "failed to read header from tar"))
+					return
+				}
+
+				switch header.Typeflag {
+				case tar.TypeDir:
+					name := filepath.Join(dstPath, header.Name)
+					if err := os.MkdirAll(name, os.FileMode(header.Mode)); err != nil {
+						pipeWriter.CloseWithError(errors.Wrap(err, "failed to mkdir"))
+						return
+					}
+				case tar.TypeReg:
+					err := result.SaveResult(dstPath, header.Name, tarReader)
+					if err != nil {
+						pipeWriter.CloseWithError(errors.Wrapf(err, "failed to save result for file %s", header.Name))
+						return
+					}
+				}
+			}
+		}()
+	} else {
+		w, err := result.GetWriter(dstPath, filepath.Base(containerPath)+".tar")
+		if err != nil {
+			return nil, nil, errors.Wrap(err, "failed to craete dest file")
+		}
+		defer result.CloseWriter(dstPath, filepath.Base(containerPath)+".tar", w)
+
+		stdoutWriter = w
+	}
+
 	var stderr bytes.Buffer
-	err = exec.Stream(remotecommand.StreamOptions{
+	copyError = exec.Stream(remotecommand.StreamOptions{
 		Stdin:  nil,
-		Stdout: output,
+		Stdout: stdoutWriter,
 		Stderr: &stderr,
 		Tty:    false,
 	})
-	if err != nil {
-		return output.Bytes(), stderr.Bytes(), errors.Wrap(err, "failed to stream command output")
+	if copyError != nil {
+		return result, stderr.Bytes(), errors.Wrap(copyError, "failed to stream command output")
 	}
 
-	return output.Bytes(), stderr.Bytes(), nil
+	return result, stderr.Bytes(), nil
 }
 
 func getCopyErrosFileName(copyCollector *troubleshootv1beta2.Copy) string {
@@ -172,4 +193,27 @@ func extractTar(reader io.Reader) (map[string][]byte, error) {
 	}
 
 	return files, nil
+}
+
+func saveFromTar(rootDir string, reader io.Reader) (CollectorResult, error) {
+	result := NewResult()
+
+	tr := tar.NewReader(reader)
+	for {
+		header, err := tr.Next()
+		if err == io.EOF {
+			break
+		} else if err != nil {
+			return result, errors.Wrap(err, "read header")
+		}
+
+		switch header.Typeflag {
+		case tar.TypeReg:
+			result.SaveResult(rootDir, header.Name, tr)
+		default:
+			continue
+		}
+	}
+
+	return result, nil
 }

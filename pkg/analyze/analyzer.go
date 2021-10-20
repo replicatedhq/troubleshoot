@@ -44,7 +44,7 @@ func isExcluded(excludeVal multitype.BoolOrString) (bool, error) {
 func HostAnalyze(hostAnalyzer *troubleshootv1beta2.HostAnalyze, getFile getCollectedFileContents, findFiles getChildCollectedFileContents) []*AnalyzeResult {
 	analyzer, ok := GetHostAnalyzer(hostAnalyzer)
 	if !ok {
-		return NewAnalyzeResultError(analyzer, errors.New("invalid analyzer"))
+		return NewAnalyzeResultError(analyzer, errors.New("invalid host analyzer"))
 	}
 
 	isExcluded, _ := analyzer.IsExcluded()
@@ -75,6 +75,10 @@ func NewAnalyzeResultError(analyzer HostAnalyzer, err error) []*AnalyzeResult {
 }
 
 func Analyze(analyzer *troubleshootv1beta2.Analyze, getFile getCollectedFileContents, findFiles getChildCollectedFileContents) ([]*AnalyzeResult, error) {
+	if analyzer == nil {
+		return nil, errors.New("nil analyzer")
+	}
+
 	if analyzer.ClusterVersion != nil {
 		isExcluded, err := isExcluded(analyzer.ClusterVersion.Exclude)
 		if err != nil {
@@ -335,6 +339,39 @@ func Analyze(analyzer *troubleshootv1beta2.Analyze, getFile getCollectedFileCont
 		result, err := analyzeRegistry(analyzer.RegistryImages, getFile)
 		if err != nil {
 			return nil, err
+		}
+		return []*AnalyzeResult{result}, nil
+	}
+
+	if analyzer.WeaveReport != nil {
+		isExcluded, err := isExcluded(analyzer.WeaveReport.Exclude)
+		if err != nil {
+			return nil, err
+		}
+		if isExcluded {
+			return nil, nil
+		}
+		results, err := analyzeWeaveReport(analyzer.WeaveReport, findFiles)
+		if err != nil {
+			return nil, err
+		}
+		return results, nil
+	}
+
+	if analyzer.Sysctl != nil {
+		isExcluded, err := isExcluded(analyzer.Sysctl.Exclude)
+		if err != nil {
+			return nil, err
+		}
+		if isExcluded {
+			return nil, nil
+		}
+		result, err := analyzeSysctl(analyzer.Sysctl, findFiles)
+		if err != nil {
+			return nil, err
+		}
+		if result == nil {
+			return []*AnalyzeResult{}, nil
 		}
 		return []*AnalyzeResult{result}, nil
 	}

@@ -131,10 +131,20 @@ type LonghornAnalyze struct {
 	Namespace     string     `json:"namespace" yaml:"namespace"`
 }
 
+type WeaveReportAnalyze struct {
+	AnalyzeMeta    `json:",inline" yaml:",inline"`
+	ReportFileGlob string `json:"reportFileGlob" yaml:"reportFileGlob,omitempty"`
+}
+
 type RegistryImagesAnalyze struct {
 	AnalyzeMeta   `json:",inline" yaml:",inline"`
 	Outcomes      []*Outcome `json:"outcomes" yaml:"outcomes"`
 	CollectorName string     `json:"collectorName" yaml:"collectorName"`
+}
+
+type SysctlAnalyze struct {
+	AnalyzeMeta `json:",inline" yaml:",inline"`
+	Outcomes    []*Outcome `json:"outcomes" yaml:"outcomes"`
 }
 
 type AnalyzeMeta struct {
@@ -162,4 +172,6 @@ type Analyze struct {
 	CephStatus               *CephStatusAnalyze        `json:"cephStatus,omitempty" yaml:"cephStatus,omitempty"`
 	Longhorn                 *LonghornAnalyze          `json:"longhorn,omitempty" yaml:"longhorn,omitempty"`
 	RegistryImages           *RegistryImagesAnalyze    `json:"registryImages,omitempty" yaml:"registryImages,omitempty"`
+	WeaveReport              *WeaveReportAnalyze       `json:"weaveReport,omitempty" yaml:"weaveReport,omitempty"`
+	Sysctl                   *SysctlAnalyze            `json:"sysctl,omitempty" yaml:"sysctl,omitempty"`
 }

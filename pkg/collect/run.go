@@ -15,7 +15,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-func Run(c *Collector, runCollector *troubleshootv1beta2.Run) (map[string][]byte, error) {
+func Run(c *Collector, runCollector *troubleshootv1beta2.Run) (CollectorResult, error) {
 	ctx := context.Background()
 
 	client, err := kubernetes.NewForConfig(c.ClientConfig)
@@ -52,9 +52,13 @@ func Run(c *Collector, runCollector *troubleshootv1beta2.Run) (map[string][]byte
 	}
 
 	errCh := make(chan error, 1)
-	resultCh := make(chan map[string][]byte, 1)
+	resultCh := make(chan CollectorResult, 1)
+
+	timeoutCtx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
 	go func() {
-		b, err := runWithoutTimeout(ctx, c, pod, runCollector)
+		b, err := runWithoutTimeout(timeoutCtx, c, pod, runCollector)
 		if err != nil {
 			errCh <- err
 		} else {
@@ -72,7 +76,7 @@ func Run(c *Collector, runCollector *troubleshootv1beta2.Run) (map[string][]byte
 	}
 }
 
-func runWithoutTimeout(ctx context.Context, c *Collector, pod *corev1.Pod, runCollector *troubleshootv1beta2.Run) (map[string][]byte, error) {
+func runWithoutTimeout(ctx context.Context, c *Collector, pod *corev1.Pod, runCollector *troubleshootv1beta2.Run) (CollectorResult, error) {
 	client, err := kubernetes.NewForConfig(c.ClientConfig)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed create client from config")
@@ -98,21 +102,21 @@ func runWithoutTimeout(ctx context.Context, c *Collector, pod *corev1.Pod, runCo
 		time.Sleep(time.Second * 1)
 	}
 
-	runOutput := map[string][]byte{}
+	output := NewResult()
 
 	limits := troubleshootv1beta2.LogLimits{
 		MaxLines: 10000,
 	}
-	podLogs, err := getPodLogs(ctx, client, *pod, runCollector.Name, "", &limits, true)
+	podLogs, err := savePodLogs(ctx, c.BundlePath, client, *pod, runCollector.Name, "", &limits, true)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get pod logs")
 	}
 
 	for k, v := range podLogs {
-		runOutput[k] = v
+		output[k] = v
 	}
 
-	return runOutput, nil
+	return output, nil
 }
 
 func runPod(ctx context.Context, client *kubernetes.Clientset, runCollector *troubleshootv1beta2.Run, namespace string) (*corev1.Pod, error) {

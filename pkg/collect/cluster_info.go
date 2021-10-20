@@ -1,6 +1,7 @@
 package collect
 
 import (
+	"bytes"
 	"encoding/json"
 	"path/filepath"
 
@@ -14,23 +15,20 @@ type ClusterVersion struct {
 	String string        `json:"string"`
 }
 
-func ClusterInfo(c *Collector) (map[string][]byte, error) {
+func ClusterInfo(c *Collector) (CollectorResult, error) {
 	client, err := kubernetes.NewForConfig(c.ClientConfig)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to create kubernetes clientset")
 	}
 
-	clusterInfoOutput := map[string][]byte{}
+	output := NewResult()
 
-	// cluster version
 	clusterVersion, clusterErrors := clusterVersion(client)
-	clusterInfoOutput[filepath.Join("cluster-info", "cluster_version.json")] = clusterVersion
-	clusterInfoOutput[filepath.Join("cluster-info", "errors.json")], err = marshalNonNil(clusterErrors)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to marshal errors")
-	}
 
-	return clusterInfoOutput, nil
+	output.SaveResult(c.BundlePath, filepath.Join("cluster-info", "cluster_version.json"), bytes.NewBuffer(clusterVersion))
+	output.SaveResult(c.BundlePath, filepath.Join("cluster-info", "errors.json"), marshalErrors(clusterErrors))
+
+	return output, nil
 }
 
 func clusterVersion(client *kubernetes.Clientset) ([]byte, []string) {

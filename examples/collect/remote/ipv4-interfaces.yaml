@@ -1,0 +1,7 @@
+apiVersion: troubleshoot.sh/v1beta2
+kind: RemoteCollector
+metadata:
+  name: ipv4Interfaces
+spec:
+  collectors:
+    - ipv4Interfaces: {}

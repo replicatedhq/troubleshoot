@@ -5,10 +5,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"os/signal"
-
 	"net/url"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"strings"
 	"time"
@@ -18,6 +17,7 @@ import (
 	"github.com/manifoldco/promptui"
 	"github.com/mattn/go-isatty"
 	"github.com/pkg/errors"
+	analyzer "github.com/replicatedhq/troubleshoot/pkg/analyze"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/replicatedhq/troubleshoot/pkg/client/troubleshootclientset/scheme"
 	troubleshootclientsetscheme "github.com/replicatedhq/troubleshoot/pkg/client/troubleshootclientset/scheme"
@@ -28,29 +28,30 @@ import (
 	"github.com/replicatedhq/troubleshoot/pkg/supportbundle"
 	"github.com/spf13/viper"
 	spin "github.com/tj/go-spin"
+	"k8s.io/client-go/rest"
 )
 
 func runTroubleshoot(v *viper.Viper, arg string) error {
-	fmt.Print(cursor.Hide())
-	defer fmt.Print(cursor.Show())
+	interactive := v.GetBool("interactive") && isatty.IsTerminal(os.Stdout.Fd())
+
+	if interactive {
+		fmt.Print(cursor.Hide())
+		defer fmt.Print(cursor.Show())
+	}
 
 	go func() {
 		signalChan := make(chan os.Signal, 1)
 		signal.Notify(signalChan, os.Interrupt)
 		<-signalChan
-		fmt.Print(cursor.Show())
+		if interactive {
+			fmt.Print(cursor.Show())
+		}
 		os.Exit(0)
 	}()
 
 	restConfig, err := k8sutil.GetRESTConfig()
 	if err != nil {
 		return errors.Wrap(err, "failed to convert kube flags to rest config")
-	}
-
-	namespace := v.GetString("namespace")
-	if namespace == "" {
-		kubeconfig := k8sutil.GetKubeconfig()
-		namespace, _, _ = kubeconfig.Namespace()
 	}
 
 	var sinceTime *time.Time
@@ -114,117 +115,131 @@ func runTroubleshoot(v *viper.Viper, arg string) error {
 		additionalRedactors.Spec.Redactors = append(additionalRedactors.Spec.Redactors, multidocRedactors.Spec.Redactors...)
 	}
 
-	s := spin.New()
-	finishedCh := make(chan bool, 1)
+	var collectorCB func(chan interface{}, string)
 	progressChan := make(chan interface{}) // non-zero buffer can result in missed messages
+	finishedCh := make(chan bool, 1)
 	isFinishedChClosed := false
-	go func() {
-		currentDir := ""
-		for {
-			select {
-			case msg := <-progressChan:
-				switch msg := msg.(type) {
-				case error:
-					c := color.New(color.FgHiRed)
-					c.Println(fmt.Sprintf("%s\r * %v", cursor.ClearEntireLine(), msg))
-				case string:
-					currentDir = filepath.Base(msg)
-				}
-			case <-finishedCh:
-				fmt.Printf("\r%s\r", cursor.ClearEntireLine())
-				return
-			case <-time.After(time.Millisecond * 100):
-				if currentDir == "" {
-					fmt.Printf("\r%s \033[36mCollecting support bundle\033[m %s", cursor.ClearEntireLine(), s.Next())
-				} else {
-					fmt.Printf("\r%s \033[36mCollecting support bundle\033[m %s %s", cursor.ClearEntireLine(), s.Next(), currentDir)
+
+	if !interactive {
+		// TODO (dans): custom warning handler to capture warning in `analysisOutput`
+		restConfig.WarningHandler = rest.NoWarnings{}
+		collectorCB = func(ch chan interface{}, name string) {
+			return
+		}
+
+		// TODO (dans): maybe log to file
+		go func() {
+			for {
+				select {
+				case _ = <-progressChan:
+					// do nothing
 				}
 			}
-		}
-	}()
-	defer func() {
-		if !isFinishedChClosed {
-			close(finishedCh)
-		}
-	}()
+		}()
+	} else {
+		s := spin.New()
+		go func() {
+			currentDir := ""
+			for {
+				select {
+				case msg := <-progressChan:
+					switch msg := msg.(type) {
+					case error:
+						c := color.New(color.FgHiRed)
+						c.Println(fmt.Sprintf("%s\r * %v", cursor.ClearEntireLine(), msg))
+					case string:
+						currentDir = filepath.Base(msg)
+					}
+				case <-finishedCh:
+					fmt.Printf("\r%s\r", cursor.ClearEntireLine())
+					return
+				case <-time.After(time.Millisecond * 100):
+					if currentDir == "" {
+						fmt.Printf("\r%s \033[36mCollecting support bundle\033[m %s", cursor.ClearEntireLine(), s.Next())
+					} else {
+						fmt.Printf("\r%s \033[36mCollecting support bundle\033[m %s %s", cursor.ClearEntireLine(), s.Next(), currentDir)
+					}
+				}
+			}
+		}()
+		defer func() {
+			if !isFinishedChClosed {
+				close(finishedCh)
+			}
+		}()
 
-	collectorCB := func(c chan interface{}, msg string) {
-		c <- fmt.Sprintf("%s", msg)
+		collectorCB = func(c chan interface{}, msg string) {
+			c <- fmt.Sprintf("%s", msg)
+		}
+
 	}
 
 	createOpts := supportbundle.SupportBundleCreateOpts{
 		CollectorProgressCallback: collectorCB,
 		CollectWithoutPermissions: v.GetBool("collect-without-permissions"),
 		KubernetesRestConfig:      restConfig,
-		Namespace:                 namespace,
+		Namespace:                 v.GetString("namespace"),
 		ProgressChan:              progressChan,
 		SinceTime:                 sinceTime,
 		Redact:                    v.GetBool("redact"),
+		FromCLI:                   true,
 	}
 
-	archivePath, err := supportbundle.CollectSupportBundleFromSpec(&supportBundle.Spec, additionalRedactors, createOpts)
-	if err != nil {
-		return errors.Wrap(err, "run collectors")
+	nonInteractiveOutput := analysisOutput{}
+
+	if interactive {
+		c := color.New()
+		c.Println(fmt.Sprintf("\r%s\r", cursor.ClearEntireLine()))
 	}
 
-	c := color.New()
-	c.Println(fmt.Sprintf("\r%s\r", cursor.ClearEntireLine()))
-
-	fileUploaded, err := supportbundle.ProcessSupportBundleAfterCollection(&supportBundle.Spec, archivePath)
+	response, err := supportbundle.CollectSupportBundleFromSpec(&supportBundle.Spec, additionalRedactors, createOpts)
 	if err != nil {
-		c := color.New(color.FgHiRed)
-		c.Printf("%s\r * %v\n", cursor.ClearEntireLine(), err)
-		// don't die
+		return errors.Wrap(err, "failed to run collect and analyze process")
 	}
-
-	analyzeResults, err := supportbundle.AnalyzeAndExtractSupportBundle(&supportBundle.Spec, archivePath)
-	if err != nil {
-		c := color.New(color.FgHiRed)
-		c.Printf("%s\r * %v\n", cursor.ClearEntireLine(), err)
-		// Don't die
-	} else if len(analyzeResults) > 0 {
-
-		interactive := v.GetBool("interactive") && isatty.IsTerminal(os.Stdout.Fd())
-
+	if len(response.AnalyzerResults) > 0 {
 		if interactive {
 			close(finishedCh) // this removes the spinner
 			isFinishedChClosed = true
 
-			if err := showInteractiveResults(supportBundle.Name, analyzeResults); err != nil {
+			if err := showInteractiveResults(supportBundle.Name, response.AnalyzerResults); err != nil {
 				interactive = false
 			}
 		} else {
-			data := convert.FromAnalyzerResult(analyzeResults)
-			formatted, err := json.MarshalIndent(data, "", "    ")
-			if err != nil {
-				c := color.New(color.FgHiRed)
-				c.Printf("%s\r * Failed to format analysis: %v\n", cursor.ClearEntireLine(), err)
-			}
-
-			fmt.Printf("%s", formatted)
+			nonInteractiveOutput.Analysis = response.AnalyzerResults
 		}
 	}
 
-	if !fileUploaded {
-		msg := archivePath
+	if !response.FileUploaded {
 		if appName := supportBundle.Labels["applicationName"]; appName != "" {
 			f := `A support bundle for %s has been created in this directory
 named %s. Please upload it on the Troubleshoot page of
 the %s Admin Console to begin analysis.`
-			msg = fmt.Sprintf(f, appName, archivePath, appName)
+			fmt.Printf(f, appName, response.ArchivePath, appName)
+			return nil
 		}
 
-		fmt.Printf("%s\n", msg)
+		if !interactive {
+			nonInteractiveOutput.ArchivePath = response.ArchivePath
+			output, err := nonInteractiveOutput.FormattedAnalysisOutput()
+			if err != nil {
+				return errors.Wrap(err, "failed to format non-interactive output")
+			}
+			fmt.Println(output)
+			return nil
+		}
 
+		fmt.Printf("%s\n", response.ArchivePath)
 		return nil
 	}
 
-	fmt.Printf("\r%s\r", cursor.ClearEntireLine())
-	if fileUploaded {
+	if interactive {
+		fmt.Printf("\r%s\r", cursor.ClearEntireLine())
+	}
+	if response.FileUploaded {
 		fmt.Printf("A support bundle has been created and uploaded to your cluster for analysis. Please visit the Troubleshoot page to continue.\n")
-		fmt.Printf("A copy of this support bundle was written to the current directory, named %q\n", archivePath)
+		fmt.Printf("A copy of this support bundle was written to the current directory, named %q\n", response.ArchivePath)
 	} else {
-		fmt.Printf("A support bundle has been created in the current directory named %q\n", archivePath)
+		fmt.Printf("A support bundle has been created in the current directory named %q\n", response.ArchivePath)
 	}
 	return nil
 }
@@ -283,4 +298,29 @@ func canTryInsecure() bool {
 
 	_, err := prompt.Run()
 	return err == nil
+}
+
+type analysisOutput struct {
+	Analysis    []*analyzer.AnalyzeResult
+	ArchivePath string
+}
+
+func (a *analysisOutput) FormattedAnalysisOutput() (outputJson string, err error) {
+	type convertedOutput struct {
+		ConvertedAnalysis []*convert.Result `json:"analyzerResults"`
+		ArchivePath       string            `json:"archivePath"`
+	}
+
+	converted := convert.FromAnalyzerResult(a.Analysis)
+
+	o := convertedOutput{
+		ConvertedAnalysis: converted,
+		ArchivePath:       a.ArchivePath,
+	}
+
+	formatted, err := json.MarshalIndent(o, "", "    ")
+	if err != nil {
+		return "", fmt.Errorf("\r * Failed to format analysis: %v\n", err)
+	}
+	return string(formatted), nil
 }

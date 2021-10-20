@@ -51,6 +51,10 @@ type BlockDevicesAnalyze struct {
 	IncludeUnmountedPartitions bool       `json:"includeUnmountedPartitions" yaml:"includeUnmountedPartitions"`
 	Outcomes                   []*Outcome `json:"outcomes" yaml:"outcomes"`
 }
+type KernelModulesAnalyze struct {
+	AnalyzeMeta `json:",inline" yaml:",inline"`
+	Outcomes    []*Outcome `json:"outcomes" yaml:"outcomes"`
+}
 
 type TCPConnectAnalyze struct {
 	AnalyzeMeta   `json:",inline" yaml:",inline"`
@@ -79,7 +83,10 @@ type HostServicesAnalyze struct {
 	AnalyzeMeta `json:",inline" yaml:",inline"`
 	Outcomes    []*Outcome `json:"outcomes" yaml:"outcomes"`
 }
-
+type HostOSAnalyze struct {
+	AnalyzeMeta `json:",inline" yaml:",inline"`
+	Outcomes    []*Outcome `json:"outcomes" yaml:"outcomes"`
+}
 type HostAnalyze struct {
 	CPU *CPUAnalyze `json:"cpu,omitempty" yaml:"cpu,omitempty"`
 	//
@@ -98,6 +105,8 @@ type HostAnalyze struct {
 
 	BlockDevices *BlockDevicesAnalyze `json:"blockDevices,omitempty" yaml:"blockDevices,omitempty"`
 
+	KernelModules *KernelModulesAnalyze `json:"kernelModules,omitempty" yaml:"kernelModules,omitempty"`
+
 	TCPConnect *TCPConnectAnalyze `json:"tcpConnect,omitempty" yaml:"tcpConnect,omitempty"`
 
 	IPV4Interfaces *IPV4InterfacesAnalyze `json:"ipv4Interfaces,omitempty" yaml:"ipv4Interfaces,omitempty"`
@@ -107,4 +116,6 @@ type HostAnalyze struct {
 	Certificate *CertificateAnalyze `json:"certificate,omitempty" yaml:"certificate,omitempty"`
 
 	HostServices *HostServicesAnalyze `json:"hostServices,omitempty" yaml:"hostServices,omitempty"`
+
+	HostOS *HostOSAnalyze `json:"hostOS,omitempty" yaml:"hostOS,omitempty"`
 }

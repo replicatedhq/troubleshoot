@@ -7,6 +7,7 @@ import (
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
+	"github.com/replicatedhq/troubleshoot/pkg/k8sutil"
 	"github.com/replicatedhq/troubleshoot/pkg/multitype"
 	authorizationv1 "k8s.io/api/authorization/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -20,6 +21,7 @@ type Collector struct {
 	RBACErrors   []error
 	ClientConfig *rest.Config
 	Namespace    string
+	BundlePath   string
 }
 
 type Collectors []*Collector
@@ -180,11 +182,20 @@ func (c *Collector) IsExcluded() bool {
 		if isExcludedResult {
 			return true
 		}
+	} else if c.Collect.Sysctl != nil {
+		isExcludedResult, err := isExcluded(c.Collect.Sysctl.Exclude)
+		if err != nil {
+			return true
+		}
+		if isExcludedResult {
+			return true
+		}
 	}
+
 	return false
 }
 
-func (c *Collector) RunCollectorSync(clientConfig *rest.Config, client kubernetes.Interface, globalRedactors []*troubleshootv1beta2.Redact) (result map[string][]byte, err error) {
+func (c *Collector) RunCollectorSync(clientConfig *rest.Config, client kubernetes.Interface, globalRedactors []*troubleshootv1beta2.Redact) (result CollectorResult, err error) {
 	defer func() {
 		if r := recover(); r != nil {
 			_, file, line, _ := runtime.Caller(4)
@@ -201,11 +212,11 @@ func (c *Collector) RunCollectorSync(clientConfig *rest.Config, client kubernete
 	if c.Collect.ClusterInfo != nil {
 		result, err = ClusterInfo(c)
 	} else if c.Collect.ClusterResources != nil {
-		result, err = ClusterResources(c)
+		result, err = ClusterResources(c, c.Collect.ClusterResources)
 	} else if c.Collect.Secret != nil {
-		result, err = Secret(ctx, client, c.Collect.Secret)
+		result, err = Secret(ctx, c, c.Collect.Secret, client)
 	} else if c.Collect.ConfigMap != nil {
-		result, err = ConfigMap(ctx, client, c.Collect.ConfigMap)
+		result, err = ConfigMap(ctx, c, c.Collect.ConfigMap, client)
 	} else if c.Collect.Logs != nil {
 		result, err = Logs(c, c.Collect.Logs)
 	} else if c.Collect.Run != nil {
@@ -218,10 +229,13 @@ func (c *Collector) RunCollectorSync(clientConfig *rest.Config, client kubernete
 		result, err = Copy(c, c.Collect.Copy)
 	} else if c.Collect.CopyFromHost != nil {
 		namespace := c.Collect.CopyFromHost.Namespace
-		if namespace == "" {
+		if namespace == "" && c.Namespace == "" {
+			kubeconfig := k8sutil.GetKubeconfig()
+			namespace, _, _ = kubeconfig.Namespace()
+		} else if namespace == "" {
 			namespace = c.Namespace
 		}
-		result, err = CopyFromHost(ctx, namespace, clientConfig, client, c.Collect.CopyFromHost)
+		result, err = CopyFromHost(ctx, c, c.Collect.CopyFromHost, namespace, clientConfig, client)
 	} else if c.Collect.HTTP != nil {
 		result, err = HTTP(c, c.Collect.HTTP)
 	} else if c.Collect.Postgres != nil {
@@ -233,16 +247,29 @@ func (c *Collector) RunCollectorSync(clientConfig *rest.Config, client kubernete
 	} else if c.Collect.Collectd != nil {
 		// TODO: see if redaction breaks these
 		namespace := c.Collect.Collectd.Namespace
-		if namespace == "" {
+		if namespace == "" && c.Namespace == "" {
+			kubeconfig := k8sutil.GetKubeconfig()
+			namespace, _, _ = kubeconfig.Namespace()
+		} else if namespace == "" {
 			namespace = c.Namespace
 		}
-		result, err = Collectd(ctx, namespace, clientConfig, client, c.Collect.Collectd)
+		result, err = Collectd(ctx, c, c.Collect.Collectd, namespace, clientConfig, client)
 	} else if c.Collect.Ceph != nil {
 		result, err = Ceph(c, c.Collect.Ceph)
 	} else if c.Collect.Longhorn != nil {
 		result, err = Longhorn(c, c.Collect.Longhorn)
 	} else if c.Collect.RegistryImages != nil {
 		result, err = Registry(c, c.Collect.RegistryImages)
+	} else if c.Collect.Sysctl != nil {
+		if c.Collect.Sysctl.Namespace == "" {
+			c.Collect.Sysctl.Namespace = c.Namespace
+		}
+		if c.Collect.Sysctl.Namespace == "" {
+			kubeconfig := k8sutil.GetKubeconfig()
+			namespace, _, _ := kubeconfig.Namespace()
+			c.Collect.Sysctl.Namespace = namespace
+		}
+		result, err = Sysctl(ctx, c, client, c.Collect.Sysctl)
 	} else {
 		err = errors.New("no spec found to run")
 		return
@@ -252,7 +279,7 @@ func (c *Collector) RunCollectorSync(clientConfig *rest.Config, client kubernete
 	}
 
 	if c.Redact {
-		result, err = redactMap(result, globalRedactors)
+		err = redactResult(c.BundlePath, result, globalRedactors)
 		err = errors.Wrap(err, "failed to redact")
 	}
 

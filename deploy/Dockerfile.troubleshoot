@@ -3,10 +3,11 @@ WORKDIR /
 
 RUN apt-get -qq update \
  && apt-get -qq -y install \
-    ca-certificates
+    ca-certificates kmod
 
 COPY support-bundle /troubleshoot/support-bundle
 COPY preflight /troubleshoot/preflight
+COPY collect /troubleshoot/collect
 
 ENV PATH="/troubleshoot:${PATH}"
 

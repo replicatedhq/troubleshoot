@@ -67,6 +67,13 @@ type HostBlockDevices struct {
 	HostCollectorMeta `json:",inline" yaml:",inline"`
 }
 
+type HostKernelModules struct {
+	HostCollectorMeta `json:",inline" yaml:",inline"`
+}
+
+type HostOS struct {
+	HostCollectorMeta `json:",inline" yaml:",inline"`
+}
 type TCPConnect struct {
 	HostCollectorMeta `json:",inline" yaml:",inline"`
 	Address           string `json:"address"`
@@ -136,10 +143,12 @@ type HostCollect struct {
 	HTTP                  *HostHTTP              `json:"http,omitempty" yaml:"http,omitempty"`
 	Time                  *HostTime              `json:"time,omitempty" yaml:"time,omitempty"`
 	BlockDevices          *HostBlockDevices      `json:"blockDevices,omitempty" yaml:"blockDevices,omitempty"`
+	KernelModules         *HostKernelModules     `json:"kernelModules,omitempty" yaml:"kernelModules,omitempty"`
 	TCPConnect            *TCPConnect            `json:"tcpConnect,omitempty" yaml:"tcpConnect,omitempty"`
 	FilesystemPerformance *FilesystemPerformance `json:"filesystemPerformance,omitempty" yaml:"filesystemPerformance,omitempty"`
 	Certificate           *Certificate           `json:"certificate,omitempty" yaml:"certificate,omitempty"`
 	HostServices          *HostServices          `json:"hostServices,omitempty" yaml:"hostServices,omitempty"`
+	HostOS                *HostOS                `json:"hostOS,omitempty" yaml:"hostOS,omitempty"`
 }
 
 func (c *HostCollect) GetName() string {

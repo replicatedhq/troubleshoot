@@ -1,13 +1,19 @@
 package collect
 
 import (
+	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"reflect"
 	"regexp"
 	"strings"
 
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 )
 
 func DeterministicIDForCollector(collector *troubleshootv1beta2.Collect) string {
@@ -88,18 +94,49 @@ func rfc1035(in string) string {
 	return out
 }
 
-func marshalNonNil(obj interface{}) ([]byte, error) {
-	if obj == nil {
-		return nil, nil
+// Use for error maps and arrays. These are guaraneteed to not result in a error when marshaling.
+func marshalErrors(errors interface{}) io.Reader {
+	if errors == nil {
+		return nil
 	}
 
-	val := reflect.ValueOf(obj)
+	val := reflect.ValueOf(errors)
 	switch val.Kind() {
 	case reflect.Array, reflect.Slice, reflect.Map:
 		if val.Len() == 0 {
-			return nil, nil
+			return nil
 		}
 	}
 
-	return json.MarshalIndent(obj, "", "  ")
+	m, _ := json.MarshalIndent(errors, "", "  ")
+	return bytes.NewBuffer(m)
+}
+
+// listNodesNamesInSelector returns a list of node names matching the label
+// selector,
+func listNodesNamesInSelector(ctx context.Context, client *kubernetes.Clientset, selector string) ([]string, error) {
+	var names []string
+	nodes, err := listNodesInSelector(ctx, client, selector)
+	if err != nil {
+		return nil, err
+	}
+	for _, node := range nodes {
+		names = append(names, node.GetName())
+	}
+	return names, nil
+}
+
+// listNodesInSelector returns a list of node names matching the label
+// selector,
+func listNodesInSelector(ctx context.Context, client *kubernetes.Clientset, selector string) ([]corev1.Node, error) {
+	listOptions := metav1.ListOptions{
+		LabelSelector: selector,
+	}
+
+	nodes, err := client.CoreV1().Nodes().List(ctx, listOptions)
+	if err != nil {
+		return nil, fmt.Errorf("Can't get the list of nodes, got: %w", err)
+	}
+
+	return nodes.Items, nil
 }

@@ -1,6 +1,7 @@
 package collect
 
 import (
+	"bytes"
 	"context"
 	"encoding/base64"
 	"encoding/json"
@@ -8,193 +9,164 @@ import (
 	"path" // this code uses 'path' and not 'path/filepath' because we don't want backslashes on windows
 	"strings"
 
+	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	authorizationv1 "k8s.io/api/authorization/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
+	apiextensionsv1clientset "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1"
 	apiextensionsv1beta1clientset "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
+
+	"github.com/replicatedhq/troubleshoot/pkg/k8sutil/discovery"
 )
 
-func ClusterResources(c *Collector) (map[string][]byte, error) {
+func ClusterResources(c *Collector, clusterResourcesCollector *troubleshootv1beta2.ClusterResources) (CollectorResult, error) {
 	client, err := kubernetes.NewForConfig(c.ClientConfig)
 	if err != nil {
 		return nil, err
 	}
 
 	ctx := context.Background()
+	output := NewResult()
 
-	clusterResourcesOutput := map[string][]byte{}
 	// namespaces
 	var namespaceNames []string
-	if c.Namespace == "" {
-		namespaces, namespaceList, namespaceErrors := namespaces(ctx, client)
-		clusterResourcesOutput["cluster-resources/namespaces.json"] = namespaces
-		clusterResourcesOutput["cluster-resources/namespaces-errors.json"], err = marshalNonNil(namespaceErrors)
-		if err != nil {
-			return nil, err
-		}
+	if len(clusterResourcesCollector.Namespaces) > 0 {
+		namespaces, namespaceErrors := getNamespaces(ctx, client, clusterResourcesCollector.Namespaces)
+		namespaceNames = clusterResourcesCollector.Namespaces
+		output.SaveResult(c.BundlePath, "cluster-resources/namespaces.json", bytes.NewBuffer(namespaces))
+		output.SaveResult(c.BundlePath, "cluster-resources/namespaces-errors.json", marshalErrors(namespaceErrors))
+	} else if c.Namespace != "" {
+		namespace, namespaceErrors := getNamespace(ctx, client, c.Namespace)
+		output.SaveResult(c.BundlePath, "cluster-resources/namespaces.json", bytes.NewBuffer(namespace))
+		output.SaveResult(c.BundlePath, "cluster-resources/namespaces-errors.json", marshalErrors(namespaceErrors))
+		namespaceNames = append(namespaceNames, c.Namespace)
+	} else {
+		namespaces, namespaceList, namespaceErrors := getAllNamespaces(ctx, client)
+		output.SaveResult(c.BundlePath, "cluster-resources/namespaces.json", bytes.NewBuffer(namespaces))
+		output.SaveResult(c.BundlePath, "cluster-resources/namespaces-errors.json", marshalErrors(namespaceErrors))
 		if namespaceList != nil {
 			for _, namespace := range namespaceList.Items {
 				namespaceNames = append(namespaceNames, namespace.Name)
 			}
 		}
-	} else {
-		namespaces, namespaceErrors := getNamespace(ctx, client, c.Namespace)
-		clusterResourcesOutput["cluster-resources/namespaces.json"] = namespaces
-		clusterResourcesOutput["cluster-resources/namespaces-errors.json"], err = marshalNonNil(namespaceErrors)
-		if err != nil {
-			return nil, err
-		}
-		namespaceNames = append(namespaceNames, c.Namespace)
 	}
+
+	// pods
 	pods, podErrors := pods(ctx, client, namespaceNames)
 	for k, v := range pods {
-		clusterResourcesOutput[path.Join("cluster-resources/pods", k)] = v
+		output.SaveResult(c.BundlePath, path.Join("cluster-resources/pods", k), bytes.NewBuffer(v))
 	}
-	clusterResourcesOutput["cluster-resources/pods-errors.json"], err = marshalNonNil(podErrors)
-	if err != nil {
-		return nil, err
-	}
+	output.SaveResult(c.BundlePath, "cluster-resources/pods-errors.json", marshalErrors(podErrors))
 
 	// services
 	services, servicesErrors := services(ctx, client, namespaceNames)
 	for k, v := range services {
-		clusterResourcesOutput[path.Join("cluster-resources/services", k)] = v
+		output.SaveResult(c.BundlePath, path.Join("cluster-resources/services", k), bytes.NewBuffer(v))
 	}
-	clusterResourcesOutput["cluster-resources/services-errors.json"], err = marshalNonNil(servicesErrors)
-	if err != nil {
-		return nil, err
-	}
+	output.SaveResult(c.BundlePath, "cluster-resources/services-errors.json", marshalErrors(servicesErrors))
 
 	// deployments
 	deployments, deploymentsErrors := deployments(ctx, client, namespaceNames)
 	for k, v := range deployments {
-		clusterResourcesOutput[path.Join("cluster-resources/deployments", k)] = v
+		output.SaveResult(c.BundlePath, path.Join("cluster-resources/deployments", k), bytes.NewBuffer(v))
 	}
-	clusterResourcesOutput["cluster-resources/deployments-errors.json"], err = marshalNonNil(deploymentsErrors)
-	if err != nil {
-		return nil, err
-	}
+	output.SaveResult(c.BundlePath, "cluster-resources/deployments-errors.json", marshalErrors(deploymentsErrors))
 
 	// statefulsets
 	statefulsets, statefulsetsErrors := statefulsets(ctx, client, namespaceNames)
 	for k, v := range statefulsets {
-		clusterResourcesOutput[path.Join("cluster-resources/statefulsets", k)] = v
+		output.SaveResult(c.BundlePath, path.Join("cluster-resources/statefulsets", k), bytes.NewBuffer(v))
 	}
-	clusterResourcesOutput["cluster-resources/statefulsets-errors.json"], err = marshalNonNil(statefulsetsErrors)
-	if err != nil {
-		return nil, err
+	output.SaveResult(c.BundlePath, "cluster-resources/statefulsets-errors.json", marshalErrors(statefulsetsErrors))
+
+	// jobs
+	jobs, jobsErrors := jobs(ctx, client, namespaceNames)
+	for k, v := range jobs {
+		output.SaveResult(c.BundlePath, path.Join("cluster-resources/jobs", k), bytes.NewBuffer(v))
 	}
+	output.SaveResult(c.BundlePath, "cluster-resources/jobs-errors.json", marshalErrors(jobsErrors))
+
+	// cronJobs
+	cronJobs, cronJobsErrors := cronJobs(ctx, client, namespaceNames)
+	for k, v := range cronJobs {
+		output.SaveResult(c.BundlePath, path.Join("cluster-resources/cronjobs", k), bytes.NewBuffer(v))
+	}
+	output.SaveResult(c.BundlePath, "cluster-resources/cronjobs-errors.json", marshalErrors(cronJobsErrors))
 
 	// ingress
 	ingress, ingressErrors := ingress(ctx, client, namespaceNames)
 	for k, v := range ingress {
-		clusterResourcesOutput[path.Join("cluster-resources/ingress", k)] = v
+		output.SaveResult(c.BundlePath, path.Join("cluster-resources/ingress", k), bytes.NewBuffer(v))
 	}
-	clusterResourcesOutput["cluster-resources/ingress-errors.json"], err = marshalNonNil(ingressErrors)
-	if err != nil {
-		return nil, err
-	}
+	output.SaveResult(c.BundlePath, "cluster-resources/ingress-errors.json", marshalErrors(ingressErrors))
 
 	// storage classes
 	storageClasses, storageErrors := storageClasses(ctx, client)
-	clusterResourcesOutput["cluster-resources/storage-classes.json"] = storageClasses
-	clusterResourcesOutput["cluster-resources/storage-errors.json"], err = marshalNonNil(storageErrors)
-	if err != nil {
-		return nil, err
-	}
+	output.SaveResult(c.BundlePath, "cluster-resources/storage-classes.json", bytes.NewBuffer(storageClasses))
+	output.SaveResult(c.BundlePath, "cluster-resources/storage-errors.json", marshalErrors(storageErrors))
 
 	// crds
-	crdClient, err := apiextensionsv1beta1clientset.NewForConfig(c.ClientConfig)
-	if err != nil {
-		return nil, err
-	}
-	customResourceDefinitions, crdErrors := crds(ctx, crdClient)
-	clusterResourcesOutput["cluster-resources/custom-resource-definitions.json"] = customResourceDefinitions
-	clusterResourcesOutput["cluster-resources/custom-resource-definitions-errors.json"], err = marshalNonNil(crdErrors)
-	if err != nil {
-		return nil, err
-	}
+	customResourceDefinitions, crdErrors := crds(ctx, client, c.ClientConfig)
+	output.SaveResult(c.BundlePath, "cluster-resources/custom-resource-definitions.json", bytes.NewBuffer(customResourceDefinitions))
+	output.SaveResult(c.BundlePath, "cluster-resources/custom-resource-definitions-errors.json", marshalErrors(crdErrors))
 
 	// imagepullsecrets
 	imagePullSecrets, pullSecretsErrors := imagePullSecrets(ctx, client, namespaceNames)
 	for k, v := range imagePullSecrets {
-		clusterResourcesOutput[path.Join("cluster-resources/image-pull-secrets", k)] = v
+		output.SaveResult(c.BundlePath, path.Join("cluster-resources/image-pull-secrets", k), bytes.NewBuffer(v))
 	}
-	clusterResourcesOutput["cluster-resources/image-pull-secrets-errors.json"], err = marshalNonNil(pullSecretsErrors)
-	if err != nil {
-		return nil, err
-	}
+	output.SaveResult(c.BundlePath, "cluster-resources/image-pull-secrets-errors.json", marshalErrors(pullSecretsErrors))
 
 	// nodes
 	nodes, nodeErrors := nodes(ctx, client)
-	clusterResourcesOutput["cluster-resources/nodes.json"] = nodes
-	clusterResourcesOutput["cluster-resources/nodes-errors.json"], err = marshalNonNil(nodeErrors)
-	if err != nil {
-		return nil, err
-	}
+	output.SaveResult(c.BundlePath, "cluster-resources/nodes.json", bytes.NewBuffer(nodes))
+	output.SaveResult(c.BundlePath, "cluster-resources/nodes-errors.json", marshalErrors(nodeErrors))
 
 	groups, resources, groupsResourcesErrors := apiResources(ctx, client)
-	clusterResourcesOutput["cluster-resources/groups.json"] = groups
-	clusterResourcesOutput["cluster-resources/resources.json"] = resources
-	clusterResourcesOutput["cluster-resources/groups-resources-errors.json"], err = marshalNonNil(groupsResourcesErrors)
-	if err != nil {
-		return nil, err
-	}
+	output.SaveResult(c.BundlePath, "cluster-resources/groups.json", bytes.NewBuffer(groups))
+	output.SaveResult(c.BundlePath, "cluster-resources/resources.json", bytes.NewBuffer(resources))
+	output.SaveResult(c.BundlePath, "cluster-resources/groups-resources-errors.json", marshalErrors(groupsResourcesErrors))
 
 	// limit ranges
 	limitRanges, limitRangesErrors := limitRanges(ctx, client, namespaceNames)
 	for k, v := range limitRanges {
-		clusterResourcesOutput[path.Join("cluster-resources/limitranges", k)] = v
+		output.SaveResult(c.BundlePath, path.Join("cluster-resources/limitranges", k), bytes.NewBuffer(v))
 	}
-	clusterResourcesOutput["cluster-resources/limitranges-errors.json"], err = marshalNonNil(limitRangesErrors)
-	if err != nil {
-		return nil, err
-	}
+	output.SaveResult(c.BundlePath, "cluster-resources/limitranges-errors.json", marshalErrors(limitRangesErrors))
 
 	// auth cani
 	authCanI, authCanIErrors := authCanI(ctx, client, namespaceNames)
 	for k, v := range authCanI {
-		clusterResourcesOutput[path.Join("cluster-resources/auth-cani-list", k)] = v
+		output.SaveResult(c.BundlePath, path.Join("cluster-resources/auth-cani-list", k), bytes.NewBuffer(v))
 	}
-	clusterResourcesOutput["cluster-resources/auth-cani-list-errors.json"], err = marshalNonNil(authCanIErrors)
-	if err != nil {
-		return nil, err
-	}
+	output.SaveResult(c.BundlePath, "cluster-resources/auth-cani-list-errors.json", marshalErrors(authCanIErrors))
 
 	//Events
 	events, eventsErrors := events(ctx, client, namespaceNames)
 	for k, v := range events {
-		clusterResourcesOutput[path.Join("cluster-resources/events", k)] = v
+		output.SaveResult(c.BundlePath, path.Join("cluster-resources/events", k), bytes.NewBuffer(v))
 	}
-	clusterResourcesOutput["cluster-resources/events-errors.json"], err = marshalNonNil(eventsErrors)
-	if err != nil {
-		return nil, err
-	}
+	output.SaveResult(c.BundlePath, "cluster-resources/events-errors.json", marshalErrors(eventsErrors))
 
 	//Persistent Volumes
 	pvs, pvsErrors := pvs(ctx, client)
-	clusterResourcesOutput["cluster-resources/pvs.json"] = pvs
-	clusterResourcesOutput["cluster-resources/pvs-errors.json"], err = marshalNonNil(pvsErrors)
-	if err != nil {
-		return nil, err
-	}
+	output.SaveResult(c.BundlePath, "cluster-resources/pvs.json", bytes.NewBuffer(pvs))
+	output.SaveResult(c.BundlePath, "cluster-resources/pvs-errors.json", marshalErrors(pvsErrors))
 
 	//Persistent Volume Claims
 	pvcs, pvcsErrors := pvcs(ctx, client, namespaceNames)
 	for k, v := range pvcs {
-		clusterResourcesOutput[path.Join("cluster-resources/pvcs", k)] = v
+		output.SaveResult(c.BundlePath, path.Join("cluster-resources/pvcs", k), bytes.NewBuffer(v))
 	}
-	clusterResourcesOutput["cluster-resources/pvcs-errors.json"], err = marshalNonNil(pvcsErrors)
-	if err != nil {
-		return nil, err
-	}
+	output.SaveResult(c.BundlePath, "cluster-resources/pvcs-errors.json", marshalErrors(pvcsErrors))
 
-	return clusterResourcesOutput, nil
+	return output, nil
 }
 
-func namespaces(ctx context.Context, client *kubernetes.Clientset) ([]byte, *corev1.NamespaceList, []string) {
+func getAllNamespaces(ctx context.Context, client *kubernetes.Clientset) ([]byte, *corev1.NamespaceList, []string) {
 	namespaces, err := client.CoreV1().Namespaces().List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return nil, nil, []string{err.Error()}
@@ -208,13 +180,35 @@ func namespaces(ctx context.Context, client *kubernetes.Clientset) ([]byte, *cor
 	return b, namespaces, nil
 }
 
+func getNamespaces(ctx context.Context, client *kubernetes.Clientset, namespaces []string) ([]byte, []string) {
+	namespacesArr := []*corev1.Namespace{}
+	errorsArr := []string{}
+
+	for _, namespace := range namespaces {
+		ns, err := client.CoreV1().Namespaces().Get(ctx, namespace, metav1.GetOptions{})
+		if err != nil {
+			errorsArr = append(errorsArr, err.Error())
+			continue
+		}
+		namespacesArr = append(namespacesArr, ns)
+	}
+
+	b, err := json.MarshalIndent(namespacesArr, "", "  ")
+	if err != nil {
+		errorsArr = append(errorsArr, err.Error())
+		return nil, errorsArr
+	}
+
+	return b, errorsArr
+}
+
 func getNamespace(ctx context.Context, client *kubernetes.Clientset, namespace string) ([]byte, []string) {
-	namespaces, err := client.CoreV1().Namespaces().Get(ctx, namespace, metav1.GetOptions{})
+	ns, err := client.CoreV1().Namespaces().Get(ctx, namespace, metav1.GetOptions{})
 	if err != nil {
 		return nil, []string{err.Error()}
 	}
 
-	b, err := json.MarshalIndent(namespaces, "", "  ")
+	b, err := json.MarshalIndent(ns, "", "  ")
 	if err != nil {
 		return nil, []string{err.Error()}
 	}
@@ -314,7 +308,88 @@ func statefulsets(ctx context.Context, client *kubernetes.Clientset, namespaces 
 	return statefulsetsByNamespace, errorsByNamespace
 }
 
+func jobs(ctx context.Context, client *kubernetes.Clientset, namespaces []string) (map[string][]byte, map[string]string) {
+	jobsByNamespace := make(map[string][]byte)
+	errorsByNamespace := make(map[string]string)
+
+	for _, namespace := range namespaces {
+		nsJobs, err := client.BatchV1().Jobs(namespace).List(ctx, metav1.ListOptions{})
+		if err != nil {
+			errorsByNamespace[namespace] = err.Error()
+			continue
+		}
+
+		b, err := json.MarshalIndent(nsJobs.Items, "", "  ")
+		if err != nil {
+			errorsByNamespace[namespace] = err.Error()
+			continue
+		}
+
+		jobsByNamespace[namespace+".json"] = b
+	}
+
+	return jobsByNamespace, errorsByNamespace
+}
+
+func cronJobs(ctx context.Context, client *kubernetes.Clientset, namespaces []string) (map[string][]byte, map[string]string) {
+	cronJobsByNamespace := make(map[string][]byte)
+	errorsByNamespace := make(map[string]string)
+
+	for _, namespace := range namespaces {
+		nsCronJobs, err := client.BatchV1beta1().CronJobs(namespace).List(ctx, metav1.ListOptions{})
+		if err != nil {
+			errorsByNamespace[namespace] = err.Error()
+			continue
+		}
+
+		b, err := json.MarshalIndent(nsCronJobs.Items, "", "  ")
+		if err != nil {
+			errorsByNamespace[namespace] = err.Error()
+			continue
+		}
+
+		cronJobsByNamespace[namespace+".json"] = b
+	}
+
+	return cronJobsByNamespace, errorsByNamespace
+}
+
 func ingress(ctx context.Context, client *kubernetes.Clientset, namespaces []string) (map[string][]byte, map[string]string) {
+	ok, err := discovery.HasResource(client, "networking.k8s.io/v1", "Ingress")
+	if err != nil {
+		return nil, map[string]string{"": err.Error()}
+	}
+	if ok {
+		return ingressV1(ctx, client, namespaces)
+	}
+
+	return ingressV1beta(ctx, client, namespaces)
+}
+
+func ingressV1(ctx context.Context, client *kubernetes.Clientset, namespaces []string) (map[string][]byte, map[string]string) {
+	ingressByNamespace := make(map[string][]byte)
+	errorsByNamespace := make(map[string]string)
+
+	for _, namespace := range namespaces {
+		ingress, err := client.NetworkingV1().Ingresses(namespace).List(ctx, metav1.ListOptions{})
+		if err != nil {
+			errorsByNamespace[namespace] = err.Error()
+			continue
+		}
+
+		b, err := json.MarshalIndent(ingress.Items, "", "  ")
+		if err != nil {
+			errorsByNamespace[namespace] = err.Error()
+			continue
+		}
+
+		ingressByNamespace[namespace+".json"] = b
+	}
+
+	return ingressByNamespace, errorsByNamespace
+}
+
+func ingressV1beta(ctx context.Context, client *kubernetes.Clientset, namespaces []string) (map[string][]byte, map[string]string) {
 	ingressByNamespace := make(map[string][]byte)
 	errorsByNamespace := make(map[string]string)
 
@@ -338,6 +413,32 @@ func ingress(ctx context.Context, client *kubernetes.Clientset, namespaces []str
 }
 
 func storageClasses(ctx context.Context, client *kubernetes.Clientset) ([]byte, []string) {
+	ok, err := discovery.HasResource(client, "storage.k8s.io/v1", "StorageClass")
+	if err != nil {
+		return nil, []string{err.Error()}
+	}
+	if ok {
+		return storageClassesV1(ctx, client)
+	}
+
+	return storageClassesV1beta(ctx, client)
+}
+
+func storageClassesV1(ctx context.Context, client *kubernetes.Clientset) ([]byte, []string) {
+	storageClasses, err := client.StorageV1().StorageClasses().List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return nil, []string{err.Error()}
+	}
+
+	b, err := json.MarshalIndent(storageClasses.Items, "", "  ")
+	if err != nil {
+		return nil, []string{err.Error()}
+	}
+
+	return b, nil
+}
+
+func storageClassesV1beta(ctx context.Context, client *kubernetes.Clientset) ([]byte, []string) {
 	storageClasses, err := client.StorageV1beta1().StorageClasses().List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return nil, []string{err.Error()}
@@ -351,7 +452,43 @@ func storageClasses(ctx context.Context, client *kubernetes.Clientset) ([]byte, 
 	return b, nil
 }
 
-func crds(ctx context.Context, client *apiextensionsv1beta1clientset.ApiextensionsV1beta1Client) ([]byte, []string) {
+func crds(ctx context.Context, client *kubernetes.Clientset, config *rest.Config) ([]byte, []string) {
+	ok, err := discovery.HasResource(client, "apiextensions.k8s.io/v1", "CustomResourceDefinition")
+	if err != nil {
+		return nil, []string{err.Error()}
+	}
+	if ok {
+		return crdsV1(ctx, config)
+	}
+
+	return crdsV1beta(ctx, config)
+}
+
+func crdsV1(ctx context.Context, config *rest.Config) ([]byte, []string) {
+	client, err := apiextensionsv1clientset.NewForConfig(config)
+	if err != nil {
+		return nil, []string{err.Error()}
+	}
+
+	crds, err := client.CustomResourceDefinitions().List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return nil, []string{err.Error()}
+	}
+
+	b, err := json.MarshalIndent(crds.Items, "", "  ")
+	if err != nil {
+		return nil, []string{err.Error()}
+	}
+
+	return b, nil
+}
+
+func crdsV1beta(ctx context.Context, config *rest.Config) ([]byte, []string) {
+	client, err := apiextensionsv1beta1clientset.NewForConfig(config)
+	if err != nil {
+		return nil, []string{err.Error()}
+	}
+
 	crds, err := client.CustomResourceDefinitions().List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return nil, []string{err.Error()}

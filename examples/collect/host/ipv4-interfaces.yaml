@@ -1,0 +1,7 @@
+apiVersion: troubleshoot.sh/v1beta2
+kind: HostCollector
+metadata:
+  name: ipv4Interfaces
+spec:
+  collectors:
+    - ipv4Interfaces: {}

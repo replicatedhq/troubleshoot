@@ -1,6 +1,7 @@
 package collect
 
 import (
+	"bytes"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -11,7 +12,7 @@ import (
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 )
 
-func Postgres(c *Collector, databaseCollector *troubleshootv1beta2.Database) (map[string][]byte, error) {
+func Postgres(c *Collector, databaseCollector *troubleshootv1beta2.Database) (CollectorResult, error) {
 	databaseConnection := DatabaseConnection{}
 
 	db, err := sql.Open("postgres", databaseCollector.URI)
@@ -46,11 +47,10 @@ func Postgres(c *Collector, databaseCollector *troubleshootv1beta2.Database) (ma
 		collectorName = "postgres"
 	}
 
-	postgresOutput := map[string][]byte{
-		fmt.Sprintf("postgres/%s.json", collectorName): b,
-	}
+	output := NewResult()
+	output.SaveResult(c.BundlePath, fmt.Sprintf("postgres/%s.json", collectorName), bytes.NewBuffer(b))
 
-	return postgresOutput, nil
+	return output, nil
 }
 
 func parsePostgresVersion(postgresVersion string) (string, error) {
