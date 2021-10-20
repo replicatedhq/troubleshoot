@@ -20,7 +20,6 @@ import (
 	apiextensionsv1beta1clientset "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1beta1"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
@@ -582,7 +581,11 @@ func crsV1(ctx context.Context, client dynamic.Interface, config *rest.Config, n
 		}
 
 		if !isNamespacedResource {
-			b, err := yaml.Marshal(customResourceList.Items)
+			objects := []map[string]interface{}{}
+			for _, item := range customResourceList.Items {
+				objects = append(objects, item.Object)
+			}
+			b, err := yaml.Marshal(objects)
 			if err != nil {
 				errorList[crd.Name] = err.Error()
 				continue
@@ -590,22 +593,20 @@ func crsV1(ctx context.Context, client dynamic.Interface, config *rest.Config, n
 			customResources[fmt.Sprintf("%s.yaml", crd.Name)] = b
 		} else {
 			// Group fetched resources by the namespace
-			perNamespace := map[string][]runtime.Object{}
+			perNamespace := map[string][]map[string]interface{}{}
 			errors := []string{}
 
-			customResourceList.EachListItem(func(obj runtime.Object) error {
-				ns, err := metaAccessor.Namespace(obj)
+			for _, item := range customResourceList.Items {
+				ns, err := metaAccessor.Namespace(&item)
 				if err != nil {
 					errors = append(errors, err.Error())
-					return nil
+					continue
 				}
-
 				if perNamespace[ns] == nil {
-					perNamespace[ns] = []runtime.Object{}
+					perNamespace[ns] = []map[string]interface{}{}
 				}
-				perNamespace[ns] = append(perNamespace[ns], obj)
-				return nil
-			})
+				perNamespace[ns] = append(perNamespace[ns], item.Object)
+			}
 
 			if len(errors) > 0 {
 				errorList[crd.Name] = strings.Join(errors, "\n")
@@ -677,6 +678,10 @@ func crsV1beta(ctx context.Context, client dynamic.Interface, config *rest.Confi
 		}
 
 		if !isNamespacedResource {
+			objects := []map[string]interface{}{}
+			for _, item := range customResourceList.Items {
+				objects = append(objects, item.Object)
+			}
 			b, err := yaml.Marshal(customResourceList.Items)
 			if err != nil {
 				errorList[crd.Name] = err.Error()
@@ -685,22 +690,20 @@ func crsV1beta(ctx context.Context, client dynamic.Interface, config *rest.Confi
 			customResources[fmt.Sprintf("%s.yaml", crd.Name)] = b
 		} else {
 			// Group fetched resources by the namespace
-			perNamespace := map[string][]runtime.Object{}
+			perNamespace := map[string][]map[string]interface{}{}
 			errors := []string{}
 
-			customResourceList.EachListItem(func(obj runtime.Object) error {
-				ns, err := metaAccessor.Namespace(obj)
+			for _, item := range customResourceList.Items {
+				ns, err := metaAccessor.Namespace(&item)
 				if err != nil {
 					errors = append(errors, err.Error())
-					return nil
+					continue
 				}
-
 				if perNamespace[ns] == nil {
-					perNamespace[ns] = []runtime.Object{}
+					perNamespace[ns] = []map[string]interface{}{}
 				}
-				perNamespace[ns] = append(perNamespace[ns], obj)
-				return nil
-			})
+				perNamespace[ns] = append(perNamespace[ns], item.Object)
+			}
 
 			if len(errors) > 0 {
 				errorList[crd.Name] = strings.Join(errors, "\n")
