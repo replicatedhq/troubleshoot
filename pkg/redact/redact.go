@@ -28,7 +28,7 @@ func init() {
 }
 
 type Redactor interface {
-	Redact(input io.Reader) io.Reader
+	Redact(input io.Reader, path string) io.Reader
 }
 
 // Redactions are indexed both by the file affected and by the name of the redactor
@@ -59,7 +59,7 @@ func Redact(input io.Reader, path string, additionalRedactors []*troubleshootv1b
 
 	nextReader := input
 	for _, r := range redactors {
-		nextReader = r.Redact(nextReader)
+		nextReader = r.Redact(nextReader, path)
 	}
 
 	return nextReader, nil

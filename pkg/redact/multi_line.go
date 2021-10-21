@@ -28,7 +28,7 @@ func NewMultiLineRedactor(re1, re2, maskText, path, name string, isDefault bool)
 	return &MultiLineRedactor{re1: compiled1, re2: compiled2, maskText: maskText, filePath: path, redactName: name, isDefault: isDefault}, nil
 }
 
-func (r *MultiLineRedactor) Redact(input io.Reader) io.Reader {
+func (r *MultiLineRedactor) Redact(input io.Reader, path string) io.Reader {
 	out, writer := io.Pipe()
 	go func() {
 		var err error

@@ -5,9 +5,11 @@ import (
 	"bytes"
 	"io"
 	"io/ioutil"
+	"path/filepath"
 	"strconv"
 	"strings"
 
+	"github.com/replicatedhq/troubleshoot/pkg/logger"
 	"gopkg.in/yaml.v2"
 )
 
@@ -24,7 +26,17 @@ func NewYamlRedactor(yamlPath, filePath, name string) *YamlRedactor {
 	return &YamlRedactor{maskPath: pathComponents, filePath: filePath, redactName: name}
 }
 
-func (r *YamlRedactor) Redact(input io.Reader) io.Reader {
+func (r *YamlRedactor) Redact(input io.Reader, path string) io.Reader {
+	if path != "" && r.filePath != "" {
+		match, err := filepath.Match(r.filePath, path)
+		if err != nil {
+			logger.Printf("Failed to match %q and %q: %v", r.filePath, path, err)
+			return input
+		}
+		if !match {
+			return input
+		}
+	}
 	reader, writer := io.Pipe()
 	go func() {
 		var err error
