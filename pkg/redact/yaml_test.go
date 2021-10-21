@@ -294,7 +294,7 @@ xyz:
 			req := require.New(t)
 			yamlRunner := NewYamlRedactor(strings.Join(tt.path, "."), "testfile", tt.name)
 
-			outReader := yamlRunner.Redact(bytes.NewReader([]byte(tt.inputString)), "")
+			outReader := yamlRunner.Redact(bytes.NewReader([]byte(tt.inputString)), "testfile")
 			gotBytes, err := ioutil.ReadAll(outReader)
 			req.NoError(err)
 			req.Equal(tt.wantString, string(gotBytes))

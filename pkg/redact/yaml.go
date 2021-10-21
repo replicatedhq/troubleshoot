@@ -27,7 +27,7 @@ func NewYamlRedactor(yamlPath, filePath, name string) *YamlRedactor {
 }
 
 func (r *YamlRedactor) Redact(input io.Reader, path string) io.Reader {
-	if path != "" && r.filePath != "" {
+	if r.filePath != "" {
 		match, err := filepath.Match(r.filePath, path)
 		if err != nil {
 			logger.Printf("Failed to match %q and %q: %v", r.filePath, path, err)
