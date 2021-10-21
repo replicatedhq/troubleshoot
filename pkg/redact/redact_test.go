@@ -1637,7 +1637,7 @@ func Test_Redactors(t *testing.T) {
 
 		nextReader := io.Reader(strings.NewReader(original))
 		for _, r := range redactors {
-			nextReader = r.Redact(nextReader)
+			nextReader = r.Redact(nextReader, "")
 		}
 
 		redacted, err := ioutil.ReadAll(nextReader)

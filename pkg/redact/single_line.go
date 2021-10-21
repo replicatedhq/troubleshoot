@@ -23,7 +23,7 @@ func NewSingleLineRedactor(re, maskText, path, name string, isDefault bool) (*Si
 	return &SingleLineRedactor{re: compiled, maskText: maskText, filePath: path, redactName: name, isDefault: isDefault}, nil
 }
 
-func (r *SingleLineRedactor) Redact(input io.Reader) io.Reader {
+func (r *SingleLineRedactor) Redact(input io.Reader, path string) io.Reader {
 	out, writer := io.Pipe()
 
 	go func() {

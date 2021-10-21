@@ -22,7 +22,7 @@ func literalString(matchString, path, name string) Redactor {
 	}
 }
 
-func (r literalRedactor) Redact(input io.Reader) io.Reader {
+func (r literalRedactor) Redact(input io.Reader, path string) io.Reader {
 	out, writer := io.Pipe()
 
 	go func() {

@@ -28,7 +28,7 @@ func init() {
 }
 
 type Redactor interface {
-	Redact(input io.Reader) io.Reader
+	Redact(input io.Reader, path string) io.Reader
 }
 
 // Redactions are indexed both by the file affected and by the name of the redactor
@@ -59,7 +59,7 @@ func Redact(input io.Reader, path string, additionalRedactors []*troubleshootv1b
 
 	nextReader := input
 	for _, r := range redactors {
-		nextReader = r.Redact(nextReader)
+		nextReader = r.Redact(nextReader, path)
 	}
 
 	return nextReader, nil
@@ -312,6 +312,40 @@ func getRedactors(path string) ([]Redactor, error) {
 			return nil, err // maybe skip broken ones?
 		}
 		redactors = append(redactors, r)
+	}
+
+	customResources := []struct {
+		resource string
+		yamlPath string
+	}{
+		{
+			resource: "installers.cluster.kurl.sh",
+			yamlPath: "*.spec.kubernetes.bootstrapToken",
+		},
+		{
+			resource: "installers.cluster.kurl.sh",
+			yamlPath: "*.spec.kubernetes.certKey",
+		},
+		{
+			resource: "installers.cluster.kurl.sh",
+			yamlPath: "*.spec.kubernetes.kubeadmToken",
+		},
+	}
+
+	uniqueCRs := map[string]bool{}
+	for _, cr := range customResources {
+		fileglob := fmt.Sprintf("cluster-resources/custom-resources/%s/*", cr.resource)
+		redactors = append(redactors, NewYamlRedactor(cr.yamlPath, fileglob, ""))
+
+		// redact kubectl last applied annotation once for each resource since it contains copies of
+		// redacted fields
+		if !uniqueCRs[cr.resource] {
+			uniqueCRs[cr.resource] = true
+			redactors = append(redactors, &YamlRedactor{
+				filePath: fileglob,
+				maskPath: []string{"*", "metadata", "annotations", "kubectl.kubernetes.io/last-applied-configuration"},
+			})
+		}
 	}
 
 	return redactors, nil
