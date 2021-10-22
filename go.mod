@@ -1,6 +1,6 @@
 module github.com/replicatedhq/troubleshoot
 
-go 1.12
+go 1.17
 
 require (
 	github.com/StackExchange/wmi v0.0.0-20210224194228-fe8f1750fd46 // indirect
@@ -47,8 +47,7 @@ require (
 	k8s.io/apiserver v0.22.2
 	k8s.io/cli-runtime v0.21.5
 	k8s.io/client-go v0.22.2
-	sigs.k8s.io/controller-runtime v0.8.3
-	sigs.k8s.io/controller-tools v0.7.0 // indirect
+	sigs.k8s.io/controller-runtime v0.7.0
 )
 
-replace sigs.k8s.io/controller-runtime => github.com/kubernetes-sigs/controller-runtime v0.8.3
+replace sigs.k8s.io/controller-runtime => github.com/kubernetes-sigs/controller-runtime v0.7.0
