@@ -48,6 +48,7 @@ require (
 	k8s.io/cli-runtime v0.21.5
 	k8s.io/client-go v0.22.2
 	sigs.k8s.io/controller-runtime v0.8.3
+	sigs.k8s.io/controller-tools v0.7.0 // indirect
 )
 
 replace sigs.k8s.io/controller-runtime => github.com/kubernetes-sigs/controller-runtime v0.8.3
