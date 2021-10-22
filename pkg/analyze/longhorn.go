@@ -8,11 +8,11 @@ import (
 	"reflect"
 	"strings"
 
-	longhornv1beta1 "github.com/longhorn/longhorn-manager/k8s/pkg/apis/longhorn/v1beta1"
-	longhorntypes "github.com/longhorn/longhorn-manager/types"
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/replicatedhq/troubleshoot/pkg/collect"
+	longhornv1beta1 "github.com/replicatedhq/troubleshoot/pkg/longhorn/apis/longhorn/v1beta1"
+	longhorntypes "github.com/replicatedhq/troubleshoot/pkg/longhorn/types"
 	"github.com/replicatedhq/troubleshoot/pkg/redact"
 	"gopkg.in/yaml.v2"
 )

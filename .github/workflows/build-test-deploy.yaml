@@ -14,7 +14,7 @@ jobs:
     steps:
       - uses: actions/setup-go@v1
         with:
-          go-version: "1.14"
+          go-version: "1.17"
 
       - name: setup env
         run: |
@@ -32,7 +32,7 @@ jobs:
     steps:
       - uses: actions/setup-go@v1
         with:
-          go-version: '1.14'
+          go-version: '1.17'
       - name: setup env
         run: |
           echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
@@ -64,7 +64,7 @@ jobs:
     steps:
       - uses: actions/setup-go@v1
         with:
-          go-version: '1.14'
+          go-version: '1.17'
       - name: setup env
         run: |
           echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
@@ -112,7 +112,7 @@ jobs:
   
       - uses: actions/setup-go@v1
         with:
-          go-version: "1.14"
+          go-version: "1.17"
 
       - uses: sigstore/cosign-installer@main
         with:
