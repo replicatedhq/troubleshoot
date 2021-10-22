@@ -158,4 +158,16 @@ sbom: sbom/assets/troubleshoot-sbom.tgz
 	cosign sign-blob -key cosign.key sbom/assets/troubleshoot-sbom.tgz > sbom/assets/troubleshoot-sbom.tgz.sig
 	cosign public-key -key cosign.key -outfile sbom/assets/key.pub
 
-
+longhorn:
+	git clone https://github.com/longhorn/longhorn-manager.git
+	cd longhorn-manager && git checkout v1.2.2 && cd ..
+	rm -rf pkg/longhorn
+	mv longhorn-manager/k8s/pkg pkg/longhorn
+	mv longhorn-manager/types pkg/longhorn/types
+	mv longhorn-manager/util pkg/longhorn/util
+	rm -rf pkg/longhorn/util/daemon
+	rm -rf pkg/longhorn/util/server
+	find pkg/longhorn -type f | xargs sed -i "s/github.com\/longhorn\/longhorn-manager\/k8s\/pkg/github.com\/replicatedhq\/troubleshoot\/pkg\/longhorn/g"
+	find pkg/longhorn -type f | xargs sed -i "s/github.com\/longhorn\/longhorn-manager\/types/github.com\/replicatedhq\/troubleshoot\/pkg\/longhorn\/types/g"
+	find pkg/longhorn -type f | xargs sed -i "s/github.com\/longhorn\/longhorn-manager\/util/github.com\/replicatedhq\/troubleshoot\/pkg\/longhorn\/util/g"
+	rm -rf longhorn-manager

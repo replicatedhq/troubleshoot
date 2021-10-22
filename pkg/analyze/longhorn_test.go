@@ -3,8 +3,8 @@ package analyzer
 import (
 	"testing"
 
-	longhornv1beta1 "github.com/longhorn/longhorn-manager/k8s/pkg/apis/longhorn/v1beta1"
-	longhorntypes "github.com/longhorn/longhorn-manager/types"
+	longhornv1beta1 "github.com/replicatedhq/troubleshoot/pkg/longhorn/apis/longhorn/v1beta1"
+	longhorntypes "github.com/replicatedhq/troubleshoot/pkg/longhorn/types"
 	"github.com/stretchr/testify/assert"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
