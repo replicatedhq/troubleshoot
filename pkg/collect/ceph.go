@@ -1,13 +1,13 @@
 package collect
 
 import (
-	"bytes"
 	"context"
 	"fmt"
+	"io"
+	"os"
 	"path"
 	"strings"
 
-	multierror "github.com/hashicorp/go-multierror"
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	corev1 "k8s.io/api/core/v1"
@@ -103,18 +103,19 @@ func Ceph(c *Collector, cephCollector *troubleshootv1beta2.Ceph) (CollectorResul
 	}
 
 	output := NewResult()
-	var multiErr *multierror.Error
 	for _, command := range CephCommands {
-		results, err := cephCommandExec(ctx, c, cephCollector, pod, command)
-		multiErr = multierror.Append(multiErr, errors.Wrapf(err, "failed to exec command %s", command.ID))
-		for fileName, r := range results {
-			output.SaveResult(c.BundlePath, fileName, bytes.NewBuffer(r))
+		err := cephCommandExec(ctx, c, cephCollector, pod, command, output)
+		if err != nil {
+			pathPrefix := GetCephCollectorFilepath(cephCollector.CollectorName, cephCollector.Namespace)
+			dstFileName := path.Join(pathPrefix, fmt.Sprintf("%s.%s-error", command.ID, command.Format))
+			output.SaveResult(c.BundlePath, dstFileName, strings.NewReader(err.Error()))
 		}
 	}
+
 	return output, nil
 }
 
-func cephCommandExec(ctx context.Context, c *Collector, cephCollector *troubleshootv1beta2.Ceph, pod *corev1.Pod, command CephCommand) (map[string][]byte, error) {
+func cephCommandExec(ctx context.Context, c *Collector, cephCollector *troubleshootv1beta2.Ceph, pod *corev1.Pod, command CephCommand, output CollectorResult) error {
 	timeout := cephCollector.Timeout
 	if timeout == "" {
 		timeout = command.DefaultTimeout
@@ -129,23 +130,30 @@ func cephCommandExec(ctx context.Context, c *Collector, cephCollector *troublesh
 	}
 	results, err := Exec(c, execCollector)
 	if err != nil {
-		return nil, err
+		return errors.Wrap(err, "failed to exec command")
 	}
 
-	final := map[string][]byte{}
-	for filename, result := range results {
+	for srcFilename, _ := range results {
 		pathPrefix := GetCephCollectorFilepath(cephCollector.CollectorName, cephCollector.Namespace)
+		var dstFileName string
 		switch {
-		case strings.HasSuffix(filename, "-stdout.txt"):
-			final[path.Join(pathPrefix, fmt.Sprintf("%s.%s", command.ID, command.Format))] = result
-		case strings.HasSuffix(filename, "-stderr.txt"):
-			final[path.Join(pathPrefix, fmt.Sprintf("%s-stderr.txt", command.ID))] = result
-		case strings.HasSuffix(filename, "-errors.json"):
-			final[path.Join(pathPrefix, fmt.Sprintf("%s-errors.json", command.ID))] = result
+		case strings.HasSuffix(srcFilename, "-stdout.txt"):
+			dstFileName = path.Join(pathPrefix, fmt.Sprintf("%s.%s", command.ID, command.Format))
+		case strings.HasSuffix(srcFilename, "-stderr.txt"):
+			dstFileName = path.Join(pathPrefix, fmt.Sprintf("%s-stderr.txt", command.ID))
+		case strings.HasSuffix(srcFilename, "-errors.json"):
+			dstFileName = path.Join(pathPrefix, fmt.Sprintf("%s-errors.json", command.ID))
+		default:
+			continue
+		}
+
+		err := copyResult(results, output, c.BundlePath, srcFilename, dstFileName)
+		if err != nil {
+			return errors.Wrap(err, "failed to copy file")
 		}
 	}
 
-	return final, nil
+	return nil
 }
 
 func findRookCephToolsPod(ctx context.Context, c *Collector, namespace string) (*corev1.Pod, error) {
@@ -185,4 +193,25 @@ func labelsToSelector(labels map[string]string) []string {
 		selector = append(selector, fmt.Sprintf("%s=%s", key, value))
 	}
 	return selector
+}
+
+func copyResult(srcResult CollectorResult, dstResult CollectorResult, bundlePath string, srcKey string, dstKey string) error {
+	reader, err := srcResult.GetReader(bundlePath, srcKey)
+	if err != nil {
+		if os.IsNotExist(errors.Cause(err)) {
+			return nil
+		}
+		return errors.Wrap(err, "failed to get reader")
+	}
+
+	if reader, ok := reader.(io.ReadCloser); ok {
+		defer reader.Close()
+	}
+
+	err = dstResult.SaveResult(bundlePath, dstKey, reader)
+	if err != nil {
+		return errors.Wrap(err, "failed to save file")
+	}
+
+	return nil
 }

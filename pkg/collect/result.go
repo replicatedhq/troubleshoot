@@ -32,7 +32,7 @@ func (r CollectorResult) SaveResult(bundlePath string, relativePath string, read
 		return nil
 	}
 
-	r[relativePath] = nil // save the the file name referencing the file on disk
+	r[relativePath] = nil // save the file name referencing the file on disk
 
 	fileDir, fileName := filepath.Split(relativePath)
 	outPath := filepath.Join(bundlePath, fileDir)
@@ -45,6 +45,7 @@ func (r CollectorResult) SaveResult(bundlePath string, relativePath string, read
 	if err != nil {
 		return errors.Wrap(err, "failed to create file")
 	}
+	defer f.Close()
 
 	_, err = io.Copy(f, reader)
 	if err != nil {
