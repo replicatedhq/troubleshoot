@@ -129,6 +129,10 @@ func clusterPodStatuses(analyzer *troubleshootv1beta2.ClusterPodStatuses, getChi
 				return nil, errors.Wrap(err, "failed to execute template")
 			}
 			r.Message = m.String()
+
+			fmt.Println("r.Title after", r.Title)
+			fmt.Println("r.Message after", r.Message)
+			podResults = append(podResults, &r)
 		}
 
 		allResults = append(allResults, podResults...)
