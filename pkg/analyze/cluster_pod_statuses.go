@@ -14,7 +14,7 @@ import (
 )
 
 func clusterPodStatuses(analyzer *troubleshootv1beta2.ClusterPodStatuses, getChildCollectedFileContents func(string) (map[string][]byte, error)) ([]*AnalyzeResult, error) {
-	collected, err := getChildCollectedFileContents(filepath.Join("cluster-resources", "pods"))
+	collected, err := getChildCollectedFileContents(filepath.Join("cluster-resources", "pods", "*.json"))
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to read collected pods")
 	}
@@ -41,43 +41,33 @@ func clusterPodStatuses(analyzer *troubleshootv1beta2.ClusterPodStatuses, getChi
 		}
 	}
 
-	results := []*AnalyzeResult{}
+	allResults := []*AnalyzeResult{}
 
 	for _, pod := range pods {
-		whens := []string{}
-		results := []*AnalyzeResult{}
+		podResults := []*AnalyzeResult{}
 
 		for _, outcome := range analyzer.Outcomes {
 			r := AnalyzeResult{}
+			when := ""
+
 			if outcome.Fail != nil {
 				r.IsFail = true
 				r.Message = outcome.Fail.Message
 				r.URI = outcome.Fail.URI
-				results = append(results, &r)
-				whens = append(whens, outcome.Fail.When)
+				when = outcome.Fail.When
 			} else if outcome.Warn != nil {
 				r.IsWarn = true
 				r.Message = outcome.Warn.Message
 				r.URI = outcome.Warn.URI
-				results = append(results, &r)
-				whens = append(whens, outcome.Warn.When)
+				when = outcome.Warn.When
 			} else if outcome.Pass != nil {
 				r.IsPass = true
 				r.Message = outcome.Pass.Message
 				r.URI = outcome.Pass.URI
-				results = append(results, &r)
-				whens = append(whens, outcome.Pass.When)
+				when = outcome.Pass.When
+			} else {
+				continue
 			}
-		}
-
-		fmt.Println("whens", whens)
-
-		if len(results) == 0 {
-			return nil, errors.New("empty outcomes")
-		}
-
-		for i, when := range whens {
-			result := results[i]
 
 			parts := strings.Split(strings.TrimSpace(when), " ")
 			match := false
@@ -95,22 +85,22 @@ func clusterPodStatuses(analyzer *troubleshootv1beta2.ClusterPodStatuses, getChi
 				continue
 			}
 
-			result.Title = analyzer.CheckName
-			if result.Title == "" {
-				result.Title = "Pod {{ .Name }} status"
+			r.Title = analyzer.CheckName
+			if r.Title == "" {
+				r.Title = "Pod {{ .Name }} status"
 			}
 
-			if result.Message == "" {
-				result.Message = "Pod {{ .Name }} status is {{ .Status.Phase }}"
+			if r.Message == "" {
+				r.Message = "Pod {{ .Name }} status is {{ .Status.Phase }}"
 			}
 
-			fmt.Println("result.Title", result.Title)
-			fmt.Println("result.Message", result.Message)
+			fmt.Println("r.Title", r.Title)
+			fmt.Println("r.Message", r.Message)
 
 			tmpl := template.New("pod")
 
 			// template the title
-			titleTmpl, err := tmpl.Parse(result.Title)
+			titleTmpl, err := tmpl.Parse(r.Title)
 			if err != nil {
 				return nil, errors.Wrap(err, "failed to create new title template")
 			}
@@ -119,10 +109,10 @@ func clusterPodStatuses(analyzer *troubleshootv1beta2.ClusterPodStatuses, getChi
 			if err != nil {
 				return nil, errors.Wrap(err, "failed to execute template")
 			}
-			result.Title = t.String()
+			r.Title = t.String()
 
 			// template the message
-			msgTmpl, err := tmpl.Parse(result.Message)
+			msgTmpl, err := tmpl.Parse(r.Message)
 			if err != nil {
 				return nil, errors.Wrap(err, "failed to create new title template")
 			}
@@ -131,11 +121,13 @@ func clusterPodStatuses(analyzer *troubleshootv1beta2.ClusterPodStatuses, getChi
 			if err != nil {
 				return nil, errors.Wrap(err, "failed to execute template")
 			}
-			result.Message = m.String()
+			r.Message = m.String()
 		}
+
+		allResults = append(allResults, podResults...)
 	}
 
-	fmt.Println("results", results)
+	fmt.Println("allResults", allResults)
 
-	return results, nil
+	return allResults, nil
 }
