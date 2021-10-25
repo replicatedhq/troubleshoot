@@ -473,6 +473,37 @@ spec:
                             type: string
                           type: array
                       type: object
+                    sysctl:
+                      properties:
+                        collectorName:
+                          type: string
+                        exclude:
+                          type: BoolString
+                        image:
+                          type: string
+                        imagePullPolicy:
+                          type: string
+                        imagePullSecret:
+                          properties:
+                            data:
+                              additionalProperties:
+                                type: string
+                              type: object
+                            name:
+                              type: string
+                            type:
+                              type: string
+                          type: object
+                        name:
+                          type: string
+                        namespace:
+                          type: string
+                        timeout:
+                          type: string
+                      required:
+                      - image
+                      - namespace
+                      type: object
                   type: object
                 type: array
             type: object

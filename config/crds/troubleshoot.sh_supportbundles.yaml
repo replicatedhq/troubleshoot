@@ -905,6 +905,47 @@ spec:
                       - outcomes
                       - storageClassName
                       type: object
+                    sysctl:
+                      properties:
+                        checkName:
+                          type: string
+                        exclude:
+                          type: BoolString
+                        outcomes:
+                          items:
+                            properties:
+                              fail:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
+                              pass:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
+                              warn:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
+                            type: object
+                          type: array
+                      required:
+                      - outcomes
+                      type: object
                     textAnalyze:
                       properties:
                         checkName:
@@ -1372,6 +1413,37 @@ spec:
                           items:
                             type: string
                           type: array
+                      type: object
+                    sysctl:
+                      properties:
+                        collectorName:
+                          type: string
+                        exclude:
+                          type: BoolString
+                        image:
+                          type: string
+                        imagePullPolicy:
+                          type: string
+                        imagePullSecret:
+                          properties:
+                            data:
+                              additionalProperties:
+                                type: string
+                              type: object
+                            name:
+                              type: string
+                            type:
+                              type: string
+                          type: object
+                        name:
+                          type: string
+                        namespace:
+                          type: string
+                        timeout:
+                          type: string
+                      required:
+                      - image
+                      - namespace
                       type: object
                   type: object
                 type: array
