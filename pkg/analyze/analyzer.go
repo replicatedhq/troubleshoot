@@ -205,6 +205,22 @@ func Analyze(analyzer *troubleshootv1beta2.Analyze, getFile getCollectedFileCont
 		}
 		return []*AnalyzeResult{result}, nil
 	}
+	if analyzer.ClusterPodStatus != nil {
+		isExcluded, err := isExcluded(analyzer.ClusterPodStatus.Exclude)
+		if err != nil {
+			return nil, err
+		}
+		if isExcluded {
+			return nil, nil
+		}
+		// TODO: add cluster pod status
+		// result, err := analyzeClusterPodStatus(analyzer.ClusterPodStatus, getFile)
+		// if err != nil {
+		// 	return nil, err
+		// }
+		// return []*AnalyzeResult{result}, nil
+		return []*AnalyzeResult{}, nil
+	}
 	if analyzer.ContainerRuntime != nil {
 		isExcluded, err := isExcluded(analyzer.ContainerRuntime.Exclude)
 		if err != nil {
