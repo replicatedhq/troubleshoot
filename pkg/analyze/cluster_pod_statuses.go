@@ -66,17 +66,24 @@ func clusterPodStatuses(analyzer *troubleshootv1beta2.ClusterPodStatuses, getChi
 				r.URI = outcome.Pass.URI
 				when = outcome.Pass.When
 			} else {
+				// TODO log error
 				continue
 			}
 
 			parts := strings.Split(strings.TrimSpace(when), " ")
-			match := false
+			if len(parts) < 2 {
+				// TODO log error
+				continue
+			}
 
-			switch parts[1] {
+			match := false
+			fmt.Println("parts", parts[0], parts[1])
+			fmt.Println("string(pod.Status.Phase)", string(pod.Status.Phase))
+			switch parts[0] {
 			case "=", "==", "===":
-				match = parts[2] == string(pod.Status.Phase)
+				match = parts[1] == string(pod.Status.Phase)
 			case "!=", "!==":
-				match = parts[2] != string(pod.Status.Phase)
+				match = parts[1] != string(pod.Status.Phase)
 			}
 
 			fmt.Println("match", match)
