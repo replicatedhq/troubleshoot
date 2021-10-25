@@ -116,7 +116,7 @@ spec:
                       - namespace
                       - outcomes
                       type: object
-                    clusterPodStatus:
+                    clusterPodStatuses:
                       properties:
                         checkName:
                           type: string

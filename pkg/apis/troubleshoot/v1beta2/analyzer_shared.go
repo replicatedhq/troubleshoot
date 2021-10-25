@@ -63,7 +63,7 @@ type StatefulsetStatus struct {
 	Name        string     `json:"name" yaml:"name"`
 }
 
-type ClusterPodStatus struct {
+type ClusterPodStatuses struct {
 	AnalyzeMeta `json:",inline" yaml:",inline"`
 	Outcomes    []*Outcome `json:"outcomes" yaml:"outcomes"`
 	Namespaces  []string   `json:"namespaces" yaml:"namespaces"`
@@ -168,7 +168,7 @@ type Analyze struct {
 	ImagePullSecret          *ImagePullSecret          `json:"imagePullSecret,omitempty" yaml:"imagePullSecret,omitempty"`
 	DeploymentStatus         *DeploymentStatus         `json:"deploymentStatus,omitempty" yaml:"deploymentStatus,omitempty"`
 	StatefulsetStatus        *StatefulsetStatus        `json:"statefulsetStatus,omitempty" yaml:"statefulsetStatus,omitempty"`
-	ClusterPodStatus         *ClusterPodStatus         `json:"clusterPodStatus,omitempty" yaml:"clusterPodStatus,omitempty"`
+	ClusterPodStatuses       *ClusterPodStatuses       `json:"clusterPodStatuses,omitempty" yaml:"clusterPodStatuses,omitempty"`
 	ContainerRuntime         *ContainerRuntime         `json:"containerRuntime,omitempty" yaml:"containerRuntime,omitempty"`
 	Distribution             *Distribution             `json:"distribution,omitempty" yaml:"distribution,omitempty"`
 	NodeResources            *NodeResources            `json:"nodeResources,omitempty" yaml:"nodeResources,omitempty"`

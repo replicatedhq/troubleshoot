@@ -139,7 +139,7 @@
                   }
                 }
               },
-              "clusterPodStatus": {
+              "clusterPodStatuses": {
                 "type": "object",
                 "required": [
                   "namespaces",
