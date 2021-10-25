@@ -19,8 +19,6 @@ func clusterPodStatuses(analyzer *troubleshootv1beta2.ClusterPodStatuses, getChi
 		return nil, errors.Wrap(err, "failed to read collected pods")
 	}
 
-	fmt.Println("collected", len(collected))
-
 	var pods []corev1.Pod
 	for fileName, fileContent := range collected {
 		podsNs := strings.TrimSuffix(fileName, ".json")
@@ -31,7 +29,6 @@ func clusterPodStatuses(analyzer *troubleshootv1beta2.ClusterPodStatuses, getChi
 				break
 			}
 		}
-		fmt.Println("include", include)
 		if include {
 			var nsPods []corev1.Pod
 			if err := json.Unmarshal(fileContent, &nsPods); err != nil {
@@ -66,27 +63,23 @@ func clusterPodStatuses(analyzer *troubleshootv1beta2.ClusterPodStatuses, getChi
 				r.URI = outcome.Pass.URI
 				when = outcome.Pass.When
 			} else {
-				// TODO log error
+				fmt.Println("error: found an empty outcome in a clusterPodStatuses analyzer") // don't stop
 				continue
 			}
 
 			parts := strings.Split(strings.TrimSpace(when), " ")
 			if len(parts) < 2 {
-				// TODO log error
+				fmt.Printf("invalid 'when' format: %s\n", when) // don't stop
 				continue
 			}
 
 			match := false
-			fmt.Println("parts", parts[0], parts[1])
-			fmt.Println("string(pod.Status.Phase)", string(pod.Status.Phase))
 			switch parts[0] {
 			case "=", "==", "===":
 				match = parts[1] == string(pod.Status.Phase)
 			case "!=", "!==":
 				match = parts[1] != string(pod.Status.Phase)
 			}
-
-			fmt.Println("match", match)
 
 			if !match {
 				continue
@@ -100,9 +93,6 @@ func clusterPodStatuses(analyzer *troubleshootv1beta2.ClusterPodStatuses, getChi
 			if r.Message == "" {
 				r.Message = "Pod {{ .Name }} status is {{ .Status.Phase }}"
 			}
-
-			fmt.Println("r.Title", r.Title)
-			fmt.Println("r.Message", r.Message)
 
 			tmpl := template.New("pod")
 
@@ -130,15 +120,11 @@ func clusterPodStatuses(analyzer *troubleshootv1beta2.ClusterPodStatuses, getChi
 			}
 			r.Message = m.String()
 
-			fmt.Println("r.Title after", r.Title)
-			fmt.Println("r.Message after", r.Message)
 			podResults = append(podResults, &r)
 		}
 
 		allResults = append(allResults, podResults...)
 	}
-
-	fmt.Println("allResults", allResults)
 
 	return allResults, nil
 }
