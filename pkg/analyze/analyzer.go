@@ -206,6 +206,7 @@ func Analyze(analyzer *troubleshootv1beta2.Analyze, getFile getCollectedFileCont
 		return []*AnalyzeResult{result}, nil
 	}
 	if analyzer.ClusterPodStatuses != nil {
+		fmt.Println("analyzer.ClusterPodStatuses", analyzer.ClusterPodStatuses)
 		isExcluded, err := isExcluded(analyzer.ClusterPodStatuses.Exclude)
 		if err != nil {
 			return nil, err

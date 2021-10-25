@@ -3,6 +3,7 @@ package analyzer
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"path/filepath"
 	"strings"
 	"text/template"
@@ -18,6 +19,8 @@ func clusterPodStatuses(analyzer *troubleshootv1beta2.ClusterPodStatuses, getChi
 		return nil, errors.Wrap(err, "failed to read collected pods")
 	}
 
+	fmt.Println("collected", len(collected))
+
 	var pods []corev1.Pod
 	for fileName, fileContent := range collected {
 		podsNs := strings.TrimSuffix(fileName, ".json")
@@ -28,6 +31,7 @@ func clusterPodStatuses(analyzer *troubleshootv1beta2.ClusterPodStatuses, getChi
 				break
 			}
 		}
+		fmt.Println("include", include)
 		if include {
 			var nsPods []corev1.Pod
 			if err := json.Unmarshal(fileContent, &nsPods); err != nil {
@@ -66,6 +70,8 @@ func clusterPodStatuses(analyzer *troubleshootv1beta2.ClusterPodStatuses, getChi
 			}
 		}
 
+		fmt.Println("whens", whens)
+
 		if len(results) == 0 {
 			return nil, errors.New("empty outcomes")
 		}
@@ -83,6 +89,8 @@ func clusterPodStatuses(analyzer *troubleshootv1beta2.ClusterPodStatuses, getChi
 				match = parts[2] != string(pod.Status.Phase)
 			}
 
+			fmt.Println("match", match)
+
 			if !match {
 				continue
 			}
@@ -95,6 +103,9 @@ func clusterPodStatuses(analyzer *troubleshootv1beta2.ClusterPodStatuses, getChi
 			if result.Message == "" {
 				result.Message = "Pod {{ .Name }} status is {{ .Status.Phase }}"
 			}
+
+			fmt.Println("result.Title", result.Title)
+			fmt.Println("result.Message", result.Message)
 
 			tmpl := template.New("pod")
 
@@ -123,6 +134,8 @@ func clusterPodStatuses(analyzer *troubleshootv1beta2.ClusterPodStatuses, getChi
 			result.Message = m.String()
 		}
 	}
+
+	fmt.Println("results", results)
 
 	return results, nil
 }
