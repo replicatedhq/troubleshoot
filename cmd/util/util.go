@@ -23,7 +23,7 @@ func IsURL(str string) bool {
 }
 
 func AppName(name string) string {
-	words := strings.Split(strings.Title(strings.Replace(name, "-", " ", -1)), " ")
+	words := strings.Split(strings.Title(strings.ReplaceAll(name, "-", " ")), " ")
 	casedWords := []string{}
 	for i, word := range words {
 		if strings.ToLower(word) == "ai" {
