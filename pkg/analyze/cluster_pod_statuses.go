@@ -90,9 +90,11 @@ func clusterPodStatuses(analyzer *troubleshootv1beta2.ClusterPodStatuses, getChi
 				continue
 			}
 
+			fmt.Printf("POD: %+v\n", pod)
+
 			r.InvolvedObject = &corev1.ObjectReference{
-				APIVersion: pod.APIVersion,
-				Kind:       pod.Kind,
+				APIVersion: "v1",
+				Kind:       "Pod",
 				Namespace:  pod.Namespace,
 				Name:       pod.Name,
 			}
@@ -132,7 +134,6 @@ func clusterPodStatuses(analyzer *troubleshootv1beta2.ClusterPodStatuses, getChi
 			}
 			r.Message = m.String()
 
-			fmt.Println("involved ojb", r.InvolvedObject)
 			podResults = append(podResults, &r)
 		}
 
