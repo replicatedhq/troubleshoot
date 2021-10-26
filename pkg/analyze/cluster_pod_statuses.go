@@ -42,8 +42,11 @@ func clusterPodStatuses(analyzer *troubleshootv1beta2.ClusterPodStatuses, getChi
 	allResults := []*AnalyzeResult{}
 
 	for _, pod := range pods {
-		pod.Status.Reason = k8sutil.GetPodStatusReason(&pod)
 		podResults := []*AnalyzeResult{}
+
+		if pod.Status.Reason == "" {
+			pod.Status.Reason = k8sutil.GetPodStatusReason(&pod)
+		}
 
 		for _, outcome := range analyzer.Outcomes {
 			r := AnalyzeResult{}
@@ -78,9 +81,9 @@ func clusterPodStatuses(analyzer *troubleshootv1beta2.ClusterPodStatuses, getChi
 			match := false
 			switch parts[0] {
 			case "=", "==", "===":
-				match = parts[1] == string(pod.Status.Phase)
+				match = parts[1] == string(pod.Status.Phase) || parts[1] == string(pod.Status.Reason)
 			case "!=", "!==":
-				match = parts[1] != string(pod.Status.Phase)
+				match = parts[1] != string(pod.Status.Phase) && parts[1] != string(pod.Status.Reason)
 			}
 
 			if !match {
@@ -93,7 +96,7 @@ func clusterPodStatuses(analyzer *troubleshootv1beta2.ClusterPodStatuses, getChi
 			}
 
 			if r.Message == "" {
-				r.Message = "Pod {{ .Namespace }}/{{ .Name }} status is {{ .Status.Phase }}"
+				r.Message = "Pod {{ .Namespace }}/{{ .Name }} status is {{ .Status.Reason }}"
 			}
 
 			tmpl := template.New("pod")
