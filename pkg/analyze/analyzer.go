@@ -199,11 +199,11 @@ func Analyze(analyzer *troubleshootv1beta2.Analyze, getFile getCollectedFileCont
 		if isExcluded {
 			return nil, nil
 		}
-		result, err := analyzeStatefulsetStatus(analyzer.StatefulsetStatus, getFile)
+		results, err := analyzeStatefulsetStatus(analyzer.StatefulsetStatus, findFiles)
 		if err != nil {
 			return nil, err
 		}
-		return []*AnalyzeResult{result}, nil
+		return results, nil
 	}
 	if analyzer.ClusterPodStatuses != nil {
 		isExcluded, err := isExcluded(analyzer.ClusterPodStatuses.Exclude)
