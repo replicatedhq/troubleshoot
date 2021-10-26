@@ -41,6 +41,7 @@ func clusterPodStatuses(analyzer *troubleshootv1beta2.ClusterPodStatuses, getChi
 	allResults := []*AnalyzeResult{}
 
 	for _, pod := range pods {
+		fmt.Println("Reason:", pod.Status.Reason)
 		podResults := []*AnalyzeResult{}
 
 		for _, outcome := range analyzer.Outcomes {
