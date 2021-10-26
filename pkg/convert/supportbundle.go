@@ -69,6 +69,7 @@ func FromAnalyzerResult(input []*analyze.AnalyzeResult) []*Result {
 
 	result := make([]*Result, 0)
 	for _, i := range input {
+		fmt.Println("involved", i.InvolvedObject)
 		name := reg.ReplaceAllString(strings.ToLower(i.Title), ".")
 		r := &Result{
 			Meta: Meta{

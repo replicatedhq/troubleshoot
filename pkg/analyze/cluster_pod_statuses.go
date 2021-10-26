@@ -132,6 +132,7 @@ func clusterPodStatuses(analyzer *troubleshootv1beta2.ClusterPodStatuses, getChi
 			}
 			r.Message = m.String()
 
+			fmt.Println("involved ojb", r.InvolvedObject)
 			podResults = append(podResults, &r)
 		}
 
