@@ -10,6 +10,7 @@ import (
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
+	"github.com/replicatedhq/troubleshoot/pkg/k8sutil"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -42,6 +43,10 @@ func clusterPodStatuses(analyzer *troubleshootv1beta2.ClusterPodStatuses, getChi
 
 	for _, pod := range pods {
 		podResults := []*AnalyzeResult{}
+
+		if pod.Status.Reason == "" {
+			pod.Status.Reason = k8sutil.GetPodStatusReason(&pod)
+		}
 
 		for _, outcome := range analyzer.Outcomes {
 			r := AnalyzeResult{}
@@ -76,9 +81,9 @@ func clusterPodStatuses(analyzer *troubleshootv1beta2.ClusterPodStatuses, getChi
 			match := false
 			switch parts[0] {
 			case "=", "==", "===":
-				match = parts[1] == string(pod.Status.Phase)
+				match = parts[1] == string(pod.Status.Phase) || parts[1] == string(pod.Status.Reason)
 			case "!=", "!==":
-				match = parts[1] != string(pod.Status.Phase)
+				match = parts[1] != string(pod.Status.Phase) && parts[1] != string(pod.Status.Reason)
 			}
 
 			if !match {
@@ -87,11 +92,11 @@ func clusterPodStatuses(analyzer *troubleshootv1beta2.ClusterPodStatuses, getChi
 
 			r.Title = analyzer.CheckName
 			if r.Title == "" {
-				r.Title = "Pod {{ .Name }} status"
+				r.Title = "Pod {{ .Namespace }}/{{ .Name }} status"
 			}
 
 			if r.Message == "" {
-				r.Message = "Pod {{ .Name }} status is {{ .Status.Phase }}"
+				r.Message = "Pod {{ .Namespace }}/{{ .Name }} status is {{ .Status.Reason }}"
 			}
 
 			tmpl := template.New("pod")
