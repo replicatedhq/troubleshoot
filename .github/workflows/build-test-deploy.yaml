@@ -56,7 +56,32 @@ jobs:
           path: bin/
       - uses: engineerd/setup-kind@v0.5.0
       - run: chmod +x bin/preflight
-      - run: ./bin/preflight --interactive=false --format=json https://preflight.replicated.com
+      - run: |
+          ./bin/preflight --interactive=false --format=json https://preflight.replicated.com > result.json
+          cat result.json
+
+          EXIT_STATUS=0
+          if grep -q "was not collected" result.json; then
+            echo "Some files were not collected"
+            EXIT_STATUS=1
+          fi
+
+          if (( `jq '.pass | length' result.json` < 1 )); then
+            echo "No passing preflights found"
+            EXIT_STATUS=1
+          fi
+
+          if (( `jq '.warn | length' result.json` < 1 )); then
+            echo "No warnings found"
+            EXIT_STATUS=1
+          fi
+
+          if (( `jq '.fail | length' result.json` < 1 )); then
+            echo "No failed preflights found"
+            EXIT_STATUS=1
+          fi
+
+          exit $EXIT_STATUS
 
   compile-supportbundle:
     runs-on: ubuntu-latest
