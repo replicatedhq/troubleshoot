@@ -12,7 +12,7 @@ func Test_deploymentStatus(t *testing.T) {
 	tests := []struct {
 		name         string
 		analyzer     troubleshootv1beta2.DeploymentStatus
-		expectResult AnalyzeResult
+		expectResult []*AnalyzeResult
 		files        map[string][]byte
 	}{
 		{
@@ -34,14 +34,16 @@ func Test_deploymentStatus(t *testing.T) {
 				Namespace: "default",
 				Name:      "kotsadm-api",
 			},
-			expectResult: AnalyzeResult{
-				IsPass:  true,
-				IsWarn:  false,
-				IsFail:  false,
-				Title:   "kotsadm-api Status",
-				Message: "pass",
-				IconKey: "kubernetes_deployment_status",
-				IconURI: "https://troubleshoot.sh/images/analyzer-icons/deployment-status.svg?w=17&h=17",
+			expectResult: []*AnalyzeResult{
+				{
+					IsPass:  true,
+					IsWarn:  false,
+					IsFail:  false,
+					Title:   "kotsadm-api Status",
+					Message: "pass",
+					IconKey: "kubernetes_deployment_status",
+					IconURI: "https://troubleshoot.sh/images/analyzer-icons/deployment-status.svg?w=17&h=17",
+				},
 			},
 			files: map[string][]byte{
 				"cluster-resources/deployments/default.json": []byte(collectedDeployments),
@@ -66,14 +68,16 @@ func Test_deploymentStatus(t *testing.T) {
 				Namespace: "default",
 				Name:      "kotsadm-api",
 			},
-			expectResult: AnalyzeResult{
-				IsPass:  false,
-				IsWarn:  false,
-				IsFail:  true,
-				Title:   "kotsadm-api Status",
-				Message: "fail",
-				IconKey: "kubernetes_deployment_status",
-				IconURI: "https://troubleshoot.sh/images/analyzer-icons/deployment-status.svg?w=17&h=17",
+			expectResult: []*AnalyzeResult{
+				{
+					IsPass:  false,
+					IsWarn:  false,
+					IsFail:  true,
+					Title:   "kotsadm-api Status",
+					Message: "fail",
+					IconKey: "kubernetes_deployment_status",
+					IconURI: "https://troubleshoot.sh/images/analyzer-icons/deployment-status.svg?w=17&h=17",
+				},
 			},
 			files: map[string][]byte{
 				"cluster-resources/deployments/default.json": []byte(collectedDeployments),
@@ -104,14 +108,16 @@ func Test_deploymentStatus(t *testing.T) {
 				Namespace: "default",
 				Name:      "kotsadm-api",
 			},
-			expectResult: AnalyzeResult{
-				IsPass:  false,
-				IsWarn:  true,
-				IsFail:  false,
-				Title:   "kotsadm-api Status",
-				Message: "warn",
-				IconKey: "kubernetes_deployment_status",
-				IconURI: "https://troubleshoot.sh/images/analyzer-icons/deployment-status.svg?w=17&h=17",
+			expectResult: []*AnalyzeResult{
+				{
+					IsPass:  false,
+					IsWarn:  true,
+					IsFail:  false,
+					Title:   "kotsadm-api Status",
+					Message: "warn",
+					IconKey: "kubernetes_deployment_status",
+					IconURI: "https://troubleshoot.sh/images/analyzer-icons/deployment-status.svg?w=17&h=17",
+				},
 			},
 			files: map[string][]byte{
 				"cluster-resources/deployments/default.json": []byte(collectedDeployments),
@@ -123,14 +129,14 @@ func Test_deploymentStatus(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			req := require.New(t)
 
-			getFiles := func(n string) ([]byte, error) {
-				return test.files[n], nil
+			getFiles := func(n string) (map[string][]byte, error) {
+				return test.files, nil
 			}
 
 			actual, err := analyzeDeploymentStatus(&test.analyzer, getFiles)
 			req.NoError(err)
 
-			assert.Equal(t, &test.expectResult, actual)
+			assert.Equal(t, test.expectResult, actual)
 
 		})
 	}
