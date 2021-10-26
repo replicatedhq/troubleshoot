@@ -205,6 +205,20 @@ func Analyze(analyzer *troubleshootv1beta2.Analyze, getFile getCollectedFileCont
 		}
 		return results, nil
 	}
+	if analyzer.JobStatus != nil {
+		isExcluded, err := isExcluded(analyzer.JobStatus.Exclude)
+		if err != nil {
+			return nil, err
+		}
+		if isExcluded {
+			return nil, nil
+		}
+		results, err := analyzeJobStatus(analyzer.JobStatus, findFiles)
+		if err != nil {
+			return nil, err
+		}
+		return results, nil
+	}
 	if analyzer.ClusterPodStatuses != nil {
 		isExcluded, err := isExcluded(analyzer.ClusterPodStatuses.Exclude)
 		if err != nil {
