@@ -432,33 +432,6 @@
                   }
                 }
               },
-              "kernelModules": {
-                "type": "object",
-                "required": [
-                  "namespace"
-                ],
-                "properties": {
-                  "collectorName": {
-                    "type": "string"
-                  },
-                  "exclude": {
-                    "description": "BoolOrString is a type that can hold an bool or a string.  When used in JSON or YAML marshalling and unmarshalling, it produces or consumes the inner type.  This allows you to have, for example, a JSON field that can accept a booolean string or raw bool.",
-                    "oneOf": [{"type": "string"},{"type": "boolean"}]
-                  },
-                  "namespace": {
-                    "type": "string"
-                  },
-                  "nodeSelector": {
-                    "type": "object",
-                    "additionalProperties": {
-                      "type": "string"
-                    }
-                  },
-                  "timeout": {
-                    "type": "string"
-                  }
-                }
-              },
               "logs": {
                 "type": "object",
                 "required": [
@@ -704,6 +677,53 @@
                     "items": {
                       "type": "string"
                     }
+                  }
+                }
+              },
+              "sysctl": {
+                "type": "object",
+                "required": [
+                  "image",
+                  "namespace"
+                ],
+                "properties": {
+                  "collectorName": {
+                    "type": "string"
+                  },
+                  "exclude": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  },
+                  "image": {
+                    "type": "string"
+                  },
+                  "imagePullPolicy": {
+                    "type": "string"
+                  },
+                  "imagePullSecret": {
+                    "type": "object",
+                    "properties": {
+                      "data": {
+                        "type": "object",
+                        "additionalProperties": {
+                          "type": "string"
+                        }
+                      },
+                      "name": {
+                        "type": "string"
+                      },
+                      "type": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "namespace": {
+                    "type": "string"
+                  },
+                  "timeout": {
+                    "type": "string"
                   }
                 }
               }

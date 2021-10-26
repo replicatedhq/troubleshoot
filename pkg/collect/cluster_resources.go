@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"path" // this code uses 'path' and not 'path/filepath' because we don't want backslashes on windows
+	"path/filepath"
 	"strings"
 
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
@@ -66,11 +67,28 @@ func ClusterResources(c *Collector, clusterResourcesCollector *troubleshootv1bet
 	}
 
 	// pods
-	pods, podErrors := pods(ctx, client, namespaceNames)
+	pods, podErrors, failedPods := pods(ctx, client, namespaceNames)
 	for k, v := range pods {
 		output.SaveResult(c.BundlePath, path.Join("cluster-resources/pods", k), bytes.NewBuffer(v))
 	}
 	output.SaveResult(c.BundlePath, "cluster-resources/pods-errors.json", marshalErrors(podErrors))
+
+	for _, pod := range failedPods {
+		for _, container := range pod.Spec.Containers {
+			logsRoot := path.Join(c.BundlePath, "cluster-resources", "pods", pod.Namespace, "logs")
+			limits := &troubleshootv1beta2.LogLimits{
+				MaxLines: 500,
+			}
+			podLogs, err := savePodLogs(ctx, logsRoot, client, pod, "", container.Name, limits, false)
+			if err != nil {
+				errPath := filepath.Join("cluster-resources", "pods", "logs", pod.Namespace, pod.Name, fmt.Sprintf("%s-logs-errors.log", container.Name))
+				output.SaveResult(c.BundlePath, errPath, bytes.NewBuffer([]byte(err.Error())))
+			}
+			for k, v := range podLogs {
+				output[filepath.Join("cluster-resources", "pods", pod.Namespace, "logs", k)] = v
+			}
+		}
+	}
 
 	// services
 	services, servicesErrors := services(ctx, client, namespaceNames)
@@ -234,9 +252,10 @@ func getNamespace(ctx context.Context, client *kubernetes.Clientset, namespace s
 	return b, nil
 }
 
-func pods(ctx context.Context, client *kubernetes.Clientset, namespaces []string) (map[string][]byte, map[string]string) {
+func pods(ctx context.Context, client *kubernetes.Clientset, namespaces []string) (map[string][]byte, map[string]string, []corev1.Pod) {
 	podsByNamespace := make(map[string][]byte)
 	errorsByNamespace := make(map[string]string)
+	failedPods := []corev1.Pod{}
 
 	for _, namespace := range namespaces {
 		pods, err := client.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{})
@@ -251,10 +270,16 @@ func pods(ctx context.Context, client *kubernetes.Clientset, namespaces []string
 			continue
 		}
 
+		for _, pod := range pods.Items {
+			if pod.Status.Phase == corev1.PodFailed {
+				failedPods = append(failedPods, pod)
+			}
+		}
+
 		podsByNamespace[namespace+".json"] = b
 	}
 
-	return podsByNamespace, errorsByNamespace
+	return podsByNamespace, errorsByNamespace, failedPods
 }
 
 func services(ctx context.Context, client *kubernetes.Clientset, namespaces []string) (map[string][]byte, map[string]string) {

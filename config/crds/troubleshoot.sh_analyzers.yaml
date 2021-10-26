@@ -874,6 +874,47 @@ spec:
                       - outcomes
                       - storageClassName
                       type: object
+                    sysctl:
+                      properties:
+                        checkName:
+                          type: string
+                        exclude:
+                          type: BoolString
+                        outcomes:
+                          items:
+                            properties:
+                              fail:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
+                              pass:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
+                              warn:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
+                            type: object
+                          type: array
+                      required:
+                      - outcomes
+                      type: object
                     textAnalyze:
                       properties:
                         checkName:
