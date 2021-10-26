@@ -90,8 +90,6 @@ func clusterPodStatuses(analyzer *troubleshootv1beta2.ClusterPodStatuses, getChi
 				continue
 			}
 
-			fmt.Printf("POD: %+v\n", pod)
-
 			r.InvolvedObject = &corev1.ObjectReference{
 				APIVersion: "v1",
 				Kind:       "Pod",
