@@ -1,0 +1,318 @@
+[
+  {
+    "metadata": {
+      "name": "pre-install-job",
+      "namespace": "test",
+      "uid": "4545c8ba-0462-45a6-96c3-793a545dfcf6",
+      "resourceVersion": "8303004",
+      "creationTimestamp": "2021-10-05T19:11:43Z",
+      "labels": {
+        "kots.io/app-slug": "test",
+        "kots.io/backup": "velero"
+      },
+      "annotations": {
+        "helm.sh/hook": "pre-install",
+        "helm.sh/hook-weight": "2",
+        "kots.io/app-slug": "test",
+        "kubectl.kubernetes.io/last-applied-configuration": "{\"apiVersion\":\"batch/v1\",\"kind\":\"Job\",\"metadata\":{\"annotations\":{\"helm.sh/hook\":\"pre-install\",\"helm.sh/hook-weight\":\"2\",\"kots.io/app-slug\":\"test\"},\"labels\":{\"kots.io/app-slug\":\"test\",\"kots.io/backup\":\"velero\"},\"name\":\"pre-install-job\",\"namespace\":\"test\"},\"spec\":{\"backoffLimit\":3,\"template\":{\"metadata\":{\"annotations\":{\"kots.io/app-slug\":\"test\"},\"labels\":{\"kots.io/app-slug\":\"test\",\"kots.io/backup\":\"velero\"},\"name\":\"security-test\"},\"spec\":{\"containers\":[{\"command\":[\"sh\",\"-c\",\"sleep 10\"],\"image\":\"alpine\",\"imagePullPolicy\":\"IfNotPresent\",\"name\":\"hook-test\"}],\"restartPolicy\":\"Never\"}}}}\n"
+      },
+      "managedFields": [
+        {
+          "manager": "kubectl-client-side-apply",
+          "operation": "Update",
+          "apiVersion": "batch/v1",
+          "time": "2021-10-05T19:11:43Z",
+          "fieldsType": "FieldsV1",
+          "fieldsV1": {
+            "f:metadata": {
+              "f:annotations": {
+                ".": {},
+                "f:helm.sh/hook": {},
+                "f:helm.sh/hook-weight": {},
+                "f:kots.io/app-slug": {},
+                "f:kubectl.kubernetes.io/last-applied-configuration": {}
+              },
+              "f:labels": {
+                ".": {},
+                "f:kots.io/app-slug": {},
+                "f:kots.io/backup": {}
+              }
+            },
+            "f:spec": {
+              "f:backoffLimit": {},
+              "f:completions": {},
+              "f:parallelism": {},
+              "f:template": {
+                "f:metadata": {
+                  "f:annotations": {
+                    ".": {},
+                    "f:kots.io/app-slug": {}
+                  },
+                  "f:labels": {
+                    ".": {},
+                    "f:kots.io/app-slug": {},
+                    "f:kots.io/backup": {}
+                  },
+                  "f:name": {}
+                },
+                "f:spec": {
+                  "f:containers": {
+                    "k:{\"name\":\"hook-test\"}": {
+                      ".": {},
+                      "f:command": {},
+                      "f:image": {},
+                      "f:imagePullPolicy": {},
+                      "f:name": {},
+                      "f:resources": {},
+                      "f:terminationMessagePath": {},
+                      "f:terminationMessagePolicy": {}
+                    }
+                  },
+                  "f:dnsPolicy": {},
+                  "f:restartPolicy": {},
+                  "f:schedulerName": {},
+                  "f:securityContext": {},
+                  "f:terminationGracePeriodSeconds": {}
+                }
+              }
+            }
+          }
+        },
+        {
+          "manager": "k3s",
+          "operation": "Update",
+          "apiVersion": "batch/v1",
+          "time": "2021-10-05T19:11:55Z",
+          "fieldsType": "FieldsV1",
+          "fieldsV1": {
+            "f:status": {
+              "f:completionTime": {},
+              "f:conditions": {},
+              "f:startTime": {},
+              "f:succeeded": {}
+            }
+          }
+        }
+      ]
+    },
+    "spec": {
+      "parallelism": 1,
+      "completions": 1,
+      "backoffLimit": 3,
+      "selector": {
+        "matchLabels": {
+          "controller-uid": "4545c8ba-0462-45a6-96c3-793a545dfcf6"
+        }
+      },
+      "template": {
+        "metadata": {
+          "name": "security-test",
+          "creationTimestamp": null,
+          "labels": {
+            "controller-uid": "4545c8ba-0462-45a6-96c3-793a545dfcf6",
+            "job-name": "pre-install-job",
+            "kots.io/app-slug": "test",
+            "kots.io/backup": "velero"
+          },
+          "annotations": {
+            "kots.io/app-slug": "test"
+          }
+        },
+        "spec": {
+          "containers": [
+            {
+              "name": "hook-test",
+              "image": "alpine",
+              "command": [
+                "sh",
+                "-c",
+                "sleep 10"
+              ],
+              "resources": {},
+              "terminationMessagePath": "/dev/termination-log",
+              "terminationMessagePolicy": "File",
+              "imagePullPolicy": "IfNotPresent"
+            }
+          ],
+          "restartPolicy": "Never",
+          "terminationGracePeriodSeconds": 30,
+          "dnsPolicy": "ClusterFirst",
+          "securityContext": {},
+          "schedulerName": "default-scheduler"
+        }
+      }
+    },
+    "status": {
+      "conditions": [
+        {
+          "type": "Complete",
+          "status": "True",
+          "lastProbeTime": "2021-10-05T19:11:55Z",
+          "lastTransitionTime": "2021-10-05T19:11:55Z"
+        }
+      ],
+      "startTime": "2021-10-05T19:11:43Z",
+      "completionTime": "2021-10-05T19:11:55Z",
+      "succeeded": 1
+    }
+  },
+  {
+    "metadata": {
+      "name": "post-install-job",
+      "namespace": "test",
+      "uid": "13844969-d21a-4514-8bed-66157f216af7",
+      "resourceVersion": "8303007",
+      "creationTimestamp": "2021-10-05T19:11:43Z",
+      "labels": {
+        "kots.io/app-slug": "test",
+        "kots.io/backup": "velero"
+      },
+      "annotations": {
+        "helm.sh/hook": "post-install",
+        "helm.sh/hook-weight": "2",
+        "kots.io/app-slug": "test",
+        "kubectl.kubernetes.io/last-applied-configuration": "{\"apiVersion\":\"batch/v1\",\"kind\":\"Job\",\"metadata\":{\"annotations\":{\"helm.sh/hook\":\"post-install\",\"helm.sh/hook-weight\":\"2\",\"kots.io/app-slug\":\"test\"},\"labels\":{\"kots.io/app-slug\":\"test\",\"kots.io/backup\":\"velero\"},\"name\":\"post-install-job\",\"namespace\":\"test\"},\"spec\":{\"backoffLimit\":3,\"template\":{\"metadata\":{\"annotations\":{\"kots.io/app-slug\":\"test\"},\"labels\":{\"kots.io/app-slug\":\"test\",\"kots.io/backup\":\"velero\"},\"name\":\"security-test\"},\"spec\":{\"containers\":[{\"command\":[\"sh\",\"-c\",\"sleep 10\"],\"image\":\"alpine\",\"imagePullPolicy\":\"IfNotPresent\",\"name\":\"hook-test\"}],\"restartPolicy\":\"Never\"}}}}\n"
+      },
+      "managedFields": [
+        {
+          "manager": "kubectl-client-side-apply",
+          "operation": "Update",
+          "apiVersion": "batch/v1",
+          "time": "2021-10-05T19:11:43Z",
+          "fieldsType": "FieldsV1",
+          "fieldsV1": {
+            "f:metadata": {
+              "f:annotations": {
+                ".": {},
+                "f:helm.sh/hook": {},
+                "f:helm.sh/hook-weight": {},
+                "f:kots.io/app-slug": {},
+                "f:kubectl.kubernetes.io/last-applied-configuration": {}
+              },
+              "f:labels": {
+                ".": {},
+                "f:kots.io/app-slug": {},
+                "f:kots.io/backup": {}
+              }
+            },
+            "f:spec": {
+              "f:backoffLimit": {},
+              "f:completions": {},
+              "f:parallelism": {},
+              "f:template": {
+                "f:metadata": {
+                  "f:annotations": {
+                    ".": {},
+                    "f:kots.io/app-slug": {}
+                  },
+                  "f:labels": {
+                    ".": {},
+                    "f:kots.io/app-slug": {},
+                    "f:kots.io/backup": {}
+                  },
+                  "f:name": {}
+                },
+                "f:spec": {
+                  "f:containers": {
+                    "k:{\"name\":\"hook-test\"}": {
+                      ".": {},
+                      "f:command": {},
+                      "f:image": {},
+                      "f:imagePullPolicy": {},
+                      "f:name": {},
+                      "f:resources": {},
+                      "f:terminationMessagePath": {},
+                      "f:terminationMessagePolicy": {}
+                    }
+                  },
+                  "f:dnsPolicy": {},
+                  "f:restartPolicy": {},
+                  "f:schedulerName": {},
+                  "f:securityContext": {},
+                  "f:terminationGracePeriodSeconds": {}
+                }
+              }
+            }
+          }
+        },
+        {
+          "manager": "k3s",
+          "operation": "Update",
+          "apiVersion": "batch/v1",
+          "time": "2021-10-05T19:11:55Z",
+          "fieldsType": "FieldsV1",
+          "fieldsV1": {
+            "f:status": {
+              "f:completionTime": {},
+              "f:conditions": {},
+              "f:startTime": {},
+              "f:succeeded": {}
+            }
+          }
+        }
+      ]
+    },
+    "spec": {
+      "parallelism": 1,
+      "completions": 1,
+      "backoffLimit": 3,
+      "selector": {
+        "matchLabels": {
+          "controller-uid": "13844969-d21a-4514-8bed-66157f216af7"
+        }
+      },
+      "template": {
+        "metadata": {
+          "name": "security-test",
+          "creationTimestamp": null,
+          "labels": {
+            "controller-uid": "13844969-d21a-4514-8bed-66157f216af7",
+            "job-name": "post-install-job",
+            "kots.io/app-slug": "test",
+            "kots.io/backup": "velero"
+          },
+          "annotations": {
+            "kots.io/app-slug": "test"
+          }
+        },
+        "spec": {
+          "containers": [
+            {
+              "name": "hook-test",
+              "image": "alpine",
+              "command": [
+                "sh",
+                "-c",
+                "sleep 10"
+              ],
+              "resources": {},
+              "terminationMessagePath": "/dev/termination-log",
+              "terminationMessagePolicy": "File",
+              "imagePullPolicy": "IfNotPresent"
+            }
+          ],
+          "restartPolicy": "Never",
+          "terminationGracePeriodSeconds": 30,
+          "dnsPolicy": "ClusterFirst",
+          "securityContext": {},
+          "schedulerName": "default-scheduler"
+        }
+      }
+    },
+    "status": {
+      "conditions": [
+        {
+          "type": "Failed",
+          "status": "True",
+          "lastProbeTime": "2021-10-05T19:11:55Z",
+          "lastTransitionTime": "2021-10-05T19:11:55Z",
+          "message": "Job has reached the specified backoff limit",
+          "reason": "BackoffLimitExceeded"
+        }
+      ],
+      "startTime": "2021-10-05T19:11:43Z",
+      "completionTime": "2021-10-05T19:11:55Z",
+      "failed": 1
+    }
+  }
+]
