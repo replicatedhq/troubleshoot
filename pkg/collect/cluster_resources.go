@@ -87,7 +87,7 @@ func ClusterResources(c *Collector, clusterResourcesCollector *troubleshootv1bet
 				output.SaveResult(c.BundlePath, errPath, bytes.NewBuffer([]byte(err.Error())))
 			}
 			for k, v := range podLogs {
-				output[filepath.Join("cluster-resources", "pods", pod.Namespace, "logs", k)] = v
+				output[filepath.Join("cluster-resources", "pods", "logs", pod.Namespace, k)] = v
 			}
 		}
 	}
