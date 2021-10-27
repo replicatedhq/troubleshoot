@@ -112,6 +112,13 @@ func ClusterResources(c *Collector, clusterResourcesCollector *troubleshootv1bet
 	}
 	output.SaveResult(c.BundlePath, "cluster-resources/statefulsets-errors.json", marshalErrors(statefulsetsErrors))
 
+	// replicasets
+	replicasets, replicasetsErrors := replicasets(ctx, client, namespaceNames)
+	for k, v := range replicasets {
+		output.SaveResult(c.BundlePath, path.Join("cluster-resources/replicasets", k), bytes.NewBuffer(v))
+	}
+	output.SaveResult(c.BundlePath, "cluster-resources/replicasets-errors.json", marshalErrors(replicasetsErrors))
+
 	// jobs
 	jobs, jobsErrors := jobs(ctx, client, namespaceNames)
 	for k, v := range jobs {
@@ -350,6 +357,29 @@ func statefulsets(ctx context.Context, client *kubernetes.Clientset, namespaces 
 	}
 
 	return statefulsetsByNamespace, errorsByNamespace
+}
+
+func replicasets(ctx context.Context, client *kubernetes.Clientset, namespaces []string) (map[string][]byte, map[string]string) {
+	replicasetsByNamespace := make(map[string][]byte)
+	errorsByNamespace := make(map[string]string)
+
+	for _, namespace := range namespaces {
+		replicasets, err := client.AppsV1().ReplicaSets(namespace).List(ctx, metav1.ListOptions{})
+		if err != nil {
+			errorsByNamespace[namespace] = err.Error()
+			continue
+		}
+
+		b, err := json.MarshalIndent(replicasets.Items, "", "  ")
+		if err != nil {
+			errorsByNamespace[namespace] = err.Error()
+			continue
+		}
+
+		replicasetsByNamespace[namespace+".json"] = b
+	}
+
+	return replicasetsByNamespace, errorsByNamespace
 }
 
 func jobs(ctx context.Context, client *kubernetes.Clientset, namespaces []string) (map[string][]byte, map[string]string) {

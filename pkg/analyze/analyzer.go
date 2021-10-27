@@ -219,6 +219,20 @@ func Analyze(analyzer *troubleshootv1beta2.Analyze, getFile getCollectedFileCont
 		}
 		return results, nil
 	}
+	if analyzer.ReplicaSetStatus != nil {
+		isExcluded, err := isExcluded(analyzer.ReplicaSetStatus.Exclude)
+		if err != nil {
+			return nil, err
+		}
+		if isExcluded {
+			return nil, nil
+		}
+		results, err := analyzeReplicaSetStatus(analyzer.ReplicaSetStatus, findFiles)
+		if err != nil {
+			return nil, err
+		}
+		return results, nil
+	}
 	if analyzer.ClusterPodStatuses != nil {
 		isExcluded, err := isExcluded(analyzer.ClusterPodStatuses.Exclude)
 		if err != nil {

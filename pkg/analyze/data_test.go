@@ -12,3 +12,6 @@ var collectedNodes string
 
 //go:embed files/jobs.json
 var collectedJobs string
+
+//go:embed files/replicasets.json
+var collectedReplicaSets string
