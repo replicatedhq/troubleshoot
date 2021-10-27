@@ -74,7 +74,8 @@ func ClusterResources(c *Collector, clusterResourcesCollector *troubleshootv1bet
 	output.SaveResult(c.BundlePath, "cluster-resources/pods-errors.json", marshalErrors(podErrors))
 
 	for _, pod := range failedPods {
-		for _, container := range pod.Spec.Containers {
+		allContainers := append(pod.Spec.InitContainers, pod.Spec.Containers...)
+		for _, container := range allContainers {
 			logsRoot := path.Join(c.BundlePath, "cluster-resources", "pods", pod.Namespace, "logs")
 			limits := &troubleshootv1beta2.LogLimits{
 				MaxLines: 500,
