@@ -117,6 +117,7 @@ func IsPodUnhealthy(pod *corev1.Pod) bool {
 
 	switch PodStatusReason(reason) {
 	case PodStatusReasonRunning:
+		fallthrough
 	case PodStatusReasonCompleted:
 		return false
 	}
