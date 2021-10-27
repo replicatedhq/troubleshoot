@@ -7,6 +7,7 @@ import (
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/replicatedhq/troubleshoot/pkg/multitype"
+	corev1 "k8s.io/api/core/v1"
 )
 
 type AnalyzeResult struct {
@@ -19,6 +20,8 @@ type AnalyzeResult struct {
 	URI     string
 	IconKey string
 	IconURI string
+
+	InvolvedObject *corev1.ObjectReference
 }
 
 type getCollectedFileContents func(string) ([]byte, error)

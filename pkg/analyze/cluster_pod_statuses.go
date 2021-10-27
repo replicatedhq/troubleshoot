@@ -90,6 +90,13 @@ func clusterPodStatuses(analyzer *troubleshootv1beta2.ClusterPodStatuses, getChi
 				continue
 			}
 
+			r.InvolvedObject = &corev1.ObjectReference{
+				APIVersion: "v1",
+				Kind:       "Pod",
+				Namespace:  pod.Namespace,
+				Name:       pod.Name,
+			}
+
 			r.Title = analyzer.CheckName
 			if r.Title == "" {
 				r.Title = "Pod {{ .Namespace }}/{{ .Name }} status"
