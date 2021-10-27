@@ -77,7 +77,7 @@ func ClusterResources(c *Collector, clusterResourcesCollector *troubleshootv1bet
 	for _, pod := range unhealthyPods {
 		allContainers := append(pod.Spec.InitContainers, pod.Spec.Containers...)
 		for _, container := range allContainers {
-			logsRoot := path.Join(c.BundlePath, "cluster-resources", "pods", "logs", pod.Namespace)
+			logsRoot := path.Join(c.BundlePath, "cluster-resources", "pods", pod.Namespace, "logs")
 			limits := &troubleshootv1beta2.LogLimits{
 				MaxLines: 500,
 			}
@@ -87,7 +87,7 @@ func ClusterResources(c *Collector, clusterResourcesCollector *troubleshootv1bet
 				output.SaveResult(c.BundlePath, errPath, bytes.NewBuffer([]byte(err.Error())))
 			}
 			for k, v := range podLogs {
-				output[filepath.Join("cluster-resources", "pods", "logs", pod.Namespace, k)] = v
+				output[filepath.Join("cluster-resources", "pods", pod.Namespace, "logs", k)] = v
 			}
 		}
 	}
@@ -281,7 +281,7 @@ func pods(ctx context.Context, client *kubernetes.Clientset, namespaces []string
 
 		for _, pod := range pods.Items {
 			if k8sutil.IsPodUnhealthy(&pod) {
-				unhealthyPods = append(unhealthyPods, pod)
+				// unhealthyPods = append(unhealthyPods, pod)
 			}
 		}
 
