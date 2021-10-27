@@ -281,7 +281,7 @@ func pods(ctx context.Context, client *kubernetes.Clientset, namespaces []string
 
 		for _, pod := range pods.Items {
 			if k8sutil.IsPodUnhealthy(&pod) {
-				// unhealthyPods = append(unhealthyPods, pod)
+				unhealthyPods = append(unhealthyPods, pod)
 			}
 		}
 
