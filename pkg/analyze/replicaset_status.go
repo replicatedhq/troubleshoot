@@ -9,49 +9,49 @@ import (
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
-	batchv1 "k8s.io/api/batch/v1"
+	appsv1 "k8s.io/api/apps/v1"
 )
 
-func analyzeJobStatus(analyzer *troubleshootv1beta2.JobStatus, getFileContents func(string) (map[string][]byte, error)) ([]*AnalyzeResult, error) {
+func analyzeReplicaSetStatus(analyzer *troubleshootv1beta2.ReplicaSetStatus, getFileContents func(string) (map[string][]byte, error)) ([]*AnalyzeResult, error) {
 	if analyzer.Name == "" {
-		return analyzeAllJobStatuses(analyzer, getFileContents)
+		return analyzeAllReplicaSetStatuses(analyzer, getFileContents)
 	} else {
-		return analyzeOneJobStatus(analyzer, getFileContents)
+		return analyzeOneReplicaSetStatus(analyzer, getFileContents)
 	}
 }
 
-func analyzeOneJobStatus(analyzer *troubleshootv1beta2.JobStatus, getFileContents func(string) (map[string][]byte, error)) ([]*AnalyzeResult, error) {
-	files, err := getFileContents(filepath.Join("cluster-resources", "jobs", fmt.Sprintf("%s.json", analyzer.Namespace)))
+func analyzeOneReplicaSetStatus(analyzer *troubleshootv1beta2.ReplicaSetStatus, getFileContents func(string) (map[string][]byte, error)) ([]*AnalyzeResult, error) {
+	files, err := getFileContents(filepath.Join("cluster-resources", "replicasets", fmt.Sprintf("%s.json", analyzer.Namespace)))
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to read collected jobs from namespace")
+		return nil, errors.Wrap(err, "failed to read collected replicasets from namespace")
 	}
 
 	var result *AnalyzeResult
 	for _, collected := range files { // only 1 file here
-		var jobs []batchv1.Job
-		if err := json.Unmarshal(collected, &jobs); err != nil {
-			return nil, errors.Wrap(err, "failed to unmarshal job list")
+		var replicasets []appsv1.ReplicaSet
+		if err := json.Unmarshal(collected, &replicasets); err != nil {
+			return nil, errors.Wrap(err, "failed to unmarshal deployment list")
 		}
 
-		var job *batchv1.Job
-		for _, j := range jobs {
-			if j.Name == analyzer.Name {
-				job = j.DeepCopy()
+		var replicaset *appsv1.ReplicaSet
+		for _, r := range replicasets {
+			if r.Name == analyzer.Name {
+				replicaset = r.DeepCopy()
 				break
 			}
 		}
 
-		if job == nil {
+		if replicaset == nil {
 			// there's not an error, but maybe the requested deployment is not even deployed
 			result = &AnalyzeResult{
-				Title:   fmt.Sprintf("%s Job Status", analyzer.Name),
+				Title:   fmt.Sprintf("%s ReplicaSet Status", analyzer.Name),
 				IconKey: "kubernetes_deployment_status",                                                  // TODO: need new icon
 				IconURI: "https://troubleshoot.sh/images/analyzer-icons/deployment-status.svg?w=17&h=17", // TODO: need new icon
 				IsFail:  true,
-				Message: fmt.Sprintf("The job %q was not found", analyzer.Name),
+				Message: fmt.Sprintf("The replicaset %q was not found", analyzer.Name),
 			}
 		} else {
-			result, err = jobStatus(analyzer.Outcomes, job)
+			result, err = replicasetStatus(analyzer.Outcomes, replicaset)
 			if err != nil {
 				return nil, errors.Wrap(err, "failed to process status")
 			}
@@ -61,45 +61,41 @@ func analyzeOneJobStatus(analyzer *troubleshootv1beta2.JobStatus, getFileContent
 	return []*AnalyzeResult{result}, nil
 }
 
-func analyzeAllJobStatuses(analyzer *troubleshootv1beta2.JobStatus, getFileContents func(string) (map[string][]byte, error)) ([]*AnalyzeResult, error) {
+func analyzeAllReplicaSetStatuses(analyzer *troubleshootv1beta2.ReplicaSetStatus, getFileContents func(string) (map[string][]byte, error)) ([]*AnalyzeResult, error) {
 	var fileName string
 	if analyzer.Namespace != "" {
-		fileName = filepath.Join("cluster-resources", "jobs", fmt.Sprintf("%s.json", analyzer.Namespace))
+		fileName = filepath.Join("cluster-resources", "replicasets", fmt.Sprintf("%s.json", analyzer.Namespace))
 	} else {
-		fileName = filepath.Join("cluster-resources", "jobs", "*.json")
+		fileName = filepath.Join("cluster-resources", "replicasets", "*.json")
 	}
 
 	files, err := getFileContents(fileName)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to read collected jobs from file")
+		return nil, errors.Wrap(err, "failed to read collected replicaset from file")
 	}
 
 	results := []*AnalyzeResult{}
 	for _, collected := range files {
-		var jobs []batchv1.Job
-		if err := json.Unmarshal(collected, &jobs); err != nil {
-			return nil, errors.Wrap(err, "failed to unmarshal job list")
+		var replicasets []appsv1.ReplicaSet
+		if err := json.Unmarshal(collected, &replicasets); err != nil {
+			return nil, errors.Wrap(err, "failed to unmarshal replicaset list")
 		}
 
-		for _, job := range jobs {
-			if job.Spec.Completions == nil && job.Status.Succeeded > 1 {
+		for _, replicaset := range replicasets {
+			if replicaset.Spec.Replicas == nil && replicaset.Status.AvailableReplicas == 1 { // default is 1
 				continue
 			}
 
-			if job.Spec.Completions != nil && *job.Spec.Completions == job.Status.Succeeded {
-				continue
-			}
-
-			if job.Status.Failed == 0 {
+			if replicaset.Spec.Replicas != nil && *replicaset.Spec.Replicas == replicaset.Status.AvailableReplicas {
 				continue
 			}
 
 			result := &AnalyzeResult{
-				Title:   fmt.Sprintf("%s/%s Job Status", job.Namespace, job.Name),
-				IconKey: "kubernetes_deployment_status",
-				IconURI: "https://troubleshoot.sh/images/analyzer-icons/deployment-status.svg?w=17&h=17",
+				Title:   fmt.Sprintf("%s/%s ReplicaSet Status", replicaset.Namespace, replicaset.Name),
+				IconKey: "kubernetes_deployment_status",                                                  // TODO: need new icon
+				IconURI: "https://troubleshoot.sh/images/analyzer-icons/deployment-status.svg?w=17&h=17", // TODO: need new icon
 				IsFail:  true,
-				Message: fmt.Sprintf("The job %s/%s is not complete", job.Namespace, job.Name),
+				Message: fmt.Sprintf("The replicaset %s/%s is not ready", replicaset.Namespace, replicaset.Name),
 			}
 
 			results = append(results, result)
@@ -109,9 +105,9 @@ func analyzeAllJobStatuses(analyzer *troubleshootv1beta2.JobStatus, getFileConte
 	return results, nil
 }
 
-func jobStatus(outcomes []*troubleshootv1beta2.Outcome, job *batchv1.Job) (*AnalyzeResult, error) {
+func replicasetStatus(outcomes []*troubleshootv1beta2.Outcome, replicaset *appsv1.ReplicaSet) (*AnalyzeResult, error) {
 	result := &AnalyzeResult{
-		Title:   fmt.Sprintf("%s Status", job.Name),
+		Title:   fmt.Sprintf("%s Status", replicaset.Name),
 		IconKey: "kubernetes_deployment_status",                                                  // TODO: needs new icon
 		IconURI: "https://troubleshoot.sh/images/analyzer-icons/deployment-status.svg?w=17&h=17", // TODO: needs new icon
 	}
@@ -127,7 +123,7 @@ func jobStatus(outcomes []*troubleshootv1beta2.Outcome, job *batchv1.Job) (*Anal
 				return result, nil
 			}
 
-			match, err := compareJobStatusToWhen(outcome.Fail.When, job)
+			match, err := compareReplicaSetStatusToWhen(outcome.Fail.When, replicaset)
 			if err != nil {
 				return nil, errors.Wrap(err, "failed to parse fail range")
 			}
@@ -148,7 +144,7 @@ func jobStatus(outcomes []*troubleshootv1beta2.Outcome, job *batchv1.Job) (*Anal
 				return result, nil
 			}
 
-			match, err := compareJobStatusToWhen(outcome.Warn.When, job)
+			match, err := compareReplicaSetStatusToWhen(outcome.Warn.When, replicaset)
 			if err != nil {
 				return nil, errors.Wrap(err, "failed to parse warn range")
 			}
@@ -169,7 +165,7 @@ func jobStatus(outcomes []*troubleshootv1beta2.Outcome, job *batchv1.Job) (*Anal
 				return result, nil
 			}
 
-			match, err := compareJobStatusToWhen(outcome.Pass.When, job)
+			match, err := compareReplicaSetStatusToWhen(outcome.Pass.When, replicaset)
 			if err != nil {
 				return nil, errors.Wrap(err, "failed to parse pass range")
 			}
@@ -187,7 +183,7 @@ func jobStatus(outcomes []*troubleshootv1beta2.Outcome, job *batchv1.Job) (*Anal
 	return result, nil
 }
 
-func compareJobStatusToWhen(when string, job *batchv1.Job) (bool, error) {
+func compareReplicaSetStatusToWhen(when string, job *appsv1.ReplicaSet) (bool, error) {
 	parts := strings.Split(strings.TrimSpace(when), " ")
 
 	// we can make this a lot more flexible
@@ -202,10 +198,10 @@ func compareJobStatusToWhen(when string, job *batchv1.Job) (bool, error) {
 
 	var actual int32
 	switch parts[0] {
-	case "succeeded":
-		actual = job.Status.Succeeded
-	case "failed":
-		actual = job.Status.Failed
+	case "ready":
+		actual = job.Status.ReadyReplicas
+	case "available":
+		actual = job.Status.AvailableReplicas
 	default:
 		return false, errors.Errorf("unknown when value: %s", parts[0])
 	}

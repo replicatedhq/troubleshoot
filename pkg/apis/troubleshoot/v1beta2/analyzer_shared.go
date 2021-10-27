@@ -70,6 +70,13 @@ type JobStatus struct {
 	Name        string     `json:"name" yaml:"name"`
 }
 
+type ReplicaSetStatus struct {
+	AnalyzeMeta `json:",inline" yaml:",inline"`
+	Outcomes    []*Outcome `json:"outcomes" yaml:"outcomes"`
+	Namespace   string     `json:"namespace" yaml:"namespace"`
+	Name        string     `json:"name" yaml:"name"`
+}
+
 type ClusterPodStatuses struct {
 	AnalyzeMeta `json:",inline" yaml:",inline"`
 	Outcomes    []*Outcome `json:"outcomes" yaml:"outcomes"`
@@ -176,6 +183,7 @@ type Analyze struct {
 	DeploymentStatus         *DeploymentStatus         `json:"deploymentStatus,omitempty" yaml:"deploymentStatus,omitempty"`
 	StatefulsetStatus        *StatefulsetStatus        `json:"statefulsetStatus,omitempty" yaml:"statefulsetStatus,omitempty"`
 	JobStatus                *JobStatus                `json:"jobStatus,omitempty" yaml:"jobStatus,omitempty"`
+	ReplicaSetStatus         *ReplicaSetStatus         `json:"replicasetStatus,omitempty" yaml:"replicasetStatus,omitempty"`
 	ClusterPodStatuses       *ClusterPodStatuses       `json:"clusterPodStatuses,omitempty" yaml:"clusterPodStatuses,omitempty"`
 	ContainerRuntime         *ContainerRuntime         `json:"containerRuntime,omitempty" yaml:"containerRuntime,omitempty"`
 	Distribution             *Distribution             `json:"distribution,omitempty" yaml:"distribution,omitempty"`
