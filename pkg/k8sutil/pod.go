@@ -6,6 +6,25 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
+type PodStatusReason string
+
+const (
+	PodStatusReasonRunning              PodStatusReason = "Running"
+	PodStatusReasonError                PodStatusReason = "Error"
+	PodStatusReasonNotReady             PodStatusReason = "NotReady"
+	PodStatusReasonUnknown              PodStatusReason = "Unknown"
+	PodStatusReasonShutdown             PodStatusReason = "Shutdown"
+	PodStatusReasonTerminating          PodStatusReason = "Terminating"
+	PodStatusReasonCrashLoopBackOff     PodStatusReason = "CrashLoopBackOff"
+	PodStatusReasonImagePullBackOff     PodStatusReason = "ImagePullBackOff"
+	PodStatusReasonContainerCreating    PodStatusReason = "ContainerCreating"
+	PodStatusReasonPending              PodStatusReason = "Pending"
+	PodStatusReasonCompleted            PodStatusReason = "Completed"
+	PodStatusReasonEvicted              PodStatusReason = "Evicted"
+	PodStatusReasonInitError            PodStatusReason = "Init:Error"
+	PodStatusReasonInitCrashLoopBackOff PodStatusReason = "Init:CrashLoopBackOff"
+)
+
 // reference: https://github.com/kubernetes/kubernetes/blob/e8fcd0de98d50f4019561a6b7a0287f5c059267a/pkg/printers/internalversion/printers.go#L741
 func GetPodStatusReason(pod *corev1.Pod) string {
 	reason := string(pod.Status.Phase)
@@ -87,4 +106,20 @@ func hasPodReadyCondition(conditions []corev1.PodCondition) bool {
 		}
 	}
 	return false
+}
+
+func IsPodUnhealthy(pod *corev1.Pod) bool {
+	if pod.Status.Phase == corev1.PodFailed || pod.Status.Phase == corev1.PodPending || pod.Status.Phase == corev1.PodUnknown {
+		return true
+	}
+
+	reason := GetPodStatusReason(pod)
+
+	switch PodStatusReason(reason) {
+	case PodStatusReasonRunning:
+	case PodStatusReasonCompleted:
+		return false
+	}
+
+	return true
 }

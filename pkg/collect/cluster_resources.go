@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
+	"github.com/replicatedhq/troubleshoot/pkg/k8sutil"
 	"gopkg.in/yaml.v2"
 	authorizationv1 "k8s.io/api/authorization/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -67,13 +68,13 @@ func ClusterResources(c *Collector, clusterResourcesCollector *troubleshootv1bet
 	}
 
 	// pods
-	pods, podErrors, failedPods := pods(ctx, client, namespaceNames)
+	pods, podErrors, unhealthyPods := pods(ctx, client, namespaceNames)
 	for k, v := range pods {
 		output.SaveResult(c.BundlePath, path.Join("cluster-resources/pods", k), bytes.NewBuffer(v))
 	}
 	output.SaveResult(c.BundlePath, "cluster-resources/pods-errors.json", marshalErrors(podErrors))
 
-	for _, pod := range failedPods {
+	for _, pod := range unhealthyPods {
 		allContainers := append(pod.Spec.InitContainers, pod.Spec.Containers...)
 		for _, container := range allContainers {
 			logsRoot := path.Join(c.BundlePath, "cluster-resources", "pods", pod.Namespace, "logs")
@@ -263,7 +264,7 @@ func getNamespace(ctx context.Context, client *kubernetes.Clientset, namespace s
 func pods(ctx context.Context, client *kubernetes.Clientset, namespaces []string) (map[string][]byte, map[string]string, []corev1.Pod) {
 	podsByNamespace := make(map[string][]byte)
 	errorsByNamespace := make(map[string]string)
-	failedPods := []corev1.Pod{}
+	unhealthyPods := []corev1.Pod{}
 
 	for _, namespace := range namespaces {
 		pods, err := client.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{})
@@ -279,15 +280,15 @@ func pods(ctx context.Context, client *kubernetes.Clientset, namespaces []string
 		}
 
 		for _, pod := range pods.Items {
-			if pod.Status.Phase == corev1.PodFailed {
-				failedPods = append(failedPods, pod)
+			if k8sutil.IsPodUnhealthy(&pod) {
+				unhealthyPods = append(unhealthyPods, pod)
 			}
 		}
 
 		podsByNamespace[namespace+".json"] = b
 	}
 
-	return podsByNamespace, errorsByNamespace, failedPods
+	return podsByNamespace, errorsByNamespace, unhealthyPods
 }
 
 func services(ctx context.Context, client *kubernetes.Clientset, namespaces []string) (map[string][]byte, map[string]string) {
