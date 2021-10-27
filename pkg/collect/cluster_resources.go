@@ -83,7 +83,7 @@ func ClusterResources(c *Collector, clusterResourcesCollector *troubleshootv1bet
 			}
 			podLogs, err := savePodLogs(ctx, logsRoot, client, pod, "", container.Name, limits, false)
 			if err != nil {
-				errPath := filepath.Join("cluster-resources", "pods", "logs", pod.Namespace, pod.Name, fmt.Sprintf("%s-logs-errors.log", container.Name))
+				errPath := filepath.Join("cluster-resources", "pods", pod.Namespace, "logs", pod.Name, fmt.Sprintf("%s-logs-errors.log", container.Name))
 				output.SaveResult(c.BundlePath, errPath, bytes.NewBuffer([]byte(err.Error())))
 			}
 			for k, v := range podLogs {
