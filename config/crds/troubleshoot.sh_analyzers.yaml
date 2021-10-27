@@ -485,6 +485,53 @@ spec:
                       - namespace
                       - outcomes
                       type: object
+                    jobStatus:
+                      properties:
+                        checkName:
+                          type: string
+                        exclude:
+                          type: BoolString
+                        name:
+                          type: string
+                        namespace:
+                          type: string
+                        outcomes:
+                          items:
+                            properties:
+                              fail:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
+                              pass:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
+                              warn:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
+                            type: object
+                          type: array
+                      required:
+                      - name
+                      - namespace
+                      - outcomes
+                      type: object
                     longhorn:
                       properties:
                         checkName:
@@ -778,6 +825,53 @@ spec:
                           type: array
                       required:
                       - collectorName
+                      - outcomes
+                      type: object
+                    replicasetStatus:
+                      properties:
+                        checkName:
+                          type: string
+                        exclude:
+                          type: BoolString
+                        name:
+                          type: string
+                        namespace:
+                          type: string
+                        outcomes:
+                          items:
+                            properties:
+                              fail:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
+                              pass:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
+                              warn:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
+                            type: object
+                          type: array
+                      required:
+                      - name
+                      - namespace
                       - outcomes
                       type: object
                     secret:
