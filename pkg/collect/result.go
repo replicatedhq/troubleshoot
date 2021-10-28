@@ -131,8 +131,13 @@ func (r CollectorResult) CloseWriter(bundlePath string, relativePath string, wri
 		return errors.Wrap(c.Close(), "failed to close writer")
 	}
 
-	if b, ok := writer.(*bytes.Buffer); ok {
-		r[relativePath] = b.Bytes()
+	if buff, ok := writer.(*bytes.Buffer); ok {
+		b := buff.Bytes()
+		if b == nil {
+			// nil means data is on disk, so make it an empty array
+			b = []byte{}
+		}
+		r[relativePath] = b
 		return nil
 	}
 
