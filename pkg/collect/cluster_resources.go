@@ -77,7 +77,10 @@ func ClusterResources(c *Collector, clusterResourcesCollector *troubleshootv1bet
 	for _, pod := range unhealthyPods {
 		allContainers := append(pod.Spec.InitContainers, pod.Spec.Containers...)
 		for _, container := range allContainers {
-			logsRoot := path.Join(c.BundlePath, "cluster-resources", "pods", "logs", pod.Namespace)
+			logsRoot := ""
+			if c.BundlePath != "" {
+				logsRoot = path.Join(c.BundlePath, "cluster-resources", "pods", "logs", pod.Namespace)
+			}
 			limits := &troubleshootv1beta2.LogLimits{
 				MaxLines: 500,
 			}
