@@ -1290,7 +1290,8 @@
                 "required": [
                   "name",
                   "namespace",
-                  "outcomes"
+                  "outcomes",
+                  "selector"
                 ],
                 "properties": {
                   "checkName": {
@@ -1353,6 +1354,12 @@
                           }
                         }
                       }
+                    }
+                  },
+                  "selector": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
                     }
                   }
                 }

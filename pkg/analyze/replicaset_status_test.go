@@ -66,7 +66,7 @@ func Test_analyzeReplicaSetStatus(t *testing.T) {
 					},
 				},
 				Namespace: "rook-ceph",
-				Name:      "csi-cephfsplugin-provisioner-56d4db5b99",
+				Selector:  []string{"app=csi-cephfsplugin-provisioner"},
 			},
 			expectResult: []*AnalyzeResult{
 				{
@@ -84,37 +84,17 @@ func Test_analyzeReplicaSetStatus(t *testing.T) {
 			},
 		},
 		{
-			name: "pass because 1 is available",
+			name: "find the one failing replicaset",
 			analyzer: troubleshootv1beta2.ReplicaSetStatus{
-				Outcomes: []*troubleshootv1beta2.Outcome{
-					{
-						Pass: &troubleshootv1beta2.SingleOutcome{
-							When:    "available = 1",
-							Message: "pass",
-						},
-					},
-					{
-						Warn: &troubleshootv1beta2.SingleOutcome{
-							When:    "ready = 1",
-							Message: "warn",
-						},
-					},
-					{
-						Fail: &troubleshootv1beta2.SingleOutcome{
-							Message: "default fail",
-						},
-					},
-				},
 				Namespace: "rook-ceph",
-				Name:      "csi-rbdplugin-provisioner-d84959fcb",
 			},
 			expectResult: []*AnalyzeResult{
 				{
-					IsPass:  true,
+					IsPass:  false,
 					IsWarn:  false,
-					IsFail:  false,
-					Title:   "csi-rbdplugin-provisioner-d84959fcb Status",
-					Message: "pass",
+					IsFail:  true,
+					Title:   "rook-ceph/rook-ceph-mds-rook-shared-fs-b-7895f484f5 ReplicaSet Status",
+					Message: "The replicaset rook-ceph/rook-ceph-mds-rook-shared-fs-b-7895f484f5 is not ready",
 					IconKey: "kubernetes_deployment_status",
 					IconURI: "https://troubleshoot.sh/images/analyzer-icons/deployment-status.svg?w=17&h=17",
 				},

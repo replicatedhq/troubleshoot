@@ -75,6 +75,7 @@ type ReplicaSetStatus struct {
 	Outcomes    []*Outcome `json:"outcomes" yaml:"outcomes"`
 	Namespace   string     `json:"namespace" yaml:"namespace"`
 	Name        string     `json:"name" yaml:"name"`
+	Selector    []string   `json:"selector" yaml:"selector"`
 }
 
 type ClusterPodStatuses struct {

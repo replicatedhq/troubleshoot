@@ -869,10 +869,15 @@ spec:
                                 type: object
                             type: object
                           type: array
+                        selector:
+                          items:
+                            type: string
+                          type: array
                       required:
                       - name
                       - namespace
                       - outcomes
+                      - selector
                       type: object
                     secret:
                       properties:
