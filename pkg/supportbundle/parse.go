@@ -3,37 +3,31 @@ package supportbundle
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"os"
 	"path/filepath"
+	"regexp"
+	"strings"
 
+	"github.com/mholt/archiver"
 	"github.com/pkg/errors"
-	redact2 "github.com/replicatedhq/troubleshoot/pkg/redact"
+	types "github.com/replicatedhq/troubleshoot/pkg/supportbundle/types"
 	corev1 "k8s.io/api/core/v1"
 )
 
-type PodDetails struct {
-	PodDefinition corev1.Pod     `json:"podDefinition"`
-	PodEvents     []corev1.Event `json:"podEvents"`
-	PodContainers []PodContainer `json:"podContainers"`
-}
+var (
+	SupportBundleNameRegex = regexp.MustCompile(`^\/?support-bundle-(\d{4})-(\d{2})-(\d{2})T(\d{2})_(\d{2})_(\d{2})\/?`)
+)
 
-type PodContainer struct {
-	Name            string `json:"name"`
-	LogsFilePath    string `json:"logsFilePath"`
-	IsInitContainer bool   `json:"isInitContainer"`
-}
-
-func GetPodDetails(bundleArchivePath string, podNamespace string, podName string) (*PodDetails, error) {
-	podDetails := PodDetails{}
+func GetPodDetails(bundleArchive string, podNamespace string, podName string) (*types.PodDetails, error) {
+	podDetails := types.PodDetails{}
 
 	nsPodsFilePath := filepath.Join("cluster-resources", "pods", fmt.Sprintf("%s.json", podNamespace))
 	nsEventsFilePath := filepath.Join("cluster-resources", "events", fmt.Sprintf("%s.json", podNamespace))
 
-	files, err := GetFilesContents(bundleArchivePath, []string{nsPodsFilePath, nsEventsFilePath})
+	files, err := GetFilesContents(bundleArchive, []string{nsPodsFilePath, nsEventsFilePath})
 	if err != nil {
-		logger.Error(errors.Wrap(err, "failed to get files contents"))
-		getPodDetailsFromSupportBundleResponse.Error = fmt.Sprintf("failed to get file %s", nsPodsFilePath)
-		JSON(w, 500, getPodDetailsFromSupportBundleResponse)
-		return
+		return nil, errors.Wrap(err, "failed to get files contents")
 	}
 
 	var nsEvents []corev1.Event
@@ -55,16 +49,16 @@ func GetPodDetails(bundleArchivePath string, podNamespace string, podName string
 	for _, pod := range podsArr {
 		if pod.Name == podName && pod.Namespace == podNamespace {
 			podDetails.PodDefinition = pod
-			podDetails.PodContainers = []PodContainer{}
+			podDetails.PodContainers = []types.PodContainer{}
 			for _, i := range pod.Spec.InitContainers {
-				podDetails.PodContainers = append(podDetails.PodContainers, PodContainer{
+				podDetails.PodContainers = append(podDetails.PodContainers, types.PodContainer{
 					Name:            i.Name,
 					LogsFilePath:    filepath.Join("cluster-resources", "pods", "logs", pod.Namespace, pod.Name, fmt.Sprintf("%s.log", i.Name)),
 					IsInitContainer: true,
 				})
 			}
 			for _, c := range pod.Spec.Containers {
-				podDetails.PodContainers = append(podDetails.PodContainers, PodContainer{
+				podDetails.PodContainers = append(podDetails.PodContainers, types.PodContainer{
 					Name:            c.Name,
 					LogsFilePath:    filepath.Join("cluster-resources", "pods", "logs", pod.Namespace, pod.Name, fmt.Sprintf("%s.log", c.Name)),
 					IsInitContainer: false,
@@ -74,12 +68,11 @@ func GetPodDetails(bundleArchivePath string, podNamespace string, podName string
 		}
 	}
 
-	return podDetails, nil
+	return &podDetails, nil
 }
 
-// GetFilesContents will return the file contents for filenames matching the filenames
-// parameter.
-func GetFilesContents(bundleArchivePath string, filenames []string) (map[string][]byte, error) {
+// GetFilesContents will return the file contents for filenames matching the filenames parameter.
+func GetFilesContents(bundleArchive string, filenames []string) (map[string][]byte, error) {
 	bundleDir, err := ioutil.TempDir("", "troubleshoot")
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create tmp dir")
