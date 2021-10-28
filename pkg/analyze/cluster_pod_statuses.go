@@ -42,6 +42,8 @@ func clusterPodStatuses(analyzer *troubleshootv1beta2.ClusterPodStatuses, getChi
 	allResults := []*AnalyzeResult{}
 
 	for _, pod := range pods {
+		podResults := []*AnalyzeResult{}
+
 		if pod.Status.Reason == "" {
 			pod.Status.Reason = k8sutil.GetPodStatusReason(&pod)
 		}
@@ -76,12 +78,23 @@ func clusterPodStatuses(analyzer *troubleshootv1beta2.ClusterPodStatuses, getChi
 				continue
 			}
 
+			operator := parts[0]
+			reason := parts[1]
 			match := false
-			switch parts[0] {
+
+			switch operator {
 			case "=", "==", "===":
-				match = parts[1] == string(pod.Status.Phase) || parts[1] == string(pod.Status.Reason)
+				if reason == "Healthy" {
+					match = !k8sutil.IsPodUnhealthy(&pod)
+				} else {
+					match = reason == string(pod.Status.Phase) || reason == string(pod.Status.Reason)
+				}
 			case "!=", "!==":
-				match = parts[1] != string(pod.Status.Phase) && parts[1] != string(pod.Status.Reason)
+				if reason == "Healthy" {
+					match = k8sutil.IsPodUnhealthy(&pod)
+				} else {
+					match = reason != string(pod.Status.Phase) && reason != string(pod.Status.Reason)
+				}
 			}
 
 			if !match {
@@ -130,9 +143,10 @@ func clusterPodStatuses(analyzer *troubleshootv1beta2.ClusterPodStatuses, getChi
 			}
 			r.Message = m.String()
 
-			allResults = append(allResults, &r)
-			break
+			podResults = append(podResults, &r)
 		}
+
+		allResults = append(allResults, podResults...)
 	}
 
 	return allResults, nil
