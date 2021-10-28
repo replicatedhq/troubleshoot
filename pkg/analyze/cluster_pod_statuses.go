@@ -141,6 +141,7 @@ func clusterPodStatuses(analyzer *troubleshootv1beta2.ClusterPodStatuses, getChi
 			}
 			r.Message = m.String()
 
+			// add to results, break and check the next pod
 			allResults = append(allResults, &r)
 			break
 		}
