@@ -50,12 +50,18 @@ func analyzeOneJobStatus(analyzer *troubleshootv1beta2.JobStatus, getFileContent
 				IsFail:  true,
 				Message: fmt.Sprintf("The job %q was not found", analyzer.Name),
 			}
-		} else {
+		} else if len(analyzer.Outcomes) > 0 {
 			result, err = jobStatus(analyzer.Outcomes, job)
 			if err != nil {
 				return nil, errors.Wrap(err, "failed to process status")
 			}
+		} else {
+			result = getDefaultJobResult(job)
 		}
+	}
+
+	if result == nil {
+		return nil, nil
 	}
 
 	return []*AnalyzeResult{result}, nil
@@ -82,27 +88,10 @@ func analyzeAllJobStatuses(analyzer *troubleshootv1beta2.JobStatus, getFileConte
 		}
 
 		for _, job := range jobs {
-			if job.Spec.Completions == nil && job.Status.Succeeded > 1 {
-				continue
+			result := getDefaultJobResult(&job)
+			if result != nil {
+				results = append(results, result)
 			}
-
-			if job.Spec.Completions != nil && *job.Spec.Completions == job.Status.Succeeded {
-				continue
-			}
-
-			if job.Status.Failed == 0 {
-				continue
-			}
-
-			result := &AnalyzeResult{
-				Title:   fmt.Sprintf("%s/%s Job Status", job.Namespace, job.Name),
-				IconKey: "kubernetes_deployment_status",
-				IconURI: "https://troubleshoot.sh/images/analyzer-icons/deployment-status.svg?w=17&h=17",
-				IsFail:  true,
-				Message: fmt.Sprintf("The job %s/%s is not complete", job.Namespace, job.Name),
-			}
-
-			results = append(results, result)
 		}
 	}
 
@@ -185,6 +174,28 @@ func jobStatus(outcomes []*troubleshootv1beta2.Outcome, job *batchv1.Job) (*Anal
 	}
 
 	return result, nil
+}
+
+func getDefaultJobResult(job *batchv1.Job) *AnalyzeResult {
+	if job.Spec.Completions == nil && job.Status.Succeeded > 1 {
+		return nil
+	}
+
+	if job.Spec.Completions != nil && *job.Spec.Completions == job.Status.Succeeded {
+		return nil
+	}
+
+	if job.Status.Failed == 0 {
+		return nil
+	}
+
+	return &AnalyzeResult{
+		Title:   fmt.Sprintf("%s/%s Job Status", job.Namespace, job.Name),
+		IconKey: "kubernetes_deployment_status",
+		IconURI: "https://troubleshoot.sh/images/analyzer-icons/deployment-status.svg?w=17&h=17",
+		IsFail:  true,
+		Message: fmt.Sprintf("The job %s/%s is not complete", job.Namespace, job.Name),
+	}
 }
 
 func compareJobStatusToWhen(when string, job *batchv1.Job) (bool, error) {
