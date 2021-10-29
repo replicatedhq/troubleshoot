@@ -84,10 +84,8 @@ func Test_analyzeReplicaSetStatus(t *testing.T) {
 			},
 		},
 		{
-			name: "find the one failing replicaset",
-			analyzer: troubleshootv1beta2.ReplicaSetStatus{
-				Namespace: "rook-ceph",
-			},
+			name:     "analyze all replicasets",
+			analyzer: troubleshootv1beta2.ReplicaSetStatus{},
 			expectResult: []*AnalyzeResult{
 				{
 					IsPass:  false,

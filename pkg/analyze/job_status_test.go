@@ -123,6 +123,24 @@ func Test_JobStatus(t *testing.T) {
 				"cluster-resources/jobs/test.json": []byte(collectedJobs),
 			},
 		},
+		{
+			name:     "analyze all jobs",
+			analyzer: troubleshootv1beta2.JobStatus{},
+			expectResult: []*AnalyzeResult{
+				{
+					IsPass:  false,
+					IsWarn:  false,
+					IsFail:  true,
+					Title:   "test/post-install-job Job Status",
+					Message: "The job test/post-install-job is not complete",
+					IconKey: "kubernetes_deployment_status",
+					IconURI: "https://troubleshoot.sh/images/analyzer-icons/deployment-status.svg?w=17&h=17",
+				},
+			},
+			files: map[string][]byte{
+				"cluster-resources/jobs/test.json": []byte(collectedJobs),
+			},
+		},
 	}
 
 	for _, test := range tests {

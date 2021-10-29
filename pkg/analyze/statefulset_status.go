@@ -31,15 +31,15 @@ func analyzeOneStatefulsetStatus(analyzer *troubleshootv1beta2.StatefulsetStatus
 			return nil, errors.Wrap(err, "failed to unmarshal statefulset list")
 		}
 
-		var status *appsv1.StatefulSetStatus
-		for _, statefulset := range statefulsets {
-			if statefulset.Name == analyzer.Name {
-				status = statefulset.Status.DeepCopy()
+		var statefulset *appsv1.StatefulSet
+		for _, s := range statefulsets {
+			if s.Name == analyzer.Name {
+				statefulset = s.DeepCopy()
 				break
 			}
 		}
 
-		if status == nil {
+		if statefulset == nil {
 			result = &AnalyzeResult{
 				Title:   fmt.Sprintf("%s Statefulset Status", analyzer.Name),
 				IconKey: "kubernetes_statefulset_status",
@@ -47,12 +47,18 @@ func analyzeOneStatefulsetStatus(analyzer *troubleshootv1beta2.StatefulsetStatus
 				IsFail:  true,
 				Message: fmt.Sprintf("The statefulset %q was not found", analyzer.Name),
 			}
-		} else {
-			result, err = commonStatus(analyzer.Outcomes, fmt.Sprintf("%s Status", analyzer.Name), "kubernetes_statefulset_status", "https://troubleshoot.sh/images/analyzer-icons/statefulset-status.svg?w=23&h=14", int(status.ReadyReplicas))
+		} else if len(analyzer.Outcomes) > 0 {
+			result, err = commonStatus(analyzer.Outcomes, fmt.Sprintf("%s Status", analyzer.Name), "kubernetes_statefulset_status", "https://troubleshoot.sh/images/analyzer-icons/statefulset-status.svg?w=23&h=14", int(statefulset.Status.ReadyReplicas))
 			if err != nil {
 				return nil, errors.Wrap(err, "failed to process status")
 			}
+		} else {
+			result = getDefaultStatefulSetResult(statefulset)
 		}
+	}
+
+	if result == nil {
+		return nil, nil
 	}
 
 	return []*AnalyzeResult{result}, nil
@@ -79,21 +85,26 @@ func analyzeAllStatefulsetStatuses(analyzer *troubleshootv1beta2.StatefulsetStat
 		}
 
 		for _, statefulset := range statefulsets {
-			if statefulset.Status.Replicas == statefulset.Status.ReadyReplicas {
-				continue
+			result := getDefaultStatefulSetResult(&statefulset)
+			if result != nil {
+				results = append(results, result)
 			}
-
-			result := &AnalyzeResult{
-				Title:   fmt.Sprintf("%s/%s Statefulset Status", statefulset.Namespace, statefulset.Name),
-				IconKey: "kubernetes_statefulset_status",
-				IconURI: "https://troubleshoot.sh/images/analyzer-icons/statefulset-status.svg?w=23&h=14",
-				IsFail:  true,
-				Message: fmt.Sprintf("The statefulset %s/%s has %d/%d replicas", statefulset.Namespace, statefulset.Name, statefulset.Status.ReadyReplicas, statefulset.Status.Replicas),
-			}
-
-			results = append(results, result)
 		}
 	}
 
 	return results, nil
+}
+
+func getDefaultStatefulSetResult(statefulset *appsv1.StatefulSet) *AnalyzeResult {
+	if statefulset.Status.Replicas == statefulset.Status.ReadyReplicas {
+		return nil
+	}
+
+	return &AnalyzeResult{
+		Title:   fmt.Sprintf("%s/%s Statefulset Status", statefulset.Namespace, statefulset.Name),
+		IconKey: "kubernetes_statefulset_status",
+		IconURI: "https://troubleshoot.sh/images/analyzer-icons/statefulset-status.svg?w=23&h=14",
+		IsFail:  true,
+		Message: fmt.Sprintf("The statefulset %s/%s has %d/%d replicas", statefulset.Namespace, statefulset.Name, statefulset.Status.ReadyReplicas, statefulset.Status.Replicas),
+	}
 }

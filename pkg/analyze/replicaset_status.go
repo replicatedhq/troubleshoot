@@ -51,11 +51,13 @@ func analyzeOneReplicaSetStatus(analyzer *troubleshootv1beta2.ReplicaSetStatus, 
 				IsFail:  true,
 				Message: fmt.Sprintf("The replicaset %q was not found", analyzer.Name),
 			}
-		} else {
+		} else if len(analyzer.Outcomes) > 0 {
 			result, err = replicasetStatus(analyzer.Outcomes, replicaset)
 			if err != nil {
 				return nil, errors.Wrap(err, "failed to process status")
 			}
+		} else {
+			result = getDefaultReplicaSetResult(replicaset)
 		}
 	}
 
@@ -99,23 +101,12 @@ func analyzeAllReplicaSetStatuses(analyzer *troubleshootv1beta2.ReplicaSetStatus
 					return nil, errors.Wrap(err, "failed to process status")
 				}
 			} else {
-				if replicaset.Spec.Replicas == nil && replicaset.Status.AvailableReplicas == 1 { // default is 1
-					continue
-				}
-				if replicaset.Spec.Replicas != nil && *replicaset.Spec.Replicas == replicaset.Status.AvailableReplicas {
-					continue
-				}
-
-				result = &AnalyzeResult{
-					Title:   fmt.Sprintf("%s/%s ReplicaSet Status", replicaset.Namespace, replicaset.Name),
-					IconKey: "kubernetes_deployment_status",                                                  // TODO: need new icon
-					IconURI: "https://troubleshoot.sh/images/analyzer-icons/deployment-status.svg?w=17&h=17", // TODO: need new icon
-					IsFail:  true,
-					Message: fmt.Sprintf("The replicaset %s/%s is not ready", replicaset.Namespace, replicaset.Name),
-				}
+				result = getDefaultReplicaSetResult(&replicaset)
 			}
 
-			results = append(results, result)
+			if result != nil {
+				results = append(results, result)
+			}
 		}
 	}
 
@@ -198,6 +189,23 @@ func replicasetStatus(outcomes []*troubleshootv1beta2.Outcome, replicaset *appsv
 	}
 
 	return result, nil
+}
+
+func getDefaultReplicaSetResult(replicaset *appsv1.ReplicaSet) *AnalyzeResult {
+	if replicaset.Spec.Replicas == nil && replicaset.Status.AvailableReplicas == 1 { // default is 1
+		return nil
+	}
+	if replicaset.Spec.Replicas != nil && *replicaset.Spec.Replicas == replicaset.Status.AvailableReplicas {
+		return nil
+	}
+
+	return &AnalyzeResult{
+		Title:   fmt.Sprintf("%s/%s ReplicaSet Status", replicaset.Namespace, replicaset.Name),
+		IconKey: "kubernetes_deployment_status",                                                  // TODO: need new icon
+		IconURI: "https://troubleshoot.sh/images/analyzer-icons/deployment-status.svg?w=17&h=17", // TODO: need new icon
+		IsFail:  true,
+		Message: fmt.Sprintf("The replicaset %s/%s is not ready", replicaset.Namespace, replicaset.Name),
+	}
 }
 
 func compareReplicaSetStatusToWhen(when string, job *appsv1.ReplicaSet) (bool, error) {
