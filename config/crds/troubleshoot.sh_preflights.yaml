@@ -1070,6 +1070,8 @@ spec:
                           type: BoolString
                         fileName:
                           type: string
+                        ignoreIfNoFiles:
+                          type: boolean
                         outcomes:
                           items:
                             properties:
