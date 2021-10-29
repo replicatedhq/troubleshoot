@@ -24,12 +24,16 @@ func analyzeTextAnalyze(analyzer *troubleshootv1beta2.TextAnalyze, getCollectedF
 	}
 
 	if len(collected) == 0 {
+		if analyzer.IgnoreIfNoFiles {
+			return nil, nil
+		}
+
 		return []*AnalyzeResult{
 			{
 				Title:   checkName,
 				IconKey: "kubernetes_text_analyze",
 				IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg",
-				IsFail:  false,
+				IsWarn:  true,
 				Message: "No matching files",
 			},
 		}, nil

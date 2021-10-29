@@ -1615,6 +1615,9 @@
                   "fileName": {
                     "type": "string"
                   },
+                  "ignoreIfNoFiles": {
+                    "type": "boolean"
+                  },
                   "outcomes": {
                     "type": "array",
                     "items": {

@@ -117,12 +117,13 @@ type NodeResourceSelectors struct {
 }
 
 type TextAnalyze struct {
-	AnalyzeMeta   `json:",inline" yaml:",inline"`
-	CollectorName string     `json:"collectorName,omitempty" yaml:"collectorName,omitempty"`
-	FileName      string     `json:"fileName,omitempty" yaml:"fileName,omitempty"`
-	RegexPattern  string     `json:"regex,omitempty" yaml:"regex,omitempty"`
-	RegexGroups   string     `json:"regexGroups,omitempty" yaml:"regexGroups,omitempty"`
-	Outcomes      []*Outcome `json:"outcomes" yaml:"outcomes"`
+	AnalyzeMeta     `json:",inline" yaml:",inline"`
+	CollectorName   string     `json:"collectorName,omitempty" yaml:"collectorName,omitempty"`
+	FileName        string     `json:"fileName,omitempty" yaml:"fileName,omitempty"`
+	RegexPattern    string     `json:"regex,omitempty" yaml:"regex,omitempty"`
+	RegexGroups     string     `json:"regexGroups,omitempty" yaml:"regexGroups,omitempty"`
+	IgnoreIfNoFiles bool       `json:"ignoreIfNoFiles,omitempty" yaml:"ignoreIfNoFiles,omitempty"`
+	Outcomes        []*Outcome `json:"outcomes" yaml:"outcomes"`
 }
 
 type DatabaseAnalyze struct {
