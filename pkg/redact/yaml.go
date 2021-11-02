@@ -81,7 +81,7 @@ func (r *YamlRedactor) Redact(input io.Reader, path string) io.Reader {
 			RedactorName:      r.redactName,
 			CharactersRemoved: len(doc) - len(newBytes),
 			Line:              0, // line 0 because we have no way to tell what line was impacted
-			File:              r.filePath,
+			File:              path,
 			IsDefaultRedactor: r.isDefault,
 		})
 
