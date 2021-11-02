@@ -3,7 +3,6 @@ package redact
 import (
 	"bufio"
 	"bytes"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"path/filepath"
@@ -78,7 +77,6 @@ func (r *YamlRedactor) Redact(input io.Reader, path string) io.Reader {
 		buf := bytes.NewBuffer(newBytes)
 		buf.WriteTo(writer)
 
-		fmt.Println("r.redactName", r.redactName)
 		addRedaction(Redaction{
 			RedactorName:      r.redactName,
 			CharactersRemoved: len(doc) - len(newBytes),
