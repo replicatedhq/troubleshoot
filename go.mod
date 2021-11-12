@@ -194,5 +194,5 @@ require (
 )
 
 replace (
-	github.com/go-ole/go-ole => github.com/go-ole/go-ole v1.2.6  // needed for arm builds
+    github.com/go-ole/go-ole => github.com/go-ole/go-ole v1.2.6  // needed for arm builds
 )
