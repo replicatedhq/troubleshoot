@@ -167,12 +167,12 @@ if [ "${INSTALL_GO_TOOLS}" = "true" ]; then
     export GOPATH=/tmp/gotools
     export GOCACHE=/tmp/gotools/cache
 
-    # Use go get for versions of go under 1.16
+    # Use go get for versions of go under 1.17
     go_install_command=install
     if [[ "1.16" > "$(go version | grep -oP 'go\K[0-9]+\.[0-9]+(\.[0-9]+)?')" ]]; then
         export GO111MODULE=on
         go_install_command=get
-        echo "Go version < 1.16, using go get."
+        echo "Go version < 1.17, using go get."
     fi 
 
     (echo "${GO_TOOLS}" | xargs -n 1 go ${go_install_command} -v )2>&1 | tee -a /usr/local/etc/vscode-dev-containers/go.log

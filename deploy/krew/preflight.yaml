@@ -29,6 +29,17 @@ spec:
     bin: preflight
   - selector:
       matchLabels:
+        os: darwin
+        arch: arm64
+    {{addURIAndSha "https://github.com/replicatedhq/troubleshoot/releases/download/{{ .TagName }}/preflight_darwin_arm64.tar.gz" .TagName }}
+    files:
+    - from: preflight
+      to: .
+    - from: LICENSE
+      to: .
+    bin: preflight    
+  - selector:
+      matchLabels:
         os: windows
         arch: amd64
     {{addURIAndSha "https://github.com/replicatedhq/troubleshoot/releases/download/{{ .TagName }}/preflight_windows_amd64.zip" .TagName }}
