@@ -14,7 +14,7 @@ require (
 	github.com/godbus/dbus v4.1.0+incompatible
 	github.com/google/gofuzz v1.1.0
 	github.com/gorilla/handlers v1.5.1
-	github.com/hashicorp/go-getter v1.3.1-0.20190627223108-da0323b9545e
+	github.com/hashicorp/go-getter v1.5.9
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/lib/pq v1.3.0
 	github.com/longhorn/go-iscsi-helper v0.0.0-20210330030558-49a327fb024e
@@ -40,7 +40,9 @@ require (
 	k8s.io/apiserver v0.22.2
 	k8s.io/cli-runtime v0.21.5
 	k8s.io/client-go v0.22.2
+	k8s.io/code-generator v0.22.2
 	sigs.k8s.io/controller-runtime v0.7.0
+	sigs.k8s.io/controller-tools v0.7.0
 )
 
 require (
@@ -104,7 +106,7 @@ require (
 	github.com/gorilla/mux v1.7.4 // indirect
 	github.com/gregjones/httpcache v0.0.0-20180305231024-9cad4c3443a7 // indirect
 	github.com/hashicorp/errwrap v1.0.0 // indirect
-	github.com/hashicorp/go-cleanhttp v0.5.1 // indirect
+	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/hashicorp/go-safetemp v1.0.0 // indirect
 	github.com/hashicorp/go-version v1.3.0 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
@@ -137,8 +139,6 @@ require (
 	github.com/monochromegane/go-gitignore v0.0.0-20200626010858-205db1a8cc00 // indirect
 	github.com/nsf/termbox-go v0.0.0-20190121233118-02980233997d // indirect
 	github.com/nwaples/rardecode v1.1.2 // indirect
-	github.com/onsi/ginkgo v1.16.4 // indirect
-	github.com/onsi/gomega v1.14.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.0.2-0.20190823105129-775207bd45b6 // indirect
 	github.com/opencontainers/runc v1.0.0-rc91 // indirect
