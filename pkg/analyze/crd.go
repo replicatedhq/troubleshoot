@@ -30,8 +30,8 @@ func analyzeCustomResourceDefinition(analyzer *troubleshootv1beta2.CustomResourc
 		IconURI: "https://troubleshoot.sh/images/analyzer-icons/custom-resource-definition.svg?w=13&h=16",
 	}
 
-	for _, storageClass := range crds {
-		if storageClass.Name == analyzer.CustomResourceDefinitionName {
+	for _, crd := range crds {
+		if crd.Name == analyzer.CustomResourceDefinitionName {
 			result.IsPass = true
 			for _, outcome := range analyzer.Outcomes {
 				if outcome.Pass != nil {
