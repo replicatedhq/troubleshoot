@@ -7,7 +7,7 @@ require (
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/containers/image/v5 v5.10.4
 	github.com/docker/distribution v2.7.1+incompatible
-	github.com/fatih/color v1.12.0
+	github.com/fatih/color v1.13.0
 	github.com/go-redis/redis/v7 v7.2.0
 	github.com/go-sql-driver/mysql v1.5.0
 	github.com/gobwas/glob v0.2.3
@@ -19,7 +19,7 @@ require (
 	github.com/lib/pq v1.3.0
 	github.com/longhorn/go-iscsi-helper v0.0.0-20210330030558-49a327fb024e
 	github.com/manifoldco/promptui v0.8.0
-	github.com/mattn/go-isatty v0.0.12
+	github.com/mattn/go-isatty v0.0.14
 	github.com/mholt/archiver v3.1.1+incompatible
 	github.com/pkg/errors v0.9.1
 	github.com/replicatedhq/termui/v3 v3.1.1-0.20200811145416-f40076d26851
@@ -123,7 +123,7 @@ require (
 	github.com/lunixbochs/vtclean v0.0.0-20180621232353-2d01aacdc34a // indirect
 	github.com/magiconair/properties v1.8.5 // indirect
 	github.com/mailru/easyjson v0.7.6 // indirect
-	github.com/mattn/go-colorable v0.1.8 // indirect
+	github.com/mattn/go-colorable v0.1.9 // indirect
 	github.com/mattn/go-runewidth v0.0.9 // indirect
 	github.com/mattn/go-shellwords v1.0.10 // indirect
 	github.com/matttproud/golang_protobuf_extensions v1.0.2-0.20181231171920-c182affec369 // indirect
