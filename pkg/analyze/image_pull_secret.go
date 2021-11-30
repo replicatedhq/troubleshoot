@@ -61,7 +61,7 @@ func analyzeImagePullSecret(analyzer *troubleshootv1beta2.ImagePullSecret, getCh
 		if result.IsPass {
 			result.Message = fmt.Sprintf("Credentials to pull from: %s found", analyzer.RegistryName)
 		} else {
-			result.Message = fmt.Sprintf("Credentials to pull from: %s not ound", analyzer.RegistryName)
+			result.Message = fmt.Sprintf("Credentials to pull from: %s not found", analyzer.RegistryName)
 		}
 	}
 	return &result, nil
