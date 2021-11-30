@@ -1,8 +1,6 @@
 
 # Image URL to use all building/pushing image targets
 IMG ?= controller:latest
-export GO111MODULE=on
-export GOPROXY=https://proxy.golang.org
 
 SHELL := /bin/bash -o pipefail
 VERSION_PACKAGE = github.com/replicatedhq/troubleshoot/pkg/version
@@ -94,13 +92,13 @@ schemas: fmt vet openapischema
 	./bin/schemagen --output-dir ./schemas
 
 controller-gen:
-	go get sigs.k8s.io/controller-tools/cmd/controller-gen@v0.7.0
+	go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.7.0
 CONTROLLER_GEN=$(shell which controller-gen)
 
 .PHONY: client-gen
 client-gen:
 ifeq (, $(shell which client-gen))
-	go get k8s.io/code-generator/cmd/client-gen@v0.22.2
+	go install k8s.io/code-generator/cmd/client-gen@v0.22.2
 CLIENT_GEN=$(shell go env GOPATH)/bin/client-gen
 else
 CLIENT_GEN=$(shell which client-gen)
