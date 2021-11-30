@@ -7,5 +7,9 @@ version: 2
 updates:
   - package-ecosystem: "gomod" # See documentation for possible values
     directory: "/" # Location of package manifests
+    labels:
+      - "dependencies"
+      - "go"
+      - "type::chore"
     schedule:
-      interval: "daily"
+      interval: "weekly"
