@@ -8,7 +8,7 @@ require (
 	github.com/containers/image/v5 v5.17.0
 	github.com/docker/distribution v2.7.1+incompatible
 	github.com/fatih/color v1.13.0
-	github.com/go-redis/redis/v7 v7.2.0
+	github.com/go-redis/redis/v7 v7.4.1
 	github.com/go-sql-driver/mysql v1.6.0
 	github.com/gobwas/glob v0.2.3
 	github.com/godbus/dbus v4.1.0+incompatible
