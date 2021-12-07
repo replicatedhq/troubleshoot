@@ -46,6 +46,10 @@ func (c *CollectHostSystemPackages) Collect(progressChan chan<- interface{}) (ma
 		}
 	}
 
+	if releaseID == "" {
+		return nil, errors.New("distribution could not be detected or is unsupported.")
+	}
+
 	for _, p := range c.hostCollector.Packages {
 		info := SystemPackageInfo{
 			Name: p,
