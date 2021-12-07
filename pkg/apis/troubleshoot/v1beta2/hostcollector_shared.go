@@ -67,6 +67,11 @@ type HostBlockDevices struct {
 	HostCollectorMeta `json:",inline" yaml:",inline"`
 }
 
+type HostSystemPackages struct {
+	HostCollectorMeta `json:",inline" yaml:",inline"`
+	Packages          []string `json:"packages"`
+}
+
 type HostKernelModules struct {
 	HostCollectorMeta `json:",inline" yaml:",inline"`
 }
@@ -143,6 +148,7 @@ type HostCollect struct {
 	HTTP                  *HostHTTP              `json:"http,omitempty" yaml:"http,omitempty"`
 	Time                  *HostTime              `json:"time,omitempty" yaml:"time,omitempty"`
 	BlockDevices          *HostBlockDevices      `json:"blockDevices,omitempty" yaml:"blockDevices,omitempty"`
+	SystemPackages        *HostSystemPackages    `json:"systemPackages,omitempty" yaml:"systemPackages,omitempty"`
 	KernelModules         *HostKernelModules     `json:"kernelModules,omitempty" yaml:"kernelModules,omitempty"`
 	TCPConnect            *TCPConnect            `json:"tcpConnect,omitempty" yaml:"tcpConnect,omitempty"`
 	FilesystemPerformance *FilesystemPerformance `json:"filesystemPerformance,omitempty" yaml:"filesystemPerformance,omitempty"`

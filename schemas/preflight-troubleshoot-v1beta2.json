@@ -2646,6 +2646,17 @@
                   }
                 }
               },
+              "systemPackages": {
+                "type": "object",
+                "properties": {
+                  "collectorName": {
+                    "type": "string"
+                  },
+                  "exclude": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  }
+                }
+              },
               "tcpConnect": {
                 "type": "object",
                 "required": [

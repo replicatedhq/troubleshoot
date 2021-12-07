@@ -548,6 +548,47 @@ spec:
                       required:
                       - outcomes
                       type: object
+                    systemPackages:
+                      properties:
+                        checkName:
+                          type: string
+                        exclude:
+                          type: BoolString
+                        outcomes:
+                          items:
+                            properties:
+                              fail:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
+                              pass:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
+                              warn:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
+                            type: object
+                          type: array
+                      required:
+                      - outcomes
+                      type: object
                     tcpConnect:
                       properties:
                         checkName:
@@ -950,6 +991,19 @@ spec:
                           type: string
                         exclude:
                           type: BoolString
+                      type: object
+                    systemPackages:
+                      properties:
+                        collectorName:
+                          type: string
+                        exclude:
+                          type: BoolString
+                        packages:
+                          items:
+                            type: string
+                          type: array
+                      required:
+                      - packages
                       type: object
                     tcpConnect:
                       properties:

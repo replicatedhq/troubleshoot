@@ -28,6 +28,8 @@ func GetHostAnalyzer(analyzer *troubleshootv1beta2.HostAnalyze) (HostAnalyzer, b
 		return &AnalyzeHostTime{analyzer.Time}, true
 	case analyzer.BlockDevices != nil:
 		return &AnalyzeHostBlockDevices{analyzer.BlockDevices}, true
+	case analyzer.SystemPackages != nil:
+		return &AnalyzeHostSystemPackages{analyzer.SystemPackages}, true
 	case analyzer.KernelModules != nil:
 		return &AnalyzeHostKernelModules{analyzer.KernelModules}, true
 	case analyzer.TCPConnect != nil:
