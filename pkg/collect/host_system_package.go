@@ -86,7 +86,7 @@ func (c *CollectHostSystemPackages) Collect(progressChan chan<- interface{}) (ma
 
 	b, err := json.Marshal(infos)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to marshal block device info")
+		return nil, errors.Wrap(err, "failed to marshal system package info")
 	}
 
 	return map[string][]byte{
