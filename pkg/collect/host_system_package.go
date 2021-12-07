@@ -64,7 +64,7 @@ func (c *CollectHostSystemPackages) Collect(progressChan chan<- interface{}) (ma
 		case "centos", "rhel", "amzn", "ol":
 			cmd = exec.Command("yum", "list", "installed", p)
 		default:
-			return nil, errors.New("unsupported distribution")
+			return nil, errors.Errorf("unsupported distribution: %s", releaseID)
 		}
 
 		err := cmd.Run()
