@@ -66,7 +66,7 @@ func clusterPodStatuses(analyzer *troubleshootv1beta2.ClusterPodStatuses, getChi
 				r.URI = outcome.Pass.URI
 				when = outcome.Pass.When
 			} else {
-				fmt.Println("error: found an empty outcome in a clusterPodStatuses analyzer") // don't stop
+				println("error: found an empty outcome in a clusterPodStatuses analyzer") // don't stop
 				continue
 			}
 

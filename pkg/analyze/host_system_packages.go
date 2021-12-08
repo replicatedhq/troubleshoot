@@ -62,7 +62,7 @@ func (a *AnalyzeHostSystemPackages) Analyze(getCollectedFileContents func(string
 				r.URI = outcome.Pass.URI
 				when = outcome.Pass.When
 			} else {
-				fmt.Println("error: found an empty outcome in a systemPackages analyzer") // don't stop
+				println("error: found an empty outcome in a systemPackages analyzer") // don't stop
 				continue
 			}
 
