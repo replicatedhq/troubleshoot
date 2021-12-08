@@ -5,19 +5,18 @@ metadata:
 spec:
   collectors:
     - systemPackages:
-        distributions:
-          ubuntu:
-            - open-iscsi
-            - nfs-common
-          rhel:
-            - iscsi-initiator-utils
-            - nfs-utils
-          centos:
-            - openssl
-          amzn:
-            - libzstd
-          ol:
-            - lvm2
+        ubuntu:
+          - open-iscsi
+          - nfs-common
+        rhel:
+          - iscsi-initiator-utils
+          - nfs-utils
+        centos:
+          - openssl
+        amzn:
+          - libzstd
+        ol:
+          - lvm2
   analyzers:
     - systemPackages:
         outcomes:

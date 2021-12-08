@@ -1988,20 +1988,30 @@ func (in *HostServicesAnalyze) DeepCopy() *HostServicesAnalyze {
 func (in *HostSystemPackages) DeepCopyInto(out *HostSystemPackages) {
 	*out = *in
 	out.HostCollectorMeta = in.HostCollectorMeta
-	if in.Distributions != nil {
-		in, out := &in.Distributions, &out.Distributions
-		*out = make(map[string][]string, len(*in))
-		for key, val := range *in {
-			var outVal []string
-			if val == nil {
-				(*out)[key] = nil
-			} else {
-				in, out := &val, &outVal
-				*out = make([]string, len(*in))
-				copy(*out, *in)
-			}
-			(*out)[key] = outVal
-		}
+	if in.Ubuntu != nil {
+		in, out := &in.Ubuntu, &out.Ubuntu
+		*out = make([]string, len(*in))
+		copy(*out, *in)
+	}
+	if in.RHEL != nil {
+		in, out := &in.RHEL, &out.RHEL
+		*out = make([]string, len(*in))
+		copy(*out, *in)
+	}
+	if in.CentOS != nil {
+		in, out := &in.CentOS, &out.CentOS
+		*out = make([]string, len(*in))
+		copy(*out, *in)
+	}
+	if in.AmazonLinux != nil {
+		in, out := &in.AmazonLinux, &out.AmazonLinux
+		*out = make([]string, len(*in))
+		copy(*out, *in)
+	}
+	if in.OracleLinux != nil {
+		in, out := &in.OracleLinux, &out.OracleLinux
+		*out = make([]string, len(*in))
+		copy(*out, *in)
 	}
 }
 

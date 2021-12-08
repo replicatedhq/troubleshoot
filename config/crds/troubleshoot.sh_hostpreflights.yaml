@@ -994,18 +994,36 @@ spec:
                       type: object
                     systemPackages:
                       properties:
+                        amazonLinux:
+                          items:
+                            type: string
+                          type: array
+                        centos:
+                          items:
+                            type: string
+                          type: array
                         collectorName:
                           type: string
-                        distributions:
-                          additionalProperties:
-                            items:
-                              type: string
-                            type: array
-                          type: object
                         exclude:
                           type: BoolString
+                        oracleLinux:
+                          items:
+                            type: string
+                          type: array
+                        rhel:
+                          items:
+                            type: string
+                          type: array
+                        ubuntu:
+                          items:
+                            type: string
+                          type: array
                       required:
-                      - distributions
+                      - amazonLinux
+                      - centos
+                      - oracleLinux
+                      - rhel
+                      - ubuntu
                       type: object
                     tcpConnect:
                       properties:

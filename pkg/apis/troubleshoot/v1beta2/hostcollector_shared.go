@@ -69,7 +69,11 @@ type HostBlockDevices struct {
 
 type HostSystemPackages struct {
 	HostCollectorMeta `json:",inline" yaml:",inline"`
-	Distributions     map[string][]string `json:"distributions"`
+	Ubuntu            []string `json:"ubuntu"`
+	RHEL              []string `json:"rhel"`
+	CentOS            []string `json:"centos"`
+	AmazonLinux       []string `json:"amazonLinux"`
+	OracleLinux       []string `json:"oracleLinux"`
 }
 
 type HostKernelModules struct {

@@ -50,43 +50,55 @@ func (c *CollectHostSystemPackages) Collect(progressChan chan<- interface{}) (ma
 		return nil, errors.New("distribution could not be detected or is unsupported.")
 	}
 
-	for distro, packages := range c.hostCollector.Distributions {
-		if distro != detectedDistro {
-			continue
+	packages := []string{}
+
+	switch detectedDistro {
+	case "ubuntu":
+		packages = append(packages, c.hostCollector.Ubuntu...)
+	case "centos":
+		packages = append(packages, c.hostCollector.CentOS...)
+	case "rhel":
+		packages = append(packages, c.hostCollector.RHEL...)
+	case "amzn":
+		packages = append(packages, c.hostCollector.AmazonLinux...)
+	case "ol":
+		packages = append(packages, c.hostCollector.OracleLinux...)
+	default:
+		return nil, errors.Errorf("unsupported distribution: %s", detectedDistro)
+	}
+
+	for _, p := range packages {
+		info := SystemPackageInfo{
+			Name: p,
 		}
-		for _, p := range packages {
-			info := SystemPackageInfo{
-				Name: p,
-			}
 
-			var cmd *exec.Cmd
-			var stdout, stderr bytes.Buffer
+		var cmd *exec.Cmd
+		var stdout, stderr bytes.Buffer
 
-			switch distro {
-			case "ubuntu":
-				cmd = exec.Command("dpkg", "-s", p)
-			case "centos", "rhel", "amzn", "ol":
-				cmd = exec.Command("yum", "list", "installed", p)
-			default:
-				return nil, errors.Errorf("unsupported distribution: %s", distro)
-			}
+		switch detectedDistro {
+		case "ubuntu":
+			cmd = exec.Command("dpkg", "-s", p)
+		case "centos", "rhel", "amzn", "ol":
+			cmd = exec.Command("yum", "list", "installed", p)
+		default:
+			return nil, errors.Errorf("unsupported distribution: %s", detectedDistro)
+		}
 
-			err := cmd.Run()
-			if err != nil {
-				if werr, ok := err.(*exec.ExitError); ok {
-					info.ExitCode = strings.TrimPrefix(werr.Error(), "exit status ")
-				} else {
-					return nil, errors.Wrap(err, "failed to run")
-				}
+		err := cmd.Run()
+		if err != nil {
+			if werr, ok := err.(*exec.ExitError); ok {
+				info.ExitCode = strings.TrimPrefix(werr.Error(), "exit status ")
 			} else {
-				info.ExitCode = "0"
+				return nil, errors.Wrap(err, "failed to run")
 			}
-
-			info.Details = stdout.String()
-			info.Error = stderr.String()
-
-			infos = append(infos, info)
+		} else {
+			info.ExitCode = "0"
 		}
+
+		info.Details = stdout.String()
+		info.Error = stderr.String()
+
+		infos = append(infos, info)
 	}
 
 	b, err := json.Marshal(infos)
