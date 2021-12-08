@@ -7,16 +7,39 @@ spec:
     - systemPackages:
         ubuntu:
           - open-iscsi
+        ubuntu-16:
+          - nfs-common
+        ubuntu-18:
+          - nmap
+        ubuntu-20:
+          - nmap
           - nfs-common
         rhel:
           - iscsi-initiator-utils
-          - nfs-utils
-        centos:
-          - openssl
-        amzn:
+        rhel-7:
           - libzstd
+        rhel-8:
+          - nfs-utils
+          - openssl
+        centos:
+          - iscsi-initiator-utils
+        centos-7:
+          - libzstd
+        centos-8:
+          - nfs-utils
+          - openssl
         ol:
           - lvm2
+        ol-7:
+          - libzstd
+          - openssl
+        ol-8:
+          - nfs-utils
+        amzn:
+          - libzstd
+        amzn-2:
+          - nfs-utils
+          - openssl
   analyzers:
     - systemPackages:
         outcomes:

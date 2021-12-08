@@ -70,10 +70,20 @@ type HostBlockDevices struct {
 type HostSystemPackages struct {
 	HostCollectorMeta `json:",inline" yaml:",inline"`
 	Ubuntu            []string `json:"ubuntu"`
+	Ubuntu16          []string `json:"ubuntu-16"`
+	Ubuntu18          []string `json:"ubuntu-18"`
+	Ubuntu20          []string `json:"ubuntu-20"`
 	RHEL              []string `json:"rhel"`
+	RHEL7             []string `json:"rhel-7"`
+	RHEL8             []string `json:"rhel-8"`
 	CentOS            []string `json:"centos"`
-	AmazonLinux       []string `json:"amazonLinux"`
-	OracleLinux       []string `json:"oracleLinux"`
+	CentOS7           []string `json:"centos-7"`
+	CentOS8           []string `json:"centos-8"`
+	OracleLinux       []string `json:"ol"`
+	OracleLinux7      []string `json:"ol-7"`
+	OracleLinux8      []string `json:"ol-8"`
+	AmazonLinux       []string `json:"amzn"`
+	AmazonLinux2      []string `json:"amzn-2"`
 }
 
 type HostKernelModules struct {

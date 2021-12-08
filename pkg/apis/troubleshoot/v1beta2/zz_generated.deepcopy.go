@@ -1993,8 +1993,33 @@ func (in *HostSystemPackages) DeepCopyInto(out *HostSystemPackages) {
 		*out = make([]string, len(*in))
 		copy(*out, *in)
 	}
+	if in.Ubuntu16 != nil {
+		in, out := &in.Ubuntu16, &out.Ubuntu16
+		*out = make([]string, len(*in))
+		copy(*out, *in)
+	}
+	if in.Ubuntu18 != nil {
+		in, out := &in.Ubuntu18, &out.Ubuntu18
+		*out = make([]string, len(*in))
+		copy(*out, *in)
+	}
+	if in.Ubuntu20 != nil {
+		in, out := &in.Ubuntu20, &out.Ubuntu20
+		*out = make([]string, len(*in))
+		copy(*out, *in)
+	}
 	if in.RHEL != nil {
 		in, out := &in.RHEL, &out.RHEL
+		*out = make([]string, len(*in))
+		copy(*out, *in)
+	}
+	if in.RHEL7 != nil {
+		in, out := &in.RHEL7, &out.RHEL7
+		*out = make([]string, len(*in))
+		copy(*out, *in)
+	}
+	if in.RHEL8 != nil {
+		in, out := &in.RHEL8, &out.RHEL8
 		*out = make([]string, len(*in))
 		copy(*out, *in)
 	}
@@ -2003,13 +2028,38 @@ func (in *HostSystemPackages) DeepCopyInto(out *HostSystemPackages) {
 		*out = make([]string, len(*in))
 		copy(*out, *in)
 	}
-	if in.AmazonLinux != nil {
-		in, out := &in.AmazonLinux, &out.AmazonLinux
+	if in.CentOS7 != nil {
+		in, out := &in.CentOS7, &out.CentOS7
+		*out = make([]string, len(*in))
+		copy(*out, *in)
+	}
+	if in.CentOS8 != nil {
+		in, out := &in.CentOS8, &out.CentOS8
 		*out = make([]string, len(*in))
 		copy(*out, *in)
 	}
 	if in.OracleLinux != nil {
 		in, out := &in.OracleLinux, &out.OracleLinux
+		*out = make([]string, len(*in))
+		copy(*out, *in)
+	}
+	if in.OracleLinux7 != nil {
+		in, out := &in.OracleLinux7, &out.OracleLinux7
+		*out = make([]string, len(*in))
+		copy(*out, *in)
+	}
+	if in.OracleLinux8 != nil {
+		in, out := &in.OracleLinux8, &out.OracleLinux8
+		*out = make([]string, len(*in))
+		copy(*out, *in)
+	}
+	if in.AmazonLinux != nil {
+		in, out := &in.AmazonLinux, &out.AmazonLinux
+		*out = make([]string, len(*in))
+		copy(*out, *in)
+	}
+	if in.AmazonLinux2 != nil {
+		in, out := &in.AmazonLinux2, &out.AmazonLinux2
 		*out = make([]string, len(*in))
 		copy(*out, *in)
 	}
