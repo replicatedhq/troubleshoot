@@ -72,7 +72,7 @@ func clusterPodStatuses(analyzer *troubleshootv1beta2.ClusterPodStatuses, getChi
 
 			parts := strings.Split(strings.TrimSpace(when), " ")
 			if len(parts) < 2 {
-				fmt.Printf("invalid 'when' format: %s\n", when) // don't stop
+				println(fmt.Sprintf("invalid 'when' format: %s\n", when)) // don't stop
 				continue
 			}
 
