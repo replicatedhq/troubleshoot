@@ -148,11 +148,6 @@ func compareHostPackagesConditionalToActual(conditional string, isInstalled bool
 		return true, nil
 	}
 
-	parts := strings.Split(conditional, " ")
-	if len(parts) != 1 {
-		return false, fmt.Errorf("invalid 'when' format: expected exactly 1 part, got %d", len(parts))
-	}
-
 	switch conditional {
 	case "installed":
 		return isInstalled, nil
@@ -160,5 +155,5 @@ func compareHostPackagesConditionalToActual(conditional string, isInstalled bool
 		return !isInstalled, nil
 	}
 
-	return false, fmt.Errorf("unexpected conditional %q", parts[0])
+	return false, fmt.Errorf("invalid 'when' format: %s", conditional)
 }
