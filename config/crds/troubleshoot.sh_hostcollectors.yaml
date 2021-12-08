@@ -996,14 +996,16 @@ spec:
                       properties:
                         collectorName:
                           type: string
+                        distributions:
+                          additionalProperties:
+                            items:
+                              type: string
+                            type: array
+                          type: object
                         exclude:
                           type: BoolString
-                        packages:
-                          items:
-                            type: string
-                          type: array
                       required:
-                      - packages
+                      - distributions
                       type: object
                     tcpConnect:
                       properties:

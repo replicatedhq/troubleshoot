@@ -69,7 +69,7 @@ type HostBlockDevices struct {
 
 type HostSystemPackages struct {
 	HostCollectorMeta `json:",inline" yaml:",inline"`
-	Packages          []string `json:"packages"`
+	Distributions     map[string][]string `json:"distributions"`
 }
 
 type HostKernelModules struct {
