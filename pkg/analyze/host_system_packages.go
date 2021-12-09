@@ -28,7 +28,12 @@ func (a *AnalyzeHostSystemPackages) IsExcluded() (bool, error) {
 func (a *AnalyzeHostSystemPackages) Analyze(getCollectedFileContents func(string) ([]byte, error)) ([]*AnalyzeResult, error) {
 	hostAnalyzer := a.hostAnalyzer
 
-	contents, err := getCollectedFileContents("system/packages.json")
+	packagesFileName := "system/packages.json"
+	if a.hostAnalyzer.ForCollector != "" {
+		packagesFileName = fmt.Sprintf("system/%s-packages.json", a.hostAnalyzer.ForCollector)
+	}
+
+	contents, err := getCollectedFileContents(packagesFileName)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get collected file")
 	}
@@ -85,19 +90,19 @@ func (a *AnalyzeHostSystemPackages) Analyze(getCollectedFileContents func(string
 			var t bytes.Buffer
 			err = titleTmpl.Execute(&t, info)
 			if err != nil {
-				return nil, errors.Wrap(err, "failed to execute template")
+				return nil, errors.Wrap(err, "failed to execute title template")
 			}
 			r.Title = t.String()
 
 			// template the message
 			msgTmpl, err := tmpl.Parse(r.Message)
 			if err != nil {
-				return nil, errors.Wrap(err, "failed to create new title template")
+				return nil, errors.Wrap(err, "failed to create new message template")
 			}
 			var m bytes.Buffer
 			err = msgTmpl.Execute(&m, info)
 			if err != nil {
-				return nil, errors.Wrap(err, "failed to execute template")
+				return nil, errors.Wrap(err, "failed to execute message template")
 			}
 			r.Message = m.String()
 
@@ -108,23 +113,6 @@ func (a *AnalyzeHostSystemPackages) Analyze(getCollectedFileContents func(string
 	}
 
 	return allResults, nil
-}
-
-func templateString(value string, info collect.SystemPackageInfo) (string, error) {
-	tmpl := template.New("package")
-
-	// template the message
-	msgTmpl, err := tmpl.Parse(value)
-	if err != nil {
-		return "", errors.Wrap(err, "failed to create new title template")
-	}
-	var m bytes.Buffer
-	err = msgTmpl.Execute(&m, info)
-	if err != nil {
-		return "", errors.Wrap(err, "failed to execute template")
-	}
-
-	return m.String(), nil
 }
 
 func isPackageInstalled(info collect.SystemPackageInfo) bool {

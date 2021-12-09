@@ -554,6 +554,8 @@ spec:
                           type: string
                         exclude:
                           type: BoolString
+                        forCollector:
+                          type: string
                         outcomes:
                           items:
                             properties:
@@ -998,7 +1000,7 @@ spec:
                           items:
                             type: string
                           type: array
-                        amzn-2:
+                        amzn2:
                           items:
                             type: string
                           type: array
@@ -1006,11 +1008,11 @@ spec:
                           items:
                             type: string
                           type: array
-                        centos-7:
+                        centos7:
                           items:
                             type: string
                           type: array
-                        centos-8:
+                        centos8:
                           items:
                             type: string
                           type: array
@@ -1022,11 +1024,11 @@ spec:
                           items:
                             type: string
                           type: array
-                        ol-7:
+                        ol7:
                           items:
                             type: string
                           type: array
-                        ol-8:
+                        ol8:
                           items:
                             type: string
                           type: array
@@ -1034,11 +1036,11 @@ spec:
                           items:
                             type: string
                           type: array
-                        rhel-7:
+                        rhel7:
                           items:
                             type: string
                           type: array
-                        rhel-8:
+                        rhel8:
                           items:
                             type: string
                           type: array
@@ -1046,34 +1048,34 @@ spec:
                           items:
                             type: string
                           type: array
-                        ubuntu-16:
+                        ubuntu16:
                           items:
                             type: string
                           type: array
-                        ubuntu-18:
+                        ubuntu18:
                           items:
                             type: string
                           type: array
-                        ubuntu-20:
+                        ubuntu20:
                           items:
                             type: string
                           type: array
                       required:
                       - amzn
-                      - amzn-2
+                      - amzn2
                       - centos
-                      - centos-7
-                      - centos-8
+                      - centos7
+                      - centos8
                       - ol
-                      - ol-7
-                      - ol-8
+                      - ol7
+                      - ol8
                       - rhel
-                      - rhel-7
-                      - rhel-8
+                      - rhel7
+                      - rhel8
                       - ubuntu
-                      - ubuntu-16
-                      - ubuntu-18
-                      - ubuntu-20
+                      - ubuntu16
+                      - ubuntu18
+                      - ubuntu20
                       type: object
                     tcpConnect:
                       properties:

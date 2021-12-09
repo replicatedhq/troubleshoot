@@ -154,8 +154,13 @@ func (c *CollectHostSystemPackages) Collect(progressChan chan<- interface{}) (ma
 		return nil, errors.Wrap(err, "failed to marshal system packages info")
 	}
 
+	outputFileName := "system/packages.json"
+	if c.hostCollector.CollectorName != "" {
+		outputFileName = fmt.Sprintf("system/%s-packages.json", c.hostCollector.CollectorName)
+	}
+
 	return map[string][]byte{
-		"system/packages.json": b,
+		outputFileName: b,
 	}, nil
 }
 
