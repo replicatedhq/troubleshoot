@@ -53,9 +53,9 @@ type BlockDevicesAnalyze struct {
 }
 
 type SystemPackagesAnalyze struct {
-	AnalyzeMeta  `json:",inline" yaml:",inline"`
-	ForCollector string     `json:"forCollector,omitempty" yaml:"forCollector,omitempty"`
-	Outcomes     []*Outcome `json:"outcomes" yaml:"outcomes"`
+	AnalyzeMeta   `json:",inline" yaml:",inline"`
+	CollectorName string     `json:"collectorName,omitempty" yaml:"collectorName,omitempty"`
+	Outcomes      []*Outcome `json:"outcomes" yaml:"outcomes"`
 }
 
 type KernelModulesAnalyze struct {

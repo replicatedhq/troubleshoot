@@ -552,10 +552,10 @@ spec:
                       properties:
                         checkName:
                           type: string
+                        collectorName:
+                          type: string
                         exclude:
                           type: BoolString
-                        forCollector:
-                          type: string
                         outcomes:
                           items:
                             properties:

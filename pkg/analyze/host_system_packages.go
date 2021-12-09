@@ -29,8 +29,8 @@ func (a *AnalyzeHostSystemPackages) Analyze(getCollectedFileContents func(string
 	hostAnalyzer := a.hostAnalyzer
 
 	packagesFileName := "system/packages.json"
-	if a.hostAnalyzer.ForCollector != "" {
-		packagesFileName = fmt.Sprintf("system/%s-packages.json", a.hostAnalyzer.ForCollector)
+	if a.hostAnalyzer.CollectorName != "" {
+		packagesFileName = fmt.Sprintf("system/%s-packages.json", a.hostAnalyzer.CollectorName)
 	}
 
 	contents, err := getCollectedFileContents(packagesFileName)
