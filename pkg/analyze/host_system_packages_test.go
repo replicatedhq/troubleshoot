@@ -14,44 +14,48 @@ import (
 func TestAnalyzeSystemPackages(t *testing.T) {
 	tests := []struct {
 		name         string
-		packages     []collect.SystemPackageInfo
+		info         collect.SystemPackagesInfo
 		hostAnalyzer *troubleshootv1beta2.SystemPackagesAnalyze
 		result       []*AnalyzeResult
 		expectErr    bool
 	}{
 		{
 			name: "basic",
-			packages: []collect.SystemPackageInfo{
-				{
-					Name:     "libzstd",
-					Details:  "installed",
-					ExitCode: "0",
-					Error:    "",
-				},
-				{
-					Name:     "nfs-common",
-					Details:  "not installed",
-					ExitCode: "1",
-					Error:    "package 'nfs-common' is not installed and no information is available",
-				},
-				{
-					Name:     "iscsi-initiator-utils",
-					Details:  "whatever",
-					ExitCode: "1",
-					Error:    "whatever",
-				},
-				{
-					Name:     "open-iscsi",
-					Details:  "No matching Packages for 'open-iscsi'",
-					ExitCode: "0",
-					Error:    "whatever",
+			info: collect.SystemPackagesInfo{
+				OS:        "ubuntu",
+				OSVersion: "18.04",
+				Packages: []collect.SystemPackage{
+					{
+						Name:     "libzstd",
+						Details:  "installed",
+						ExitCode: "0",
+						Error:    "",
+					},
+					{
+						Name:     "nfs-common",
+						Details:  "not installed",
+						ExitCode: "1",
+						Error:    "package 'nfs-common' is not installed and no information is available",
+					},
+					{
+						Name:     "iscsi-initiator-utils",
+						Details:  "whatever",
+						ExitCode: "1",
+						Error:    "whatever",
+					},
+					{
+						Name:     "open-iscsi",
+						Details:  "No matching Packages for 'open-iscsi'",
+						ExitCode: "0",
+						Error:    "whatever",
+					},
 				},
 			},
 			hostAnalyzer: &troubleshootv1beta2.SystemPackagesAnalyze{
 				Outcomes: []*troubleshootv1beta2.Outcome{
 					{
 						Fail: &troubleshootv1beta2.SingleOutcome{
-							When:    "unavailable",
+							When:    "{{ not .IsInstalled }}",
 							Message: "Package {{ .Name }} is not installed.",
 						},
 					},
@@ -89,7 +93,7 @@ func TestAnalyzeSystemPackages(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			req := require.New(t)
-			b, err := json.Marshal(test.packages)
+			b, err := json.Marshal(test.info)
 			if err != nil {
 				t.Fatal(err)
 			}

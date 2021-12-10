@@ -1,16 +1,19 @@
 package analyzer
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/json"
 	"fmt"
 	"strings"
+	"unicode"
 
 	"text/template"
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/replicatedhq/troubleshoot/pkg/collect"
+	"github.com/replicatedhq/troubleshoot/pkg/textutil"
 )
 
 type AnalyzeHostSystemPackages struct {
@@ -38,16 +41,17 @@ func (a *AnalyzeHostSystemPackages) Analyze(getCollectedFileContents func(string
 		return nil, errors.Wrap(err, "failed to get collected file")
 	}
 
-	var infos []collect.SystemPackageInfo
-	if err := json.Unmarshal(contents, &infos); err != nil {
+	var info collect.SystemPackagesInfo
+	if err := json.Unmarshal(contents, &info); err != nil {
 		return nil, errors.Wrap(err, "failed to unmarshal system packages info")
 	}
 
 	allResults := []*AnalyzeResult{}
 
-	for _, info := range infos {
+	for _, pkg := range info.Packages {
+		templateMap := getSystemPackageTemplateMap(pkg, info.OS, info.OSVersion)
+
 		for _, outcome := range hostAnalyzer.Outcomes {
-			isInstalled := isPackageInstalled(info)
 			r := AnalyzeResult{}
 			when := ""
 
@@ -71,7 +75,7 @@ func (a *AnalyzeHostSystemPackages) Analyze(getCollectedFileContents func(string
 				continue
 			}
 
-			match, err := compareHostPackagesConditionalToActual(when, isInstalled)
+			match, err := compareSystemPackagesConditionalToActual(when, templateMap)
 			if err != nil {
 				return nil, errors.Wrapf(err, "failed to compare %s", when)
 			}
@@ -88,7 +92,7 @@ func (a *AnalyzeHostSystemPackages) Analyze(getCollectedFileContents func(string
 				return nil, errors.Wrap(err, "failed to create new title template")
 			}
 			var t bytes.Buffer
-			err = titleTmpl.Execute(&t, info)
+			err = titleTmpl.Execute(&t, templateMap)
 			if err != nil {
 				return nil, errors.Wrap(err, "failed to execute title template")
 			}
@@ -100,7 +104,7 @@ func (a *AnalyzeHostSystemPackages) Analyze(getCollectedFileContents func(string
 				return nil, errors.Wrap(err, "failed to create new message template")
 			}
 			var m bytes.Buffer
-			err = msgTmpl.Execute(&m, info)
+			err = msgTmpl.Execute(&m, templateMap)
 			if err != nil {
 				return nil, errors.Wrap(err, "failed to execute message template")
 			}
@@ -115,33 +119,98 @@ func (a *AnalyzeHostSystemPackages) Analyze(getCollectedFileContents func(string
 	return allResults, nil
 }
 
-func isPackageInstalled(info collect.SystemPackageInfo) bool {
-	if info.Error != "" {
+func getSystemPackageTemplateMap(pkg collect.SystemPackage, osName string, osVersion string) map[string]interface{} {
+	m := map[string]interface{}{
+		"OS":          osName,
+		"OSVersion":   osVersion,
+		"Name":        pkg.Name,
+		"Error":       pkg.Error,
+		"ExitCode":    pkg.ExitCode,
+		"IsInstalled": isSystemPackageInstalled(pkg),
+	}
+
+	for k, v := range getSystemPackageDetailsMap(pkg) {
+		m[k] = v
+	}
+
+	return m
+}
+
+func isSystemPackageInstalled(pkg collect.SystemPackage) bool {
+	if pkg.Error != "" {
 		return false
 	}
-	if info.ExitCode != "0" {
+	if pkg.ExitCode != "0" {
 		return false
 	}
-	if strings.Contains(info.Details, "not installed") {
+	if strings.Contains(pkg.Details, "not installed") {
 		return false
 	}
-	if strings.Contains(info.Details, "No matching Packages") {
+	if strings.Contains(pkg.Details, "No matching Packages") {
 		return false
 	}
 	return true
 }
 
-func compareHostPackagesConditionalToActual(conditional string, isInstalled bool) (res bool, err error) {
+func getSystemPackageDetailsMap(pkg collect.SystemPackage) map[string]string {
+	// TODO: handle multiline values
+	m := map[string]string{}
+
+	buffer := bytes.NewBuffer([]byte(pkg.Details))
+	scanner := bufio.NewScanner(buffer)
+
+	for scanner.Scan() {
+		line := scanner.Text()
+		parts := strings.SplitN(line, ":", 2)
+
+		if len(parts) != 2 {
+			continue
+		}
+
+		key := parts[0]
+
+		// key should start with an upper case
+		if !unicode.IsUpper([]rune(key)[0]) {
+			continue
+		}
+
+		// key shouldn't start with a space
+		if unicode.IsSpace([]rune(key)[0]) {
+			continue
+		}
+
+		// sanitize the key and value
+		key = textutil.StripSpaces(key) // remove all spaces, even the ones in between
+		key = strings.ReplaceAll(key, "-", "")
+		value := strings.TrimSpace(parts[1])
+
+		if key == "" || value == "" {
+			continue
+		}
+
+		m[key] = value
+	}
+
+	return m
+}
+
+func compareSystemPackagesConditionalToActual(conditional string, templateMap map[string]interface{}) (res bool, err error) {
 	if conditional == "" {
 		return true, nil
 	}
 
-	switch conditional {
-	case "installed":
-		return isInstalled, nil
-	case "unavailable":
-		return !isInstalled, nil
+	tmpl := template.New("conditional")
+
+	conditionalTmpl, err := tmpl.Parse(conditional)
+	if err != nil {
+		return false, errors.Wrap(err, "failed to create new when template")
 	}
 
-	return false, fmt.Errorf("invalid 'when' format: %s", conditional)
+	var when bytes.Buffer
+	err = conditionalTmpl.Execute(&when, templateMap)
+	if err != nil {
+		return false, errors.Wrap(err, "failed to execute when template")
+	}
+
+	return when.String() == "true", nil
 }
