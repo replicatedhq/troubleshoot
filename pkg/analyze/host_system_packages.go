@@ -123,7 +123,7 @@ func getSystemPackageTemplateMap(pkg collect.SystemPackage, osName string, osVer
 	osVersionParts := strings.Split(osVersion, ".")
 	osVersionMajor, _ := strconv.ParseInt(osVersionParts[0], 10, 64)
 
-	var osVersionMinor int64 = -1
+	var osVersionMinor int64
 	if len(osVersionParts) > 1 {
 		osVersionMinor, _ = strconv.ParseInt(osVersionParts[1], 10, 64)
 	}
