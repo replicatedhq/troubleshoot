@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"strconv"
 	"strings"
 	"unicode"
 
@@ -13,7 +14,6 @@ import (
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/replicatedhq/troubleshoot/pkg/collect"
-	"github.com/replicatedhq/troubleshoot/pkg/textutil"
 )
 
 type AnalyzeHostSystemPackages struct {
@@ -120,13 +120,23 @@ func (a *AnalyzeHostSystemPackages) Analyze(getCollectedFileContents func(string
 }
 
 func getSystemPackageTemplateMap(pkg collect.SystemPackage, osName string, osVersion string) map[string]interface{} {
+	osVersionParts := strings.Split(osVersion, ".")
+	osVersionMajor, _ := strconv.ParseInt(osVersionParts[0], 10, 64)
+
+	var osVersionMinor int64 = -1
+	if len(osVersionParts) > 1 {
+		osVersionMinor, _ = strconv.ParseInt(osVersionParts[1], 10, 64)
+	}
+
 	m := map[string]interface{}{
-		"OS":          osName,
-		"OSVersion":   osVersion,
-		"Name":        pkg.Name,
-		"Error":       pkg.Error,
-		"ExitCode":    pkg.ExitCode,
-		"IsInstalled": isSystemPackageInstalled(pkg),
+		"OS":             osName,
+		"OSVersion":      osVersion,
+		"OSVersionMajor": osVersionMajor,
+		"OSVersionMinor": osVersionMinor,
+		"Name":           pkg.Name,
+		"Error":          pkg.Error,
+		"ExitCode":       pkg.ExitCode,
+		"IsInstalled":    isSystemPackageInstalled(pkg),
 	}
 
 	for k, v := range getSystemPackageDetailsMap(pkg) {
@@ -180,7 +190,7 @@ func getSystemPackageDetailsMap(pkg collect.SystemPackage) map[string]string {
 		}
 
 		// sanitize the key and value
-		key = textutil.StripSpaces(key) // remove all spaces, even the ones in between
+		key = strings.ReplaceAll(key, " ", "")
 		key = strings.ReplaceAll(key, "-", "")
 		value := strings.TrimSpace(parts[1])
 
@@ -212,5 +222,10 @@ func compareSystemPackagesConditionalToActual(conditional string, templateMap ma
 		return false, errors.Wrap(err, "failed to execute when template")
 	}
 
-	return when.String() == "true", nil
+	t, err := strconv.ParseBool(when.String())
+	if err != nil {
+		return false, errors.Wrap(err, "failed to parse templated when expression as a boolean")
+	}
+
+	return t, nil
 }
