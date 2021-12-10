@@ -70,6 +70,10 @@ type RemoteBlockDevices struct {
 	RemoteCollectorMeta `json:",inline" yaml:",inline"`
 }
 
+type RemoteSystemPackages struct {
+	RemoteCollectorMeta `json:",inline" yaml:",inline"`
+}
+
 type RemoteKernelModules struct {
 	RemoteCollectorMeta `json:",inline" yaml:",inline"`
 }
@@ -142,6 +146,7 @@ type RemoteCollect struct {
 	HTTP                  *RemoteHTTP                  `json:"http,omitempty" yaml:"http,omitempty"`
 	Time                  *RemoteTime                  `json:"time,omitempty" yaml:"time,omitempty"`
 	BlockDevices          *RemoteBlockDevices          `json:"blockDevices,omitempty" yaml:"blockDevices,omitempty"`
+	SystemPackages        *RemoteSystemPackages        `json:"systemPackages,omitempty" yaml:"systemPackages,omitempty"`
 	KernelModules         *RemoteKernelModules         `json:"kernelModules,omitempty" yaml:"kernelModules,omitempty"`
 	TCPConnect            *RemoteTCPConnect            `json:"tcpConnect,omitempty" yaml:"tcpConnect,omitempty"`
 	FilesystemPerformance *RemoteFilesystemPerformance `json:"filesystemPerformance,omitempty" yaml:"filesystemPerformance,omitempty"`

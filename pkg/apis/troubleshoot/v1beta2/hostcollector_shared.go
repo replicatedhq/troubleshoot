@@ -67,6 +67,25 @@ type HostBlockDevices struct {
 	HostCollectorMeta `json:",inline" yaml:",inline"`
 }
 
+type HostSystemPackages struct {
+	HostCollectorMeta `json:",inline" yaml:",inline"`
+	Ubuntu            []string `json:"ubuntu"`
+	Ubuntu16          []string `json:"ubuntu16"`
+	Ubuntu18          []string `json:"ubuntu18"`
+	Ubuntu20          []string `json:"ubuntu20"`
+	RHEL              []string `json:"rhel"`
+	RHEL7             []string `json:"rhel7"`
+	RHEL8             []string `json:"rhel8"`
+	CentOS            []string `json:"centos"`
+	CentOS7           []string `json:"centos7"`
+	CentOS8           []string `json:"centos8"`
+	OracleLinux       []string `json:"ol"`
+	OracleLinux7      []string `json:"ol7"`
+	OracleLinux8      []string `json:"ol8"`
+	AmazonLinux       []string `json:"amzn"`
+	AmazonLinux2      []string `json:"amzn2"`
+}
+
 type HostKernelModules struct {
 	HostCollectorMeta `json:",inline" yaml:",inline"`
 }
@@ -143,6 +162,7 @@ type HostCollect struct {
 	HTTP                  *HostHTTP              `json:"http,omitempty" yaml:"http,omitempty"`
 	Time                  *HostTime              `json:"time,omitempty" yaml:"time,omitempty"`
 	BlockDevices          *HostBlockDevices      `json:"blockDevices,omitempty" yaml:"blockDevices,omitempty"`
+	SystemPackages        *HostSystemPackages    `json:"systemPackages,omitempty" yaml:"systemPackages,omitempty"`
 	KernelModules         *HostKernelModules     `json:"kernelModules,omitempty" yaml:"kernelModules,omitempty"`
 	TCPConnect            *TCPConnect            `json:"tcpConnect,omitempty" yaml:"tcpConnect,omitempty"`
 	FilesystemPerformance *FilesystemPerformance `json:"filesystemPerformance,omitempty" yaml:"filesystemPerformance,omitempty"`

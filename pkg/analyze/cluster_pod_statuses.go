@@ -66,13 +66,13 @@ func clusterPodStatuses(analyzer *troubleshootv1beta2.ClusterPodStatuses, getChi
 				r.URI = outcome.Pass.URI
 				when = outcome.Pass.When
 			} else {
-				fmt.Println("error: found an empty outcome in a clusterPodStatuses analyzer") // don't stop
+				println("error: found an empty outcome in a clusterPodStatuses analyzer") // don't stop
 				continue
 			}
 
 			parts := strings.Split(strings.TrimSpace(when), " ")
 			if len(parts) < 2 {
-				fmt.Printf("invalid 'when' format: %s\n", when) // don't stop
+				println(fmt.Sprintf("invalid 'when' format: %s\n", when)) // don't stop
 				continue
 			}
 

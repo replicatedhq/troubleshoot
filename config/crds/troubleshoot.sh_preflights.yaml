@@ -1780,6 +1780,13 @@ spec:
                         exclude:
                           type: BoolString
                       type: object
+                    systemPackages:
+                      properties:
+                        collectorName:
+                          type: string
+                        exclude:
+                          type: BoolString
+                      type: object
                     tcpConnect:
                       properties:
                         address:

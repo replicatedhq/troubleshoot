@@ -1,0 +1,50 @@
+apiVersion: troubleshoot.sh/v1beta2
+kind: HostPreflight
+metadata:
+  name: packages
+spec:
+  collectors:
+    - systemPackages:
+        ubuntu:
+          - open-iscsi
+        ubuntu16:
+          - nfs-common
+        ubuntu18:
+          - nmap
+        ubuntu20:
+          - nmap
+          - nfs-common
+        rhel:
+          - iscsi-initiator-utils
+        rhel7:
+          - libzstd
+        rhel8:
+          - nfs-utils
+          - openssl
+        centos:
+          - iscsi-initiator-utils
+        centos7:
+          - libzstd
+        centos8:
+          - nfs-utils
+          - openssl
+        ol:
+          - lvm2
+        ol7:
+          - libzstd
+          - openssl
+        ol8:
+          - nfs-utils
+        amzn:
+          - libzstd
+        amzn2:
+          - nfs-utils
+          - openssl
+  analyzers:
+    - systemPackages:
+        outcomes:
+          - fail:
+              when: "{{ not .IsInstalled }}"
+              message: Package {{ .Name }} is not installed.
+          - pass:
+              message: Package {{ .Name }} is installed.

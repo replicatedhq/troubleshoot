@@ -229,6 +229,13 @@ func (c *RemoteCollector) toHostCollector() (*troubleshootv1beta2.HostCollect, e
 				Exclude:       c.Collect.BlockDevices.Exclude,
 			},
 		}
+	case c.Collect.SystemPackages != nil:
+		hostCollect.SystemPackages = &troubleshootv1beta2.HostSystemPackages{
+			HostCollectorMeta: troubleshootv1beta2.HostCollectorMeta{
+				CollectorName: c.Collect.SystemPackages.CollectorName,
+				Exclude:       c.Collect.SystemPackages.Exclude,
+			},
+		}
 	case c.Collect.KernelModules != nil:
 		hostCollect.KernelModules = &troubleshootv1beta2.HostKernelModules{
 			HostCollectorMeta: troubleshootv1beta2.HostCollectorMeta{
