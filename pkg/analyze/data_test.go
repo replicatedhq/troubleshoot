@@ -4,14 +4,14 @@ import (
 	_ "embed"
 )
 
-//go:embed files/deployments.json
-var collectedDeployments string
+//go:embed files/deployments/default.json
+var defaultDeployments string
 
 //go:embed files/nodes.json
 var collectedNodes string
 
-//go:embed files/jobs.json
-var collectedJobs string
+//go:embed files/jobs/test.json
+var testJobs string
 
-//go:embed files/replicasets.json
-var collectedReplicaSets string
+//go:embed files/replicasets/rook-ceph.json
+var rookCephReplicaSets string

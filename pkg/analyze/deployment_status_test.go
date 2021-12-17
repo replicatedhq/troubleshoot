@@ -46,7 +46,7 @@ func Test_deploymentStatus(t *testing.T) {
 				},
 			},
 			files: map[string][]byte{
-				"cluster-resources/deployments/default.json": []byte(collectedDeployments),
+				"cluster-resources/deployments/default.json": []byte(defaultDeployments),
 			},
 		},
 		{
@@ -80,7 +80,7 @@ func Test_deploymentStatus(t *testing.T) {
 				},
 			},
 			files: map[string][]byte{
-				"cluster-resources/deployments/default.json": []byte(collectedDeployments),
+				"cluster-resources/deployments/default.json": []byte(defaultDeployments),
 			},
 		},
 		{
@@ -120,7 +120,7 @@ func Test_deploymentStatus(t *testing.T) {
 				},
 			},
 			files: map[string][]byte{
-				"cluster-resources/deployments/default.json": []byte(collectedDeployments),
+				"cluster-resources/deployments/default.json": []byte(defaultDeployments),
 			},
 		},
 	}

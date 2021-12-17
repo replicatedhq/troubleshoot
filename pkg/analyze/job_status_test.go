@@ -46,7 +46,7 @@ func Test_JobStatus(t *testing.T) {
 				},
 			},
 			files: map[string][]byte{
-				"cluster-resources/jobs/test.json": []byte(collectedJobs),
+				"cluster-resources/jobs/test.json": []byte(testJobs),
 			},
 		},
 		{
@@ -80,7 +80,7 @@ func Test_JobStatus(t *testing.T) {
 				},
 			},
 			files: map[string][]byte{
-				"cluster-resources/jobs/test.json": []byte(collectedJobs),
+				"cluster-resources/jobs/test.json": []byte(testJobs),
 			},
 		},
 		{
@@ -120,7 +120,7 @@ func Test_JobStatus(t *testing.T) {
 				},
 			},
 			files: map[string][]byte{
-				"cluster-resources/jobs/test.json": []byte(collectedJobs),
+				"cluster-resources/jobs/test.json": []byte(testJobs),
 			},
 		},
 		{
@@ -138,7 +138,7 @@ func Test_JobStatus(t *testing.T) {
 				},
 			},
 			files: map[string][]byte{
-				"cluster-resources/jobs/test.json": []byte(collectedJobs),
+				"cluster-resources/jobs/test.json": []byte(testJobs),
 			},
 		},
 	}
