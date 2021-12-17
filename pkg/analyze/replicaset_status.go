@@ -65,47 +65,54 @@ func analyzeOneReplicaSetStatus(analyzer *troubleshootv1beta2.ReplicaSetStatus, 
 }
 
 func analyzeAllReplicaSetStatuses(analyzer *troubleshootv1beta2.ReplicaSetStatus, getFileContents func(string) (map[string][]byte, error)) ([]*AnalyzeResult, error) {
-	var fileName string
+	fileNames := make([]string, 0)
 	if analyzer.Namespace != "" {
-		fileName = filepath.Join("cluster-resources", "replicasets", fmt.Sprintf("%s.json", analyzer.Namespace))
-	} else {
-		fileName = filepath.Join("cluster-resources", "replicasets", "*.json")
+		fileNames = append(fileNames, filepath.Join("cluster-resources", "replicasets", fmt.Sprintf("%s.json", analyzer.Namespace)))
+	}
+	for _, ns := range analyzer.Namespaces {
+		fileNames = append(fileNames, filepath.Join("cluster-resources", "replicasets", fmt.Sprintf("%s.json", ns)))
 	}
 
-	files, err := getFileContents(fileName)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to read collected replicaset from file")
-	}
-
-	labelSelector, err := labels.Parse(strings.Join(analyzer.Selector, ","))
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to parse selector")
+	if len(fileNames) == 0 {
+		fileNames = append(fileNames, filepath.Join("cluster-resources", "replicasets", "*.json"))
 	}
 
 	results := []*AnalyzeResult{}
-	for _, collected := range files {
-		var replicasets []appsv1.ReplicaSet
-		if err := json.Unmarshal(collected, &replicasets); err != nil {
-			return nil, errors.Wrap(err, "failed to unmarshal replicaset list")
+	for _, fileName := range fileNames {
+		files, err := getFileContents(fileName)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to read collected replicaset from file")
 		}
 
-		for _, replicaset := range replicasets {
-			if !labelSelector.Matches(labels.Set(replicaset.Labels)) {
-				continue
+		labelSelector, err := labels.Parse(strings.Join(analyzer.Selector, ","))
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to parse selector")
+		}
+
+		for _, collected := range files {
+			var replicasets []appsv1.ReplicaSet
+			if err := json.Unmarshal(collected, &replicasets); err != nil {
+				return nil, errors.Wrap(err, "failed to unmarshal replicaset list")
 			}
 
-			var result *AnalyzeResult
-			if len(analyzer.Outcomes) > 0 {
-				result, err = replicasetStatus(analyzer.Outcomes, &replicaset)
-				if err != nil {
-					return nil, errors.Wrap(err, "failed to process status")
+			for _, replicaset := range replicasets {
+				if !labelSelector.Matches(labels.Set(replicaset.Labels)) {
+					continue
 				}
-			} else {
-				result = getDefaultReplicaSetResult(&replicaset)
-			}
 
-			if result != nil {
-				results = append(results, result)
+				var result *AnalyzeResult
+				if len(analyzer.Outcomes) > 0 {
+					result, err = replicasetStatus(analyzer.Outcomes, &replicaset)
+					if err != nil {
+						return nil, errors.Wrap(err, "failed to process status")
+					}
+				} else {
+					result = getDefaultReplicaSetResult(&replicaset)
+				}
+
+				if result != nil {
+					results = append(results, result)
+				}
 			}
 		}
 	}
