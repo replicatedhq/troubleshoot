@@ -59,39 +59,47 @@ func analyzeOneDeploymentStatus(analyzer *troubleshootv1beta2.DeploymentStatus, 
 }
 
 func analyzeAllDeploymentStatuses(analyzer *troubleshootv1beta2.DeploymentStatus, getFileContents func(string) (map[string][]byte, error)) ([]*AnalyzeResult, error) {
-	var fileName string
+	fileNames := make([]string, 0)
 	if analyzer.Namespace != "" {
-		fileName = filepath.Join("cluster-resources", "deployments", fmt.Sprintf("%s.json", analyzer.Namespace))
-	} else {
-		fileName = filepath.Join("cluster-resources", "deployments", "*.json")
+		fileNames = append(fileNames, filepath.Join("cluster-resources", "deployments", fmt.Sprintf("%s.json", analyzer.Namespace)))
+	}
+	for _, ns := range analyzer.Namespaces {
+		fileNames = append(fileNames, filepath.Join("cluster-resources", "deployments", fmt.Sprintf("%s.json", ns)))
 	}
 
-	files, err := getFileContents(fileName)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to read collected deployments from file")
+	// no namespace specified, so we need to analyze all deployments
+	if len(fileNames) == 0 {
+		fileNames = append(fileNames, filepath.Join("cluster-resources", "deployments", "*.json"))
 	}
 
 	results := []*AnalyzeResult{}
-	for _, collected := range files {
-		var deployments []appsv1.Deployment
-		if err := json.Unmarshal(collected, &deployments); err != nil {
-			return nil, errors.Wrap(err, "failed to unmarshal deployment list")
+	for _, fileName := range fileNames {
+		files, err := getFileContents(fileName)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to read collected deployments from file")
 		}
 
-		for _, deployment := range deployments {
-			if deployment.Status.Replicas == deployment.Status.AvailableReplicas {
-				continue
+		for _, collected := range files {
+			var deployments []appsv1.Deployment
+			if err := json.Unmarshal(collected, &deployments); err != nil {
+				return nil, errors.Wrap(err, "failed to unmarshal deployment list")
 			}
 
-			result := &AnalyzeResult{
-				Title:   fmt.Sprintf("%s/%s Deployment Status", deployment.Namespace, deployment.Name),
-				IconKey: "kubernetes_deployment_status",
-				IconURI: "https://troubleshoot.sh/images/analyzer-icons/deployment-status.svg?w=17&h=17",
-				IsFail:  true,
-				Message: fmt.Sprintf("The deployment %s/%s has %d/%d replicas", deployment.Namespace, deployment.Name, deployment.Status.ReadyReplicas, deployment.Status.Replicas),
-			}
+			for _, deployment := range deployments {
+				if deployment.Status.Replicas == deployment.Status.AvailableReplicas {
+					continue
+				}
 
-			results = append(results, result)
+				result := &AnalyzeResult{
+					Title:   fmt.Sprintf("%s/%s Deployment Status", deployment.Namespace, deployment.Name),
+					IconKey: "kubernetes_deployment_status",
+					IconURI: "https://troubleshoot.sh/images/analyzer-icons/deployment-status.svg?w=17&h=17",
+					IsFail:  true,
+					Message: fmt.Sprintf("The deployment %s/%s has %d/%d replicas", deployment.Namespace, deployment.Name, deployment.Status.ReadyReplicas, deployment.Status.Replicas),
+				}
+
+				results = append(results, result)
+			}
 		}
 	}
 

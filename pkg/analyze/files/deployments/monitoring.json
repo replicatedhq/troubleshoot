@@ -1,0 +1,1644 @@
+[
+    {
+      "metadata": {
+        "name": "grafana",
+        "namespace": "monitoring",
+        "selfLink": "/apis/apps/v1/namespaces/monitoring/deployments/grafana",
+        "uid": "00cd5f1f-2a6b-49a6-8951-2c321187b31e",
+        "resourceVersion": "2197",
+        "generation": 1,
+        "creationTimestamp": "2021-12-17T18:41:27Z",
+        "labels": {
+          "app.kubernetes.io/instance": "v0.49.0-17.1.3",
+          "app.kubernetes.io/managed-by": "Helm",
+          "app.kubernetes.io/name": "grafana",
+          "app.kubernetes.io/version": "8.0.5",
+          "helm.sh/chart": "grafana-6.14.1"
+        },
+        "annotations": {
+          "deployment.kubernetes.io/revision": "1",
+          "kubectl.kubernetes.io/last-applied-configuration": "{\"apiVersion\":\"apps/v1\",\"kind\":\"Deployment\",\"metadata\":{\"annotations\":{},\"labels\":{\"app.kubernetes.io/instance\":\"v0.49.0-17.1.3\",\"app.kubernetes.io/managed-by\":\"Helm\",\"app.kubernetes.io/name\":\"grafana\",\"app.kubernetes.io/version\":\"8.0.5\",\"helm.sh/chart\":\"grafana-6.14.1\"},\"name\":\"grafana\",\"namespace\":\"monitoring\"},\"spec\":{\"replicas\":1,\"revisionHistoryLimit\":10,\"selector\":{\"matchLabels\":{\"app.kubernetes.io/instance\":\"v0.49.0-17.1.3\",\"app.kubernetes.io/name\":\"grafana\"}},\"strategy\":{\"type\":\"RollingUpdate\"},\"template\":{\"metadata\":{\"annotations\":{\"checksum/config\":\"76e4c3d8e9384607b5dafa08c9dd7eaeb44b6d5c224ca070de5b99667138dc04\",\"checksum/dashboards-json-config\":\"01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b\",\"checksum/sc-dashboard-provider-config\":\"5f18351bfe1f60ece9f2e169280646d34eb18165e6884855f79bbcd6b92a07f2\"},\"labels\":{\"app.kubernetes.io/instance\":\"v0.49.0-17.1.3\",\"app.kubernetes.io/name\":\"grafana\"}},\"spec\":{\"automountServiceAccountToken\":true,\"containers\":[{\"env\":[{\"name\":\"METHOD\",\"value\":null},{\"name\":\"LABEL\",\"value\":\"grafana_dashboard\"},{\"name\":\"FOLDER\",\"value\":\"/tmp/dashboards\"},{\"name\":\"RESOURCE\",\"value\":\"both\"}],\"image\":\"quay.io/kiwigrid/k8s-sidecar:1.12.2\",\"imagePullPolicy\":\"IfNotPresent\",\"name\":\"grafana-sc-dashboard\",\"resources\":{},\"volumeMounts\":[{\"mountPath\":\"/tmp/dashboards\",\"name\":\"sc-dashboard-volume\"}]},{\"env\":[{\"name\":\"GF_SECURITY_ADMIN_USER\",\"valueFrom\":{\"secretKeyRef\":{\"key\":\"admin-user\",\"name\":\"grafana-admin\"}}},{\"name\":\"GF_SECURITY_ADMIN_PASSWORD\",\"valueFrom\":{\"secretKeyRef\":{\"key\":\"admin-password\",\"name\":\"grafana-admin\"}}},{\"name\":\"GF_PATHS_DATA\",\"value\":\"/var/lib/grafana/\"},{\"name\":\"GF_PATHS_LOGS\",\"value\":\"/var/log/grafana\"},{\"name\":\"GF_PATHS_PLUGINS\",\"value\":\"/var/lib/grafana/plugins\"},{\"name\":\"GF_PATHS_PROVISIONING\",\"value\":\"/etc/grafana/provisioning\"}],\"image\":\"grafana/grafana:8.0.5\",\"imagePullPolicy\":\"IfNotPresent\",\"livenessProbe\":{\"failureThreshold\":10,\"httpGet\":{\"path\":\"/api/health\",\"port\":3000},\"initialDelaySeconds\":60,\"timeoutSeconds\":30},\"name\":\"grafana\",\"ports\":[{\"containerPort\":80,\"name\":\"service\",\"protocol\":\"TCP\"},{\"containerPort\":3000,\"name\":\"grafana\",\"protocol\":\"TCP\"}],\"readinessProbe\":{\"httpGet\":{\"path\":\"/api/health\",\"port\":3000}},\"resources\":{\"limits\":{\"cpu\":\"100m\",\"memory\":\"128Mi\"},\"requests\":{\"cpu\":\"100m\",\"memory\":\"128Mi\"}},\"volumeMounts\":[{\"mountPath\":\"/etc/grafana/grafana.ini\",\"name\":\"config\",\"subPath\":\"grafana.ini\"},{\"mountPath\":\"/var/lib/grafana\",\"name\":\"storage\"},{\"mountPath\":\"/tmp/dashboards\",\"name\":\"sc-dashboard-volume\"},{\"mountPath\":\"/etc/grafana/provisioning/dashboards/sc-dashboardproviders.yaml\",\"name\":\"sc-dashboard-provider\",\"subPath\":\"provider.yaml\"},{\"mountPath\":\"/etc/grafana/provisioning/datasources\",\"name\":\"sc-datasources-volume\"}]}],\"enableServiceLinks\":true,\"initContainers\":[{\"env\":[{\"name\":\"METHOD\",\"value\":\"LIST\"},{\"name\":\"LABEL\",\"value\":\"grafana_datasource\"},{\"name\":\"FOLDER\",\"value\":\"/etc/grafana/provisioning/datasources\"},{\"name\":\"RESOURCE\",\"value\":\"both\"}],\"image\":\"quay.io/kiwigrid/k8s-sidecar:1.12.2\",\"imagePullPolicy\":\"IfNotPresent\",\"name\":\"grafana-sc-datasources\",\"resources\":{},\"volumeMounts\":[{\"mountPath\":\"/etc/grafana/provisioning/datasources\",\"name\":\"sc-datasources-volume\"}]}],\"securityContext\":{\"fsGroup\":472,\"runAsGroup\":472,\"runAsUser\":472},\"serviceAccountName\":\"grafana\",\"volumes\":[{\"configMap\":{\"name\":\"grafana\"},\"name\":\"config\"},{\"emptyDir\":{},\"name\":\"storage\"},{\"emptyDir\":{},\"name\":\"sc-dashboard-volume\"},{\"configMap\":{\"name\":\"grafana-config-dashboards\"},\"name\":\"sc-dashboard-provider\"},{\"emptyDir\":{},\"name\":\"sc-datasources-volume\"}]}}}}\n"
+        },
+        "managedFields": [
+          {
+            "manager": "kubectl-client-side-apply",
+            "operation": "Update",
+            "apiVersion": "apps/v1",
+            "time": "2021-12-17T18:41:27Z",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:metadata": {
+                "f:annotations": {
+                  ".": {},
+                  "f:kubectl.kubernetes.io/last-applied-configuration": {}
+                },
+                "f:labels": {
+                  ".": {},
+                  "f:app.kubernetes.io/instance": {},
+                  "f:app.kubernetes.io/managed-by": {},
+                  "f:app.kubernetes.io/name": {},
+                  "f:app.kubernetes.io/version": {},
+                  "f:helm.sh/chart": {}
+                }
+              },
+              "f:spec": {
+                "f:progressDeadlineSeconds": {},
+                "f:replicas": {},
+                "f:revisionHistoryLimit": {},
+                "f:selector": {
+                  "f:matchLabels": {
+                    ".": {},
+                    "f:app.kubernetes.io/instance": {},
+                    "f:app.kubernetes.io/name": {}
+                  }
+                },
+                "f:strategy": {
+                  "f:rollingUpdate": {
+                    ".": {},
+                    "f:maxSurge": {},
+                    "f:maxUnavailable": {}
+                  },
+                  "f:type": {}
+                },
+                "f:template": {
+                  "f:metadata": {
+                    "f:annotations": {
+                      ".": {},
+                      "f:checksum/config": {},
+                      "f:checksum/dashboards-json-config": {},
+                      "f:checksum/sc-dashboard-provider-config": {}
+                    },
+                    "f:labels": {
+                      ".": {},
+                      "f:app.kubernetes.io/instance": {},
+                      "f:app.kubernetes.io/name": {}
+                    }
+                  },
+                  "f:spec": {
+                    "f:automountServiceAccountToken": {},
+                    "f:containers": {
+                      "k:{\"name\":\"grafana\"}": {
+                        ".": {},
+                        "f:env": {
+                          ".": {},
+                          "k:{\"name\":\"GF_PATHS_DATA\"}": {
+                            ".": {},
+                            "f:name": {},
+                            "f:value": {}
+                          },
+                          "k:{\"name\":\"GF_PATHS_LOGS\"}": {
+                            ".": {},
+                            "f:name": {},
+                            "f:value": {}
+                          },
+                          "k:{\"name\":\"GF_PATHS_PLUGINS\"}": {
+                            ".": {},
+                            "f:name": {},
+                            "f:value": {}
+                          },
+                          "k:{\"name\":\"GF_PATHS_PROVISIONING\"}": {
+                            ".": {},
+                            "f:name": {},
+                            "f:value": {}
+                          },
+                          "k:{\"name\":\"GF_SECURITY_ADMIN_PASSWORD\"}": {
+                            ".": {},
+                            "f:name": {},
+                            "f:valueFrom": {
+                              ".": {},
+                              "f:secretKeyRef": {
+                                ".": {},
+                                "f:key": {},
+                                "f:name": {}
+                              }
+                            }
+                          },
+                          "k:{\"name\":\"GF_SECURITY_ADMIN_USER\"}": {
+                            ".": {},
+                            "f:name": {},
+                            "f:valueFrom": {
+                              ".": {},
+                              "f:secretKeyRef": {
+                                ".": {},
+                                "f:key": {},
+                                "f:name": {}
+                              }
+                            }
+                          }
+                        },
+                        "f:image": {},
+                        "f:imagePullPolicy": {},
+                        "f:livenessProbe": {
+                          ".": {},
+                          "f:failureThreshold": {},
+                          "f:httpGet": {
+                            ".": {},
+                            "f:path": {},
+                            "f:port": {},
+                            "f:scheme": {}
+                          },
+                          "f:initialDelaySeconds": {},
+                          "f:periodSeconds": {},
+                          "f:successThreshold": {},
+                          "f:timeoutSeconds": {}
+                        },
+                        "f:name": {},
+                        "f:ports": {
+                          ".": {},
+                          "k:{\"containerPort\":80,\"protocol\":\"TCP\"}": {
+                            ".": {},
+                            "f:containerPort": {},
+                            "f:name": {},
+                            "f:protocol": {}
+                          },
+                          "k:{\"containerPort\":3000,\"protocol\":\"TCP\"}": {
+                            ".": {},
+                            "f:containerPort": {},
+                            "f:name": {},
+                            "f:protocol": {}
+                          }
+                        },
+                        "f:readinessProbe": {
+                          ".": {},
+                          "f:failureThreshold": {},
+                          "f:httpGet": {
+                            ".": {},
+                            "f:path": {},
+                            "f:port": {},
+                            "f:scheme": {}
+                          },
+                          "f:periodSeconds": {},
+                          "f:successThreshold": {},
+                          "f:timeoutSeconds": {}
+                        },
+                        "f:resources": {
+                          ".": {},
+                          "f:limits": {
+                            ".": {},
+                            "f:cpu": {},
+                            "f:memory": {}
+                          },
+                          "f:requests": {
+                            ".": {},
+                            "f:cpu": {},
+                            "f:memory": {}
+                          }
+                        },
+                        "f:terminationMessagePath": {},
+                        "f:terminationMessagePolicy": {},
+                        "f:volumeMounts": {
+                          ".": {},
+                          "k:{\"mountPath\":\"/etc/grafana/grafana.ini\"}": {
+                            ".": {},
+                            "f:mountPath": {},
+                            "f:name": {},
+                            "f:subPath": {}
+                          },
+                          "k:{\"mountPath\":\"/etc/grafana/provisioning/dashboards/sc-dashboardproviders.yaml\"}": {
+                            ".": {},
+                            "f:mountPath": {},
+                            "f:name": {},
+                            "f:subPath": {}
+                          },
+                          "k:{\"mountPath\":\"/etc/grafana/provisioning/datasources\"}": {
+                            ".": {},
+                            "f:mountPath": {},
+                            "f:name": {}
+                          },
+                          "k:{\"mountPath\":\"/tmp/dashboards\"}": {
+                            ".": {},
+                            "f:mountPath": {},
+                            "f:name": {}
+                          },
+                          "k:{\"mountPath\":\"/var/lib/grafana\"}": {
+                            ".": {},
+                            "f:mountPath": {},
+                            "f:name": {}
+                          }
+                        }
+                      },
+                      "k:{\"name\":\"grafana-sc-dashboard\"}": {
+                        ".": {},
+                        "f:env": {
+                          ".": {},
+                          "k:{\"name\":\"FOLDER\"}": {
+                            ".": {},
+                            "f:name": {},
+                            "f:value": {}
+                          },
+                          "k:{\"name\":\"LABEL\"}": {
+                            ".": {},
+                            "f:name": {},
+                            "f:value": {}
+                          },
+                          "k:{\"name\":\"METHOD\"}": {
+                            ".": {},
+                            "f:name": {}
+                          },
+                          "k:{\"name\":\"RESOURCE\"}": {
+                            ".": {},
+                            "f:name": {},
+                            "f:value": {}
+                          }
+                        },
+                        "f:image": {},
+                        "f:imagePullPolicy": {},
+                        "f:name": {},
+                        "f:resources": {},
+                        "f:terminationMessagePath": {},
+                        "f:terminationMessagePolicy": {},
+                        "f:volumeMounts": {
+                          ".": {},
+                          "k:{\"mountPath\":\"/tmp/dashboards\"}": {
+                            ".": {},
+                            "f:mountPath": {},
+                            "f:name": {}
+                          }
+                        }
+                      }
+                    },
+                    "f:dnsPolicy": {},
+                    "f:enableServiceLinks": {},
+                    "f:initContainers": {
+                      ".": {},
+                      "k:{\"name\":\"grafana-sc-datasources\"}": {
+                        ".": {},
+                        "f:env": {
+                          ".": {},
+                          "k:{\"name\":\"FOLDER\"}": {
+                            ".": {},
+                            "f:name": {},
+                            "f:value": {}
+                          },
+                          "k:{\"name\":\"LABEL\"}": {
+                            ".": {},
+                            "f:name": {},
+                            "f:value": {}
+                          },
+                          "k:{\"name\":\"METHOD\"}": {
+                            ".": {},
+                            "f:name": {},
+                            "f:value": {}
+                          },
+                          "k:{\"name\":\"RESOURCE\"}": {
+                            ".": {},
+                            "f:name": {},
+                            "f:value": {}
+                          }
+                        },
+                        "f:image": {},
+                        "f:imagePullPolicy": {},
+                        "f:name": {},
+                        "f:resources": {},
+                        "f:terminationMessagePath": {},
+                        "f:terminationMessagePolicy": {},
+                        "f:volumeMounts": {
+                          ".": {},
+                          "k:{\"mountPath\":\"/etc/grafana/provisioning/datasources\"}": {
+                            ".": {},
+                            "f:mountPath": {},
+                            "f:name": {}
+                          }
+                        }
+                      }
+                    },
+                    "f:restartPolicy": {},
+                    "f:schedulerName": {},
+                    "f:securityContext": {
+                      ".": {},
+                      "f:fsGroup": {},
+                      "f:runAsGroup": {},
+                      "f:runAsUser": {}
+                    },
+                    "f:serviceAccount": {},
+                    "f:serviceAccountName": {},
+                    "f:terminationGracePeriodSeconds": {},
+                    "f:volumes": {
+                      ".": {},
+                      "k:{\"name\":\"config\"}": {
+                        ".": {},
+                        "f:configMap": {
+                          ".": {},
+                          "f:defaultMode": {},
+                          "f:name": {}
+                        },
+                        "f:name": {}
+                      },
+                      "k:{\"name\":\"sc-dashboard-provider\"}": {
+                        ".": {},
+                        "f:configMap": {
+                          ".": {},
+                          "f:defaultMode": {},
+                          "f:name": {}
+                        },
+                        "f:name": {}
+                      },
+                      "k:{\"name\":\"sc-dashboard-volume\"}": {
+                        ".": {},
+                        "f:emptyDir": {},
+                        "f:name": {}
+                      },
+                      "k:{\"name\":\"sc-datasources-volume\"}": {
+                        ".": {},
+                        "f:emptyDir": {},
+                        "f:name": {}
+                      },
+                      "k:{\"name\":\"storage\"}": {
+                        ".": {},
+                        "f:emptyDir": {},
+                        "f:name": {}
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          {
+            "manager": "kube-controller-manager",
+            "operation": "Update",
+            "apiVersion": "apps/v1",
+            "time": "2021-12-17T18:41:50Z",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:metadata": {
+                "f:annotations": {
+                  "f:deployment.kubernetes.io/revision": {}
+                }
+              },
+              "f:status": {
+                "f:availableReplicas": {},
+                "f:conditions": {
+                  ".": {},
+                  "k:{\"type\":\"Available\"}": {
+                    ".": {},
+                    "f:lastTransitionTime": {},
+                    "f:lastUpdateTime": {},
+                    "f:message": {},
+                    "f:reason": {},
+                    "f:status": {},
+                    "f:type": {}
+                  },
+                  "k:{\"type\":\"Progressing\"}": {
+                    ".": {},
+                    "f:lastTransitionTime": {},
+                    "f:lastUpdateTime": {},
+                    "f:message": {},
+                    "f:reason": {},
+                    "f:status": {},
+                    "f:type": {}
+                  }
+                },
+                "f:observedGeneration": {},
+                "f:readyReplicas": {},
+                "f:replicas": {},
+                "f:updatedReplicas": {}
+              }
+            }
+          }
+        ]
+      },
+      "spec": {
+        "replicas": 1,
+        "selector": {
+          "matchLabels": {
+            "app.kubernetes.io/instance": "v0.49.0-17.1.3",
+            "app.kubernetes.io/name": "grafana"
+          }
+        },
+        "template": {
+          "metadata": {
+            "creationTimestamp": null,
+            "labels": {
+              "app.kubernetes.io/instance": "v0.49.0-17.1.3",
+              "app.kubernetes.io/name": "grafana"
+            },
+            "annotations": {
+              "checksum/config": "76e4c3d8e9384607b5dafa08c9dd7eaeb44b6d5c224ca070de5b99667138dc04",
+              "checksum/dashboards-json-config": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+              "checksum/sc-dashboard-provider-config": "5f18351bfe1f60ece9f2e169280646d34eb18165e6884855f79bbcd6b92a07f2"
+            }
+          },
+          "spec": {
+            "volumes": [
+              {
+                "name": "config",
+                "configMap": {
+                  "name": "grafana",
+                  "defaultMode": 420
+                }
+              },
+              {
+                "name": "storage",
+                "emptyDir": {}
+              },
+              {
+                "name": "sc-dashboard-volume",
+                "emptyDir": {}
+              },
+              {
+                "name": "sc-dashboard-provider",
+                "configMap": {
+                  "name": "grafana-config-dashboards",
+                  "defaultMode": 420
+                }
+              },
+              {
+                "name": "sc-datasources-volume",
+                "emptyDir": {}
+              }
+            ],
+            "initContainers": [
+              {
+                "name": "grafana-sc-datasources",
+                "image": "quay.io/kiwigrid/k8s-sidecar:1.12.2",
+                "env": [
+                  {
+                    "name": "METHOD",
+                    "value": "LIST"
+                  },
+                  {
+                    "name": "LABEL",
+                    "value": "grafana_datasource"
+                  },
+                  {
+                    "name": "FOLDER",
+                    "value": "/etc/grafana/provisioning/datasources"
+                  },
+                  {
+                    "name": "RESOURCE",
+                    "value": "both"
+                  }
+                ],
+                "resources": {},
+                "volumeMounts": [
+                  {
+                    "name": "sc-datasources-volume",
+                    "mountPath": "/etc/grafana/provisioning/datasources"
+                  }
+                ],
+                "terminationMessagePath": "/dev/termination-log",
+                "terminationMessagePolicy": "File",
+                "imagePullPolicy": "IfNotPresent"
+              }
+            ],
+            "containers": [
+              {
+                "name": "grafana-sc-dashboard",
+                "image": "quay.io/kiwigrid/k8s-sidecar:1.12.2",
+                "env": [
+                  {
+                    "name": "METHOD"
+                  },
+                  {
+                    "name": "LABEL",
+                    "value": "grafana_dashboard"
+                  },
+                  {
+                    "name": "FOLDER",
+                    "value": "/tmp/dashboards"
+                  },
+                  {
+                    "name": "RESOURCE",
+                    "value": "both"
+                  }
+                ],
+                "resources": {},
+                "volumeMounts": [
+                  {
+                    "name": "sc-dashboard-volume",
+                    "mountPath": "/tmp/dashboards"
+                  }
+                ],
+                "terminationMessagePath": "/dev/termination-log",
+                "terminationMessagePolicy": "File",
+                "imagePullPolicy": "IfNotPresent"
+              },
+              {
+                "name": "grafana",
+                "image": "grafana/grafana:8.0.5",
+                "ports": [
+                  {
+                    "name": "service",
+                    "containerPort": 80,
+                    "protocol": "TCP"
+                  },
+                  {
+                    "name": "grafana",
+                    "containerPort": 3000,
+                    "protocol": "TCP"
+                  }
+                ],
+                "env": [
+                  {
+                    "name": "GF_SECURITY_ADMIN_USER",
+                    "valueFrom": {
+                      "secretKeyRef": {
+                        "name": "grafana-admin",
+                        "key": "admin-user"
+                      }
+                    }
+                  },
+                  {
+                    "name": "GF_SECURITY_ADMIN_PASSWORD",
+                    "valueFrom": {
+                      "secretKeyRef": {
+                        "name": "grafana-admin",
+                        "key": "admin-password"
+                      }
+                    }
+                  },
+                  {
+                    "name": "GF_PATHS_DATA",
+                    "value": "/var/lib/grafana/"
+                  },
+                  {
+                    "name": "GF_PATHS_LOGS",
+                    "value": "/var/log/grafana"
+                  },
+                  {
+                    "name": "GF_PATHS_PLUGINS",
+                    "value": "/var/lib/grafana/plugins"
+                  },
+                  {
+                    "name": "GF_PATHS_PROVISIONING",
+                    "value": "/etc/grafana/provisioning"
+                  }
+                ],
+                "resources": {
+                  "limits": {
+                    "cpu": "100m",
+                    "memory": "128Mi"
+                  },
+                  "requests": {
+                    "cpu": "100m",
+                    "memory": "128Mi"
+                  }
+                },
+                "volumeMounts": [
+                  {
+                    "name": "config",
+                    "mountPath": "/etc/grafana/grafana.ini",
+                    "subPath": "grafana.ini"
+                  },
+                  {
+                    "name": "storage",
+                    "mountPath": "/var/lib/grafana"
+                  },
+                  {
+                    "name": "sc-dashboard-volume",
+                    "mountPath": "/tmp/dashboards"
+                  },
+                  {
+                    "name": "sc-dashboard-provider",
+                    "mountPath": "/etc/grafana/provisioning/dashboards/sc-dashboardproviders.yaml",
+                    "subPath": "provider.yaml"
+                  },
+                  {
+                    "name": "sc-datasources-volume",
+                    "mountPath": "/etc/grafana/provisioning/datasources"
+                  }
+                ],
+                "livenessProbe": {
+                  "httpGet": {
+                    "path": "/api/health",
+                    "port": 3000,
+                    "scheme": "HTTP"
+                  },
+                  "initialDelaySeconds": 60,
+                  "timeoutSeconds": 30,
+                  "periodSeconds": 10,
+                  "successThreshold": 1,
+                  "failureThreshold": 10
+                },
+                "readinessProbe": {
+                  "httpGet": {
+                    "path": "/api/health",
+                    "port": 3000,
+                    "scheme": "HTTP"
+                  },
+                  "timeoutSeconds": 1,
+                  "periodSeconds": 10,
+                  "successThreshold": 1,
+                  "failureThreshold": 3
+                },
+                "terminationMessagePath": "/dev/termination-log",
+                "terminationMessagePolicy": "File",
+                "imagePullPolicy": "IfNotPresent"
+              }
+            ],
+            "restartPolicy": "Always",
+            "terminationGracePeriodSeconds": 30,
+            "dnsPolicy": "ClusterFirst",
+            "serviceAccountName": "grafana",
+            "serviceAccount": "grafana",
+            "automountServiceAccountToken": true,
+            "securityContext": {
+              "runAsUser": 472,
+              "runAsGroup": 472,
+              "fsGroup": 472
+            },
+            "schedulerName": "default-scheduler",
+            "enableServiceLinks": true
+          }
+        },
+        "strategy": {
+          "type": "RollingUpdate",
+          "rollingUpdate": {
+            "maxUnavailable": "25%",
+            "maxSurge": "25%"
+          }
+        },
+        "revisionHistoryLimit": 10,
+        "progressDeadlineSeconds": 600
+      },
+      "status": {
+        "observedGeneration": 1,
+        "replicas": 1,
+        "updatedReplicas": 1,
+        "readyReplicas": 1,
+        "availableReplicas": 1,
+        "conditions": [
+          {
+            "type": "Available",
+            "status": "True",
+            "lastUpdateTime": "2021-12-17T18:41:50Z",
+            "lastTransitionTime": "2021-12-17T18:41:50Z",
+            "reason": "MinimumReplicasAvailable",
+            "message": "Deployment has minimum availability."
+          },
+          {
+            "type": "Progressing",
+            "status": "True",
+            "lastUpdateTime": "2021-12-17T18:41:50Z",
+            "lastTransitionTime": "2021-12-17T18:41:27Z",
+            "reason": "NewReplicaSetAvailable",
+            "message": "ReplicaSet \"grafana-5b868476b6\" has successfully progressed."
+          }
+        ]
+      }
+    },
+    {
+      "metadata": {
+        "name": "kube-state-metrics",
+        "namespace": "monitoring",
+        "selfLink": "/apis/apps/v1/namespaces/monitoring/deployments/kube-state-metrics",
+        "uid": "41cdab80-2fa4-49fc-8ac4-b80dad242855",
+        "resourceVersion": "2153",
+        "generation": 1,
+        "creationTimestamp": "2021-12-17T18:41:27Z",
+        "labels": {
+          "app.kubernetes.io/instance": "v0.49.0-17.1.3",
+          "app.kubernetes.io/managed-by": "Helm",
+          "app.kubernetes.io/name": "kube-state-metrics",
+          "app.kubernetes.io/version": "2.1.0",
+          "helm.sh/chart": "kube-state-metrics-3.4.1"
+        },
+        "annotations": {
+          "deployment.kubernetes.io/revision": "1",
+          "kubectl.kubernetes.io/last-applied-configuration": "{\"apiVersion\":\"apps/v1\",\"kind\":\"Deployment\",\"metadata\":{\"annotations\":{},\"labels\":{\"app.kubernetes.io/instance\":\"v0.49.0-17.1.3\",\"app.kubernetes.io/managed-by\":\"Helm\",\"app.kubernetes.io/name\":\"kube-state-metrics\",\"app.kubernetes.io/version\":\"2.1.0\",\"helm.sh/chart\":\"kube-state-metrics-3.4.1\"},\"name\":\"kube-state-metrics\",\"namespace\":\"monitoring\"},\"spec\":{\"replicas\":1,\"selector\":{\"matchLabels\":{\"app.kubernetes.io/name\":\"kube-state-metrics\"}},\"template\":{\"metadata\":{\"labels\":{\"app.kubernetes.io/instance\":\"v0.49.0-17.1.3\",\"app.kubernetes.io/name\":\"kube-state-metrics\"}},\"spec\":{\"containers\":[{\"args\":[\"--port=8080\",\"--resources=certificatesigningrequests,configmaps,cronjobs,daemonsets,deployments,endpoints,horizontalpodautoscalers,ingresses,jobs,limitranges,mutatingwebhookconfigurations,namespaces,networkpolicies,nodes,persistentvolumeclaims,persistentvolumes,poddisruptionbudgets,pods,replicasets,replicationcontrollers,resourcequotas,secrets,services,statefulsets,storageclasses,validatingwebhookconfigurations,volumeattachments\",\"--telemetry-port=8081\"],\"image\":\"k8s.gcr.io/kube-state-metrics/kube-state-metrics:v2.1.0\",\"imagePullPolicy\":\"IfNotPresent\",\"livenessProbe\":{\"httpGet\":{\"path\":\"/healthz\",\"port\":8080},\"initialDelaySeconds\":5,\"timeoutSeconds\":5},\"name\":\"kube-state-metrics\",\"ports\":[{\"containerPort\":8080}],\"readinessProbe\":{\"httpGet\":{\"path\":\"/\",\"port\":8080},\"initialDelaySeconds\":5,\"timeoutSeconds\":5}}],\"hostNetwork\":false,\"securityContext\":{\"fsGroup\":65534,\"runAsGroup\":65534,\"runAsUser\":65534},\"serviceAccountName\":\"kube-state-metrics\"}}}}\n"
+        },
+        "managedFields": [
+          {
+            "manager": "kubectl-client-side-apply",
+            "operation": "Update",
+            "apiVersion": "apps/v1",
+            "time": "2021-12-17T18:41:27Z",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:metadata": {
+                "f:annotations": {
+                  ".": {},
+                  "f:kubectl.kubernetes.io/last-applied-configuration": {}
+                },
+                "f:labels": {
+                  ".": {},
+                  "f:app.kubernetes.io/instance": {},
+                  "f:app.kubernetes.io/managed-by": {},
+                  "f:app.kubernetes.io/name": {},
+                  "f:app.kubernetes.io/version": {},
+                  "f:helm.sh/chart": {}
+                }
+              },
+              "f:spec": {
+                "f:progressDeadlineSeconds": {},
+                "f:replicas": {},
+                "f:revisionHistoryLimit": {},
+                "f:selector": {
+                  "f:matchLabels": {
+                    ".": {},
+                    "f:app.kubernetes.io/name": {}
+                  }
+                },
+                "f:strategy": {
+                  "f:rollingUpdate": {
+                    ".": {},
+                    "f:maxSurge": {},
+                    "f:maxUnavailable": {}
+                  },
+                  "f:type": {}
+                },
+                "f:template": {
+                  "f:metadata": {
+                    "f:labels": {
+                      ".": {},
+                      "f:app.kubernetes.io/instance": {},
+                      "f:app.kubernetes.io/name": {}
+                    }
+                  },
+                  "f:spec": {
+                    "f:containers": {
+                      "k:{\"name\":\"kube-state-metrics\"}": {
+                        ".": {},
+                        "f:args": {},
+                        "f:image": {},
+                        "f:imagePullPolicy": {},
+                        "f:livenessProbe": {
+                          ".": {},
+                          "f:failureThreshold": {},
+                          "f:httpGet": {
+                            ".": {},
+                            "f:path": {},
+                            "f:port": {},
+                            "f:scheme": {}
+                          },
+                          "f:initialDelaySeconds": {},
+                          "f:periodSeconds": {},
+                          "f:successThreshold": {},
+                          "f:timeoutSeconds": {}
+                        },
+                        "f:name": {},
+                        "f:ports": {
+                          ".": {},
+                          "k:{\"containerPort\":8080,\"protocol\":\"TCP\"}": {
+                            ".": {},
+                            "f:containerPort": {},
+                            "f:protocol": {}
+                          }
+                        },
+                        "f:readinessProbe": {
+                          ".": {},
+                          "f:failureThreshold": {},
+                          "f:httpGet": {
+                            ".": {},
+                            "f:path": {},
+                            "f:port": {},
+                            "f:scheme": {}
+                          },
+                          "f:initialDelaySeconds": {},
+                          "f:periodSeconds": {},
+                          "f:successThreshold": {},
+                          "f:timeoutSeconds": {}
+                        },
+                        "f:resources": {},
+                        "f:terminationMessagePath": {},
+                        "f:terminationMessagePolicy": {}
+                      }
+                    },
+                    "f:dnsPolicy": {},
+                    "f:restartPolicy": {},
+                    "f:schedulerName": {},
+                    "f:securityContext": {
+                      ".": {},
+                      "f:fsGroup": {},
+                      "f:runAsGroup": {},
+                      "f:runAsUser": {}
+                    },
+                    "f:serviceAccount": {},
+                    "f:serviceAccountName": {},
+                    "f:terminationGracePeriodSeconds": {}
+                  }
+                }
+              }
+            }
+          },
+          {
+            "manager": "kube-controller-manager",
+            "operation": "Update",
+            "apiVersion": "apps/v1",
+            "time": "2021-12-17T18:41:46Z",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:metadata": {
+                "f:annotations": {
+                  "f:deployment.kubernetes.io/revision": {}
+                }
+              },
+              "f:status": {
+                "f:availableReplicas": {},
+                "f:conditions": {
+                  ".": {},
+                  "k:{\"type\":\"Available\"}": {
+                    ".": {},
+                    "f:lastTransitionTime": {},
+                    "f:lastUpdateTime": {},
+                    "f:message": {},
+                    "f:reason": {},
+                    "f:status": {},
+                    "f:type": {}
+                  },
+                  "k:{\"type\":\"Progressing\"}": {
+                    ".": {},
+                    "f:lastTransitionTime": {},
+                    "f:lastUpdateTime": {},
+                    "f:message": {},
+                    "f:reason": {},
+                    "f:status": {},
+                    "f:type": {}
+                  }
+                },
+                "f:observedGeneration": {},
+                "f:readyReplicas": {},
+                "f:replicas": {},
+                "f:updatedReplicas": {}
+              }
+            }
+          }
+        ]
+      },
+      "spec": {
+        "replicas": 1,
+        "selector": {
+          "matchLabels": {
+            "app.kubernetes.io/name": "kube-state-metrics"
+          }
+        },
+        "template": {
+          "metadata": {
+            "creationTimestamp": null,
+            "labels": {
+              "app.kubernetes.io/instance": "v0.49.0-17.1.3",
+              "app.kubernetes.io/name": "kube-state-metrics"
+            }
+          },
+          "spec": {
+            "containers": [
+              {
+                "name": "kube-state-metrics",
+                "image": "k8s.gcr.io/kube-state-metrics/kube-state-metrics:v2.1.0",
+                "args": [
+                  "--port=8080",
+                  "--resources=certificatesigningrequests,configmaps,cronjobs,daemonsets,deployments,endpoints,horizontalpodautoscalers,ingresses,jobs,limitranges,mutatingwebhookconfigurations,namespaces,networkpolicies,nodes,persistentvolumeclaims,persistentvolumes,poddisruptionbudgets,pods,replicasets,replicationcontrollers,resourcequotas,secrets,services,statefulsets,storageclasses,validatingwebhookconfigurations,volumeattachments",
+                  "--telemetry-port=8081"
+                ],
+                "ports": [
+                  {
+                    "containerPort": 8080,
+                    "protocol": "TCP"
+                  }
+                ],
+                "resources": {},
+                "livenessProbe": {
+                  "httpGet": {
+                    "path": "/healthz",
+                    "port": 8080,
+                    "scheme": "HTTP"
+                  },
+                  "initialDelaySeconds": 5,
+                  "timeoutSeconds": 5,
+                  "periodSeconds": 10,
+                  "successThreshold": 1,
+                  "failureThreshold": 3
+                },
+                "readinessProbe": {
+                  "httpGet": {
+                    "path": "/",
+                    "port": 8080,
+                    "scheme": "HTTP"
+                  },
+                  "initialDelaySeconds": 5,
+                  "timeoutSeconds": 5,
+                  "periodSeconds": 10,
+                  "successThreshold": 1,
+                  "failureThreshold": 3
+                },
+                "terminationMessagePath": "/dev/termination-log",
+                "terminationMessagePolicy": "File",
+                "imagePullPolicy": "IfNotPresent"
+              }
+            ],
+            "restartPolicy": "Always",
+            "terminationGracePeriodSeconds": 30,
+            "dnsPolicy": "ClusterFirst",
+            "serviceAccountName": "kube-state-metrics",
+            "serviceAccount": "kube-state-metrics",
+            "securityContext": {
+              "runAsUser": 65534,
+              "runAsGroup": 65534,
+              "fsGroup": 65534
+            },
+            "schedulerName": "default-scheduler"
+          }
+        },
+        "strategy": {
+          "type": "RollingUpdate",
+          "rollingUpdate": {
+            "maxUnavailable": "25%",
+            "maxSurge": "25%"
+          }
+        },
+        "revisionHistoryLimit": 10,
+        "progressDeadlineSeconds": 600
+      },
+      "status": {
+        "observedGeneration": 1,
+        "replicas": 1,
+        "updatedReplicas": 1,
+        "readyReplicas": 1,
+        "availableReplicas": 1,
+        "conditions": [
+          {
+            "type": "Available",
+            "status": "True",
+            "lastUpdateTime": "2021-12-17T18:41:46Z",
+            "lastTransitionTime": "2021-12-17T18:41:46Z",
+            "reason": "MinimumReplicasAvailable",
+            "message": "Deployment has minimum availability."
+          },
+          {
+            "type": "Progressing",
+            "status": "True",
+            "lastUpdateTime": "2021-12-17T18:41:46Z",
+            "lastTransitionTime": "2021-12-17T18:41:27Z",
+            "reason": "NewReplicaSetAvailable",
+            "message": "ReplicaSet \"kube-state-metrics-f97897479\" has successfully progressed."
+          }
+        ]
+      }
+    },
+    {
+      "metadata": {
+        "name": "prometheus-adapter",
+        "namespace": "monitoring",
+        "selfLink": "/apis/apps/v1/namespaces/monitoring/deployments/prometheus-adapter",
+        "uid": "4fed14e4-17a1-4389-a30e-20bd9f75a9cb",
+        "resourceVersion": "2290",
+        "generation": 1,
+        "creationTimestamp": "2021-12-17T18:41:27Z",
+        "labels": {
+          "app": "prometheus-adapter",
+          "chart": "prometheus-adapter-2.15.2",
+          "heritage": "Helm",
+          "release": "v0.49.0-17.1.3"
+        },
+        "annotations": {
+          "deployment.kubernetes.io/revision": "1",
+          "kubectl.kubernetes.io/last-applied-configuration": "{\"apiVersion\":\"apps/v1\",\"kind\":\"Deployment\",\"metadata\":{\"annotations\":{},\"labels\":{\"app\":\"prometheus-adapter\",\"chart\":\"prometheus-adapter-2.15.2\",\"heritage\":\"Helm\",\"release\":\"v0.49.0-17.1.3\"},\"name\":\"prometheus-adapter\",\"namespace\":\"monitoring\"},\"spec\":{\"replicas\":1,\"selector\":{\"matchLabels\":{\"app\":\"prometheus-adapter\",\"release\":\"v0.49.0-17.1.3\"}},\"strategy\":{\"rollingUpdate\":{\"maxSurge\":\"25%\",\"maxUnavailable\":\"25%\"},\"type\":\"RollingUpdate\"},\"template\":{\"metadata\":{\"annotations\":{\"checksum/config\":\"89f5608c27af8dcbe0df07191295c0195b7409f20fab98f2b6458cb8a0583581\"},\"labels\":{\"app\":\"prometheus-adapter\",\"chart\":\"prometheus-adapter-2.15.2\",\"heritage\":\"Helm\",\"release\":\"v0.49.0-17.1.3\"},\"name\":\"prometheus-adapter\"},\"spec\":{\"affinity\":{},\"containers\":[{\"args\":[\"/adapter\",\"--secure-port=6443\",\"--cert-dir=/tmp/cert\",\"--logtostderr=true\",\"--prometheus-url=http://prometheus.default.svc:9090\",\"--metrics-relist-interval=1m\",\"--v=4\",\"--config=/etc/adapter/config.yaml\"],\"image\":\"directxman12/k8s-prometheus-adapter-amd64:v0.8.4\",\"imagePullPolicy\":\"IfNotPresent\",\"livenessProbe\":{\"httpGet\":{\"path\":\"/healthz\",\"port\":\"https\",\"scheme\":\"HTTPS\"},\"initialDelaySeconds\":30,\"timeoutSeconds\":5},\"name\":\"prometheus-adapter\",\"ports\":[{\"containerPort\":6443,\"name\":\"https\"}],\"readinessProbe\":{\"httpGet\":{\"path\":\"/healthz\",\"port\":\"https\",\"scheme\":\"HTTPS\"},\"initialDelaySeconds\":30,\"timeoutSeconds\":5},\"securityContext\":{\"allowPrivilegeEscalation\":false,\"capabilities\":{\"drop\":[\"all\"]},\"readOnlyRootFilesystem\":true,\"runAsNonRoot\":true,\"runAsUser\":10001},\"volumeMounts\":[{\"mountPath\":\"/etc/adapter/\",\"name\":\"config\",\"readOnly\":true},{\"mountPath\":\"/tmp\",\"name\":\"tmp\"}]}],\"nodeSelector\":{},\"priorityClassName\":null,\"securityContext\":{\"fsGroup\":10001},\"serviceAccountName\":\"prometheus-adapter\",\"tolerations\":[],\"volumes\":[{\"configMap\":{\"name\":\"prometheus-adapter\"},\"name\":\"config\"},{\"emptyDir\":{},\"name\":\"tmp\"}]}}}}\n"
+        },
+        "managedFields": [
+          {
+            "manager": "kubectl-client-side-apply",
+            "operation": "Update",
+            "apiVersion": "apps/v1",
+            "time": "2021-12-17T18:41:27Z",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:metadata": {
+                "f:annotations": {
+                  ".": {},
+                  "f:kubectl.kubernetes.io/last-applied-configuration": {}
+                },
+                "f:labels": {
+                  ".": {},
+                  "f:app": {},
+                  "f:chart": {},
+                  "f:heritage": {},
+                  "f:release": {}
+                }
+              },
+              "f:spec": {
+                "f:progressDeadlineSeconds": {},
+                "f:replicas": {},
+                "f:revisionHistoryLimit": {},
+                "f:selector": {
+                  "f:matchLabels": {
+                    ".": {},
+                    "f:app": {},
+                    "f:release": {}
+                  }
+                },
+                "f:strategy": {
+                  "f:rollingUpdate": {
+                    ".": {},
+                    "f:maxSurge": {},
+                    "f:maxUnavailable": {}
+                  },
+                  "f:type": {}
+                },
+                "f:template": {
+                  "f:metadata": {
+                    "f:annotations": {
+                      ".": {},
+                      "f:checksum/config": {}
+                    },
+                    "f:labels": {
+                      ".": {},
+                      "f:app": {},
+                      "f:chart": {},
+                      "f:heritage": {},
+                      "f:release": {}
+                    },
+                    "f:name": {}
+                  },
+                  "f:spec": {
+                    "f:affinity": {},
+                    "f:containers": {
+                      "k:{\"name\":\"prometheus-adapter\"}": {
+                        ".": {},
+                        "f:args": {},
+                        "f:image": {},
+                        "f:imagePullPolicy": {},
+                        "f:livenessProbe": {
+                          ".": {},
+                          "f:failureThreshold": {},
+                          "f:httpGet": {
+                            ".": {},
+                            "f:path": {},
+                            "f:port": {},
+                            "f:scheme": {}
+                          },
+                          "f:initialDelaySeconds": {},
+                          "f:periodSeconds": {},
+                          "f:successThreshold": {},
+                          "f:timeoutSeconds": {}
+                        },
+                        "f:name": {},
+                        "f:ports": {
+                          ".": {},
+                          "k:{\"containerPort\":6443,\"protocol\":\"TCP\"}": {
+                            ".": {},
+                            "f:containerPort": {},
+                            "f:name": {},
+                            "f:protocol": {}
+                          }
+                        },
+                        "f:readinessProbe": {
+                          ".": {},
+                          "f:failureThreshold": {},
+                          "f:httpGet": {
+                            ".": {},
+                            "f:path": {},
+                            "f:port": {},
+                            "f:scheme": {}
+                          },
+                          "f:initialDelaySeconds": {},
+                          "f:periodSeconds": {},
+                          "f:successThreshold": {},
+                          "f:timeoutSeconds": {}
+                        },
+                        "f:resources": {},
+                        "f:securityContext": {
+                          ".": {},
+                          "f:allowPrivilegeEscalation": {},
+                          "f:capabilities": {
+                            ".": {},
+                            "f:drop": {}
+                          },
+                          "f:readOnlyRootFilesystem": {},
+                          "f:runAsNonRoot": {},
+                          "f:runAsUser": {}
+                        },
+                        "f:terminationMessagePath": {},
+                        "f:terminationMessagePolicy": {},
+                        "f:volumeMounts": {
+                          ".": {},
+                          "k:{\"mountPath\":\"/etc/adapter/\"}": {
+                            ".": {},
+                            "f:mountPath": {},
+                            "f:name": {},
+                            "f:readOnly": {}
+                          },
+                          "k:{\"mountPath\":\"/tmp\"}": {
+                            ".": {},
+                            "f:mountPath": {},
+                            "f:name": {}
+                          }
+                        }
+                      }
+                    },
+                    "f:dnsPolicy": {},
+                    "f:restartPolicy": {},
+                    "f:schedulerName": {},
+                    "f:securityContext": {
+                      ".": {},
+                      "f:fsGroup": {}
+                    },
+                    "f:serviceAccount": {},
+                    "f:serviceAccountName": {},
+                    "f:terminationGracePeriodSeconds": {},
+                    "f:volumes": {
+                      ".": {},
+                      "k:{\"name\":\"config\"}": {
+                        ".": {},
+                        "f:configMap": {
+                          ".": {},
+                          "f:defaultMode": {},
+                          "f:name": {}
+                        },
+                        "f:name": {}
+                      },
+                      "k:{\"name\":\"tmp\"}": {
+                        ".": {},
+                        "f:emptyDir": {},
+                        "f:name": {}
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          {
+            "manager": "kube-controller-manager",
+            "operation": "Update",
+            "apiVersion": "apps/v1",
+            "time": "2021-12-17T18:42:07Z",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:metadata": {
+                "f:annotations": {
+                  "f:deployment.kubernetes.io/revision": {}
+                }
+              },
+              "f:status": {
+                "f:availableReplicas": {},
+                "f:conditions": {
+                  ".": {},
+                  "k:{\"type\":\"Available\"}": {
+                    ".": {},
+                    "f:lastTransitionTime": {},
+                    "f:lastUpdateTime": {},
+                    "f:message": {},
+                    "f:reason": {},
+                    "f:status": {},
+                    "f:type": {}
+                  },
+                  "k:{\"type\":\"Progressing\"}": {
+                    ".": {},
+                    "f:lastTransitionTime": {},
+                    "f:lastUpdateTime": {},
+                    "f:message": {},
+                    "f:reason": {},
+                    "f:status": {},
+                    "f:type": {}
+                  }
+                },
+                "f:observedGeneration": {},
+                "f:readyReplicas": {},
+                "f:replicas": {},
+                "f:updatedReplicas": {}
+              }
+            }
+          }
+        ]
+      },
+      "spec": {
+        "replicas": 1,
+        "selector": {
+          "matchLabels": {
+            "app": "prometheus-adapter",
+            "release": "v0.49.0-17.1.3"
+          }
+        },
+        "template": {
+          "metadata": {
+            "name": "prometheus-adapter",
+            "creationTimestamp": null,
+            "labels": {
+              "app": "prometheus-adapter",
+              "chart": "prometheus-adapter-2.15.2",
+              "heritage": "Helm",
+              "release": "v0.49.0-17.1.3"
+            },
+            "annotations": {
+              "checksum/config": "89f5608c27af8dcbe0df07191295c0195b7409f20fab98f2b6458cb8a0583581"
+            }
+          },
+          "spec": {
+            "volumes": [
+              {
+                "name": "config",
+                "configMap": {
+                  "name": "prometheus-adapter",
+                  "defaultMode": 420
+                }
+              },
+              {
+                "name": "tmp",
+                "emptyDir": {}
+              }
+            ],
+            "containers": [
+              {
+                "name": "prometheus-adapter",
+                "image": "directxman12/k8s-prometheus-adapter-amd64:v0.8.4",
+                "args": [
+                  "/adapter",
+                  "--secure-port=6443",
+                  "--cert-dir=/tmp/cert",
+                  "--logtostderr=true",
+                  "--prometheus-url=http://prometheus.default.svc:9090",
+                  "--metrics-relist-interval=1m",
+                  "--v=4",
+                  "--config=/etc/adapter/config.yaml"
+                ],
+                "ports": [
+                  {
+                    "name": "https",
+                    "containerPort": 6443,
+                    "protocol": "TCP"
+                  }
+                ],
+                "resources": {},
+                "volumeMounts": [
+                  {
+                    "name": "config",
+                    "readOnly": true,
+                    "mountPath": "/etc/adapter/"
+                  },
+                  {
+                    "name": "tmp",
+                    "mountPath": "/tmp"
+                  }
+                ],
+                "livenessProbe": {
+                  "httpGet": {
+                    "path": "/healthz",
+                    "port": "https",
+                    "scheme": "HTTPS"
+                  },
+                  "initialDelaySeconds": 30,
+                  "timeoutSeconds": 5,
+                  "periodSeconds": 10,
+                  "successThreshold": 1,
+                  "failureThreshold": 3
+                },
+                "readinessProbe": {
+                  "httpGet": {
+                    "path": "/healthz",
+                    "port": "https",
+                    "scheme": "HTTPS"
+                  },
+                  "initialDelaySeconds": 30,
+                  "timeoutSeconds": 5,
+                  "periodSeconds": 10,
+                  "successThreshold": 1,
+                  "failureThreshold": 3
+                },
+                "terminationMessagePath": "/dev/termination-log",
+                "terminationMessagePolicy": "File",
+                "imagePullPolicy": "IfNotPresent",
+                "securityContext": {
+                  "capabilities": {
+                    "drop": [
+                      "all"
+                    ]
+                  },
+                  "runAsUser": 10001,
+                  "runAsNonRoot": true,
+                  "readOnlyRootFilesystem": true,
+                  "allowPrivilegeEscalation": false
+                }
+              }
+            ],
+            "restartPolicy": "Always",
+            "terminationGracePeriodSeconds": 30,
+            "dnsPolicy": "ClusterFirst",
+            "serviceAccountName": "prometheus-adapter",
+            "serviceAccount": "prometheus-adapter",
+            "securityContext": {
+              "fsGroup": 10001
+            },
+            "affinity": {},
+            "schedulerName": "default-scheduler"
+          }
+        },
+        "strategy": {
+          "type": "RollingUpdate",
+          "rollingUpdate": {
+            "maxUnavailable": "25%",
+            "maxSurge": "25%"
+          }
+        },
+        "revisionHistoryLimit": 10,
+        "progressDeadlineSeconds": 600
+      },
+      "status": {
+        "observedGeneration": 1,
+        "replicas": 1,
+        "updatedReplicas": 1,
+        "readyReplicas": 1,
+        "availableReplicas": 1,
+        "conditions": [
+          {
+            "type": "Available",
+            "status": "True",
+            "lastUpdateTime": "2021-12-17T18:42:07Z",
+            "lastTransitionTime": "2021-12-17T18:42:07Z",
+            "reason": "MinimumReplicasAvailable",
+            "message": "Deployment has minimum availability."
+          },
+          {
+            "type": "Progressing",
+            "status": "True",
+            "lastUpdateTime": "2021-12-17T18:42:07Z",
+            "lastTransitionTime": "2021-12-17T18:41:27Z",
+            "reason": "NewReplicaSetAvailable",
+            "message": "ReplicaSet \"prometheus-adapter-75c7788d57\" has successfully progressed."
+          }
+        ]
+      }
+    },
+    {
+      "metadata": {
+        "name": "prometheus-operator",
+        "namespace": "monitoring",
+        "selfLink": "/apis/apps/v1/namespaces/monitoring/deployments/prometheus-operator",
+        "uid": "e619939c-7c41-4a30-8f13-3cf1ad50b4f4",
+        "resourceVersion": "1813",
+        "generation": 1,
+        "creationTimestamp": "2021-12-17T18:41:27Z",
+        "labels": {
+          "app": "kube-prometheus-stack-operator",
+          "app.kubernetes.io/instance": "v0.49.0-17.1.3",
+          "app.kubernetes.io/managed-by": "Helm",
+          "app.kubernetes.io/part-of": "kube-prometheus-stack",
+          "app.kubernetes.io/version": "17.1.3",
+          "chart": "kube-prometheus-stack-17.1.3",
+          "heritage": "Helm",
+          "release": "v0.49.0-17.1.3"
+        },
+        "annotations": {
+          "deployment.kubernetes.io/revision": "1",
+          "kubectl.kubernetes.io/last-applied-configuration": "{\"apiVersion\":\"apps/v1\",\"kind\":\"Deployment\",\"metadata\":{\"annotations\":{},\"labels\":{\"app\":\"kube-prometheus-stack-operator\",\"app.kubernetes.io/instance\":\"v0.49.0-17.1.3\",\"app.kubernetes.io/managed-by\":\"Helm\",\"app.kubernetes.io/part-of\":\"kube-prometheus-stack\",\"app.kubernetes.io/version\":\"17.1.3\",\"chart\":\"kube-prometheus-stack-17.1.3\",\"heritage\":\"Helm\",\"release\":\"v0.49.0-17.1.3\"},\"name\":\"prometheus-operator\",\"namespace\":\"monitoring\"},\"spec\":{\"replicas\":1,\"selector\":{\"matchLabels\":{\"app\":\"kube-prometheus-stack-operator\"}},\"template\":{\"metadata\":{\"labels\":{\"app\":\"kube-prometheus-stack-operator\",\"app.kubernetes.io/instance\":\"v0.49.0-17.1.3\",\"app.kubernetes.io/managed-by\":\"Helm\",\"app.kubernetes.io/part-of\":\"kube-prometheus-stack\",\"app.kubernetes.io/version\":\"17.1.3\",\"chart\":\"kube-prometheus-stack-17.1.3\",\"heritage\":\"Helm\",\"release\":\"v0.49.0-17.1.3\"}},\"spec\":{\"containers\":[{\"args\":[\"--kubelet-service=kube-system/prometheus-kubelet\",\"--localhost=***HIDDEN***\",\"--prometheus-config-reloader=quay.io/prometheus-operator/prometheus-config-reloader:v0.49.0\",\"--config-reloader-cpu=100m\",\"--config-reloader-memory=50Mi\",\"--thanos-default-base-image=quay.io/thanos/thanos:v0.17.2\"],\"image\":\"quay.io/prometheus-operator/prometheus-operator:v0.49.0\",\"imagePullPolicy\":\"IfNotPresent\",\"name\":\"kube-prometheus-stack\",\"ports\":[{\"containerPort\":8080,\"name\":\"http\"}],\"resources\":{\"limits\":{\"cpu\":\"200m\",\"memory\":\"200Mi\"},\"requests\":{\"cpu\":\"100m\",\"memory\":\"100Mi\"}},\"securityContext\":{\"allowPrivilegeEscalation\":false,\"readOnlyRootFilesystem\":true}}],\"securityContext\":{\"fsGroup\":65534,\"runAsGroup\":65534,\"runAsNonRoot\":true,\"runAsUser\":65534},\"serviceAccountName\":\"prometheus-operator\"}}}}\n"
+        },
+        "managedFields": [
+          {
+            "manager": "kubectl-client-side-apply",
+            "operation": "Update",
+            "apiVersion": "apps/v1",
+            "time": "2021-12-17T18:41:27Z",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:metadata": {
+                "f:annotations": {
+                  ".": {},
+                  "f:kubectl.kubernetes.io/last-applied-configuration": {}
+                },
+                "f:labels": {
+                  ".": {},
+                  "f:app": {},
+                  "f:app.kubernetes.io/instance": {},
+                  "f:app.kubernetes.io/managed-by": {},
+                  "f:app.kubernetes.io/part-of": {},
+                  "f:app.kubernetes.io/version": {},
+                  "f:chart": {},
+                  "f:heritage": {},
+                  "f:release": {}
+                }
+              },
+              "f:spec": {
+                "f:progressDeadlineSeconds": {},
+                "f:replicas": {},
+                "f:revisionHistoryLimit": {},
+                "f:selector": {
+                  "f:matchLabels": {
+                    ".": {},
+                    "f:app": {}
+                  }
+                },
+                "f:strategy": {
+                  "f:rollingUpdate": {
+                    ".": {},
+                    "f:maxSurge": {},
+                    "f:maxUnavailable": {}
+                  },
+                  "f:type": {}
+                },
+                "f:template": {
+                  "f:metadata": {
+                    "f:labels": {
+                      ".": {},
+                      "f:app": {},
+                      "f:app.kubernetes.io/instance": {},
+                      "f:app.kubernetes.io/managed-by": {},
+                      "f:app.kubernetes.io/part-of": {},
+                      "f:app.kubernetes.io/version": {},
+                      "f:chart": {},
+                      "f:heritage": {},
+                      "f:release": {}
+                    }
+                  },
+                  "f:spec": {
+                    "f:containers": {
+                      "k:{\"name\":\"kube-prometheus-stack\"}": {
+                        ".": {},
+                        "f:args": {},
+                        "f:image": {},
+                        "f:imagePullPolicy": {},
+                        "f:name": {},
+                        "f:ports": {
+                          ".": {},
+                          "k:{\"containerPort\":8080,\"protocol\":\"TCP\"}": {
+                            ".": {},
+                            "f:containerPort": {},
+                            "f:name": {},
+                            "f:protocol": {}
+                          }
+                        },
+                        "f:resources": {
+                          ".": {},
+                          "f:limits": {
+                            ".": {},
+                            "f:cpu": {},
+                            "f:memory": {}
+                          },
+                          "f:requests": {
+                            ".": {},
+                            "f:cpu": {},
+                            "f:memory": {}
+                          }
+                        },
+                        "f:securityContext": {
+                          ".": {},
+                          "f:allowPrivilegeEscalation": {},
+                          "f:readOnlyRootFilesystem": {}
+                        },
+                        "f:terminationMessagePath": {},
+                        "f:terminationMessagePolicy": {}
+                      }
+                    },
+                    "f:dnsPolicy": {},
+                    "f:restartPolicy": {},
+                    "f:schedulerName": {},
+                    "f:securityContext": {
+                      ".": {},
+                      "f:fsGroup": {},
+                      "f:runAsGroup": {},
+                      "f:runAsNonRoot": {},
+                      "f:runAsUser": {}
+                    },
+                    "f:serviceAccount": {},
+                    "f:serviceAccountName": {},
+                    "f:terminationGracePeriodSeconds": {}
+                  }
+                }
+              }
+            }
+          },
+          {
+            "manager": "kube-controller-manager",
+            "operation": "Update",
+            "apiVersion": "apps/v1",
+            "time": "2021-12-17T18:41:30Z",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:metadata": {
+                "f:annotations": {
+                  "f:deployment.kubernetes.io/revision": {}
+                }
+              },
+              "f:status": {
+                "f:availableReplicas": {},
+                "f:conditions": {
+                  ".": {},
+                  "k:{\"type\":\"Available\"}": {
+                    ".": {},
+                    "f:lastTransitionTime": {},
+                    "f:lastUpdateTime": {},
+                    "f:message": {},
+                    "f:reason": {},
+                    "f:status": {},
+                    "f:type": {}
+                  },
+                  "k:{\"type\":\"Progressing\"}": {
+                    ".": {},
+                    "f:lastTransitionTime": {},
+                    "f:lastUpdateTime": {},
+                    "f:message": {},
+                    "f:reason": {},
+                    "f:status": {},
+                    "f:type": {}
+                  }
+                },
+                "f:observedGeneration": {},
+                "f:readyReplicas": {},
+                "f:replicas": {},
+                "f:updatedReplicas": {}
+              }
+            }
+          }
+        ]
+      },
+      "spec": {
+        "replicas": 1,
+        "selector": {
+          "matchLabels": {
+            "app": "kube-prometheus-stack-operator"
+          }
+        },
+        "template": {
+          "metadata": {
+            "creationTimestamp": null,
+            "labels": {
+              "app": "kube-prometheus-stack-operator",
+              "app.kubernetes.io/instance": "v0.49.0-17.1.3",
+              "app.kubernetes.io/managed-by": "Helm",
+              "app.kubernetes.io/part-of": "kube-prometheus-stack",
+              "app.kubernetes.io/version": "17.1.3",
+              "chart": "kube-prometheus-stack-17.1.3",
+              "heritage": "Helm",
+              "release": "v0.49.0-17.1.3"
+            }
+          },
+          "spec": {
+            "containers": [
+              {
+                "name": "kube-prometheus-stack",
+                "image": "quay.io/prometheus-operator/prometheus-operator:v0.49.0",
+                "args": [
+                  "--kubelet-service=kube-system/prometheus-kubelet",
+                  "--localhost=***HIDDEN***",
+                  "--prometheus-config-reloader=quay.io/prometheus-operator/prometheus-config-reloader:v0.49.0",
+                  "--config-reloader-cpu=100m",
+                  "--config-reloader-memory=50Mi",
+                  "--thanos-default-base-image=quay.io/thanos/thanos:v0.17.2"
+                ],
+                "ports": [
+                  {
+                    "name": "http",
+                    "containerPort": 8080,
+                    "protocol": "TCP"
+                  }
+                ],
+                "resources": {
+                  "limits": {
+                    "cpu": "200m",
+                    "memory": "200Mi"
+                  },
+                  "requests": {
+                    "cpu": "100m",
+                    "memory": "100Mi"
+                  }
+                },
+                "terminationMessagePath": "/dev/termination-log",
+                "terminationMessagePolicy": "File",
+                "imagePullPolicy": "IfNotPresent",
+                "securityContext": {
+                  "readOnlyRootFilesystem": true,
+                  "allowPrivilegeEscalation": false
+                }
+              }
+            ],
+            "restartPolicy": "Always",
+            "terminationGracePeriodSeconds": 30,
+            "dnsPolicy": "ClusterFirst",
+            "serviceAccountName": "prometheus-operator",
+            "serviceAccount": "prometheus-operator",
+            "securityContext": {
+              "runAsUser": 65534,
+              "runAsGroup": 65534,
+              "runAsNonRoot": true,
+              "fsGroup": 65534
+            },
+            "schedulerName": "default-scheduler"
+          }
+        },
+        "strategy": {
+          "type": "RollingUpdate",
+          "rollingUpdate": {
+            "maxUnavailable": "25%",
+            "maxSurge": "25%"
+          }
+        },
+        "revisionHistoryLimit": 10,
+        "progressDeadlineSeconds": 600
+      },
+      "status": {
+        "observedGeneration": 1,
+        "replicas": 2,
+        "updatedReplicas": 1,
+        "readyReplicas": 1,
+        "availableReplicas": 1,
+        "conditions": [
+          {
+            "type": "Available",
+            "status": "True",
+            "lastUpdateTime": "2021-12-17T18:41:30Z",
+            "lastTransitionTime": "2021-12-17T18:41:30Z",
+            "reason": "MinimumReplicasAvailable",
+            "message": "Deployment has minimum availability."
+          },
+          {
+            "type": "Progressing",
+            "status": "True",
+            "lastUpdateTime": "2021-12-17T18:41:30Z",
+            "lastTransitionTime": "2021-12-17T18:41:27Z",
+            "reason": "NewReplicaSetAvailable",
+            "message": "ReplicaSet \"prometheus-operator-7f6d8fdc86\" has successfully progressed."
+          }
+        ]
+      }
+    }
+  ]
+  

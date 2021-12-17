@@ -65,29 +65,37 @@ func analyzeOneStatefulsetStatus(analyzer *troubleshootv1beta2.StatefulsetStatus
 }
 
 func analyzeAllStatefulsetStatuses(analyzer *troubleshootv1beta2.StatefulsetStatus, getFileContents func(string) (map[string][]byte, error)) ([]*AnalyzeResult, error) {
-	var fileName string
+	fileNames := make([]string, 0)
 	if analyzer.Namespace != "" {
-		fileName = filepath.Join("cluster-resources", "statefulsets", fmt.Sprintf("%s.json", analyzer.Namespace))
-	} else {
-		fileName = filepath.Join("cluster-resources", "statefulsets", "*.json")
+		fileNames = append(fileNames, filepath.Join("cluster-resources", "statefulsets", fmt.Sprintf("%s.json", analyzer.Namespace)))
+	}
+	for _, ns := range analyzer.Namespaces {
+		fileNames = append(fileNames, filepath.Join("cluster-resources", "statefulsets", fmt.Sprintf("%s.json", ns)))
 	}
 
-	files, err := getFileContents(fileName)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to read collected statefulsets from namespace")
+	// no namespace specified, so we need to analyze all statefulsets
+	if len(fileNames) == 0 {
+		fileNames = append(fileNames, filepath.Join("cluster-resources", "statefulsets", "*.json"))
 	}
 
 	results := []*AnalyzeResult{}
-	for _, collected := range files {
-		var statefulsets []appsv1.StatefulSet
-		if err := json.Unmarshal(collected, &statefulsets); err != nil {
-			return nil, errors.Wrap(err, "failed to unmarshal statefulset list")
+	for _, fileName := range fileNames {
+		files, err := getFileContents(fileName)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to read collected statefulsets from namespace")
 		}
 
-		for _, statefulset := range statefulsets {
-			result := getDefaultStatefulSetResult(&statefulset)
-			if result != nil {
-				results = append(results, result)
+		for _, collected := range files {
+			var statefulsets []appsv1.StatefulSet
+			if err := json.Unmarshal(collected, &statefulsets); err != nil {
+				return nil, errors.Wrap(err, "failed to unmarshal statefulset list")
+			}
+
+			for _, statefulset := range statefulsets {
+				result := getDefaultStatefulSetResult(&statefulset)
+				if result != nil {
+					results = append(results, result)
+				}
 			}
 		}
 	}

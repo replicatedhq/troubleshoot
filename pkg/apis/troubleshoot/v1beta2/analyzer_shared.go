@@ -49,10 +49,12 @@ type ImagePullSecret struct {
 	Outcomes     []*Outcome `json:"outcomes" yaml:"outcomes"`
 	RegistryName string     `json:"registryName" yaml:"registryName"`
 }
+
 type DeploymentStatus struct {
 	AnalyzeMeta `json:",inline" yaml:",inline"`
 	Outcomes    []*Outcome `json:"outcomes" yaml:"outcomes"`
 	Namespace   string     `json:"namespace" yaml:"namespace"`
+	Namespaces  []string   `json:"namespaces" yaml:"namespaces"`
 	Name        string     `json:"name" yaml:"name"`
 }
 
@@ -60,6 +62,7 @@ type StatefulsetStatus struct {
 	AnalyzeMeta `json:",inline" yaml:",inline"`
 	Outcomes    []*Outcome `json:"outcomes" yaml:"outcomes"`
 	Namespace   string     `json:"namespace" yaml:"namespace"`
+	Namespaces  []string   `json:"namespaces" yaml:"namespaces"`
 	Name        string     `json:"name" yaml:"name"`
 }
 
@@ -67,6 +70,7 @@ type JobStatus struct {
 	AnalyzeMeta `json:",inline" yaml:",inline"`
 	Outcomes    []*Outcome `json:"outcomes" yaml:"outcomes"`
 	Namespace   string     `json:"namespace" yaml:"namespace"`
+	Namespaces  []string   `json:"namespaces" yaml:"namespaces"`
 	Name        string     `json:"name" yaml:"name"`
 }
 
@@ -74,6 +78,7 @@ type ReplicaSetStatus struct {
 	AnalyzeMeta `json:",inline" yaml:",inline"`
 	Outcomes    []*Outcome `json:"outcomes" yaml:"outcomes"`
 	Namespace   string     `json:"namespace" yaml:"namespace"`
+	Namespaces  []string   `json:"namespaces" yaml:"namespaces"`
 	Name        string     `json:"name" yaml:"name"`
 	Selector    []string   `json:"selector" yaml:"selector"`
 }

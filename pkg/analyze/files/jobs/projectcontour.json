@@ -1,0 +1,198 @@
+[
+    {
+      "metadata": {
+        "name": "contour-certgen-v1.19.1",
+        "namespace": "projectcontour",
+        "selfLink": "/apis/batch/v1/namespaces/projectcontour/jobs/contour-certgen-v1.19.1",
+        "uid": "416a2a9d-b862-47b8-93d9-160775641fbe",
+        "resourceVersion": "1386",
+        "creationTimestamp": "2021-12-17T18:41:14Z",
+        "labels": {
+          "app": "contour-certgen",
+          "controller-uid": "416a2a9d-b862-47b8-93d9-160775641fbe",
+          "job-name": "contour-certgen-v1.19.1"
+        },
+        "annotations": {
+          "kubectl.kubernetes.io/last-applied-configuration": "{\"apiVersion\":\"batch/v1\",\"kind\":\"Job\",\"metadata\":{\"annotations\":{},\"name\":\"contour-certgen-v1.19.1\",\"namespace\":\"projectcontour\"},\"spec\":{\"backoffLimit\":1,\"completions\":1,\"parallelism\":1,\"template\":{\"metadata\":{\"labels\":{\"app\":\"contour-certgen\"}},\"spec\":{\"containers\":[{\"command\":[\"contour\",\"certgen\",\"--kube\",\"--incluster\",\"--overwrite\",\"--secrets-format=compact\",\"--namespace=$(CONTOUR_NAMESPACE)\"],\"env\":[{\"name\":\"CONTOUR_NAMESPACE\",\"valueFrom\":{\"fieldRef\":{\"fieldPath\":\"metadata.namespace\"}}}],\"image\":\"ghcr.io/projectcontour/contour:v1.19.1\",\"imagePullPolicy\":\"IfNotPresent\",\"name\":\"contour\"}],\"restartPolicy\":\"Never\",\"securityContext\":{\"runAsGroup\":65534,\"runAsNonRoot\":true,\"runAsUser\":65534},\"serviceAccountName\":\"contour-certgen\"}},\"ttlSecondsAfterFinished\":0}}\n"
+        },
+        "managedFields": [
+          {
+            "manager": "kubectl-client-side-apply",
+            "operation": "Update",
+            "apiVersion": "batch/v1",
+            "time": "2021-12-17T18:41:14Z",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:metadata": {
+                "f:annotations": {
+                  ".": {},
+                  "f:kubectl.kubernetes.io/last-applied-configuration": {}
+                },
+                "f:labels": {
+                  ".": {},
+                  "f:app": {}
+                }
+              },
+              "f:spec": {
+                "f:backoffLimit": {},
+                "f:completions": {},
+                "f:parallelism": {},
+                "f:template": {
+                  "f:metadata": {
+                    "f:labels": {
+                      ".": {},
+                      "f:app": {}
+                    }
+                  },
+                  "f:spec": {
+                    "f:containers": {
+                      "k:{\"name\":\"contour\"}": {
+                        ".": {},
+                        "f:command": {},
+                        "f:env": {
+                          ".": {},
+                          "k:{\"name\":\"CONTOUR_NAMESPACE\"}": {
+                            ".": {},
+                            "f:name": {},
+                            "f:valueFrom": {
+                              ".": {},
+                              "f:fieldRef": {
+                                ".": {},
+                                "f:apiVersion": {},
+                                "f:fieldPath": {}
+                              }
+                            }
+                          }
+                        },
+                        "f:image": {},
+                        "f:imagePullPolicy": {},
+                        "f:name": {},
+                        "f:resources": {},
+                        "f:terminationMessagePath": {},
+                        "f:terminationMessagePolicy": {}
+                      }
+                    },
+                    "f:dnsPolicy": {},
+                    "f:restartPolicy": {},
+                    "f:schedulerName": {},
+                    "f:securityContext": {
+                      ".": {},
+                      "f:runAsGroup": {},
+                      "f:runAsNonRoot": {},
+                      "f:runAsUser": {}
+                    },
+                    "f:serviceAccount": {},
+                    "f:serviceAccountName": {},
+                    "f:terminationGracePeriodSeconds": {}
+                  }
+                },
+                "f:ttlSecondsAfterFinished": {}
+              }
+            }
+          },
+          {
+            "manager": "kube-controller-manager",
+            "operation": "Update",
+            "apiVersion": "batch/v1",
+            "time": "2021-12-17T18:41:17Z",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:status": {
+                "f:completionTime": {},
+                "f:conditions": {
+                  ".": {},
+                  "k:{\"type\":\"Complete\"}": {
+                    ".": {},
+                    "f:lastProbeTime": {},
+                    "f:lastTransitionTime": {},
+                    "f:status": {},
+                    "f:type": {}
+                  }
+                },
+                "f:startTime": {},
+                "f:succeeded": {}
+              }
+            }
+          }
+        ]
+      },
+      "spec": {
+        "parallelism": 1,
+        "completions": 1,
+        "backoffLimit": 1,
+        "selector": {
+          "matchLabels": {
+            "controller-uid": "416a2a9d-b862-47b8-93d9-160775641fbe"
+          }
+        },
+        "template": {
+          "metadata": {
+            "creationTimestamp": null,
+            "labels": {
+              "app": "contour-certgen",
+              "controller-uid": "416a2a9d-b862-47b8-93d9-160775641fbe",
+              "job-name": "contour-certgen-v1.19.1"
+            }
+          },
+          "spec": {
+            "containers": [
+              {
+                "name": "contour",
+                "image": "ghcr.io/projectcontour/contour:v1.19.1",
+                "command": [
+                  "contour",
+                  "certgen",
+                  "--kube",
+                  "--incluster",
+                  "--overwrite",
+                  "--secrets-format=compact",
+                  "--namespace=$(CONTOUR_NAMESPACE)"
+                ],
+                "env": [
+                  {
+                    "name": "CONTOUR_NAMESPACE",
+                    "valueFrom": {
+                      "fieldRef": {
+                        "apiVersion": "v1",
+                        "fieldPath": "metadata.namespace"
+                      }
+                    }
+                  }
+                ],
+                "resources": {},
+                "terminationMessagePath": "/dev/termination-log",
+                "terminationMessagePolicy": "File",
+                "imagePullPolicy": "IfNotPresent"
+              }
+            ],
+            "restartPolicy": "Never",
+            "terminationGracePeriodSeconds": 30,
+            "dnsPolicy": "ClusterFirst",
+            "serviceAccountName": "contour-certgen",
+            "serviceAccount": "contour-certgen",
+            "securityContext": {
+              "runAsUser": 65534,
+              "runAsGroup": 65534,
+              "runAsNonRoot": true
+            },
+            "schedulerName": "default-scheduler"
+          }
+        }
+      },
+      "status": {
+        "conditions": [
+          {
+            "type": "Complete",
+            "status": "True",
+            "lastProbeTime": "2021-12-17T18:41:17Z",
+            "lastTransitionTime": "2021-12-17T18:41:17Z"
+          }
+        ],
+        "startTime": "2021-12-17T18:41:14Z",
+        "completionTime": "2021-12-17T18:41:17Z",
+        "succeeded": 0,
+        "failed": 1
+      }
+    }
+  ]
+  

@@ -46,7 +46,8 @@ func Test_analyzeReplicaSetStatus(t *testing.T) {
 				},
 			},
 			files: map[string][]byte{
-				"cluster-resources/replicasets/rook-ceph.json": []byte(collectedReplicaSets),
+				"cluster-resources/replicasets/rook-ceph.json": []byte(rookCephReplicaSets),
+				"cluster-resources/replicasets/default.json":   []byte(defaultReplicaSets),
 			},
 		},
 		{
@@ -80,7 +81,8 @@ func Test_analyzeReplicaSetStatus(t *testing.T) {
 				},
 			},
 			files: map[string][]byte{
-				"cluster-resources/replicasets/rook-ceph.json": []byte(collectedReplicaSets),
+				"cluster-resources/replicasets/rook-ceph.json": []byte(rookCephReplicaSets),
+				"cluster-resources/replicasets/default.json":   []byte(defaultReplicaSets),
 			},
 		},
 		{
@@ -96,9 +98,40 @@ func Test_analyzeReplicaSetStatus(t *testing.T) {
 					IconKey: "kubernetes_deployment_status",
 					IconURI: "https://troubleshoot.sh/images/analyzer-icons/deployment-status.svg?w=17&h=17",
 				},
+				{
+					IsPass:  false,
+					IsWarn:  false,
+					IsFail:  true,
+					Title:   "default/kurl-proxy-kotsadm-cf695877c ReplicaSet Status",
+					Message: "The replicaset default/kurl-proxy-kotsadm-cf695877c is not ready",
+					IconKey: "kubernetes_deployment_status",
+					IconURI: "https://troubleshoot.sh/images/analyzer-icons/deployment-status.svg?w=17&h=17",
+				},
 			},
 			files: map[string][]byte{
-				"cluster-resources/replicasets/rook-ceph.json": []byte(collectedReplicaSets),
+				"cluster-resources/replicasets/rook-ceph.json": []byte(rookCephReplicaSets),
+				"cluster-resources/replicasets/default.json":   []byte(defaultReplicaSets),
+			},
+		},
+		{
+			name: "analyze all replicasets with namespaces",
+			analyzer: troubleshootv1beta2.ReplicaSetStatus{
+				Namespaces: []string{"default"},
+			},
+			expectResult: []*AnalyzeResult{
+				{
+					IsPass:  false,
+					IsWarn:  false,
+					IsFail:  true,
+					Title:   "default/kurl-proxy-kotsadm-cf695877c ReplicaSet Status",
+					Message: "The replicaset default/kurl-proxy-kotsadm-cf695877c is not ready",
+					IconKey: "kubernetes_deployment_status",
+					IconURI: "https://troubleshoot.sh/images/analyzer-icons/deployment-status.svg?w=17&h=17",
+				},
+			},
+			files: map[string][]byte{
+				"cluster-resources/replicasets/rook-ceph.json": []byte(rookCephReplicaSets),
+				"cluster-resources/replicasets/default.json":   []byte(defaultReplicaSets),
 			},
 		},
 	}
@@ -108,14 +141,19 @@ func Test_analyzeReplicaSetStatus(t *testing.T) {
 			req := require.New(t)
 
 			getFiles := func(n string) (map[string][]byte, error) {
+				if file, ok := test.files[n]; ok {
+					return map[string][]byte{n: file}, nil
+				}
 				return test.files, nil
 			}
 
 			actual, err := analyzeReplicaSetStatus(&test.analyzer, getFiles)
 			req.NoError(err)
 
-			assert.Equal(t, test.expectResult, actual)
-
+			req.Equal(len(test.expectResult), len(actual))
+			for _, a := range actual {
+				assert.Contains(t, test.expectResult, a)
+			}
 		})
 	}
 }
