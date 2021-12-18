@@ -37,7 +37,7 @@ require (
 	k8s.io/api v0.23.1
 	k8s.io/apiextensions-apiserver v0.23.0
 	k8s.io/apimachinery v0.23.1
-	k8s.io/apiserver v0.23.0
+	k8s.io/apiserver v0.23.1
 	k8s.io/cli-runtime v0.23.1
 	k8s.io/client-go v0.23.1
 	periph.io/x/periph v3.6.8+incompatible
