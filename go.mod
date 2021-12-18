@@ -35,9 +35,9 @@ require (
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.23.1
-	k8s.io/apiextensions-apiserver v0.23.0
+	k8s.io/apiextensions-apiserver v0.23.1
 	k8s.io/apimachinery v0.23.1
-	k8s.io/apiserver v0.23.0
+	k8s.io/apiserver v0.23.1
 	k8s.io/cli-runtime v0.23.1
 	k8s.io/client-go v0.23.1
 	periph.io/x/periph v3.6.8+incompatible
