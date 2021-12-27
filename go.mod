@@ -14,7 +14,7 @@ require (
 	github.com/godbus/dbus v4.1.0+incompatible
 	github.com/google/gofuzz v1.2.0
 	github.com/gorilla/handlers v1.5.1
-	github.com/hashicorp/go-getter v1.5.9
+	github.com/hashicorp/go-getter v1.5.10
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/lib/pq v1.10.4
 	github.com/longhorn/go-iscsi-helper v0.0.0-20210330030558-49a327fb024e
