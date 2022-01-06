@@ -159,7 +159,6 @@ spec:
                             type: object
                           type: array
                       required:
-                      - namespaces
                       - outcomes
                       type: object
                     clusterVersion:
@@ -347,6 +346,10 @@ spec:
                           type: string
                         namespace:
                           type: string
+                        namespaces:
+                          items:
+                            type: string
+                          type: array
                         outcomes:
                           items:
                             properties:
@@ -381,7 +384,6 @@ spec:
                           type: array
                       required:
                       - name
-                      - namespace
                       - outcomes
                       type: object
                     distribution:
@@ -526,6 +528,10 @@ spec:
                           type: string
                         namespace:
                           type: string
+                        namespaces:
+                          items:
+                            type: string
+                          type: array
                         outcomes:
                           items:
                             properties:
@@ -560,7 +566,6 @@ spec:
                           type: array
                       required:
                       - name
-                      - namespace
                       - outcomes
                       type: object
                     longhorn:
@@ -868,6 +873,10 @@ spec:
                           type: string
                         namespace:
                           type: string
+                        namespaces:
+                          items:
+                            type: string
+                          type: array
                         outcomes:
                           items:
                             properties:
@@ -906,7 +915,6 @@ spec:
                           type: array
                       required:
                       - name
-                      - namespace
                       - outcomes
                       - selector
                       type: object
@@ -969,6 +977,10 @@ spec:
                           type: string
                         namespace:
                           type: string
+                        namespaces:
+                          items:
+                            type: string
+                          type: array
                         outcomes:
                           items:
                             properties:
@@ -1003,7 +1015,6 @@ spec:
                           type: array
                       required:
                       - name
-                      - namespace
                       - outcomes
                       type: object
                     storageClass:

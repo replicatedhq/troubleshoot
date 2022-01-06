@@ -69,21 +69,21 @@ type HostBlockDevices struct {
 
 type HostSystemPackages struct {
 	HostCollectorMeta `json:",inline" yaml:",inline"`
-	Ubuntu            []string `json:"ubuntu"`
-	Ubuntu16          []string `json:"ubuntu16"`
-	Ubuntu18          []string `json:"ubuntu18"`
-	Ubuntu20          []string `json:"ubuntu20"`
-	RHEL              []string `json:"rhel"`
-	RHEL7             []string `json:"rhel7"`
-	RHEL8             []string `json:"rhel8"`
-	CentOS            []string `json:"centos"`
-	CentOS7           []string `json:"centos7"`
-	CentOS8           []string `json:"centos8"`
-	OracleLinux       []string `json:"ol"`
-	OracleLinux7      []string `json:"ol7"`
-	OracleLinux8      []string `json:"ol8"`
-	AmazonLinux       []string `json:"amzn"`
-	AmazonLinux2      []string `json:"amzn2"`
+	Ubuntu            []string `json:"ubuntu,omitempty"`
+	Ubuntu16          []string `json:"ubuntu16,omitempty"`
+	Ubuntu18          []string `json:"ubuntu18,omitempty"`
+	Ubuntu20          []string `json:"ubuntu20,omitempty"`
+	RHEL              []string `json:"rhel,omitempty"`
+	RHEL7             []string `json:"rhel7,omitempty"`
+	RHEL8             []string `json:"rhel8,omitempty"`
+	CentOS            []string `json:"centos,omitempty"`
+	CentOS7           []string `json:"centos7,omitempty"`
+	CentOS8           []string `json:"centos8,omitempty"`
+	OracleLinux       []string `json:"ol,omitempty"`
+	OracleLinux7      []string `json:"ol7,omitempty"`
+	OracleLinux8      []string `json:"ol8,omitempty"`
+	AmazonLinux       []string `json:"amzn,omitempty"`
+	AmazonLinux2      []string `json:"amzn2,omitempty"`
 }
 
 type HostKernelModules struct {
