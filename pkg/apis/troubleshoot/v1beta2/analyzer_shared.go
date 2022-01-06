@@ -53,32 +53,32 @@ type ImagePullSecret struct {
 type DeploymentStatus struct {
 	AnalyzeMeta `json:",inline" yaml:",inline"`
 	Outcomes    []*Outcome `json:"outcomes" yaml:"outcomes"`
-	Namespace   string     `json:"namespace" yaml:"namespace"`
-	Namespaces  []string   `json:"namespaces" yaml:"namespaces"`
+	Namespace   string     `json:"namespace,omitempty" yaml:"namespace,omitempty"`
+	Namespaces  []string   `json:"namespaces,omitempty" yaml:"namespaces,omitempty"`
 	Name        string     `json:"name" yaml:"name"`
 }
 
 type StatefulsetStatus struct {
 	AnalyzeMeta `json:",inline" yaml:",inline"`
 	Outcomes    []*Outcome `json:"outcomes" yaml:"outcomes"`
-	Namespace   string     `json:"namespace" yaml:"namespace"`
-	Namespaces  []string   `json:"namespaces" yaml:"namespaces"`
+	Namespace   string     `json:"namespace,omitempty" yaml:"namespace,omitempty"`
+	Namespaces  []string   `json:"namespaces,omitempty" yaml:"namespaces,omitempty"`
 	Name        string     `json:"name" yaml:"name"`
 }
 
 type JobStatus struct {
 	AnalyzeMeta `json:",inline" yaml:",inline"`
 	Outcomes    []*Outcome `json:"outcomes" yaml:"outcomes"`
-	Namespace   string     `json:"namespace" yaml:"namespace"`
-	Namespaces  []string   `json:"namespaces" yaml:"namespaces"`
+	Namespace   string     `json:"namespace,omitempty" yaml:"namespace,omitempty"`
+	Namespaces  []string   `json:"namespaces,omitempty" yaml:"namespaces,omitempty"`
 	Name        string     `json:"name" yaml:"name"`
 }
 
 type ReplicaSetStatus struct {
 	AnalyzeMeta `json:",inline" yaml:",inline"`
 	Outcomes    []*Outcome `json:"outcomes" yaml:"outcomes"`
-	Namespace   string     `json:"namespace" yaml:"namespace"`
-	Namespaces  []string   `json:"namespaces" yaml:"namespaces"`
+	Namespace   string     `json:"namespace,omitempty" yaml:"namespace,omitempty"`
+	Namespaces  []string   `json:"namespaces,omitempty" yaml:"namespaces,omitempty"`
 	Name        string     `json:"name" yaml:"name"`
 	Selector    []string   `json:"selector" yaml:"selector"`
 }
@@ -86,7 +86,7 @@ type ReplicaSetStatus struct {
 type ClusterPodStatuses struct {
 	AnalyzeMeta `json:",inline" yaml:",inline"`
 	Outcomes    []*Outcome `json:"outcomes" yaml:"outcomes"`
-	Namespaces  []string   `json:"namespaces" yaml:"namespaces"`
+	Namespaces  []string   `json:"namespaces,omitempty" yaml:"namespaces,omitempty"`
 }
 
 type ContainerRuntime struct {
