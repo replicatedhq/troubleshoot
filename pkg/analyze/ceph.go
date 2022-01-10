@@ -74,7 +74,17 @@ type CephStatus struct {
 }
 
 type HealthStatus struct {
-	Status string `json:"status"`
+	Status string                  `json:"status"`
+	Checks map[string]CheckMessage `json:"checks"`
+}
+
+type CheckMessage struct {
+	Severity string  `json:"severity"`
+	Summary  Summary `json:"summary"`
+}
+
+type Summary struct {
+	Message string `json:"message"`
 }
 
 type OsdMap struct {
@@ -204,6 +214,8 @@ func detailedCephMessage(msg string, status CephStatus) string {
 		msg = fmt.Sprintf("%s. OSD disk is full", msg)
 	} else if status.OsdMap.OsdMap.NearFull {
 		msg = fmt.Sprintf("%s. OSD disk is nearly full", msg)
+	} else if chkMsg, ok := status.Health.Checks["POOL_NO_REDUNDANCY"]; ok {
+		msg = fmt.Sprintf("%s. Pool no redundancy: %s", msg, chkMsg.Summary.Message)
 	}
 
 	if status.PgMap.TotalBytes > 0 {

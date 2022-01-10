@@ -30,23 +30,23 @@ func Test_cephStatus(t *testing.T) {
 			},
 			filePath: "ceph/status.json",
 			file: `{
-				"fsid": "96a8178c-6aa2-4adf-a309-9e8869a79611",
-				"health": {
-					"status": "HEALTH_OK"
-				},
-				"osdmap": {
+					"fsid": "96a8178c-6aa2-4adf-a309-9e8869a79611",
+					"health": {
+						"status": "HEALTH_OK"
+					},
 					"osdmap": {
-						"num_osds": 5,
-						"num_up_osds": 5,
-						"full": false,
-						"nearfull": false
+						"osdmap": {
+							"num_osds": 5,
+							"num_up_osds": 5,
+							"full": false,
+							"nearfull": false
+						}
+					},
+					"pgmap": {
+						"bytes_used": 10000,
+						"bytes_total": 100000
 					}
-				},
-				"pgmap": {
-					"bytes_used": 10000,
-					"bytes_total": 100000
-				}
-			}`,
+				}`,
 		},
 		{
 			name:     "warn case",
@@ -63,23 +63,23 @@ func Test_cephStatus(t *testing.T) {
 			},
 			filePath: "ceph/status.json",
 			file: `{
-				"fsid": "96a8178c-6aa2-4adf-a309-9e8869a79611",
-				"health": {
-					"status": "HEALTH_WARN"
-				},
-				"osdmap": {
+					"fsid": "96a8178c-6aa2-4adf-a309-9e8869a79611",
+					"health": {
+						"status": "HEALTH_WARN"
+					},
 					"osdmap": {
-						"num_osds": 5,
-						"num_up_osds": 5,
-						"full": false,
-						"nearfull": true
+						"osdmap": {
+							"num_osds": 5,
+							"num_up_osds": 5,
+							"full": false,
+							"nearfull": true
+						}
+					},
+					"pgmap": {
+						"bytes_used": 85000,
+						"bytes_total": 100000
 					}
-				},
-				"pgmap": {
-					"bytes_used": 85000,
-					"bytes_total": 100000
-				}
-			}`,
+				}`,
 		},
 		{
 			name:     "fail case",
@@ -96,23 +96,23 @@ func Test_cephStatus(t *testing.T) {
 			},
 			filePath: "ceph/status.json",
 			file: `{
-				"fsid": "96a8178c-6aa2-4adf-a309-9e8869a79611",
-				"health": {
-					"status": "HEALTH_ERR"
-				},
-				"osdmap": {
+					"fsid": "96a8178c-6aa2-4adf-a309-9e8869a79611",
+					"health": {
+						"status": "HEALTH_ERR"
+					},
 					"osdmap": {
-						"num_osds": 5,
-						"num_up_osds": 4,
-						"full": true,
-						"nearfull": true
+						"osdmap": {
+							"num_osds": 5,
+							"num_up_osds": 4,
+							"full": true,
+							"nearfull": true
+						}
+					},
+					"pgmap": {
+						"bytes_used": 95000,
+						"bytes_total": 100000
 					}
-				},
-				"pgmap": {
-					"bytes_used": 95000,
-					"bytes_total": 100000
-				}
-			}`,
+				}`,
 		},
 		{
 			name: "CollectorName and Namespace",
@@ -131,21 +131,21 @@ func Test_cephStatus(t *testing.T) {
 			},
 			filePath: "custom-namespace/namespace/ceph/status.json",
 			file: `{
-				"fsid": "96a8178c-6aa2-4adf-a309-9e8869a79611",
-				"health": {
-					"status": "HEALTH_OK"
-				},
-				"osdmap": {
+					"fsid": "96a8178c-6aa2-4adf-a309-9e8869a79611",
+					"health": {
+						"status": "HEALTH_OK"
+					},
 					"osdmap": {
-						"full": false,
-						"nearfull": false
+						"osdmap": {
+							"full": false,
+							"nearfull": false
+						}
+					},
+					"pgmap": {
+						"bytes_used": 10000,
+						"bytes_total": 100000
 					}
-				},
-				"pgmap": {
-					"bytes_used": 10000,
-					"bytes_total": 100000
-				}
-			}`,
+				}`,
 		},
 		{
 			name: "outcomes when",
@@ -179,23 +179,23 @@ func Test_cephStatus(t *testing.T) {
 			},
 			filePath: "ceph/status.json",
 			file: `{
-				"fsid": "96a8178c-6aa2-4adf-a309-9e8869a79611",
-				"health": {
-					"status": "HEALTH_WARN"
-				},
-				"osdmap": {
+					"fsid": "96a8178c-6aa2-4adf-a309-9e8869a79611",
+					"health": {
+						"status": "HEALTH_WARN"
+					},
 					"osdmap": {
-						"num_osds": 5,
-						"num_up_osds": 5,
-						"full": false,
-						"nearfull": true
+						"osdmap": {
+							"num_osds": 5,
+							"num_up_osds": 5,
+							"full": false,
+							"nearfull": true
+						}
+					},
+					"pgmap": {
+						"bytes_used": 85000,
+						"bytes_total": 100000
 					}
-				},
-				"pgmap": {
-					"bytes_used": 85000,
-					"bytes_total": 100000
-				}
-			}`,
+				}`,
 		},
 		{
 			name:     "warn case with missing osd/pg data",
@@ -212,9 +212,40 @@ func Test_cephStatus(t *testing.T) {
 			},
 			filePath: "ceph/status.json",
 			file: `{
+					"fsid": "96a8178c-6aa2-4adf-a309-9e8869a79611",
+					"health": {
+						"status": "HEALTH_WARN"
+					}
+				}`,
+		},
+		{
+			name:     "warn case with no redundancy",
+			analyzer: troubleshootv1beta2.CephStatusAnalyze{},
+			expectResult: AnalyzeResult{
+				IsPass:  false,
+				IsWarn:  true,
+				IsFail:  false,
+				Title:   "Ceph Status",
+				Message: "Ceph status is HEALTH_WARN. Pool no redundancy: 11 pool(s) have no replicas configured",
+				URI:     "https://rook.io/docs/rook/v1.4/ceph-common-issues.html",
+				IconKey: "rook",
+				IconURI: "https://troubleshoot.sh/images/analyzer-icons/rook.svg?w=11&h=16",
+			},
+			filePath: "ceph/status.json",
+			file: `{
 				"fsid": "96a8178c-6aa2-4adf-a309-9e8869a79611",
 				"health": {
-					"status": "HEALTH_WARN"
+					"status": "HEALTH_WARN",
+					"checks": {
+						"POOL_NO_REDUNDANCY": {
+						    "severity": "HEALTH_WARN",
+						    "summary": {
+							"message": "11 pool(s) have no replicas configured",
+							"count": 11
+						    },
+						    "muted": false
+						}
+					}
 				}
 			}`,
 		},
