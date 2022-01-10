@@ -77,8 +77,6 @@ func (cr RemoteCollectResult) IsRBACAllowed() bool {
 func CollectHost(opts CollectOpts, p *troubleshootv1beta2.HostPreflight) (CollectResult, error) {
 	collectSpecs := make([]*troubleshootv1beta2.HostCollect, 0, 0)
 	collectSpecs = append(collectSpecs, p.Spec.Collectors...)
-	collectSpecs = ensureHostCollectorInList(collectSpecs, troubleshootv1beta2.HostCollect{CPU: &troubleshootv1beta2.CPU{}})
-	collectSpecs = ensureHostCollectorInList(collectSpecs, troubleshootv1beta2.HostCollect{Memory: &troubleshootv1beta2.Memory{}})
 
 	allCollectedData := make(map[string][]byte)
 
