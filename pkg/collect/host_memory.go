@@ -31,7 +31,7 @@ func (c *CollectHostMemory) Collect(progressChan chan<- interface{}) (map[string
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to read virtual memory")
 	}
-	memoryInfo.Total = vmstat.Available
+	memoryInfo.Total = vmstat.Total
 
 	b, err := json.Marshal(memoryInfo)
 	if err != nil {
