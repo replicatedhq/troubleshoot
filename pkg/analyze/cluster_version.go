@@ -67,7 +67,7 @@ func analyzeClusterVersionResult(k8sVersion semver.Version, outcomes []*troubles
 
 		// When is usually empty as the final case and should be treated as true
 		if when == "" {
-			result.Message = message
+			result.Message = buildMessage(message, k8sVersion)
 			result.URI = uri
 
 			return &result, nil
@@ -79,7 +79,7 @@ func analyzeClusterVersionResult(k8sVersion semver.Version, outcomes []*troubles
 		}
 
 		if whenRange(k8sVersion) {
-			result.Message = message
+			result.Message = buildMessage(message, k8sVersion)
 			result.URI = uri
 
 			return &result, nil
