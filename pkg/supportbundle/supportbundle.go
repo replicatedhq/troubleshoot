@@ -28,6 +28,7 @@ type SupportBundleCreateOpts struct {
 	SinceTime                 *time.Time
 	Redact                    bool
 	FromCLI                   bool
+	OutputPath                string
 }
 
 type SupportBundleResponse struct {
@@ -57,9 +58,22 @@ func CollectSupportBundleFromSpec(spec *troubleshootv1beta2.SupportBundleSpec, a
 	}
 	defer os.RemoveAll(tmpDir)
 
-	basename := fmt.Sprintf("support-bundle-%s", time.Now().Format("2006-01-02T15_04_05"))
-	if !opts.FromCLI {
-		basename = filepath.Join(os.TempDir(), basename)
+	basename := ""
+	if opts.OutputPath != "" {
+		// use override output path
+		overridePath, err := filepath.Abs(opts.OutputPath)
+		if err != nil {
+			return nil, errors.Wrap(err, "")
+		}
+
+		basename = filepath.Base(overridePath)
+		basename = strings.TrimSuffix(basename, ".tar.gz")
+	} else {
+		// use default output path
+		basename = fmt.Sprintf("support-bundle-%s", time.Now().Format("2006-01-02T15_04_05"))
+		if !opts.FromCLI {
+			basename = filepath.Join(os.TempDir(), basename)
+		}
 	}
 
 	filename, err := findFileName(basename, "tar.gz")
