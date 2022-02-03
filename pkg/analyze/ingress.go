@@ -15,7 +15,7 @@ func analyzeIngress(analyzer *troubleshootv1beta2.Ingress, getCollectedFileConte
 		return nil, err
 	}
 
-	var ingresses []extensionsv1beta1.Ingress
+	var ingresses extensionsv1beta1.IngressList
 	if err := json.Unmarshal(ingressData, &ingresses); err != nil {
 		return nil, err
 	}
@@ -31,7 +31,7 @@ func analyzeIngress(analyzer *troubleshootv1beta2.Ingress, getCollectedFileConte
 		IconURI: "https://troubleshoot.sh/images/analyzer-icons/ingress-controller.svg?w=20&h=13",
 	}
 
-	for _, ingress := range ingresses {
+	for _, ingress := range ingresses.Items {
 		if ingress.Name == analyzer.IngressName {
 			result.IsPass = true
 			for _, outcome := range analyzer.Outcomes {

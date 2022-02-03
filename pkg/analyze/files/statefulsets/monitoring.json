@@ -1,4 +1,10 @@
-[
+{
+  "kind": "StatefulSetList",
+  "apiVersion": "apps/v1",
+  "metadata": {
+    "resourceVersion": "27195655"
+  },
+  "items": [
     {
       "metadata": {
         "name": "alertmanager-prometheus-alertmanager",
@@ -1279,4 +1285,4 @@
       }
     }
   ]
-  
+}

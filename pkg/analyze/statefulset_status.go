@@ -26,13 +26,13 @@ func analyzeOneStatefulsetStatus(analyzer *troubleshootv1beta2.StatefulsetStatus
 
 	var result *AnalyzeResult
 	for _, collected := range files { // only 1 file here
-		var statefulsets []appsv1.StatefulSet
+		var statefulsets appsv1.StatefulSetList
 		if err := json.Unmarshal(collected, &statefulsets); err != nil {
 			return nil, errors.Wrap(err, "failed to unmarshal statefulset list")
 		}
 
 		var statefulset *appsv1.StatefulSet
-		for _, s := range statefulsets {
+		for _, s := range statefulsets.Items {
 			if s.Name == analyzer.Name {
 				statefulset = s.DeepCopy()
 				break
@@ -86,12 +86,12 @@ func analyzeAllStatefulsetStatuses(analyzer *troubleshootv1beta2.StatefulsetStat
 		}
 
 		for _, collected := range files {
-			var statefulsets []appsv1.StatefulSet
+			var statefulsets appsv1.StatefulSetList
 			if err := json.Unmarshal(collected, &statefulsets); err != nil {
 				return nil, errors.Wrap(err, "failed to unmarshal statefulset list")
 			}
 
-			for _, statefulset := range statefulsets {
+			for _, statefulset := range statefulsets.Items {
 				result := getDefaultStatefulSetResult(&statefulset)
 				if result != nil {
 					results = append(results, result)
