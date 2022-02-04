@@ -14,7 +14,7 @@ func analyzeStorageClass(analyzer *troubleshootv1beta2.StorageClass, getCollecte
 		return nil, err
 	}
 
-	var storageClasses []storagev1beta1.StorageClass
+	var storageClasses storagev1beta1.StorageClassList
 	if err := json.Unmarshal(storageClassesData, &storageClasses); err != nil {
 		return nil, err
 	}
@@ -34,7 +34,7 @@ func analyzeStorageClass(analyzer *troubleshootv1beta2.StorageClass, getCollecte
 		IconURI: "https://troubleshoot.sh/images/analyzer-icons/storage-class.svg?w=12&h=12",
 	}
 
-	for _, storageClass := range storageClasses {
+	for _, storageClass := range storageClasses.Items {
 		val, _ := storageClass.Annotations["storageclass.kubernetes.io/is-default-class"]
 		if (storageClass.Name == analyzer.StorageClassName) || (analyzer.StorageClassName == "" && val == "true") {
 			result.IsPass = true

@@ -75,10 +75,7 @@ func (c *Clientset) Tracker() testing.ObjectTracker {
 	return c.tracker
 }
 
-var (
-	_ clientset.Interface = &Clientset{}
-	_ testing.FakeClient  = &Clientset{}
-)
+var _ clientset.Interface = &Clientset{}
 
 // TroubleshootV1beta1 retrieves the TroubleshootV1beta1Client
 func (c *Clientset) TroubleshootV1beta1() troubleshootv1beta1.TroubleshootV1beta1Interface {

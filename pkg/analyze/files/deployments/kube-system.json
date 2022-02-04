@@ -1,4 +1,10 @@
-[
+{
+  "kind": "DeploymentList",
+  "apiVersion": "apps/v1",
+  "metadata": {
+    "resourceVersion": "27195652"
+  },
+  "items": [
     {
       "metadata": {
         "name": "coredns",
@@ -658,4 +664,4 @@
       }
     }
   ]
-  
+}
