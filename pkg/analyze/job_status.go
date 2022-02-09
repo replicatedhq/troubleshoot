@@ -28,13 +28,13 @@ func analyzeOneJobStatus(analyzer *troubleshootv1beta2.JobStatus, getFileContent
 
 	var result *AnalyzeResult
 	for _, collected := range files { // only 1 file here
-		var jobs []batchv1.Job
+		var jobs batchv1.JobList
 		if err := json.Unmarshal(collected, &jobs); err != nil {
 			return nil, errors.Wrap(err, "failed to unmarshal job list")
 		}
 
 		var job *batchv1.Job
-		for _, j := range jobs {
+		for _, j := range jobs.Items {
 			if j.Name == analyzer.Name {
 				job = j.DeepCopy()
 				break
@@ -89,12 +89,12 @@ func analyzeAllJobStatuses(analyzer *troubleshootv1beta2.JobStatus, getFileConte
 		}
 
 		for _, collected := range files {
-			var jobs []batchv1.Job
+			var jobs batchv1.JobList
 			if err := json.Unmarshal(collected, &jobs); err != nil {
 				return nil, errors.Wrap(err, "failed to unmarshal job list")
 			}
 
-			for _, job := range jobs {
+			for _, job := range jobs.Items {
 				result := getDefaultJobResult(&job)
 				if result != nil {
 					results = append(results, result)

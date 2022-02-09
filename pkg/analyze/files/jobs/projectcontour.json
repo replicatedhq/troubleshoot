@@ -1,4 +1,10 @@
-[
+{
+  "kind": "JobList",
+  "apiVersion": "batch/v1",
+  "metadata": {
+    "resourceVersion": "27195661"
+  },
+  "items": [
     {
       "metadata": {
         "name": "contour-certgen-v1.19.1",
@@ -195,4 +201,4 @@
       }
     }
   ]
-  
+}
