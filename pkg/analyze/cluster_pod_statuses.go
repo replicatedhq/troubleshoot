@@ -31,11 +31,11 @@ func clusterPodStatuses(analyzer *troubleshootv1beta2.ClusterPodStatuses, getChi
 			}
 		}
 		if include {
-			var nsPods []corev1.Pod
+			var nsPods corev1.PodList
 			if err := json.Unmarshal(fileContent, &nsPods); err != nil {
 				return nil, errors.Wrapf(err, "failed to unmarshal pods list for namespace %s", podsNs)
 			}
-			pods = append(pods, nsPods...)
+			pods = append(pods, nsPods.Items...)
 		}
 	}
 

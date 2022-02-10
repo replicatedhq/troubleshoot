@@ -1,4 +1,10 @@
-[
+{
+  "kind": "DeploymentList",
+  "apiVersion": "apps/v1",
+  "metadata": {
+    "resourceVersion": "27195653"
+  },
+  "items": [
     {
       "metadata": {
         "name": "grafana",
@@ -1640,5 +1646,5 @@
         ]
       }
     }
-  ]
-  
+  ] 
+}

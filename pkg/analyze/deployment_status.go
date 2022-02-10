@@ -26,13 +26,13 @@ func analyzeOneDeploymentStatus(analyzer *troubleshootv1beta2.DeploymentStatus, 
 
 	var result *AnalyzeResult
 	for _, collected := range files { // only 1 file here
-		var deployments []appsv1.Deployment
+		var deployments appsv1.DeploymentList
 		if err := json.Unmarshal(collected, &deployments); err != nil {
 			return nil, errors.Wrap(err, "failed to unmarshal deployment list")
 		}
 
 		var status *appsv1.DeploymentStatus
-		for _, deployment := range deployments {
+		for _, deployment := range deployments.Items {
 			if deployment.Name == analyzer.Name {
 				status = deployment.Status.DeepCopy()
 			}
@@ -80,12 +80,12 @@ func analyzeAllDeploymentStatuses(analyzer *troubleshootv1beta2.DeploymentStatus
 		}
 
 		for _, collected := range files {
-			var deployments []appsv1.Deployment
+			var deployments appsv1.DeploymentList
 			if err := json.Unmarshal(collected, &deployments); err != nil {
 				return nil, errors.Wrap(err, "failed to unmarshal deployment list")
 			}
 
-			for _, deployment := range deployments {
+			for _, deployment := range deployments.Items {
 				if deployment.Status.Replicas == deployment.Status.AvailableReplicas {
 					continue
 				}
