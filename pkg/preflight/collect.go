@@ -288,12 +288,13 @@ func CollectRemote(opts CollectOpts, p *troubleshootv1beta2.HostPreflight) (Coll
 			CurrentStatus:  "running",
 			CompletedCount: i,
 			TotalCount:     len(collectors),
+			Collectors:     collectorList,
 		}
 
 		result, err := collector.RunCollectorSync(nil)
 		if err != nil {
 			collectorList[collector.GetDisplayName()] = CollectorStatus{
-				Status: "running",
+				Status: "failed",
 			}
 
 			opts.ProgressChan <- errors.Errorf("failed to run collector %s: %v\n", collector.GetDisplayName(), err)
@@ -302,12 +303,13 @@ func CollectRemote(opts CollectOpts, p *troubleshootv1beta2.HostPreflight) (Coll
 				CurrentStatus:  "failed",
 				CompletedCount: i + 1,
 				TotalCount:     len(collectors),
+				Collectors:     collectorList,
 			}
 			continue
 		}
 
 		collectorList[collector.GetDisplayName()] = CollectorStatus{
-			Status: "running",
+			Status: "completed",
 		}
 
 		opts.ProgressChan <- CollectProgress{
@@ -315,6 +317,7 @@ func CollectRemote(opts CollectOpts, p *troubleshootv1beta2.HostPreflight) (Coll
 			CurrentStatus:  "completed",
 			CompletedCount: i + 1,
 			TotalCount:     len(collectors),
+			Collectors:     collectorList,
 		}
 
 		for k, v := range result {
