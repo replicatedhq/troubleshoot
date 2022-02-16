@@ -60,6 +60,20 @@
                             }
                           }
                         },
+                        "fatal": {
+                          "type": "object",
+                          "properties": {
+                            "message": {
+                              "type": "string"
+                            },
+                            "uri": {
+                              "type": "string"
+                            },
+                            "when": {
+                              "type": "string"
+                            }
+                          }
+                        },
                         "pass": {
                           "type": "object",
                           "properties": {
@@ -96,7 +110,6 @@
               "clusterPodStatuses": {
                 "type": "object",
                 "required": [
-                  "namespaces",
                   "outcomes"
                 ],
                 "properties": {
@@ -118,6 +131,20 @@
                       "type": "object",
                       "properties": {
                         "fail": {
+                          "type": "object",
+                          "properties": {
+                            "message": {
+                              "type": "string"
+                            },
+                            "uri": {
+                              "type": "string"
+                            },
+                            "when": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "fatal": {
                           "type": "object",
                           "properties": {
                             "message": {
@@ -182,6 +209,20 @@
                       "type": "object",
                       "properties": {
                         "fail": {
+                          "type": "object",
+                          "properties": {
+                            "message": {
+                              "type": "string"
+                            },
+                            "uri": {
+                              "type": "string"
+                            },
+                            "when": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "fatal": {
                           "type": "object",
                           "properties": {
                             "message": {
@@ -270,6 +311,20 @@
                             }
                           }
                         },
+                        "fatal": {
+                          "type": "object",
+                          "properties": {
+                            "message": {
+                              "type": "string"
+                            },
+                            "uri": {
+                              "type": "string"
+                            },
+                            "when": {
+                              "type": "string"
+                            }
+                          }
+                        },
                         "pass": {
                           "type": "object",
                           "properties": {
@@ -321,6 +376,20 @@
                       "type": "object",
                       "properties": {
                         "fail": {
+                          "type": "object",
+                          "properties": {
+                            "message": {
+                              "type": "string"
+                            },
+                            "uri": {
+                              "type": "string"
+                            },
+                            "when": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "fatal": {
                           "type": "object",
                           "properties": {
                             "message": {
@@ -402,6 +471,20 @@
                             }
                           }
                         },
+                        "fatal": {
+                          "type": "object",
+                          "properties": {
+                            "message": {
+                              "type": "string"
+                            },
+                            "uri": {
+                              "type": "string"
+                            },
+                            "when": {
+                              "type": "string"
+                            }
+                          }
+                        },
                         "pass": {
                           "type": "object",
                           "properties": {
@@ -439,7 +522,6 @@
                 "type": "object",
                 "required": [
                   "name",
-                  "namespace",
                   "outcomes"
                 ],
                 "properties": {
@@ -455,12 +537,32 @@
                   "namespace": {
                     "type": "string"
                   },
+                  "namespaces": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
                   "outcomes": {
                     "type": "array",
                     "items": {
                       "type": "object",
                       "properties": {
                         "fail": {
+                          "type": "object",
+                          "properties": {
+                            "message": {
+                              "type": "string"
+                            },
+                            "uri": {
+                              "type": "string"
+                            },
+                            "when": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "fatal": {
                           "type": "object",
                           "properties": {
                             "message": {
@@ -538,6 +640,20 @@
                             }
                           }
                         },
+                        "fatal": {
+                          "type": "object",
+                          "properties": {
+                            "message": {
+                              "type": "string"
+                            },
+                            "uri": {
+                              "type": "string"
+                            },
+                            "when": {
+                              "type": "string"
+                            }
+                          }
+                        },
                         "pass": {
                           "type": "object",
                           "properties": {
@@ -590,6 +706,20 @@
                       "type": "object",
                       "properties": {
                         "fail": {
+                          "type": "object",
+                          "properties": {
+                            "message": {
+                              "type": "string"
+                            },
+                            "uri": {
+                              "type": "string"
+                            },
+                            "when": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "fatal": {
                           "type": "object",
                           "properties": {
                             "message": {
@@ -678,6 +808,20 @@
                             }
                           }
                         },
+                        "fatal": {
+                          "type": "object",
+                          "properties": {
+                            "message": {
+                              "type": "string"
+                            },
+                            "uri": {
+                              "type": "string"
+                            },
+                            "when": {
+                              "type": "string"
+                            }
+                          }
+                        },
                         "pass": {
                           "type": "object",
                           "properties": {
@@ -715,7 +859,6 @@
                 "type": "object",
                 "required": [
                   "name",
-                  "namespace",
                   "outcomes"
                 ],
                 "properties": {
@@ -731,12 +874,32 @@
                   "namespace": {
                     "type": "string"
                   },
+                  "namespaces": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
                   "outcomes": {
                     "type": "array",
                     "items": {
                       "type": "object",
                       "properties": {
                         "fail": {
+                          "type": "object",
+                          "properties": {
+                            "message": {
+                              "type": "string"
+                            },
+                            "uri": {
+                              "type": "string"
+                            },
+                            "when": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "fatal": {
                           "type": "object",
                           "properties": {
                             "message": {
@@ -821,6 +984,20 @@
                             }
                           }
                         },
+                        "fatal": {
+                          "type": "object",
+                          "properties": {
+                            "message": {
+                              "type": "string"
+                            },
+                            "uri": {
+                              "type": "string"
+                            },
+                            "when": {
+                              "type": "string"
+                            }
+                          }
+                        },
                         "pass": {
                           "type": "object",
                           "properties": {
@@ -879,6 +1056,20 @@
                       "type": "object",
                       "properties": {
                         "fail": {
+                          "type": "object",
+                          "properties": {
+                            "message": {
+                              "type": "string"
+                            },
+                            "uri": {
+                              "type": "string"
+                            },
+                            "when": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "fatal": {
                           "type": "object",
                           "properties": {
                             "message": {
@@ -996,6 +1187,20 @@
                             }
                           }
                         },
+                        "fatal": {
+                          "type": "object",
+                          "properties": {
+                            "message": {
+                              "type": "string"
+                            },
+                            "uri": {
+                              "type": "string"
+                            },
+                            "when": {
+                              "type": "string"
+                            }
+                          }
+                        },
                         "pass": {
                           "type": "object",
                           "properties": {
@@ -1054,6 +1259,20 @@
                       "type": "object",
                       "properties": {
                         "fail": {
+                          "type": "object",
+                          "properties": {
+                            "message": {
+                              "type": "string"
+                            },
+                            "uri": {
+                              "type": "string"
+                            },
+                            "when": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "fatal": {
                           "type": "object",
                           "properties": {
                             "message": {
@@ -1138,6 +1357,20 @@
                             }
                           }
                         },
+                        "fatal": {
+                          "type": "object",
+                          "properties": {
+                            "message": {
+                              "type": "string"
+                            },
+                            "uri": {
+                              "type": "string"
+                            },
+                            "when": {
+                              "type": "string"
+                            }
+                          }
+                        },
                         "pass": {
                           "type": "object",
                           "properties": {
@@ -1206,6 +1439,20 @@
                             }
                           }
                         },
+                        "fatal": {
+                          "type": "object",
+                          "properties": {
+                            "message": {
+                              "type": "string"
+                            },
+                            "uri": {
+                              "type": "string"
+                            },
+                            "when": {
+                              "type": "string"
+                            }
+                          }
+                        },
                         "pass": {
                           "type": "object",
                           "properties": {
@@ -1243,7 +1490,6 @@
                 "type": "object",
                 "required": [
                   "name",
-                  "namespace",
                   "outcomes",
                   "selector"
                 ],
@@ -1260,12 +1506,32 @@
                   "namespace": {
                     "type": "string"
                   },
+                  "namespaces": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
                   "outcomes": {
                     "type": "array",
                     "items": {
                       "type": "object",
                       "properties": {
                         "fail": {
+                          "type": "object",
+                          "properties": {
+                            "message": {
+                              "type": "string"
+                            },
+                            "uri": {
+                              "type": "string"
+                            },
+                            "when": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "fatal": {
                           "type": "object",
                           "properties": {
                             "message": {
@@ -1357,6 +1623,20 @@
                             }
                           }
                         },
+                        "fatal": {
+                          "type": "object",
+                          "properties": {
+                            "message": {
+                              "type": "string"
+                            },
+                            "uri": {
+                              "type": "string"
+                            },
+                            "when": {
+                              "type": "string"
+                            }
+                          }
+                        },
                         "pass": {
                           "type": "object",
                           "properties": {
@@ -1397,7 +1677,6 @@
                 "type": "object",
                 "required": [
                   "name",
-                  "namespace",
                   "outcomes"
                 ],
                 "properties": {
@@ -1413,12 +1692,32 @@
                   "namespace": {
                     "type": "string"
                   },
+                  "namespaces": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
                   "outcomes": {
                     "type": "array",
                     "items": {
                       "type": "object",
                       "properties": {
                         "fail": {
+                          "type": "object",
+                          "properties": {
+                            "message": {
+                              "type": "string"
+                            },
+                            "uri": {
+                              "type": "string"
+                            },
+                            "when": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "fatal": {
                           "type": "object",
                           "properties": {
                             "message": {
@@ -1484,6 +1783,20 @@
                       "type": "object",
                       "properties": {
                         "fail": {
+                          "type": "object",
+                          "properties": {
+                            "message": {
+                              "type": "string"
+                            },
+                            "uri": {
+                              "type": "string"
+                            },
+                            "when": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "fatal": {
                           "type": "object",
                           "properties": {
                             "message": {
@@ -1564,6 +1877,20 @@
                             }
                           }
                         },
+                        "fatal": {
+                          "type": "object",
+                          "properties": {
+                            "message": {
+                              "type": "string"
+                            },
+                            "uri": {
+                              "type": "string"
+                            },
+                            "when": {
+                              "type": "string"
+                            }
+                          }
+                        },
                         "pass": {
                           "type": "object",
                           "properties": {
@@ -1624,6 +1951,20 @@
                       "type": "object",
                       "properties": {
                         "fail": {
+                          "type": "object",
+                          "properties": {
+                            "message": {
+                              "type": "string"
+                            },
+                            "uri": {
+                              "type": "string"
+                            },
+                            "when": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "fatal": {
                           "type": "object",
                           "properties": {
                             "message": {

@@ -46,7 +46,12 @@ func analyzeClusterVersionResult(k8sVersion semver.Version, outcomes []*troubles
 			IconURI: "https://troubleshoot.sh/images/analyzer-icons/kubernetes.svg?w=16&h=16",
 		}
 
-		if outcome.Fail != nil {
+		if outcome.Fatal != nil {
+			result.IsFatal = true
+			when = outcome.Fatal.When
+			message = outcome.Fatal.Message
+			uri = outcome.Fatal.URI
+		} else if outcome.Fail != nil {
 			result.IsFail = true
 			when = outcome.Fail.When
 			message = outcome.Fail.Message

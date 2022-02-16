@@ -52,11 +52,15 @@ func analyzeStorageClass(analyzer *troubleshootv1beta2.StorageClass, getCollecte
 		}
 	}
 
-	result.IsFail = true
 	for _, outcome := range analyzer.Outcomes {
 		if outcome.Fail != nil {
+			result.IsFail = true
 			result.Message = outcome.Fail.Message
 			result.URI = outcome.Fail.URI
+		} else if outcome.Fatal != nil {
+			result.IsFatal = true
+			result.Message = outcome.Fatal.Message
+			result.URI = outcome.Fatal.URI
 		}
 	}
 	if analyzer.StorageClassName == "" && result.Message == "" {

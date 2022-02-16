@@ -11,9 +11,10 @@ import (
 )
 
 type AnalyzeResult struct {
-	IsPass bool
-	IsFail bool
-	IsWarn bool
+	IsFatal    bool
+	IsPass     bool
+	IsFail     bool
+	IsWarn     bool
 
 	Title   string
 	Message string

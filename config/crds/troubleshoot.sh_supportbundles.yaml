@@ -92,6 +92,15 @@ spec:
                                   when:
                                     type: string
                                 type: object
+                              fatal:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
                               pass:
                                 properties:
                                   message:
@@ -138,6 +147,15 @@ spec:
                                   when:
                                     type: string
                                 type: object
+                              fatal:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
                               pass:
                                 properties:
                                   message:
@@ -171,6 +189,15 @@ spec:
                           items:
                             properties:
                               fail:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
+                              fatal:
                                 properties:
                                   message:
                                     type: string
@@ -226,6 +253,15 @@ spec:
                                   when:
                                     type: string
                                 type: object
+                              fatal:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
                               pass:
                                 properties:
                                   message:
@@ -269,6 +305,15 @@ spec:
                                   when:
                                     type: string
                                 type: object
+                              fatal:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
                               pass:
                                 properties:
                                   message:
@@ -304,6 +349,15 @@ spec:
                           items:
                             properties:
                               fail:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
+                              fatal:
                                 properties:
                                   message:
                                     type: string
@@ -362,6 +416,15 @@ spec:
                                   when:
                                     type: string
                                 type: object
+                              fatal:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
                               pass:
                                 properties:
                                   message:
@@ -396,6 +459,15 @@ spec:
                           items:
                             properties:
                               fail:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
+                              fatal:
                                 properties:
                                   message:
                                     type: string
@@ -445,6 +517,15 @@ spec:
                                   when:
                                     type: string
                                 type: object
+                              fatal:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
                               pass:
                                 properties:
                                   message:
@@ -485,6 +566,15 @@ spec:
                           items:
                             properties:
                               fail:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
+                              fatal:
                                 properties:
                                   message:
                                     type: string
@@ -544,6 +634,15 @@ spec:
                                   when:
                                     type: string
                                 type: object
+                              fatal:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
                               pass:
                                 properties:
                                   message:
@@ -590,6 +689,15 @@ spec:
                                   when:
                                     type: string
                                 type: object
+                              fatal:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
                               pass:
                                 properties:
                                   message:
@@ -628,6 +736,15 @@ spec:
                           items:
                             properties:
                               fail:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
+                              fatal:
                                 properties:
                                   message:
                                     type: string
@@ -704,6 +821,15 @@ spec:
                                   when:
                                     type: string
                                 type: object
+                              fatal:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
                               pass:
                                 properties:
                                   message:
@@ -741,6 +867,15 @@ spec:
                           items:
                             properties:
                               fail:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
+                              fatal:
                                 properties:
                                   message:
                                     type: string
@@ -795,6 +930,15 @@ spec:
                                   when:
                                     type: string
                                 type: object
+                              fatal:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
                               pass:
                                 properties:
                                   message:
@@ -831,6 +975,15 @@ spec:
                           items:
                             properties:
                               fail:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
+                              fatal:
                                 properties:
                                   message:
                                     type: string
@@ -889,6 +1042,15 @@ spec:
                                   when:
                                     type: string
                                 type: object
+                              fatal:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
                               pass:
                                 properties:
                                   message:
@@ -932,6 +1094,15 @@ spec:
                           items:
                             properties:
                               fail:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
+                              fatal:
                                 properties:
                                   message:
                                     type: string
@@ -993,6 +1164,15 @@ spec:
                                   when:
                                     type: string
                                 type: object
+                              fatal:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
                               pass:
                                 properties:
                                   message:
@@ -1027,6 +1207,15 @@ spec:
                           items:
                             properties:
                               fail:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
+                              fatal:
                                 properties:
                                   message:
                                     type: string
@@ -1079,6 +1268,15 @@ spec:
                                   when:
                                     type: string
                                 type: object
+                              fatal:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
                               pass:
                                 properties:
                                   message:
@@ -1118,6 +1316,15 @@ spec:
                           items:
                             properties:
                               fail:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
+                              fatal:
                                 properties:
                                   message:
                                     type: string
