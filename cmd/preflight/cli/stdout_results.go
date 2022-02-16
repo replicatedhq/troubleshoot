@@ -44,15 +44,17 @@ func showStdoutResultsJSON(preflightName string, analyzeResults []*analyzerunner
 		URI     string `json:"uri,omitempty"`
 	}
 	type Output struct {
-		Pass []ResultOutput `json:"pass,omitempty"`
-		Warn []ResultOutput `json:"warn,omitempty"`
-		Fail []ResultOutput `json:"fail,omitempty"`
+		Pass  []ResultOutput `json:"pass,omitempty"`
+		Warn  []ResultOutput `json:"warn,omitempty"`
+		Fail  []ResultOutput `json:"fail,omitempty"`
+		Fatal []ResultOutput `json:"fatal,omitempty"`
 	}
 
 	output := Output{
-		Pass: []ResultOutput{},
-		Warn: []ResultOutput{},
-		Fail: []ResultOutput{},
+		Pass:  []ResultOutput{},
+		Warn:  []ResultOutput{},
+		Fail:  []ResultOutput{},
+		Fatal: []ResultOutput{},
 	}
 
 	for _, analyzeResult := range analyzeResults {
@@ -68,6 +70,8 @@ func showStdoutResultsJSON(preflightName string, analyzeResults []*analyzerunner
 			output.Warn = append(output.Warn, resultOutput)
 		} else if analyzeResult.IsFail {
 			output.Fail = append(output.Fail, resultOutput)
+		} else if analyzeResult.IsFatal {
+			output.Fatal = append(output.Fatal, resultOutput)
 		}
 	}
 
@@ -90,6 +94,10 @@ func outputResult(analyzeResult *analyzerunner.AnalyzeResult) bool {
 		fmt.Printf("      --- %s\n", analyzeResult.Message)
 	} else if analyzeResult.IsFail {
 		fmt.Printf("   --- FAIL: %s\n", analyzeResult.Title)
+		fmt.Printf("      --- %s\n", analyzeResult.Message)
+		return true
+	} else if analyzeResult.IsFatal {
+		fmt.Printf("   --- FATAL: %s\n", analyzeResult.Title)
 		fmt.Printf("      --- %s\n", analyzeResult.Message)
 		return true
 	}
