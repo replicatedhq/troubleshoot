@@ -228,7 +228,7 @@ func save(preflightName string, outputPath string, analyzeResults []*analyzerunn
 		filename = overridePath
 	} else {
 		// use default output path
-		filename = fmt.Sprintf("%s-results.txt", preflightName)
+		filename = fmt.Sprintf("%s-results-%s.txt", preflightName, time.Now().Format("2006-01-02T15_04_05"))
 	}
 
 	_, err := os.Stat(filename)
