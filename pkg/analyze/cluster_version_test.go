@@ -11,6 +11,13 @@ import (
 func Test_analyzeClusterVersionResult(t *testing.T) {
 	outcomes := []*troubleshootv1beta2.Outcome{
 		{
+			Fatal: &troubleshootv1beta2.SingleOutcome{
+				When:    "> 1.20.0",
+				Message: "Sentry requires at Kubernetes 1.13.0 or later, and recommends 1.15.0.",
+				URI:     "https://www.kubernetes.io",
+			},
+		},
+		{
 			Fail: &troubleshootv1beta2.SingleOutcome{
 				When:    "< 1.13.0",
 				Message: "Sentry requires at Kubernetes 1.13.0 or later, and recommends 1.15.0.",
@@ -42,6 +49,22 @@ func Test_analyzeClusterVersionResult(t *testing.T) {
 		want    *AnalyzeResult
 		wantErr bool
 	}{
+		{
+			name: "fatal",
+			args: args{
+				k8sVersion: semver.MustParse("1.21.0"),
+				outcomes:   outcomes,
+				checkName:  "Check Fatal",
+			},
+			want: &AnalyzeResult{
+				IsFatal:  true,
+				Title:   "Check Fatal",
+				Message: "Sentry requires at Kubernetes 1.13.0 or later, and recommends 1.15.0.",
+				URI:     "https://www.kubernetes.io",
+				IconKey: "kubernetes_cluster_version",
+				IconURI: "https://troubleshoot.sh/images/analyzer-icons/kubernetes.svg?w=16&h=16",
+			},
+		},
 		{
 			name: "fail",
 			args: args{
@@ -98,6 +121,8 @@ func Test_analyzeClusterVersionResult(t *testing.T) {
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
+				t.Logf(`%v`, got.IsFatal)
+				t.Logf(`%v`, got.IsFail)
 				t.Errorf("analyzeClusterVersionResult() = %v, want %v", got, tt.want)
 			}
 		})
