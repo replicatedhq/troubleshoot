@@ -38,7 +38,30 @@ func analyzeContainerRuntime(analyzer *troubleshootv1beta2.ContainerRuntime, get
 
 	// ordering is important for passthrough
 	for _, outcome := range analyzer.Outcomes {
-		if outcome.Fail != nil {
+		if outcome.Fatal != nil {
+			if outcome.Fatal.When == "" {
+				result.IsFatal = true
+				result.Message = outcome.Fatal.Message
+				result.URI = outcome.Fatal.URI
+
+				return result, nil
+			}
+
+			for _, foundRuntime := range foundRuntimes {
+				isMatch, err := compareRuntimeConditionalToActual(outcome.Fatal.When, foundRuntime)
+				if err != nil {
+					return nil, errors.Wrap(err, "failed to compare runtime conditional")
+				}
+
+				if isMatch {
+					result.IsFatal = true
+					result.Message = outcome.Fatal.Message
+					result.URI = outcome.Fatal.URI
+
+					return result, nil
+				}
+			}
+		} else if outcome.Fail != nil {
 			if outcome.Fail.When == "" {
 				result.IsFail = true
 				result.Message = outcome.Fail.Message

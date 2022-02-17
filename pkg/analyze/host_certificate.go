@@ -38,7 +38,15 @@ func (a *AnalyzeHostCertificate) Analyze(getCollectedFileContents func(string) (
 	for _, outcome := range hostAnalyzer.Outcomes {
 		result := &AnalyzeResult{Title: a.Title()}
 
-		if outcome.Fail != nil {
+		if outcome.Fatal != nil {
+			if outcome.Fatal.When == "" || outcome.Fatal.When == status {
+				result.IsFatal = true
+				result.Message = outcome.Fatal.Message
+				result.URI = outcome.Fatal.URI
+
+				coll.push(result)
+			}
+		} else if outcome.Fail != nil {
 			if outcome.Fail.When == "" || outcome.Fail.When == status {
 				result.IsFail = true
 				result.Message = outcome.Fail.Message

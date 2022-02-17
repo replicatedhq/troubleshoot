@@ -168,7 +168,28 @@ func analyzeDistribution(analyzer *troubleshootv1beta2.Distribution, getCollecte
 
 	// ordering is important for passthrough
 	for _, outcome := range analyzer.Outcomes {
-		if outcome.Fail != nil {
+		if outcome.Fatal != nil {
+			if outcome.Fatal.When == "" {
+				result.IsFatal = true
+				result.Message = outcome.Fatal.Message
+				result.URI = outcome.Fatal.URI
+
+				return result, nil
+			}
+
+			isMatch, err := compareDistributionConditionalToActual(outcome.Fatal.When, foundProviders, &unknownDistribution)
+			if err != nil {
+				return result, errors.Wrap(err, "failed to compare distribution conditional")
+			}
+
+			if isMatch {
+				result.IsFatal = true
+				result.Message = outcome.Fatal.Message
+				result.URI = outcome.Fatal.URI
+
+				return result, nil
+			}
+		} else if outcome.Fail != nil {
 			if outcome.Fail.When == "" {
 				result.IsFail = true
 				result.Message = outcome.Fail.Message

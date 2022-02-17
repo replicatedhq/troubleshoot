@@ -42,7 +42,28 @@ func (a *AnalyzeHostBlockDevices) Analyze(getCollectedFileContents func(string) 
 	result.Title = a.Title()
 
 	for _, outcome := range hostAnalyzer.Outcomes {
-		if outcome.Fail != nil {
+		if outcome.Fatal != nil {
+			if outcome.Fatal.When == "" {
+				result.IsFatal = true
+				result.Message = outcome.Fatal.Message
+				result.URI = outcome.Fatal.URI
+
+				return []*AnalyzeResult{&result}, nil
+			}
+
+			isMatch, err := compareHostBlockDevicesConditionalToActual(outcome.Fatal.When, hostAnalyzer.MinimumAcceptableSize, hostAnalyzer.IncludeUnmountedPartitions, devices)
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to compare %s", outcome.Fatal.When)
+			}
+
+			if isMatch {
+				result.IsFatal = true
+				result.Message = outcome.Fatal.Message
+				result.URI = outcome.Fatal.URI
+
+				return []*AnalyzeResult{&result}, nil
+			}
+		} else if outcome.Fail != nil {
 			if outcome.Fail.When == "" {
 				result.IsFail = true
 				result.Message = outcome.Fail.Message

@@ -50,7 +50,12 @@ func clusterPodStatuses(analyzer *troubleshootv1beta2.ClusterPodStatuses, getChi
 			r := AnalyzeResult{}
 			when := ""
 
-			if outcome.Fail != nil {
+			if outcome.Fatal != nil {
+				r.IsFatal = true
+				r.Message = outcome.Fatal.Message
+				r.URI = outcome.Fatal.URI
+				when = outcome.Fatal.When
+			} else if outcome.Fail != nil {
 				r.IsFail = true
 				r.Message = outcome.Fail.Message
 				r.URI = outcome.Fail.URI

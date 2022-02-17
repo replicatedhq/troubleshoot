@@ -14,9 +14,10 @@ import (
 type CephHealth string
 
 const (
-	CephHealthOK   CephHealth = "HEALTH_OK"
-	CephHealthWarn CephHealth = "HEALTH_WARN"
-	CephHealthErr  CephHealth = "HEALTH_ERR"
+	CephHealthOK    CephHealth = "HEALTH_OK"
+	CephHealthWarn  CephHealth = "HEALTH_WARN"
+	CephHealthErr   CephHealth = "HEALTH_ERR"
+	CephHealthFatal CephHealth = "HEALTH_FATAL"
 )
 
 func (a CephHealth) Compare(b CephHealth) int {
@@ -30,13 +31,21 @@ func (a CephHealth) Compare(b CephHealth) int {
 		switch b {
 		case CephHealthOK:
 			return -1
-		case CephHealthErr:
+		case CephHealthErr, CephHealthFatal:
 			return 1
 		}
 		return 1
 	case CephHealthErr:
 		switch b {
 		case CephHealthOK, CephHealthWarn:
+			return -1
+		case CephHealthFatal:
+			return 1
+		}
+		return 1
+	case CephHealthFatal:
+		switch b {
+		case CephHealthOK, CephHealthWarn, CephHealthErr:
 			return -1
 		}
 		return 1
@@ -60,6 +69,12 @@ var CephStatusDefaultOutcomes = []*troubleshootv1beta2.Outcome{
 	{
 		Fail: &troubleshootv1beta2.SingleOutcome{
 			Message: "Ceph status is HEALTH_ERR",
+			URI:     "https://rook.io/docs/rook/v1.4/ceph-common-issues.html",
+		},
+	},
+	{
+		Fatal: &troubleshootv1beta2.SingleOutcome{
+			Message: "Ceph status is HEALTH_FATAL",
 			URI:     "https://rook.io/docs/rook/v1.4/ceph-common-issues.html",
 		},
 	},
@@ -117,7 +132,20 @@ func cephStatus(analyzer *troubleshootv1beta2.CephStatusAnalyze, getCollectedFil
 	}
 
 	for _, outcome := range analyzer.Outcomes {
-		if outcome.Fail != nil {
+		if outcome.Fatal != nil {
+			if outcome.Fatal.When == "" {
+				outcome.Fatal.When = string(CephHealthFatal)
+			}
+			match, err := compareCephStatus(status.Health.Status, outcome.Fatal.When)
+			if err != nil {
+				return nil, errors.Wrap(err, "failed to compare ceph status")
+			} else if match {
+				analyzeResult.IsFatal = true
+				analyzeResult.Message = detailedCephMessage(outcome.Fatal.Message, status)
+				analyzeResult.URI = outcome.Fatal.URI
+				return analyzeResult, nil
+			}
+		} else if outcome.Fail != nil {
 			if outcome.Fail.When == "" {
 				outcome.Fail.When = string(CephHealthErr)
 			}
