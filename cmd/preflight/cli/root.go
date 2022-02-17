@@ -38,6 +38,7 @@ that a cluster meets the requirements to run an application.`,
 	cmd.Flags().String("selector", "", "selector (label query) to filter remote collection nodes on.")
 	cmd.Flags().String("since-time", "", "force pod logs collectors to return logs after a specific date (RFC3339)")
 	cmd.Flags().String("since", "", "force pod logs collectors to return logs newer than a relative duration like 5s, 2m, or 3h.")
+	cmd.Flags().StringP("output", "o", "", "specify the output file path for the preflight checks")
 
 	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
 
