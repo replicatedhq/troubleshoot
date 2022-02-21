@@ -200,8 +200,8 @@ func Analyze(analyzer *troubleshootv1beta2.Analyze, getFile getCollectedFileCont
 		if err != nil {
 			return nil, err
 		}
-		for _, r := range results {
-			r.Strict = analyzer.DeploymentStatus.Strict.BoolVal
+		for i := range results {
+			results[i].Strict = analyzer.DeploymentStatus.Strict.BoolVal
 		}
 		return results, nil
 	}
@@ -217,8 +217,8 @@ func Analyze(analyzer *troubleshootv1beta2.Analyze, getFile getCollectedFileCont
 		if err != nil {
 			return nil, err
 		}
-		for _, r := range results {
-			r.Strict = analyzer.StatefulsetStatus.Strict.BoolVal
+		for i := range results {
+			results[i].Strict = analyzer.StatefulsetStatus.Strict.BoolVal
 		}
 		return results, nil
 	}
@@ -234,8 +234,8 @@ func Analyze(analyzer *troubleshootv1beta2.Analyze, getFile getCollectedFileCont
 		if err != nil {
 			return nil, err
 		}
-		for _, r := range results {
-			r.Strict = analyzer.JobStatus.Strict.BoolVal
+		for i := range results {
+			results[i].Strict = analyzer.JobStatus.Strict.BoolVal
 		}
 		return results, nil
 	}
@@ -251,8 +251,8 @@ func Analyze(analyzer *troubleshootv1beta2.Analyze, getFile getCollectedFileCont
 		if err != nil {
 			return nil, err
 		}
-		for _, r := range results {
-			r.Strict = analyzer.ReplicaSetStatus.Strict.BoolVal
+		for i := range results {
+			results[i].Strict = analyzer.ReplicaSetStatus.Strict.BoolVal
 		}
 		return results, nil
 	}
@@ -268,8 +268,8 @@ func Analyze(analyzer *troubleshootv1beta2.Analyze, getFile getCollectedFileCont
 		if err != nil {
 			return nil, err
 		}
-		for _, r := range results {
-			r.Strict = analyzer.ClusterPodStatuses.Strict.BoolVal
+		for i := range results {
+			results[i].Strict = analyzer.ClusterPodStatuses.Strict.BoolVal
 		}
 		return results, nil
 	}
@@ -330,8 +330,8 @@ func Analyze(analyzer *troubleshootv1beta2.Analyze, getFile getCollectedFileCont
 		if err != nil {
 			return nil, err
 		}
-		for _, r := range results {
-			r.Strict = analyzer.TextAnalyze.Strict.BoolVal
+		for i := range results {
+			results[i].Strict = analyzer.TextAnalyze.Strict.BoolVal
 		}
 		return results, nil
 	}
@@ -407,8 +407,8 @@ func Analyze(analyzer *troubleshootv1beta2.Analyze, getFile getCollectedFileCont
 		if err != nil {
 			return nil, err
 		}
-		for _, r := range results {
-			r.Strict = analyzer.Longhorn.Strict.BoolVal
+		for i := range results {
+			results[i].Strict = analyzer.Longhorn.Strict.BoolVal
 		}
 		return results, nil
 	}
@@ -441,8 +441,8 @@ func Analyze(analyzer *troubleshootv1beta2.Analyze, getFile getCollectedFileCont
 		if err != nil {
 			return nil, err
 		}
-		for _, r := range results {
-			r.Strict = analyzer.WeaveReport.Strict.BoolVal
+		for i := range results {
+			results[i].Strict = analyzer.WeaveReport.Strict.BoolVal
 		}
 		return results, nil
 	}
