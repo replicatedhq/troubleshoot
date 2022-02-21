@@ -42,6 +42,7 @@ func showStdoutResultsJSON(preflightName string, analyzeResults []*analyzerunner
 		Title   string `json:"title"`
 		Message string `json:"message"`
 		URI     string `json:"uri,omitempty"`
+		Strict  bool   `json:"strict,omitempty"`
 	}
 	type Output struct {
 		Pass []ResultOutput `json:"pass,omitempty"`
@@ -60,6 +61,7 @@ func showStdoutResultsJSON(preflightName string, analyzeResults []*analyzerunner
 			Title:   analyzeResult.Title,
 			Message: analyzeResult.Message,
 			URI:     analyzeResult.URI,
+			Strict:  analyzeResult.Strict,
 		}
 
 		if analyzeResult.IsPass {
@@ -90,6 +92,7 @@ func outputResult(analyzeResult *analyzerunner.AnalyzeResult) bool {
 		fmt.Printf("      --- %s\n", analyzeResult.Message)
 	} else if analyzeResult.IsFail {
 		fmt.Printf("   --- FAIL: %s\n", analyzeResult.Title)
+		fmt.Printf("      --- Strict: %t\n", analyzeResult.Strict)
 		fmt.Printf("      --- %s\n", analyzeResult.Message)
 		return true
 	}
