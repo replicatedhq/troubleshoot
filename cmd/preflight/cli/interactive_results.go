@@ -258,6 +258,10 @@ func save(preflightName string, outputPath string, analyzeResults []*analyzerunn
 			result = result + fmt.Sprintf("URI: %s\n", analyzeResult.URI)
 		}
 
+		if analyzeResult.Strict {
+			result = result + fmt.Sprintf("Strict: %t\n", analyzeResult.Strict)
+		}
+
 		result = result + "\n------------\n"
 
 		results = results + result
