@@ -82,6 +82,8 @@ spec:
                                 type: object
                             type: object
                           type: array
+                        strict:
+                          type: BoolString
                       required:
                       - includeUnmountedPartitions
                       - minimumAcceptableSize
@@ -127,6 +129,8 @@ spec:
                                 type: object
                             type: object
                           type: array
+                        strict:
+                          type: BoolString
                       required:
                       - outcomes
                       type: object
@@ -168,6 +172,8 @@ spec:
                                 type: object
                             type: object
                           type: array
+                        strict:
+                          type: BoolString
                       required:
                       - outcomes
                       type: object
@@ -211,6 +217,8 @@ spec:
                                 type: object
                             type: object
                           type: array
+                        strict:
+                          type: BoolString
                       required:
                       - outcomes
                       type: object
@@ -254,6 +262,8 @@ spec:
                                 type: object
                             type: object
                           type: array
+                        strict:
+                          type: BoolString
                       required:
                       - outcomes
                       type: object
@@ -295,6 +305,8 @@ spec:
                                 type: object
                             type: object
                           type: array
+                        strict:
+                          type: BoolString
                       required:
                       - outcomes
                       type: object
@@ -336,6 +348,8 @@ spec:
                                 type: object
                             type: object
                           type: array
+                        strict:
+                          type: BoolString
                       required:
                       - outcomes
                       type: object
@@ -379,6 +393,8 @@ spec:
                                 type: object
                             type: object
                           type: array
+                        strict:
+                          type: BoolString
                       required:
                       - outcomes
                       type: object
@@ -422,6 +438,8 @@ spec:
                                 type: object
                             type: object
                           type: array
+                        strict:
+                          type: BoolString
                       required:
                       - outcomes
                       type: object
@@ -463,6 +481,8 @@ spec:
                                 type: object
                             type: object
                           type: array
+                        strict:
+                          type: BoolString
                       required:
                       - outcomes
                       type: object
@@ -504,6 +524,8 @@ spec:
                                 type: object
                             type: object
                           type: array
+                        strict:
+                          type: BoolString
                       required:
                       - outcomes
                       type: object
@@ -545,6 +567,8 @@ spec:
                                 type: object
                             type: object
                           type: array
+                        strict:
+                          type: BoolString
                       required:
                       - outcomes
                       type: object
@@ -588,6 +612,8 @@ spec:
                                 type: object
                             type: object
                           type: array
+                        strict:
+                          type: BoolString
                       required:
                       - outcomes
                       type: object
@@ -631,6 +657,8 @@ spec:
                                 type: object
                             type: object
                           type: array
+                        strict:
+                          type: BoolString
                       required:
                       - outcomes
                       type: object
@@ -674,6 +702,8 @@ spec:
                                 type: object
                             type: object
                           type: array
+                        strict:
+                          type: BoolString
                       required:
                       - outcomes
                       type: object
@@ -717,6 +747,8 @@ spec:
                                 type: object
                             type: object
                           type: array
+                        strict:
+                          type: BoolString
                       required:
                       - outcomes
                       type: object
@@ -758,6 +790,8 @@ spec:
                                 type: object
                             type: object
                           type: array
+                        strict:
+                          type: BoolString
                       required:
                       - outcomes
                       type: object

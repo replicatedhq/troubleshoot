@@ -81,6 +81,8 @@ spec:
                                 type: object
                             type: object
                           type: array
+                        strict:
+                          type: BoolString
                       required:
                       - namespace
                       - outcomes
@@ -127,6 +129,8 @@ spec:
                                 type: object
                             type: object
                           type: array
+                        strict:
+                          type: BoolString
                       required:
                       - outcomes
                       type: object
@@ -168,6 +172,8 @@ spec:
                                 type: object
                             type: object
                           type: array
+                        strict:
+                          type: BoolString
                       required:
                       - outcomes
                       type: object
@@ -215,6 +221,8 @@ spec:
                                 type: object
                             type: object
                           type: array
+                        strict:
+                          type: BoolString
                       required:
                       - configMapName
                       - namespace
@@ -258,6 +266,8 @@ spec:
                                 type: object
                             type: object
                           type: array
+                        strict:
+                          type: BoolString
                       required:
                       - outcomes
                       type: object
@@ -301,6 +311,8 @@ spec:
                                 type: object
                             type: object
                           type: array
+                        strict:
+                          type: BoolString
                       required:
                       - customResourceDefinitionName
                       - outcomes
@@ -351,6 +363,8 @@ spec:
                                 type: object
                             type: object
                           type: array
+                        strict:
+                          type: BoolString
                       required:
                       - name
                       - outcomes
@@ -393,6 +407,8 @@ spec:
                                 type: object
                             type: object
                           type: array
+                        strict:
+                          type: BoolString
                       required:
                       - outcomes
                       type: object
@@ -436,6 +452,8 @@ spec:
                           type: array
                         registryName:
                           type: string
+                        strict:
+                          type: BoolString
                       required:
                       - outcomes
                       - registryName
@@ -482,6 +500,8 @@ spec:
                                 type: object
                             type: object
                           type: array
+                        strict:
+                          type: BoolString
                       required:
                       - ingressName
                       - namespace
@@ -533,6 +553,8 @@ spec:
                                 type: object
                             type: object
                           type: array
+                        strict:
+                          type: BoolString
                       required:
                       - name
                       - outcomes
@@ -579,6 +601,8 @@ spec:
                                 type: object
                             type: object
                           type: array
+                        strict:
+                          type: BoolString
                       required:
                       - namespace
                       - outcomes
@@ -625,6 +649,8 @@ spec:
                                 type: object
                             type: object
                           type: array
+                        strict:
+                          type: BoolString
                       required:
                       - collectorName
                       - outcomes
@@ -693,6 +719,8 @@ spec:
                                 type: object
                             type: object
                           type: array
+                        strict:
+                          type: BoolString
                       required:
                       - outcomes
                       type: object
@@ -738,6 +766,8 @@ spec:
                                 type: object
                             type: object
                           type: array
+                        strict:
+                          type: BoolString
                       required:
                       - collectorName
                       - outcomes
@@ -784,6 +814,8 @@ spec:
                                 type: object
                             type: object
                           type: array
+                        strict:
+                          type: BoolString
                       required:
                       - collectorName
                       - outcomes
@@ -828,6 +860,8 @@ spec:
                                 type: object
                             type: object
                           type: array
+                        strict:
+                          type: BoolString
                       required:
                       - collectorName
                       - outcomes
@@ -882,6 +916,8 @@ spec:
                           items:
                             type: string
                           type: array
+                        strict:
+                          type: BoolString
                       required:
                       - name
                       - outcomes
@@ -931,6 +967,8 @@ spec:
                           type: array
                         secretName:
                           type: string
+                        strict:
+                          type: BoolString
                       required:
                       - namespace
                       - outcomes
@@ -982,6 +1020,8 @@ spec:
                                 type: object
                             type: object
                           type: array
+                        strict:
+                          type: BoolString
                       required:
                       - name
                       - outcomes
@@ -1026,6 +1066,8 @@ spec:
                           type: array
                         storageClassName:
                           type: string
+                        strict:
+                          type: BoolString
                       required:
                       - outcomes
                       - storageClassName
@@ -1068,6 +1110,8 @@ spec:
                                 type: object
                             type: object
                           type: array
+                        strict:
+                          type: BoolString
                       required:
                       - outcomes
                       type: object
@@ -1119,6 +1163,8 @@ spec:
                           type: string
                         regexGroups:
                           type: string
+                        strict:
+                          type: BoolString
                       required:
                       - outcomes
                       type: object
@@ -1130,6 +1176,8 @@ spec:
                           type: BoolString
                         reportFileGlob:
                           type: string
+                        strict:
+                          type: BoolString
                       required:
                       - reportFileGlob
                       type: object
