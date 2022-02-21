@@ -139,6 +139,9 @@ func drawPreflightTable(analyzeResults []*analyzerunner.AnalyzeResult) {
 
 	for i, analyzeResult := range analyzeResults {
 		title := analyzeResult.Title
+		if analyzeResult.Strict {
+			title = title + fmt.Sprintf(" (Strict: %t)", analyzeResult.Strict)
+		}
 		if analyzeResult.IsPass {
 			title = fmt.Sprintf("✔  %s", title)
 		} else if analyzeResult.IsWarn {
