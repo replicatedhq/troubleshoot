@@ -1,6 +1,7 @@
 package preflight
 
 type UploadPreflightResult struct {
+	Strict bool `json:"strict,omitempty"`
 	IsFail bool `json:"isFail,omitempty"`
 	IsWarn bool `json:"isWarn,omitempty"`
 	IsPass bool `json:"isPass,omitempty"`

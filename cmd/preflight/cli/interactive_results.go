@@ -139,6 +139,9 @@ func drawPreflightTable(analyzeResults []*analyzerunner.AnalyzeResult) {
 
 	for i, analyzeResult := range analyzeResults {
 		title := analyzeResult.Title
+		if analyzeResult.Strict {
+			title = title + fmt.Sprintf(" (Strict: %t)", analyzeResult.Strict)
+		}
 		if analyzeResult.IsPass {
 			title = fmt.Sprintf("✔  %s", title)
 		} else if analyzeResult.IsWarn {
@@ -253,6 +256,10 @@ func save(preflightName string, outputPath string, analyzeResults []*analyzerunn
 
 		if analyzeResult.URI != "" {
 			result = result + fmt.Sprintf("URI: %s\n", analyzeResult.URI)
+		}
+
+		if analyzeResult.Strict {
+			result = result + fmt.Sprintf("Strict: %t\n", analyzeResult.Strict)
 		}
 
 		result = result + "\n------------\n"
