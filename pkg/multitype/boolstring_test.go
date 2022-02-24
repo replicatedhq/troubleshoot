@@ -73,22 +73,20 @@ func TestBoolOrString_Bool(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			req := require.New(t)
 			boolstr := &BoolOrString{
 				Type:    tt.fields.Type,
 				BoolVal: tt.fields.BoolVal,
 				StrVal:  tt.fields.StrVal,
 			}
 			got, err := boolstr.Bool()
-			if (err != nil) != tt.wantErr {
-				t.Errorf("BoolOrString.Bool() error = %v, wantErr %v", err, tt.wantErr)
+			if tt.wantErr {
+				req.Error(err)
 				return
 			}
-			if got != tt.want {
-				t.Errorf("BoolOrString.Bool() = %v, want %v", got, tt.want)
-			}
-			if got := boolstr.BoolOrDefaultFalse(); got != tt.want {
-				t.Errorf("BoolOrString.BoolOrDefaultFalse() = %v, want %v", got, tt.want)
-			}
+			req.NoError(err)
+			req.Equal(tt.want, got)
+			req.Equal(tt.want, boolstr.BoolOrDefaultFalse())
 		})
 	}
 }
