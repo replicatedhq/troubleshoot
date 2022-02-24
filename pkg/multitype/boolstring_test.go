@@ -4,6 +4,8 @@ package multitype
 
 import (
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestBoolOrString_Bool(t *testing.T) {
@@ -80,13 +82,13 @@ func TestBoolOrString_Bool(t *testing.T) {
 				StrVal:  tt.fields.StrVal,
 			}
 			got, err := boolstr.Bool()
+			req.Equal(tt.want, boolstr.BoolOrDefaultFalse())
 			if tt.wantErr {
 				req.Error(err)
 				return
 			}
 			req.NoError(err)
 			req.Equal(tt.want, got)
-			req.Equal(tt.want, boolstr.BoolOrDefaultFalse())
 		})
 	}
 }
