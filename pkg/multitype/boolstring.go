@@ -120,7 +120,10 @@ func (boolstr *BoolOrString) Fuzz(c fuzz.Continue) {
 
 // BoolOrDefaultFalse returns bool val, if strValu is parsed returns parsed value  else false as default when parse error
 func (boolstr *BoolOrString) BoolOrDefaultFalse() bool {
-	val, _ := boolstr.Bool()
+	val, err := boolstr.Bool()
+	if err != nil {
+		return false
+	}
 	return val
 }
 
