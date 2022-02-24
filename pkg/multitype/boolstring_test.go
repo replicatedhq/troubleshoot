@@ -29,9 +29,9 @@ func TestBoolOrString_Bool(t *testing.T) {
 			want:    false,
 			wantErr: false,
 		}, {
-			name:    "expect false when StrVal is 'true'",
-			fields:  fields{Type: String, StrVal: "true"},
-			want:    true,
+			name:    "expect false when StrVal is 'false'",
+			fields:  fields{Type: String, StrVal: "false"},
+			want:    false,
 			wantErr: false,
 		}, {
 			name:    "expect false when StrVal is 'true'",
