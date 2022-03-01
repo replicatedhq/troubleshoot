@@ -139,12 +139,12 @@ func analyzeDistribution(analyzer *troubleshootv1beta2.Distribution, getCollecte
 		return nil, errors.Wrap(err, "failed to get contents of nodes.json")
 	}
 
-	var nodes []corev1.Node
+	var nodes corev1.NodeList
 	if err := json.Unmarshal(collected, &nodes); err != nil {
 		return nil, errors.Wrap(err, "failed to unmarshal node list")
 	}
 
-	foundProviders, _ := ParseNodesForProviders(nodes)
+	foundProviders, _ := ParseNodesForProviders(nodes.Items)
 
 	apiResourcesBytes, err := getCollectedFileContents("cluster-resources/resources.json")
 	// if the file is not found, that is not a fatal error

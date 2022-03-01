@@ -16,13 +16,13 @@ func analyzeContainerRuntime(analyzer *troubleshootv1beta2.ContainerRuntime, get
 		return nil, errors.Wrap(err, "failed to get contents of nodes.json")
 	}
 
-	var nodes []corev1.Node
+	var nodes corev1.NodeList
 	if err := json.Unmarshal(collected, &nodes); err != nil {
 		return nil, errors.Wrap(err, "failed to unmarshal node list")
 	}
 
 	foundRuntimes := []string{}
-	for _, node := range nodes {
+	for _, node := range nodes.Items {
 		foundRuntimes = append(foundRuntimes, node.Status.NodeInfo.ContainerRuntimeVersion)
 	}
 

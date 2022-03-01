@@ -167,7 +167,7 @@ func runPreflights(v *viper.Viper, arg string) error {
 		if len(analyzeResults) == 0 {
 			return errors.New("no data has been collected")
 		}
-		return showInteractiveResults(preflightSpecName, analyzeResults)
+		return showInteractiveResults(preflightSpecName, v.GetString("output"), analyzeResults)
 	}
 
 	return showStdoutResults(v.GetString("format"), preflightSpecName, analyzeResults)
