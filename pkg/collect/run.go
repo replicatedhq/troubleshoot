@@ -135,6 +135,11 @@ func runPod(ctx context.Context, client *kubernetes.Clientset, runCollector *tro
 		namespace = "default"
 	}
 
+	serviceAccountName := "default"
+	if runCollector.ServiceAccountName != "" {
+		serviceAccountName = runCollector.ServiceAccountName
+	}
+
 	pod := corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      runCollector.CollectorName,
@@ -146,7 +151,8 @@ func runPod(ctx context.Context, client *kubernetes.Clientset, runCollector *tro
 			Kind:       "Pod",
 		},
 		Spec: corev1.PodSpec{
-			RestartPolicy: corev1.RestartPolicyNever,
+			RestartPolicy:      corev1.RestartPolicyNever,
+			ServiceAccountName: serviceAccountName,
 			Containers: []corev1.Container{
 				{
 					Image:           runCollector.Image,
