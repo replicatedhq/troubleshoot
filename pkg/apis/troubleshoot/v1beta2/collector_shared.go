@@ -65,15 +65,16 @@ type Data struct {
 }
 
 type Run struct {
-	CollectorMeta   `json:",inline" yaml:",inline"`
-	Name            string            `json:"name,omitempty" yaml:"name,omitempty"`
-	Namespace       string            `json:"namespace" yaml:"namespace"`
-	Image           string            `json:"image" yaml:"image"`
-	Command         []string          `json:"command,omitempty" yaml:"command,omitempty"`
-	Args            []string          `json:"args,omitempty" yaml:"args,omitempty"`
-	Timeout         string            `json:"timeout,omitempty" yaml:"timeout,omitempty"`
-	ImagePullPolicy string            `json:"imagePullPolicy,omitempty" yaml:"imagePullPolicy,omitempty"`
-	ImagePullSecret *ImagePullSecrets `json:"imagePullSecret,omitempty" yaml:"imagePullSecret,omitempty"`
+	CollectorMeta      `json:",inline" yaml:",inline"`
+	Name               string            `json:"name,omitempty" yaml:"name,omitempty"`
+	Namespace          string            `json:"namespace" yaml:"namespace"`
+	Image              string            `json:"image" yaml:"image"`
+	Command            []string          `json:"command,omitempty" yaml:"command,omitempty"`
+	Args               []string          `json:"args,omitempty" yaml:"args,omitempty"`
+	Timeout            string            `json:"timeout,omitempty" yaml:"timeout,omitempty"`
+	ImagePullPolicy    string            `json:"imagePullPolicy,omitempty" yaml:"imagePullPolicy,omitempty"`
+	ImagePullSecret    *ImagePullSecrets `json:"imagePullSecret,omitempty" yaml:"imagePullSecret,omitempty"`
+	ServiceAccountName string            `json:"serviceAccountName,omitempty" yaml:"serviceAccountName,omitempty"`
 }
 
 type ImagePullSecrets struct {
