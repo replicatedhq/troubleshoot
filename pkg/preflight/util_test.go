@@ -261,8 +261,8 @@ func TestHasStrictAnalyzerFailed(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := HasStrictAnalyzerFailed(tt.preflightResult); got != tt.want {
-				t.Errorf("HasStrictAnalyzerFailed() = %v, want %v", got, tt.want)
+			if got := HasStrictAnalyzersFailed(tt.preflightResult); got != tt.want {
+				t.Errorf("HasStrictAnalyzersFailed() = %v, want %v", got, tt.want)
 			}
 		})
 	}

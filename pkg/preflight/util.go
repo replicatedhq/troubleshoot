@@ -43,18 +43,18 @@ func HasStrictAnalyzers(preflight *troubleshootv1beta2.Preflight) (bool, error) 
 	return false, nil
 }
 
-// HasStrictAnalyzerFailed - checks if preflight analyzer's result is strict:true and isFail:true, then returns true else false
-func HasStrictAnalyzerFailed(preflightResult *UploadPreflightResults) bool {
-	hasStrictAnalyzerFailed := false
+// HasStrictAnalyzersFailed - checks if preflight analyzer's result is strict:true and isFail:true, then returns true else false
+func HasStrictAnalyzersFailed(preflightResult *UploadPreflightResults) bool {
+	hasStrictAnalyzersFailed := false
 	// if results are empty, treat as failure
 	if preflightResult == nil || len(preflightResult.Results) == 0 {
-		hasStrictAnalyzerFailed = true
+		hasStrictAnalyzersFailed = true
 	} else {
 		for _, result := range preflightResult.Results {
 			if result.IsFail && result.Strict {
-				hasStrictAnalyzerFailed = true
+				hasStrictAnalyzersFailed = true
 			}
 		}
 	}
-	return hasStrictAnalyzerFailed
+	return hasStrictAnalyzersFailed
 }
