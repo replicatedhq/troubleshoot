@@ -222,6 +222,21 @@ func TestHasStrictAnalyzers(t *testing.T) {
 			},
 			want:    true,
 			wantErr: false,
+		}, {
+			name: "expect true when preflight spec's analyzer has analyzer with strict true in one of multiple analyzers",
+			preflight: &troubleshootv1beta2.Preflight{
+				Spec: troubleshootv1beta2.PreflightSpec{
+					Analyzers: []*troubleshootv1beta2.Analyze{
+						{
+							ClusterVersion: &troubleshootv1beta2.ClusterVersion{AnalyzeMeta: analyzeMetaStrictFalseInt},
+							StorageClass:   &troubleshootv1beta2.StorageClass{AnalyzeMeta: analyzeMetaStrictFalseInt},
+							Secret:         &troubleshootv1beta2.AnalyzeSecret{AnalyzeMeta: analyzeMetaStrictTrueBool},
+						},
+					},
+				},
+			},
+			want:    true,
+			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
