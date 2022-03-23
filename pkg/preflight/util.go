@@ -5,7 +5,6 @@ import (
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
-	"github.com/replicatedhq/troubleshoot/pkg/logger"
 )
 
 // HasStrictAnalyzers - checks and returns true if a preflight's analyzer has strict:true, else false
@@ -29,7 +28,7 @@ func HasStrictAnalyzers(preflight *troubleshootv1beta2.Preflight) (bool, error) 
 	for _, analyzers := range analyzersMap { // for each analyzer: map["clusterVersion": map[string]interface{} ["exclude": "", "strict": "true", "outcomes": nil]
 		hasStrictAnalyzer, err := hasStrictAnalyzer(analyzers)
 		if err != nil {
-			logger.Printf("failed to check strict field in analyzer with error: %v, continuing checks with other analyzers", err.Error())
+			return false, errors.Wrap(err, "failed to check if analyzer has strict:true")
 		}
 		if hasStrictAnalyzer {
 			return true, nil
