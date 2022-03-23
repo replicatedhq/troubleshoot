@@ -7,44 +7,49 @@ import (
 	"github.com/replicatedhq/troubleshoot/pkg/multitype"
 )
 
-func TestHasStrictAnalyzers(t *testing.T) {
-	analyzeMetaStrictFalseStr := troubleshootv1beta2.AnalyzeMeta{
+var (
+	analyzeMetaStrictFalseStr = troubleshootv1beta2.AnalyzeMeta{
 		Strict: multitype.BoolOrString{
 			StrVal: "false",
 		},
 	}
-	analyzeMetaStrictInvalidStr := troubleshootv1beta2.AnalyzeMeta{
+	analyzeMetaStrictInvalidStr = troubleshootv1beta2.AnalyzeMeta{
 		Strict: multitype.BoolOrString{
 			StrVal: "invalid",
 		},
 	}
-	analyzeMetaStrictTrueStr := troubleshootv1beta2.AnalyzeMeta{
+	analyzeMetaStrictTrueStr = troubleshootv1beta2.AnalyzeMeta{
 		Strict: multitype.BoolOrString{
 			StrVal: "true",
 		},
 	}
-	analyzeMetaStrictFalseBool := troubleshootv1beta2.AnalyzeMeta{
+	analyzeMetaStrictFalseBool = troubleshootv1beta2.AnalyzeMeta{
 		Strict: multitype.BoolOrString{
 			Type:    multitype.Bool,
 			BoolVal: false,
 		},
 	}
-	analyzeMetaStrictTrueBool := troubleshootv1beta2.AnalyzeMeta{
+	analyzeMetaStrictTrueBool = troubleshootv1beta2.AnalyzeMeta{
 		Strict: multitype.BoolOrString{
 			Type:    multitype.Bool,
 			BoolVal: true,
 		},
 	}
-	analyzeMetaStrictFalseInt := troubleshootv1beta2.AnalyzeMeta{
+	analyzeMetaStrictFalseInt = troubleshootv1beta2.AnalyzeMeta{
 		Strict: multitype.BoolOrString{
 			StrVal: "0",
 		},
 	}
-	analyzeMetaStrictTrueInt := troubleshootv1beta2.AnalyzeMeta{
+	analyzeMetaStrictTrueInt = troubleshootv1beta2.AnalyzeMeta{
 		Strict: multitype.BoolOrString{
+			Type:   multitype.String,
 			StrVal: "1",
 		},
 	}
+)
+
+func TestHasStrictAnalyzers(t *testing.T) {
+
 	tests := []struct {
 		name      string
 		preflight *troubleshootv1beta2.Preflight
@@ -82,7 +87,7 @@ func TestHasStrictAnalyzers(t *testing.T) {
 			want:    false,
 			wantErr: false,
 		}, {
-			name: "expect false when preflight spec's analyzser has nil anlyzer",
+			name: "expect false when preflight spec's analyzer has nil analyzer",
 			preflight: &troubleshootv1beta2.Preflight{
 				Spec: troubleshootv1beta2.PreflightSpec{
 					Analyzers: []*troubleshootv1beta2.Analyze{
@@ -95,7 +100,7 @@ func TestHasStrictAnalyzers(t *testing.T) {
 			want:    false,
 			wantErr: false,
 		}, {
-			name: "expect false when preflight spec's analyzser has anlyzer with strict str: false",
+			name: "expect false when preflight spec's analyzer has analyzer with strict str: false",
 			preflight: &troubleshootv1beta2.Preflight{
 				Spec: troubleshootv1beta2.PreflightSpec{
 					Analyzers: []*troubleshootv1beta2.Analyze{
@@ -108,7 +113,7 @@ func TestHasStrictAnalyzers(t *testing.T) {
 			want:    false,
 			wantErr: false,
 		}, {
-			name: "expect false when preflight spec's analyzser has anlyzer with strict bool: false",
+			name: "expect false when preflight spec's analyzer has analyzer with strict bool: false",
 			preflight: &troubleshootv1beta2.Preflight{
 				Spec: troubleshootv1beta2.PreflightSpec{
 					Analyzers: []*troubleshootv1beta2.Analyze{
@@ -121,7 +126,7 @@ func TestHasStrictAnalyzers(t *testing.T) {
 			want:    false,
 			wantErr: false,
 		}, {
-			name: "expect false when preflight spec's analyzser has anlyzer with strict str: invalid",
+			name: "expect false when preflight spec's analyzer has analyzer with strict str: invalid",
 			preflight: &troubleshootv1beta2.Preflight{
 				Spec: troubleshootv1beta2.PreflightSpec{
 					Analyzers: []*troubleshootv1beta2.Analyze{
@@ -134,7 +139,7 @@ func TestHasStrictAnalyzers(t *testing.T) {
 			want:    false,
 			wantErr: false,
 		}, {
-			name: "expect true when preflight spec's analyzser has anlyzer with strict str: true",
+			name: "expect true when preflight spec's analyzer has analyzer with strict str: true",
 			preflight: &troubleshootv1beta2.Preflight{
 				Spec: troubleshootv1beta2.PreflightSpec{
 					Analyzers: []*troubleshootv1beta2.Analyze{
@@ -147,7 +152,7 @@ func TestHasStrictAnalyzers(t *testing.T) {
 			want:    true,
 			wantErr: false,
 		}, {
-			name: "expect true when preflight spec's analyzer has anlyzer with strict bool: true",
+			name: "expect true when preflight spec's analyzer has analyzer with strict bool: true",
 			preflight: &troubleshootv1beta2.Preflight{
 				Spec: troubleshootv1beta2.PreflightSpec{
 					Analyzers: []*troubleshootv1beta2.Analyze{
@@ -160,7 +165,7 @@ func TestHasStrictAnalyzers(t *testing.T) {
 			want:    true,
 			wantErr: false,
 		}, {
-			name: "expect true when preflight spec's analyzer has anlyzer with strict int: 1",
+			name: "expect true when preflight spec's analyzer has analyzer with strict int: 1",
 			preflight: &troubleshootv1beta2.Preflight{
 				Spec: troubleshootv1beta2.PreflightSpec{
 					Analyzers: []*troubleshootv1beta2.Analyze{
@@ -173,7 +178,7 @@ func TestHasStrictAnalyzers(t *testing.T) {
 			want:    true,
 			wantErr: false,
 		}, {
-			name: "expect false when preflight spec's analyzer has anlyzer with strict int: 0",
+			name: "expect false when preflight spec's analyzer has analyzer with strict int: 0",
 			preflight: &troubleshootv1beta2.Preflight{
 				Spec: troubleshootv1beta2.PreflightSpec{
 					Analyzers: []*troubleshootv1beta2.Analyze{
@@ -263,6 +268,60 @@ func TestHasStrictAnalyzerFailed(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := HasStrictAnalyzersFailed(tt.preflightResult); got != tt.want {
 				t.Errorf("HasStrictAnalyzersFailed() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestHasStrictAnalyzer(t *testing.T) {
+	tests := []struct {
+		name     string
+		analyzer *troubleshootv1beta2.Analyze
+		want     bool
+		wantErr  bool
+	}{
+		{
+			name:     "expect strict=false, err=nil when analyzer is nil",
+			analyzer: nil,
+			want:     false,
+			wantErr:  false,
+		}, {
+			name:     "expect strict=false, err=nil when analyzer is empty",
+			analyzer: &troubleshootv1beta2.Analyze{},
+			want:     false,
+			wantErr:  false,
+		}, {
+			name: "expect strict=false, err=nil when ClusterVersion analyzer has strict=1",
+			analyzer: &troubleshootv1beta2.Analyze{
+				ClusterVersion: &troubleshootv1beta2.ClusterVersion{AnalyzeMeta: analyzeMetaStrictFalseInt},
+			},
+			want:    false,
+			wantErr: false,
+		}, {
+			name: "expect strict=false, err=nil when ClusterVersion analyzer has strict=true",
+			analyzer: &troubleshootv1beta2.Analyze{
+				ClusterVersion: &troubleshootv1beta2.ClusterVersion{AnalyzeMeta: analyzeMetaStrictTrueInt},
+			},
+			want:    true,
+			wantErr: false,
+		}, {
+			name: "expect strict=false, err=nil when ClusterVersion analyzer is nil",
+			analyzer: &troubleshootv1beta2.Analyze{
+				ClusterVersion: nil,
+			},
+			want:    false,
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := HasStrictAnalyzer(tt.analyzer)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("HasStrictAnalyzer() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("HasStrictAnalyzer() = %v, want %v", got, tt.want)
 			}
 		})
 	}

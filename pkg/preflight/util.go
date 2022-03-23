@@ -26,19 +26,39 @@ func HasStrictAnalyzers(preflight *troubleshootv1beta2.Preflight) (bool, error) 
 
 	// analyzerMap will ignore empty Analyzers and loop around Analyzer with data
 	for _, analyzers := range analyzersMap { // for each analyzer: map["clusterVersion": map[string]interface{} ["exclude": "", "strict": "true", "outcomes": nil]
-		for _, analyzer := range analyzers { // for each analyzerMeta: map[string]interface{} ["exclude": "", "strict": "true", "outcomes": nil]
-			marshalledAnalyzer, err := json.Marshal(analyzer)
-			if err != nil {
-				return false, errors.Wrap(err, "error while marshalling analyzer")
-			}
-			// return Analyzer.Strict which can be extracted from AnalyzeMeta
-			analyzeMeta := troubleshootv1beta2.AnalyzeMeta{}
-			err = json.Unmarshal(marshalledAnalyzer, &analyzeMeta)
-			if err != nil {
-				return false, errors.Wrap(err, "error while un-marshalling marshalledAnalyzers")
-			}
-			return analyzeMeta.Strict.BoolOrDefaultFalse(), nil
+		return hasStrictAnalyzer(analyzers)
+	}
+	return false, nil
+}
+
+// HasStrictAnalyzers - checks and returns true if a preflight's analyzer has strict:true, else false
+func HasStrictAnalyzer(analyzer *troubleshootv1beta2.Analyze) (bool, error) {
+	marshalledAnalyzer, err := json.Marshal(analyzer)
+	if err != nil {
+		return false, errors.Wrap(err, "error while marshalling analyzer")
+	}
+
+	analyzerMap := make(map[string]interface{})
+	err = json.Unmarshal(marshalledAnalyzer, &analyzerMap) // Unmarshall again so we can loop over non nil analyzers
+	if err != nil {
+		return false, errors.Wrap(err, "failed to unmarshal analyzers")
+	}
+	return hasStrictAnalyzer(analyzerMap)
+}
+
+func hasStrictAnalyzer(analyzerMap map[string]interface{}) (bool, error) {
+	for _, analyzer := range analyzerMap { // for each analyzerMeta: map[string]interface{} ["exclude": "", "strict": "true", "outcomes": nil]
+		marshalledAnalyzer, err := json.Marshal(analyzer)
+		if err != nil {
+			return false, errors.Wrap(err, "error while marshalling analyzer")
 		}
+		// return Analyzer.Strict which can be extracted from AnalyzeMeta
+		analyzeMeta := troubleshootv1beta2.AnalyzeMeta{}
+		err = json.Unmarshal(marshalledAnalyzer, &analyzeMeta)
+		if err != nil {
+			return false, errors.Wrap(err, "error while un-marshalling marshalledAnalyzers")
+		}
+		return analyzeMeta.Strict.BoolOrDefaultFalse(), nil
 	}
 	return false, nil
 }
