@@ -77,8 +77,10 @@ func doAnalyze(allCollectedData map[string][]byte, analyzers []*troubleshootv1be
 	for _, analyzer := range analyzers {
 		analyzeResult, err := analyze.Analyze(analyzer, getCollectedFileContents, getChildCollectedFileContents)
 		if err != nil {
+			strict, _ := HasStrictAnalyzer(analyzer)
 			analyzeResult = []*analyze.AnalyzeResult{
 				{
+					Strict:  strict,
 					IsFail:  true,
 					Title:   "Analyzer Failed",
 					Message: err.Error(),
