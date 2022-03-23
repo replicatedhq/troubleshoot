@@ -80,7 +80,7 @@ func doAnalyze(allCollectedData map[string][]byte, analyzers []*troubleshootv1be
 		if err != nil {
 			strict, err := HasStrictAnalyzer(analyzer)
 			if err != nil {
-				logger.Printf("failed to check strict field in analyzer: %v with error: %v, continuing analyzing other analyzers", analyzer, err.Error())
+				logger.Printf("failed to determine if analyzer %v is strict: %s", analyzer, err)
 			}
 
 			analyzeResult = []*analyze.AnalyzeResult{
