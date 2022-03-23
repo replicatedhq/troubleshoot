@@ -25,8 +25,11 @@ func HasStrictAnalyzers(preflight *troubleshootv1beta2.Preflight) (bool, error) 
 	}
 
 	// analyzerMap will ignore empty Analyzers and loop around Analyzer with data
+	// hasStrictAnalyers:=false
 	for _, analyzers := range analyzersMap { // for each analyzer: map["clusterVersion": map[string]interface{} ["exclude": "", "strict": "true", "outcomes": nil]
-		return hasStrictAnalyzer(analyzers)
+		if hasStrictAnalyzer, _ := hasStrictAnalyzer(analyzers); hasStrictAnalyzer {
+			return true, nil
+		}
 	}
 	return false, nil
 }
