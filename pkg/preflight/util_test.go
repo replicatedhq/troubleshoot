@@ -190,6 +190,53 @@ func TestHasStrictAnalyzers(t *testing.T) {
 			},
 			want:    false,
 			wantErr: false,
+		}, {
+			name: "expect true when preflight spec's analyzer has analyzer with strict true in one of multiple analyzers",
+			preflight: &troubleshootv1beta2.Preflight{
+				Spec: troubleshootv1beta2.PreflightSpec{
+					Analyzers: []*troubleshootv1beta2.Analyze{
+						{
+							ClusterVersion: &troubleshootv1beta2.ClusterVersion{AnalyzeMeta: analyzeMetaStrictFalseInt},
+						}, {
+							ClusterVersion: &troubleshootv1beta2.ClusterVersion{AnalyzeMeta: analyzeMetaStrictTrueBool},
+						},
+					},
+				},
+			},
+			want:    true,
+			wantErr: false,
+		}, {
+			name: "expect true when preflight spec's analyzer has analyzer with strict true in one of multiple analyzers",
+			preflight: &troubleshootv1beta2.Preflight{
+				Spec: troubleshootv1beta2.PreflightSpec{
+					Analyzers: []*troubleshootv1beta2.Analyze{
+						{
+							ClusterVersion: &troubleshootv1beta2.ClusterVersion{AnalyzeMeta: analyzeMetaStrictFalseInt},
+						}, {
+							ClusterVersion: &troubleshootv1beta2.ClusterVersion{AnalyzeMeta: analyzeMetaStrictTrueBool},
+						}, {
+							ClusterVersion: &troubleshootv1beta2.ClusterVersion{AnalyzeMeta: analyzeMetaStrictInvalidStr},
+						},
+					},
+				},
+			},
+			want:    true,
+			wantErr: false,
+		}, {
+			name: "expect true when preflight spec's analyzer has analyzer with strict true in one of multiple analyzers",
+			preflight: &troubleshootv1beta2.Preflight{
+				Spec: troubleshootv1beta2.PreflightSpec{
+					Analyzers: []*troubleshootv1beta2.Analyze{
+						{
+							ClusterVersion: &troubleshootv1beta2.ClusterVersion{AnalyzeMeta: analyzeMetaStrictFalseInt},
+							StorageClass:   &troubleshootv1beta2.StorageClass{AnalyzeMeta: analyzeMetaStrictFalseInt},
+							Secret:         &troubleshootv1beta2.AnalyzeSecret{AnalyzeMeta: analyzeMetaStrictTrueBool},
+						},
+					},
+				},
+			},
+			want:    true,
+			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
@@ -298,7 +345,7 @@ func TestHasStrictAnalyzer(t *testing.T) {
 			want:    false,
 			wantErr: false,
 		}, {
-			name: "expect strict=false, err=nil when ClusterVersion analyzer has strict=true",
+			name: "expect strict=true, err=nil when ClusterVersion analyzer has strict=true",
 			analyzer: &troubleshootv1beta2.Analyze{
 				ClusterVersion: &troubleshootv1beta2.ClusterVersion{AnalyzeMeta: analyzeMetaStrictTrueInt},
 			},
@@ -310,6 +357,15 @@ func TestHasStrictAnalyzer(t *testing.T) {
 				ClusterVersion: nil,
 			},
 			want:    false,
+			wantErr: false,
+		}, {
+			name: "expect strict=true, err=nil when one of the analyzers has strict=true",
+			analyzer: &troubleshootv1beta2.Analyze{
+				ClusterVersion: &troubleshootv1beta2.ClusterVersion{AnalyzeMeta: analyzeMetaStrictFalseInt},
+				StorageClass:   &troubleshootv1beta2.StorageClass{AnalyzeMeta: analyzeMetaStrictFalseInt},
+				Secret:         &troubleshootv1beta2.AnalyzeSecret{AnalyzeMeta: analyzeMetaStrictTrueBool},
+			},
+			want:    true,
 			wantErr: false,
 		},
 	}

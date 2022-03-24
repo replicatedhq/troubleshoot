@@ -26,7 +26,13 @@ func HasStrictAnalyzers(preflight *troubleshootv1beta2.Preflight) (bool, error) 
 
 	// analyzerMap will ignore empty Analyzers and loop around Analyzer with data
 	for _, analyzers := range analyzersMap { // for each analyzer: map["clusterVersion": map[string]interface{} ["exclude": "", "strict": "true", "outcomes": nil]
-		return hasStrictAnalyzer(analyzers)
+		hasStrictAnalyzer, err := hasStrictAnalyzer(analyzers)
+		if err != nil {
+			return false, errors.Wrap(err, "failed to check if analyzer has strict:true")
+		}
+		if hasStrictAnalyzer {
+			return true, nil
+		}
 	}
 	return false, nil
 }
@@ -58,7 +64,9 @@ func hasStrictAnalyzer(analyzerMap map[string]interface{}) (bool, error) {
 		if err != nil {
 			return false, errors.Wrap(err, "error while un-marshalling marshalledAnalyzers")
 		}
-		return analyzeMeta.Strict.BoolOrDefaultFalse(), nil
+		if analyzeMeta.Strict.BoolOrDefaultFalse() {
+			return true, nil
+		}
 	}
 	return false, nil
 }

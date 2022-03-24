@@ -8,6 +8,7 @@ import (
 
 	analyze "github.com/replicatedhq/troubleshoot/pkg/analyze"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
+	"github.com/replicatedhq/troubleshoot/pkg/logger"
 )
 
 // Analyze runs the analyze phase of preflight checks
@@ -77,7 +78,11 @@ func doAnalyze(allCollectedData map[string][]byte, analyzers []*troubleshootv1be
 	for _, analyzer := range analyzers {
 		analyzeResult, err := analyze.Analyze(analyzer, getCollectedFileContents, getChildCollectedFileContents)
 		if err != nil {
-			strict, _ := HasStrictAnalyzer(analyzer)
+			strict, strictErr := HasStrictAnalyzer(analyzer)
+			if strictErr != nil {
+				logger.Printf("failed to determine if analyzer %v is strict: %s", analyzer, strictErr)
+			}
+
 			analyzeResult = []*analyze.AnalyzeResult{
 				{
 					Strict:  strict,
