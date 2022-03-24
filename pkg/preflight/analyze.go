@@ -78,9 +78,9 @@ func doAnalyze(allCollectedData map[string][]byte, analyzers []*troubleshootv1be
 	for _, analyzer := range analyzers {
 		analyzeResult, err := analyze.Analyze(analyzer, getCollectedFileContents, getChildCollectedFileContents)
 		if err != nil {
-			strict, err := HasStrictAnalyzer(analyzer)
-			if err != nil {
-				logger.Printf("failed to determine if analyzer %v is strict: %s", analyzer, err)
+			strict, strictErr := HasStrictAnalyzer(analyzer)
+			if strictErr != nil {
+				logger.Printf("failed to determine if analyzer %v is strict: %s", analyzer, strictErr)
 			}
 
 			analyzeResult = []*analyze.AnalyzeResult{
