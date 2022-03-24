@@ -455,6 +455,18 @@ func (c *Collect) GetName() string {
 		collector = "http"
 		name = c.HTTP.CollectorName
 	}
+	if c.Postgres != nil {
+		collector = "postgres"
+		name = c.Postgres.CollectorName
+	}
+	if c.Mysql != nil {
+		collector = "mysql"
+		name = c.Mysql.CollectorName
+	}
+	if c.Redis != nil {
+		collector = "redis"
+		name = c.Redis.CollectorName
+	}
 	if c.Collectd != nil {
 		collector = "collectd"
 		name = c.Collectd.CollectorName
