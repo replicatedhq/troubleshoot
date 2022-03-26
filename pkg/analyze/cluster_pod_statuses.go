@@ -22,7 +22,7 @@ func clusterPodStatuses(analyzer *troubleshootv1beta2.ClusterPodStatuses, getChi
 
 	var pods []corev1.Pod
 	for fileName, fileContent := range collected {
-		podsNs := strings.TrimSuffix(fileName, ".json")
+		podsNs := strings.TrimSuffix(filepath.Base(fileName), ".json")
 		include := len(analyzer.Namespaces) == 0
 		for _, ns := range analyzer.Namespaces {
 			if ns == podsNs {
@@ -33,9 +33,14 @@ func clusterPodStatuses(analyzer *troubleshootv1beta2.ClusterPodStatuses, getChi
 		if include {
 			var nsPods corev1.PodList
 			if err := json.Unmarshal(fileContent, &nsPods); err != nil {
-				return nil, errors.Wrapf(err, "failed to unmarshal pods list for namespace %s", podsNs)
+				var nsPodsArr []corev1.Pod
+				if err := json.Unmarshal(fileContent, &nsPodsArr); err != nil {
+					return nil, errors.Wrapf(err, "failed to unmarshal pods list for namespace %s", podsNs)
+				}
+				pods = append(pods, nsPodsArr...)
+			} else {
+				pods = append(pods, nsPods.Items...)
 			}
-			pods = append(pods, nsPods.Items...)
 		}
 	}
 
