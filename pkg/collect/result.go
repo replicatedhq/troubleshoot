@@ -95,7 +95,7 @@ func (r CollectorResult) GetReader(bundlePath string, relativePath string) (io.R
 	}
 
 	filename := filepath.Join(bundlePath, relativePath)
-	f, err := os.Open(filename)
+	f, err := os.Open(filename) // does this ever close?
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to open file")
 	}
