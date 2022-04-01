@@ -26,9 +26,7 @@ func redactResult(bundlePath string, input CollectorResult, additionalRedactors 
 				}
 				return errors.Wrap(err, "failed to get reader")
 			}
-			if r, ok := r.(io.ReadCloser); ok {
-				defer r.Close()
-			}
+			defer r.Close()
 
 			reader = r
 		} else {

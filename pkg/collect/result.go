@@ -85,9 +85,9 @@ func (r CollectorResult) ReplaceResult(bundlePath string, relativePath string, r
 	return nil
 }
 
-func (r CollectorResult) GetReader(bundlePath string, relativePath string) (io.Reader, error) {
+func (r CollectorResult) GetReader(bundlePath string, relativePath string) (io.ReadCloser, error) {
 	if r[relativePath] != nil {
-		return bytes.NewReader(r[relativePath]), nil
+		return ioutil.NopCloser(bytes.NewReader(r[relativePath])), nil
 	}
 
 	if bundlePath == "" {
@@ -95,7 +95,7 @@ func (r CollectorResult) GetReader(bundlePath string, relativePath string) (io.R
 	}
 
 	filename := filepath.Join(bundlePath, relativePath)
-	f, err := os.Open(filename) // does this ever close?
+	f, err := os.Open(filename)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to open file")
 	}
