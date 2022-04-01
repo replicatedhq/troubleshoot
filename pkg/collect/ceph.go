@@ -3,7 +3,6 @@ package collect
 import (
 	"context"
 	"fmt"
-	"io"
 	"os"
 	"path"
 	"strings"
@@ -133,8 +132,8 @@ func cephCommandExec(ctx context.Context, c *Collector, cephCollector *troublesh
 		return errors.Wrap(err, "failed to exec command")
 	}
 
+	pathPrefix := GetCephCollectorFilepath(cephCollector.CollectorName, cephCollector.Namespace)
 	for srcFilename, _ := range results {
-		pathPrefix := GetCephCollectorFilepath(cephCollector.CollectorName, cephCollector.Namespace)
 		var dstFileName string
 		switch {
 		case strings.HasSuffix(srcFilename, "-stdout.txt"):
@@ -203,10 +202,7 @@ func copyResult(srcResult CollectorResult, dstResult CollectorResult, bundlePath
 		}
 		return errors.Wrap(err, "failed to get reader")
 	}
-
-	if reader, ok := reader.(io.ReadCloser); ok {
-		defer reader.Close()
-	}
+	defer reader.Close()
 
 	err = dstResult.SaveResult(bundlePath, dstKey, reader)
 	if err != nil {
