@@ -155,8 +155,8 @@ func runPod(ctx context.Context, client *kubernetes.Clientset, runCollector *tro
 			Spec: runCollector.PodSpec,
 		}
 
-		if runCollector.PodSpec.ImagePullSecret != nil && runCollector.PodSpec.ImagePullSecret.Data != nil {
-			secretName, err := createSecret(ctx, client, pod.Namespace, runCollector.PodSpec.ImagePullSecret)
+		if runCollector.PodSpec.ImagePullSecrets != nil && runCollector.PodSpec.ImagePullSecrets.Data != nil {
+			secretName, err := createSecret(ctx, client, pod.Namespace, runCollector.PodSpec.ImagePullSecrets)
 			if err != nil {
 				return nil, errors.Wrap(err, "failed to create secret")
 			}
