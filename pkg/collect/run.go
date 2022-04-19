@@ -140,38 +140,63 @@ func runPod(ctx context.Context, client *kubernetes.Clientset, runCollector *tro
 		serviceAccountName = runCollector.ServiceAccountName
 	}
 
-	pod := corev1.Pod{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      runCollector.CollectorName,
-			Namespace: namespace,
-			Labels:    podLabels,
-		},
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: "v1",
-			Kind:       "Pod",
-		},
-		Spec: corev1.PodSpec{
-			RestartPolicy:      corev1.RestartPolicyNever,
-			ServiceAccountName: serviceAccountName,
-			Containers: []corev1.Container{
-				{
-					Image:           runCollector.Image,
-					ImagePullPolicy: pullPolicy,
-					Name:            "collector",
-					Command:         runCollector.Command,
-					Args:            runCollector.Args,
+	pod := corev1.Pod{}
+	if runCollector.PodSpec.Containers != nil {
+		pod = corev1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      runCollector.CollectorName,
+				Namespace: namespace,
+				Labels:    podLabels,
+			},
+			TypeMeta: metav1.TypeMeta{
+				APIVersion: "v1",
+				Kind:       "Pod",
+			},
+			Spec: runCollector.PodSpec,
+		}
+
+		if runCollector.PodSpec.ImagePullSecret != nil && runCollector.PodSpec.ImagePullSecret.Data != nil {
+			secretName, err := createSecret(ctx, client, pod.Namespace, runCollector.PodSpec.ImagePullSecret)
+			if err != nil {
+				return nil, errors.Wrap(err, "failed to create secret")
+			}
+			pod.Spec.ImagePullSecrets = append(pod.Spec.ImagePullSecrets, corev1.LocalObjectReference{Name: secretName})
+		}
+	} else {
+		pod = corev1.Pod{
+			ObjectMeta: metav1.ObjectMeta{
+				Name:      runCollector.CollectorName,
+				Namespace: namespace,
+				Labels:    podLabels,
+			},
+			TypeMeta: metav1.TypeMeta{
+				APIVersion: "v1",
+				Kind:       "Pod",
+			},
+			Spec: corev1.PodSpec{
+				RestartPolicy:      corev1.RestartPolicyNever,
+				ServiceAccountName: serviceAccountName,
+				Containers: []corev1.Container{
+					{
+						Image:           runCollector.Image,
+						ImagePullPolicy: pullPolicy,
+						Name:            "collector",
+						Command:         runCollector.Command,
+						Args:            runCollector.Args,
+					},
 				},
 			},
-		},
+		}
+
+		if runCollector.ImagePullSecret != nil && runCollector.ImagePullSecret.Data != nil {
+			secretName, err := createSecret(ctx, client, pod.Namespace, runCollector.ImagePullSecret)
+			if err != nil {
+				return nil, errors.Wrap(err, "failed to create secret")
+			}
+			pod.Spec.ImagePullSecrets = append(pod.Spec.ImagePullSecrets, corev1.LocalObjectReference{Name: secretName})
+		}
 	}
 
-	if runCollector.ImagePullSecret != nil && runCollector.ImagePullSecret.Data != nil {
-		secretName, err := createSecret(ctx, client, pod.Namespace, runCollector.ImagePullSecret)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to create secret")
-		}
-		pod.Spec.ImagePullSecrets = append(pod.Spec.ImagePullSecrets, corev1.LocalObjectReference{Name: secretName})
-	}
 	created, err := client.CoreV1().Pods(namespace).Create(ctx, &pod, metav1.CreateOptions{})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create pod")

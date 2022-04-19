@@ -6,6 +6,7 @@ import (
 
 	"github.com/replicatedhq/troubleshoot/pkg/multitype"
 	authorizationv1 "k8s.io/api/authorization/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -75,6 +76,7 @@ type Run struct {
 	ImagePullPolicy    string            `json:"imagePullPolicy,omitempty" yaml:"imagePullPolicy,omitempty"`
 	ImagePullSecret    *ImagePullSecrets `json:"imagePullSecret,omitempty" yaml:"imagePullSecret,omitempty"`
 	ServiceAccountName string            `json:"serviceAccountName,omitempty" yaml:"serviceAccountName,omitempty"`
+	PodSpec            corev1.PodSpec    `json:"podSpec,omitempty" yaml:"podSpec,omitempty"`
 }
 
 type ImagePullSecrets struct {
