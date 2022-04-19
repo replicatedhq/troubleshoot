@@ -154,14 +154,6 @@ func runPod(ctx context.Context, client *kubernetes.Clientset, runCollector *tro
 			},
 			Spec: runCollector.PodSpec,
 		}
-
-		if runCollector.PodSpec.ImagePullSecrets != nil && runCollector.PodSpec.ImagePullSecrets.Data != nil {
-			secretName, err := createSecret(ctx, client, pod.Namespace, runCollector.PodSpec.ImagePullSecrets)
-			if err != nil {
-				return nil, errors.Wrap(err, "failed to create secret")
-			}
-			pod.Spec.ImagePullSecrets = append(pod.Spec.ImagePullSecrets, corev1.LocalObjectReference{Name: secretName})
-		}
 	} else {
 		pod = corev1.Pod{
 			ObjectMeta: metav1.ObjectMeta{
