@@ -27,6 +27,38 @@ func Mysql(c *Collector, databaseCollector *troubleshootv1beta2.Database) (Colle
 			databaseConnection.IsConnected = true
 			databaseConnection.Version = version
 		}
+
+		rows, err := db.Query("SHOW VARIABLES")
+		if err != nil {
+			databaseConnection.Error = err.Error()
+		}
+		columns, err := rows.Columns()
+		if err != nil {
+			databaseConnection.Error = err.Error()
+		}
+		values := make([]sql.RawBytes, len(columns))
+		scanArgs := make([]interface{}, len(values))
+		for i := range values {
+			scanArgs[i] = &values[i]
+		}
+
+		variables := make(map[string]string)
+		for rows.Next() {
+			err = rows.Scan(scanArgs...)
+			if err != nil {
+				databaseConnection.Error = err.Error()
+			}
+
+			key := string(values[0])
+			var value string
+			if string(values[1]) == "" {
+				value = "NULL"
+			} else {
+				value = string(values[1])
+			}
+			variables[key] = value
+		}
+		databaseConnection.Variables = variables
 	}
 
 	b, err := json.Marshal(databaseConnection)
