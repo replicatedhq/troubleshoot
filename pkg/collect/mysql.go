@@ -15,10 +15,10 @@ func Mysql(c *Collector, databaseCollector *troubleshootv1beta2.Database) (Colle
 	databaseConnection := DatabaseConnection{}
 
 	db, err := sql.Open("mysql", databaseCollector.URI)
-	defer db.Close()
 	if err != nil {
 		databaseConnection.Error = err.Error()
 	} else {
+		defer db.Close()
 		query := `select version()`
 		row := db.QueryRow(query)
 
@@ -31,27 +31,24 @@ func Mysql(c *Collector, databaseCollector *troubleshootv1beta2.Database) (Colle
 		}
 
 		rows, err := db.Query("SHOW VARIABLES")
-		defer rows.Close()
 
 		if err != nil {
 			databaseConnection.Error = err.Error()
-		}
+		} else {
+			defer rows.Close()
 
-		if err != nil {
-			databaseConnection.Error = err.Error()
-		}
-
-		variables := map[string]string{}
-		for rows.Next() {
-			variable := MySQLVariable{}
-			err = rows.Scan(&variable.Key, &variable.Value)
-			if err != nil {
-				databaseConnection.Error = err.Error()
-				break
+			variables := map[string]string{}
+			for rows.Next() {
+				variable := MySQLVariable{}
+				err = rows.Scan(&variable.Key, &variable.Value)
+				if err != nil {
+					databaseConnection.Error = err.Error()
+					break
+				}
+				variables[variable.Key] = variable.Value
 			}
-			variables[variable.Key] = variable.Value
+			databaseConnection.Variables = variables
 		}
-		databaseConnection.Variables = variables
 	}
 
 	b, err := json.Marshal(databaseConnection)
