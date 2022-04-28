@@ -15,12 +15,12 @@ func Mysql(c *Collector, databaseCollector *troubleshootv1beta2.Database) (Colle
 	databaseConnection := DatabaseConnection{}
 
 	db, err := sql.Open("mysql", databaseCollector.URI)
+	defer db.Close()
 	if err != nil {
 		databaseConnection.Error = err.Error()
 	} else {
 		query := `select version()`
 		row := db.QueryRow(query)
-		defer db.Close()
 
 		version := ""
 		if err := row.Scan(&version); err != nil {
