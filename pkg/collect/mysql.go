@@ -39,13 +39,13 @@ func Mysql(c *Collector, databaseCollector *troubleshootv1beta2.Database) (Colle
 
 			variables := map[string]string{}
 			for rows.Next() {
-				variable := MySQLVariable{}
-				err = rows.Scan(&variable.Key, &variable.Value)
+				var key, value string
+				err = rows.Scan(&key, &value)
 				if err != nil {
 					databaseConnection.Error = err.Error()
 					break
 				}
-				variables[variable.Key] = variable.Value
+				variables[key] = value
 			}
 			databaseConnection.Variables = variables
 		}

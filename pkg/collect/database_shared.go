@@ -1,10 +1,5 @@
 package collect
 
-type MySQLVariable struct {
-	Key   string
-	Value string
-}
-
 type DatabaseConnection struct {
 	IsConnected bool              `json:"isConnected"`
 	Error       string            `json:"error,omitempty"`
