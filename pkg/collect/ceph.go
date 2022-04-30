@@ -87,6 +87,12 @@ var CephCommands = []CephCommand{
 		Args:    []string{"--pool=replicapool"},
 		Format:  "txt",
 	},
+	{
+		ID:      "osd-df",
+		Command: []string{"ceph", "osd", "df"},
+		Args:    []string{"-f", "json-pretty"},
+		Format:  "json",
+	},
 }
 
 func Ceph(c *Collector, cephCollector *troubleshootv1beta2.Ceph) (CollectorResult, error) {
