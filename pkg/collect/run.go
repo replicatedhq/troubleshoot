@@ -16,9 +16,6 @@ import (
 )
 
 func Run(c *Collector, runCollector *troubleshootv1beta2.Run) (CollectorResult, error) {
-	podLabels := make(map[string]string)
-	podLabels["troubleshoot-role"] = "run-collector"
-
 	pullPolicy := corev1.PullIfNotPresent
 	if runCollector.ImagePullPolicy != "" {
 		pullPolicy = corev1.PullPolicy(runCollector.ImagePullPolicy)
