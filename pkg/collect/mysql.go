@@ -30,25 +30,37 @@ func Mysql(c *Collector, databaseCollector *troubleshootv1beta2.Database) (Colle
 			databaseConnection.Version = version
 		}
 
-		rows, err := db.Query("SHOW VARIABLES")
+		requestedParameters := databaseCollector.Parameters
+		if len(requestedParameters) > 0 {
+			rows, err := db.Query("SHOW VARIABLES")
 
-		if err != nil {
-			databaseConnection.Error = err.Error()
-		} else {
-			defer rows.Close()
+			if err != nil {
+				databaseConnection.Error = err.Error()
+			} else {
+				defer rows.Close()
 
-			variables := map[string]string{}
-			for rows.Next() {
-				var key, value string
-				err = rows.Scan(&key, &value)
-				if err != nil {
-					databaseConnection.Error = err.Error()
-					break
+				variables := map[string]string{}
+				for rows.Next() {
+					var key, value string
+					err = rows.Scan(&key, &value)
+					if err != nil {
+						databaseConnection.Error = err.Error()
+						break
+					}
+					variables[key] = value
 				}
-				variables[key] = value
+				filteredVariables := map[string]string{}
+
+				for _, key := range requestedParameters {
+					if value, ok := variables[key]; ok {
+						filteredVariables[key] = value
+					}
+
+				}
+				databaseConnection.Variables = filteredVariables
 			}
-			databaseConnection.Variables = variables
 		}
+
 	}
 
 	b, err := json.Marshal(databaseConnection)
