@@ -76,7 +76,15 @@ type Run struct {
 	ImagePullPolicy    string            `json:"imagePullPolicy,omitempty" yaml:"imagePullPolicy,omitempty"`
 	ImagePullSecret    *ImagePullSecrets `json:"imagePullSecret,omitempty" yaml:"imagePullSecret,omitempty"`
 	ServiceAccountName string            `json:"serviceAccountName,omitempty" yaml:"serviceAccountName,omitempty"`
-	PodSpec            corev1.PodSpec    `json:"podSpec,omitempty" yaml:"podSpec,omitempty"`
+}
+
+type RunPod struct {
+	CollectorMeta   `json:",inline" yaml:",inline"`
+	Name            string            `json:"name,omitempty" yaml:"name,omitempty"`
+	Namespace       string            `json:"namespace" yaml:"namespace"`
+	Timeout         string            `json:"timeout,omitempty" yaml:"timeout,omitempty"`
+	ImagePullSecret *ImagePullSecrets `json:"imagePullSecret,omitempty" yaml:"imagePullSecret,omitempty"`
+	PodSpec         corev1.PodSpec    `json:"podSpec,omitempty" yaml:"podSpec,omitempty"`
 }
 
 type ImagePullSecrets struct {
@@ -197,6 +205,7 @@ type Collect struct {
 	ConfigMap        *ConfigMap        `json:"configMap,omitempty" yaml:"configMap,omitempty"`
 	Logs             *Logs             `json:"logs,omitempty" yaml:"logs,omitempty"`
 	Run              *Run              `json:"run,omitempty" yaml:"run,omitempty"`
+	RunPod           *RunPod           `json:"runPod,omitempty" yaml:"runPod,omitempty"`
 	Exec             *Exec             `json:"exec,omitempty" yaml:"exec,omitempty"`
 	Data             *Data             `json:"data,omitempty" yaml:"data,omitempty"`
 	Copy             *Copy             `json:"copy,omitempty" yaml:"copy,omitempty"`
@@ -330,6 +339,19 @@ func (c *Collect) AccessReviewSpecs(overrideNS string) []authorizationv1.SelfSub
 			},
 			NonResourceAttributes: nil,
 		})
+	} else if c.RunPod != nil {
+		result = append(result, authorizationv1.SelfSubjectAccessReviewSpec{
+			ResourceAttributes: &authorizationv1.ResourceAttributes{
+				Namespace:   pickNamespaceOrDefault(c.RunPod.Namespace, overrideNS),
+				Verb:        "create",
+				Group:       "",
+				Version:     "",
+				Resource:    "pods",
+				Subresource: "",
+				Name:        "",
+			},
+			NonResourceAttributes: nil,
+		})
 	} else if c.Exec != nil {
 		result = append(result, authorizationv1.SelfSubjectAccessReviewSpec{
 			ResourceAttributes: &authorizationv1.ResourceAttributes{
@@ -434,6 +456,10 @@ func (c *Collect) GetName() string {
 	if c.Run != nil {
 		collector = "run"
 		name = c.Run.CollectorName
+	}
+	if c.RunPod != nil {
+		collector = "run-pod"
+		name = c.RunPod.CollectorName
 	}
 	if c.Exec != nil {
 		collector = "exec"
