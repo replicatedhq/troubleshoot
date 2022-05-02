@@ -54,7 +54,7 @@ func Run(c *Collector, runCollector *troubleshootv1beta2.Run) (CollectorResult, 
 	return RunPod(c, runPodCollector)
 }
 
-func RunPod(c *Collector, runCollector *troubleshootv1beta2.RunPod) (CollectorResult, error) {
+func RunPod(c *Collector, runPodCollector *troubleshootv1beta2.RunPod) (CollectorResult, error) {
 	ctx := context.Background()
 
 	client, err := kubernetes.NewForConfig(c.ClientConfig)
@@ -62,7 +62,7 @@ func RunPod(c *Collector, runCollector *troubleshootv1beta2.RunPod) (CollectorRe
 		return nil, errors.Wrap(err, "failed to create client from config")
 	}
 
-	pod, err := runPodWithSpec(ctx, client, runCollector)
+	pod, err := runPodWithSpec(ctx, client, runPodCollector)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to run pod")
 	}
@@ -72,7 +72,7 @@ func RunPod(c *Collector, runCollector *troubleshootv1beta2.RunPod) (CollectorRe
 			logger.Printf("Failed to delete pod %s: %v", pod.Name, err)
 		}
 	}()
-	if runCollector.ImagePullSecret != nil && runCollector.ImagePullSecret.Data != nil {
+	if runPodCollector.ImagePullSecret != nil && runPodCollector.ImagePullSecret.Data != nil {
 		defer func() {
 			for _, k := range pod.Spec.ImagePullSecrets {
 				if err := client.CoreV1().Secrets(pod.Namespace).Delete(ctx, k.Name, metav1.DeleteOptions{}); err != nil {
@@ -81,11 +81,11 @@ func RunPod(c *Collector, runCollector *troubleshootv1beta2.RunPod) (CollectorRe
 			}
 		}()
 	}
-	if runCollector.Timeout == "" {
-		return runWithoutTimeout(ctx, c, pod, runCollector)
+	if runPodCollector.Timeout == "" {
+		return runWithoutTimeout(ctx, c, pod, runPodCollector)
 	}
 
-	timeout, err := time.ParseDuration(runCollector.Timeout)
+	timeout, err := time.ParseDuration(runPodCollector.Timeout)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to parse timeout")
 	}
@@ -97,7 +97,7 @@ func RunPod(c *Collector, runCollector *troubleshootv1beta2.RunPod) (CollectorRe
 	defer cancel()
 
 	go func() {
-		b, err := runWithoutTimeout(timeoutCtx, c, pod, runCollector)
+		b, err := runWithoutTimeout(timeoutCtx, c, pod, runPodCollector)
 		if err != nil {
 			errCh <- err
 		} else {
@@ -115,20 +115,20 @@ func RunPod(c *Collector, runCollector *troubleshootv1beta2.RunPod) (CollectorRe
 	}
 }
 
-func runPodWithSpec(ctx context.Context, client *kubernetes.Clientset, runCollector *troubleshootv1beta2.RunPod) (*corev1.Pod, error) {
+func runPodWithSpec(ctx context.Context, client *kubernetes.Clientset, runPodCollector *troubleshootv1beta2.RunPod) (*corev1.Pod, error) {
 	podLabels := make(map[string]string)
 	podLabels["troubleshoot-role"] = "run-collector"
 
 	namespace := "default"
-	if runCollector.Namespace != "" {
-		namespace = runCollector.Namespace
+	if runPodCollector.Namespace != "" {
+		namespace = runPodCollector.Namespace
 	}
 
 	podName := "run-pod"
-	if runCollector.CollectorName != "" {
-		podName = runCollector.CollectorName
-	} else if runCollector.Name != "" {
-		podName = runCollector.Name
+	if runPodCollector.CollectorName != "" {
+		podName = runPodCollector.CollectorName
+	} else if runPodCollector.Name != "" {
+		podName = runPodCollector.Name
 	}
 
 	pod := corev1.Pod{
@@ -141,11 +141,11 @@ func runPodWithSpec(ctx context.Context, client *kubernetes.Clientset, runCollec
 			APIVersion: "v1",
 			Kind:       "Pod",
 		},
-		Spec: runCollector.PodSpec,
+		Spec: runPodCollector.PodSpec,
 	}
 
-	if runCollector.ImagePullSecret != nil && runCollector.ImagePullSecret.Data != nil {
-		secretName, err := createSecret(ctx, client, pod.Namespace, runCollector.ImagePullSecret)
+	if runPodCollector.ImagePullSecret != nil && runPodCollector.ImagePullSecret.Data != nil {
+		secretName, err := createSecret(ctx, client, pod.Namespace, runPodCollector.ImagePullSecret)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to create secret")
 		}
@@ -160,7 +160,7 @@ func runPodWithSpec(ctx context.Context, client *kubernetes.Clientset, runCollec
 	return created, nil
 }
 
-func runWithoutTimeout(ctx context.Context, c *Collector, pod *corev1.Pod, runCollector *troubleshootv1beta2.RunPod) (CollectorResult, error) {
+func runWithoutTimeout(ctx context.Context, c *Collector, pod *corev1.Pod, runPodCollector *troubleshootv1beta2.RunPod) (CollectorResult, error) {
 	client, err := kubernetes.NewForConfig(c.ClientConfig)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed create client from config")
@@ -188,9 +188,9 @@ func runWithoutTimeout(ctx context.Context, c *Collector, pod *corev1.Pod, runCo
 
 	output := NewResult()
 
-	collectorName := runCollector.Name
+	collectorName := runPodCollector.Name
 	if collectorName == "" {
-		collectorName = runCollector.CollectorName
+		collectorName = runPodCollector.CollectorName
 	}
 
 	limits := troubleshootv1beta2.LogLimits{
