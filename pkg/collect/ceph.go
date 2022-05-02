@@ -103,13 +103,6 @@ var CephCommands = []CephCommand{
 		Format:         "json",
 		DefaultTimeout: "30s",
 	},
-	{
-		ID:             "df",
-		Command:        []string{"df"},
-		Args:           []string{"-h"},
-		Format:         "txt",
-		DefaultTimeout: "30s",
-	},
 }
 
 func Ceph(c *Collector, cephCollector *troubleshootv1beta2.Ceph) (CollectorResult, error) {
