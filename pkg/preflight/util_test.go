@@ -9,39 +9,39 @@ import (
 
 var (
 	analyzeMetaStrictFalseStr = troubleshootv1beta2.AnalyzeMeta{
-		Strict: multitype.BoolOrString{
+		Strict: &multitype.BoolOrString{
 			StrVal: "false",
 		},
 	}
 	analyzeMetaStrictInvalidStr = troubleshootv1beta2.AnalyzeMeta{
-		Strict: multitype.BoolOrString{
+		Strict: &multitype.BoolOrString{
 			StrVal: "invalid",
 		},
 	}
 	analyzeMetaStrictTrueStr = troubleshootv1beta2.AnalyzeMeta{
-		Strict: multitype.BoolOrString{
+		Strict: &multitype.BoolOrString{
 			StrVal: "true",
 		},
 	}
 	analyzeMetaStrictFalseBool = troubleshootv1beta2.AnalyzeMeta{
-		Strict: multitype.BoolOrString{
+		Strict: &multitype.BoolOrString{
 			Type:    multitype.Bool,
 			BoolVal: false,
 		},
 	}
 	analyzeMetaStrictTrueBool = troubleshootv1beta2.AnalyzeMeta{
-		Strict: multitype.BoolOrString{
+		Strict: &multitype.BoolOrString{
 			Type:    multitype.Bool,
 			BoolVal: true,
 		},
 	}
 	analyzeMetaStrictFalseInt = troubleshootv1beta2.AnalyzeMeta{
-		Strict: multitype.BoolOrString{
+		Strict: &multitype.BoolOrString{
 			StrVal: "0",
 		},
 	}
 	analyzeMetaStrictTrueInt = troubleshootv1beta2.AnalyzeMeta{
-		Strict: multitype.BoolOrString{
+		Strict: &multitype.BoolOrString{
 			Type:   multitype.String,
 			StrVal: "1",
 		},

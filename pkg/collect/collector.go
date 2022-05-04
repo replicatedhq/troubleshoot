@@ -26,7 +26,11 @@ type Collector struct {
 
 type Collectors []*Collector
 
-func isExcluded(excludeVal multitype.BoolOrString) (bool, error) {
+func isExcluded(excludeVal *multitype.BoolOrString) (bool, error) {
+	if excludeVal == nil {
+		return false, nil
+	}
+
 	if excludeVal.Type == multitype.Bool {
 		return excludeVal.BoolVal, nil
 	}

@@ -28,7 +28,11 @@ type AnalyzeResult struct {
 type getCollectedFileContents func(string) ([]byte, error)
 type getChildCollectedFileContents func(string) (map[string][]byte, error)
 
-func isExcluded(excludeVal multitype.BoolOrString) (bool, error) {
+func isExcluded(excludeVal *multitype.BoolOrString) (bool, error) {
+	if excludeVal == nil {
+		return false, nil
+	}
+
 	if excludeVal.Type == multitype.Bool {
 		return excludeVal.BoolVal, nil
 	}
