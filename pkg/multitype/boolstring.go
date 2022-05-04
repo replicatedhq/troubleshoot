@@ -132,6 +132,9 @@ func (boolstr *BoolOrString) Fuzz(c fuzz.Continue) {
 
 // BoolOrDefaultFalse returns bool val, if strValu is parsed returns parsed value  else false as default when parse error
 func (boolstr *BoolOrString) BoolOrDefaultFalse() bool {
+	if boolstr == nil {
+		return false
+	}
 	val, err := boolstr.Bool()
 	if err != nil {
 		return false
@@ -141,6 +144,9 @@ func (boolstr *BoolOrString) BoolOrDefaultFalse() bool {
 
 // Bool returns bool val, if strValu is parsed returns parsed value else false with parse error
 func (boolstr *BoolOrString) Bool() (bool, error) {
+	if boolstr == nil {
+		return false, nil
+	}
 	if boolstr.Type == Bool {
 		return boolstr.BoolVal, nil
 	}
