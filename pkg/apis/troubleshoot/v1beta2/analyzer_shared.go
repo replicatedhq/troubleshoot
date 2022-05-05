@@ -175,9 +175,9 @@ type SysctlAnalyze struct {
 }
 
 type AnalyzeMeta struct {
-	CheckName string                 `json:"checkName,omitempty" yaml:"checkName,omitempty"`
-	Exclude   multitype.BoolOrString `json:"exclude,omitempty" yaml:"exclude,omitempty"`
-	Strict    multitype.BoolOrString `json:"strict,omitempty" yaml:"strict,omitempty"`
+	CheckName string                  `json:"checkName,omitempty" yaml:"checkName,omitempty"`
+	Exclude   *multitype.BoolOrString `json:"exclude,omitempty" yaml:"exclude,omitempty"`
+	Strict    *multitype.BoolOrString `json:"strict,omitempty" yaml:"strict,omitempty"`
 }
 
 type Analyze struct {

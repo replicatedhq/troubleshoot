@@ -116,8 +116,8 @@ type DatabaseAnalyze struct {
 }
 
 type AnalyzeMeta struct {
-	CheckName string                 `json:"checkName,omitempty" yaml:"checkName,omitempty"`
-	Exclude   multitype.BoolOrString `json:"exclude,omitempty" yaml:"exclude,omitempty"`
+	CheckName string                  `json:"checkName,omitempty" yaml:"checkName,omitempty"`
+	Exclude   *multitype.BoolOrString `json:"exclude,omitempty" yaml:"exclude,omitempty"`
 }
 
 type Analyze struct {

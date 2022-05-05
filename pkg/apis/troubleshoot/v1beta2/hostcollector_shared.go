@@ -7,7 +7,7 @@ import (
 type HostCollectorMeta struct {
 	CollectorName string `json:"collectorName,omitempty" yaml:"collectorName,omitempty"`
 	// +optional
-	Exclude multitype.BoolOrString `json:"exclude,omitempty" yaml:"exclude,omitempty"`
+	Exclude *multitype.BoolOrString `json:"exclude,omitempty" yaml:"exclude,omitempty"`
 }
 
 type CPU struct {
