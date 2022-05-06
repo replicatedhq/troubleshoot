@@ -13,7 +13,7 @@ import (
 type CollectorMeta struct {
 	CollectorName string `json:"collectorName,omitempty" yaml:"collectorName,omitempty"`
 	// +optional
-	Exclude multitype.BoolOrString `json:"exclude,omitempty" yaml:"exclude,omitempty"`
+	Exclude *multitype.BoolOrString `json:"exclude,omitempty" yaml:"exclude,omitempty"`
 }
 
 type ClusterInfo struct {
@@ -166,7 +166,8 @@ type Put struct {
 
 type Database struct {
 	CollectorMeta `json:",inline" yaml:",inline"`
-	URI           string `json:"uri" yaml:"uri"`
+	URI           string   `json:"uri" yaml:"uri"`
+	Parameters    []string `json:"parameters,omitempty"`
 }
 
 type Collectd struct {

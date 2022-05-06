@@ -3,9 +3,12 @@
 package multitype
 
 import (
+	"encoding/json"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"gopkg.in/yaml.v2"
 )
 
 func TestBoolOrString_Bool(t *testing.T) {
@@ -84,6 +87,61 @@ func TestBoolOrString_Bool(t *testing.T) {
 			}
 			req.NoError(err)
 			req.Equal(tt.want, got)
+		})
+	}
+}
+
+func TestBoolOrString_MarshalOmitempty(t *testing.T) {
+	type S struct {
+		String string        `json:"string,omitempty" yaml:"string,omitempty"`
+		Multi  *BoolOrString `json:"multi,omitempty" yaml:"multi,omitempty"`
+	}
+	tests := []struct {
+		name     string
+		wantJSON string
+		wantYAML string
+	}{
+		{
+			wantJSON: `{"string":"string"}`,
+			wantYAML: "string: string",
+		},
+		{
+			wantJSON: `{"string":"string","multi":false}`,
+			wantYAML: "string: string\nmulti: false",
+		},
+		{
+			wantJSON: `{"string":"string","multi":"false"}`,
+			wantYAML: "string: string\nmulti: \"false\"",
+		},
+		{
+			wantJSON: `{"string":"string","multi":true}`,
+			wantYAML: "string: string\nmulti: true",
+		},
+		{
+			wantJSON: `{"string":"string","multi":"true"}`,
+			wantYAML: "string: string\nmulti: \"true\"",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			req := require.New(t)
+			ass := require.New(t)
+
+			var sJSON S
+			err := json.Unmarshal([]byte(tt.wantJSON), &sJSON)
+			req.NoError(err)
+
+			out, err := json.Marshal(sJSON)
+			req.NoError(err)
+			ass.Equal(tt.wantJSON, strings.TrimSpace(string(out)))
+
+			var sYAML S
+			err = json.Unmarshal([]byte(tt.wantJSON), &sYAML)
+			req.NoError(err)
+
+			out, err = yaml.Marshal(sYAML)
+			req.NoError(err)
+			ass.Equal(tt.wantYAML, strings.TrimSpace(string(out)))
 		})
 	}
 }

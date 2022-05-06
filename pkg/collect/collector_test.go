@@ -21,7 +21,6 @@ func TestCollector_RunCollectorSyncNoRedact(t *testing.T) {
 				Data: &troubleshootv1beta2.Data{
 					CollectorMeta: troubleshootv1beta2.CollectorMeta{
 						CollectorName: "datacollectorname",
-						Exclude:       multitype.BoolOrString{},
 					},
 					Name: "data",
 					Data: `abc 123
@@ -54,7 +53,6 @@ pwd=***HIDDEN***;
 				Data: &troubleshootv1beta2.Data{
 					CollectorMeta: troubleshootv1beta2.CollectorMeta{
 						CollectorName: "datacollectorname",
-						Exclude:       multitype.BoolOrString{},
 					},
 					Name: "data",
 					Data: `abc 123
@@ -89,7 +87,6 @@ pwd=***HIDDEN***;
 				Data: &troubleshootv1beta2.Data{
 					CollectorMeta: troubleshootv1beta2.CollectorMeta{
 						CollectorName: "datacollectorname",
-						Exclude:       multitype.BoolOrString{},
 					},
 					Name: "data",
 					Data: `abc 123
@@ -124,7 +121,6 @@ pwd=***HIDDEN***;
 				Data: &troubleshootv1beta2.Data{
 					CollectorMeta: troubleshootv1beta2.CollectorMeta{
 						CollectorName: "datacollectorname",
-						Exclude:       multitype.BoolOrString{},
 					},
 					Name: "data",
 					Data: `abc 123
@@ -162,7 +158,6 @@ pwd=***HIDDEN***;
 				Data: &troubleshootv1beta2.Data{
 					CollectorMeta: troubleshootv1beta2.CollectorMeta{
 						CollectorName: "data/collectorname",
-						Exclude:       multitype.BoolOrString{},
 					},
 					Name: "data",
 					Data: `abc 123
@@ -200,7 +195,6 @@ pwd=***HIDDEN***;
 				Data: &troubleshootv1beta2.Data{
 					CollectorMeta: troubleshootv1beta2.CollectorMeta{
 						CollectorName: "datacollectorname",
-						Exclude:       multitype.BoolOrString{},
 					},
 					Name: "data",
 					Data: `abc 123
@@ -228,7 +222,6 @@ another line here
 				Data: &troubleshootv1beta2.Data{
 					CollectorMeta: troubleshootv1beta2.CollectorMeta{
 						CollectorName: "datacollectorname",
-						Exclude:       multitype.BoolOrString{},
 					},
 					Name: "data",
 					Data: `xyz123
@@ -265,7 +258,7 @@ abc
 				Data: &troubleshootv1beta2.Data{
 					CollectorMeta: troubleshootv1beta2.CollectorMeta{
 						CollectorName: "datacollectorname",
-						Exclude:       multitype.BoolOrString{Type: multitype.String, StrVal: "true"},
+						Exclude:       multitype.FromString("true"),
 					},
 					Name: "data",
 					Data: `abc 123
@@ -310,7 +303,6 @@ func TestCollector_RunCollectorSync(t *testing.T) {
 				Data: &troubleshootv1beta2.Data{
 					CollectorMeta: troubleshootv1beta2.CollectorMeta{
 						CollectorName: "datacollectorname",
-						Exclude:       multitype.BoolOrString{},
 					},
 					Name: "data",
 					Data: `abc 123

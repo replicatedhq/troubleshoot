@@ -34,22 +34,25 @@ const (
 )
 
 // FromBool creates an BoolOrString object with a bool value.
-func FromBool(val bool) BoolOrString {
-	return BoolOrString{Type: Bool, BoolVal: val}
+func FromBool(val bool) *BoolOrString {
+	return &BoolOrString{Type: Bool, BoolVal: val}
 }
 
 // FromString creates an BoolOrString object with a string value.
-func FromString(val string) BoolOrString {
-	return BoolOrString{Type: String, StrVal: val}
+func FromString(val string) *BoolOrString {
+	return &BoolOrString{Type: String, StrVal: val}
 }
 
 // Parse the given string
-func Parse(val string) BoolOrString {
+func Parse(val string) *BoolOrString {
 	return FromString(val)
 }
 
 // UnmarshalJSON implements the json.Unmarshaller boolerface.
 func (boolstr *BoolOrString) UnmarshalJSON(value []byte) error {
+	if boolstr == nil {
+		return nil
+	}
 	if value[0] == '"' {
 		boolstr.Type = String
 		return json.Unmarshal(value, &boolstr.StrVal)
@@ -60,6 +63,9 @@ func (boolstr *BoolOrString) UnmarshalJSON(value []byte) error {
 
 // String returns the string value, '1' for true, or '0' for false.
 func (boolstr *BoolOrString) String() string {
+	if boolstr == nil {
+		return "0"
+	}
 	if boolstr.Type == String {
 		return boolstr.StrVal
 	} else if boolstr.BoolVal {
@@ -70,7 +76,10 @@ func (boolstr *BoolOrString) String() string {
 }
 
 // MarshalJSON implements the json.Marshaller interface.
-func (boolstr BoolOrString) MarshalJSON() ([]byte, error) {
+func (boolstr *BoolOrString) MarshalJSON() ([]byte, error) {
+	if boolstr == nil {
+		return []byte{}, nil
+	}
 	switch boolstr.Type {
 	case Bool:
 		return json.Marshal(boolstr.BoolVal)
@@ -82,7 +91,10 @@ func (boolstr BoolOrString) MarshalJSON() ([]byte, error) {
 }
 
 // MarshalYAML implements the yaml.Marshaller interface https://godoc.org/gopkg.in/yaml.v3#Marshaler
-func (boolstr BoolOrString) MarshalYAML() (interface{}, error) {
+func (boolstr *BoolOrString) MarshalYAML() (interface{}, error) {
+	if boolstr == nil {
+		return []byte{}, nil
+	}
 	switch boolstr.Type {
 	case Bool:
 		return boolstr.BoolVal, nil
@@ -120,6 +132,9 @@ func (boolstr *BoolOrString) Fuzz(c fuzz.Continue) {
 
 // BoolOrDefaultFalse returns bool val, if strValu is parsed returns parsed value  else false as default when parse error
 func (boolstr *BoolOrString) BoolOrDefaultFalse() bool {
+	if boolstr == nil {
+		return false
+	}
 	val, err := boolstr.Bool()
 	if err != nil {
 		return false
@@ -129,6 +144,9 @@ func (boolstr *BoolOrString) BoolOrDefaultFalse() bool {
 
 // Bool returns bool val, if strValu is parsed returns parsed value else false with parse error
 func (boolstr *BoolOrString) Bool() (bool, error) {
+	if boolstr == nil {
+		return false, nil
+	}
 	if boolstr.Type == Bool {
 		return boolstr.BoolVal, nil
 	}
