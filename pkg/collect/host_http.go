@@ -1,6 +1,7 @@
 package collect
 
 import (
+	"bytes"
 	"net/http"
 	"path/filepath"
 
@@ -10,6 +11,7 @@ import (
 
 type CollectHostHTTP struct {
 	hostCollector *troubleshootv1beta2.HostHTTP
+	BundlePath    string
 }
 
 func (c *CollectHostHTTP) Title() string {
@@ -36,17 +38,22 @@ func (c *CollectHostHTTP) Collect(progressChan chan<- interface{}) (map[string][
 		return nil, errors.New("no supported http request type")
 	}
 
-	output, err := responseToOutput(response, err, false)
+	responseOutput, err := responseToOutput(response, err, false)
 	if err != nil {
 		return nil, err
 	}
 
-	fileName := "result.json"
-	if httpCollector.CollectorName != "" {
-		fileName = httpCollector.CollectorName + ".json"
+	collectorName := c.hostCollector.CollectorName
+	if collectorName == "" {
+		collectorName = "result"
 	}
+	name := filepath.Join("http", collectorName+".json")
+
+	output := NewResult()
+	output.SaveResult(c.BundlePath, name, bytes.NewBuffer(responseOutput))
+
 	httpOutput := map[string][]byte{
-		filepath.Join("http", fileName): output,
+		name: responseOutput,
 	}
 
 	return httpOutput, nil

@@ -1,9 +1,11 @@
 package collect
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"log"
+	"path/filepath"
 	"strings"
 
 	"github.com/godbus/dbus"
@@ -21,6 +23,7 @@ type TimeInfo struct {
 
 type CollectHostTime struct {
 	hostCollector *troubleshootv1beta2.HostTime
+	BundlePath    string
 }
 
 func (c *CollectHostTime) Title() string {
@@ -90,7 +93,16 @@ func (c *CollectHostTime) Collect(progressChan chan<- interface{}) (map[string][
 		return nil, errors.Wrap(err, "failed to marshal time info")
 	}
 
+	collectorName := c.hostCollector.CollectorName
+	if collectorName == "" {
+		collectorName = "time"
+	}
+	name := filepath.Join("system", collectorName+".json")
+
+	output := NewResult()
+	output.SaveResult(c.BundlePath, name, bytes.NewBuffer(b))
+
 	return map[string][]byte{
-		"system/time.json": b,
+		name: b,
 	}, nil
 }

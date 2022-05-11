@@ -1,8 +1,10 @@
 package collect
 
 import (
+	"bytes"
 	"encoding/json"
 	"net"
+	"path/filepath"
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
@@ -10,6 +12,7 @@ import (
 
 type CollectHostIPV4Interfaces struct {
 	hostCollector *troubleshootv1beta2.IPV4Interfaces
+	BundlePath    string
 }
 
 func (c *CollectHostIPV4Interfaces) Title() string {
@@ -47,7 +50,16 @@ func (c *CollectHostIPV4Interfaces) Collect(progressChan chan<- interface{}) (ma
 		return nil, errors.Wrap(err, "failed to marshal network interfaces")
 	}
 
+	collectorName := c.hostCollector.CollectorName
+	if collectorName == "" {
+		collectorName = "ipv4Interfaces"
+	}
+	name := filepath.Join("system", collectorName+".json")
+
+	output := NewResult()
+	output.SaveResult(c.BundlePath, name, bytes.NewBuffer(b))
+
 	return map[string][]byte{
-		"system/ipv4Interfaces.json": b,
+		name: b,
 	}, nil
 }

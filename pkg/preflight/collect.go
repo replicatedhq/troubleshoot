@@ -87,7 +87,7 @@ func CollectHost(opts CollectOpts, p *troubleshootv1beta2.HostPreflight) (Collec
 
 	var collectors []collect.HostCollector
 	for _, desiredCollector := range collectSpecs {
-		collector, ok := collect.GetHostCollector(desiredCollector)
+		collector, ok := collect.GetHostCollector(desiredCollector, "")
 		if ok {
 			collectors = append(collectors, collector)
 		}

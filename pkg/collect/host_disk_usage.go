@@ -1,6 +1,7 @@
 package collect
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -18,6 +19,7 @@ type DiskUsageInfo struct {
 
 type CollectHostDiskUsage struct {
 	hostCollector *troubleshootv1beta2.DiskUsage
+	BundlePath    string
 }
 
 func (c *CollectHostDiskUsage) Title() string {
@@ -54,6 +56,15 @@ func (c *CollectHostDiskUsage) Collect(progressChan chan<- interface{}) (map[str
 	}
 	key := HostDiskUsageKey(c.hostCollector.CollectorName)
 	result[key] = b
+
+	collectorName := c.hostCollector.CollectorName
+	if collectorName == "" {
+		collectorName = "disk_usage"
+	}
+	name := filepath.Join("system", collectorName+".json")
+
+	output := NewResult()
+	output.SaveResult(c.BundlePath, name, bytes.NewBuffer(b))
 
 	return result, nil
 }

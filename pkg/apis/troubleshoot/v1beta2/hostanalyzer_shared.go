@@ -87,9 +87,11 @@ type CertificateAnalyze struct {
 }
 
 type HostServicesAnalyze struct {
-	AnalyzeMeta `json:",inline" yaml:",inline"`
-	Outcomes    []*Outcome `json:"outcomes" yaml:"outcomes"`
+	AnalyzeMeta   `json:",inline" yaml:",inline"`
+	CollectorName string     `json:"collectorName,omitempty" yaml:"collectorName,omitempty"`
+	Outcomes      []*Outcome `json:"outcomes" yaml:"outcomes"`
 }
+
 type HostOSAnalyze struct {
 	AnalyzeMeta `json:",inline" yaml:",inline"`
 	Outcomes    []*Outcome `json:"outcomes" yaml:"outcomes"`

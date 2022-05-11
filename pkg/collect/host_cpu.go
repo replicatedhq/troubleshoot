@@ -1,7 +1,9 @@
 package collect
 
 import (
+	"bytes"
 	"encoding/json"
+	"path/filepath"
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
@@ -15,6 +17,7 @@ type CPUInfo struct {
 
 type CollectHostCPU struct {
 	hostCollector *troubleshootv1beta2.CPU
+	BundlePath    string
 }
 
 func (c *CollectHostCPU) Title() string {
@@ -45,7 +48,16 @@ func (c *CollectHostCPU) Collect(progressChan chan<- interface{}) (map[string][]
 		return nil, errors.Wrap(err, "failed to marshal cpu info")
 	}
 
+	collectorName := c.hostCollector.CollectorName
+	if collectorName == "" {
+		collectorName = "cpu"
+	}
+	name := filepath.Join("system", collectorName+".json")
+
+	output := NewResult()
+	output.SaveResult(c.BundlePath, name, bytes.NewBuffer(b))
+
 	return map[string][]byte{
-		"system/cpu.json": b,
+		name: b,
 	}, nil
 }

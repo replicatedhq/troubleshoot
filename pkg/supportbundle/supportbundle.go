@@ -86,10 +86,19 @@ func CollectSupportBundleFromSpec(spec *troubleshootv1beta2.SupportBundleSpec, a
 		return nil, errors.Wrap(err, "create bundle dir")
 	}
 
+	hostFiles, err := runHostCollectors(opts, spec.HostCollectors, bundlePath)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to run host collectors")
+	}
+
 	// Run collectors
 	files, err := runCollectors(spec.Collectors, additionalRedactors, bundlePath, opts)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to run collectors")
+	}
+
+	for k, v := range hostFiles {
+		files[k] = v
 	}
 
 	version, err := getVersionFile()

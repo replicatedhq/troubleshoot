@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os/exec"
+	"path/filepath"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -28,6 +29,7 @@ type SystemPackage struct {
 
 type CollectHostSystemPackages struct {
 	hostCollector *troubleshootv1beta2.HostSystemPackages
+	BundlePath    string
 }
 
 func (c *CollectHostSystemPackages) Title() string {
@@ -162,13 +164,17 @@ func (c *CollectHostSystemPackages) Collect(progressChan chan<- interface{}) (ma
 		return nil, errors.Wrap(err, "failed to marshal system packages info")
 	}
 
-	outputFileName := "system/packages.json"
-	if c.hostCollector.CollectorName != "" {
-		outputFileName = fmt.Sprintf("system/%s-packages.json", c.hostCollector.CollectorName)
+	collectorName := c.hostCollector.CollectorName
+	if collectorName == "" {
+		collectorName = "packages"
 	}
+	name := filepath.Join("system", collectorName+"-packages.json")
+
+	output := NewResult()
+	output.SaveResult(c.BundlePath, name, bytes.NewBuffer(b))
 
 	return map[string][]byte{
-		outputFileName: b,
+		name: b,
 	}, nil
 }
 
