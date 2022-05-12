@@ -30,7 +30,7 @@ type KernelModuleInfo struct {
 	Status    KernelModuleStatus `json:"status"`
 }
 
-const HostKernelModulesPath = `system/time.json`
+const HostKernelModulesPath = `host-collectors/system/kernel_modules.json`
 
 // kernelModuleCollector defines the interface used to collect modules from the
 // underlying host.

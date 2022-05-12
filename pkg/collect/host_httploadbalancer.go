@@ -125,7 +125,7 @@ func (c *CollectHostHTTPLoadBalancer) Collect(progressChan chan<- interface{}) (
 	if collectorName == "" {
 		collectorName = "httpLoadBalancer"
 	}
-	name := filepath.Join("httpLoadBalancer", collectorName+".json")
+	name := filepath.Join("host-collectors/httpLoadBalancer", collectorName+".json")
 
 	output := NewResult()
 	output.SaveResult(c.BundlePath, name, bytes.NewBuffer(b))

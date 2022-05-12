@@ -199,7 +199,7 @@ func collectHostFilesystemPerformance(hostCollector *troubleshootv1beta2.Filesys
 	if collectorName == "" {
 		collectorName = "filesystemPerformance"
 	}
-	name := filepath.Join("filesystemPerformance", collectorName+".json")
+	name := filepath.Join("host-collectors/filesystemPerformance", collectorName+".json")
 	b, err := json.Marshal(fsPerf)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to marshal fs perf results")

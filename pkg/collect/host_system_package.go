@@ -168,7 +168,7 @@ func (c *CollectHostSystemPackages) Collect(progressChan chan<- interface{}) (ma
 	if collectorName == "" {
 		collectorName = "packages"
 	}
-	name := filepath.Join("system", collectorName+"-packages.json")
+	name := filepath.Join("host-collectors/system", collectorName+"-packages.json")
 
 	output := NewResult()
 	output.SaveResult(c.BundlePath, name, bytes.NewBuffer(b))

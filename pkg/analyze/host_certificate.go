@@ -26,7 +26,7 @@ func (a *AnalyzeHostCertificate) Analyze(getCollectedFileContents func(string) (
 	if collectorName == "" {
 		collectorName = "certificate"
 	}
-	name := filepath.Join("certificate", collectorName+".json")
+	name := filepath.Join("host-collectors/certificate", collectorName+".json")
 	contents, err := getCollectedFileContents(name)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get collected file")

@@ -32,9 +32,9 @@ func (a *AnalyzeHostHTTP) IsExcluded() (bool, error) {
 func (a *AnalyzeHostHTTP) Analyze(getCollectedFileContents func(string) ([]byte, error)) ([]*AnalyzeResult, error) {
 	hostAnalyzer := a.hostAnalyzer
 
-	name := filepath.Join("http", "result.json")
+	name := filepath.Join("host-collectors/http", "result.json")
 	if hostAnalyzer.CollectorName != "" {
-		name = filepath.Join("http", hostAnalyzer.CollectorName+".json")
+		name = filepath.Join("host-collectors/http", hostAnalyzer.CollectorName+".json")
 	}
 	contents, err := getCollectedFileContents(name)
 	if err != nil {

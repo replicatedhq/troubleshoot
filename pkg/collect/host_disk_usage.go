@@ -59,7 +59,7 @@ func (c *CollectHostDiskUsage) Collect(progressChan chan<- interface{}) (map[str
 	if collectorName == "" {
 		collectorName = "diskUsage"
 	}
-	name := filepath.Join("diskUsage", collectorName+".json")
+	name := filepath.Join("host-collectors/diskUsage", collectorName+".json")
 
 	result[name] = b
 

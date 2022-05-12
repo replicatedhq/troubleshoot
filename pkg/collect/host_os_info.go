@@ -16,7 +16,7 @@ type HostOSInfo struct {
 	Platform        string `json:"platform"`
 }
 
-const HostOSInfoPath = `system/hostos_info.json`
+const HostOSInfoPath = `host-collectors/system/hostos_info.json`
 
 type CollectHostOS struct {
 	hostCollector *troubleshootv1beta2.HostOS

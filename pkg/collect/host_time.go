@@ -20,7 +20,7 @@ type TimeInfo struct {
 	NTPActive       bool   `json:"ntp_active"`
 }
 
-const HostTimePath = `system/time.json`
+const HostTimePath = `host-collectors/system/time.json`
 
 type CollectHostTime struct {
 	hostCollector *troubleshootv1beta2.HostTime

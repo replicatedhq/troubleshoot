@@ -27,9 +27,9 @@ func (a *AnalyzeHostTCPPortStatus) IsExcluded() (bool, error) {
 func (a *AnalyzeHostTCPPortStatus) Analyze(getCollectedFileContents func(string) ([]byte, error)) ([]*AnalyzeResult, error) {
 	hostAnalyzer := a.hostAnalyzer
 
-	fullPath := path.Join("tcpPortStatus", "tcpPortStatus.json")
+	fullPath := path.Join("host-collectors/tcpPortStatus", "tcpPortStatus.json")
 	if hostAnalyzer.CollectorName != "" {
-		fullPath = path.Join("tcpPortStatus", fmt.Sprintf("%s.json", hostAnalyzer.CollectorName))
+		fullPath = path.Join("host-collectors/tcpPortStatus", fmt.Sprintf("%s.json", hostAnalyzer.CollectorName))
 	}
 
 	collected, err := getCollectedFileContents(fullPath)

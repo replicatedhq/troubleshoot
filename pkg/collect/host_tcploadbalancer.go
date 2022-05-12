@@ -32,7 +32,7 @@ func (c *CollectHostTCPLoadBalancer) Collect(progressChan chan<- interface{}) (m
 	if collectorName == "" {
 		collectorName = "tcpLoadBalancer"
 	}
-	name := filepath.Join("tcpLoadBalancer", collectorName+".json")
+	name := filepath.Join("host-collectors/tcpLoadBalancer", collectorName+".json")
 
 	output := NewResult()
 

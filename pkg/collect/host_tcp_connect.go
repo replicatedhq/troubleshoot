@@ -50,7 +50,7 @@ func (c *CollectHostTCPConnect) Collect(progressChan chan<- interface{}) (map[st
 	if collectorName == "" {
 		collectorName = "connect"
 	}
-	name := filepath.Join("connect", collectorName+".json")
+	name := filepath.Join("host-collectors/connect", collectorName+".json")
 
 	output := NewResult()
 	output.SaveResult(c.BundlePath, name, bytes.NewBuffer(b))

@@ -28,9 +28,9 @@ func (a *AnalyzeHostDiskUsage) IsExcluded() (bool, error) {
 func (a *AnalyzeHostDiskUsage) Analyze(getCollectedFileContents func(string) ([]byte, error)) ([]*AnalyzeResult, error) {
 	hostAnalyzer := a.hostAnalyzer
 
-	name := filepath.Join("diskUsage", "diskUsage.json")
+	name := filepath.Join("host-collectors/diskUsage", "diskUsage.json")
 	if hostAnalyzer.CollectorName != "" {
-		name = filepath.Join("diskUsage", hostAnalyzer.CollectorName+".json")
+		name = filepath.Join("host-collectors/diskUsage", hostAnalyzer.CollectorName+".json")
 	}
 	contents, err := getCollectedFileContents(name)
 	if err != nil {

@@ -9,7 +9,7 @@ import (
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 )
 
-const HostIPV4InterfacesPath = `system/ipv4Interfaces.json`
+const HostIPV4InterfacesPath = `host-collectors/system/ipv4Interfaces.json`
 
 type CollectHostIPV4Interfaces struct {
 	hostCollector *troubleshootv1beta2.IPV4Interfaces

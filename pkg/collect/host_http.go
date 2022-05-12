@@ -47,7 +47,7 @@ func (c *CollectHostHTTP) Collect(progressChan chan<- interface{}) (map[string][
 	if collectorName == "" {
 		collectorName = "result"
 	}
-	name := filepath.Join("http", collectorName+".json")
+	name := filepath.Join("host-collectors/http", collectorName+".json")
 
 	output := NewResult()
 	output.SaveResult(c.BundlePath, name, bytes.NewBuffer(responseOutput))

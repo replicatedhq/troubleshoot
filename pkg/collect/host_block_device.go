@@ -28,7 +28,7 @@ type BlockDeviceInfo struct {
 
 const lsblkColumns = "NAME,KNAME,PKNAME,TYPE,MAJ:MIN,SIZE,FSTYPE,MOUNTPOINT,SERIAL,RO,RM"
 const lsblkFormat = `NAME=%q KNAME=%q PKNAME=%q TYPE=%q MAJ:MIN="%d:%d" SIZE="%d" FSTYPE=%q MOUNTPOINT=%q SERIAL=%q RO="%d" RM="%d0"`
-const HostBlockDevicesPath = `system/block_devices.json`
+const HostBlockDevicesPath = `host-collectors/system/block_devices.json`
 
 type CollectHostBlockDevices struct {
 	hostCollector *troubleshootv1beta2.HostBlockDevices

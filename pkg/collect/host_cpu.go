@@ -14,7 +14,7 @@ type CPUInfo struct {
 	PhysicalCount int `json:"physicalCount"`
 }
 
-const HostCPUPath = `system/cpu.json`
+const HostCPUPath = `host-collectors/system/cpu.json`
 
 type CollectHostCPU struct {
 	hostCollector *troubleshootv1beta2.CPU

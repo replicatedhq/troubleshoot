@@ -13,7 +13,7 @@ type MemoryInfo struct {
 	Total uint64 `json:"total"`
 }
 
-const HostMemoryPath = `system/memory.json`
+const HostMemoryPath = `host-collectors/system/memory.json`
 
 type CollectHostMemory struct {
 	hostCollector *troubleshootv1beta2.Memory

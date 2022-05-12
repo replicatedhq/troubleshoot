@@ -67,7 +67,7 @@ func (c *CollectHostTCPPortStatus) Collect(progressChan chan<- interface{}) (map
 	if collectorName == "" {
 		collectorName = "tcpPortStatus"
 	}
-	name := filepath.Join("tcpPortStatus", collectorName+".json")
+	name := filepath.Join("host-collectors/tcpPortStatus", collectorName+".json")
 
 	output := NewResult()
 	output.SaveResult(c.BundlePath, name, bytes.NewBuffer(b))
