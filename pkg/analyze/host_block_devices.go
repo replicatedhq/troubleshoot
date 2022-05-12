@@ -27,7 +27,7 @@ func (a *AnalyzeHostBlockDevices) IsExcluded() (bool, error) {
 func (a *AnalyzeHostBlockDevices) Analyze(getCollectedFileContents func(string) ([]byte, error)) ([]*AnalyzeResult, error) {
 	hostAnalyzer := a.hostAnalyzer
 
-	contents, err := getCollectedFileContents("system/block_devices.json")
+	contents, err := getCollectedFileContents(collect.HostBlockDevicesPath)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get collected file")
 	}

@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os/exec"
-	"path/filepath"
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
@@ -29,6 +28,7 @@ type BlockDeviceInfo struct {
 
 const lsblkColumns = "NAME,KNAME,PKNAME,TYPE,MAJ:MIN,SIZE,FSTYPE,MOUNTPOINT,SERIAL,RO,RM"
 const lsblkFormat = `NAME=%q KNAME=%q PKNAME=%q TYPE=%q MAJ:MIN="%d:%d" SIZE="%d" FSTYPE=%q MOUNTPOINT=%q SERIAL=%q RO="%d" RM="%d0"`
+const HostBlockDevicesPath = `system/block_devices.json`
 
 type CollectHostBlockDevices struct {
 	hostCollector *troubleshootv1beta2.HostBlockDevices
@@ -85,16 +85,10 @@ func (c *CollectHostBlockDevices) Collect(progressChan chan<- interface{}) (map[
 		return nil, errors.Wrap(err, "failed to marshal block device info")
 	}
 
-	collectorName := c.hostCollector.CollectorName
-	if collectorName == "" {
-		collectorName = "block_devices"
-	}
-	name := filepath.Join("system", collectorName+".json")
-
 	output := NewResult()
-	output.SaveResult(c.BundlePath, name, bytes.NewBuffer(b))
+	output.SaveResult(c.BundlePath, HostBlockDevicesPath, bytes.NewBuffer(b))
 
 	return map[string][]byte{
-		name: b,
+		HostBlockDevicesPath: b,
 	}, nil
 }

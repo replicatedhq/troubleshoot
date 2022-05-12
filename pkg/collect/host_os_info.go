@@ -3,7 +3,6 @@ package collect
 import (
 	"bytes"
 	"encoding/json"
-	"path/filepath"
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
@@ -16,6 +15,8 @@ type HostOSInfo struct {
 	PlatformVersion string `json:"platformVersion"`
 	Platform        string `json:"platform"`
 }
+
+const HostOSInfoPath = `system/hostos_info.json`
 
 type CollectHostOS struct {
 	hostCollector *troubleshootv1beta2.HostOS
@@ -46,16 +47,10 @@ func (c *CollectHostOS) Collect(progressChan chan<- interface{}) (map[string][]b
 		return nil, errors.Wrap(err, "failed to marshal host os info")
 	}
 
-	collectorName := c.hostCollector.CollectorName
-	if collectorName == "" {
-		collectorName = "hostos_info"
-	}
-	name := filepath.Join("system", collectorName+".json")
-
 	output := NewResult()
-	output.SaveResult(c.BundlePath, name, bytes.NewBuffer(b))
+	output.SaveResult(c.BundlePath, HostOSInfoPath, bytes.NewBuffer(b))
 
 	return map[string][]byte{
-		name: b,
+		HostOSInfoPath: b,
 	}, nil
 }

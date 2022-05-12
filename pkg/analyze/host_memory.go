@@ -26,7 +26,7 @@ func (a *AnalyzeHostMemory) IsExcluded() (bool, error) {
 func (a *AnalyzeHostMemory) Analyze(getCollectedFileContents func(string) ([]byte, error)) ([]*AnalyzeResult, error) {
 	hostAnalyzer := a.hostAnalyzer
 
-	contents, err := getCollectedFileContents("system/memory.json")
+	contents, err := getCollectedFileContents(collect.HostMemoryPath)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get collected file")
 	}

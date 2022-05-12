@@ -29,7 +29,7 @@ func (a *AnalyzeHostOS) Analyze(getCollectedFileContents func(string) ([]byte, e
 	result := AnalyzeResult{}
 	result.Title = a.Title()
 
-	contents, err := getCollectedFileContents("system/hostos_info.json")
+	contents, err := getCollectedFileContents(collect.HostOSInfoPath)
 	if err != nil {
 		return []*AnalyzeResult{&result}, errors.Wrap(err, "failed to get collected file")
 	}

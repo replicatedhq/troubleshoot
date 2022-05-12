@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os/exec"
-	"path/filepath"
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
@@ -20,6 +19,7 @@ type ServiceInfo struct {
 }
 
 const systemctlFormat = `%s %s %s %s` // this leaves off the description
+const HostServicesPath = `system/systemctl_services.json`
 
 type CollectHostServices struct {
 	hostCollector *troubleshootv1beta2.HostServices
@@ -64,16 +64,10 @@ func (c *CollectHostServices) Collect(progressChan chan<- interface{}) (map[stri
 		return nil, errors.Wrap(err, "failed to marshal systemctl service info")
 	}
 
-	collectorName := c.hostCollector.CollectorName
-	if collectorName == "" {
-		collectorName = "systemctl_services"
-	}
-	name := filepath.Join("system", collectorName+".json")
-
 	output := NewResult()
-	output.SaveResult(c.BundlePath, name, bytes.NewBuffer(b))
+	output.SaveResult(c.BundlePath, HostServicesPath, bytes.NewBuffer(b))
 
 	return map[string][]byte{
-		name: b,
+		HostServicesPath: b,
 	}, nil
 }

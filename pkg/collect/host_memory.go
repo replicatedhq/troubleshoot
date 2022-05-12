@@ -3,7 +3,6 @@ package collect
 import (
 	"bytes"
 	"encoding/json"
-	"path/filepath"
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
@@ -13,6 +12,8 @@ import (
 type MemoryInfo struct {
 	Total uint64 `json:"total"`
 }
+
+const HostMemoryPath = `system/memory.json`
 
 type CollectHostMemory struct {
 	hostCollector *troubleshootv1beta2.Memory
@@ -41,16 +42,10 @@ func (c *CollectHostMemory) Collect(progressChan chan<- interface{}) (map[string
 		return nil, errors.Wrap(err, "failed to marshal memory info")
 	}
 
-	collectorName := c.hostCollector.CollectorName
-	if collectorName == "" {
-		collectorName = "memory"
-	}
-	name := filepath.Join("system", collectorName+".json")
-
 	output := NewResult()
-	output.SaveResult(c.BundlePath, name, bytes.NewBuffer(b))
+	output.SaveResult(c.BundlePath, HostMemoryPath, bytes.NewBuffer(b))
 
 	return map[string][]byte{
-		name: b,
+		HostMemoryPath: b,
 	}, nil
 }

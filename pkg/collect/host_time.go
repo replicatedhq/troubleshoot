@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"path/filepath"
 	"strings"
 
 	"github.com/godbus/dbus"
@@ -20,6 +19,8 @@ type TimeInfo struct {
 	NTPSynchronized bool   `json:"ntp_synchronized"`
 	NTPActive       bool   `json:"ntp_active"`
 }
+
+const HostTimePath = `system/time.json`
 
 type CollectHostTime struct {
 	hostCollector *troubleshootv1beta2.HostTime
@@ -93,16 +94,10 @@ func (c *CollectHostTime) Collect(progressChan chan<- interface{}) (map[string][
 		return nil, errors.Wrap(err, "failed to marshal time info")
 	}
 
-	collectorName := c.hostCollector.CollectorName
-	if collectorName == "" {
-		collectorName = "time"
-	}
-	name := filepath.Join("system", collectorName+".json")
-
 	output := NewResult()
-	output.SaveResult(c.BundlePath, name, bytes.NewBuffer(b))
+	output.SaveResult(c.BundlePath, HostTimePath, bytes.NewBuffer(b))
 
 	return map[string][]byte{
-		name: b,
+		HostTimePath: b,
 	}, nil
 }

@@ -3,7 +3,6 @@ package analyzer
 import (
 	"encoding/json"
 	"fmt"
-	"path/filepath"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -26,13 +25,7 @@ func (a *AnalyzeHostServices) IsExcluded() (bool, error) {
 func (a *AnalyzeHostServices) Analyze(getCollectedFileContents func(string) ([]byte, error)) ([]*AnalyzeResult, error) {
 	hostAnalyzer := a.hostAnalyzer
 
-	collectorName := hostAnalyzer.CollectorName
-	if collectorName == "" {
-		collectorName = "systemctl_services"
-	}
-	name := filepath.Join("system", collectorName+".json")
-
-	contents, err := getCollectedFileContents(name)
+	contents, err := getCollectedFileContents(collect.HostServicesPath)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get collected file")
 	}

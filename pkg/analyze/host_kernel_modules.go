@@ -43,7 +43,7 @@ func (a *AnalyzeHostKernelModules) IsExcluded() (bool, error) {
 //
 func (a *AnalyzeHostKernelModules) Analyze(getCollectedFileContents func(string) ([]byte, error)) ([]*AnalyzeResult, error) {
 	hostAnalyzer := a.hostAnalyzer
-	contents, err := getCollectedFileContents("system/kernel_modules.json")
+	contents, err := getCollectedFileContents(collect.HostKernelModulesPath)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get collected file")
 	}

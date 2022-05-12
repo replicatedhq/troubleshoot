@@ -25,7 +25,7 @@ func (a *AnalyzeHostCPU) IsExcluded() (bool, error) {
 func (a *AnalyzeHostCPU) Analyze(getCollectedFileContents func(string) ([]byte, error)) ([]*AnalyzeResult, error) {
 	hostAnalyzer := a.hostAnalyzer
 
-	contents, err := getCollectedFileContents("system/cpu.json")
+	contents, err := getCollectedFileContents(collect.HostCPUPath)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get collected file")
 	}
