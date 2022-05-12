@@ -34,7 +34,7 @@ func (c *CollectHostDiskUsage) Collect(progressChan chan<- interface{}) (map[str
 	result := map[string][]byte{}
 
 	if c.hostCollector == nil {
-		return result, nil
+		return map[string][]byte{}, nil
 	}
 
 	pathExists, err := traverseFiletreeDirExists(c.hostCollector.Path)
@@ -54,23 +54,19 @@ func (c *CollectHostDiskUsage) Collect(progressChan chan<- interface{}) (map[str
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to marshal disk space info")
 	}
-	key := HostDiskUsageKey(c.hostCollector.CollectorName)
-	result[key] = b
 
 	collectorName := c.hostCollector.CollectorName
 	if collectorName == "" {
-		collectorName = "disk_usage"
+		collectorName = "diskUsage"
 	}
-	name := filepath.Join("system", collectorName+".json")
+	name := filepath.Join("diskUsage", collectorName+".json")
+
+	result[name] = b
 
 	output := NewResult()
 	output.SaveResult(c.BundlePath, name, bytes.NewBuffer(b))
 
 	return result, nil
-}
-
-func HostDiskUsageKey(name string) string {
-	return fmt.Sprintf("diskUsage/%s.json", name)
 }
 
 func traverseFiletreeDirExists(filename string) (string, error) {
