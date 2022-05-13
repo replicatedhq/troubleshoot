@@ -34,7 +34,7 @@ func (a *AnalyzeHostFilesystemPerformance) Analyze(getCollectedFileContents func
 	if collectorName == "" {
 		collectorName = "filesystemPerformance"
 	}
-	name := filepath.Join("filesystemPerformance", collectorName+".json")
+	name := filepath.Join("host-collectors/filesystemPerformance", collectorName+".json")
 	contents, err := getCollectedFileContents(name)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to get collected file %s", name)

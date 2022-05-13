@@ -1,6 +1,7 @@
 package collect
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -37,7 +38,7 @@ func (d Durations) Swap(i, j int) {
 	d[i], d[j] = d[j], d[i]
 }
 
-func collectHostFilesystemPerformance(hostCollector *troubleshootv1beta2.FilesystemPerformance) (map[string][]byte, error) {
+func collectHostFilesystemPerformance(hostCollector *troubleshootv1beta2.FilesystemPerformance, bundlePath string) (map[string][]byte, error) {
 	timeout := time.Minute
 	if hostCollector.Timeout != "" {
 		d, err := time.ParseDuration(hostCollector.Timeout)
@@ -198,11 +199,14 @@ func collectHostFilesystemPerformance(hostCollector *troubleshootv1beta2.Filesys
 	if collectorName == "" {
 		collectorName = "filesystemPerformance"
 	}
-	name := filepath.Join("filesystemPerformance", collectorName+".json")
+	name := filepath.Join("host-collectors/filesystemPerformance", collectorName+".json")
 	b, err := json.Marshal(fsPerf)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to marshal fs perf results")
 	}
+
+	output := NewResult()
+	output.SaveResult(bundlePath, name, bytes.NewBuffer(b))
 
 	return map[string][]byte{
 		name: b,

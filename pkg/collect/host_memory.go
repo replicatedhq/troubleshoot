@@ -1,6 +1,7 @@
 package collect
 
 import (
+	"bytes"
 	"encoding/json"
 
 	"github.com/pkg/errors"
@@ -12,8 +13,11 @@ type MemoryInfo struct {
 	Total uint64 `json:"total"`
 }
 
+const HostMemoryPath = `host-collectors/system/memory.json`
+
 type CollectHostMemory struct {
 	hostCollector *troubleshootv1beta2.Memory
+	BundlePath    string
 }
 
 func (c *CollectHostMemory) Title() string {
@@ -38,7 +42,10 @@ func (c *CollectHostMemory) Collect(progressChan chan<- interface{}) (map[string
 		return nil, errors.Wrap(err, "failed to marshal memory info")
 	}
 
+	output := NewResult()
+	output.SaveResult(c.BundlePath, HostMemoryPath, bytes.NewBuffer(b))
+
 	return map[string][]byte{
-		"system/memory.json": b,
+		HostMemoryPath: b,
 	}, nil
 }

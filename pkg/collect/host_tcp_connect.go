@@ -1,10 +1,10 @@
 package collect
 
 import (
+	"bytes"
 	"encoding/json"
-	"fmt"
 	"net"
-	"path"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -14,6 +14,7 @@ import (
 
 type CollectHostTCPConnect struct {
 	hostCollector *troubleshootv1beta2.TCPConnect
+	BundlePath    string
 }
 
 func (c *CollectHostTCPConnect) Title() string {
@@ -45,7 +46,14 @@ func (c *CollectHostTCPConnect) Collect(progressChan chan<- interface{}) (map[st
 		return nil, errors.Wrap(err, "failed to marshal result")
 	}
 
-	name := path.Join("connect", fmt.Sprintf("%s.json", c.hostCollector.CollectorName))
+	collectorName := c.hostCollector.CollectorName
+	if collectorName == "" {
+		collectorName = "connect"
+	}
+	name := filepath.Join("host-collectors/connect", collectorName+".json")
+
+	output := NewResult()
+	output.SaveResult(c.BundlePath, name, bytes.NewBuffer(b))
 
 	return map[string][]byte{
 		name: b,

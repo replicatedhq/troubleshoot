@@ -9,6 +9,7 @@ import (
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
+	"github.com/replicatedhq/troubleshoot/pkg/collect"
 )
 
 type AnalyzeHostIPV4Interfaces struct {
@@ -26,7 +27,7 @@ func (a *AnalyzeHostIPV4Interfaces) IsExcluded() (bool, error) {
 func (a *AnalyzeHostIPV4Interfaces) Analyze(getCollectedFileContents func(string) ([]byte, error)) ([]*AnalyzeResult, error) {
 	hostAnalyzer := a.hostAnalyzer
 
-	contents, err := getCollectedFileContents("system/ipv4Interfaces.json")
+	contents, err := getCollectedFileContents(collect.HostIPV4InterfacesPath)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get collected file")
 	}

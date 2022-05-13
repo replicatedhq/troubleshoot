@@ -30,7 +30,7 @@ func (a *AnalyzeHostTCPLoadBalancer) Analyze(getCollectedFileContents func(strin
 		collectorName = "tcpLoadBalancer"
 	}
 
-	fullPath := path.Join("tcpLoadBalancer", fmt.Sprintf("%s.json", collectorName))
+	fullPath := path.Join("host-collectors/tcpLoadBalancer", fmt.Sprintf("%s.json", collectorName))
 
 	collected, err := getCollectedFileContents(fullPath)
 	if err != nil {

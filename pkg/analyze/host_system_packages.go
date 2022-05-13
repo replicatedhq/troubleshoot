@@ -31,9 +31,9 @@ func (a *AnalyzeHostSystemPackages) IsExcluded() (bool, error) {
 func (a *AnalyzeHostSystemPackages) Analyze(getCollectedFileContents func(string) ([]byte, error)) ([]*AnalyzeResult, error) {
 	hostAnalyzer := a.hostAnalyzer
 
-	packagesFileName := "system/packages.json"
+	packagesFileName := "host-collectors/system/packages.json"
 	if a.hostAnalyzer.CollectorName != "" {
-		packagesFileName = fmt.Sprintf("system/%s-packages.json", a.hostAnalyzer.CollectorName)
+		packagesFileName = fmt.Sprintf("host-collectors/system/%s-packages.json", a.hostAnalyzer.CollectorName)
 	}
 
 	contents, err := getCollectedFileContents(packagesFileName)
