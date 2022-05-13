@@ -228,7 +228,7 @@ func detailedCephMessage(outcomeMessage string, status CephStatus) string {
 
 	if status.PgMap.TotalBytes > 0 {
 		pgUsage := 100 * float64(status.PgMap.UsedBytes) / float64(status.PgMap.TotalBytes)
-		msg = append(msg, fmt.Sprintf("PG storage usage is %.1f%%.", pgUsage))
+		msg = append(msg, fmt.Sprintf("PG storage usage is %.1f%%", pgUsage))
 	}
 
 	if status.Health.Checks != nil {
