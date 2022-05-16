@@ -32,7 +32,10 @@ func Run(c *Collector, runCollector *troubleshootv1beta2.Run) (CollectorResult, 
 	}
 
 	runPodCollector := &troubleshootv1beta2.RunPod{
-		Name:            runCollector.CollectorName,
+		CollectorMeta: troubleshootv1beta2.CollectorMeta{
+			CollectorName: runCollector.CollectorName,
+		},
+		Name:            runCollector.Name,
 		Namespace:       namespace,
 		Timeout:         runCollector.Timeout,
 		ImagePullSecret: runCollector.ImagePullSecret,
@@ -189,9 +192,6 @@ func runWithoutTimeout(ctx context.Context, c *Collector, pod *corev1.Pod, runPo
 	output := NewResult()
 
 	collectorName := runPodCollector.Name
-	if collectorName == "" {
-		collectorName = runPodCollector.CollectorName
-	}
 
 	limits := troubleshootv1beta2.LogLimits{
 		MaxLines: 10000,
