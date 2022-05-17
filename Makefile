@@ -35,7 +35,7 @@ endef
 
 BUILDFLAGS = -tags "netgo containers_image_ostree_stub exclude_graphdriver_devicemapper exclude_graphdriver_btrfs containers_image_openpgp" -installsuffix netgo
 
-all: test
+all: test support-bundle preflight collect
 
 .PHONY: ffi
 ffi: fmt vet
@@ -46,19 +46,19 @@ test: generate fmt vet
 	go test ${BUILDFLAGS} ./pkg/... ./cmd/... -coverprofile cover.out
 
 .PHONY: support-bundle
-support-bundle: generate fmt vet
+support-bundle:
 	go build ${BUILDFLAGS} ${LDFLAGS} -o bin/support-bundle github.com/replicatedhq/troubleshoot/cmd/troubleshoot
 
 .PHONY: preflight
-preflight: generate fmt vet
+preflight:
 	go build ${BUILDFLAGS} ${LDFLAGS} -o bin/preflight github.com/replicatedhq/troubleshoot/cmd/preflight
 
 .PHONY: analyze
-analyze: generate fmt vet
+analyze:
 	go build ${BUILDFLAGS} ${LDFLAGS} -o bin/analyze github.com/replicatedhq/troubleshoot/cmd/analyze
 	
 .PHONY: collect
-collect: generate fmt vet
+collect:
 	go build ${BUILDFLAGS} ${LDFLAGS} -o bin/collect github.com/replicatedhq/troubleshoot/cmd/collect	
 
 .PHONY: fmt
