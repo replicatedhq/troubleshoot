@@ -35,7 +35,7 @@ endef
 
 BUILDFLAGS = -tags "netgo containers_image_ostree_stub exclude_graphdriver_devicemapper exclude_graphdriver_btrfs containers_image_openpgp" -installsuffix netgo
 
-all: test
+all: test support-bundle preflight collect
 
 .PHONY: ffi
 ffi: fmt vet
