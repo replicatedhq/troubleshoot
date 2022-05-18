@@ -477,6 +477,41 @@ func Test_textAnalyze(t *testing.T) {
 				"text-collector-1/cfile-1.txt": []byte("value: 2\nother: 10"),
 			},
 		},
+		{
+			name: "Outcome message is templated with regex groups",
+			analyzer: troubleshootv1beta2.TextAnalyze{
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							When:    `Error == ""`,
+							Message: "No error found",
+						},
+					},
+					{
+						Fail: &troubleshootv1beta2.SingleOutcome{
+							Message: "There is a prefix not found error in {{ .SubName }} in namespace {{ .Namespace }}",
+						},
+					},
+				},
+				CollectorName: "text-collector-templated-regex-message",
+				FileName:      "cfile-1.txt",
+				RegexGroups:   `"name":\s*"(?P<SubName>.*?)".*namespace":\s*"(?P<Namespace>.*?)".*error":\s*.*"(?P<Error>prefix not found.*?)"`,
+			},
+			expectResult: []AnalyzeResult{
+				{
+					IsPass:  false,
+					IsWarn:  false,
+					IsFail:  true,
+					Title:   "text-collector-templated-regex-message",
+					Message: "There is a prefix not found error in wrong-eventtypeprefix in namespace default",
+					IconKey: "kubernetes_text_analyze",
+					IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg?w=13&h=16",
+				},
+			},
+			files: map[string][]byte{
+				"text-collector-templated-regex-message/cfile-1.txt": []byte(`{"level":"ERROR","timestamp":"2022-05-17T20:37:41Z","caller":"controller/controller.go:317","message":"Reconciler error","context":{"name":"wrong-eventtypeprefix","namespace":"default","error":"prefix not found"}}`),
+			},
+		},
 	}
 
 	for _, test := range tests {
