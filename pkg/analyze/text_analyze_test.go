@@ -477,6 +477,38 @@ func Test_textAnalyze(t *testing.T) {
 				"text-collector-1/cfile-1.txt": []byte("value: 2\nother: 10"),
 			},
 		},
+		// This test ensures that the Outcomes.Pass.Message can be templated using the findings of the regular expression groups.
+		{
+			name: "Outcome pass message is templated with regex groups",
+			analyzer: troubleshootv1beta2.TextAnalyze{
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							When:    `Feature == insert-feature-name-here`,
+							Message: "Feature {{ .Feature }} is enabled",
+						},
+					},
+				},
+				CollectorName: "text-collector-templated-regex-message",
+				FileName:      "cfile-1.txt",
+				RegexGroups:   `"name":\s*"(?P<CRDName>.*?)".*namespace":\s*"(?P<Namespace>.*?)".*feature":\s*.*"(?P<Feature>insert-feature-name-here.*?)"`,
+			},
+			expectResult: []AnalyzeResult{
+				{
+					IsPass:  true,
+					IsWarn:  false,
+					IsFail:  false,
+					Title:   "text-collector-templated-regex-message",
+					Message: "Feature insert-feature-name-here is enabled",
+					IconKey: "kubernetes_text_analyze",
+					IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg?w=13&h=16",
+				},
+			},
+			files: map[string][]byte{
+				"text-collector-templated-regex-message/cfile-1.txt": []byte(`{"level":"INFO","timestamp":"2022-05-17T20:37:41Z","caller":"controller/controller.go:317","message":"Feature enabled","context":{"name":"insert-crd-name-here","namespace":"default","feature":"insert-feature-name-here"}}`),
+			},
+		},
+		// This test ensures that the Outcomes.Warn.Message can be templated using the findings of the regular expression groups.
 		{
 			name: "Outcome warn message is templated with regex groups",
 			analyzer: troubleshootv1beta2.TextAnalyze{
@@ -487,6 +519,7 @@ func Test_textAnalyze(t *testing.T) {
 							Message: "No warning found",
 						},
 					},
+					// The Warn case is triggered if warning != ""
 					{
 						Warn: &troubleshootv1beta2.SingleOutcome{
 							Message: "Warning for CRD with name in {{ .CRDName }} in namespace {{ .Namespace }}",
@@ -512,6 +545,7 @@ func Test_textAnalyze(t *testing.T) {
 				"text-collector-templated-regex-message/cfile-1.txt": []byte(`{"level":"WARN","timestamp":"2022-05-17T20:37:41Z","caller":"controller/controller.go:317","message":"Reconciler error","context":{"name":"insert-crd-name-here","namespace":"default","warning":"mywarning"}}`),
 			},
 		},
+		// This test ensures that the Outcomes.Fail.Message can be templated using the findings of the regular expression groups.
 		{
 			name: "Outcome fail message is templated with regex groups",
 			analyzer: troubleshootv1beta2.TextAnalyze{
@@ -522,6 +556,7 @@ func Test_textAnalyze(t *testing.T) {
 							Message: "No error found",
 						},
 					},
+					// The Fail case is triggered if warning != ""
 					{
 						Fail: &troubleshootv1beta2.SingleOutcome{
 							Message: "Error for CRD with name in {{ .CRDName }} in namespace {{ .Namespace }}",
