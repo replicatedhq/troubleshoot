@@ -478,6 +478,41 @@ func Test_textAnalyze(t *testing.T) {
 			},
 		},
 		{
+			name: "Warn message is templated with regex groups",
+			analyzer: troubleshootv1beta2.TextAnalyze{
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							When:    `Warning == ""`,
+							Message: "No warning found",
+						},
+					},
+					{
+						Warn: &troubleshootv1beta2.SingleOutcome{
+							Message: "Warning for CRD with name in {{ .CRDName }} in namespace {{ .Namespace }}",
+						},
+					},
+				},
+				CollectorName: "text-collector-templated-regex-message",
+				FileName:      "cfile-1.txt",
+				RegexGroups:   `"name":\s*"(?P<CRDName>.*?)".*namespace":\s*"(?P<Namespace>.*?)".*warning":\s*.*"(?P<Error>mywarning.*?)"`,
+			},
+			expectResult: []AnalyzeResult{
+				{
+					IsPass:  false,
+					IsWarn:  true,
+					IsFail:  false,
+					Title:   "text-collector-templated-regex-message",
+					Message: "Warning for CRD with name in insert-crd-name-here in namespace default",
+					IconKey: "kubernetes_text_analyze",
+					IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg?w=13&h=16",
+				},
+			},
+			files: map[string][]byte{
+				"text-collector-templated-regex-message/cfile-1.txt": []byte(`{"level":"ERROR","timestamp":"2022-05-17T20:37:41Z","caller":"controller/controller.go:317","message":"Reconciler error","context":{"name":"insert-crd-name-here","namespace":"default","warning":"mywarning"}}`),
+			},
+		},
+		{
 			name: "Outcome message is templated with regex groups",
 			analyzer: troubleshootv1beta2.TextAnalyze{
 				Outcomes: []*troubleshootv1beta2.Outcome{
