@@ -489,13 +489,13 @@ func Test_textAnalyze(t *testing.T) {
 					},
 					{
 						Fail: &troubleshootv1beta2.SingleOutcome{
-							Message: "There is a prefix not found error in {{ .SubName }} in namespace {{ .Namespace }}",
+							Message: "Error for CRD with name in {{ .CRDName }} in namespace {{ .Namespace }}",
 						},
 					},
 				},
 				CollectorName: "text-collector-templated-regex-message",
 				FileName:      "cfile-1.txt",
-				RegexGroups:   `"name":\s*"(?P<SubName>.*?)".*namespace":\s*"(?P<Namespace>.*?)".*error":\s*.*"(?P<Error>prefix not found.*?)"`,
+				RegexGroups:   `"name":\s*"(?P<CRDName>.*?)".*namespace":\s*"(?P<Namespace>.*?)".*error":\s*.*"(?P<Error>myerror.*?)"`,
 			},
 			expectResult: []AnalyzeResult{
 				{
@@ -503,13 +503,13 @@ func Test_textAnalyze(t *testing.T) {
 					IsWarn:  false,
 					IsFail:  true,
 					Title:   "text-collector-templated-regex-message",
-					Message: "There is a prefix not found error in wrong-eventtypeprefix in namespace default",
+					Message: "Error for CRD with name in insert-crd-name-here in namespace default",
 					IconKey: "kubernetes_text_analyze",
 					IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg?w=13&h=16",
 				},
 			},
 			files: map[string][]byte{
-				"text-collector-templated-regex-message/cfile-1.txt": []byte(`{"level":"ERROR","timestamp":"2022-05-17T20:37:41Z","caller":"controller/controller.go:317","message":"Reconciler error","context":{"name":"wrong-eventtypeprefix","namespace":"default","error":"prefix not found"}}`),
+				"text-collector-templated-regex-message/cfile-1.txt": []byte(`{"level":"ERROR","timestamp":"2022-05-17T20:37:41Z","caller":"controller/controller.go:317","message":"Reconciler error","context":{"name":"insert-crd-name-here","namespace":"default","error":"myerror"}}`),
 			},
 		},
 	}
