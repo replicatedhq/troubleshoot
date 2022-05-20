@@ -522,7 +522,7 @@ func Test_textAnalyze(t *testing.T) {
 					// The Warn case is triggered if warning != ""
 					{
 						Warn: &troubleshootv1beta2.SingleOutcome{
-							Message: "Warning for CR with name in {{ .CRName }} in namespace {{ .Namespace }}",
+							Message: "Warning for CR with name {{ .CRName }} in namespace {{ .Namespace }}",
 						},
 					},
 				},
@@ -536,7 +536,7 @@ func Test_textAnalyze(t *testing.T) {
 					IsWarn:  true,
 					IsFail:  false,
 					Title:   "text-collector-templated-regex-message",
-					Message: "Warning for CR with name in insert-cr-name-here in namespace default",
+					Message: "Warning for CR with name insert-cr-name-here in namespace default",
 					IconKey: "kubernetes_text_analyze",
 					IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg?w=13&h=16",
 				},
@@ -559,7 +559,7 @@ func Test_textAnalyze(t *testing.T) {
 					// The Fail case is triggered if warning != ""
 					{
 						Fail: &troubleshootv1beta2.SingleOutcome{
-							Message: "Error for CR with name in {{ .CRName }} in namespace {{ .Namespace }}",
+							Message: "Error for CR with name {{ .CRName }} in namespace {{ .Namespace }}",
 						},
 					},
 				},
@@ -573,7 +573,7 @@ func Test_textAnalyze(t *testing.T) {
 					IsWarn:  false,
 					IsFail:  true,
 					Title:   "text-collector-templated-regex-message",
-					Message: "Error for CR with name in insert-cr-name-here in namespace default",
+					Message: "Error for CR with name insert-cr-name-here in namespace default",
 					IconKey: "kubernetes_text_analyze",
 					IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg?w=13&h=16",
 				},
