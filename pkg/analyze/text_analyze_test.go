@@ -485,13 +485,13 @@ func Test_textAnalyze(t *testing.T) {
 					{
 						Pass: &troubleshootv1beta2.SingleOutcome{
 							When:    `Feature == insert-feature-name-here`,
-							Message: "Feature {{ .Feature }} is enabled",
+							Message: "Feature {{ .Feature }} is enabled for CR {{ .CRName }} in namespace {{ .Namespace }}",
 						},
 					},
 				},
 				CollectorName: "text-collector-templated-regex-message",
 				FileName:      "cfile-1.txt",
-				RegexGroups:   `"name":\s*"(?P<CRDName>.*?)".*namespace":\s*"(?P<Namespace>.*?)".*feature":\s*.*"(?P<Feature>insert-feature-name-here.*?)"`,
+				RegexGroups:   `"name":\s*"(?P<CRName>.*?)".*namespace":\s*"(?P<Namespace>.*?)".*feature":\s*.*"(?P<Feature>insert-feature-name-here.*?)"`,
 			},
 			expectResult: []AnalyzeResult{
 				{
@@ -499,13 +499,13 @@ func Test_textAnalyze(t *testing.T) {
 					IsWarn:  false,
 					IsFail:  false,
 					Title:   "text-collector-templated-regex-message",
-					Message: "Feature insert-feature-name-here is enabled",
+					Message: "Feature insert-feature-name-here is enabled for CR insert-cr-name-here in namespace default",
 					IconKey: "kubernetes_text_analyze",
 					IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg?w=13&h=16",
 				},
 			},
 			files: map[string][]byte{
-				"text-collector-templated-regex-message/cfile-1.txt": []byte(`{"level":"INFO","timestamp":"2022-05-17T20:37:41Z","caller":"controller/controller.go:317","message":"Feature enabled","context":{"name":"insert-crd-name-here","namespace":"default","feature":"insert-feature-name-here"}}`),
+				"text-collector-templated-regex-message/cfile-1.txt": []byte(`{"level":"INFO","timestamp":"2022-05-17T20:37:41Z","caller":"controller/controller.go:317","message":"Feature enabled","context":{"name":"insert-cr-name-here","namespace":"default","feature":"insert-feature-name-here"}}`),
 			},
 		},
 		// This test ensures that the Outcomes.Warn.Message can be templated using the findings of the regular expression groups.
@@ -522,13 +522,13 @@ func Test_textAnalyze(t *testing.T) {
 					// The Warn case is triggered if warning != ""
 					{
 						Warn: &troubleshootv1beta2.SingleOutcome{
-							Message: "Warning for CRD with name in {{ .CRDName }} in namespace {{ .Namespace }}",
+							Message: "Warning for CR with name in {{ .CRName }} in namespace {{ .Namespace }}",
 						},
 					},
 				},
 				CollectorName: "text-collector-templated-regex-message",
 				FileName:      "cfile-1.txt",
-				RegexGroups:   `"name":\s*"(?P<CRDName>.*?)".*namespace":\s*"(?P<Namespace>.*?)".*warning":\s*.*"(?P<Error>mywarning.*?)"`,
+				RegexGroups:   `"name":\s*"(?P<CRName>.*?)".*namespace":\s*"(?P<Namespace>.*?)".*warning":\s*.*"(?P<Error>mywarning.*?)"`,
 			},
 			expectResult: []AnalyzeResult{
 				{
@@ -536,13 +536,13 @@ func Test_textAnalyze(t *testing.T) {
 					IsWarn:  true,
 					IsFail:  false,
 					Title:   "text-collector-templated-regex-message",
-					Message: "Warning for CRD with name in insert-crd-name-here in namespace default",
+					Message: "Warning for CR with name in insert-cr-name-here in namespace default",
 					IconKey: "kubernetes_text_analyze",
 					IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg?w=13&h=16",
 				},
 			},
 			files: map[string][]byte{
-				"text-collector-templated-regex-message/cfile-1.txt": []byte(`{"level":"WARN","timestamp":"2022-05-17T20:37:41Z","caller":"controller/controller.go:317","message":"Reconciler error","context":{"name":"insert-crd-name-here","namespace":"default","warning":"mywarning"}}`),
+				"text-collector-templated-regex-message/cfile-1.txt": []byte(`{"level":"WARN","timestamp":"2022-05-17T20:37:41Z","caller":"controller/controller.go:317","message":"Reconciler error","context":{"name":"insert-cr-name-here","namespace":"default","warning":"mywarning"}}`),
 			},
 		},
 		// This test ensures that the Outcomes.Fail.Message can be templated using the findings of the regular expression groups.
@@ -559,13 +559,13 @@ func Test_textAnalyze(t *testing.T) {
 					// The Fail case is triggered if warning != ""
 					{
 						Fail: &troubleshootv1beta2.SingleOutcome{
-							Message: "Error for CRD with name in {{ .CRDName }} in namespace {{ .Namespace }}",
+							Message: "Error for CR with name in {{ .CRName }} in namespace {{ .Namespace }}",
 						},
 					},
 				},
 				CollectorName: "text-collector-templated-regex-message",
 				FileName:      "cfile-1.txt",
-				RegexGroups:   `"name":\s*"(?P<CRDName>.*?)".*namespace":\s*"(?P<Namespace>.*?)".*error":\s*.*"(?P<Error>myerror.*?)"`,
+				RegexGroups:   `"name":\s*"(?P<CRName>.*?)".*namespace":\s*"(?P<Namespace>.*?)".*error":\s*.*"(?P<Error>myerror.*?)"`,
 			},
 			expectResult: []AnalyzeResult{
 				{
@@ -573,13 +573,13 @@ func Test_textAnalyze(t *testing.T) {
 					IsWarn:  false,
 					IsFail:  true,
 					Title:   "text-collector-templated-regex-message",
-					Message: "Error for CRD with name in insert-crd-name-here in namespace default",
+					Message: "Error for CR with name in insert-cr-name-here in namespace default",
 					IconKey: "kubernetes_text_analyze",
 					IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg?w=13&h=16",
 				},
 			},
 			files: map[string][]byte{
-				"text-collector-templated-regex-message/cfile-1.txt": []byte(`{"level":"ERROR","timestamp":"2022-05-17T20:37:41Z","caller":"controller/controller.go:317","message":"Reconciler error","context":{"name":"insert-crd-name-here","namespace":"default","error":"myerror"}}`),
+				"text-collector-templated-regex-message/cfile-1.txt": []byte(`{"level":"ERROR","timestamp":"2022-05-17T20:37:41Z","caller":"controller/controller.go:317","message":"Reconciler error","context":{"name":"insert-cr-name-here","namespace":"default","error":"myerror"}}`),
 			},
 		},
 	}
