@@ -478,7 +478,7 @@ func Test_textAnalyze(t *testing.T) {
 			},
 		},
 		{
-			name: "Warn message is templated with regex groups",
+			name: "Outcome warn message is templated with regex groups",
 			analyzer: troubleshootv1beta2.TextAnalyze{
 				Outcomes: []*troubleshootv1beta2.Outcome{
 					{
@@ -513,7 +513,7 @@ func Test_textAnalyze(t *testing.T) {
 			},
 		},
 		{
-			name: "Outcome message is templated with regex groups",
+			name: "Outcome fail message is templated with regex groups",
 			analyzer: troubleshootv1beta2.TextAnalyze{
 				Outcomes: []*troubleshootv1beta2.Outcome{
 					{
