@@ -229,7 +229,7 @@ func templateRegExGroup(tpl string, matches map[string]string) (string, error) {
 	var msg bytes.Buffer
 	err = t.Execute(&msg, matches)
 	if err != nil {
-		panic(err)
+		return "", err
 	}
 	return msg.String(), nil
 }
