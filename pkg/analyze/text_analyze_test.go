@@ -509,7 +509,7 @@ func Test_textAnalyze(t *testing.T) {
 				},
 			},
 			files: map[string][]byte{
-				"text-collector-templated-regex-message/cfile-1.txt": []byte(`{"level":"ERROR","timestamp":"2022-05-17T20:37:41Z","caller":"controller/controller.go:317","message":"Reconciler error","context":{"name":"insert-crd-name-here","namespace":"default","warning":"mywarning"}}`),
+				"text-collector-templated-regex-message/cfile-1.txt": []byte(`{"level":"WARN","timestamp":"2022-05-17T20:37:41Z","caller":"controller/controller.go:317","message":"Reconciler error","context":{"name":"insert-crd-name-here","namespace":"default","warning":"mywarning"}}`),
 			},
 		},
 		{
