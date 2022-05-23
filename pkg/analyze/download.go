@@ -38,8 +38,11 @@ func AnalyzeLocal(localBundlePath string, analyzers []*troubleshootv1beta2.Analy
 			continue
 		}
 
-		if analyzeResult != nil {
-			analyzeResults = append(analyzeResults, analyzeResult...)
+		// Filter nil results to prevent panic
+		for _, r := range analyzeResult {
+			if r != nil {
+				analyzeResults = append(analyzeResults, r)
+			}
 		}
 	}
 
