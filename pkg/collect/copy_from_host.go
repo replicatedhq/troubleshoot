@@ -137,6 +137,11 @@ func copyFromHostCreateDaemonSet(ctx context.Context, client kubernetes.Interfac
 							Operator: "Exists",
 							Effect:   "NoSchedule",
 						},
+						{
+							Key:      "node-role.kubernetes.io/control-plane",
+							Operator: "Exists",
+							Effect:   "NoSchedule",
+						},
 					},
 					Volumes: []corev1.Volume{
 						{

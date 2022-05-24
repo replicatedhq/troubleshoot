@@ -73,6 +73,9 @@ func ParseNodesForProviders(nodes []corev1.Node) (providers, string) {
 			if k == "node-role.kubernetes.io/master" {
 				foundMaster = true
 			}
+			if k == "node-role.kubernetes.io/control-plane" {
+				foundMaster = true
+			}
 			if k == "kubernetes.azure.com/role" {
 				foundProviders.aks = true
 				stringProvider = "aks"
