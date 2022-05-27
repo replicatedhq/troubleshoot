@@ -69,6 +69,11 @@ func RunPodsReadyNodes(ctx context.Context, client v1.CoreV1Interface, opts RunP
 							Operator: "Exists",
 							Effect:   "NoSchedule",
 						},
+						{
+							Key:      "node-role.kubernetes.io/control-plane",
+							Operator: "Exists",
+							Effect:   "NoSchedule",
+						},
 					},
 				},
 			}
