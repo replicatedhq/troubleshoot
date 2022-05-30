@@ -55,6 +55,10 @@ func analyzeOneDeploymentStatus(analyzer *troubleshootv1beta2.DeploymentStatus, 
 		}
 	}
 
+	if result == nil {
+		return nil, nil
+	}
+
 	return []*AnalyzeResult{result}, nil
 }
 
