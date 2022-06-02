@@ -9,3 +9,19 @@ Thank you for your interest in Troubleshoot, we welcome your participation. Plea
 ## Pull Requests
 
 If you are interested in contributing a change to the code or documentation please open a pull request with your set of changes. The pull request will be reviewed in a timely manner.
+
+## Tests
+
+To run the tests locally run the following:
+
+```bash
+make test
+```
+
+Additionally, e2e tests can be run with:
+
+```bash
+make support-bundle preflight e2e-test
+```
+
+A kubernetes cluster as well as `jq` are required to run e2e tests.
