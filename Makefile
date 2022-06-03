@@ -41,9 +41,13 @@ all: test support-bundle preflight collect
 ffi: fmt vet
 	go build ${BUILDFLAGS} ${LDFLAGS} -o bin/troubleshoot.so -buildmode=c-shared ffi/main.go
 
-# Run tests
+.PHONY: test
 test: generate fmt vet
 	go test ${BUILDFLAGS} ./pkg/... ./cmd/... -coverprofile cover.out
+
+.PHONY: e2e-test
+e2e-test:
+	./test/validate-preflight-e2e.sh
 
 .PHONY: support-bundle
 support-bundle:
@@ -74,6 +78,7 @@ generate: controller-gen client-gen
 	$(CONTROLLER_GEN) \
 		object:headerFile=./hack/boilerplate.go.txt paths=./pkg/apis/...
 	$(CLIENT_GEN) \
+		--output-base=./../../../ \
 		--output-package=github.com/replicatedhq/troubleshoot/pkg/client \
 		--clientset-name troubleshootclientset \
 		--input-base github.com/replicatedhq/troubleshoot/pkg/apis \
