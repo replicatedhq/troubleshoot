@@ -64,6 +64,9 @@ func hasStrictAnalyzer(analyzerMap map[string]interface{}) (bool, error) {
 		if err != nil {
 			return false, errors.Wrap(err, "error while un-marshalling marshalledAnalyzers")
 		}
+		if analyzeMeta.Exclude.BoolOrDefaultFalse() {
+			continue
+		}
 		if analyzeMeta.Strict.BoolOrDefaultFalse() {
 			return true, nil
 		}

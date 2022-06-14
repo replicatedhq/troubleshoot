@@ -46,6 +46,16 @@ var (
 			StrVal: "1",
 		},
 	}
+	analyzeMetaStrictTrueExcludeTrue = troubleshootv1beta2.AnalyzeMeta{
+		Exclude: &multitype.BoolOrString{
+			Type:    multitype.Bool,
+			BoolVal: true,
+		},
+		Strict: &multitype.BoolOrString{
+			Type:    multitype.Bool,
+			BoolVal: true,
+		},
+	}
 )
 
 func TestHasStrictAnalyzers(t *testing.T) {
@@ -229,6 +239,36 @@ func TestHasStrictAnalyzers(t *testing.T) {
 					Analyzers: []*troubleshootv1beta2.Analyze{
 						{
 							ClusterVersion: &troubleshootv1beta2.ClusterVersion{AnalyzeMeta: analyzeMetaStrictFalseInt},
+							StorageClass:   &troubleshootv1beta2.StorageClass{AnalyzeMeta: analyzeMetaStrictFalseInt},
+							Secret:         &troubleshootv1beta2.AnalyzeSecret{AnalyzeMeta: analyzeMetaStrictTrueBool},
+						},
+					},
+				},
+			},
+			want:    true,
+			wantErr: false,
+		},
+		{
+			name: "expect false when preflight spec's analyzer has analyzer with strict true and exclude true",
+			preflight: &troubleshootv1beta2.Preflight{
+				Spec: troubleshootv1beta2.PreflightSpec{
+					Analyzers: []*troubleshootv1beta2.Analyze{
+						{
+							ClusterVersion: &troubleshootv1beta2.ClusterVersion{AnalyzeMeta: analyzeMetaStrictTrueExcludeTrue},
+						},
+					},
+				},
+			},
+			want:    false,
+			wantErr: false,
+		},
+		{
+			name: "expect true when preflight spec's analyzer has analyzer with strict true in one of multiple analyzers, but one analyzer with strict true is exclude true",
+			preflight: &troubleshootv1beta2.Preflight{
+				Spec: troubleshootv1beta2.PreflightSpec{
+					Analyzers: []*troubleshootv1beta2.Analyze{
+						{
+							ClusterVersion: &troubleshootv1beta2.ClusterVersion{AnalyzeMeta: analyzeMetaStrictTrueExcludeTrue},
 							StorageClass:   &troubleshootv1beta2.StorageClass{AnalyzeMeta: analyzeMetaStrictFalseInt},
 							Secret:         &troubleshootv1beta2.AnalyzeSecret{AnalyzeMeta: analyzeMetaStrictTrueBool},
 						},
