@@ -2,7 +2,7 @@
 
 ## Goals
 
-* Provide API based access to collected information, decoupling other projects from troubleshoot
+* Provide API based access to collected information, decoupling other projects from troubleshoot on-disk format
 * Reuse existing APIs when they exist to make the bundle compatible with existing tools without modification
 * Plan for extensibility for accessing information beyond just the standard kubernetes api
 
@@ -22,7 +22,7 @@ This proposal is meant to take the learnings from `sbctl` and consider implement
 
 ## High-Level Design
 
-To help address standard access to API data, troubleshoot will start an api server backed by etcd which collectors can then use to store collected information rather than writting to custom on-disk locations. This will allow collectors to have use the standard API to both collect (from the live API server) and store (to the ephemeral troubleshoot API server) data. Storing data directly in etcd will allow troubleshoot to later serve up this same information by again starting an api-server and etcd using the previously collected etcd data store. This should remove almsot all maitnance from troubleshoot for implementing API calls to access the collected information.
+To help address standard access to API data, troubleshoot will start an api server backed by etcd which collectors can then use to store collected information rather than writting to custom on-disk locations. This will allow collectors to use the standard API to both collect (from the live API server) and store (to the ephemeral troubleshoot API server) data. Storing data directly in etcd will allow troubleshoot to later serve up this same information by again starting an api-server and etcd using the previously collected etcd data store. This should remove almsot all maitnance from troubleshoot for implementing API calls to access the collected information.
 
 There will also be information that is desired to be stored that doesn't have any native representation in the api-server today. Examples could include customer collectors which execute into containers and extensions like [metrics server](https://github.com/kubernetes-sigs/metrics-server). These components can be addressed using the built in [Kubernetes API Aggregation Layer](https://kubernetes.io/docs/concepts/extend-kubernetes/api-extension/apiserver-aggregation/) which is how `metrics server` itself works to extend and provide api based access to node information. By registering additional API extensions troubleshoot plugins can implement both a collection and an API for retrieving custom information which is accessible and revisioned in the same fashion as the rest of the api-server.
 
@@ -36,7 +36,7 @@ TBD
 
 ## Limitations
 
-Using the actual API server will provide limitations on the version skew which can be collected/displayed. This could be addressed by including multiple versions of the kubernetes-api server to allow serving a wide range of support bundles. This limitation likely already exists today but would existing in the tooling that is trying to collect, analyzer, or server the data.
+Using the actual API server will provide limitations on the version skew which can be collected/displayed. This could be addressed by including multiple versions of the kubernetes-api server to allow serving a wide range of support bundles. This limitation likely already exists today but would exist in the tooling that is trying to collect, analyzer, or server the data.
 
 ## Assumptions
 
