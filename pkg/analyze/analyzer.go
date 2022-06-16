@@ -354,6 +354,21 @@ func Analyze(analyzer *troubleshootv1beta2.Analyze, getFile getCollectedFileCont
 		result.Strict = analyzer.YamlCompare.Strict.BoolOrDefaultFalse()
 		return []*AnalyzeResult{result}, nil
 	}
+	if analyzer.JsonCompare != nil {
+		isExcluded, err := isExcluded(analyzer.JsonCompare.Exclude)
+		if err != nil {
+			return nil, err
+		}
+		if isExcluded {
+			return nil, nil
+		}
+		result, err := analyzeJsonCompare(analyzer.JsonCompare, getFile)
+		if err != nil {
+			return nil, err
+		}
+		result.Strict = analyzer.JsonCompare.Strict.BoolOrDefaultFalse()
+		return []*AnalyzeResult{result}, nil
+	}
 	if analyzer.Postgres != nil {
 		isExcluded, err := isExcluded(analyzer.Postgres.Exclude)
 		if err != nil {
