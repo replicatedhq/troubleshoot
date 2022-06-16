@@ -58,6 +58,50 @@ morestuff:
     bar: baz`),
 		},
 		{
+			name: "basic comparison, but fail on match",
+			analyzer: troubleshootv1beta2.YamlCompare{
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							Message: "pass",
+							When:    "false",
+						},
+					},
+					{
+						Fail: &troubleshootv1beta2.SingleOutcome{
+							Message: "fail",
+							When:    "true",
+						},
+					},
+				},
+				CollectorName: "yaml-compare-1-1",
+				FileName:      "yaml-compare-1-1.yaml",
+				Value: `foo: bar
+stuff:
+  foo: bar
+  bar: foo
+morestuff:
+- foo:
+    bar: baz`,
+			},
+			expectResult: AnalyzeResult{
+				IsPass:  false,
+				IsWarn:  false,
+				IsFail:  true,
+				Title:   "yaml-compare-1-1",
+				Message: "fail",
+				IconKey: "kubernetes_text_analyze",
+				IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg",
+			},
+			fileContents: []byte(`foo: bar
+stuff:
+  foo: bar
+  bar: foo
+morestuff:
+- foo:
+    bar: baz`),
+		},
+		{
 			name: "comparison using path 1",
 			analyzer: troubleshootv1beta2.YamlCompare{
 				Outcomes: []*troubleshootv1beta2.Outcome{
@@ -84,6 +128,46 @@ morestuff:
 				IsFail:  false,
 				Title:   "yaml-compare-2",
 				Message: "pass",
+				IconKey: "kubernetes_text_analyze",
+				IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg",
+			},
+			fileContents: []byte(`foo: bar
+stuff:
+  foo: bar
+  bar: foo
+morestuff:
+- foo:
+    bar: baz`),
+		},
+		{
+			name: "comparison using path, but warn when matching",
+			analyzer: troubleshootv1beta2.YamlCompare{
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							Message: "pass",
+							When:    "false",
+						},
+					},
+					{
+						Warn: &troubleshootv1beta2.SingleOutcome{
+							Message: "warn",
+							When:    "true",
+						},
+					},
+				},
+				CollectorName: "yaml-compare-2-1",
+				FileName:      "yaml-compare-2-1.yaml",
+				Path:          "morestuff",
+				Value: `- foo:
+    bar: baz`,
+			},
+			expectResult: AnalyzeResult{
+				IsPass:  false,
+				IsWarn:  true,
+				IsFail:  false,
+				Title:   "yaml-compare-2-1",
+				Message: "warn",
 				IconKey: "kubernetes_text_analyze",
 				IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg",
 			},
@@ -163,6 +247,50 @@ morestuff:
 				IsFail:  true,
 				Title:   "yaml-compare-4",
 				Message: "fail",
+				IconKey: "kubernetes_text_analyze",
+				IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg",
+			},
+			fileContents: []byte(`foo: bar
+stuff:
+  foo: bar
+  bar: foo
+otherstuff:
+- foo:
+    bar: baz`),
+		},
+		{
+			name: "basic comparison pass when not matching",
+			analyzer: troubleshootv1beta2.YamlCompare{
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							Message: "pass",
+							When:    "false",
+						},
+					},
+					{
+						Fail: &troubleshootv1beta2.SingleOutcome{
+							Message: "fail",
+							When:    "true",
+						},
+					},
+				},
+				CollectorName: "yaml-compare-4-1",
+				FileName:      "yaml-compare-4-1.yaml",
+				Value: `foo: bar
+stuff:
+  foo: bar
+  bar: foo
+morestuff:
+- foo:
+    bar: baz`,
+			},
+			expectResult: AnalyzeResult{
+				IsPass:  true,
+				IsWarn:  false,
+				IsFail:  false,
+				Title:   "yaml-compare-4-1",
+				Message: "pass",
 				IconKey: "kubernetes_text_analyze",
 				IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg",
 			},

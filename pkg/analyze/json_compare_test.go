@@ -72,6 +72,64 @@ func Test_jsonCompare(t *testing.T) {
 			}`),
 		},
 		{
+			name: "basic comparison, but fail on match",
+			analyzer: troubleshootv1beta2.JsonCompare{
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							Message: "pass",
+							When:    "false",
+						},
+					},
+					{
+						Fail: &troubleshootv1beta2.SingleOutcome{
+							Message: "fail",
+							When:    "true",
+						},
+					},
+				},
+				CollectorName: "json-compare-1-1",
+				FileName:      "json-compare-1-1.json",
+				Value: `{
+					"foo": "bar",
+					"stuff": {
+						"foo": "bar",
+						"bar": true
+					},
+					"morestuff": [
+						{
+							"foo": {
+								"bar": 123
+							}
+						}
+					]
+				}`,
+			},
+			expectResult: AnalyzeResult{
+				IsPass:  false,
+				IsWarn:  false,
+				IsFail:  true,
+				Title:   "json-compare-1-1",
+				Message: "fail",
+				IconKey: "kubernetes_text_analyze",
+				IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg",
+			},
+			fileContents: []byte(`{
+				"foo": "bar",
+				"stuff": {
+					"foo": "bar",
+					"bar": true
+				},
+				"morestuff": [
+					{
+						"foo": {
+							"bar": 123
+						}
+					}
+				]
+			}`),
+		},
+		{
 			name: "comparison using path 1",
 			analyzer: troubleshootv1beta2.JsonCompare{
 				Outcomes: []*troubleshootv1beta2.Outcome{
@@ -147,6 +205,52 @@ func Test_jsonCompare(t *testing.T) {
 				IsFail:  false,
 				Title:   "json-compare-3",
 				Message: "pass",
+				IconKey: "kubernetes_text_analyze",
+				IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg",
+			},
+			fileContents: []byte(`{
+				"foo": "bar",
+				"stuff": {
+					"foo": "bar",
+					"bar": true
+				},
+				"morestuff": [
+					{
+						"foo": {
+							"bar": 123
+						}
+					}
+				]
+			}`),
+		},
+		{
+			name: "comparison using path 2, but warn on match",
+			analyzer: troubleshootv1beta2.JsonCompare{
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							Message: "pass",
+							When:    "false",
+						},
+					},
+					{
+						Warn: &troubleshootv1beta2.SingleOutcome{
+							Message: "warn",
+							When:    "true",
+						},
+					},
+				},
+				CollectorName: "json-compare-3-1",
+				FileName:      "json-compare-3-1.json",
+				Path:          "morestuff.[0].foo.bar",
+				Value:         `123`,
+			},
+			expectResult: AnalyzeResult{
+				IsPass:  false,
+				IsWarn:  true,
+				IsFail:  false,
+				Title:   "json-compare-3-1",
+				Message: "warn",
 				IconKey: "kubernetes_text_analyze",
 				IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg",
 			},
@@ -253,6 +357,58 @@ func Test_jsonCompare(t *testing.T) {
 				IsFail:  true,
 				Title:   "json-compare-5",
 				Message: "fail",
+				IconKey: "kubernetes_text_analyze",
+				IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg",
+			},
+			fileContents: []byte(`{
+				"foo": "bar",
+				"stuff": {
+					"foo": "bar",
+					"bar": true
+				},
+				"morestuff": [
+					{
+						"foo": {
+							"bar": 123
+						}
+					}
+				]
+			}`),
+		},
+		{
+			name: "comparison using path, but pass when not matching",
+			analyzer: troubleshootv1beta2.JsonCompare{
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							Message: "pass",
+							When:    "false",
+						},
+					},
+					{
+						Fail: &troubleshootv1beta2.SingleOutcome{
+							Message: "fail",
+							When:    "true",
+						},
+					},
+				},
+				CollectorName: "json-compare-5-1",
+				FileName:      "json-compare-5-1.json",
+				Path:          "morestuff",
+				Value: `[
+					{
+						"foo": {
+							"bar": 321
+						}
+					}
+				]`,
+			},
+			expectResult: AnalyzeResult{
+				IsPass:  true,
+				IsWarn:  false,
+				IsFail:  false,
+				Title:   "json-compare-5-1",
+				Message: "pass",
 				IconKey: "kubernetes_text_analyze",
 				IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg",
 			},

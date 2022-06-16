@@ -3,6 +3,7 @@ package analyzer
 import (
 	"path/filepath"
 	"reflect"
+	"strconv"
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
@@ -51,27 +52,48 @@ func analyzeYamlCompare(analyzer *troubleshootv1beta2.YamlCompare, getCollectedF
 
 	for _, outcome := range analyzer.Outcomes {
 		if outcome.Fail != nil {
-			if !equal {
+			when := false
+			if outcome.Fail.When != "" {
+				when, err = strconv.ParseBool(outcome.Fail.When)
+				if err != nil {
+					return nil, errors.Wrapf(err, "failed to process when statement: %s", outcome.Fail.When)
+				}
+			}
+
+			if when == equal {
 				result.IsFail = true
 				result.Message = outcome.Fail.Message
 				result.URI = outcome.Fail.URI
-
 				return result, nil
 			}
 		} else if outcome.Warn != nil {
-			if !equal {
+			when := false
+			if outcome.Warn.When != "" {
+				when, err = strconv.ParseBool(outcome.Warn.When)
+				if err != nil {
+					return nil, errors.Wrapf(err, "failed to process when statement: %s", outcome.Warn.When)
+				}
+			}
+
+			if when == equal {
 				result.IsWarn = true
 				result.Message = outcome.Warn.Message
 				result.URI = outcome.Warn.URI
-
 				return result, nil
 			}
 		} else if outcome.Pass != nil {
-			if equal {
+			when := true // default to passing when values are equal
+			if outcome.Pass.When != "" {
+				when, err = strconv.ParseBool(outcome.Pass.When)
+				if err != nil {
+					return nil, errors.Wrapf(err, "failed to process when statement: %s", outcome.Pass.When)
+				}
+			}
+
+			if when == equal {
 				result.IsPass = true
 				result.Message = outcome.Pass.Message
 				result.URI = outcome.Pass.URI
-
 				return result, nil
 			}
 		}
