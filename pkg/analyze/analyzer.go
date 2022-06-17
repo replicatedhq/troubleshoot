@@ -2,6 +2,7 @@ package analyzer
 
 import (
 	"fmt"
+	"reflect"
 	"strconv"
 
 	"github.com/pkg/errors"
@@ -501,4 +502,26 @@ func Analyze(analyzer *troubleshootv1beta2.Analyze, getFile getCollectedFileCont
 	}
 
 	return nil, errors.New("invalid analyzer")
+}
+
+func GetExcludeFlag(analyzer *troubleshootv1beta2.Analyze) *multitype.BoolOrString {
+	if analyzer == nil {
+		return nil
+	}
+
+	reflected := reflect.ValueOf(analyzer).Elem()
+	for i := 0; i < reflected.NumField(); i++ {
+		if reflected.Field(i).IsNil() {
+			continue
+		}
+
+		field := reflect.Indirect(reflected.Field(i)).FieldByName("Exclude")
+		exclude, ok := field.Interface().(*multitype.BoolOrString)
+		if !ok {
+			continue
+		}
+		return exclude
+	}
+
+	return nil
 }
