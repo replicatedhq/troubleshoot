@@ -293,7 +293,7 @@ func (c *Collector) RunCollectorSync(clientConfig *rest.Config, client kubernete
 	}
 
 	if c.Redact {
-		err = redactResult(c.BundlePath, result, globalRedactors)
+		err = RedactResult(c.BundlePath, result, globalRedactors)
 		err = errors.Wrap(err, "failed to redact")
 	}
 

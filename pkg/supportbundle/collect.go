@@ -20,7 +20,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-func runHostCollectors(opts SupportBundleCreateOpts, hostCollectors []*troubleshootv1beta2.HostCollect, bundlePath string) (collect.CollectorResult, error) {
+func runHostCollectors(additionalRedactors *troubleshootv1beta2.Redactor, opts SupportBundleCreateOpts, hostCollectors []*troubleshootv1beta2.HostCollect, bundlePath string) (collect.CollectorResult, error) {
 	collectSpecs := make([]*troubleshootv1beta2.HostCollect, 0, 0)
 	collectSpecs = append(collectSpecs, hostCollectors...)
 
@@ -53,6 +53,17 @@ func runHostCollectors(opts SupportBundleCreateOpts, hostCollectors []*troublesh
 	}
 
 	collectResult = allCollectedData
+
+	globalRedactors := []*troubleshootv1beta2.Redact{}
+	if additionalRedactors != nil {
+		globalRedactors = additionalRedactors.Spec.Redactors
+	}
+
+	if true {
+		err := collect.RedactResult(bundlePath, collectResult, globalRedactors)
+		err = errors.Wrap(err, "failed to redact")
+		return collectResult, err
+	}
 
 	return collectResult, nil
 }
