@@ -131,6 +131,24 @@ type TextAnalyze struct {
 	Outcomes        []*Outcome `json:"outcomes" yaml:"outcomes"`
 }
 
+type YamlCompare struct {
+	AnalyzeMeta   `json:",inline" yaml:",inline"`
+	CollectorName string     `json:"collectorName,omitempty" yaml:"collectorName,omitempty"`
+	FileName      string     `json:"fileName,omitempty" yaml:"fileName,omitempty"`
+	Path          string     `json:"path,omitempty" yaml:"path,omitempty"`
+	Value         string     `json:"value,omitempty" yaml:"value,omitempty"`
+	Outcomes      []*Outcome `json:"outcomes" yaml:"outcomes"`
+}
+
+type JsonCompare struct {
+	AnalyzeMeta   `json:",inline" yaml:",inline"`
+	CollectorName string     `json:"collectorName,omitempty" yaml:"collectorName,omitempty"`
+	FileName      string     `json:"fileName,omitempty" yaml:"fileName,omitempty"`
+	Path          string     `json:"path,omitempty" yaml:"path,omitempty"`
+	Value         string     `json:"value,omitempty" yaml:"value,omitempty"`
+	Outcomes      []*Outcome `json:"outcomes" yaml:"outcomes"`
+}
+
 type DatabaseAnalyze struct {
 	AnalyzeMeta   `json:",inline" yaml:",inline"`
 	Outcomes      []*Outcome `json:"outcomes" yaml:"outcomes"`
@@ -175,9 +193,10 @@ type SysctlAnalyze struct {
 }
 
 type AnalyzeMeta struct {
-	CheckName string                  `json:"checkName,omitempty" yaml:"checkName,omitempty"`
-	Exclude   *multitype.BoolOrString `json:"exclude,omitempty" yaml:"exclude,omitempty"`
-	Strict    *multitype.BoolOrString `json:"strict,omitempty" yaml:"strict,omitempty"`
+	CheckName   string                  `json:"checkName,omitempty" yaml:"checkName,omitempty"`
+	Exclude     *multitype.BoolOrString `json:"exclude,omitempty" yaml:"exclude,omitempty"`
+	Strict      *multitype.BoolOrString `json:"strict,omitempty" yaml:"strict,omitempty"`
+	Annotations map[string]string       `json:"annotations,omitempty" yaml:"annotations,omitempty"`
 }
 
 type Analyze struct {
@@ -197,6 +216,8 @@ type Analyze struct {
 	Distribution             *Distribution             `json:"distribution,omitempty" yaml:"distribution,omitempty"`
 	NodeResources            *NodeResources            `json:"nodeResources,omitempty" yaml:"nodeResources,omitempty"`
 	TextAnalyze              *TextAnalyze              `json:"textAnalyze,omitempty" yaml:"textAnalyze,omitempty"`
+	YamlCompare              *YamlCompare              `json:"yamlCompare,omitempty" yaml:"yamlCompare,omitempty"`
+	JsonCompare              *JsonCompare              `json:"jsonCompare,omitempty" yaml:"jsonCompare,omitempty"`
 	Postgres                 *DatabaseAnalyze          `json:"postgres,omitempty" yaml:"postgres,omitempty"`
 	Mysql                    *DatabaseAnalyze          `json:"mysql,omitempty" yaml:"mysql,omitempty"`
 	Redis                    *DatabaseAnalyze          `json:"redis,omitempty" yaml:"redis,omitempty"`
@@ -205,80 +226,4 @@ type Analyze struct {
 	RegistryImages           *RegistryImagesAnalyze    `json:"registryImages,omitempty" yaml:"registryImages,omitempty"`
 	WeaveReport              *WeaveReportAnalyze       `json:"weaveReport,omitempty" yaml:"weaveReport,omitempty"`
 	Sysctl                   *SysctlAnalyze            `json:"sysctl,omitempty" yaml:"sysctl,omitempty"`
-}
-
-func (a *Analyze) GetExclude() *multitype.BoolOrString {
-	if a.ClusterVersion != nil {
-		return a.ClusterVersion.Exclude
-	}
-	if a.StorageClass != nil {
-		return a.StorageClass.Exclude
-	}
-	if a.CustomResourceDefinition != nil {
-		return a.CustomResourceDefinition.Exclude
-	}
-	if a.Ingress != nil {
-		return a.Ingress.Exclude
-	}
-	if a.Secret != nil {
-		return a.Secret.Exclude
-	}
-	if a.ConfigMap != nil {
-		return a.ConfigMap.Exclude
-	}
-	if a.ImagePullSecret != nil {
-		return a.ImagePullSecret.Exclude
-	}
-	if a.DeploymentStatus != nil {
-		return a.DeploymentStatus.Exclude
-	}
-	if a.StatefulsetStatus != nil {
-		return a.StatefulsetStatus.Exclude
-	}
-	if a.JobStatus != nil {
-		return a.JobStatus.Exclude
-	}
-	if a.ReplicaSetStatus != nil {
-		return a.ReplicaSetStatus.Exclude
-	}
-	if a.ClusterPodStatuses != nil {
-		return a.ClusterPodStatuses.Exclude
-	}
-	if a.ContainerRuntime != nil {
-		return a.ContainerRuntime.Exclude
-	}
-	if a.Distribution != nil {
-		return a.Distribution.Exclude
-	}
-	if a.NodeResources != nil {
-		return a.NodeResources.Exclude
-	}
-	if a.TextAnalyze != nil {
-		return a.TextAnalyze.Exclude
-	}
-	if a.Postgres != nil {
-		return a.Postgres.Exclude
-	}
-	if a.Mysql != nil {
-		return a.Mysql.Exclude
-	}
-	if a.Redis != nil {
-		return a.Redis.Exclude
-	}
-	if a.CephStatus != nil {
-		return a.CephStatus.Exclude
-	}
-	if a.Longhorn != nil {
-		return a.Longhorn.Exclude
-	}
-	if a.RegistryImages != nil {
-		return a.RegistryImages.Exclude
-	}
-	if a.WeaveReport != nil {
-		return a.WeaveReport.Exclude
-	}
-	if a.Sysctl != nil {
-		return a.Sysctl.Exclude
-	}
-	return nil
 }
