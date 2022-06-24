@@ -48,18 +48,17 @@ func (c *CollectRunHost) Collect(progressChan chan<- interface{}) (map[string][]
 	if err != nil {
 		if werr, ok := err.(*exec.ExitError); ok {
 			runResult.ExitCode = strings.TrimPrefix(werr.Error(), "exit status ")
+			runResult.Error = stderr.String()
 		} else {
 			return nil, errors.Wrap(err, "failed to run")
 		}
 	}
 
-	runResult.Error = stderr.String()
-
 	collectorName := c.hostCollector.CollectorName
 	if collectorName == "" {
 		collectorName = "run-host"
 	}
-	resultDetails := filepath.Join("host-collectors/run-host", collectorName+"-info.json")
+	resultInfo := filepath.Join("host-collectors/run-host", collectorName+"-info.json")
 	result := filepath.Join("host-collectors/run-host", collectorName+".txt")
 
 	b, err := json.Marshal(runResult)
@@ -68,12 +67,12 @@ func (c *CollectRunHost) Collect(progressChan chan<- interface{}) (map[string][]
 	}
 
 	output := NewResult()
-	output.SaveResult(c.BundlePath, resultDetails, bytes.NewBuffer(b))
+	output.SaveResult(c.BundlePath, resultInfo, bytes.NewBuffer(b))
 	output.SaveResult(c.BundlePath, result, bytes.NewBuffer(stdout.Bytes()))
 
 	runHostOutput := map[string][]byte{
-		resultDetails: b,
-		result:        stdout.Bytes(),
+		resultInfo: b,
+		result:     stdout.Bytes(),
 	}
 
 	return runHostOutput, nil
