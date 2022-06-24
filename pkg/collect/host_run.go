@@ -11,26 +11,26 @@ import (
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 )
 
-type RunHostResults struct {
+type HostRunResults struct {
 	Command  string `json:"result"`
 	ExitCode string `json:"exitCode"`
 	Error    string `json:"error"`
 }
 
-type CollectRunHost struct {
-	hostCollector *troubleshootv1beta2.RunHost
+type CollectHostRun struct {
+	hostCollector *troubleshootv1beta2.HostRun
 	BundlePath    string
 }
 
-func (c *CollectRunHost) Title() string {
+func (c *CollectHostRun) Title() string {
 	return hostCollectorTitleOrDefault(c.hostCollector.HostCollectorMeta, "Run Host")
 }
 
-func (c *CollectRunHost) IsExcluded() (bool, error) {
+func (c *CollectHostRun) IsExcluded() (bool, error) {
 	return isExcluded(c.hostCollector.Exclude)
 }
 
-func (c *CollectRunHost) Collect(progressChan chan<- interface{}) (map[string][]byte, error) {
+func (c *CollectHostRun) Collect(progressChan chan<- interface{}) (map[string][]byte, error) {
 	runHostCollector := c.hostCollector
 
 	cmd := exec.Command(runHostCollector.Command, runHostCollector.Args...)
@@ -39,7 +39,7 @@ func (c *CollectRunHost) Collect(progressChan chan<- interface{}) (map[string][]
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 
-	runResult := RunHostResults{
+	runResult := HostRunResults{
 		Command:  cmd.String(),
 		ExitCode: "0",
 	}

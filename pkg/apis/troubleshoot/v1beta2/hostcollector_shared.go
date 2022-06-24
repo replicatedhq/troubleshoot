@@ -150,7 +150,7 @@ type HostServices struct {
 	HostCollectorMeta `json:",inline" yaml:",inline"`
 }
 
-type RunHost struct {
+type HostRun struct {
 	HostCollectorMeta `json:",inline" yaml:",inline"`
 	Command           string   `json:"command"`
 	Args              []string `json:"args"`
@@ -175,7 +175,7 @@ type HostCollect struct {
 	Certificate           *Certificate           `json:"certificate,omitempty" yaml:"certificate,omitempty"`
 	HostServices          *HostServices          `json:"hostServices,omitempty" yaml:"hostServices,omitempty"`
 	HostOS                *HostOS                `json:"hostOS,omitempty" yaml:"hostOS,omitempty"`
-	RunHost               *RunHost               `json:"run,omitempty" yaml:"run,omitempty"`
+	HostRun               *HostRun               `json:"run,omitempty" yaml:"run,omitempty"`
 }
 
 func (c *HostCollect) GetName() string {
