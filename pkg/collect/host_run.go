@@ -11,7 +11,7 @@ import (
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 )
 
-type HostRunResults struct {
+type HostRunInfo struct {
 	Command  string `json:"result"`
 	ExitCode string `json:"exitCode"`
 	Error    string `json:"error"`
@@ -39,7 +39,7 @@ func (c *CollectHostRun) Collect(progressChan chan<- interface{}) (map[string][]
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 
-	runResult := HostRunResults{
+	runResult := HostRunInfo{
 		Command:  cmd.String(),
 		ExitCode: "0",
 	}
