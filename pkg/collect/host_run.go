@@ -12,7 +12,7 @@ import (
 )
 
 type HostRunInfo struct {
-	Command  string `json:"result"`
+	Command  string `json:"command"`
 	ExitCode string `json:"exitCode"`
 	Error    string `json:"error"`
 }
@@ -39,7 +39,7 @@ func (c *CollectHostRun) Collect(progressChan chan<- interface{}) (map[string][]
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 
-	runResult := HostRunInfo{
+	runInfo := HostRunInfo{
 		Command:  cmd.String(),
 		ExitCode: "0",
 	}
@@ -47,8 +47,8 @@ func (c *CollectHostRun) Collect(progressChan chan<- interface{}) (map[string][]
 	err := cmd.Run()
 	if err != nil {
 		if werr, ok := err.(*exec.ExitError); ok {
-			runResult.ExitCode = strings.TrimPrefix(werr.Error(), "exit status ")
-			runResult.Error = stderr.String()
+			runInfo.ExitCode = strings.TrimPrefix(werr.Error(), "exit status ")
+			runInfo.Error = stderr.String()
 		} else {
 			return nil, errors.Wrap(err, "failed to run")
 		}
@@ -61,7 +61,7 @@ func (c *CollectHostRun) Collect(progressChan chan<- interface{}) (map[string][]
 	resultInfo := filepath.Join("host-collectors/run-host", collectorName+"-info.json")
 	result := filepath.Join("host-collectors/run-host", collectorName+".txt")
 
-	b, err := json.Marshal(runResult)
+	b, err := json.Marshal(runInfo)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to marshal run host result")
 	}
