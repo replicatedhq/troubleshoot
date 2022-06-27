@@ -59,7 +59,6 @@ func runHostCollectors(opts SupportBundleCreateOpts, hostCollectors []*troublesh
 
 // TODO (dan): This is VERY similar to the Preflight collect package and should be refactored.
 func runCollectors(collectors []*troubleshootv1beta2.Collect, additionalRedactors *troubleshootv1beta2.Redactor, bundlePath string, opts SupportBundleCreateOpts) (collect.CollectorResult, error) {
-
 	collectSpecs := make([]*troubleshootv1beta2.Collect, 0)
 	collectSpecs = append(collectSpecs, collectors...)
 	collectSpecs = ensureCollectorInList(collectSpecs, troubleshootv1beta2.Collect{ClusterInfo: &troubleshootv1beta2.ClusterInfo{}})

@@ -2,6 +2,7 @@ package collect
 
 import (
 	"context"
+	"fmt"
 	"runtime"
 	"strconv"
 
@@ -205,6 +206,35 @@ func (c *Collector) IsExcluded() bool {
 	}
 
 	return false
+}
+
+// CollectAndStream will use the watch api and other stream techniques to keep the collector open
+// and streaming to the endpoint in opts
+// This function will block and not return until there's an error or the collector is closed
+func (c *Collector) CollectAndStream(clientConfig *rest.Config, client kubernetes.Interface, globalRefactors []*troubleshootv1beta2.Redact) error {
+	defer func() {
+		if r := recover(); r != nil {
+			_, file, line, _ := runtime.Caller(4)
+			fmt.Printf("recovered from panic at \"%s:%d\": %v", file, line, r)
+		}
+	}()
+
+	if c.IsExcluded() {
+		return nil
+	}
+
+	// ctx := context.TODO()
+
+	// get a stream ID from the stream server
+	streamID := "this-is-not-a-real-stream-id"
+
+	if c.Collect.Logs != nil {
+		if err := LogsStream(c, c.Collect.Logs, streamID); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (c *Collector) RunCollectorSync(clientConfig *rest.Config, client kubernetes.Interface, globalRedactors []*troubleshootv1beta2.Redact) (result CollectorResult, err error) {

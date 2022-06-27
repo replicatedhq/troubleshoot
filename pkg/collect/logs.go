@@ -1,9 +1,11 @@
 package collect
 
 import (
+	"bufio"
 	"context"
 	"fmt"
 	"io"
+	"net/http"
 	"strings"
 	"time"
 
@@ -14,6 +16,90 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
+
+// LogsStream will block, streaming logs back from the collector
+// This function needs to watch for the pods to change
+func LogsStream(c *Collector, logsCollector *troubleshootv1beta2.Logs, streamID string) error {
+	fmt.Printf("LogsStream: %+v\n", logsCollector)
+
+	client, err := kubernetes.NewForConfig(c.ClientConfig)
+	if err != nil {
+		return err
+	}
+
+	ctx := context.Background()
+
+	pods, podsErrors := listPodsInSelectors(ctx, client, logsCollector.Namespace, logsCollector.Selector)
+	if len(podsErrors) > 0 {
+		fmt.Printf("%s\n", strings.Join(podsErrors, "\n"))
+	}
+
+	// TODO need to watch for new pods, disconnect from deleting pods, etc
+
+	for _, pod := range pods {
+		if len(logsCollector.ContainerNames) == 0 {
+			containerNames := []string{}
+			for _, container := range pod.Spec.Containers {
+				containerNames = append(containerNames, container.Name)
+			}
+			for _, container := range pod.Spec.InitContainers {
+				containerNames = append(containerNames, container.Name)
+			}
+
+			for _, containerName := range containerNames {
+				fmt.Printf("Streaming logs for pod %s/%s container %s\n", pod.Namespace, pod.Name, containerName)
+
+				logStream, err := pipeFollowPodLogs(ctx, client, pod, pod.Name, containerName)
+				if err != nil {
+					fmt.Printf("Failed to stream logs for pod %s/%s container %s: %s\n", pod.Namespace, pod.Name, containerName, err)
+					return err
+				}
+
+				rd := bufio.NewReader(logStream)
+
+				for {
+					line, err := rd.ReadString('\n')
+					if err != nil {
+						if err == io.EOF {
+							break
+						}
+						fmt.Printf("Failed to read line from log stream for pod %s/%s container %s: %s\n", pod.Namespace, pod.Name, containerName, err)
+						return err
+					}
+
+					url := fmt.Sprintf("https://replicated-app-marccampbell.replicated.okteto.dev/supportbundle/stream/%s", streamID)
+					req, err := http.NewRequest("PUT", url, strings.NewReader(line))
+					if err != nil {
+						fmt.Printf("Failed to create request for pod %s/%s container %s: %s\n", pod.Namespace, pod.Name, containerName, err)
+						return err
+					}
+
+					req.Header.Set("Content-Type", "text/plain")
+					req.Header.Set("X-Replicated-Stream-ID", streamID)
+					req.Header.Set("X-Replicated-Stream-Container", containerName)
+					req.Header.Set("X-Replicated-Stream-Pod", pod.Name)
+					req.Header.Set("X-Replicated-Stream-Namespace", pod.Namespace)
+
+					resp, err := http.DefaultClient.Do(req)
+					if err != nil {
+						fmt.Printf("Failed to send log line to stream %s: %s\n", streamID, err)
+						return err
+					}
+
+					if resp.StatusCode != http.StatusOK {
+						fmt.Printf("Failed to send log line to stream %s: %s\n", streamID, resp.Status)
+						return errors.New(resp.Status)
+					}
+				}
+			}
+		}
+	}
+
+	for {
+		time.Sleep(1 * time.Second)
+	}
+
+}
 
 func Logs(c *Collector, logsCollector *troubleshootv1beta2.Logs) (CollectorResult, error) {
 	client, err := kubernetes.NewForConfig(c.ClientConfig)
@@ -99,7 +185,22 @@ func listPodsInSelectors(ctx context.Context, client *kubernetes.Clientset, name
 	return pods.Items, nil
 }
 
-func savePodLogs(ctx context.Context, bundlePath string, client *kubernetes.Clientset, pod corev1.Pod, name, container string, limits *troubleshootv1beta2.LogLimits, follow bool) (CollectorResult, error) {
+func pipeFollowPodLogs(ctx context.Context, client *kubernetes.Clientset, pod corev1.Pod, name string, container string) (io.ReadCloser, error) {
+	podLogOpts := corev1.PodLogOptions{
+		Follow:    true,
+		Container: container,
+	}
+
+	req := client.CoreV1().Pods(pod.Namespace).GetLogs(pod.Name, &podLogOpts)
+	podLogs, err := req.Stream(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get log stream")
+	}
+
+	return podLogs, nil
+}
+
+func savePodLogs(ctx context.Context, bundlePath string, client *kubernetes.Clientset, pod corev1.Pod, name string, container string, limits *troubleshootv1beta2.LogLimits, follow bool) (CollectorResult, error) {
 	podLogOpts := corev1.PodLogOptions{
 		Follow:    follow,
 		Container: container,

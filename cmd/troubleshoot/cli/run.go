@@ -32,7 +32,8 @@ import (
 )
 
 func runTroubleshoot(v *viper.Viper, arg string) error {
-	interactive := v.GetBool("interactive") && isatty.IsTerminal(os.Stdout.Fd())
+	stream := v.GetBool("stream")
+	interactive := v.GetBool("interactive") && isatty.IsTerminal(os.Stdout.Fd()) && !stream
 
 	if interactive {
 		fmt.Print(cursor.Hide())
@@ -193,6 +194,16 @@ func runTroubleshoot(v *viper.Viper, arg string) error {
 		c.Println(fmt.Sprintf("\r%s\r", cursor.ClearEntireLine()))
 	}
 
+	if stream {
+		// streaming support bundles don't "finish" or support uploading an archive
+		// in fact, there's no archive.
+		if err := supportbundle.StreamSupportBundleFromSpec(&supportBundle.Spec, additionalRedactors, createOpts); err != nil {
+			return errors.Wrap(err, "failed to stream support bundle")
+		}
+
+		return nil
+	}
+
 	response, err := supportbundle.CollectSupportBundleFromSpec(&supportBundle.Spec, additionalRedactors, createOpts)
 	if err != nil {
 		return errors.Wrap(err, "failed to run collect and analyze process")
@@ -236,12 +247,14 @@ the %s Admin Console to begin analysis.`
 	if interactive {
 		fmt.Printf("\r%s\r", cursor.ClearEntireLine())
 	}
+
 	if response.FileUploaded {
 		fmt.Printf("A support bundle has been created and uploaded to your cluster for analysis. Please visit the Troubleshoot page to continue.\n")
 		fmt.Printf("A copy of this support bundle was written to the current directory, named %q\n", response.ArchivePath)
 	} else {
 		fmt.Printf("A support bundle has been created in the current directory named %q\n", response.ArchivePath)
 	}
+
 	return nil
 }
 
