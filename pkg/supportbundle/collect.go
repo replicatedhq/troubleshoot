@@ -20,7 +20,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-func runHostCollectors(additionalRedactors *troubleshootv1beta2.Redactor, opts SupportBundleCreateOpts, hostCollectors []*troubleshootv1beta2.HostCollect, bundlePath string) (collect.CollectorResult, error) {
+func runHostCollectors(hostCollectors []*troubleshootv1beta2.HostCollect, additionalRedactors *troubleshootv1beta2.Redactor, bundlePath string, opts SupportBundleCreateOpts) (collect.CollectorResult, error) {
 	collectSpecs := make([]*troubleshootv1beta2.HostCollect, 0, 0)
 	collectSpecs = append(collectSpecs, hostCollectors...)
 
