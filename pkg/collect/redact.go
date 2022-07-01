@@ -15,7 +15,7 @@ import (
 	"github.com/replicatedhq/troubleshoot/pkg/redact"
 )
 
-func redactResult(bundlePath string, input CollectorResult, additionalRedactors []*troubleshootv1beta2.Redact) error {
+func RedactResult(bundlePath string, input CollectorResult, additionalRedactors []*troubleshootv1beta2.Redact) error {
 	for k, v := range input {
 		var reader io.Reader
 		if v == nil {
@@ -46,7 +46,7 @@ func redactResult(bundlePath string, input CollectorResult, additionalRedactors 
 			if err != nil {
 				return errors.Wrap(err, "failed to decompress file")
 			}
-			err = redactResult(tmpDir, subResult, additionalRedactors)
+			err = RedactResult(tmpDir, subResult, additionalRedactors)
 			if err != nil {
 				return errors.Wrap(err, "failed to redact file")
 			}
