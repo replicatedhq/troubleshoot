@@ -59,10 +59,13 @@ func runHostCollectors(additionalRedactors *troubleshootv1beta2.Redactor, opts S
 		globalRedactors = additionalRedactors.Spec.Redactors
 	}
 
-	if true {
+	if opts.Redact {
 		err := collect.RedactResult(bundlePath, collectResult, globalRedactors)
-		err = errors.Wrap(err, "failed to redact")
-		return collectResult, err
+		fmt.Println("it did")
+		if err != nil {
+			err = errors.Wrap(err, "failed to redact")
+			return collectResult, err
+		}
 	}
 
 	return collectResult, nil
