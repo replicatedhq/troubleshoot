@@ -797,6 +797,9 @@ func crsV1(ctx context.Context, client dynamic.Interface, config *rest.Config, n
 		if len(crd.Spec.Versions) > 0 {
 			version = crd.Spec.Versions[0].Name
 		}
+		if len(crd.Status.StoredVersions) > 0 {
+			version = crd.Status.StoredVersions[0]
+		}
 		gvr := schema.GroupVersionResource{
 			Group:    crd.Spec.Group,
 			Version:  version,
