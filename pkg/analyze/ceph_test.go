@@ -219,14 +219,14 @@ func Test_cephStatus(t *testing.T) {
 			}`,
 		},
 		{
-			name:     "warn case with multiple health status messages",
+			name:     "warn case with health status message and summary",
 			analyzer: troubleshootv1beta2.CephStatusAnalyze{},
 			expectResult: AnalyzeResult{
 				IsPass:  false,
 				IsWarn:  true,
 				IsFail:  false,
 				Title:   "Ceph Status",
-				Message: "Ceph status is HEALTH_WARN\nPOOL_NO_REDUNDANCY: 11 pool(s) have no replicas configured\nPOOL_PG_NUM_NOT_POWER_OF_TWO: 8 pool(s) have non-power-of-two pg_num",
+				Message: "Ceph status is HEALTH_WARN\nPOOL_NO_REDUNDANCY: 11 pool(s) have no replicas configured",
 				URI:     "https://rook.io/docs/rook/v1.4/ceph-common-issues.html",
 				IconKey: "rook",
 				IconURI: "https://troubleshoot.sh/images/analyzer-icons/rook.svg?w=11&h=16",
@@ -244,12 +244,6 @@ func Test_cephStatus(t *testing.T) {
 								"count": 11
 							},
 							"muted": false
-						},
-						"POOL_PG_NUM_NOT_POWER_OF_TWO": {
-							"severity": "HEALTH_WARN",
-							"summary": {
-								"message": "8 pool(s) have non-power-of-two pg_num"
-							}
 						}
 					}
 				}

@@ -39,12 +39,6 @@ func analyzePostgres(analyzer *troubleshootv1beta2.DatabaseAnalyze, getCollected
 		IconURI: "https://troubleshoot.sh/images/analyzer-icons/postgres-analyze.svg",
 	}
 
-	if databaseConnection.Error != "" {
-		result.IsFail = true
-		result.Message = databaseConnection.Error
-		return result, nil
-	}
-
 	for _, outcome := range analyzer.Outcomes {
 		if outcome.Fail != nil {
 			if outcome.Fail.When == "" {
@@ -61,8 +55,14 @@ func analyzePostgres(analyzer *troubleshootv1beta2.DatabaseAnalyze, getCollected
 			}
 
 			if isMatch {
+
+				if databaseConnection.Error != "" {
+					result.Message = outcome.Fail.Message + " " + databaseConnection.Error
+				} else {
+					result.Message = outcome.Fail.Message
+				}
+
 				result.IsFail = true
-				result.Message = outcome.Fail.Message
 				result.URI = outcome.Fail.URI
 
 				return result, nil
