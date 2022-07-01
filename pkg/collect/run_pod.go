@@ -98,20 +98,17 @@ func RunPodsReadyNodes(ctx context.Context, client v1.CoreV1Interface, opts RunP
 }
 
 // RunPodLogs runs a pod to completion on a node and returns its logs
-func RunPodLogs(ctx context.Context, client v1.CoreV1Interface, pod *corev1.Pod) ([]byte, error) {
+func RunPodLogs(ctx context.Context, client v1.CoreV1Interface, podSpec *corev1.Pod) ([]byte, error) {
 	// 1. Create
-	pod, err := client.Pods(pod.Namespace).Create(ctx, pod, metav1.CreateOptions{})
+	pod, err := client.Pods(podSpec.Namespace).Create(ctx, podSpec, metav1.CreateOptions{})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create pod")
 	}
 	defer func() {
-		go func() {
-			// use context.background for the after-completion cleanup, as the parent context might already be over
-			err := client.Pods(pod.Namespace).Delete(context.Background(), pod.Name, metav1.DeleteOptions{})
-			if err != nil && !kuberneteserrors.IsNotFound(err) {
-				logger.Printf("Failed to delete pod %s: %v\n", pod.Name, err)
-			}
-		}()
+		err := client.Pods(pod.Namespace).Delete(context.Background(), pod.Name, metav1.DeleteOptions{})
+		if err != nil && !kuberneteserrors.IsNotFound(err) {
+			logger.Printf("Failed to delete pod %s: %v\n", pod.Name, err)
+		}
 	}()
 
 	// 2. Wait
