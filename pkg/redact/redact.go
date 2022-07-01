@@ -304,6 +304,11 @@ func getRedactors(path string) ([]Redactor, error) {
 			line2: `(?i)("value": *")(?P<mask>.*[^\"]*)(")`,
 			name:  "Redact usernames in multiline JSON",
 		},
+		{
+			line1: `(?i)"entity": *"(osd|client|mgr)\..*[^\"]*"`,
+			line2: `(?i)("key": *")(?P<mask>.{38}==[^\"]*)(")`,
+			name:  "Redact 'key' values found in Ceph auth lists",
+		},
 	}
 
 	for _, l := range doubleLines {
