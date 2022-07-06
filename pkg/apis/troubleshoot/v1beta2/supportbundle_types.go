@@ -26,6 +26,7 @@ type SupportBundleSpec struct {
 	Collectors      []*Collect         `json:"collectors,omitempty" yaml:"collectors,omitempty"`
 	HostCollectors  []*HostCollect     `json:"hostCollectors,omitempty" yaml:"hostCollectors,omitempty"`
 	Analyzers       []*Analyze         `json:"analyzers,omitempty" yaml:"analyzers,omitempty"`
+	HostAnalyzers   []*HostAnalyze     `json:"hostAnalyzers,omitempty" yaml:"hostAnalyzers,omitempty"`
 }
 
 // SupportBundleStatus defines the observed state of SupportBundle

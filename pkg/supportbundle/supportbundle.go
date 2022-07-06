@@ -201,10 +201,10 @@ func ProcessSupportBundleAfterCollection(spec *troubleshootv1beta2.SupportBundle
 // AnalyzeSupportBundle performs analysis on a support bundle using the support bundle spec and an already unpacked support
 // bundle on disk
 func AnalyzeSupportBundle(spec *troubleshootv1beta2.SupportBundleSpec, tmpDir string) ([]*analyzer.AnalyzeResult, error) {
-	if len(spec.Analyzers) == 0 {
+	if len(spec.Analyzers) == 0 && len(spec.HostAnalyzers) == 0 {
 		return nil, nil
 	}
-	analyzeResults, err := analyzer.AnalyzeLocal(tmpDir, spec.Analyzers)
+	analyzeResults, err := analyzer.AnalyzeLocal(tmpDir, spec.Analyzers, spec.HostAnalyzers)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to analyze support bundle")
 	}
