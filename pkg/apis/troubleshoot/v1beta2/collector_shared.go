@@ -2,6 +2,7 @@ package v1beta2
 
 import (
 	"fmt"
+	"reflect"
 	"strings"
 
 	"github.com/replicatedhq/troubleshoot/pkg/multitype"
@@ -537,4 +538,21 @@ func pickNamespaceOrDefault(collectorNS string, overrideNS string) string {
 		return collectorNS
 	}
 	return "default"
+}
+
+func GetCollector(collector *Collect) interface{} {
+	if collector == nil {
+		return nil
+	}
+
+	reflected := reflect.ValueOf(collector).Elem()
+	for i := 0; i < reflected.NumField(); i++ {
+		if reflected.Field(i).IsNil() {
+			continue
+		}
+
+		return reflect.Indirect(reflected.Field(i)).Addr().Interface()
+	}
+
+	return nil
 }

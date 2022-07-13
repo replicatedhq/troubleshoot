@@ -16,12 +16,12 @@ func (c ClusterCollectResult) Analyze() []*analyze.AnalyzeResult {
 	return doAnalyze(c.AllCollectedData, c.Spec.Spec.Analyzers, nil, "")
 }
 
-// Analyze runs the analysze phase of host preflight checks
+// Analyze runs the analyze phase of host preflight checks
 func (c HostCollectResult) Analyze() []*analyze.AnalyzeResult {
 	return doAnalyze(c.AllCollectedData, nil, c.Spec.Spec.Analyzers, "")
 }
 
-// Analyze runs the analysze phase of host preflight checks.
+// Analyze runs the analyze phase of host preflight checks.
 //
 // Runs the analysis for each node and aggregates the results.
 func (c RemoteCollectResult) Analyze() []*analyze.AnalyzeResult {

@@ -69,16 +69,16 @@ func RunPod(c *Collector, runPodCollector *troubleshootv1beta2.RunPod) (Collecto
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to run pod")
 	}
-
 	defer func() {
-		if err := client.CoreV1().Pods(pod.Namespace).Delete(ctx, pod.Name, metav1.DeleteOptions{}); err != nil {
+		if err := client.CoreV1().Pods(pod.Namespace).Delete(context.Background(), pod.Name, metav1.DeleteOptions{}); err != nil {
 			logger.Printf("Failed to delete pod %s: %v", pod.Name, err)
 		}
 	}()
+
 	if runPodCollector.ImagePullSecret != nil && runPodCollector.ImagePullSecret.Data != nil {
 		defer func() {
 			for _, k := range pod.Spec.ImagePullSecrets {
-				if err := client.CoreV1().Secrets(pod.Namespace).Delete(ctx, k.Name, metav1.DeleteOptions{}); err != nil {
+				if err := client.CoreV1().Secrets(pod.Namespace).Delete(context.Background(), k.Name, metav1.DeleteOptions{}); err != nil {
 					logger.Printf("Failed to delete secret %s: %v", k.Name, err)
 				}
 			}

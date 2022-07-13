@@ -11,7 +11,7 @@ Thank you for your interest in Troubleshoot, we welcome your participation. Plea
 To get started we recommend:
 
 1. Go (v1.17 or later)
-2. Kubernetes (we recommend https://k3d.io/. requires Docker v20.10.5 or later)
+2. A Kubernetes cluster (we recommend https://k3d.io/. This requires Docker v20.10.5 or later)
 3. Fork and clone the repo to $GOPATH/src/github.com/replicatedhq/
 4. Run `make support-bundle preflight` to generate binaries
 5. Run `make run-troubleshoot` to generate a support bundle with the `sample-troubleshoot.yaml` in the root of the repo
