@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"path" // this code uses 'path' and not 'path/filepath' because we don't want backslashes on windows
 	"path/filepath"
+	"sort"
 	"strings"
 
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
@@ -23,6 +24,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/version"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -767,6 +769,18 @@ func crs(ctx context.Context, dyn dynamic.Interface, client *kubernetes.Clientse
 	return crsV1beta(ctx, dyn, config, namespaces)
 }
 
+// Selects the newest version by kube-aware priority.
+func selectCRDVersionByPriority(versions []string) string {
+	if len(versions) == 0 {
+		return ""
+	}
+
+	sort.Slice(versions, func(i, j int) bool {
+		return version.CompareKubeAwareVersionStrings(versions[i], versions[j]) < 0
+	})
+	return versions[len(versions)-1]
+}
+
 func crsV1(ctx context.Context, client dynamic.Interface, config *rest.Config, namespaces []string) (map[string][]byte, map[string]string) {
 	customResources := make(map[string][]byte)
 	errorList := make(map[string]string)
@@ -795,10 +809,15 @@ func crsV1(ctx context.Context, client dynamic.Interface, config *rest.Config, n
 
 		var version string
 		if len(crd.Spec.Versions) > 0 {
-			version = crd.Spec.Versions[0].Name
-		}
-		if len(crd.Status.StoredVersions) > 0 {
-			version = crd.Status.StoredVersions[0]
+			versions := []string{}
+			for _, v := range crd.Spec.Versions {
+				versions = append(versions, v.Name)
+			}
+
+			version = versions[0]
+			if len(versions) > 1 {
+				version = selectCRDVersionByPriority(versions)
+			}
 		}
 		gvr := schema.GroupVersionResource{
 			Group:    crd.Spec.Group,
@@ -902,6 +921,20 @@ func crsV1beta(ctx context.Context, client dynamic.Interface, config *rest.Confi
 			Version:  crd.Spec.Version,
 			Resource: crd.Spec.Names.Plural,
 		}
+
+		if len(crd.Spec.Versions) > 0 {
+			versions := []string{}
+			for _, v := range crd.Spec.Versions {
+				versions = append(versions, v.Name)
+			}
+
+			version := versions[0]
+			if len(versions) > 1 {
+				version = selectCRDVersionByPriority(versions)
+			}
+			gvr.Version = version
+		}
+
 		isNamespacedResource := crd.Spec.Scope == apiextensionsv1beta1.NamespaceScoped
 
 		// Fetch all resources of given type
