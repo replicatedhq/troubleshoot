@@ -89,6 +89,7 @@ func listPodsInSelectors(ctx context.Context, client *kubernetes.Clientset, name
 
 	listOptions := metav1.ListOptions{
 		LabelSelector: serializedLabelSelector,
+		FieldSelector: "status.phase!=Failed",
 	}
 
 	pods, err := client.CoreV1().Pods(namespace).List(ctx, listOptions)
