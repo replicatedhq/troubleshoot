@@ -16,6 +16,9 @@ To get started we recommend:
 4. Run `make support-bundle preflight` to generate binaries
 5. Run `make run-troubleshoot` to generate a support bundle with the `sample-troubleshoot.yaml` in the root of the repo
 
+> Note: recent versions of Go support easy cross-compilation.  For example, to cross-compile a Linux binary from MacOS:
+> `GOOS=linux GOARCH=amd64 make support-bundle preflight`
+
 ### Testing
 
 To run the tests locally run the following:
@@ -36,7 +39,8 @@ A Kubernetes cluster as well as `jq` are required to run e2e tests.
 
 This is a rough outline of how to prepare a contribution:
 
-- Create a topic branch from where you want to base your work (branched from main).
+- Create a fork of this repo.
+- Create a topic branch from where you want to base your work (branched from `main` is a safe choice).
 - Make commits of logical units.
 - Push your changes to a topic branch in your fork of the repository.
 - Submit a pull request to the original repository. It will be reviewed in a timely manner.
