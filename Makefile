@@ -35,30 +35,34 @@ endef
 
 BUILDFLAGS = -tags "netgo containers_image_ostree_stub exclude_graphdriver_devicemapper exclude_graphdriver_btrfs containers_image_openpgp" -installsuffix netgo
 
-all: test
+all: test support-bundle preflight collect
 
 .PHONY: ffi
 ffi: fmt vet
 	go build ${BUILDFLAGS} ${LDFLAGS} -o bin/troubleshoot.so -buildmode=c-shared ffi/main.go
 
-# Run tests
+.PHONY: test
 test: generate fmt vet
 	go test ${BUILDFLAGS} ./pkg/... ./cmd/... -coverprofile cover.out
 
+.PHONY: e2e-test
+e2e-test:
+	./test/validate-preflight-e2e.sh
+
 .PHONY: support-bundle
-support-bundle: generate fmt vet
+support-bundle:
 	go build ${BUILDFLAGS} ${LDFLAGS} -o bin/support-bundle github.com/replicatedhq/troubleshoot/cmd/troubleshoot
 
 .PHONY: preflight
-preflight: generate fmt vet
+preflight:
 	go build ${BUILDFLAGS} ${LDFLAGS} -o bin/preflight github.com/replicatedhq/troubleshoot/cmd/preflight
 
 .PHONY: analyze
-analyze: generate fmt vet
+analyze:
 	go build ${BUILDFLAGS} ${LDFLAGS} -o bin/analyze github.com/replicatedhq/troubleshoot/cmd/analyze
 	
 .PHONY: collect
-collect: generate fmt vet
+collect:
 	go build ${BUILDFLAGS} ${LDFLAGS} -o bin/collect github.com/replicatedhq/troubleshoot/cmd/collect	
 
 .PHONY: fmt
@@ -74,6 +78,7 @@ generate: controller-gen client-gen
 	$(CONTROLLER_GEN) \
 		object:headerFile=./hack/boilerplate.go.txt paths=./pkg/apis/...
 	$(CLIENT_GEN) \
+		--output-base=./../../../ \
 		--output-package=github.com/replicatedhq/troubleshoot/pkg/client \
 		--clientset-name troubleshootclientset \
 		--input-base github.com/replicatedhq/troubleshoot/pkg/apis \
@@ -169,3 +174,12 @@ longhorn:
 	find pkg/longhorn -type f | xargs sed -i "s/github.com\/longhorn\/longhorn-manager\/types/github.com\/replicatedhq\/troubleshoot\/pkg\/longhorn\/types/g"
 	find pkg/longhorn -type f | xargs sed -i "s/github.com\/longhorn\/longhorn-manager\/util/github.com\/replicatedhq\/troubleshoot\/pkg\/longhorn\/util/g"
 	rm -rf longhorn-manager
+
+.PHONY: scan
+scan:
+	trivy fs \
+		--security-checks vuln \
+		--exit-code=1 \
+		--severity="HIGH,CRITICAL" \
+		--ignore-unfixed \
+		./

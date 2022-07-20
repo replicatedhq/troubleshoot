@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"path"
 	"time"
 
 	"github.com/pkg/errors"
@@ -12,6 +11,7 @@ import (
 	"github.com/replicatedhq/termui/v3/widgets"
 	"github.com/replicatedhq/troubleshoot/cmd/util"
 	analyzerunner "github.com/replicatedhq/troubleshoot/pkg/analyze"
+	"github.com/replicatedhq/troubleshoot/pkg/convert"
 )
 
 var (
@@ -20,7 +20,7 @@ var (
 	isShowingSaved = false
 )
 
-func showInteractiveResults(preflightName string, analyzeResults []*analyzerunner.AnalyzeResult) error {
+func showInteractiveResults(preflightName string, outputPath string, analyzeResults []*analyzerunner.AnalyzeResult) error {
 	if err := ui.Init(); err != nil {
 		return errors.Wrap(err, "failed to create terminal ui")
 	}
@@ -44,7 +44,7 @@ func showInteractiveResults(preflightName string, analyzeResults []*analyzerunne
 					return nil
 				}
 			case "s":
-				filename, err := save(preflightName, analyzeResults)
+				filename, err := save(preflightName, outputPath, analyzeResults)
 				if err != nil {
 					// show
 				} else {
@@ -139,6 +139,9 @@ func drawPreflightTable(analyzeResults []*analyzerunner.AnalyzeResult) {
 
 	for i, analyzeResult := range analyzeResults {
 		title := analyzeResult.Title
+		if analyzeResult.Strict {
+			title = title + fmt.Sprintf(" (Strict: %t)", analyzeResult.Strict)
+		}
 		if analyzeResult.IsPass {
 			title = fmt.Sprintf("✔  %s", title)
 		} else if analyzeResult.IsWarn {
@@ -217,8 +220,20 @@ func estimateNumberOfLines(text string, width int) int {
 	return lines
 }
 
-func save(preflightName string, analyzeResults []*analyzerunner.AnalyzeResult) (string, error) {
-	filename := path.Join(util.HomeDir(), fmt.Sprintf("%s-results.txt", preflightName))
+func save(preflightName string, outputPath string, analyzeResults []*analyzerunner.AnalyzeResult) (string, error) {
+	filename := ""
+	if outputPath != "" {
+		// use override output path
+		overridePath, err := convert.ValidateOutputPath(outputPath)
+		if err != nil {
+			return "", errors.Wrap(err, "override output file path")
+		}
+		filename = overridePath
+	} else {
+		// use default output path
+		filename = fmt.Sprintf("%s-results-%s.txt", preflightName, time.Now().Format("2006-01-02T15_04_05"))
+	}
+
 	_, err := os.Stat(filename)
 	if err == nil {
 		os.Remove(filename)
@@ -241,6 +256,10 @@ func save(preflightName string, analyzeResults []*analyzerunner.AnalyzeResult) (
 
 		if analyzeResult.URI != "" {
 			result = result + fmt.Sprintf("URI: %s\n", analyzeResult.URI)
+		}
+
+		if analyzeResult.Strict {
+			result = result + fmt.Sprintf("Strict: %t\n", analyzeResult.Strict)
 		}
 
 		result = result + "\n------------\n"

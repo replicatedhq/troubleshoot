@@ -2,6 +2,7 @@ package analyzer
 
 import (
 	"fmt"
+	"reflect"
 	"strconv"
 
 	"github.com/pkg/errors"
@@ -14,6 +15,7 @@ type AnalyzeResult struct {
 	IsPass bool
 	IsFail bool
 	IsWarn bool
+	Strict bool
 
 	Title   string
 	Message string
@@ -27,7 +29,11 @@ type AnalyzeResult struct {
 type getCollectedFileContents func(string) ([]byte, error)
 type getChildCollectedFileContents func(string) (map[string][]byte, error)
 
-func isExcluded(excludeVal multitype.BoolOrString) (bool, error) {
+func isExcluded(excludeVal *multitype.BoolOrString) (bool, error) {
+	if excludeVal == nil {
+		return false, nil
+	}
+
 	if excludeVal.Type == multitype.Bool {
 		return excludeVal.BoolVal, nil
 	}
@@ -94,6 +100,7 @@ func Analyze(analyzer *troubleshootv1beta2.Analyze, getFile getCollectedFileCont
 		if err != nil {
 			return nil, err
 		}
+		result.Strict = analyzer.ClusterVersion.Strict.BoolOrDefaultFalse()
 		return []*AnalyzeResult{result}, nil
 	}
 	if analyzer.StorageClass != nil {
@@ -108,6 +115,7 @@ func Analyze(analyzer *troubleshootv1beta2.Analyze, getFile getCollectedFileCont
 		if err != nil {
 			return nil, err
 		}
+		result.Strict = analyzer.StorageClass.Strict.BoolOrDefaultFalse()
 		return []*AnalyzeResult{result}, nil
 	}
 	if analyzer.CustomResourceDefinition != nil {
@@ -122,6 +130,7 @@ func Analyze(analyzer *troubleshootv1beta2.Analyze, getFile getCollectedFileCont
 		if err != nil {
 			return nil, err
 		}
+		result.Strict = analyzer.CustomResourceDefinition.Strict.BoolOrDefaultFalse()
 		return []*AnalyzeResult{result}, nil
 	}
 	if analyzer.Ingress != nil {
@@ -136,6 +145,7 @@ func Analyze(analyzer *troubleshootv1beta2.Analyze, getFile getCollectedFileCont
 		if err != nil {
 			return nil, err
 		}
+		result.Strict = analyzer.Ingress.Strict.BoolOrDefaultFalse()
 		return []*AnalyzeResult{result}, nil
 	}
 	if analyzer.Secret != nil {
@@ -150,6 +160,7 @@ func Analyze(analyzer *troubleshootv1beta2.Analyze, getFile getCollectedFileCont
 		if err != nil {
 			return nil, err
 		}
+		result.Strict = analyzer.Secret.Strict.BoolOrDefaultFalse()
 		return []*AnalyzeResult{result}, nil
 	}
 	if analyzer.ConfigMap != nil {
@@ -164,6 +175,7 @@ func Analyze(analyzer *troubleshootv1beta2.Analyze, getFile getCollectedFileCont
 		if err != nil {
 			return nil, err
 		}
+		result.Strict = analyzer.ConfigMap.Strict.BoolOrDefaultFalse()
 		return []*AnalyzeResult{result}, nil
 	}
 	if analyzer.ImagePullSecret != nil {
@@ -178,6 +190,7 @@ func Analyze(analyzer *troubleshootv1beta2.Analyze, getFile getCollectedFileCont
 		if err != nil {
 			return nil, err
 		}
+		result.Strict = analyzer.ImagePullSecret.Strict.BoolOrDefaultFalse()
 		return []*AnalyzeResult{result}, nil
 	}
 	if analyzer.DeploymentStatus != nil {
@@ -191,6 +204,9 @@ func Analyze(analyzer *troubleshootv1beta2.Analyze, getFile getCollectedFileCont
 		results, err := analyzeDeploymentStatus(analyzer.DeploymentStatus, findFiles)
 		if err != nil {
 			return nil, err
+		}
+		for i := range results {
+			results[i].Strict = analyzer.DeploymentStatus.Strict.BoolOrDefaultFalse()
 		}
 		return results, nil
 	}
@@ -206,6 +222,9 @@ func Analyze(analyzer *troubleshootv1beta2.Analyze, getFile getCollectedFileCont
 		if err != nil {
 			return nil, err
 		}
+		for i := range results {
+			results[i].Strict = analyzer.StatefulsetStatus.Strict.BoolOrDefaultFalse()
+		}
 		return results, nil
 	}
 	if analyzer.JobStatus != nil {
@@ -219,6 +238,9 @@ func Analyze(analyzer *troubleshootv1beta2.Analyze, getFile getCollectedFileCont
 		results, err := analyzeJobStatus(analyzer.JobStatus, findFiles)
 		if err != nil {
 			return nil, err
+		}
+		for i := range results {
+			results[i].Strict = analyzer.JobStatus.Strict.BoolOrDefaultFalse()
 		}
 		return results, nil
 	}
@@ -234,6 +256,9 @@ func Analyze(analyzer *troubleshootv1beta2.Analyze, getFile getCollectedFileCont
 		if err != nil {
 			return nil, err
 		}
+		for i := range results {
+			results[i].Strict = analyzer.ReplicaSetStatus.Strict.BoolOrDefaultFalse()
+		}
 		return results, nil
 	}
 	if analyzer.ClusterPodStatuses != nil {
@@ -247,6 +272,9 @@ func Analyze(analyzer *troubleshootv1beta2.Analyze, getFile getCollectedFileCont
 		results, err := clusterPodStatuses(analyzer.ClusterPodStatuses, findFiles)
 		if err != nil {
 			return nil, err
+		}
+		for i := range results {
+			results[i].Strict = analyzer.ClusterPodStatuses.Strict.BoolOrDefaultFalse()
 		}
 		return results, nil
 	}
@@ -262,6 +290,7 @@ func Analyze(analyzer *troubleshootv1beta2.Analyze, getFile getCollectedFileCont
 		if err != nil {
 			return nil, err
 		}
+		result.Strict = analyzer.ContainerRuntime.Strict.BoolOrDefaultFalse()
 		return []*AnalyzeResult{result}, nil
 	}
 	if analyzer.Distribution != nil {
@@ -276,6 +305,7 @@ func Analyze(analyzer *troubleshootv1beta2.Analyze, getFile getCollectedFileCont
 		if err != nil {
 			return nil, err
 		}
+		result.Strict = analyzer.Distribution.Strict.BoolOrDefaultFalse()
 		return []*AnalyzeResult{result}, nil
 	}
 	if analyzer.NodeResources != nil {
@@ -290,6 +320,7 @@ func Analyze(analyzer *troubleshootv1beta2.Analyze, getFile getCollectedFileCont
 		if err != nil {
 			return nil, err
 		}
+		result.Strict = analyzer.NodeResources.Strict.BoolOrDefaultFalse()
 		return []*AnalyzeResult{result}, nil
 	}
 	if analyzer.TextAnalyze != nil {
@@ -300,11 +331,44 @@ func Analyze(analyzer *troubleshootv1beta2.Analyze, getFile getCollectedFileCont
 		if isExcluded {
 			return nil, nil
 		}
-		multiResult, err := analyzeTextAnalyze(analyzer.TextAnalyze, findFiles)
+		results, err := analyzeTextAnalyze(analyzer.TextAnalyze, findFiles)
 		if err != nil {
 			return nil, err
 		}
-		return multiResult, nil
+		for i := range results {
+			results[i].Strict = analyzer.TextAnalyze.Strict.BoolOrDefaultFalse()
+		}
+		return results, nil
+	}
+	if analyzer.YamlCompare != nil {
+		isExcluded, err := isExcluded(analyzer.YamlCompare.Exclude)
+		if err != nil {
+			return nil, err
+		}
+		if isExcluded {
+			return nil, nil
+		}
+		result, err := analyzeYamlCompare(analyzer.YamlCompare, getFile)
+		if err != nil {
+			return nil, err
+		}
+		result.Strict = analyzer.YamlCompare.Strict.BoolOrDefaultFalse()
+		return []*AnalyzeResult{result}, nil
+	}
+	if analyzer.JsonCompare != nil {
+		isExcluded, err := isExcluded(analyzer.JsonCompare.Exclude)
+		if err != nil {
+			return nil, err
+		}
+		if isExcluded {
+			return nil, nil
+		}
+		result, err := analyzeJsonCompare(analyzer.JsonCompare, getFile)
+		if err != nil {
+			return nil, err
+		}
+		result.Strict = analyzer.JsonCompare.Strict.BoolOrDefaultFalse()
+		return []*AnalyzeResult{result}, nil
 	}
 	if analyzer.Postgres != nil {
 		isExcluded, err := isExcluded(analyzer.Postgres.Exclude)
@@ -318,6 +382,7 @@ func Analyze(analyzer *troubleshootv1beta2.Analyze, getFile getCollectedFileCont
 		if err != nil {
 			return nil, err
 		}
+		result.Strict = analyzer.Postgres.Strict.BoolOrDefaultFalse()
 		return []*AnalyzeResult{result}, nil
 	}
 	if analyzer.Mysql != nil {
@@ -332,6 +397,7 @@ func Analyze(analyzer *troubleshootv1beta2.Analyze, getFile getCollectedFileCont
 		if err != nil {
 			return nil, err
 		}
+		result.Strict = analyzer.Mysql.Strict.BoolOrDefaultFalse()
 		return []*AnalyzeResult{result}, nil
 	}
 	if analyzer.Redis != nil {
@@ -346,6 +412,7 @@ func Analyze(analyzer *troubleshootv1beta2.Analyze, getFile getCollectedFileCont
 		if err != nil {
 			return nil, err
 		}
+		result.Strict = analyzer.Redis.Strict.BoolOrDefaultFalse()
 		return []*AnalyzeResult{result}, nil
 	}
 	if analyzer.CephStatus != nil {
@@ -360,6 +427,7 @@ func Analyze(analyzer *troubleshootv1beta2.Analyze, getFile getCollectedFileCont
 		if err != nil {
 			return nil, err
 		}
+		result.Strict = analyzer.CephStatus.Strict.BoolOrDefaultFalse()
 		return []*AnalyzeResult{result}, nil
 	}
 	if analyzer.Longhorn != nil {
@@ -370,7 +438,14 @@ func Analyze(analyzer *troubleshootv1beta2.Analyze, getFile getCollectedFileCont
 		if isExcluded {
 			return nil, nil
 		}
-		return longhorn(analyzer.Longhorn, getFile, findFiles)
+		results, err := longhorn(analyzer.Longhorn, getFile, findFiles)
+		if err != nil {
+			return nil, err
+		}
+		for i := range results {
+			results[i].Strict = analyzer.Longhorn.Strict.BoolOrDefaultFalse()
+		}
+		return results, nil
 	}
 
 	if analyzer.RegistryImages != nil {
@@ -385,6 +460,7 @@ func Analyze(analyzer *troubleshootv1beta2.Analyze, getFile getCollectedFileCont
 		if err != nil {
 			return nil, err
 		}
+		result.Strict = analyzer.RegistryImages.Strict.BoolOrDefaultFalse()
 		return []*AnalyzeResult{result}, nil
 	}
 
@@ -399,6 +475,9 @@ func Analyze(analyzer *troubleshootv1beta2.Analyze, getFile getCollectedFileCont
 		results, err := analyzeWeaveReport(analyzer.WeaveReport, findFiles)
 		if err != nil {
 			return nil, err
+		}
+		for i := range results {
+			results[i].Strict = analyzer.WeaveReport.Strict.BoolOrDefaultFalse()
 		}
 		return results, nil
 	}
@@ -418,8 +497,31 @@ func Analyze(analyzer *troubleshootv1beta2.Analyze, getFile getCollectedFileCont
 		if result == nil {
 			return []*AnalyzeResult{}, nil
 		}
+		result.Strict = analyzer.Sysctl.Strict.BoolOrDefaultFalse()
 		return []*AnalyzeResult{result}, nil
 	}
 
 	return nil, errors.New("invalid analyzer")
+}
+
+func GetExcludeFlag(analyzer *troubleshootv1beta2.Analyze) *multitype.BoolOrString {
+	if analyzer == nil {
+		return nil
+	}
+
+	reflected := reflect.ValueOf(analyzer).Elem()
+	for i := 0; i < reflected.NumField(); i++ {
+		if reflected.Field(i).IsNil() {
+			continue
+		}
+
+		field := reflect.Indirect(reflected.Field(i)).FieldByName("Exclude")
+		exclude, ok := field.Interface().(*multitype.BoolOrString)
+		if !ok {
+			continue
+		}
+		return exclude
+	}
+
+	return nil
 }

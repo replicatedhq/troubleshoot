@@ -85,9 +85,9 @@ func (r CollectorResult) ReplaceResult(bundlePath string, relativePath string, r
 	return nil
 }
 
-func (r CollectorResult) GetReader(bundlePath string, relativePath string) (io.Reader, error) {
+func (r CollectorResult) GetReader(bundlePath string, relativePath string) (io.ReadCloser, error) {
 	if r[relativePath] != nil {
-		return bytes.NewReader(r[relativePath]), nil
+		return ioutil.NopCloser(bytes.NewReader(r[relativePath])), nil
 	}
 
 	if bundlePath == "" {

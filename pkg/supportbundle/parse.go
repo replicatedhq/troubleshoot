@@ -19,20 +19,44 @@ var (
 	SupportBundleNameRegex = regexp.MustCompile(`^\/?support-bundle-(\d{4})-(\d{2})-(\d{2})T(\d{2})_(\d{2})_(\d{2})\/?`)
 )
 
-func GetPodDetails(bundleArchive string, podNamespace string, podName string) (*types.PodDetails, error) {
-	podDetails := types.PodDetails{}
+func getPodsFilePath(namespace string) string {
+	return filepath.Join("cluster-resources", "pods", fmt.Sprintf("%s.json", namespace))
+}
 
-	nsPodsFilePath := filepath.Join("cluster-resources", "pods", fmt.Sprintf("%s.json", podNamespace))
-	nsEventsFilePath := filepath.Join("cluster-resources", "events", fmt.Sprintf("%s.json", podNamespace))
+func getContainerLogsFilePath(namespace string, podName string, containerName string) string {
+	return filepath.Join("cluster-resources", "pods", "logs", namespace, podName, fmt.Sprintf("%s.log", containerName))
+}
+
+func getEventsFilePath(namespace string) string {
+	return filepath.Join("cluster-resources", "events", fmt.Sprintf("%s.json", namespace))
+}
+
+func GetPodDetails(bundleArchive string, podNamespace string, podName string) (*types.PodDetails, error) {
+	nsPodsFilePath := getPodsFilePath(podNamespace)
+	nsEventsFilePath := getEventsFilePath(podNamespace)
 
 	files, err := GetFilesContents(bundleArchive, []string{nsPodsFilePath, nsEventsFilePath})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get files contents")
 	}
 
+	return getPodDetailsFromFiles(files, podNamespace, podName)
+}
+
+func getPodDetailsFromFiles(files map[string][]byte, podNamespace string, podName string) (*types.PodDetails, error) {
+	podDetails := types.PodDetails{}
+
+	nsPodsFilePath := getPodsFilePath(podNamespace)
+	nsEventsFilePath := getEventsFilePath(podNamespace)
+
 	var nsEvents []corev1.Event
 	if err := json.Unmarshal(files[nsEventsFilePath], &nsEvents); err != nil {
-		return nil, errors.Wrap(err, "failed to unmarshal events")
+		// try new format
+		var nsEventsList corev1.EventList
+		if err := json.Unmarshal(files[nsEventsFilePath], &nsEventsList); err != nil {
+			return nil, errors.Wrap(err, "failed to unmarshal events")
+		}
+		nsEvents = nsEventsList.Items
 	}
 	podEvents := []corev1.Event{}
 	for _, event := range nsEvents {
@@ -44,7 +68,12 @@ func GetPodDetails(bundleArchive string, podNamespace string, podName string) (*
 
 	var podsArr []corev1.Pod
 	if err := json.Unmarshal(files[nsPodsFilePath], &podsArr); err != nil {
-		return nil, errors.Wrap(err, "failed to unmarshal pods")
+		// try new format
+		var podsList corev1.PodList
+		if err := json.Unmarshal(files[nsPodsFilePath], &podsList); err != nil {
+			return nil, errors.Wrap(err, "failed to unmarshal pods")
+		}
+		podsArr = podsList.Items
 	}
 	for _, pod := range podsArr {
 		if pod.Name == podName && pod.Namespace == podNamespace {
@@ -53,14 +82,14 @@ func GetPodDetails(bundleArchive string, podNamespace string, podName string) (*
 			for _, i := range pod.Spec.InitContainers {
 				podDetails.PodContainers = append(podDetails.PodContainers, types.PodContainer{
 					Name:            i.Name,
-					LogsFilePath:    filepath.Join("cluster-resources", "pods", "logs", pod.Namespace, pod.Name, fmt.Sprintf("%s.log", i.Name)),
+					LogsFilePath:    getContainerLogsFilePath(pod.Namespace, pod.Name, i.Name),
 					IsInitContainer: true,
 				})
 			}
 			for _, c := range pod.Spec.Containers {
 				podDetails.PodContainers = append(podDetails.PodContainers, types.PodContainer{
 					Name:            c.Name,
-					LogsFilePath:    filepath.Join("cluster-resources", "pods", "logs", pod.Namespace, pod.Name, fmt.Sprintf("%s.log", c.Name)),
+					LogsFilePath:    getContainerLogsFilePath(pod.Namespace, pod.Name, c.Name),
 					IsInitContainer: false,
 				})
 			}

@@ -4,9 +4,11 @@ import (
 	"os"
 	"strings"
 
+	"github.com/go-logr/logr"
 	"github.com/replicatedhq/troubleshoot/pkg/k8sutil"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"k8s.io/klog/v2"
 )
 
 func RootCmd() *cobra.Command {
@@ -18,7 +20,12 @@ func RootCmd() *cobra.Command {
 that a cluster meets the requirements to run an application.`,
 		SilenceUsage: true,
 		PreRun: func(cmd *cobra.Command, args []string) {
-			viper.BindPFlags(cmd.Flags())
+			v := viper.GetViper()
+			v.BindPFlags(cmd.Flags())
+
+			if !v.GetBool("debug") {
+				klog.SetLogger(logr.Discard())
+			}
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			v := viper.GetViper()
@@ -38,6 +45,8 @@ that a cluster meets the requirements to run an application.`,
 	cmd.Flags().String("selector", "", "selector (label query) to filter remote collection nodes on.")
 	cmd.Flags().String("since-time", "", "force pod logs collectors to return logs after a specific date (RFC3339)")
 	cmd.Flags().String("since", "", "force pod logs collectors to return logs newer than a relative duration like 5s, 2m, or 3h.")
+	cmd.Flags().StringP("output", "o", "", "specify the output file path for the preflight checks")
+	cmd.Flags().Bool("debug", false, "enable debug logging")
 
 	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
 

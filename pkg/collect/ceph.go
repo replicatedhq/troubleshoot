@@ -3,7 +3,6 @@ package collect
 import (
 	"context"
 	"fmt"
-	"io"
 	"os"
 	"path"
 	"strings"
@@ -28,52 +27,60 @@ type CephCommand struct {
 
 var CephCommands = []CephCommand{
 	{
-		ID:      "status",
-		Command: []string{"ceph", "status"},
-		Args:    []string{"-f", "json-pretty"},
-		Format:  "json",
+		ID:             "status",
+		Command:        []string{"ceph", "status"},
+		Args:           []string{"-f", "json-pretty"},
+		Format:         "json",
+		DefaultTimeout: "30s",
 	},
 	{
-		ID:      "fs",
-		Command: []string{"ceph", "fs", "status"},
-		Args:    []string{"-f", "json-pretty"},
-		Format:  "json",
+		ID:             "fs",
+		Command:        []string{"ceph", "fs", "status"},
+		Args:           []string{"-f", "json-pretty"},
+		Format:         "json",
+		DefaultTimeout: "30s",
 	},
 	{
-		ID:      "fs-ls",
-		Command: []string{"ceph", "fs", "ls"},
-		Args:    []string{"-f", "json-pretty"},
-		Format:  "json",
+		ID:             "fs-ls",
+		Command:        []string{"ceph", "fs", "ls"},
+		Args:           []string{"-f", "json-pretty"},
+		Format:         "json",
+		DefaultTimeout: "30s",
 	},
 	{
-		ID:      "osd-status",
-		Command: []string{"ceph", "osd", "status"},
-		Args:    []string{"-f", "json-pretty"},
-		Format:  "txt",
+		ID:             "osd-status",
+		Command:        []string{"ceph", "osd", "status"},
+		Args:           []string{"-f", "json-pretty"},
+		Format:         "txt",
+		DefaultTimeout: "30s",
 	},
 	{
-		ID:      "osd-tree",
-		Command: []string{"ceph", "osd", "tree"},
-		Args:    []string{"-f", "json-pretty"},
-		Format:  "json",
+		ID:             "osd-tree",
+		Command:        []string{"ceph", "osd", "tree"},
+		Args:           []string{"-f", "json-pretty"},
+		Format:         "json",
+		DefaultTimeout: "30s",
 	},
 	{
-		ID:      "osd-pool",
-		Command: []string{"ceph", "osd", "pool", "ls", "detail"},
-		Args:    []string{"-f", "json-pretty"},
-		Format:  "json",
+		ID:             "osd-pool",
+		Command:        []string{"ceph", "osd", "pool", "ls", "detail"},
+		Args:           []string{"-f", "json-pretty"},
+		Format:         "json",
+		DefaultTimeout: "30s",
 	},
 	{
-		ID:      "health",
-		Command: []string{"ceph", "health", "detail"},
-		Args:    []string{"-f", "json-pretty"},
-		Format:  "json",
+		ID:             "health",
+		Command:        []string{"ceph", "health", "detail"},
+		Args:           []string{"-f", "json-pretty"},
+		Format:         "json",
+		DefaultTimeout: "30s",
 	},
 	{
-		ID:      "auth",
-		Command: []string{"ceph", "auth", "ls"},
-		Args:    []string{"-f", "json-pretty"},
-		Format:  "json",
+		ID:             "auth",
+		Command:        []string{"ceph", "auth", "ls"},
+		Args:           []string{"-f", "json-pretty"},
+		Format:         "json",
+		DefaultTimeout: "30s",
 	},
 	{
 		ID:             "rgw-stats", // the disk usage (and other stats) of each object store bucket
@@ -83,10 +90,18 @@ var CephCommands = []CephCommand{
 		DefaultTimeout: "30s", // include a default timeout because this command will hang if the RGW daemon isn't running/is unhealthy
 	},
 	{
-		ID:      "rbd-du", // the disk usage of each PVC
-		Command: []string{"rbd", "du"},
-		Args:    []string{"--pool=replicapool"},
-		Format:  "txt",
+		ID:             "rbd-du", // the disk usage of each PVC
+		Command:        []string{"rbd", "du"},
+		Args:           []string{"--pool=replicapool"},
+		Format:         "txt",
+		DefaultTimeout: "30s",
+	},
+	{
+		ID:             "osd-df",
+		Command:        []string{"ceph", "osd", "df"},
+		Args:           []string{"-f", "json-pretty"},
+		Format:         "json",
+		DefaultTimeout: "30s",
 	},
 }
 
@@ -133,8 +148,8 @@ func cephCommandExec(ctx context.Context, c *Collector, cephCollector *troublesh
 		return errors.Wrap(err, "failed to exec command")
 	}
 
+	pathPrefix := GetCephCollectorFilepath(cephCollector.CollectorName, cephCollector.Namespace)
 	for srcFilename, _ := range results {
-		pathPrefix := GetCephCollectorFilepath(cephCollector.CollectorName, cephCollector.Namespace)
 		var dstFileName string
 		switch {
 		case strings.HasSuffix(srcFilename, "-stdout.txt"):
@@ -203,10 +218,7 @@ func copyResult(srcResult CollectorResult, dstResult CollectorResult, bundlePath
 		}
 		return errors.Wrap(err, "failed to get reader")
 	}
-
-	if reader, ok := reader.(io.ReadCloser); ok {
-		defer reader.Close()
-	}
+	defer reader.Close()
 
 	err = dstResult.SaveResult(bundlePath, dstKey, reader)
 	if err != nil {

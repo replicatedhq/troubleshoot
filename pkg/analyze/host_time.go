@@ -32,7 +32,7 @@ func (a *AnalyzeHostTime) IsExcluded() (bool, error) {
 func (a *AnalyzeHostTime) Analyze(getCollectedFileContents func(string) ([]byte, error)) ([]*AnalyzeResult, error) {
 	hostAnalyzer := a.hostAnalyzer
 
-	contents, err := getCollectedFileContents("system/time.json")
+	contents, err := getCollectedFileContents(collect.HostTimePath)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get collected file")
 	}

@@ -1,13 +1,15 @@
 package v1beta2
 
 type CPUAnalyze struct {
-	AnalyzeMeta `json:",inline" yaml:",inline"`
-	Outcomes    []*Outcome `json:"outcomes" yaml:"outcomes"`
+	AnalyzeMeta   `json:",inline" yaml:",inline"`
+	CollectorName string     `json:"collectorName,omitempty" yaml:"collectorName,omitempty"`
+	Outcomes      []*Outcome `json:"outcomes" yaml:"outcomes"`
 }
 
 type MemoryAnalyze struct {
-	AnalyzeMeta `json:",inline" yaml:",inline"`
-	Outcomes    []*Outcome `json:"outcomes" yaml:"outcomes"`
+	AnalyzeMeta   `json:",inline" yaml:",inline"`
+	CollectorName string     `json:"collectorName,omitempty" yaml:"collectorName,omitempty"`
+	Outcomes      []*Outcome `json:"outcomes" yaml:"outcomes"`
 }
 
 type TCPLoadBalancerAnalyze struct {
@@ -41,12 +43,14 @@ type HTTPAnalyze struct {
 }
 
 type TimeAnalyze struct {
-	AnalyzeMeta `json:",inline" yaml:",inline"`
-	Outcomes    []*Outcome `json:"outcomes" yaml:"outcomes"`
+	AnalyzeMeta   `json:",inline" yaml:",inline"`
+	CollectorName string     `json:"collectorName,omitempty" yaml:"collectorName,omitempty"`
+	Outcomes      []*Outcome `json:"outcomes" yaml:"outcomes"`
 }
 
 type BlockDevicesAnalyze struct {
 	AnalyzeMeta                `json:",inline" yaml:",inline"`
+	CollectorName              string     `json:"collectorName,omitempty" yaml:"collectorName,omitempty"`
 	MinimumAcceptableSize      uint64     `json:"minimumAcceptableSize" yaml:"minimumAcceptableSize"`
 	IncludeUnmountedPartitions bool       `json:"includeUnmountedPartitions" yaml:"includeUnmountedPartitions"`
 	Outcomes                   []*Outcome `json:"outcomes" yaml:"outcomes"`
@@ -59,8 +63,9 @@ type SystemPackagesAnalyze struct {
 }
 
 type KernelModulesAnalyze struct {
-	AnalyzeMeta `json:",inline" yaml:",inline"`
-	Outcomes    []*Outcome `json:"outcomes" yaml:"outcomes"`
+	AnalyzeMeta   `json:",inline" yaml:",inline"`
+	CollectorName string     `json:"collectorName,omitempty" yaml:"collectorName,omitempty"`
+	Outcomes      []*Outcome `json:"outcomes" yaml:"outcomes"`
 }
 
 type TCPConnectAnalyze struct {
@@ -70,8 +75,9 @@ type TCPConnectAnalyze struct {
 }
 
 type IPV4InterfacesAnalyze struct {
-	AnalyzeMeta `json:",inline" yaml:",inline"`
-	Outcomes    []*Outcome `json:"outcomes" yaml:"outcomes"`
+	AnalyzeMeta   `json:",inline" yaml:",inline"`
+	CollectorName string     `json:"collectorName,omitempty" yaml:"collectorName,omitempty"`
+	Outcomes      []*Outcome `json:"outcomes" yaml:"outcomes"`
 }
 
 type FilesystemPerformanceAnalyze struct {
@@ -87,12 +93,15 @@ type CertificateAnalyze struct {
 }
 
 type HostServicesAnalyze struct {
-	AnalyzeMeta `json:",inline" yaml:",inline"`
-	Outcomes    []*Outcome `json:"outcomes" yaml:"outcomes"`
+	AnalyzeMeta   `json:",inline" yaml:",inline"`
+	CollectorName string     `json:"collectorName,omitempty" yaml:"collectorName,omitempty"`
+	Outcomes      []*Outcome `json:"outcomes" yaml:"outcomes"`
 }
+
 type HostOSAnalyze struct {
-	AnalyzeMeta `json:",inline" yaml:",inline"`
-	Outcomes    []*Outcome `json:"outcomes" yaml:"outcomes"`
+	AnalyzeMeta   `json:",inline" yaml:",inline"`
+	CollectorName string     `json:"collectorName,omitempty" yaml:"collectorName,omitempty"`
+	Outcomes      []*Outcome `json:"outcomes" yaml:"outcomes"`
 }
 type HostAnalyze struct {
 	CPU *CPUAnalyze `json:"cpu,omitempty" yaml:"cpu,omitempty"`

@@ -131,6 +131,24 @@ type TextAnalyze struct {
 	Outcomes        []*Outcome `json:"outcomes" yaml:"outcomes"`
 }
 
+type YamlCompare struct {
+	AnalyzeMeta   `json:",inline" yaml:",inline"`
+	CollectorName string     `json:"collectorName,omitempty" yaml:"collectorName,omitempty"`
+	FileName      string     `json:"fileName,omitempty" yaml:"fileName,omitempty"`
+	Path          string     `json:"path,omitempty" yaml:"path,omitempty"`
+	Value         string     `json:"value,omitempty" yaml:"value,omitempty"`
+	Outcomes      []*Outcome `json:"outcomes" yaml:"outcomes"`
+}
+
+type JsonCompare struct {
+	AnalyzeMeta   `json:",inline" yaml:",inline"`
+	CollectorName string     `json:"collectorName,omitempty" yaml:"collectorName,omitempty"`
+	FileName      string     `json:"fileName,omitempty" yaml:"fileName,omitempty"`
+	Path          string     `json:"path,omitempty" yaml:"path,omitempty"`
+	Value         string     `json:"value,omitempty" yaml:"value,omitempty"`
+	Outcomes      []*Outcome `json:"outcomes" yaml:"outcomes"`
+}
+
 type DatabaseAnalyze struct {
 	AnalyzeMeta   `json:",inline" yaml:",inline"`
 	Outcomes      []*Outcome `json:"outcomes" yaml:"outcomes"`
@@ -175,8 +193,10 @@ type SysctlAnalyze struct {
 }
 
 type AnalyzeMeta struct {
-	CheckName string                 `json:"checkName,omitempty" yaml:"checkName,omitempty"`
-	Exclude   multitype.BoolOrString `json:"exclude,omitempty" yaml:"exclude,omitempty"`
+	CheckName   string                  `json:"checkName,omitempty" yaml:"checkName,omitempty"`
+	Exclude     *multitype.BoolOrString `json:"exclude,omitempty" yaml:"exclude,omitempty"`
+	Strict      *multitype.BoolOrString `json:"strict,omitempty" yaml:"strict,omitempty"`
+	Annotations map[string]string       `json:"annotations,omitempty" yaml:"annotations,omitempty"`
 }
 
 type Analyze struct {
@@ -196,6 +216,8 @@ type Analyze struct {
 	Distribution             *Distribution             `json:"distribution,omitempty" yaml:"distribution,omitempty"`
 	NodeResources            *NodeResources            `json:"nodeResources,omitempty" yaml:"nodeResources,omitempty"`
 	TextAnalyze              *TextAnalyze              `json:"textAnalyze,omitempty" yaml:"textAnalyze,omitempty"`
+	YamlCompare              *YamlCompare              `json:"yamlCompare,omitempty" yaml:"yamlCompare,omitempty"`
+	JsonCompare              *JsonCompare              `json:"jsonCompare,omitempty" yaml:"jsonCompare,omitempty"`
 	Postgres                 *DatabaseAnalyze          `json:"postgres,omitempty" yaml:"postgres,omitempty"`
 	Mysql                    *DatabaseAnalyze          `json:"mysql,omitempty" yaml:"mysql,omitempty"`
 	Redis                    *DatabaseAnalyze          `json:"redis,omitempty" yaml:"redis,omitempty"`

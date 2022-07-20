@@ -29,13 +29,13 @@ func analyzeOneReplicaSetStatus(analyzer *troubleshootv1beta2.ReplicaSetStatus, 
 
 	var result *AnalyzeResult
 	for _, collected := range files { // only 1 file here
-		var replicasets []appsv1.ReplicaSet
+		var replicasets appsv1.ReplicaSetList
 		if err := json.Unmarshal(collected, &replicasets); err != nil {
 			return nil, errors.Wrap(err, "failed to unmarshal deployment list")
 		}
 
 		var replicaset *appsv1.ReplicaSet
-		for _, r := range replicasets {
+		for _, r := range replicasets.Items {
 			if r.Name == analyzer.Name {
 				replicaset = r.DeepCopy()
 				break
@@ -90,12 +90,12 @@ func analyzeAllReplicaSetStatuses(analyzer *troubleshootv1beta2.ReplicaSetStatus
 		}
 
 		for _, collected := range files {
-			var replicasets []appsv1.ReplicaSet
+			var replicasets appsv1.ReplicaSetList
 			if err := json.Unmarshal(collected, &replicasets); err != nil {
 				return nil, errors.Wrap(err, "failed to unmarshal replicaset list")
 			}
 
-			for _, replicaset := range replicasets {
+			for _, replicaset := range replicasets.Items {
 				if !labelSelector.Matches(labels.Set(replicaset.Labels)) {
 					continue
 				}

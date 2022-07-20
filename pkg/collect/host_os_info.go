@@ -1,6 +1,7 @@
 package collect
 
 import (
+	"bytes"
 	"encoding/json"
 
 	"github.com/pkg/errors"
@@ -15,8 +16,11 @@ type HostOSInfo struct {
 	Platform        string `json:"platform"`
 }
 
+const HostOSInfoPath = `host-collectors/system/hostos_info.json`
+
 type CollectHostOS struct {
 	hostCollector *troubleshootv1beta2.HostOS
+	BundlePath    string
 }
 
 func (c *CollectHostOS) Title() string {
@@ -43,7 +47,10 @@ func (c *CollectHostOS) Collect(progressChan chan<- interface{}) (map[string][]b
 		return nil, errors.Wrap(err, "failed to marshal host os info")
 	}
 
+	output := NewResult()
+	output.SaveResult(c.BundlePath, HostOSInfoPath, bytes.NewBuffer(b))
+
 	return map[string][]byte{
-		"system/hostos_info.json": b,
+		HostOSInfoPath: b,
 	}, nil
 }

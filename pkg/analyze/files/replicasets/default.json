@@ -1,4 +1,10 @@
-[
+{
+  "kind": "ReplicaSetList",
+  "apiVersion": "apps/v1",
+  "metadata": {
+    "resourceVersion": "27195657"
+  },
+  "items": [
     {
       "metadata": {
         "name": "kotsadm-f98ff7d75",
@@ -1440,4 +1446,4 @@
       }
     }
   ]
-  
+}

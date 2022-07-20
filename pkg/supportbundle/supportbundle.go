@@ -15,6 +15,7 @@ import (
 	analyzer "github.com/replicatedhq/troubleshoot/pkg/analyze"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/replicatedhq/troubleshoot/pkg/collect"
+	"github.com/replicatedhq/troubleshoot/pkg/convert"
 	"k8s.io/client-go/rest"
 )
 
@@ -26,6 +27,7 @@ type SupportBundleCreateOpts struct {
 	Namespace                 string
 	ProgressChan              chan interface{}
 	SinceTime                 *time.Time
+	OutputPath                string
 	Redact                    bool
 	FromCLI                   bool
 }
@@ -57,9 +59,20 @@ func CollectSupportBundleFromSpec(spec *troubleshootv1beta2.SupportBundleSpec, a
 	}
 	defer os.RemoveAll(tmpDir)
 
-	basename := fmt.Sprintf("support-bundle-%s", time.Now().Format("2006-01-02T15_04_05"))
-	if !opts.FromCLI {
-		basename = filepath.Join(os.TempDir(), basename)
+	basename := ""
+	if opts.OutputPath != "" {
+		// use override output path
+		overridePath, err := convert.ValidateOutputPath(opts.OutputPath)
+		if err != nil {
+			return nil, errors.Wrap(err, "override output file path")
+		}
+		basename = strings.TrimSuffix(overridePath, ".tar.gz")
+	} else {
+		// use default output path
+		basename = fmt.Sprintf("support-bundle-%s", time.Now().Format("2006-01-02T15_04_05"))
+		if !opts.FromCLI {
+			basename = filepath.Join(os.TempDir(), basename)
+		}
 	}
 
 	filename, err := findFileName(basename, "tar.gz")
@@ -73,10 +86,19 @@ func CollectSupportBundleFromSpec(spec *troubleshootv1beta2.SupportBundleSpec, a
 		return nil, errors.Wrap(err, "create bundle dir")
 	}
 
+	hostFiles, err := runHostCollectors(spec.HostCollectors, additionalRedactors, bundlePath, opts)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to run host collectors")
+	}
+
 	// Run collectors
 	files, err := runCollectors(spec.Collectors, additionalRedactors, bundlePath, opts)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to run collectors")
+	}
+
+	for k, v := range hostFiles {
+		files[k] = v
 	}
 
 	version, err := getVersionFile()
@@ -179,10 +201,10 @@ func ProcessSupportBundleAfterCollection(spec *troubleshootv1beta2.SupportBundle
 // AnalyzeSupportBundle performs analysis on a support bundle using the support bundle spec and an already unpacked support
 // bundle on disk
 func AnalyzeSupportBundle(spec *troubleshootv1beta2.SupportBundleSpec, tmpDir string) ([]*analyzer.AnalyzeResult, error) {
-	if len(spec.Analyzers) == 0 {
+	if len(spec.Analyzers) == 0 && len(spec.HostAnalyzers) == 0 {
 		return nil, nil
 	}
-	analyzeResults, err := analyzer.AnalyzeLocal(tmpDir, spec.Analyzers)
+	analyzeResults, err := analyzer.AnalyzeLocal(tmpDir, spec.Analyzers, spec.HostAnalyzers)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to analyze support bundle")
 	}

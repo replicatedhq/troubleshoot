@@ -30,6 +30,8 @@ type KernelModuleInfo struct {
 	Status    KernelModuleStatus `json:"status"`
 }
 
+const HostKernelModulesPath = `host-collectors/system/kernel_modules.json`
+
 // kernelModuleCollector defines the interface used to collect modules from the
 // underlying host.
 type kernelModuleCollector interface {
@@ -40,6 +42,7 @@ type kernelModuleCollector interface {
 // from the host.
 type CollectHostKernelModules struct {
 	hostCollector *troubleshootv1beta2.HostKernelModules
+	BundlePath    string
 	loadable      kernelModuleCollector
 	loaded        kernelModuleCollector
 }
@@ -95,8 +98,11 @@ func (c *CollectHostKernelModules) Collect(progressChan chan<- interface{}) (map
 		return nil, errors.Wrap(err, "failed to marshal kernel modules")
 	}
 
+	output := NewResult()
+	output.SaveResult(c.BundlePath, HostKernelModulesPath, bytes.NewBuffer(b))
+
 	return map[string][]byte{
-		"system/kernel_modules.json": b,
+		HostKernelModulesPath: b,
 	}, nil
 }
 

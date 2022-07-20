@@ -1,9 +1,10 @@
 package collect
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
-	"path"
+	"path/filepath"
 	"time"
 
 	"github.com/pkg/errors"
@@ -12,6 +13,7 @@ import (
 
 type CollectHostTCPLoadBalancer struct {
 	hostCollector *troubleshootv1beta2.TCPLoadBalancer
+	BundlePath    string
 }
 
 func (c *CollectHostTCPLoadBalancer) Title() string {
@@ -26,10 +28,13 @@ func (c *CollectHostTCPLoadBalancer) Collect(progressChan chan<- interface{}) (m
 	listenAddress := fmt.Sprintf("0.0.0.0:%d", c.hostCollector.Port)
 	dialAddress := c.hostCollector.Address
 
-	name := path.Join("tcpLoadBalancer", "tcpLoadBalancer.json")
-	if c.hostCollector.CollectorName != "" {
-		name = path.Join("tcpLoadBalancer", fmt.Sprintf("%s.json", c.hostCollector.CollectorName))
+	collectorName := c.hostCollector.CollectorName
+	if collectorName == "" {
+		collectorName = "tcpLoadBalancer"
 	}
+	name := filepath.Join("host-collectors/tcpLoadBalancer", collectorName+".json")
+
+	output := NewResult()
 
 	timeout := 60 * time.Minute
 	if c.hostCollector.Timeout != "" {
@@ -50,6 +55,8 @@ func (c *CollectHostTCPLoadBalancer) Collect(progressChan chan<- interface{}) (m
 			return nil, errors.Wrap(err, "failed to marshal result")
 		}
 
+		output.SaveResult(c.BundlePath, name, bytes.NewBuffer(b))
+
 		return map[string][]byte{
 			name: b,
 		}, err
@@ -62,6 +69,8 @@ func (c *CollectHostTCPLoadBalancer) Collect(progressChan chan<- interface{}) (m
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to marshal result")
 	}
+
+	output.SaveResult(c.BundlePath, name, bytes.NewBuffer(b))
 
 	return map[string][]byte{
 		name: b,

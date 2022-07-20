@@ -1,6 +1,7 @@
 package collect
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -18,6 +19,7 @@ type DiskUsageInfo struct {
 
 type CollectHostDiskUsage struct {
 	hostCollector *troubleshootv1beta2.DiskUsage
+	BundlePath    string
 }
 
 func (c *CollectHostDiskUsage) Title() string {
@@ -32,7 +34,7 @@ func (c *CollectHostDiskUsage) Collect(progressChan chan<- interface{}) (map[str
 	result := map[string][]byte{}
 
 	if c.hostCollector == nil {
-		return result, nil
+		return map[string][]byte{}, nil
 	}
 
 	pathExists, err := traverseFiletreeDirExists(c.hostCollector.Path)
@@ -52,14 +54,19 @@ func (c *CollectHostDiskUsage) Collect(progressChan chan<- interface{}) (map[str
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to marshal disk space info")
 	}
-	key := HostDiskUsageKey(c.hostCollector.CollectorName)
-	result[key] = b
+
+	collectorName := c.hostCollector.CollectorName
+	if collectorName == "" {
+		collectorName = "diskUsage"
+	}
+	name := filepath.Join("host-collectors/diskUsage", collectorName+".json")
+
+	result[name] = b
+
+	output := NewResult()
+	output.SaveResult(c.BundlePath, name, bytes.NewBuffer(b))
 
 	return result, nil
-}
-
-func HostDiskUsageKey(name string) string {
-	return fmt.Sprintf("diskUsage/%s.json", name)
 }
 
 func traverseFiletreeDirExists(filename string) (string, error) {

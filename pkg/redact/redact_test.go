@@ -816,6 +816,53 @@ func Test_Redactors(t *testing.T) {
 		  "status": {
 			"loadBalancer": {}
 		  }
+		},
+		{
+			"auth_dump": [
+				{
+					"entity": "osd.0",
+					"key": "ABCxyzABCxyz/foo/bar123xyz/BAZAABBCCDD==",
+					"caps": {
+						"mgr": "allow profile osd",
+						"mon": "allow profile osd",
+						"osd": "allow *"
+					}
+				},
+				{
+					"entity": "client.admin",
+					"key": "ABCxyzABCxyz/foo/bar123xyz/BAZAABBCCDD==",
+					"caps": {
+						"mds": "allow *",
+						"mgr": "allow *",
+						"mon": "allow *",
+						"osd": "allow *"
+					}
+				},
+				{
+					"entity": "client.bootstrap-mds",
+					"key": "ABCxyzABCxyz/foo/bar123xyz/BAZAABBCCDD==",
+					"caps": {
+						"mon": "allow profile bootstrap-mds"
+					}
+				},
+				{
+					"entity": "client.rgw.rook.ceph.store.a",
+					"key": "ABCxyzABCxyz/foo/bar123xyz/BAZAABBCCDD==",
+					"caps": {
+						"mon": "allow rw",
+						"osd": "allow rwx"
+					}
+				},
+				{
+					"entity": "mgr.a",
+					"key": "ABCxyzABCxyz/foo/bar123xyz/BAZAABBCCDD==",
+					"caps": {
+						"mds": "allow *",
+						"mon": "allow profile mgr",
+						"osd": "allow *"
+					}
+				}
+			]
 		}
 	  ]`
 
@@ -1624,11 +1671,58 @@ func Test_Redactors(t *testing.T) {
 		  "status": {
 			"loadBalancer": {}
 		  }
+		},
+		{
+			"auth_dump": [
+				{
+					"entity": "osd.0",
+					"key": "***HIDDEN***",
+					"caps": {
+						"mgr": "allow profile osd",
+						"mon": "allow profile osd",
+						"osd": "allow *"
+					}
+				},
+				{
+					"entity": "client.admin",
+					"key": "***HIDDEN***",
+					"caps": {
+						"mds": "allow *",
+						"mgr": "allow *",
+						"mon": "allow *",
+						"osd": "allow *"
+					}
+				},
+				{
+					"entity": "client.bootstrap-mds",
+					"key": "***HIDDEN***",
+					"caps": {
+						"mon": "allow profile bootstrap-mds"
+					}
+				},
+				{
+					"entity": "client.rgw.rook.ceph.store.a",
+					"key": "***HIDDEN***",
+					"caps": {
+						"mon": "allow rw",
+						"osd": "allow rwx"
+					}
+				},
+				{
+					"entity": "mgr.a",
+					"key": "***HIDDEN***",
+					"caps": {
+						"mds": "allow *",
+						"mon": "allow profile mgr",
+						"osd": "allow *"
+					}
+				}
+			]
 		}
 	  ]`
 
-	wantRedactionsLen := 39
-	wantRedactionsCount := 25
+	wantRedactionsLen := 44
+	wantRedactionsCount := 26
 
 	t.Run("test default redactors", func(t *testing.T) {
 		req := require.New(t)

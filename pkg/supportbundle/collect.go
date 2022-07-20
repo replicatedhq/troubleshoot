@@ -20,6 +20,56 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
+func runHostCollectors(hostCollectors []*troubleshootv1beta2.HostCollect, additionalRedactors *troubleshootv1beta2.Redactor, bundlePath string, opts SupportBundleCreateOpts) (collect.CollectorResult, error) {
+	collectSpecs := make([]*troubleshootv1beta2.HostCollect, 0, 0)
+	collectSpecs = append(collectSpecs, hostCollectors...)
+
+	allCollectedData := make(map[string][]byte)
+
+	var collectors []collect.HostCollector
+	for _, desiredCollector := range collectSpecs {
+		collector, ok := collect.GetHostCollector(desiredCollector, bundlePath)
+		if ok {
+			collectors = append(collectors, collector)
+		}
+	}
+
+	collectResult := collect.NewResult()
+
+	for _, collector := range collectors {
+		isExcluded, _ := collector.IsExcluded()
+		if isExcluded {
+			continue
+		}
+
+		opts.ProgressChan <- fmt.Sprintf("[%s] Running collector...", collector.Title())
+		result, err := collector.Collect(opts.ProgressChan)
+		if err != nil {
+			opts.ProgressChan <- errors.Errorf("failed to run collector: %s: %v", collector.Title(), err)
+		}
+		for k, v := range result {
+			allCollectedData[k] = v
+		}
+	}
+
+	collectResult = allCollectedData
+
+	globalRedactors := []*troubleshootv1beta2.Redact{}
+	if additionalRedactors != nil {
+		globalRedactors = additionalRedactors.Spec.Redactors
+	}
+
+	if opts.Redact {
+		err := collect.RedactResult(bundlePath, collectResult, globalRedactors)
+		if err != nil {
+			err = errors.Wrap(err, "failed to redact")
+			return collectResult, err
+		}
+	}
+
+	return collectResult, nil
+}
+
 // TODO (dan): This is VERY similar to the Preflight collect package and should be refactored.
 func runCollectors(collectors []*troubleshootv1beta2.Collect, additionalRedactors *troubleshootv1beta2.Redactor, bundlePath string, opts SupportBundleCreateOpts) (collect.CollectorResult, error) {
 

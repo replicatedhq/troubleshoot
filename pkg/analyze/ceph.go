@@ -131,6 +131,7 @@ func cephStatus(analyzer *troubleshootv1beta2.CephStatusAnalyze, getCollectedFil
 			if outcome.Fail.When == "" {
 				outcome.Fail.When = string(CephHealthErr)
 			}
+
 			match, err := compareCephStatus(status.Health.Status, outcome.Fail.When)
 			if err != nil {
 				return nil, errors.Wrap(err, "failed to compare ceph status")
@@ -144,6 +145,7 @@ func cephStatus(analyzer *troubleshootv1beta2.CephStatusAnalyze, getCollectedFil
 			if outcome.Warn.When == "" {
 				outcome.Warn.When = string(CephHealthWarn)
 			}
+
 			match, err := compareCephStatus(status.Health.Status, outcome.Warn.When)
 			if err != nil {
 				return nil, errors.Wrap(err, "failed to compare ceph status")
@@ -157,6 +159,7 @@ func cephStatus(analyzer *troubleshootv1beta2.CephStatusAnalyze, getCollectedFil
 			if outcome.Pass.When == "" {
 				outcome.Pass.When = string(CephHealthOK)
 			}
+
 			match, err := compareCephStatus(status.Health.Status, outcome.Pass.When)
 			if err != nil {
 				return nil, errors.Wrap(err, "failed to compare ceph status")
@@ -164,6 +167,7 @@ func cephStatus(analyzer *troubleshootv1beta2.CephStatusAnalyze, getCollectedFil
 				analyzeResult.IsPass = true
 				analyzeResult.Message = outcome.Pass.Message
 				analyzeResult.URI = outcome.Pass.URI
+
 				return analyzeResult, nil
 			}
 		}
@@ -205,13 +209,19 @@ func compareCephStatus(actual, when string) (bool, error) {
 	}
 }
 
-func detailedCephMessage(msg string, status CephStatus) string {
+func detailedCephMessage(outcomeMessage string, status CephStatus) string {
+	var msg = []string{}
+
+	if outcomeMessage != "" {
+		msg = append(msg, outcomeMessage)
+	}
+
 	if status.OsdMap.OsdMap.NumOsd > 0 {
-		msg = fmt.Sprintf("%s. %v/%v OSDs up", msg, status.OsdMap.OsdMap.NumUpOsd, status.OsdMap.OsdMap.NumOsd)
+		msg = append(msg, fmt.Sprintf("%v/%v OSDs up", status.OsdMap.OsdMap.NumUpOsd, status.OsdMap.OsdMap.NumOsd))
 	}
 
 	if status.OsdMap.OsdMap.Full {
-		msg = fmt.Sprintf("%s. OSD disk is full", msg)
+		msg = append(msg, fmt.Sprintf("OSD disk is full"))
 	} else if status.OsdMap.OsdMap.NearFull {
 		msg = fmt.Sprintf("%s. OSD disk is nearly full", msg)
 	} else if chkMsg, ok := status.Health.Checks["POOL_NO_REDUNDANCY"]; ok {
@@ -220,8 +230,14 @@ func detailedCephMessage(msg string, status CephStatus) string {
 
 	if status.PgMap.TotalBytes > 0 {
 		pgUsage := 100 * float64(status.PgMap.UsedBytes) / float64(status.PgMap.TotalBytes)
-		msg = fmt.Sprintf("%s. PG storage usage is %.1f%%.", msg, pgUsage)
+		msg = append(msg, fmt.Sprintf("PG storage usage is %.1f%%", pgUsage))
 	}
 
-	return msg
+	if status.Health.Checks != nil {
+		for k, v := range status.Health.Checks {
+			msg = append(msg, fmt.Sprintf("%s: %s", k, v.Summary.Message))
+		}
+	}
+
+	return strings.Join(msg, "\n")
 }

@@ -30,6 +30,11 @@ type CollectProgress struct {
 	CurrentStatus  string
 	CompletedCount int
 	TotalCount     int
+	Collectors     map[string]CollectorStatus
+}
+
+type CollectorStatus struct {
+	Status string
 }
 
 func (cp *CollectProgress) String() string {
@@ -77,14 +82,12 @@ func (cr RemoteCollectResult) IsRBACAllowed() bool {
 func CollectHost(opts CollectOpts, p *troubleshootv1beta2.HostPreflight) (CollectResult, error) {
 	collectSpecs := make([]*troubleshootv1beta2.HostCollect, 0, 0)
 	collectSpecs = append(collectSpecs, p.Spec.Collectors...)
-	collectSpecs = ensureHostCollectorInList(collectSpecs, troubleshootv1beta2.HostCollect{CPU: &troubleshootv1beta2.CPU{}})
-	collectSpecs = ensureHostCollectorInList(collectSpecs, troubleshootv1beta2.HostCollect{Memory: &troubleshootv1beta2.Memory{}})
 
 	allCollectedData := make(map[string][]byte)
 
 	var collectors []collect.HostCollector
 	for _, desiredCollector := range collectSpecs {
-		collector, ok := collect.GetHostCollector(desiredCollector)
+		collector, ok := collect.GetHostCollector(desiredCollector, "")
 		if ok {
 			collectors = append(collectors, collector)
 		}
@@ -163,11 +166,22 @@ func Collect(opts CollectOpts, p *troubleshootv1beta2.Preflight) (CollectResult,
 		return collectResult, errors.New("insufficient permissions to run all collectors")
 	}
 
+	// generate a map of all collectors for atomic status messages
+	collectorList := map[string]CollectorStatus{}
+	for _, collector := range collectors {
+		collectorList[collector.GetDisplayName()] = CollectorStatus{
+			Status: "pending",
+		}
+	}
+
 	// Run preflights collectors synchronously
 	for i, collector := range collectors {
 		if len(collector.RBACErrors) > 0 {
 			// don't skip clusterResources collector due to RBAC issues
 			if collector.Collect.ClusterResources == nil {
+				collectorList[collector.GetDisplayName()] = CollectorStatus{
+					Status: "skipped",
+				}
 				collectResult.isRBACAllowed = false // not failing, but going to report this
 				opts.ProgressChan <- fmt.Sprintf("skipping collector %s with insufficient RBAC permissions", collector.GetDisplayName())
 				opts.ProgressChan <- CollectProgress{
@@ -175,35 +189,48 @@ func Collect(opts CollectOpts, p *troubleshootv1beta2.Preflight) (CollectResult,
 					CurrentStatus:  "skipped",
 					CompletedCount: i + 1,
 					TotalCount:     len(collectors),
+					Collectors:     collectorList,
 				}
 				continue
 			}
 		}
 
+		collectorList[collector.GetDisplayName()] = CollectorStatus{
+			Status: "running",
+		}
 		opts.ProgressChan <- CollectProgress{
 			CurrentName:    collector.GetDisplayName(),
 			CurrentStatus:  "running",
 			CompletedCount: i,
 			TotalCount:     len(collectors),
+			Collectors:     collectorList,
 		}
 
 		result, err := collector.RunCollectorSync(opts.KubernetesRestConfig, k8sClient, nil)
 		if err != nil {
+			collectorList[collector.GetDisplayName()] = CollectorStatus{
+				Status: "failed",
+			}
 			opts.ProgressChan <- errors.Errorf("failed to run collector %s: %v\n", collector.GetDisplayName(), err)
 			opts.ProgressChan <- CollectProgress{
 				CurrentName:    collector.GetDisplayName(),
 				CurrentStatus:  "failed",
 				CompletedCount: i + 1,
 				TotalCount:     len(collectors),
+				Collectors:     collectorList,
 			}
 			continue
 		}
 
+		collectorList[collector.GetDisplayName()] = CollectorStatus{
+			Status: "completed",
+		}
 		opts.ProgressChan <- CollectProgress{
 			CurrentName:    collector.GetDisplayName(),
 			CurrentStatus:  "completed",
 			CompletedCount: i + 1,
 			TotalCount:     len(collectors),
+			Collectors:     collectorList,
 		}
 
 		for k, v := range result {
@@ -242,25 +269,47 @@ func CollectRemote(opts CollectOpts, p *troubleshootv1beta2.HostPreflight) (Coll
 		Spec:       p,
 	}
 
+	// generate a map of all collectors for atomic status messages
+	collectorList := map[string]CollectorStatus{}
+	for _, collector := range collectors {
+		collectorList[collector.GetDisplayName()] = CollectorStatus{
+			Status: "pending",
+		}
+	}
+
 	// Run preflights collectors synchronously
 	for i, collector := range collectors {
+		collectorList[collector.GetDisplayName()] = CollectorStatus{
+			Status: "running",
+		}
+
 		opts.ProgressChan <- CollectProgress{
 			CurrentName:    collector.GetDisplayName(),
 			CurrentStatus:  "running",
 			CompletedCount: i,
 			TotalCount:     len(collectors),
+			Collectors:     collectorList,
 		}
 
 		result, err := collector.RunCollectorSync(nil)
 		if err != nil {
+			collectorList[collector.GetDisplayName()] = CollectorStatus{
+				Status: "failed",
+			}
+
 			opts.ProgressChan <- errors.Errorf("failed to run collector %s: %v\n", collector.GetDisplayName(), err)
 			opts.ProgressChan <- CollectProgress{
 				CurrentName:    collector.GetDisplayName(),
 				CurrentStatus:  "failed",
 				CompletedCount: i + 1,
 				TotalCount:     len(collectors),
+				Collectors:     collectorList,
 			}
 			continue
+		}
+
+		collectorList[collector.GetDisplayName()] = CollectorStatus{
+			Status: "completed",
 		}
 
 		opts.ProgressChan <- CollectProgress{
@@ -268,6 +317,7 @@ func CollectRemote(opts CollectOpts, p *troubleshootv1beta2.HostPreflight) (Coll
 			CurrentStatus:  "completed",
 			CompletedCount: i + 1,
 			TotalCount:     len(collectors),
+			Collectors:     collectorList,
 		}
 
 		for k, v := range result {

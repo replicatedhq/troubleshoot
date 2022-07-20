@@ -3,6 +3,7 @@ package analyzer
 import (
 	"encoding/json"
 	"fmt"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -27,15 +28,18 @@ func (a *AnalyzeHostDiskUsage) IsExcluded() (bool, error) {
 func (a *AnalyzeHostDiskUsage) Analyze(getCollectedFileContents func(string) ([]byte, error)) ([]*AnalyzeResult, error) {
 	hostAnalyzer := a.hostAnalyzer
 
-	key := collect.HostDiskUsageKey(hostAnalyzer.CollectorName)
-	contents, err := getCollectedFileContents(key)
+	name := filepath.Join("host-collectors/diskUsage", "diskUsage.json")
+	if hostAnalyzer.CollectorName != "" {
+		name = filepath.Join("host-collectors/diskUsage", hostAnalyzer.CollectorName+".json")
+	}
+	contents, err := getCollectedFileContents(name)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get collected file %s", key)
+		return nil, errors.Wrapf(err, "failed to get collected file %s", name)
 	}
 
 	diskUsageInfo := collect.DiskUsageInfo{}
 	if err := json.Unmarshal(contents, &diskUsageInfo); err != nil {
-		return nil, errors.Wrapf(err, "failed to unmarshal disk usage info from %s", key)
+		return nil, errors.Wrapf(err, "failed to unmarshal disk usage info from %s", name)
 	}
 
 	result := AnalyzeResult{

@@ -8,7 +8,7 @@ spec:
         selector:
           - app=example
           - component=nginx
-        namespace: repl{{ Namespace }}
+        namespace: default
         limits:
           maxAge: 720h # 30*24
           maxLines: 10000

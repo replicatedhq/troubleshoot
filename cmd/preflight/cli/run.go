@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"os"
 	"os/signal"
 	"strings"
@@ -19,6 +20,7 @@ import (
 	troubleshootclientsetscheme "github.com/replicatedhq/troubleshoot/pkg/client/troubleshootclientset/scheme"
 	"github.com/replicatedhq/troubleshoot/pkg/docrewrite"
 	"github.com/replicatedhq/troubleshoot/pkg/k8sutil"
+	"github.com/replicatedhq/troubleshoot/pkg/oci"
 	"github.com/replicatedhq/troubleshoot/pkg/preflight"
 	"github.com/replicatedhq/troubleshoot/pkg/specs"
 	"github.com/spf13/viper"
@@ -65,27 +67,45 @@ func runPreflights(v *viper.Viper, arg string) error {
 
 		preflightContent = b
 	} else {
-		if !util.IsURL(arg) {
-			return fmt.Errorf("%s is not a URL and was not found (err %s)", arg, err)
-		}
-
-		req, err := http.NewRequest("GET", arg, nil)
-		if err != nil {
-			return err
-		}
-		req.Header.Set("User-Agent", "Replicated_Preflight/v1beta2")
-		resp, err := http.DefaultClient.Do(req)
-		if err != nil {
-			return err
-		}
-		defer resp.Body.Close()
-
-		body, err := ioutil.ReadAll(resp.Body)
+		u, err := url.Parse(arg)
 		if err != nil {
 			return err
 		}
 
-		preflightContent = body
+		if u.Scheme == "oci" {
+			content, err := oci.PullPreflightFromOCI(arg)
+			if err != nil {
+				if err == oci.ErrNoRelease {
+					return errors.Errorf("no release found for %s.\nCheck the oci:// uri for errors or contact the application vendor for support.", arg)
+				}
+
+				return err
+			}
+
+			preflightContent = content
+		} else {
+			if !util.IsURL(arg) {
+				return fmt.Errorf("%s is not a URL and was not found (err %s)", arg, err)
+			}
+
+			req, err := http.NewRequest("GET", arg, nil)
+			if err != nil {
+				return err
+			}
+			req.Header.Set("User-Agent", "Replicated_Preflight/v1beta2")
+			resp, err := http.DefaultClient.Do(req)
+			if err != nil {
+				return err
+			}
+			defer resp.Body.Close()
+
+			body, err := ioutil.ReadAll(resp.Body)
+			if err != nil {
+				return err
+			}
+
+			preflightContent = body
+		}
 	}
 
 	preflightContent, err = docrewrite.ConvertToV1Beta2(preflightContent)
@@ -167,7 +187,7 @@ func runPreflights(v *viper.Viper, arg string) error {
 		if len(analyzeResults) == 0 {
 			return errors.New("no data has been collected")
 		}
-		return showInteractiveResults(preflightSpecName, analyzeResults)
+		return showInteractiveResults(preflightSpecName, v.GetString("output"), analyzeResults)
 	}
 
 	return showStdoutResults(v.GetString("format"), preflightSpecName, analyzeResults)

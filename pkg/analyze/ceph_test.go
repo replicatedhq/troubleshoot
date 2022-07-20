@@ -56,7 +56,7 @@ func Test_cephStatus(t *testing.T) {
 				IsWarn:  true,
 				IsFail:  false,
 				Title:   "Ceph Status",
-				Message: "Ceph status is HEALTH_WARN. 5/5 OSDs up. OSD disk is nearly full. PG storage usage is 85.0%.",
+				Message: "Ceph status is HEALTH_WARN\n5/5 OSDs up\nOSD disk is nearly full\nPG storage usage is 85.0%",
 				URI:     "https://rook.io/docs/rook/v1.4/ceph-common-issues.html",
 				IconKey: "rook",
 				IconURI: "https://troubleshoot.sh/images/analyzer-icons/rook.svg?w=11&h=16",
@@ -89,7 +89,7 @@ func Test_cephStatus(t *testing.T) {
 				IsWarn:  false,
 				IsFail:  true,
 				Title:   "Ceph Status",
-				Message: "Ceph status is HEALTH_ERR. 4/5 OSDs up. OSD disk is full. PG storage usage is 95.0%.",
+				Message: "Ceph status is HEALTH_ERR\n4/5 OSDs up\nOSD disk is full\nPG storage usage is 95.0%",
 				URI:     "https://rook.io/docs/rook/v1.4/ceph-common-issues.html",
 				IconKey: "rook",
 				IconURI: "https://troubleshoot.sh/images/analyzer-icons/rook.svg?w=11&h=16",
@@ -172,7 +172,7 @@ func Test_cephStatus(t *testing.T) {
 				IsWarn:  false,
 				IsFail:  true,
 				Title:   "Ceph Status",
-				Message: "custom message WARN. 5/5 OSDs up. OSD disk is nearly full. PG storage usage is 85.0%.",
+				Message: "custom message WARN\n5/5 OSDs up\nOSD disk is nearly full\nPG storage usage is 85.0%",
 				URI:     "custom uri WARN",
 				IconKey: "rook",
 				IconURI: "https://troubleshoot.sh/images/analyzer-icons/rook.svg?w=11&h=16",
@@ -244,6 +244,37 @@ func Test_cephStatus(t *testing.T) {
 							"count": 11
 						    },
 						    "muted": false
+						}
+					}
+				}
+			}`,
+		},
+		{
+			name:     "warn case with health status message and summary",
+			analyzer: troubleshootv1beta2.CephStatusAnalyze{},
+			expectResult: AnalyzeResult{
+				IsPass:  false,
+				IsWarn:  true,
+				IsFail:  false,
+				Title:   "Ceph Status",
+				Message: "Ceph status is HEALTH_WARN\nPOOL_NO_REDUNDANCY: 11 pool(s) have no replicas configured",
+				URI:     "https://rook.io/docs/rook/v1.4/ceph-common-issues.html",
+				IconKey: "rook",
+				IconURI: "https://troubleshoot.sh/images/analyzer-icons/rook.svg?w=11&h=16",
+			},
+			filePath: "ceph/status.json",
+			file: `{
+				"fsid": "96a8178c-6aa2-4adf-a309-9e8869a79611",
+				"health": {
+					"status": "HEALTH_WARN",
+					"checks": {
+						"POOL_NO_REDUNDANCY": {
+							"severity": "HEALTH_WARN",
+							"summary": {
+								"message": "11 pool(s) have no replicas configured",
+								"count": 11
+							},
+							"muted": false
 						}
 					}
 				}

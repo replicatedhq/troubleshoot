@@ -16,6 +16,7 @@ func init() {
 
 type CollectHostFilesystemPerformance struct {
 	hostCollector *troubleshootv1beta2.FilesystemPerformance
+	BundlePath    string
 }
 
 func (c *CollectHostFilesystemPerformance) Title() string {
@@ -27,7 +28,7 @@ func (c *CollectHostFilesystemPerformance) IsExcluded() (bool, error) {
 }
 
 func (c *CollectHostFilesystemPerformance) Collect(progressChan chan<- interface{}) (map[string][]byte, error) {
-	return collectHostFilesystemPerformance(c.hostCollector)
+	return collectHostFilesystemPerformance(c.hostCollector, c.BundlePath)
 }
 
 type FSPerfResults struct {

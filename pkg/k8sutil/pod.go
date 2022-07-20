@@ -114,13 +114,20 @@ func IsPodUnhealthy(pod *corev1.Pod) bool {
 	}
 
 	reason := GetPodStatusReason(pod)
-
-	switch PodStatusReason(reason) {
-	case PodStatusReasonRunning:
-		fallthrough
-	case PodStatusReasonCompleted:
-		return false
+	if PodStatusReason(reason) == PodStatusReasonCompleted {
+		return false // completed pods are healthy pods
 	}
 
-	return true
+	if PodStatusReason(reason) != PodStatusReasonRunning {
+		return true // pods that are not completed or running are unhealthy
+	}
+
+	// running pods with unready containers are not healthy
+	for _, containerStatus := range pod.Status.ContainerStatuses {
+		if !containerStatus.Ready {
+			return true
+		}
+	}
+
+	return false
 }

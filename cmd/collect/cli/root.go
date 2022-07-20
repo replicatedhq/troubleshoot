@@ -4,10 +4,12 @@ import (
 	"os"
 	"strings"
 
+	"github.com/go-logr/logr"
 	"github.com/replicatedhq/troubleshoot/pkg/k8sutil"
 	"github.com/replicatedhq/troubleshoot/pkg/logger"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"k8s.io/klog/v2"
 )
 
 func RootCmd() *cobra.Command {
@@ -18,7 +20,12 @@ func RootCmd() *cobra.Command {
 		Long:         `Run a collector and output the results.`,
 		SilenceUsage: true,
 		PreRun: func(cmd *cobra.Command, args []string) {
-			viper.BindPFlags(cmd.Flags())
+			v := viper.GetViper()
+			v.BindPFlags(cmd.Flags())
+
+			if !v.GetBool("debug") {
+				klog.SetLogger(logr.Discard())
+			}
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			v := viper.GetViper()
@@ -39,6 +46,7 @@ func RootCmd() *cobra.Command {
 	cmd.Flags().String("collector-pull-policy", "", "the pull policy of the collector image")
 	cmd.Flags().String("selector", "", "selector (label query) to filter remote collection nodes on.")
 	cmd.Flags().Bool("collect-without-permissions", false, "always generate a support bundle, even if it some require additional permissions")
+	cmd.Flags().Bool("debug", false, "enable debug logging")
 
 	// hidden in favor of the `insecure-skip-tls-verify` flag
 	cmd.Flags().Bool("allow-insecure-connections", false, "when set, do not verify TLS certs when retrieving spec and reporting results")

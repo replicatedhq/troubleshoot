@@ -25,7 +25,9 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
+	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 
 	"github.com/replicatedhq/troubleshoot/pkg/k8sutil/discovery"
 )
@@ -220,7 +222,19 @@ func getAllNamespaces(ctx context.Context, client *kubernetes.Clientset) ([]byte
 		return nil, nil, []string{err.Error()}
 	}
 
-	b, err := json.MarshalIndent(namespaces.Items, "", "  ")
+	gvk, err := apiutil.GVKForObject(namespaces, scheme.Scheme)
+	if err == nil {
+		namespaces.GetObjectKind().SetGroupVersionKind(gvk)
+	}
+
+	for i, o := range namespaces.Items {
+		gvk, err := apiutil.GVKForObject(&o, scheme.Scheme)
+		if err == nil {
+			namespaces.Items[i].GetObjectKind().SetGroupVersionKind(gvk)
+		}
+	}
+
+	b, err := json.MarshalIndent(namespaces, "", "  ")
 	if err != nil {
 		return nil, nil, []string{err.Error()}
 	}
@@ -256,6 +270,11 @@ func getNamespace(ctx context.Context, client *kubernetes.Clientset, namespace s
 		return nil, []string{err.Error()}
 	}
 
+	gvk, err := apiutil.GVKForObject(ns, scheme.Scheme)
+	if err == nil {
+		ns.GetObjectKind().SetGroupVersionKind(gvk)
+	}
+
 	b, err := json.MarshalIndent(ns, "", "  ")
 	if err != nil {
 		return nil, []string{err.Error()}
@@ -276,7 +295,19 @@ func pods(ctx context.Context, client *kubernetes.Clientset, namespaces []string
 			continue
 		}
 
-		b, err := json.MarshalIndent(pods.Items, "", "  ")
+		gvk, err := apiutil.GVKForObject(pods, scheme.Scheme)
+		if err == nil {
+			pods.GetObjectKind().SetGroupVersionKind(gvk)
+		}
+
+		for i, o := range pods.Items {
+			gvk, err := apiutil.GVKForObject(&o, scheme.Scheme)
+			if err == nil {
+				pods.Items[i].GetObjectKind().SetGroupVersionKind(gvk)
+			}
+		}
+
+		b, err := json.MarshalIndent(pods, "", "  ")
 		if err != nil {
 			errorsByNamespace[namespace] = err.Error()
 			continue
@@ -305,7 +336,19 @@ func services(ctx context.Context, client *kubernetes.Clientset, namespaces []st
 			continue
 		}
 
-		b, err := json.MarshalIndent(services.Items, "", "  ")
+		gvk, err := apiutil.GVKForObject(services, scheme.Scheme)
+		if err == nil {
+			services.GetObjectKind().SetGroupVersionKind(gvk)
+		}
+
+		for i, o := range services.Items {
+			gvk, err := apiutil.GVKForObject(&o, scheme.Scheme)
+			if err == nil {
+				services.Items[i].GetObjectKind().SetGroupVersionKind(gvk)
+			}
+		}
+
+		b, err := json.MarshalIndent(services, "", "  ")
 		if err != nil {
 			errorsByNamespace[namespace] = err.Error()
 			continue
@@ -328,7 +371,19 @@ func deployments(ctx context.Context, client *kubernetes.Clientset, namespaces [
 			continue
 		}
 
-		b, err := json.MarshalIndent(deployments.Items, "", "  ")
+		gvk, err := apiutil.GVKForObject(deployments, scheme.Scheme)
+		if err == nil {
+			deployments.GetObjectKind().SetGroupVersionKind(gvk)
+		}
+
+		for i, o := range deployments.Items {
+			gvk, err := apiutil.GVKForObject(&o, scheme.Scheme)
+			if err == nil {
+				deployments.Items[i].GetObjectKind().SetGroupVersionKind(gvk)
+			}
+		}
+
+		b, err := json.MarshalIndent(deployments, "", "  ")
 		if err != nil {
 			errorsByNamespace[namespace] = err.Error()
 			continue
@@ -351,7 +406,19 @@ func statefulsets(ctx context.Context, client *kubernetes.Clientset, namespaces 
 			continue
 		}
 
-		b, err := json.MarshalIndent(statefulsets.Items, "", "  ")
+		gvk, err := apiutil.GVKForObject(statefulsets, scheme.Scheme)
+		if err == nil {
+			statefulsets.GetObjectKind().SetGroupVersionKind(gvk)
+		}
+
+		for i, o := range statefulsets.Items {
+			gvk, err := apiutil.GVKForObject(&o, scheme.Scheme)
+			if err == nil {
+				statefulsets.Items[i].GetObjectKind().SetGroupVersionKind(gvk)
+			}
+		}
+
+		b, err := json.MarshalIndent(statefulsets, "", "  ")
 		if err != nil {
 			errorsByNamespace[namespace] = err.Error()
 			continue
@@ -374,7 +441,19 @@ func replicasets(ctx context.Context, client *kubernetes.Clientset, namespaces [
 			continue
 		}
 
-		b, err := json.MarshalIndent(replicasets.Items, "", "  ")
+		gvk, err := apiutil.GVKForObject(replicasets, scheme.Scheme)
+		if err == nil {
+			replicasets.GetObjectKind().SetGroupVersionKind(gvk)
+		}
+
+		for i, o := range replicasets.Items {
+			gvk, err := apiutil.GVKForObject(&o, scheme.Scheme)
+			if err == nil {
+				replicasets.Items[i].GetObjectKind().SetGroupVersionKind(gvk)
+			}
+		}
+
+		b, err := json.MarshalIndent(replicasets, "", "  ")
 		if err != nil {
 			errorsByNamespace[namespace] = err.Error()
 			continue
@@ -397,7 +476,19 @@ func jobs(ctx context.Context, client *kubernetes.Clientset, namespaces []string
 			continue
 		}
 
-		b, err := json.MarshalIndent(nsJobs.Items, "", "  ")
+		gvk, err := apiutil.GVKForObject(nsJobs, scheme.Scheme)
+		if err == nil {
+			nsJobs.GetObjectKind().SetGroupVersionKind(gvk)
+		}
+
+		for i, o := range nsJobs.Items {
+			gvk, err := apiutil.GVKForObject(&o, scheme.Scheme)
+			if err == nil {
+				nsJobs.Items[i].GetObjectKind().SetGroupVersionKind(gvk)
+			}
+		}
+
+		b, err := json.MarshalIndent(nsJobs, "", "  ")
 		if err != nil {
 			errorsByNamespace[namespace] = err.Error()
 			continue
@@ -420,7 +511,19 @@ func cronJobs(ctx context.Context, client *kubernetes.Clientset, namespaces []st
 			continue
 		}
 
-		b, err := json.MarshalIndent(nsCronJobs.Items, "", "  ")
+		gvk, err := apiutil.GVKForObject(nsCronJobs, scheme.Scheme)
+		if err == nil {
+			nsCronJobs.GetObjectKind().SetGroupVersionKind(gvk)
+		}
+
+		for i, o := range nsCronJobs.Items {
+			gvk, err := apiutil.GVKForObject(&o, scheme.Scheme)
+			if err == nil {
+				nsCronJobs.Items[i].GetObjectKind().SetGroupVersionKind(gvk)
+			}
+		}
+
+		b, err := json.MarshalIndent(nsCronJobs, "", "  ")
 		if err != nil {
 			errorsByNamespace[namespace] = err.Error()
 			continue
@@ -455,7 +558,19 @@ func ingressV1(ctx context.Context, client *kubernetes.Clientset, namespaces []s
 			continue
 		}
 
-		b, err := json.MarshalIndent(ingress.Items, "", "  ")
+		gvk, err := apiutil.GVKForObject(ingress, scheme.Scheme)
+		if err == nil {
+			ingress.GetObjectKind().SetGroupVersionKind(gvk)
+		}
+
+		for i, o := range ingress.Items {
+			gvk, err := apiutil.GVKForObject(&o, scheme.Scheme)
+			if err == nil {
+				ingress.Items[i].GetObjectKind().SetGroupVersionKind(gvk)
+			}
+		}
+
+		b, err := json.MarshalIndent(ingress, "", "  ")
 		if err != nil {
 			errorsByNamespace[namespace] = err.Error()
 			continue
@@ -478,7 +593,19 @@ func ingressV1beta(ctx context.Context, client *kubernetes.Clientset, namespaces
 			continue
 		}
 
-		b, err := json.MarshalIndent(ingress.Items, "", "  ")
+		gvk, err := apiutil.GVKForObject(ingress, scheme.Scheme)
+		if err == nil {
+			ingress.GetObjectKind().SetGroupVersionKind(gvk)
+		}
+
+		for i, o := range ingress.Items {
+			gvk, err := apiutil.GVKForObject(&o, scheme.Scheme)
+			if err == nil {
+				ingress.Items[i].GetObjectKind().SetGroupVersionKind(gvk)
+			}
+		}
+
+		b, err := json.MarshalIndent(ingress, "", "  ")
 		if err != nil {
 			errorsByNamespace[namespace] = err.Error()
 			continue
@@ -508,7 +635,19 @@ func storageClassesV1(ctx context.Context, client *kubernetes.Clientset) ([]byte
 		return nil, []string{err.Error()}
 	}
 
-	b, err := json.MarshalIndent(storageClasses.Items, "", "  ")
+	gvk, err := apiutil.GVKForObject(storageClasses, scheme.Scheme)
+	if err == nil {
+		storageClasses.GetObjectKind().SetGroupVersionKind(gvk)
+	}
+
+	for i, o := range storageClasses.Items {
+		gvk, err := apiutil.GVKForObject(&o, scheme.Scheme)
+		if err == nil {
+			storageClasses.Items[i].GetObjectKind().SetGroupVersionKind(gvk)
+		}
+	}
+
+	b, err := json.MarshalIndent(storageClasses, "", "  ")
 	if err != nil {
 		return nil, []string{err.Error()}
 	}
@@ -522,7 +661,19 @@ func storageClassesV1beta(ctx context.Context, client *kubernetes.Clientset) ([]
 		return nil, []string{err.Error()}
 	}
 
-	b, err := json.MarshalIndent(storageClasses.Items, "", "  ")
+	gvk, err := apiutil.GVKForObject(storageClasses, scheme.Scheme)
+	if err == nil {
+		storageClasses.GetObjectKind().SetGroupVersionKind(gvk)
+	}
+
+	for i, o := range storageClasses.Items {
+		gvk, err := apiutil.GVKForObject(&o, scheme.Scheme)
+		if err == nil {
+			storageClasses.Items[i].GetObjectKind().SetGroupVersionKind(gvk)
+		}
+	}
+
+	b, err := json.MarshalIndent(storageClasses, "", "  ")
 	if err != nil {
 		return nil, []string{err.Error()}
 	}
@@ -553,7 +704,19 @@ func crdsV1(ctx context.Context, config *rest.Config) ([]byte, []string) {
 		return nil, []string{err.Error()}
 	}
 
-	b, err := json.MarshalIndent(crds.Items, "", "  ")
+	gvk, err := apiutil.GVKForObject(crds, scheme.Scheme)
+	if err == nil {
+		crds.GetObjectKind().SetGroupVersionKind(gvk)
+	}
+
+	for i, o := range crds.Items {
+		gvk, err := apiutil.GVKForObject(&o, scheme.Scheme)
+		if err == nil {
+			crds.Items[i].GetObjectKind().SetGroupVersionKind(gvk)
+		}
+	}
+
+	b, err := json.MarshalIndent(crds, "", "  ")
 	if err != nil {
 		return nil, []string{err.Error()}
 	}
@@ -572,7 +735,19 @@ func crdsV1beta(ctx context.Context, config *rest.Config) ([]byte, []string) {
 		return nil, []string{err.Error()}
 	}
 
-	b, err := json.MarshalIndent(crds.Items, "", "  ")
+	gvk, err := apiutil.GVKForObject(crds, scheme.Scheme)
+	if err == nil {
+		crds.GetObjectKind().SetGroupVersionKind(gvk)
+	}
+
+	for i, o := range crds.Items {
+		gvk, err := apiutil.GVKForObject(&o, scheme.Scheme)
+		if err == nil {
+			crds.Items[i].GetObjectKind().SetGroupVersionKind(gvk)
+		}
+	}
+
+	b, err := json.MarshalIndent(crds, "", "  ")
 	if err != nil {
 		return nil, []string{err.Error()}
 	}
@@ -621,6 +796,9 @@ func crsV1(ctx context.Context, client dynamic.Interface, config *rest.Config, n
 		var version string
 		if len(crd.Spec.Versions) > 0 {
 			version = crd.Spec.Versions[0].Name
+		}
+		if len(crd.Status.StoredVersions) > 0 {
+			version = crd.Status.StoredVersions[0]
 		}
 		gvr := schema.GroupVersionResource{
 			Group:    crd.Spec.Group,
@@ -853,7 +1031,19 @@ func limitRanges(ctx context.Context, client *kubernetes.Clientset, namespaces [
 			continue
 		}
 
-		b, err := json.MarshalIndent(limitRanges.Items, "", "  ")
+		gvk, err := apiutil.GVKForObject(limitRanges, scheme.Scheme)
+		if err == nil {
+			limitRanges.GetObjectKind().SetGroupVersionKind(gvk)
+		}
+
+		for i, o := range limitRanges.Items {
+			gvk, err := apiutil.GVKForObject(&o, scheme.Scheme)
+			if err == nil {
+				limitRanges.Items[i].GetObjectKind().SetGroupVersionKind(gvk)
+			}
+		}
+
+		b, err := json.MarshalIndent(limitRanges, "", "  ")
 		if err != nil {
 			errorsByNamespace[namespace] = err.Error()
 			continue
@@ -871,7 +1061,19 @@ func nodes(ctx context.Context, client *kubernetes.Clientset) ([]byte, []string)
 		return nil, []string{err.Error()}
 	}
 
-	b, err := json.MarshalIndent(nodes.Items, "", "  ")
+	gvk, err := apiutil.GVKForObject(nodes, scheme.Scheme)
+	if err == nil {
+		nodes.GetObjectKind().SetGroupVersionKind(gvk)
+	}
+
+	for i, o := range nodes.Items {
+		gvk, err := apiutil.GVKForObject(&o, scheme.Scheme)
+		if err == nil {
+			nodes.Items[i].GetObjectKind().SetGroupVersionKind(gvk)
+		}
+	}
+
+	b, err := json.MarshalIndent(nodes, "", "  ")
 	if err != nil {
 		return nil, []string{err.Error()}
 	}
@@ -942,7 +1144,19 @@ func events(ctx context.Context, client *kubernetes.Clientset, namespaces []stri
 			continue
 		}
 
-		b, err := json.MarshalIndent(events.Items, "", "  ")
+		gvk, err := apiutil.GVKForObject(events, scheme.Scheme)
+		if err == nil {
+			events.GetObjectKind().SetGroupVersionKind(gvk)
+		}
+
+		for i, o := range events.Items {
+			gvk, err := apiutil.GVKForObject(&o, scheme.Scheme)
+			if err == nil {
+				events.Items[i].GetObjectKind().SetGroupVersionKind(gvk)
+			}
+		}
+
+		b, err := json.MarshalIndent(events, "", "  ")
 		if err != nil {
 			errorsByNamespace[namespace] = err.Error()
 			continue
@@ -982,7 +1196,19 @@ func pvs(ctx context.Context, client *kubernetes.Clientset) ([]byte, []string) {
 		return nil, []string{err.Error()}
 	}
 
-	b, err := json.MarshalIndent(pv.Items, "", "  ")
+	gvk, err := apiutil.GVKForObject(pv, scheme.Scheme)
+	if err == nil {
+		pv.GetObjectKind().SetGroupVersionKind(gvk)
+	}
+
+	for i, o := range pv.Items {
+		gvk, err := apiutil.GVKForObject(&o, scheme.Scheme)
+		if err == nil {
+			pv.Items[i].GetObjectKind().SetGroupVersionKind(gvk)
+		}
+	}
+
+	b, err := json.MarshalIndent(pv, "", "  ")
 	if err != nil {
 		return nil, []string{err.Error()}
 	}
@@ -1000,7 +1226,19 @@ func pvcs(ctx context.Context, client *kubernetes.Clientset, namespaces []string
 			continue
 		}
 
-		b, err := json.MarshalIndent(pvcs.Items, "", "  ")
+		gvk, err := apiutil.GVKForObject(pvcs, scheme.Scheme)
+		if err == nil {
+			pvcs.GetObjectKind().SetGroupVersionKind(gvk)
+		}
+
+		for i, o := range pvcs.Items {
+			gvk, err := apiutil.GVKForObject(&o, scheme.Scheme)
+			if err == nil {
+				pvcs.Items[i].GetObjectKind().SetGroupVersionKind(gvk)
+			}
+		}
+
+		b, err := json.MarshalIndent(pvcs, "", "  ")
 		if err != nil {
 			errorsByNamespace[namespace] = err.Error()
 			continue

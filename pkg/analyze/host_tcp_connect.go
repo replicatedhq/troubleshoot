@@ -2,8 +2,7 @@ package analyzer
 
 import (
 	"encoding/json"
-	"fmt"
-	"path"
+	"path/filepath"
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
@@ -25,7 +24,11 @@ func (a *AnalyzeHostTCPConnect) IsExcluded() (bool, error) {
 func (a *AnalyzeHostTCPConnect) Analyze(getCollectedFileContents func(string) ([]byte, error)) ([]*AnalyzeResult, error) {
 	hostAnalyzer := a.hostAnalyzer
 
-	fullPath := path.Join("connect", fmt.Sprintf("%s.json", hostAnalyzer.CollectorName))
+	collectorName := hostAnalyzer.CollectorName
+	if collectorName == "" {
+		collectorName = "connect"
+	}
+	fullPath := filepath.Join("host-collectors/connect", collectorName+".json")
 
 	collected, err := getCollectedFileContents(fullPath)
 	if err != nil {

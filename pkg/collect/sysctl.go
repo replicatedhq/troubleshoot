@@ -51,7 +51,7 @@ find /proc/sys/net/bridge -type f | while read f; do v=$(cat $f 2>/dev/null); ec
 				return nil, errors.Wrap(err, "create image pull secret")
 			}
 			defer func() {
-				err := client.CoreV1().Secrets(collector.Namespace).Delete(ctx, collector.ImagePullSecret.Name, metav1.DeleteOptions{})
+				err := client.CoreV1().Secrets(collector.Namespace).Delete(context.Background(), collector.ImagePullSecret.Name, metav1.DeleteOptions{})
 				if err != nil && !kuberneteserrors.IsNotFound(err) {
 					logger.Printf("Failed to delete secret %s: %v", collector.ImagePullSecret.Name, err)
 				}

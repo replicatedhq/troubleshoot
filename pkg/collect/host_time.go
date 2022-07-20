@@ -1,6 +1,7 @@
 package collect
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -19,8 +20,11 @@ type TimeInfo struct {
 	NTPActive       bool   `json:"ntp_active"`
 }
 
+const HostTimePath = `host-collectors/system/time.json`
+
 type CollectHostTime struct {
 	hostCollector *troubleshootv1beta2.HostTime
+	BundlePath    string
 }
 
 func (c *CollectHostTime) Title() string {
@@ -90,7 +94,10 @@ func (c *CollectHostTime) Collect(progressChan chan<- interface{}) (map[string][
 		return nil, errors.Wrap(err, "failed to marshal time info")
 	}
 
+	output := NewResult()
+	output.SaveResult(c.BundlePath, HostTimePath, bytes.NewBuffer(b))
+
 	return map[string][]byte{
-		"system/time.json": b,
+		HostTimePath: b,
 	}, nil
 }
