@@ -172,7 +172,7 @@ func compareNodeResourceConditionalToActual(conditional string, matchingNodes []
 
 		for _, node := range matchingNodes {
 			for _, condition := range node.Status.Conditions {
-				if string(condition.Type) == match[2] && condition.Status == desiredValue {
+				if string(condition.Type) == match[2] && string(condition.Status) == desiredValue {
 					res = true
 					return
 				}
