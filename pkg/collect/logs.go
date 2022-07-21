@@ -12,6 +12,7 @@ import (
 	"github.com/replicatedhq/troubleshoot/pkg/logger"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/fields"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -89,7 +90,7 @@ func listPodsInSelectors(ctx context.Context, client *kubernetes.Clientset, name
 
 	listOptions := metav1.ListOptions{
 		LabelSelector: serializedLabelSelector,
-		FieldSelector: "status.phase!=Failed",
+		FieldSelector: fields.OneTermNotEqualSelector("status.phase", string(corev1.PodFailed)).String(),
 	}
 
 	pods, err := client.CoreV1().Pods(namespace).List(ctx, listOptions)
