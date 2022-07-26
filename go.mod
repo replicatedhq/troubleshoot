@@ -8,7 +8,7 @@ require (
 	github.com/containers/image/v5 v5.19.3
 	github.com/docker/distribution v2.8.1+incompatible
 	github.com/fatih/color v1.13.0
-	github.com/go-logr/logr v1.2.2
+	github.com/go-logr/logr v1.2.3
 	github.com/go-redis/redis/v7 v7.4.1
 	github.com/go-sql-driver/mysql v1.6.0
 	github.com/gobwas/glob v0.2.3
@@ -34,7 +34,7 @@ require (
 	github.com/spf13/viper v1.12.0
 	github.com/stretchr/testify v1.8.0
 	github.com/tj/go-spin v1.1.0
-	golang.org/x/sync v0.0.0-20220513210516-0976fa681c29
+	golang.org/x/sync v0.0.0-20220601150217-0de741cfad7f
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.24.3
 	k8s.io/apiextensions-apiserver v0.24.2
@@ -43,7 +43,7 @@ require (
 	k8s.io/cli-runtime v0.24.3
 	k8s.io/client-go v0.24.3
 	k8s.io/klog/v2 v2.70.1
-	oras.land/oras-go v1.1.1
+	oras.land/oras-go v1.2.0
 	periph.io/x/periph v3.6.8+incompatible
 	sigs.k8s.io/controller-runtime v0.12.3
 )
@@ -80,8 +80,8 @@ require (
 	github.com/containers/storage v1.38.3 // indirect
 	github.com/cyphar/filepath-securejoin v0.2.3 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/docker/cli v20.10.11+incompatible // indirect
-	github.com/docker/docker v20.10.14+incompatible // indirect
+	github.com/docker/cli v20.10.17+incompatible // indirect
+	github.com/docker/docker v20.10.17+incompatible // indirect
 	github.com/docker/docker-credential-helpers v0.6.4 // indirect
 	github.com/docker/go-connections v0.4.0 // indirect
 	github.com/docker/go-metrics v0.0.1 // indirect
@@ -177,7 +177,7 @@ require (
 	github.com/yusufpapurcu/wmi v1.2.2 // indirect
 	go.opencensus.io v0.23.0 // indirect
 	go.starlark.net v0.0.0-20200306205701-8dd3e2ee1dd5 // indirect
-	golang.org/x/crypto v0.0.0-20220411220226-7b82a4e95df4 // indirect
+	golang.org/x/crypto v0.0.0-20220525230936-793ad666bf5e // indirect
 	golang.org/x/net v0.0.0-20220520000938-2e3eb7b945c2 // indirect
 	golang.org/x/oauth2 v0.0.0-20220411215720-9780585627b5 // indirect
 	golang.org/x/sys v0.0.0-20220715151400-c0bba94af5f8 // indirect
