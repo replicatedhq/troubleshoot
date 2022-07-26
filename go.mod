@@ -44,7 +44,6 @@ require (
 	k8s.io/client-go v0.24.3
 	k8s.io/klog/v2 v2.70.1
 	oras.land/oras-go v1.2.0
-	periph.io/x/periph v3.6.8+incompatible
 	sigs.k8s.io/controller-runtime v0.12.3
 )
 
@@ -195,6 +194,7 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20220328201542-3ee0da9b0b42 // indirect
 	k8s.io/utils v0.0.0-20220210201930-3a6ce19ff2f9 // indirect
+	periph.io/x/host/v3 v3.7.2
 	sigs.k8s.io/json v0.0.0-20211208200746-9f7c6b3444d2 // indirect
 	sigs.k8s.io/kustomize/api v0.11.4 // indirect
 	sigs.k8s.io/kustomize/kyaml v0.13.6 // indirect
