@@ -11,7 +11,7 @@ import (
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
-	"periph.io/x/periph/host/distro"
+	"periph.io/x/host/v3/distro"
 )
 
 type SystemPackagesInfo struct {
