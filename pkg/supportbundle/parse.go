@@ -9,7 +9,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/mholt/archiver"
+	"github.com/mholt/archiver/v3"
 	"github.com/pkg/errors"
 	types "github.com/replicatedhq/troubleshoot/pkg/supportbundle/types"
 	corev1 "k8s.io/api/core/v1"
