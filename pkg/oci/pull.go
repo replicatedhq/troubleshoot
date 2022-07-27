@@ -19,7 +19,7 @@ import (
 )
 
 const (
-	HelmCredentialsFileBasename = "registry/config.json"
+	HelmCredentialsFileBasename = ".config/helm/registry/config.json"
 )
 
 var (
