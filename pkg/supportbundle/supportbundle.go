@@ -86,19 +86,35 @@ func CollectSupportBundleFromSpec(spec *troubleshootv1beta2.SupportBundleSpec, a
 		return nil, errors.Wrap(err, "create bundle dir")
 	}
 
-	hostFiles, err := runHostCollectors(spec.HostCollectors, additionalRedactors, bundlePath, opts)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to run host collectors")
+	var result, files, hostFiles collect.CollectorResult
+
+	if spec.HostCollectors != nil {
+		// Run host collectors
+		hostFiles, err = runHostCollectors(spec.HostCollectors, additionalRedactors, bundlePath, opts)
+		if err != nil {
+			fmt.Println(errors.Wrap(err, "failed to run host collectors"))
+		}
 	}
 
-	// Run collectors
-	files, err := runCollectors(spec.Collectors, additionalRedactors, bundlePath, opts)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to run collectors")
+	if spec.Collectors != nil {
+		// Run collectors
+		files, err = runCollectors(spec.Collectors, additionalRedactors, bundlePath, opts)
+		if err != nil {
+			fmt.Println(errors.Wrap(err, "failed to run collectors"))
+		}
 	}
 
-	for k, v := range hostFiles {
-		files[k] = v
+	if files != nil && hostFiles != nil {
+		result = files
+		for k, v := range hostFiles {
+			result[k] = v
+		}
+	} else if files != nil {
+		result = files
+	} else if hostFiles != nil {
+		result = hostFiles
+	} else {
+		return nil, errors.Wrap(err, "failed to generate support bundle")
 	}
 
 	version, err := getVersionFile()
@@ -106,7 +122,7 @@ func CollectSupportBundleFromSpec(spec *troubleshootv1beta2.SupportBundleSpec, a
 		return nil, errors.Wrap(err, "failed to get version file")
 	}
 
-	err = files.SaveResult(bundlePath, VersionFilename, version)
+	err = result.SaveResult(bundlePath, VersionFilename, version)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to write version")
 	}
@@ -129,12 +145,12 @@ func CollectSupportBundleFromSpec(spec *troubleshootv1beta2.SupportBundleSpec, a
 		return nil, errors.Wrap(err, "failed to get analysis file")
 	}
 
-	err = files.SaveResult(bundlePath, AnalysisFilename, analysis)
+	err = result.SaveResult(bundlePath, AnalysisFilename, analysis)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to write analysis")
 	}
 
-	if err := collect.TarSupportBundleDir(bundlePath, files, filename); err != nil {
+	if err := collect.TarSupportBundleDir(bundlePath, result, filename); err != nil {
 		return nil, errors.Wrap(err, "create bundle file")
 	}
 
