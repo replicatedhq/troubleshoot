@@ -42,10 +42,10 @@ func runHostCollectors(hostCollectors []*troubleshootv1beta2.HostCollect, additi
 			continue
 		}
 
-		opts.ProgressChan <- fmt.Sprintf("[%s] Running collector...", collector.Title())
+		opts.ProgressChan <- fmt.Sprintf("[%s] Running host collector...", collector.Title())
 		result, err := collector.Collect(opts.ProgressChan)
 		if err != nil {
-			opts.ProgressChan <- errors.Errorf("failed to run collector: %s: %v", collector.Title(), err)
+			opts.ProgressChan <- errors.Errorf("failed to run host collector: %s: %v", collector.Title(), err)
 		}
 		for k, v := range result {
 			allCollectedData[k] = v
