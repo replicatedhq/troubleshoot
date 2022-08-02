@@ -26,6 +26,9 @@ func analyzeOneDeploymentStatus(analyzer *troubleshootv1beta2.DeploymentStatus, 
 
 	var result *AnalyzeResult
 	for _, collected := range files { // only 1 file here
+		var exists bool = true
+		var readyReplicas int
+
 		var deployments appsv1.DeploymentList
 		if err := json.Unmarshal(collected, &deployments); err != nil {
 			return nil, errors.Wrap(err, "failed to unmarshal deployment list")
@@ -39,19 +42,15 @@ func analyzeOneDeploymentStatus(analyzer *troubleshootv1beta2.DeploymentStatus, 
 		}
 
 		if status == nil {
-			// there's not an error, but maybe the requested deployment is not even deployed
-			result = &AnalyzeResult{
-				Title:   fmt.Sprintf("%s Deployment Status", analyzer.Name),
-				IconKey: "kubernetes_deployment_status",
-				IconURI: "https://troubleshoot.sh/images/analyzer-icons/deployment-status.svg?w=17&h=17",
-				IsFail:  true,
-				Message: fmt.Sprintf("The deployment %q was not found", analyzer.Name),
-			}
+			exists = false
+			readyReplicas = 0
 		} else {
-			result, err = commonStatus(analyzer.Outcomes, fmt.Sprintf("%s Status", analyzer.Name), "kubernetes_deployment_status", "https://troubleshoot.sh/images/analyzer-icons/deployment-status.svg?w=17&h=17", int(status.ReadyReplicas))
-			if err != nil {
-				return nil, errors.Wrap(err, "failed to process status")
-			}
+			readyReplicas = int(status.ReadyReplicas)
+		}
+
+		result, err = commonStatus(analyzer.Outcomes, analyzer.Name, "kubernetes_deployment_status", "https://troubleshoot.sh/images/analyzer-icons/deployment-status.svg?w=17&h=17", readyReplicas, exists, "deployment")
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to process status")
 		}
 	}
 
