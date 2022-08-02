@@ -92,7 +92,7 @@ func runCollectors(collectors []*troubleshootv1beta2.Collect, additionalRedactor
 
 	k8sClient, err := kubernetes.NewForConfig(opts.KubernetesRestConfig)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to instantiate kuberentes client")
+		return nil, errors.Wrap(err, "failed to instantiate Kubernetes client")
 	}
 
 	if err := cleanedCollectors.CheckRBAC(context.Background()); err != nil {

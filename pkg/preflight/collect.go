@@ -146,7 +146,7 @@ func Collect(opts CollectOpts, p *troubleshootv1beta2.Preflight) (CollectResult,
 
 	k8sClient, err := kubernetes.NewForConfig(opts.KubernetesRestConfig)
 	if err != nil {
-		return collectResult, errors.Wrap(err, "failed to instantiate kuberentes client")
+		return collectResult, errors.Wrap(err, "failed to instantiate Kubernetes client")
 	}
 
 	if err := collectors.CheckRBAC(context.Background()); err != nil {
