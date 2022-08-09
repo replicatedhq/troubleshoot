@@ -151,9 +151,9 @@ func ClusterResources(c *Collector, clusterResourcesCollector *troubleshootv1bet
 	// network policy
 	networkPolicy, networkPolicyErrors := networkPolicy(ctx, client, namespaceNames)
 	for k, v := range networkPolicy {
-		output.SaveResult(c.BundlePath, path.Join("cluster-resources/networkPolicy", k), bytes.NewBuffer(v))
+		output.SaveResult(c.BundlePath, path.Join("cluster-resources/network-policy", k), bytes.NewBuffer(v))
 	}
-	output.SaveResult(c.BundlePath, "cluster-resources/networkPolicy-errors.json", marshalErrors(networkPolicyErrors))
+	output.SaveResult(c.BundlePath, "cluster-resources/network-policy-errors.json", marshalErrors(networkPolicyErrors))
 
 
 	// storage classes
