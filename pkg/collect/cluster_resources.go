@@ -99,6 +99,14 @@ func ClusterResources(c *Collector, clusterResourcesCollector *troubleshootv1bet
 		}
 	}
 
+	// pod disruption budgets (for all existing namespaces)
+
+	PodDisruptionBudgets, pdbError := getPodDisruptionBudgets(ctx, client, namespaceNames)
+	for k, v := range PodDisruptionBudgets {
+		output.SaveResult(c.BundlePath, path.Join("cluster-resources/pod-disruption-budgets", k), bytes.NewBuffer(v))
+	}
+	output.SaveResult(c.BundlePath, "cluster-resources/pod-disruption-budgets-info.json", marshalErrors(pdbError))
+	
 	// services
 	services, servicesErrors := services(ctx, client, namespaceNames)
 	for k, v := range services {
@@ -325,6 +333,34 @@ func pods(ctx context.Context, client *kubernetes.Clientset, namespaces []string
 	}
 
 	return podsByNamespace, errorsByNamespace, unhealthyPods
+}
+
+func getPodDisruptionBudgets(ctx context.Context, client *kubernetes.Clientset, namespaces []string) (map[string][]byte, map[string]string) {
+	pdbByNamespace := make(map[string][]byte)
+	errorsByNamespace := make(map[string]string)
+
+	for _, namespace := range namespaces {
+		PodDisruptionBudgets, err := client.PolicyV1beta1().PodDisruptionBudgets(namespace).List(ctx, metav1.ListOptions{})
+		if err != nil {
+			errorsByNamespace[namespace] = err.Error()
+			continue
+		}
+
+		gvk, err := apiutil.GVKForObject(PodDisruptionBudgets, scheme.Scheme)
+		if err == nil {
+			PodDisruptionBudgets.GetObjectKind().SetGroupVersionKind(gvk)
+		}
+
+		b, err := json.MarshalIndent(PodDisruptionBudgets, "", "  ")
+		if err != nil {
+			errorsByNamespace[namespace] = err.Error()
+			continue
+		}
+
+		pdbByNamespace[namespace+".json"] = b
+	}
+
+	return pdbByNamespace, errorsByNamespace
 }
 
 func services(ctx context.Context, client *kubernetes.Clientset, namespaces []string) (map[string][]byte, map[string]string) {
