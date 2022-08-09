@@ -148,6 +148,14 @@ func ClusterResources(c *Collector, clusterResourcesCollector *troubleshootv1bet
 	}
 	output.SaveResult(c.BundlePath, "cluster-resources/ingress-errors.json", marshalErrors(ingressErrors))
 
+	// network policy
+	networkPolicy, networkPolicyErrors := networkPolicy(ctx, client, namespaceNames)
+	for k, v := range networkPolicy {
+		output.SaveResult(c.BundlePath, path.Join("cluster-resources/networkPolicy", k), bytes.NewBuffer(v))
+	}
+	output.SaveResult(c.BundlePath, "cluster-resources/networkPolicy-errors.json", marshalErrors(networkPolicyErrors))
+
+
 	// storage classes
 	storageClasses, storageErrors := storageClasses(ctx, client)
 	output.SaveResult(c.BundlePath, "cluster-resources/storage-classes.json", bytes.NewBuffer(storageClasses))
@@ -617,6 +625,41 @@ func ingressV1beta(ctx context.Context, client *kubernetes.Clientset, namespaces
 	}
 
 	return ingressByNamespace, errorsByNamespace
+}
+
+func networkPolicy(ctx context.Context, client *kubernetes.Clientset, namespaces []string) (map[string][]byte, map[string]string) {
+	networkPolicyByNamespace := make(map[string][]byte)
+	errorsByNamespace := make(map[string]string)
+
+	for _, namespace := range namespaces {
+		networkPolicy, err := client.NetworkingV1().NetworkPolicies(namespace).List(ctx, metav1.ListOptions{})
+		if err != nil {
+			errorsByNamespace[namespace] = err.Error()
+			continue
+		}
+
+		gvk, err := apiutil.GVKForObject(networkPolicy, scheme.Scheme)
+		if err == nil {
+			networkPolicy.GetObjectKind().SetGroupVersionKind(gvk)
+		}
+
+		for i, o := range networkPolicy.Items {
+			gvk, err := apiutil.GVKForObject(&o, scheme.Scheme)
+			if err == nil {
+				networkPolicy.Items[i].GetObjectKind().SetGroupVersionKind(gvk)
+			}
+		}
+
+		b, err := json.MarshalIndent(networkPolicy, "", "  ")
+		if err != nil {
+			errorsByNamespace[namespace] = err.Error()
+			continue
+		}
+
+		networkPolicyByNamespace[namespace+".json"] = b
+	}
+
+	return networkPolicyByNamespace, errorsByNamespace
 }
 
 func storageClasses(ctx context.Context, client *kubernetes.Clientset) ([]byte, []string) {
