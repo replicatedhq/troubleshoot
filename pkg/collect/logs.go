@@ -52,7 +52,7 @@ func Logs(c *Collector, logsCollector *troubleshootv1beta2.Logs) (CollectorResul
 						if containerName != "" {
 							key = fmt.Sprintf("%s/%s/%s-errors.json", logsCollector.Name, pod.Name, containerName)
 						}
-						output.SaveResult(c.BundlePath, key, marshalErrors([]string{err.Error()}))
+						err := output.SaveResult(c.BundlePath, key, marshalErrors([]string{err.Error()}))
 						if err != nil {
 							return nil, err
 						}
@@ -67,7 +67,7 @@ func Logs(c *Collector, logsCollector *troubleshootv1beta2.Logs) (CollectorResul
 					containerLogs, err := savePodLogs(ctx, c.BundlePath, client, pod, logsCollector.Name, container, logsCollector.Limits, false)
 					if err != nil {
 						key := fmt.Sprintf("%s/%s/%s-errors.json", logsCollector.Name, pod.Name, container)
-						output.SaveResult(c.BundlePath, key, marshalErrors([]string{err.Error()}))
+						err := output.SaveResult(c.BundlePath, key, marshalErrors([]string{err.Error()}))
 						if err != nil {
 							return nil, err
 						}
