@@ -1237,7 +1237,7 @@ func events(ctx context.Context, client *kubernetes.Clientset, namespaces []stri
 	return eventsByNamespace, errorsByNamespace
 }
 
-// not exprted from: https://github.com/kubernetes/kubernetes/blob/master/pkg/kubectl/cmd/auth/cani.go#L339
+// not exported from: https://github.com/kubernetes/kubernetes/blob/master/pkg/kubectl/cmd/auth/cani.go#L339
 func convertToPolicyRule(status authorizationv1.SubjectRulesReviewStatus) []rbacv1.PolicyRule {
 	ret := []rbacv1.PolicyRule{}
 	for _, resource := range status.ResourceRules {
