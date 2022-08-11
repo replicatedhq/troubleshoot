@@ -16,6 +16,37 @@ func Test_deploymentStatus(t *testing.T) {
 		files        map[string][]byte
 	}{
 		{
+			name: "1/1, fail when absent",
+			analyzer: troubleshootv1beta2.DeploymentStatus{
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Fail: &troubleshootv1beta2.SingleOutcome{
+							When: "absent",
+							Message: "fail",
+						},
+					},
+				},
+				Namespace: "default",
+				Name: "nonexistant-deployment",
+			},
+			expectResult: []*AnalyzeResult{
+				{
+					IsPass: false,
+					IsWarn: false,
+					IsFail: true,
+					Title: "nonexistant-deployment Status",
+					Message: "fail",
+					IconKey: "kubernetes_deployment_status",
+					IconURI: "https://troubleshoot.sh/images/analyzer-icons/deployment-status.svg?w=17&h=17",
+				},
+			},
+			files: map[string][]byte{
+				"cluster-resources/deployments/default.json":     []byte(defaultDeployments),
+				"cluster-resources/deployments/monitoring.json":  []byte(monitoringDeployments),
+				"cluster-resources/deployments/kube-system.json": []byte(kubeSystemDeployments),
+			},
+		},
+		{
 			name: "1/1, pass when = 1",
 			analyzer: troubleshootv1beta2.DeploymentStatus{
 				Outcomes: []*troubleshootv1beta2.Outcome{
