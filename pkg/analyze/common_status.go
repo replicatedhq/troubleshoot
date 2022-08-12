@@ -23,7 +23,7 @@ func commonStatus(outcomes []*troubleshootv1beta2.Outcome, name string, iconKey 
 			// if we're not checking that something is absent but it is, we should throw a default but meaningful error.
 			if exists == false  && outcome.Fail.When != "absent" {
 				result.IsFail = true
-				result.Message = fmt.Sprintf("The %s %s was not found", resourceType, name)
+				result.Message = fmt.Sprintf("The %s %q was not found", resourceType, name)
 				result.URI = outcome.Fail.URI
 				return result, nil
 			}
