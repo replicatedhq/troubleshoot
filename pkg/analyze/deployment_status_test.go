@@ -25,6 +25,12 @@ func Test_deploymentStatus(t *testing.T) {
 							Message: "fail",
 						},
 					},
+					{
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							When:    "= 1",
+							Message: "pass",
+						},
+					},
 				},
 				Namespace: "default",
 				Name: "nonexistant-deployment",
@@ -50,6 +56,12 @@ func Test_deploymentStatus(t *testing.T) {
 			name: "1/1, pass when = 1",
 			analyzer: troubleshootv1beta2.DeploymentStatus{
 				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Fail: &troubleshootv1beta2.SingleOutcome{
+							When: "absent",
+							Message: "fail",
+						},
+					},
 					{
 						Pass: &troubleshootv1beta2.SingleOutcome{
 							When:    "= 1",
@@ -87,6 +99,12 @@ func Test_deploymentStatus(t *testing.T) {
 			analyzer: troubleshootv1beta2.DeploymentStatus{
 				Outcomes: []*troubleshootv1beta2.Outcome{
 					{
+						Fail: &troubleshootv1beta2.SingleOutcome{
+							When: "absent",
+							Message: "fail",
+						},
+					},
+					{
 						Pass: &troubleshootv1beta2.SingleOutcome{
 							When:    "= 2",
 							Message: "pass",
@@ -122,6 +140,12 @@ func Test_deploymentStatus(t *testing.T) {
 			name: "1/1, pass when >= 2, warn when = 1, fail when 0",
 			analyzer: troubleshootv1beta2.DeploymentStatus{
 				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Fail: &troubleshootv1beta2.SingleOutcome{
+							When: "absent",
+							Message: "fail",
+						},
+					},
 					{
 						Pass: &troubleshootv1beta2.SingleOutcome{
 							When:    ">= 2",

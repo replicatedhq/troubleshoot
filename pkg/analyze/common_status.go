@@ -21,7 +21,7 @@ func commonStatus(outcomes []*troubleshootv1beta2.Outcome, name string, iconKey 
 		if outcome.Fail != nil {
 
 			// if we're not checking that something is absent but it is, we should throw a default but meaningful error.
-			if exists == false  && outcome.Fail.When != "absent" {
+			if exists == false && outcome.Fail.When != "absent" {
 				result.IsFail = true
 				result.Message = fmt.Sprintf("The %s %q was not found", resourceType, name)
 				result.URI = outcome.Fail.URI
@@ -36,11 +36,15 @@ func commonStatus(outcomes []*troubleshootv1beta2.Outcome, name string, iconKey 
 				return result, nil
 			}
 
-			if outcome.Fail.When == "absent" && exists == false {
-				result.IsFail = true
-				result.Message = outcome.Fail.Message
-				result.URI = outcome.Fail.URI
-				return result, nil
+			if  outcome.Fail.When == "absent"  {
+				if exists == false {
+					result.IsFail = true
+					result.Message = outcome.Fail.Message
+					result.URI = outcome.Fail.URI
+					return result, nil
+				} else {
+					continue
+				}
 			}
 
 			match, err := compareActualToWhen(outcome.Fail.When, readyReplicas, exists)
@@ -57,7 +61,7 @@ func commonStatus(outcomes []*troubleshootv1beta2.Outcome, name string, iconKey 
 			}
 		} else if outcome.Warn != nil {
 
-			if exists == false  && outcome.Warn.When != "absent" {
+			if exists == false && outcome.Warn.When != "absent" {
 				result.IsFail = true
 				result.Message = fmt.Sprintf("The %s %q was not found", resourceType, name)
 				result.URI = outcome.Fail.URI
@@ -72,11 +76,15 @@ func commonStatus(outcomes []*troubleshootv1beta2.Outcome, name string, iconKey 
 				return result, nil
 			}
 
-			if outcome.Warn.When == "absent" && exists == false {
-				result.IsWarn = true
-				result.Message = outcome.Warn.Message
-				result.URI = outcome.Warn.URI
-				return result, nil
+			if outcome.Warn.When == "absent" {
+				if exists == false {
+					result.IsWarn = true
+					result.Message = outcome.Warn.Message
+					result.URI = outcome.Warn.URI
+					return result, nil
+				} else {
+					continue
+				}
 			}
 
 			match, err := compareActualToWhen(outcome.Warn.When, readyReplicas, exists)
@@ -93,7 +101,7 @@ func commonStatus(outcomes []*troubleshootv1beta2.Outcome, name string, iconKey 
 			}
 		} else if outcome.Pass != nil {
 
-			if exists == false  && outcome.Pass.When != "absent" {
+			if exists == false && outcome.Pass.When != "absent" {
 				result.IsFail = true
 				result.Message = fmt.Sprintf("The %s %q was not found", resourceType, name)
 				result.URI = outcome.Fail.URI
@@ -108,11 +116,15 @@ func commonStatus(outcomes []*troubleshootv1beta2.Outcome, name string, iconKey 
 				return result, nil
 			}
 
-			if outcome.Pass.When == "absent" && exists == false {
-				result.IsPass = true
-				result.Message = outcome.Pass.Message
-				result.URI = outcome.Pass.URI
-				return result, nil
+			if outcome.Pass.When == "absent" {
+				if exists == false {
+					result.IsPass = true
+					result.Message = outcome.Pass.Message
+					result.URI = outcome.Pass.URI
+					return result, nil
+				} else {
+					continue
+				}
 			}
 
 			match, err := compareActualToWhen(outcome.Pass.When, readyReplicas, exists)

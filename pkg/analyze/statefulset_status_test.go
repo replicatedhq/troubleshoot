@@ -25,6 +25,12 @@ func Test_analyzeStatefulsetStatus(t *testing.T) {
 							Message: "fail",
 						},
 					},
+					{
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							When:    "= 1",
+							Message: "pass",
+						},
+					},
 				},
 				Namespace: "default",
 				Name: "nonexistant",
