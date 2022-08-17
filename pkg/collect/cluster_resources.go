@@ -11,6 +11,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/replicatedhq/troubleshoot/pkg/k8sutil"
 	"gopkg.in/yaml.v2"
@@ -34,7 +35,60 @@ import (
 	"github.com/replicatedhq/troubleshoot/pkg/k8sutil/discovery"
 )
 
-func ClusterResources(c *Collector, clusterResourcesCollector *troubleshootv1beta2.ClusterResources) (CollectorResult, error) {
+type CollectClusterResources struct {
+	Collector    *troubleshootv1beta2.ClusterResources
+	BundlePath   string
+	Namespace    string
+	ClientConfig *rest.Config
+}
+
+func (c *CollectClusterResources) Title() string {
+	return collectorTitleOrDefault(c.Collector.CollectorMeta, "Cluster Resources")
+}
+
+func (c *CollectClusterResources) IsExcluded() (bool, error) {
+	return isExcluded(c.Collector.Exclude)
+}
+
+func (c *CollectClusterResources) CheckRBAC(ctx context.Context, collector *troubleshootv1beta2.Collect) error {
+	exclude, err := c.IsExcluded()
+	if err != nil || exclude != true {
+		return nil
+	}
+
+	client, err := kubernetes.NewForConfig(c.ClientConfig)
+	if err != nil {
+		return errors.Wrap(err, "failed to create client from config")
+	}
+
+	forbidden := make([]error, 0)
+
+	specs := collector.AccessReviewSpecs(c.Namespace)
+	for _, spec := range specs {
+		sar := &authorizationv1.SelfSubjectAccessReview{
+			Spec: spec,
+		}
+
+		resp, err := client.AuthorizationV1().SelfSubjectAccessReviews().Create(ctx, sar, metav1.CreateOptions{})
+		if err != nil {
+			return errors.Wrap(err, "failed to run subject review")
+		}
+
+		if !resp.Status.Allowed { // all other fields of Status are empty...
+			forbidden = append(forbidden, RBACError{
+				DisplayName: c.Title(),
+				Namespace:   spec.ResourceAttributes.Namespace,
+				Resource:    spec.ResourceAttributes.Resource,
+				Verb:        spec.ResourceAttributes.Verb,
+			})
+		}
+	}
+	c.RBACErrors = forbidden
+
+	return nil
+}
+
+func (c *CollectClusterResources) Collect(progressChan chan<- interface{}) (CollectorResult, error) {
 	client, err := kubernetes.NewForConfig(c.ClientConfig)
 	if err != nil {
 		return nil, err
@@ -50,9 +104,9 @@ func ClusterResources(c *Collector, clusterResourcesCollector *troubleshootv1bet
 
 	// namespaces
 	var namespaceNames []string
-	if len(clusterResourcesCollector.Namespaces) > 0 {
-		namespaces, namespaceErrors := getNamespaces(ctx, client, clusterResourcesCollector.Namespaces)
-		namespaceNames = clusterResourcesCollector.Namespaces
+	if len(c.Collector.Namespaces) > 0 {
+		namespaces, namespaceErrors := getNamespaces(ctx, client, c.Collector.Namespaces)
+		namespaceNames = c.Collector.Namespaces
 		output.SaveResult(c.BundlePath, "cluster-resources/namespaces.json", bytes.NewBuffer(namespaces))
 		output.SaveResult(c.BundlePath, "cluster-resources/namespaces-errors.json", marshalErrors(namespaceErrors))
 	} else if c.Namespace != "" {
@@ -106,7 +160,7 @@ func ClusterResources(c *Collector, clusterResourcesCollector *troubleshootv1bet
 		output.SaveResult(c.BundlePath, path.Join("cluster-resources/pod-disruption-budgets", k), bytes.NewBuffer(v))
 	}
 	output.SaveResult(c.BundlePath, "cluster-resources/pod-disruption-budgets-info.json", marshalErrors(pdbError))
-	
+
 	// services
 	services, servicesErrors := services(ctx, client, namespaceNames)
 	for k, v := range services {
@@ -162,7 +216,6 @@ func ClusterResources(c *Collector, clusterResourcesCollector *troubleshootv1bet
 		output.SaveResult(c.BundlePath, path.Join("cluster-resources/network-policy", k), bytes.NewBuffer(v))
 	}
 	output.SaveResult(c.BundlePath, "cluster-resources/network-policy-errors.json", marshalErrors(networkPolicyErrors))
-
 
 	// storage classes
 	storageClasses, storageErrors := storageClasses(ctx, client)

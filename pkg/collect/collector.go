@@ -2,26 +2,19 @@ package collect
 
 import (
 	"context"
-	"runtime"
 	"strconv"
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
-	"github.com/replicatedhq/troubleshoot/pkg/k8sutil"
 	"github.com/replicatedhq/troubleshoot/pkg/multitype"
-	authorizationv1 "k8s.io/api/authorization/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
 
-type Collector struct {
-	Collect      *troubleshootv1beta2.Collect
-	Redact       bool
-	RBACErrors   []error
-	ClientConfig *rest.Config
-	Namespace    string
-	BundlePath   string
+type Collector interface {
+	Title() string
+	IsExcluded() (bool, error)
+	CheckRBAC(ctx context.Context, collector *troubleshootv1beta2.Collect) error
+	Collect(progressChan chan<- interface{}) (CollectorResult, error)
 }
 
 type Collectors []*Collector
@@ -47,303 +40,61 @@ func isExcluded(excludeVal *multitype.BoolOrString) (bool, error) {
 	return parsed, nil
 }
 
-// checks if a given collector has a spec with 'exclude' that evaluates to true.
-func (c *Collector) IsExcluded() bool {
-	if c.Collect.ClusterInfo != nil {
-		isExcludedResult, err := isExcluded(c.Collect.ClusterInfo.Exclude)
-		if err != nil {
-			return true
-		}
-		if isExcludedResult {
-			return true
-		}
-	} else if c.Collect.ClusterResources != nil {
-		isExcludedResult, err := isExcluded(c.Collect.ClusterResources.Exclude)
-		if err != nil {
-			return true
-		}
-		if isExcludedResult {
-			return true
-		}
-	} else if c.Collect.Secret != nil {
-		isExcludedResult, err := isExcluded(c.Collect.Secret.Exclude)
-		if err != nil {
-			return true
-		}
-		if isExcludedResult {
-			return true
-		}
-	} else if c.Collect.ConfigMap != nil {
-		isExcludedResult, err := isExcluded(c.Collect.ConfigMap.Exclude)
-		if err != nil {
-			return true
-		}
-		if isExcludedResult {
-			return true
-		}
-	} else if c.Collect.Logs != nil {
-		isExcludedResult, err := isExcluded(c.Collect.Logs.Exclude)
-		if err != nil {
-			return true
-		}
-		if isExcludedResult {
-			return true
-		}
-	} else if c.Collect.Run != nil {
-		isExcludedResult, err := isExcluded(c.Collect.Run.Exclude)
-		if err != nil {
-			return true
-		}
-		if isExcludedResult {
-			return true
-		}
-	} else if c.Collect.RunPod != nil {
-		isExcludedResult, err := isExcluded(c.Collect.RunPod.Exclude)
-		if err != nil {
-			return true
-		}
-		if isExcludedResult {
-			return true
-		}
-	} else if c.Collect.Exec != nil {
-		isExcludedResult, err := isExcluded(c.Collect.Exec.Exclude)
-		if err != nil {
-			return true
-		}
-		if isExcludedResult {
-			return true
-		}
-	} else if c.Collect.Data != nil {
-		isExcludedResult, err := isExcluded(c.Collect.Data.Exclude)
-		if err != nil {
-			return true
-		}
-		if isExcludedResult {
-			return true
-		}
-	} else if c.Collect.Copy != nil {
-		isExcludedResult, err := isExcluded(c.Collect.Copy.Exclude)
-		if err != nil {
-			return true
-		}
-		if isExcludedResult {
-			return true
-		}
-	} else if c.Collect.CopyFromHost != nil {
-		isExcludedResult, err := isExcluded(c.Collect.CopyFromHost.Exclude)
-		if err != nil {
-			return true
-		}
-		if isExcludedResult {
-			return true
-		}
-	} else if c.Collect.HTTP != nil {
-		isExcludedResult, err := isExcluded(c.Collect.HTTP.Exclude)
-		if err != nil {
-			return true
-		}
-		if isExcludedResult {
-			return true
-		}
-	} else if c.Collect.Postgres != nil {
-		isExcludedResult, err := isExcluded(c.Collect.Postgres.Exclude)
-		if err != nil {
-			return true
-		}
-		if isExcludedResult {
-			return true
-		}
-	} else if c.Collect.Mysql != nil {
-		isExcludedResult, err := isExcluded(c.Collect.Mysql.Exclude)
-		if err != nil {
-			return true
-		}
-		if isExcludedResult {
-			return true
-		}
-	} else if c.Collect.Redis != nil {
-		isExcludedResult, err := isExcluded(c.Collect.Redis.Exclude)
-		if err != nil {
-			return true
-		}
-		if isExcludedResult {
-			return true
-		}
-	} else if c.Collect.Collectd != nil {
-		// TODO: see if redaction breaks these
-		isExcludedResult, err := isExcluded(c.Collect.Collectd.Exclude)
-		if err != nil {
-			return true
-		}
-		if isExcludedResult {
-			return true
-		}
-	} else if c.Collect.Ceph != nil {
-		isExcludedResult, err := isExcluded(c.Collect.Ceph.Exclude)
-		if err != nil {
-			return true
-		}
-		if isExcludedResult {
-			return true
-		}
-	} else if c.Collect.Longhorn != nil {
-		isExcludedResult, err := isExcluded(c.Collect.Longhorn.Exclude)
-		if err != nil {
-			return true
-		}
-		if isExcludedResult {
-			return true
-		}
-	} else if c.Collect.Sysctl != nil {
-		isExcludedResult, err := isExcluded(c.Collect.Sysctl.Exclude)
-		if err != nil {
-			return true
-		}
-		if isExcludedResult {
-			return true
-		}
+func GetCollector(collector *troubleshootv1beta2.Collect, bundlePath string, namespace string, clientConfig *rest.Config) (Collector, bool) {
+	switch {
+	case collector.ClusterInfo != nil:
+		return &CollectClusterInfo{collector.ClusterInfo, bundlePath}, true
+	case collector.ClusterResources != nil:
+		return &CollectClusterResources{collector.ClusterResources, bundlePath, namespace, clientConfig}, true
+	/*case collector.Secret != nil:
+		return &CollectSecret{collector.Secret, bundlePath}, true
+	case collector.ConfigMap != nil:
+		return &CollectConfigMap{collector.ConfigMap, bundlePath}, true
+	case collector.Logs != nil:
+		return &CollectLogs{collector.Logs, bundlePath}, true
+	case collector.Run != nil:
+		return &CollectRun{collector.Run, bundlePath}, true
+	case collector.RunPod != nil:
+		return &CollectRunPod{collector.RunPod, bundlePath}, true
+	case collector.Exec != nil:
+		return &CollectExec{collector.Exec, bundlePath}, true
+	case collector.Data != nil:
+		return &CollectData{collector.Data, bundlePath}, true
+	case collector.Copy != nil:
+		return &CollectCopy{collector.Copy, bundlePath}, true
+	case collector.CopyFromHost != nil:
+		return &CollectCopyFromHost{collector.CopyFromHost, bundlePath}, true
+	case collector.HTTP != nil:
+		return &CollectHTTP{collector.HTTP, bundlePath}, true
+	case collector.Postgres != nil:
+		return &CollectPostgres{collector.Postgres, bundlePath}, true
+	case collector.Mysql != nil:
+		return &CollectMysql{collector.Mysql, bundlePath}, true
+	case collector.Redis != nil:
+		return &CollectRedis{collector.Redis, bundlePath}, true
+	case collector.Collectd != nil:
+		return &CollectCollectd{collector.Collectd, bundlePath}, true
+	case collector.Longhorn != nil:
+		return &CollectLonghorn{collector.Longhorn, bundlePath}, true
+	case collector.Registry != nil:
+		return &CollectRegistry{collector.Registry, bundlePath}, true
+	case collector.Sysctl != nil:
+		return &CollectSysctl{collector.Sysctl, bundlePath}, true*/
+	default:
+		return nil, false
 	}
-
-	return false
 }
 
-func (c *Collector) RunCollectorSync(clientConfig *rest.Config, client kubernetes.Interface, globalRedactors []*troubleshootv1beta2.Redact) (result CollectorResult, err error) {
-	defer func() {
-		if r := recover(); r != nil {
-			_, file, line, _ := runtime.Caller(4)
-			err = errors.Errorf("recovered from panic at \"%s:%d\": %v", file, line, r)
-		}
-	}()
-
-	if c.IsExcluded() {
-		return
+func collectorTitleOrDefault(meta troubleshootv1beta2.CollectorMeta, defaultTitle string) string {
+	if meta.CollectorName != "" {
+		return meta.CollectorName
 	}
-
-	ctx := context.TODO()
-
-	if c.Collect.ClusterInfo != nil {
-		result, err = ClusterInfo(c)
-	} else if c.Collect.ClusterResources != nil {
-		result, err = ClusterResources(c, c.Collect.ClusterResources)
-	} else if c.Collect.Secret != nil {
-		result, err = Secret(ctx, c, c.Collect.Secret, client)
-	} else if c.Collect.ConfigMap != nil {
-		result, err = ConfigMap(ctx, c, c.Collect.ConfigMap, client)
-	} else if c.Collect.Logs != nil {
-		result, err = Logs(c, c.Collect.Logs)
-	} else if c.Collect.Run != nil {
-		result, err = Run(c, c.Collect.Run)
-	} else if c.Collect.RunPod != nil {
-		result, err = RunPod(c, c.Collect.RunPod)
-	} else if c.Collect.Exec != nil {
-		result, err = Exec(c, c.Collect.Exec)
-	} else if c.Collect.Data != nil {
-		result, err = Data(c, c.Collect.Data)
-	} else if c.Collect.Copy != nil {
-		result, err = Copy(c, c.Collect.Copy)
-	} else if c.Collect.CopyFromHost != nil {
-		namespace := c.Collect.CopyFromHost.Namespace
-		if namespace == "" && c.Namespace == "" {
-			kubeconfig := k8sutil.GetKubeconfig()
-			namespace, _, _ = kubeconfig.Namespace()
-		} else if namespace == "" {
-			namespace = c.Namespace
-		}
-		result, err = CopyFromHost(ctx, c, c.Collect.CopyFromHost, namespace, clientConfig, client)
-	} else if c.Collect.HTTP != nil {
-		result, err = HTTP(c, c.Collect.HTTP)
-	} else if c.Collect.Postgres != nil {
-		result, err = Postgres(c, c.Collect.Postgres)
-	} else if c.Collect.Mysql != nil {
-		result, err = Mysql(c, c.Collect.Mysql)
-	} else if c.Collect.Redis != nil {
-		result, err = Redis(c, c.Collect.Redis)
-	} else if c.Collect.Collectd != nil {
-		// TODO: see if redaction breaks these
-		namespace := c.Collect.Collectd.Namespace
-		if namespace == "" && c.Namespace == "" {
-			kubeconfig := k8sutil.GetKubeconfig()
-			namespace, _, _ = kubeconfig.Namespace()
-		} else if namespace == "" {
-			namespace = c.Namespace
-		}
-		result, err = Collectd(ctx, c, c.Collect.Collectd, namespace, clientConfig, client)
-	} else if c.Collect.Ceph != nil {
-		result, err = Ceph(c, c.Collect.Ceph)
-	} else if c.Collect.Longhorn != nil {
-		result, err = Longhorn(c, c.Collect.Longhorn)
-	} else if c.Collect.RegistryImages != nil {
-		result, err = Registry(c, c.Collect.RegistryImages)
-	} else if c.Collect.Sysctl != nil {
-		if c.Collect.Sysctl.Namespace == "" {
-			c.Collect.Sysctl.Namespace = c.Namespace
-		}
-		if c.Collect.Sysctl.Namespace == "" {
-			kubeconfig := k8sutil.GetKubeconfig()
-			namespace, _, _ := kubeconfig.Namespace()
-			c.Collect.Sysctl.Namespace = namespace
-		}
-		result, err = Sysctl(ctx, c, client, c.Collect.Sysctl)
-	} else {
-		err = errors.New("no spec found to run")
-		return
-	}
-	if err != nil {
-		return
-	}
-
-	if c.Redact {
-		err = RedactResult(c.BundlePath, result, globalRedactors)
-		err = errors.Wrap(err, "failed to redact")
-	}
-
-	return
+	return defaultTitle
 }
 
-func (c *Collector) GetDisplayName() string {
-	return c.Collect.GetName()
-}
-
-func (c *Collector) CheckRBAC(ctx context.Context) error {
-	if c.IsExcluded() {
-		return nil // excluded collectors require no permissions
-	}
-
-	client, err := kubernetes.NewForConfig(c.ClientConfig)
-	if err != nil {
-		return errors.Wrap(err, "failed to create client from config")
-	}
-
-	forbidden := make([]error, 0)
-
-	specs := c.Collect.AccessReviewSpecs(c.Namespace)
-	for _, spec := range specs {
-		sar := &authorizationv1.SelfSubjectAccessReview{
-			Spec: spec,
-		}
-
-		resp, err := client.AuthorizationV1().SelfSubjectAccessReviews().Create(ctx, sar, metav1.CreateOptions{})
-		if err != nil {
-			return errors.Wrap(err, "failed to run subject review")
-		}
-
-		if !resp.Status.Allowed { // all other fields of Status are empty...
-			forbidden = append(forbidden, RBACError{
-				DisplayName: c.GetDisplayName(),
-				Namespace:   spec.ResourceAttributes.Namespace,
-				Resource:    spec.ResourceAttributes.Resource,
-				Verb:        spec.ResourceAttributes.Verb,
-			})
-		}
-	}
-	c.RBACErrors = forbidden
-
-	return nil
-}
-
-func (cs Collectors) CheckRBAC(ctx context.Context) error {
+func (cs Collectors) CheckRBAC(ctx context.Context, collector *troubleshootv1beta2.Collect) error {
 	for _, c := range cs {
-		if err := c.CheckRBAC(ctx); err != nil {
+		if err := c.CheckRBAC(ctx, collector); err != nil {
 			return errors.Wrap(err, "failed to check RBAC")
 		}
 	}

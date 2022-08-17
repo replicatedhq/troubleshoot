@@ -2,7 +2,6 @@ package supportbundle
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -17,7 +16,6 @@ import (
 	"github.com/replicatedhq/troubleshoot/pkg/version"
 	"gopkg.in/yaml.v2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
 )
 
 func runHostCollectors(hostCollectors []*troubleshootv1beta2.HostCollect, additionalRedactors *troubleshootv1beta2.Redactor, bundlePath string, opts SupportBundleCreateOpts) (collect.CollectorResult, error) {
@@ -70,83 +68,56 @@ func runHostCollectors(hostCollectors []*troubleshootv1beta2.HostCollect, additi
 	return collectResult, nil
 }
 
-// TODO (dan): This is VERY similar to the Preflight collect package and should be refactored.
 func runCollectors(collectors []*troubleshootv1beta2.Collect, additionalRedactors *troubleshootv1beta2.Redactor, bundlePath string, opts SupportBundleCreateOpts) (collect.CollectorResult, error) {
-
 	collectSpecs := make([]*troubleshootv1beta2.Collect, 0)
 	collectSpecs = append(collectSpecs, collectors...)
 	collectSpecs = ensureCollectorInList(collectSpecs, troubleshootv1beta2.Collect{ClusterInfo: &troubleshootv1beta2.ClusterInfo{}})
 	collectSpecs = ensureCollectorInList(collectSpecs, troubleshootv1beta2.Collect{ClusterResources: &troubleshootv1beta2.ClusterResources{}})
 
-	var cleanedCollectors collect.Collectors
+	allCollectedData := make(map[string][]byte)
+
+	var collectors []collect.Collectors
 	for _, desiredCollector := range collectSpecs {
-		collector := collect.Collector{
-			Redact:       opts.Redact,
-			Collect:      desiredCollector,
-			ClientConfig: opts.KubernetesRestConfig,
-			Namespace:    opts.Namespace,
-			BundlePath:   bundlePath,
-		}
-		cleanedCollectors = append(cleanedCollectors, &collector)
-	}
-
-	k8sClient, err := kubernetes.NewForConfig(opts.KubernetesRestConfig)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to instantiate Kubernetes client")
-	}
-
-	if err := cleanedCollectors.CheckRBAC(context.Background()); err != nil {
-		return nil, errors.Wrap(err, "failed to check RBAC for collectors")
-	}
-
-	foundForbidden := false
-	for _, c := range cleanedCollectors {
-		for _, e := range c.RBACErrors {
-			foundForbidden = true
-			opts.ProgressChan <- e
+		collector, ok := collect.GetCollector(desiredCollector, bundlePath, opts.Namespace, opts.KubernetesRestConfig)
+		if ok {
+			collectors = append(collectors, collector)
 		}
 	}
 
-	if foundForbidden && !opts.CollectWithoutPermissions {
-		return nil, errors.New("insufficient permissions to run all collectors")
+	collectResult := collect.NewResult()
+
+	for _, collector := range collectors {
+		isExcluded, _ := collector.IsExcluded()
+		if isExcluded {
+			continue
+		}
+
+		opts.ProgressChan <- fmt.Sprintf("[%s] Running collector...", collector.Title())
+		result, err := collector.Collect(opts.ProgressChan)
+		if err != nil {
+			opts.ProgressChan <- errors.Errorf("failed to run collector: %s: %v", collector.Title(), err)
+		}
+		for k, v := range result {
+			allCollectedData[k] = v
+		}
 	}
+
+	collectResult = allCollectedData
 
 	globalRedactors := []*troubleshootv1beta2.Redact{}
 	if additionalRedactors != nil {
 		globalRedactors = additionalRedactors.Spec.Redactors
 	}
 
-	if opts.SinceTime != nil {
-		applyLogSinceTime(*opts.SinceTime, &cleanedCollectors)
-	}
-
-	result := collect.NewResult()
-
-	// Run preflights collectors synchronously
-	for _, collector := range cleanedCollectors {
-		if len(collector.RBACErrors) > 0 {
-			// don't skip clusterResources collector due to RBAC issues
-			if collector.Collect.ClusterResources == nil {
-				msg := fmt.Sprintf("skipping collector %s with insufficient RBAC permissions", collector.GetDisplayName())
-				opts.CollectorProgressCallback(opts.ProgressChan, msg)
-				continue
-			}
-		}
-
-		opts.CollectorProgressCallback(opts.ProgressChan, collector.GetDisplayName())
-
-		files, err := collector.RunCollectorSync(opts.KubernetesRestConfig, k8sClient, globalRedactors)
+	if opts.Redact {
+		err := collect.RedactResult(bundlePath, collectResult, globalRedactors)
 		if err != nil {
-			opts.ProgressChan <- fmt.Errorf("failed to run collector %q: %v", collector.GetDisplayName(), err)
-			continue
-		}
-
-		for k, v := range files {
-			result[k] = v
+			err = errors.Wrap(err, "failed to redact")
+			return collectResult, err
 		}
 	}
 
-	return result, nil
+	return collectResult, nil
 }
 
 func findFileName(basename, extension string) (string, error) {
