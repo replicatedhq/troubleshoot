@@ -48,6 +48,24 @@ type SupportBundle struct {
 	Status SupportBundleStatus `json:"status,omitempty"`
 }
 
+func (s *SupportBundle) concatSpec(bundle *SupportBundle) {
+	for _, v := range bundle.Spec.Collectors {
+		s.Spec.Collectors = append(bundle.Spec.Collectors, v)
+	}
+	for _, v := range bundle.Spec.AfterCollection {
+		s.Spec.AfterCollection = append(bundle.Spec.AfterCollection, v)
+	}
+	for _, v := range bundle.Spec.HostCollectors {
+		s.Spec.HostCollectors = append(bundle.Spec.HostCollectors, v)
+	}
+	for _, v := range bundle.Spec.HostAnalyzers {
+		s.Spec.HostAnalyzers = append(bundle.Spec.HostAnalyzers, v)
+	}
+	for _, v := range bundle.Spec.Analyzers {
+		s.Spec.Analyzers = append(bundle.Spec.Analyzers, v)
+	}
+}
+
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 
 // SupportBundleList contains a list of SupportBundle

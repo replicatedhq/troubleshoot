@@ -34,7 +34,7 @@ from a server that can be used to assist when troubleshooting a Kubernetes clust
 			v := viper.GetViper()
 
 			logger.SetQuiet(v.GetBool("quiet"))
-			return runTroubleshoot(v, args[0])
+			return runTroubleshoot(v, args)
 		},
 	}
 
