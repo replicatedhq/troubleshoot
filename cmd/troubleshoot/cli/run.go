@@ -101,7 +101,7 @@ func runTroubleshoot(v *viper.Viper, arg []string) error {
 		if i == 0 {
 			mainBundle = supportBundle
 		} else {
-			mainBundle.concatSpec(supportBundle)
+			mainBundle.ConcatSpec(supportBundle)
 		}
 
 		for i, additionalDoc := range multidocs {
