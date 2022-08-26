@@ -1,13 +1,13 @@
 ---
 name: Feature Epic
-about: Propose a change that is larger than a single task
+about: Create a tracking issue for a change that is larger than a single task
 labels: 'epic'
 
 ---
 
 # Design Proposal
 
-Link to the [proposal](design/template.md)
+Link to the [proposal](https://github.com/replicatedhq/troubleshoot/tree/main/design/template.md)
 
 # Definition of done
 
