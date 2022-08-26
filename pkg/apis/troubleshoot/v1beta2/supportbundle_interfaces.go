@@ -21,13 +21,27 @@ func (s *SupportBundle) ConcatSpec(bundle *SupportBundle) {
 
 func (s *SupportBundleSpec) MergeCollectors(spec *SupportBundleSpec) {
     for _,c := range spec.Collectors {
+        // we want to move away from checking for specific collectors in favor of allowing collectors to expose their own merge method
+        // ideally we'd just want to be able to call something like c.Merge(spec) here and have the collector's own merge method work out what to do'
 
         if c.ClusterInfo != nil {
             // we only actually want one of these so skip if there's already one
             y := 0
-            // we want to move away from checking for specific collectors in favor of allowing collectors to expose their own merge method
             for _,v := range s.Collectors{
                 if v.ClusterInfo != nil {
+                    y = 1
+                }
+            }
+            if y != 1 {
+                s.Collectors = append(s.Collectors, c)
+            }
+            continue
+        }
+
+        if c.ClusterResources != nil {
+            y := 0
+            for _,v := range s.Collectors {
+                if v.ClusterResources != nil {
                     y = 1
                 }
             }
