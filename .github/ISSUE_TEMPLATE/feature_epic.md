@@ -13,7 +13,7 @@ Link to the [proposal](https://github.com/replicatedhq/troubleshoot/tree/main/de
 
 Describe what specific goals can measure if this overall task is considered completed. Things to consider are documentation, high level description of the feature working, and tests.
 
-* []
+* [ ]
 
 # Subtasks
 
@@ -21,8 +21,8 @@ Create a list of the smaller tasks to implement this design. Task can start as s
 
 ## Started
 
-* []
+* [ ]
 
 ## Planned
 
-* []
+* [ ]
