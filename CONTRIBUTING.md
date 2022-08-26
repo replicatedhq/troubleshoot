@@ -7,6 +7,10 @@ Thank you for your interest in Troubleshoot, we welcome your participation. Plea
 - [Request a New Feature](https://github.com/replicatedhq/troubleshoot/issues/new?assignees=&labels=feature&template=feature_enhancement.md) Create an issue to add functionality that addresses a problem or adds an enhancement.  
 - [Report a Bug](https://github.com/replicatedhq/troubleshoot/issues/new?assignees=&labels=bug&template=bug_report.md) Report a problem or unexpected behaviour with Troubleshoot.
 
+## Design Principles
+
+When implementing a new feature please review the [design principles](./design/design-principles.md) to help guide the approach.
+
 ## Development Environment
 
 To get started we recommend:
