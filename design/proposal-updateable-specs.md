@@ -18,11 +18,13 @@ It is also difficult to justify the tight coupling of Troubleshoot configuration
 
 ## High-Level Design
 
-Add a new field to the Troubleshoot spec definition, which includes a URI used to locate the current spec online.
+Add a new field to the Troubleshoot spec definition, which includes a URI used to locate additional specs.
 
-If the field is populated, Troubleshoot is to attempt to download the additional spec(s) from the source online, and add to the spec already provided.
+If the field is populated, Troubleshoot is to attempt to collect the additional spec(s) from the location provided, and add to the spec already provided.
 
-Add a CLI flag to prevent any attmept to download, for use in airgap environments and/or when we simply do not want to download.
+If the additional spec is not found at the location (or, if there is no network access to that location), Troubleshoot is to continue processing the remainder of the spec provided, with a log message describing the failure.
+
+Add a CLI flag to disable the URI specified locations from being accessed.  This would be useful in airgap environments and/or when we simply do not want to have additional specs used, without having to update the yaml, secret or remote source.
 
 Update the [default spec included with kots](https://github.com/replicatedhq/kots/blob/main/pkg/supportbundle/defaultspec/spec.yaml) to include a URI pointing at [the troubleshoot-specs repo](https://raw.githubusercontent.com/replicatedhq/troubleshoot-specs/main/in-cluster/default.yaml).
 
@@ -66,7 +68,7 @@ spec:
 
 ## Impact on kURL and kots
 
-For kURL, each component/addon installed could include adding a URI pointing at a specific spec that 
+For kURL, each component/addon installed could include adding a URI pointing at a specific spec for that component, which could be updated independently of other components.
 
 ## Limitations
 
