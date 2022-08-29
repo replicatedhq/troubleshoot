@@ -43,6 +43,8 @@ spec:
                       properties:
                         checkName:
                           type: string
+                        collectorName:
+                          type: string
                         exclude:
                           type: BoolString
                         includeUnmountedPartitions:
@@ -137,6 +139,8 @@ spec:
                     cpu:
                       properties:
                         checkName:
+                          type: string
+                        collectorName:
                           type: string
                         exclude:
                           type: BoolString
@@ -271,6 +275,8 @@ spec:
                       properties:
                         checkName:
                           type: string
+                        collectorName:
+                          type: string
                         exclude:
                           type: BoolString
                         outcomes:
@@ -313,6 +319,8 @@ spec:
                     hostServices:
                       properties:
                         checkName:
+                          type: string
+                        collectorName:
                           type: string
                         exclude:
                           type: BoolString
@@ -447,6 +455,8 @@ spec:
                       properties:
                         checkName:
                           type: string
+                        collectorName:
+                          type: string
                         exclude:
                           type: BoolString
                         outcomes:
@@ -490,6 +500,8 @@ spec:
                       properties:
                         checkName:
                           type: string
+                        collectorName:
+                          type: string
                         exclude:
                           type: BoolString
                         outcomes:
@@ -532,6 +544,8 @@ spec:
                     memory:
                       properties:
                         checkName:
+                          type: string
+                        collectorName:
                           type: string
                         exclude:
                           type: BoolString
@@ -755,6 +769,8 @@ spec:
                     time:
                       properties:
                         checkName:
+                          type: string
+                        collectorName:
                           type: string
                         exclude:
                           type: BoolString
