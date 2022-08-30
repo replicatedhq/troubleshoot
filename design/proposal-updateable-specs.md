@@ -51,7 +51,7 @@ kind: SupportBundle
 metadata:
   name: default
 spec:
-  specURI: https://raw.githubusercontent.com/replicatedhq/troubleshoot-specs/main/in-cluster/default.yaml
+  uri: https://raw.githubusercontent.com/replicatedhq/troubleshoot-specs/main/in-cluster/default.yaml
   collectors:
     - clusterInfo: {}
     - clusterResources: {}
