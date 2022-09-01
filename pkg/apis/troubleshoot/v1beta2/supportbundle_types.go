@@ -27,6 +27,13 @@ type SupportBundleSpec struct {
 	HostCollectors  []*HostCollect     `json:"hostCollectors,omitempty" yaml:"hostCollectors,omitempty"`
 	Analyzers       []*Analyze         `json:"analyzers,omitempty" yaml:"analyzers,omitempty"`
 	HostAnalyzers   []*HostAnalyze     `json:"hostAnalyzers,omitempty" yaml:"hostAnalyzers,omitempty"`
+	// Uri defines the location of the spec file that needs to be used. This is optional and can be
+	// either a secret, url or spec yaml file.
+	// When presented with a spec document that contains a URI, if that spec is one of the specs provided
+	// on the command line or initial call to Troubleshoot, attempt to collect a replacement spec from that URI.
+	// If successful, it will replace the entire spec with the one downloaded.
+	// If unsuccessful, log the error and use the spec provided.
+	Uri string `json:"uri,omitempty" yaml:"uri,omitempty"`
 }
 
 // SupportBundleStatus defines the observed state of SupportBundle
