@@ -4,7 +4,7 @@ The CRDs in this folder are used by Troubleshoot in combination with the spec th
 
 Should the CRDs (and corresponding schemas) need to be (re-) generated or if an additional field or type needs to be added, the following steps need to be taken;
 
-**Adding new field(s)/type(s):**
+## Adding new field(s)/type(s)
 
 New fields (types) need to be defined in the `./pkg/apis/troubleshoot/v1beta2/supportbundle_types.go` file.
 
