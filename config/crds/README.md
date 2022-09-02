@@ -1,4 +1,4 @@
-**Managing Troubleshoot CRDs**
+## Managing Troubleshoot CRDs
 
 The CRDs in this folder are used by Troubleshoot in combination with the spec that can be passed on to the Troubleshoot CLI in various ways (the location of the spec can be passed on as a web address, yaml file or a secret residing on a cluster).
 
