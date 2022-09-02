@@ -17,7 +17,6 @@ import (
 	longhornv1beta1 "github.com/replicatedhq/troubleshoot/pkg/longhorn/client/clientset/versioned/typed/longhorn/v1beta1"
 	longhorntypes "github.com/replicatedhq/troubleshoot/pkg/longhorn/types"
 	"gopkg.in/yaml.v2"
-	authorizationv1 "k8s.io/api/authorization/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -48,40 +47,26 @@ func (c *CollectLonghorn) IsExcluded() (bool, error) {
 	return isExcluded(c.Collector.Exclude)
 }
 
+func (c *CollectLonghorn) GetRBACErrors() []error {
+	return c.RBACErrors
+}
+
+func (c *CollectLonghorn) HasRBACErrors() bool {
+	return len(c.RBACErrors) > 0
+}
+
 func (c *CollectLonghorn) CheckRBAC(ctx context.Context, collector *troubleshootv1beta2.Collect) error {
 	exclude, err := c.IsExcluded()
 	if err != nil || exclude != true {
 		return nil
 	}
 
-	client, err := kubernetes.NewForConfig(c.ClientConfig)
+	rbacErrors, err := checkRBAC(ctx, c.ClientConfig, c.Namespace, c.Title(), collector)
 	if err != nil {
-		return errors.Wrap(err, "failed to create client from config")
+		return err
 	}
 
-	forbidden := make([]error, 0)
-
-	specs := collector.AccessReviewSpecs(c.Namespace)
-	for _, spec := range specs {
-		sar := &authorizationv1.SelfSubjectAccessReview{
-			Spec: spec,
-		}
-
-		resp, err := client.AuthorizationV1().SelfSubjectAccessReviews().Create(ctx, sar, metav1.CreateOptions{})
-		if err != nil {
-			return errors.Wrap(err, "failed to run subject review")
-		}
-
-		if !resp.Status.Allowed { // all other fields of Status are empty...
-			forbidden = append(forbidden, RBACError{
-				DisplayName: c.Title(),
-				Namespace:   spec.ResourceAttributes.Namespace,
-				Resource:    spec.ResourceAttributes.Resource,
-				Verb:        spec.ResourceAttributes.Verb,
-			})
-		}
-	}
-	c.RBACErrors = forbidden
+	c.RBACErrors = rbacErrors
 
 	return nil
 }
@@ -259,7 +244,7 @@ func (c *CollectLonghorn) Collect(progressChan chan<- interface{}) (CollectorRes
 		Namespace: ns,
 	}
 
-	logsCollector := &CollectLogs{logsCollectorSpec, c.BundlePath, c.Namespace, c.ClientConfig, c.Client, c.ctx, c.RBACErrors}
+	logsCollector := &CollectLogs{logsCollectorSpec, c.BundlePath, c.Namespace, c.ClientConfig, c.Client, c.ctx, nil, c.RBACErrors}
 
 	logs, err := logsCollector.Collect(progressChan)
 	if err != nil {

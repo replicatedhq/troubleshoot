@@ -15,7 +15,6 @@ import (
 	"github.com/replicatedhq/troubleshoot/pkg/logger"
 	"github.com/segmentio/ksuid"
 	appsv1 "k8s.io/api/apps/v1"
-	authorizationv1 "k8s.io/api/authorization/v1"
 	corev1 "k8s.io/api/core/v1"
 	kuberneteserrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -45,40 +44,26 @@ func (c *CollectCopyFromHost) IsExcluded() (bool, error) {
 	return isExcluded(c.Collector.Exclude)
 }
 
+func (c *CollectCopyFromHost) GetRBACErrors() []error {
+	return c.RBACErrors
+}
+
+func (c *CollectCopyFromHost) HasRBACErrors() bool {
+	return len(c.RBACErrors) > 0
+}
+
 func (c *CollectCopyFromHost) CheckRBAC(ctx context.Context, collector *troubleshootv1beta2.Collect) error {
 	exclude, err := c.IsExcluded()
 	if err != nil || exclude != true {
 		return nil
 	}
 
-	client, err := kubernetes.NewForConfig(c.ClientConfig)
+	rbacErrors, err := checkRBAC(ctx, c.ClientConfig, c.Namespace, c.Title(), collector)
 	if err != nil {
-		return errors.Wrap(err, "failed to create client from config")
+		return err
 	}
 
-	forbidden := make([]error, 0)
-
-	specs := collector.AccessReviewSpecs(c.Namespace)
-	for _, spec := range specs {
-		sar := &authorizationv1.SelfSubjectAccessReview{
-			Spec: spec,
-		}
-
-		resp, err := client.AuthorizationV1().SelfSubjectAccessReviews().Create(ctx, sar, metav1.CreateOptions{})
-		if err != nil {
-			return errors.Wrap(err, "failed to run subject review")
-		}
-
-		if !resp.Status.Allowed { // all other fields of Status are empty...
-			forbidden = append(forbidden, RBACError{
-				DisplayName: c.Title(),
-				Namespace:   spec.ResourceAttributes.Namespace,
-				Resource:    spec.ResourceAttributes.Resource,
-				Verb:        spec.ResourceAttributes.Verb,
-			})
-		}
-	}
-	c.RBACErrors = forbidden
+	c.RBACErrors = rbacErrors
 
 	return nil
 }

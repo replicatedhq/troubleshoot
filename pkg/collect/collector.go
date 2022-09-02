@@ -3,6 +3,7 @@ package collect
 import (
 	"context"
 	"strconv"
+	"time"
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
@@ -14,6 +15,8 @@ import (
 type Collector interface {
 	Title() string
 	IsExcluded() (bool, error)
+	GetRBACErrors() []error
+	HasRBACErrors() bool
 	CheckRBAC(ctx context.Context, collector *troubleshootv1beta2.Collect) error
 	Collect(progressChan chan<- interface{}) (CollectorResult, error)
 }
@@ -41,7 +44,7 @@ func isExcluded(excludeVal *multitype.BoolOrString) (bool, error) {
 	return parsed, nil
 }
 
-func GetCollector(collector *troubleshootv1beta2.Collect, bundlePath string, namespace string, clientConfig *rest.Config, client kubernetes.Interface, RBACErrors []error) (Collector, bool) {
+func GetCollector(collector *troubleshootv1beta2.Collect, bundlePath string, namespace string, clientConfig *rest.Config, client kubernetes.Interface, sinceTime *time.Time, RBACErrors []error) (Collector, bool) {
 
 	ctx := context.TODO()
 
@@ -55,7 +58,7 @@ func GetCollector(collector *troubleshootv1beta2.Collect, bundlePath string, nam
 	case collector.ConfigMap != nil:
 		return &CollectConfigMap{collector.ConfigMap, bundlePath, namespace, clientConfig, client, ctx, RBACErrors}, true
 	case collector.Logs != nil:
-		return &CollectLogs{collector.Logs, bundlePath, namespace, clientConfig, client, ctx, RBACErrors}, true
+		return &CollectLogs{collector.Logs, bundlePath, namespace, clientConfig, client, ctx, sinceTime, RBACErrors}, true
 	case collector.Run != nil:
 		return &CollectRun{collector.Run, bundlePath, namespace, clientConfig, client, ctx, RBACErrors}, true
 	case collector.RunPod != nil:
@@ -97,13 +100,3 @@ func collectorTitleOrDefault(meta troubleshootv1beta2.CollectorMeta, defaultTitl
 	}
 	return defaultTitle
 }
-
-/*
-func (cs Collectors) CheckRBAC(ctx context.Context, collector *troubleshootv1beta2.Collect) error {
-	for _, c := range cs {
-		if err := c.CheckRBAC(ctx, collector); err != nil {
-			return errors.Wrap(err, "failed to check RBAC")
-		}
-	}
-	return nil
-}*/

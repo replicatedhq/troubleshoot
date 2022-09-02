@@ -2,6 +2,7 @@ package supportbundle
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -84,10 +85,26 @@ func runCollectors(collectors []*troubleshootv1beta2.Collect, additionalRedactor
 
 	var newCollectors []collect.Collector
 	for _, desiredCollector := range collectSpecs {
-		collector, ok := collect.GetCollector(desiredCollector, bundlePath, opts.Namespace, opts.KubernetesRestConfig, k8sClient, RBACErrors)
+		collector, ok := collect.GetCollector(desiredCollector, bundlePath, opts.Namespace, opts.KubernetesRestConfig, k8sClient, opts.SinceTime, RBACErrors)
 		if ok {
+			err := collector.CheckRBAC(context.Background(), desiredCollector)
+			if err != nil {
+				return nil, errors.Wrap(err, "failed to check RBAC for collectors")
+			}
 			newCollectors = append(newCollectors, collector)
 		}
+	}
+
+	foundForbidden := false
+	for _, c := range newCollectors {
+		for _, e := range c.GetRBACErrors() {
+			foundForbidden = true
+			opts.ProgressChan <- e
+		}
+	}
+
+	if foundForbidden && !opts.CollectWithoutPermissions {
+		return nil, errors.New("insufficient permissions to run all collectors")
 	}
 
 	collectResult := collect.NewResult()
@@ -96,6 +113,15 @@ func runCollectors(collectors []*troubleshootv1beta2.Collect, additionalRedactor
 		isExcluded, _ := collector.IsExcluded()
 		if isExcluded {
 			continue
+		}
+
+		// skip collectors with RBAC errors unless its the ClusterResources collector
+		if collector.HasRBACErrors() {
+			if _, ok := collector.(*collect.CollectClusterResources); !ok {
+				msg := fmt.Sprintf("skipping collector %s with insufficient RBAC permissions", collector.Title())
+				opts.CollectorProgressCallback(opts.ProgressChan, msg)
+				continue
+			}
 		}
 
 		opts.ProgressChan <- fmt.Sprintf("[%s] Running collector...", collector.Title())
@@ -184,15 +210,3 @@ func getAnalysisFile(analyzeResults []*analyze.AnalyzeResult) (io.Reader, error)
 
 	return bytes.NewBuffer(analysis), nil
 }
-
-/*func applyLogSinceTime(sinceTime time.Time, collectors *collect.Collectors) {
-
-	for _, collector := range *collectors {
-		if collector.Collect.Logs != nil {
-			if collector.Collect.Logs.Limits == nil {
-				collector.Collect.Logs.Limits = new(troubleshootv1beta2.LogLimits)
-			}
-			collector.Collect.Logs.Limits.SinceTime = metav1.NewTime(sinceTime)
-		}
-	}
-}*/
