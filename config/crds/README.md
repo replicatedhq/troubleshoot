@@ -9,7 +9,7 @@ Should the CRDs (and corresponding schemas) need to be (re-) generated or if an 
 New fields (types) need to be defined in the `./pkg/apis/troubleshoot/v1beta2/supportbundle_types.go` file.
 
 
-**(Re)generate new schema's/CRDs:**
+## Regenerate schemas/CRDs
 
 Generating new schemas in `./schemas` can be done by running `make schemas`, which will then implement the new type into the CRDs
 
