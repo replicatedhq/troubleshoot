@@ -12,5 +12,3 @@ New fields (types) need to be defined in the `./pkg/apis/troubleshoot/v1beta2/su
 ## Regenerate schemas/CRDs
 
 Generating new schemas in `./schemas` can be done by running `make schemas`, which will then implement the new type into the CRDs
-
-*TBD: More detailed documentation on the CRDs and corresponding components.*
