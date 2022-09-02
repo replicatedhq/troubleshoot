@@ -17,6 +17,7 @@ import (
 	longhornv1beta1 "github.com/replicatedhq/troubleshoot/pkg/longhorn/client/clientset/versioned/typed/longhorn/v1beta1"
 	longhorntypes "github.com/replicatedhq/troubleshoot/pkg/longhorn/types"
 	"gopkg.in/yaml.v2"
+	authorizationv1 "k8s.io/api/authorization/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -29,12 +30,68 @@ const (
 
 var checksumRX = regexp.MustCompile(`(\S+)\s+(\S+)`)
 
-func Longhorn(c *Collector, longhornCollector *troubleshootv1beta2.Longhorn) (CollectorResult, error) {
+type CollectLonghorn struct {
+	Collector    *troubleshootv1beta2.Longhorn
+	BundlePath   string
+	Namespace    string
+	ClientConfig *rest.Config
+	Client       kubernetes.Interface
+	ctx          context.Context
+	RBACErrors   []error
+}
+
+func (c *CollectLonghorn) Title() string {
+	return collectorTitleOrDefault(c.Collector.CollectorMeta, "Longhorn")
+}
+
+func (c *CollectLonghorn) IsExcluded() (bool, error) {
+	return isExcluded(c.Collector.Exclude)
+}
+
+func (c *CollectLonghorn) CheckRBAC(ctx context.Context, collector *troubleshootv1beta2.Collect) error {
+	exclude, err := c.IsExcluded()
+	if err != nil || exclude != true {
+		return nil
+	}
+
+	client, err := kubernetes.NewForConfig(c.ClientConfig)
+	if err != nil {
+		return errors.Wrap(err, "failed to create client from config")
+	}
+
+	forbidden := make([]error, 0)
+
+	specs := collector.AccessReviewSpecs(c.Namespace)
+	for _, spec := range specs {
+		sar := &authorizationv1.SelfSubjectAccessReview{
+			Spec: spec,
+		}
+
+		resp, err := client.AuthorizationV1().SelfSubjectAccessReviews().Create(ctx, sar, metav1.CreateOptions{})
+		if err != nil {
+			return errors.Wrap(err, "failed to run subject review")
+		}
+
+		if !resp.Status.Allowed { // all other fields of Status are empty...
+			forbidden = append(forbidden, RBACError{
+				DisplayName: c.Title(),
+				Namespace:   spec.ResourceAttributes.Namespace,
+				Resource:    spec.ResourceAttributes.Resource,
+				Verb:        spec.ResourceAttributes.Verb,
+			})
+		}
+	}
+	c.RBACErrors = forbidden
+
+	return nil
+}
+
+func (c *CollectLonghorn) Collect(progressChan chan<- interface{}) (CollectorResult, error) {
 	ctx := context.TODO()
 
 	ns := DefaultLonghornNamespace
-	if longhornCollector.Namespace != "" {
-		ns = longhornCollector.Namespace
+	if c.Collector.Namespace != "" {
+		ns = c.Collector.Namespace
 	}
 
 	client, err := longhornv1beta1.NewForConfig(c.ClientConfig)
@@ -197,11 +254,14 @@ func Longhorn(c *Collector, longhornCollector *troubleshootv1beta2.Longhorn) (Co
 	output.SaveResult(c.BundlePath, settingsKey, bytes.NewBuffer(settingsB))
 
 	// logs of all pods in namespace
-	logsCollector := &troubleshootv1beta2.Logs{
+	logsCollectorSpec := &troubleshootv1beta2.Logs{
 		Selector:  []string{""},
 		Namespace: ns,
 	}
-	logs, err := Logs(c, logsCollector)
+
+	logsCollector := &CollectLogs{logsCollectorSpec, c.BundlePath, c.Namespace, c.ClientConfig, c.Client, c.ctx, c.RBACErrors}
+
+	logs, err := logsCollector.Collect(progressChan)
 	if err != nil {
 		return nil, errors.Wrap(err, "collect longhorn logs")
 	}

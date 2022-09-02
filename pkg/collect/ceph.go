@@ -9,8 +9,11 @@ import (
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
+	authorizationv1 "k8s.io/api/authorization/v1"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 )
 
 const (
@@ -105,23 +108,79 @@ var CephCommands = []CephCommand{
 	},
 }
 
-func Ceph(c *Collector, cephCollector *troubleshootv1beta2.Ceph) (CollectorResult, error) {
-	ctx := context.TODO()
+type CollectCeph struct {
+	Collector    *troubleshootv1beta2.Ceph
+	BundlePath   string
+	Namespace    string
+	ClientConfig *rest.Config
+	Client       kubernetes.Interface
+	ctx          context.Context
+	RBACErrors   []error
+}
 
-	if cephCollector.Namespace == "" {
-		cephCollector.Namespace = DefaultCephNamespace
+func (c *CollectCeph) Title() string {
+	return collectorTitleOrDefault(c.Collector.CollectorMeta, "Cluster Info")
+}
+
+func (c *CollectCeph) IsExcluded() (bool, error) {
+	return isExcluded(c.Collector.Exclude)
+}
+
+func (c *CollectCeph) CheckRBAC(ctx context.Context, collector *troubleshootv1beta2.Collect) error {
+	exclude, err := c.IsExcluded()
+	if err != nil || exclude != true {
+		return nil
 	}
 
-	pod, err := findRookCephToolsPod(ctx, c, cephCollector.Namespace)
+	client, err := kubernetes.NewForConfig(c.ClientConfig)
+	if err != nil {
+		return errors.Wrap(err, "failed to create client from config")
+	}
+
+	forbidden := make([]error, 0)
+
+	specs := collector.AccessReviewSpecs(c.Namespace)
+	for _, spec := range specs {
+		sar := &authorizationv1.SelfSubjectAccessReview{
+			Spec: spec,
+		}
+
+		resp, err := client.AuthorizationV1().SelfSubjectAccessReviews().Create(ctx, sar, metav1.CreateOptions{})
+		if err != nil {
+			return errors.Wrap(err, "failed to run subject review")
+		}
+
+		if !resp.Status.Allowed { // all other fields of Status are empty...
+			forbidden = append(forbidden, RBACError{
+				DisplayName: c.Title(),
+				Namespace:   spec.ResourceAttributes.Namespace,
+				Resource:    spec.ResourceAttributes.Resource,
+				Verb:        spec.ResourceAttributes.Verb,
+			})
+		}
+	}
+	c.RBACErrors = forbidden
+
+	return nil
+}
+
+func (c *CollectCeph) Collect(progressChan chan<- interface{}) (CollectorResult, error) {
+	ctx := context.TODO()
+
+	if c.Namespace == "" {
+		c.Namespace = DefaultCephNamespace
+	}
+
+	pod, err := findRookCephToolsPod(ctx, c, c.Namespace)
 	if err != nil {
 		return nil, err
 	}
 
 	output := NewResult()
 	for _, command := range CephCommands {
-		err := cephCommandExec(ctx, c, cephCollector, pod, command, output)
+		err := cephCommandExec(ctx, progressChan, c, c.Collector, pod, command, output)
 		if err != nil {
-			pathPrefix := GetCephCollectorFilepath(cephCollector.CollectorName, cephCollector.Namespace)
+			pathPrefix := GetCephCollectorFilepath(c.Collector.CollectorName, c.Namespace)
 			dstFileName := path.Join(pathPrefix, fmt.Sprintf("%s.%s-error", command.ID, command.Format))
 			output.SaveResult(c.BundlePath, dstFileName, strings.NewReader(err.Error()))
 		}
@@ -130,20 +189,23 @@ func Ceph(c *Collector, cephCollector *troubleshootv1beta2.Ceph) (CollectorResul
 	return output, nil
 }
 
-func cephCommandExec(ctx context.Context, c *Collector, cephCollector *troubleshootv1beta2.Ceph, pod *corev1.Pod, command CephCommand, output CollectorResult) error {
+func cephCommandExec(ctx context.Context, progressChan chan<- interface{}, c *CollectCeph, cephCollector *troubleshootv1beta2.Ceph, pod *corev1.Pod, command CephCommand, output CollectorResult) error {
 	timeout := cephCollector.Timeout
 	if timeout == "" {
 		timeout = command.DefaultTimeout
 	}
 
-	execCollector := &troubleshootv1beta2.Exec{
+	execSpec := &troubleshootv1beta2.Exec{
 		Selector:  labelsToSelector(pod.Labels),
 		Namespace: pod.Namespace,
 		Command:   command.Command,
 		Args:      command.Args,
 		Timeout:   timeout,
 	}
-	results, err := Exec(c, execCollector)
+
+	execCollector := &CollectExec{execSpec, c.BundlePath, c.Namespace, c.ClientConfig, c.Client, c.ctx, c.RBACErrors}
+
+	results, err := execCollector.Collect(progressChan)
 	if err != nil {
 		return errors.Wrap(err, "failed to exec command")
 	}
@@ -171,7 +233,7 @@ func cephCommandExec(ctx context.Context, c *Collector, cephCollector *troublesh
 	return nil
 }
 
-func findRookCephToolsPod(ctx context.Context, c *Collector, namespace string) (*corev1.Pod, error) {
+func findRookCephToolsPod(ctx context.Context, c *CollectCeph, namespace string) (*corev1.Pod, error) {
 	client, err := kubernetes.NewForConfig(c.ClientConfig)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create kubernetes client")

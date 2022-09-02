@@ -18,8 +18,10 @@ import (
 	"github.com/pkg/errors"
 	"github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
+	authorizationv1 "k8s.io/api/authorization/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 )
 
 type RegistryImage struct {
@@ -36,13 +38,69 @@ type registryAuthConfig struct {
 	password string
 }
 
-func Registry(c *Collector, registryCollector *troubleshootv1beta2.RegistryImages) (CollectorResult, error) {
+type CollectRegistry struct {
+	Collector    *troubleshootv1beta2.RegistryImages
+	BundlePath   string
+	Namespace    string
+	ClientConfig *rest.Config
+	Client       kubernetes.Interface
+	ctx          context.Context
+	RBACErrors   []error
+}
+
+func (c *CollectRegistry) Title() string {
+	return collectorTitleOrDefault(c.Collector.CollectorMeta, "Registry Images")
+}
+
+func (c *CollectRegistry) IsExcluded() (bool, error) {
+	return isExcluded(c.Collector.Exclude)
+}
+
+func (c *CollectRegistry) CheckRBAC(ctx context.Context, collector *troubleshootv1beta2.Collect) error {
+	exclude, err := c.IsExcluded()
+	if err != nil || exclude != true {
+		return nil
+	}
+
+	client, err := kubernetes.NewForConfig(c.ClientConfig)
+	if err != nil {
+		return errors.Wrap(err, "failed to create client from config")
+	}
+
+	forbidden := make([]error, 0)
+
+	specs := collector.AccessReviewSpecs(c.Namespace)
+	for _, spec := range specs {
+		sar := &authorizationv1.SelfSubjectAccessReview{
+			Spec: spec,
+		}
+
+		resp, err := client.AuthorizationV1().SelfSubjectAccessReviews().Create(ctx, sar, metav1.CreateOptions{})
+		if err != nil {
+			return errors.Wrap(err, "failed to run subject review")
+		}
+
+		if !resp.Status.Allowed { // all other fields of Status are empty...
+			forbidden = append(forbidden, RBACError{
+				DisplayName: c.Title(),
+				Namespace:   spec.ResourceAttributes.Namespace,
+				Resource:    spec.ResourceAttributes.Resource,
+				Verb:        spec.ResourceAttributes.Verb,
+			})
+		}
+	}
+	c.RBACErrors = forbidden
+
+	return nil
+}
+
+func (c *CollectRegistry) Collect(progressChan chan<- interface{}) (CollectorResult, error) {
 	registryInfo := RegistryInfo{
 		Images: map[string]RegistryImage{},
 	}
 
-	for _, image := range registryCollector.Images {
-		exists, err := imageExists(c, registryCollector, image)
+	for _, image := range c.Collector.Images {
+		exists, err := imageExists(c.Namespace, c.ClientConfig, c.Collector, image)
 		if err != nil {
 			registryInfo.Images[image] = RegistryImage{
 				Error: err.Error(),
@@ -59,7 +117,7 @@ func Registry(c *Collector, registryCollector *troubleshootv1beta2.RegistryImage
 		return nil, errors.Wrap(err, "failed to marshal database connection")
 	}
 
-	collectorName := registryCollector.CollectorName
+	collectorName := c.Collector.CollectorName
 	if collectorName == "" {
 		collectorName = "images"
 	}
@@ -70,13 +128,13 @@ func Registry(c *Collector, registryCollector *troubleshootv1beta2.RegistryImage
 	return output, nil
 }
 
-func imageExists(c *Collector, registryCollector *troubleshootv1beta2.RegistryImages, image string) (bool, error) {
+func imageExists(namespace string, clientConfig *rest.Config, registryCollector *troubleshootv1beta2.RegistryImages, image string) (bool, error) {
 	imageRef, err := alltransports.ParseImageName(fmt.Sprintf("docker://%s", image))
 	if err != nil {
 		return false, errors.Wrapf(err, "failed to parse image name %s", image)
 	}
 
-	authConfig, err := getImageAuthConfig(c, registryCollector, imageRef)
+	authConfig, err := getImageAuthConfig(namespace, clientConfig, registryCollector, imageRef)
 	if err != nil {
 		return false, errors.Wrap(err, "failed to get auth config")
 	}
@@ -123,13 +181,13 @@ func imageExists(c *Collector, registryCollector *troubleshootv1beta2.RegistryIm
 	return false, errors.Wrap(lastErr, "failed to retry")
 }
 
-func getImageAuthConfig(c *Collector, registryCollector *troubleshootv1beta2.RegistryImages, imageRef types.ImageReference) (*registryAuthConfig, error) {
+func getImageAuthConfig(namespace string, clientConfig *rest.Config, registryCollector *troubleshootv1beta2.RegistryImages, imageRef types.ImageReference) (*registryAuthConfig, error) {
 	if registryCollector.ImagePullSecrets == nil {
 		return nil, nil
 	}
 
 	if registryCollector.ImagePullSecrets.Data != nil {
-		config, err := getImageAuthConfigFromData(c, imageRef, registryCollector.ImagePullSecrets)
+		config, err := getImageAuthConfigFromData(imageRef, registryCollector.ImagePullSecrets)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to get auth from data")
 		}
@@ -137,14 +195,14 @@ func getImageAuthConfig(c *Collector, registryCollector *troubleshootv1beta2.Reg
 	}
 
 	if registryCollector.ImagePullSecrets.Name != "" {
-		namespace := registryCollector.Namespace
-		if namespace == "" {
-			namespace = c.Namespace
+		collectorNamespace := registryCollector.Namespace
+		if collectorNamespace == "" {
+			collectorNamespace = namespace
 		}
-		if namespace == "" {
-			namespace = "default"
+		if collectorNamespace == "" {
+			collectorNamespace = "default"
 		}
-		config, err := getImageAuthConfigFromSecret(c, imageRef, registryCollector.ImagePullSecrets, namespace)
+		config, err := getImageAuthConfigFromSecret(clientConfig, imageRef, registryCollector.ImagePullSecrets, collectorNamespace)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to get auth from secret")
 		}
@@ -154,7 +212,7 @@ func getImageAuthConfig(c *Collector, registryCollector *troubleshootv1beta2.Reg
 	return nil, errors.New("image pull secret spec is not valid")
 }
 
-func getImageAuthConfigFromData(c *Collector, imageRef types.ImageReference, pullSecrets *v1beta2.ImagePullSecrets) (*registryAuthConfig, error) {
+func getImageAuthConfigFromData(imageRef types.ImageReference, pullSecrets *v1beta2.ImagePullSecrets) (*registryAuthConfig, error) {
 	if pullSecrets.SecretType != "kubernetes.io/dockerconfigjson" {
 		return nil, errors.Errorf("secret type is not supported: %s", pullSecrets.SecretType)
 	}
@@ -197,10 +255,10 @@ func getImageAuthConfigFromData(c *Collector, imageRef types.ImageReference, pul
 	return &authConfig, nil
 }
 
-func getImageAuthConfigFromSecret(c *Collector, imageRef types.ImageReference, pullSecrets *v1beta2.ImagePullSecrets, namespace string) (*registryAuthConfig, error) {
+func getImageAuthConfigFromSecret(clientConfig *rest.Config, imageRef types.ImageReference, pullSecrets *v1beta2.ImagePullSecrets, namespace string) (*registryAuthConfig, error) {
 	ctx := context.Background()
 
-	client, err := kubernetes.NewForConfig(c.ClientConfig)
+	client, err := kubernetes.NewForConfig(clientConfig)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create client from config")
 	}
@@ -218,7 +276,7 @@ func getImageAuthConfigFromSecret(c *Collector, imageRef types.ImageReference, p
 		},
 	}
 
-	config, err := getImageAuthConfigFromData(c, imageRef, foundSecrets)
+	config, err := getImageAuthConfigFromData(imageRef, foundSecrets)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get auth from secret data")
 	}

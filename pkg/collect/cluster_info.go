@@ -12,6 +12,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/version"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 )
 
 type ClusterVersion struct {
@@ -20,8 +21,11 @@ type ClusterVersion struct {
 }
 
 type CollectClusterInfo struct {
-	Collector  *troubleshootv1beta2.ClusterInfo
-	BundlePath string
+	Collector    *troubleshootv1beta2.ClusterInfo
+	BundlePath   string
+	Namespace    string
+	ClientConfig *rest.Config
+	RBACErrors   []error
 }
 
 func (c *CollectClusterInfo) Title() string {
@@ -31,6 +35,7 @@ func (c *CollectClusterInfo) Title() string {
 func (c *CollectClusterInfo) IsExcluded() (bool, error) {
 	return isExcluded(c.Collector.Exclude)
 }
+
 func (c *CollectClusterInfo) CheckRBAC(ctx context.Context, collector *troubleshootv1beta2.Collect) error {
 	exclude, err := c.IsExcluded()
 	if err != nil || exclude != true {
@@ -44,7 +49,7 @@ func (c *CollectClusterInfo) CheckRBAC(ctx context.Context, collector *troublesh
 
 	forbidden := make([]error, 0)
 
-	specs := c.Collector.AccessReviewSpecs(c.Namespace)
+	specs := collector.AccessReviewSpecs(c.Namespace)
 	for _, spec := range specs {
 		sar := &authorizationv1.SelfSubjectAccessReview{
 			Spec: spec,

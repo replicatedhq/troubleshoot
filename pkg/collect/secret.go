@@ -10,10 +10,12 @@ import (
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
+	authorizationv1 "k8s.io/api/authorization/v1"
 	corev1 "k8s.io/api/core/v1"
 	kuberneteserrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 )
 
 type SecretOutput struct {
@@ -25,28 +27,84 @@ type SecretOutput struct {
 	Value        string `json:"value,omitempty"`
 }
 
-func Secret(ctx context.Context, c *Collector, secretCollector *troubleshootv1beta2.Secret, client kubernetes.Interface) (CollectorResult, error) {
+type CollectSecret struct {
+	Collector    *troubleshootv1beta2.Secret
+	BundlePath   string
+	Namespace    string
+	ClientConfig *rest.Config
+	Client       kubernetes.Interface
+	ctx          context.Context
+	RBACErrors   []error
+}
+
+func (c *CollectSecret) Title() string {
+	return collectorTitleOrDefault(c.Collector.CollectorMeta, "Secret")
+}
+
+func (c *CollectSecret) IsExcluded() (bool, error) {
+	return isExcluded(c.Collector.Exclude)
+}
+
+func (c *CollectSecret) CheckRBAC(ctx context.Context, collector *troubleshootv1beta2.Collect) error {
+	exclude, err := c.IsExcluded()
+	if err != nil || exclude != true {
+		return nil
+	}
+
+	client, err := kubernetes.NewForConfig(c.ClientConfig)
+	if err != nil {
+		return errors.Wrap(err, "failed to create client from config")
+	}
+
+	forbidden := make([]error, 0)
+
+	specs := collector.AccessReviewSpecs(c.Namespace)
+	for _, spec := range specs {
+		sar := &authorizationv1.SelfSubjectAccessReview{
+			Spec: spec,
+		}
+
+		resp, err := client.AuthorizationV1().SelfSubjectAccessReviews().Create(ctx, sar, metav1.CreateOptions{})
+		if err != nil {
+			return errors.Wrap(err, "failed to run subject review")
+		}
+
+		if !resp.Status.Allowed { // all other fields of Status are empty...
+			forbidden = append(forbidden, RBACError{
+				DisplayName: c.Title(),
+				Namespace:   spec.ResourceAttributes.Namespace,
+				Resource:    spec.ResourceAttributes.Resource,
+				Verb:        spec.ResourceAttributes.Verb,
+			})
+		}
+	}
+	c.RBACErrors = forbidden
+
+	return nil
+}
+
+func (c *CollectSecret) Collect(progressChan chan<- interface{}) (CollectorResult, error) {
 	output := NewResult()
 
 	secrets := []corev1.Secret{}
-	if secretCollector.Name != "" {
-		secret, err := client.CoreV1().Secrets(secretCollector.Namespace).Get(ctx, secretCollector.Name, metav1.GetOptions{})
+	if c.Collector.Name != "" {
+		secret, err := c.Client.CoreV1().Secrets(c.Collector.Namespace).Get(c.ctx, c.Collector.Name, metav1.GetOptions{})
 		if err != nil {
 			if kuberneteserrors.IsNotFound(err) {
-				filePath, encoded, err := secretToOutput(secretCollector, nil, secretCollector.Name)
+				filePath, encoded, err := secretToOutput(c.Collector, nil, c.Collector.Name)
 				if err != nil {
-					return output, errors.Wrapf(err, "collect secret %s", secretCollector.Name)
+					return output, errors.Wrapf(err, "collect secret %s", c.Collector.Name)
 				}
 				output.SaveResult(c.BundlePath, filePath, bytes.NewBuffer(encoded))
 			}
-			output.SaveResult(c.BundlePath, GetSecretErrorsFileName(secretCollector), marshalErrors([]string{err.Error()}))
+			output.SaveResult(c.BundlePath, GetSecretErrorsFileName(c.Collector), marshalErrors([]string{err.Error()}))
 			return output, nil
 		}
 		secrets = append(secrets, *secret)
-	} else if len(secretCollector.Selector) > 0 {
-		ss, err := listSecretsForSelector(ctx, client, secretCollector.Namespace, secretCollector.Selector)
+	} else if len(c.Collector.Selector) > 0 {
+		ss, err := listSecretsForSelector(c.ctx, c.Client, c.Collector.Namespace, c.Collector.Selector)
 		if err != nil {
-			output.SaveResult(c.BundlePath, GetSecretErrorsFileName(secretCollector), marshalErrors([]string{err.Error()}))
+			output.SaveResult(c.BundlePath, GetSecretErrorsFileName(c.Collector), marshalErrors([]string{err.Error()}))
 			return output, nil
 		}
 		secrets = append(secrets, ss...)
@@ -55,7 +113,7 @@ func Secret(ctx context.Context, c *Collector, secretCollector *troubleshootv1be
 	}
 
 	for _, secret := range secrets {
-		filePath, encoded, err := secretToOutput(secretCollector, &secret, secret.Name)
+		filePath, encoded, err := secretToOutput(c.Collector, &secret, secret.Name)
 		if err != nil {
 			return output, errors.Wrapf(err, "collect secret %s", secret.Name)
 		}

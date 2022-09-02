@@ -7,6 +7,7 @@ import (
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/replicatedhq/troubleshoot/pkg/multitype"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
 
@@ -40,46 +41,51 @@ func isExcluded(excludeVal *multitype.BoolOrString) (bool, error) {
 	return parsed, nil
 }
 
-func GetCollector(collector *troubleshootv1beta2.Collect, bundlePath string, namespace string, clientConfig *rest.Config) (Collector, bool) {
+func GetCollector(collector *troubleshootv1beta2.Collect, bundlePath string, namespace string, clientConfig *rest.Config, client kubernetes.Interface, RBACErrors []error) (Collector, bool) {
+
+	ctx := context.TODO()
+
 	switch {
 	case collector.ClusterInfo != nil:
-		return &CollectClusterInfo{collector.ClusterInfo, bundlePath}, true
+		return &CollectClusterInfo{collector.ClusterInfo, bundlePath, namespace, clientConfig, RBACErrors}, true
 	case collector.ClusterResources != nil:
-		return &CollectClusterResources{collector.ClusterResources, bundlePath, namespace, clientConfig}, true
-	/*case collector.Secret != nil:
-		return &CollectSecret{collector.Secret, bundlePath}, true
+		return &CollectClusterResources{collector.ClusterResources, bundlePath, namespace, clientConfig, RBACErrors}, true
+	case collector.Secret != nil:
+		return &CollectSecret{collector.Secret, bundlePath, namespace, clientConfig, client, ctx, RBACErrors}, true
 	case collector.ConfigMap != nil:
-		return &CollectConfigMap{collector.ConfigMap, bundlePath}, true
+		return &CollectConfigMap{collector.ConfigMap, bundlePath, namespace, clientConfig, client, ctx, RBACErrors}, true
 	case collector.Logs != nil:
-		return &CollectLogs{collector.Logs, bundlePath}, true
+		return &CollectLogs{collector.Logs, bundlePath, namespace, clientConfig, client, ctx, RBACErrors}, true
 	case collector.Run != nil:
-		return &CollectRun{collector.Run, bundlePath}, true
+		return &CollectRun{collector.Run, bundlePath, namespace, clientConfig, client, ctx, RBACErrors}, true
 	case collector.RunPod != nil:
-		return &CollectRunPod{collector.RunPod, bundlePath}, true
+		return &CollectRunPod{collector.RunPod, bundlePath, namespace, clientConfig, client, ctx, RBACErrors}, true
 	case collector.Exec != nil:
-		return &CollectExec{collector.Exec, bundlePath}, true
+		return &CollectExec{collector.Exec, bundlePath, namespace, clientConfig, client, ctx, RBACErrors}, true
 	case collector.Data != nil:
-		return &CollectData{collector.Data, bundlePath}, true
+		return &CollectData{collector.Data, bundlePath, namespace, clientConfig, client, ctx, RBACErrors}, true
 	case collector.Copy != nil:
-		return &CollectCopy{collector.Copy, bundlePath}, true
+		return &CollectCopy{collector.Copy, bundlePath, namespace, clientConfig, client, ctx, RBACErrors}, true
 	case collector.CopyFromHost != nil:
-		return &CollectCopyFromHost{collector.CopyFromHost, bundlePath}, true
+		return &CollectCopyFromHost{collector.CopyFromHost, bundlePath, namespace, clientConfig, client, ctx, RBACErrors}, true
 	case collector.HTTP != nil:
-		return &CollectHTTP{collector.HTTP, bundlePath}, true
+		return &CollectHTTP{collector.HTTP, bundlePath, namespace, clientConfig, client, RBACErrors}, true
 	case collector.Postgres != nil:
-		return &CollectPostgres{collector.Postgres, bundlePath}, true
+		return &CollectPostgres{collector.Postgres, bundlePath, namespace, clientConfig, client, ctx, RBACErrors}, true
 	case collector.Mysql != nil:
-		return &CollectMysql{collector.Mysql, bundlePath}, true
+		return &CollectMysql{collector.Mysql, bundlePath, namespace, clientConfig, client, ctx, RBACErrors}, true
 	case collector.Redis != nil:
-		return &CollectRedis{collector.Redis, bundlePath}, true
+		return &CollectRedis{collector.Redis, bundlePath, namespace, clientConfig, client, ctx, RBACErrors}, true
 	case collector.Collectd != nil:
-		return &CollectCollectd{collector.Collectd, bundlePath}, true
+		return &CollectCollectd{collector.Collectd, bundlePath, namespace, clientConfig, client, ctx, RBACErrors}, true
+	case collector.Ceph != nil:
+		return &CollectCeph{collector.Ceph, bundlePath, namespace, clientConfig, client, ctx, RBACErrors}, true
 	case collector.Longhorn != nil:
-		return &CollectLonghorn{collector.Longhorn, bundlePath}, true
-	case collector.Registry != nil:
-		return &CollectRegistry{collector.Registry, bundlePath}, true
+		return &CollectLonghorn{collector.Longhorn, bundlePath, namespace, clientConfig, client, ctx, RBACErrors}, true
+	case collector.RegistryImages != nil:
+		return &CollectRegistry{collector.RegistryImages, bundlePath, namespace, clientConfig, client, ctx, RBACErrors}, true
 	case collector.Sysctl != nil:
-		return &CollectSysctl{collector.Sysctl, bundlePath}, true*/
+		return &CollectSysctl{collector.Sysctl, bundlePath, namespace, clientConfig, client, ctx, RBACErrors}, true
 	default:
 		return nil, false
 	}
@@ -92,6 +98,7 @@ func collectorTitleOrDefault(meta troubleshootv1beta2.CollectorMeta, defaultTitl
 	return defaultTitle
 }
 
+/*
 func (cs Collectors) CheckRBAC(ctx context.Context, collector *troubleshootv1beta2.Collect) error {
 	for _, c := range cs {
 		if err := c.CheckRBAC(ctx, collector); err != nil {
@@ -99,4 +106,4 @@ func (cs Collectors) CheckRBAC(ctx context.Context, collector *troubleshootv1bet
 		}
 	}
 	return nil
-}
+}*/

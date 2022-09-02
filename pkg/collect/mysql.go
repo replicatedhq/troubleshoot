@@ -2,6 +2,7 @@ package collect
 
 import (
 	"bytes"
+	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -9,12 +10,72 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
+	authorizationv1 "k8s.io/api/authorization/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 )
 
-func Mysql(c *Collector, databaseCollector *troubleshootv1beta2.Database) (CollectorResult, error) {
+type CollectMysql struct {
+	Collector    *troubleshootv1beta2.Database
+	BundlePath   string
+	Namespace    string
+	ClientConfig *rest.Config
+	Client       kubernetes.Interface
+	ctx          context.Context
+	RBACErrors   []error
+}
+
+func (c *CollectMysql) Title() string {
+	return collectorTitleOrDefault(c.Collector.CollectorMeta, "Mysql")
+}
+
+func (c *CollectMysql) IsExcluded() (bool, error) {
+	return isExcluded(c.Collector.Exclude)
+}
+
+func (c *CollectMysql) CheckRBAC(ctx context.Context, collector *troubleshootv1beta2.Collect) error {
+	exclude, err := c.IsExcluded()
+	if err != nil || exclude != true {
+		return nil
+	}
+
+	client, err := kubernetes.NewForConfig(c.ClientConfig)
+	if err != nil {
+		return errors.Wrap(err, "failed to create client from config")
+	}
+
+	forbidden := make([]error, 0)
+
+	specs := collector.AccessReviewSpecs(c.Namespace)
+	for _, spec := range specs {
+		sar := &authorizationv1.SelfSubjectAccessReview{
+			Spec: spec,
+		}
+
+		resp, err := client.AuthorizationV1().SelfSubjectAccessReviews().Create(ctx, sar, metav1.CreateOptions{})
+		if err != nil {
+			return errors.Wrap(err, "failed to run subject review")
+		}
+
+		if !resp.Status.Allowed { // all other fields of Status are empty...
+			forbidden = append(forbidden, RBACError{
+				DisplayName: c.Title(),
+				Namespace:   spec.ResourceAttributes.Namespace,
+				Resource:    spec.ResourceAttributes.Resource,
+				Verb:        spec.ResourceAttributes.Verb,
+			})
+		}
+	}
+	c.RBACErrors = forbidden
+
+	return nil
+}
+
+func (c *CollectMysql) Collect(progressChan chan<- interface{}) (CollectorResult, error) {
 	databaseConnection := DatabaseConnection{}
 
-	db, err := sql.Open("mysql", databaseCollector.URI)
+	db, err := sql.Open("mysql", c.Collector.URI)
 	if err != nil {
 		databaseConnection.Error = err.Error()
 	} else {
@@ -30,7 +91,7 @@ func Mysql(c *Collector, databaseCollector *troubleshootv1beta2.Database) (Colle
 			databaseConnection.Version = version
 		}
 
-		requestedParameters := databaseCollector.Parameters
+		requestedParameters := c.Collector.Parameters
 		if len(requestedParameters) > 0 {
 			rows, err := db.Query("SHOW VARIABLES")
 
@@ -68,7 +129,7 @@ func Mysql(c *Collector, databaseCollector *troubleshootv1beta2.Database) (Colle
 		return nil, errors.Wrap(err, "failed to marshal database connection")
 	}
 
-	collectorName := databaseCollector.CollectorName
+	collectorName := c.Collector.CollectorName
 	if collectorName == "" {
 		collectorName = "mysql"
 	}

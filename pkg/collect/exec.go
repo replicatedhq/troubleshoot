@@ -3,24 +3,83 @@ package collect
 import (
 	"bytes"
 	"context"
-	"errors"
 	"fmt"
 	"path/filepath"
 	"time"
 
+	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
+	authorizationv1 "k8s.io/api/authorization/v1"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/remotecommand"
 )
 
-func Exec(c *Collector, execCollector *troubleshootv1beta2.Exec) (CollectorResult, error) {
-	if execCollector.Timeout == "" {
-		return execWithoutTimeout(c, execCollector)
+type CollectExec struct {
+	Collector    *troubleshootv1beta2.Exec
+	BundlePath   string
+	Namespace    string
+	ClientConfig *rest.Config
+	Client       kubernetes.Interface
+	ctx          context.Context
+	RBACErrors   []error
+}
+
+func (c *CollectExec) Title() string {
+	return collectorTitleOrDefault(c.Collector.CollectorMeta, "Exec")
+}
+
+func (c *CollectExec) IsExcluded() (bool, error) {
+	return isExcluded(c.Collector.Exclude)
+}
+
+func (c *CollectExec) CheckRBAC(ctx context.Context, collector *troubleshootv1beta2.Collect) error {
+	exclude, err := c.IsExcluded()
+	if err != nil || exclude != true {
+		return nil
 	}
 
-	timeout, err := time.ParseDuration(execCollector.Timeout)
+	client, err := kubernetes.NewForConfig(c.ClientConfig)
+	if err != nil {
+		return errors.Wrap(err, "failed to create client from config")
+	}
+
+	forbidden := make([]error, 0)
+
+	specs := collector.AccessReviewSpecs(c.Namespace)
+	for _, spec := range specs {
+		sar := &authorizationv1.SelfSubjectAccessReview{
+			Spec: spec,
+		}
+
+		resp, err := client.AuthorizationV1().SelfSubjectAccessReviews().Create(ctx, sar, metav1.CreateOptions{})
+		if err != nil {
+			return errors.Wrap(err, "failed to run subject review")
+		}
+
+		if !resp.Status.Allowed { // all other fields of Status are empty...
+			forbidden = append(forbidden, RBACError{
+				DisplayName: c.Title(),
+				Namespace:   spec.ResourceAttributes.Namespace,
+				Resource:    spec.ResourceAttributes.Resource,
+				Verb:        spec.ResourceAttributes.Verb,
+			})
+		}
+	}
+	c.RBACErrors = forbidden
+
+	return nil
+}
+
+func (c *CollectExec) Collect(progressChan chan<- interface{}) (CollectorResult, error) {
+	if c.Collector.Timeout == "" {
+		return execWithoutTimeout(c.ClientConfig, c.BundlePath, c.Collector)
+	}
+
+	timeout, err := time.ParseDuration(c.Collector.Timeout)
 	if err != nil {
 		return nil, err
 	}
@@ -29,7 +88,7 @@ func Exec(c *Collector, execCollector *troubleshootv1beta2.Exec) (CollectorResul
 	resultCh := make(chan CollectorResult, 1)
 
 	go func() {
-		b, err := execWithoutTimeout(c, execCollector)
+		b, err := execWithoutTimeout(c.ClientConfig, c.BundlePath, c.Collector)
 		if err != nil {
 			errCh <- err
 		} else {
@@ -47,8 +106,8 @@ func Exec(c *Collector, execCollector *troubleshootv1beta2.Exec) (CollectorResul
 	}
 }
 
-func execWithoutTimeout(c *Collector, execCollector *troubleshootv1beta2.Exec) (CollectorResult, error) {
-	client, err := kubernetes.NewForConfig(c.ClientConfig)
+func execWithoutTimeout(clientConfig *rest.Config, bundlePath string, execCollector *troubleshootv1beta2.Exec) (CollectorResult, error) {
+	client, err := kubernetes.NewForConfig(clientConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -59,23 +118,23 @@ func execWithoutTimeout(c *Collector, execCollector *troubleshootv1beta2.Exec) (
 
 	pods, podsErrors := listPodsInSelectors(ctx, client, execCollector.Namespace, execCollector.Selector)
 	if len(podsErrors) > 0 {
-		output.SaveResult(c.BundlePath, getExecErrosFileName(execCollector), marshalErrors(podsErrors))
+		output.SaveResult(bundlePath, getExecErrosFileName(execCollector), marshalErrors(podsErrors))
 	}
 
 	if len(pods) > 0 {
 		for _, pod := range pods {
-			stdout, stderr, execErrors := getExecOutputs(c, client, pod, execCollector)
+			stdout, stderr, execErrors := getExecOutputs(clientConfig, client, pod, execCollector)
 
-			bundlePath := filepath.Join(execCollector.Name, pod.Namespace, pod.Name)
+			path := filepath.Join(execCollector.Name, pod.Namespace, pod.Name)
 			if len(stdout) > 0 {
-				output.SaveResult(c.BundlePath, filepath.Join(bundlePath, execCollector.CollectorName+"-stdout.txt"), bytes.NewBuffer(stdout))
+				output.SaveResult(bundlePath, filepath.Join(path, execCollector.CollectorName+"-stdout.txt"), bytes.NewBuffer(stdout))
 			}
 			if len(stderr) > 0 {
-				output.SaveResult(c.BundlePath, filepath.Join(bundlePath, execCollector.CollectorName+"-stderr.txt"), bytes.NewBuffer(stderr))
+				output.SaveResult(bundlePath, filepath.Join(path, execCollector.CollectorName+"-stderr.txt"), bytes.NewBuffer(stderr))
 			}
 
 			if len(execErrors) > 0 {
-				output.SaveResult(c.BundlePath, filepath.Join(bundlePath, execCollector.CollectorName+"-errors.json"), marshalErrors(execErrors))
+				output.SaveResult(bundlePath, filepath.Join(path, execCollector.CollectorName+"-errors.json"), marshalErrors(execErrors))
 				continue
 			}
 		}
@@ -84,7 +143,7 @@ func execWithoutTimeout(c *Collector, execCollector *troubleshootv1beta2.Exec) (
 	return output, nil
 }
 
-func getExecOutputs(c *Collector, client *kubernetes.Clientset, pod corev1.Pod, execCollector *troubleshootv1beta2.Exec) ([]byte, []byte, []string) {
+func getExecOutputs(clientConfig *rest.Config, client *kubernetes.Clientset, pod corev1.Pod, execCollector *troubleshootv1beta2.Exec) ([]byte, []byte, []string) {
 	container := pod.Spec.Containers[0].Name
 	if execCollector.ContainerName != "" {
 		container = execCollector.ContainerName
@@ -106,7 +165,7 @@ func getExecOutputs(c *Collector, client *kubernetes.Clientset, pod corev1.Pod, 
 		TTY:       false,
 	}, parameterCodec)
 
-	exec, err := remotecommand.NewSPDYExecutor(c.ClientConfig, "POST", req.URL())
+	exec, err := remotecommand.NewSPDYExecutor(clientConfig, "POST", req.URL())
 	if err != nil {
 		return nil, nil, []string{err.Error()}
 	}

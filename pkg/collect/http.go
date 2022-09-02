@@ -2,15 +2,20 @@ package collect
 
 import (
 	"bytes"
+	"context"
 	"crypto/tls"
 	"encoding/json"
-	"errors"
 	"io/ioutil"
 	"net/http"
 	"path/filepath"
 	"strings"
 
+	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
+	authorizationv1 "k8s.io/api/authorization/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 )
 
 type HTTPResponse struct {
@@ -33,32 +38,87 @@ var (
 	}
 )
 
-func HTTP(c *Collector, httpCollector *troubleshootv1beta2.HTTP) (CollectorResult, error) {
+type CollectHTTP struct {
+	Collector    *troubleshootv1beta2.HTTP
+	BundlePath   string
+	Namespace    string
+	ClientConfig *rest.Config
+	Client       kubernetes.Interface
+	RBACErrors   []error
+}
+
+func (c *CollectHTTP) Title() string {
+	return collectorTitleOrDefault(c.Collector.CollectorMeta, "HTTP")
+}
+
+func (c *CollectHTTP) IsExcluded() (bool, error) {
+	return isExcluded(c.Collector.Exclude)
+}
+
+func (c *CollectHTTP) CheckRBAC(ctx context.Context, collector *troubleshootv1beta2.Collect) error {
+	exclude, err := c.IsExcluded()
+	if err != nil || exclude != true {
+		return nil
+	}
+
+	client, err := kubernetes.NewForConfig(c.ClientConfig)
+	if err != nil {
+		return errors.Wrap(err, "failed to create client from config")
+	}
+
+	forbidden := make([]error, 0)
+
+	specs := collector.AccessReviewSpecs(c.Namespace)
+	for _, spec := range specs {
+		sar := &authorizationv1.SelfSubjectAccessReview{
+			Spec: spec,
+		}
+
+		resp, err := client.AuthorizationV1().SelfSubjectAccessReviews().Create(ctx, sar, metav1.CreateOptions{})
+		if err != nil {
+			return errors.Wrap(err, "failed to run subject review")
+		}
+
+		if !resp.Status.Allowed { // all other fields of Status are empty...
+			forbidden = append(forbidden, RBACError{
+				DisplayName: c.Title(),
+				Namespace:   spec.ResourceAttributes.Namespace,
+				Resource:    spec.ResourceAttributes.Resource,
+				Verb:        spec.ResourceAttributes.Verb,
+			})
+		}
+	}
+	c.RBACErrors = forbidden
+
+	return nil
+}
+
+func (c *CollectHTTP) Collect(progressChan chan<- interface{}) (CollectorResult, error) {
 	var response *http.Response
 	var err error
 
-	if httpCollector.Get != nil {
-		response, err = doGet(httpCollector.Get)
-	} else if httpCollector.Post != nil {
-		response, err = doPost(httpCollector.Post)
-	} else if httpCollector.Put != nil {
-		response, err = doPut(httpCollector.Put)
+	if c.Collector.Get != nil {
+		response, err = doGet(c.Collector.Get)
+	} else if c.Collector.Post != nil {
+		response, err = doPost(c.Collector.Post)
+	} else if c.Collector.Put != nil {
+		response, err = doPut(c.Collector.Put)
 	} else {
 		return nil, errors.New("no supported http request type")
 	}
 
-	o, err := responseToOutput(response, err, c.Redact)
+	o, err := responseToOutput(response, err)
 	if err != nil {
 		return nil, err
 	}
 
 	fileName := "result.json"
-	if httpCollector.CollectorName != "" {
-		fileName = httpCollector.CollectorName + ".json"
+	if c.Collector.CollectorName != "" {
+		fileName = c.Collector.CollectorName + ".json"
 	}
 
 	output := NewResult()
-	output.SaveResult(c.BundlePath, filepath.Join(httpCollector.Name, fileName), bytes.NewBuffer(o))
+	output.SaveResult(c.BundlePath, filepath.Join(c.Collector.Name, fileName), bytes.NewBuffer(o))
 
 	return output, nil
 }
@@ -117,7 +177,7 @@ func doPut(put *troubleshootv1beta2.Put) (*http.Response, error) {
 	return httpClient.Do(req)
 }
 
-func responseToOutput(response *http.Response, err error, doRedact bool) ([]byte, error) {
+func responseToOutput(response *http.Response, err error) ([]byte, error) {
 	output := make(map[string]interface{})
 	if err != nil {
 		output["error"] = HTTPError{

@@ -34,13 +34,13 @@ func uploadResults(uri string, analyzeResults []*analyzerunner.AnalyzeResult) er
 
 func uploadErrors(uri string, collectors collect.Collectors) error {
 	errors := []*preflight.UploadPreflightError{}
-	for _, collector := range collectors {
+	/*for _, collector := range collectors {
 		for _, e := range collector.RBACErrors {
 			errors = append(errors, &preflight.UploadPreflightError{
 				Error: e.Error(),
 			})
 		}
-	}
+	}*/
 
 	results := &preflight.UploadPreflightResults{
 		Errors: errors,

@@ -40,6 +40,7 @@ type CollectClusterResources struct {
 	BundlePath   string
 	Namespace    string
 	ClientConfig *rest.Config
+	RBACErrors   []error
 }
 
 func (c *CollectClusterResources) Title() string {

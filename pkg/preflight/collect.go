@@ -1,7 +1,6 @@
 package preflight
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
 	"time"
@@ -10,7 +9,6 @@ import (
 	analyze "github.com/replicatedhq/troubleshoot/pkg/analyze"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/replicatedhq/troubleshoot/pkg/collect"
-	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
 
@@ -121,15 +119,15 @@ func CollectHost(opts CollectOpts, p *troubleshootv1beta2.HostPreflight) (Collec
 
 // Collect runs the collection phase of preflight checks
 func Collect(opts CollectOpts, p *troubleshootv1beta2.Preflight) (CollectResult, error) {
-	collectSpecs := make([]*troubleshootv1beta2.Collect, 0, 0)
+	/*collectSpecs := make([]*troubleshootv1beta2.Collect, 0, 0)
 	collectSpecs = append(collectSpecs, p.Spec.Collectors...)
 	collectSpecs = ensureCollectorInList(collectSpecs, troubleshootv1beta2.Collect{ClusterInfo: &troubleshootv1beta2.ClusterInfo{}})
 	collectSpecs = ensureCollectorInList(collectSpecs, troubleshootv1beta2.Collect{ClusterResources: &troubleshootv1beta2.ClusterResources{}})
 
 	allCollectedData := make(map[string][]byte)
-
+	*/
 	var collectors collect.Collectors
-	for _, desiredCollector := range collectSpecs {
+	/*for _, desiredCollector := range collectSpecs {
 		collector := collect.Collector{
 			Redact:       true,
 			Collect:      desiredCollector,
@@ -137,108 +135,109 @@ func Collect(opts CollectOpts, p *troubleshootv1beta2.Preflight) (CollectResult,
 			Namespace:    opts.Namespace,
 		}
 		collectors = append(collectors, &collector)
-	}
+	}*/
 
 	collectResult := ClusterCollectResult{
 		Collectors: collectors,
 		Spec:       p,
 	}
-
-	k8sClient, err := kubernetes.NewForConfig(opts.KubernetesRestConfig)
-	if err != nil {
-		return collectResult, errors.Wrap(err, "failed to instantiate Kubernetes client")
-	}
-
-	if err := collectors.CheckRBAC(context.Background()); err != nil {
-		return collectResult, errors.Wrap(err, "failed to check RBAC for collectors")
-	}
-
-	foundForbidden := false
-	for _, c := range collectors {
-		for _, e := range c.RBACErrors {
-			foundForbidden = true
-			opts.ProgressChan <- e
+	/*
+		k8sClient, err := kubernetes.NewForConfig(opts.KubernetesRestConfig)
+		if err != nil {
+			return collectResult, errors.Wrap(err, "failed to instantiate Kubernetes client")
 		}
-	}
 
-	if foundForbidden && !opts.IgnorePermissionErrors {
-		collectResult.isRBACAllowed = false
-		return collectResult, errors.New("insufficient permissions to run all collectors")
-	}
-
-	// generate a map of all collectors for atomic status messages
-	collectorList := map[string]CollectorStatus{}
-	for _, collector := range collectors {
-		collectorList[collector.GetDisplayName()] = CollectorStatus{
-			Status: "pending",
+		if err := collectors.CheckRBAC(context.Background()); err != nil {
+			return collectResult, errors.Wrap(err, "failed to check RBAC for collectors")
 		}
-	}
 
-	// Run preflights collectors synchronously
-	for i, collector := range collectors {
-		if len(collector.RBACErrors) > 0 {
-			// don't skip clusterResources collector due to RBAC issues
-			if collector.Collect.ClusterResources == nil {
-				collectorList[collector.GetDisplayName()] = CollectorStatus{
-					Status: "skipped",
+		foundForbidden := false
+		for _, c := range collectors {
+			for _, e := range c.RBACErrors {
+				foundForbidden = true
+				opts.ProgressChan <- e
+			}
+		}
+
+		if foundForbidden && !opts.IgnorePermissionErrors {
+			collectResult.isRBACAllowed = false
+			return collectResult, errors.New("insufficient permissions to run all collectors")
+		}
+
+		// generate a map of all collectors for atomic status messages
+		collectorList := map[string]CollectorStatus{}
+		for _, collector := range collectors {
+			collectorList[collector.GetDisplayName()] = CollectorStatus{
+				Status: "pending",
+			}
+		}
+
+		// Run preflights collectors synchronously
+		for i, collector := range collectors {
+			if len(collector.RBACErrors) > 0 {
+				// don't skip clusterResources collector due to RBAC issues
+				if collector.Collect.ClusterResources == nil {
+					collectorList[collector.GetDisplayName()] = CollectorStatus{
+						Status: "skipped",
+					}
+					collectResult.isRBACAllowed = false // not failing, but going to report this
+					opts.ProgressChan <- fmt.Sprintf("skipping collector %s with insufficient RBAC permissions", collector.GetDisplayName())
+					opts.ProgressChan <- CollectProgress{
+						CurrentName:    collector.GetDisplayName(),
+						CurrentStatus:  "skipped",
+						CompletedCount: i + 1,
+						TotalCount:     len(collectors),
+						Collectors:     collectorList,
+					}
+					continue
 				}
-				collectResult.isRBACAllowed = false // not failing, but going to report this
-				opts.ProgressChan <- fmt.Sprintf("skipping collector %s with insufficient RBAC permissions", collector.GetDisplayName())
+			}
+
+			collectorList[collector.GetDisplayName()] = CollectorStatus{
+				Status: "running",
+			}
+			opts.ProgressChan <- CollectProgress{
+				CurrentName:    collector.GetDisplayName(),
+				CurrentStatus:  "running",
+				CompletedCount: i,
+				TotalCount:     len(collectors),
+				Collectors:     collectorList,
+			}
+
+			result, err := collector.RunCollectorSync(opts.KubernetesRestConfig, k8sClient, nil)
+			if err != nil {
+				collectorList[collector.GetDisplayName()] = CollectorStatus{
+					Status: "failed",
+				}
+				opts.ProgressChan <- errors.Errorf("failed to run collector %s: %v\n", collector.GetDisplayName(), err)
 				opts.ProgressChan <- CollectProgress{
 					CurrentName:    collector.GetDisplayName(),
-					CurrentStatus:  "skipped",
+					CurrentStatus:  "failed",
 					CompletedCount: i + 1,
 					TotalCount:     len(collectors),
 					Collectors:     collectorList,
 				}
 				continue
 			}
-		}
 
-		collectorList[collector.GetDisplayName()] = CollectorStatus{
-			Status: "running",
-		}
-		opts.ProgressChan <- CollectProgress{
-			CurrentName:    collector.GetDisplayName(),
-			CurrentStatus:  "running",
-			CompletedCount: i,
-			TotalCount:     len(collectors),
-			Collectors:     collectorList,
-		}
-
-		result, err := collector.RunCollectorSync(opts.KubernetesRestConfig, k8sClient, nil)
-		if err != nil {
 			collectorList[collector.GetDisplayName()] = CollectorStatus{
-				Status: "failed",
+				Status: "completed",
 			}
-			opts.ProgressChan <- errors.Errorf("failed to run collector %s: %v\n", collector.GetDisplayName(), err)
 			opts.ProgressChan <- CollectProgress{
 				CurrentName:    collector.GetDisplayName(),
-				CurrentStatus:  "failed",
+				CurrentStatus:  "completed",
 				CompletedCount: i + 1,
 				TotalCount:     len(collectors),
 				Collectors:     collectorList,
 			}
-			continue
+
+			for k, v := range result {
+				allCollectedData[k] = v
+			}
 		}
 
-		collectorList[collector.GetDisplayName()] = CollectorStatus{
-			Status: "completed",
-		}
-		opts.ProgressChan <- CollectProgress{
-			CurrentName:    collector.GetDisplayName(),
-			CurrentStatus:  "completed",
-			CompletedCount: i + 1,
-			TotalCount:     len(collectors),
-			Collectors:     collectorList,
-		}
-
-		for k, v := range result {
-			allCollectedData[k] = v
-		}
-	}
-
-	collectResult.AllCollectedData = allCollectedData
+		collectResult.AllCollectedData = allCollectedData
+	*/
 	return collectResult, nil
 }
 

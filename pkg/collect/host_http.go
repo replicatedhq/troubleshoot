@@ -38,7 +38,7 @@ func (c *CollectHostHTTP) Collect(progressChan chan<- interface{}) (map[string][
 		return nil, errors.New("no supported http request type")
 	}
 
-	responseOutput, err := responseToOutput(response, err, false)
+	responseOutput, err := responseToOutput(response, err)
 	if err != nil {
 		return nil, err
 	}

@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"time"
 
 	"github.com/pkg/errors"
 	analyze "github.com/replicatedhq/troubleshoot/pkg/analyze"
@@ -15,7 +14,7 @@ import (
 	"github.com/replicatedhq/troubleshoot/pkg/convert"
 	"github.com/replicatedhq/troubleshoot/pkg/version"
 	"gopkg.in/yaml.v2"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 )
 
 func runHostCollectors(hostCollectors []*troubleshootv1beta2.HostCollect, additionalRedactors *troubleshootv1beta2.Redactor, bundlePath string, opts SupportBundleCreateOpts) (collect.CollectorResult, error) {
@@ -76,17 +75,24 @@ func runCollectors(collectors []*troubleshootv1beta2.Collect, additionalRedactor
 
 	allCollectedData := make(map[string][]byte)
 
-	var collectors []collect.Collectors
+	var RBACErrors []error
+
+	k8sClient, err := kubernetes.NewForConfig(opts.KubernetesRestConfig)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to instantiate Kubernetes client")
+	}
+
+	var newCollectors []collect.Collector
 	for _, desiredCollector := range collectSpecs {
-		collector, ok := collect.GetCollector(desiredCollector, bundlePath, opts.Namespace, opts.KubernetesRestConfig)
+		collector, ok := collect.GetCollector(desiredCollector, bundlePath, opts.Namespace, opts.KubernetesRestConfig, k8sClient, RBACErrors)
 		if ok {
-			collectors = append(collectors, collector)
+			newCollectors = append(newCollectors, collector)
 		}
 	}
 
 	collectResult := collect.NewResult()
 
-	for _, collector := range collectors {
+	for _, collector := range newCollectors {
 		isExcluded, _ := collector.IsExcluded()
 		if isExcluded {
 			continue
@@ -179,7 +185,7 @@ func getAnalysisFile(analyzeResults []*analyze.AnalyzeResult) (io.Reader, error)
 	return bytes.NewBuffer(analysis), nil
 }
 
-func applyLogSinceTime(sinceTime time.Time, collectors *collect.Collectors) {
+/*func applyLogSinceTime(sinceTime time.Time, collectors *collect.Collectors) {
 
 	for _, collector := range *collectors {
 		if collector.Collect.Logs != nil {
@@ -189,4 +195,4 @@ func applyLogSinceTime(sinceTime time.Time, collectors *collect.Collectors) {
 			collector.Collect.Logs.Limits.SinceTime = metav1.NewTime(sinceTime)
 		}
 	}
-}
+}*/

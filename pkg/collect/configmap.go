@@ -10,10 +10,12 @@ import (
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
+	authorizationv1 "k8s.io/api/authorization/v1"
 	corev1 "k8s.io/api/core/v1"
 	kuberneteserrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 )
 
 type ConfigMapOutput struct {
@@ -26,28 +28,84 @@ type ConfigMapOutput struct {
 	Data            map[string]string `json:"data,omitonempty"`
 }
 
-func ConfigMap(ctx context.Context, c *Collector, configMapCollector *troubleshootv1beta2.ConfigMap, client kubernetes.Interface) (CollectorResult, error) {
+type CollectConfigMap struct {
+	Collector    *troubleshootv1beta2.ConfigMap
+	BundlePath   string
+	Namespace    string
+	ClientConfig *rest.Config
+	Client       kubernetes.Interface
+	ctx          context.Context
+	RBACErrors   []error
+}
+
+func (c *CollectConfigMap) Title() string {
+	return collectorTitleOrDefault(c.Collector.CollectorMeta, "ConfigMap")
+}
+
+func (c *CollectConfigMap) IsExcluded() (bool, error) {
+	return isExcluded(c.Collector.Exclude)
+}
+
+func (c *CollectConfigMap) CheckRBAC(ctx context.Context, collector *troubleshootv1beta2.Collect) error {
+	exclude, err := c.IsExcluded()
+	if err != nil || exclude != true {
+		return nil
+	}
+
+	client, err := kubernetes.NewForConfig(c.ClientConfig)
+	if err != nil {
+		return errors.Wrap(err, "failed to create client from config")
+	}
+
+	forbidden := make([]error, 0)
+
+	specs := collector.AccessReviewSpecs(c.Namespace)
+	for _, spec := range specs {
+		sar := &authorizationv1.SelfSubjectAccessReview{
+			Spec: spec,
+		}
+
+		resp, err := client.AuthorizationV1().SelfSubjectAccessReviews().Create(ctx, sar, metav1.CreateOptions{})
+		if err != nil {
+			return errors.Wrap(err, "failed to run subject review")
+		}
+
+		if !resp.Status.Allowed { // all other fields of Status are empty...
+			forbidden = append(forbidden, RBACError{
+				DisplayName: c.Title(),
+				Namespace:   spec.ResourceAttributes.Namespace,
+				Resource:    spec.ResourceAttributes.Resource,
+				Verb:        spec.ResourceAttributes.Verb,
+			})
+		}
+	}
+	c.RBACErrors = forbidden
+
+	return nil
+}
+
+func (c *CollectConfigMap) Collect(progressChan chan<- interface{}) (CollectorResult, error) {
 	output := NewResult()
 
 	configMaps := []corev1.ConfigMap{}
-	if configMapCollector.Name != "" {
-		configMap, err := client.CoreV1().ConfigMaps(configMapCollector.Namespace).Get(ctx, configMapCollector.Name, metav1.GetOptions{})
+	if c.Collector.Name != "" {
+		configMap, err := c.Client.CoreV1().ConfigMaps(c.Collector.Namespace).Get(c.ctx, c.Collector.Name, metav1.GetOptions{})
 		if err != nil {
 			if kuberneteserrors.IsNotFound(err) {
-				filePath, encoded, err := configMapToOutput(configMapCollector, nil, configMapCollector.Name)
+				filePath, encoded, err := configMapToOutput(c.Collector, nil, c.Collector.Name)
 				if err != nil {
-					return output, errors.Wrapf(err, "collect secret %s", configMapCollector.Name)
+					return output, errors.Wrapf(err, "collect secret %s", c.Collector.Name)
 				}
 				output.SaveResult(c.BundlePath, filePath, bytes.NewBuffer(encoded))
 			}
-			output.SaveResult(c.BundlePath, GetConfigMapErrorsFileName(configMapCollector), marshalErrors([]string{err.Error()}))
+			output.SaveResult(c.BundlePath, GetConfigMapErrorsFileName(c.Collector), marshalErrors([]string{err.Error()}))
 			return output, nil
 		}
 		configMaps = append(configMaps, *configMap)
-	} else if len(configMapCollector.Selector) > 0 {
-		cms, err := listConfigMapsForSelector(ctx, client, configMapCollector.Namespace, configMapCollector.Selector)
+	} else if len(c.Collector.Selector) > 0 {
+		cms, err := listConfigMapsForSelector(c.ctx, c.Client, c.Collector.Namespace, c.Collector.Selector)
 		if err != nil {
-			output.SaveResult(c.BundlePath, GetConfigMapErrorsFileName(configMapCollector), marshalErrors([]string{err.Error()}))
+			output.SaveResult(c.BundlePath, GetConfigMapErrorsFileName(c.Collector), marshalErrors([]string{err.Error()}))
 			return output, nil
 		}
 		configMaps = append(configMaps, cms...)
@@ -56,7 +114,7 @@ func ConfigMap(ctx context.Context, c *Collector, configMapCollector *troublesho
 	}
 
 	for _, configMap := range configMaps {
-		filePath, encoded, err := configMapToOutput(configMapCollector, &configMap, configMap.Name)
+		filePath, encoded, err := configMapToOutput(c.Collector, &configMap, configMap.Name)
 		if err != nil {
 			return output, errors.Wrapf(err, "collect configMap %s", configMap.Name)
 		}
