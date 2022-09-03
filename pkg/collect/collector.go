@@ -21,6 +21,11 @@ type Collector interface {
 	Collect(progressChan chan<- interface{}) (CollectorResult, error)
 }
 
+type MergeableCollector interface {
+	Collector
+	Merge() string
+}
+
 type Collectors []*Collector
 
 func isExcluded(excludeVal *multitype.BoolOrString) (bool, error) {
@@ -44,7 +49,7 @@ func isExcluded(excludeVal *multitype.BoolOrString) (bool, error) {
 	return parsed, nil
 }
 
-func GetCollector(collector *troubleshootv1beta2.Collect, bundlePath string, namespace string, clientConfig *rest.Config, client kubernetes.Interface, sinceTime *time.Time, RBACErrors []error) (Collector, bool) {
+func GetCollector(collector *troubleshootv1beta2.Collect, bundlePath string, namespace string, clientConfig *rest.Config, client kubernetes.Interface, sinceTime *time.Time, RBACErrors []error) (interface{}, bool) {
 
 	ctx := context.TODO()
 

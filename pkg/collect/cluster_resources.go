@@ -74,6 +74,10 @@ func (c *CollectClusterResources) CheckRBAC(ctx context.Context, collector *trou
 	return nil
 }
 
+func (c *CollectClusterResources) Merge() string {
+	return "merged!"
+}
+
 func (c *CollectClusterResources) Collect(progressChan chan<- interface{}) (CollectorResult, error) {
 	client, err := kubernetes.NewForConfig(c.ClientConfig)
 	if err != nil {

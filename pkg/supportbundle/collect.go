@@ -85,13 +85,21 @@ func runCollectors(collectors []*troubleshootv1beta2.Collect, additionalRedactor
 
 	var newCollectors []collect.Collector
 	for _, desiredCollector := range collectSpecs {
-		collector, ok := collect.GetCollector(desiredCollector, bundlePath, opts.Namespace, opts.KubernetesRestConfig, k8sClient, opts.SinceTime, RBACErrors)
-		if ok {
-			err := collector.CheckRBAC(context.Background(), desiredCollector)
-			if err != nil {
-				return nil, errors.Wrap(err, "failed to check RBAC for collectors")
+		if collector, ok := collect.GetCollector(desiredCollector, bundlePath, opts.Namespace, opts.KubernetesRestConfig, k8sClient, opts.SinceTime, RBACErrors); ok {
+			if regCollector, ok := collector.(collect.Collector); ok {
+				err := regCollector.CheckRBAC(context.Background(), desiredCollector)
+				if err != nil {
+					return nil, errors.Wrap(err, "failed to check RBAC for collectors")
+				}
+
+				//Not sure this makes sense here as we're still iterating through the entire spec
+				//Likely better to iterate by collector Type so that you only process each type once(eg. Logs, ClusterResources, etc.)
+				if mergeCollector, ok := collector.(collect.MergeableCollector); ok {
+					fmt.Println(mergeCollector.Merge())
+				}
+
+				newCollectors = append(newCollectors, regCollector)
 			}
-			newCollectors = append(newCollectors, collector)
 		}
 	}
 
