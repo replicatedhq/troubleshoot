@@ -10,6 +10,7 @@ import (
 	analyze "github.com/replicatedhq/troubleshoot/pkg/analyze"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/replicatedhq/troubleshoot/pkg/collect"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
 
@@ -47,7 +48,7 @@ type CollectResult interface {
 
 type ClusterCollectResult struct {
 	AllCollectedData map[string][]byte
-	Collectors       collect.Collectors
+	Collectors       []collect.Collector
 	RemoteCollectors collect.RemoteCollectors
 	isRBACAllowed    bool
 	Spec             *troubleshootv1beta2.Preflight
@@ -127,117 +128,114 @@ func Collect(opts CollectOpts, p *troubleshootv1beta2.Preflight) (CollectResult,
 
 	allCollectedData := make(map[string][]byte)
 
-	var collectors collect.Collectors
-	for _, desiredCollector := range collectSpecs {
-		collector := collect.Collector{
-			Redact:       true,
-			Collect:      desiredCollector,
-			ClientConfig: opts.KubernetesRestConfig,
-			Namespace:    opts.Namespace,
-		}
-		collectors = append(collectors, &collector)
-	}
-
-	collectResult := ClusterCollectResult{
-		Collectors: collectors,
-		Spec:       p,
-	}
+	var RBACErrors []error
 
 	k8sClient, err := kubernetes.NewForConfig(opts.KubernetesRestConfig)
 	if err != nil {
-		return collectResult, errors.Wrap(err, "failed to instantiate Kubernetes client")
+		return nil, errors.Wrap(err, "failed to instantiate Kubernetes client")
 	}
 
-	if err := collectors.CheckRBAC(context.Background()); err != nil {
-		return collectResult, errors.Wrap(err, "failed to check RBAC for collectors")
+	var newCollectors []collect.Collector
+	for _, desiredCollector := range collectSpecs {
+		if collector, ok := collect.GetCollector(desiredCollector, "", opts.Namespace, opts.KubernetesRestConfig, k8sClient, nil, RBACErrors); ok {
+			if regCollector, ok := collector.(collect.Collector); ok {
+				err := regCollector.CheckRBAC(context.Background(), desiredCollector)
+				if err != nil {
+					return nil, errors.Wrap(err, "failed to check RBAC for collectors")
+				}
+
+				//Not sure this makes sense here as we're still iterating through the entire spec
+				//Likely better to iterate by collector Type so that you only process each type once(eg. Logs, ClusterResources, etc.)
+				if mergeCollector, ok := collector.(collect.MergeableCollector); ok {
+					fmt.Println(mergeCollector.Merge())
+				}
+
+				newCollectors = append(newCollectors, regCollector)
+			}
+		}
+	}
+
+	collectResult := ClusterCollectResult{
+		Collectors: newCollectors,
+		Spec:       p,
 	}
 
 	foundForbidden := false
-	for _, c := range collectors {
-		for _, e := range c.RBACErrors {
+	for _, c := range newCollectors {
+		for _, e := range c.GetRBACErrors() {
 			foundForbidden = true
 			opts.ProgressChan <- e
 		}
 	}
 
 	if foundForbidden && !opts.IgnorePermissionErrors {
-		collectResult.isRBACAllowed = false
-		return collectResult, errors.New("insufficient permissions to run all collectors")
+		return nil, errors.New("insufficient permissions to run all collectors")
 	}
 
 	// generate a map of all collectors for atomic status messages
 	collectorList := map[string]CollectorStatus{}
-	for _, collector := range collectors {
-		collectorList[collector.GetDisplayName()] = CollectorStatus{
+	for _, collector := range newCollectors {
+		collectorList[collector.Title()] = CollectorStatus{
 			Status: "pending",
 		}
 	}
 
-	// Run preflights collectors synchronously
-	for i, collector := range collectors {
-		if len(collector.RBACErrors) > 0 {
-			// don't skip clusterResources collector due to RBAC issues
-			if collector.Collect.ClusterResources == nil {
-				collectorList[collector.GetDisplayName()] = CollectorStatus{
-					Status: "skipped",
-				}
-				collectResult.isRBACAllowed = false // not failing, but going to report this
-				opts.ProgressChan <- fmt.Sprintf("skipping collector %s with insufficient RBAC permissions", collector.GetDisplayName())
+	for i, collector := range newCollectors {
+		isExcluded, _ := collector.IsExcluded()
+		if isExcluded {
+			continue
+		}
+
+		// skip collectors with RBAC errors unless its the ClusterResources collector
+		if collector.HasRBACErrors() {
+			if _, ok := collector.(*collect.CollectClusterResources); !ok {
+				opts.ProgressChan <- fmt.Sprintf("skipping collector %s with insufficient RBAC permissions", collector.Title())
 				opts.ProgressChan <- CollectProgress{
-					CurrentName:    collector.GetDisplayName(),
+					CurrentName:    collector.Title(),
 					CurrentStatus:  "skipped",
 					CompletedCount: i + 1,
-					TotalCount:     len(collectors),
+					TotalCount:     len(newCollectors),
 					Collectors:     collectorList,
 				}
 				continue
 			}
 		}
 
-		collectorList[collector.GetDisplayName()] = CollectorStatus{
+		collectorList[collector.Title()] = CollectorStatus{
 			Status: "running",
 		}
 		opts.ProgressChan <- CollectProgress{
-			CurrentName:    collector.GetDisplayName(),
+			CurrentName:    collector.Title(),
 			CurrentStatus:  "running",
 			CompletedCount: i,
-			TotalCount:     len(collectors),
+			TotalCount:     len(newCollectors),
 			Collectors:     collectorList,
 		}
 
-		result, err := collector.RunCollectorSync(opts.KubernetesRestConfig, k8sClient, nil)
+		result, err := collector.Collect(opts.ProgressChan)
 		if err != nil {
-			collectorList[collector.GetDisplayName()] = CollectorStatus{
-				Status: "failed",
-			}
-			opts.ProgressChan <- errors.Errorf("failed to run collector %s: %v\n", collector.GetDisplayName(), err)
-			opts.ProgressChan <- CollectProgress{
-				CurrentName:    collector.GetDisplayName(),
-				CurrentStatus:  "failed",
-				CompletedCount: i + 1,
-				TotalCount:     len(collectors),
-				Collectors:     collectorList,
-			}
-			continue
+			opts.ProgressChan <- errors.Errorf("failed to run collector: %s: %v", collector.Title(), err)
 		}
-
-		collectorList[collector.GetDisplayName()] = CollectorStatus{
-			Status: "completed",
-		}
-		opts.ProgressChan <- CollectProgress{
-			CurrentName:    collector.GetDisplayName(),
-			CurrentStatus:  "completed",
-			CompletedCount: i + 1,
-			TotalCount:     len(collectors),
-			Collectors:     collectorList,
-		}
-
 		for k, v := range result {
 			allCollectedData[k] = v
 		}
 	}
 
 	collectResult.AllCollectedData = allCollectedData
+
+	/*globalRedactors := []*troubleshootv1beta2.Redact{}
+	if additionalRedactors != nil {
+		globalRedactors = additionalRedactors.Spec.Redactors
+	}
+
+	if opts.Redact {
+		err := collect.RedactResult(bundlePath, collectResult, globalRedactors)
+		if err != nil {
+			err = errors.Wrap(err, "failed to redact")
+			return collectResult, err
+		}
+	}*/
+
 	return collectResult, nil
 }
 
