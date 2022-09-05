@@ -1,9 +1,6 @@
 
 # Image URL to use all building/pushing image targets
 IMG ?= controller:latest
-export GO111MODULE=on
-export GOPROXY=https://proxy.golang.org
-export SCOPE_LOG_ROOT_PATH=/dev/null
 
 SHELL := /bin/bash -o pipefail
 VERSION_PACKAGE = github.com/replicatedhq/troubleshoot/pkg/version
@@ -36,27 +33,37 @@ define LDFLAGS
 "
 endef
 
-all: test
+BUILDFLAGS = -tags "netgo containers_image_ostree_stub exclude_graphdriver_devicemapper exclude_graphdriver_btrfs containers_image_openpgp" -installsuffix netgo
+
+all: test support-bundle preflight collect
 
 .PHONY: ffi
 ffi: fmt vet
-	go build ${LDFLAGS} -o bin/troubleshoot.so -buildmode=c-shared ffi/main.go
+	go build ${BUILDFLAGS} ${LDFLAGS} -o bin/troubleshoot.so -buildmode=c-shared ffi/main.go
 
-# Run tests
+.PHONY: test
 test: generate fmt vet
-	go test ./pkg/... ./cmd/... -coverprofile cover.out
+	go test ${BUILDFLAGS} ./pkg/... ./cmd/... -coverprofile cover.out
+
+.PHONY: e2e-test
+e2e-test:
+	./test/validate-preflight-e2e.sh
 
 .PHONY: support-bundle
-support-bundle: generate fmt vet
-	go build -tags netgo ${LDFLAGS} -o bin/support-bundle github.com/replicatedhq/troubleshoot/cmd/troubleshoot
+support-bundle:
+	go build ${BUILDFLAGS} ${LDFLAGS} -o bin/support-bundle github.com/replicatedhq/troubleshoot/cmd/troubleshoot
 
 .PHONY: preflight
-preflight: generate fmt vet
-	go build -tags netgo ${LDFLAGS} -o bin/preflight github.com/replicatedhq/troubleshoot/cmd/preflight
+preflight:
+	go build ${BUILDFLAGS} ${LDFLAGS} -o bin/preflight github.com/replicatedhq/troubleshoot/cmd/preflight
 
 .PHONY: analyze
-analyze: generate fmt vet
-	go build -tags netgo ${LDFLAGS} -o bin/analyze github.com/replicatedhq/troubleshoot/cmd/analyze
+analyze:
+	go build ${BUILDFLAGS} ${LDFLAGS} -o bin/analyze github.com/replicatedhq/troubleshoot/cmd/analyze
+	
+.PHONY: collect
+collect:
+	go build ${BUILDFLAGS} ${LDFLAGS} -o bin/collect github.com/replicatedhq/troubleshoot/cmd/collect	
 
 .PHONY: fmt
 fmt:
@@ -64,13 +71,14 @@ fmt:
 
 .PHONY: vet
 vet:
-	go vet ./pkg/... ./cmd/...
+	go vet ${BUILDFLAGS} ./pkg/... ./cmd/...
 
 .PHONY: generate
 generate: controller-gen client-gen
 	$(CONTROLLER_GEN) \
 		object:headerFile=./hack/boilerplate.go.txt paths=./pkg/apis/...
 	$(CLIENT_GEN) \
+		--output-base=./../../../ \
 		--output-package=github.com/replicatedhq/troubleshoot/pkg/client \
 		--clientset-name troubleshootclientset \
 		--input-base github.com/replicatedhq/troubleshoot/pkg/apis \
@@ -88,19 +96,14 @@ schemas: fmt vet openapischema
 	go build ${LDFLAGS} -o bin/schemagen github.com/replicatedhq/troubleshoot/cmd/schemagen
 	./bin/schemagen --output-dir ./schemas
 
-.PHONY: contoller-gen
 controller-gen:
-ifeq (, $(shell which controller-gen))
-	go get sigs.k8s.io/controller-tools/cmd/controller-gen@v0.3.0
-CONTROLLER_GEN=$(shell go env GOPATH)/bin/controller-gen
-else
+	go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.7.0
 CONTROLLER_GEN=$(shell which controller-gen)
-endif
 
 .PHONY: client-gen
 client-gen:
 ifeq (, $(shell which client-gen))
-	go get k8s.io/code-generator/cmd/client-gen@kubernetes-1.18.0
+	go install k8s.io/code-generator/cmd/client-gen@v0.22.2
 CLIENT_GEN=$(shell go env GOPATH)/bin/client-gen
 else
 CLIENT_GEN=$(shell which client-gen)
@@ -136,3 +139,47 @@ run-troubleshoot: support-bundle
 .PHONY: run-analyze
 run-analyze: analyze
 	./bin/analyze --analyzers ./examples/support-bundle/sample-analyzers.yaml ./support-bundle.tar.gz
+
+.PHONY: init-sbom
+init-sbom:
+	mkdir -p sbom/spdx sbom/assets
+
+.PHONY: install-spdx-sbom-generator
+install-spdx-sbom-generator: init-sbom
+	./scripts/initialize-sbom-build.sh
+
+SPDX_GENERATOR=./sbom/spdx-sbom-generator
+
+.PHONY: generate-sbom
+generate-sbom: install-spdx-sbom-generator
+	$(SPDX_GENERATOR) -o ./sbom/spdx
+
+sbom/assets/troubleshoot-sbom.tgz: generate-sbom
+	tar -czf sbom/assets/troubleshoot-sbom.tgz sbom/spdx/*.spdx 
+
+sbom: sbom/assets/troubleshoot-sbom.tgz
+	cosign sign-blob -key cosign.key sbom/assets/troubleshoot-sbom.tgz > sbom/assets/troubleshoot-sbom.tgz.sig
+	cosign public-key -key cosign.key -outfile sbom/assets/key.pub
+
+longhorn:
+	git clone https://github.com/longhorn/longhorn-manager.git
+	cd longhorn-manager && git checkout v1.2.2 && cd ..
+	rm -rf pkg/longhorn
+	mv longhorn-manager/k8s/pkg pkg/longhorn
+	mv longhorn-manager/types pkg/longhorn/types
+	mv longhorn-manager/util pkg/longhorn/util
+	rm -rf pkg/longhorn/util/daemon
+	rm -rf pkg/longhorn/util/server
+	find pkg/longhorn -type f | xargs sed -i "s/github.com\/longhorn\/longhorn-manager\/k8s\/pkg/github.com\/replicatedhq\/troubleshoot\/pkg\/longhorn/g"
+	find pkg/longhorn -type f | xargs sed -i "s/github.com\/longhorn\/longhorn-manager\/types/github.com\/replicatedhq\/troubleshoot\/pkg\/longhorn\/types/g"
+	find pkg/longhorn -type f | xargs sed -i "s/github.com\/longhorn\/longhorn-manager\/util/github.com\/replicatedhq\/troubleshoot\/pkg\/longhorn\/util/g"
+	rm -rf longhorn-manager
+
+.PHONY: scan
+scan:
+	trivy fs \
+		--security-checks vuln \
+		--exit-code=1 \
+		--severity="HIGH,CRITICAL" \
+		--ignore-unfixed \
+		./

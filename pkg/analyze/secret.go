@@ -9,12 +9,21 @@ import (
 )
 
 func analyzeSecret(analyzer *troubleshootv1beta2.AnalyzeSecret, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
-	secretData, err := getCollectedFileContents(fmt.Sprintf("secrets/%s/%s.json", analyzer.Namespace, analyzer.SecretName))
+	filename := collect.GetSecretFileName(
+		&troubleshootv1beta2.Secret{
+			Namespace: analyzer.Namespace,
+			Name:      analyzer.SecretName,
+			Key:       analyzer.Key,
+		},
+		analyzer.SecretName,
+	)
+
+	secretData, err := getCollectedFileContents(filename)
 	if err != nil {
 		return nil, err
 	}
 
-	var foundSecret collect.FoundSecret
+	var foundSecret collect.SecretOutput
 	if err := json.Unmarshal(secretData, &foundSecret); err != nil {
 		return nil, err
 	}

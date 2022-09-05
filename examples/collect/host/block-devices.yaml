@@ -1,0 +1,8 @@
+apiVersion: troubleshoot.sh/v1beta2
+kind: HostCollector
+metadata:
+  name: block
+spec:
+  collectors:
+    - blockDevices: {}
+

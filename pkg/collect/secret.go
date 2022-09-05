@@ -1,17 +1,22 @@
 package collect
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"path/filepath"
+	"strings"
 
+	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
+	corev1 "k8s.io/api/core/v1"
+	kuberneteserrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
 
-type FoundSecret struct {
+type SecretOutput struct {
 	Namespace    string `json:"namespace"`
 	Name         string `json:"name"`
 	Key          string `json:"key"`
@@ -20,75 +25,85 @@ type FoundSecret struct {
 	Value        string `json:"value,omitempty"`
 }
 
-func Secret(c *Collector, secretCollector *troubleshootv1beta2.Secret) (map[string][]byte, error) {
-	client, err := kubernetes.NewForConfig(c.ClientConfig)
-	if err != nil {
-		return nil, err
-	}
+func Secret(ctx context.Context, c *Collector, secretCollector *troubleshootv1beta2.Secret, client kubernetes.Interface) (CollectorResult, error) {
+	output := NewResult()
 
-	secretOutput := map[string][]byte{}
-
-	ctx := context.Background()
-
-	filePath, encoded, err := secret(ctx, client, secretCollector)
-	if err != nil {
-		errorBytes, err := marshalNonNil([]string{err.Error()})
+	secrets := []corev1.Secret{}
+	if secretCollector.Name != "" {
+		secret, err := client.CoreV1().Secrets(secretCollector.Namespace).Get(ctx, secretCollector.Name, metav1.GetOptions{})
 		if err != nil {
-			return nil, err
+			if kuberneteserrors.IsNotFound(err) {
+				filePath, encoded, err := secretToOutput(secretCollector, nil, secretCollector.Name)
+				if err != nil {
+					return output, errors.Wrapf(err, "collect secret %s", secretCollector.Name)
+				}
+				output.SaveResult(c.BundlePath, filePath, bytes.NewBuffer(encoded))
+			}
+			output.SaveResult(c.BundlePath, GetSecretErrorsFileName(secretCollector), marshalErrors([]string{err.Error()}))
+			return output, nil
 		}
-		secretOutput[filepath.Join("secrets-errors", filePath)] = errorBytes
-	}
-	if encoded != nil {
-		secretOutput[filepath.Join("secrets", filePath)] = encoded
+		secrets = append(secrets, *secret)
+	} else if len(secretCollector.Selector) > 0 {
+		ss, err := listSecretsForSelector(ctx, client, secretCollector.Namespace, secretCollector.Selector)
+		if err != nil {
+			output.SaveResult(c.BundlePath, GetSecretErrorsFileName(secretCollector), marshalErrors([]string{err.Error()}))
+			return output, nil
+		}
+		secrets = append(secrets, ss...)
+	} else {
+		return nil, errors.New("either name or selector must be specified")
 	}
 
-	return secretOutput, nil
+	for _, secret := range secrets {
+		filePath, encoded, err := secretToOutput(secretCollector, &secret, secret.Name)
+		if err != nil {
+			return output, errors.Wrapf(err, "collect secret %s", secret.Name)
+		}
+		output.SaveResult(c.BundlePath, filePath, bytes.NewBuffer(encoded))
+	}
+
+	return output, nil
 }
 
-func secret(ctx context.Context, client *kubernetes.Clientset, secretCollector *troubleshootv1beta2.Secret) (string, []byte, error) {
-	ns := secretCollector.Namespace
-	path := fmt.Sprintf("%s.json", filepath.Join(ns, secretCollector.SecretName))
-
-	found, err := client.CoreV1().Secrets(secretCollector.Namespace).Get(ctx, secretCollector.SecretName, metav1.GetOptions{})
-	if err != nil {
-		missingSecret := FoundSecret{
-			Namespace:    secretCollector.Namespace,
-			Name:         secretCollector.SecretName,
-			SecretExists: false,
-		}
-
-		b, marshalErr := json.MarshalIndent(missingSecret, "", "  ")
-		if marshalErr != nil {
-			return path, nil, marshalErr
-		}
-
-		return path, b, err
+func secretToOutput(secretCollector *troubleshootv1beta2.Secret, secret *corev1.Secret, secretName string) (string, []byte, error) {
+	foundSecret := SecretOutput{
+		Namespace: secretCollector.Namespace,
+		Name:      secretName,
+		Key:       secretCollector.Key,
 	}
 
-	ns = found.Namespace
-	path = fmt.Sprintf("%s.json", filepath.Join(ns, secretCollector.SecretName))
-
-	keyExists := false
-	keyData := ""
-	secretKey := ""
-	if secretCollector.Key != "" {
-		secretKey = secretCollector.Key
-		if val, ok := found.Data[secretCollector.Key]; ok {
-			keyExists = true
-			if secretCollector.IncludeValue {
-				keyData = string(val)
+	if secret != nil {
+		foundSecret.SecretExists = true
+		if secretCollector.Key != "" {
+			if val, ok := secret.Data[secretCollector.Key]; ok {
+				foundSecret.KeyExists = true
+				if secretCollector.IncludeValue {
+					foundSecret.Value = string(val)
+				}
 			}
 		}
 	}
 
-	secret := FoundSecret{
-		Namespace:    found.Namespace,
-		Name:         found.Name,
-		Key:          secretKey,
-		SecretExists: true,
-		KeyExists:    keyExists,
-		Value:        keyData,
+	return marshalSecretOutput(secretCollector, foundSecret)
+}
+
+func listSecretsForSelector(ctx context.Context, client kubernetes.Interface, namespace string, selector []string) ([]corev1.Secret, error) {
+	serializedLabelSelector := strings.Join(selector, ",")
+
+	listOptions := metav1.ListOptions{
+		LabelSelector: serializedLabelSelector,
 	}
+
+	secrets, err := client.CoreV1().Secrets(namespace).List(ctx, listOptions)
+	if err != nil {
+		return nil, err
+	}
+
+	return secrets.Items, nil
+}
+
+func marshalSecretOutput(secretCollector *troubleshootv1beta2.Secret, secret SecretOutput) (string, []byte, error) {
+	path := GetSecretFileName(secretCollector, secret.Name)
 
 	b, err := json.MarshalIndent(secret, "", "  ")
 	if err != nil {
@@ -96,4 +111,25 @@ func secret(ctx context.Context, client *kubernetes.Clientset, secretCollector *
 	}
 
 	return path, b, nil
+}
+
+func GetSecretFileName(secretCollector *troubleshootv1beta2.Secret, name string) string {
+	parts := []string{"secrets", secretCollector.Namespace, name}
+	if secretCollector.Key != "" {
+		parts = append(parts, secretCollector.Key)
+	}
+	return fmt.Sprintf("%s.json", filepath.Join(parts...))
+}
+
+func GetSecretErrorsFileName(secretCollector *troubleshootv1beta2.Secret) string {
+	parts := []string{"secrets-errors", secretCollector.Namespace}
+	if secretCollector.Name != "" {
+		parts = append(parts, secretCollector.Name)
+	} else {
+		parts = append(parts, selectorToString(secretCollector.Selector))
+	}
+	if secretCollector.Key != "" {
+		parts = append(parts, secretCollector.Key)
+	}
+	return fmt.Sprintf("%s.json", filepath.Join(parts...))
 }

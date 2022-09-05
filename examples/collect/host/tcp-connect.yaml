@@ -1,0 +1,9 @@
+apiVersion: troubleshoot.sh/v1beta2
+kind: HostCollector
+metadata:
+  name: connect
+spec:
+  collectors:
+    - tcpConnect:
+        collectorName: weave host 1
+        address: 10.128.0.2:6783

@@ -1,0 +1,30 @@
+apiVersion: troubleshoot.sh/v1beta2
+kind: HostPreflight
+metadata:
+  name: port
+spec:
+  remoteCollectors:
+    - tcpPortStatus:
+        collectorName: k8s
+        port: 7443
+  analyzers:
+    - tcpPortStatus:
+        collectorName: k8s
+        outcomes:
+          - fail:
+              when: "connection-refused"
+              message: Connection to port 7443 was refused.
+          - fail:
+              when: "address-in-use"
+              message: Another process was already listening on port 7443.
+          - fail:
+              when: "connection-timeout"
+              message: Timed out connecting to port 7443. Check your firewall.
+          - fail:
+              when: "error"
+              message: Unexpected port status
+          - pass:
+              when: "connected"
+              message: Port 7443 is open
+          - warn:
+              message: Unexpected port status

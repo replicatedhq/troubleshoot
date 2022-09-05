@@ -21,8 +21,14 @@ type AnalyzerExpansion interface{}
 
 type CollectorExpansion interface{}
 
+type HostCollectorExpansion interface{}
+
+type HostPreflightExpansion interface{}
+
 type PreflightExpansion interface{}
 
 type RedactorExpansion interface{}
+
+type RemoteCollectorExpansion interface{}
 
 type SupportBundleExpansion interface{}

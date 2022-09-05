@@ -4,18 +4,6 @@ release:
     owner: replicatedhq
     name: troubleshoot
 builds:
-  - id: so
-    goos:
-      - linux
-    goarch:
-      - amd64
-    env:
-      - CGO_ENABLED=1
-      - GO111MODULE=on
-    main: ffi/main.go
-    flags: -buildmode=c-shared
-    binary: troubleshoot.so
-    hooks: {}
   - id: preflight
     goos:
       - linux
@@ -23,6 +11,7 @@ builds:
       - windows
     goarch:
       - amd64
+      - arm64
     env:
       - CGO_ENABLED=0
     main: cmd/preflight/main.go
@@ -31,7 +20,7 @@ builds:
       -X github.com/replicatedhq/troubleshoot/pkg/version.gitSHA={{.Commit}}
       -X github.com/replicatedhq/troubleshoot/pkg/version.buildTime={{.Date}}
       -extldflags "-static"
-    flags: -tags netgo -installsuffix netgo
+    flags: -tags netgo -tags containers_image_ostree_stub -tags exclude_graphdriver_devicemapper -tags exclude_graphdriver_btrfs -tags containers_image_openpgp -installsuffix netgo
     binary: preflight
     hooks: {}
   - id: support-bundle
@@ -41,6 +30,7 @@ builds:
       - windows
     goarch:
       - amd64
+      - arm64
     env:
       - CGO_ENABLED=0
     main: cmd/troubleshoot/main.go
@@ -49,15 +39,29 @@ builds:
       -X github.com/replicatedhq/troubleshoot/pkg/version.gitSHA={{.Commit}}
       -X github.com/replicatedhq/troubleshoot/pkg/version.buildTime={{.Date}}
       -extldflags "-static"
-    flags: -tags netgo -installsuffix netgo
+    flags: -tags netgo -tags containers_image_ostree_stub -tags exclude_graphdriver_devicemapper -tags exclude_graphdriver_btrfs -tags containers_image_openpgp -installsuffix netgo
     binary: support-bundle
     hooks: {}
+  - id: collect
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    env:
+      - CGO_ENABLED=0
+    main: cmd/collect/main.go
+    ldflags: -s -w
+      -X github.com/replicatedhq/troubleshoot/pkg/version.version={{.Version}}
+      -X github.com/replicatedhq/troubleshoot/pkg/version.gitSHA={{.Commit}}
+      -X github.com/replicatedhq/troubleshoot/pkg/version.buildTime={{.Date}}
+      -extldflags "-static"
+    flags: -tags netgo -tags containers_image_ostree_stub -tags exclude_graphdriver_devicemapper -tags exclude_graphdriver_btrfs -tags containers_image_openpgp -installsuffix netgo
+    binary: collect
+    hooks: {}
 archives:
-  - id: so
-    builds:
-      - so
-    format: tar.gz
-    name_template: 'troubleshoot.so_{{ .Os }}_{{ .Arch }}'
   - id: preflight
     builds:
       - preflight
@@ -75,6 +79,9 @@ archives:
       - README*
       - changelog*
       - CHANGELOG*
+      - src: 'sbom/assets/*'
+        dst: .
+        strip_parent: true  # this is needed to make up for the way unzips work in krew v0.4.1
   - id: support-bundle
     builds:
       - support-bundle
@@ -92,6 +99,29 @@ archives:
       - README*
       - changelog*
       - CHANGELOG*
+      - src: 'sbom/assets/*'
+        dst: .
+        strip_parent: true # this is needed to make up for the way unzips work in krew v0.4.1
+  - id: collect
+    builds:
+      - collect
+    format: tar.gz
+    format_overrides:
+      - goos: windows
+        format: zip
+    name_template: 'collect_{{ .Os }}_{{ .Arch }}'
+    files:
+      - licence*
+      - LICENCE*
+      - license*
+      - LICENSE*
+      - readme*
+      - README*
+      - changelog*
+      - CHANGELOG*
+      - src: 'sbom/assets/*'
+        dst: .
+        strip_parent: true # this is needed to make up for the way unzips work in krew v0.4.1
 dockers:
   - dockerfile: ./deploy/Dockerfile.troubleshoot
     image_templates:
@@ -99,15 +129,17 @@ dockers:
       - "replicated/troubleshoot:{{ .Major }}"
       - "replicated/troubleshoot:{{ .Major }}.{{ .Minor }}"
       - "replicated/troubleshoot:{{ .Major }}.{{ .Minor }}.{{ .Patch }}"
-    binaries:
+    ids:
       - support-bundle
       - preflight
+      - collect
   - dockerfile: ./deploy/Dockerfile.troubleshoot
     image_templates:
       - "replicated/preflight:latest"
       - "replicated/preflight:{{ .Major }}"
       - "replicated/preflight:{{ .Major }}.{{ .Minor }}"
       - "replicated/preflight:{{ .Major }}.{{ .Minor }}.{{ .Patch }}"
-    binaries:
+    ids:
       - support-bundle
       - preflight
+      - collect

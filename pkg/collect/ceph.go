@@ -3,10 +3,10 @@ package collect
 import (
 	"context"
 	"fmt"
+	"os"
 	"path"
 	"strings"
 
-	multierror "github.com/hashicorp/go-multierror"
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	corev1 "k8s.io/api/core/v1"
@@ -18,64 +18,94 @@ const (
 )
 
 type CephCommand struct {
-	ID      string
-	Command []string
-	Args    []string
-	Format  string
+	ID             string
+	Command        []string
+	Args           []string
+	Format         string
+	DefaultTimeout string
 }
 
 var CephCommands = []CephCommand{
 	{
-		ID:      "status",
-		Command: []string{"ceph", "status"},
-		Args:    []string{"-f", "json-pretty"},
-		Format:  "json",
+		ID:             "status",
+		Command:        []string{"ceph", "status"},
+		Args:           []string{"-f", "json-pretty"},
+		Format:         "json",
+		DefaultTimeout: "30s",
 	},
 	{
-		ID:      "fs",
-		Command: []string{"ceph", "fs", "status"},
-		Args:    []string{"-f", "json-pretty"},
-		Format:  "json",
+		ID:             "fs",
+		Command:        []string{"ceph", "fs", "status"},
+		Args:           []string{"-f", "json-pretty"},
+		Format:         "json",
+		DefaultTimeout: "30s",
 	},
 	{
-		ID:      "fs-ls",
-		Command: []string{"ceph", "fs", "ls"},
-		Args:    []string{"-f", "json-pretty"},
-		Format:  "json",
+		ID:             "fs-ls",
+		Command:        []string{"ceph", "fs", "ls"},
+		Args:           []string{"-f", "json-pretty"},
+		Format:         "json",
+		DefaultTimeout: "30s",
 	},
 	{
-		ID:      "osd-status",
-		Command: []string{"ceph", "osd", "status"},
-		Args:    []string{"-f", "json-pretty"},
-		Format:  "txt",
+		ID:             "osd-status",
+		Command:        []string{"ceph", "osd", "status"},
+		Args:           []string{"-f", "json-pretty"},
+		Format:         "txt",
+		DefaultTimeout: "30s",
 	},
 	{
-		ID:      "osd-tree",
-		Command: []string{"ceph", "osd", "tree"},
-		Args:    []string{"-f", "json-pretty"},
-		Format:  "json",
+		ID:             "osd-tree",
+		Command:        []string{"ceph", "osd", "tree"},
+		Args:           []string{"-f", "json-pretty"},
+		Format:         "json",
+		DefaultTimeout: "30s",
 	},
 	{
-		ID:      "osd-pool",
-		Command: []string{"ceph", "osd", "pool", "ls", "detail"},
-		Args:    []string{"-f", "json-pretty"},
-		Format:  "json",
+		ID:             "osd-pool",
+		Command:        []string{"ceph", "osd", "pool", "ls", "detail"},
+		Args:           []string{"-f", "json-pretty"},
+		Format:         "json",
+		DefaultTimeout: "30s",
 	},
 	{
-		ID:      "health",
-		Command: []string{"ceph", "health", "detail"},
-		Args:    []string{"-f", "json-pretty"},
-		Format:  "json",
+		ID:             "health",
+		Command:        []string{"ceph", "health", "detail"},
+		Args:           []string{"-f", "json-pretty"},
+		Format:         "json",
+		DefaultTimeout: "30s",
 	},
 	{
-		ID:      "auth",
-		Command: []string{"ceph", "auth", "ls"},
-		Args:    []string{"-f", "json-pretty"},
-		Format:  "json",
+		ID:             "auth",
+		Command:        []string{"ceph", "auth", "ls"},
+		Args:           []string{"-f", "json-pretty"},
+		Format:         "json",
+		DefaultTimeout: "30s",
+	},
+	{
+		ID:             "rgw-stats", // the disk usage (and other stats) of each object store bucket
+		Command:        []string{"radosgw-admin", "bucket", "stats"},
+		Args:           []string{"--rgw-cache-enabled=false"},
+		Format:         "txt",
+		DefaultTimeout: "30s", // include a default timeout because this command will hang if the RGW daemon isn't running/is unhealthy
+	},
+	{
+		ID:             "rbd-du", // the disk usage of each PVC
+		Command:        []string{"rbd", "du"},
+		Args:           []string{"--pool=replicapool"},
+		Format:         "txt",
+		DefaultTimeout: "30s",
+	},
+	{
+		ID:             "osd-df",
+		Command:        []string{"ceph", "osd", "df"},
+		Args:           []string{"-f", "json-pretty"},
+		Format:         "json",
+		DefaultTimeout: "30s",
 	},
 }
 
-func Ceph(c *Collector, cephCollector *troubleshootv1beta2.Ceph) (map[string][]byte, error) {
+func Ceph(c *Collector, cephCollector *troubleshootv1beta2.Ceph) (CollectorResult, error) {
 	ctx := context.TODO()
 
 	if cephCollector.Namespace == "" {
@@ -87,45 +117,58 @@ func Ceph(c *Collector, cephCollector *troubleshootv1beta2.Ceph) (map[string][]b
 		return nil, err
 	}
 
-	final := map[string][]byte{}
-	var multiErr *multierror.Error
+	output := NewResult()
 	for _, command := range CephCommands {
-		results, err := cephCommandExec(ctx, c, cephCollector, pod, command)
-		multiErr = multierror.Append(multiErr, errors.Wrapf(err, "failed to exec command %s", command.ID))
-		for fileName, output := range results {
-			final[fileName] = output
+		err := cephCommandExec(ctx, c, cephCollector, pod, command, output)
+		if err != nil {
+			pathPrefix := GetCephCollectorFilepath(cephCollector.CollectorName, cephCollector.Namespace)
+			dstFileName := path.Join(pathPrefix, fmt.Sprintf("%s.%s-error", command.ID, command.Format))
+			output.SaveResult(c.BundlePath, dstFileName, strings.NewReader(err.Error()))
 		}
 	}
-	return final, nil
+
+	return output, nil
 }
 
-func cephCommandExec(ctx context.Context, c *Collector, cephCollector *troubleshootv1beta2.Ceph, pod *corev1.Pod, command CephCommand) (map[string][]byte, error) {
+func cephCommandExec(ctx context.Context, c *Collector, cephCollector *troubleshootv1beta2.Ceph, pod *corev1.Pod, command CephCommand, output CollectorResult) error {
+	timeout := cephCollector.Timeout
+	if timeout == "" {
+		timeout = command.DefaultTimeout
+	}
+
 	execCollector := &troubleshootv1beta2.Exec{
 		Selector:  labelsToSelector(pod.Labels),
 		Namespace: pod.Namespace,
 		Command:   command.Command,
 		Args:      command.Args,
-		Timeout:   cephCollector.Timeout,
+		Timeout:   timeout,
 	}
 	results, err := Exec(c, execCollector)
 	if err != nil {
-		return nil, err
+		return errors.Wrap(err, "failed to exec command")
 	}
 
-	final := map[string][]byte{}
-	for filename, result := range results {
-		pathPrefix := GetCephCollectorFilepath(cephCollector.CollectorName, cephCollector.Namespace)
+	pathPrefix := GetCephCollectorFilepath(cephCollector.CollectorName, cephCollector.Namespace)
+	for srcFilename, _ := range results {
+		var dstFileName string
 		switch {
-		case strings.HasSuffix(filename, "-stdout.txt"):
-			final[path.Join(pathPrefix, fmt.Sprintf("%s.%s", command.ID, command.Format))] = result
-		case strings.HasSuffix(filename, "-stderr.txt"):
-			final[path.Join(pathPrefix, fmt.Sprintf("%s-stderr.txt", command.ID))] = result
-		case strings.HasSuffix(filename, "-errors.json"):
-			final[path.Join(pathPrefix, fmt.Sprintf("%s-errors.json", command.ID))] = result
+		case strings.HasSuffix(srcFilename, "-stdout.txt"):
+			dstFileName = path.Join(pathPrefix, fmt.Sprintf("%s.%s", command.ID, command.Format))
+		case strings.HasSuffix(srcFilename, "-stderr.txt"):
+			dstFileName = path.Join(pathPrefix, fmt.Sprintf("%s-stderr.txt", command.ID))
+		case strings.HasSuffix(srcFilename, "-errors.json"):
+			dstFileName = path.Join(pathPrefix, fmt.Sprintf("%s-errors.json", command.ID))
+		default:
+			continue
+		}
+
+		err := copyResult(results, output, c.BundlePath, srcFilename, dstFileName)
+		if err != nil {
+			return errors.Wrap(err, "failed to copy file")
 		}
 	}
 
-	return final, nil
+	return nil
 }
 
 func findRookCephToolsPod(ctx context.Context, c *Collector, namespace string) (*corev1.Pod, error) {
@@ -165,4 +208,22 @@ func labelsToSelector(labels map[string]string) []string {
 		selector = append(selector, fmt.Sprintf("%s=%s", key, value))
 	}
 	return selector
+}
+
+func copyResult(srcResult CollectorResult, dstResult CollectorResult, bundlePath string, srcKey string, dstKey string) error {
+	reader, err := srcResult.GetReader(bundlePath, srcKey)
+	if err != nil {
+		if os.IsNotExist(errors.Cause(err)) {
+			return nil
+		}
+		return errors.Wrap(err, "failed to get reader")
+	}
+	defer reader.Close()
+
+	err = dstResult.SaveResult(bundlePath, dstKey, reader)
+	if err != nil {
+		return errors.Wrap(err, "failed to save file")
+	}
+
+	return nil
 }

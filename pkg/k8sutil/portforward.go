@@ -35,9 +35,9 @@ func PortForward(config *restclient.Config, localPort int, remotePort int, names
 	go func() {
 		for range readyChan { // Kubernetes will close this channel when it has something to tell us.
 		}
-		if len(errOut.String()) != 0 {
+		if errOut.String() != "" {
 			panic(errOut.String())
-		} else if len(out.String()) != 0 {
+		} else if out.String() != "" {
 			// fmt.Println(out.String())
 		}
 	}()

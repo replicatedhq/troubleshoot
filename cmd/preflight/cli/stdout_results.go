@@ -19,6 +19,7 @@ func showStdoutResults(format string, preflightName string, analyzeResults []*an
 }
 
 func showStdoutResultsHuman(preflightName string, analyzeResults []*analyzerunner.AnalyzeResult) error {
+	fmt.Println("")
 	var failed bool
 	for _, analyzeResult := range analyzeResults {
 		testResultfailed := outputResult(analyzeResult)
@@ -41,6 +42,7 @@ func showStdoutResultsJSON(preflightName string, analyzeResults []*analyzerunner
 		Title   string `json:"title"`
 		Message string `json:"message"`
 		URI     string `json:"uri,omitempty"`
+		Strict  bool   `json:"strict,omitempty"`
 	}
 	type Output struct {
 		Pass []ResultOutput `json:"pass,omitempty"`
@@ -59,6 +61,10 @@ func showStdoutResultsJSON(preflightName string, analyzeResults []*analyzerunner
 			Title:   analyzeResult.Title,
 			Message: analyzeResult.Message,
 			URI:     analyzeResult.URI,
+		}
+
+		if analyzeResult.Strict {
+			resultOutput.Strict = analyzeResult.Strict
 		}
 
 		if analyzeResult.IsPass {
@@ -90,6 +96,13 @@ func outputResult(analyzeResult *analyzerunner.AnalyzeResult) bool {
 	} else if analyzeResult.IsFail {
 		fmt.Printf("   --- FAIL: %s\n", analyzeResult.Title)
 		fmt.Printf("      --- %s\n", analyzeResult.Message)
+	}
+
+	if analyzeResult.Strict {
+		fmt.Printf("      --- Strict: %t\n", analyzeResult.Strict)
+	}
+
+	if analyzeResult.IsFail {
 		return true
 	}
 	return false

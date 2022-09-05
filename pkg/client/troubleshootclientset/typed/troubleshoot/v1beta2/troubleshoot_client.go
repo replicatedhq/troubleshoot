@@ -27,8 +27,11 @@ type TroubleshootV1beta2Interface interface {
 	RESTClient() rest.Interface
 	AnalyzersGetter
 	CollectorsGetter
+	HostCollectorsGetter
+	HostPreflightsGetter
 	PreflightsGetter
 	RedactorsGetter
+	RemoteCollectorsGetter
 	SupportBundlesGetter
 }
 
@@ -45,12 +48,24 @@ func (c *TroubleshootV1beta2Client) Collectors(namespace string) CollectorInterf
 	return newCollectors(c, namespace)
 }
 
+func (c *TroubleshootV1beta2Client) HostCollectors(namespace string) HostCollectorInterface {
+	return newHostCollectors(c, namespace)
+}
+
+func (c *TroubleshootV1beta2Client) HostPreflights(namespace string) HostPreflightInterface {
+	return newHostPreflights(c, namespace)
+}
+
 func (c *TroubleshootV1beta2Client) Preflights(namespace string) PreflightInterface {
 	return newPreflights(c, namespace)
 }
 
 func (c *TroubleshootV1beta2Client) Redactors(namespace string) RedactorInterface {
 	return newRedactors(c, namespace)
+}
+
+func (c *TroubleshootV1beta2Client) RemoteCollectors(namespace string) RemoteCollectorInterface {
+	return newRemoteCollectors(c, namespace)
 }
 
 func (c *TroubleshootV1beta2Client) SupportBundles(namespace string) SupportBundleInterface {

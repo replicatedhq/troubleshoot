@@ -1,7 +1,8 @@
 package collect
 
 import (
-	"context"
+	"bytes"
+  "context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -14,7 +15,7 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-func Mysql(c *Collector, databaseCollector *troubleshootv1beta2.Database) (map[string][]byte, error) {
+func Mysql(c *Collector, databaseCollector *troubleshootv1beta2.Database) (CollectorResult, error) {
 	databaseConnection := DatabaseConnection{}
 
 	uri, err := getUri(c.ClientConfig, databaseCollector)
@@ -25,8 +26,10 @@ func Mysql(c *Collector, databaseCollector *troubleshootv1beta2.Database) (map[s
 	if err != nil {
 		databaseConnection.Error = err.Error()
 	} else {
+		defer db.Close()
 		query := `select version()`
 		row := db.QueryRow(query)
+
 		version := ""
 		if err := row.Scan(&version); err != nil {
 			databaseConnection.Error = err.Error()
@@ -34,6 +37,38 @@ func Mysql(c *Collector, databaseCollector *troubleshootv1beta2.Database) (map[s
 			databaseConnection.IsConnected = true
 			databaseConnection.Version = version
 		}
+
+		requestedParameters := databaseCollector.Parameters
+		if len(requestedParameters) > 0 {
+			rows, err := db.Query("SHOW VARIABLES")
+
+			if err != nil {
+				databaseConnection.Error = err.Error()
+			} else {
+				defer rows.Close()
+
+				variables := map[string]string{}
+				for rows.Next() {
+					var key, value string
+					err = rows.Scan(&key, &value)
+					if err != nil {
+						databaseConnection.Error = err.Error()
+						break
+					}
+					variables[key] = value
+				}
+				filteredVariables := map[string]string{}
+
+				for _, key := range requestedParameters {
+					if value, ok := variables[key]; ok {
+						filteredVariables[key] = value
+					}
+
+				}
+				databaseConnection.Variables = filteredVariables
+			}
+		}
+
 	}
 
 	b, err := json.Marshal(databaseConnection)
@@ -46,11 +81,10 @@ func Mysql(c *Collector, databaseCollector *troubleshootv1beta2.Database) (map[s
 		collectorName = "mysql"
 	}
 
-	mysqlOutput := map[string][]byte{
-		fmt.Sprintf("mysql/%s.json", collectorName): b,
-	}
+	output := NewResult()
+	output.SaveResult(c.BundlePath, fmt.Sprintf("mysql/%s.json", collectorName), bytes.NewBuffer(b))
 
-	return mysqlOutput, nil
+	return output, nil
 }
 
 func getUri(clientConfig *rest.Config, databaseCollector *troubleshootv1beta2.Database) (string, error) {

@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.undefinedlabs.com/scopeagent"
 )
 
 func TestNewSingleLineRedactor(t *testing.T) {
@@ -104,14 +103,12 @@ func TestNewSingleLineRedactor(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			scopetest := scopeagent.StartTest(t)
-			defer scopetest.End()
-
 			req := require.New(t)
+			ResetRedactionList()
 			reRunner, err := NewSingleLineRedactor(tt.re, MASK_TEXT, "testfile", tt.name, false)
 			req.NoError(err)
 
-			outReader := reRunner.Redact(bytes.NewReader([]byte(tt.inputString)))
+			outReader := reRunner.Redact(bytes.NewReader([]byte(tt.inputString)), "")
 			gotBytes, err := ioutil.ReadAll(outReader)
 			req.NoError(err)
 			req.Equal(tt.wantString, string(gotBytes))

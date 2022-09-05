@@ -1,11 +1,13 @@
 package analyzer
 
 import (
+	"bytes"
 	"fmt"
 	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
+	"text/template"
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
@@ -24,12 +26,16 @@ func analyzeTextAnalyze(analyzer *troubleshootv1beta2.TextAnalyze, getCollectedF
 	}
 
 	if len(collected) == 0 {
+		if analyzer.IgnoreIfNoFiles {
+			return nil, nil
+		}
+
 		return []*AnalyzeResult{
 			{
 				Title:   checkName,
 				IconKey: "kubernetes_text_analyze",
 				IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg",
-				IsFail:  false,
+				IsWarn:  true,
 				Message: "No matching files",
 			},
 		}, nil
@@ -97,7 +103,27 @@ func analyzeRegexPattern(pattern string, collected []byte, outcomes []*troublesh
 		IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg",
 	}
 
-	if re.MatchString(string(collected)) {
+	reMatch := re.MatchString(string(collected))
+	failWhen := false
+	if failOutcome != nil && failOutcome.When != "" {
+		failWhen, err = strconv.ParseBool(failOutcome.When)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to process when statement: %s", failOutcome.When)
+		}
+	}
+	passWhen := true
+	if passOutcome != nil && passOutcome.When != "" {
+		passWhen, err = strconv.ParseBool(passOutcome.When)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to process when statement: %s", passOutcome.When)
+		}
+	}
+
+	if passWhen == failWhen {
+		return nil, errors.Wrap(err, "outcome when conditions for fail and pass are equal")
+	}
+
+	if reMatch == passWhen {
 		result.IsPass = true
 		if passOutcome != nil {
 			result.Message = passOutcome.Message
@@ -105,6 +131,7 @@ func analyzeRegexPattern(pattern string, collected []byte, outcomes []*troublesh
 		}
 		return &result, nil
 	}
+
 	result.IsFail = true
 	if failOutcome != nil {
 		result.Message = failOutcome.Message
@@ -137,14 +164,6 @@ func analyzeRegexGroups(pattern string, collected []byte, outcomes []*troublesho
 	// allow fallthrough
 	for _, outcome := range outcomes {
 		if outcome.Fail != nil {
-			if outcome.Fail.When == "" {
-				result.IsFail = true
-				result.Message = outcome.Fail.Message
-				result.URI = outcome.Fail.URI
-
-				return result, nil
-			}
-
 			isMatch, err := compareRegex(outcome.Fail.When, foundMatches)
 			if err != nil {
 				return result, errors.Wrap(err, "failed to compare regex fail conditional")
@@ -152,20 +171,16 @@ func analyzeRegexGroups(pattern string, collected []byte, outcomes []*troublesho
 
 			if isMatch {
 				result.IsFail = true
-				result.Message = outcome.Fail.Message
+				tplMessage, err := templateRegExGroup(outcome.Fail.Message, foundMatches)
+				if err != nil {
+					return result, errors.Wrap(err, "failed to template message in outcome.Fail block")
+				}
+				result.Message = tplMessage
 				result.URI = outcome.Fail.URI
 
 				return result, nil
 			}
 		} else if outcome.Warn != nil {
-			if outcome.Warn.When == "" {
-				result.IsWarn = true
-				result.Message = outcome.Warn.Message
-				result.URI = outcome.Warn.URI
-
-				return result, nil
-			}
-
 			isMatch, err := compareRegex(outcome.Warn.When, foundMatches)
 			if err != nil {
 				return result, errors.Wrap(err, "failed to compare regex warn conditional")
@@ -173,20 +188,16 @@ func analyzeRegexGroups(pattern string, collected []byte, outcomes []*troublesho
 
 			if isMatch {
 				result.IsWarn = true
-				result.Message = outcome.Warn.Message
+				tplMessage, err := templateRegExGroup(outcome.Warn.Message, foundMatches)
+				if err != nil {
+					return result, errors.Wrap(err, "failed to template message in outcome.Warn block")
+				}
+				result.Message = tplMessage
 				result.URI = outcome.Warn.URI
 
 				return result, nil
 			}
 		} else if outcome.Pass != nil {
-			if outcome.Pass.When == "" {
-				result.IsPass = true
-				result.Message = outcome.Pass.Message
-				result.URI = outcome.Pass.URI
-
-				return result, nil
-			}
-
 			isMatch, err := compareRegex(outcome.Pass.When, foundMatches)
 			if err != nil {
 				return result, errors.Wrap(err, "failed to compare regex pass conditional")
@@ -194,7 +205,11 @@ func analyzeRegexGroups(pattern string, collected []byte, outcomes []*troublesho
 
 			if isMatch {
 				result.IsPass = true
-				result.Message = outcome.Pass.Message
+				tplMessage, err := templateRegExGroup(outcome.Pass.Message, foundMatches)
+				if err != nil {
+					return result, errors.Wrap(err, "failed to template message in outcome.Pass block")
+				}
+				result.Message = tplMessage
 				result.URI = outcome.Pass.URI
 
 				return result, nil
@@ -205,7 +220,24 @@ func analyzeRegexGroups(pattern string, collected []byte, outcomes []*troublesho
 	return result, nil
 }
 
+// templateRegExGroup takes a tpl and replaces the variables using matches.
+func templateRegExGroup(tpl string, matches map[string]string) (string, error) {
+	t, err := template.New("").Parse(tpl)
+	if err != nil {
+		return "", err
+	}
+	var msg bytes.Buffer
+	err = t.Execute(&msg, matches)
+	if err != nil {
+		return "", err
+	}
+	return msg.String(), nil
+}
+
 func compareRegex(conditional string, foundMatches map[string]string) (bool, error) {
+	if conditional == "" {
+		return true, nil
+	}
 	parts := strings.Split(strings.TrimSpace(conditional), " ")
 
 	if len(parts) != 3 {

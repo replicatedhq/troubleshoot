@@ -2,10 +2,8 @@ package redact
 
 import (
 	"bufio"
-	"bytes"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"regexp"
 	"sync"
 
@@ -30,7 +28,7 @@ func init() {
 }
 
 type Redactor interface {
-	Redact(input io.Reader) io.Reader
+	Redact(input io.Reader, path string) io.Reader
 }
 
 // Redactions are indexed both by the file affected and by the name of the redactor
@@ -47,7 +45,7 @@ type Redaction struct {
 	IsDefaultRedactor bool   `json:"isDefaultRedactor" yaml:"isDefaultRedactor"`
 }
 
-func Redact(input []byte, path string, additionalRedactors []*troubleshootv1beta2.Redact) ([]byte, error) {
+func Redact(input io.Reader, path string, additionalRedactors []*troubleshootv1beta2.Redact) (io.Reader, error) {
 	redactors, err := getRedactors(path)
 	if err != nil {
 		return nil, err
@@ -59,17 +57,12 @@ func Redact(input []byte, path string, additionalRedactors []*troubleshootv1beta
 	}
 	redactors = append(redactors, builtRedactors...)
 
-	nextReader := io.Reader(bytes.NewReader(input))
+	nextReader := input
 	for _, r := range redactors {
-		nextReader = r.Redact(nextReader)
+		nextReader = r.Redact(nextReader, path)
 	}
 
-	redacted, err := ioutil.ReadAll(nextReader)
-	if err != nil {
-		return nil, err
-	}
-
-	return redacted, nil
+	return nextReader, nil
 }
 
 func GetRedactionList() RedactionList {
@@ -223,6 +216,11 @@ func getRedactors(path string) ([]Redactor, error) {
 			name:  "Redact database connection strings that contain username and password",
 		},
 		// standard postgres and mysql connection strings
+		// protocol://user:password@host:5432/db
+		{
+			regex: `\b(\w*:\/\/)(?P<mask>[^:\"\/]*){1}(:)(?P<mask>[^:\"\/]*){1}(@)(?P<mask>[^:\"\/]*){1}(?P<port>:[\d]*)?(\/)(?P<mask>[\w\d\S-_]+){1}\b`,
+			name:  "Redact database connection strings that contain username and password",
+		},
 		{
 			regex: `(?i)(Data Source *= *)(?P<mask>[^\;]+)(;)`,
 			name:  "Redact 'Data Source' values commonly found in database connection strings",
@@ -306,6 +304,11 @@ func getRedactors(path string) ([]Redactor, error) {
 			line2: `(?i)("value": *")(?P<mask>.*[^\"]*)(")`,
 			name:  "Redact usernames in multiline JSON",
 		},
+		{
+			line1: `(?i)"entity": *"(osd|client|mgr)\..*[^\"]*"`,
+			line2: `(?i)("key": *")(?P<mask>.{38}==[^\"]*)(")`,
+			name:  "Redact 'key' values found in Ceph auth lists",
+		},
 	}
 
 	for _, l := range doubleLines {
@@ -314,6 +317,40 @@ func getRedactors(path string) ([]Redactor, error) {
 			return nil, err // maybe skip broken ones?
 		}
 		redactors = append(redactors, r)
+	}
+
+	customResources := []struct {
+		resource string
+		yamlPath string
+	}{
+		{
+			resource: "installers.cluster.kurl.sh",
+			yamlPath: "*.spec.kubernetes.bootstrapToken",
+		},
+		{
+			resource: "installers.cluster.kurl.sh",
+			yamlPath: "*.spec.kubernetes.certKey",
+		},
+		{
+			resource: "installers.cluster.kurl.sh",
+			yamlPath: "*.spec.kubernetes.kubeadmToken",
+		},
+	}
+
+	uniqueCRs := map[string]bool{}
+	for _, cr := range customResources {
+		fileglob := fmt.Sprintf("cluster-resources/custom-resources/%s/*", cr.resource)
+		redactors = append(redactors, NewYamlRedactor(cr.yamlPath, fileglob, ""))
+
+		// redact kubectl last applied annotation once for each resource since it contains copies of
+		// redacted fields
+		if !uniqueCRs[cr.resource] {
+			uniqueCRs[cr.resource] = true
+			redactors = append(redactors, &YamlRedactor{
+				filePath: fileglob,
+				maskPath: []string{"*", "metadata", "annotations", "kubectl.kubernetes.io/last-applied-configuration"},
+			})
+		}
 	}
 
 	return redactors, nil

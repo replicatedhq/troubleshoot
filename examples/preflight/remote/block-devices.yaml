@@ -1,0 +1,18 @@
+apiVersion: troubleshoot.sh/v1beta2
+kind: HostPreflight
+metadata:
+  name: block
+spec:
+  remoteCollectors:
+    - blockDevices: {}
+  analyzers:
+    - blockDevices:
+        outcomes:
+          - pass:
+              when: ".* == 1"
+              message: One available block device
+          - pass:
+              when: ".* > 1"
+              message: Multiple available block devices
+          - fail:
+              message: No available block devices

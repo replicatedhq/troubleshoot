@@ -7,7 +7,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"go.undefinedlabs.com/scopeagent"
 )
 
 func TestNewYamlRedactor(t *testing.T) {
@@ -292,13 +291,10 @@ xyz:
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			scopetest := scopeagent.StartTest(t)
-			defer scopetest.End()
-
 			req := require.New(t)
 			yamlRunner := NewYamlRedactor(strings.Join(tt.path, "."), "testfile", tt.name)
 
-			outReader := yamlRunner.Redact(bytes.NewReader([]byte(tt.inputString)))
+			outReader := yamlRunner.Redact(bytes.NewReader([]byte(tt.inputString)), "testfile")
 			gotBytes, err := ioutil.ReadAll(outReader)
 			req.NoError(err)
 			req.Equal(tt.wantString, string(gotBytes))

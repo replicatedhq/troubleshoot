@@ -1,0 +1,7 @@
+apiVersion: troubleshoot.sh/v1beta2
+kind: RemoteCollector
+metadata:
+  name: modules
+spec:
+  collectors:
+    - kernelModules: {}

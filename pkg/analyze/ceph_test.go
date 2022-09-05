@@ -7,7 +7,6 @@ import (
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.undefinedlabs.com/scopeagent"
 )
 
 func Test_cephStatus(t *testing.T) {
@@ -34,6 +33,18 @@ func Test_cephStatus(t *testing.T) {
 				"fsid": "96a8178c-6aa2-4adf-a309-9e8869a79611",
 				"health": {
 					"status": "HEALTH_OK"
+				},
+				"osdmap": {
+					"osdmap": {
+						"num_osds": 5,
+						"num_up_osds": 5,
+						"full": false,
+						"nearfull": false
+					}
+				},
+				"pgmap": {
+					"bytes_used": 10000,
+					"bytes_total": 100000
 				}
 			}`,
 		},
@@ -45,7 +56,7 @@ func Test_cephStatus(t *testing.T) {
 				IsWarn:  true,
 				IsFail:  false,
 				Title:   "Ceph Status",
-				Message: "Ceph status is HEALTH_WARN",
+				Message: "Ceph status is HEALTH_WARN\n5/5 OSDs up\nOSD disk is nearly full\nPG storage usage is 85.0%",
 				URI:     "https://rook.io/docs/rook/v1.4/ceph-common-issues.html",
 				IconKey: "rook",
 				IconURI: "https://troubleshoot.sh/images/analyzer-icons/rook.svg?w=11&h=16",
@@ -55,6 +66,18 @@ func Test_cephStatus(t *testing.T) {
 				"fsid": "96a8178c-6aa2-4adf-a309-9e8869a79611",
 				"health": {
 					"status": "HEALTH_WARN"
+				},
+				"osdmap": {
+					"osdmap": {
+						"num_osds": 5,
+						"num_up_osds": 5,
+						"full": false,
+						"nearfull": true
+					}
+				},
+				"pgmap": {
+					"bytes_used": 85000,
+					"bytes_total": 100000
 				}
 			}`,
 		},
@@ -66,7 +89,7 @@ func Test_cephStatus(t *testing.T) {
 				IsWarn:  false,
 				IsFail:  true,
 				Title:   "Ceph Status",
-				Message: "Ceph status is HEALTH_ERR",
+				Message: "Ceph status is HEALTH_ERR\n4/5 OSDs up\nOSD disk is full\nPG storage usage is 95.0%",
 				URI:     "https://rook.io/docs/rook/v1.4/ceph-common-issues.html",
 				IconKey: "rook",
 				IconURI: "https://troubleshoot.sh/images/analyzer-icons/rook.svg?w=11&h=16",
@@ -76,6 +99,18 @@ func Test_cephStatus(t *testing.T) {
 				"fsid": "96a8178c-6aa2-4adf-a309-9e8869a79611",
 				"health": {
 					"status": "HEALTH_ERR"
+				},
+				"osdmap": {
+					"osdmap": {
+						"num_osds": 5,
+						"num_up_osds": 4,
+						"full": true,
+						"nearfull": true
+					}
+				},
+				"pgmap": {
+					"bytes_used": 95000,
+					"bytes_total": 100000
 				}
 			}`,
 		},
@@ -99,6 +134,16 @@ func Test_cephStatus(t *testing.T) {
 				"fsid": "96a8178c-6aa2-4adf-a309-9e8869a79611",
 				"health": {
 					"status": "HEALTH_OK"
+				},
+				"osdmap": {
+					"osdmap": {
+						"full": false,
+						"nearfull": false
+					}
+				},
+				"pgmap": {
+					"bytes_used": 10000,
+					"bytes_total": 100000
 				}
 			}`,
 		},
@@ -127,8 +172,41 @@ func Test_cephStatus(t *testing.T) {
 				IsWarn:  false,
 				IsFail:  true,
 				Title:   "Ceph Status",
-				Message: "custom message WARN",
+				Message: "custom message WARN\n5/5 OSDs up\nOSD disk is nearly full\nPG storage usage is 85.0%",
 				URI:     "custom uri WARN",
+				IconKey: "rook",
+				IconURI: "https://troubleshoot.sh/images/analyzer-icons/rook.svg?w=11&h=16",
+			},
+			filePath: "ceph/status.json",
+			file: `{
+				"fsid": "96a8178c-6aa2-4adf-a309-9e8869a79611",
+				"health": {
+					"status": "HEALTH_WARN"
+				},
+				"osdmap": {
+					"osdmap": {
+						"num_osds": 5,
+						"num_up_osds": 5,
+						"full": false,
+						"nearfull": true
+					}
+				},
+				"pgmap": {
+					"bytes_used": 85000,
+					"bytes_total": 100000
+				}
+			}`,
+		},
+		{
+			name:     "warn case with missing osd/pg data",
+			analyzer: troubleshootv1beta2.CephStatusAnalyze{},
+			expectResult: AnalyzeResult{
+				IsPass:  false,
+				IsWarn:  true,
+				IsFail:  false,
+				Title:   "Ceph Status",
+				Message: "Ceph status is HEALTH_WARN",
+				URI:     "https://rook.io/docs/rook/v1.4/ceph-common-issues.html",
 				IconKey: "rook",
 				IconURI: "https://troubleshoot.sh/images/analyzer-icons/rook.svg?w=11&h=16",
 			},
@@ -140,12 +218,41 @@ func Test_cephStatus(t *testing.T) {
 				}
 			}`,
 		},
+		{
+			name:     "warn case with health status message and summary",
+			analyzer: troubleshootv1beta2.CephStatusAnalyze{},
+			expectResult: AnalyzeResult{
+				IsPass:  false,
+				IsWarn:  true,
+				IsFail:  false,
+				Title:   "Ceph Status",
+				Message: "Ceph status is HEALTH_WARN\nPOOL_NO_REDUNDANCY: 11 pool(s) have no replicas configured",
+				URI:     "https://rook.io/docs/rook/v1.4/ceph-common-issues.html",
+				IconKey: "rook",
+				IconURI: "https://troubleshoot.sh/images/analyzer-icons/rook.svg?w=11&h=16",
+			},
+			filePath: "ceph/status.json",
+			file: `{
+				"fsid": "96a8178c-6aa2-4adf-a309-9e8869a79611",
+				"health": {
+					"status": "HEALTH_WARN",
+					"checks": {
+						"POOL_NO_REDUNDANCY": {
+							"severity": "HEALTH_WARN",
+							"summary": {
+								"message": "11 pool(s) have no replicas configured",
+								"count": 11
+							},
+							"muted": false
+						}
+					}
+				}
+			}`,
+		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			scopetest := scopeagent.StartTest(t)
-			defer scopetest.End()
 			req := require.New(t)
 
 			getFile := func(n string) ([]byte, error) {

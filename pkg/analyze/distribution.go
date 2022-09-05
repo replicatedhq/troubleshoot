@@ -22,6 +22,8 @@ type providers struct {
 	aks           bool
 	ibm           bool
 	minikube      bool
+	rke2          bool
+	k3s           bool
 }
 
 type Provider int
@@ -38,11 +40,13 @@ const (
 	aks           Provider = iota
 	ibm           Provider = iota
 	minikube      Provider = iota
+	rke2          Provider = iota
+	k3s           Provider = iota
 )
 
 func CheckOpenShift(foundProviders *providers, apiResources []*metav1.APIResourceList, provider string) string {
 	for _, resource := range apiResources {
-		if strings.Contains(resource.GroupVersion, "openshift") {
+		if strings.HasPrefix(resource.GroupVersion, "apps.openshift.io/") {
 			foundProviders.openShift = true
 			return "openShift"
 		}
@@ -69,6 +73,9 @@ func ParseNodesForProviders(nodes []corev1.Node) (providers, string) {
 			if k == "node-role.kubernetes.io/master" {
 				foundMaster = true
 			}
+			if k == "node-role.kubernetes.io/control-plane" {
+				foundMaster = true
+			}
 			if k == "kubernetes.azure.com/role" {
 				foundProviders.aks = true
 				stringProvider = "aks"
@@ -76,6 +83,21 @@ func ParseNodesForProviders(nodes []corev1.Node) (providers, string) {
 			if k == "minikube.k8s.io/version" {
 				foundProviders.minikube = true
 				stringProvider = "minikube"
+			}
+			if k == "node.kubernetes.io/instance-type" && v == "k3s" {
+				foundProviders.k3s = true
+				stringProvider = "k3s"
+			}
+			if k == "beta.kubernetes.io/instance-type" && v == "k3s" {
+				foundProviders.k3s = true
+				stringProvider = "k3s"
+			}
+		}
+
+		for k := range node.ObjectMeta.Annotations {
+			if k == "rke2.io/node-args" {
+				foundProviders.rke2 = true
+				stringProvider = "rke2"
 			}
 		}
 
@@ -120,12 +142,12 @@ func analyzeDistribution(analyzer *troubleshootv1beta2.Distribution, getCollecte
 		return nil, errors.Wrap(err, "failed to get contents of nodes.json")
 	}
 
-	var nodes []corev1.Node
+	var nodes corev1.NodeList
 	if err := json.Unmarshal(collected, &nodes); err != nil {
 		return nil, errors.Wrap(err, "failed to unmarshal node list")
 	}
 
-	foundProviders, _ := ParseNodesForProviders(nodes)
+	foundProviders, _ := ParseNodesForProviders(nodes.Items)
 
 	apiResourcesBytes, err := getCollectedFileContents("cluster-resources/resources.json")
 	// if the file is not found, that is not a fatal error
@@ -270,6 +292,10 @@ func compareDistributionConditionalToActual(conditional string, actual providers
 		isMatch = actual.ibm
 	case minikube:
 		isMatch = actual.minikube
+	case rke2:
+		isMatch = actual.rke2
+	case k3s:
+		isMatch = actual.k3s
 	}
 
 	switch parts[0] {
@@ -304,6 +330,10 @@ func mustNormalizeDistributionName(raw string) Provider {
 		return ibm
 	case "minikube":
 		return minikube
+	case "rke2":
+		return rke2
+	case "k3s":
+		return k3s
 	}
 
 	return unknown

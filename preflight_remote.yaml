@@ -1,0 +1,50 @@
+apiVersion: troubleshoot.sh/v1beta2
+kind: HostPreflight
+metadata:
+  name: modules
+spec:
+  remoteCollectors:
+    - cpu: {}
+    - memory: {}
+    - kernelModules: {}
+  analyzers:
+    - cpu:
+        outcomes:
+          - fail:
+              when: "physical < 1"
+              message: At least 1 physical CPU cores are required
+          - fail:
+              when: "logical < 1"
+              message: At least 1 CPU cores are required
+          - warn:
+              when: "count < 2"
+              message: At least 2 CPU cores preferred
+          - pass:
+              message: This server has sufficient CPU cores
+    - memory:
+        outcomes:
+          - fail:
+              when: "< 2Gi"
+              message: At least 2Gi of memory is required
+          - warn:
+              when: "< 8Gi"
+              message: At least 8Gi of memory is recommended
+          - pass:
+              message: The system has as sufficient memory              
+    - kernelModules:
+        outcomes:
+          - fail:
+              when: "target_core_mod != loaded,loadable"
+              message: The 'target_core_mod' kernel module is not loaded or loadable
+          - fail:
+              when: "target_core_file != loaded,loadable"
+              message: The 'target_core_file' kernel module is not loaded or loadable
+          - fail:
+              when: "tcm_loop != loaded,loadable"
+              message: The 'tcm_loop' kernel module is not loaded or loadable
+          - warn:
+              when: "nvme != loaded"
+              message: The system is not using NVME storage, which will provide better performance
+          - pass:
+              when: "target_core_mod,target_core_file,tcm_loop == loaded,loadable"
+              message: The 'target_core_mod', target_core_file', and 'tcm_loop' kernel modules are loaded or loadable

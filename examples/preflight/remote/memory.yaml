@@ -1,0 +1,19 @@
+apiVersion: troubleshoot.sh/v1beta2
+kind: HostPreflight
+metadata:
+  name: memory
+spec:
+  remoteCollectors:
+    - memory:
+        collectorName: memory
+  analyzers:
+    - memory:
+        outcomes:
+          - fail:
+              when: "< 8Gi"
+              message: At least 8Gi of memory is required
+          - warn:
+              when: "< 32Gi"
+              message: At least 32Gi of memory is recommended
+          - pass:
+              message: The system has as sufficient memory

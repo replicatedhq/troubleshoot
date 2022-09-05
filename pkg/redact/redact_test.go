@@ -8,7 +8,6 @@ import (
 
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/stretchr/testify/require"
-	"go.undefinedlabs.com/scopeagent"
 )
 
 func Test_Redactors(t *testing.T) {
@@ -64,6 +63,10 @@ func Test_Redactors(t *testing.T) {
 					  {
 						"name": "POSTGRES_CONNECTION_STRING",
 						"value": "Provider=PostgreSQL OLE DB Provider;Data Source=myServerAddress;location=myDataBase;User ID=myUsername;password=myPassword;timeout=1000;"
+					  },
+					  {
+						"name": "POSTGRES_CONNECTION_STRING_2",
+						"value": "postgres://pg_user:pg_password@pg_host:5432/pg_database"
 					  },
 					  {
 						"name": "MYSQL_CONNECTION_STRING",
@@ -813,6 +816,53 @@ func Test_Redactors(t *testing.T) {
 		  "status": {
 			"loadBalancer": {}
 		  }
+		},
+		{
+			"auth_dump": [
+				{
+					"entity": "osd.0",
+					"key": "ABCxyzABCxyz/foo/bar123xyz/BAZAABBCCDD==",
+					"caps": {
+						"mgr": "allow profile osd",
+						"mon": "allow profile osd",
+						"osd": "allow *"
+					}
+				},
+				{
+					"entity": "client.admin",
+					"key": "ABCxyzABCxyz/foo/bar123xyz/BAZAABBCCDD==",
+					"caps": {
+						"mds": "allow *",
+						"mgr": "allow *",
+						"mon": "allow *",
+						"osd": "allow *"
+					}
+				},
+				{
+					"entity": "client.bootstrap-mds",
+					"key": "ABCxyzABCxyz/foo/bar123xyz/BAZAABBCCDD==",
+					"caps": {
+						"mon": "allow profile bootstrap-mds"
+					}
+				},
+				{
+					"entity": "client.rgw.rook.ceph.store.a",
+					"key": "ABCxyzABCxyz/foo/bar123xyz/BAZAABBCCDD==",
+					"caps": {
+						"mon": "allow rw",
+						"osd": "allow rwx"
+					}
+				},
+				{
+					"entity": "mgr.a",
+					"key": "ABCxyzABCxyz/foo/bar123xyz/BAZAABBCCDD==",
+					"caps": {
+						"mds": "allow *",
+						"mon": "allow profile mgr",
+						"osd": "allow *"
+					}
+				}
+			]
 		}
 	  ]`
 
@@ -868,6 +918,10 @@ func Test_Redactors(t *testing.T) {
 					  {
 						"name": "POSTGRES_CONNECTION_STRING",
 						"value": "Provider=PostgreSQL OLE DB Provider;Data Source=***HIDDEN***;location=***HIDDEN***;User ID=***HIDDEN***;password=***HIDDEN***;timeout=1000;"
+					  },
+					  {
+						"name": "POSTGRES_CONNECTION_STRING_2",
+						"value": "postgres://***HIDDEN***:***HIDDEN***@***HIDDEN***:5432/***HIDDEN***"
 					  },
 					  {
 						"name": "MYSQL_CONNECTION_STRING",
@@ -1617,22 +1671,67 @@ func Test_Redactors(t *testing.T) {
 		  "status": {
 			"loadBalancer": {}
 		  }
+		},
+		{
+			"auth_dump": [
+				{
+					"entity": "osd.0",
+					"key": "***HIDDEN***",
+					"caps": {
+						"mgr": "allow profile osd",
+						"mon": "allow profile osd",
+						"osd": "allow *"
+					}
+				},
+				{
+					"entity": "client.admin",
+					"key": "***HIDDEN***",
+					"caps": {
+						"mds": "allow *",
+						"mgr": "allow *",
+						"mon": "allow *",
+						"osd": "allow *"
+					}
+				},
+				{
+					"entity": "client.bootstrap-mds",
+					"key": "***HIDDEN***",
+					"caps": {
+						"mon": "allow profile bootstrap-mds"
+					}
+				},
+				{
+					"entity": "client.rgw.rook.ceph.store.a",
+					"key": "***HIDDEN***",
+					"caps": {
+						"mon": "allow rw",
+						"osd": "allow rwx"
+					}
+				},
+				{
+					"entity": "mgr.a",
+					"key": "***HIDDEN***",
+					"caps": {
+						"mds": "allow *",
+						"mon": "allow profile mgr",
+						"osd": "allow *"
+					}
+				}
+			]
 		}
 	  ]`
 
-	wantRedactionsLen := 38
-	wantRedactionsCount := 25
+	wantRedactionsLen := 44
+	wantRedactionsCount := 26
 
 	t.Run("test default redactors", func(t *testing.T) {
-		scopetest := scopeagent.StartTest(t)
-		defer scopetest.End()
 		req := require.New(t)
 		redactors, err := getRedactors("testpath")
 		req.NoError(err)
 
 		nextReader := io.Reader(strings.NewReader(original))
 		for _, r := range redactors {
-			nextReader = r.Redact(nextReader)
+			nextReader = r.Redact(nextReader, "")
 		}
 
 		redacted, err := ioutil.ReadAll(nextReader)
@@ -1767,8 +1866,6 @@ func Test_redactMatchesPath(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			scopetest := scopeagent.StartTest(t)
-			defer scopetest.End()
 			req := require.New(t)
 
 			got, err := redactMatchesPath(tt.args.path, tt.args.redact)

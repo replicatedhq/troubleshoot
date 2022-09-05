@@ -1,0 +1,418 @@
+{
+  "kind": "StatefulSetList",
+  "apiVersion": "apps/v1",
+  "metadata": {
+    "resourceVersion": "27195654"
+  },
+  "items": [
+    {
+      "metadata": {
+        "name": "kotsadm-postgres",
+        "namespace": "default",
+        "selfLink": "/apis/apps/v1/namespaces/default/statefulsets/kotsadm-postgres",
+        "uid": "7b8a5a95-98bf-4b37-b302-7f55e5af844b",
+        "resourceVersion": "2185",
+        "generation": 1,
+        "creationTimestamp": "2021-12-17T18:41:34Z",
+        "labels": {
+          "kots.io/backup": "velero",
+          "kots.io/kotsadm": "true"
+        },
+        "annotations": {
+          "kubectl.kubernetes.io/last-applied-configuration": "{\"apiVersion\":\"apps/v1\",\"kind\":\"StatefulSet\",\"metadata\":{\"annotations\":{},\"labels\":{\"kots.io/backup\":\"velero\",\"kots.io/kotsadm\":\"true\"},\"name\":\"kotsadm-postgres\",\"namespace\":\"default\"},\"spec\":{\"replicas\":1,\"selector\":{\"matchLabels\":{\"app\":\"kotsadm-postgres\"}},\"serviceName\":\"kotsadm-postgres\",\"template\":{\"metadata\":{\"labels\":{\"app\":\"kotsadm-postgres\",\"kots.io/backup\":\"velero\",\"kots.io/kotsadm\":\"true\"}},\"spec\":{\"containers\":[{\"env\":[{\"name\":\"PGDATA\",\"value\":\"/var/lib/postgresql/data/pgdata\"},{\"name\":\"POSTGRES_USER\",\"value\":\"***HIDDEN***\"},{\"name\":\"POSTGRES_PASSWORD\",\"valueFrom\":{\"secretKeyRef\":{\"key\":\"password\",\"name\":\"kotsadm-postgres\"}}},{\"name\":\"POSTGRES_DB\",\"value\":\"kotsadm\"}],\"image\":\"postgres:10.18-alpine\",\"livenessProbe\":{\"exec\":{\"command\":[\"/bin/sh\",\"-i\",\"-c\",\"pg_isready -U kotsadm -h ***HIDDEN*** -p 5432\"]},\"failureThreshold\":3,\"initialDelaySeconds\":30,\"timeoutSeconds\":5},\"name\":\"kotsadm-postgres\",\"ports\":[{\"containerPort\":5432,\"name\":\"postgres\"}],\"readinessProbe\":{\"exec\":{\"command\":[\"/bin/sh\",\"-i\",\"-c\",\"pg_isready -U kotsadm -h ***HIDDEN*** -p 5432\"]},\"initialDelaySeconds\":1,\"periodSeconds\":1,\"timeoutSeconds\":1},\"resources\":{\"limits\":{\"cpu\":\"200m\",\"memory\":\"200Mi\"},\"requests\":{\"cpu\":\"100m\",\"memory\":\"100Mi\"}},\"volumeMounts\":[{\"mountPath\":\"/var/lib/postgresql/data\",\"name\":\"kotsadm-postgres\"},{\"mountPath\":\"/etc/passwd\",\"name\":\"etc-passwd\",\"subPath\":\"passwd\"}]}],\"securityContext\":{\"fsGroup\":999,\"runAsUser\":999},\"volumes\":[{\"name\":\"kotsadm-postgres\",\"persistentVolumeClaim\":{\"claimName\":\"kotsadm-postgres\"}},{\"configMap\":{\"items\":[{\"key\":\"passwd\",\"mode\":420,\"path\":\"passwd\"}],\"name\":\"kotsadm-postgres\"},\"name\":\"etc-passwd\"}]}},\"volumeClaimTemplates\":[{\"metadata\":{\"labels\":{\"kots.io/kotsadm\":\"true\"},\"name\":\"kotsadm-postgres\"},\"spec\":{\"accessModes\":[\"ReadWriteOnce\"],\"resources\":{\"requests\":{\"storage\":\"1Gi\"}}}}]}}\n"
+        },
+        "managedFields": [
+          {
+            "manager": "kubectl-client-side-apply",
+            "operation": "Update",
+            "apiVersion": "apps/v1",
+            "time": "2021-12-17T18:41:34Z",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:metadata": {
+                "f:annotations": {
+                  ".": {},
+                  "f:kubectl.kubernetes.io/last-applied-configuration": {}
+                },
+                "f:labels": {
+                  ".": {},
+                  "f:kots.io/backup": {},
+                  "f:kots.io/kotsadm": {}
+                }
+              },
+              "f:spec": {
+                "f:podManagementPolicy": {},
+                "f:replicas": {},
+                "f:revisionHistoryLimit": {},
+                "f:selector": {
+                  "f:matchLabels": {
+                    ".": {},
+                    "f:app": {}
+                  }
+                },
+                "f:serviceName": {},
+                "f:template": {
+                  "f:metadata": {
+                    "f:labels": {
+                      ".": {},
+                      "f:app": {},
+                      "f:kots.io/backup": {},
+                      "f:kots.io/kotsadm": {}
+                    }
+                  },
+                  "f:spec": {
+                    "f:containers": {
+                      "k:{\"name\":\"kotsadm-postgres\"}": {
+                        ".": {},
+                        "f:env": {
+                          ".": {},
+                          "k:{\"name\":\"PGDATA\"}": {
+                            ".": {},
+                            "f:name": {},
+                            "f:value": {}
+                          },
+                          "k:{\"name\":\"POSTGRES_DB\"}": {
+                            ".": {},
+                            "f:name": {},
+                            "f:value": {}
+                          },
+                          "k:{\"name\":\"POSTGRES_PASSWORD\"}": {
+                            ".": {},
+                            "f:name": {},
+                            "f:valueFrom": {
+                              ".": {},
+                              "f:secretKeyRef": {
+                                ".": {},
+                                "f:key": {},
+                                "f:name": {}
+                              }
+                            }
+                          },
+                          "k:{\"name\":\"POSTGRES_USER\"}": {
+                            ".": {},
+                            "f:name": {},
+                            "f:value": {}
+                          }
+                        },
+                        "f:image": {},
+                        "f:imagePullPolicy": {},
+                        "f:livenessProbe": {
+                          ".": {},
+                          "f:exec": {
+                            ".": {},
+                            "f:command": {}
+                          },
+                          "f:failureThreshold": {},
+                          "f:initialDelaySeconds": {},
+                          "f:periodSeconds": {},
+                          "f:successThreshold": {},
+                          "f:timeoutSeconds": {}
+                        },
+                        "f:name": {},
+                        "f:ports": {
+                          ".": {},
+                          "k:{\"containerPort\":5432,\"protocol\":\"TCP\"}": {
+                            ".": {},
+                            "f:containerPort": {},
+                            "f:name": {},
+                            "f:protocol": {}
+                          }
+                        },
+                        "f:readinessProbe": {
+                          ".": {},
+                          "f:exec": {
+                            ".": {},
+                            "f:command": {}
+                          },
+                          "f:failureThreshold": {},
+                          "f:initialDelaySeconds": {},
+                          "f:periodSeconds": {},
+                          "f:successThreshold": {},
+                          "f:timeoutSeconds": {}
+                        },
+                        "f:resources": {
+                          ".": {},
+                          "f:limits": {
+                            ".": {},
+                            "f:cpu": {},
+                            "f:memory": {}
+                          },
+                          "f:requests": {
+                            ".": {},
+                            "f:cpu": {},
+                            "f:memory": {}
+                          }
+                        },
+                        "f:terminationMessagePath": {},
+                        "f:terminationMessagePolicy": {},
+                        "f:volumeMounts": {
+                          ".": {},
+                          "k:{\"mountPath\":\"/etc/passwd\"}": {
+                            ".": {},
+                            "f:mountPath": {},
+                            "f:name": {},
+                            "f:subPath": {}
+                          },
+                          "k:{\"mountPath\":\"/var/lib/postgresql/data\"}": {
+                            ".": {},
+                            "f:mountPath": {},
+                            "f:name": {}
+                          }
+                        }
+                      }
+                    },
+                    "f:dnsPolicy": {},
+                    "f:restartPolicy": {},
+                    "f:schedulerName": {},
+                    "f:securityContext": {
+                      ".": {},
+                      "f:fsGroup": {},
+                      "f:runAsUser": {}
+                    },
+                    "f:terminationGracePeriodSeconds": {},
+                    "f:volumes": {
+                      ".": {},
+                      "k:{\"name\":\"etc-passwd\"}": {
+                        ".": {},
+                        "f:configMap": {
+                          ".": {},
+                          "f:defaultMode": {},
+                          "f:items": {},
+                          "f:name": {}
+                        },
+                        "f:name": {}
+                      },
+                      "k:{\"name\":\"kotsadm-postgres\"}": {
+                        ".": {},
+                        "f:name": {},
+                        "f:persistentVolumeClaim": {
+                          ".": {},
+                          "f:claimName": {}
+                        }
+                      }
+                    }
+                  }
+                },
+                "f:updateStrategy": {
+                  "f:rollingUpdate": {
+                    ".": {},
+                    "f:partition": {}
+                  },
+                  "f:type": {}
+                }
+              }
+            }
+          },
+          {
+            "manager": "kube-controller-manager",
+            "operation": "Update",
+            "apiVersion": "apps/v1",
+            "time": "2021-12-17T18:41:48Z",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:spec": {
+                "f:volumeClaimTemplates": {}
+              },
+              "f:status": {
+                "f:collisionCount": {},
+                "f:currentReplicas": {},
+                "f:currentRevision": {},
+                "f:observedGeneration": {},
+                "f:readyReplicas": {},
+                "f:replicas": {},
+                "f:updateRevision": {},
+                "f:updatedReplicas": {}
+              }
+            }
+          }
+        ]
+      },
+      "spec": {
+        "replicas": 1,
+        "selector": {
+          "matchLabels": {
+            "app": "kotsadm-postgres"
+          }
+        },
+        "template": {
+          "metadata": {
+            "creationTimestamp": null,
+            "labels": {
+              "app": "kotsadm-postgres",
+              "kots.io/backup": "velero",
+              "kots.io/kotsadm": "true"
+            }
+          },
+          "spec": {
+            "volumes": [
+              {
+                "name": "kotsadm-postgres",
+                "persistentVolumeClaim": {
+                  "claimName": "kotsadm-postgres"
+                }
+              },
+              {
+                "name": "etc-passwd",
+                "configMap": {
+                  "name": "kotsadm-postgres",
+                  "items": [
+                    {
+                      "key": "passwd",
+                      "path": "passwd",
+                      "mode": 420
+                    }
+                  ],
+                  "defaultMode": 420
+                }
+              }
+            ],
+            "containers": [
+              {
+                "name": "kotsadm-postgres",
+                "image": "postgres:10.18-alpine",
+                "ports": [
+                  {
+                    "name": "postgres",
+                    "containerPort": 5432,
+                    "protocol": "TCP"
+                  }
+                ],
+                "env": [
+                  {
+                    "name": "PGDATA",
+                    "value": "/var/lib/postgresql/data/pgdata"
+                  },
+                  {
+                    "name": "POSTGRES_USER",
+                    "value": "***HIDDEN***"
+                  },
+                  {
+                    "name": "POSTGRES_PASSWORD",
+                    "valueFrom": {
+                      "secretKeyRef": {
+                        "name": "kotsadm-postgres",
+                        "key": "password"
+                      }
+                    }
+                  },
+                  {
+                    "name": "POSTGRES_DB",
+                    "value": "kotsadm"
+                  }
+                ],
+                "resources": {
+                  "limits": {
+                    "cpu": "200m",
+                    "memory": "200Mi"
+                  },
+                  "requests": {
+                    "cpu": "100m",
+                    "memory": "100Mi"
+                  }
+                },
+                "volumeMounts": [
+                  {
+                    "name": "kotsadm-postgres",
+                    "mountPath": "/var/lib/postgresql/data"
+                  },
+                  {
+                    "name": "etc-passwd",
+                    "mountPath": "/etc/passwd",
+                    "subPath": "passwd"
+                  }
+                ],
+                "livenessProbe": {
+                  "exec": {
+                    "command": [
+                      "/bin/sh",
+                      "-i",
+                      "-c",
+                      "pg_isready -U kotsadm -h ***HIDDEN*** -p 5432"
+                    ]
+                  },
+                  "initialDelaySeconds": 30,
+                  "timeoutSeconds": 5,
+                  "periodSeconds": 10,
+                  "successThreshold": 1,
+                  "failureThreshold": 3
+                },
+                "readinessProbe": {
+                  "exec": {
+                    "command": [
+                      "/bin/sh",
+                      "-i",
+                      "-c",
+                      "pg_isready -U kotsadm -h ***HIDDEN*** -p 5432"
+                    ]
+                  },
+                  "initialDelaySeconds": 1,
+                  "timeoutSeconds": 1,
+                  "periodSeconds": 1,
+                  "successThreshold": 1,
+                  "failureThreshold": 3
+                },
+                "terminationMessagePath": "/dev/termination-log",
+                "terminationMessagePolicy": "File",
+                "imagePullPolicy": "IfNotPresent"
+              }
+            ],
+            "restartPolicy": "Always",
+            "terminationGracePeriodSeconds": 30,
+            "dnsPolicy": "ClusterFirst",
+            "securityContext": {
+              "runAsUser": 999,
+              "fsGroup": 999
+            },
+            "schedulerName": "default-scheduler"
+          }
+        },
+        "volumeClaimTemplates": [
+          {
+            "kind": "PersistentVolumeClaim",
+            "apiVersion": "v1",
+            "metadata": {
+              "name": "kotsadm-postgres",
+              "creationTimestamp": null,
+              "labels": {
+                "kots.io/kotsadm": "true"
+              }
+            },
+            "spec": {
+              "accessModes": [
+                "ReadWriteOnce"
+              ],
+              "resources": {
+                "requests": {
+                  "storage": "1Gi"
+                }
+              },
+              "volumeMode": "Filesystem"
+            },
+            "status": {
+              "phase": "Pending"
+            }
+          }
+        ],
+        "serviceName": "kotsadm-postgres",
+        "podManagementPolicy": "OrderedReady",
+        "updateStrategy": {
+          "type": "RollingUpdate",
+          "rollingUpdate": {
+            "partition": 0
+          }
+        },
+        "revisionHistoryLimit": 10
+      },
+      "status": {
+        "observedGeneration": 1,
+        "replicas": 2,
+        "readyReplicas": 1,
+        "currentReplicas": 1,
+        "updatedReplicas": 1,
+        "currentRevision": "kotsadm-postgres-77c87fd9d8",
+        "updateRevision": "kotsadm-postgres-77c87fd9d8",
+        "collisionCount": 0
+      }
+    }
+  ]
+}

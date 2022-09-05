@@ -5,7 +5,6 @@ import (
 
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/stretchr/testify/assert"
-	"go.undefinedlabs.com/scopeagent"
 )
 
 func Test_selectorToString(t *testing.T) {
@@ -23,8 +22,6 @@ func Test_selectorToString(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			scopetest := scopeagent.StartTest(t)
-			defer scopetest.End()
 			actual := selectorToString(test.selector)
 			assert.Equal(t, test.expect, actual)
 		})
@@ -55,11 +52,41 @@ func Test_DeterministicIDForCollector(t *testing.T) {
 			name: "secret",
 			collector: &troubleshootv1beta2.Collect{
 				Secret: &troubleshootv1beta2.Secret{
-					SecretName: "secret-agent-woman",
-					Namespace:  "top-secret",
+					Namespace: "top-secret",
+					Name:      "secret-agent-woman",
 				},
 			},
 			expect: "secret-top-secret-secret-agent-woman",
+		},
+		{
+			name: "secret selector",
+			collector: &troubleshootv1beta2.Collect{
+				Secret: &troubleshootv1beta2.Secret{
+					Namespace: "top-secret",
+					Selector:  []string{"this=is", "rather=long", "for=testing", "more=words", "too=many", "abcdef!=123456"},
+				},
+			},
+			expect: "secret-top-secret-this-is-rather-long-for-testing-more-words-to",
+		},
+		{
+			name: "configmap",
+			collector: &troubleshootv1beta2.Collect{
+				ConfigMap: &troubleshootv1beta2.ConfigMap{
+					Namespace: "top-secret",
+					Name:      "secret-agent-woman",
+				},
+			},
+			expect: "configmap-top-secret-secret-agent-woman",
+		},
+		{
+			name: "configmap selector",
+			collector: &troubleshootv1beta2.Collect{
+				ConfigMap: &troubleshootv1beta2.ConfigMap{
+					Namespace: "top-secret",
+					Selector:  []string{"this=is", "rather=long", "for=testing", "more=words", "too=many", "abcdef!=123456"},
+				},
+			},
+			expect: "configmap-top-secret-this-is-rather-long-for-testing-more-words",
 		},
 		{
 			name: "logs",
@@ -75,8 +102,6 @@ func Test_DeterministicIDForCollector(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			scopetest := scopeagent.StartTest(t)
-			defer scopetest.End()
 			actual := DeterministicIDForCollector(test.collector)
 			assert.Equal(t, test.expect, actual)
 		})

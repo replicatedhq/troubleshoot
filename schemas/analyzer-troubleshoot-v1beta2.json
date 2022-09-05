@@ -22,6 +22,153 @@
           "items": {
             "type": "object",
             "properties": {
+              "cephStatus": {
+                "type": "object",
+                "required": [
+                  "namespace",
+                  "outcomes"
+                ],
+                "properties": {
+                  "checkName": {
+                    "type": "string"
+                  },
+                  "collectorName": {
+                    "type": "string"
+                  },
+                  "exclude": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  },
+                  "namespace": {
+                    "type": "string"
+                  },
+                  "outcomes": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "fail": {
+                          "type": "object",
+                          "properties": {
+                            "message": {
+                              "type": "string"
+                            },
+                            "uri": {
+                              "type": "string"
+                            },
+                            "when": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "pass": {
+                          "type": "object",
+                          "properties": {
+                            "message": {
+                              "type": "string"
+                            },
+                            "uri": {
+                              "type": "string"
+                            },
+                            "when": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "warn": {
+                          "type": "object",
+                          "properties": {
+                            "message": {
+                              "type": "string"
+                            },
+                            "uri": {
+                              "type": "string"
+                            },
+                            "when": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "strict": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  }
+                }
+              },
+              "clusterPodStatuses": {
+                "type": "object",
+                "required": [
+                  "outcomes"
+                ],
+                "properties": {
+                  "checkName": {
+                    "type": "string"
+                  },
+                  "exclude": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  },
+                  "namespaces": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "outcomes": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "fail": {
+                          "type": "object",
+                          "properties": {
+                            "message": {
+                              "type": "string"
+                            },
+                            "uri": {
+                              "type": "string"
+                            },
+                            "when": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "pass": {
+                          "type": "object",
+                          "properties": {
+                            "message": {
+                              "type": "string"
+                            },
+                            "uri": {
+                              "type": "string"
+                            },
+                            "when": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "warn": {
+                          "type": "object",
+                          "properties": {
+                            "message": {
+                              "type": "string"
+                            },
+                            "uri": {
+                              "type": "string"
+                            },
+                            "when": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "strict": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  }
+                }
+              },
               "clusterVersion": {
                 "type": "object",
                 "required": [
@@ -32,7 +179,6 @@
                     "type": "string"
                   },
                   "exclude": {
-                    "description": "BoolOrString is a type that can hold an bool or a string.  When used in JSON or YAML marshalling and unmarshalling, it produces or consumes the inner type.  This allows you to have, for example, a JSON field that can accept a booolean string or raw bool.",
                     "oneOf": [{"type": "string"},{"type": "boolean"}]
                   },
                   "outcomes": {
@@ -84,147 +230,16 @@
                         }
                       }
                     }
-                  }
-                }
-              },
-              "containerRuntime": {
-                "type": "object",
-                "required": [
-                  "outcomes"
-                ],
-                "properties": {
-                  "checkName": {
-                    "type": "string"
                   },
-                  "exclude": {
-                    "description": "BoolOrString is a type that can hold an bool or a string.  When used in JSON or YAML marshalling and unmarshalling, it produces or consumes the inner type.  This allows you to have, for example, a JSON field that can accept a booolean string or raw bool.",
+                  "strict": {
                     "oneOf": [{"type": "string"},{"type": "boolean"}]
-                  },
-                  "outcomes": {
-                    "type": "array",
-                    "items": {
-                      "type": "object",
-                      "properties": {
-                        "fail": {
-                          "type": "object",
-                          "properties": {
-                            "message": {
-                              "type": "string"
-                            },
-                            "uri": {
-                              "type": "string"
-                            },
-                            "when": {
-                              "type": "string"
-                            }
-                          }
-                        },
-                        "pass": {
-                          "type": "object",
-                          "properties": {
-                            "message": {
-                              "type": "string"
-                            },
-                            "uri": {
-                              "type": "string"
-                            },
-                            "when": {
-                              "type": "string"
-                            }
-                          }
-                        },
-                        "warn": {
-                          "type": "object",
-                          "properties": {
-                            "message": {
-                              "type": "string"
-                            },
-                            "uri": {
-                              "type": "string"
-                            },
-                            "when": {
-                              "type": "string"
-                            }
-                          }
-                        }
-                      }
-                    }
                   }
                 }
               },
-              "customResourceDefinition": {
+              "configMap": {
                 "type": "object",
                 "required": [
-                  "customResourceDefinitionName",
-                  "outcomes"
-                ],
-                "properties": {
-                  "checkName": {
-                    "type": "string"
-                  },
-                  "customResourceDefinitionName": {
-                    "type": "string"
-                  },
-                  "exclude": {
-                    "description": "BoolOrString is a type that can hold an bool or a string.  When used in JSON or YAML marshalling and unmarshalling, it produces or consumes the inner type.  This allows you to have, for example, a JSON field that can accept a booolean string or raw bool.",
-                    "oneOf": [{"type": "string"},{"type": "boolean"}]
-                  },
-                  "outcomes": {
-                    "type": "array",
-                    "items": {
-                      "type": "object",
-                      "properties": {
-                        "fail": {
-                          "type": "object",
-                          "properties": {
-                            "message": {
-                              "type": "string"
-                            },
-                            "uri": {
-                              "type": "string"
-                            },
-                            "when": {
-                              "type": "string"
-                            }
-                          }
-                        },
-                        "pass": {
-                          "type": "object",
-                          "properties": {
-                            "message": {
-                              "type": "string"
-                            },
-                            "uri": {
-                              "type": "string"
-                            },
-                            "when": {
-                              "type": "string"
-                            }
-                          }
-                        },
-                        "warn": {
-                          "type": "object",
-                          "properties": {
-                            "message": {
-                              "type": "string"
-                            },
-                            "uri": {
-                              "type": "string"
-                            },
-                            "when": {
-                              "type": "string"
-                            }
-                          }
-                        }
-                      }
-                    }
-                  }
-                }
-              },
-              "deploymentStatus": {
-                "type": "object",
-                "required": [
-                  "name",
+                  "configMapName",
                   "namespace",
                   "outcomes"
                 ],
@@ -232,11 +247,13 @@
                   "checkName": {
                     "type": "string"
                   },
+                  "configMapName": {
+                    "type": "string"
+                  },
                   "exclude": {
-                    "description": "BoolOrString is a type that can hold an bool or a string.  When used in JSON or YAML marshalling and unmarshalling, it produces or consumes the inner type.  This allows you to have, for example, a JSON field that can accept a booolean string or raw bool.",
                     "oneOf": [{"type": "string"},{"type": "boolean"}]
                   },
-                  "name": {
+                  "key": {
                     "type": "string"
                   },
                   "namespace": {
@@ -291,10 +308,13 @@
                         }
                       }
                     }
+                  },
+                  "strict": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
                   }
                 }
               },
-              "distribution": {
+              "containerRuntime": {
                 "type": "object",
                 "required": [
                   "outcomes"
@@ -304,7 +324,6 @@
                     "type": "string"
                   },
                   "exclude": {
-                    "description": "BoolOrString is a type that can hold an bool or a string.  When used in JSON or YAML marshalling and unmarshalling, it produces or consumes the inner type.  This allows you to have, for example, a JSON field that can accept a booolean string or raw bool.",
                     "oneOf": [{"type": "string"},{"type": "boolean"}]
                   },
                   "outcomes": {
@@ -356,6 +375,227 @@
                         }
                       }
                     }
+                  },
+                  "strict": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  }
+                }
+              },
+              "customResourceDefinition": {
+                "type": "object",
+                "required": [
+                  "customResourceDefinitionName",
+                  "outcomes"
+                ],
+                "properties": {
+                  "checkName": {
+                    "type": "string"
+                  },
+                  "customResourceDefinitionName": {
+                    "type": "string"
+                  },
+                  "exclude": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  },
+                  "outcomes": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "fail": {
+                          "type": "object",
+                          "properties": {
+                            "message": {
+                              "type": "string"
+                            },
+                            "uri": {
+                              "type": "string"
+                            },
+                            "when": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "pass": {
+                          "type": "object",
+                          "properties": {
+                            "message": {
+                              "type": "string"
+                            },
+                            "uri": {
+                              "type": "string"
+                            },
+                            "when": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "warn": {
+                          "type": "object",
+                          "properties": {
+                            "message": {
+                              "type": "string"
+                            },
+                            "uri": {
+                              "type": "string"
+                            },
+                            "when": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "strict": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  }
+                }
+              },
+              "deploymentStatus": {
+                "type": "object",
+                "required": [
+                  "name",
+                  "outcomes"
+                ],
+                "properties": {
+                  "checkName": {
+                    "type": "string"
+                  },
+                  "exclude": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "namespace": {
+                    "type": "string"
+                  },
+                  "namespaces": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "outcomes": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "fail": {
+                          "type": "object",
+                          "properties": {
+                            "message": {
+                              "type": "string"
+                            },
+                            "uri": {
+                              "type": "string"
+                            },
+                            "when": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "pass": {
+                          "type": "object",
+                          "properties": {
+                            "message": {
+                              "type": "string"
+                            },
+                            "uri": {
+                              "type": "string"
+                            },
+                            "when": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "warn": {
+                          "type": "object",
+                          "properties": {
+                            "message": {
+                              "type": "string"
+                            },
+                            "uri": {
+                              "type": "string"
+                            },
+                            "when": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "strict": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  }
+                }
+              },
+              "distribution": {
+                "type": "object",
+                "required": [
+                  "outcomes"
+                ],
+                "properties": {
+                  "checkName": {
+                    "type": "string"
+                  },
+                  "exclude": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  },
+                  "outcomes": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "fail": {
+                          "type": "object",
+                          "properties": {
+                            "message": {
+                              "type": "string"
+                            },
+                            "uri": {
+                              "type": "string"
+                            },
+                            "when": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "pass": {
+                          "type": "object",
+                          "properties": {
+                            "message": {
+                              "type": "string"
+                            },
+                            "uri": {
+                              "type": "string"
+                            },
+                            "when": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "warn": {
+                          "type": "object",
+                          "properties": {
+                            "message": {
+                              "type": "string"
+                            },
+                            "uri": {
+                              "type": "string"
+                            },
+                            "when": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "strict": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
                   }
                 }
               },
@@ -370,7 +610,6 @@
                     "type": "string"
                   },
                   "exclude": {
-                    "description": "BoolOrString is a type that can hold an bool or a string.  When used in JSON or YAML marshalling and unmarshalling, it produces or consumes the inner type.  This allows you to have, for example, a JSON field that can accept a booolean string or raw bool.",
                     "oneOf": [{"type": "string"},{"type": "boolean"}]
                   },
                   "outcomes": {
@@ -425,6 +664,9 @@
                   },
                   "registryName": {
                     "type": "string"
+                  },
+                  "strict": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
                   }
                 }
               },
@@ -440,7 +682,6 @@
                     "type": "string"
                   },
                   "exclude": {
-                    "description": "BoolOrString is a type that can hold an bool or a string.  When used in JSON or YAML marshalling and unmarshalling, it produces or consumes the inner type.  This allows you to have, for example, a JSON field that can accept a booolean string or raw bool.",
                     "oneOf": [{"type": "string"},{"type": "boolean"}]
                   },
                   "ingressName": {
@@ -498,6 +739,163 @@
                         }
                       }
                     }
+                  },
+                  "strict": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  }
+                }
+              },
+              "jobStatus": {
+                "type": "object",
+                "required": [
+                  "name",
+                  "outcomes"
+                ],
+                "properties": {
+                  "checkName": {
+                    "type": "string"
+                  },
+                  "exclude": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "namespace": {
+                    "type": "string"
+                  },
+                  "namespaces": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "outcomes": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "fail": {
+                          "type": "object",
+                          "properties": {
+                            "message": {
+                              "type": "string"
+                            },
+                            "uri": {
+                              "type": "string"
+                            },
+                            "when": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "pass": {
+                          "type": "object",
+                          "properties": {
+                            "message": {
+                              "type": "string"
+                            },
+                            "uri": {
+                              "type": "string"
+                            },
+                            "when": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "warn": {
+                          "type": "object",
+                          "properties": {
+                            "message": {
+                              "type": "string"
+                            },
+                            "uri": {
+                              "type": "string"
+                            },
+                            "when": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "strict": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  }
+                }
+              },
+              "longhorn": {
+                "type": "object",
+                "required": [
+                  "namespace",
+                  "outcomes"
+                ],
+                "properties": {
+                  "checkName": {
+                    "type": "string"
+                  },
+                  "collectorName": {
+                    "type": "string"
+                  },
+                  "exclude": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  },
+                  "namespace": {
+                    "type": "string"
+                  },
+                  "outcomes": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "fail": {
+                          "type": "object",
+                          "properties": {
+                            "message": {
+                              "type": "string"
+                            },
+                            "uri": {
+                              "type": "string"
+                            },
+                            "when": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "pass": {
+                          "type": "object",
+                          "properties": {
+                            "message": {
+                              "type": "string"
+                            },
+                            "uri": {
+                              "type": "string"
+                            },
+                            "when": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "warn": {
+                          "type": "object",
+                          "properties": {
+                            "message": {
+                              "type": "string"
+                            },
+                            "uri": {
+                              "type": "string"
+                            },
+                            "when": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "strict": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
                   }
                 }
               },
@@ -515,7 +913,6 @@
                     "type": "string"
                   },
                   "exclude": {
-                    "description": "BoolOrString is a type that can hold an bool or a string.  When used in JSON or YAML marshalling and unmarshalling, it produces or consumes the inner type.  This allows you to have, for example, a JSON field that can accept a booolean string or raw bool.",
                     "oneOf": [{"type": "string"},{"type": "boolean"}]
                   },
                   "fileName": {
@@ -570,6 +967,9 @@
                         }
                       }
                     }
+                  },
+                  "strict": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
                   }
                 }
               },
@@ -583,7 +983,6 @@
                     "type": "string"
                   },
                   "exclude": {
-                    "description": "BoolOrString is a type that can hold an bool or a string.  When used in JSON or YAML marshalling and unmarshalling, it produces or consumes the inner type.  This allows you to have, for example, a JSON field that can accept a booolean string or raw bool.",
                     "oneOf": [{"type": "string"},{"type": "boolean"}]
                   },
                   "filters": {
@@ -675,6 +1074,9 @@
                         }
                       }
                     }
+                  },
+                  "strict": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
                   }
                 }
               },
@@ -692,7 +1094,6 @@
                     "type": "string"
                   },
                   "exclude": {
-                    "description": "BoolOrString is a type that can hold an bool or a string.  When used in JSON or YAML marshalling and unmarshalling, it produces or consumes the inner type.  This allows you to have, for example, a JSON field that can accept a booolean string or raw bool.",
                     "oneOf": [{"type": "string"},{"type": "boolean"}]
                   },
                   "fileName": {
@@ -747,6 +1148,9 @@
                         }
                       }
                     }
+                  },
+                  "strict": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
                   }
                 }
               },
@@ -764,7 +1168,6 @@
                     "type": "string"
                   },
                   "exclude": {
-                    "description": "BoolOrString is a type that can hold an bool or a string.  When used in JSON or YAML marshalling and unmarshalling, it produces or consumes the inner type.  This allows you to have, for example, a JSON field that can accept a booolean string or raw bool.",
                     "oneOf": [{"type": "string"},{"type": "boolean"}]
                   },
                   "fileName": {
@@ -819,6 +1222,167 @@
                         }
                       }
                     }
+                  },
+                  "strict": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  }
+                }
+              },
+              "registryImages": {
+                "type": "object",
+                "required": [
+                  "collectorName",
+                  "outcomes"
+                ],
+                "properties": {
+                  "checkName": {
+                    "type": "string"
+                  },
+                  "collectorName": {
+                    "type": "string"
+                  },
+                  "exclude": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  },
+                  "outcomes": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "fail": {
+                          "type": "object",
+                          "properties": {
+                            "message": {
+                              "type": "string"
+                            },
+                            "uri": {
+                              "type": "string"
+                            },
+                            "when": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "pass": {
+                          "type": "object",
+                          "properties": {
+                            "message": {
+                              "type": "string"
+                            },
+                            "uri": {
+                              "type": "string"
+                            },
+                            "when": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "warn": {
+                          "type": "object",
+                          "properties": {
+                            "message": {
+                              "type": "string"
+                            },
+                            "uri": {
+                              "type": "string"
+                            },
+                            "when": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "strict": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  }
+                }
+              },
+              "replicasetStatus": {
+                "type": "object",
+                "required": [
+                  "name",
+                  "outcomes",
+                  "selector"
+                ],
+                "properties": {
+                  "checkName": {
+                    "type": "string"
+                  },
+                  "exclude": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "namespace": {
+                    "type": "string"
+                  },
+                  "namespaces": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "outcomes": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "fail": {
+                          "type": "object",
+                          "properties": {
+                            "message": {
+                              "type": "string"
+                            },
+                            "uri": {
+                              "type": "string"
+                            },
+                            "when": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "pass": {
+                          "type": "object",
+                          "properties": {
+                            "message": {
+                              "type": "string"
+                            },
+                            "uri": {
+                              "type": "string"
+                            },
+                            "when": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "warn": {
+                          "type": "object",
+                          "properties": {
+                            "message": {
+                              "type": "string"
+                            },
+                            "uri": {
+                              "type": "string"
+                            },
+                            "when": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "selector": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "strict": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
                   }
                 }
               },
@@ -834,7 +1398,6 @@
                     "type": "string"
                   },
                   "exclude": {
-                    "description": "BoolOrString is a type that can hold an bool or a string.  When used in JSON or YAML marshalling and unmarshalling, it produces or consumes the inner type.  This allows you to have, for example, a JSON field that can accept a booolean string or raw bool.",
                     "oneOf": [{"type": "string"},{"type": "boolean"}]
                   },
                   "key": {
@@ -895,6 +1458,9 @@
                   },
                   "secretName": {
                     "type": "string"
+                  },
+                  "strict": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
                   }
                 }
               },
@@ -902,7 +1468,6 @@
                 "type": "object",
                 "required": [
                   "name",
-                  "namespace",
                   "outcomes"
                 ],
                 "properties": {
@@ -910,7 +1475,6 @@
                     "type": "string"
                   },
                   "exclude": {
-                    "description": "BoolOrString is a type that can hold an bool or a string.  When used in JSON or YAML marshalling and unmarshalling, it produces or consumes the inner type.  This allows you to have, for example, a JSON field that can accept a booolean string or raw bool.",
                     "oneOf": [{"type": "string"},{"type": "boolean"}]
                   },
                   "name": {
@@ -918,6 +1482,12 @@
                   },
                   "namespace": {
                     "type": "string"
+                  },
+                  "namespaces": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
                   },
                   "outcomes": {
                     "type": "array",
@@ -968,6 +1538,9 @@
                         }
                       }
                     }
+                  },
+                  "strict": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
                   }
                 }
               },
@@ -982,7 +1555,6 @@
                     "type": "string"
                   },
                   "exclude": {
-                    "description": "BoolOrString is a type that can hold an bool or a string.  When used in JSON or YAML marshalling and unmarshalling, it produces or consumes the inner type.  This allows you to have, for example, a JSON field that can accept a booolean string or raw bool.",
                     "oneOf": [{"type": "string"},{"type": "boolean"}]
                   },
                   "outcomes": {
@@ -1037,6 +1609,76 @@
                   },
                   "storageClassName": {
                     "type": "string"
+                  },
+                  "strict": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  }
+                }
+              },
+              "sysctl": {
+                "type": "object",
+                "required": [
+                  "outcomes"
+                ],
+                "properties": {
+                  "checkName": {
+                    "type": "string"
+                  },
+                  "exclude": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  },
+                  "outcomes": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "fail": {
+                          "type": "object",
+                          "properties": {
+                            "message": {
+                              "type": "string"
+                            },
+                            "uri": {
+                              "type": "string"
+                            },
+                            "when": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "pass": {
+                          "type": "object",
+                          "properties": {
+                            "message": {
+                              "type": "string"
+                            },
+                            "uri": {
+                              "type": "string"
+                            },
+                            "when": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "warn": {
+                          "type": "object",
+                          "properties": {
+                            "message": {
+                              "type": "string"
+                            },
+                            "uri": {
+                              "type": "string"
+                            },
+                            "when": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "strict": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
                   }
                 }
               },
@@ -1053,11 +1695,13 @@
                     "type": "string"
                   },
                   "exclude": {
-                    "description": "BoolOrString is a type that can hold an bool or a string.  When used in JSON or YAML marshalling and unmarshalling, it produces or consumes the inner type.  This allows you to have, for example, a JSON field that can accept a booolean string or raw bool.",
                     "oneOf": [{"type": "string"},{"type": "boolean"}]
                   },
                   "fileName": {
                     "type": "string"
+                  },
+                  "ignoreIfNoFiles": {
+                    "type": "boolean"
                   },
                   "outcomes": {
                     "type": "array",
@@ -1114,6 +1758,29 @@
                   },
                   "regexGroups": {
                     "type": "string"
+                  },
+                  "strict": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  }
+                }
+              },
+              "weaveReport": {
+                "type": "object",
+                "required": [
+                  "reportFileGlob"
+                ],
+                "properties": {
+                  "checkName": {
+                    "type": "string"
+                  },
+                  "exclude": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  },
+                  "reportFileGlob": {
+                    "type": "string"
+                  },
+                  "strict": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
                   }
                 }
               }

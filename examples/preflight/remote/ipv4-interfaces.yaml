@@ -1,0 +1,19 @@
+apiVersion: troubleshoot.sh/v1beta2
+kind: HostPreflight
+metadata:
+  name: ipv4Interfaces
+spec:
+  remoteCollectors:
+    - ipv4Interfaces: {}
+  analyzers:
+    - ipv4Interfaces:
+        outcomes:
+          - fail:
+              when: "count == 0"
+              message: No IPv4 interfaces detected
+          - warn:
+              when: "count >= 2"
+              message: Multiple IPv4 interfaces detected
+          - pass:
+              when: "count == 1"
+              message: IPv4 interface detected

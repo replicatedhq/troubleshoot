@@ -1,0 +1,8 @@
+apiVersion: troubleshoot.sh/v1beta2
+kind: RemoteCollector
+metadata:
+  name: block
+spec:
+  collectors:
+    - blockDevices: {}
+

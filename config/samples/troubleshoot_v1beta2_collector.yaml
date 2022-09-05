@@ -3,6 +3,7 @@ kind: Collector
 metadata:
   name: collector-sample
 spec:
+  uri: https://raw.githubusercontent.com/replicatedhq/troubleshoot-specs/main/in-cluster/default.yaml
   collectors:
     - clusterInfo: {}
     - clusterResources: {}
@@ -15,7 +16,7 @@ spec:
     #       - name=nginx-ingress-microk8s
     #     namespace: default
     #     limits:
-    #       maxAge: 30d
+    #       maxAge: 720h # 30*24
     #       maxLines: 10000
     # - run:
     #     collectorName: ping-google

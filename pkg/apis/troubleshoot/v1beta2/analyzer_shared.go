@@ -4,18 +4,6 @@ import (
 	"github.com/replicatedhq/troubleshoot/pkg/multitype"
 )
 
-type SingleOutcome struct {
-	When    string `json:"when,omitempty" yaml:"when,omitempty"`
-	Message string `json:"message,omitempty" yaml:"message,omitempty"`
-	URI     string `json:"uri,omitempty" yaml:"uri,omitempty"`
-}
-
-type Outcome struct {
-	Fail *SingleOutcome `json:"fail,omitempty" yaml:"fail,omitempty"`
-	Warn *SingleOutcome `json:"warn,omitempty" yaml:"warn,omitempty"`
-	Pass *SingleOutcome `json:"pass,omitempty" yaml:"pass,omitempty"`
-}
-
 type ClusterVersion struct {
 	AnalyzeMeta `json:",inline" yaml:",inline"`
 	Outcomes    []*Outcome `json:"outcomes" yaml:"outcomes"`
@@ -48,23 +36,57 @@ type AnalyzeSecret struct {
 	Key         string     `json:"key,omitempty" yaml:"key,omitempty"`
 }
 
+type AnalyzeConfigMap struct {
+	AnalyzeMeta   `json:",inline" yaml:",inline"`
+	Outcomes      []*Outcome `json:"outcomes" yaml:"outcomes"`
+	ConfigMapName string     `json:"configMapName" yaml:"configMapName"`
+	Namespace     string     `json:"namespace" yaml:"namespace"`
+	Key           string     `json:"key,omitempty" yaml:"key,omitempty"`
+}
+
 type ImagePullSecret struct {
 	AnalyzeMeta  `json:",inline" yaml:",inline"`
 	Outcomes     []*Outcome `json:"outcomes" yaml:"outcomes"`
 	RegistryName string     `json:"registryName" yaml:"registryName"`
 }
+
 type DeploymentStatus struct {
 	AnalyzeMeta `json:",inline" yaml:",inline"`
 	Outcomes    []*Outcome `json:"outcomes" yaml:"outcomes"`
-	Namespace   string     `json:"namespace" yaml:"namespace"`
+	Namespace   string     `json:"namespace,omitempty" yaml:"namespace,omitempty"`
+	Namespaces  []string   `json:"namespaces,omitempty" yaml:"namespaces,omitempty"`
 	Name        string     `json:"name" yaml:"name"`
 }
 
 type StatefulsetStatus struct {
 	AnalyzeMeta `json:",inline" yaml:",inline"`
 	Outcomes    []*Outcome `json:"outcomes" yaml:"outcomes"`
-	Namespace   string     `json:"namespace" yaml:"namespace"`
+	Namespace   string     `json:"namespace,omitempty" yaml:"namespace,omitempty"`
+	Namespaces  []string   `json:"namespaces,omitempty" yaml:"namespaces,omitempty"`
 	Name        string     `json:"name" yaml:"name"`
+}
+
+type JobStatus struct {
+	AnalyzeMeta `json:",inline" yaml:",inline"`
+	Outcomes    []*Outcome `json:"outcomes" yaml:"outcomes"`
+	Namespace   string     `json:"namespace,omitempty" yaml:"namespace,omitempty"`
+	Namespaces  []string   `json:"namespaces,omitempty" yaml:"namespaces,omitempty"`
+	Name        string     `json:"name" yaml:"name"`
+}
+
+type ReplicaSetStatus struct {
+	AnalyzeMeta `json:",inline" yaml:",inline"`
+	Outcomes    []*Outcome `json:"outcomes" yaml:"outcomes"`
+	Namespace   string     `json:"namespace,omitempty" yaml:"namespace,omitempty"`
+	Namespaces  []string   `json:"namespaces,omitempty" yaml:"namespaces,omitempty"`
+	Name        string     `json:"name" yaml:"name"`
+	Selector    []string   `json:"selector" yaml:"selector"`
+}
+
+type ClusterPodStatuses struct {
+	AnalyzeMeta `json:",inline" yaml:",inline"`
+	Outcomes    []*Outcome `json:"outcomes" yaml:"outcomes"`
+	Namespaces  []string   `json:"namespaces,omitempty" yaml:"namespaces,omitempty"`
 }
 
 type ContainerRuntime struct {
@@ -100,11 +122,30 @@ type NodeResourceSelectors struct {
 }
 
 type TextAnalyze struct {
+	AnalyzeMeta     `json:",inline" yaml:",inline"`
+	CollectorName   string     `json:"collectorName,omitempty" yaml:"collectorName,omitempty"`
+	FileName        string     `json:"fileName,omitempty" yaml:"fileName,omitempty"`
+	RegexPattern    string     `json:"regex,omitempty" yaml:"regex,omitempty"`
+	RegexGroups     string     `json:"regexGroups,omitempty" yaml:"regexGroups,omitempty"`
+	IgnoreIfNoFiles bool       `json:"ignoreIfNoFiles,omitempty" yaml:"ignoreIfNoFiles,omitempty"`
+	Outcomes        []*Outcome `json:"outcomes" yaml:"outcomes"`
+}
+
+type YamlCompare struct {
 	AnalyzeMeta   `json:",inline" yaml:",inline"`
 	CollectorName string     `json:"collectorName,omitempty" yaml:"collectorName,omitempty"`
 	FileName      string     `json:"fileName,omitempty" yaml:"fileName,omitempty"`
-	RegexPattern  string     `json:"regex,omitempty" yaml:"regex,omitempty"`
-	RegexGroups   string     `json:"regexGroups,omitempty" yaml:"regexGroups,omitempty"`
+	Path          string     `json:"path,omitempty" yaml:"path,omitempty"`
+	Value         string     `json:"value,omitempty" yaml:"value,omitempty"`
+	Outcomes      []*Outcome `json:"outcomes" yaml:"outcomes"`
+}
+
+type JsonCompare struct {
+	AnalyzeMeta   `json:",inline" yaml:",inline"`
+	CollectorName string     `json:"collectorName,omitempty" yaml:"collectorName,omitempty"`
+	FileName      string     `json:"fileName,omitempty" yaml:"fileName,omitempty"`
+	Path          string     `json:"path,omitempty" yaml:"path,omitempty"`
+	Value         string     `json:"value,omitempty" yaml:"value,omitempty"`
 	Outcomes      []*Outcome `json:"outcomes" yaml:"outcomes"`
 }
 
@@ -128,9 +169,34 @@ type CephStatusAnalyze struct {
 	Namespace     string     `json:"namespace" yaml:"namespace"`
 }
 
+type LonghornAnalyze struct {
+	AnalyzeMeta   `json:",inline" yaml:",inline"`
+	Outcomes      []*Outcome `json:"outcomes" yaml:"outcomes"`
+	CollectorName string     `json:"collectorName,omitempty" yaml:"collectorName,omitempty"`
+	Namespace     string     `json:"namespace" yaml:"namespace"`
+}
+
+type WeaveReportAnalyze struct {
+	AnalyzeMeta    `json:",inline" yaml:",inline"`
+	ReportFileGlob string `json:"reportFileGlob" yaml:"reportFileGlob,omitempty"`
+}
+
+type RegistryImagesAnalyze struct {
+	AnalyzeMeta   `json:",inline" yaml:",inline"`
+	Outcomes      []*Outcome `json:"outcomes" yaml:"outcomes"`
+	CollectorName string     `json:"collectorName" yaml:"collectorName"`
+}
+
+type SysctlAnalyze struct {
+	AnalyzeMeta `json:",inline" yaml:",inline"`
+	Outcomes    []*Outcome `json:"outcomes" yaml:"outcomes"`
+}
+
 type AnalyzeMeta struct {
-	CheckName string                 `json:"checkName,omitempty" yaml:"checkName,omitempty"`
-	Exclude   multitype.BoolOrString `json:"exclude,omitempty" yaml:"exclude,omitempty"`
+	CheckName   string                  `json:"checkName,omitempty" yaml:"checkName,omitempty"`
+	Exclude     *multitype.BoolOrString `json:"exclude,omitempty" yaml:"exclude,omitempty"`
+	Strict      *multitype.BoolOrString `json:"strict,omitempty" yaml:"strict,omitempty"`
+	Annotations map[string]string       `json:"annotations,omitempty" yaml:"annotations,omitempty"`
 }
 
 type Analyze struct {
@@ -139,15 +205,25 @@ type Analyze struct {
 	CustomResourceDefinition *CustomResourceDefinition `json:"customResourceDefinition,omitempty" yaml:"customResourceDefinition,omitempty"`
 	Ingress                  *Ingress                  `json:"ingress,omitempty" yaml:"ingress,omitempty"`
 	Secret                   *AnalyzeSecret            `json:"secret,omitempty" yaml:"secret,omitempty"`
+	ConfigMap                *AnalyzeConfigMap         `json:"configMap,omitempty" yaml:"configMap,omitempty"`
 	ImagePullSecret          *ImagePullSecret          `json:"imagePullSecret,omitempty" yaml:"imagePullSecret,omitempty"`
 	DeploymentStatus         *DeploymentStatus         `json:"deploymentStatus,omitempty" yaml:"deploymentStatus,omitempty"`
 	StatefulsetStatus        *StatefulsetStatus        `json:"statefulsetStatus,omitempty" yaml:"statefulsetStatus,omitempty"`
+	JobStatus                *JobStatus                `json:"jobStatus,omitempty" yaml:"jobStatus,omitempty"`
+	ReplicaSetStatus         *ReplicaSetStatus         `json:"replicasetStatus,omitempty" yaml:"replicasetStatus,omitempty"`
+	ClusterPodStatuses       *ClusterPodStatuses       `json:"clusterPodStatuses,omitempty" yaml:"clusterPodStatuses,omitempty"`
 	ContainerRuntime         *ContainerRuntime         `json:"containerRuntime,omitempty" yaml:"containerRuntime,omitempty"`
 	Distribution             *Distribution             `json:"distribution,omitempty" yaml:"distribution,omitempty"`
 	NodeResources            *NodeResources            `json:"nodeResources,omitempty" yaml:"nodeResources,omitempty"`
 	TextAnalyze              *TextAnalyze              `json:"textAnalyze,omitempty" yaml:"textAnalyze,omitempty"`
+	YamlCompare              *YamlCompare              `json:"yamlCompare,omitempty" yaml:"yamlCompare,omitempty"`
+	JsonCompare              *JsonCompare              `json:"jsonCompare,omitempty" yaml:"jsonCompare,omitempty"`
 	Postgres                 *DatabaseAnalyze          `json:"postgres,omitempty" yaml:"postgres,omitempty"`
 	Mysql                    *DatabaseAnalyze          `json:"mysql,omitempty" yaml:"mysql,omitempty"`
 	Redis                    *DatabaseAnalyze          `json:"redis,omitempty" yaml:"redis,omitempty"`
 	CephStatus               *CephStatusAnalyze        `json:"cephStatus,omitempty" yaml:"cephStatus,omitempty"`
+	Longhorn                 *LonghornAnalyze          `json:"longhorn,omitempty" yaml:"longhorn,omitempty"`
+	RegistryImages           *RegistryImagesAnalyze    `json:"registryImages,omitempty" yaml:"registryImages,omitempty"`
+	WeaveReport              *WeaveReportAnalyze       `json:"weaveReport,omitempty" yaml:"weaveReport,omitempty"`
+	Sysctl                   *SysctlAnalyze            `json:"sysctl,omitempty" yaml:"sysctl,omitempty"`
 }

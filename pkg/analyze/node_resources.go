@@ -19,14 +19,14 @@ func analyzeNodeResources(analyzer *troubleshootv1beta2.NodeResources, getCollec
 		return nil, errors.Wrap(err, "failed to get contents of nodes.json")
 	}
 
-	nodes := []corev1.Node{}
+	var nodes corev1.NodeList
 	if err := json.Unmarshal(collected, &nodes); err != nil {
 		return nil, errors.Wrap(err, "failed to unmarshal node list")
 	}
 
 	matchingNodes := []corev1.Node{}
 
-	for _, node := range nodes {
+	for _, node := range nodes.Items {
 		isMatch, err := nodeMatchesFilters(node, analyzer.Filters)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to check if node matches filter")
@@ -50,7 +50,7 @@ func analyzeNodeResources(analyzer *troubleshootv1beta2.NodeResources, getCollec
 
 	for _, outcome := range analyzer.Outcomes {
 		if outcome.Fail != nil {
-			isWhenMatch, err := compareNodeResourceConditionalToActual(outcome.Fail.When, matchingNodes, len(nodes))
+			isWhenMatch, err := compareNodeResourceConditionalToActual(outcome.Fail.When, matchingNodes)
 			if err != nil {
 				return nil, errors.Wrap(err, "failed to parse when")
 			}
@@ -63,7 +63,7 @@ func analyzeNodeResources(analyzer *troubleshootv1beta2.NodeResources, getCollec
 				return result, nil
 			}
 		} else if outcome.Warn != nil {
-			isWhenMatch, err := compareNodeResourceConditionalToActual(outcome.Warn.When, matchingNodes, len(nodes))
+			isWhenMatch, err := compareNodeResourceConditionalToActual(outcome.Warn.When, matchingNodes)
 			if err != nil {
 				return nil, errors.Wrap(err, "failed to parse when")
 			}
@@ -76,7 +76,7 @@ func analyzeNodeResources(analyzer *troubleshootv1beta2.NodeResources, getCollec
 				return result, nil
 			}
 		} else if outcome.Pass != nil {
-			isWhenMatch, err := compareNodeResourceConditionalToActual(outcome.Pass.When, matchingNodes, len(nodes))
+			isWhenMatch, err := compareNodeResourceConditionalToActual(outcome.Pass.When, matchingNodes)
 			if err != nil {
 				return nil, errors.Wrap(err, "failed to parse when")
 			}
@@ -94,7 +94,7 @@ func analyzeNodeResources(analyzer *troubleshootv1beta2.NodeResources, getCollec
 	return result, nil
 }
 
-func compareNodeResourceConditionalToActual(conditional string, matchingNodes []corev1.Node, totalNodeCount int) (res bool, err error) {
+func compareNodeResourceConditionalToActual(conditional string, matchingNodes []corev1.Node) (res bool, err error) {
 	res = false
 	err = nil
 
@@ -159,6 +159,27 @@ func compareNodeResourceConditionalToActual(conditional string, matchingNodes []
 		actualValue = findMax(matchingNodes, property)
 	case "sum":
 		actualValue = findSum(matchingNodes, property)
+	case "nodeCondition":
+		operatorChecker := regexp.MustCompile(`={1,3}`)
+		if !operatorChecker.MatchString(operator) {
+			err = errors.New("nodeCondition function can only be compared using equals expression.")
+			return
+		}
+		if match[2] == "" {
+			err = errors.New("value function parameter missing.")
+			return
+		}
+
+		for _, node := range matchingNodes {
+			for _, condition := range node.Status.Conditions {
+				if string(condition.Type) == match[2] && string(condition.Status) == desiredValue {
+					res = true
+					return
+				}
+			}
+		}
+		res = false
+		return
 	}
 
 	switch operator {
@@ -321,8 +342,11 @@ func nodeMatchesFilters(node corev1.Node, filters *troubleshootv1beta2.NodeResou
 	// all filters must pass for this to pass
 	if filters.Selector != nil {
 		for k, v := range filters.Selector.MatchLabel {
-			if l, found := node.Labels[k]; !found || l != v {
-				return false, errors.Errorf("failed to match label %s", k)
+			l, found := node.Labels[k]
+			if !found {
+				return false, nil
+			} else if l != v {
+				return false, nil
 			}
 		}
 	}

@@ -25,20 +25,35 @@ func Bool(text string, data interface{}) (bool, error) {
 }
 
 func Execute(text string, data interface{}) (string, error) {
-	tmpl, err := template.New(text).
-		Delims("{{repl", "}}").
-		Funcs(funcMap).
-		Parse(text)
-	if err != nil {
-		return "", err
+	delims := []struct {
+		ldelim string
+		rdelim string
+	}{
+		{"{{repl", "}}"},
+		{"repl{{", "}}"},
 	}
-	var buf bytes.Buffer
-	err = func() (err error) {
-		defer errRecover(&err)
-		err = tmpl.Execute(&buf, data)
-		return
-	}()
-	return buf.String(), err
+
+	curText := text
+	for _, d := range delims {
+		tmpl, err := template.New(curText).
+			Delims(d.ldelim, d.rdelim).
+			Funcs(funcMap).
+			Parse(curText)
+		if err != nil {
+			return "", err
+		}
+		var buf bytes.Buffer
+		err = func() (err error) {
+			defer errRecover(&err)
+			err = tmpl.Execute(&buf, data)
+			return
+		}()
+		if err != nil {
+			return "", err
+		}
+		curText = buf.String()
+	}
+	return curText, nil
 }
 
 func RegisterFunc(key string, fn interface{}) {

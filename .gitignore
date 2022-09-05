@@ -26,7 +26,11 @@ vendor
 *.swo
 *~
 
-# scope test logs
-scope-go-*.log
-
 dist
+try.sh
+
+.vscode/
+workspace.*
+
+cosign.key
+sbom/

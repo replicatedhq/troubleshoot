@@ -4,95 +4,148 @@ import (
 	"archive/tar"
 	"bytes"
 	"compress/gzip"
-	"encoding/binary"
 	"io"
+	"io/ioutil"
+	"os"
 	"path/filepath"
 	"strings"
 
+	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/replicatedhq/troubleshoot/pkg/redact"
 )
 
-func redactMap(input map[string][]byte, additionalRedactors []*troubleshootv1beta2.Redact) (map[string][]byte, error) {
-	result := make(map[string][]byte)
+func RedactResult(bundlePath string, input CollectorResult, additionalRedactors []*troubleshootv1beta2.Redact) error {
 	for k, v := range input {
+		var reader io.Reader
 		if v == nil {
-			continue
+			r, err := input.GetReader(bundlePath, k)
+			if err != nil {
+				if os.IsNotExist(errors.Cause(err)) {
+					continue
+				}
+				return errors.Wrap(err, "failed to get reader")
+			}
+			defer r.Close()
+
+			reader = r
+		} else {
+			reader = bytes.NewBuffer(v)
 		}
+
 		//If the file is .tar, .tgz or .tar.gz, it must not be redacted. Instead it is decompressed and each file inside the
 		//tar is decompressed, redacted and compressed back into the tar.
 		if filepath.Ext(k) == ".tar" || filepath.Ext(k) == ".tgz" || strings.HasSuffix(k, ".tar.gz") {
-			tarFile := bytes.NewBuffer(v)
-			unRedacted, tarHeaders, err := decompressFile(tarFile, k)
+			tmpDir, err := ioutil.TempDir("", "troubleshoot-subresult-")
 			if err != nil {
-				return nil, err
+				return errors.Wrap(err, "failed to create temp dir")
 			}
-			redacted, err := redactMap(unRedacted, additionalRedactors)
+			defer os.RemoveAll(tmpDir)
+
+			subResult, tarHeaders, err := decompressFile(tmpDir, reader, k)
 			if err != nil {
-				return nil, err
+				return errors.Wrap(err, "failed to decompress file")
 			}
-			result[k], err = compressFiles(redacted, tarHeaders, k)
+			err = RedactResult(tmpDir, subResult, additionalRedactors)
 			if err != nil {
-				return nil, err
+				return errors.Wrap(err, "failed to redact file")
 			}
+
+			dstFilename := filepath.Join(bundlePath, k)
+			err = compressFiles(tmpDir, subResult, tarHeaders, dstFilename)
+			if err != nil {
+				return errors.Wrap(err, "failed to re-compress file")
+			}
+
+			os.RemoveAll(tmpDir) // ensure clean up on each iteration in addition to the defer
+
 			//Content of the tar file was redacted. Continue to next file.
 			continue
 		}
-		redacted, err := redact.Redact(v, k, additionalRedactors)
+
+		redacted, err := redact.Redact(reader, k, additionalRedactors)
 		if err != nil {
-			return nil, err
+			return errors.Wrap(err, "failed to redact")
 		}
-		result[k] = redacted
+
+		err = input.ReplaceResult(bundlePath, k, redacted)
+		if err != nil {
+			return errors.Wrap(err, "failed to create redacted result")
+		}
 	}
-	return result, nil
+	return nil
 }
 
-func compressFiles(tarContent map[string][]byte, tarHeaders map[string]*tar.Header, filename string) ([]byte, error) {
-	buff := new(bytes.Buffer)
+func compressFiles(bundlePath string, result CollectorResult, tarHeaders map[string]*tar.Header, dstFilename string) error {
+	fw, err := os.Create(dstFilename)
+	if err != nil {
+		return errors.Wrap(err, "failed to open destination file")
+	}
+	defer fw.Close()
+
 	var tw *tar.Writer
 	var zw *gzip.Writer
-	if filepath.Ext(filename) != ".tar" {
-		zw = gzip.NewWriter(buff)
+	if filepath.Ext(dstFilename) != ".tar" {
+		zw = gzip.NewWriter(fw)
 		tw = tar.NewWriter(zw)
 		defer zw.Close()
 	} else {
-		tw = tar.NewWriter(buff)
+		tw = tar.NewWriter(fw)
 	}
 	defer tw.Close()
-	for p, f := range tarContent {
-		if tarHeaders[p].FileInfo().IsDir() {
-			err := tw.WriteHeader(tarHeaders[p])
+
+	for subPath := range result {
+		if tarHeaders[subPath].FileInfo().IsDir() {
+			err := tw.WriteHeader(tarHeaders[subPath])
 			if err != nil {
-				return nil, err
+				return err
 			}
 			continue
 		}
+
+		srcFilename := filepath.Join(bundlePath, subPath)
+		fileStat, err := os.Stat(srcFilename)
+		if err != nil {
+			return errors.Wrap(err, "failed to stat source file")
+		}
+
+		fr, err := os.Open(srcFilename)
+		if err != nil {
+			return errors.Wrap(err, "failed to open source file")
+		}
+		defer fr.Close()
+
 		//File size must be recalculated in case the redactor added some bytes while redacting.
-		tarHeaders[p].Size = int64(binary.Size(f))
-		err := tw.WriteHeader(tarHeaders[p])
+		tarHeaders[subPath].Size = fileStat.Size()
+		err = tw.WriteHeader(tarHeaders[subPath])
 		if err != nil {
-			return nil, err
+			return errors.Wrap(err, "failed to write tar header")
 		}
-		_, err = tw.Write(f)
+		_, err = io.Copy(tw, fr)
 		if err != nil {
-			return nil, err
+			return errors.Wrap(err, "failed to write tar data")
 		}
+
+		_ = fr.Close()
 	}
-	err := tw.Close()
+
+	err = tw.Close()
 	if err != nil {
-		return nil, err
+		return err
 	}
-	if filepath.Ext(filename) != ".tar" {
+	if filepath.Ext(dstFilename) != ".tar" {
 		err = zw.Close()
 		if err != nil {
-			return nil, err
+			return err
 		}
 	}
-	return buff.Bytes(), nil
 
+	return nil
 }
 
-func decompressFile(tarFile *bytes.Buffer, filename string) (map[string][]byte, map[string]*tar.Header, error) {
+func decompressFile(dstDir string, tarFile io.Reader, filename string) (CollectorResult, map[string]*tar.Header, error) {
+	result := NewResult()
+
 	var tarReader *tar.Reader
 	var zr *gzip.Reader
 	var err error
@@ -106,8 +159,8 @@ func decompressFile(tarFile *bytes.Buffer, filename string) (map[string][]byte, 
 	} else {
 		tarReader = tar.NewReader(tarFile)
 	}
+
 	tarHeaders := make(map[string]*tar.Header)
-	tarContent := make(map[string][]byte)
 	for {
 		header, err := tarReader.Next()
 		if err != nil {
@@ -116,14 +169,13 @@ func decompressFile(tarFile *bytes.Buffer, filename string) (map[string][]byte, 
 			}
 			break
 		}
-		file := new(bytes.Buffer)
-		_, err = io.Copy(file, tarReader)
-		if err != nil {
-			return nil, nil, err
+		if !header.FileInfo().Mode().IsRegular() {
+			continue
 		}
-		tarContent[header.Name] = file.Bytes()
+		result.SaveResult(dstDir, header.Name, tarReader)
 		tarHeaders[header.Name] = header
 
 	}
-	return tarContent, tarHeaders, nil
+
+	return result, tarHeaders, nil
 }

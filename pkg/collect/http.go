@@ -1,6 +1,7 @@
 package collect
 
 import (
+	"bytes"
 	"crypto/tls"
 	"encoding/json"
 	"errors"
@@ -12,17 +13,27 @@ import (
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 )
 
-type httpResponse struct {
+type HTTPResponse struct {
 	Status  int               `json:"status"`
 	Body    string            `json:"body"`
 	Headers map[string]string `json:"headers"`
 }
 
-type httpError struct {
+type HTTPError struct {
 	Message string `json:"message"`
 }
 
-func HTTP(c *Collector, httpCollector *troubleshootv1beta2.HTTP) (map[string][]byte, error) {
+var (
+	httpInsecureClient = &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: true,
+			},
+		},
+	}
+)
+
+func HTTP(c *Collector, httpCollector *troubleshootv1beta2.HTTP) (CollectorResult, error) {
 	var response *http.Response
 	var err error
 
@@ -36,7 +47,7 @@ func HTTP(c *Collector, httpCollector *troubleshootv1beta2.HTTP) (map[string][]b
 		return nil, errors.New("no supported http request type")
 	}
 
-	output, err := responseToOutput(response, err, c.Redact)
+	o, err := responseToOutput(response, err, c.Redact)
 	if err != nil {
 		return nil, err
 	}
@@ -45,16 +56,17 @@ func HTTP(c *Collector, httpCollector *troubleshootv1beta2.HTTP) (map[string][]b
 	if httpCollector.CollectorName != "" {
 		fileName = httpCollector.CollectorName + ".json"
 	}
-	httpOutput := map[string][]byte{
-		filepath.Join(httpCollector.Name, fileName): output,
-	}
 
-	return httpOutput, nil
+	output := NewResult()
+	output.SaveResult(c.BundlePath, filepath.Join(httpCollector.Name, fileName), bytes.NewBuffer(o))
+
+	return output, nil
 }
 
 func doGet(get *troubleshootv1beta2.Get) (*http.Response, error) {
-	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{
-		InsecureSkipVerify: get.InsecureSkipVerify,
+	httpClient := http.DefaultClient
+	if get.InsecureSkipVerify {
+		httpClient = httpInsecureClient
 	}
 
 	req, err := http.NewRequest("GET", get.URL, nil)
@@ -66,12 +78,13 @@ func doGet(get *troubleshootv1beta2.Get) (*http.Response, error) {
 		req.Header.Set(k, v)
 	}
 
-	return http.DefaultClient.Do(req)
+	return httpClient.Do(req)
 }
 
 func doPost(post *troubleshootv1beta2.Post) (*http.Response, error) {
-	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{
-		InsecureSkipVerify: post.InsecureSkipVerify,
+	httpClient := http.DefaultClient
+	if post.InsecureSkipVerify {
+		httpClient = httpInsecureClient
 	}
 
 	req, err := http.NewRequest("POST", post.URL, strings.NewReader(post.Body))
@@ -83,12 +96,13 @@ func doPost(post *troubleshootv1beta2.Post) (*http.Response, error) {
 		req.Header.Set(k, v)
 	}
 
-	return http.DefaultClient.Do(req)
+	return httpClient.Do(req)
 }
 
 func doPut(put *troubleshootv1beta2.Put) (*http.Response, error) {
-	http.DefaultTransport.(*http.Transport).TLSClientConfig = &tls.Config{
-		InsecureSkipVerify: put.InsecureSkipVerify,
+	httpClient := http.DefaultClient
+	if put.InsecureSkipVerify {
+		httpClient = httpInsecureClient
 	}
 
 	req, err := http.NewRequest("PUT", put.URL, strings.NewReader(put.Body))
@@ -100,13 +114,13 @@ func doPut(put *troubleshootv1beta2.Put) (*http.Response, error) {
 		req.Header.Set(k, v)
 	}
 
-	return http.DefaultClient.Do(req)
+	return httpClient.Do(req)
 }
 
 func responseToOutput(response *http.Response, err error, doRedact bool) ([]byte, error) {
 	output := make(map[string]interface{})
 	if err != nil {
-		output["error"] = httpError{
+		output["error"] = HTTPError{
 			Message: err.Error(),
 		}
 	} else {
@@ -120,7 +134,7 @@ func responseToOutput(response *http.Response, err error, doRedact bool) ([]byte
 			headers[k] = strings.Join(v, ",")
 		}
 
-		output["response"] = httpResponse{
+		output["response"] = HTTPResponse{
 			Status:  response.StatusCode,
 			Body:    string(body),
 			Headers: headers,

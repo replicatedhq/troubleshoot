@@ -1,6 +1,7 @@
 package version
 
 import (
+	"fmt"
 	"runtime"
 	"time"
 )
@@ -69,4 +70,8 @@ func getGoInfo() GoInfo {
 		OS:       runtime.GOOS,
 		Arch:     runtime.GOARCH,
 	}
+}
+
+func GetUserAgent() string {
+	return fmt.Sprintf("Replicated_Troubleshoot/%s", Version())
 }
