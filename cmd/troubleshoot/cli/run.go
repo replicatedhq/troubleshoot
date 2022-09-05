@@ -68,19 +68,6 @@ func runTroubleshoot(v *viper.Viper, arg []string) error {
 		})
 	}
 
-	// 	collectorContent, err := supportbundle.LoadSupportBundleSpec(arg)
-	// 	if err != nil {
-	// 		return errors.Wrap(err, "failed to load collector spec")
-	// 	}
-	//
-	// 	multidocs := strings.Split(string(collectorContent), "\n---\n")
-	//
-	// 	// we support both raw collector kinds and supportbundle kinds here
-	// supportBundle, err := supportbundle.ParseSupportBundleFromDoc([]byte(multidocs[0]))
-	// 	if err != nil {
-	// 		return errors.Wrap(err, "failed to parse collector")
-	// 	}
-
 	var mainBundle *troubleshootv1beta2.SupportBundle
 
 	troubleshootclientsetscheme.AddToScheme(scheme.Scheme)
@@ -101,7 +88,7 @@ func runTroubleshoot(v *viper.Viper, arg []string) error {
 		if i == 0 {
 			mainBundle = supportBundle
 		} else {
-			mainBundle.ConcatSpec(supportBundle)
+			mainBundle = supportbundle.ConcatSpec(mainBundle, supportBundle)
 		}
 
 		for i, additionalDoc := range multidocs {
@@ -134,25 +121,6 @@ func runTroubleshoot(v *viper.Viper, arg []string) error {
 			additionalRedactors.Spec.Redactors = append(additionalRedactors.Spec.Redactors, redactorObj.Spec.Redactors...)
 		}
 	}
-
-	// 	for i, additionalDoc := range multidocs {
-	// 		if i == 0 {
-	// 			continue
-	// 		}
-	// 		additionalDoc, err := docrewrite.ConvertToV1Beta2([]byte(additionalDoc))
-	// 		if err != nil {
-	// 			return errors.Wrap(err, "failed to convert to v1beta2")
-	// 		}
-	// 		obj, _, err := decode(additionalDoc, nil, nil)
-	// 		if err != nil {
-	// 			return errors.Wrapf(err, "failed to parse additional doc %d", i)
-	// 		}
-	// 		multidocRedactors, ok := obj.(*troubleshootv1beta2.Redactor)
-	// 		if !ok {
-	// 			continue
-	// 		}
-	// 		additionalRedactors.Spec.Redactors = append(additionalRedactors.Spec.Redactors, multidocRedactors.Spec.Redactors...)
-	// 	}
 
 	var collectorCB func(chan interface{}, string)
 	progressChan := make(chan interface{}) // non-zero buffer can result in missed messages
