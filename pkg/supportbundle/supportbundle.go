@@ -230,20 +230,10 @@ func AnalyzeSupportBundle(spec *troubleshootv1beta2.SupportBundleSpec, tmpDir st
 // the intention with these appends is to swap them out at a later date with more specific handlers for merging the spec fields
 func ConcatSpec(target *troubleshootv1beta2.SupportBundle, source *troubleshootv1beta2.SupportBundle) *troubleshootv1beta2.SupportBundle {
 	newBundle := target.DeepCopy()
-	for _, v := range source.Spec.Collectors {
-		newBundle.Spec.Collectors = append(target.Spec.Collectors, v)
-	}
-	for _, v := range source.Spec.AfterCollection {
-		newBundle.Spec.AfterCollection = append(target.Spec.AfterCollection, v)
-	}
-	for _, v := range source.Spec.HostCollectors {
-		newBundle.Spec.HostCollectors = append(target.Spec.HostCollectors, v)
-	}
-	for _, v := range source.Spec.HostAnalyzers {
-		newBundle.Spec.HostAnalyzers = append(target.Spec.HostAnalyzers, v)
-	}
-	for _, v := range source.Spec.Analyzers {
-		newBundle.Spec.Analyzers = append(target.Spec.Analyzers, v)
-	}
+	newBundle.Spec.Collectors = append(target.Spec.Collectors, source.Spec.Collectors...)
+	newBundle.Spec.AfterCollection = append(target.Spec.AfterCollection, source.Spec.AfterCollection...)
+	newBundle.Spec.HostCollectors = append(target.Spec.HostCollectors, source.Spec.HostCollectors...)
+	newBundle.Spec.HostAnalyzers = append(target.Spec.HostAnalyzers, source.Spec.HostAnalyzers...)
+	newBundle.Spec.Analyzers = append(target.Spec.Analyzers, source.Spec.Analyzers...)
 	return newBundle
 }
