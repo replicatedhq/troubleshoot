@@ -1,11 +1,11 @@
 package analyzer
 
 import (
-	"strconv"
-	"strings"
 	"fmt"
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
+	"strconv"
+	"strings"
 )
 
 func commonStatus(outcomes []*troubleshootv1beta2.Outcome, name string, iconKey string, iconURI string, readyReplicas int, exists bool, resourceType string) (*AnalyzeResult, error) {
@@ -36,7 +36,7 @@ func commonStatus(outcomes []*troubleshootv1beta2.Outcome, name string, iconKey 
 				return result, nil
 			}
 
-			if  outcome.Fail.When == "absent"  {
+			if outcome.Fail.When == "absent" {
 				if exists == false {
 					result.IsFail = true
 					result.Message = outcome.Fail.Message

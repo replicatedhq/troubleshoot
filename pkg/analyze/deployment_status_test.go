@@ -21,7 +21,7 @@ func Test_deploymentStatus(t *testing.T) {
 				Outcomes: []*troubleshootv1beta2.Outcome{
 					{
 						Fail: &troubleshootv1beta2.SingleOutcome{
-							When: "absent",
+							When:    "absent",
 							Message: "fail",
 						},
 					},
@@ -33,14 +33,14 @@ func Test_deploymentStatus(t *testing.T) {
 					},
 				},
 				Namespace: "default",
-				Name: "nonexistant-deployment",
+				Name:      "nonexistant-deployment",
 			},
 			expectResult: []*AnalyzeResult{
 				{
-					IsPass: false,
-					IsWarn: false,
-					IsFail: true,
-					Title: "nonexistant-deployment Status",
+					IsPass:  false,
+					IsWarn:  false,
+					IsFail:  true,
+					Title:   "nonexistant-deployment Status",
 					Message: "fail",
 					IconKey: "kubernetes_deployment_status",
 					IconURI: "https://troubleshoot.sh/images/analyzer-icons/deployment-status.svg?w=17&h=17",
@@ -58,7 +58,7 @@ func Test_deploymentStatus(t *testing.T) {
 				Outcomes: []*troubleshootv1beta2.Outcome{
 					{
 						Fail: &troubleshootv1beta2.SingleOutcome{
-							When: "absent",
+							When:    "absent",
 							Message: "fail",
 						},
 					},
@@ -100,7 +100,7 @@ func Test_deploymentStatus(t *testing.T) {
 				Outcomes: []*troubleshootv1beta2.Outcome{
 					{
 						Fail: &troubleshootv1beta2.SingleOutcome{
-							When: "absent",
+							When:    "absent",
 							Message: "fail",
 						},
 					},
@@ -142,7 +142,7 @@ func Test_deploymentStatus(t *testing.T) {
 				Outcomes: []*troubleshootv1beta2.Outcome{
 					{
 						Fail: &troubleshootv1beta2.SingleOutcome{
-							When: "absent",
+							When:    "absent",
 							Message: "fail",
 						},
 					},

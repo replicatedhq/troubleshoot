@@ -185,7 +185,6 @@ func ClusterResources(c *Collector, clusterResourcesCollector *troubleshootv1bet
 	}
 	output.SaveResult(c.BundlePath, "cluster-resources/network-policy-errors.json", marshalErrors(networkPolicyErrors))
 
-
 	// storage classes
 	storageClasses, storageErrors := storageClasses(ctx, client)
 	output.SaveResult(c.BundlePath, "cluster-resources/storage-classes.json", bytes.NewBuffer(storageClasses))

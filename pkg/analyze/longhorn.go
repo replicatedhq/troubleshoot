@@ -133,8 +133,8 @@ func longhorn(analyzer *troubleshootv1beta2.LonghornAnalyze, getCollectedFileCon
 		// Check Volume replicas
 		if volume.Spec.NumberOfReplicas < 2 {
 			result := &AnalyzeResult{
-				Title: "Longhorn volume with low replicas",
-				IsWarn: true,
+				Title:   "Longhorn volume with low replicas",
+				IsWarn:  true,
 				Message: fmt.Sprintf("Longhorn volume %s has less than two replicas, this could lead to issues with volume availability", volume.Name),
 			}
 			results = append(results, result)

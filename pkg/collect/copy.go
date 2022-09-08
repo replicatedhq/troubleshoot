@@ -19,7 +19,7 @@ import (
 	"k8s.io/client-go/tools/remotecommand"
 )
 
-//Copy function gets a file or folder from a container specified in the specs.
+// Copy function gets a file or folder from a container specified in the specs.
 func Copy(c *Collector, copyCollector *troubleshootv1beta2.Copy) (CollectorResult, error) {
 	client, err := kubernetes.NewForConfig(c.ClientConfig)
 	if err != nil {
