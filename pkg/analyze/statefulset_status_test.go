@@ -21,7 +21,7 @@ func Test_analyzeStatefulsetStatus(t *testing.T) {
 				Outcomes: []*troubleshootv1beta2.Outcome{
 					{
 						Fail: &troubleshootv1beta2.SingleOutcome{
-							When: "absent",
+							When:    "absent",
 							Message: "fail",
 						},
 					},
@@ -33,21 +33,21 @@ func Test_analyzeStatefulsetStatus(t *testing.T) {
 					},
 				},
 				Namespace: "default",
-				Name: "nonexistant",
+				Name:      "nonexistant",
 			},
 			expectResult: []*AnalyzeResult{
 				{
-					IsPass: false,
-					IsWarn: false,
-					IsFail: true,
-					Title: "nonexistant Status",
+					IsPass:  false,
+					IsWarn:  false,
+					IsFail:  true,
+					Title:   "nonexistant Status",
 					Message: "fail",
 					IconKey: "kubernetes_statefulset_status",
 					IconURI: "https://troubleshoot.sh/images/analyzer-icons/statefulset-status.svg?w=23&h=14",
 				},
 			},
 			files: map[string][]byte{
-				"cluster-resources/statefulsets/default.json":    []byte(defaultStatefulSets),
+				"cluster-resources/statefulsets/default.json": []byte(defaultStatefulSets),
 			},
 		},
 		{
