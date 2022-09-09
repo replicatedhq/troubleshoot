@@ -31,7 +31,7 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-func runTroubleshoot(v *viper.Viper, arg string) error {
+func runTroubleshoot(v *viper.Viper, arg []string) error {
 	interactive := v.GetBool("interactive") && isatty.IsTerminal(os.Stdout.Fd())
 
 	if interactive {
@@ -68,23 +68,49 @@ func runTroubleshoot(v *viper.Viper, arg string) error {
 		})
 	}
 
-	collectorContent, err := supportbundle.LoadSupportBundleSpec(arg)
-	if err != nil {
-		return errors.Wrap(err, "failed to load collector spec")
-	}
-
-	multidocs := strings.Split(string(collectorContent), "\n---\n")
-
-	// we support both raw collector kinds and supportbundle kinds here
-	supportBundle, err := supportbundle.ParseSupportBundleFromDoc([]byte(multidocs[0]))
-	if err != nil {
-		return errors.Wrap(err, "failed to parse collector")
-	}
+	var mainBundle *troubleshootv1beta2.SupportBundle
 
 	troubleshootclientsetscheme.AddToScheme(scheme.Scheme)
 	decode := scheme.Codecs.UniversalDeserializer().Decode
-
 	additionalRedactors := &troubleshootv1beta2.Redactor{}
+	for i, v := range arg {
+
+		collectorContent, err := supportbundle.LoadSupportBundleSpec(v)
+		if err != nil {
+			return errors.Wrap(err, "failed to load collector spec")
+		}
+		multidocs := strings.Split(string(collectorContent), "\n---\n")
+		supportBundle, err := supportbundle.ParseSupportBundleFromDoc([]byte(multidocs[0]))
+		if err != nil {
+			return errors.Wrap(err, "failed to parse collector")
+		}
+
+		if i == 0 {
+			mainBundle = supportBundle
+		} else {
+			mainBundle = supportbundle.ConcatSpec(mainBundle, supportBundle)
+		}
+
+		for i, additionalDoc := range multidocs {
+			if i == 0 {
+				continue
+			}
+			additionalDoc, err := docrewrite.ConvertToV1Beta2([]byte(additionalDoc))
+			if err != nil {
+				return errors.Wrap(err, "failed to convert to v1beta2")
+			}
+			obj, _, err := decode(additionalDoc, nil, nil)
+			if err != nil {
+				return errors.Wrapf(err, "failed to parse additional doc %d", i)
+			}
+			multidocRedactors, ok := obj.(*troubleshootv1beta2.Redactor)
+			if !ok {
+				continue
+			}
+			additionalRedactors.Spec.Redactors = append(additionalRedactors.Spec.Redactors, multidocRedactors.Spec.Redactors...)
+		}
+	}
+
 	for idx, redactor := range v.GetStringSlice("redactors") {
 		redactorObj, err := supportbundle.GetRedactorFromURI(redactor)
 		if err != nil {
@@ -94,25 +120,6 @@ func runTroubleshoot(v *viper.Viper, arg string) error {
 		if redactorObj != nil {
 			additionalRedactors.Spec.Redactors = append(additionalRedactors.Spec.Redactors, redactorObj.Spec.Redactors...)
 		}
-	}
-
-	for i, additionalDoc := range multidocs {
-		if i == 0 {
-			continue
-		}
-		additionalDoc, err := docrewrite.ConvertToV1Beta2([]byte(additionalDoc))
-		if err != nil {
-			return errors.Wrap(err, "failed to convert to v1beta2")
-		}
-		obj, _, err := decode(additionalDoc, nil, nil)
-		if err != nil {
-			return errors.Wrapf(err, "failed to parse additional doc %d", i)
-		}
-		multidocRedactors, ok := obj.(*troubleshootv1beta2.Redactor)
-		if !ok {
-			continue
-		}
-		additionalRedactors.Spec.Redactors = append(additionalRedactors.Spec.Redactors, multidocRedactors.Spec.Redactors...)
 	}
 
 	var collectorCB func(chan interface{}, string)
@@ -193,7 +200,7 @@ func runTroubleshoot(v *viper.Viper, arg string) error {
 		c.Println(fmt.Sprintf("\r%s\r", cursor.ClearEntireLine()))
 	}
 
-	response, err := supportbundle.CollectSupportBundleFromSpec(&supportBundle.Spec, additionalRedactors, createOpts)
+	response, err := supportbundle.CollectSupportBundleFromSpec(&mainBundle.Spec, additionalRedactors, createOpts)
 	if err != nil {
 		return errors.Wrap(err, "failed to run collect and analyze process")
 	}
@@ -202,7 +209,7 @@ func runTroubleshoot(v *viper.Viper, arg string) error {
 			close(finishedCh) // this removes the spinner
 			isFinishedChClosed = true
 
-			if err := showInteractiveResults(supportBundle.Name, response.AnalyzerResults); err != nil {
+			if err := showInteractiveResults(mainBundle.Name, response.AnalyzerResults); err != nil {
 				interactive = false
 			}
 		} else {
@@ -211,7 +218,7 @@ func runTroubleshoot(v *viper.Viper, arg string) error {
 	}
 
 	if !response.FileUploaded {
-		if appName := supportBundle.Labels["applicationName"]; appName != "" {
+		if appName := mainBundle.Labels["applicationName"]; appName != "" {
 			f := `A support bundle for %s has been created in this directory
 named %s. Please upload it on the Troubleshoot page of
 the %s Admin Console to begin analysis.`
