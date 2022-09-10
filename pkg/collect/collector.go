@@ -23,10 +23,10 @@ type Collector interface {
 
 type MergeableCollector interface {
 	Collector
-	Merge() string
+	Merge(allCollectors []Collector) ([]Collector, error)
 }
 
-type Collectors []*Collector
+//type Collectors []*Collector
 
 func isExcluded(excludeVal *multitype.BoolOrString) (bool, error) {
 	if excludeVal == nil {

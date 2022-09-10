@@ -74,8 +74,9 @@ func (c *CollectClusterResources) CheckRBAC(ctx context.Context, collector *trou
 	return nil
 }
 
-func (c *CollectClusterResources) Merge() string {
-	return "merged!"
+func (c *CollectClusterResources) Merge(allCollectors []Collector) ([]Collector, error) {
+	result := append(allCollectors, c)
+	return result, nil
 }
 
 func (c *CollectClusterResources) Collect(progressChan chan<- interface{}) (CollectorResult, error) {

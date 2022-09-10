@@ -126,42 +126,44 @@ func Collect(opts CollectOpts, p *troubleshootv1beta2.Preflight) (CollectResult,
 	collectSpecs = ensureCollectorInList(collectSpecs, troubleshootv1beta2.Collect{ClusterInfo: &troubleshootv1beta2.ClusterInfo{}})
 	collectSpecs = ensureCollectorInList(collectSpecs, troubleshootv1beta2.Collect{ClusterResources: &troubleshootv1beta2.ClusterResources{}})
 
-	allCollectedData := make(map[string][]byte)
-
+	var allCollectors []collect.Collector
 	var RBACErrors []error
+
+	allCollectedData := make(map[string][]byte)
 
 	k8sClient, err := kubernetes.NewForConfig(opts.KubernetesRestConfig)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to instantiate Kubernetes client")
 	}
 
-	var newCollectors []collect.Collector
 	for _, desiredCollector := range collectSpecs {
-		if collector, ok := collect.GetCollector(desiredCollector, "", opts.Namespace, opts.KubernetesRestConfig, k8sClient, nil, RBACErrors); ok {
-			if regCollector, ok := collector.(collect.Collector); ok {
-				err := regCollector.CheckRBAC(context.Background(), desiredCollector)
+		if collectorInterface, ok := collect.GetCollector(desiredCollector, "", opts.Namespace, opts.KubernetesRestConfig, k8sClient, nil, RBACErrors); ok {
+			if collector, ok := collectorInterface.(collect.Collector); ok {
+				err := collector.CheckRBAC(context.Background(), desiredCollector)
 				if err != nil {
 					return nil, errors.Wrap(err, "failed to check RBAC for collectors")
 				}
 
-				//Not sure this makes sense here as we're still iterating through the entire spec
-				//Likely better to iterate by collector Type so that you only process each type once(eg. Logs, ClusterResources, etc.)
-				if mergeCollector, ok := collector.(collect.MergeableCollector); ok {
-					fmt.Println(mergeCollector.Merge())
+				if mergeCollector, ok := collectorInterface.(collect.MergeableCollector); ok {
+					allCollectors, err = mergeCollector.Merge(allCollectors)
+					if err != nil {
+						msg := fmt.Sprintf("failed to merge collector: %s: %s", collector.Title(), err)
+						opts.ProgressChan <- msg
+					}
+				} else {
+					allCollectors = append(allCollectors, collector)
 				}
-
-				newCollectors = append(newCollectors, regCollector)
 			}
 		}
 	}
 
 	collectResult := ClusterCollectResult{
-		Collectors: newCollectors,
+		Collectors: allCollectors,
 		Spec:       p,
 	}
 
 	foundForbidden := false
-	for _, c := range newCollectors {
+	for _, c := range allCollectors {
 		for _, e := range c.GetRBACErrors() {
 			foundForbidden = true
 			opts.ProgressChan <- e
@@ -174,13 +176,13 @@ func Collect(opts CollectOpts, p *troubleshootv1beta2.Preflight) (CollectResult,
 
 	// generate a map of all collectors for atomic status messages
 	collectorList := map[string]CollectorStatus{}
-	for _, collector := range newCollectors {
+	for _, collector := range allCollectors {
 		collectorList[collector.Title()] = CollectorStatus{
 			Status: "pending",
 		}
 	}
 
-	for i, collector := range newCollectors {
+	for i, collector := range allCollectors {
 		isExcluded, _ := collector.IsExcluded()
 		if isExcluded {
 			continue
@@ -194,7 +196,7 @@ func Collect(opts CollectOpts, p *troubleshootv1beta2.Preflight) (CollectResult,
 					CurrentName:    collector.Title(),
 					CurrentStatus:  "skipped",
 					CompletedCount: i + 1,
-					TotalCount:     len(newCollectors),
+					TotalCount:     len(allCollectors),
 					Collectors:     collectorList,
 				}
 				continue
@@ -208,7 +210,7 @@ func Collect(opts CollectOpts, p *troubleshootv1beta2.Preflight) (CollectResult,
 			CurrentName:    collector.Title(),
 			CurrentStatus:  "running",
 			CompletedCount: i,
-			TotalCount:     len(newCollectors),
+			TotalCount:     len(allCollectors),
 			Collectors:     collectorList,
 		}
 

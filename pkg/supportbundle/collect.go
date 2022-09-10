@@ -93,10 +93,14 @@ func runCollectors(collectors []*troubleshootv1beta2.Collect, additionalRedactor
 				}
 
 				if mergeCollector, ok := collectorInterface.(collect.MergeableCollector); ok {
-					mergeCollector.Merge()
+					allCollectors, err = mergeCollector.Merge(allCollectors)
+					if err != nil {
+						msg := fmt.Sprintf("failed to merge collector: %s: %s", collector.Title(), err)
+						opts.CollectorProgressCallback(opts.ProgressChan, msg)
+					}
+				} else {
+					allCollectors = append(allCollectors, collector)
 				}
-
-				allCollectors = append(allCollectors, collector)
 			}
 		}
 	}
