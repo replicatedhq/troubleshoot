@@ -62,7 +62,7 @@ func (c *CollectCopy) CheckRBAC(ctx context.Context, collector *troubleshootv1be
 	return nil
 }
 
-//Copy function gets a file or folder from a container specified in the specs.
+// Copy function gets a file or folder from a container specified in the specs.
 func (c *CollectCopy) Collect(progressChan chan<- interface{}) (CollectorResult, error) {
 	client, err := kubernetes.NewForConfig(c.ClientConfig)
 	if err != nil {
