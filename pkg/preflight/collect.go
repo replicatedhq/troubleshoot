@@ -216,27 +216,37 @@ func Collect(opts CollectOpts, p *troubleshootv1beta2.Preflight) (CollectResult,
 
 		result, err := collector.Collect(opts.ProgressChan)
 		if err != nil {
+			collectorList[collector.Title()] = CollectorStatus{
+				Status: "failed",
+			}
 			opts.ProgressChan <- errors.Errorf("failed to run collector: %s: %v", collector.Title(), err)
+			opts.ProgressChan <- CollectProgress{
+				CurrentName:    collector.Title(),
+				CurrentStatus:  "failed",
+				CompletedCount: i + 1,
+				TotalCount:     len(allCollectors),
+				Collectors:     collectorList,
+			}
+			continue
 		}
+
+		collectorList[collector.Title()] = CollectorStatus{
+			Status: "completed",
+		}
+		opts.ProgressChan <- CollectProgress{
+			CurrentName:    collector.Title(),
+			CurrentStatus:  "completed",
+			CompletedCount: i + 1,
+			TotalCount:     len(allCollectors),
+			Collectors:     collectorList,
+		}
+
 		for k, v := range result {
 			allCollectedData[k] = v
 		}
 	}
 
 	collectResult.AllCollectedData = allCollectedData
-
-	/*globalRedactors := []*troubleshootv1beta2.Redact{}
-	if additionalRedactors != nil {
-		globalRedactors = additionalRedactors.Spec.Redactors
-	}
-
-	if opts.Redact {
-		err := collect.RedactResult(bundlePath, collectResult, globalRedactors)
-		if err != nil {
-			err = errors.Wrap(err, "failed to redact")
-			return collectResult, err
-		}
-	}*/
 
 	return collectResult, nil
 }
