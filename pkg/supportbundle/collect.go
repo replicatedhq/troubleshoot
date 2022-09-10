@@ -74,37 +74,35 @@ func runCollectors(collectors []*troubleshootv1beta2.Collect, additionalRedactor
 	collectSpecs = ensureCollectorInList(collectSpecs, troubleshootv1beta2.Collect{ClusterInfo: &troubleshootv1beta2.ClusterInfo{}})
 	collectSpecs = ensureCollectorInList(collectSpecs, troubleshootv1beta2.Collect{ClusterResources: &troubleshootv1beta2.ClusterResources{}})
 
-	allCollectedData := make(map[string][]byte)
-
+	var allCollectors []collect.Collector
 	var RBACErrors []error
+
+	allCollectedData := make(map[string][]byte)
 
 	k8sClient, err := kubernetes.NewForConfig(opts.KubernetesRestConfig)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to instantiate Kubernetes client")
 	}
 
-	var newCollectors []collect.Collector
 	for _, desiredCollector := range collectSpecs {
-		if collector, ok := collect.GetCollector(desiredCollector, bundlePath, opts.Namespace, opts.KubernetesRestConfig, k8sClient, opts.SinceTime, RBACErrors); ok {
-			if regCollector, ok := collector.(collect.Collector); ok {
-				err := regCollector.CheckRBAC(context.Background(), desiredCollector)
+		if collectorInterface, ok := collect.GetCollector(desiredCollector, bundlePath, opts.Namespace, opts.KubernetesRestConfig, k8sClient, opts.SinceTime, RBACErrors); ok {
+			if collector, ok := collectorInterface.(collect.Collector); ok {
+				err := collector.CheckRBAC(context.Background(), desiredCollector)
 				if err != nil {
 					return nil, errors.Wrap(err, "failed to check RBAC for collectors")
 				}
 
-				//Not sure this makes sense here as we're still iterating through the entire spec
-				//Likely better to iterate by collector Type so that you only process each type once(eg. Logs, ClusterResources, etc.)
-				if mergeCollector, ok := collector.(collect.MergeableCollector); ok {
-					fmt.Println(mergeCollector.Merge())
+				if mergeCollector, ok := collectorInterface.(collect.MergeableCollector); ok {
+					mergeCollector.Merge()
 				}
 
-				newCollectors = append(newCollectors, regCollector)
+				allCollectors = append(allCollectors, collector)
 			}
 		}
 	}
 
 	foundForbidden := false
-	for _, c := range newCollectors {
+	for _, c := range allCollectors {
 		for _, e := range c.GetRBACErrors() {
 			foundForbidden = true
 			opts.ProgressChan <- e
@@ -115,9 +113,7 @@ func runCollectors(collectors []*troubleshootv1beta2.Collect, additionalRedactor
 		return nil, errors.New("insufficient permissions to run all collectors")
 	}
 
-	collectResult := collect.NewResult()
-
-	for _, collector := range newCollectors {
+	for _, collector := range allCollectors {
 		isExcluded, _ := collector.IsExcluded()
 		if isExcluded {
 			continue
@@ -142,7 +138,7 @@ func runCollectors(collectors []*troubleshootv1beta2.Collect, additionalRedactor
 		}
 	}
 
-	collectResult = allCollectedData
+	collectResult := allCollectedData
 
 	globalRedactors := []*troubleshootv1beta2.Redact{}
 	if additionalRedactors != nil {
