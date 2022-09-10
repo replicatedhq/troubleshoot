@@ -1,6 +1,14 @@
 package collect
 
-/*func TestCollector_RunCollectorSyncNoRedact(t *testing.T) {
+import (
+	"testing"
+
+	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
+	"github.com/replicatedhq/troubleshoot/pkg/multitype"
+	"github.com/stretchr/testify/require"
+)
+
+func TestCollector_RunCollectorSyncNoRedact(t *testing.T) {
 	tests := []struct {
 		name      string
 		Collect   *troubleshootv1beta2.Collect
@@ -162,7 +170,7 @@ pwd=somethinggoeshere;`,
 					Name: "",
 					FileSelector: troubleshootv1beta2.FileSelector{
 						Files: []string{
-							"data/*\/*",
+							"data/*/*",
 						},
 					},
 					Removals: troubleshootv1beta2.Removals{
@@ -265,21 +273,26 @@ pwd=somethinggoeshere;`,
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			req := require.New(t)
-			c := &Collector{
-				Collect: tt.Collect,
-				Redact:  true,
+
+			var result CollectorResult
+
+			collector, _ := GetCollector(tt.Collect, "", "", nil, nil, nil, nil)
+			regCollector, _ := collector.(Collector)
+
+			if excluded, err := regCollector.IsExcluded(); !excluded {
+				req.NoError(err)
+
+				result, err = regCollector.Collect(nil)
+				req.NoError(err)
+
+				err = RedactResult("", result, tt.Redactors)
+
+				req.NoError(err)
 			}
-
-			got, err := c.RunCollectorSync(nil, nil, tt.Redactors)
-			collector, err := collect.GetCollector(tt.Collect, nil, nil, nil, nil, nil, nil)
-			req.NoError(err)
-
-			regCollector, _ := collector.(collect.Collector)
-			got, err := regCollector.Collect(nil)
 
 			// convert to string to make differences easier to see
 			toString := map[string]string{}
-			for k, v := range got {
+			for k, v := range result {
 				toString[k] = string(v)
 			}
 			req.EqualValues(tt.want, toString)
@@ -329,20 +342,25 @@ pwd=somethinggoeshere;`,
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			req := require.New(t)
-			c := &Collector{
-				Collect: tt.Collect,
-				Redact:  false,
+
+			var result CollectorResult
+
+			collector, _ := GetCollector(tt.Collect, "", "", nil, nil, nil, nil)
+			regCollector, _ := collector.(Collector)
+
+			if excluded, err := regCollector.IsExcluded(); !excluded {
+				req.NoError(err)
+
+				result, err = regCollector.Collect(nil)
+				req.NoError(err)
 			}
-			got, err := c.RunCollectorSync(nil, nil, tt.Redactors)
-			req.NoError(err)
 
 			// convert to string to make differences easier to see
 			toString := map[string]string{}
-			for k, v := range got {
+			for k, v := range result {
 				toString[k] = string(v)
 			}
 			req.EqualValues(tt.want, toString)
 		})
 	}
 }
-*/
