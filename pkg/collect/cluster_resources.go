@@ -127,7 +127,7 @@ func (c *CollectClusterResources) Collect(progressChan chan<- interface{}) (Coll
 	}
 	output.SaveResult(c.BundlePath, "cluster-resources/auth-cani-list-errors.json", marshalErrors(reviewStatusErrors))
 
-	if nsListedFromCluster && !clusterResourcesCollector.IgnoreRBAC {
+	if nsListedFromCluster && !c.Collector.IgnoreRBAC {
 		filteredNamespaces := []string{}
 		for _, ns := range namespaceNames {
 			status := reviewStatuses[ns]
