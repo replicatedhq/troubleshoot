@@ -60,17 +60,17 @@ func (c *CollectHostKernelModules) IsExcluded() (bool, error) {
 // Collect the kernel module status from the host.   Modules are returned as a
 // map keyed on the module name used by the kernel, e.g:
 //
-// {
-//   "system/kernel_modules.json": {
-//     ...
-//     "dm_snapshot": {
-//       "instances": 8,
-//       "size": 45056,
-//       "status": "loaded"
-//     },
-//     ...
-//   },
-// }
+//	{
+//	  "system/kernel_modules.json": {
+//	    ...
+//	    "dm_snapshot": {
+//	      "instances": 8,
+//	      "size": 45056,
+//	      "status": "loaded"
+//	    },
+//	    ...
+//	  },
+//	}
 //
 // Module status may be: loaded, loadable, loading, unloading or unknown.  When
 // a module is loaded, it may have one or more instances.  The size represents

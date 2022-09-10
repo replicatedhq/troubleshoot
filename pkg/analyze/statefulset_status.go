@@ -26,6 +26,9 @@ func analyzeOneStatefulsetStatus(analyzer *troubleshootv1beta2.StatefulsetStatus
 
 	var result *AnalyzeResult
 	for _, collected := range files { // only 1 file here
+		var exists bool = true
+		var readyReplicas int
+
 		var statefulsets appsv1.StatefulSetList
 		if err := json.Unmarshal(collected, &statefulsets); err != nil {
 			return nil, errors.Wrap(err, "failed to unmarshal statefulset list")
@@ -40,15 +43,13 @@ func analyzeOneStatefulsetStatus(analyzer *troubleshootv1beta2.StatefulsetStatus
 		}
 
 		if statefulset == nil {
-			result = &AnalyzeResult{
-				Title:   fmt.Sprintf("%s Statefulset Status", analyzer.Name),
-				IconKey: "kubernetes_statefulset_status",
-				IconURI: "https://troubleshoot.sh/images/analyzer-icons/statefulset-status.svg?w=23&h=14",
-				IsFail:  true,
-				Message: fmt.Sprintf("The statefulset %q was not found", analyzer.Name),
-			}
-		} else if len(analyzer.Outcomes) > 0 {
-			result, err = commonStatus(analyzer.Outcomes, fmt.Sprintf("%s Status", analyzer.Name), "kubernetes_statefulset_status", "https://troubleshoot.sh/images/analyzer-icons/statefulset-status.svg?w=23&h=14", int(statefulset.Status.ReadyReplicas))
+			exists = false
+			readyReplicas = 0
+		} else {
+			readyReplicas = int(statefulset.Status.ReadyReplicas)
+		}
+		if len(analyzer.Outcomes) > 0 {
+			result, err = commonStatus(analyzer.Outcomes, analyzer.Name, "kubernetes_statefulset_status", "https://troubleshoot.sh/images/analyzer-icons/statefulset-status.svg?w=23&h=14", readyReplicas, exists, "statefulset")
 			if err != nil {
 				return nil, errors.Wrap(err, "failed to process status")
 			}

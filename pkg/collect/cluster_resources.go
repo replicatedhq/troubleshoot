@@ -94,6 +94,7 @@ func (c *CollectClusterResources) Collect(progressChan chan<- interface{}) (Coll
 	output := NewResult()
 
 	// namespaces
+	nsListedFromCluster := false
 	var namespaceNames []string
 	if len(c.Collector.Namespaces) > 0 {
 		namespaces, namespaceErrors := getNamespaces(ctx, client, c.Collector.Namespaces)
@@ -114,6 +115,27 @@ func (c *CollectClusterResources) Collect(progressChan chan<- interface{}) (Coll
 				namespaceNames = append(namespaceNames, namespace.Name)
 			}
 		}
+		nsListedFromCluster = true
+	}
+
+	reviewStatuses, reviewStatusErrors := getSelfSubjectRulesReviews(ctx, client, namespaceNames)
+
+	// auth cani
+	authCanI := authCanI(reviewStatuses, namespaceNames)
+	for k, v := range authCanI {
+		output.SaveResult(c.BundlePath, path.Join("cluster-resources/auth-cani-list", k), bytes.NewBuffer(v))
+	}
+	output.SaveResult(c.BundlePath, "cluster-resources/auth-cani-list-errors.json", marshalErrors(reviewStatusErrors))
+
+	if nsListedFromCluster && !clusterResourcesCollector.IgnoreRBAC {
+		filteredNamespaces := []string{}
+		for _, ns := range namespaceNames {
+			status := reviewStatuses[ns]
+			if status == nil || canCollectNamespaceResources(status) { // TODO: exclude nil ones?
+				filteredNamespaces = append(filteredNamespaces, ns)
+			}
+		}
+		namespaceNames = filteredNamespaces
 	}
 
 	// pods
@@ -248,13 +270,6 @@ func (c *CollectClusterResources) Collect(progressChan chan<- interface{}) (Coll
 		output.SaveResult(c.BundlePath, path.Join("cluster-resources/limitranges", k), bytes.NewBuffer(v))
 	}
 	output.SaveResult(c.BundlePath, "cluster-resources/limitranges-errors.json", marshalErrors(limitRangesErrors))
-
-	// auth cani
-	authCanI, authCanIErrors := authCanI(ctx, client, namespaceNames)
-	for k, v := range authCanI {
-		output.SaveResult(c.BundlePath, path.Join("cluster-resources/auth-cani-list", k), bytes.NewBuffer(v))
-	}
-	output.SaveResult(c.BundlePath, "cluster-resources/auth-cani-list-errors.json", marshalErrors(authCanIErrors))
 
 	//Events
 	events, eventsErrors := events(ctx, client, namespaceNames)
@@ -1258,10 +1273,10 @@ func apiResources(ctx context.Context, client *kubernetes.Clientset) ([]byte, []
 	return groupBytes, resourcesBytes, errorArray
 }
 
-func authCanI(ctx context.Context, client *kubernetes.Clientset, namespaces []string) (map[string][]byte, map[string]string) {
+func getSelfSubjectRulesReviews(ctx context.Context, client *kubernetes.Clientset, namespaces []string) (map[string]*authorizationv1.SubjectRulesReviewStatus, map[string]string) {
 	// https://github.com/kubernetes/kubernetes/blob/master/pkg/kubectl/cmd/auth/cani.go
 
-	authListByNamespace := make(map[string][]byte)
+	statusByNamespace := make(map[string]*authorizationv1.SubjectRulesReviewStatus)
 	errorsByNamespace := make(map[string]string)
 
 	for _, namespace := range namespaces {
@@ -1276,17 +1291,29 @@ func authCanI(ctx context.Context, client *kubernetes.Clientset, namespaces []st
 			continue
 		}
 
-		rules := convertToPolicyRule(response.Status)
-		b, err := json.MarshalIndent(rules, "", "  ")
-		if err != nil {
-			errorsByNamespace[namespace] = err.Error()
+		statusByNamespace[namespace] = response.Status.DeepCopy()
+	}
+
+	return statusByNamespace, errorsByNamespace
+}
+
+func authCanI(accessStatuses map[string]*authorizationv1.SubjectRulesReviewStatus, namespaces []string) map[string][]byte {
+	// https://github.com/kubernetes/kubernetes/blob/master/pkg/kubectl/cmd/auth/cani.go
+
+	authListByNamespace := make(map[string][]byte)
+
+	for _, namespace := range namespaces {
+		accessStatus := accessStatuses[namespace]
+		if accessStatus == nil {
 			continue
 		}
 
+		rules := convertToPolicyRule(accessStatus)
+		b, _ := json.MarshalIndent(rules, "", "  ")
 		authListByNamespace[namespace+".json"] = b
 	}
 
-	return authListByNamespace, errorsByNamespace
+	return authListByNamespace
 }
 
 func events(ctx context.Context, client *kubernetes.Clientset, namespaces []string) (map[string][]byte, map[string]string) {
@@ -1324,8 +1351,44 @@ func events(ctx context.Context, client *kubernetes.Clientset, namespaces []stri
 	return eventsByNamespace, errorsByNamespace
 }
 
+func canCollectNamespaceResources(status *authorizationv1.SubjectRulesReviewStatus) bool {
+	// This is all very approximate
+
+	for _, resource := range status.ResourceRules {
+		hasGet := false
+		for _, verb := range resource.Verbs {
+			if verb == "*" || verb == "get" {
+				hasGet = true
+				break
+			}
+		}
+
+		hasAPI := false
+		for _, group := range resource.APIGroups {
+			if group == "*" || group == "" {
+				hasAPI = true
+				break
+			}
+		}
+
+		hasPods := false
+		for _, resource := range resource.Resources {
+			if resource == "*" || resource == "pods" { // pods is the bare minimum
+				hasPods = true
+				break
+			}
+		}
+
+		if hasGet && hasAPI && hasPods {
+			return true
+		}
+	}
+
+	return false
+}
+
 // not exported from: https://github.com/kubernetes/kubernetes/blob/master/pkg/kubectl/cmd/auth/cani.go#L339
-func convertToPolicyRule(status authorizationv1.SubjectRulesReviewStatus) []rbacv1.PolicyRule {
+func convertToPolicyRule(status *authorizationv1.SubjectRulesReviewStatus) []rbacv1.PolicyRule {
 	ret := []rbacv1.PolicyRule{}
 	for _, resource := range status.ResourceRules {
 		ret = append(ret, rbacv1.PolicyRule{

@@ -40,7 +40,6 @@ func (a *AnalyzeHostKernelModules) IsExcluded() (bool, error) {
 //   - a default fail will only trigger if there are no matching non-default pass outcomes.
 //   - a default warn will only trigger if there are no matching non-default pass or fail outcomes.
 //   - a default pass will only trigger if there are no matching non-default fail outcomes.
-//
 func (a *AnalyzeHostKernelModules) Analyze(getCollectedFileContents func(string) ([]byte, error)) ([]*AnalyzeResult, error) {
 	hostAnalyzer := a.hostAnalyzer
 	contents, err := getCollectedFileContents(collect.HostKernelModulesPath)

@@ -595,6 +595,7 @@ type DiskSpecWithName struct {
 // UnmarshalToDisks input format should be:
 // `[{"path":"/mnt/disk1","allowScheduling":false},
 //   {"path":"/mnt/disk2","allowScheduling":false,"storageReserved":1024,"tags":["ssd","fast"]}]`
+
 func UnmarshalToDisks(s string) (ret []DiskSpecWithName, err error) {
 	if err := json.Unmarshal([]byte(s), &ret); err != nil {
 		return nil, err

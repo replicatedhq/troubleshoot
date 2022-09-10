@@ -27,6 +27,8 @@ type SupportBundleSpec struct {
 	HostCollectors  []*HostCollect     `json:"hostCollectors,omitempty" yaml:"hostCollectors,omitempty"`
 	Analyzers       []*Analyze         `json:"analyzers,omitempty" yaml:"analyzers,omitempty"`
 	HostAnalyzers   []*HostAnalyze     `json:"hostAnalyzers,omitempty" yaml:"hostAnalyzers,omitempty"`
+	// URI optionally defines a location which is the source of this spec to allow updating of the spec at runtime
+	Uri string `json:"uri,omitempty" yaml:"uri,omitempty"`
 }
 
 // SupportBundleStatus defines the observed state of SupportBundle
