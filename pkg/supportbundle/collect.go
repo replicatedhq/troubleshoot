@@ -75,8 +75,8 @@ func runCollectors(collectors []*troubleshootv1beta2.Collect, additionalRedactor
 
 	collectSpecs := make([]*troubleshootv1beta2.Collect, 0)
 	collectSpecs = append(collectSpecs, collectors...)
-	/*collectSpecs = ensureCollectorInList(collectSpecs, troubleshootv1beta2.Collect{ClusterInfo: &troubleshootv1beta2.ClusterInfo{}})
-	collectSpecs = ensureCollectorInList(collectSpecs, troubleshootv1beta2.Collect{ClusterResources: &troubleshootv1beta2.ClusterResources{}})*/
+	collectSpecs = ensureCollectorInList(collectSpecs, troubleshootv1beta2.Collect{ClusterInfo: &troubleshootv1beta2.ClusterInfo{}})
+	collectSpecs = ensureCollectorInList(collectSpecs, troubleshootv1beta2.Collect{ClusterResources: &troubleshootv1beta2.ClusterResources{}})
 
 	var cleanedCollectors collect.Collectors
 	for _, desiredCollector := range collectSpecs {

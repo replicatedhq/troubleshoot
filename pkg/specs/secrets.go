@@ -34,7 +34,7 @@ func LoadFromSecret(namespace string, secretName string, key string) ([]byte, er
 }
 
 func LoadFromSecretMatchingLabel(labelSelector string, namespace string, key string) ([]string, error) {
-	var allSecrets []string
+	var secretsMatchingKey []string
 
 	config, err := k8sutil.GetRESTConfig()
 	if err != nil {
@@ -46,19 +46,19 @@ func LoadFromSecretMatchingLabel(labelSelector string, namespace string, key str
 		return nil, errors.Wrap(err, "failed to convert create k8s client")
 	}
 
-	daSecrets, err := client.CoreV1().Secrets(namespace).List(context.TODO(), metav1.ListOptions{LabelSelector: labelSelector})
+	secrets, err := client.CoreV1().Secrets(namespace).List(context.TODO(), metav1.ListOptions{LabelSelector: labelSelector})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get secret")
 	}
 
-	for _, secret := range daSecrets.Items {
+	for _, secret := range secrets.Items {
 		spec, ok := secret.Data[key]
 		if !ok {
 			return nil, errors.Errorf("support bundle spec not found in secret with matching label %s", secret.Name)
 		}
 		//multidocs := strings.Split(string(spec), "\n---\n")
-		allSecrets = append(allSecrets, string(spec))
+		secretsMatchingKey = append(secretsMatchingKey, string(spec))
 	}
 
-	return allSecrets, nil
+	return secretsMatchingKey, nil
 }
