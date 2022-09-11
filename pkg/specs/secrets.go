@@ -56,7 +56,6 @@ func LoadFromSecretMatchingLabel(labelSelector string, namespace string, key str
 		if !ok {
 			return nil, errors.Errorf("support bundle spec not found in secret with matching label %s", secret.Name)
 		}
-		//multidocs := strings.Split(string(spec), "\n---\n")
 		secretsMatchingKey = append(secretsMatchingKey, string(spec))
 	}
 
