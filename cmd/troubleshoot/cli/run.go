@@ -22,13 +22,18 @@ import (
 	"github.com/replicatedhq/troubleshoot/pkg/client/troubleshootclientset/scheme"
 	troubleshootclientsetscheme "github.com/replicatedhq/troubleshoot/pkg/client/troubleshootclientset/scheme"
 	"github.com/replicatedhq/troubleshoot/pkg/convert"
-	"github.com/replicatedhq/troubleshoot/pkg/docrewrite"
 	"github.com/replicatedhq/troubleshoot/pkg/httputil"
 	"github.com/replicatedhq/troubleshoot/pkg/k8sutil"
+	"github.com/replicatedhq/troubleshoot/pkg/specs"
 	"github.com/replicatedhq/troubleshoot/pkg/supportbundle"
 	"github.com/spf13/viper"
 	spin "github.com/tj/go-spin"
+	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/rest"
+)
+
+const (
+	SupportBundleSecretKey = "support-bundle-spec"
 )
 
 func runTroubleshoot(v *viper.Viper, arg []string) error {
@@ -71,18 +76,17 @@ func runTroubleshoot(v *viper.Viper, arg []string) error {
 	var mainBundle *troubleshootv1beta2.SupportBundle
 
 	troubleshootclientsetscheme.AddToScheme(scheme.Scheme)
-	decode := scheme.Codecs.UniversalDeserializer().Decode
 	additionalRedactors := &troubleshootv1beta2.Redactor{}
 	for i, v := range arg {
 
 		collectorContent, err := supportbundle.LoadSupportBundleSpec(v)
 		if err != nil {
-			return errors.Wrap(err, "failed to load collector spec")
+			return errors.Wrap(err, "failed to load support bundle spec")
 		}
 		multidocs := strings.Split(string(collectorContent), "\n---\n")
 		supportBundle, err := supportbundle.ParseSupportBundleFromDoc([]byte(multidocs[0]))
 		if err != nil {
-			return errors.Wrap(err, "failed to parse collector")
+			return errors.Wrap(err, "failed to parse support bundle spec")
 		}
 
 		if i == 0 {
@@ -91,23 +95,47 @@ func runTroubleshoot(v *viper.Viper, arg []string) error {
 			mainBundle = supportbundle.ConcatSpec(mainBundle, supportBundle)
 		}
 
-		for i, additionalDoc := range multidocs {
-			if i == 0 {
-				continue
+		parsedRedactors, err := supportbundle.ParseRedactorsFromSpec(multidocs)
+		if err != nil {
+			return errors.Wrap(err, "failed to parse redactors from doc")
+		}
+		additionalRedactors.Spec.Redactors = append(additionalRedactors.Spec.Redactors, parsedRedactors...)
+	}
+
+	if v.GetBool("load-specs-from-secrets") {
+		labelSelector := strings.Join(v.GetStringSlice("selector"), ",")
+
+		parsedSelector, err := labels.Parse(labelSelector)
+		if err != nil {
+			return errors.Wrap(err, "unable to parse selector")
+		}
+
+		namespace := ""
+		if v.GetString("namespace") != "" {
+			namespace = v.GetString("namespace")
+		}
+
+		bundlesFromSecrets, err := specs.LoadFromSecretMatchingLabel(parsedSelector.String(), namespace, SupportBundleSecretKey)
+		if err != nil {
+			return errors.Wrap(err, "failed to load support bundle spec from secrets")
+		}
+
+		if bundlesFromSecrets != nil {
+			for _, bundle := range bundlesFromSecrets {
+				multidocs := strings.Split(string(bundle), "\n---\n")
+				parsedBundlesFromSecrets, err := supportbundle.ParseSupportBundleFromDoc([]byte(multidocs[0]))
+				if err != nil {
+					return errors.Wrap(err, "failed to parse support bundle spec")
+				}
+
+				mainBundle = supportbundle.ConcatSpec(mainBundle, parsedBundlesFromSecrets)
+
+				parsedRedactors, err := supportbundle.ParseRedactorsFromSpec(multidocs)
+				if err != nil {
+					return errors.Wrap(err, "failed to parse redactors from doc")
+				}
+				additionalRedactors.Spec.Redactors = append(additionalRedactors.Spec.Redactors, parsedRedactors...)
 			}
-			additionalDoc, err := docrewrite.ConvertToV1Beta2([]byte(additionalDoc))
-			if err != nil {
-				return errors.Wrap(err, "failed to convert to v1beta2")
-			}
-			obj, _, err := decode(additionalDoc, nil, nil)
-			if err != nil {
-				return errors.Wrapf(err, "failed to parse additional doc %d", i)
-			}
-			multidocRedactors, ok := obj.(*troubleshootv1beta2.Redactor)
-			if !ok {
-				continue
-			}
-			additionalRedactors.Spec.Redactors = append(additionalRedactors.Spec.Redactors, multidocRedactors.Spec.Redactors...)
 		}
 	}
 
