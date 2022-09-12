@@ -51,6 +51,7 @@ func analyzeTextAnalyze(analyzer *troubleshootv1beta2.TextAnalyze, getCollectedF
 			}
 			if result != nil {
 				results = append(results, result)
+				fmt.Println(result)
 			}
 		}
 	}
@@ -63,6 +64,7 @@ func analyzeTextAnalyze(analyzer *troubleshootv1beta2.TextAnalyze, getCollectedF
 			}
 			if result != nil {
 				results = append(results, result)
+				fmt.Println(result)
 			}
 		}
 	}
@@ -247,6 +249,10 @@ func compareRegex(conditional string, foundMatches map[string]string) (bool, err
 	lookForMatchName := parts[0]
 	operator := parts[1]
 	lookForValue := parts[2]
+
+	fmt.Println(lookForMatchName)
+	fmt.Println(operator)
+	fmt.Print(lookForValue)
 
 	foundValue, ok := foundMatches[lookForMatchName]
 	if !ok {
