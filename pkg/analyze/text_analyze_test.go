@@ -582,6 +582,81 @@ func Test_textAnalyze(t *testing.T) {
 				"text-collector-templated-regex-message/cfile-1.txt": []byte(`{"level":"ERROR","timestamp":"2022-05-17T20:37:41Z","caller":"controller/controller.go:317","message":"Reconciler error","context":{"name":"insert-cr-name-here","namespace":"default","error":"myerror"}}`),
 			},
 		},
+		{
+			name: "Collected file has trailing whitespace",
+			analyzer: troubleshootv1beta2.TextAnalyze{
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							When:    `Result == PASS`,
+							Message: "Passed",
+						},
+					},
+					{
+						Fail: &troubleshootv1beta2.SingleOutcome{
+							When:    `Result == FAIL`,
+							Message: "Result: {{ .Result }}",
+						},
+					},
+				},
+				CollectorName: "text-collector-content-with-trailing-whitespace",
+				FileName:      "text-collector-content-with-trailing-whitespace.txt",
+				RegexGroups:   `SMTP server is reachable , (?P<Result>.*?) , (?P<Message>.*$)`,
+			},
+			expectResult: []AnalyzeResult{
+				{
+					IsPass:  true,
+					IsWarn:  false,
+					IsFail:  false,
+					Title:   "text-collector-content-with-trailing-whitespace",
+					Message: "Passed",
+					IconKey: "kubernetes_text_analyze",
+					IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg?w=13&h=16",
+				},
+			},
+			files: map[string][]byte{
+				"text-collector-content-with-trailing-whitespace/text-collector-content-with-trailing-whitespace.txt": []byte(`SMTP server is reachable , PASS , blah blah message	
+					
+				`),
+			},
+		},
+		{
+			name: "Collected file has leading whitespace",
+			analyzer: troubleshootv1beta2.TextAnalyze{
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							When:    `Result == PASS`,
+							Message: "Passed",
+						},
+					},
+					{
+						Fail: &troubleshootv1beta2.SingleOutcome{
+							When:    `Result == FAIL`,
+							Message: "Result: {{ .Result }}",
+						},
+					},
+				},
+				CollectorName: "text-collector-content-with-leading-whitespace",
+				FileName:      "text-collector-content-with-leading-whitespace.txt",
+				RegexGroups:   `SMTP server is reachable , (?P<Result>.*?) , (?P<Message>.*$)`,
+			},
+			expectResult: []AnalyzeResult{
+				{
+					IsPass:  false,
+					IsWarn:  false,
+					IsFail:  true,
+					Title:   "text-collector-content-with-leading-whitespace",
+					Message: "Result: FAIL",
+					IconKey: "kubernetes_text_analyze",
+					IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg?w=13&h=16",
+				},
+			},
+			files: map[string][]byte{
+				"text-collector-content-with-leading-whitespace/text-collector-content-with-leading-whitespace.txt": []byte(`
+				SMTP server is reachable , FAIL , blah blah message`),
+			},
+		},
 	}
 
 	for _, test := range tests {

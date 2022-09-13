@@ -148,7 +148,9 @@ func analyzeRegexGroups(pattern string, collected []byte, outcomes []*troublesho
 		return nil, errors.Wrapf(err, "failed to compile regex: %s", pattern)
 	}
 
-	match := re.FindStringSubmatch(string(collected))
+	// Trim leading and trailing space from the collected file contents
+	collectedTrimmed := strings.TrimSpace(string(collected))
+	match := re.FindStringSubmatch(collectedTrimmed)
 
 	result := &AnalyzeResult{
 		Title:   checkName,
@@ -249,10 +251,6 @@ func compareRegex(conditional string, foundMatches map[string]string) (bool, err
 	lookForMatchName := parts[0]
 	operator := parts[1]
 	lookForValue := parts[2]
-
-	fmt.Println(lookForMatchName)
-	fmt.Println(operator)
-	fmt.Print(lookForValue)
 
 	foundValue, ok := foundMatches[lookForMatchName]
 	if !ok {
