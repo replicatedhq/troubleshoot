@@ -615,7 +615,7 @@ func Test_textAnalyze(t *testing.T) {
 				},
 			},
 			files: map[string][]byte{
-				"text-collector-content-with-trailing-whitespace/text-collector-content-with-trailing-whitespace.txt": []byte(`SMTP server is reachable , PASS , blah blah message	
+				"text-collector-content-with-trailing-whitespace/text-collector-content-with-trailing-whitespace.txt": []byte(`SMTP server is reachable , PASS , message	
 					
 				`),
 			},
@@ -654,7 +654,7 @@ func Test_textAnalyze(t *testing.T) {
 			},
 			files: map[string][]byte{
 				"text-collector-content-with-leading-whitespace/text-collector-content-with-leading-whitespace.txt": []byte(`
-				SMTP server is reachable , FAIL , blah blah message`),
+				SMTP server is reachable , FAIL , message`),
 			},
 		},
 	}
