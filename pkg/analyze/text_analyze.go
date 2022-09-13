@@ -51,7 +51,6 @@ func analyzeTextAnalyze(analyzer *troubleshootv1beta2.TextAnalyze, getCollectedF
 			}
 			if result != nil {
 				results = append(results, result)
-				fmt.Println(result)
 			}
 		}
 	}
@@ -64,7 +63,6 @@ func analyzeTextAnalyze(analyzer *troubleshootv1beta2.TextAnalyze, getCollectedF
 			}
 			if result != nil {
 				results = append(results, result)
-				fmt.Println(result)
 			}
 		}
 	}
