@@ -105,7 +105,9 @@ func analyzeRegexPattern(pattern string, collected []byte, outcomes []*troublesh
 		IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg",
 	}
 
-	reMatch := re.MatchString(string(collected))
+	// Trim leading and trailing space from the collected file contents
+	collectedTrimmed := strings.TrimSpace(string(collected))
+	reMatch := re.MatchString(string(collectedTrimmed))
 	failWhen := false
 	if failOutcome != nil && failOutcome.When != "" {
 		failWhen, err = strconv.ParseBool(failOutcome.When)
