@@ -102,7 +102,7 @@ func runTroubleshoot(v *viper.Viper, arg []string) error {
 		additionalRedactors.Spec.Redactors = append(additionalRedactors.Spec.Redactors, parsedRedactors...)
 	}
 
-	if v.GetBool("load-specs-from-secrets") {
+	if v.GetBool("load-cluster-specs") {
 		labelSelector := strings.Join(v.GetStringSlice("selector"), ",")
 
 		parsedSelector, err := labels.Parse(labelSelector)
