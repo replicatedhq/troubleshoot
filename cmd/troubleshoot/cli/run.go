@@ -29,6 +29,7 @@ import (
 	"github.com/spf13/viper"
 	spin "github.com/tj/go-spin"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
 
@@ -115,7 +116,17 @@ func runTroubleshoot(v *viper.Viper, arg []string) error {
 			namespace = v.GetString("namespace")
 		}
 
-		bundlesFromSecrets, err := specs.LoadFromSecretMatchingLabel(parsedSelector.String(), namespace, SupportBundleSecretKey)
+		config, err := k8sutil.GetRESTConfig()
+		if err != nil {
+			return errors.Wrap(err, "failed to convert kube flags to rest config")
+		}
+
+		client, err := kubernetes.NewForConfig(config)
+		if err != nil {
+			return errors.Wrap(err, "failed to convert create k8s client")
+		}
+
+		bundlesFromSecrets, err := specs.LoadFromSecretMatchingLabel(client, parsedSelector.String(), namespace, SupportBundleSecretKey)
 		if err != nil {
 			return errors.Wrap(err, "failed to load support bundle spec from secrets")
 		}

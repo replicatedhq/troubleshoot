@@ -33,18 +33,8 @@ func LoadFromSecret(namespace string, secretName string, key string) ([]byte, er
 	return spec, nil
 }
 
-func LoadFromSecretMatchingLabel(labelSelector string, namespace string, key string) ([]string, error) {
+func LoadFromSecretMatchingLabel(client kubernetes.Interface, labelSelector string, namespace string, key string) ([]string, error) {
 	var secretsMatchingKey []string
-
-	config, err := k8sutil.GetRESTConfig()
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to convert kube flags to rest config")
-	}
-
-	client, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to convert create k8s client")
-	}
 
 	secrets, err := client.CoreV1().Secrets(namespace).List(context.TODO(), metav1.ListOptions{LabelSelector: labelSelector})
 	if err != nil {
@@ -52,7 +42,7 @@ func LoadFromSecretMatchingLabel(labelSelector string, namespace string, key str
 	}
 
 	for _, secret := range secrets.Items {
-		spec, ok := secret.Data[key]
+		spec, ok := secret.StringData[key]
 		if !ok {
 			return nil, errors.Errorf("support bundle spec not found in secret with matching label %s", secret.Name)
 		}
