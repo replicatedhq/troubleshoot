@@ -165,7 +165,9 @@ func runTroubleshoot(v *viper.Viper, arg []string) error {
 	}
 
 	if mainBundle == nil {
-		return errors.New("no specs provided to run")
+		return errors.New("no support bundle specs provided to run")
+	} else if mainBundle.Spec.Collectors == nil && mainBundle.Spec.HostCollectors == nil {
+		return errors.New("no collectors specified in support bundle")
 	}
 
 	for idx, redactor := range v.GetStringSlice("redactors") {
