@@ -24,6 +24,7 @@ import (
 	"github.com/replicatedhq/troubleshoot/pkg/convert"
 	"github.com/replicatedhq/troubleshoot/pkg/httputil"
 	"github.com/replicatedhq/troubleshoot/pkg/k8sutil"
+	"github.com/replicatedhq/troubleshoot/pkg/logger"
 	"github.com/replicatedhq/troubleshoot/pkg/specs"
 	"github.com/replicatedhq/troubleshoot/pkg/supportbundle"
 	"github.com/spf13/viper"
@@ -132,7 +133,7 @@ func runTroubleshoot(v *viper.Viper, arg []string) error {
 
 		bundlesFromSecrets, err := specs.LoadFromSecretMatchingLabel(client, parsedSelector.String(), namespace, SupportBundleSecretKey)
 		if err != nil {
-			return errors.Wrap(err, "failed to load support bundle spec from secrets")
+			logger.Printf("failed to load support bundle spec from secrets: %s", err)
 		}
 
 		if bundlesFromSecrets != nil {
@@ -140,7 +141,8 @@ func runTroubleshoot(v *viper.Viper, arg []string) error {
 				multidocs := strings.Split(string(bundle), "\n---\n")
 				parsedBundlesFromSecrets, err := supportbundle.ParseSupportBundleFromDoc([]byte(multidocs[0]))
 				if err != nil {
-					return errors.Wrap(err, "failed to parse support bundle spec")
+					logger.Printf("failed to parse support bundle spec:  %w", err)
+					continue
 				}
 
 				if mainBundle == nil {
@@ -151,10 +153,14 @@ func runTroubleshoot(v *viper.Viper, arg []string) error {
 
 				parsedRedactors, err := supportbundle.ParseRedactorsFromSpec(multidocs)
 				if err != nil {
-					return errors.Wrap(err, "failed to parse redactors from doc")
+					logger.Printf("failed to parse redactors from doc:  %w", err)
+					continue
 				}
 				additionalRedactors.Spec.Redactors = append(additionalRedactors.Spec.Redactors, parsedRedactors...)
 			}
+		}
+		if mainBundle == nil {
+			return errors.New("no specs found in cluster")
 		}
 	}
 

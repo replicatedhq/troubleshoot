@@ -39,7 +39,7 @@ func LoadFromSecretMatchingLabel(client kubernetes.Interface, labelSelector stri
 
 	secrets, err := client.CoreV1().Secrets(namespace).List(context.TODO(), metav1.ListOptions{LabelSelector: labelSelector})
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to search for secrets containing support bundles in the cluster")
+		return nil, errors.Wrap(err, "failed to search for secrets in the cluster")
 	}
 
 	for _, secret := range secrets.Items {
