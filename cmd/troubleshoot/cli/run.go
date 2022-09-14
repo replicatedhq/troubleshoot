@@ -141,7 +141,7 @@ func runTroubleshoot(v *viper.Viper, arg []string) error {
 				multidocs := strings.Split(string(bundle), "\n---\n")
 				parsedBundlesFromSecrets, err := supportbundle.ParseSupportBundleFromDoc([]byte(multidocs[0]))
 				if err != nil {
-					logger.Printf("failed to parse support bundle spec:  %w", err)
+					logger.Printf("failed to parse support bundle spec:  %s", err)
 					continue
 				}
 
@@ -153,7 +153,7 @@ func runTroubleshoot(v *viper.Viper, arg []string) error {
 
 				parsedRedactors, err := supportbundle.ParseRedactorsFromSpec(multidocs)
 				if err != nil {
-					logger.Printf("failed to parse redactors from doc:  %w", err)
+					logger.Printf("failed to parse redactors from doc:  %s", err)
 					continue
 				}
 				additionalRedactors.Spec.Redactors = append(additionalRedactors.Spec.Redactors, parsedRedactors...)
