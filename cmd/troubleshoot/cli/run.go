@@ -38,6 +38,10 @@ const (
 )
 
 func runTroubleshoot(v *viper.Viper, arg []string) error {
+	if v.GetBool("load-cluster-specs") == false && len(arg) == 0 {
+		return errors.New("flag load-cluster-specs must be set if no specs are provided on the command line")
+	}
+
 	interactive := v.GetBool("interactive") && isatty.IsTerminal(os.Stdout.Fd())
 
 	if interactive {
@@ -139,7 +143,11 @@ func runTroubleshoot(v *viper.Viper, arg []string) error {
 					return errors.Wrap(err, "failed to parse support bundle spec")
 				}
 
-				mainBundle = supportbundle.ConcatSpec(mainBundle, parsedBundlesFromSecrets)
+				if mainBundle == nil {
+					mainBundle = parsedBundlesFromSecrets
+				} else {
+					supportbundle.ConcatSpec(mainBundle, parsedBundlesFromSecrets)
+				}
 
 				parsedRedactors, err := supportbundle.ParseRedactorsFromSpec(multidocs)
 				if err != nil {
@@ -148,6 +156,10 @@ func runTroubleshoot(v *viper.Viper, arg []string) error {
 				additionalRedactors.Spec.Redactors = append(additionalRedactors.Spec.Redactors, parsedRedactors...)
 			}
 		}
+	}
+
+	if mainBundle == nil {
+		return errors.New("no specs provided to run")
 	}
 
 	for idx, redactor := range v.GetStringSlice("redactors") {
