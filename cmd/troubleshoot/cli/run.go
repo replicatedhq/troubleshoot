@@ -38,7 +38,7 @@ const (
 )
 
 func runTroubleshoot(v *viper.Viper, arg []string) error {
-	if v.GetBool("load-cluster-specs") == false && len(arg) == 0 {
+	if v.GetBool("load-cluster-specs") == false && len(arg) < 1 {
 		return errors.New("flag load-cluster-specs must be set if no specs are provided on the command line")
 	}
 
