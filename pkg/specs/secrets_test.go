@@ -34,8 +34,8 @@ func Test_LoadFromSecretMatchingLabel(t *testing.T) {
 							"troubleshoot.io/kind": "supportbundle-spec",
 						},
 					},
-					StringData: map[string]string{
-						"support-bundle-spec": `apiVersion: troubleshoot.sh/v1beta2
+					Data: map[string][]byte{
+						"support-bundle-spec": []byte(`apiVersion: troubleshoot.sh/v1beta2
 kind: SupportBundle
 metadata:
   name: test
@@ -49,7 +49,7 @@ spec:
 		  - name: run-ping
 			image: busybox:1
 			command: ["ping"]
-			args: ["-w", "5", "www.google.com"]`,
+			args: ["-w", "5", "www.google.com"]`),
 					},
 				},
 			},
@@ -79,8 +79,8 @@ spec:
 						Name:      "secret",
 						Namespace: "default",
 					},
-					StringData: map[string]string{
-						"support-bundle-spec": `apiVersion: troubleshoot.sh/v1beta2
+					Data: map[string][]byte{
+						"support-bundle-spec": []byte(`apiVersion: troubleshoot.sh/v1beta2
 kind: SupportBundle
 metadata:
   name: test
@@ -89,7 +89,7 @@ spec:
   - data:
       name: static/data.txt
       data: |
-	    static data`,
+	    static data`),
 					},
 				},
 			},
@@ -103,8 +103,8 @@ spec:
 						Name:      "secret",
 						Namespace: "default",
 					},
-					StringData: map[string]string{
-						"support-bundle-specc": `apiVersion: troubleshoot.sh/v1beta2
+					Data: map[string][]byte{
+						"support-bundle-specc": []byte(`apiVersion: troubleshoot.sh/v1beta2
 kind: SupportBundle
 metadata:
   name: test
@@ -113,7 +113,7 @@ spec:
   - data:
       name: static/data.txt
       data: |
-	    static data`,
+	    static data`),
 					},
 				},
 			},
@@ -130,14 +130,14 @@ spec:
 							"troubleshoot.io/kind": "supportbundle-spec",
 						},
 					},
-					StringData: map[string]string{
-						"support-bundle-spec": `apiVersion: troubleshoot.sh/v1beta2
+					Data: map[string][]byte{
+						"support-bundle-spec": []byte(`apiVersion: troubleshoot.sh/v1beta2
 kind: SupportBundle
 metadata:
   name: cluster-info
 spec:
   collectors:
-  - clusterInfo: {}`,
+  - clusterInfo: {}`),
 					},
 				},
 				{
@@ -148,14 +148,14 @@ spec:
 							"troubleshoot.io/kind": "supportbundle-spec",
 						},
 					},
-					StringData: map[string]string{
-						"support-bundle-spec": `apiVersion: troubleshoot.sh/v1beta2
+					Data: map[string][]byte{
+						"support-bundle-spec": []byte(`apiVersion: troubleshoot.sh/v1beta2
 kind: SupportBundle
 metadata:
   name: cluster-resources
 spec:
   collectors:
-  - clusterResources: {}`,
+  - clusterResources: {}`),
 					},
 				},
 			},
@@ -187,14 +187,14 @@ spec:
 							"troubleshoot.io/kind": "supportbundle-spec",
 						},
 					},
-					StringData: map[string]string{
-						"support-bundle-spec": `apiVersion: troubleshoot.sh/v1beta2
+					Data: map[string][]byte{
+						"support-bundle-spec": []byte(`apiVersion: troubleshoot.sh/v1beta2
 kind: SupportBundle
 metadata:
   name: cluster-info
 spec:
   collectors:
-  - clusterInfo: {}`,
+  - clusterInfo: {}`),
 					},
 				},
 				{
@@ -205,14 +205,14 @@ spec:
 							"troubleshoot.io/kind": "supportbundle-spec",
 						},
 					},
-					StringData: map[string]string{
-						"support-bundle-spec": `apiVersion: troubleshoot.sh/v1beta2
+					Data: map[string][]byte{
+						"support-bundle-spec": []byte(`apiVersion: troubleshoot.sh/v1beta2
 kind: SupportBundle
 metadata:
   name: cluster-resources
 spec:
   collectors:
-  - clusterResources: {}`,
+  - clusterResources: {}`),
 					},
 				},
 			},
@@ -244,14 +244,14 @@ spec:
 							"troubleshoot.io/kind": "supportbundle-spec-wrong",
 						},
 					},
-					StringData: map[string]string{
-						"support-bundle-spec-wrong": `apiVersion: troubleshoot.sh/v1beta2
+					Data: map[string][]byte{
+						"support-bundle-spec-wrong": []byte(`apiVersion: troubleshoot.sh/v1beta2
 kind: SupportBundle
 metadata:
   name: cluster-info
 spec:
   collectors:
-  - clusterInfo: {}`,
+  - clusterInfo: {}`),
 					},
 				},
 				{
@@ -262,14 +262,14 @@ spec:
 							"troubleshoot.io/kind": "supportbundle-spec",
 						},
 					},
-					StringData: map[string]string{
-						"support-bundle-spec": `apiVersion: troubleshoot.sh/v1beta2
+					Data: map[string][]byte{
+						"support-bundle-spec": []byte(`apiVersion: troubleshoot.sh/v1beta2
 kind: SupportBundle
 metadata:
   name: cluster-resources
 spec:
   collectors:
-  - clusterResources: {}`,
+  - clusterResources: {}`),
 					},
 				},
 			},
@@ -325,8 +325,8 @@ func TestUserProvidedNamespace_LoadFromSecretMatchingLabel(t *testing.T) {
 							"troubleshoot.io/kind": "supportbundle-spec",
 						},
 					},
-					StringData: map[string]string{
-						"support-bundle-spec": `apiVersion: troubleshoot.sh/v1beta2
+					Data: map[string][]byte{
+						"support-bundle-spec": []byte(`apiVersion: troubleshoot.sh/v1beta2
 kind: SupportBundle
 metadata:
   name: test
@@ -335,7 +335,7 @@ spec:
   - data:
       name: static/data.txt
       data: |
-	    static data`,
+	    static data`),
 					},
 				},
 			},
@@ -363,8 +363,8 @@ spec:
 							"troubleshoot.io/kind": "supportbundle-spec",
 						},
 					},
-					StringData: map[string]string{
-						"support-bundle-spec": `apiVersion: troubleshoot.sh/v1beta2
+					Data: map[string][]byte{
+						"support-bundle-spec": []byte(`apiVersion: troubleshoot.sh/v1beta2
 kind: SupportBundle
 metadata:
   name: test
@@ -373,7 +373,7 @@ spec:
   - data:
       name: static/data.txt
       data: |
-	    static data`,
+	    static data`),
 					},
 				},
 			},

@@ -5,6 +5,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/replicatedhq/troubleshoot/pkg/k8sutil"
+	"github.com/replicatedhq/troubleshoot/pkg/logger"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
@@ -38,13 +39,14 @@ func LoadFromSecretMatchingLabel(client kubernetes.Interface, labelSelector stri
 
 	secrets, err := client.CoreV1().Secrets(namespace).List(context.TODO(), metav1.ListOptions{LabelSelector: labelSelector})
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to get secret")
+		return nil, errors.Wrap(err, "failed to search for secrets containing support bundles in the cluster")
 	}
 
 	for _, secret := range secrets.Items {
-		spec, ok := secret.StringData[key]
+		spec, ok := secret.Data[key]
 		if !ok {
-			return nil, errors.Errorf("support bundle spec not found in secret with matching label %s", secret.Name)
+			logger.Printf("expected key of %s not found in secret %s, skipping\n", key, secret.Name)
+			continue
 		}
 		secretsMatchingKey = append(secretsMatchingKey, string(spec))
 	}
