@@ -58,6 +58,10 @@ from a server that can be used to assist when troubleshooting a Kubernetes clust
 	cmd.Flags().Bool("allow-insecure-connections", false, "when set, do not verify TLS certs when retrieving spec and reporting results")
 	cmd.Flags().MarkHidden("allow-insecure-connections")
 
+	// `follow-uri` references the `followURI` functionality where we can use an upstream spec when creating a support bundle
+	// This flag makes sure we can also disable this and fall back to the default spec.
+	cmd.Flags().Bool("follow-uri", true, "Forces the support bundle to revert back to the default and not use a URI for a spec when set to `false`")
+
 	viper.BindPFlags(cmd.Flags())
 
 	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
