@@ -18,8 +18,10 @@ func Mysql(c *Collector, databaseCollector *troubleshootv1beta2.Database) (Colle
 	if err != nil {
 		databaseConnection.Error = err.Error()
 	} else {
+		defer db.Close()
 		query := `select version()`
 		row := db.QueryRow(query)
+
 		version := ""
 		if err := row.Scan(&version); err != nil {
 			databaseConnection.Error = err.Error()
@@ -27,6 +29,38 @@ func Mysql(c *Collector, databaseCollector *troubleshootv1beta2.Database) (Colle
 			databaseConnection.IsConnected = true
 			databaseConnection.Version = version
 		}
+
+		requestedParameters := databaseCollector.Parameters
+		if len(requestedParameters) > 0 {
+			rows, err := db.Query("SHOW VARIABLES")
+
+			if err != nil {
+				databaseConnection.Error = err.Error()
+			} else {
+				defer rows.Close()
+
+				variables := map[string]string{}
+				for rows.Next() {
+					var key, value string
+					err = rows.Scan(&key, &value)
+					if err != nil {
+						databaseConnection.Error = err.Error()
+						break
+					}
+					variables[key] = value
+				}
+				filteredVariables := map[string]string{}
+
+				for _, key := range requestedParameters {
+					if value, ok := variables[key]; ok {
+						filteredVariables[key] = value
+					}
+
+				}
+				databaseConnection.Variables = filteredVariables
+			}
+		}
+
 	}
 
 	b, err := json.Marshal(databaseConnection)

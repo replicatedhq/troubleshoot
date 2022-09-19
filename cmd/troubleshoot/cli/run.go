@@ -22,16 +22,27 @@ import (
 	"github.com/replicatedhq/troubleshoot/pkg/client/troubleshootclientset/scheme"
 	troubleshootclientsetscheme "github.com/replicatedhq/troubleshoot/pkg/client/troubleshootclientset/scheme"
 	"github.com/replicatedhq/troubleshoot/pkg/convert"
-	"github.com/replicatedhq/troubleshoot/pkg/docrewrite"
 	"github.com/replicatedhq/troubleshoot/pkg/httputil"
 	"github.com/replicatedhq/troubleshoot/pkg/k8sutil"
+	"github.com/replicatedhq/troubleshoot/pkg/logger"
+	"github.com/replicatedhq/troubleshoot/pkg/specs"
 	"github.com/replicatedhq/troubleshoot/pkg/supportbundle"
 	"github.com/spf13/viper"
 	spin "github.com/tj/go-spin"
+	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
 
-func runTroubleshoot(v *viper.Viper, arg string) error {
+const (
+	SupportBundleSecretKey = "support-bundle-spec"
+)
+
+func runTroubleshoot(v *viper.Viper, arg []string) error {
+	if v.GetBool("load-cluster-specs") == false && len(arg) < 1 {
+		return errors.New("flag load-cluster-specs must be set if no specs are provided on the command line")
+	}
+
 	interactive := v.GetBool("interactive") && isatty.IsTerminal(os.Stdout.Fd())
 
 	if interactive {
@@ -68,23 +79,97 @@ func runTroubleshoot(v *viper.Viper, arg string) error {
 		})
 	}
 
-	collectorContent, err := supportbundle.LoadSupportBundleSpec(arg)
-	if err != nil {
-		return errors.Wrap(err, "failed to load collector spec")
-	}
-
-	multidocs := strings.Split(string(collectorContent), "\n---\n")
-
-	// we support both raw collector kinds and supportbundle kinds here
-	supportBundle, err := supportbundle.ParseSupportBundleFromDoc([]byte(multidocs[0]))
-	if err != nil {
-		return errors.Wrap(err, "failed to parse collector")
-	}
+	var mainBundle *troubleshootv1beta2.SupportBundle
 
 	troubleshootclientsetscheme.AddToScheme(scheme.Scheme)
-	decode := scheme.Codecs.UniversalDeserializer().Decode
-
 	additionalRedactors := &troubleshootv1beta2.Redactor{}
+	for i, v := range arg {
+
+		collectorContent, err := supportbundle.LoadSupportBundleSpec(v)
+		if err != nil {
+			return errors.Wrap(err, "failed to load support bundle spec")
+		}
+		multidocs := strings.Split(string(collectorContent), "\n---\n")
+		supportBundle, err := supportbundle.ParseSupportBundleFromDoc([]byte(multidocs[0]))
+		if err != nil {
+			return errors.Wrap(err, "failed to parse support bundle spec")
+		}
+
+		if i == 0 {
+			mainBundle = supportBundle
+		} else {
+			mainBundle = supportbundle.ConcatSpec(mainBundle, supportBundle)
+		}
+
+		parsedRedactors, err := supportbundle.ParseRedactorsFromSpec(multidocs)
+		if err != nil {
+			return errors.Wrap(err, "failed to parse redactors from doc")
+		}
+		additionalRedactors.Spec.Redactors = append(additionalRedactors.Spec.Redactors, parsedRedactors...)
+	}
+
+	if v.GetBool("load-cluster-specs") {
+		labelSelector := strings.Join(v.GetStringSlice("selector"), ",")
+
+		parsedSelector, err := labels.Parse(labelSelector)
+		if err != nil {
+			return errors.Wrap(err, "unable to parse selector")
+		}
+
+		namespace := ""
+		if v.GetString("namespace") != "" {
+			namespace = v.GetString("namespace")
+		}
+
+		config, err := k8sutil.GetRESTConfig()
+		if err != nil {
+			return errors.Wrap(err, "failed to convert kube flags to rest config")
+		}
+
+		client, err := kubernetes.NewForConfig(config)
+		if err != nil {
+			return errors.Wrap(err, "failed to convert create k8s client")
+		}
+
+		bundlesFromSecrets, err := specs.LoadFromSecretMatchingLabel(client, parsedSelector.String(), namespace, SupportBundleSecretKey)
+		if err != nil {
+			logger.Printf("failed to load support bundle spec from secrets: %s", err)
+		}
+
+		if bundlesFromSecrets != nil {
+			for _, bundle := range bundlesFromSecrets {
+				multidocs := strings.Split(string(bundle), "\n---\n")
+				parsedBundlesFromSecrets, err := supportbundle.ParseSupportBundleFromDoc([]byte(multidocs[0]))
+				if err != nil {
+					logger.Printf("failed to parse support bundle spec:  %s", err)
+					continue
+				}
+
+				if mainBundle == nil {
+					mainBundle = parsedBundlesFromSecrets
+				} else {
+					supportbundle.ConcatSpec(mainBundle, parsedBundlesFromSecrets)
+				}
+
+				parsedRedactors, err := supportbundle.ParseRedactorsFromSpec(multidocs)
+				if err != nil {
+					logger.Printf("failed to parse redactors from doc:  %s", err)
+					continue
+				}
+				additionalRedactors.Spec.Redactors = append(additionalRedactors.Spec.Redactors, parsedRedactors...)
+			}
+		}
+		if mainBundle == nil {
+			return errors.New("no specs found in cluster")
+		}
+	}
+
+	if mainBundle == nil {
+		return errors.New("no support bundle specs provided to run")
+	} else if mainBundle.Spec.Collectors == nil && mainBundle.Spec.HostCollectors == nil {
+		return errors.New("no collectors specified in support bundle")
+	}
+
 	for idx, redactor := range v.GetStringSlice("redactors") {
 		redactorObj, err := supportbundle.GetRedactorFromURI(redactor)
 		if err != nil {
@@ -94,25 +179,6 @@ func runTroubleshoot(v *viper.Viper, arg string) error {
 		if redactorObj != nil {
 			additionalRedactors.Spec.Redactors = append(additionalRedactors.Spec.Redactors, redactorObj.Spec.Redactors...)
 		}
-	}
-
-	for i, additionalDoc := range multidocs {
-		if i == 0 {
-			continue
-		}
-		additionalDoc, err := docrewrite.ConvertToV1Beta2([]byte(additionalDoc))
-		if err != nil {
-			return errors.Wrap(err, "failed to convert to v1beta2")
-		}
-		obj, _, err := decode(additionalDoc, nil, nil)
-		if err != nil {
-			return errors.Wrapf(err, "failed to parse additional doc %d", i)
-		}
-		multidocRedactors, ok := obj.(*troubleshootv1beta2.Redactor)
-		if !ok {
-			continue
-		}
-		additionalRedactors.Spec.Redactors = append(additionalRedactors.Spec.Redactors, multidocRedactors.Spec.Redactors...)
 	}
 
 	var collectorCB func(chan interface{}, string)
@@ -181,6 +247,7 @@ func runTroubleshoot(v *viper.Viper, arg string) error {
 		Namespace:                 v.GetString("namespace"),
 		ProgressChan:              progressChan,
 		SinceTime:                 sinceTime,
+		OutputPath:                v.GetString("output"),
 		Redact:                    v.GetBool("redact"),
 		FromCLI:                   true,
 	}
@@ -192,7 +259,7 @@ func runTroubleshoot(v *viper.Viper, arg string) error {
 		c.Println(fmt.Sprintf("\r%s\r", cursor.ClearEntireLine()))
 	}
 
-	response, err := supportbundle.CollectSupportBundleFromSpec(&supportBundle.Spec, additionalRedactors, createOpts)
+	response, err := supportbundle.CollectSupportBundleFromSpec(&mainBundle.Spec, additionalRedactors, createOpts)
 	if err != nil {
 		return errors.Wrap(err, "failed to run collect and analyze process")
 	}
@@ -201,7 +268,7 @@ func runTroubleshoot(v *viper.Viper, arg string) error {
 			close(finishedCh) // this removes the spinner
 			isFinishedChClosed = true
 
-			if err := showInteractiveResults(supportBundle.Name, response.AnalyzerResults); err != nil {
+			if err := showInteractiveResults(mainBundle.Name, response.AnalyzerResults); err != nil {
 				interactive = false
 			}
 		} else {
@@ -210,7 +277,7 @@ func runTroubleshoot(v *viper.Viper, arg string) error {
 	}
 
 	if !response.FileUploaded {
-		if appName := supportBundle.Labels["applicationName"]; appName != "" {
+		if appName := mainBundle.Labels["applicationName"]; appName != "" {
 			f := `A support bundle for %s has been created in this directory
 named %s. Please upload it on the Troubleshoot page of
 the %s Admin Console to begin analysis.`

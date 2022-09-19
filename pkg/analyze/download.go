@@ -22,7 +22,7 @@ type fileContentProvider struct {
 }
 
 // Analyze local will analyze a locally available (already downloaded) bundle
-func AnalyzeLocal(localBundlePath string, analyzers []*troubleshootv1beta2.Analyze) ([]*AnalyzeResult, error) {
+func AnalyzeLocal(localBundlePath string, analyzers []*troubleshootv1beta2.Analyze, hostAnalyzers []*troubleshootv1beta2.HostAnalyze) ([]*AnalyzeResult, error) {
 	rootDir, err := FindBundleRootDir(localBundlePath)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to find root dir")
@@ -38,9 +38,17 @@ func AnalyzeLocal(localBundlePath string, analyzers []*troubleshootv1beta2.Analy
 			continue
 		}
 
-		if analyzeResult != nil {
-			analyzeResults = append(analyzeResults, analyzeResult...)
+		// Filter nil results to prevent panic
+		for _, r := range analyzeResult {
+			if r != nil {
+				analyzeResults = append(analyzeResults, r)
+			}
 		}
+	}
+
+	for _, hostAnalyzer := range hostAnalyzers {
+		analyzeResult := HostAnalyze(hostAnalyzer, fcp.getFileContents, fcp.getChildFileContents)
+		analyzeResults = append(analyzeResults, analyzeResult...)
 	}
 
 	return analyzeResults, nil
@@ -68,22 +76,24 @@ func DownloadAndAnalyze(bundleURL string, analyzersSpec string) ([]*AnalyzeResul
 	}
 
 	analyzers := []*troubleshootv1beta2.Analyze{}
+	hostAnalyzers := []*troubleshootv1beta2.HostAnalyze{}
 
 	if analyzersSpec == "" {
-		defaultAnalyzers, err := getDefaultAnalyzers()
+		defaultAnalyzers, _, err := getDefaultAnalyzers()
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to get default analyzers")
 		}
 		analyzers = defaultAnalyzers
 	} else {
-		parsedAnalyzers, err := parseAnalyzers(analyzersSpec)
+		parsedAnalyzers, parsedHostAnalyzers, err := parseAnalyzers(analyzersSpec)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to parse analyzers")
 		}
 		analyzers = parsedAnalyzers
+		hostAnalyzers = parsedHostAnalyzers
 	}
 
-	return AnalyzeLocal(rootDir, analyzers)
+	return AnalyzeLocal(rootDir, analyzers, hostAnalyzers)
 }
 
 func downloadTroubleshootBundle(bundleURL string, destDir string) error {
@@ -171,33 +181,33 @@ func ExtractTroubleshootBundle(reader io.Reader, destDir string) error {
 	return nil
 }
 
-func parseAnalyzers(spec string) ([]*troubleshootv1beta2.Analyze, error) {
+func parseAnalyzers(spec string) ([]*troubleshootv1beta2.Analyze, []*troubleshootv1beta2.HostAnalyze, error) {
 	troubleshootscheme.AddToScheme(scheme.Scheme)
 	decode := scheme.Codecs.UniversalDeserializer().Decode
 
 	convertedSpec, err := docrewrite.ConvertToV1Beta2([]byte(spec))
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to convert to v1beta2")
+		return nil, nil, errors.Wrap(err, "failed to convert to v1beta2")
 	}
 
 	obj, gvk, err := decode(convertedSpec, nil, nil)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to decode analyzers")
+		return nil, nil, errors.Wrap(err, "failed to decode analyzers")
 	}
 
 	// SupportBundle overwrites Analyzer if defined
 	if gvk.Group == "troubleshoot.sh" && gvk.Version == "v1beta2" && gvk.Kind == "SupportBundle" {
 		supportBundle := obj.(*troubleshootv1beta2.SupportBundle)
-		return supportBundle.Spec.Analyzers, nil
+		return supportBundle.Spec.Analyzers, supportBundle.Spec.HostAnalyzers, nil
 	} else if gvk.Group == "troubleshoot.sh" && gvk.Version == "v1beta2" && gvk.Kind == "Analyzer" {
 		analyzer := obj.(*troubleshootv1beta2.Analyzer)
-		return analyzer.Spec.Analyzers, nil
+		return analyzer.Spec.Analyzers, analyzer.Spec.HostAnalyzers, nil
 	}
 
-	return nil, errors.Errorf("invalid gvk %q", gvk)
+	return nil, nil, errors.Errorf("invalid gvk %q", gvk)
 }
 
-func getDefaultAnalyzers() ([]*troubleshootv1beta2.Analyze, error) {
+func getDefaultAnalyzers() ([]*troubleshootv1beta2.Analyze, []*troubleshootv1beta2.HostAnalyze, error) {
 	spec := `apiVersion: troubleshoot.sh/v1beta2
 kind: Analyzer
 metadata:

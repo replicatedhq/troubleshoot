@@ -30,6 +30,8 @@ type KernelModuleInfo struct {
 	Status    KernelModuleStatus `json:"status"`
 }
 
+const HostKernelModulesPath = `host-collectors/system/kernel_modules.json`
+
 // kernelModuleCollector defines the interface used to collect modules from the
 // underlying host.
 type kernelModuleCollector interface {
@@ -40,6 +42,7 @@ type kernelModuleCollector interface {
 // from the host.
 type CollectHostKernelModules struct {
 	hostCollector *troubleshootv1beta2.HostKernelModules
+	BundlePath    string
 	loadable      kernelModuleCollector
 	loaded        kernelModuleCollector
 }
@@ -57,17 +60,17 @@ func (c *CollectHostKernelModules) IsExcluded() (bool, error) {
 // Collect the kernel module status from the host.   Modules are returned as a
 // map keyed on the module name used by the kernel, e.g:
 //
-// {
-//   "system/kernel_modules.json": {
-//     ...
-//     "dm_snapshot": {
-//       "instances": 8,
-//       "size": 45056,
-//       "status": "loaded"
-//     },
-//     ...
-//   },
-// }
+//	{
+//	  "system/kernel_modules.json": {
+//	    ...
+//	    "dm_snapshot": {
+//	      "instances": 8,
+//	      "size": 45056,
+//	      "status": "loaded"
+//	    },
+//	    ...
+//	  },
+//	}
 //
 // Module status may be: loaded, loadable, loading, unloading or unknown.  When
 // a module is loaded, it may have one or more instances.  The size represents
@@ -95,8 +98,11 @@ func (c *CollectHostKernelModules) Collect(progressChan chan<- interface{}) (map
 		return nil, errors.Wrap(err, "failed to marshal kernel modules")
 	}
 
+	output := NewResult()
+	output.SaveResult(c.BundlePath, HostKernelModulesPath, bytes.NewBuffer(b))
+
 	return map[string][]byte{
-		"system/kernel_modules.json": b,
+		HostKernelModulesPath: b,
 	}, nil
 }
 

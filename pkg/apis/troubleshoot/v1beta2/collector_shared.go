@@ -2,17 +2,19 @@ package v1beta2
 
 import (
 	"fmt"
+	"reflect"
 	"strings"
 
 	"github.com/replicatedhq/troubleshoot/pkg/multitype"
 	authorizationv1 "k8s.io/api/authorization/v1"
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type CollectorMeta struct {
 	CollectorName string `json:"collectorName,omitempty" yaml:"collectorName,omitempty"`
 	// +optional
-	Exclude multitype.BoolOrString `json:"exclude,omitempty" yaml:"exclude,omitempty"`
+	Exclude *multitype.BoolOrString `json:"exclude,omitempty" yaml:"exclude,omitempty"`
 }
 
 type ClusterInfo struct {
@@ -22,6 +24,7 @@ type ClusterInfo struct {
 type ClusterResources struct {
 	CollectorMeta `json:",inline" yaml:",inline"`
 	Namespaces    []string `json:"namespaces,omitempty" yaml:"namespaces,omitempty"`
+	IgnoreRBAC    bool     `json:"ignoreRBAC,omitempty" yaml:"ignoreRBAC"`
 }
 
 type Secret struct {
@@ -65,15 +68,25 @@ type Data struct {
 }
 
 type Run struct {
+	CollectorMeta      `json:",inline" yaml:",inline"`
+	Name               string            `json:"name,omitempty" yaml:"name,omitempty"`
+	Namespace          string            `json:"namespace" yaml:"namespace"`
+	Image              string            `json:"image" yaml:"image"`
+	Command            []string          `json:"command,omitempty" yaml:"command,omitempty"`
+	Args               []string          `json:"args,omitempty" yaml:"args,omitempty"`
+	Timeout            string            `json:"timeout,omitempty" yaml:"timeout,omitempty"`
+	ImagePullPolicy    string            `json:"imagePullPolicy,omitempty" yaml:"imagePullPolicy,omitempty"`
+	ImagePullSecret    *ImagePullSecrets `json:"imagePullSecret,omitempty" yaml:"imagePullSecret,omitempty"`
+	ServiceAccountName string            `json:"serviceAccountName,omitempty" yaml:"serviceAccountName,omitempty"`
+}
+
+type RunPod struct {
 	CollectorMeta   `json:",inline" yaml:",inline"`
 	Name            string            `json:"name,omitempty" yaml:"name,omitempty"`
 	Namespace       string            `json:"namespace" yaml:"namespace"`
-	Image           string            `json:"image" yaml:"image"`
-	Command         []string          `json:"command,omitempty" yaml:"command,omitempty"`
-	Args            []string          `json:"args,omitempty" yaml:"args,omitempty"`
 	Timeout         string            `json:"timeout,omitempty" yaml:"timeout,omitempty"`
-	ImagePullPolicy string            `json:"imagePullPolicy,omitempty" yaml:"imagePullPolicy,omitempty"`
 	ImagePullSecret *ImagePullSecrets `json:"imagePullSecret,omitempty" yaml:"imagePullSecret,omitempty"`
+	PodSpec         corev1.PodSpec    `json:"podSpec,omitempty" yaml:"podSpec,omitempty"`
 }
 
 type ImagePullSecrets struct {
@@ -155,7 +168,8 @@ type Put struct {
 
 type Database struct {
 	CollectorMeta `json:",inline" yaml:",inline"`
-	URI           string `json:"uri" yaml:"uri"`
+	URI           string   `json:"uri" yaml:"uri"`
+	Parameters    []string `json:"parameters,omitempty"`
 }
 
 type Collectd struct {
@@ -194,6 +208,7 @@ type Collect struct {
 	ConfigMap        *ConfigMap        `json:"configMap,omitempty" yaml:"configMap,omitempty"`
 	Logs             *Logs             `json:"logs,omitempty" yaml:"logs,omitempty"`
 	Run              *Run              `json:"run,omitempty" yaml:"run,omitempty"`
+	RunPod           *RunPod           `json:"runPod,omitempty" yaml:"runPod,omitempty"`
 	Exec             *Exec             `json:"exec,omitempty" yaml:"exec,omitempty"`
 	Data             *Data             `json:"data,omitempty" yaml:"data,omitempty"`
 	Copy             *Copy             `json:"copy,omitempty" yaml:"copy,omitempty"`
@@ -327,6 +342,19 @@ func (c *Collect) AccessReviewSpecs(overrideNS string) []authorizationv1.SelfSub
 			},
 			NonResourceAttributes: nil,
 		})
+	} else if c.RunPod != nil {
+		result = append(result, authorizationv1.SelfSubjectAccessReviewSpec{
+			ResourceAttributes: &authorizationv1.ResourceAttributes{
+				Namespace:   pickNamespaceOrDefault(c.RunPod.Namespace, overrideNS),
+				Verb:        "create",
+				Group:       "",
+				Version:     "",
+				Resource:    "pods",
+				Subresource: "",
+				Name:        "",
+			},
+			NonResourceAttributes: nil,
+		})
 	} else if c.Exec != nil {
 		result = append(result, authorizationv1.SelfSubjectAccessReviewSpec{
 			ResourceAttributes: &authorizationv1.ResourceAttributes{
@@ -432,6 +460,10 @@ func (c *Collect) GetName() string {
 		collector = "run"
 		name = c.Run.CollectorName
 	}
+	if c.RunPod != nil {
+		collector = "run-pod"
+		name = c.RunPod.CollectorName
+	}
 	if c.Exec != nil {
 		collector = "exec"
 		name = c.Exec.CollectorName
@@ -453,6 +485,18 @@ func (c *Collect) GetName() string {
 	if c.HTTP != nil {
 		collector = "http"
 		name = c.HTTP.CollectorName
+	}
+	if c.Postgres != nil {
+		collector = "postgres"
+		name = c.Postgres.CollectorName
+	}
+	if c.Mysql != nil {
+		collector = "mysql"
+		name = c.Mysql.CollectorName
+	}
+	if c.Redis != nil {
+		collector = "redis"
+		name = c.Redis.CollectorName
 	}
 	if c.Collectd != nil {
 		collector = "collectd"
@@ -495,4 +539,21 @@ func pickNamespaceOrDefault(collectorNS string, overrideNS string) string {
 		return collectorNS
 	}
 	return "default"
+}
+
+func GetCollector(collector *Collect) interface{} {
+	if collector == nil {
+		return nil
+	}
+
+	reflected := reflect.ValueOf(collector).Elem()
+	for i := 0; i < reflected.NumField(); i++ {
+		if reflected.Field(i).IsNil() {
+			continue
+		}
+
+		return reflect.Indirect(reflected.Field(i)).Addr().Interface()
+	}
+
+	return nil
 }

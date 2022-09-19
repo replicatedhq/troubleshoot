@@ -8,6 +8,7 @@ import (
 
 	analyze "github.com/replicatedhq/troubleshoot/pkg/analyze"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
+	"github.com/replicatedhq/troubleshoot/pkg/logger"
 )
 
 // Analyze runs the analyze phase of preflight checks
@@ -15,12 +16,12 @@ func (c ClusterCollectResult) Analyze() []*analyze.AnalyzeResult {
 	return doAnalyze(c.AllCollectedData, c.Spec.Spec.Analyzers, nil, "")
 }
 
-// Analyze runs the analysze phase of host preflight checks
+// Analyze runs the analyze phase of host preflight checks
 func (c HostCollectResult) Analyze() []*analyze.AnalyzeResult {
 	return doAnalyze(c.AllCollectedData, nil, c.Spec.Spec.Analyzers, "")
 }
 
-// Analyze runs the analysze phase of host preflight checks.
+// Analyze runs the analyze phase of host preflight checks.
 //
 // Runs the analysis for each node and aggregates the results.
 func (c RemoteCollectResult) Analyze() []*analyze.AnalyzeResult {
@@ -77,8 +78,14 @@ func doAnalyze(allCollectedData map[string][]byte, analyzers []*troubleshootv1be
 	for _, analyzer := range analyzers {
 		analyzeResult, err := analyze.Analyze(analyzer, getCollectedFileContents, getChildCollectedFileContents)
 		if err != nil {
+			strict, strictErr := HasStrictAnalyzer(analyzer)
+			if strictErr != nil {
+				logger.Printf("failed to determine if analyzer %v is strict: %s", analyzer, strictErr)
+			}
+
 			analyzeResult = []*analyze.AnalyzeResult{
 				{
+					Strict:  strict,
 					IsFail:  true,
 					Title:   "Analyzer Failed",
 					Message: err.Error(),

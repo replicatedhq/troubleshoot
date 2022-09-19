@@ -43,6 +43,8 @@ spec:
                       properties:
                         checkName:
                           type: string
+                        collectorName:
+                          type: string
                         exclude:
                           type: BoolString
                         includeUnmountedPartitions:
@@ -82,6 +84,8 @@ spec:
                                 type: object
                             type: object
                           type: array
+                        strict:
+                          type: BoolString
                       required:
                       - includeUnmountedPartitions
                       - minimumAcceptableSize
@@ -127,12 +131,16 @@ spec:
                                 type: object
                             type: object
                           type: array
+                        strict:
+                          type: BoolString
                       required:
                       - outcomes
                       type: object
                     cpu:
                       properties:
                         checkName:
+                          type: string
+                        collectorName:
                           type: string
                         exclude:
                           type: BoolString
@@ -168,6 +176,8 @@ spec:
                                 type: object
                             type: object
                           type: array
+                        strict:
+                          type: BoolString
                       required:
                       - outcomes
                       type: object
@@ -211,6 +221,8 @@ spec:
                                 type: object
                             type: object
                           type: array
+                        strict:
+                          type: BoolString
                       required:
                       - outcomes
                       type: object
@@ -254,6 +266,8 @@ spec:
                                 type: object
                             type: object
                           type: array
+                        strict:
+                          type: BoolString
                       required:
                       - outcomes
                       type: object
@@ -261,46 +275,7 @@ spec:
                       properties:
                         checkName:
                           type: string
-                        exclude:
-                          type: BoolString
-                        outcomes:
-                          items:
-                            properties:
-                              fail:
-                                properties:
-                                  message:
-                                    type: string
-                                  uri:
-                                    type: string
-                                  when:
-                                    type: string
-                                type: object
-                              pass:
-                                properties:
-                                  message:
-                                    type: string
-                                  uri:
-                                    type: string
-                                  when:
-                                    type: string
-                                type: object
-                              warn:
-                                properties:
-                                  message:
-                                    type: string
-                                  uri:
-                                    type: string
-                                  when:
-                                    type: string
-                                type: object
-                            type: object
-                          type: array
-                      required:
-                      - outcomes
-                      type: object
-                    hostServices:
-                      properties:
-                        checkName:
+                        collectorName:
                           type: string
                         exclude:
                           type: BoolString
@@ -336,6 +311,53 @@ spec:
                                 type: object
                             type: object
                           type: array
+                        strict:
+                          type: BoolString
+                      required:
+                      - outcomes
+                      type: object
+                    hostServices:
+                      properties:
+                        checkName:
+                          type: string
+                        collectorName:
+                          type: string
+                        exclude:
+                          type: BoolString
+                        outcomes:
+                          items:
+                            properties:
+                              fail:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
+                              pass:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
+                              warn:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
+                            type: object
+                          type: array
+                        strict:
+                          type: BoolString
                       required:
                       - outcomes
                       type: object
@@ -379,6 +401,8 @@ spec:
                                 type: object
                             type: object
                           type: array
+                        strict:
+                          type: BoolString
                       required:
                       - outcomes
                       type: object
@@ -422,6 +446,8 @@ spec:
                                 type: object
                             type: object
                           type: array
+                        strict:
+                          type: BoolString
                       required:
                       - outcomes
                       type: object
@@ -429,6 +455,8 @@ spec:
                       properties:
                         checkName:
                           type: string
+                        collectorName:
+                          type: string
                         exclude:
                           type: BoolString
                         outcomes:
@@ -463,6 +491,8 @@ spec:
                                 type: object
                             type: object
                           type: array
+                        strict:
+                          type: BoolString
                       required:
                       - outcomes
                       type: object
@@ -470,46 +500,7 @@ spec:
                       properties:
                         checkName:
                           type: string
-                        exclude:
-                          type: BoolString
-                        outcomes:
-                          items:
-                            properties:
-                              fail:
-                                properties:
-                                  message:
-                                    type: string
-                                  uri:
-                                    type: string
-                                  when:
-                                    type: string
-                                type: object
-                              pass:
-                                properties:
-                                  message:
-                                    type: string
-                                  uri:
-                                    type: string
-                                  when:
-                                    type: string
-                                type: object
-                              warn:
-                                properties:
-                                  message:
-                                    type: string
-                                  uri:
-                                    type: string
-                                  when:
-                                    type: string
-                                type: object
-                            type: object
-                          type: array
-                      required:
-                      - outcomes
-                      type: object
-                    memory:
-                      properties:
-                        checkName:
+                        collectorName:
                           type: string
                         exclude:
                           type: BoolString
@@ -545,6 +536,53 @@ spec:
                                 type: object
                             type: object
                           type: array
+                        strict:
+                          type: BoolString
+                      required:
+                      - outcomes
+                      type: object
+                    memory:
+                      properties:
+                        checkName:
+                          type: string
+                        collectorName:
+                          type: string
+                        exclude:
+                          type: BoolString
+                        outcomes:
+                          items:
+                            properties:
+                              fail:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
+                              pass:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
+                              warn:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
+                            type: object
+                          type: array
+                        strict:
+                          type: BoolString
                       required:
                       - outcomes
                       type: object
@@ -588,6 +626,8 @@ spec:
                                 type: object
                             type: object
                           type: array
+                        strict:
+                          type: BoolString
                       required:
                       - outcomes
                       type: object
@@ -631,6 +671,8 @@ spec:
                                 type: object
                             type: object
                           type: array
+                        strict:
+                          type: BoolString
                       required:
                       - outcomes
                       type: object
@@ -674,6 +716,8 @@ spec:
                                 type: object
                             type: object
                           type: array
+                        strict:
+                          type: BoolString
                       required:
                       - outcomes
                       type: object
@@ -717,12 +761,16 @@ spec:
                                 type: object
                             type: object
                           type: array
+                        strict:
+                          type: BoolString
                       required:
                       - outcomes
                       type: object
                     time:
                       properties:
                         checkName:
+                          type: string
+                        collectorName:
                           type: string
                         exclude:
                           type: BoolString
@@ -758,6 +806,8 @@ spec:
                                 type: object
                             type: object
                           type: array
+                        strict:
+                          type: BoolString
                       required:
                       - outcomes
                       type: object

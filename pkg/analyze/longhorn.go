@@ -109,8 +109,8 @@ func longhorn(analyzer *troubleshootv1beta2.LonghornAnalyze, getCollectedFileCon
 		results = append(results, analyzeLonghornEngine(engine))
 	}
 
-	// get replica checksums for each volume if provided
 	for _, volume := range volumes {
+		// get replica checksums for each volume if provided
 		checksumsGlob := filepath.Join(volumesDir, volume.Name, "replicachecksums", "*")
 		checksumFiles, err := findFiles(checksumsGlob)
 		if err != nil {
@@ -129,6 +129,17 @@ func longhorn(analyzer *troubleshootv1beta2.LonghornAnalyze, getCollectedFileCon
 		if len(checksums) > 1 {
 			results = append(results, analyzeLonghornReplicaChecksums(volume.Name, checksums))
 		}
+
+		// Check Volume replicas
+		if volume.Spec.NumberOfReplicas < 2 {
+			result := &AnalyzeResult{
+				Title:   "Longhorn volume with low replicas",
+				IsWarn:  true,
+				Message: fmt.Sprintf("Longhorn volume %s has less than two replicas, this could lead to issues with volume availability", volume.Name),
+			}
+			results = append(results, result)
+		}
+
 	}
 
 	return simplifyLonghornResults(results), nil

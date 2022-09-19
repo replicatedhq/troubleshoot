@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"path" // this code uses 'path' and not 'path/filepath' because we don't want backslashes on windows
 	"path/filepath"
+	"sort"
 	"strings"
 
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
@@ -23,9 +24,12 @@ import (
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/apimachinery/pkg/version"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
+	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 
 	"github.com/replicatedhq/troubleshoot/pkg/k8sutil/discovery"
 )
@@ -45,6 +49,7 @@ func ClusterResources(c *Collector, clusterResourcesCollector *troubleshootv1bet
 	output := NewResult()
 
 	// namespaces
+	nsListedFromCluster := false
 	var namespaceNames []string
 	if len(clusterResourcesCollector.Namespaces) > 0 {
 		namespaces, namespaceErrors := getNamespaces(ctx, client, clusterResourcesCollector.Namespaces)
@@ -65,6 +70,27 @@ func ClusterResources(c *Collector, clusterResourcesCollector *troubleshootv1bet
 				namespaceNames = append(namespaceNames, namespace.Name)
 			}
 		}
+		nsListedFromCluster = true
+	}
+
+	reviewStatuses, reviewStatusErrors := getSelfSubjectRulesReviews(ctx, client, namespaceNames)
+
+	// auth cani
+	authCanI := authCanI(reviewStatuses, namespaceNames)
+	for k, v := range authCanI {
+		output.SaveResult(c.BundlePath, path.Join("cluster-resources/auth-cani-list", k), bytes.NewBuffer(v))
+	}
+	output.SaveResult(c.BundlePath, "cluster-resources/auth-cani-list-errors.json", marshalErrors(reviewStatusErrors))
+
+	if nsListedFromCluster && !clusterResourcesCollector.IgnoreRBAC {
+		filteredNamespaces := []string{}
+		for _, ns := range namespaceNames {
+			status := reviewStatuses[ns]
+			if status == nil || canCollectNamespaceResources(status) { // TODO: exclude nil ones?
+				filteredNamespaces = append(filteredNamespaces, ns)
+			}
+		}
+		namespaceNames = filteredNamespaces
 	}
 
 	// pods
@@ -94,6 +120,14 @@ func ClusterResources(c *Collector, clusterResourcesCollector *troubleshootv1bet
 			}
 		}
 	}
+
+	// pod disruption budgets (for all existing namespaces)
+
+	PodDisruptionBudgets, pdbError := getPodDisruptionBudgets(ctx, client, namespaceNames)
+	for k, v := range PodDisruptionBudgets {
+		output.SaveResult(c.BundlePath, path.Join("cluster-resources/pod-disruption-budgets", k), bytes.NewBuffer(v))
+	}
+	output.SaveResult(c.BundlePath, "cluster-resources/pod-disruption-budgets-info.json", marshalErrors(pdbError))
 
 	// services
 	services, servicesErrors := services(ctx, client, namespaceNames)
@@ -144,6 +178,13 @@ func ClusterResources(c *Collector, clusterResourcesCollector *troubleshootv1bet
 	}
 	output.SaveResult(c.BundlePath, "cluster-resources/ingress-errors.json", marshalErrors(ingressErrors))
 
+	// network policy
+	networkPolicy, networkPolicyErrors := networkPolicy(ctx, client, namespaceNames)
+	for k, v := range networkPolicy {
+		output.SaveResult(c.BundlePath, path.Join("cluster-resources/network-policy", k), bytes.NewBuffer(v))
+	}
+	output.SaveResult(c.BundlePath, "cluster-resources/network-policy-errors.json", marshalErrors(networkPolicyErrors))
+
 	// storage classes
 	storageClasses, storageErrors := storageClasses(ctx, client)
 	output.SaveResult(c.BundlePath, "cluster-resources/storage-classes.json", bytes.NewBuffer(storageClasses))
@@ -185,13 +226,6 @@ func ClusterResources(c *Collector, clusterResourcesCollector *troubleshootv1bet
 	}
 	output.SaveResult(c.BundlePath, "cluster-resources/limitranges-errors.json", marshalErrors(limitRangesErrors))
 
-	// auth cani
-	authCanI, authCanIErrors := authCanI(ctx, client, namespaceNames)
-	for k, v := range authCanI {
-		output.SaveResult(c.BundlePath, path.Join("cluster-resources/auth-cani-list", k), bytes.NewBuffer(v))
-	}
-	output.SaveResult(c.BundlePath, "cluster-resources/auth-cani-list-errors.json", marshalErrors(authCanIErrors))
-
 	//Events
 	events, eventsErrors := events(ctx, client, namespaceNames)
 	for k, v := range events {
@@ -220,7 +254,19 @@ func getAllNamespaces(ctx context.Context, client *kubernetes.Clientset) ([]byte
 		return nil, nil, []string{err.Error()}
 	}
 
-	b, err := json.MarshalIndent(namespaces.Items, "", "  ")
+	gvk, err := apiutil.GVKForObject(namespaces, scheme.Scheme)
+	if err == nil {
+		namespaces.GetObjectKind().SetGroupVersionKind(gvk)
+	}
+
+	for i, o := range namespaces.Items {
+		gvk, err := apiutil.GVKForObject(&o, scheme.Scheme)
+		if err == nil {
+			namespaces.Items[i].GetObjectKind().SetGroupVersionKind(gvk)
+		}
+	}
+
+	b, err := json.MarshalIndent(namespaces, "", "  ")
 	if err != nil {
 		return nil, nil, []string{err.Error()}
 	}
@@ -256,6 +302,11 @@ func getNamespace(ctx context.Context, client *kubernetes.Clientset, namespace s
 		return nil, []string{err.Error()}
 	}
 
+	gvk, err := apiutil.GVKForObject(ns, scheme.Scheme)
+	if err == nil {
+		ns.GetObjectKind().SetGroupVersionKind(gvk)
+	}
+
 	b, err := json.MarshalIndent(ns, "", "  ")
 	if err != nil {
 		return nil, []string{err.Error()}
@@ -276,7 +327,19 @@ func pods(ctx context.Context, client *kubernetes.Clientset, namespaces []string
 			continue
 		}
 
-		b, err := json.MarshalIndent(pods.Items, "", "  ")
+		gvk, err := apiutil.GVKForObject(pods, scheme.Scheme)
+		if err == nil {
+			pods.GetObjectKind().SetGroupVersionKind(gvk)
+		}
+
+		for i, o := range pods.Items {
+			gvk, err := apiutil.GVKForObject(&o, scheme.Scheme)
+			if err == nil {
+				pods.Items[i].GetObjectKind().SetGroupVersionKind(gvk)
+			}
+		}
+
+		b, err := json.MarshalIndent(pods, "", "  ")
 		if err != nil {
 			errorsByNamespace[namespace] = err.Error()
 			continue
@@ -294,6 +357,34 @@ func pods(ctx context.Context, client *kubernetes.Clientset, namespaces []string
 	return podsByNamespace, errorsByNamespace, unhealthyPods
 }
 
+func getPodDisruptionBudgets(ctx context.Context, client *kubernetes.Clientset, namespaces []string) (map[string][]byte, map[string]string) {
+	pdbByNamespace := make(map[string][]byte)
+	errorsByNamespace := make(map[string]string)
+
+	for _, namespace := range namespaces {
+		PodDisruptionBudgets, err := client.PolicyV1beta1().PodDisruptionBudgets(namespace).List(ctx, metav1.ListOptions{})
+		if err != nil {
+			errorsByNamespace[namespace] = err.Error()
+			continue
+		}
+
+		gvk, err := apiutil.GVKForObject(PodDisruptionBudgets, scheme.Scheme)
+		if err == nil {
+			PodDisruptionBudgets.GetObjectKind().SetGroupVersionKind(gvk)
+		}
+
+		b, err := json.MarshalIndent(PodDisruptionBudgets, "", "  ")
+		if err != nil {
+			errorsByNamespace[namespace] = err.Error()
+			continue
+		}
+
+		pdbByNamespace[namespace+".json"] = b
+	}
+
+	return pdbByNamespace, errorsByNamespace
+}
+
 func services(ctx context.Context, client *kubernetes.Clientset, namespaces []string) (map[string][]byte, map[string]string) {
 	servicesByNamespace := make(map[string][]byte)
 	errorsByNamespace := make(map[string]string)
@@ -305,7 +396,19 @@ func services(ctx context.Context, client *kubernetes.Clientset, namespaces []st
 			continue
 		}
 
-		b, err := json.MarshalIndent(services.Items, "", "  ")
+		gvk, err := apiutil.GVKForObject(services, scheme.Scheme)
+		if err == nil {
+			services.GetObjectKind().SetGroupVersionKind(gvk)
+		}
+
+		for i, o := range services.Items {
+			gvk, err := apiutil.GVKForObject(&o, scheme.Scheme)
+			if err == nil {
+				services.Items[i].GetObjectKind().SetGroupVersionKind(gvk)
+			}
+		}
+
+		b, err := json.MarshalIndent(services, "", "  ")
 		if err != nil {
 			errorsByNamespace[namespace] = err.Error()
 			continue
@@ -328,7 +431,19 @@ func deployments(ctx context.Context, client *kubernetes.Clientset, namespaces [
 			continue
 		}
 
-		b, err := json.MarshalIndent(deployments.Items, "", "  ")
+		gvk, err := apiutil.GVKForObject(deployments, scheme.Scheme)
+		if err == nil {
+			deployments.GetObjectKind().SetGroupVersionKind(gvk)
+		}
+
+		for i, o := range deployments.Items {
+			gvk, err := apiutil.GVKForObject(&o, scheme.Scheme)
+			if err == nil {
+				deployments.Items[i].GetObjectKind().SetGroupVersionKind(gvk)
+			}
+		}
+
+		b, err := json.MarshalIndent(deployments, "", "  ")
 		if err != nil {
 			errorsByNamespace[namespace] = err.Error()
 			continue
@@ -351,7 +466,19 @@ func statefulsets(ctx context.Context, client *kubernetes.Clientset, namespaces 
 			continue
 		}
 
-		b, err := json.MarshalIndent(statefulsets.Items, "", "  ")
+		gvk, err := apiutil.GVKForObject(statefulsets, scheme.Scheme)
+		if err == nil {
+			statefulsets.GetObjectKind().SetGroupVersionKind(gvk)
+		}
+
+		for i, o := range statefulsets.Items {
+			gvk, err := apiutil.GVKForObject(&o, scheme.Scheme)
+			if err == nil {
+				statefulsets.Items[i].GetObjectKind().SetGroupVersionKind(gvk)
+			}
+		}
+
+		b, err := json.MarshalIndent(statefulsets, "", "  ")
 		if err != nil {
 			errorsByNamespace[namespace] = err.Error()
 			continue
@@ -374,7 +501,19 @@ func replicasets(ctx context.Context, client *kubernetes.Clientset, namespaces [
 			continue
 		}
 
-		b, err := json.MarshalIndent(replicasets.Items, "", "  ")
+		gvk, err := apiutil.GVKForObject(replicasets, scheme.Scheme)
+		if err == nil {
+			replicasets.GetObjectKind().SetGroupVersionKind(gvk)
+		}
+
+		for i, o := range replicasets.Items {
+			gvk, err := apiutil.GVKForObject(&o, scheme.Scheme)
+			if err == nil {
+				replicasets.Items[i].GetObjectKind().SetGroupVersionKind(gvk)
+			}
+		}
+
+		b, err := json.MarshalIndent(replicasets, "", "  ")
 		if err != nil {
 			errorsByNamespace[namespace] = err.Error()
 			continue
@@ -397,7 +536,19 @@ func jobs(ctx context.Context, client *kubernetes.Clientset, namespaces []string
 			continue
 		}
 
-		b, err := json.MarshalIndent(nsJobs.Items, "", "  ")
+		gvk, err := apiutil.GVKForObject(nsJobs, scheme.Scheme)
+		if err == nil {
+			nsJobs.GetObjectKind().SetGroupVersionKind(gvk)
+		}
+
+		for i, o := range nsJobs.Items {
+			gvk, err := apiutil.GVKForObject(&o, scheme.Scheme)
+			if err == nil {
+				nsJobs.Items[i].GetObjectKind().SetGroupVersionKind(gvk)
+			}
+		}
+
+		b, err := json.MarshalIndent(nsJobs, "", "  ")
 		if err != nil {
 			errorsByNamespace[namespace] = err.Error()
 			continue
@@ -420,7 +571,19 @@ func cronJobs(ctx context.Context, client *kubernetes.Clientset, namespaces []st
 			continue
 		}
 
-		b, err := json.MarshalIndent(nsCronJobs.Items, "", "  ")
+		gvk, err := apiutil.GVKForObject(nsCronJobs, scheme.Scheme)
+		if err == nil {
+			nsCronJobs.GetObjectKind().SetGroupVersionKind(gvk)
+		}
+
+		for i, o := range nsCronJobs.Items {
+			gvk, err := apiutil.GVKForObject(&o, scheme.Scheme)
+			if err == nil {
+				nsCronJobs.Items[i].GetObjectKind().SetGroupVersionKind(gvk)
+			}
+		}
+
+		b, err := json.MarshalIndent(nsCronJobs, "", "  ")
 		if err != nil {
 			errorsByNamespace[namespace] = err.Error()
 			continue
@@ -455,7 +618,19 @@ func ingressV1(ctx context.Context, client *kubernetes.Clientset, namespaces []s
 			continue
 		}
 
-		b, err := json.MarshalIndent(ingress.Items, "", "  ")
+		gvk, err := apiutil.GVKForObject(ingress, scheme.Scheme)
+		if err == nil {
+			ingress.GetObjectKind().SetGroupVersionKind(gvk)
+		}
+
+		for i, o := range ingress.Items {
+			gvk, err := apiutil.GVKForObject(&o, scheme.Scheme)
+			if err == nil {
+				ingress.Items[i].GetObjectKind().SetGroupVersionKind(gvk)
+			}
+		}
+
+		b, err := json.MarshalIndent(ingress, "", "  ")
 		if err != nil {
 			errorsByNamespace[namespace] = err.Error()
 			continue
@@ -478,7 +653,19 @@ func ingressV1beta(ctx context.Context, client *kubernetes.Clientset, namespaces
 			continue
 		}
 
-		b, err := json.MarshalIndent(ingress.Items, "", "  ")
+		gvk, err := apiutil.GVKForObject(ingress, scheme.Scheme)
+		if err == nil {
+			ingress.GetObjectKind().SetGroupVersionKind(gvk)
+		}
+
+		for i, o := range ingress.Items {
+			gvk, err := apiutil.GVKForObject(&o, scheme.Scheme)
+			if err == nil {
+				ingress.Items[i].GetObjectKind().SetGroupVersionKind(gvk)
+			}
+		}
+
+		b, err := json.MarshalIndent(ingress, "", "  ")
 		if err != nil {
 			errorsByNamespace[namespace] = err.Error()
 			continue
@@ -488,6 +675,41 @@ func ingressV1beta(ctx context.Context, client *kubernetes.Clientset, namespaces
 	}
 
 	return ingressByNamespace, errorsByNamespace
+}
+
+func networkPolicy(ctx context.Context, client *kubernetes.Clientset, namespaces []string) (map[string][]byte, map[string]string) {
+	networkPolicyByNamespace := make(map[string][]byte)
+	errorsByNamespace := make(map[string]string)
+
+	for _, namespace := range namespaces {
+		networkPolicy, err := client.NetworkingV1().NetworkPolicies(namespace).List(ctx, metav1.ListOptions{})
+		if err != nil {
+			errorsByNamespace[namespace] = err.Error()
+			continue
+		}
+
+		gvk, err := apiutil.GVKForObject(networkPolicy, scheme.Scheme)
+		if err == nil {
+			networkPolicy.GetObjectKind().SetGroupVersionKind(gvk)
+		}
+
+		for i, o := range networkPolicy.Items {
+			gvk, err := apiutil.GVKForObject(&o, scheme.Scheme)
+			if err == nil {
+				networkPolicy.Items[i].GetObjectKind().SetGroupVersionKind(gvk)
+			}
+		}
+
+		b, err := json.MarshalIndent(networkPolicy, "", "  ")
+		if err != nil {
+			errorsByNamespace[namespace] = err.Error()
+			continue
+		}
+
+		networkPolicyByNamespace[namespace+".json"] = b
+	}
+
+	return networkPolicyByNamespace, errorsByNamespace
 }
 
 func storageClasses(ctx context.Context, client *kubernetes.Clientset) ([]byte, []string) {
@@ -508,7 +730,19 @@ func storageClassesV1(ctx context.Context, client *kubernetes.Clientset) ([]byte
 		return nil, []string{err.Error()}
 	}
 
-	b, err := json.MarshalIndent(storageClasses.Items, "", "  ")
+	gvk, err := apiutil.GVKForObject(storageClasses, scheme.Scheme)
+	if err == nil {
+		storageClasses.GetObjectKind().SetGroupVersionKind(gvk)
+	}
+
+	for i, o := range storageClasses.Items {
+		gvk, err := apiutil.GVKForObject(&o, scheme.Scheme)
+		if err == nil {
+			storageClasses.Items[i].GetObjectKind().SetGroupVersionKind(gvk)
+		}
+	}
+
+	b, err := json.MarshalIndent(storageClasses, "", "  ")
 	if err != nil {
 		return nil, []string{err.Error()}
 	}
@@ -522,7 +756,19 @@ func storageClassesV1beta(ctx context.Context, client *kubernetes.Clientset) ([]
 		return nil, []string{err.Error()}
 	}
 
-	b, err := json.MarshalIndent(storageClasses.Items, "", "  ")
+	gvk, err := apiutil.GVKForObject(storageClasses, scheme.Scheme)
+	if err == nil {
+		storageClasses.GetObjectKind().SetGroupVersionKind(gvk)
+	}
+
+	for i, o := range storageClasses.Items {
+		gvk, err := apiutil.GVKForObject(&o, scheme.Scheme)
+		if err == nil {
+			storageClasses.Items[i].GetObjectKind().SetGroupVersionKind(gvk)
+		}
+	}
+
+	b, err := json.MarshalIndent(storageClasses, "", "  ")
 	if err != nil {
 		return nil, []string{err.Error()}
 	}
@@ -553,7 +799,19 @@ func crdsV1(ctx context.Context, config *rest.Config) ([]byte, []string) {
 		return nil, []string{err.Error()}
 	}
 
-	b, err := json.MarshalIndent(crds.Items, "", "  ")
+	gvk, err := apiutil.GVKForObject(crds, scheme.Scheme)
+	if err == nil {
+		crds.GetObjectKind().SetGroupVersionKind(gvk)
+	}
+
+	for i, o := range crds.Items {
+		gvk, err := apiutil.GVKForObject(&o, scheme.Scheme)
+		if err == nil {
+			crds.Items[i].GetObjectKind().SetGroupVersionKind(gvk)
+		}
+	}
+
+	b, err := json.MarshalIndent(crds, "", "  ")
 	if err != nil {
 		return nil, []string{err.Error()}
 	}
@@ -572,7 +830,19 @@ func crdsV1beta(ctx context.Context, config *rest.Config) ([]byte, []string) {
 		return nil, []string{err.Error()}
 	}
 
-	b, err := json.MarshalIndent(crds.Items, "", "  ")
+	gvk, err := apiutil.GVKForObject(crds, scheme.Scheme)
+	if err == nil {
+		crds.GetObjectKind().SetGroupVersionKind(gvk)
+	}
+
+	for i, o := range crds.Items {
+		gvk, err := apiutil.GVKForObject(&o, scheme.Scheme)
+		if err == nil {
+			crds.Items[i].GetObjectKind().SetGroupVersionKind(gvk)
+		}
+	}
+
+	b, err := json.MarshalIndent(crds, "", "  ")
 	if err != nil {
 		return nil, []string{err.Error()}
 	}
@@ -590,6 +860,18 @@ func crs(ctx context.Context, dyn dynamic.Interface, client *kubernetes.Clientse
 	}
 
 	return crsV1beta(ctx, dyn, config, namespaces)
+}
+
+// Selects the newest version by kube-aware priority.
+func selectCRDVersionByPriority(versions []string) string {
+	if len(versions) == 0 {
+		return ""
+	}
+
+	sort.Slice(versions, func(i, j int) bool {
+		return version.CompareKubeAwareVersionStrings(versions[i], versions[j]) < 0
+	})
+	return versions[len(versions)-1]
 }
 
 func crsV1(ctx context.Context, client dynamic.Interface, config *rest.Config, namespaces []string) (map[string][]byte, map[string]string) {
@@ -620,7 +902,15 @@ func crsV1(ctx context.Context, client dynamic.Interface, config *rest.Config, n
 
 		var version string
 		if len(crd.Spec.Versions) > 0 {
-			version = crd.Spec.Versions[0].Name
+			versions := []string{}
+			for _, v := range crd.Spec.Versions {
+				versions = append(versions, v.Name)
+			}
+
+			version = versions[0]
+			if len(versions) > 1 {
+				version = selectCRDVersionByPriority(versions)
+			}
 		}
 		gvr := schema.GroupVersionResource{
 			Group:    crd.Spec.Group,
@@ -724,6 +1014,20 @@ func crsV1beta(ctx context.Context, client dynamic.Interface, config *rest.Confi
 			Version:  crd.Spec.Version,
 			Resource: crd.Spec.Names.Plural,
 		}
+
+		if len(crd.Spec.Versions) > 0 {
+			versions := []string{}
+			for _, v := range crd.Spec.Versions {
+				versions = append(versions, v.Name)
+			}
+
+			version := versions[0]
+			if len(versions) > 1 {
+				version = selectCRDVersionByPriority(versions)
+			}
+			gvr.Version = version
+		}
+
 		isNamespacedResource := crd.Spec.Scope == apiextensionsv1beta1.NamespaceScoped
 
 		// Fetch all resources of given type
@@ -853,7 +1157,19 @@ func limitRanges(ctx context.Context, client *kubernetes.Clientset, namespaces [
 			continue
 		}
 
-		b, err := json.MarshalIndent(limitRanges.Items, "", "  ")
+		gvk, err := apiutil.GVKForObject(limitRanges, scheme.Scheme)
+		if err == nil {
+			limitRanges.GetObjectKind().SetGroupVersionKind(gvk)
+		}
+
+		for i, o := range limitRanges.Items {
+			gvk, err := apiutil.GVKForObject(&o, scheme.Scheme)
+			if err == nil {
+				limitRanges.Items[i].GetObjectKind().SetGroupVersionKind(gvk)
+			}
+		}
+
+		b, err := json.MarshalIndent(limitRanges, "", "  ")
 		if err != nil {
 			errorsByNamespace[namespace] = err.Error()
 			continue
@@ -871,7 +1187,19 @@ func nodes(ctx context.Context, client *kubernetes.Clientset) ([]byte, []string)
 		return nil, []string{err.Error()}
 	}
 
-	b, err := json.MarshalIndent(nodes.Items, "", "  ")
+	gvk, err := apiutil.GVKForObject(nodes, scheme.Scheme)
+	if err == nil {
+		nodes.GetObjectKind().SetGroupVersionKind(gvk)
+	}
+
+	for i, o := range nodes.Items {
+		gvk, err := apiutil.GVKForObject(&o, scheme.Scheme)
+		if err == nil {
+			nodes.Items[i].GetObjectKind().SetGroupVersionKind(gvk)
+		}
+	}
+
+	b, err := json.MarshalIndent(nodes, "", "  ")
 	if err != nil {
 		return nil, []string{err.Error()}
 	}
@@ -900,10 +1228,10 @@ func apiResources(ctx context.Context, client *kubernetes.Clientset) ([]byte, []
 	return groupBytes, resourcesBytes, errorArray
 }
 
-func authCanI(ctx context.Context, client *kubernetes.Clientset, namespaces []string) (map[string][]byte, map[string]string) {
+func getSelfSubjectRulesReviews(ctx context.Context, client *kubernetes.Clientset, namespaces []string) (map[string]*authorizationv1.SubjectRulesReviewStatus, map[string]string) {
 	// https://github.com/kubernetes/kubernetes/blob/master/pkg/kubectl/cmd/auth/cani.go
 
-	authListByNamespace := make(map[string][]byte)
+	statusByNamespace := make(map[string]*authorizationv1.SubjectRulesReviewStatus)
 	errorsByNamespace := make(map[string]string)
 
 	for _, namespace := range namespaces {
@@ -918,17 +1246,29 @@ func authCanI(ctx context.Context, client *kubernetes.Clientset, namespaces []st
 			continue
 		}
 
-		rules := convertToPolicyRule(response.Status)
-		b, err := json.MarshalIndent(rules, "", "  ")
-		if err != nil {
-			errorsByNamespace[namespace] = err.Error()
+		statusByNamespace[namespace] = response.Status.DeepCopy()
+	}
+
+	return statusByNamespace, errorsByNamespace
+}
+
+func authCanI(accessStatuses map[string]*authorizationv1.SubjectRulesReviewStatus, namespaces []string) map[string][]byte {
+	// https://github.com/kubernetes/kubernetes/blob/master/pkg/kubectl/cmd/auth/cani.go
+
+	authListByNamespace := make(map[string][]byte)
+
+	for _, namespace := range namespaces {
+		accessStatus := accessStatuses[namespace]
+		if accessStatus == nil {
 			continue
 		}
 
+		rules := convertToPolicyRule(accessStatus)
+		b, _ := json.MarshalIndent(rules, "", "  ")
 		authListByNamespace[namespace+".json"] = b
 	}
 
-	return authListByNamespace, errorsByNamespace
+	return authListByNamespace
 }
 
 func events(ctx context.Context, client *kubernetes.Clientset, namespaces []string) (map[string][]byte, map[string]string) {
@@ -942,7 +1282,19 @@ func events(ctx context.Context, client *kubernetes.Clientset, namespaces []stri
 			continue
 		}
 
-		b, err := json.MarshalIndent(events.Items, "", "  ")
+		gvk, err := apiutil.GVKForObject(events, scheme.Scheme)
+		if err == nil {
+			events.GetObjectKind().SetGroupVersionKind(gvk)
+		}
+
+		for i, o := range events.Items {
+			gvk, err := apiutil.GVKForObject(&o, scheme.Scheme)
+			if err == nil {
+				events.Items[i].GetObjectKind().SetGroupVersionKind(gvk)
+			}
+		}
+
+		b, err := json.MarshalIndent(events, "", "  ")
 		if err != nil {
 			errorsByNamespace[namespace] = err.Error()
 			continue
@@ -954,8 +1306,44 @@ func events(ctx context.Context, client *kubernetes.Clientset, namespaces []stri
 	return eventsByNamespace, errorsByNamespace
 }
 
-// not exprted from: https://github.com/kubernetes/kubernetes/blob/master/pkg/kubectl/cmd/auth/cani.go#L339
-func convertToPolicyRule(status authorizationv1.SubjectRulesReviewStatus) []rbacv1.PolicyRule {
+func canCollectNamespaceResources(status *authorizationv1.SubjectRulesReviewStatus) bool {
+	// This is all very approximate
+
+	for _, resource := range status.ResourceRules {
+		hasGet := false
+		for _, verb := range resource.Verbs {
+			if verb == "*" || verb == "get" {
+				hasGet = true
+				break
+			}
+		}
+
+		hasAPI := false
+		for _, group := range resource.APIGroups {
+			if group == "*" || group == "" {
+				hasAPI = true
+				break
+			}
+		}
+
+		hasPods := false
+		for _, resource := range resource.Resources {
+			if resource == "*" || resource == "pods" { // pods is the bare minimum
+				hasPods = true
+				break
+			}
+		}
+
+		if hasGet && hasAPI && hasPods {
+			return true
+		}
+	}
+
+	return false
+}
+
+// not exported from: https://github.com/kubernetes/kubernetes/blob/master/pkg/kubectl/cmd/auth/cani.go#L339
+func convertToPolicyRule(status *authorizationv1.SubjectRulesReviewStatus) []rbacv1.PolicyRule {
 	ret := []rbacv1.PolicyRule{}
 	for _, resource := range status.ResourceRules {
 		ret = append(ret, rbacv1.PolicyRule{
@@ -982,7 +1370,19 @@ func pvs(ctx context.Context, client *kubernetes.Clientset) ([]byte, []string) {
 		return nil, []string{err.Error()}
 	}
 
-	b, err := json.MarshalIndent(pv.Items, "", "  ")
+	gvk, err := apiutil.GVKForObject(pv, scheme.Scheme)
+	if err == nil {
+		pv.GetObjectKind().SetGroupVersionKind(gvk)
+	}
+
+	for i, o := range pv.Items {
+		gvk, err := apiutil.GVKForObject(&o, scheme.Scheme)
+		if err == nil {
+			pv.Items[i].GetObjectKind().SetGroupVersionKind(gvk)
+		}
+	}
+
+	b, err := json.MarshalIndent(pv, "", "  ")
 	if err != nil {
 		return nil, []string{err.Error()}
 	}
@@ -1000,7 +1400,19 @@ func pvcs(ctx context.Context, client *kubernetes.Clientset, namespaces []string
 			continue
 		}
 
-		b, err := json.MarshalIndent(pvcs.Items, "", "  ")
+		gvk, err := apiutil.GVKForObject(pvcs, scheme.Scheme)
+		if err == nil {
+			pvcs.GetObjectKind().SetGroupVersionKind(gvk)
+		}
+
+		for i, o := range pvcs.Items {
+			gvk, err := apiutil.GVKForObject(&o, scheme.Scheme)
+			if err == nil {
+				pvcs.Items[i].GetObjectKind().SetGroupVersionKind(gvk)
+			}
+		}
+
+		b, err := json.MarshalIndent(pvcs, "", "  ")
 		if err != nil {
 			errorsByNamespace[namespace] = err.Error()
 			continue

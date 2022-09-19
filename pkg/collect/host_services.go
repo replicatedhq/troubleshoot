@@ -19,10 +19,11 @@ type ServiceInfo struct {
 }
 
 const systemctlFormat = `%s %s %s %s` // this leaves off the description
-const HostServicesPath = `system/systemctl_services.json`
+const HostServicesPath = `host-collectors/system/systemctl_services.json`
 
 type CollectHostServices struct {
 	hostCollector *troubleshootv1beta2.HostServices
+	BundlePath    string
 }
 
 func (c *CollectHostServices) Title() string {
@@ -62,6 +63,9 @@ func (c *CollectHostServices) Collect(progressChan chan<- interface{}) (map[stri
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to marshal systemctl service info")
 	}
+
+	output := NewResult()
+	output.SaveResult(c.BundlePath, HostServicesPath, bytes.NewBuffer(b))
 
 	return map[string][]byte{
 		HostServicesPath: b,

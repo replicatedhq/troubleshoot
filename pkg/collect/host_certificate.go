@@ -19,6 +19,7 @@ const KeyPairValid = "key-pair-valid"
 
 type CollectHostCertificate struct {
 	hostCollector *troubleshootv1beta2.Certificate
+	BundlePath    string
 }
 
 func (c *CollectHostCertificate) Title() string {
@@ -53,14 +54,19 @@ func (c *CollectHostCertificate) Collect(progressChan chan<- interface{}) (map[s
 		}
 	}
 
+	b := []byte(result)
+
 	collectorName := c.hostCollector.CollectorName
 	if collectorName == "" {
 		collectorName = "certificate"
 	}
-	name := filepath.Join("certificate", collectorName+".json")
+	name := filepath.Join("host-collectors/certificate", collectorName+".json")
+
+	output := NewResult()
+	output.SaveResult(c.BundlePath, name, bytes.NewBuffer(b))
 
 	return map[string][]byte{
-		name: []byte(result),
+		name: b,
 	}, nil
 }
 

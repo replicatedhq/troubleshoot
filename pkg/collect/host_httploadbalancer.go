@@ -8,7 +8,7 @@ import (
 	"io/ioutil"
 	"net"
 	"net/http"
-	"path"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -20,6 +20,7 @@ import (
 
 type CollectHostHTTPLoadBalancer struct {
 	hostCollector *troubleshootv1beta2.HTTPLoadBalancer
+	BundlePath    string
 }
 
 func (c *CollectHostHTTPLoadBalancer) Title() string {
@@ -120,10 +121,14 @@ func (c *CollectHostHTTPLoadBalancer) Collect(progressChan chan<- interface{}) (
 		return nil, errors.Wrap(err, "failed to marshal result")
 	}
 
-	name := path.Join("httpLoadBalancer", "httpLoadBalancer.json")
-	if c.hostCollector.CollectorName != "" {
-		name = path.Join("httpLoadBalancer", fmt.Sprintf("%s.json", c.hostCollector.CollectorName))
+	collectorName := c.hostCollector.CollectorName
+	if collectorName == "" {
+		collectorName = "httpLoadBalancer"
 	}
+	name := filepath.Join("host-collectors/httpLoadBalancer", collectorName+".json")
+
+	output := NewResult()
+	output.SaveResult(c.BundlePath, name, bytes.NewBuffer(b))
 
 	return map[string][]byte{
 		name: b,

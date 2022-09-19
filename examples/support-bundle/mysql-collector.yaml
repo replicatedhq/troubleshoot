@@ -1,0 +1,17 @@
+apiVersion: troubleshoot.sh/v1beta2
+kind: SupportBundle
+metadata:
+  name: mysql
+spec:
+  collectors:
+    - mysql:
+        collectorName: mysql
+        uri: 'root:my-secret-pw@tcp(localhost:3306)/mysql'
+        parameters:
+          - character_set_server
+          - collation_server
+          - init_connect
+          - innodb_file_format
+          - innodb_large_prefix
+          - innodb_strict_mode
+          - log_bin_trust_function_creators

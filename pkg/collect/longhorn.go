@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"path"
 	"path/filepath"
 	"regexp"
 	"sync"
@@ -205,9 +206,12 @@ func Longhorn(c *Collector, longhornCollector *troubleshootv1beta2.Longhorn) (Co
 		return nil, errors.Wrap(err, "collect longhorn logs")
 	}
 	logsDir := GetLonghornLogsDirectory(ns)
-	for key, log := range logs {
-		key = filepath.Join(logsDir, key)
-		output.SaveResult(c.BundlePath, key, bytes.NewBuffer(log))
+	for srcFilename, _ := range logs {
+		dstFileName := path.Join(logsDir, srcFilename)
+		err := copyResult(logs, output, c.BundlePath, srcFilename, dstFileName)
+		if err != nil {
+			logger.Printf("Failed to copy file %s; %v", srcFilename, err)
+		}
 	}
 
 	// https://longhorn.io/docs/1.1.1/advanced-resources/data-recovery/corrupted-replica/

@@ -17,6 +17,7 @@ func uploadResults(uri string, analyzeResults []*analyzerunner.AnalyzeResult) er
 	}
 	for _, analyzeResult := range analyzeResults {
 		uploadPreflightResult := &preflight.UploadPreflightResult{
+			Strict:  analyzeResult.Strict,
 			IsFail:  analyzeResult.IsFail,
 			IsWarn:  analyzeResult.IsWarn,
 			IsPass:  analyzeResult.IsPass,

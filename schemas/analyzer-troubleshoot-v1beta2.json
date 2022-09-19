@@ -90,13 +90,15 @@
                         }
                       }
                     }
+                  },
+                  "strict": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
                   }
                 }
               },
               "clusterPodStatuses": {
                 "type": "object",
                 "required": [
-                  "namespaces",
                   "outcomes"
                 ],
                 "properties": {
@@ -161,6 +163,9 @@
                         }
                       }
                     }
+                  },
+                  "strict": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
                   }
                 }
               },
@@ -225,6 +230,9 @@
                         }
                       }
                     }
+                  },
+                  "strict": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
                   }
                 }
               },
@@ -300,6 +308,9 @@
                         }
                       }
                     }
+                  },
+                  "strict": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
                   }
                 }
               },
@@ -364,6 +375,9 @@
                         }
                       }
                     }
+                  },
+                  "strict": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
                   }
                 }
               },
@@ -432,6 +446,9 @@
                         }
                       }
                     }
+                  },
+                  "strict": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
                   }
                 }
               },
@@ -439,7 +456,6 @@
                 "type": "object",
                 "required": [
                   "name",
-                  "namespace",
                   "outcomes"
                 ],
                 "properties": {
@@ -454,6 +470,12 @@
                   },
                   "namespace": {
                     "type": "string"
+                  },
+                  "namespaces": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
                   },
                   "outcomes": {
                     "type": "array",
@@ -504,6 +526,9 @@
                         }
                       }
                     }
+                  },
+                  "strict": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
                   }
                 }
               },
@@ -568,6 +593,9 @@
                         }
                       }
                     }
+                  },
+                  "strict": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
                   }
                 }
               },
@@ -636,6 +664,9 @@
                   },
                   "registryName": {
                     "type": "string"
+                  },
+                  "strict": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
                   }
                 }
               },
@@ -708,6 +739,9 @@
                         }
                       }
                     }
+                  },
+                  "strict": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
                   }
                 }
               },
@@ -715,7 +749,6 @@
                 "type": "object",
                 "required": [
                   "name",
-                  "namespace",
                   "outcomes"
                 ],
                 "properties": {
@@ -730,6 +763,12 @@
                   },
                   "namespace": {
                     "type": "string"
+                  },
+                  "namespaces": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
                   },
                   "outcomes": {
                     "type": "array",
@@ -780,6 +819,9 @@
                         }
                       }
                     }
+                  },
+                  "strict": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
                   }
                 }
               },
@@ -851,6 +893,9 @@
                         }
                       }
                     }
+                  },
+                  "strict": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
                   }
                 }
               },
@@ -922,6 +967,9 @@
                         }
                       }
                     }
+                  },
+                  "strict": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
                   }
                 }
               },
@@ -1026,6 +1074,9 @@
                         }
                       }
                     }
+                  },
+                  "strict": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
                   }
                 }
               },
@@ -1097,6 +1148,9 @@
                         }
                       }
                     }
+                  },
+                  "strict": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
                   }
                 }
               },
@@ -1168,6 +1222,9 @@
                         }
                       }
                     }
+                  },
+                  "strict": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
                   }
                 }
               },
@@ -1236,6 +1293,9 @@
                         }
                       }
                     }
+                  },
+                  "strict": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
                   }
                 }
               },
@@ -1243,7 +1303,6 @@
                 "type": "object",
                 "required": [
                   "name",
-                  "namespace",
                   "outcomes",
                   "selector"
                 ],
@@ -1259,6 +1318,12 @@
                   },
                   "namespace": {
                     "type": "string"
+                  },
+                  "namespaces": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
                   },
                   "outcomes": {
                     "type": "array",
@@ -1315,6 +1380,9 @@
                     "items": {
                       "type": "string"
                     }
+                  },
+                  "strict": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
                   }
                 }
               },
@@ -1390,6 +1458,9 @@
                   },
                   "secretName": {
                     "type": "string"
+                  },
+                  "strict": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
                   }
                 }
               },
@@ -1397,7 +1468,6 @@
                 "type": "object",
                 "required": [
                   "name",
-                  "namespace",
                   "outcomes"
                 ],
                 "properties": {
@@ -1412,6 +1482,12 @@
                   },
                   "namespace": {
                     "type": "string"
+                  },
+                  "namespaces": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
                   },
                   "outcomes": {
                     "type": "array",
@@ -1462,6 +1538,9 @@
                         }
                       }
                     }
+                  },
+                  "strict": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
                   }
                 }
               },
@@ -1530,6 +1609,9 @@
                   },
                   "storageClassName": {
                     "type": "string"
+                  },
+                  "strict": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
                   }
                 }
               },
@@ -1594,6 +1676,9 @@
                         }
                       }
                     }
+                  },
+                  "strict": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
                   }
                 }
               },
@@ -1673,6 +1758,9 @@
                   },
                   "regexGroups": {
                     "type": "string"
+                  },
+                  "strict": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
                   }
                 }
               },
@@ -1690,6 +1778,9 @@
                   },
                   "reportFileGlob": {
                     "type": "string"
+                  },
+                  "strict": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
                   }
                 }
               }

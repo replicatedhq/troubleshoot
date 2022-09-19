@@ -1,10 +1,11 @@
 package collect
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"net"
-	"path"
+	"path/filepath"
 	"time"
 
 	"github.com/pkg/errors"
@@ -13,6 +14,7 @@ import (
 
 type CollectHostTCPPortStatus struct {
 	hostCollector *troubleshootv1beta2.TCPPortStatus
+	BundlePath    string
 }
 
 func (c *CollectHostTCPPortStatus) Title() string {
@@ -61,10 +63,15 @@ func (c *CollectHostTCPPortStatus) Collect(progressChan chan<- interface{}) (map
 		return nil, errors.Wrap(err, "failed to marshal result")
 	}
 
-	name := path.Join("tcpPortStatus", "tcpPortStatus.json")
-	if c.hostCollector.CollectorName != "" {
-		name = path.Join("tcpPortStatus", fmt.Sprintf("%s.json", c.hostCollector.CollectorName))
+	collectorName := c.hostCollector.CollectorName
+	if collectorName == "" {
+		collectorName = "tcpPortStatus"
 	}
+	name := filepath.Join("host-collectors/tcpPortStatus", collectorName+".json")
+
+	output := NewResult()
+	output.SaveResult(c.BundlePath, name, bytes.NewBuffer(b))
+
 	return map[string][]byte{
 		name: b,
 	}, nil

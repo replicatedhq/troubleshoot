@@ -4,10 +4,12 @@ import (
 	"os"
 	"strings"
 
+	"github.com/go-logr/logr"
 	"github.com/replicatedhq/troubleshoot/pkg/k8sutil"
 	"github.com/replicatedhq/troubleshoot/pkg/logger"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"k8s.io/klog/v2"
 )
 
 func RootCmd() *cobra.Command {
@@ -18,7 +20,12 @@ func RootCmd() *cobra.Command {
 		Long:         `Run a series of analyzers on a support bundle archive`,
 		SilenceUsage: true,
 		PreRun: func(cmd *cobra.Command, args []string) {
-			viper.BindPFlags(cmd.Flags())
+			v := viper.GetViper()
+			v.BindPFlags(cmd.Flags())
+
+			if !v.GetBool("debug") {
+				klog.SetLogger(logr.Discard())
+			}
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			v := viper.GetViper()
@@ -32,6 +39,7 @@ func RootCmd() *cobra.Command {
 	cobra.OnInitialize(initConfig)
 
 	cmd.Flags().String("analyzers", "", "filename or url of the analyzers to use")
+	cmd.Flags().Bool("debug", false, "enable debug logging")
 
 	viper.BindPFlags(cmd.Flags())
 

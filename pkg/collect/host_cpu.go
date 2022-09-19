@@ -1,6 +1,7 @@
 package collect
 
 import (
+	"bytes"
 	"encoding/json"
 
 	"github.com/pkg/errors"
@@ -13,8 +14,11 @@ type CPUInfo struct {
 	PhysicalCount int `json:"physicalCount"`
 }
 
+const HostCPUPath = `host-collectors/system/cpu.json`
+
 type CollectHostCPU struct {
 	hostCollector *troubleshootv1beta2.CPU
+	BundlePath    string
 }
 
 func (c *CollectHostCPU) Title() string {
@@ -45,7 +49,10 @@ func (c *CollectHostCPU) Collect(progressChan chan<- interface{}) (map[string][]
 		return nil, errors.Wrap(err, "failed to marshal cpu info")
 	}
 
+	output := NewResult()
+	output.SaveResult(c.BundlePath, HostCPUPath, bytes.NewBuffer(b))
+
 	return map[string][]byte{
-		"system/cpu.json": b,
+		HostCPUPath: b,
 	}, nil
 }

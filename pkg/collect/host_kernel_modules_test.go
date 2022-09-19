@@ -45,7 +45,7 @@ func TestCollectHostKernelModules_Collect(t *testing.T) {
 			},
 			loaded: mockKernelModulesCollector{},
 			want: map[string][]byte{
-				"system/kernel_modules.json": []byte("{\"first\":{\"size\":0,\"instances\":0,\"status\":\"loadable\"},\"second\":{\"size\":0,\"instances\":0,\"status\":\"loadable\"}}"),
+				"host-collectors/system/kernel_modules.json": []byte("{\"first\":{\"size\":0,\"instances\":0,\"status\":\"loadable\"},\"second\":{\"size\":0,\"instances\":0,\"status\":\"loadable\"}}"),
 			},
 		},
 		{
@@ -64,7 +64,7 @@ func TestCollectHostKernelModules_Collect(t *testing.T) {
 				},
 			},
 			want: map[string][]byte{
-				"system/kernel_modules.json": []byte("{\"first\":{\"size\":10,\"instances\":2,\"status\":\"loaded\"},\"second\":{\"size\":0,\"instances\":0,\"status\":\"loading\"}}"),
+				"host-collectors/system/kernel_modules.json": []byte("{\"first\":{\"size\":10,\"instances\":2,\"status\":\"loaded\"},\"second\":{\"size\":0,\"instances\":0,\"status\":\"loading\"}}"),
 			},
 		},
 		{
@@ -89,7 +89,7 @@ func TestCollectHostKernelModules_Collect(t *testing.T) {
 				},
 			},
 			want: map[string][]byte{
-				"system/kernel_modules.json": []byte("{\"first\":{\"size\":10,\"instances\":2,\"status\":\"loaded\"},\"second\":{\"size\":0,\"instances\":0,\"status\":\"loadable\"}}"),
+				"host-collectors/system/kernel_modules.json": []byte("{\"first\":{\"size\":10,\"instances\":2,\"status\":\"loaded\"},\"second\":{\"size\":0,\"instances\":0,\"status\":\"loadable\"}}"),
 			},
 		},
 		{

@@ -477,6 +477,111 @@ func Test_textAnalyze(t *testing.T) {
 				"text-collector-1/cfile-1.txt": []byte("value: 2\nother: 10"),
 			},
 		},
+		// This test ensures that the Outcomes.Pass.Message can be templated using the findings of the regular expression groups.
+		{
+			name: "Outcome pass message is templated with regex groups",
+			analyzer: troubleshootv1beta2.TextAnalyze{
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							When:    `Feature == insert-feature-name-here`,
+							Message: "Feature {{ .Feature }} is enabled for CR {{ .CRName }} in namespace {{ .Namespace }}",
+						},
+					},
+				},
+				CollectorName: "text-collector-templated-regex-message",
+				FileName:      "cfile-1.txt",
+				RegexGroups:   `"name":\s*"(?P<CRName>.*?)".*namespace":\s*"(?P<Namespace>.*?)".*feature":\s*.*"(?P<Feature>insert-feature-name-here.*?)"`,
+			},
+			expectResult: []AnalyzeResult{
+				{
+					IsPass:  true,
+					IsWarn:  false,
+					IsFail:  false,
+					Title:   "text-collector-templated-regex-message",
+					Message: "Feature insert-feature-name-here is enabled for CR insert-cr-name-here in namespace default",
+					IconKey: "kubernetes_text_analyze",
+					IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg?w=13&h=16",
+				},
+			},
+			files: map[string][]byte{
+				"text-collector-templated-regex-message/cfile-1.txt": []byte(`{"level":"INFO","timestamp":"2022-05-17T20:37:41Z","caller":"controller/controller.go:317","message":"Feature enabled","context":{"name":"insert-cr-name-here","namespace":"default","feature":"insert-feature-name-here"}}`),
+			},
+		},
+		// This test ensures that the Outcomes.Warn.Message can be templated using the findings of the regular expression groups.
+		{
+			name: "Outcome warn message is templated with regex groups",
+			analyzer: troubleshootv1beta2.TextAnalyze{
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							When:    `Warning == ""`,
+							Message: "No warning found",
+						},
+					},
+					// The Warn case is triggered if warning != ""
+					{
+						Warn: &troubleshootv1beta2.SingleOutcome{
+							Message: "Warning for CR with name {{ .CRName }} in namespace {{ .Namespace }}",
+						},
+					},
+				},
+				CollectorName: "text-collector-templated-regex-message",
+				FileName:      "cfile-1.txt",
+				RegexGroups:   `"name":\s*"(?P<CRName>.*?)".*namespace":\s*"(?P<Namespace>.*?)".*warning":\s*.*"(?P<Error>mywarning.*?)"`,
+			},
+			expectResult: []AnalyzeResult{
+				{
+					IsPass:  false,
+					IsWarn:  true,
+					IsFail:  false,
+					Title:   "text-collector-templated-regex-message",
+					Message: "Warning for CR with name insert-cr-name-here in namespace default",
+					IconKey: "kubernetes_text_analyze",
+					IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg?w=13&h=16",
+				},
+			},
+			files: map[string][]byte{
+				"text-collector-templated-regex-message/cfile-1.txt": []byte(`{"level":"WARN","timestamp":"2022-05-17T20:37:41Z","caller":"controller/controller.go:317","message":"Reconciler error","context":{"name":"insert-cr-name-here","namespace":"default","warning":"mywarning"}}`),
+			},
+		},
+		// This test ensures that the Outcomes.Fail.Message can be templated using the findings of the regular expression groups.
+		{
+			name: "Outcome fail message is templated with regex groups",
+			analyzer: troubleshootv1beta2.TextAnalyze{
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							When:    `Error == ""`,
+							Message: "No error found",
+						},
+					},
+					// The Fail case is triggered if warning != ""
+					{
+						Fail: &troubleshootv1beta2.SingleOutcome{
+							Message: "Error for CR with name {{ .CRName }} in namespace {{ .Namespace }}",
+						},
+					},
+				},
+				CollectorName: "text-collector-templated-regex-message",
+				FileName:      "cfile-1.txt",
+				RegexGroups:   `"name":\s*"(?P<CRName>.*?)".*namespace":\s*"(?P<Namespace>.*?)".*error":\s*.*"(?P<Error>myerror.*?)"`,
+			},
+			expectResult: []AnalyzeResult{
+				{
+					IsPass:  false,
+					IsWarn:  false,
+					IsFail:  true,
+					Title:   "text-collector-templated-regex-message",
+					Message: "Error for CR with name insert-cr-name-here in namespace default",
+					IconKey: "kubernetes_text_analyze",
+					IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg?w=13&h=16",
+				},
+			},
+			files: map[string][]byte{
+				"text-collector-templated-regex-message/cfile-1.txt": []byte(`{"level":"ERROR","timestamp":"2022-05-17T20:37:41Z","caller":"controller/controller.go:317","message":"Reconciler error","context":{"name":"insert-cr-name-here","namespace":"default","error":"myerror"}}`),
+			},
+		},
 	}
 
 	for _, test := range tests {

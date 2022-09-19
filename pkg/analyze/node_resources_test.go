@@ -814,15 +814,15 @@ func Test_analyzeNodeResources(t *testing.T) {
 					},
 					{
 						Warn: &troubleshootv1beta2.SingleOutcome{
-							When:    "sum(cpuCapacity) > 8",
-							Message: "more than 8 CPUs in nodes with 8Gb of ram",
+							When:    "sum(cpuCapacity) = 8",
+							Message: "exactly 8 CPUs total in nodes with 8Gb of ram",
 							URI:     "",
 						},
 					},
 					{
 						Pass: &troubleshootv1beta2.SingleOutcome{
-							When:    "sum(cpuCapacity) = 8",
-							Message: "exactly 8 CPUs total in nodes with 8Gb of ram",
+							When:    "sum(cpuCapacity) > 8",
+							Message: "more than 8 CPUs in nodes with 8Gb of ram",
 							URI:     "",
 						},
 					},
@@ -836,7 +836,7 @@ func Test_analyzeNodeResources(t *testing.T) {
 				IsFail:  false,
 				IsWarn:  false,
 				Title:   "memory filter",
-				Message: "exactly 8 CPUs total in nodes with 8Gb of ram",
+				Message: "more than 8 CPUs in nodes with 8Gb of ram",
 				URI:     "",
 				IconKey: "kubernetes_node_resources",
 				IconURI: "https://troubleshoot.sh/images/analyzer-icons/node-resources.svg?w=16&h=18",
@@ -871,6 +871,11 @@ func Test_analyzeNodeResources(t *testing.T) {
 			},
 		},
 	}
+
+	getExampleNodeContents := func(nodeName string) ([]byte, error) {
+		return []byte(collectedNodes), nil
+	}
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			req := require.New(t)

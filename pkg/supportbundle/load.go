@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 
@@ -14,6 +15,7 @@ import (
 	troubleshootclientsetscheme "github.com/replicatedhq/troubleshoot/pkg/client/troubleshootclientset/scheme"
 	"github.com/replicatedhq/troubleshoot/pkg/docrewrite"
 	"github.com/replicatedhq/troubleshoot/pkg/httputil"
+	"github.com/replicatedhq/troubleshoot/pkg/oci"
 	"github.com/replicatedhq/troubleshoot/pkg/specs"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -160,7 +162,27 @@ func loadSpec(arg string) ([]byte, error) {
 		}
 
 		return b, nil
-	} else if !util.IsURL(arg) {
+	}
+
+	u, err := url.Parse(arg)
+	if err != nil {
+		return nil, errors.Wrapf(err, "%s is not a valid URL (%s)", arg, err)
+	}
+
+	if u.Scheme == "oci" {
+		content, err := oci.PullSupportBundleFromOCI(arg)
+		if err != nil {
+			if err == oci.ErrNoRelease {
+				return nil, errors.Errorf("no release found for %s.\nCheck the oci:// uri for errors or contact the application vendor for support.", arg)
+			}
+
+			return nil, errors.Wrap(err, "pull from oci")
+		}
+
+		return content, nil
+	}
+
+	if !util.IsURL(arg) {
 		return nil, fmt.Errorf("%s is not a URL and was not found (err %s)", arg, err)
 	}
 
@@ -196,4 +218,31 @@ func loadSpecFromURL(arg string) ([]byte, error) {
 
 		return body, nil
 	}
+}
+
+func ParseRedactorsFromSpec(docs []string) ([]*troubleshootv1beta2.Redact, error) {
+	var redactors []*troubleshootv1beta2.Redact
+
+	decode := scheme.Codecs.UniversalDeserializer().Decode
+
+	for i, additionalDoc := range docs {
+		if i == 0 {
+			continue
+		}
+		additionalDoc, err := docrewrite.ConvertToV1Beta2([]byte(additionalDoc))
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to convert to v1beta2")
+		}
+		obj, _, err := decode(additionalDoc, nil, nil)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to parse additional doc %d", i)
+		}
+		multidocRedactors, ok := obj.(*troubleshootv1beta2.Redactor)
+		if !ok {
+			continue
+		}
+		redactors = append(redactors, multidocRedactors.Spec.Redactors...)
+	}
+
+	return redactors, nil
 }

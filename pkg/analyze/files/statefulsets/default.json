@@ -1,4 +1,10 @@
-[
+{
+  "kind": "StatefulSetList",
+  "apiVersion": "apps/v1",
+  "metadata": {
+    "resourceVersion": "27195654"
+  },
+  "items": [
     {
       "metadata": {
         "name": "kotsadm-postgres",
@@ -409,4 +415,4 @@
       }
     }
   ]
-  
+}

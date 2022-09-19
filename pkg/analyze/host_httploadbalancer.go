@@ -29,7 +29,7 @@ func (a *AnalyzeHostHTTPLoadBalancer) Analyze(getCollectedFileContents func(stri
 	if collectorName == "" {
 		collectorName = "httpLoadBalancer"
 	}
-	fullPath := path.Join("httpLoadBalancer", fmt.Sprintf("%s.json", collectorName))
+	fullPath := path.Join("host-collectors/httpLoadBalancer", fmt.Sprintf("%s.json", collectorName))
 
 	collected, err := getCollectedFileContents(fullPath)
 	if err != nil {

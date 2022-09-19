@@ -26,7 +26,11 @@ type Collector struct {
 
 type Collectors []*Collector
 
-func isExcluded(excludeVal multitype.BoolOrString) (bool, error) {
+func isExcluded(excludeVal *multitype.BoolOrString) (bool, error) {
+	if excludeVal == nil {
+		return false, nil
+	}
+
 	if excludeVal.Type == multitype.Bool {
 		return excludeVal.BoolVal, nil
 	}
@@ -87,6 +91,14 @@ func (c *Collector) IsExcluded() bool {
 		}
 	} else if c.Collect.Run != nil {
 		isExcludedResult, err := isExcluded(c.Collect.Run.Exclude)
+		if err != nil {
+			return true
+		}
+		if isExcludedResult {
+			return true
+		}
+	} else if c.Collect.RunPod != nil {
+		isExcludedResult, err := isExcluded(c.Collect.RunPod.Exclude)
 		if err != nil {
 			return true
 		}
@@ -221,6 +233,8 @@ func (c *Collector) RunCollectorSync(clientConfig *rest.Config, client kubernete
 		result, err = Logs(c, c.Collect.Logs)
 	} else if c.Collect.Run != nil {
 		result, err = Run(c, c.Collect.Run)
+	} else if c.Collect.RunPod != nil {
+		result, err = RunPod(c, c.Collect.RunPod)
 	} else if c.Collect.Exec != nil {
 		result, err = Exec(c, c.Collect.Exec)
 	} else if c.Collect.Data != nil {
@@ -279,7 +293,7 @@ func (c *Collector) RunCollectorSync(clientConfig *rest.Config, client kubernete
 	}
 
 	if c.Redact {
-		err = redactResult(c.BundlePath, result, globalRedactors)
+		err = RedactResult(c.BundlePath, result, globalRedactors)
 		err = errors.Wrap(err, "failed to redact")
 	}
 

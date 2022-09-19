@@ -19,14 +19,14 @@ func analyzeNodeResources(analyzer *troubleshootv1beta2.NodeResources, getCollec
 		return nil, errors.Wrap(err, "failed to get contents of nodes.json")
 	}
 
-	nodes := []corev1.Node{}
+	var nodes corev1.NodeList
 	if err := json.Unmarshal(collected, &nodes); err != nil {
 		return nil, errors.Wrap(err, "failed to unmarshal node list")
 	}
 
 	matchingNodes := []corev1.Node{}
 
-	for _, node := range nodes {
+	for _, node := range nodes.Items {
 		isMatch, err := nodeMatchesFilters(node, analyzer.Filters)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to check if node matches filter")
@@ -172,7 +172,7 @@ func compareNodeResourceConditionalToActual(conditional string, matchingNodes []
 
 		for _, node := range matchingNodes {
 			for _, condition := range node.Status.Conditions {
-				if string(condition.Type) == match[2] && condition.Status == desiredValue {
+				if string(condition.Type) == match[2] && string(condition.Status) == desiredValue {
 					res = true
 					return
 				}

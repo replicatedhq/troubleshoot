@@ -15,6 +15,7 @@ import (
 	analyzer "github.com/replicatedhq/troubleshoot/pkg/analyze"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/replicatedhq/troubleshoot/pkg/collect"
+	"github.com/replicatedhq/troubleshoot/pkg/convert"
 	"k8s.io/client-go/rest"
 )
 
@@ -26,6 +27,7 @@ type SupportBundleCreateOpts struct {
 	Namespace                 string
 	ProgressChan              chan interface{}
 	SinceTime                 *time.Time
+	OutputPath                string
 	Redact                    bool
 	FromCLI                   bool
 }
@@ -57,9 +59,20 @@ func CollectSupportBundleFromSpec(spec *troubleshootv1beta2.SupportBundleSpec, a
 	}
 	defer os.RemoveAll(tmpDir)
 
-	basename := fmt.Sprintf("support-bundle-%s", time.Now().Format("2006-01-02T15_04_05"))
-	if !opts.FromCLI {
-		basename = filepath.Join(os.TempDir(), basename)
+	basename := ""
+	if opts.OutputPath != "" {
+		// use override output path
+		overridePath, err := convert.ValidateOutputPath(opts.OutputPath)
+		if err != nil {
+			return nil, errors.Wrap(err, "override output file path")
+		}
+		basename = strings.TrimSuffix(overridePath, ".tar.gz")
+	} else {
+		// use default output path
+		basename = fmt.Sprintf("support-bundle-%s", time.Now().Format("2006-01-02T15_04_05"))
+		if !opts.FromCLI {
+			basename = filepath.Join(os.TempDir(), basename)
+		}
 	}
 
 	filename, err := findFileName(basename, "tar.gz")
@@ -73,10 +86,35 @@ func CollectSupportBundleFromSpec(spec *troubleshootv1beta2.SupportBundleSpec, a
 		return nil, errors.Wrap(err, "create bundle dir")
 	}
 
-	// Run collectors
-	files, err := runCollectors(spec.Collectors, additionalRedactors, bundlePath, opts)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to run collectors")
+	var result, files, hostFiles collect.CollectorResult
+
+	if spec.HostCollectors != nil {
+		// Run host collectors
+		hostFiles, err = runHostCollectors(spec.HostCollectors, additionalRedactors, bundlePath, opts)
+		if err != nil {
+			fmt.Println(errors.Wrap(err, "failed to run host collectors"))
+		}
+	}
+
+	if spec.Collectors != nil {
+		// Run collectors
+		files, err = runCollectors(spec.Collectors, additionalRedactors, bundlePath, opts)
+		if err != nil {
+			fmt.Println(errors.Wrap(err, "failed to run collectors"))
+		}
+	}
+
+	if files != nil && hostFiles != nil {
+		result = files
+		for k, v := range hostFiles {
+			result[k] = v
+		}
+	} else if files != nil {
+		result = files
+	} else if hostFiles != nil {
+		result = hostFiles
+	} else {
+		return nil, errors.Wrap(err, "failed to generate support bundle")
 	}
 
 	version, err := getVersionFile()
@@ -84,7 +122,7 @@ func CollectSupportBundleFromSpec(spec *troubleshootv1beta2.SupportBundleSpec, a
 		return nil, errors.Wrap(err, "failed to get version file")
 	}
 
-	err = files.SaveResult(bundlePath, VersionFilename, version)
+	err = result.SaveResult(bundlePath, VersionFilename, version)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to write version")
 	}
@@ -107,12 +145,12 @@ func CollectSupportBundleFromSpec(spec *troubleshootv1beta2.SupportBundleSpec, a
 		return nil, errors.Wrap(err, "failed to get analysis file")
 	}
 
-	err = files.SaveResult(bundlePath, AnalysisFilename, analysis)
+	err = result.SaveResult(bundlePath, AnalysisFilename, analysis)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to write analysis")
 	}
 
-	if err := collect.TarSupportBundleDir(bundlePath, files, filename); err != nil {
+	if err := collect.TarSupportBundleDir(bundlePath, result, filename); err != nil {
 		return nil, errors.Wrap(err, "create bundle file")
 	}
 
@@ -179,12 +217,23 @@ func ProcessSupportBundleAfterCollection(spec *troubleshootv1beta2.SupportBundle
 // AnalyzeSupportBundle performs analysis on a support bundle using the support bundle spec and an already unpacked support
 // bundle on disk
 func AnalyzeSupportBundle(spec *troubleshootv1beta2.SupportBundleSpec, tmpDir string) ([]*analyzer.AnalyzeResult, error) {
-	if len(spec.Analyzers) == 0 {
+	if len(spec.Analyzers) == 0 && len(spec.HostAnalyzers) == 0 {
 		return nil, nil
 	}
-	analyzeResults, err := analyzer.AnalyzeLocal(tmpDir, spec.Analyzers)
+	analyzeResults, err := analyzer.AnalyzeLocal(tmpDir, spec.Analyzers, spec.HostAnalyzers)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to analyze support bundle")
 	}
 	return analyzeResults, nil
+}
+
+// the intention with these appends is to swap them out at a later date with more specific handlers for merging the spec fields
+func ConcatSpec(target *troubleshootv1beta2.SupportBundle, source *troubleshootv1beta2.SupportBundle) *troubleshootv1beta2.SupportBundle {
+	newBundle := target.DeepCopy()
+	newBundle.Spec.Collectors = append(target.Spec.Collectors, source.Spec.Collectors...)
+	newBundle.Spec.AfterCollection = append(target.Spec.AfterCollection, source.Spec.AfterCollection...)
+	newBundle.Spec.HostCollectors = append(target.Spec.HostCollectors, source.Spec.HostCollectors...)
+	newBundle.Spec.HostAnalyzers = append(target.Spec.HostAnalyzers, source.Spec.HostAnalyzers...)
+	newBundle.Spec.Analyzers = append(target.Spec.Analyzers, source.Spec.Analyzers...)
+	return newBundle
 }
