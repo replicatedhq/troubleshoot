@@ -167,12 +167,6 @@ func getRedactors(path string) ([]Redactor, error) {
 		regex string
 		name  string
 	}{
-		// ipv4
-		{
-			regex: `(?P<mask>\b(?P<drop>25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(?P<drop>25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(?P<drop>25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(?P<drop>25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b)`,
-			name:  "Redact ipv4 addresses",
-		},
-		// TODO: ipv6
 		// aws secrets
 		{
 			regex: `(?i)(\\\"name\\\":\\\"[^\"]*SECRET_?ACCESS_?KEY\\\",\\\"value\\\":\\\")(?P<mask>[^\"]*)(\\\")`,

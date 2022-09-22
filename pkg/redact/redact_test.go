@@ -808,7 +808,6 @@ func Test_Redactors(t *testing.T) {
 			"selector": {
 			  "app": "lazy-api"
 			},
-			"clusterIP": "10.152.183.227",
 			"type": "NodePort",
 			"sessionAffinity": "None",
 			"externalTrafficPolicy": "Cluster"
@@ -1663,7 +1662,6 @@ func Test_Redactors(t *testing.T) {
 			"selector": {
 			  "app": "lazy-api"
 			},
-			"clusterIP": "***HIDDEN***",
 			"type": "NodePort",
 			"sessionAffinity": "None",
 			"externalTrafficPolicy": "Cluster"
