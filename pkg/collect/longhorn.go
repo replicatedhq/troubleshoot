@@ -201,7 +201,7 @@ func Longhorn(c *Collector, longhornCollector *troubleshootv1beta2.Longhorn) (Co
 		Selector:  []string{""},
 		Namespace: ns,
 	}
-	logs, err := Logs(c, logsCollector)
+	logs, err := Logs(ctx, c, logsCollector)
 	if err != nil {
 		return nil, errors.Wrap(err, "collect longhorn logs")
 	}
