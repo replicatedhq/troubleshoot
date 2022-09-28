@@ -15,7 +15,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-func Logs(ctx context.Context, c *Collector, logsCollector *troubleshootv1beta2.Logs) (CollectorResult, error) {
+func Logs(ctxWithTimeout context.Context, c *Collector, logsCollector *troubleshootv1beta2.Logs) (CollectorResult, error) {
 	client, err := kubernetes.NewForConfig(c.ClientConfig)
 	if err != nil {
 		return nil, err
@@ -23,7 +23,9 @@ func Logs(ctx context.Context, c *Collector, logsCollector *troubleshootv1beta2.
 
 	output := NewResult()
 
-	ctx := context.Background()
+	ctx := context.Background() //Todo; it appears that we are passing a background context but not performing any actions; which calls into question of context architecture.
+	//should we give each of the processes (listPodsInSelectors and savePodLogs) a specific context timeout as well? If so, then where should we specify the timeout
+	//as neither have a struct.
 
 	pods, podsErrors := listPodsInSelectors(ctx, client, logsCollector.Namespace, logsCollector.Selector)
 	if len(podsErrors) > 0 {
