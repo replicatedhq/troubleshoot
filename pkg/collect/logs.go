@@ -43,15 +43,9 @@ func Logs(c *Collector, logsCollector *troubleshootv1beta2.Logs) (CollectorResul
 				}
 
 				for _, containerName := range containerNames {
-					if len(containerNames) == 1 {
-						containerName = "" // if there was only one container, use the old behavior of not including the container name in the path
-					}
 					podLogs, err := savePodLogs(ctx, c.BundlePath, client, pod, logsCollector.Name, containerName, logsCollector.Limits, false)
 					if err != nil {
-						key := fmt.Sprintf("%s/%s-errors.json", logsCollector.Name, pod.Name)
-						if containerName != "" {
-							key = fmt.Sprintf("%s/%s/%s-errors.json", logsCollector.Name, pod.Name, containerName)
-						}
+						key := fmt.Sprintf("%s/%s/%s-errors.json", logsCollector.Name, pod.Name, containerName)
 						err := output.SaveResult(c.BundlePath, key, marshalErrors([]string{err.Error()}))
 						if err != nil {
 							return nil, err
@@ -107,10 +101,7 @@ func savePodLogs(ctx context.Context, bundlePath string, client *kubernetes.Clie
 
 	setLogLimits(&podLogOpts, limits, convertMaxAgeToTime)
 
-	fileKey := fmt.Sprintf("%s/%s", name, pod.Name)
-	if container != "" {
-		fileKey = fmt.Sprintf("%s/%s/%s", name, pod.Name, container)
-	}
+	fileKey := fmt.Sprintf("%s/%s/%s/%s", "cluster-resources/pods/logs", pod.Namespace, pod.Name, container)
 
 	result := NewResult()
 
