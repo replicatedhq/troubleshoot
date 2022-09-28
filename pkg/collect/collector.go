@@ -4,6 +4,7 @@ import (
 	"context"
 	"runtime"
 	"strconv"
+	"time"
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
@@ -219,7 +220,12 @@ func (c *Collector) RunCollectorSync(clientConfig *rest.Config, client kubernete
 		return
 	}
 
-	ctx := context.TODO()
+	ctx := context.TODO() //empty context defined prior
+
+	//ctx background() deployed to support context timeout implementation
+	const timeout = 5 //placeholder will add timout field to Logs struct.
+	ctxBackground, cancel := context.WithTimeout(context.Background(), timeout*time.Second)
+	defer cancel()
 
 	if c.Collect.ClusterInfo != nil {
 		result, err = ClusterInfo(c)
@@ -230,7 +236,7 @@ func (c *Collector) RunCollectorSync(clientConfig *rest.Config, client kubernete
 	} else if c.Collect.ConfigMap != nil {
 		result, err = ConfigMap(ctx, c, c.Collect.ConfigMap, client)
 	} else if c.Collect.Logs != nil {
-		result, err = Logs(c, c.Collect.Logs)
+		result, err = Logs(ctxBackground, c, c.Collect.Logs)
 	} else if c.Collect.Run != nil {
 		result, err = Run(c, c.Collect.Run)
 	} else if c.Collect.RunPod != nil {

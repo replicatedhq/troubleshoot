@@ -15,7 +15,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-func Logs(c *Collector, logsCollector *troubleshootv1beta2.Logs) (CollectorResult, error) {
+func Logs(ctx context.Context, c *Collector, logsCollector *troubleshootv1beta2.Logs) (CollectorResult, error) {
 	client, err := kubernetes.NewForConfig(c.ClientConfig)
 	if err != nil {
 		return nil, err
