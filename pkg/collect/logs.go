@@ -15,75 +15,86 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-func Logs(ctxWithTimeout context.Context, c *Collector, logsCollector *troubleshootv1beta2.Logs) (CollectorResult, error) {
-	client, err := kubernetes.NewForConfig(c.ClientConfig)
-	if err != nil {
-		return nil, err
-	}
+func Logs(ctxCollector context.Context, c *Collector, logsCollector *troubleshootv1beta2.Logs) (CollectorResult, error) {
+	for {
+		select {
+		case <-ctxCollector.Done():
+			error := ctxCollector.Err()
+			return nil, error
+		default:
 
-	output := NewResult()
+			client, err := kubernetes.NewForConfig(c.ClientConfig)
+			if err != nil {
+				return nil, err
+			}
 
-	ctx := context.Background() //Todo; it appears that we are passing a background context but not performing any actions; which calls into question of context architecture.
-	//should we give each of the processes (listPodsInSelectors and savePodLogs) a specific context timeout as well? If so, then where should we specify the timeout
-	//as neither have a struct.
+			output := NewResult()
 
-	pods, podsErrors := listPodsInSelectors(ctx, client, logsCollector.Namespace, logsCollector.Selector)
-	if len(podsErrors) > 0 {
-		output.SaveResult(c.BundlePath, getLogsErrorsFileName(logsCollector), marshalErrors(podsErrors))
-	}
+			ctx := context.Background() //Todo; it appears that we are passing a background context but not performing any actions; which calls into question of context architecture.
+			//should we give each of the processes (listPodsInSelectors and savePodLogs) a specific context timeout as well? If so, then where should we specify the timeout
+			//as neither have a struct.
 
-	if len(pods) > 0 {
-		for _, pod := range pods {
-			if len(logsCollector.ContainerNames) == 0 {
-				// make a list of all the containers in the pod, so that we can get logs from all of them
-				containerNames := []string{}
-				for _, container := range pod.Spec.Containers {
-					containerNames = append(containerNames, container.Name)
-				}
-				for _, container := range pod.Spec.InitContainers {
-					containerNames = append(containerNames, container.Name)
-				}
+			pods, podsErrors := listPodsInSelectors(ctx, client, logsCollector.Namespace, logsCollector.Selector)
+			if len(podsErrors) > 0 {
+				output.SaveResult(c.BundlePath, getLogsErrorsFileName(logsCollector), marshalErrors(podsErrors))
+			}
 
-				for _, containerName := range containerNames {
-					if len(containerNames) == 1 {
-						containerName = "" // if there was only one container, use the old behavior of not including the container name in the path
-					}
-					podLogs, err := savePodLogs(ctx, c.BundlePath, client, pod, logsCollector.Name, containerName, logsCollector.Limits, false)
-					if err != nil {
-						key := fmt.Sprintf("%s/%s-errors.json", logsCollector.Name, pod.Name)
-						if containerName != "" {
-							key = fmt.Sprintf("%s/%s/%s-errors.json", logsCollector.Name, pod.Name, containerName)
+			if len(pods) > 0 {
+				for _, pod := range pods {
+					if len(logsCollector.ContainerNames) == 0 {
+						// make a list of all the containers in the pod, so that we can get logs from all of them
+						containerNames := []string{}
+						for _, container := range pod.Spec.Containers {
+							containerNames = append(containerNames, container.Name)
 						}
-						err := output.SaveResult(c.BundlePath, key, marshalErrors([]string{err.Error()}))
-						if err != nil {
-							return nil, err
+						for _, container := range pod.Spec.InitContainers {
+							containerNames = append(containerNames, container.Name)
 						}
-						continue
-					}
-					for k, v := range podLogs {
-						output[k] = v
-					}
-				}
-			} else {
-				for _, container := range logsCollector.ContainerNames {
-					containerLogs, err := savePodLogs(ctx, c.BundlePath, client, pod, logsCollector.Name, container, logsCollector.Limits, false)
-					if err != nil {
-						key := fmt.Sprintf("%s/%s/%s-errors.json", logsCollector.Name, pod.Name, container)
-						err := output.SaveResult(c.BundlePath, key, marshalErrors([]string{err.Error()}))
-						if err != nil {
-							return nil, err
+
+						for _, containerName := range containerNames {
+							if len(containerNames) == 1 {
+								containerName = "" // if there was only one container, use the old behavior of not including the container name in the path
+							}
+							podLogs, err := savePodLogs(ctx, c.BundlePath, client, pod, logsCollector.Name, containerName, logsCollector.Limits, false)
+							if err != nil {
+								key := fmt.Sprintf("%s/%s-errors.json", logsCollector.Name, pod.Name)
+								if containerName != "" {
+									key = fmt.Sprintf("%s/%s/%s-errors.json", logsCollector.Name, pod.Name, containerName)
+								}
+								err := output.SaveResult(c.BundlePath, key, marshalErrors([]string{err.Error()}))
+								if err != nil {
+									return nil, err
+								}
+								continue
+							}
+							for k, v := range podLogs {
+								output[k] = v
+							}
 						}
-						continue
-					}
-					for k, v := range containerLogs {
-						output[k] = v
+					} else {
+						for _, container := range logsCollector.ContainerNames {
+							containerLogs, err := savePodLogs(ctx, c.BundlePath, client, pod, logsCollector.Name, container, logsCollector.Limits, false)
+							if err != nil {
+								key := fmt.Sprintf("%s/%s/%s-errors.json", logsCollector.Name, pod.Name, container)
+								err := output.SaveResult(c.BundlePath, key, marshalErrors([]string{err.Error()}))
+								if err != nil {
+									return nil, err
+								}
+								continue
+							}
+							for k, v := range containerLogs {
+								output[k] = v
+							}
+						}
 					}
 				}
 			}
+
+			return output, nil
+
 		}
 	}
 
-	return output, nil
 }
 
 func listPodsInSelectors(ctx context.Context, client *kubernetes.Clientset, namespace string, selector []string) ([]corev1.Pod, []string) {
