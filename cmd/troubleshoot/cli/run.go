@@ -148,7 +148,7 @@ func runTroubleshoot(v *viper.Viper, arg []string) error {
 				if mainBundle == nil {
 					mainBundle = parsedBundlesFromSecrets
 				} else {
-					supportbundle.ConcatSpec(mainBundle, parsedBundlesFromSecrets)
+					mainBundle = supportbundle.ConcatSpec(mainBundle, parsedBundlesFromSecrets)
 				}
 
 				parsedRedactors, err := supportbundle.ParseRedactorsFromSpec(multidocs)
