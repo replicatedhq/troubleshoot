@@ -24,7 +24,7 @@ func (e RBACErrors) HasRBACErrors() bool {
 
 func (e *RBACErrors) CheckRBAC(ctx context.Context, c Collector, collector *troubleshootv1beta2.Collect, clientConfig *rest.Config, namespace string) error {
 	exclude, err := c.IsExcluded()
-	if err != nil || exclude != true {
+	if err != nil || exclude {
 		return nil
 	}
 
