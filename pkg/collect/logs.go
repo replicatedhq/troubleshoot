@@ -24,7 +24,7 @@ type CollectLogs struct {
 	Client       kubernetes.Interface
 	ctx          context.Context
 	SinceTime    *time.Time
-	RBACErrors   []error
+	RBACErrors
 }
 
 func (c *CollectLogs) Title() string {
@@ -33,30 +33,6 @@ func (c *CollectLogs) Title() string {
 
 func (c *CollectLogs) IsExcluded() (bool, error) {
 	return isExcluded(c.Collector.Exclude)
-}
-
-func (c *CollectLogs) GetRBACErrors() []error {
-	return c.RBACErrors
-}
-
-func (c *CollectLogs) HasRBACErrors() bool {
-	return len(c.RBACErrors) > 0
-}
-
-func (c *CollectLogs) CheckRBAC(ctx context.Context, collector *troubleshootv1beta2.Collect) error {
-	exclude, err := c.IsExcluded()
-	if err != nil || exclude != true {
-		return nil
-	}
-
-	rbacErrors, err := checkRBAC(ctx, c.ClientConfig, c.Namespace, c.Title(), collector)
-	if err != nil {
-		return err
-	}
-
-	c.RBACErrors = rbacErrors
-
-	return nil
 }
 
 func (c *CollectLogs) Collect(progressChan chan<- interface{}) (CollectorResult, error) {

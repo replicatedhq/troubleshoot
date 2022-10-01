@@ -113,7 +113,7 @@ type CollectCeph struct {
 	ClientConfig *rest.Config
 	Client       kubernetes.Interface
 	ctx          context.Context
-	RBACErrors   []error
+	RBACErrors
 }
 
 func (c *CollectCeph) Title() string {
@@ -122,30 +122,6 @@ func (c *CollectCeph) Title() string {
 
 func (c *CollectCeph) IsExcluded() (bool, error) {
 	return isExcluded(c.Collector.Exclude)
-}
-
-func (c *CollectCeph) GetRBACErrors() []error {
-	return c.RBACErrors
-}
-
-func (c *CollectCeph) HasRBACErrors() bool {
-	return len(c.RBACErrors) > 0
-}
-
-func (c *CollectCeph) CheckRBAC(ctx context.Context, collector *troubleshootv1beta2.Collect) error {
-	exclude, err := c.IsExcluded()
-	if err != nil || exclude != true {
-		return nil
-	}
-
-	rbacErrors, err := checkRBAC(ctx, c.ClientConfig, c.Namespace, c.Title(), collector)
-	if err != nil {
-		return err
-	}
-
-	c.RBACErrors = rbacErrors
-
-	return nil
 }
 
 func (c *CollectCeph) Collect(progressChan chan<- interface{}) (CollectorResult, error) {
@@ -187,7 +163,8 @@ func cephCommandExec(ctx context.Context, progressChan chan<- interface{}, c *Co
 		Timeout:   timeout,
 	}
 
-	execCollector := &CollectExec{execSpec, c.BundlePath, c.Namespace, c.ClientConfig, c.Client, c.ctx, c.RBACErrors}
+	rbacErrors := c.GetRBACErrors()
+	execCollector := &CollectExec{execSpec, c.BundlePath, c.Namespace, c.ClientConfig, c.Client, c.ctx, rbacErrors}
 
 	results, err := execCollector.Collect(progressChan)
 	if err != nil {

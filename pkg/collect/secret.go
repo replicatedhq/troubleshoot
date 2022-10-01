@@ -33,7 +33,7 @@ type CollectSecret struct {
 	ClientConfig *rest.Config
 	Client       kubernetes.Interface
 	ctx          context.Context
-	RBACErrors   []error
+	RBACErrors
 }
 
 func (c *CollectSecret) Title() string {
@@ -42,30 +42,6 @@ func (c *CollectSecret) Title() string {
 
 func (c *CollectSecret) IsExcluded() (bool, error) {
 	return isExcluded(c.Collector.Exclude)
-}
-
-func (c *CollectSecret) GetRBACErrors() []error {
-	return c.RBACErrors
-}
-
-func (c *CollectSecret) HasRBACErrors() bool {
-	return len(c.RBACErrors) > 0
-}
-
-func (c *CollectSecret) CheckRBAC(ctx context.Context, collector *troubleshootv1beta2.Collect) error {
-	exclude, err := c.IsExcluded()
-	if err != nil || exclude != true {
-		return nil
-	}
-
-	rbacErrors, err := checkRBAC(ctx, c.ClientConfig, c.Namespace, c.Title(), collector)
-	if err != nil {
-		return err
-	}
-
-	c.RBACErrors = rbacErrors
-
-	return nil
 }
 
 func (c *CollectSecret) Collect(progressChan chan<- interface{}) (CollectorResult, error) {

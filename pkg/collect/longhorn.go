@@ -36,7 +36,7 @@ type CollectLonghorn struct {
 	ClientConfig *rest.Config
 	Client       kubernetes.Interface
 	ctx          context.Context
-	RBACErrors   []error
+	RBACErrors
 }
 
 func (c *CollectLonghorn) Title() string {
@@ -45,30 +45,6 @@ func (c *CollectLonghorn) Title() string {
 
 func (c *CollectLonghorn) IsExcluded() (bool, error) {
 	return isExcluded(c.Collector.Exclude)
-}
-
-func (c *CollectLonghorn) GetRBACErrors() []error {
-	return c.RBACErrors
-}
-
-func (c *CollectLonghorn) HasRBACErrors() bool {
-	return len(c.RBACErrors) > 0
-}
-
-func (c *CollectLonghorn) CheckRBAC(ctx context.Context, collector *troubleshootv1beta2.Collect) error {
-	exclude, err := c.IsExcluded()
-	if err != nil || exclude != true {
-		return nil
-	}
-
-	rbacErrors, err := checkRBAC(ctx, c.ClientConfig, c.Namespace, c.Title(), collector)
-	if err != nil {
-		return err
-	}
-
-	c.RBACErrors = rbacErrors
-
-	return nil
 }
 
 func (c *CollectLonghorn) Collect(progressChan chan<- interface{}) (CollectorResult, error) {
@@ -244,7 +220,8 @@ func (c *CollectLonghorn) Collect(progressChan chan<- interface{}) (CollectorRes
 		Namespace: ns,
 	}
 
-	logsCollector := &CollectLogs{logsCollectorSpec, c.BundlePath, c.Namespace, c.ClientConfig, c.Client, c.ctx, nil, c.RBACErrors}
+	rbacErrors := c.GetRBACErrors()
+	logsCollector := &CollectLogs{logsCollectorSpec, c.BundlePath, c.Namespace, c.ClientConfig, c.Client, c.ctx, nil, rbacErrors}
 
 	logs, err := logsCollector.Collect(progressChan)
 	if err != nil {

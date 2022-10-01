@@ -2,7 +2,6 @@ package collect
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"path/filepath"
 
@@ -23,7 +22,7 @@ type CollectClusterInfo struct {
 	BundlePath   string
 	Namespace    string
 	ClientConfig *rest.Config
-	RBACErrors   []error
+	RBACErrors
 }
 
 func (c *CollectClusterInfo) Title() string {
@@ -32,30 +31,6 @@ func (c *CollectClusterInfo) Title() string {
 
 func (c *CollectClusterInfo) IsExcluded() (bool, error) {
 	return isExcluded(c.Collector.Exclude)
-}
-
-func (c *CollectClusterInfo) GetRBACErrors() []error {
-	return c.RBACErrors
-}
-
-func (c *CollectClusterInfo) HasRBACErrors() bool {
-	return len(c.RBACErrors) > 0
-}
-
-func (c *CollectClusterInfo) CheckRBAC(ctx context.Context, collector *troubleshootv1beta2.Collect) error {
-	exclude, err := c.IsExcluded()
-	if err != nil || exclude != true {
-		return nil
-	}
-
-	rbacErrors, err := checkRBAC(ctx, c.ClientConfig, c.Namespace, c.Title(), collector)
-	if err != nil {
-		return err
-	}
-
-	c.RBACErrors = rbacErrors
-
-	return nil
 }
 
 func (c *CollectClusterInfo) Collect(progressChan chan<- interface{}) (CollectorResult, error) {

@@ -34,7 +34,7 @@ type CollectConfigMap struct {
 	ClientConfig *rest.Config
 	Client       kubernetes.Interface
 	ctx          context.Context
-	RBACErrors   []error
+	RBACErrors
 }
 
 func (c *CollectConfigMap) Title() string {
@@ -43,30 +43,6 @@ func (c *CollectConfigMap) Title() string {
 
 func (c *CollectConfigMap) IsExcluded() (bool, error) {
 	return isExcluded(c.Collector.Exclude)
-}
-
-func (c *CollectConfigMap) GetRBACErrors() []error {
-	return c.RBACErrors
-}
-
-func (c *CollectConfigMap) HasRBACErrors() bool {
-	return len(c.RBACErrors) > 0
-}
-
-func (c *CollectConfigMap) CheckRBAC(ctx context.Context, collector *troubleshootv1beta2.Collect) error {
-	exclude, err := c.IsExcluded()
-	if err != nil || exclude != true {
-		return nil
-	}
-
-	rbacErrors, err := checkRBAC(ctx, c.ClientConfig, c.Namespace, c.Title(), collector)
-	if err != nil {
-		return err
-	}
-
-	c.RBACErrors = rbacErrors
-
-	return nil
 }
 
 func (c *CollectConfigMap) Collect(progressChan chan<- interface{}) (CollectorResult, error) {

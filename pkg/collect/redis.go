@@ -21,7 +21,7 @@ type CollectRedis struct {
 	ClientConfig *rest.Config
 	Client       kubernetes.Interface
 	ctx          context.Context
-	RBACErrors   []error
+	RBACErrors
 }
 
 func (c *CollectRedis) Title() string {
@@ -30,30 +30,6 @@ func (c *CollectRedis) Title() string {
 
 func (c *CollectRedis) IsExcluded() (bool, error) {
 	return isExcluded(c.Collector.Exclude)
-}
-
-func (c *CollectRedis) GetRBACErrors() []error {
-	return c.RBACErrors
-}
-
-func (c *CollectRedis) HasRBACErrors() bool {
-	return len(c.RBACErrors) > 0
-}
-
-func (c *CollectRedis) CheckRBAC(ctx context.Context, collector *troubleshootv1beta2.Collect) error {
-	exclude, err := c.IsExcluded()
-	if err != nil || exclude != true {
-		return nil
-	}
-
-	rbacErrors, err := checkRBAC(ctx, c.ClientConfig, c.Namespace, c.Title(), collector)
-	if err != nil {
-		return err
-	}
-
-	c.RBACErrors = rbacErrors
-
-	return nil
 }
 
 func (c *CollectRedis) Collect(progressChan chan<- interface{}) (CollectorResult, error) {

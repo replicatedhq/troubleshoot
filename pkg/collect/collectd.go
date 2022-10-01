@@ -15,7 +15,7 @@ type CollectCollectd struct {
 	ClientConfig *rest.Config
 	Client       kubernetes.Interface
 	ctx          context.Context
-	RBACErrors   []error
+	RBACErrors
 }
 
 func (c *CollectCollectd) Title() string {
@@ -24,30 +24,6 @@ func (c *CollectCollectd) Title() string {
 
 func (c *CollectCollectd) IsExcluded() (bool, error) {
 	return isExcluded(c.Collector.Exclude)
-}
-
-func (c *CollectCollectd) GetRBACErrors() []error {
-	return c.RBACErrors
-}
-
-func (c *CollectCollectd) HasRBACErrors() bool {
-	return len(c.RBACErrors) > 0
-}
-
-func (c *CollectCollectd) CheckRBAC(ctx context.Context, collector *troubleshootv1beta2.Collect) error {
-	exclude, err := c.IsExcluded()
-	if err != nil || exclude != true {
-		return nil
-	}
-
-	rbacErrors, err := checkRBAC(ctx, c.ClientConfig, c.Namespace, c.Title(), collector)
-	if err != nil {
-		return err
-	}
-
-	c.RBACErrors = rbacErrors
-
-	return nil
 }
 
 func (c *CollectCollectd) Collect(progressChan chan<- interface{}) (CollectorResult, error) {
@@ -62,7 +38,8 @@ func (c *CollectCollectd) Collect(progressChan chan<- interface{}) (CollectorRes
 		HostPath:        c.Collector.HostPath,
 	}
 
-	copyFromHostCollector := &CollectCopyFromHost{copyFromHost, c.BundlePath, c.Namespace, c.ClientConfig, c.Client, c.ctx, c.RBACErrors}
+	rbacErrors := c.GetRBACErrors()
+	copyFromHostCollector := &CollectCopyFromHost{copyFromHost, c.BundlePath, c.Namespace, c.ClientConfig, c.Client, c.ctx, rbacErrors}
 
 	return copyFromHostCollector.Collect(progressChan)
 }

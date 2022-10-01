@@ -33,7 +33,7 @@ type CollectCopyFromHost struct {
 	ClientConfig *rest.Config
 	Client       kubernetes.Interface
 	ctx          context.Context
-	RBACErrors   []error
+	RBACErrors
 }
 
 func (c *CollectCopyFromHost) Title() string {
@@ -42,30 +42,6 @@ func (c *CollectCopyFromHost) Title() string {
 
 func (c *CollectCopyFromHost) IsExcluded() (bool, error) {
 	return isExcluded(c.Collector.Exclude)
-}
-
-func (c *CollectCopyFromHost) GetRBACErrors() []error {
-	return c.RBACErrors
-}
-
-func (c *CollectCopyFromHost) HasRBACErrors() bool {
-	return len(c.RBACErrors) > 0
-}
-
-func (c *CollectCopyFromHost) CheckRBAC(ctx context.Context, collector *troubleshootv1beta2.Collect) error {
-	exclude, err := c.IsExcluded()
-	if err != nil || exclude != true {
-		return nil
-	}
-
-	rbacErrors, err := checkRBAC(ctx, c.ClientConfig, c.Namespace, c.Title(), collector)
-	if err != nil {
-		return err
-	}
-
-	c.RBACErrors = rbacErrors
-
-	return nil
 }
 
 // copies a file or directory from a host or hosts to include in the bundle.

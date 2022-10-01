@@ -276,7 +276,7 @@ pwd=somethinggoeshere;`,
 
 			var result CollectorResult
 
-			collector, _ := GetCollector(tt.Collect, "", "", nil, nil, nil, nil)
+			collector, _ := GetCollector(tt.Collect, "", "", nil, nil, nil)
 			regCollector, _ := collector.(Collector)
 
 			if excluded, err := regCollector.IsExcluded(); !excluded {
@@ -345,7 +345,7 @@ pwd=somethinggoeshere;`,
 
 			var result CollectorResult
 
-			collector, _ := GetCollector(tt.Collect, "", "", nil, nil, nil, nil)
+			collector, _ := GetCollector(tt.Collect, "", "", nil, nil, nil)
 			regCollector, _ := collector.(Collector)
 
 			if excluded, err := regCollector.IsExcluded(); !excluded {

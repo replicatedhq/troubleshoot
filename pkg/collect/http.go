@@ -2,7 +2,6 @@ package collect
 
 import (
 	"bytes"
-	"context"
 	"crypto/tls"
 	"encoding/json"
 	"io/ioutil"
@@ -42,7 +41,7 @@ type CollectHTTP struct {
 	Namespace    string
 	ClientConfig *rest.Config
 	Client       kubernetes.Interface
-	RBACErrors   []error
+	RBACErrors
 }
 
 func (c *CollectHTTP) Title() string {
@@ -51,30 +50,6 @@ func (c *CollectHTTP) Title() string {
 
 func (c *CollectHTTP) IsExcluded() (bool, error) {
 	return isExcluded(c.Collector.Exclude)
-}
-
-func (c *CollectHTTP) GetRBACErrors() []error {
-	return c.RBACErrors
-}
-
-func (c *CollectHTTP) HasRBACErrors() bool {
-	return len(c.RBACErrors) > 0
-}
-
-func (c *CollectHTTP) CheckRBAC(ctx context.Context, collector *troubleshootv1beta2.Collect) error {
-	exclude, err := c.IsExcluded()
-	if err != nil || exclude != true {
-		return nil
-	}
-
-	rbacErrors, err := checkRBAC(ctx, c.ClientConfig, c.Namespace, c.Title(), collector)
-	if err != nil {
-		return err
-	}
-
-	c.RBACErrors = rbacErrors
-
-	return nil
 }
 
 func (c *CollectHTTP) Collect(progressChan chan<- interface{}) (CollectorResult, error) {

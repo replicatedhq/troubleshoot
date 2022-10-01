@@ -75,7 +75,6 @@ func runCollectors(collectors []*troubleshootv1beta2.Collect, additionalRedactor
 	collectSpecs = ensureCollectorInList(collectSpecs, troubleshootv1beta2.Collect{ClusterResources: &troubleshootv1beta2.ClusterResources{}})
 
 	var allCollectors []collect.Collector
-	var RBACErrors []error
 
 	allCollectedData := make(map[string][]byte)
 
@@ -85,9 +84,9 @@ func runCollectors(collectors []*troubleshootv1beta2.Collect, additionalRedactor
 	}
 
 	for _, desiredCollector := range collectSpecs {
-		if collectorInterface, ok := collect.GetCollector(desiredCollector, bundlePath, opts.Namespace, opts.KubernetesRestConfig, k8sClient, opts.SinceTime, RBACErrors); ok {
+		if collectorInterface, ok := collect.GetCollector(desiredCollector, bundlePath, opts.Namespace, opts.KubernetesRestConfig, k8sClient, opts.SinceTime); ok {
 			if collector, ok := collectorInterface.(collect.Collector); ok {
-				err := collector.CheckRBAC(context.Background(), desiredCollector)
+				err := collector.CheckRBAC(context.Background(), collector, desiredCollector, opts.KubernetesRestConfig, opts.Namespace)
 				if err != nil {
 					return nil, errors.Wrap(err, "failed to check RBAC for collectors")
 				}

@@ -21,7 +21,7 @@ type CollectMysql struct {
 	ClientConfig *rest.Config
 	Client       kubernetes.Interface
 	ctx          context.Context
-	RBACErrors   []error
+	RBACErrors
 }
 
 func (c *CollectMysql) Title() string {
@@ -30,30 +30,6 @@ func (c *CollectMysql) Title() string {
 
 func (c *CollectMysql) IsExcluded() (bool, error) {
 	return isExcluded(c.Collector.Exclude)
-}
-
-func (c *CollectMysql) GetRBACErrors() []error {
-	return c.RBACErrors
-}
-
-func (c *CollectMysql) HasRBACErrors() bool {
-	return len(c.RBACErrors) > 0
-}
-
-func (c *CollectMysql) CheckRBAC(ctx context.Context, collector *troubleshootv1beta2.Collect) error {
-	exclude, err := c.IsExcluded()
-	if err != nil || exclude != true {
-		return nil
-	}
-
-	rbacErrors, err := checkRBAC(ctx, c.ClientConfig, c.Namespace, c.Title(), collector)
-	if err != nil {
-		return err
-	}
-
-	c.RBACErrors = rbacErrors
-
-	return nil
 }
 
 func (c *CollectMysql) Collect(progressChan chan<- interface{}) (CollectorResult, error) {

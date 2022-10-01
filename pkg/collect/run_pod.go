@@ -29,7 +29,7 @@ type CollectRunPod struct {
 	ClientConfig *rest.Config
 	Client       kubernetes.Interface
 	ctx          context.Context
-	RBACErrors   []error
+	RBACErrors
 }
 
 func (c *CollectRunPod) Title() string {
@@ -38,30 +38,6 @@ func (c *CollectRunPod) Title() string {
 
 func (c *CollectRunPod) IsExcluded() (bool, error) {
 	return isExcluded(c.Collector.Exclude)
-}
-
-func (c *CollectRunPod) GetRBACErrors() []error {
-	return c.RBACErrors
-}
-
-func (c *CollectRunPod) HasRBACErrors() bool {
-	return len(c.RBACErrors) > 0
-}
-
-func (c *CollectRunPod) CheckRBAC(ctx context.Context, collector *troubleshootv1beta2.Collect) error {
-	exclude, err := c.IsExcluded()
-	if err != nil || exclude != true {
-		return nil
-	}
-
-	rbacErrors, err := checkRBAC(ctx, c.ClientConfig, c.Namespace, c.Title(), collector)
-	if err != nil {
-		return err
-	}
-
-	c.RBACErrors = rbacErrors
-
-	return nil
 }
 
 func (c *CollectRunPod) Collect(progressChan chan<- interface{}) (CollectorResult, error) {

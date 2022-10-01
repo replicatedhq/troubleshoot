@@ -17,7 +17,7 @@ type Collector interface {
 	IsExcluded() (bool, error)
 	GetRBACErrors() []error
 	HasRBACErrors() bool
-	CheckRBAC(ctx context.Context, collector *troubleshootv1beta2.Collect) error
+	CheckRBAC(ctx context.Context, c Collector, collector *troubleshootv1beta2.Collect, clientConfig *rest.Config, namespace string) error
 	Collect(progressChan chan<- interface{}) (CollectorResult, error)
 }
 
@@ -49,9 +49,11 @@ func isExcluded(excludeVal *multitype.BoolOrString) (bool, error) {
 	return parsed, nil
 }
 
-func GetCollector(collector *troubleshootv1beta2.Collect, bundlePath string, namespace string, clientConfig *rest.Config, client kubernetes.Interface, sinceTime *time.Time, RBACErrors []error) (interface{}, bool) {
+func GetCollector(collector *troubleshootv1beta2.Collect, bundlePath string, namespace string, clientConfig *rest.Config, client kubernetes.Interface, sinceTime *time.Time) (interface{}, bool) {
 
 	ctx := context.TODO()
+
+	var RBACErrors []error
 
 	switch {
 	case collector.ClusterInfo != nil:

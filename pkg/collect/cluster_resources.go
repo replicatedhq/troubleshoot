@@ -39,7 +39,7 @@ type CollectClusterResources struct {
 	BundlePath   string
 	Namespace    string
 	ClientConfig *rest.Config
-	RBACErrors   []error
+	RBACErrors
 }
 
 func (c *CollectClusterResources) Title() string {
@@ -48,30 +48,6 @@ func (c *CollectClusterResources) Title() string {
 
 func (c *CollectClusterResources) IsExcluded() (bool, error) {
 	return isExcluded(c.Collector.Exclude)
-}
-
-func (c *CollectClusterResources) GetRBACErrors() []error {
-	return c.RBACErrors
-}
-
-func (c *CollectClusterResources) HasRBACErrors() bool {
-	return len(c.RBACErrors) > 0
-}
-
-func (c *CollectClusterResources) CheckRBAC(ctx context.Context, collector *troubleshootv1beta2.Collect) error {
-	exclude, err := c.IsExcluded()
-	if err != nil || exclude != true {
-		return nil
-	}
-
-	rbacErrors, err := checkRBAC(ctx, c.ClientConfig, c.Namespace, c.Title(), collector)
-	if err != nil {
-		return err
-	}
-
-	c.RBACErrors = rbacErrors
-
-	return nil
 }
 
 func (c *CollectClusterResources) Merge(allCollectors []Collector) ([]Collector, error) {

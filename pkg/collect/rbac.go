@@ -12,6 +12,32 @@ import (
 	"k8s.io/client-go/rest"
 )
 
+type RBACErrors []error
+
+func (e RBACErrors) GetRBACErrors() []error {
+	return e
+}
+
+func (e RBACErrors) HasRBACErrors() bool {
+	return len(e) > 0
+}
+
+func (e *RBACErrors) CheckRBAC(ctx context.Context, c Collector, collector *troubleshootv1beta2.Collect, clientConfig *rest.Config, namespace string) error {
+	exclude, err := c.IsExcluded()
+	if err != nil || exclude != true {
+		return nil
+	}
+
+	rbacErrors, err := checkRBAC(ctx, clientConfig, namespace, c.Title(), collector)
+	if err != nil {
+		return err
+	}
+
+	*e = rbacErrors
+
+	return nil
+}
+
 type RBACError struct {
 	DisplayName string
 	Namespace   string
