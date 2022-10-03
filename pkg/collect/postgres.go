@@ -2,6 +2,7 @@ package collect
 
 import (
 	"bytes"
+	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -10,12 +11,32 @@ import (
 	_ "github.com/lib/pq"
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 )
 
-func Postgres(c *Collector, databaseCollector *troubleshootv1beta2.Database) (CollectorResult, error) {
+type CollectPostgres struct {
+	Collector    *troubleshootv1beta2.Database
+	BundlePath   string
+	Namespace    string
+	ClientConfig *rest.Config
+	Client       kubernetes.Interface
+	ctx          context.Context
+	RBACErrors
+}
+
+func (c *CollectPostgres) Title() string {
+	return collectorTitleOrDefault(c.Collector.CollectorMeta, "Postgres")
+}
+
+func (c *CollectPostgres) IsExcluded() (bool, error) {
+	return isExcluded(c.Collector.Exclude)
+}
+
+func (c *CollectPostgres) Collect(progressChan chan<- interface{}) (CollectorResult, error) {
 	databaseConnection := DatabaseConnection{}
 
-	db, err := sql.Open("postgres", databaseCollector.URI)
+	db, err := sql.Open("postgres", c.Collector.URI)
 	if err != nil {
 		databaseConnection.Error = err.Error()
 	} else {
@@ -42,7 +63,7 @@ func Postgres(c *Collector, databaseCollector *troubleshootv1beta2.Database) (Co
 		return nil, errors.Wrap(err, "failed to marshal database connection")
 	}
 
-	collectorName := databaseCollector.CollectorName
+	collectorName := c.Collector.CollectorName
 	if collectorName == "" {
 		collectorName = "postgres"
 	}

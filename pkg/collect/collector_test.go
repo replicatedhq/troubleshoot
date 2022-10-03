@@ -273,16 +273,26 @@ pwd=somethinggoeshere;`,
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			req := require.New(t)
-			c := &Collector{
-				Collect: tt.Collect,
-				Redact:  true,
+
+			var result CollectorResult
+
+			collector, _ := GetCollector(tt.Collect, "", "", nil, nil, nil)
+			regCollector, _ := collector.(Collector)
+
+			if excluded, err := regCollector.IsExcluded(); !excluded {
+				req.NoError(err)
+
+				result, err = regCollector.Collect(nil)
+				req.NoError(err)
+
+				err = RedactResult("", result, tt.Redactors)
+
+				req.NoError(err)
 			}
-			got, err := c.RunCollectorSync(nil, nil, tt.Redactors)
-			req.NoError(err)
 
 			// convert to string to make differences easier to see
 			toString := map[string]string{}
-			for k, v := range got {
+			for k, v := range result {
 				toString[k] = string(v)
 			}
 			req.EqualValues(tt.want, toString)
@@ -332,16 +342,22 @@ pwd=somethinggoeshere;`,
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			req := require.New(t)
-			c := &Collector{
-				Collect: tt.Collect,
-				Redact:  false,
+
+			var result CollectorResult
+
+			collector, _ := GetCollector(tt.Collect, "", "", nil, nil, nil)
+			regCollector, _ := collector.(Collector)
+
+			if excluded, err := regCollector.IsExcluded(); !excluded {
+				req.NoError(err)
+
+				result, err = regCollector.Collect(nil)
+				req.NoError(err)
 			}
-			got, err := c.RunCollectorSync(nil, nil, tt.Redactors)
-			req.NoError(err)
 
 			// convert to string to make differences easier to see
 			toString := map[string]string{}
-			for k, v := range got {
+			for k, v := range result {
 				toString[k] = string(v)
 			}
 			req.EqualValues(tt.want, toString)

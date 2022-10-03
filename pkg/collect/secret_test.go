@@ -223,8 +223,8 @@ func TestSecret(t *testing.T) {
 				_, err := client.CoreV1().Secrets(secret.Namespace).Create(ctx, &secret, metav1.CreateOptions{})
 				require.NoError(t, err)
 			}
-			c := &Collector{}
-			got, err := Secret(ctx, c, tt.secretCollector, client)
+			secretCollector := &CollectSecret{tt.secretCollector, "", "", nil, client, ctx, nil}
+			got, err := secretCollector.Collect(nil)
 			if tt.wantErr {
 				assert.Error(t, err)
 			} else {

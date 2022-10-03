@@ -295,7 +295,7 @@ the %s Admin Console to begin analysis.`
 			return nil
 		}
 
-		fmt.Printf("%s\n", response.ArchivePath)
+		fmt.Printf("\n%s\n", response.ArchivePath)
 		return nil
 	}
 

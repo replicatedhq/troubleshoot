@@ -4,13 +4,15 @@ import (
 	"bytes"
 	"crypto/tls"
 	"encoding/json"
-	"errors"
 	"io/ioutil"
 	"net/http"
 	"path/filepath"
 	"strings"
 
+	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 )
 
 type HTTPResponse struct {
@@ -33,32 +35,49 @@ var (
 	}
 )
 
-func HTTP(c *Collector, httpCollector *troubleshootv1beta2.HTTP) (CollectorResult, error) {
+type CollectHTTP struct {
+	Collector    *troubleshootv1beta2.HTTP
+	BundlePath   string
+	Namespace    string
+	ClientConfig *rest.Config
+	Client       kubernetes.Interface
+	RBACErrors
+}
+
+func (c *CollectHTTP) Title() string {
+	return collectorTitleOrDefault(c.Collector.CollectorMeta, "HTTP")
+}
+
+func (c *CollectHTTP) IsExcluded() (bool, error) {
+	return isExcluded(c.Collector.Exclude)
+}
+
+func (c *CollectHTTP) Collect(progressChan chan<- interface{}) (CollectorResult, error) {
 	var response *http.Response
 	var err error
 
-	if httpCollector.Get != nil {
-		response, err = doGet(httpCollector.Get)
-	} else if httpCollector.Post != nil {
-		response, err = doPost(httpCollector.Post)
-	} else if httpCollector.Put != nil {
-		response, err = doPut(httpCollector.Put)
+	if c.Collector.Get != nil {
+		response, err = doGet(c.Collector.Get)
+	} else if c.Collector.Post != nil {
+		response, err = doPost(c.Collector.Post)
+	} else if c.Collector.Put != nil {
+		response, err = doPut(c.Collector.Put)
 	} else {
 		return nil, errors.New("no supported http request type")
 	}
 
-	o, err := responseToOutput(response, err, c.Redact)
+	o, err := responseToOutput(response, err)
 	if err != nil {
 		return nil, err
 	}
 
 	fileName := "result.json"
-	if httpCollector.CollectorName != "" {
-		fileName = httpCollector.CollectorName + ".json"
+	if c.Collector.CollectorName != "" {
+		fileName = c.Collector.CollectorName + ".json"
 	}
 
 	output := NewResult()
-	output.SaveResult(c.BundlePath, filepath.Join(httpCollector.Name, fileName), bytes.NewBuffer(o))
+	output.SaveResult(c.BundlePath, filepath.Join(c.Collector.Name, fileName), bytes.NewBuffer(o))
 
 	return output, nil
 }
@@ -117,7 +136,7 @@ func doPut(put *troubleshootv1beta2.Put) (*http.Response, error) {
 	return httpClient.Do(req)
 }
 
-func responseToOutput(response *http.Response, err error, doRedact bool) ([]byte, error) {
+func responseToOutput(response *http.Response, err error) ([]byte, error) {
 	output := make(map[string]interface{})
 	if err != nil {
 		output["error"] = HTTPError{

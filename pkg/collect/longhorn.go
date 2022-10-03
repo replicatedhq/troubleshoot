@@ -29,12 +29,30 @@ const (
 
 var checksumRX = regexp.MustCompile(`(\S+)\s+(\S+)`)
 
-func Longhorn(c *Collector, longhornCollector *troubleshootv1beta2.Longhorn) (CollectorResult, error) {
+type CollectLonghorn struct {
+	Collector    *troubleshootv1beta2.Longhorn
+	BundlePath   string
+	Namespace    string
+	ClientConfig *rest.Config
+	Client       kubernetes.Interface
+	ctx          context.Context
+	RBACErrors
+}
+
+func (c *CollectLonghorn) Title() string {
+	return collectorTitleOrDefault(c.Collector.CollectorMeta, "Longhorn")
+}
+
+func (c *CollectLonghorn) IsExcluded() (bool, error) {
+	return isExcluded(c.Collector.Exclude)
+}
+
+func (c *CollectLonghorn) Collect(progressChan chan<- interface{}) (CollectorResult, error) {
 	ctx := context.TODO()
 
 	ns := DefaultLonghornNamespace
-	if longhornCollector.Namespace != "" {
-		ns = longhornCollector.Namespace
+	if c.Collector.Namespace != "" {
+		ns = c.Collector.Namespace
 	}
 
 	client, err := longhornv1beta1.NewForConfig(c.ClientConfig)
@@ -197,11 +215,15 @@ func Longhorn(c *Collector, longhornCollector *troubleshootv1beta2.Longhorn) (Co
 	output.SaveResult(c.BundlePath, settingsKey, bytes.NewBuffer(settingsB))
 
 	// logs of all pods in namespace
-	logsCollector := &troubleshootv1beta2.Logs{
+	logsCollectorSpec := &troubleshootv1beta2.Logs{
 		Selector:  []string{""},
 		Namespace: ns,
 	}
-	logs, err := Logs(c, logsCollector)
+
+	rbacErrors := c.GetRBACErrors()
+	logsCollector := &CollectLogs{logsCollectorSpec, c.BundlePath, c.Namespace, c.ClientConfig, c.Client, c.ctx, nil, rbacErrors}
+
+	logs, err := logsCollector.Collect(progressChan)
 	if err != nil {
 		return nil, errors.Wrap(err, "collect longhorn logs")
 	}
