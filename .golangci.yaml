@@ -1,0 +1,12 @@
+# https://golangci-lint.run/usage/configuration/#config-file
+
+run:
+  allow-parallel-runners: true
+  timeout: 30s
+
+linters:
+  enable:
+    - gocritic
+    - gocyclo
+    - gofmt
+    - gosec

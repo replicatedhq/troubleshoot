@@ -4,7 +4,7 @@ Thank you for your interest in Troubleshoot, we welcome your participation. Plea
 
 ## Issues
 
-- [Request a New Feature](https://github.com/replicatedhq/troubleshoot/issues/new?assignees=&labels=feature&template=feature_enhancement.md) Create an issue to add functionality that addresses a problem or adds an enhancement.  
+- [Request a New Feature](https://github.com/replicatedhq/troubleshoot/issues/new?assignees=&labels=feature&template=feature_enhancement.md) Create an issue to add functionality that addresses a problem or adds an enhancement.
 - [Report a Bug](https://github.com/replicatedhq/troubleshoot/issues/new?assignees=&labels=bug&template=bug_report.md) Report a problem or unexpected behaviour with Troubleshoot.
 
 ## Design Principles
@@ -23,6 +23,9 @@ To get started we recommend:
 
 > Note: recent versions of Go support easy cross-compilation.  For example, to cross-compile a Linux binary from MacOS:
 > `GOOS=linux GOARCH=amd64 make support-bundle preflight`
+
+6. Install [pre-commit](https://pre-commit.com/#install) and run `pre-commit` command in the root of the project. This tool will run a number of checks before making a commit.
+7. Install [golangci-lint] linter and run `make lint` to execute code linters. `pre-commit` runs this command as well.
 
 ### Testing
 
@@ -48,15 +51,15 @@ This is a rough outline of how to prepare a contribution:
 - Create a topic branch from where you want to base your work (branched from `main` is a safe choice).
 - Make commits of logical units.
 - When your changes are ready to merge, squash your history to 1 commit.
-  - For example, if you want to squash your last 3 commits and write a new commit message: 
+  - For example, if you want to squash your last 3 commits and write a new commit message:
       ```
-      git reset --soft HEAD~3 && 
+      git reset --soft HEAD~3 &&
       git commit
-      ``` 
+      ```
 
   - If you want to keep the previous commit messages and concatenate them all into a new commit, you can do something like this instead:
       ```
-      git reset --soft HEAD~3 && 
+      git reset --soft HEAD~3 &&
       git commit --edit -m"$(git log --format=%B --reverse HEAD..HEAD@{1})"
       ```
 - Push your changes to a topic branch in your fork of the repository.
@@ -64,7 +67,6 @@ This is a rough outline of how to prepare a contribution:
 
 ### Pull Requests
 
-A pull request should address a single issue, feature or bug. For example, lets say you've written code that fixes two issues. That's great! However, you should submit two small pull requests, one for each issue as opposed to combining them into a single larger pull request. In general the size of the pull request should be kept small in order to make it easy for a reviewer to understand, and to minimize risks from integrating many changes at the same time. For example, if you are working on a large feature you should break it into several smaller PRs by implementing the feature as changes to several packages and submitting a separate pull request for each one.  Squash commit history when preparing your PR so it merges as 1 commit.  
+A pull request should address a single issue, feature or bug. For example, lets say you've written code that fixes two issues. That's great! However, you should submit two small pull requests, one for each issue as opposed to combining them into a single larger pull request. In general the size of the pull request should be kept small in order to make it easy for a reviewer to understand, and to minimize risks from integrating many changes at the same time. For example, if you are working on a large feature you should break it into several smaller PRs by implementing the feature as changes to several packages and submitting a separate pull request for each one.  Squash commit history when preparing your PR so it merges as 1 commit.
 
 Code submitted in pull requests must be properly documented, formatted and tested in order to be approved and merged. The following guidelines describe the things a reviewer will look for when they evaluate your pull request. Here's a tip. If your reviewer doesn't understand what the code is doing, they won't approve the pull request. Strive to make code clear and well documented. If possible, request a reviewer that has some context on the PR.
-
