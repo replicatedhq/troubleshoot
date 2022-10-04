@@ -24,8 +24,7 @@ To get started we recommend:
 > Note: recent versions of Go support easy cross-compilation.  For example, to cross-compile a Linux binary from MacOS:
 > `GOOS=linux GOARCH=amd64 make support-bundle preflight`
 
-6. Install [pre-commit](https://pre-commit.com/#install) and run `pre-commit` command in the root of the project. This tool will run a number of checks before making a commit.
-7. Install [golangci-lint] linter and run `make lint` to execute code linters. `pre-commit` runs this command as well.
+6. Install [golangci-lint] linter and run `make lint` to execute code linters.
 
 ### Testing
 
