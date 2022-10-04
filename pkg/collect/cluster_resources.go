@@ -34,7 +34,28 @@ import (
 	"github.com/replicatedhq/troubleshoot/pkg/k8sutil/discovery"
 )
 
-func ClusterResources(c *Collector, clusterResourcesCollector *troubleshootv1beta2.ClusterResources) (CollectorResult, error) {
+type CollectClusterResources struct {
+	Collector    *troubleshootv1beta2.ClusterResources
+	BundlePath   string
+	Namespace    string
+	ClientConfig *rest.Config
+	RBACErrors
+}
+
+func (c *CollectClusterResources) Title() string {
+	return collectorTitleOrDefault(c.Collector.CollectorMeta, "Cluster Resources")
+}
+
+func (c *CollectClusterResources) IsExcluded() (bool, error) {
+	return isExcluded(c.Collector.Exclude)
+}
+
+func (c *CollectClusterResources) Merge(allCollectors []Collector) ([]Collector, error) {
+	result := append(allCollectors, c)
+	return result, nil
+}
+
+func (c *CollectClusterResources) Collect(progressChan chan<- interface{}) (CollectorResult, error) {
 	client, err := kubernetes.NewForConfig(c.ClientConfig)
 	if err != nil {
 		return nil, err
@@ -51,9 +72,9 @@ func ClusterResources(c *Collector, clusterResourcesCollector *troubleshootv1bet
 	// namespaces
 	nsListedFromCluster := false
 	var namespaceNames []string
-	if len(clusterResourcesCollector.Namespaces) > 0 {
-		namespaces, namespaceErrors := getNamespaces(ctx, client, clusterResourcesCollector.Namespaces)
-		namespaceNames = clusterResourcesCollector.Namespaces
+	if len(c.Collector.Namespaces) > 0 {
+		namespaces, namespaceErrors := getNamespaces(ctx, client, c.Collector.Namespaces)
+		namespaceNames = c.Collector.Namespaces
 		output.SaveResult(c.BundlePath, "cluster-resources/namespaces.json", bytes.NewBuffer(namespaces))
 		output.SaveResult(c.BundlePath, "cluster-resources/namespaces-errors.json", marshalErrors(namespaceErrors))
 	} else if c.Namespace != "" {
@@ -82,7 +103,7 @@ func ClusterResources(c *Collector, clusterResourcesCollector *troubleshootv1bet
 	}
 	output.SaveResult(c.BundlePath, "cluster-resources/auth-cani-list-errors.json", marshalErrors(reviewStatusErrors))
 
-	if nsListedFromCluster && !clusterResourcesCollector.IgnoreRBAC {
+	if nsListedFromCluster && !c.Collector.IgnoreRBAC {
 		filteredNamespaces := []string{}
 		for _, ns := range namespaceNames {
 			status := reviewStatuses[ns]

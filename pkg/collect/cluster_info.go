@@ -6,8 +6,10 @@ import (
 	"path/filepath"
 
 	"github.com/pkg/errors"
+	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"k8s.io/apimachinery/pkg/version"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 )
 
 type ClusterVersion struct {
@@ -15,7 +17,23 @@ type ClusterVersion struct {
 	String string        `json:"string"`
 }
 
-func ClusterInfo(c *Collector) (CollectorResult, error) {
+type CollectClusterInfo struct {
+	Collector    *troubleshootv1beta2.ClusterInfo
+	BundlePath   string
+	Namespace    string
+	ClientConfig *rest.Config
+	RBACErrors
+}
+
+func (c *CollectClusterInfo) Title() string {
+	return collectorTitleOrDefault(c.Collector.CollectorMeta, "Cluster Info")
+}
+
+func (c *CollectClusterInfo) IsExcluded() (bool, error) {
+	return isExcluded(c.Collector.Exclude)
+}
+
+func (c *CollectClusterInfo) Collect(progressChan chan<- interface{}) (CollectorResult, error) {
 	client, err := kubernetes.NewForConfig(c.ClientConfig)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to create kubernetes clientset")

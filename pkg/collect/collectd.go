@@ -5,19 +5,41 @@ import (
 
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"k8s.io/client-go/kubernetes"
-	restclient "k8s.io/client-go/rest"
+	"k8s.io/client-go/rest"
 )
 
-func Collectd(ctx context.Context, c *Collector, collector *troubleshootv1beta2.Collectd, namespace string, clientConfig *restclient.Config, client kubernetes.Interface) (CollectorResult, error) {
+type CollectCollectd struct {
+	Collector    *troubleshootv1beta2.Collectd
+	BundlePath   string
+	Namespace    string
+	ClientConfig *rest.Config
+	Client       kubernetes.Interface
+	ctx          context.Context
+	RBACErrors
+}
+
+func (c *CollectCollectd) Title() string {
+	return collectorTitleOrDefault(c.Collector.CollectorMeta, "CollectD")
+}
+
+func (c *CollectCollectd) IsExcluded() (bool, error) {
+	return isExcluded(c.Collector.Exclude)
+}
+
+func (c *CollectCollectd) Collect(progressChan chan<- interface{}) (CollectorResult, error) {
 	copyFromHost := &troubleshootv1beta2.CopyFromHost{
-		CollectorMeta:   collector.CollectorMeta,
+		CollectorMeta:   c.Collector.CollectorMeta,
 		Name:            "collectd/rrd",
-		Namespace:       collector.Namespace,
-		Image:           collector.Image,
-		ImagePullPolicy: collector.ImagePullPolicy,
-		ImagePullSecret: collector.ImagePullSecret,
-		Timeout:         collector.Timeout,
-		HostPath:        collector.HostPath,
+		Namespace:       c.Collector.Namespace,
+		Image:           c.Collector.Image,
+		ImagePullPolicy: c.Collector.ImagePullPolicy,
+		ImagePullSecret: c.Collector.ImagePullSecret,
+		Timeout:         c.Collector.Timeout,
+		HostPath:        c.Collector.HostPath,
 	}
-	return CopyFromHost(ctx, c, copyFromHost, namespace, clientConfig, client)
+
+	rbacErrors := c.GetRBACErrors()
+	copyFromHostCollector := &CollectCopyFromHost{copyFromHost, c.BundlePath, c.Namespace, c.ClientConfig, c.Client, c.ctx, rbacErrors}
+
+	return copyFromHostCollector.Collect(progressChan)
 }

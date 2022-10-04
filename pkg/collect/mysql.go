@@ -2,6 +2,7 @@ package collect
 
 import (
 	"bytes"
+	"context"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -9,12 +10,32 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 )
 
-func Mysql(c *Collector, databaseCollector *troubleshootv1beta2.Database) (CollectorResult, error) {
+type CollectMysql struct {
+	Collector    *troubleshootv1beta2.Database
+	BundlePath   string
+	Namespace    string
+	ClientConfig *rest.Config
+	Client       kubernetes.Interface
+	ctx          context.Context
+	RBACErrors
+}
+
+func (c *CollectMysql) Title() string {
+	return collectorTitleOrDefault(c.Collector.CollectorMeta, "Mysql")
+}
+
+func (c *CollectMysql) IsExcluded() (bool, error) {
+	return isExcluded(c.Collector.Exclude)
+}
+
+func (c *CollectMysql) Collect(progressChan chan<- interface{}) (CollectorResult, error) {
 	databaseConnection := DatabaseConnection{}
 
-	db, err := sql.Open("mysql", databaseCollector.URI)
+	db, err := sql.Open("mysql", c.Collector.URI)
 	if err != nil {
 		databaseConnection.Error = err.Error()
 	} else {
@@ -30,7 +51,7 @@ func Mysql(c *Collector, databaseCollector *troubleshootv1beta2.Database) (Colle
 			databaseConnection.Version = version
 		}
 
-		requestedParameters := databaseCollector.Parameters
+		requestedParameters := c.Collector.Parameters
 		if len(requestedParameters) > 0 {
 			rows, err := db.Query("SHOW VARIABLES")
 
@@ -68,7 +89,7 @@ func Mysql(c *Collector, databaseCollector *troubleshootv1beta2.Database) (Colle
 		return nil, errors.Wrap(err, "failed to marshal database connection")
 	}
 
-	collectorName := databaseCollector.CollectorName
+	collectorName := c.Collector.CollectorName
 	if collectorName == "" {
 		collectorName = "mysql"
 	}

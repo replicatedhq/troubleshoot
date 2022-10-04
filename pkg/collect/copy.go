@@ -15,12 +15,31 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 	restclient "k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/remotecommand"
 )
 
+type CollectCopy struct {
+	Collector    *troubleshootv1beta2.Copy
+	BundlePath   string
+	Namespace    string
+	ClientConfig *rest.Config
+	Client       kubernetes.Interface
+	ctx          context.Context
+	RBACErrors
+}
+
+func (c *CollectCopy) Title() string {
+	return collectorTitleOrDefault(c.Collector.CollectorMeta, "Copy")
+}
+
+func (c *CollectCopy) IsExcluded() (bool, error) {
+	return isExcluded(c.Collector.Exclude)
+}
+
 // Copy function gets a file or folder from a container specified in the specs.
-func Copy(c *Collector, copyCollector *troubleshootv1beta2.Copy) (CollectorResult, error) {
+func (c *CollectCopy) Collect(progressChan chan<- interface{}) (CollectorResult, error) {
 	client, err := kubernetes.NewForConfig(c.ClientConfig)
 	if err != nil {
 		return nil, err
@@ -30,40 +49,40 @@ func Copy(c *Collector, copyCollector *troubleshootv1beta2.Copy) (CollectorResul
 
 	ctx := context.Background()
 
-	pods, podsErrors := listPodsInSelectors(ctx, client, copyCollector.Namespace, copyCollector.Selector)
+	pods, podsErrors := listPodsInSelectors(ctx, client, c.Collector.Namespace, c.Collector.Selector)
 	if len(podsErrors) > 0 {
-		output.SaveResult(c.BundlePath, getCopyErrosFileName(copyCollector), marshalErrors(podsErrors))
+		output.SaveResult(c.BundlePath, getCopyErrosFileName(c.Collector), marshalErrors(podsErrors))
 	}
 
 	if len(pods) > 0 {
 		for _, pod := range pods {
 
 			containerName := pod.Spec.Containers[0].Name
-			if copyCollector.ContainerName != "" {
-				containerName = copyCollector.ContainerName
+			if c.Collector.ContainerName != "" {
+				containerName = c.Collector.ContainerName
 			}
 
-			subPath := filepath.Join(copyCollector.Name, pod.Namespace, pod.Name, copyCollector.ContainerName)
+			subPath := filepath.Join(c.Collector.Name, pod.Namespace, pod.Name, c.Collector.ContainerName)
 
-			copyCollector.ExtractArchive = true // TODO: existing regression. this flag is always ignored and this matches current behaviour
+			c.Collector.ExtractArchive = true // TODO: existing regression. this flag is always ignored and this matches current behaviour
 
 			copyErrors := map[string]string{}
 
-			dstPath := filepath.Join(c.BundlePath, subPath, filepath.Dir(copyCollector.ContainerPath))
-			files, stderr, err := copyFilesFromPod(ctx, dstPath, c.ClientConfig, client, pod.Name, containerName, pod.Namespace, copyCollector.ContainerPath, copyCollector.ExtractArchive)
+			dstPath := filepath.Join(c.BundlePath, subPath, filepath.Dir(c.Collector.ContainerPath))
+			files, stderr, err := copyFilesFromPod(ctx, dstPath, c.ClientConfig, client, pod.Name, containerName, pod.Namespace, c.Collector.ContainerPath, c.Collector.ExtractArchive)
 			if err != nil {
-				copyErrors[filepath.Join(copyCollector.ContainerPath, "error")] = err.Error()
+				copyErrors[filepath.Join(c.Collector.ContainerPath, "error")] = err.Error()
 				if len(stderr) > 0 {
-					copyErrors[filepath.Join(copyCollector.ContainerPath, "stderr")] = string(stderr)
+					copyErrors[filepath.Join(c.Collector.ContainerPath, "stderr")] = string(stderr)
 				}
 
-				key := filepath.Join(subPath, copyCollector.ContainerPath+"-errors.json")
+				key := filepath.Join(subPath, c.Collector.ContainerPath+"-errors.json")
 				output.SaveResult(c.BundlePath, key, marshalErrors(copyErrors))
 				continue
 			}
 
 			for k, v := range files {
-				output[filepath.Join(subPath, filepath.Dir(copyCollector.ContainerPath), k)] = v
+				output[filepath.Join(subPath, filepath.Dir(c.Collector.ContainerPath), k)] = v
 			}
 		}
 	}
