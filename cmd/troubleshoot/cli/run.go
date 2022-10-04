@@ -119,13 +119,22 @@ func runTroubleshoot(v *viper.Viper, arg []string) error {
 			return errors.Wrap(err, "failed to convert create k8s client")
 		}
 
-		// Search cluster for Troubleshoot objects in secrets
+		var bundlesFromCluster []string
+
+		// Search cluster for Troubleshoot objects in cluster
 		bundlesFromSecrets, err := specs.LoadFromSecretMatchingLabel(client, specs.SupportBundleSelector, namespace, specs.SupportBundleKey)
 		if err != nil {
 			logger.Printf("failed to load support bundle spec from secrets: %s", err)
 		}
+		bundlesFromCluster = append(bundlesFromCluster, bundlesFromSecrets...)
 
-		if bundlesFromSecrets != nil {
+		bundlesFromConfigMaps, err := specs.LoadFromConfigMapMatchingLabel(client, specs.SupportBundleSelector, namespace, specs.SupportBundleKey)
+		if err != nil {
+			logger.Printf("failed to load support bundle spec from secrets: %s", err)
+		}
+		bundlesFromCluster = append(bundlesFromCluster, bundlesFromConfigMaps...)
+
+		if bundlesFromCluster != nil {
 			for _, bundle := range bundlesFromSecrets {
 				multidocs := strings.Split(string(bundle), "\n---\n")
 				parsedBundleFromSecret, err := supportbundle.ParseSupportBundleFromDoc([]byte(multidocs[0]))
@@ -149,13 +158,22 @@ func runTroubleshoot(v *viper.Viper, arg []string) error {
 			}
 		}
 
+		var redactorsFromCluster []string
+
 		// Search cluster for Troubleshoot objects in ConfigMaps
+		redactorsFromSecrets, err := specs.LoadFromSecretMatchingLabel(client, specs.RedactorSelector, namespace, specs.RedactorKey)
+		if err != nil {
+			logger.Printf("failed to load redactor specs from config maps: %s", err)
+		}
+		redactorsFromCluster = append(redactorsFromCluster, redactorsFromSecrets...)
+
 		redactorsFromConfigMaps, err := specs.LoadFromConfigMapMatchingLabel(client, specs.RedactorSelector, namespace, specs.RedactorKey)
 		if err != nil {
 			logger.Printf("failed to load redactor specs from config maps: %s", err)
 		}
+		redactorsFromCluster = append(redactorsFromCluster, redactorsFromConfigMaps...)
 
-		if redactorsFromConfigMaps != nil {
+		if redactorsFromCluster != nil {
 			for _, redactor := range redactorsFromConfigMaps {
 				multidocs := strings.Split(string(redactor), "\n---\n")
 				parsedRedactors, err := supportbundle.ParseRedactorsFromDocs(multidocs)
