@@ -29,13 +29,8 @@ import (
 	"github.com/replicatedhq/troubleshoot/pkg/supportbundle"
 	"github.com/spf13/viper"
 	spin "github.com/tj/go-spin"
-	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-)
-
-const (
-	SupportBundleSecretKey = "support-bundle-spec"
 )
 
 func runTroubleshoot(v *viper.Viper, arg []string) error {
@@ -101,7 +96,7 @@ func runTroubleshoot(v *viper.Viper, arg []string) error {
 			mainBundle = supportbundle.ConcatSpec(mainBundle, supportBundle)
 		}
 
-		parsedRedactors, err := supportbundle.ParseRedactorsFromSpec(multidocs)
+		parsedRedactors, err := supportbundle.ParseRedactorsFromDocs(multidocs)
 		if err != nil {
 			return errors.Wrap(err, "failed to parse redactors from doc")
 		}
@@ -109,13 +104,6 @@ func runTroubleshoot(v *viper.Viper, arg []string) error {
 	}
 
 	if v.GetBool("load-cluster-specs") {
-		labelSelector := strings.Join(v.GetStringSlice("selector"), ",")
-
-		parsedSelector, err := labels.Parse(labelSelector)
-		if err != nil {
-			return errors.Wrap(err, "unable to parse selector")
-		}
-
 		namespace := ""
 		if v.GetString("namespace") != "" {
 			namespace = v.GetString("namespace")
@@ -131,7 +119,8 @@ func runTroubleshoot(v *viper.Viper, arg []string) error {
 			return errors.Wrap(err, "failed to convert create k8s client")
 		}
 
-		bundlesFromSecrets, err := specs.LoadFromSecretMatchingLabel(client, parsedSelector.String(), namespace, SupportBundleSecretKey)
+		// Search cluster for Troubleshoot objects in secrets
+		bundlesFromSecrets, err := specs.LoadFromSecretMatchingLabel(client, specs.SupportBundleSelector, namespace, specs.SupportBundleKey)
 		if err != nil {
 			logger.Printf("failed to load support bundle spec from secrets: %s", err)
 		}
@@ -139,19 +128,19 @@ func runTroubleshoot(v *viper.Viper, arg []string) error {
 		if bundlesFromSecrets != nil {
 			for _, bundle := range bundlesFromSecrets {
 				multidocs := strings.Split(string(bundle), "\n---\n")
-				parsedBundlesFromSecrets, err := supportbundle.ParseSupportBundleFromDoc([]byte(multidocs[0]))
+				parsedBundleFromSecret, err := supportbundle.ParseSupportBundleFromDoc([]byte(multidocs[0]))
 				if err != nil {
 					logger.Printf("failed to parse support bundle spec:  %s", err)
 					continue
 				}
 
 				if mainBundle == nil {
-					mainBundle = parsedBundlesFromSecrets
+					mainBundle = parsedBundleFromSecret
 				} else {
-					mainBundle = supportbundle.ConcatSpec(mainBundle, parsedBundlesFromSecrets)
+					mainBundle = supportbundle.ConcatSpec(mainBundle, parsedBundleFromSecret)
 				}
 
-				parsedRedactors, err := supportbundle.ParseRedactorsFromSpec(multidocs)
+				parsedRedactors, err := supportbundle.ParseRedactorsFromDocs(multidocs)
 				if err != nil {
 					logger.Printf("failed to parse redactors from doc:  %s", err)
 					continue
@@ -159,6 +148,25 @@ func runTroubleshoot(v *viper.Viper, arg []string) error {
 				additionalRedactors.Spec.Redactors = append(additionalRedactors.Spec.Redactors, parsedRedactors...)
 			}
 		}
+
+		// Search cluster for Troubleshoot objects in ConfigMaps
+		redactorsFromConfigMaps, err := specs.LoadFromConfigMapMatchingLabel(client, specs.RedactorSelector, namespace, specs.RedactorKey)
+		if err != nil {
+			logger.Printf("failed to load redactor specs from config maps: %s", err)
+		}
+
+		if redactorsFromConfigMaps != nil {
+			for _, redactor := range redactorsFromConfigMaps {
+				multidocs := strings.Split(string(redactor), "\n---\n")
+				parsedRedactors, err := supportbundle.ParseRedactorsFromDocs(multidocs)
+				if err != nil {
+					logger.Printf("failed to parse redactors from doc:  %s", err)
+				}
+
+				additionalRedactors.Spec.Redactors = append(additionalRedactors.Spec.Redactors, parsedRedactors...)
+			}
+		}
+
 		if mainBundle == nil {
 			return errors.New("no specs found in cluster")
 		}
