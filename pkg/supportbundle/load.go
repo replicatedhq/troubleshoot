@@ -248,23 +248,22 @@ func loadSpecFromURL(arg string) ([]byte, error) {
 	}
 }
 
-func ParseRedactorsFromSpec(docs []string) ([]*troubleshootv1beta2.Redact, error) {
+func ParseRedactorsFromDocs(docs []string) ([]*troubleshootv1beta2.Redact, error) {
 	var redactors []*troubleshootv1beta2.Redact
 
 	decode := scheme.Codecs.UniversalDeserializer().Decode
 
-	for i, additionalDoc := range docs {
-		if i == 0 {
-			continue
-		}
-		additionalDoc, err := docrewrite.ConvertToV1Beta2([]byte(additionalDoc))
+	for i, doc := range docs {
+		doc, err := docrewrite.ConvertToV1Beta2([]byte(doc))
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to convert to v1beta2")
 		}
-		obj, _, err := decode(additionalDoc, nil, nil)
+
+		obj, _, err := decode(doc, nil, nil)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to parse additional doc %d", i)
+			return nil, errors.Wrapf(err, "failed to parse redactor from doc %d", i)
 		}
+
 		multidocRedactors, ok := obj.(*troubleshootv1beta2.Redactor)
 		if !ok {
 			continue
