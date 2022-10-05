@@ -2,6 +2,7 @@ package collect
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -9,12 +10,32 @@ import (
 	"github.com/go-redis/redis/v7"
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 )
 
-func Redis(c *Collector, databaseCollector *troubleshootv1beta2.Database) (CollectorResult, error) {
+type CollectRedis struct {
+	Collector    *troubleshootv1beta2.Database
+	BundlePath   string
+	Namespace    string
+	ClientConfig *rest.Config
+	Client       kubernetes.Interface
+	ctx          context.Context
+	RBACErrors
+}
+
+func (c *CollectRedis) Title() string {
+	return collectorTitleOrDefault(c.Collector.CollectorMeta, "Cluster Info")
+}
+
+func (c *CollectRedis) IsExcluded() (bool, error) {
+	return isExcluded(c.Collector.Exclude)
+}
+
+func (c *CollectRedis) Collect(progressChan chan<- interface{}) (CollectorResult, error) {
 	databaseConnection := DatabaseConnection{}
 
-	opt, err := redis.ParseURL(databaseCollector.URI)
+	opt, err := redis.ParseURL(c.Collector.URI)
 	if err != nil {
 		databaseConnection.Error = err.Error()
 	} else {
@@ -45,7 +66,7 @@ func Redis(c *Collector, databaseCollector *troubleshootv1beta2.Database) (Colle
 		return nil, errors.Wrap(err, "failed to marshal database connection")
 	}
 
-	collectorName := databaseCollector.CollectorName
+	collectorName := c.Collector.CollectorName
 	if collectorName == "" {
 		collectorName = "redis"
 	}

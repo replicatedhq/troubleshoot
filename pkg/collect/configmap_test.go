@@ -328,8 +328,8 @@ func TestConfigMap(t *testing.T) {
 				_, err := client.CoreV1().ConfigMaps(configMap.Namespace).Create(ctx, &configMap, metav1.CreateOptions{})
 				require.NoError(t, err)
 			}
-			c := &Collector{}
-			got, err := ConfigMap(ctx, c, tt.configMapCollector, client)
+			configMapCollector := &CollectConfigMap{tt.configMapCollector, "", "", nil, client, ctx, nil}
+			got, err := configMapCollector.Collect(nil)
 			if tt.wantErr {
 				assert.Error(t, err)
 			} else {

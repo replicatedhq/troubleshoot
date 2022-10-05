@@ -155,7 +155,7 @@ func runTroubleshoot(v *viper.Viper, arg []string) error {
 				if mainBundle == nil {
 					mainBundle = parsedBundlesFromSecrets
 				} else {
-					supportbundle.ConcatSpec(mainBundle, parsedBundlesFromSecrets)
+					mainBundle = supportbundle.ConcatSpec(mainBundle, parsedBundlesFromSecrets)
 				}
 
 				parsedRedactors, err := supportbundle.ParseRedactorsFromSpec(multidocs)
@@ -302,7 +302,7 @@ the %s Admin Console to begin analysis.`
 			return nil
 		}
 
-		fmt.Printf("%s\n", response.ArchivePath)
+		fmt.Printf("\n%s\n", response.ArchivePath)
 		return nil
 	}
 

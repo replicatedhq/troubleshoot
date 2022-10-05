@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"time"
 
 	"github.com/pkg/errors"
 	analyze "github.com/replicatedhq/troubleshoot/pkg/analyze"
@@ -16,7 +15,6 @@ import (
 	"github.com/replicatedhq/troubleshoot/pkg/convert"
 	"github.com/replicatedhq/troubleshoot/pkg/version"
 	"gopkg.in/yaml.v2"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -70,38 +68,45 @@ func runHostCollectors(hostCollectors []*troubleshootv1beta2.HostCollect, additi
 	return collectResult, nil
 }
 
-// TODO (dan): This is VERY similar to the Preflight collect package and should be refactored.
 func runCollectors(collectors []*troubleshootv1beta2.Collect, additionalRedactors *troubleshootv1beta2.Redactor, bundlePath string, opts SupportBundleCreateOpts) (collect.CollectorResult, error) {
-
 	collectSpecs := make([]*troubleshootv1beta2.Collect, 0)
 	collectSpecs = append(collectSpecs, collectors...)
 	collectSpecs = ensureCollectorInList(collectSpecs, troubleshootv1beta2.Collect{ClusterInfo: &troubleshootv1beta2.ClusterInfo{}})
 	collectSpecs = ensureCollectorInList(collectSpecs, troubleshootv1beta2.Collect{ClusterResources: &troubleshootv1beta2.ClusterResources{}})
 
-	var cleanedCollectors collect.Collectors
-	for _, desiredCollector := range collectSpecs {
-		collector := collect.Collector{
-			Redact:       opts.Redact,
-			Collect:      desiredCollector,
-			ClientConfig: opts.KubernetesRestConfig,
-			Namespace:    opts.Namespace,
-			BundlePath:   bundlePath,
-		}
-		cleanedCollectors = append(cleanedCollectors, &collector)
-	}
+	var allCollectors []collect.Collector
+
+	allCollectedData := make(map[string][]byte)
 
 	k8sClient, err := kubernetes.NewForConfig(opts.KubernetesRestConfig)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to instantiate Kubernetes client")
 	}
 
-	if err := cleanedCollectors.CheckRBAC(context.Background()); err != nil {
-		return nil, errors.Wrap(err, "failed to check RBAC for collectors")
+	for _, desiredCollector := range collectSpecs {
+		if collectorInterface, ok := collect.GetCollector(desiredCollector, bundlePath, opts.Namespace, opts.KubernetesRestConfig, k8sClient, opts.SinceTime); ok {
+			if collector, ok := collectorInterface.(collect.Collector); ok {
+				err := collector.CheckRBAC(context.Background(), collector, desiredCollector, opts.KubernetesRestConfig, opts.Namespace)
+				if err != nil {
+					return nil, errors.Wrap(err, "failed to check RBAC for collectors")
+				}
+
+				if mergeCollector, ok := collectorInterface.(collect.MergeableCollector); ok {
+					allCollectors, err = mergeCollector.Merge(allCollectors)
+					if err != nil {
+						msg := fmt.Sprintf("failed to merge collector: %s: %s", collector.Title(), err)
+						opts.CollectorProgressCallback(opts.ProgressChan, msg)
+					}
+				} else {
+					allCollectors = append(allCollectors, collector)
+				}
+			}
+		}
 	}
 
 	foundForbidden := false
-	for _, c := range cleanedCollectors {
-		for _, e := range c.RBACErrors {
+	for _, c := range allCollectors {
+		for _, e := range c.GetRBACErrors() {
 			foundForbidden = true
 			opts.ProgressChan <- e
 		}
@@ -111,42 +116,47 @@ func runCollectors(collectors []*troubleshootv1beta2.Collect, additionalRedactor
 		return nil, errors.New("insufficient permissions to run all collectors")
 	}
 
-	globalRedactors := []*troubleshootv1beta2.Redact{}
-	if additionalRedactors != nil {
-		globalRedactors = additionalRedactors.Spec.Redactors
-	}
+	for _, collector := range allCollectors {
+		isExcluded, _ := collector.IsExcluded()
+		if isExcluded {
+			continue
+		}
 
-	if opts.SinceTime != nil {
-		applyLogSinceTime(*opts.SinceTime, &cleanedCollectors)
-	}
-
-	result := collect.NewResult()
-
-	// Run preflights collectors synchronously
-	for _, collector := range cleanedCollectors {
-		if len(collector.RBACErrors) > 0 {
-			// don't skip clusterResources collector due to RBAC issues
-			if collector.Collect.ClusterResources == nil {
-				msg := fmt.Sprintf("skipping collector %s with insufficient RBAC permissions", collector.GetDisplayName())
+		// skip collectors with RBAC errors unless its the ClusterResources collector
+		if collector.HasRBACErrors() {
+			if _, ok := collector.(*collect.CollectClusterResources); !ok {
+				msg := fmt.Sprintf("skipping collector %s with insufficient RBAC permissions", collector.Title())
 				opts.CollectorProgressCallback(opts.ProgressChan, msg)
 				continue
 			}
 		}
 
-		opts.CollectorProgressCallback(opts.ProgressChan, collector.GetDisplayName())
-
-		files, err := collector.RunCollectorSync(opts.KubernetesRestConfig, k8sClient, globalRedactors)
+		opts.ProgressChan <- fmt.Sprintf("[%s] Running collector...", collector.Title())
+		result, err := collector.Collect(opts.ProgressChan)
 		if err != nil {
-			opts.ProgressChan <- fmt.Errorf("failed to run collector %q: %v", collector.GetDisplayName(), err)
-			continue
+			opts.ProgressChan <- errors.Errorf("failed to run collector: %s: %v", collector.Title(), err)
 		}
-
-		for k, v := range files {
-			result[k] = v
+		for k, v := range result {
+			allCollectedData[k] = v
 		}
 	}
 
-	return result, nil
+	collectResult := allCollectedData
+
+	globalRedactors := []*troubleshootv1beta2.Redact{}
+	if additionalRedactors != nil {
+		globalRedactors = additionalRedactors.Spec.Redactors
+	}
+
+	if opts.Redact {
+		err := collect.RedactResult(bundlePath, collectResult, globalRedactors)
+		if err != nil {
+			err = errors.Wrap(err, "failed to redact")
+			return collectResult, err
+		}
+	}
+
+	return collectResult, nil
 }
 
 func findFileName(basename, extension string) (string, error) {
@@ -206,16 +216,4 @@ func getAnalysisFile(analyzeResults []*analyze.AnalyzeResult) (io.Reader, error)
 	}
 
 	return bytes.NewBuffer(analysis), nil
-}
-
-func applyLogSinceTime(sinceTime time.Time, collectors *collect.Collectors) {
-
-	for _, collector := range *collectors {
-		if collector.Collect.Logs != nil {
-			if collector.Collect.Logs.Limits == nil {
-				collector.Collect.Logs.Limits = new(troubleshootv1beta2.LogLimits)
-			}
-			collector.Collect.Logs.Limits.SinceTime = metav1.NewTime(sinceTime)
-		}
-	}
 }
