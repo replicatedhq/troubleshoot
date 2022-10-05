@@ -187,3 +187,7 @@ scan:
 .PHONY: lint
 lint:
 	golangci-lint run -c .golangci.yaml
+
+.PHONY: lint-and-fix
+lint-and-fix:
+	golangci-lint run --fix -c .golangci.yaml
