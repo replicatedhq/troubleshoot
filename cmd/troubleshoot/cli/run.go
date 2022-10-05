@@ -97,7 +97,7 @@ func runTroubleshoot(v *viper.Viper, arg []string) error {
 		// Will make sure we can enable or disable the us of the spec.uri field for an upstream spec.
 		// This change will not have an impact on Kots usage of `ParseSupportBundle`
 		// As Kots uses `load.go` directly.
-		supportBundle, err := supportbundle.ParseSupportBundle([]byte(multidocs[0]), v.GetBool("follow-uri"))
+		supportBundle, err := supportbundle.ParseSupportBundle([]byte(multidocs[0]), v.GetBool("no-uri"))
 		if err != nil {
 			return errors.Wrap(err, "failed to parse support bundle spec")
 		}
