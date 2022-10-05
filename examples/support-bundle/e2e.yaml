@@ -1,0 +1,103 @@
+apiVersion: troubleshoot.sh/v1beta2
+kind: SupportBundle
+metadata:
+  name: example
+spec:
+  collectors:
+    - clusterInfo: {}
+    - clusterResources: {}
+    - data:
+        name: config/replicas.txt
+        data: "5"
+    - runPod:
+        collectorName: "static-hi"
+        podSpec: 
+          containers:
+          - name: static-hi
+            image: alpine:3.5
+            command: ["echo", "hi static!"]
+  analyzers:
+    - clusterVersion:
+        outcomes:
+          - fail:
+              when: "< 1.13.0"
+              message: This application requires at least Kubernetes 1.13.0 or later, and recommends 1.15.0.
+              uri: https://www.kubernetes.io
+          - warn:
+              when: "< 1.15.0"
+              message: Your cluster meets the minimum version of Kubernetes, but we recommend you update to 1.15.0 or later.
+              uri: https://kubernetes.io
+          - pass:
+              when: ">= 1.15.0"
+              message: Your cluster meets the recommended and required versions of Kubernetes.
+    - distribution:
+        outcomes:
+          - pass:
+              when: "== k3s"
+              message: K3S is a supported distribution
+          - warn:
+              message: Unable to determine the distribution of Kubernetes
+    - textAnalyze:
+        checkName: Replica Count
+        fileName: config/replicas.txt
+        regexGroups: '(?P<Replicas>\d+)'
+        outcomes:
+          - fail:
+              when: "Replicas < 5"
+              message: That's not enough replicas!
+          - pass:
+              message: You have at least 5 replicas
+    - textAnalyze:
+        checkName: Said hi!
+        fileName: /static-hi.log
+        regex: 'hi static'
+        outcomes:
+          - fail:
+              message: Didn't say hi.
+          - pass:
+              message: Said hi!
+    - nodeResources:
+        checkName: Must be exactly 1 node in the cluster
+        outcomes:
+          - pass:
+              when: "= 1"
+              message: This cluster has exactly 1 node
+          - fail:
+              message: This application requires exactly 1 node
+    - nodeResources:
+        checkName: Must have 1 node with at least 2 cores
+        filters:
+          cpuCapacity: "2"
+        outcomes:
+          - pass:
+              when: "= 1"
+              message: This cluster has exactly 1 node with at least 2 cores
+          - fail:
+              message: This application requires exactly 1 node with at least 2 cores
+    - nodeResources:
+        checkName: Must have 1 node with 2Gi (available) memory and at least 2 cores (on a single node)
+        filters:
+          allocatableMemory: 2Gi
+          cpuCapacity: "2"
+        outcomes:
+          - pass:
+              when: "= 1"
+              message: This cluster has exactly 1 node with at least 2Gi available memory and 2 cores
+          - fail:
+              message: This application requires exactly 1 node with at least 2Gi available memory and 2 cores
+    - nodeResources:
+        checkName: There must be exactly 1 node in the cluster
+        outcomes:
+          - pass:
+              when: "count() = 1"
+              message: This has exactly 1 node in the cluster
+          - fail:
+              message: This application requires exactly 1 node in the cluster
+    - nodeResources:
+        checkName: There must be a total of at least 2Gi of memory on all nodes
+        outcomes:
+          - fail:
+              when: "sum(memoryCapacity) < 2Gi"
+              message: This application requires that 2Gi or more memory be available to the cluster
+          - pass:
+              message: This cluster has sufficient memory
