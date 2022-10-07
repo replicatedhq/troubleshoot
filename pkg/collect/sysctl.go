@@ -8,31 +8,59 @@ import (
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
+	"github.com/replicatedhq/troubleshoot/pkg/k8sutil"
 	"github.com/replicatedhq/troubleshoot/pkg/logger"
 	kuberneteserrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 )
 
-func Sysctl(ctx context.Context, c *Collector, client kubernetes.Interface, collector *troubleshootv1beta2.Sysctl) (CollectorResult, error) {
+type CollectSysctl struct {
+	Collector    *troubleshootv1beta2.Sysctl
+	BundlePath   string
+	Namespace    string
+	ClientConfig *rest.Config
+	Client       kubernetes.Interface
+	ctx          context.Context
+	RBACErrors
+}
 
-	if collector.Timeout != "" {
-		timeout, err := time.ParseDuration(collector.Timeout)
+func (c *CollectSysctl) Title() string {
+	return collectorTitleOrDefault(c.Collector.CollectorMeta, "Sysctl")
+}
+
+func (c *CollectSysctl) IsExcluded() (bool, error) {
+	return isExcluded(c.Collector.Exclude)
+}
+
+func (c *CollectSysctl) Collect(progressChan chan<- interface{}) (CollectorResult, error) {
+	if c.Collector.Timeout != "" {
+		timeout, err := time.ParseDuration(c.Collector.Timeout)
 		if err != nil {
 			return nil, errors.Wrap(err, "parse timeout")
 		}
 		if timeout == 0 {
 			timeout = time.Minute
 		}
-		childCtx, cancel := context.WithTimeout(ctx, timeout)
+		childCtx, cancel := context.WithTimeout(c.ctx, timeout)
 		defer cancel()
-		ctx = childCtx
+		c.ctx = childCtx
+	}
+
+	if c.Collector.Namespace == "" {
+		c.Collector.Namespace = c.Namespace
+	}
+	if c.Collector.Namespace == "" {
+		kubeconfig := k8sutil.GetKubeconfig()
+		namespace, _, _ := kubeconfig.Namespace()
+		c.Collector.Namespace = namespace
 	}
 
 	runPodOptions := RunPodOptions{
-		Image:           collector.Image,
-		ImagePullPolicy: collector.ImagePullPolicy,
-		Namespace:       collector.Namespace,
+		Image:           c.Collector.Image,
+		ImagePullPolicy: c.Collector.ImagePullPolicy,
+		Namespace:       c.Collector.Namespace,
 		HostNetwork:     true,
 	}
 
@@ -42,18 +70,18 @@ find /proc/sys/net/bridge -type f | while read f; do v=$(cat $f 2>/dev/null); ec
 `
 	runPodOptions.Command = []string{"sh", "-c", command}
 
-	if collector.ImagePullSecret != nil {
-		runPodOptions.ImagePullSecretName = collector.ImagePullSecret.Name
+	if c.Collector.ImagePullSecret != nil {
+		runPodOptions.ImagePullSecretName = c.Collector.ImagePullSecret.Name
 
-		if collector.ImagePullSecret.Data != nil {
-			secretName, err := createSecret(ctx, client, collector.Namespace, collector.ImagePullSecret)
+		if c.Collector.ImagePullSecret.Data != nil {
+			secretName, err := createSecret(c.ctx, c.Client, c.Collector.Namespace, c.Collector.ImagePullSecret)
 			if err != nil {
 				return nil, errors.Wrap(err, "create image pull secret")
 			}
 			defer func() {
-				err := client.CoreV1().Secrets(collector.Namespace).Delete(context.Background(), collector.ImagePullSecret.Name, metav1.DeleteOptions{})
+				err := c.Client.CoreV1().Secrets(c.Collector.Namespace).Delete(context.Background(), c.Collector.ImagePullSecret.Name, metav1.DeleteOptions{})
 				if err != nil && !kuberneteserrors.IsNotFound(err) {
-					logger.Printf("Failed to delete secret %s: %v", collector.ImagePullSecret.Name, err)
+					logger.Printf("Failed to delete secret %s: %v", c.Collector.ImagePullSecret.Name, err)
 				}
 			}()
 
@@ -61,7 +89,7 @@ find /proc/sys/net/bridge -type f | while read f; do v=$(cat $f 2>/dev/null); ec
 		}
 	}
 
-	results, err := RunPodsReadyNodes(ctx, client.CoreV1(), runPodOptions)
+	results, err := RunPodsReadyNodes(c.ctx, c.Client.CoreV1(), runPodOptions)
 	if err != nil {
 		return nil, err
 	}

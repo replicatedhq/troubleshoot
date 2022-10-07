@@ -173,7 +173,7 @@ func CollectSupportBundleFromSpec(spec *troubleshootv1beta2.SupportBundleSpec, a
 // collectors, analyzers and after collection steps. Input arguments are the URIs of the support bundle and redactor specs.
 // The support bundle is archived in the OS temp folder (os.TempDir()).
 func CollectSupportBundleFromURI(specURI string, redactorURIs []string, opts SupportBundleCreateOpts) (*SupportBundleResponse, error) {
-	supportbundle, err := GetSupportBundleFromURI(specURI)
+	supportBundle, err := GetSupportBundleFromURI(specURI)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not bundle from URI")
 	}
@@ -190,7 +190,7 @@ func CollectSupportBundleFromURI(specURI string, redactorURIs []string, opts Sup
 		}
 	}
 
-	return CollectSupportBundleFromSpec(&supportbundle.Spec, additionalRedactors, opts)
+	return CollectSupportBundleFromSpec(&supportBundle.Spec, additionalRedactors, opts)
 }
 
 // ProcessSupportBundleAfterCollection performs the after collection actions, like Callbacks and sending the archive to a remote server.

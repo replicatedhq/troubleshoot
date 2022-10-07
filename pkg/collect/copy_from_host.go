@@ -11,6 +11,7 @@ import (
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
+	"github.com/replicatedhq/troubleshoot/pkg/k8sutil"
 	"github.com/replicatedhq/troubleshoot/pkg/logger"
 	"github.com/segmentio/ksuid"
 	appsv1 "k8s.io/api/apps/v1"
@@ -20,19 +21,40 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 	restclient "k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/remotecommand"
 )
 
-// CopyFromHost is a function that copies a file or directory from a host or hosts to include in the bundle.
-func CopyFromHost(ctx context.Context, c *Collector, collector *troubleshootv1beta2.CopyFromHost, namespace string, clientConfig *restclient.Config, client kubernetes.Interface) (CollectorResult, error) {
+type CollectCopyFromHost struct {
+	Collector    *troubleshootv1beta2.CopyFromHost
+	BundlePath   string
+	Namespace    string
+	ClientConfig *rest.Config
+	Client       kubernetes.Interface
+	ctx          context.Context
+	RBACErrors
+}
+
+func (c *CollectCopyFromHost) Title() string {
+	return collectorTitleOrDefault(c.Collector.CollectorMeta, "Copy from Host")
+}
+
+func (c *CollectCopyFromHost) IsExcluded() (bool, error) {
+	return isExcluded(c.Collector.Exclude)
+}
+
+// copies a file or directory from a host or hosts to include in the bundle.
+func (c *CollectCopyFromHost) Collect(progressChan chan<- interface{}) (CollectorResult, error) {
+	var namespace string
+
 	labels := map[string]string{
 		"app.kubernetes.io/managed-by":    "troubleshoot.sh",
 		"troubleshoot.sh/collector":       "copyfromhost",
 		"troubleshoot.sh/copyfromhost-id": ksuid.New().String(),
 	}
 
-	hostPath := filepath.Clean(collector.HostPath) // strip trailing slash
+	hostPath := filepath.Clean(c.Collector.HostPath) // strip trailing slash
 
 	hostDir := filepath.Dir(hostPath)
 	fileName := filepath.Base(hostPath)
@@ -41,18 +63,24 @@ func CopyFromHost(ctx context.Context, c *Collector, collector *troubleshootv1be
 		fileName = "."
 	}
 
-	_, cleanup, err := copyFromHostCreateDaemonSet(ctx, client, collector, hostDir, namespace, "troubleshoot-copyfromhost-", labels)
+	namespace = c.Namespace
+	if namespace == "" {
+		kubeconfig := k8sutil.GetKubeconfig()
+		namespace, _, _ = kubeconfig.Namespace()
+	}
+
+	_, cleanup, err := copyFromHostCreateDaemonSet(c.ctx, c.Client, c.Collector, hostDir, namespace, "troubleshoot-copyfromhost-", labels)
 	defer cleanup()
 	if err != nil {
 		return nil, errors.Wrap(err, "create daemonset")
 	}
 
-	childCtx, cancel := context.WithCancel(ctx)
+	childCtx, cancel := context.WithCancel(c.ctx)
 	defer cancel()
 
 	timeoutCtx := context.Background()
-	if collector.Timeout != "" {
-		timeout, err := time.ParseDuration(collector.Timeout)
+	if c.Collector.Timeout != "" {
+		timeout, err := time.ParseDuration(c.Collector.Timeout)
 		if err != nil {
 			return nil, errors.Wrap(err, "parse timeout")
 		}
@@ -67,12 +95,12 @@ func CopyFromHost(ctx context.Context, c *Collector, collector *troubleshootv1be
 	resultCh := make(chan CollectorResult, 1)
 	go func() {
 		var outputFilename string
-		if collector.Name != "" {
-			outputFilename = collector.Name
+		if c.Collector.Name != "" {
+			outputFilename = c.Collector.Name
 		} else {
 			outputFilename = hostPath
 		}
-		b, err := copyFromHostGetFilesFromPods(childCtx, c, collector, clientConfig, client, fileName, outputFilename, labels, namespace)
+		b, err := copyFromHostGetFilesFromPods(childCtx, c.BundlePath, c.Collector, c.ClientConfig, c.Client, fileName, outputFilename, labels, namespace)
 		if err != nil {
 			errCh <- err
 		} else {
@@ -220,7 +248,7 @@ func copyFromHostCreateDaemonSet(ctx context.Context, client kubernetes.Interfac
 	return createdDS.Name, cleanup, nil
 }
 
-func copyFromHostGetFilesFromPods(ctx context.Context, c *Collector, collector *troubleshootv1beta2.CopyFromHost, clientConfig *restclient.Config, client kubernetes.Interface, fileName string, outputFilename string, labelSelector map[string]string, namespace string) (CollectorResult, error) {
+func copyFromHostGetFilesFromPods(ctx context.Context, bundlePath string, collector *troubleshootv1beta2.CopyFromHost, clientConfig *restclient.Config, client kubernetes.Interface, fileName string, outputFilename string, labelSelector map[string]string, namespace string) (CollectorResult, error) {
 	opts := metav1.ListOptions{
 		LabelSelector: labels.SelectorFromSet(labelSelector).String(),
 	}
@@ -233,16 +261,16 @@ func copyFromHostGetFilesFromPods(ctx context.Context, c *Collector, collector *
 	output := NewResult()
 	for _, pod := range pods.Items {
 		outputNodeFilename := filepath.Join(outputFilename, pod.Spec.NodeName)
-		files, stderr, err := copyFilesFromHost(ctx, filepath.Join(c.BundlePath, outputNodeFilename), clientConfig, client, pod.Name, "collector", namespace, filepath.Join("/host", fileName), collector.ExtractArchive)
+		files, stderr, err := copyFilesFromHost(ctx, filepath.Join(bundlePath, outputNodeFilename), clientConfig, client, pod.Name, "collector", namespace, filepath.Join("/host", fileName), collector.ExtractArchive)
 		if err != nil {
-			output.SaveResult(c.BundlePath, filepath.Join(outputNodeFilename, "error.txt"), bytes.NewBuffer([]byte(err.Error())))
+			output.SaveResult(bundlePath, filepath.Join(outputNodeFilename, "error.txt"), bytes.NewBuffer([]byte(err.Error())))
 			if len(stderr) > 0 {
-				output.SaveResult(c.BundlePath, filepath.Join(outputNodeFilename, "stderr.txt"), bytes.NewBuffer(stderr))
+				output.SaveResult(bundlePath, filepath.Join(outputNodeFilename, "stderr.txt"), bytes.NewBuffer(stderr))
 			}
 		}
 
 		for k, v := range files {
-			relPath, err := filepath.Rel(c.BundlePath, filepath.Join(c.BundlePath, filepath.Join(outputNodeFilename, k)))
+			relPath, err := filepath.Rel(bundlePath, filepath.Join(bundlePath, filepath.Join(outputNodeFilename, k)))
 			if err != nil {
 				return nil, errors.Wrap(err, "relative path")
 			}

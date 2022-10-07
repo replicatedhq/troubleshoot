@@ -45,9 +45,13 @@ ffi: fmt vet
 test: generate fmt vet
 	go test ${BUILDFLAGS} ./pkg/... ./cmd/... -coverprofile cover.out
 
-.PHONY: e2e-test
-e2e-test:
+.PHONY: preflight-e2e-test
+preflight-e2e-test:
 	./test/validate-preflight-e2e.sh
+
+.PHONY: support-bundle-e2e-test
+support-bundle-e2e-test:
+	./test/validate-support-bundle-e2e.sh
 
 .PHONY: support-bundle
 support-bundle:

@@ -30,6 +30,7 @@ spec:
         outcomes:
           - fail:
               message: The Rook CRD was not found in the cluster.
+              uri: https://kurl.sh/docs/add-ons/rook/some/path/that/does/not/exist/for/the/sake/of/having/a/very/long/url.md
           - pass:
               message: Rook is installed and available.
     - containerRuntime:
