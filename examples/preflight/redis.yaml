@@ -14,10 +14,9 @@ spec:
         outcomes:
           - fail:
               when: "connected == false"
-              message: Cannot connect to postgres server
+              message: Cannot connect to redis
           - fail:
               when: "version < 5.0.0"
               message: The redis server must be at least version 5
           - pass:
               message: The redis connection checks out
-  
