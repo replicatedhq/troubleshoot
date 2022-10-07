@@ -60,7 +60,7 @@ from a server that can be used to assist when troubleshooting a Kubernetes clust
 
 	// `no-uri` references the `followURI` functionality where we can use an upstream spec when creating a support bundle
 	// This flag makes sure we can also disable this and fall back to the default spec.
-	cmd.Flags().Bool("no-uri", false, "Forces the support bundle to revert back to the default and not use a URI for a spec when used.`")
+	cmd.Flags().Bool("no-uri", false, "When this flag is used, Troubleshoot does not attempt to retrieve the bundle referenced by the uri: field in the spec.`")
 
 	viper.BindPFlags(cmd.Flags())
 
