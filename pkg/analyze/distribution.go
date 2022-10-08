@@ -46,19 +46,12 @@ const (
 	k3s           Provider = iota
 )
 
-func CheckOpenShift(foundProviders *providers, apiResources []*metav1.APIResourceList, provider string) string {
+func CheckApiResourcesForProviders(foundProviders *providers, apiResources []*metav1.APIResourceList, provider string) string {
 	for _, resource := range apiResources {
 		if strings.HasPrefix(resource.GroupVersion, "apps.openshift.io/") {
 			foundProviders.openShift = true
 			return "openShift"
 		}
-	}
-
-	return provider
-}
-
-func CheckTanzu(foundProviders *providers, apiResources []*metav1.APIResourceList, provider string) string {
-	for _, resource := range apiResources {
 		if strings.HasPrefix(resource.GroupVersion, "run.tanzu.vmware.com/") {
 			foundProviders.tanzu = true
 			return "tanzu"
@@ -170,8 +163,7 @@ func analyzeDistribution(analyzer *troubleshootv1beta2.Distribution, getCollecte
 		if err := json.Unmarshal(apiResourcesBytes, &apiResources); err != nil {
 			return nil, errors.Wrap(err, "failed to unmarshal api resource list")
 		}
-		_ = CheckOpenShift(&foundProviders, apiResources, "")
-		_ = CheckTanzu(&foundProviders, apiResources, "")
+		_ = CheckApiResourcesForProvider(&foundProviders, apiResources, "")
 	}
 
 	title := analyzer.CheckName
