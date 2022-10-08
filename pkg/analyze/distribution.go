@@ -59,7 +59,7 @@ func CheckOpenShift(foundProviders *providers, apiResources []*metav1.APIResourc
 
 func CheckTanzu(foundProviders *providers, apiResources []*metav1.APIResourceList, provider string) string {
 	for _, resource := range apiResources {
-		if strings.HasPrefix(resource.GroupVersion, "packaging.carvel.dev/") {
+		if strings.HasPrefix(resource.GroupVersion, "run.tanzu.vmware.com/") {
 			foundProviders.tanzu = true
 			return "tanzu"
 		}
