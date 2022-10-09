@@ -163,7 +163,7 @@ func analyzeDistribution(analyzer *troubleshootv1beta2.Distribution, getCollecte
 		if err := json.Unmarshal(apiResourcesBytes, &apiResources); err != nil {
 			return nil, errors.Wrap(err, "failed to unmarshal api resource list")
 		}
-		_ = CheckApiResourcesForProvider(&foundProviders, apiResources, "")
+		_ = CheckApiResourcesForProviders(&foundProviders, apiResources, "")
 	}
 
 	title := analyzer.CheckName
