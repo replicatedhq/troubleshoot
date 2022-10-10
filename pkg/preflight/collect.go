@@ -123,8 +123,9 @@ func CollectHost(opts CollectOpts, p *troubleshootv1beta2.HostPreflight) (Collec
 func Collect(opts CollectOpts, p *troubleshootv1beta2.Preflight) (CollectResult, error) {
 	collectSpecs := make([]*troubleshootv1beta2.Collect, 0, 0)
 	collectSpecs = append(collectSpecs, p.Spec.Collectors...)
-	collectSpecs = ensureCollectorInList(collectSpecs, troubleshootv1beta2.Collect{ClusterInfo: &troubleshootv1beta2.ClusterInfo{}})
-	collectSpecs = ensureCollectorInList(collectSpecs, troubleshootv1beta2.Collect{ClusterResources: &troubleshootv1beta2.ClusterResources{}})
+	collectSpecs = collect.EnsureCollectorInList(collectSpecs, troubleshootv1beta2.Collect{ClusterInfo: &troubleshootv1beta2.ClusterInfo{}})
+	collectSpecs = collect.EnsureCollectorInList(collectSpecs, troubleshootv1beta2.Collect{ClusterResources: &troubleshootv1beta2.ClusterResources{}})
+	collectSpecs = collect.EnsureClusterResourcesFirst(collectSpecs)
 
 	var allCollectors []collect.Collector
 
@@ -359,30 +360,4 @@ func CollectRemote(opts CollectOpts, p *troubleshootv1beta2.HostPreflight) (Coll
 
 	collectResult.AllCollectedData = allCollectedData
 	return collectResult, nil
-}
-
-func ensureCollectorInList(list []*troubleshootv1beta2.Collect, collector troubleshootv1beta2.Collect) []*troubleshootv1beta2.Collect {
-	for _, inList := range list {
-		if collector.ClusterResources != nil && inList.ClusterResources != nil {
-			return list
-		}
-		if collector.ClusterInfo != nil && inList.ClusterInfo != nil {
-			return list
-		}
-	}
-
-	return append(list, &collector)
-}
-
-func ensureHostCollectorInList(list []*troubleshootv1beta2.HostCollect, collector troubleshootv1beta2.HostCollect) []*troubleshootv1beta2.HostCollect {
-	for _, inList := range list {
-		if collector.CPU != nil && inList.CPU != nil {
-			return list
-		}
-		if collector.Memory != nil && inList.Memory != nil {
-			return list
-		}
-	}
-
-	return append(list, &collector)
 }
