@@ -6,6 +6,7 @@
 *.so
 *.dylib
 bin
+.DS_Store
 
 # Test binary, build with `go test -c`
 *.test
@@ -34,3 +35,6 @@ workspace.*
 
 cosign.key
 sbom/
+
+# Ignore local pre-commit config
+.pre-commit-config.yaml

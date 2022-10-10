@@ -1,7 +1,5 @@
 # Replicated Troubleshoot
 
-[![FOSSA Status](https://app.fossa.com/api/projects/custom%2B5995%2Fgithub.com%2Freplicatedhq%2Ftroubleshoot.svg?type=small)](https://app.fossa.com/projects/custom%2B5995%2Fgithub.com%2Freplicatedhq%2Ftroubleshoot?ref=badge_small)
-
 Replicated Troubleshoot is a framework for collecting, redacting, and analyzing highly customizable diagnostic information about a Kubernetes cluster. Troubleshoot specs are created by 3rd-party application developers/maintainers and run by cluster operators in the initial and ongoing operation of those applications.
 
 Troubleshoot provides two CLI tools as kubectl plugins (using [Krew](https://krew.dev)): `kubectl preflight` and `kubectl support-bundle`. Preflight provides pre-installation cluster conformance testing and validation (preflight checks) and support-bundle provides post-installation troubleshooting and diagnostics (support bundles).
@@ -11,12 +9,12 @@ Preflight checks are an easy-to-run set of conformance tests that can be written
 
 To run a sample preflight check from a sample application, install the preflight kubectl plugin:
 
-```shell
+```
 curl https://krew.sh/preflight | bash
 ```
  and run:
  
-```shell
+```
 kubectl preflight https://preflight.replicated.com
 ```
 
@@ -28,12 +26,12 @@ A support bundle is an archive that's created in-cluster, by collecting logs and
 
 To collect a sample support bundle, install the troubleshoot kubectl plugin:
 
-```shell
+```
 curl https://krew.sh/support-bundle | bash
 ```
  and run:
  
-```shell
+```
 kubectl support-bundle https://support-bundle.replicated.com
 ```
 For more details on creating the custom resource files that drive support-bundle collection, visit [creating collectors](https://troubleshoot.sh/docs/collect/) and [creating analyzers](https://troubleshoot.sh/docs/analyze/).
@@ -50,7 +48,7 @@ A signed SBOM  that includes Troubleshoot dependencies is included in each relea
 
 The following example illustrates using [cosign](https://github.com/sigstore/cosign) to verify that **troubleshoot-sbom.tgz** has
 not been tampered with.
-```shell
+```
 $ cosign verify-blob -key key.pub -signature troubleshoot-sbom.tgz.sig troubleshoot-sbom.tgz
 Verified OK
 ```

@@ -15,6 +15,7 @@ import (
 	troubleshootclientsetscheme "github.com/replicatedhq/troubleshoot/pkg/client/troubleshootclientset/scheme"
 	"github.com/replicatedhq/troubleshoot/pkg/docrewrite"
 	"github.com/replicatedhq/troubleshoot/pkg/httputil"
+	"github.com/replicatedhq/troubleshoot/pkg/logger"
 	"github.com/replicatedhq/troubleshoot/pkg/oci"
 	"github.com/replicatedhq/troubleshoot/pkg/specs"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -28,7 +29,7 @@ func GetSupportBundleFromURI(bundleURI string) (*troubleshootv1beta2.SupportBund
 
 	multidocs := strings.Split(string(collectorContent), "\n---\n")
 
-	supportbundle, err := ParseSupportBundleFromDoc([]byte(multidocs[0]))
+	supportbundle, err := ParseSupportBundle([]byte(multidocs[0]), true)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to parse collector")
 	}
@@ -36,7 +37,7 @@ func GetSupportBundleFromURI(bundleURI string) (*troubleshootv1beta2.SupportBund
 	return supportbundle, nil
 }
 
-func ParseSupportBundleFromDoc(doc []byte) (*troubleshootv1beta2.SupportBundle, error) {
+func ParseSupportBundle(doc []byte, followURI bool) (*troubleshootv1beta2.SupportBundle, error) {
 	doc, err := docrewrite.ConvertToV1Beta2(doc)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to convert to v1beta2")
@@ -49,6 +50,9 @@ func ParseSupportBundleFromDoc(doc []byte) (*troubleshootv1beta2.SupportBundle, 
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to parse document")
 	}
+
+	// parse doc and detect if it's a SupportBundle type,
+	// if it's a Collector type, convert it to a SupportBundle
 
 	collector, ok := obj.(*troubleshootv1beta2.Collector)
 	if ok {
@@ -70,10 +74,34 @@ func ParseSupportBundleFromDoc(doc []byte) (*troubleshootv1beta2.SupportBundle, 
 
 	supportBundle, ok := obj.(*troubleshootv1beta2.SupportBundle)
 	if ok {
+		// check if there is a uri field and if so,
+		// use the upstream spec, otherwise fall back to
+		// what's defined in the current spec
+		if supportBundle.Spec.Uri != "" && followURI {
+			logger.Printf("using upstream reference: %+v\n", supportBundle.Spec.Uri)
+			upstreamSupportBundleContent, err := LoadSupportBundleSpec(supportBundle.Spec.Uri)
+			if err != nil {
+				logger.Printf("failed to load upstream supportbundle, falling back")
+				return supportBundle, nil
+			}
+
+			multidocs := strings.Split(string(upstreamSupportBundleContent), "\n---\n")
+
+			upstreamSupportBundle, err := ParseSupportBundle([]byte(multidocs[0]), false)
+			if err != nil {
+				logger.Printf("failed to parse upstream supportbundle, falling back")
+				return supportBundle, nil
+			}
+			return upstreamSupportBundle, nil
+		}
 		return supportBundle, nil
 	}
 
 	return nil, errors.New("spec was not parseable as a troubleshoot kind")
+}
+
+func ParseSupportBundleFromDoc(doc []byte) (*troubleshootv1beta2.SupportBundle, error) {
+	return ParseSupportBundle(doc, true)
 }
 
 func GetRedactorFromURI(redactorURI string) (*troubleshootv1beta2.Redactor, error) {

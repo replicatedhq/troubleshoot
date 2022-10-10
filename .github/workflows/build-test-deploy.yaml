@@ -104,7 +104,7 @@ jobs:
           name: preflight
           path: bin/
       - run: chmod +x bin/preflight
-      - run: make e2e-test
+      - run: make preflight-e2e-test
 
   compile-supportbundle:
     runs-on: ubuntu-latest
@@ -142,6 +142,23 @@ jobs:
       - run: ./bin/support-bundle ./examples/support-bundle/sample-collectors.yaml
       - run: ./bin/support-bundle ./examples/support-bundle/sample-supportbundle.yaml
       - run: ./bin/support-bundle https://kots.io
+
+  validate-supportbundle-e2e:
+    runs-on: ubuntu-latest
+    needs: compile-supportbundle
+    steps:
+      - uses: actions/checkout@master
+      - uses: replicatedhq/action-k3s@main
+        id: k3s
+        with:
+          version: v1.23.6-k3s1
+      - name: Download support bundle binary
+        uses: actions/download-artifact@v1
+        with:
+          name: support-bundle
+          path: bin/
+      - run: chmod +x bin/support-bundle
+      - run: make support-bundle-e2e-test
 
   compile-collect:
     runs-on: ubuntu-latest
