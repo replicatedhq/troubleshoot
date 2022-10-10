@@ -83,14 +83,21 @@ func runTroubleshoot(v *viper.Viper, arg []string) error {
 
 	troubleshootclientsetscheme.AddToScheme(scheme.Scheme)
 	additionalRedactors := &troubleshootv1beta2.Redactor{}
-	for i, v := range arg {
 
-		collectorContent, err := supportbundle.LoadSupportBundleSpec(v)
+	// Defining `v` below will render using `v` in reference to Viper unusable.
+	// Therefore refactoring `v` to `val` will make sure we can still use it.
+	for i, val := range arg {
+
+		collectorContent, err := supportbundle.LoadSupportBundleSpec(val)
 		if err != nil {
 			return errors.Wrap(err, "failed to load support bundle spec")
 		}
 		multidocs := strings.Split(string(collectorContent), "\n---\n")
-		supportBundle, err := supportbundle.ParseSupportBundleFromDoc([]byte(multidocs[0]))
+		// Referencing `ParseSupportBundle with a secondary arg of `no-uri`
+		// Will make sure we can enable or disable the use of the `Spec.uri` field for an upstream spec.
+		// This change will not have an impact on KOTS' usage of `ParseSupportBundle`
+		// As Kots uses `load.go` directly.
+		supportBundle, err := supportbundle.ParseSupportBundle([]byte(multidocs[0]), !v.GetBool("no-uri"))
 		if err != nil {
 			return errors.Wrap(err, "failed to parse support bundle spec")
 		}

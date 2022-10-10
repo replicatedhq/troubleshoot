@@ -64,10 +64,10 @@ preflight:
 .PHONY: analyze
 analyze:
 	go build ${BUILDFLAGS} ${LDFLAGS} -o bin/analyze github.com/replicatedhq/troubleshoot/cmd/analyze
-	
+
 .PHONY: collect
 collect:
-	go build ${BUILDFLAGS} ${LDFLAGS} -o bin/collect github.com/replicatedhq/troubleshoot/cmd/collect	
+	go build ${BUILDFLAGS} ${LDFLAGS} -o bin/collect github.com/replicatedhq/troubleshoot/cmd/collect
 
 .PHONY: fmt
 fmt:
@@ -159,7 +159,7 @@ generate-sbom: install-spdx-sbom-generator
 	$(SPDX_GENERATOR) -o ./sbom/spdx
 
 sbom/assets/troubleshoot-sbom.tgz: generate-sbom
-	tar -czf sbom/assets/troubleshoot-sbom.tgz sbom/spdx/*.spdx 
+	tar -czf sbom/assets/troubleshoot-sbom.tgz sbom/spdx/*.spdx
 
 sbom: sbom/assets/troubleshoot-sbom.tgz
 	cosign sign-blob -key cosign.key sbom/assets/troubleshoot-sbom.tgz > sbom/assets/troubleshoot-sbom.tgz.sig
@@ -187,3 +187,11 @@ scan:
 		--severity="HIGH,CRITICAL" \
 		--ignore-unfixed \
 		./
+
+.PHONY: lint
+lint:
+	golangci-lint run -c .golangci.yaml
+
+.PHONY: lint-and-fix
+lint-and-fix:
+	golangci-lint run --fix -c .golangci.yaml
