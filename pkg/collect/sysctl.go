@@ -22,7 +22,7 @@ type CollectSysctl struct {
 	Namespace    string
 	ClientConfig *rest.Config
 	Client       kubernetes.Interface
-	ctx          context.Context
+	Context      context.Context
 	RBACErrors
 }
 
@@ -43,9 +43,9 @@ func (c *CollectSysctl) Collect(progressChan chan<- interface{}) (CollectorResul
 		if timeout == 0 {
 			timeout = time.Minute
 		}
-		childCtx, cancel := context.WithTimeout(c.ctx, timeout)
+		childCtx, cancel := context.WithTimeout(c.Context, timeout)
 		defer cancel()
-		c.ctx = childCtx
+		c.Context = childCtx
 	}
 
 	if c.Collector.Namespace == "" {
@@ -74,7 +74,7 @@ find /proc/sys/net/bridge -type f | while read f; do v=$(cat $f 2>/dev/null); ec
 		runPodOptions.ImagePullSecretName = c.Collector.ImagePullSecret.Name
 
 		if c.Collector.ImagePullSecret.Data != nil {
-			secretName, err := createSecret(c.ctx, c.Client, c.Collector.Namespace, c.Collector.ImagePullSecret)
+			secretName, err := createSecret(c.Context, c.Client, c.Collector.Namespace, c.Collector.ImagePullSecret)
 			if err != nil {
 				return nil, errors.Wrap(err, "create image pull secret")
 			}
@@ -89,7 +89,7 @@ find /proc/sys/net/bridge -type f | while read f; do v=$(cat $f 2>/dev/null); ec
 		}
 	}
 
-	results, err := RunPodsReadyNodes(c.ctx, c.Client.CoreV1(), runPodOptions)
+	results, err := RunPodsReadyNodes(c.Context, c.Client.CoreV1(), runPodOptions)
 	if err != nil {
 		return nil, err
 	}
