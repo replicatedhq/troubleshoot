@@ -6,6 +6,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/replicatedhq/troubleshoot/pkg/k8sutil"
+	"github.com/replicatedhq/troubleshoot/pkg/preflight"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"k8s.io/klog/v2"
@@ -29,24 +30,14 @@ that a cluster meets the requirements to run an application.`,
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			v := viper.GetViper()
-			return runPreflights(v, args[0])
+			return preflight.RunPreflights(v.GetBool("interactive"), v.GetString("output"), v.GetString("format"), args[0])
 		},
 	}
 
 	cobra.OnInitialize(initConfig)
 
 	cmd.AddCommand(VersionCmd())
-
-	cmd.Flags().Bool("interactive", true, "interactive preflights")
-	cmd.Flags().String("format", "human", "output format, one of human, json, yaml. only used when interactive is set to false")
-	cmd.Flags().String("collector-image", "", "the full name of the collector image to use")
-	cmd.Flags().String("collector-pullpolicy", "", "the pull policy of the collector image")
-	cmd.Flags().Bool("collect-without-permissions", true, "always run preflight checks even if some require permissions that preflight does not have")
-	cmd.Flags().String("selector", "", "selector (label query) to filter remote collection nodes on.")
-	cmd.Flags().String("since-time", "", "force pod logs collectors to return logs after a specific date (RFC3339)")
-	cmd.Flags().String("since", "", "force pod logs collectors to return logs newer than a relative duration like 5s, 2m, or 3h.")
-	cmd.Flags().StringP("output", "o", "", "specify the output file path for the preflight checks")
-	cmd.Flags().Bool("debug", false, "enable debug logging")
+	preflight.AddFlags(cmd.PersistentFlags())
 
 	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
 
