@@ -47,6 +47,7 @@ from a server that can be used to assist when troubleshooting a Kubernetes clust
 	cmd.Flags().Bool("redact", true, "enable/disable default redactions")
 	cmd.Flags().Bool("interactive", true, "enable/disable interactive mode")
 	cmd.Flags().Bool("collect-without-permissions", true, "always generate a support bundle, even if it some require additional permissions")
+	cmd.Flags().StringSliceP("selector", "l", []string{"troubleshoot.io/kind=supportbundle-spec"}, "selector to filter on for loading additional support bundle specs found in secrets within the cluster")
 	cmd.Flags().Bool("load-cluster-specs", false, "enable/disable loading additional troubleshoot specs found within the cluster. required when no specs are provided on the command line")
 	cmd.Flags().String("since-time", "", "force pod logs collectors to return logs after a specific date (RFC3339)")
 	cmd.Flags().String("since", "", "force pod logs collectors to return logs newer than a relative duration like 5s, 2m, or 3h.")
