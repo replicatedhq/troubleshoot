@@ -206,6 +206,13 @@ func (c *CollectClusterResources) Collect(progressChan chan<- interface{}) (Coll
 	}
 	output.SaveResult(c.BundlePath, "cluster-resources/network-policy-errors.json", marshalErrors(networkPolicyErrors))
 
+	// resource quotas
+	resourceQuota, resourceQuotaErrors := resourceQuota(ctx, client, namespaceNames)
+	for k, v := range resourceQuota {
+		output.SaveResult(c.BundlePath, path.Join("cluster-resources/resource-quotas", k), bytes.NewBuffer(v))
+	}
+	output.SaveResult(c.BundlePath, "cluster-resources/resource-quota-errors.json", marshalErrors(resourceQuotaErrors))
+
 	// storage classes
 	storageClasses, storageErrors := storageClasses(ctx, client)
 	output.SaveResult(c.BundlePath, "cluster-resources/storage-classes.json", bytes.NewBuffer(storageClasses))
@@ -731,6 +738,41 @@ func networkPolicy(ctx context.Context, client *kubernetes.Clientset, namespaces
 	}
 
 	return networkPolicyByNamespace, errorsByNamespace
+}
+
+func resourceQuota(ctx context.Context, client *kubernetes.Clientset, namespaces []string) (map[string][]byte, map[string]string) {
+	resourceQuotaByNamespace := make(map[string][]byte)
+	errorsByNamespace := make(map[string]string)
+
+	for _, namespace := range namespaces {
+		resourceQuota, err := client.CoreV1().ResourceQuotas(namespace).List(ctx, metav1.ListOptions{})
+		if err != nil {
+			errorsByNamespace[namespace] = err.Error()
+			continue
+		}
+
+		gvk, err := apiutil.GVKForObject(resourceQuota, scheme.Scheme)
+		if err == nil {
+			resourceQuota.GetObjectKind().SetGroupVersionKind(gvk)
+		}
+
+		for i, o := range resourceQuota.Items {
+			gvk, err := apiutil.GVKForObject(&o, scheme.Scheme)
+			if err == nil {
+				resourceQuota.Items[i].GetObjectKind().SetGroupVersionKind(gvk)
+			}
+		}
+
+		b, err := json.MarshalIndent(resourceQuota, "", "  ")
+		if err != nil {
+			errorsByNamespace[namespace] = err.Error()
+			continue
+		}
+
+		resourceQuotaByNamespace[namespace+".json"] = b
+	}
+
+	return resourceQuotaByNamespace, errorsByNamespace
 }
 
 func storageClasses(ctx context.Context, client *kubernetes.Clientset) ([]byte, []string) {

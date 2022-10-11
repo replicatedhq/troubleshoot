@@ -1,0 +1,12 @@
+apiVersion: troubleshoot.sh/v1beta2
+kind: SupportBundle
+metadata:
+  name: default
+spec:
+  uri: https://githubusercontent.com/adamancini/troubleshoot-specs/main/host/cluster-down
+  collectors:
+    - clusterInfo: {}
+    - clusterResources: {}
+  analyzers:
+    - cephStatus: {}
+    - longhorn: {}

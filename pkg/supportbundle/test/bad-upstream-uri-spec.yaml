@@ -1,0 +1,12 @@
+apiVersion: troubleshoot.sh/v1beta2
+kind: SupportBundle
+metadata:
+  name: default
+spec:
+  uri: https://raw.githubusercontent.com/adamancini/troubleshoot-specs/main/host/bad-spec.yaml
+  collectors:
+    - clusterInfo: {}
+    - clusterResources: {}
+  analyzers:
+    - cephStatus: {}
+    - longhorn: {}

@@ -204,10 +204,11 @@ func drawDetails(analysisResult *analyzerunner.AnalyzeResult) {
 		uri := widgets.NewParagraph()
 		uri.Text = fmt.Sprintf("For more information: %s", analysisResult.URI)
 		uri.Border = false
-		height = estimateNumberOfLines(uri.Text, termWidth/2)
+		// For long urls that lead to wrapping text, make the rectangle bigger by
+		// increasing the calculated height by 2
+		height = estimateNumberOfLines(uri.Text, termWidth/2) + 2
 		uri.SetRect(termWidth/2, currentTop, termWidth, currentTop+height)
 		ui.Render(uri)
-		currentTop = currentTop + height + 1
 	}
 }
 

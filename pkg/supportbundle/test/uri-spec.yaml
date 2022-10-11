@@ -1,0 +1,12 @@
+apiVersion: troubleshoot.sh/v1beta2
+kind: SupportBundle
+metadata:
+  name: default
+spec:
+  uri: https://raw.githubusercontent.com/replicatedhq/troubleshoot-specs/main/host/cluster-down.yaml
+  collectors:
+    - clusterInfo: {}
+    - clusterResources: {}
+  analyzers:
+    - cephStatus: {}
+    - longhorn: {}
