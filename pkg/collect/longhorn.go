@@ -35,7 +35,7 @@ type CollectLonghorn struct {
 	Namespace    string
 	ClientConfig *rest.Config
 	Client       kubernetes.Interface
-	ctx          context.Context
+	Context      context.Context
 	RBACErrors
 }
 
@@ -221,7 +221,7 @@ func (c *CollectLonghorn) Collect(progressChan chan<- interface{}) (CollectorRes
 	}
 
 	rbacErrors := c.GetRBACErrors()
-	logsCollector := &CollectLogs{logsCollectorSpec, c.BundlePath, c.Namespace, c.ClientConfig, c.Client, c.ctx, nil, rbacErrors}
+	logsCollector := &CollectLogs{logsCollectorSpec, c.BundlePath, c.Namespace, c.ClientConfig, c.Client, c.Context, nil, rbacErrors}
 
 	logs, err := logsCollector.Collect(progressChan)
 	if err != nil {

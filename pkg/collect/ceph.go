@@ -112,7 +112,7 @@ type CollectCeph struct {
 	Namespace    string
 	ClientConfig *rest.Config
 	Client       kubernetes.Interface
-	ctx          context.Context
+	Context      context.Context
 	RBACErrors
 }
 
@@ -164,7 +164,7 @@ func cephCommandExec(ctx context.Context, progressChan chan<- interface{}, c *Co
 	}
 
 	rbacErrors := c.GetRBACErrors()
-	execCollector := &CollectExec{execSpec, c.BundlePath, c.Namespace, c.ClientConfig, c.Client, c.ctx, rbacErrors}
+	execCollector := &CollectExec{execSpec, c.BundlePath, c.Namespace, c.ClientConfig, c.Client, c.Context, rbacErrors}
 
 	results, err := execCollector.Collect(progressChan)
 	if err != nil {
