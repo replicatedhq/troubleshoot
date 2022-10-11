@@ -32,7 +32,7 @@ type CollectCopyFromHost struct {
 	Namespace    string
 	ClientConfig *rest.Config
 	Client       kubernetes.Interface
-	ctx          context.Context
+	Context      context.Context
 	RBACErrors
 }
 
@@ -69,13 +69,13 @@ func (c *CollectCopyFromHost) Collect(progressChan chan<- interface{}) (Collecto
 		namespace, _, _ = kubeconfig.Namespace()
 	}
 
-	_, cleanup, err := copyFromHostCreateDaemonSet(c.ctx, c.Client, c.Collector, hostDir, namespace, "troubleshoot-copyfromhost-", labels)
+	_, cleanup, err := copyFromHostCreateDaemonSet(c.Context, c.Client, c.Collector, hostDir, namespace, "troubleshoot-copyfromhost-", labels)
 	defer cleanup()
 	if err != nil {
 		return nil, errors.Wrap(err, "create daemonset")
 	}
 
-	childCtx, cancel := context.WithCancel(c.ctx)
+	childCtx, cancel := context.WithCancel(c.Context)
 	defer cancel()
 
 	timeoutCtx := context.Background()

@@ -33,7 +33,7 @@ type CollectConfigMap struct {
 	Namespace    string
 	ClientConfig *rest.Config
 	Client       kubernetes.Interface
-	ctx          context.Context
+	Context      context.Context
 	RBACErrors
 }
 
@@ -50,7 +50,7 @@ func (c *CollectConfigMap) Collect(progressChan chan<- interface{}) (CollectorRe
 
 	configMaps := []corev1.ConfigMap{}
 	if c.Collector.Name != "" {
-		configMap, err := c.Client.CoreV1().ConfigMaps(c.Collector.Namespace).Get(c.ctx, c.Collector.Name, metav1.GetOptions{})
+		configMap, err := c.Client.CoreV1().ConfigMaps(c.Collector.Namespace).Get(c.Context, c.Collector.Name, metav1.GetOptions{})
 		if err != nil {
 			if kuberneteserrors.IsNotFound(err) {
 				filePath, encoded, err := configMapToOutput(c.Collector, nil, c.Collector.Name)
@@ -64,7 +64,7 @@ func (c *CollectConfigMap) Collect(progressChan chan<- interface{}) (CollectorRe
 		}
 		configMaps = append(configMaps, *configMap)
 	} else if len(c.Collector.Selector) > 0 {
-		cms, err := listConfigMapsForSelector(c.ctx, c.Client, c.Collector.Namespace, c.Collector.Selector)
+		cms, err := listConfigMapsForSelector(c.Context, c.Client, c.Collector.Namespace, c.Collector.Selector)
 		if err != nil {
 			output.SaveResult(c.BundlePath, GetConfigMapErrorsFileName(c.Collector), marshalErrors([]string{err.Error()}))
 			return output, nil

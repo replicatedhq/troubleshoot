@@ -14,7 +14,7 @@ type CollectCollectd struct {
 	Namespace    string
 	ClientConfig *rest.Config
 	Client       kubernetes.Interface
-	ctx          context.Context
+	Context      context.Context
 	RBACErrors
 }
 
@@ -39,7 +39,7 @@ func (c *CollectCollectd) Collect(progressChan chan<- interface{}) (CollectorRes
 	}
 
 	rbacErrors := c.GetRBACErrors()
-	copyFromHostCollector := &CollectCopyFromHost{copyFromHost, c.BundlePath, c.Namespace, c.ClientConfig, c.Client, c.ctx, rbacErrors}
+	copyFromHostCollector := &CollectCopyFromHost{copyFromHost, c.BundlePath, c.Namespace, c.ClientConfig, c.Client, c.Context, rbacErrors}
 
 	return copyFromHostCollector.Collect(progressChan)
 }

@@ -16,7 +16,7 @@ type CollectData struct {
 	Namespace    string
 	ClientConfig *rest.Config
 	Client       kubernetes.Interface
-	ctx          context.Context
+	Context      context.Context
 	RBACErrors
 }
 
