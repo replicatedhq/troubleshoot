@@ -170,7 +170,7 @@ func Collect(opts CollectOpts, p *troubleshootv1beta2.Preflight) (CollectResult,
 	}
 
 	if foundForbidden && !opts.IgnorePermissionErrors {
-		return nil, errors.New("insufficient permissions to run all collectors")
+		return collectResult, errors.New("insufficient permissions to run all collectors")
 	}
 
 	// generate a map of all collectors for atomic status messages

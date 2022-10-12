@@ -4,8 +4,13 @@ metadata:
   name: modules
 spec:
   collectors:
-    - cpu: {}
-    # - kernelModules: {}
+    - logs:
+        selector:
+          - app=svclb-traefik
+        namespace: kube-system
+        name: backend/container/logs
+        limits:
+          maxLines: 1000
   analyzers:
     - clusterVersion:
         outcomes:
