@@ -170,6 +170,7 @@ func Collect(opts CollectOpts, p *troubleshootv1beta2.Preflight) (CollectResult,
 	}
 
 	if foundForbidden && !opts.IgnorePermissionErrors {
+		collectResult.isRBACAllowed = false
 		return collectResult, errors.New("insufficient permissions to run all collectors")
 	}
 
