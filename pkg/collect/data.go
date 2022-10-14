@@ -21,7 +21,7 @@ type CollectData struct {
 }
 
 func (c *CollectData) Title() string {
-	return collectorTitleOrDefault(c.Collector.CollectorMeta, "Data")
+	return getCollectorName(c)
 }
 
 func (c *CollectData) IsExcluded() (bool, error) {

@@ -38,7 +38,7 @@ type CollectConfigMap struct {
 }
 
 func (c *CollectConfigMap) Title() string {
-	return collectorTitleOrDefault(c.Collector.CollectorMeta, "ConfigMap")
+	return getCollectorName(c)
 }
 
 func (c *CollectConfigMap) IsExcluded() (bool, error) {

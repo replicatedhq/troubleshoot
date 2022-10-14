@@ -20,7 +20,7 @@ type CollectRun struct {
 }
 
 func (c *CollectRun) Title() string {
-	return collectorTitleOrDefault(c.Collector.CollectorMeta, "Run")
+	return getCollectorName(c)
 }
 
 func (c *CollectRun) IsExcluded() (bool, error) {

@@ -45,7 +45,7 @@ type CollectHTTP struct {
 }
 
 func (c *CollectHTTP) Title() string {
-	return collectorTitleOrDefault(c.Collector.CollectorMeta, "HTTP")
+	return getCollectorName(c)
 }
 
 func (c *CollectHTTP) IsExcluded() (bool, error) {
