@@ -25,7 +25,7 @@ type CollectMysql struct {
 }
 
 func (c *CollectMysql) Title() string {
-	return collectorTitleOrDefault(c.Collector.CollectorMeta, "Mysql")
+	return getCollectorName(c)
 }
 
 func (c *CollectMysql) IsExcluded() (bool, error) {

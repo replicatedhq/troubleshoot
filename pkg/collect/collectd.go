@@ -19,7 +19,7 @@ type CollectCollectd struct {
 }
 
 func (c *CollectCollectd) Title() string {
-	return collectorTitleOrDefault(c.Collector.CollectorMeta, "CollectD")
+	return getCollectorName(c)
 }
 
 func (c *CollectCollectd) IsExcluded() (bool, error) {

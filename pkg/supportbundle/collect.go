@@ -131,7 +131,7 @@ func runCollectors(collectors []*troubleshootv1beta2.Collect, additionalRedactor
 			}
 		}
 
-		opts.ProgressChan <- fmt.Sprintf("[%s] Running collector...", collector.Title())
+		opts.CollectorProgressCallback(opts.ProgressChan, collector.Title())
 		result, err := collector.Collect(opts.ProgressChan)
 		if err != nil {
 			opts.ProgressChan <- errors.Errorf("failed to run collector: %s: %v", collector.Title(), err)

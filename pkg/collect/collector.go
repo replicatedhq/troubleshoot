@@ -2,7 +2,9 @@ package collect
 
 import (
 	"context"
+	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -106,4 +108,84 @@ func collectorTitleOrDefault(meta troubleshootv1beta2.CollectorMeta, defaultTitl
 		return meta.CollectorName
 	}
 	return defaultTitle
+}
+
+func getCollectorName(c interface{}) string {
+	var collector, name, selector string
+
+	switch v := c.(type) {
+	case *CollectClusterInfo:
+		collector = "cluster-info"
+	case *CollectClusterResources:
+		collector = "cluster-resources"
+	case *CollectSecret:
+		collector = "secret"
+		name = v.Collector.CollectorName
+		selector = strings.Join(v.Collector.Selector, ",")
+	case *CollectConfigMap:
+		collector = "configmap"
+		name = v.Collector.CollectorName
+		selector = strings.Join(v.Collector.Selector, ",")
+	case *CollectLogs:
+		collector = "logs"
+		name = v.Collector.CollectorName
+		selector = strings.Join(v.Collector.Selector, ",")
+	case *CollectRun:
+		collector = "run"
+		name = v.Collector.CollectorName
+	case *CollectRunPod:
+		collector = "run-pod"
+		name = v.Collector.CollectorName
+	case *CollectExec:
+		collector = "exec"
+		name = v.Collector.CollectorName
+		selector = strings.Join(v.Collector.Selector, ",")
+	case *CollectData:
+		collector = "data"
+		name = v.Collector.CollectorName
+	case *CollectCopy:
+		collector = "copy"
+		name = v.Collector.CollectorName
+		selector = strings.Join(v.Collector.Selector, ",")
+	case *CollectCopyFromHost:
+		collector = "copy-from-host"
+		name = v.Collector.CollectorName
+	case *CollectHTTP:
+		collector = "http"
+		name = v.Collector.CollectorName
+	case *CollectPostgres:
+		collector = "postgres"
+		name = v.Collector.CollectorName
+	case *CollectMysql:
+		collector = "mysql"
+		name = v.Collector.CollectorName
+	case *CollectRedis:
+		collector = "redis"
+		name = v.Collector.CollectorName
+	case *CollectCollectd:
+		collector = "collectd"
+		name = v.Collector.CollectorName
+	case *CollectCeph:
+		collector = "ceph"
+		name = v.Collector.CollectorName
+	case *CollectLonghorn:
+		collector = "longhorn"
+		name = v.Collector.CollectorName
+	case *CollectRegistry:
+		collector = "registry-images"
+		name = v.Collector.CollectorName
+	case *CollectSysctl:
+		collector = "sysctl"
+		name = v.Collector.Name
+	default:
+		collector = "<none>"
+	}
+
+	if name != "" {
+		return fmt.Sprintf("%s/%s", collector, name)
+	}
+	if selector != "" {
+		return fmt.Sprintf("%s/%s", collector, selector)
+	}
+	return collector
 }

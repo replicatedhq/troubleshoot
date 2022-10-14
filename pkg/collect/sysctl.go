@@ -27,7 +27,7 @@ type CollectSysctl struct {
 }
 
 func (c *CollectSysctl) Title() string {
-	return collectorTitleOrDefault(c.Collector.CollectorMeta, "Sysctl")
+	return getCollectorName(c)
 }
 
 func (c *CollectSysctl) IsExcluded() (bool, error) {

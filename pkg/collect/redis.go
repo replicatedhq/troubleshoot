@@ -25,7 +25,7 @@ type CollectRedis struct {
 }
 
 func (c *CollectRedis) Title() string {
-	return collectorTitleOrDefault(c.Collector.CollectorMeta, "Cluster Info")
+	return getCollectorName(c)
 }
 
 func (c *CollectRedis) IsExcluded() (bool, error) {

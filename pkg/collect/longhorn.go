@@ -40,7 +40,7 @@ type CollectLonghorn struct {
 }
 
 func (c *CollectLonghorn) Title() string {
-	return collectorTitleOrDefault(c.Collector.CollectorMeta, "Longhorn")
+	return getCollectorName(c)
 }
 
 func (c *CollectLonghorn) IsExcluded() (bool, error) {

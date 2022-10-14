@@ -27,7 +27,7 @@ type CollectExec struct {
 }
 
 func (c *CollectExec) Title() string {
-	return collectorTitleOrDefault(c.Collector.CollectorMeta, "Exec")
+	return getCollectorName(c)
 }
 
 func (c *CollectExec) IsExcluded() (bool, error) {

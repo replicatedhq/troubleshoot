@@ -43,7 +43,7 @@ type CollectClusterResources struct {
 }
 
 func (c *CollectClusterResources) Title() string {
-	return collectorTitleOrDefault(c.Collector.CollectorMeta, "Cluster Resources")
+	return getCollectorName(c)
 }
 
 func (c *CollectClusterResources) IsExcluded() (bool, error) {

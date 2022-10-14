@@ -26,7 +26,7 @@ type CollectPostgres struct {
 }
 
 func (c *CollectPostgres) Title() string {
-	return collectorTitleOrDefault(c.Collector.CollectorMeta, "Postgres")
+	return getCollectorName(c)
 }
 
 func (c *CollectPostgres) IsExcluded() (bool, error) {

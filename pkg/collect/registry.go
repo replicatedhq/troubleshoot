@@ -48,7 +48,7 @@ type CollectRegistry struct {
 }
 
 func (c *CollectRegistry) Title() string {
-	return collectorTitleOrDefault(c.Collector.CollectorMeta, "Registry Images")
+	return getCollectorName(c)
 }
 
 func (c *CollectRegistry) IsExcluded() (bool, error) {

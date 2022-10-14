@@ -31,7 +31,7 @@ type CollectCopy struct {
 }
 
 func (c *CollectCopy) Title() string {
-	return collectorTitleOrDefault(c.Collector.CollectorMeta, "Copy")
+	return getCollectorName(c)
 }
 
 func (c *CollectCopy) IsExcluded() (bool, error) {
