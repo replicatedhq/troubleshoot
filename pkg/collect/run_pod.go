@@ -33,7 +33,7 @@ type CollectRunPod struct {
 }
 
 func (c *CollectRunPod) Title() string {
-	return collectorTitleOrDefault(c.Collector.CollectorMeta, "Run Pod")
+	return getCollectorName(c)
 }
 
 func (c *CollectRunPod) IsExcluded() (bool, error) {

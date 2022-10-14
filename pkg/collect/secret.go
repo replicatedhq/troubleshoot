@@ -37,7 +37,7 @@ type CollectSecret struct {
 }
 
 func (c *CollectSecret) Title() string {
-	return collectorTitleOrDefault(c.Collector.CollectorMeta, "Secret")
+	return getCollectorName(c)
 }
 
 func (c *CollectSecret) IsExcluded() (bool, error) {

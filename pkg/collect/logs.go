@@ -28,7 +28,7 @@ type CollectLogs struct {
 }
 
 func (c *CollectLogs) Title() string {
-	return collectorTitleOrDefault(c.Collector.CollectorMeta, "Logs")
+	return getCollectorName(c)
 }
 
 func (c *CollectLogs) IsExcluded() (bool, error) {
