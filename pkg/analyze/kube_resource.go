@@ -18,6 +18,15 @@ func analyzeResource(analyzer *troubleshootv1beta2.ClusterResource, getFileConte
 
 	filemap["Deployment"] = "deployments"
 	filemap["StatefulSet"] = "statefulsets"
+	filemap["NetworkPolicy"] = "network-policy"
+	filemap["Pod"] = "pods"
+	filemap["Ingress"] = "ingress"
+	filemap["Service"] = "services"
+	filemap["ResourceQuota"] = "resource-quotas"
+	filemap["Job"] = "jobs"
+	filemap["PersistentVoumeClaim"] = "pvcs"
+	filemap["pvc"] = "pvcs"
+	filemap["ReplicaSet"] = "replicasets"
 
 	targetFolder, ok := filemap[analyzer.Kind]
 
