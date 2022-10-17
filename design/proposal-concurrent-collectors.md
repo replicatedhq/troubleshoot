@@ -187,6 +187,10 @@ The existing Collect functions will need unit tests altered (or added).
 
 The concept for this change was tested using the example code above.
 
+## Documentation
+
+This requires updates to the docs for the new `dependsOn` field.
+
 ## Alternatives Considered
 
 Introduce the concept of 'phases' for collection.
