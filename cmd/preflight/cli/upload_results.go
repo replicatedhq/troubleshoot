@@ -1,4 +1,4 @@
-package preflight
+package cli
 
 import (
 	"bytes"
@@ -8,14 +8,15 @@ import (
 	"github.com/pkg/errors"
 	analyzerunner "github.com/replicatedhq/troubleshoot/pkg/analyze"
 	"github.com/replicatedhq/troubleshoot/pkg/collect"
+	"github.com/replicatedhq/troubleshoot/pkg/preflight"
 )
 
 func uploadResults(uri string, analyzeResults []*analyzerunner.AnalyzeResult) error {
-	uploadPreflightResults := &UploadPreflightResults{
-		Results: []*UploadPreflightResult{},
+	uploadPreflightResults := &preflight.UploadPreflightResults{
+		Results: []*preflight.UploadPreflightResult{},
 	}
 	for _, analyzeResult := range analyzeResults {
-		uploadPreflightResult := &UploadPreflightResult{
+		uploadPreflightResult := &preflight.UploadPreflightResult{
 			Strict:  analyzeResult.Strict,
 			IsFail:  analyzeResult.IsFail,
 			IsWarn:  analyzeResult.IsWarn,
@@ -32,23 +33,23 @@ func uploadResults(uri string, analyzeResults []*analyzerunner.AnalyzeResult) er
 }
 
 func uploadErrors(uri string, collectors []collect.Collector) error {
-	errors := []*UploadPreflightError{}
+	errors := []*preflight.UploadPreflightError{}
 	for _, collector := range collectors {
 		for _, e := range collector.GetRBACErrors() {
-			errors = append(errors, &UploadPreflightError{
+			errors = append(errors, &preflight.UploadPreflightError{
 				Error: e.Error(),
 			})
 		}
 	}
 
-	results := &UploadPreflightResults{
+	results := &preflight.UploadPreflightResults{
 		Errors: errors,
 	}
 
 	return upload(uri, results)
 }
 
-func upload(uri string, payload *UploadPreflightResults) error {
+func upload(uri string, payload *preflight.UploadPreflightResults) error {
 	b, err := json.Marshal(payload)
 	if err != nil {
 		return errors.Wrap(err, "failed to marshal payload")
