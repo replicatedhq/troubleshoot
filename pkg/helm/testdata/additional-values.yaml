@@ -1,0 +1,5 @@
+replicated:
+  license:
+    entitlements:
+      isSnapshotSupported: true
+      numberOfSeats: 5

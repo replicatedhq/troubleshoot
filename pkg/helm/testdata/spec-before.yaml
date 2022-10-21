@@ -1,0 +1,32 @@
+apiVersion: troubleshoot.sh/v1beta2
+kind: Preflight
+metadata:
+  name: {{ .Values.preflight.name | upper | quote }}
+spec:
+{{- if .Values.replicated.license.entitlements.isSnapshotSupported }}
+  collectors:
+    - logs:
+        collectorName: velero
+        name: velero
+        selector:
+          - component=velero
+          - app.kubernetes.io/name=velero
+{{- end }}
+    - data:
+        collectorName: number-of-seats
+        name: number-of-seats
+        data: |
+          {{ .Values.replicated.license.entitlements.numberOfSeats }}
+  analyzers:
+    - clusterVersion:
+        outcomes:
+          - fail:
+              when: "< {{ .Values.minimumK8sVersion }}"
+              message: The application requires Kubernetes 1.20.0 or later, and recommends 1.21.0 or later.
+              uri: https://www.kubernetes.io
+          - warn:
+              when: "< {{ .Values.acceptableK8sVersion }}"
+              message: Your cluster meets the minimum version of Kubernetes, but we recommend you update to 1.21.0 or later.
+              uri: https://kubernetes.io
+          - pass:
+              message: Your cluster meets the recommended and required versions of Kubernetes.

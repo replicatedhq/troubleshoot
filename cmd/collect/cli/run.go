@@ -16,6 +16,7 @@ import (
 	troubleshootclientsetscheme "github.com/replicatedhq/troubleshoot/pkg/client/troubleshootclientset/scheme"
 	"github.com/replicatedhq/troubleshoot/pkg/collect"
 	"github.com/replicatedhq/troubleshoot/pkg/docrewrite"
+	"github.com/replicatedhq/troubleshoot/pkg/helm"
 	"github.com/replicatedhq/troubleshoot/pkg/k8sutil"
 	"github.com/replicatedhq/troubleshoot/pkg/specs"
 	"github.com/replicatedhq/troubleshoot/pkg/supportbundle"
@@ -161,8 +162,13 @@ func runCollect(v *viper.Viper, arg string) error {
 		ProgressChan:              progressCh,
 	}
 
+	collectSpec, err := helm.ApplyTemplates([]byte(multidocs[0]), v.GetStringSlice("values"), nil)
+	if err != nil {
+		return errors.Wrap(err, "failed to apply values")
+	}
+
 	// we only support HostCollector or RemoteCollector kinds.
-	hostCollector, err := collect.ParseHostCollectorFromDoc([]byte(multidocs[0]))
+	hostCollector, err := collect.ParseHostCollectorFromDoc(collectSpec)
 	if err == nil {
 		results, err := collect.CollectHost(hostCollector, additionalRedactors, createOpts)
 		if err != nil {
@@ -171,7 +177,7 @@ func runCollect(v *viper.Viper, arg string) error {
 		return showHostStdoutResults(v.GetString("format"), hostCollector.Name, results)
 	}
 
-	remoteCollector, err := collect.ParseRemoteCollectorFromDoc([]byte(multidocs[0]))
+	remoteCollector, err := collect.ParseRemoteCollectorFromDoc(collectSpec)
 	if err == nil {
 		results, err := collect.CollectRemote(remoteCollector, additionalRedactors, createOpts)
 		if err != nil {

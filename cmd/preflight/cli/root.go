@@ -47,6 +47,8 @@ that a cluster meets the requirements to run an application.`,
 	cmd.Flags().String("since", "", "force pod logs collectors to return logs newer than a relative duration like 5s, 2m, or 3h.")
 	cmd.Flags().StringP("output", "o", "", "specify the output file path for the preflight checks")
 	cmd.Flags().Bool("debug", false, "enable debug logging")
+	cmd.Flags().StringSlice("values", []string{}, "specify Helm values in a YAML file or a URL (can specify multiple)")
+	cmd.Flags().MarkHidden("values") // Until docs complete for templating
 
 	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
 

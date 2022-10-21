@@ -19,6 +19,7 @@ import (
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	troubleshootclientsetscheme "github.com/replicatedhq/troubleshoot/pkg/client/troubleshootclientset/scheme"
 	"github.com/replicatedhq/troubleshoot/pkg/docrewrite"
+	"github.com/replicatedhq/troubleshoot/pkg/helm"
 	"github.com/replicatedhq/troubleshoot/pkg/k8sutil"
 	"github.com/replicatedhq/troubleshoot/pkg/oci"
 	"github.com/replicatedhq/troubleshoot/pkg/preflight"
@@ -45,6 +46,7 @@ func runPreflights(v *viper.Viper, arg string) error {
 	}()
 
 	var preflightContent []byte
+	var licenseValuesYaml []byte
 	var err error
 	if strings.HasPrefix(arg, "secret/") {
 		// format secret/namespace-name/secret-name
@@ -73,7 +75,7 @@ func runPreflights(v *viper.Viper, arg string) error {
 		}
 
 		if u.Scheme == "oci" {
-			content, err := oci.PullPreflightFromOCI(arg)
+			ociLayers, err := oci.PullPreflightFromOCI(arg)
 			if err != nil {
 				if err == oci.ErrNoRelease {
 					return errors.Errorf("no release found for %s.\nCheck the oci:// uri for errors or contact the application vendor for support.", arg)
@@ -82,7 +84,8 @@ func runPreflights(v *viper.Viper, arg string) error {
 				return err
 			}
 
-			preflightContent = content
+			preflightContent = ociLayers.GetSpec()
+			licenseValuesYaml = ociLayers.GetValues()
 		} else {
 			if !util.IsURL(arg) {
 				return fmt.Errorf("%s is not a URL and was not found (err %s)", arg, err)
@@ -106,6 +109,11 @@ func runPreflights(v *viper.Viper, arg string) error {
 
 			preflightContent = body
 		}
+	}
+
+	preflightContent, err = helm.ApplyTemplates(preflightContent, v.GetStringSlice("values"), licenseValuesYaml)
+	if err != nil {
+		return errors.Wrap(err, "failed to apply values")
 	}
 
 	preflightContent, err = docrewrite.ConvertToV1Beta2(preflightContent)

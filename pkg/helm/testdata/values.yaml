@@ -1,0 +1,4 @@
+minimumK8sVersion: 1.20.0
+acceptableK8sVersion: 1.21.0
+preflight:
+  name: test-preflight-name

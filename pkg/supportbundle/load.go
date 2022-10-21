@@ -22,7 +22,7 @@ import (
 )
 
 func GetSupportBundleFromURI(bundleURI string) (*troubleshootv1beta2.SupportBundle, error) {
-	collectorContent, err := LoadSupportBundleSpec(bundleURI)
+	collectorContent, _, err := LoadSupportBundleSpec(bundleURI)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to load collector spec")
 	}
@@ -79,7 +79,7 @@ func ParseSupportBundle(doc []byte, followURI bool) (*troubleshootv1beta2.Suppor
 		// what's defined in the current spec
 		if supportBundle.Spec.Uri != "" && followURI {
 			logger.Printf("using upstream reference: %+v\n", supportBundle.Spec.Uri)
-			upstreamSupportBundleContent, err := LoadSupportBundleSpec(supportBundle.Spec.Uri)
+			upstreamSupportBundleContent, _, err := LoadSupportBundleSpec(supportBundle.Spec.Uri)
 			if err != nil {
 				logger.Printf("failed to load upstream supportbundle, falling back")
 				return supportBundle, nil
@@ -107,7 +107,7 @@ func ParseSupportBundleFromDoc(doc []byte) (*troubleshootv1beta2.SupportBundle, 
 func GetRedactorFromURI(redactorURI string) (*troubleshootv1beta2.Redactor, error) {
 	decode := scheme.Codecs.UniversalDeserializer().Decode
 
-	redactorContent, err := LoadRedactorSpec(redactorURI)
+	redactorContent, _, err := LoadRedactorSpec(redactorURI)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to load redactor spec %s", redactorURI)
 	}
@@ -130,34 +130,34 @@ func GetRedactorFromURI(redactorURI string) (*troubleshootv1beta2.Redactor, erro
 	return redactor, nil
 }
 
-func LoadSupportBundleSpec(arg string) ([]byte, error) {
+func LoadSupportBundleSpec(arg string) ([]byte, []byte, error) {
 	if strings.HasPrefix(arg, "secret/") {
 		// format secret/namespace-name/secret-name
 		pathParts := strings.Split(arg, "/")
 		if len(pathParts) != 3 {
-			return nil, errors.Errorf("secret path %s must have 3 components", arg)
+			return nil, nil, errors.Errorf("secret path %s must have 3 components", arg)
 		}
 
 		spec, err := specs.LoadFromSecret(pathParts[1], pathParts[2], "support-bundle-spec")
 		if err != nil {
-			return nil, errors.Wrap(err, "failed to get spec from secret")
+			return nil, nil, errors.Wrap(err, "failed to get spec from secret")
 		}
 
-		return spec, nil
+		return spec, nil, nil
 	}
 
 	return loadSpec(arg)
 }
 
-func LoadRedactorSpec(arg string) ([]byte, error) {
+func LoadRedactorSpec(arg string) ([]byte, []byte, error) {
 	if strings.HasPrefix(arg, "configmap/") {
 		// format configmap/namespace-name/configmap-name[/data-key]
 		pathParts := strings.Split(arg, "/")
 		if len(pathParts) > 4 {
-			return nil, errors.Errorf("configmap path %s must have at most 4 components", arg)
+			return nil, nil, errors.Errorf("configmap path %s must have at most 4 components", arg)
 		}
 		if len(pathParts) < 3 {
-			return nil, errors.Errorf("configmap path %s must have at least 3 components", arg)
+			return nil, nil, errors.Errorf("configmap path %s must have at least 3 components", arg)
 		}
 
 		dataKey := "redactor-spec"
@@ -167,58 +167,59 @@ func LoadRedactorSpec(arg string) ([]byte, error) {
 
 		spec, err := specs.LoadFromConfigMap(pathParts[1], pathParts[2], dataKey)
 		if err != nil {
-			return nil, errors.Wrap(err, "failed to get spec from configmap")
+			return nil, nil, errors.Wrap(err, "failed to get spec from configmap")
 		}
 
-		return spec, nil
+		return spec, nil, nil
 	}
 
-	spec, err := loadSpec(arg)
+	spec, values, err := loadSpec(arg)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to load spec")
+		return nil, nil, errors.Wrap(err, "failed to load spec")
 	}
 
-	return spec, nil
+	return spec, values, nil
 }
 
-func loadSpec(arg string) ([]byte, error) {
+func loadSpec(arg string) ([]byte, []byte, error) {
 	var err error
 	if _, err = os.Stat(arg); err == nil {
 		b, err := ioutil.ReadFile(arg)
 		if err != nil {
-			return nil, errors.Wrap(err, "read spec file")
+			return nil, nil, errors.Wrap(err, "read spec file")
 		}
 
-		return b, nil
+		return b, nil, nil
 	}
 
 	u, err := url.Parse(arg)
 	if err != nil {
-		return nil, errors.Wrapf(err, "%s is not a valid URL (%s)", arg, err)
+		return nil, nil, errors.Wrapf(err, "%s is not a valid URL (%s)", arg, err)
 	}
 
 	if u.Scheme == "oci" {
 		content, err := oci.PullSupportBundleFromOCI(arg)
 		if err != nil {
 			if err == oci.ErrNoRelease {
-				return nil, errors.Errorf("no release found for %s.\nCheck the oci:// uri for errors or contact the application vendor for support.", arg)
+				return nil, nil, errors.Errorf("no release found for %s.\nCheck the oci:// uri for errors or contact the application vendor for support.", arg)
 			}
 
-			return nil, errors.Wrap(err, "pull from oci")
+			return nil, nil, errors.Wrap(err, "pull from oci")
 		}
 
-		return content, nil
+		// TODO: return license values
+		return content.GetSpec(), content.GetValues(), nil
 	}
 
 	if !util.IsURL(arg) {
-		return nil, fmt.Errorf("%s is not a URL and was not found (err %s)", arg, err)
+		return nil, nil, fmt.Errorf("%s is not a URL and was not found (err %s)", arg, err)
 	}
 
 	spec, err := loadSpecFromURL(arg)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to get spec from URL")
+		return nil, nil, errors.Wrap(err, "failed to get spec from URL")
 	}
-	return spec, nil
+	return spec, nil, nil
 }
 
 func loadSpecFromURL(arg string) ([]byte, error) {

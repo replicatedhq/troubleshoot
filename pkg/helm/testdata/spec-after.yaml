@@ -1,0 +1,30 @@
+apiVersion: troubleshoot.sh/v1beta2
+kind: Preflight
+metadata:
+  name: "TEST-PREFLIGHT-NAME"
+spec:
+  collectors:
+    - logs:
+        collectorName: velero
+        name: velero
+        selector:
+          - component=velero
+          - app.kubernetes.io/name=velero
+    - data:
+        collectorName: number-of-seats
+        name: number-of-seats
+        data: |
+          5
+  analyzers:
+    - clusterVersion:
+        outcomes:
+          - fail:
+              when: "< 1.20.0"
+              message: The application requires Kubernetes 1.20.0 or later, and recommends 1.21.0 or later.
+              uri: https://www.kubernetes.io
+          - warn:
+              when: "< 1.21.0"
+              message: Your cluster meets the minimum version of Kubernetes, but we recommend you update to 1.21.0 or later.
+              uri: https://kubernetes.io
+          - pass:
+              message: Your cluster meets the recommended and required versions of Kubernetes.

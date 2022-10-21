@@ -9,6 +9,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/replicatedhq/troubleshoot/cmd/util"
 	analyzer "github.com/replicatedhq/troubleshoot/pkg/analyze"
+	"github.com/replicatedhq/troubleshoot/pkg/helm"
 	"github.com/spf13/viper"
 )
 
@@ -47,6 +48,12 @@ func runAnalyzers(v *viper.Viper, bundlePath string) error {
 
 		specContent = string(body)
 	}
+
+	s, err := helm.ApplyTemplates([]byte(specContent), v.GetStringSlice("values"), nil)
+	if err != nil {
+		return errors.Wrap(err, "failed to apply values")
+	}
+	specContent = string(s)
 
 	analyzeResults, err := analyzer.DownloadAndAnalyze(bundlePath, specContent)
 	if err != nil {

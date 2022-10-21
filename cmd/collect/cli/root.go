@@ -47,6 +47,7 @@ func RootCmd() *cobra.Command {
 	cmd.Flags().String("selector", "", "selector (label query) to filter remote collection nodes on.")
 	cmd.Flags().Bool("collect-without-permissions", false, "always generate a support bundle, even if it some require additional permissions")
 	cmd.Flags().Bool("debug", false, "enable debug logging")
+	cmd.Flags().StringSlice("values", []string{}, "specify Helm values in a YAML file or a URL (can specify multiple)")
 
 	// hidden in favor of the `insecure-skip-tls-verify` flag
 	cmd.Flags().Bool("allow-insecure-connections", false, "when set, do not verify TLS certs when retrieving spec and reporting results")

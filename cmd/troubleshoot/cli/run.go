@@ -22,6 +22,7 @@ import (
 	"github.com/replicatedhq/troubleshoot/pkg/client/troubleshootclientset/scheme"
 	troubleshootclientsetscheme "github.com/replicatedhq/troubleshoot/pkg/client/troubleshootclientset/scheme"
 	"github.com/replicatedhq/troubleshoot/pkg/convert"
+	"github.com/replicatedhq/troubleshoot/pkg/helm"
 	"github.com/replicatedhq/troubleshoot/pkg/httputil"
 	"github.com/replicatedhq/troubleshoot/pkg/k8sutil"
 	"github.com/replicatedhq/troubleshoot/pkg/logger"
@@ -84,14 +85,18 @@ func runTroubleshoot(v *viper.Viper, arg []string) error {
 	troubleshootclientsetscheme.AddToScheme(scheme.Scheme)
 	additionalRedactors := &troubleshootv1beta2.Redactor{}
 
-	// Defining `v` below will render using `v` in reference to Viper unusable.
-	// Therefore refactoring `v` to `val` will make sure we can still use it.
 	for i, val := range arg {
 
-		collectorContent, err := supportbundle.LoadSupportBundleSpec(val)
+		collectorContent, valuesYaml, err := supportbundle.LoadSupportBundleSpec(val)
 		if err != nil {
 			return errors.Wrap(err, "failed to load support bundle spec")
 		}
+
+		collectorContent, err = helm.ApplyTemplates(collectorContent, v.GetStringSlice("values"), valuesYaml)
+		if err != nil {
+			return errors.Wrapf(err, "failed to apply values to %s", val)
+		}
+
 		multidocs := strings.Split(string(collectorContent), "\n---\n")
 		// Referencing `ParseSupportBundle with a secondary arg of `no-uri`
 		// Will make sure we can enable or disable the use of the `Spec.uri` field for an upstream spec.
@@ -145,6 +150,12 @@ func runTroubleshoot(v *viper.Viper, arg []string) error {
 
 		if bundlesFromSecrets != nil {
 			for _, bundle := range bundlesFromSecrets {
+				b, err := helm.ApplyTemplates([]byte(bundle), v.GetStringSlice("values"), nil)
+				if err != nil {
+					return errors.Wrap(err, "failed to apply values")
+				}
+				bundle = string(b)
+
 				multidocs := strings.Split(string(bundle), "\n---\n")
 				parsedBundlesFromSecrets, err := supportbundle.ParseSupportBundleFromDoc([]byte(multidocs[0]))
 				if err != nil {

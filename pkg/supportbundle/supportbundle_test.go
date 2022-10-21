@@ -7,12 +7,12 @@ import (
 
 func Test_LoadAndConcatSpec(t *testing.T) {
 
-	bundle1doc, err := LoadSupportBundleSpec("test/supportbundle1.yaml")
+	bundle1doc, _, err := LoadSupportBundleSpec("test/supportbundle1.yaml")
 	if err != nil {
 		t.Error("couldn't load bundle1 from file")
 	}
 
-	bundle2doc, err := LoadSupportBundleSpec("test/supportbundle2.yaml")
+	bundle2doc, _, err := LoadSupportBundleSpec("test/supportbundle2.yaml")
 	if err != nil {
 		t.Error("couldn't load bundle2 from file")
 	}
@@ -27,7 +27,7 @@ func Test_LoadAndConcatSpec(t *testing.T) {
 		t.Error("couldn't parse bundle 2")
 	}
 
-	fulldoc, err := LoadSupportBundleSpec("test/completebundle.yaml")
+	fulldoc, _, err := LoadSupportBundleSpec("test/completebundle.yaml")
 	if err != nil {
 		t.Error("couldn't load full bundle from file")
 	}
