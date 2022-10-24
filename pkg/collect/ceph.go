@@ -117,7 +117,7 @@ type CollectCeph struct {
 }
 
 func (c *CollectCeph) Title() string {
-	return collectorTitleOrDefault(c.Collector.CollectorMeta, "Cluster Info")
+	return getCollectorName(c)
 }
 
 func (c *CollectCeph) IsExcluded() (bool, error) {
