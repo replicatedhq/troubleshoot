@@ -414,7 +414,7 @@ func getPodDisruptionBudgets(ctx context.Context, client *kubernetes.Clientset, 
 	errorsByNamespace := make(map[string]string)
 
 	for _, namespace := range namespaces {
-		PodDisruptionBudgets, err := client.PolicyV1beta1().PodDisruptionBudgets(namespace).List(ctx, metav1.ListOptions{})
+		PodDisruptionBudgets, err := client.PolicyV1().PodDisruptionBudgets(namespace).List(ctx, metav1.ListOptions{})
 		if err != nil {
 			errorsByNamespace[namespace] = err.Error()
 			continue
@@ -617,7 +617,7 @@ func cronJobs(ctx context.Context, client *kubernetes.Clientset, namespaces []st
 	errorsByNamespace := make(map[string]string)
 
 	for _, namespace := range namespaces {
-		nsCronJobs, err := client.BatchV1beta1().CronJobs(namespace).List(ctx, metav1.ListOptions{})
+		nsCronJobs, err := client.BatchV1().CronJobs(namespace).List(ctx, metav1.ListOptions{})
 		if err != nil {
 			errorsByNamespace[namespace] = err.Error()
 			continue
