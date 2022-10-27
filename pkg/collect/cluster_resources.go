@@ -142,7 +142,7 @@ func (c *CollectClusterResources) Collect(progressChan chan<- interface{}) (Coll
 		}
 	}
 
-	// pod disruption budgets (for all existing namespaces)
+	// pod disruption budgets
 
 	PodDisruptionBudgets, pdbError := getPodDisruptionBudgets(ctx, client, namespaceNames)
 	for k, v := range PodDisruptionBudgets {
@@ -415,6 +415,15 @@ func getPodDisruptionBudgets(ctx context.Context, client *kubernetes.Clientset, 
 
 	for _, namespace := range namespaces {
 		PodDisruptionBudgets, err := client.PolicyV1().PodDisruptionBudgets(namespace).List(ctx, metav1.ListOptions{})
+
+		ok, err := discovery.HasResource(client, "policy/v1", "PodDisruptionBudgets")
+		if err != nil {
+			return nil, map[string]string{"": err.Error()}
+		}
+		if ok {
+			PodDisruptionBudgets, err = client.PolicyV1().PodDisruptionBudgets(namespace).List(ctx, metav1.ListOptions{})
+		}
+
 		if err != nil {
 			errorsByNamespace[namespace] = err.Error()
 			continue
@@ -617,6 +626,15 @@ func cronJobs(ctx context.Context, client *kubernetes.Clientset, namespaces []st
 	errorsByNamespace := make(map[string]string)
 
 	for _, namespace := range namespaces {
+		ok, err := discovery.HasResource(client, "batch/v1", "CronJob")
+		if err != nil {
+			errorsByNamespace[namespace] = err.Error()
+			continue
+		}
+		if !ok {
+			continue
+		}
+
 		nsCronJobs, err := client.BatchV1().CronJobs(namespace).List(ctx, metav1.ListOptions{})
 		if err != nil {
 			errorsByNamespace[namespace] = err.Error()
