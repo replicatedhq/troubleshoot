@@ -421,6 +421,7 @@ func getPodDisruptionBudgets(ctx context.Context, client *kubernetes.Clientset, 
 	return pdbV1beta(ctx, client, namespaces)
 }
 
+// TODO: The below function (`pdbV1`) needs to be DRY'd and moved into the main `getPodDisruptionBudgets` function.
 func pdbV1(ctx context.Context, client *kubernetes.Clientset, namespaces []string) (map[string][]byte, map[string]string) {
 	pdbByNamespace := make(map[string][]byte)
 	errorsByNamespace := make(map[string]string)
@@ -456,6 +457,7 @@ func pdbV1(ctx context.Context, client *kubernetes.Clientset, namespaces []strin
 	return pdbByNamespace, errorsByNamespace
 }
 
+// This block/function can remain as is
 func pdbV1beta(ctx context.Context, client *kubernetes.Clientset, namespaces []string) (map[string][]byte, map[string]string) {
 	pdbByNamespace := make(map[string][]byte)
 	errorsByNamespace := make(map[string]string)
