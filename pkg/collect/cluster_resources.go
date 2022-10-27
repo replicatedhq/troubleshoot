@@ -410,20 +410,23 @@ func pods(ctx context.Context, client *kubernetes.Clientset, namespaces []string
 }
 
 func getPodDisruptionBudgets(ctx context.Context, client *kubernetes.Clientset, namespaces []string) (map[string][]byte, map[string]string) {
+	ok, err := discovery.HasResource(client, "policy.k8s.io/v1", "PodDisruptionBudgets")
+	if err != nil {
+		return nil, map[string]string{"": err.Error()}
+	}
+	if ok {
+		return pdbV1(ctx, client, namespaces)
+	}
+
+	return pdbV1beta(ctx, client, namespaces)
+}
+
+func pdbV1(ctx context.Context, client *kubernetes.Clientset, namespaces []string) (map[string][]byte, map[string]string) {
 	pdbByNamespace := make(map[string][]byte)
 	errorsByNamespace := make(map[string]string)
 
 	for _, namespace := range namespaces {
 		PodDisruptionBudgets, err := client.PolicyV1().PodDisruptionBudgets(namespace).List(ctx, metav1.ListOptions{})
-
-		ok, err := discovery.HasResource(client, "policy/v1", "PodDisruptionBudgets")
-		if err != nil {
-			return nil, map[string]string{"": err.Error()}
-		}
-		if ok {
-			PodDisruptionBudgets, err = client.PolicyV1().PodDisruptionBudgets(namespace).List(ctx, metav1.ListOptions{})
-		}
-
 		if err != nil {
 			errorsByNamespace[namespace] = err.Error()
 			continue
@@ -432,6 +435,48 @@ func getPodDisruptionBudgets(ctx context.Context, client *kubernetes.Clientset, 
 		gvk, err := apiutil.GVKForObject(PodDisruptionBudgets, scheme.Scheme)
 		if err == nil {
 			PodDisruptionBudgets.GetObjectKind().SetGroupVersionKind(gvk)
+		}
+
+		for i, o := range PodDisruptionBudgets.Items {
+			gvk, err := apiutil.GVKForObject(&o, scheme.Scheme)
+			if err == nil {
+				PodDisruptionBudgets.Items[i].GetObjectKind().SetGroupVersionKind(gvk)
+			}
+		}
+
+		b, err := json.MarshalIndent(PodDisruptionBudgets, "", "  ")
+		if err != nil {
+			errorsByNamespace[namespace] = err.Error()
+			continue
+		}
+
+		pdbByNamespace[namespace+".json"] = b
+	}
+
+	return pdbByNamespace, errorsByNamespace
+}
+
+func pdbV1beta(ctx context.Context, client *kubernetes.Clientset, namespaces []string) (map[string][]byte, map[string]string) {
+	pdbByNamespace := make(map[string][]byte)
+	errorsByNamespace := make(map[string]string)
+
+	for _, namespace := range namespaces {
+		PodDisruptionBudgets, err := client.PolicyV1beta1().PodDisruptionBudgets(namespace).List(ctx, metav1.ListOptions{})
+		if err != nil {
+			errorsByNamespace[namespace] = err.Error()
+			continue
+		}
+
+		gvk, err := apiutil.GVKForObject(PodDisruptionBudgets, scheme.Scheme)
+		if err == nil {
+			PodDisruptionBudgets.GetObjectKind().SetGroupVersionKind(gvk)
+		}
+
+		for i, o := range PodDisruptionBudgets.Items {
+			gvk, err := apiutil.GVKForObject(&o, scheme.Scheme)
+			if err == nil {
+				PodDisruptionBudgets.Items[i].GetObjectKind().SetGroupVersionKind(gvk)
+			}
 		}
 
 		b, err := json.MarshalIndent(PodDisruptionBudgets, "", "  ")
@@ -622,38 +667,76 @@ func jobs(ctx context.Context, client *kubernetes.Clientset, namespaces []string
 }
 
 func cronJobs(ctx context.Context, client *kubernetes.Clientset, namespaces []string) (map[string][]byte, map[string]string) {
+	ok, err := discovery.HasResource(client, "batch.k8s.io/v1", "CronJobs")
+	if err != nil {
+		return nil, map[string]string{"": err.Error()}
+	}
+	if ok {
+		return cronJobsV1(ctx, client, namespaces)
+	}
+
+	return cronJobsV1beta(ctx, client, namespaces)
+}
+
+func cronJobsV1(ctx context.Context, client *kubernetes.Clientset, namespaces []string) (map[string][]byte, map[string]string) {
 	cronJobsByNamespace := make(map[string][]byte)
 	errorsByNamespace := make(map[string]string)
 
 	for _, namespace := range namespaces {
-		ok, err := discovery.HasResource(client, "batch/v1", "CronJob")
-		if err != nil {
-			errorsByNamespace[namespace] = err.Error()
-			continue
-		}
-		if !ok {
-			continue
-		}
-
-		nsCronJobs, err := client.BatchV1().CronJobs(namespace).List(ctx, metav1.ListOptions{})
+		cronJobs, err := client.BatchV1().CronJobs(namespace).List(ctx, metav1.ListOptions{})
 		if err != nil {
 			errorsByNamespace[namespace] = err.Error()
 			continue
 		}
 
-		gvk, err := apiutil.GVKForObject(nsCronJobs, scheme.Scheme)
+		gvk, err := apiutil.GVKForObject(cronJobs, scheme.Scheme)
 		if err == nil {
-			nsCronJobs.GetObjectKind().SetGroupVersionKind(gvk)
+			cronJobs.GetObjectKind().SetGroupVersionKind(gvk)
 		}
 
-		for i, o := range nsCronJobs.Items {
+		for i, o := range cronJobs.Items {
 			gvk, err := apiutil.GVKForObject(&o, scheme.Scheme)
 			if err == nil {
-				nsCronJobs.Items[i].GetObjectKind().SetGroupVersionKind(gvk)
+				cronJobs.Items[i].GetObjectKind().SetGroupVersionKind(gvk)
 			}
 		}
 
-		b, err := json.MarshalIndent(nsCronJobs, "", "  ")
+		b, err := json.MarshalIndent(cronJobs, "", "  ")
+		if err != nil {
+			errorsByNamespace[namespace] = err.Error()
+			continue
+		}
+
+		cronJobsByNamespace[namespace+".json"] = b
+	}
+
+	return cronJobsByNamespace, errorsByNamespace
+}
+
+func cronJobsV1beta(ctx context.Context, client *kubernetes.Clientset, namespaces []string) (map[string][]byte, map[string]string) {
+	cronJobsByNamespace := make(map[string][]byte)
+	errorsByNamespace := make(map[string]string)
+
+	for _, namespace := range namespaces {
+		cronJobs, err := client.BatchV1beta1().CronJobs(namespace).List(ctx, metav1.ListOptions{})
+		if err != nil {
+			errorsByNamespace[namespace] = err.Error()
+			continue
+		}
+
+		gvk, err := apiutil.GVKForObject(cronJobs, scheme.Scheme)
+		if err == nil {
+			cronJobs.GetObjectKind().SetGroupVersionKind(gvk)
+		}
+
+		for i, o := range cronJobs.Items {
+			gvk, err := apiutil.GVKForObject(&o, scheme.Scheme)
+			if err == nil {
+				cronJobs.Items[i].GetObjectKind().SetGroupVersionKind(gvk)
+			}
+		}
+
+		b, err := json.MarshalIndent(cronJobs, "", "  ")
 		if err != nil {
 			errorsByNamespace[namespace] = err.Error()
 			continue
