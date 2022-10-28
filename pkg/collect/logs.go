@@ -6,6 +6,7 @@ import (
 	"io"
 	"strings"
 	"time"
+	"os"
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
