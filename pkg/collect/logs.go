@@ -138,6 +138,9 @@ func savePodLogs(ctx context.Context, bundlePath string, client *kubernetes.Clie
 	if container != "" {
 		fileKey = fmt.Sprintf("%s/%s/%s", name, pod.Name, container)
 	}
+	
+	// EL - Define fileKey for the SymLink
+	symFileKey := fmt.Sprintf("%s/%s/%s/%s", "bundlePath/cluster-resources/pods/logs", pod.Namespace, pod.Name, container)
 
 	result := NewResult()
 
@@ -179,6 +182,12 @@ func savePodLogs(ctx context.Context, bundlePath string, client *kubernetes.Clie
 		return nil, errors.Wrap(err, "failed to copy previous log")
 	}
 
+	// EL - Create a SymLink for SBCTL log reference
+	err = os.Symlink(fileKey, symFileKey)
+	if err != nil {
+		fmt.Println(err)
+	}
+	
 	return result, nil
 }
 
