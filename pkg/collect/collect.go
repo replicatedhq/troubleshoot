@@ -190,3 +190,31 @@ func CollectRemote(c *troubleshootv1beta2.RemoteCollector, additionalRedactors *
 	collectResult.AllCollectedData = allCollectedData
 	return collectResult, nil
 }
+
+// Ensure that the specified collector is in the list of collectors
+func EnsureCollectorInList(list []*troubleshootv1beta2.Collect, collector troubleshootv1beta2.Collect) []*troubleshootv1beta2.Collect {
+	for _, inList := range list {
+		if collector.ClusterResources != nil && inList.ClusterResources != nil {
+			return list
+		}
+		if collector.ClusterInfo != nil && inList.ClusterInfo != nil {
+			return list
+		}
+	}
+
+	return append(list, &collector)
+}
+
+// collect ClusterResources earliest in the list so the pod list does not include pods started by collectors
+func EnsureClusterResourcesFirst(list []*troubleshootv1beta2.Collect) []*troubleshootv1beta2.Collect {
+	sliceOfClusterResources := []*troubleshootv1beta2.Collect{}
+	sliceOfOtherCollectors := []*troubleshootv1beta2.Collect{}
+	for _, collector := range list {
+		if collector.ClusterResources != nil {
+			sliceOfClusterResources = append(sliceOfClusterResources, []*troubleshootv1beta2.Collect{collector}...)
+		} else {
+			sliceOfOtherCollectors = append(sliceOfOtherCollectors, []*troubleshootv1beta2.Collect{collector}...)
+		}
+	}
+	return append(sliceOfClusterResources, sliceOfOtherCollectors...)
+}
