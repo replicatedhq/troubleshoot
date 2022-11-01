@@ -184,10 +184,10 @@ func savePodLogs(ctx context.Context, bundlePath string, client *kubernetes.Clie
 	}
 	
 	// EL - Temporarily moved defer to this location for further testing
-	defer podLogs.Close()
-	defer result.CloseWriter(bundlePath, fileKey+".log", logWriter)
-	defer podLogs.Close()
-	defer result.CloseWriter(bundlePath, fileKey+"-previous.log", logWriter)
+	podLogs.Close()
+	result.CloseWriter(bundlePath, fileKey+".log", logWriter)
+	podLogs.Close()
+	result.CloseWriter(bundlePath, fileKey+"-previous.log", logWriter)
 
 	// EL - Create a SymLink for SBCTL log reference
 	err = os.Symlink(fileKey, symFileKey)
