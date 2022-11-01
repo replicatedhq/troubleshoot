@@ -30,8 +30,9 @@ vendor
 dist
 try.sh
 
-.vscode/
+__debug_bin
 workspace.*
+*.tar.gz
 
 cosign.key
 sbom/
