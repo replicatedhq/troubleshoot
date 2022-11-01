@@ -150,13 +150,13 @@ func savePodLogs(ctx context.Context, bundlePath string, client *kubernetes.Clie
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get log stream")
 	}
-	defer podLogs.Close()
+	//defer podLogs.Close()
 
 	logWriter, err := result.GetWriter(bundlePath, fileKey+".log")
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get log writer")
 	}
-	defer result.CloseWriter(bundlePath, fileKey+".log", logWriter)
+	//defer result.CloseWriter(bundlePath, fileKey+".log", logWriter)
 
 	_, err = io.Copy(logWriter, podLogs)
 	if err != nil {
@@ -170,18 +170,24 @@ func savePodLogs(ctx context.Context, bundlePath string, client *kubernetes.Clie
 		// maybe fail on !kuberneteserrors.IsNotFound(err)?
 		return result, nil
 	}
-	defer podLogs.Close()
+	//defer podLogs.Close()
 
 	prevLogWriter, err := result.GetWriter(bundlePath, fileKey+"-previous.log")
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get previous log writer")
 	}
-	defer result.CloseWriter(bundlePath, fileKey+"-previous.log", logWriter)
+	//defer result.CloseWriter(bundlePath, fileKey+"-previous.log", logWriter)
 
 	_, err = io.Copy(prevLogWriter, podLogs)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to copy previous log")
 	}
+	
+	// EL - Temporarily moved defer to this location for further testing
+	defer podLogs.Close()
+	defer result.CloseWriter(bundlePath, fileKey+".log", logWriter)
+	defer podLogs.Close()
+	defer result.CloseWriter(bundlePath, fileKey+"-previous.log", logWriter)
 
 	// EL - Create a SymLink for SBCTL log reference
 	err = os.Symlink(fileKey, symFileKey)
