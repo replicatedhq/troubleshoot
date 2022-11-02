@@ -27,16 +27,29 @@ func analyzeResource(analyzer *troubleshootv1beta2.ClusterResource, getFileConte
 	filemap["PersistentVoumeClaim"] = "pvcs"
 	filemap["pvc"] = "pvcs"
 	filemap["ReplicaSet"] = "replicasets"
+	filemap["Namespace"] = "namespaces.json"
+	filemap["PersistentVolume"] = "pvs.json"
+	filemap["pv"] = "pvs.json"
+	filemap["Node"] = "nodes.json"
+	filemap["StorageClass"] = "storage-classes.json"
 
-	targetFolder, ok := filemap[analyzer.Kind]
+	var datapath string
+
+	resourceLocation, ok := filemap[analyzer.Kind]
 
 	if ok != true {
 		return nil, errors.New("failed to find resource")
 	}
 
-	files, err := getFileContents(filepath.Join("cluster-resources", targetFolder, fmt.Sprintf("%s.json", analyzer.Namespace)))
+	if analyzer.Namespace != nil {
+		datapath = filepath.Join("cluster-resources", resourceLocation, fmt.Sprintf("%s.json", analyzer.Namespace))
+	} else {
+		datapath = filepath.Join("cluster-resources", resourceLocation)
+	}
+
+	files, err := getFileContents(datapath)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to read collected deployments from namespace")
+		return nil, errors.Wrap(err, "failed to read collected resources")
 	}
 
 	var resource interface{}
@@ -48,12 +61,17 @@ func analyzeResource(analyzer *troubleshootv1beta2.ClusterResource, getFileConte
 	}
 
 	var selected interface{}
-	items, _ := iutils.GetAtPath(resource, "items")
+	items, err := iutils.GetAtPath(resource, "items")
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get items from file")
+	}
+
 	itemslice := items.([]interface{})
 	for _, item := range itemslice {
 		name, _ := iutils.GetAtPath(item, "metadata.name")
 		if name == analyzer.Name {
 			selected = item
+			break
 		}
 	}
 
