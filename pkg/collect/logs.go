@@ -120,6 +120,8 @@ func (c *CollectLogs) Collect(progressChan chan<- interface{}) (CollectorResult,
 						}
 						for k, v := range containerLogs {
 							output[k] = v
+
+							resultCh <- output
 						}
 					}
 				}
@@ -127,25 +129,20 @@ func (c *CollectLogs) Collect(progressChan chan<- interface{}) (CollectorResult,
 
 			return output, nil
 
-		}
+			}()
 
-<<<<<<< HEAD
-	}()
+			select {
+			case <-ctxTimeout.Done():
+				return nil, errors.New("timeout")
+			case result := <-resultCh:
+				return result, nil
+			case err := <-errCh:
+				if errors.Is(err, context.DeadlineExceeded) {
+					return nil, errors.New("timeout")
+				}
+				return output, err
+			}
 
-	select {
-	case <-ctxTimeout.Done():
-		return nil, errors.New("timeout")
-	case result := <-resultCh:
-		return result, nil
-	case err := <-errCh:
-		if errors.Is(err, context.DeadlineExceeded) {
-			return nil, errors.New("timeout")
-		}
-		log.Println(output)
-		return output, err
-	}
-=======
->>>>>>> 7581ee864f788e3af453371e62a9a4af8d3dcd21
 }
 
 func listPodsInSelectors(ctx context.Context, client *kubernetes.Clientset, namespace string, selector []string) ([]corev1.Pod, []string) {
