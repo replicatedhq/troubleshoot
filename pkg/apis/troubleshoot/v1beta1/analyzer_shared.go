@@ -24,7 +24,7 @@ type ClusterVersion struct {
 type StorageClass struct {
 	AnalyzeMeta      `json:",inline" yaml:",inline"`
 	Outcomes         []*Outcome `json:"outcomes" yaml:"outcomes"`
-	StorageClassName string     `json:"storageClassName" yaml:"storageClassName"`
+	StorageClassName string     `json:"storageClassName,omitempty" yaml:"storageClassName,omitempty"`
 }
 
 type CustomResourceDefinition struct {

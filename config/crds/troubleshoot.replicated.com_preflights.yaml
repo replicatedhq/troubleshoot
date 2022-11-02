@@ -687,7 +687,6 @@ spec:
                           type: string
                       required:
                       - outcomes
-                      - storageClassName
                       type: object
                     textAnalyze:
                       properties:
