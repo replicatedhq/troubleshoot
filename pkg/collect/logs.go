@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log"
 	"strings"
 	"time"
 
@@ -36,17 +37,21 @@ func (c *CollectLogs) IsExcluded() (bool, error) {
 }
 
 func (c *CollectLogs) Collect(progressChan chan<- interface{}) (CollectorResult, error) {
+
 	client, err := kubernetes.NewForConfig(c.ClientConfig)
 	if err != nil {
-		return nil, err
+		//return nil, err
+		log.Println(err)
 	}
 
+	//results := NewResult()
 	output := NewResult()
 
-	ctx := context.Background()
+	//ctx := context.Background()
 
-	childCtx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	const timeout = 3 //timeout in seconds
 
+	ctxTimeout, cancel := context.WithTimeout(context.Background(), timeout*time.Second)
 	defer cancel()
 
 	errCh := make(chan error, 1)
@@ -61,7 +66,7 @@ func (c *CollectLogs) Collect(progressChan chan<- interface{}) (CollectorResult,
 			c.Collector.Limits.SinceTime = metav1.NewTime(*c.SinceTime)
 		}
 
-		pods, podsErrors := listPodsInSelectors(ctx, client, c.Collector.Namespace, c.Collector.Selector)
+		pods, podsErrors := listPodsInSelectors(ctxTimeout, client, c.Collector.Namespace, c.Collector.Selector)
 		if len(podsErrors) > 0 {
 			output.SaveResult(c.BundlePath, getLogsErrorsFileName(c.Collector), marshalErrors(podsErrors))
 		}
@@ -77,37 +82,39 @@ func (c *CollectLogs) Collect(progressChan chan<- interface{}) (CollectorResult,
 					for _, container := range pod.Spec.InitContainers {
 						containerNames = append(containerNames, container.Name)
 					}
-					go func() {
-						for _, containerName := range containerNames {
-							if len(containerNames) == 1 {
-								containerName = "" // if there was only one container, use the old behavior of not including the container name in the path
-							}
-							podLogs, err := savePodLogs(ctx, c.BundlePath, client, pod, c.Collector.Name, containerName, c.Collector.Limits, false)
-							if err != nil {
-								key := fmt.Sprintf("%s/%s-errors.json", c.Collector.Name, pod.Name)
-								if containerName != "" {
-									key = fmt.Sprintf("%s/%s/%s-errors.json", c.Collector.Name, pod.Name, containerName)
-								}
-								err := output.SaveResult(c.BundlePath, key, marshalErrors([]string{err.Error()}))
-								if err != nil {
-									return nil, err
-								}
-								continue
-							}
-							for k, v := range podLogs {
-								output[k] = v
-							}
-						}
-					}()
-				} else {
 
+					for _, containerName := range containerNames {
+						if len(containerNames) == 1 {
+							containerName = "" // if there was only one container, use the old behavior of not including the container name in the path
+						}
+						podLogs, err := savePodLogs(ctxTimeout, c.BundlePath, client, pod, c.Collector.Name, containerName, c.Collector.Limits, false)
+						if err != nil {
+							key := fmt.Sprintf("%s/%s-errors.json", c.Collector.Name, pod.Name)
+							if containerName != "" {
+								key = fmt.Sprintf("%s/%s/%s-errors.json", c.Collector.Name, pod.Name, containerName)
+							}
+							err := output.SaveResult(c.BundlePath, key, marshalErrors([]string{err.Error()}))
+							if err != nil {
+								//return nil, err
+								log.Println(err)
+							}
+							continue
+						}
+						for k, v := range podLogs {
+							output[k] = v
+
+							resultCh <- output
+						}
+					}
+				} else {
 					for _, container := range c.Collector.ContainerNames {
-						containerLogs, err := savePodLogs(ctx, c.BundlePath, client, pod, c.Collector.Name, container, c.Collector.Limits, false)
+						containerLogs, err := savePodLogs(ctxTimeout, c.BundlePath, client, pod, c.Collector.Name, container, c.Collector.Limits, false)
 						if err != nil {
 							key := fmt.Sprintf("%s/%s/%s-errors.json", c.Collector.Name, pod.Name, container)
 							err := output.SaveResult(c.BundlePath, key, marshalErrors([]string{err.Error()}))
 							if err != nil {
-								return err
+								//return nil, err
+								log.Println(err)
 							}
 							continue
 						}
@@ -119,12 +126,10 @@ func (c *CollectLogs) Collect(progressChan chan<- interface{}) (CollectorResult,
 			}
 		}
 
-		return output, nil
-
 	}()
 
 	select {
-	case <-timeoutCtx.Done():
+	case <-ctxTimeout.Done():
 		return nil, errors.New("timeout")
 	case result := <-resultCh:
 		return result, nil
@@ -132,7 +137,8 @@ func (c *CollectLogs) Collect(progressChan chan<- interface{}) (CollectorResult,
 		if errors.Is(err, context.DeadlineExceeded) {
 			return nil, errors.New("timeout")
 		}
-		return nil, err
+		log.Println(output)
+		return output, err
 	}
 }
 
