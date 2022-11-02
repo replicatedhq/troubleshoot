@@ -4,7 +4,10 @@ import (
 	"context"
 	"fmt"
 	"strconv"
+<<<<<<< HEAD
 	"strings"
+=======
+>>>>>>> 7581ee864f788e3af453371e62a9a4af8d3dcd21
 	"time"
 
 	"github.com/pkg/errors"
@@ -53,9 +56,87 @@ func isExcluded(excludeVal *multitype.BoolOrString) (bool, error) {
 
 func GetCollector(collector *troubleshootv1beta2.Collect, bundlePath string, namespace string, clientConfig *rest.Config, client kubernetes.Interface, sinceTime *time.Time) (interface{}, bool) {
 
-	ctx := context.TODO()
+	ctx := context.TODO() //empty context defined prior
 
+	//ctx background() deployed to support context timeout implementation
+	const timeout = 5 //placeholder will add timout field to Logs struct.
+	ctxBackground, cancel := context.WithTimeout(context.Background(), timeout*time.Second)
+	defer cancel()
+
+<<<<<<< HEAD
 	var RBACErrors []error
+=======
+	if c.Collect.ClusterInfo != nil {
+		result, err = ClusterInfo(c)
+	} else if c.Collect.ClusterResources != nil {
+		result, err = ClusterResources(c, c.Collect.ClusterResources)
+	} else if c.Collect.Secret != nil {
+		result, err = Secret(ctx, c, c.Collect.Secret, client)
+	} else if c.Collect.ConfigMap != nil {
+		result, err = ConfigMap(ctx, c, c.Collect.ConfigMap, client)
+	} else if c.Collect.Logs != nil {
+		result, err = Logs(ctxBackground, c, c.Collect.Logs)
+	} else if c.Collect.Run != nil {
+		result, err = Run(c, c.Collect.Run)
+	} else if c.Collect.RunPod != nil {
+		result, err = RunPod(c, c.Collect.RunPod)
+	} else if c.Collect.Exec != nil {
+		result, err = Exec(c, c.Collect.Exec)
+	} else if c.Collect.Data != nil {
+		result, err = Data(c, c.Collect.Data)
+	} else if c.Collect.Copy != nil {
+		result, err = Copy(c, c.Collect.Copy)
+	} else if c.Collect.CopyFromHost != nil {
+		namespace := c.Collect.CopyFromHost.Namespace
+		if namespace == "" && c.Namespace == "" {
+			kubeconfig := k8sutil.GetKubeconfig()
+			namespace, _, _ = kubeconfig.Namespace()
+		} else if namespace == "" {
+			namespace = c.Namespace
+		}
+		result, err = CopyFromHost(ctx, c, c.Collect.CopyFromHost, namespace, clientConfig, client)
+	} else if c.Collect.HTTP != nil {
+		result, err = HTTP(c, c.Collect.HTTP)
+	} else if c.Collect.Postgres != nil {
+		result, err = Postgres(c, c.Collect.Postgres)
+	} else if c.Collect.Mysql != nil {
+		result, err = Mysql(c, c.Collect.Mysql)
+	} else if c.Collect.Redis != nil {
+		result, err = Redis(c, c.Collect.Redis)
+	} else if c.Collect.Collectd != nil {
+		// TODO: see if redaction breaks these
+		namespace := c.Collect.Collectd.Namespace
+		if namespace == "" && c.Namespace == "" {
+			kubeconfig := k8sutil.GetKubeconfig()
+			namespace, _, _ = kubeconfig.Namespace()
+		} else if namespace == "" {
+			namespace = c.Namespace
+		}
+		result, err = Collectd(ctx, c, c.Collect.Collectd, namespace, clientConfig, client)
+	} else if c.Collect.Ceph != nil {
+		result, err = Ceph(c, c.Collect.Ceph)
+	} else if c.Collect.Longhorn != nil {
+		result, err = Longhorn(c, c.Collect.Longhorn)
+	} else if c.Collect.RegistryImages != nil {
+		result, err = Registry(c, c.Collect.RegistryImages)
+	} else if c.Collect.Sysctl != nil {
+		if c.Collect.Sysctl.Namespace == "" {
+			c.Collect.Sysctl.Namespace = c.Namespace
+		}
+		if c.Collect.Sysctl.Namespace == "" {
+			kubeconfig := k8sutil.GetKubeconfig()
+			namespace, _, _ := kubeconfig.Namespace()
+			c.Collect.Sysctl.Namespace = namespace
+		}
+		result, err = Sysctl(ctx, c, client, c.Collect.Sysctl)
+	} else {
+		err = errors.New("no spec found to run")
+		return
+	}
+	if err != nil {
+		return
+	}
+>>>>>>> 7581ee864f788e3af453371e62a9a4af8d3dcd21
 
 	switch {
 	case collector.ClusterInfo != nil:

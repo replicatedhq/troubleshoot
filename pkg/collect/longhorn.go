@@ -219,11 +219,15 @@ func (c *CollectLonghorn) Collect(progressChan chan<- interface{}) (CollectorRes
 		Selector:  []string{""},
 		Namespace: ns,
 	}
+<<<<<<< HEAD
 
 	rbacErrors := c.GetRBACErrors()
 	logsCollector := &CollectLogs{logsCollectorSpec, c.BundlePath, c.Namespace, c.ClientConfig, c.Client, c.Context, nil, rbacErrors}
 
 	logs, err := logsCollector.Collect(progressChan)
+=======
+	logs, err := Logs(ctx, c, logsCollector)
+>>>>>>> 7581ee864f788e3af453371e62a9a4af8d3dcd21
 	if err != nil {
 		return nil, errors.Wrap(err, "collect longhorn logs")
 	}
