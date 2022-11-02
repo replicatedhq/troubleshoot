@@ -1,6 +1,8 @@
 package collect
 
 import (
+	"context"
+	"reflect"
 	"testing"
 	"time"
 
@@ -9,6 +11,9 @@ import (
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
+	testclient "k8s.io/client-go/kubernetes/fake"
+	"k8s.io/client-go/rest"
 )
 
 func Test_setLogLimits(t *testing.T) {
@@ -73,6 +78,67 @@ func Test_setLogLimits(t *testing.T) {
 				assert.Equal(t, *test.expected.SinceTime, *actual.SinceTime)
 			} else {
 				req.Nil(actual.SinceTime)
+			}
+		})
+	}
+}
+
+func TestCollectLogs_Collect(t *testing.T) {
+
+	client := testclient.NewSimpleClientset()
+	ctx := context.Background()
+	var results map[string][]byte
+
+	type fields struct {
+		Collector    *troubleshootv1beta2.Logs
+		BundlePath   string
+		Namespace    string
+		ClientConfig *rest.Config
+		Client       kubernetes.Interface
+		Context      context.Context
+		SinceTime    *time.Time
+		RBACErrors   RBACErrors
+	}
+	type args struct {
+		progressChan chan<- interface{}
+	}
+	tests := []struct {
+		name    string
+		fields  fields
+		args    args
+		want    CollectorResult
+		wantErr bool
+	}{
+		// TODO: Add test cases.
+		{
+			name:    "test1",
+			fields:  fields{BundlePath: "/tmp", Namespace: "default", Context: ctx},
+			want:    results,
+			wantErr: false,
+		},
+	}
+
+	// need to create the kubernetes client here...
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c := &CollectLogs{
+				Collector:    tt.fields.Collector,
+				BundlePath:   tt.fields.BundlePath,
+				Namespace:    tt.fields.Namespace,
+				ClientConfig: tt.fields.ClientConfig,
+				Client:       tt.fields.Client,
+				Context:      tt.fields.Context,
+				SinceTime:    tt.fields.SinceTime,
+				RBACErrors:   tt.fields.RBACErrors,
+			}
+			got, err := c.Collect(tt.args.progressChan)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("CollectLogs.Collect() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("CollectLogs.Collect() = %v, want %v", got, tt.want)
 			}
 		})
 	}
