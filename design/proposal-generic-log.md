@@ -143,7 +143,7 @@ No changes required.
 ## Alternatives Considered
 
 * Having each collector append the list of pods to a global, then on completion of all collectors run the collector for pod logs (starting with deduplicating the list of pods).  This would be slower since we need to wait for all collectors to complete prior to pod log collection starting.
-* Making a generic logs collector function that can be imported by any collector that wishes to collect logs.  This would not allow the same pod's logs to be collected several times.
+* Making a generic logs collector function that can be imported by any collector that wishes to collect logs.  While a common location for pod logs would effectively allow them to be stored only once per pod since after the first, subsequent runs of log collection would overwrite the previous one, it is a challenge to preevent multiple collectors from requesting the same pod's logs to be collected multiple times which would slow things down.  There are workarounds such as checking the disk location is empty prior to running the collection, or keeping a global of collected pods (see above).
 
 ## Security Considerations
 
