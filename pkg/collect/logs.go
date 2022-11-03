@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"os"
+	"path"
 	"strings"
 	"time"
 
@@ -13,6 +15,7 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/klog/v2"
 )
 
 func Logs(c *Collector, logsCollector *troubleshootv1beta2.Logs) (CollectorResult, error) {
@@ -103,6 +106,14 @@ func savePodLogs(ctx context.Context, bundlePath string, client *kubernetes.Clie
 
 	fileKey := fmt.Sprintf("%s/%s/%s/%s", "cluster-resources/pods/logs", pod.Namespace, pod.Name, container)
 
+	// location from earlier iterations
+	legacyLocation := fmt.Sprintf("%s/%s", name, pod.Name)
+	symlinkDir := "../"
+	if container != "" {
+		legacyLocation = fmt.Sprintf("%s/%s/%s", name, pod.Name, container)
+		symlinkDir = "../../"
+	}
+
 	result := NewResult()
 
 	req := client.CoreV1().Pods(pod.Namespace).GetLogs(pod.Name, &podLogOpts)
@@ -122,6 +133,36 @@ func savePodLogs(ctx context.Context, bundlePath string, client *kubernetes.Clie
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to copy log")
 	}
+
+	// Make a symlink to the 'old' location for compatibility
+    cwd, _ := os.Getwd()
+	legacyPath := path.Dir(fmt.Sprintf("%s/%s", bundlePath, legacyLocation))
+	os.MkdirAll(legacyPath, 0755)
+	err = os.Chdir(legacyPath)
+    if err != nil {
+		return nil, errors.Wrap(err, "failed to switch to bundle creation dir in logs collector")
+    }
+	
+	symlink := path.Base(legacyLocation) + ".log"
+	target := symlinkDir + fileKey + ".log"
+	err = os.Symlink(target, symlink)
+	if err != nil {
+		klog.Error("Failed to make symlink for log file")
+	}
+	err = os.Chdir(cwd)
+    if err != nil {
+		return nil, errors.Wrap(err, "failed to switch to correct working dir in logs collector")
+    }
+
+	// At this point, we have a symlink in the legacyLocation.log, pointing at the actual log file
+	// however, we need to get it to the tarball which means modifying the result that is returned.
+	// Add to the result, we don't actually need to write anything there
+	linkWriter, err := result.GetWriter(bundlePath, legacyLocation + ".log")
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get log writer")
+	}
+	defer result.CloseWriter(bundlePath, legacyLocation + ".log", linkWriter)
+	// Problem: this writes an empty file, not a symlink.  It either overwrites the symlink or it copies an empty object to the tarball rather than the actual symlink
 
 	podLogOpts.Previous = true
 	req = client.CoreV1().Pods(pod.Namespace).GetLogs(pod.Name, &podLogOpts)
