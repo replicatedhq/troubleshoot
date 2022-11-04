@@ -12,7 +12,7 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-func analyzeResource(analyzer *troubleshootv1beta2.ClusterResource, getFileContents func(string) (map[string][]byte, error)) (*AnalyzeResult, error) {
+func findResource(kind string, namespace *string, name string, getFileContents func(string) (map[string][]byte, error)) (interface{}, error) {
 
 	filemap := map[string]string{
 		"Deployment":           "deployments",
@@ -35,14 +35,14 @@ func analyzeResource(analyzer *troubleshootv1beta2.ClusterResource, getFileConte
 
 	var datapath string
 
-	resourceLocation, ok := filemap[analyzer.Kind]
+	resourceLocation, ok := filemap[kind]
 
 	if ok != true {
 		return nil, errors.New("failed to find resource")
 	}
 
-	if analyzer.Namespace != nil {
-		datapath = filepath.Join("cluster-resources", resourceLocation, fmt.Sprintf("%s.json", analyzer.Namespace))
+	if namespace != nil {
+		datapath = filepath.Join("cluster-resources", resourceLocation, fmt.Sprintf("%s.json", namespace))
 	} else {
 		datapath = filepath.Join("cluster-resources", resourceLocation)
 	}
@@ -70,12 +70,23 @@ func analyzeResource(analyzer *troubleshootv1beta2.ClusterResource, getFileConte
 	for _, item := range itemslice {
 		name, err := iutils.GetAtPath(item, "metadata.name")
 		if err != nil {
-			return nil, errors.Wrapf(err, "Failed to find resource with name: %s", analyzer.Name)
+			return nil, errors.Wrapf(err, "Failed to find resource with name: %s", name)
 		}
-		if name == analyzer.Name {
+		if name == name {
 			selected = item
 			break
 		}
+	}
+
+	return selected, nil
+
+}
+
+func analyzeResource(analyzer *troubleshootv1beta2.ClusterResource, getFileContents func(string) (map[string][]byte, error)) (*AnalyzeResult, error) {
+
+	selected, err := findResource(analyzer.Kind, analyzer.Namespace, analyzer.Name, getFileContents)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to find resource")
 	}
 
 	actual, err := iutils.GetAtPath(selected, analyzer.YamlPath)
