@@ -12,7 +12,7 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-func findResource(kind string, namespace *string, name string, getFileContents func(string) (map[string][]byte, error)) (interface{}, error) {
+func findResource(kind string, namespace string, name string, getFileContents func(string) (map[string][]byte, error)) (interface{}, error) {
 
 	filemap := map[string]string{
 		"Deployment":           "deployments",
@@ -41,7 +41,7 @@ func findResource(kind string, namespace *string, name string, getFileContents f
 		return nil, errors.New("failed to find resource")
 	}
 
-	if namespace != nil {
+	if namespace != "" {
 		datapath = filepath.Join("cluster-resources", resourceLocation, fmt.Sprintf("%s.json", namespace))
 	} else {
 		datapath = filepath.Join("cluster-resources", resourceLocation)
