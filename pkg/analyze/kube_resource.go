@@ -14,24 +14,24 @@ import (
 
 func analyzeResource(analyzer *troubleshootv1beta2.ClusterResource, getFileContents func(string) (map[string][]byte, error)) (*AnalyzeResult, error) {
 
-	filemap := make(map[string]string)
-
-	filemap["Deployment"] = "deployments"
-	filemap["StatefulSet"] = "statefulsets"
-	filemap["NetworkPolicy"] = "network-policy"
-	filemap["Pod"] = "pods"
-	filemap["Ingress"] = "ingress"
-	filemap["Service"] = "services"
-	filemap["ResourceQuota"] = "resource-quotas"
-	filemap["Job"] = "jobs"
-	filemap["PersistentVoumeClaim"] = "pvcs"
-	filemap["pvc"] = "pvcs"
-	filemap["ReplicaSet"] = "replicasets"
-	filemap["Namespace"] = "namespaces.json"
-	filemap["PersistentVolume"] = "pvs.json"
-	filemap["pv"] = "pvs.json"
-	filemap["Node"] = "nodes.json"
-	filemap["StorageClass"] = "storage-classes.json"
+	filemap := map[string]string{
+		"Deployment":           "deployments",
+		"StatefulSet":          "statefulsets",
+		"NetworkPolicy":        "network-policy",
+		"Pod":                  "pods",
+		"Ingress":              "ingress",
+		"Service":              "services",
+		"ResourceQuota":        "resource-quotas",
+		"Job":                  "jobs",
+		"PersistentVoumeClaim": "pvcs",
+		"pvc":                  "pvcs",
+		"ReplicaSet":           "replicasets",
+		"Namespace":            "namespaces.json",
+		"PersistentVolume":     "pvs.json",
+		"pv":                   "pvs.json",
+		"Node":                 "nodes.json",
+		"StorageClass":         "storage-classes.json",
+	}
 
 	var datapath string
 
@@ -68,7 +68,10 @@ func analyzeResource(analyzer *troubleshootv1beta2.ClusterResource, getFileConte
 
 	itemslice := items.([]interface{})
 	for _, item := range itemslice {
-		name, _ := iutils.GetAtPath(item, "metadata.name")
+		name, err := iutils.GetAtPath(item, "metadata.name")
+		if err != nil {
+			return nil, errors.Wrapf(err, "Failed to find resource with name: %s", analyzer.Name)
+		}
 		if name == analyzer.Name {
 			selected = item
 			break
