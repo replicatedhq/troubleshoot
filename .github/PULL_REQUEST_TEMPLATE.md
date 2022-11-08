@@ -1,6 +1,6 @@
 ## Description, Motivation and Context
 
-Please include a summary of the change or what problem does it solve. Please also include relevant motivation and context.
+Please include a summary of the change or what problem it solves. Please also include relevant motivation and context.
 
 <!--- If it relates to an open issue, please link to the issue here.
 e.g.
