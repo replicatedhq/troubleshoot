@@ -4,15 +4,14 @@ Please include a summary of the change or what problem does it solve. Please als
 
 <!--- If it relates to an open issue, please link to the issue here.
 e.g.
-[issue 414](https://github.com/replicatedhq/troubleshoot.sh/issues/414)
+Fixes: #414
 -->
 
 ## Checklist
 
-- [ ] The impact of the change checked.
+- [ ] New and existing tests pass locally with the changes.
 - [ ] Tests for the changes have been added (for bug fixes / features)
-- [ ] The commit message(s) follow [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/)
-- [ ] Documentation added in /docs or commit messages for bug fixes / features
+- [ ] The commit message(s) are informative and highlight any breaking changes
 
 ## Does this PR introduce a breaking change?
 - [ ] Yes
