@@ -32,7 +32,8 @@ The problem discussed in this document:
 
 ## Decision
 
-We will remove the IP address redactor from Troubleshoot.
+We will remove the code that redacts IP addresses by default from Troubleshoot.  Folks that wish to redact IP addresses will
+need to add that redactor to their individual Troubleshoot specs.
 
 ## Solution
 
@@ -41,7 +42,7 @@ The following changes need to be made:
 * [Documentation](https://troubleshoot.sh/docs/redact/ip-addresses/) for the IP address redaction needs altering to reflect that Troubleshoot
   does not automatically redact IP addresses, but if users wish to there is an example yaml spec available.
 * Removal of the IP address redactor from [the code](https://github.com/replicatedhq/troubleshoot/blob/v0.45.0/pkg/redact/redact.go#L170)
-* Clear release notes on release of this change, communicating that those wishing to redact IP addresses need to add that redactor to their code.
+* Clear release notes on release of this change, communicating that those wishing to redact IP addresses need to add that redactor to their spec.
 * Possible broadcast communication since this is a change to default behavior.
 
 ## Status
