@@ -89,8 +89,8 @@ func runCollectors(collectors []*troubleshootv1beta2.Collect, additionalRedactor
 				if err != nil {
 					return nil, errors.Wrap(err, "failed to check RBAC for collectors")
 				}
-
-				if mergeCollector, ok := collectorInterface.(collect.MergeableCollector); ok {
+				allCollectors = append(allCollectors, collector)
+				/*if mergeCollector, ok := collectorInterface.(collect.MergeableCollector); ok {
 					allCollectors, err = mergeCollector.Merge(allCollectors)
 					if err != nil {
 						msg := fmt.Sprintf("failed to merge collector: %s: %s", collector.Title(), err)
@@ -98,7 +98,16 @@ func runCollectors(collectors []*troubleshootv1beta2.Collect, additionalRedactor
 					}
 				} else {
 					allCollectors = append(allCollectors, collector)
-				}
+				}*/
+			}
+		}
+	}
+	for _, collec := range allCollectors {
+		if mergeCollector, ok := collec.(collect.MergeableCollector); ok {
+			allCollectors, err = mergeCollector.Merge(allCollectors)
+			if err != nil {
+				msg := fmt.Sprintf("failed to merge collector: %s: %s", mergeCollector.Title(), err)
+				opts.CollectorProgressCallback(opts.ProgressChan, msg)
 			}
 		}
 	}
