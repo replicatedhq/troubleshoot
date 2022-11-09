@@ -149,28 +149,27 @@ func runTroubleshoot(v *viper.Viper, arg []string) error {
 		}
 		bundlesFromCluster = append(bundlesFromCluster, bundlesFromConfigMaps...)
 
-		if bundlesFromCluster != nil {
-			for _, bundle := range bundlesFromCluster {
-				multidocs := strings.Split(string(bundle), "\n---\n")
-				parsedBundleFromSecret, err := supportbundle.ParseSupportBundleFromDoc([]byte(multidocs[0]))
-				if err != nil {
-					logger.Printf("failed to parse support bundle spec:  %s", err)
-					continue
-				}
-
-				if mainBundle == nil {
-					mainBundle = parsedBundleFromSecret
-				} else {
-					mainBundle = supportbundle.ConcatSpec(mainBundle, parsedBundleFromSecret)
-				}
-
-				parsedRedactors, err := supportbundle.ParseRedactorsFromDocs(multidocs)
-				if err != nil {
-					logger.Printf("failed to parse redactors from doc:  %s", err)
-					continue
-				}
-				additionalRedactors.Spec.Redactors = append(additionalRedactors.Spec.Redactors, parsedRedactors...)
+		for _, bundle := range bundlesFromCluster {
+			multidocs := strings.Split(string(bundle), "\n---\n")
+			parsedBundleFromSecret, err := supportbundle.ParseSupportBundleFromDoc([]byte(multidocs[0]))
+			if err != nil {
+				logger.Printf("failed to parse support bundle spec:  %s", err)
+				continue
 			}
+
+			if mainBundle == nil {
+				mainBundle = parsedBundleFromSecret
+			} else {
+				mainBundle = supportbundle.ConcatSpec(mainBundle, parsedBundleFromSecret)
+			}
+
+			parsedRedactors, err := supportbundle.ParseRedactorsFromDocs(multidocs)
+			if err != nil {
+				logger.Printf("failed to parse redactors from doc:  %s", err)
+				continue
+			}
+
+			additionalRedactors.Spec.Redactors = append(additionalRedactors.Spec.Redactors, parsedRedactors...)
 		}
 
 		var redactorsFromCluster []string
@@ -188,15 +187,14 @@ func runTroubleshoot(v *viper.Viper, arg []string) error {
 		}
 		redactorsFromCluster = append(redactorsFromCluster, redactorsFromConfigMaps...)
 
-		if redactorsFromCluster != nil {
-			for _, redactor := range redactorsFromCluster {
-				multidocs := strings.Split(string(redactor), "\n---\n")
-				parsedRedactors, err := supportbundle.ParseRedactorsFromDocs(multidocs)
-				if err != nil {
-					logger.Printf("failed to parse redactors from doc:  %s", err)
-				}
-				additionalRedactors.Spec.Redactors = append(additionalRedactors.Spec.Redactors, parsedRedactors...)
+		for _, redactor := range redactorsFromCluster {
+			multidocs := strings.Split(string(redactor), "\n---\n")
+			parsedRedactors, err := supportbundle.ParseRedactorsFromDocs(multidocs)
+			if err != nil {
+				logger.Printf("failed to parse redactors from doc:  %s", err)
 			}
+
+			additionalRedactors.Spec.Redactors = append(additionalRedactors.Spec.Redactors, parsedRedactors...)
 		}
 
 		if mainBundle == nil {
