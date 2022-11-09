@@ -26,12 +26,12 @@ type CollectCopy struct {
 	Namespace    string
 	ClientConfig *rest.Config
 	Client       kubernetes.Interface
-	ctx          context.Context
+	Context      context.Context
 	RBACErrors
 }
 
 func (c *CollectCopy) Title() string {
-	return collectorTitleOrDefault(c.Collector.CollectorMeta, "Copy")
+	return getCollectorName(c)
 }
 
 func (c *CollectCopy) IsExcluded() (bool, error) {

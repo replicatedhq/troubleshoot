@@ -2,6 +2,7 @@ package analyzer
 
 import (
 	"path/filepath"
+	"strings"
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
@@ -33,13 +34,15 @@ func (a *AnalyzeHostCertificate) Analyze(getCollectedFileContents func(string) (
 	}
 	status := string(contents)
 
+	trimmedStatus := strings.TrimSpace(status)
+
 	var coll resultCollector
 
 	for _, outcome := range hostAnalyzer.Outcomes {
 		result := &AnalyzeResult{Title: a.Title()}
 
 		if outcome.Fail != nil {
-			if outcome.Fail.When == "" || outcome.Fail.When == status {
+			if outcome.Fail.When == "" || outcome.Fail.When == trimmedStatus {
 				result.IsFail = true
 				result.Message = outcome.Fail.Message
 				result.URI = outcome.Fail.URI
@@ -47,7 +50,7 @@ func (a *AnalyzeHostCertificate) Analyze(getCollectedFileContents func(string) (
 				coll.push(result)
 			}
 		} else if outcome.Warn != nil {
-			if outcome.Warn.When == "" || outcome.Warn.When == status {
+			if outcome.Warn.When == "" || outcome.Warn.When == trimmedStatus {
 				result.IsWarn = true
 				result.Message = outcome.Warn.Message
 				result.URI = outcome.Warn.URI
@@ -55,7 +58,7 @@ func (a *AnalyzeHostCertificate) Analyze(getCollectedFileContents func(string) (
 				coll.push(result)
 			}
 		} else if outcome.Pass != nil {
-			if outcome.Pass.When == "" || outcome.Pass.When == status {
+			if outcome.Pass.When == "" || outcome.Pass.When == trimmedStatus {
 				result.IsPass = true
 				result.Message = outcome.Pass.Message
 				result.URI = outcome.Pass.URI

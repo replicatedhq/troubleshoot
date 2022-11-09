@@ -18,6 +18,7 @@ type providers struct {
 	gke           bool
 	digitalOcean  bool
 	openShift     bool
+	tanzu         bool
 	kurl          bool
 	aks           bool
 	ibm           bool
@@ -36,6 +37,7 @@ const (
 	gke           Provider = iota
 	digitalOcean  Provider = iota
 	openShift     Provider = iota
+	tanzu         Provider = iota
 	kurl          Provider = iota
 	aks           Provider = iota
 	ibm           Provider = iota
@@ -44,11 +46,15 @@ const (
 	k3s           Provider = iota
 )
 
-func CheckOpenShift(foundProviders *providers, apiResources []*metav1.APIResourceList, provider string) string {
+func CheckApiResourcesForProviders(foundProviders *providers, apiResources []*metav1.APIResourceList, provider string) string {
 	for _, resource := range apiResources {
 		if strings.HasPrefix(resource.GroupVersion, "apps.openshift.io/") {
 			foundProviders.openShift = true
 			return "openShift"
+		}
+		if strings.HasPrefix(resource.GroupVersion, "run.tanzu.vmware.com/") {
+			foundProviders.tanzu = true
+			return "tanzu"
 		}
 	}
 
@@ -157,8 +163,9 @@ func analyzeDistribution(analyzer *troubleshootv1beta2.Distribution, getCollecte
 		if err := json.Unmarshal(apiResourcesBytes, &apiResources); err != nil {
 			return nil, errors.Wrap(err, "failed to unmarshal api resource list")
 		}
-		_ = CheckOpenShift(&foundProviders, apiResources, "")
+		_ = CheckApiResourcesForProviders(&foundProviders, apiResources, "")
 	}
+
 	title := analyzer.CheckName
 	if title == "" {
 		title = "Kubernetes Distribution"
@@ -322,6 +329,8 @@ func mustNormalizeDistributionName(raw string) Provider {
 		return digitalOcean
 	case "openshift":
 		return openShift
+	case "tanzu":
+		return tanzu
 	case "kurl":
 		return kurl
 	case "aks":

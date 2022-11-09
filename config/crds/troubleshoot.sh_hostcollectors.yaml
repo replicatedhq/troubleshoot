@@ -41,6 +41,10 @@ spec:
                   properties:
                     blockDevices:
                       properties:
+                        annotations:
+                          additionalProperties:
+                            type: string
+                          type: object
                         checkName:
                           type: string
                         collectorName:
@@ -93,6 +97,10 @@ spec:
                       type: object
                     certificate:
                       properties:
+                        annotations:
+                          additionalProperties:
+                            type: string
+                          type: object
                         checkName:
                           type: string
                         collectorName:
@@ -138,6 +146,10 @@ spec:
                       type: object
                     cpu:
                       properties:
+                        annotations:
+                          additionalProperties:
+                            type: string
+                          type: object
                         checkName:
                           type: string
                         collectorName:
@@ -183,6 +195,10 @@ spec:
                       type: object
                     diskUsage:
                       properties:
+                        annotations:
+                          additionalProperties:
+                            type: string
+                          type: object
                         checkName:
                           type: string
                         collectorName:
@@ -228,6 +244,10 @@ spec:
                       type: object
                     filesystemPerformance:
                       properties:
+                        annotations:
+                          additionalProperties:
+                            type: string
+                          type: object
                         checkName:
                           type: string
                         collectorName:
@@ -273,6 +293,10 @@ spec:
                       type: object
                     hostOS:
                       properties:
+                        annotations:
+                          additionalProperties:
+                            type: string
+                          type: object
                         checkName:
                           type: string
                         collectorName:
@@ -318,6 +342,10 @@ spec:
                       type: object
                     hostServices:
                       properties:
+                        annotations:
+                          additionalProperties:
+                            type: string
+                          type: object
                         checkName:
                           type: string
                         collectorName:
@@ -363,6 +391,10 @@ spec:
                       type: object
                     http:
                       properties:
+                        annotations:
+                          additionalProperties:
+                            type: string
+                          type: object
                         checkName:
                           type: string
                         collectorName:
@@ -408,6 +440,10 @@ spec:
                       type: object
                     httpLoadBalancer:
                       properties:
+                        annotations:
+                          additionalProperties:
+                            type: string
+                          type: object
                         checkName:
                           type: string
                         collectorName:
@@ -453,6 +489,10 @@ spec:
                       type: object
                     ipv4Interfaces:
                       properties:
+                        annotations:
+                          additionalProperties:
+                            type: string
+                          type: object
                         checkName:
                           type: string
                         collectorName:
@@ -498,6 +538,10 @@ spec:
                       type: object
                     kernelModules:
                       properties:
+                        annotations:
+                          additionalProperties:
+                            type: string
+                          type: object
                         checkName:
                           type: string
                         collectorName:
@@ -543,6 +587,10 @@ spec:
                       type: object
                     memory:
                       properties:
+                        annotations:
+                          additionalProperties:
+                            type: string
+                          type: object
                         checkName:
                           type: string
                         collectorName:
@@ -588,6 +636,10 @@ spec:
                       type: object
                     systemPackages:
                       properties:
+                        annotations:
+                          additionalProperties:
+                            type: string
+                          type: object
                         checkName:
                           type: string
                         collectorName:
@@ -633,6 +685,10 @@ spec:
                       type: object
                     tcpConnect:
                       properties:
+                        annotations:
+                          additionalProperties:
+                            type: string
+                          type: object
                         checkName:
                           type: string
                         collectorName:
@@ -678,6 +734,10 @@ spec:
                       type: object
                     tcpLoadBalancer:
                       properties:
+                        annotations:
+                          additionalProperties:
+                            type: string
+                          type: object
                         checkName:
                           type: string
                         collectorName:
@@ -723,6 +783,10 @@ spec:
                       type: object
                     tcpPortStatus:
                       properties:
+                        annotations:
+                          additionalProperties:
+                            type: string
+                          type: object
                         checkName:
                           type: string
                         collectorName:
@@ -768,6 +832,10 @@ spec:
                       type: object
                     time:
                       properties:
+                        annotations:
+                          additionalProperties:
+                            type: string
+                          type: object
                         checkName:
                           type: string
                         collectorName:
@@ -1043,6 +1111,22 @@ spec:
                           type: string
                         exclude:
                           type: BoolString
+                      type: object
+                    run:
+                      properties:
+                        args:
+                          items:
+                            type: string
+                          type: array
+                        collectorName:
+                          type: string
+                        command:
+                          type: string
+                        exclude:
+                          type: BoolString
+                      required:
+                      - args
+                      - command
                       type: object
                     systemPackages:
                       properties:

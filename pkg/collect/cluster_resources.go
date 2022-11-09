@@ -43,7 +43,7 @@ type CollectClusterResources struct {
 }
 
 func (c *CollectClusterResources) Title() string {
-	return collectorTitleOrDefault(c.Collector.CollectorMeta, "Cluster Resources")
+	return getCollectorName(c)
 }
 
 func (c *CollectClusterResources) IsExcluded() (bool, error) {
@@ -142,7 +142,7 @@ func (c *CollectClusterResources) Collect(progressChan chan<- interface{}) (Coll
 		}
 	}
 
-	// pod disruption budgets (for all existing namespaces)
+	// pod disruption budgets
 
 	PodDisruptionBudgets, pdbError := getPodDisruptionBudgets(ctx, client, namespaceNames)
 	for k, v := range PodDisruptionBudgets {
@@ -273,6 +273,30 @@ func (c *CollectClusterResources) Collect(progressChan chan<- interface{}) (Coll
 	}
 	output.SaveResult(c.BundlePath, "cluster-resources/pvcs-errors.json", marshalErrors(pvcsErrors))
 
+	//Roles
+	roles, rolesErrors := roles(ctx, client, namespaceNames)
+	for k, v := range roles {
+		output.SaveResult(c.BundlePath, path.Join("cluster-resources/roles", k), bytes.NewBuffer(v))
+	}
+	output.SaveResult(c.BundlePath, "cluster-resources/roles-errors.json", marshalErrors(rolesErrors))
+
+	//Role Bindings
+	roleBindings, roleBindingsErrors := roleBindings(ctx, client, namespaceNames)
+	for k, v := range roleBindings {
+		output.SaveResult(c.BundlePath, path.Join("cluster-resources/rolebindings", k), bytes.NewBuffer(v))
+	}
+	output.SaveResult(c.BundlePath, "cluster-resources/rolebindings-errors.json", marshalErrors(roleBindingsErrors))
+
+	//Cluster Roles
+	clusterRoles, clusterRolesErrors := clusterRoles(ctx, client)
+	output.SaveResult(c.BundlePath, "cluster-resources/clusterroles.json", bytes.NewBuffer(clusterRoles))
+	output.SaveResult(c.BundlePath, "cluster-resources/clusterroles-errors.json", marshalErrors(clusterRolesErrors))
+
+	//Cluster Role Bindings
+	clusterRoleBindings, clusterRoleBindingsErrors := clusterRoleBindings(ctx, client)
+	output.SaveResult(c.BundlePath, "cluster-resources/clusterRoleBindings.json", bytes.NewBuffer(clusterRoleBindings))
+	output.SaveResult(c.BundlePath, "cluster-resources/clusterRoleBindings-errors.json", marshalErrors(clusterRoleBindingsErrors))
+
 	return output, nil
 }
 
@@ -386,6 +410,55 @@ func pods(ctx context.Context, client *kubernetes.Clientset, namespaces []string
 }
 
 func getPodDisruptionBudgets(ctx context.Context, client *kubernetes.Clientset, namespaces []string) (map[string][]byte, map[string]string) {
+	ok, err := discovery.HasResource(client, "policy.k8s.io/v1", "PodDisruptionBudgets")
+	if err != nil {
+		return nil, map[string]string{"": err.Error()}
+	}
+	if ok {
+		return pdbV1(ctx, client, namespaces)
+	}
+
+	return pdbV1beta(ctx, client, namespaces)
+}
+
+// TODO: The below function (`pdbV1`) needs to be DRY'd and moved into the main `getPodDisruptionBudgets` function.
+func pdbV1(ctx context.Context, client *kubernetes.Clientset, namespaces []string) (map[string][]byte, map[string]string) {
+	pdbByNamespace := make(map[string][]byte)
+	errorsByNamespace := make(map[string]string)
+
+	for _, namespace := range namespaces {
+		PodDisruptionBudgets, err := client.PolicyV1().PodDisruptionBudgets(namespace).List(ctx, metav1.ListOptions{})
+		if err != nil {
+			errorsByNamespace[namespace] = err.Error()
+			continue
+		}
+
+		gvk, err := apiutil.GVKForObject(PodDisruptionBudgets, scheme.Scheme)
+		if err == nil {
+			PodDisruptionBudgets.GetObjectKind().SetGroupVersionKind(gvk)
+		}
+
+		for i, o := range PodDisruptionBudgets.Items {
+			gvk, err := apiutil.GVKForObject(&o, scheme.Scheme)
+			if err == nil {
+				PodDisruptionBudgets.Items[i].GetObjectKind().SetGroupVersionKind(gvk)
+			}
+		}
+
+		b, err := json.MarshalIndent(PodDisruptionBudgets, "", "  ")
+		if err != nil {
+			errorsByNamespace[namespace] = err.Error()
+			continue
+		}
+
+		pdbByNamespace[namespace+".json"] = b
+	}
+
+	return pdbByNamespace, errorsByNamespace
+}
+
+// This block/function can remain as is
+func pdbV1beta(ctx context.Context, client *kubernetes.Clientset, namespaces []string) (map[string][]byte, map[string]string) {
 	pdbByNamespace := make(map[string][]byte)
 	errorsByNamespace := make(map[string]string)
 
@@ -399,6 +472,13 @@ func getPodDisruptionBudgets(ctx context.Context, client *kubernetes.Clientset, 
 		gvk, err := apiutil.GVKForObject(PodDisruptionBudgets, scheme.Scheme)
 		if err == nil {
 			PodDisruptionBudgets.GetObjectKind().SetGroupVersionKind(gvk)
+		}
+
+		for i, o := range PodDisruptionBudgets.Items {
+			gvk, err := apiutil.GVKForObject(&o, scheme.Scheme)
+			if err == nil {
+				PodDisruptionBudgets.Items[i].GetObjectKind().SetGroupVersionKind(gvk)
+			}
 		}
 
 		b, err := json.MarshalIndent(PodDisruptionBudgets, "", "  ")
@@ -589,29 +669,76 @@ func jobs(ctx context.Context, client *kubernetes.Clientset, namespaces []string
 }
 
 func cronJobs(ctx context.Context, client *kubernetes.Clientset, namespaces []string) (map[string][]byte, map[string]string) {
+	ok, err := discovery.HasResource(client, "batch.k8s.io/v1", "CronJobs")
+	if err != nil {
+		return nil, map[string]string{"": err.Error()}
+	}
+	if ok {
+		return cronJobsV1(ctx, client, namespaces)
+	}
+
+	return cronJobsV1beta(ctx, client, namespaces)
+}
+
+func cronJobsV1(ctx context.Context, client *kubernetes.Clientset, namespaces []string) (map[string][]byte, map[string]string) {
 	cronJobsByNamespace := make(map[string][]byte)
 	errorsByNamespace := make(map[string]string)
 
 	for _, namespace := range namespaces {
-		nsCronJobs, err := client.BatchV1beta1().CronJobs(namespace).List(ctx, metav1.ListOptions{})
+		cronJobs, err := client.BatchV1().CronJobs(namespace).List(ctx, metav1.ListOptions{})
 		if err != nil {
 			errorsByNamespace[namespace] = err.Error()
 			continue
 		}
 
-		gvk, err := apiutil.GVKForObject(nsCronJobs, scheme.Scheme)
+		gvk, err := apiutil.GVKForObject(cronJobs, scheme.Scheme)
 		if err == nil {
-			nsCronJobs.GetObjectKind().SetGroupVersionKind(gvk)
+			cronJobs.GetObjectKind().SetGroupVersionKind(gvk)
 		}
 
-		for i, o := range nsCronJobs.Items {
+		for i, o := range cronJobs.Items {
 			gvk, err := apiutil.GVKForObject(&o, scheme.Scheme)
 			if err == nil {
-				nsCronJobs.Items[i].GetObjectKind().SetGroupVersionKind(gvk)
+				cronJobs.Items[i].GetObjectKind().SetGroupVersionKind(gvk)
 			}
 		}
 
-		b, err := json.MarshalIndent(nsCronJobs, "", "  ")
+		b, err := json.MarshalIndent(cronJobs, "", "  ")
+		if err != nil {
+			errorsByNamespace[namespace] = err.Error()
+			continue
+		}
+
+		cronJobsByNamespace[namespace+".json"] = b
+	}
+
+	return cronJobsByNamespace, errorsByNamespace
+}
+
+func cronJobsV1beta(ctx context.Context, client *kubernetes.Clientset, namespaces []string) (map[string][]byte, map[string]string) {
+	cronJobsByNamespace := make(map[string][]byte)
+	errorsByNamespace := make(map[string]string)
+
+	for _, namespace := range namespaces {
+		cronJobs, err := client.BatchV1beta1().CronJobs(namespace).List(ctx, metav1.ListOptions{})
+		if err != nil {
+			errorsByNamespace[namespace] = err.Error()
+			continue
+		}
+
+		gvk, err := apiutil.GVKForObject(cronJobs, scheme.Scheme)
+		if err == nil {
+			cronJobs.GetObjectKind().SetGroupVersionKind(gvk)
+		}
+
+		for i, o := range cronJobs.Items {
+			gvk, err := apiutil.GVKForObject(&o, scheme.Scheme)
+			if err == nil {
+				cronJobs.Items[i].GetObjectKind().SetGroupVersionKind(gvk)
+			}
+		}
+
+		b, err := json.MarshalIndent(cronJobs, "", "  ")
 		if err != nil {
 			errorsByNamespace[namespace] = err.Error()
 			continue
@@ -1485,4 +1612,124 @@ func pvcs(ctx context.Context, client *kubernetes.Clientset, namespaces []string
 	}
 
 	return pvcsByNamespace, errorsByNamespace
+}
+
+func roles(ctx context.Context, client *kubernetes.Clientset, namespaces []string) (map[string][]byte, map[string]string) {
+	rolesByNamespace := make(map[string][]byte)
+	errorsByNamespace := make(map[string]string)
+
+	for _, namespace := range namespaces {
+		roles, err := client.RbacV1().Roles(namespace).List(ctx, metav1.ListOptions{})
+		if err != nil {
+			errorsByNamespace[namespace] = err.Error()
+			continue
+		}
+
+		gvk, err := apiutil.GVKForObject(roles, scheme.Scheme)
+		if err == nil {
+			roles.GetObjectKind().SetGroupVersionKind(gvk)
+		}
+
+		for i, o := range roles.Items {
+			gvk, err := apiutil.GVKForObject(&o, scheme.Scheme)
+			if err == nil {
+				roles.Items[i].GetObjectKind().SetGroupVersionKind(gvk)
+			}
+		}
+
+		b, err := json.MarshalIndent(roles, "", "  ")
+		if err != nil {
+			errorsByNamespace[namespace] = err.Error()
+			continue
+		}
+
+		rolesByNamespace[namespace+".json"] = b
+	}
+
+	return rolesByNamespace, errorsByNamespace
+}
+
+func roleBindings(ctx context.Context, client *kubernetes.Clientset, namespaces []string) (map[string][]byte, map[string]string) {
+	roleBindingsByNamespace := make(map[string][]byte)
+	errorsByNamespace := make(map[string]string)
+
+	for _, namespace := range namespaces {
+		roleBindings, err := client.RbacV1().RoleBindings(namespace).List(ctx, metav1.ListOptions{})
+		if err != nil {
+			errorsByNamespace[namespace] = err.Error()
+			continue
+		}
+
+		gvk, err := apiutil.GVKForObject(roleBindings, scheme.Scheme)
+		if err == nil {
+			roleBindings.GetObjectKind().SetGroupVersionKind(gvk)
+		}
+
+		for i, o := range roleBindings.Items {
+			gvk, err := apiutil.GVKForObject(&o, scheme.Scheme)
+			if err == nil {
+				roleBindings.Items[i].GetObjectKind().SetGroupVersionKind(gvk)
+			}
+		}
+
+		b, err := json.MarshalIndent(roleBindings, "", "  ")
+		if err != nil {
+			errorsByNamespace[namespace] = err.Error()
+			continue
+		}
+
+		roleBindingsByNamespace[namespace+".json"] = b
+	}
+
+	return roleBindingsByNamespace, errorsByNamespace
+}
+
+func clusterRoles(ctx context.Context, client *kubernetes.Clientset) ([]byte, []string) {
+	clusterRoles, err := client.RbacV1().ClusterRoles().List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return nil, []string{err.Error()}
+	}
+
+	gvk, err := apiutil.GVKForObject(clusterRoles, scheme.Scheme)
+	if err == nil {
+		clusterRoles.GetObjectKind().SetGroupVersionKind(gvk)
+	}
+
+	for i, o := range clusterRoles.Items {
+		gvk, err := apiutil.GVKForObject(&o, scheme.Scheme)
+		if err == nil {
+			clusterRoles.Items[i].GetObjectKind().SetGroupVersionKind(gvk)
+		}
+	}
+
+	b, err := json.MarshalIndent(clusterRoles, "", "  ")
+	if err != nil {
+		return nil, []string{err.Error()}
+	}
+	return b, nil
+}
+
+func clusterRoleBindings(ctx context.Context, client *kubernetes.Clientset) ([]byte, []string) {
+	clusterRoleBindings, err := client.RbacV1().ClusterRoleBindings().List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return nil, []string{err.Error()}
+	}
+
+	gvk, err := apiutil.GVKForObject(clusterRoleBindings, scheme.Scheme)
+	if err == nil {
+		clusterRoleBindings.GetObjectKind().SetGroupVersionKind(gvk)
+	}
+
+	for i, o := range clusterRoleBindings.Items {
+		gvk, err := apiutil.GVKForObject(&o, scheme.Scheme)
+		if err == nil {
+			clusterRoleBindings.Items[i].GetObjectKind().SetGroupVersionKind(gvk)
+		}
+	}
+
+	b, err := json.MarshalIndent(clusterRoleBindings, "", "  ")
+	if err != nil {
+		return nil, []string{err.Error()}
+	}
+	return b, nil
 }

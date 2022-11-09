@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/go-logr/logr"
-	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/replicatedhq/troubleshoot/pkg/k8sutil"
 	"github.com/replicatedhq/troubleshoot/pkg/logger"
 	"github.com/spf13/cobra"
@@ -80,19 +79,6 @@ func InitAndExecute() {
 func initConfig() {
 	viper.SetEnvPrefix("TROUBLESHOOT")
 	viper.AutomaticEnv()
-}
-
-func ensureCollectorInList(list []*troubleshootv1beta2.Collect, collector troubleshootv1beta2.Collect) []*troubleshootv1beta2.Collect {
-	for _, inList := range list {
-		if collector.ClusterResources != nil && inList.ClusterResources != nil {
-			return list
-		}
-		if collector.ClusterInfo != nil && inList.ClusterInfo != nil {
-			return list
-		}
-	}
-
-	return append(list, &collector)
 }
 
 func writeFile(filename string, contents []byte) error {

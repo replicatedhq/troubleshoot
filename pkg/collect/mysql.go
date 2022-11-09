@@ -20,12 +20,12 @@ type CollectMysql struct {
 	Namespace    string
 	ClientConfig *rest.Config
 	Client       kubernetes.Interface
-	ctx          context.Context
+	Context      context.Context
 	RBACErrors
 }
 
 func (c *CollectMysql) Title() string {
-	return collectorTitleOrDefault(c.Collector.CollectorMeta, "Mysql")
+	return getCollectorName(c)
 }
 
 func (c *CollectMysql) IsExcluded() (bool, error) {
