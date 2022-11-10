@@ -32,3 +32,22 @@ func LoadFromConfigMap(namespace string, configMapName string, key string) ([]by
 
 	return []byte(spec), nil
 }
+
+func LoadFromConfigMapMatchingLabel(client kubernetes.Interface, labelSelector string, namespace string, key string) ([]string, error) {
+	var configMapMatchingKey []string
+
+	configMaps, err := client.CoreV1().ConfigMaps(namespace).List(context.TODO(), metav1.ListOptions{LabelSelector: labelSelector})
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to search for configmaps in the cluster")
+	}
+
+	for _, configMap := range configMaps.Items {
+		spec, ok := configMap.Data[key]
+		if !ok {
+			continue
+		}
+		configMapMatchingKey = append(configMapMatchingKey, string(spec))
+	}
+
+	return configMapMatchingKey, nil
+}
