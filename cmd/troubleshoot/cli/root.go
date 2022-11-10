@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/go-logr/logr"
-	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/replicatedhq/troubleshoot/pkg/k8sutil"
 	"github.com/replicatedhq/troubleshoot/pkg/logger"
 	"github.com/spf13/cobra"
@@ -48,7 +47,7 @@ from a server that can be used to assist when troubleshooting a Kubernetes clust
 	cmd.Flags().Bool("interactive", true, "enable/disable interactive mode")
 	cmd.Flags().Bool("collect-without-permissions", true, "always generate a support bundle, even if it some require additional permissions")
 	cmd.Flags().StringSliceP("selector", "l", []string{"troubleshoot.io/kind=supportbundle-spec"}, "selector to filter on for loading additional support bundle specs found in secrets within the cluster")
-	cmd.Flags().Bool("load-cluster-specs", false, "enable/disable loading additional support bundle specs found in secrets within the cluster. required when no specs are provided on the command line")
+	cmd.Flags().Bool("load-cluster-specs", false, "enable/disable loading additional troubleshoot specs found within the cluster. required when no specs are provided on the command line")
 	cmd.Flags().String("since-time", "", "force pod logs collectors to return logs after a specific date (RFC3339)")
 	cmd.Flags().String("since", "", "force pod logs collectors to return logs newer than a relative duration like 5s, 2m, or 3h.")
 	cmd.Flags().StringP("output", "o", "", "specify the output file path for the support bundle")
@@ -80,19 +79,6 @@ func InitAndExecute() {
 func initConfig() {
 	viper.SetEnvPrefix("TROUBLESHOOT")
 	viper.AutomaticEnv()
-}
-
-func ensureCollectorInList(list []*troubleshootv1beta2.Collect, collector troubleshootv1beta2.Collect) []*troubleshootv1beta2.Collect {
-	for _, inList := range list {
-		if collector.ClusterResources != nil && inList.ClusterResources != nil {
-			return list
-		}
-		if collector.ClusterInfo != nil && inList.ClusterInfo != nil {
-			return list
-		}
-	}
-
-	return append(list, &collector)
 }
 
 func writeFile(filename string, contents []byte) error {

@@ -5,7 +5,6 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/replicatedhq/troubleshoot/pkg/k8sutil"
-	"github.com/replicatedhq/troubleshoot/pkg/logger"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
@@ -45,7 +44,6 @@ func LoadFromSecretMatchingLabel(client kubernetes.Interface, labelSelector stri
 	for _, secret := range secrets.Items {
 		spec, ok := secret.Data[key]
 		if !ok {
-			logger.Printf("expected key of %s not found in secret %s, skipping\n", key, secret.Name)
 			continue
 		}
 		secretsMatchingKey = append(secretsMatchingKey, string(spec))
