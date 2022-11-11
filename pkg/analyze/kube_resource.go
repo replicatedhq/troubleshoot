@@ -12,7 +12,7 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-func findResource(kind string, namespace string, name string, getFileContents func(string) (map[string][]byte, error)) (interface{}, error) {
+func FindResource(kind string, namespace string, name string, getFileContents func(string) (map[string][]byte, error)) (interface{}, error) {
 
 	filemap := map[string]string{
 		"Deployment":           "deployments",
@@ -84,7 +84,7 @@ func findResource(kind string, namespace string, name string, getFileContents fu
 
 func analyzeResource(analyzer *troubleshootv1beta2.ClusterResource, getFileContents func(string) (map[string][]byte, error)) (*AnalyzeResult, error) {
 
-	selected, err := findResource(analyzer.Kind, analyzer.Namespace, analyzer.Name, getFileContents)
+	selected, err := FindResource(analyzer.Kind, analyzer.Namespace, analyzer.Name, getFileContents)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to find resource")
 	}
