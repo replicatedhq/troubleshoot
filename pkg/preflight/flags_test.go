@@ -6,6 +6,13 @@ import (
 	flag "github.com/spf13/pflag"
 )
 
+// Reset flags for preflightFlags
+func resetFlags() {
+	if preflightFlags != nil {
+		preflightFlags = NewPreflightFlags()
+	}
+}
+
 func TestAddFlags(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -77,7 +84,7 @@ func TestAddFlags(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ResetFlags()
+			resetFlags()
 			f := flag.FlagSet{}
 			AddFlags(&f)
 

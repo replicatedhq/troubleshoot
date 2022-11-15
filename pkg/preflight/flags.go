@@ -56,13 +56,6 @@ func AddFlags(flags *flag.FlagSet) {
 	preflightFlags.addFlags(flags)
 }
 
-// Reset flags for preflightFlags
-func ResetFlags() {
-	if preflightFlags != nil {
-		preflightFlags = NewPreflightFlags()
-	}
-}
-
 // AddFlags binds client configuration flags to a given flagset
 func (f *PreflightFlags) addFlags(flags *flag.FlagSet) {
 	if preflightFlags == nil {
