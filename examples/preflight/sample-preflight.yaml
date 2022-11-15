@@ -75,19 +75,6 @@ spec:
           - warn:
               message: Unable to determine the distribution of Kubernetes
     - nodeResources:
-        checkName: Must have at least 3 nodes in the cluster, with 5 recommended
-        outcomes:
-        - fail:
-            when: "count() < 3"
-            message: This application requires at least 3 nodes.
-            uri: https://kurl.sh/docs/install-with-kurl/adding-nodes
-        - warn:
-            when: "count() < 5"
-            message: This application recommends at last 5 nodes.
-            uri: https://kurl.sh/docs/install-with-kurl/adding-nodes
-        - pass:
-            message: This cluster has enough nodes.
-    - nodeResources:
         checkName: Every node in the cluster must have at least 10 GB of memory, with 32 GB recommended
         outcomes:
         - fail:
