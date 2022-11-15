@@ -15,7 +15,7 @@ curl https://krew.sh/preflight | bash
  and run:
  
 ```
-# It is ONLY an example. Do **not** use to validate cluster installs.
+# It is ONLY an example. Do **not** use to validate cluster state.
 kubectl preflight https://preflight.replicated.com
 ```
 
