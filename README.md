@@ -15,7 +15,7 @@ curl https://krew.sh/preflight | bash
  and run:
  
 ```
-# It is ONLY an example. Do **not** use to validate cluster state.
+# It is ONLY an example. Do **not** use to validate real scenarios.
 kubectl preflight https://preflight.replicated.com
 ```
 
@@ -33,7 +33,7 @@ curl https://krew.sh/support-bundle | bash
  and run:
  
 ```
-# It is ONLY an example. Do **not** use to validate applications.
+# It is ONLY an example. Do **not** use to validate real scenarios.
 kubectl support-bundle https://support-bundle.replicated.com
 ```
 
