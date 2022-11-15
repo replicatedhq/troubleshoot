@@ -17,14 +17,6 @@ spec:
           - pass:
               when: ">= 1.22.0"
               message: Your cluster meets the recommended and required versions of Kubernetes.
-    - customResourceDefinition:
-        checkName: Ingress
-        customResourceDefinitionName: ingressroutes.contour.heptio.com
-        outcomes:
-          - fail:
-              message: Contour ingress not found!
-          - pass:
-              message: Contour ingress found!
     - containerRuntime:
         outcomes:
           - pass:
