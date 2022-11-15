@@ -15,6 +15,7 @@ curl https://krew.sh/preflight | bash
  and run:
  
 ```
+# It is ONLY an example. Do **not** use to validate cluster installs.
 kubectl preflight https://preflight.replicated.com
 ```
 
@@ -32,8 +33,10 @@ curl https://krew.sh/support-bundle | bash
  and run:
  
 ```
+# It is ONLY an example. Do **not** use to validate applications.
 kubectl support-bundle https://support-bundle.replicated.com
 ```
+
 For more details on creating the custom resource files that drive support-bundle collection, visit [creating collectors](https://troubleshoot.sh/docs/collect/) and [creating analyzers](https://troubleshoot.sh/docs/analyze/).
 
 And see our other tool [sbctl](https://github.com/replicatedhq/sbctl) that makes it easier to interact with support bundles using `kubectl` commands you already know
