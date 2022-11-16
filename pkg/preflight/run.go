@@ -1,4 +1,4 @@
-package cli
+package preflight
 
 import (
 	"context"
@@ -21,7 +21,6 @@ import (
 	"github.com/replicatedhq/troubleshoot/pkg/docrewrite"
 	"github.com/replicatedhq/troubleshoot/pkg/k8sutil"
 	"github.com/replicatedhq/troubleshoot/pkg/oci"
-	"github.com/replicatedhq/troubleshoot/pkg/preflight"
 	"github.com/replicatedhq/troubleshoot/pkg/specs"
 	"github.com/spf13/viper"
 	spin "github.com/tj/go-spin"
@@ -31,8 +30,8 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 )
 
-func runPreflights(v *viper.Viper, arg string) error {
-	if v.GetBool("interactive") {
+func RunPreflights(interactive bool, output, format, arg string) error {
+	if interactive {
 		fmt.Print(cursor.Hide())
 		defer fmt.Print(cursor.Show())
 	}
@@ -120,7 +119,7 @@ func runPreflights(v *viper.Viper, arg string) error {
 		return errors.Wrapf(err, "failed to parse %s", arg)
 	}
 
-	var collectResults []preflight.CollectResult
+	var collectResults []CollectResult
 	preflightSpecName := ""
 
 	progressCh := make(chan interface{})
@@ -131,7 +130,7 @@ func runPreflights(v *viper.Viper, arg string) error {
 	defer stopProgressCollection()
 	progressCollection, ctx := errgroup.WithContext(ctx)
 
-	if v.GetBool("interactive") {
+	if interactive {
 		progressCollection.Go(collectInteractiveProgress(ctx, progressCh))
 	} else {
 		progressCollection.Go(collectNonInteractiveProgess(ctx, progressCh))
@@ -183,14 +182,14 @@ func runPreflights(v *viper.Viper, arg string) error {
 	stopProgressCollection()
 	progressCollection.Wait()
 
-	if v.GetBool("interactive") {
+	if interactive {
 		if len(analyzeResults) == 0 {
 			return errors.New("no data has been collected")
 		}
-		return showInteractiveResults(preflightSpecName, v.GetString("output"), analyzeResults)
+		return showInteractiveResults(preflightSpecName, output, analyzeResults)
 	}
 
-	return showStdoutResults(v.GetString("format"), preflightSpecName, analyzeResults)
+	return showStdoutResults(format, preflightSpecName, analyzeResults)
 }
 
 func collectInteractiveProgress(ctx context.Context, progressCh <-chan interface{}) func() error {
@@ -235,7 +234,7 @@ func collectNonInteractiveProgess(ctx context.Context, progressCh <-chan interfa
 					fmt.Fprintf(os.Stderr, "error - %v\n", msg)
 				case string:
 					fmt.Fprintf(os.Stderr, "%s\n", msg)
-				case preflight.CollectProgress:
+				case CollectProgress:
 					fmt.Fprintf(os.Stderr, "%s\n", msg.String())
 
 				}
@@ -246,7 +245,7 @@ func collectNonInteractiveProgess(ctx context.Context, progressCh <-chan interfa
 	}
 }
 
-func collectInCluster(preflightSpec *troubleshootv1beta2.Preflight, progressCh chan interface{}) (*preflight.CollectResult, error) {
+func collectInCluster(preflightSpec *troubleshootv1beta2.Preflight, progressCh chan interface{}) (*CollectResult, error) {
 	v := viper.GetViper()
 
 	restConfig, err := k8sutil.GetRESTConfig()
@@ -254,7 +253,7 @@ func collectInCluster(preflightSpec *troubleshootv1beta2.Preflight, progressCh c
 		return nil, errors.Wrap(err, "failed to convert kube flags to rest config")
 	}
 
-	collectOpts := preflight.CollectOpts{
+	collectOpts := CollectOpts{
 		Namespace:              v.GetString("namespace"),
 		IgnorePermissionErrors: v.GetBool("collect-without-permissions"),
 		ProgressChan:           progressCh,
@@ -268,11 +267,11 @@ func collectInCluster(preflightSpec *troubleshootv1beta2.Preflight, progressCh c
 		}
 	}
 
-	collectResults, err := preflight.Collect(collectOpts, preflightSpec)
+	collectResults, err := Collect(collectOpts, preflightSpec)
 	if err != nil {
-		if !collectResults.IsRBACAllowed() {
+		if collectResults != nil && !collectResults.IsRBACAllowed() {
 			if preflightSpec.Spec.UploadResultsTo != "" {
-				clusterCollectResults := collectResults.(preflight.ClusterCollectResult)
+				clusterCollectResults := collectResults.(ClusterCollectResult)
 				err := uploadErrors(preflightSpec.Spec.UploadResultsTo, clusterCollectResults.Collectors)
 				if err != nil {
 					progressCh <- err
@@ -285,7 +284,7 @@ func collectInCluster(preflightSpec *troubleshootv1beta2.Preflight, progressCh c
 	return &collectResults, nil
 }
 
-func collectRemote(preflightSpec *troubleshootv1beta2.HostPreflight, progressCh chan interface{}) (*preflight.CollectResult, error) {
+func collectRemote(preflightSpec *troubleshootv1beta2.HostPreflight, progressCh chan interface{}) (*CollectResult, error) {
 	v := viper.GetViper()
 
 	restConfig, err := k8sutil.GetRESTConfig()
@@ -308,7 +307,7 @@ func collectRemote(preflightSpec *troubleshootv1beta2.HostPreflight, progressCh 
 		timeout = 30 * time.Second
 	}
 
-	collectOpts := preflight.CollectOpts{
+	collectOpts := CollectOpts{
 		Namespace:              namespace,
 		IgnorePermissionErrors: v.GetBool("collect-without-permissions"),
 		ProgressChan:           progressCh,
@@ -319,7 +318,7 @@ func collectRemote(preflightSpec *troubleshootv1beta2.HostPreflight, progressCh 
 		Timeout:                timeout,
 	}
 
-	collectResults, err := preflight.CollectRemote(collectOpts, preflightSpec)
+	collectResults, err := CollectRemote(collectOpts, preflightSpec)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to collect from remote")
 	}
@@ -327,12 +326,12 @@ func collectRemote(preflightSpec *troubleshootv1beta2.HostPreflight, progressCh 
 	return &collectResults, nil
 }
 
-func collectHost(hostPreflightSpec *troubleshootv1beta2.HostPreflight, progressCh chan interface{}) (*preflight.CollectResult, error) {
-	collectOpts := preflight.CollectOpts{
+func collectHost(hostPreflightSpec *troubleshootv1beta2.HostPreflight, progressCh chan interface{}) (*CollectResult, error) {
+	collectOpts := CollectOpts{
 		ProgressChan: progressCh,
 	}
 
-	collectResults, err := preflight.CollectHost(collectOpts, hostPreflightSpec)
+	collectResults, err := CollectHost(collectOpts, hostPreflightSpec)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to collect from host")
 	}

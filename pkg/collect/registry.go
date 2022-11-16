@@ -43,12 +43,12 @@ type CollectRegistry struct {
 	Namespace    string
 	ClientConfig *rest.Config
 	Client       kubernetes.Interface
-	ctx          context.Context
+	Context      context.Context
 	RBACErrors
 }
 
 func (c *CollectRegistry) Title() string {
-	return collectorTitleOrDefault(c.Collector.CollectorMeta, "Registry Images")
+	return getCollectorName(c)
 }
 
 func (c *CollectRegistry) IsExcluded() (bool, error) {

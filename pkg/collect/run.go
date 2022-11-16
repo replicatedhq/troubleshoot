@@ -15,12 +15,12 @@ type CollectRun struct {
 	Namespace    string
 	ClientConfig *rest.Config
 	Client       kubernetes.Interface
-	ctx          context.Context
+	Context      context.Context
 	RBACErrors
 }
 
 func (c *CollectRun) Title() string {
-	return collectorTitleOrDefault(c.Collector.CollectorMeta, "Run")
+	return getCollectorName(c)
 }
 
 func (c *CollectRun) IsExcluded() (bool, error) {
@@ -67,7 +67,7 @@ func (c *CollectRun) Collect(progressChan chan<- interface{}) (CollectorResult, 
 	}
 
 	rbacErrors := c.GetRBACErrors()
-	runPodCollector := &CollectRunPod{runPodSpec, c.BundlePath, c.Namespace, c.ClientConfig, c.Client, c.ctx, rbacErrors}
+	runPodCollector := &CollectRunPod{runPodSpec, c.BundlePath, c.Namespace, c.ClientConfig, c.Client, c.Context, rbacErrors}
 
 	return runPodCollector.Collect(progressChan)
 }

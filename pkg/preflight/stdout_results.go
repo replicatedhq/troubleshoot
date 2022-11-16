@@ -1,4 +1,4 @@
-package cli
+package preflight
 
 import (
 	"encoding/json"

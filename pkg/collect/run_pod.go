@@ -28,12 +28,12 @@ type CollectRunPod struct {
 	Namespace    string
 	ClientConfig *rest.Config
 	Client       kubernetes.Interface
-	ctx          context.Context
+	Context      context.Context
 	RBACErrors
 }
 
 func (c *CollectRunPod) Title() string {
-	return collectorTitleOrDefault(c.Collector.CollectorMeta, "Run Pod")
+	return getCollectorName(c)
 }
 
 func (c *CollectRunPod) IsExcluded() (bool, error) {

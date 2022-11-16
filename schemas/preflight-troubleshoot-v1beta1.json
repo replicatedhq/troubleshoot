@@ -961,8 +961,7 @@
               "storageClass": {
                 "type": "object",
                 "required": [
-                  "outcomes",
-                  "storageClassName"
+                  "outcomes"
                 ],
                 "properties": {
                   "checkName": {

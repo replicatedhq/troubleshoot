@@ -26,7 +26,7 @@ type CollectClusterInfo struct {
 }
 
 func (c *CollectClusterInfo) Title() string {
-	return collectorTitleOrDefault(c.Collector.CollectorMeta, "Cluster Info")
+	return getCollectorName(c)
 }
 
 func (c *CollectClusterInfo) IsExcluded() (bool, error) {

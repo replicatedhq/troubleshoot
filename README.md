@@ -12,11 +12,13 @@ To run a sample preflight check from a sample application, install the preflight
 ```
 curl https://krew.sh/preflight | bash
 ```
- and run:
+ and run, where https://preflight.replicated.com provides an **example** preflight spec:
  
 ```
 kubectl preflight https://preflight.replicated.com
 ```
+
+**NOTE** this is an example. Do **not** use to validate real scenarios. 
 
 For more details on creating the custom resource files that drive preflight checks, visit [creating preflight checks](https://troubleshoot.sh/docs/preflight/introduction/).
 
@@ -29,12 +31,17 @@ To collect a sample support bundle, install the troubleshoot kubectl plugin:
 ```
 curl https://krew.sh/support-bundle | bash
 ```
- and run:
+ and run, where https://support-bundle.replicated.com provides an **example** support bundle spec:
  
 ```
 kubectl support-bundle https://support-bundle.replicated.com
 ```
+
+**NOTE** this is an example. Do **not** use to validate real scenarios. 
+
 For more details on creating the custom resource files that drive support-bundle collection, visit [creating collectors](https://troubleshoot.sh/docs/collect/) and [creating analyzers](https://troubleshoot.sh/docs/analyze/).
+
+And see our other tool [sbctl](https://github.com/replicatedhq/sbctl) that makes it easier to interact with support bundles using `kubectl` commands you already know
 
 # Community
 

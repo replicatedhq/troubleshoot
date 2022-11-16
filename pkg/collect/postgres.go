@@ -21,12 +21,12 @@ type CollectPostgres struct {
 	Namespace    string
 	ClientConfig *rest.Config
 	Client       kubernetes.Interface
-	ctx          context.Context
+	Context      context.Context
 	RBACErrors
 }
 
 func (c *CollectPostgres) Title() string {
-	return collectorTitleOrDefault(c.Collector.CollectorMeta, "Postgres")
+	return getCollectorName(c)
 }
 
 func (c *CollectPostgres) IsExcluded() (bool, error) {

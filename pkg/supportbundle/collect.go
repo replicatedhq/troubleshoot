@@ -32,8 +32,6 @@ func runHostCollectors(hostCollectors []*troubleshootv1beta2.HostCollect, additi
 		}
 	}
 
-	collectResult := collect.NewResult()
-
 	for _, collector := range collectors {
 		isExcluded, _ := collector.IsExcluded()
 		if isExcluded {
@@ -50,7 +48,7 @@ func runHostCollectors(hostCollectors []*troubleshootv1beta2.HostCollect, additi
 		}
 	}
 
-	collectResult = allCollectedData
+	collectResult := allCollectedData
 
 	globalRedactors := []*troubleshootv1beta2.Redact{}
 	if additionalRedactors != nil {
@@ -71,8 +69,9 @@ func runHostCollectors(hostCollectors []*troubleshootv1beta2.HostCollect, additi
 func runCollectors(collectors []*troubleshootv1beta2.Collect, additionalRedactors *troubleshootv1beta2.Redactor, bundlePath string, opts SupportBundleCreateOpts) (collect.CollectorResult, error) {
 	collectSpecs := make([]*troubleshootv1beta2.Collect, 0)
 	collectSpecs = append(collectSpecs, collectors...)
-	collectSpecs = ensureCollectorInList(collectSpecs, troubleshootv1beta2.Collect{ClusterInfo: &troubleshootv1beta2.ClusterInfo{}})
-	collectSpecs = ensureCollectorInList(collectSpecs, troubleshootv1beta2.Collect{ClusterResources: &troubleshootv1beta2.ClusterResources{}})
+	collectSpecs = collect.EnsureCollectorInList(collectSpecs, troubleshootv1beta2.Collect{ClusterInfo: &troubleshootv1beta2.ClusterInfo{}})
+	collectSpecs = collect.EnsureCollectorInList(collectSpecs, troubleshootv1beta2.Collect{ClusterResources: &troubleshootv1beta2.ClusterResources{}})
+	collectSpecs = collect.EnsureClusterResourcesFirst(collectSpecs)
 
 	var allCollectors []collect.Collector
 
@@ -131,7 +130,7 @@ func runCollectors(collectors []*troubleshootv1beta2.Collect, additionalRedactor
 			}
 		}
 
-		opts.ProgressChan <- fmt.Sprintf("[%s] Running collector...", collector.Title())
+		opts.CollectorProgressCallback(opts.ProgressChan, collector.Title())
 		result, err := collector.Collect(opts.ProgressChan)
 		if err != nil {
 			opts.ProgressChan <- errors.Errorf("failed to run collector: %s: %v", collector.Title(), err)
@@ -173,19 +172,6 @@ func findFileName(basename, extension string) (string, error) {
 		name = fmt.Sprintf("%s (%d)", basename, n)
 		n = n + 1
 	}
-}
-
-func ensureCollectorInList(list []*troubleshootv1beta2.Collect, collector troubleshootv1beta2.Collect) []*troubleshootv1beta2.Collect {
-	for _, inList := range list {
-		if collector.ClusterResources != nil && inList.ClusterResources != nil {
-			return list
-		}
-		if collector.ClusterInfo != nil && inList.ClusterInfo != nil {
-			return list
-		}
-	}
-
-	return append(list, &collector)
 }
 
 const VersionFilename = "version.yaml"

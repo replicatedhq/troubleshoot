@@ -22,12 +22,12 @@ type CollectExec struct {
 	Namespace    string
 	ClientConfig *rest.Config
 	Client       kubernetes.Interface
-	ctx          context.Context
+	Context      context.Context
 	RBACErrors
 }
 
 func (c *CollectExec) Title() string {
-	return collectorTitleOrDefault(c.Collector.CollectorMeta, "Exec")
+	return getCollectorName(c)
 }
 
 func (c *CollectExec) IsExcluded() (bool, error) {

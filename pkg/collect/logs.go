@@ -22,13 +22,13 @@ type CollectLogs struct {
 	Namespace    string
 	ClientConfig *rest.Config
 	Client       kubernetes.Interface
-	ctx          context.Context
+	Context      context.Context
 	SinceTime    *time.Time
 	RBACErrors
 }
 
 func (c *CollectLogs) Title() string {
-	return collectorTitleOrDefault(c.Collector.CollectorMeta, "Logs")
+	return getCollectorName(c)
 }
 
 func (c *CollectLogs) IsExcluded() (bool, error) {

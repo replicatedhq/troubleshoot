@@ -20,12 +20,12 @@ type CollectRedis struct {
 	Namespace    string
 	ClientConfig *rest.Config
 	Client       kubernetes.Interface
-	ctx          context.Context
+	Context      context.Context
 	RBACErrors
 }
 
 func (c *CollectRedis) Title() string {
-	return collectorTitleOrDefault(c.Collector.CollectorMeta, "Cluster Info")
+	return getCollectorName(c)
 }
 
 func (c *CollectRedis) IsExcluded() (bool, error) {

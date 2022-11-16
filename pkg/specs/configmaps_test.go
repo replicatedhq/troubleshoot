@@ -12,30 +12,30 @@ import (
 	testclient "k8s.io/client-go/kubernetes/fake"
 )
 
-func Test_LoadFromSecretMatchingLabel(t *testing.T) {
+func Test_LoadFromConfigMapMatchingLabel(t *testing.T) {
 	type args struct {
 		ctx    context.Context
 		client kubernetes.Interface
 	}
 	tests := []struct {
-		name                 string
-		supportBundleSecrets []corev1.Secret
-		want                 []string
-		wantErr              bool
+		name                    string
+		supportBundleConfigMaps []corev1.ConfigMap
+		want                    []string
+		wantErr                 bool
 	}{
 		{
-			name: "support bundle secret with matching label and key",
-			supportBundleSecrets: []corev1.Secret{
+			name: "support bundle configmap with matching label and key",
+			supportBundleConfigMaps: []corev1.ConfigMap{
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      "secret",
+						Name:      "configmap",
 						Namespace: "default",
 						Labels: map[string]string{
 							"troubleshoot.io/kind": "supportbundle-spec",
 						},
 					},
-					Data: map[string][]byte{
-						"support-bundle-spec": []byte(`apiVersion: troubleshoot.sh/v1beta2
+					Data: map[string]string{
+						"support-bundle-spec": `apiVersion: troubleshoot.sh/v1beta2
 kind: SupportBundle
 metadata:
   name: test
@@ -49,7 +49,7 @@ spec:
 		  - name: run-ping
 			image: busybox:1
 			command: ["ping"]
-			args: ["-w", "5", "www.google.com"]`),
+			args: ["-w", "5", "www.google.com"]`,
 					},
 				},
 			},
@@ -73,17 +73,17 @@ spec:
 		},
 		{
 			name: "mutlidoc support bundle secret with matching label and key",
-			supportBundleSecrets: []corev1.Secret{
+			supportBundleConfigMaps: []corev1.ConfigMap{
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      "secret",
+						Name:      "configmap",
 						Namespace: "default",
 						Labels: map[string]string{
 							"troubleshoot.io/kind": "supportbundle-spec",
 						},
 					},
-					Data: map[string][]byte{
-						"support-bundle-spec": []byte(`apiVersion: troubleshoot.sh/v1beta2
+					Data: map[string]string{
+						"support-bundle-spec": `apiVersion: troubleshoot.sh/v1beta2
 kind: SupportBundle
 metadata:
   name: test
@@ -109,7 +109,7 @@ spec:
     removals:
       regex:
       - selector: '(?i)"name": *".*user[^\"]*"'
-        redactor: '(?i)("value": *")(?P<mask>.*[^\"]*)(")'`),
+        redactor: '(?i)("value": *")(?P<mask>.*[^\"]*)(")'`,
 					},
 				},
 			},
@@ -144,15 +144,15 @@ spec:
 			},
 		},
 		{
-			name: "support bundle secret with missing label",
-			supportBundleSecrets: []corev1.Secret{
+			name: "support bundle configmap with missing label",
+			supportBundleConfigMaps: []corev1.ConfigMap{
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      "secret",
+						Name:      "configap",
 						Namespace: "default",
 					},
-					Data: map[string][]byte{
-						"support-bundle-spec": []byte(`apiVersion: troubleshoot.sh/v1beta2
+					Data: map[string]string{
+						"support-bundle-spec": `apiVersion: troubleshoot.sh/v1beta2
 kind: SupportBundle
 metadata:
   name: test
@@ -161,22 +161,22 @@ spec:
   - data:
       name: static/data.txt
       data: |
-	    static data`),
+	    static data`,
 					},
 				},
 			},
 			want: []string(nil),
 		},
 		{
-			name: "support bundle secret with matching label but wrong key",
-			supportBundleSecrets: []corev1.Secret{
+			name: "support bundle configmap with matching label but wrong key",
+			supportBundleConfigMaps: []corev1.ConfigMap{
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      "secret",
+						Name:      "configmap",
 						Namespace: "default",
 					},
-					Data: map[string][]byte{
-						"support-bundle-specc": []byte(`apiVersion: troubleshoot.sh/v1beta2
+					Data: map[string]string{
+						"support-bundle-specc": `apiVersion: troubleshoot.sh/v1beta2
 kind: SupportBundle
 metadata:
   name: test
@@ -185,49 +185,49 @@ spec:
   - data:
       name: static/data.txt
       data: |
-	    static data`),
+	    static data`,
 					},
 				},
 			},
 			want: []string(nil),
 		},
 		{
-			name: "multiple support bundle secrets in the same namespace with matching label and key",
-			supportBundleSecrets: []corev1.Secret{
+			name: "multiple support bundle configmaps in the same namespace with matching label and key",
+			supportBundleConfigMaps: []corev1.ConfigMap{
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      "secret",
+						Name:      "configmap",
 						Namespace: "default",
 						Labels: map[string]string{
 							"troubleshoot.io/kind": "supportbundle-spec",
 						},
 					},
-					Data: map[string][]byte{
-						"support-bundle-spec": []byte(`apiVersion: troubleshoot.sh/v1beta2
+					Data: map[string]string{
+						"support-bundle-spec": `apiVersion: troubleshoot.sh/v1beta2
 kind: SupportBundle
 metadata:
   name: cluster-info
 spec:
   collectors:
-  - clusterInfo: {}`),
+  - clusterInfo: {}`,
 					},
 				},
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      "secret-2",
+						Name:      "configmap-2",
 						Namespace: "default",
 						Labels: map[string]string{
 							"troubleshoot.io/kind": "supportbundle-spec",
 						},
 					},
-					Data: map[string][]byte{
-						"support-bundle-spec": []byte(`apiVersion: troubleshoot.sh/v1beta2
+					Data: map[string]string{
+						"support-bundle-spec": `apiVersion: troubleshoot.sh/v1beta2
 kind: SupportBundle
 metadata:
   name: cluster-resources
 spec:
   collectors:
-  - clusterResources: {}`),
+  - clusterResources: {}`,
 					},
 				},
 			},
@@ -249,42 +249,42 @@ spec:
 			},
 		},
 		{
-			name: "multiple support bundle secrets in different namespaces with matching label and key",
-			supportBundleSecrets: []corev1.Secret{
+			name: "multiple support bundle configmaps in different namespaces with matching label and key",
+			supportBundleConfigMaps: []corev1.ConfigMap{
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      "secret",
+						Name:      "configmap",
 						Namespace: "some-namespace",
 						Labels: map[string]string{
 							"troubleshoot.io/kind": "supportbundle-spec",
 						},
 					},
-					Data: map[string][]byte{
-						"support-bundle-spec": []byte(`apiVersion: troubleshoot.sh/v1beta2
+					Data: map[string]string{
+						"support-bundle-spec": `apiVersion: troubleshoot.sh/v1beta2
 kind: SupportBundle
 metadata:
   name: cluster-info
 spec:
   collectors:
-  - clusterInfo: {}`),
+  - clusterInfo: {}`,
 					},
 				},
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      "secret-2",
+						Name:      "configmap-2",
 						Namespace: "some-namespace-2",
 						Labels: map[string]string{
 							"troubleshoot.io/kind": "supportbundle-spec",
 						},
 					},
-					Data: map[string][]byte{
-						"support-bundle-spec": []byte(`apiVersion: troubleshoot.sh/v1beta2
+					Data: map[string]string{
+						"support-bundle-spec": `apiVersion: troubleshoot.sh/v1beta2
 kind: SupportBundle
 metadata:
   name: cluster-resources
 spec:
   collectors:
-  - clusterResources: {}`),
+  - clusterResources: {}`,
 					},
 				},
 			},
@@ -306,42 +306,42 @@ spec:
 			},
 		},
 		{
-			name: "multiple support bundle secrets in different namespaces but only one with correct label and key",
-			supportBundleSecrets: []corev1.Secret{
+			name: "multiple support bundle configmaps in different namespaces but only one with correct label and key",
+			supportBundleConfigMaps: []corev1.ConfigMap{
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      "secret",
+						Name:      "configmap",
 						Namespace: "some-namespace",
 						Labels: map[string]string{
 							"troubleshoot.io/kind": "supportbundle-spec-wrong",
 						},
 					},
-					Data: map[string][]byte{
-						"support-bundle-spec-wrong": []byte(`apiVersion: troubleshoot.sh/v1beta2
+					Data: map[string]string{
+						"support-bundle-spec-wrong": `apiVersion: troubleshoot.sh/v1beta2
 kind: SupportBundle
 metadata:
   name: cluster-info
 spec:
   collectors:
-  - clusterInfo: {}`),
+  - clusterInfo: {}`,
 					},
 				},
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      "secret-2",
+						Name:      "configmap-2",
 						Namespace: "some-namespace-2",
 						Labels: map[string]string{
 							"troubleshoot.io/kind": "supportbundle-spec",
 						},
 					},
-					Data: map[string][]byte{
-						"support-bundle-spec": []byte(`apiVersion: troubleshoot.sh/v1beta2
+					Data: map[string]string{
+						"support-bundle-spec": `apiVersion: troubleshoot.sh/v1beta2
 kind: SupportBundle
 metadata:
   name: cluster-resources
 spec:
   collectors:
-  - clusterResources: {}`),
+  - clusterResources: {}`,
 					},
 				},
 			},
@@ -360,11 +360,11 @@ spec:
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
 			client := testclient.NewSimpleClientset()
-			for _, secret := range tt.supportBundleSecrets {
-				_, err := client.CoreV1().Secrets(secret.Namespace).Create(ctx, &secret, metav1.CreateOptions{})
+			for _, configmap := range tt.supportBundleConfigMaps {
+				_, err := client.CoreV1().ConfigMaps(configmap.Namespace).Create(ctx, &configmap, metav1.CreateOptions{})
 				require.NoError(t, err)
 			}
-			got, err := LoadFromSecretMatchingLabel(client, "troubleshoot.io/kind=supportbundle-spec", "", "support-bundle-spec")
+			got, err := LoadFromConfigMapMatchingLabel(client, "troubleshoot.io/kind=supportbundle-spec", "", "support-bundle-spec")
 			if tt.wantErr {
 				assert.Error(t, err)
 			} else {
@@ -375,30 +375,30 @@ spec:
 	}
 }
 
-func TestUserProvidedNamespace_LoadFromSecretMatchingLabel(t *testing.T) {
+func TestUserProvidedNamespace_LoadFromConfigMapMatchingLabel(t *testing.T) {
 	type args struct {
 		ctx    context.Context
 		client kubernetes.Interface
 	}
 	tests := []struct {
-		name                 string
-		supportBundleSecrets []corev1.Secret
-		want                 []string
-		wantErr              bool
+		name                    string
+		supportBundleConfigMaps []corev1.ConfigMap
+		want                    []string
+		wantErr                 bool
 	}{
 		{
-			name: "support bundle secret with matching label and key in user provided namespace",
-			supportBundleSecrets: []corev1.Secret{
+			name: "support bundle configmap with matching label and key in user provided namespace",
+			supportBundleConfigMaps: []corev1.ConfigMap{
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      "secret",
+						Name:      "configmap",
 						Namespace: "some-namespace",
 						Labels: map[string]string{
 							"troubleshoot.io/kind": "supportbundle-spec",
 						},
 					},
-					Data: map[string][]byte{
-						"support-bundle-spec": []byte(`apiVersion: troubleshoot.sh/v1beta2
+					Data: map[string]string{
+						"support-bundle-spec": `apiVersion: troubleshoot.sh/v1beta2
 kind: SupportBundle
 metadata:
   name: test
@@ -407,7 +407,7 @@ spec:
   - data:
       name: static/data.txt
       data: |
-	    static data`),
+	    static data`,
 					},
 				},
 			},
@@ -425,18 +425,18 @@ spec:
 			},
 		},
 		{
-			name: "support bundle secret with matching label and key outside of user provided namespace",
-			supportBundleSecrets: []corev1.Secret{
+			name: "support bundle configmap with matching label and key outside of user provided namespace",
+			supportBundleConfigMaps: []corev1.ConfigMap{
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      "secret",
+						Name:      "configmap",
 						Namespace: "not-your-namespace",
 						Labels: map[string]string{
 							"troubleshoot.io/kind": "supportbundle-spec",
 						},
 					},
-					Data: map[string][]byte{
-						"support-bundle-spec": []byte(`apiVersion: troubleshoot.sh/v1beta2
+					Data: map[string]string{
+						"support-bundle-spec": `apiVersion: troubleshoot.sh/v1beta2
 kind: SupportBundle
 metadata:
   name: test
@@ -445,7 +445,7 @@ spec:
   - data:
       name: static/data.txt
       data: |
-	    static data`),
+	    static data`,
 					},
 				},
 			},
@@ -456,11 +456,11 @@ spec:
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
 			client := testclient.NewSimpleClientset()
-			for _, secret := range tt.supportBundleSecrets {
-				_, err := client.CoreV1().Secrets(secret.Namespace).Create(ctx, &secret, metav1.CreateOptions{})
+			for _, configmap := range tt.supportBundleConfigMaps {
+				_, err := client.CoreV1().ConfigMaps(configmap.Namespace).Create(ctx, &configmap, metav1.CreateOptions{})
 				require.NoError(t, err)
 			}
-			got, err := LoadFromSecretMatchingLabel(client, "troubleshoot.io/kind=supportbundle-spec", "some-namespace", "support-bundle-spec")
+			got, err := LoadFromConfigMapMatchingLabel(client, "troubleshoot.io/kind=supportbundle-spec", "some-namespace", "support-bundle-spec")
 			if tt.wantErr {
 				assert.Error(t, err)
 			} else {
@@ -471,30 +471,30 @@ spec:
 	}
 }
 
-func TestRedactors_LoadFromSecretMatchingLabel(t *testing.T) {
+func TestRedactors_LoadFromConfigMapMatchingLabel(t *testing.T) {
 	type args struct {
 		ctx    context.Context
 		client kubernetes.Interface
 	}
 	tests := []struct {
-		name                 string
-		supportBundleSecrets []corev1.Secret
-		want                 []string
-		wantErr              bool
+		name                    string
+		supportBundleConfigMaps []corev1.ConfigMap
+		want                    []string
+		wantErr                 bool
 	}{
 		{
-			name: "redactor secret with matching label and key",
-			supportBundleSecrets: []corev1.Secret{
+			name: "redactor configmap with matching label and key",
+			supportBundleConfigMaps: []corev1.ConfigMap{
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      "secret",
+						Name:      "configmap",
 						Namespace: "default",
 						Labels: map[string]string{
 							"troubleshoot.io/kind": "supportbundle-spec",
 						},
 					},
-					Data: map[string][]byte{
-						"redactor-spec": []byte(`apiVersion: troubleshoot.sh/v1beta2
+					Data: map[string]string{
+						"redactor-spec": `apiVersion: troubleshoot.sh/v1beta2
 kind: Redactor
 metadata:
   name: redact-some-content
@@ -505,7 +505,7 @@ spec:
       file: result.json
     removals:
       values:
-      - some-content`),
+      - some-content`,
 					},
 				},
 			},
@@ -525,18 +525,18 @@ spec:
 			},
 		},
 		{
-			name: "redactor secret with matching label but wrong key",
-			supportBundleSecrets: []corev1.Secret{
+			name: "redactor configmap with matching label but wrong key",
+			supportBundleConfigMaps: []corev1.ConfigMap{
 				{
 					ObjectMeta: metav1.ObjectMeta{
-						Name:      "secret",
+						Name:      "configmap",
 						Namespace: "default",
 						Labels: map[string]string{
 							"troubleshoot.io/kind": "supportbundle-spec",
 						},
 					},
-					Data: map[string][]byte{
-						"redactor-spec-wrong": []byte(`apiVersion: troubleshoot.sh/v1beta2
+					Data: map[string]string{
+						"redactor-spec-wrong": `apiVersion: troubleshoot.sh/v1beta2
 kind: Redactor
 metadata:
   name: redact-some-content
@@ -547,7 +547,7 @@ spec:
       file: result.json
     removals:
       values:
-      - some-content`),
+      - some-content`,
 					},
 				},
 			},
@@ -558,11 +558,11 @@ spec:
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
 			client := testclient.NewSimpleClientset()
-			for _, secret := range tt.supportBundleSecrets {
-				_, err := client.CoreV1().Secrets(secret.Namespace).Create(ctx, &secret, metav1.CreateOptions{})
+			for _, configmap := range tt.supportBundleConfigMaps {
+				_, err := client.CoreV1().ConfigMaps(configmap.Namespace).Create(ctx, &configmap, metav1.CreateOptions{})
 				require.NoError(t, err)
 			}
-			got, err := LoadFromSecretMatchingLabel(client, "troubleshoot.io/kind=supportbundle-spec", "", "redactor-spec")
+			got, err := LoadFromConfigMapMatchingLabel(client, "troubleshoot.io/kind=supportbundle-spec", "", "redactor-spec")
 			if tt.wantErr {
 				assert.Error(t, err)
 			} else {
