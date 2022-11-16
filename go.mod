@@ -5,7 +5,7 @@ go 1.19
 require (
 	github.com/ahmetalpbalkan/go-cursor v0.0.0-20131010032410-8136607ea412
 	github.com/blang/semver v3.5.1+incompatible
-	github.com/containers/image/v5 v5.23.0
+	github.com/containers/image/v5 v5.23.1
 	github.com/docker/distribution v2.8.1+incompatible
 	github.com/fatih/color v1.13.0
 	github.com/go-logr/logr v1.2.3
