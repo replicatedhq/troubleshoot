@@ -116,11 +116,11 @@ endif
 .PHONY: release
 release: export GITHUB_TOKEN = $(shell echo ${GITHUB_TOKEN_TROUBLESHOOT})
 release:
-	curl -sL https://git.io/goreleaser | bash -s -- --rm-dist --config deploy/.goreleaser.yml
+	curl -sL https://git.io/goreleaser | bash -s -- --rm-dist --config deploy/.goreleaser.yaml
 
 .PHONY: snapshot-release
 snapshot-release:
-	curl -sL https://git.io/goreleaser | bash -s -- --rm-dist --snapshot --config deploy/.goreleaser.snapshot.yml
+	curl -sL https://git.io/goreleaser | bash -s -- --rm-dist --snapshot --config deploy/.goreleaser.snapshot.yaml
 	docker push replicated/troubleshoot:alpha
 	docker push replicated/preflight:alpha
 
