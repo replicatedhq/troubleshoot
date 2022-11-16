@@ -7,13 +7,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-// Reset flags for preflightFlags
-func resetFlags() {
-	if preflightFlags != nil {
-		preflightFlags = NewPreflightFlags()
-	}
-}
-
 func TestAddFlagsString(t *testing.T) {
 	tests := []struct {
 		name    string
@@ -69,7 +62,6 @@ func TestAddFlagsString(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			resetFlags()
 			f := flag.FlagSet{}
 			AddFlags(&f)
 
@@ -106,7 +98,6 @@ func TestAddFlagsBool(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			resetFlags()
 			f := flag.FlagSet{}
 			AddFlags(&f)
 
