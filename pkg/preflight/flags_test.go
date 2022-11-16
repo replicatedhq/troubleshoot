@@ -19,42 +19,37 @@ func TestAddFlagsString(t *testing.T) {
 		want:    "",
 		wantErr: true,
 	}, {
-		name:    "expect output=empty, err=nil when output flag is set",
-		flag:    "output",
-		want:    "",
-		wantErr: false,
-	}, {
 		name:    "expect format=human, err=nil when format flag is set",
 		flag:    "format",
 		want:    "human",
 		wantErr: false,
 	}, {
-		name:    "expect collector-image=empty, err=nil when format collector-image is set",
+		name:    "expect collector-image=empty, err=nil when collector-image flag is set",
 		flag:    "collector-image",
 		want:    "",
 		wantErr: false,
 	}, {
-		name:    "expect collector-pullpolicy=empty, err=nil when format collector-pullpolicy is set",
+		name:    "expect collector-pullpolicy=empty, err=nil when collector-pullpolicy flag is set",
 		flag:    "collector-pullpolicy",
 		want:    "",
 		wantErr: false,
 	}, {
-		name:    "expect selector=empty, err=nil when format selector is set",
+		name:    "expect selector=empty, err=nil when selector flag is set",
 		flag:    "selector",
 		want:    "",
 		wantErr: false,
 	}, {
-		name:    "expect since-time=empty, err=nil when format since-time is set",
+		name:    "expect since-time=empty, err=nil when since-time flag is set",
 		flag:    "since-time",
 		want:    "",
 		wantErr: false,
 	}, {
-		name:    "expect since=empty, err=nil when format since is set",
+		name:    "expect since=empty, err=nil when since flag is set",
 		flag:    "since",
 		want:    "",
 		wantErr: false,
 	}, {
-		name:    "expect output=empty, err=nil when format output is set",
+		name:    "expect output=empty, err=nil when output flag is set",
 		flag:    "output",
 		want:    "",
 		wantErr: false,
