@@ -74,7 +74,6 @@ func (c *CollectClusterResources) Merge(allCollectors []Collector) ([]Collector,
 			}
 		}
 	}
-	fmt.Println(uniqueNamespaces)
 
 	clusterResourcesCollector := c
 
