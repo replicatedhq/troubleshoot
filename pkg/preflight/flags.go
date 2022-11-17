@@ -88,7 +88,7 @@ func (f *PreflightFlags) addFlags(flags *flag.FlagSet) {
 		flags.StringVar(f.Since, flagSince, *f.Since, "force pod logs collectors to return logs newer than a relative duration like 5s, 2m, or 3h.")
 	}
 	if f.Output != nil {
-		flags.StringVar(f.Output, flagOutput, *f.Output, "specify the output file path for the preflight checks")
+		flags.StringVarP(f.Output, flagOutput, *f.Output, "", "specify the output file path for the preflight checks")
 	}
 	if f.Debug != nil {
 		flags.BoolVar(f.Debug, flagDebug, *f.Debug, "enable debug logging")
