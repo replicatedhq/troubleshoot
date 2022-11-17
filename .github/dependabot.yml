@@ -21,6 +21,7 @@ updates:
     directory: "/"
     labels:
       - "dependencies"
+      - "github-actions"
       - "type::chore"
     schedule:
       interval: "weekly"
