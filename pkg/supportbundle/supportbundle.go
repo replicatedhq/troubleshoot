@@ -58,7 +58,7 @@ func CollectSupportBundleFromSpec(spec *troubleshootv1beta2.SupportBundleSpec, a
 		return nil, errors.Wrap(err, "create temp dir")
 	}
 	defer os.RemoveAll(tmpDir)
-	klog.V(2).Infof("Support bundle temp dir: %s", tmpDir)
+	klog.V(2).Infof("Support bundle created in temporary directory: %s", tmpDir)
 
 	basename := ""
 	if opts.OutputPath != "" {
