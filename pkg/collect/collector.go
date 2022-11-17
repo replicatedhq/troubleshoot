@@ -3,7 +3,6 @@ package collect
 import (
 	"context"
 	"fmt"
-	"reflect"
 	"strconv"
 	"strings"
 	"time"
@@ -52,20 +51,18 @@ func isExcluded(excludeVal *multitype.BoolOrString) (bool, error) {
 	return parsed, nil
 }
 
-func GetCollector(collector *troubleshootv1beta2.Collect, bundlePath string, namespace string, clientConfig *rest.Config, client kubernetes.Interface, sinceTime *time.Time) (interface{}, interface{}, bool) {
+func GetCollector(collector *troubleshootv1beta2.Collect, bundlePath string, namespace string, clientConfig *rest.Config, client kubernetes.Interface, sinceTime *time.Time) (interface{}, bool) {
 
-	//ctx := context.TODO()
+	ctx := context.TODO()
 
 	var RBACErrors []error
 
 	switch {
 	case collector.ClusterInfo != nil:
-		return &CollectClusterInfo{collector.ClusterInfo, bundlePath, namespace, clientConfig, RBACErrors}, &CollectClusterInfo{}, true
+		return &CollectClusterInfo{collector.ClusterInfo, bundlePath, namespace, clientConfig, RBACErrors}, true
 	case collector.ClusterResources != nil:
-		obj := &CollectClusterResources{collector.ClusterResources, bundlePath, namespace, clientConfig, RBACErrors}
-		typeOf := reflect.TypeOf(obj)
-		return obj, typeOf, true
-	/*case collector.Secret != nil:
+		return &CollectClusterResources{collector.ClusterResources, bundlePath, namespace, clientConfig, RBACErrors}, true
+	case collector.Secret != nil:
 		return &CollectSecret{collector.Secret, bundlePath, namespace, clientConfig, client, ctx, RBACErrors}, true
 	case collector.ConfigMap != nil:
 		return &CollectConfigMap{collector.ConfigMap, bundlePath, namespace, clientConfig, client, ctx, RBACErrors}, true
@@ -100,9 +97,9 @@ func GetCollector(collector *troubleshootv1beta2.Collect, bundlePath string, nam
 	case collector.RegistryImages != nil:
 		return &CollectRegistry{collector.RegistryImages, bundlePath, namespace, clientConfig, client, ctx, RBACErrors}, true
 	case collector.Sysctl != nil:
-		return &CollectSysctl{collector.Sysctl, bundlePath, namespace, clientConfig, client, ctx, RBACErrors}, true*/
+		return &CollectSysctl{collector.Sysctl, bundlePath, namespace, clientConfig, client, ctx, RBACErrors}, true
 	default:
-		return nil, nil, false
+		return nil, false
 	}
 }
 

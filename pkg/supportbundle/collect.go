@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"reflect"
 
 	"github.com/pkg/errors"
 	analyze "github.com/replicatedhq/troubleshoot/pkg/analyze"
@@ -88,29 +89,27 @@ func runCollectors(collectors []*troubleshootv1beta2.Collect, additionalRedactor
 	newDesiredCollectors := make(map[interface{}][]collect.Collector)
 
 	for _, desiredCollector := range collectSpecs {
-		if collectorInterface, cType, ok := collect.GetCollector(desiredCollector, bundlePath, opts.Namespace, opts.KubernetesRestConfig, k8sClient, opts.SinceTime); ok {
+		if collectorInterface, ok := collect.GetCollector(desiredCollector, bundlePath, opts.Namespace, opts.KubernetesRestConfig, k8sClient, opts.SinceTime); ok {
 			if collector, ok := collectorInterface.(collect.Collector); ok {
 				err := collector.CheckRBAC(context.Background(), collector, desiredCollector, opts.KubernetesRestConfig, opts.Namespace)
 				if err != nil {
 					return nil, errors.Wrap(err, "failed to check RBAC for collectors")
 				}
-				newDesiredCollectors[cType] = append(newDesiredCollectors[cType], collector)
+				collectorType := reflect.TypeOf(collector)
+				newDesiredCollectors[collectorType] = append(newDesiredCollectors[collectorType], collector)
 			}
 		}
 	}
 
 	var foundForbidden bool
 	for k, v := range newDesiredCollectors {
-		// run merge on v if mergeable
 		if mergeCollector, ok := v[0].(collect.MergeableCollector); ok {
-			fmt.Println(newDesiredCollectors[k])
 			newList, err := mergeCollector.Merge(v)
 			if err != nil {
 				msg := fmt.Sprintf("failed to merge collector: %s: %s", mergeCollector.Title(), err)
 				opts.CollectorProgressCallback(opts.ProgressChan, msg)
 			}
 			newDesiredCollectors[k] = newList
-			fmt.Println(newDesiredCollectors[k])
 		}
 		foundForbidden = false
 		for _, daCollec := range v {
