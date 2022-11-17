@@ -51,17 +51,10 @@ func (c *CollectClusterResources) IsExcluded() (bool, error) {
 }
 
 func (c *CollectClusterResources) Merge(allCollectors []Collector) ([]Collector, error) {
-	// Right now this merge function assumes it has been provided the entire list of collectors to be run and will
-	//       return the entire "spec" but modifying the pieces it needs to
 	var result []Collector
 	uniqueNamespaces := make(map[string]bool)
 	hasEmptyNameSpaceCollector := false
 
-	// 1. search all collectors for Cluster Resources Collectors
-	// 2. If we come across one with namespaces not set, set hasEmptyNameSpaceCollector true and continue
-	// 3. However if we exclusively come across collectors with a specific namespace set, start building a map to use later
-	// 4. If its not a cluster resources collector just append the current collector to the result
-	// 5. Else just add the collector to the list as its not a Cluster Resources collector so we don't need to do anything
 	for _, collectorInterface := range allCollectors {
 		if collector, ok := collectorInterface.(*CollectClusterResources); ok {
 			if collector.Collector.Namespaces == nil {
@@ -77,25 +70,20 @@ func (c *CollectClusterResources) Merge(allCollectors []Collector) ([]Collector,
 
 	clusterResourcesCollector := c
 
-	// If we found a cluster resources collector earlier, return a single cluster resources collector with namespace set to nil
 	if hasEmptyNameSpaceCollector {
 		clusterResourcesCollector.Collector.Namespaces = nil
 		result = append(result, clusterResourcesCollector)
 		return result, nil
 	}
 
-	// Build a string slice of all the namespaces we found ealier in the cluster resource collectors
 	var allNamespaces []string
 	for k, v := range uniqueNamespaces {
 		if v {
 			allNamespaces = append(allNamespaces, k)
 		}
 	}
-	// Set the cluster resources collector object we created to use the slice of string we built
 	clusterResourcesCollector.Collector.Namespaces = allNamespaces
 
-	// As opposed to the spec originally having multiple collector definitions specified, the merge function now collapses them into one with
-	//     a longer string slice of all the unqiue namespaces that were provided
 	result = append(result, clusterResourcesCollector)
 
 	return result, nil
