@@ -5,11 +5,11 @@ import (
 	"bytes"
 	"compress/gzip"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 
 	"github.com/pkg/errors"
+	"k8s.io/klog/v2"
 )
 
 type CollectorResult map[string][]byte
@@ -18,13 +18,65 @@ func NewResult() CollectorResult {
 	return map[string][]byte{}
 }
 
+// SymLinkResult creates a symlink (relativeLinkPath) of relativeFilePath in the bundle. If bundlePath
+// is empty, no symlink is created. The relativeLinkPath is always saved in the result map.
+func (r CollectorResult) SymLinkResult(bundlePath, relativeLinkPath, relativeFilePath string) error {
+	if bundlePath == "" {
+		// Just save the link path. No need to create a symlink
+		r[relativeLinkPath] = nil
+		return nil
+	}
+
+	linkPath := filepath.Join(bundlePath, relativeLinkPath)
+	filePath := filepath.Join(bundlePath, relativeFilePath)
+
+	// If both paths are the same, don't create a symlink
+	if linkPath == filePath {
+		return nil
+	}
+
+	linkDirPath := filepath.Dir(linkPath)
+
+	// Create the directory for the symlink if it doesn't exist
+	err := os.MkdirAll(linkDirPath, 0777)
+	if err != nil {
+		return errors.Wrap(err, "failed to create directory")
+	}
+
+	// Ensure the file exists
+	_, err = os.Stat(filePath)
+	if err != nil {
+		return errors.Wrap(err, "failed to stat. File may not exist")
+	}
+
+	// Do nothing if the symlink already exists
+	_, err = os.Lstat(linkPath)
+	if err == nil {
+		return nil
+	}
+
+	// Create the symlink
+	err = os.Symlink(filePath, linkPath)
+	if err != nil {
+		return errors.Wrap(err, "failed to create symlink")
+	}
+
+	klog.V(2).Infof("Created '%s' symlink of '%s'", relativeLinkPath, relativeFilePath)
+	// store the file name referencing the symlink to have archived
+	r[relativeLinkPath] = nil
+
+	return nil
+}
+
+// SaveResult saves the collector result to relativePath file on disk. If bundlePath is
+// empty, no file is created on disk. The relativePath is always saved in the result map.
 func (r CollectorResult) SaveResult(bundlePath string, relativePath string, reader io.Reader) error {
 	if reader == nil {
 		return nil
 	}
 
 	if bundlePath == "" {
-		data, err := ioutil.ReadAll(reader)
+		data, err := io.ReadAll(reader)
 		if err != nil {
 			return errors.Wrap(err, "failed to read data")
 		}
@@ -38,7 +90,7 @@ func (r CollectorResult) SaveResult(bundlePath string, relativePath string, read
 	outPath := filepath.Join(bundlePath, fileDir)
 
 	if err := os.MkdirAll(outPath, 0777); err != nil {
-		return errors.Wrap(err, "create output file")
+		return errors.Wrap(err, "failed to create output file directory")
 	}
 
 	f, err := os.Create(filepath.Join(outPath, fileName))
@@ -57,7 +109,7 @@ func (r CollectorResult) SaveResult(bundlePath string, relativePath string, read
 
 func (r CollectorResult) ReplaceResult(bundlePath string, relativePath string, reader io.Reader) error {
 	if bundlePath == "" {
-		data, err := ioutil.ReadAll(reader)
+		data, err := io.ReadAll(reader)
 		if err != nil {
 			return errors.Wrap(err, "failed to read data")
 		}
@@ -65,7 +117,7 @@ func (r CollectorResult) ReplaceResult(bundlePath string, relativePath string, r
 		return nil
 	}
 
-	tmpFile, err := ioutil.TempFile("", "replace-")
+	tmpFile, err := os.CreateTemp("", "replace-")
 	if err != nil {
 		return errors.Wrap(err, "failed to create temp file")
 	}
@@ -87,7 +139,7 @@ func (r CollectorResult) ReplaceResult(bundlePath string, relativePath string, r
 
 func (r CollectorResult) GetReader(bundlePath string, relativePath string) (io.ReadCloser, error) {
 	if r[relativePath] != nil {
-		return ioutil.NopCloser(bytes.NewReader(r[relativePath])), nil
+		return io.NopCloser(bytes.NewReader(r[relativePath])), nil
 	}
 
 	if bundlePath == "" {
@@ -112,7 +164,7 @@ func (r CollectorResult) GetWriter(bundlePath string, relativePath string) (io.W
 	fileDir, _ := filepath.Split(relativePath)
 	outPath := filepath.Join(bundlePath, fileDir)
 	if err := os.MkdirAll(outPath, 0777); err != nil {
-		return nil, errors.Wrap(err, "create output file")
+		return nil, errors.Wrap(err, "failed to create output directory")
 	}
 
 	filename := filepath.Join(bundlePath, relativePath)
@@ -159,14 +211,20 @@ func TarSupportBundleDir(bundlePath string, input CollectorResult, outputFilenam
 
 	for relativeName := range input {
 		filename := filepath.Join(bundlePath, relativeName)
-		info, err := os.Stat(filename)
+		info, err := os.Lstat(filename)
 		if err != nil {
 			return errors.Wrap(err, "failed to stat file")
 		}
 
 		fileMode := info.Mode()
-		if !fileMode.IsRegular() { // support bundle can have only files
+		if !(fileMode.IsRegular() || fileMode.Type() == os.ModeSymlink) {
+			// support bundle can have only files or symlinks
 			continue
+		}
+
+		hdr, err := tar.FileInfoHeader(info, "")
+		if err != nil {
+			return errors.Wrap(err, "failed to tar file info header")
 		}
 
 		parentDirName := filepath.Dir(bundlePath) // this is to have the files inside a subdirectory
@@ -174,15 +232,29 @@ func TarSupportBundleDir(bundlePath string, input CollectorResult, outputFilenam
 		if err != nil {
 			return errors.Wrap(err, "failed to create relative file name")
 		}
+		// Use the relative path of the file so as to retain directory hierachy
+		hdr.Name = nameInArchive
 
-		// tar.FileInfoHeader call causes a crash in static builds
-		// https://github.com/golang/go/issues/24787
-		hdr := &tar.Header{
-			Name:     nameInArchive,
-			ModTime:  info.ModTime(),
-			Mode:     int64(fileMode.Perm()),
-			Typeflag: tar.TypeReg,
-			Size:     info.Size(),
+		if fileMode.Type() == os.ModeSymlink {
+			linkTarget, err := os.Readlink(filename)
+			if err != nil {
+				return errors.Wrap(err, "failed to get symlink target")
+			}
+
+			linkTargetInArchive, err := filepath.Rel(parentDirName, linkTarget)
+			if err != nil {
+				return errors.Wrap(err, "failed to create relative file name")
+			}
+
+			// Use the relative path of the link target so as to retain directory hierachy
+			// i.e link -> ../../../../target.log. When untarred, the link will point to the
+			// relative path of the target file on the machine where it is untarred.
+			relLinkPath, err := filepath.Rel(filepath.Dir(nameInArchive), linkTargetInArchive)
+			if err != nil {
+				return errors.Wrap(err, "failed to create relative path of symlink target file")
+			}
+
+			hdr.Linkname = relLinkPath
 		}
 
 		err = tarWriter.WriteHeader(hdr)
@@ -190,7 +262,13 @@ func TarSupportBundleDir(bundlePath string, input CollectorResult, outputFilenam
 			return errors.Wrap(err, "failed to write tar header")
 		}
 
-		err = func() error {
+		func() error {
+			if fileMode.Type() == os.ModeSymlink {
+				// Don't copy the symlink, just write the header which
+				// will create a symlink in the tarball
+				return nil
+			}
+
 			fileReader, err := os.Open(filename)
 			if err != nil {
 				return errors.Wrap(err, "failed to open source file")

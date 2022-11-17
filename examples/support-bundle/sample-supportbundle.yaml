@@ -12,6 +12,9 @@ spec:
         limits:
           maxAge: 720h # 30*24
           maxLines: 10000
+    - logs:
+        collectorName: all-logs
+        name: all-logs
   analyzers:
     - clusterVersion:
         outcomes:

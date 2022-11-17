@@ -131,7 +131,7 @@ func (c *CollectClusterResources) Collect(progressChan chan<- interface{}) (Coll
 			limits := &troubleshootv1beta2.LogLimits{
 				MaxLines: 500,
 			}
-			podLogs, err := savePodLogs(ctx, logsRoot, client, pod, "", container.Name, limits, false)
+			podLogs, err := savePodLogs(ctx, logsRoot, client, &pod, "", container.Name, limits, false)
 			if err != nil {
 				errPath := filepath.Join("cluster-resources", "pods", "logs", pod.Namespace, pod.Name, fmt.Sprintf("%s-logs-errors.log", container.Name))
 				output.SaveResult(c.BundlePath, errPath, bytes.NewBuffer([]byte(err.Error())))
