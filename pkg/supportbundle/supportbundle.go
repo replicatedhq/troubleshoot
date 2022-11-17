@@ -2,7 +2,6 @@ package supportbundle
 
 import (
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -17,6 +16,7 @@ import (
 	"github.com/replicatedhq/troubleshoot/pkg/collect"
 	"github.com/replicatedhq/troubleshoot/pkg/convert"
 	"k8s.io/client-go/rest"
+	"k8s.io/klog/v2"
 )
 
 type SupportBundleCreateOpts struct {
@@ -53,11 +53,12 @@ func CollectSupportBundleFromSpec(spec *troubleshootv1beta2.SupportBundleSpec, a
 		return nil, errors.New("did not receive collector progress chan")
 	}
 
-	tmpDir, err := ioutil.TempDir("", "supportbundle")
+	tmpDir, err := os.MkdirTemp("", "supportbundle")
 	if err != nil {
 		return nil, errors.Wrap(err, "create temp dir")
 	}
 	defer os.RemoveAll(tmpDir)
+	klog.V(2).Infof("Support bundle temp dir: %s", tmpDir)
 
 	basename := ""
 	if opts.OutputPath != "" {

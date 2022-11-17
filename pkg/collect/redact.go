@@ -17,9 +17,28 @@ import (
 
 func RedactResult(bundlePath string, input CollectorResult, additionalRedactors []*troubleshootv1beta2.Redact) error {
 	for k, v := range input {
+		file := k
+
 		var reader io.Reader
 		if v == nil {
-			r, err := input.GetReader(bundlePath, k)
+			// Collected contents are in a file. Get a reader to the file.
+			info, err := os.Lstat(filepath.Join(bundlePath, k))
+			if err != nil {
+				if os.IsNotExist(errors.Cause(err)) {
+					// File not found, moving on.
+					continue
+				}
+				return errors.Wrap(err, "failed to stat file")
+			}
+
+			// Redact the target file of a symlink
+			if info.Mode().Type() == os.ModeSymlink {
+				file, err = os.Readlink(k)
+				if err != nil {
+					return errors.Wrap(err, "failed to read symlink")
+				}
+			}
+			r, err := input.GetReader(bundlePath, file)
 			if err != nil {
 				if os.IsNotExist(errors.Cause(err)) {
 					continue
@@ -30,19 +49,20 @@ func RedactResult(bundlePath string, input CollectorResult, additionalRedactors 
 
 			reader = r
 		} else {
+			// Collected contents are in memory. Get a reader to the memory buffer.
 			reader = bytes.NewBuffer(v)
 		}
 
 		//If the file is .tar, .tgz or .tar.gz, it must not be redacted. Instead it is decompressed and each file inside the
 		//tar is decompressed, redacted and compressed back into the tar.
-		if filepath.Ext(k) == ".tar" || filepath.Ext(k) == ".tgz" || strings.HasSuffix(k, ".tar.gz") {
+		if filepath.Ext(file) == ".tar" || filepath.Ext(file) == ".tgz" || strings.HasSuffix(file, ".tar.gz") {
 			tmpDir, err := ioutil.TempDir("", "troubleshoot-subresult-")
 			if err != nil {
 				return errors.Wrap(err, "failed to create temp dir")
 			}
 			defer os.RemoveAll(tmpDir)
 
-			subResult, tarHeaders, err := decompressFile(tmpDir, reader, k)
+			subResult, tarHeaders, err := decompressFile(tmpDir, reader, file)
 			if err != nil {
 				return errors.Wrap(err, "failed to decompress file")
 			}
@@ -51,7 +71,7 @@ func RedactResult(bundlePath string, input CollectorResult, additionalRedactors 
 				return errors.Wrap(err, "failed to redact file")
 			}
 
-			dstFilename := filepath.Join(bundlePath, k)
+			dstFilename := filepath.Join(bundlePath, file)
 			err = compressFiles(tmpDir, subResult, tarHeaders, dstFilename)
 			if err != nil {
 				return errors.Wrap(err, "failed to re-compress file")
@@ -63,12 +83,12 @@ func RedactResult(bundlePath string, input CollectorResult, additionalRedactors 
 			continue
 		}
 
-		redacted, err := redact.Redact(reader, k, additionalRedactors)
+		redacted, err := redact.Redact(reader, file, additionalRedactors)
 		if err != nil {
 			return errors.Wrap(err, "failed to redact")
 		}
 
-		err = input.ReplaceResult(bundlePath, k, redacted)
+		err = input.ReplaceResult(bundlePath, file, redacted)
 		if err != nil {
 			return errors.Wrap(err, "failed to create redacted result")
 		}

@@ -138,7 +138,7 @@ run-preflight: preflight
 
 .PHONY: run-troubleshoot
 run-troubleshoot: support-bundle
-	./bin/support-bundle ./examples/support-bundle/sample-supportbundle.yaml
+	./bin/support-bundle ./examples/support-bundle/sample-supportbundle.yaml --debug --interactive=false
 
 .PHONY: run-analyze
 run-analyze: analyze
