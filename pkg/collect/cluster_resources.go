@@ -72,10 +72,9 @@ func (c *CollectClusterResources) Merge(allCollectors []Collector) ([]Collector,
 					uniqueNamespaces[namespace] = true
 				}
 			}
-		} else {
-			result = append(result, collectorInterface)
 		}
 	}
+	fmt.Println(uniqueNamespaces)
 
 	clusterResourcesCollector := c
 
@@ -98,7 +97,7 @@ func (c *CollectClusterResources) Merge(allCollectors []Collector) ([]Collector,
 
 	// As opposed to the spec originally having multiple collector definitions specified, the merge function now collapses them into one with
 	//     a longer string slice of all the unqiue namespaces that were provided
-	result = append(allCollectors, clusterResourcesCollector)
+	result = append(result, clusterResourcesCollector)
 
 	return result, nil
 }
