@@ -43,7 +43,7 @@ jobs:
         shell: bash
       - uses: actions/checkout@v3
       - run: make generate preflight
-      - uses: actions/upload-artifact@v1
+      - uses: actions/upload-artifact@v3
         with:
           name: preflight
           path: bin/preflight
@@ -119,7 +119,7 @@ jobs:
         shell: bash
       - uses: actions/checkout@v3
       - run: make generate support-bundle
-      - uses: actions/upload-artifact@v1
+      - uses: actions/upload-artifact@v3
         with:
           name: support-bundle
           path: bin/support-bundle
@@ -173,7 +173,7 @@ jobs:
         shell: bash
       - uses: actions/checkout@v3
       - run: make generate collect
-      - uses: actions/upload-artifact@v1
+      - uses: actions/upload-artifact@v3
         with:
           name: collect
           path: bin/collect
