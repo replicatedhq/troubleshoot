@@ -110,7 +110,7 @@ func Test_savePodLogs(t *testing.T) {
 			},
 		},
 		{
-			name:              "without container name",
+			name:              "without container name or collector name",
 			withContainerName: false,
 			want: CollectorResult{
 				"/test-pod.log":          []byte("fake logs"),
