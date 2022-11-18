@@ -57,7 +57,7 @@ jobs:
         with:
           version: v1.23.6-k3s1
       - name: Download preflight binary
-        uses: actions/download-artifact@v1
+        uses: actions/download-artifact@v3
         with:
           name: preflight
           path: bin/
@@ -99,7 +99,7 @@ jobs:
         with:
           version: v1.23.6-k3s1
       - name: Download preflight binary
-        uses: actions/download-artifact@v1
+        uses: actions/download-artifact@v3
         with:
           name: preflight
           path: bin/
@@ -134,7 +134,7 @@ jobs:
         with:
           version: v1.23.6-k3s1
       - name: Download support-bundle binary
-        uses: actions/download-artifact@v1
+        uses: actions/download-artifact@v3
         with:
           name: support-bundle
           path: bin/
@@ -153,7 +153,7 @@ jobs:
         with:
           version: v1.23.6-k3s1
       - name: Download support bundle binary
-        uses: actions/download-artifact@v1
+        uses: actions/download-artifact@v3
         with:
           name: support-bundle
           path: bin/
