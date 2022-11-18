@@ -138,9 +138,15 @@ func savePodLogs(
 	filePathPrefix := filepath.Join(
 		"cluster-resources", "pods", "logs", pod.Namespace, pod.Name, pod.Spec.Containers[0].Name,
 	)
-	linkRelPathPrefix := filepath.Join(collectorName, pod.Name)
+
+	// TODO: If collectorName is empty, the path is stored with a leading slash
+	// Retain this behavior otherwise analysers in the wild may break
+	// Analysers that need to find a file in the root of the bundle should
+	// prefix the path with a slash e.g /file.txt. This behavior should be
+	// properly deprecated in the future.
+	linkRelPathPrefix := fmt.Sprintf("%s/%s", collectorName, pod.Name)
 	if container != "" {
-		linkRelPathPrefix = filepath.Join(collectorName, pod.Name, container)
+		linkRelPathPrefix = fmt.Sprintf("%s/%s/%s", collectorName, pod.Name, container)
 		filePathPrefix = filepath.Join(
 			"cluster-resources", "pods", "logs", pod.Namespace, pod.Name, container,
 		)

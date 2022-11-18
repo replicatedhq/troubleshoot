@@ -84,14 +84,27 @@ func Test_savePodLogs(t *testing.T) {
 	tests := []struct {
 		name              string
 		withContainerName bool
+		collectorName     string
 		want              CollectorResult
 	}{
 		{
 			name:              "with container name",
 			withContainerName: true,
+			collectorName:     "all-logs",
 			want: CollectorResult{
-				"all-logs/test-pod/nginx.log":                                          nil,
-				"all-logs/test-pod/nginx-previous.log":                                 nil,
+				"all-logs/test-pod/nginx.log":                                          []byte("fake logs"),
+				"all-logs/test-pod/nginx-previous.log":                                 []byte("fake logs"),
+				"cluster-resources/pods/logs/my-namespace/test-pod/nginx.log":          []byte("fake logs"),
+				"cluster-resources/pods/logs/my-namespace/test-pod/nginx-previous.log": []byte("fake logs"),
+			},
+		},
+		{
+			name:              "without container name",
+			withContainerName: false,
+			collectorName:     "all-logs",
+			want: CollectorResult{
+				"all-logs/test-pod.log":                                                []byte("fake logs"),
+				"all-logs/test-pod-previous.log":                                       []byte("fake logs"),
 				"cluster-resources/pods/logs/my-namespace/test-pod/nginx.log":          []byte("fake logs"),
 				"cluster-resources/pods/logs/my-namespace/test-pod/nginx-previous.log": []byte("fake logs"),
 			},
@@ -100,8 +113,8 @@ func Test_savePodLogs(t *testing.T) {
 			name:              "without container name",
 			withContainerName: false,
 			want: CollectorResult{
-				"all-logs/test-pod.log":                                                nil,
-				"all-logs/test-pod-previous.log":                                       nil,
+				"/test-pod.log":          []byte("fake logs"),
+				"/test-pod-previous.log": []byte("fake logs"),
 				"cluster-resources/pods/logs/my-namespace/test-pod/nginx.log":          []byte("fake logs"),
 				"cluster-resources/pods/logs/my-namespace/test-pod/nginx-previous.log": []byte("fake logs"),
 			},
@@ -128,11 +141,10 @@ func Test_savePodLogs(t *testing.T) {
 				},
 			}, metav1.CreateOptions{})
 			assert.NoError(t, err)
-			collectorName := "all-logs"
 			if !tt.withContainerName {
 				containerName = ""
 			}
-			got, err := savePodLogs(ctx, "", client, pod, collectorName, containerName, limits, false)
+			got, err := savePodLogs(ctx, "", client, pod, tt.collectorName, containerName, limits, false)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.want, got)
 		})
