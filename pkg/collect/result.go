@@ -21,9 +21,16 @@ func NewResult() CollectorResult {
 // SymLinkResult creates a symlink (relativeLinkPath) of relativeFilePath in the bundle. If bundlePath
 // is empty, no symlink is created. The relativeLinkPath is always saved in the result map.
 func (r CollectorResult) SymLinkResult(bundlePath, relativeLinkPath, relativeFilePath string) error {
+	// We should have saved the result this symlink is pointing to prior to creating it
+	klog.Info("Creating symlink ", relativeLinkPath, " -> ", relativeFilePath)
+	data, ok := r[relativeFilePath]
+	if !ok {
+		return errors.Errorf("cannot create symlink, result in %q not found", relativeFilePath)
+	}
+
 	if bundlePath == "" {
-		// Just save the link path. No need to create a symlink
-		r[relativeLinkPath] = nil
+		// If we are not saving results to disk, cache in memory
+		r[relativeLinkPath] = data
 		return nil
 	}
 

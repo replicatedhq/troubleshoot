@@ -159,8 +159,9 @@ func savePodLogs(
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get log writer")
 	}
-	defer result.CloseWriter(bundlePath, filePathPrefix+".log", logWriter)
+	// NOTE: deffered calls are executed in LIFO order i.e called in reverse order
 	defer result.SymLinkResult(bundlePath, linkRelPathPrefix+".log", filePathPrefix+".log")
+	defer result.CloseWriter(bundlePath, filePathPrefix+".log", logWriter)
 
 	_, err = io.Copy(logWriter, podLogs)
 	if err != nil {
@@ -180,8 +181,9 @@ func savePodLogs(
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get previous log writer")
 	}
-	defer result.CloseWriter(bundlePath, filePathPrefix+"-previous.log", logWriter)
+	// NOTE: deffered calls are executed in LIFO order i.e called in reverse order
 	defer result.SymLinkResult(bundlePath, linkRelPathPrefix+"-previous.log", filePathPrefix+"-previous.log")
+	defer result.CloseWriter(bundlePath, filePathPrefix+"-previous.log", logWriter)
 
 	_, err = io.Copy(prevLogWriter, podLogs)
 	if err != nil {
