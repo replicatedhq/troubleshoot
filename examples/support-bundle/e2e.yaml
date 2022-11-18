@@ -11,10 +11,10 @@ spec:
         data: "5"
     - runPod:
         collectorName: "static-hi"
-        podSpec: 
+        podSpec:
           containers:
           - name: static-hi
-            image: alpine:3.5
+            image: alpine:3
             command: ["echo", "hi static!"]
   analyzers:
     - clusterVersion:
