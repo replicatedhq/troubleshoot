@@ -6,7 +6,7 @@ tmpdir="$(mktemp -d)"
 bundle_archive_name="support-bundle.tar.gz"
 bundle_directory_name="support-bundle"
 
-./bin/support-bundle --interactive=false examples/support-bundle/e2e.yaml --output=$tmpdir/$bundle_archive_name
+./bin/support-bundle --debug --interactive=false examples/support-bundle/e2e.yaml --output=$tmpdir/$bundle_archive_name
 
 EXIT_STATUS=0
 if ! tar -xvzf $tmpdir/$bundle_archive_name --directory $tmpdir; then

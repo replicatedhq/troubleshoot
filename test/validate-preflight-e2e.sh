@@ -4,7 +4,7 @@ set -euo pipefail
 
 tmpdir="$(mktemp -d)"
 
-./bin/preflight --interactive=false --format=json examples/preflight/e2e.yaml > "$tmpdir/result.json"
+./bin/preflight --debug --interactive=false --format=json examples/preflight/e2e.yaml > "$tmpdir/result.json"
 cat "$tmpdir/result.json"
 
 EXIT_STATUS=0
