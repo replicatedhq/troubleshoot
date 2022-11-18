@@ -22,7 +22,7 @@ func RedactResult(bundlePath string, input CollectorResult, additionalRedactors 
 		var reader io.Reader
 		if v == nil {
 			// Collected contents are in a file. Get a reader to the file.
-			info, err := os.Lstat(filepath.Join(bundlePath, k))
+			info, err := os.Lstat(filepath.Join(bundlePath, file))
 			if err != nil {
 				if os.IsNotExist(errors.Cause(err)) {
 					// File not found, moving on.
@@ -33,7 +33,7 @@ func RedactResult(bundlePath string, input CollectorResult, additionalRedactors 
 
 			// Redact the target file of a symlink
 			if info.Mode().Type() == os.ModeSymlink {
-				file, err = os.Readlink(k)
+				file, err = os.Readlink(filepath.Join(bundlePath, file))
 				if err != nil {
 					return errors.Wrap(err, "failed to read symlink")
 				}
@@ -85,7 +85,7 @@ func RedactResult(bundlePath string, input CollectorResult, additionalRedactors 
 
 		redacted, err := redact.Redact(reader, file, additionalRedactors)
 		if err != nil {
-			return errors.Wrap(err, "failed to redact")
+			return errors.Wrap(err, "failed to redact io stream")
 		}
 
 		err = input.ReplaceResult(bundlePath, file, redacted)

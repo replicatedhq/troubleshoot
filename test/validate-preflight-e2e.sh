@@ -5,6 +5,11 @@ set -euo pipefail
 tmpdir="$(mktemp -d)"
 
 ./bin/preflight --debug --interactive=false --format=json examples/preflight/e2e.yaml > "$tmpdir/result.json"
+if [ $? -ne 0 ]; then
+    echo "preflight command failed"
+    exit $EXIT_STATUS
+fi
+
 cat "$tmpdir/result.json"
 
 EXIT_STATUS=0

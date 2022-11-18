@@ -89,11 +89,15 @@ func CollectSupportBundleFromSpec(spec *troubleshootv1beta2.SupportBundleSpec, a
 
 	var result, files, hostFiles collect.CollectorResult
 
+	// Cache error returned by collectors and return it at the end of the function
+	// so as to have a chance to run analyzers and archive the support bundle after.
+	// If both host and in cluster collectors fail, the errors will be wrapped
+	collectorsErrs := []string{}
 	if spec.HostCollectors != nil {
 		// Run host collectors
 		hostFiles, err = runHostCollectors(spec.HostCollectors, additionalRedactors, bundlePath, opts)
 		if err != nil {
-			fmt.Println(errors.Wrap(err, "failed to run host collectors"))
+			collectorsErrs = append(collectorsErrs, fmt.Sprintf("failed to run host collectors: %s", err))
 		}
 	}
 
@@ -101,7 +105,7 @@ func CollectSupportBundleFromSpec(spec *troubleshootv1beta2.SupportBundleSpec, a
 		// Run collectors
 		files, err = runCollectors(spec.Collectors, additionalRedactors, bundlePath, opts)
 		if err != nil {
-			fmt.Println(errors.Wrap(err, "failed to run collectors"))
+			collectorsErrs = append(collectorsErrs, fmt.Sprintf("failed to run collectors: %s", err))
 		}
 	}
 
@@ -166,6 +170,11 @@ func CollectSupportBundleFromSpec(spec *troubleshootv1beta2.SupportBundleSpec, a
 		}
 	}
 	resultsResponse.FileUploaded = fileUploaded
+
+	if len(collectorsErrs) > 0 {
+		// TODO: Consider a collectors error type
+		return &resultsResponse, fmt.Errorf(strings.Join(collectorsErrs, "\n"))
+	}
 
 	return &resultsResponse, nil
 }

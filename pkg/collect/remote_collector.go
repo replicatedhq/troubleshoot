@@ -109,7 +109,7 @@ func (c *RemoteCollector) RunCollectorSync(globalRedactors []*troubleshootv1beta
 
 	if err = RedactResult("", result, globalRedactors); err != nil {
 		// Returning result on error to be consistent with local collector.
-		return result, errors.Wrap(err, "failed to redact")
+		return result, errors.Wrap(err, "failed to redact remote collector results")
 	}
 	return result, nil
 }
