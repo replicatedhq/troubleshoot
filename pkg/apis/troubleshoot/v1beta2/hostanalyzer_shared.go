@@ -30,6 +30,13 @@ type TCPPortStatusAnalyze struct {
 	Outcomes      []*Outcome `json:"outcomes" yaml:"outcomes"`
 }
 
+type InstalledPackageAnalyze struct {
+	AnalyzeMeta   `json:",inline" yaml:",inline"`
+	CollectorName string     `json:"collectorName,omitempty" yaml:"collectorName,omitempty"`
+	PackageName   string     `json:"packageName"`
+	Outcomes      []*Outcome `json:"outcomes" yaml:"outcomes"`
+}
+
 type DiskUsageAnalyze struct {
 	AnalyzeMeta   `json:",inline" yaml:",inline"`
 	CollectorName string     `json:"collectorName,omitempty" yaml:"collectorName,omitempty"`
@@ -136,4 +143,6 @@ type HostAnalyze struct {
 	HostServices *HostServicesAnalyze `json:"hostServices,omitempty" yaml:"hostServices,omitempty"`
 
 	HostOS *HostOSAnalyze `json:"hostOS,omitempty" yaml:"hostOS,omitempty"`
+
+	InstalledPackage *InstalledPackageAnalyze `json:"installedPackage,omitempty" yaml:"installedPackage,omitempty"`
 }

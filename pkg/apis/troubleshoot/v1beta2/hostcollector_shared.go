@@ -33,6 +33,10 @@ type HTTPLoadBalancer struct {
 	Timeout           string `json:"timeout,omitempty"`
 }
 
+type InstalledPackages struct {
+	HostCollectorMeta `json:",inline" yaml:",inline"`
+}
+
 type TCPPortStatus struct {
 	HostCollectorMeta `json:",inline" yaml:",inline"`
 	Interface         string `json:"interface,omitempty"`
@@ -176,6 +180,7 @@ type HostCollect struct {
 	HostServices          *HostServices          `json:"hostServices,omitempty" yaml:"hostServices,omitempty"`
 	HostOS                *HostOS                `json:"hostOS,omitempty" yaml:"hostOS,omitempty"`
 	HostRun               *HostRun               `json:"run,omitempty" yaml:"run,omitempty"`
+	InstalledPackages     *InstalledPackages     `json:"installedPackages,omitempty" yaml:"installedPackages,omitempty"`
 }
 
 func (c *HostCollect) GetName() string {

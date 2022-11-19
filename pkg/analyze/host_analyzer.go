@@ -2,6 +2,10 @@ package analyzer
 
 import troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 
+type Templated interface {
+	ProcessTemplate(getFile func(string) ([]byte, error)) error
+}
+
 type HostAnalyzer interface {
 	Title() string
 	IsExcluded() (bool, error)
@@ -44,6 +48,8 @@ func GetHostAnalyzer(analyzer *troubleshootv1beta2.HostAnalyze) (HostAnalyzer, b
 		return &AnalyzeHostServices{analyzer.HostServices}, true
 	case analyzer.HostOS != nil:
 		return &AnalyzeHostOS{analyzer.HostOS}, true
+	case analyzer.InstalledPackage != nil:
+		return &AnalyzeInstalledPackage{analyzer.InstalledPackage}, true
 	default:
 		return nil, false
 	}

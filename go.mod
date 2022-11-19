@@ -4,6 +4,7 @@ go 1.19
 
 require (
 	github.com/ahmetalpbalkan/go-cursor v0.0.0-20131010032410-8136607ea412
+	github.com/arduino/go-apt-client v0.0.0-20190812130613-5613f843fdc8
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/containers/image/v5 v5.23.1
 	github.com/docker/distribution v2.8.1+incompatible

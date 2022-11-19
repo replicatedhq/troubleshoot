@@ -56,6 +56,12 @@ func HostAnalyze(hostAnalyzer *troubleshootv1beta2.HostAnalyze, getFile getColle
 		return NewAnalyzeResultError(analyzer, errors.New("invalid host analyzer"))
 	}
 
+	if tplanalyzer, ok := analyzer.(Templated); ok {
+		if err := tplanalyzer.ProcessTemplate(getFile); err != nil {
+			return NewAnalyzeResultError(analyzer, err)
+		}
+	}
+
 	isExcluded, _ := analyzer.IsExcluded()
 	if isExcluded {
 		return nil
