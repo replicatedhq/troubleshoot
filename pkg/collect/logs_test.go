@@ -144,7 +144,7 @@ func Test_savePodLogs(t *testing.T) {
 			if !tt.withContainerName {
 				containerName = ""
 			}
-			got, err := savePodLogs(ctx, "", client, pod, tt.collectorName, containerName, limits, false)
+			got, err := savePodLogsWithInterface(ctx, "", client, pod, tt.collectorName, containerName, limits, false)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.want, got)
 		})

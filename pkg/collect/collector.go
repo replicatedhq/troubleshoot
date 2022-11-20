@@ -67,7 +67,7 @@ func GetCollector(collector *troubleshootv1beta2.Collect, bundlePath string, nam
 	case collector.ConfigMap != nil:
 		return &CollectConfigMap{collector.ConfigMap, bundlePath, namespace, clientConfig, client, ctx, RBACErrors}, true
 	case collector.Logs != nil:
-		return &CollectLogs{collector.Logs, bundlePath, namespace, client, ctx, sinceTime, RBACErrors}, true
+		return &CollectLogs{collector.Logs, bundlePath, namespace, clientConfig, client, ctx, sinceTime, RBACErrors}, true
 	case collector.Run != nil:
 		return &CollectRun{collector.Run, bundlePath, namespace, clientConfig, client, ctx, RBACErrors}, true
 	case collector.RunPod != nil:

@@ -14,15 +14,17 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 )
 
 type CollectLogs struct {
-	Collector  *troubleshootv1beta2.Logs
-	BundlePath string
-	Namespace  string
-	Client     kubernetes.Interface
-	Context    context.Context
-	SinceTime  *time.Time
+	Collector    *troubleshootv1beta2.Logs
+	BundlePath   string
+	Namespace    string
+	ClientConfig *rest.Config
+	Client       kubernetes.Interface
+	Context      context.Context
+	SinceTime    *time.Time
 	RBACErrors
 }
 
@@ -35,6 +37,11 @@ func (c *CollectLogs) IsExcluded() (bool, error) {
 }
 
 func (c *CollectLogs) Collect(progressChan chan<- interface{}) (CollectorResult, error) {
+	client, err := kubernetes.NewForConfig(c.ClientConfig)
+	if err != nil {
+		return nil, err
+	}
+
 	output := NewResult()
 
 	ctx := context.Background()
@@ -46,7 +53,7 @@ func (c *CollectLogs) Collect(progressChan chan<- interface{}) (CollectorResult,
 		c.Collector.Limits.SinceTime = metav1.NewTime(*c.SinceTime)
 	}
 
-	pods, podsErrors := listPodsInSelectors(ctx, c.Client, c.Collector.Namespace, c.Collector.Selector)
+	pods, podsErrors := listPodsInSelectors(ctx, client, c.Collector.Namespace, c.Collector.Selector)
 	if len(podsErrors) > 0 {
 		output.SaveResult(c.BundlePath, getLogsErrorsFileName(c.Collector), marshalErrors(podsErrors))
 	}
@@ -64,7 +71,7 @@ func (c *CollectLogs) Collect(progressChan chan<- interface{}) (CollectorResult,
 				}
 
 				for _, containerName := range containerNames {
-					podLogs, err := savePodLogs(ctx, c.BundlePath, c.Client, &pod, c.Collector.Name, containerName, c.Collector.Limits, false)
+					podLogs, err := savePodLogs(ctx, c.BundlePath, client, &pod, c.Collector.Name, containerName, c.Collector.Limits, false)
 					if err != nil {
 						key := fmt.Sprintf("%s/%s-errors.json", c.Collector.Name, pod.Name)
 						if containerName != "" {
@@ -82,7 +89,7 @@ func (c *CollectLogs) Collect(progressChan chan<- interface{}) (CollectorResult,
 				}
 			} else {
 				for _, container := range c.Collector.ContainerNames {
-					containerLogs, err := savePodLogs(ctx, c.BundlePath, c.Client, &pod, c.Collector.Name, container, c.Collector.Limits, false)
+					containerLogs, err := savePodLogs(ctx, c.BundlePath, client, &pod, c.Collector.Name, container, c.Collector.Limits, false)
 					if err != nil {
 						key := fmt.Sprintf("%s/%s/%s-errors.json", c.Collector.Name, pod.Name, container)
 						err := output.SaveResult(c.BundlePath, key, marshalErrors([]string{err.Error()}))
@@ -118,6 +125,18 @@ func listPodsInSelectors(ctx context.Context, client kubernetes.Interface, names
 }
 
 func savePodLogs(
+	ctx context.Context,
+	bundlePath string,
+	client *kubernetes.Clientset,
+	pod *corev1.Pod,
+	collectorName, container string,
+	limits *troubleshootv1beta2.LogLimits,
+	follow bool,
+) (CollectorResult, error) {
+	return savePodLogsWithInterface(ctx, bundlePath, client, pod, collectorName, container, limits, follow)
+}
+
+func savePodLogsWithInterface(
 	ctx context.Context,
 	bundlePath string,
 	client kubernetes.Interface,
