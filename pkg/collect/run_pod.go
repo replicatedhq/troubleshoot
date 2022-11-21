@@ -179,7 +179,7 @@ func runWithoutTimeout(ctx context.Context, bundlePath string, clientConfig *res
 	limits := troubleshootv1beta2.LogLimits{
 		MaxLines: 10000,
 	}
-	podLogs, err := savePodLogs(ctx, bundlePath, client, *pod, collectorName, "", &limits, true)
+	podLogs, err := savePodLogs(ctx, bundlePath, client, pod, collectorName, "", &limits, true)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get pod logs")
 	}
