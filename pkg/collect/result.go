@@ -29,7 +29,7 @@ func (r CollectorResult) SymLinkResult(bundlePath, relativeLinkPath, relativeFil
 	}
 
 	if bundlePath == "" {
-		// If we are not saving results to disk, cache in memory
+		// Memory only bundle
 		r[relativeLinkPath] = data
 		return nil
 	}
@@ -63,6 +63,10 @@ func (r CollectorResult) SymLinkResult(bundlePath, relativeLinkPath, relativeFil
 	}
 
 	// Create the symlink
+	// NOTE: When creating an archive, relative paths are used
+	// to make the bundle more portable. That implementation
+	// lives in TarSupportBundleDir function. This path needs to
+	// remain as-is to support memory only bundles e.g preflight
 	err = os.Symlink(filePath, linkPath)
 	if err != nil {
 		return errors.Wrap(err, "failed to create symlink")
@@ -87,6 +91,7 @@ func (r CollectorResult) SaveResult(bundlePath string, relativePath string, read
 		if err != nil {
 			return errors.Wrap(err, "failed to read data")
 		}
+		// Memory only bundle
 		r[relativePath] = data
 		return nil
 	}
@@ -120,6 +125,7 @@ func (r CollectorResult) ReplaceResult(bundlePath string, relativePath string, r
 		if err != nil {
 			return errors.Wrap(err, "failed to read data")
 		}
+		// Memory only bundle
 		r[relativePath] = data
 		return nil
 	}
@@ -146,6 +152,7 @@ func (r CollectorResult) ReplaceResult(bundlePath string, relativePath string, r
 
 func (r CollectorResult) GetReader(bundlePath string, relativePath string) (io.ReadCloser, error) {
 	if r[relativePath] != nil {
+		// Memory only bundle
 		return io.NopCloser(bytes.NewReader(r[relativePath])), nil
 	}
 
@@ -164,6 +171,7 @@ func (r CollectorResult) GetReader(bundlePath string, relativePath string) (io.R
 
 func (r CollectorResult) GetWriter(bundlePath string, relativePath string) (io.Writer, error) {
 	if bundlePath == "" {
+		// Memory only bundle
 		var b bytes.Buffer
 		return &b, nil
 	}
@@ -191,6 +199,7 @@ func (r CollectorResult) CloseWriter(bundlePath string, relativePath string, wri
 	}
 
 	if buff, ok := writer.(*bytes.Buffer); ok {
+		// Memory only bundle
 		b := buff.Bytes()
 		if b == nil {
 			// nil means data is on disk, so make it an empty array
