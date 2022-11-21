@@ -100,6 +100,11 @@ schemas: fmt vet openapischema
 	go build ${LDFLAGS} -o bin/schemagen github.com/replicatedhq/troubleshoot/cmd/schemagen
 	./bin/schemagen --output-dir ./schemas
 
+.PHONY: docs
+docs: fmt vet
+	go build ${LDFLAGS} -o bin/docsgen github.com/replicatedhq/troubleshoot/cmd/docsgen
+	./bin/docsgen
+
 controller-gen:
 	go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.7.0
 CONTROLLER_GEN=$(shell which controller-gen)
