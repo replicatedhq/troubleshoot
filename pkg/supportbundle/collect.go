@@ -81,7 +81,7 @@ func runCollectors(collectors []*troubleshootv1beta2.Collect, additionalRedactor
 		return nil, errors.Wrap(err, "failed to instantiate Kubernetes client")
 	}
 
-	newDesiredCollectors := make(map[reflect.Type][]collect.Collector)
+	allCollectors := make(map[reflect.Type][]collect.Collector)
 
 	for _, desiredCollector := range collectSpecs {
 		if collectorInterface, ok := collect.GetCollector(desiredCollector, bundlePath, opts.Namespace, opts.KubernetesRestConfig, k8sClient, opts.SinceTime); ok {
@@ -91,20 +91,20 @@ func runCollectors(collectors []*troubleshootv1beta2.Collect, additionalRedactor
 					return nil, errors.Wrap(err, "failed to check RBAC for collectors")
 				}
 				collectorType := reflect.TypeOf(collector)
-				newDesiredCollectors[collectorType] = append(newDesiredCollectors[collectorType], collector)
+				allCollectors[collectorType] = append(allCollectors[collectorType], collector)
 			}
 		}
 	}
 
 	var foundForbidden bool
-	for collectorType, collectors := range newDesiredCollectors {
+	for collectorType, collectors := range allCollectors {
 		if mergeCollector, ok := collectors[0].(collect.MergeableCollector); ok {
-			newList, err := mergeCollector.Merge(collectors)
+			mergedCollectors, err := mergeCollector.Merge(collectors)
 			if err != nil {
 				msg := fmt.Sprintf("failed to merge collector: %s: %s", mergeCollector.Title(), err)
 				opts.CollectorProgressCallback(opts.ProgressChan, msg)
 			}
-			newDesiredCollectors[collectorType] = newList
+			allCollectors[collectorType] = mergedCollectors
 		}
 		foundForbidden = false
 		for _, collector := range collectors {
@@ -119,7 +119,7 @@ func runCollectors(collectors []*troubleshootv1beta2.Collect, additionalRedactor
 		return nil, errors.New("insufficient permissions to run all collectors")
 	}
 
-	for _, collectors := range newDesiredCollectors {
+	for _, collectors := range allCollectors {
 		for _, collector := range collectors {
 			isExcluded, _ := collector.IsExcluded()
 			if isExcluded {
