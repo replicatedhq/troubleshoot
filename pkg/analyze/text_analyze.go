@@ -13,9 +13,10 @@ import (
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 )
 
-func analyzeTextAnalyze(analyzer *troubleshootv1beta2.TextAnalyze, getCollectedFileContents func(string) (map[string][]byte, error)) ([]*AnalyzeResult, error) {
+func analyzeTextAnalyze(analyzer *troubleshootv1beta2.TextAnalyze, getCollectedFileContents func(string, []string) (map[string][]byte, error)) ([]*AnalyzeResult, error) {
 	fullPath := filepath.Join(analyzer.CollectorName, analyzer.FileName)
-	collected, err := getCollectedFileContents(fullPath)
+	excludeFiles := analyzer.ExcludeFiles
+	collected, err := getCollectedFileContents(fullPath, excludeFiles)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to read collected file name: %s", fullPath)
 	}

@@ -14,8 +14,9 @@ import (
 	corev1 "k8s.io/api/core/v1"
 )
 
-func clusterPodStatuses(analyzer *troubleshootv1beta2.ClusterPodStatuses, getChildCollectedFileContents func(string) (map[string][]byte, error)) ([]*AnalyzeResult, error) {
-	collected, err := getChildCollectedFileContents(filepath.Join("cluster-resources", "pods", "*.json"))
+func clusterPodStatuses(analyzer *troubleshootv1beta2.ClusterPodStatuses, getChildCollectedFileContents func(string, []string) (map[string][]byte, error)) ([]*AnalyzeResult, error) {
+	excludeFiles := []string{}
+	collected, err := getChildCollectedFileContents(filepath.Join("cluster-resources", "pods", "*.json"), excludeFiles)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to read collected pods")
 	}

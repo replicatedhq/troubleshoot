@@ -10,7 +10,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 )
 
-func analyzeDeploymentStatus(analyzer *troubleshootv1beta2.DeploymentStatus, getFileContents func(string) (map[string][]byte, error)) ([]*AnalyzeResult, error) {
+func analyzeDeploymentStatus(analyzer *troubleshootv1beta2.DeploymentStatus, getFileContents func(string, []string) (map[string][]byte, error)) ([]*AnalyzeResult, error) {
 	if analyzer.Name == "" {
 		return analyzeAllDeploymentStatuses(analyzer, getFileContents)
 	} else {
@@ -18,8 +18,9 @@ func analyzeDeploymentStatus(analyzer *troubleshootv1beta2.DeploymentStatus, get
 	}
 }
 
-func analyzeOneDeploymentStatus(analyzer *troubleshootv1beta2.DeploymentStatus, getFileContents func(string) (map[string][]byte, error)) ([]*AnalyzeResult, error) {
-	files, err := getFileContents(filepath.Join("cluster-resources", "deployments", fmt.Sprintf("%s.json", analyzer.Namespace)))
+func analyzeOneDeploymentStatus(analyzer *troubleshootv1beta2.DeploymentStatus, getFileContents func(string, []string) (map[string][]byte, error)) ([]*AnalyzeResult, error) {
+	excludeFiles := []string{}
+	files, err := getFileContents(filepath.Join("cluster-resources", "deployments", fmt.Sprintf("%s.json", analyzer.Namespace)), excludeFiles)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to read collected deployments from namespace")
 	}
@@ -61,7 +62,8 @@ func analyzeOneDeploymentStatus(analyzer *troubleshootv1beta2.DeploymentStatus, 
 	return []*AnalyzeResult{result}, nil
 }
 
-func analyzeAllDeploymentStatuses(analyzer *troubleshootv1beta2.DeploymentStatus, getFileContents func(string) (map[string][]byte, error)) ([]*AnalyzeResult, error) {
+func analyzeAllDeploymentStatuses(analyzer *troubleshootv1beta2.DeploymentStatus, getFileContents func(string, []string) (map[string][]byte, error)) ([]*AnalyzeResult, error) {
+	excludeFiles := []string{}
 	fileNames := make([]string, 0)
 	if analyzer.Namespace != "" {
 		fileNames = append(fileNames, filepath.Join("cluster-resources", "deployments", fmt.Sprintf("%s.json", analyzer.Namespace)))
@@ -77,7 +79,7 @@ func analyzeAllDeploymentStatuses(analyzer *troubleshootv1beta2.DeploymentStatus
 
 	results := []*AnalyzeResult{}
 	for _, fileName := range fileNames {
-		files, err := getFileContents(fileName)
+		files, err := getFileContents(fileName, excludeFiles)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to read collected deployments from file")
 		}
