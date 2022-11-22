@@ -268,21 +268,20 @@ func (f fileContentProvider) getFileContents(fileName string) ([]byte, error) {
 	return ioutil.ReadFile(filepath.Join(f.rootDir, fileName))
 }
 
-func excludeFilePaths(a, b []string) []string {
-	for i := len(a) - 1; i >= 0; i-- {
-		for _, v := range b {
-			if a[i] == v {
-				a = append(a[:i], a[i+1:]...)
+func excludeFilePaths(files, excludeFiles []string) []string {
+	for i := len(files) - 1; i >= 0; i-- {
+		for _, excludeFile := range excludeFiles {
+			if files[i] == excludeFile {
+				files = append(files[:i], files[i+1:]...)
 				break
 			}
 		}
 	}
-	return a
+	return files
 }
 
 func (f fileContentProvider) getChildFileContents(dirName string, excludeFiles []string) (map[string][]byte, error) {
 	files, err := filepath.Glob(filepath.Join(f.rootDir, dirName))
-
 	if err != nil {
 		return nil, errors.Wrapf(err, "invalid glob %q", dirName)
 	}
