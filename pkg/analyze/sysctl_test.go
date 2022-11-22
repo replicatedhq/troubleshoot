@@ -274,7 +274,7 @@ func TestAnalyzeSysctl(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			var findFiles = func(glob string) (map[string][]byte, error) {
+			var findFiles = func(glob string, _ []string) (map[string][]byte, error) {
 				return test.files, nil
 			}
 			got, err := analyzeSysctl(test.analyzer, findFiles)

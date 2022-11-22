@@ -588,7 +588,7 @@ func Test_textAnalyze(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			req := require.New(t)
 
-			getFiles := func(n string) (map[string][]byte, error) {
+			getFiles := func(n string, _ []string) (map[string][]byte, error) {
 				matching := make(map[string][]byte)
 				for k, v := range test.files {
 					if strings.HasPrefix(k, n) {
