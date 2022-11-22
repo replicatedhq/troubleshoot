@@ -125,28 +125,20 @@ archives:
 dockers:
   - dockerfile: ./deploy/Dockerfile.troubleshoot
     image_templates:
-      - "docker.io/replicated/troubleshoot:latest"
-      - "docker.io/replicated/troubleshoot:{{ .Major }}"
-      - "docker.io/replicated/troubleshoot:{{ .Major }}.{{ .Minor }}"
-      - "docker.io/replicated/troubleshoot:{{ .Major }}.{{ .Minor }}.{{ .Patch }}"
-      - "ghcr.io/replicatedhq/troubleshoot:latest"
-      - "ghcr.io/replicatedhq/troubleshoot:{{ .Major }}"
-      - "ghcr.io/replicatedhq/troubleshoot:{{ .Major }}.{{ .Minor }}"
-      - "ghcr.io/replicatedhq/troubleshoot:{{ .Major }}.{{ .Minor }}.{{ .Patch }}"
+      - "replicated/troubleshoot:latest"
+      - "replicated/troubleshoot:{{ .Major }}"
+      - "replicated/troubleshoot:{{ .Major }}.{{ .Minor }}"
+      - "replicated/troubleshoot:{{ .Major }}.{{ .Minor }}.{{ .Patch }}"
     ids:
       - support-bundle
       - preflight
       - collect
   - dockerfile: ./deploy/Dockerfile.troubleshoot
     image_templates:
-      - "docker.io/replicated/preflight:latest"
-      - "docker.io/replicated/preflight:{{ .Major }}"
-      - "docker.io/replicated/preflight:{{ .Major }}.{{ .Minor }}"
-      - "docker.io/replicated/preflight:{{ .Major }}.{{ .Minor }}.{{ .Patch }}"
-      - "ghcr.io/replicatedhq/preflight:latest"
-      - "ghcr.io/replicatedhq/preflight:{{ .Major }}"
-      - "ghcr.io/replicatedhq/preflight:{{ .Major }}.{{ .Minor }}"
-      - "ghcr.io/replicatedhq/preflight:{{ .Major }}.{{ .Minor }}.{{ .Patch }}"
+      - "replicated/preflight:latest"
+      - "replicated/preflight:{{ .Major }}"
+      - "replicated/preflight:{{ .Major }}.{{ .Minor }}"
+      - "replicated/preflight:{{ .Major }}.{{ .Minor }}.{{ .Patch }}"
     ids:
       - support-bundle
       - preflight
