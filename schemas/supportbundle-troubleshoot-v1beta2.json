@@ -2604,6 +2604,36 @@
                       "type": "string"
                     }
                   },
+                  "tls": {
+                    "type": "object",
+                    "properties": {
+                      "cacert": {
+                        "type": "string"
+                      },
+                      "clientCert": {
+                        "type": "string"
+                      },
+                      "clientKey": {
+                        "type": "string"
+                      },
+                      "secret": {
+                        "description": "TODO: How do we validate JSON objects based on the struct tags?",
+                        "type": "object",
+                        "required": [
+                          "name",
+                          "namespace"
+                        ],
+                        "properties": {
+                          "name": {
+                            "type": "string"
+                          },
+                          "namespace": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  },
                   "uri": {
                     "type": "string"
                   }
@@ -2627,6 +2657,36 @@
                       "type": "string"
                     }
                   },
+                  "tls": {
+                    "type": "object",
+                    "properties": {
+                      "cacert": {
+                        "type": "string"
+                      },
+                      "clientCert": {
+                        "type": "string"
+                      },
+                      "clientKey": {
+                        "type": "string"
+                      },
+                      "secret": {
+                        "description": "TODO: How do we validate JSON objects based on the struct tags?",
+                        "type": "object",
+                        "required": [
+                          "name",
+                          "namespace"
+                        ],
+                        "properties": {
+                          "name": {
+                            "type": "string"
+                          },
+                          "namespace": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  },
                   "uri": {
                     "type": "string"
                   }
@@ -2648,6 +2708,36 @@
                     "type": "array",
                     "items": {
                       "type": "string"
+                    }
+                  },
+                  "tls": {
+                    "type": "object",
+                    "properties": {
+                      "cacert": {
+                        "type": "string"
+                      },
+                      "clientCert": {
+                        "type": "string"
+                      },
+                      "clientKey": {
+                        "type": "string"
+                      },
+                      "secret": {
+                        "description": "TODO: How do we validate JSON objects based on the struct tags?",
+                        "type": "object",
+                        "required": [
+                          "name",
+                          "namespace"
+                        ],
+                        "properties": {
+                          "name": {
+                            "type": "string"
+                          },
+                          "namespace": {
+                            "type": "string"
+                          }
+                        }
+                      }
                     }
                   },
                   "uri": {

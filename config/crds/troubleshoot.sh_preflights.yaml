@@ -1688,6 +1688,27 @@ spec:
                           items:
                             type: string
                           type: array
+                        tls:
+                          properties:
+                            cacert:
+                              type: string
+                            clientCert:
+                              type: string
+                            clientKey:
+                              type: string
+                            secret:
+                              description: 'TODO: How do we validate JSON objects
+                                based on the struct tags?'
+                              properties:
+                                name:
+                                  type: string
+                                namespace:
+                                  type: string
+                              required:
+                              - name
+                              - namespace
+                              type: object
+                          type: object
                         uri:
                           type: string
                       required:
@@ -1703,6 +1724,27 @@ spec:
                           items:
                             type: string
                           type: array
+                        tls:
+                          properties:
+                            cacert:
+                              type: string
+                            clientCert:
+                              type: string
+                            clientKey:
+                              type: string
+                            secret:
+                              description: 'TODO: How do we validate JSON objects
+                                based on the struct tags?'
+                              properties:
+                                name:
+                                  type: string
+                                namespace:
+                                  type: string
+                              required:
+                              - name
+                              - namespace
+                              type: object
+                          type: object
                         uri:
                           type: string
                       required:
@@ -1718,6 +1760,27 @@ spec:
                           items:
                             type: string
                           type: array
+                        tls:
+                          properties:
+                            cacert:
+                              type: string
+                            clientCert:
+                              type: string
+                            clientKey:
+                              type: string
+                            secret:
+                              description: 'TODO: How do we validate JSON objects
+                                based on the struct tags?'
+                              properties:
+                                name:
+                                  type: string
+                                namespace:
+                                  type: string
+                              required:
+                              - name
+                              - namespace
+                              type: object
+                          type: object
                         uri:
                           type: string
                       required:
