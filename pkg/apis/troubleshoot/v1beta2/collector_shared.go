@@ -180,7 +180,6 @@ type TLSParams struct {
 	ClientKey  string     `json:"clientKey,omitempty" yaml:"clientKey,omitempty"`
 }
 
-// TODO: How do we validate JSON objects based on the struct tags?
 type TLSSecret struct {
 	Name      string `json:"name" yaml:"name"`
 	Namespace string `json:"namespace" yaml:"namespace"`
