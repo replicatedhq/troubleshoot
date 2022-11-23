@@ -15,7 +15,11 @@ import (
 
 func analyzeTextAnalyze(analyzer *troubleshootv1beta2.TextAnalyze, getCollectedFileContents func(string, []string) (map[string][]byte, error)) ([]*AnalyzeResult, error) {
 	fullPath := filepath.Join(analyzer.CollectorName, analyzer.FileName)
-	excludeFiles := analyzer.ExcludeFiles
+	excludeFiles := []string{}
+	for _, excludeFile := range analyzer.ExcludeFiles {
+		excludeFiles = append(excludeFiles, filepath.Join(analyzer.CollectorName, excludeFile))
+	}
+
 	collected, err := getCollectedFileContents(fullPath, excludeFiles)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to read collected file name: %s", fullPath)

@@ -582,13 +582,122 @@ func Test_textAnalyze(t *testing.T) {
 				"text-collector-templated-regex-message/cfile-1.txt": []byte(`{"level":"ERROR","timestamp":"2022-05-17T20:37:41Z","caller":"controller/controller.go:317","message":"Reconciler error","context":{"name":"insert-cr-name-here","namespace":"default","error":"myerror"}}`),
 			},
 		},
+		{
+			name: "exclude files case 1 globbing",
+			analyzer: troubleshootv1beta2.TextAnalyze{
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Fail: &troubleshootv1beta2.SingleOutcome{
+							Message: "fail",
+						},
+					},
+				},
+				CollectorName: "text-collector-1",
+				FileName:      "cfile*.txt",
+				ExcludeFiles:  []string{"*previous.txt"},
+				RegexPattern:  "success",
+			},
+			expectResult: []AnalyzeResult{
+				{
+					IsPass:  false,
+					IsWarn:  false,
+					IsFail:  true,
+					Title:   "text-collector-1",
+					Message: "fail",
+					IconKey: "kubernetes_text_analyze",
+					IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg",
+				},
+			},
+			files: map[string][]byte{
+				"text-collector-1/cfile-1.txt":        []byte("Yes it all succeeded"),
+				"text-collector-1/cfile-previous.txt": []byte("no success here"),
+			},
+		},
+		{
+			name: "exclude files case 2 globbing",
+			analyzer: troubleshootv1beta2.TextAnalyze{
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Fail: &troubleshootv1beta2.SingleOutcome{
+							Message: "fail",
+						},
+					},
+				},
+				CollectorName: "text-collector-1",
+				FileName:      "cfile*.txt",
+				ExcludeFiles:  []string{"*previous.txt", "cfile-2.txt"},
+				RegexPattern:  "success",
+			},
+			expectResult: []AnalyzeResult{
+				{
+					IsPass:  false,
+					IsWarn:  false,
+					IsFail:  true,
+					Title:   "text-collector-1",
+					Message: "fail",
+					IconKey: "kubernetes_text_analyze",
+					IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg",
+				},
+			},
+			files: map[string][]byte{
+				"text-collector-1/cfile-1.txt":        []byte("Yes it all succeeded"),
+				"text-collector-1/cfile-previous.txt": []byte("no success here"),
+				"text-collector-1/cfile-2.txt":        []byte("no success here"),
+			},
+		},
+		{
+			name: "exclude files case 3 globbing",
+			analyzer: troubleshootv1beta2.TextAnalyze{
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							Message: "success",
+						},
+					},
+					{
+						Fail: &troubleshootv1beta2.SingleOutcome{
+							Message: "fail",
+						},
+					},
+				},
+				CollectorName: "text-collector-1",
+				FileName:      "cfile*.txt",
+				ExcludeFiles:  []string{"*previous.txt"},
+				RegexPattern:  "succeeded",
+			},
+			expectResult: []AnalyzeResult{
+				{
+					IsPass:  true,
+					IsWarn:  false,
+					IsFail:  false,
+					Title:   "text-collector-1",
+					Message: "success",
+					IconKey: "kubernetes_text_analyze",
+					IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg",
+				},
+				{
+					IsPass:  true,
+					IsWarn:  false,
+					IsFail:  false,
+					Title:   "text-collector-1",
+					Message: "success",
+					IconKey: "kubernetes_text_analyze",
+					IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg",
+				},
+			},
+			files: map[string][]byte{
+				"text-collector-1/cfile-1.txt":        []byte("Yes it all succeeded"),
+				"text-collector-1/cfile-previous.txt": []byte("no success here"),
+				"text-collector-1/cfile-2.txt":        []byte("Yes it all succeeded"),
+			},
+		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			req := require.New(t)
 
-			getFiles := func(n string, _ []string) (map[string][]byte, error) {
+			getFiles := func(n string, excludeFiles []string) (map[string][]byte, error) {
 				matching := make(map[string][]byte)
 				for k, v := range test.files {
 					if strings.HasPrefix(k, n) {
@@ -599,6 +708,16 @@ func Test_textAnalyze(t *testing.T) {
 				for k, v := range test.files {
 					if ok, _ := filepath.Match(n, k); ok {
 						matching[k] = v
+					}
+				}
+
+				if len(excludeFiles) > 0 {
+					for k := range matching {
+						for _, ex := range excludeFiles {
+							if ok, _ := filepath.Match(ex, k); ok {
+								delete(matching, k)
+							}
+						}
 					}
 				}
 
