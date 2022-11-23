@@ -376,8 +376,6 @@ spec:
                             clientKey:
                               type: string
                             secret:
-                              description: 'TODO: How do we validate JSON objects
-                                based on the struct tags?'
                               properties:
                                 name:
                                   type: string
@@ -387,6 +385,8 @@ spec:
                               - name
                               - namespace
                               type: object
+                            skipVerify:
+                              type: boolean
                           type: object
                         uri:
                           type: string
@@ -412,8 +412,6 @@ spec:
                             clientKey:
                               type: string
                             secret:
-                              description: 'TODO: How do we validate JSON objects
-                                based on the struct tags?'
                               properties:
                                 name:
                                   type: string
@@ -423,6 +421,8 @@ spec:
                               - name
                               - namespace
                               type: object
+                            skipVerify:
+                              type: boolean
                           type: object
                         uri:
                           type: string
@@ -448,8 +448,6 @@ spec:
                             clientKey:
                               type: string
                             secret:
-                              description: 'TODO: How do we validate JSON objects
-                                based on the struct tags?'
                               properties:
                                 name:
                                   type: string
@@ -459,6 +457,8 @@ spec:
                               - name
                               - namespace
                               type: object
+                            skipVerify:
+                              type: boolean
                           type: object
                         uri:
                           type: string

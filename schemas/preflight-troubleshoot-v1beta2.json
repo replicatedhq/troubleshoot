@@ -2571,7 +2571,6 @@
                         "type": "string"
                       },
                       "secret": {
-                        "description": "TODO: How do we validate JSON objects based on the struct tags?",
                         "type": "object",
                         "required": [
                           "name",
@@ -2585,6 +2584,9 @@
                             "type": "string"
                           }
                         }
+                      },
+                      "skipVerify": {
+                        "type": "boolean"
                       }
                     }
                   },
@@ -2624,7 +2626,6 @@
                         "type": "string"
                       },
                       "secret": {
-                        "description": "TODO: How do we validate JSON objects based on the struct tags?",
                         "type": "object",
                         "required": [
                           "name",
@@ -2638,6 +2639,9 @@
                             "type": "string"
                           }
                         }
+                      },
+                      "skipVerify": {
+                        "type": "boolean"
                       }
                     }
                   },
@@ -2677,7 +2681,6 @@
                         "type": "string"
                       },
                       "secret": {
-                        "description": "TODO: How do we validate JSON objects based on the struct tags?",
                         "type": "object",
                         "required": [
                           "name",
@@ -2691,6 +2694,9 @@
                             "type": "string"
                           }
                         }
+                      },
+                      "skipVerify": {
+                        "type": "boolean"
                       }
                     }
                   },

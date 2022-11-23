@@ -174,6 +174,7 @@ type Database struct {
 }
 
 type TLSParams struct {
+	SkipVerify bool       `json:"skipVerify,omitempty" yaml:"skipVerify,omitempty"`
 	Secret     *TLSSecret `json:"secret,omitempty" yaml:"secret,omitempty"`
 	CACert     string     `json:"cacert,omitempty" yaml:"cacert,omitempty"`
 	ClientCert string     `json:"clientCert,omitempty" yaml:"clientCert,omitempty"`
