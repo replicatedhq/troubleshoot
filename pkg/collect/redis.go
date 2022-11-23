@@ -58,6 +58,13 @@ func (c *CollectRedis) createMTLSClient(opt *redis.Options) (*redis.Client, erro
 	}
 	tParams := c.Collector.TLS
 
+	if tParams.SkipVerify {
+		opt.TLSConfig = &tls.Config{
+			InsecureSkipVerify: true,
+		}
+		return redis.NewClient(opt), nil
+	}
+
 	var caCert, clientCert, clientKey []byte
 	if tParams.Secret != nil {
 		caCert, clientCert, clientKey, err = c.getTLSParamsFromSecret(tParams.Secret)

@@ -114,6 +114,13 @@ func TestCollectRedis_createMTLSClient(t *testing.T) {
 			},
 		},
 		{
+			name: "valid uri and tls params with skip verify creates redis client successfully",
+			uri:  "redis://localhost:6379",
+			tlsParams: v1beta2.TLSParams{
+				SkipVerify: true,
+			},
+		},
+		{
 			name:     "empty TLS parameters fails to create client with error",
 			uri:      "redis://localhost:6379",
 			hasError: true,
@@ -187,10 +194,17 @@ func TestCollectRedis_createMTLSClient(t *testing.T) {
 				opt := client.Options()
 				assert.Equal(t, opt.Addr, "localhost:6379")
 
-				// TLS parameter objects are opaque. Just check if they were created.
-				// There is no trivial way to inspect their metadata. Trust me :)
-				assert.NotNil(t, opt.TLSConfig.RootCAs)
-				assert.NotNil(t, opt.TLSConfig.Certificates)
+				if tt.tlsParams.SkipVerify {
+					assert.True(t, opt.TLSConfig.InsecureSkipVerify)
+					assert.Nil(t, opt.TLSConfig.RootCAs)
+					assert.Nil(t, opt.TLSConfig.Certificates)
+				} else {
+					// TLS parameter objects are opaque. Just check if they were created.
+					// There is no trivial way to inspect their metadata. Trust me :)
+					assert.NotNil(t, opt.TLSConfig.RootCAs)
+					assert.NotNil(t, opt.TLSConfig.Certificates)
+					assert.False(t, opt.TLSConfig.InsecureSkipVerify)
+				}
 			} else {
 				t.Log(err)
 				assert.Nil(t, client)
