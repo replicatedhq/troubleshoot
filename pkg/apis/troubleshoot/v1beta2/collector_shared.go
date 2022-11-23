@@ -168,8 +168,22 @@ type Put struct {
 
 type Database struct {
 	CollectorMeta `json:",inline" yaml:",inline"`
-	URI           string   `json:"uri" yaml:"uri"`
-	Parameters    []string `json:"parameters,omitempty"`
+	URI           string     `json:"uri" yaml:"uri"`
+	Parameters    []string   `json:"parameters,omitempty"`
+	TLS           *TLSParams `json:"tls,omitempty" yaml:"tls,omitempty"`
+}
+
+type TLSParams struct {
+	Secret     *TLSSecret `json:"secret,omitempty" yaml:"secret,omitempty"`
+	CACert     string     `json:"cacert,omitempty" yaml:"cacert,omitempty"`
+	ClientCert string     `json:"clientCert,omitempty" yaml:"clientCert,omitempty"`
+	ClientKey  string     `json:"clientKey,omitempty" yaml:"clientKey,omitempty"`
+}
+
+// TODO: How do we validate JSON objects based on the struct tags?
+type TLSSecret struct {
+	Name      string `json:"name" yaml:"name"`
+	Namespace string `json:"namespace" yaml:"namespace"`
 }
 
 type Collectd struct {
