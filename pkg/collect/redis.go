@@ -51,72 +51,96 @@ func (c *CollectRedis) createClient() (*redis.Client, error) {
 	return redis.NewClient(opt), nil
 }
 
-func (c *CollectRedis) createMTLSClient(opt *redis.Options) (*redis.Client, error) {
+func createTLSConfig(ctx context.Context, client kubernetes.Interface, params *troubleshootv1beta2.TLSParams) (*tls.Config, error) {
 	rootCA, err := x509.SystemCertPool()
 	if err != nil {
 		rootCA = x509.NewCertPool()
 	}
-	tParams := c.Collector.TLS
 
-	if tParams.SkipVerify {
-		opt.TLSConfig = &tls.Config{
-			InsecureSkipVerify: true,
-		}
-		return redis.NewClient(opt), nil
+	tlsCfg := &tls.Config{}
+
+	if params.SkipVerify {
+		tlsCfg.InsecureSkipVerify = true
+		return tlsCfg, nil
 	}
 
-	var caCert, clientCert, clientKey []byte
-	if tParams.Secret != nil {
-		caCert, clientCert, clientKey, err = c.getTLSParamsFromSecret(tParams.Secret)
+	var caCert, clientCert, clientKey string
+	if params.Secret != nil {
+		caCert, clientCert, clientKey, err = getTLSParamsFromSecret(ctx, client, params.Secret)
 		if err != nil {
 			return nil, err
 		}
 	} else {
-		caCert = []byte(tParams.CACert)
-		clientCert = []byte(tParams.ClientCert)
-		clientKey = []byte(tParams.ClientKey)
+		caCert = params.CACert
+		clientCert = params.ClientCert
+		clientKey = params.ClientKey
 	}
 
-	if ok := rootCA.AppendCertsFromPEM(caCert); !ok {
+	if ok := rootCA.AppendCertsFromPEM([]byte(caCert)); !ok {
 		return nil, fmt.Errorf("failed to append CA cert to root CA bundle")
 	}
+	tlsCfg.RootCAs = rootCA
 
-	certPair, err := tls.X509KeyPair(clientCert, clientKey)
+	if clientCert == "" && clientKey == "" {
+		return tlsCfg, nil
+	}
+
+	certPair, err := tls.X509KeyPair([]byte(clientCert), []byte(clientKey))
 	if err != nil {
 		return nil, err
 	}
 
-	opt.TLSConfig = &tls.Config{
-		Certificates: []tls.Certificate{certPair},
-		RootCAs:      rootCA,
+	tlsCfg.Certificates = []tls.Certificate{certPair}
+
+	return tlsCfg, nil
+}
+
+func (c *CollectRedis) createMTLSClient(opt *redis.Options) (*redis.Client, error) {
+	tlsCfg, err := createTLSConfig(c.Context, c.Client, c.Collector.TLS)
+	if err != nil {
+		return nil, err
 	}
+
+	opt.TLSConfig = tlsCfg
 
 	return redis.NewClient(opt), nil
 }
 
-func (c *CollectRedis) getTLSParamsFromSecret(secretParams *troubleshootv1beta2.TLSSecret) ([]byte, []byte, []byte, error) {
-	var caCert, clientCert, clientKey []byte
-	secret, err := c.Client.CoreV1().Secrets(secretParams.Namespace).Get(c.Context, secretParams.Name, metav1.GetOptions{})
+func getTLSParamsFromSecret(ctx context.Context, client kubernetes.Interface, secretParams *troubleshootv1beta2.TLSSecret) (string, string, string, error) {
+	var caCert, clientCert, clientKey string
+	secret, err := client.CoreV1().Secrets(secretParams.Namespace).Get(ctx, secretParams.Name, metav1.GetOptions{})
 	if err != nil {
-		return nil, nil, nil, errors.Wrap(err, "failed to get secret")
+		return "", "", "", errors.Wrap(err, "failed to get secret")
 	}
 
 	if val, ok := secret.StringData["cacert"]; ok {
-		caCert = []byte(val)
+		caCert = val
 	} else {
-		return nil, nil, nil, fmt.Errorf("failed to find 'cacert' key for CA cert data in secret")
+		return "", "", "", fmt.Errorf("failed to find 'cacert' key for CA cert data in secret")
 	}
 
+	var foundClientCert, foundClientKey bool
 	if val, ok := secret.StringData["clientCert"]; ok {
-		clientCert = []byte(val)
-	} else {
-		return nil, nil, nil, fmt.Errorf("failed to find 'clientCert' for client cert data in secret")
+		clientCert = val
+		foundClientCert = true
 	}
 
 	if val, ok := secret.StringData["clientKey"]; ok {
-		clientKey = []byte(val)
-	} else {
-		return nil, nil, nil, fmt.Errorf("failed to find 'clientKey' for client key data in secret")
+		clientKey = val
+		foundClientKey = true
+	}
+
+	if !foundClientCert && !foundClientKey {
+		// Cert only configuration
+		return caCert, "", "", nil
+	}
+
+	if !foundClientKey {
+		return "", "", "", fmt.Errorf("failed to find 'clientKey' for client key data in secret")
+	}
+
+	if !foundClientCert {
+		return "", "", "", fmt.Errorf("failed to find 'clientCert' for client cert data in secret")
 	}
 
 	return caCert, clientCert, clientKey, nil
