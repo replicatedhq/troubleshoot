@@ -72,6 +72,7 @@ type JobStatus struct {
 	Namespace   string     `json:"namespace,omitempty" yaml:"namespace,omitempty"`
 	Namespaces  []string   `json:"namespaces,omitempty" yaml:"namespaces,omitempty"`
 	Name        string     `json:"name" yaml:"name"`
+	SomeDummy   string     `json:"someDummy" yaml:"someDummy"`
 }
 
 type ReplicaSetStatus struct {
