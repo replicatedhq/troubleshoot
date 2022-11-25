@@ -58,7 +58,7 @@ type Logs struct {
 	Selector       []string   `json:"selector" yaml:"selector"`
 	Namespace      string     `json:"namespace,omitempty" yaml:"namespace,omitempty"`
 	ContainerNames []string   `json:"containerNames,omitempty" yaml:"containerNames,omitempty"`
-	Limits         *LogLimits `json:"limits,omitempty" yaml:"omitempty"`
+	Limits         *LogLimits `json:"limits,omitempty" yaml:"limits,omitempty"`
 }
 
 type Data struct {
