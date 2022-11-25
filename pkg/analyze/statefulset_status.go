@@ -10,7 +10,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 )
 
-func analyzeStatefulsetStatus(analyzer *troubleshootv1beta2.StatefulsetStatus, getFileContents func(string, []string) (map[string][]byte, error)) ([]*AnalyzeResult, error) {
+func analyzeStatefulsetStatus(analyzer *troubleshootv1beta2.StatefulsetStatus, getFileContents getChildCollectedFileContents) ([]*AnalyzeResult, error) {
 	if analyzer.Name == "" {
 		return analyzeAllStatefulsetStatuses(analyzer, getFileContents)
 	} else {
@@ -18,7 +18,7 @@ func analyzeStatefulsetStatus(analyzer *troubleshootv1beta2.StatefulsetStatus, g
 	}
 }
 
-func analyzeOneStatefulsetStatus(analyzer *troubleshootv1beta2.StatefulsetStatus, getFileContents func(string, []string) (map[string][]byte, error)) ([]*AnalyzeResult, error) {
+func analyzeOneStatefulsetStatus(analyzer *troubleshootv1beta2.StatefulsetStatus, getFileContents getChildCollectedFileContents) ([]*AnalyzeResult, error) {
 	excludeFiles := []string{}
 	files, err := getFileContents(filepath.Join("cluster-resources", "statefulsets", fmt.Sprintf("%s.json", analyzer.Namespace)), excludeFiles)
 	if err != nil {
@@ -66,7 +66,7 @@ func analyzeOneStatefulsetStatus(analyzer *troubleshootv1beta2.StatefulsetStatus
 	return []*AnalyzeResult{result}, nil
 }
 
-func analyzeAllStatefulsetStatuses(analyzer *troubleshootv1beta2.StatefulsetStatus, getFileContents func(string, []string) (map[string][]byte, error)) ([]*AnalyzeResult, error) {
+func analyzeAllStatefulsetStatuses(analyzer *troubleshootv1beta2.StatefulsetStatus, getFileContents getChildCollectedFileContents) ([]*AnalyzeResult, error) {
 	fileNames := make([]string, 0)
 	if analyzer.Namespace != "" {
 		fileNames = append(fileNames, filepath.Join("cluster-resources", "statefulsets", fmt.Sprintf("%s.json", analyzer.Namespace)))

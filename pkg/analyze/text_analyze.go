@@ -13,7 +13,7 @@ import (
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 )
 
-func analyzeTextAnalyze(analyzer *troubleshootv1beta2.TextAnalyze, getCollectedFileContents func(string, []string) (map[string][]byte, error)) ([]*AnalyzeResult, error) {
+func analyzeTextAnalyze(analyzer *troubleshootv1beta2.TextAnalyze, getCollectedFileContents getChildCollectedFileContents) ([]*AnalyzeResult, error) {
 	fullPath := filepath.Join(analyzer.CollectorName, analyzer.FileName)
 	excludeFiles := []string{}
 	for _, excludeFile := range analyzer.ExcludeFiles {

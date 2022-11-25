@@ -17,7 +17,7 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-func longhorn(analyzer *troubleshootv1beta2.LonghornAnalyze, getCollectedFileContents func(string) ([]byte, error), findFiles func(string, []string) (map[string][]byte, error)) ([]*AnalyzeResult, error) {
+func longhorn(analyzer *troubleshootv1beta2.LonghornAnalyze, getCollectedFileContents func(string) ([]byte, error), findFiles getChildCollectedFileContents) ([]*AnalyzeResult, error) {
 	ns := collect.DefaultLonghornNamespace
 	if analyzer.Namespace != "" {
 		ns = analyzer.Namespace

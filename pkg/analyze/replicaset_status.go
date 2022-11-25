@@ -13,7 +13,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 )
 
-func analyzeReplicaSetStatus(analyzer *troubleshootv1beta2.ReplicaSetStatus, getFileContents func(string, []string) (map[string][]byte, error)) ([]*AnalyzeResult, error) {
+func analyzeReplicaSetStatus(analyzer *troubleshootv1beta2.ReplicaSetStatus, getFileContents getChildCollectedFileContents) ([]*AnalyzeResult, error) {
 	if analyzer.Name == "" {
 		return analyzeAllReplicaSetStatuses(analyzer, getFileContents)
 	} else {
@@ -21,7 +21,7 @@ func analyzeReplicaSetStatus(analyzer *troubleshootv1beta2.ReplicaSetStatus, get
 	}
 }
 
-func analyzeOneReplicaSetStatus(analyzer *troubleshootv1beta2.ReplicaSetStatus, getFileContents func(string, []string) (map[string][]byte, error)) ([]*AnalyzeResult, error) {
+func analyzeOneReplicaSetStatus(analyzer *troubleshootv1beta2.ReplicaSetStatus, getFileContents getChildCollectedFileContents) ([]*AnalyzeResult, error) {
 	excludeFiles := []string{}
 	files, err := getFileContents(filepath.Join("cluster-resources", "replicasets", fmt.Sprintf("%s.json", analyzer.Namespace)), excludeFiles)
 	if err != nil {
@@ -65,7 +65,7 @@ func analyzeOneReplicaSetStatus(analyzer *troubleshootv1beta2.ReplicaSetStatus, 
 	return []*AnalyzeResult{result}, nil
 }
 
-func analyzeAllReplicaSetStatuses(analyzer *troubleshootv1beta2.ReplicaSetStatus, getFileContents func(string, []string) (map[string][]byte, error)) ([]*AnalyzeResult, error) {
+func analyzeAllReplicaSetStatuses(analyzer *troubleshootv1beta2.ReplicaSetStatus, getFileContents getChildCollectedFileContents) ([]*AnalyzeResult, error) {
 	fileNames := make([]string, 0)
 	if analyzer.Namespace != "" {
 		fileNames = append(fileNames, filepath.Join("cluster-resources", "replicasets", fmt.Sprintf("%s.json", analyzer.Namespace)))
