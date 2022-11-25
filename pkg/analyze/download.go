@@ -269,15 +269,21 @@ func (f fileContentProvider) getFileContents(fileName string) ([]byte, error) {
 }
 
 func excludeFilePaths(files, excludeFiles []string) []string {
-	for i := len(files) - 1; i >= 0; i-- {
-		for _, excludeFile := range excludeFiles {
-			if files[i] == excludeFile {
-				files = append(files[:i], files[i+1:]...)
-				break
-			}
+	mapExcludeFiles := make(map[string]struct{}, len(excludeFiles))
+
+	for _, path := range excludeFiles {
+		mapExcludeFiles[path] = struct{}{}
+	}
+
+	var nonexcludedFiles []string
+
+	for _, path := range files {
+		if _, found := mapExcludeFiles[path]; !found {
+			nonexcludedFiles = append(nonexcludedFiles, path)
 		}
 	}
-	return files
+
+	return nonexcludedFiles
 }
 
 func (f fileContentProvider) getChildFileContents(dirName string, excludeFiles []string) (map[string][]byte, error) {
