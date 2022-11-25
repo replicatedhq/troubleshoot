@@ -95,6 +95,13 @@ openapischema: controller-gen
 	controller-gen crd +output:dir=./config/crds  paths=./pkg/apis/troubleshoot/v1beta1
 	controller-gen crd +output:dir=./config/crds  paths=./pkg/apis/troubleshoot/v1beta2
 
+check-schemas: generate schemas
+	@if [ -n "$(shell git status --short)" ]; then \
+    	echo -e "\033[31mThe git repo is dirty :( Ensure all generated files are committed e.g CRD schema files\033[0;m"; \
+    	git status --short; \
+    	exit 1; \
+	fi
+
 .PHONY: schemas
 schemas: fmt vet openapischema
 	go build ${LDFLAGS} -o bin/schemagen github.com/replicatedhq/troubleshoot/cmd/schemagen
