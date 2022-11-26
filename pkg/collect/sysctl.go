@@ -67,6 +67,7 @@ func (c *CollectSysctl) Collect(progressChan chan<- interface{}) (CollectorResul
 	command := `
 find /proc/sys/net/ipv4 -type f | while read f; do v=$(cat $f 2>/dev/null); echo "$f = $v"; done
 find /proc/sys/net/bridge -type f | while read f; do v=$(cat $f 2>/dev/null); echo "$f = $v"; done
+find /proc/sys/vm -type f | while read f; do v=$(cat $f 2>/dev/null); echo "$f = $v"; done
 `
 	runPodOptions.Command = []string{"sh", "-c", command}
 
