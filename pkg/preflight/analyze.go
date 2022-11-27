@@ -57,7 +57,7 @@ func doAnalyze(allCollectedData map[string][]byte, analyzers []*troubleshootv1be
 
 		return contents, nil
 	}
-	getChildCollectedFileContents := func(prefix string) (map[string][]byte, error) {
+	getChildCollectedFileContents := func(prefix string, excludeFiles []string) (map[string][]byte, error) {
 		matching := make(map[string][]byte)
 		for k, v := range allCollectedData {
 			if strings.HasPrefix(k, prefix) {
@@ -71,6 +71,19 @@ func doAnalyze(allCollectedData map[string][]byte, analyzers []*troubleshootv1be
 			}
 		}
 
+		if len(excludeFiles) > 0 {
+			for k := range matching {
+				for _, ex := range excludeFiles {
+					if ok, _ := filepath.Match(ex, k); ok {
+						delete(matching, k)
+					}
+				}
+			}
+		}
+
+		if len(matching) == 0 {
+			return nil, fmt.Errorf("File not found: %s", prefix)
+		}
 		return matching, nil
 	}
 

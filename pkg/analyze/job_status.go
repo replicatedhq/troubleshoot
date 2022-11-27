@@ -12,7 +12,7 @@ import (
 	batchv1 "k8s.io/api/batch/v1"
 )
 
-func analyzeJobStatus(analyzer *troubleshootv1beta2.JobStatus, getFileContents func(string) (map[string][]byte, error)) ([]*AnalyzeResult, error) {
+func analyzeJobStatus(analyzer *troubleshootv1beta2.JobStatus, getFileContents getChildCollectedFileContents) ([]*AnalyzeResult, error) {
 	if analyzer.Name == "" {
 		return analyzeAllJobStatuses(analyzer, getFileContents)
 	} else {
@@ -20,8 +20,9 @@ func analyzeJobStatus(analyzer *troubleshootv1beta2.JobStatus, getFileContents f
 	}
 }
 
-func analyzeOneJobStatus(analyzer *troubleshootv1beta2.JobStatus, getFileContents func(string) (map[string][]byte, error)) ([]*AnalyzeResult, error) {
-	files, err := getFileContents(filepath.Join("cluster-resources", "jobs", fmt.Sprintf("%s.json", analyzer.Namespace)))
+func analyzeOneJobStatus(analyzer *troubleshootv1beta2.JobStatus, getFileContents getChildCollectedFileContents) ([]*AnalyzeResult, error) {
+	excludeFiles := []string{}
+	files, err := getFileContents(filepath.Join("cluster-resources", "jobs", fmt.Sprintf("%s.json", analyzer.Namespace)), excludeFiles)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to read collected jobs from namespace")
 	}
@@ -67,7 +68,7 @@ func analyzeOneJobStatus(analyzer *troubleshootv1beta2.JobStatus, getFileContent
 	return []*AnalyzeResult{result}, nil
 }
 
-func analyzeAllJobStatuses(analyzer *troubleshootv1beta2.JobStatus, getFileContents func(string) (map[string][]byte, error)) ([]*AnalyzeResult, error) {
+func analyzeAllJobStatuses(analyzer *troubleshootv1beta2.JobStatus, getFileContents getChildCollectedFileContents) ([]*AnalyzeResult, error) {
 	fileNames := make([]string, 0)
 	if analyzer.Namespace != "" {
 		fileNames = append(fileNames, filepath.Join("cluster-resources", "jobs", fmt.Sprintf("%s.json", analyzer.Namespace)))
@@ -81,9 +82,10 @@ func analyzeAllJobStatuses(analyzer *troubleshootv1beta2.JobStatus, getFileConte
 		fileNames = append(fileNames, filepath.Join("cluster-resources", "jobs", "*.json"))
 	}
 
+	excludeFiles := []string{}
 	results := []*AnalyzeResult{}
 	for _, fileName := range fileNames {
-		files, err := getFileContents(fileName)
+		files, err := getFileContents(fileName, excludeFiles)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to read collected jobs from file")
 		}

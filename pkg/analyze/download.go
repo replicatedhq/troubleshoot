@@ -268,11 +268,42 @@ func (f fileContentProvider) getFileContents(fileName string) ([]byte, error) {
 	return ioutil.ReadFile(filepath.Join(f.rootDir, fileName))
 }
 
-func (f fileContentProvider) getChildFileContents(dirName string) (map[string][]byte, error) {
+func excludeFilePaths(files, excludeFiles []string) []string {
+	mapExcludeFiles := make(map[string]struct{}, len(excludeFiles))
+
+	for _, path := range excludeFiles {
+		mapExcludeFiles[path] = struct{}{}
+	}
+
+	var nonexcludedFiles []string
+
+	for _, path := range files {
+		if _, found := mapExcludeFiles[path]; !found {
+			nonexcludedFiles = append(nonexcludedFiles, path)
+		}
+	}
+
+	return nonexcludedFiles
+}
+
+func (f fileContentProvider) getChildFileContents(dirName string, excludeFiles []string) (map[string][]byte, error) {
 	files, err := filepath.Glob(filepath.Join(f.rootDir, dirName))
 	if err != nil {
 		return nil, errors.Wrapf(err, "invalid glob %q", dirName)
 	}
+
+	if len(excludeFiles) > 0 {
+		excludeFileNames := []string{}
+		for _, excludeFile := range excludeFiles {
+			excludeFileName, err := filepath.Glob(filepath.Join(f.rootDir, excludeFile))
+			if err != nil {
+				return nil, errors.Wrapf(err, "invalid glob %q", excludeFile)
+			}
+			excludeFileNames = append(excludeFileNames, excludeFileName...)
+		}
+		files = excludeFilePaths(files, excludeFileNames)
+	}
+
 	fileArr := map[string][]byte{}
 	for _, filePath := range files {
 		bytes, err := ioutil.ReadFile(filePath)
