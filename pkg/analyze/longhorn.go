@@ -17,16 +17,17 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-func longhorn(analyzer *troubleshootv1beta2.LonghornAnalyze, getCollectedFileContents func(string) ([]byte, error), findFiles func(string) (map[string][]byte, error)) ([]*AnalyzeResult, error) {
+func longhorn(analyzer *troubleshootv1beta2.LonghornAnalyze, getFileContents getCollectedFileContents, findFiles getChildCollectedFileContents) ([]*AnalyzeResult, error) {
 	ns := collect.DefaultLonghornNamespace
 	if analyzer.Namespace != "" {
 		ns = analyzer.Namespace
 	}
 
+	excludeFiles := []string{}
 	// get nodes.longhorn.io
 	nodesDir := collect.GetLonghornNodesDirectory(ns)
 	nodesGlob := filepath.Join(nodesDir, "*")
-	nodesYaml, err := findFiles(nodesGlob)
+	nodesYaml, err := findFiles(nodesGlob, excludeFiles)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to find longhorn nodes files under %s", nodesDir)
 	}
@@ -44,7 +45,7 @@ func longhorn(analyzer *troubleshootv1beta2.LonghornAnalyze, getCollectedFileCon
 	// get replicas.longhorn.io
 	replicasDir := collect.GetLonghornReplicasDirectory(ns)
 	replicasGlob := filepath.Join(replicasDir, "*")
-	replicasYaml, err := findFiles(replicasGlob)
+	replicasYaml, err := findFiles(replicasGlob, excludeFiles)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to find longhorn replicas files under %s", replicasDir)
 	}
@@ -62,7 +63,7 @@ func longhorn(analyzer *troubleshootv1beta2.LonghornAnalyze, getCollectedFileCon
 	// get engines.longhorn.io
 	enginesDir := collect.GetLonghornEnginesDirectory(ns)
 	enginesGlob := filepath.Join(enginesDir, "*")
-	enginesYaml, err := findFiles(enginesGlob)
+	enginesYaml, err := findFiles(enginesGlob, excludeFiles)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to find longhorn engines files under %s", enginesDir)
 	}
@@ -80,7 +81,7 @@ func longhorn(analyzer *troubleshootv1beta2.LonghornAnalyze, getCollectedFileCon
 	// get volumes.longhorn.io
 	volumesDir := collect.GetLonghornVolumesDirectory(ns)
 	volumesGlob := filepath.Join(volumesDir, "*.yaml")
-	volumesYaml, err := findFiles(volumesGlob)
+	volumesYaml, err := findFiles(volumesGlob, excludeFiles)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to find longhorn volumes files under %s", volumesDir)
 	}
@@ -112,7 +113,7 @@ func longhorn(analyzer *troubleshootv1beta2.LonghornAnalyze, getCollectedFileCon
 	for _, volume := range volumes {
 		// get replica checksums for each volume if provided
 		checksumsGlob := filepath.Join(volumesDir, volume.Name, "replicachecksums", "*")
-		checksumFiles, err := findFiles(checksumsGlob)
+		checksumFiles, err := findFiles(checksumsGlob, excludeFiles)
 		if err != nil {
 			return nil, errors.Wrapf(err, "Failed to find longhorn replica checksums under %s", checksumsGlob)
 		}

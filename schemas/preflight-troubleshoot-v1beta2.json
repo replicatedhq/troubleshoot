@@ -1919,6 +1919,12 @@
                   "exclude": {
                     "oneOf": [{"type": "string"},{"type": "boolean"}]
                   },
+                  "excludeFiles": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
                   "fileName": {
                     "type": "string"
                   },

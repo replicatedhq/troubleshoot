@@ -17,8 +17,9 @@ import (
 // The when condition for outcomes in this analyzer is interpreted as "for some node".
 // For example, "when: net.ipv4.ip_forward = 0" is true if at least one node has IP forwarding
 // disabled.
-func analyzeSysctl(analyzer *troubleshootv1beta2.SysctlAnalyze, findFiles func(string) (map[string][]byte, error)) (*AnalyzeResult, error) {
-	files, err := findFiles("sysctl/*")
+func analyzeSysctl(analyzer *troubleshootv1beta2.SysctlAnalyze, findFiles getChildCollectedFileContents) (*AnalyzeResult, error) {
+	excludeFiles := []string{}
+	files, err := findFiles("sysctl/*", excludeFiles)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to find collected sysctl parameters")
 	}

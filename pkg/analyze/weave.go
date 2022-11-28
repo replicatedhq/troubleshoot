@@ -39,8 +39,9 @@ type WeaveAttributes struct {
 	Name      string `json:"name"`
 }
 
-func analyzeWeaveReport(analyzer *troubleshootv1beta2.WeaveReportAnalyze, findFiles func(string) (map[string][]byte, error)) ([]*AnalyzeResult, error) {
-	files, err := findFiles(analyzer.ReportFileGlob)
+func analyzeWeaveReport(analyzer *troubleshootv1beta2.WeaveReportAnalyze, findFiles getChildCollectedFileContents) ([]*AnalyzeResult, error) {
+	excludeFiles := []string{}
+	files, err := findFiles(analyzer.ReportFileGlob, excludeFiles)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to find weave report files in %q", analyzer.ReportFileGlob)
 	}
