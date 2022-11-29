@@ -1,7 +1,7 @@
 apiVersion: troubleshoot.sh/v1beta2
 kind: SupportBundle
 metadata:
-  name: mysql
+  name: dbs-collector
 spec:
   collectors:
     - mysql:
@@ -15,3 +15,6 @@ spec:
           - innodb_large_prefix
           - innodb_strict_mode
           - log_bin_trust_function_creators
+    - redis:
+        collectorName: my-redis
+        uri: rediss://default:replicated@server:6380

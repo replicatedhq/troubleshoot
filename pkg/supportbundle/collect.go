@@ -58,7 +58,7 @@ func runHostCollectors(hostCollectors []*troubleshootv1beta2.HostCollect, additi
 	if opts.Redact {
 		err := collect.RedactResult(bundlePath, collectResult, globalRedactors)
 		if err != nil {
-			err = errors.Wrap(err, "failed to redact")
+			err = errors.Wrap(err, "failed to redact host collector results")
 			return collectResult, err
 		}
 	}
@@ -150,8 +150,7 @@ func runCollectors(collectors []*troubleshootv1beta2.Collect, additionalRedactor
 	if opts.Redact {
 		err := collect.RedactResult(bundlePath, collectResult, globalRedactors)
 		if err != nil {
-			err = errors.Wrap(err, "failed to redact")
-			return collectResult, err
+			return collectResult, errors.Wrap(err, "failed to redact in cluster collector results")
 		}
 	}
 

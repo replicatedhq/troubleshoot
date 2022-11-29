@@ -221,7 +221,7 @@ func Test_deploymentStatus(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			req := require.New(t)
 
-			getFiles := func(n string) (map[string][]byte, error) {
+			getFiles := func(n string, _ []string) (map[string][]byte, error) {
 				if file, ok := test.files[n]; ok {
 					return map[string][]byte{n: file}, nil
 				}

@@ -8,8 +8,9 @@ import (
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 )
 
-func analyzeImagePullSecret(analyzer *troubleshootv1beta2.ImagePullSecret, getChildCollectedFileContents func(string) (map[string][]byte, error)) (*AnalyzeResult, error) {
-	imagePullSecrets, err := getChildCollectedFileContents("cluster-resources/image-pull-secrets")
+func analyzeImagePullSecret(analyzer *troubleshootv1beta2.ImagePullSecret, getChildCollectedFileContents getChildCollectedFileContents) (*AnalyzeResult, error) {
+	var excludeFiles = []string{}
+	imagePullSecrets, err := getChildCollectedFileContents("cluster-resources/image-pull-secrets", excludeFiles)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get file contents for image pull secrets")
 	}
