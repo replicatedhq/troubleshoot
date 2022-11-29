@@ -3,12 +3,11 @@ package collect
 import (
 	"bytes"
 	"context"
-	"database/sql"
 	"encoding/json"
 	"fmt"
 	"regexp"
 
-	_ "github.com/lib/pq"
+	"github.com/jackc/pgx/v5"
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"k8s.io/client-go/kubernetes"
@@ -33,15 +32,54 @@ func (c *CollectPostgres) IsExcluded() (bool, error) {
 	return isExcluded(c.Collector.Exclude)
 }
 
+func (c *CollectPostgres) createConnectConfig() (*pgx.ConnConfig, error) {
+	if c.Collector.URI == "" {
+		return nil, errors.New("postgres uri cannot be empty")
+	}
+
+	cfg, err := pgx.ParseConfig(c.Collector.URI)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to parse postgres config")
+	}
+
+	if c.Collector.TLS != nil {
+		tlsCfg, err := createTLSConfig(c.Context, c.Client, c.Collector.TLS)
+		if err != nil {
+			return nil, err
+		}
+
+		tlsCfg.ServerName = cfg.Host
+		cfg.TLSConfig = tlsCfg
+	}
+
+	return cfg, nil
+}
+
+func (c *CollectPostgres) connect() (*pgx.Conn, error) {
+	connCfg, err := c.createConnectConfig()
+	if err != nil {
+		return nil, err
+	}
+
+	conn, err := pgx.ConnectConfig(c.Context, connCfg)
+	if err != nil {
+		return nil, err
+	}
+
+	return conn, nil
+}
+
 func (c *CollectPostgres) Collect(progressChan chan<- interface{}) (CollectorResult, error) {
 	databaseConnection := DatabaseConnection{}
 
-	db, err := sql.Open("postgres", c.Collector.URI)
+	conn, err := c.connect()
 	if err != nil {
 		databaseConnection.Error = err.Error()
 	} else {
+		defer conn.Close(c.Context)
+
 		query := `select version()`
-		row := db.QueryRow(query)
+		row := conn.QueryRow(c.Context, query)
 		version := ""
 		if err := row.Scan(&version); err != nil {
 			databaseConnection.Error = err.Error()
