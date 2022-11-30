@@ -1,10 +1,13 @@
 package collect
 
 import (
+	"context"
 	"testing"
 
+	"github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	testclient "k8s.io/client-go/kubernetes/fake"
 )
 
 func Test_parsePostgresVersion(t *testing.T) {
@@ -43,4 +46,73 @@ func Test_parsePostgresVersion(t *testing.T) {
 
 		})
 	}
+}
+
+func TestCollectPostgres_createConnectConfigPlainText(t *testing.T) {
+	tests := []struct {
+		name     string
+		uri      string
+		hasError bool
+	}{
+		{
+			name: "valid uri creates postgres connection config successfully",
+			uri:  "postgresql://user:password@my-pghost:5432/defaultdb?sslmode=require",
+		},
+		{
+			name:     "empty uri fails to create postgres connection config with error",
+			uri:      "",
+			hasError: true,
+		},
+		{
+			name:     "invalid redis protocol fails to create postgres connection config with error",
+			uri:      "http://somehost:5432",
+			hasError: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			c := &CollectPostgres{
+				Context: context.Background(),
+				Collector: &v1beta2.Database{
+					URI: tt.uri,
+				},
+			}
+
+			connCfg, err := c.createConnectConfig()
+			assert.Equal(t, err != nil, tt.hasError)
+			if err == nil {
+				require.NotNil(t, connCfg)
+				assert.Equal(t, connCfg.Host, "my-pghost")
+				assert.Equal(t, connCfg.Database, "defaultdb")
+			} else {
+				t.Log(err)
+				assert.Nil(t, connCfg)
+			}
+		})
+	}
+}
+
+func TestCollectPostgres_createConnectConfigTLS(t *testing.T) {
+	k8sClient := testclient.NewSimpleClientset()
+
+	c := &CollectPostgres{
+		Client:  k8sClient,
+		Context: context.Background(),
+		Collector: &v1beta2.Database{
+			URI: "postgresql://user:password@my-pghost:5432/defaultdb?sslmode=require",
+			TLS: &v1beta2.TLSParams{
+				CACert:     getTestFixture(t, "db/ca.pem"),
+				ClientCert: getTestFixture(t, "db/client.pem"),
+				ClientKey:  getTestFixture(t, "db/client-key.pem"),
+			},
+		},
+	}
+
+	connCfg, err := c.createConnectConfig()
+	assert.NoError(t, err)
+	assert.NotNil(t, connCfg)
+	assert.Equal(t, connCfg.Host, "my-pghost")
+	assert.NotNil(t, connCfg.TLSConfig.Certificates)
+	assert.NotNil(t, connCfg.TLSConfig.RootCAs)
+	assert.False(t, connCfg.TLSConfig.InsecureSkipVerify)
 }
