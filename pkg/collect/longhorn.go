@@ -289,27 +289,27 @@ func (c *CollectLonghorn) Collect(progressChan chan<- interface{}) (CollectorRes
 	return output, nil
 }
 
-func (c *CollectLonghorn) collectLonghornLogs(namespace string, results CollectorResult, progressChan chan<- interface{}, ) error {
-		// logs of all pods in namespace
-		logsCollectorSpec := &troubleshootv1beta2.Logs{
-			Selector:  []string{""},
-			Name:      GetLonghornLogsDirectory(namespace), // Logs (symlinks) will be stored in this directory
-			Namespace: namespace,
-		}
+func (c *CollectLonghorn) collectLonghornLogs(namespace string, results CollectorResult, progressChan chan<- interface{}) error {
+	// logs of all pods in namespace
+	logsCollectorSpec := &troubleshootv1beta2.Logs{
+		Selector:  []string{""},
+		Name:      GetLonghornLogsDirectory(namespace), // Logs (symlinks) will be stored in this directory
+		Namespace: namespace,
+	}
 
-		rbacErrors := c.GetRBACErrors()
-		logsCollector := &CollectLogs{logsCollectorSpec, c.BundlePath, namespace, c.ClientConfig, c.Client, c.Context, nil, rbacErrors}
+	rbacErrors := c.GetRBACErrors()
+	logsCollector := &CollectLogs{logsCollectorSpec, c.BundlePath, namespace, c.ClientConfig, c.Client, c.Context, nil, rbacErrors}
 
-		logs, err := logsCollector.Collect(progressChan)
-		if err != nil {
-			return err
-		}
+	logs, err := logsCollector.Collect(progressChan)
+	if err != nil {
+		return err
+	}
 
-		// Add logs collector results to the rest of
-		// the longhorn collector results for later consumption
-		results.AddResult(logs)
+	// Add logs collector results to the rest of
+	// the longhorn collector results for later consumption
+	results.AddResult(logs)
 
-		return nil
+	return nil
 }
 
 func GetLonghornNodesDirectory(namespace string) string {
