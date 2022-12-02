@@ -22,7 +22,7 @@ func NewResult() CollectorResult {
 // is empty, no symlink is created. The relativeLinkPath is always saved in the result map.
 func (r CollectorResult) SymLinkResult(bundlePath, relativeLinkPath, relativeFilePath string) error {
 	// We should have saved the result this symlink is pointing to prior to creating it
-	klog.Info("Creating symlink ", relativeLinkPath, " -> ", relativeFilePath)
+	klog.V(2).Info("Creating symlink ", relativeLinkPath, " -> ", relativeFilePath)
 	data, ok := r[relativeFilePath]
 	if !ok {
 		return errors.Errorf("cannot create symlink, result in %q not found", relativeFilePath)
@@ -72,11 +72,21 @@ func (r CollectorResult) SymLinkResult(bundlePath, relativeLinkPath, relativeFil
 		return errors.Wrap(err, "failed to create symlink")
 	}
 
-	klog.V(2).Infof("Created '%s' symlink of '%s'", relativeLinkPath, relativeFilePath)
+	klog.V(2).Infof("Created %q symlink of %q", relativeLinkPath, relativeFilePath)
 	// store the file name referencing the symlink to have archived
 	r[relativeLinkPath] = nil
 
 	return nil
+}
+
+// AddResult combines another results object into this collector result.
+// This ensures when archiving a bundle from the result, all files are included.
+// It also ensures that when operating on the results in memory (e.g preflights),
+// all files are included.
+func (r CollectorResult) AddResult(other CollectorResult) {
+	for k, v := range other {
+		r[k] = v
+	}
 }
 
 // SaveResult saves the collector result to relativePath file on disk. If bundlePath is

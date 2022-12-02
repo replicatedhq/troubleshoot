@@ -20,7 +20,7 @@ import (
 type CollectLogs struct {
 	Collector    *troubleshootv1beta2.Logs
 	BundlePath   string
-	Namespace    string
+	Namespace    string	// There is a Namespace parameter in troubleshootv1beta2.Logs. Should remove this?
 	ClientConfig *rest.Config
 	Client       kubernetes.Interface
 	Context      context.Context

@@ -172,7 +172,7 @@ func cephCommandExec(ctx context.Context, progressChan chan<- interface{}, c *Co
 	}
 
 	pathPrefix := GetCephCollectorFilepath(cephCollector.CollectorName, cephCollector.Namespace)
-	for srcFilename, _ := range results {
+	for srcFilename := range results {
 		var dstFileName string
 		switch {
 		case strings.HasSuffix(srcFilename, "-stdout.txt"):
