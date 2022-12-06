@@ -88,6 +88,9 @@ EMPTY_NAMESPACE_FOUND:
 			allNamespaces = append(allNamespaces, k)
 		}
 	}
+
+	sort.Strings(allNamespaces)
+
 	clusterResourcesCollector.Collector.Namespaces = allNamespaces
 
 	result = append(result, clusterResourcesCollector)

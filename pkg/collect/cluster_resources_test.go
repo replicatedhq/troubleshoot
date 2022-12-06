@@ -110,6 +110,43 @@ func TestClusterResources_Merge(t *testing.T) {
 			},
 		},
 		{
+			name: "multiple cluster resource collectors with a empty string namespace provided",
+			Collectors: []troubleshootv1beta2.Collect{
+				{
+					ClusterResources: &troubleshootv1beta2.ClusterResources{
+						CollectorMeta: troubleshootv1beta2.CollectorMeta{
+							CollectorName: "collectorname",
+						},
+						Namespaces: []string{"hello"},
+					},
+				},
+				{
+					ClusterResources: &troubleshootv1beta2.ClusterResources{
+						CollectorMeta: troubleshootv1beta2.CollectorMeta{
+							CollectorName: "collectorname",
+						},
+						Namespaces: []string{"hello2"},
+					},
+				},
+				{
+					ClusterResources: &troubleshootv1beta2.ClusterResources{
+						CollectorMeta: troubleshootv1beta2.CollectorMeta{
+							CollectorName: "collectorname",
+						},
+						Namespaces: []string{""},
+					},
+				},
+			},
+			want: &CollectClusterResources{
+				Collector: &troubleshootv1beta2.ClusterResources{
+					CollectorMeta: troubleshootv1beta2.CollectorMeta{
+						CollectorName: "collectorname",
+					},
+					Namespaces: nil,
+				},
+			},
+		},
+		{
 			name: "multiple cluster resource collectors with a nil namespace provided",
 			Collectors: []troubleshootv1beta2.Collect{
 				{
