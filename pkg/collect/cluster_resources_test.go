@@ -155,10 +155,10 @@ func TestClusterResources_Merge(t *testing.T) {
 			allCollectors := make(map[reflect.Type][]Collector)
 			collectorType := reflect.TypeOf(CollectClusterResources{})
 
-			for _, v := range tt.Collectors {
-				collectorInterface, _ := GetCollector(&v, "", "", nil, nil, nil)
-				if collector, ok := collectorInterface.(MergeableCollector); ok {
-					allCollectors[collectorType] = append(allCollectors[collectorType], collector)
+			for _, collector := range tt.Collectors {
+				collectorInterface, _ := GetCollector(&collector, "", "", nil, nil, nil)
+				if mergeCollector, ok := collectorInterface.(MergeableCollector); ok {
+					allCollectors[collectorType] = append(allCollectors[collectorType], mergeCollector)
 				}
 			}
 
