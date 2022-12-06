@@ -55,6 +55,7 @@ func (c *CollectClusterResources) Merge(allCollectors []Collector) ([]Collector,
 	uniqueNamespaces := make(map[string]bool)
 	hasEmptyNameSpaceCollector := false
 
+EMPTY_NAMESPACE_FOUND:
 	for _, collectorInterface := range allCollectors {
 		if collector, ok := collectorInterface.(*CollectClusterResources); ok {
 			if collector.Collector.Namespaces == nil {
@@ -62,7 +63,12 @@ func (c *CollectClusterResources) Merge(allCollectors []Collector) ([]Collector,
 				break
 			} else {
 				for _, namespace := range collector.Collector.Namespaces {
-					uniqueNamespaces[namespace] = true
+					if namespace == "" {
+						hasEmptyNameSpaceCollector = true
+						break EMPTY_NAMESPACE_FOUND
+					} else {
+						uniqueNamespaces[namespace] = true
+					}
 				}
 			}
 		}
