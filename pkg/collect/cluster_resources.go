@@ -51,7 +51,50 @@ func (c *CollectClusterResources) IsExcluded() (bool, error) {
 }
 
 func (c *CollectClusterResources) Merge(allCollectors []Collector) ([]Collector, error) {
-	result := append(allCollectors, c)
+	var result []Collector
+	uniqueNamespaces := make(map[string]bool)
+	hasEmptyNameSpaceCollector := false
+
+EMPTY_NAMESPACE_FOUND:
+	for _, collectorInterface := range allCollectors {
+		if collector, ok := collectorInterface.(*CollectClusterResources); ok {
+			if collector.Collector.Namespaces == nil {
+				hasEmptyNameSpaceCollector = true
+				break
+			} else {
+				for _, namespace := range collector.Collector.Namespaces {
+					if namespace == "" {
+						hasEmptyNameSpaceCollector = true
+						break EMPTY_NAMESPACE_FOUND
+					} else {
+						uniqueNamespaces[namespace] = true
+					}
+				}
+			}
+		}
+	}
+
+	clusterResourcesCollector := c
+
+	if hasEmptyNameSpaceCollector {
+		clusterResourcesCollector.Collector.Namespaces = nil
+		result = append(result, clusterResourcesCollector)
+		return result, nil
+	}
+
+	var allNamespaces []string
+	for k, v := range uniqueNamespaces {
+		if v {
+			allNamespaces = append(allNamespaces, k)
+		}
+	}
+
+	sort.Strings(allNamespaces)
+
+	clusterResourcesCollector.Collector.Namespaces = allNamespaces
+
+	result = append(result, clusterResourcesCollector)
+
 	return result, nil
 }
 
