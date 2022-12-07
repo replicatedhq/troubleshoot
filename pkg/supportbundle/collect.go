@@ -68,20 +68,22 @@ func runHostCollectors(hostCollectors []*troubleshootv1beta2.HostCollect, additi
 }
 
 func runCollectors(collectors []*troubleshootv1beta2.Collect, additionalRedactors *troubleshootv1beta2.Redactor, bundlePath string, opts SupportBundleCreateOpts) (collect.CollectorResult, error) {
+	var allCollectors []collect.Collector
+	var foundForbidden bool
+
 	collectSpecs := make([]*troubleshootv1beta2.Collect, 0)
 	collectSpecs = append(collectSpecs, collectors...)
 	collectSpecs = collect.EnsureCollectorInList(collectSpecs, troubleshootv1beta2.Collect{ClusterInfo: &troubleshootv1beta2.ClusterInfo{}})
 	collectSpecs = collect.EnsureCollectorInList(collectSpecs, troubleshootv1beta2.Collect{ClusterResources: &troubleshootv1beta2.ClusterResources{}})
 	collectSpecs = collect.EnsureClusterResourcesFirst(collectSpecs)
 
-	allCollectedData := make(map[string][]byte)
-
 	k8sClient, err := kubernetes.NewForConfig(opts.KubernetesRestConfig)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to instantiate Kubernetes client")
 	}
 
-	allCollectors := make(map[reflect.Type][]collect.Collector)
+	allCollectorsMap := make(map[reflect.Type][]collect.Collector)
+	allCollectedData := make(map[string][]byte)
 
 	for _, desiredCollector := range collectSpecs {
 		if collectorInterface, ok := collect.GetCollector(desiredCollector, bundlePath, opts.Namespace, opts.KubernetesRestConfig, k8sClient, opts.SinceTime); ok {
@@ -91,21 +93,23 @@ func runCollectors(collectors []*troubleshootv1beta2.Collect, additionalRedactor
 					return nil, errors.Wrap(err, "failed to check RBAC for collectors")
 				}
 				collectorType := reflect.TypeOf(collector)
-				allCollectors[collectorType] = append(allCollectors[collectorType], collector)
+				allCollectorsMap[collectorType] = append(allCollectorsMap[collectorType], collector)
 			}
 		}
 	}
 
-	var foundForbidden bool
-	for collectorType, collectors := range allCollectors {
+	for _, collectors := range allCollectorsMap {
 		if mergeCollector, ok := collectors[0].(collect.MergeableCollector); ok {
 			mergedCollectors, err := mergeCollector.Merge(collectors)
 			if err != nil {
 				msg := fmt.Sprintf("failed to merge collector: %s: %s", mergeCollector.Title(), err)
 				opts.CollectorProgressCallback(opts.ProgressChan, msg)
 			}
-			allCollectors[collectorType] = mergedCollectors
+			allCollectors = append(allCollectors, mergedCollectors...)
+		} else {
+			allCollectors = append(allCollectors, collectors...)
 		}
+
 		foundForbidden = false
 		for _, collector := range collectors {
 			for _, e := range collector.GetRBACErrors() {
@@ -119,29 +123,27 @@ func runCollectors(collectors []*troubleshootv1beta2.Collect, additionalRedactor
 		return nil, errors.New("insufficient permissions to run all collectors")
 	}
 
-	for _, collectors := range allCollectors {
-		for _, collector := range collectors {
-			isExcluded, _ := collector.IsExcluded()
-			if isExcluded {
+	for _, collector := range allCollectors {
+		isExcluded, _ := collector.IsExcluded()
+		if isExcluded {
+			continue
+		}
+
+		// skip collectors with RBAC errors unless its the ClusterResources collector
+		if collector.HasRBACErrors() {
+			if _, ok := collector.(*collect.CollectClusterResources); !ok {
+				msg := fmt.Sprintf("skipping collector %s with insufficient RBAC permissions", collector.Title())
+				opts.CollectorProgressCallback(opts.ProgressChan, msg)
 				continue
 			}
-
-			// skip collectors with RBAC errors unless its the ClusterResources collector
-			if collector.HasRBACErrors() {
-				if _, ok := collector.(*collect.CollectClusterResources); !ok {
-					msg := fmt.Sprintf("skipping collector %s with insufficient RBAC permissions", collector.Title())
-					opts.CollectorProgressCallback(opts.ProgressChan, msg)
-					continue
-				}
-			}
-			opts.CollectorProgressCallback(opts.ProgressChan, collector.Title())
-			result, err := collector.Collect(opts.ProgressChan)
-			if err != nil {
-				opts.ProgressChan <- errors.Errorf("failed to run collector: %s: %v", collector.Title(), err)
-			}
-			for k, v := range result {
-				allCollectedData[k] = v
-			}
+		}
+		opts.CollectorProgressCallback(opts.ProgressChan, collector.Title())
+		result, err := collector.Collect(opts.ProgressChan)
+		if err != nil {
+			opts.ProgressChan <- errors.Errorf("failed to run collector: %s: %v", collector.Title(), err)
+		}
+		for k, v := range result {
+			allCollectedData[k] = v
 		}
 	}
 
