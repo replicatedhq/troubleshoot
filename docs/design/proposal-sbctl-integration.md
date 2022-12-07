@@ -47,7 +47,7 @@ Similiar to the [Analyze](https://github.com/replicatedhq/troubleshoot/blob/main
 
 cluster_resources.go
 ```go
-const ClusterResourcesPath = `cluster-resources/`
+const ClusterResourcesPath = `cluster-resources`
 ...
 
 path := filepath.Join(ClusterResourcesPath, "namespaces.json")
