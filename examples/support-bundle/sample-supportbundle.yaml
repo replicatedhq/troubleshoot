@@ -12,6 +12,7 @@ spec:
         limits:
           maxAge: 720h # 30*24
           maxLines: 10000
+          maxBytes: 5000000
     - logs:
         collectorName: all-logs
         name: all-logs
