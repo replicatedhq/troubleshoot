@@ -49,6 +49,7 @@ type ConfigMap struct {
 type LogLimits struct {
 	MaxAge    string      `json:"maxAge,omitempty" yaml:"maxAge,omitempty"`
 	MaxLines  int64       `json:"maxLines,omitempty" yaml:"maxLines,omitempty"`
+	MaxBytes  int64       `json:"maxBytes,omitempty" yaml:"maxBytes,omitempty"`
 	SinceTime metav1.Time `json:"sinceTime,omitempty" yaml:"sinceTime,omitempty"`
 }
 
