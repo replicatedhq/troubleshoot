@@ -66,6 +66,48 @@ import (
 dirName := filepath.Join(collect.ClusterResourcesPath, fmt.Sprintf("%s", resource))
 ```
 
+### Package Structure
+```
+cmd
+    serve/
+    shell/
+pkg
+    serve/
+    shell/
+tests           # API tests, integration tests etc reside here.
+    serve/      # sbctl BDD tests.
+        # all tests and test fixtures moved here
+```
+
+### Makefile Changes
+
+We'll need to add make targets specific to these commands similar to the current ones
+```
+make serve run-serve
+make shell run-shell
+make ginkgo
+```
+
+### Tests
+We will need to have a separate directory for ginkgo BDD tests. The test harness used is ginkgo cli instead of go test and there is no straight forward way of separating these tests. Also, from a directory structure point of view, such integration tests usually reside in modules in a root level tests directory. Changes to the test code need to be minimal, ideally no change, cause they will be used to ensure any refactored code does not break.
+
+### Docs 
+In troubleshoo.sh docs, add a new sub section under "Support Bundle" describing then new serve & shell subcommands.
+
+### Other Changes
+We would need to merge some of the support bundle functionality we see in both projects like so
+
+Create a new sbutil module to store reusable support bundle functionality. At leastanalyze & serve modules will depend on this module
+
+```
+pkg
+    sbutil/
+```
+
+Merge troubleshoot/pkg/analyze/download.ExtractTroubleshootBundle & sbctl/pkg/sbctl/support-bundle.ExtractBundle that duplicate support bundle archive extraction
+Build on sbctl/pkg/sbctl/support-bundle.ClusterData to have it expose well known paths (ClusterResourcesDir, Version files, analysis results etc) and unmarshalled resources (this bit can be built on a need to have basis) in a support bundle especially once Add generic kubernetes resource analyzer #780 PR is merged.
+Build on sbctl/pkg/sbctl/support-bundle.FindClusterData to perform pre-validation of a support bundle to ensure it is valid before running any applications.
+
 ## Limitations
 
 ## Assumptions
