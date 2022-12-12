@@ -104,9 +104,9 @@ pkg
     sbutil/
 ```
 
-Merge troubleshoot/pkg/analyze/download.ExtractTroubleshootBundle & sbctl/pkg/sbctl/support-bundle.ExtractBundle that duplicate support bundle archive extraction
-Build on sbctl/pkg/sbctl/support-bundle.ClusterData to have it expose well known paths (ClusterResourcesDir, Version files, analysis results etc) and unmarshalled resources (this bit can be built on a need to have basis) in a support bundle especially once Add generic kubernetes resource analyzer #780 PR is merged.
-Build on sbctl/pkg/sbctl/support-bundle.FindClusterData to perform pre-validation of a support bundle to ensure it is valid before running any applications.
+Merge `troubleshoot/pkg/analyze/download.ExtractTroubleshootBundle` & `sbctl/pkg/sbctl/support-bundle.ExtractBundle` that duplicate support bundle archive extraction
+Build on `sbctl/pkg/sbctl/support-bundle.ClusterData` to have it expose well known paths (ClusterResourcesDir, Version files, analysis results etc) and unmarshalled resources (this bit can be built on a need to have basis) in a support bundle especially once [Add generic kubernetes resource analyzer #780 PR](https://github.com/replicatedhq/troubleshoot/pull/780) is merged.
+Build on `sbctl/pkg/sbctl/support-bundle.FindClusterData` to perform pre-validation of a support bundle to ensure it is valid before running any applications.
 
 ## Limitations
 
