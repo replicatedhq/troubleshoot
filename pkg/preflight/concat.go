@@ -8,7 +8,6 @@ func ConcatPreflightSpec(target *troubleshootv1beta2.Preflight, source *troubles
 	newSpec := target.DeepCopy()
 	newSpec.Spec.Collectors = append(target.Spec.Collectors, source.Spec.Collectors...)
 	newSpec.Spec.RemoteCollectors = append(target.Spec.RemoteCollectors, source.Spec.RemoteCollectors...)
-	//newSpec.Spec.UploadResultsTo = append(target.Spec.UploadResultsTo, source.Spec.UploadResultsTo...)
 	newSpec.Spec.Analyzers = append(target.Spec.Analyzers, source.Spec.Analyzers...)
 	return newSpec
 }
