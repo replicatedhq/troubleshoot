@@ -44,8 +44,9 @@ func RunPreflights(interactive bool, output string, format string, args []string
 	}()
 
 	var preflightContent []byte
-	var processedPreflightSpec *troubleshootv1beta2.Preflight
-	var processedHostPreflightSpec *troubleshootv1beta2.HostPreflight
+	var preflightSpec *troubleshootv1beta2.Preflight
+	var hostPreflightSpec *troubleshootv1beta2.HostPreflight
+	var uploadResultSpecs []*troubleshootv1beta2.Preflight
 	var err error
 
 	for i, v := range args {
@@ -123,22 +124,27 @@ func RunPreflights(interactive bool, output string, format string, args []string
 			return errors.Wrapf(err, "failed to parse %s", v)
 		}
 
-		if preflightSpec, ok := obj.(*troubleshootv1beta2.Preflight); ok {
-			if i == 0 {
-				processedPreflightSpec = preflightSpec
+		if spec, ok := obj.(*troubleshootv1beta2.Preflight); ok {
+			if spec.Spec.UploadResultsTo == "" {
+				if i == 0 {
+					preflightSpec = spec
+				} else {
+					preflightSpec = ConcatPreflightSpec(preflightSpec, spec)
+				}
 			} else {
-				processedPreflightSpec = ConcatPreflightSpec(processedPreflightSpec, preflightSpec)
+				uploadResultSpecs = append(uploadResultSpecs, preflightSpec)
 			}
-		} else if hostPreflightSpec, ok := obj.(*troubleshootv1beta2.HostPreflight); ok {
+		} else if spec, ok := obj.(*troubleshootv1beta2.HostPreflight); ok {
 			if i == 0 {
-				processedHostPreflightSpec = hostPreflightSpec
+				hostPreflightSpec = spec
 			} else {
-				processedHostPreflightSpec = ConcatHostPreflightSpec(processedHostPreflightSpec, hostPreflightSpec)
+				hostPreflightSpec = ConcatHostPreflightSpec(hostPreflightSpec, spec)
 			}
 		}
 	}
 
 	var collectResults []CollectResult
+	var uploadCollectResults []CollectResult
 	preflightSpecName := ""
 
 	progressCh := make(chan interface{})
@@ -155,33 +161,46 @@ func RunPreflights(interactive bool, output string, format string, args []string
 		progressCollection.Go(collectNonInteractiveProgess(ctx, progressCh))
 	}
 
-	if processedPreflightSpec != nil {
-		r, err := collectInCluster(processedPreflightSpec, progressCh)
+	uploadResultsMap := make(map[string][]CollectResult)
+
+	if preflightSpec != nil {
+		r, err := collectInCluster(preflightSpec, progressCh)
 		if err != nil {
 			return errors.Wrap(err, "failed to collect in cluster")
 		}
 		collectResults = append(collectResults, *r)
-		preflightSpecName = processedPreflightSpec.Name
+		preflightSpecName = preflightSpec.Name
 	}
-	if processedHostPreflightSpec != nil {
-		if len(processedHostPreflightSpec.Spec.Collectors) > 0 {
-			r, err := collectHost(processedHostPreflightSpec, progressCh)
+	if uploadResultSpecs != nil {
+		for _, spec := range uploadResultSpecs {
+			r, err := collectInCluster(spec, progressCh)
+			if err != nil {
+				return errors.Wrap(err, "failed to collect in cluster")
+			}
+			uploadResultsMap[spec.Spec.UploadResultsTo] = append(uploadResultsMap[spec.Spec.UploadResultsTo], *r)
+			uploadCollectResults = append(collectResults, *r)
+			preflightSpecName = spec.Name
+		}
+	}
+	if hostPreflightSpec != nil {
+		if len(hostPreflightSpec.Spec.Collectors) > 0 {
+			r, err := collectHost(hostPreflightSpec, progressCh)
 			if err != nil {
 				return errors.Wrap(err, "failed to collect from host")
 			}
 			collectResults = append(collectResults, *r)
 		}
-		if len(processedHostPreflightSpec.Spec.RemoteCollectors) > 0 {
-			r, err := collectRemote(processedHostPreflightSpec, progressCh)
+		if len(hostPreflightSpec.Spec.RemoteCollectors) > 0 {
+			r, err := collectRemote(hostPreflightSpec, progressCh)
 			if err != nil {
 				return errors.Wrap(err, "failed to collect remotely")
 			}
 			collectResults = append(collectResults, *r)
 		}
-		preflightSpecName = processedHostPreflightSpec.Name
+		preflightSpecName = hostPreflightSpec.Name
 	}
 
-	if collectResults == nil {
+	if collectResults == nil && uploadCollectResults == nil {
 		return errors.New("no results")
 	}
 
@@ -190,9 +209,17 @@ func RunPreflights(interactive bool, output string, format string, args []string
 		analyzeResults = append(analyzeResults, res.Analyze()...)
 	}
 
-	if processedPreflightSpec != nil {
-		if processedPreflightSpec.Spec.UploadResultsTo != "" {
-			err := uploadResults(processedPreflightSpec.Spec.UploadResultsTo, analyzeResults)
+	uploadAnalyzeResultsMap := make(map[string][]*analyzer.AnalyzeResult)
+	for location, results := range uploadResultsMap {
+		for _, res := range results {
+			uploadAnalyzeResultsMap[location] = append(uploadAnalyzeResultsMap[location], res.Analyze()...)
+			analyzeResults = append(analyzeResults, uploadAnalyzeResultsMap[location]...)
+		}
+	}
+
+	if uploadAnalyzeResultsMap != nil {
+		for k, v := range uploadAnalyzeResultsMap {
+			err := uploadResults(k, v)
 			if err != nil {
 				progressCh <- err
 			}
