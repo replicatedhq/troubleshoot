@@ -187,7 +187,6 @@ func (c *CollectClusterResources) Collect(progressChan chan<- interface{}) (Coll
 	}
 
 	// pod disruption budgets
-
 	PodDisruptionBudgets, pdbError := getPodDisruptionBudgets(ctx, client, namespaceNames)
 	for k, v := range PodDisruptionBudgets {
 		output.SaveResult(c.BundlePath, path.Join("cluster-resources/pod-disruption-budgets", k), bytes.NewBuffer(v))

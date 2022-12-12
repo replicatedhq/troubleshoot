@@ -54,6 +54,14 @@ func Test_setLogLimits(t *testing.T) {
 				SinceTime: &sinceWhen,
 			},
 		},
+		// Add testing for max bytes
+		//{
+		//	name: "max bytes",
+		//	limits: &troubleshootv1beta2.LogLimits{MaxBytes: 6000000},
+		//	expected: corev1.PodLogOptions{MaxBytes: 5000000},
+		//	validate: func(t *testing.T, podLogOpts *corev1.PodLogOptions) {
+		//	},
+		//},
 	}
 
 	for _, test := range tests {
