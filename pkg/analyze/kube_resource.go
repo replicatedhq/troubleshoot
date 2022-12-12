@@ -13,24 +13,23 @@ import (
 )
 
 var Filemap = map[string]string{
-		"Deployment":           "deployments",
-		"StatefulSet":          "statefulsets",
-		"NetworkPolicy":        "network-policy",
-		"Pod":                  "pods",
-		"Ingress":              "ingress",
-		"Service":              "services",
-		"ResourceQuota":        "resource-quotas",
-		"Job":                  "jobs",
-		"PersistentVoumeClaim": "pvcs",
-		"pvc":                  "pvcs",
-		"ReplicaSet":           "replicasets",
-		"Namespace":            "namespaces.json",
-		"PersistentVolume":     "pvs.json",
-		"pv":                   "pvs.json",
-		"Node":                 "nodes.json",
-		"StorageClass":         "storage-classes.json",
-	}
-
+	"Deployment":           "deployments",
+	"StatefulSet":          "statefulsets",
+	"NetworkPolicy":        "network-policy",
+	"Pod":                  "pods",
+	"Ingress":              "ingress",
+	"Service":              "services",
+	"ResourceQuota":        "resource-quotas",
+	"Job":                  "jobs",
+	"PersistentVoumeClaim": "pvcs",
+	"pvc":                  "pvcs",
+	"ReplicaSet":           "replicasets",
+	"Namespace":            "namespaces.json",
+	"PersistentVolume":     "pvs.json",
+	"pv":                   "pvs.json",
+	"Node":                 "nodes.json",
+	"StorageClass":         "storage-classes.json",
+}
 
 func FindResource(kind string, namespace string, name string, getFileContents func(string) (map[string][]byte, error)) (interface{}, error) {
 
@@ -52,33 +51,35 @@ func FindResource(kind string, namespace string, name string, getFileContents fu
 		return nil, errors.Wrap(err, "failed to read collected resources")
 	}
 
-	var resource interface{}
+	resources := []interface{}{}
+
 	for _, file := range files {
+		var resource interface{}
 		err = yaml.Unmarshal(file, &resource)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to parse data as yaml doc")
 		}
+		resources = append(resources, resource)
 	}
 
-	var selected interface{}
-	items, err := iutils.GetAtPath(resource, "items")
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to get items from file")
-	}
-
-	itemslice := items.([]interface{})
-	for _, item := range itemslice {
-		name, err := iutils.GetAtPath(item, "metadata.name")
+	for _, resource := range resources {
+		items, err := iutils.GetAtPath(resource, "items")
 		if err != nil {
-			return nil, errors.Wrapf(err, "Failed to find resource with name: %s", name)
+			return nil, errors.Wrap(err, "failed to get items from file")
 		}
-		if name == name {
-			selected = item
-			break
+		itemslice := items.([]interface{})
+		for _, item := range itemslice {
+			name, err := iutils.GetAtPath(item, "metadata.name")
+			if err != nil {
+				return nil, errors.Wrapf(err, "Failed to find resource with name: %s", name)
+			}
+			if name == name {
+				return item, nil
+			}
 		}
 	}
 
-	return selected, nil
+	return nil, nil
 
 }
 
