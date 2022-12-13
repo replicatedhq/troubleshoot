@@ -20,4 +20,3 @@ spec:
               message: The postgres server must be at least version 10
           - pass:
               message: The postgres connection checks out
-  

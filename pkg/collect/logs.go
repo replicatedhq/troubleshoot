@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -19,7 +20,7 @@ import (
 type CollectLogs struct {
 	Collector    *troubleshootv1beta2.Logs
 	BundlePath   string
-	Namespace    string
+	Namespace    string // There is a Namespace parameter in troubleshootv1beta2.Logs. Should we remove this?
 	ClientConfig *rest.Config
 	Client       kubernetes.Interface
 	Context      context.Context
@@ -70,10 +71,7 @@ func (c *CollectLogs) Collect(progressChan chan<- interface{}) (CollectorResult,
 				}
 
 				for _, containerName := range containerNames {
-					if len(containerNames) == 1 {
-						containerName = "" // if there was only one container, use the old behavior of not including the container name in the path
-					}
-					podLogs, err := savePodLogs(ctx, c.BundlePath, client, pod, c.Collector.Name, containerName, c.Collector.Limits, false)
+					podLogs, err := savePodLogs(ctx, c.BundlePath, client, &pod, c.Collector.Name, containerName, c.Collector.Limits, false)
 					if err != nil {
 						key := fmt.Sprintf("%s/%s-errors.json", c.Collector.Name, pod.Name)
 						if containerName != "" {
@@ -91,7 +89,7 @@ func (c *CollectLogs) Collect(progressChan chan<- interface{}) (CollectorResult,
 				}
 			} else {
 				for _, container := range c.Collector.ContainerNames {
-					containerLogs, err := savePodLogs(ctx, c.BundlePath, client, pod, c.Collector.Name, container, c.Collector.Limits, false)
+					containerLogs, err := savePodLogs(ctx, c.BundlePath, client, &pod, c.Collector.Name, container, c.Collector.Limits, false)
 					if err != nil {
 						key := fmt.Sprintf("%s/%s/%s-errors.json", c.Collector.Name, pod.Name, container)
 						err := output.SaveResult(c.BundlePath, key, marshalErrors([]string{err.Error()}))
@@ -111,7 +109,7 @@ func (c *CollectLogs) Collect(progressChan chan<- interface{}) (CollectorResult,
 	return output, nil
 }
 
-func listPodsInSelectors(ctx context.Context, client *kubernetes.Clientset, namespace string, selector []string) ([]corev1.Pod, []string) {
+func listPodsInSelectors(ctx context.Context, client kubernetes.Interface, namespace string, selector []string) ([]corev1.Pod, []string) {
 	serializedLabelSelector := strings.Join(selector, ",")
 
 	listOptions := metav1.ListOptions{
@@ -126,20 +124,54 @@ func listPodsInSelectors(ctx context.Context, client *kubernetes.Clientset, name
 	return pods.Items, nil
 }
 
-func savePodLogs(ctx context.Context, bundlePath string, client *kubernetes.Clientset, pod corev1.Pod, name, container string, limits *troubleshootv1beta2.LogLimits, follow bool) (CollectorResult, error) {
+func savePodLogs(
+	ctx context.Context,
+	bundlePath string,
+	client *kubernetes.Clientset,
+	pod *corev1.Pod,
+	collectorName, container string,
+	limits *troubleshootv1beta2.LogLimits,
+	follow bool,
+) (CollectorResult, error) {
+	return savePodLogsWithInterface(ctx, bundlePath, client, pod, collectorName, container, limits, follow)
+}
+
+func savePodLogsWithInterface(
+	ctx context.Context,
+	bundlePath string,
+	client kubernetes.Interface,
+	pod *corev1.Pod,
+	collectorName, container string,
+	limits *troubleshootv1beta2.LogLimits,
+	follow bool,
+) (CollectorResult, error) {
 	podLogOpts := corev1.PodLogOptions{
 		Follow:    follow,
 		Container: container,
 	}
 
-	setLogLimits(&podLogOpts, limits, convertMaxAgeToTime)
+	result := NewResult()
 
-	fileKey := fmt.Sprintf("%s/%s", name, pod.Name)
+	// TODO: Abstract away hard coded directory structure paths
+	// Maybe create a FS provider or something similar
+	filePathPrefix := filepath.Join(
+		"cluster-resources", "pods", "logs", pod.Namespace, pod.Name, pod.Spec.Containers[0].Name,
+	)
+
+	// TODO: If collectorName is empty, the path is stored with a leading slash
+	// Retain this behavior otherwise analysers in the wild may break
+	// Analysers that need to find a file in the root of the bundle should
+	// prefix the path with a slash e.g /file.txt. This behavior should be
+	// properly deprecated in the future.
+	linkRelPathPrefix := fmt.Sprintf("%s/%s", collectorName, pod.Name)
 	if container != "" {
-		fileKey = fmt.Sprintf("%s/%s/%s", name, pod.Name, container)
+		linkRelPathPrefix = fmt.Sprintf("%s/%s/%s", collectorName, pod.Name, container)
+		filePathPrefix = filepath.Join(
+			"cluster-resources", "pods", "logs", pod.Namespace, pod.Name, container,
+		)
 	}
 
-	result := NewResult()
+	setLogLimits(&podLogOpts, limits, convertMaxAgeToTime)
 
 	req := client.CoreV1().Pods(pod.Namespace).GetLogs(pod.Name, &podLogOpts)
 	podLogs, err := req.Stream(ctx)
@@ -148,11 +180,13 @@ func savePodLogs(ctx context.Context, bundlePath string, client *kubernetes.Clie
 	}
 	defer podLogs.Close()
 
-	logWriter, err := result.GetWriter(bundlePath, fileKey+".log")
+	logWriter, err := result.GetWriter(bundlePath, filePathPrefix+".log")
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get log writer")
 	}
-	defer result.CloseWriter(bundlePath, fileKey+".log", logWriter)
+	// NOTE: deferred calls are executed in LIFO order i.e called in reverse order
+	defer result.SymLinkResult(bundlePath, linkRelPathPrefix+".log", filePathPrefix+".log")
+	defer result.CloseWriter(bundlePath, filePathPrefix+".log", logWriter)
 
 	_, err = io.Copy(logWriter, podLogs)
 	if err != nil {
@@ -168,11 +202,13 @@ func savePodLogs(ctx context.Context, bundlePath string, client *kubernetes.Clie
 	}
 	defer podLogs.Close()
 
-	prevLogWriter, err := result.GetWriter(bundlePath, fileKey+"-previous.log")
+	prevLogWriter, err := result.GetWriter(bundlePath, filePathPrefix+"-previous.log")
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get previous log writer")
 	}
-	defer result.CloseWriter(bundlePath, fileKey+"-previous.log", logWriter)
+	// NOTE: deferred calls are executed in LIFO order i.e called in reverse order
+	defer result.SymLinkResult(bundlePath, linkRelPathPrefix+"-previous.log", filePathPrefix+"-previous.log")
+	defer result.CloseWriter(bundlePath, filePathPrefix+"-previous.log", logWriter)
 
 	_, err = io.Copy(prevLogWriter, podLogs)
 	if err != nil {

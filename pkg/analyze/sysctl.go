@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -16,8 +17,9 @@ import (
 // The when condition for outcomes in this analyzer is interpreted as "for some node".
 // For example, "when: net.ipv4.ip_forward = 0" is true if at least one node has IP forwarding
 // disabled.
-func analyzeSysctl(analyzer *troubleshootv1beta2.SysctlAnalyze, findFiles func(string) (map[string][]byte, error)) (*AnalyzeResult, error) {
-	files, err := findFiles("sysctl/*")
+func analyzeSysctl(analyzer *troubleshootv1beta2.SysctlAnalyze, findFiles getChildCollectedFileContents) (*AnalyzeResult, error) {
+	excludeFiles := []string{}
+	files, err := findFiles("sysctl/*", excludeFiles)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to find collected sysctl parameters")
 	}
@@ -123,7 +125,7 @@ func evalSysctlOutcome(nodeParams map[string]map[string]string, outcome *trouble
 }
 
 // Example: net.ipv4.ip_forward = 0
-var sysctlWhenRX = regexp.MustCompile(`([^\s]+)\s+(=+)\s+(.+)`)
+var sysctlWhenRX = regexp.MustCompile(`([^\s]+)\s+([><=]=*)\s+(.+)`)
 
 // Returns the list of node names the condition is true for. The condition is not considered true
 // if the parameter is missing for the node.
@@ -150,6 +152,95 @@ func evalSysctlWhen(nodeParams map[string]map[string]string, when string) ([]str
 		sort.Strings(nodes)
 
 		return nodes, nil
+
+	case "<":
+		var nodes []string
+
+		for nodeName, params := range nodeParams {
+			nodeValue, err := strconv.ParseInt(params[matches[1]], 10, 64)
+			if err != nil {
+				return nil, fmt.Errorf("Failed to parse when %q", when)
+			}
+
+			expectedValue, err := strconv.ParseInt(strings.TrimSpace(matches[3]), 10, 64)
+			if err != nil {
+				return nil, fmt.Errorf("Failed to parse when %q", when)
+			}
+			if nodeValue < expectedValue {
+				nodes = append(nodes, nodeName)
+			}
+		}
+
+		sort.Strings(nodes)
+
+		return nodes, nil
+
+	case "<=":
+		var nodes []string
+
+		for nodeName, params := range nodeParams {
+			nodeValue, err := strconv.ParseInt(params[matches[1]], 10, 64)
+			if err != nil {
+				return nil, fmt.Errorf("Failed to parse when %q", when)
+			}
+
+			expectedValue, err := strconv.ParseInt(strings.TrimSpace(matches[3]), 10, 64)
+			if err != nil {
+				return nil, fmt.Errorf("Failed to parse when %q", when)
+			}
+			if nodeValue <= expectedValue {
+				nodes = append(nodes, nodeName)
+			}
+		}
+
+		sort.Strings(nodes)
+
+		return nodes, nil
+
+	case ">":
+		var nodes []string
+
+		for nodeName, params := range nodeParams {
+			nodeValue, err := strconv.ParseInt(params[matches[1]], 10, 64)
+			if err != nil {
+				return nil, fmt.Errorf("Failed to parse when %q", when)
+			}
+
+			expectedValue, err := strconv.ParseInt(strings.TrimSpace(matches[3]), 10, 64)
+			if err != nil {
+				return nil, fmt.Errorf("Failed to parse when %q", when)
+			}
+			if nodeValue > expectedValue {
+				nodes = append(nodes, nodeName)
+			}
+		}
+
+		sort.Strings(nodes)
+
+		return nodes, nil
+
+	case ">=":
+		var nodes []string
+
+		for nodeName, params := range nodeParams {
+			nodeValue, err := strconv.ParseInt(params[matches[1]], 10, 64)
+			if err != nil {
+				return nil, fmt.Errorf("Failed to parse when %q", when)
+			}
+
+			expectedValue, err := strconv.ParseInt(strings.TrimSpace(matches[3]), 10, 64)
+			if err != nil {
+				return nil, fmt.Errorf("Failed to parse when %q", when)
+			}
+			if nodeValue >= expectedValue {
+				nodes = append(nodes, nodeName)
+			}
+		}
+
+		sort.Strings(nodes)
+
+		return nodes, nil
+
 	default:
 		return nil, fmt.Errorf("Unknown operator %q", matches[2])
 	}

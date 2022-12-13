@@ -140,6 +140,7 @@ type TextAnalyze struct {
 	RegexGroups     string     `json:"regexGroups,omitempty" yaml:"regexGroups,omitempty"`
 	IgnoreIfNoFiles bool       `json:"ignoreIfNoFiles,omitempty" yaml:"ignoreIfNoFiles,omitempty"`
 	Outcomes        []*Outcome `json:"outcomes" yaml:"outcomes"`
+	ExcludeFiles    []string   `json:"excludeFiles,omitempty" yaml:"excludeFiles,omitempty"`
 }
 
 type YamlCompare struct {

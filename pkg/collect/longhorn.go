@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"path"
 	"path/filepath"
 	"regexp"
 	"sync"
@@ -214,26 +213,9 @@ func (c *CollectLonghorn) Collect(progressChan chan<- interface{}) (CollectorRes
 	}
 	output.SaveResult(c.BundlePath, settingsKey, bytes.NewBuffer(settingsB))
 
-	// logs of all pods in namespace
-	logsCollectorSpec := &troubleshootv1beta2.Logs{
-		Selector:  []string{""},
-		Namespace: ns,
-	}
-
-	rbacErrors := c.GetRBACErrors()
-	logsCollector := &CollectLogs{logsCollectorSpec, c.BundlePath, c.Namespace, c.ClientConfig, c.Client, c.Context, nil, rbacErrors}
-
-	logs, err := logsCollector.Collect(progressChan)
+	err = c.collectLonghornLogs(ns, output, progressChan)
 	if err != nil {
 		return nil, errors.Wrap(err, "collect longhorn logs")
-	}
-	logsDir := GetLonghornLogsDirectory(ns)
-	for srcFilename, _ := range logs {
-		dstFileName := path.Join(logsDir, srcFilename)
-		err := copyResult(logs, output, c.BundlePath, srcFilename, dstFileName)
-		if err != nil {
-			logger.Printf("Failed to copy file %s; %v", srcFilename, err)
-		}
 	}
 
 	// https://longhorn.io/docs/1.1.1/advanced-resources/data-recovery/corrupted-replica/
@@ -305,6 +287,29 @@ func (c *CollectLonghorn) Collect(progressChan chan<- interface{}) (CollectorRes
 	wg.Wait()
 
 	return output, nil
+}
+
+func (c *CollectLonghorn) collectLonghornLogs(namespace string, results CollectorResult, progressChan chan<- interface{}) error {
+	// logs of all pods in namespace
+	logsCollectorSpec := &troubleshootv1beta2.Logs{
+		Selector:  []string{""},
+		Name:      GetLonghornLogsDirectory(namespace), // Logs (symlinks) will be stored in this directory
+		Namespace: namespace,
+	}
+
+	rbacErrors := c.GetRBACErrors()
+	logsCollector := &CollectLogs{logsCollectorSpec, c.BundlePath, namespace, c.ClientConfig, c.Client, c.Context, nil, rbacErrors}
+
+	logs, err := logsCollector.Collect(progressChan)
+	if err != nil {
+		return err
+	}
+
+	// Add logs collector results to the rest of
+	// the longhorn collector results for later consumption
+	results.AddResult(logs)
+
+	return nil
 }
 
 func GetLonghornNodesDirectory(namespace string) string {

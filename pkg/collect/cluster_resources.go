@@ -51,7 +51,50 @@ func (c *CollectClusterResources) IsExcluded() (bool, error) {
 }
 
 func (c *CollectClusterResources) Merge(allCollectors []Collector) ([]Collector, error) {
-	result := append(allCollectors, c)
+	var result []Collector
+	uniqueNamespaces := make(map[string]bool)
+	hasEmptyNameSpaceCollector := false
+
+EMPTY_NAMESPACE_FOUND:
+	for _, collectorInterface := range allCollectors {
+		if collector, ok := collectorInterface.(*CollectClusterResources); ok {
+			if collector.Collector.Namespaces == nil {
+				hasEmptyNameSpaceCollector = true
+				break
+			} else {
+				for _, namespace := range collector.Collector.Namespaces {
+					if namespace == "" {
+						hasEmptyNameSpaceCollector = true
+						break EMPTY_NAMESPACE_FOUND
+					} else {
+						uniqueNamespaces[namespace] = true
+					}
+				}
+			}
+		}
+	}
+
+	clusterResourcesCollector := c
+
+	if hasEmptyNameSpaceCollector {
+		clusterResourcesCollector.Collector.Namespaces = nil
+		result = append(result, clusterResourcesCollector)
+		return result, nil
+	}
+
+	var allNamespaces []string
+	for k, v := range uniqueNamespaces {
+		if v {
+			allNamespaces = append(allNamespaces, k)
+		}
+	}
+
+	sort.Strings(allNamespaces)
+
+	clusterResourcesCollector.Collector.Namespaces = allNamespaces
+
+	result = append(result, clusterResourcesCollector)
+
 	return result, nil
 }
 
@@ -131,7 +174,7 @@ func (c *CollectClusterResources) Collect(progressChan chan<- interface{}) (Coll
 			limits := &troubleshootv1beta2.LogLimits{
 				MaxLines: 500,
 			}
-			podLogs, err := savePodLogs(ctx, logsRoot, client, pod, "", container.Name, limits, false)
+			podLogs, err := savePodLogs(ctx, logsRoot, client, &pod, "", container.Name, limits, false)
 			if err != nil {
 				errPath := filepath.Join("cluster-resources", "pods", "logs", pod.Namespace, pod.Name, fmt.Sprintf("%s-logs-errors.log", container.Name))
 				output.SaveResult(c.BundlePath, errPath, bytes.NewBuffer([]byte(err.Error())))

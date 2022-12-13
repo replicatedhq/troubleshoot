@@ -38,3 +38,6 @@ sbom/
 
 # Ignore local pre-commit config
 .pre-commit-config.yaml
+
+# Ignore generated support bundles
+*.tar.gz

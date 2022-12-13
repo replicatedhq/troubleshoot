@@ -2013,6 +2013,12 @@
                   "exclude": {
                     "oneOf": [{"type": "string"},{"type": "boolean"}]
                   },
+                  "excludeFiles": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
                   "fileName": {
                     "type": "string"
                   },
@@ -2652,6 +2658,38 @@
                       "type": "string"
                     }
                   },
+                  "tls": {
+                    "type": "object",
+                    "properties": {
+                      "cacert": {
+                        "type": "string"
+                      },
+                      "clientCert": {
+                        "type": "string"
+                      },
+                      "clientKey": {
+                        "type": "string"
+                      },
+                      "secret": {
+                        "type": "object",
+                        "required": [
+                          "name",
+                          "namespace"
+                        ],
+                        "properties": {
+                          "name": {
+                            "type": "string"
+                          },
+                          "namespace": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "skipVerify": {
+                        "type": "boolean"
+                      }
+                    }
+                  },
                   "uri": {
                     "type": "string"
                   }
@@ -2675,6 +2713,38 @@
                       "type": "string"
                     }
                   },
+                  "tls": {
+                    "type": "object",
+                    "properties": {
+                      "cacert": {
+                        "type": "string"
+                      },
+                      "clientCert": {
+                        "type": "string"
+                      },
+                      "clientKey": {
+                        "type": "string"
+                      },
+                      "secret": {
+                        "type": "object",
+                        "required": [
+                          "name",
+                          "namespace"
+                        ],
+                        "properties": {
+                          "name": {
+                            "type": "string"
+                          },
+                          "namespace": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "skipVerify": {
+                        "type": "boolean"
+                      }
+                    }
+                  },
                   "uri": {
                     "type": "string"
                   }
@@ -2696,6 +2766,38 @@
                     "type": "array",
                     "items": {
                       "type": "string"
+                    }
+                  },
+                  "tls": {
+                    "type": "object",
+                    "properties": {
+                      "cacert": {
+                        "type": "string"
+                      },
+                      "clientCert": {
+                        "type": "string"
+                      },
+                      "clientKey": {
+                        "type": "string"
+                      },
+                      "secret": {
+                        "type": "object",
+                        "required": [
+                          "name",
+                          "namespace"
+                        ],
+                        "properties": {
+                          "name": {
+                            "type": "string"
+                          },
+                          "namespace": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "skipVerify": {
+                        "type": "boolean"
+                      }
                     }
                   },
                   "uri": {

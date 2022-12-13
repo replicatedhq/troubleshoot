@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"reflect"
 
 	"github.com/pkg/errors"
 	analyze "github.com/replicatedhq/troubleshoot/pkg/analyze"
@@ -58,7 +59,7 @@ func runHostCollectors(hostCollectors []*troubleshootv1beta2.HostCollect, additi
 	if opts.Redact {
 		err := collect.RedactResult(bundlePath, collectResult, globalRedactors)
 		if err != nil {
-			err = errors.Wrap(err, "failed to redact")
+			err = errors.Wrap(err, "failed to redact host collector results")
 			return collectResult, err
 		}
 	}
@@ -67,20 +68,22 @@ func runHostCollectors(hostCollectors []*troubleshootv1beta2.HostCollect, additi
 }
 
 func runCollectors(collectors []*troubleshootv1beta2.Collect, additionalRedactors *troubleshootv1beta2.Redactor, bundlePath string, opts SupportBundleCreateOpts) (collect.CollectorResult, error) {
+	var allCollectors []collect.Collector
+	var foundForbidden bool
+
 	collectSpecs := make([]*troubleshootv1beta2.Collect, 0)
 	collectSpecs = append(collectSpecs, collectors...)
 	collectSpecs = collect.EnsureCollectorInList(collectSpecs, troubleshootv1beta2.Collect{ClusterInfo: &troubleshootv1beta2.ClusterInfo{}})
 	collectSpecs = collect.EnsureCollectorInList(collectSpecs, troubleshootv1beta2.Collect{ClusterResources: &troubleshootv1beta2.ClusterResources{}})
 	collectSpecs = collect.EnsureClusterResourcesFirst(collectSpecs)
 
-	var allCollectors []collect.Collector
-
-	allCollectedData := make(map[string][]byte)
-
 	k8sClient, err := kubernetes.NewForConfig(opts.KubernetesRestConfig)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to instantiate Kubernetes client")
 	}
+
+	allCollectorsMap := make(map[reflect.Type][]collect.Collector)
+	allCollectedData := make(map[string][]byte)
 
 	for _, desiredCollector := range collectSpecs {
 		if collectorInterface, ok := collect.GetCollector(desiredCollector, bundlePath, opts.Namespace, opts.KubernetesRestConfig, k8sClient, opts.SinceTime); ok {
@@ -89,25 +92,30 @@ func runCollectors(collectors []*troubleshootv1beta2.Collect, additionalRedactor
 				if err != nil {
 					return nil, errors.Wrap(err, "failed to check RBAC for collectors")
 				}
-
-				if mergeCollector, ok := collectorInterface.(collect.MergeableCollector); ok {
-					allCollectors, err = mergeCollector.Merge(allCollectors)
-					if err != nil {
-						msg := fmt.Sprintf("failed to merge collector: %s: %s", collector.Title(), err)
-						opts.CollectorProgressCallback(opts.ProgressChan, msg)
-					}
-				} else {
-					allCollectors = append(allCollectors, collector)
-				}
+				collectorType := reflect.TypeOf(collector)
+				allCollectorsMap[collectorType] = append(allCollectorsMap[collectorType], collector)
 			}
 		}
 	}
 
-	foundForbidden := false
-	for _, c := range allCollectors {
-		for _, e := range c.GetRBACErrors() {
-			foundForbidden = true
-			opts.ProgressChan <- e
+	for _, collectors := range allCollectorsMap {
+		if mergeCollector, ok := collectors[0].(collect.MergeableCollector); ok {
+			mergedCollectors, err := mergeCollector.Merge(collectors)
+			if err != nil {
+				msg := fmt.Sprintf("failed to merge collector: %s: %s", mergeCollector.Title(), err)
+				opts.CollectorProgressCallback(opts.ProgressChan, msg)
+			}
+			allCollectors = append(allCollectors, mergedCollectors...)
+		} else {
+			allCollectors = append(allCollectors, collectors...)
+		}
+
+		foundForbidden = false
+		for _, collector := range collectors {
+			for _, e := range collector.GetRBACErrors() {
+				foundForbidden = true
+				opts.ProgressChan <- e
+			}
 		}
 	}
 
@@ -129,7 +137,6 @@ func runCollectors(collectors []*troubleshootv1beta2.Collect, additionalRedactor
 				continue
 			}
 		}
-
 		opts.CollectorProgressCallback(opts.ProgressChan, collector.Title())
 		result, err := collector.Collect(opts.ProgressChan)
 		if err != nil {
@@ -150,8 +157,7 @@ func runCollectors(collectors []*troubleshootv1beta2.Collect, additionalRedactor
 	if opts.Redact {
 		err := collect.RedactResult(bundlePath, collectResult, globalRedactors)
 		if err != nil {
-			err = errors.Wrap(err, "failed to redact")
-			return collectResult, err
+			return collectResult, errors.Wrap(err, "failed to redact in cluster collector results")
 		}
 	}
 

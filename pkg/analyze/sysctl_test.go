@@ -12,12 +12,14 @@ func TestParseSysctlParameters(t *testing.T) {
 /proc/sys/net/ipv4/ip_forward = 1
 /proc/sys/net/ipv4/ip_local_port_range = 32768 60999
 /proc/sys/net/bridge/bridge-nf-call-iptables = 0
+/proc/sys/vm/max_map_count = 65530
 `
 	got := parseSysctlParameters([]byte(parameters))
 	expect := map[string]string{
 		"net.ipv4.ip_forward":                "1",
 		"net.ipv4.ip_local_port_range":       "32768 60999",
 		"net.bridge.bridge-nf-call-iptables": "0",
+		"vm.max_map_count":                   "65530",
 	}
 
 	assert.Equal(t, expect, got)
@@ -67,6 +69,36 @@ func TestEvalSysctlWhen(t *testing.T) {
 				"node-b": {"net.ipv4.ip_forward": "0"},
 			},
 			expect:    []string{"node-b"},
+			expectErr: false,
+		},
+		{
+			name: "No nodes have max map count > 65530",
+			when: "vm.max_map_count > 65530",
+			nodeParams: map[string]map[string]string{
+				"node-a": {"vm.max_map_count": "65530"},
+				"node-b": {"vm.max_map_count": "65530"},
+			},
+			expect:    []string{},
+			expectErr: false,
+		},
+		{
+			name: "One node has max map count > 65530",
+			when: "vm.max_map_count > 65530",
+			nodeParams: map[string]map[string]string{
+				"node-a": {"vm.max_map_count": "65530"},
+				"node-b": {"vm.max_map_count": "262144"},
+			},
+			expect:    []string{"node-b"},
+			expectErr: false,
+		},
+		{
+			name: "All nodes have max map count > 65530",
+			when: "vm.max_map_count > 65530",
+			nodeParams: map[string]map[string]string{
+				"node-a": {"vm.max_map_count": "262144"},
+				"node-b": {"vm.max_map_count": "262144"},
+			},
+			expect:    []string{"node-a", "node-b"},
 			expectErr: false,
 		},
 	}
@@ -270,11 +302,105 @@ func TestAnalyzeSysctl(t *testing.T) {
 			},
 			expect: nil,
 		},
+		{
+			name: "Fail one node too low on max map count",
+			files: map[string][]byte{
+				"a": []byte(`
+/proc/sys/vm/max_map_count = 65530
+`),
+				"b": []byte(`
+/proc/sys/vm/max_map_count = 262144
+`),
+			},
+			analyzer: &troubleshootv1beta2.SysctlAnalyze{
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Fail: &troubleshootv1beta2.SingleOutcome{
+							When:    "vm.max_map_count < 262144 ",
+							Message: "Max map count too low",
+						},
+					},
+					{
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							Message: "Max map count sufficient",
+						},
+					},
+				},
+			},
+			expect: &AnalyzeResult{
+				Title:   "Sysctl",
+				IsFail:  true,
+				Message: "Node a: Max map count too low",
+			},
+		},
+		{
+			name: "Fail two nodes too low on max map count",
+			files: map[string][]byte{
+				"a": []byte(`
+/proc/sys/vm/max_map_count = 65530
+`),
+				"b": []byte(`
+/proc/sys/vm/max_map_count = 65530
+`),
+			},
+			analyzer: &troubleshootv1beta2.SysctlAnalyze{
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Fail: &troubleshootv1beta2.SingleOutcome{
+							When:    "vm.max_map_count < 262144 ",
+							Message: "Max map count too low",
+						},
+					},
+					{
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							Message: "Max map count sufficient",
+						},
+					},
+				},
+			},
+			expect: &AnalyzeResult{
+				Title:   "Sysctl",
+				IsFail:  true,
+				Message: "Nodes a, b: Max map count too low",
+			},
+		},
+		{
+			name: "Pass sufficient max map count on both nodes",
+			files: map[string][]byte{
+				"a": []byte(`
+/proc/sys/vm/max_map_count = 262144
+`),
+				"b": []byte(`
+/proc/sys/vm/max_map_count = 262144
+`),
+			},
+			analyzer: &troubleshootv1beta2.SysctlAnalyze{
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Fail: &troubleshootv1beta2.SingleOutcome{
+							When:    "vm.max_map_count < 262144 ",
+							Message: "Max map count too low",
+						},
+					},
+					{
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							When:    "vm.max_map_count >= 262144 ",
+							Message: "Max map count sufficient",
+						},
+					},
+				},
+			},
+			expect: &AnalyzeResult{
+				Title:   "Sysctl",
+				IsPass:  true,
+				Message: "Nodes a, b: Max map count sufficient",
+			},
+		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			var findFiles = func(glob string) (map[string][]byte, error) {
+			var findFiles = func(glob string, _ []string) (map[string][]byte, error) {
 				return test.files, nil
 			}
 			got, err := analyzeSysctl(test.analyzer, findFiles)
