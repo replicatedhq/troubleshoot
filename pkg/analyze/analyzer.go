@@ -218,7 +218,7 @@ func Analyze(analyzer *troubleshootv1beta2.Analyze, getFile getCollectedFileCont
 		if isExcluded {
 			return nil, nil
 		}
-		result, err := analyzeResource(analyzer.ClusterResource, findFiles)
+		result, err := analyzeResource(analyzer.ClusterResource, getFile)
 		if err != nil {
 			return nil, err
 		}

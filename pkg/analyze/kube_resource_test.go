@@ -1,11 +1,9 @@
 package analyzer
 
 import (
-	"io/ioutil"
 	"path/filepath"
 	"testing"
 
-	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/stretchr/testify/require"
 )
@@ -39,24 +37,11 @@ func Test_clusterResource(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			req := require.New(t)
 
-			getCollectedFileContents := func(dirName string) (map[string][]byte, error) {
-				files, err := filepath.Glob(filepath.Join("files/support-bundle", dirName))
-				if err != nil {
-					return nil, errors.Wrapf(err, "invalid glob %q", dirName)
-				}
-				fileArr := map[string][]byte{}
-				for _, filePath := range files {
-					bytes, err := ioutil.ReadFile(filePath)
-					if err != nil {
-						return nil, errors.Wrapf(err, "read %q", filePath)
-					}
-					fileArr[filePath] = bytes
-				}
-				return fileArr, nil
-			}
+			rootDir := filepath.Join("files", "support-bundle")
+			fcp := fileContentProvider{rootDir: rootDir}
 
 			analyzer := &test.analyzer
-			_, err := FindResource(analyzer.Kind, analyzer.Namespace, analyzer.Name, getCollectedFileContents)
+			_, err := FindResource(analyzer.Kind, analyzer.Namespace, analyzer.Name, fcp.getFileContents)
 
 			if !test.isError {
 				req.NoError(err)

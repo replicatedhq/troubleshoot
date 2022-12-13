@@ -31,7 +31,7 @@ var Filemap = map[string]string{
 	"StorageClass":         "storage-classes.json",
 }
 
-func FindResource(kind string, namespace string, name string, getFileContents func(string) (map[string][]byte, error)) (interface{}, error) {
+func FindResource(kind string, namespace string, name string, getFileContents getCollectedFileContents) (interface{}, error) {
 
 	var datapath string
 
@@ -46,36 +46,29 @@ func FindResource(kind string, namespace string, name string, getFileContents fu
 		datapath = filepath.Join("cluster-resources", resourceLocation, fmt.Sprintf("%s.json", namespace))
 	}
 
-	files, err := getFileContents(datapath)
+	file, err := getFileContents(datapath)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to read collected resources")
 	}
 
-	resources := []interface{}{}
-
-	for _, file := range files {
-		var resource interface{}
-		err = yaml.Unmarshal(file, &resource)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to parse data as yaml doc")
-		}
-		resources = append(resources, resource)
+	var resource interface{}
+	err = yaml.Unmarshal(file, &resource)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to parse data as yaml doc")
 	}
 
-	for _, resource := range resources {
-		items, err := iutils.GetAtPath(resource, "items")
+	items, err := iutils.GetAtPath(resource, "items")
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get items from file")
+	}
+	itemslice := items.([]interface{})
+	for _, item := range itemslice {
+		name, err := iutils.GetAtPath(item, "metadata.name")
 		if err != nil {
-			return nil, errors.Wrap(err, "failed to get items from file")
+			return nil, errors.Wrapf(err, "Failed to find resource with name: %s", name)
 		}
-		itemslice := items.([]interface{})
-		for _, item := range itemslice {
-			name, err := iutils.GetAtPath(item, "metadata.name")
-			if err != nil {
-				return nil, errors.Wrapf(err, "Failed to find resource with name: %s", name)
-			}
-			if name == name {
-				return item, nil
-			}
+		if name == name {
+			return item, nil
 		}
 	}
 
@@ -83,7 +76,7 @@ func FindResource(kind string, namespace string, name string, getFileContents fu
 
 }
 
-func analyzeResource(analyzer *troubleshootv1beta2.ClusterResource, getFileContents func(string) (map[string][]byte, error)) (*AnalyzeResult, error) {
+func analyzeResource(analyzer *troubleshootv1beta2.ClusterResource, getFileContents getCollectedFileContents) (*AnalyzeResult, error) {
 
 	selected, err := FindResource(analyzer.Kind, analyzer.Namespace, analyzer.Name, getFileContents)
 	if err != nil {
