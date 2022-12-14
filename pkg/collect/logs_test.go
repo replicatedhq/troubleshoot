@@ -87,6 +87,7 @@ func Test_setLogLimits(t *testing.T) {
 				req.Nil(actual.SinceTime)
 			}
 
+			// Add test for MaxSize, this is currently not working
 			if test.expected.LimitBytes != nil {
 				req.NotNil(actual.LimitBytes)
 				assert.Equal(t, *test.expected.LimitBytes, *actual.LimitBytes)
