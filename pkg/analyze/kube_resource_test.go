@@ -41,7 +41,7 @@ func Test_clusterResource(t *testing.T) {
 
 			analyzer := &test.analyzer
 			_, err := FindResource(analyzer.Kind, analyzer.Namespace, analyzer.Name, fcp.getFileContents)
-			assert.Nil(t,err)
+			assert.Nil(t, err)
 
 		})
 	}
