@@ -167,21 +167,16 @@ func (c *CollectClusterResources) Collect(progressChan chan<- interface{}) (Coll
 	for _, pod := range unhealthyPods {
 		allContainers := append(pod.Spec.InitContainers, pod.Spec.Containers...)
 		for _, container := range allContainers {
-			logsRoot := ""
-			if c.BundlePath != "" {
-				logsRoot = path.Join(c.BundlePath, "cluster-resources", "pods", "logs", pod.Namespace)
-			}
 			limits := &troubleshootv1beta2.LogLimits{
 				MaxLines: 500,
 			}
-			podLogs, err := savePodLogs(ctx, logsRoot, client, &pod, "", container.Name, limits, false)
+			podLogs, err := savePodLogs(ctx, c.BundlePath, client, &pod, "", container.Name, limits, false, false)
 			if err != nil {
 				errPath := filepath.Join("cluster-resources", "pods", "logs", pod.Namespace, pod.Name, fmt.Sprintf("%s-logs-errors.log", container.Name))
 				output.SaveResult(c.BundlePath, errPath, bytes.NewBuffer([]byte(err.Error())))
 			}
-			for k, v := range podLogs {
-				output[filepath.Join("cluster-resources", "pods", "logs", pod.Namespace, k)] = v
-			}
+			// Add logs collector results to the rest of the output
+			output.AddResult(podLogs)
 		}
 	}
 
