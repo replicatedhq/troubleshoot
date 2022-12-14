@@ -18,6 +18,7 @@ func Test_setLogLimits(t *testing.T) {
 	customLines := int64(20)
 	maxAge := "10h"
 	sinceWhen := metav1.NewTime(time.Now().Add(-10 * time.Hour))
+	maxBytes := int64(5000000)
 
 	convertMaxAgeToTime := func(maxAge string) *metav1.Time {
 		return &sinceWhen
@@ -54,14 +55,15 @@ func Test_setLogLimits(t *testing.T) {
 				SinceTime: &sinceWhen,
 			},
 		},
-		// Add testing for max bytes
-		//{
-		//	name: "max bytes",
-		//	limits: &troubleshootv1beta2.LogLimits{MaxBytes: 6000000},
-		//	expected: corev1.PodLogOptions{MaxBytes: 5000000},
-		//	validate: func(t *testing.T, podLogOpts *corev1.PodLogOptions) {
-		//	},
-		//},
+		{
+			name: "max bytes",
+			limits: &troubleshootv1beta2.LogLimits{
+				MaxBytes: maxBytes,
+			},
+			expected: corev1.PodLogOptions{
+				LimitBytes: &maxBytes,
+			},
+		},
 	}
 
 	for _, test := range tests {
@@ -83,6 +85,13 @@ func Test_setLogLimits(t *testing.T) {
 				assert.Equal(t, *test.expected.SinceTime, *actual.SinceTime)
 			} else {
 				req.Nil(actual.SinceTime)
+			}
+
+			if test.expected.LimitBytes != nil {
+				req.NotNil(actual.LimitBytes)
+				assert.Equal(t, *test.expected.LimitBytes, *actual.LimitBytes)
+			} else {
+				req.Nil(actual.LimitBytes)
 			}
 		})
 	}
@@ -134,7 +143,7 @@ func Test_savePodLogs(t *testing.T) {
 			containerName := "nginx"
 			client := testclient.NewSimpleClientset()
 			limits := &troubleshootv1beta2.LogLimits{
-				MaxLines: 500,
+				MaxLines: 500, MaxBytes: 1000000,
 			}
 			pod, err := client.CoreV1().Pods("my-namespace").Create(ctx, &corev1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
