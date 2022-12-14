@@ -47,15 +47,19 @@ func (c *CollectLogs) Collect(progressChan chan<- interface{}) (CollectorResult,
 
 	ctx := context.Background()
 
-	const timeout = 60 //timeout in seconds
+	const timeout = 60 //timeout in seconds used for context timeout value
 
+	// timeout context
 	ctxTimeout, cancel := context.WithTimeout(context.Background(), timeout*time.Second)
 	defer cancel()
 
 	errCh := make(chan error, 1)
 	resultCh := make(chan CollectorResult, 1)
 
+	//wrapped code go func for context timeout solution
 	go func() {
+
+		output := NewResult()
 
 		if c.SinceTime != nil {
 			if c.Collector.Limits == nil {
@@ -97,7 +101,6 @@ func (c *CollectLogs) Collect(progressChan chan<- interface{}) (CollectorResult,
 						}
 						for k, v := range podLogs {
 							output[k] = v
-							resultCh <- output
 						}
 					}
 				} else {
@@ -107,36 +110,33 @@ func (c *CollectLogs) Collect(progressChan chan<- interface{}) (CollectorResult,
 							key := fmt.Sprintf("%s/%s/%s-errors.json", c.Collector.Name, pod.Name, container)
 							err := output.SaveResult(c.BundlePath, key, marshalErrors([]string{err.Error()}))
 							if err != nil {
-								//return nil, err
 								log.Println(err)
 							}
 							continue
 						}
 						for k, v := range containerLogs {
 							output[k] = v
-							resultCh <- output
+							log.Println("second", output)
 						}
 					}
 				}
 			}
-
-			//return output, nil
+			resultCh <- output
 		}
-
 	}()
 
 	select {
 	case <-ctxTimeout.Done():
-		return nil, errors.New("timeout")
+		return nil, errors.New("context timeout exceeded")
 	case output := <-resultCh:
 		return output, nil
 	case err := <-errCh:
 		if errors.Is(err, context.DeadlineExceeded) {
-			return nil, errors.New("timeout dagr")
+			return nil, err
 		}
-		return output, err // changed from output to nil
+		log.Println(output)
+		return output, err
 	}
-
 }
 
 func listPodsInSelectors(ctx context.Context, client kubernetes.Interface, namespace string, selector []string) ([]corev1.Pod, []string) {
