@@ -46,6 +46,14 @@ func (c *CollectLogs) Collect(progressChan chan<- interface{}) (CollectorResult,
 
 	ctx := context.Background()
 
+	const timeout = 60 //timeout in seconds
+
+	ctxTimeout, cancel := context.WithTimeout(context.Background(), timeout*time.Second)
+	defer cancel()
+
+	errCh := make(chan error, 1)
+	resultCh := make(chan CollectorResult, 1)
+
 	if c.SinceTime != nil {
 		if c.Collector.Limits == nil {
 			c.Collector.Limits = new(troubleshootv1beta2.LogLimits)
