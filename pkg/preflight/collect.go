@@ -138,7 +138,7 @@ func Collect(opts CollectOpts, p *troubleshootv1beta2.Preflight) (CollectResult,
 
 	allCollectorsMap := make(map[reflect.Type][]collect.Collector)
 	allCollectedData := make(map[string][]byte)
-
+	start := time.Now()
 	for _, desiredCollector := range collectSpecs {
 		if collectorInterface, ok := collect.GetCollector(desiredCollector, "", opts.Namespace, opts.KubernetesRestConfig, k8sClient, nil); ok {
 			if collector, ok := collectorInterface.(collect.Collector); ok {
@@ -151,9 +151,11 @@ func Collect(opts CollectOpts, p *troubleshootv1beta2.Preflight) (CollectResult,
 			}
 		}
 	}
+	collectionDuration := time.Since(start)
+	fmt.Printf("Collection duration: %v\n", collectionDuration)
 
 	collectorList := map[string]CollectorStatus{}
-
+	start = time.Now()
 	for _, collectors := range allCollectorsMap {
 		if mergeCollector, ok := collectors[0].(collect.MergeableCollector); ok {
 			mergedCollectors, err := mergeCollector.Merge(collectors)
@@ -179,6 +181,8 @@ func Collect(opts CollectOpts, p *troubleshootv1beta2.Preflight) (CollectResult,
 			}
 		}
 	}
+	collectionMergeDuration := time.Since(start)
+	fmt.Printf("Collection merge duration: %v\n", collectionMergeDuration)
 
 	collectResult := ClusterCollectResult{
 		Collectors: allCollectors,
@@ -190,12 +194,16 @@ func Collect(opts CollectOpts, p *troubleshootv1beta2.Preflight) (CollectResult,
 		return collectResult, errors.New("insufficient permissions to run all collectors")
 	}
 
+	fmt.Printf("allCollectors length: %d\n", len(allCollectors))
+	start = time.Now()
 	for i, collector := range allCollectors {
+		collectorStart := time.Now()
+		fmt.Printf("Collector#%d: %v\n", i, collector.Title())
 		isExcluded, _ := collector.IsExcluded()
 		if isExcluded {
 			continue
 		}
-
+		stepStart := time.Now()
 		// skip collectors with RBAC errors unless its the ClusterResources collector
 		if collector.HasRBACErrors() {
 			if _, ok := collector.(*collect.CollectClusterResources); !ok {
@@ -210,7 +218,8 @@ func Collect(opts CollectOpts, p *troubleshootv1beta2.Preflight) (CollectResult,
 				continue
 			}
 		}
-
+		fmt.Printf("Time to check RBAC: %v\n", time.Since(stepStart))
+		stepStart = time.Now()
 		collectorList[collector.Title()] = CollectorStatus{
 			Status: "running",
 		}
@@ -221,8 +230,11 @@ func Collect(opts CollectOpts, p *troubleshootv1beta2.Preflight) (CollectResult,
 			TotalCount:     len(allCollectors),
 			Collectors:     collectorList,
 		}
-
+		fmt.Printf("Time to send progress: %v\n", time.Since(stepStart))
+		stepStart = time.Now()
 		result, err := collector.Collect(opts.ProgressChan)
+		fmt.Println("Time to collect: ", time.Since(stepStart))
+		stepStart = time.Now()
 		if err != nil {
 			collectorList[collector.Title()] = CollectorStatus{
 				Status: "failed",
@@ -237,6 +249,8 @@ func Collect(opts CollectOpts, p *troubleshootv1beta2.Preflight) (CollectResult,
 			}
 			continue
 		}
+		fmt.Printf("Time to check errors: %v\n", time.Since(stepStart))
+		stepStart = time.Now()
 
 		collectorList[collector.Title()] = CollectorStatus{
 			Status: "completed",
@@ -248,11 +262,19 @@ func Collect(opts CollectOpts, p *troubleshootv1beta2.Preflight) (CollectResult,
 			TotalCount:     len(allCollectors),
 			Collectors:     collectorList,
 		}
+		fmt.Printf("Time to send progress2: %v\n", time.Since(stepStart))
+		stepStart = time.Now()
 
 		for k, v := range result {
 			allCollectedData[k] = v
 		}
+		fmt.Printf("Time to fill map: %v\n", time.Since(stepStart))
+		fmt.Printf("Length of allCollectedData: %d\n", len(allCollectedData))
+		collectorDuration := time.Since(collectorStart)
+		fmt.Printf("Collector#%d duration: %v\n", i, collectorDuration)
 	}
+	collectorResultDuration := time.Since(start)
+	fmt.Printf("Collector result duration: %v\n", collectorResultDuration)
 
 	collectResult.AllCollectedData = allCollectedData
 

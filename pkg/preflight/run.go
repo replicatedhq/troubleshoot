@@ -23,7 +23,6 @@ import (
 	"github.com/replicatedhq/troubleshoot/pkg/oci"
 	"github.com/replicatedhq/troubleshoot/pkg/specs"
 	"github.com/spf13/viper"
-	spin "github.com/tj/go-spin"
 	"golang.org/x/sync/errgroup"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -194,7 +193,7 @@ func RunPreflights(interactive bool, output, format, arg string) error {
 
 func collectInteractiveProgress(ctx context.Context, progressCh <-chan interface{}) func() error {
 	return func() error {
-		spinner := spin.New()
+		// spinner := spin.New()
 		lastMsg := ""
 
 		errorTxt := color.New(color.FgHiRed)
@@ -215,7 +214,7 @@ func collectInteractiveProgress(ctx context.Context, progressCh <-chan interface
 
 				}
 			case <-time.After(time.Millisecond * 100):
-				fmt.Printf("\r  %s %s ", color.CyanString("Running Preflight Checks"), spinner.Next())
+				// fmt.Printf("\r  %s %s ", color.CyanString("Running Preflight Checks"), spinner.Next())
 			case <-ctx.Done():
 				fmt.Printf("\r%s\r", cursor.ClearEntireLine())
 				return nil
