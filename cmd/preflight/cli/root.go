@@ -30,7 +30,7 @@ that a cluster meets the requirements to run an application.`,
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			v := viper.GetViper()
-			return preflight.RunPreflights(v.GetBool("interactive"), v.GetString("output"), v.GetString("format"), args[0])
+			return preflight.RunPreflights(v.GetBool("interactive"), v.GetString("output"), v.GetString("format"), args)
 		},
 	}
 
