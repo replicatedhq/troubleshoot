@@ -24,10 +24,19 @@ func Test_clusterResource(t *testing.T) {
 			},
 		},
 		{
+			name: "check default fallthrough",
+			analyzer: troubleshootv1beta2.ClusterResource{
+				CollectorName: "Check namespaced resource",
+				Kind:          "Deployment",
+				Name:          "kotsadm-api",
+			},
+		},
+		{
 			name: "cluster scoped resource",
 			analyzer: troubleshootv1beta2.ClusterResource{
 				CollectorName: "Check namespaced resource",
 				Kind:          "Node",
+				ClusterScoped: true,
 				Name:          "repldev-marc",
 			},
 		},
@@ -40,7 +49,7 @@ func Test_clusterResource(t *testing.T) {
 			fcp := fileContentProvider{rootDir: rootDir}
 
 			analyzer := &test.analyzer
-			_, err := FindResource(analyzer.Kind, analyzer.Namespace, analyzer.Name, fcp.getFileContents)
+			_, err := FindResource(analyzer.Kind, analyzer.ClusterScoped, analyzer.Namespace, analyzer.Name, fcp.getFileContents)
 			assert.Nil(t, err)
 
 		})

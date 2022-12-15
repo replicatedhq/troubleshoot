@@ -63,6 +63,7 @@ type ClusterResource struct {
 	CollectorName string     `json:"collectorName,omitempty" yaml:"collectorName,omitempty"`
 	Outcomes      []*Outcome `json:"outcomes" yaml:"outcomes"`
 	Kind          string     `json:"kind" yaml:"kind"`
+	ClusterScoped bool       `json:"clusterScoped" yaml:"clusterScoped"`
 	Namespace     string     `json:"namespace,omitempty" yaml:"namespace,omitempty"`
 	Name          string     `json:"name" yaml:"name"`
 	YamlPath      string     `json:"yamlPath" yaml:"yamlPath"`

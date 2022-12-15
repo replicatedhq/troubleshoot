@@ -31,7 +31,9 @@ var Filemap = map[string]string{
 	"StorageClass":         "storage-classes.json",
 }
 
-func FindResource(kind string, namespace string, name string, getFileContents getCollectedFileContents) (interface{}, error) {
+// FindResource locates and returns a kubernetes resource as an interface{} from a support bundle based on some basic selectors
+// if clusterScoped is false and namespace is not provided, it will default to looking in the "default" namespace
+func FindResource(kind string, clusterScoped bool, namespace string, name string, getFileContents getCollectedFileContents) (interface{}, error) {
 
 	var datapath string
 
@@ -42,7 +44,10 @@ func FindResource(kind string, namespace string, name string, getFileContents ge
 	}
 
 	datapath = filepath.Join("cluster-resources", resourceLocation)
-	if namespace != "" {
+	if !clusterScoped {
+		if namespace == "" {
+			namespace = "default"
+		}
 		datapath = filepath.Join("cluster-resources", resourceLocation, fmt.Sprintf("%s.json", namespace))
 	}
 
@@ -78,7 +83,7 @@ func FindResource(kind string, namespace string, name string, getFileContents ge
 
 func analyzeResource(analyzer *troubleshootv1beta2.ClusterResource, getFileContents getCollectedFileContents) (*AnalyzeResult, error) {
 
-	selected, err := FindResource(analyzer.Kind, analyzer.Namespace, analyzer.Name, getFileContents)
+	selected, err := FindResource(analyzer.Kind, analyzer.ClusterScoped, analyzer.Namespace, analyzer.Name, getFileContents)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to find resource")
 	}
