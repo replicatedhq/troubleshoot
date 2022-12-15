@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"log"
 	"path/filepath"
 	"strings"
 	"time"
@@ -94,7 +93,7 @@ func (c *CollectLogs) Collect(progressChan chan<- interface{}) (CollectorResult,
 							}
 							err := output.SaveResult(c.BundlePath, key, marshalErrors([]string{err.Error()}))
 							if err != nil {
-								log.Println(err)
+								errCh <- err
 							}
 							continue
 						}
@@ -110,7 +109,7 @@ func (c *CollectLogs) Collect(progressChan chan<- interface{}) (CollectorResult,
 							key := fmt.Sprintf("%s/%s/%s-errors.json", c.Collector.Name, pod.Name, container)
 							err := output.SaveResult(c.BundlePath, key, marshalErrors([]string{err.Error()}))
 							if err != nil {
-								log.Println(err)
+								errCh <- err
 							}
 							continue
 						}
