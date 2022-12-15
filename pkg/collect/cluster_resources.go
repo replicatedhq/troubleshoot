@@ -10,6 +10,8 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"sync"
+	"time"
 
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/replicatedhq/troubleshoot/pkg/k8sutil"
@@ -98,21 +100,29 @@ EMPTY_NAMESPACE_FOUND:
 	return result, nil
 }
 
+// This method is taking 6m in openshift clusters, need to optimize
 func (c *CollectClusterResources) Collect(progressChan chan<- interface{}) (CollectorResult, error) {
+	fmt.Println("----- Collect Cluster Resources -----")
+	var wg sync.WaitGroup
+	wg.Add(22)
+	start := time.Now()
 	client, err := kubernetes.NewForConfig(c.ClientConfig)
 	if err != nil {
 		return nil, err
 	}
-
+	fmt.Printf("New client took %v\n", time.Since(start))
+	start = time.Now()
 	dynamicClient, err := dynamic.NewForConfig(c.ClientConfig)
 	if err != nil {
 		return nil, err
 	}
+	fmt.Printf("New dynamic client took %v\n", time.Since(start))
 
 	ctx := context.Background()
 	output := NewResult()
 
 	// namespaces
+	start = time.Now()
 	nsListedFromCluster := false
 	var namespaceNames []string
 	if len(c.Collector.Namespaces) > 0 {
@@ -136,210 +146,330 @@ func (c *CollectClusterResources) Collect(progressChan chan<- interface{}) (Coll
 		}
 		nsListedFromCluster = true
 	}
+	fmt.Printf("Namespaces block took %v\n", time.Since(start))
+	go func() {
+		defer wg.Done()
+		start = time.Now()
+		reviewStatuses, reviewStatusErrors := getSelfSubjectRulesReviews(ctx, client, namespaceNames)
+		fmt.Printf("SelfSubjectRulesReviews block took %v\n", time.Since(start))
+		start = time.Now()
+		// auth cani
+		authCanI := authCanI(reviewStatuses, namespaceNames)
+		for k, v := range authCanI {
+			output.SaveResult(c.BundlePath, path.Join("cluster-resources/auth-cani-list", k), bytes.NewBuffer(v))
+		}
+		output.SaveResult(c.BundlePath, "cluster-resources/auth-cani-list-errors.json", marshalErrors(reviewStatusErrors))
+		fmt.Printf("Auth cani block took %v\n", time.Since(start))
 
-	reviewStatuses, reviewStatusErrors := getSelfSubjectRulesReviews(ctx, client, namespaceNames)
+		start = time.Now()
+		if nsListedFromCluster && !c.Collector.IgnoreRBAC {
+			filteredNamespaces := []string{}
+			for _, ns := range namespaceNames {
+				status := reviewStatuses[ns]
+				if status == nil || canCollectNamespaceResources(status) { // TODO: exclude nil ones?
+					filteredNamespaces = append(filteredNamespaces, ns)
+				}
+			}
+			namespaceNames = filteredNamespaces
+		}
+		fmt.Printf("Filtering namespaces block took %v\n", time.Since(start))
+	}()
 
-	// auth cani
-	authCanI := authCanI(reviewStatuses, namespaceNames)
-	for k, v := range authCanI {
-		output.SaveResult(c.BundlePath, path.Join("cluster-resources/auth-cani-list", k), bytes.NewBuffer(v))
-	}
-	output.SaveResult(c.BundlePath, "cluster-resources/auth-cani-list-errors.json", marshalErrors(reviewStatusErrors))
+	go func() {
+		defer wg.Done()
+		start = time.Now()
+		// pods
+		pods, podErrors, unhealthyPods := pods(ctx, client, namespaceNames)
+		for k, v := range pods {
+			output.SaveResult(c.BundlePath, path.Join("cluster-resources/pods", k), bytes.NewBuffer(v))
+		}
+		output.SaveResult(c.BundlePath, "cluster-resources/pods-errors.json", marshalErrors(podErrors))
 
-	if nsListedFromCluster && !c.Collector.IgnoreRBAC {
-		filteredNamespaces := []string{}
-		for _, ns := range namespaceNames {
-			status := reviewStatuses[ns]
-			if status == nil || canCollectNamespaceResources(status) { // TODO: exclude nil ones?
-				filteredNamespaces = append(filteredNamespaces, ns)
+		for _, pod := range unhealthyPods {
+			allContainers := append(pod.Spec.InitContainers, pod.Spec.Containers...)
+			for _, container := range allContainers {
+				logsRoot := ""
+				if c.BundlePath != "" {
+					logsRoot = path.Join(c.BundlePath, "cluster-resources", "pods", "logs", pod.Namespace)
+				}
+				limits := &troubleshootv1beta2.LogLimits{
+					MaxLines: 500,
+				}
+				podLogs, err := savePodLogs(ctx, logsRoot, client, &pod, "", container.Name, limits, false)
+				if err != nil {
+					errPath := filepath.Join("cluster-resources", "pods", "logs", pod.Namespace, pod.Name, fmt.Sprintf("%s-logs-errors.log", container.Name))
+					output.SaveResult(c.BundlePath, errPath, bytes.NewBuffer([]byte(err.Error())))
+				}
+				for k, v := range podLogs {
+					output[filepath.Join("cluster-resources", "pods", "logs", pod.Namespace, k)] = v
+				}
 			}
 		}
-		namespaceNames = filteredNamespaces
-	}
+		fmt.Printf("Pods block took %v\n", time.Since(start))
+	}()
 
-	// pods
-	pods, podErrors, unhealthyPods := pods(ctx, client, namespaceNames)
-	for k, v := range pods {
-		output.SaveResult(c.BundlePath, path.Join("cluster-resources/pods", k), bytes.NewBuffer(v))
-	}
-	output.SaveResult(c.BundlePath, "cluster-resources/pods-errors.json", marshalErrors(podErrors))
-
-	for _, pod := range unhealthyPods {
-		allContainers := append(pod.Spec.InitContainers, pod.Spec.Containers...)
-		for _, container := range allContainers {
-			logsRoot := ""
-			if c.BundlePath != "" {
-				logsRoot = path.Join(c.BundlePath, "cluster-resources", "pods", "logs", pod.Namespace)
-			}
-			limits := &troubleshootv1beta2.LogLimits{
-				MaxLines: 500,
-			}
-			podLogs, err := savePodLogs(ctx, logsRoot, client, &pod, "", container.Name, limits, false)
-			if err != nil {
-				errPath := filepath.Join("cluster-resources", "pods", "logs", pod.Namespace, pod.Name, fmt.Sprintf("%s-logs-errors.log", container.Name))
-				output.SaveResult(c.BundlePath, errPath, bytes.NewBuffer([]byte(err.Error())))
-			}
-			for k, v := range podLogs {
-				output[filepath.Join("cluster-resources", "pods", "logs", pod.Namespace, k)] = v
-			}
+	go func() {
+		defer wg.Done()
+		// pod disruption budgets
+		start = time.Now()
+		PodDisruptionBudgets, pdbError := getPodDisruptionBudgets(ctx, client, namespaceNames)
+		for k, v := range PodDisruptionBudgets {
+			output.SaveResult(c.BundlePath, path.Join("cluster-resources/pod-disruption-budgets", k), bytes.NewBuffer(v))
 		}
-	}
+		output.SaveResult(c.BundlePath, "cluster-resources/pod-disruption-budgets-info.json", marshalErrors(pdbError))
+		fmt.Printf("Pod disruption budgets block took %v\n", time.Since(start))
+	}()
+	go func() {
+		defer wg.Done()
+		// services
+		start = time.Now()
+		services, servicesErrors := services(ctx, client, namespaceNames)
+		for k, v := range services {
+			output.SaveResult(c.BundlePath, path.Join("cluster-resources/services", k), bytes.NewBuffer(v))
+		}
+		output.SaveResult(c.BundlePath, "cluster-resources/services-errors.json", marshalErrors(servicesErrors))
+		fmt.Printf("Services block took %v\n", time.Since(start))
+	}()
 
-	// pod disruption budgets
+	go func() {
+		defer wg.Done()
+		start = time.Now()
+		// deployments
+		deployments, deploymentsErrors := deployments(ctx, client, namespaceNames)
+		for k, v := range deployments {
+			output.SaveResult(c.BundlePath, path.Join("cluster-resources/deployments", k), bytes.NewBuffer(v))
+		}
+		output.SaveResult(c.BundlePath, "cluster-resources/deployments-errors.json", marshalErrors(deploymentsErrors))
+		fmt.Printf("Deployments block took %v\n", time.Since(start))
+	}()
 
-	PodDisruptionBudgets, pdbError := getPodDisruptionBudgets(ctx, client, namespaceNames)
-	for k, v := range PodDisruptionBudgets {
-		output.SaveResult(c.BundlePath, path.Join("cluster-resources/pod-disruption-budgets", k), bytes.NewBuffer(v))
-	}
-	output.SaveResult(c.BundlePath, "cluster-resources/pod-disruption-budgets-info.json", marshalErrors(pdbError))
+	go func() {
+		defer wg.Done()
+		start = time.Now()
+		// statefulsets
+		statefulsets, statefulsetsErrors := statefulsets(ctx, client, namespaceNames)
+		for k, v := range statefulsets {
+			output.SaveResult(c.BundlePath, path.Join("cluster-resources/statefulsets", k), bytes.NewBuffer(v))
+		}
+		output.SaveResult(c.BundlePath, "cluster-resources/statefulsets-errors.json", marshalErrors(statefulsetsErrors))
+		fmt.Printf("Statefulsets block took %v\n", time.Since(start))
+	}()
 
-	// services
-	services, servicesErrors := services(ctx, client, namespaceNames)
-	for k, v := range services {
-		output.SaveResult(c.BundlePath, path.Join("cluster-resources/services", k), bytes.NewBuffer(v))
-	}
-	output.SaveResult(c.BundlePath, "cluster-resources/services-errors.json", marshalErrors(servicesErrors))
+	go func() {
+		defer wg.Done()
+		start = time.Now()
+		// replicasets
+		replicasets, replicasetsErrors := replicasets(ctx, client, namespaceNames)
+		for k, v := range replicasets {
+			output.SaveResult(c.BundlePath, path.Join("cluster-resources/replicasets", k), bytes.NewBuffer(v))
+		}
+		output.SaveResult(c.BundlePath, "cluster-resources/replicasets-errors.json", marshalErrors(replicasetsErrors))
+		fmt.Printf("Replicasets block took %v\n", time.Since(start))
+	}()
 
-	// deployments
-	deployments, deploymentsErrors := deployments(ctx, client, namespaceNames)
-	for k, v := range deployments {
-		output.SaveResult(c.BundlePath, path.Join("cluster-resources/deployments", k), bytes.NewBuffer(v))
-	}
-	output.SaveResult(c.BundlePath, "cluster-resources/deployments-errors.json", marshalErrors(deploymentsErrors))
+	go func() {
+		defer wg.Done()
+		start = time.Now()
+		// jobs
+		jobs, jobsErrors := jobs(ctx, client, namespaceNames)
+		for k, v := range jobs {
+			output.SaveResult(c.BundlePath, path.Join("cluster-resources/jobs", k), bytes.NewBuffer(v))
+		}
+		output.SaveResult(c.BundlePath, "cluster-resources/jobs-errors.json", marshalErrors(jobsErrors))
+		fmt.Printf("Jobs block took %v\n", time.Since(start))
+	}()
 
-	// statefulsets
-	statefulsets, statefulsetsErrors := statefulsets(ctx, client, namespaceNames)
-	for k, v := range statefulsets {
-		output.SaveResult(c.BundlePath, path.Join("cluster-resources/statefulsets", k), bytes.NewBuffer(v))
-	}
-	output.SaveResult(c.BundlePath, "cluster-resources/statefulsets-errors.json", marshalErrors(statefulsetsErrors))
+	go func() {
+		defer wg.Done()
+		start = time.Now()
+		// cronJobs
+		cronJobs, cronJobsErrors := cronJobs(ctx, client, namespaceNames)
+		for k, v := range cronJobs {
+			output.SaveResult(c.BundlePath, path.Join("cluster-resources/cronjobs", k), bytes.NewBuffer(v))
+		}
+		output.SaveResult(c.BundlePath, "cluster-resources/cronjobs-errors.json", marshalErrors(cronJobsErrors))
+		fmt.Printf("CronJobs block took %v\n", time.Since(start))
+	}()
 
-	// replicasets
-	replicasets, replicasetsErrors := replicasets(ctx, client, namespaceNames)
-	for k, v := range replicasets {
-		output.SaveResult(c.BundlePath, path.Join("cluster-resources/replicasets", k), bytes.NewBuffer(v))
-	}
-	output.SaveResult(c.BundlePath, "cluster-resources/replicasets-errors.json", marshalErrors(replicasetsErrors))
+	go func() {
+		defer wg.Done()
+		start = time.Now()
+		// ingress
+		ingress, ingressErrors := ingress(ctx, client, namespaceNames)
+		for k, v := range ingress {
+			output.SaveResult(c.BundlePath, path.Join("cluster-resources/ingress", k), bytes.NewBuffer(v))
+		}
+		output.SaveResult(c.BundlePath, "cluster-resources/ingress-errors.json", marshalErrors(ingressErrors))
+		fmt.Printf("Ingress block took %v\n", time.Since(start))
+	}()
 
-	// jobs
-	jobs, jobsErrors := jobs(ctx, client, namespaceNames)
-	for k, v := range jobs {
-		output.SaveResult(c.BundlePath, path.Join("cluster-resources/jobs", k), bytes.NewBuffer(v))
-	}
-	output.SaveResult(c.BundlePath, "cluster-resources/jobs-errors.json", marshalErrors(jobsErrors))
+	go func() {
+		defer wg.Done()
+		start = time.Now()
+		// network policy
+		networkPolicy, networkPolicyErrors := networkPolicy(ctx, client, namespaceNames)
+		for k, v := range networkPolicy {
+			output.SaveResult(c.BundlePath, path.Join("cluster-resources/network-policy", k), bytes.NewBuffer(v))
+		}
+		output.SaveResult(c.BundlePath, "cluster-resources/network-policy-errors.json", marshalErrors(networkPolicyErrors))
+		fmt.Printf("Network policy block took %v\n", time.Since(start))
+	}()
 
-	// cronJobs
-	cronJobs, cronJobsErrors := cronJobs(ctx, client, namespaceNames)
-	for k, v := range cronJobs {
-		output.SaveResult(c.BundlePath, path.Join("cluster-resources/cronjobs", k), bytes.NewBuffer(v))
-	}
-	output.SaveResult(c.BundlePath, "cluster-resources/cronjobs-errors.json", marshalErrors(cronJobsErrors))
+	go func() {
+		defer wg.Done()
+		start = time.Now()
+		// resource quotas
+		resourceQuota, resourceQuotaErrors := resourceQuota(ctx, client, namespaceNames)
+		for k, v := range resourceQuota {
+			output.SaveResult(c.BundlePath, path.Join("cluster-resources/resource-quotas", k), bytes.NewBuffer(v))
+		}
+		output.SaveResult(c.BundlePath, "cluster-resources/resource-quota-errors.json", marshalErrors(resourceQuotaErrors))
+		fmt.Printf("Resource quota block took %v\n", time.Since(start))
+	}()
 
-	// ingress
-	ingress, ingressErrors := ingress(ctx, client, namespaceNames)
-	for k, v := range ingress {
-		output.SaveResult(c.BundlePath, path.Join("cluster-resources/ingress", k), bytes.NewBuffer(v))
-	}
-	output.SaveResult(c.BundlePath, "cluster-resources/ingress-errors.json", marshalErrors(ingressErrors))
+	go func() {
+		defer wg.Done()
+		start = time.Now()
+		// storage classes
+		storageClasses, storageErrors := storageClasses(ctx, client)
+		output.SaveResult(c.BundlePath, "cluster-resources/storage-classes.json", bytes.NewBuffer(storageClasses))
+		output.SaveResult(c.BundlePath, "cluster-resources/storage-errors.json", marshalErrors(storageErrors))
+		fmt.Printf("Storage classes block took %v\n", time.Since(start))
+	}()
 
-	// network policy
-	networkPolicy, networkPolicyErrors := networkPolicy(ctx, client, namespaceNames)
-	for k, v := range networkPolicy {
-		output.SaveResult(c.BundlePath, path.Join("cluster-resources/network-policy", k), bytes.NewBuffer(v))
-	}
-	output.SaveResult(c.BundlePath, "cluster-resources/network-policy-errors.json", marshalErrors(networkPolicyErrors))
-
-	// resource quotas
-	resourceQuota, resourceQuotaErrors := resourceQuota(ctx, client, namespaceNames)
-	for k, v := range resourceQuota {
-		output.SaveResult(c.BundlePath, path.Join("cluster-resources/resource-quotas", k), bytes.NewBuffer(v))
-	}
-	output.SaveResult(c.BundlePath, "cluster-resources/resource-quota-errors.json", marshalErrors(resourceQuotaErrors))
-
-	// storage classes
-	storageClasses, storageErrors := storageClasses(ctx, client)
-	output.SaveResult(c.BundlePath, "cluster-resources/storage-classes.json", bytes.NewBuffer(storageClasses))
-	output.SaveResult(c.BundlePath, "cluster-resources/storage-errors.json", marshalErrors(storageErrors))
-
+	start = time.Now()
 	// crds
 	customResourceDefinitions, crdErrors := crds(ctx, client, c.ClientConfig)
 	output.SaveResult(c.BundlePath, "cluster-resources/custom-resource-definitions.json", bytes.NewBuffer(customResourceDefinitions))
 	output.SaveResult(c.BundlePath, "cluster-resources/custom-resource-definitions-errors.json", marshalErrors(crdErrors))
+	fmt.Printf("CRDs block took %v\n", time.Since(start))
 
-	// crs
-	customResources, crErrors := crs(ctx, dynamicClient, client, c.ClientConfig, namespaceNames)
-	for k, v := range customResources {
-		output.SaveResult(c.BundlePath, fmt.Sprintf("cluster-resources/custom-resources/%v", k), bytes.NewBuffer(v))
-	}
-	output.SaveResult(c.BundlePath, "cluster-resources/custom-resources/custom-resources-errors.json", marshalErrors(crErrors))
+	go func() {
+		defer wg.Done()
+		start = time.Now()
+		// crs
+		customResources, crErrors := crs(ctx, dynamicClient, client, c.ClientConfig, namespaceNames)
+		for k, v := range customResources {
+			output.SaveResult(c.BundlePath, fmt.Sprintf("cluster-resources/custom-resources/%v", k), bytes.NewBuffer(v))
+		}
+		output.SaveResult(c.BundlePath, "cluster-resources/custom-resources/custom-resources-errors.json", marshalErrors(crErrors))
+		fmt.Printf("CRs block took %v\n", time.Since(start))
+	}()
 
-	// imagepullsecrets
-	imagePullSecrets, pullSecretsErrors := imagePullSecrets(ctx, client, namespaceNames)
-	for k, v := range imagePullSecrets {
-		output.SaveResult(c.BundlePath, path.Join("cluster-resources/image-pull-secrets", k), bytes.NewBuffer(v))
-	}
-	output.SaveResult(c.BundlePath, "cluster-resources/image-pull-secrets-errors.json", marshalErrors(pullSecretsErrors))
+	go func() {
+		defer wg.Done()
+		start = time.Now()
+		// imagepullsecrets
+		imagePullSecrets, pullSecretsErrors := imagePullSecrets(ctx, client, namespaceNames)
+		for k, v := range imagePullSecrets {
+			output.SaveResult(c.BundlePath, path.Join("cluster-resources/image-pull-secrets", k), bytes.NewBuffer(v))
+		}
+		output.SaveResult(c.BundlePath, "cluster-resources/image-pull-secrets-errors.json", marshalErrors(pullSecretsErrors))
+		fmt.Printf("Image pull secrets block took %v\n", time.Since(start))
+	}()
 
-	// nodes
-	nodes, nodeErrors := nodes(ctx, client)
-	output.SaveResult(c.BundlePath, "cluster-resources/nodes.json", bytes.NewBuffer(nodes))
-	output.SaveResult(c.BundlePath, "cluster-resources/nodes-errors.json", marshalErrors(nodeErrors))
+	go func() {
+		defer wg.Done()
+		start = time.Now()
+		// nodes
+		nodes, nodeErrors := nodes(ctx, client)
+		output.SaveResult(c.BundlePath, "cluster-resources/nodes.json", bytes.NewBuffer(nodes))
+		output.SaveResult(c.BundlePath, "cluster-resources/nodes-errors.json", marshalErrors(nodeErrors))
+		fmt.Printf("Nodes block took %v\n", time.Since(start))
+	}()
 
-	groups, resources, groupsResourcesErrors := apiResources(ctx, client)
-	output.SaveResult(c.BundlePath, "cluster-resources/groups.json", bytes.NewBuffer(groups))
-	output.SaveResult(c.BundlePath, "cluster-resources/resources.json", bytes.NewBuffer(resources))
-	output.SaveResult(c.BundlePath, "cluster-resources/groups-resources-errors.json", marshalErrors(groupsResourcesErrors))
+	go func() {
+		defer wg.Done()
+		start = time.Now()
+		groups, resources, groupsResourcesErrors := apiResources(ctx, client)
+		output.SaveResult(c.BundlePath, "cluster-resources/groups.json", bytes.NewBuffer(groups))
+		output.SaveResult(c.BundlePath, "cluster-resources/resources.json", bytes.NewBuffer(resources))
+		output.SaveResult(c.BundlePath, "cluster-resources/groups-resources-errors.json", marshalErrors(groupsResourcesErrors))
+		fmt.Printf("Groups and Resources block took %v\n", time.Since(start))
+	}()
 
-	// limit ranges
-	limitRanges, limitRangesErrors := limitRanges(ctx, client, namespaceNames)
-	for k, v := range limitRanges {
-		output.SaveResult(c.BundlePath, path.Join("cluster-resources/limitranges", k), bytes.NewBuffer(v))
-	}
-	output.SaveResult(c.BundlePath, "cluster-resources/limitranges-errors.json", marshalErrors(limitRangesErrors))
+	go func() {
+		defer wg.Done()
+		start = time.Now()
+		// limit ranges
+		limitRanges, limitRangesErrors := limitRanges(ctx, client, namespaceNames)
+		for k, v := range limitRanges {
+			output.SaveResult(c.BundlePath, path.Join("cluster-resources/limitranges", k), bytes.NewBuffer(v))
+		}
+		output.SaveResult(c.BundlePath, "cluster-resources/limitranges-errors.json", marshalErrors(limitRangesErrors))
+		fmt.Printf("Limit ranges block took %v\n", time.Since(start))
+	}()
 
-	//Events
-	events, eventsErrors := events(ctx, client, namespaceNames)
-	for k, v := range events {
-		output.SaveResult(c.BundlePath, path.Join("cluster-resources/events", k), bytes.NewBuffer(v))
-	}
-	output.SaveResult(c.BundlePath, "cluster-resources/events-errors.json", marshalErrors(eventsErrors))
+	go func() {
+		defer wg.Done()
+		start = time.Now()
+		//Events
+		events, eventsErrors := events(ctx, client, namespaceNames)
+		for k, v := range events {
+			output.SaveResult(c.BundlePath, path.Join("cluster-resources/events", k), bytes.NewBuffer(v))
+		}
+		output.SaveResult(c.BundlePath, "cluster-resources/events-errors.json", marshalErrors(eventsErrors))
+		fmt.Printf("Events block took %v\n", time.Since(start))
+	}()
 
+	start = time.Now()
 	//Persistent Volumes
 	pvs, pvsErrors := pvs(ctx, client)
 	output.SaveResult(c.BundlePath, "cluster-resources/pvs.json", bytes.NewBuffer(pvs))
 	output.SaveResult(c.BundlePath, "cluster-resources/pvs-errors.json", marshalErrors(pvsErrors))
+	fmt.Printf("Persistent Volumes block took %v\n", time.Since(start))
 
-	//Persistent Volume Claims
-	pvcs, pvcsErrors := pvcs(ctx, client, namespaceNames)
-	for k, v := range pvcs {
-		output.SaveResult(c.BundlePath, path.Join("cluster-resources/pvcs", k), bytes.NewBuffer(v))
-	}
-	output.SaveResult(c.BundlePath, "cluster-resources/pvcs-errors.json", marshalErrors(pvcsErrors))
+	go func() {
+		defer wg.Done()
+		start = time.Now()
+		//Persistent Volume Claims
+		pvcs, pvcsErrors := pvcs(ctx, client, namespaceNames)
+		for k, v := range pvcs {
+			output.SaveResult(c.BundlePath, path.Join("cluster-resources/pvcs", k), bytes.NewBuffer(v))
+		}
+		output.SaveResult(c.BundlePath, "cluster-resources/pvcs-errors.json", marshalErrors(pvcsErrors))
+		fmt.Printf("Persistent Volume Claims block took %v\n", time.Since(start))
+	}()
 
-	//Roles
-	roles, rolesErrors := roles(ctx, client, namespaceNames)
-	for k, v := range roles {
-		output.SaveResult(c.BundlePath, path.Join("cluster-resources/roles", k), bytes.NewBuffer(v))
-	}
-	output.SaveResult(c.BundlePath, "cluster-resources/roles-errors.json", marshalErrors(rolesErrors))
+	go func() {
+		defer wg.Done()
+		start = time.Now()
+		//Roles
+		roles, rolesErrors := roles(ctx, client, namespaceNames)
+		for k, v := range roles {
+			output.SaveResult(c.BundlePath, path.Join("cluster-resources/roles", k), bytes.NewBuffer(v))
+		}
+		output.SaveResult(c.BundlePath, "cluster-resources/roles-errors.json", marshalErrors(rolesErrors))
+		fmt.Printf("Roles block took %v\n", time.Since(start))
+	}()
 
-	//Role Bindings
-	roleBindings, roleBindingsErrors := roleBindings(ctx, client, namespaceNames)
-	for k, v := range roleBindings {
-		output.SaveResult(c.BundlePath, path.Join("cluster-resources/rolebindings", k), bytes.NewBuffer(v))
-	}
-	output.SaveResult(c.BundlePath, "cluster-resources/rolebindings-errors.json", marshalErrors(roleBindingsErrors))
+	go func() {
+		defer wg.Done()
+		start = time.Now()
+		//Role Bindings
+		roleBindings, roleBindingsErrors := roleBindings(ctx, client, namespaceNames)
+		for k, v := range roleBindings {
+			output.SaveResult(c.BundlePath, path.Join("cluster-resources/rolebindings", k), bytes.NewBuffer(v))
+		}
+		output.SaveResult(c.BundlePath, "cluster-resources/rolebindings-errors.json", marshalErrors(roleBindingsErrors))
+		fmt.Printf("Role Bindings block took %v\n", time.Since(start))
+	}()
 
+	start = time.Now()
 	//Cluster Roles
 	clusterRoles, clusterRolesErrors := clusterRoles(ctx, client)
 	output.SaveResult(c.BundlePath, "cluster-resources/clusterroles.json", bytes.NewBuffer(clusterRoles))
 	output.SaveResult(c.BundlePath, "cluster-resources/clusterroles-errors.json", marshalErrors(clusterRolesErrors))
+	fmt.Printf("Cluster Roles block took %v\n", time.Since(start))
 
+	start = time.Now()
 	//Cluster Role Bindings
 	clusterRoleBindings, clusterRoleBindingsErrors := clusterRoleBindings(ctx, client)
 	output.SaveResult(c.BundlePath, "cluster-resources/clusterRoleBindings.json", bytes.NewBuffer(clusterRoleBindings))
 	output.SaveResult(c.BundlePath, "cluster-resources/clusterRoleBindings-errors.json", marshalErrors(clusterRoleBindingsErrors))
-
+	fmt.Printf("Cluster Role Bindings block took %v\n", time.Since(start))
+	wg.Wait()
+	fmt.Println("------- Done with Cluster Resources -------")
 	return output, nil
 }
 
