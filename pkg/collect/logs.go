@@ -100,6 +100,7 @@ func (c *CollectLogs) Collect(progressChan chan<- interface{}) (CollectorResult,
 						}
 						for k, v := range podLogs {
 							output[k] = v
+							resultCh <- output
 						}
 					}
 				} else {
@@ -115,6 +116,7 @@ func (c *CollectLogs) Collect(progressChan chan<- interface{}) (CollectorResult,
 						}
 						for k, v := range containerLogs {
 							output[k] = v
+							resultCh <- output
 						}
 					}
 				}
