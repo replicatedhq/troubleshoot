@@ -14,11 +14,11 @@ import (
 )
 
 func Test_setLogLimits(t *testing.T) {
+	maxBytes := int64(5000000)
 	defaultMaxLines := int64(10000)
 	customLines := int64(20)
 	maxAge := "10h"
 	sinceWhen := metav1.NewTime(time.Now().Add(-10 * time.Hour))
-	maxBytes := int64(5000000)
 
 	convertMaxAgeToTime := func(maxAge string) *metav1.Time {
 		return &sinceWhen
@@ -30,6 +30,15 @@ func Test_setLogLimits(t *testing.T) {
 		expected corev1.PodLogOptions
 		validate func(t *testing.T, podLogOpts *corev1.PodLogOptions)
 	}{
+		{
+			name: "max bytes",
+			limits: &troubleshootv1beta2.LogLimits{
+				MaxBytes: maxBytes,
+			},
+			expected: corev1.PodLogOptions{
+				LimitBytes: &maxBytes,
+			},
+		},
 		{
 			name:   "default limits",
 			limits: nil,
@@ -55,15 +64,6 @@ func Test_setLogLimits(t *testing.T) {
 				SinceTime: &sinceWhen,
 			},
 		},
-		{
-			name: "max bytes",
-			limits: &troubleshootv1beta2.LogLimits{
-				MaxBytes: maxBytes,
-			},
-			expected: corev1.PodLogOptions{
-				LimitBytes: &maxBytes,
-			},
-		},
 	}
 
 	for _, test := range tests {
@@ -72,6 +72,16 @@ func Test_setLogLimits(t *testing.T) {
 
 			actual := corev1.PodLogOptions{}
 			setLogLimits(&actual, test.limits, convertMaxAgeToTime)
+
+			// Fix the below test as its currently failing with an error `Expected value not to be nil.`
+			// Changed the order in which we use the if statements in here. This was previously failing
+			// because of TailLines giving trouble during make operation(s).
+			if test.expected.LimitBytes != nil {
+				req.NotNil(actual.LimitBytes)
+				assert.Equal(t, *test.expected.LimitBytes, *actual.LimitBytes)
+			} else {
+				req.Nil(actual.LimitBytes)
+			}
 
 			if test.expected.TailLines != nil {
 				req.NotNil(actual.TailLines)
@@ -87,13 +97,6 @@ func Test_setLogLimits(t *testing.T) {
 				req.Nil(actual.SinceTime)
 			}
 
-			// Add test for MaxSize, this is currently not working
-			if test.expected.LimitBytes != nil {
-				req.NotNil(actual.LimitBytes)
-				assert.Equal(t, *test.expected.LimitBytes, *actual.LimitBytes)
-			} else {
-				req.Nil(actual.LimitBytes)
-			}
 		})
 	}
 }
@@ -144,7 +147,8 @@ func Test_savePodLogs(t *testing.T) {
 			containerName := "nginx"
 			client := testclient.NewSimpleClientset()
 			limits := &troubleshootv1beta2.LogLimits{
-				MaxLines: 500, MaxBytes: 1000000,
+				MaxLines: 500,
+				MaxBytes: 6000000,
 			}
 			pod, err := client.CoreV1().Pods("my-namespace").Create(ctx, &corev1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
