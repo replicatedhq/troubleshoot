@@ -260,7 +260,7 @@ func setLogLimits(podLogOpts *corev1.PodLogOptions, limits *troubleshootv1beta2.
 		podLogOpts.TailLines = &limits.MaxLines
 	}
 
-	if limits.MaxBytes == 500000 {
+	if limits.MaxBytes == 5000000 {
 		podLogOpts.LimitBytes = &limits.MaxBytes
 	}
 }
