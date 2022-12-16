@@ -232,7 +232,6 @@ func convertMaxAgeToTime(maxAge string) *metav1.Time {
 	return &kthen
 }
 
-// Add new functionality for log size limits below:
 func setLogLimits(podLogOpts *corev1.PodLogOptions, limits *troubleshootv1beta2.LogLimits, maxAgeParser func(maxAge string) *metav1.Time) {
 	if podLogOpts == nil {
 		return
@@ -260,7 +259,15 @@ func setLogLimits(podLogOpts *corev1.PodLogOptions, limits *troubleshootv1beta2.
 		podLogOpts.TailLines = &limits.MaxLines
 	}
 
-	if limits.MaxBytes == 5000000 {
+	defaultMaxBytes := int64(5000000)
+	if limits.MaxBytes == 0 {
+		podLogOpts.LimitBytes = &defaultMaxBytes
+		return
+	}
+
+	if limits.MaxBytes == 0 {
+		podLogOpts.LimitBytes = &defaultMaxBytes
+	} else {
 		podLogOpts.LimitBytes = &limits.MaxBytes
 	}
 }

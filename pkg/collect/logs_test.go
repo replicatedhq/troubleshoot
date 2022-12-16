@@ -39,6 +39,7 @@ func Test_setLogLimits(t *testing.T) {
 				LimitBytes: &maxBytes,
 			},
 		},
+
 		{
 			name: "max age",
 			limits: &troubleshootv1beta2.LogLimits{
@@ -79,7 +80,6 @@ func Test_setLogLimits(t *testing.T) {
 			} else {
 				req.Nil(actual.LimitBytes)
 			}
-
 			if test.expected.SinceTime != nil {
 				req.NotNil(actual.SinceTime)
 				assert.Equal(t, *test.expected.SinceTime, *actual.SinceTime)
@@ -88,10 +88,10 @@ func Test_setLogLimits(t *testing.T) {
 			}
 
 			if test.expected.TailLines != nil {
-				//req.NotNil(actual.TailLines)
+				req.NotNil(actual.TailLines)
 				assert.Equal(t, *test.expected.TailLines, *actual.TailLines)
 			} else {
-				//req.Nil(actual.TailLines)
+				req.Nil(actual.TailLines)
 			}
 
 		})
