@@ -39,6 +39,7 @@ func Test_setLogLimits(t *testing.T) {
 				LimitBytes: &maxBytes,
 			},
 		},
+
 		{
 			name:   "default limits",
 			limits: nil,
@@ -73,9 +74,6 @@ func Test_setLogLimits(t *testing.T) {
 			actual := corev1.PodLogOptions{}
 			setLogLimits(&actual, test.limits, convertMaxAgeToTime)
 
-			// Fix the below test as its currently failing with an error `Expected value not to be nil.`
-			// Changed the order in which we use the if statements in here. This was previously failing
-			// because of TailLines giving trouble during make operation(s).
 			if test.expected.LimitBytes != nil {
 				req.NotNil(actual.LimitBytes)
 				assert.Equal(t, *test.expected.LimitBytes, *actual.LimitBytes)
