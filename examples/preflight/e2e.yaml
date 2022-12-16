@@ -44,7 +44,7 @@ spec:
               message: You have at least 5 replicas
     - textAnalyze:
         checkName: Said hi!
-        fileName: /static-hi.log
+        fileName: /static-hi*.log
         regex: 'hi static'
         outcomes:
           - fail:
