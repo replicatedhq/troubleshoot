@@ -99,8 +99,9 @@ func (c *CollectLogs) Collect(progressChan chan<- interface{}) (CollectorResult,
 						}
 						for k, v := range podLogs {
 							output[k] = v
-							resultCh <- output
+
 						}
+						resultCh <- output
 					}
 				} else {
 					for _, container := range c.Collector.ContainerNames {
@@ -115,12 +116,12 @@ func (c *CollectLogs) Collect(progressChan chan<- interface{}) (CollectorResult,
 						}
 						for k, v := range containerLogs {
 							output[k] = v
-							resultCh <- output
 						}
+						resultCh <- output
 					}
 				}
 			}
-			resultCh <- output
+
 		}
 
 	}()
@@ -128,14 +129,15 @@ func (c *CollectLogs) Collect(progressChan chan<- interface{}) (CollectorResult,
 	select {
 	case <-ctxTimeout.Done():
 		return nil, errors.New("context timeout exceeded")
-	case output := <-resultCh:
-		return output, nil
+	case o := <-resultCh:
+		output = o
 	case err := <-errCh:
 		if errors.Is(err, context.DeadlineExceeded) {
 			return nil, err
 		}
 		return output, err
 	}
+	return output, nil
 }
 
 func listPodsInSelectors(ctx context.Context, client kubernetes.Interface, namespace string, selector []string) ([]corev1.Pod, []string) {
