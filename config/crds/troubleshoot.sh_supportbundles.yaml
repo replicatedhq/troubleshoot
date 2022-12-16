@@ -187,6 +187,8 @@ spec:
                           type: string
                         exclude:
                           type: BoolString
+                        expectedValue:
+                          type: string
                         kind:
                           type: string
                         name:
@@ -227,8 +229,6 @@ spec:
                           type: array
                         strict:
                           type: BoolString
-                        value:
-                          type: string
                         yamlPath:
                           type: string
                       required:

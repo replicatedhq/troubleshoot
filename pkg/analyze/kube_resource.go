@@ -94,7 +94,7 @@ func analyzeResource(analyzer *troubleshootv1beta2.ClusterResource, getFileConte
 	}
 
 	var expected interface{}
-	err = yaml.Unmarshal([]byte(analyzer.Value), &expected)
+	err = yaml.Unmarshal([]byte(analyzer.ExpectedValue), &expected)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to parse expected value as yaml doc")
 	}

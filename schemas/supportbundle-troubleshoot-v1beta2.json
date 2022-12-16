@@ -255,6 +255,9 @@
                   "exclude": {
                     "oneOf": [{"type": "string"},{"type": "boolean"}]
                   },
+                  "expectedValue": {
+                    "type": "string"
+                  },
                   "kind": {
                     "type": "string"
                   },
@@ -316,9 +319,6 @@
                   },
                   "strict": {
                     "oneOf": [{"type": "string"},{"type": "boolean"}]
-                  },
-                  "value": {
-                    "type": "string"
                   },
                   "yamlPath": {
                     "type": "string"

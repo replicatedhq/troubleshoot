@@ -67,7 +67,7 @@ type ClusterResource struct {
 	Namespace     string     `json:"namespace,omitempty" yaml:"namespace,omitempty"`
 	Name          string     `json:"name" yaml:"name"`
 	YamlPath      string     `json:"yamlPath" yaml:"yamlPath"`
-	Value         string     `json:"value,omitempty" yaml:"value,omitempty"`
+	ExpectedValue string     `json:"expectedValue,omitempty" yaml:"expectedValue,omitempty"`
 }
 
 type StatefulsetStatus struct {
