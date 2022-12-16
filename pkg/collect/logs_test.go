@@ -103,12 +103,14 @@ func Test_savePodLogs(t *testing.T) {
 		name              string
 		withContainerName bool
 		collectorName     string
+		createSymLinks    bool
 		want              CollectorResult
 	}{
 		{
 			name:              "with container name",
 			withContainerName: true,
 			collectorName:     "all-logs",
+			createSymLinks:    true,
 			want: CollectorResult{
 				"all-logs/test-pod/nginx.log":                                          []byte("fake logs"),
 				"all-logs/test-pod/nginx-previous.log":                                 []byte("fake logs"),
@@ -120,6 +122,7 @@ func Test_savePodLogs(t *testing.T) {
 			name:              "without container name",
 			withContainerName: false,
 			collectorName:     "all-logs",
+			createSymLinks:    true,
 			want: CollectorResult{
 				"all-logs/test-pod.log":                                                []byte("fake logs"),
 				"all-logs/test-pod-previous.log":                                       []byte("fake logs"),
@@ -130,9 +133,20 @@ func Test_savePodLogs(t *testing.T) {
 		{
 			name:              "without container or collector names",
 			withContainerName: false,
+			createSymLinks:    true,
 			want: CollectorResult{
 				"/test-pod.log":          []byte("fake logs"),
 				"/test-pod-previous.log": []byte("fake logs"),
+				"cluster-resources/pods/logs/my-namespace/test-pod/nginx.log":          []byte("fake logs"),
+				"cluster-resources/pods/logs/my-namespace/test-pod/nginx-previous.log": []byte("fake logs"),
+			},
+		},
+		{
+			name:              "without sym links",
+			withContainerName: true,
+			collectorName:     "all-logs",
+			createSymLinks:    false,
+			want: CollectorResult{
 				"cluster-resources/pods/logs/my-namespace/test-pod/nginx.log":          []byte("fake logs"),
 				"cluster-resources/pods/logs/my-namespace/test-pod/nginx-previous.log": []byte("fake logs"),
 			},
@@ -163,7 +177,7 @@ func Test_savePodLogs(t *testing.T) {
 			if !tt.withContainerName {
 				containerName = ""
 			}
-			got, err := savePodLogsWithInterface(ctx, "", client, pod, tt.collectorName, containerName, limits, false)
+			got, err := savePodLogsWithInterface(ctx, "", client, pod, tt.collectorName, containerName, limits, false, tt.createSymLinks)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.want, got)
 		})

@@ -30,7 +30,7 @@ import (
 	"k8s.io/client-go/kubernetes/scheme"
 )
 
-func RunPreflights(interactive bool, output, format, arg string) error {
+func RunPreflights(interactive bool, output string, format string, args []string) error {
 	if interactive {
 		fmt.Print(cursor.Hide())
 		defer fmt.Print(cursor.Show())
@@ -44,82 +44,107 @@ func RunPreflights(interactive bool, output, format, arg string) error {
 	}()
 
 	var preflightContent []byte
+	var preflightSpec *troubleshootv1beta2.Preflight
+	var hostPreflightSpec *troubleshootv1beta2.HostPreflight
+	var uploadResultSpecs []*troubleshootv1beta2.Preflight
 	var err error
-	if strings.HasPrefix(arg, "secret/") {
-		// format secret/namespace-name/secret-name
-		pathParts := strings.Split(arg, "/")
-		if len(pathParts) != 3 {
-			return errors.Errorf("path %s must have 3 components", arg)
-		}
 
-		spec, err := specs.LoadFromSecret(pathParts[1], pathParts[2], "preflight-spec")
-		if err != nil {
-			return errors.Wrap(err, "failed to get spec from secret")
-		}
+	for i, v := range args {
+		if strings.HasPrefix(v, "secret/") {
+			// format secret/namespace-name/secret-name
+			pathParts := strings.Split(v, "/")
+			if len(pathParts) != 3 {
+				return errors.Errorf("path %s must have 3 components", v)
+			}
 
-		preflightContent = spec
-	} else if _, err = os.Stat(arg); err == nil {
-		b, err := ioutil.ReadFile(arg)
-		if err != nil {
-			return err
-		}
-
-		preflightContent = b
-	} else {
-		u, err := url.Parse(arg)
-		if err != nil {
-			return err
-		}
-
-		if u.Scheme == "oci" {
-			content, err := oci.PullPreflightFromOCI(arg)
+			spec, err := specs.LoadFromSecret(pathParts[1], pathParts[2], "preflight-spec")
 			if err != nil {
-				if err == oci.ErrNoRelease {
-					return errors.Errorf("no release found for %s.\nCheck the oci:// uri for errors or contact the application vendor for support.", arg)
+				return errors.Wrap(err, "failed to get spec from secret")
+			}
+
+			preflightContent = spec
+		} else if _, err = os.Stat(v); err == nil {
+			b, err := ioutil.ReadFile(v)
+			if err != nil {
+				return err
+			}
+
+			preflightContent = b
+		} else {
+			u, err := url.Parse(v)
+			if err != nil {
+				return err
+			}
+
+			if u.Scheme == "oci" {
+				content, err := oci.PullPreflightFromOCI(v)
+				if err != nil {
+					if err == oci.ErrNoRelease {
+						return errors.Errorf("no release found for %s.\nCheck the oci:// uri for errors or contact the application vendor for support.", v)
+					}
+
+					return err
 				}
 
-				return err
-			}
+				preflightContent = content
+			} else {
+				if !util.IsURL(v) {
+					return fmt.Errorf("%s is not a URL and was not found (err %s)", v, err)
+				}
 
-			preflightContent = content
-		} else {
-			if !util.IsURL(arg) {
-				return fmt.Errorf("%s is not a URL and was not found (err %s)", arg, err)
-			}
+				req, err := http.NewRequest("GET", v, nil)
+				if err != nil {
+					return err
+				}
+				req.Header.Set("User-Agent", "Replicated_Preflight/v1beta2")
+				resp, err := http.DefaultClient.Do(req)
+				if err != nil {
+					return err
+				}
+				defer resp.Body.Close()
 
-			req, err := http.NewRequest("GET", arg, nil)
-			if err != nil {
-				return err
-			}
-			req.Header.Set("User-Agent", "Replicated_Preflight/v1beta2")
-			resp, err := http.DefaultClient.Do(req)
-			if err != nil {
-				return err
-			}
-			defer resp.Body.Close()
+				body, err := ioutil.ReadAll(resp.Body)
+				if err != nil {
+					return err
+				}
 
-			body, err := ioutil.ReadAll(resp.Body)
-			if err != nil {
-				return err
+				preflightContent = body
 			}
-
-			preflightContent = body
 		}
-	}
 
-	preflightContent, err = docrewrite.ConvertToV1Beta2(preflightContent)
-	if err != nil {
-		return errors.Wrap(err, "failed to convert to v1beta2")
-	}
+		preflightContent, err = docrewrite.ConvertToV1Beta2(preflightContent)
+		if err != nil {
+			return errors.Wrap(err, "failed to convert to v1beta2")
+		}
 
-	troubleshootclientsetscheme.AddToScheme(scheme.Scheme)
-	decode := scheme.Codecs.UniversalDeserializer().Decode
-	obj, _, err := decode([]byte(preflightContent), nil, nil)
-	if err != nil {
-		return errors.Wrapf(err, "failed to parse %s", arg)
+		troubleshootclientsetscheme.AddToScheme(scheme.Scheme)
+		decode := scheme.Codecs.UniversalDeserializer().Decode
+		obj, _, err := decode([]byte(preflightContent), nil, nil)
+		if err != nil {
+			return errors.Wrapf(err, "failed to parse %s", v)
+		}
+
+		if spec, ok := obj.(*troubleshootv1beta2.Preflight); ok {
+			if spec.Spec.UploadResultsTo == "" {
+				if i == 0 {
+					preflightSpec = spec
+				} else {
+					preflightSpec = ConcatPreflightSpec(preflightSpec, spec)
+				}
+			} else {
+				uploadResultSpecs = append(uploadResultSpecs, preflightSpec)
+			}
+		} else if spec, ok := obj.(*troubleshootv1beta2.HostPreflight); ok {
+			if i == 0 {
+				hostPreflightSpec = spec
+			} else {
+				hostPreflightSpec = ConcatHostPreflightSpec(hostPreflightSpec, spec)
+			}
+		}
 	}
 
 	var collectResults []CollectResult
+	var uploadCollectResults []CollectResult
 	preflightSpecName := ""
 
 	progressCh := make(chan interface{})
@@ -136,14 +161,28 @@ func RunPreflights(interactive bool, output, format, arg string) error {
 		progressCollection.Go(collectNonInteractiveProgess(ctx, progressCh))
 	}
 
-	if preflightSpec, ok := obj.(*troubleshootv1beta2.Preflight); ok {
+	uploadResultsMap := make(map[string][]CollectResult)
+
+	if preflightSpec != nil {
 		r, err := collectInCluster(preflightSpec, progressCh)
 		if err != nil {
 			return errors.Wrap(err, "failed to collect in cluster")
 		}
 		collectResults = append(collectResults, *r)
 		preflightSpecName = preflightSpec.Name
-	} else if hostPreflightSpec, ok := obj.(*troubleshootv1beta2.HostPreflight); ok {
+	}
+	if uploadResultSpecs != nil {
+		for _, spec := range uploadResultSpecs {
+			r, err := collectInCluster(spec, progressCh)
+			if err != nil {
+				return errors.Wrap(err, "failed to collect in cluster")
+			}
+			uploadResultsMap[spec.Spec.UploadResultsTo] = append(uploadResultsMap[spec.Spec.UploadResultsTo], *r)
+			uploadCollectResults = append(collectResults, *r)
+			preflightSpecName = spec.Name
+		}
+	}
+	if hostPreflightSpec != nil {
 		if len(hostPreflightSpec.Spec.Collectors) > 0 {
 			r, err := collectHost(hostPreflightSpec, progressCh)
 			if err != nil {
@@ -161,7 +200,7 @@ func RunPreflights(interactive bool, output, format, arg string) error {
 		preflightSpecName = hostPreflightSpec.Name
 	}
 
-	if collectResults == nil {
+	if collectResults == nil && uploadCollectResults == nil {
 		return errors.New("no results")
 	}
 
@@ -170,9 +209,17 @@ func RunPreflights(interactive bool, output, format, arg string) error {
 		analyzeResults = append(analyzeResults, res.Analyze()...)
 	}
 
-	if preflightSpec, ok := obj.(*troubleshootv1beta2.Preflight); ok {
-		if preflightSpec.Spec.UploadResultsTo != "" {
-			err := uploadResults(preflightSpec.Spec.UploadResultsTo, analyzeResults)
+	uploadAnalyzeResultsMap := make(map[string][]*analyzer.AnalyzeResult)
+	for location, results := range uploadResultsMap {
+		for _, res := range results {
+			uploadAnalyzeResultsMap[location] = append(uploadAnalyzeResultsMap[location], res.Analyze()...)
+			analyzeResults = append(analyzeResults, uploadAnalyzeResultsMap[location]...)
+		}
+	}
+
+	if uploadAnalyzeResultsMap != nil {
+		for k, v := range uploadAnalyzeResultsMap {
+			err := uploadResults(k, v)
 			if err != nil {
 				progressCh <- err
 			}

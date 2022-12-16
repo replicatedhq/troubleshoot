@@ -71,7 +71,7 @@ func (c *CollectLogs) Collect(progressChan chan<- interface{}) (CollectorResult,
 				}
 
 				for _, containerName := range containerNames {
-					podLogs, err := savePodLogs(ctx, c.BundlePath, client, &pod, c.Collector.Name, containerName, c.Collector.Limits, false)
+					podLogs, err := savePodLogs(ctx, c.BundlePath, client, &pod, c.Collector.Name, containerName, c.Collector.Limits, false, true)
 					if err != nil {
 						key := fmt.Sprintf("%s/%s-errors.json", c.Collector.Name, pod.Name)
 						if containerName != "" {
@@ -89,7 +89,7 @@ func (c *CollectLogs) Collect(progressChan chan<- interface{}) (CollectorResult,
 				}
 			} else {
 				for _, container := range c.Collector.ContainerNames {
-					containerLogs, err := savePodLogs(ctx, c.BundlePath, client, &pod, c.Collector.Name, container, c.Collector.Limits, false)
+					containerLogs, err := savePodLogs(ctx, c.BundlePath, client, &pod, c.Collector.Name, container, c.Collector.Limits, false, true)
 					if err != nil {
 						key := fmt.Sprintf("%s/%s/%s-errors.json", c.Collector.Name, pod.Name, container)
 						err := output.SaveResult(c.BundlePath, key, marshalErrors([]string{err.Error()}))
@@ -132,8 +132,9 @@ func savePodLogs(
 	collectorName, container string,
 	limits *troubleshootv1beta2.LogLimits,
 	follow bool,
+	createSymLinks bool,
 ) (CollectorResult, error) {
-	return savePodLogsWithInterface(ctx, bundlePath, client, pod, collectorName, container, limits, follow)
+	return savePodLogsWithInterface(ctx, bundlePath, client, pod, collectorName, container, limits, follow, createSymLinks)
 }
 
 func savePodLogsWithInterface(
@@ -144,6 +145,7 @@ func savePodLogsWithInterface(
 	collectorName, container string,
 	limits *troubleshootv1beta2.LogLimits,
 	follow bool,
+	createSymLinks bool,
 ) (CollectorResult, error) {
 	podLogOpts := corev1.PodLogOptions{
 		Follow:    follow,
@@ -185,7 +187,9 @@ func savePodLogsWithInterface(
 		return nil, errors.Wrap(err, "failed to get log writer")
 	}
 	// NOTE: deferred calls are executed in LIFO order i.e called in reverse order
-	defer result.SymLinkResult(bundlePath, linkRelPathPrefix+".log", filePathPrefix+".log")
+	if createSymLinks {
+		defer result.SymLinkResult(bundlePath, linkRelPathPrefix+".log", filePathPrefix+".log")
+	}
 	defer result.CloseWriter(bundlePath, filePathPrefix+".log", logWriter)
 
 	_, err = io.Copy(logWriter, podLogs)
@@ -207,7 +211,9 @@ func savePodLogsWithInterface(
 		return nil, errors.Wrap(err, "failed to get previous log writer")
 	}
 	// NOTE: deferred calls are executed in LIFO order i.e called in reverse order
-	defer result.SymLinkResult(bundlePath, linkRelPathPrefix+"-previous.log", filePathPrefix+"-previous.log")
+	if createSymLinks {
+		defer result.SymLinkResult(bundlePath, linkRelPathPrefix+"-previous.log", filePathPrefix+"-previous.log")
+	}
 	defer result.CloseWriter(bundlePath, filePathPrefix+"-previous.log", logWriter)
 
 	_, err = io.Copy(prevLogWriter, podLogs)
