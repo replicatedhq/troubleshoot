@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"sync"
 	"time"
@@ -119,9 +120,9 @@ func runPodWithSpec(ctx context.Context, client *kubernetes.Clientset, runPodCol
 
 	pod := corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      podName,
-			Namespace: namespace,
-			Labels:    podLabels,
+			GenerateName: fmt.Sprintf("%s-", podName),
+			Namespace:    namespace,
+			Labels:       podLabels,
 		},
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "v1",
