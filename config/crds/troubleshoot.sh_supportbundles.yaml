@@ -181,6 +181,8 @@ spec:
                           type: object
                         checkName:
                           type: string
+                        clusterScoped:
+                          type: boolean
                         collectorName:
                           type: string
                         exclude:
@@ -230,6 +232,7 @@ spec:
                         yamlPath:
                           type: string
                       required:
+                      - clusterScoped
                       - kind
                       - name
                       - outcomes

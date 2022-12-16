@@ -230,6 +230,7 @@
               "clusterResource": {
                 "type": "object",
                 "required": [
+                  "clusterScoped",
                   "kind",
                   "name",
                   "outcomes",
@@ -244,6 +245,9 @@
                   },
                   "checkName": {
                     "type": "string"
+                  },
+                  "clusterScoped": {
+                    "type": "boolean"
                   },
                   "collectorName": {
                     "type": "string"
