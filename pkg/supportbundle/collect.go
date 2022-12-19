@@ -77,6 +77,10 @@ func runCollectors(collectors []*troubleshootv1beta2.Collect, additionalRedactor
 	collectSpecs = collect.EnsureCollectorInList(collectSpecs, troubleshootv1beta2.Collect{ClusterResources: &troubleshootv1beta2.ClusterResources{}})
 	collectSpecs = collect.EnsureClusterResourcesFirst(collectSpecs)
 
+	opts.KubernetesRestConfig.QPS = 100
+	opts.KubernetesRestConfig.Burst = 100
+	opts.KubernetesRestConfig.UserAgent = fmt.Sprintf("ReplicatedTroubleshoot/%s", version.Version())
+
 	k8sClient, err := kubernetes.NewForConfig(opts.KubernetesRestConfig)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to instantiate Kubernetes client")
