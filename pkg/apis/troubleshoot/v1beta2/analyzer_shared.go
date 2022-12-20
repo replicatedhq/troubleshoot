@@ -58,6 +58,18 @@ type DeploymentStatus struct {
 	Name        string     `json:"name" yaml:"name"`
 }
 
+type ClusterResource struct {
+	AnalyzeMeta   `json:",inline" yaml:",inline"`
+	CollectorName string     `json:"collectorName,omitempty" yaml:"collectorName,omitempty"`
+	Outcomes      []*Outcome `json:"outcomes" yaml:"outcomes"`
+	Kind          string     `json:"kind" yaml:"kind"`
+	ClusterScoped bool       `json:"clusterScoped" yaml:"clusterScoped"`
+	Namespace     string     `json:"namespace,omitempty" yaml:"namespace,omitempty"`
+	Name          string     `json:"name" yaml:"name"`
+	YamlPath      string     `json:"yamlPath" yaml:"yamlPath"`
+	ExpectedValue string     `json:"expectedValue,omitempty" yaml:"expectedValue,omitempty"`
+}
+
 type StatefulsetStatus struct {
 	AnalyzeMeta `json:",inline" yaml:",inline"`
 	Outcomes    []*Outcome `json:"outcomes" yaml:"outcomes"`
@@ -227,4 +239,5 @@ type Analyze struct {
 	RegistryImages           *RegistryImagesAnalyze    `json:"registryImages,omitempty" yaml:"registryImages,omitempty"`
 	WeaveReport              *WeaveReportAnalyze       `json:"weaveReport,omitempty" yaml:"weaveReport,omitempty"`
 	Sysctl                   *SysctlAnalyze            `json:"sysctl,omitempty" yaml:"sysctl,omitempty"`
+	ClusterResource          *ClusterResource          `json:"clusterResource,omitempty" yaml:"clusterResource,omitempty"`
 }
