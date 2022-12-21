@@ -6,7 +6,7 @@ tmpdir="$(mktemp -d)"
 bundle_archive_name="support-bundle.tar.gz"
 bundle_directory_name="support-bundle"
 
-# Support bundle generation
+echo "====== Generating support bundle from k8s cluster ======"
 ./bin/support-bundle --debug --interactive=false examples/support-bundle/e2e.yaml --output=$tmpdir/$bundle_archive_name
 if [ $? -ne 0 ]; then
     echo "support-bundle command failed"
@@ -42,10 +42,10 @@ if [ $EXIT_STATUS -ne 0 ]; then
     exit $EXIT_STATUS
 fi
 
-# Redact an existing support bundle
+echo "======= Redact an existing support bundle ======"
 redact_tmpdir="$(mktemp -d)"
 redacted_archive_name="$redact_tmpdir/redacted-support-bundle.tar.gz"
-./bin/support-bundle redact examples/support-bundle/e2e.yaml --bundle=$tmpdir/$bundle_archive_name --output=$redacted_archive_name
+./bin/support-bundle redact examples/redact/e2e.yaml --bundle=$tmpdir/$bundle_archive_name --output=$redacted_archive_name
 if [ $? -ne 0 ]; then
     echo "support-bundle redact command failed"
     exit $?
