@@ -15,25 +15,25 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-type CollectMSSql struct {
+type CollectMsSql struct {
 	Collector    *troubleshootv1beta2.Database
 	BundlePath   string
 	Namespace    string
 	ClientConfig *rest.Config
 	Client       kubernetes.Interface
-	ctx          context.Context
+	Context      context.Context
 	RBACErrors
 }
 
-func (c *CollectMSSql) Title() string {
+func (c *CollectMsSql) Title() string {
 	return collectorTitleOrDefault(c.Collector.CollectorMeta, "MSSSQLServer")
 }
 
-func (c *CollectMSSql) IsExcluded() (bool, error) {
+func (c *CollectMsSql) IsExcluded() (bool, error) {
 	return isExcluded(c.Collector.Exclude)
 }
 
-func (c *CollectMSSql) Collect(progressChan chan<- interface{}) (CollectorResult, error) {
+func (c *CollectMsSql) Collect(progressChan chan<- interface{}) (CollectorResult, error) {
 	databaseConnection := DatabaseConnection{}
 
 	db, err := sql.Open("mssql", c.Collector.URI)
@@ -48,7 +48,7 @@ func (c *CollectMSSql) Collect(progressChan chan<- interface{}) (CollectorResult
 		} else {
 			databaseConnection.IsConnected = true
 
-			mssqlVersion, err := parseMSSqlVersion(version)
+			mssqlVersion, err := parseMsSqlVersion(version)
 			if err != nil {
 				databaseConnection.Version = "Unknown"
 				databaseConnection.Error = err.Error()
@@ -74,8 +74,8 @@ func (c *CollectMSSql) Collect(progressChan chan<- interface{}) (CollectorResult
 	return output, nil
 }
 
-func parseMSSqlVersion(mssqlVersion string) (string, error) {
-	re := regexp.MustCompile("MSSQLServer ([0-9.]*)")
+func parseMsSqlVersion(mssqlVersion string) (string, error) {
+	re := regexp.MustCompile(".*SQL.*-\\s+([0-9.]+)")
 	matches := re.FindStringSubmatch(mssqlVersion)
 	if len(matches) < 2 {
 		return "", errors.Errorf("mssql version did not match regex: %q", mssqlVersion)
