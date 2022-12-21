@@ -117,9 +117,7 @@ func (c *CollectLogs) Collect(progressChan chan<- interface{}) (CollectorResult,
 					}
 				}
 			}
-
 		}
-
 	}()
 
 	select {
@@ -128,11 +126,9 @@ func (c *CollectLogs) Collect(progressChan chan<- interface{}) (CollectorResult,
 	case o := <-resultCh:
 		output = o
 	case err := <-errCh:
-		//review context.DeadlineExceeded; does it need to be
 		return nil, err
 	}
 	return output, nil
-
 }
 
 func listPodsInSelectors(ctx context.Context, client kubernetes.Interface, namespace string, selector []string) ([]corev1.Pod, []string) {
