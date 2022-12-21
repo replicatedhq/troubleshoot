@@ -12,7 +12,7 @@ To run a sample preflight check from a sample application, install the preflight
 ```
 curl https://krew.sh/preflight | bash
 ```
- and run, where https://preflight.replicated.com provides an **example** preflight spec:
+and run, where https://preflight.replicated.com provides an **example** preflight spec:
  
 ```
 kubectl preflight https://preflight.replicated.com
@@ -31,7 +31,7 @@ To collect a sample support bundle, install the troubleshoot kubectl plugin:
 ```
 curl https://krew.sh/support-bundle | bash
 ```
- and run, where https://support-bundle.replicated.com provides an **example** support bundle spec:
+and run, where https://support-bundle.replicated.com provides an **example** support bundle spec:
  
 ```
 kubectl support-bundle https://support-bundle.replicated.com
