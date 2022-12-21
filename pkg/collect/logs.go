@@ -265,12 +265,6 @@ func setLogLimits(podLogOpts *corev1.PodLogOptions, limits *troubleshootv1beta2.
 		podLogOpts.TailLines = &limits.MaxLines
 	}
 
-	defaultMaxBytes := int64(5000000)
-	if limits.MaxBytes == 0 {
-		podLogOpts.LimitBytes = &defaultMaxBytes
-		return
-	}
-
 	if limits.MaxBytes == 0 {
 		podLogOpts.LimitBytes = &defaultMaxBytes
 	} else {
