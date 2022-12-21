@@ -127,6 +127,9 @@ func (c *CollectLogs) Collect(progressChan chan<- interface{}) (CollectorResult,
 		return nil, fmt.Errorf("%s (%s) collector timeout exceeded", c.Title(), c.Collector.CollectorName)
 	case o := <-resultCh:
 		output = o
+	case err := <-errCh:
+		//review context.DeadlineExceeded; does it need to be
+		return nil, err
 	}
 	return output, nil
 
