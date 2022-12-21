@@ -13,6 +13,7 @@ import (
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/replicatedhq/troubleshoot/pkg/redact"
+	"k8s.io/klog/v2"
 )
 
 func RedactResult(bundlePath string, input CollectorResult, additionalRedactors []*troubleshootv1beta2.Redact) error {
@@ -32,11 +33,25 @@ func RedactResult(bundlePath string, input CollectorResult, additionalRedactors 
 			}
 
 			// Redact the target file of a symlink
+			// There is an opportunity for improving performance here by skipping symlinks
+			// if a target has been redacted already, but that would require
+			// some extra logic to ensure that a spec filtering only symlinks still works.
 			if info.Mode().Type() == os.ModeSymlink {
-				file, err = os.Readlink(filepath.Join(bundlePath, file))
+				symlink := file
+				target, err := os.Readlink(filepath.Join(bundlePath, symlink))
 				if err != nil {
 					return errors.Wrap(err, "failed to read symlink")
 				}
+
+				// Get the relative path to the target file to conform with
+				// the path formats of the CollectorResult
+				file, err = filepath.Rel(bundlePath, target)
+				if err != nil {
+					return errors.Wrap(err, "failed to get relative path")
+				}
+				klog.V(4).Infof("Redacting %s (symlink => %s)\n", file, symlink)
+			} else {
+				klog.V(4).Infof("Redacting %s\n", file)
 			}
 			r, err := input.GetReader(bundlePath, file)
 			if err != nil {
@@ -53,8 +68,8 @@ func RedactResult(bundlePath string, input CollectorResult, additionalRedactors 
 			reader = bytes.NewBuffer(v)
 		}
 
-		//If the file is .tar, .tgz or .tar.gz, it must not be redacted. Instead it is decompressed and each file inside the
-		//tar is decompressed, redacted and compressed back into the tar.
+		// If the file is .tar, .tgz or .tar.gz, it must not be redacted. Instead it is
+		// decompressed and each file inside the tar redacted and compressed back into the archive.
 		if filepath.Ext(file) == ".tar" || filepath.Ext(file) == ".tgz" || strings.HasSuffix(file, ".tar.gz") {
 			tmpDir, err := ioutil.TempDir("", "troubleshoot-subresult-")
 			if err != nil {

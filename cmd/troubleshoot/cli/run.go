@@ -208,16 +208,11 @@ func runTroubleshoot(v *viper.Viper, arg []string) error {
 		return errors.New("no collectors specified in support bundle")
 	}
 
-	for idx, redactor := range v.GetStringSlice("redactors") {
-		redactorObj, err := supportbundle.GetRedactorFromURI(redactor)
-		if err != nil {
-			return errors.Wrapf(err, "failed to get redactor spec %s, #%d", redactor, idx)
-		}
-
-		if redactorObj != nil {
-			additionalRedactors.Spec.Redactors = append(additionalRedactors.Spec.Redactors, redactorObj.Spec.Redactors...)
-		}
+	redactors, err := supportbundle.GetRedactorsFromURIs(v.GetStringSlice("redactors"))
+	if err != nil {
+		return errors.Wrap(err, "failed to get redactors")
 	}
+	additionalRedactors.Spec.Redactors = append(additionalRedactors.Spec.Redactors, redactors...)
 
 	var collectorCB func(chan interface{}, string)
 	progressChan := make(chan interface{}) // non-zero buffer can result in missed messages

@@ -91,16 +91,15 @@ func runCollect(v *viper.Viper, arg string) error {
 	troubleshootclientsetscheme.AddToScheme(scheme.Scheme)
 	decode := scheme.Codecs.UniversalDeserializer().Decode
 
-	additionalRedactors := &troubleshootv1beta2.Redactor{}
-	for idx, redactor := range v.GetStringSlice("redactors") {
-		redactorObj, err := supportbundle.GetRedactorFromURI(redactor)
-		if err != nil {
-			return errors.Wrapf(err, "failed to get redactor spec %s, #%d", redactor, idx)
-		}
+	redactors, err := supportbundle.GetRedactorsFromURIs(v.GetStringSlice("redactors"))
+	if err != nil {
+		return errors.Wrap(err, "failed to get redactors")
+	}
 
-		if redactorObj != nil {
-			additionalRedactors.Spec.Redactors = append(additionalRedactors.Spec.Redactors, redactorObj.Spec.Redactors...)
-		}
+	additionalRedactors := &troubleshootv1beta2.Redactor{
+		Spec: troubleshootv1beta2.RedactorSpec{
+			Redactors: redactors,
+		},
 	}
 
 	for i, additionalDoc := range multidocs {

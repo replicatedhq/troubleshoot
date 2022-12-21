@@ -155,7 +155,7 @@ func CollectSupportBundleFromSpec(spec *troubleshootv1beta2.SupportBundleSpec, a
 		return nil, errors.Wrap(err, "failed to write analysis")
 	}
 
-	if err := collect.TarSupportBundleDir(bundlePath, result, filename); err != nil {
+	if err := result.ArchiveSupportBundle(bundlePath, filename); err != nil {
 		return nil, errors.Wrap(err, "create bundle file")
 	}
 
@@ -188,17 +188,12 @@ func CollectSupportBundleFromURI(specURI string, redactorURIs []string, opts Sup
 		return nil, errors.Wrap(err, "could not bundle from URI")
 	}
 
-	additionalRedactors := &troubleshootv1beta2.Redactor{}
-	for _, redactor := range redactorURIs {
-		redactorObj, err := GetRedactorFromURI(redactor)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get redactor spec %s", redactor)
-		}
-
-		if redactorObj != nil {
-			additionalRedactors.Spec.Redactors = append(additionalRedactors.Spec.Redactors, redactorObj.Spec.Redactors...)
-		}
+	redactors, err := GetRedactorsFromURIs(redactorURIs)
+	if err != nil {
+		return nil, err
 	}
+	additionalRedactors := &troubleshootv1beta2.Redactor{}
+	additionalRedactors.Spec.Redactors = redactors
 
 	return CollectSupportBundleFromSpec(&supportBundle.Spec, additionalRedactors, opts)
 }

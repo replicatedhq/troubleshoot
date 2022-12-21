@@ -1,0 +1,10 @@
+apiVersion: troubleshoot.sh/v1beta2
+kind: Redactor
+metadata:
+  name: e2e-redactor
+spec:
+  redactors:
+    - name: redact-static-text
+      removals:
+        values:
+        - static
