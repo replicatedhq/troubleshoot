@@ -73,6 +73,11 @@ func Test_setLogLimits(t *testing.T) {
 			actual := corev1.PodLogOptions{}
 			setLogLimits(&actual, test.limits, convertMaxAgeToTime)
 
+			if test.expected.LimitBytes == &maxBytes {
+				assert.NotNil(t, actual.LimitBytes)
+				assert.Equal(t, *test.expected.LimitBytes, *actual.LimitBytes)
+			}
+
 			if test.expected.TailLines != nil {
 				assert.NotNil(t, actual.TailLines)
 				assert.Equal(t, *test.expected.TailLines, *actual.TailLines)
