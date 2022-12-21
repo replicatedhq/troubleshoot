@@ -178,6 +178,7 @@ func runWithoutTimeout(ctx context.Context, bundlePath string, clientConfig *res
 
 	limits := troubleshootv1beta2.LogLimits{
 		MaxLines: 10000,
+		MaxBytes: 5000000,
 	}
 	podLogs, err := savePodLogs(ctx, bundlePath, client, pod, collectorName, "", &limits, true, true)
 	if err != nil {

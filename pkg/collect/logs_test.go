@@ -7,13 +7,13 @@ import (
 
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	testclient "k8s.io/client-go/kubernetes/fake"
 )
 
 func Test_setLogLimits(t *testing.T) {
+	maxBytes := int64(5000000)
 	defaultMaxLines := int64(10000)
 	customLines := int64(20)
 	maxAge := "10h"
@@ -29,6 +29,17 @@ func Test_setLogLimits(t *testing.T) {
 		expected corev1.PodLogOptions
 		validate func(t *testing.T, podLogOpts *corev1.PodLogOptions)
 	}{
+		{
+			name: "max bytes",
+			limits: &troubleshootv1beta2.LogLimits{
+				MaxBytes: maxBytes,
+			},
+			expected: corev1.PodLogOptions{
+				LimitBytes: &maxBytes,
+				TailLines:  &defaultMaxLines,
+			},
+		},
+
 		{
 			name:   "default limits",
 			limits: nil,
@@ -58,23 +69,22 @@ func Test_setLogLimits(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			req := require.New(t)
 
 			actual := corev1.PodLogOptions{}
 			setLogLimits(&actual, test.limits, convertMaxAgeToTime)
 
 			if test.expected.TailLines != nil {
-				req.NotNil(actual.TailLines)
+				assert.NotNil(t, actual.TailLines)
 				assert.Equal(t, *test.expected.TailLines, *actual.TailLines)
 			} else {
-				req.Nil(actual.TailLines)
+				assert.Nil(t, actual.TailLines)
 			}
 
 			if test.expected.SinceTime != nil {
-				req.NotNil(actual.SinceTime)
+				assert.NotNil(t, actual.SinceTime)
 				assert.Equal(t, *test.expected.SinceTime, *actual.SinceTime)
 			} else {
-				req.Nil(actual.SinceTime)
+				assert.Nil(t, actual.SinceTime)
 			}
 		})
 	}
@@ -141,6 +151,7 @@ func Test_savePodLogs(t *testing.T) {
 			client := testclient.NewSimpleClientset()
 			limits := &troubleshootv1beta2.LogLimits{
 				MaxLines: 500,
+				MaxBytes: 5000000,
 			}
 			pod, err := client.CoreV1().Pods("my-namespace").Create(ctx, &corev1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
