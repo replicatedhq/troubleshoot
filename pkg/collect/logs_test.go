@@ -156,7 +156,7 @@ func Test_savePodLogs(t *testing.T) {
 			client := testclient.NewSimpleClientset()
 			limits := &troubleshootv1beta2.LogLimits{
 				MaxLines: 500,
-				MaxBytes: 5000000,
+				MaxBytes: 10000000,
 			}
 			pod, err := client.CoreV1().Pods("my-namespace").Create(ctx, &corev1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
