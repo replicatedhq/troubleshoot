@@ -61,8 +61,10 @@ Visualize using [pprof](https://github.com/google/pprof/blob/main/doc/README.md)
 ```sh
 go tool pprof -http=":8000" cpu.prof
 
-go tool pprof -http=":8000" mem.prof
+go tool pprof -http=":8001" mem.prof
 ```
+
+More on profiling please visit https://go.dev/doc/diagnostics#profiling
 
 ## Contribution workflow
 
