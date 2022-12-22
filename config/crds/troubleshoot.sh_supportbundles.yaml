@@ -1747,6 +1747,9 @@ spec:
                           properties:
                             maxAge:
                               type: string
+                            maxBytes:
+                              format: int64
+                              type: integer
                             maxLines:
                               format: int64
                               type: integer
