@@ -14,6 +14,7 @@ import (
 	analyzer "github.com/replicatedhq/troubleshoot/pkg/analyze"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/replicatedhq/troubleshoot/pkg/collect"
+	"github.com/replicatedhq/troubleshoot/pkg/constants"
 	"github.com/replicatedhq/troubleshoot/pkg/convert"
 	"k8s.io/client-go/rest"
 	"k8s.io/klog/v2"
@@ -127,7 +128,7 @@ func CollectSupportBundleFromSpec(spec *troubleshootv1beta2.SupportBundleSpec, a
 		return nil, errors.Wrap(err, "failed to get version file")
 	}
 
-	err = result.SaveResult(bundlePath, VersionFilename, version)
+	err = result.SaveResult(bundlePath, constants.VersionFilename, version)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to write version")
 	}

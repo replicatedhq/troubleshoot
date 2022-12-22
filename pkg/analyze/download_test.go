@@ -9,7 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestDownloadAndExtractBundle(t *testing.T) {
+func TestDownloadAndExtractSupportBundle(t *testing.T) {
 	// TODO: Add tests for web url downloads
 	tests := []struct {
 		name      string
@@ -34,11 +34,17 @@ func TestDownloadAndExtractBundle(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tmpDir, _, err := DownloadAndExtractBundle(tt.bundleURL)
+			tmpDir, bundleDir, err := DownloadAndExtractSupportBundle(tt.bundleURL)
 			defer os.RemoveAll(tmpDir) // clean up. Ignore error
 
-			assert.Equal(t, (err != nil), tt.wantErr)
-			t.Log(err)
+			if err == nil {
+				assert.DirExists(t, tmpDir)
+				assert.DirExists(t, filepath.Join(tmpDir, bundleDir))
+				assert.FileExists(t, filepath.Join(tmpDir, bundleDir, "version.yaml"))
+			} else {
+				assert.Equal(t, "", tmpDir)
+				assert.Equal(t, "", bundleDir)
+			}
 		})
 	}
 }

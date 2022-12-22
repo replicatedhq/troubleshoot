@@ -317,6 +317,8 @@ func (r CollectorResult) ArchiveSupportBundle(bundlePath string, outputFilename 
 }
 
 // CollectorResultFromBundle creates a CollectorResult from a bundle directory
+// The bundle directory is not necessarily a support bundle, it can be any directory
+// of collected files as part of other operations or files that are already on disk.
 func CollectorResultFromBundle(bundleDir string) (CollectorResult, error) {
 	// Check directory exists
 	if _, err := os.Stat(bundleDir); os.IsNotExist(err) {

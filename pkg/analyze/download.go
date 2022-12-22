@@ -11,6 +11,7 @@ import (
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	troubleshootscheme "github.com/replicatedhq/troubleshoot/pkg/client/troubleshootclientset/scheme"
+	"github.com/replicatedhq/troubleshoot/pkg/constants"
 	"github.com/replicatedhq/troubleshoot/pkg/docrewrite"
 	"github.com/replicatedhq/troubleshoot/pkg/logger"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -54,7 +55,7 @@ func AnalyzeLocal(localBundlePath string, analyzers []*troubleshootv1beta2.Analy
 }
 
 func DownloadAndAnalyze(bundleURL string, analyzersSpec string) ([]*AnalyzeResult, error) {
-	tmpDir, rootDir, err := DownloadAndExtractBundle(bundleURL)
+	tmpDir, rootDir, err := DownloadAndExtractSupportBundle(bundleURL)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to find root dir")
 	}
@@ -81,7 +82,7 @@ func DownloadAndAnalyze(bundleURL string, analyzersSpec string) ([]*AnalyzeResul
 	return AnalyzeLocal(rootDir, analyzers, hostAnalyzers)
 }
 
-func DownloadAndExtractBundle(bundleURL string) (string, string, error) {
+func DownloadAndExtractSupportBundle(bundleURL string) (string, string, error) {
 	tmpDir, err := os.MkdirTemp("", "troubleshoot-k8s")
 	if err != nil {
 		return "", "", errors.Wrap(err, "failed to create temp dir")
@@ -98,10 +99,10 @@ func DownloadAndExtractBundle(bundleURL string) (string, string, error) {
 		return "", "", errors.Wrap(err, "failed to find root dir")
 	}
 
-	_, err = os.Stat(filepath.Join(bundleDir, "version.yaml"))
+	_, err = os.Stat(filepath.Join(bundleDir, constants.VersionFilename))
 	if err != nil {
 		os.RemoveAll(tmpDir)
-		return "", "", errors.Wrap(err, "failed to read version.yaml")
+		return "", "", errors.Wrap(err, "failed to read "+constants.VersionFilename)
 	}
 
 	return tmpDir, bundleDir, nil
@@ -280,7 +281,7 @@ func FindBundleRootDir(localBundlePath string) (string, error) {
 
 	isInSubDir := true
 	for _, name := range names {
-		if name == "version.yaml" {
+		if name == constants.VersionFilename {
 			isInSubDir = false
 			break
 		}

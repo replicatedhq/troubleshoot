@@ -44,7 +44,7 @@ For more information on redactors visit https://troubleshoot.sh/docs/redact/
 			}
 
 			// 2. Download the bundle and extract it
-			tmpDir, bundleDir, err := analyzer.DownloadAndExtractBundle(v.GetString("bundle"))
+			tmpDir, bundleDir, err := analyzer.DownloadAndExtractSupportBundle(v.GetString("bundle"))
 			if err != nil {
 				return err
 			}
