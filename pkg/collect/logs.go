@@ -46,66 +46,88 @@ func (c *CollectLogs) Collect(progressChan chan<- interface{}) (CollectorResult,
 
 	ctx := context.Background()
 
-	if c.SinceTime != nil {
-		if c.Collector.Limits == nil {
-			c.Collector.Limits = new(troubleshootv1beta2.LogLimits)
+	const timeout = 60 //timeout in seconds used for context timeout value
+
+	// timeout context
+	ctxTimeout, cancel := context.WithTimeout(context.Background(), timeout*time.Second)
+	defer cancel()
+
+	errCh := make(chan error, 1)
+	resultCh := make(chan CollectorResult, 1)
+
+	//wrapped code go func for context timeout solution
+	go func() {
+
+		output := NewResult()
+
+		if c.SinceTime != nil {
+			if c.Collector.Limits == nil {
+				c.Collector.Limits = new(troubleshootv1beta2.LogLimits)
+			}
+			c.Collector.Limits.SinceTime = metav1.NewTime(*c.SinceTime)
 		}
-		c.Collector.Limits.SinceTime = metav1.NewTime(*c.SinceTime)
-	}
 
-	pods, podsErrors := listPodsInSelectors(ctx, client, c.Collector.Namespace, c.Collector.Selector)
-	if len(podsErrors) > 0 {
-		output.SaveResult(c.BundlePath, getLogsErrorsFileName(c.Collector), marshalErrors(podsErrors))
-	}
+		pods, podsErrors := listPodsInSelectors(ctx, client, c.Collector.Namespace, c.Collector.Selector)
+		if len(podsErrors) > 0 {
+			output.SaveResult(c.BundlePath, getLogsErrorsFileName(c.Collector), marshalErrors(podsErrors))
+		}
 
-	if len(pods) > 0 {
-		for _, pod := range pods {
-			if len(c.Collector.ContainerNames) == 0 {
-				// make a list of all the containers in the pod, so that we can get logs from all of them
-				containerNames := []string{}
-				for _, container := range pod.Spec.Containers {
-					containerNames = append(containerNames, container.Name)
-				}
-				for _, container := range pod.Spec.InitContainers {
-					containerNames = append(containerNames, container.Name)
-				}
+		if len(pods) > 0 {
+			for _, pod := range pods {
+				if len(c.Collector.ContainerNames) == 0 {
+					// make a list of all the containers in the pod, so that we can get logs from all of them
+					containerNames := []string{}
+					for _, container := range pod.Spec.Containers {
+						containerNames = append(containerNames, container.Name)
+					}
+					for _, container := range pod.Spec.InitContainers {
+						containerNames = append(containerNames, container.Name)
+					}
 
-				for _, containerName := range containerNames {
-					podLogs, err := savePodLogs(ctx, c.BundlePath, client, &pod, c.Collector.Name, containerName, c.Collector.Limits, false, true)
-					if err != nil {
-						key := fmt.Sprintf("%s/%s-errors.json", c.Collector.Name, pod.Name)
-						if containerName != "" {
-							key = fmt.Sprintf("%s/%s/%s-errors.json", c.Collector.Name, pod.Name, containerName)
-						}
-						err := output.SaveResult(c.BundlePath, key, marshalErrors([]string{err.Error()}))
+					for _, containerName := range containerNames {
+						podLogs, err := savePodLogs(ctx, c.BundlePath, client, &pod, c.Collector.Name, containerName, c.Collector.Limits, false, true)
 						if err != nil {
-							return nil, err
+							key := fmt.Sprintf("%s/%s-errors.json", c.Collector.Name, pod.Name)
+							if containerName != "" {
+								key = fmt.Sprintf("%s/%s/%s-errors.json", c.Collector.Name, pod.Name, containerName)
+							}
+							err := output.SaveResult(c.BundlePath, key, marshalErrors([]string{err.Error()}))
+							if err != nil {
+								errCh <- err
+							}
+							continue
 						}
-						continue
+						output.AddResult(podLogs)
+
+						resultCh <- output
 					}
-					for k, v := range podLogs {
-						output[k] = v
-					}
-				}
-			} else {
-				for _, container := range c.Collector.ContainerNames {
-					containerLogs, err := savePodLogs(ctx, c.BundlePath, client, &pod, c.Collector.Name, container, c.Collector.Limits, false, true)
-					if err != nil {
-						key := fmt.Sprintf("%s/%s/%s-errors.json", c.Collector.Name, pod.Name, container)
-						err := output.SaveResult(c.BundlePath, key, marshalErrors([]string{err.Error()}))
+				} else {
+					for _, container := range c.Collector.ContainerNames {
+						containerLogs, err := savePodLogs(ctx, c.BundlePath, client, &pod, c.Collector.Name, container, c.Collector.Limits, false, true)
 						if err != nil {
-							return nil, err
+							key := fmt.Sprintf("%s/%s/%s-errors.json", c.Collector.Name, pod.Name, container)
+							err := output.SaveResult(c.BundlePath, key, marshalErrors([]string{err.Error()}))
+							if err != nil {
+								errCh <- err
+							}
+							continue
 						}
-						continue
-					}
-					for k, v := range containerLogs {
-						output[k] = v
+						output.AddResult(containerLogs)
+						resultCh <- output
 					}
 				}
 			}
 		}
-	}
+	}()
 
+	select {
+	case <-ctxTimeout.Done():
+		return nil, fmt.Errorf("%s (%s) collector timeout exceeded", c.Title(), c.Collector.CollectorName)
+	case o := <-resultCh:
+		output = o
+	case err := <-errCh:
+		return nil, err
+	}
 	return output, nil
 }
 
