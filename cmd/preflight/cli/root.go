@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/go-logr/logr"
+	"github.com/replicatedhq/troubleshoot/cmd/util"
 	"github.com/replicatedhq/troubleshoot/pkg/k8sutil"
 	"github.com/replicatedhq/troubleshoot/pkg/preflight"
 	"github.com/spf13/cobra"
@@ -22,6 +23,7 @@ that a cluster meets the requirements to run an application.`,
 		SilenceUsage: true,
 		PreRun: func(cmd *cobra.Command, args []string) {
 			v := viper.GetViper()
+			v.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
 			v.BindPFlags(cmd.Flags())
 
 			if !v.GetBool("debug") {
@@ -29,8 +31,10 @@ that a cluster meets the requirements to run an application.`,
 			}
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			v := viper.GetViper()
-			return preflight.RunPreflights(v.GetBool("interactive"), v.GetString("output"), v.GetString("format"), args)
+			return util.ProfiledRunE(cmd, args, func(cmd *cobra.Command, args []string) error {
+				v := viper.GetViper()
+				return preflight.RunPreflights(v.GetBool("interactive"), v.GetString("output"), v.GetString("format"), args)
+			})
 		},
 	}
 
@@ -39,9 +43,10 @@ that a cluster meets the requirements to run an application.`,
 	cmd.AddCommand(VersionCmd())
 	preflight.AddFlags(cmd.PersistentFlags())
 
-	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
-
 	k8sutil.AddFlags(cmd.Flags())
+
+	// CPU and memory profiling flags
+	util.AddProfilingFlags(cmd)
 
 	return cmd
 }

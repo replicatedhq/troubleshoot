@@ -1,10 +1,12 @@
 package cli
 
 import (
+	"fmt"
 	"os"
 	"strings"
 
 	"github.com/go-logr/logr"
+	"github.com/replicatedhq/troubleshoot/cmd/util"
 	"github.com/replicatedhq/troubleshoot/pkg/k8sutil"
 	"github.com/replicatedhq/troubleshoot/pkg/logger"
 	"github.com/spf13/cobra"
@@ -28,11 +30,14 @@ func RootCmd() *cobra.Command {
 			}
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			v := viper.GetViper()
+			return util.ProfiledRunE(cmd, args, func(cmd *cobra.Command, args []string) error {
+				v := viper.GetViper()
 
-			logger.SetQuiet(v.GetBool("quiet"))
+				logger.SetQuiet(v.GetBool("quiet"))
+				fmt.Println(v.GetString("cpuprofile"))
 
-			return runAnalyzers(v, args[0])
+				return runAnalyzers(v, args[0])
+			})
 		},
 	}
 
