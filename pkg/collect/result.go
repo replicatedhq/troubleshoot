@@ -323,19 +323,9 @@ func CollectorResultFromBundle(bundleDir string) (CollectorResult, error) {
 		return nil, errors.Wrap(err, "bundle directory does not exist")
 	}
 
-	// Ensure this is indeed a support bundle directory
-	// All support bundles have a version.yaml file
-	// TODO: We might want to unmarshal the version.yaml file as well
-	_, err := os.Stat(filepath.Join(bundleDir, "version.yaml"))
-	if err != nil {
-		return nil, errors.Wrap(err,
-			"failed to read version.yaml from the bundle directory. This is not a valid support bundle directory",
-		)
-	}
-
 	// Walk the directory and add all files to the collector result
 	result := make(CollectorResult)
-	err = filepath.Walk(bundleDir, func(path string, info os.FileInfo, err error) error {
+	err := filepath.Walk(bundleDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}

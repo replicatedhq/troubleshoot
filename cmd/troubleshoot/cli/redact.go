@@ -79,7 +79,7 @@ For more information on redactors visit https://troubleshoot.sh/docs/redact/
 	cmd.Flags().String("bundle", "", "file path of the support bundle archive to redact")
 	cmd.MarkFlagRequired("bundle")
 	cmd.Flags().BoolP("quiet", "q", false, "enable/disable error messaging and only show parseable output")
-	cmd.Flags().String("output", "", "file path of where to save the redacted support bundle archive (default \"redacted-support-bundle-YYYY-MM-DDTHH_MM_SS.tar.gz\")")
+	cmd.Flags().StringP("output", "o", "", "file path of where to save the redacted support bundle archive (default \"redacted-support-bundle-YYYY-MM-DDTHH_MM_SS.tar.gz\")")
 
 	return cmd
 }

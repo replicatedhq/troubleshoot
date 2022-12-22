@@ -32,15 +32,8 @@ func TestCollectorResultFromBundle(t *testing.T) {
 			want: CollectorResult{
 				"cluster-resources/pods/logs/default/static-hi/static-hi.log": nil,
 				"static-hi.log": nil,
-				"version.yaml":  nil,
 			},
 			wantErr: false,
-		},
-		{
-			name:      "fails to create collector results from a directory that is not a bundle",
-			bundleDir: filepath.Join(testutils.FileDir(), "../../testdata/supportbundle"),
-			want:      nil,
-			wantErr:   true,
 		},
 		{
 			name:      "fails to create collector results from a missing directory",

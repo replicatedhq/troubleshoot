@@ -1,4 +1,0 @@
-apiVersion: troubleshoot.sh/v1beta2
-kind: SupportBundle
-spec:
-  versionNumber: v0.50.0-13-gd9e2465-dirty
