@@ -37,18 +37,32 @@ spec:
           - pass:
               message: This cluster has a node with enough memory.
     - nodeResources:
-        checkName: There must be at least 3 nodes in the cluster
+        checkName: Must have 1 node with 16 GB (available) memory and 4 cores of amd64 arch (on a single node)
+        filters:
+          allocatableMemory: 16Gi
+          cpuArchitecture: amd64
+          cpuCapacity: "4"
         outcomes:
           - fail:
-              when: "count() < 3"
-              message: This application requires at least 3 nodes in the cluster
+              when: "< 1"
+              message: This application requires at least 1 node with amd64 arch and 16GB available memory
           - pass:
-              message: This cluster haas sufficient nodes
+              message: This cluster has a node with the correct architecture and enough memory.
     - nodeResources:
         checkName: There must be a total of at least 32Gi of memory on all nodes
         outcomes:
           - fail:
               when: "sum(memoryCapacity) < 32Gi"
               message: This application requires that 32Gi or more memory be available to the cluster
+          - pass:
+              message: This cluster haas sufficient memory
+    - nodeResources:
+        checkName: There must be a total of at least 16Gi of memory on amd64 nodes
+        filters:
+          cpuArchitecture: amd64
+        outcomes:
+          - fail:
+              when: "sum(memoryCapacity) < 16Gi"
+              message: This application requires that 16Gi or more memory on amd64 nodes be available to the cluster
           - pass:
               message: This cluster haas sufficient memory

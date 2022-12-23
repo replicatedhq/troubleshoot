@@ -351,6 +351,17 @@ func nodeMatchesFilters(node corev1.Node, filters *troubleshootv1beta2.NodeResou
 		}
 	}
 
+	if filters.CPUArchitecture != "" {
+		parsed := filters.CPUArchitecture
+		if parsed != "" {
+			return false, errors.Errorf("failed to parse cpu architecture")
+		}
+
+		if !strings.EqualFold(node.Status.NodeInfo.Architecture, parsed) {
+			return false, nil
+		}
+	}
+
 	if filters.CPUCapacity != "" {
 		parsed, err := resource.ParseQuantity(filters.CPUCapacity)
 		if err != nil {
