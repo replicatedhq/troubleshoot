@@ -16,7 +16,7 @@ spec:
           - pass:
               message: This cluster has enough nodes.
     - nodeResources:
-        checkName: Must have 3 nodes with at least 6 cores
+        checkName: Must have 3 nodes with at least 6 cores each
         filters:
           cpuCapacity: "6"
         outcomes:
@@ -24,12 +24,12 @@ spec:
               when: "< 3"
               message: This application requires at least 3 nodes with 6 cores each
           - pass:
-              message: This cluster has enough nodes with enough codes
+              message: This cluster has enough nodes with enough cores
     - nodeResources:
-        checkName: Must have 1 node with 16 GB (available) memory and 5 cores (on a single node)
+        checkName: Must have 1 node with 16 GB (available) memory and 10 cores (on a single node)
         filters:
           allocatableMemory: 16Gi
-          cpuCapacity: "5"
+          cpuCapacity: "10"
         outcomes:
           - fail:
               when: "< 1"
@@ -37,11 +37,11 @@ spec:
           - pass:
               message: This cluster has a node with enough memory.
     - nodeResources:
-        checkName: Must have 1 node with 16 GB (available) memory and 4 cores of amd64 arch (on a single node)
+        checkName: Must have 1 node with 16 GB (available) memory and 6 cores of amd64 arch (on a single node)
         filters:
           allocatableMemory: 16Gi
           cpuArchitecture: amd64
-          cpuCapacity: "4"
+          cpuCapacity: "6"
         outcomes:
           - fail:
               when: "< 1"
@@ -55,14 +55,14 @@ spec:
               when: "sum(memoryCapacity) < 32Gi"
               message: This application requires that 32Gi or more memory be available to the cluster
           - pass:
-              message: This cluster haas sufficient memory
+              message: This cluster has sufficient memory
     - nodeResources:
-        checkName: There must be a total of at least 16Gi of memory on amd64 nodes
+        checkName: There must be a total of at least 32Gi of memory on amd64 nodes
         filters:
           cpuArchitecture: amd64
         outcomes:
           - fail:
-              when: "sum(memoryCapacity) < 16Gi"
-              message: This application requires that 16Gi or more memory on amd64 nodes be available to the cluster
+              when: "sum(memoryCapacity) < 32Gi"
+              message: This application requires that 32Gi or more memory on amd64 nodes be available to the cluster
           - pass:
-              message: This cluster haas sufficient memory
+              message: This cluster has sufficient memory
