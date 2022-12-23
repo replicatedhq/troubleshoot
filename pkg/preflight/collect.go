@@ -172,7 +172,6 @@ func Collect(opts CollectOpts, p *troubleshootv1beta2.Preflight) (CollectResult,
 			allCollectors = append(allCollectors, collectors...)
 		}
 
-		foundForbidden = false
 		for _, collector := range collectors {
 			for _, e := range collector.GetRBACErrors() {
 				foundForbidden = true
