@@ -37,15 +37,30 @@ spec:
           - pass:
               message: This cluster has a node with enough memory.
     - nodeResources:
-        checkName: Must have 1 node with 16 GB (available) memory and 6 cores of amd64 arch (on a single node)
+        checkName: Must have 1 node with 16 GB (available) memory and 4 cores of amd64 arch (on a single node)
         filters:
+          allocatableMemory: 16Gi
+          cpuArchitecture: amd64
+          cpuCapacity: "4"
+        outcomes:
+          - fail:
+              when: "< 1"
+              message: This application requires at least 1 node with amd64 arch and 16GB available memory
+          - pass:
+              message: This cluster has a node with the correct architecture and enough memory.
+    - nodeResources:
+        checkName: Must have 1 manager node with 16 GB (available) memory and 4 cores of amd64 arch
+        filters:
+          selector:
+            matchLabel:
+              node-role.kubernetes.io/master: ""
           allocatableMemory: 16Gi
           cpuArchitecture: amd64
           cpuCapacity: "6"
         outcomes:
           - fail:
               when: "< 1"
-              message: This application requires at least 1 node with amd64 arch and 16GB available memory
+              message: This application requires at least 1 manager node with amd64 arch, 16GB available memory, and the label `node-role.kubernetes.io/master=""`
           - pass:
               message: This cluster has a node with the correct architecture and enough memory.
     - nodeResources:
