@@ -31,7 +31,7 @@ func Test_LoadFromConfigMapMatchingLabel(t *testing.T) {
 						Name:      "configmap",
 						Namespace: "default",
 						Labels: map[string]string{
-							"troubleshoot.io/kind": "supportbundle-spec",
+							"troubleshoot.io/kind": "support-bundle",
 						},
 					},
 					Data: map[string]string{
@@ -44,7 +44,7 @@ spec:
 	- runPod:
 		name: "run-ping"
 		namespace: default
-		podSpec: 
+		podSpec:
 		  containers:
 		  - name: run-ping
 			image: busybox:1
@@ -63,7 +63,7 @@ spec:
 	- runPod:
 		name: "run-ping"
 		namespace: default
-		podSpec: 
+		podSpec:
 		  containers:
 		  - name: run-ping
 			image: busybox:1
@@ -79,7 +79,7 @@ spec:
 						Name:      "configmap",
 						Namespace: "default",
 						Labels: map[string]string{
-							"troubleshoot.io/kind": "supportbundle-spec",
+							"troubleshoot.io/kind": "support-bundle",
 						},
 					},
 					Data: map[string]string{
@@ -92,7 +92,7 @@ spec:
 	- runPod:
 		name: "run-ping"
 		namespace: default
-		podSpec: 
+		podSpec:
 		  containers:
 		  - name: run-ping
 			image: busybox:1
@@ -123,7 +123,7 @@ spec:
 	- runPod:
 		name: "run-ping"
 		namespace: default
-		podSpec: 
+		podSpec:
 		  containers:
 		  - name: run-ping
 			image: busybox:1
@@ -199,7 +199,7 @@ spec:
 						Name:      "configmap",
 						Namespace: "default",
 						Labels: map[string]string{
-							"troubleshoot.io/kind": "supportbundle-spec",
+							"troubleshoot.io/kind": "support-bundle",
 						},
 					},
 					Data: map[string]string{
@@ -217,7 +217,7 @@ spec:
 						Name:      "configmap-2",
 						Namespace: "default",
 						Labels: map[string]string{
-							"troubleshoot.io/kind": "supportbundle-spec",
+							"troubleshoot.io/kind": "support-bundle",
 						},
 					},
 					Data: map[string]string{
@@ -256,7 +256,7 @@ spec:
 						Name:      "configmap",
 						Namespace: "some-namespace",
 						Labels: map[string]string{
-							"troubleshoot.io/kind": "supportbundle-spec",
+							"troubleshoot.io/kind": "support-bundle",
 						},
 					},
 					Data: map[string]string{
@@ -274,7 +274,7 @@ spec:
 						Name:      "configmap-2",
 						Namespace: "some-namespace-2",
 						Labels: map[string]string{
-							"troubleshoot.io/kind": "supportbundle-spec",
+							"troubleshoot.io/kind": "support-bundle",
 						},
 					},
 					Data: map[string]string{
@@ -313,7 +313,7 @@ spec:
 						Name:      "configmap",
 						Namespace: "some-namespace",
 						Labels: map[string]string{
-							"troubleshoot.io/kind": "supportbundle-spec-wrong",
+							"troubleshoot.io/kind": "support-bundle-wrong",
 						},
 					},
 					Data: map[string]string{
@@ -331,7 +331,7 @@ spec:
 						Name:      "configmap-2",
 						Namespace: "some-namespace-2",
 						Labels: map[string]string{
-							"troubleshoot.io/kind": "supportbundle-spec",
+							"troubleshoot.io/kind": "support-bundle",
 						},
 					},
 					Data: map[string]string{
@@ -364,7 +364,7 @@ spec:
 				_, err := client.CoreV1().ConfigMaps(configmap.Namespace).Create(ctx, &configmap, metav1.CreateOptions{})
 				require.NoError(t, err)
 			}
-			got, err := LoadFromConfigMapMatchingLabel(client, "troubleshoot.io/kind=supportbundle-spec", "", "support-bundle-spec")
+			got, err := LoadFromConfigMapMatchingLabel(client, "troubleshoot.io/kind=support-bundle", "", "support-bundle-spec")
 			if tt.wantErr {
 				assert.Error(t, err)
 			} else {
@@ -394,7 +394,7 @@ func TestUserProvidedNamespace_LoadFromConfigMapMatchingLabel(t *testing.T) {
 						Name:      "configmap",
 						Namespace: "some-namespace",
 						Labels: map[string]string{
-							"troubleshoot.io/kind": "supportbundle-spec",
+							"troubleshoot.io/kind": "support-bundle",
 						},
 					},
 					Data: map[string]string{
@@ -432,7 +432,7 @@ spec:
 						Name:      "configmap",
 						Namespace: "not-your-namespace",
 						Labels: map[string]string{
-							"troubleshoot.io/kind": "supportbundle-spec",
+							"troubleshoot.io/kind": "support-bundle",
 						},
 					},
 					Data: map[string]string{
@@ -460,7 +460,7 @@ spec:
 				_, err := client.CoreV1().ConfigMaps(configmap.Namespace).Create(ctx, &configmap, metav1.CreateOptions{})
 				require.NoError(t, err)
 			}
-			got, err := LoadFromConfigMapMatchingLabel(client, "troubleshoot.io/kind=supportbundle-spec", "some-namespace", "support-bundle-spec")
+			got, err := LoadFromConfigMapMatchingLabel(client, "troubleshoot.io/kind=support-bundle", "some-namespace", "support-bundle-spec")
 			if tt.wantErr {
 				assert.Error(t, err)
 			} else {
@@ -490,7 +490,7 @@ func TestRedactors_LoadFromConfigMapMatchingLabel(t *testing.T) {
 						Name:      "configmap",
 						Namespace: "default",
 						Labels: map[string]string{
-							"troubleshoot.io/kind": "supportbundle-spec",
+							"troubleshoot.io/kind": "support-bundle",
 						},
 					},
 					Data: map[string]string{
@@ -532,7 +532,7 @@ spec:
 						Name:      "configmap",
 						Namespace: "default",
 						Labels: map[string]string{
-							"troubleshoot.io/kind": "supportbundle-spec",
+							"troubleshoot.io/kind": "support-bundle",
 						},
 					},
 					Data: map[string]string{
@@ -562,7 +562,7 @@ spec:
 				_, err := client.CoreV1().ConfigMaps(configmap.Namespace).Create(ctx, &configmap, metav1.CreateOptions{})
 				require.NoError(t, err)
 			}
-			got, err := LoadFromConfigMapMatchingLabel(client, "troubleshoot.io/kind=supportbundle-spec", "", "redactor-spec")
+			got, err := LoadFromConfigMapMatchingLabel(client, "troubleshoot.io/kind=support-bundle", "", "redactor-spec")
 			if tt.wantErr {
 				assert.Error(t, err)
 			} else {
