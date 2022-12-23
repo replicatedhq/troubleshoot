@@ -6,7 +6,7 @@ import (
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
-	"github.com/shirou/gopsutil/cpu"
+	"github.com/shirou/gopsutil/v3/cpu"
 )
 
 type CPUInfo struct {
