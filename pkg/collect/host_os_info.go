@@ -50,7 +50,5 @@ func (c *CollectHostOS) Collect(progressChan chan<- interface{}) (map[string][]b
 	output := NewResult()
 	output.SaveResult(c.BundlePath, HostOSInfoPath, bytes.NewBuffer(b))
 
-	return map[string][]byte{
-		HostOSInfoPath: b,
-	}, nil
+	return output, nil
 }

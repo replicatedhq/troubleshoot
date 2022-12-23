@@ -45,7 +45,5 @@ func (c *CollectHostMemory) Collect(progressChan chan<- interface{}) (map[string
 	output := NewResult()
 	output.SaveResult(c.BundlePath, HostMemoryPath, bytes.NewBuffer(b))
 
-	return map[string][]byte{
-		HostMemoryPath: b,
-	}, nil
+	return output, nil
 }

@@ -52,7 +52,5 @@ func (c *CollectHostCPU) Collect(progressChan chan<- interface{}) (map[string][]
 	output := NewResult()
 	output.SaveResult(c.BundlePath, HostCPUPath, bytes.NewBuffer(b))
 
-	return map[string][]byte{
-		HostCPUPath: b,
-	}, nil
+	return output, nil
 }
