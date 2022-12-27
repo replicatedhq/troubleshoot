@@ -32,6 +32,7 @@ import (
 	"k8s.io/client-go/rest"
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 
+	"github.com/replicatedhq/troubleshoot/pkg/constants"
 	"github.com/replicatedhq/troubleshoot/pkg/k8sutil/discovery"
 )
 
@@ -289,9 +290,7 @@ func (c *CollectClusterResources) Collect(progressChan chan<- interface{}) (Coll
 	})
 
 	// run the collectors
-
-	maxNbConcurrentGoroutines := 5
-	concurrentGoroutines := make(chan struct{}, maxNbConcurrentGoroutines)
+	concurrentGoroutines := make(chan struct{}, constants.DEFAULT_MAX_NB_CONCURRENT_COLLECTORS)
 
 	for _, thisClusterResourceCollector := range clusterResourceCollectors {
 		wg.Add(1)
