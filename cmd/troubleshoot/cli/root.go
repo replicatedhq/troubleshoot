@@ -22,15 +22,16 @@ func RootCmd() *cobra.Command {
 from a server that can be used to assist when troubleshooting a Kubernetes cluster.`,
 		SilenceUsage: true,
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
+			v := viper.GetViper()
+			v.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
+			v.BindPFlags(cmd.Flags())
+
 			if err := util.StartProfiling(); err != nil {
 				logger.Printf("Failed to start profiling: %v", err)
 			}
 		},
 		PreRun: func(cmd *cobra.Command, args []string) {
 			v := viper.GetViper()
-			v.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
-			v.BindPFlags(cmd.Flags())
-
 			if !v.GetBool("debug") {
 				klog.SetLogger(logr.Discard())
 			}
