@@ -351,8 +351,8 @@ func nodeMatchesFilters(node corev1.Node, filters *troubleshootv1beta2.NodeResou
 		}
 	}
 
-	if filters.CPUArchitecture != "" {
-		parsed := filters.CPUArchitecture
+	if filters.Architecture != "" {
+		parsed := filters.Architecture
 
 		if !strings.EqualFold(node.Status.NodeInfo.Architecture, parsed) {
 			return false, nil

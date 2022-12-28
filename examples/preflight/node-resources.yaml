@@ -21,7 +21,7 @@ spec:
           cpuCapacity: "6"
         outcomes:
           - fail:
-              when: "< 3"
+              when: "count() < 3"
               message: This application requires at least 3 nodes with 6 cores each
           - pass:
               message: This cluster has enough nodes with enough cores

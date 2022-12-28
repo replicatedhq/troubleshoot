@@ -392,6 +392,9 @@ func Test_nodeMatchesFilters(t *testing.T) {
 			},
 		},
 		Status: corev1.NodeStatus{
+			NodeInfo: corev1.NodeSystemInfo{
+				Architecture: "amd64",
+			},
 			Capacity: corev1.ResourceList{
 				"attachable-volumes-aws-ebs": resource.MustParse("25"),
 				"cpu":                        resource.MustParse("2"),
@@ -435,6 +438,22 @@ func Test_nodeMatchesFilters(t *testing.T) {
 			node: node,
 			filters: &troubleshootv1beta2.NodeResourceFilters{
 				MemoryAllocatable: "16Gi",
+			},
+			expectResult: false,
+		},
+		{
+			name: "true when cpu arch is amd64",
+			node: node,
+			filters: &troubleshootv1beta2.NodeResourceFilters{
+				Architecture: "amd64",
+			},
+			expectResult: true,
+		},
+		{
+			name: "false when cpu arch is not amd64",
+			node: node,
+			filters: &troubleshootv1beta2.NodeResourceFilters{
+				Architecture: "armhf",
 			},
 			expectResult: false,
 		},
@@ -704,6 +723,43 @@ func Test_analyzeNodeResources(t *testing.T) {
 				IsWarn:  false,
 				Title:   "bignode-exists",
 				Message: "There is a node with at least 8 cores",
+				URI:     "",
+				IconKey: "kubernetes_node_resources",
+				IconURI: "https://troubleshoot.sh/images/analyzer-icons/node-resources.svg?w=16&h=18",
+			},
+		},
+		{
+			name: "at least 8 cores on amd64", // filter for a node with enough amd64 cores
+			analyzer: &troubleshootv1beta2.NodeResources{
+				AnalyzeMeta: troubleshootv1beta2.AnalyzeMeta{
+					CheckName: "amd64-exists",
+				},
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Fail: &troubleshootv1beta2.SingleOutcome{
+							When:    "max(cpuCapacity) < 8",
+							Message: "There isn't a node with 8 or more cores on amd64 arch",
+							URI:     "",
+						},
+					},
+					{
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							When:    "max(cpuCapacity) >= 8",
+							Message: "There is a node with at least 8 cores on amd64 arch",
+							URI:     "",
+						},
+					},
+				},
+				Filters: &troubleshootv1beta2.NodeResourceFilters{
+					Architecture: "amd64",
+				},
+			},
+			want: &AnalyzeResult{
+				IsPass:  true,
+				IsFail:  false,
+				IsWarn:  false,
+				Title:   "amd64-exists",
+				Message: "There is a node with at least 8 cores on amd64 arch",
 				URI:     "",
 				IconKey: "kubernetes_node_resources",
 				IconURI: "https://troubleshoot.sh/images/analyzer-icons/node-resources.svg?w=16&h=18",
