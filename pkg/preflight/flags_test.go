@@ -62,7 +62,7 @@ func TestAddFlagsString(t *testing.T) {
 
 			got, err := f.GetString(tt.flag)
 
-			assert.Equalf(t, (err != nil), tt.wantErr, "AddFlags() error = %v, wantErr %v", err, tt.wantErr)
+			assert.Equalf(t, tt.wantErr, err != nil, "AddFlags() error = %v, wantErr %v", err, tt.wantErr)
 			assert.Equalf(t, got, tt.want, "AddFlags() = %v, wantErr %v", got, tt.want)
 		})
 	}
@@ -98,7 +98,7 @@ func TestAddFlagsBool(t *testing.T) {
 
 			got, err := f.GetBool(tt.flag)
 
-			assert.Equalf(t, (err != nil), tt.wantErr, "AddFlags() error = %v, wantErr %v", err, tt.wantErr)
+			assert.Equalf(t, tt.wantErr, err != nil, "AddFlags() error = %v, wantErr %v", err, tt.wantErr)
 			assert.Equalf(t, got, tt.want, "AddFlags() = %v, wantErr %v", got, tt.want)
 		})
 	}
