@@ -26,47 +26,45 @@ func Analyze() *cobra.Command {
 			viper.BindPFlags(cmd.Flags())
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return util.ProfiledRunE(cmd, args, func(cmd *cobra.Command, args []string) error {
-				v := viper.GetViper()
+			v := viper.GetViper()
 
-				logger.SetQuiet(v.GetBool("quiet"))
+			logger.SetQuiet(v.GetBool("quiet"))
 
-				specPath := args[0]
-				analyzerSpec, err := downloadAnalyzerSpec(specPath)
-				if err != nil {
-					return err
-				}
+			specPath := args[0]
+			analyzerSpec, err := downloadAnalyzerSpec(specPath)
+			if err != nil {
+				return err
+			}
 
-				result, err := analyzer.DownloadAndAnalyze(v.GetString("bundle"), analyzerSpec)
-				if err != nil {
-					return err
-				}
+			result, err := analyzer.DownloadAndAnalyze(v.GetString("bundle"), analyzerSpec)
+			if err != nil {
+				return err
+			}
 
-				var data interface{}
-				switch v.GetString("compatibility") {
-				case "support-bundle":
-					data = convert.FromAnalyzerResult(result)
-				default:
-					data = result
-				}
+			var data interface{}
+			switch v.GetString("compatibility") {
+			case "support-bundle":
+				data = convert.FromAnalyzerResult(result)
+			default:
+				data = result
+			}
 
-				var formatted []byte
-				switch v.GetString("output") {
-				case "json":
-					formatted, err = json.MarshalIndent(data, "", "    ")
-				case "", "yaml":
-					formatted, err = yaml.Marshal(data)
-				default:
-					return fmt.Errorf("unsupported output format: %q", v.GetString("output"))
-				}
+			var formatted []byte
+			switch v.GetString("output") {
+			case "json":
+				formatted, err = json.MarshalIndent(data, "", "    ")
+			case "", "yaml":
+				formatted, err = yaml.Marshal(data)
+			default:
+				return fmt.Errorf("unsupported output format: %q", v.GetString("output"))
+			}
 
-				if err != nil {
-					return err
-				}
+			if err != nil {
+				return err
+			}
 
-				fmt.Printf("%s", formatted)
-				return nil
-			})
+			fmt.Printf("%s", formatted)
+			return nil
 		},
 	}
 

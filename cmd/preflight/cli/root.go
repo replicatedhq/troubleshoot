@@ -7,6 +7,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/replicatedhq/troubleshoot/cmd/util"
 	"github.com/replicatedhq/troubleshoot/pkg/k8sutil"
+	"github.com/replicatedhq/troubleshoot/pkg/logger"
 	"github.com/replicatedhq/troubleshoot/pkg/preflight"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -29,12 +30,19 @@ that a cluster meets the requirements to run an application.`,
 			if !v.GetBool("debug") {
 				klog.SetLogger(logr.Discard())
 			}
+
+			if err := util.StartProfiling(); err != nil {
+				logger.Printf("Failed to start profiling: %v", err)
+			}
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return util.ProfiledRunE(cmd, args, func(cmd *cobra.Command, args []string) error {
-				v := viper.GetViper()
-				return preflight.RunPreflights(v.GetBool("interactive"), v.GetString("output"), v.GetString("format"), args)
-			})
+			v := viper.GetViper()
+			return preflight.RunPreflights(v.GetBool("interactive"), v.GetString("output"), v.GetString("format"), args)
+		},
+		PostRun: func(cmd *cobra.Command, args []string) {
+			if err := util.StopProfiling(); err != nil {
+				logger.Printf("Failed to stop profiling: %v", err)
+			}
 		},
 	}
 

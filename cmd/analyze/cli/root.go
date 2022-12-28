@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/go-logr/logr"
-	"github.com/replicatedhq/troubleshoot/cmd/util"
 	"github.com/replicatedhq/troubleshoot/pkg/k8sutil"
 	"github.com/replicatedhq/troubleshoot/pkg/logger"
 	"github.com/spf13/cobra"
@@ -27,15 +26,12 @@ func RootCmd() *cobra.Command {
 			if !v.GetBool("debug") {
 				klog.SetLogger(logr.Discard())
 			}
+			logger.SetQuiet(v.GetBool("quiet"))
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return util.ProfiledRunE(cmd, args, func(cmd *cobra.Command, args []string) error {
-				v := viper.GetViper()
+			v := viper.GetViper()
 
-				logger.SetQuiet(v.GetBool("quiet"))
-
-				return runAnalyzers(v, args[0])
-			})
+			return runAnalyzers(v, args[0])
 		},
 	}
 

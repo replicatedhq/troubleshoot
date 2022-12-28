@@ -21,6 +21,11 @@ func RootCmd() *cobra.Command {
 		Long: `A support bundle is an archive of files, output, metrics and state
 from a server that can be used to assist when troubleshooting a Kubernetes cluster.`,
 		SilenceUsage: true,
+		PersistentPreRun: func(cmd *cobra.Command, args []string) {
+			if err := util.StartProfiling(); err != nil {
+				logger.Printf("Failed to start profiling: %v", err)
+			}
+		},
 		PreRun: func(cmd *cobra.Command, args []string) {
 			v := viper.GetViper()
 			v.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
@@ -29,14 +34,17 @@ from a server that can be used to assist when troubleshooting a Kubernetes clust
 			if !v.GetBool("debug") {
 				klog.SetLogger(logr.Discard())
 			}
+			logger.SetQuiet(v.GetBool("quiet"))
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
-			return util.ProfiledRunE(cmd, args, func(cmd *cobra.Command, args []string) error {
-				v := viper.GetViper()
+			v := viper.GetViper()
 
-				logger.SetQuiet(v.GetBool("quiet"))
-				return runTroubleshoot(v, args)
-			})
+			return runTroubleshoot(v, args)
+		},
+		PersistentPostRun: func(cmd *cobra.Command, args []string) {
+			if err := util.StopProfiling(); err != nil {
+				logger.Printf("Failed to stop profiling: %v", err)
+			}
 		},
 	}
 
