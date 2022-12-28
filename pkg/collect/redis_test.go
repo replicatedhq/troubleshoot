@@ -70,7 +70,7 @@ func TestCollectRedis_createPlainTextClient(t *testing.T) {
 			}
 
 			client, err := c.createClient()
-			assert.Equal(t, err != nil, tt.hasError)
+			assert.Equal(t, tt.hasError, err != nil)
 			if err == nil {
 				require.NotNil(t, client)
 				assert.Equal(t, client.Options().Addr, "localhost:6379")

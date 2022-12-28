@@ -6,7 +6,7 @@ import (
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
-	"github.com/shirou/gopsutil/cpu"
+	"github.com/shirou/gopsutil/v3/cpu"
 )
 
 type CPUInfo struct {
@@ -52,7 +52,5 @@ func (c *CollectHostCPU) Collect(progressChan chan<- interface{}) (map[string][]
 	output := NewResult()
 	output.SaveResult(c.BundlePath, HostCPUPath, bytes.NewBuffer(b))
 
-	return map[string][]byte{
-		HostCPUPath: b,
-	}, nil
+	return output, nil
 }
