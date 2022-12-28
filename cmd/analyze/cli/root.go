@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"fmt"
 	"os"
 	"strings"
 
@@ -34,7 +33,6 @@ func RootCmd() *cobra.Command {
 				v := viper.GetViper()
 
 				logger.SetQuiet(v.GetBool("quiet"))
-				fmt.Println(v.GetString("cpuprofile"))
 
 				return runAnalyzers(v, args[0])
 			})
