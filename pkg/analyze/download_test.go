@@ -38,9 +38,8 @@ func TestDownloadAndExtractSupportBundle(t *testing.T) {
 			defer os.RemoveAll(tmpDir) // clean up. Ignore error
 
 			if err == nil {
-				assert.DirExists(t, tmpDir)
-				assert.DirExists(t, filepath.Join(tmpDir, bundleDir))
-				assert.FileExists(t, filepath.Join(tmpDir, bundleDir, "version.yaml"))
+				assert.DirExists(t, bundleDir)
+				assert.FileExists(t, filepath.Join(bundleDir, "version.yaml"))
 			} else {
 				assert.Equal(t, "", tmpDir)
 				assert.Equal(t, "", bundleDir)
