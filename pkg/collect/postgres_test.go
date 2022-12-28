@@ -80,7 +80,7 @@ func TestCollectPostgres_createConnectConfigPlainText(t *testing.T) {
 			}
 
 			connCfg, err := c.createConnectConfig()
-			assert.Equal(t, err != nil, tt.hasError)
+			assert.Equal(t, tt.hasError, err != nil)
 			if err == nil {
 				require.NotNil(t, connCfg)
 				assert.Equal(t, connCfg.Host, "my-pghost")

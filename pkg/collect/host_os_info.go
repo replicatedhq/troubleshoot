@@ -6,7 +6,7 @@ import (
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
-	osutils "github.com/shirou/gopsutil/host"
+	osutils "github.com/shirou/gopsutil/v3/host"
 )
 
 type HostOSInfo struct {
@@ -50,7 +50,5 @@ func (c *CollectHostOS) Collect(progressChan chan<- interface{}) (map[string][]b
 	output := NewResult()
 	output.SaveResult(c.BundlePath, HostOSInfoPath, bytes.NewBuffer(b))
 
-	return map[string][]byte{
-		HostOSInfoPath: b,
-	}, nil
+	return output, nil
 }

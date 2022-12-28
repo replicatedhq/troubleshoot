@@ -228,7 +228,7 @@ func Test_createTLSConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tlsCfg, err := createTLSConfig(context.Background(), k8sClient, &tt.tlsParams)
-			assert.Equalf(t, err != nil, tt.hasError, "createTLSConfig() error = %v, wantErr %v", err, tt.hasError)
+			assert.Equalf(t, tt.hasError, err != nil, "createTLSConfig() error = %v, wantErr %v", err, tt.hasError)
 
 			if err == nil {
 				require.NotNil(t, tlsCfg)
