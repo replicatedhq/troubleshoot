@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/go-logr/logr"
+	"github.com/replicatedhq/troubleshoot/cmd/util"
 	"github.com/replicatedhq/troubleshoot/pkg/k8sutil"
 	"github.com/replicatedhq/troubleshoot/pkg/logger"
 	"github.com/spf13/cobra"
@@ -27,11 +28,20 @@ func RootCmd() *cobra.Command {
 				klog.SetLogger(logr.Discard())
 			}
 			logger.SetQuiet(v.GetBool("quiet"))
+
+			if err := util.StartProfiling(); err != nil {
+				logger.Printf("Failed to start profiling: %v", err)
+			}
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			v := viper.GetViper()
 
 			return runAnalyzers(v, args[0])
+		},
+		PostRun: func(cmd *cobra.Command, args []string) {
+			if err := util.StopProfiling(); err != nil {
+				logger.Printf("Failed to stop profiling: %v", err)
+			}
 		},
 	}
 
@@ -45,6 +55,9 @@ func RootCmd() *cobra.Command {
 	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
 
 	k8sutil.AddFlags(cmd.Flags())
+
+	// CPU and memory profiling flags
+	util.AddProfilingFlags(cmd)
 
 	return cmd
 }
