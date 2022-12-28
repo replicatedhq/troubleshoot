@@ -19,8 +19,8 @@ support-bundle version [flags]
 ### Options inherited from parent commands
 
 ```
-      --cpuprofile string   write cpu profile to file
-      --memprofile string   write memory profile to this file
+      --cpuprofile string   File path to write cpu profiling data
+      --memprofile string   File path to write memory profiling data
 ```
 
 ### SEE ALSO

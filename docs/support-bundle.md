@@ -24,14 +24,14 @@ support-bundle [url] [flags]
       --cluster string                 The name of the kubeconfig cluster to use
       --collect-without-permissions    always generate a support bundle, even if it some require additional permissions (default true)
       --context string                 The name of the kubeconfig context to use
-      --cpuprofile string              write cpu profile to file
+      --cpuprofile string              File path to write cpu profiling data
       --debug                          enable debug logging
   -h, --help                           help for support-bundle
       --insecure-skip-tls-verify       If true, the server's certificate will not be checked for validity. This will make your HTTPS connections insecure
       --interactive                    enable/disable interactive mode (default true)
       --kubeconfig string              Path to the kubeconfig file to use for CLI requests.
       --load-cluster-specs             enable/disable loading additional troubleshoot specs found within the cluster. required when no specs are provided on the command line
-      --memprofile string              write memory profile to this file
+      --memprofile string              File path to write memory profiling data
   -n, --namespace string               If present, the namespace scope for this CLI request
       --no-uri                         When this flag is used, Troubleshoot does not attempt to retrieve the bundle referenced by the uri: field in the spec.`
   -o, --output string                  specify the output file path for the support bundle

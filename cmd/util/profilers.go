@@ -61,6 +61,6 @@ func StopProfiling() error {
 // AddProfilingFlags adds the --cpuprofile and --memprofile flags to the given command.
 func AddProfilingFlags(cmd *cobra.Command) {
 	// Persistent flags to make available to subcommands
-	cmd.PersistentFlags().String("cpuprofile", "", "write cpu profile to file")
-	cmd.PersistentFlags().String("memprofile", "", "write memory profile to this file")
+	cmd.PersistentFlags().String("cpuprofile", "", "File path to write cpu profiling data")
+	cmd.PersistentFlags().String("memprofile", "", "File path to write memory profiling data")
 }

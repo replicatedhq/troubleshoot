@@ -26,14 +26,14 @@ preflight [url] [flags]
       --collector-image string         the full name of the collector image to use
       --collector-pullpolicy string    the pull policy of the collector image
       --context string                 The name of the kubeconfig context to use
-      --cpuprofile string              write cpu profile to file
+      --cpuprofile string              File path to write cpu profiling data
       --debug                          enable debug logging
       --format string                  output format, one of human, json, yaml. only used when interactive is set to false (default "human")
   -h, --help                           help for preflight
       --insecure-skip-tls-verify       If true, the server's certificate will not be checked for validity. This will make your HTTPS connections insecure
       --interactive                    interactive preflights (default true)
       --kubeconfig string              Path to the kubeconfig file to use for CLI requests.
-      --memprofile string              write memory profile to this file
+      --memprofile string              File path to write memory profiling data
   -n, --namespace string               If present, the namespace scope for this CLI request
   -o, --output string                  specify the output file path for the preflight checks
       --request-timeout string         The length of time to wait before giving up on a single server request. Non-zero values should contain a corresponding time unit (e.g. 1s, 2m, 3h). A value of zero means don't timeout requests. (default "0")

@@ -22,11 +22,11 @@ preflight version [flags]
       --collect-without-permissions   always run preflight checks even if some require permissions that preflight does not have (default true)
       --collector-image string        the full name of the collector image to use
       --collector-pullpolicy string   the pull policy of the collector image
-      --cpuprofile string             write cpu profile to file
+      --cpuprofile string             File path to write cpu profiling data
       --debug                         enable debug logging
       --format string                 output format, one of human, json, yaml. only used when interactive is set to false (default "human")
       --interactive                   interactive preflights (default true)
-      --memprofile string             write memory profile to this file
+      --memprofile string             File path to write memory profiling data
   -o, --output string                 specify the output file path for the preflight checks
       --selector string               selector (label query) to filter remote collection nodes on.
       --since string                  force pod logs collectors to return logs newer than a relative duration like 5s, 2m, or 3h.
