@@ -118,6 +118,7 @@ type NodeResources struct {
 }
 
 type NodeResourceFilters struct {
+	Architecture                string                 `json:"architecture,omitempty" yaml:"cpuArchitecture,omitempty"`
 	CPUCapacity                 string                 `json:"cpuCapacity,omitempty" yaml:"cpuCapacity,omitempty"`
 	CPUAllocatable              string                 `json:"cpuAllocatable,omitempty" yaml:"cpuAllocatable,omitempty"`
 	MemoryCapacity              string                 `json:"memoryCapacity,omitempty" yaml:"memoryCapacity,omitempty"`
