@@ -117,6 +117,8 @@ func (c *CollectLogs) Collect(progressChan chan<- interface{}) (CollectorResult,
 					}
 				}
 			}
+		} else {
+			resultCh <- output
 		}
 	}()
 
