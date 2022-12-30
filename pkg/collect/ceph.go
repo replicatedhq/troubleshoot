@@ -131,18 +131,27 @@ func (c *CollectCeph) Collect(progressChan chan<- interface{}) (CollectorResult,
 		c.Namespace = DefaultCephNamespace
 	}
 
-	pod, err := findRookCephToolsPod(ctx, c, c.Namespace)
+	output := NewResult()
+
+	addOneEnabled, err := checkInstallersAddOn(c.ClientConfig, "rook")
+
 	if err != nil {
 		return nil, err
 	}
 
-	output := NewResult()
-	for _, command := range CephCommands {
-		err := cephCommandExec(ctx, progressChan, c, c.Collector, pod, command, output)
+	if addOneEnabled {
+		pod, err := findRookCephToolsPod(ctx, c, c.Namespace)
 		if err != nil {
-			pathPrefix := GetCephCollectorFilepath(c.Collector.CollectorName, c.Namespace)
-			dstFileName := path.Join(pathPrefix, fmt.Sprintf("%s.%s-error", command.ID, command.Format))
-			output.SaveResult(c.BundlePath, dstFileName, strings.NewReader(err.Error()))
+			return nil, err
+		}
+
+		for _, command := range CephCommands {
+			err := cephCommandExec(ctx, progressChan, c, c.Collector, pod, command, output)
+			if err != nil {
+				pathPrefix := GetCephCollectorFilepath(c.Collector.CollectorName, c.Namespace)
+				dstFileName := path.Join(pathPrefix, fmt.Sprintf("%s.%s-error", command.ID, command.Format))
+				output.SaveResult(c.BundlePath, dstFileName, strings.NewReader(err.Error()))
+			}
 		}
 	}
 

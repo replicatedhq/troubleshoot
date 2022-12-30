@@ -60,6 +60,16 @@ func (c *CollectLonghorn) Collect(progressChan chan<- interface{}) (CollectorRes
 	}
 
 	output := NewResult()
+
+	addOneEnabled, err := checkInstallersAddOn(c.ClientConfig, "longhorn")
+	if err != nil {
+		return nil, err
+	}
+
+	if !addOneEnabled {
+		return output, nil
+	}
+
 	var mtx sync.Mutex
 
 	// collect nodes.longhorn.io
