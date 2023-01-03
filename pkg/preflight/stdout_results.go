@@ -6,6 +6,7 @@ import (
 
 	"github.com/pkg/errors"
 	analyzerunner "github.com/replicatedhq/troubleshoot/pkg/analyze"
+	"gopkg.in/yaml.v2"
 )
 
 func showStdoutResults(format string, preflightName string, analyzeResults []*analyzerunner.AnalyzeResult) error {
@@ -13,6 +14,8 @@ func showStdoutResults(format string, preflightName string, analyzeResults []*an
 		return showStdoutResultsHuman(preflightName, analyzeResults)
 	} else if format == "json" {
 		return showStdoutResultsJSON(preflightName, analyzeResults)
+	} else if format == "yaml" {
+		return showStdoutResultsYAML(preflightName, analyzeResults)
 	}
 
 	return errors.Errorf("unknown output format: %q", format)
@@ -37,27 +40,29 @@ func showStdoutResultsHuman(preflightName string, analyzeResults []*analyzerunne
 	return nil
 }
 
-func showStdoutResultsJSON(preflightName string, analyzeResults []*analyzerunner.AnalyzeResult) error {
-	type ResultOutput struct {
-		Title   string `json:"title"`
-		Message string `json:"message"`
-		URI     string `json:"uri,omitempty"`
-		Strict  bool   `json:"strict,omitempty"`
-	}
-	type Output struct {
-		Pass []ResultOutput `json:"pass,omitempty"`
-		Warn []ResultOutput `json:"warn,omitempty"`
-		Fail []ResultOutput `json:"fail,omitempty"`
-	}
+type StdoutResultOutput struct {
+	Title   string `json:"title" yaml:"title"`
+	Message string `json:"message" yaml:"message"`
+	URI     string `json:"uri,omitempty" yaml:"uri,omitempty"`
+	Strict  bool   `json:"strict,omitempty" yaml:"strict,omitempty"`
+}
 
-	output := Output{
-		Pass: []ResultOutput{},
-		Warn: []ResultOutput{},
-		Fail: []ResultOutput{},
+type StdoutOutput struct {
+	Pass []StdoutResultOutput `json:"pass,omitempty" yaml:"pass,omitempty"`
+	Warn []StdoutResultOutput `json:"warn,omitempty" yaml:"warn,omitempty"`
+	Fail []StdoutResultOutput `json:"fail,omitempty" yaml:"fail,omitempty"`
+}
+
+// Used by both JSON and YAML outputs
+func showStdoutResultsStructured(preflightName string, analyzeResults []*analyzerunner.AnalyzeResult) *StdoutOutput {
+	output := StdoutOutput{
+		Pass: []StdoutResultOutput{},
+		Warn: []StdoutResultOutput{},
+		Fail: []StdoutResultOutput{},
 	}
 
 	for _, analyzeResult := range analyzeResults {
-		resultOutput := ResultOutput{
+		resultOutput := StdoutResultOutput{
 			Title:   analyzeResult.Title,
 			Message: analyzeResult.Message,
 			URI:     analyzeResult.URI,
@@ -76,9 +81,28 @@ func showStdoutResultsJSON(preflightName string, analyzeResults []*analyzerunner
 		}
 	}
 
-	b, err := json.MarshalIndent(output, "", "  ")
+	return &output
+}
+
+func showStdoutResultsJSON(preflightName string, analyzeResults []*analyzerunner.AnalyzeResult) error {
+	output := showStdoutResultsStructured(preflightName, analyzeResults)
+
+	b, err := json.MarshalIndent(*output, "", "  ")
 	if err != nil {
-		return errors.Wrap(err, "failed to marshal results")
+		return errors.Wrap(err, "failed to marshal results as json")
+	}
+
+	fmt.Printf("%s\n", b)
+
+	return nil
+}
+
+func showStdoutResultsYAML(preflightName string, analyzeResults []*analyzerunner.AnalyzeResult) error {
+	output := showStdoutResultsStructured(preflightName, analyzeResults)
+
+	b, err := yaml.Marshal(*output)
+	if err != nil {
+		return errors.Wrap(err, "failed to marshal results as yaml")
 	}
 
 	fmt.Printf("%s\n", b)
