@@ -441,8 +441,12 @@ func Analyze(analyzer *troubleshootv1beta2.Analyze, getFile getCollectedFileCont
 		if err != nil {
 			return nil, err
 		}
-		result.Strict = analyzer.CephStatus.Strict.BoolOrDefaultFalse()
-		return []*AnalyzeResult{result}, nil
+
+		if result != nil {
+			result.Strict = analyzer.CephStatus.Strict.BoolOrDefaultFalse()
+			return []*AnalyzeResult{result}, nil
+		}
+		return nil, nil
 	}
 	if analyzer.Longhorn != nil {
 		isExcluded, err := isExcluded(analyzer.Longhorn.Exclude)
