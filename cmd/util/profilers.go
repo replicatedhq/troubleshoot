@@ -5,6 +5,7 @@ import (
 	"os"
 	"runtime"
 	"runtime/pprof"
+	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -37,24 +38,39 @@ func StartProfiling() error {
 // the files specified by --cpuprofile and --memprofile flags respectively.
 func StopProfiling() error {
 	v := viper.GetViper()
-
-	if v.GetString("memprofile") != "" {
-		f, err := os.Create(v.GetString("memprofile"))
-		if err != nil {
-			return fmt.Errorf("could not create memory profile: %w", err)
-		}
-		defer f.Close()
-		runtime.GC() // get up-to-date statistics
-		if err := pprof.WriteHeapProfile(f); err != nil {
-			return fmt.Errorf("could not write memory profile: %w", err)
-		}
-	}
+	errs := []string{}
 
 	// Stop CPU profiling if it was started
 	if cpuProfileFile != nil {
 		pprof.StopCPUProfile()
-		return cpuProfileFile.Close()
+		err := cpuProfileFile.Close()
+		if err != nil {
+			errs = append(errs, err.Error())
+		}
 	}
+
+	if v.GetString("memprofile") != "" {
+		f, err := os.Create(v.GetString("memprofile"))
+		if err != nil {
+			errs = append(errs, err.Error())
+			goto BREAK_FROM_MEMPROFILE_IF
+		}
+		runtime.GC() // get up-to-date statistics
+		if err := pprof.WriteHeapProfile(f); err != nil {
+			errs = append(errs, err.Error())
+			goto BREAK_FROM_MEMPROFILE_IF
+		}
+		err = f.Close()
+		if err != nil {
+			errs = append(errs, err.Error())
+		}
+	}
+
+BREAK_FROM_MEMPROFILE_IF:
+	if len(errs) > 0 {
+		return fmt.Errorf("errors while stopping profiling: [%s]", strings.Join(errs, ", "))
+	}
+
 	return nil
 }
 
