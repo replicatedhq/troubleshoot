@@ -5,6 +5,8 @@ release:
     name: troubleshoot
 builds:
   - id: preflight
+    # NOTE: if you add any additional goos/goarch values, ensure you update ../.github/workflows/build-test-deploy.yaml
+    # with the respective goreleaser-test-* jobs
     goos:
       - linux
       - darwin
