@@ -41,3 +41,4 @@ sbom/
 
 # Ignore generated support bundles
 *.tar.gz
+!testdata/supportbundle/*.tar.gz

@@ -185,8 +185,6 @@ func findFileName(basename, extension string) (string, error) {
 	}
 }
 
-const VersionFilename = "version.yaml"
-
 func getVersionFile() (io.Reader, error) {
 	version := troubleshootv1beta2.SupportBundleVersion{
 		ApiVersion: "troubleshoot.sh/v1beta2",
