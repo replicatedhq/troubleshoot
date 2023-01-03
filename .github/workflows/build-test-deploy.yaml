@@ -192,7 +192,7 @@ jobs:
           name: collect
           path: bin/collect
 
-  goreleaser-test-collect:
+  goreleaser-test:
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/v') != true
     steps:
@@ -210,47 +210,7 @@ jobs:
         uses: goreleaser/goreleaser-action@v4
         with:
           version: "v0.183.0"
-          args: build --rm-dist --snapshot --config deploy/.goreleaser.yaml --id collect
-
-  goreleaser-test-preflight:
-    runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/v') != true
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-
-      - name: Unshallow
-        run: git fetch --prune --unshallow
-
-      - uses: actions/setup-go@v3
-        with:
-          go-version: "1.19"
-
-      - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v4
-        with:
-          version: "v0.183.0"
-          args: build --rm-dist --snapshot --config deploy/.goreleaser.yaml --id preflight
-
-  goreleaser-test-support-bundle:
-    runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/v') != true
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-
-      - name: Unshallow
-        run: git fetch --prune --unshallow
-
-      - uses: actions/setup-go@v3
-        with:
-          go-version: "1.19"
-
-      - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v4
-        with:
-          version: "v0.183.0"
-          args: build --rm-dist --snapshot --config deploy/.goreleaser.yaml --id support-bundle
+          args: build --rm-dist --snapshot --config deploy/.goreleaser.yaml
 
   goreleaser:
     runs-on: ubuntu-latest
