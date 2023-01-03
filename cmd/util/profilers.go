@@ -47,6 +47,7 @@ func StopProfiling() error {
 		if err != nil {
 			errs = append(errs, err.Error())
 		}
+		cpuProfileFile = nil
 	}
 
 	if v.GetString("memprofile") != "" {
