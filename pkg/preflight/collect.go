@@ -84,7 +84,9 @@ func (cr RemoteCollectResult) IsRBACAllowed() bool {
 // CollectHost runs the collection phase of host preflight checks
 func CollectHost(opts CollectOpts, p *troubleshootv1beta2.HostPreflight) (CollectResult, error) {
 	collectSpecs := make([]*troubleshootv1beta2.HostCollect, 0, 0)
-	collectSpecs = append(collectSpecs, p.Spec.Collectors...)
+	if p != nil && p.Spec.Collectors != nil {
+		collectSpecs = append(collectSpecs, p.Spec.Collectors...)
+	}
 
 	allCollectedData := make(map[string][]byte)
 
@@ -128,7 +130,9 @@ func Collect(opts CollectOpts, p *troubleshootv1beta2.Preflight) (CollectResult,
 	var foundForbidden bool
 
 	collectSpecs := make([]*troubleshootv1beta2.Collect, 0, 0)
-	collectSpecs = append(collectSpecs, p.Spec.Collectors...)
+	if p != nil && p.Spec.Collectors != nil {
+		collectSpecs = append(collectSpecs, p.Spec.Collectors...)
+	}
 	collectSpecs = collect.EnsureCollectorInList(collectSpecs, troubleshootv1beta2.Collect{ClusterInfo: &troubleshootv1beta2.ClusterInfo{}})
 	collectSpecs = collect.EnsureCollectorInList(collectSpecs, troubleshootv1beta2.Collect{ClusterResources: &troubleshootv1beta2.ClusterResources{}})
 	collectSpecs = collect.EnsureClusterResourcesFirst(collectSpecs)
@@ -267,7 +271,9 @@ func Collect(opts CollectOpts, p *troubleshootv1beta2.Preflight) (CollectResult,
 // Collect runs the collection phase of preflight checks
 func CollectRemote(opts CollectOpts, p *troubleshootv1beta2.HostPreflight) (CollectResult, error) {
 	collectSpecs := make([]*troubleshootv1beta2.RemoteCollect, 0, 0)
-	collectSpecs = append(collectSpecs, p.Spec.RemoteCollectors...)
+	if p != nil && p.Spec.RemoteCollectors != nil {
+		collectSpecs = append(collectSpecs, p.Spec.RemoteCollectors...)
+	}
 
 	allCollectedData := make(map[string][]byte)
 
