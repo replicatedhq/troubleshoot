@@ -25,15 +25,15 @@ type CollectMssql struct {
 	RBACErrors
 }
 
-func (c *CollectMsSql) Title() string {
+func (c *CollectMssql) Title() string {
 	return collectorTitleOrDefault(c.Collector.CollectorMeta, "MSSSQLServer")
 }
 
-func (c *CollectMsSql) IsExcluded() (bool, error) {
+func (c *CollectMssql) IsExcluded() (bool, error) {
 	return isExcluded(c.Collector.Exclude)
 }
 
-func (c *CollectMsSql) Collect(progressChan chan<- interface{}) (CollectorResult, error) {
+func (c *CollectMssql) Collect(progressChan chan<- interface{}) (CollectorResult, error) {
 	databaseConnection := DatabaseConnection{}
 
 	db, err := sql.Open("mssql", c.Collector.URI)
