@@ -61,10 +61,7 @@ func (c *CollectLonghorn) Collect(progressChan chan<- interface{}) (CollectorRes
 
 	output := NewResult()
 
-	addOneEnabled, err := checkInstallersAddOn(c.ClientConfig, "longhorn")
-	if err != nil {
-		return nil, err
-	}
+	addOneEnabled, _ := checkInstallersAddOn(c.ClientConfig, "longhorn")
 
 	if !addOneEnabled {
 		return output, nil

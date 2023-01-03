@@ -133,11 +133,7 @@ func (c *CollectCeph) Collect(progressChan chan<- interface{}) (CollectorResult,
 
 	output := NewResult()
 
-	addOneEnabled, err := checkInstallersAddOn(c.ClientConfig, "rook")
-
-	if err != nil {
-		return nil, err
-	}
+	addOneEnabled, _ := checkInstallersAddOn(c.ClientConfig, "rook")
 
 	if addOneEnabled {
 		pod, err := findRookCephToolsPod(ctx, c, c.Namespace)
