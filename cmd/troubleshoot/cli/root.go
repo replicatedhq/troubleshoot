@@ -15,7 +15,7 @@ import (
 
 func RootCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "support-bundle [url]",
+		Use:   "support-bundle [urls...]",
 		Args:  cobra.MinimumNArgs(0),
 		Short: "Generate a support bundle",
 		Long: `A support bundle is an archive of files, output, metrics and state
@@ -52,6 +52,7 @@ from a server that can be used to assist when troubleshooting a Kubernetes clust
 	cobra.OnInitialize(initConfig)
 
 	cmd.AddCommand(Analyze())
+	cmd.AddCommand(Redact())
 	cmd.AddCommand(VersionCmd())
 
 	cmd.Flags().StringSlice("redactors", []string{}, "names of the additional redactors to use")

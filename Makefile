@@ -35,7 +35,7 @@ endef
 
 BUILDFLAGS = -tags "netgo containers_image_ostree_stub exclude_graphdriver_devicemapper exclude_graphdriver_btrfs containers_image_openpgp" -installsuffix netgo
 
-all: test support-bundle preflight collect
+all: test support-bundle preflight collect analyze
 
 .PHONY: ffi
 ffi: fmt vet
@@ -202,8 +202,8 @@ scan:
 
 .PHONY: lint
 lint:
-	golangci-lint run -c .golangci.yaml
+	golangci-lint run --new -c .golangci.yaml pkg/... cmd/...
 
 .PHONY: lint-and-fix
 lint-and-fix:
-	golangci-lint run --fix -c .golangci.yaml
+	golangci-lint run --new --fix -c .golangci.yaml pkg/... cmd/...
