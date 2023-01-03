@@ -10,10 +10,10 @@ import (
 	"github.com/replicatedhq/troubleshoot/pkg/collect"
 )
 
-func analyzeMsSQLServer(analyzer *troubleshootv1beta2.DatabaseAnalyze, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
+func analyzeMsssql(analyzer *troubleshootv1beta2.DatabaseAnalyze, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
 	collectorName := analyzer.CollectorName
 	if collectorName == "" {
-		collectorName = "MsSqlServer"
+		collectorName = "mssql"
 	}
 
 	fullPath := path.Join("mssql", fmt.Sprintf("%s.json", collectorName))
@@ -35,8 +35,8 @@ func analyzeMsSQLServer(analyzer *troubleshootv1beta2.DatabaseAnalyze, getCollec
 
 	result := &AnalyzeResult{
 		Title:   title,
-		IconKey: "kubernetes_MS SQL Server_analyze",
-		IconURI: "https://troubleshoot.sh/images/analyzer-icons/MS SQL Server-analyze.svg",
+		IconKey: "kubernetes_sqlserver_analyze",
+		IconURI: "https://troubleshoot.sh/images/analyzer-icons/sqlserver-analyze.svg",
 	}
 
 	for _, outcome := range analyzer.Outcomes {

@@ -4,11 +4,11 @@ metadata:
   name: sample
 spec:
   collectors:
-    - postgres:
+    - mssql:
         collectorName: mssql
         uri: sqlserver://user:password@hostname:1433/master
   analyzers:
-    - postgres:
+    - mssql:
         checkName: Must be SQLServer 15.x or later
         collectorName: mssql
         outcomes:
@@ -17,6 +17,6 @@ spec:
               message: Cannot connect to postgres server
           - fail:
               when: "version < 15.x"
-              message: The postgres server must be at least version 15
+              message: The SQLServer must be at least version 15
           - pass:
-              message: The postgres connection checks out
+              message: The SQLServer connection checks out

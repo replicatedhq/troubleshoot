@@ -15,7 +15,7 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-type CollectMsSql struct {
+type CollectMssql struct {
 	Collector    *troubleshootv1beta2.Database
 	BundlePath   string
 	Namespace    string
