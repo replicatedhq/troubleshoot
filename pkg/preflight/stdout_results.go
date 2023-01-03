@@ -40,29 +40,29 @@ func showStdoutResultsHuman(preflightName string, analyzeResults []*analyzerunne
 	return nil
 }
 
-type StdoutResultOutput struct {
+type stdoutResultOutput struct {
 	Title   string `json:"title" yaml:"title"`
 	Message string `json:"message" yaml:"message"`
 	URI     string `json:"uri,omitempty" yaml:"uri,omitempty"`
 	Strict  bool   `json:"strict,omitempty" yaml:"strict,omitempty"`
 }
 
-type StdoutOutput struct {
-	Pass []StdoutResultOutput `json:"pass,omitempty" yaml:"pass,omitempty"`
-	Warn []StdoutResultOutput `json:"warn,omitempty" yaml:"warn,omitempty"`
-	Fail []StdoutResultOutput `json:"fail,omitempty" yaml:"fail,omitempty"`
+type stdoutOutput struct {
+	Pass []stdoutResultOutput `json:"pass,omitempty" yaml:"pass,omitempty"`
+	Warn []stdoutResultOutput `json:"warn,omitempty" yaml:"warn,omitempty"`
+	Fail []stdoutResultOutput `json:"fail,omitempty" yaml:"fail,omitempty"`
 }
 
 // Used by both JSON and YAML outputs
-func showStdoutResultsStructured(preflightName string, analyzeResults []*analyzerunner.AnalyzeResult) *StdoutOutput {
-	output := StdoutOutput{
-		Pass: []StdoutResultOutput{},
-		Warn: []StdoutResultOutput{},
-		Fail: []StdoutResultOutput{},
+func showStdoutResultsStructured(preflightName string, analyzeResults []*analyzerunner.AnalyzeResult) *stdoutOutput {
+	output := stdoutOutput{
+		Pass: []stdoutResultOutput{},
+		Warn: []stdoutResultOutput{},
+		Fail: []stdoutResultOutput{},
 	}
 
 	for _, analyzeResult := range analyzeResults {
-		resultOutput := StdoutResultOutput{
+		resultOutput := stdoutResultOutput{
 			Title:   analyzeResult.Title,
 			Message: analyzeResult.Message,
 			URI:     analyzeResult.URI,
