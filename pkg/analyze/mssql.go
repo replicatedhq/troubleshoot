@@ -10,7 +10,7 @@ import (
 	"github.com/replicatedhq/troubleshoot/pkg/collect"
 )
 
-func analyzeMsssql(analyzer *troubleshootv1beta2.DatabaseAnalyze, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
+func analyzeMssql(analyzer *troubleshootv1beta2.DatabaseAnalyze, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
 	collectorName := analyzer.CollectorName
 	if collectorName == "" {
 		collectorName = "mssql"
