@@ -9,6 +9,7 @@ import (
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/replicatedhq/troubleshoot/pkg/collect"
+	"github.com/spf13/viper"
 )
 
 type CephHealth string
@@ -104,6 +105,12 @@ func cephStatus(analyzer *troubleshootv1beta2.CephStatusAnalyze, getCollectedFil
 	collected, err := getCollectedFileContents(fileName)
 	analyzeResult := &AnalyzeResult{}
 	if err != nil {
+
+		v := viper.GetViper()
+		if v.GetBool("debug") {
+			return nil, errors.Wrap(err, "failed to read collected ceph status")
+		}
+
 		return analyzeResult, nil
 	}
 
