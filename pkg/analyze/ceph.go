@@ -102,8 +102,9 @@ type PgMap struct {
 func cephStatus(analyzer *troubleshootv1beta2.CephStatusAnalyze, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
 	fileName := path.Join(collect.GetCephCollectorFilepath(analyzer.CollectorName, analyzer.Namespace), "status.json")
 	collected, err := getCollectedFileContents(fileName)
+	analyzeResult := &AnalyzeResult{}
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to read collected ceph status")
+		return analyzeResult, nil
 	}
 
 	title := analyzer.CheckName
@@ -111,7 +112,7 @@ func cephStatus(analyzer *troubleshootv1beta2.CephStatusAnalyze, getCollectedFil
 		title = "Ceph Status"
 	}
 
-	analyzeResult := &AnalyzeResult{
+	analyzeResult = &AnalyzeResult{
 		Title:   title,
 		IconKey: "rook", // maybe this should be ceph?
 		IconURI: "https://troubleshoot.sh/images/analyzer-icons/rook.svg?w=11&h=16",
