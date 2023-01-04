@@ -6,7 +6,7 @@ spec:
   collectors:
     - mssql:
         collectorName: mssql
-        uri: sqlserver://user:password@hostname:1433/master
+        uri: sqlserver://SA:P%40w0rd1@technonook.com:1433/master
   analyzers:
     - mssql:
         checkName: Must be SQLServer 15.x or later
@@ -14,7 +14,7 @@ spec:
         outcomes:
           - fail:
               when: "connected == false"
-              message: Cannot connect to postgres server
+              message: Cannot connect to SQLServer
           - fail:
               when: "version < 15.x"
               message: The SQLServer must be at least version 15
