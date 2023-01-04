@@ -1,11 +1,11 @@
 package cli
 
 import (
-	"io/ioutil"
 	"os"
 	"strings"
 
 	"github.com/go-logr/logr"
+	"github.com/replicatedhq/troubleshoot/cmd/util"
 	"github.com/replicatedhq/troubleshoot/pkg/k8sutil"
 	"github.com/replicatedhq/troubleshoot/pkg/logger"
 	"github.com/spf13/cobra"
@@ -21,19 +21,31 @@ func RootCmd() *cobra.Command {
 		Long: `A support bundle is an archive of files, output, metrics and state
 from a server that can be used to assist when troubleshooting a Kubernetes cluster.`,
 		SilenceUsage: true,
-		PreRun: func(cmd *cobra.Command, args []string) {
+		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			v := viper.GetViper()
+			v.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
 			v.BindPFlags(cmd.Flags())
 
+			if err := util.StartProfiling(); err != nil {
+				logger.Printf("Failed to start profiling: %v", err)
+			}
+		},
+		PreRun: func(cmd *cobra.Command, args []string) {
+			v := viper.GetViper()
 			if !v.GetBool("debug") {
 				klog.SetLogger(logr.Discard())
 			}
+			logger.SetQuiet(v.GetBool("quiet"))
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			v := viper.GetViper()
 
-			logger.SetQuiet(v.GetBool("quiet"))
 			return runTroubleshoot(v, args)
+		},
+		PersistentPostRun: func(cmd *cobra.Command, args []string) {
+			if err := util.StopProfiling(); err != nil {
+				logger.Printf("Failed to stop profiling: %v", err)
+			}
 		},
 	}
 
@@ -62,11 +74,10 @@ from a server that can be used to assist when troubleshooting a Kubernetes clust
 	// This flag makes sure we can also disable this and fall back to the default spec.
 	cmd.Flags().Bool("no-uri", false, "When this flag is used, Troubleshoot does not attempt to retrieve the bundle referenced by the uri: field in the spec.`")
 
-	viper.BindPFlags(cmd.Flags())
-
-	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
-
 	k8sutil.AddFlags(cmd.Flags())
+
+	// CPU and memory profiling flags
+	util.AddProfilingFlags(cmd)
 
 	return cmd
 }
@@ -80,12 +91,4 @@ func InitAndExecute() {
 func initConfig() {
 	viper.SetEnvPrefix("TROUBLESHOOT")
 	viper.AutomaticEnv()
-}
-
-func writeFile(filename string, contents []byte) error {
-	if err := ioutil.WriteFile(filename, contents, 0644); err != nil {
-		return err
-	}
-
-	return nil
 }

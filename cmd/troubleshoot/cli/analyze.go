@@ -23,9 +23,7 @@ func Analyze() *cobra.Command {
 		Short: "analyze a support bundle",
 		Long:  `Analyze a support bundle using the Analyzer definitions provided`,
 		PreRun: func(cmd *cobra.Command, args []string) {
-			viper.BindPFlag("bundle", cmd.Flags().Lookup("bundle"))
-			viper.BindPFlag("output", cmd.Flags().Lookup("output"))
-			viper.BindPFlag("quiet", cmd.Flags().Lookup("quiet"))
+			viper.BindPFlags(cmd.Flags())
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			v := viper.GetViper()
@@ -76,8 +74,6 @@ func Analyze() *cobra.Command {
 	cmd.Flags().String("compatibility", "", "output compatibility mode: support-bundle")
 	cmd.Flags().MarkHidden("compatibility")
 	cmd.Flags().Bool("quiet", false, "enable/disable error messaging and only show parseable output")
-
-	viper.BindPFlags(cmd.Flags())
 
 	return cmd
 }

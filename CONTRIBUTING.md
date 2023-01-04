@@ -46,7 +46,25 @@ Additionally, e2e tests can be run with:
 make support-bundle preflight e2e-test
 ```
 
-A Kubernetes cluster as well as `jq` are required to run e2e tests.
+A running Kubernetes cluster as well as `jq` are required to run e2e tests.
+
+### Profiling
+
+You are able to collect CPU & memory runtime properties and store the data for analysis in a file. To do so, pass in the file paths using `--cpuprofile` and `--memprofile` flags in the CLI. Once you have your data collected, you can analyse it using [pprof visualization tool](https://github.com/google/pprof/blob/main/doc/README.md). Here is how
+
+Run support bundle and with CPU & memory profile flags
+```sh
+./bin/support-bundle examples/support-bundle/sample-supportbundle.yaml --cpuprofile=cpu.prof --memprofile=mem.prof
+```
+
+Visualize using [pprof](https://github.com/google/pprof/blob/main/doc/README.md)
+```sh
+go tool pprof -http=":8000" cpu.prof
+
+go tool pprof -http=":8001" mem.prof
+```
+
+More on profiling please visit https://go.dev/doc/diagnostics#profiling
 
 ## Contribution workflow
 
