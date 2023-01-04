@@ -399,6 +399,21 @@ func Analyze(analyzer *troubleshootv1beta2.Analyze, getFile getCollectedFileCont
 		result.Strict = analyzer.Postgres.Strict.BoolOrDefaultFalse()
 		return []*AnalyzeResult{result}, nil
 	}
+	if analyzer.Mssql != nil {
+		isExcluded, err := isExcluded(analyzer.Mssql.Exclude)
+		if err != nil {
+			return nil, err
+		}
+		if isExcluded {
+			return nil, nil
+		}
+		result, err := analyzeMssql(analyzer.Mssql, getFile)
+		if err != nil {
+			return nil, err
+		}
+		result.Strict = analyzer.Mssql.Strict.BoolOrDefaultFalse()
+		return []*AnalyzeResult{result}, nil
+	}
 	if analyzer.Mysql != nil {
 		isExcluded, err := isExcluded(analyzer.Mysql.Exclude)
 		if err != nil {
