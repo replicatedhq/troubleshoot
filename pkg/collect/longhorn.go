@@ -65,7 +65,7 @@ func (c *CollectLonghorn) Collect(progressChan chan<- interface{}) (CollectorRes
 	// collect nodes.longhorn.io
 	nodes, err := client.Nodes(ns).List(ctx, metav1.ListOptions{})
 	if err != nil {
-		return nil, errors.Wrap(err, "list nodes.longhorn.io")
+		return output, nil
 	}
 	dir := GetLonghornNodesDirectory(ns)
 	for _, node := range nodes.Items {
