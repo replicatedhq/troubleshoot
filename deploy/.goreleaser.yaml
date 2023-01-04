@@ -6,7 +6,7 @@ release:
 builds:
   - id: preflight
     # NOTE: if you add any additional goos/goarch values, ensure you update ../.github/workflows/build-test-deploy.yaml
-    # with the respective goreleaser-test-* jobs
+    # specifically the matrix values for goreleaser-test
     goos:
       - linux
       - darwin
