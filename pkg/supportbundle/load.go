@@ -105,29 +105,36 @@ func ParseSupportBundleFromDoc(doc []byte) (*troubleshootv1beta2.SupportBundle, 
 }
 
 func GetRedactorFromURI(redactorURI string) (*troubleshootv1beta2.Redactor, error) {
-	decode := scheme.Codecs.UniversalDeserializer().Decode
-
 	redactorContent, err := LoadRedactorSpec(redactorURI)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to load redactor spec %s", redactorURI)
 	}
 
-	redactorContent, err = docrewrite.ConvertToV1Beta2(redactorContent)
+	redactor, ok, err := toRedactGVK([]byte(redactorContent))
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to convert to v1beta2")
+		return nil, errors.Wrapf(err, "failed to parse redactor from doc")
 	}
-
-	obj, _, err := decode([]byte(redactorContent), nil, nil)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to parse redactors %s", redactorURI)
-	}
-
-	redactor, ok := obj.(*troubleshootv1beta2.Redactor)
 	if !ok {
 		return nil, fmt.Errorf("%s is not a troubleshootv1beta2 redactor type", redactorURI)
 	}
 
 	return redactor, nil
+}
+
+func GetRedactorsFromURIs(redactorURIs []string) ([]*troubleshootv1beta2.Redact, error) {
+	redactors := []*troubleshootv1beta2.Redact{}
+	for _, redactor := range redactorURIs {
+		redactorObj, err := GetRedactorFromURI(redactor)
+		if err != nil {
+			return nil, err
+		}
+
+		if redactorObj != nil {
+			redactors = append(redactors, redactorObj.Spec.Redactors...)
+		}
+	}
+
+	return redactors, nil
 }
 
 func LoadSupportBundleSpec(arg string) ([]byte, error) {
@@ -251,25 +258,32 @@ func loadSpecFromURL(arg string) ([]byte, error) {
 func ParseRedactorsFromDocs(docs []string) ([]*troubleshootv1beta2.Redact, error) {
 	var redactors []*troubleshootv1beta2.Redact
 
-	decode := scheme.Codecs.UniversalDeserializer().Decode
-
 	for i, doc := range docs {
-		doc, err := docrewrite.ConvertToV1Beta2([]byte(doc))
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to convert to v1beta2")
-		}
-
-		obj, _, err := decode(doc, nil, nil)
+		multidocRedactors, ok, err := toRedactGVK([]byte(doc))
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to parse redactor from doc %d", i)
 		}
-
-		multidocRedactors, ok := obj.(*troubleshootv1beta2.Redactor)
 		if !ok {
 			continue
 		}
+
 		redactors = append(redactors, multidocRedactors.Spec.Redactors...)
 	}
 
 	return redactors, nil
+}
+
+func toRedactGVK(doc []byte) (*troubleshootv1beta2.Redactor, bool, error) {
+	doc, err := docrewrite.ConvertToV1Beta2(doc)
+	if err != nil {
+		return nil, false, errors.Wrap(err, "failed to convert to v1beta2")
+	}
+
+	obj, _, err := scheme.Codecs.UniversalDeserializer().Decode([]byte(doc), nil, nil)
+	if err != nil {
+		return nil, false, err
+	}
+
+	multidocRedactors, ok := obj.(*troubleshootv1beta2.Redactor)
+	return multidocRedactors, ok, nil
 }

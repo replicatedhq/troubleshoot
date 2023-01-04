@@ -3,10 +3,9 @@ package collect
 import (
 	"context"
 	"math/rand"
-	"os"
-	"path/filepath"
 	"testing"
 
+	"github.com/replicatedhq/troubleshoot/internal/testutils"
 	"github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/stretchr/testify/assert"
@@ -130,18 +129,18 @@ func Test_createTLSConfig(t *testing.T) {
 		{
 			name: "complete tls params creates config successfully",
 			tlsParams: v1beta2.TLSParams{
-				CACert:     getTestFixture(t, "db/ca.pem"),
-				ClientCert: getTestFixture(t, "db/client.pem"),
-				ClientKey:  getTestFixture(t, "db/client-key.pem"),
+				CACert:     testutils.GetTestFixture(t, "db/ca.pem"),
+				ClientCert: testutils.GetTestFixture(t, "db/client.pem"),
+				ClientKey:  testutils.GetTestFixture(t, "db/client-key.pem"),
 			},
 		},
 		{
 			name: "complete tls params in secret creates config successfully",
 			tlsParams: v1beta2.TLSParams{
 				Secret: createTLSSecret(t, k8sClient, map[string]string{
-					"cacert":     getTestFixture(t, "db/ca.pem"),
-					"clientCert": getTestFixture(t, "db/client.pem"),
-					"clientKey":  getTestFixture(t, "db/client-key.pem"),
+					"cacert":     testutils.GetTestFixture(t, "db/ca.pem"),
+					"clientCert": testutils.GetTestFixture(t, "db/client.pem"),
+					"clientKey":  testutils.GetTestFixture(t, "db/client-key.pem"),
 				}),
 			},
 		},
@@ -155,7 +154,7 @@ func Test_createTLSConfig(t *testing.T) {
 			name: "tls params with CA cert only in secret creates config successfully",
 			tlsParams: v1beta2.TLSParams{
 				Secret: createTLSSecret(t, k8sClient, map[string]string{
-					"cacert": getTestFixture(t, "db/ca.pem"),
+					"cacert": testutils.GetTestFixture(t, "db/ca.pem"),
 				}),
 			},
 			caCertOnly: true,
@@ -163,7 +162,7 @@ func Test_createTLSConfig(t *testing.T) {
 		{
 			name: "tls params with CA cert only creates config successfully",
 			tlsParams: v1beta2.TLSParams{
-				CACert: getTestFixture(t, "db/ca.pem"),
+				CACert: testutils.GetTestFixture(t, "db/ca.pem"),
 			},
 			caCertOnly: true,
 		},
@@ -174,24 +173,24 @@ func Test_createTLSConfig(t *testing.T) {
 		{
 			name: "missing CA cert fails to create config with error",
 			tlsParams: v1beta2.TLSParams{
-				ClientCert: getTestFixture(t, "db/client.pem"),
-				ClientKey:  getTestFixture(t, "db/client-key.pem"),
+				ClientCert: testutils.GetTestFixture(t, "db/client.pem"),
+				ClientKey:  testutils.GetTestFixture(t, "db/client-key.pem"),
 			},
 			hasError: true,
 		},
 		{
 			name: "missing client cert fails to create config with error",
 			tlsParams: v1beta2.TLSParams{
-				CACert:    getTestFixture(t, "db/ca.pem"),
-				ClientKey: getTestFixture(t, "db/client-key.pem"),
+				CACert:    testutils.GetTestFixture(t, "db/ca.pem"),
+				ClientKey: testutils.GetTestFixture(t, "db/client-key.pem"),
 			},
 			hasError: true,
 		},
 		{
 			name: "missing client key fails to create config with error",
 			tlsParams: v1beta2.TLSParams{
-				CACert:     getTestFixture(t, "db/ca.pem"),
-				ClientCert: getTestFixture(t, "db/client.pem"),
+				CACert:     testutils.GetTestFixture(t, "db/ca.pem"),
+				ClientCert: testutils.GetTestFixture(t, "db/client.pem"),
 			},
 			hasError: true,
 		},
@@ -199,8 +198,8 @@ func Test_createTLSConfig(t *testing.T) {
 			name: "missing CA cert in secret fails to create config with error",
 			tlsParams: v1beta2.TLSParams{
 				Secret: createTLSSecret(t, k8sClient, map[string]string{
-					"clientCert": getTestFixture(t, "db/client.pem"),
-					"clientKey":  getTestFixture(t, "db/client-key.pem"),
+					"clientCert": testutils.GetTestFixture(t, "db/client.pem"),
+					"clientKey":  testutils.GetTestFixture(t, "db/client-key.pem"),
 				}),
 			},
 			hasError: true,
@@ -209,8 +208,8 @@ func Test_createTLSConfig(t *testing.T) {
 			name: "missing client cert in secret fails to create config with error",
 			tlsParams: v1beta2.TLSParams{
 				Secret: createTLSSecret(t, k8sClient, map[string]string{
-					"cacert":    getTestFixture(t, "db/ca.pem"),
-					"clientKey": getTestFixture(t, "db/client-key.pem"),
+					"cacert":    testutils.GetTestFixture(t, "db/ca.pem"),
+					"clientKey": testutils.GetTestFixture(t, "db/client-key.pem"),
 				}),
 			},
 			hasError: true,
@@ -219,8 +218,8 @@ func Test_createTLSConfig(t *testing.T) {
 			name: "missing client key in secret fails to create config with error",
 			tlsParams: v1beta2.TLSParams{
 				Secret: createTLSSecret(t, k8sClient, map[string]string{
-					"cacert":     getTestFixture(t, "db/ca.pem"),
-					"clientCert": getTestFixture(t, "db/client.pem"),
+					"cacert":     testutils.GetTestFixture(t, "db/ca.pem"),
+					"clientCert": testutils.GetTestFixture(t, "db/client.pem"),
 				}),
 			},
 			hasError: true,
@@ -229,7 +228,7 @@ func Test_createTLSConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tlsCfg, err := createTLSConfig(context.Background(), k8sClient, &tt.tlsParams)
-			assert.Equalf(t, err != nil, tt.hasError, "createTLSConfig() error = %v, wantErr %v", err, tt.hasError)
+			assert.Equalf(t, tt.hasError, err != nil, "createTLSConfig() error = %v, wantErr %v", err, tt.hasError)
 
 			if err == nil {
 				require.NotNil(t, tlsCfg)
@@ -286,12 +285,4 @@ func createTLSSecret(t *testing.T, client kubernetes.Interface, secretData map[s
 		Namespace: namespace,
 		Name:      secretName,
 	}
-}
-
-func getTestFixture(t *testing.T, path string) string {
-	t.Helper()
-	p := filepath.Join("../../testdata", path)
-	b, err := os.ReadFile(p)
-	require.NoError(t, err)
-	return string(b)
 }

@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
+	"github.com/replicatedhq/troubleshoot/pkg/constants"
 	"github.com/replicatedhq/troubleshoot/pkg/version"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v2"
@@ -26,8 +27,6 @@ func VersionCmd() *cobra.Command {
 	return cmd
 }
 
-const VersionFilename = "version.yaml"
-
 func writeVersionFile(path string) error {
 	version := troubleshootv1beta2.SupportBundleVersion{
 		ApiVersion: "troubleshoot.sh/v1beta2",
@@ -41,7 +40,7 @@ func writeVersionFile(path string) error {
 		return err
 	}
 
-	filename := filepath.Join(path, VersionFilename)
+	filename := filepath.Join(path, constants.VersionFilename)
 	err = ioutil.WriteFile(filename, b, 0644)
 	if err != nil {
 		return err

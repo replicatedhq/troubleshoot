@@ -195,6 +195,10 @@ jobs:
   goreleaser-test:
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/v') != true
+    strategy:
+      matrix:
+        goarch: [amd64, arm64]
+        goos: [darwin, linux, windows]
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -210,7 +214,10 @@ jobs:
         uses: goreleaser/goreleaser-action@v4
         with:
           version: "v0.183.0"
-          args: build --rm-dist --snapshot --config deploy/.goreleaser.yaml
+          args: build --rm-dist --snapshot --config deploy/.goreleaser.yaml --single-target
+        env:
+          GOARCH: ${{ matrix.goarch }}
+          GOOS: ${{ matrix.goos }}
 
   goreleaser:
     runs-on: ubuntu-latest

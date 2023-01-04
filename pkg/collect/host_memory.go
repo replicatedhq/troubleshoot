@@ -6,7 +6,7 @@ import (
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
-	"github.com/shirou/gopsutil/mem"
+	"github.com/shirou/gopsutil/v3/mem"
 )
 
 type MemoryInfo struct {
@@ -45,7 +45,5 @@ func (c *CollectHostMemory) Collect(progressChan chan<- interface{}) (map[string
 	output := NewResult()
 	output.SaveResult(c.BundlePath, HostMemoryPath, bytes.NewBuffer(b))
 
-	return map[string][]byte{
-		HostMemoryPath: b,
-	}, nil
+	return output, nil
 }

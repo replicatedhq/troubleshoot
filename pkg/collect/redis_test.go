@@ -3,6 +3,7 @@ package collect
 import (
 	"testing"
 
+	"github.com/replicatedhq/troubleshoot/internal/testutils"
 	v1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -70,7 +71,7 @@ func TestCollectRedis_createPlainTextClient(t *testing.T) {
 			}
 
 			client, err := c.createClient()
-			assert.Equal(t, err != nil, tt.hasError)
+			assert.Equal(t, tt.hasError, err != nil)
 			if err == nil {
 				require.NotNil(t, client)
 				assert.Equal(t, client.Options().Addr, "localhost:6379")
@@ -90,9 +91,9 @@ func TestCollectRedis_createTLSClient(t *testing.T) {
 		Collector: &v1beta2.Database{
 			URI: "redis://localhost:6379",
 			TLS: &v1beta2.TLSParams{
-				CACert:     getTestFixture(t, "db/ca.pem"),
-				ClientCert: getTestFixture(t, "db/client.pem"),
-				ClientKey:  getTestFixture(t, "db/client-key.pem"),
+				CACert:     testutils.GetTestFixture(t, "db/ca.pem"),
+				ClientCert: testutils.GetTestFixture(t, "db/client.pem"),
+				ClientKey:  testutils.GetTestFixture(t, "db/client-key.pem"),
 			},
 		},
 	}

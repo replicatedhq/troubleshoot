@@ -1301,6 +1301,9 @@
                   "filters": {
                     "type": "object",
                     "properties": {
+                      "architecture": {
+                        "type": "string"
+                      },
                       "cpuAllocatable": {
                         "type": "string"
                       },

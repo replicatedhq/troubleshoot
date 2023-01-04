@@ -65,7 +65,7 @@ func (r CollectorResult) SymLinkResult(bundlePath, relativeLinkPath, relativeFil
 	// Create the symlink
 	// NOTE: When creating an archive, relative paths are used
 	// to make the bundle more portable. That implementation
-	// lives in TarSupportBundleDir function. This path needs to
+	// lives in CollectorResultFromBundle function. This path needs to
 	// remain as-is to support memory only bundles e.g preflight
 	err = os.Symlink(filePath, linkPath)
 	if err != nil {
@@ -222,7 +222,7 @@ func (r CollectorResult) CloseWriter(bundlePath string, relativePath string, wri
 	return errors.Errorf("cannot close writer of type %T", writer)
 }
 
-func TarSupportBundleDir(bundlePath string, input CollectorResult, outputFilename string) error {
+func (r CollectorResult) ArchiveSupportBundle(bundlePath string, outputFilename string) error {
 	fileWriter, err := os.Create(outputFilename)
 	if err != nil {
 		return errors.Wrap(err, "failed to create output file")
@@ -235,7 +235,7 @@ func TarSupportBundleDir(bundlePath string, input CollectorResult, outputFilenam
 	tarWriter := tar.NewWriter(gzipWriter)
 	defer tarWriter.Close()
 
-	for relativeName := range input {
+	for relativeName := range r {
 		filename := filepath.Join(bundlePath, relativeName)
 		info, err := os.Lstat(filename)
 		if err != nil {
@@ -314,4 +314,45 @@ func TarSupportBundleDir(bundlePath string, input CollectorResult, outputFilenam
 	}
 
 	return nil
+}
+
+// CollectorResultFromBundle creates a CollectorResult from a bundle directory
+// The bundle directory is not necessarily a support bundle, it can be any directory
+// of collected files as part of other operations or files that are already on disk.
+func CollectorResultFromBundle(bundleDir string) (CollectorResult, error) {
+	// Check directory exists
+	if _, err := os.Stat(bundleDir); os.IsNotExist(err) {
+		return nil, errors.Wrap(err, "bundle directory does not exist")
+	}
+
+	// Walk the directory and add all files to the collector result
+	result := make(CollectorResult)
+	err := filepath.Walk(bundleDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if info.IsDir() {
+			return nil
+		}
+
+		rel, err := filepath.Rel(bundleDir, path)
+		if err != nil {
+			return err
+		}
+
+		result[rel] = nil
+		return nil
+	})
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to walk bundle directory")
+	}
+
+	return result, nil
+}
+
+// TarSupportBundleDir wraps ArchiveSupportBundle for backwards compatibility
+// Deprecated: Remove in a future version (v1.0)
+func TarSupportBundleDir(bundlePath string, input CollectorResult, outputFilename string) error {
+	// Is this used anywhere external anyway?
+	return input.ArchiveSupportBundle(bundlePath, outputFilename)
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"testing"
 
+	"github.com/replicatedhq/troubleshoot/internal/testutils"
 	"github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -79,7 +80,7 @@ func TestCollectPostgres_createConnectConfigPlainText(t *testing.T) {
 			}
 
 			connCfg, err := c.createConnectConfig()
-			assert.Equal(t, err != nil, tt.hasError)
+			assert.Equal(t, tt.hasError, err != nil)
 			if err == nil {
 				require.NotNil(t, connCfg)
 				assert.Equal(t, connCfg.Host, "my-pghost")
@@ -101,9 +102,9 @@ func TestCollectPostgres_createConnectConfigTLS(t *testing.T) {
 		Collector: &v1beta2.Database{
 			URI: "postgresql://user:password@my-pghost:5432/defaultdb?sslmode=require",
 			TLS: &v1beta2.TLSParams{
-				CACert:     getTestFixture(t, "db/ca.pem"),
-				ClientCert: getTestFixture(t, "db/client.pem"),
-				ClientKey:  getTestFixture(t, "db/client-key.pem"),
+				CACert:     testutils.GetTestFixture(t, "db/ca.pem"),
+				ClientCert: testutils.GetTestFixture(t, "db/client.pem"),
+				ClientKey:  testutils.GetTestFixture(t, "db/client-key.pem"),
 			},
 		},
 	}

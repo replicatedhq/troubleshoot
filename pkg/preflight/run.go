@@ -132,7 +132,7 @@ func RunPreflights(interactive bool, output string, format string, args []string
 					preflightSpec = ConcatPreflightSpec(preflightSpec, spec)
 				}
 			} else {
-				uploadResultSpecs = append(uploadResultSpecs, preflightSpec)
+				uploadResultSpecs = append(uploadResultSpecs, spec)
 			}
 		} else if spec, ok := obj.(*troubleshootv1beta2.HostPreflight); ok {
 			if i == 0 {

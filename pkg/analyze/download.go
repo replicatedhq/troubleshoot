@@ -4,7 +4,6 @@ import (
 	"archive/tar"
 	"compress/gzip"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 
@@ -12,6 +11,7 @@ import (
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	troubleshootscheme "github.com/replicatedhq/troubleshoot/pkg/client/troubleshootclientset/scheme"
+	"github.com/replicatedhq/troubleshoot/pkg/constants"
 	"github.com/replicatedhq/troubleshoot/pkg/docrewrite"
 	"github.com/replicatedhq/troubleshoot/pkg/logger"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -55,27 +55,13 @@ func AnalyzeLocal(localBundlePath string, analyzers []*troubleshootv1beta2.Analy
 }
 
 func DownloadAndAnalyze(bundleURL string, analyzersSpec string) ([]*AnalyzeResult, error) {
-	tmpDir, err := ioutil.TempDir("", "troubleshoot-k8s")
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to create temp dir")
-	}
-	defer os.RemoveAll(tmpDir)
-
-	if err := downloadTroubleshootBundle(bundleURL, tmpDir); err != nil {
-		return nil, errors.Wrap(err, "failed to download bundle")
-	}
-
-	rootDir, err := FindBundleRootDir(tmpDir)
+	tmpDir, rootDir, err := DownloadAndExtractSupportBundle(bundleURL)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to find root dir")
 	}
+	defer os.RemoveAll(tmpDir)
 
-	_, err = os.Stat(filepath.Join(rootDir, "version.yaml"))
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to read version.yaml")
-	}
-
-	analyzers := []*troubleshootv1beta2.Analyze{}
+	var analyzers []*troubleshootv1beta2.Analyze
 	hostAnalyzers := []*troubleshootv1beta2.HostAnalyze{}
 
 	if analyzersSpec == "" {
@@ -96,7 +82,34 @@ func DownloadAndAnalyze(bundleURL string, analyzersSpec string) ([]*AnalyzeResul
 	return AnalyzeLocal(rootDir, analyzers, hostAnalyzers)
 }
 
+func DownloadAndExtractSupportBundle(bundleURL string) (string, string, error) {
+	tmpDir, err := os.MkdirTemp("", "troubleshoot-k8s")
+	if err != nil {
+		return "", "", errors.Wrap(err, "failed to create temp dir")
+	}
+
+	if err := downloadTroubleshootBundle(bundleURL, tmpDir); err != nil {
+		os.RemoveAll(tmpDir)
+		return "", "", errors.Wrap(err, "failed to download bundle")
+	}
+
+	bundleDir, err := FindBundleRootDir(tmpDir)
+	if err != nil {
+		os.RemoveAll(tmpDir)
+		return "", "", errors.Wrap(err, "failed to find root dir")
+	}
+
+	_, err = os.Stat(filepath.Join(bundleDir, constants.VersionFilename))
+	if err != nil {
+		os.RemoveAll(tmpDir)
+		return "", "", errors.Wrap(err, "failed to read "+constants.VersionFilename)
+	}
+
+	return tmpDir, bundleDir, nil
+}
+
 func downloadTroubleshootBundle(bundleURL string, destDir string) error {
+	// TODO: Move to separate package support bundle utils package
 	if bundleURL[0] == os.PathSeparator {
 		f, err := os.Open(bundleURL)
 		if err != nil {
@@ -111,7 +124,7 @@ func downloadTroubleshootBundle(bundleURL string, destDir string) error {
 		return errors.Wrap(err, "failed to get workdir")
 	}
 
-	tmpDir, err := ioutil.TempDir("", "troubleshoot")
+	tmpDir, err := os.MkdirTemp("", "troubleshoot")
 	if err != nil {
 		return errors.Wrap(err, "failed to create tmp dir")
 	}
@@ -137,6 +150,8 @@ func downloadTroubleshootBundle(bundleURL string, destDir string) error {
 }
 
 func ExtractTroubleshootBundle(reader io.Reader, destDir string) error {
+	// TODO: Move to separate package e.g support bundle package, or sbutils
+	// if there are cyclic dependencies
 	gzReader, err := gzip.NewReader(reader)
 	if err != nil {
 		return errors.Wrap(err, "failed to create gzip reader")
@@ -159,14 +174,14 @@ func ExtractTroubleshootBundle(reader io.Reader, destDir string) error {
 				return errors.Wrap(err, "failed to mkdir")
 			}
 		case tar.TypeReg:
-			name := filepath.Join(destDir, header.Name)
+			destFileName := filepath.Join(destDir, header.Name)
 
-			dirName := filepath.Dir(name)
+			dirName := filepath.Dir(destFileName)
 			if err := os.MkdirAll(dirName, 0755); err != nil {
 				return errors.Wrapf(err, "failed to mkdir for file %s", header.Name)
 			}
 
-			file, err := os.OpenFile(name, os.O_RDWR|os.O_CREATE, os.FileMode(header.Mode))
+			file, err := os.OpenFile(destFileName, os.O_RDWR|os.O_CREATE, os.FileMode(header.Mode))
 			if err != nil {
 				return errors.Wrap(err, "failed to open tar file")
 			}
@@ -174,6 +189,21 @@ func ExtractTroubleshootBundle(reader io.Reader, destDir string) error {
 			file.Close()
 			if err != nil {
 				return errors.Wrap(err, "failed to extract file")
+			}
+		case tar.TypeSymlink:
+			destFileName := filepath.Join(destDir, header.Name)
+
+			dirName := filepath.Dir(destFileName)
+			if err := os.MkdirAll(dirName, 0755); err != nil {
+				return errors.Wrapf(err, "failed to mkdir for symlink %s", header.Name)
+			}
+
+			// Symlink targets should be absolute paths after extraction
+			// for other parts of the code to work correctly e.g redaction, CollectorResult
+			targetPath := filepath.Join(filepath.Dir(destFileName), header.Linkname)
+			err = os.Symlink(targetPath, destFileName)
+			if err != nil {
+				return errors.Wrap(err, "failed to create symlink")
 			}
 		}
 	}
@@ -251,7 +281,7 @@ func FindBundleRootDir(localBundlePath string) (string, error) {
 
 	isInSubDir := true
 	for _, name := range names {
-		if name == "version.yaml" {
+		if name == constants.VersionFilename {
 			isInSubDir = false
 			break
 		}
@@ -265,7 +295,7 @@ func FindBundleRootDir(localBundlePath string) (string, error) {
 }
 
 func (f fileContentProvider) getFileContents(fileName string) ([]byte, error) {
-	return ioutil.ReadFile(filepath.Join(f.rootDir, fileName))
+	return os.ReadFile(filepath.Join(f.rootDir, fileName))
 }
 
 func excludeFilePaths(files, excludeFiles []string) []string {
@@ -306,7 +336,7 @@ func (f fileContentProvider) getChildFileContents(dirName string, excludeFiles [
 
 	fileArr := map[string][]byte{}
 	for _, filePath := range files {
-		bytes, err := ioutil.ReadFile(filePath)
+		bytes, err := os.ReadFile(filePath)
 		if err != nil {
 			return nil, errors.Wrapf(err, "read %q", filePath)
 		}
