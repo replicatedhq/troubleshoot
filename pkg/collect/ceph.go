@@ -9,7 +9,7 @@ import (
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
-	"github.com/spf13/viper"
+	"github.com/replicatedhq/troubleshoot/pkg/types"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -139,14 +139,12 @@ func (c *CollectCeph) Collect(progressChan chan<- interface{}) (CollectorResult,
 
 	output := NewResult()
 
-	if pod != nil {
-		for _, command := range CephCommands {
-			err := cephCommandExec(ctx, progressChan, c, c.Collector, pod, command, output)
-			if err != nil {
-				pathPrefix := GetCephCollectorFilepath(c.Collector.CollectorName, c.Namespace)
-				dstFileName := path.Join(pathPrefix, fmt.Sprintf("%s.%s-error", command.ID, command.Format))
-				output.SaveResult(c.BundlePath, dstFileName, strings.NewReader(err.Error()))
-			}
+	for _, command := range CephCommands {
+		err := cephCommandExec(ctx, progressChan, c, c.Collector, pod, command, output)
+		if err != nil {
+			pathPrefix := GetCephCollectorFilepath(c.Collector.CollectorName, c.Namespace)
+			dstFileName := path.Join(pathPrefix, fmt.Sprintf("%s.%s-error", command.ID, command.Format))
+			output.SaveResult(c.BundlePath, dstFileName, strings.NewReader(err.Error()))
 		}
 	}
 	return output, nil
@@ -199,7 +197,6 @@ func cephCommandExec(ctx context.Context, progressChan chan<- interface{}, c *Co
 
 func findRookCephToolsPod(ctx context.Context, c *CollectCeph, namespace string) (*corev1.Pod, error) {
 	client, err := kubernetes.NewForConfig(c.ClientConfig)
-	v := viper.GetViper()
 
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create kubernetes client")
@@ -215,11 +212,7 @@ func findRookCephToolsPod(ctx context.Context, c *CollectCeph, namespace string)
 		return &pods[0], nil
 	}
 
-	if v.GetBool("debug") {
-		return nil, errors.New("rook ceph tools pod not found")
-	}
-
-	return nil, nil
+	return nil, &types.NotFoundError{Name: "rook ceph tools pod"}
 }
 
 func GetCephCollectorFilepath(name, namespace string) string {
