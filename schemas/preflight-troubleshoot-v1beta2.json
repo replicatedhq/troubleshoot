@@ -2603,6 +2603,10 @@
                       "maxAge": {
                         "type": "string"
                       },
+                      "maxBytes": {
+                        "type": "integer",
+                        "format": "int64"
+                      },
                       "maxLines": {
                         "type": "integer",
                         "format": "int64"

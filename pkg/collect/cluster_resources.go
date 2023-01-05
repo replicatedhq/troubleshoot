@@ -169,6 +169,7 @@ func (c *CollectClusterResources) Collect(progressChan chan<- interface{}) (Coll
 		for _, container := range allContainers {
 			limits := &troubleshootv1beta2.LogLimits{
 				MaxLines: 500,
+				MaxBytes: 5000000,
 			}
 			podLogs, err := savePodLogs(ctx, c.BundlePath, client, &pod, "", container.Name, limits, false, false)
 			if err != nil {
