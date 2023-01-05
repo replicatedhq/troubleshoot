@@ -9,7 +9,7 @@ import (
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
-	"github.com/replicatedhq/troubleshoot/pkg/types"
+	"github.com/replicatedhq/troubleshoot/pkg/logger"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -138,13 +138,14 @@ func (c *CollectCeph) Collect(progressChan chan<- interface{}) (CollectorResult,
 	}
 
 	output := NewResult()
-
-	for _, command := range CephCommands {
-		err := cephCommandExec(ctx, progressChan, c, c.Collector, pod, command, output)
-		if err != nil {
-			pathPrefix := GetCephCollectorFilepath(c.Collector.CollectorName, c.Namespace)
-			dstFileName := path.Join(pathPrefix, fmt.Sprintf("%s.%s-error", command.ID, command.Format))
-			output.SaveResult(c.BundlePath, dstFileName, strings.NewReader(err.Error()))
+	if pod != nil {
+		for _, command := range CephCommands {
+			err := cephCommandExec(ctx, progressChan, c, c.Collector, pod, command, output)
+			if err != nil {
+				pathPrefix := GetCephCollectorFilepath(c.Collector.CollectorName, c.Namespace)
+				dstFileName := path.Join(pathPrefix, fmt.Sprintf("%s.%s-error", command.ID, command.Format))
+				output.SaveResult(c.BundlePath, dstFileName, strings.NewReader(err.Error()))
+			}
 		}
 	}
 	return output, nil
@@ -212,7 +213,9 @@ func findRookCephToolsPod(ctx context.Context, c *CollectCeph, namespace string)
 		return &pods[0], nil
 	}
 
-	return nil, &types.NotFoundError{Name: "rook ceph tools pod"}
+	logger.Printf("rook ceph tools pod not found")
+
+	return nil, nil
 }
 
 func GetCephCollectorFilepath(name, namespace string) string {

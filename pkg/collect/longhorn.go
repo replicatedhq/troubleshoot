@@ -15,7 +15,6 @@ import (
 	longhornv1beta1types "github.com/replicatedhq/troubleshoot/pkg/longhorn/apis/longhorn/v1beta1"
 	longhornv1beta1 "github.com/replicatedhq/troubleshoot/pkg/longhorn/client/clientset/versioned/typed/longhorn/v1beta1"
 	longhorntypes "github.com/replicatedhq/troubleshoot/pkg/longhorn/types"
-	"github.com/replicatedhq/troubleshoot/pkg/types"
 	"gopkg.in/yaml.v2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -66,7 +65,8 @@ func (c *CollectLonghorn) Collect(progressChan chan<- interface{}) (CollectorRes
 	// collect nodes.longhorn.io
 	nodes, err := client.Nodes(ns).List(ctx, metav1.ListOptions{})
 	if err != nil {
-		return nil, &types.NotFoundError{Name: "list nodes.longhorn.io"}
+		logger.Printf("list nodes.longhorn.io not found")
+		return nil, nil
 	}
 	dir := GetLonghornNodesDirectory(ns)
 	for _, node := range nodes.Items {
