@@ -15,7 +15,6 @@ import (
 	"github.com/replicatedhq/troubleshoot/pkg/collect"
 	"github.com/replicatedhq/troubleshoot/pkg/constants"
 	"github.com/replicatedhq/troubleshoot/pkg/convert"
-	"github.com/replicatedhq/troubleshoot/pkg/types"
 	"github.com/replicatedhq/troubleshoot/pkg/version"
 	"gopkg.in/yaml.v2"
 	"k8s.io/client-go/kubernetes"
@@ -146,9 +145,6 @@ func runCollectors(collectors []*troubleshootv1beta2.Collect, additionalRedactor
 		opts.CollectorProgressCallback(opts.ProgressChan, collector.Title())
 		result, err := collector.Collect(opts.ProgressChan)
 		if err != nil {
-			if _, ok := err.(*types.NotFoundError); ok {
-				continue
-			}
 			opts.ProgressChan <- errors.Errorf("failed to run collector: %s: %v", collector.Title(), err)
 		}
 		for k, v := range result {
