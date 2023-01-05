@@ -70,7 +70,7 @@ func FromAnalyzerResult(input []*analyze.AnalyzeResult) []*Result {
 	result := make([]*Result, 0)
 	for _, i := range input {
 		// Continue on nil result to prevent panic
-		if i == nil || i.Title == "" {
+		if i == nil {
 			continue
 		}
 		name := reg.ReplaceAllString(strings.ToLower(i.Title), ".")
