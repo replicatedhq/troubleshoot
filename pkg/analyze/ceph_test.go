@@ -5,16 +5,21 @@ import (
 	"testing"
 
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
+	"github.com/replicatedhq/troubleshoot/pkg/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
+type getFile func(n string) ([]byte, error)
+
 func Test_cephStatus(t *testing.T) {
 	tests := []struct {
-		name           string
-		analyzer       troubleshootv1beta2.CephStatusAnalyze
-		expectResult   AnalyzeResult
-		filePath, file string
+		name            string
+		analyzer        troubleshootv1beta2.CephStatusAnalyze
+		expectResult    AnalyzeResult
+		expectNilResult bool
+		getFile         getFile
+		filePath, file  string
 	}{
 		{
 			name:     "pass case",
@@ -249,21 +254,34 @@ func Test_cephStatus(t *testing.T) {
 				}
 			}`,
 		},
+		{
+			name:            "pass case when get file returns not found error",
+			analyzer:        troubleshootv1beta2.CephStatusAnalyze{},
+			expectNilResult: true,
+			getFile: func(n string) ([]byte, error) {
+				return nil, &types.NotFoundError{}
+			},
+		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			req := require.New(t)
-
-			getFile := func(n string) ([]byte, error) {
-				assert.Equal(t, n, test.filePath)
-				return []byte(test.file), nil
+			if test.getFile == nil {
+				test.getFile = func(n string) ([]byte, error) {
+					assert.Equal(t, n, test.filePath)
+					return []byte(test.file), nil
+				}
 			}
 
-			actual, err := cephStatus(&test.analyzer, getFile)
+			actual, err := cephStatus(&test.analyzer, test.getFile)
 			req.NoError(err)
 
-			assert.Equal(t, test.expectResult, *actual)
+			if test.expectNilResult {
+				assert.Nil(t, actual)
+			} else {
+				assert.Equal(t, test.expectResult, *actual)
+			}
 		})
 	}
 }
