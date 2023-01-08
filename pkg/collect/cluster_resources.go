@@ -169,6 +169,9 @@ func (c *CollectClusterResources) Collect(progressChan chan<- interface{}) (Coll
 		for _, container := range allContainers {
 			limits := &troubleshootv1beta2.LogLimits{
 				MaxLines: 500,
+				// MaxBytes has been introduced to be able to limit the size of a pods logfile. This will in turn
+				// limit the total support bundle size as well as make sure the log(s) don't contain information
+				// that is too old/not relevant.
 				MaxBytes: 5000000,
 			}
 			podLogs, err := savePodLogs(ctx, c.BundlePath, client, &pod, "", container.Name, limits, false, false)
