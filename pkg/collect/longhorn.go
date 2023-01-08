@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"net/http"
 	"path/filepath"
 	"regexp"
 	"sync"
@@ -16,6 +17,7 @@ import (
 	longhornv1beta1 "github.com/replicatedhq/troubleshoot/pkg/longhorn/client/clientset/versioned/typed/longhorn/v1beta1"
 	longhorntypes "github.com/replicatedhq/troubleshoot/pkg/longhorn/types"
 	"gopkg.in/yaml.v2"
+	apiErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -65,8 +67,13 @@ func (c *CollectLonghorn) Collect(progressChan chan<- interface{}) (CollectorRes
 	// collect nodes.longhorn.io
 	nodes, err := client.Nodes(ns).List(ctx, metav1.ListOptions{})
 	if err != nil {
-		logger.Printf("list nodes.longhorn.io not found")
-		return nil, nil
+		if apiErr, ok := err.(*apiErrors.StatusError); ok {
+			if apiErr.ErrStatus.Code == http.StatusNotFound {
+				logger.Printf("list nodes.longhorn.io not found")
+				return nil, nil
+			}
+		}
+		return nil, errors.Wrap(err, "list nodes.longhorn.io")
 	}
 	dir := GetLonghornNodesDirectory(ns)
 	for _, node := range nodes.Items {
