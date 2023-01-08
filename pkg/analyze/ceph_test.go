@@ -14,17 +14,16 @@ type getFile func(n string) ([]byte, error)
 
 func Test_cephStatus(t *testing.T) {
 	tests := []struct {
-		name            string
-		analyzer        troubleshootv1beta2.CephStatusAnalyze
-		expectResult    AnalyzeResult
-		expectNilResult bool
-		getFile         getFile
-		filePath, file  string
+		name           string
+		analyzer       troubleshootv1beta2.CephStatusAnalyze
+		expectResult   *AnalyzeResult
+		getFile        getFile
+		filePath, file string
 	}{
 		{
 			name:     "pass case",
 			analyzer: troubleshootv1beta2.CephStatusAnalyze{},
-			expectResult: AnalyzeResult{
+			expectResult: &AnalyzeResult{
 				IsPass:  true,
 				IsWarn:  false,
 				IsFail:  false,
@@ -56,7 +55,7 @@ func Test_cephStatus(t *testing.T) {
 		{
 			name:     "warn case",
 			analyzer: troubleshootv1beta2.CephStatusAnalyze{},
-			expectResult: AnalyzeResult{
+			expectResult: &AnalyzeResult{
 				IsPass:  false,
 				IsWarn:  true,
 				IsFail:  false,
@@ -89,7 +88,7 @@ func Test_cephStatus(t *testing.T) {
 		{
 			name:     "fail case",
 			analyzer: troubleshootv1beta2.CephStatusAnalyze{},
-			expectResult: AnalyzeResult{
+			expectResult: &AnalyzeResult{
 				IsPass:  false,
 				IsWarn:  false,
 				IsFail:  true,
@@ -125,7 +124,7 @@ func Test_cephStatus(t *testing.T) {
 				CollectorName: "custom-namespace",
 				Namespace:     "namespace",
 			},
-			expectResult: AnalyzeResult{
+			expectResult: &AnalyzeResult{
 				IsPass:  true,
 				IsWarn:  false,
 				IsFail:  false,
@@ -172,7 +171,7 @@ func Test_cephStatus(t *testing.T) {
 					},
 				},
 			},
-			expectResult: AnalyzeResult{
+			expectResult: &AnalyzeResult{
 				IsPass:  false,
 				IsWarn:  false,
 				IsFail:  true,
@@ -205,7 +204,7 @@ func Test_cephStatus(t *testing.T) {
 		{
 			name:     "warn case with missing osd/pg data",
 			analyzer: troubleshootv1beta2.CephStatusAnalyze{},
-			expectResult: AnalyzeResult{
+			expectResult: &AnalyzeResult{
 				IsPass:  false,
 				IsWarn:  true,
 				IsFail:  false,
@@ -226,7 +225,7 @@ func Test_cephStatus(t *testing.T) {
 		{
 			name:     "warn case with health status message and summary",
 			analyzer: troubleshootv1beta2.CephStatusAnalyze{},
-			expectResult: AnalyzeResult{
+			expectResult: &AnalyzeResult{
 				IsPass:  false,
 				IsWarn:  true,
 				IsFail:  false,
@@ -255,9 +254,9 @@ func Test_cephStatus(t *testing.T) {
 			}`,
 		},
 		{
-			name:            "pass case when get file returns not found error",
-			analyzer:        troubleshootv1beta2.CephStatusAnalyze{},
-			expectNilResult: true,
+			name:         "pass case when get file returns not found error",
+			analyzer:     troubleshootv1beta2.CephStatusAnalyze{},
+			expectResult: nil,
 			getFile: func(n string) ([]byte, error) {
 				return nil, &types.NotFoundError{}
 			},
@@ -277,11 +276,7 @@ func Test_cephStatus(t *testing.T) {
 			actual, err := cephStatus(&test.analyzer, test.getFile)
 			req.NoError(err)
 
-			if test.expectNilResult {
-				assert.Nil(t, actual)
-			} else {
-				assert.Equal(t, test.expectResult, *actual)
-			}
+			assert.Equal(t, test.expectResult, actual)
 		})
 	}
 }
