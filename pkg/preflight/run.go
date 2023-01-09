@@ -236,7 +236,7 @@ func RunPreflights(interactive bool, output string, format string, args []string
 		return showInteractiveResults(preflightSpecName, output, analyzeResults)
 	}
 
-	return showStdoutResults(format, preflightSpecName, analyzeResults)
+	return showTextResults(format, preflightSpecName, output, analyzeResults)
 }
 
 func collectInteractiveProgress(ctx context.Context, progressCh <-chan interface{}) func() error {
