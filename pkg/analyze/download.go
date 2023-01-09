@@ -4,6 +4,7 @@ import (
 	"archive/tar"
 	"compress/gzip"
 	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
 
@@ -14,6 +15,7 @@ import (
 	"github.com/replicatedhq/troubleshoot/pkg/constants"
 	"github.com/replicatedhq/troubleshoot/pkg/docrewrite"
 	"github.com/replicatedhq/troubleshoot/pkg/logger"
+	"github.com/replicatedhq/troubleshoot/pkg/types"
 	"k8s.io/client-go/kubernetes/scheme"
 )
 
@@ -295,7 +297,14 @@ func FindBundleRootDir(localBundlePath string) (string, error) {
 }
 
 func (f fileContentProvider) getFileContents(fileName string) ([]byte, error) {
-	return os.ReadFile(filepath.Join(f.rootDir, fileName))
+	contents, err := os.ReadFile(filepath.Join(f.rootDir, fileName))
+	if err != nil {
+		if errors.Is(err, fs.ErrNotExist) {
+			return nil, &types.NotFoundError{Name: fileName}
+		}
+		return nil, err
+	}
+	return contents, nil
 }
 
 func excludeFilePaths(files, excludeFiles []string) []string {
