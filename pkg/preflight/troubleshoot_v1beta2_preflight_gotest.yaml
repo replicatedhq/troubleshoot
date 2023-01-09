@@ -1,0 +1,39 @@
+apiVersion: troubleshoot.sh/v1beta2
+kind: Preflight
+metadata:
+  name: go-test-preflight
+spec:
+  # TODO: mock a local HTTP server to send this to
+  #uploadResultsTo: http://someurl
+  collectors:
+    - data:
+        name: example.json
+        data: |
+          {
+            "foo": "bar",
+            "stuff": {
+              "foo": "bar",
+              "bar": true
+            },
+            "morestuff": [
+              {
+                "foo": {
+                  "bar": 123
+                }
+              }
+            ]
+          }
+  analyzers:
+    - jsonCompare:
+        checkName: Compare JSON Example
+        fileName: example.json
+        path: "morestuff.[0].foo.bar"
+        value: |
+          123
+        outcomes:
+          - fail:
+              when: "false"
+              message: The collected data does not match the value.
+          - pass:
+              when: "true"
+              message: The collected data matches the value.
