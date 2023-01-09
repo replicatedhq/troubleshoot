@@ -7,8 +7,10 @@ import (
 
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 	testclient "k8s.io/client-go/kubernetes/fake"
 )
 
@@ -158,25 +160,82 @@ func Test_savePodLogs(t *testing.T) {
 				MaxLines: 500,
 				MaxBytes: 10000000,
 			}
-			pod, err := client.CoreV1().Pods("my-namespace").Create(ctx, &corev1.Pod{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "test-pod",
-				},
-				Spec: corev1.PodSpec{
-					Containers: []corev1.Container{
-						{
-							Name: containerName,
-						},
-					},
-				},
-			}, metav1.CreateOptions{})
-			assert.NoError(t, err)
+			pod, err := createPod(client, containerName, "test-pod", "my-namespace")
+			require.NoError(t, err)
 			if !tt.withContainerName {
 				containerName = ""
 			}
-			got, err := savePodLogsWithInterface(ctx, "", client, pod, tt.collectorName, containerName, limits, false, tt.createSymLinks)
+			got, err := savePodLogs(ctx, "", client, pod, tt.collectorName, containerName, limits, false, tt.createSymLinks)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.want, got)
 		})
 	}
+}
+
+func Test_CollectLogs(t *testing.T) {
+	tests := []struct {
+		name          string
+		collectorName string
+		podNames      []string
+		want          CollectorResult
+	}{
+		{
+			name:          "from multiple pods",
+			collectorName: "all-logs",
+			podNames: []string{
+				"firstPod",
+				"secondPod",
+			},
+			want: CollectorResult{
+				"all-logs/firstPod/nginx.log":                                           []byte("fake logs"),
+				"all-logs/firstPod/nginx-previous.log":                                  []byte("fake logs"),
+				"all-logs/secondPod/nginx.log":                                          []byte("fake logs"),
+				"all-logs/secondPod/nginx-previous.log":                                 []byte("fake logs"),
+				"cluster-resources/pods/logs/my-namespace/firstPod/nginx.log":           []byte("fake logs"),
+				"cluster-resources/pods/logs/my-namespace/firstPod/nginx-previous.log":  []byte("fake logs"),
+				"cluster-resources/pods/logs/my-namespace/secondPod/nginx.log":          []byte("fake logs"),
+				"cluster-resources/pods/logs/my-namespace/secondPod/nginx-previous.log": []byte("fake logs"),
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := context.TODO()
+			ns := "my-namespace"
+			client := testclient.NewSimpleClientset()
+
+			for _, podName := range tt.podNames {
+				_, err := createPod(client, "nginx", podName, ns)
+				require.NoError(t, err)
+			}
+
+			progresChan := make(chan any)
+			c := &CollectLogs{
+				Context:   ctx,
+				Namespace: ns,
+				Collector: &troubleshootv1beta2.Logs{
+					Name: tt.collectorName,
+				},
+			}
+			got, err := c.CollectWithClient(progresChan, client)
+
+			assert.NoError(t, err)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
+
+func createPod(client kubernetes.Interface, containerName, podName, ns string) (*corev1.Pod, error) {
+	return client.CoreV1().Pods(ns).Create(context.TODO(), &corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: podName,
+		},
+		Spec: corev1.PodSpec{
+			Containers: []corev1.Container{
+				{
+					Name: containerName,
+				},
+			},
+		},
+	}, metav1.CreateOptions{})
 }
