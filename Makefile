@@ -48,6 +48,7 @@ test: generate fmt vet
 .PHONY: preflight-e2e-test
 preflight-e2e-test:
 	./test/validate-preflight-e2e.sh
+	cd pkg/preflight && go test --tags=integration
 
 .PHONY: support-bundle-e2e-test
 support-bundle-e2e-test:
