@@ -253,7 +253,7 @@ jobs:
 
       - uses: azure/docker-login@v1
         with:
-          username: repldeploy2
+          username: ${{ secrets.DOCKERHUB_USER }}
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
 
       - name: Unshallow
