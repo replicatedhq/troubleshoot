@@ -7,14 +7,12 @@
 package preflight
 
 import (
-	"crypto/rand"
-	"encoding/hex"
 	"errors"
-	"fmt"
 	"os"
 	"path/filepath"
-	"runtime"
 	"testing"
+
+	"github.com/replicatedhq/troubleshoot/internal/testutils"
 	/*
 		See TODOLATER below
 
@@ -27,57 +25,16 @@ func TestRunPreflights(t *testing.T) {
 	t.Parallel()
 
 	// A very simple preflight spec (local file)
-	_, testFilename, _, status := runtime.Caller(0)
-	if status == false {
-		t.Fatal("Cannot determine current directory for go test source code, required for relative path of preflight spec YAML")
-	}
-	preflightFile := fmt.Sprintf("%s/troubleshoot_v1beta2_preflight_gotest.yaml", filepath.ToSlash(filepath.Dir(testFilename)))
+	preflightFile := filepath.Join(testutils.FileDir(), "../../testdata/preflightspec/troubleshoot_v1beta2_preflight_gotest.yaml")
 
-	type preflightTests struct {
-		Interactive bool
-		Output      string
-		Format      string
-		Args        []string
-		//
-		ExpectedError      error
-		ExpectedOutputFile string
-		// May be in stdout or file, depending on above value
-		ExpectedOutputContent string
-	}
-
-	tests := []preflightTests{}
-	// TODO: test interactive true as well
-	for _, interactive := range []bool{false} {
-		// false = no output file specified, true = specify a (temp) output filename
-		for _, outputToFile := range []bool{false, true} {
-			for _, format := range []string{"human", "json", "yaml"} {
-				thisTest := preflightTests{
-					Interactive: interactive,
-					Format:      format,
-					// TODOLATER: try a URL also, using a local mocked HTTP server for testing? using a local file only for now
-					Args:          []string{preflightFile},
-					ExpectedError: nil,
-				}
-
-				// An output file should be written
-				if outputToFile == true {
-					randBytes := make([]byte, 16)
-					rand.Read(randBytes)
-					outputFilename := filepath.Join(os.TempDir(), fmt.Sprintf("preflight_out_test_%s", hex.EncodeToString(randBytes)))
-					thisTest.Output = outputFilename
-					thisTest.ExpectedOutputFile = outputFilename
-				}
-
-				switch format {
-				case "human":
-					thisTest.ExpectedOutputContent = `
+	expectedOutputContentHuman := `
    --- PASS Compare JSON Example
       --- The collected data matches the value.
 --- PASS   go-test-preflight
 PASS
 `
-				case "json":
-					thisTest.ExpectedOutputContent = `{
+
+	expectedOutputContentJson := `{
   "pass": [
     {
       "title": "Compare JSON Example",
@@ -86,23 +43,73 @@ PASS
   ]
 }
 `
-				case "yaml":
-					thisTest.ExpectedOutputContent = `pass:
+
+	expectedOutputContentYaml := `pass:
 - title: Compare JSON Example
   message: The collected data matches the value.
 
 `
-				default:
-					t.Fatal("Error: unsupported output format in test")
-				}
 
-				tests = append(tests, thisTest)
-			}
-		}
+	tests := []struct {
+		interactive bool
+		output      string
+		format      string
+		args        []string
+		//
+		expectedError error
+		// May be in stdout or file, depending on above value
+		expectedOutputContent string
+	}{
+		// TODOLATER: test interactive true as well
+		{
+			interactive:           false,
+			output:                "",
+			format:                "human",
+			args:                  []string{preflightFile},
+			expectedError:         nil,
+			expectedOutputContent: expectedOutputContentHuman,
+		},
+		{
+			interactive:           false,
+			output:                "",
+			format:                "json",
+			args:                  []string{preflightFile},
+			expectedError:         nil,
+			expectedOutputContent: expectedOutputContentJson,
+		},
+		{
+			interactive:           false,
+			output:                "",
+			format:                "yaml",
+			args:                  []string{preflightFile},
+			expectedError:         nil,
+			expectedOutputContent: expectedOutputContentYaml,
+		},
+		{
+			interactive:           false,
+			output:                testutils.TempFilename("preflight_out_test_"),
+			format:                "human",
+			args:                  []string{preflightFile},
+			expectedError:         nil,
+			expectedOutputContent: expectedOutputContentHuman,
+		},
+		{
+			interactive:           false,
+			output:                testutils.TempFilename("preflight_out_test_"),
+			format:                "json",
+			args:                  []string{preflightFile},
+			expectedError:         nil,
+			expectedOutputContent: expectedOutputContentJson,
+		},
+		{
+			interactive:           false,
+			output:                testutils.TempFilename("preflight_out_test_"),
+			format:                "yaml",
+			args:                  []string{preflightFile},
+			expectedError:         nil,
+			expectedOutputContent: expectedOutputContentYaml,
+		},
 	}
-
-	// Show the full list of permutations
-	//fmt.Printf("+v\n", tests)
 
 	// Use a fake/mocked K8s API, since some collectors are mandatory and need an API server to hit
 	// TODOLATER: for this to work, we need to refactor all of the collectors and analyzers to allow passing in a fake clientset?
@@ -140,7 +147,7 @@ PASS
 		fmt.Printf("kubeconfig: %+v\n", kubeconfig)
 	*/
 
-	for _, i := range tests {
+	for _, tt := range tests {
 		// Capture stdout/stderr along the way
 		rOut, wOut, err := os.Pipe()
 		if err != nil {
@@ -156,7 +163,7 @@ PASS
 		origStderr := os.Stderr
 		os.Stderr = wErr
 
-		tErr := RunPreflights(i.Interactive, i.Output, i.Format, i.Args)
+		tErr := RunPreflights(tt.interactive, tt.output, tt.format, tt.args)
 
 		// Stop redirection of stdout/stderr
 		bufOut := make([]byte, 1024)
@@ -173,7 +180,7 @@ PASS
 		os.Stdout = origStdout
 		os.Stderr = origStderr
 
-		if tErr != i.ExpectedError {
+		if tErr != tt.expectedError {
 			t.Error(err)
 		}
 
@@ -182,35 +189,35 @@ PASS
 		//fmt.Printf("stdout: %+v\n", useBufOut)
 		//fmt.Printf("stderr: %+v\n", useBufErr)
 
-		if i.ExpectedOutputFile != "" {
+		if tt.output != "" {
 			// Output file is expected, make sure it exists
-			if _, err := os.Stat(i.ExpectedOutputFile); errors.Is(err, os.ErrNotExist) {
-				t.Errorf("interactive: %t format %s :: Output file %s was expected, does not exist\n", i.Interactive, i.Format, i.ExpectedOutputFile)
+			if _, err := os.Stat(tt.output); errors.Is(err, os.ErrNotExist) {
+				t.Errorf("interactive: %t format %s :: Output file %s was expected, does not exist\n", tt.interactive, tt.format, tt.output)
 			} else {
 				// If it exists, check contents of output file against expected
-				readOutputFile, err := os.ReadFile(i.ExpectedOutputFile)
+				readOutputFile, err := os.ReadFile(tt.output)
 				if err != nil {
 					t.Error(err)
 				}
-				if string(readOutputFile) != i.ExpectedOutputContent {
-					t.Errorf("interactive: %t format %s :: Output in file does not match expected. Expected length: %d, stdout buffer: %d\n", i.Interactive, i.Format, len(i.ExpectedOutputContent), len(readOutputFile))
+				if string(readOutputFile) != tt.expectedOutputContent {
+					t.Errorf("interactive: %t format %s :: Output in file does not match expected. Expected length: %d, stdout buffer: %d\n", tt.interactive, tt.format, len(tt.expectedOutputContent), len(readOutputFile))
 				}
 			}
 		} else {
 			// Expected no output file, make sure it doesn't exist
-			if _, err := os.Stat(i.ExpectedOutputFile); err == nil {
-				t.Errorf("interactive: %t format %s :: Output file %s was not expected, but one was found\n", i.Interactive, i.Format, i.ExpectedOutputFile)
+			if _, err := os.Stat(tt.output); err == nil {
+				t.Errorf("interactive: %t format %s :: Output file %s was not expected, but one was found\n", tt.interactive, tt.format, tt.output)
 			}
 
 			// Check stdout against expected output
-			if useBufOut != i.ExpectedOutputContent {
-				t.Errorf("interactive: %t format %s :: Output to stdout does not match expected. Expected length: %d, stdout buffer length: %d\n\nexpected: ''%s''\n\ngot: ''%s''\n", i.Interactive, i.Format, len(i.ExpectedOutputContent), len(useBufOut), i.ExpectedOutputContent, useBufOut)
+			if useBufOut != tt.expectedOutputContent {
+				t.Errorf("interactive: %t format %s :: Output to stdout does not match expected. Expected length: %d, stdout buffer length: %d\n\nexpected: ''%s''\n\ngot: ''%s''\n", tt.interactive, tt.format, len(tt.expectedOutputContent), len(useBufOut), tt.expectedOutputContent, useBufOut)
 			}
 		}
 
 		// Remove the (temp) output file if it exists
-		if _, err := os.Stat(i.ExpectedOutputFile); err == nil {
-			err = os.Remove(i.ExpectedOutputFile)
+		if _, err := os.Stat(tt.output); err == nil {
+			err = os.Remove(tt.output)
 			if err != nil {
 				t.Error(err)
 			}
