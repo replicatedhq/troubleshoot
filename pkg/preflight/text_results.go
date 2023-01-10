@@ -45,22 +45,21 @@ func showTextResults(format string, preflightName string, outputPath string, ana
 }
 
 func showTextResultsHuman(preflightName string, analyzeResults []*analyzerunner.AnalyzeResult) (string, error) {
-	results := ""
-
-	fmt.Sprintln(results, "")
+	results := fmt.Sprintln("")
 	var failed bool
 	for _, analyzeResult := range analyzeResults {
-		testResultfailed := outputResult(&results, analyzeResult)
+		testResultfailed := false
+		results, testResultfailed = outputResult(results, analyzeResult)
 		if testResultfailed {
 			failed = true
 		}
 	}
 	if failed {
-		fmt.Sprintf(results, "--- FAIL   %s\n", preflightName)
-		fmt.Sprintln(results, "FAILED")
+		results = fmt.Sprintf("%s--- FAIL   %s\n", results, preflightName)
+		results = fmt.Sprintf("%sFAILED\n", results)
 	} else {
-		fmt.Sprintf(results, "--- PASS   %s\n", preflightName)
-		fmt.Sprintln(results, "PASS")
+		results = fmt.Sprintf("%s--- PASS   %s\n", results, preflightName)
+		results = fmt.Sprintf("%sPASS\n", results)
 	}
 	return results, nil
 }
@@ -117,10 +116,7 @@ func showTextResultsJSON(preflightName string, analyzeResults []*analyzerunner.A
 		return "", errors.Wrap(err, "failed to marshal results as json")
 	}
 
-	results := ""
-	fmt.Sprintf(results, "%s\n", b)
-
-	return results, nil
+	return fmt.Sprintf("%s\n", b), nil
 }
 
 func showTextResultsYAML(preflightName string, analyzeResults []*analyzerunner.AnalyzeResult) (string, error) {
@@ -131,30 +127,27 @@ func showTextResultsYAML(preflightName string, analyzeResults []*analyzerunner.A
 		return "", errors.Wrap(err, "failed to marshal results as yaml")
 	}
 
-	results := ""
-	fmt.Sprintf(results, "%s\n", b)
-
-	return results, nil
+	return fmt.Sprintf("%s\n", b), nil
 }
 
-func outputResult(results *string, analyzeResult *analyzerunner.AnalyzeResult) bool {
+func outputResult(results string, analyzeResult *analyzerunner.AnalyzeResult) (string, bool) {
 	if analyzeResult.IsPass {
-		fmt.Sprintf(*results, "   --- PASS %s\n", analyzeResult.Title)
-		fmt.Sprintf(*results, "      --- %s\n", analyzeResult.Message)
+		results = fmt.Sprintf("%s   --- PASS %s\n", results, analyzeResult.Title)
+		results = fmt.Sprintf("%s      --- %s\n", results, analyzeResult.Message)
 	} else if analyzeResult.IsWarn {
-		fmt.Sprintf(*results, "   --- WARN: %s\n", analyzeResult.Title)
-		fmt.Sprintf(*results, "      --- %s\n", analyzeResult.Message)
+		results = fmt.Sprintf("%s   --- WARN: %s\n", results, analyzeResult.Title)
+		results = fmt.Sprintf("%s      --- %s\n", results, analyzeResult.Message)
 	} else if analyzeResult.IsFail {
-		fmt.Sprintf(*results, "   --- FAIL: %s\n", analyzeResult.Title)
-		fmt.Sprintf(*results, "      --- %s\n", analyzeResult.Message)
+		results = fmt.Sprintf("%s   --- FAIL: %s\n", results, analyzeResult.Title)
+		results = fmt.Sprintf("%s      --- %s\n", results, analyzeResult.Message)
 	}
 
 	if analyzeResult.Strict {
-		fmt.Sprintf(*results, "      --- Strict: %t\n", analyzeResult.Strict)
+		results = fmt.Sprintf("%s      --- Strict: %t\n", results, analyzeResult.Strict)
 	}
 
 	if analyzeResult.IsFail {
-		return true
+		return results, true
 	}
-	return false
+	return results, false
 }
