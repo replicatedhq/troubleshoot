@@ -35,7 +35,7 @@ from a server that can be used to assist when troubleshooting a Kubernetes clust
 			if !v.GetBool("debug") {
 				klog.SetLogger(logr.Discard())
 			}
-			logger.SetQuiet(v.GetBool("quiet"))
+			logger.SetQuiet(!v.GetBool("debug"))
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			v := viper.GetViper()

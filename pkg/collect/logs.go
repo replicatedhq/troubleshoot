@@ -10,6 +10,7 @@ import (
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
+	"github.com/replicatedhq/troubleshoot/pkg/constants"
 	"github.com/replicatedhq/troubleshoot/pkg/logger"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -20,7 +21,7 @@ import (
 type CollectLogs struct {
 	Collector    *troubleshootv1beta2.Logs
 	BundlePath   string
-	Namespace    string // There is a Namespace parameter in troubleshootv1beta2.Logs. Should we remove this?
+	Namespace    string // TODO: There is a Namespace parameter in troubleshootv1beta2.Logs. Should we remove this?
 	ClientConfig *rest.Config
 	Client       kubernetes.Interface
 	Context      context.Context
@@ -42,24 +43,30 @@ func (c *CollectLogs) Collect(progressChan chan<- interface{}) (CollectorResult,
 		return nil, err
 	}
 
-	output := NewResult()
+	return c.CollectWithClient(progressChan, client)
 
-	ctx := context.Background()
+}
 
-	const timeout = 60 //timeout in seconds used for context timeout value
+// CollectWithClient is a helper function that allows passing in a kubernetes client
+// It's a stopgap implementation before it's decided whether to either always use a single
+// client for collectors or leave the implementation as is.
+// Ref: https://github.com/replicatedhq/troubleshoot/pull/821#discussion_r1026258904
+func (c *CollectLogs) CollectWithClient(progressChan chan<- interface{}, client kubernetes.Interface) (CollectorResult, error) {
+	out := NewResult()
 
-	// timeout context
-	ctxTimeout, cancel := context.WithTimeout(context.Background(), timeout*time.Second)
+	ctx, cancel := context.WithTimeout(c.Context, constants.DEFAULT_LOGS_COLLECTOR_TIMEOUT)
 	defer cancel()
 
 	errCh := make(chan error, 1)
-	resultCh := make(chan CollectorResult, 1)
+	done := make(chan struct{}, 1)
 
-	//wrapped code go func for context timeout solution
-	go func() {
-
-		output := NewResult()
-
+	// Collect logs in a go routine to allow timing out of long running operations
+	// If a timeout occurs, the passed in collector result will contain logs collected
+	// prior. We want this to be the case so as to have some logs in the support bundle
+	// even if not from all expected pods.
+	// TODO: In future all collectors will have a timeout. This will be implemented in the
+	// framework level (caller of Collect function). Remove this code when we get there.
+	go func(output CollectorResult) {
 		if c.SinceTime != nil {
 			if c.Collector.Limits == nil {
 				c.Collector.Limits = new(troubleshootv1beta2.LogLimits)
@@ -98,8 +105,6 @@ func (c *CollectLogs) Collect(progressChan chan<- interface{}) (CollectorResult,
 							continue
 						}
 						output.AddResult(podLogs)
-
-						resultCh <- output
 					}
 				} else {
 					for _, container := range c.Collector.ContainerNames {
@@ -113,24 +118,24 @@ func (c *CollectLogs) Collect(progressChan chan<- interface{}) (CollectorResult,
 							continue
 						}
 						output.AddResult(containerLogs)
-						resultCh <- output
 					}
 				}
 			}
-		} else {
-			resultCh <- output
 		}
-	}()
+
+		// Send a signal to indicate that we are done collecting logs
+		done <- struct{}{}
+	}(out)
 
 	select {
-	case <-ctxTimeout.Done():
-		return nil, fmt.Errorf("%s (%s) collector timeout exceeded", c.Title(), c.Collector.CollectorName)
-	case o := <-resultCh:
-		output = o
+	case <-ctx.Done():
+		// When we timeout, return the logs we have collected so far
+		return out, fmt.Errorf("%s (%s) collector timeout exceeded", c.Title(), c.Collector.CollectorName)
+	case <-done:
+		return out, nil
 	case err := <-errCh:
 		return nil, err
 	}
-	return output, nil
 }
 
 func listPodsInSelectors(ctx context.Context, client kubernetes.Interface, namespace string, selector []string) ([]corev1.Pod, []string) {
@@ -149,19 +154,6 @@ func listPodsInSelectors(ctx context.Context, client kubernetes.Interface, names
 }
 
 func savePodLogs(
-	ctx context.Context,
-	bundlePath string,
-	client *kubernetes.Clientset,
-	pod *corev1.Pod,
-	collectorName, container string,
-	limits *troubleshootv1beta2.LogLimits,
-	follow bool,
-	createSymLinks bool,
-) (CollectorResult, error) {
-	return savePodLogsWithInterface(ctx, bundlePath, client, pod, collectorName, container, limits, follow, createSymLinks)
-}
-
-func savePodLogsWithInterface(
 	ctx context.Context,
 	bundlePath string,
 	client kubernetes.Interface,

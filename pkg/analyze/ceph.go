@@ -9,6 +9,7 @@ import (
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/replicatedhq/troubleshoot/pkg/collect"
+	"github.com/replicatedhq/troubleshoot/pkg/types"
 )
 
 type CephHealth string
@@ -102,7 +103,11 @@ type PgMap struct {
 func cephStatus(analyzer *troubleshootv1beta2.CephStatusAnalyze, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
 	fileName := path.Join(collect.GetCephCollectorFilepath(analyzer.CollectorName, analyzer.Namespace), "status.json")
 	collected, err := getCollectedFileContents(fileName)
+
 	if err != nil {
+		if _, ok := err.(*types.NotFoundError); ok {
+			return nil, nil
+		}
 		return nil, errors.Wrap(err, "failed to read collected ceph status")
 	}
 
