@@ -37,14 +37,14 @@ require (
 	golang.org/x/sync v0.1.0
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.26.0
-	k8s.io/apiextensions-apiserver v0.25.0
+	k8s.io/apiextensions-apiserver v0.26.0
 	k8s.io/apimachinery v0.26.0
 	k8s.io/apiserver v0.26.0
 	k8s.io/cli-runtime v0.26.0
 	k8s.io/client-go v0.26.0
 	k8s.io/klog/v2 v2.80.1
 	oras.land/oras-go v1.2.1
-	sigs.k8s.io/controller-runtime v0.13.1
+	sigs.k8s.io/controller-runtime v0.14.1
 )
 
 require (
@@ -142,7 +142,7 @@ require (
 	github.com/moby/locker v1.0.1 // indirect
 	github.com/moby/spdystream v0.2.0 // indirect
 	github.com/moby/sys/mountinfo v0.6.2 // indirect
-	github.com/moby/term v0.0.0-20210619224110-3f7ff695adc6 // indirect
+	github.com/moby/term v0.0.0-20220808134915-39b0c02b01ae // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/monochromegane/go-gitignore v0.0.0-20200626010858-205db1a8cc00 // indirect
@@ -186,7 +186,7 @@ require (
 	golang.org/x/sys v0.4.0 // indirect
 	golang.org/x/term v0.4.0 // indirect
 	golang.org/x/text v0.6.0 // indirect
-	golang.org/x/time v0.0.0-20220609170525-579cf78fd858 // indirect
+	golang.org/x/time v0.3.0 // indirect
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
 	google.golang.org/api v0.102.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
@@ -197,7 +197,7 @@ require (
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20221012153701-172d655c2280 // indirect
-	k8s.io/utils v0.0.0-20221107191617-1a15be271d1d
+	k8s.io/utils v0.0.0-20221128185143-99ec85e7a448
 	periph.io/x/host/v3 v3.8.0
 	sigs.k8s.io/json v0.0.0-20220713155537-f223a00ba0e2 // indirect
 	sigs.k8s.io/kustomize/api v0.12.1 // indirect
