@@ -6,7 +6,7 @@ require (
 	github.com/ahmetalpbalkan/go-cursor v0.0.0-20131010032410-8136607ea412
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/containers/image/v5 v5.23.1
-	github.com/docker/distribution v2.8.1+incompatible
+	github.com/distribution/distribution/v3 v3.0.0-20221208165359-362910506bc2
 	github.com/fatih/color v1.13.0
 	github.com/go-logr/logr v1.2.3
 	github.com/go-redis/redis/v7 v7.4.1
@@ -50,6 +50,7 @@ require (
 require (
 	cloud.google.com/go/compute/metadata v0.2.1 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.2 // indirect
+	github.com/docker/distribution v2.8.1+incompatible // indirect
 	github.com/emicklei/go-restful/v3 v3.9.0 // indirect
 	github.com/evanphx/json-patch/v5 v5.6.0 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.2.0 // indirect
