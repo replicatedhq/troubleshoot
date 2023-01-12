@@ -12,7 +12,7 @@ require (
 	github.com/go-redis/redis/v7 v7.4.1
 	github.com/go-sql-driver/mysql v1.7.0
 	github.com/gobwas/glob v0.2.3
-	github.com/godbus/dbus v4.1.0+incompatible
+	github.com/godbus/dbus/v5 v5.1.0
 	github.com/google/gofuzz v1.2.0
 	github.com/google/uuid v1.3.0
 	github.com/gorilla/handlers v1.5.1
