@@ -45,6 +45,12 @@ ffi: fmt vet
 test: generate fmt vet
 	go test ${BUILDFLAGS} ./pkg/... ./cmd/... -coverprofile cover.out
 
+# Go tests that require a K8s instance
+# TODOLATER: merge with test, so we get unified coverage reports? it'll add 21~sec to the test job though...
+.PHONY: test-integration
+test-integration:
+	go test -v --tags "integration exclude_graphdriver_devicemapper exclude_graphdriver_btrfs" ./pkg/... ./cmd/...
+
 .PHONY: preflight-e2e-test
 preflight-e2e-test:
 	./test/validate-preflight-e2e.sh

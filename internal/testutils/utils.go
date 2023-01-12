@@ -1,6 +1,9 @@
 package testutils
 
 import (
+	"crypto/rand"
+	"encoding/hex"
+	"fmt"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -21,4 +24,11 @@ func GetTestFixture(t *testing.T, path string) string {
 func FileDir() string {
 	_, filename, _, _ := runtime.Caller(0)
 	return filepath.Dir(filename)
+}
+
+// Generates a temporary filename
+func TempFilename(prefix string) string {
+	randBytes := make([]byte, 16)
+	rand.Read(randBytes)
+	return filepath.Join(os.TempDir(), fmt.Sprintf("%s_%s", prefix, hex.EncodeToString(randBytes)))
 }
