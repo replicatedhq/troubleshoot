@@ -8,11 +8,7 @@ There is discussion about changing the behaviour of `preflight`, considering tha
 
 ## Non-Goals
 
-
 ## Background
-
-
-
 
 ## High Level Design
 
@@ -22,6 +18,11 @@ Functions of `support-bundle`, `preflight`, `analyze`, `redact`, and `sbctl` bin
 
 ## Detailed Design
 
+- TODO: specify the public APIs we expect users of Troubleshoot to consumem, e.g.
+  - collect()
+  - redact()
+  - analyze()
+
 - generate a support bundle
 
   `kubectl troubleshoot supportbundle.yaml`
@@ -29,6 +30,8 @@ Functions of `support-bundle`, `preflight`, `analyze`, `redact`, and `sbctl` bin
   `kubectl troubleshoot supportbundle.yaml secrets/default/kotsadm-appslug-supportbundle`
 
   `kubectl troubleshoot https://kots.io`
+
+
 
 - use a spec to return a go/no-go preflight outcome
 
@@ -39,6 +42,8 @@ Functions of `support-bundle`, `preflight`, `analyze`, `redact`, and `sbctl` bin
   `kubectl troubleshoot --shell support-bundle-12-12-2001.tar.gz`
 
 ## Limitations
+
+
 
 ## Assumptions
 
