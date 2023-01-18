@@ -289,12 +289,12 @@ func (c *CollectClusterResources) Collect(progressChan chan<- interface{}) (Coll
 
 	// storage classes
 	storageClasses, storageErrors := storageClasses(ctx, client)
-	output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIR, CLUSTER_RESOURCES_STORAGE_CLASS), bytes.NewBuffer(storageClasses))
+	output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s.json", CLUSTER_RESOURCES_STORAGE_CLASS)), bytes.NewBuffer(storageClasses))
 	output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s-errors.json", CLUSTER_RESOURCES_STORAGE_CLASS)), marshalErrors(storageErrors))
 
 	// crds
 	customResourceDefinitions, crdErrors := crds(ctx, client, c.ClientConfig)
-	output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIR, CLUSTER_RESOURCES_CUSTOM_RESOURCE_DEFINITIONS), bytes.NewBuffer(customResourceDefinitions))
+	output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s.json", CLUSTER_RESOURCES_CUSTOM_RESOURCE_DEFINITIONS)), bytes.NewBuffer(customResourceDefinitions))
 	output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s-errors.json", CLUSTER_RESOURCES_CUSTOM_RESOURCE_DEFINITIONS)), marshalErrors(crdErrors))
 
 	// crs
