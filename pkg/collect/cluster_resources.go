@@ -318,7 +318,7 @@ func (c *CollectClusterResources) Collect(progressChan chan<- interface{}) (Coll
 
 	groups, resources, groupsResourcesErrors := apiResources(ctx, client)
 	output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s.json", CLUSTER_RESOURCES_GROUPS)), bytes.NewBuffer(groups))
-	output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s.json", CLUSTER_RESOURCES_RESOURCES)), marshalErrors(resources))
+	output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s.json", CLUSTER_RESOURCES_RESOURCES)), bytes.NewBuffer(resources))
 	output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s-%s-errors.json", CLUSTER_RESOURCES_GROUPS, CLUSTER_RESOURCES_RESOURCES)), marshalErrors(groupsResourcesErrors))
 
 	// limit ranges
