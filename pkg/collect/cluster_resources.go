@@ -35,8 +35,35 @@ import (
 )
 
 const (
-	//
-	CLUSTER_RESOURCES_DIRECTORY = "cluster-resources"
+	CLUSTER_RESOURCES_DIR                         = "cluster-resources"
+	CLUSTER_RESOURCES_NAMESPACES                  = "namespace"
+	CLUSTER_RESOURCES_AUTH_CANI                   = "auth-cani-list"
+	CLUSTER_RESOURCES_PODS                        = "pods"
+	CLUSTER_RESOURCES_POD_DISRUPTION_BUDGETS      = "pod-disruption-budgets"
+	CLUSTER_RESOURCES_SERVICES                    = "services"
+	CLUSTER_RESOURCES_DEPLOYMENTS                 = "deployments"
+	CLUSTER_RESOURCES_REPLICASETS                 = "replicasets"
+	CLUSTER_RESOURCES_STATEFULSETS                = "statefulsets"
+	CLUSTER_RESOURCES_JOBS                        = "jobs"
+	CLUSTER_RESOURCES_CRONJOBS                    = "cronjobs"
+	CLUSTER_RESOURCES_INGRESS                     = "ingress"
+	CLUSTER_RESOURCES_NETWORK_POLICY              = "network-policy"
+	CLUSTER_RESOURCES_RESOURCE_QUOTA              = "resource-quota"
+	CLUSTER_RESOURCES_STORAGE_CLASS               = "storage-class"
+	CLUSTER_RESOURCES_CUSTOM_RESOURCE_DEFINITIONS = "custom-resource-definitions"
+	CLUSTER_RESOURCES_CUSTOM_RESOURCES            = "custom-resources"
+	CLUSTER_RESOURCES_IMAGE_PULL_SECRETS          = "image-pull-secrets"
+	CLUSTER_RESOURCES_NODES                       = "nodes"
+	CLUSTER_RESOURCES_GROUPS                      = "groups"
+	CLUSTER_RESOURCES_RESOURCES                   = "resources"
+	CLUSTER_RESOURCES_LIMITRANGES                 = "limitranges"
+	CLUSTER_RESOURCES_EVENTS                      = "events"
+	CLUSTER_RESOURCES_PVS                         = "pvs"
+	CLUSTER_RESOURCES_PVCS                        = "pvcs"
+	CLUSTER_RESOURCES_ROLES                       = "roles"
+	CLUSTER_RESOURCES_ROLE_BINDINGS               = "rolebindings"
+	CLUSTER_RESOURCES_CLUSTER_ROLES               = "clusterroles"
+	CLUSTER_RESOURCES_CLUSTER_ROLE_BINDINGS       = "clusterRoleBindings"
 )
 
 type CollectClusterResources struct {
@@ -123,17 +150,17 @@ func (c *CollectClusterResources) Collect(progressChan chan<- interface{}) (Coll
 	if len(c.Collector.Namespaces) > 0 {
 		namespaces, namespaceErrors := getNamespaces(ctx, client, c.Collector.Namespaces)
 		namespaceNames = c.Collector.Namespaces
-		output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIRECTORY, "namespaces.json"), bytes.NewBuffer(namespaces))
-		output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIRECTORY, "namespaces-errors.json"), marshalErrors(namespaceErrors))
+		output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s.json", CLUSTER_RESOURCES_NAMESPACES)), bytes.NewBuffer(namespaces))
+		output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s-errors.json", CLUSTER_RESOURCES_NAMESPACES)), marshalErrors(namespaceErrors))
 	} else if c.Namespace != "" {
 		namespace, namespaceErrors := getNamespace(ctx, client, c.Namespace)
-		output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIRECTORY, "namespaces.json"), bytes.NewBuffer(namespace))
-		output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIRECTORY, "namespaces-errors.json"), marshalErrors(namespaceErrors))
+		output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s.json", CLUSTER_RESOURCES_NAMESPACES)), bytes.NewBuffer(namespace))
+		output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s-errors.json", CLUSTER_RESOURCES_NAMESPACES)), marshalErrors(namespaceErrors))
 		namespaceNames = append(namespaceNames, c.Namespace)
 	} else {
 		namespaces, namespaceList, namespaceErrors := getAllNamespaces(ctx, client)
-		output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIRECTORY, "namespaces.json"), bytes.NewBuffer(namespaces))
-		output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIRECTORY, "namespaces-errors.json"), marshalErrors(namespaceErrors))
+		output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s.json", CLUSTER_RESOURCES_NAMESPACES)), bytes.NewBuffer(namespaces))
+		output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s-errors.json", CLUSTER_RESOURCES_NAMESPACES)), marshalErrors(namespaceErrors))
 		if namespaceList != nil {
 			for _, namespace := range namespaceList.Items {
 				namespaceNames = append(namespaceNames, namespace.Name)
@@ -147,9 +174,9 @@ func (c *CollectClusterResources) Collect(progressChan chan<- interface{}) (Coll
 	// auth cani
 	authCanI := authCanI(reviewStatuses, namespaceNames)
 	for k, v := range authCanI {
-		output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIRECTORY, "auth-cani-list", k), bytes.NewBuffer(v))
+		output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIR, CLUSTER_RESOURCES_AUTH_CANI, k), bytes.NewBuffer(v))
 	}
-	output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIRECTORY, "auth-cani-list-errors"), marshalErrors(reviewStatusErrors))
+	output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s-errors.json", CLUSTER_RESOURCES_AUTH_CANI)), marshalErrors(reviewStatusErrors))
 
 	if nsListedFromCluster && !c.Collector.IgnoreRBAC {
 		filteredNamespaces := []string{}
@@ -165,9 +192,9 @@ func (c *CollectClusterResources) Collect(progressChan chan<- interface{}) (Coll
 	// pods
 	pods, podErrors, unhealthyPods := pods(ctx, client, namespaceNames)
 	for k, v := range pods {
-		output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIRECTORY, "pods", k), bytes.NewBuffer(v))
+		output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIR, CLUSTER_RESOURCES_PODS, k), bytes.NewBuffer(v))
 	}
-	output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIRECTORY, "pods-errors.json"), marshalErrors(podErrors))
+	output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s-errors.json", CLUSTER_RESOURCES_PODS)), marshalErrors(podErrors))
 
 	for _, pod := range unhealthyPods {
 		allContainers := append(pod.Spec.InitContainers, pod.Spec.Containers...)
@@ -181,7 +208,7 @@ func (c *CollectClusterResources) Collect(progressChan chan<- interface{}) (Coll
 			}
 			podLogs, err := savePodLogs(ctx, c.BundlePath, client, &pod, "", container.Name, limits, false, false)
 			if err != nil {
-				errPath := filepath.Join(CLUSTER_RESOURCES_DIRECTORY, "pods", "logs", pod.Namespace, pod.Name, fmt.Sprintf("%s-logs-errors.log", container.Name))
+				errPath := filepath.Join(CLUSTER_RESOURCES_DIR, CLUSTER_RESOURCES_PODS, "logs", pod.Namespace, pod.Name, fmt.Sprintf("%s-logs-errors.log", container.Name))
 				output.SaveResult(c.BundlePath, errPath, bytes.NewBuffer([]byte(err.Error())))
 			}
 			// Add logs collector results to the rest of the output
@@ -193,156 +220,156 @@ func (c *CollectClusterResources) Collect(progressChan chan<- interface{}) (Coll
 
 	PodDisruptionBudgets, pdbError := getPodDisruptionBudgets(ctx, client, namespaceNames)
 	for k, v := range PodDisruptionBudgets {
-		output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIRECTORY, "pod-disruption-budgets", k), bytes.NewBuffer(v))
+		output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIR, CLUSTER_RESOURCES_POD_DISRUPTION_BUDGETS, k), bytes.NewBuffer(v))
 	}
-	output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIRECTORY, "pod-disruption-budgets-info.json"), marshalErrors(pdbError))
+	output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s-errors.json", CLUSTER_RESOURCES_POD_DISRUPTION_BUDGETS)), marshalErrors(pdbError))
 
 	// services
 	services, servicesErrors := services(ctx, client, namespaceNames)
 	for k, v := range services {
-		output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIRECTORY, "services", k), bytes.NewBuffer(v))
+		output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIR, CLUSTER_RESOURCES_SERVICES, k), bytes.NewBuffer(v))
 	}
-	output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIRECTORY, "services-errors.json"), marshalErrors(servicesErrors))
+	output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s-errors.json", CLUSTER_RESOURCES_SERVICES)), marshalErrors(servicesErrors))
 
 	// deployments
 	deployments, deploymentsErrors := deployments(ctx, client, namespaceNames)
 	for k, v := range deployments {
-		output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIRECTORY, "deployments", k), bytes.NewBuffer(v))
+		output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIR, CLUSTER_RESOURCES_DEPLOYMENTS, k), bytes.NewBuffer(v))
 	}
-	output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIRECTORY, "deployments-errors.json"), marshalErrors(deploymentsErrors))
+	output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s-errors.json", CLUSTER_RESOURCES_DEPLOYMENTS)), marshalErrors(deploymentsErrors))
 
 	// statefulsets
 	statefulsets, statefulsetsErrors := statefulsets(ctx, client, namespaceNames)
 	for k, v := range statefulsets {
-		output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIRECTORY, "statefulsets", k), bytes.NewBuffer(v))
+		output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIR, CLUSTER_RESOURCES_STATEFULSETS, k), bytes.NewBuffer(v))
 	}
-	output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIRECTORY, "statefulsets-errors.json"), marshalErrors(statefulsetsErrors))
+	output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s-errors.json", CLUSTER_RESOURCES_STATEFULSETS)), marshalErrors(statefulsetsErrors))
 
 	// replicasets
 	replicasets, replicasetsErrors := replicasets(ctx, client, namespaceNames)
 	for k, v := range replicasets {
-		output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIRECTORY, "replicasets", k), bytes.NewBuffer(v))
+		output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s-errors.json", CLUSTER_RESOURCES_STATEFULSETS), k), bytes.NewBuffer(v))
 	}
-	output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIRECTORY, "replicasets-errors.json"), marshalErrors(replicasetsErrors))
+	output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s-errors.json", CLUSTER_RESOURCES_REPLICASETS)), marshalErrors(replicasetsErrors))
 
 	// jobs
 	jobs, jobsErrors := jobs(ctx, client, namespaceNames)
 	for k, v := range jobs {
-		output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIRECTORY, "jobs", k), bytes.NewBuffer(v))
+		output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIR, CLUSTER_RESOURCES_JOBS, k), bytes.NewBuffer(v))
 	}
-	output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIRECTORY, "jobs-errors.json"), marshalErrors(jobsErrors))
+	output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s-errors.json", CLUSTER_RESOURCES_JOBS)), marshalErrors(jobsErrors))
 
 	// cronJobs
 	cronJobs, cronJobsErrors := cronJobs(ctx, client, namespaceNames)
 	for k, v := range cronJobs {
-		output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIRECTORY, "cronjobs", k), bytes.NewBuffer(v))
+		output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIR, CLUSTER_RESOURCES_CRONJOBS, k), bytes.NewBuffer(v))
 	}
-	output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIRECTORY, "cronjobs-errors.json"), marshalErrors(cronJobsErrors))
+	output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s-errors.json", CLUSTER_RESOURCES_CRONJOBS)), marshalErrors(cronJobsErrors))
 
 	// ingress
 	ingress, ingressErrors := ingress(ctx, client, namespaceNames)
 	for k, v := range ingress {
-		output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIRECTORY, "ingress", k), bytes.NewBuffer(v))
+		output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIR, CLUSTER_RESOURCES_INGRESS, k), bytes.NewBuffer(v))
 	}
-	output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIRECTORY, "ingress-errors.json"), marshalErrors(ingressErrors))
+	output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s-errors.json", CLUSTER_RESOURCES_INGRESS)), marshalErrors(ingressErrors))
 
 	// network policy
 	networkPolicy, networkPolicyErrors := networkPolicy(ctx, client, namespaceNames)
 	for k, v := range networkPolicy {
-		output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIRECTORY, "network-policy", k), bytes.NewBuffer(v))
+		output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIR, CLUSTER_RESOURCES_NETWORK_POLICY, k), bytes.NewBuffer(v))
 	}
-	output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIRECTORY, "network-policy-errors.json"), marshalErrors(networkPolicyErrors))
+	output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s-errors.json", CLUSTER_RESOURCES_NETWORK_POLICY)), marshalErrors(networkPolicyErrors))
 
 	// resource quotas
 	resourceQuota, resourceQuotaErrors := resourceQuota(ctx, client, namespaceNames)
 	for k, v := range resourceQuota {
-		output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIRECTORY, "resource-quota", k), bytes.NewBuffer(v))
+		output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIR, CLUSTER_RESOURCES_RESOURCE_QUOTA, k), bytes.NewBuffer(v))
 	}
-	output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIRECTORY, "resource-quota-errors.json"), marshalErrors(resourceQuotaErrors))
+	output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s-errors.json", CLUSTER_RESOURCES_RESOURCE_QUOTA)), marshalErrors(resourceQuotaErrors))
 
 	// storage classes
 	storageClasses, storageErrors := storageClasses(ctx, client)
-	output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIRECTORY, "storage-classes"), bytes.NewBuffer(storageClasses))
-	output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIRECTORY, "storage-classes-errors.json"), marshalErrors(storageErrors))
+	output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIR, CLUSTER_RESOURCES_STORAGE_CLASS), bytes.NewBuffer(storageClasses))
+	output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s-errors.json", CLUSTER_RESOURCES_STORAGE_CLASS)), marshalErrors(storageErrors))
 
 	// crds
 	customResourceDefinitions, crdErrors := crds(ctx, client, c.ClientConfig)
-	output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIRECTORY, "customer-resource-definitions"), bytes.NewBuffer(customResourceDefinitions))
-	output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIRECTORY, "customer-resource-definitions-errors.json"), marshalErrors(crdErrors))
+	output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIR, CLUSTER_RESOURCES_CUSTOM_RESOURCE_DEFINITIONS), bytes.NewBuffer(customResourceDefinitions))
+	output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s-errors.json", CLUSTER_RESOURCES_CUSTOM_RESOURCE_DEFINITIONS)), marshalErrors(crdErrors))
 
 	// crs
 	customResources, crErrors := crs(ctx, dynamicClient, client, c.ClientConfig, namespaceNames)
 	for k, v := range customResources {
-		output.SaveResult(c.BundlePath, fmt.Sprintf("%s/custom-resources/%v", CLUSTER_RESOURCES_DIRECTORY, k), bytes.NewBuffer(v))
+		output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIR, CLUSTER_RESOURCES_CUSTOM_RESOURCE_DEFINITIONS, k), bytes.NewBuffer(v))
 	}
-	output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIRECTORY, "custom-resources", "customer-resources-errors.json"), marshalErrors(crErrors))
+	output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIR, CLUSTER_RESOURCES_CUSTOM_RESOURCE_DEFINITIONS, fmt.Sprintf("%s-errors.json", CLUSTER_RESOURCES_CUSTOM_RESOURCE_DEFINITIONS)), marshalErrors(crErrors))
 
 	// imagepullsecrets
 	imagePullSecrets, pullSecretsErrors := imagePullSecrets(ctx, client, namespaceNames)
 	for k, v := range imagePullSecrets {
-		output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIRECTORY, "image-pull-secrets", k), bytes.NewBuffer(v))
+		output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIR, CLUSTER_RESOURCES_IMAGE_PULL_SECRETS, k), bytes.NewBuffer(v))
 	}
-	output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIRECTORY, "image-pull-secrets-errors.json"), marshalErrors(pullSecretsErrors))
+	output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s-errors.json", CLUSTER_RESOURCES_IMAGE_PULL_SECRETS)), marshalErrors(pullSecretsErrors))
 
 	// nodes
 	nodes, nodeErrors := nodes(ctx, client)
-	output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIRECTORY, "nodes.json"), bytes.NewBuffer(nodes))
-	output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIRECTORY, "nodes-errors.json"), marshalErrors(nodeErrors))
+	output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s.json", CLUSTER_RESOURCES_NODES)), bytes.NewBuffer(nodes))
+	output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s-errors.json", CLUSTER_RESOURCES_NODES)), marshalErrors(nodeErrors))
 
 	groups, resources, groupsResourcesErrors := apiResources(ctx, client)
-	output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIRECTORY, "groups.json"), bytes.NewBuffer(groups))
-	output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIRECTORY, "resources.json"), marshalErrors(resources))
-	output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIRECTORY, "groups-resources-errors.json"), marshalErrors(groupsResourcesErrors))
+	output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s.json", CLUSTER_RESOURCES_GROUPS)), bytes.NewBuffer(groups))
+	output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s.json", CLUSTER_RESOURCES_RESOURCES)), marshalErrors(resources))
+	output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s-%s-errors.json", CLUSTER_RESOURCES_GROUPS, CLUSTER_RESOURCES_RESOURCES)), marshalErrors(groupsResourcesErrors))
 
 	// limit ranges
 	limitRanges, limitRangesErrors := limitRanges(ctx, client, namespaceNames)
 	for k, v := range limitRanges {
-		output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIRECTORY, "limitranges", k), bytes.NewBuffer(v))
+		output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIR, CLUSTER_RESOURCES_LIMITRANGES, k), bytes.NewBuffer(v))
 	}
-	output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIRECTORY, "limitranges-errors.json"), marshalErrors(limitRangesErrors))
+	output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s-errors.json", CLUSTER_RESOURCES_LIMITRANGES)), marshalErrors(limitRangesErrors))
 
 	//Events
 	events, eventsErrors := events(ctx, client, namespaceNames)
 	for k, v := range events {
-		output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIRECTORY, "events", k), bytes.NewBuffer(v))
+		output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIR, CLUSTER_RESOURCES_EVENTS, k), bytes.NewBuffer(v))
 	}
-	output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIRECTORY, "events-errors.json"), marshalErrors(eventsErrors))
+	output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s-errors.json", CLUSTER_RESOURCES_EVENTS)), marshalErrors(eventsErrors))
 
 	//Persistent Volumes
 	pvs, pvsErrors := pvs(ctx, client)
-	output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIRECTORY, "pvs.json"), bytes.NewBuffer(pvs))
-	output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIRECTORY, "pvs-errors.json"), marshalErrors(pvsErrors))
+	output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIR, CLUSTER_RESOURCES_PVS), bytes.NewBuffer(pvs))
+	output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s-errors.json", CLUSTER_RESOURCES_PVS)), marshalErrors(pvsErrors))
 
 	//Persistent Volume Claims
 	pvcs, pvcsErrors := pvcs(ctx, client, namespaceNames)
 	for k, v := range pvcs {
-		output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIRECTORY, "pvcs", k), bytes.NewBuffer(v))
+		output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIR, CLUSTER_RESOURCES_PVCS, k), bytes.NewBuffer(v))
 	}
-	output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIRECTORY, "pvcs-errors.json"), marshalErrors(pvcsErrors))
+	output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s-errors.json", CLUSTER_RESOURCES_PVCS)), marshalErrors(pvcsErrors))
 
 	//Roles
 	roles, rolesErrors := roles(ctx, client, namespaceNames)
 	for k, v := range roles {
-		output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIRECTORY, "roles", k), bytes.NewBuffer(v))
+		output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIR, CLUSTER_RESOURCES_ROLES, k), bytes.NewBuffer(v))
 	}
-	output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIRECTORY, "roles-errors.json"), marshalErrors(rolesErrors))
+	output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s-errors.json", CLUSTER_RESOURCES_ROLES)), marshalErrors(rolesErrors))
 
 	//Role Bindings
 	roleBindings, roleBindingsErrors := roleBindings(ctx, client, namespaceNames)
 	for k, v := range roleBindings {
-		output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIRECTORY, "rolebindings", k), bytes.NewBuffer(v))
+		output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIR, CLUSTER_RESOURCES_ROLE_BINDINGS, k), bytes.NewBuffer(v))
 	}
-	output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIRECTORY, "rolebindings-errors.json"), marshalErrors(roleBindingsErrors))
+	output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s-errors.json", CLUSTER_RESOURCES_ROLE_BINDINGS)), marshalErrors(roleBindingsErrors))
 
 	//Cluster Roles
 	clusterRoles, clusterRolesErrors := clusterRoles(ctx, client)
-	output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIRECTORY, "clusterroles.json"), bytes.NewBuffer(clusterRoles))
-	output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIRECTORY, "clusterroles-errors.json"), marshalErrors(clusterRolesErrors))
+	output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIR, CLUSTER_RESOURCES_CLUSTER_ROLES), bytes.NewBuffer(clusterRoles))
+	output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s-errors.json", CLUSTER_RESOURCES_CLUSTER_ROLES)), marshalErrors(clusterRolesErrors))
 
 	//Cluster Role Bindings
 	clusterRoleBindings, clusterRoleBindingsErrors := clusterRoleBindings(ctx, client)
-	output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIRECTORY, "clusterRoleBindings.json"), bytes.NewBuffer(clusterRoleBindings))
-	output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIRECTORY, "clusterRoleBindings-errors.json"), marshalErrors(clusterRoleBindingsErrors))
+	output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIR, CLUSTER_RESOURCES_CLUSTER_ROLE_BINDINGS), bytes.NewBuffer(clusterRoleBindings))
+	output.SaveResult(c.BundlePath, path.Join(CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s-errors.json", CLUSTER_RESOURCES_CLUSTER_ROLE_BINDINGS)), marshalErrors(clusterRoleBindingsErrors))
 
 	return output, nil
 }
