@@ -34,38 +34,6 @@ import (
 	"github.com/replicatedhq/troubleshoot/pkg/k8sutil/discovery"
 )
 
-const (
-	CLUSTER_RESOURCES_DIR                         = "cluster-resources"
-	CLUSTER_RESOURCES_NAMESPACES                  = "namespace"
-	CLUSTER_RESOURCES_AUTH_CANI                   = "auth-cani-list"
-	CLUSTER_RESOURCES_PODS                        = "pods"
-	CLUSTER_RESOURCES_POD_DISRUPTION_BUDGETS      = "pod-disruption-budgets"
-	CLUSTER_RESOURCES_SERVICES                    = "services"
-	CLUSTER_RESOURCES_DEPLOYMENTS                 = "deployments"
-	CLUSTER_RESOURCES_REPLICASETS                 = "replicasets"
-	CLUSTER_RESOURCES_STATEFULSETS                = "statefulsets"
-	CLUSTER_RESOURCES_JOBS                        = "jobs"
-	CLUSTER_RESOURCES_CRONJOBS                    = "cronjobs"
-	CLUSTER_RESOURCES_INGRESS                     = "ingress"
-	CLUSTER_RESOURCES_NETWORK_POLICY              = "network-policy"
-	CLUSTER_RESOURCES_RESOURCE_QUOTA              = "resource-quota"
-	CLUSTER_RESOURCES_STORAGE_CLASS               = "storage-classes"
-	CLUSTER_RESOURCES_CUSTOM_RESOURCE_DEFINITIONS = "custom-resource-definitions"
-	CLUSTER_RESOURCES_CUSTOM_RESOURCES            = "custom-resources"
-	CLUSTER_RESOURCES_IMAGE_PULL_SECRETS          = "image-pull-secrets"
-	CLUSTER_RESOURCES_NODES                       = "nodes"
-	CLUSTER_RESOURCES_GROUPS                      = "groups"
-	CLUSTER_RESOURCES_RESOURCES                   = "resources"
-	CLUSTER_RESOURCES_LIMITRANGES                 = "limitranges"
-	CLUSTER_RESOURCES_EVENTS                      = "events"
-	CLUSTER_RESOURCES_PVS                         = "pvs"
-	CLUSTER_RESOURCES_PVCS                        = "pvcs"
-	CLUSTER_RESOURCES_ROLES                       = "roles"
-	CLUSTER_RESOURCES_ROLE_BINDINGS               = "rolebindings"
-	CLUSTER_RESOURCES_CLUSTER_ROLES               = "clusterroles"
-	CLUSTER_RESOURCES_CLUSTER_ROLE_BINDINGS       = "clusterRoleBindings"
-)
-
 type CollectClusterResources struct {
 	Collector    *troubleshootv1beta2.ClusterResources
 	BundlePath   string
@@ -208,7 +176,7 @@ func (c *CollectClusterResources) Collect(progressChan chan<- interface{}) (Coll
 			}
 			podLogs, err := savePodLogs(ctx, c.BundlePath, client, &pod, "", container.Name, limits, false, false)
 			if err != nil {
-				errPath := filepath.Join(CLUSTER_RESOURCES_DIR, CLUSTER_RESOURCES_PODS, "logs", pod.Namespace, pod.Name, fmt.Sprintf("%s-logs-errors.log", container.Name))
+				errPath := filepath.Join(CLUSTER_RESOURCES_DIR, CLUSTER_RESOURCES_PODS_LOGS, pod.Namespace, pod.Name, fmt.Sprintf("%s-logs-errors.log", container.Name))
 				output.SaveResult(c.BundlePath, errPath, bytes.NewBuffer([]byte(err.Error())))
 			}
 			// Add logs collector results to the rest of the output

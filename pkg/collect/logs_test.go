@@ -2,6 +2,7 @@ package collect
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -187,14 +188,14 @@ func Test_CollectLogs(t *testing.T) {
 				"secondPod",
 			},
 			want: CollectorResult{
-				"all-logs/firstPod/nginx.log":                                           []byte("fake logs"),
-				"all-logs/firstPod/nginx-previous.log":                                  []byte("fake logs"),
-				"all-logs/secondPod/nginx.log":                                          []byte("fake logs"),
-				"all-logs/secondPod/nginx-previous.log":                                 []byte("fake logs"),
-				"cluster-resources/pods/logs/my-namespace/firstPod/nginx.log":           []byte("fake logs"),
-				"cluster-resources/pods/logs/my-namespace/firstPod/nginx-previous.log":  []byte("fake logs"),
-				"cluster-resources/pods/logs/my-namespace/secondPod/nginx.log":          []byte("fake logs"),
-				"cluster-resources/pods/logs/my-namespace/secondPod/nginx-previous.log": []byte("fake logs"),
+				"all-logs/firstPod/nginx.log":           []byte("fake logs"),
+				"all-logs/firstPod/nginx-previous.log":  []byte("fake logs"),
+				"all-logs/secondPod/nginx.log":          []byte("fake logs"),
+				"all-logs/secondPod/nginx-previous.log": []byte("fake logs"),
+				fmt.Sprintf("%s/%s/my-namespace/firstPod/nginx.log", CLUSTER_RESOURCES_DIR, CLUSTER_RESOURCES_PODS_LOGS):           []byte("fake logs"),
+				fmt.Sprintf("%s/%s/my-namespace/firstPod/nginx-previous.log", CLUSTER_RESOURCES_DIR, CLUSTER_RESOURCES_PODS_LOGS):  []byte("fake logs"),
+				fmt.Sprintf("%s/%s/my-namespace/secondPod/nginx.log", CLUSTER_RESOURCES_DIR, CLUSTER_RESOURCES_PODS_LOGS):          []byte("fake logs"),
+				fmt.Sprintf("%s/%s/my-namespace/secondPod/nginx-previous.log", CLUSTER_RESOURCES_DIR, CLUSTER_RESOURCES_PODS_LOGS): []byte("fake logs"),
 			},
 		},
 	}
