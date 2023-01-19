@@ -7,7 +7,7 @@ import (
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
-	"github.com/replicatedhq/troubleshoot/pkg/collect"
+	"github.com/replicatedhq/troubleshoot/pkg/constants"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -144,9 +144,9 @@ func ParseNodesForProviders(nodes []corev1.Node) (providers, string) {
 
 func analyzeDistribution(analyzer *troubleshootv1beta2.Distribution, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
 	var unknownDistribution string
-	collected, err := getCollectedFileContents(fmt.Sprintf("%s/%s.json", collect.CLUSTER_RESOURCES_DIR, collect.CLUSTER_RESOURCES_NODES))
+	collected, err := getCollectedFileContents(fmt.Sprintf("%s/%s.json", constants.CLUSTER_RESOURCES_DIR, constants.CLUSTER_RESOURCES_NODES))
 	if err != nil {
-		return nil, errors.Wrap(err, fmt.Sprintf("failed to get contents of %s.json", collect.CLUSTER_RESOURCES_NODES))
+		return nil, errors.Wrap(err, fmt.Sprintf("failed to get contents of %s.json", constants.CLUSTER_RESOURCES_NODES))
 	}
 
 	var nodes corev1.NodeList
@@ -156,7 +156,7 @@ func analyzeDistribution(analyzer *troubleshootv1beta2.Distribution, getCollecte
 
 	foundProviders, _ := ParseNodesForProviders(nodes.Items)
 
-	apiResourcesBytes, err := getCollectedFileContents(fmt.Sprintf("%s/%s.json", collect.CLUSTER_RESOURCES_DIR, collect.CLUSTER_RESOURCES_RESOURCES))
+	apiResourcesBytes, err := getCollectedFileContents(fmt.Sprintf("%s/%s.json", constants.CLUSTER_RESOURCES_DIR, constants.CLUSTER_RESOURCES_RESOURCES))
 	// if the file is not found, that is not a fatal error
 	// troubleshoot 0.9.15 and earlier did not collect that file
 	if err == nil {

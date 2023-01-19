@@ -6,12 +6,12 @@ import (
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
-	"github.com/replicatedhq/troubleshoot/pkg/collect"
+	"github.com/replicatedhq/troubleshoot/pkg/constants"
 )
 
 func analyzeImagePullSecret(analyzer *troubleshootv1beta2.ImagePullSecret, getChildCollectedFileContents getChildCollectedFileContents) (*AnalyzeResult, error) {
 	var excludeFiles = []string{}
-	imagePullSecrets, err := getChildCollectedFileContents(fmt.Sprintf("%s/%s", collect.CLUSTER_RESOURCES_DIR, collect.CLUSTER_RESOURCES_IMAGE_PULL_SECRETS), excludeFiles)
+	imagePullSecrets, err := getChildCollectedFileContents(fmt.Sprintf("%s/%s", constants.CLUSTER_RESOURCES_DIR, constants.CLUSTER_RESOURCES_IMAGE_PULL_SECRETS), excludeFiles)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get file contents for image pull secrets")
 	}

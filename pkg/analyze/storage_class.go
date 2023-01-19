@@ -5,12 +5,12 @@ import (
 	"fmt"
 
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
-	"github.com/replicatedhq/troubleshoot/pkg/collect"
+	"github.com/replicatedhq/troubleshoot/pkg/constants"
 	storagev1beta1 "k8s.io/api/storage/v1beta1"
 )
 
 func analyzeStorageClass(analyzer *troubleshootv1beta2.StorageClass, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
-	storageClassesData, err := getCollectedFileContents(fmt.Sprintf("%s/%s.json", collect.CLUSTER_RESOURCES_DIR, collect.CLUSTER_RESOURCES_STORAGE_CLASS))
+	storageClassesData, err := getCollectedFileContents(fmt.Sprintf("%s/%s.json", constants.CLUSTER_RESOURCES_DIR, constants.CLUSTER_RESOURCES_STORAGE_CLASS))
 	if err != nil {
 		return nil, err
 	}

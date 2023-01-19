@@ -11,7 +11,7 @@ import (
 
 	"github.com/mholt/archiver/v3"
 	"github.com/pkg/errors"
-	"github.com/replicatedhq/troubleshoot/pkg/collect"
+	"github.com/replicatedhq/troubleshoot/pkg/constants"
 	types "github.com/replicatedhq/troubleshoot/pkg/supportbundle/types"
 	corev1 "k8s.io/api/core/v1"
 )
@@ -21,15 +21,15 @@ var (
 )
 
 func getPodsFilePath(namespace string) string {
-	return filepath.Join(collect.CLUSTER_RESOURCES_DIR, collect.CLUSTER_RESOURCES_PODS, fmt.Sprintf("%s.json", namespace))
+	return filepath.Join(constants.CLUSTER_RESOURCES_DIR, constants.CLUSTER_RESOURCES_PODS, fmt.Sprintf("%s.json", namespace))
 }
 
 func getContainerLogsFilePath(namespace string, podName string, containerName string) string {
-	return filepath.Join(collect.CLUSTER_RESOURCES_DIR, collect.CLUSTER_RESOURCES_PODS_LOGS, namespace, podName, fmt.Sprintf("%s.log", containerName))
+	return filepath.Join(constants.CLUSTER_RESOURCES_DIR, constants.CLUSTER_RESOURCES_PODS_LOGS, namespace, podName, fmt.Sprintf("%s.log", containerName))
 }
 
 func getEventsFilePath(namespace string) string {
-	return filepath.Join(collect.CLUSTER_RESOURCES_DIR, "events", fmt.Sprintf("%s.json", namespace))
+	return filepath.Join(constants.CLUSTER_RESOURCES_DIR, "events", fmt.Sprintf("%s.json", namespace))
 }
 
 func GetPodDetails(bundleArchive string, podNamespace string, podName string) (*types.PodDetails, error) {

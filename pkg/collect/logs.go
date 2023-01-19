@@ -173,7 +173,7 @@ func savePodLogs(
 	// TODO: Abstract away hard coded directory structure paths
 	// Maybe create a FS provider or something similar
 	filePathPrefix := filepath.Join(
-		CLUSTER_RESOURCES_DIR, CLUSTER_RESOURCES_PODS_LOGS, pod.Namespace, pod.Name, pod.Spec.Containers[0].Name,
+		constants.CLUSTER_RESOURCES_DIR, constants.CLUSTER_RESOURCES_PODS_LOGS, pod.Namespace, pod.Name, pod.Spec.Containers[0].Name,
 	)
 
 	// TODO: If collectorName is empty, the path is stored with a leading slash
@@ -185,7 +185,7 @@ func savePodLogs(
 	if container != "" {
 		linkRelPathPrefix = fmt.Sprintf("%s/%s/%s", collectorName, pod.Name, container)
 		filePathPrefix = filepath.Join(
-			CLUSTER_RESOURCES_DIR, CLUSTER_RESOURCES_PODS_LOGS, pod.Namespace, pod.Name, container,
+			constants.CLUSTER_RESOURCES_DIR, constants.CLUSTER_RESOURCES_PODS_LOGS, pod.Namespace, pod.Name, container,
 		)
 	}
 
