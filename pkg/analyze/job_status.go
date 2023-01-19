@@ -9,6 +9,7 @@ import (
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
+	"github.com/replicatedhq/troubleshoot/pkg/collect"
 	batchv1 "k8s.io/api/batch/v1"
 )
 
@@ -22,7 +23,7 @@ func analyzeJobStatus(analyzer *troubleshootv1beta2.JobStatus, getFileContents g
 
 func analyzeOneJobStatus(analyzer *troubleshootv1beta2.JobStatus, getFileContents getChildCollectedFileContents) ([]*AnalyzeResult, error) {
 	excludeFiles := []string{}
-	files, err := getFileContents(filepath.Join("cluster-resources", "jobs", fmt.Sprintf("%s.json", analyzer.Namespace)), excludeFiles)
+	files, err := getFileContents(filepath.Join(collect.CLUSTER_RESOURCES_DIR, collect.CLUSTER_RESOURCES_JOBS, fmt.Sprintf("%s.json", analyzer.Namespace)), excludeFiles)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to read collected jobs from namespace")
 	}
@@ -71,15 +72,15 @@ func analyzeOneJobStatus(analyzer *troubleshootv1beta2.JobStatus, getFileContent
 func analyzeAllJobStatuses(analyzer *troubleshootv1beta2.JobStatus, getFileContents getChildCollectedFileContents) ([]*AnalyzeResult, error) {
 	fileNames := make([]string, 0)
 	if analyzer.Namespace != "" {
-		fileNames = append(fileNames, filepath.Join("cluster-resources", "jobs", fmt.Sprintf("%s.json", analyzer.Namespace)))
+		fileNames = append(fileNames, filepath.Join(collect.CLUSTER_RESOURCES_DIR, collect.CLUSTER_RESOURCES_JOBS, fmt.Sprintf("%s.json", analyzer.Namespace)))
 	}
 	for _, ns := range analyzer.Namespaces {
-		fileNames = append(fileNames, filepath.Join("cluster-resources", "jobs", fmt.Sprintf("%s.json", ns)))
+		fileNames = append(fileNames, filepath.Join(collect.CLUSTER_RESOURCES_DIR, collect.CLUSTER_RESOURCES_JOBS, fmt.Sprintf("%s.json", ns)))
 	}
 
 	// no namespace specified, so we need to analyze all jobs
 	if len(analyzer.Namespaces) == 0 {
-		fileNames = append(fileNames, filepath.Join("cluster-resources", "jobs", "*.json"))
+		fileNames = append(fileNames, filepath.Join(collect.CLUSTER_RESOURCES_DIR, collect.CLUSTER_RESOURCES_JOBS, "*.json"))
 	}
 
 	excludeFiles := []string{}

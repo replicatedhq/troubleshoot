@@ -8,6 +8,7 @@ import (
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
+	"github.com/replicatedhq/troubleshoot/pkg/collect"
 	iutils "github.com/replicatedhq/troubleshoot/pkg/interfaceutils"
 	"gopkg.in/yaml.v2"
 )
@@ -43,12 +44,12 @@ func FindResource(kind string, clusterScoped bool, namespace string, name string
 		return nil, errors.New("failed to find resource")
 	}
 
-	datapath = filepath.Join("cluster-resources", resourceLocation)
+	datapath = filepath.Join(collect.CLUSTER_RESOURCES_DIR, resourceLocation)
 	if !clusterScoped {
 		if namespace == "" {
 			namespace = "default"
 		}
-		datapath = filepath.Join("cluster-resources", resourceLocation, fmt.Sprintf("%s.json", namespace))
+		datapath = filepath.Join(collect.CLUSTER_RESOURCES_DIR, resourceLocation, fmt.Sprintf("%s.json", namespace))
 	}
 
 	file, err := getFileContents(datapath)

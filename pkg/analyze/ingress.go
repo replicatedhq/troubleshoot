@@ -6,11 +6,12 @@ import (
 	"path/filepath"
 
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
+	"github.com/replicatedhq/troubleshoot/pkg/collect"
 	extensionsv1beta1 "k8s.io/api/extensions/v1beta1"
 )
 
 func analyzeIngress(analyzer *troubleshootv1beta2.Ingress, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
-	ingressData, err := getCollectedFileContents(filepath.Join("cluster-resources", "ingress", fmt.Sprintf("%s.json", analyzer.Namespace)))
+	ingressData, err := getCollectedFileContents(filepath.Join(collect.CLUSTER_RESOURCES_DIR, collect.CLUSTER_RESOURCES_INGRESS, fmt.Sprintf("%s.json", analyzer.Namespace)))
 	if err != nil {
 		return nil, err
 	}

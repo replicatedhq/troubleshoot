@@ -7,6 +7,7 @@ import (
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
+	"github.com/replicatedhq/troubleshoot/pkg/collect"
 	appsv1 "k8s.io/api/apps/v1"
 )
 
@@ -20,7 +21,7 @@ func analyzeDeploymentStatus(analyzer *troubleshootv1beta2.DeploymentStatus, get
 
 func analyzeOneDeploymentStatus(analyzer *troubleshootv1beta2.DeploymentStatus, getFileContents getChildCollectedFileContents) ([]*AnalyzeResult, error) {
 	excludeFiles := []string{}
-	files, err := getFileContents(filepath.Join("cluster-resources", "deployments", fmt.Sprintf("%s.json", analyzer.Namespace)), excludeFiles)
+	files, err := getFileContents(filepath.Join(collect.CLUSTER_RESOURCES_DIR, collect.CLUSTER_RESOURCES_DEPLOYMENTS, fmt.Sprintf("%s.json", analyzer.Namespace)), excludeFiles)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to read collected deployments from namespace")
 	}
@@ -66,15 +67,15 @@ func analyzeAllDeploymentStatuses(analyzer *troubleshootv1beta2.DeploymentStatus
 	excludeFiles := []string{}
 	fileNames := make([]string, 0)
 	if analyzer.Namespace != "" {
-		fileNames = append(fileNames, filepath.Join("cluster-resources", "deployments", fmt.Sprintf("%s.json", analyzer.Namespace)))
+		fileNames = append(fileNames, filepath.Join(collect.CLUSTER_RESOURCES_DIR, collect.CLUSTER_RESOURCES_DEPLOYMENTS, fmt.Sprintf("%s.json", analyzer.Namespace)))
 	}
 	for _, ns := range analyzer.Namespaces {
-		fileNames = append(fileNames, filepath.Join("cluster-resources", "deployments", fmt.Sprintf("%s.json", ns)))
+		fileNames = append(fileNames, filepath.Join(collect.CLUSTER_RESOURCES_DIR, collect.CLUSTER_RESOURCES_DEPLOYMENTS, fmt.Sprintf("%s.json", ns)))
 	}
 
 	// no namespace specified, so we need to analyze all deployments
 	if len(fileNames) == 0 {
-		fileNames = append(fileNames, filepath.Join("cluster-resources", "deployments", "*.json"))
+		fileNames = append(fileNames, filepath.Join(collect.CLUSTER_RESOURCES_DIR, collect.CLUSTER_RESOURCES_DEPLOYMENTS, "*.json"))
 	}
 
 	results := []*AnalyzeResult{}
