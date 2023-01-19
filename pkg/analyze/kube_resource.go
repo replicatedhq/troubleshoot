@@ -14,22 +14,22 @@ import (
 )
 
 var Filemap = map[string]string{
-	"Deployment":           "deployments",
-	"StatefulSet":          "statefulsets",
-	"NetworkPolicy":        "network-policy",
-	"Pod":                  "pods",
-	"Ingress":              "ingress",
-	"Service":              "services",
-	"ResourceQuota":        "resource-quotas",
-	"Job":                  "jobs",
-	"PersistentVoumeClaim": "pvcs",
-	"pvc":                  "pvcs",
-	"ReplicaSet":           "replicasets",
-	"Namespace":            "namespaces.json",
-	"PersistentVolume":     "pvs.json",
-	"pv":                   "pvs.json",
-	"Node":                 "nodes.json",
-	"StorageClass":         "storage-classes.json",
+	"Deployment":           collect.CLUSTER_RESOURCES_DEPLOYMENTS,
+	"StatefulSet":          collect.CLUSTER_RESOURCES_STATEFULSETS,
+	"NetworkPolicy":        collect.CLUSTER_RESOURCES_NETWORK_POLICY,
+	"Pod":                  collect.CLUSTER_RESOURCES_PODS,
+	"Ingress":              collect.CLUSTER_RESOURCES_INGRESS,
+	"Service":              collect.CLUSTER_RESOURCES_SERVICES,
+	"ResourceQuota":        collect.CLUSTER_RESOURCES_RESOURCE_QUOTA,
+	"Job":                  collect.CLUSTER_RESOURCES_JOBS,
+	"PersistentVoumeClaim": collect.CLUSTER_RESOURCES_PVCS,
+	"pvc":                  collect.CLUSTER_RESOURCES_PVCS,
+	"ReplicaSet":           collect.CLUSTER_RESOURCES_REPLICASETS,
+	"Namespace":            fmt.Sprintf("%s.json", collect.CLUSTER_RESOURCES_NAMESPACES),
+	"PersistentVolume":     fmt.Sprintf("%s.json", collect.CLUSTER_RESOURCES_PVS),
+	"pv":                   fmt.Sprintf("%s.json", collect.CLUSTER_RESOURCES_PVS),
+	"Node":                 fmt.Sprintf("%s.json", collect.CLUSTER_RESOURCES_NODES),
+	"StorageClass":         fmt.Sprintf("%s.json", collect.CLUSTER_RESOURCES_STORAGE_CLASS),
 }
 
 // FindResource locates and returns a kubernetes resource as an interface{} from a support bundle based on some basic selectors
