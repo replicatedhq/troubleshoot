@@ -135,6 +135,7 @@ func Collect(opts CollectOpts, p *troubleshootv1beta2.Preflight) (CollectResult,
 	}
 	collectSpecs = collect.EnsureCollectorInList(collectSpecs, troubleshootv1beta2.Collect{ClusterInfo: &troubleshootv1beta2.ClusterInfo{}})
 	collectSpecs = collect.EnsureCollectorInList(collectSpecs, troubleshootv1beta2.Collect{ClusterResources: &troubleshootv1beta2.ClusterResources{}})
+	collectSpecs = collect.DedupCollectors(collectSpecs)
 	collectSpecs = collect.EnsureClusterResourcesFirst(collectSpecs)
 
 	opts.KubernetesRestConfig.QPS = constants.DEFAULT_CLIENT_QPS
