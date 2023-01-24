@@ -4,6 +4,6 @@ metadata:
   name: port
 spec:
   collectors:
-    - tcpPortStatus:
+    - udpPortStatus:
         collectorName: flannel
         port: 8472
