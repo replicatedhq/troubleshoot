@@ -1,0 +1,24 @@
+apiVersion: troubleshoot.sh/v1beta2
+kind: HostPreflight
+metadata:
+  name: port
+spec:
+  collectors:
+    - udpPortStatus:
+        collectorName: flannel
+        port: 8472
+  analyzers:
+    - udpPortStatus:
+        collectorName: flannel
+        outcomes:
+          - fail:
+              when: "address-in-use"
+              message: Another process was already listening on port 8472.
+          - fail:
+              when: "error"
+              message: Unexpected port status
+          - pass:
+              when: "connected"
+              message: Port 8472 is open
+          - warn:
+              message: Unexpected port status

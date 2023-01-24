@@ -9330,6 +9330,26 @@
                     "oneOf": [{"type": "string"},{"type": "boolean"}]
                   }
                 }
+              },
+              "udpPortStatus": {
+                "type": "object",
+                "required": [
+                  "port"
+                ],
+                "properties": {
+                  "collectorName": {
+                    "type": "string"
+                  },
+                  "exclude": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  },
+                  "interface": {
+                    "type": "string"
+                  },
+                  "port": {
+                    "type": "integer"
+                  }
+                }
               }
             }
           }
