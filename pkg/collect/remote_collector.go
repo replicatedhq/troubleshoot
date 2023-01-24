@@ -205,6 +205,15 @@ func (c *RemoteCollector) toHostCollector() (*troubleshootv1beta2.HostCollect, e
 			Interface: c.Collect.TCPPortStatus.Interface,
 			Port:      c.Collect.TCPPortStatus.Port,
 		}
+	case c.Collect.UDPPortStatus != nil:
+		hostCollect.UDPPortStatus = &troubleshootv1beta2.UDPPortStatus{
+			HostCollectorMeta: troubleshootv1beta2.HostCollectorMeta{
+				CollectorName: c.Collect.UDPPortStatus.CollectorName,
+				Exclude:       c.Collect.UDPPortStatus.Exclude,
+			},
+			Interface: c.Collect.UDPPortStatus.Interface,
+			Port:      c.Collect.UDPPortStatus.Port,
+		}
 	case c.Collect.HTTP != nil:
 		hostCollect.HTTP = &troubleshootv1beta2.HostHTTP{
 			HostCollectorMeta: troubleshootv1beta2.HostCollectorMeta{
