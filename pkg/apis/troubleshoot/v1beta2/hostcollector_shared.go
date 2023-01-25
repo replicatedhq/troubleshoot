@@ -39,6 +39,12 @@ type TCPPortStatus struct {
 	Port              int    `json:"port"`
 }
 
+type UDPPortStatus struct {
+	HostCollectorMeta `json:",inline" yaml:",inline"`
+	Interface         string `json:"interface,omitempty"`
+	Port              int    `json:"port"`
+}
+
 type Kubernetes struct {
 	HostCollectorMeta `json:",inline" yaml:",inline"`
 }
@@ -162,6 +168,7 @@ type HostCollect struct {
 	TCPLoadBalancer       *TCPLoadBalancer       `json:"tcpLoadBalancer,omitempty" yaml:"tcpLoadBalancer,omitempty"`
 	HTTPLoadBalancer      *HTTPLoadBalancer      `json:"httpLoadBalancer,omitempty" yaml:"httpLoadBalancer,omitempty"`
 	TCPPortStatus         *TCPPortStatus         `json:"tcpPortStatus,omitempty" yaml:"tcpPortStatus,omitempty"`
+	UDPPortStatus         *UDPPortStatus         `json:"udpPortStatus,omitempty" yaml:"udpPortStatus,omitempty"`
 	Kubernetes            *Kubernetes            `json:"kubernetes,omitempty" yaml:"kubernetes,omitempty"`
 	IPV4Interfaces        *IPV4Interfaces        `json:"ipv4Interfaces,omitempty" yaml:"ipv4Interfaces,omitempty"`
 	DiskUsage             *DiskUsage             `json:"diskUsage,omitempty" yaml:"diskUsage,omitempty"`

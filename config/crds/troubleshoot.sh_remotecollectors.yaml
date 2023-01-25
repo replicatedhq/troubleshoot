@@ -340,6 +340,19 @@ spec:
                         exclude:
                           type: BoolString
                       type: object
+                    udpPortStatus:
+                      properties:
+                        collectorName:
+                          type: string
+                        exclude:
+                          type: BoolString
+                        interface:
+                          type: string
+                        port:
+                          type: integer
+                      required:
+                      - port
+                      type: object
                   type: object
                 type: array
               nodeSelector:

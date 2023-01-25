@@ -8,27 +8,28 @@ import (
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
+	"github.com/replicatedhq/troubleshoot/pkg/constants"
 	iutils "github.com/replicatedhq/troubleshoot/pkg/interfaceutils"
 	"gopkg.in/yaml.v2"
 )
 
 var Filemap = map[string]string{
-	"Deployment":           "deployments",
-	"StatefulSet":          "statefulsets",
-	"NetworkPolicy":        "network-policy",
-	"Pod":                  "pods",
-	"Ingress":              "ingress",
-	"Service":              "services",
-	"ResourceQuota":        "resource-quotas",
-	"Job":                  "jobs",
-	"PersistentVoumeClaim": "pvcs",
-	"pvc":                  "pvcs",
-	"ReplicaSet":           "replicasets",
-	"Namespace":            "namespaces.json",
-	"PersistentVolume":     "pvs.json",
-	"pv":                   "pvs.json",
-	"Node":                 "nodes.json",
-	"StorageClass":         "storage-classes.json",
+	"Deployment":           constants.CLUSTER_RESOURCES_DEPLOYMENTS,
+	"StatefulSet":          constants.CLUSTER_RESOURCES_STATEFULSETS,
+	"NetworkPolicy":        constants.CLUSTER_RESOURCES_NETWORK_POLICY,
+	"Pod":                  constants.CLUSTER_RESOURCES_PODS,
+	"Ingress":              constants.CLUSTER_RESOURCES_INGRESS,
+	"Service":              constants.CLUSTER_RESOURCES_SERVICES,
+	"ResourceQuota":        constants.CLUSTER_RESOURCES_RESOURCE_QUOTA,
+	"Job":                  constants.CLUSTER_RESOURCES_JOBS,
+	"PersistentVoumeClaim": constants.CLUSTER_RESOURCES_PVCS,
+	"pvc":                  constants.CLUSTER_RESOURCES_PVCS,
+	"ReplicaSet":           constants.CLUSTER_RESOURCES_REPLICASETS,
+	"Namespace":            fmt.Sprintf("%s.json", constants.CLUSTER_RESOURCES_NAMESPACES),
+	"PersistentVolume":     fmt.Sprintf("%s.json", constants.CLUSTER_RESOURCES_PVS),
+	"pv":                   fmt.Sprintf("%s.json", constants.CLUSTER_RESOURCES_PVS),
+	"Node":                 fmt.Sprintf("%s.json", constants.CLUSTER_RESOURCES_NODES),
+	"StorageClass":         fmt.Sprintf("%s.json", constants.CLUSTER_RESOURCES_STORAGE_CLASS),
 }
 
 // FindResource locates and returns a kubernetes resource as an interface{} from a support bundle based on some basic selectors
@@ -43,12 +44,12 @@ func FindResource(kind string, clusterScoped bool, namespace string, name string
 		return nil, errors.New("failed to find resource")
 	}
 
-	datapath = filepath.Join("cluster-resources", resourceLocation)
+	datapath = filepath.Join(constants.CLUSTER_RESOURCES_DIR, resourceLocation)
 	if !clusterScoped {
 		if namespace == "" {
 			namespace = "default"
 		}
-		datapath = filepath.Join("cluster-resources", resourceLocation, fmt.Sprintf("%s.json", namespace))
+		datapath = filepath.Join(constants.CLUSTER_RESOURCES_DIR, resourceLocation, fmt.Sprintf("%s.json", namespace))
 	}
 
 	file, err := getFileContents(datapath)

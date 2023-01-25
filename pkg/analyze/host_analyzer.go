@@ -22,6 +22,8 @@ func GetHostAnalyzer(analyzer *troubleshootv1beta2.HostAnalyze) (HostAnalyzer, b
 		return &AnalyzeHostDiskUsage{analyzer.DiskUsage}, true
 	case analyzer.TCPPortStatus != nil:
 		return &AnalyzeHostTCPPortStatus{analyzer.TCPPortStatus}, true
+	case analyzer.UDPPortStatus != nil:
+		return &AnalyzeHostUDPPortStatus{analyzer.UDPPortStatus}, true
 	case analyzer.HTTP != nil:
 		return &AnalyzeHostHTTP{analyzer.HTTP}, true
 	case analyzer.Time != nil:
