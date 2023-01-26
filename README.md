@@ -56,6 +56,6 @@ A signed SBOM  that includes Troubleshoot dependencies is included in each relea
 The following example illustrates using [cosign](https://github.com/sigstore/cosign) to verify that **troubleshoot-sbom.tgz** has
 not been tampered with.
 ```
-$ cosign verify-blob -key key.pub -signature troubleshoot-sbom.tgz.sig troubleshoot-sbom.tgz
+$ cosign verify-blob --key key.pub --signature troubleshoot-sbom.tgz.sig troubleshoot-sbom.tgz
 Verified OK
 ```
