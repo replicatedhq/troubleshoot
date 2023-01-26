@@ -38,6 +38,7 @@ To run the tests locally run the following:
 
 ```bash
 make test
+make test RUN=TestClusterResources_Merge
 ```
 
 Additionally, e2e tests can be run with:
