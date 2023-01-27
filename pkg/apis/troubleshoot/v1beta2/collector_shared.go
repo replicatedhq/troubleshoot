@@ -540,6 +540,10 @@ func (c *Collect) GetName() string {
 		collector = "sysctl"
 		name = c.Sysctl.Name
 	}
+	if c.InClusterSSLCertInfo != nil {
+		collector = ""
+		name = c.Sysctl.Name
+	}
 
 	if collector == "" {
 		return "<none>"
