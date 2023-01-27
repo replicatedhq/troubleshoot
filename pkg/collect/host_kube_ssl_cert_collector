@@ -1,0 +1,174 @@
+package main
+
+import (
+	"bytes"
+	"context"
+	"crypto/x509"
+	"encoding/json"
+	"encoding/pem"
+	"io/ioutil"
+	"log"
+	"os"
+	"path/filepath"
+	"time"
+
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
+)
+
+// boiler plate collector struct
+type CollectHostKubeSSLCertInfo struct {
+	Collector    *troubleshootv1beta2.SSLCertInfo
+	BundlePath   string
+	Namespace    string
+	ClientConfig *rest.Config
+	Client       kubernetes.Interface
+	Context      context.Context
+	RBACErrors
+}
+
+func (c *CollectHostKubeSSLCertInfo) Title() string {
+	return getCollectorName(c)
+}
+
+func (c *CollectHostKubeSSLCertInfo) IsExcluded() (bool, error) {
+	return isExcluded(c.Collector.Exclude)
+}
+
+// SSL Certificate Struct
+type sslCert struct {
+	CertName         string    `json:"Certificate Name"`
+	DNSNames         []string  `json:"DNS Names"`
+	IssuerCommonName string    `json:"Issuer"`
+	Organizations    []string  `json:"Issuer Organizations"`
+	CertDate         time.Time `json:"Certificate Expiration Date"`
+	IsValid          bool      `json:"IsValid"`
+	Location         location  `json:"Location,omitempty"`
+}
+
+// SSL Cert Location Struct
+type location struct {
+	FilePath string `json:"File Path,omitempty"`
+}
+
+func (c *CollectSSLCertInfo) Collect(progressChan chan<- interface{}) (CollectorResult, error) {
+	output := NewResult()
+	/*
+		// Go Client Config -- start
+		var kubeconfig *string
+		if home := homedir.HomeDir(); home != "" {
+			kubeconfig = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional) absolute path to the kubeconfig file")
+		} else {
+			kubeconfig = flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
+		}
+		flag.Parse()
+		// uses the current context in kubeconfig
+		config, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
+		if err != nil {
+			panic(err.Error())
+		}
+		// creates the clientsets
+		clientset, err := kubernetes.NewForConfig(config)
+		if err != nil {
+			panic(err.Error())
+		}
+		// Go Client Config -- end
+	*/
+
+	// Json object initilization - start
+	var certInfo []sslCert
+	var certJson = []byte("[]")
+	errJson := json.Unmarshal(certJson, &certInfo)
+	if errJson != nil {
+		log.Println(errJson)
+	}
+	// Json object initilization - end
+
+	//file path & extension variables
+	dirPath := "/etc/kubernetes/pki"
+	ext := "*.crt"
+
+	GetCertificatesNames, err := GetKubeCertsFromFilePath(dirPath, ext)
+	if err != nil {
+		log.Println(err)
+	}
+
+	results := KubeCertCollector(GetCertificatesNames, c.Client)
+
+	output.SaveResult(c.BundlePath, "certificates.json", bytes.NewBuffer(results))
+
+	//log.Println(string(results))
+	return output, err
+
+}
+
+// This function collects certificate names with a .crt extension within the defined dirPath.
+// Output is a slice of certificate names (certNames) that are fed into the KubeCertCollector function.
+func GetKubeCertsFromFilePath(dirPath, ext string) ([]string, error) {
+	var matches []string
+	err := filepath.Walk(dirPath, func(dirPath string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if info.IsDir() {
+			return nil
+		}
+		if matched, err := filepath.Match(ext, filepath.Base(dirPath)); err != nil {
+			return err
+		} else if matched {
+			matches = append(matches, dirPath)
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return matches, nil
+}
+
+// This function collects information for all SSL certificates (CertNames) located in the dirPath;
+// includes all sub directories.
+func KubeCertCollector(certNames []string, client kubernetes.Interface) []byte {
+	currentTime := time.Now()
+	var certInfo []sslCert
+	var certJson = []byte("[]")
+	err := json.Unmarshal(certJson, &certInfo)
+	if err != nil {
+		log.Println(err)
+	}
+
+	for _, cert := range certNames {
+
+		path, file := filepath.Split(cert)
+		filePath := path + file
+
+		certFile, err := ioutil.ReadFile(filePath)
+		if err != nil {
+			panic(err)
+		}
+
+		block, _ := pem.Decode(certFile)
+		if block == nil {
+			panic("Failed to parse certificate file")
+		}
+
+		//parsed SSL certificate
+		parsedCert, errParse := x509.ParseCertificate(block.Bytes)
+		if errParse != nil {
+			log.Println(errParse)
+		}
+		certInfo = append(certInfo, sslCert{
+			CertName:         file,
+			DNSNames:         parsedCert.DNSNames,
+			IssuerCommonName: parsedCert.Issuer.CommonName,
+			Organizations:    parsedCert.Issuer.Organization,
+			CertDate:         parsedCert.NotAfter,
+			IsValid:          currentTime.Before(parsedCert.NotAfter),
+			Location: location{
+				FilePath: path,
+			},
+		})
+		certJson, _ = json.MarshalIndent(certInfo, "", "\t")
+	}
+	return certJson
+}
