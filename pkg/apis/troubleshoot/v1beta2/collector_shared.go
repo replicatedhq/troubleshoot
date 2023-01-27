@@ -243,7 +243,7 @@ type Collect struct {
 	Longhorn             *Longhorn             `json:"longhorn,omitempty" yaml:"longhorn,omitempty"`
 	RegistryImages       *RegistryImages       `json:"registryImages,omitempty" yaml:"registryImages,omitempty"`
 	Sysctl               *Sysctl               `json:"sysctl,omitempty" yaml:"sysctl,omitempty"`
-	InClusterSSLCertInfo *InClusterSSLCertInfo `json:"inClusterSSLCertInfo ,omitempty" yaml:"inClusterSSLCertInfo,omitempty"`
+	InClusterSSLCertInfo *InClusterSSLCertInfo `json:"inClusterSSLCertInfo,omitempty" yaml:"inClusterSSLCertInfo,omitempty"`
 }
 
 func (c *Collect) AccessReviewSpecs(overrideNS string) []authorizationv1.SelfSubjectAccessReviewSpec {
@@ -541,7 +541,7 @@ func (c *Collect) GetName() string {
 		name = c.Sysctl.Name
 	}
 	if c.InClusterSSLCertInfo != nil {
-		collector = "dagr"
+		collector = "InClusterSSLCertInfo"
 		name = c.InClusterSSLCertInfo.CollectorName
 	}
 
