@@ -52,7 +52,7 @@ func (c *CollectKubeSSLCertInfo) Collect(progressChan chan<- interface{}) (map[s
 	var certJson = []byte("[]")
 	errJson := json.Unmarshal(certJson, &certInfo)
 	if errJson != nil {
-		log.Println(errJson)
+		log.Println("error unmarshalling certJson: ", errJson)
 	}
 	// Json object initilization - end
 
@@ -62,12 +62,12 @@ func (c *CollectKubeSSLCertInfo) Collect(progressChan chan<- interface{}) (map[s
 
 	GetCertificatesNames, err := GetKubeCertsFromFilePath(dirPath, ext)
 	if err != nil {
-		log.Println(err)
+		log.Println("error retrieving ssl certificate names:", err)
 	}
 
 	results := KubeCertCollector(GetCertificatesNames)
 
-	output.SaveResult(c.BundlePath, "ssl/kube_ssl_certificates.json", bytes.NewBuffer(results))
+	output.SaveResult(c.BundlePath, "ssl_certificates/kube_ssl_certificates.json", bytes.NewBuffer(results))
 
 	//log.Println(string(results))
 	return output, err
