@@ -27,17 +27,17 @@ type CollectInClusterSSLCertInfo struct {
 
 // SSL Certificate Struct
 type sslCert struct {
-	CertName         string    `json:"Certificate Name"`
-	DNSNames         []string  `json:"DNS Names"`
-	IssuerCommonName string    `json:"Issuer"`
-	Organizations    []string  `json:"Issuer Organizations"`
-	CertDate         time.Time `json:"Certificate Expiration Date"`
-	IsValid          bool      `json:"IsValid"`
-	Location         location  `json:"Location,omitempty"`
+	CertName         string       `json:"Certificate Name"`
+	DNSNames         []string     `json:"DNS Names"`
+	IssuerCommonName string       `json:"Issuer"`
+	Organizations    []string     `json:"Issuer Organizations"`
+	CertDate         time.Time    `json:"Certificate Expiration Date"`
+	IsValid          bool         `json:"IsValid"`
+	Location         CertLocation `json:"Location,omitempty"`
 }
 
 // SSL Cert Location Struct
-type location struct {
+type CertLocation struct {
 	Secret          string `json:"Secret Name,omitempty"`
 	SecretNamespace string `json:"Secret Namespace,omitempty"`
 }
@@ -57,6 +57,7 @@ func (c *CollectInClusterSSLCertInfo) Collect(progressChan chan<- interface{}) (
 		return nil, err
 	} // Go Client Config -- end
 
+	output := NewResult()
 	// Json object initilization - start
 	var certInfo []sslCert
 	var certJson = []byte("[]")
@@ -66,13 +67,13 @@ func (c *CollectInClusterSSLCertInfo) Collect(progressChan chan<- interface{}) (
 	} // Json object initilization - end
 
 	// Collects SSL certificate data from "kubelet-client-cert" secret (Opaque) associated with deployment.apps/kotsadm.
-	kubeletclientcertCerts := OpaqueSecretCertCollector("kubelet-client-cert", clientset)
+	kubeletclientcertCerts := OpaqueSecretCertCollector("kubelet-client-cert", client)
 
 	// Collects SSL certificate data from "registry-pki" secret (Opaque) associated with deployment.apps/registry.
-	registrypkiCerts := OpaqueSecretCertCollector("registry-pki", clientset)
+	registrypkiCerts := OpaqueSecretCertCollector("registry-pki", client)
 
 	// Collects SSL certificate data from all Secrets in a k8s cluster that are of type "kubernetes.io/tls".
-	tlsSecretsCerts := TLSSecretCertCollector("type=kubernetes.io/tls", clientset)
+	tlsSecretsCerts := TLSSecretCertCollector("type=kubernetes.io/tls", client)
 
 	// Appends SSL certificate "kubelet-client-cert" and "registry-pki" collections to results Json.
 	results := append(kubeletclientcertCerts, registrypkiCerts...)
@@ -125,7 +126,7 @@ func OpaqueSecretCertCollector(secretName string, client kubernetes.Interface) [
 						Organizations:    parsedCert.Issuer.Organization,
 						CertDate:         parsedCert.NotAfter,
 						IsValid:          currentTime.Before(parsedCert.NotAfter),
-						Location: location{
+						Location: CertLocation{
 							Secret:          secret.Name,
 							SecretNamespace: secret.Namespace,
 						},
@@ -180,7 +181,7 @@ func TLSSecretCertCollector(fieldSelector string, client kubernetes.Interface) [
 					Organizations:    parsedCert.Issuer.Organization,
 					CertDate:         parsedCert.NotAfter,
 					IsValid:          currentTime.Before(parsedCert.NotAfter),
-					Location: location{
+					Location: CertLocation{
 						Secret:          secret.Name,
 						SecretNamespace: secret.Namespace,
 					},
