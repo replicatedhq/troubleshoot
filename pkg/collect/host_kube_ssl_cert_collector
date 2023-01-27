@@ -1,8 +1,7 @@
-package main
+package collect
 
 import (
 	"bytes"
-	"context"
 	"crypto/x509"
 	"encoding/json"
 	"encoding/pem"
@@ -12,31 +11,24 @@ import (
 	"path/filepath"
 	"time"
 
-	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
+	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 )
 
-// boiler plate collector struct
-type CollectHostKubeSSLCertInfo struct {
-	Collector    *troubleshootv1beta2.SSLCertInfo
-	BundlePath   string
-	Namespace    string
-	ClientConfig *rest.Config
-	Client       kubernetes.Interface
-	Context      context.Context
-	RBACErrors
+type CollectKubeSSLCertInfo struct {
+	hostCollector *troubleshootv1beta2.Certificate
+	BundlePath    string
 }
 
-func (c *CollectHostKubeSSLCertInfo) Title() string {
+func (c *CollectKubeSSLCertInfo) Title() string {
 	return getCollectorName(c)
 }
 
-func (c *CollectHostKubeSSLCertInfo) IsExcluded() (bool, error) {
+func (c *CollectKubeSSLCertInfo) IsExcluded() (bool, error) {
 	return isExcluded(c.Collector.Exclude)
 }
 
 // SSL Certificate Struct
-type sslCert struct {
+type KubeSSLCertCollect struct {
 	CertName         string    `json:"Certificate Name"`
 	DNSNames         []string  `json:"DNS Names"`
 	IssuerCommonName string    `json:"Issuer"`
@@ -52,31 +44,11 @@ type location struct {
 }
 
 func (c *CollectSSLCertInfo) Collect(progressChan chan<- interface{}) (CollectorResult, error) {
+
 	output := NewResult()
-	/*
-		// Go Client Config -- start
-		var kubeconfig *string
-		if home := homedir.HomeDir(); home != "" {
-			kubeconfig = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional) absolute path to the kubeconfig file")
-		} else {
-			kubeconfig = flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
-		}
-		flag.Parse()
-		// uses the current context in kubeconfig
-		config, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
-		if err != nil {
-			panic(err.Error())
-		}
-		// creates the clientsets
-		clientset, err := kubernetes.NewForConfig(config)
-		if err != nil {
-			panic(err.Error())
-		}
-		// Go Client Config -- end
-	*/
 
 	// Json object initilization - start
-	var certInfo []sslCert
+	var certInfo []KubeSSLCertCollect
 	var certJson = []byte("[]")
 	errJson := json.Unmarshal(certJson, &certInfo)
 	if errJson != nil {
@@ -93,7 +65,7 @@ func (c *CollectSSLCertInfo) Collect(progressChan chan<- interface{}) (Collector
 		log.Println(err)
 	}
 
-	results := KubeCertCollector(GetCertificatesNames, c.Client)
+	results := KubeCertCollector(GetCertificatesNames)
 
 	output.SaveResult(c.BundlePath, "certificates.json", bytes.NewBuffer(results))
 
@@ -128,9 +100,9 @@ func GetKubeCertsFromFilePath(dirPath, ext string) ([]string, error) {
 
 // This function collects information for all SSL certificates (CertNames) located in the dirPath;
 // includes all sub directories.
-func KubeCertCollector(certNames []string, client kubernetes.Interface) []byte {
+func KubeCertCollector(certNames []string) []byte {
 	currentTime := time.Now()
-	var certInfo []sslCert
+	var certInfo []KubeSSLCertCollect
 	var certJson = []byte("[]")
 	err := json.Unmarshal(certJson, &certInfo)
 	if err != nil {
@@ -157,7 +129,7 @@ func KubeCertCollector(certNames []string, client kubernetes.Interface) []byte {
 		if errParse != nil {
 			log.Println(errParse)
 		}
-		certInfo = append(certInfo, sslCert{
+		certInfo = append(certInfo, KubeSSLCertCollect{
 			CertName:         file,
 			DNSNames:         parsedCert.DNSNames,
 			IssuerCommonName: parsedCert.Issuer.CommonName,

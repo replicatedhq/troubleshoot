@@ -162,6 +162,10 @@ type HostRun struct {
 	Args              []string `json:"args"`
 }
 
+type KubeSSLCertCollect struct {
+	CollectorMeta `json:",inline" yaml:",inline"`
+}
+
 type HostCollect struct {
 	CPU                   *CPU                   `json:"cpu,omitempty" yaml:"cpu,omitempty"`
 	Memory                *Memory                `json:"memory,omitempty" yaml:"memory,omitempty"`
@@ -183,6 +187,7 @@ type HostCollect struct {
 	HostServices          *HostServices          `json:"hostServices,omitempty" yaml:"hostServices,omitempty"`
 	HostOS                *HostOS                `json:"hostOS,omitempty" yaml:"hostOS,omitempty"`
 	HostRun               *HostRun               `json:"run,omitempty" yaml:"run,omitempty"`
+	KubeSSLCertCollect    *KubeSSLCertCollect    `json:"KubeSSLCertCollect,omitempty" yaml:"KubeSSLCertCollect,omitempty"`
 }
 
 func (c *HostCollect) GetName() string {
