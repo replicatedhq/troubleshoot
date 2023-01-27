@@ -15,7 +15,7 @@ import (
 )
 
 type CollectKubeSSLCertInfo struct {
-	hostCollector *troubleshootv1beta2.Certificate
+	hostCollector *troubleshootv1beta2.KubeSSLCertCollect
 	BundlePath    string
 }
 
@@ -24,7 +24,7 @@ func (c *CollectKubeSSLCertInfo) Title() string {
 }
 
 func (c *CollectKubeSSLCertInfo) IsExcluded() (bool, error) {
-	return isExcluded(c.Collector.Exclude)
+	return isExcluded(c.hostCollector.Exclude)
 }
 
 // SSL Certificate Struct
@@ -43,7 +43,7 @@ type location struct {
 	FilePath string `json:"File Path,omitempty"`
 }
 
-func (c *CollectSSLCertInfo) Collect(progressChan chan<- interface{}) (CollectorResult, error) {
+func (c *CollectKubeSSLCertInfo) Collect(progressChan chan<- interface{}) (map[string][]byte, error) {
 
 	output := NewResult()
 
@@ -67,7 +67,7 @@ func (c *CollectSSLCertInfo) Collect(progressChan chan<- interface{}) (Collector
 
 	results := KubeCertCollector(GetCertificatesNames)
 
-	output.SaveResult(c.BundlePath, "certificates.json", bytes.NewBuffer(results))
+	output.SaveResult(c.BundlePath, "ssl/kube_ssl_certificates.json", bytes.NewBuffer(results))
 
 	//log.Println(string(results))
 	return output, err
