@@ -180,7 +180,7 @@ func getCollectorName(c interface{}) string {
 		collector = "sysctl"
 		name = v.Collector.Name
 	case *CollectInClusterSSLCertInfo:
-		collector = "inClusterSSLCertInfo"
+		collector = "incluster-ssl-cert-info"
 		name = v.Collector.CollectorName
 	default:
 		collector = "<none>"
