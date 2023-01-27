@@ -541,7 +541,7 @@ func (c *Collect) GetName() string {
 		name = c.Sysctl.Name
 	}
 	if c.InClusterSSLCertInfo != nil {
-		collector = "inClusterSSLCertInfo"
+		collector = "dagr"
 		name = c.InClusterSSLCertInfo.CollectorName
 	}
 
