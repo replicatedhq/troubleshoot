@@ -6,13 +6,17 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"encoding/pem"
+	"flag"
 	"log"
+	"path/filepath"
 	"time"
 
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/client-go/util/homedir"
 )
 
 type CollectInClusterSSLCertInfo struct {
@@ -51,11 +55,29 @@ func (c *CollectInClusterSSLCertInfo) IsExcluded() (bool, error) {
 }
 
 func (c *CollectInClusterSSLCertInfo) Collect(progressChan chan<- interface{}) (CollectorResult, error) {
-	// Go Client Config -- start
+	/* Go Client Config -- start
 	client, err := kubernetes.NewForConfig(c.ClientConfig)
 	if err != nil {
 		return nil, err
-	} // Go Client Config -- end
+	} */ //Go Client Config -- end
+
+	var kubeconfig *string
+	if home := homedir.HomeDir(); home != "" {
+		kubeconfig = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional) absolute path to the kubeconfig file")
+	} else {
+		kubeconfig = flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
+	}
+	flag.Parse()
+	// uses the current context in kubeconfig
+	config, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
+	if err != nil {
+		panic(err.Error())
+	}
+	// creates the clientsets
+	client, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		panic(err.Error())
+	}
 
 	output := NewResult()
 	// Json object initilization - start
