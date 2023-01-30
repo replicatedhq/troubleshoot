@@ -8,6 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	testclient "k8s.io/client-go/kubernetes/fake"
 )
@@ -568,6 +569,193 @@ spec:
 			} else {
 				require.NoError(t, err)
 				assert.Equal(t, tt.want, got)
+			}
+		})
+	}
+}
+
+func Test_getSpecSecretsMatchingLabel(t *testing.T) {
+	tests := []struct {
+		name            string
+		secret          []runtime.Object
+		targetNamespace string
+		targetLabelKey  string
+		key             string
+		wantErr         bool
+	}{
+		{
+			name: "get secret with matching label",
+			secret: []runtime.Object{
+				&corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "secret-1",
+						Namespace: "default",
+						Labels: map[string]string{
+							"foo": "bar",
+						},
+					},
+					Data: map[string][]byte{
+						"spec": []byte("spec-1"),
+					},
+				},
+			},
+			key:             "spec",
+			targetNamespace: "default",
+			targetLabelKey:  "foo=bar",
+			wantErr:         false,
+		},
+		{
+			name: "get support bundle spec secret with matching label",
+			secret: []runtime.Object{
+				&corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "secret-2",
+						Namespace: "default",
+						Labels: map[string]string{
+							"troubleshoot.io/kind": "support-bundle",
+						},
+					},
+					Data: map[string][]byte{
+						"support-bundle-spec": []byte("spec-1"),
+					},
+				},
+			},
+			key:             "support-bundle-spec",
+			targetNamespace: "default",
+			targetLabelKey:  "troubleshoot.io/kind=support-bundle",
+			wantErr:         false,
+		},
+		{
+			name: "cannot get support bundle spec secret with wrong spec key",
+			secret: []runtime.Object{
+				&corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "secret-2",
+						Namespace: "default",
+						Labels: map[string]string{
+							"troubleshoot.io/kind": "support-bundle",
+						},
+					},
+					Data: map[string][]byte{
+						"support-bundle-spec": []byte("spec-1"),
+					},
+				},
+			},
+			key:             "spec",
+			targetNamespace: "default",
+			targetLabelKey:  "troubleshoot.io/kind=support-bundle",
+			wantErr:         true,
+		},
+		{
+			name: "get support bundle spec secret with multiple label selector",
+			secret: []runtime.Object{
+				&corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "secret-1",
+						Namespace: "default",
+						Labels: map[string]string{
+							"troubleshoot.io/kind": "support-bundle",
+						},
+					},
+					Data: map[string][]byte{
+						"support-bundle-spec": []byte("spec-1"),
+					},
+				},
+				&corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "secret-2",
+						Namespace: "default",
+						Labels: map[string]string{
+							"troubleshoot.io/kind": "support-bundle",
+						},
+					},
+					Data: map[string][]byte{
+						"support-bundle-spec": []byte("spec-2"),
+					},
+				},
+			},
+			key:             "support-bundle-spec",
+			targetNamespace: "default",
+			targetLabelKey:  "troubleshoot.io/kind=support-bundle",
+			wantErr:         false,
+		},
+		{
+			name: "get support bundle spec secret with multiple label selector and one matching",
+			secret: []runtime.Object{
+				&corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "secret-1",
+						Namespace: "default",
+						Labels: map[string]string{
+							"troubleshoot.io/kind": "support-bundle",
+						},
+					},
+					Data: map[string][]byte{
+						"support-bundle-spec-wrong": []byte("spec-1"),
+					},
+				},
+				&corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "secret-2",
+						Namespace: "default",
+						Labels: map[string]string{
+							"troubleshoot.io/kind": "support-bundle",
+						},
+					},
+					Data: map[string][]byte{
+						"support-bundle-spec": []byte("spec-2"),
+					},
+				},
+			},
+			key:             "support-bundle-spec",
+			targetNamespace: "default",
+			targetLabelKey:  "troubleshoot.io/kind=support-bundle",
+			wantErr:         false,
+		},
+		{
+			name: "cannot get support bundle spec secret with multiple label selector and none matching",
+			secret: []runtime.Object{
+				&corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "secret-1",
+						Namespace: "default",
+						Labels: map[string]string{
+							"troubleshoot.io/kind": "support-bundle",
+						},
+					},
+					Data: map[string][]byte{
+						"support-bundle-spec-wrong": []byte("spec-1"),
+					},
+				},
+				&corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "secret-2",
+						Namespace: "default",
+						Labels: map[string]string{
+							"troubleshoot.io/kind": "support-bundle",
+						},
+					},
+					Data: map[string][]byte{
+						"support-bundle-spec-wrong": []byte("spec-2"),
+					},
+				},
+			},
+			key:             "support-bundle-spec",
+			targetNamespace: "default",
+			targetLabelKey:  "troubleshoot.io/kind=support-bundle",
+			wantErr:         true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			client := testclient.NewSimpleClientset(tt.secret...)
+			_, err := GetSecretMatchingLabel(client, tt.targetLabelKey, tt.targetNamespace, tt.key)
+
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				require.NoError(t, err)
 			}
 		})
 	}

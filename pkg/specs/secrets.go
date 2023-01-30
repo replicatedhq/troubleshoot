@@ -5,6 +5,8 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/replicatedhq/troubleshoot/pkg/k8sutil"
+	corev1 "k8s.io/api/core/v1"
+	kuberneteserrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 )
@@ -50,4 +52,22 @@ func LoadFromSecretMatchingLabel(client kubernetes.Interface, labelSelector stri
 	}
 
 	return secretsMatchingKey, nil
+}
+
+func GetSecretMatchingLabel(client kubernetes.Interface, labelSelector string, namespace string, key string) (*corev1.Secret, error) {
+
+	secrets, err := client.CoreV1().Secrets(namespace).List(context.TODO(), metav1.ListOptions{LabelSelector: labelSelector})
+	if err != nil {
+		return nil, err
+	}
+
+	for _, secret := range secrets.Items {
+		_, ok := secret.Data[key]
+		if !ok {
+			continue
+		}
+		return &secret, nil
+	}
+
+	return nil, kuberneteserrors.NewNotFound(corev1.Resource("secret"), "support bundle spec")
 }
