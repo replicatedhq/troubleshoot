@@ -4,11 +4,67 @@ import (
 	"encoding/json"
 	"fmt"
 	"path"
+	"strconv"
+	"strings"
 
+	"github.com/hashicorp/go-version"
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/replicatedhq/troubleshoot/pkg/collect"
 )
+
+func compareMssqlConditionalToActual(conditional string, result *collect.DatabaseConnection) (bool, error) {
+	parts := strings.Split(strings.TrimSpace(conditional), " ")
+
+	if len(parts) != 3 {
+		return false, errors.New("unable to parse conditional")
+	}
+
+	switch parts[0] {
+	case "connected":
+		expected, err := strconv.ParseBool(parts[2])
+		if err != nil {
+			return false, errors.Wrap(err, "failed to parse bool")
+		}
+
+		switch parts[1] {
+		case "=", "==", "===":
+			return expected == result.IsConnected, nil
+		case "!=", "!==":
+			return expected != result.IsConnected, nil
+
+		}
+
+		return false, errors.New("unable to parse postgres connected analyzer")
+
+	case "version":
+		expected, err := version.NewVersion(strings.Replace(parts[2], "x", "0", -1))
+		if err != nil {
+			return false, errors.Wrap(err, "failed to parse expected version")
+		}
+
+		operation := parts[1]
+		switch operation {
+		case "=", "==", "===":
+			operation = "="
+		case "!=", "!==":
+			operation = "!="
+		}
+
+		actual, err := version.NewVersion(strings.Replace(result.Version, "x", "0", -1))
+		if err != nil {
+			return false, errors.Wrap(err, "failed to parse mssql db actual version")
+		}
+
+		constraints, err := version.NewConstraint(fmt.Sprintf("%s %s", operation, expected))
+		if err != nil {
+			return false, errors.Wrap(err, "failed to create constraint")
+		}
+		return constraints.Check(actual), nil
+	}
+
+	return false, nil
+}
 
 func analyzeMssql(analyzer *troubleshootv1beta2.DatabaseAnalyze, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
 	collectorName := analyzer.CollectorName
@@ -49,7 +105,7 @@ func analyzeMssql(analyzer *troubleshootv1beta2.DatabaseAnalyze, getCollectedFil
 				return result, nil
 			}
 
-			isMatch, err := compareDatabaseConditionalToActual(outcome.Fail.When, &databaseConnection)
+			isMatch, err := compareMssqlConditionalToActual(outcome.Fail.When, &databaseConnection)
 			if err != nil {
 				return result, errors.Wrap(err, "failed to compare MS SQL Server database conditional")
 			}
@@ -76,7 +132,7 @@ func analyzeMssql(analyzer *troubleshootv1beta2.DatabaseAnalyze, getCollectedFil
 				return result, nil
 			}
 
-			isMatch, err := compareDatabaseConditionalToActual(outcome.Warn.When, &databaseConnection)
+			isMatch, err := compareMssqlConditionalToActual(outcome.Warn.When, &databaseConnection)
 			if err != nil {
 				return result, errors.Wrap(err, "failed to compare MS SQL Server database conditional")
 			}
@@ -97,7 +153,7 @@ func analyzeMssql(analyzer *troubleshootv1beta2.DatabaseAnalyze, getCollectedFil
 				return result, nil
 			}
 
-			isMatch, err := compareDatabaseConditionalToActual(outcome.Pass.When, &databaseConnection)
+			isMatch, err := compareMssqlConditionalToActual(outcome.Pass.When, &databaseConnection)
 			if err != nil {
 				return result, errors.Wrap(err, "failed to compare MS SQL Server database conditional")
 			}
