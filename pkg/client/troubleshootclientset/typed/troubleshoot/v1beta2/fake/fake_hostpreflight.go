@@ -116,7 +116,7 @@ func (c *FakeHostPreflights) UpdateStatus(ctx context.Context, hostPreflight *v1
 // Delete takes name of the hostPreflight and deletes it. Returns an error if one occurs.
 func (c *FakeHostPreflights) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewDeleteActionWithOptions(hostpreflightsResource, c.ns, name, opts), &v1beta2.HostPreflight{})
+		Invokes(testing.NewDeleteAction(hostpreflightsResource, c.ns, name), &v1beta2.HostPreflight{})
 
 	return err
 }

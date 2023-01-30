@@ -116,7 +116,7 @@ func (c *FakePreflights) UpdateStatus(ctx context.Context, preflight *v1beta1.Pr
 // Delete takes name of the preflight and deletes it. Returns an error if one occurs.
 func (c *FakePreflights) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewDeleteActionWithOptions(preflightsResource, c.ns, name, opts), &v1beta1.Preflight{})
+		Invokes(testing.NewDeleteAction(preflightsResource, c.ns, name), &v1beta1.Preflight{})
 
 	return err
 }
