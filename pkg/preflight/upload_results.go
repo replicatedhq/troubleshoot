@@ -23,6 +23,7 @@ func uploadResults(uri string, analyzeResults []*analyzerunner.AnalyzeResult) er
 			Title:   analyzeResult.Title,
 			Message: analyzeResult.Message,
 			URI:     analyzeResult.URI,
+			Note:    analyzeResult.Note,
 		}
 
 		uploadPreflightResults.Results = append(uploadPreflightResults.Results, uploadPreflightResult)

@@ -50,6 +50,10 @@ func outputToFile(preflightName string, outputPath string, analyzeResults []*ana
 			result = result + fmt.Sprintf("URI: %s\n", analyzeResult.URI)
 		}
 
+		if analyzeResult.Note != "" {
+			result = result + fmt.Sprintf("Note: %s\n", analyzeResult.Note)
+		}
+
 		if analyzeResult.Strict {
 			result = result + fmt.Sprintf("Strict: %t\n", analyzeResult.Strict)
 		}

@@ -4,6 +4,7 @@ type SingleOutcome struct {
 	When    string `json:"when,omitempty" yaml:"when,omitempty"`
 	Message string `json:"message,omitempty" yaml:"message,omitempty"`
 	URI     string `json:"uri,omitempty" yaml:"uri,omitempty"`
+	Note    string `json:"note,omitempty" yaml:"note,omitempty"`
 }
 
 type Outcome struct {

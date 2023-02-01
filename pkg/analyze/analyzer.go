@@ -20,6 +20,7 @@ type AnalyzeResult struct {
 	Title   string
 	Message string
 	URI     string
+	Note    string
 	IconKey string
 	IconURI string
 

@@ -210,6 +210,17 @@ func drawDetails(analysisResult *analyzerunner.AnalyzeResult) {
 		uri.SetRect(termWidth/2, currentTop, termWidth, currentTop+height)
 		ui.Render(uri)
 	}
+
+	if analysisResult.Note != "" {
+		note := widgets.NewParagraph()
+		note.Text = fmt.Sprintf("Note: %s", analysisResult.Note)
+		note.Border = false
+		// For long urls that lead to wrapping text, make the rectangle bigger by
+		// increasing the calculated height by 2
+		height = estimateNumberOfLines(note.Text, termWidth/2) + 2
+		note.SetRect(termWidth/2, currentTop, termWidth, currentTop+height)
+		ui.Render(note)
+	}
 }
 
 func estimateNumberOfLines(text string, width int) int {
@@ -260,6 +271,10 @@ func save(analyzeResults []*analyzerunner.AnalyzeResult) (string, error) {
 
 		if analyzeResult.URI != "" {
 			result = result + fmt.Sprintf("URI: %s\n", analyzeResult.URI)
+		}
+
+		if analyzeResult.Note != "" {
+			result = result + fmt.Sprintf("Note: %s\n", analyzeResult.Note)
 		}
 
 		result = result + "\n------------\n"

@@ -68,6 +68,7 @@ type textResultOutput struct {
 	Title   string `json:"title" yaml:"title"`
 	Message string `json:"message" yaml:"message"`
 	URI     string `json:"uri,omitempty" yaml:"uri,omitempty"`
+	Note    string `json:"note,omitempty" yaml:"note,omitempty"`
 	Strict  bool   `json:"strict,omitempty" yaml:"strict,omitempty"`
 }
 
@@ -90,6 +91,7 @@ func showTextResultsStructured(preflightName string, analyzeResults []*analyzeru
 			Title:   analyzeResult.Title,
 			Message: analyzeResult.Message,
 			URI:     analyzeResult.URI,
+			Note:    analyzeResult.Note,
 		}
 
 		if analyzeResult.Strict {

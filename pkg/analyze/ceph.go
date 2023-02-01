@@ -55,13 +55,15 @@ var CephStatusDefaultOutcomes = []*troubleshootv1beta2.Outcome{
 	{
 		Warn: &troubleshootv1beta2.SingleOutcome{
 			Message: "Ceph status is HEALTH_WARN",
-			URI:     "https://rook.io/docs/rook/v1.4/ceph-common-issues.html",
+			URI:     "https://rook.io/docs/rook/v1.9/ceph-common-issues.html",
+			Note:    "Please, ensure that you check the documentation for the Rook version installed.",
 		},
 	},
 	{
 		Fail: &troubleshootv1beta2.SingleOutcome{
 			Message: "Ceph status is HEALTH_ERR",
-			URI:     "https://rook.io/docs/rook/v1.4/ceph-common-issues.html",
+			URI:     "https://rook.io/docs/rook/v1.9/ceph-common-issues.html",
+			Note:    "Please, ensure that you check the documentation for the Rook version installed.",
 		},
 	},
 }
@@ -144,6 +146,7 @@ func cephStatus(analyzer *troubleshootv1beta2.CephStatusAnalyze, getCollectedFil
 				analyzeResult.IsFail = true
 				analyzeResult.Message = detailedCephMessage(outcome.Fail.Message, status)
 				analyzeResult.URI = outcome.Fail.URI
+				analyzeResult.Note = outcome.Fail.Note
 				return analyzeResult, nil
 			}
 		} else if outcome.Warn != nil {
@@ -158,6 +161,7 @@ func cephStatus(analyzer *troubleshootv1beta2.CephStatusAnalyze, getCollectedFil
 				analyzeResult.IsWarn = true
 				analyzeResult.Message = detailedCephMessage(outcome.Warn.Message, status)
 				analyzeResult.URI = outcome.Warn.URI
+				analyzeResult.Note = outcome.Warn.Note
 				return analyzeResult, nil
 			}
 		} else if outcome.Pass != nil {
@@ -172,7 +176,7 @@ func cephStatus(analyzer *troubleshootv1beta2.CephStatusAnalyze, getCollectedFil
 				analyzeResult.IsPass = true
 				analyzeResult.Message = outcome.Pass.Message
 				analyzeResult.URI = outcome.Pass.URI
-
+				analyzeResult.Note = outcome.Pass.Note
 				return analyzeResult, nil
 			}
 		}

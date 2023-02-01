@@ -9,6 +9,7 @@ type UploadPreflightResult struct {
 	Title   string `json:"title"`
 	Message string `json:"message"`
 	URI     string `json:"uri,omitempty"`
+	Note    string `json:"note,omitempty"`
 }
 
 type UploadPreflightError struct {

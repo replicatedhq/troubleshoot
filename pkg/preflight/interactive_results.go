@@ -210,6 +210,16 @@ func drawDetails(analysisResult *analyzerunner.AnalyzeResult) {
 		ui.Render(uri)
 		currentTop = currentTop + height + 1
 	}
+
+	if analysisResult.Note != "" {
+		note := widgets.NewParagraph()
+		note.Text = fmt.Sprintf("Note: %s", analysisResult.Note)
+		note.Border = false
+		height = estimateNumberOfLines(note.Text, termWidth/2)
+		note.SetRect(termWidth/2, currentTop, termWidth, currentTop+height)
+		ui.Render(note)
+		currentTop = currentTop + height + 1
+	}
 }
 
 func estimateNumberOfLines(text string, width int) int {
