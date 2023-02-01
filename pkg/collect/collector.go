@@ -227,11 +227,16 @@ func DedupCollectors(allCollectors []*troubleshootv1beta2.Collect) []*troublesho
 	finalCollectors := []*troubleshootv1beta2.Collect{}
 
 	for _, collector := range allCollectors {
-		data, _ := json.Marshal(collector)
-		stringData := string(data)
-		if _, value := uniqueCollectors[stringData]; !value {
-			uniqueCollectors[stringData] = true
+		data, err := json.Marshal(collector)
+		if err != nil {
+			// return collector as is if for whatever reason it can't be marshalled into json
 			finalCollectors = append(finalCollectors, collector)
+		} else {
+			stringData := string(data)
+			if _, value := uniqueCollectors[stringData]; !value {
+				uniqueCollectors[stringData] = true
+				finalCollectors = append(finalCollectors, collector)
+			}
 		}
 	}
 	return finalCollectors
