@@ -2,6 +2,7 @@ package collect
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strconv"
 	"strings"
@@ -188,4 +189,55 @@ func getCollectorName(c interface{}) string {
 		return fmt.Sprintf("%s/%s", collector, selector)
 	}
 	return collector
+}
+
+// Ensure that the specified collector is in the list of collectors
+func EnsureCollectorInList(list []*troubleshootv1beta2.Collect, collector troubleshootv1beta2.Collect) []*troubleshootv1beta2.Collect {
+	for _, inList := range list {
+		if collector.ClusterResources != nil && inList.ClusterResources != nil {
+			return list
+		}
+		if collector.ClusterInfo != nil && inList.ClusterInfo != nil {
+			return list
+		}
+	}
+
+	return append(list, &collector)
+}
+
+// collect ClusterResources earliest in the list so the pod list does not include pods started by collectors
+func EnsureClusterResourcesFirst(list []*troubleshootv1beta2.Collect) []*troubleshootv1beta2.Collect {
+	sliceOfClusterResources := []*troubleshootv1beta2.Collect{}
+	sliceOfOtherCollectors := []*troubleshootv1beta2.Collect{}
+	for _, collector := range list {
+		if collector.ClusterResources != nil {
+			sliceOfClusterResources = append(sliceOfClusterResources, []*troubleshootv1beta2.Collect{collector}...)
+		} else {
+			sliceOfOtherCollectors = append(sliceOfOtherCollectors, []*troubleshootv1beta2.Collect{collector}...)
+		}
+	}
+	return append(sliceOfClusterResources, sliceOfOtherCollectors...)
+}
+
+// deduplicates a list of troubleshootv1beta2.Collect objects
+// marshals object to json and then uses its string value to check for uniqueness
+// there is no sorting of the keys in the collect object's spec so if the spec isn't an exact match line for line as written, no dedup will occur
+func DedupCollectors(allCollectors []*troubleshootv1beta2.Collect) []*troubleshootv1beta2.Collect {
+	uniqueCollectors := make(map[string]bool)
+	finalCollectors := []*troubleshootv1beta2.Collect{}
+
+	for _, collector := range allCollectors {
+		data, err := json.Marshal(collector)
+		if err != nil {
+			// return collector as is if for whatever reason it can't be marshalled into json
+			finalCollectors = append(finalCollectors, collector)
+		} else {
+			stringData := string(data)
+			if _, value := uniqueCollectors[stringData]; !value {
+				uniqueCollectors[stringData] = true
+				finalCollectors = append(finalCollectors, collector)
+			}
+		}
+	}
+	return finalCollectors
 }
