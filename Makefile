@@ -6,6 +6,7 @@ SHELL := /bin/bash -o pipefail
 VERSION_PACKAGE = github.com/replicatedhq/troubleshoot/pkg/version
 VERSION ?=`git describe --tags --dirty`
 DATE=`date -u +"%Y-%m-%dT%H:%M:%SZ"`
+RUN?=""
 
 GIT_TREE = $(shell git rev-parse --is-inside-work-tree 2>/dev/null)
 ifneq "$(GIT_TREE)" ""
@@ -43,7 +44,11 @@ ffi: fmt vet
 
 .PHONY: test
 test: generate fmt vet
-	go test ${BUILDFLAGS} ./pkg/... ./cmd/... -coverprofile cover.out
+	if [ -n $(RUN) ]; then \
+		go test ${BUILDFLAGS} ./pkg/... ./cmd/... -coverprofile cover.out -run $(RUN); \
+	else \
+		go test ${BUILDFLAGS} ./pkg/... ./cmd/... -coverprofile cover.out; \
+	fi
 
 # Go tests that require a K8s instance
 # TODOLATER: merge with test, so we get unified coverage reports? it'll add 21~sec to the test job though...
@@ -119,13 +124,13 @@ docs: fmt vet
 	./bin/docsgen
 
 controller-gen:
-	go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.7.0
+	go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.11.2
 CONTROLLER_GEN=$(shell which controller-gen)
 
 .PHONY: client-gen
 client-gen:
 ifeq (, $(shell which client-gen))
-	go install k8s.io/code-generator/cmd/client-gen@v0.22.2
+	go install k8s.io/code-generator/cmd/client-gen@v0.26.1
 CLIENT_GEN=$(shell go env GOPATH)/bin/client-gen
 else
 CLIENT_GEN=$(shell which client-gen)

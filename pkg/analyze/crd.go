@@ -5,11 +5,12 @@ import (
 	"fmt"
 
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
+	"github.com/replicatedhq/troubleshoot/pkg/constants"
 	apiextensionsv1beta1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 )
 
 func analyzeCustomResourceDefinition(analyzer *troubleshootv1beta2.CustomResourceDefinition, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
-	crdData, err := getCollectedFileContents("cluster-resources/custom-resource-definitions.json")
+	crdData, err := getCollectedFileContents(fmt.Sprintf("%s/%s.json", constants.CLUSTER_RESOURCES_DIR, constants.CLUSTER_RESOURCES_CUSTOM_RESOURCE_DEFINITIONS))
 	if err != nil {
 		return nil, err
 	}
