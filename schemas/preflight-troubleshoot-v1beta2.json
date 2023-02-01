@@ -3047,7 +3047,8 @@
                                             }
                                           }
                                         }
-                                      }
+                                      },
+                                      "x-kubernetes-map-type": "atomic"
                                     },
                                     "weight": {
                                       "description": "Weight associated with matching the corresponding nodeSelectorTerm, in the range 1-100.",
@@ -3129,10 +3130,12 @@
                                             }
                                           }
                                         }
-                                      }
+                                      },
+                                      "x-kubernetes-map-type": "atomic"
                                     }
                                   }
-                                }
+                                },
+                                "x-kubernetes-map-type": "atomic"
                               }
                             }
                           },
@@ -3198,7 +3201,8 @@
                                                 "type": "string"
                                               }
                                             }
-                                          }
+                                          },
+                                          "x-kubernetes-map-type": "atomic"
                                         },
                                         "namespaceSelector": {
                                           "description": "A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means \"this pod's namespace\". An empty selector ({}) matches all namespaces.",
@@ -3240,7 +3244,8 @@
                                                 "type": "string"
                                               }
                                             }
-                                          }
+                                          },
+                                          "x-kubernetes-map-type": "atomic"
                                         },
                                         "namespaces": {
                                           "description": "namespaces specifies a static list of namespace names that the term applies to. The term is applied to the union of the namespaces listed in this field and the ones selected by namespaceSelector. null or empty namespaces list and null namespaceSelector means \"this pod's namespace\".",
@@ -3313,7 +3318,8 @@
                                             "type": "string"
                                           }
                                         }
-                                      }
+                                      },
+                                      "x-kubernetes-map-type": "atomic"
                                     },
                                     "namespaceSelector": {
                                       "description": "A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means \"this pod's namespace\". An empty selector ({}) matches all namespaces.",
@@ -3355,7 +3361,8 @@
                                             "type": "string"
                                           }
                                         }
-                                      }
+                                      },
+                                      "x-kubernetes-map-type": "atomic"
                                     },
                                     "namespaces": {
                                       "description": "namespaces specifies a static list of namespace names that the term applies to. The term is applied to the union of the namespaces listed in this field and the ones selected by namespaceSelector. null or empty namespaces list and null namespaceSelector means \"this pod's namespace\".",
@@ -3435,7 +3442,8 @@
                                                 "type": "string"
                                               }
                                             }
-                                          }
+                                          },
+                                          "x-kubernetes-map-type": "atomic"
                                         },
                                         "namespaceSelector": {
                                           "description": "A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means \"this pod's namespace\". An empty selector ({}) matches all namespaces.",
@@ -3477,7 +3485,8 @@
                                                 "type": "string"
                                               }
                                             }
-                                          }
+                                          },
+                                          "x-kubernetes-map-type": "atomic"
                                         },
                                         "namespaces": {
                                           "description": "namespaces specifies a static list of namespace names that the term applies to. The term is applied to the union of the namespaces listed in this field and the ones selected by namespaceSelector. null or empty namespaces list and null namespaceSelector means \"this pod's namespace\".",
@@ -3550,7 +3559,8 @@
                                             "type": "string"
                                           }
                                         }
-                                      }
+                                      },
+                                      "x-kubernetes-map-type": "atomic"
                                     },
                                     "namespaceSelector": {
                                       "description": "A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means \"this pod's namespace\". An empty selector ({}) matches all namespaces.",
@@ -3592,7 +3602,8 @@
                                             "type": "string"
                                           }
                                         }
-                                      }
+                                      },
+                                      "x-kubernetes-map-type": "atomic"
                                     },
                                     "namespaces": {
                                       "description": "namespaces specifies a static list of namespace names that the term applies to. The term is applied to the union of the namespaces listed in this field and the ones selected by namespaceSelector. null or empty namespaces list and null namespaceSelector means \"this pod's namespace\".",
@@ -3681,7 +3692,8 @@
                                             "description": "Specify whether the ConfigMap or its key must be defined",
                                             "type": "boolean"
                                           }
-                                        }
+                                        },
+                                        "x-kubernetes-map-type": "atomic"
                                       },
                                       "fieldRef": {
                                         "description": "Selects a field of the pod: supports metadata.name, metadata.namespace, `metadata.labels['\u003cKEY\u003e']`, `metadata.annotations['\u003cKEY\u003e']`, spec.nodeName, spec.serviceAccountName, status.hostIP, status.podIP, status.podIPs.",
@@ -3698,7 +3710,8 @@
                                             "description": "Path of the field to select in the specified API version.",
                                             "type": "string"
                                           }
-                                        }
+                                        },
+                                        "x-kubernetes-map-type": "atomic"
                                       },
                                       "resourceFieldRef": {
                                         "description": "Selects a resource of the container: only resources limits and requests (limits.cpu, limits.memory, limits.ephemeral-storage, requests.cpu, requests.memory and requests.ephemeral-storage) are currently supported.",
@@ -3728,7 +3741,8 @@
                                             "description": "Required: resource to select",
                                             "type": "string"
                                           }
-                                        }
+                                        },
+                                        "x-kubernetes-map-type": "atomic"
                                       },
                                       "secretKeyRef": {
                                         "description": "Selects a key of a secret in the pod's namespace",
@@ -3749,7 +3763,8 @@
                                             "description": "Specify whether the Secret or its key must be defined",
                                             "type": "boolean"
                                           }
-                                        }
+                                        },
+                                        "x-kubernetes-map-type": "atomic"
                                       }
                                     }
                                   }
@@ -3775,7 +3790,8 @@
                                         "description": "Specify whether the ConfigMap must be defined",
                                         "type": "boolean"
                                       }
-                                    }
+                                    },
+                                    "x-kubernetes-map-type": "atomic"
                                   },
                                   "prefix": {
                                     "description": "An optional identifier to prepend to each key in the ConfigMap. Must be a C_IDENTIFIER.",
@@ -3793,7 +3809,8 @@
                                         "description": "Specify whether the Secret must be defined",
                                         "type": "boolean"
                                       }
-                                    }
+                                    },
+                                    "x-kubernetes-map-type": "atomic"
                                   }
                                 }
                               }
@@ -4871,7 +4888,8 @@
                                             "description": "Specify whether the ConfigMap or its key must be defined",
                                             "type": "boolean"
                                           }
-                                        }
+                                        },
+                                        "x-kubernetes-map-type": "atomic"
                                       },
                                       "fieldRef": {
                                         "description": "Selects a field of the pod: supports metadata.name, metadata.namespace, `metadata.labels['\u003cKEY\u003e']`, `metadata.annotations['\u003cKEY\u003e']`, spec.nodeName, spec.serviceAccountName, status.hostIP, status.podIP, status.podIPs.",
@@ -4888,7 +4906,8 @@
                                             "description": "Path of the field to select in the specified API version.",
                                             "type": "string"
                                           }
-                                        }
+                                        },
+                                        "x-kubernetes-map-type": "atomic"
                                       },
                                       "resourceFieldRef": {
                                         "description": "Selects a resource of the container: only resources limits and requests (limits.cpu, limits.memory, limits.ephemeral-storage, requests.cpu, requests.memory and requests.ephemeral-storage) are currently supported.",
@@ -4918,7 +4937,8 @@
                                             "description": "Required: resource to select",
                                             "type": "string"
                                           }
-                                        }
+                                        },
+                                        "x-kubernetes-map-type": "atomic"
                                       },
                                       "secretKeyRef": {
                                         "description": "Selects a key of a secret in the pod's namespace",
@@ -4939,7 +4959,8 @@
                                             "description": "Specify whether the Secret or its key must be defined",
                                             "type": "boolean"
                                           }
-                                        }
+                                        },
+                                        "x-kubernetes-map-type": "atomic"
                                       }
                                     }
                                   }
@@ -4965,7 +4986,8 @@
                                         "description": "Specify whether the ConfigMap must be defined",
                                         "type": "boolean"
                                       }
-                                    }
+                                    },
+                                    "x-kubernetes-map-type": "atomic"
                                   },
                                   "prefix": {
                                     "description": "An optional identifier to prepend to each key in the ConfigMap. Must be a C_IDENTIFIER.",
@@ -4983,7 +5005,8 @@
                                         "description": "Specify whether the Secret must be defined",
                                         "type": "boolean"
                                       }
-                                    }
+                                    },
+                                    "x-kubernetes-map-type": "atomic"
                                   }
                                 }
                               }
@@ -6007,7 +6030,8 @@
                               "description": "Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names TODO: Add other useful fields. apiVersion, kind, uid?",
                               "type": "string"
                             }
-                          }
+                          },
+                          "x-kubernetes-map-type": "atomic"
                         }
                       },
                       "initContainers": {
@@ -6075,7 +6099,8 @@
                                             "description": "Specify whether the ConfigMap or its key must be defined",
                                             "type": "boolean"
                                           }
-                                        }
+                                        },
+                                        "x-kubernetes-map-type": "atomic"
                                       },
                                       "fieldRef": {
                                         "description": "Selects a field of the pod: supports metadata.name, metadata.namespace, `metadata.labels['\u003cKEY\u003e']`, `metadata.annotations['\u003cKEY\u003e']`, spec.nodeName, spec.serviceAccountName, status.hostIP, status.podIP, status.podIPs.",
@@ -6092,7 +6117,8 @@
                                             "description": "Path of the field to select in the specified API version.",
                                             "type": "string"
                                           }
-                                        }
+                                        },
+                                        "x-kubernetes-map-type": "atomic"
                                       },
                                       "resourceFieldRef": {
                                         "description": "Selects a resource of the container: only resources limits and requests (limits.cpu, limits.memory, limits.ephemeral-storage, requests.cpu, requests.memory and requests.ephemeral-storage) are currently supported.",
@@ -6122,7 +6148,8 @@
                                             "description": "Required: resource to select",
                                             "type": "string"
                                           }
-                                        }
+                                        },
+                                        "x-kubernetes-map-type": "atomic"
                                       },
                                       "secretKeyRef": {
                                         "description": "Selects a key of a secret in the pod's namespace",
@@ -6143,7 +6170,8 @@
                                             "description": "Specify whether the Secret or its key must be defined",
                                             "type": "boolean"
                                           }
-                                        }
+                                        },
+                                        "x-kubernetes-map-type": "atomic"
                                       }
                                     }
                                   }
@@ -6169,7 +6197,8 @@
                                         "description": "Specify whether the ConfigMap must be defined",
                                         "type": "boolean"
                                       }
-                                    }
+                                    },
+                                    "x-kubernetes-map-type": "atomic"
                                   },
                                   "prefix": {
                                     "description": "An optional identifier to prepend to each key in the ConfigMap. Must be a C_IDENTIFIER.",
@@ -6187,7 +6216,8 @@
                                         "description": "Specify whether the Secret must be defined",
                                         "type": "boolean"
                                       }
-                                    }
+                                    },
+                                    "x-kubernetes-map-type": "atomic"
                                   }
                                 }
                               }
@@ -7522,7 +7552,8 @@
                                     "type": "string"
                                   }
                                 }
-                              }
+                              },
+                              "x-kubernetes-map-type": "atomic"
                             },
                             "matchLabelKeys": {
                               "description": "MatchLabelKeys is a set of pod label keys to select the pods over which spreading will be calculated. The keys are used to lookup values from the incoming pod labels, those key-value labels are ANDed with labelSelector to select the group of existing pods over which spreading will be calculated for the incoming pod. Keys that don't exist in the incoming pod labels will be ignored. A null or empty list means only match against labelSelector.",
@@ -7555,7 +7586,7 @@
                               "type": "string"
                             },
                             "whenUnsatisfiable": {
-                              "description": "WhenUnsatisfiable indicates how to deal with a pod if it doesn't satisfy the spread constraint. - DoNotSchedule (default) tells the scheduler not to schedule it. - ScheduleAnyway tells the scheduler to schedule the pod in any location,   but giving higher precedence to topologies that would help reduce the   skew. A constraint is considered \"Unsatisfiable\" for an incoming pod if and only if every possible node assignment for that pod would violate \"MaxSkew\" on some topology. For example, in a 3-zone cluster, MaxSkew is set to 1, and pods with the same labelSelector spread as 3/1/1: | zone1 | zone2 | zone3 | | P P P |   P   |   P   | If WhenUnsatisfiable is set to DoNotSchedule, incoming pod can only be scheduled to zone2(zone3) to become 3/2/1(3/1/2) as ActualSkew(2-1) on zone2(zone3) satisfies MaxSkew(1). In other words, the cluster can still be imbalanced, but scheduler won't make it *more* imbalanced. It's a required field.",
+                              "description": "WhenUnsatisfiable indicates how to deal with a pod if it doesn't satisfy the spread constraint. - DoNotSchedule (default) tells the scheduler not to schedule it. - ScheduleAnyway tells the scheduler to schedule the pod in any location, but giving higher precedence to topologies that would help reduce the skew. A constraint is considered \"Unsatisfiable\" for an incoming pod if and only if every possible node assignment for that pod would violate \"MaxSkew\" on some topology. For example, in a 3-zone cluster, MaxSkew is set to 1, and pods with the same labelSelector spread as 3/1/1: | zone1 | zone2 | zone3 | | P P P |   P   |   P   | If WhenUnsatisfiable is set to DoNotSchedule, incoming pod can only be scheduled to zone2(zone3) to become 3/2/1(3/1/2) as ActualSkew(2-1) on zone2(zone3) satisfies MaxSkew(1). In other words, the cluster can still be imbalanced, but scheduler won't make it *more* imbalanced. It's a required field.",
                               "type": "string"
                             }
                           }
@@ -7692,7 +7723,8 @@
                                       "description": "Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names TODO: Add other useful fields. apiVersion, kind, uid?",
                                       "type": "string"
                                     }
-                                  }
+                                  },
+                                  "x-kubernetes-map-type": "atomic"
                                 },
                                 "user": {
                                   "description": "user is optional: User is the rados user name, default is admin More info: https://examples.k8s.io/volumes/cephfs/README.md#how-to-use-it",
@@ -7723,7 +7755,8 @@
                                       "description": "Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names TODO: Add other useful fields. apiVersion, kind, uid?",
                                       "type": "string"
                                     }
-                                  }
+                                  },
+                                  "x-kubernetes-map-type": "atomic"
                                 },
                                 "volumeID": {
                                   "description": "volumeID used to identify the volume in cinder. More info: https://examples.k8s.io/mysql-cinder-pd/README.md",
@@ -7775,7 +7808,8 @@
                                   "description": "optional specify whether the ConfigMap or its keys must be defined",
                                   "type": "boolean"
                                 }
-                              }
+                              },
+                              "x-kubernetes-map-type": "atomic"
                             },
                             "csi": {
                               "description": "csi (Container Storage Interface) represents ephemeral storage that is handled by certain external CSI drivers (Beta feature).",
@@ -7800,7 +7834,8 @@
                                       "description": "Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names TODO: Add other useful fields. apiVersion, kind, uid?",
                                       "type": "string"
                                     }
-                                  }
+                                  },
+                                  "x-kubernetes-map-type": "atomic"
                                 },
                                 "readOnly": {
                                   "description": "readOnly specifies a read-only configuration for the volume. Defaults to false (read/write).",
@@ -7849,7 +7884,8 @@
                                             "description": "Path of the field to select in the specified API version.",
                                             "type": "string"
                                           }
-                                        }
+                                        },
+                                        "x-kubernetes-map-type": "atomic"
                                       },
                                       "mode": {
                                         "description": "Optional: mode bits used to set permissions on this file, must be an octal value between 0000 and 0777 or a decimal value between 0 and 511. YAML accepts both octal and decimal values, JSON requires decimal values for mode bits. If not specified, the volume defaultMode will be used. This might be in conflict with other options that affect the file mode, like fsGroup, and the result can be other mode bits set.",
@@ -7888,7 +7924,8 @@
                                             "description": "Required: resource to select",
                                             "type": "string"
                                           }
-                                        }
+                                        },
+                                        "x-kubernetes-map-type": "atomic"
                                       }
                                     }
                                   }
@@ -7919,7 +7956,7 @@
                               }
                             },
                             "ephemeral": {
-                              "description": "ephemeral represents a volume that is handled by a cluster storage driver. The volume's lifecycle is tied to the pod that defines it - it will be created before the pod starts, and deleted when the pod is removed. \n Use this if: a) the volume is only needed while the pod runs, b) features of normal volumes like restoring from snapshot or capacity    tracking are needed, c) the storage driver is specified through a storage class, and d) the storage driver supports dynamic volume provisioning through    a PersistentVolumeClaim (see EphemeralVolumeSource for more    information on the connection between this volume type    and PersistentVolumeClaim). \n Use PersistentVolumeClaim or one of the vendor-specific APIs for volumes that persist for longer than the lifecycle of an individual pod. \n Use CSI for light-weight local ephemeral volumes if the CSI driver is meant to be used that way - see the documentation of the driver for more information. \n A pod can use both types of ephemeral volumes and persistent volumes at the same time.",
+                              "description": "ephemeral represents a volume that is handled by a cluster storage driver. The volume's lifecycle is tied to the pod that defines it - it will be created before the pod starts, and deleted when the pod is removed. \n Use this if: a) the volume is only needed while the pod runs, b) features of normal volumes like restoring from snapshot or capacity tracking are needed, c) the storage driver is specified through a storage class, and d) the storage driver supports dynamic volume provisioning through a PersistentVolumeClaim (see EphemeralVolumeSource for more information on the connection between this volume type and PersistentVolumeClaim). \n Use PersistentVolumeClaim or one of the vendor-specific APIs for volumes that persist for longer than the lifecycle of an individual pod. \n Use CSI for light-weight local ephemeral volumes if the CSI driver is meant to be used that way - see the documentation of the driver for more information. \n A pod can use both types of ephemeral volumes and persistent volumes at the same time.",
                               "type": "object",
                               "properties": {
                                 "volumeClaimTemplate": {
@@ -7964,10 +8001,11 @@
                                               "description": "Name is the name of resource being referenced",
                                               "type": "string"
                                             }
-                                          }
+                                          },
+                                          "x-kubernetes-map-type": "atomic"
                                         },
                                         "dataSourceRef": {
-                                          "description": "dataSourceRef specifies the object from which to populate the volume with data, if a non-empty volume is desired. This may be any object from a non-empty API group (non core object) or a PersistentVolumeClaim object. When this field is specified, volume binding will only succeed if the type of the specified object matches some installed volume populator or dynamic provisioner. This field will replace the functionality of the dataSource field and as such if both fields are non-empty, they must have the same value. For backwards compatibility, when namespace isn't specified in dataSourceRef, both fields (dataSource and dataSourceRef) will be set to the same value automatically if one of them is empty and the other is non-empty. When namespace is specified in dataSourceRef, dataSource isn't set to the same value and must be empty. There are three important differences between dataSource and dataSourceRef: * While dataSource only allows two specific types of objects, dataSourceRef   allows any non-core object, as well as PersistentVolumeClaim objects. * While dataSource ignores disallowed values (dropping them), dataSourceRef   preserves all values, and generates an error if a disallowed value is   specified. * While dataSource only allows local objects, dataSourceRef allows objects   in any namespaces. (Beta) Using this field requires the AnyVolumeDataSource feature gate to be enabled. (Alpha) Using the namespace field of dataSourceRef requires the CrossNamespaceVolumeDataSource feature gate to be enabled.",
+                                          "description": "dataSourceRef specifies the object from which to populate the volume with data, if a non-empty volume is desired. This may be any object from a non-empty API group (non core object) or a PersistentVolumeClaim object. When this field is specified, volume binding will only succeed if the type of the specified object matches some installed volume populator or dynamic provisioner. This field will replace the functionality of the dataSource field and as such if both fields are non-empty, they must have the same value. For backwards compatibility, when namespace isn't specified in dataSourceRef, both fields (dataSource and dataSourceRef) will be set to the same value automatically if one of them is empty and the other is non-empty. When namespace is specified in dataSourceRef, dataSource isn't set to the same value and must be empty. There are three important differences between dataSource and dataSourceRef: * While dataSource only allows two specific types of objects, dataSourceRef allows any non-core object, as well as PersistentVolumeClaim objects. * While dataSource ignores disallowed values (dropping them), dataSourceRef preserves all values, and generates an error if a disallowed value is specified. * While dataSource only allows local objects, dataSourceRef allows objects in any namespaces. (Beta) Using this field requires the AnyVolumeDataSource feature gate to be enabled. (Alpha) Using the namespace field of dataSourceRef requires the CrossNamespaceVolumeDataSource feature gate to be enabled.",
                                           "type": "object",
                                           "required": [
                                             "kind",
@@ -8091,7 +8129,8 @@
                                                 "type": "string"
                                               }
                                             }
-                                          }
+                                          },
+                                          "x-kubernetes-map-type": "atomic"
                                         },
                                         "storageClassName": {
                                           "description": "storageClassName is the name of the StorageClass required by the claim. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#class-1",
@@ -8178,7 +8217,8 @@
                                       "description": "Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names TODO: Add other useful fields. apiVersion, kind, uid?",
                                       "type": "string"
                                     }
-                                  }
+                                  },
+                                  "x-kubernetes-map-type": "atomic"
                                 }
                               }
                             },
@@ -8339,7 +8379,8 @@
                                       "description": "Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names TODO: Add other useful fields. apiVersion, kind, uid?",
                                       "type": "string"
                                     }
-                                  }
+                                  },
+                                  "x-kubernetes-map-type": "atomic"
                                 },
                                 "targetPortal": {
                                   "description": "targetPortal is iSCSI Target Portal. The Portal is either an IP or ip_addr:port if the port is other than default (typically TCP ports 860 and 3260).",
@@ -8483,7 +8524,8 @@
                                             "description": "optional specify whether the ConfigMap or its keys must be defined",
                                             "type": "boolean"
                                           }
-                                        }
+                                        },
+                                        "x-kubernetes-map-type": "atomic"
                                       },
                                       "downwardAPI": {
                                         "description": "downwardAPI information about the downwardAPI data to project",
@@ -8514,7 +8556,8 @@
                                                       "description": "Path of the field to select in the specified API version.",
                                                       "type": "string"
                                                     }
-                                                  }
+                                                  },
+                                                  "x-kubernetes-map-type": "atomic"
                                                 },
                                                 "mode": {
                                                   "description": "Optional: mode bits used to set permissions on this file, must be an octal value between 0000 and 0777 or a decimal value between 0 and 511. YAML accepts both octal and decimal values, JSON requires decimal values for mode bits. If not specified, the volume defaultMode will be used. This might be in conflict with other options that affect the file mode, like fsGroup, and the result can be other mode bits set.",
@@ -8553,7 +8596,8 @@
                                                       "description": "Required: resource to select",
                                                       "type": "string"
                                                     }
-                                                  }
+                                                  },
+                                                  "x-kubernetes-map-type": "atomic"
                                                 }
                                               }
                                             }
@@ -8599,7 +8643,8 @@
                                             "description": "optional field specify whether the Secret or its key must be defined",
                                             "type": "boolean"
                                           }
-                                        }
+                                        },
+                                        "x-kubernetes-map-type": "atomic"
                                       },
                                       "serviceAccountToken": {
                                         "description": "serviceAccountToken is information about the serviceAccountToken data to project",
@@ -8705,7 +8750,8 @@
                                       "description": "Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names TODO: Add other useful fields. apiVersion, kind, uid?",
                                       "type": "string"
                                     }
-                                  }
+                                  },
+                                  "x-kubernetes-map-type": "atomic"
                                 },
                                 "user": {
                                   "description": "user is the rados user name. Default is admin. More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it",
@@ -8746,7 +8792,8 @@
                                       "description": "Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names TODO: Add other useful fields. apiVersion, kind, uid?",
                                       "type": "string"
                                     }
-                                  }
+                                  },
+                                  "x-kubernetes-map-type": "atomic"
                                 },
                                 "sslEnabled": {
                                   "description": "sslEnabled Flag enable/disable SSL communication with Gateway, default false",
@@ -8836,7 +8883,8 @@
                                       "description": "Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names TODO: Add other useful fields. apiVersion, kind, uid?",
                                       "type": "string"
                                     }
-                                  }
+                                  },
+                                  "x-kubernetes-map-type": "atomic"
                                 },
                                 "volumeName": {
                                   "description": "volumeName is the human-readable name of the StorageOS volume.  Volume names are only unique within a namespace.",

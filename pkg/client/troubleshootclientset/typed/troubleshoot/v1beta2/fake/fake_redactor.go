@@ -116,7 +116,7 @@ func (c *FakeRedactors) UpdateStatus(ctx context.Context, redactor *v1beta2.Reda
 // Delete takes name of the redactor and deletes it. Returns an error if one occurs.
 func (c *FakeRedactors) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewDeleteActionWithOptions(redactorsResource, c.ns, name, opts), &v1beta2.Redactor{})
+		Invokes(testing.NewDeleteAction(redactorsResource, c.ns, name), &v1beta2.Redactor{})
 
 	return err
 }
