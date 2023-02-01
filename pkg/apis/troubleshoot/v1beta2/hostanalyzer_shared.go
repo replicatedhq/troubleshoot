@@ -30,6 +30,12 @@ type TCPPortStatusAnalyze struct {
 	Outcomes      []*Outcome `json:"outcomes" yaml:"outcomes"`
 }
 
+type UDPPortStatusAnalyze struct {
+	AnalyzeMeta   `json:",inline" yaml:",inline"`
+	CollectorName string     `json:"collectorName,omitempty" yaml:"collectorName,omitempty"`
+	Outcomes      []*Outcome `json:"outcomes" yaml:"outcomes"`
+}
+
 type DiskUsageAnalyze struct {
 	AnalyzeMeta   `json:",inline" yaml:",inline"`
 	CollectorName string     `json:"collectorName,omitempty" yaml:"collectorName,omitempty"`
@@ -114,6 +120,8 @@ type HostAnalyze struct {
 	Memory *MemoryAnalyze `json:"memory,omitempty" yaml:"memory,omitempty"`
 
 	TCPPortStatus *TCPPortStatusAnalyze `json:"tcpPortStatus,omitempty" yaml:"tcpPortStatus,omitempty"`
+
+	UDPPortStatus *UDPPortStatusAnalyze `json:"udpPortStatus,omitempty" yaml:"udpPortStatus,omitempty"`
 
 	HTTP *HTTPAnalyze `json:"http,omitempty" yaml:"http,omitempty"`
 

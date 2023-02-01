@@ -49,7 +49,7 @@ func RunPreflights(interactive bool, output string, format string, args []string
 	var uploadResultSpecs []*troubleshootv1beta2.Preflight
 	var err error
 
-	for i, v := range args {
+	for _, v := range args {
 		if strings.HasPrefix(v, "secret/") {
 			// format secret/namespace-name/secret-name
 			pathParts := strings.Split(v, "/")
@@ -126,20 +126,12 @@ func RunPreflights(interactive bool, output string, format string, args []string
 
 		if spec, ok := obj.(*troubleshootv1beta2.Preflight); ok {
 			if spec.Spec.UploadResultsTo == "" {
-				if i == 0 {
-					preflightSpec = spec
-				} else {
-					preflightSpec = ConcatPreflightSpec(preflightSpec, spec)
-				}
+				preflightSpec = ConcatPreflightSpec(preflightSpec, spec)
 			} else {
 				uploadResultSpecs = append(uploadResultSpecs, spec)
 			}
 		} else if spec, ok := obj.(*troubleshootv1beta2.HostPreflight); ok {
-			if i == 0 {
-				hostPreflightSpec = spec
-			} else {
-				hostPreflightSpec = ConcatHostPreflightSpec(hostPreflightSpec, spec)
-			}
+			hostPreflightSpec = ConcatHostPreflightSpec(hostPreflightSpec, spec)
 		}
 	}
 

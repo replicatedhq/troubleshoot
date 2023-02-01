@@ -9,6 +9,7 @@ import (
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
+	"github.com/replicatedhq/troubleshoot/pkg/constants"
 	appsv1 "k8s.io/api/apps/v1"
 	"k8s.io/apimachinery/pkg/labels"
 )
@@ -23,7 +24,7 @@ func analyzeReplicaSetStatus(analyzer *troubleshootv1beta2.ReplicaSetStatus, get
 
 func analyzeOneReplicaSetStatus(analyzer *troubleshootv1beta2.ReplicaSetStatus, getFileContents getChildCollectedFileContents) ([]*AnalyzeResult, error) {
 	excludeFiles := []string{}
-	files, err := getFileContents(filepath.Join("cluster-resources", "replicasets", fmt.Sprintf("%s.json", analyzer.Namespace)), excludeFiles)
+	files, err := getFileContents(filepath.Join(constants.CLUSTER_RESOURCES_DIR, constants.CLUSTER_RESOURCES_REPLICASETS, fmt.Sprintf("%s.json", analyzer.Namespace)), excludeFiles)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to read collected replicasets from namespace")
 	}
@@ -68,14 +69,14 @@ func analyzeOneReplicaSetStatus(analyzer *troubleshootv1beta2.ReplicaSetStatus, 
 func analyzeAllReplicaSetStatuses(analyzer *troubleshootv1beta2.ReplicaSetStatus, getFileContents getChildCollectedFileContents) ([]*AnalyzeResult, error) {
 	fileNames := make([]string, 0)
 	if analyzer.Namespace != "" {
-		fileNames = append(fileNames, filepath.Join("cluster-resources", "replicasets", fmt.Sprintf("%s.json", analyzer.Namespace)))
+		fileNames = append(fileNames, filepath.Join(constants.CLUSTER_RESOURCES_DIR, constants.CLUSTER_RESOURCES_REPLICASETS, fmt.Sprintf("%s.json", analyzer.Namespace)))
 	}
 	for _, ns := range analyzer.Namespaces {
-		fileNames = append(fileNames, filepath.Join("cluster-resources", "replicasets", fmt.Sprintf("%s.json", ns)))
+		fileNames = append(fileNames, filepath.Join(constants.CLUSTER_RESOURCES_DIR, constants.CLUSTER_RESOURCES_REPLICASETS, fmt.Sprintf("%s.json", ns)))
 	}
 
 	if len(fileNames) == 0 {
-		fileNames = append(fileNames, filepath.Join("cluster-resources", "replicasets", "*.json"))
+		fileNames = append(fileNames, filepath.Join(constants.CLUSTER_RESOURCES_DIR, constants.CLUSTER_RESOURCES_REPLICASETS, "*.json"))
 	}
 
 	results := []*AnalyzeResult{}

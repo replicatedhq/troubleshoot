@@ -6,6 +6,7 @@ SHELL := /bin/bash -o pipefail
 VERSION_PACKAGE = github.com/replicatedhq/troubleshoot/pkg/version
 VERSION ?=`git describe --tags --dirty`
 DATE=`date -u +"%Y-%m-%dT%H:%M:%SZ"`
+RUN?=""
 
 GIT_TREE = $(shell git rev-parse --is-inside-work-tree 2>/dev/null)
 ifneq "$(GIT_TREE)" ""
@@ -43,7 +44,11 @@ ffi: fmt vet
 
 .PHONY: test
 test: generate fmt vet
-	go test ${BUILDFLAGS} ./pkg/... ./cmd/... -coverprofile cover.out
+	if [ -n $(RUN) ]; then \
+		go test ${BUILDFLAGS} ./pkg/... ./cmd/... -coverprofile cover.out -run $(RUN); \
+	else \
+		go test ${BUILDFLAGS} ./pkg/... ./cmd/... -coverprofile cover.out; \
+	fi
 
 # Go tests that require a K8s instance
 # TODOLATER: merge with test, so we get unified coverage reports? it'll add 21~sec to the test job though...

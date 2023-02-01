@@ -3847,7 +3847,9 @@ spec:
                                           - name
                                           type: object
                                         type: array
-                                        x-kubernetes-list-type: set
+                                        x-kubernetes-list-map-keys:
+                                        - name
+                                        x-kubernetes-list-type: map
                                       limits:
                                         additionalProperties:
                                           anyOf:
@@ -5310,7 +5312,9 @@ spec:
                                           - name
                                           type: object
                                         type: array
-                                        x-kubernetes-list-type: set
+                                        x-kubernetes-list-map-keys:
+                                        - name
+                                        x-kubernetes-list-type: map
                                       limits:
                                         additionalProperties:
                                           anyOf:
@@ -6808,7 +6812,9 @@ spec:
                                           - name
                                           type: object
                                         type: array
-                                        x-kubernetes-list-type: set
+                                        x-kubernetes-list-map-keys:
+                                        - name
+                                        x-kubernetes-list-type: map
                                       limits:
                                         additionalProperties:
                                           anyOf:
@@ -8730,7 +8736,9 @@ spec:
                                                       - name
                                                       type: object
                                                     type: array
-                                                    x-kubernetes-list-type: set
+                                                    x-kubernetes-list-map-keys:
+                                                    - name
+                                                    x-kubernetes-list-type: map
                                                   limits:
                                                     additionalProperties:
                                                       anyOf:
@@ -10755,6 +10763,55 @@ spec:
                       required:
                       - outcomes
                       type: object
+                    udpPortStatus:
+                      properties:
+                        annotations:
+                          additionalProperties:
+                            type: string
+                          type: object
+                        checkName:
+                          type: string
+                        collectorName:
+                          type: string
+                        exclude:
+                          type: BoolString
+                        outcomes:
+                          items:
+                            properties:
+                              fail:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
+                              pass:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
+                              warn:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
+                            type: object
+                          type: array
+                        strict:
+                          type: BoolString
+                      required:
+                      - outcomes
+                      type: object
                   type: object
                 type: array
               hostCollectors:
@@ -11119,6 +11176,19 @@ spec:
                           type: string
                         exclude:
                           type: BoolString
+                      type: object
+                    udpPortStatus:
+                      properties:
+                        collectorName:
+                          type: string
+                        exclude:
+                          type: BoolString
+                        interface:
+                          type: string
+                        port:
+                          type: integer
+                      required:
+                      - port
                       type: object
                   type: object
                 type: array

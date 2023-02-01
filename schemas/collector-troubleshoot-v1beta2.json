@@ -2225,7 +2225,10 @@
                                       }
                                     }
                                   },
-                                  "x-kubernetes-list-type": "set"
+                                  "x-kubernetes-list-map-keys": [
+                                    "name"
+                                  ],
+                                  "x-kubernetes-list-type": "map"
                                 },
                                 "limits": {
                                   "description": "Limits describes the maximum amount of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/",
@@ -3412,7 +3415,10 @@
                                       }
                                     }
                                   },
-                                  "x-kubernetes-list-type": "set"
+                                  "x-kubernetes-list-map-keys": [
+                                    "name"
+                                  ],
+                                  "x-kubernetes-list-type": "map"
                                 },
                                 "limits": {
                                   "description": "Limits describes the maximum amount of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/",
@@ -4613,7 +4619,10 @@
                                       }
                                     }
                                   },
-                                  "x-kubernetes-list-type": "set"
+                                  "x-kubernetes-list-map-keys": [
+                                    "name"
+                                  ],
+                                  "x-kubernetes-list-type": "map"
                                 },
                                 "limits": {
                                   "description": "Limits describes the maximum amount of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/",
@@ -5859,7 +5868,10 @@
                                                   }
                                                 }
                                               },
-                                              "x-kubernetes-list-type": "set"
+                                              "x-kubernetes-list-map-keys": [
+                                                "name"
+                                              ],
+                                              "x-kubernetes-list-type": "map"
                                             },
                                             "limits": {
                                               "description": "Limits describes the maximum amount of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/",
