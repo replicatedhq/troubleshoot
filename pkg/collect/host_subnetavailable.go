@@ -7,8 +7,6 @@ import (
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
-	"github.com/replicatedhq/troubleshoot/pkg/debug"
-	"github.com/vishvananda/netlink"
 )
 
 type CollectHostSubnetAvailable struct {
@@ -26,12 +24,9 @@ func (c *CollectHostSubnetAvailable) IsExcluded() (bool, error) {
 
 func (c *CollectHostSubnetAvailable) Collect(progressChan chan<- interface{}) (map[string][]byte, error) {
 
-	routes, err := netlink.RouteList(nil, netlink.FAMILY_V4)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to list routes")
-	}
+	// TODO: run `ip route` and get the output (if available)
 
-	debug.Printf("Routes: %+v\n", routes)
+	//debug.Printf("Routes: %+v\n", routes)
 
 	result := []byte{}
 
