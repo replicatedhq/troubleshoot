@@ -32,6 +32,42 @@ To get started we recommend:
 
 6. Install [golangci-lint] linter and run `make lint` to execute additional code linters.
 
+### Quick Start Local Development (MacOS)
+
+First install [colima](https://github.com/abiosoft/colima):
+
+```
+brew install colima
+```
+
+Start a colima VM with a single node Kubernetes cluster:
+
+```
+colima start --kubernetes
+```
+
+Then spawn a Docker container with a Go toolchain, with access to the Kubernetes cluster:
+
+```
+docker run -it --rm --network host -v $(pwd):/src -v $HOME/.kube:/root/.kube golang:1.19.5-bullseye bash
+```
+
+A quick test (in the Docker container):
+
+```
+make preflight support-bundle
+bin/preflight config/samples/troubleshoot_v1beta2_preflight.yaml
+bin/preflight examples/preflight/sample-preflight.yaml
+```
+
+If you need `kubectl` in the Docker container for diagnostics:
+
+```
+curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+rm -f kubectl
+```
+
 ### Testing
 
 To run the tests locally run the following:
