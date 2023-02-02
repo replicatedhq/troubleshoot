@@ -53,6 +53,10 @@ type IPV4Interfaces struct {
 	HostCollectorMeta `json:",inline" yaml:",inline"`
 }
 
+type SubnetAvailable struct {
+	HostCollectorMeta `json:",inline" yaml:",inline"`
+}
+
 type DiskUsage struct {
 	HostCollectorMeta `json:",inline" yaml:",inline"`
 	Path              string `json:"path"`
@@ -171,6 +175,7 @@ type HostCollect struct {
 	UDPPortStatus         *UDPPortStatus         `json:"udpPortStatus,omitempty" yaml:"udpPortStatus,omitempty"`
 	Kubernetes            *Kubernetes            `json:"kubernetes,omitempty" yaml:"kubernetes,omitempty"`
 	IPV4Interfaces        *IPV4Interfaces        `json:"ipv4Interfaces,omitempty" yaml:"ipv4Interfaces,omitempty"`
+	SubnetAvailable       *SubnetAvailable       `json:"subnetAvailable,omitempty" yaml:"subnetAvailable,omitempty"`
 	DiskUsage             *DiskUsage             `json:"diskUsage,omitempty" yaml:"diskUsage,omitempty"`
 	HTTP                  *HostHTTP              `json:"http,omitempty" yaml:"http,omitempty"`
 	Time                  *HostTime              `json:"time,omitempty" yaml:"time,omitempty"`

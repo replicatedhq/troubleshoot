@@ -56,6 +56,10 @@ type RemoteIPV4Interfaces struct {
 	RemoteCollectorMeta `json:",inline" yaml:",inline"`
 }
 
+type RemoteSubnetAvailable struct {
+	RemoteCollectorMeta `json:",inline" yaml:",inline"`
+}
+
 type RemoteDiskUsage struct {
 	RemoteCollectorMeta `json:",inline" yaml:",inline"`
 	Path                string `json:"path"`
@@ -149,6 +153,7 @@ type RemoteCollect struct {
 	TCPPortStatus         *RemoteTCPPortStatus         `json:"tcpPortStatus,omitempty" yaml:"tcpPortStatus,omitempty"`
 	UDPPortStatus         *RemoteUDPPortStatus         `json:"udpPortStatus,omitempty" yaml:"udpPortStatus,omitempty"`
 	IPV4Interfaces        *RemoteIPV4Interfaces        `json:"ipv4Interfaces,omitempty" yaml:"ipv4Interfaces,omitempty"`
+	SubnetAvailable       *RemoteSubnetAvailable       `json:"subnetAvailable,omitempty" yaml:"subnetAvailable,omitempty"`
 	DiskUsage             *RemoteDiskUsage             `json:"diskUsage,omitempty" yaml:"diskUsage,omitempty"`
 	HTTP                  *RemoteHTTP                  `json:"http,omitempty" yaml:"http,omitempty"`
 	Time                  *RemoteTime                  `json:"time,omitempty" yaml:"time,omitempty"`
