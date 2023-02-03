@@ -33,7 +33,8 @@ import (
 )
 
 func RunPreflights(interactive bool, output string, format string, args []string) error {
-	ctx, root := otel.Tracer(constants.LIB_TRACER_NAME).Start(context.Background(), "troubleshoot-root")
+	ctx, root := otel.Tracer(
+		constants.LIB_TRACER_NAME).Start(context.Background(), constants.TROUBLESHOOT_ROOT_SPAN_NAME)
 	defer root.End()
 
 	if interactive {
