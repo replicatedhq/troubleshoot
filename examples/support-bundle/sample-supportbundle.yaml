@@ -3,6 +3,8 @@ kind: SupportBundle
 metadata:
   name: example
 spec:
+  hostCollectors:
+    - hostOS: {}
   collectors:
     - logs:
         selector:

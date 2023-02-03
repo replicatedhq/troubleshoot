@@ -29,13 +29,9 @@ func TestCollectHostUDPPortStatus_Collect(t *testing.T) {
 		return port, conn, err
 	}
 
-	type fields struct {
-		hostCollector *troubleshootv1beta2.UDPPortStatus
-	}
 	tests := []struct {
 		name    string
 		getPort func(t *testing.T) (port int, closeFn func() error)
-		fields  fields
 		want    map[string][]byte
 	}{
 		{

@@ -1,6 +1,7 @@
 package preflight
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"path/filepath"
@@ -13,12 +14,12 @@ import (
 
 // Analyze runs the analyze phase of preflight checks
 func (c ClusterCollectResult) Analyze() []*analyze.AnalyzeResult {
-	return doAnalyze(c.AllCollectedData, c.Spec.Spec.Analyzers, nil, "")
+	return doAnalyze(c.Context, c.AllCollectedData, c.Spec.Spec.Analyzers, nil, "")
 }
 
 // Analyze runs the analyze phase of host preflight checks
 func (c HostCollectResult) Analyze() []*analyze.AnalyzeResult {
-	return doAnalyze(c.AllCollectedData, nil, c.Spec.Spec.Analyzers, "")
+	return doAnalyze(c.Context, c.AllCollectedData, nil, c.Spec.Spec.Analyzers, "")
 }
 
 // Analyze runs the analyze phase of host preflight checks.
@@ -43,12 +44,18 @@ func (c RemoteCollectResult) Analyze() []*analyze.AnalyzeResult {
 			byteResult[k] = []byte(v)
 
 		}
-		results = append(results, doAnalyze(byteResult, nil, c.Spec.Spec.Analyzers, nodeName)...)
+		results = append(results, doAnalyze(c.Context, byteResult, nil, c.Spec.Spec.Analyzers, nodeName)...)
 	}
 	return results
 }
 
-func doAnalyze(allCollectedData map[string][]byte, analyzers []*troubleshootv1beta2.Analyze, hostAnalyzers []*troubleshootv1beta2.HostAnalyze, nodeName string) []*analyze.AnalyzeResult {
+func doAnalyze(
+	ctx context.Context,
+	allCollectedData map[string][]byte,
+	analyzers []*troubleshootv1beta2.Analyze,
+	hostAnalyzers []*troubleshootv1beta2.HostAnalyze,
+	nodeName string,
+) []*analyze.AnalyzeResult {
 	getCollectedFileContents := func(fileName string) ([]byte, error) {
 		contents, ok := allCollectedData[fileName]
 		if !ok {
@@ -89,7 +96,7 @@ func doAnalyze(allCollectedData map[string][]byte, analyzers []*troubleshootv1be
 
 	analyzeResults := []*analyze.AnalyzeResult{}
 	for _, analyzer := range analyzers {
-		analyzeResult, err := analyze.Analyze(analyzer, getCollectedFileContents, getChildCollectedFileContents)
+		analyzeResult, err := analyze.Analyze(ctx, analyzer, getCollectedFileContents, getChildCollectedFileContents)
 		if err != nil {
 			strict, strictErr := HasStrictAnalyzer(analyzer)
 			if strictErr != nil {
@@ -112,7 +119,7 @@ func doAnalyze(allCollectedData map[string][]byte, analyzers []*troubleshootv1be
 	}
 
 	for _, hostAnalyzer := range hostAnalyzers {
-		analyzeResult := analyze.HostAnalyze(hostAnalyzer, getCollectedFileContents, getChildCollectedFileContents)
+		analyzeResult := analyze.HostAnalyze(ctx, hostAnalyzer, getCollectedFileContents, getChildCollectedFileContents)
 		analyzeResults = append(analyzeResults, analyzeResult...)
 	}
 

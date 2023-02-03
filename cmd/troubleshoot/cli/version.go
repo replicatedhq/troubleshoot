@@ -40,7 +40,7 @@ func writeVersionFile(path string) error {
 		return err
 	}
 
-	filename := filepath.Join(path, constants.VersionFilename)
+	filename := filepath.Join(path, constants.VERSION_FILENAME)
 	err = ioutil.WriteFile(filename, b, 0644)
 	if err != nil {
 		return err
