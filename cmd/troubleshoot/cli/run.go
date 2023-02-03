@@ -82,7 +82,7 @@ func runTroubleshoot(v *viper.Viper, arg []string) error {
 
 	// Defining `v` below will render using `v` in reference to Viper unusable.
 	// Therefore refactoring `v` to `val` will make sure we can still use it.
-	for i, val := range arg {
+	for _, val := range arg {
 
 		collectorContent, err := supportbundle.LoadSupportBundleSpec(val)
 		if err != nil {
@@ -98,11 +98,7 @@ func runTroubleshoot(v *viper.Viper, arg []string) error {
 			return errors.Wrap(err, "failed to parse support bundle spec")
 		}
 
-		if i == 0 {
-			mainBundle = supportBundle
-		} else {
-			mainBundle = supportbundle.ConcatSpec(mainBundle, supportBundle)
-		}
+		mainBundle = supportbundle.ConcatSpec(mainBundle, supportBundle)
 
 		parsedRedactors, err := supportbundle.ParseRedactorsFromDocs(multidocs)
 		if err != nil {
