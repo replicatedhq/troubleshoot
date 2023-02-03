@@ -12,13 +12,43 @@ import (
 	"github.com/replicatedhq/troubleshoot/pkg/collect"
 )
 
-func analyzeRegistry(analyzer *troubleshootv1beta2.RegistryImagesAnalyze, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
-	collectorName := analyzer.CollectorName
+type AnalyzeRegistryImages struct {
+	analyzer *troubleshootv1beta2.RegistryImagesAnalyze
+}
+
+func (a *AnalyzeRegistryImages) Title() string {
+	title := a.analyzer.CheckName
+	if title == "" {
+		title = a.collectorName()
+	}
+
+	return title
+}
+
+func (a *AnalyzeRegistryImages) collectorName() string {
+	collectorName := a.analyzer.CollectorName
 	if collectorName == "" {
 		collectorName = "images"
 	}
 
-	fullPath := path.Join("registry", fmt.Sprintf("%s.json", collectorName))
+	return collectorName
+}
+
+func (a *AnalyzeRegistryImages) IsExcluded() (bool, error) {
+	return isExcluded(a.analyzer.Exclude)
+}
+
+func (a *AnalyzeRegistryImages) Analyze(getFile getCollectedFileContents, findFiles getChildCollectedFileContents) ([]*AnalyzeResult, error) {
+	result, err := a.analyzeRegistry(a.analyzer, getFile)
+	if err != nil {
+		return nil, err
+	}
+	result.Strict = a.analyzer.Strict.BoolOrDefaultFalse()
+	return []*AnalyzeResult{result}, nil
+}
+
+func (a *AnalyzeRegistryImages) analyzeRegistry(analyzer *troubleshootv1beta2.RegistryImagesAnalyze, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
+	fullPath := path.Join("registry", fmt.Sprintf("%s.json", a.collectorName()))
 
 	collected, err := getCollectedFileContents(fullPath)
 	if err != nil {
@@ -43,13 +73,8 @@ func analyzeRegistry(analyzer *troubleshootv1beta2.RegistryImagesAnalyze, getCol
 		}
 	}
 
-	title := analyzer.CheckName
-	if title == "" {
-		title = collectorName
-	}
-
 	result := &AnalyzeResult{
-		Title:   title,
+		Title:   a.Title(),
 		IconKey: "kubernetes_registry_analyze",
 		IconURI: "https://troubleshoot.sh/images/analyzer-icons/registry-analyze.svg",
 	}

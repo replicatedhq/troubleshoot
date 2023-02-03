@@ -113,7 +113,11 @@ func Test_containerRuntime(t *testing.T) {
 				return test.files[n], nil
 			}
 
-			actual, err := analyzeContainerRuntime(&test.analyzer, getFiles)
+			a := AnalyzeContainerRuntime{
+				analyzer: &test.analyzer,
+			}
+
+			actual, err := a.analyzeContainerRuntime(&test.analyzer, getFiles)
 			req.NoError(err)
 
 			assert.Equal(t, &test.expectResult, actual)

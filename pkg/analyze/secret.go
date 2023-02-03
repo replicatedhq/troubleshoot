@@ -8,7 +8,33 @@ import (
 	"github.com/replicatedhq/troubleshoot/pkg/collect"
 )
 
-func analyzeSecret(analyzer *troubleshootv1beta2.AnalyzeSecret, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
+type AnalyzeSecret struct {
+	analyzer *troubleshootv1beta2.AnalyzeSecret
+}
+
+func (a *AnalyzeSecret) Title() string {
+	title := a.analyzer.CheckName
+	if title == "" {
+		title = fmt.Sprintf("Secret %s", a.analyzer.SecretName)
+	}
+
+	return title
+}
+
+func (a *AnalyzeSecret) IsExcluded() (bool, error) {
+	return isExcluded(a.analyzer.Exclude)
+}
+
+func (a *AnalyzeSecret) Analyze(getFile getCollectedFileContents, findFiles getChildCollectedFileContents) ([]*AnalyzeResult, error) {
+	result, err := a.analyzeSecret(a.analyzer, getFile)
+	if err != nil {
+		return nil, err
+	}
+	result.Strict = a.analyzer.Strict.BoolOrDefaultFalse()
+	return []*AnalyzeResult{result}, nil
+}
+
+func (a *AnalyzeSecret) analyzeSecret(analyzer *troubleshootv1beta2.AnalyzeSecret, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
 	filename := collect.GetSecretFileName(
 		&troubleshootv1beta2.Secret{
 			Namespace: analyzer.Namespace,
@@ -28,13 +54,8 @@ func analyzeSecret(analyzer *troubleshootv1beta2.AnalyzeSecret, getCollectedFile
 		return nil, err
 	}
 
-	title := analyzer.CheckName
-	if title == "" {
-		title = fmt.Sprintf("Secret %s", analyzer.SecretName)
-	}
-
 	result := AnalyzeResult{
-		Title:   title,
+		Title:   a.Title(),
 		IconKey: "kubernetes_analyze_secret",
 		IconURI: "https://troubleshoot.sh/images/analyzer-icons/secret.svg?w=13&h=16",
 	}

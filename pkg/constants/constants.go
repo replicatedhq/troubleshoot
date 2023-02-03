@@ -33,7 +33,7 @@ const (
 	CLUSTER_RESOURCES_STORAGE_CLASS               = "storage-classes"
 	CLUSTER_RESOURCES_CUSTOM_RESOURCE_DEFINITIONS = "custom-resource-definitions"
 	CLUSTER_RESOURCES_CUSTOM_RESOURCES            = "custom-resources"
-	CLUSTER_RESOURCES_IMAGE_PULL_SECRETS          = "image-pull-secrets"
+	CLUSTER_RESOURCES_IMAGE_PULL_SECRETS          = "image-pull-secrets" // nolint:gosec
 	CLUSTER_RESOURCES_NODES                       = "nodes"
 	CLUSTER_RESOURCES_GROUPS                      = "groups"
 	CLUSTER_RESOURCES_RESOURCES                   = "resources"

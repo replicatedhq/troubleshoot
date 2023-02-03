@@ -10,7 +10,33 @@ import (
 	extensionsv1beta1 "k8s.io/api/extensions/v1beta1"
 )
 
-func analyzeIngress(analyzer *troubleshootv1beta2.Ingress, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
+type AnalyzeIngress struct {
+	analyzer *troubleshootv1beta2.Ingress
+}
+
+func (a *AnalyzeIngress) Title() string {
+	title := a.analyzer.CheckName
+	if title == "" {
+		title = fmt.Sprintf("Ingress %s", a.analyzer.IngressName)
+	}
+
+	return title
+}
+
+func (a *AnalyzeIngress) IsExcluded() (bool, error) {
+	return isExcluded(a.analyzer.Exclude)
+}
+
+func (a *AnalyzeIngress) Analyze(getFile getCollectedFileContents, findFiles getChildCollectedFileContents) ([]*AnalyzeResult, error) {
+	result, err := a.analyzeIngress(a.analyzer, getFile)
+	if err != nil {
+		return nil, err
+	}
+	result.Strict = a.analyzer.Strict.BoolOrDefaultFalse()
+	return []*AnalyzeResult{result}, nil
+}
+
+func (a *AnalyzeIngress) analyzeIngress(analyzer *troubleshootv1beta2.Ingress, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
 	ingressData, err := getCollectedFileContents(filepath.Join(constants.CLUSTER_RESOURCES_DIR, constants.CLUSTER_RESOURCES_INGRESS, fmt.Sprintf("%s.json", analyzer.Namespace)))
 	if err != nil {
 		return nil, err
@@ -21,13 +47,8 @@ func analyzeIngress(analyzer *troubleshootv1beta2.Ingress, getCollectedFileConte
 		return nil, err
 	}
 
-	title := analyzer.CheckName
-	if title == "" {
-		title = fmt.Sprintf("Ingress %s", analyzer.IngressName)
-	}
-
 	result := AnalyzeResult{
-		Title:   title,
+		Title:   a.Title(),
 		IconKey: "kubernetes_ingress",
 		IconURI: "https://troubleshoot.sh/images/analyzer-icons/ingress-controller.svg?w=20&h=13",
 	}

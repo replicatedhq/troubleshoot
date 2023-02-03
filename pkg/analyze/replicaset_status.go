@@ -14,6 +14,44 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 )
 
+type AnalyzeReplicaSetStatus struct {
+	analyzer *troubleshootv1beta2.ReplicaSetStatus
+}
+
+func (a *AnalyzeReplicaSetStatus) Title() string {
+	if a.analyzer.CheckName != "" {
+		return a.analyzer.CheckName
+	}
+
+	if a.analyzer.Name != "" && a.analyzer.Namespace != "" {
+		return fmt.Sprintf("%s/%s ReplicaSet Status", a.analyzer.Namespace, a.analyzer.Name)
+	}
+
+	if a.analyzer.Name != "" {
+		return fmt.Sprintf("%s ReplicaSet Status", a.analyzer.Name)
+	}
+	if a.analyzer.Namespace != "" {
+		return fmt.Sprintf("%s ReplicaSet Status", a.analyzer.Namespace)
+	}
+
+	return "ReplicaSet Status"
+}
+
+func (a *AnalyzeReplicaSetStatus) IsExcluded() (bool, error) {
+	return isExcluded(a.analyzer.Exclude)
+}
+
+func (a *AnalyzeReplicaSetStatus) Analyze(getFile getCollectedFileContents, findFiles getChildCollectedFileContents) ([]*AnalyzeResult, error) {
+	results, err := analyzeReplicaSetStatus(a.analyzer, findFiles)
+	if err != nil {
+		return nil, err
+	}
+	for i := range results {
+		results[i].Strict = a.analyzer.Strict.BoolOrDefaultFalse()
+	}
+	return results, nil
+}
+
 func analyzeReplicaSetStatus(analyzer *troubleshootv1beta2.ReplicaSetStatus, getFileContents getChildCollectedFileContents) ([]*AnalyzeResult, error) {
 	if analyzer.Name == "" {
 		return analyzeAllReplicaSetStatuses(analyzer, getFileContents)

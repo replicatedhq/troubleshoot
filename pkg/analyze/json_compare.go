@@ -11,7 +11,33 @@ import (
 	iutils "github.com/replicatedhq/troubleshoot/pkg/interfaceutils"
 )
 
-func analyzeJsonCompare(analyzer *troubleshootv1beta2.JsonCompare, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
+type AnalyzeJsonCompare struct {
+	analyzer *troubleshootv1beta2.JsonCompare
+}
+
+func (a *AnalyzeJsonCompare) Title() string {
+	title := a.analyzer.CheckName
+	if title == "" {
+		title = a.analyzer.CollectorName
+	}
+
+	return title
+}
+
+func (a *AnalyzeJsonCompare) IsExcluded() (bool, error) {
+	return isExcluded(a.analyzer.Exclude)
+}
+
+func (a *AnalyzeJsonCompare) Analyze(getFile getCollectedFileContents, findFiles getChildCollectedFileContents) ([]*AnalyzeResult, error) {
+	result, err := a.analyzeJsonCompare(a.analyzer, getFile)
+	if err != nil {
+		return nil, err
+	}
+	result.Strict = a.analyzer.Strict.BoolOrDefaultFalse()
+	return []*AnalyzeResult{result}, nil
+}
+
+func (a *AnalyzeJsonCompare) analyzeJsonCompare(analyzer *troubleshootv1beta2.JsonCompare, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
 	fullPath := filepath.Join(analyzer.CollectorName, analyzer.FileName)
 	collected, err := getCollectedFileContents(fullPath)
 	if err != nil {
@@ -37,13 +63,8 @@ func analyzeJsonCompare(analyzer *troubleshootv1beta2.JsonCompare, getCollectedF
 		return nil, errors.Wrap(err, "failed to parse expected value as json")
 	}
 
-	title := analyzer.CheckName
-	if title == "" {
-		title = analyzer.CollectorName
-	}
-
 	result := &AnalyzeResult{
-		Title:   title,
+		Title:   a.Title(),
 		IconKey: "kubernetes_text_analyze",
 		IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg",
 	}
@@ -103,7 +124,7 @@ func analyzeJsonCompare(analyzer *troubleshootv1beta2.JsonCompare, getCollectedF
 	}
 
 	return &AnalyzeResult{
-		Title:   title,
+		Title:   a.Title(),
 		IconKey: "kubernetes_text_analyze",
 		IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg",
 		IsFail:  true,
