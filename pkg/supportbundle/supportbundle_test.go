@@ -44,15 +44,29 @@ func Test_LoadAndConcatSpec(t *testing.T) {
 	if reflect.DeepEqual(fullbundle, bundle3) == false {
 		t.Error("Full bundle and concatenated bundle are not the same.")
 	}
-	// add nil pointer test case
-	bundle4 := ConcatSpec((*troubleshootv1beta2.SupportBundle)(nil), bundle1)
-	if reflect.DeepEqual(bundle1, bundle4) == false {
-		t.Error("concatenating nil pointer bundle with bundle1 has error.")
+
+}
+
+func Test_LoadAndConcatSpec_WithNil(t *testing.T) {
+	var bundle *troubleshootv1beta2.SupportBundle
+	// both function arguments are nil
+	bundle4 := ConcatSpec(bundle, bundle)
+	if reflect.DeepEqual(bundle4, (*troubleshootv1beta2.SupportBundle)(nil)) == false {
+		t.Error("concatenating nil pointer with nil pointer has error.")
 	}
 
-	bundle5 := ConcatSpec(bundle1, (*troubleshootv1beta2.SupportBundle)(nil))
-	if reflect.DeepEqual(bundle1, bundle5) == false {
-		t.Error("concatenating nil pointer bundle with bundle1 has error.")
+	fulldoc, _ := LoadSupportBundleSpec("test/completebundle.yaml")
+	bundle, _ = ParseSupportBundleFromDoc(fulldoc)
+
+	// targetBundle is nil pointer
+	bundle5 := ConcatSpec((*troubleshootv1beta2.SupportBundle)(nil), bundle)
+	if reflect.DeepEqual(bundle5, bundle) == false {
+		t.Error("concatenating targetBundle of nil pointer has error.")
 	}
 
+	// sourceBundle is nil pointer
+	bundle6 := ConcatSpec(bundle, (*troubleshootv1beta2.SupportBundle)(nil))
+	if reflect.DeepEqual(bundle6, bundle) == false {
+		t.Error("concatenating sourceBundle of nil pointer has error.")
+	}
 }
