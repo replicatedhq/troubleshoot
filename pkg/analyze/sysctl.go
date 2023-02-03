@@ -14,10 +14,34 @@ import (
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 )
 
+type AnalyzeSysctl struct {
+	analyzer *troubleshootv1beta2.SysctlAnalyze
+}
+
+func (a *AnalyzeSysctl) Title() string {
+	return "Sysctl"
+}
+
+func (a *AnalyzeSysctl) IsExcluded() (bool, error) {
+	return isExcluded(a.analyzer.Exclude)
+}
+
+func (a *AnalyzeSysctl) Analyze(getFile getCollectedFileContents, findFiles getChildCollectedFileContents) ([]*AnalyzeResult, error) {
+	result, err := a.analyzeSysctl(a.analyzer, findFiles)
+	if err != nil {
+		return nil, err
+	}
+	if result == nil {
+		return []*AnalyzeResult{}, nil
+	}
+	result.Strict = a.analyzer.Strict.BoolOrDefaultFalse()
+	return []*AnalyzeResult{result}, nil
+}
+
 // The when condition for outcomes in this analyzer is interpreted as "for some node".
 // For example, "when: net.ipv4.ip_forward = 0" is true if at least one node has IP forwarding
 // disabled.
-func analyzeSysctl(analyzer *troubleshootv1beta2.SysctlAnalyze, findFiles getChildCollectedFileContents) (*AnalyzeResult, error) {
+func (a *AnalyzeSysctl) analyzeSysctl(analyzer *troubleshootv1beta2.SysctlAnalyze, findFiles getChildCollectedFileContents) (*AnalyzeResult, error) {
 	excludeFiles := []string{}
 	files, err := findFiles("sysctl/*", excludeFiles)
 	if err != nil {
@@ -42,7 +66,7 @@ func analyzeSysctl(analyzer *troubleshootv1beta2.SysctlAnalyze, findFiles getChi
 		if result != nil {
 			result.Title = analyzer.CheckName
 			if result.Title == "" {
-				result.Title = "Sysctl"
+				result.Title = a.Title()
 			}
 			return result, nil
 		}

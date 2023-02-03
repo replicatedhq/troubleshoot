@@ -11,6 +11,44 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 )
 
+type AnalyzeStatefulsetStatus struct {
+	analyzer *troubleshootv1beta2.StatefulsetStatus
+}
+
+func (a *AnalyzeStatefulsetStatus) Title() string {
+	if a.analyzer.CheckName != "" {
+		return a.analyzer.CheckName
+	}
+
+	if a.analyzer.Name != "" && a.analyzer.Namespace != "" {
+		return fmt.Sprintf("%s/%s Statefulset Status", a.analyzer.Namespace, a.analyzer.Name)
+	}
+
+	if a.analyzer.Name != "" {
+		return fmt.Sprintf("%s Statefulset Status", a.analyzer.Name)
+	}
+	if a.analyzer.Namespace != "" {
+		return fmt.Sprintf("%s Statefulset Status", a.analyzer.Namespace)
+	}
+
+	return "Statefulset Status"
+}
+
+func (a *AnalyzeStatefulsetStatus) IsExcluded() (bool, error) {
+	return isExcluded(a.analyzer.Exclude)
+}
+
+func (a *AnalyzeStatefulsetStatus) Analyze(getFile getCollectedFileContents, findFiles getChildCollectedFileContents) ([]*AnalyzeResult, error) {
+	results, err := analyzeStatefulsetStatus(a.analyzer, findFiles)
+	if err != nil {
+		return nil, err
+	}
+	for i := range results {
+		results[i].Strict = a.analyzer.Strict.BoolOrDefaultFalse()
+	}
+	return results, nil
+}
+
 func analyzeStatefulsetStatus(analyzer *troubleshootv1beta2.StatefulsetStatus, getFileContents getChildCollectedFileContents) ([]*AnalyzeResult, error) {
 	if analyzer.Name == "" {
 		return analyzeAllStatefulsetStatuses(analyzer, getFileContents)

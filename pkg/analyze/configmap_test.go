@@ -199,7 +199,12 @@ func Test_analyzeConfigMap(t *testing.T) {
 				}
 				return contents, nil
 			}
-			got, err := analyzeConfigMap(tt.analyzer, getCollectedFileContents)
+
+			a := AnalyzeConfigMap{
+				analyzer: tt.analyzer,
+			}
+
+			got, err := a.analyzeConfigMap(tt.analyzer, getCollectedFileContents)
 			if tt.wantErr {
 				assert.Error(t, err)
 			} else {

@@ -39,6 +39,29 @@ type WeaveAttributes struct {
 	Name      string `json:"name"`
 }
 
+type AnalyzeWeaveReport struct {
+	analyzer *troubleshootv1beta2.WeaveReportAnalyze
+}
+
+func (a *AnalyzeWeaveReport) Title() string {
+	return "Weave CNI"
+}
+
+func (a *AnalyzeWeaveReport) IsExcluded() (bool, error) {
+	return isExcluded(a.analyzer.Exclude)
+}
+
+func (a *AnalyzeWeaveReport) Analyze(getFile getCollectedFileContents, findFiles getChildCollectedFileContents) ([]*AnalyzeResult, error) {
+	results, err := analyzeWeaveReport(a.analyzer, findFiles)
+	if err != nil {
+		return nil, err
+	}
+	for i := range results {
+		results[i].Strict = a.analyzer.Strict.BoolOrDefaultFalse()
+	}
+	return results, nil
+}
+
 func analyzeWeaveReport(analyzer *troubleshootv1beta2.WeaveReportAnalyze, findFiles getChildCollectedFileContents) ([]*AnalyzeResult, error) {
 	excludeFiles := []string{}
 	files, err := findFiles(analyzer.ReportFileGlob, excludeFiles)

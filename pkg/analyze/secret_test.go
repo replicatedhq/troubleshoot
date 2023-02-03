@@ -200,7 +200,10 @@ func Test_analyzeSecret(t *testing.T) {
 				}
 				return contents, nil
 			}
-			got, err := analyzeSecret(tt.analyzer, getCollectedFileContents)
+			a := AnalyzeSecret{
+				analyzer: tt.analyzer,
+			}
+			got, err := a.analyzeSecret(tt.analyzer, getCollectedFileContents)
 			if tt.wantErr {
 				assert.Error(t, err)
 			} else {

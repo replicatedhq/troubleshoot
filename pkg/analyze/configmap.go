@@ -8,7 +8,33 @@ import (
 	"github.com/replicatedhq/troubleshoot/pkg/collect"
 )
 
-func analyzeConfigMap(analyzer *troubleshootv1beta2.AnalyzeConfigMap, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
+type AnalyzeConfigMap struct {
+	analyzer *troubleshootv1beta2.AnalyzeConfigMap
+}
+
+func (a *AnalyzeConfigMap) Title() string {
+	title := a.analyzer.CheckName
+	if title == "" {
+		title = fmt.Sprintf("ConfigMap %s", a.analyzer.ConfigMapName)
+	}
+
+	return title
+}
+
+func (a *AnalyzeConfigMap) IsExcluded() (bool, error) {
+	return isExcluded(a.analyzer.Exclude)
+}
+
+func (a *AnalyzeConfigMap) Analyze(getFile getCollectedFileContents, findFiles getChildCollectedFileContents) ([]*AnalyzeResult, error) {
+	result, err := a.analyzeConfigMap(a.analyzer, getFile)
+	if err != nil {
+		return nil, err
+	}
+	result.Strict = a.analyzer.Strict.BoolOrDefaultFalse()
+	return []*AnalyzeResult{result}, nil
+}
+
+func (a *AnalyzeConfigMap) analyzeConfigMap(analyzer *troubleshootv1beta2.AnalyzeConfigMap, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
 	filename := collect.GetConfigMapFileName(
 		&troubleshootv1beta2.ConfigMap{
 			Namespace: analyzer.Namespace,
@@ -28,13 +54,8 @@ func analyzeConfigMap(analyzer *troubleshootv1beta2.AnalyzeConfigMap, getCollect
 		return nil, err
 	}
 
-	title := analyzer.CheckName
-	if title == "" {
-		title = fmt.Sprintf("ConfigMap %s", analyzer.ConfigMapName)
-	}
-
 	result := AnalyzeResult{
-		Title:   title,
+		Title:   a.Title(),
 		IconKey: "kubernetes_analyze_secret", // TODO: icon
 		IconURI: "https://troubleshoot.sh/images/analyzer-icons/secret.svg?w=13&h=16",
 	}

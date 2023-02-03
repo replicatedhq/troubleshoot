@@ -11,6 +11,44 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 )
 
+type AnalyzeDeploymentStatus struct {
+	analyzer *troubleshootv1beta2.DeploymentStatus
+}
+
+func (a *AnalyzeDeploymentStatus) Title() string {
+	if a.analyzer.CheckName != "" {
+		return a.analyzer.CheckName
+	}
+
+	if a.analyzer.Name != "" && a.analyzer.Namespace != "" {
+		return fmt.Sprintf("%s/%s Deployment Status", a.analyzer.Name, a.analyzer.Name)
+	}
+
+	if a.analyzer.Name != "" {
+		return fmt.Sprintf("%s Deployment Status", a.analyzer.Name)
+	}
+	if a.analyzer.Namespace != "" {
+		return fmt.Sprintf("%s Deployment Status", a.analyzer.Namespace)
+	}
+
+	return "Deployment Status"
+}
+
+func (a *AnalyzeDeploymentStatus) IsExcluded() (bool, error) {
+	return isExcluded(a.analyzer.Exclude)
+}
+
+func (a *AnalyzeDeploymentStatus) Analyze(getFile getCollectedFileContents, findFiles getChildCollectedFileContents) ([]*AnalyzeResult, error) {
+	results, err := analyzeDeploymentStatus(a.analyzer, findFiles)
+	if err != nil {
+		return nil, err
+	}
+	for i := range results {
+		results[i].Strict = a.analyzer.Strict.BoolOrDefaultFalse()
+	}
+	return results, nil
+}
+
 func analyzeDeploymentStatus(analyzer *troubleshootv1beta2.DeploymentStatus, getFileContents getChildCollectedFileContents) ([]*AnalyzeResult, error) {
 	if analyzer.Name == "" {
 		return analyzeAllDeploymentStatuses(analyzer, getFileContents)
