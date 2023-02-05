@@ -55,6 +55,8 @@ type IPV4Interfaces struct {
 
 type SubnetAvailable struct {
 	HostCollectorMeta `json:",inline" yaml:",inline"`
+	CIDRRangeAlloc    `json:",inline" yaml:",inline"`
+	desiredCIDR       `json:",inline" yaml:",inline"`
 }
 
 type DiskUsage struct {

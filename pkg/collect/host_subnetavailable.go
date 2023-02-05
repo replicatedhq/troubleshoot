@@ -6,12 +6,14 @@ import (
 	"encoding/json"
 	"fmt"
 	"net"
+	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
+	"github.com/replicatedhq/troubleshoot/pkg/debug"
 )
 
 type CollectHostSubnetAvailable struct {
@@ -28,8 +30,16 @@ func (c *CollectHostSubnetAvailable) IsExcluded() (bool, error) {
 }
 
 func (c *CollectHostSubnetAvailable) Collect(progressChan chan<- interface{}) (map[string][]byte, error) {
+	procNetRoute, err := os.ReadFile("/proc/net/route")
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to read contents of /proc/net/route")
+	}
 
-	//debug.Printf("Routes: %+v\n", routes)
+	routes, err := parseProcNetRoute(string(procNetRoute))
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to parse /proc/net/route")
+	}
+	debug.Printf("Routes: %+v\n", routes)
 
 	result := []byte{}
 
