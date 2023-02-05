@@ -58,8 +58,8 @@ type RemoteIPV4Interfaces struct {
 
 type RemoteSubnetAvailable struct {
 	RemoteCollectorMeta `json:",inline" yaml:",inline"`
-	CIDRRangeAlloc      `json:",inline" yaml:",inline"`
-	desiredCIDR         `json:",inline" yaml:",inline"`
+	CIDRRangeAlloc      string `json:"CIDRRangeAlloc" yaml:"CIDRRangeAlloc"`
+	DesiredCIDR         string `json:"desiredCIDR" yaml:"desiredCIDR"`
 }
 
 type RemoteDiskUsage struct {
