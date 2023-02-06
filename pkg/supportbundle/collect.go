@@ -15,6 +15,7 @@ import (
 	"github.com/replicatedhq/troubleshoot/pkg/collect"
 	"github.com/replicatedhq/troubleshoot/pkg/constants"
 	"github.com/replicatedhq/troubleshoot/pkg/convert"
+	"github.com/replicatedhq/troubleshoot/pkg/logger"
 	"github.com/replicatedhq/troubleshoot/pkg/version"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -44,7 +45,8 @@ func runHostCollectors(ctx context.Context, hostCollectors []*troubleshootv1beta
 
 		isExcluded, _ := collector.IsExcluded()
 		if isExcluded {
-			span.SetStatus(codes.Ok, "Collector is excluded")
+			logger.Printf("Excluding %q collector", collector.Title())
+			span.SetAttributes(attribute.Bool(constants.EXCLUDED, true))
 			span.End()
 			continue
 		}
@@ -150,7 +152,8 @@ func runCollectors(ctx context.Context, collectors []*troubleshootv1beta2.Collec
 
 		isExcluded, _ := collector.IsExcluded()
 		if isExcluded {
-			span.SetStatus(codes.Ok, "in-cluster collector excluded")
+			logger.Printf("Excluding %q collector", collector.Title())
+			span.SetAttributes(attribute.Bool(constants.EXCLUDED, true))
 			span.End()
 			continue
 		}

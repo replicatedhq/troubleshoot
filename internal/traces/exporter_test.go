@@ -12,10 +12,12 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 )
 
-func TestExporter_LogSummaryAndReset(t *testing.T) {
+func TestExporter_GetSummary(t *testing.T) {
 	logger.SetQuiet(true)
 
 	tests := []struct {
@@ -54,11 +56,32 @@ func TestExporter_LogSummaryAndReset(t *testing.T) {
 						attribute.String("type", "*collect.CollectHostOS"),
 					},
 				},
+				tracetest.SpanStub{
+					Name: "excluded-collector", StartTime: time.Now(), EndTime: time.Now().Add(time.Millisecond * 2),
+					Attributes: []attribute.KeyValue{
+						attribute.String("type", "*collect.CollectHostOS"),
+						attribute.Bool("excluded", true),
+					},
+				},
+				tracetest.SpanStub{
+					Name: "failed-collector", StartTime: time.Now(), EndTime: time.Now().Add(time.Millisecond),
+					Attributes: []attribute.KeyValue{
+						attribute.String("type", "*collect.CollectHostOS"),
+					},
+					Status: trace.Status{
+						Code:        codes.Error,
+						Description: "some error",
+					},
+				},
 			},
 			want: `
-========= Collectors summary ==========
-all-logs : 60,000ms
-host-os  : 1,000ms`,
+============ Collectors summary =============
+Suceeded (S), eXcluded (X), Failed (F)
+=============================================
+all-logs (S)           : 60,000ms
+host-os (S)            : 1,000ms
+excluded-collector (X) : 2ms
+failed-collector (F)   : 1ms`,
 		},
 		{
 			name: "with analyzers",
@@ -75,12 +98,32 @@ host-os  : 1,000ms`,
 						attribute.String("type", "*analyzer.AnalyzeHostCPU"),
 					},
 				},
+				tracetest.SpanStub{
+					Name: "excluded-analyser", StartTime: time.Now(), EndTime: time.Now().Add(time.Millisecond * 2),
+					Attributes: []attribute.KeyValue{
+						attribute.String("type", "*collect.AnalyzeHostCPU"),
+						attribute.Bool("excluded", true),
+					},
+				},
+				tracetest.SpanStub{
+					Name: "failed-analyser", StartTime: time.Now(), EndTime: time.Now().Add(time.Millisecond),
+					Attributes: []attribute.KeyValue{
+						attribute.String("type", "*collect.AnalyzeHostCPU"),
+					},
+					Status: trace.Status{
+						Code:        codes.Error,
+						Description: "some error",
+					},
+				},
 			},
 			want: `
-========= Analysers summary ==========
-host-cpu        : 60,000ms
-cluster-version : 1,000ms
-`,
+============= Analyzers summary =============
+Suceeded (S), eXcluded (X), Failed (F)
+=============================================
+host-cpu (S)          : 60,000ms
+cluster-version (S)   : 1,000ms
+excluded-analyser (X) : 2ms
+failed-analyser (F)   : 1ms`,
 		},
 		{
 			name: "with redactors",
@@ -93,7 +136,7 @@ cluster-version : 1,000ms
 				},
 			},
 			want: `
-========= Redactors summary ==========
+============ Redactors summary =============
 cluster redactor : 1,000ms`,
 		},
 	}

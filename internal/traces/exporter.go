@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/replicatedhq/troubleshoot/pkg/constants"
+	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/sdk/trace"
 	"go.opentelemetry.io/otel/sdk/trace/tracetest"
 	"golang.org/x/text/language"
@@ -20,6 +21,8 @@ var (
 	exporter *Exporter
 	printer  = message.NewPrinter(language.English)
 )
+
+const legend = "Suceeded (S), eXcluded (X), Failed (F)\n"
 
 // FUTURE WORK: This exporter should only be used by troubleshoot CLIs
 // until the following issue is addressed:
@@ -99,6 +102,22 @@ func isType(stub *tracetest.SpanStub, t string) bool {
 	return false
 }
 
+func formatStubName(stub *tracetest.SpanStub) string {
+	if stub == nil {
+		return ""
+	}
+
+	for _, attr := range stub.Attributes {
+		if stub.Status.Code == codes.Error {
+			return stub.Name + " (F)"
+		}
+		if string(attr.Key) == constants.EXCLUDED && attr.Value.AsBool() {
+			return stub.Name + " (X)"
+		}
+	}
+	return stub.Name + " (S)" // Assume success
+}
+
 // maxInt returns the larger of x or y.
 func maxInt(x, y int) int {
 	if x < y {
@@ -135,15 +154,16 @@ func (e *Exporter) GetSummary() string {
 
 		// Summary of span stubs
 		duration := stub.EndTime.Sub(stub.StartTime)
+		stubName := formatStubName(stub)
 		switch {
 		case stub.Name == constants.TROUBLESHOOT_ROOT_SPAN_NAME:
 			totalDuration = duration
 		case isType(stub, "Collect"):
-			collectors[stub.Name] = duration
+			collectors[stubName] = duration
 		case isType(stub, "Redactors"):
 			redactors[stub.Name] = duration
 		case isType(stub, "Analyze"):
-			analysers[stub.Name] = duration
+			analysers[stubName] = duration
 		default:
 			continue
 		}
@@ -163,7 +183,9 @@ func (e *Exporter) GetSummary() string {
 func collectorsSummary(summary map[string]time.Duration, sb *strings.Builder) {
 	padding, keys := sortedKeysAndPadding(summary)
 
-	sb.WriteString("========= Collectors summary ==========\n")
+	sb.WriteString("============ Collectors summary =============\n")
+	sb.WriteString(legend)
+	sb.WriteString("=============================================\n")
 	if len(summary) == 0 {
 		sb.WriteString("No collectors executed\n")
 		return
@@ -178,7 +200,7 @@ func collectorsSummary(summary map[string]time.Duration, sb *strings.Builder) {
 func redactorsSummary(summary map[string]time.Duration, sb *strings.Builder) {
 	padding, keys := sortedKeysAndPadding(summary)
 
-	sb.WriteString("\n========= Redactors summary ==========\n")
+	sb.WriteString("\n============ Redactors summary =============\n")
 	if len(summary) == 0 {
 		sb.WriteString("No redactors executed\n")
 		return
@@ -193,9 +215,11 @@ func redactorsSummary(summary map[string]time.Duration, sb *strings.Builder) {
 func analysersSummary(summary map[string]time.Duration, sb *strings.Builder) {
 	padding, keys := sortedKeysAndPadding(summary)
 
-	sb.WriteString("\n========= Analysers summary ==========\n")
+	sb.WriteString("\n============= Analyzers summary =============\n")
+	sb.WriteString(legend)
+	sb.WriteString("=============================================\n")
 	if len(summary) == 0 {
-		sb.WriteString("No analysers executed\n")
+		sb.WriteString("No analyzers executed\n")
 		return
 	}
 
