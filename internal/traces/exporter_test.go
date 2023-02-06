@@ -110,6 +110,16 @@ cluster redactor : 1,000ms`,
 	}
 }
 
+func TestExporter_ExportSpansWithDoneContext(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+
+	e := &Exporter{}
+	spans := tracetest.SpanStubs{}
+
+	assert.EqualError(t, e.ExportSpans(ctx, spans.Snapshots()), context.Canceled.Error())
+}
+
 func TestExporter_Shutdown(t *testing.T) {
 	e := &Exporter{}
 

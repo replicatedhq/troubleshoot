@@ -160,6 +160,7 @@ func runCollectors(ctx context.Context, collectors []*troubleshootv1beta2.Collec
 			if _, ok := collector.(*collect.CollectClusterResources); !ok {
 				msg := fmt.Sprintf("skipping collector %s with insufficient RBAC permissions", collector.Title())
 				opts.CollectorProgressCallback(opts.ProgressChan, msg)
+				span.SetStatus(codes.Error, "skipping collector, insufficient RBAC permissions")
 				span.End()
 				continue
 			}

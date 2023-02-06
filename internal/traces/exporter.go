@@ -51,6 +51,11 @@ type Exporter struct {
 // ExportSpans writes spans to an in-memory cache
 // This function can/will be called on every span.End() at worst.
 func (e *Exporter) ExportSpans(ctx context.Context, spans []trace.ReadOnlySpan) error {
+	// This is a no-op if the context is canceled.
+	if ctx.Err() != nil {
+		return ctx.Err()
+	}
+
 	e.stoppedMu.RLock()
 	stopped := e.stopped
 	e.stoppedMu.RUnlock()

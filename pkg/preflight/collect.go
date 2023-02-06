@@ -250,6 +250,7 @@ func CollectWithContext(ctx context.Context, opts CollectOpts, p *troubleshootv1
 					TotalCount:     len(allCollectors),
 					Collectors:     collectorList,
 				}
+				span.SetStatus(codes.Error, "skipping collector, insufficient RBAC permissions")
 				span.End()
 				continue
 			}
