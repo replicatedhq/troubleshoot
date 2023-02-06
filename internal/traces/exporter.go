@@ -26,6 +26,16 @@ var (
 // 1. The cache of spans grows infinitely at the moment. This is OK for short lived
 //    invocations such as CLI applications running one-shot commands. For long running
 //    applications, this will be a problem.
+//		* We can drop non-troubleshoot spans from the cache. There is an OTEP to add
+//        "inheritable attributes" to spans which is unsupported as of today. Once/if
+//		  it gets accepted and implemented, it will allow us to add a "troubleshoot"
+//		  attribute to the "root" span which gets propagated to downstream spans which
+//		  we can use to filter out non-troubleshoot spans.
+//		  https://github.com/dynatrace-oss-contrib/oteps/blob/feature/context-scoped-attributes/text/0207-context-scoped-attributes.md
+//		  https://github.com/open-telemetry/opentelemetry-specification/issues/1337
+//		* We can "search" for the "root" span by traversing up the span tree and drop
+//		  all spans that are not descendants of the "root" span. This can be slow, but
+//		  we can do it in a background goroutine (adds a bit of complexity).
 // 2. At the moment, the summary of an execution is the only case this exporter
 // 	  is being used for.
 
