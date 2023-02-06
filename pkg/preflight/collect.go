@@ -123,7 +123,7 @@ func CollectHostWithContext(
 
 		isExcluded, _ := collector.IsExcluded()
 		if isExcluded {
-			// Log here that the collector is excluded
+			logger.Printf("Excluding %q collector", collector.Title())
 			span.SetAttributes(attribute.Bool(constants.EXCLUDED, true))
 			span.End()
 			continue
