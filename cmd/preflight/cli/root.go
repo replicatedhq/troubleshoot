@@ -1,11 +1,13 @@
 package cli
 
 import (
+	"fmt"
 	"os"
 	"strings"
 
 	"github.com/go-logr/logr"
 	"github.com/replicatedhq/troubleshoot/cmd/util"
+	"github.com/replicatedhq/troubleshoot/internal/traces"
 	"github.com/replicatedhq/troubleshoot/pkg/k8sutil"
 	"github.com/replicatedhq/troubleshoot/pkg/logger"
 	"github.com/replicatedhq/troubleshoot/pkg/preflight"
@@ -37,7 +39,19 @@ that a cluster meets the requirements to run an application.`,
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			v := viper.GetViper()
-			return preflight.RunPreflights(v.GetBool("interactive"), v.GetString("output"), v.GetString("format"), args)
+			closer, err := traces.ConfigureTracing("preflight")
+			if err != nil {
+				// Do not fail running preflights if tracing fails
+				logger.Printf("Failed to initialize open tracing provider: %v", err)
+			} else {
+				defer closer()
+			}
+
+			err = preflight.RunPreflights(v.GetBool("interactive"), v.GetString("output"), v.GetString("format"), args)
+			if v.GetBool("debug") {
+				fmt.Printf("\n%s", traces.GetExporterInstance().GetSummary())
+			}
+			return err
 		},
 		PostRun: func(cmd *cobra.Command, args []string) {
 			if err := util.StopProfiling(); err != nil {

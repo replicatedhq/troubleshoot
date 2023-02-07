@@ -1,6 +1,7 @@
 package analyzer
 
 import (
+	"context"
 	"testing"
 
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
@@ -67,7 +68,7 @@ func Test_GetExcludeFlag(t *testing.T) {
 }
 
 func TestAnalyzeWithNilAnalyzer(t *testing.T) {
-	got, err := Analyze(nil, nil, nil)
+	got, err := Analyze(context.Background(), nil, nil, nil)
 	assert.Error(t, err)
 	assert.Nil(t, got)
 }

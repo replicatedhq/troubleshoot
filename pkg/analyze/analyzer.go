@@ -1,13 +1,19 @@
 package analyzer
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 	"strconv"
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
+	"github.com/replicatedhq/troubleshoot/pkg/constants"
+	"github.com/replicatedhq/troubleshoot/pkg/logger"
 	"github.com/replicatedhq/troubleshoot/pkg/multitype"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
 	corev1 "k8s.io/api/core/v1"
 )
 
@@ -50,14 +56,25 @@ func isExcluded(excludeVal *multitype.BoolOrString) (bool, error) {
 	return parsed, nil
 }
 
-func HostAnalyze(hostAnalyzer *troubleshootv1beta2.HostAnalyze, getFile getCollectedFileContents, findFiles getChildCollectedFileContents) []*AnalyzeResult {
+func HostAnalyze(
+	ctx context.Context,
+	hostAnalyzer *troubleshootv1beta2.HostAnalyze,
+	getFile getCollectedFileContents,
+	findFiles getChildCollectedFileContents,
+) []*AnalyzeResult {
 	analyzer, ok := GetHostAnalyzer(hostAnalyzer)
 	if !ok {
 		return NewAnalyzeResultError(analyzer, errors.New("invalid host analyzer"))
 	}
 
+	_, span := otel.Tracer(constants.LIB_TRACER_NAME).Start(ctx, analyzer.Title())
+	span.SetAttributes(attribute.String("type", reflect.TypeOf(analyzer).String()))
+	defer span.End()
+
 	isExcluded, _ := analyzer.IsExcluded()
 	if isExcluded {
+		logger.Printf("Excluding %q analyzer", analyzer.Title())
+		span.SetAttributes(attribute.Bool(constants.EXCLUDED, true))
 		return nil
 	}
 
@@ -83,7 +100,12 @@ func NewAnalyzeResultError(analyzer HostAnalyzer, err error) []*AnalyzeResult {
 	}}
 }
 
-func Analyze(analyzer *troubleshootv1beta2.Analyze, getFile getCollectedFileContents, findFiles getChildCollectedFileContents) ([]*AnalyzeResult, error) {
+func Analyze(
+	ctx context.Context,
+	analyzer *troubleshootv1beta2.Analyze,
+	getFile getCollectedFileContents,
+	findFiles getChildCollectedFileContents,
+) ([]*AnalyzeResult, error) {
 	if analyzer == nil {
 		return nil, errors.New("nil analyzer")
 	}
@@ -97,16 +119,24 @@ func Analyze(analyzer *troubleshootv1beta2.Analyze, getFile getCollectedFileCont
 		}}, nil
 	}
 
+	_, span := otel.Tracer(constants.LIB_TRACER_NAME).Start(ctx, analyzerInst.Title())
+	span.SetAttributes(attribute.String("type", reflect.TypeOf(analyzerInst).String()))
+	defer span.End()
+
 	isExcluded, err := analyzerInst.IsExcluded()
 	if err != nil {
+		span.SetStatus(codes.Error, err.Error())
 		return nil, err
 	}
 	if isExcluded {
+		logger.Printf("Excluding %q analyzer", analyzerInst.Title())
+		span.SetAttributes(attribute.Bool(constants.EXCLUDED, true))
 		return nil, nil
 	}
 
 	results, err := analyzerInst.Analyze(getFile, findFiles)
 	if err != nil {
+		span.SetStatus(codes.Error, err.Error())
 		return nil, err
 	}
 
