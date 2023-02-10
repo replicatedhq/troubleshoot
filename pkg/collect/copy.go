@@ -6,7 +6,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 
@@ -185,54 +184,4 @@ func getCopyErrosFileName(copyCollector *troubleshootv1beta2.Copy) string {
 	}
 	// TODO: random part
 	return "errors.json"
-}
-
-func extractTar(reader io.Reader) (map[string][]byte, error) {
-	files := map[string][]byte{}
-
-	tr := tar.NewReader(reader)
-	for {
-		header, err := tr.Next()
-		if err == io.EOF {
-			break
-		} else if err != nil {
-			return files, errors.Wrap(err, "read header")
-		}
-
-		switch header.Typeflag {
-		case tar.TypeReg:
-			data, err := ioutil.ReadAll(tr)
-			if err != nil {
-				return files, errors.Wrapf(err, "read file %s", header.Name)
-			}
-			files[header.Name] = data
-		default:
-			continue
-		}
-	}
-
-	return files, nil
-}
-
-func saveFromTar(rootDir string, reader io.Reader) (CollectorResult, error) {
-	result := NewResult()
-
-	tr := tar.NewReader(reader)
-	for {
-		header, err := tr.Next()
-		if err == io.EOF {
-			break
-		} else if err != nil {
-			return result, errors.Wrap(err, "read header")
-		}
-
-		switch header.Typeflag {
-		case tar.TypeReg:
-			result.SaveResult(rootDir, header.Name, tr)
-		default:
-			continue
-		}
-	}
-
-	return result, nil
 }
