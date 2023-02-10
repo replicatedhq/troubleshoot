@@ -2,12 +2,9 @@ package debug
 
 import (
 	"log"
-	"os"
 
 	"github.com/spf13/viper"
 )
-
-var logger = log.New(os.Stderr, "[debug]", log.Lshortfile)
 
 func Print(v ...interface{}) {
 	if viper.GetBool("debug") {
