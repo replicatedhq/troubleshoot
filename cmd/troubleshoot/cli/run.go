@@ -10,6 +10,7 @@ import (
 	"os/signal"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	cursor "github.com/ahmetalpbalkan/go-cursor"
@@ -210,34 +211,42 @@ func runTroubleshoot(v *viper.Viper, arg []string) error {
 	}
 	additionalRedactors.Spec.Redactors = append(additionalRedactors.Spec.Redactors, redactors...)
 
-	var collectorCB func(chan interface{}, string)
-	progressChan := make(chan interface{}) // non-zero buffer can result in missed messages
-	finishedCh := make(chan bool, 1)
-	isFinishedChClosed := false
+	var wg sync.WaitGroup
+	collectorCB := func(c chan interface{}, msg string) { c <- msg }
+	progressChan := make(chan interface{})
+	isProgressChanClosed := false
+	defer func() {
+		if !isProgressChanClosed {
+			close(progressChan)
+		}
+		wg.Wait()
+	}()
 
 	if !interactive {
 		// TODO (dans): custom warning handler to capture warning in `analysisOutput`
 		restConfig.WarningHandler = rest.NoWarnings{}
-		collectorCB = func(ch chan interface{}, name string) {
-			return
-		}
 
 		// TODO (dans): maybe log to file
+		wg.Add(1)
 		go func() {
-			for {
-				select {
-				case _ = <-progressChan:
-					// do nothing
-				}
+			defer wg.Done()
+			for msg := range progressChan {
+				logger.Printf("Collecting support bundle: %v", msg)
 			}
 		}()
 	} else {
 		s := spin.New()
+		wg.Add(1)
 		go func() {
+			defer wg.Done()
 			currentDir := ""
 			for {
 				select {
-				case msg := <-progressChan:
+				case msg, ok := <-progressChan:
+					if !ok {
+						fmt.Printf("\r%s\r", cursor.ClearEntireLine())
+						return
+					}
 					switch msg := msg.(type) {
 					case error:
 						c := color.New(color.FgHiRed)
@@ -245,9 +254,6 @@ func runTroubleshoot(v *viper.Viper, arg []string) error {
 					case string:
 						currentDir = filepath.Base(msg)
 					}
-				case <-finishedCh:
-					fmt.Printf("\r%s\r", cursor.ClearEntireLine())
-					return
 				case <-time.After(time.Millisecond * 100):
 					if currentDir == "" {
 						fmt.Printf("\r%s \033[36mCollecting support bundle\033[m %s", cursor.ClearEntireLine(), s.Next())
@@ -257,16 +263,6 @@ func runTroubleshoot(v *viper.Viper, arg []string) error {
 				}
 			}
 		}()
-		defer func() {
-			if !isFinishedChClosed {
-				close(finishedCh)
-			}
-		}()
-
-		collectorCB = func(c chan interface{}, msg string) {
-			c <- fmt.Sprintf("%s", msg)
-		}
-
 	}
 
 	createOpts := supportbundle.SupportBundleCreateOpts{
@@ -292,11 +288,12 @@ func runTroubleshoot(v *viper.Viper, arg []string) error {
 	if err != nil {
 		return errors.Wrap(err, "failed to run collect and analyze process")
 	}
+
+	close(progressChan) // this removes the spinner in interactive mode
+	isProgressChanClosed = true
+
 	if len(response.AnalyzerResults) > 0 {
 		if interactive {
-			close(finishedCh) // this removes the spinner
-			isFinishedChClosed = true
-
 			if err := showInteractiveResults(mainBundle.Name, response.AnalyzerResults); err != nil {
 				interactive = false
 			}
