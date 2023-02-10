@@ -130,7 +130,7 @@ CONTROLLER_GEN=$(shell which controller-gen)
 
 .PHONY: client-gen
 client-gen:
-ifeq (, $(shell which client-gen))
+ifeq (, $(shell which client-gen 2>/dev/null))
 	go install k8s.io/code-generator/cmd/client-gen@v0.26.1
 CLIENT_GEN=$(shell go env GOPATH)/bin/client-gen
 else
