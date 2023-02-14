@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"net/url"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -15,7 +14,6 @@ import (
 
 	cursor "github.com/ahmetalpbalkan/go-cursor"
 	"github.com/fatih/color"
-	"github.com/manifoldco/promptui"
 	"github.com/mattn/go-isatty"
 	"github.com/pkg/errors"
 	analyzer "github.com/replicatedhq/troubleshoot/pkg/analyze"
@@ -337,14 +335,6 @@ the %s Admin Console to begin analysis.`
 	return nil
 }
 
-func getExpectedContentType(uploadURL string) string {
-	parsedURL, err := url.Parse(uploadURL)
-	if err != nil {
-		return ""
-	}
-	return parsedURL.Query().Get("Content-Type")
-}
-
 func parseTimeFlags(v *viper.Viper) (*time.Time, error) {
 	var (
 		sinceTime time.Time
@@ -368,29 +358,6 @@ func parseTimeFlags(v *viper.Viper) (*time.Time, error) {
 	}
 
 	return &sinceTime, nil
-}
-
-func shouldRetryRequest(err error) bool {
-	if strings.Contains(err.Error(), "x509") && canTryInsecure() {
-		httputil.AddTransport(&http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-		})
-		return true
-	}
-	return false
-}
-
-func canTryInsecure() bool {
-	if !isatty.IsTerminal(os.Stdout.Fd()) {
-		return false
-	}
-	prompt := promptui.Prompt{
-		Label:     "Connection appears to be insecure. Would you like to attempt to create a support bundle anyway?",
-		IsConfirm: true,
-	}
-
-	_, err := prompt.Run()
-	return err == nil
 }
 
 type analysisOutput struct {

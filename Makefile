@@ -2,7 +2,7 @@
 # Image URL to use all building/pushing image targets
 IMG ?= controller:latest
 
-SHELL := /bin/bash -o pipefail
+SHELL := bash -o pipefail
 VERSION_PACKAGE = github.com/replicatedhq/troubleshoot/pkg/version
 VERSION ?=`git describe --tags --dirty`
 DATE=`date -u +"%Y-%m-%dT%H:%M:%SZ"`
@@ -130,7 +130,7 @@ CONTROLLER_GEN=$(shell which controller-gen)
 
 .PHONY: client-gen
 client-gen:
-ifeq (, $(shell which client-gen))
+ifeq (, $(shell which client-gen 2>/dev/null))
 	go install k8s.io/code-generator/cmd/client-gen@v0.26.1
 CLIENT_GEN=$(shell go env GOPATH)/bin/client-gen
 else

@@ -104,13 +104,6 @@ func GetCollector(collector *troubleshootv1beta2.Collect, bundlePath string, nam
 	}
 }
 
-func collectorTitleOrDefault(meta troubleshootv1beta2.CollectorMeta, defaultTitle string) string {
-	if meta.CollectorName != "" {
-		return meta.CollectorName
-	}
-	return defaultTitle
-}
-
 func getCollectorName(c interface{}) string {
 	var collector, name, selector string
 
