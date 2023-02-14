@@ -150,6 +150,10 @@ func parseProcNetRoute(input string) (systemRoutes, error) {
 //
 // isASubnetAvailableInCIDR will check if a subnet of cidrRange size is available within subnetRange (IPv4 only)
 func isASubnetAvailableInCIDR(cidrRange int, subnetRange *net.IPNet, routes *systemRoutes, debug bool) (bool, error) {
+	if cidrRange < 1 || cidrRange > 32 {
+		return false, errors.New("CIDR range size %d invalid, must be between 1 and 32")
+	}
+
 	forceV4 := len(subnetRange.IP) == net.IPv4len
 
 	startIP, _ := cidr.AddressRange(subnetRange)
