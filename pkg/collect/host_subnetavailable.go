@@ -148,7 +148,7 @@ func parseProcNetRoute(input string) (systemRoutes, error) {
 // Credit: https://github.com/replicatedhq/kURL/blob/main/kurl_util/cmd/subnet/main.go findAvailableSubnet
 // TODOLATER: consolidate some of this logic into a unified library? will need a bit of refactoring if so
 //
-// isASubnetAvailableInCIDR will check if a subnet of cidrRange size is available within subnetRange
+// isASubnetAvailableInCIDR will check if a subnet of cidrRange size is available within subnetRange (IPv4 only)
 func isASubnetAvailableInCIDR(cidrRange int, subnetRange *net.IPNet, routes *systemRoutes, debug bool) (bool, error) {
 	forceV4 := len(subnetRange.IP) == net.IPv4len
 
@@ -159,7 +159,8 @@ func isASubnetAvailableInCIDR(cidrRange int, subnetRange *net.IPNet, routes *sys
 		return false, errors.Wrap(err, "parse cidr")
 	}
 	if debug {
-		fmt.Fprintf(os.Stderr, "First subnet %s\n", subnet)
+		fmt.Fprintf(os.Stderr, "Looking for a /%d within %s\n", cidrRange, subnetRange)
+		fmt.Fprintf(os.Stderr, "First subnet to test %s\n", subnet)
 	}
 
 	for {
@@ -170,6 +171,9 @@ func isASubnetAvailableInCIDR(cidrRange int, subnetRange *net.IPNet, routes *sys
 
 		route := findFirstOverlappingRoute(subnet, routes)
 		if route == nil {
+			if debug {
+				fmt.Fprintf(os.Stderr, "No overlapping routes found\n")
+			}
 			return true, nil
 		}
 		if forceV4 {
@@ -179,7 +183,7 @@ func isASubnetAvailableInCIDR(cidrRange int, subnetRange *net.IPNet, routes *sys
 			}
 		}
 		if debug {
-			fmt.Fprintf(os.Stderr, "Route %v overlaps with subnet %s\n", *route, subnet)
+			fmt.Fprintf(os.Stderr, "Route %s overlaps with subnet %s\n", &route.DestNet, subnet)
 		}
 
 		subnet, _ = cidr.NextSubnet(&route.DestNet, cidrRange)
@@ -191,14 +195,24 @@ func isASubnetAvailableInCIDR(cidrRange int, subnetRange *net.IPNet, routes *sys
 
 // findFirstOverlappingRoute will return the first overlapping route with the subnet specified
 func findFirstOverlappingRoute(subnet *net.IPNet, routes *systemRoutes) *systemRoute {
+	defaultRoute := net.IPNet{
+		IP:   net.IPv4(0, 0, 0, 0),
+		Mask: net.CIDRMask(0, 32),
+	}
+
 	for _, route := range *routes {
-		if &route.DestNet != nil && overlaps(&route.DestNet, subnet) {
+		// Exclude default routes (0.0.0.0/0)
+		if route.DestNet.IP.Equal(defaultRoute.IP) && route.DestNet.Mask.String() == defaultRoute.Mask.String() {
+			continue
+		}
+
+		if netOverlaps(&route.DestNet, subnet) {
 			return &route
 		}
 	}
 	return nil
 }
 
-func overlaps(n1, n2 *net.IPNet) bool {
+func netOverlaps(n1, n2 *net.IPNet) bool {
 	return n1.Contains(n2.IP) || n2.Contains(n1.IP)
 }
