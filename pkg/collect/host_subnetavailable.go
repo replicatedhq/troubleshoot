@@ -11,10 +11,18 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/apparentlymart/go-cidr/cidr"
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/replicatedhq/troubleshoot/pkg/debug"
 )
+
+type SubnetAvailableResult struct {
+	CIDRRangeAlloc string `json:"CIDRRangeAlloc"`
+	DesiredCIDR    string `json:"desiredCIDR"`
+	// If true, at least 1 of the DesiredCIDR size is available within CIDRRangeAlloc
+	ADesiredIsAvailable bool `json:"aDesiredIsAvailable"`
+}
 
 type CollectHostSubnetAvailable struct {
 	hostCollector *troubleshootv1beta2.SubnetAvailable
@@ -41,7 +49,14 @@ func (c *CollectHostSubnetAvailable) Collect(progressChan chan<- interface{}) (m
 	}
 	debug.Printf("Routes: %+v\n", routes)
 
-	result := []byte{}
+	// c.hostCollector.CIDRRangeAlloc
+	// c.hostCollector.DesiredCIDR
+	// TODO: parse into types we can use
+
+	result := SubnetAvailableResult{}
+	result.CIDRRangeAlloc = c.hostCollector.CIDRRangeAlloc
+	result.DesiredCIDR = c.hostCollector.DesiredCIDR
+	// TODO: populate result.DesiredIsAvailable true/false
 
 	b, err := json.Marshal(result)
 	if err != nil {
@@ -128,4 +143,62 @@ func parseProcNetRoute(input string) (systemRoutes, error) {
 	}
 
 	return routes, nil
+}
+
+// Credit: https://github.com/replicatedhq/kURL/blob/main/kurl_util/cmd/subnet/main.go findAvailableSubnet
+// TODOLATER: consolidate some of this logic into a unified library? will need a bit of refactoring if so
+//
+// isASubnetAvailableInCIDR will check if a subnet of cidrRange size is available within subnetRange
+func isASubnetAvailableInCIDR(cidrRange int, subnetRange *net.IPNet, routes *systemRoutes, debug bool) (bool, error) {
+	forceV4 := len(subnetRange.IP) == net.IPv4len
+
+	startIP, _ := cidr.AddressRange(subnetRange)
+
+	_, subnet, err := net.ParseCIDR(fmt.Sprintf("%s/%d", startIP, cidrRange))
+	if err != nil {
+		return false, errors.Wrap(err, "parse cidr")
+	}
+	if debug {
+		fmt.Fprintf(os.Stderr, "First subnet %s\n", subnet)
+	}
+
+	for {
+		firstIP, lastIP := cidr.AddressRange(subnet)
+		if !subnetRange.Contains(firstIP) || !subnetRange.Contains(lastIP) {
+			return false, errors.New("no available subnet found")
+		}
+
+		route := findFirstOverlappingRoute(subnet, routes)
+		if route == nil {
+			return true, nil
+		}
+		if forceV4 {
+			// NOTE: this may break with v6 addresses
+			if ip4 := route.DestNet.IP.To4(); ip4 != nil {
+				route.DestNet.IP = ip4
+			}
+		}
+		if debug {
+			fmt.Fprintf(os.Stderr, "Route %v overlaps with subnet %s\n", *route, subnet)
+		}
+
+		subnet, _ = cidr.NextSubnet(&route.DestNet, cidrRange)
+		if debug {
+			fmt.Fprintf(os.Stderr, "Next subnet %s\n", subnet)
+		}
+	}
+}
+
+// findFirstOverlappingRoute will return the first overlapping route with the subnet specified
+func findFirstOverlappingRoute(subnet *net.IPNet, routes *systemRoutes) *systemRoute {
+	for _, route := range *routes {
+		if &route.DestNet != nil && overlaps(&route.DestNet, subnet) {
+			return &route
+		}
+	}
+	return nil
+}
+
+func overlaps(n1, n2 *net.IPNet) bool {
+	return n1.Contains(n2.IP) || n2.Contains(n1.IP)
 }
