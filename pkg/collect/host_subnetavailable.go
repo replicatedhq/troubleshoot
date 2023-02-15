@@ -19,7 +19,7 @@ import (
 
 type SubnetAvailableResult struct {
 	CIDRRangeAlloc string `json:"CIDRRangeAlloc"`
-	DesiredCIDR    string `json:"desiredCIDR"`
+	DesiredCIDR    int    `json:"desiredCIDR"`
 	// If true, at least 1 of the DesiredCIDR size is available within CIDRRangeAlloc
 	ADesiredIsAvailable bool `json:"aDesiredIsAvailable"`
 }
@@ -49,14 +49,34 @@ func (c *CollectHostSubnetAvailable) Collect(progressChan chan<- interface{}) (m
 	}
 	debug.Printf("Routes: %+v\n", routes)
 
-	// c.hostCollector.CIDRRangeAlloc
-	// c.hostCollector.DesiredCIDR
-	// TODO: parse into types we can use
+	// IPv4 only right now...
+	if c.hostCollector.DesiredCIDR < 1 || c.hostCollector.DesiredCIDR > 32 {
+		return nil, errors.Wrap(err, fmt.Sprintf("CIDR range size %d invalid, must be between 1 and 32", c.hostCollector.DesiredCIDR))
+	}
+
+	splitCIDRRangeAlloc := strings.Split(c.hostCollector.CIDRRangeAlloc, "/")
+	if len(splitCIDRRangeAlloc) != 2 {
+		return nil, errors.Wrap(err, fmt.Sprintf("CIDRRangeAlloc value %s invalid, expected format x.x.x.x/##", c.hostCollector.CIDRRangeAlloc))
+	}
+	maskInt, err := strconv.Atoi(splitCIDRRangeAlloc[1])
+	if err != nil {
+		return nil, errors.Wrap(err, fmt.Sprintf("CIDRRangeAlloc mask %s invalid, expected integer", splitCIDRRangeAlloc[1]))
+	}
+	if maskInt < 1 || maskInt > 32 {
+		return nil, errors.Wrap(err, fmt.Sprintf("CIDRRangeAlloc mask %d invalid, must be between 1 and 32", maskInt))
+	}
+	cidrRangeAllocIPNet := net.IPNet{
+		IP:   net.ParseIP(splitCIDRRangeAlloc[0]),
+		Mask: net.CIDRMask(maskInt, 32),
+	}
 
 	result := SubnetAvailableResult{}
 	result.CIDRRangeAlloc = c.hostCollector.CIDRRangeAlloc
 	result.DesiredCIDR = c.hostCollector.DesiredCIDR
-	// TODO: populate result.DesiredIsAvailable true/false
+	result.ADesiredIsAvailable, err = isASubnetAvailableInCIDR(c.hostCollector.DesiredCIDR, &cidrRangeAllocIPNet, &routes, false)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to determine if desired CIDR is available within subnet")
+	}
 
 	b, err := json.Marshal(result)
 	if err != nil {
@@ -151,7 +171,7 @@ func parseProcNetRoute(input string) (systemRoutes, error) {
 // isASubnetAvailableInCIDR will check if a subnet of cidrRange size is available within subnetRange (IPv4 only)
 func isASubnetAvailableInCIDR(cidrRange int, subnetRange *net.IPNet, routes *systemRoutes, debug bool) (bool, error) {
 	if cidrRange < 1 || cidrRange > 32 {
-		return false, errors.New("CIDR range size %d invalid, must be between 1 and 32")
+		return false, errors.New(fmt.Sprintf("CIDR range size %d invalid, must be between 1 and 32", cidrRange))
 	}
 
 	forceV4 := len(subnetRange.IP) == net.IPv4len
@@ -190,6 +210,8 @@ func isASubnetAvailableInCIDR(cidrRange int, subnetRange *net.IPNet, routes *sys
 			fmt.Fprintf(os.Stderr, "Route %s overlaps with subnet %s\n", &route.DestNet, subnet)
 		}
 
+		// TODO: somethings "off" with this part of the logic... debug further
+		fmt.Printf("route %s\n", route.DestNet.String())
 		subnet, _ = cidr.NextSubnet(&route.DestNet, cidrRange)
 		if debug {
 			fmt.Fprintf(os.Stderr, "Next subnet %s\n", subnet)
