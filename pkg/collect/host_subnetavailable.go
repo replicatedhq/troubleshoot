@@ -174,7 +174,14 @@ func isASubnetAvailableInCIDR(cidrRange int, subnetRange *net.IPNet, routes *sys
 		return false, errors.New(fmt.Sprintf("CIDR range size %d invalid, must be between 1 and 32", cidrRange))
 	}
 
+	// TODO: this isn't reliable, refactor. from the golang net does:
+	// Note that in this documentation, referring to an IP address as an IPv4 address or an IPv6 address is a semantic property of the address, not just the length of the byte slice: a 16-byte slice can still be an IPv4 address.
 	forceV4 := len(subnetRange.IP) == net.IPv4len
+	if debug {
+		fmt.Fprintf(os.Stderr, "forceV4 %t ip len %d\n", forceV4, len(subnetRange.IP))
+	}
+	// TODO: remove once above is refactored
+	forceV4 = true
 
 	startIP, _ := cidr.AddressRange(subnetRange)
 
@@ -193,7 +200,7 @@ func isASubnetAvailableInCIDR(cidrRange int, subnetRange *net.IPNet, routes *sys
 			return false, errors.New("no available subnet found")
 		}
 
-		route := findFirstOverlappingRoute(subnet, routes)
+		route := findFirstOverlappingRoute(subnet, routes, debug)
 		if route == nil {
 			if debug {
 				fmt.Fprintf(os.Stderr, "No overlapping routes found\n")
@@ -203,6 +210,9 @@ func isASubnetAvailableInCIDR(cidrRange int, subnetRange *net.IPNet, routes *sys
 		if forceV4 {
 			// NOTE: this may break with v6 addresses
 			if ip4 := route.DestNet.IP.To4(); ip4 != nil {
+				if debug {
+					fmt.Fprintf(os.Stderr, "converting route.DestNet.IP to ensure IPv4 %+v\n", ip4)
+				}
 				route.DestNet.IP = ip4
 			}
 		}
@@ -220,7 +230,7 @@ func isASubnetAvailableInCIDR(cidrRange int, subnetRange *net.IPNet, routes *sys
 }
 
 // findFirstOverlappingRoute will return the first overlapping route with the subnet specified
-func findFirstOverlappingRoute(subnet *net.IPNet, routes *systemRoutes) *systemRoute {
+func findFirstOverlappingRoute(subnet *net.IPNet, routes *systemRoutes, debug bool) *systemRoute {
 	defaultRoute := net.IPNet{
 		IP:   net.IPv4(0, 0, 0, 0),
 		Mask: net.CIDRMask(0, 32),
@@ -232,9 +242,18 @@ func findFirstOverlappingRoute(subnet *net.IPNet, routes *systemRoutes) *systemR
 			continue
 		}
 
+		if debug {
+			fmt.Fprintf(os.Stderr, "Checking if route %s overlaps with subnet %s\n", &route.DestNet, subnet)
+		}
 		if netOverlaps(&route.DestNet, subnet) {
+			if debug {
+				fmt.Fprintf(os.Stderr, "Overlaps\n")
+			}
 			return &route
 		}
+	}
+	if debug {
+		fmt.Fprintf(os.Stderr, "No overlap\n")
 	}
 	return nil
 }
