@@ -2,7 +2,6 @@ package analyzer
 
 import (
 	"encoding/json"
-	"fmt"
 	"path/filepath"
 
 	"github.com/pkg/errors"
@@ -39,16 +38,12 @@ func (a *AnalyzeHostSubnetAvailable) Analyze(getCollectedFileContents func(strin
 		return nil, errors.Wrap(err, "failed to unmarshal subnetAvailable result")
 	}
 
-	fmt.Printf("%+v\n", isSubnetAvailable)
-
 	result := &AnalyzeResult{
 		Title: a.Title(),
 	}
 
 	for _, outcome := range hostAnalyzer.Outcomes {
-		fmt.Printf("fail: %+v pass: %+v\n", outcome.Fail, outcome.Pass)
 		if outcome.Fail != nil {
-			fmt.Printf("fail.when: %s\n", outcome.Fail.When)
 			if outcome.Fail.When == "" {
 				result.IsFail = true
 				result.Message = outcome.Fail.Message
@@ -65,7 +60,6 @@ func (a *AnalyzeHostSubnetAvailable) Analyze(getCollectedFileContents func(strin
 				return []*AnalyzeResult{result}, nil
 			}
 		} else if outcome.Pass != nil {
-			fmt.Printf("pass.when: %s\n", outcome.Pass.When)
 			if outcome.Pass.When == "" {
 				result.IsPass = true
 				result.Message = outcome.Pass.Message
