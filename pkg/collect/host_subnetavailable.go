@@ -17,11 +17,18 @@ import (
 	"github.com/replicatedhq/troubleshoot/pkg/debug"
 )
 
+type SubnetStatus string
+
+const (
+	SubnetStatusAvailable     = "a-subnet-is-available"
+	SubnetStatusNoneAvailable = "no-subnet-available"
+)
+
 type SubnetAvailableResult struct {
 	CIDRRangeAlloc string `json:"CIDRRangeAlloc"`
 	DesiredCIDR    int    `json:"desiredCIDR"`
-	// If true, at least 1 of the DesiredCIDR size is available within CIDRRangeAlloc
-	ADesiredIsAvailable bool `json:"aDesiredIsAvailable"`
+	// If subnet-available, at least 1 of the DesiredCIDR size is available within CIDRRangeAlloc
+	Status SubnetStatus `json:"aDesiredIsAvailable"`
 }
 
 type CollectHostSubnetAvailable struct {
@@ -73,9 +80,14 @@ func (c *CollectHostSubnetAvailable) Collect(progressChan chan<- interface{}) (m
 	result := SubnetAvailableResult{}
 	result.CIDRRangeAlloc = c.hostCollector.CIDRRangeAlloc
 	result.DesiredCIDR = c.hostCollector.DesiredCIDR
-	result.ADesiredIsAvailable, err = isASubnetAvailableInCIDR(c.hostCollector.DesiredCIDR, &cidrRangeAllocIPNet, &routes, false)
+	available, err := isASubnetAvailableInCIDR(c.hostCollector.DesiredCIDR, &cidrRangeAllocIPNet, &routes, false)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to determine if desired CIDR is available within subnet")
+	}
+	if available == true {
+		result.Status = SubnetStatusAvailable
+	} else {
+		result.Status = SubnetStatusNoneAvailable
 	}
 
 	b, err := json.Marshal(result)
@@ -85,7 +97,7 @@ func (c *CollectHostSubnetAvailable) Collect(progressChan chan<- interface{}) (m
 
 	collectorName := c.hostCollector.CollectorName
 	if collectorName == "" {
-		collectorName = "subnetAvailable"
+		collectorName = "result"
 	}
 	name := filepath.Join("host-collectors/subnetAvailable", collectorName+".json")
 
@@ -111,6 +123,10 @@ type systemRoute struct {
 func parseProcNetRoute(input string) (systemRoutes, error) {
 	routes := systemRoutes{}
 	for _, line := range strings.Split(input, "\n") {
+		if len(line) < 4 {
+			// Likely a blank line?
+			continue
+		}
 		if line[0:5] == "Iface" {
 			continue
 		}
