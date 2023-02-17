@@ -17,6 +17,29 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+type AnalyzeLonghorn struct {
+	analyzer *troubleshootv1beta2.LonghornAnalyze
+}
+
+func (a *AnalyzeLonghorn) Title() string {
+	return "Longhorn analyzer"
+}
+
+func (a *AnalyzeLonghorn) IsExcluded() (bool, error) {
+	return isExcluded(a.analyzer.Exclude)
+}
+
+func (a *AnalyzeLonghorn) Analyze(getFile getCollectedFileContents, findFiles getChildCollectedFileContents) ([]*AnalyzeResult, error) {
+	results, err := longhorn(a.analyzer, getFile, findFiles)
+	if err != nil {
+		return nil, err
+	}
+	for i := range results {
+		results[i].Strict = a.analyzer.Strict.BoolOrDefaultFalse()
+	}
+	return results, nil
+}
+
 func longhorn(analyzer *troubleshootv1beta2.LonghornAnalyze, getFileContents getCollectedFileContents, findFiles getChildCollectedFileContents) ([]*AnalyzeResult, error) {
 	ns := collect.DefaultLonghornNamespace
 	if analyzer.Namespace != "" {

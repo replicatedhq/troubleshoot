@@ -13,6 +13,44 @@ import (
 	batchv1 "k8s.io/api/batch/v1"
 )
 
+type AnalyzeJobStatus struct {
+	analyzer *troubleshootv1beta2.JobStatus
+}
+
+func (a *AnalyzeJobStatus) Title() string {
+	if a.analyzer.CheckName != "" {
+		return a.analyzer.CheckName
+	}
+
+	if a.analyzer.Name != "" && a.analyzer.Namespace != "" {
+		return fmt.Sprintf("%s/%s Job Status", a.analyzer.Namespace, a.analyzer.Name)
+	}
+
+	if a.analyzer.Name != "" {
+		return fmt.Sprintf("%s Job Status", a.analyzer.Name)
+	}
+	if a.analyzer.Namespace != "" {
+		return fmt.Sprintf("%s Job Status", a.analyzer.Namespace)
+	}
+
+	return "Job Status"
+}
+
+func (a *AnalyzeJobStatus) IsExcluded() (bool, error) {
+	return isExcluded(a.analyzer.Exclude)
+}
+
+func (a *AnalyzeJobStatus) Analyze(getFile getCollectedFileContents, findFiles getChildCollectedFileContents) ([]*AnalyzeResult, error) {
+	results, err := analyzeJobStatus(a.analyzer, findFiles)
+	if err != nil {
+		return nil, err
+	}
+	for i := range results {
+		results[i].Strict = a.analyzer.Strict.BoolOrDefaultFalse()
+	}
+	return results, nil
+}
+
 func analyzeJobStatus(analyzer *troubleshootv1beta2.JobStatus, getFileContents getChildCollectedFileContents) ([]*AnalyzeResult, error) {
 	if analyzer.Name == "" {
 		return analyzeAllJobStatuses(analyzer, getFileContents)

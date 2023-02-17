@@ -12,7 +12,11 @@ import (
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/replicatedhq/troubleshoot/pkg/collect"
 	"github.com/replicatedhq/troubleshoot/pkg/constants"
+	"github.com/replicatedhq/troubleshoot/pkg/logger"
 	"github.com/replicatedhq/troubleshoot/pkg/version"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
@@ -55,6 +59,7 @@ type ClusterCollectResult struct {
 	RemoteCollectors collect.RemoteCollectors
 	isRBACAllowed    bool
 	Spec             *troubleshootv1beta2.Preflight
+	Context          context.Context
 }
 
 func (cr ClusterCollectResult) IsRBACAllowed() bool {
@@ -65,6 +70,7 @@ type HostCollectResult struct {
 	AllCollectedData map[string][]byte
 	Collectors       []collect.HostCollector
 	Spec             *troubleshootv1beta2.HostPreflight
+	Context          context.Context
 }
 
 func (cr HostCollectResult) IsRBACAllowed() bool {
@@ -75,6 +81,7 @@ type RemoteCollectResult struct {
 	AllCollectedData map[string][]byte
 	Collectors       collect.RemoteCollectors
 	Spec             *troubleshootv1beta2.HostPreflight
+	Context          context.Context
 }
 
 func (cr RemoteCollectResult) IsRBACAllowed() bool {
@@ -83,6 +90,12 @@ func (cr RemoteCollectResult) IsRBACAllowed() bool {
 
 // CollectHost runs the collection phase of host preflight checks
 func CollectHost(opts CollectOpts, p *troubleshootv1beta2.HostPreflight) (CollectResult, error) {
+	return CollectHostWithContext(context.Background(), opts, p)
+}
+
+func CollectHostWithContext(
+	ctx context.Context, opts CollectOpts, p *troubleshootv1beta2.HostPreflight,
+) (CollectResult, error) {
 	collectSpecs := make([]*troubleshootv1beta2.HostCollect, 0, 0)
 	if p != nil && p.Spec.Collectors != nil {
 		collectSpecs = append(collectSpecs, p.Spec.Collectors...)
@@ -101,11 +114,18 @@ func CollectHost(opts CollectOpts, p *troubleshootv1beta2.HostPreflight) (Collec
 	collectResult := HostCollectResult{
 		Collectors: collectors,
 		Spec:       p,
+		Context:    ctx,
 	}
 
 	for _, collector := range collectors {
+		_, span := otel.Tracer(constants.LIB_TRACER_NAME).Start(ctx, collector.Title())
+		span.SetAttributes(attribute.String("type", reflect.TypeOf(collector).String()))
+
 		isExcluded, _ := collector.IsExcluded()
 		if isExcluded {
+			logger.Printf("Excluding %q collector", collector.Title())
+			span.SetAttributes(attribute.Bool(constants.EXCLUDED, true))
+			span.End()
 			continue
 		}
 
@@ -117,6 +137,7 @@ func CollectHost(opts CollectOpts, p *troubleshootv1beta2.HostPreflight) (Collec
 		for k, v := range result {
 			allCollectedData[k] = v
 		}
+		span.End()
 	}
 
 	collectResult.AllCollectedData = allCollectedData
@@ -126,6 +147,10 @@ func CollectHost(opts CollectOpts, p *troubleshootv1beta2.HostPreflight) (Collec
 
 // Collect runs the collection phase of preflight checks
 func Collect(opts CollectOpts, p *troubleshootv1beta2.Preflight) (CollectResult, error) {
+	return CollectWithContext(context.Background(), opts, p)
+}
+
+func CollectWithContext(ctx context.Context, opts CollectOpts, p *troubleshootv1beta2.Preflight) (CollectResult, error) {
 	var allCollectors []collect.Collector
 	var foundForbidden bool
 
@@ -133,8 +158,13 @@ func Collect(opts CollectOpts, p *troubleshootv1beta2.Preflight) (CollectResult,
 	if p != nil && p.Spec.Collectors != nil {
 		collectSpecs = append(collectSpecs, p.Spec.Collectors...)
 	}
-	collectSpecs = collect.EnsureCollectorInList(collectSpecs, troubleshootv1beta2.Collect{ClusterInfo: &troubleshootv1beta2.ClusterInfo{}})
-	collectSpecs = collect.EnsureCollectorInList(collectSpecs, troubleshootv1beta2.Collect{ClusterResources: &troubleshootv1beta2.ClusterResources{}})
+	collectSpecs = collect.EnsureCollectorInList(
+		collectSpecs, troubleshootv1beta2.Collect{ClusterInfo: &troubleshootv1beta2.ClusterInfo{}},
+	)
+	collectSpecs = collect.EnsureCollectorInList(
+		collectSpecs, troubleshootv1beta2.Collect{ClusterResources: &troubleshootv1beta2.ClusterResources{}},
+	)
+	collectSpecs = collect.DedupCollectors(collectSpecs)
 	collectSpecs = collect.EnsureClusterResourcesFirst(collectSpecs)
 
 	opts.KubernetesRestConfig.QPS = constants.DEFAULT_CLIENT_QPS
@@ -152,7 +182,7 @@ func Collect(opts CollectOpts, p *troubleshootv1beta2.Preflight) (CollectResult,
 	for _, desiredCollector := range collectSpecs {
 		if collectorInterface, ok := collect.GetCollector(desiredCollector, "", opts.Namespace, opts.KubernetesRestConfig, k8sClient, nil); ok {
 			if collector, ok := collectorInterface.(collect.Collector); ok {
-				err := collector.CheckRBAC(context.Background(), collector, desiredCollector, opts.KubernetesRestConfig, opts.Namespace)
+				err := collector.CheckRBAC(ctx, collector, desiredCollector, opts.KubernetesRestConfig, opts.Namespace)
 				if err != nil {
 					return nil, errors.Wrap(err, "failed to check RBAC for collectors")
 				}
@@ -192,6 +222,7 @@ func Collect(opts CollectOpts, p *troubleshootv1beta2.Preflight) (CollectResult,
 	collectResult := ClusterCollectResult{
 		Collectors: allCollectors,
 		Spec:       p,
+		Context:    ctx,
 	}
 
 	if foundForbidden && !opts.IgnorePermissionErrors {
@@ -200,8 +231,14 @@ func Collect(opts CollectOpts, p *troubleshootv1beta2.Preflight) (CollectResult,
 	}
 
 	for i, collector := range allCollectors {
+		_, span := otel.Tracer(constants.LIB_TRACER_NAME).Start(ctx, collector.Title())
+		span.SetAttributes(attribute.String("type", reflect.TypeOf(collector).String()))
+
 		isExcluded, _ := collector.IsExcluded()
 		if isExcluded {
+			logger.Printf("Excluding %q collector", collector.Title())
+			span.SetAttributes(attribute.Bool(constants.EXCLUDED, true))
+			span.End()
 			continue
 		}
 
@@ -216,6 +253,8 @@ func Collect(opts CollectOpts, p *troubleshootv1beta2.Preflight) (CollectResult,
 					TotalCount:     len(allCollectors),
 					Collectors:     collectorList,
 				}
+				span.SetStatus(codes.Error, "skipping collector, insufficient RBAC permissions")
+				span.End()
 				continue
 			}
 		}
@@ -244,6 +283,8 @@ func Collect(opts CollectOpts, p *troubleshootv1beta2.Preflight) (CollectResult,
 				TotalCount:     len(allCollectors),
 				Collectors:     collectorList,
 			}
+			span.SetStatus(codes.Error, err.Error())
+			span.End()
 			continue
 		}
 
@@ -261,6 +302,7 @@ func Collect(opts CollectOpts, p *troubleshootv1beta2.Preflight) (CollectResult,
 		for k, v := range result {
 			allCollectedData[k] = v
 		}
+		span.End()
 	}
 
 	collectResult.AllCollectedData = allCollectedData
@@ -270,6 +312,10 @@ func Collect(opts CollectOpts, p *troubleshootv1beta2.Preflight) (CollectResult,
 
 // Collect runs the collection phase of preflight checks
 func CollectRemote(opts CollectOpts, p *troubleshootv1beta2.HostPreflight) (CollectResult, error) {
+	return CollectRemoteWithContext(context.Background(), opts, p)
+}
+
+func CollectRemoteWithContext(ctx context.Context, opts CollectOpts, p *troubleshootv1beta2.HostPreflight) (CollectResult, error) {
 	collectSpecs := make([]*troubleshootv1beta2.RemoteCollect, 0, 0)
 	if p != nil && p.Spec.RemoteCollectors != nil {
 		collectSpecs = append(collectSpecs, p.Spec.RemoteCollectors...)
@@ -295,6 +341,7 @@ func CollectRemote(opts CollectOpts, p *troubleshootv1beta2.HostPreflight) (Coll
 	collectResult := RemoteCollectResult{
 		Collectors: collectors,
 		Spec:       p,
+		Context:    ctx,
 	}
 
 	// generate a map of all collectors for atomic status messages
@@ -307,6 +354,9 @@ func CollectRemote(opts CollectOpts, p *troubleshootv1beta2.HostPreflight) (Coll
 
 	// Run preflights collectors synchronously
 	for i, collector := range collectors {
+		_, span := otel.Tracer(constants.LIB_TRACER_NAME).Start(ctx, collector.GetDisplayName())
+		span.SetAttributes(attribute.String("type", reflect.TypeOf(collector).String()))
+
 		collectorList[collector.GetDisplayName()] = CollectorStatus{
 			Status: "running",
 		}
@@ -333,6 +383,8 @@ func CollectRemote(opts CollectOpts, p *troubleshootv1beta2.HostPreflight) (Coll
 				TotalCount:     len(collectors),
 				Collectors:     collectorList,
 			}
+			span.SetStatus(codes.Error, err.Error())
+			span.End()
 			continue
 		}
 
@@ -374,6 +426,8 @@ func CollectRemote(opts CollectOpts, p *troubleshootv1beta2.HostPreflight) (Coll
 			}
 
 		}
+
+		span.End()
 	}
 
 	collectResult.AllCollectedData = allCollectedData

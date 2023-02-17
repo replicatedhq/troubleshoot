@@ -9,10 +9,16 @@ const (
 	DEFAULT_CLIENT_BURST = 100
 	// DEFAULT_CLIENT_USER_AGENT is an field that specifies the caller of troubleshoot request.
 	DEFAULT_CLIENT_USER_AGENT = "ReplicatedTroubleshoot"
-	// VersionFilename is the name of the file that contains the support bundle version.
-	VersionFilename = "version.yaml"
+	// VERSION_FILENAME is the name of the file that contains the support bundle version.
+	VERSION_FILENAME = "version.yaml"
 	// DEFAULT_LOGS_COLLECTOR_TIMEOUT is the default timeout for logs collector.
 	DEFAULT_LOGS_COLLECTOR_TIMEOUT = 60 * time.Second
+
+	// Tracing constants
+
+	LIB_TRACER_NAME             = "github.com/replicatedhq/troubleshoot"
+	TROUBLESHOOT_ROOT_SPAN_NAME = "ReplicatedTroubleshootRootSpan"
+	EXCLUDED                    = "excluded"
 
 	// Cluster Resources Collector Directories
 	CLUSTER_RESOURCES_DIR                         = "cluster-resources"
@@ -33,7 +39,7 @@ const (
 	CLUSTER_RESOURCES_STORAGE_CLASS               = "storage-classes"
 	CLUSTER_RESOURCES_CUSTOM_RESOURCE_DEFINITIONS = "custom-resource-definitions"
 	CLUSTER_RESOURCES_CUSTOM_RESOURCES            = "custom-resources"
-	CLUSTER_RESOURCES_IMAGE_PULL_SECRETS          = "image-pull-secrets"
+	CLUSTER_RESOURCES_IMAGE_PULL_SECRETS          = "image-pull-secrets" // nolint:gosec
 	CLUSTER_RESOURCES_NODES                       = "nodes"
 	CLUSTER_RESOURCES_GROUPS                      = "groups"
 	CLUSTER_RESOURCES_RESOURCES                   = "resources"

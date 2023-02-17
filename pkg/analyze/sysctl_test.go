@@ -403,7 +403,11 @@ func TestAnalyzeSysctl(t *testing.T) {
 			var findFiles = func(glob string, _ []string) (map[string][]byte, error) {
 				return test.files, nil
 			}
-			got, err := analyzeSysctl(test.analyzer, findFiles)
+
+			a := AnalyzeSysctl{
+				analyzer: test.analyzer,
+			}
+			got, err := a.analyzeSysctl(test.analyzer, findFiles)
 
 			assert.NoError(t, err)
 

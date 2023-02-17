@@ -1,11 +1,13 @@
 package cli
 
 import (
+	"fmt"
 	"os"
 	"strings"
 
 	"github.com/go-logr/logr"
 	"github.com/replicatedhq/troubleshoot/cmd/util"
+	"github.com/replicatedhq/troubleshoot/internal/traces"
 	"github.com/replicatedhq/troubleshoot/pkg/k8sutil"
 	"github.com/replicatedhq/troubleshoot/pkg/logger"
 	"github.com/spf13/cobra"
@@ -40,7 +42,20 @@ from a server that can be used to assist when troubleshooting a Kubernetes clust
 		RunE: func(cmd *cobra.Command, args []string) error {
 			v := viper.GetViper()
 
-			return runTroubleshoot(v, args)
+			closer, err := traces.ConfigureTracing("support-bundle")
+			if err != nil {
+				// Do not fail running support-bundle if tracing fails
+				logger.Printf("Failed to initialize open tracing provider: %v", err)
+			} else {
+				defer closer()
+			}
+
+			err = runTroubleshoot(v, args)
+			if v.GetBool("debug") {
+				fmt.Printf("\n%s", traces.GetExporterInstance().GetSummary())
+			}
+
+			return err
 		},
 		PersistentPostRun: func(cmd *cobra.Command, args []string) {
 			if err := util.StopProfiling(); err != nil {

@@ -936,7 +936,11 @@ func Test_analyzeNodeResources(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			req := require.New(t)
 
-			got, err := analyzeNodeResources(tt.analyzer, getExampleNodeContents)
+			a := AnalyzeNodeResources{
+				analyzer: tt.analyzer,
+			}
+
+			got, err := a.analyzeNodeResources(tt.analyzer, getExampleNodeContents)
 			req.NoError(err)
 			req.Equal(tt.want, got)
 		})

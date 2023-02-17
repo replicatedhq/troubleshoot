@@ -273,7 +273,11 @@ func Test_cephStatus(t *testing.T) {
 				}
 			}
 
-			actual, err := cephStatus(&test.analyzer, test.getFile)
+			a := AnalyzeCephStatus{
+				analyzer: &test.analyzer,
+			}
+
+			actual, err := a.cephStatus(&test.analyzer, test.getFile)
 			req.NoError(err)
 
 			assert.Equal(t, test.expectResult, actual)

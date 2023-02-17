@@ -3,7 +3,7 @@ package preflight
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"os"
@@ -18,12 +18,14 @@ import (
 	analyzer "github.com/replicatedhq/troubleshoot/pkg/analyze"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	troubleshootclientsetscheme "github.com/replicatedhq/troubleshoot/pkg/client/troubleshootclientset/scheme"
+	"github.com/replicatedhq/troubleshoot/pkg/constants"
 	"github.com/replicatedhq/troubleshoot/pkg/docrewrite"
 	"github.com/replicatedhq/troubleshoot/pkg/k8sutil"
 	"github.com/replicatedhq/troubleshoot/pkg/oci"
 	"github.com/replicatedhq/troubleshoot/pkg/specs"
 	"github.com/spf13/viper"
 	spin "github.com/tj/go-spin"
+	"go.opentelemetry.io/otel"
 	"golang.org/x/sync/errgroup"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
@@ -31,6 +33,10 @@ import (
 )
 
 func RunPreflights(interactive bool, output string, format string, args []string) error {
+	ctx, root := otel.Tracer(
+		constants.LIB_TRACER_NAME).Start(context.Background(), constants.TROUBLESHOOT_ROOT_SPAN_NAME)
+	defer root.End()
+
 	if interactive {
 		fmt.Print(cursor.Hide())
 		defer fmt.Print(cursor.Show())
@@ -49,7 +55,7 @@ func RunPreflights(interactive bool, output string, format string, args []string
 	var uploadResultSpecs []*troubleshootv1beta2.Preflight
 	var err error
 
-	for i, v := range args {
+	for _, v := range args {
 		if strings.HasPrefix(v, "secret/") {
 			// format secret/namespace-name/secret-name
 			pathParts := strings.Split(v, "/")
@@ -64,7 +70,7 @@ func RunPreflights(interactive bool, output string, format string, args []string
 
 			preflightContent = spec
 		} else if _, err = os.Stat(v); err == nil {
-			b, err := ioutil.ReadFile(v)
+			b, err := os.ReadFile(v)
 			if err != nil {
 				return err
 			}
@@ -103,7 +109,7 @@ func RunPreflights(interactive bool, output string, format string, args []string
 				}
 				defer resp.Body.Close()
 
-				body, err := ioutil.ReadAll(resp.Body)
+				body, err := io.ReadAll(resp.Body)
 				if err != nil {
 					return err
 				}
@@ -126,20 +132,12 @@ func RunPreflights(interactive bool, output string, format string, args []string
 
 		if spec, ok := obj.(*troubleshootv1beta2.Preflight); ok {
 			if spec.Spec.UploadResultsTo == "" {
-				if i == 0 {
-					preflightSpec = spec
-				} else {
-					preflightSpec = ConcatPreflightSpec(preflightSpec, spec)
-				}
+				preflightSpec = ConcatPreflightSpec(preflightSpec, spec)
 			} else {
 				uploadResultSpecs = append(uploadResultSpecs, spec)
 			}
 		} else if spec, ok := obj.(*troubleshootv1beta2.HostPreflight); ok {
-			if i == 0 {
-				hostPreflightSpec = spec
-			} else {
-				hostPreflightSpec = ConcatHostPreflightSpec(hostPreflightSpec, spec)
-			}
+			hostPreflightSpec = ConcatHostPreflightSpec(hostPreflightSpec, spec)
 		}
 	}
 
@@ -150,7 +148,7 @@ func RunPreflights(interactive bool, output string, format string, args []string
 	progressCh := make(chan interface{})
 	defer close(progressCh)
 
-	ctx, stopProgressCollection := context.WithCancel(context.Background())
+	ctx, stopProgressCollection := context.WithCancel(ctx)
 	// make sure we shut down progress collection goroutines if an error occurs
 	defer stopProgressCollection()
 	progressCollection, ctx := errgroup.WithContext(ctx)
@@ -164,7 +162,7 @@ func RunPreflights(interactive bool, output string, format string, args []string
 	uploadResultsMap := make(map[string][]CollectResult)
 
 	if preflightSpec != nil {
-		r, err := collectInCluster(preflightSpec, progressCh)
+		r, err := collectInCluster(ctx, preflightSpec, progressCh)
 		if err != nil {
 			return errors.Wrap(err, "failed to collect in cluster")
 		}
@@ -173,7 +171,7 @@ func RunPreflights(interactive bool, output string, format string, args []string
 	}
 	if uploadResultSpecs != nil {
 		for _, spec := range uploadResultSpecs {
-			r, err := collectInCluster(spec, progressCh)
+			r, err := collectInCluster(ctx, spec, progressCh)
 			if err != nil {
 				return errors.Wrap(err, "failed to collect in cluster")
 			}
@@ -184,14 +182,14 @@ func RunPreflights(interactive bool, output string, format string, args []string
 	}
 	if hostPreflightSpec != nil {
 		if len(hostPreflightSpec.Spec.Collectors) > 0 {
-			r, err := collectHost(hostPreflightSpec, progressCh)
+			r, err := collectHost(ctx, hostPreflightSpec, progressCh)
 			if err != nil {
 				return errors.Wrap(err, "failed to collect from host")
 			}
 			collectResults = append(collectResults, *r)
 		}
 		if len(hostPreflightSpec.Spec.RemoteCollectors) > 0 {
-			r, err := collectRemote(hostPreflightSpec, progressCh)
+			r, err := collectRemote(ctx, hostPreflightSpec, progressCh)
 			if err != nil {
 				return errors.Wrap(err, "failed to collect remotely")
 			}
@@ -292,7 +290,7 @@ func collectNonInteractiveProgess(ctx context.Context, progressCh <-chan interfa
 	}
 }
 
-func collectInCluster(preflightSpec *troubleshootv1beta2.Preflight, progressCh chan interface{}) (*CollectResult, error) {
+func collectInCluster(ctx context.Context, preflightSpec *troubleshootv1beta2.Preflight, progressCh chan interface{}) (*CollectResult, error) {
 	v := viper.GetViper()
 
 	restConfig, err := k8sutil.GetRESTConfig()
@@ -314,7 +312,7 @@ func collectInCluster(preflightSpec *troubleshootv1beta2.Preflight, progressCh c
 		}
 	}
 
-	collectResults, err := Collect(collectOpts, preflightSpec)
+	collectResults, err := CollectWithContext(ctx, collectOpts, preflightSpec)
 	if err != nil {
 		if collectResults != nil && !collectResults.IsRBACAllowed() {
 			if preflightSpec.Spec.UploadResultsTo != "" {
@@ -331,7 +329,7 @@ func collectInCluster(preflightSpec *troubleshootv1beta2.Preflight, progressCh c
 	return &collectResults, nil
 }
 
-func collectRemote(preflightSpec *troubleshootv1beta2.HostPreflight, progressCh chan interface{}) (*CollectResult, error) {
+func collectRemote(ctx context.Context, preflightSpec *troubleshootv1beta2.HostPreflight, progressCh chan interface{}) (*CollectResult, error) {
 	v := viper.GetViper()
 
 	restConfig, err := k8sutil.GetRESTConfig()
@@ -373,7 +371,7 @@ func collectRemote(preflightSpec *troubleshootv1beta2.HostPreflight, progressCh 
 	return &collectResults, nil
 }
 
-func collectHost(hostPreflightSpec *troubleshootv1beta2.HostPreflight, progressCh chan interface{}) (*CollectResult, error) {
+func collectHost(ctx context.Context, hostPreflightSpec *troubleshootv1beta2.HostPreflight, progressCh chan interface{}) (*CollectResult, error) {
 	collectOpts := CollectOpts{
 		ProgressChan: progressCh,
 	}

@@ -32,6 +32,31 @@ var Filemap = map[string]string{
 	"StorageClass":         fmt.Sprintf("%s.json", constants.CLUSTER_RESOURCES_STORAGE_CLASS),
 }
 
+type AnalyzeClusterResource struct {
+	analyzer *troubleshootv1beta2.ClusterResource
+}
+
+func (a *AnalyzeClusterResource) Title() string {
+	title := a.analyzer.CheckName
+	if title == "" {
+		title = a.analyzer.CollectorName
+	}
+
+	return title
+}
+
+func (a *AnalyzeClusterResource) IsExcluded() (bool, error) {
+	return isExcluded(a.analyzer.Exclude)
+}
+
+func (a *AnalyzeClusterResource) Analyze(getFile getCollectedFileContents, findFiles getChildCollectedFileContents) ([]*AnalyzeResult, error) {
+	result, err := a.analyzeResource(a.analyzer, getFile)
+	if err != nil {
+		return nil, err
+	}
+	return []*AnalyzeResult{result}, nil
+}
+
 // FindResource locates and returns a kubernetes resource as an interface{} from a support bundle based on some basic selectors
 // if clusterScoped is false and namespace is not provided, it will default to looking in the "default" namespace
 func FindResource(kind string, clusterScoped bool, namespace string, name string, getFileContents getCollectedFileContents) (interface{}, error) {
@@ -82,7 +107,7 @@ func FindResource(kind string, clusterScoped bool, namespace string, name string
 
 }
 
-func analyzeResource(analyzer *troubleshootv1beta2.ClusterResource, getFileContents getCollectedFileContents) (*AnalyzeResult, error) {
+func (a *AnalyzeClusterResource) analyzeResource(analyzer *troubleshootv1beta2.ClusterResource, getFileContents getCollectedFileContents) (*AnalyzeResult, error) {
 
 	selected, err := FindResource(analyzer.Kind, analyzer.ClusterScoped, analyzer.Namespace, analyzer.Name, getFileContents)
 	if err != nil {
@@ -100,13 +125,8 @@ func analyzeResource(analyzer *troubleshootv1beta2.ClusterResource, getFileConte
 		return nil, errors.Wrap(err, "failed to parse expected value as yaml doc")
 	}
 
-	title := analyzer.CheckName
-	if title == "" {
-		title = analyzer.CollectorName
-	}
-
 	result := &AnalyzeResult{
-		Title:   title,
+		Title:   a.Title(),
 		IconKey: "kubernetes_text_analyze",
 		IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg",
 	}
@@ -163,7 +183,7 @@ func analyzeResource(analyzer *troubleshootv1beta2.ClusterResource, getFileConte
 	}
 
 	return &AnalyzeResult{
-		Title:   title,
+		Title:   a.Title(),
 		IconKey: "kubernetes_text_analyze",
 		IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg",
 		IsFail:  true,
