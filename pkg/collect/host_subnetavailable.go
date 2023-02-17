@@ -168,69 +168,62 @@ func parseProcNetRoute(input string) (systemRoutes, error) {
 // Credit: https://github.com/replicatedhq/kURL/blob/main/kurl_util/cmd/subnet/main.go findAvailableSubnet
 // TODOLATER: consolidate some of this logic into a unified library? will need a bit of refactoring if so
 //
-// isASubnetAvailableInCIDR will check if a subnet of cidrRange size is available within subnetRange (IPv4 only)
+// isASubnetAvailableInCIDR will check if a subnet of cidrRange size is available within subnetRange (IPv4 only), checking against system routes for conflicts
 func isASubnetAvailableInCIDR(cidrRange int, subnetRange *net.IPNet, routes *systemRoutes, debug bool) (bool, error) {
+	// Sanity check that the CIDR range size is IPv4 valid (/0 to /32)
 	if cidrRange < 1 || cidrRange > 32 {
 		return false, errors.New(fmt.Sprintf("CIDR range size %d invalid, must be between 1 and 32", cidrRange))
 	}
 
-	// TODO: this isn't reliable, refactor. from the golang net does:
-	// Note that in this documentation, referring to an IP address as an IPv4 address or an IPv6 address is a semantic property of the address, not just the length of the byte slice: a 16-byte slice can still be an IPv4 address.
-	forceV4 := len(subnetRange.IP) == net.IPv4len
-	if debug {
-		fmt.Fprintf(os.Stderr, "forceV4 %t ip len %d\n", forceV4, len(subnetRange.IP))
+	// Check that cidrRange is equal to or smaller than the subnet size of subnetRange
+	// Always exit false if not...
+	subnetRangeSize, subnetRangeSizeBits := subnetRange.Mask.Size()
+	if subnetRangeSizeBits != 32 {
+		return false, errors.New(fmt.Sprintf("subnetRange size is not IPv4 compatible? expected 32 got %d", subnetRangeSizeBits))
 	}
-	// TODO: remove once above is refactored
-	forceV4 = true
+	// NOTE: reversed operator as we're talking about CIDR blocks (smaller integer = more IPs)
+	if subnetRangeSize > cidrRange {
+		return false, errors.New(fmt.Sprintf("subnetRange size (%d) must be larger than or equal to cidrRange size (%d), can't check if a range larger than itself is available", subnetRangeSize, cidrRange))
+	}
 
+	// Find the start IP of subnetRange, this will become the first subnet to be tested (with cidrRange as the size)
 	startIP, _ := cidr.AddressRange(subnetRange)
 
 	_, subnet, err := net.ParseCIDR(fmt.Sprintf("%s/%d", startIP, cidrRange))
 	if err != nil {
 		return false, errors.Wrap(err, "parse cidr")
 	}
-	if debug {
-		fmt.Fprintf(os.Stderr, "Looking for a /%d within %s\n", cidrRange, subnetRange)
-		fmt.Fprintf(os.Stderr, "First subnet to test %s\n", subnet)
-	}
 
 	for {
+		// This is the extents of the subnet to be tested
 		firstIP, lastIP := cidr.AddressRange(subnet)
-		if !subnetRange.Contains(firstIP) || !subnetRange.Contains(lastIP) {
-			return false, errors.New("no available subnet found")
+		if debug {
+			fmt.Fprintf(os.Stderr, "Checking subnet: %s firstIP: %s lastIP: %s\n", subnet.String(), firstIP, lastIP)
 		}
 
+		// Make sure the smaller subnet is (still) within the large subnetRange. If subnetRange has been exhausted one of these will be false
+		if !subnetRange.Contains(firstIP) || !subnetRange.Contains(lastIP) {
+			return false, nil
+		}
+
+		// Check if any system routes overlap with the smaller subnet being tested
 		route := findFirstOverlappingRoute(subnet, routes, debug)
 		if route == nil {
-			if debug {
-				fmt.Fprintf(os.Stderr, "No overlapping routes found\n")
-			}
+			// No system routes match, this (smaller) subnet is available
 			return true, nil
 		}
-		if forceV4 {
-			// NOTE: this may break with v6 addresses
-			if ip4 := route.DestNet.IP.To4(); ip4 != nil {
-				if debug {
-					fmt.Fprintf(os.Stderr, "converting route.DestNet.IP to ensure IPv4 %+v\n", ip4)
-				}
-				route.DestNet.IP = ip4
-			}
-		}
-		if debug {
-			fmt.Fprintf(os.Stderr, "Route %s overlaps with subnet %s\n", &route.DestNet, subnet)
-		}
 
-		// TODO: somethings "off" with this part of the logic... debug further
-		fmt.Printf("route %s\n", route.DestNet.String())
-		subnet, _ = cidr.NextSubnet(&route.DestNet, cidrRange)
-		if debug {
-			fmt.Fprintf(os.Stderr, "Next subnet %s\n", subnet)
-		}
+		// Try the next subnet in the range
+		subnet, _ = cidr.NextSubnet(subnet, cidrRange)
 	}
+
+	// No subnets of cidrRange size were available within subnetRange (exhausted)
+	return false, nil
 }
 
 // findFirstOverlappingRoute will return the first overlapping route with the subnet specified
 func findFirstOverlappingRoute(subnet *net.IPNet, routes *systemRoutes, debug bool) *systemRoute {
+	// NOTE: IPv4 specific
 	defaultRoute := net.IPNet{
 		IP:   net.IPv4(0, 0, 0, 0),
 		Mask: net.CIDRMask(0, 32),
@@ -243,21 +236,39 @@ func findFirstOverlappingRoute(subnet *net.IPNet, routes *systemRoutes, debug bo
 		}
 
 		if debug {
-			fmt.Fprintf(os.Stderr, "Checking if route %s overlaps with subnet %s\n", &route.DestNet, subnet)
+			fmt.Fprintf(os.Stderr, "Checking if route %s overlaps with subnet %s - ", &route.DestNet, subnet)
 		}
+		// TODOLATER: can we use cidr.VerifyNoOverlap to replace this? tests fail right now trying to do so...
+		//if cidr.VerifyNoOverlap([]*net.IPNet{subnet}, &route.DestNet) != nil {
 		if netOverlaps(&route.DestNet, subnet) {
 			if debug {
 				fmt.Fprintf(os.Stderr, "Overlaps\n")
 			}
 			return &route
+		} else {
+			if debug {
+				fmt.Fprintf(os.Stderr, "No overlap\n")
+			}
 		}
 	}
 	if debug {
-		fmt.Fprintf(os.Stderr, "No overlap\n")
+		fmt.Fprintf(os.Stderr, "Subnet %s has no overlap with any system routes\n", subnet)
 	}
 	return nil
 }
 
 func netOverlaps(n1, n2 *net.IPNet) bool {
-	return n1.Contains(n2.IP) || n2.Contains(n1.IP)
+	n1FirstIP, n1LastIP := cidr.AddressRange(n1)
+	n2FirstIP, n2LastIP := cidr.AddressRange(n2)
+
+	// Check if the first net contains either the first or last IP of the second net
+	if n1.Contains(n2FirstIP) || n1.Contains(n2LastIP) {
+		return true
+	}
+	// Now do the reverse: check if the second net contains either the first or last IP of the first net
+	if n2.Contains(n1FirstIP) || n2.Contains(n1LastIP) {
+		return true
+	}
+
+	return false
 }
