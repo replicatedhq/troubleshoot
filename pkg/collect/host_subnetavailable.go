@@ -28,7 +28,7 @@ type SubnetAvailableResult struct {
 	CIDRRangeAlloc string `json:"CIDRRangeAlloc"`
 	DesiredCIDR    int    `json:"desiredCIDR"`
 	// If subnet-available, at least 1 of the DesiredCIDR size is available within CIDRRangeAlloc
-	Status SubnetStatus `json:"aDesiredIsAvailable"`
+	Status SubnetStatus `json:"status"`
 }
 
 type CollectHostSubnetAvailable struct {
