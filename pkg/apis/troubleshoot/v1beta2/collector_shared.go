@@ -216,6 +216,12 @@ type RegistryImages struct {
 	ImagePullSecrets *ImagePullSecrets `json:"imagePullSecret,omitempty" yaml:"imagePullSecret,omitempty"`
 }
 
+type InClusterCertificateInfo struct {
+	CollectorMeta `json:",inline" yaml:",inline"`
+	Namespace     string `json:"namespace,omitempty" yaml:"namespace,omitempty"`
+	Timeout       string `json:"timeout,omitempty" yaml:"timeout,omitempty"`
+}
+
 type Collect struct {
 	ClusterInfo      *ClusterInfo      `json:"clusterInfo,omitempty" yaml:"clusterInfo,omitempty"`
 	ClusterResources *ClusterResources `json:"clusterResources,omitempty" yaml:"clusterResources,omitempty"`
