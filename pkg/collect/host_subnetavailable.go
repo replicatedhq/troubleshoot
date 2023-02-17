@@ -232,9 +232,6 @@ func isASubnetAvailableInCIDR(cidrRange int, subnetRange *net.IPNet, routes *sys
 		// Try the next subnet in the range
 		subnet, _ = cidr.NextSubnet(subnet, cidrRange)
 	}
-
-	// No subnets of cidrRange size were available within subnetRange (exhausted)
-	return false, nil
 }
 
 // findFirstOverlappingRoute will return the first overlapping route with the subnet specified
