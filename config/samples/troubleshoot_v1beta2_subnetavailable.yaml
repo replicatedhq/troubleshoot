@@ -6,14 +6,14 @@ spec:
   collectors:
     # would output yes/no depending if there is a /22 available in 10.0.0.0/8
     - subnetAvailable:
-         CIDRRangeAlloc: "10.0.0.0/8"
-         desiredCIDR: 22
+      CIDRRangeAlloc: "10.0.0.0/8"
+      desiredCIDR: 22
   analyzers:
     - subnetAvailable:
-        outcomes:
-          - fail:
-              when: "no-subnet-available"
-              message: failed to find available subnet
-          - pass:
-              when: "a-subnet-is-available"
-              message: available /22 subnet found
+      outcomes:
+        - fail:
+          when: "no-subnet-available"
+          message: failed to find available subnet
+        - pass:
+          when: "a-subnet-is-available"
+          message: available /22 subnet found
