@@ -32,7 +32,7 @@ type Secret struct {
 }
 
 // Certificate Struct
-type Certificate struct {
+type ParsedCertificate struct {
 	CertName         string    `json:"Certificate Name"`
 	DNSNames         []string  `json:"DNS Names"`
 	IssuerCommonName string    `json:"Issuer"`
@@ -54,7 +54,7 @@ func (c *CollectInClusterCertificateInfo) Collect(progressChan chan<- interface{
 
 	output := NewResult()
 	// Json object initilization - start
-	var certInfo []Certificate
+	var certInfo []ParsedCertificate
 	var certJson = []byte("[]")
 	errJson := json.Unmarshal(certJson, &certInfo)
 	if errJson != nil {
@@ -78,7 +78,7 @@ func (c *CollectInClusterCertificateInfo) Collect(progressChan chan<- interface{
 func OpaqueSecretCertCollector(secretName string, client kubernetes.Interface) []byte {
 
 	currentTime := time.Now()
-	var certInfo []Certificate
+	var certInfo []ParsedCertificate
 	var certJson = []byte("[]")
 	err := json.Unmarshal(certJson, &certInfo)
 	if err != nil {
@@ -105,7 +105,7 @@ func OpaqueSecretCertCollector(secretName string, client kubernetes.Interface) [
 						log.Println(errParse)
 					}
 
-					certInfo = append(certInfo, Certificate{
+					certInfo = append(certInfo, ParsedCertificate{
 						CertName:         certName,
 						DNSNames:         parsedCert.DNSNames,
 						IssuerCommonName: parsedCert.Issuer.CommonName,
