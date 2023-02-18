@@ -6,22 +6,20 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"encoding/pem"
-	"flag"
 	"log"
-	"path/filepath"
 	"time"
 
+	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
-	"k8s.io/client-go/tools/clientcmd"
-	"k8s.io/client-go/util/homedir"
 )
 
 type CollectInClusterCertificateInfo struct {
 	Collector    *troubleshootv1beta2.InClusterCertificateInfo
 	BundlePath   string
+	SecretName   string
 	Namespace    string
 	ClientConfig *rest.Config
 	Client       kubernetes.Interface
@@ -31,19 +29,14 @@ type CollectInClusterCertificateInfo struct {
 
 // SSL Certificate Struct
 type Certificate struct {
-	CertName         string       `json:"Certificate Name"`
-	DNSNames         []string     `json:"DNS Names"`
-	IssuerCommonName string       `json:"Issuer"`
-	Organizations    []string     `json:"Issuer Organizations"`
-	CertDate         time.Time    `json:"Certificate Expiration Date"`
-	IsValid          bool         `json:"IsValid"`
-	Location         CertLocation `json:"Location,omitempty"`
-}
-
-// SSL Cert Location Struct
-type CertLocation struct {
-	Secret          string `json:"Secret Name,omitempty"`
-	SecretNamespace string `json:"Secret Namespace,omitempty"`
+	CertName         string    `json:"Certificate Name"`
+	DNSNames         []string  `json:"DNS Names"`
+	IssuerCommonName string    `json:"Issuer"`
+	Organizations    []string  `json:"Issuer Organizations"`
+	CertDate         time.Time `json:"Certificate Expiration Date"`
+	IsValid          bool      `json:"IsValid"`
+	SecretName       string    `json:"secretName,omitempty"`
+	SecretNamespace  string    `json:"secretNamespace,omitempty"`
 }
 
 func (c *CollectInClusterCertificateInfo) Title() string {
@@ -55,29 +48,6 @@ func (c *CollectInClusterCertificateInfo) IsExcluded() (bool, error) {
 }
 
 func (c *CollectInClusterCertificateInfo) Collect(progressChan chan<- interface{}) (CollectorResult, error) {
-	/* Go Client Config -- start
-	client, err := kubernetes.NewForConfig(c.ClientConfig)
-	if err != nil {
-		return nil, err
-	} */ //Go Client Config -- end
-
-	var kubeconfig *string
-	if home := homedir.HomeDir(); home != "" {
-		kubeconfig = flag.String("kubeconfig", filepath.Join(home, ".kube", "config"), "(optional) absolute path to the kubeconfig file")
-	} else {
-		kubeconfig = flag.String("kubeconfig", "", "absolute path to the kubeconfig file")
-	}
-	flag.Parse()
-	// uses the current context in kubeconfig
-	config, err := clientcmd.BuildConfigFromFlags("", *kubeconfig)
-	if err != nil {
-		panic(err.Error())
-	}
-	// creates the clientsets
-	client, err := kubernetes.NewForConfig(config)
-	if err != nil {
-		panic(err.Error())
-	}
 
 	output := NewResult()
 	// Json object initilization - start
@@ -85,27 +55,18 @@ func (c *CollectInClusterCertificateInfo) Collect(progressChan chan<- interface{
 	var certJson = []byte("[]")
 	errJson := json.Unmarshal(certJson, &certInfo)
 	if errJson != nil {
-		log.Println(errJson)
+		return nil, errors.Wrap(errJson, "failed to umarshal Json")
 	} // Json object initilization - end
 
-	// Collects SSL certificate data from "kubelet-client-cert" secret (Opaque) associated with deployment.apps/kotsadm.
-	kubeletclientcertCerts := OpaqueSecretCertCollector("kubelet-client-cert", client)
-
 	// Collects SSL certificate data from "registry-pki" secret (Opaque) associated with deployment.apps/registry.
-	registrypkiCerts := OpaqueSecretCertCollector("registry-pki", client)
-
-	// Collects SSL certificate data from all Secrets in a k8s cluster that are of type "kubernetes.io/tls".
-	tlsSecretsCerts := TLSSecretCertCollector("type=kubernetes.io/tls", client)
+	certificates := OpaqueSecretCertCollector(c.SecretName, c.Client)
 
 	// Appends SSL certificate "kubelet-client-cert" and "registry-pki" collections to results Json.
-	results := append(kubeletclientcertCerts, registrypkiCerts...)
-
-	// Appends collections of SSL certs of Secrets with type "kubernetes.io/tls" to results Json.
-	results = append(results, tlsSecretsCerts...)
+	results := certificates
 
 	output.SaveResult(c.BundlePath, "certificates/incluster_ssl_certificates.json", bytes.NewBuffer(results))
 
-	return output, err
+	return output, errors.New("image pull secret spec is not valid")
 }
 
 // This function collects information for all certificates in the named Secret (secretName).
@@ -127,10 +88,10 @@ func OpaqueSecretCertCollector(secretName string, client kubernetes.Interface) [
 	for _, secret := range secrets.Items {
 		if secretName == secret.Name {
 
-			for certName, certSSL := range secret.Data {
+			for certName, cert := range secret.Data {
 				if certName[len(certName)-3:] == "crt" {
 
-					data := string(certSSL)
+					data := string(cert)
 					var block *pem.Block
 
 					block, _ = pem.Decode([]byte(data))
@@ -148,67 +109,11 @@ func OpaqueSecretCertCollector(secretName string, client kubernetes.Interface) [
 						Organizations:    parsedCert.Issuer.Organization,
 						CertDate:         parsedCert.NotAfter,
 						IsValid:          currentTime.Before(parsedCert.NotAfter),
-						Location: CertLocation{
-							Secret:          secret.Name,
-							SecretNamespace: secret.Namespace,
-						},
+						SecretName:       secret.Name,
+						SecretNamespace:  secret.Namespace,
 					})
 					certJson, _ = json.MarshalIndent(certInfo, "", "\t")
 				}
-			}
-		}
-	}
-	return certJson
-}
-
-// This function collects information for all certificates in Secrets of type "kubernetes.io/tls"
-// This function will collect SSL certificate information for all Secrets of type "kubernetes.io/tls".
-func TLSSecretCertCollector(fieldSelector string, client kubernetes.Interface) []byte {
-
-	currentTime := time.Now()
-	var certInfo []Certificate
-
-	var certJson = []byte("[]")
-
-	err := json.Unmarshal(certJson, &certInfo)
-	if err != nil {
-		log.Println(err)
-	}
-
-	listOptions := metav1.ListOptions{
-		FieldSelector: fieldSelector,
-	}
-	secrets, _ := client.CoreV1().Secrets("").List(context.Background(), listOptions)
-
-	for _, secret := range secrets.Items {
-
-		for certName, certSSL := range secret.Data {
-			if certName[len(certName)-3:] == "crt" {
-
-				data := string(certSSL)
-				var block *pem.Block
-
-				block, _ = pem.Decode([]byte(data))
-
-				//parsed SSL certificate
-				parsedCert, errParse := x509.ParseCertificate(block.Bytes)
-				if errParse != nil {
-					log.Println(errParse)
-				}
-
-				certInfo = append(certInfo, Certificate{
-					CertName:         certName,
-					DNSNames:         parsedCert.DNSNames,
-					IssuerCommonName: parsedCert.Issuer.CommonName,
-					Organizations:    parsedCert.Issuer.Organization,
-					CertDate:         parsedCert.NotAfter,
-					IsValid:          currentTime.Before(parsedCert.NotAfter),
-					Location: CertLocation{
-						Secret:          secret.Name,
-						SecretNamespace: secret.Namespace,
-					},
-				})
-				certJson, _ = json.MarshalIndent(certInfo, "", "\t")
 			}
 		}
 	}
