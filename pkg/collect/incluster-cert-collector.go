@@ -19,7 +19,7 @@ import (
 	"k8s.io/client-go/util/homedir"
 )
 
-type CollectInClusterCertInfo struct {
+type CollectInClusterCertificateInfo struct {
 	Collector    *troubleshootv1beta2.InClusterCertificateInfo
 	BundlePath   string
 	Namespace    string
@@ -54,7 +54,7 @@ func (c *CollectInClusterCertificateInfo) IsExcluded() (bool, error) {
 	return isExcluded(c.Collector.Exclude)
 }
 
-func (c *CollectInClusterCertificatetInfo) Collect(progressChan chan<- interface{}) (CollectorResult, error) {
+func (c *CollectInClusterCertificateInfo) Collect(progressChan chan<- interface{}) (CollectorResult, error) {
 	/* Go Client Config -- start
 	client, err := kubernetes.NewForConfig(c.ClientConfig)
 	if err != nil {
