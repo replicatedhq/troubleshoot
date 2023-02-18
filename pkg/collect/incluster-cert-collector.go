@@ -62,7 +62,7 @@ func (c *CollectInClusterCertificateInfo) Collect(progressChan chan<- interface{
 	} // Json object initilization - end
 
 	// Collects SSL certificate data from "registry-pki" secret (Opaque) associated with deployment.apps/registry.
-	certificates := OpaqueSecretCertCollector("kubelet-client-cert", c.Client)
+	certificates := OpaqueSecretCertCollector(c.Collector.Name, c.Client)
 
 	// Appends SSL certificate "kubelet-client-cert" and "registry-pki" collections to results Json.
 	results := certificates
