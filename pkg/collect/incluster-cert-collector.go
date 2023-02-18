@@ -19,7 +19,6 @@ import (
 type CollectInClusterCertificateInfo struct {
 	Collector    *troubleshootv1beta2.InClusterCertificateInfo
 	BundlePath   string
-	SecretName   string
 	Namespace    string
 	ClientConfig *rest.Config
 	Client       kubernetes.Interface
@@ -27,7 +26,7 @@ type CollectInClusterCertificateInfo struct {
 	RBACErrors
 }
 
-// SSL Certificate Struct
+// Certificate Struct
 type Certificate struct {
 	CertName         string    `json:"Certificate Name"`
 	DNSNames         []string  `json:"DNS Names"`
@@ -35,8 +34,13 @@ type Certificate struct {
 	Organizations    []string  `json:"Issuer Organizations"`
 	CertDate         time.Time `json:"Certificate Expiration Date"`
 	IsValid          bool      `json:"IsValid"`
-	SecretName       string    `json:"secretName,omitempty"`
-	SecretNamespace  string    `json:"secretNamespace,omitempty"`
+	Secret			[]Secret	`json:"Secret"`
+
+}
+
+type Secret Struct{
+	SecretName       string    `json:"secret Name,omitempty"`
+	SecretNamespace  string    `json:"secret Namespace,omitempty"`
 }
 
 func (c *CollectInClusterCertificateInfo) Title() string {
