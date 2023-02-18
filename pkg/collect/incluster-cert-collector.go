@@ -103,7 +103,7 @@ func (c *CollectInClusterCertificateInfo) Collect(progressChan chan<- interface{
 	// Appends collections of SSL certs of Secrets with type "kubernetes.io/tls" to results Json.
 	results = append(results, tlsSecretsCerts...)
 
-	output.SaveResult(c.BundlePath, "ssl_certificates/incluster_ssl_certificates.json", bytes.NewBuffer(results))
+	output.SaveResult(c.BundlePath, "certificates/incluster_ssl_certificates.json", bytes.NewBuffer(results))
 
 	return output, err
 }
