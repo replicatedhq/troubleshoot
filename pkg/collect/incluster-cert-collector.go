@@ -67,9 +67,9 @@ func (c *CollectInClusterCertificateInfo) Collect(progressChan chan<- interface{
 	// Appends SSL certificate "kubelet-client-cert" and "registry-pki" collections to results Json.
 	results := certificates
 
-	output.SaveResult(c.BundlePath, "certificates/incluster_ssl_certificates.json", bytes.NewBuffer(results))
+	output.SaveResult(c.BundlePath, "certificates/incluster-certificates.json", bytes.NewBuffer(results))
 
-	return output, errors.New("image pull secret spec is not valid")
+	return output, errors.New(c.Collector.Name)
 }
 
 // This function collects information for all certificates in the named Secret (secretName).
