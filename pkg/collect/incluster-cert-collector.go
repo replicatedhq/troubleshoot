@@ -67,7 +67,9 @@ func (c *CollectInClusterCertificateInfo) Collect(progressChan chan<- interface{
 	// Appends SSL certificate "kubelet-client-cert" and "registry-pki" collections to results Json.
 	results := certificates
 
-	output.SaveResult(c.BundlePath, "certificates/incluster-certificates.json", bytes.NewBuffer(results))
+	filePath := "certificates/" + c.Collector.Name + "incluster-certificates.json"
+
+	output.SaveResult(c.BundlePath, filePath, bytes.NewBuffer(results))
 
 	return output, errors.New("collector name is:" + c.Collector.Name)
 }
