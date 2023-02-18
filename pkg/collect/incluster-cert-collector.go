@@ -69,7 +69,7 @@ func (c *CollectInClusterCertificateInfo) Collect(progressChan chan<- interface{
 
 	output.SaveResult(c.BundlePath, "certificates/incluster-certificates.json", bytes.NewBuffer(results))
 
-	return output, errors.New(c.Collector.Name)
+	return output, errors.New("collector name is:" + c.Collector.Name)
 }
 
 // This function collects information for all certificates in the named Secret (secretName).
