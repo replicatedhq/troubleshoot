@@ -26,6 +26,11 @@ type CollectInClusterCertificateInfo struct {
 	RBACErrors
 }
 
+type Secret struct {
+	Name      string `json:"secret Name,omitempty"`
+	Namespace string `json:"secret Namespace,omitempty"`
+}
+
 // Certificate Struct
 type Certificate struct {
 	CertName         string    `json:"Certificate Name"`
@@ -34,13 +39,7 @@ type Certificate struct {
 	Organizations    []string  `json:"Issuer Organizations"`
 	CertDate         time.Time `json:"Certificate Expiration Date"`
 	IsValid          bool      `json:"IsValid"`
-	Secret			[]Secret	`json:"Secret"`
-
-}
-
-type Secret Struct{
-	SecretName       string    `json:"secret Name,omitempty"`
-	SecretNamespace  string    `json:"secret Namespace,omitempty"`
+	SecretInfo       Secret    `json:"Secret"`
 }
 
 func (c *CollectInClusterCertificateInfo) Title() string {
@@ -63,7 +62,7 @@ func (c *CollectInClusterCertificateInfo) Collect(progressChan chan<- interface{
 	} // Json object initilization - end
 
 	// Collects SSL certificate data from "registry-pki" secret (Opaque) associated with deployment.apps/registry.
-	certificates := OpaqueSecretCertCollector(c.SecretName, c.Client)
+	certificates := OpaqueSecretCertCollector(c.Collector.SecretName, c.Client)
 
 	// Appends SSL certificate "kubelet-client-cert" and "registry-pki" collections to results Json.
 	results := certificates
@@ -113,8 +112,10 @@ func OpaqueSecretCertCollector(secretName string, client kubernetes.Interface) [
 						Organizations:    parsedCert.Issuer.Organization,
 						CertDate:         parsedCert.NotAfter,
 						IsValid:          currentTime.Before(parsedCert.NotAfter),
-						SecretName:       secret.Name,
-						SecretNamespace:  secret.Namespace,
+						SecretInfo: Secret{
+							Name:      secret.Name,
+							Namespace: secret.Namespace,
+						},
 					})
 					certJson, _ = json.MarshalIndent(certInfo, "", "\t")
 				}
