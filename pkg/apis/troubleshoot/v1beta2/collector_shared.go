@@ -216,7 +216,7 @@ type RegistryImages struct {
 	ImagePullSecrets *ImagePullSecrets `json:"imagePullSecret,omitempty" yaml:"imagePullSecret,omitempty"`
 }
 
-type InClusterCertificateInfo struct {
+type Certificate struct {
 	CollectorMeta `json:",inline" yaml:",inline"`
 	Name          string `json:"name,omitempty" yaml:"name,omitempty"`
 	Namespace     string `json:"namespace,omitempty" yaml:"namespace,omitempty"`
