@@ -244,7 +244,7 @@ type Collect struct {
 	Longhorn                 *Longhorn                 `json:"longhorn,omitempty" yaml:"longhorn,omitempty"`
 	RegistryImages           *RegistryImages           `json:"registryImages,omitempty" yaml:"registryImages,omitempty"`
 	Sysctl                   *Sysctl                   `json:"sysctl,omitempty" yaml:"sysctl,omitempty"`
-	InClusterCertificateInfo *InClusterCertificateInfo `json:"certificate,omitempty" yaml:"InClusterCertificateInfo,omitempty"`
+	InClusterCertificateInfo *InClusterCertificateInfo `json:"InClusterCertificateInfo,omitempty" yaml:"InClusterCertificateInfo,omitempty"`
 }
 
 func (c *Collect) AccessReviewSpecs(overrideNS string) []authorizationv1.SelfSubjectAccessReviewSpec {
