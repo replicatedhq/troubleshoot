@@ -218,7 +218,7 @@ type RegistryImages struct {
 
 type InClusterCertificateInfo struct {
 	CollectorMeta `json:",inline" yaml:",inline"`
-	Name          string `json:"name,omitempty" yaml:"name,omitempty"`
+	SecretName    string `json:"name,omitempty" yaml:"name,omitempty"`
 	Namespace     string `json:"namespace,omitempty" yaml:"namespace,omitempty"`
 }
 
@@ -310,6 +310,19 @@ func (c *Collect) AccessReviewSpecs(overrideNS string) []authorizationv1.SelfSub
 				Resource:    "secrets",
 				Subresource: "",
 				Name:        c.Secret.Name,
+			},
+			NonResourceAttributes: nil,
+		})
+	} else if c.InClusterCertificateInfo != nil {
+		result = append(result, authorizationv1.SelfSubjectAccessReviewSpec{
+			ResourceAttributes: &authorizationv1.ResourceAttributes{
+				Namespace:   pickNamespaceOrDefault(c.InClusterCertificateInfo.Namespace, overrideNS),
+				Verb:        "get",
+				Group:       "",
+				Version:     "",
+				Resource:    "secrets",
+				Subresource: "",
+				Name:        c.InClusterCertificateInfo.SecretName,
 			},
 			NonResourceAttributes: nil,
 		})
@@ -542,7 +555,7 @@ func (c *Collect) GetName() string {
 	}
 	if c.InClusterCertificateInfo != nil {
 		collector = "InClusterCertificateInfo"
-		name = c.InClusterCertificateInfo.Name
+		name = c.InClusterCertificateInfo.CollectorName
 	}
 
 	if collector == "" {

@@ -88,7 +88,9 @@ func OpaqueSecretCertCollector(secretName string, client kubernetes.Interface) [
 	}
 
 	listOptions := metav1.ListOptions{}
+	//GetOptions := metav1.GetOptions{}
 	secrets, _ := client.CoreV1().Secrets("").List(context.Background(), listOptions)
+	//secret, err := client.CoreV1().Secrets(c.Collector.Namespace).Get(c.Context, c.Collector.Name, GetOptions{})
 
 	for _, secret := range secrets.Items {
 		if secretName == secret.Name {
