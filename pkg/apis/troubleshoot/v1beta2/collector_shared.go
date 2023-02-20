@@ -2,6 +2,7 @@ package v1beta2
 
 import (
 	"fmt"
+	"log"
 	"reflect"
 	"strings"
 
@@ -556,6 +557,7 @@ func (c *Collect) GetName() string {
 	if c.InClusterCertificateInfo != nil {
 		collector = "InClusterCertificateInfo"
 		name = c.InClusterCertificateInfo.CollectorName
+		log.Println(c.InClusterCertificateInfo.CollectorName)
 	}
 
 	if collector == "" {
