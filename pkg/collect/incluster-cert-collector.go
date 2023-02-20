@@ -17,7 +17,7 @@ import (
 )
 
 type CollectInclusterCertificate struct {
-	Collector    *troubleshootv1beta2.InClusterCertificateInfo
+	Collector    *troubleshootv1beta2.InclusterCertificate
 	BundlePath   string
 	Namespace    string
 	ClientConfig *rest.Config
