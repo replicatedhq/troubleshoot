@@ -16,7 +16,7 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-type CollectInClusterCertificateInfo struct {
+type CollectCertificate struct {
 	Collector    *troubleshootv1beta2.InClusterCertificateInfo
 	BundlePath   string
 	Namespace    string
@@ -42,15 +42,15 @@ type ParsedCertificate struct {
 	SecretInfo       Secret    `json:"Secret"`
 }
 
-func (c *CollectInClusterCertificateInfo) Title() string {
+func (c *CollectCertificate) Title() string {
 	return getCollectorName(c)
 }
 
-func (c *CollectInClusterCertificateInfo) IsExcluded() (bool, error) {
+func (c *CollectCertificate) IsExcluded() (bool, error) {
 	return isExcluded(c.Collector.Exclude)
 }
 
-func (c *CollectInClusterCertificateInfo) Collect(progressChan chan<- interface{}) (CollectorResult, error) {
+func (c *CollectCertificate) Collect(progressChan chan<- interface{}) (CollectorResult, error) {
 
 	output := NewResult()
 	// Json object initilization - start
