@@ -219,7 +219,7 @@ type RegistryImages struct {
 
 type InClusterCertificateInfo struct {
 	CollectorMeta `json:",inline" yaml:",inline"`
-	SecretName    string `json:"name,omitempty" yaml:"name,omitempty"`
+	Name          string `json:"name,omitempty" yaml:"name,omitempty"`
 	Namespace     string `json:"namespace,omitempty" yaml:"namespace,omitempty"`
 }
 
