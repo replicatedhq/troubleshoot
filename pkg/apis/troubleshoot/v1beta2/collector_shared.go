@@ -323,7 +323,7 @@ func (c *Collect) AccessReviewSpecs(overrideNS string) []authorizationv1.SelfSub
 				Version:     "",
 				Resource:    "secrets",
 				Subresource: "",
-				Name:        c.InClusterCertificateInfo.SecretName,
+				Name:        c.InClusterCertificateInfo.Name,
 			},
 			NonResourceAttributes: nil,
 		})
