@@ -8,14 +8,12 @@ import (
 	"net/http"
 	"path/filepath"
 	"regexp"
-	"sync"
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/replicatedhq/troubleshoot/pkg/logger"
 	longhornv1beta1types "github.com/replicatedhq/troubleshoot/pkg/longhorn/apis/longhorn/v1beta1"
 	longhornv1beta1 "github.com/replicatedhq/troubleshoot/pkg/longhorn/client/clientset/versioned/typed/longhorn/v1beta1"
-	longhorntypes "github.com/replicatedhq/troubleshoot/pkg/longhorn/types"
 	"gopkg.in/yaml.v2"
 	apiErrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -62,7 +60,7 @@ func (c *CollectLonghorn) Collect(progressChan chan<- interface{}) (CollectorRes
 	}
 
 	output := NewResult()
-	var mtx sync.Mutex
+	//var mtx sync.Mutex
 
 	// collect nodes.longhorn.io
 	nodes, err := client.Nodes(ns).List(ctx, metav1.ListOptions{})
@@ -230,69 +228,7 @@ func (c *CollectLonghorn) Collect(progressChan chan<- interface{}) (CollectorRes
 
 	// There is one instance manager replica pod per node. To checksum a replica we will
 	// exec into that pod and get the sha256sum of all files in the replica data directory.
-	var replicaPodsByNode map[string]string
-
-	var wg sync.WaitGroup
-
-	for _, volume := range volumes.Items {
-		if volume.Status.State != longhorntypes.VolumeStateDetached {
-			// cannot checksum volumes in use
-			continue
-		}
-
-		var volReplicas []longhornv1beta1types.Replica
-		for _, replica := range replicas.Items {
-			if replica.Spec.InstanceSpec.VolumeName != volume.Name {
-				continue
-			}
-			if replica.Spec.InstanceSpec.NodeID == "" {
-				continue
-			}
-			volReplicas = append(volReplicas, replica)
-		}
-		if len(volReplicas) <= 1 {
-			// no reason to checksum volumes with a single replica
-			continue
-		}
-
-		// At this point we've found a detached volume with multiple replicas so we have to checksum
-		// each replica.
-
-		// First initialize the map of nodes to pods we will exec into
-		if replicaPodsByNode == nil {
-			pods, err := ListInstanceManagerReplicaPods(ctx, c.ClientConfig, ns)
-			if err != nil {
-				return nil, err
-			}
-			replicaPodsByNode = pods
-		}
-
-		for _, replica := range volReplicas {
-			// Find the name of the instance manager replica pod running on the node where this
-			// replica is scheduled
-			podName := replicaPodsByNode[replica.Spec.InstanceSpec.NodeID]
-			if podName == "" {
-				continue
-			}
-
-			wg.Add(1)
-			go func(replica longhornv1beta1types.Replica) {
-				defer wg.Done()
-				checksums, err := GetLonghornReplicaChecksum(c.ClientConfig, replica, podName)
-				if err != nil {
-					logger.Printf("Failed to get replica %s checksum: %v", replica.Name, err)
-					return
-				}
-				volsDir := GetLonghornVolumesDirectory(ns)
-				key := filepath.Join(volsDir, volume.Name, "replicachecksums", replica.Name+".txt")
-				mtx.Lock()
-				output.SaveResult(c.BundlePath, key, bytes.NewBuffer([]byte(checksums)))
-				mtx.Unlock()
-			}(replica)
-		}
-	}
-
-	wg.Wait()
+	//var replicaPodsByNode map[string]string
 
 	return output, nil
 }
