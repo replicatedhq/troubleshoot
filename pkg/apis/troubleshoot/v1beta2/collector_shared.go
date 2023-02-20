@@ -314,19 +314,6 @@ func (c *Collect) AccessReviewSpecs(overrideNS string) []authorizationv1.SelfSub
 			},
 			NonResourceAttributes: nil,
 		})
-	} else if c.InClusterCertificateInfo != nil {
-		result = append(result, authorizationv1.SelfSubjectAccessReviewSpec{
-			ResourceAttributes: &authorizationv1.ResourceAttributes{
-				Namespace:   pickNamespaceOrDefault(c.InClusterCertificateInfo.Namespace, overrideNS),
-				Verb:        "get",
-				Group:       "",
-				Version:     "",
-				Resource:    "secrets",
-				Subresource: "",
-				Name:        c.InClusterCertificateInfo.Name,
-			},
-			NonResourceAttributes: nil,
-		})
 	} else if c.ConfigMap != nil {
 		result = append(result, authorizationv1.SelfSubjectAccessReviewSpec{
 			ResourceAttributes: &authorizationv1.ResourceAttributes{
