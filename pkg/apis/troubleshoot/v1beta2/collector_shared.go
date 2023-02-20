@@ -542,7 +542,7 @@ func (c *Collect) GetName() string {
 	}
 	if c.InClusterCertificateInfo != nil {
 		collector = "InClusterCertificateInfo"
-		name = c.InClusterCertificateInfo.CollectorName
+		name = c.InClusterCertificateInfo.Name
 	}
 
 	if collector == "" {
