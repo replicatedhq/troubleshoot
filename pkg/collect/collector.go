@@ -173,9 +173,9 @@ func getCollectorName(c interface{}) string {
 	case *CollectSysctl:
 		collector = "sysctl"
 		name = v.Collector.Name
-	case *CollectInClusterCertificateInfo
+	case *CollectInClusterCertificateInfo:
 		collector = "CollectInClusterCertificateInfo"
-		name = v.Collector.SecretName
+		name = v.Collector.CollectorName
 	default:
 		collector = "<none>"
 	}
