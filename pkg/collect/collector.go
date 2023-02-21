@@ -175,7 +175,7 @@ func getCollectorName(c interface{}) string {
 		name = v.Collector.Name
 	case *CollectInclusterCertificate:
 		collector = "inclustercertificate"
-		name = v.Collector.CollectorName
+		name = v.Collector.Name
 	default:
 		collector = "<none>"
 	}
