@@ -61,23 +61,18 @@ func (c *CollectInclusterCertificate) Collect(progressChan chan<- interface{}) (
 		return nil, errors.Wrap(errJson, "failed to umarshal Json")
 	} // Json object initilization - end
 
-	// Collects SSL certificate data from "registry-pki" secret (Opaque) associated with deployment.apps/registry.
-	certificates := OpaqueSecretCertCollector(c.Collector.Name, c.Client)
+	certificate := SecretCertCollector(c.Collector.Name, c.Client)
 
-	// Appends SSL certificate "kubelet-client-cert" and "registry-pki" collections to results Json.
-	results := certificates
+	results := certificate
 
 	filePath := "certificates/" + c.Collector.Name + ".json"
 
 	output.SaveResult(c.BundlePath, filePath, bytes.NewBuffer(results))
 
-	return output, errors.New("collector name is:" + c.Collector.Name)
+	return output, nil
 }
 
-// This function collects information for all certificates in the named Secret (secretName).
-// This function should be used when a Secret is of type Opaque (NOT type of "kubernetes.io/tls").
-// SecretName == name of secret to collect SSL certificates from.
-func OpaqueSecretCertCollector(secretName string, client kubernetes.Interface) []byte {
+func SecretCertCollector(secretName string, client kubernetes.Interface) []byte {
 
 	currentTime := time.Now()
 	var certInfo []ParsedCertificate
@@ -88,9 +83,8 @@ func OpaqueSecretCertCollector(secretName string, client kubernetes.Interface) [
 	}
 
 	listOptions := metav1.ListOptions{}
-	//GetOptions := metav1.GetOptions{}
+
 	secrets, _ := client.CoreV1().Secrets("").List(context.Background(), listOptions)
-	//secret, err := client.CoreV1().Secrets(c.Collector.Namespace).Get(c.Context, c.Collector.Name, GetOptions{})
 
 	for _, secret := range secrets.Items {
 		if secretName == secret.Name {
