@@ -9,10 +9,10 @@ import (
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
-	"github.com/replicatedhq/troubleshoot/pkg/logger"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"k8s.io/klog/v2"
 )
 
 const (
@@ -213,7 +213,7 @@ func findRookCephToolsPod(ctx context.Context, c *CollectCeph, namespace string)
 		return &pods[0], nil
 	}
 
-	logger.Printf("rook ceph tools pod not found")
+	klog.Info("rook ceph tools pod not found")
 
 	return nil, nil
 }

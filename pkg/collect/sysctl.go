@@ -9,11 +9,11 @@ import (
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/replicatedhq/troubleshoot/pkg/k8sutil"
-	"github.com/replicatedhq/troubleshoot/pkg/logger"
 	kuberneteserrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"k8s.io/klog/v2"
 )
 
 type CollectSysctl struct {
@@ -82,7 +82,7 @@ find /proc/sys/vm -type f | while read f; do v=$(cat $f 2>/dev/null); echo "$f =
 			defer func() {
 				err := c.Client.CoreV1().Secrets(c.Collector.Namespace).Delete(context.Background(), c.Collector.ImagePullSecret.Name, metav1.DeleteOptions{})
 				if err != nil && !kuberneteserrors.IsNotFound(err) {
-					logger.Printf("Failed to delete secret %s: %v", c.Collector.ImagePullSecret.Name, err)
+					klog.Errorf("Failed to delete secret %s: %v", c.Collector.ImagePullSecret.Name, err)
 				}
 			}()
 

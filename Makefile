@@ -213,9 +213,9 @@ scan:
 		./
 
 .PHONY: lint
-lint:
+lint: fmt vet
 	golangci-lint run --new -c .golangci.yaml ${BUILDPATHS}
 
 .PHONY: lint-and-fix
-lint-and-fix:
+lint-and-fix: fmt vet
 	golangci-lint run --new --fix -c .golangci.yaml ${BUILDPATHS}
