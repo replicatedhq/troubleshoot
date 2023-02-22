@@ -4,6 +4,8 @@ Replicated Troubleshoot is a framework for collecting, redacting, and analyzing 
 
 Troubleshoot provides two CLI tools as kubectl plugins (using [Krew](https://krew.dev)): `kubectl preflight` and `kubectl support-bundle`. Preflight provides pre-installation cluster conformance testing and validation (preflight checks) and support-bundle provides post-installation troubleshooting and diagnostics (support bundles).
 
+To know more about troubleshoot, please visit: https://troubleshoot.sh/
+
 ## Preflight Checks
 Preflight checks are an easy-to-run set of conformance tests that can be written to verify that specific requirements in a cluster are met.
 
