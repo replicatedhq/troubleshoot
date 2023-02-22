@@ -69,8 +69,8 @@ func (c *CollectHostSubnetAvailable) Collect(progressChan chan<- interface{}) (m
 	if err != nil {
 		return nil, errors.Wrap(err, fmt.Sprintf("CIDRRangeAlloc mask %s invalid, expected integer", splitCIDRRangeAlloc[1]))
 	}
-	if maskInt < 1 || maskInt > 32 {
-		return nil, errors.Wrap(err, fmt.Sprintf("CIDRRangeAlloc mask %d invalid, must be between 1 and 32", maskInt))
+	if maskInt < 0 || maskInt > 32 {
+		return nil, errors.Wrap(err, fmt.Sprintf("CIDRRangeAlloc mask %d invalid, must be between 0 and 32", maskInt))
 	}
 	cidrRangeAllocIPNet := net.IPNet{
 		IP:   net.ParseIP(splitCIDRRangeAlloc[0]),
