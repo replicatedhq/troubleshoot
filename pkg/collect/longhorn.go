@@ -235,6 +235,7 @@ func (c *CollectLonghorn) Collect(progressChan chan<- interface{}) (CollectorRes
 	var wg sync.WaitGroup
 
 	for _, volume := range volumes.Items {
+		volume := volume
 		if volume.Status.State != longhorntypes.VolumeStateDetached {
 			// cannot checksum volumes in use
 			continue
