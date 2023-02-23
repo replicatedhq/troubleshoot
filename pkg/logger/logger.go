@@ -18,12 +18,15 @@ package logger
 
 import (
 	"flag"
+	"sync"
 
 	"github.com/go-logr/logr"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"k8s.io/klog/v2"
 )
+
+var lock sync.Mutex
 
 // InitKlogFlags initializes klog flags and adds them to the cobra command.
 func InitKlogFlags(cmd *cobra.Command) {
@@ -50,6 +53,9 @@ func SetupLogger(v *viper.Viper) {
 
 // SetQuiet enables or disables klog logger.
 func SetQuiet(quiet bool) {
+	lock.Lock()
+	defer lock.Unlock()
+
 	if quiet {
 		klog.SetLogger(logr.Discard())
 	} else {
