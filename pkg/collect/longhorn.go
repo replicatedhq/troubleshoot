@@ -277,19 +277,24 @@ func (c *CollectLonghorn) Collect(progressChan chan<- interface{}) (CollectorRes
 			}
 
 			wg.Add(1)
-			go func(replica longhornv1beta1types.Replica) {
+			go func(repl longhornv1beta1types.Replica, pName string, cfg *rest.Config, vol *longhornv1beta1types.Volume) {
 				defer wg.Done()
-				checksums, err := GetLonghornReplicaChecksum(c.ClientConfig, replica, podName)
+				checksums, err := GetLonghornReplicaChecksum(cfg, repl, pName)
 				if err != nil {
-					logger.Printf("Failed to get replica %s checksum: %v", replica.Name, err)
+					logger.Printf("Failed to get replica %s checksum: %v", repl.Name, err)
 					return
 				}
 				volsDir := GetLonghornVolumesDirectory(ns)
-				key := filepath.Join(volsDir, volume.Name, "replicachecksums", replica.Name+".txt")
+				key := filepath.Join(volsDir, vol.Name, "replicachecksums", repl.Name+".txt")
+
+				// Locking is required because the output object is shared between goroutines
 				mtx.Lock()
 				output.SaveResult(c.BundlePath, key, bytes.NewBuffer([]byte(checksums)))
 				mtx.Unlock()
-			}(replica)
+
+				// make separate new copies of CR objects so as not to share internal memory
+				// of objects between goroutines
+			}(*replica.DeepCopy(), podName, rest.CopyConfig(c.ClientConfig), volume.DeepCopy())
 		}
 	}
 
