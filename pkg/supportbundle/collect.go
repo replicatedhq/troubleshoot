@@ -168,7 +168,7 @@ func runCollectors(ctx context.Context, collectors []*troubleshootv1beta2.Collec
 				continue
 			}
 		}
-		opts.CollectorProgressCallback(opts.ProgressChan, collector.Title())
+		opts.CollectorProgressCallback(opts.ProgressChan, fmt.Sprintf("running collector %s", collector.Title()))
 		result, err := collector.Collect(opts.ProgressChan)
 		if err != nil {
 			span.SetStatus(codes.Error, err.Error())
