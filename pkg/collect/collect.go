@@ -71,6 +71,7 @@ func CollectHost(c *troubleshootv1beta2.HostCollector, additionalRedactors *trou
 	for _, collector := range collectors {
 		isExcluded, _ := collector.IsExcluded()
 		if isExcluded {
+			opts.ProgressChan <- fmt.Sprintf("[%s] Excluding collector", collector.Title())
 			continue
 		}
 

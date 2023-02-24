@@ -11,11 +11,11 @@ import (
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/replicatedhq/troubleshoot/pkg/constants"
-	"github.com/replicatedhq/troubleshoot/pkg/logger"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"k8s.io/klog/v2"
 )
 
 type CollectLogs struct {
@@ -243,7 +243,7 @@ func savePodLogs(
 func convertMaxAgeToTime(maxAge string) *metav1.Time {
 	parsedDuration, err := time.ParseDuration(maxAge)
 	if err != nil {
-		logger.Printf("Failed to parse time duration %s", maxAge)
+		klog.Errorf("Failed to parse time duration %s", maxAge)
 		return nil
 	}
 
