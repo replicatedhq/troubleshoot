@@ -15,9 +15,9 @@ import (
 	troubleshootscheme "github.com/replicatedhq/troubleshoot/pkg/client/troubleshootclientset/scheme"
 	"github.com/replicatedhq/troubleshoot/pkg/constants"
 	"github.com/replicatedhq/troubleshoot/pkg/docrewrite"
-	"github.com/replicatedhq/troubleshoot/pkg/logger"
 	"github.com/replicatedhq/troubleshoot/pkg/types"
 	"k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/klog/v2"
 )
 
 type fileContentProvider struct {
@@ -42,7 +42,7 @@ func AnalyzeLocal(
 	for _, analyzer := range analyzers {
 		analyzeResult, err := Analyze(ctx, analyzer, fcp.getFileContents, fcp.getChildFileContents)
 		if err != nil {
-			logger.Printf("An analyzer failed to run: %v", err)
+			klog.Errorf("An analyzer failed to run: %v", err)
 			continue
 		}
 

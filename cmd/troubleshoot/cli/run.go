@@ -23,7 +23,6 @@ import (
 	"github.com/replicatedhq/troubleshoot/pkg/convert"
 	"github.com/replicatedhq/troubleshoot/pkg/httputil"
 	"github.com/replicatedhq/troubleshoot/pkg/k8sutil"
-	"github.com/replicatedhq/troubleshoot/pkg/logger"
 	"github.com/replicatedhq/troubleshoot/pkg/specs"
 	"github.com/replicatedhq/troubleshoot/pkg/supportbundle"
 	"github.com/spf13/viper"
@@ -31,6 +30,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"k8s.io/klog/v2"
 )
 
 func runTroubleshoot(v *viper.Viper, arg []string) error {
@@ -134,13 +134,13 @@ func runTroubleshoot(v *viper.Viper, arg []string) error {
 		// Search cluster for Troubleshoot objects in cluster
 		bundlesFromSecrets, err := specs.LoadFromSecretMatchingLabel(client, parsedSelector.String(), namespace, specs.SupportBundleKey)
 		if err != nil {
-			logger.Printf("failed to load support bundle spec from secrets: %s", err)
+			klog.Errorf("failed to load support bundle spec from secrets: %s", err)
 		}
 		bundlesFromCluster = append(bundlesFromCluster, bundlesFromSecrets...)
 
 		bundlesFromConfigMaps, err := specs.LoadFromConfigMapMatchingLabel(client, parsedSelector.String(), namespace, specs.SupportBundleKey)
 		if err != nil {
-			logger.Printf("failed to load support bundle spec from secrets: %s", err)
+			klog.Errorf("failed to load support bundle spec from secrets: %s", err)
 		}
 		bundlesFromCluster = append(bundlesFromCluster, bundlesFromConfigMaps...)
 
@@ -148,7 +148,7 @@ func runTroubleshoot(v *viper.Viper, arg []string) error {
 			multidocs := strings.Split(string(bundle), "\n---\n")
 			parsedBundleFromSecret, err := supportbundle.ParseSupportBundleFromDoc([]byte(multidocs[0]))
 			if err != nil {
-				logger.Printf("failed to parse support bundle spec:  %s", err)
+				klog.Errorf("failed to parse support bundle spec:  %s", err)
 				continue
 			}
 
@@ -160,7 +160,7 @@ func runTroubleshoot(v *viper.Viper, arg []string) error {
 
 			parsedRedactors, err := supportbundle.ParseRedactorsFromDocs(multidocs)
 			if err != nil {
-				logger.Printf("failed to parse redactors from doc:  %s", err)
+				klog.Errorf("failed to parse redactors from doc:  %s", err)
 				continue
 			}
 
@@ -172,13 +172,13 @@ func runTroubleshoot(v *viper.Viper, arg []string) error {
 		// Search cluster for Troubleshoot objects in ConfigMaps
 		redactorsFromSecrets, err := specs.LoadFromSecretMatchingLabel(client, parsedSelector.String(), namespace, specs.RedactorKey)
 		if err != nil {
-			logger.Printf("failed to load redactor specs from config maps: %s", err)
+			klog.Errorf("failed to load redactor specs from config maps: %s", err)
 		}
 		redactorsFromCluster = append(redactorsFromCluster, redactorsFromSecrets...)
 
 		redactorsFromConfigMaps, err := specs.LoadFromConfigMapMatchingLabel(client, parsedSelector.String(), namespace, specs.RedactorKey)
 		if err != nil {
-			logger.Printf("failed to load redactor specs from config maps: %s", err)
+			klog.Errorf("failed to load redactor specs from config maps: %s", err)
 		}
 		redactorsFromCluster = append(redactorsFromCluster, redactorsFromConfigMaps...)
 
@@ -186,7 +186,7 @@ func runTroubleshoot(v *viper.Viper, arg []string) error {
 			multidocs := strings.Split(string(redactor), "\n---\n")
 			parsedRedactors, err := supportbundle.ParseRedactorsFromDocs(multidocs)
 			if err != nil {
-				logger.Printf("failed to parse redactors from doc:  %s", err)
+				klog.Errorf("failed to parse redactors from doc:  %s", err)
 			}
 
 			additionalRedactors.Spec.Redactors = append(additionalRedactors.Spec.Redactors, parsedRedactors...)
@@ -229,7 +229,7 @@ func runTroubleshoot(v *viper.Viper, arg []string) error {
 		go func() {
 			defer wg.Done()
 			for msg := range progressChan {
-				logger.Printf("Collecting support bundle: %v", msg)
+				klog.Infof("Collecting support bundle: %v", msg)
 			}
 		}()
 	} else {
