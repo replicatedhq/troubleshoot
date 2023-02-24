@@ -49,9 +49,9 @@ func RedactResult(bundlePath string, input CollectorResult, additionalRedactors 
 				if err != nil {
 					return errors.Wrap(err, "failed to get relative path")
 				}
-				klog.V(4).Infof("Redacting %s (symlink => %s)\n", file, symlink)
+				klog.V(2).Infof("Redacting %s (symlink => %s)\n", file, symlink)
 			} else {
-				klog.V(4).Infof("Redacting %s\n", file)
+				klog.V(2).Infof("Redacting %s\n", file)
 			}
 			r, err := input.GetReader(bundlePath, file)
 			if err != nil {

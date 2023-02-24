@@ -5,7 +5,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/go-logr/logr"
 	"github.com/replicatedhq/troubleshoot/cmd/util"
 	"github.com/replicatedhq/troubleshoot/internal/traces"
 	"github.com/replicatedhq/troubleshoot/pkg/k8sutil"
@@ -29,12 +28,10 @@ that a cluster meets the requirements to run an application.`,
 			v.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
 			v.BindPFlags(cmd.Flags())
 
-			if !v.GetBool("debug") {
-				klog.SetLogger(logr.Discard())
-			}
+			logger.SetupLogger(v)
 
 			if err := util.StartProfiling(); err != nil {
-				logger.Printf("Failed to start profiling: %v", err)
+				klog.Errorf("Failed to start profiling: %v", err)
 			}
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -42,20 +39,20 @@ that a cluster meets the requirements to run an application.`,
 			closer, err := traces.ConfigureTracing("preflight")
 			if err != nil {
 				// Do not fail running preflights if tracing fails
-				logger.Printf("Failed to initialize open tracing provider: %v", err)
+				klog.Errorf("Failed to initialize open tracing provider: %v", err)
 			} else {
 				defer closer()
 			}
 
 			err = preflight.RunPreflights(v.GetBool("interactive"), v.GetString("output"), v.GetString("format"), args)
-			if v.GetBool("debug") {
+			if v.GetBool("debug") || v.IsSet("v") {
 				fmt.Printf("\n%s", traces.GetExporterInstance().GetSummary())
 			}
 			return err
 		},
 		PostRun: func(cmd *cobra.Command, args []string) {
 			if err := util.StopProfiling(); err != nil {
-				logger.Printf("Failed to stop profiling: %v", err)
+				klog.Errorf("Failed to stop profiling: %v", err)
 			}
 		},
 	}
@@ -66,6 +63,9 @@ that a cluster meets the requirements to run an application.`,
 	preflight.AddFlags(cmd.PersistentFlags())
 
 	k8sutil.AddFlags(cmd.Flags())
+
+	// Initialize klog flags
+	logger.InitKlogFlags(cmd)
 
 	// CPU and memory profiling flags
 	util.AddProfilingFlags(cmd)

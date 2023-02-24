@@ -9,12 +9,12 @@ import (
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/replicatedhq/troubleshoot/pkg/constants"
-	"github.com/replicatedhq/troubleshoot/pkg/logger"
 	"github.com/replicatedhq/troubleshoot/pkg/multitype"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/klog/v2"
 )
 
 type AnalyzeResult struct {
@@ -73,7 +73,7 @@ func HostAnalyze(
 
 	isExcluded, _ := analyzer.IsExcluded()
 	if isExcluded {
-		logger.Printf("Excluding %q analyzer", analyzer.Title())
+		klog.Infof("excluding %q analyzer", analyzer.Title())
 		span.SetAttributes(attribute.Bool(constants.EXCLUDED, true))
 		return nil
 	}
@@ -511,7 +511,7 @@ func Analyze(
 		return nil, err
 	}
 	if isExcluded {
-		logger.Printf("Excluding %q analyzer", analyzerInst.Title())
+		klog.Infof("excluding %q analyzer", analyzerInst.Title())
 		span.SetAttributes(attribute.Bool(constants.EXCLUDED, true))
 		return nil, nil
 	}

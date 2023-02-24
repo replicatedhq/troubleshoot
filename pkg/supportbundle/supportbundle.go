@@ -19,7 +19,6 @@ import (
 	"github.com/replicatedhq/troubleshoot/pkg/collect"
 	"github.com/replicatedhq/troubleshoot/pkg/constants"
 	"github.com/replicatedhq/troubleshoot/pkg/convert"
-	"github.com/replicatedhq/troubleshoot/pkg/logger"
 	"go.opentelemetry.io/otel"
 	"k8s.io/client-go/rest"
 	"k8s.io/klog/v2"
@@ -181,7 +180,7 @@ func CollectSupportBundleFromSpec(
 	err = result.SaveResult(bundlePath, "execution-data/summary.txt", bytes.NewReader([]byte(summary)))
 	if err != nil {
 		// Don't fail the support bundle if we can't save the execution summary
-		logger.Printf("failed to save execution summary file in the support bundle: %v", err)
+		klog.Errorf("failed to save execution summary file in the support bundle: %v", err)
 	}
 
 	// Archive Support Bundle
