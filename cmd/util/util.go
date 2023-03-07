@@ -4,6 +4,9 @@ import (
 	"net/url"
 	"os"
 	"strings"
+
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
 func HomeDir() string {
@@ -23,7 +26,7 @@ func IsURL(str string) bool {
 }
 
 func AppName(name string) string {
-	words := strings.Split(strings.Title(strings.Replace(name, "-", " ", -1)), " ")
+	words := strings.Split(cases.Title(language.English).String(strings.ReplaceAll(name, "-", " ")), " ")
 	casedWords := []string{}
 	for i, word := range words {
 		if strings.ToLower(word) == "ai" {

@@ -12,11 +12,11 @@ import (
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/replicatedhq/troubleshoot/pkg/k8sutil"
-	"github.com/replicatedhq/troubleshoot/pkg/logger"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 	v1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/rest"
+	"k8s.io/klog/v2"
 
 	kuberneteserrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -54,7 +54,7 @@ func (c *CollectRunPod) Collect(progressChan chan<- interface{}) (CollectorResul
 	}
 	defer func() {
 		if err := client.CoreV1().Pods(pod.Namespace).Delete(context.Background(), pod.Name, metav1.DeleteOptions{}); err != nil {
-			logger.Printf("Failed to delete pod %s: %v", pod.Name, err)
+			klog.Errorf("Failed to delete pod %s: %v", pod.Name, err)
 		}
 	}()
 
@@ -62,7 +62,7 @@ func (c *CollectRunPod) Collect(progressChan chan<- interface{}) (CollectorResul
 		defer func() {
 			for _, k := range pod.Spec.ImagePullSecrets {
 				if err := client.CoreV1().Secrets(pod.Namespace).Delete(context.Background(), k.Name, metav1.DeleteOptions{}); err != nil {
-					logger.Printf("Failed to delete secret %s: %v", k.Name, err)
+					klog.Errorf("Failed to delete secret %s: %v", k.Name, err)
 				}
 			}
 		}()
@@ -316,7 +316,7 @@ func RunPodsReadyNodes(ctx context.Context, client v1.CoreV1Interface, opts RunP
 			}
 			logs, err := RunPodLogs(ctx, client, pod)
 			if err != nil {
-				logger.Printf("Failed to run pod on node %s: %v", node, err)
+				klog.Errorf("Failed to run pod on node %s: %v", node, err)
 				return
 			}
 
@@ -341,7 +341,7 @@ func RunPodLogs(ctx context.Context, client v1.CoreV1Interface, podSpec *corev1.
 	defer func() {
 		err := client.Pods(pod.Namespace).Delete(context.Background(), pod.Name, metav1.DeleteOptions{})
 		if err != nil && !kuberneteserrors.IsNotFound(err) {
-			logger.Printf("Failed to delete pod %s: %v\n", pod.Name, err)
+			klog.Errorf("Failed to delete pod %s: %v\n", pod.Name, err)
 		}
 	}()
 

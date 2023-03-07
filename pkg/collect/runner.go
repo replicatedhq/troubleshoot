@@ -10,7 +10,6 @@ import (
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
-	"github.com/replicatedhq/troubleshoot/pkg/logger"
 	corev1 "k8s.io/api/core/v1"
 	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	kuberneteserrors "k8s.io/apimachinery/pkg/api/errors"
@@ -18,6 +17,7 @@ import (
 	runtime "k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/util/retry"
+	"k8s.io/klog/v2"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
@@ -43,10 +43,10 @@ func (r *podRunner) run(ctx context.Context, collector *troubleshootv1beta2.Host
 
 	defer func() {
 		if err := r.client.CoreV1().Pods(namespace).Delete(context.Background(), pod.Name, metav1.DeleteOptions{}); err != nil {
-			logger.Printf("Failed to delete pod %s: %v\n", pod.Name, err)
+			klog.Errorf("Failed to delete pod %s: %v\n", pod.Name, err)
 		}
 		if err := r.client.CoreV1().ConfigMaps(namespace).Delete(context.Background(), cm.Name, metav1.DeleteOptions{}); err != nil {
-			logger.Printf("Failed to delete configmap %s: %v\n", pod.Name, err)
+			klog.Errorf("Failed to delete configmap %s: %v\n", pod.Name, err)
 		}
 	}()
 
