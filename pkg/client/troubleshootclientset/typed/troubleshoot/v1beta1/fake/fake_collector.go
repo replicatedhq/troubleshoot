@@ -116,7 +116,7 @@ func (c *FakeCollectors) UpdateStatus(ctx context.Context, collector *v1beta1.Co
 // Delete takes name of the collector and deletes it. Returns an error if one occurs.
 func (c *FakeCollectors) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewDeleteAction(collectorsResource, c.ns, name), &v1beta1.Collector{})
+		Invokes(testing.NewDeleteActionWithOptions(collectorsResource, c.ns, name, opts), &v1beta1.Collector{})
 
 	return err
 }
