@@ -8,39 +8,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-/*
-func TestCollectHostSubnetAvailable_Collect(t *testing.T) {
-	type fields struct {
-		hostCollector *troubleshootv1beta2.SubnetAvailable
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		want   map[string][]byte
-	}{
-		{
-			name: "TODO",
-			want: map[string][]byte{
-				"host-collectors/subnetAvailable/subnetAvailable.json": []byte(`{"status":"connected","message":""}`),
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			tmpDir, err := os.MkdirTemp("", "bundle")
-			require.NoError(t, err)
-
-			c := &CollectHostSubnetAvailable{
-				hostCollector: &troubleshootv1beta2.SubnetAvailable{
-					// TODO: implement
-				},
-				BundlePath: tmpDir,
-			}
-		})
-	}
-}
-*/
-
 func TestParseProcNetRoute(t *testing.T) {
 	input := `Iface	Destination	Gateway 	Flags	RefCnt	Use	Metric	Mask		MTU	Window	IRTT
 eth1	00000000	016BA8C0	0003	0	0	200	00000000	0	0	0
