@@ -10803,6 +10803,12 @@
                       "type": "string"
                     }
                   },
+                  "centos9": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
                   "collectorName": {
                     "type": "string"
                   },
@@ -10827,6 +10833,12 @@
                       "type": "string"
                     }
                   },
+                  "ol9": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
                   "rhel": {
                     "type": "array",
                     "items": {
@@ -10840,6 +10852,30 @@
                     }
                   },
                   "rhel8": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "rhel9": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "rocky": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "rocky8": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "rocky9": {
                     "type": "array",
                     "items": {
                       "type": "string"

@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os/exec"
+	"strings"
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
@@ -44,22 +45,43 @@ func (c *CollectHostBlockDevices) IsExcluded() (bool, error) {
 }
 
 func (c *CollectHostBlockDevices) Collect(progressChan chan<- interface{}) (map[string][]byte, error) {
-	var devices []BlockDeviceInfo
-
 	cmd := exec.Command("lsblk", "--noheadings", "--bytes", "--pairs", "-o", lsblkColumns)
 	stdout, err := cmd.Output()
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to execute lsblk")
 	}
-	buf := bytes.NewBuffer(stdout)
+
+	devices, err := parseLsblkOutput(stdout)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to parse block device output")
+	}
+
+	b, err := json.Marshal(devices)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to marshal block device info")
+	}
+
+	output := NewResult()
+	output.SaveResult(c.BundlePath, HostBlockDevicesPath, bytes.NewBuffer(b))
+
+	return map[string][]byte{
+		HostBlockDevicesPath: b,
+	}, nil
+}
+
+func parseLsblkOutput(output []byte) ([]BlockDeviceInfo, error) {
+	var devices []BlockDeviceInfo
+
+	buf := bytes.NewBuffer(output)
 	scanner := bufio.NewScanner(buf)
 
 	for scanner.Scan() {
 		bdi := BlockDeviceInfo{}
 		var ro int
 		var rm int
+		line := strings.ReplaceAll(scanner.Text(), "MAJ_MIN", "MAJ:MIN")
 		fmt.Sscanf(
-			scanner.Text(),
+			line,
 			lsblkFormat,
 			&bdi.Name,
 			&bdi.KernelName,
@@ -80,15 +102,9 @@ func (c *CollectHostBlockDevices) Collect(progressChan chan<- interface{}) (map[
 		devices = append(devices, bdi)
 	}
 
-	b, err := json.Marshal(devices)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to marshal block device info")
+	if err := scanner.Err(); err != nil {
+		return nil, errors.Wrap(err, "failed to scan lsblk output")
 	}
 
-	output := NewResult()
-	output.SaveResult(c.BundlePath, HostBlockDevicesPath, bytes.NewBuffer(b))
-
-	return map[string][]byte{
-		HostBlockDevicesPath: b,
-	}, nil
+	return devices, nil
 }
