@@ -116,7 +116,7 @@ func (c *FakeAnalyzers) UpdateStatus(ctx context.Context, analyzer *v1beta2.Anal
 // Delete takes name of the analyzer and deletes it. Returns an error if one occurs.
 func (c *FakeAnalyzers) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewDeleteAction(analyzersResource, c.ns, name), &v1beta2.Analyzer{})
+		Invokes(testing.NewDeleteActionWithOptions(analyzersResource, c.ns, name, opts), &v1beta2.Analyzer{})
 
 	return err
 }

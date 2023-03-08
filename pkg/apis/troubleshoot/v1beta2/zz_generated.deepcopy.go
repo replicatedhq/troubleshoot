@@ -2158,6 +2158,26 @@ func (in *HostSystemPackages) DeepCopyInto(out *HostSystemPackages) {
 		*out = make([]string, len(*in))
 		copy(*out, *in)
 	}
+	if in.RHEL9 != nil {
+		in, out := &in.RHEL9, &out.RHEL9
+		*out = make([]string, len(*in))
+		copy(*out, *in)
+	}
+	if in.RockyLinux != nil {
+		in, out := &in.RockyLinux, &out.RockyLinux
+		*out = make([]string, len(*in))
+		copy(*out, *in)
+	}
+	if in.RockyLinux8 != nil {
+		in, out := &in.RockyLinux8, &out.RockyLinux8
+		*out = make([]string, len(*in))
+		copy(*out, *in)
+	}
+	if in.RockyLinux9 != nil {
+		in, out := &in.RockyLinux9, &out.RockyLinux9
+		*out = make([]string, len(*in))
+		copy(*out, *in)
+	}
 	if in.CentOS != nil {
 		in, out := &in.CentOS, &out.CentOS
 		*out = make([]string, len(*in))
@@ -2173,6 +2193,11 @@ func (in *HostSystemPackages) DeepCopyInto(out *HostSystemPackages) {
 		*out = make([]string, len(*in))
 		copy(*out, *in)
 	}
+	if in.CentOS9 != nil {
+		in, out := &in.CentOS9, &out.CentOS9
+		*out = make([]string, len(*in))
+		copy(*out, *in)
+	}
 	if in.OracleLinux != nil {
 		in, out := &in.OracleLinux, &out.OracleLinux
 		*out = make([]string, len(*in))
@@ -2185,6 +2210,11 @@ func (in *HostSystemPackages) DeepCopyInto(out *HostSystemPackages) {
 	}
 	if in.OracleLinux8 != nil {
 		in, out := &in.OracleLinux8, &out.OracleLinux8
+		*out = make([]string, len(*in))
+		copy(*out, *in)
+	}
+	if in.OracleLinux9 != nil {
+		in, out := &in.OracleLinux9, &out.OracleLinux9
 		*out = make([]string, len(*in))
 		copy(*out, *in)
 	}
