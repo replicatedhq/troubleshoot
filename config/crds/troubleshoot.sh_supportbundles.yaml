@@ -11218,6 +11218,10 @@ spec:
                           items:
                             type: string
                           type: array
+                        centos9:
+                          items:
+                            type: string
+                          type: array
                         collectorName:
                           type: string
                         exclude:
@@ -11234,6 +11238,10 @@ spec:
                           items:
                             type: string
                           type: array
+                        ol9:
+                          items:
+                            type: string
+                          type: array
                         rhel:
                           items:
                             type: string
@@ -11243,6 +11251,22 @@ spec:
                             type: string
                           type: array
                         rhel8:
+                          items:
+                            type: string
+                          type: array
+                        rhel9:
+                          items:
+                            type: string
+                          type: array
+                        rocky:
+                          items:
+                            type: string
+                          type: array
+                        rocky8:
+                          items:
+                            type: string
+                          type: array
+                        rocky9:
                           items:
                             type: string
                           type: array
