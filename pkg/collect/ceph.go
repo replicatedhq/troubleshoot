@@ -128,11 +128,11 @@ func (c *CollectCeph) IsExcluded() (bool, error) {
 func (c *CollectCeph) Collect(progressChan chan<- interface{}) (CollectorResult, error) {
 	ctx := context.TODO()
 
-	if c.Namespace == "" {
-		c.Namespace = DefaultCephNamespace
+	if c.Collector.Namespace == "" {
+		c.Collector.Namespace = DefaultCephNamespace
 	}
 
-	pod, err := findRookCephToolsPod(ctx, c, c.Namespace)
+	pod, err := findRookCephToolsPod(ctx, c, c.Collector.Namespace)
 	if err != nil {
 		return nil, err
 	}
@@ -142,7 +142,7 @@ func (c *CollectCeph) Collect(progressChan chan<- interface{}) (CollectorResult,
 		for _, command := range CephCommands {
 			err := cephCommandExec(ctx, progressChan, c, c.Collector, pod, command, output)
 			if err != nil {
-				pathPrefix := GetCephCollectorFilepath(c.Collector.CollectorName, c.Namespace)
+				pathPrefix := GetCephCollectorFilepath(c.Collector.CollectorName, c.Collector.Namespace)
 				dstFileName := path.Join(pathPrefix, fmt.Sprintf("%s.%s-error", command.ID, command.Format))
 				output.SaveResult(c.BundlePath, dstFileName, strings.NewReader(err.Error()))
 			}
