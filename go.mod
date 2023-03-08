@@ -27,12 +27,12 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/replicatedhq/termui/v3 v3.1.1-0.20200811145416-f40076d26851
 	github.com/segmentio/ksuid v1.0.4
-	github.com/shirou/gopsutil/v3 v3.23.1
+	github.com/shirou/gopsutil/v3 v3.23.2
 	github.com/sirupsen/logrus v1.9.0
 	github.com/spf13/cobra v1.6.1
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.15.0
-	github.com/stretchr/testify v1.8.1
+	github.com/stretchr/testify v1.8.2
 	github.com/tj/go-spin v1.1.0
 	go.opentelemetry.io/otel v1.13.0
 	go.opentelemetry.io/otel/sdk v1.13.0
