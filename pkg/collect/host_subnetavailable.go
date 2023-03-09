@@ -14,7 +14,7 @@ import (
 	"github.com/apparentlymart/go-cidr/cidr"
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
-	"github.com/replicatedhq/troubleshoot/pkg/debug"
+	"k8s.io/klog/v2"
 )
 
 type SubnetStatus string
@@ -54,7 +54,7 @@ func (c *CollectHostSubnetAvailable) Collect(progressChan chan<- interface{}) (m
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to parse /proc/net/route")
 	}
-	debug.Printf("Routes: %+v\n", routes)
+	klog.V(2).Infof("Routes: %+v\n", routes)
 
 	// IPv4 only right now...
 	if c.hostCollector.DesiredCIDR < 1 || c.hostCollector.DesiredCIDR > 32 {
@@ -185,7 +185,7 @@ func parseProcNetRoute(input string) (systemRoutes, error) {
 // TODOLATER: consolidate some of this logic into a unified library? will need a bit of refactoring if so
 //
 // isASubnetAvailableInCIDR will check if a subnet of cidrRange size is available within subnetRange (IPv4 only), checking against system routes for conflicts
-func isASubnetAvailableInCIDR(cidrRange int, subnetRange *net.IPNet, routes *systemRoutes, debug bool) (bool, error) {
+func isASubnetAvailableInCIDR(cidrRange int, subnetRange *net.IPNet, routes *systemRoutes) (bool, error) {
 	// Sanity check that the CIDR range size is IPv4 valid (/0 to /32)
 	if cidrRange < 1 || cidrRange > 32 {
 		return false, errors.New(fmt.Sprintf("CIDR range size %d invalid, must be between 1 and 32", cidrRange))
@@ -213,9 +213,7 @@ func isASubnetAvailableInCIDR(cidrRange int, subnetRange *net.IPNet, routes *sys
 	for {
 		// This is the extents of the subnet to be tested
 		firstIP, lastIP := cidr.AddressRange(subnet)
-		if debug {
-			fmt.Fprintf(os.Stderr, "Checking subnet: %s firstIP: %s lastIP: %s\n", subnet.String(), firstIP, lastIP)
-		}
+		klog.V(2).Infof("Checking subnet: %s firstIP: %s lastIP: %s\n", subnet.String(), firstIP, lastIP)
 
 		// Make sure the smaller subnet is (still) within the large subnetRange. If subnetRange has been exhausted one of these will be false
 		if !subnetRange.Contains(firstIP) || !subnetRange.Contains(lastIP) {
@@ -223,19 +221,21 @@ func isASubnetAvailableInCIDR(cidrRange int, subnetRange *net.IPNet, routes *sys
 		}
 
 		// Check if any system routes overlap with the smaller subnet being tested
-		route := findFirstOverlappingRoute(subnet, routes, debug)
+		route := findFirstOverlappingRoute(subnet, routes)
 		if route == nil {
 			// No system routes match, this (smaller) subnet is available
+			klog.V(1).Infof("Subnet %s is available", subnet.String())
 			return true, nil
 		}
 
 		// Try the next subnet in the range
-		subnet, _ = cidr.NextSubnet(subnet, cidrRange)
+		//subnet, _ = cidr.NextSubnet(subnet, cidrRange)
+		subnet, _ = cidr.NextSubnet(&route.DestNet, cidrRange)
 	}
 }
 
 // findFirstOverlappingRoute will return the first overlapping route with the subnet specified
-func findFirstOverlappingRoute(subnet *net.IPNet, routes *systemRoutes, debug bool) *systemRoute {
+func findFirstOverlappingRoute(subnet *net.IPNet, routes *systemRoutes) *systemRoute {
 	// NOTE: IPv4 specific
 	defaultRoute := net.IPNet{
 		IP:   net.IPv4(0, 0, 0, 0),
@@ -248,25 +248,17 @@ func findFirstOverlappingRoute(subnet *net.IPNet, routes *systemRoutes, debug bo
 			continue
 		}
 
-		if debug {
-			fmt.Fprintf(os.Stderr, "Checking if route %s overlaps with subnet %s - ", &route.DestNet, subnet)
-		}
+		klog.V(2).Infof("Checking if route %s overlaps with subnet %s - ", &route.DestNet, subnet)
 		// TODOLATER: can we use cidr.VerifyNoOverlap to replace this? tests fail right now trying to do so...
 		//if cidr.VerifyNoOverlap([]*net.IPNet{subnet}, &route.DestNet) != nil {
 		if netOverlaps(&route.DestNet, subnet) {
-			if debug {
-				fmt.Fprintf(os.Stderr, "Overlaps\n")
-			}
+			klog.V(2).Infof("Overlaps\n")
 			return &route
 		} else {
-			if debug {
-				fmt.Fprintf(os.Stderr, "No overlap\n")
-			}
+			klog.V(2).Infof("No overlap\n")
 		}
 	}
-	if debug {
-		fmt.Fprintf(os.Stderr, "Subnet %s has no overlap with any system routes\n", subnet)
-	}
+	klog.V(2).Infof("Subnet %s has no overlap with any system routes\n", subnet)
 	return nil
 }
 
