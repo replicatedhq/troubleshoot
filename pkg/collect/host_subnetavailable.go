@@ -80,7 +80,7 @@ func (c *CollectHostSubnetAvailable) Collect(progressChan chan<- interface{}) (m
 	result := SubnetAvailableResult{}
 	result.CIDRRangeAlloc = c.hostCollector.CIDRRangeAlloc
 	result.DesiredCIDR = c.hostCollector.DesiredCIDR
-	available, err := isASubnetAvailableInCIDR(c.hostCollector.DesiredCIDR, &cidrRangeAllocIPNet, &routes, false)
+	available, err := isASubnetAvailableInCIDR(c.hostCollector.DesiredCIDR, &cidrRangeAllocIPNet, &routes)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to determine if desired CIDR is available within subnet")
 	}

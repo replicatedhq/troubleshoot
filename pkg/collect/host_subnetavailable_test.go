@@ -194,7 +194,7 @@ func TestIsASubnetAvailableInCIDR(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			req := require.New(t)
-			actual, err := isASubnetAvailableInCIDR(tt.cidrRange, &tt.subnetRange, &sysRoutes, false) // debug bool is useful for fixing bugs here, but off by default for noise
+			actual, err := isASubnetAvailableInCIDR(tt.cidrRange, &tt.subnetRange, &sysRoutes) // debug bool is useful for fixing bugs here, but off by default for noise
 			req.NoError(err)
 
 			assert.Equal(t, tt.expected, actual)
