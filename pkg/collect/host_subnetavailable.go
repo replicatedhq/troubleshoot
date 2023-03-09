@@ -54,7 +54,7 @@ func (c *CollectHostSubnetAvailable) Collect(progressChan chan<- interface{}) (m
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to parse /proc/net/route")
 	}
-	klog.V(2).Infof("Routes: %+v\n", routes)
+	klog.V(3).Infof("Routes: %+v\n", routes)
 
 	// IPv4 only right now...
 	if c.hostCollector.DesiredCIDR < 1 || c.hostCollector.DesiredCIDR > 32 {
