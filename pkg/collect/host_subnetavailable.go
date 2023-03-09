@@ -229,8 +229,7 @@ func isASubnetAvailableInCIDR(cidrRange int, subnetRange *net.IPNet, routes *sys
 		}
 
 		// Try the next subnet in the range
-		//subnet, _ = cidr.NextSubnet(subnet, cidrRange)
-		subnet, _ = cidr.NextSubnet(&route.DestNet, cidrRange)
+		subnet, _ = cidr.NextSubnet(subnet, cidrRange)
 	}
 }
 
