@@ -88,12 +88,18 @@ type HostSystemPackages struct {
 	RHEL              []string `json:"rhel,omitempty"`
 	RHEL7             []string `json:"rhel7,omitempty"`
 	RHEL8             []string `json:"rhel8,omitempty"`
+	RHEL9             []string `json:"rhel9,omitempty"`
+	RockyLinux        []string `json:"rocky,omitempty"`
+	RockyLinux8       []string `json:"rocky8,omitempty"`
+	RockyLinux9       []string `json:"rocky9,omitempty"`
 	CentOS            []string `json:"centos,omitempty"`
 	CentOS7           []string `json:"centos7,omitempty"`
 	CentOS8           []string `json:"centos8,omitempty"`
+	CentOS9           []string `json:"centos9,omitempty"`
 	OracleLinux       []string `json:"ol,omitempty"`
 	OracleLinux7      []string `json:"ol7,omitempty"`
 	OracleLinux8      []string `json:"ol8,omitempty"`
+	OracleLinux9      []string `json:"ol9,omitempty"`
 	AmazonLinux       []string `json:"amzn,omitempty"`
 	AmazonLinux2      []string `json:"amzn2,omitempty"`
 }
