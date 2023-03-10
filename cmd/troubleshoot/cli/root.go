@@ -1,11 +1,12 @@
 package cli
 
 import (
+	"fmt"
 	"os"
 	"strings"
 
-	"github.com/go-logr/logr"
 	"github.com/replicatedhq/troubleshoot/cmd/util"
+	"github.com/replicatedhq/troubleshoot/internal/traces"
 	"github.com/replicatedhq/troubleshoot/pkg/k8sutil"
 	"github.com/replicatedhq/troubleshoot/pkg/logger"
 	"github.com/spf13/cobra"
@@ -26,25 +27,33 @@ from a server that can be used to assist when troubleshooting a Kubernetes clust
 			v.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
 			v.BindPFlags(cmd.Flags())
 
+			logger.SetupLogger(v)
+
 			if err := util.StartProfiling(); err != nil {
-				logger.Printf("Failed to start profiling: %v", err)
+				klog.Errorf("Failed to start profiling: %v", err)
 			}
-		},
-		PreRun: func(cmd *cobra.Command, args []string) {
-			v := viper.GetViper()
-			if !v.GetBool("debug") {
-				klog.SetLogger(logr.Discard())
-			}
-			logger.SetQuiet(!v.GetBool("debug"))
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			v := viper.GetViper()
 
-			return runTroubleshoot(v, args)
+			closer, err := traces.ConfigureTracing("support-bundle")
+			if err != nil {
+				// Do not fail running support-bundle if tracing fails
+				klog.Errorf("Failed to initialize open tracing provider: %v", err)
+			} else {
+				defer closer()
+			}
+
+			err = runTroubleshoot(v, args)
+			if v.GetBool("debug") || v.IsSet("v") {
+				fmt.Printf("\n%s", traces.GetExporterInstance().GetSummary())
+			}
+
+			return err
 		},
 		PersistentPostRun: func(cmd *cobra.Command, args []string) {
 			if err := util.StopProfiling(); err != nil {
-				logger.Printf("Failed to stop profiling: %v", err)
+				klog.Errorf("Failed to stop profiling: %v", err)
 			}
 		},
 	}
@@ -64,7 +73,7 @@ from a server that can be used to assist when troubleshooting a Kubernetes clust
 	cmd.Flags().String("since-time", "", "force pod logs collectors to return logs after a specific date (RFC3339)")
 	cmd.Flags().String("since", "", "force pod logs collectors to return logs newer than a relative duration like 5s, 2m, or 3h.")
 	cmd.Flags().StringP("output", "o", "", "specify the output file path for the support bundle")
-	cmd.Flags().Bool("debug", false, "enable debug logging")
+	cmd.Flags().Bool("debug", false, "enable debug logging. This is equivalent to --v=0")
 
 	// hidden in favor of the `insecure-skip-tls-verify` flag
 	cmd.Flags().Bool("allow-insecure-connections", false, "when set, do not verify TLS certs when retrieving spec and reporting results")
@@ -75,6 +84,9 @@ from a server that can be used to assist when troubleshooting a Kubernetes clust
 	cmd.Flags().Bool("no-uri", false, "When this flag is used, Troubleshoot does not attempt to retrieve the bundle referenced by the uri: field in the spec.`")
 
 	k8sutil.AddFlags(cmd.Flags())
+
+	// Initialize klog flags
+	logger.InitKlogFlags(cmd)
 
 	// CPU and memory profiling flags
 	util.AddProfilingFlags(cmd)

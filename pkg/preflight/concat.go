@@ -5,17 +5,33 @@ import (
 )
 
 func ConcatPreflightSpec(target *troubleshootv1beta2.Preflight, source *troubleshootv1beta2.Preflight) *troubleshootv1beta2.Preflight {
-	newSpec := target.DeepCopy()
-	newSpec.Spec.Collectors = append(target.Spec.Collectors, source.Spec.Collectors...)
-	newSpec.Spec.RemoteCollectors = append(target.Spec.RemoteCollectors, source.Spec.RemoteCollectors...)
-	newSpec.Spec.Analyzers = append(target.Spec.Analyzers, source.Spec.Analyzers...)
+	if source == nil {
+		return target
+	}
+	var newSpec *troubleshootv1beta2.Preflight
+	if target == nil {
+		newSpec = source
+	} else {
+		newSpec = target.DeepCopy()
+		newSpec.Spec.Collectors = append(newSpec.Spec.Collectors, source.Spec.Collectors...)
+		newSpec.Spec.RemoteCollectors = append(newSpec.Spec.RemoteCollectors, source.Spec.RemoteCollectors...)
+		newSpec.Spec.Analyzers = append(newSpec.Spec.Analyzers, source.Spec.Analyzers...)
+	}
 	return newSpec
 }
 
 func ConcatHostPreflightSpec(target *troubleshootv1beta2.HostPreflight, source *troubleshootv1beta2.HostPreflight) *troubleshootv1beta2.HostPreflight {
-	newSpec := target.DeepCopy()
-	newSpec.Spec.Collectors = append(target.Spec.Collectors, source.Spec.Collectors...)
-	newSpec.Spec.RemoteCollectors = append(target.Spec.RemoteCollectors, source.Spec.RemoteCollectors...)
-	newSpec.Spec.Analyzers = append(target.Spec.Analyzers, source.Spec.Analyzers...)
+	if source == nil {
+		return target
+	}
+	var newSpec *troubleshootv1beta2.HostPreflight
+	if target == nil {
+		newSpec = source
+	} else {
+		newSpec = target.DeepCopy()
+		newSpec.Spec.Collectors = append(newSpec.Spec.Collectors, source.Spec.Collectors...)
+		newSpec.Spec.RemoteCollectors = append(newSpec.Spec.RemoteCollectors, source.Spec.RemoteCollectors...)
+		newSpec.Spec.Analyzers = append(newSpec.Spec.Analyzers, source.Spec.Analyzers...)
+	}
 	return newSpec
 }

@@ -21,11 +21,23 @@ spec:
         rhel8:
           - nfs-utils
           - openssl
+        rhel9:
+          - nfs-utils
+          - openssl
+        rocky8:
+          - nfs-utils
+          - openssl
+        rocky9:
+          - nfs-utils
+          - openssl
         centos:
           - iscsi-initiator-utils
         centos7:
           - libzstd
         centos8:
+          - nfs-utils
+          - openssl
+        centos9:
           - nfs-utils
           - openssl
         ol:
@@ -34,6 +46,8 @@ spec:
           - libzstd
           - openssl
         ol8:
+          - nfs-utils
+        ol9:
           - nfs-utils
         amzn:
           - libzstd

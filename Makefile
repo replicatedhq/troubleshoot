@@ -2,10 +2,11 @@
 # Image URL to use all building/pushing image targets
 IMG ?= controller:latest
 
-SHELL := /bin/bash -o pipefail
+SHELL := bash -o pipefail
 VERSION_PACKAGE = github.com/replicatedhq/troubleshoot/pkg/version
 VERSION ?=`git describe --tags --dirty`
 DATE=`date -u +"%Y-%m-%dT%H:%M:%SZ"`
+RUN?=""
 
 GIT_TREE = $(shell git rev-parse --is-inside-work-tree 2>/dev/null)
 ifneq "$(GIT_TREE)" ""
@@ -34,6 +35,7 @@ define LDFLAGS
 endef
 
 BUILDFLAGS = -tags "netgo containers_image_ostree_stub exclude_graphdriver_devicemapper exclude_graphdriver_btrfs containers_image_openpgp" -installsuffix netgo
+BUILDPATHS = ./pkg/... ./cmd/... ./internal/...
 
 all: test support-bundle preflight collect analyze
 
@@ -43,13 +45,17 @@ ffi: fmt vet
 
 .PHONY: test
 test: generate fmt vet
-	go test ${BUILDFLAGS} ./pkg/... ./cmd/... -coverprofile cover.out
+	if [ -n $(RUN) ]; then \
+		go test ${BUILDFLAGS} ${BUILDPATHS} -coverprofile cover.out -run $(RUN); \
+	else \
+		go test ${BUILDFLAGS} ${BUILDPATHS} -coverprofile cover.out; \
+	fi
 
 # Go tests that require a K8s instance
 # TODOLATER: merge with test, so we get unified coverage reports? it'll add 21~sec to the test job though...
 .PHONY: test-integration
 test-integration:
-	go test -v --tags "integration exclude_graphdriver_devicemapper exclude_graphdriver_btrfs" ./pkg/... ./cmd/...
+	go test -v --tags "integration exclude_graphdriver_devicemapper exclude_graphdriver_btrfs" ${BUILDPATHS}
 
 .PHONY: preflight-e2e-test
 preflight-e2e-test:
@@ -77,11 +83,11 @@ collect:
 
 .PHONY: fmt
 fmt:
-	go fmt ./pkg/... ./cmd/...
+	go fmt ${BUILDPATHS}
 
 .PHONY: vet
 vet:
-	go vet ${BUILDFLAGS} ./pkg/... ./cmd/...
+	go vet ${BUILDFLAGS} ${BUILDPATHS}
 
 .PHONY: generate
 generate: controller-gen client-gen
@@ -119,13 +125,13 @@ docs: fmt vet
 	./bin/docsgen
 
 controller-gen:
-	go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.7.0
+	go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.11.2
 CONTROLLER_GEN=$(shell which controller-gen)
 
 .PHONY: client-gen
 client-gen:
-ifeq (, $(shell which client-gen))
-	go install k8s.io/code-generator/cmd/client-gen@v0.22.2
+ifeq (, $(shell which client-gen 2>/dev/null))
+	go install k8s.io/code-generator/cmd/client-gen@v0.26.1
 CLIENT_GEN=$(shell go env GOPATH)/bin/client-gen
 else
 CLIENT_GEN=$(shell which client-gen)
@@ -207,9 +213,9 @@ scan:
 		./
 
 .PHONY: lint
-lint:
-	golangci-lint run --new -c .golangci.yaml pkg/... cmd/...
+lint: fmt vet
+	golangci-lint run --new -c .golangci.yaml ${BUILDPATHS}
 
 .PHONY: lint-and-fix
-lint-and-fix:
-	golangci-lint run --new --fix -c .golangci.yaml pkg/... cmd/...
+lint-and-fix: fmt vet
+	golangci-lint run --new --fix -c .golangci.yaml ${BUILDPATHS}

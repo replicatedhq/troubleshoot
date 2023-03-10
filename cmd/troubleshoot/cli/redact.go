@@ -8,7 +8,6 @@ import (
 	"github.com/pkg/errors"
 	analyzer "github.com/replicatedhq/troubleshoot/pkg/analyze"
 	"github.com/replicatedhq/troubleshoot/pkg/collect"
-	"github.com/replicatedhq/troubleshoot/pkg/logger"
 	"github.com/replicatedhq/troubleshoot/pkg/supportbundle"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -34,8 +33,6 @@ For more information on redactors visit https://troubleshoot.sh/docs/redact/
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			v := viper.GetViper()
-
-			logger.SetQuiet(v.GetBool("quiet"))
 
 			// 1. Decode redactors from provided URLs
 			redactors, err := supportbundle.GetRedactorsFromURIs(args)

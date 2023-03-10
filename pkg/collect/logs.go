@@ -11,11 +11,11 @@ import (
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/replicatedhq/troubleshoot/pkg/constants"
-	"github.com/replicatedhq/troubleshoot/pkg/logger"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"k8s.io/klog/v2"
 )
 
 type CollectLogs struct {
@@ -173,7 +173,7 @@ func savePodLogs(
 	// TODO: Abstract away hard coded directory structure paths
 	// Maybe create a FS provider or something similar
 	filePathPrefix := filepath.Join(
-		"cluster-resources", "pods", "logs", pod.Namespace, pod.Name, pod.Spec.Containers[0].Name,
+		constants.CLUSTER_RESOURCES_DIR, constants.CLUSTER_RESOURCES_PODS_LOGS, pod.Namespace, pod.Name, pod.Spec.Containers[0].Name,
 	)
 
 	// TODO: If collectorName is empty, the path is stored with a leading slash
@@ -185,7 +185,7 @@ func savePodLogs(
 	if container != "" {
 		linkRelPathPrefix = fmt.Sprintf("%s/%s/%s", collectorName, pod.Name, container)
 		filePathPrefix = filepath.Join(
-			"cluster-resources", "pods", "logs", pod.Namespace, pod.Name, container,
+			constants.CLUSTER_RESOURCES_DIR, constants.CLUSTER_RESOURCES_PODS_LOGS, pod.Namespace, pod.Name, container,
 		)
 	}
 
@@ -243,7 +243,7 @@ func savePodLogs(
 func convertMaxAgeToTime(maxAge string) *metav1.Time {
 	parsedDuration, err := time.ParseDuration(maxAge)
 	if err != nil {
-		logger.Printf("Failed to parse time duration %s", maxAge)
+		klog.Errorf("Failed to parse time duration %s", maxAge)
 		return nil
 	}
 

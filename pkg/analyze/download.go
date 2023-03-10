@@ -3,6 +3,7 @@ package analyzer
 import (
 	"archive/tar"
 	"compress/gzip"
+	"context"
 	"io"
 	"io/fs"
 	"os"
@@ -14,9 +15,9 @@ import (
 	troubleshootscheme "github.com/replicatedhq/troubleshoot/pkg/client/troubleshootclientset/scheme"
 	"github.com/replicatedhq/troubleshoot/pkg/constants"
 	"github.com/replicatedhq/troubleshoot/pkg/docrewrite"
-	"github.com/replicatedhq/troubleshoot/pkg/logger"
 	"github.com/replicatedhq/troubleshoot/pkg/types"
 	"k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/klog/v2"
 )
 
 type fileContentProvider struct {
@@ -24,7 +25,12 @@ type fileContentProvider struct {
 }
 
 // Analyze local will analyze a locally available (already downloaded) bundle
-func AnalyzeLocal(localBundlePath string, analyzers []*troubleshootv1beta2.Analyze, hostAnalyzers []*troubleshootv1beta2.HostAnalyze) ([]*AnalyzeResult, error) {
+func AnalyzeLocal(
+	ctx context.Context,
+	localBundlePath string,
+	analyzers []*troubleshootv1beta2.Analyze,
+	hostAnalyzers []*troubleshootv1beta2.HostAnalyze,
+) ([]*AnalyzeResult, error) {
 	rootDir, err := FindBundleRootDir(localBundlePath)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to find root dir")
@@ -34,9 +40,9 @@ func AnalyzeLocal(localBundlePath string, analyzers []*troubleshootv1beta2.Analy
 
 	analyzeResults := []*AnalyzeResult{}
 	for _, analyzer := range analyzers {
-		analyzeResult, err := Analyze(analyzer, fcp.getFileContents, fcp.getChildFileContents)
+		analyzeResult, err := Analyze(ctx, analyzer, fcp.getFileContents, fcp.getChildFileContents)
 		if err != nil {
-			logger.Printf("An analyzer failed to run: %v", err)
+			klog.Errorf("An analyzer failed to run: %v", err)
 			continue
 		}
 
@@ -49,7 +55,7 @@ func AnalyzeLocal(localBundlePath string, analyzers []*troubleshootv1beta2.Analy
 	}
 
 	for _, hostAnalyzer := range hostAnalyzers {
-		analyzeResult := HostAnalyze(hostAnalyzer, fcp.getFileContents, fcp.getChildFileContents)
+		analyzeResult := HostAnalyze(ctx, hostAnalyzer, fcp.getFileContents, fcp.getChildFileContents)
 		analyzeResults = append(analyzeResults, analyzeResult...)
 	}
 
@@ -81,7 +87,7 @@ func DownloadAndAnalyze(bundleURL string, analyzersSpec string) ([]*AnalyzeResul
 		hostAnalyzers = parsedHostAnalyzers
 	}
 
-	return AnalyzeLocal(rootDir, analyzers, hostAnalyzers)
+	return AnalyzeLocal(context.Background(), rootDir, analyzers, hostAnalyzers)
 }
 
 func DownloadAndExtractSupportBundle(bundleURL string) (string, string, error) {
@@ -101,10 +107,10 @@ func DownloadAndExtractSupportBundle(bundleURL string) (string, string, error) {
 		return "", "", errors.Wrap(err, "failed to find root dir")
 	}
 
-	_, err = os.Stat(filepath.Join(bundleDir, constants.VersionFilename))
+	_, err = os.Stat(filepath.Join(bundleDir, constants.VERSION_FILENAME))
 	if err != nil {
 		os.RemoveAll(tmpDir)
-		return "", "", errors.Wrap(err, "failed to read "+constants.VersionFilename)
+		return "", "", errors.Wrap(err, "failed to read "+constants.VERSION_FILENAME)
 	}
 
 	return tmpDir, bundleDir, nil
@@ -283,7 +289,7 @@ func FindBundleRootDir(localBundlePath string) (string, error) {
 
 	isInSubDir := true
 	for _, name := range names {
-		if name == constants.VersionFilename {
+		if name == constants.VERSION_FILENAME {
 			isInSubDir = false
 			break
 		}

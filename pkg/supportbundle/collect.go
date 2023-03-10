@@ -16,12 +16,15 @@ import (
 	"github.com/replicatedhq/troubleshoot/pkg/constants"
 	"github.com/replicatedhq/troubleshoot/pkg/convert"
 	"github.com/replicatedhq/troubleshoot/pkg/version"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/codes"
 	"gopkg.in/yaml.v2"
 	"k8s.io/client-go/kubernetes"
 )
 
-func runHostCollectors(hostCollectors []*troubleshootv1beta2.HostCollect, additionalRedactors *troubleshootv1beta2.Redactor, bundlePath string, opts SupportBundleCreateOpts) (collect.CollectorResult, error) {
-	collectSpecs := make([]*troubleshootv1beta2.HostCollect, 0, 0)
+func runHostCollectors(ctx context.Context, hostCollectors []*troubleshootv1beta2.HostCollect, additionalRedactors *troubleshootv1beta2.Redactor, bundlePath string, opts SupportBundleCreateOpts) (collect.CollectorResult, error) {
+	collectSpecs := make([]*troubleshootv1beta2.HostCollect, 0)
 	collectSpecs = append(collectSpecs, hostCollectors...)
 
 	allCollectedData := make(map[string][]byte)
@@ -35,16 +38,25 @@ func runHostCollectors(hostCollectors []*troubleshootv1beta2.HostCollect, additi
 	}
 
 	for _, collector := range collectors {
+		// TODO: Add context to host collectors
+		_, span := otel.Tracer(constants.LIB_TRACER_NAME).Start(ctx, collector.Title())
+		span.SetAttributes(attribute.String("type", reflect.TypeOf(collector).String()))
+
 		isExcluded, _ := collector.IsExcluded()
 		if isExcluded {
+			opts.ProgressChan <- fmt.Sprintf("[%s] Excluding host collector", collector.Title())
+			span.SetAttributes(attribute.Bool(constants.EXCLUDED, true))
+			span.End()
 			continue
 		}
 
 		opts.ProgressChan <- fmt.Sprintf("[%s] Running host collector...", collector.Title())
 		result, err := collector.Collect(opts.ProgressChan)
 		if err != nil {
+			span.SetStatus(codes.Error, err.Error())
 			opts.ProgressChan <- errors.Errorf("failed to run host collector: %s: %v", collector.Title(), err)
 		}
+		span.End()
 		for k, v := range result {
 			allCollectedData[k] = v
 		}
@@ -58,17 +70,21 @@ func runHostCollectors(hostCollectors []*troubleshootv1beta2.HostCollect, additi
 	}
 
 	if opts.Redact {
+		_, span := otel.Tracer(constants.LIB_TRACER_NAME).Start(ctx, "Host collectors")
+		span.SetAttributes(attribute.String("type", "Redactors"))
 		err := collect.RedactResult(bundlePath, collectResult, globalRedactors)
 		if err != nil {
 			err = errors.Wrap(err, "failed to redact host collector results")
+			span.SetStatus(codes.Error, err.Error())
 			return collectResult, err
 		}
+		span.End()
 	}
 
 	return collectResult, nil
 }
 
-func runCollectors(collectors []*troubleshootv1beta2.Collect, additionalRedactors *troubleshootv1beta2.Redactor, bundlePath string, opts SupportBundleCreateOpts) (collect.CollectorResult, error) {
+func runCollectors(ctx context.Context, collectors []*troubleshootv1beta2.Collect, additionalRedactors *troubleshootv1beta2.Redactor, bundlePath string, opts SupportBundleCreateOpts) (collect.CollectorResult, error) {
 	var allCollectors []collect.Collector
 	var foundForbidden bool
 
@@ -76,6 +92,7 @@ func runCollectors(collectors []*troubleshootv1beta2.Collect, additionalRedactor
 	collectSpecs = append(collectSpecs, collectors...)
 	collectSpecs = collect.EnsureCollectorInList(collectSpecs, troubleshootv1beta2.Collect{ClusterInfo: &troubleshootv1beta2.ClusterInfo{}})
 	collectSpecs = collect.EnsureCollectorInList(collectSpecs, troubleshootv1beta2.Collect{ClusterResources: &troubleshootv1beta2.ClusterResources{}})
+	collectSpecs = collect.DedupCollectors(collectSpecs)
 	collectSpecs = collect.EnsureClusterResourcesFirst(collectSpecs)
 
 	opts.KubernetesRestConfig.QPS = constants.DEFAULT_CLIENT_QPS
@@ -93,7 +110,7 @@ func runCollectors(collectors []*troubleshootv1beta2.Collect, additionalRedactor
 	for _, desiredCollector := range collectSpecs {
 		if collectorInterface, ok := collect.GetCollector(desiredCollector, bundlePath, opts.Namespace, opts.KubernetesRestConfig, k8sClient, opts.SinceTime); ok {
 			if collector, ok := collectorInterface.(collect.Collector); ok {
-				err := collector.CheckRBAC(context.Background(), collector, desiredCollector, opts.KubernetesRestConfig, opts.Namespace)
+				err := collector.CheckRBAC(ctx, collector, desiredCollector, opts.KubernetesRestConfig, opts.Namespace)
 				if err != nil {
 					return nil, errors.Wrap(err, "failed to check RBAC for collectors")
 				}
@@ -129,27 +146,39 @@ func runCollectors(collectors []*troubleshootv1beta2.Collect, additionalRedactor
 	}
 
 	for _, collector := range allCollectors {
+		_, span := otel.Tracer(constants.LIB_TRACER_NAME).Start(ctx, collector.Title())
+		span.SetAttributes(attribute.String("type", reflect.TypeOf(collector).String()))
+
 		isExcluded, _ := collector.IsExcluded()
 		if isExcluded {
+			msg := fmt.Sprintf("excluding %q collector", collector.Title())
+			opts.CollectorProgressCallback(opts.ProgressChan, msg)
+			span.SetAttributes(attribute.Bool(constants.EXCLUDED, true))
+			span.End()
 			continue
 		}
 
 		// skip collectors with RBAC errors unless its the ClusterResources collector
 		if collector.HasRBACErrors() {
 			if _, ok := collector.(*collect.CollectClusterResources); !ok {
-				msg := fmt.Sprintf("skipping collector %s with insufficient RBAC permissions", collector.Title())
+				msg := fmt.Sprintf("skipping collector %q with insufficient RBAC permissions", collector.Title())
 				opts.CollectorProgressCallback(opts.ProgressChan, msg)
+				span.SetStatus(codes.Error, "skipping collector, insufficient RBAC permissions")
+				span.End()
 				continue
 			}
 		}
 		opts.CollectorProgressCallback(opts.ProgressChan, collector.Title())
 		result, err := collector.Collect(opts.ProgressChan)
 		if err != nil {
+			span.SetStatus(codes.Error, err.Error())
 			opts.ProgressChan <- errors.Errorf("failed to run collector: %s: %v", collector.Title(), err)
 		}
+
 		for k, v := range result {
 			allCollectedData[k] = v
 		}
+		span.End()
 	}
 
 	collectResult := allCollectedData
@@ -160,10 +189,17 @@ func runCollectors(collectors []*troubleshootv1beta2.Collect, additionalRedactor
 	}
 
 	if opts.Redact {
+		// TODO: Should we record how long each redactor takes?
+		_, span := otel.Tracer(constants.LIB_TRACER_NAME).Start(ctx, "In-cluster collectors")
+		span.SetAttributes(attribute.String("type", "Redactors"))
 		err := collect.RedactResult(bundlePath, collectResult, globalRedactors)
 		if err != nil {
-			return collectResult, errors.Wrap(err, "failed to redact in cluster collector results")
+			err := errors.Wrap(err, "failed to redact in cluster collector results")
+			span.SetStatus(codes.Error, err.Error())
+			span.End()
+			return collectResult, err
 		}
+		span.End()
 	}
 
 	return collectResult, nil

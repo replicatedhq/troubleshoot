@@ -9,12 +9,39 @@ import (
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
+	"github.com/replicatedhq/troubleshoot/pkg/constants"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 )
 
-func analyzeNodeResources(analyzer *troubleshootv1beta2.NodeResources, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
-	collected, err := getCollectedFileContents("cluster-resources/nodes.json")
+type AnalyzeNodeResources struct {
+	analyzer *troubleshootv1beta2.NodeResources
+}
+
+func (a *AnalyzeNodeResources) Title() string {
+	title := a.analyzer.CheckName
+	if title == "" {
+		title = "Node Resources"
+	}
+
+	return title
+}
+
+func (a *AnalyzeNodeResources) IsExcluded() (bool, error) {
+	return isExcluded(a.analyzer.Exclude)
+}
+
+func (a *AnalyzeNodeResources) Analyze(getFile getCollectedFileContents, findFiles getChildCollectedFileContents) ([]*AnalyzeResult, error) {
+	result, err := a.analyzeNodeResources(a.analyzer, getFile)
+	if err != nil {
+		return nil, err
+	}
+	result.Strict = a.analyzer.Strict.BoolOrDefaultFalse()
+	return []*AnalyzeResult{result}, nil
+}
+
+func (a *AnalyzeNodeResources) analyzeNodeResources(analyzer *troubleshootv1beta2.NodeResources, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
+	collected, err := getCollectedFileContents(fmt.Sprintf("%s/%s.json", constants.CLUSTER_RESOURCES_DIR, constants.CLUSTER_RESOURCES_NODES))
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get contents of nodes.json")
 	}
@@ -37,13 +64,8 @@ func analyzeNodeResources(analyzer *troubleshootv1beta2.NodeResources, getCollec
 		}
 	}
 
-	title := analyzer.CheckName
-	if title == "" {
-		title = "Node Resources"
-	}
-
 	result := &AnalyzeResult{
-		Title:   title,
+		Title:   a.Title(),
 		IconKey: "kubernetes_node_resources",
 		IconURI: "https://troubleshoot.sh/images/analyzer-icons/node-resources.svg?w=16&h=18",
 	}

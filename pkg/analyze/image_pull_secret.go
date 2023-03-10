@@ -6,11 +6,38 @@ import (
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
+	"github.com/replicatedhq/troubleshoot/pkg/constants"
 )
 
-func analyzeImagePullSecret(analyzer *troubleshootv1beta2.ImagePullSecret, getChildCollectedFileContents getChildCollectedFileContents) (*AnalyzeResult, error) {
+type AnalyzeImagePullSecret struct {
+	analyzer *troubleshootv1beta2.ImagePullSecret
+}
+
+func (a *AnalyzeImagePullSecret) Title() string {
+	title := a.analyzer.CheckName
+	if title == "" {
+		title = "Image Pull Secrets"
+	}
+
+	return title
+}
+
+func (a *AnalyzeImagePullSecret) IsExcluded() (bool, error) {
+	return isExcluded(a.analyzer.Exclude)
+}
+
+func (a *AnalyzeImagePullSecret) Analyze(getFile getCollectedFileContents, findFiles getChildCollectedFileContents) ([]*AnalyzeResult, error) {
+	result, err := a.analyzeImagePullSecret(a.analyzer, findFiles)
+	if err != nil {
+		return nil, err
+	}
+	result.Strict = a.analyzer.Strict.BoolOrDefaultFalse()
+	return []*AnalyzeResult{result}, nil
+}
+
+func (a *AnalyzeImagePullSecret) analyzeImagePullSecret(analyzer *troubleshootv1beta2.ImagePullSecret, getChildCollectedFileContents getChildCollectedFileContents) (*AnalyzeResult, error) {
 	var excludeFiles = []string{}
-	imagePullSecrets, err := getChildCollectedFileContents("cluster-resources/image-pull-secrets", excludeFiles)
+	imagePullSecrets, err := getChildCollectedFileContents(fmt.Sprintf("%s/%s", constants.CLUSTER_RESOURCES_DIR, constants.CLUSTER_RESOURCES_IMAGE_PULL_SECRETS), excludeFiles)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get file contents for image pull secrets")
 	}
@@ -24,13 +51,9 @@ func analyzeImagePullSecret(analyzer *troubleshootv1beta2.ImagePullSecret, getCh
 			passOutcome = outcome.Pass
 		}
 	}
-	title := analyzer.CheckName
-	if title == "" {
-		title = "Image Pull Secrets"
-	}
 
 	result := AnalyzeResult{
-		Title:   title,
+		Title:   a.Title(),
 		IconKey: "kubernetes_image_pull_secret",
 		IconURI: "https://troubleshoot.sh/images/analyzer-icons/image-pull-secret.svg?w=16&h=14",
 		IsFail:  true,

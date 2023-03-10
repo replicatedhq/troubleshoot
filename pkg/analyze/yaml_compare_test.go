@@ -440,7 +440,11 @@ otherstuff:
 				return test.fileContents, nil
 			}
 
-			actual, err := analyzeYamlCompare(&test.analyzer, getCollectedFileContents)
+			a := AnalyzeYamlCompare{
+				analyzer: &test.analyzer,
+			}
+
+			actual, err := a.analyzeYamlCompare(&test.analyzer, getCollectedFileContents)
 			if !test.isError {
 				req.NoError(err)
 				req.Equal(test.expectResult, *actual)

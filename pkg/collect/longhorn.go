@@ -12,7 +12,6 @@ import (
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
-	"github.com/replicatedhq/troubleshoot/pkg/logger"
 	longhornv1beta1types "github.com/replicatedhq/troubleshoot/pkg/longhorn/apis/longhorn/v1beta1"
 	longhornv1beta1 "github.com/replicatedhq/troubleshoot/pkg/longhorn/client/clientset/versioned/typed/longhorn/v1beta1"
 	longhorntypes "github.com/replicatedhq/troubleshoot/pkg/longhorn/types"
@@ -22,6 +21,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/remotecommand"
+	"k8s.io/klog/v2"
 )
 
 const (
@@ -69,8 +69,8 @@ func (c *CollectLonghorn) Collect(progressChan chan<- interface{}) (CollectorRes
 	if err != nil {
 		if apiErr, ok := err.(*apiErrors.StatusError); ok {
 			if apiErr.ErrStatus.Code == http.StatusNotFound {
-				logger.Printf("list nodes.longhorn.io not found")
-				return nil, nil
+				klog.Error("list nodes.longhorn.io not found")
+				return NewResult(), nil
 			}
 		}
 		return nil, errors.Wrap(err, "list nodes.longhorn.io")
@@ -280,7 +280,7 @@ func (c *CollectLonghorn) Collect(progressChan chan<- interface{}) (CollectorRes
 				defer wg.Done()
 				checksums, err := GetLonghornReplicaChecksum(c.ClientConfig, replica, podName)
 				if err != nil {
-					logger.Printf("Failed to get replica %s checksum: %v", replica.Name, err)
+					klog.Errorf("Failed to get replica %s checksum: %v", replica.Name, err)
 					return
 				}
 				volsDir := GetLonghornVolumesDirectory(ns)

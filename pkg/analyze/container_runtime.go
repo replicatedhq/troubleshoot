@@ -2,16 +2,44 @@ package analyzer
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/url"
 	"strings"
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
+	"github.com/replicatedhq/troubleshoot/pkg/constants"
 	corev1 "k8s.io/api/core/v1"
 )
 
-func analyzeContainerRuntime(analyzer *troubleshootv1beta2.ContainerRuntime, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
-	collected, err := getCollectedFileContents("cluster-resources/nodes.json")
+type AnalyzeContainerRuntime struct {
+	analyzer *troubleshootv1beta2.ContainerRuntime
+}
+
+func (a *AnalyzeContainerRuntime) Title() string {
+	title := a.analyzer.CheckName
+	if title == "" {
+		title = "Container Runtime"
+	}
+
+	return title
+}
+
+func (a *AnalyzeContainerRuntime) IsExcluded() (bool, error) {
+	return isExcluded(a.analyzer.Exclude)
+}
+
+func (a *AnalyzeContainerRuntime) Analyze(getFile getCollectedFileContents, findFiles getChildCollectedFileContents) ([]*AnalyzeResult, error) {
+	result, err := a.analyzeContainerRuntime(a.analyzer, getFile)
+	if err != nil {
+		return nil, err
+	}
+	result.Strict = a.analyzer.Strict.BoolOrDefaultFalse()
+	return []*AnalyzeResult{result}, nil
+}
+
+func (a *AnalyzeContainerRuntime) analyzeContainerRuntime(analyzer *troubleshootv1beta2.ContainerRuntime, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
+	collected, err := getCollectedFileContents(fmt.Sprintf("%s/%s.json", constants.CLUSTER_RESOURCES_DIR, constants.CLUSTER_RESOURCES_NODES))
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get contents of nodes.json")
 	}
@@ -26,12 +54,8 @@ func analyzeContainerRuntime(analyzer *troubleshootv1beta2.ContainerRuntime, get
 		foundRuntimes = append(foundRuntimes, node.Status.NodeInfo.ContainerRuntimeVersion)
 	}
 
-	title := analyzer.CheckName
-	if title == "" {
-		title = "Container Runtime"
-	}
 	result := &AnalyzeResult{
-		Title:   title,
+		Title:   a.Title(),
 		IconKey: "kubernetes_container_runtime",
 		IconURI: "https://troubleshoot.sh/images/analyzer-icons/container-runtime.svg?w=23&h=16",
 	}

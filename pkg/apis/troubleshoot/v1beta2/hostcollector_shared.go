@@ -39,12 +39,24 @@ type TCPPortStatus struct {
 	Port              int    `json:"port"`
 }
 
+type UDPPortStatus struct {
+	HostCollectorMeta `json:",inline" yaml:",inline"`
+	Interface         string `json:"interface,omitempty"`
+	Port              int    `json:"port"`
+}
+
 type Kubernetes struct {
 	HostCollectorMeta `json:",inline" yaml:",inline"`
 }
 
 type IPV4Interfaces struct {
 	HostCollectorMeta `json:",inline" yaml:",inline"`
+}
+
+type SubnetAvailable struct {
+	HostCollectorMeta `json:",inline" yaml:",inline"`
+	CIDRRangeAlloc    string `json:"CIDRRangeAlloc" yaml:"CIDRRangeAlloc"`
+	DesiredCIDR       int    `json:"desiredCIDR" yaml:"desiredCIDR"`
 }
 
 type DiskUsage struct {
@@ -76,12 +88,18 @@ type HostSystemPackages struct {
 	RHEL              []string `json:"rhel,omitempty"`
 	RHEL7             []string `json:"rhel7,omitempty"`
 	RHEL8             []string `json:"rhel8,omitempty"`
+	RHEL9             []string `json:"rhel9,omitempty"`
+	RockyLinux        []string `json:"rocky,omitempty"`
+	RockyLinux8       []string `json:"rocky8,omitempty"`
+	RockyLinux9       []string `json:"rocky9,omitempty"`
 	CentOS            []string `json:"centos,omitempty"`
 	CentOS7           []string `json:"centos7,omitempty"`
 	CentOS8           []string `json:"centos8,omitempty"`
+	CentOS9           []string `json:"centos9,omitempty"`
 	OracleLinux       []string `json:"ol,omitempty"`
 	OracleLinux7      []string `json:"ol7,omitempty"`
 	OracleLinux8      []string `json:"ol8,omitempty"`
+	OracleLinux9      []string `json:"ol9,omitempty"`
 	AmazonLinux       []string `json:"amzn,omitempty"`
 	AmazonLinux2      []string `json:"amzn2,omitempty"`
 }
@@ -162,8 +180,10 @@ type HostCollect struct {
 	TCPLoadBalancer       *TCPLoadBalancer       `json:"tcpLoadBalancer,omitempty" yaml:"tcpLoadBalancer,omitempty"`
 	HTTPLoadBalancer      *HTTPLoadBalancer      `json:"httpLoadBalancer,omitempty" yaml:"httpLoadBalancer,omitempty"`
 	TCPPortStatus         *TCPPortStatus         `json:"tcpPortStatus,omitempty" yaml:"tcpPortStatus,omitempty"`
+	UDPPortStatus         *UDPPortStatus         `json:"udpPortStatus,omitempty" yaml:"udpPortStatus,omitempty"`
 	Kubernetes            *Kubernetes            `json:"kubernetes,omitempty" yaml:"kubernetes,omitempty"`
 	IPV4Interfaces        *IPV4Interfaces        `json:"ipv4Interfaces,omitempty" yaml:"ipv4Interfaces,omitempty"`
+	SubnetAvailable       *SubnetAvailable       `json:"subnetAvailable,omitempty" yaml:"subnetAvailable,omitempty"`
 	DiskUsage             *DiskUsage             `json:"diskUsage,omitempty" yaml:"diskUsage,omitempty"`
 	HTTP                  *HostHTTP              `json:"http,omitempty" yaml:"http,omitempty"`
 	Time                  *HostTime              `json:"time,omitempty" yaml:"time,omitempty"`

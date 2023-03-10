@@ -24,6 +24,8 @@ func GetHostCollector(collector *troubleshootv1beta2.HostCollect, bundlePath str
 		return &CollectHostDiskUsage{collector.DiskUsage, bundlePath}, true
 	case collector.TCPPortStatus != nil:
 		return &CollectHostTCPPortStatus{collector.TCPPortStatus, bundlePath}, true
+	case collector.UDPPortStatus != nil:
+		return &CollectHostUDPPortStatus{collector.UDPPortStatus, bundlePath}, true
 	case collector.HTTP != nil:
 		return &CollectHostHTTP{collector.HTTP, bundlePath}, true
 	case collector.Time != nil:
@@ -43,6 +45,8 @@ func GetHostCollector(collector *troubleshootv1beta2.HostCollect, bundlePath str
 		return &CollectHostTCPConnect{collector.TCPConnect, bundlePath}, true
 	case collector.IPV4Interfaces != nil:
 		return &CollectHostIPV4Interfaces{collector.IPV4Interfaces, bundlePath}, true
+	case collector.SubnetAvailable != nil:
+		return &CollectHostSubnetAvailable{collector.SubnetAvailable, bundlePath}, true
 	case collector.FilesystemPerformance != nil:
 		return &CollectHostFilesystemPerformance{collector.FilesystemPerformance, bundlePath}, true
 	case collector.Certificate != nil:

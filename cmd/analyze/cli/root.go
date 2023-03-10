@@ -4,7 +4,6 @@ import (
 	"os"
 	"strings"
 
-	"github.com/go-logr/logr"
 	"github.com/replicatedhq/troubleshoot/cmd/util"
 	"github.com/replicatedhq/troubleshoot/pkg/k8sutil"
 	"github.com/replicatedhq/troubleshoot/pkg/logger"
@@ -24,13 +23,10 @@ func RootCmd() *cobra.Command {
 			v := viper.GetViper()
 			v.BindPFlags(cmd.Flags())
 
-			if !v.GetBool("debug") {
-				klog.SetLogger(logr.Discard())
-			}
-			logger.SetQuiet(v.GetBool("quiet"))
+			logger.SetupLogger(v)
 
 			if err := util.StartProfiling(); err != nil {
-				logger.Printf("Failed to start profiling: %v", err)
+				klog.Errorf("Failed to start profiling: %v", err)
 			}
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -40,7 +36,7 @@ func RootCmd() *cobra.Command {
 		},
 		PostRun: func(cmd *cobra.Command, args []string) {
 			if err := util.StopProfiling(); err != nil {
-				logger.Printf("Failed to stop profiling: %v", err)
+				klog.Errorf("Failed to stop profiling: %v", err)
 			}
 		},
 	}
@@ -53,6 +49,9 @@ func RootCmd() *cobra.Command {
 	viper.BindPFlags(cmd.Flags())
 
 	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
+
+	// Initialize klog flags
+	logger.InitKlogFlags(cmd)
 
 	k8sutil.AddFlags(cmd.Flags())
 

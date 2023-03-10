@@ -5,16 +5,15 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"net/url"
 	"os"
 	"os/signal"
 	"path/filepath"
 	"strings"
+	"sync"
 	"time"
 
 	cursor "github.com/ahmetalpbalkan/go-cursor"
 	"github.com/fatih/color"
-	"github.com/manifoldco/promptui"
 	"github.com/mattn/go-isatty"
 	"github.com/pkg/errors"
 	analyzer "github.com/replicatedhq/troubleshoot/pkg/analyze"
@@ -24,7 +23,6 @@ import (
 	"github.com/replicatedhq/troubleshoot/pkg/convert"
 	"github.com/replicatedhq/troubleshoot/pkg/httputil"
 	"github.com/replicatedhq/troubleshoot/pkg/k8sutil"
-	"github.com/replicatedhq/troubleshoot/pkg/logger"
 	"github.com/replicatedhq/troubleshoot/pkg/specs"
 	"github.com/replicatedhq/troubleshoot/pkg/supportbundle"
 	"github.com/spf13/viper"
@@ -32,6 +30,7 @@ import (
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"k8s.io/klog/v2"
 )
 
 func runTroubleshoot(v *viper.Viper, arg []string) error {
@@ -82,7 +81,7 @@ func runTroubleshoot(v *viper.Viper, arg []string) error {
 
 	// Defining `v` below will render using `v` in reference to Viper unusable.
 	// Therefore refactoring `v` to `val` will make sure we can still use it.
-	for i, val := range arg {
+	for _, val := range arg {
 
 		collectorContent, err := supportbundle.LoadSupportBundleSpec(val)
 		if err != nil {
@@ -98,11 +97,7 @@ func runTroubleshoot(v *viper.Viper, arg []string) error {
 			return errors.Wrap(err, "failed to parse support bundle spec")
 		}
 
-		if i == 0 {
-			mainBundle = supportBundle
-		} else {
-			mainBundle = supportbundle.ConcatSpec(mainBundle, supportBundle)
-		}
+		mainBundle = supportbundle.ConcatSpec(mainBundle, supportBundle)
 
 		parsedRedactors, err := supportbundle.ParseRedactorsFromDocs(multidocs)
 		if err != nil {
@@ -139,13 +134,13 @@ func runTroubleshoot(v *viper.Viper, arg []string) error {
 		// Search cluster for Troubleshoot objects in cluster
 		bundlesFromSecrets, err := specs.LoadFromSecretMatchingLabel(client, parsedSelector.String(), namespace, specs.SupportBundleKey)
 		if err != nil {
-			logger.Printf("failed to load support bundle spec from secrets: %s", err)
+			klog.Errorf("failed to load support bundle spec from secrets: %s", err)
 		}
 		bundlesFromCluster = append(bundlesFromCluster, bundlesFromSecrets...)
 
 		bundlesFromConfigMaps, err := specs.LoadFromConfigMapMatchingLabel(client, parsedSelector.String(), namespace, specs.SupportBundleKey)
 		if err != nil {
-			logger.Printf("failed to load support bundle spec from secrets: %s", err)
+			klog.Errorf("failed to load support bundle spec from secrets: %s", err)
 		}
 		bundlesFromCluster = append(bundlesFromCluster, bundlesFromConfigMaps...)
 
@@ -153,7 +148,7 @@ func runTroubleshoot(v *viper.Viper, arg []string) error {
 			multidocs := strings.Split(string(bundle), "\n---\n")
 			parsedBundleFromSecret, err := supportbundle.ParseSupportBundleFromDoc([]byte(multidocs[0]))
 			if err != nil {
-				logger.Printf("failed to parse support bundle spec:  %s", err)
+				klog.Errorf("failed to parse support bundle spec:  %s", err)
 				continue
 			}
 
@@ -165,7 +160,7 @@ func runTroubleshoot(v *viper.Viper, arg []string) error {
 
 			parsedRedactors, err := supportbundle.ParseRedactorsFromDocs(multidocs)
 			if err != nil {
-				logger.Printf("failed to parse redactors from doc:  %s", err)
+				klog.Errorf("failed to parse redactors from doc:  %s", err)
 				continue
 			}
 
@@ -177,13 +172,13 @@ func runTroubleshoot(v *viper.Viper, arg []string) error {
 		// Search cluster for Troubleshoot objects in ConfigMaps
 		redactorsFromSecrets, err := specs.LoadFromSecretMatchingLabel(client, parsedSelector.String(), namespace, specs.RedactorKey)
 		if err != nil {
-			logger.Printf("failed to load redactor specs from config maps: %s", err)
+			klog.Errorf("failed to load redactor specs from config maps: %s", err)
 		}
 		redactorsFromCluster = append(redactorsFromCluster, redactorsFromSecrets...)
 
 		redactorsFromConfigMaps, err := specs.LoadFromConfigMapMatchingLabel(client, parsedSelector.String(), namespace, specs.RedactorKey)
 		if err != nil {
-			logger.Printf("failed to load redactor specs from config maps: %s", err)
+			klog.Errorf("failed to load redactor specs from config maps: %s", err)
 		}
 		redactorsFromCluster = append(redactorsFromCluster, redactorsFromConfigMaps...)
 
@@ -191,7 +186,7 @@ func runTroubleshoot(v *viper.Viper, arg []string) error {
 			multidocs := strings.Split(string(redactor), "\n---\n")
 			parsedRedactors, err := supportbundle.ParseRedactorsFromDocs(multidocs)
 			if err != nil {
-				logger.Printf("failed to parse redactors from doc:  %s", err)
+				klog.Errorf("failed to parse redactors from doc:  %s", err)
 			}
 
 			additionalRedactors.Spec.Redactors = append(additionalRedactors.Spec.Redactors, parsedRedactors...)
@@ -214,34 +209,42 @@ func runTroubleshoot(v *viper.Viper, arg []string) error {
 	}
 	additionalRedactors.Spec.Redactors = append(additionalRedactors.Spec.Redactors, redactors...)
 
-	var collectorCB func(chan interface{}, string)
-	progressChan := make(chan interface{}) // non-zero buffer can result in missed messages
-	finishedCh := make(chan bool, 1)
-	isFinishedChClosed := false
+	var wg sync.WaitGroup
+	collectorCB := func(c chan interface{}, msg string) { c <- msg }
+	progressChan := make(chan interface{})
+	isProgressChanClosed := false
+	defer func() {
+		if !isProgressChanClosed {
+			close(progressChan)
+		}
+		wg.Wait()
+	}()
 
 	if !interactive {
 		// TODO (dans): custom warning handler to capture warning in `analysisOutput`
 		restConfig.WarningHandler = rest.NoWarnings{}
-		collectorCB = func(ch chan interface{}, name string) {
-			return
-		}
 
 		// TODO (dans): maybe log to file
+		wg.Add(1)
 		go func() {
-			for {
-				select {
-				case _ = <-progressChan:
-					// do nothing
-				}
+			defer wg.Done()
+			for msg := range progressChan {
+				klog.Infof("Collecting support bundle: %v", msg)
 			}
 		}()
 	} else {
 		s := spin.New()
+		wg.Add(1)
 		go func() {
+			defer wg.Done()
 			currentDir := ""
 			for {
 				select {
-				case msg := <-progressChan:
+				case msg, ok := <-progressChan:
+					if !ok {
+						fmt.Printf("\r%s\r", cursor.ClearEntireLine())
+						return
+					}
 					switch msg := msg.(type) {
 					case error:
 						c := color.New(color.FgHiRed)
@@ -249,9 +252,6 @@ func runTroubleshoot(v *viper.Viper, arg []string) error {
 					case string:
 						currentDir = filepath.Base(msg)
 					}
-				case <-finishedCh:
-					fmt.Printf("\r%s\r", cursor.ClearEntireLine())
-					return
 				case <-time.After(time.Millisecond * 100):
 					if currentDir == "" {
 						fmt.Printf("\r%s \033[36mCollecting support bundle\033[m %s", cursor.ClearEntireLine(), s.Next())
@@ -261,16 +261,6 @@ func runTroubleshoot(v *viper.Viper, arg []string) error {
 				}
 			}
 		}()
-		defer func() {
-			if !isFinishedChClosed {
-				close(finishedCh)
-			}
-		}()
-
-		collectorCB = func(c chan interface{}, msg string) {
-			c <- fmt.Sprintf("%s", msg)
-		}
-
 	}
 
 	createOpts := supportbundle.SupportBundleCreateOpts{
@@ -296,11 +286,12 @@ func runTroubleshoot(v *viper.Viper, arg []string) error {
 	if err != nil {
 		return errors.Wrap(err, "failed to run collect and analyze process")
 	}
+
+	close(progressChan) // this removes the spinner in interactive mode
+	isProgressChanClosed = true
+
 	if len(response.AnalyzerResults) > 0 {
 		if interactive {
-			close(finishedCh) // this removes the spinner
-			isFinishedChClosed = true
-
 			if err := showInteractiveResults(mainBundle.Name, response.AnalyzerResults); err != nil {
 				interactive = false
 			}
@@ -328,7 +319,7 @@ the %s Admin Console to begin analysis.`
 			return nil
 		}
 
-		fmt.Printf("%s\n", response.ArchivePath)
+		fmt.Printf("\n%s\n", response.ArchivePath)
 		return nil
 	}
 
@@ -342,14 +333,6 @@ the %s Admin Console to begin analysis.`
 		fmt.Printf("A support bundle has been created in the current directory named %q\n", response.ArchivePath)
 	}
 	return nil
-}
-
-func getExpectedContentType(uploadURL string) string {
-	parsedURL, err := url.Parse(uploadURL)
-	if err != nil {
-		return ""
-	}
-	return parsedURL.Query().Get("Content-Type")
 }
 
 func parseTimeFlags(v *viper.Viper) (*time.Time, error) {
@@ -375,29 +358,6 @@ func parseTimeFlags(v *viper.Viper) (*time.Time, error) {
 	}
 
 	return &sinceTime, nil
-}
-
-func shouldRetryRequest(err error) bool {
-	if strings.Contains(err.Error(), "x509") && canTryInsecure() {
-		httputil.AddTransport(&http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-		})
-		return true
-	}
-	return false
-}
-
-func canTryInsecure() bool {
-	if !isatty.IsTerminal(os.Stdout.Fd()) {
-		return false
-	}
-	prompt := promptui.Prompt{
-		Label:     "Connection appears to be insecure. Would you like to attempt to create a support bundle anyway?",
-		IsConfirm: true,
-	}
-
-	_, err := prompt.Run()
-	return err == nil
 }
 
 type analysisOutput struct {
