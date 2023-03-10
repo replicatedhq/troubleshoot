@@ -10241,6 +10241,20 @@ spec:
                         exclude:
                           type: BoolString
                       type: object
+                    subnetAvailable:
+                      properties:
+                        CIDRRangeAlloc:
+                          type: string
+                        collectorName:
+                          type: string
+                        desiredCIDR:
+                          type: integer
+                        exclude:
+                          type: BoolString
+                      required:
+                      - CIDRRangeAlloc
+                      - desiredCIDR
+                      type: object
                     systemPackages:
                       properties:
                         collectorName:

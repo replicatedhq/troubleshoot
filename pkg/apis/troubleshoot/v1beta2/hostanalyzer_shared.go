@@ -86,6 +86,12 @@ type IPV4InterfacesAnalyze struct {
 	Outcomes      []*Outcome `json:"outcomes" yaml:"outcomes"`
 }
 
+type SubnetAvailableAnalyze struct {
+	AnalyzeMeta   `json:",inline" yaml:",inline"`
+	CollectorName string     `json:"collectorName,omitempty" yaml:"collectorName,omitempty"`
+	Outcomes      []*Outcome `json:"outcomes" yaml:"outcomes"`
+}
+
 type FilesystemPerformanceAnalyze struct {
 	AnalyzeMeta   `json:",inline" yaml:",inline"`
 	CollectorName string     `json:"collectorName,omitempty" yaml:"collectorName,omitempty"`
@@ -136,6 +142,8 @@ type HostAnalyze struct {
 	TCPConnect *TCPConnectAnalyze `json:"tcpConnect,omitempty" yaml:"tcpConnect,omitempty"`
 
 	IPV4Interfaces *IPV4InterfacesAnalyze `json:"ipv4Interfaces,omitempty" yaml:"ipv4Interfaces,omitempty"`
+
+	SubnetAvailable *SubnetAvailableAnalyze `json:"subnetAvailable,omitempty" yaml:"subnetAvailable,omitempty"`
 
 	FilesystemPerformance *FilesystemPerformanceAnalyze `json:"filesystemPerformance,omitempty" yaml:"filesystemPerformance,omitempty"`
 

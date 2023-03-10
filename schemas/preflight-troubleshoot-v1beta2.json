@@ -9428,6 +9428,27 @@
                   }
                 }
               },
+              "subnetAvailable": {
+                "type": "object",
+                "required": [
+                  "CIDRRangeAlloc",
+                  "desiredCIDR"
+                ],
+                "properties": {
+                  "CIDRRangeAlloc": {
+                    "type": "string"
+                  },
+                  "collectorName": {
+                    "type": "string"
+                  },
+                  "desiredCIDR": {
+                    "type": "integer"
+                  },
+                  "exclude": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  }
+                }
+              },
               "systemPackages": {
                 "type": "object",
                 "properties": {
