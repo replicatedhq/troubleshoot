@@ -65,11 +65,11 @@ func (c *CollectCertificate) Collect(progressChan chan<- interface{}) (Collector
 		return nil, errors.Wrap(errJson, "failed to umarshal Json")
 	} // Json object initilization - end
 
-	certificate := CertificateCollector(c.Collector.Name, c.Client)
+	certificate := CertificateCollector(c.Collector.CollectorName, c.Client)
 
 	results := certificate
 
-	filePath := "certificates/" + c.Collector.Name + ".json"
+	filePath := "certificates/" + c.Collector.CollectorName + ".json"
 
 	output.SaveResult(c.BundlePath, filePath, bytes.NewBuffer(results))
 

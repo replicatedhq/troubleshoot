@@ -99,8 +99,8 @@ func GetCollector(collector *troubleshootv1beta2.Collect, bundlePath string, nam
 		return &CollectRegistry{collector.RegistryImages, bundlePath, namespace, clientConfig, client, ctx, RBACErrors}, true
 	case collector.Sysctl != nil:
 		return &CollectSysctl{collector.Sysctl, bundlePath, namespace, clientConfig, client, ctx, RBACErrors}, true
-	case collector.InclusterCertificate != nil:
-		return &CollectCertificate{collector.InclusterCertificate, bundlePath, namespace, clientConfig, client, ctx, RBACErrors}, true
+	case collector.Certificate != nil:
+		return &CollectCertificate{collector.Certificate, bundlePath, namespace, clientConfig, client, ctx, RBACErrors}, true
 	default:
 		return nil, false
 	}
