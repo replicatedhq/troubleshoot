@@ -4,6 +4,7 @@ go 1.19
 
 require (
 	github.com/ahmetalpbalkan/go-cursor v0.0.0-20131010032410-8136607ea412
+	github.com/apparentlymart/go-cidr v1.1.0
 	github.com/blang/semver/v4 v4.0.0
 	github.com/containers/image/v5 v5.24.2
 	github.com/distribution/distribution/v3 v3.0.0-20221208165359-362910506bc2
@@ -40,7 +41,7 @@ require (
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.26.1
 	k8s.io/apiextensions-apiserver v0.26.1
-	k8s.io/apimachinery v0.26.1
+	k8s.io/apimachinery v0.26.2
 	k8s.io/apiserver v0.26.1
 	k8s.io/cli-runtime v0.26.1
 	k8s.io/client-go v0.26.1
@@ -51,7 +52,6 @@ require (
 
 require (
 	cloud.google.com/go/compute/metadata v0.2.3 // indirect
-	github.com/apparentlymart/go-cidr v1.1.0 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.2 // indirect
 	github.com/docker/distribution v2.8.1+incompatible // indirect
 	github.com/emicklei/go-restful/v3 v3.9.0 // indirect
