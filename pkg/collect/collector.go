@@ -173,9 +173,8 @@ func getCollectorName(c interface{}) string {
 	case *CollectSysctl:
 		collector = "sysctl"
 		name = v.Collector.Name
-	case *CollectCertificate:
-		collector = "certificate"
-		name = v.Collector.CollectorName
+	case collector.InclusterCertificate != nil:
+		return &CollectInclusterCertificate{collector.InclusterCertificate, bundlePath, namespace, clientConfig, client, ctx, RBACErrors}, true
 	default:
 		collector = "<none>"
 	}
