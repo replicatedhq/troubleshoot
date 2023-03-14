@@ -45,7 +45,7 @@ require (
 	k8s.io/apiserver v0.26.1
 	k8s.io/cli-runtime v0.26.1
 	k8s.io/client-go v0.26.1
-	k8s.io/klog/v2 v2.90.0
+	k8s.io/klog/v2 v2.90.1
 	oras.land/oras-go v1.2.2
 	sigs.k8s.io/controller-runtime v0.14.5
 )
