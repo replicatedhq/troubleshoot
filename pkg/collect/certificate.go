@@ -26,20 +26,24 @@ type CollectInclusterCertificate struct {
 	RBACErrors
 }
 
-type Secret struct {
-	Name      string `json:"secret Name,omitempty"`
-	Namespace string `json:"secret Namespace,omitempty"`
+type CertificateSource struct {
+	SecretName    string `json:"secret,omitempty"`
+	ConfigMapName string `json:"configMap,omitempty"`
+	Namespace     string `json:"namespace,omitempty"`
 }
 
 // Certificate Struct
 type ParsedCertificate struct {
-	CertName         string    `json:"Certificate Name"`
-	DNSNames         []string  `json:"DNS Names"`
-	IssuerCommonName string    `json:"Issuer"`
-	Organizations    []string  `json:"Issuer Organizations"`
-	CertDate         time.Time `json:"Certificate Expiration Date"`
-	IsValid          bool      `json:"IsValid"`
-	SecretInfo       Secret    `json:"Secret"`
+	CertificateSource       CertificateSource `json:"source"`
+	CertName                string            `json:"certificate"`
+	Subject                 string            `json:"subject"`
+	SubjectAlternativeNames []string          `json:"subjectAlternativeNames"`
+	Issuer                  string            `json:"issuer"`
+	Organizations           []string          `json:"issuerOrganizations"`
+	NotAfter                time.Time         `json:"notAfter"`
+	NotBefore               time.Time         `json:"notBefore"`
+	IsValid                 bool              `json:"isValid"`
+	IsCA                    bool              `json:"isCA"`
 }
 
 func (c *CollectInclusterCertificate) Title() string {
@@ -61,9 +65,9 @@ func (c *CollectInclusterCertificate) Collect(progressChan chan<- interface{}) (
 		return nil, errors.Wrap(errJson, "failed to umarshal Json")
 	} // Json object initilization - end
 
-	certificate := SecretCertCollector(c.Collector.Name, c.Client)
+	results := SecretCertCollector(c.Collector.Name, c.Client)
 
-	results := certificate
+	//results := certificate
 
 	filePath := "certificates/" + c.Collector.Name + ".json"
 
@@ -104,16 +108,18 @@ func SecretCertCollector(secretName string, client kubernetes.Interface) []byte 
 					}
 
 					certInfo = append(certInfo, ParsedCertificate{
-						CertName:         certName,
-						DNSNames:         parsedCert.DNSNames,
-						IssuerCommonName: parsedCert.Issuer.CommonName,
-						Organizations:    parsedCert.Issuer.Organization,
-						CertDate:         parsedCert.NotAfter,
-						IsValid:          currentTime.Before(parsedCert.NotAfter),
-						SecretInfo: Secret{
-							Name:      secret.Name,
-							Namespace: secret.Namespace,
+						CertificateSource: CertificateSource{
+							SecretName: secret.Name,
+							Namespace:  secret.Namespace,
 						},
+						CertName:                certName,
+						SubjectAlternativeNames: parsedCert.DNSNames,
+						Issuer:                  parsedCert.Issuer.CommonName,
+						Organizations:           parsedCert.Issuer.Organization,
+						NotAfter:                parsedCert.NotAfter,
+						NotBefore:               parsedCert.NotBefore,
+						IsValid:                 currentTime.Before(parsedCert.NotAfter),
+						IsCA:                    parsedCert.IsCA,
 					})
 					certJson, _ = json.MarshalIndent(certInfo, "", "\t")
 				}
