@@ -151,10 +151,12 @@ func IsPayloadCertificate(sourceName string, client kubernetes.Interface) bool {
 			for certName, payload := range source.Data {
 				if certName[len(certName)-3:] == "crt" {
 
-					data := payload
-					log.Println(string(data))
+					data := string(payload)
+					var block *pem.Block
+					block, _ = pem.Decode([]byte(data))
 
-					_, errParseCert := x509.ParseCertificate(data)
+					_, errParseCert := x509.ParseCertificate(block.Bytes)
+					log.Println(string(data))
 
 					if errParseCert != nil {
 						//log.Println(errParse)
