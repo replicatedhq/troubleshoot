@@ -65,7 +65,11 @@ func (c *CollectInclusterCertificate) Collect(progressChan chan<- interface{}) (
 		return nil, errors.Wrap(errJson, "failed to umarshal Json")
 	} // Json object initilization - end
 
-	results := CertificateCollector(c.Collector.Name, c.Client)
+	cm := configMapCertCollector(c.Collector.ConfigMapName, c.Client)
+
+	secret := secretCertCollector(c.Collector.SecretName, c.Client)
+
+	results := append(cm, secret...)
 
 	//results := certificate
 

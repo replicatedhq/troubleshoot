@@ -218,11 +218,11 @@ type RegistryImages struct {
 
 // Cannot rename as Certificate as it is already defined in hostcollector_shared.go
 type InclusterCertificate struct {
-	CollectorMeta  `json:",inline" yaml:",inline"`
-	Name           string `json:"name,omitempty" yaml:"name,omitempty"`
-	SecretName     string `json:"secretName,omitempty" yaml:"secretname,omitempty"`
-	ConfigMaptName string `json:"configMapName,omitempty" yaml:"name,omitempty"`
-	Namespace      string `json:"secretNamespace,omitempty" yaml:"secretNamespace,omitempty"`
+	CollectorMeta `json:",inline" yaml:",inline"`
+	Name          string `json:"name,omitempty" yaml:"name,omitempty"`
+	SecretName    string `json:"secretName,omitempty" yaml:"secretname,omitempty"`
+	ConfigMapName string `json:"configMapName,omitempty" yaml:"name,omitempty"`
+	Namespace     string `json:"secretNamespace,omitempty" yaml:"secretNamespace,omitempty"`
 }
 
 type Collect struct {
