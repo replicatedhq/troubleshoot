@@ -78,6 +78,16 @@ func (c *CollectInclusterCertificate) Collect(progressChan chan<- interface{}) (
 
 func CertificateCollector(sourceName string, client kubernetes.Interface) []byte {
 
+	configMapCertCollector := configMapCertCollector(sourceName, client)
+
+	secretCertCollector := secretCertCollector(sourceName, client)
+
+	results := append(configMapCertCollector, secretCertCollector...)
+	return results
+}
+
+func configMapCertCollector(sourceName string, client kubernetes.Interface) []byte {
+
 	currentTime := time.Now()
 	var certInfo []ParsedCertificate
 	var certJson = []byte("[]")
@@ -89,8 +99,6 @@ func CertificateCollector(sourceName string, client kubernetes.Interface) []byte
 	listOptions := metav1.ListOptions{}
 
 	configMaps, _ := client.CoreV1().ConfigMaps("").List(context.Background(), listOptions)
-
-	secrets, _ := client.CoreV1().Secrets("").List(context.Background(), listOptions)
 
 	for _, configMap := range configMaps.Items {
 		if sourceName == configMap.Name {
@@ -129,6 +137,22 @@ func CertificateCollector(sourceName string, client kubernetes.Interface) []byte
 		}
 	}
 
+	return certJson
+}
+
+func secretCertCollector(sourceName string, client kubernetes.Interface) []byte {
+
+	currentTime := time.Now()
+	var certInfo []ParsedCertificate
+	var certJson = []byte("[]")
+	err := json.Unmarshal(certJson, &certInfo)
+	if err != nil {
+		log.Println(err)
+	}
+
+	listOptions := metav1.ListOptions{}
+	secrets, _ := client.CoreV1().Secrets("").List(context.Background(), listOptions)
+
 	for _, secret := range secrets.Items {
 		if sourceName == secret.Name {
 
@@ -165,7 +189,6 @@ func CertificateCollector(sourceName string, client kubernetes.Interface) []byte
 			}
 		}
 	}
-
 	return certJson
 }
 
