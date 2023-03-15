@@ -72,7 +72,7 @@ func (c *CollectInclusterCertificate) Collect(progressChan chan<- interface{}) (
 	cm := configMapCertCollector(c.Collector.ConfigMapSources, c.Client)
 
 	// collect secret certificate
-	secret := secretCertCollector(c.Collector.SecretNames, c.Client)
+	secret := secretCertCollector(c.Collector.SecretSources, c.Client)
 
 	results := append(cm, secret...)
 
