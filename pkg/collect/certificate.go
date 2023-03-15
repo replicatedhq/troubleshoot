@@ -152,7 +152,7 @@ func IsPayloadCertificate(sourceName string, client kubernetes.Interface) bool {
 				if certName[len(certName)-3:] == "crt" {
 
 					data := payload
-					log.Println(data)
+					log.Println(string(data))
 
 					_, errParseCert := x509.ParseCertificate(data)
 
