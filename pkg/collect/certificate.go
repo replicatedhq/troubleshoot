@@ -136,8 +136,8 @@ func SecretCertCollector(sourceName string, client kubernetes.Interface) []byte 
 }
 
 // checks if keys that end with .crt have a certificate payload
-func IsPayloadCertificate(sourceName string, client kubernetes.Interface) bool {
 
+func IsPayloadCertificate(sourceName string, client kubernetes.Interface) bool {
 	isCertificate := true
 
 	listOptions := metav1.ListOptions{}
@@ -148,8 +148,8 @@ func IsPayloadCertificate(sourceName string, client kubernetes.Interface) bool {
 
 		if sourceName == source.Name {
 
-			for sourceName, payload := range source.Data {
-				if sourceName[len(sourceName)-3:] == "crt" {
+			for certName, payload := range source.Data {
+				if certName[len(certName)-3:] == "crt" {
 
 					data := payload
 					log.Println(data)
