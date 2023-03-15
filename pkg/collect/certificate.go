@@ -57,7 +57,7 @@ func (c *CollectInclusterCertificate) IsExcluded() (bool, error) {
 
 func (c *CollectInclusterCertificate) Collect(progressChan chan<- interface{}) (CollectorResult, error) {
 
-	secretsList := []string{"envoycert", "kotsadm-tls"}
+	//secretsList := []string{"envoycert", "kotsadm-tls"}
 
 	output := NewResult()
 	// Json object initilization - start
@@ -72,7 +72,7 @@ func (c *CollectInclusterCertificate) Collect(progressChan chan<- interface{}) (
 	cm := configMapCertCollector(c.Collector.ConfigMapName, c.Client)
 
 	// collect secret certificate
-	secret := secretCertCollector(secretsList, c.Client)
+	secret := secretCertCollector(c.Collector.SecretName, c.Client)
 
 	results := append(cm, secret...)
 
