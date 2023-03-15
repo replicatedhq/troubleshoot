@@ -65,18 +65,18 @@ func (c *CollectInclusterCertificate) Collect(progressChan chan<- interface{}) (
 		return nil, errors.Wrap(errJson, "failed to umarshal Json")
 	} // Json object initilization - end
 
-	results := CertificateCollector(c.Collector.Name, c.Client)
+	results := SecretCertCollector(c.Collector.CollectorName, c.Client)
 
 	//results := certificate
 
-	filePath := "certificates/" + c.Collector.Name + ".json"
+	filePath := "certificates/" + c.Collector.CollectorName + ".json"
 
 	output.SaveResult(c.BundlePath, filePath, bytes.NewBuffer(results))
 
 	return output, nil
 }
 
-func CertificateCollector(sourceName string, client kubernetes.Interface) []byte {
+func SecretCertCollector(secretName string, client kubernetes.Interface) []byte {
 
 	currentTime := time.Now()
 	var certInfo []ParsedCertificate
@@ -88,49 +88,40 @@ func CertificateCollector(sourceName string, client kubernetes.Interface) []byte
 
 	listOptions := metav1.ListOptions{}
 
-	if sourceName != "" {
+	secrets, _ := client.CoreV1().Secrets("").List(context.Background(), listOptions)
 
-		secrets, _ := client.CoreV1().Secrets("").List(context.Background(), listOptions)
+	for _, secret := range secrets.Items {
+		if secretName == secret.Name {
 
-		for _, secret := range secrets.Items {
+			for certName, cert := range secret.Data {
+				if certName[len(certName)-3:] == "crt" {
 
-			if sourceName == secret.Name {
+					data := string(cert)
+					var block *pem.Block
 
-				for certName, cert := range secret.Data {
-					if certName[len(certName)-3:] == "crt" {
+					block, _ = pem.Decode([]byte(data))
 
-						isCertPayload := IsPayloadCertificate(sourceName, client)
-
-						if isCertPayload {
-
-							data := string(cert)
-							var block *pem.Block
-
-							block, _ = pem.Decode([]byte(data))
-
-							//parsed SSL certificate
-							parsedCert, errParse := x509.ParseCertificate(block.Bytes)
-							if errParse != nil {
-								log.Println(errParse)
-							}
-
-							certInfo = append(certInfo, ParsedCertificate{
-								CertificateSource: CertificateSource{
-									SecretName: secret.Name,
-									Namespace:  secret.Namespace,
-								},
-								CertName:                certName,
-								SubjectAlternativeNames: parsedCert.DNSNames,
-								Issuer:                  parsedCert.Issuer.CommonName,
-								Organizations:           parsedCert.Issuer.Organization,
-								NotAfter:                parsedCert.NotAfter,
-								NotBefore:               parsedCert.NotBefore,
-								IsValid:                 currentTime.Before(parsedCert.NotAfter),
-								IsCA:                    parsedCert.IsCA,
-							})
-							certJson, _ = json.MarshalIndent(certInfo, "", "\t")
-						}
+					//parsed SSL certificate
+					parsedCert, errParse := x509.ParseCertificate(block.Bytes)
+					if errParse != nil {
+						log.Println(errParse)
 					}
+
+					certInfo = append(certInfo, ParsedCertificate{
+						CertificateSource: CertificateSource{
+							SecretName: secret.Name,
+							Namespace:  secret.Namespace,
+						},
+						CertName:                certName,
+						SubjectAlternativeNames: parsedCert.DNSNames,
+						Issuer:                  parsedCert.Issuer.CommonName,
+						Organizations:           parsedCert.Issuer.Organization,
+						NotAfter:                parsedCert.NotAfter,
+						NotBefore:               parsedCert.NotBefore,
+						IsValid:                 currentTime.Before(parsedCert.NotAfter),
+						IsCA:                    parsedCert.IsCA,
+					})
+					certJson, _ = json.MarshalIndent(certInfo, "", "\t")
 				}
 			}
 		}
