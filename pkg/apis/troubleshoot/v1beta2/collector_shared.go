@@ -217,37 +217,40 @@ type RegistryImages struct {
 }
 
 // Cannot rename as Certificate as it is already defined in hostcollector_shared.go
-type InclusterCertificate struct {
+type SecretCertificate struct {
+	CollectorMeta   `json:",inline" yaml:",inline"`
+	SecretName      string `json:"secretName,omitempty" yaml:"secretName,omitempty"`
+	SecretNamespace string `json:"secretNamespace,omitempty" yaml:"secretNamespace,omitempty"`
+}
+
+type ConfigMapCertificate struct {
 	CollectorMeta      `json:",inline" yaml:",inline"`
-	Name               string `json:"name,omitempty" yaml:"name,omitempty"`
-	SecretName         string `json:"secretName,omitempty" yaml:"secretName,omitempty"`
-	SecretNamespace    string `json:"secretNamespace,omitempty" yaml:"secretNamespace,omitempty"`
 	ConfigMapName      string `json:"configMapName,omitempty" yaml:"configMapName,omitempty"`
 	ConfigMapNamespace string `json:"configMapNamespace,omitempty" yaml:"configMapNamespace,omitempty"`
 }
 
 type Collect struct {
-	ClusterInfo          *ClusterInfo          `json:"clusterInfo,omitempty" yaml:"clusterInfo,omitempty"`
-	ClusterResources     *ClusterResources     `json:"clusterResources,omitempty" yaml:"clusterResources,omitempty"`
-	Secret               *Secret               `json:"secret,omitempty" yaml:"secret,omitempty"`
-	ConfigMap            *ConfigMap            `json:"configMap,omitempty" yaml:"configMap,omitempty"`
-	Logs                 *Logs                 `json:"logs,omitempty" yaml:"logs,omitempty"`
-	Run                  *Run                  `json:"run,omitempty" yaml:"run,omitempty"`
-	RunPod               *RunPod               `json:"runPod,omitempty" yaml:"runPod,omitempty"`
-	Exec                 *Exec                 `json:"exec,omitempty" yaml:"exec,omitempty"`
-	Data                 *Data                 `json:"data,omitempty" yaml:"data,omitempty"`
-	Copy                 *Copy                 `json:"copy,omitempty" yaml:"copy,omitempty"`
-	CopyFromHost         *CopyFromHost         `json:"copyFromHost,omitempty" yaml:"copyFromHost,omitempty"`
-	HTTP                 *HTTP                 `json:"http,omitempty" yaml:"http,omitempty"`
-	Postgres             *Database             `json:"postgres,omitempty" yaml:"postgres,omitempty"`
-	Mysql                *Database             `json:"mysql,omitempty" yaml:"mysql,omitempty"`
-	Redis                *Database             `json:"redis,omitempty" yaml:"redis,omitempty"`
-	Collectd             *Collectd             `json:"collectd,omitempty" yaml:"collectd,omitempty"`
-	Ceph                 *Ceph                 `json:"ceph,omitempty" yaml:"ceph,omitempty"`
-	Longhorn             *Longhorn             `json:"longhorn,omitempty" yaml:"longhorn,omitempty"`
-	RegistryImages       *RegistryImages       `json:"registryImages,omitempty" yaml:"registryImages,omitempty"`
-	Sysctl               *Sysctl               `json:"sysctl,omitempty" yaml:"sysctl,omitempty"`
-	InclusterCertificate *InclusterCertificate `json:"inclustercertificate,omitempty" yaml:"inclustercertificate,omitempty"`
+	ClusterInfo          *ClusterInfo       `json:"clusterInfo,omitempty" yaml:"clusterInfo,omitempty"`
+	ClusterResources     *ClusterResources  `json:"clusterResources,omitempty" yaml:"clusterResources,omitempty"`
+	Secret               *Secret            `json:"secret,omitempty" yaml:"secret,omitempty"`
+	ConfigMap            *ConfigMap         `json:"configMap,omitempty" yaml:"configMap,omitempty"`
+	Logs                 *Logs              `json:"logs,omitempty" yaml:"logs,omitempty"`
+	Run                  *Run               `json:"run,omitempty" yaml:"run,omitempty"`
+	RunPod               *RunPod            `json:"runPod,omitempty" yaml:"runPod,omitempty"`
+	Exec                 *Exec              `json:"exec,omitempty" yaml:"exec,omitempty"`
+	Data                 *Data              `json:"data,omitempty" yaml:"data,omitempty"`
+	Copy                 *Copy              `json:"copy,omitempty" yaml:"copy,omitempty"`
+	CopyFromHost         *CopyFromHost      `json:"copyFromHost,omitempty" yaml:"copyFromHost,omitempty"`
+	HTTP                 *HTTP              `json:"http,omitempty" yaml:"http,omitempty"`
+	Postgres             *Database          `json:"postgres,omitempty" yaml:"postgres,omitempty"`
+	Mysql                *Database          `json:"mysql,omitempty" yaml:"mysql,omitempty"`
+	Redis                *Database          `json:"redis,omitempty" yaml:"redis,omitempty"`
+	Collectd             *Collectd          `json:"collectd,omitempty" yaml:"collectd,omitempty"`
+	Ceph                 *Ceph              `json:"ceph,omitempty" yaml:"ceph,omitempty"`
+	Longhorn             *Longhorn          `json:"longhorn,omitempty" yaml:"longhorn,omitempty"`
+	RegistryImages       *RegistryImages    `json:"registryImages,omitempty" yaml:"registryImages,omitempty"`
+	Sysctl               *Sysctl            `json:"sysctl,omitempty" yaml:"sysctl,omitempty"`
+	InclusterCertificate *SecretCertificate `json:"secretCertificate,omitempty" yaml:"secretCertificate,omitempty"`
 }
 
 func (c *Collect) AccessReviewSpecs(overrideNS string) []authorizationv1.SelfSubjectAccessReviewSpec {
