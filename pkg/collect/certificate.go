@@ -159,7 +159,7 @@ func IsPayloadCertificate(sourceName string, client kubernetes.Interface) bool {
 					if errParseCert != nil {
 						//log.Println(errParse)
 						isCertificate = false
-						log.Println(isCertificate, "NO CERTIFICATE")
+						log.Println(isCertificate, "NO CERTIFICATE", "--", errParseCert)
 						return isCertificate
 					}
 
