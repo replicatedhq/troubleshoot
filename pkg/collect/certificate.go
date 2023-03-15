@@ -16,7 +16,7 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-type CollectCertificate struct {
+type CollectInclusterCertificate struct {
 	Collector    *troubleshootv1beta2.InclusterCertificate
 	BundlePath   string
 	Namespace    string
@@ -47,15 +47,17 @@ type ParsedCertificate struct {
 	IsCA                    bool              `json:"isCA"`
 }
 
-func (c *CollectCertificate) Title() string {
+func (c *CollectInclusterCertificate) Title() string {
 	return getCollectorName(c)
 }
 
-func (c *CollectCertificate) IsExcluded() (bool, error) {
+func (c *CollectInclusterCertificate) IsExcluded() (bool, error) {
 	return isExcluded(c.Collector.Exclude)
 }
 
-func (c *CollectCertificate) Collect(progressChan chan<- interface{}) (CollectorResult, error) {
+func (c *CollectInclusterCertificate) Collect(progressChan chan<- interface{}) (CollectorResult, error) {
+
+	secretsList := []string{"envoycert", "kotsadm-tls"}
 
 	output := NewResult()
 	// Json object initilization - start
@@ -70,7 +72,7 @@ func (c *CollectCertificate) Collect(progressChan chan<- interface{}) (Collector
 	cm := configMapCertCollector(c.Collector.ConfigMapName, c.Client)
 
 	// collect secret certificate
-	secret := secretCertCollector(c.Collector.SecretName, c.Client)
+	secret := secretCertCollector(secretsList, c.Client)
 
 	results := append(cm, secret...)
 
@@ -139,7 +141,7 @@ func configMapCertCollector(sourceName string, client kubernetes.Interface) []by
 }
 
 // secret certificate collector function
-func secretCertCollector(sourceName string, client kubernetes.Interface) []byte {
+func secretCertCollector(sourceNameList []string, client kubernetes.Interface) []byte {
 
 	currentTime := time.Now()
 	var certInfo []ParsedCertificate
@@ -149,41 +151,45 @@ func secretCertCollector(sourceName string, client kubernetes.Interface) []byte 
 		log.Println(err)
 	}
 
-	listOptions := metav1.ListOptions{}
-	secrets, _ := client.CoreV1().Secrets("").List(context.Background(), listOptions)
+	for _, sourceName := range sourceNameList {
 
-	for _, secret := range secrets.Items {
-		if sourceName == secret.Name {
+		listOptions := metav1.ListOptions{}
+		secrets, _ := client.CoreV1().Secrets("").List(context.Background(), listOptions)
 
-			for certName, cert := range secret.Data {
-				if certName[len(certName)-3:] == "crt" {
+		for _, secret := range secrets.Items {
+			if sourceName == secret.Name {
 
-					data := string(cert)
-					var block *pem.Block
+				for certName, cert := range secret.Data {
+					if certName[len(certName)-3:] == "crt" {
 
-					block, _ = pem.Decode([]byte(data))
+						data := string(cert)
+						var block *pem.Block
 
-					//parsed SSL certificate
-					parsedCert, errParse := x509.ParseCertificate(block.Bytes)
-					if errParse != nil {
-						log.Println(errParse)
+						block, _ = pem.Decode([]byte(data))
+
+						//parsed SSL certificate
+						parsedCert, errParse := x509.ParseCertificate(block.Bytes)
+						if errParse != nil {
+							log.Println(errParse)
+						}
+
+						certInfo = append(certInfo, ParsedCertificate{
+							CertificateSource: CertificateSource{
+								SecretName: secret.Name,
+								Namespace:  secret.Namespace,
+							},
+							CertName:                certName,
+							SubjectAlternativeNames: parsedCert.DNSNames,
+							Issuer:                  parsedCert.Issuer.CommonName,
+							Organizations:           parsedCert.Issuer.Organization,
+							NotAfter:                parsedCert.NotAfter,
+							NotBefore:               parsedCert.NotBefore,
+							IsValid:                 currentTime.Before(parsedCert.NotAfter),
+							IsCA:                    parsedCert.IsCA,
+						})
+						certJson, _ = json.MarshalIndent(certInfo, "", "\t")
+
 					}
-
-					certInfo = append(certInfo, ParsedCertificate{
-						CertificateSource: CertificateSource{
-							SecretName: secret.Name,
-							Namespace:  secret.Namespace,
-						},
-						CertName:                certName,
-						SubjectAlternativeNames: parsedCert.DNSNames,
-						Issuer:                  parsedCert.Issuer.CommonName,
-						Organizations:           parsedCert.Issuer.Organization,
-						NotAfter:                parsedCert.NotAfter,
-						NotBefore:               parsedCert.NotBefore,
-						IsValid:                 currentTime.Before(parsedCert.NotAfter),
-						IsCA:                    parsedCert.IsCA,
-					})
-					certJson, _ = json.MarshalIndent(certInfo, "", "\t")
 				}
 			}
 		}
