@@ -144,7 +144,7 @@ func configMapCertCollector(configMapSources map[string]string, client kubernete
 }
 
 // secret certificate collector function
-func secretCertCollector(sourceNameList []string, client kubernetes.Interface) []byte {
+func secretCertCollector(secretSources map[string]string, client kubernetes.Interface) []byte {
 
 	currentTime := time.Now()
 	var certInfo []ParsedCertificate
@@ -154,10 +154,10 @@ func secretCertCollector(sourceNameList []string, client kubernetes.Interface) [
 		log.Println(err)
 	}
 
-	for _, sourceName := range sourceNameList {
+	for sourceName, namespace := range secretSources {
 
 		listOptions := metav1.ListOptions{}
-		secrets, _ := client.CoreV1().Secrets("").List(context.Background(), listOptions)
+		secrets, _ := client.CoreV1().Secrets(namespace).List(context.Background(), listOptions)
 
 		for _, secret := range secrets.Items {
 			if sourceName == secret.Name {
