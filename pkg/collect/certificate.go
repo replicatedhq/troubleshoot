@@ -26,6 +26,7 @@ type CollectInclusterCertificate struct {
 	RBACErrors
 }
 
+// Collect source information - where certificate came from.
 type CertificateSource struct {
 	SecretName    string `json:"secret,omitempty"`
 	ConfigMapName string `json:"configMap,omitempty"`
@@ -65,8 +66,10 @@ func (c *CollectInclusterCertificate) Collect(progressChan chan<- interface{}) (
 		return nil, errors.Wrap(errJson, "failed to umarshal Json")
 	} // Json object initilization - end
 
+	// collect configmap certificate
 	cm := configMapCertCollector(c.Collector.ConfigMapName, c.Client)
 
+	// collect secret certificate
 	secret := secretCertCollector(c.Collector.SecretName, c.Client)
 
 	results := append(cm, secret...)
@@ -80,16 +83,7 @@ func (c *CollectInclusterCertificate) Collect(progressChan chan<- interface{}) (
 	return output, nil
 }
 
-func CertificateCollector(sourceName string, client kubernetes.Interface) []byte {
-
-	configMapCertCollector := configMapCertCollector(sourceName, client)
-
-	secretCertCollector := secretCertCollector(sourceName, client)
-
-	results := append(configMapCertCollector, secretCertCollector...)
-	return results
-}
-
+// configmap certificate collector function
 func configMapCertCollector(sourceName string, client kubernetes.Interface) []byte {
 
 	currentTime := time.Now()
@@ -144,6 +138,7 @@ func configMapCertCollector(sourceName string, client kubernetes.Interface) []by
 	return certJson
 }
 
+// secret certificate collector function
 func secretCertCollector(sourceName string, client kubernetes.Interface) []byte {
 
 	currentTime := time.Now()
@@ -197,6 +192,7 @@ func secretCertCollector(sourceName string, client kubernetes.Interface) []byte 
 }
 
 // checks if keys that end with .crt have a certificate payload
+// work in progress...
 
 func IsPayloadCertificate(sourceName string, client kubernetes.Interface) bool {
 	isCertificate := true
