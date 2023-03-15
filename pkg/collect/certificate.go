@@ -69,7 +69,7 @@ func (c *CollectInclusterCertificate) Collect(progressChan chan<- interface{}) (
 	} // Json object initilization - end
 
 	// collect configmap certificate
-	cm := configMapCertCollector(c.Collector.ConfigMapNames, c.Client)
+	cm := configMapCertCollector(c.Collector.ConfigMapSources, c.Client)
 
 	// collect secret certificate
 	secret := secretCertCollector(c.Collector.SecretNames, c.Client)
@@ -86,7 +86,7 @@ func (c *CollectInclusterCertificate) Collect(progressChan chan<- interface{}) (
 }
 
 // configmap certificate collector function
-func configMapCertCollector(sourceNameList []string, client kubernetes.Interface) []byte {
+func configMapCertCollector(configMapSources map[string]string, client kubernetes.Interface) []byte {
 
 	currentTime := time.Now()
 	var certInfo []ParsedCertificate
@@ -96,11 +96,11 @@ func configMapCertCollector(sourceNameList []string, client kubernetes.Interface
 		log.Println(err)
 	}
 
-	for _, sourceName := range sourceNameList {
+	for sourceName, namespace := range configMapSources {
 
 		listOptions := metav1.ListOptions{}
 
-		configMaps, _ := client.CoreV1().ConfigMaps("").List(context.Background(), listOptions)
+		configMaps, _ := client.CoreV1().ConfigMaps(namespace).List(context.Background(), listOptions)
 
 		for _, configMap := range configMaps.Items {
 			if sourceName == configMap.Name {
