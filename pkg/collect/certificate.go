@@ -111,8 +111,8 @@ func CertificateCollector(sourceName string, client kubernetes.Interface) []byte
 
 					certInfo = append(certInfo, ParsedCertificate{
 						CertificateSource: CertificateSource{
-							SecretName: configMap.Name,
-							Namespace:  configMap.Namespace,
+							ConfigMapName: configMap.Name,
+							Namespace:     configMap.Namespace,
 						},
 						CertName:                certName,
 						SubjectAlternativeNames: parsedCert.DNSNames,
