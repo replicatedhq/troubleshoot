@@ -6,6 +6,7 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"encoding/pem"
+	"fmt"
 	"log"
 	"time"
 
@@ -28,9 +29,14 @@ type CollectInclusterCertificate struct {
 
 // Collect source information - where certificate came from.
 type CertificateSource struct {
-	SecretName    string `json:"secret,omitempty"`
-	ConfigMapName string `json:"configMap,omitempty"`
-	Namespace     string `json:"namespace,omitempty"`
+	SecretName    string  `json:"secret,omitempty"`
+	ConfigMapName string  `json:"configMap,omitempty"`
+	Namespace     string  `json:"namespace,omitempty"`
+	Errors        []error `json:"errors,omitempty"`
+}
+
+type TraceErrors struct {
+	SecretName string `json:"secret,omitempty"`
 }
 
 // Certificate Struct
@@ -45,7 +51,6 @@ type ParsedCertificate struct {
 	NotBefore               time.Time         `json:"notBefore"`
 	IsValid                 bool              `json:"isValid"`
 	IsCA                    bool              `json:"isCA"`
-	TrackErrors             []error           `json:"errorTracker"`
 }
 
 func (c *CollectInclusterCertificate) Title() string {
@@ -57,8 +62,6 @@ func (c *CollectInclusterCertificate) IsExcluded() (bool, error) {
 }
 
 func (c *CollectInclusterCertificate) Collect(progressChan chan<- interface{}) (CollectorResult, error) {
-
-	//secretsList := []string{"envoycert", "kotsadm-tls"}
 
 	output := NewResult()
 	// Json object initilization - start
@@ -88,6 +91,14 @@ func (c *CollectInclusterCertificate) Collect(progressChan chan<- interface{}) (
 
 // configmap certificate collector function
 func configMapCertCollector(configMapSources map[string]string, client kubernetes.Interface) []byte {
+	var trackErrors []error
+	defer func() {
+		if err := recover(); err != nil {
+			panicError := errors.New(fmt.Sprintf("error:%v", err))
+			trackErrors = append(trackErrors, panicError)
+
+		}
+	}()
 
 	currentTime := time.Now()
 	var certInfo []ParsedCertificate
@@ -117,13 +128,23 @@ func configMapCertCollector(configMapSources map[string]string, client kubernete
 					//parsed SSL certificate
 					parsedCert, errParse := x509.ParseCertificate(block.Bytes)
 					if errParse != nil {
-						log.Println(errParse)
+						parseError := errors.New(fmt.Sprintf("error:%s", err))
+						trackErrors = append(trackErrors, parseError)
 					}
+
+					func() {
+						if err := recover(); err != nil {
+
+							err := errors.New(fmt.Sprintf("error:%s", err))
+							trackErrors = append(trackErrors, err)
+						}
+					}()
 
 					certInfo = append(certInfo, ParsedCertificate{
 						CertificateSource: CertificateSource{
 							ConfigMapName: configMap.Name,
 							Namespace:     configMap.Namespace,
+							Errors:        trackErrors,
 						},
 						CertName:                certName,
 						SubjectAlternativeNames: parsedCert.DNSNames,
@@ -149,7 +170,8 @@ func secretCertCollector(secretSources map[string]string, client kubernetes.Inte
 	var trackErrors []error
 	defer func() {
 		if err := recover(); err != nil {
-			log.Println("whoos, something happened")
+			panicError := errors.New(fmt.Sprintf("error:%v", err))
+			trackErrors = append(trackErrors, panicError)
 
 		}
 	}()
@@ -181,15 +203,17 @@ func secretCertCollector(secretSources map[string]string, client kubernetes.Inte
 					//parsed SSL certificate
 					parsedCert, errParse := x509.ParseCertificate(block.Bytes)
 					if errParse != nil {
-						trackErrors = append(trackErrors, errParse)
-						//log.Println("This is me, my error:", trackErrors)
+
+						parseError := errors.New(fmt.Sprintf("error:%s", err))
+						trackErrors = append(trackErrors, parseError)
 
 					}
 
 					func() {
 						if err := recover(); err != nil {
-							//log.Println("panic occurred:", err)
-							trackErrors = append(trackErrors, errParse)
+
+							err := errors.New(fmt.Sprintf("error:%s", err))
+							trackErrors = append(trackErrors, err)
 						}
 					}()
 
@@ -197,6 +221,7 @@ func secretCertCollector(secretSources map[string]string, client kubernetes.Inte
 						CertificateSource: CertificateSource{
 							SecretName: secret.Name,
 							Namespace:  secret.Namespace,
+							Errors:     trackErrors,
 						},
 						CertName:                certName,
 						SubjectAlternativeNames: parsedCert.DNSNames,
@@ -206,7 +231,6 @@ func secretCertCollector(secretSources map[string]string, client kubernetes.Inte
 						NotBefore:               parsedCert.NotBefore,
 						IsValid:                 currentTime.Before(parsedCert.NotAfter),
 						IsCA:                    parsedCert.IsCA,
-						TrackErrors:             trackErrors,
 					})
 					certJson, _ = json.MarshalIndent(certInfo, "", "\t")
 
