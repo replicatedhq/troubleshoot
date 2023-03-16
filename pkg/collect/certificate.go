@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"context"
 	"crypto/x509"
+	"crypto/x509/pkix"
 	"encoding/json"
 	"encoding/pem"
+	"fmt"
 	"log"
 	"time"
 
@@ -162,22 +164,29 @@ func secretCertCollector(secretSources map[string]string, client kubernetes.Inte
 				for certName, cert := range secret.Data {
 					//if certName[len(certName)-3:] == "crt" {
 
-					data := string(cert)
+					data := cert
 					var block *pem.Block
 
-					block, _ = pem.Decode([]byte(data))
+					block, _ = pem.Decode(data)
 
 					//parsed SSL certificate
 					parsedCert, errParse := x509.ParseCertificate(block.Bytes)
 					if errParse != nil {
-						if err != nil {
-							t.Fatal(err)
-						}
-				
-						}
-
+						log.Println(errParse)
 					}
 
+					//x509.VerifyOptions()
+
+					//x509.HostnameError
+
+					/*
+						opts := x509.VerifyOptions{
+							DNSName: "deepsource.io",
+							Roots:   roots,
+						}
+					*/
+
+					subject := pkixNameToString(parsedCert.Subject)
 
 					certInfo = append(certInfo, ParsedCertificate{
 						CertificateSource: CertificateSource{
@@ -185,6 +194,7 @@ func secretCertCollector(secretSources map[string]string, client kubernetes.Inte
 							Namespace:  secret.Namespace,
 						},
 						CertName:                certName,
+						Subject:                 subject,
 						SubjectAlternativeNames: parsedCert.DNSNames,
 						Issuer:                  parsedCert.Issuer.CommonName,
 						Organizations:           parsedCert.Issuer.Organization,
@@ -200,4 +210,39 @@ func secretCertCollector(secretSources map[string]string, client kubernetes.Inte
 		}
 	}
 	return certJson
+}
+
+func pkixNameToString(name pkix.Name) string {
+	seq := name.ToRDNSequence()
+	var s bytes.Buffer
+	for _, rdnSet := range seq {
+		for _, rdn := range rdnSet {
+			if s.Len() != 0 {
+				s.WriteString(",")
+			}
+			key := ""
+			t := rdn.Type
+			if len(t) == 4 && t[0] == 2 && t[1] == 5 && t[2] == 4 {
+				switch t[3] {
+				case 3:
+					key = "cn"
+				case 5:
+					key = "serial"
+				case 6:
+					key = "c"
+				case 7:
+					key = "l"
+				case 10:
+					key = "o"
+				case 11:
+					key = "ou"
+				}
+			}
+			if key == "" {
+				key = t.String()
+			}
+			s.WriteString(fmt.Sprintf("%v=%v", key, rdn.Value))
+		}
+	}
+	return s.String()
 }
