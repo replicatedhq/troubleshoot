@@ -165,8 +165,6 @@ func secretCertCollector(secretSources map[string]string, client kubernetes.Inte
 					data := string(cert)
 					var block *pem.Block
 
-					block, errBlock = pem.Decode([]byte(data))
-
 					//parsed SSL certificate
 					parsedCert, errParse := x509.ParseCertificate(block.Bytes)
 					if errParse != nil {
