@@ -6,7 +6,6 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"encoding/pem"
-	"fmt"
 	"log"
 	"time"
 
@@ -136,12 +135,6 @@ func configMapCertCollector(configMapSources map[string]string, client kubernete
 // secret certificate collector function
 func secretCertCollector(secretSources map[string]string, client kubernetes.Interface) []byte {
 
-	defer func() {
-		if r := recover(); r != nil {
-			fmt.Println("Recovered. Error:\n", r)
-		}
-	}()
-
 	currentTime := time.Now()
 	var certInfo []ParsedCertificate
 	var certJson = []byte("[]")
@@ -171,6 +164,10 @@ func secretCertCollector(secretSources map[string]string, client kubernetes.Inte
 					if errParse != nil {
 						log.Println(errParse)
 					}
+
+					pc := parsedCert.Raw
+
+					log.Println("pc:", string(pc))
 
 					certInfo = append(certInfo, ParsedCertificate{
 						CertificateSource: CertificateSource{
