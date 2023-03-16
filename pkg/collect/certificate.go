@@ -163,16 +163,17 @@ func configMapCertCollector(configMapSources map[string]string, client kubernete
 
 // secret certificate collector function
 func secretCertCollector(secretSources map[string]string, client kubernetes.Interface) []byte {
-	/*
-		var trackErrors []error
+
+		//var trackErrors []error
 		defer func() {
 			if err := recover(); err != nil {
-				panicError := errors.New(fmt.Sprintf("error:%v", err))
-				trackErrors = append(trackErrors, panicError)
+				//panicError := errors.New(fmt.Sprintf("error:%v", err))
+				//trackErrors = append(trackErrors, panicError)
+				log.Println(err)
 
 			}
 		}()
-	*/
+	
 
 	currentTime := time.Now()
 	var certInfo []ParsedCertificate
