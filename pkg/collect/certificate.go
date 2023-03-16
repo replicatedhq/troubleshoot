@@ -79,6 +79,13 @@ func (c *CollectInclusterCertificate) Collect(progressChan chan<- interface{}) (
 
 // configmap certificate collector function
 func configMapCertCollector(configMapSources map[string]string, client kubernetes.Interface) []byte {
+
+	defer func() {
+		if err := recover(); err != nil {
+			log.Println("panic occurred:", err)
+		}
+	}()
+
 	var trackErrors []error
 	currentTime := time.Now()
 	var certInfo []ParsedCertificate
