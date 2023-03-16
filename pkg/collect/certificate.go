@@ -11,7 +11,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/pkg/errors"
+	//"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -151,8 +151,6 @@ func secretCertCollector(secretSources map[string]string, client kubernetes.Inte
 			log.Println("panic occurred:", err)
 		}
 	}()
-
-
 
 	currentTime := time.Now()
 	var certInfo []ParsedCertificate
