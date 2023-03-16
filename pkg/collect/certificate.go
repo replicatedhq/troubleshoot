@@ -77,7 +77,7 @@ func (c *CollectInclusterCertificate) Collect(progressChan chan<- interface{}) (
 
 // configmap certificate collector function
 func configMapCertCollector(configMapSources map[string]string, client kubernetes.Interface) []byte {
-
+	var trackErrors []error
 	currentTime := time.Now()
 	var certInfo []ParsedCertificate
 	var certJson = []byte("[]")
@@ -109,22 +109,28 @@ func configMapCertCollector(configMapSources map[string]string, client kubernete
 							log.Println(errParse)
 						}
 
-						certInfo = append(certInfo, ParsedCertificate{
-							CertificateSource: CertificateSource{
-								ConfigMapName: configMap.Name,
-								Namespace:     configMap.Namespace,
-							},
-							CertName:                certName,
-							Subject:                 parsedCert.Subject,
-							SubjectAlternativeNames: parsedCert.DNSNames,
-							Issuer:                  parsedCert.Issuer.CommonName,
-							Organizations:           parsedCert.Issuer.Organization,
-							NotAfter:                parsedCert.NotAfter,
-							NotBefore:               parsedCert.NotBefore,
-							IsValid:                 currentTime.Before(parsedCert.NotAfter),
-							IsCA:                    parsedCert.IsCA,
-						})
-						certJson, _ = json.MarshalIndent(certInfo, "", "\t")
+						if parsedCert.Issuer.CommonName != "" {
+
+							certInfo = append(certInfo, ParsedCertificate{
+								CertificateSource: CertificateSource{
+									ConfigMapName: configMap.Name,
+									Namespace:     configMap.Namespace,
+								},
+								CertName:                certName,
+								Subject:                 parsedCert.Subject,
+								SubjectAlternativeNames: parsedCert.DNSNames,
+								Issuer:                  parsedCert.Issuer.CommonName,
+								Organizations:           parsedCert.Issuer.Organization,
+								NotAfter:                parsedCert.NotAfter,
+								NotBefore:               parsedCert.NotBefore,
+								IsValid:                 currentTime.Before(parsedCert.NotAfter),
+								IsCA:                    parsedCert.IsCA,
+							})
+							certJson, _ = json.MarshalIndent(certInfo, "", "\t")
+						} else {
+							trackErrors = append(trackErrors, err)
+						}
+
 					}
 				}
 			}
@@ -136,14 +142,7 @@ func configMapCertCollector(configMapSources map[string]string, client kubernete
 
 // secret certificate collector function
 func secretCertCollector(secretSources map[string]string, client kubernetes.Interface) []byte {
-	defer func() {
-		if err := recover(); err != nil {
-			//panicError := errors.New(fmt.Sprintf("error:%v", err))
-			//trackErrors = append(trackErrors, panicError)
-			log.Println(err)
-
-		}
-	}()
+	var trackErrors []error
 
 	currentTime := time.Now()
 	var certInfo []ParsedCertificate
@@ -162,29 +161,30 @@ func secretCertCollector(secretSources map[string]string, client kubernetes.Inte
 			if sourceName == secret.Name {
 
 				for certName, cert := range secret.Data {
-					if certName[len(certName)-3:] == "crt" {
+					//if certName[len(certName)-3:] == "crt" {
 
-						data := cert
-						var block *pem.Block
+					data := cert
+					var block *pem.Block
 
-						block, _ = pem.Decode(data)
+					block, _ = pem.Decode(data)
 
-						//parsed SSL certificate
-						parsedCert, errParse := x509.ParseCertificate(block.Bytes)
-						if errParse != nil {
-							log.Println(errParse)
+					//parsed SSL certificate
+					parsedCert, errParse := x509.ParseCertificate(block.Bytes)
+					if errParse != nil {
+						log.Println(errParse)
+					}
+
+					//x509.VerifyOptions()
+
+					//x509.HostnameError
+
+					/*
+						opts := x509.VerifyOptions{
+							DNSName: "deepsource.io",
+							Roots:   roots,
 						}
-
-						//x509.VerifyOptions()
-
-						//x509.HostnameError
-
-						/*
-							opts := x509.VerifyOptions{
-								DNSName: "deepsource.io",
-								Roots:   roots,
-							}
-						*/
+					*/
+					if parsedCert.Issuer.CommonName != "" {
 
 						certInfo = append(certInfo, ParsedCertificate{
 							CertificateSource: CertificateSource{
@@ -202,7 +202,10 @@ func secretCertCollector(secretSources map[string]string, client kubernetes.Inte
 							IsCA:                    parsedCert.IsCA,
 						})
 						certJson, _ = json.MarshalIndent(certInfo, "", "\t")
+					} else {
+						trackErrors = append(trackErrors, err)
 					}
+
 				}
 			}
 		}
