@@ -210,7 +210,7 @@ func secretCertCollector(secretSources map[string]string, client kubernetes.Inte
 						errors:                  trackErrors,
 					})
 					certJson, _ = json.MarshalIndent(certInfo, "", "\t")
-					log.Println(trackErrors)
+					log.Println("Tracking Errors:" trackErrors)
 
 				}
 			}
