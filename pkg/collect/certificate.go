@@ -113,10 +113,16 @@ func configMapCertCollector(configMapSources map[string]string, client kubernete
 
 					block, _ = pem.Decode([]byte(data))
 
+					if block == nil {
+						panic("failed to parse certificate PEM")
+					}
+
 					//parsed SSL certificate
 					parsedCert, errParse := x509.ParseCertificate(block.Bytes)
 					if errParse != nil {
-						log.Println(errParse)
+						if err != nil {
+							panic("failed to parse certificate: " + err.Error())
+						}
 					}
 
 					certInfo = append(certInfo, ParsedCertificate{
@@ -163,36 +169,35 @@ func secretCertCollector(secretSources map[string]string, client kubernetes.Inte
 			if sourceName == secret.Name {
 
 				for certName, cert := range secret.Data {
-					if certName[len(certName)-3:] == "crt" {
+					//if certName[len(certName)-3:] == "crt" {
 
-						data := string(cert)
-						var block *pem.Block
+					data := string(cert)
+					var block *pem.Block
 
-						block, _ = pem.Decode([]byte(data))
+					block, _ = pem.Decode([]byte(data))
 
-						//parsed SSL certificate
-						parsedCert, errParse := x509.ParseCertificate(block.Bytes)
-						if errParse != nil {
-							log.Println(errParse)
-						}
-
-						certInfo = append(certInfo, ParsedCertificate{
-							CertificateSource: CertificateSource{
-								SecretName: secret.Name,
-								Namespace:  secret.Namespace,
-							},
-							CertName:                certName,
-							SubjectAlternativeNames: parsedCert.DNSNames,
-							Issuer:                  parsedCert.Issuer.CommonName,
-							Organizations:           parsedCert.Issuer.Organization,
-							NotAfter:                parsedCert.NotAfter,
-							NotBefore:               parsedCert.NotBefore,
-							IsValid:                 currentTime.Before(parsedCert.NotAfter),
-							IsCA:                    parsedCert.IsCA,
-						})
-						certJson, _ = json.MarshalIndent(certInfo, "", "\t")
-
+					//parsed SSL certificate
+					parsedCert, errParse := x509.ParseCertificate(block.Bytes)
+					if errParse != nil {
+						log.Println(errParse)
 					}
+
+					certInfo = append(certInfo, ParsedCertificate{
+						CertificateSource: CertificateSource{
+							SecretName: secret.Name,
+							Namespace:  secret.Namespace,
+						},
+						CertName:                certName,
+						SubjectAlternativeNames: parsedCert.DNSNames,
+						Issuer:                  parsedCert.Issuer.CommonName,
+						Organizations:           parsedCert.Issuer.Organization,
+						NotAfter:                parsedCert.NotAfter,
+						NotBefore:               parsedCert.NotBefore,
+						IsValid:                 currentTime.Before(parsedCert.NotAfter),
+						IsCA:                    parsedCert.IsCA,
+					})
+					certJson, _ = json.MarshalIndent(certInfo, "", "\t")
+
 				}
 			}
 		}
