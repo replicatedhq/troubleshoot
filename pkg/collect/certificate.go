@@ -6,11 +6,9 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"encoding/pem"
-	"fmt"
 	"log"
 	"time"
 
-	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -59,14 +57,6 @@ func (c *CollectInclusterCertificate) IsExcluded() (bool, error) {
 
 func (c *CollectInclusterCertificate) Collect(progressChan chan<- interface{}) (CollectorResult, error) {
 
-	defer func() {
-		if err := recover(); err != nil {
-			panicError := errors.New(fmt.Sprintf("error:%v", err))
-			log.Println(panicError)
-
-		}
-	}()
-
 	output := NewResult()
 
 	// collect configmap certificate
@@ -80,14 +70,6 @@ func (c *CollectInclusterCertificate) Collect(progressChan chan<- interface{}) (
 	filePath := "certificates/certificates.json"
 
 	output.SaveResult(c.BundlePath, filePath, bytes.NewBuffer(results))
-
-	func() {
-		if err := recover(); err != nil {
-
-			panicError := errors.New(fmt.Sprintf("error:%v", err))
-			log.Println(panicError)
-		}
-	}()
 
 	return output, nil
 }
