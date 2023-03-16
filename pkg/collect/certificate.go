@@ -6,6 +6,7 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"encoding/pem"
+	"fmt"
 	"log"
 	"time"
 
@@ -28,9 +29,10 @@ type CollectInclusterCertificate struct {
 
 // Collect source information - where certificate came from.
 type CertificateSource struct {
-	SecretName    string `json:"secret,omitempty"`
-	ConfigMapName string `json:"configMap,omitempty"`
-	Namespace     string `json:"namespace,omitempty"`
+	SecretName    string  `json:"secret,omitempty"`
+	ConfigMapName string  `json:"configMap,omitempty"`
+	Namespace     string  `json:"namespace,omitempty"`
+	Errors        []error `json:"errors,omitempty"`
 }
 
 // Certificate Struct
@@ -57,16 +59,15 @@ func (c *CollectInclusterCertificate) IsExcluded() (bool, error) {
 
 func (c *CollectInclusterCertificate) Collect(progressChan chan<- interface{}) (CollectorResult, error) {
 
-	//secretsList := []string{"envoycert", "kotsadm-tls"}
+	defer func() {
+		if err := recover(); err != nil {
+			panicError := errors.New(fmt.Sprintf("error:%v", err))
+			log.Println(panicError)
+
+		}
+	}()
 
 	output := NewResult()
-	// Json object initilization - start
-	var certInfo []ParsedCertificate
-	var certJson = []byte("[]")
-	errJson := json.Unmarshal(certJson, &certInfo)
-	if errJson != nil {
-		return nil, errors.Wrap(errJson, "failed to umarshal Json")
-	} // Json object initilization - end
 
 	// collect configmap certificate
 	cm := configMapCertCollector(c.Collector.ConfigMapSources, c.Client)
@@ -76,11 +77,17 @@ func (c *CollectInclusterCertificate) Collect(progressChan chan<- interface{}) (
 
 	results := append(cm, secret...)
 
-	//results := certificate
-
 	filePath := "certificates/certificates.json"
 
 	output.SaveResult(c.BundlePath, filePath, bytes.NewBuffer(results))
+
+	func() {
+		if err := recover(); err != nil {
+
+			panicError := errors.New(fmt.Sprintf("error:%v", err))
+			log.Println(panicError)
+		}
+	}()
 
 	return output, nil
 }
