@@ -183,7 +183,7 @@ func secretCertCollector(secretSources map[string]string, client kubernetes.Inte
 					parsedCert, errParse := x509.ParseCertificate(block.Bytes)
 					if errParse != nil {
 						trackErrors = append(trackErrors, errParse)
-						log.Println(trackErrors)
+						log.Println("This is me, my error:", trackErrors)
 
 					}
 
