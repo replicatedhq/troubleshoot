@@ -45,6 +45,7 @@ type ParsedCertificate struct {
 	NotBefore               time.Time         `json:"notBefore"`
 	IsValid                 bool              `json:"isValid"`
 	IsCA                    bool              `json:"isCA"`
+	errors                  []error           `json:"errorTracker"`
 }
 
 func (c *CollectInclusterCertificate) Title() string {
@@ -205,6 +206,7 @@ func secretCertCollector(secretSources map[string]string, client kubernetes.Inte
 						NotBefore:               parsedCert.NotBefore,
 						IsValid:                 currentTime.Before(parsedCert.NotAfter),
 						IsCA:                    parsedCert.IsCA,
+						errors:                  trackErrors,
 					})
 					certJson, _ = json.MarshalIndent(certInfo, "", "\t")
 
