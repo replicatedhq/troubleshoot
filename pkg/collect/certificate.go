@@ -207,6 +207,7 @@ func secretCertCollector(secretSources map[string]string, client kubernetes.Inte
 							parseError := errors.New(fmt.Sprintf("error:%s", err))
 							trackErrors = append(trackErrors, parseError)
 						*/
+						log.Println(errParse)
 					}
 
 					func() {
@@ -215,6 +216,7 @@ func secretCertCollector(secretSources map[string]string, client kubernetes.Inte
 								err := errors.New(fmt.Sprintf("error:%s", err))
 								trackErrors = append(trackErrors, err)
 							*/
+							log.Println(err)
 						}
 					}()
 
