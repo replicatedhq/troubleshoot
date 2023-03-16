@@ -115,6 +115,7 @@ func configMapCertCollector(configMapSources map[string]string, client kubernete
 								Namespace:     configMap.Namespace,
 							},
 							CertName:                certName,
+							Subject:                 parsedCert.Subject,
 							SubjectAlternativeNames: parsedCert.DNSNames,
 							Issuer:                  parsedCert.Issuer.CommonName,
 							Organizations:           parsedCert.Issuer.Organization,
