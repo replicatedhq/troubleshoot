@@ -114,13 +114,13 @@ func configMapCertCollector(configMapSources map[string]string, client kubernete
 					block, _ = pem.Decode([]byte(data))
 
 					if block == nil {
-						panic("failed to parse certificate PEM")
+						log.Println("failed to parse certificate PEM")
 					}
 
 					//parsed SSL certificate
 					parsedCert, errParse := x509.ParseCertificate(block.Bytes)
 					if errParse != nil {
-						panic("failed to parse certificate: " + errParse.Error())
+						log.Println("failed to parse certificate: " + errParse.Error())
 					}
 
 					//parsedCert.VerifyHostname()
