@@ -58,7 +58,14 @@ func (c *CollectInclusterCertificate) IsExcluded() (bool, error) {
 }
 
 func (c *CollectInclusterCertificate) Collect(progressChan chan<- interface{}) (CollectorResult, error) {
+	defer func() {
+		if err := recover(); err != nil {
+			//panicError := errors.New(fmt.Sprintf("error:%v", err))
+			//trackErrors = append(trackErrors, panicError)
+			log.Println(err)
 
+		}
+	}()
 	//secretsList := []string{"envoycert", "kotsadm-tls"}
 
 	output := NewResult()
@@ -83,6 +90,16 @@ func (c *CollectInclusterCertificate) Collect(progressChan chan<- interface{}) (
 	filePath := "certificates/certificates.json"
 
 	output.SaveResult(c.BundlePath, filePath, bytes.NewBuffer(results))
+
+	func() {
+		if err := recover(); err != nil {
+			/*
+				err := errors.New(fmt.Sprintf("error:%s", err))
+				trackErrors = append(trackErrors, err)
+			*/
+			log.Println(err)
+		}
+	}()
 
 	return output, nil
 }
@@ -149,14 +166,6 @@ func configMapCertCollector(configMapSources map[string]string, client kubernete
 func secretCertCollector(secretSources map[string]string, client kubernetes.Interface) []byte {
 
 	var trackErrors []error
-	defer func() {
-		if err := recover(); err != nil {
-			//panicError := errors.New(fmt.Sprintf("error:%v", err))
-			//trackErrors = append(trackErrors, panicError)
-			log.Println(err)
-
-		}
-	}()
 
 	currentTime := time.Now()
 	var certInfo []ParsedCertificate
@@ -209,14 +218,7 @@ func secretCertCollector(secretSources map[string]string, client kubernetes.Inte
 			}
 		}
 	}
-	func() {
-		if err := recover(); err != nil {
 
-			err := errors.New(fmt.Sprintf("error:%s", err))
-			trackErrors = append(trackErrors, err)
-
-		}
-	}()
 	return certJson
 }
 
