@@ -7,6 +7,7 @@ import (
 	"crypto/x509/pkix"
 	"encoding/json"
 	"encoding/pem"
+	"fmt"
 	"log"
 	"time"
 
@@ -142,7 +143,7 @@ func configMapCertCollector(configMapSources map[string]string, client kubernete
 
 // secret certificate collector function
 func secretCertCollector(secretSources map[string]string, client kubernetes.Interface) []byte {
-	var trackErrors []error
+	//var trackErrors []error
 
 	currentTime := time.Now()
 	var certInfo []ParsedCertificate
@@ -171,7 +172,8 @@ func secretCertCollector(secretSources map[string]string, client kubernetes.Inte
 					//parsed SSL certificate
 					parsedCert, errParse := x509.ParseCertificate(block.Bytes)
 					if errParse != nil {
-						log.Println(errParse)
+						fmt.Println("failed to parse certificate: %v", err.Error())
+						return nil
 					}
 
 					//x509.VerifyOptions()
@@ -184,29 +186,25 @@ func secretCertCollector(secretSources map[string]string, client kubernetes.Inte
 							Roots:   roots,
 						}
 					*/
-					if parsedCert.Issuer.CommonName != "" {
 
-						certInfo = append(certInfo, ParsedCertificate{
-							CertificateSource: CertificateSource{
-								SecretName: secret.Name,
-								Namespace:  secret.Namespace,
-							},
-							CertName:                certName,
-							Subject:                 parsedCert.Subject,
-							SubjectAlternativeNames: parsedCert.DNSNames,
-							Issuer:                  parsedCert.Issuer.CommonName,
-							Organizations:           parsedCert.Issuer.Organization,
-							NotAfter:                parsedCert.NotAfter,
-							NotBefore:               parsedCert.NotBefore,
-							IsValid:                 currentTime.Before(parsedCert.NotAfter),
-							IsCA:                    parsedCert.IsCA,
-						})
-						certJson, _ = json.MarshalIndent(certInfo, "", "\t")
-					} else {
-						trackErrors = append(trackErrors, err)
-					}
-
+					certInfo = append(certInfo, ParsedCertificate{
+						CertificateSource: CertificateSource{
+							SecretName: secret.Name,
+							Namespace:  secret.Namespace,
+						},
+						CertName:                certName,
+						Subject:                 parsedCert.Subject,
+						SubjectAlternativeNames: parsedCert.DNSNames,
+						Issuer:                  parsedCert.Issuer.CommonName,
+						Organizations:           parsedCert.Issuer.Organization,
+						NotAfter:                parsedCert.NotAfter,
+						NotBefore:               parsedCert.NotBefore,
+						IsValid:                 currentTime.Before(parsedCert.NotAfter),
+						IsCA:                    parsedCert.IsCA,
+					})
+					certJson, _ = json.MarshalIndent(certInfo, "", "\t")
 				}
+
 			}
 		}
 	}
