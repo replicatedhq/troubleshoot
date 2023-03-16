@@ -7,7 +7,6 @@ import (
 	"crypto/x509/pkix"
 	"encoding/json"
 	"encoding/pem"
-	"fmt"
 	"log"
 	"time"
 
@@ -39,7 +38,7 @@ type CertificateSource struct {
 type ParsedCertificate struct {
 	CertificateSource       CertificateSource `json:"source"`
 	CertName                string            `json:"certificate"`
-	Subject                 string            `json:"subject"`
+	Subject                 pkix.Name         `json:"subject"`
 	SubjectAlternativeNames []string          `json:"subjectAlternativeNames"`
 	Issuer                  string            `json:"issuer"`
 	Organizations           []string          `json:"issuerOrganizations"`
@@ -162,87 +161,50 @@ func secretCertCollector(secretSources map[string]string, client kubernetes.Inte
 			if sourceName == secret.Name {
 
 				for certName, cert := range secret.Data {
-					//if certName[len(certName)-3:] == "crt" {
+					if certName[len(certName)-3:] == "crt" {
 
-					data := cert
-					var block *pem.Block
+						data := cert
+						var block *pem.Block
 
-					block, _ = pem.Decode(data)
+						block, _ = pem.Decode(data)
 
-					//parsed SSL certificate
-					parsedCert, errParse := x509.ParseCertificate(block.Bytes)
-					if errParse != nil {
-						log.Println(errParse)
-					}
-
-					//x509.VerifyOptions()
-
-					//x509.HostnameError
-
-					/*
-						opts := x509.VerifyOptions{
-							DNSName: "deepsource.io",
-							Roots:   roots,
+						//parsed SSL certificate
+						parsedCert, errParse := x509.ParseCertificate(block.Bytes)
+						if errParse != nil {
+							log.Println(errParse)
 						}
-					*/
 
-					subject := pkixNameToString(parsedCert.Subject)
+						//x509.VerifyOptions()
 
-					certInfo = append(certInfo, ParsedCertificate{
-						CertificateSource: CertificateSource{
-							SecretName: secret.Name,
-							Namespace:  secret.Namespace,
-						},
-						CertName:                certName,
-						Subject:                 subject,
-						SubjectAlternativeNames: parsedCert.DNSNames,
-						Issuer:                  parsedCert.Issuer.CommonName,
-						Organizations:           parsedCert.Issuer.Organization,
-						NotAfter:                parsedCert.NotAfter,
-						NotBefore:               parsedCert.NotBefore,
-						IsValid:                 currentTime.Before(parsedCert.NotAfter),
-						IsCA:                    parsedCert.IsCA,
-					})
-					certJson, _ = json.MarshalIndent(certInfo, "", "\t")
+						//x509.HostnameError
 
+						/*
+							opts := x509.VerifyOptions{
+								DNSName: "deepsource.io",
+								Roots:   roots,
+							}
+						*/
+
+						certInfo = append(certInfo, ParsedCertificate{
+							CertificateSource: CertificateSource{
+								SecretName: secret.Name,
+								Namespace:  secret.Namespace,
+							},
+							CertName:                certName,
+							Subject:                 parsedCert.Subject,
+							SubjectAlternativeNames: parsedCert.DNSNames,
+							Issuer:                  parsedCert.Issuer.CommonName,
+							Organizations:           parsedCert.Issuer.Organization,
+							NotAfter:                parsedCert.NotAfter,
+							NotBefore:               parsedCert.NotBefore,
+							IsValid:                 currentTime.Before(parsedCert.NotAfter),
+							IsCA:                    parsedCert.IsCA,
+						})
+						certJson, _ = json.MarshalIndent(certInfo, "", "\t")
+					}
 				}
 			}
 		}
 	}
 	return certJson
-}
-
-func pkixNameToString(name pkix.Name) string {
-	seq := name.ToRDNSequence()
-	var s bytes.Buffer
-	for _, rdnSet := range seq {
-		for _, rdn := range rdnSet {
-			if s.Len() != 0 {
-				s.WriteString(",")
-			}
-			key := ""
-			t := rdn.Type
-			if len(t) == 4 && t[0] == 2 && t[1] == 5 && t[2] == 4 {
-				switch t[3] {
-				case 3:
-					key = "cn"
-				case 5:
-					key = "serial"
-				case 6:
-					key = "c"
-				case 7:
-					key = "l"
-				case 10:
-					key = "o"
-				case 11:
-					key = "ou"
-				}
-			}
-			if key == "" {
-				key = t.String()
-			}
-			s.WriteString(fmt.Sprintf("%v=%v", key, rdn.Value))
-		}
-	}
-	return s.String()
 }
