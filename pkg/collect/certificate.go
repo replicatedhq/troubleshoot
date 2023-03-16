@@ -32,11 +32,7 @@ type CertificateSource struct {
 	SecretName    string  `json:"secret,omitempty"`
 	ConfigMapName string  `json:"configMap,omitempty"`
 	Namespace     string  `json:"namespace,omitempty"`
-	Errors        []error `json:"errors,omitempty"`
-}
-
-type TraceErrors struct {
-	SecretName string `json:"secret,omitempty"`
+	Errors        []error `json:"errors"`
 }
 
 // Certificate Struct
@@ -167,14 +163,16 @@ func configMapCertCollector(configMapSources map[string]string, client kubernete
 
 // secret certificate collector function
 func secretCertCollector(secretSources map[string]string, client kubernetes.Interface) []byte {
-	var trackErrors []error
-	defer func() {
-		if err := recover(); err != nil {
-			panicError := errors.New(fmt.Sprintf("error:%v", err))
-			trackErrors = append(trackErrors, panicError)
+	/*
+		var trackErrors []error
+		defer func() {
+			if err := recover(); err != nil {
+				panicError := errors.New(fmt.Sprintf("error:%v", err))
+				trackErrors = append(trackErrors, panicError)
 
-		}
-	}()
+			}
+		}()
+	*/
 
 	currentTime := time.Now()
 	var certInfo []ParsedCertificate
@@ -204,16 +202,19 @@ func secretCertCollector(secretSources map[string]string, client kubernetes.Inte
 					parsedCert, errParse := x509.ParseCertificate(block.Bytes)
 					if errParse != nil {
 
-						parseError := errors.New(fmt.Sprintf("error:%s", err))
-						trackErrors = append(trackErrors, parseError)
+						/*
 
+							parseError := errors.New(fmt.Sprintf("error:%s", err))
+							trackErrors = append(trackErrors, parseError)
+						*/
 					}
 
 					func() {
 						if err := recover(); err != nil {
-
-							err := errors.New(fmt.Sprintf("error:%s", err))
-							trackErrors = append(trackErrors, err)
+							/*
+								err := errors.New(fmt.Sprintf("error:%s", err))
+								trackErrors = append(trackErrors, err)
+							*/
 						}
 					}()
 
@@ -221,7 +222,7 @@ func secretCertCollector(secretSources map[string]string, client kubernetes.Inte
 						CertificateSource: CertificateSource{
 							SecretName: secret.Name,
 							Namespace:  secret.Namespace,
-							Errors:     trackErrors,
+							//Errors:     trackErrors,
 						},
 						CertName:                certName,
 						SubjectAlternativeNames: parsedCert.DNSNames,
