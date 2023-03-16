@@ -135,6 +135,16 @@ func configMapCertCollector(configMapSources map[string]string, client kubernete
 // secret certificate collector function
 func secretCertCollector(secretSources map[string]string, client kubernetes.Interface) []byte {
 
+	defer func() {
+		if err := recover(); err != nil {
+			//panicError := errors.New(fmt.Sprintf("error:%v", err))
+			//trackErrors = append(trackErrors, panicError)
+			log.Println(err)
+
+		}
+	}()
+
+
 	currentTime := time.Now()
 	var certInfo []ParsedCertificate
 	var certJson = []byte("[]")
@@ -157,7 +167,10 @@ func secretCertCollector(secretSources map[string]string, client kubernetes.Inte
 					data := string(cert)
 					var block *pem.Block
 
-					block, _ = pem.Decode([]byte(data))
+					block, errBlock = pem.Decode([]byte(data))
+				
+
+					}
 
 					//parsed SSL certificate
 					parsedCert, errParse := x509.ParseCertificate(block.Bytes)
@@ -168,6 +181,17 @@ func secretCertCollector(secretSources map[string]string, client kubernetes.Inte
 						}
 
 					}
+
+
+					func() {
+						if err := recover(); err != nil {
+							/*
+								err := errors.New(fmt.Sprintf("error:%s", err))
+								trackErrors = append(trackErrors, err)
+							*/
+							log.Println(err)
+						}
+					}()
 
 					certInfo = append(certInfo, ParsedCertificate{
 						CertificateSource: CertificateSource{
