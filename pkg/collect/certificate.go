@@ -11,6 +11,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -144,6 +145,14 @@ func configMapCertCollector(configMapSources map[string]string, client kubernete
 // secret certificate collector function
 func secretCertCollector(secretSources map[string]string, client kubernetes.Interface) []byte {
 	//var trackErrors []error
+
+	defer func() {
+		if err := recover(); err != nil {
+			log.Println("panic occurred:", err)
+		}
+	}()
+
+
 
 	currentTime := time.Now()
 	var certInfo []ParsedCertificate
