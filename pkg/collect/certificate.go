@@ -170,22 +170,14 @@ func secretCertCollector(secretSources map[string]string, client kubernetes.Inte
 					//parsed SSL certificate
 					parsedCert, errParse := x509.ParseCertificate(block.Bytes)
 					if errParse != nil {
-						log.Println(errParse)
 						if err != nil {
-							return nil
+							t.Fatal(err)
+						}
+				
 						}
 
 					}
 
-					func() {
-						if err := recover(); err != nil {
-							/*
-								err := errors.New(fmt.Sprintf("error:%s", err))
-								trackErrors = append(trackErrors, err)
-							*/
-							log.Println(err)
-						}
-					}()
 
 					certInfo = append(certInfo, ParsedCertificate{
 						CertificateSource: CertificateSource{
