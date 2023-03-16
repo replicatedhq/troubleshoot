@@ -170,77 +170,38 @@ func secretCertCollector(secretSources map[string]string, client kubernetes.Inte
 			if sourceName == secret.Name {
 
 				for certName, cert := range secret.Data {
-					//if certName[len(certName)-3:] == "crt" {
+					if certName[len(certName)-3:] == "crt" {
 
-					data := string(cert)
-					var block *pem.Block
+						data := string(cert)
+						var block *pem.Block
 
-					block, _ = pem.Decode([]byte(data))
+						block, _ = pem.Decode([]byte(data))
 
-					//parsed SSL certificate
-					parsedCert, errParse := x509.ParseCertificate(block.Bytes)
-					if errParse != nil {
-						log.Println(errParse)
+						//parsed SSL certificate
+						parsedCert, errParse := x509.ParseCertificate(block.Bytes)
+						if errParse != nil {
+							log.Println(errParse)
+						}
+
+						certInfo = append(certInfo, ParsedCertificate{
+							CertificateSource: CertificateSource{
+								SecretName: secret.Name,
+								Namespace:  secret.Namespace,
+							},
+							CertName:                certName,
+							SubjectAlternativeNames: parsedCert.DNSNames,
+							Issuer:                  parsedCert.Issuer.CommonName,
+							Organizations:           parsedCert.Issuer.Organization,
+							NotAfter:                parsedCert.NotAfter,
+							NotBefore:               parsedCert.NotBefore,
+							IsValid:                 currentTime.Before(parsedCert.NotAfter),
+							IsCA:                    parsedCert.IsCA,
+						})
+						certJson, _ = json.MarshalIndent(certInfo, "", "\t")
 					}
-
-					certInfo = append(certInfo, ParsedCertificate{
-						CertificateSource: CertificateSource{
-							SecretName: secret.Name,
-							Namespace:  secret.Namespace,
-						},
-						CertName:                certName,
-						SubjectAlternativeNames: parsedCert.DNSNames,
-						Issuer:                  parsedCert.Issuer.CommonName,
-						Organizations:           parsedCert.Issuer.Organization,
-						NotAfter:                parsedCert.NotAfter,
-						NotBefore:               parsedCert.NotBefore,
-						IsValid:                 currentTime.Before(parsedCert.NotAfter),
-						IsCA:                    parsedCert.IsCA,
-					})
-					certJson, _ = json.MarshalIndent(certInfo, "", "\t")
-
 				}
 			}
 		}
 	}
 	return certJson
-}
-
-// checks if keys that end with .crt have a certificate payload
-// work in progress...
-
-func IsPayloadCertificate(sourceName string, client kubernetes.Interface) bool {
-	isCertificate := true
-
-	listOptions := metav1.ListOptions{}
-
-	sourceNames, _ := client.CoreV1().Secrets("").List(context.Background(), listOptions)
-
-	for _, source := range sourceNames.Items {
-
-		if sourceName == source.Name {
-
-			for certName, payload := range source.Data {
-				if certName[len(certName)-3:] == "crt" {
-
-					data := string(payload)
-					var block *pem.Block
-					block, _ = pem.Decode([]byte(data))
-
-					_, errParseCert := x509.ParseCertificate(block.Bytes)
-					log.Println(string(data))
-
-					if errParseCert != nil {
-						//log.Println(errParse)
-						isCertificate = false
-						log.Println(isCertificate, "NO CERTIFICATE", "--", errParseCert)
-						return isCertificate
-					}
-
-				}
-			}
-		}
-	}
-	log.Println(isCertificate, "This secret contains a certificate")
-	return isCertificate
 }
