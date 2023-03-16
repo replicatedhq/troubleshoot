@@ -45,7 +45,7 @@ type ParsedCertificate struct {
 	NotBefore               time.Time         `json:"notBefore"`
 	IsValid                 bool              `json:"isValid"`
 	IsCA                    bool              `json:"isCA"`
-	errors                  []error           `json:"errorTracker"`
+	TrackErrors             []error           `json:"errorTracker"`
 }
 
 func (c *CollectInclusterCertificate) Title() string {
@@ -146,10 +146,11 @@ func configMapCertCollector(configMapSources map[string]string, client kubernete
 
 // secret certificate collector function
 func secretCertCollector(secretSources map[string]string, client kubernetes.Interface) []byte {
-
+	var trackErrors []error
 	defer func() {
 		if err := recover(); err != nil {
-			log.Println("panic occurred:", err)
+			log.Println("whoos, something happened")
+
 		}
 	}()
 
@@ -160,8 +161,6 @@ func secretCertCollector(secretSources map[string]string, client kubernetes.Inte
 	if err != nil {
 		log.Println(err)
 	}
-
-	var trackErrors []error
 
 	for sourceName, namespace := range secretSources {
 
@@ -183,7 +182,7 @@ func secretCertCollector(secretSources map[string]string, client kubernetes.Inte
 					parsedCert, errParse := x509.ParseCertificate(block.Bytes)
 					if errParse != nil {
 						trackErrors = append(trackErrors, errParse)
-						log.Println("This is me, my error:", trackErrors)
+						//log.Println("This is me, my error:", trackErrors)
 
 					}
 
@@ -207,10 +206,9 @@ func secretCertCollector(secretSources map[string]string, client kubernetes.Inte
 						NotBefore:               parsedCert.NotBefore,
 						IsValid:                 currentTime.Before(parsedCert.NotAfter),
 						IsCA:                    parsedCert.IsCA,
-						errors:                  trackErrors,
+						TrackErrors:             trackErrors,
 					})
 					certJson, _ = json.MarshalIndent(certInfo, "", "\t")
-					log.Println("Tracking Errors:", trackErrors)
 
 				}
 			}
@@ -255,6 +253,6 @@ func IsPayloadCertificate(sourceName string, client kubernetes.Interface) bool {
 			}
 		}
 	}
-	log.Println(isCertificate, "This secret contains a certificate")
+
 	return isCertificate
 }
