@@ -120,10 +120,10 @@ func configMapCertCollector(configMapSources map[string]string, client kubernete
 					//parsed SSL certificate
 					parsedCert, errParse := x509.ParseCertificate(block.Bytes)
 					if errParse != nil {
-						if err != nil {
-							panic("failed to parse certificate: " + err.Error())
-						}
+						panic("failed to parse certificate: " + errParse.Error())
 					}
+
+					//parsedCert.VerifyHostname()
 
 					certInfo = append(certInfo, ParsedCertificate{
 						CertificateSource: CertificateSource{
