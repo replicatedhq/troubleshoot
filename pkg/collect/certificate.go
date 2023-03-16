@@ -190,6 +190,7 @@ func secretCertCollector(secretSources map[string]string, client kubernetes.Inte
 					func() {
 						if err := recover(); err != nil {
 							//log.Println("panic occurred:", err)
+							trackErrors = append(trackErrors, errParse)
 						}
 					}()
 
@@ -209,11 +210,13 @@ func secretCertCollector(secretSources map[string]string, client kubernetes.Inte
 						errors:                  trackErrors,
 					})
 					certJson, _ = json.MarshalIndent(certInfo, "", "\t")
+					log.Println(trackErrors)
 
 				}
 			}
 		}
 	}
+
 	return certJson
 }
 
