@@ -105,8 +105,8 @@ func configMapCertCollector(configMapSources map[string]string, client kubernete
 		for _, configMap := range configMaps.Items {
 			if sourceName == configMap.Name {
 
-				//for certName, cert := range configMap.Data {
-				if certName[len(certName)-3:] == "crt" {
+				for certName, cert := range configMap.Data {
+					//if certName[len(certName)-3:] == "crt" {
 
 					data := string(cert)
 					var block *pem.Block
@@ -135,7 +135,7 @@ func configMapCertCollector(configMapSources map[string]string, client kubernete
 					})
 					certJson, _ = json.MarshalIndent(certInfo, "", "\t")
 				}
-				//}
+
 			}
 		}
 	}
