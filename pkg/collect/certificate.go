@@ -106,45 +106,46 @@ func configMapCertCollector(configMapSources map[string]string, client kubernete
 			if sourceName == configMap.Name {
 
 				for certName, cert := range configMap.Data {
-					//if certName[len(certName)-3:] == "crt" {
+					if certName[len(certName)-3:] == "crt" {
 
-					data := string(cert)
-					var block *pem.Block
+						data := string(cert)
+						var block *pem.Block
 
-					block, _ = pem.Decode([]byte(data))
+						block, _ = pem.Decode([]byte(data))
 
-					/*
-						if block != nil {
-							log.Println("failed to parse certificate PEM")
-						}
-					*/
+						/*
+							if block != nil {
+								log.Println("failed to parse certificate PEM")
+							}
+						*/
 
-					//parsed SSL certificate
-					parsedCert, _ := x509.ParseCertificate(block.Bytes)
-					/*
-						if errParse != nil {
-							log.Println("failed to parse certificate: " + errParse.Error())
-						}
-					*/
+						//parsed SSL certificate
+						parsedCert, _ := x509.ParseCertificate(block.Bytes)
+						/*
+							if errParse != nil {
+								log.Println("failed to parse certificate: " + errParse.Error())
+							}
+						*/
 
-					//parsedCert.VerifyHostname()
+						//parsedCert.VerifyHostname()
 
-					certInfo = append(certInfo, ParsedCertificate{
-						CertificateSource: CertificateSource{
-							ConfigMapName: configMap.Name,
-							Namespace:     configMap.Namespace,
-						},
-						CertName:                certName,
-						SubjectAlternativeNames: parsedCert.DNSNames,
-						Issuer:                  parsedCert.Issuer.CommonName,
-						Organizations:           parsedCert.Issuer.Organization,
-						NotAfter:                parsedCert.NotAfter,
-						NotBefore:               parsedCert.NotBefore,
-						IsValid:                 currentTime.Before(parsedCert.NotAfter),
-						IsCA:                    parsedCert.IsCA,
-					})
-					certJson, _ = json.MarshalIndent(certInfo, "", "\t")
+						certInfo = append(certInfo, ParsedCertificate{
+							CertificateSource: CertificateSource{
+								ConfigMapName: configMap.Name,
+								Namespace:     configMap.Namespace,
+							},
+							CertName:                certName,
+							SubjectAlternativeNames: parsedCert.DNSNames,
+							Issuer:                  parsedCert.Issuer.CommonName,
+							Organizations:           parsedCert.Issuer.Organization,
+							NotAfter:                parsedCert.NotAfter,
+							NotBefore:               parsedCert.NotBefore,
+							IsValid:                 currentTime.Before(parsedCert.NotAfter),
+							IsCA:                    parsedCert.IsCA,
+						})
+						certJson, _ = json.MarshalIndent(certInfo, "", "\t")
 
+					}
 				}
 			}
 		}
