@@ -6,6 +6,7 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"encoding/pem"
+	"fmt"
 	"log"
 	"time"
 
@@ -28,9 +29,10 @@ type CollectInclusterCertificate struct {
 
 // Collect source information - where certificate came from.
 type CertificateSource struct {
-	SecretName    string `json:"secret,omitempty"`
-	ConfigMapName string `json:"configMap,omitempty"`
-	Namespace     string `json:"namespace,omitempty"`
+	SecretName    string  `json:"secret,omitempty"`
+	ConfigMapName string  `json:"configMap,omitempty"`
+	Namespace     string  `json:"namespace,omitempty"`
+	Errors        []error `json:"errors"`
 }
 
 // Certificate Struct
@@ -146,6 +148,16 @@ func configMapCertCollector(configMapSources map[string]string, client kubernete
 // secret certificate collector function
 func secretCertCollector(secretSources map[string]string, client kubernetes.Interface) []byte {
 
+	var trackErrors []error
+	defer func() {
+		if err := recover(); err != nil {
+			//panicError := errors.New(fmt.Sprintf("error:%v", err))
+			//trackErrors = append(trackErrors, panicError)
+			log.Println(err)
+
+		}
+	}()
+
 	currentTime := time.Now()
 	var certInfo []ParsedCertificate
 	var certJson = []byte("[]")
@@ -163,40 +175,48 @@ func secretCertCollector(secretSources map[string]string, client kubernetes.Inte
 			if sourceName == secret.Name {
 
 				for certName, cert := range secret.Data {
-					if certName[len(certName)-3:] == "crt" {
+					//if certName[len(certName)-3:] == "crt" {
 
-						data := string(cert)
-						var block *pem.Block
+					data := string(cert)
+					var block *pem.Block
 
-						block, _ = pem.Decode([]byte(data))
+					block, _ = pem.Decode([]byte(data))
 
-						//parsed SSL certificate
-						parsedCert, errParse := x509.ParseCertificate(block.Bytes)
-						if errParse != nil {
-							log.Println(errParse)
-						}
-
-						certInfo = append(certInfo, ParsedCertificate{
-							CertificateSource: CertificateSource{
-								SecretName: secret.Name,
-								Namespace:  secret.Namespace,
-							},
-							CertName:                certName,
-							SubjectAlternativeNames: parsedCert.DNSNames,
-							Issuer:                  parsedCert.Issuer.CommonName,
-							Organizations:           parsedCert.Issuer.Organization,
-							NotAfter:                parsedCert.NotAfter,
-							NotBefore:               parsedCert.NotBefore,
-							IsValid:                 currentTime.Before(parsedCert.NotAfter),
-							IsCA:                    parsedCert.IsCA,
-						})
-						certJson, _ = json.MarshalIndent(certInfo, "", "\t")
-
+					//parsed SSL certificate
+					parsedCert, errParse := x509.ParseCertificate(block.Bytes)
+					if errParse != nil {
+						parseError := errors.New(fmt.Sprintf("error:%s", err))
+						trackErrors = append(trackErrors, parseError)
 					}
+
+					certInfo = append(certInfo, ParsedCertificate{
+						CertificateSource: CertificateSource{
+							SecretName: secret.Name,
+							Namespace:  secret.Namespace,
+						},
+						CertName:                certName,
+						SubjectAlternativeNames: parsedCert.DNSNames,
+						Issuer:                  parsedCert.Issuer.CommonName,
+						Organizations:           parsedCert.Issuer.Organization,
+						NotAfter:                parsedCert.NotAfter,
+						NotBefore:               parsedCert.NotBefore,
+						IsValid:                 currentTime.Before(parsedCert.NotAfter),
+						IsCA:                    parsedCert.IsCA,
+					})
+					certJson, _ = json.MarshalIndent(certInfo, "", "\t")
+
 				}
 			}
 		}
 	}
+	func() {
+		if err := recover(); err != nil {
+
+			err := errors.New(fmt.Sprintf("error:%s", err))
+			trackErrors = append(trackErrors, err)
+
+		}
+	}()
 	return certJson
 }
 
