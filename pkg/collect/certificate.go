@@ -146,6 +146,12 @@ func configMapCertCollector(configMapSources map[string]string, client kubernete
 // secret certificate collector function
 func secretCertCollector(secretSources map[string]string, client kubernetes.Interface) []byte {
 
+	defer func() {
+		if err := recover(); err != nil {
+			log.Println("panic occurred:", err)
+		}
+	}()
+
 	currentTime := time.Now()
 	var certInfo []ParsedCertificate
 	var certJson = []byte("[]")
@@ -175,6 +181,12 @@ func secretCertCollector(secretSources map[string]string, client kubernetes.Inte
 					if errParse != nil {
 						log.Println(errParse)
 					}
+
+					func() {
+						if err := recover(); err != nil {
+							log.Println("panic occurred:", err)
+						}
+					}()
 
 					certInfo = append(certInfo, ParsedCertificate{
 						CertificateSource: CertificateSource{
