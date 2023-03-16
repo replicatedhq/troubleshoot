@@ -58,12 +58,6 @@ func (c *CollectInclusterCertificate) IsExcluded() (bool, error) {
 
 func (c *CollectInclusterCertificate) Collect(progressChan chan<- interface{}) (CollectorResult, error) {
 
-	defer func() {
-		if r := recover(); r != nil {
-			fmt.Println("Recovered. Error:\n", r)
-		}
-	}()
-
 	output := NewResult()
 
 	// collect configmap certificate
@@ -141,6 +135,12 @@ func configMapCertCollector(configMapSources map[string]string, client kubernete
 
 // secret certificate collector function
 func secretCertCollector(secretSources map[string]string, client kubernetes.Interface) []byte {
+
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("Recovered. Error:\n", r)
+		}
+	}()
 
 	currentTime := time.Now()
 	var certInfo []ParsedCertificate
