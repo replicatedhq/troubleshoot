@@ -189,7 +189,7 @@ func secretCertCollector(secretSources map[string]string, client kubernetes.Inte
 
 					func() {
 						if err := recover(); err != nil {
-							log.Println("panic occurred:", err)
+							//log.Println("panic occurred:", err)
 						}
 					}()
 
