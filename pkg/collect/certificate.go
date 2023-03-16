@@ -105,37 +105,37 @@ func configMapCertCollector(configMapSources map[string]string, client kubernete
 		for _, configMap := range configMaps.Items {
 			if sourceName == configMap.Name {
 
-				for certName, cert := range configMap.Data {
-					if certName[len(certName)-3:] == "crt" {
+				//for certName, cert := range configMap.Data {
+				if certName[len(certName)-3:] == "crt" {
 
-						data := string(cert)
-						var block *pem.Block
+					data := string(cert)
+					var block *pem.Block
 
-						block, _ = pem.Decode([]byte(data))
+					block, _ = pem.Decode([]byte(data))
 
-						//parsed SSL certificate
-						parsedCert, errParse := x509.ParseCertificate(block.Bytes)
-						if errParse != nil {
-							log.Println(errParse)
-						}
-
-						certInfo = append(certInfo, ParsedCertificate{
-							CertificateSource: CertificateSource{
-								ConfigMapName: configMap.Name,
-								Namespace:     configMap.Namespace,
-							},
-							CertName:                certName,
-							SubjectAlternativeNames: parsedCert.DNSNames,
-							Issuer:                  parsedCert.Issuer.CommonName,
-							Organizations:           parsedCert.Issuer.Organization,
-							NotAfter:                parsedCert.NotAfter,
-							NotBefore:               parsedCert.NotBefore,
-							IsValid:                 currentTime.Before(parsedCert.NotAfter),
-							IsCA:                    parsedCert.IsCA,
-						})
-						certJson, _ = json.MarshalIndent(certInfo, "", "\t")
+					//parsed SSL certificate
+					parsedCert, errParse := x509.ParseCertificate(block.Bytes)
+					if errParse != nil {
+						log.Println(errParse)
 					}
+
+					certInfo = append(certInfo, ParsedCertificate{
+						CertificateSource: CertificateSource{
+							ConfigMapName: configMap.Name,
+							Namespace:     configMap.Namespace,
+						},
+						CertName:                certName,
+						SubjectAlternativeNames: parsedCert.DNSNames,
+						Issuer:                  parsedCert.Issuer.CommonName,
+						Organizations:           parsedCert.Issuer.Organization,
+						NotAfter:                parsedCert.NotAfter,
+						NotBefore:               parsedCert.NotBefore,
+						IsValid:                 currentTime.Before(parsedCert.NotAfter),
+						IsCA:                    parsedCert.IsCA,
+					})
+					certJson, _ = json.MarshalIndent(certInfo, "", "\t")
 				}
+				//}
 			}
 		}
 	}
