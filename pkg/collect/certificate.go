@@ -160,6 +160,8 @@ func secretCertCollector(secretSources map[string]string, client kubernetes.Inte
 		log.Println(err)
 	}
 
+	var trackErrors []error
+
 	for sourceName, namespace := range secretSources {
 
 		listOptions := metav1.ListOptions{}
@@ -179,7 +181,9 @@ func secretCertCollector(secretSources map[string]string, client kubernetes.Inte
 					//parsed SSL certificate
 					parsedCert, errParse := x509.ParseCertificate(block.Bytes)
 					if errParse != nil {
-						log.Println(errParse)
+						trackErrors = append(trackErrors, errParse)
+						log.Println(trackErrors)
+
 					}
 
 					func() {
