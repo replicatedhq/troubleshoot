@@ -115,29 +115,29 @@ func configMapCertCollector(configMapSources map[string]string, client kubernete
 							log.Println(errParse)
 						}
 
-							certInfo = append(certInfo, ParsedCertificate{
-								CertificateSource: CertificateSource{
-									ConfigMapName: configMap.Name,
-									Namespace:     configMap.Namespace,
-								},
-								CertName:                certName,
-								Subject:                 parsedCert.Subject, //TODO
-								SubjectAlternativeNames: parsedCert.DNSNames,
-								Issuer:                  parsedCert.Issuer.CommonName,
-								Organizations:           parsedCert.Issuer.Organization,
-								NotAfter:                parsedCert.NotAfter,
-								NotBefore:               parsedCert.NotBefore,
-								IsValid:                 currentTime.Before(parsedCert.NotAfter),
-								IsCA:                    parsedCert.IsCA,
-							})
-							certJson, _ = json.MarshalIndent(certInfo, "", "\t")
-						} else {
+						certInfo = append(certInfo, ParsedCertificate{
+							CertificateSource: CertificateSource{
+								ConfigMapName: configMap.Name,
+								Namespace:     configMap.Namespace,
+							},
+							CertName:                certName,
+							Subject:                 parsedCert.Subject, //TODO
+							SubjectAlternativeNames: parsedCert.DNSNames,
+							Issuer:                  parsedCert.Issuer.CommonName,
+							Organizations:           parsedCert.Issuer.Organization,
+							NotAfter:                parsedCert.NotAfter,
+							NotBefore:               parsedCert.NotBefore,
+							IsValid:                 currentTime.Before(parsedCert.NotAfter),
+							IsCA:                    parsedCert.IsCA,
+						})
+						certJson, _ = json.MarshalIndent(certInfo, "", "\t")
+					} else {
 
-							err := errors.New(("error: This object is not a certificate"))
-							trackErrors = append(trackErrors, err)
+						err := errors.New(("error: This object is not a certificate"))
+						trackErrors = append(trackErrors, err)
 
-						}
 					}
+
 				}
 			}
 		}
