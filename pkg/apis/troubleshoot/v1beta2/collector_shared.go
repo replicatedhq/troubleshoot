@@ -216,17 +216,11 @@ type RegistryImages struct {
 	ImagePullSecrets *ImagePullSecrets `json:"imagePullSecret,omitempty" yaml:"imagePullSecret,omitempty"`
 }
 
-// Cannot rename as Certificate as it is already defined in hostcollector_shared.go
-// TODO, cleanup after convo with @banjo.
 type Certificates struct {
-	CollectorMeta       `json:",inline" yaml:",inline"`
-	Name                string            `json:"name,omitempty" yaml:"name,omitempty"`
-	SecretNames         []string          `json:"secretNames,omitempty" yaml:"secretnames,omitempty"`
-	SecretNamespaces    []string          `json:"secretNamespaces,omitempty" yaml:"secretNamespaces,omitempty"`
-	ConfigMapNames      []string          `json:"configMapNames,omitempty" yaml:"configMapNames,omitempty"`
-	ConfigMapNamespaces string            `json:"configMapNamespaces,omitempty" yaml:"configMapNamespaces,omitempty"`
-	SecretSources       map[string]string `json:"secretSources,omitempty" yaml:"secretSources,omitempty"`
-	ConfigMapSources    map[string]string `json:"configMapSources,omitempty" yaml:"configMapSources,omitempty"`
+	CollectorMeta `json:",inline" yaml:",inline"`
+	Name          string            `json:"name,omitempty" yaml:"name,omitempty"`
+	Secrets       map[string]string `json:"secretSources,omitempty" yaml:"secretSources,omitempty"`
+	ConfigMaps    map[string]string `json:"configMapSources,omitempty" yaml:"configMapSources,omitempty"`
 }
 
 type Collect struct {
