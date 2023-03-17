@@ -30,6 +30,22 @@ type CollectCertificates struct {
 	RBACErrors
 }
 
+func decodePem(certInput string) tls.Certificate {
+	var cert tls.Certificate
+	certPEMBlock := []byte(certInput)
+	var certDERBlock *pem.Block
+	for {
+		certDERBlock, certPEMBlock = pem.Decode(certPEMBlock)
+		if certDERBlock == nil {
+			break
+		}
+		if certDERBlock.Type == "CERTIFICATE" {
+			cert.Certificate = append(cert.Certificate, certDERBlock.Bytes)
+		}
+	}
+	return cert
+}
+
 // Collect source information - where certificate came from.
 type CertificateSource struct {
 	SecretName    string  `json:"secret,omitempty"`
@@ -166,74 +182,60 @@ func secretCertCollector(secretSources map[string]string, client kubernetes.Inte
 		for _, secret := range secrets.Items {
 			if sourceName == secret.Name {
 
-				for certName, cert := range secret.Data {
+				for certName, certs := range secret.Data {
 
-					data := string(cert)
-					var block *pem.Block
+					data := string(certs)
+
+					//var block *pem.Block
+
 					if strings.Contains(data, "BEGIN CERTIFICATE") && strings.Contains(data, "END CERTIFICATE") {
 
-						block, _ = pem.Decode([]byte(data))
+						//block, _ = pem.Decode([]byte(data))
+						//block, _ = pem.Decode([]byte(data))
+						certChain := decodePem(data)
 
-						//parsed SSL certificate
-						parsedCert, errParse := x509.ParseCertificate(block.Bytes)
-						if errParse != nil {
-							fmt.Println("failed to parse certificate: %v", errParse.Error())
-							return nil
-						}
+						for _, cert := range certChain.Certificate {
 
-						//Just note for myself; will clean up in final version
-						//x509.VerifyOptions()
-						//x509.HostnameError
-						/*
-							opts := x509.VerifyOptions{
-								DNSName: "deepsource.io",
-								Roots:   roots,
+							//parsed SSL certificate
+							parsedCert, errParse := x509.ParseCertificate(cert)
+							if errParse != nil {
+								fmt.Println("failed to parse certificate: %v", errParse.Error())
+								continue
 							}
-						*/
 
-						certInfo = append(certInfo, ParsedCertificate{
-							CertificateSource: CertificateSource{
-								SecretName: secret.Name,
-								Namespace:  secret.Namespace,
-								Errors:     trackErrors,
-							},
-							CertName:                certName,
-							Subject:                 parsedCert.Subject,
-							SubjectAlternativeNames: parsedCert.DNSNames,
-							Issuer:                  parsedCert.Issuer.CommonName,
-							Organizations:           parsedCert.Issuer.Organization,
-							NotAfter:                parsedCert.NotAfter,
-							NotBefore:               parsedCert.NotBefore,
-							IsValid:                 currentTime.Before(parsedCert.NotAfter),
-							IsCA:                    parsedCert.IsCA,
-						})
-						certJson, _ = json.MarshalIndent(certInfo, "", "\t")
-					} else {
+							//Just note for myself; will clean up in final version
+							//x509.VerifyOptions()
+							//x509.HostnameError
+							/*
+								opts := x509.VerifyOptions{
+									DNSName: "deepsource.io",
+									Roots:   roots,
+								}
+							*/
 
-						err := errors.New(("error: This object is not a certificate"))
-						trackErrors = append(trackErrors, err)
-
+							certInfo = append(certInfo, ParsedCertificate{
+								CertificateSource: CertificateSource{
+									SecretName: secret.Name,
+									Namespace:  secret.Namespace,
+									Errors:     trackErrors,
+								},
+								CertName:                certName,
+								Subject:                 parsedCert.Subject,
+								SubjectAlternativeNames: parsedCert.DNSNames,
+								Issuer:                  parsedCert.Issuer.CommonName,
+								Organizations:           parsedCert.Issuer.Organization,
+								NotAfter:                parsedCert.NotAfter,
+								NotBefore:               parsedCert.NotBefore,
+								IsValid:                 currentTime.Before(parsedCert.NotAfter),
+								IsCA:                    parsedCert.IsCA,
+							})
+							certJson, _ = json.MarshalIndent(certInfo, "", "\t")
+						}
 					}
-
 				}
+
 			}
 		}
 	}
 	return certJson
-}
-
-func decodePem(certInput string) tls.Certificate {
-	var cert tls.Certificate
-	certPEMBlock := []byte(certInput)
-	var certDERBlock *pem.Block
-	for {
-		certDERBlock, certPEMBlock = pem.Decode(certPEMBlock)
-		if certDERBlock == nil {
-			break
-		}
-		if certDERBlock.Type == "CERTIFICATE" {
-			cert.Certificate = append(cert.Certificate, certDERBlock.Bytes)
-		}
-	}
-	return cert
 }
