@@ -154,7 +154,6 @@ func configMapCertCollector(configMapSources map[string]string, client kubernete
 func secretCertCollector(secretSources map[string]string, client kubernetes.Interface) []byte {
 	//var trackErrors []error
 
-
 	currentTime := time.Now()
 	var certInfo []ParsedCertificate
 	var certJson = []byte("[]")
@@ -176,7 +175,7 @@ func secretCertCollector(secretSources map[string]string, client kubernetes.Inte
 
 					data := string(cert)
 					var block *pem.Block
-					if strings.Contains(data, "BEGIN CERTIFICATE") && strings.Contains(data, "END CERTIFICATE") {
+					if !strings.Contains(data, "BEGIN CERTIFICATE") && strings.Contains(data, "END CERTIFICATE") {
 
 						block, _ = pem.Decode([]byte(data))
 
