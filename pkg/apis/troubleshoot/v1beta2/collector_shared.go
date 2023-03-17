@@ -548,7 +548,7 @@ func (c *Collect) GetName() string {
 		name = c.Sysctl.Name
 	}
 	if c.Certificates != nil {
-		collector = "inclustercertificate"
+		collector = "certificates"
 		name = c.Certificates.CollectorName
 	}
 
