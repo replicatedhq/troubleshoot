@@ -3,6 +3,7 @@ package collect
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/json"
@@ -101,7 +102,6 @@ func configMapCertCollector(configMapSources map[string]string, client kubernete
 			if sourceName == configMap.Name {
 
 				for certName, cert := range configMap.Data {
-					//if certName[len(certName)-3:] == "crt" {
 
 					data := string(cert)
 					var block *pem.Block
@@ -114,8 +114,6 @@ func configMapCertCollector(configMapSources map[string]string, client kubernete
 						if errParse != nil {
 							log.Println(errParse)
 						}
-
-						if parsedCert.Issuer.CommonName != "" { //TODO: take this out
 
 							certInfo = append(certInfo, ParsedCertificate{
 								CertificateSource: CertificateSource{
@@ -169,7 +167,6 @@ func secretCertCollector(secretSources map[string]string, client kubernetes.Inte
 			if sourceName == secret.Name {
 
 				for certName, cert := range secret.Data {
-					//if certName[len(certName)-3:] == "crt" {
 
 					data := string(cert)
 					var block *pem.Block
@@ -223,4 +220,20 @@ func secretCertCollector(secretSources map[string]string, client kubernetes.Inte
 		}
 	}
 	return certJson
+}
+
+func decodePem(certInput string) tls.Certificate {
+	var cert tls.Certificate
+	certPEMBlock := []byte(certInput)
+	var certDERBlock *pem.Block
+	for {
+		certDERBlock, certPEMBlock = pem.Decode(certPEMBlock)
+		if certDERBlock == nil {
+			break
+		}
+		if certDERBlock.Type == "CERTIFICATE" {
+			cert.Certificate = append(cert.Certificate, certDERBlock.Bytes)
+		}
+	}
+	return cert
 }
