@@ -9,6 +9,7 @@ import (
 	"encoding/pem"
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	//"github.com/pkg/errors"
@@ -178,45 +179,47 @@ func secretCertCollector(secretSources map[string]string, client kubernetes.Inte
 				for certName, cert := range secret.Data {
 					//if certName[len(certName)-3:] == "crt" {
 
-					data := cert
+					data := string(cert)
 					var block *pem.Block
+					if strings.Contains(data, "BEGIN CERTIFICATE") && strings.Contains(data, "END CERTIFICATE") {
 
-					block, _ = pem.Decode(data)
+						block, _ = pem.Decode([]byte(data))
 
-					//parsed SSL certificate
-					parsedCert, errParse := x509.ParseCertificate(block.Bytes)
-					if errParse != nil {
-						fmt.Println("failed to parse certificate: %v", err.Error())
-						return nil
-					}
-
-					//x509.VerifyOptions()
-
-					//x509.HostnameError
-
-					/*
-						opts := x509.VerifyOptions{
-							DNSName: "deepsource.io",
-							Roots:   roots,
+						//parsed SSL certificate
+						parsedCert, errParse := x509.ParseCertificate(block.Bytes)
+						if errParse != nil {
+							fmt.Println("failed to parse certificate: %v", err.Error())
+							return nil
 						}
-					*/
 
-					certInfo = append(certInfo, ParsedCertificate{
-						CertificateSource: CertificateSource{
-							SecretName: secret.Name,
-							Namespace:  secret.Namespace,
-						},
-						CertName:                certName,
-						Subject:                 parsedCert.Subject,
-						SubjectAlternativeNames: parsedCert.DNSNames,
-						Issuer:                  parsedCert.Issuer.CommonName,
-						Organizations:           parsedCert.Issuer.Organization,
-						NotAfter:                parsedCert.NotAfter,
-						NotBefore:               parsedCert.NotBefore,
-						IsValid:                 currentTime.Before(parsedCert.NotAfter),
-						IsCA:                    parsedCert.IsCA,
-					})
-					certJson, _ = json.MarshalIndent(certInfo, "", "\t")
+						//x509.VerifyOptions()
+
+						//x509.HostnameError
+
+						/*
+							opts := x509.VerifyOptions{
+								DNSName: "deepsource.io",
+								Roots:   roots,
+							}
+						*/
+
+						certInfo = append(certInfo, ParsedCertificate{
+							CertificateSource: CertificateSource{
+								SecretName: secret.Name,
+								Namespace:  secret.Namespace,
+							},
+							CertName:                certName,
+							Subject:                 parsedCert.Subject,
+							SubjectAlternativeNames: parsedCert.DNSNames,
+							Issuer:                  parsedCert.Issuer.CommonName,
+							Organizations:           parsedCert.Issuer.Organization,
+							NotAfter:                parsedCert.NotAfter,
+							NotBefore:               parsedCert.NotBefore,
+							IsValid:                 currentTime.Before(parsedCert.NotAfter),
+							IsCA:                    parsedCert.IsCA,
+						})
+						certJson, _ = json.MarshalIndent(certInfo, "", "\t")
+					}
 				}
 
 			}
