@@ -217,6 +217,7 @@ type RegistryImages struct {
 }
 
 // Cannot rename as Certificate as it is already defined in hostcollector_shared.go
+// TODO, cleanup after convo with @banjo.
 type Certificates struct {
 	CollectorMeta       `json:",inline" yaml:",inline"`
 	Name                string            `json:"name,omitempty" yaml:"name,omitempty"`
@@ -249,7 +250,7 @@ type Collect struct {
 	Longhorn         *Longhorn         `json:"longhorn,omitempty" yaml:"longhorn,omitempty"`
 	RegistryImages   *RegistryImages   `json:"registryImages,omitempty" yaml:"registryImages,omitempty"`
 	Sysctl           *Sysctl           `json:"sysctl,omitempty" yaml:"sysctl,omitempty"`
-	Certificates     *Certificates     `json:"certificate,omitempty" yaml:"certificate,omitempty"`
+	Certificates     *Certificates     `json:"certificates,omitempty" yaml:"certificates,omitempty"`
 }
 
 func (c *Collect) AccessReviewSpecs(overrideNS string) []authorizationv1.SelfSubjectAccessReviewSpec {
