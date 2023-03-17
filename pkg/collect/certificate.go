@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	//"github.com/pkg/errors"
+	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -152,7 +152,17 @@ func configMapCertCollector(configMapSources map[string]string, client kubernete
 
 // secret certificate collector function
 func secretCertCollector(secretSources map[string]string, client kubernetes.Interface) []byte {
-	//var trackErrors []error
+	var trackErrors []error
+
+	//note to @Banjo - do we keep this in to protect again NIL Pointer Dereference?
+	//use case would be if we fail to validate object is a certificate rn; using contains.strings...
+	defer func() {
+		if err := recover(); err != nil {
+			panicError := errors.New(fmt.Sprintf("error:%v", err))
+			trackErrors = append(trackErrors, panicError)
+
+		}
+	}()
 
 	currentTime := time.Now()
 	var certInfo []ParsedCertificate
@@ -175,21 +185,20 @@ func secretCertCollector(secretSources map[string]string, client kubernetes.Inte
 
 					data := string(cert)
 					var block *pem.Block
-					if !strings.Contains(data, "BEGIN CERTIFICATE") && strings.Contains(data, "END CERTIFICATE") {
+					if strings.Contains(data, "BEGIN CERTIFICATE") && strings.Contains(data, "END CERTIFICATE") {
 
 						block, _ = pem.Decode([]byte(data))
 
 						//parsed SSL certificate
 						parsedCert, errParse := x509.ParseCertificate(block.Bytes)
 						if errParse != nil {
-							fmt.Println("failed to parse certificate: %v", err.Error())
+							fmt.Println("failed to parse certificate: %v", errParse.Error())
 							return nil
 						}
 
+						//Just note for myself; will clean up in final version
 						//x509.VerifyOptions()
-
 						//x509.HostnameError
-
 						/*
 							opts := x509.VerifyOptions{
 								DNSName: "deepsource.io",
@@ -201,6 +210,7 @@ func secretCertCollector(secretSources map[string]string, client kubernetes.Inte
 							CertificateSource: CertificateSource{
 								SecretName: secret.Name,
 								Namespace:  secret.Namespace,
+								Errors:     trackErrors,
 							},
 							CertName:                certName,
 							Subject:                 parsedCert.Subject,
@@ -213,9 +223,14 @@ func secretCertCollector(secretSources map[string]string, client kubernetes.Inte
 							IsCA:                    parsedCert.IsCA,
 						})
 						certJson, _ = json.MarshalIndent(certInfo, "", "\t")
-					}
-				}
+					} else {
 
+						err := errors.New(("error: This object is not a certificate"))
+						trackErrors = append(trackErrors, err)
+
+					}
+
+				}
 			}
 		}
 	}
