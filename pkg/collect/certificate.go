@@ -81,13 +81,18 @@ func (c *CollectInclusterCertificate) Collect(progressChan chan<- interface{}) (
 // configmap certificate collector function
 func configMapCertCollector(configMapSources map[string]string, client kubernetes.Interface) []byte {
 
+	var trackErrors []error
+
+	//note to @Banjo - do we keep this in to protect again NIL Pointer Dereference?
+	//use case would be if we fail to validate object is a certificate rn; using contains.strings...
 	defer func() {
 		if err := recover(); err != nil {
-			log.Println("panic occurred:", err)
+			panicError := errors.New(fmt.Sprintf("error:%v", err))
+			trackErrors = append(trackErrors, panicError)
+
 		}
 	}()
 
-	var trackErrors []error
 	currentTime := time.Now()
 	var certInfo []ParsedCertificate
 	var certJson = []byte("[]")
@@ -106,10 +111,11 @@ func configMapCertCollector(configMapSources map[string]string, client kubernete
 			if sourceName == configMap.Name {
 
 				for certName, cert := range configMap.Data {
-					if certName[len(certName)-3:] == "crt" {
+					//if certName[len(certName)-3:] == "crt" {
 
-						data := string(cert)
-						var block *pem.Block
+					data := string(cert)
+					var block *pem.Block
+					if strings.Contains(data, "BEGIN CERTIFICATE") && strings.Contains(data, "END CERTIFICATE") {
 
 						block, _ = pem.Decode([]byte(data))
 
@@ -138,9 +144,11 @@ func configMapCertCollector(configMapSources map[string]string, client kubernete
 							})
 							certJson, _ = json.MarshalIndent(certInfo, "", "\t")
 						} else {
-							trackErrors = append(trackErrors, err)
-						}
 
+							err := errors.New(("error: This object is not a certificate"))
+							trackErrors = append(trackErrors, err)
+
+						}
 					}
 				}
 			}
