@@ -64,10 +64,10 @@ func (c *CollectCertificates) Collect(progressChan chan<- interface{}) (Collecto
 	output := NewResult()
 
 	// collect configmap certificate
-	cm := configMapCertCollector(c.Collector.ConfigMapSources, c.Client)
+	cm := configMapCertCollector(c.Collector.ConfigMaps, c.Client)
 
 	// collect secret certificate
-	secret := secretCertCollector(c.Collector.SecretSources, c.Client)
+	secret := secretCertCollector(c.Collector.Secrets, c.Client)
 
 	results := append(cm, secret...)
 
