@@ -88,11 +88,12 @@ func (c *CollectCertificates) Collect(progressChan chan<- interface{}) (Collecto
 
 	// create JSON here
 	var certsJson = []byte("[]")
-	//err := json.Unmarshal(certsJson, &results)
-	_, err := json.MarshalIndent(results, "", " ")
+	err := json.Unmarshal(certsJson, &results)
+
 	if err != nil {
 		log.Println(err)
 	}
+	certsJson, _ = json.MarshalIndent(results, "", "\t")
 
 	log.Println(string(certsJson))
 
