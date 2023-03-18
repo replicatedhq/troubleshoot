@@ -76,7 +76,7 @@ func (c *CollectCertificates) Collect(progressChan chan<- interface{}) (Collecto
 
 	results = append(results, configMapCollection)
 
-	log.Println("configmap -- result collection:", configMapCollection)
+	log.Println("configmap -- result collection:", results)
 
 	// collect secret certificate
 	secretCollection := secretCertCollector(c.Collector.Secrets, c.Client)
@@ -84,7 +84,7 @@ func (c *CollectCertificates) Collect(progressChan chan<- interface{}) (Collecto
 
 	results = append(results, secretCollection)
 
-	log.Println("secret -- result collection:", secretCollection)
+	log.Println("secret -- result collection:", results)
 
 	// create JSON here
 	var certsJson = []byte("[]")
