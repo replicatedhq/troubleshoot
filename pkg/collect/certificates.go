@@ -73,6 +73,7 @@ func (c *CollectCertificates) Collect(progressChan chan<- interface{}) (Collecto
 
 	// collect configmap certificate
 	configMapCollection := configMapCertCollector(c.Collector.ConfigMaps, c.Client)
+	log.Println("configmapcollection:", configMapCollection)
 
 	collectionResults = append(collectionResults, configMapCollection)
 
