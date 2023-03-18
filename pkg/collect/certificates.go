@@ -69,22 +69,26 @@ func (c *CollectCertificates) Collect(progressChan chan<- interface{}) (Collecto
 
 	output := NewResult()
 
-	collectionResults := []CertCollection{}
+	results := []CertCollection{}
 
 	// collect configmap certificate
 	configMapCollection := configMapCertCollector(c.Collector.ConfigMaps, c.Client)
-	log.Println("configmapcollection:", configMapCollection)
 
-	collectionResults = append(collectionResults, configMapCollection)
+	results = append(results, configMapCollection)
+
+	log.Println("configmap -- result collection:", configMapCollection)
 
 	// collect secret certificate
 	secretCollection := secretCertCollector(c.Collector.Secrets, c.Client)
+	log.Println("secret -- collection:", secretCollection)
 
-	collectionResults = append(collectionResults, secretCollection)
+	results = append(results, secretCollection)
+
+	log.Println("secret -- result collection:", secretCollection)
 
 	// create JSON here
 	var certsJson = []byte("[]")
-	err := json.Unmarshal(certsJson, &collectionResults)
+	err := json.Unmarshal(certsJson, &results)
 	if err != nil {
 		log.Println(err)
 	}
