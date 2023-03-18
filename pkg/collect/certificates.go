@@ -76,15 +76,15 @@ func (c *CollectCertificates) Collect(progressChan chan<- interface{}) (Collecto
 
 	results = append(results, configMapCollection)
 
-	log.Println("configmap -- result collection:", results)
+	//log.Println("configmap -- result collection:", results)
 
 	// collect secret certificate
 	secretCollection := secretCertCollector(c.Collector.Secrets, c.Client)
-	log.Println("secret -- collection:", secretCollection)
+	//log.Println("secret -- collection:", secretCollection)
 
 	results = append(results, secretCollection)
 
-	log.Println("secret -- result collection:", results)
+	//log.Println("secret -- result collection:", results)
 
 	// create JSON here
 	var certsJson = []byte("[]")
@@ -92,6 +92,8 @@ func (c *CollectCertificates) Collect(progressChan chan<- interface{}) (Collecto
 	if err != nil {
 		log.Println(err)
 	}
+
+	log.Println(string(certsJson))
 
 	filePath := "certificates/certificates.json"
 
