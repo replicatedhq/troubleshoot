@@ -82,7 +82,7 @@ func (c *CollectCertificates) Collect(progressChan chan<- interface{}) (Collecto
 	collectionResults = append(collectionResults, secretCollection)
 
 	// create JSON here
-	var certsJson []byte
+	var certsJson = []byte("[]")
 	err := json.Unmarshal(certsJson, &collectionResults)
 	if err != nil {
 		log.Println(err)
