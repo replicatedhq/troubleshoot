@@ -29,28 +29,18 @@ type CollectCertificates struct {
 	RBACErrors
 }
 
-func decodePem(certInput string) tls.Certificate {
-	var cert tls.Certificate
-	certPEMBlock := []byte(certInput)
-	var certDERBlock *pem.Block
-	for {
-		certDERBlock, certPEMBlock = pem.Decode(certPEMBlock)
-		if certDERBlock == nil {
-			break
-		}
-		if certDERBlock.Type == "CERTIFICATE" {
-			cert.Certificate = append(cert.Certificate, certDERBlock.Bytes)
-		}
-	}
-	return cert
+// Collect source information - where certificate came from.
+
+type CertCollection struct {
+	CertificateChain []ParsedCertificate `json:"certificateChain"`
+	Errors           []error             `json:"errors"`
+	Source           CertificateSource   `json:"source"`
 }
 
-// Collect source information - where certificate came from.
 type CertificateSource struct {
-	SecretName    string  `json:"secret,omitempty"`
-	ConfigMapName string  `json:"configMap,omitempty"`
-	Namespace     string  `json:"namespace,omitempty"`
-	Errors        []error `json:"errors,omitempty"`
+	SecretName    string `json:"secret,omitempty"`
+	ConfigMapName string `json:"configMap,omitempty"`
+	Namespace     string `json:"namespace,omitempty"`
 }
 
 // Certificate Struct
@@ -97,7 +87,7 @@ func (c *CollectCertificates) Collect(progressChan chan<- interface{}) (Collecto
 // configmap certificate collector function
 func configMapCertCollector(configMapName map[string]string, client kubernetes.Interface) []byte {
 
-	var trackErrors []error
+	//var trackErrors []error
 
 	currentTime := time.Now()
 	var certInfo []ParsedCertificate
@@ -135,7 +125,6 @@ func configMapCertCollector(configMapName map[string]string, client kubernetes.I
 								CertificateSource: CertificateSource{
 									ConfigMapName: configMap.Name,
 									Namespace:     configMap.Namespace,
-									Errors:        trackErrors,
 								},
 								CertName:                certName,
 								Subject:                 parsedCert.Subject, //TODO
@@ -161,7 +150,7 @@ func configMapCertCollector(configMapName map[string]string, client kubernetes.I
 
 // secret certificate collector function
 func secretCertCollector(secretName map[string]string, client kubernetes.Interface) []byte {
-	var trackErrors []error
+	//var trackErrors []error
 
 	currentTime := time.Now()
 	var certInfo []ParsedCertificate
@@ -200,7 +189,6 @@ func secretCertCollector(secretName map[string]string, client kubernetes.Interfa
 								CertificateSource: CertificateSource{
 									SecretName: secret.Name,
 									Namespace:  secret.Namespace,
-									Errors:     trackErrors,
 								},
 								CertName:                certName,
 								Subject:                 parsedCert.Subject,
@@ -221,4 +209,20 @@ func secretCertCollector(secretName map[string]string, client kubernetes.Interfa
 		}
 	}
 	return certJson
+}
+
+func decodePem(certInput string) tls.Certificate {
+	var cert tls.Certificate
+	certPEMBlock := []byte(certInput)
+	var certDERBlock *pem.Block
+	for {
+		certDERBlock, certPEMBlock = pem.Decode(certPEMBlock)
+		if certDERBlock == nil {
+			break
+		}
+		if certDERBlock.Type == "CERTIFICATE" {
+			cert.Certificate = append(cert.Certificate, certDERBlock.Bytes)
+		}
+	}
+	return cert
 }
