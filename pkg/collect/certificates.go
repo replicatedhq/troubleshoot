@@ -13,7 +13,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -96,7 +95,7 @@ func (c *CollectCertificates) Collect(progressChan chan<- interface{}) (Collecto
 }
 
 // configmap certificate collector function
-func configMapCertCollector(configMapSources map[string]string, client kubernetes.Interface) []byte {
+func configMapCertCollector(configMapName map[string]string, client kubernetes.Interface) []byte {
 
 	var trackErrors []error
 
@@ -108,7 +107,7 @@ func configMapCertCollector(configMapSources map[string]string, client kubernete
 		log.Println(err)
 	}
 
-	for sourceName, namespace := range configMapSources {
+	for sourceName, namespace := range configMapName {
 
 		listOptions := metav1.ListOptions{}
 
@@ -117,43 +116,41 @@ func configMapCertCollector(configMapSources map[string]string, client kubernete
 		for _, configMap := range configMaps.Items {
 			if sourceName == configMap.Name {
 
-				for certName, cert := range configMap.Data {
+				for certName, certs := range configMap.Data {
+					data := string(certs)
 
-					data := string(cert)
-					var block *pem.Block
 					if strings.Contains(data, "BEGIN CERTIFICATE") && strings.Contains(data, "END CERTIFICATE") {
 
-						block, _ = pem.Decode([]byte(data))
+						certChain := decodePem(data)
 
-						//parsed SSL certificate
-						parsedCert, errParse := x509.ParseCertificate(block.Bytes)
-						if errParse != nil {
-							log.Println(errParse)
+						for _, cert := range certChain.Certificate {
+
+							//parsed SSL certificate
+							parsedCert, errParse := x509.ParseCertificate(cert)
+							if errParse != nil {
+								log.Println(errParse)
+							}
+
+							certInfo = append(certInfo, ParsedCertificate{
+								CertificateSource: CertificateSource{
+									ConfigMapName: configMap.Name,
+									Namespace:     configMap.Namespace,
+									Errors:        trackErrors,
+								},
+								CertName:                certName,
+								Subject:                 parsedCert.Subject, //TODO
+								SubjectAlternativeNames: parsedCert.DNSNames,
+								Issuer:                  parsedCert.Issuer.CommonName,
+								Organizations:           parsedCert.Issuer.Organization,
+								NotAfter:                parsedCert.NotAfter,
+								NotBefore:               parsedCert.NotBefore,
+								IsValid:                 currentTime.Before(parsedCert.NotAfter),
+								IsCA:                    parsedCert.IsCA,
+							})
+							certJson, _ = json.MarshalIndent(certInfo, "", "\t")
 						}
 
-						certInfo = append(certInfo, ParsedCertificate{
-							CertificateSource: CertificateSource{
-								ConfigMapName: configMap.Name,
-								Namespace:     configMap.Namespace,
-							},
-							CertName:                certName,
-							Subject:                 parsedCert.Subject, //TODO
-							SubjectAlternativeNames: parsedCert.DNSNames,
-							Issuer:                  parsedCert.Issuer.CommonName,
-							Organizations:           parsedCert.Issuer.Organization,
-							NotAfter:                parsedCert.NotAfter,
-							NotBefore:               parsedCert.NotBefore,
-							IsValid:                 currentTime.Before(parsedCert.NotAfter),
-							IsCA:                    parsedCert.IsCA,
-						})
-						certJson, _ = json.MarshalIndent(certInfo, "", "\t")
-					} else {
-
-						err := errors.New(("error: This object is not a certificate"))
-						trackErrors = append(trackErrors, err)
-
 					}
-
 				}
 			}
 		}
@@ -163,7 +160,7 @@ func configMapCertCollector(configMapSources map[string]string, client kubernete
 }
 
 // secret certificate collector function
-func secretCertCollector(secretSources map[string]string, client kubernetes.Interface) []byte {
+func secretCertCollector(secretName map[string]string, client kubernetes.Interface) []byte {
 	var trackErrors []error
 
 	currentTime := time.Now()
@@ -174,7 +171,7 @@ func secretCertCollector(secretSources map[string]string, client kubernetes.Inte
 		log.Println(err)
 	}
 
-	for sourceName, namespace := range secretSources {
+	for sourceName, namespace := range secretName {
 
 		listOptions := metav1.ListOptions{}
 		secrets, _ := client.CoreV1().Secrets(namespace).List(context.Background(), listOptions)
@@ -186,12 +183,8 @@ func secretCertCollector(secretSources map[string]string, client kubernetes.Inte
 
 					data := string(certs)
 
-					//var block *pem.Block
-
 					if strings.Contains(data, "BEGIN CERTIFICATE") && strings.Contains(data, "END CERTIFICATE") {
 
-						//block, _ = pem.Decode([]byte(data))
-						//block, _ = pem.Decode([]byte(data))
 						certChain := decodePem(data)
 
 						for _, cert := range certChain.Certificate {
@@ -202,16 +195,6 @@ func secretCertCollector(secretSources map[string]string, client kubernetes.Inte
 								fmt.Println("failed to parse certificate: %v", errParse.Error())
 								continue
 							}
-
-							//Just note for myself; will clean up in final version
-							//x509.VerifyOptions()
-							//x509.HostnameError
-							/*
-								opts := x509.VerifyOptions{
-									DNSName: "deepsource.io",
-									Roots:   roots,
-								}
-							*/
 
 							certInfo = append(certInfo, ParsedCertificate{
 								CertificateSource: CertificateSource{
