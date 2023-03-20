@@ -1,6 +1,8 @@
 package supportbundle
 
 import (
+	"bytes"
+	"context"
 	"fmt"
 	"net/http"
 	"os"
@@ -11,11 +13,14 @@ import (
 	cursor "github.com/ahmetalpbalkan/go-cursor"
 	"github.com/fatih/color"
 	"github.com/pkg/errors"
+	"github.com/replicatedhq/troubleshoot/internal/traces"
 	analyzer "github.com/replicatedhq/troubleshoot/pkg/analyze"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/replicatedhq/troubleshoot/pkg/collect"
 	"github.com/replicatedhq/troubleshoot/pkg/constants"
 	"github.com/replicatedhq/troubleshoot/pkg/convert"
+	"github.com/replicatedhq/troubleshoot/pkg/logger"
+	"go.opentelemetry.io/otel"
 	"k8s.io/client-go/rest"
 	"k8s.io/klog/v2"
 )
@@ -43,7 +48,10 @@ type SupportBundleResponse struct {
 // collectors, analyzers and after collection steps. Input arguments are specifications.
 // if FromCLI option is set to true, the output is the name of the archive on disk in the cwd.
 // if FromCLI option is set to false, the support bundle is archived in the OS temp folder (os.TempDir()).
-func CollectSupportBundleFromSpec(spec *troubleshootv1beta2.SupportBundleSpec, additionalRedactors *troubleshootv1beta2.Redactor, opts SupportBundleCreateOpts) (*SupportBundleResponse, error) {
+func CollectSupportBundleFromSpec(
+	spec *troubleshootv1beta2.SupportBundleSpec, additionalRedactors *troubleshootv1beta2.Redactor, opts SupportBundleCreateOpts,
+) (*SupportBundleResponse, error) {
+
 	resultsResponse := SupportBundleResponse{}
 
 	if opts.KubernetesRestConfig == nil {
@@ -90,13 +98,23 @@ func CollectSupportBundleFromSpec(spec *troubleshootv1beta2.SupportBundleSpec, a
 
 	var result, files, hostFiles collect.CollectorResult
 
+	ctx, root := otel.Tracer(constants.LIB_TRACER_NAME).Start(
+		context.Background(), constants.TROUBLESHOOT_ROOT_SPAN_NAME,
+	)
+	defer func() {
+		// If this function returns an error, root.End() may not be called.
+		// We want to ensure this happens, so we defer it. It is safe to call
+		// root.End() multiple times.
+		root.End()
+	}()
+
 	// Cache error returned by collectors and return it at the end of the function
 	// so as to have a chance to run analyzers and archive the support bundle after.
 	// If both host and in cluster collectors fail, the errors will be wrapped
 	collectorsErrs := []string{}
 	if spec.HostCollectors != nil {
 		// Run host collectors
-		hostFiles, err = runHostCollectors(spec.HostCollectors, additionalRedactors, bundlePath, opts)
+		hostFiles, err = runHostCollectors(ctx, spec.HostCollectors, additionalRedactors, bundlePath, opts)
 		if err != nil {
 			collectorsErrs = append(collectorsErrs, fmt.Sprintf("failed to run host collectors: %s", err))
 		}
@@ -104,7 +122,7 @@ func CollectSupportBundleFromSpec(spec *troubleshootv1beta2.SupportBundleSpec, a
 
 	if spec.Collectors != nil {
 		// Run collectors
-		files, err = runCollectors(spec.Collectors, additionalRedactors, bundlePath, opts)
+		files, err = runCollectors(ctx, spec.Collectors, additionalRedactors, bundlePath, opts)
 		if err != nil {
 			collectorsErrs = append(collectorsErrs, fmt.Sprintf("failed to run collectors: %s", err))
 		}
@@ -128,13 +146,13 @@ func CollectSupportBundleFromSpec(spec *troubleshootv1beta2.SupportBundleSpec, a
 		return nil, errors.Wrap(err, "failed to get version file")
 	}
 
-	err = result.SaveResult(bundlePath, constants.VersionFilename, version)
+	err = result.SaveResult(bundlePath, constants.VERSION_FILENAME, version)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to write version")
 	}
 
 	// Run Analyzers
-	analyzeResults, err := AnalyzeSupportBundle(spec, bundlePath)
+	analyzeResults, err := AnalyzeSupportBundle(ctx, spec, bundlePath)
 	if err != nil {
 		if opts.FromCLI {
 			c := color.New(color.FgHiRed)
@@ -156,6 +174,17 @@ func CollectSupportBundleFromSpec(spec *troubleshootv1beta2.SupportBundleSpec, a
 		return nil, errors.Wrap(err, "failed to write analysis")
 	}
 
+	// Complete tracing by ending the root span and collecting
+	// the summary of the traces. Store them in the support bundle.
+	root.End()
+	summary := traces.GetExporterInstance().GetSummary()
+	err = result.SaveResult(bundlePath, "execution-data/summary.txt", bytes.NewReader([]byte(summary)))
+	if err != nil {
+		// Don't fail the support bundle if we can't save the execution summary
+		logger.Printf("failed to save execution summary file in the support bundle: %v", err)
+	}
+
+	// Archive Support Bundle
 	if err := result.ArchiveSupportBundle(bundlePath, filename); err != nil {
 		return nil, errors.Wrap(err, "create bundle file")
 	}
@@ -174,6 +203,7 @@ func CollectSupportBundleFromSpec(spec *troubleshootv1beta2.SupportBundleSpec, a
 
 	if len(collectorsErrs) > 0 {
 		// TODO: Consider a collectors error type
+		// TODO: use errors.Join in go 1.20 (https://pkg.go.dev/errors#Join)
 		return &resultsResponse, fmt.Errorf(strings.Join(collectorsErrs, "\n"))
 	}
 
@@ -222,11 +252,11 @@ func ProcessSupportBundleAfterCollection(spec *troubleshootv1beta2.SupportBundle
 
 // AnalyzeSupportBundle performs analysis on a support bundle using the support bundle spec and an already unpacked support
 // bundle on disk
-func AnalyzeSupportBundle(spec *troubleshootv1beta2.SupportBundleSpec, tmpDir string) ([]*analyzer.AnalyzeResult, error) {
+func AnalyzeSupportBundle(ctx context.Context, spec *troubleshootv1beta2.SupportBundleSpec, tmpDir string) ([]*analyzer.AnalyzeResult, error) {
 	if len(spec.Analyzers) == 0 && len(spec.HostAnalyzers) == 0 {
 		return nil, nil
 	}
-	analyzeResults, err := analyzer.AnalyzeLocal(tmpDir, spec.Analyzers, spec.HostAnalyzers)
+	analyzeResults, err := analyzer.AnalyzeLocal(ctx, tmpDir, spec.Analyzers, spec.HostAnalyzers)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to analyze support bundle")
 	}

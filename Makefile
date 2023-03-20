@@ -35,6 +35,7 @@ define LDFLAGS
 endef
 
 BUILDFLAGS = -tags "netgo containers_image_ostree_stub exclude_graphdriver_devicemapper exclude_graphdriver_btrfs containers_image_openpgp" -installsuffix netgo
+BUILDPATHS = ./pkg/... ./cmd/... ./internal/...
 
 all: test support-bundle preflight collect analyze
 
@@ -45,16 +46,16 @@ ffi: fmt vet
 .PHONY: test
 test: generate fmt vet
 	if [ -n $(RUN) ]; then \
-		go test ${BUILDFLAGS} ./pkg/... ./cmd/... -coverprofile cover.out -run $(RUN); \
+		go test ${BUILDFLAGS} ${BUILDPATHS} -coverprofile cover.out -run $(RUN); \
 	else \
-		go test ${BUILDFLAGS} ./pkg/... ./cmd/... -coverprofile cover.out; \
+		go test ${BUILDFLAGS} ${BUILDPATHS} -coverprofile cover.out; \
 	fi
 
 # Go tests that require a K8s instance
 # TODOLATER: merge with test, so we get unified coverage reports? it'll add 21~sec to the test job though...
 .PHONY: test-integration
 test-integration:
-	go test -v --tags "integration exclude_graphdriver_devicemapper exclude_graphdriver_btrfs" ./pkg/... ./cmd/...
+	go test -v --tags "integration exclude_graphdriver_devicemapper exclude_graphdriver_btrfs" ${BUILDPATHS}
 
 .PHONY: preflight-e2e-test
 preflight-e2e-test:
@@ -82,11 +83,11 @@ collect:
 
 .PHONY: fmt
 fmt:
-	go fmt ./pkg/... ./cmd/...
+	go fmt ${BUILDPATHS}
 
 .PHONY: vet
 vet:
-	go vet ${BUILDFLAGS} ./pkg/... ./cmd/...
+	go vet ${BUILDFLAGS} ${BUILDPATHS}
 
 .PHONY: generate
 generate: controller-gen client-gen
@@ -213,8 +214,8 @@ scan:
 
 .PHONY: lint
 lint:
-	golangci-lint run --new -c .golangci.yaml pkg/... cmd/...
+	golangci-lint run --new -c .golangci.yaml ${BUILDPATHS}
 
 .PHONY: lint-and-fix
 lint-and-fix:
-	golangci-lint run --new --fix -c .golangci.yaml pkg/... cmd/...
+	golangci-lint run --new --fix -c .golangci.yaml ${BUILDPATHS}
