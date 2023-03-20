@@ -30,9 +30,9 @@ type CollectCertificates struct {
 
 // Collect source information - where certificate came from.
 type CertCollection struct {
-	CertificateChain []ParsedCertificate `json:"certificateChain"`
-	Errors           []error             `json:"errors"`
 	Source           []CertificateSource `json:"source"`
+	Errors           []error             `json:"errors"`
+	CertificateChain []ParsedCertificate `json:"certificateChain"`
 }
 
 type CertificateSource struct {
@@ -190,8 +190,8 @@ func secretCertCollector(secretName map[string]string, client kubernetes.Interfa
 							}
 
 							source = append(source, CertificateSource{
-								ConfigMapName: secret.Name,
-								Namespace:     secret.Namespace,
+								SecretName: secret.Name,
+								Namespace:  secret.Namespace,
 							})
 
 							certInfo = append(certInfo, ParsedCertificate{
