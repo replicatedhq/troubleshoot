@@ -176,6 +176,11 @@ func secretCertCollector(secretName map[string]string, client kubernetes.Interfa
 
 					if strings.Contains(data, "BEGIN CERTIFICATE") && strings.Contains(data, "END CERTIFICATE") {
 
+						source = append(source, CertificateSource{
+							SecretName: secret.Name,
+							Namespace:  secret.Namespace,
+						})
+
 						certChain := decodePem(data)
 
 						for _, cert := range certChain.Certificate {
@@ -188,11 +193,6 @@ func secretCertCollector(secretName map[string]string, client kubernetes.Interfa
 									trackErrors = append(trackErrors, err)
 								}
 							}
-
-							source = append(source, CertificateSource{
-								SecretName: secret.Name,
-								Namespace:  secret.Namespace,
-							})
 
 							certInfo = append(certInfo, ParsedCertificate{
 								CertName:                certName,
