@@ -15,12 +15,17 @@ import (
 	"k8s.io/client-go/rest"
 )
 
+<<<<<<< HEAD
 type CollectMssql struct {
+=======
+type CollectMSSql struct {
+>>>>>>> ffcf962 (Adds MSSQL collector based on Postgres collector)
 	Collector    *troubleshootv1beta2.Database
 	BundlePath   string
 	Namespace    string
 	ClientConfig *rest.Config
 	Client       kubernetes.Interface
+<<<<<<< HEAD
 	Context      context.Context
 	RBACErrors
 }
@@ -34,6 +39,21 @@ func (c *CollectMssql) IsExcluded() (bool, error) {
 }
 
 func (c *CollectMssql) Collect(progressChan chan<- interface{}) (CollectorResult, error) {
+=======
+	ctx          context.Context
+	RBACErrors
+}
+
+func (c *CollectMSSql) Title() string {
+	return collectorTitleOrDefault(c.Collector.CollectorMeta, "MSSSQLServer")
+}
+
+func (c *CollectMSSql) IsExcluded() (bool, error) {
+	return isExcluded(c.Collector.Exclude)
+}
+
+func (c *CollectMSSql) Collect(progressChan chan<- interface{}) (CollectorResult, error) {
+>>>>>>> ffcf962 (Adds MSSQL collector based on Postgres collector)
 	databaseConnection := DatabaseConnection{}
 
 	db, err := sql.Open("mssql", c.Collector.URI)
@@ -48,7 +68,11 @@ func (c *CollectMssql) Collect(progressChan chan<- interface{}) (CollectorResult
 		} else {
 			databaseConnection.IsConnected = true
 
+<<<<<<< HEAD
 			mssqlVersion, err := parseMsSqlVersion(version)
+=======
+			mssqlVersion, err := parseMSSqlVersion(version)
+>>>>>>> ffcf962 (Adds MSSQL collector based on Postgres collector)
 			if err != nil {
 				databaseConnection.Version = "Unknown"
 				databaseConnection.Error = err.Error()
@@ -74,8 +98,13 @@ func (c *CollectMssql) Collect(progressChan chan<- interface{}) (CollectorResult
 	return output, nil
 }
 
+<<<<<<< HEAD
 func parseMsSqlVersion(mssqlVersion string) (string, error) {
 	re := regexp.MustCompile(".*SQL.*-\\s+([0-9.]+)")
+=======
+func parseMSSqlVersion(mssqlVersion string) (string, error) {
+	re := regexp.MustCompile("MSSQLServer ([0-9.]*)")
+>>>>>>> ffcf962 (Adds MSSQL collector based on Postgres collector)
 	matches := re.FindStringSubmatch(mssqlVersion)
 	if len(matches) < 2 {
 		return "", errors.Errorf("mssql version did not match regex: %q", mssqlVersion)
