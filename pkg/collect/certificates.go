@@ -30,7 +30,7 @@ type CollectCertificates struct {
 
 // Collect source information - where certificate came from.
 type CertCollection struct {
-	Source           []CertificateSource `json:"source"`
+	Source           *CertificateSource  `json:"source"`
 	Errors           []error             `json:"errors"`
 	CertificateChain []ParsedCertificate `json:"certificateChain"`
 }
@@ -98,7 +98,7 @@ func configMapCertCollector(configMapName string, namespace string, client kuber
 	currentTime := time.Now()
 	var certInfo []ParsedCertificate
 	var trackErrors []error
-	var source []CertificateSource
+	var source = &CertificateSource{}
 
 	listOptions := metav1.ListOptions{}
 
@@ -112,10 +112,10 @@ func configMapCertCollector(configMapName string, namespace string, client kuber
 
 				if strings.Contains(data, "BEGIN CERTIFICATE") && strings.Contains(data, "END CERTIFICATE") {
 
-					source = append(source, CertificateSource{
+					source = &CertificateSource{
 						ConfigMapName: configMap.Name,
 						Namespace:     configMap.Namespace,
-					})
+					}
 
 					certChain := decodePem(data)
 
