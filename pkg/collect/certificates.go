@@ -8,8 +8,6 @@ import (
 	"crypto/x509/pkix"
 	"encoding/json"
 	"encoding/pem"
-	"fmt"
-	"log"
 	"strings"
 	"time"
 
@@ -76,19 +74,12 @@ func (c *CollectCertificates) Collect(progressChan chan<- interface{}) (Collecto
 
 	results = append(results, configMapCollection)
 
-	//log.Println("configmap -- result collection:", results)
-
 	// collect secret certificate
 	secretCollection := secretCertCollector(c.Collector.Secrets, c.Client)
-	//log.Println("secret -- collection:", secretCollection)
 
 	results = append(results, secretCollection)
 
-	//log.Println("final -- result collection:", results)
-
 	certsJson, _ := json.MarshalIndent(results, "", "\t")
-
-	log.Println(string(certsJson))
 
 	filePath := "certificates/certificates.json"
 
@@ -125,7 +116,8 @@ func configMapCertCollector(configMapName map[string]string, client kubernetes.I
 							//parsed SSL certificate
 							parsedCert, errParse := x509.ParseCertificate(cert)
 							if errParse != nil {
-								log.Println(errParse)
+								err := errors.New(("error: failed to parse certificate"))
+								trackErrors = append(trackErrors, err)
 							}
 
 							source = append(source, CertificateSource{
@@ -158,9 +150,9 @@ func configMapCertCollector(configMapName map[string]string, client kubernetes.I
 	}
 
 	return CertCollection{
-		CertificateChain: certInfo,
-		Errors:           trackErrors,
 		Source:           source,
+		Errors:           trackErrors,
+		CertificateChain: certInfo,
 	}
 }
 
@@ -192,8 +184,10 @@ func secretCertCollector(secretName map[string]string, client kubernetes.Interfa
 							//parsed SSL certificate
 							parsedCert, errParse := x509.ParseCertificate(cert)
 							if errParse != nil {
-								fmt.Println("failed to parse certificate: %v", errParse.Error())
-								continue
+								if errParse != nil {
+									err := errors.New(("error: failed to parse certificate"))
+									trackErrors = append(trackErrors, err)
+								}
 							}
 
 							source = append(source, CertificateSource{
