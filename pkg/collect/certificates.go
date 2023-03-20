@@ -213,7 +213,6 @@ func secretCertCollector(secretName map[string]string, client kubernetes.Interfa
 	}
 
 	return CertCollection{
-		Source:           source,
 		Errors:           trackErrors,
 		CertificateChain: certInfo,
 	}
