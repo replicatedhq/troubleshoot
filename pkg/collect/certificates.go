@@ -80,6 +80,12 @@ func (c *CollectCertificates) Collect(progressChan chan<- interface{}) (Collecto
 
 	}
 
+	for configMapName, namespace := range c.Collector.ConfigMaps {
+		configMapCollection := configMapCertCollector(configMapName, namespace, c.Client)
+		results = append(results, configMapCollection)
+
+	}
+
 	//secretCollection := secretCertCollector(c.Collector.Secrets, c.Client)
 
 	//results = append(results, secretCollection)
