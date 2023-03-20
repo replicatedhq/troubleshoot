@@ -43,16 +43,15 @@ type CertificateSource struct {
 
 // Certificate Struct
 type ParsedCertificate struct {
-	CertificateSource       CertificateSource `json:"source"`
-	CertName                string            `json:"certificate"`
-	Subject                 pkix.RDNSequence  `json:"subject"`
-	SubjectAlternativeNames []string          `json:"subjectAlternativeNames"`
-	Issuer                  string            `json:"issuer"`
-	Organizations           []string          `json:"issuerOrganizations"`
-	NotAfter                time.Time         `json:"notAfter"`
-	NotBefore               time.Time         `json:"notBefore"`
-	IsValid                 bool              `json:"isValid"`
-	IsCA                    bool              `json:"isCA"`
+	CertName                string           `json:"certificate"`
+	Subject                 pkix.RDNSequence `json:"subject"`
+	SubjectAlternativeNames []string         `json:"subjectAlternativeNames"`
+	Issuer                  string           `json:"issuer"`
+	Organizations           []string         `json:"issuerOrganizations"`
+	NotAfter                time.Time        `json:"notAfter"`
+	NotBefore               time.Time        `json:"notBefore"`
+	IsValid                 bool             `json:"isValid"`
+	IsCA                    bool             `json:"isCA"`
 }
 
 func (c *CollectCertificates) Title() string {
@@ -196,10 +195,6 @@ func secretCertCollector(secretName map[string]string, client kubernetes.Interfa
 							})
 
 							certInfo = append(certInfo, ParsedCertificate{
-								CertificateSource: CertificateSource{
-									SecretName: secret.Name,
-									Namespace:  secret.Namespace,
-								},
 								CertName:                certName,
 								Subject:                 parsedCert.Subject.ToRDNSequence(),
 								SubjectAlternativeNames: parsedCert.DNSNames,
@@ -221,9 +216,9 @@ func secretCertCollector(secretName map[string]string, client kubernetes.Interfa
 	}
 
 	return CertCollection{
-		CertificateChain: certInfo,
-		Errors:           trackErrors,
 		Source:           source,
+		Errors:           trackErrors,
+		CertificateChain: certInfo,
 	}
 }
 
