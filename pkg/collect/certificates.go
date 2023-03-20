@@ -45,6 +45,7 @@ type CertificateSource struct {
 type ParsedCertificate struct {
 	CertName                string           `json:"certificate"`
 	Subject                 pkix.RDNSequence `json:"subject"`
+	CommonName              string           `json:"commonName"`
 	SubjectAlternativeNames []string         `json:"subjectAlternativeNames"`
 	Issuer                  string           `json:"issuer"`
 	Organizations           []string         `json:"issuerOrganizations"`
@@ -137,6 +138,7 @@ func configMapCertCollector(configMapName string, namespace string, client kuber
 						certInfo = append(certInfo, ParsedCertificate{
 							CertName:                certName,
 							Subject:                 parsedCert.Subject.ToRDNSequence(),
+							CommonName:              parsedCert.Subject.CommonName,
 							SubjectAlternativeNames: parsedCert.DNSNames,
 							Issuer:                  parsedCert.Issuer.CommonName,
 							Organizations:           parsedCert.Issuer.Organization,
