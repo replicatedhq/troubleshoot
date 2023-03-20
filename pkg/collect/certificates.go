@@ -94,61 +94,65 @@ func (c *CollectCertificates) Collect(progressChan chan<- interface{}) (Collecto
 }
 
 // configmap certificate collector function
-func configMapCertCollector(configMapName map[string]string, client kubernetes.Interface) CertCollection {
+func configMapCertCollector(configMapName string, namespace string, client kubernetes.Interface) CertCollection {
 	currentTime := time.Now()
 	var certInfo []ParsedCertificate
 	var trackErrors []error
+	var source []CertificateSource
 
-	for sourceName, namespace := range configMapName {
+	listOptions := metav1.ListOptions{}
 
-		listOptions := metav1.ListOptions{}
+	configMaps, _ := client.CoreV1().ConfigMaps(namespace).List(context.Background(), listOptions)
 
-		configMaps, _ := client.CoreV1().ConfigMaps(namespace).List(context.Background(), listOptions)
+	for _, configMap := range configMaps.Items {
+		if configMapName == configMap.Name {
 
-		for _, configMap := range configMaps.Items {
-			if sourceName == configMap.Name {
+			for certName, certs := range configMap.Data {
+				data := string(certs)
 
-				for certName, certs := range configMap.Data {
-					data := string(certs)
+				if strings.Contains(data, "BEGIN CERTIFICATE") && strings.Contains(data, "END CERTIFICATE") {
 
-					if strings.Contains(data, "BEGIN CERTIFICATE") && strings.Contains(data, "END CERTIFICATE") {
+					source = append(source, CertificateSource{
+						ConfigMapName: configMap.Name,
+						Namespace:     configMap.Namespace,
+					})
 
-						certChain := decodePem(data)
+					certChain := decodePem(data)
 
-						for _, cert := range certChain.Certificate {
+					for _, cert := range certChain.Certificate {
 
-							//parsed SSL certificate
-							parsedCert, errParse := x509.ParseCertificate(cert)
-							if errParse != nil {
-								err := errors.New(("error: failed to parse certificate"))
-								trackErrors = append(trackErrors, err)
-							}
-
-							certInfo = append(certInfo, ParsedCertificate{
-								CertName:                certName,
-								Subject:                 parsedCert.Subject.ToRDNSequence(),
-								SubjectAlternativeNames: parsedCert.DNSNames,
-								Issuer:                  parsedCert.Issuer.CommonName,
-								Organizations:           parsedCert.Issuer.Organization,
-								NotAfter:                parsedCert.NotAfter,
-								NotBefore:               parsedCert.NotBefore,
-								IsValid:                 currentTime.Before(parsedCert.NotAfter),
-								IsCA:                    parsedCert.IsCA,
-							})
-
+						//parsed SSL certificate
+						parsedCert, errParse := x509.ParseCertificate(cert)
+						if errParse != nil {
+							err := errors.New(("error: failed to parse certificate"))
+							trackErrors = append(trackErrors, err)
 						}
-					} else {
 
-						err := errors.New(("error: This object is not a certificate"))
-						trackErrors = append(trackErrors, err)
+						certInfo = append(certInfo, ParsedCertificate{
+							CertName:                certName,
+							Subject:                 parsedCert.Subject.ToRDNSequence(),
+							SubjectAlternativeNames: parsedCert.DNSNames,
+							Issuer:                  parsedCert.Issuer.CommonName,
+							Organizations:           parsedCert.Issuer.Organization,
+							NotAfter:                parsedCert.NotAfter,
+							NotBefore:               parsedCert.NotBefore,
+							IsValid:                 currentTime.Before(parsedCert.NotAfter),
+							IsCA:                    parsedCert.IsCA,
+						})
 
 					}
+				} else {
+
+					err := errors.New(("error: This object is not a certificate"))
+					trackErrors = append(trackErrors, err)
+
 				}
 			}
+
 		}
 	}
-
 	return CertCollection{
+		Source:           source,
 		Errors:           trackErrors,
 		CertificateChain: certInfo,
 	}
@@ -212,7 +216,6 @@ func secretCertCollector(secretName string, namespace string, client kubernetes.
 
 		}
 	}
-
 	return CertCollection{
 		Source:           source,
 		Errors:           trackErrors,
