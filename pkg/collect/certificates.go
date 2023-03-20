@@ -207,6 +207,7 @@ func secretCertCollector(secretName string, namespace string, client kubernetes.
 						certInfo = append(certInfo, ParsedCertificate{
 							CertName:                certName,
 							Subject:                 parsedCert.Subject.ToRDNSequence(),
+							CommonName:              parsedCert.Subject.CommonName,
 							SubjectAlternativeNames: parsedCert.DNSNames,
 							Issuer:                  parsedCert.Issuer.CommonName,
 							Organizations:           parsedCert.Issuer.Organization,
