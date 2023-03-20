@@ -30,7 +30,6 @@ type CollectCertificates struct {
 
 // Collect source information - where certificate came from.
 type CertCollection struct {
-	Source           CertificateSource   `json:"source"`
 	Errors           []error             `json:"errors"`
 	CertificateChain []ParsedCertificate `json:"certificateChain"`
 }
@@ -43,15 +42,16 @@ type CertificateSource struct {
 
 // Certificate Struct
 type ParsedCertificate struct {
-	CertName                string           `json:"certificate"`
-	Subject                 pkix.RDNSequence `json:"subject"`
-	SubjectAlternativeNames []string         `json:"subjectAlternativeNames"`
-	Issuer                  string           `json:"issuer"`
-	Organizations           []string         `json:"issuerOrganizations"`
-	NotAfter                time.Time        `json:"notAfter"`
-	NotBefore               time.Time        `json:"notBefore"`
-	IsValid                 bool             `json:"isValid"`
-	IsCA                    bool             `json:"isCA"`
+	Source                  CertificateSource `json:"source"`
+	CertName                string            `json:"certificate"`
+	Subject                 pkix.RDNSequence  `json:"subject"`
+	SubjectAlternativeNames []string          `json:"subjectAlternativeNames"`
+	Issuer                  string            `json:"issuer"`
+	Organizations           []string          `json:"issuerOrganizations"`
+	NotAfter                time.Time         `json:"notAfter"`
+	NotBefore               time.Time         `json:"notBefore"`
+	IsValid                 bool              `json:"isValid"`
+	IsCA                    bool              `json:"isCA"`
 }
 
 func (c *CollectCertificates) Title() string {
@@ -92,7 +92,6 @@ func configMapCertCollector(configMapName map[string]string, client kubernetes.I
 	currentTime := time.Now()
 	var certInfo []ParsedCertificate
 	var trackErrors []error
-	var source CertificateSource
 
 	for sourceName, namespace := range configMapName {
 
@@ -119,13 +118,11 @@ func configMapCertCollector(configMapName map[string]string, client kubernetes.I
 								trackErrors = append(trackErrors, err)
 							}
 
-							source = CertificateSource{
-								ConfigMapName: configMap.Name,
-								Namespace:     configMap.Namespace,
-							}
-
 							certInfo = append(certInfo, ParsedCertificate{
-
+								Source: CertificateSource{
+									ConfigMapName: configMap.Name,
+									Namespace:     configMap.Namespace,
+								},
 								CertName:                certName,
 								Subject:                 parsedCert.Subject.ToRDNSequence(),
 								SubjectAlternativeNames: parsedCert.DNSNames,
@@ -150,7 +147,6 @@ func configMapCertCollector(configMapName map[string]string, client kubernetes.I
 	}
 
 	return CertCollection{
-		Source:           source,
 		Errors:           trackErrors,
 		CertificateChain: certInfo,
 	}
@@ -161,7 +157,7 @@ func secretCertCollector(secretName map[string]string, client kubernetes.Interfa
 	currentTime := time.Now()
 	var certInfo []ParsedCertificate
 	var trackErrors []error
-	var source CertificateSource
+	var source []CertificateSource
 
 	for sourceName, namespace := range secretName {
 
@@ -177,6 +173,11 @@ func secretCertCollector(secretName map[string]string, client kubernetes.Interfa
 
 					if strings.Contains(data, "BEGIN CERTIFICATE") && strings.Contains(data, "END CERTIFICATE") {
 
+						source = append(source, CertificateSource{
+							SecretName: secret.Name,
+							Namespace:  secret.Namespace,
+						})
+
 						certChain := decodePem(data)
 
 						for _, cert := range certChain.Certificate {
@@ -188,11 +189,6 @@ func secretCertCollector(secretName map[string]string, client kubernetes.Interfa
 									err := errors.New(("error: failed to parse certificate"))
 									trackErrors = append(trackErrors, err)
 								}
-							}
-
-							source = CertificateSource{
-								SecretName: secret.Name,
-								Namespace:  secret.Namespace,
 							}
 
 							certInfo = append(certInfo, ParsedCertificate{
@@ -217,7 +213,6 @@ func secretCertCollector(secretName map[string]string, client kubernetes.Interfa
 	}
 
 	return CertCollection{
-		Source:           source,
 		Errors:           trackErrors,
 		CertificateChain: certInfo,
 	}
