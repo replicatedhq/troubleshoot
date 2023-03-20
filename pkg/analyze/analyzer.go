@@ -479,60 +479,24 @@ func Analyze(analyzer *troubleshootv1beta2.Analyze, getFile getCollectedFileCont
 		return results, nil
 	}
 
-	if analyzer.RegistryImages != nil {
-		isExcluded, err := isExcluded(analyzer.RegistryImages.Exclude)
-		if err != nil {
-			return nil, err
-		}
-		if isExcluded {
-			return nil, nil
-		}
-		result, err := analyzeRegistry(analyzer.RegistryImages, getFile)
-		if err != nil {
-			return nil, err
-		}
-		result.Strict = analyzer.RegistryImages.Strict.BoolOrDefaultFalse()
-		return []*AnalyzeResult{result}, nil
+	isExcluded, err := analyzerInst.IsExcluded()
+	if err != nil {
+		return nil, err
+	}
+	if isExcluded {
+		return nil, nil
 	}
 
-	if analyzer.WeaveReport != nil {
-		isExcluded, err := isExcluded(analyzer.WeaveReport.Exclude)
-		if err != nil {
-			return nil, err
-		}
-		if isExcluded {
-			return nil, nil
-		}
-		results, err := analyzeWeaveReport(analyzer.WeaveReport, findFiles)
-		if err != nil {
-			return nil, err
-		}
-		for i := range results {
-			results[i].Strict = analyzer.WeaveReport.Strict.BoolOrDefaultFalse()
-		}
-		return results, nil
+	results, err := analyzerInst.Analyze(getFile, findFiles)
+	if err != nil {
+		return nil, err
 	}
 
-	if analyzer.Sysctl != nil {
-		isExcluded, err := isExcluded(analyzer.Sysctl.Exclude)
-		if err != nil {
-			return nil, err
-		}
-		if isExcluded {
-			return nil, nil
-		}
-		result, err := analyzeSysctl(analyzer.Sysctl, findFiles)
-		if err != nil {
-			return nil, err
-		}
-		if result == nil {
-			return []*AnalyzeResult{}, nil
-		}
-		result.Strict = analyzer.Sysctl.Strict.BoolOrDefaultFalse()
-		return []*AnalyzeResult{result}, nil
+	if results == nil {
+		results = []*AnalyzeResult{}
 	}
 
-	return nil, errors.New("invalid analyzer")
+	return results, nil
 }
 
 func GetExcludeFlag(analyzer *troubleshootv1beta2.Analyze) *multitype.BoolOrString {
@@ -555,4 +519,71 @@ func GetExcludeFlag(analyzer *troubleshootv1beta2.Analyze) *multitype.BoolOrStri
 	}
 
 	return nil
+}
+
+type Analyzer interface {
+	Title() string
+	IsExcluded() (bool, error)
+	Analyze(getFile getCollectedFileContents, findFiles getChildCollectedFileContents) ([]*AnalyzeResult, error)
+}
+
+func getAnalyzer(analyzer *troubleshootv1beta2.Analyze) Analyzer {
+	switch {
+	case analyzer.ClusterVersion != nil:
+		return &AnalyzeClusterVersion{analyzer: analyzer.ClusterVersion}
+	case analyzer.StorageClass != nil:
+		return &AnalyzeStorageClass{analyzer: analyzer.StorageClass}
+	case analyzer.CustomResourceDefinition != nil:
+		return &AnalyzeCustomResourceDefinition{analyzer: analyzer.CustomResourceDefinition}
+	case analyzer.Ingress != nil:
+		return &AnalyzeIngress{analyzer: analyzer.Ingress}
+	case analyzer.Secret != nil:
+		return &AnalyzeSecret{analyzer: analyzer.Secret}
+	case analyzer.ConfigMap != nil:
+		return &AnalyzeConfigMap{analyzer: analyzer.ConfigMap}
+	case analyzer.ImagePullSecret != nil:
+		return &AnalyzeImagePullSecret{analyzer: analyzer.ImagePullSecret}
+	case analyzer.DeploymentStatus != nil:
+		return &AnalyzeDeploymentStatus{analyzer: analyzer.DeploymentStatus}
+	case analyzer.StatefulsetStatus != nil:
+		return &AnalyzeStatefulsetStatus{analyzer: analyzer.StatefulsetStatus}
+	case analyzer.JobStatus != nil:
+		return &AnalyzeJobStatus{analyzer: analyzer.JobStatus}
+	case analyzer.ReplicaSetStatus != nil:
+		return &AnalyzeReplicaSetStatus{analyzer: analyzer.ReplicaSetStatus}
+	case analyzer.ClusterPodStatuses != nil:
+		return &AnalyzeClusterPodStatuses{analyzer: analyzer.ClusterPodStatuses}
+	case analyzer.ContainerRuntime != nil:
+		return &AnalyzeContainerRuntime{analyzer: analyzer.ContainerRuntime}
+	case analyzer.Distribution != nil:
+		return &AnalyzeDistribution{analyzer: analyzer.Distribution}
+	case analyzer.NodeResources != nil:
+		return &AnalyzeNodeResources{analyzer: analyzer.NodeResources}
+	case analyzer.TextAnalyze != nil:
+		return &AnalyzeTextAnalyze{analyzer: analyzer.TextAnalyze}
+	case analyzer.YamlCompare != nil:
+		return &AnalyzeYamlCompare{analyzer: analyzer.YamlCompare}
+	case analyzer.JsonCompare != nil:
+		return &AnalyzeJsonCompare{analyzer: analyzer.JsonCompare}
+	case analyzer.Postgres != nil:
+		return &AnalyzePostgres{analyzer: analyzer.Postgres}
+	case analyzer.Mysql != nil:
+		return &AnalyzeMysql{analyzer: analyzer.Mysql}
+	case analyzer.Redis != nil:
+		return &AnalyzeRedis{analyzer: analyzer.Redis}
+	case analyzer.CephStatus != nil:
+		return &AnalyzeCephStatus{analyzer: analyzer.CephStatus}
+	case analyzer.Longhorn != nil:
+		return &AnalyzeLonghorn{analyzer: analyzer.Longhorn}
+	case analyzer.RegistryImages != nil:
+		return &AnalyzeRegistryImages{analyzer: analyzer.RegistryImages}
+	case analyzer.WeaveReport != nil:
+		return &AnalyzeWeaveReport{analyzer: analyzer.WeaveReport}
+	case analyzer.Sysctl != nil:
+		return &AnalyzeSysctl{analyzer: analyzer.Sysctl}
+	case analyzer.ClusterResource != nil:
+		return &AnalyzeClusterResource{analyzer: analyzer.ClusterResource}
+	default:
+		return nil
+	}
 }

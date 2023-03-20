@@ -47,6 +47,32 @@ const (
 	k3s           Provider = iota
 )
 
+type AnalyzeDistribution struct {
+	analyzer *troubleshootv1beta2.Distribution
+}
+
+func (a *AnalyzeDistribution) Title() string {
+	title := a.analyzer.CheckName
+	if title == "" {
+		title = "Kubernetes Distribution"
+	}
+
+	return title
+}
+
+func (a *AnalyzeDistribution) IsExcluded() (bool, error) {
+	return isExcluded(a.analyzer.Exclude)
+}
+
+func (a *AnalyzeDistribution) Analyze(getFile getCollectedFileContents, findFiles getChildCollectedFileContents) ([]*AnalyzeResult, error) {
+	result, err := a.analyzeDistribution(a.analyzer, getFile)
+	if err != nil {
+		return nil, err
+	}
+	result.Strict = a.analyzer.Strict.BoolOrDefaultFalse()
+	return []*AnalyzeResult{result}, nil
+}
+
 func CheckApiResourcesForProviders(foundProviders *providers, apiResources []*metav1.APIResourceList, provider string) string {
 	for _, resource := range apiResources {
 		if strings.HasPrefix(resource.GroupVersion, "apps.openshift.io/") {
@@ -142,7 +168,7 @@ func ParseNodesForProviders(nodes []corev1.Node) (providers, string) {
 	return foundProviders, stringProvider
 }
 
-func analyzeDistribution(analyzer *troubleshootv1beta2.Distribution, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
+func (a *AnalyzeDistribution) analyzeDistribution(analyzer *troubleshootv1beta2.Distribution, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
 	var unknownDistribution string
 	collected, err := getCollectedFileContents(fmt.Sprintf("%s/%s.json", constants.CLUSTER_RESOURCES_DIR, constants.CLUSTER_RESOURCES_NODES))
 	if err != nil {
@@ -167,12 +193,8 @@ func analyzeDistribution(analyzer *troubleshootv1beta2.Distribution, getCollecte
 		_ = CheckApiResourcesForProviders(&foundProviders, apiResources, "")
 	}
 
-	title := analyzer.CheckName
-	if title == "" {
-		title = "Kubernetes Distribution"
-	}
 	result := &AnalyzeResult{
-		Title:   title,
+		Title:   a.Title(),
 		IconKey: "kubernetes_distribution",
 		IconURI: "https://troubleshoot.sh/images/analyzer-icons/distribution.svg?w=20&h=14",
 	}

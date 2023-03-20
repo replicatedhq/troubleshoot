@@ -10,13 +10,41 @@ import (
 	"github.com/replicatedhq/troubleshoot/pkg/collect"
 )
 
-func analyzeMysql(analyzer *troubleshootv1beta2.DatabaseAnalyze, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
-	collectorName := analyzer.CollectorName
-	if collectorName == "" {
-		collectorName = "mysql"
+type AnalyzeMysql struct {
+	analyzer *troubleshootv1beta2.DatabaseAnalyze
+}
+
+func (a *AnalyzeMysql) Title() string {
+	title := a.analyzer.CheckName
+	if title == "" {
+		title = a.collectorName()
 	}
 
-	fullPath := path.Join("mysql", fmt.Sprintf("%s.json", collectorName))
+	return title
+}
+
+func (a *AnalyzeMysql) IsExcluded() (bool, error) {
+	return isExcluded(a.analyzer.Exclude)
+}
+
+func (a *AnalyzeMysql) Analyze(getFile getCollectedFileContents, findFiles getChildCollectedFileContents) ([]*AnalyzeResult, error) {
+	result, err := a.analyzeMysql(a.analyzer, getFile)
+	if err != nil {
+		return nil, err
+	}
+	result.Strict = a.analyzer.Strict.BoolOrDefaultFalse()
+	return []*AnalyzeResult{result}, nil
+}
+
+func (a *AnalyzeMysql) collectorName() string {
+	if a.analyzer.CollectorName != "" {
+		return a.analyzer.CollectorName
+	}
+	return "mysql"
+}
+
+func (a *AnalyzeMysql) analyzeMysql(analyzer *troubleshootv1beta2.DatabaseAnalyze, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
+	fullPath := path.Join("mysql", fmt.Sprintf("%s.json", a.collectorName()))
 
 	collected, err := getCollectedFileContents(fullPath)
 	if err != nil {
@@ -28,13 +56,8 @@ func analyzeMysql(analyzer *troubleshootv1beta2.DatabaseAnalyze, getCollectedFil
 		return nil, errors.Wrap(err, "failed to unmarshal databased connection result")
 	}
 
-	title := analyzer.CheckName
-	if title == "" {
-		title = collectorName
-	}
-
 	result := &AnalyzeResult{
-		Title:   title,
+		Title:   a.Title(),
 		IconKey: "kubernetes_mysql_analyze",
 		IconURI: "https://troubleshoot.sh/images/analyzer-icons/mysql-analyze.svg",
 	}

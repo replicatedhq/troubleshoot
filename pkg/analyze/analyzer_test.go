@@ -65,3 +65,9 @@ func Test_GetExcludeFlag(t *testing.T) {
 		})
 	}
 }
+
+func TestAnalyzeWithNilAnalyzer(t *testing.T) {
+	got, err := Analyze(nil, nil, nil)
+	assert.Error(t, err)
+	assert.Nil(t, got)
+}

@@ -727,7 +727,11 @@ func Test_textAnalyze(t *testing.T) {
 				return matching, nil
 			}
 
-			actual, err := analyzeTextAnalyze(&test.analyzer, getFiles)
+			a := AnalyzeTextAnalyze{
+				analyzer: &test.analyzer,
+			}
+
+			actual, err := a.analyzeTextAnalyze(&test.analyzer, getFiles)
 			req.NoError(err)
 
 			unPointered := []AnalyzeResult{}
