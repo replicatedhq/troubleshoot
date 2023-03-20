@@ -30,6 +30,7 @@ type CollectCertificates struct {
 
 // Collect source information - where certificate came from.
 type CertCollection struct {
+	Source           CertificateSource   `json:"source"`
 	Errors           []error             `json:"errors"`
 	CertificateChain []ParsedCertificate `json:"certificateChain"`
 }
@@ -42,16 +43,15 @@ type CertificateSource struct {
 
 // Certificate Struct
 type ParsedCertificate struct {
-	Source                  CertificateSource `json:"source"`
-	CertName                string            `json:"certificate"`
-	Subject                 pkix.RDNSequence  `json:"subject"`
-	SubjectAlternativeNames []string          `json:"subjectAlternativeNames"`
-	Issuer                  string            `json:"issuer"`
-	Organizations           []string          `json:"issuerOrganizations"`
-	NotAfter                time.Time         `json:"notAfter"`
-	NotBefore               time.Time         `json:"notBefore"`
-	IsValid                 bool              `json:"isValid"`
-	IsCA                    bool              `json:"isCA"`
+	CertName                string           `json:"certificate"`
+	Subject                 pkix.RDNSequence `json:"subject"`
+	SubjectAlternativeNames []string         `json:"subjectAlternativeNames"`
+	Issuer                  string           `json:"issuer"`
+	Organizations           []string         `json:"issuerOrganizations"`
+	NotAfter                time.Time        `json:"notAfter"`
+	NotBefore               time.Time        `json:"notBefore"`
+	IsValid                 bool             `json:"isValid"`
+	IsCA                    bool             `json:"isCA"`
 }
 
 func (c *CollectCertificates) Title() string {
@@ -92,6 +92,7 @@ func configMapCertCollector(configMapName map[string]string, client kubernetes.I
 	currentTime := time.Now()
 	var certInfo []ParsedCertificate
 	var trackErrors []error
+	var source CertificateSource
 
 	for sourceName, namespace := range configMapName {
 
@@ -118,11 +119,13 @@ func configMapCertCollector(configMapName map[string]string, client kubernetes.I
 								trackErrors = append(trackErrors, err)
 							}
 
+							source = CertificateSource{
+								ConfigMapName: configMap.Name,
+								Namespace:     configMap.Namespace,
+							}
+
 							certInfo = append(certInfo, ParsedCertificate{
-								Source: CertificateSource{
-									ConfigMapName: configMap.Name,
-									Namespace:     configMap.Namespace,
-								},
+
 								CertName:                certName,
 								Subject:                 parsedCert.Subject.ToRDNSequence(),
 								SubjectAlternativeNames: parsedCert.DNSNames,
@@ -147,6 +150,7 @@ func configMapCertCollector(configMapName map[string]string, client kubernetes.I
 	}
 
 	return CertCollection{
+		Source:           source,
 		Errors:           trackErrors,
 		CertificateChain: certInfo,
 	}
