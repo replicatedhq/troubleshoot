@@ -164,7 +164,7 @@ func secretCertCollector(secretName string, namespace string, client kubernetes.
 	currentTime := time.Now()
 	var certInfo []ParsedCertificate
 	var trackErrors []error
-	var source []CertificateSource
+	var source = &CertificateSource{}
 
 	listOptions := metav1.ListOptions{}
 	secrets, _ := client.CoreV1().Secrets(namespace).List(context.Background(), listOptions)
@@ -178,10 +178,10 @@ func secretCertCollector(secretName string, namespace string, client kubernetes.
 
 				if strings.Contains(data, "BEGIN CERTIFICATE") && strings.Contains(data, "END CERTIFICATE") {
 
-					source = append(source, CertificateSource{
+					source = &CertificateSource{
 						SecretName: secret.Name,
 						Namespace:  secret.Namespace,
-					})
+					}
 
 					certChain := decodePem(data)
 
