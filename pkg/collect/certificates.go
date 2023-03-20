@@ -161,7 +161,7 @@ func secretCertCollector(secretName map[string]string, client kubernetes.Interfa
 	currentTime := time.Now()
 	var certInfo []ParsedCertificate
 	var trackErrors []error
-	var source []CertificateSource
+	var source CertificateSource
 
 	for sourceName, namespace := range secretName {
 
@@ -177,11 +177,6 @@ func secretCertCollector(secretName map[string]string, client kubernetes.Interfa
 
 					if strings.Contains(data, "BEGIN CERTIFICATE") && strings.Contains(data, "END CERTIFICATE") {
 
-						source = append(source, CertificateSource{
-							SecretName: secret.Name,
-							Namespace:  secret.Namespace,
-						})
-
 						certChain := decodePem(data)
 
 						for _, cert := range certChain.Certificate {
@@ -193,6 +188,11 @@ func secretCertCollector(secretName map[string]string, client kubernetes.Interfa
 									err := errors.New(("error: failed to parse certificate"))
 									trackErrors = append(trackErrors, err)
 								}
+							}
+
+							source = CertificateSource{
+								ConfigMapName: secret.Name,
+								Namespace:     secret.Namespace,
 							}
 
 							certInfo = append(certInfo, ParsedCertificate{
@@ -217,6 +217,7 @@ func secretCertCollector(secretName map[string]string, client kubernetes.Interfa
 	}
 
 	return CertCollection{
+		Source:           source,
 		Errors:           trackErrors,
 		CertificateChain: certInfo,
 	}
