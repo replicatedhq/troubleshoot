@@ -101,49 +101,47 @@ func configMapCertCollector(configMapName string, namespace string, client kuber
 	configMaps, _ := client.CoreV1().ConfigMaps(namespace).List(context.Background(), listOptions)
 
 	for _, configMap := range configMaps.Items {
-		if configMapName == configMap.Name {
 
-			for certName, certs := range configMap.Data {
-				data := string(certs)
+		for certName, certs := range configMap.Data {
+			data := string(certs)
 
-				if strings.Contains(data, "BEGIN CERTIFICATE") && strings.Contains(data, "END CERTIFICATE") {
+			if strings.Contains(data, "BEGIN CERTIFICATE") && strings.Contains(data, "END CERTIFICATE") {
 
-					certChain := decodePem(data)
+				certChain := decodePem(data)
 
-					for _, cert := range certChain.Certificate {
+				for _, cert := range certChain.Certificate {
 
-						source = &CertificateSource{
-							ConfigMapName: configMap.Name,
-							Namespace:     configMap.Namespace,
-						}
-
-						//parsed SSL certificate
-						parsedCert, errParse := x509.ParseCertificate(cert)
-						if errParse != nil {
-							err := errors.New(("error: failed to parse certificate"))
-							trackErrors = append(trackErrors, err)
-						}
-
-						certInfo = append(certInfo, ParsedCertificate{
-							CertName:                certName,
-							Subject:                 parsedCert.Subject.ToRDNSequence(),
-							CommonName:              parsedCert.Subject.CommonName,
-							SubjectAlternativeNames: parsedCert.DNSNames,
-							Issuer:                  parsedCert.Issuer.CommonName,
-							Organizations:           parsedCert.Issuer.Organization,
-							NotAfter:                parsedCert.NotAfter,
-							NotBefore:               parsedCert.NotBefore,
-							IsValid:                 currentTime.Before(parsedCert.NotAfter),
-							IsCA:                    parsedCert.IsCA,
-						})
-
+					source = &CertificateSource{
+						ConfigMapName: configMapName,
+						Namespace:     namespace,
 					}
-				} else {
 
-					err := errors.New(("error: This object is not a certificate"))
-					trackErrors = append(trackErrors, err)
+					//parsed SSL certificate
+					parsedCert, errParse := x509.ParseCertificate(cert)
+					if errParse != nil {
+						err := errors.New(("error: failed to parse certificate"))
+						trackErrors = append(trackErrors, err)
+					}
+
+					certInfo = append(certInfo, ParsedCertificate{
+						CertName:                certName,
+						Subject:                 parsedCert.Subject.ToRDNSequence(),
+						CommonName:              parsedCert.Subject.CommonName,
+						SubjectAlternativeNames: parsedCert.DNSNames,
+						Issuer:                  parsedCert.Issuer.CommonName,
+						Organizations:           parsedCert.Issuer.Organization,
+						NotAfter:                parsedCert.NotAfter,
+						NotBefore:               parsedCert.NotBefore,
+						IsValid:                 currentTime.Before(parsedCert.NotAfter),
+						IsCA:                    parsedCert.IsCA,
+					})
 
 				}
+			} else {
+
+				err := errors.New(("error: This object is not a certificate"))
+				trackErrors = append(trackErrors, err)
+
 			}
 
 		}
@@ -167,51 +165,49 @@ func secretCertCollector(secretName string, namespace string, client kubernetes.
 	secrets, _ := client.CoreV1().Secrets(namespace).List(context.Background(), listOptions)
 
 	for _, secret := range secrets.Items {
-		if secretName == secret.Name {
 
-			for certName, certs := range secret.Data {
+		for certName, certs := range secret.Data {
 
-				data := string(certs)
+			data := string(certs)
 
-				if strings.Contains(data, "BEGIN CERTIFICATE") && strings.Contains(data, "END CERTIFICATE") {
+			if strings.Contains(data, "BEGIN CERTIFICATE") && strings.Contains(data, "END CERTIFICATE") {
 
-					certChain := decodePem(data)
+				certChain := decodePem(data)
 
-					for _, cert := range certChain.Certificate {
-						source = &CertificateSource{
-							SecretName: secret.Name,
-							Namespace:  namespace,
-						}
-
-						//parsed SSL certificate
-						parsedCert, errParse := x509.ParseCertificate(cert)
-						if errParse != nil {
-							if errParse != nil {
-								err := errors.New(("error: failed to parse certificate"))
-								trackErrors = append(trackErrors, err)
-							}
-						}
-
-						certInfo = append(certInfo, ParsedCertificate{
-							CertName:                certName,
-							Subject:                 parsedCert.Subject.ToRDNSequence(),
-							CommonName:              parsedCert.Subject.CommonName,
-							SubjectAlternativeNames: parsedCert.DNSNames,
-							Issuer:                  parsedCert.Issuer.CommonName,
-							Organizations:           parsedCert.Issuer.Organization,
-							NotAfter:                parsedCert.NotAfter,
-							NotBefore:               parsedCert.NotBefore,
-							IsValid:                 currentTime.Before(parsedCert.NotAfter),
-							IsCA:                    parsedCert.IsCA,
-						})
+				for _, cert := range certChain.Certificate {
+					source = &CertificateSource{
+						SecretName: secret.Name,
+						Namespace:  namespace,
 					}
-				} else {
-					err := errors.New(("error: This object is not a certificate"))
-					trackErrors = append(trackErrors, err)
-				}
-			}
 
+					//parsed SSL certificate
+					parsedCert, errParse := x509.ParseCertificate(cert)
+					if errParse != nil {
+						if errParse != nil {
+							err := errors.New(("error: failed to parse certificate"))
+							trackErrors = append(trackErrors, err)
+						}
+					}
+
+					certInfo = append(certInfo, ParsedCertificate{
+						CertName:                certName,
+						Subject:                 parsedCert.Subject.ToRDNSequence(),
+						CommonName:              parsedCert.Subject.CommonName,
+						SubjectAlternativeNames: parsedCert.DNSNames,
+						Issuer:                  parsedCert.Issuer.CommonName,
+						Organizations:           parsedCert.Issuer.Organization,
+						NotAfter:                parsedCert.NotAfter,
+						NotBefore:               parsedCert.NotBefore,
+						IsValid:                 currentTime.Before(parsedCert.NotAfter),
+						IsCA:                    parsedCert.IsCA,
+					})
+				}
+			} else {
+				err := errors.New(("error: This object is not a certificate"))
+				trackErrors = append(trackErrors, err)
+			}
 		}
+
 	}
 	return CertCollection{
 		Source:           source,
