@@ -32,7 +32,7 @@ type CollectCertificates struct {
 type CertCollection struct {
 	Source           *CertificateSource  `json:"source"`
 	Errors           []error             `json:"errors"`
-	CertificateChain []ParsedCertificate `json:"certificateChain"`
+	CertificateChain []ParsedCertificate `json:"certificateChain"`dafd
 }
 
 type CertificateSource struct {
