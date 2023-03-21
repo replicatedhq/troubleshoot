@@ -177,7 +177,7 @@ func secretCertCollector(secretName string, namespace string, client kubernetes.
 
 					source = &CertificateSource{
 						SecretName: secret.Name,
-						Namespace:  secret.Namespace,
+						Namespace:  namespace,
 					}
 
 					certChain := decodePem(data)
