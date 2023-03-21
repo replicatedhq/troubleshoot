@@ -108,14 +108,14 @@ func configMapCertCollector(configMapName string, namespace string, client kuber
 
 				if strings.Contains(data, "BEGIN CERTIFICATE") && strings.Contains(data, "END CERTIFICATE") {
 
-					source = &CertificateSource{
-						ConfigMapName: configMap.Name,
-						Namespace:     configMap.Namespace,
-					}
-
 					certChain := decodePem(data)
 
 					for _, cert := range certChain.Certificate {
+
+						source = &CertificateSource{
+							ConfigMapName: configMap.Name,
+							Namespace:     configMap.Namespace,
+						}
 
 						//parsed SSL certificate
 						parsedCert, errParse := x509.ParseCertificate(cert)
