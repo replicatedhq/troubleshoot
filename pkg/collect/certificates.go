@@ -176,8 +176,8 @@ func secretCertCollector(secretName string, namespace string, client kubernetes.
 
 				if strings.Contains(data, "BEGIN CERTIFICATE") && strings.Contains(data, "END CERTIFICATE") {
 					source = &CertificateSource{
-						ConfigMapName: configMapName,
-						Namespace:     configMap.Namespace,
+						ConfigMapName: secretName,
+						Namespace:     namespace,
 					}
 
 					certChain := decodePem(data)
