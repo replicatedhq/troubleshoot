@@ -30,6 +30,7 @@ type CollectCertificates struct {
 
 // Collect source information - where certificate came from.
 type CertCollection struct {
+	Source           *CertificateSource  `json:"source"`
 	Errors           []error             `json:"errors"`
 	CertificateChain []ParsedCertificate `json:"certificateChain"`
 }
@@ -42,17 +43,16 @@ type CertificateSource struct {
 
 // Certificate Struct
 type ParsedCertificate struct {
-	Source                  *CertificateSource `json:"source"`
-	CertName                string             `json:"certificate"`
-	Subject                 pkix.RDNSequence   `json:"subject"`
-	CommonName              string             `json:"commonName"`
-	SubjectAlternativeNames []string           `json:"subjectAlternativeNames"`
-	Issuer                  string             `json:"issuer"`
-	Organizations           []string           `json:"issuerOrganizations"`
-	NotAfter                time.Time          `json:"notAfter"`
-	NotBefore               time.Time          `json:"notBefore"`
-	IsValid                 bool               `json:"isValid"`
-	IsCA                    bool               `json:"isCA"`
+	CertName                string           `json:"certificate"`
+	Subject                 pkix.RDNSequence `json:"subject"`
+	CommonName              string           `json:"commonName"`
+	SubjectAlternativeNames []string         `json:"subjectAlternativeNames"`
+	Issuer                  string           `json:"issuer"`
+	Organizations           []string         `json:"issuerOrganizations"`
+	NotAfter                time.Time        `json:"notAfter"`
+	NotBefore               time.Time        `json:"notBefore"`
+	IsValid                 bool             `json:"isValid"`
+	IsCA                    bool             `json:"isCA"`
 }
 
 func (c *CollectCertificates) Title() string {
@@ -110,7 +110,7 @@ func configMapCertCollector(configMapName string, namespace string, client kuber
 
 					source = &CertificateSource{
 						ConfigMapName: configMapName,
-						Namespace:     configMap.Namespace,
+						Namespace:     namespace,
 					}
 
 					certChain := decodePem(data)
@@ -125,7 +125,6 @@ func configMapCertCollector(configMapName string, namespace string, client kuber
 						}
 
 						certInfo = append(certInfo, ParsedCertificate{
-							Source:                  source,
 							CertName:                certName,
 							Subject:                 parsedCert.Subject.ToRDNSequence(),
 							CommonName:              parsedCert.Subject.CommonName,
@@ -150,7 +149,7 @@ func configMapCertCollector(configMapName string, namespace string, client kuber
 		}
 	}
 	return CertCollection{
-
+		Source:           source,
 		Errors:           trackErrors,
 		CertificateChain: certInfo,
 	}
@@ -194,7 +193,6 @@ func secretCertCollector(secretName string, namespace string, client kubernetes.
 						}
 
 						certInfo = append(certInfo, ParsedCertificate{
-							Source:                  source,
 							CertName:                certName,
 							Subject:                 parsedCert.Subject.ToRDNSequence(),
 							CommonName:              parsedCert.Subject.CommonName,
@@ -216,6 +214,7 @@ func secretCertCollector(secretName string, namespace string, client kubernetes.
 		}
 	}
 	return CertCollection{
+		Source:           source,
 		Errors:           trackErrors,
 		CertificateChain: certInfo,
 	}
