@@ -32,13 +32,13 @@ type CollectCertificates struct {
 type CertCollection struct {
 	Source           *CertificateSource  `json:"source"`
 	Errors           []error             `json:"errors"`
-	CertificateChain []ParsedCertificate `json:"certificateChain"`dafd
+	CertificateChain []ParsedCertificate `json:"certificateChain"`
 }
 
 type CertificateSource struct {
-	SecretName    string `json:"secret"`
-	ConfigMapName string `json:"configMap"`
-	Namespace     string `json:"namespace"`
+	SecretName    string `json:"secret,omitempty"`
+	ConfigMapName string `json:"configMap,omitempty"`
+	Namespace     string `json:"namespace,omitempty"`
 }
 
 // Certificate Struct
