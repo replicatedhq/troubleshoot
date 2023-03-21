@@ -109,8 +109,8 @@ func configMapCertCollector(configMapName string, namespace string, client kuber
 				if strings.Contains(data, "BEGIN CERTIFICATE") && strings.Contains(data, "END CERTIFICATE") {
 
 					source = &CertificateSource{
-						ConfigMapName: configMap.Name,
-						Namespace:     configMap.Namespace,
+						ConfigMapName: configMapName,
+						Namespace:     Namespace,
 					}
 
 					certChain := decodePem(data)
