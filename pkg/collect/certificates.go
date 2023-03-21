@@ -175,14 +175,13 @@ func secretCertCollector(secretName string, namespace string, client kubernetes.
 
 				if strings.Contains(data, "BEGIN CERTIFICATE") && strings.Contains(data, "END CERTIFICATE") {
 
-					source = &CertificateSource{
-						SecretName: secret.Name,
-						Namespace:  namespace,
-					}
-
 					certChain := decodePem(data)
 
 					for _, cert := range certChain.Certificate {
+						source = &CertificateSource{
+							SecretName: secret.Name,
+							Namespace:  namespace,
+						}
 
 						//parsed SSL certificate
 						parsedCert, errParse := x509.ParseCertificate(cert)
