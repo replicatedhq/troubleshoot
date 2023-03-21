@@ -36,9 +36,9 @@ type CertCollection struct {
 }
 
 type CertificateSource struct {
-	SecretName    string `json:"secret,omitempty"`
-	ConfigMapName string `json:"configMap,omitempty"`
-	Namespace     string `json:"namespace,omitempty"`
+	SecretName    string `json:"secret"`
+	ConfigMapName string `json:"configMap"`
+	Namespace     string `json:"namespace"`
 }
 
 // Certificate Struct
@@ -109,8 +109,8 @@ func configMapCertCollector(configMapName string, namespace string, client kuber
 				if strings.Contains(data, "BEGIN CERTIFICATE") && strings.Contains(data, "END CERTIFICATE") {
 
 					source = &CertificateSource{
-						ConfigMapName: configMapName,
-						Namespace:     namespace,
+						ConfigMapName: configMap.Name,
+						Namespace:     configMap.Namespace,
 					}
 
 					certChain := decodePem(data)
@@ -174,9 +174,10 @@ func secretCertCollector(secretName string, namespace string, client kubernetes.
 				data := string(certs)
 
 				if strings.Contains(data, "BEGIN CERTIFICATE") && strings.Contains(data, "END CERTIFICATE") {
+
 					source = &CertificateSource{
-						ConfigMapName: secretName,
-						Namespace:     namespace,
+						SecretName: secret.Name,
+						Namespace:  namespace,
 					}
 
 					certChain := decodePem(data)
