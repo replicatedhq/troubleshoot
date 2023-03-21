@@ -30,7 +30,7 @@ type CollectCertificates struct {
 
 // Collect source information - where certificate came from.
 type CertCollection struct {
-	Source           CertificateSource   `json:"source"`
+	Source           *CertificateSource  `json:"source"`
 	Errors           []error             `json:"errors"`
 	CertificateChain []ParsedCertificate `json:"certificateChain"`
 }
@@ -94,7 +94,7 @@ func configMapCertCollector(configMapName string, namespace string, client kuber
 	currentTime := time.Now()
 	var certInfo []ParsedCertificate
 	var trackErrors []error
-	var source CertificateSource
+	var source = &CertificateSource{}
 
 	listOptions := metav1.ListOptions{}
 
@@ -108,9 +108,9 @@ func configMapCertCollector(configMapName string, namespace string, client kuber
 
 				if strings.Contains(data, "BEGIN CERTIFICATE") && strings.Contains(data, "END CERTIFICATE") {
 
-					source = CertificateSource{
-						ConfigMapName: configMap.Name,
-						Namespace:     namespace,
+					source = &CertificateSource{
+						ConfigMapName: configMapName,
+						Namespace:     configMap.Namespace,
 					}
 
 					certChain := decodePem(data)
@@ -161,7 +161,7 @@ func secretCertCollector(secretName string, namespace string, client kubernetes.
 	currentTime := time.Now()
 	var certInfo []ParsedCertificate
 	var trackErrors []error
-	var source CertificateSource
+	var source = &CertificateSource{}
 
 	listOptions := metav1.ListOptions{}
 	secrets, _ := client.CoreV1().Secrets(namespace).List(context.Background(), listOptions)
@@ -175,7 +175,7 @@ func secretCertCollector(secretName string, namespace string, client kubernetes.
 
 				if strings.Contains(data, "BEGIN CERTIFICATE") && strings.Contains(data, "END CERTIFICATE") {
 
-					source = CertificateSource{
+					source = &CertificateSource{
 						SecretName: secret.Name,
 						Namespace:  namespace,
 					}
