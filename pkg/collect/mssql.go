@@ -48,11 +48,7 @@ func (c *CollectMssql) Collect(progressChan chan<- interface{}) (CollectorResult
 		} else {
 			databaseConnection.IsConnected = true
 
-<<<<<<< HEAD
 			mssqlVersion, err := parseMsSqlVersion(version)
-=======
-			mssqlVersion, err := parseMSSqlVersion(version)
->>>>>>> ffcf962 (Adds MSSQL collector based on Postgres collector)
 			if err != nil {
 				databaseConnection.Version = "Unknown"
 				databaseConnection.Error = err.Error()
@@ -78,13 +74,8 @@ func (c *CollectMssql) Collect(progressChan chan<- interface{}) (CollectorResult
 	return output, nil
 }
 
-<<<<<<< HEAD
 func parseMsSqlVersion(mssqlVersion string) (string, error) {
 	re := regexp.MustCompile(".*SQL.*-\\s+([0-9.]+)")
-=======
-func parseMSSqlVersion(mssqlVersion string) (string, error) {
-	re := regexp.MustCompile("MSSQLServer ([0-9.]*)")
->>>>>>> ffcf962 (Adds MSSQL collector based on Postgres collector)
 	matches := re.FindStringSubmatch(mssqlVersion)
 	if len(matches) < 2 {
 		return "", errors.Errorf("mssql version did not match regex: %q", mssqlVersion)
