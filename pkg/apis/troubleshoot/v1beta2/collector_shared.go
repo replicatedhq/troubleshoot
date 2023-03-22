@@ -449,6 +449,7 @@ func (c *Collect) AccessReviewSpecs(overrideNS string) []authorizationv1.SelfSub
 }
 
 func (c *Collect) GetName() string {
+	// TODO: Is this used anywhere? Should we just remove it?
 	var collector, name, selector string
 	if c.ClusterInfo != nil {
 		collector = "cluster-info"

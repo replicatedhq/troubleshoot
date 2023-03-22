@@ -10554,6 +10554,23 @@
                   }
                 }
               },
+              "copy": {
+                "type": "object",
+                "required": [
+                  "path"
+                ],
+                "properties": {
+                  "collectorName": {
+                    "type": "string"
+                  },
+                  "exclude": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  },
+                  "path": {
+                    "type": "string"
+                  }
+                }
+              },
               "cpu": {
                 "type": "object",
                 "properties": {

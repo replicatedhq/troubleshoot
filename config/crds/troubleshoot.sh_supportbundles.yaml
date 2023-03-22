@@ -10934,6 +10934,17 @@ spec:
                       - certificatePath
                       - keyPath
                       type: object
+                    copy:
+                      properties:
+                        collectorName:
+                          type: string
+                        exclude:
+                          type: BoolString
+                        path:
+                          type: string
+                      required:
+                      - path
+                      type: object
                     cpu:
                       properties:
                         collectorName:
