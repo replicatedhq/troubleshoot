@@ -276,7 +276,7 @@ func (c *CollectLonghorn) Collect(progressChan chan<- interface{}) (CollectorRes
 			}
 
 			wg.Add(1)
-			go func(replica longhornv1beta1types.Replica) {
+			go func(replica longhornv1beta1types.Replica, volume longhornv1beta1types.Volume) {
 				defer wg.Done()
 				checksums, err := GetLonghornReplicaChecksum(c.ClientConfig, replica, podName)
 				if err != nil {
@@ -288,7 +288,7 @@ func (c *CollectLonghorn) Collect(progressChan chan<- interface{}) (CollectorRes
 				mtx.Lock()
 				output.SaveResult(c.BundlePath, key, bytes.NewBuffer([]byte(checksums)))
 				mtx.Unlock()
-			}(replica)
+			}(replica, volume)
 		}
 	}
 
