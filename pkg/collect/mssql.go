@@ -15,17 +15,12 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-<<<<<<< HEAD
 type CollectMssql struct {
-=======
-type CollectMSSql struct {
->>>>>>> ffcf962 (Adds MSSQL collector based on Postgres collector)
 	Collector    *troubleshootv1beta2.Database
 	BundlePath   string
 	Namespace    string
 	ClientConfig *rest.Config
 	Client       kubernetes.Interface
-<<<<<<< HEAD
 	Context      context.Context
 	RBACErrors
 }
@@ -39,21 +34,6 @@ func (c *CollectMssql) IsExcluded() (bool, error) {
 }
 
 func (c *CollectMssql) Collect(progressChan chan<- interface{}) (CollectorResult, error) {
-=======
-	ctx          context.Context
-	RBACErrors
-}
-
-func (c *CollectMSSql) Title() string {
-	return collectorTitleOrDefault(c.Collector.CollectorMeta, "MSSSQLServer")
-}
-
-func (c *CollectMSSql) IsExcluded() (bool, error) {
-	return isExcluded(c.Collector.Exclude)
-}
-
-func (c *CollectMSSql) Collect(progressChan chan<- interface{}) (CollectorResult, error) {
->>>>>>> ffcf962 (Adds MSSQL collector based on Postgres collector)
 	databaseConnection := DatabaseConnection{}
 
 	db, err := sql.Open("mssql", c.Collector.URI)
