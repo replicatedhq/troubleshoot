@@ -114,11 +114,6 @@ func runTroubleshoot(v *viper.Viper, arg []string) error {
 			return errors.Wrap(err, "unable to parse selector")
 		}
 
-		namespace := ""
-		if v.GetString("namespace") != "" {
-			namespace = v.GetString("namespace")
-		}
-
 		config, err := k8sutil.GetRESTConfig()
 		if err != nil {
 			return errors.Wrap(err, "failed to convert kube flags to rest config")
@@ -127,6 +122,22 @@ func runTroubleshoot(v *viper.Viper, arg []string) error {
 		client, err := kubernetes.NewForConfig(config)
 		if err != nil {
 			return errors.Wrap(err, "failed to convert create k8s client")
+		}
+
+		namespace := ""
+
+		if v.GetString("namespace") != "" {
+			namespace = v.GetString("namespace")
+		} else {
+			IsNamespacedScopeRBAC, err := k8sutil.IsNamespacedScopeRBAC(client)
+			if err != nil {
+				return errors.Wrap(err, "failed to check if cluster is namespaced")
+			}
+
+			if !IsNamespacedScopeRBAC {
+				kubeconfig := k8sutil.GetKubeconfig()
+				namespace, _, _ = kubeconfig.Namespace()
+			}
 		}
 
 		var bundlesFromCluster []string
