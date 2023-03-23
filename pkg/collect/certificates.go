@@ -173,10 +173,12 @@ func secretCertCollector(secretName string, namespace string, client kubernetes.
 				Errors:           trackErrors,
 				CertificateChain: certInfo,
 			}
+			log.Println("my certinfo: ", certInfo)
 
 		}
 
 	}
+	log.Println("my results: ", results)
 	return results
 }
 
@@ -228,7 +230,7 @@ func CertParser(certName string, certs []byte) ([]ParsedCertificate, []string) {
 				IsCA:                    parsedCert.IsCA,
 			})
 
-			log.Println("stuff should be here: ", certInfo)
+			//log.Println("stuff should be here: ", certInfo)
 		}
 	}
 	return certInfo, trackErrors
