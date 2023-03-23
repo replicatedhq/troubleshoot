@@ -5,11 +5,13 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
+	"crypto/x509/pkix"
 	"encoding/json"
 	"encoding/pem"
-	"log"
+	"strings"
 	"time"
 
+	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -29,26 +31,28 @@ type CollectCertificates struct {
 // Collect source information - where certificate came from.
 type CertCollection struct {
 	Source           *CertificateSource  `json:"source"`
-	Errors           []string            `json:"errors"`
-	CertificateChain []ParsedCertificate `json:"certificateChain"`
+	Errors           []error             `json:"errors"`
+	CertificateChain []ParsedCertificate `json:"certificateChain"`dafd
 }
 
 type CertificateSource struct {
-	SecretName    string `json:"secret,omitempty"`
-	ConfigMapName string `json:"configMap,omitempty"`
-	Namespace     string `json:"namespace,omitempty"`
+	SecretName    string `json:"secret"`
+	ConfigMapName string `json:"configMap"`
+	Namespace     string `json:"namespace"`
 }
 
 // Certificate Struct
 type ParsedCertificate struct {
-	CertName                string    `json:"certificate"`
-	Subject                 string    `json:"subject"`
-	SubjectAlternativeNames []string  `json:"subjectAlternativeNames"`
-	Issuer                  string    `json:"issuer"`
-	NotAfter                time.Time `json:"notAfter"`
-	NotBefore               time.Time `json:"notBefore"`
-	IsValid                 bool      `json:"isValid"`
-	IsCA                    bool      `json:"isCA"`
+	CertName                string           `json:"certificate"`
+	Subject                 pkix.RDNSequence `json:"subject"`
+	CommonName              string           `json:"commonName"`
+	SubjectAlternativeNames []string         `json:"subjectAlternativeNames"`
+	Issuer                  string           `json:"issuer"`
+	Organizations           []string         `json:"issuerOrganizations"`
+	NotAfter                time.Time        `json:"notAfter"`
+	NotBefore               time.Time        `json:"notBefore"`
+	IsValid                 bool             `json:"isValid"`
+	IsCA                    bool             `json:"isCA"`
 }
 
 func (c *CollectCertificates) Title() string {
@@ -59,15 +63,21 @@ func (c *CollectCertificates) IsExcluded() (bool, error) {
 	return isExcluded(c.Collector.Exclude)
 }
 
-func (c *CollectCertificates) Collect(progressChan chan<- interface{}) CollectorResult {
+func (c *CollectCertificates) Collect(progressChan chan<- interface{}) (CollectorResult, error) {
 
 	output := NewResult()
+
 	results := []CertCollection{}
 
 	// collect secret certificate
 	for secretName, namespace := range c.Collector.Secrets {
-		secretCollections := secretCertCollector(secretName, namespace, c.Client)
-		results = append(results, secretCollections...) // Explode the slice
+		secretCollection := secretCertCollector(secretName, namespace, c.Client)
+		results = append(results, secretCollection)
+	}
+
+	for configMapName, namespace := range c.Collector.ConfigMaps {
+		configMapCollection := configMapCertCollector(configMapName, namespace, c.Client)
+		results = append(results, configMapCollection)
 	}
 
 	certsJson, _ := json.MarshalIndent(results, "", "\t")
@@ -76,52 +86,139 @@ func (c *CollectCertificates) Collect(progressChan chan<- interface{}) Collector
 
 	output.SaveResult(c.BundlePath, filePath, bytes.NewBuffer(certsJson))
 
-	log.Println("results should spit out here: ", results)
-
-	return output
+	return output, nil
 }
 
 // configmap certificate collector function
-/*
 func configMapCertCollector(configMapName string, namespace string, client kubernetes.Interface) CertCollection {
+	currentTime := time.Now()
+	var certInfo []ParsedCertificate
+	var trackErrors []error
+	var source = &CertificateSource{}
 
+	listOptions := metav1.ListOptions{}
+
+	configMaps, _ := client.CoreV1().ConfigMaps(namespace).List(context.Background(), listOptions)
+
+	for _, configMap := range configMaps.Items {
+		if configMapName == configMap.Name {
+
+			for certName, certs := range configMap.Data {
+				data := string(certs)
+
+				if strings.Contains(data, "BEGIN CERTIFICATE") && strings.Contains(data, "END CERTIFICATE") {
+
+					source = &CertificateSource{
+						ConfigMapName: configMap.Name,
+						Namespace:     configMap.Namespace,
+					}
+
+					certChain := decodePem(data)
+
+					for _, cert := range certChain.Certificate {
+
+						//parsed SSL certificate
+						parsedCert, errParse := x509.ParseCertificate(cert)
+						if errParse != nil {
+							err := errors.New(("error: failed to parse certificate"))
+							trackErrors = append(trackErrors, err)
+						}
+
+						certInfo = append(certInfo, ParsedCertificate{
+							CertName:                certName,
+							Subject:                 parsedCert.Subject.ToRDNSequence(),
+							CommonName:              parsedCert.Subject.CommonName,
+							SubjectAlternativeNames: parsedCert.DNSNames,
+							Issuer:                  parsedCert.Issuer.CommonName,
+							Organizations:           parsedCert.Issuer.Organization,
+							NotAfter:                parsedCert.NotAfter,
+							NotBefore:               parsedCert.NotBefore,
+							IsValid:                 currentTime.Before(parsedCert.NotAfter),
+							IsCA:                    parsedCert.IsCA,
+						})
+
+					}
+				} else {
+
+					err := errors.New(("error: This object is not a certificate"))
+					trackErrors = append(trackErrors, err)
+
+				}
+			}
+
+		}
+	}
+	return CertCollection{
+		Source:           source,
+		Errors:           trackErrors,
+		CertificateChain: certInfo,
+	}
 }
-*/
 
 // secret certificate collector function
 // func secretCertCollector(secretName map[string]string, client kubernetes.Interface) CertCollection {
-func secretCertCollector(secretName string, namespace string, client kubernetes.Interface) []CertCollection {
+func secretCertCollector(secretName string, namespace string, client kubernetes.Interface) CertCollection {
+	currentTime := time.Now()
+	var certInfo []ParsedCertificate
+	var trackErrors []error
+	var source = &CertificateSource{}
 
-	results := []CertCollection{}
-
-	// Collect from secrets
 	listOptions := metav1.ListOptions{}
-	// TODO: Handle RBAC errors. Not to be worked on yet
 	secrets, _ := client.CoreV1().Secrets(namespace).List(context.Background(), listOptions)
 
 	for _, secret := range secrets.Items {
-		// Collect from secret
-		source := &CertificateSource{
-			SecretName: secret.Name,
-			Namespace:  secret.Namespace,
+		if secretName == secret.Name {
+
+			for certName, certs := range secret.Data {
+
+				data := string(certs)
+
+				if strings.Contains(data, "BEGIN CERTIFICATE") && strings.Contains(data, "END CERTIFICATE") {
+
+					source = &CertificateSource{
+						SecretName: secret.Name,
+						Namespace:  namespace,
+					}
+
+					certChain := decodePem(data)
+
+					for _, cert := range certChain.Certificate {
+
+						//parsed SSL certificate
+						parsedCert, errParse := x509.ParseCertificate(cert)
+						if errParse != nil {
+							if errParse != nil {
+								err := errors.New(("error: failed to parse certificate"))
+								trackErrors = append(trackErrors, err)
+							}
+						}
+
+						certInfo = append(certInfo, ParsedCertificate{
+							CertName:                certName,
+							Subject:                 parsedCert.Subject.ToRDNSequence(),
+							CommonName:              parsedCert.Subject.CommonName,
+							SubjectAlternativeNames: parsedCert.DNSNames,
+							Issuer:                  parsedCert.Issuer.CommonName,
+							Organizations:           parsedCert.Issuer.Organization,
+							NotAfter:                parsedCert.NotAfter,
+							NotBefore:               parsedCert.NotBefore,
+							IsValid:                 currentTime.Before(parsedCert.NotAfter),
+							IsCA:                    parsedCert.IsCA,
+						})
+					}
+				} else {
+					err := errors.New(("error: This object is not a certificate"))
+					trackErrors = append(trackErrors, err)
+				}
+			}
+
 		}
-		log.Println("secret items: ", secrets.Items)
-
-		trackErrors := []string{}
-
-		for certName, certs := range secret.Data {
-			certInfo, _ := CertParser(certName, certs)
-
-			results = append(results, CertCollection{
-				Source:           source,
-				Errors:           trackErrors,
-				CertificateChain: certInfo,
-			})
-			log.Println("myresults:", results)
-		}
-
 	}
-	return results
+	return CertCollection{
+		Source:           source,
+		Errors:           trackErrors,
+		CertificateChain: certInfo,
+	}
 }
 
 func decodePem(certInput string) tls.Certificate {
@@ -138,38 +235,4 @@ func decodePem(certInput string) tls.Certificate {
 		}
 	}
 	return cert
-}
-
-//for certName, certs := range secret.Data {
-
-func CertParser(certName string, certs []byte) ([]ParsedCertificate, []string) {
-	currentTime := time.Now()
-	var trackErrors []string
-	data := string(certs)
-	var certificateChainCollection []ParsedCertificate
-
-	certChain := decodePem(data)
-
-	for _, cert := range certChain.Certificate {
-
-		//parsed SSL certificate
-		parsedCert, errParse := x509.ParseCertificate(cert)
-		if errParse != nil {
-			trackErrors = append(trackErrors, "error: This object is not a certificate")
-			//continue // End here, start parsing the next cert in the for loop
-		}
-
-		certInfo := ParsedCertificate{
-			CertName:                certName,
-			Subject:                 parsedCert.Subject.ToRDNSequence().String(),
-			SubjectAlternativeNames: parsedCert.DNSNames,
-			Issuer:                  parsedCert.Issuer.CommonName,
-			NotAfter:                parsedCert.NotAfter,
-			NotBefore:               parsedCert.NotBefore,
-			IsValid:                 currentTime.Before(parsedCert.NotAfter),
-			IsCA:                    parsedCert.IsCA,
-		}
-		certificateChainCollection = append(certificateChainCollection, certInfo)
-	}
-	return certificateChainCollection, trackErrors
 }
