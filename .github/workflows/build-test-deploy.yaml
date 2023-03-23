@@ -232,6 +232,9 @@ jobs:
       matrix:
         goarch: [amd64, arm64]
         goos: [darwin, linux, windows]
+        include:
+          - goarch: arm
+            goos: linux
     steps:
       - name: Checkout
         uses: actions/checkout@v3
