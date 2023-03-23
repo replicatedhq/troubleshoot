@@ -103,6 +103,7 @@ func secretCertCollector(secretName string, namespace string, client kubernetes.
 			SecretName: secret.Name,
 			Namespace:  secret.Namespace,
 		}
+		log.Println("secret items: ", secrets.Items)
 
 		trackErrors := []string{}
 
