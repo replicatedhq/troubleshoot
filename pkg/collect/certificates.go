@@ -87,7 +87,7 @@ func (c *CollectCertificates) Collect(progressChan chan<- interface{}) (Collecto
 func configMapCertCollector(configMapName string, namespace string, client kubernetes.Interface) CertCollection {
 	currentTime := time.Now()
 	var certInfo []ParsedCertificate
-	var trackErrors []error
+	var trackErrors []string
 	var source = &CertificateSource{}
 
 	listOptions := metav1.ListOptions{}
@@ -216,7 +216,7 @@ func CertParser(certName string, certs []byte) ([]ParsedCertificate, []string) {
 		parsedCert, errParse := x509.ParseCertificate(cert)
 		if errParse != nil {
 			trackErrors = append(trackErrors, "error: This object is not a certificate")
-			//continue // End here, start parsing the next cert in the for loop
+			continue // End here, start parsing the next cert in the for loop
 		}
 
 		certInfo := ParsedCertificate{
