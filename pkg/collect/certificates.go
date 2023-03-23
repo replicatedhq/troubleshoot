@@ -61,6 +61,7 @@ func (c *CollectCertificates) IsExcluded() (bool, error) {
 func (c *CollectCertificates) Collect(progressChan chan<- interface{}) CollectorResult {
 
 	output := NewResult()
+	results := []CertCollection{}
 
 	// collect secret certificate
 	for secretName, namespace := range c.Collector.Secrets {
@@ -74,7 +75,7 @@ func (c *CollectCertificates) Collect(progressChan chan<- interface{}) Collector
 
 	output.SaveResult(c.BundlePath, filePath, bytes.NewBuffer(certsJson))
 
-	return output, nil
+	return output
 }
 
 // configmap certificate collector function
@@ -95,6 +96,27 @@ func secretCertCollector(secretName string, namespace string, client kubernetes.
 	// TODO: Handle RBAC errors. Not to be worked on yet
 	secrets, _ := client.CoreV1().Secrets(namespace).List(context.Background(), listOptions)
 
+	for _, secret := range secrets.Items {
+		// Collect from secret
+		source := &CertificateSource{
+			SecretName: secret.Name,
+			Namespace:  secret.Namespace,
+		}
+
+		trackErrors := []string{}
+
+		for certName, certs := range secret.Data {
+			certInfo, _ := CertParser(certName, certs)
+
+			results = append(results, CertCollection{
+				Source:           source,
+				Errors:           trackErrors,
+				CertificateChain: certInfo,
+			})
+		}
+
+	}
+	return results
 }
 
 func decodePem(certInput string) tls.Certificate {
@@ -115,7 +137,7 @@ func decodePem(certInput string) tls.Certificate {
 
 //for certName, certs := range secret.Data {
 
-func CertParser(certName string, certs string) ([]ParsedCertificate, []string) {
+func CertParser(certName string, certs []byte) ([]ParsedCertificate, []string) {
 	currentTime := time.Now()
 	var trackErrors []string
 	data := string(certs)
