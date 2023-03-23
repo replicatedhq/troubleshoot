@@ -255,6 +255,7 @@ func AnalyzeSupportBundle(ctx context.Context, spec *troubleshootv1beta2.Support
 	if len(spec.Analyzers) == 0 && len(spec.HostAnalyzers) == 0 {
 		return nil, nil
 	}
+	spec.Analyzers = analyzer.DedupAnalyzers(spec.Analyzers)
 	analyzeResults, err := analyzer.AnalyzeLocal(ctx, tmpDir, spec.Analyzers, spec.HostAnalyzers)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to analyze support bundle")
