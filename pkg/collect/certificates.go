@@ -207,7 +207,7 @@ func CertParser(certName string, certs []byte) ([]ParsedCertificate, []string) {
 	currentTime := time.Now()
 	var trackErrors []string
 	data := string(certs)
-	certInfo := []ParsedCertificate{}
+	certInfo := &[]ParsedCertificate{}
 
 	certChain := decodePem(data)
 
@@ -232,12 +232,12 @@ func CertParser(certName string, certs []byte) ([]ParsedCertificate, []string) {
 				IsValid:                 currentTime.Before(parsedCert.NotAfter),
 				IsCA:                    parsedCert.IsCA,
 			}
-			certInfo = append(certInfo, *certCollection)
+			*certInfo = append(*certInfo, *certCollection)
 
 		}
 		log.Println("stuff should be here: ", certInfo)
-		return certInfo, trackErrors
+		return *certInfo, trackErrors
 	}
 	log.Println("certCollect-final: ", certInfo)
-	return certInfo, trackErrors
+	return *certInfo, trackErrors
 }
