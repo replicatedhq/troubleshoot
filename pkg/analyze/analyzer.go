@@ -2,6 +2,7 @@ package analyzer
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"reflect"
 	"strconv"
@@ -234,4 +235,27 @@ func getAnalyzer(analyzer *troubleshootv1beta2.Analyze) Analyzer {
 	default:
 		return nil
 	}
+}
+
+// deduplicates a list of troubleshootv1beta2.Analyze objects
+// marshals object to json and then uses its string value to check for uniqueness
+// there is no sorting of the keys in the analyze object's spec so if the spec isn't an exact match line for line as written, no dedup will occur
+func DedupAnalyzers(allAnalyzers []*troubleshootv1beta2.Analyze) []*troubleshootv1beta2.Analyze {
+	uniqueAnalyzers := make(map[string]bool)
+	finalAnalyzers := []*troubleshootv1beta2.Analyze{}
+
+	for _, analyzer := range allAnalyzers {
+		data, err := json.Marshal(analyzer)
+		if err != nil {
+			// return analyzer as is if for whatever reason it can't be marshalled into json
+			finalAnalyzers = append(finalAnalyzers, analyzer)
+		} else {
+			stringData := string(data)
+			if _, value := uniqueAnalyzers[stringData]; !value {
+				uniqueAnalyzers[stringData] = true
+				finalAnalyzers = append(finalAnalyzers, analyzer)
+			}
+		}
+	}
+	return finalAnalyzers
 }
