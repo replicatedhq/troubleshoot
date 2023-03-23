@@ -26,7 +26,7 @@ type CollectMssql struct {
 }
 
 func (c *CollectMssql) Title() string {
-	return collectorTitleOrDefault(c.Collector.CollectorMeta, "MSSSQLServer")
+	return getCollectorName(c)
 }
 
 func (c *CollectMssql) IsExcluded() (bool, error) {
