@@ -28,7 +28,7 @@ jobs:
   test:
     runs-on: ubuntu-20.04
     steps:
-      - uses: actions/setup-go@v3
+      - uses: actions/setup-go@v4
         with:
           go-version: "1.19"
 
@@ -45,7 +45,7 @@ jobs:
   test-integration:
     runs-on: ubuntu-20.04
     steps:
-      - uses: actions/setup-go@v3
+      - uses: actions/setup-go@v4
         with:
           go-version: "1.19"
 
@@ -66,7 +66,7 @@ jobs:
   ensure-schemas-are-generated:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/setup-go@v3
+      - uses: actions/setup-go@v4
         with:
           go-version: "1.19"
       - name: setup env
@@ -80,7 +80,7 @@ jobs:
   compile-preflight:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/setup-go@v3
+      - uses: actions/setup-go@v4
         with:
           go-version: "1.19"
       - name: setup env
@@ -156,7 +156,7 @@ jobs:
   compile-supportbundle:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/setup-go@v3
+      - uses: actions/setup-go@v4
         with:
           go-version: "1.19"
       - name: setup env
@@ -210,7 +210,7 @@ jobs:
   compile-collect:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/setup-go@v3
+      - uses: actions/setup-go@v4
         with:
           go-version: "1.19"
       - name: setup env
@@ -241,7 +241,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: actions/setup-go@v3
+      - uses: actions/setup-go@v4
         with:
           go-version: "1.19"
 
@@ -272,7 +272,7 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USER }}
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
 
-      - uses: actions/setup-go@v3
+      - uses: actions/setup-go@v4
         with:
           go-version: "1.19"
 
