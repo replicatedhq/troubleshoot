@@ -11,7 +11,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -114,8 +113,8 @@ func configMapCertCollector(configMapName string, namespace string, client kuber
 						//parsed SSL certificate
 						parsedCert, errParse := x509.ParseCertificate(cert)
 						if errParse != nil {
-							err := errors.New(("error: failed to parse certificate"))
-							trackErrors = append(trackErrors, err)
+
+							trackErrors = append(trackErrors, errParse.Error())
 						}
 
 						// Subject example: CN=DigiCert High Assurance EV CA-1,OU=www.digicert.com,O=DigiCert Inc,C=US
@@ -133,8 +132,7 @@ func configMapCertCollector(configMapName string, namespace string, client kuber
 
 					}
 				} else {
-					err := errors.New(("error: This object is not a certificate"))
-					trackErrors = append(trackErrors, err)
+					trackErrors = append(trackErrors, "error: This object is not a certificate")
 
 				}
 			}
