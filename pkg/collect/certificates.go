@@ -228,7 +228,7 @@ func CertParser(certName string, certs []byte) ([]ParsedCertificate, []string) {
 				IsCA:                    parsedCert.IsCA,
 			})
 
-			log.Println()
+			log.Println("stuff should be here: ", certInfo)
 		}
 	}
 	return certInfo, trackErrors
