@@ -4,7 +4,6 @@ import (
 	"archive/tar"
 	"bytes"
 	"compress/gzip"
-	"fmt"
 	"io"
 	"os"
 	"path/filepath"
@@ -129,31 +128,6 @@ func (r CollectorResult) SaveResult(bundlePath string, relativePath string, read
 	}
 
 	klog.V(2).Infof("Added %q to bundle output", relativePath)
-	return nil
-}
-
-func (r CollectorResult) SaveDirResult(bundlePath, relativePath string) error {
-	outPath := filepath.Join(bundlePath, relativePath)
-	err := filepath.Walk(outPath, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-		if info.IsDir() {
-			return nil
-		}
-
-		rel, err := filepath.Rel(bundlePath, path)
-		if err != nil {
-			return err
-		}
-
-		klog.V(2).Infof("Added %q to bundle output", rel)
-		r[rel] = nil
-		return nil
-	})
-	if err != nil {
-		return fmt.Errorf("failed to walk %q bundle directory: %w", outPath, err)
-	}
 	return nil
 }
 
