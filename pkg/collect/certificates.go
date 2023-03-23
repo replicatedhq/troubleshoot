@@ -165,25 +165,21 @@ func secretCertCollector(secretName string, namespace string, client kubernetes.
 
 		trackErrors := []string{}
 
-		certInfo := []ParsedCertificate{}
-
 		for certName, certs := range secret.Data {
 
-			cert, _ := CertParser(certName, certs)
-
-			certInfo = append(certInfo, cert)
+			certInfo, _ := CertParser(certName, certs)
 
 			results = CertCollection{
 				Source:           source,
 				Errors:           trackErrors,
 				CertificateChain: certInfo,
 			}
-			log.Println("my certinfo: ", certInfo)
+			//log.Println("my certinfo: ", certInfo)
 
 		}
 
 	}
-	log.Println("my results: ", results)
+	//log.Println("my results: ", results)
 	return results
 }
 
@@ -224,7 +220,7 @@ func CertParser(certName string, certs []byte) ([]ParsedCertificate, []string) {
 				continue // End here, start parsing the next cert in the for loop
 			}
 
-			certInfo = append(certInfo, ParsedCertificate{
+			certCollect := ParsedCertificate{
 				CertName:                certName,
 				Subject:                 parsedCert.Subject.ToRDNSequence().String(),
 				SubjectAlternativeNames: parsedCert.DNSNames,
@@ -233,9 +229,11 @@ func CertParser(certName string, certs []byte) ([]ParsedCertificate, []string) {
 				NotBefore:               parsedCert.NotBefore,
 				IsValid:                 currentTime.Before(parsedCert.NotAfter),
 				IsCA:                    parsedCert.IsCA,
-			})
+			}
 
-			//log.Println("stuff should be here: ", certInfo)
+			certInfo = append(certInfo, certCollect)
+
+			log.Println("stuff should be here: ", certInfo)
 		}
 	}
 	return certInfo, trackErrors
