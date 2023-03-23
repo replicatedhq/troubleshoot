@@ -222,7 +222,7 @@ func CertParser(certName string, certs []byte) ([]ParsedCertificate, []string) {
 				continue // End here, start parsing the next cert in the for loop
 			}
 
-			certCollect := &ParsedCertificate{
+			certCollect := ParsedCertificate{
 				CertName:                certName,
 				Subject:                 parsedCert.Subject.ToRDNSequence().String(),
 				SubjectAlternativeNames: parsedCert.DNSNames,
@@ -233,7 +233,7 @@ func CertParser(certName string, certs []byte) ([]ParsedCertificate, []string) {
 				IsCA:                    parsedCert.IsCA,
 			}
 
-			certInfo = append(certInfo, *certCollect)
+			certInfo = append(certInfo, certCollect)
 
 			log.Println("stuff should be here: ", certInfo)
 		}
