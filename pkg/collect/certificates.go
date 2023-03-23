@@ -34,9 +34,9 @@ type CertCollection struct {
 }
 
 type CertificateSource struct {
-	SecretName    string `json:"secret",omitempty"`
-	ConfigMapName string `json:"configMap",omitempty"`
-	Namespace     string `json:"namespace",omitempty"`
+	SecretName    string `json:"secret,omitempty"`
+	ConfigMapName string `json:"configMap,omitempty"`
+	Namespace     string `json:"namespace,omitempty"`
 }
 
 // Certificate Struct
