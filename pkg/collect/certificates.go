@@ -7,6 +7,7 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"encoding/pem"
+	"log"
 	"time"
 
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
@@ -113,6 +114,7 @@ func secretCertCollector(secretName string, namespace string, client kubernetes.
 				Errors:           trackErrors,
 				CertificateChain: certInfo,
 			})
+			log.Println("myresults:", results)
 		}
 
 	}
