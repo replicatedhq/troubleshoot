@@ -7,7 +7,6 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"encoding/pem"
-	"log"
 	"strings"
 	"time"
 
@@ -68,7 +67,8 @@ func (c *CollectCertificates) Collect(progressChan chan<- interface{}) (Collecto
 	// collect secret certificate
 	for secretName, namespace := range c.Collector.Secrets {
 		secretCollections := secretCertCollector(secretName, namespace, c.Client)
-		results = append(results, secretCollections...) // Explode the slice
+		results = append(results, secretCollections) // Explode the slice
+
 	}
 
 	certsJson, _ := json.MarshalIndent(results, "", "\t")
@@ -76,8 +76,6 @@ func (c *CollectCertificates) Collect(progressChan chan<- interface{}) (Collecto
 	filePath := "certificates/certificates.json"
 
 	output.SaveResult(c.BundlePath, filePath, bytes.NewBuffer(certsJson))
-
-	log.Println("results should spit out here: ", results)
 
 	return output, nil
 }
@@ -148,9 +146,9 @@ func configMapCertCollector(configMapName string, namespace string, client kuber
 
 // secret certificate collector function
 // func secretCertCollector(secretName map[string]string, client kubernetes.Interface) CertCollection {
-func secretCertCollector(secretName string, namespace string, client kubernetes.Interface) []CertCollection {
+func secretCertCollector(secretName string, namespace string, client kubernetes.Interface) CertCollection {
 
-	results := []CertCollection{}
+	results := CertCollection{}
 
 	// Collect from secrets
 	listOptions := metav1.ListOptions{}
@@ -169,11 +167,11 @@ func secretCertCollector(secretName string, namespace string, client kubernetes.
 		for certName, certs := range secret.Data {
 			certInfo, _ := CertParser(certName, certs)
 
-			results = append(results, CertCollection{
+			results = CertCollection{
 				Source:           source,
 				Errors:           trackErrors,
 				CertificateChain: certInfo,
-			})
+			}
 
 		}
 
