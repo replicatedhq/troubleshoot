@@ -156,7 +156,7 @@ func CertParser(certName string, certs []byte) ([]ParsedCertificate, []string) {
 		parsedCert, errParse := x509.ParseCertificate(cert)
 		if errParse != nil {
 			trackErrors = append(trackErrors, "error: This object is not a certificate")
-			continue // End here, start parsing the next cert in the for loop
+			//continue // End here, start parsing the next cert in the for loop
 		}
 
 		certInfo := ParsedCertificate{
