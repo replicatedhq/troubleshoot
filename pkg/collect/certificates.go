@@ -8,8 +8,10 @@ import (
 	"encoding/json"
 	"encoding/pem"
 	"log"
+	"strings"
 	"time"
 
+	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -59,7 +61,7 @@ func (c *CollectCertificates) IsExcluded() (bool, error) {
 	return isExcluded(c.Collector.Exclude)
 }
 
-func (c *CollectCertificates) Collect(progressChan chan<- interface{}) CollectorResult {
+func (c *CollectCertificates) Collect(progressChan chan<- interface{}) (CollectorResult, error) {
 
 	output := NewResult()
 	results := []CertCollection{}
@@ -78,15 +80,73 @@ func (c *CollectCertificates) Collect(progressChan chan<- interface{}) Collector
 
 	log.Println("results should spit out here: ", results)
 
-	return output
+	return output, nil
 }
 
 // configmap certificate collector function
-/*
 func configMapCertCollector(configMapName string, namespace string, client kubernetes.Interface) CertCollection {
+	currentTime := time.Now()
+	var certInfo []ParsedCertificate
+	var trackErrors []error
+	var source = &CertificateSource{}
 
+	listOptions := metav1.ListOptions{}
+
+	configMaps, _ := client.CoreV1().ConfigMaps(namespace).List(context.Background(), listOptions)
+
+	for _, configMap := range configMaps.Items {
+		if configMapName == configMap.Name {
+
+			for certName, certs := range configMap.Data {
+				data := string(certs)
+
+				if strings.Contains(data, "BEGIN CERTIFICATE") && strings.Contains(data, "END CERTIFICATE") {
+
+					source = &CertificateSource{
+						ConfigMapName: configMap.Name,
+						Namespace:     configMap.Namespace,
+					}
+
+					certChain := decodePem(data)
+
+					for _, cert := range certChain.Certificate {
+
+						//parsed SSL certificate
+						parsedCert, errParse := x509.ParseCertificate(cert)
+						if errParse != nil {
+							err := errors.New(("error: failed to parse certificate"))
+							trackErrors = append(trackErrors, err)
+						}
+
+						// Subject example: CN=DigiCert High Assurance EV CA-1,OU=www.digicert.com,O=DigiCert Inc,C=US
+						// Issuer example: CN=DigiCert High Assurance EV Root CA,OU=www.digicert.com,O=DigiCert Inc,C=US
+						certInfo = append(certInfo, ParsedCertificate{
+							CertName:                certName,
+							Subject:                 parsedCert.Subject.ToRDNSequence().String(),
+							SubjectAlternativeNames: parsedCert.DNSNames,
+							Issuer:                  parsedCert.Issuer.ToRDNSequence().String(),
+							NotAfter:                parsedCert.NotAfter,
+							NotBefore:               parsedCert.NotBefore,
+							IsValid:                 currentTime.Before(parsedCert.NotAfter),
+							IsCA:                    parsedCert.IsCA,
+						})
+
+					}
+				} else {
+					err := errors.New(("error: This object is not a certificate"))
+					trackErrors = append(trackErrors, err)
+
+				}
+			}
+
+		}
+	}
+	return CertCollection{
+		Source:           source,
+		Errors:           trackErrors,
+		CertificateChain: certInfo,
+	}
 }
-*/
 
 // secret certificate collector function
 // func secretCertCollector(secretName map[string]string, client kubernetes.Interface) CertCollection {
