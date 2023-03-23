@@ -76,6 +76,8 @@ func (c *CollectCertificates) Collect(progressChan chan<- interface{}) Collector
 
 	output.SaveResult(c.BundlePath, filePath, bytes.NewBuffer(certsJson))
 
+	log.Println("results should spit out here: ", results)
+
 	return output
 }
 
