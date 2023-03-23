@@ -18,6 +18,17 @@ spec:
     bin: support-bundle
   - selector:
       matchLabels:
+        os: linux
+        arch: arm
+    {{addURIAndSha "https://github.com/replicatedhq/troubleshoot/releases/download/{{ .TagName }}/support-bundle_linux_arm_6.tar.gz" .TagName }}
+    files:
+    - from: support-bundle
+      to: .
+    - from: LICENSE
+      to: .
+    bin: support-bundle
+  - selector:
+      matchLabels:
         os: darwin
         arch: amd64
     {{addURIAndSha "https://github.com/replicatedhq/troubleshoot/releases/download/{{ .TagName }}/support-bundle_darwin_amd64.tar.gz" .TagName }}

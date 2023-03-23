@@ -18,6 +18,17 @@ spec:
     bin: preflight
   - selector:
       matchLabels:
+        os: linux
+        arch: arm
+    {{addURIAndSha "https://github.com/replicatedhq/troubleshoot/releases/download/{{ .TagName }}/preflight_linux_arm_6.tar.gz" .TagName }}
+    files:
+    - from: preflight
+      to: .
+    - from: LICENSE
+      to: .
+    bin: preflight
+  - selector:
+      matchLabels:
         os: darwin
         arch: amd64
     {{addURIAndSha "https://github.com/replicatedhq/troubleshoot/releases/download/{{ .TagName }}/preflight_darwin_amd64.tar.gz" .TagName }}
