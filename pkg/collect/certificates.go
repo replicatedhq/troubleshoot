@@ -233,10 +233,9 @@ func CertParser(certName string, certs []byte) ([]ParsedCertificate, []string) {
 
 			certInfo = append(certInfo, certCollect)
 
-			log.Println("certCollect: ", certCollect)
-
 			log.Println("stuff should be here: ", certInfo)
 		}
 	}
+	log.Println("certCollect-final: ", certInfo)
 	return certInfo, trackErrors
 }
