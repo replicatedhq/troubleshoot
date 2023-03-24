@@ -26,7 +26,7 @@ func Test_LoadFromSecretMatchingLabel(t *testing.T) {
 						Name:      "secret",
 						Namespace: "default",
 						Labels: map[string]string{
-							"troubleshoot.io/kind": "support-bundle",
+							"troubleshoot.sh/kind": "support-bundle",
 						},
 					},
 					Data: map[string][]byte{
@@ -74,7 +74,7 @@ spec:
 						Name:      "secret",
 						Namespace: "default",
 						Labels: map[string]string{
-							"troubleshoot.io/kind": "support-bundle",
+							"troubleshoot.sh/kind": "support-bundle",
 						},
 					},
 					Data: map[string][]byte{
@@ -194,7 +194,7 @@ spec:
 						Name:      "secret",
 						Namespace: "default",
 						Labels: map[string]string{
-							"troubleshoot.io/kind": "support-bundle",
+							"troubleshoot.sh/kind": "support-bundle",
 						},
 					},
 					Data: map[string][]byte{
@@ -212,7 +212,7 @@ spec:
 						Name:      "secret-2",
 						Namespace: "default",
 						Labels: map[string]string{
-							"troubleshoot.io/kind": "support-bundle",
+							"troubleshoot.sh/kind": "support-bundle",
 						},
 					},
 					Data: map[string][]byte{
@@ -251,7 +251,7 @@ spec:
 						Name:      "secret",
 						Namespace: "some-namespace",
 						Labels: map[string]string{
-							"troubleshoot.io/kind": "support-bundle",
+							"troubleshoot.sh/kind": "support-bundle",
 						},
 					},
 					Data: map[string][]byte{
@@ -269,7 +269,7 @@ spec:
 						Name:      "secret-2",
 						Namespace: "some-namespace-2",
 						Labels: map[string]string{
-							"troubleshoot.io/kind": "support-bundle",
+							"troubleshoot.sh/kind": "support-bundle",
 						},
 					},
 					Data: map[string][]byte{
@@ -308,7 +308,7 @@ spec:
 						Name:      "secret",
 						Namespace: "some-namespace",
 						Labels: map[string]string{
-							"troubleshoot.io/kind": "support-bundle-wrong",
+							"troubleshoot.sh/kind": "support-bundle-wrong",
 						},
 					},
 					Data: map[string][]byte{
@@ -326,7 +326,7 @@ spec:
 						Name:      "secret-2",
 						Namespace: "some-namespace-2",
 						Labels: map[string]string{
-							"troubleshoot.io/kind": "support-bundle",
+							"troubleshoot.sh/kind": "support-bundle",
 						},
 					},
 					Data: map[string][]byte{
@@ -359,7 +359,7 @@ spec:
 				_, err := client.CoreV1().Secrets(secret.Namespace).Create(ctx, &secret, metav1.CreateOptions{})
 				require.NoError(t, err)
 			}
-			got, err := LoadFromSecretMatchingLabel(client, "troubleshoot.io/kind=support-bundle", "", "support-bundle-spec")
+			got, err := LoadFromSecretMatchingLabel(client, "troubleshoot.sh/kind=support-bundle", "", "support-bundle-spec")
 			if tt.wantErr {
 				assert.Error(t, err)
 			} else {
@@ -385,7 +385,7 @@ func TestUserProvidedNamespace_LoadFromSecretMatchingLabel(t *testing.T) {
 						Name:      "secret",
 						Namespace: "some-namespace",
 						Labels: map[string]string{
-							"troubleshoot.io/kind": "support-bundle",
+							"troubleshoot.sh/kind": "support-bundle",
 						},
 					},
 					Data: map[string][]byte{
@@ -423,7 +423,7 @@ spec:
 						Name:      "secret",
 						Namespace: "not-your-namespace",
 						Labels: map[string]string{
-							"troubleshoot.io/kind": "support-bundle",
+							"troubleshoot.sh/kind": "support-bundle",
 						},
 					},
 					Data: map[string][]byte{
@@ -451,7 +451,7 @@ spec:
 				_, err := client.CoreV1().Secrets(secret.Namespace).Create(ctx, &secret, metav1.CreateOptions{})
 				require.NoError(t, err)
 			}
-			got, err := LoadFromSecretMatchingLabel(client, "troubleshoot.io/kind=support-bundle", "some-namespace", "support-bundle-spec")
+			got, err := LoadFromSecretMatchingLabel(client, "troubleshoot.sh/kind=support-bundle", "some-namespace", "support-bundle-spec")
 			if tt.wantErr {
 				assert.Error(t, err)
 			} else {
@@ -477,7 +477,7 @@ func TestRedactors_LoadFromSecretMatchingLabel(t *testing.T) {
 						Name:      "secret",
 						Namespace: "default",
 						Labels: map[string]string{
-							"troubleshoot.io/kind": "support-bundle",
+							"troubleshoot.sh/kind": "support-bundle",
 						},
 					},
 					Data: map[string][]byte{
@@ -519,7 +519,7 @@ spec:
 						Name:      "secret",
 						Namespace: "default",
 						Labels: map[string]string{
-							"troubleshoot.io/kind": "support-bundle",
+							"troubleshoot.sh/kind": "support-bundle",
 						},
 					},
 					Data: map[string][]byte{
@@ -549,7 +549,7 @@ spec:
 				_, err := client.CoreV1().Secrets(secret.Namespace).Create(ctx, &secret, metav1.CreateOptions{})
 				require.NoError(t, err)
 			}
-			got, err := LoadFromSecretMatchingLabel(client, "troubleshoot.io/kind=support-bundle", "", "redactor-spec")
+			got, err := LoadFromSecretMatchingLabel(client, "troubleshoot.sh/kind=support-bundle", "", "redactor-spec")
 			if tt.wantErr {
 				assert.Error(t, err)
 			} else {
