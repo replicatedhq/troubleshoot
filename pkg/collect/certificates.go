@@ -208,7 +208,7 @@ func CertParser(certName string, certs []byte) ([]ParsedCertificate, []string) {
 	var trackErrors []string
 	data := string(certs)
 	certInfo := &[]ParsedCertificate{}
-	
+
 	certChain := decodePem(data)
 
 	if strings.Contains(data, "BEGIN CERTIFICATE") && strings.Contains(data, "END CERTIFICATE") {
@@ -233,7 +233,7 @@ func CertParser(certName string, certs []byte) ([]ParsedCertificate, []string) {
 				IsCA:                    parsedCert.IsCA,
 			})
 
-			log.Println("certCollect-final: ", certInfo)
+			log.Println("certCollect-final: ", *certInfo)
 
 		}
 
