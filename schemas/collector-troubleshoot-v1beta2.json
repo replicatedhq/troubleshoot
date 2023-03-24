@@ -2282,7 +2282,7 @@
                               "type": "object",
                               "properties": {
                                 "claims": {
-                                  "description": "Claims lists the names of resources, defined in spec.resourceClaims, that are used by this container. \n This is an alpha field and requires enabling the DynamicResourceAllocation feature gate. \n This field is immutable.",
+                                  "description": "Claims lists the names of resources, defined in spec.resourceClaims, that are used by this container. \n This is an alpha field and requires enabling the DynamicResourceAllocation feature gate. \n This field is immutable. It can only be set for containers.",
                                   "type": "array",
                                   "items": {
                                     "description": "ResourceClaim references one entry in PodSpec.ResourceClaims.",
@@ -3478,7 +3478,7 @@
                               "type": "object",
                               "properties": {
                                 "claims": {
-                                  "description": "Claims lists the names of resources, defined in spec.resourceClaims, that are used by this container. \n This is an alpha field and requires enabling the DynamicResourceAllocation feature gate. \n This field is immutable.",
+                                  "description": "Claims lists the names of resources, defined in spec.resourceClaims, that are used by this container. \n This is an alpha field and requires enabling the DynamicResourceAllocation feature gate. \n This field is immutable. It can only be set for containers.",
                                   "type": "array",
                                   "items": {
                                     "description": "ResourceClaim references one entry in PodSpec.ResourceClaims.",
@@ -4689,7 +4689,7 @@
                               "type": "object",
                               "properties": {
                                 "claims": {
-                                  "description": "Claims lists the names of resources, defined in spec.resourceClaims, that are used by this container. \n This is an alpha field and requires enabling the DynamicResourceAllocation feature gate. \n This field is immutable.",
+                                  "description": "Claims lists the names of resources, defined in spec.resourceClaims, that are used by this container. \n This is an alpha field and requires enabling the DynamicResourceAllocation feature gate. \n This field is immutable. It can only be set for containers.",
                                   "type": "array",
                                   "items": {
                                     "description": "ResourceClaim references one entry in PodSpec.ResourceClaims.",
@@ -5946,7 +5946,7 @@
                                           "type": "object",
                                           "properties": {
                                             "claims": {
-                                              "description": "Claims lists the names of resources, defined in spec.resourceClaims, that are used by this container. \n This is an alpha field and requires enabling the DynamicResourceAllocation feature gate. \n This field is immutable.",
+                                              "description": "Claims lists the names of resources, defined in spec.resourceClaims, that are used by this container. \n This is an alpha field and requires enabling the DynamicResourceAllocation feature gate. \n This field is immutable. It can only be set for containers.",
                                               "type": "array",
                                               "items": {
                                                 "description": "ResourceClaim references one entry in PodSpec.ResourceClaims.",
