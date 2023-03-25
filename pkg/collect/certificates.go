@@ -187,7 +187,7 @@ func secretCertCollector(secretName string, namespace string, client kubernetes.
 		}
 
 	}
-	log.Println("my results: ", results)
+	//log.Println("my results: ", results)
 	return results
 
 }
