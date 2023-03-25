@@ -155,6 +155,8 @@ func secretCertCollector(secretName string, namespace string, client kubernetes.
 	listOptions := metav1.ListOptions{}
 	// TODO: Handle RBAC errors. Not to be worked on yet
 	secrets, _ := client.CoreV1().Secrets(namespace).List(context.Background(), listOptions)
+	trackErrors := []string{}
+	certInfo := []ParsedCertificate{}
 
 	for _, secret := range secrets.Items {
 		if secretName == secret.Name {
@@ -164,21 +166,12 @@ func secretCertCollector(secretName string, namespace string, client kubernetes.
 				Namespace:  secret.Namespace,
 			}
 
-			trackErrors := []string{}
-
 			for certName, certs := range secret.Data {
-				certCollection := []ParsedCertificate{}
 
-				certInfo := CertParser(certName, certs, certCollection)
+				//certInfo := CertParser(certName, certs, certCollection)
+				collection := CertParser(certName, certs, certInfo, source, trackErrors)
 
-				certCollection = append(certCollection, certInfo...)
-
-				results = CertCollection{
-					Source:           source,
-					Errors:           trackErrors,
-					CertificateChain: certCollection,
-				}
-				//log.Println("my certinfo: ", certInfo)
+				log.Println("coolection: ", collection)
 
 			}
 		}
@@ -207,11 +200,11 @@ func decodePem(certInput string) tls.Certificate {
 //for certName, certs := range secret.Data {
 
 // func CertParser(certName string, certs []byte) ([]ParsedCertificate, []string) {
-func CertParser(certName string, certs []byte, certCollection []ParsedCertificate) []ParsedCertificate {
+func CertParser(certName string, certs []byte, parsedCerts []ParsedCertificate, source *CertificateSource, trackErrors []string) CertCollection {
 	currentTime := time.Now()
-	var trackErrors []string
 	data := string(certs)
-	certInfo := ParsedCertificate{}
+	//certInfo := ParsedCertificate{}
+	results := CertCollection{}
 
 	certChain := decodePem(data)
 
@@ -226,7 +219,7 @@ func CertParser(certName string, certs []byte, certCollection []ParsedCertificat
 				continue // End here, start parsing the next cert in the for loop
 			}
 
-			certCollection = append(certCollection, ParsedCertificate{
+			parsedCerts := append(parsedCerts, ParsedCertificate{
 				CertName:                certName,
 				Subject:                 parsedCert.Subject.ToRDNSequence().String(),
 				SubjectAlternativeNames: parsedCert.DNSNames,
@@ -238,11 +231,18 @@ func CertParser(certName string, certs []byte, certCollection []ParsedCertificat
 			})
 
 			//log.Println("certCollect-final: ", *certInfo)
+			//certCollection = append(certCollection, certInfo...)
+
+			results = CertCollection{
+				Source:           source,
+				Errors:           trackErrors,
+				CertificateChain: parsedCerts,
+			}
 
 		}
-		log.Println("dagr: ", certInfo)
+		//log.Println("dagr: ", certInfo)
 
 	}
 
-	return certCollection
+	return results
 }
