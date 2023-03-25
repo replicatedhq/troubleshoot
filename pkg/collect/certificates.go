@@ -68,7 +68,7 @@ func (c *CollectCertificates) Collect(progressChan chan<- interface{}) (Collecto
 	// collect secret certificate
 	for secretName, namespace := range c.Collector.Secrets {
 		log.Println("secret: ", secretName)
-		log.Println("secret: ", namespace)
+		log.Println("namespace: ", namespace)
 		secretCollections := secretCertCollector(secretName, namespace, c.Client)
 		results = append(results, secretCollections...)
 		//log.Println("final results: ", results)
