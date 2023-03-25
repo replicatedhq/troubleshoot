@@ -218,36 +218,36 @@ func CertParser(certName string, certs []byte) ([]ParsedCertificate, []string) {
 
 	certChain := decodePem(data)
 
-	if strings.Contains(data, "BEGIN CERTIFICATE") && strings.Contains(data, "END CERTIFICATE") {
+	//if strings.Contains(data, "BEGIN CERTIFICATE") && strings.Contains(data, "END CERTIFICATE") {
 
-		for _, cert := range certChain.Certificate {
+	for _, cert := range certChain.Certificate {
 
-			//parsed SSL certificate
-			parsedCert, errParse := x509.ParseCertificate(cert)
-			if errParse != nil {
-				trackErrors = append(trackErrors, "error: This object is not a certificate")
-				continue // End here, start parsing the next cert in the for loop
-			}
-
-			certInfo := append(certInfo, ParsedCertificate{
-				CertName:                certName,
-				Subject:                 parsedCert.Subject.ToRDNSequence().String(),
-				SubjectAlternativeNames: parsedCert.DNSNames,
-				Issuer:                  parsedCert.Issuer.CommonName,
-				NotAfter:                parsedCert.NotAfter,
-				NotBefore:               parsedCert.NotBefore,
-				IsValid:                 currentTime.Before(parsedCert.NotAfter),
-				IsCA:                    parsedCert.IsCA,
-			})
-
-			//log.Println("certCollect-final: ", *certInfo)
-			//certCollection = append(certCollection, certInfo...)
-			return certInfo, nil
-
+		//parsed SSL certificate
+		parsedCert, errParse := x509.ParseCertificate(cert)
+		if errParse != nil {
+			trackErrors = append(trackErrors, "error: This object is not a certificate")
+			continue // End here, start parsing the next cert in the for loop
 		}
-		log.Println("dagr: ", certInfo)
+
+		certInfo := append(certInfo, ParsedCertificate{
+			CertName:                certName,
+			Subject:                 parsedCert.Subject.ToRDNSequence().String(),
+			SubjectAlternativeNames: parsedCert.DNSNames,
+			Issuer:                  parsedCert.Issuer.CommonName,
+			NotAfter:                parsedCert.NotAfter,
+			NotBefore:               parsedCert.NotBefore,
+			IsValid:                 currentTime.Before(parsedCert.NotAfter),
+			IsCA:                    parsedCert.IsCA,
+		})
+
+		//log.Println("certCollect-final: ", *certInfo)
+		//certCollection = append(certCollection, certInfo...)
+		return certInfo, nil
 
 	}
+	log.Println("dagr: ", certInfo)
+
+	//}
 
 	return certInfo, nil
 }
