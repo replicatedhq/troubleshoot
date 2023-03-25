@@ -7,7 +7,6 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"encoding/pem"
-	"log"
 	"strings"
 	"time"
 
@@ -210,7 +209,7 @@ func CertParser(certName string, certs []byte) ([]ParsedCertificate, []string) {
 	currentTime := time.Now()
 	var trackErrors []string
 	data := string(certs)
-	certInfo := &[]ParsedCertificate{}
+	certInfo := []ParsedCertificate{}
 
 	certChain := decodePem(data)
 
@@ -225,7 +224,7 @@ func CertParser(certName string, certs []byte) ([]ParsedCertificate, []string) {
 				continue // End here, start parsing the next cert in the for loop
 			}
 
-			*certInfo = append(*certInfo, ParsedCertificate{
+			certInfo = append(certInfo, ParsedCertificate{
 				CertName:                certName,
 				Subject:                 parsedCert.Subject.ToRDNSequence().String(),
 				SubjectAlternativeNames: parsedCert.DNSNames,
@@ -236,11 +235,11 @@ func CertParser(certName string, certs []byte) ([]ParsedCertificate, []string) {
 				IsCA:                    parsedCert.IsCA,
 			})
 
-			log.Println("certCollect-final: ", *certInfo)
+			//log.Println("certCollect-final: ", *certInfo)
 
 		}
 
 	}
 
-	return *certInfo, trackErrors
+	return certInfo, trackErrors
 }
