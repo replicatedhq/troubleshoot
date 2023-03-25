@@ -167,13 +167,16 @@ func secretCertCollector(secretName string, namespace string, client kubernetes.
 			trackErrors := []string{}
 
 			for certName, certs := range secret.Data {
+				certCollection := []ParsedCertificate{}
 
 				certInfo, _ := CertParser(certName, certs)
+
+				certCollection = append(certCollection, certInfo...)
 
 				results = CertCollection{
 					Source:           source,
 					Errors:           trackErrors,
-					CertificateChain: certInfo,
+					CertificateChain: certCollection,
 				}
 				//log.Println("my certinfo: ", certInfo)
 
