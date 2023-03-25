@@ -185,7 +185,7 @@ func secretCertCollector(secretName string, namespace string, client kubernetes.
 		}
 
 	}
-	//log.Println("my results: ", results)
+	log.Println("my results: ", results)
 	return results
 
 }
@@ -246,8 +246,7 @@ func CertParser(certName string, certs []byte) ([]ParsedCertificate, []string) {
 
 	}
 
-
 	//}
-	log.Println("dagr: ", certInfo)
+
 	return certInfo, nil
 }
