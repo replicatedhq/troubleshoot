@@ -7,6 +7,7 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"encoding/pem"
+	"log"
 	"strings"
 	"time"
 
@@ -238,6 +239,7 @@ func CertParser(certName string, certs []byte) ([]ParsedCertificate, []string) {
 			//log.Println("certCollect-final: ", *certInfo)
 
 		}
+		log.Println("dagr: ", certInfo)
 
 	}
 
