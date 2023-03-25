@@ -169,7 +169,7 @@ func secretCertCollector(secretName string, namespace string, client kubernetes.
 			for certName, certs := range secret.Data {
 				certCollection := []ParsedCertificate{}
 
-				certInfo, _ := CertParser(certName, certs)
+				certInfo := CertParser(certName, certs, certCollection)
 
 				certCollection = append(certCollection, certInfo...)
 
@@ -206,12 +206,12 @@ func decodePem(certInput string) tls.Certificate {
 
 //for certName, certs := range secret.Data {
 
-func CertParser(certName string, certs []byte) ([]ParsedCertificate, []string) {
+// func CertParser(certName string, certs []byte) ([]ParsedCertificate, []string) {
+func CertParser(certName string, certs []byte, certCollection []ParsedCertificate) []ParsedCertificate {
 	currentTime := time.Now()
 	var trackErrors []string
 	data := string(certs)
 	certInfo := ParsedCertificate{}
-	certCollection := []ParsedCertificate{}
 
 	certChain := decodePem(data)
 
@@ -244,5 +244,5 @@ func CertParser(certName string, certs []byte) ([]ParsedCertificate, []string) {
 
 	}
 
-	return certCollection, trackErrors
+	return certCollection
 }
