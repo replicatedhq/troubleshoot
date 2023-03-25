@@ -245,9 +245,9 @@ func CertParser(certName string, certs []byte) ([]ParsedCertificate, []string) {
 		return certInfo, nil
 
 	}
-	log.Println("dagr: ", certInfo)
+
 
 	//}
-
+	log.Println("dagr: ", certInfo)
 	return certInfo, nil
 }
