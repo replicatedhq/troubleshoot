@@ -66,13 +66,15 @@ func (c *CollectCertificates) Collect(progressChan chan<- interface{}) (Collecto
 	results := []CertCollection{}
 
 	// collect secret certificate
-	for _, namespace := range c.Collector.Namespaces {
+	for secretName, namespaces := range c.Collector.Secrets {
+		for _, namespace := range namespaces {
 
-		secretCollections := secretCertCollector(c.Collector.Secrets, namespace, c.Client)
-		log.Println("secret: ", c.Collector.Secrets)
-		log.Println("namespace: ", c.Collector.Namespaces)
-		results = append(results, secretCollections...)
-		//log.Println("final results: ", results)
+			secretCollections := secretCertCollector(secretName, namespace, c.Client)
+			log.Println("secret: ", secretName)
+			log.Println("namespace: ", namespace)
+			results = append(results, secretCollections...)
+			//log.Println("final results: ", results)
+		}
 	}
 
 	certsJson, _ := json.MarshalIndent(results, "", "\t")
