@@ -86,7 +86,7 @@ func (c *CollectCertificates) Collect(progressChan chan<- interface{}) (Collecto
 	return output, nil
 }
 
-// configmap certificate collector function
+// configmap certificate collector function will go here
 func configMapCertCollector(configMapName string, namespace string, client kubernetes.Interface) CertCollection {
 	currentTime := time.Now()
 	var certInfo []ParsedCertificate
