@@ -221,7 +221,7 @@ type Certificates struct {
 	Name          string   `json:"name,omitempty" yaml:"name,omitempty"`
 	Secrets       string   `json:"secrets,omitempty" yaml:"secrets,omitempty"`
 	ConfigMaps    string   `json:"configMaps,omitempty" yaml:"configMaps,omitempty"`
-	Namespace     []string `json:"namespaces,omitempty" yaml:"namespaces,omitempty"`
+	Namespaces    []string `json:"namespaces,omitempty" yaml:"namespaces,omitempty"`
 }
 
 type Collect struct {
