@@ -76,6 +76,18 @@ func (c *CollectCertificates) Collect(progressChan chan<- interface{}) (Collecto
 		}
 	}
 
+	// collect secret certificate
+	for configMapName, namespaces := range c.Collector.ConfigMaps {
+		for _, namespace := range namespaces {
+
+			configMapCollections := configMapCertCollector(configMapName, namespace, c.Client)
+			log.Println("configMap: ", configMapName)
+			log.Println("namespace: ", namespace)
+			results = append(results, configMapCollections...)
+			//log.Println("final results: ", results)
+		}
+	}
+
 	certsJson, _ := json.MarshalIndent(results, "", "\t")
 
 	filePath := "certificates/certificates.json"
