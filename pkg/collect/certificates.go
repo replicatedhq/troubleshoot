@@ -7,7 +7,6 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"encoding/pem"
-	"log"
 	"time"
 
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
@@ -69,25 +68,22 @@ func (c *CollectCertificates) Collect(progressChan chan<- interface{}) (Collecto
 		for _, namespace := range namespaces {
 
 			secretCollections := secretCertCollector(secretName, namespace, c.Client)
-			log.Println("secret: ", secretName)
-			log.Println("namespace: ", namespace)
 			results = append(results, secretCollections...)
-			//log.Println("final results: ", results)
 		}
 	}
 
 	// collect secret certificate
 	/*
-	for configMapName, namespaces := range c.Collector.ConfigMaps {
-		for _, namespace := range namespaces {
+		for configMapName, namespaces := range c.Collector.ConfigMaps {
+			for _, namespace := range namespaces {
 
-			configMapCollections := configMapCertCollector(configMapName, namespace, c.Client)
-			log.Println("configMap: ", configMapName)
-			log.Println("namespace: ", namespace)
-			results = append(results, configMapCollections...)
-			//log.Println("final results: ", results)
+				configMapCollections := configMapCertCollector(configMapName, namespace, c.Client)
+				log.Println("configMap: ", configMapName)
+				log.Println("namespace: ", namespace)
+				results = append(results, configMapCollections...)
+				//log.Println("final results: ", results)
+			}
 		}
-	}
 	*/
 
 	certsJson, _ := json.MarshalIndent(results, "", "\t")
@@ -138,7 +134,6 @@ func configMapCertCollector(configMapName string, namespace string, client kuber
 		}
 	}
 
-	//log.Println("my results: ", results)
 	return results
 }
 
@@ -183,7 +178,6 @@ func secretCertCollector(secretName string, namespace string, client kubernetes.
 		}
 
 	}
-	//log.Println("my results: ", results)
 	return results
 
 }
