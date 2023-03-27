@@ -138,35 +138,38 @@ func secretCertCollector(secretName string, namespace string, client kubernetes.
 	results := []CertCollection{}
 
 	// Collect from secrets
-	listOptions := metav1.ListOptions{}
+	//listOptions := metav1.ListOptions{}
+	getOptions := metav1.GetOptions{}
 	// TODO: Handle RBAC errors. Not to be worked on yet
-	secrets, _ := client.CoreV1().Secrets(namespace).List(context.Background(), listOptions)
+	//secrets, _ := client.CoreV1().Secrets(namespace).List(context.Background(), listOptions)
+
+	secret, _ := client.CoreV1().Secrets(namespace).Get(context.Background(), secretName, getOptions)
+
 	trackErrors := []string{}
 
 	collection := []ParsedCertificate{}
 
-	for _, secret := range secrets.Items {
-		if secretName == secret.Name {
-
-			// Collect from secret
-			source := &CertificateSource{
-				SecretName: secret.Name,
-				Namespace:  secret.Namespace,
-			}
-
-			for certName, certs := range secret.Data {
-				certInfo, _ := CertParser(certName, certs)
-
-				collection = append(collection, certInfo...)
-
-			}
-			results = append(results, CertCollection{
-				Source:           source,
-				Errors:           trackErrors,
-				CertificateChain: collection,
-			})
-		}
+	// Collect from secret
+	source := &CertificateSource{
+		SecretName: secret.Name,
+		Namespace:  secret.Namespace,
 	}
+
+	//if secretName == secret.Name {
+
+	for certName, certs := range secret.Data {
+		certInfo, _ := CertParser(certName, certs)
+
+		collection = append(collection, certInfo...)
+
+	}
+	results = append(results, CertCollection{
+		Source:           source,
+		Errors:           trackErrors,
+		CertificateChain: collection,
+	})
+	//}
+
 	return results
 }
 
