@@ -73,13 +73,15 @@ func (c *CollectCertificates) Collect(progressChan chan<- interface{}) (Collecto
 		}
 	}
 
-	// collect configMap certificates
-	for configMapName, namespaces := range c.Collector.ConfigMaps {
-		for _, namespace := range namespaces {
-			configMapCollections := configMapCertCollector(configMapName, namespace, c.Client)
-			results = append(results, configMapCollections...)
+	/*
+		// collect configMap certificates
+		for configMapName, namespaces := range c.Collector.ConfigMaps {
+			for _, namespace := range namespaces {
+				configMapCollections := configMapCertCollector(configMapName, namespace, c.Client)
+				results = append(results, configMapCollections...)
+			}
 		}
-	}
+	*/
 
 	certsJson, _ := json.MarshalIndent(results, "", "\t")
 
