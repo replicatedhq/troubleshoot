@@ -64,7 +64,7 @@ func (c *CollectCertificates) Collect(progressChan chan<- interface{}) (Collecto
 	output := NewResult()
 	results := []CertCollection{}
 
-	// collect secret certificates
+	// collect certificates from secrets
 	for secretName, namespaces := range c.Collector.Secrets {
 		for _, namespace := range namespaces {
 
@@ -74,7 +74,7 @@ func (c *CollectCertificates) Collect(progressChan chan<- interface{}) (Collecto
 	}
 
 	/*
-		// collect configMap certificates
+		// collect certificates from configMaps
 		for configMapName, namespaces := range c.Collector.ConfigMaps {
 			for _, namespace := range namespaces {
 				configMapCollections := configMapCertCollector(configMapName, namespace, c.Client)
@@ -195,7 +195,6 @@ func CertParser(certName string, certs []byte) ([]ParsedCertificate, []string) {
 	data := string(certs)
 	certInfo := []ParsedCertificate{}
 	trackErrors := []string{}
-	//results := CertCollection{}
 
 	certChain := decodePem(data)
 
