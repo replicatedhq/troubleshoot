@@ -233,6 +233,7 @@ type Analyze struct {
 	YamlCompare              *YamlCompare              `json:"yamlCompare,omitempty" yaml:"yamlCompare,omitempty"`
 	JsonCompare              *JsonCompare              `json:"jsonCompare,omitempty" yaml:"jsonCompare,omitempty"`
 	Postgres                 *DatabaseAnalyze          `json:"postgres,omitempty" yaml:"postgres,omitempty"`
+	Mssql                    *DatabaseAnalyze          `json:"mssql,omitempty" yaml:"mssql,omitempty"`
 	Mysql                    *DatabaseAnalyze          `json:"mysql,omitempty" yaml:"mysql,omitempty"`
 	Redis                    *DatabaseAnalyze          `json:"redis,omitempty" yaml:"redis,omitempty"`
 	CephStatus               *CephStatusAnalyze        `json:"cephStatus,omitempty" yaml:"cephStatus,omitempty"`
