@@ -25,13 +25,14 @@ type CollectCertificates struct {
 	RBACErrors
 }
 
-// Collect source information - where certificate came from.
+// Certificate collection struct
 type CertCollection struct {
 	Source           *CertificateSource  `json:"source"`
 	Errors           []string            `json:"errors"`
 	CertificateChain []ParsedCertificate `json:"certificateChain"`
 }
 
+// Certificate source
 type CertificateSource struct {
 	SecretName    string `json:"secret,omitempty"`
 	ConfigMapName string `json:"configMap,omitempty"`
@@ -63,7 +64,7 @@ func (c *CollectCertificates) Collect(progressChan chan<- interface{}) (Collecto
 	output := NewResult()
 	results := []CertCollection{}
 
-	// collect secret certificate
+	// collect secret certificates
 	for secretName, namespaces := range c.Collector.Secrets {
 		for _, namespace := range namespaces {
 
@@ -72,8 +73,7 @@ func (c *CollectCertificates) Collect(progressChan chan<- interface{}) (Collecto
 		}
 	}
 
-	// collect secret certificate
-
+	// collect configMap certificates
 	for configMapName, namespaces := range c.Collector.ConfigMaps {
 		for _, namespace := range namespaces {
 			configMapCollections := configMapCertCollector(configMapName, namespace, c.Client)
@@ -91,7 +91,6 @@ func (c *CollectCertificates) Collect(progressChan chan<- interface{}) (Collecto
 }
 
 // configmap certificate collector function will
-// func configMapCertCollector(configMapName string, namespace string, client kubernetes.Interface) CertCollection {
 func configMapCertCollector(configMapName string, namespace string, client kubernetes.Interface) []CertCollection {
 
 	results := []CertCollection{}
@@ -128,7 +127,6 @@ func configMapCertCollector(configMapName string, namespace string, client kuber
 
 		}
 	}
-
 	return results
 }
 
@@ -159,8 +157,6 @@ func secretCertCollector(secretName string, namespace string, client kubernetes.
 
 				collection = append(collection, certInfo...)
 
-				//log.Println("coolection: ", collection)
-
 			}
 			results = append(results, CertCollection{
 				Source:           source,
@@ -189,10 +185,10 @@ func decodePem(certInput string) tls.Certificate {
 	return cert
 }
 
-//for certName, certs := range secret.Data {
-
+// Certificate parser
 func CertParser(certName string, certs []byte) ([]ParsedCertificate, []string) {
 	//func CertParser(certName string, certs []byte, parsedCerts []ParsedCertificate, source *CertificateSource, trackErrors []string) CertCollection {
+	//TODO: return trackErrors as well.
 	currentTime := time.Now()
 	data := string(certs)
 	certInfo := []ParsedCertificate{}
@@ -201,15 +197,13 @@ func CertParser(certName string, certs []byte) ([]ParsedCertificate, []string) {
 
 	certChain := decodePem(data)
 
-	//if strings.Contains(data, "BEGIN CERTIFICATE") && strings.Contains(data, "END CERTIFICATE") {
-
 	for _, cert := range certChain.Certificate {
 
 		//parsed SSL certificate
 		parsedCert, errParse := x509.ParseCertificate(cert)
 		if errParse != nil {
-			trackErrors = append(trackErrors, "error: This object is not a certificate")
-			continue // End here, start parsing the next cert in the for loop
+			trackErrors = append(trackErrors, errParse.Error())
+			continue
 		}
 
 		certInfo = append(certInfo, ParsedCertificate{
@@ -222,12 +216,6 @@ func CertParser(certName string, certs []byte) ([]ParsedCertificate, []string) {
 			IsValid:                 currentTime.Before(parsedCert.NotAfter),
 			IsCA:                    parsedCert.IsCA,
 		})
-
-		//return certInfo, nil
-
 	}
-
-	//}
-
-	return certInfo, nil
+	return certInfo, nil //return trackErrors
 }
