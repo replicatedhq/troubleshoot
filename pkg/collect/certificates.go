@@ -73,18 +73,13 @@ func (c *CollectCertificates) Collect(progressChan chan<- interface{}) (Collecto
 	}
 
 	// collect secret certificate
-	/*
-		for configMapName, namespaces := range c.Collector.ConfigMaps {
-			for _, namespace := range namespaces {
 
-				configMapCollections := configMapCertCollector(configMapName, namespace, c.Client)
-				log.Println("configMap: ", configMapName)
-				log.Println("namespace: ", namespace)
-				results = append(results, configMapCollections...)
-				//log.Println("final results: ", results)
-			}
+	for configMapName, namespaces := range c.Collector.ConfigMaps {
+		for _, namespace := range namespaces {
+			configMapCollections := configMapCertCollector(configMapName, namespace, c.Client)
+			results = append(results, configMapCollections...)
 		}
-	*/
+	}
 
 	certsJson, _ := json.MarshalIndent(results, "", "\t")
 
@@ -138,8 +133,6 @@ func configMapCertCollector(configMapName string, namespace string, client kuber
 }
 
 // secret certificate collector function
-// func secretCertCollector(secretName map[string]string, client kubernetes.Interface) CertCollection {
-
 func secretCertCollector(secretName string, namespace string, client kubernetes.Interface) []CertCollection {
 
 	results := []CertCollection{}
@@ -154,6 +147,7 @@ func secretCertCollector(secretName string, namespace string, client kubernetes.
 
 	for _, secret := range secrets.Items {
 		if secretName == secret.Name {
+
 			// Collect from secret
 			source := &CertificateSource{
 				SecretName: secret.Name,
@@ -161,8 +155,6 @@ func secretCertCollector(secretName string, namespace string, client kubernetes.
 			}
 
 			for certName, certs := range secret.Data {
-
-				//certInfo := CertParser(certName, certs, certCollection)
 				certInfo, _ := CertParser(certName, certs)
 
 				collection = append(collection, certInfo...)
