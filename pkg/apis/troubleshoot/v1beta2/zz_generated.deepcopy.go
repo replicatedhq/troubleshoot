@@ -149,6 +149,11 @@ func (in *Analyze) DeepCopyInto(out *Analyze) {
 		*out = new(DatabaseAnalyze)
 		(*in).DeepCopyInto(*out)
 	}
+	if in.Mssql != nil {
+		in, out := &in.Mssql, &out.Mssql
+		*out = new(DatabaseAnalyze)
+		(*in).DeepCopyInto(*out)
+	}
 	if in.Mysql != nil {
 		in, out := &in.Mysql, &out.Mysql
 		*out = new(DatabaseAnalyze)
@@ -742,6 +747,11 @@ func (in *Collect) DeepCopyInto(out *Collect) {
 	}
 	if in.Postgres != nil {
 		in, out := &in.Postgres, &out.Postgres
+		*out = new(Database)
+		(*in).DeepCopyInto(*out)
+	}
+	if in.Mssql != nil {
+		in, out := &in.Mssql, &out.Mssql
 		*out = new(Database)
 		(*in).DeepCopyInto(*out)
 	}
