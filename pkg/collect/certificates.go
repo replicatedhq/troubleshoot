@@ -73,15 +73,13 @@ func (c *CollectCertificates) Collect(progressChan chan<- interface{}) (Collecto
 		}
 	}
 
-	/*
-		// collect certificates from configMaps
-		for configMapName, namespaces := range c.Collector.ConfigMaps {
-			for _, namespace := range namespaces {
-				configMapCollections := configMapCertCollector(configMapName, namespace, c.Client)
-				results = append(results, configMapCollections...)
-			}
+	// collect certificates from configMaps
+	for configMapName, namespaces := range c.Collector.ConfigMaps {
+		for _, namespace := range namespaces {
+			configMapCollections := configMapCertCollector(configMapName, namespace, c.Client)
+			results = append(results, configMapCollections...)
 		}
-	*/
+	}
 
 	certsJson, _ := json.MarshalIndent(results, "", "\t")
 
@@ -97,38 +95,37 @@ func configMapCertCollector(configMapName string, namespace string, client kuber
 
 	results := []CertCollection{}
 
-	// Collect from configMaps
-	listOptions := metav1.ListOptions{}
+	//listOptions := metav1.ListOptions{}
+	//configMaps, _ := client.CoreV1().ConfigMaps(namespace).List(context.Background(), listOptions)
 
-	configMaps, _ := client.CoreV1().ConfigMaps(namespace).List(context.Background(), listOptions)
+	getOptions := metav1.GetOptions{}
+
+	// Collect from configMaps
+	configMap, _ := client.CoreV1().ConfigMaps(namespace).Get(context.Background(), configMapName, getOptions)
 
 	trackErrors := []string{}
 
 	collection := []ParsedCertificate{}
 
-	for _, configMap := range configMaps.Items {
-		if configMapName == configMap.Name {
-			//Collect from configMap
-			source := &CertificateSource{
-				ConfigMapName: configMap.Name,
-				Namespace:     configMap.Namespace,
-			}
-			for certName, c := range configMap.Data {
-
-				certs := []byte(c)
-
-				certInfo, _ := CertParser(certName, certs)
-
-				collection = append(collection, certInfo...)
-			}
-			results = append(results, CertCollection{
-				Source:           source,
-				Errors:           trackErrors,
-				CertificateChain: collection,
-			})
-
-		}
+	//Collect from configMap
+	source := &CertificateSource{
+		ConfigMapName: configMap.Name,
+		Namespace:     configMap.Namespace,
 	}
+	for certName, c := range configMap.Data {
+
+		certs := []byte(c)
+
+		certInfo, _ := CertParser(certName, certs)
+
+		collection = append(collection, certInfo...)
+	}
+	results = append(results, CertCollection{
+		Source:           source,
+		Errors:           trackErrors,
+		CertificateChain: collection,
+	})
+
 	return results
 }
 
@@ -137,12 +134,12 @@ func secretCertCollector(secretName string, namespace string, client kubernetes.
 
 	results := []CertCollection{}
 
-	// Collect from secrets
 	//listOptions := metav1.ListOptions{}
-	getOptions := metav1.GetOptions{}
-	// TODO: Handle RBAC errors. Not to be worked on yet
 	//secrets, _ := client.CoreV1().Secrets(namespace).List(context.Background(), listOptions)
 
+	// TODO: Handle RBAC errors. Not to be worked on yet
+	getOptions := metav1.GetOptions{}
+	// Collect from secrets
 	secret, _ := client.CoreV1().Secrets(namespace).Get(context.Background(), secretName, getOptions)
 
 	trackErrors := []string{}
@@ -155,8 +152,6 @@ func secretCertCollector(secretName string, namespace string, client kubernetes.
 		Namespace:  secret.Namespace,
 	}
 
-	//if secretName == secret.Name {
-
 	for certName, certs := range secret.Data {
 		certInfo, _ := CertParser(certName, certs)
 
@@ -168,7 +163,6 @@ func secretCertCollector(secretName string, namespace string, client kubernetes.
 		Errors:           trackErrors,
 		CertificateChain: collection,
 	})
-	//}
 
 	return results
 }
