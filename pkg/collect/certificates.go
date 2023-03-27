@@ -153,29 +153,29 @@ func secretCertCollector(secretName string, namespace string, client kubernetes.
 	collection := []ParsedCertificate{}
 
 	for _, secret := range secrets.Items {
-		if secretName == secret.Name {
-			// Collect from secret
-			source := &CertificateSource{
-				SecretName: secret.Name,
-				Namespace:  secret.Namespace,
-			}
-
-			for certName, certs := range secret.Data {
-
-				//certInfo := CertParser(certName, certs, certCollection)
-				certInfo, _ := CertParser(certName, certs)
-
-				collection = append(collection, certInfo...)
-
-				//log.Println("coolection: ", collection)
-
-			}
-			results = append(results, CertCollection{
-				Source:           source,
-				Errors:           trackErrors,
-				CertificateChain: collection,
-			})
+		//if secretName == secret.Name {
+		// Collect from secret
+		source := &CertificateSource{
+			SecretName: secret.Name,
+			Namespace:  secret.Namespace,
 		}
+
+		for certName, certs := range secret.Data {
+
+			//certInfo := CertParser(certName, certs, certCollection)
+			certInfo, _ := CertParser(certName, certs)
+
+			collection = append(collection, certInfo...)
+
+			//log.Println("coolection: ", collection)
+
+		}
+		results = append(results, CertCollection{
+			Source:           source,
+			Errors:           trackErrors,
+			CertificateChain: collection,
+		})
+		//}
 
 	}
 	return results
