@@ -7,7 +7,6 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"encoding/pem"
-	"log"
 	"time"
 
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
@@ -108,6 +107,13 @@ func configMapCertCollector(configMapName string, namespace string, client kuber
 
 	collection := []ParsedCertificate{}
 
+	// Check if configMap exists in the namespace.
+	if configMap.Name == "" {
+		trackErrors = append(trackErrors, "The secret does not exist in this namespace")
+		configMap.Name = configMapName
+		configMap.Namespace = namespace
+	}
+
 	//Collect from configMap
 	source := &CertificateSource{
 		ConfigMapName: configMap.Name,
@@ -147,8 +153,8 @@ func secretCertCollector(secretName string, namespace string, client kubernetes.
 
 	collection := []ParsedCertificate{}
 
+	// Check if secret exists in the namespace.
 	if secret.Name == "" {
-		log.Println("The secret does not exist in this namespace")
 		trackErrors = append(trackErrors, "The secret does not exist in this namespace")
 		secret.Name = secretName
 		secret.Namespace = namespace
