@@ -106,7 +106,7 @@ func configMapCertCollector(configMapName string, namespace string, client kuber
 
 	// Check if configMap exists in the namespace.
 	if configMap.Name == "" {
-		trackErrors = append(trackErrors, "The configMap does not exist in this namespace")
+		trackErrors = append(trackErrors, "Either the configMap does not exist in this namespace or RBAC permissions are prenventing certificate collection")
 		configMap.Name = configMapName
 		configMap.Namespace = namespace
 	}
@@ -138,10 +138,6 @@ func secretCertCollector(secretName string, namespace string, client kubernetes.
 
 	results := []CertCollection{}
 
-	//listOptions := metav1.ListOptions{}
-	//secrets, _ := client.CoreV1().Secrets(namespace).List(context.Background(), listOptions)
-
-	// TODO: Handle RBAC errors. Not to be worked on yet
 	getOptions := metav1.GetOptions{}
 	// Collect from secrets
 	secret, _ := client.CoreV1().Secrets(namespace).Get(context.Background(), secretName, getOptions)
@@ -152,7 +148,7 @@ func secretCertCollector(secretName string, namespace string, client kubernetes.
 
 	// Check if secret exists in the namespace.
 	if secret.Name == "" {
-		trackErrors = append(trackErrors, "The secret does not exist in this namespace")
+		trackErrors = append(trackErrors, "Either the secret does not exist in this namespace or RBAC permissions are prenventing certificate collection")
 		secret.Name = secretName
 		secret.Namespace = namespace
 	}
@@ -197,7 +193,6 @@ func decodePem(certInput string) tls.Certificate {
 
 // Certificate parser
 func CertParser(certName string, certs []byte) ([]ParsedCertificate, []string) {
-	//func CertParser(certName string, certs []byte, parsedCerts []ParsedCertificate, source *CertificateSource, trackErrors []string) CertCollection {
 	//TODO: return trackErrors as well.
 	currentTime := time.Now()
 	data := string(certs)
