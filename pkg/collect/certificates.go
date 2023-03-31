@@ -7,6 +7,7 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"encoding/pem"
+	"log"
 	"time"
 
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
@@ -150,6 +151,10 @@ func secretCertCollector(secretName string, namespace string, client kubernetes.
 	source := &CertificateSource{
 		SecretName: secret.Name,
 		Namespace:  secret.Namespace,
+	}
+
+	if secret == nil {
+		log.Println("The secret does not exist in this namespace")
 	}
 
 	for certName, certs := range secret.Data {
