@@ -7,6 +7,7 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"encoding/pem"
+	"log"
 	"time"
 
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
@@ -198,6 +199,8 @@ func CertParser(certName string, certs []byte) ([]ParsedCertificate, []string) {
 	data := string(certs)
 	certInfo := []ParsedCertificate{}
 	trackErrors := []string{}
+	log.Println(certs)
+	log.Println(data)
 
 	certChain := decodePem(data)
 
