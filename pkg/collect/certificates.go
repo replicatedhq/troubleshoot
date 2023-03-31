@@ -95,9 +95,6 @@ func configMapCertCollector(configMapName string, namespace string, client kuber
 
 	results := []CertCollection{}
 
-	//listOptions := metav1.ListOptions{}
-	//configMaps, _ := client.CoreV1().ConfigMaps(namespace).List(context.Background(), listOptions)
-
 	getOptions := metav1.GetOptions{}
 
 	// Collect from configMaps
@@ -109,7 +106,7 @@ func configMapCertCollector(configMapName string, namespace string, client kuber
 
 	// Check if configMap exists in the namespace.
 	if configMap.Name == "" {
-		trackErrors = append(trackErrors, "The secret does not exist in this namespace")
+		trackErrors = append(trackErrors, "The configMap does not exist in this namespace")
 		configMap.Name = configMapName
 		configMap.Namespace = namespace
 	}
