@@ -116,7 +116,7 @@ func (c *FakeRemoteCollectors) UpdateStatus(ctx context.Context, remoteCollector
 // Delete takes name of the remoteCollector and deletes it. Returns an error if one occurs.
 func (c *FakeRemoteCollectors) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewDeleteActionWithOptions(remotecollectorsResource, c.ns, name, opts), &v1beta2.RemoteCollector{})
+		Invokes(testing.NewDeleteAction(remotecollectorsResource, c.ns, name), &v1beta2.RemoteCollector{})
 
 	return err
 }
