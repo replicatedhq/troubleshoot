@@ -147,14 +147,16 @@ func secretCertCollector(secretName string, namespace string, client kubernetes.
 
 	collection := []ParsedCertificate{}
 
+	if secret.Name == "" {
+		log.Println("The secret does not exist in this namespace")
+		trackErrors = append(trackErrors, "The secret does not exist in this namespace")
+		secret.Name = secretName
+	}
+
 	// Collect from secret
 	source := &CertificateSource{
 		SecretName: secret.Name,
 		Namespace:  secret.Namespace,
-	}
-
-	if secret == nil {
-		log.Println("The secret does not exist in this namespace")
 	}
 
 	for certName, certs := range secret.Data {
