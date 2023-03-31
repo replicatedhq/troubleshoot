@@ -151,6 +151,7 @@ func secretCertCollector(secretName string, namespace string, client kubernetes.
 		log.Println("The secret does not exist in this namespace")
 		trackErrors = append(trackErrors, "The secret does not exist in this namespace")
 		secret.Name = secretName
+		secret.Namespace = namespace
 	}
 
 	// Collect from secret
