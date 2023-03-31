@@ -104,33 +104,36 @@ func clusterPodStatuses(analyzer *troubleshootv1beta2.ClusterPodStatuses, getChi
 				continue
 			}
 
-			parts := strings.Split(strings.TrimSpace(when), " ")
-			if len(parts) < 2 {
-				println(fmt.Sprintf("invalid 'when' format: %s\n", when)) // don't stop
-				continue
-			}
-
-			operator := parts[0]
-			reason := parts[1]
+			operator := ""
+			reason := ""
 			match := false
-
-			switch operator {
-			case "=", "==", "===":
-				if reason == "Healthy" {
-					match = !k8sutil.IsPodUnhealthy(&pod)
-				} else {
-					match = reason == string(pod.Status.Phase) || reason == string(pod.Status.Reason)
+			if when != "" {
+				parts := strings.Split(strings.TrimSpace(when), " ")
+				if len(parts) < 2 {
+					println(fmt.Sprintf("invalid 'when' format: %s\n", when)) // don't stop
+					continue
 				}
-			case "!=", "!==":
-				if reason == "Healthy" {
-					match = k8sutil.IsPodUnhealthy(&pod)
-				} else {
-					match = reason != string(pod.Status.Phase) && reason != string(pod.Status.Reason)
-				}
-			}
+				operator = parts[0]
+				reason = parts[1]
 
-			if !match {
-				continue
+				switch operator {
+				case "=", "==", "===":
+					if reason == "Healthy" {
+						match = !k8sutil.IsPodUnhealthy(&pod)
+					} else {
+						match = reason == string(pod.Status.Phase) || reason == string(pod.Status.Reason)
+					}
+				case "!=", "!==":
+					if reason == "Healthy" {
+						match = k8sutil.IsPodUnhealthy(&pod)
+					} else {
+						match = reason != string(pod.Status.Phase) && reason != string(pod.Status.Reason)
+					}
+				}
+
+				if !match {
+					continue
+				}
 			}
 
 			r.InvolvedObject = &corev1.ObjectReference{
