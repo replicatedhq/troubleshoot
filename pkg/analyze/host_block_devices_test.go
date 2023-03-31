@@ -158,7 +158,7 @@ func TestAnalyzeBlockDevices(t *testing.T) {
 			},
 		},
 		{
-			name: ".* > 1, pass with unmounted partition",
+			name: ".* == 1, pass with unmounted partition",
 			devices: []collect.BlockDeviceInfo{
 				{
 					Name:       "sdb",
@@ -175,13 +175,21 @@ func TestAnalyzeBlockDevices(t *testing.T) {
 					Major:            8,
 					Minor:            1,
 				},
+				{
+					Name:             "sdb2",
+					KernelName:       "sdb2",
+					ParentKernelName: "sdb",
+					Type:             "crypto_LUKS",
+					Major:            8,
+					Size:             1024 * 1024 * 1024 * 5,
+				},
 			},
 			hostAnalyzer: &troubleshootv1beta2.BlockDevicesAnalyze{
 				IncludeUnmountedPartitions: true,
 				Outcomes: []*troubleshootv1beta2.Outcome{
 					{
 						Pass: &troubleshootv1beta2.SingleOutcome{
-							When:    ".* >= 1",
+							When:    ".* == 1",
 							Message: "Block device or partition available",
 						},
 					},
@@ -255,11 +263,8 @@ func TestAnalyzeBlockDevices(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			req := require.New(t)
 			b, err := json.Marshal(test.devices)
-			if err != nil {
-				t.Fatal(err)
-			}
+			require.NoError(t, err)
 
 			getCollectedFileContents := func(filename string) ([]byte, error) {
 				return b, nil
@@ -267,9 +272,9 @@ func TestAnalyzeBlockDevices(t *testing.T) {
 
 			result, err := (&AnalyzeHostBlockDevices{test.hostAnalyzer}).Analyze(getCollectedFileContents)
 			if test.expectErr {
-				req.Error(err)
+				assert.Error(t, err)
 			} else {
-				req.NoError(err)
+				assert.NoError(t, err)
 			}
 
 			assert.Equal(t, test.result, result)
