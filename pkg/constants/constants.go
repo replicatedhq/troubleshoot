@@ -22,7 +22,7 @@ const (
 
 	// Cluster Resources Collector Directories
 	CLUSTER_RESOURCES_DIR                         = "cluster-resources"
-	CLUSTER_RESOURCES_NAMESPACES                  = "namespace"
+	CLUSTER_RESOURCES_NAMESPACES                  = "namespacs"
 	CLUSTER_RESOURCES_AUTH_CANI                   = "auth-cani-list"
 	CLUSTER_RESOURCES_PODS                        = "pods"
 	CLUSTER_RESOURCES_PODS_LOGS                   = "pods/logs"
