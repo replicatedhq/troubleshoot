@@ -161,23 +161,29 @@ func Test_decodePem(t *testing.T) {
 	certDecoderTests := []struct {
 		Name      string
 		certInput string
+		certCount int
 		Expected  bool
 	}{
-		//{"widgets-cert", invalidCert, "", true, false, 1},
-		{"digi-cert", chain, false},
+		{"widgets-cert", chain, 1, false},
+		{"digi-cert", chain2, 2, true},
 	}
-	var certificates []string
 	for _, e := range certDecoderTests {
 		results := decodePem(e.certInput)
-		counter := 0
+		certCount := 0
 
 		for _, cert := range results.Certificate {
-
-			certificates = append(certificates, string(cert))
-
-			counter++
+			log.Println(cert)
+			certCount++
+		}
+		if certCount != e.certCount {
+			t.Errorf("cert count -- expected %d, but got %d", e.certCount, certCount)
+		} else {
+			expected := true
+			if e.Expected != expected {
+				t.Errorf("certificate count expected %v, but got %v", e.Expected, expected)
+			}
 
 		}
-		log.Println(len(certificates))
+
 	}
 }
