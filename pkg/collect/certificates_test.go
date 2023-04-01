@@ -105,9 +105,10 @@ NCIm5NJ5jAJpcJmoEb+JMP3j0x6wydHDXFtGm3WRggZRcrjasyodSKK6szbf96+9
 -----END CERTIFICATE-----
 `
 
+// Tests validates that the certParser function correctly parses a certificate.
 func TestCertParser(t *testing.T) {
 
-	invalidCert := []byte(chain)
+	expiredCert := []byte(chain)
 	multiCert := []byte(chain2)
 	validCert := []byte(chain3)
 	//add docs
@@ -120,7 +121,7 @@ func TestCertParser(t *testing.T) {
 		IsValid  bool
 		CertQty  int
 	}{
-		{"widgets-cert", invalidCert, "", true, false, 1},
+		{"widgets-cert", expiredCert, "", true, false, 1},
 		{"digi-cert", multiCert, "", true, false, 2},
 		{"tls.crt", validCert, "", true, true, 1},
 	}
@@ -157,6 +158,7 @@ func TestCertParser(t *testing.T) {
 
 }
 
+// Validates that certificate count is correct when parsing a certificate input string.
 func Test_decodePem(t *testing.T) {
 	certDecoderTests := []struct {
 		Name      string
