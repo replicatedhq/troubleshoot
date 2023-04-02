@@ -2,6 +2,7 @@ package collect
 
 import (
 	"log"
+	"strings"
 	"testing"
 )
 
@@ -105,40 +106,74 @@ NCIm5NJ5jAJpcJmoEb+JMP3j0x6wydHDXFtGm3WRggZRcrjasyodSKK6szbf96+9
 -----END CERTIFICATE-----
 `
 
+var chain4 = `-----BEGIN CERTIFICATE-----
+Oy1is0whDArLNwIDAQABo4G9MIG6
+MA4GA1UdDwEB/wQEAwIE8DAdBgNVHQ4EFgQUbAavOY+vIXgc44k8GvLHH6mdzzYw
+HwYDVR0jBBgwFoAUb+S3Mu7cbwZiqZaEHTEMyUhLyH4waAYDVR0RBGEwX4IFZW52
+b3mCFGVudm95LnByb2plY3Rjb250b3VyghhlbnZveS5wcm9qZWN0Y29udG91ci5z
+dmOCJmVudm95LnByb2plY3Rjb250b3VyLnN2Yy5jbHVzdGVyLmxvY2FsMA0GCSqG
+SIb3DQEBCwUAA4IBAQBIKpBD1T9tugzJF7lajbdulXTb9qGibwQALqauskX9Sq57
+po/R2TjyxywLn4DgM7BAzzu9qfHWf+S4eQjRUHQshPbUEX9CEsSd5tCu8ZHVbBds
+6qFagl2+YQ9ng0Xwta9ezvctM3T6Dy9Kkf5OOe9ysMEsBX7s8NFxe68Qku+cExr3
+78oERlIoNOlT0cNbFLAlH2svNv1uB4qOThRDha52L+mlUdZfTMYZAwNDJWm52t/M
+NCIm5NJ5jAJpcJmoEb+JMP3j0x6wydHDXFtGm3WRggZRcrjasyodSKK6szbf96+9
+6syzAwvg9xxNtFxwbhRqqplMEz2sDWaggTrxCQzd
+-----END CERTIFICATE-----
+`
+
 // Tests validates that the certParser function correctly parses a certificate.
 func TestCertParser(t *testing.T) {
 
 	expiredCert := []byte(chain)
 	multiCert := []byte(chain2)
 	validCert := []byte(chain3)
+	nonCert := []byte(chain4)
 	//add docs
 
 	certParserTests := []struct {
-		Name     string
-		Certs    []byte
-		Subject  string
-		Expected bool
-		IsValid  bool
-		CertQty  int
+		Name      string
+		Certs     []byte
+		CertQty   int
+		Subject   string
+		IsSubject bool
+		IsCert    bool
+		IsValid   bool
 	}{
-		{"widgets-cert", expiredCert, "", true, false, 1},
-		{"digi-cert", multiCert, "", true, false, 2},
-		{"tls.crt", validCert, "", true, true, 1},
+		{"Widgits", expiredCert, 1, "", true, true, false},
+		{"digicert", multiCert, 2, "", true, true, true},
+		{"envoy", validCert, 1, "", true, true, true},
+		{"non.crt", nonCert, 1, "", true, false, true},
 	}
 
 	for _, e := range certParserTests {
 
 		results, _ := CertParser(e.Name, e.Certs)
-		for _, cert := range results {
-			log.Println("digi-subject:", cert.Subject)
 
-			if cert.Subject == "" {
+		// tests if results contains a list of parsed certificates
+		var isCert bool
+		if len(results) == 0 {
+			isCert = false
+		} else {
+			isCert = true
+		}
+
+		if isCert != e.IsCert {
+			t.Errorf("when checking if file contains %s has a certificate, you chose %v, but got %v", e.Name, e.IsCert, isCert)
+			continue
+		}
+
+		for _, cert := range results {
+
+			log.Println(e.Name, cert.Subject)
+
+			//if cert.Subject == "" {
+			if !strings.Contains(cert.Subject, e.Name) {
 				t.Error("unable to parse certificate: ", e.Name)
-				log.Println("digi-subject:", cert.Subject)
+
 			} else {
-				expected := true
-				if e.Expected != expected {
-					t.Errorf("certificate able to be parsed; expected %v, but got %v", e.Expected, expected)
+				isSubject := true
+				if e.IsSubject != isSubject {
+					t.Errorf("subject does not contains name; expected %v, here is the entire subject string %v", e.Name, cert.Subject)
 				}
 			}
 
@@ -149,7 +184,7 @@ func TestCertParser(t *testing.T) {
 			if numCerts > 1 {
 				continue
 			} else if cert.IsValid != e.IsValid {
-				t.Errorf("expected %v, but got %v", e.IsValid, cert.IsValid)
+				t.Errorf("%s expected %v, but got %v", e.Name, e.IsValid, cert.IsValid)
 			}
 
 		}
