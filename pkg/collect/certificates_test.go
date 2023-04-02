@@ -121,7 +121,7 @@ NCIm5NJ5jAJpcJmoEb+JMP3j0x6wydHDXFtGm3WRggZRcrjasyodSKK6szbf96+9
 -----END CERTIFICATE-----
 `
 
-// Tests validates that the certParser function correctly parses a certificate.
+// tests validate that the certParser function correctly parses a certificate
 func TestCertParser(t *testing.T) {
 
 	expiredCert := []byte(chain)
@@ -134,15 +134,15 @@ func TestCertParser(t *testing.T) {
 		Name      string
 		Certs     []byte
 		CertQty   int
-		Subject   string
 		IsSubject bool
 		IsCert    bool
 		IsValid   bool
 	}{
-		{"Widgits", expiredCert, 1, "", true, true, false},
-		{"digicert", multiCert, 2, "", true, true, true},
-		{"envoy", validCert, 1, "", true, true, true},
-		{"non.crt", nonCert, 1, "", true, false, true},
+		// Name, Certs, CertQty, IsSubject, IsCert, IsValid
+		{"Widgits", expiredCert, 1, true, true, false},
+		{"digicert", multiCert, 2, true, true, false}, //IsValid will not be evaluated for multicerts
+		{"envoy", validCert, 1, true, true, true},
+		{"non.crt", nonCert, 1, false, false, false}, // IsSubject and IsValid n/a for non.crt
 	}
 
 	for _, e := range certParserTests {
@@ -158,7 +158,7 @@ func TestCertParser(t *testing.T) {
 		}
 
 		if isCert != e.IsCert {
-			t.Errorf("when checking if file contains %s has a certificate, you chose %v, but got %v", e.Name, e.IsCert, isCert)
+			t.Errorf("Expected %v, but got %v that %s is a certificate", e.IsCert, isCert, e.Name)
 			continue
 		}
 
@@ -166,25 +166,29 @@ func TestCertParser(t *testing.T) {
 
 			log.Println(e.Name, cert.Subject)
 
-			//if cert.Subject == "" {
+			// test checks if certificate subject contains a matching string; validates that can parse cert and pull back information
 			if !strings.Contains(cert.Subject, e.Name) {
 				t.Error("unable to parse certificate: ", e.Name)
 
 			} else {
 				isSubject := true
 				if e.IsSubject != isSubject {
-					t.Errorf("subject does not contains name; expected %v, here is the entire subject string %v", e.Name, cert.Subject)
+					t.Errorf("You expected that %s certificate contains %s in the Subject line but it was not present; here is the entire subject string: %v", e.Name, e.Name, cert.Subject)
 				}
 			}
 
+			// test checks for expected quantity of certificates in a certificate file
 			numCerts := len(results)
 			if numCerts != e.CertQty {
 				t.Errorf("expected %d certificates in slice but got %d", e.CertQty, numCerts)
 			}
 			if numCerts > 1 {
 				continue
-			} else if cert.IsValid != e.IsValid {
-				t.Errorf("%s expected %v, but got %v", e.Name, e.IsValid, cert.IsValid)
+			}
+
+			// test checks for expected certificate expired
+			if cert.IsValid != e.IsValid {
+				t.Errorf("When checing that %v certificate is expired, you expected %v, but got %v ", e.Name, e.IsValid, cert.IsValid)
 			}
 
 		}
@@ -199,13 +203,12 @@ func Test_decodePem(t *testing.T) {
 		Name      string
 		certInput string
 		certCount int
-		Expected  bool
 	}{
-		{"widgets-cert", chain, 1, false},
-		{"digi-cert", chain2, 2, true},
+		{"widgets-cert", chain, 1},
+		{"digi-cert", chain2, 2},
 	}
 	for _, e := range certDecoderTests {
-		results := decodePem(e.certInput)
+		results, _ := decodePem(e.certInput)
 		certCount := 0
 
 		for _, cert := range results.Certificate {
@@ -214,12 +217,6 @@ func Test_decodePem(t *testing.T) {
 		}
 		if certCount != e.certCount {
 			t.Errorf("cert count -- expected %d, but got %d", e.certCount, certCount)
-		} else {
-			expected := true
-			if e.Expected != expected {
-				t.Errorf("certificate count expected %v, but got %v", e.Expected, expected)
-			}
-
 		}
 
 	}
