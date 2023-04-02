@@ -114,7 +114,7 @@ func configMapCertCollector(configMapName string, namespace string, client kuber
 			SecretName: configMapName,
 			Namespace:  namespace,
 		}
-		trackErrors = append(trackErrors, err.Error())
+		trackErrors = append(trackErrors, "Either the configMap does not exist in this namespace or RBAC permissions are prenventing certificate collection")
 
 		results = append(results, CertCollection{
 			Source:           source,
@@ -124,13 +124,6 @@ func configMapCertCollector(configMapName string, namespace string, client kuber
 
 		return results
 
-	}
-
-	// Check if configMap exists in the namespace.
-	if configMap.Name == "" {
-		trackErrors = append(trackErrors, "Either the configMap does not exist in this namespace or RBAC permissions are prenventing certificate collection")
-		configMap.Name = configMapName
-		configMap.Namespace = namespace
 	}
 
 	//Collect from configMap
@@ -172,7 +165,7 @@ func secretCertCollector(secretName string, namespace string, client kubernetes.
 			SecretName: secretName,
 			Namespace:  namespace,
 		}
-		trackErrors = append(trackErrors, err.Error())
+		trackErrors = append(trackErrors, "Either the secret does not exist in this namespace or RBAC permissions are prenventing certificate collection")
 
 		results = append(results, CertCollection{
 			Source:           source,
