@@ -175,20 +175,23 @@ func secretCertCollector(secretName string, namespace string, client kubernetes.
 }
 
 // decode pem and validate data source contains
-func decodePem(certInput string) tls.Certificate {
+func decodePem(certInput string) (tls.Certificate, []string) {
 	var cert tls.Certificate
+	trackErrors := []string{}
 	certPEMBlock := []byte(certInput)
 	var certDERBlock *pem.Block
 	for {
 		certDERBlock, certPEMBlock = pem.Decode(certPEMBlock)
 		if certDERBlock == nil {
+			trackErrors = append(trackErrors, "decodePem function error: cert block is empty")
+
 			break
 		}
 		if certDERBlock.Type == "CERTIFICATE" {
 			cert.Certificate = append(cert.Certificate, certDERBlock.Bytes)
 		}
 	}
-	return cert
+	return cert, trackErrors
 }
 
 // Certificate parser
@@ -199,7 +202,9 @@ func CertParser(certName string, certs []byte) ([]ParsedCertificate, []string) {
 	certInfo := []ParsedCertificate{}
 	trackErrors := []string{}
 
-	certChain := decodePem(data)
+	certChain, decodePemTrackErrors := decodePem(data)
+
+	trackErrors = append(trackErrors, decodePemTrackErrors...)
 
 	for _, cert := range certChain.Certificate {
 
