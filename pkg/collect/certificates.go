@@ -137,14 +137,28 @@ func configMapCertCollector(configMapName string, namespace string, client kuber
 func secretCertCollector(secretName string, namespace string, client kubernetes.Interface) []CertCollection {
 
 	results := []CertCollection{}
+	trackErrors := []string{}
+	collection := []ParsedCertificate{}
 
 	getOptions := metav1.GetOptions{}
 	// Collect from secrets
-	secret, _ := client.CoreV1().Secrets(namespace).Get(context.Background(), secretName, getOptions)
+	secret, err := client.CoreV1().Secrets(namespace).Get(context.Background(), secretName, getOptions)
+	if err != nil {
 
-	trackErrors := []string{}
+		// collect certificate source information
+		source := &CertificateSource{
+			SecretName: secretName,
+			Namespace:  namespace,
+		}
+		trackErrors = append(trackErrors, err.Error())
 
-	collection := []ParsedCertificate{}
+		results = append(results, CertCollection{
+			Source:           source,
+			Errors:           trackErrors,
+			CertificateChain: collection,
+		})
+
+	}
 
 	// Check if secret exists in the namespace.
 	if secret.Name == "" {
