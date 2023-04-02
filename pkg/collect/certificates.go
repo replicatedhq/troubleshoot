@@ -94,15 +94,31 @@ func (c *CollectCertificates) Collect(progressChan chan<- interface{}) (Collecto
 func configMapCertCollector(configMapName string, namespace string, client kubernetes.Interface) []CertCollection {
 
 	results := []CertCollection{}
+	trackErrors := []string{}
+	collection := []ParsedCertificate{}
 
 	getOptions := metav1.GetOptions{}
 
 	// Collect from configMaps
-	configMap, _ := client.CoreV1().ConfigMaps(namespace).Get(context.Background(), configMapName, getOptions)
+	configMap, err := client.CoreV1().ConfigMaps(namespace).Get(context.Background(), configMapName, getOptions)
+	if err != nil {
 
-	trackErrors := []string{}
+		// collect certificate source information
+		source := &CertificateSource{
+			SecretName: configMapName,
+			Namespace:  namespace,
+		}
+		trackErrors = append(trackErrors, err.Error())
 
-	collection := []ParsedCertificate{}
+		results = append(results, CertCollection{
+			Source:           source,
+			Errors:           trackErrors,
+			CertificateChain: collection,
+		})
+
+		return results
+
+	}
 
 	// Check if configMap exists in the namespace.
 	if configMap.Name == "" {
@@ -161,15 +177,6 @@ func secretCertCollector(secretName string, namespace string, client kubernetes.
 		return results
 
 	}
-
-	/*
-		// Check if secret exists in the namespace.
-		if secret.Name == "" {
-			trackErrors = append(trackErrors, "Either the secret does not exist in this namespace or RBAC permissions are prenventing certificate collection")
-			secret.Name = secretName
-			secret.Namespace = namespace
-		}
-	*/
 
 	// Collect from secret
 	source := &CertificateSource{
