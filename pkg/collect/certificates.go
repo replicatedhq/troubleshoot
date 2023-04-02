@@ -81,11 +81,17 @@ func (c *CollectCertificates) Collect(progressChan chan<- interface{}) (Collecto
 		}
 	}
 
-	certsJson, _ := json.MarshalIndent(results, "", "\t")
+	certsJson, errCertJson := json.MarshalIndent(results, "", "\t")
+	if errCertJson != nil {
+		return nil, errCertJson
+	}
 
 	filePath := "certificates/certificates.json"
 
-	output.SaveResult(c.BundlePath, filePath, bytes.NewBuffer(certsJson))
+	err := output.SaveResult(c.BundlePath, filePath, bytes.NewBuffer(certsJson))
+	if err != nil {
+		return nil, err
+	}
 
 	return output, nil
 }
