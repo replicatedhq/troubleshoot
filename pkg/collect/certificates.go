@@ -219,7 +219,7 @@ func CertParser(certName string, certs []byte) ([]ParsedCertificate, []string) {
 			CertName:                certName,
 			Subject:                 parsedCert.Subject.ToRDNSequence().String(),
 			SubjectAlternativeNames: parsedCert.DNSNames,
-			Issuer:                  parsedCert.Issuer.CommonName,
+			Issuer:                  parsedCert.Issuer.ToRDNSequence().String(),
 			NotAfter:                parsedCert.NotAfter,
 			NotBefore:               parsedCert.NotBefore,
 			IsValid:                 currentTime.Before(parsedCert.NotAfter),
