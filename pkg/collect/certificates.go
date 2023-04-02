@@ -158,14 +158,18 @@ func secretCertCollector(secretName string, namespace string, client kubernetes.
 			CertificateChain: collection,
 		})
 
+		return results
+
 	}
 
-	// Check if secret exists in the namespace.
-	if secret.Name == "" {
-		trackErrors = append(trackErrors, "Either the secret does not exist in this namespace or RBAC permissions are prenventing certificate collection")
-		secret.Name = secretName
-		secret.Namespace = namespace
-	}
+	/*
+		// Check if secret exists in the namespace.
+		if secret.Name == "" {
+			trackErrors = append(trackErrors, "Either the secret does not exist in this namespace or RBAC permissions are prenventing certificate collection")
+			secret.Name = secretName
+			secret.Namespace = namespace
+		}
+	*/
 
 	// Collect from secret
 	source := &CertificateSource{
