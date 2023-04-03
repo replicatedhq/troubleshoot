@@ -22,7 +22,7 @@ require (
 	github.com/jackc/pgx/v5 v5.3.0
 	github.com/longhorn/go-iscsi-helper v0.0.0-20210330030558-49a327fb024e
 	github.com/manifoldco/promptui v0.9.0
-	github.com/mattn/go-isatty v0.0.17
+	github.com/mattn/go-isatty v0.0.18
 	github.com/mholt/archiver/v3 v3.5.1
 	github.com/microsoft/go-mssqldb v0.18.0
 	github.com/opencontainers/image-spec v1.1.0-rc2
