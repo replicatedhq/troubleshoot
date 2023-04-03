@@ -89,11 +89,6 @@ func (c *CollectHostCopy) doCopy(src, dst string, result CollectorResult) error 
 		if err != nil {
 			return err
 		}
-	} else if srcInfo.Mode()&os.ModeSymlink != 0 {
-		err := c.copySymlink(src, dst, result)
-		if err != nil {
-			return err
-		}
 	} else if srcInfo.IsDir() {
 		err := c.copyDir(src, dst, result)
 		if err != nil {
@@ -119,27 +114,6 @@ func (c *CollectHostCopy) copyFile(src, dst string, result CollectorResult) erro
 	if err != nil {
 		return err
 	}
-	return nil
-}
-
-// copySymlink copies a symlink from src dir or file to the bundle
-func (c *CollectHostCopy) copySymlink(src, dst string, result CollectorResult) error {
-	target, err := os.Readlink(src)
-	if err != nil {
-		return err
-	}
-
-	if !filepath.IsAbs(target) {
-		// The symlink target is relative to the symlink's parent directory
-		target = filepath.Join(filepath.Dir(src), target)
-	}
-
-	klog.V(2).Infof("Copying symlink %q (target=%q) -> %q", src, target, dst)
-	err = c.doCopy(target, dst, result)
-	if err != nil {
-		return err
-	}
-
 	return nil
 }
 
