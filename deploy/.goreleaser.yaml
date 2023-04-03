@@ -13,7 +13,11 @@ builds:
       - windows
     goarch:
       - amd64
+      - arm
       - arm64
+    ignore:
+      - goos: windows
+        goarch: arm
     env:
       - CGO_ENABLED=0
     main: cmd/preflight/main.go
@@ -32,7 +36,11 @@ builds:
       - windows
     goarch:
       - amd64
+      - arm
       - arm64
+    ignore:
+      - goos: windows
+        goarch: arm
     env:
       - CGO_ENABLED=0
     main: cmd/troubleshoot/main.go
@@ -51,7 +59,11 @@ builds:
       - windows
     goarch:
       - amd64
+      - arm
       - arm64
+    ignore:
+      - goos: windows
+        goarch: arm
     env:
       - CGO_ENABLED=0
     main: cmd/collect/main.go

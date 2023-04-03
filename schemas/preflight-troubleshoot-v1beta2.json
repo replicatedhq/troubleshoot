@@ -1154,6 +1154,86 @@
                   }
                 }
               },
+              "mssql": {
+                "type": "object",
+                "required": [
+                  "collectorName",
+                  "outcomes"
+                ],
+                "properties": {
+                  "annotations": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "string"
+                    }
+                  },
+                  "checkName": {
+                    "type": "string"
+                  },
+                  "collectorName": {
+                    "type": "string"
+                  },
+                  "exclude": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  },
+                  "fileName": {
+                    "type": "string"
+                  },
+                  "outcomes": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "fail": {
+                          "type": "object",
+                          "properties": {
+                            "message": {
+                              "type": "string"
+                            },
+                            "uri": {
+                              "type": "string"
+                            },
+                            "when": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "pass": {
+                          "type": "object",
+                          "properties": {
+                            "message": {
+                              "type": "string"
+                            },
+                            "uri": {
+                              "type": "string"
+                            },
+                            "when": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "warn": {
+                          "type": "object",
+                          "properties": {
+                            "message": {
+                              "type": "string"
+                            },
+                            "uri": {
+                              "type": "string"
+                            },
+                            "when": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "strict": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  }
+                }
+              },
               "mysql": {
                 "type": "object",
                 "required": [
@@ -2647,6 +2727,61 @@
                     "type": "string"
                   },
                   "timeout": {
+                    "type": "string"
+                  }
+                }
+              },
+              "mssql": {
+                "type": "object",
+                "required": [
+                  "uri"
+                ],
+                "properties": {
+                  "collectorName": {
+                    "type": "string"
+                  },
+                  "exclude": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  },
+                  "parameters": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "tls": {
+                    "type": "object",
+                    "properties": {
+                      "cacert": {
+                        "type": "string"
+                      },
+                      "clientCert": {
+                        "type": "string"
+                      },
+                      "clientKey": {
+                        "type": "string"
+                      },
+                      "secret": {
+                        "type": "object",
+                        "required": [
+                          "name",
+                          "namespace"
+                        ],
+                        "properties": {
+                          "name": {
+                            "type": "string"
+                          },
+                          "namespace": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "skipVerify": {
+                        "type": "boolean"
+                      }
+                    }
+                  },
+                  "uri": {
                     "type": "string"
                   }
                 }
@@ -4371,7 +4506,7 @@
                               "type": "object",
                               "properties": {
                                 "claims": {
-                                  "description": "Claims lists the names of resources, defined in spec.resourceClaims, that are used by this container. \n This is an alpha field and requires enabling the DynamicResourceAllocation feature gate. \n This field is immutable.",
+                                  "description": "Claims lists the names of resources, defined in spec.resourceClaims, that are used by this container. \n This is an alpha field and requires enabling the DynamicResourceAllocation feature gate. \n This field is immutable. It can only be set for containers.",
                                   "type": "array",
                                   "items": {
                                     "description": "ResourceClaim references one entry in PodSpec.ResourceClaims.",
@@ -5567,7 +5702,7 @@
                               "type": "object",
                               "properties": {
                                 "claims": {
-                                  "description": "Claims lists the names of resources, defined in spec.resourceClaims, that are used by this container. \n This is an alpha field and requires enabling the DynamicResourceAllocation feature gate. \n This field is immutable.",
+                                  "description": "Claims lists the names of resources, defined in spec.resourceClaims, that are used by this container. \n This is an alpha field and requires enabling the DynamicResourceAllocation feature gate. \n This field is immutable. It can only be set for containers.",
                                   "type": "array",
                                   "items": {
                                     "description": "ResourceClaim references one entry in PodSpec.ResourceClaims.",
@@ -6778,7 +6913,7 @@
                               "type": "object",
                               "properties": {
                                 "claims": {
-                                  "description": "Claims lists the names of resources, defined in spec.resourceClaims, that are used by this container. \n This is an alpha field and requires enabling the DynamicResourceAllocation feature gate. \n This field is immutable.",
+                                  "description": "Claims lists the names of resources, defined in spec.resourceClaims, that are used by this container. \n This is an alpha field and requires enabling the DynamicResourceAllocation feature gate. \n This field is immutable. It can only be set for containers.",
                                   "type": "array",
                                   "items": {
                                     "description": "ResourceClaim references one entry in PodSpec.ResourceClaims.",
@@ -8035,7 +8170,7 @@
                                           "type": "object",
                                           "properties": {
                                             "claims": {
-                                              "description": "Claims lists the names of resources, defined in spec.resourceClaims, that are used by this container. \n This is an alpha field and requires enabling the DynamicResourceAllocation feature gate. \n This field is immutable.",
+                                              "description": "Claims lists the names of resources, defined in spec.resourceClaims, that are used by this container. \n This is an alpha field and requires enabling the DynamicResourceAllocation feature gate. \n This field is immutable. It can only be set for containers.",
                                               "type": "array",
                                               "items": {
                                                 "description": "ResourceClaim references one entry in PodSpec.ResourceClaims.",
