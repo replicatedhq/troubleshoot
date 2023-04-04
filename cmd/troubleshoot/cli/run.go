@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"context"
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
@@ -27,6 +28,8 @@ import (
 	"github.com/replicatedhq/troubleshoot/pkg/supportbundle"
 	"github.com/spf13/viper"
 	spin "github.com/tj/go-spin"
+	k8serrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -34,7 +37,7 @@ import (
 )
 
 func runTroubleshoot(v *viper.Viper, arg []string) error {
-	if v.GetBool("load-cluster-specs") == false && len(arg) < 1 {
+	if !v.GetBool("load-cluster-specs") && len(arg) < 1 {
 		return errors.New("flag load-cluster-specs must be set if no specs are provided on the command line")
 	}
 
@@ -107,6 +110,8 @@ func runTroubleshoot(v *viper.Viper, arg []string) error {
 	}
 
 	if v.GetBool("load-cluster-specs") {
+		klog.Info("Discover troubleshoot specs from cluster")
+
 		labelSelector := strings.Join(v.GetStringSlice("selector"), ",")
 
 		parsedSelector, err := labels.Parse(labelSelector)
@@ -124,36 +129,74 @@ func runTroubleshoot(v *viper.Viper, arg []string) error {
 			return errors.Wrap(err, "failed to convert create k8s client")
 		}
 
-		namespace := ""
+		// List of namespaces we want to search for secrets and configmaps with support bundle specs
+		namespaces := []string{}
+		ctx := context.Background()
 
 		if v.GetString("namespace") != "" {
-			namespace = v.GetString("namespace")
+			// Just progress with the namespace provided
+			namespaces = []string{v.GetString("namespace")}
 		} else {
-			IsNamespacedScopeRBAC, err := k8sutil.IsNamespacedScopeRBAC(client)
+			// Check if I can read secrets and configmaps in all namespaces
+			ican, err := k8sutil.CanIListAndGetAllSecretsAndConfigMaps(ctx, client)
 			if err != nil {
-				return errors.Wrap(err, "failed to check if cluster is namespaced")
+				return errors.Wrap(err, "failed to check if I can read secrets and configmaps")
 			}
+			klog.V(1).Infof("Can I read any secrets and configmaps: %v", ican)
 
-			if !IsNamespacedScopeRBAC {
-				kubeconfig := k8sutil.GetKubeconfig()
-				namespace, _, _ = kubeconfig.Namespace()
+			if ican {
+				// I can read secrets and configmaps in all namespaces
+				// No need to iterate over all namespaces
+				namespaces = []string{""}
+			} else {
+				// Get list of all namespaces and try to find specs from each namespace
+				nsList, err := client.CoreV1().Namespaces().List(ctx, metav1.ListOptions{})
+				if err != nil {
+					if k8serrors.IsForbidden(err) {
+						kubeconfig := k8sutil.GetKubeconfig()
+						ns, _, err := kubeconfig.Namespace()
+						if err != nil {
+							return errors.Wrap(err, "failed to get namespace from kubeconfig")
+						}
+						// If we are not allowed to list namespaces, just use the default namespace
+						// configured in the kubeconfig
+						namespaces = []string{ns}
+					} else {
+						return errors.Wrap(err, "failed to list namespaces")
+					}
+				}
+
+				for _, ns := range nsList.Items {
+					namespaces = append(namespaces, ns.Name)
+				}
 			}
 		}
 
 		var bundlesFromCluster []string
 
-		// Search cluster for Troubleshoot objects in cluster
-		bundlesFromSecrets, err := specs.LoadFromSecretMatchingLabel(client, parsedSelector.String(), namespace, specs.SupportBundleKey)
-		if err != nil {
-			klog.Errorf("failed to load support bundle spec from secrets: %s", err)
-		}
-		bundlesFromCluster = append(bundlesFromCluster, bundlesFromSecrets...)
+		// Search cluster for support bundle specs
+		klog.V(1).Infof("Search support bundle specs from [%q] namespaces using %q selector", strings.Join(namespaces, ", "), parsedSelector.String())
+		for _, ns := range namespaces {
+			bundlesFromSecrets, err := specs.LoadFromSecretMatchingLabel(client, parsedSelector.String(), ns, specs.SupportBundleKey)
+			if err != nil {
+				if !k8serrors.IsForbidden(err) {
+					klog.Errorf("failed to load support bundle spec from secrets: %s", err)
+				} else {
+					klog.Warningf("Reading secrets from %q namespace forbidden", ns)
+				}
+			}
+			bundlesFromCluster = append(bundlesFromCluster, bundlesFromSecrets...)
 
-		bundlesFromConfigMaps, err := specs.LoadFromConfigMapMatchingLabel(client, parsedSelector.String(), namespace, specs.SupportBundleKey)
-		if err != nil {
-			klog.Errorf("failed to load support bundle spec from secrets: %s", err)
+			bundlesFromConfigMaps, err := specs.LoadFromConfigMapMatchingLabel(client, parsedSelector.String(), ns, specs.SupportBundleKey)
+			if err != nil {
+				if !k8serrors.IsForbidden(err) {
+					klog.Errorf("failed to load support bundle spec from configmap: %s", err)
+				} else {
+					klog.Warningf("Reading configmaps from %q namespace forbidden", ns)
+				}
+			}
+			bundlesFromCluster = append(bundlesFromCluster, bundlesFromConfigMaps...)
 		}
-		bundlesFromCluster = append(bundlesFromCluster, bundlesFromConfigMaps...)
 
 		for _, bundle := range bundlesFromCluster {
 			multidocs := strings.Split(string(bundle), "\n---\n")
@@ -180,18 +223,29 @@ func runTroubleshoot(v *viper.Viper, arg []string) error {
 
 		var redactorsFromCluster []string
 
-		// Search cluster for Troubleshoot objects in ConfigMaps
-		redactorsFromSecrets, err := specs.LoadFromSecretMatchingLabel(client, parsedSelector.String(), namespace, specs.RedactorKey)
-		if err != nil {
-			klog.Errorf("failed to load redactor specs from config maps: %s", err)
-		}
-		redactorsFromCluster = append(redactorsFromCluster, redactorsFromSecrets...)
+		// Search cluster for redactor specs
+		klog.V(1).Infof("Search redactor specs from [%q] namespaces using %q selector", strings.Join(namespaces, ", "), parsedSelector.String())
+		for _, ns := range namespaces {
+			redactorsFromSecrets, err := specs.LoadFromSecretMatchingLabel(client, parsedSelector.String(), ns, specs.RedactorKey)
+			if err != nil {
+				if !k8serrors.IsForbidden(err) {
+					klog.Errorf("failed to load support bundle spec from secrets: %s", err)
+				} else {
+					klog.Warningf("Reading secrets from %q namespace forbidden", ns)
+				}
+			}
+			redactorsFromCluster = append(redactorsFromCluster, redactorsFromSecrets...)
 
-		redactorsFromConfigMaps, err := specs.LoadFromConfigMapMatchingLabel(client, parsedSelector.String(), namespace, specs.RedactorKey)
-		if err != nil {
-			klog.Errorf("failed to load redactor specs from config maps: %s", err)
+			redactorsFromConfigMaps, err := specs.LoadFromConfigMapMatchingLabel(client, parsedSelector.String(), ns, specs.RedactorKey)
+			if err != nil {
+				if !k8serrors.IsForbidden(err) {
+					klog.Errorf("failed to load support bundle spec from configmap: %s", err)
+				} else {
+					klog.Warningf("Reading configmaps from %q namespace forbidden", ns)
+				}
+			}
+			redactorsFromCluster = append(redactorsFromCluster, redactorsFromConfigMaps...)
 		}
-		redactorsFromCluster = append(redactorsFromCluster, redactorsFromConfigMaps...)
 
 		for _, redactor := range redactorsFromCluster {
 			multidocs := strings.Split(string(redactor), "\n---\n")
@@ -201,10 +255,6 @@ func runTroubleshoot(v *viper.Viper, arg []string) error {
 			}
 
 			additionalRedactors.Spec.Redactors = append(additionalRedactors.Spec.Redactors, parsedRedactors...)
-		}
-
-		if mainBundle == nil {
-			return errors.New("no specs found in cluster")
 		}
 	}
 
