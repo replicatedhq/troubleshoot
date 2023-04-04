@@ -72,10 +72,14 @@ func pullFromOCI(uri string, mediaType string, imageName string) ([]byte, error)
 		uri = fmt.Sprintf("%s:latest", uri)
 	}
 
+	fmt.Printf("\n\n<<<<<<<<<<<<<<<<<<<<<<<\nreplicated-supportbundle URI: %s\n\n\n", uri)
+
 	parsedRef, err := registry.ParseReference(uri)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to parse reference")
 	}
+
+	fmt.Printf("\n\n<><><><><><><><><><>\nparsedRef:\n%+v\n\n\n", parsedRef)
 
 	manifest, err := oras.Copy(context.TODO(), registryStore, parsedRef.String(), memoryStore, "",
 		oras.WithPullEmptyNameAllowed(),
