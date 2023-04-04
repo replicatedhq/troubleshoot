@@ -9,8 +9,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/replicatedhq/troubleshoot/pkg/logger"
 	"gopkg.in/yaml.v2"
+	"k8s.io/klog/v2"
 )
 
 type YamlRedactor struct {
@@ -30,7 +30,7 @@ func (r *YamlRedactor) Redact(input io.Reader, path string) io.Reader {
 	if r.filePath != "" {
 		match, err := filepath.Match(r.filePath, path)
 		if err != nil {
-			logger.Printf("Failed to match %q and %q: %v", r.filePath, path, err)
+			klog.Errorf("Failed to match %q and %q: %v", r.filePath, path, err)
 			return input
 		}
 		if !match {

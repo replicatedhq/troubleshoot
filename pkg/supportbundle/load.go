@@ -15,10 +15,10 @@ import (
 	troubleshootclientsetscheme "github.com/replicatedhq/troubleshoot/pkg/client/troubleshootclientset/scheme"
 	"github.com/replicatedhq/troubleshoot/pkg/docrewrite"
 	"github.com/replicatedhq/troubleshoot/pkg/httputil"
-	"github.com/replicatedhq/troubleshoot/pkg/logger"
 	"github.com/replicatedhq/troubleshoot/pkg/oci"
 	"github.com/replicatedhq/troubleshoot/pkg/specs"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/klog/v2"
 )
 
 func GetSupportBundleFromURI(bundleURI string) (*troubleshootv1beta2.SupportBundle, error) {
@@ -78,10 +78,10 @@ func ParseSupportBundle(doc []byte, followURI bool) (*troubleshootv1beta2.Suppor
 		// use the upstream spec, otherwise fall back to
 		// what's defined in the current spec
 		if supportBundle.Spec.Uri != "" && followURI {
-			logger.Printf("using upstream reference: %+v\n", supportBundle.Spec.Uri)
+			klog.Infof("using upstream reference: %+v\n", supportBundle.Spec.Uri)
 			upstreamSupportBundleContent, err := LoadSupportBundleSpec(supportBundle.Spec.Uri)
 			if err != nil {
-				logger.Printf("failed to load upstream supportbundle, falling back")
+				klog.Errorf("failed to load upstream supportbundle, falling back")
 				return supportBundle, nil
 			}
 
@@ -89,7 +89,7 @@ func ParseSupportBundle(doc []byte, followURI bool) (*troubleshootv1beta2.Suppor
 
 			upstreamSupportBundle, err := ParseSupportBundle([]byte(multidocs[0]), false)
 			if err != nil {
-				logger.Printf("failed to parse upstream supportbundle, falling back")
+				klog.Errorf("failed to parse upstream supportbundle, falling back")
 				return supportBundle, nil
 			}
 			return upstreamSupportBundle, nil

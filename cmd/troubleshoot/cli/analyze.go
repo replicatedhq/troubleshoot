@@ -10,7 +10,6 @@ import (
 	"github.com/replicatedhq/troubleshoot/cmd/util"
 	analyzer "github.com/replicatedhq/troubleshoot/pkg/analyze"
 	"github.com/replicatedhq/troubleshoot/pkg/convert"
-	"github.com/replicatedhq/troubleshoot/pkg/logger"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"gopkg.in/yaml.v2"
@@ -27,8 +26,6 @@ func Analyze() *cobra.Command {
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
 			v := viper.GetViper()
-
-			logger.SetQuiet(v.GetBool("quiet"))
 
 			specPath := args[0]
 			analyzerSpec, err := downloadAnalyzerSpec(specPath)

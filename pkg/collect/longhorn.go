@@ -12,7 +12,6 @@ import (
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
-	"github.com/replicatedhq/troubleshoot/pkg/logger"
 	longhornv1beta1types "github.com/replicatedhq/troubleshoot/pkg/longhorn/apis/longhorn/v1beta1"
 	longhornv1beta1 "github.com/replicatedhq/troubleshoot/pkg/longhorn/client/clientset/versioned/typed/longhorn/v1beta1"
 	longhorntypes "github.com/replicatedhq/troubleshoot/pkg/longhorn/types"
@@ -22,6 +21,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/remotecommand"
+	"k8s.io/klog/v2"
 )
 
 const (
@@ -69,8 +69,8 @@ func (c *CollectLonghorn) Collect(progressChan chan<- interface{}) (CollectorRes
 	if err != nil {
 		if apiErr, ok := err.(*apiErrors.StatusError); ok {
 			if apiErr.ErrStatus.Code == http.StatusNotFound {
-				logger.Printf("list nodes.longhorn.io not found")
-				return nil, nil
+				klog.Error("list nodes.longhorn.io not found")
+				return NewResult(), nil
 			}
 		}
 		return nil, errors.Wrap(err, "list nodes.longhorn.io")
@@ -276,19 +276,24 @@ func (c *CollectLonghorn) Collect(progressChan chan<- interface{}) (CollectorRes
 			}
 
 			wg.Add(1)
-			go func(replica longhornv1beta1types.Replica) {
+			go func(repl *longhornv1beta1types.Replica, pName string, cfg *rest.Config, vol *longhornv1beta1types.Volume) {
 				defer wg.Done()
-				checksums, err := GetLonghornReplicaChecksum(c.ClientConfig, replica, podName)
+				checksums, err := GetLonghornReplicaChecksum(cfg, *repl, pName)
 				if err != nil {
-					logger.Printf("Failed to get replica %s checksum: %v", replica.Name, err)
+					klog.Errorf("Failed to get replica %q checksum: %v", repl.Name, err)
 					return
 				}
 				volsDir := GetLonghornVolumesDirectory(ns)
-				key := filepath.Join(volsDir, volume.Name, "replicachecksums", replica.Name+".txt")
+				key := filepath.Join(volsDir, vol.Name, "replicachecksums", repl.Name+".txt")
+
+				// Locking is required because the output object is shared between goroutines
 				mtx.Lock()
 				output.SaveResult(c.BundlePath, key, bytes.NewBuffer([]byte(checksums)))
 				mtx.Unlock()
-			}(replica)
+
+				// make separate new copies of CR objects so as not to share internal memory
+				// of objects between goroutines
+			}(replica.DeepCopy(), podName, rest.CopyConfig(c.ClientConfig), volume.DeepCopy())
 		}
 	}
 

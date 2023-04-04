@@ -12,13 +12,13 @@ import (
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/replicatedhq/troubleshoot/pkg/collect"
 	"github.com/replicatedhq/troubleshoot/pkg/constants"
-	"github.com/replicatedhq/troubleshoot/pkg/logger"
 	"github.com/replicatedhq/troubleshoot/pkg/version"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"k8s.io/klog/v2"
 )
 
 type CollectOpts struct {
@@ -123,7 +123,7 @@ func CollectHostWithContext(
 
 		isExcluded, _ := collector.IsExcluded()
 		if isExcluded {
-			logger.Printf("Excluding %q collector", collector.Title())
+			opts.ProgressChan <- fmt.Sprintf("[%s] Excluding collector", collector.Title())
 			span.SetAttributes(attribute.Bool(constants.EXCLUDED, true))
 			span.End()
 			continue
@@ -236,7 +236,7 @@ func CollectWithContext(ctx context.Context, opts CollectOpts, p *troubleshootv1
 
 		isExcluded, _ := collector.IsExcluded()
 		if isExcluded {
-			logger.Printf("Excluding %q collector", collector.Title())
+			klog.Infof("excluding %q collector", collector.Title())
 			span.SetAttributes(attribute.Bool(constants.EXCLUDED, true))
 			span.End()
 			continue

@@ -238,6 +238,7 @@ type Collect struct {
 	CopyFromHost     *CopyFromHost     `json:"copyFromHost,omitempty" yaml:"copyFromHost,omitempty"`
 	HTTP             *HTTP             `json:"http,omitempty" yaml:"http,omitempty"`
 	Postgres         *Database         `json:"postgres,omitempty" yaml:"postgres,omitempty"`
+	Mssql            *Database         `json:"mssql,omitempty" yaml:"mssql,omitempty"`
 	Mysql            *Database         `json:"mysql,omitempty" yaml:"mysql,omitempty"`
 	Redis            *Database         `json:"redis,omitempty" yaml:"redis,omitempty"`
 	Collectd         *Collectd         `json:"collectd,omitempty" yaml:"collectd,omitempty"`
@@ -513,6 +514,10 @@ func (c *Collect) GetName() string {
 	if c.Postgres != nil {
 		collector = "postgres"
 		name = c.Postgres.CollectorName
+	}
+	if c.Mssql != nil {
+		collector = "mssql"
+		name = c.Mssql.CollectorName
 	}
 	if c.Mysql != nil {
 		collector = "mysql"

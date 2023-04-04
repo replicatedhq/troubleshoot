@@ -12,7 +12,6 @@ import (
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/replicatedhq/troubleshoot/pkg/k8sutil"
-	"github.com/replicatedhq/troubleshoot/pkg/logger"
 	"github.com/segmentio/ksuid"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -24,6 +23,7 @@ import (
 	"k8s.io/client-go/rest"
 	restclient "k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/remotecommand"
+	"k8s.io/klog/v2"
 )
 
 type CollectCopyFromHost struct {
@@ -204,7 +204,7 @@ func copyFromHostCreateDaemonSet(ctx context.Context, client kubernetes.Interfac
 		cleanupFuncs = append(cleanupFuncs, func() {
 			err := client.CoreV1().Secrets(namespace).Delete(context.Background(), collector.ImagePullSecret.Name, metav1.DeleteOptions{})
 			if err != nil && !kuberneteserrors.IsNotFound(err) {
-				logger.Printf("Failed to delete secret %s: %v", collector.ImagePullSecret.Name, err)
+				klog.Errorf("Failed to delete secret %s: %v", collector.ImagePullSecret.Name, err)
 			}
 		})
 	}
@@ -215,7 +215,7 @@ func copyFromHostCreateDaemonSet(ctx context.Context, client kubernetes.Interfac
 	}
 	cleanupFuncs = append(cleanupFuncs, func() {
 		if err := client.AppsV1().DaemonSets(namespace).Delete(context.Background(), createdDS.Name, metav1.DeleteOptions{}); err != nil {
-			logger.Printf("Failed to delete daemonset %s: %v", createdDS.Name, err)
+			klog.Errorf("Failed to delete daemonset %s: %v", createdDS.Name, err)
 		}
 	})
 

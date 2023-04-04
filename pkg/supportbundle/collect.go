@@ -15,7 +15,6 @@ import (
 	"github.com/replicatedhq/troubleshoot/pkg/collect"
 	"github.com/replicatedhq/troubleshoot/pkg/constants"
 	"github.com/replicatedhq/troubleshoot/pkg/convert"
-	"github.com/replicatedhq/troubleshoot/pkg/logger"
 	"github.com/replicatedhq/troubleshoot/pkg/version"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -45,7 +44,7 @@ func runHostCollectors(ctx context.Context, hostCollectors []*troubleshootv1beta
 
 		isExcluded, _ := collector.IsExcluded()
 		if isExcluded {
-			logger.Printf("Excluding %q collector", collector.Title())
+			opts.ProgressChan <- fmt.Sprintf("[%s] Excluding host collector", collector.Title())
 			span.SetAttributes(attribute.Bool(constants.EXCLUDED, true))
 			span.End()
 			continue
@@ -152,7 +151,8 @@ func runCollectors(ctx context.Context, collectors []*troubleshootv1beta2.Collec
 
 		isExcluded, _ := collector.IsExcluded()
 		if isExcluded {
-			logger.Printf("Excluding %q collector", collector.Title())
+			msg := fmt.Sprintf("excluding %q collector", collector.Title())
+			opts.CollectorProgressCallback(opts.ProgressChan, msg)
 			span.SetAttributes(attribute.Bool(constants.EXCLUDED, true))
 			span.End()
 			continue
@@ -161,7 +161,7 @@ func runCollectors(ctx context.Context, collectors []*troubleshootv1beta2.Collec
 		// skip collectors with RBAC errors unless its the ClusterResources collector
 		if collector.HasRBACErrors() {
 			if _, ok := collector.(*collect.CollectClusterResources); !ok {
-				msg := fmt.Sprintf("skipping collector %s with insufficient RBAC permissions", collector.Title())
+				msg := fmt.Sprintf("skipping collector %q with insufficient RBAC permissions", collector.Title())
 				opts.CollectorProgressCallback(opts.ProgressChan, msg)
 				span.SetStatus(codes.Error, "skipping collector, insufficient RBAC permissions")
 				span.End()

@@ -3,13 +3,13 @@ package traces
 import (
 	"context"
 
-	"github.com/replicatedhq/troubleshoot/pkg/logger"
 	"github.com/replicatedhq/troubleshoot/pkg/version"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/resource"
 	"go.opentelemetry.io/otel/sdk/trace"
 	semconv "go.opentelemetry.io/otel/semconv/v1.12.0"
+	"k8s.io/klog/v2"
 )
 
 // ConfigureTracing configures the OpenTelemetry trace provider for CLI
@@ -54,7 +54,7 @@ func ConfigureTracing(processName string) (func(), error) {
 
 	return func() {
 		if err := tp.Shutdown(context.Background()); err != nil {
-			logger.Printf("Failed to shutdown trace provider: %v", err)
+			klog.Errorf("Failed to shutdown trace provider: %v", err)
 		}
 	}, nil
 }

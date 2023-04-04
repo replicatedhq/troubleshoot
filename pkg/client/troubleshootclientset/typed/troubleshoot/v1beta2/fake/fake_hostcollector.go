@@ -116,7 +116,7 @@ func (c *FakeHostCollectors) UpdateStatus(ctx context.Context, hostCollector *v1
 // Delete takes name of the hostCollector and deletes it. Returns an error if one occurs.
 func (c *FakeHostCollectors) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewDeleteAction(hostcollectorsResource, c.ns, name), &v1beta2.HostCollector{})
+		Invokes(testing.NewDeleteActionWithOptions(hostcollectorsResource, c.ns, name, opts), &v1beta2.HostCollector{})
 
 	return err
 }
