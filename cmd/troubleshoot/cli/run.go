@@ -259,6 +259,12 @@ the %s Admin Console to begin analysis.`
 	return nil
 }
 
+// loadClusterSpecs loads the support bundle and redactor specs from the cluster
+// based on troubleshoot.io/kind=support-bundle label selector. We search for secrets
+// and configmaps with the label selector and parse the data as a support bundle. If the
+// user does not have sufficient permissions to list & read secrets and configmaps from
+// all namespaces, we will fallback to trying each namespace individually, and eventually
+// default to the configured kubeconfig namespace.
 func loadClusterSpecs() (*troubleshootv1beta2.SupportBundle, *troubleshootv1beta2.Redactor, error) {
 	var parsedBundle *troubleshootv1beta2.SupportBundle
 	redactors := &troubleshootv1beta2.Redactor{}
