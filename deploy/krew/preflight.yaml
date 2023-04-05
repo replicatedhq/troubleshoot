@@ -19,6 +19,17 @@ spec:
   - selector:
       matchLabels:
         os: linux
+        arch: arm64
+    {{addURIAndSha "https://github.com/replicatedhq/troubleshoot/releases/download/{{ .TagName }}/preflight_linux_arm64.tar.gz" .TagName }}
+    files:
+    - from: preflight
+      to: .
+    - from: LICENSE
+      to: .
+    bin: preflight
+  - selector:
+      matchLabels:
+        os: linux
         arch: arm
     {{addURIAndSha "https://github.com/replicatedhq/troubleshoot/releases/download/{{ .TagName }}/preflight_linux_arm_6.tar.gz" .TagName }}
     files:
@@ -48,7 +59,7 @@ spec:
       to: .
     - from: LICENSE
       to: .
-    bin: preflight    
+    bin: preflight
   - selector:
       matchLabels:
         os: windows
