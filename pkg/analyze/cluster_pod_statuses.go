@@ -3,7 +3,6 @@ package analyzer
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"path/filepath"
 	"strings"
 	"text/template"
@@ -13,6 +12,7 @@ import (
 	"github.com/replicatedhq/troubleshoot/pkg/constants"
 	"github.com/replicatedhq/troubleshoot/pkg/k8sutil"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/klog/v2"
 )
 
 type AnalyzeClusterPodStatuses struct {
@@ -100,7 +100,7 @@ func clusterPodStatuses(analyzer *troubleshootv1beta2.ClusterPodStatuses, getChi
 				r.URI = outcome.Pass.URI
 				when = outcome.Pass.When
 			} else {
-				println("error: found an empty outcome in a clusterPodStatuses analyzer") // don't stop
+				klog.Error("error: found an empty outcome in a clusterPodStatuses analyzer\n")
 				continue
 			}
 
@@ -110,7 +110,7 @@ func clusterPodStatuses(analyzer *troubleshootv1beta2.ClusterPodStatuses, getChi
 			if when != "" {
 				parts := strings.Split(strings.TrimSpace(when), " ")
 				if len(parts) < 2 {
-					println(fmt.Sprintf("invalid 'when' format: %s\n", when)) // don't stop
+					klog.Errorf("invalid 'when' format: %s\n", when)
 					continue
 				}
 				operator = parts[0]
