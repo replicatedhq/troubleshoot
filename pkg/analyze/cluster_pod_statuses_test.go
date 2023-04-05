@@ -160,6 +160,50 @@ func Test_ClusterPodStatuses(t *testing.T) {
 			},
 		},
 		{
+			name: "fail_when_pods_are_unhealthy_in_specific_namespace_using_double_ne",
+			analyzer: troubleshootv1beta2.ClusterPodStatuses{
+				AnalyzeMeta: troubleshootv1beta2.AnalyzeMeta{
+					CheckName: "fail_when_pods_are_unhealthy_in_specific_namespace_using_double_ne",
+				},
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Fail: &troubleshootv1beta2.SingleOutcome{
+							When:    "!== Healthy",
+							Message: "A pod is unhealthy",
+						},
+					},
+					{
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							When:    "",
+							Message: "All Pods are OK.",
+						},
+					},
+				},
+				Namespaces: []string{"default-unhealthy"},
+			},
+			expectResult: []*AnalyzeResult{
+				{
+					IsPass:  false,
+					IsWarn:  false,
+					IsFail:  true,
+					Title:   "fail_when_pods_are_unhealthy_in_specific_namespace_using_double_ne",
+					Message: "A pod is unhealthy",
+					InvolvedObject: &corev1.ObjectReference{
+						APIVersion: "v1",
+						Kind:       "Pod",
+						Namespace:  "default-unhealthy",
+						Name:       "random-pod-75b66db9b9-nqhp8",
+					},
+				},
+			},
+			files: map[string][]byte{
+				"cluster-resources/pods/default.json":           []byte(defaultPods),
+				"cluster-resources/pods/other.json":             []byte(otherPods),
+				"cluster-resources/pods/default-unhealthy.json": []byte(defaultPodsUnhealthy),
+				"cluster-resources/pods/other-unhealthy.json":   []byte(otherPodsUnhealthy),
+			},
+		},
+		{
 			name: "fail_when_pods_are_unhealthy_in_any_namespace",
 			analyzer: troubleshootv1beta2.ClusterPodStatuses{
 				AnalyzeMeta: troubleshootv1beta2.AnalyzeMeta{
@@ -232,6 +276,94 @@ func Test_ClusterPodStatuses(t *testing.T) {
 						Kind:       "Pod",
 						Namespace:  "other",
 						Name:       "other-pod-75b66db9b9-nqhp8",
+					},
+				},
+			},
+			files: map[string][]byte{
+				"cluster-resources/pods/default.json":           []byte(defaultPods),
+				"cluster-resources/pods/other.json":             []byte(otherPods),
+				"cluster-resources/pods/default-unhealthy.json": []byte(defaultPodsUnhealthy),
+				"cluster-resources/pods/other-unhealthy.json":   []byte(otherPodsUnhealthy),
+			},
+		},
+		{
+			name: "warn_when_pods_are_unhealthy_in_specific_namespace_using_double_equals",
+			analyzer: troubleshootv1beta2.ClusterPodStatuses{
+				AnalyzeMeta: troubleshootv1beta2.AnalyzeMeta{
+					CheckName: "warn_when_pods_are_unhealthy_in_specific_namespace_using_double_equals",
+				},
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Warn: &troubleshootv1beta2.SingleOutcome{
+							When:    "== CrashLoopBackOff",
+							Message: "A pod is unhealthy.",
+						},
+					},
+					{
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							When:    "",
+							Message: "All Pods are OK.",
+						},
+					},
+				},
+				Namespaces: []string{"default-unhealthy"},
+			},
+			expectResult: []*AnalyzeResult{
+				{
+					IsPass:  false,
+					IsWarn:  true,
+					IsFail:  false,
+					Title:   "warn_when_pods_are_unhealthy_in_specific_namespace_using_double_equals",
+					Message: "A pod is unhealthy.",
+					InvolvedObject: &corev1.ObjectReference{
+						APIVersion: "v1",
+						Kind:       "Pod",
+						Namespace:  "default-unhealthy",
+						Name:       "random-pod-75b66db9b9-nqhp8",
+					},
+				},
+			},
+			files: map[string][]byte{
+				"cluster-resources/pods/default.json":           []byte(defaultPods),
+				"cluster-resources/pods/other.json":             []byte(otherPods),
+				"cluster-resources/pods/default-unhealthy.json": []byte(defaultPodsUnhealthy),
+				"cluster-resources/pods/other-unhealthy.json":   []byte(otherPodsUnhealthy),
+			},
+		},
+		{
+			name: "warn_when_pods_are_unhealthy_in_specific_namespace_using_triple_equals",
+			analyzer: troubleshootv1beta2.ClusterPodStatuses{
+				AnalyzeMeta: troubleshootv1beta2.AnalyzeMeta{
+					CheckName: "warn_when_pods_are_unhealthy_in_specific_namespace_using_triple_equals",
+				},
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Warn: &troubleshootv1beta2.SingleOutcome{
+							When:    "=== CrashLoopBackOff",
+							Message: "A pod is unhealthy.",
+						},
+					},
+					{
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							When:    "",
+							Message: "All Pods are OK.",
+						},
+					},
+				},
+				Namespaces: []string{"default-unhealthy"},
+			},
+			expectResult: []*AnalyzeResult{
+				{
+					IsPass:  false,
+					IsWarn:  true,
+					IsFail:  false,
+					Title:   "warn_when_pods_are_unhealthy_in_specific_namespace_using_triple_equals",
+					Message: "A pod is unhealthy.",
+					InvolvedObject: &corev1.ObjectReference{
+						APIVersion: "v1",
+						Kind:       "Pod",
+						Namespace:  "default-unhealthy",
+						Name:       "random-pod-75b66db9b9-nqhp8",
 					},
 				},
 			},
