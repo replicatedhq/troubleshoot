@@ -31,7 +31,7 @@ spec:
       matchLabels:
         os: linux
         arch: arm
-    {{addURIAndSha "https://github.com/replicatedhq/troubleshoot/releases/download/{{ .TagName }}/preflight_linux_arm_6.tar.gz" .TagName }}
+    {{addURIAndSha "https://github.com/replicatedhq/troubleshoot/releases/download/{{ .TagName }}/preflight_linux_arm.tar.gz" .TagName }}
     files:
     - from: preflight
       to: .
