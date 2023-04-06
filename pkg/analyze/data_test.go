@@ -33,3 +33,15 @@ var defaultStatefulSets string
 
 //go:embed files/statefulsets/monitoring.json
 var monitoringStatefulSets string
+
+//go:embed files/pods/default.json
+var defaultPods string
+
+//go:embed files/pods/other.json
+var otherPods string
+
+//go:embed files/pods/default-unhealthy.json
+var defaultPodsUnhealthy string
+
+//go:embed files/pods/other-unhealthy.json
+var otherPodsUnhealthy string
