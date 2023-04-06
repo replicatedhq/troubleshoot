@@ -278,7 +278,7 @@ jobs:
 
       - uses: sigstore/cosign-installer@main
         with:
-          cosign-release: "v1.2.1"
+          cosign-release: "v2.0.0"  # Binary version to install
 
       - name: Get Cosign Key
         run: |
@@ -296,7 +296,7 @@ jobs:
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v4
         with:
-          version: "v0.183.0"
+          version: "v1.16.2"  # Binary version to install
           args: release --rm-dist --config deploy/.goreleaser.yaml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
