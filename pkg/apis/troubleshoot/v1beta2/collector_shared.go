@@ -216,6 +216,13 @@ type RegistryImages struct {
 	ImagePullSecrets *ImagePullSecrets `json:"imagePullSecret,omitempty" yaml:"imagePullSecret,omitempty"`
 }
 
+type Certificates struct {
+	CollectorMeta `json:",inline" yaml:",inline"`
+	Name          string              `json:"name,omitempty" yaml:"name,omitempty"`
+	Secrets       map[string][]string `json:"secrets,omitempty" yaml:"secrets,omitempty"`
+	ConfigMaps    map[string][]string `json:"configMaps,omitempty" yaml:"configMaps,omitempty"`
+}
+
 type Collect struct {
 	ClusterInfo      *ClusterInfo      `json:"clusterInfo,omitempty" yaml:"clusterInfo,omitempty"`
 	ClusterResources *ClusterResources `json:"clusterResources,omitempty" yaml:"clusterResources,omitempty"`
@@ -238,6 +245,7 @@ type Collect struct {
 	Longhorn         *Longhorn         `json:"longhorn,omitempty" yaml:"longhorn,omitempty"`
 	RegistryImages   *RegistryImages   `json:"registryImages,omitempty" yaml:"registryImages,omitempty"`
 	Sysctl           *Sysctl           `json:"sysctl,omitempty" yaml:"sysctl,omitempty"`
+	Certificates     *Certificates     `json:"certificates,omitempty" yaml:"certificates,omitempty"`
 }
 
 func (c *Collect) AccessReviewSpecs(overrideNS string) []authorizationv1.SelfSubjectAccessReviewSpec {
@@ -538,6 +546,10 @@ func (c *Collect) GetName() string {
 	if c.Sysctl != nil {
 		collector = "sysctl"
 		name = c.Sysctl.Name
+	}
+	if c.Certificates != nil {
+		collector = "certificates"
+		name = c.Certificates.CollectorName
 	}
 
 	if collector == "" {
