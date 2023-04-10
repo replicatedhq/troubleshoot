@@ -96,7 +96,7 @@ func (c *CollectCertificates) Collect(progressChan chan<- interface{}) (Collecto
 	return output, nil
 }
 
-// configmap certificate collector function will
+// configmap certificate collector
 func configMapCertCollector(configMapName string, namespace string, client kubernetes.Interface) []CertCollection {
 
 	results := []CertCollection{}
@@ -148,7 +148,7 @@ func configMapCertCollector(configMapName string, namespace string, client kuber
 	return results
 }
 
-// secret certificate collector function
+// secret certificate collector
 func secretCertCollector(secretName string, namespace string, client kubernetes.Interface) []CertCollection {
 
 	results := []CertCollection{}
