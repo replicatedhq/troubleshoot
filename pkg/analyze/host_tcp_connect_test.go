@@ -31,6 +31,11 @@ func TestAnalyzeTCPConnect(t *testing.T) {
 							Message: "Connection was refused",
 						},
 					},
+					{
+						Warn: &troubleshootv1beta2.SingleOutcome{
+							Message: "Unexpected TCP connection status",
+						},
+					},
 				},
 			},
 			result: []*AnalyzeResult{
@@ -58,6 +63,11 @@ func TestAnalyzeTCPConnect(t *testing.T) {
 						Pass: &troubleshootv1beta2.SingleOutcome{
 							When:    "connected",
 							Message: "Connection was successful",
+						},
+					},
+					{
+						Warn: &troubleshootv1beta2.SingleOutcome{
+							Message: "Unexpected TCP connection status",
 						},
 					},
 				},
