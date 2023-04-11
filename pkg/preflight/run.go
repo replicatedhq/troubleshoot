@@ -27,6 +27,7 @@ import (
 	spin "github.com/tj/go-spin"
 	"go.opentelemetry.io/otel"
 	"golang.org/x/sync/errgroup"
+	"gopkg.in/yaml.v2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -127,6 +128,22 @@ func RunPreflights(interactive bool, output string, format string, args []string
 		multidocs := strings.Split(string(preflightContent), "\n---\n")
 
 		for _, doc := range multidocs {
+
+			type documentHead struct {
+				Kind string `yaml:"kind"`
+			}
+
+			var parsedDocHead documentHead
+
+			err := yaml.Unmarshal([]byte(doc),&parsedDocHead)
+			if err != nil {
+				return errors.Wrap(err, "failed to parse yaml")
+			}
+
+			if parsedDocHead.Kind != "Preflight" {
+				continue
+			}
+
 			preflightContent, err = docrewrite.ConvertToV1Beta2([]byte(doc))
 			if err != nil {
 				return errors.Wrap(err, "failed to convert to v1beta2")
