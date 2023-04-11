@@ -76,6 +76,12 @@ func RunPreflights(interactive bool, output string, format string, args []string
 			}
 
 			preflightContent = b
+		} else if v == "-" {
+			b, err := io.ReadAll(os.Stdin)
+			if err != nil {
+				return err
+			}
+			preflightContent = b
 		} else {
 			u, err := url.Parse(v)
 			if err != nil {
