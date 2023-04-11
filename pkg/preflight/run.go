@@ -135,7 +135,7 @@ func RunPreflights(interactive bool, output string, format string, args []string
 
 			var parsedDocHead documentHead
 
-			err := yaml.Unmarshal([]byte(doc),&parsedDocHead)
+			err := yaml.Unmarshal([]byte(doc), &parsedDocHead)
 			if err != nil {
 				return errors.Wrap(err, "failed to parse yaml")
 			}
