@@ -1557,6 +1557,27 @@ spec:
                       required:
                       - namespace
                       type: object
+                    certificates:
+                      properties:
+                        collectorName:
+                          type: string
+                        configMaps:
+                          additionalProperties:
+                            items:
+                              type: string
+                            type: array
+                          type: object
+                        exclude:
+                          type: BoolString
+                        name:
+                          type: string
+                        secrets:
+                          additionalProperties:
+                            items:
+                              type: string
+                            type: array
+                          type: object
+                      type: object
                     clusterInfo:
                       properties:
                         collectorName:
