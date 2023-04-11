@@ -124,27 +124,32 @@ func RunPreflights(interactive bool, output string, format string, args []string
 			}
 		}
 
-		preflightContent, err = docrewrite.ConvertToV1Beta2(preflightContent)
-		if err != nil {
-			return errors.Wrap(err, "failed to convert to v1beta2")
-		}
+		multidocs := strings.Split(string(preflightContent), "\n---\n")
 
-		troubleshootclientsetscheme.AddToScheme(scheme.Scheme)
-		decode := scheme.Codecs.UniversalDeserializer().Decode
-		obj, _, err := decode([]byte(preflightContent), nil, nil)
-		if err != nil {
-			return errors.Wrapf(err, "failed to parse %s", v)
-		}
-
-		if spec, ok := obj.(*troubleshootv1beta2.Preflight); ok {
-			if spec.Spec.UploadResultsTo == "" {
-				preflightSpec = ConcatPreflightSpec(preflightSpec, spec)
-			} else {
-				uploadResultSpecs = append(uploadResultSpecs, spec)
+		for _, doc := range multidocs {
+			preflightContent, err = docrewrite.ConvertToV1Beta2([]byte(doc))
+			if err != nil {
+				return errors.Wrap(err, "failed to convert to v1beta2")
 			}
-		} else if spec, ok := obj.(*troubleshootv1beta2.HostPreflight); ok {
-			hostPreflightSpec = ConcatHostPreflightSpec(hostPreflightSpec, spec)
+
+			troubleshootclientsetscheme.AddToScheme(scheme.Scheme)
+			decode := scheme.Codecs.UniversalDeserializer().Decode
+			obj, _, err := decode([]byte(preflightContent), nil, nil)
+			if err != nil {
+				return errors.Wrapf(err, "failed to parse %s", v)
+			}
+
+			if spec, ok := obj.(*troubleshootv1beta2.Preflight); ok {
+				if spec.Spec.UploadResultsTo == "" {
+					preflightSpec = ConcatPreflightSpec(preflightSpec, spec)
+				} else {
+					uploadResultSpecs = append(uploadResultSpecs, spec)
+				}
+			} else if spec, ok := obj.(*troubleshootv1beta2.HostPreflight); ok {
+				hostPreflightSpec = ConcatHostPreflightSpec(hostPreflightSpec, spec)
+			}
 		}
+
 	}
 
 	var collectResults []CollectResult
