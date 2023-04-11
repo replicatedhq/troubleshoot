@@ -114,7 +114,7 @@ func configMapCertCollector(configMapName string, namespace string, client kuber
 			SecretName: configMapName,
 			Namespace:  namespace,
 		}
-		trackErrors = append(trackErrors, "Either the configMap does not exist in this namespace or RBAC permissions are prenventing certificate collection")
+		trackErrors = append(trackErrors, "Either the configMap does not exist in this namespace or RBAC permissions are preventing certificate collection")
 
 		results = append(results, CertCollection{
 			Source:           source,
