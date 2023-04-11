@@ -75,6 +75,8 @@ jobs:
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
         shell: bash
       - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
       - run: make check-schemas
 
   compile-preflight:
