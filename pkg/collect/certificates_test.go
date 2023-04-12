@@ -1,7 +1,6 @@
 package collect
 
 import (
-	"log"
 	"strings"
 	"testing"
 )
@@ -164,7 +163,7 @@ func TestCertParser(t *testing.T) {
 
 		for _, cert := range results {
 
-			log.Println(e.Name, cert.Subject)
+			t.Log(e.Name, cert.Subject)
 
 			// test checks if certificate subject contains a matching string; validates that can parse cert and pull back information
 			if !strings.Contains(cert.Subject, e.Name) {
@@ -212,7 +211,7 @@ func Test_decodePem(t *testing.T) {
 		certCount := 0
 
 		for _, cert := range results.Certificate {
-			log.Println(cert)
+			t.Log(cert)
 			certCount++
 		}
 		if certCount != e.certCount {
