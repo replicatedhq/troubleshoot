@@ -14,7 +14,7 @@ func OciFetchCmd() *cobra.Command {
 		Short: "Fetch a preflight from an OCI registry and print it to standard out",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			uri := args[0]
-			data,err := oci.PullPreflightFromOCI(uri)
+			data, err := oci.PullPreflightFromOCI(uri)
 			if err != nil {
 				return err
 			}
