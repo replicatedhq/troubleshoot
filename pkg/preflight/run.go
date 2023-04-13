@@ -27,6 +27,7 @@ import (
 	spin "github.com/tj/go-spin"
 	"go.opentelemetry.io/otel"
 	"golang.org/x/sync/errgroup"
+	"gopkg.in/yaml.v2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -76,6 +77,12 @@ func RunPreflights(interactive bool, output string, format string, args []string
 			}
 
 			preflightContent = b
+		} else if v == "-" {
+			b, err := io.ReadAll(os.Stdin)
+			if err != nil {
+				return err
+			}
+			preflightContent = b
 		} else {
 			u, err := url.Parse(v)
 			if err != nil {
@@ -118,27 +125,48 @@ func RunPreflights(interactive bool, output string, format string, args []string
 			}
 		}
 
-		preflightContent, err = docrewrite.ConvertToV1Beta2(preflightContent)
-		if err != nil {
-			return errors.Wrap(err, "failed to convert to v1beta2")
-		}
+		multidocs := strings.Split(string(preflightContent), "\n---\n")
 
-		troubleshootclientsetscheme.AddToScheme(scheme.Scheme)
-		decode := scheme.Codecs.UniversalDeserializer().Decode
-		obj, _, err := decode([]byte(preflightContent), nil, nil)
-		if err != nil {
-			return errors.Wrapf(err, "failed to parse %s", v)
-		}
+		for _, doc := range multidocs {
 
-		if spec, ok := obj.(*troubleshootv1beta2.Preflight); ok {
-			if spec.Spec.UploadResultsTo == "" {
-				preflightSpec = ConcatPreflightSpec(preflightSpec, spec)
-			} else {
-				uploadResultSpecs = append(uploadResultSpecs, spec)
+			type documentHead struct {
+				Kind string `yaml:"kind"`
 			}
-		} else if spec, ok := obj.(*troubleshootv1beta2.HostPreflight); ok {
-			hostPreflightSpec = ConcatHostPreflightSpec(hostPreflightSpec, spec)
+
+			var parsedDocHead documentHead
+
+			err := yaml.Unmarshal([]byte(doc), &parsedDocHead)
+			if err != nil {
+				return errors.Wrap(err, "failed to parse yaml")
+			}
+
+			if parsedDocHead.Kind != "Preflight" {
+				continue
+			}
+
+			preflightContent, err = docrewrite.ConvertToV1Beta2([]byte(doc))
+			if err != nil {
+				return errors.Wrap(err, "failed to convert to v1beta2")
+			}
+
+			troubleshootclientsetscheme.AddToScheme(scheme.Scheme)
+			decode := scheme.Codecs.UniversalDeserializer().Decode
+			obj, _, err := decode([]byte(preflightContent), nil, nil)
+			if err != nil {
+				return errors.Wrapf(err, "failed to parse %s", v)
+			}
+
+			if spec, ok := obj.(*troubleshootv1beta2.Preflight); ok {
+				if spec.Spec.UploadResultsTo == "" {
+					preflightSpec = ConcatPreflightSpec(preflightSpec, spec)
+				} else {
+					uploadResultSpecs = append(uploadResultSpecs, spec)
+				}
+			} else if spec, ok := obj.(*troubleshootv1beta2.HostPreflight); ok {
+				hostPreflightSpec = ConcatHostPreflightSpec(hostPreflightSpec, spec)
+			}
 		}
+
 	}
 
 	var collectResults []CollectResult
