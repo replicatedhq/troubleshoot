@@ -60,6 +60,7 @@ that a cluster meets the requirements to run an application.`,
 	cobra.OnInitialize(initConfig)
 
 	cmd.AddCommand(VersionCmd())
+	cmd.AddCommand(OciFetchCmd())
 	preflight.AddFlags(cmd.PersistentFlags())
 
 	k8sutil.AddFlags(cmd.Flags())
