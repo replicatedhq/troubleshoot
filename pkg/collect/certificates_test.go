@@ -3,9 +3,12 @@ package collect
 import (
 	"strings"
 	"testing"
+	"time"
+
+	"github.com/stretchr/testify/assert"
 )
 
-var chain = `-----BEGIN CERTIFICATE-----
+var expiredCertChain = `-----BEGIN CERTIFICATE-----
 MIIB0zCCAX2gAwIBAgIJAI/M7BYjwB+uMA0GCSqGSIb3DQEBBQUAMEUxCzAJBgNV
 BAYTAkFVMRMwEQYDVQQIDApTb21lLVN0YXRlMSEwHwYDVQQKDBhJbnRlcm5ldCBX
 aWRnaXRzIFB0eSBMdGQwHhcNMTIwOTEyMjE1MjAyWhcNMTUwOTEyMjE1MjAyWjBF
@@ -16,10 +19,9 @@ rtNuC+BdZ1tMuVCPFZcCAwEAAaNQME4wHQYDVR0OBBYEFJvKs8RfJaXTH08W+SGv
 zQyKn0H8MB8GA1UdIwQYMBaAFJvKs8RfJaXTH08W+SGvzQyKn0H8MAwGA1UdEwQF
 MAMBAf8wDQYJKoZIhvcNAQEFBQADQQBJlffJHybjDGxRMqaRmDhX0+6v02TUKZsW
 r5QuVbpQhH6u+0UgcW0jp9QwpxoPTLTWGXEWBBBurxFwiCBhkQ+V
------END CERTIFICATE-----
-`
+-----END CERTIFICATE-----`
 
-var chain2 = `-----BEGIN CERTIFICATE-----
+var multiCertChain = `-----BEGIN CERTIFICATE-----
 MIIG5jCCBc6gAwIBAgIQAze5KDR8YKauxa2xIX84YDANBgkqhkiG9w0BAQUFADBs
 MQswCQYDVQQGEwJVUzEVMBMGA1UEChMMRGlnaUNlcnQgSW5jMRkwFwYDVQQLExB3
 d3cuZGlnaWNlcnQuY29tMSswKQYDVQQDEyJEaWdpQ2VydCBIaWdoIEFzc3VyYW5j
@@ -82,7 +84,7 @@ vEsXCS+0yx5DaMkHJ8HSXPfqIbloEpw8nL+e/IBcm2PN7EeqJSdnoDfzAIJ9VNep
 +OkuE6N36B9K
 -----END CERTIFICATE-----`
 
-var chain3 = `-----BEGIN CERTIFICATE-----
+var validCertChain = `-----BEGIN CERTIFICATE-----
 MIIDejCCAmKgAwIBAgIEAZaq0DANBgkqhkiG9w0BAQsFADAuMRgwFgYDVQQDEw9Q
 cm9qZWN0IENvbnRvdXIxEjAQBgNVBAUTCTYxNTkyOTg5MTAeFw0yMzAyMjQwNDI3
 MThaFw0yNDAyMjUwNDI3MTZaMBAxDjAMBgNVBAMTBWVudm95MIIBIjANBgkqhkiG
@@ -105,7 +107,7 @@ NCIm5NJ5jAJpcJmoEb+JMP3j0x6wydHDXFtGm3WRggZRcrjasyodSKK6szbf96+9
 -----END CERTIFICATE-----
 `
 
-var chain4 = `-----BEGIN CERTIFICATE-----
+var nonCertChain = `-----BEGIN CERTIFICATE-----
 Oy1is0whDArLNwIDAQABo4G9MIG6
 MA4GA1UdDwEB/wQEAwIE8DAdBgNVHQ4EFgQUbAavOY+vIXgc44k8GvLHH6mdzzYw
 HwYDVR0jBBgwFoAUb+S3Mu7cbwZiqZaEHTEMyUhLyH4waAYDVR0RBGEwX4IFZW52
@@ -122,101 +124,104 @@ NCIm5NJ5jAJpcJmoEb+JMP3j0x6wydHDXFtGm3WRggZRcrjasyodSKK6szbf96+9
 
 // tests validate that the certParser function correctly parses a certificate
 func TestCertParser(t *testing.T) {
-
-	expiredCert := []byte(chain)
-	multiCert := []byte(chain2)
-	validCert := []byte(chain3)
-	nonCert := []byte(chain4)
-	//add docs
-
-	certParserTests := []struct {
+	type parsedCertResult struct {
 		Name      string
-		Certs     []byte
 		CertQty   int
 		IsSubject bool
-		IsCert    bool
-		IsValid   bool
+		IsValid   []bool
+	}
+
+	tests := []struct {
+		name        string
+		certName    string
+		certificate []byte
+		expiredTime time.Time
+		want        parsedCertResult
 	}{
-		// Name, Certs, CertQty, IsSubject, IsCert, IsValid
-		{"Widgits", expiredCert, 1, true, true, false},
-		{"digicert", multiCert, 2, true, true, false}, //IsValid will not be evaluated for multicerts
-		{"envoy", validCert, 1, true, true, true},
-		{"non.crt", nonCert, 1, false, false, false}, // IsSubject and IsValid n/a for non.crt
+		{
+			name:        "expired certificate",
+			certName:    "Widgits",
+			certificate: []byte(expiredCertChain),
+			expiredTime: time.Now(),
+			want: parsedCertResult{
+				CertQty:   1,
+				IsSubject: true,
+				IsValid:   []bool{false},
+			},
+		},
+		{
+			name:        "multi certificate",
+			certName:    "digicert",
+			certificate: []byte(multiCertChain),
+			expiredTime: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
+			want: parsedCertResult{
+				CertQty:   2,
+				IsSubject: true,
+				IsValid:   []bool{false, true},
+			},
+		},
+		{
+			name:        "valid certificate",
+			certName:    "envoy",
+			certificate: []byte(validCertChain),
+			expiredTime: time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC),
+			want: parsedCertResult{
+				CertQty:   1,
+				IsSubject: true,
+				IsValid:   []bool{true},
+			},
+		},
+		{
+			name:        "non certificate",
+			certName:    "non.crt",
+			certificate: []byte(nonCertChain),
+			expiredTime: time.Now(),
+			want: parsedCertResult{
+				CertQty:   0,
+				IsSubject: false,
+				IsValid:   []bool{true},
+			},
+		},
 	}
 
-	for _, e := range certParserTests {
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			certs, _ := CertParser(tt.certName, tt.certificate, tt.expiredTime)
+			assert.Equal(t, tt.want.CertQty, len(certs), "Expected %v, but got %v", tt.want.CertQty, len(certs))
 
-		results, _ := CertParser(e.Name, e.Certs)
-
-		// tests if results contains a list of parsed certificates
-		var isCert bool
-		if len(results) == 0 {
-			isCert = false
-		} else {
-			isCert = true
-		}
-
-		if isCert != e.IsCert {
-			t.Errorf("Expected %v, but got %v that %s is a certificate", e.IsCert, isCert, e.Name)
-			continue
-		}
-
-		for _, cert := range results {
-
-			t.Log(e.Name, cert.Subject)
-
-			// test checks if certificate subject contains a matching string; validates that can parse cert and pull back information
-			if !strings.Contains(cert.Subject, e.Name) {
-				t.Error("unable to parse certificate: ", e.Name)
-
-			} else {
-				isSubject := true
-				if e.IsSubject != isSubject {
-					t.Errorf("You expected that %s certificate contains %s in the Subject line but it was not present; here is the entire subject string: %v", e.Name, e.Name, cert.Subject)
+			for idx, cert := range certs {
+				if !strings.Contains(cert.Subject, tt.certName) {
+					isSubject := false
+					assert.Equal(t, tt.want.IsSubject, isSubject, "Expected %v, but got %v", tt.want.IsSubject, isSubject)
 				}
+				assert.Equal(t, tt.want.IsValid[idx], cert.IsValid, "Expected %v, but got %v", tt.want.IsValid[idx], cert.IsValid)
 			}
-
-			// test checks for expected quantity of certificates in a certificate file
-			numCerts := len(results)
-			if numCerts != e.CertQty {
-				t.Errorf("expected %d certificates in slice but got %d", e.CertQty, numCerts)
-			}
-			if numCerts > 1 {
-				continue
-			}
-
-			// test checks for expected certificate expired
-			if cert.IsValid != e.IsValid {
-				t.Errorf("When checing that %v certificate is expired, you expected %v, but got %v ", e.Name, e.IsValid, cert.IsValid)
-			}
-
-		}
-
+		})
 	}
-
 }
 
 // validates that certificate count is correct when parsing a certificate input string.
 func Test_decodePem(t *testing.T) {
-	certDecoderTests := []struct {
-		Name      string
-		certInput string
-		certCount int
+	tests := []struct {
+		name        string
+		certificate []byte
+		wantQty     int
 	}{
-		{"widgets-cert", chain, 1},
-		{"digi-cert", chain2, 2},
+		{
+			name:        "expired certificate",
+			certificate: []byte(expiredCertChain),
+			wantQty:     1,
+		},
+		{
+			name:        "multi certificate",
+			certificate: []byte(multiCertChain),
+			wantQty:     2,
+		},
 	}
-	for _, e := range certDecoderTests {
-		results, _ := decodePem(e.certInput)
-		certCount := 0
-
-		for _, cert := range results.Certificate {
-			t.Log(cert)
-			certCount++
-		}
-		if certCount != e.certCount {
-			t.Errorf("cert count -- expected %d, but got %d", e.certCount, certCount)
-		}
-
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cert, _ := decodePem(tt.certificate)
+			assert.Equal(t, tt.wantQty, len(cert.Certificate), "Expected %v, but got %v", tt.wantQty, len(cert.Certificate))
+		})
 	}
 }
