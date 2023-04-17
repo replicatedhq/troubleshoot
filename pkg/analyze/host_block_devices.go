@@ -116,7 +116,7 @@ func (a *AnalyzeHostBlockDevices) Analyze(getCollectedFileContents func(string) 
 func compareHostBlockDevicesConditionalToActual(conditional string, minimumAcceptableSize uint64, includeUnmountedPartitions bool, devices []collect.BlockDeviceInfo) (res bool, err error) {
 	parts := strings.Split(conditional, " ")
 	if len(parts) != 3 {
-		return false, fmt.Errorf("expected exactly 3 parts, got %d", len(parts))
+		return false, fmt.Errorf("Expected exactly 3 parts, got %d", len(parts))
 	}
 
 	rx, err := regexp.Compile(parts[0])
@@ -143,7 +143,7 @@ func compareHostBlockDevicesConditionalToActual(conditional string, minimumAccep
 		return count == desiredInt, nil
 	}
 
-	return false, fmt.Errorf("unexpected operator %q", parts[1])
+	return false, fmt.Errorf("Unexpected operator %q", parts[1])
 }
 
 func countEligibleBlockDevices(rx *regexp.Regexp, minimumAcceptableSize uint64, includeUnmountedPartitions bool, devices []collect.BlockDeviceInfo) int {
