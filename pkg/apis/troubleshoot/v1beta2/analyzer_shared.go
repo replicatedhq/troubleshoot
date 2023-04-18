@@ -213,6 +213,11 @@ type AnalyzeMeta struct {
 	Annotations map[string]string       `json:"annotations,omitempty" yaml:"annotations,omitempty"`
 }
 
+type CertificatesAnalyze struct {
+	AnalyzeMeta `json:",inline" yaml:",inline"`
+	Outcomes    []*Outcome `json:"outcomes" yaml:"outcomes"`
+}
+
 type Analyze struct {
 	ClusterVersion           *ClusterVersion           `json:"clusterVersion,omitempty" yaml:"clusterVersion,omitempty"`
 	StorageClass             *StorageClass             `json:"storageClass,omitempty" yaml:"storageClass,omitempty"`
@@ -242,4 +247,5 @@ type Analyze struct {
 	WeaveReport              *WeaveReportAnalyze       `json:"weaveReport,omitempty" yaml:"weaveReport,omitempty"`
 	Sysctl                   *SysctlAnalyze            `json:"sysctl,omitempty" yaml:"sysctl,omitempty"`
 	ClusterResource          *ClusterResource          `json:"clusterResource,omitempty" yaml:"clusterResource,omitempty"`
+	Certificates             *CertificatesAnalyze      `json:"certificates,omitempty" yaml:"certificates,omitempty"`
 }
