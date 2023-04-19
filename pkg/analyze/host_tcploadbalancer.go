@@ -42,9 +42,9 @@ func (a *AnalyzeHostTCPLoadBalancer) Analyze(getCollectedFileContents func(strin
 	}
 
 	var coll resultCollector
+	result := &AnalyzeResult{Title: a.Title()}
 
 	for _, outcome := range hostAnalyzer.Outcomes {
-		result := &AnalyzeResult{Title: a.Title()}
 
 		if outcome.Fail != nil {
 			if outcome.Fail.When == "" {
@@ -53,6 +53,7 @@ func (a *AnalyzeHostTCPLoadBalancer) Analyze(getCollectedFileContents func(strin
 				result.URI = outcome.Fail.URI
 
 				coll.push(result)
+				break
 			}
 
 			if string(actual.Status) == outcome.Fail.When {
@@ -61,6 +62,7 @@ func (a *AnalyzeHostTCPLoadBalancer) Analyze(getCollectedFileContents func(strin
 				result.URI = outcome.Fail.URI
 
 				coll.push(result)
+				break
 			}
 		} else if outcome.Warn != nil {
 			if outcome.Warn.When == "" {
@@ -69,6 +71,7 @@ func (a *AnalyzeHostTCPLoadBalancer) Analyze(getCollectedFileContents func(strin
 				result.URI = outcome.Warn.URI
 
 				coll.push(result)
+				break
 			}
 
 			if string(actual.Status) == outcome.Warn.When {
@@ -77,6 +80,7 @@ func (a *AnalyzeHostTCPLoadBalancer) Analyze(getCollectedFileContents func(strin
 				result.URI = outcome.Warn.URI
 
 				coll.push(result)
+				break
 			}
 		} else if outcome.Pass != nil {
 			if outcome.Pass.When == "" {
@@ -85,6 +89,7 @@ func (a *AnalyzeHostTCPLoadBalancer) Analyze(getCollectedFileContents func(strin
 				result.URI = outcome.Pass.URI
 
 				coll.push(result)
+				break
 			}
 
 			if string(actual.Status) == outcome.Pass.When {
@@ -93,6 +98,7 @@ func (a *AnalyzeHostTCPLoadBalancer) Analyze(getCollectedFileContents func(strin
 				result.URI = outcome.Pass.URI
 
 				coll.push(result)
+				break
 			}
 		}
 	}

@@ -10,11 +10,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestAnalyzeTCPConnect(t *testing.T) {
+func TestAnalyzeTCPLoadBalancer(t *testing.T) {
 	tests := []struct {
 		name         string
 		info         *collect.NetworkStatusResult
-		hostAnalyzer *troubleshootv1beta2.TCPConnectAnalyze
+		hostAnalyzer *troubleshootv1beta2.TCPLoadBalancerAnalyze
 		result       []*AnalyzeResult
 		expectErr    bool
 	}{
@@ -23,7 +23,7 @@ func TestAnalyzeTCPConnect(t *testing.T) {
 			info: &collect.NetworkStatusResult{
 				Status: collect.NetworkStatusConnectionRefused,
 			},
-			hostAnalyzer: &troubleshootv1beta2.TCPConnectAnalyze{
+			hostAnalyzer: &troubleshootv1beta2.TCPLoadBalancerAnalyze{
 				Outcomes: []*troubleshootv1beta2.Outcome{
 					{
 						Fail: &troubleshootv1beta2.SingleOutcome{
@@ -46,7 +46,7 @@ func TestAnalyzeTCPConnect(t *testing.T) {
 			},
 			result: []*AnalyzeResult{
 				{
-					Title:   "TCP Connection Attempt",
+					Title:   "TCP Load Balancer",
 					IsFail:  true,
 					Message: "Connection was refused",
 				},
@@ -57,7 +57,7 @@ func TestAnalyzeTCPConnect(t *testing.T) {
 			info: &collect.NetworkStatusResult{
 				Status: collect.NetworkStatusConnected,
 			},
-			hostAnalyzer: &troubleshootv1beta2.TCPConnectAnalyze{
+			hostAnalyzer: &troubleshootv1beta2.TCPLoadBalancerAnalyze{
 				Outcomes: []*troubleshootv1beta2.Outcome{
 					{
 						Fail: &troubleshootv1beta2.SingleOutcome{
@@ -80,7 +80,7 @@ func TestAnalyzeTCPConnect(t *testing.T) {
 			},
 			result: []*AnalyzeResult{
 				{
-					Title:   "TCP Connection Attempt",
+					Title:   "TCP Load Balancer",
 					IsPass:  true,
 					Message: "Connection was successful",
 				},
@@ -99,7 +99,7 @@ func TestAnalyzeTCPConnect(t *testing.T) {
 				return b, nil
 			}
 
-			result, err := (&AnalyzeHostTCPConnect{test.hostAnalyzer}).Analyze(getCollectedFileContents)
+			result, err := (&AnalyzeHostTCPLoadBalancer{test.hostAnalyzer}).Analyze(getCollectedFileContents)
 			if test.expectErr {
 				req.Error(err)
 			} else {
