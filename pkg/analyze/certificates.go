@@ -104,10 +104,15 @@ func (a *AnalyzeCertificates) analyzeAnalyzeCertificatesResult(certifcates []col
 					warnDate, _ := regexp.Compile(`notAfter \< Today \+ (\d+) days`)
 					warnMatch := warnDate.FindStringSubmatch(when)
 					if warnMatch != nil {
-						warnMatchDays, _ := strconv.Atoi(warnMatch[1])
+						warnMatchDays, err := strconv.Atoi(warnMatch[1])
+						if err != nil {
+							return nil, errors.Wrap(err, "failed to convert string to integer")
+						}
+
 						targetTime := time.Now().AddDate(0, 0, warnMatchDays)
+
 						if targetTime.After(certChain.NotAfter) {
-							result.Message = fmt.Sprintf("%s %s in %d days, %s, ", certChain.CertName, message, warnMatchDays, source)
+							result.Message = fmt.Sprintf("%s %s in %d days, %s", certChain.CertName, message, warnMatchDays, source)
 							results = append(results, &result)
 						}
 					}
