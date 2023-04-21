@@ -20,7 +20,7 @@ func PortForward(config *restclient.Config, localPort int, remotePort int, names
 	}
 
 	path := fmt.Sprintf("/api/v1/namespaces/%s/pods/%s/portforward", namespace, podName)
-	hostIP := strings.TrimLeft(config.Host, "htps:/")
+	hostIP := strings.TrimPrefix(config.Host, "htps:/")
 	serverURL := url.URL{Scheme: "http", Path: path, Host: hostIP}
 	dialer := spdy.NewDialer(upgrader, &http.Client{Transport: roundTripper}, http.MethodPost, &serverURL)
 
