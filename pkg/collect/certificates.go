@@ -111,10 +111,10 @@ func configMapCertCollector(configMapName string, namespace string, client kuber
 
 		// collect certificate source information
 		source := &CertificateSource{
-			SecretName: configMapName,
-			Namespace:  namespace,
+			ConfigMapName: configMapName,
+			Namespace:     namespace,
 		}
-		trackErrors := append(trackErrors, "Either the configMap does not exist in this namespace or RBAC permissions are preventing certificate collection")
+		trackErrors := append(trackErrors, err.Error())
 
 		results = append(results, CertCollection{
 			Source: source,
@@ -164,7 +164,7 @@ func secretCertCollector(secretName string, namespace string, client kubernetes.
 			SecretName: secretName,
 			Namespace:  namespace,
 		}
-		trackErrors = append(trackErrors, "Either the secret does not exist in this namespace or RBAC permissions are prenventing certificate collection")
+		trackErrors = append(trackErrors, err.Error())
 
 		results = append(results, CertCollection{
 			Source: source,
@@ -192,14 +192,15 @@ func secretCertCollector(secretName string, namespace string, client kubernetes.
 		})
 	}
 
+	fmt.Printf("%+v\n", results)
+
 	return results
 }
 
 // decode pem and validate data source contains
-func decodePem(certInput []byte) (tls.Certificate, string) {
+func decodePem(certPEMBlock []byte) (tls.Certificate, string) {
 	var cert tls.Certificate
 	var trackErrors string
-	certPEMBlock := certInput
 	var certDERBlock *pem.Block
 
 	for {
@@ -224,7 +225,7 @@ func CertParser(certName string, certs []byte, currentTime time.Time) ([]ParsedC
 	if currentTime.IsZero() {
 		currentTime = time.Now()
 	}
-	fmt.Println(currentTime)
+
 	certChain, decodePemTrackErrors := decodePem(certs)
 
 	if decodePemTrackErrors != "" {
