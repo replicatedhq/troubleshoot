@@ -61,7 +61,7 @@ type SubnetAvailable struct {
 
 type DiskUsage struct {
 	HostCollectorMeta `json:",inline" yaml:",inline"`
-	Path              string `json:"path"`
+	Path              string `json:"path" yaml:"path"`
 }
 
 type HostHTTP struct {
@@ -69,6 +69,11 @@ type HostHTTP struct {
 	Get               *Get  `json:"get,omitempty" yaml:"get,omitempty"`
 	Post              *Post `json:"post,omitempty" yaml:"post,omitempty"`
 	Put               *Put  `json:"put,omitempty" yaml:"put,omitempty"`
+}
+
+type HostCopy struct {
+	HostCollectorMeta `json:",inline" yaml:",inline"`
+	Path              string `json:"path" yaml:"path"`
 }
 
 type HostTime struct {
@@ -196,9 +201,11 @@ type HostCollect struct {
 	HostServices          *HostServices          `json:"hostServices,omitempty" yaml:"hostServices,omitempty"`
 	HostOS                *HostOS                `json:"hostOS,omitempty" yaml:"hostOS,omitempty"`
 	HostRun               *HostRun               `json:"run,omitempty" yaml:"run,omitempty"`
+	HostCopy              *HostCopy              `json:"copy,omitempty" yaml:"copy,omitempty"`
 }
 
 func (c *HostCollect) GetName() string {
+	// TODO: Is this used anywhere? Should we just remove it?
 	var collector string
 	if c.CPU != nil {
 		collector = "cpu"

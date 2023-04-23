@@ -36,6 +36,7 @@ endef
 
 BUILDFLAGS = -tags "netgo containers_image_ostree_stub exclude_graphdriver_devicemapper exclude_graphdriver_btrfs containers_image_openpgp" -installsuffix netgo
 BUILDPATHS = ./pkg/... ./cmd/... ./internal/...
+TESTFLAGS ?= -v -coverprofile cover.out
 
 all: test support-bundle preflight collect analyze
 
@@ -46,9 +47,9 @@ ffi: fmt vet
 .PHONY: test
 test: generate fmt vet
 	if [ -n $(RUN) ]; then \
-		go test ${BUILDFLAGS} ${BUILDPATHS} -coverprofile cover.out -run $(RUN); \
+		go test ${BUILDFLAGS} ${BUILDPATHS} ${TESTFLAGS} -run $(RUN); \
 	else \
-		go test ${BUILDFLAGS} ${BUILDPATHS} -coverprofile cover.out; \
+		go test ${BUILDFLAGS} ${BUILDPATHS} ${TESTFLAGS}; \
 	fi
 
 # Go tests that require a K8s instance

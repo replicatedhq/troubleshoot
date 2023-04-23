@@ -3,7 +3,6 @@ package analyzer
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"path/filepath"
 	"strings"
 	"text/template"
@@ -13,6 +12,7 @@ import (
 	"github.com/replicatedhq/troubleshoot/pkg/constants"
 	"github.com/replicatedhq/troubleshoot/pkg/k8sutil"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/klog/v2"
 )
 
 type AnalyzeClusterPodStatuses struct {
@@ -100,37 +100,40 @@ func clusterPodStatuses(analyzer *troubleshootv1beta2.ClusterPodStatuses, getChi
 				r.URI = outcome.Pass.URI
 				when = outcome.Pass.When
 			} else {
-				println("error: found an empty outcome in a clusterPodStatuses analyzer") // don't stop
+				klog.Error("error: found an empty outcome in a clusterPodStatuses analyzer\n")
 				continue
 			}
 
-			parts := strings.Split(strings.TrimSpace(when), " ")
-			if len(parts) < 2 {
-				println(fmt.Sprintf("invalid 'when' format: %s\n", when)) // don't stop
-				continue
-			}
-
-			operator := parts[0]
-			reason := parts[1]
+			operator := ""
+			reason := ""
 			match := false
-
-			switch operator {
-			case "=", "==", "===":
-				if reason == "Healthy" {
-					match = !k8sutil.IsPodUnhealthy(&pod)
-				} else {
-					match = reason == string(pod.Status.Phase) || reason == string(pod.Status.Reason)
+			if when != "" {
+				parts := strings.Split(strings.TrimSpace(when), " ")
+				if len(parts) < 2 {
+					klog.Errorf("invalid 'when' format: %s\n", when)
+					continue
 				}
-			case "!=", "!==":
-				if reason == "Healthy" {
-					match = k8sutil.IsPodUnhealthy(&pod)
-				} else {
-					match = reason != string(pod.Status.Phase) && reason != string(pod.Status.Reason)
-				}
-			}
+				operator = parts[0]
+				reason = parts[1]
 
-			if !match {
-				continue
+				switch operator {
+				case "=", "==", "===":
+					if reason == "Healthy" {
+						match = !k8sutil.IsPodUnhealthy(&pod)
+					} else {
+						match = reason == string(pod.Status.Phase) || reason == string(pod.Status.Reason)
+					}
+				case "!=", "!==":
+					if reason == "Healthy" {
+						match = k8sutil.IsPodUnhealthy(&pod)
+					} else {
+						match = reason != string(pod.Status.Phase) && reason != string(pod.Status.Reason)
+					}
+				}
+
+				if !match {
+					continue
+				}
 			}
 
 			r.InvolvedObject = &corev1.ObjectReference{

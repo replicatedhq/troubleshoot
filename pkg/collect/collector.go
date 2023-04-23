@@ -85,6 +85,8 @@ func GetCollector(collector *troubleshootv1beta2.Collect, bundlePath string, nam
 		return &CollectHTTP{collector.HTTP, bundlePath, namespace, clientConfig, client, RBACErrors}, true
 	case collector.Postgres != nil:
 		return &CollectPostgres{collector.Postgres, bundlePath, namespace, clientConfig, client, ctx, RBACErrors}, true
+	case collector.Mssql != nil:
+		return &CollectMssql{collector.Mssql, bundlePath, namespace, clientConfig, client, ctx, RBACErrors}, true
 	case collector.Mysql != nil:
 		return &CollectMysql{collector.Mysql, bundlePath, namespace, clientConfig, client, ctx, RBACErrors}, true
 	case collector.Redis != nil:
@@ -99,6 +101,8 @@ func GetCollector(collector *troubleshootv1beta2.Collect, bundlePath string, nam
 		return &CollectRegistry{collector.RegistryImages, bundlePath, namespace, clientConfig, client, ctx, RBACErrors}, true
 	case collector.Sysctl != nil:
 		return &CollectSysctl{collector.Sysctl, bundlePath, namespace, clientConfig, client, ctx, RBACErrors}, true
+	case collector.Certificates != nil:
+		return &CollectCertificates{collector.Certificates, bundlePath, namespace, clientConfig, client, ctx, RBACErrors}, true
 	default:
 		return nil, false
 	}
@@ -150,6 +154,9 @@ func getCollectorName(c interface{}) string {
 	case *CollectPostgres:
 		collector = "postgres"
 		name = v.Collector.CollectorName
+	case *CollectMssql:
+		collector = "mssql"
+		name = v.Collector.CollectorName
 	case *CollectMysql:
 		collector = "mysql"
 		name = v.Collector.CollectorName
@@ -170,6 +177,9 @@ func getCollectorName(c interface{}) string {
 		name = v.Collector.CollectorName
 	case *CollectSysctl:
 		collector = "sysctl"
+		name = v.Collector.Name
+	case *CollectCertificates:
+		collector = "certificates"
 		name = v.Collector.Name
 	default:
 		collector = "<none>"

@@ -1,0 +1,70 @@
+apiVersion: troubleshoot.sh/v1beta2
+kind: Preflight
+metadata:
+  name: sample
+spec:
+  collectors:
+    - mssql:
+        collectorName: mssql
+        uri: sqlserver://SA:nac3lle-ch@stise-bOMBay-wag@db.lab.shortrib.net:1433/master
+  analyzers:
+    - mssql:
+        checkName: Must be SQLServer 15.x or later
+        collectorName: mssql
+        outcomes:
+          - fail:
+              when: "connected == false"
+              message: Cannot connect to SQLServer
+          - fail:
+              when: "version < 15.x"
+              message: The SQLServer must be at least version 15
+          - pass:
+              message: The SQLServer connection checks out
+    - mssql:
+        checkName: Must be SQLServer 14 or earlier
+        collectorName: mssql
+        outcomes:
+          - fail:
+              when: "connected == false"
+              message: Cannot connect to SQLServer
+          - fail:
+              when: "version > 14.x"
+              message: The SQLServer must be at most version 14
+          - pass:
+              message: The SQLServer connection checks out
+    - mssql:
+        checkName: Must be SQLServer 15.0.2000.1565 
+        collectorName: mssql
+        outcomes:
+          - fail:
+              when: "connected == false"
+              message: Cannot connect to SQLServer
+          - fail:
+              when: "version == 15.0.2000.1565"
+              message: The SQLServer must be version 15.0.2000.1565 
+          - pass:
+              message: The SQLServer connection checks out
+    - mssql:
+        checkName: Must not be SQLServer 15.0.2000.1565 
+        collectorName: mssql
+        outcomes:
+          - fail:
+              when: "connected == false"
+              message: Cannot connect to SQLServer
+          - fail:
+              when: "version != 15.0.2000.1565"
+              message: The SQLServer must not be version 15.0.2000.1565 
+          - pass:
+              message: The SQLServer connection checks out
+    - mssql:
+        checkName: I don't want to connect to your SQL Server
+        collectorName: mssql
+        outcomes:
+          - fail:
+              when: "connected == true"
+              message: Can connect to your SQL Server
+          - fail:
+              when: "version != 15.0.2000.1565"
+              message: The SQLServer must be version 15.0.2000.1565 
+          - pass:
+              message: The SQLServer connection checks out
