@@ -127,7 +127,7 @@ NCIm5NJ5jAJpcJmoEb+JMP3j0x6wydHDXFtGm3WRggZRcrjasyodSKK6szbf96+9
 }
 
 // tests validate that the certParser function correctly parses a certificate
-func TestCertParser2(t *testing.T) {
+func TestCertParser(t *testing.T) {
 	tests := []struct {
 		name          string
 		certChainName string
@@ -163,7 +163,7 @@ func TestCertParser2(t *testing.T) {
 						{
 							CertName:                "tls.crt",
 							Subject:                 "O=Internet Widgits Pty Ltd,ST=Some-State,C=AU",
-							SubjectAlternativeNames: []string(nil),
+							SubjectAlternativeNames: nil,
 							Issuer:                  "O=Internet Widgits Pty Ltd,ST=Some-State,C=AU",
 							NotAfter:                time.Date(2015, time.September, 12, 21, 52, 2, 0, time.UTC),
 							NotBefore:               time.Date(2012, time.September, 12, 21, 52, 2, 0, time.UTC),
@@ -203,17 +203,19 @@ func TestCertParser2(t *testing.T) {
 						{
 							CertName:                "tls.crt",
 							Subject:                 "CN=DigiCert High Assurance EV CA-1,OU=www.digicert.com,O=DigiCert Inc,C=US",
-							SubjectAlternativeNames: []string(nil), Issuer: "CN=DigiCert High Assurance EV Root CA,OU=www.digicert.com,O=DigiCert Inc,C=US",
-							NotAfter:  time.Date(2021, time.November, 10, 0, 0, 0, 0, time.UTC),
-							NotBefore: time.Date(2007, time.November, 9, 12, 0, 0, 0, time.UTC),
-							IsValid:   false,
-							IsCA:      true,
+							SubjectAlternativeNames: nil,
+							Issuer:                  "CN=DigiCert High Assurance EV Root CA,OU=www.digicert.com,O=DigiCert Inc,C=US",
+							NotAfter:                time.Date(2021, time.November, 10, 0, 0, 0, 0, time.UTC),
+							NotBefore:               time.Date(2007, time.November, 9, 12, 0, 0, 0, time.UTC),
+							IsValid:                 false,
+							IsCA:                    true,
 						},
 						{
 							CertName:                "tls.crt",
 							Subject:                 "CN=DigiCert High Assurance EV Root CA,OU=www.digicert.com,O=DigiCert Inc,C=US",
-							SubjectAlternativeNames: []string(nil), Issuer: "CN=DigiCert High Assurance EV Root CA,OU=www.digicert.com,O=DigiCert Inc,C=US",
-							NotAfter: time.Date(2031, time.November, 10, 0, 0, 0, 0, time.UTC), NotBefore: time.Date(2006, time.November, 10, 0, 0, 0, 0, time.UTC),
+							SubjectAlternativeNames: nil,
+							Issuer:                  "CN=DigiCert High Assurance EV Root CA,OU=www.digicert.com,O=DigiCert Inc,C=US",
+							NotAfter:                time.Date(2031, time.November, 10, 0, 0, 0, 0, time.UTC), NotBefore: time.Date(2006, time.November, 10, 0, 0, 0, 0, time.UTC),
 							IsValid: true,
 							IsCA:    true,
 						},
@@ -248,14 +250,19 @@ func TestCertParser2(t *testing.T) {
 					},
 					CertificateChain: []ParsedCertificate{
 						{
-							CertName:                "tls.crt",
-							Subject:                 "CN=envoy",
-							SubjectAlternativeNames: []string{"envoy", "envoy.projectcontour", "envoy.projectcontour.svc", "envoy.projectcontour.svc.cluster.local"},
-							Issuer:                  "SERIALNUMBER=615929891,CN=Project Contour",
-							NotAfter:                time.Date(2024, time.February, 25, 4, 27, 16, 0, time.UTC),
-							NotBefore:               time.Date(2023, time.February, 24, 4, 27, 18, 0, time.UTC),
-							IsValid:                 true,
-							IsCA:                    false,
+							CertName: "tls.crt",
+							Subject:  "CN=envoy",
+							SubjectAlternativeNames: []string{
+								"envoy",
+								"envoy.projectcontour",
+								"envoy.projectcontour.svc",
+								"envoy.projectcontour.svc.cluster.local",
+							},
+							Issuer:    "SERIALNUMBER=615929891,CN=Project Contour",
+							NotAfter:  time.Date(2024, time.February, 25, 4, 27, 16, 0, time.UTC),
+							NotBefore: time.Date(2023, time.February, 24, 4, 27, 18, 0, time.UTC),
+							IsValid:   true,
+							IsCA:      false,
 						},
 					},
 				},

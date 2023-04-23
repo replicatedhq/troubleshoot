@@ -7,7 +7,6 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"encoding/pem"
-	"fmt"
 	"time"
 
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
@@ -191,8 +190,6 @@ func secretCertCollector(secretName string, namespace string, client kubernetes.
 			CertificateChain: collection,
 		})
 	}
-
-	fmt.Printf("%+v\n", results)
 
 	return results
 }
