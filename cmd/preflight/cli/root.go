@@ -15,7 +15,9 @@ import (
 	"k8s.io/klog/v2"
 )
 
-func RootCmd() *cobra.Command {
+func InitAndExecute() {
+	exitCode := 0
+
 	cmd := &cobra.Command{
 		Use:   "preflight [url]",
 		Args:  cobra.MinimumNArgs(1),
@@ -44,10 +46,13 @@ that a cluster meets the requirements to run an application.`,
 				defer closer()
 			}
 
-			err = preflight.RunPreflights(v.GetBool("interactive"), v.GetString("output"), v.GetString("format"), args)
+			// NOTE: exitCode is a variable defined outside of this function
+			// RunE can only propagate an error type back up the stack, we need the exit code also...
+			exitCode, err = preflight.RunPreflights(v.GetBool("interactive"), v.GetString("output"), v.GetString("format"), args)
 			if v.GetBool("debug") || v.IsSet("v") {
 				fmt.Printf("\n%s", traces.GetExporterInstance().GetSummary())
 			}
+
 			return err
 		},
 		PostRun: func(cmd *cobra.Command, args []string) {
@@ -70,12 +75,14 @@ that a cluster meets the requirements to run an application.`,
 	// CPU and memory profiling flags
 	util.AddProfilingFlags(cmd)
 
-	return cmd
-}
+	var err error
+	err = cmd.Execute()
 
-func InitAndExecute() {
-	if err := RootCmd().Execute(); err != nil {
+	// We can't just exit inside the command RunE, as we need to ensure the PostRun's are handled
+	if err != nil {
 		os.Exit(1)
+	} else {
+		os.Exit(exitCode)
 	}
 }
 

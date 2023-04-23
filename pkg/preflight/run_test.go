@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	"github.com/replicatedhq/troubleshoot/internal/testutils"
+	analyzerunner "github.com/replicatedhq/troubleshoot/pkg/analyze"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	/*
@@ -58,7 +59,8 @@ PASS
 		format      string
 		args        []string
 		//
-		wantErr bool
+		wantExitCode int
+		wantErr      bool
 		// May be in stdout or file, depending on above value
 		wantOutputContent string
 	}{
@@ -69,6 +71,7 @@ PASS
 			output:            "",
 			format:            "human",
 			args:              []string{preflightFile},
+			wantExitCode:      0,
 			wantErr:           false,
 			wantOutputContent: wantOutputContentHuman,
 		},
@@ -78,6 +81,7 @@ PASS
 			output:            "",
 			format:            "json",
 			args:              []string{preflightFile},
+			wantExitCode:      0,
 			wantErr:           false,
 			wantOutputContent: wantOutputContentJson,
 		},
@@ -87,6 +91,7 @@ PASS
 			output:            "",
 			format:            "yaml",
 			args:              []string{preflightFile},
+			wantExitCode:      0,
 			wantErr:           false,
 			wantOutputContent: wantOutputContentYaml,
 		},
@@ -96,6 +101,7 @@ PASS
 			output:            testutils.TempFilename("preflight_out_test_"),
 			format:            "human",
 			args:              []string{preflightFile},
+			wantExitCode:      0,
 			wantErr:           false,
 			wantOutputContent: wantOutputContentHuman,
 		},
@@ -105,6 +111,7 @@ PASS
 			output:            testutils.TempFilename("preflight_out_test_"),
 			format:            "json",
 			args:              []string{preflightFile},
+			wantExitCode:      0,
 			wantErr:           false,
 			wantOutputContent: wantOutputContentJson,
 		},
@@ -114,6 +121,7 @@ PASS
 			output:            testutils.TempFilename("preflight_out_test_"),
 			format:            "yaml",
 			args:              []string{preflightFile},
+			wantExitCode:      0,
 			wantErr:           false,
 			wantOutputContent: wantOutputContentYaml,
 		},
@@ -168,7 +176,7 @@ PASS
 			origStderr := os.Stderr
 			os.Stderr = wErr
 
-			tErr := RunPreflights(tt.interactive, tt.output, tt.format, tt.args)
+			tExitCode, tErr := RunPreflights(tt.interactive, tt.output, tt.format, tt.args)
 
 			// Stop redirection of stdout/stderr
 			bufOut := make([]byte, 1024)
@@ -180,6 +188,8 @@ PASS
 			require.Nil(t, err)
 			os.Stdout = origStdout
 			os.Stderr = origStderr
+
+			assert.Equal(t, tt.wantExitCode, tExitCode)
 
 			if tt.wantErr {
 				assert.Error(t, tErr)
@@ -211,6 +221,93 @@ PASS
 				err = os.Remove(tt.output)
 				require.NoError(t, err)
 			}
+		})
+	}
+}
+
+func TestCheckOutcomesToExitCode(t *testing.T) {
+	tests := []struct {
+		name         string
+		results      []*analyzerunner.AnalyzeResult
+		wantExitCode int
+	}{
+		{
+			name: "all-pass",
+			results: []*analyzerunner.AnalyzeResult{
+				&analyzerunner.AnalyzeResult{
+					IsPass: true,
+					IsFail: false,
+					IsWarn: false,
+				},
+				&analyzerunner.AnalyzeResult{
+					IsPass: true,
+					IsFail: false,
+					IsWarn: false,
+				},
+			},
+			wantExitCode: 0,
+		},
+		{
+			name: "one-warn",
+			results: []*analyzerunner.AnalyzeResult{
+				&analyzerunner.AnalyzeResult{
+					IsPass: true,
+					IsFail: false,
+					IsWarn: false,
+				},
+				&analyzerunner.AnalyzeResult{
+					IsPass: false,
+					IsFail: false,
+					IsWarn: true,
+				},
+			},
+			wantExitCode: 4,
+		},
+		{
+			name: "one-fail",
+			results: []*analyzerunner.AnalyzeResult{
+				&analyzerunner.AnalyzeResult{
+					IsPass: true,
+					IsFail: false,
+					IsWarn: false,
+				},
+				&analyzerunner.AnalyzeResult{
+					IsPass: false,
+					IsFail: true,
+					IsWarn: false,
+				},
+			},
+			wantExitCode: 3,
+		},
+		{
+			name: "one-warn-one-fail",
+			results: []*analyzerunner.AnalyzeResult{
+				&analyzerunner.AnalyzeResult{
+					IsPass: true,
+					IsFail: false,
+					IsWarn: false,
+				},
+				&analyzerunner.AnalyzeResult{
+					IsPass: false,
+					IsFail: true,
+					IsWarn: false,
+				},
+				&analyzerunner.AnalyzeResult{
+					IsPass: false,
+					IsFail: false,
+					IsWarn: true,
+				},
+			},
+			// A fail is a fail...
+			wantExitCode: 3,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotExitCode := checkOutcomesToExitCode(tt.results)
+
+			assert.Equal(t, tt.wantExitCode, gotExitCode)
 		})
 	}
 }
