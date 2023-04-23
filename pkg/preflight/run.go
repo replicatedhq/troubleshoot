@@ -85,7 +85,7 @@ func RunPreflights(interactive bool, output string, format string, args []string
 		} else if v == "-" {
 			b, err := io.ReadAll(os.Stdin)
 			if err != nil {
-				return err
+				return catchAllExitCode, err
 			}
 			preflightContent = b
 		} else {
