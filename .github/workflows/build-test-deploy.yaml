@@ -112,6 +112,7 @@ jobs:
           path: bin/
       - run: chmod +x bin/preflight
       - run: |
+          set +e
           ./bin/preflight --interactive=false --format=json https://preflight.replicated.com > result.json
           EXIT_CODE=$?
           cat result.json
