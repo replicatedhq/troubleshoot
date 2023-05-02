@@ -55,6 +55,7 @@ func (a *AnalyzeCertificates) analyzeAnalyzeCertificatesResult(certifcates []col
 	var results []*AnalyzeResult
 
 	for _, cert := range certifcates {
+		var passResults []*AnalyzeResult
 		for _, certChain := range cert.CertificateChain {
 
 			when := ""
@@ -93,13 +94,13 @@ func (a *AnalyzeCertificates) analyzeAnalyzeCertificatesResult(certifcates []col
 				if result.IsPass && certChain.IsValid {
 					result.Message = fmt.Sprintf("%s %s, %s", certChain.CertName, message, source)
 					// if the certificate is valid, we need to wait for the warning check whether the certificate is going to expire
-					results = append(results, &result)
+					passResults = append(passResults, &result)
 				}
 
 				if result.IsFail && !certChain.IsValid {
 					result.Message = fmt.Sprintf("%s %s, %s", certChain.CertName, message, source)
 					// return the result immediately if the certificate is invalid
-					return []*AnalyzeResult{&result}, nil
+					results = append(results, &result)
 				}
 
 				if result.IsWarn && certChain.IsValid {
@@ -115,12 +116,15 @@ func (a *AnalyzeCertificates) analyzeAnalyzeCertificatesResult(certifcates []col
 
 						if targetTime.After(certChain.NotAfter) {
 							result.Message = fmt.Sprintf("%s %s in %d days, %s", certChain.CertName, message, warnMatchDays, source)
-							// return the result immediately if the certificate is going to expire
-							return []*AnalyzeResult{&result}, nil
+							// discard passResults if the certificate is going to expire in certain days
+							passResults = []*AnalyzeResult{}
+							results = append(results, &result)
 						}
 					}
 				}
 			}
+			// append passResults if the certificate is valid and not going to expire in certain days
+			results = append(results, passResults...)
 		}
 	}
 
