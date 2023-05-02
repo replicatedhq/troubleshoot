@@ -92,12 +92,14 @@ func (a *AnalyzeCertificates) analyzeAnalyzeCertificatesResult(certifcates []col
 
 				if result.IsPass && certChain.IsValid {
 					result.Message = fmt.Sprintf("%s %s, %s", certChain.CertName, message, source)
+					// if the certificate is valid, we need to wait for the warning check whether the certificate is going to expire
 					results = append(results, &result)
 				}
 
 				if result.IsFail && !certChain.IsValid {
 					result.Message = fmt.Sprintf("%s %s, %s", certChain.CertName, message, source)
-					results = append(results, &result)
+					// return the result immediately if the certificate is invalid
+					return []*AnalyzeResult{&result}, nil
 				}
 
 				if result.IsWarn && certChain.IsValid {
@@ -113,7 +115,8 @@ func (a *AnalyzeCertificates) analyzeAnalyzeCertificatesResult(certifcates []col
 
 						if targetTime.After(certChain.NotAfter) {
 							result.Message = fmt.Sprintf("%s %s in %d days, %s", certChain.CertName, message, warnMatchDays, source)
-							results = append(results, &result)
+							// return the result immediately if the certificate is going to expire
+							return []*AnalyzeResult{&result}, nil
 						}
 					}
 				}
