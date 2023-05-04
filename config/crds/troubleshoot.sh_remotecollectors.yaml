@@ -1,10 +1,9 @@
-
 ---
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.7.0
+    controller-gen.kubebuilder.io/version: v0.11.2
   creationTimestamp: null
   name: remotecollectors.troubleshoot.sh
 spec:
@@ -284,6 +283,20 @@ spec:
                         exclude:
                           type: BoolString
                       type: object
+                    subnetAvailable:
+                      properties:
+                        CIDRRangeAlloc:
+                          type: string
+                        collectorName:
+                          type: string
+                        desiredCIDR:
+                          type: integer
+                        exclude:
+                          type: BoolString
+                      required:
+                      - CIDRRangeAlloc
+                      - desiredCIDR
+                      type: object
                     systemPackages:
                       properties:
                         collectorName:
@@ -340,6 +353,19 @@ spec:
                         exclude:
                           type: BoolString
                       type: object
+                    udpPortStatus:
+                      properties:
+                        collectorName:
+                          type: string
+                        exclude:
+                          type: BoolString
+                        interface:
+                          type: string
+                        port:
+                          type: integer
+                      required:
+                      - port
+                      type: object
                   type: object
                 type: array
               nodeSelector:
@@ -353,9 +379,3 @@ spec:
         type: object
     served: true
     storage: true
-status:
-  acceptedNames:
-    kind: ""
-    plural: ""
-  conditions: []
-  storedVersions: []

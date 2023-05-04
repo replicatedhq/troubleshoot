@@ -3,20 +3,48 @@ package analyzer
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"path/filepath"
 	"strings"
 	"text/template"
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
+	"github.com/replicatedhq/troubleshoot/pkg/constants"
 	"github.com/replicatedhq/troubleshoot/pkg/k8sutil"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/klog/v2"
 )
+
+type AnalyzeClusterPodStatuses struct {
+	analyzer *troubleshootv1beta2.ClusterPodStatuses
+}
+
+func (a *AnalyzeClusterPodStatuses) Title() string {
+	if a.analyzer.CheckName != "" {
+		return a.analyzer.CheckName
+	}
+
+	return "Cluster Pod Status"
+}
+
+func (a *AnalyzeClusterPodStatuses) IsExcluded() (bool, error) {
+	return isExcluded(a.analyzer.Exclude)
+}
+
+func (a *AnalyzeClusterPodStatuses) Analyze(getFile getCollectedFileContents, findFiles getChildCollectedFileContents) ([]*AnalyzeResult, error) {
+	results, err := clusterPodStatuses(a.analyzer, findFiles)
+	if err != nil {
+		return nil, err
+	}
+	for i := range results {
+		results[i].Strict = a.analyzer.Strict.BoolOrDefaultFalse()
+	}
+	return results, nil
+}
 
 func clusterPodStatuses(analyzer *troubleshootv1beta2.ClusterPodStatuses, getChildCollectedFileContents getChildCollectedFileContents) ([]*AnalyzeResult, error) {
 	excludeFiles := []string{}
-	collected, err := getChildCollectedFileContents(filepath.Join("cluster-resources", "pods", "*.json"), excludeFiles)
+	collected, err := getChildCollectedFileContents(filepath.Join(constants.CLUSTER_RESOURCES_DIR, constants.CLUSTER_RESOURCES_PODS, "*.json"), excludeFiles)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to read collected pods")
 	}
@@ -72,37 +100,40 @@ func clusterPodStatuses(analyzer *troubleshootv1beta2.ClusterPodStatuses, getChi
 				r.URI = outcome.Pass.URI
 				when = outcome.Pass.When
 			} else {
-				println("error: found an empty outcome in a clusterPodStatuses analyzer") // don't stop
+				klog.Error("error: found an empty outcome in a clusterPodStatuses analyzer\n")
 				continue
 			}
 
-			parts := strings.Split(strings.TrimSpace(when), " ")
-			if len(parts) < 2 {
-				println(fmt.Sprintf("invalid 'when' format: %s\n", when)) // don't stop
-				continue
-			}
-
-			operator := parts[0]
-			reason := parts[1]
+			operator := ""
+			reason := ""
 			match := false
-
-			switch operator {
-			case "=", "==", "===":
-				if reason == "Healthy" {
-					match = !k8sutil.IsPodUnhealthy(&pod)
-				} else {
-					match = reason == string(pod.Status.Phase) || reason == string(pod.Status.Reason)
+			if when != "" {
+				parts := strings.Split(strings.TrimSpace(when), " ")
+				if len(parts) < 2 {
+					klog.Errorf("invalid 'when' format: %s\n", when)
+					continue
 				}
-			case "!=", "!==":
-				if reason == "Healthy" {
-					match = k8sutil.IsPodUnhealthy(&pod)
-				} else {
-					match = reason != string(pod.Status.Phase) && reason != string(pod.Status.Reason)
-				}
-			}
+				operator = parts[0]
+				reason = parts[1]
 
-			if !match {
-				continue
+				switch operator {
+				case "=", "==", "===":
+					if reason == "Healthy" {
+						match = !k8sutil.IsPodUnhealthy(&pod)
+					} else {
+						match = reason == string(pod.Status.Phase) || reason == string(pod.Status.Reason)
+					}
+				case "!=", "!==":
+					if reason == "Healthy" {
+						match = k8sutil.IsPodUnhealthy(&pod)
+					} else {
+						match = reason != string(pod.Status.Phase) && reason != string(pod.Status.Reason)
+					}
+				}
+
+				if !match {
+					continue
+				}
 			}
 
 			r.InvolvedObject = &corev1.ObjectReference{

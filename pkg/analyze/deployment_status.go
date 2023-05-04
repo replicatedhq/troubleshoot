@@ -7,8 +7,47 @@ import (
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
+	"github.com/replicatedhq/troubleshoot/pkg/constants"
 	appsv1 "k8s.io/api/apps/v1"
 )
+
+type AnalyzeDeploymentStatus struct {
+	analyzer *troubleshootv1beta2.DeploymentStatus
+}
+
+func (a *AnalyzeDeploymentStatus) Title() string {
+	if a.analyzer.CheckName != "" {
+		return a.analyzer.CheckName
+	}
+
+	if a.analyzer.Name != "" && a.analyzer.Namespace != "" {
+		return fmt.Sprintf("%s/%s Deployment Status", a.analyzer.Name, a.analyzer.Name)
+	}
+
+	if a.analyzer.Name != "" {
+		return fmt.Sprintf("%s Deployment Status", a.analyzer.Name)
+	}
+	if a.analyzer.Namespace != "" {
+		return fmt.Sprintf("%s Deployment Status", a.analyzer.Namespace)
+	}
+
+	return "Deployment Status"
+}
+
+func (a *AnalyzeDeploymentStatus) IsExcluded() (bool, error) {
+	return isExcluded(a.analyzer.Exclude)
+}
+
+func (a *AnalyzeDeploymentStatus) Analyze(getFile getCollectedFileContents, findFiles getChildCollectedFileContents) ([]*AnalyzeResult, error) {
+	results, err := analyzeDeploymentStatus(a.analyzer, findFiles)
+	if err != nil {
+		return nil, err
+	}
+	for i := range results {
+		results[i].Strict = a.analyzer.Strict.BoolOrDefaultFalse()
+	}
+	return results, nil
+}
 
 func analyzeDeploymentStatus(analyzer *troubleshootv1beta2.DeploymentStatus, getFileContents getChildCollectedFileContents) ([]*AnalyzeResult, error) {
 	if analyzer.Name == "" {
@@ -20,7 +59,7 @@ func analyzeDeploymentStatus(analyzer *troubleshootv1beta2.DeploymentStatus, get
 
 func analyzeOneDeploymentStatus(analyzer *troubleshootv1beta2.DeploymentStatus, getFileContents getChildCollectedFileContents) ([]*AnalyzeResult, error) {
 	excludeFiles := []string{}
-	files, err := getFileContents(filepath.Join("cluster-resources", "deployments", fmt.Sprintf("%s.json", analyzer.Namespace)), excludeFiles)
+	files, err := getFileContents(filepath.Join(constants.CLUSTER_RESOURCES_DIR, constants.CLUSTER_RESOURCES_DEPLOYMENTS, fmt.Sprintf("%s.json", analyzer.Namespace)), excludeFiles)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to read collected deployments from namespace")
 	}
@@ -66,15 +105,15 @@ func analyzeAllDeploymentStatuses(analyzer *troubleshootv1beta2.DeploymentStatus
 	excludeFiles := []string{}
 	fileNames := make([]string, 0)
 	if analyzer.Namespace != "" {
-		fileNames = append(fileNames, filepath.Join("cluster-resources", "deployments", fmt.Sprintf("%s.json", analyzer.Namespace)))
+		fileNames = append(fileNames, filepath.Join(constants.CLUSTER_RESOURCES_DIR, constants.CLUSTER_RESOURCES_DEPLOYMENTS, fmt.Sprintf("%s.json", analyzer.Namespace)))
 	}
 	for _, ns := range analyzer.Namespaces {
-		fileNames = append(fileNames, filepath.Join("cluster-resources", "deployments", fmt.Sprintf("%s.json", ns)))
+		fileNames = append(fileNames, filepath.Join(constants.CLUSTER_RESOURCES_DIR, constants.CLUSTER_RESOURCES_DEPLOYMENTS, fmt.Sprintf("%s.json", ns)))
 	}
 
 	// no namespace specified, so we need to analyze all deployments
 	if len(fileNames) == 0 {
-		fileNames = append(fileNames, filepath.Join("cluster-resources", "deployments", "*.json"))
+		fileNames = append(fileNames, filepath.Join(constants.CLUSTER_RESOURCES_DIR, constants.CLUSTER_RESOURCES_DEPLOYMENTS, "*.json"))
 	}
 
 	results := []*AnalyzeResult{}

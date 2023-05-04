@@ -1,6 +1,7 @@
 package analyzer
 
 import (
+	"context"
 	"testing"
 
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
@@ -62,6 +63,106 @@ func Test_GetExcludeFlag(t *testing.T) {
 			req.NoError(err)
 
 			assert.Equal(t, test.want, got)
+		})
+	}
+}
+
+func TestAnalyzeWithNilAnalyzer(t *testing.T) {
+	got, err := Analyze(context.Background(), nil, nil, nil)
+	assert.Error(t, err)
+	assert.Nil(t, got)
+}
+
+func TestCollector_DedupCollectors(t *testing.T) {
+	tests := []struct {
+		name      string
+		Analyzers []*troubleshootv1beta2.Analyze
+		want      []*troubleshootv1beta2.Analyze
+	}{
+		{
+			name: "multiple ClusterVersion",
+			Analyzers: []*troubleshootv1beta2.Analyze{
+				{
+					ClusterVersion: &troubleshootv1beta2.ClusterVersion{},
+				},
+				{
+					ClusterVersion: &troubleshootv1beta2.ClusterVersion{},
+				},
+			},
+			want: []*troubleshootv1beta2.Analyze{
+				{
+					ClusterVersion: &troubleshootv1beta2.ClusterVersion{},
+				},
+			},
+		},
+		{
+			name: "multiple TextAnalyze",
+			Analyzers: []*troubleshootv1beta2.Analyze{
+				{
+					TextAnalyze: &troubleshootv1beta2.TextAnalyze{
+						AnalyzeMeta: troubleshootv1beta2.AnalyzeMeta{
+							CheckName: "hi",
+						},
+					},
+				},
+				{
+					TextAnalyze: &troubleshootv1beta2.TextAnalyze{
+						AnalyzeMeta: troubleshootv1beta2.AnalyzeMeta{
+							CheckName: "hi",
+						},
+					},
+				},
+			},
+			want: []*troubleshootv1beta2.Analyze{
+				{
+					TextAnalyze: &troubleshootv1beta2.TextAnalyze{
+						AnalyzeMeta: troubleshootv1beta2.AnalyzeMeta{
+							CheckName: "hi",
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "multiple TextAnalyze with different CheckName",
+			Analyzers: []*troubleshootv1beta2.Analyze{
+				{
+					TextAnalyze: &troubleshootv1beta2.TextAnalyze{
+						AnalyzeMeta: troubleshootv1beta2.AnalyzeMeta{
+							CheckName: "hi",
+						},
+					},
+				},
+				{
+					TextAnalyze: &troubleshootv1beta2.TextAnalyze{
+						AnalyzeMeta: troubleshootv1beta2.AnalyzeMeta{
+							CheckName: "test",
+						},
+					},
+				},
+			},
+			want: []*troubleshootv1beta2.Analyze{
+				{
+					TextAnalyze: &troubleshootv1beta2.TextAnalyze{
+						AnalyzeMeta: troubleshootv1beta2.AnalyzeMeta{
+							CheckName: "hi",
+						},
+					},
+				},
+				{
+					TextAnalyze: &troubleshootv1beta2.TextAnalyze{
+						AnalyzeMeta: troubleshootv1beta2.AnalyzeMeta{
+							CheckName: "test",
+						},
+					},
+				},
+			},
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got := DedupAnalyzers(tc.Analyzers)
+			assert.Equal(t, tc.want, got)
 		})
 	}
 }

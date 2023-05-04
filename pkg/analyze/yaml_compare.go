@@ -11,7 +11,33 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-func analyzeYamlCompare(analyzer *troubleshootv1beta2.YamlCompare, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
+type AnalyzeYamlCompare struct {
+	analyzer *troubleshootv1beta2.YamlCompare
+}
+
+func (a *AnalyzeYamlCompare) Title() string {
+	title := a.analyzer.CheckName
+	if title == "" {
+		title = a.analyzer.CollectorName
+	}
+
+	return title
+}
+
+func (a *AnalyzeYamlCompare) IsExcluded() (bool, error) {
+	return isExcluded(a.analyzer.Exclude)
+}
+
+func (a *AnalyzeYamlCompare) Analyze(getFile getCollectedFileContents, findFiles getChildCollectedFileContents) ([]*AnalyzeResult, error) {
+	result, err := a.analyzeYamlCompare(a.analyzer, getFile)
+	if err != nil {
+		return nil, err
+	}
+	result.Strict = a.analyzer.Strict.BoolOrDefaultFalse()
+	return []*AnalyzeResult{result}, nil
+}
+
+func (a *AnalyzeYamlCompare) analyzeYamlCompare(analyzer *troubleshootv1beta2.YamlCompare, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
 	fullPath := filepath.Join(analyzer.CollectorName, analyzer.FileName)
 	collected, err := getCollectedFileContents(fullPath)
 	if err != nil {
@@ -37,13 +63,8 @@ func analyzeYamlCompare(analyzer *troubleshootv1beta2.YamlCompare, getCollectedF
 		return nil, errors.Wrap(err, "failed to parse expected value as yaml doc")
 	}
 
-	title := analyzer.CheckName
-	if title == "" {
-		title = analyzer.CollectorName
-	}
-
 	result := &AnalyzeResult{
-		Title:   title,
+		Title:   a.Title(),
 		IconKey: "kubernetes_text_analyze",
 		IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg",
 	}
@@ -100,7 +121,7 @@ func analyzeYamlCompare(analyzer *troubleshootv1beta2.YamlCompare, getCollectedF
 	}
 
 	return &AnalyzeResult{
-		Title:   title,
+		Title:   a.Title(),
 		IconKey: "kubernetes_text_analyze",
 		IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg",
 		IsFail:  true,

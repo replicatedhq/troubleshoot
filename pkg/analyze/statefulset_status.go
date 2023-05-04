@@ -7,8 +7,47 @@ import (
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
+	"github.com/replicatedhq/troubleshoot/pkg/constants"
 	appsv1 "k8s.io/api/apps/v1"
 )
+
+type AnalyzeStatefulsetStatus struct {
+	analyzer *troubleshootv1beta2.StatefulsetStatus
+}
+
+func (a *AnalyzeStatefulsetStatus) Title() string {
+	if a.analyzer.CheckName != "" {
+		return a.analyzer.CheckName
+	}
+
+	if a.analyzer.Name != "" && a.analyzer.Namespace != "" {
+		return fmt.Sprintf("%s/%s Statefulset Status", a.analyzer.Namespace, a.analyzer.Name)
+	}
+
+	if a.analyzer.Name != "" {
+		return fmt.Sprintf("%s Statefulset Status", a.analyzer.Name)
+	}
+	if a.analyzer.Namespace != "" {
+		return fmt.Sprintf("%s Statefulset Status", a.analyzer.Namespace)
+	}
+
+	return "Statefulset Status"
+}
+
+func (a *AnalyzeStatefulsetStatus) IsExcluded() (bool, error) {
+	return isExcluded(a.analyzer.Exclude)
+}
+
+func (a *AnalyzeStatefulsetStatus) Analyze(getFile getCollectedFileContents, findFiles getChildCollectedFileContents) ([]*AnalyzeResult, error) {
+	results, err := analyzeStatefulsetStatus(a.analyzer, findFiles)
+	if err != nil {
+		return nil, err
+	}
+	for i := range results {
+		results[i].Strict = a.analyzer.Strict.BoolOrDefaultFalse()
+	}
+	return results, nil
+}
 
 func analyzeStatefulsetStatus(analyzer *troubleshootv1beta2.StatefulsetStatus, getFileContents getChildCollectedFileContents) ([]*AnalyzeResult, error) {
 	if analyzer.Name == "" {
@@ -20,7 +59,7 @@ func analyzeStatefulsetStatus(analyzer *troubleshootv1beta2.StatefulsetStatus, g
 
 func analyzeOneStatefulsetStatus(analyzer *troubleshootv1beta2.StatefulsetStatus, getFileContents getChildCollectedFileContents) ([]*AnalyzeResult, error) {
 	excludeFiles := []string{}
-	files, err := getFileContents(filepath.Join("cluster-resources", "statefulsets", fmt.Sprintf("%s.json", analyzer.Namespace)), excludeFiles)
+	files, err := getFileContents(filepath.Join(constants.CLUSTER_RESOURCES_DIR, constants.CLUSTER_RESOURCES_STATEFULSETS, fmt.Sprintf("%s.json", analyzer.Namespace)), excludeFiles)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to read collected statefulsets from namespace")
 	}
@@ -69,15 +108,15 @@ func analyzeOneStatefulsetStatus(analyzer *troubleshootv1beta2.StatefulsetStatus
 func analyzeAllStatefulsetStatuses(analyzer *troubleshootv1beta2.StatefulsetStatus, getFileContents getChildCollectedFileContents) ([]*AnalyzeResult, error) {
 	fileNames := make([]string, 0)
 	if analyzer.Namespace != "" {
-		fileNames = append(fileNames, filepath.Join("cluster-resources", "statefulsets", fmt.Sprintf("%s.json", analyzer.Namespace)))
+		fileNames = append(fileNames, filepath.Join(constants.CLUSTER_RESOURCES_DIR, constants.CLUSTER_RESOURCES_STATEFULSETS, fmt.Sprintf("%s.json", analyzer.Namespace)))
 	}
 	for _, ns := range analyzer.Namespaces {
-		fileNames = append(fileNames, filepath.Join("cluster-resources", "statefulsets", fmt.Sprintf("%s.json", ns)))
+		fileNames = append(fileNames, filepath.Join(constants.CLUSTER_RESOURCES_DIR, constants.CLUSTER_RESOURCES_STATEFULSETS, fmt.Sprintf("%s.json", ns)))
 	}
 
 	// no namespace specified, so we need to analyze all statefulsets
 	if len(fileNames) == 0 {
-		fileNames = append(fileNames, filepath.Join("cluster-resources", "statefulsets", "*.json"))
+		fileNames = append(fileNames, filepath.Join(constants.CLUSTER_RESOURCES_DIR, constants.CLUSTER_RESOURCES_STATEFULSETS, "*.json"))
 	}
 
 	excludeFiles := []string{}

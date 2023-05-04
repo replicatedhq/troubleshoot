@@ -205,6 +205,15 @@ func (c *RemoteCollector) toHostCollector() (*troubleshootv1beta2.HostCollect, e
 			Interface: c.Collect.TCPPortStatus.Interface,
 			Port:      c.Collect.TCPPortStatus.Port,
 		}
+	case c.Collect.UDPPortStatus != nil:
+		hostCollect.UDPPortStatus = &troubleshootv1beta2.UDPPortStatus{
+			HostCollectorMeta: troubleshootv1beta2.HostCollectorMeta{
+				CollectorName: c.Collect.UDPPortStatus.CollectorName,
+				Exclude:       c.Collect.UDPPortStatus.Exclude,
+			},
+			Interface: c.Collect.UDPPortStatus.Interface,
+			Port:      c.Collect.UDPPortStatus.Port,
+		}
 	case c.Collect.HTTP != nil:
 		hostCollect.HTTP = &troubleshootv1beta2.HostHTTP{
 			HostCollectorMeta: troubleshootv1beta2.HostCollectorMeta{
@@ -254,6 +263,13 @@ func (c *RemoteCollector) toHostCollector() (*troubleshootv1beta2.HostCollect, e
 		}
 	case c.Collect.IPV4Interfaces != nil:
 		hostCollect.IPV4Interfaces = &troubleshootv1beta2.IPV4Interfaces{
+			HostCollectorMeta: troubleshootv1beta2.HostCollectorMeta{
+				CollectorName: c.Collect.IPV4Interfaces.CollectorName,
+				Exclude:       c.Collect.IPV4Interfaces.Exclude,
+			},
+		}
+	case c.Collect.SubnetAvailable != nil:
+		hostCollect.SubnetAvailable = &troubleshootv1beta2.SubnetAvailable{
 			HostCollectorMeta: troubleshootv1beta2.HostCollectorMeta{
 				CollectorName: c.Collect.IPV4Interfaces.CollectorName,
 				Exclude:       c.Collect.IPV4Interfaces.Exclude,

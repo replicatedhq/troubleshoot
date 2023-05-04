@@ -8,15 +8,10 @@ import (
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/client-go/kubernetes"
 	testclient "k8s.io/client-go/kubernetes/fake"
 )
 
 func Test_LoadFromSecretMatchingLabel(t *testing.T) {
-	type args struct {
-		ctx    context.Context
-		client kubernetes.Interface
-	}
 	tests := []struct {
 		name                 string
 		supportBundleSecrets []corev1.Secret
@@ -376,10 +371,6 @@ spec:
 }
 
 func TestUserProvidedNamespace_LoadFromSecretMatchingLabel(t *testing.T) {
-	type args struct {
-		ctx    context.Context
-		client kubernetes.Interface
-	}
 	tests := []struct {
 		name                 string
 		supportBundleSecrets []corev1.Secret
@@ -472,10 +463,6 @@ spec:
 }
 
 func TestRedactors_LoadFromSecretMatchingLabel(t *testing.T) {
-	type args struct {
-		ctx    context.Context
-		client kubernetes.Interface
-	}
 	tests := []struct {
 		name                 string
 		supportBundleSecrets []corev1.Secret

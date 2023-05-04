@@ -1200,6 +1200,86 @@
                   }
                 }
               },
+              "mssql": {
+                "type": "object",
+                "required": [
+                  "collectorName",
+                  "outcomes"
+                ],
+                "properties": {
+                  "annotations": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "string"
+                    }
+                  },
+                  "checkName": {
+                    "type": "string"
+                  },
+                  "collectorName": {
+                    "type": "string"
+                  },
+                  "exclude": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  },
+                  "fileName": {
+                    "type": "string"
+                  },
+                  "outcomes": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "fail": {
+                          "type": "object",
+                          "properties": {
+                            "message": {
+                              "type": "string"
+                            },
+                            "uri": {
+                              "type": "string"
+                            },
+                            "when": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "pass": {
+                          "type": "object",
+                          "properties": {
+                            "message": {
+                              "type": "string"
+                            },
+                            "uri": {
+                              "type": "string"
+                            },
+                            "when": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "warn": {
+                          "type": "object",
+                          "properties": {
+                            "message": {
+                              "type": "string"
+                            },
+                            "uri": {
+                              "type": "string"
+                            },
+                            "when": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "strict": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  }
+                }
+              },
               "mysql": {
                 "type": "object",
                 "required": [
@@ -2278,6 +2358,38 @@
                   }
                 }
               },
+              "certificates": {
+                "type": "object",
+                "properties": {
+                  "collectorName": {
+                    "type": "string"
+                  },
+                  "configMaps": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "exclude": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  },
+                  "name": {
+                    "type": "string"
+                  },
+                  "secrets": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              },
               "clusterInfo": {
                 "type": "object",
                 "properties": {
@@ -2649,6 +2761,10 @@
                       "maxAge": {
                         "type": "string"
                       },
+                      "maxBytes": {
+                        "type": "integer",
+                        "format": "int64"
+                      },
                       "maxLines": {
                         "type": "integer",
                         "format": "int64"
@@ -2689,6 +2805,61 @@
                     "type": "string"
                   },
                   "timeout": {
+                    "type": "string"
+                  }
+                }
+              },
+              "mssql": {
+                "type": "object",
+                "required": [
+                  "uri"
+                ],
+                "properties": {
+                  "collectorName": {
+                    "type": "string"
+                  },
+                  "exclude": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  },
+                  "parameters": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "tls": {
+                    "type": "object",
+                    "properties": {
+                      "cacert": {
+                        "type": "string"
+                      },
+                      "clientCert": {
+                        "type": "string"
+                      },
+                      "clientKey": {
+                        "type": "string"
+                      },
+                      "secret": {
+                        "type": "object",
+                        "required": [
+                          "name",
+                          "namespace"
+                        ],
+                        "properties": {
+                          "name": {
+                            "type": "string"
+                          },
+                          "namespace": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "skipVerify": {
+                        "type": "boolean"
+                      }
+                    }
+                  },
+                  "uri": {
                     "type": "string"
                   }
                 }
@@ -3089,7 +3260,8 @@
                                             }
                                           }
                                         }
-                                      }
+                                      },
+                                      "x-kubernetes-map-type": "atomic"
                                     },
                                     "weight": {
                                       "description": "Weight associated with matching the corresponding nodeSelectorTerm, in the range 1-100.",
@@ -3171,10 +3343,12 @@
                                             }
                                           }
                                         }
-                                      }
+                                      },
+                                      "x-kubernetes-map-type": "atomic"
                                     }
                                   }
-                                }
+                                },
+                                "x-kubernetes-map-type": "atomic"
                               }
                             }
                           },
@@ -3240,7 +3414,8 @@
                                                 "type": "string"
                                               }
                                             }
-                                          }
+                                          },
+                                          "x-kubernetes-map-type": "atomic"
                                         },
                                         "namespaceSelector": {
                                           "description": "A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means \"this pod's namespace\". An empty selector ({}) matches all namespaces.",
@@ -3282,7 +3457,8 @@
                                                 "type": "string"
                                               }
                                             }
-                                          }
+                                          },
+                                          "x-kubernetes-map-type": "atomic"
                                         },
                                         "namespaces": {
                                           "description": "namespaces specifies a static list of namespace names that the term applies to. The term is applied to the union of the namespaces listed in this field and the ones selected by namespaceSelector. null or empty namespaces list and null namespaceSelector means \"this pod's namespace\".",
@@ -3355,7 +3531,8 @@
                                             "type": "string"
                                           }
                                         }
-                                      }
+                                      },
+                                      "x-kubernetes-map-type": "atomic"
                                     },
                                     "namespaceSelector": {
                                       "description": "A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means \"this pod's namespace\". An empty selector ({}) matches all namespaces.",
@@ -3397,7 +3574,8 @@
                                             "type": "string"
                                           }
                                         }
-                                      }
+                                      },
+                                      "x-kubernetes-map-type": "atomic"
                                     },
                                     "namespaces": {
                                       "description": "namespaces specifies a static list of namespace names that the term applies to. The term is applied to the union of the namespaces listed in this field and the ones selected by namespaceSelector. null or empty namespaces list and null namespaceSelector means \"this pod's namespace\".",
@@ -3477,7 +3655,8 @@
                                                 "type": "string"
                                               }
                                             }
-                                          }
+                                          },
+                                          "x-kubernetes-map-type": "atomic"
                                         },
                                         "namespaceSelector": {
                                           "description": "A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means \"this pod's namespace\". An empty selector ({}) matches all namespaces.",
@@ -3519,7 +3698,8 @@
                                                 "type": "string"
                                               }
                                             }
-                                          }
+                                          },
+                                          "x-kubernetes-map-type": "atomic"
                                         },
                                         "namespaces": {
                                           "description": "namespaces specifies a static list of namespace names that the term applies to. The term is applied to the union of the namespaces listed in this field and the ones selected by namespaceSelector. null or empty namespaces list and null namespaceSelector means \"this pod's namespace\".",
@@ -3592,7 +3772,8 @@
                                             "type": "string"
                                           }
                                         }
-                                      }
+                                      },
+                                      "x-kubernetes-map-type": "atomic"
                                     },
                                     "namespaceSelector": {
                                       "description": "A label query over the set of namespaces that the term applies to. The term is applied to the union of the namespaces selected by this field and the ones listed in the namespaces field. null selector and null or empty namespaces list means \"this pod's namespace\". An empty selector ({}) matches all namespaces.",
@@ -3634,7 +3815,8 @@
                                             "type": "string"
                                           }
                                         }
-                                      }
+                                      },
+                                      "x-kubernetes-map-type": "atomic"
                                     },
                                     "namespaces": {
                                       "description": "namespaces specifies a static list of namespace names that the term applies to. The term is applied to the union of the namespaces listed in this field and the ones selected by namespaceSelector. null or empty namespaces list and null namespaceSelector means \"this pod's namespace\".",
@@ -3723,7 +3905,8 @@
                                             "description": "Specify whether the ConfigMap or its key must be defined",
                                             "type": "boolean"
                                           }
-                                        }
+                                        },
+                                        "x-kubernetes-map-type": "atomic"
                                       },
                                       "fieldRef": {
                                         "description": "Selects a field of the pod: supports metadata.name, metadata.namespace, `metadata.labels['\u003cKEY\u003e']`, `metadata.annotations['\u003cKEY\u003e']`, spec.nodeName, spec.serviceAccountName, status.hostIP, status.podIP, status.podIPs.",
@@ -3740,7 +3923,8 @@
                                             "description": "Path of the field to select in the specified API version.",
                                             "type": "string"
                                           }
-                                        }
+                                        },
+                                        "x-kubernetes-map-type": "atomic"
                                       },
                                       "resourceFieldRef": {
                                         "description": "Selects a resource of the container: only resources limits and requests (limits.cpu, limits.memory, limits.ephemeral-storage, requests.cpu, requests.memory and requests.ephemeral-storage) are currently supported.",
@@ -3770,7 +3954,8 @@
                                             "description": "Required: resource to select",
                                             "type": "string"
                                           }
-                                        }
+                                        },
+                                        "x-kubernetes-map-type": "atomic"
                                       },
                                       "secretKeyRef": {
                                         "description": "Selects a key of a secret in the pod's namespace",
@@ -3791,7 +3976,8 @@
                                             "description": "Specify whether the Secret or its key must be defined",
                                             "type": "boolean"
                                           }
-                                        }
+                                        },
+                                        "x-kubernetes-map-type": "atomic"
                                       }
                                     }
                                   }
@@ -3817,7 +4003,8 @@
                                         "description": "Specify whether the ConfigMap must be defined",
                                         "type": "boolean"
                                       }
-                                    }
+                                    },
+                                    "x-kubernetes-map-type": "atomic"
                                   },
                                   "prefix": {
                                     "description": "An optional identifier to prepend to each key in the ConfigMap. Must be a C_IDENTIFIER.",
@@ -3835,7 +4022,8 @@
                                         "description": "Specify whether the Secret must be defined",
                                         "type": "boolean"
                                       }
-                                    }
+                                    },
+                                    "x-kubernetes-map-type": "atomic"
                                   }
                                 }
                               }
@@ -4075,7 +4263,7 @@
                                   "format": "int32"
                                 },
                                 "grpc": {
-                                  "description": "GRPC specifies an action involving a GRPC port. This is a beta field and requires enabling GRPCContainerProbe feature gate.",
+                                  "description": "GRPC specifies an action involving a GRPC port.",
                                   "type": "object",
                                   "required": [
                                     "port"
@@ -4267,7 +4455,7 @@
                                   "format": "int32"
                                 },
                                 "grpc": {
-                                  "description": "GRPC specifies an action involving a GRPC port. This is a beta field and requires enabling GRPCContainerProbe feature gate.",
+                                  "description": "GRPC specifies an action involving a GRPC port.",
                                   "type": "object",
                                   "required": [
                                     "port"
@@ -4391,10 +4579,54 @@
                                 }
                               }
                             },
+                            "resizePolicy": {
+                              "description": "Resources resize policy for the container.",
+                              "type": "array",
+                              "items": {
+                                "description": "ContainerResizePolicy represents resource resize policy for the container.",
+                                "type": "object",
+                                "required": [
+                                  "resourceName",
+                                  "restartPolicy"
+                                ],
+                                "properties": {
+                                  "resourceName": {
+                                    "description": "Name of the resource to which this resource resize policy applies. Supported values: cpu, memory.",
+                                    "type": "string"
+                                  },
+                                  "restartPolicy": {
+                                    "description": "Restart policy to apply when specified resource is resized. If not specified, it defaults to NotRequired.",
+                                    "type": "string"
+                                  }
+                                }
+                              },
+                              "x-kubernetes-list-type": "atomic"
+                            },
                             "resources": {
                               "description": "Compute Resources required by this container. Cannot be updated. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/",
                               "type": "object",
                               "properties": {
+                                "claims": {
+                                  "description": "Claims lists the names of resources, defined in spec.resourceClaims, that are used by this container. \n This is an alpha field and requires enabling the DynamicResourceAllocation feature gate. \n This field is immutable. It can only be set for containers.",
+                                  "type": "array",
+                                  "items": {
+                                    "description": "ResourceClaim references one entry in PodSpec.ResourceClaims.",
+                                    "type": "object",
+                                    "required": [
+                                      "name"
+                                    ],
+                                    "properties": {
+                                      "name": {
+                                        "description": "Name must match the name of one entry in pod.spec.resourceClaims of the Pod where this field is used. It makes that resource available inside a container.",
+                                        "type": "string"
+                                      }
+                                    }
+                                  },
+                                  "x-kubernetes-list-map-keys": [
+                                    "name"
+                                  ],
+                                  "x-kubernetes-list-type": "map"
+                                },
                                 "limits": {
                                   "description": "Limits describes the maximum amount of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/",
                                   "type": "object",
@@ -4412,7 +4644,7 @@
                                   }
                                 },
                                 "requests": {
-                                  "description": "Requests describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/",
+                                  "description": "Requests describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. Requests cannot exceed Limits. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/",
                                   "type": "object",
                                   "additionalProperties": {
                                     "pattern": "^(\\+|-)?(([0-9]+(\\.[0-9]*)?)|(\\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\\+|-)?(([0-9]+(\\.[0-9]*)?)|(\\.[0-9]+))))?$",
@@ -4571,7 +4803,7 @@
                                   "format": "int32"
                                 },
                                 "grpc": {
-                                  "description": "GRPC specifies an action involving a GRPC port. This is a beta field and requires enabling GRPCContainerProbe feature gate.",
+                                  "description": "GRPC specifies an action involving a GRPC port.",
                                   "type": "object",
                                   "required": [
                                     "port"
@@ -4892,7 +5124,8 @@
                                             "description": "Specify whether the ConfigMap or its key must be defined",
                                             "type": "boolean"
                                           }
-                                        }
+                                        },
+                                        "x-kubernetes-map-type": "atomic"
                                       },
                                       "fieldRef": {
                                         "description": "Selects a field of the pod: supports metadata.name, metadata.namespace, `metadata.labels['\u003cKEY\u003e']`, `metadata.annotations['\u003cKEY\u003e']`, spec.nodeName, spec.serviceAccountName, status.hostIP, status.podIP, status.podIPs.",
@@ -4909,7 +5142,8 @@
                                             "description": "Path of the field to select in the specified API version.",
                                             "type": "string"
                                           }
-                                        }
+                                        },
+                                        "x-kubernetes-map-type": "atomic"
                                       },
                                       "resourceFieldRef": {
                                         "description": "Selects a resource of the container: only resources limits and requests (limits.cpu, limits.memory, limits.ephemeral-storage, requests.cpu, requests.memory and requests.ephemeral-storage) are currently supported.",
@@ -4939,7 +5173,8 @@
                                             "description": "Required: resource to select",
                                             "type": "string"
                                           }
-                                        }
+                                        },
+                                        "x-kubernetes-map-type": "atomic"
                                       },
                                       "secretKeyRef": {
                                         "description": "Selects a key of a secret in the pod's namespace",
@@ -4960,7 +5195,8 @@
                                             "description": "Specify whether the Secret or its key must be defined",
                                             "type": "boolean"
                                           }
-                                        }
+                                        },
+                                        "x-kubernetes-map-type": "atomic"
                                       }
                                     }
                                   }
@@ -4986,7 +5222,8 @@
                                         "description": "Specify whether the ConfigMap must be defined",
                                         "type": "boolean"
                                       }
-                                    }
+                                    },
+                                    "x-kubernetes-map-type": "atomic"
                                   },
                                   "prefix": {
                                     "description": "An optional identifier to prepend to each key in the ConfigMap. Must be a C_IDENTIFIER.",
@@ -5004,7 +5241,8 @@
                                         "description": "Specify whether the Secret must be defined",
                                         "type": "boolean"
                                       }
-                                    }
+                                    },
+                                    "x-kubernetes-map-type": "atomic"
                                   }
                                 }
                               }
@@ -5244,7 +5482,7 @@
                                   "format": "int32"
                                 },
                                 "grpc": {
-                                  "description": "GRPC specifies an action involving a GRPC port. This is a beta field and requires enabling GRPCContainerProbe feature gate.",
+                                  "description": "GRPC specifies an action involving a GRPC port.",
                                   "type": "object",
                                   "required": [
                                     "port"
@@ -5436,7 +5674,7 @@
                                   "format": "int32"
                                 },
                                 "grpc": {
-                                  "description": "GRPC specifies an action involving a GRPC port. This is a beta field and requires enabling GRPCContainerProbe feature gate.",
+                                  "description": "GRPC specifies an action involving a GRPC port.",
                                   "type": "object",
                                   "required": [
                                     "port"
@@ -5560,10 +5798,54 @@
                                 }
                               }
                             },
+                            "resizePolicy": {
+                              "description": "Resources resize policy for the container.",
+                              "type": "array",
+                              "items": {
+                                "description": "ContainerResizePolicy represents resource resize policy for the container.",
+                                "type": "object",
+                                "required": [
+                                  "resourceName",
+                                  "restartPolicy"
+                                ],
+                                "properties": {
+                                  "resourceName": {
+                                    "description": "Name of the resource to which this resource resize policy applies. Supported values: cpu, memory.",
+                                    "type": "string"
+                                  },
+                                  "restartPolicy": {
+                                    "description": "Restart policy to apply when specified resource is resized. If not specified, it defaults to NotRequired.",
+                                    "type": "string"
+                                  }
+                                }
+                              },
+                              "x-kubernetes-list-type": "atomic"
+                            },
                             "resources": {
                               "description": "Resources are not allowed for ephemeral containers. Ephemeral containers use spare resources already allocated to the pod.",
                               "type": "object",
                               "properties": {
+                                "claims": {
+                                  "description": "Claims lists the names of resources, defined in spec.resourceClaims, that are used by this container. \n This is an alpha field and requires enabling the DynamicResourceAllocation feature gate. \n This field is immutable. It can only be set for containers.",
+                                  "type": "array",
+                                  "items": {
+                                    "description": "ResourceClaim references one entry in PodSpec.ResourceClaims.",
+                                    "type": "object",
+                                    "required": [
+                                      "name"
+                                    ],
+                                    "properties": {
+                                      "name": {
+                                        "description": "Name must match the name of one entry in pod.spec.resourceClaims of the Pod where this field is used. It makes that resource available inside a container.",
+                                        "type": "string"
+                                      }
+                                    }
+                                  },
+                                  "x-kubernetes-list-map-keys": [
+                                    "name"
+                                  ],
+                                  "x-kubernetes-list-type": "map"
+                                },
                                 "limits": {
                                   "description": "Limits describes the maximum amount of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/",
                                   "type": "object",
@@ -5581,7 +5863,7 @@
                                   }
                                 },
                                 "requests": {
-                                  "description": "Requests describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/",
+                                  "description": "Requests describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. Requests cannot exceed Limits. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/",
                                   "type": "object",
                                   "additionalProperties": {
                                     "pattern": "^(\\+|-)?(([0-9]+(\\.[0-9]*)?)|(\\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\\+|-)?(([0-9]+(\\.[0-9]*)?)|(\\.[0-9]+))))?$",
@@ -5740,7 +6022,7 @@
                                   "format": "int32"
                                 },
                                 "grpc": {
-                                  "description": "GRPC specifies an action involving a GRPC port. This is a beta field and requires enabling GRPCContainerProbe feature gate.",
+                                  "description": "GRPC specifies an action involving a GRPC port.",
                                   "type": "object",
                                   "required": [
                                     "port"
@@ -6007,7 +6289,8 @@
                               "description": "Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names TODO: Add other useful fields. apiVersion, kind, uid?",
                               "type": "string"
                             }
-                          }
+                          },
+                          "x-kubernetes-map-type": "atomic"
                         }
                       },
                       "initContainers": {
@@ -6075,7 +6358,8 @@
                                             "description": "Specify whether the ConfigMap or its key must be defined",
                                             "type": "boolean"
                                           }
-                                        }
+                                        },
+                                        "x-kubernetes-map-type": "atomic"
                                       },
                                       "fieldRef": {
                                         "description": "Selects a field of the pod: supports metadata.name, metadata.namespace, `metadata.labels['\u003cKEY\u003e']`, `metadata.annotations['\u003cKEY\u003e']`, spec.nodeName, spec.serviceAccountName, status.hostIP, status.podIP, status.podIPs.",
@@ -6092,7 +6376,8 @@
                                             "description": "Path of the field to select in the specified API version.",
                                             "type": "string"
                                           }
-                                        }
+                                        },
+                                        "x-kubernetes-map-type": "atomic"
                                       },
                                       "resourceFieldRef": {
                                         "description": "Selects a resource of the container: only resources limits and requests (limits.cpu, limits.memory, limits.ephemeral-storage, requests.cpu, requests.memory and requests.ephemeral-storage) are currently supported.",
@@ -6122,7 +6407,8 @@
                                             "description": "Required: resource to select",
                                             "type": "string"
                                           }
-                                        }
+                                        },
+                                        "x-kubernetes-map-type": "atomic"
                                       },
                                       "secretKeyRef": {
                                         "description": "Selects a key of a secret in the pod's namespace",
@@ -6143,7 +6429,8 @@
                                             "description": "Specify whether the Secret or its key must be defined",
                                             "type": "boolean"
                                           }
-                                        }
+                                        },
+                                        "x-kubernetes-map-type": "atomic"
                                       }
                                     }
                                   }
@@ -6169,7 +6456,8 @@
                                         "description": "Specify whether the ConfigMap must be defined",
                                         "type": "boolean"
                                       }
-                                    }
+                                    },
+                                    "x-kubernetes-map-type": "atomic"
                                   },
                                   "prefix": {
                                     "description": "An optional identifier to prepend to each key in the ConfigMap. Must be a C_IDENTIFIER.",
@@ -6187,7 +6475,8 @@
                                         "description": "Specify whether the Secret must be defined",
                                         "type": "boolean"
                                       }
-                                    }
+                                    },
+                                    "x-kubernetes-map-type": "atomic"
                                   }
                                 }
                               }
@@ -6427,7 +6716,7 @@
                                   "format": "int32"
                                 },
                                 "grpc": {
-                                  "description": "GRPC specifies an action involving a GRPC port. This is a beta field and requires enabling GRPCContainerProbe feature gate.",
+                                  "description": "GRPC specifies an action involving a GRPC port.",
                                   "type": "object",
                                   "required": [
                                     "port"
@@ -6619,7 +6908,7 @@
                                   "format": "int32"
                                 },
                                 "grpc": {
-                                  "description": "GRPC specifies an action involving a GRPC port. This is a beta field and requires enabling GRPCContainerProbe feature gate.",
+                                  "description": "GRPC specifies an action involving a GRPC port.",
                                   "type": "object",
                                   "required": [
                                     "port"
@@ -6743,10 +7032,54 @@
                                 }
                               }
                             },
+                            "resizePolicy": {
+                              "description": "Resources resize policy for the container.",
+                              "type": "array",
+                              "items": {
+                                "description": "ContainerResizePolicy represents resource resize policy for the container.",
+                                "type": "object",
+                                "required": [
+                                  "resourceName",
+                                  "restartPolicy"
+                                ],
+                                "properties": {
+                                  "resourceName": {
+                                    "description": "Name of the resource to which this resource resize policy applies. Supported values: cpu, memory.",
+                                    "type": "string"
+                                  },
+                                  "restartPolicy": {
+                                    "description": "Restart policy to apply when specified resource is resized. If not specified, it defaults to NotRequired.",
+                                    "type": "string"
+                                  }
+                                }
+                              },
+                              "x-kubernetes-list-type": "atomic"
+                            },
                             "resources": {
                               "description": "Compute Resources required by this container. Cannot be updated. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/",
                               "type": "object",
                               "properties": {
+                                "claims": {
+                                  "description": "Claims lists the names of resources, defined in spec.resourceClaims, that are used by this container. \n This is an alpha field and requires enabling the DynamicResourceAllocation feature gate. \n This field is immutable. It can only be set for containers.",
+                                  "type": "array",
+                                  "items": {
+                                    "description": "ResourceClaim references one entry in PodSpec.ResourceClaims.",
+                                    "type": "object",
+                                    "required": [
+                                      "name"
+                                    ],
+                                    "properties": {
+                                      "name": {
+                                        "description": "Name must match the name of one entry in pod.spec.resourceClaims of the Pod where this field is used. It makes that resource available inside a container.",
+                                        "type": "string"
+                                      }
+                                    }
+                                  },
+                                  "x-kubernetes-list-map-keys": [
+                                    "name"
+                                  ],
+                                  "x-kubernetes-list-type": "map"
+                                },
                                 "limits": {
                                   "description": "Limits describes the maximum amount of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/",
                                   "type": "object",
@@ -6764,7 +7097,7 @@
                                   }
                                 },
                                 "requests": {
-                                  "description": "Requests describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/",
+                                  "description": "Requests describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. Requests cannot exceed Limits. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/",
                                   "type": "object",
                                   "additionalProperties": {
                                     "pattern": "^(\\+|-)?(([0-9]+(\\.[0-9]*)?)|(\\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\\+|-)?(([0-9]+(\\.[0-9]*)?)|(\\.[0-9]+))))?$",
@@ -6923,7 +7256,7 @@
                                   "format": "int32"
                                 },
                                 "grpc": {
-                                  "description": "GRPC specifies an action involving a GRPC port. This is a beta field and requires enabling GRPCContainerProbe feature gate.",
+                                  "description": "GRPC specifies an action involving a GRPC port.",
                                   "type": "object",
                                   "required": [
                                     "port"
@@ -7205,8 +7538,43 @@
                           }
                         }
                       },
+                      "resourceClaims": {
+                        "description": "ResourceClaims defines which ResourceClaims must be allocated and reserved before the Pod is allowed to start. The resources will be made available to those containers which consume them by name. \n This is an alpha field and requires enabling the DynamicResourceAllocation feature gate. \n This field is immutable.",
+                        "type": "array",
+                        "items": {
+                          "description": "PodResourceClaim references exactly one ResourceClaim through a ClaimSource. It adds a name to it that uniquely identifies the ResourceClaim inside the Pod. Containers that need access to the ResourceClaim reference it with this name.",
+                          "type": "object",
+                          "required": [
+                            "name"
+                          ],
+                          "properties": {
+                            "name": {
+                              "description": "Name uniquely identifies this resource claim inside the pod. This must be a DNS_LABEL.",
+                              "type": "string"
+                            },
+                            "source": {
+                              "description": "Source describes where to find the ResourceClaim.",
+                              "type": "object",
+                              "properties": {
+                                "resourceClaimName": {
+                                  "description": "ResourceClaimName is the name of a ResourceClaim object in the same namespace as this pod.",
+                                  "type": "string"
+                                },
+                                "resourceClaimTemplateName": {
+                                  "description": "ResourceClaimTemplateName is the name of a ResourceClaimTemplate object in the same namespace as this pod. \n The template will be used to create a new ResourceClaim, which will be bound to this pod. When this pod is deleted, the ResourceClaim will also be deleted. The name of the ResourceClaim will be \u003cpod name\u003e-\u003cresource name\u003e, where \u003cresource name\u003e is the PodResourceClaim.Name. Pod validation will reject the pod if the concatenated name is not valid for a ResourceClaim (e.g. too long). \n An existing ResourceClaim with that name that is not owned by the pod will not be used for the pod to avoid using an unrelated resource by mistake. Scheduling and pod startup are then blocked until the unrelated ResourceClaim is removed. \n This field is immutable and no changes will be made to the corresponding ResourceClaim by the control plane after creating the ResourceClaim.",
+                                  "type": "string"
+                                }
+                              }
+                            }
+                          }
+                        },
+                        "x-kubernetes-list-map-keys": [
+                          "name"
+                        ],
+                        "x-kubernetes-list-type": "map"
+                      },
                       "restartPolicy": {
-                        "description": "Restart policy for all containers within the pod. One of Always, OnFailure, Never. Default to Always. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#restart-policy",
+                        "description": "Restart policy for all containers within the pod. One of Always, OnFailure, Never. In some contexts, only a subset of those values may be permitted. Default to Always. More info: https://kubernetes.io/docs/concepts/workloads/pods/pod-lifecycle/#restart-policy",
                         "type": "string"
                       },
                       "runtimeClassName": {
@@ -7216,6 +7584,27 @@
                       "schedulerName": {
                         "description": "If specified, the pod will be dispatched by specified scheduler. If not specified, the pod will be dispatched by default scheduler.",
                         "type": "string"
+                      },
+                      "schedulingGates": {
+                        "description": "SchedulingGates is an opaque list of values that if specified will block scheduling the pod. If schedulingGates is not empty, the pod will stay in the SchedulingGated state and the scheduler will not attempt to schedule the pod. \n SchedulingGates can only be set at pod creation time, and be removed only afterwards. \n This is a beta feature enabled by the PodSchedulingReadiness feature gate.",
+                        "type": "array",
+                        "items": {
+                          "description": "PodSchedulingGate is associated to a Pod to guard its scheduling.",
+                          "type": "object",
+                          "required": [
+                            "name"
+                          ],
+                          "properties": {
+                            "name": {
+                              "description": "Name of the scheduling gate. Each scheduling gate must have a unique name field.",
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "x-kubernetes-list-map-keys": [
+                          "name"
+                        ],
+                        "x-kubernetes-list-type": "map"
                       },
                       "securityContext": {
                         "description": "SecurityContext holds pod-level security attributes and common container settings. Optional: Defaults to empty.  See type description for default values of each field.",
@@ -7284,7 +7673,7 @@
                             }
                           },
                           "supplementalGroups": {
-                            "description": "A list of groups applied to the first process run in each container, in addition to the container's primary GID.  If unspecified, no groups will be added to any container. Note that this field cannot be set when spec.os.name is windows.",
+                            "description": "A list of groups applied to the first process run in each container, in addition to the container's primary GID, the fsGroup (if specified), and group memberships defined in the container image for the uid of the container process. If unspecified, no additional groups are added to any container. Note that group memberships defined in the container image for the uid of the container process are still effective, even if they are not included in this list. Note that this field cannot be set when spec.os.name is windows.",
                             "type": "array",
                             "items": {
                               "type": "integer",
@@ -7445,10 +7834,11 @@
                                     "type": "string"
                                   }
                                 }
-                              }
+                              },
+                              "x-kubernetes-map-type": "atomic"
                             },
                             "matchLabelKeys": {
-                              "description": "MatchLabelKeys is a set of pod label keys to select the pods over which spreading will be calculated. The keys are used to lookup values from the incoming pod labels, those key-value labels are ANDed with labelSelector to select the group of existing pods over which spreading will be calculated for the incoming pod. Keys that don't exist in the incoming pod labels will be ignored. A null or empty list means only match against labelSelector.",
+                              "description": "MatchLabelKeys is a set of pod label keys to select the pods over which spreading will be calculated. The keys are used to lookup values from the incoming pod labels, those key-value labels are ANDed with labelSelector to select the group of existing pods over which spreading will be calculated for the incoming pod. The same key is forbidden to exist in both MatchLabelKeys and LabelSelector. MatchLabelKeys cannot be set when LabelSelector isn't set. Keys that don't exist in the incoming pod labels will be ignored. A null or empty list means only match against labelSelector. \n This is a beta field and requires the MatchLabelKeysInPodTopologySpread feature gate to be enabled (enabled by default).",
                               "type": "array",
                               "items": {
                                 "type": "string"
@@ -7466,11 +7856,11 @@
                               "format": "int32"
                             },
                             "nodeAffinityPolicy": {
-                              "description": "NodeAffinityPolicy indicates how we will treat Pod's nodeAffinity/nodeSelector when calculating pod topology spread skew. Options are: - Honor: only nodes matching nodeAffinity/nodeSelector are included in the calculations. - Ignore: nodeAffinity/nodeSelector are ignored. All nodes are included in the calculations. \n If this value is nil, the behavior is equivalent to the Honor policy. This is a alpha-level feature enabled by the NodeInclusionPolicyInPodTopologySpread feature flag.",
+                              "description": "NodeAffinityPolicy indicates how we will treat Pod's nodeAffinity/nodeSelector when calculating pod topology spread skew. Options are: - Honor: only nodes matching nodeAffinity/nodeSelector are included in the calculations. - Ignore: nodeAffinity/nodeSelector are ignored. All nodes are included in the calculations. \n If this value is nil, the behavior is equivalent to the Honor policy. This is a beta-level feature default enabled by the NodeInclusionPolicyInPodTopologySpread feature flag.",
                               "type": "string"
                             },
                             "nodeTaintsPolicy": {
-                              "description": "NodeTaintsPolicy indicates how we will treat node taints when calculating pod topology spread skew. Options are: - Honor: nodes without taints, along with tainted nodes for which the incoming pod has a toleration, are included. - Ignore: node taints are ignored. All nodes are included. \n If this value is nil, the behavior is equivalent to the Ignore policy. This is a alpha-level feature enabled by the NodeInclusionPolicyInPodTopologySpread feature flag.",
+                              "description": "NodeTaintsPolicy indicates how we will treat node taints when calculating pod topology spread skew. Options are: - Honor: nodes without taints, along with tainted nodes for which the incoming pod has a toleration, are included. - Ignore: node taints are ignored. All nodes are included. \n If this value is nil, the behavior is equivalent to the Ignore policy. This is a beta-level feature default enabled by the NodeInclusionPolicyInPodTopologySpread feature flag.",
                               "type": "string"
                             },
                             "topologyKey": {
@@ -7478,7 +7868,7 @@
                               "type": "string"
                             },
                             "whenUnsatisfiable": {
-                              "description": "WhenUnsatisfiable indicates how to deal with a pod if it doesn't satisfy the spread constraint. - DoNotSchedule (default) tells the scheduler not to schedule it. - ScheduleAnyway tells the scheduler to schedule the pod in any location,   but giving higher precedence to topologies that would help reduce the   skew. A constraint is considered \"Unsatisfiable\" for an incoming pod if and only if every possible node assignment for that pod would violate \"MaxSkew\" on some topology. For example, in a 3-zone cluster, MaxSkew is set to 1, and pods with the same labelSelector spread as 3/1/1: | zone1 | zone2 | zone3 | | P P P |   P   |   P   | If WhenUnsatisfiable is set to DoNotSchedule, incoming pod can only be scheduled to zone2(zone3) to become 3/2/1(3/1/2) as ActualSkew(2-1) on zone2(zone3) satisfies MaxSkew(1). In other words, the cluster can still be imbalanced, but scheduler won't make it *more* imbalanced. It's a required field.",
+                              "description": "WhenUnsatisfiable indicates how to deal with a pod if it doesn't satisfy the spread constraint. - DoNotSchedule (default) tells the scheduler not to schedule it. - ScheduleAnyway tells the scheduler to schedule the pod in any location, but giving higher precedence to topologies that would help reduce the skew. A constraint is considered \"Unsatisfiable\" for an incoming pod if and only if every possible node assignment for that pod would violate \"MaxSkew\" on some topology. For example, in a 3-zone cluster, MaxSkew is set to 1, and pods with the same labelSelector spread as 3/1/1: | zone1 | zone2 | zone3 | | P P P |   P   |   P   | If WhenUnsatisfiable is set to DoNotSchedule, incoming pod can only be scheduled to zone2(zone3) to become 3/2/1(3/1/2) as ActualSkew(2-1) on zone2(zone3) satisfies MaxSkew(1). In other words, the cluster can still be imbalanced, but scheduler won't make it *more* imbalanced. It's a required field.",
                               "type": "string"
                             }
                           }
@@ -7615,7 +8005,8 @@
                                       "description": "Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names TODO: Add other useful fields. apiVersion, kind, uid?",
                                       "type": "string"
                                     }
-                                  }
+                                  },
+                                  "x-kubernetes-map-type": "atomic"
                                 },
                                 "user": {
                                   "description": "user is optional: User is the rados user name, default is admin More info: https://examples.k8s.io/volumes/cephfs/README.md#how-to-use-it",
@@ -7646,7 +8037,8 @@
                                       "description": "Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names TODO: Add other useful fields. apiVersion, kind, uid?",
                                       "type": "string"
                                     }
-                                  }
+                                  },
+                                  "x-kubernetes-map-type": "atomic"
                                 },
                                 "volumeID": {
                                   "description": "volumeID used to identify the volume in cinder. More info: https://examples.k8s.io/mysql-cinder-pd/README.md",
@@ -7698,7 +8090,8 @@
                                   "description": "optional specify whether the ConfigMap or its keys must be defined",
                                   "type": "boolean"
                                 }
-                              }
+                              },
+                              "x-kubernetes-map-type": "atomic"
                             },
                             "csi": {
                               "description": "csi (Container Storage Interface) represents ephemeral storage that is handled by certain external CSI drivers (Beta feature).",
@@ -7723,7 +8116,8 @@
                                       "description": "Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names TODO: Add other useful fields. apiVersion, kind, uid?",
                                       "type": "string"
                                     }
-                                  }
+                                  },
+                                  "x-kubernetes-map-type": "atomic"
                                 },
                                 "readOnly": {
                                   "description": "readOnly specifies a read-only configuration for the volume. Defaults to false (read/write).",
@@ -7772,7 +8166,8 @@
                                             "description": "Path of the field to select in the specified API version.",
                                             "type": "string"
                                           }
-                                        }
+                                        },
+                                        "x-kubernetes-map-type": "atomic"
                                       },
                                       "mode": {
                                         "description": "Optional: mode bits used to set permissions on this file, must be an octal value between 0000 and 0777 or a decimal value between 0 and 511. YAML accepts both octal and decimal values, JSON requires decimal values for mode bits. If not specified, the volume defaultMode will be used. This might be in conflict with other options that affect the file mode, like fsGroup, and the result can be other mode bits set.",
@@ -7811,7 +8206,8 @@
                                             "description": "Required: resource to select",
                                             "type": "string"
                                           }
-                                        }
+                                        },
+                                        "x-kubernetes-map-type": "atomic"
                                       }
                                     }
                                   }
@@ -7827,7 +8223,7 @@
                                   "type": "string"
                                 },
                                 "sizeLimit": {
-                                  "description": "sizeLimit is the total amount of local storage required for this EmptyDir volume. The size limit is also applicable for memory medium. The maximum usage on memory medium EmptyDir would be the minimum value between the SizeLimit specified here and the sum of memory limits of all containers in a pod. The default is nil which means that the limit is undefined. More info: http://kubernetes.io/docs/user-guide/volumes#emptydir",
+                                  "description": "sizeLimit is the total amount of local storage required for this EmptyDir volume. The size limit is also applicable for memory medium. The maximum usage on memory medium EmptyDir would be the minimum value between the SizeLimit specified here and the sum of memory limits of all containers in a pod. The default is nil which means that the limit is undefined. More info: https://kubernetes.io/docs/concepts/storage/volumes#emptydir",
                                   "pattern": "^(\\+|-)?(([0-9]+(\\.[0-9]*)?)|(\\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\\+|-)?(([0-9]+(\\.[0-9]*)?)|(\\.[0-9]+))))?$",
                                   "anyOf": [
                                     {
@@ -7842,7 +8238,7 @@
                               }
                             },
                             "ephemeral": {
-                              "description": "ephemeral represents a volume that is handled by a cluster storage driver. The volume's lifecycle is tied to the pod that defines it - it will be created before the pod starts, and deleted when the pod is removed. \n Use this if: a) the volume is only needed while the pod runs, b) features of normal volumes like restoring from snapshot or capacity    tracking are needed, c) the storage driver is specified through a storage class, and d) the storage driver supports dynamic volume provisioning through    a PersistentVolumeClaim (see EphemeralVolumeSource for more    information on the connection between this volume type    and PersistentVolumeClaim). \n Use PersistentVolumeClaim or one of the vendor-specific APIs for volumes that persist for longer than the lifecycle of an individual pod. \n Use CSI for light-weight local ephemeral volumes if the CSI driver is meant to be used that way - see the documentation of the driver for more information. \n A pod can use both types of ephemeral volumes and persistent volumes at the same time.",
+                              "description": "ephemeral represents a volume that is handled by a cluster storage driver. The volume's lifecycle is tied to the pod that defines it - it will be created before the pod starts, and deleted when the pod is removed. \n Use this if: a) the volume is only needed while the pod runs, b) features of normal volumes like restoring from snapshot or capacity tracking are needed, c) the storage driver is specified through a storage class, and d) the storage driver supports dynamic volume provisioning through a PersistentVolumeClaim (see EphemeralVolumeSource for more information on the connection between this volume type and PersistentVolumeClaim). \n Use PersistentVolumeClaim or one of the vendor-specific APIs for volumes that persist for longer than the lifecycle of an individual pod. \n Use CSI for light-weight local ephemeral volumes if the CSI driver is meant to be used that way - see the documentation of the driver for more information. \n A pod can use both types of ephemeral volumes and persistent volumes at the same time.",
                               "type": "object",
                               "properties": {
                                 "volumeClaimTemplate": {
@@ -7868,7 +8264,7 @@
                                           }
                                         },
                                         "dataSource": {
-                                          "description": "dataSource field can be used to specify either: * An existing VolumeSnapshot object (snapshot.storage.k8s.io/VolumeSnapshot) * An existing PVC (PersistentVolumeClaim) If the provisioner or an external controller can support the specified data source, it will create a new volume based on the contents of the specified data source. If the AnyVolumeDataSource feature gate is enabled, this field will always have the same contents as the DataSourceRef field.",
+                                          "description": "dataSource field can be used to specify either: * An existing VolumeSnapshot object (snapshot.storage.k8s.io/VolumeSnapshot) * An existing PVC (PersistentVolumeClaim) If the provisioner or an external controller can support the specified data source, it will create a new volume based on the contents of the specified data source. When the AnyVolumeDataSource feature gate is enabled, dataSource contents will be copied to dataSourceRef, and dataSourceRef contents will be copied to dataSource when dataSourceRef.namespace is not specified. If the namespace is specified, then dataSourceRef will not be copied to dataSource.",
                                           "type": "object",
                                           "required": [
                                             "kind",
@@ -7887,10 +8283,11 @@
                                               "description": "Name is the name of resource being referenced",
                                               "type": "string"
                                             }
-                                          }
+                                          },
+                                          "x-kubernetes-map-type": "atomic"
                                         },
                                         "dataSourceRef": {
-                                          "description": "dataSourceRef specifies the object from which to populate the volume with data, if a non-empty volume is desired. This may be any local object from a non-empty API group (non core object) or a PersistentVolumeClaim object. When this field is specified, volume binding will only succeed if the type of the specified object matches some installed volume populator or dynamic provisioner. This field will replace the functionality of the DataSource field and as such if both fields are non-empty, they must have the same value. For backwards compatibility, both fields (DataSource and DataSourceRef) will be set to the same value automatically if one of them is empty and the other is non-empty. There are two important differences between DataSource and DataSourceRef: * While DataSource only allows two specific types of objects, DataSourceRef   allows any non-core object, as well as PersistentVolumeClaim objects. * While DataSource ignores disallowed values (dropping them), DataSourceRef   preserves all values, and generates an error if a disallowed value is   specified. (Beta) Using this field requires the AnyVolumeDataSource feature gate to be enabled.",
+                                          "description": "dataSourceRef specifies the object from which to populate the volume with data, if a non-empty volume is desired. This may be any object from a non-empty API group (non core object) or a PersistentVolumeClaim object. When this field is specified, volume binding will only succeed if the type of the specified object matches some installed volume populator or dynamic provisioner. This field will replace the functionality of the dataSource field and as such if both fields are non-empty, they must have the same value. For backwards compatibility, when namespace isn't specified in dataSourceRef, both fields (dataSource and dataSourceRef) will be set to the same value automatically if one of them is empty and the other is non-empty. When namespace is specified in dataSourceRef, dataSource isn't set to the same value and must be empty. There are three important differences between dataSource and dataSourceRef: * While dataSource only allows two specific types of objects, dataSourceRef allows any non-core object, as well as PersistentVolumeClaim objects. * While dataSource ignores disallowed values (dropping them), dataSourceRef preserves all values, and generates an error if a disallowed value is specified. * While dataSource only allows local objects, dataSourceRef allows objects in any namespaces. (Beta) Using this field requires the AnyVolumeDataSource feature gate to be enabled. (Alpha) Using the namespace field of dataSourceRef requires the CrossNamespaceVolumeDataSource feature gate to be enabled.",
                                           "type": "object",
                                           "required": [
                                             "kind",
@@ -7907,6 +8304,10 @@
                                             },
                                             "name": {
                                               "description": "Name is the name of resource being referenced",
+                                              "type": "string"
+                                            },
+                                            "namespace": {
+                                              "description": "Namespace is the namespace of resource being referenced Note that when a namespace is specified, a gateway.networking.k8s.io/ReferenceGrant object is required in the referent namespace to allow that namespace's owner to accept the reference. See the ReferenceGrant documentation for details. (Alpha) This field requires the CrossNamespaceVolumeDataSource feature gate to be enabled.",
                                               "type": "string"
                                             }
                                           }
@@ -7915,6 +8316,27 @@
                                           "description": "resources represents the minimum resources the volume should have. If RecoverVolumeExpansionFailure feature is enabled users are allowed to specify resource requirements that are lower than previous value but must still be higher than capacity recorded in the status field of the claim. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#resources",
                                           "type": "object",
                                           "properties": {
+                                            "claims": {
+                                              "description": "Claims lists the names of resources, defined in spec.resourceClaims, that are used by this container. \n This is an alpha field and requires enabling the DynamicResourceAllocation feature gate. \n This field is immutable. It can only be set for containers.",
+                                              "type": "array",
+                                              "items": {
+                                                "description": "ResourceClaim references one entry in PodSpec.ResourceClaims.",
+                                                "type": "object",
+                                                "required": [
+                                                  "name"
+                                                ],
+                                                "properties": {
+                                                  "name": {
+                                                    "description": "Name must match the name of one entry in pod.spec.resourceClaims of the Pod where this field is used. It makes that resource available inside a container.",
+                                                    "type": "string"
+                                                  }
+                                                }
+                                              },
+                                              "x-kubernetes-list-map-keys": [
+                                                "name"
+                                              ],
+                                              "x-kubernetes-list-type": "map"
+                                            },
                                             "limits": {
                                               "description": "Limits describes the maximum amount of compute resources allowed. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/",
                                               "type": "object",
@@ -7932,7 +8354,7 @@
                                               }
                                             },
                                             "requests": {
-                                              "description": "Requests describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/",
+                                              "description": "Requests describes the minimum amount of compute resources required. If Requests is omitted for a container, it defaults to Limits if that is explicitly specified, otherwise to an implementation-defined value. Requests cannot exceed Limits. More info: https://kubernetes.io/docs/concepts/configuration/manage-resources-containers/",
                                               "type": "object",
                                               "additionalProperties": {
                                                 "pattern": "^(\\+|-)?(([0-9]+(\\.[0-9]*)?)|(\\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\\+|-)?(([0-9]+(\\.[0-9]*)?)|(\\.[0-9]+))))?$",
@@ -7989,7 +8411,8 @@
                                                 "type": "string"
                                               }
                                             }
-                                          }
+                                          },
+                                          "x-kubernetes-map-type": "atomic"
                                         },
                                         "storageClassName": {
                                           "description": "storageClassName is the name of the StorageClass required by the claim. More info: https://kubernetes.io/docs/concepts/storage/persistent-volumes#class-1",
@@ -8076,7 +8499,8 @@
                                       "description": "Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names TODO: Add other useful fields. apiVersion, kind, uid?",
                                       "type": "string"
                                     }
-                                  }
+                                  },
+                                  "x-kubernetes-map-type": "atomic"
                                 }
                               }
                             },
@@ -8237,7 +8661,8 @@
                                       "description": "Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names TODO: Add other useful fields. apiVersion, kind, uid?",
                                       "type": "string"
                                     }
-                                  }
+                                  },
+                                  "x-kubernetes-map-type": "atomic"
                                 },
                                 "targetPortal": {
                                   "description": "targetPortal is iSCSI Target Portal. The Portal is either an IP or ip_addr:port if the port is other than default (typically TCP ports 860 and 3260).",
@@ -8381,7 +8806,8 @@
                                             "description": "optional specify whether the ConfigMap or its keys must be defined",
                                             "type": "boolean"
                                           }
-                                        }
+                                        },
+                                        "x-kubernetes-map-type": "atomic"
                                       },
                                       "downwardAPI": {
                                         "description": "downwardAPI information about the downwardAPI data to project",
@@ -8412,7 +8838,8 @@
                                                       "description": "Path of the field to select in the specified API version.",
                                                       "type": "string"
                                                     }
-                                                  }
+                                                  },
+                                                  "x-kubernetes-map-type": "atomic"
                                                 },
                                                 "mode": {
                                                   "description": "Optional: mode bits used to set permissions on this file, must be an octal value between 0000 and 0777 or a decimal value between 0 and 511. YAML accepts both octal and decimal values, JSON requires decimal values for mode bits. If not specified, the volume defaultMode will be used. This might be in conflict with other options that affect the file mode, like fsGroup, and the result can be other mode bits set.",
@@ -8451,7 +8878,8 @@
                                                       "description": "Required: resource to select",
                                                       "type": "string"
                                                     }
-                                                  }
+                                                  },
+                                                  "x-kubernetes-map-type": "atomic"
                                                 }
                                               }
                                             }
@@ -8497,7 +8925,8 @@
                                             "description": "optional field specify whether the Secret or its key must be defined",
                                             "type": "boolean"
                                           }
-                                        }
+                                        },
+                                        "x-kubernetes-map-type": "atomic"
                                       },
                                       "serviceAccountToken": {
                                         "description": "serviceAccountToken is information about the serviceAccountToken data to project",
@@ -8603,7 +9032,8 @@
                                       "description": "Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names TODO: Add other useful fields. apiVersion, kind, uid?",
                                       "type": "string"
                                     }
-                                  }
+                                  },
+                                  "x-kubernetes-map-type": "atomic"
                                 },
                                 "user": {
                                   "description": "user is the rados user name. Default is admin. More info: https://examples.k8s.io/volumes/rbd/README.md#how-to-use-it",
@@ -8644,7 +9074,8 @@
                                       "description": "Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names TODO: Add other useful fields. apiVersion, kind, uid?",
                                       "type": "string"
                                     }
-                                  }
+                                  },
+                                  "x-kubernetes-map-type": "atomic"
                                 },
                                 "sslEnabled": {
                                   "description": "sslEnabled Flag enable/disable SSL communication with Gateway, default false",
@@ -8734,7 +9165,8 @@
                                       "description": "Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names TODO: Add other useful fields. apiVersion, kind, uid?",
                                       "type": "string"
                                     }
-                                  }
+                                  },
+                                  "x-kubernetes-map-type": "atomic"
                                 },
                                 "volumeName": {
                                   "description": "volumeName is the human-readable name of the StorageOS volume.  Volume names are only unique within a namespace.",
@@ -9786,6 +10218,82 @@
                   }
                 }
               },
+              "subnetAvailable": {
+                "type": "object",
+                "required": [
+                  "outcomes"
+                ],
+                "properties": {
+                  "annotations": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "string"
+                    }
+                  },
+                  "checkName": {
+                    "type": "string"
+                  },
+                  "collectorName": {
+                    "type": "string"
+                  },
+                  "exclude": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  },
+                  "outcomes": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "fail": {
+                          "type": "object",
+                          "properties": {
+                            "message": {
+                              "type": "string"
+                            },
+                            "uri": {
+                              "type": "string"
+                            },
+                            "when": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "pass": {
+                          "type": "object",
+                          "properties": {
+                            "message": {
+                              "type": "string"
+                            },
+                            "uri": {
+                              "type": "string"
+                            },
+                            "when": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "warn": {
+                          "type": "object",
+                          "properties": {
+                            "message": {
+                              "type": "string"
+                            },
+                            "uri": {
+                              "type": "string"
+                            },
+                            "when": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "strict": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  }
+                }
+              },
               "systemPackages": {
                 "type": "object",
                 "required": [
@@ -10165,6 +10673,82 @@
                     "oneOf": [{"type": "string"},{"type": "boolean"}]
                   }
                 }
+              },
+              "udpPortStatus": {
+                "type": "object",
+                "required": [
+                  "outcomes"
+                ],
+                "properties": {
+                  "annotations": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "string"
+                    }
+                  },
+                  "checkName": {
+                    "type": "string"
+                  },
+                  "collectorName": {
+                    "type": "string"
+                  },
+                  "exclude": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  },
+                  "outcomes": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "fail": {
+                          "type": "object",
+                          "properties": {
+                            "message": {
+                              "type": "string"
+                            },
+                            "uri": {
+                              "type": "string"
+                            },
+                            "when": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "pass": {
+                          "type": "object",
+                          "properties": {
+                            "message": {
+                              "type": "string"
+                            },
+                            "uri": {
+                              "type": "string"
+                            },
+                            "when": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "warn": {
+                          "type": "object",
+                          "properties": {
+                            "message": {
+                              "type": "string"
+                            },
+                            "uri": {
+                              "type": "string"
+                            },
+                            "when": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "strict": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  }
+                }
               }
             }
           }
@@ -10202,6 +10786,23 @@
                     "oneOf": [{"type": "string"},{"type": "boolean"}]
                   },
                   "keyPath": {
+                    "type": "string"
+                  }
+                }
+              },
+              "copy": {
+                "type": "object",
+                "required": [
+                  "path"
+                ],
+                "properties": {
+                  "collectorName": {
+                    "type": "string"
+                  },
+                  "exclude": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  },
+                  "path": {
                     "type": "string"
                   }
                 }
@@ -10498,6 +11099,27 @@
                   }
                 }
               },
+              "subnetAvailable": {
+                "type": "object",
+                "required": [
+                  "CIDRRangeAlloc",
+                  "desiredCIDR"
+                ],
+                "properties": {
+                  "CIDRRangeAlloc": {
+                    "type": "string"
+                  },
+                  "collectorName": {
+                    "type": "string"
+                  },
+                  "desiredCIDR": {
+                    "type": "integer"
+                  },
+                  "exclude": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  }
+                }
+              },
               "systemPackages": {
                 "type": "object",
                 "properties": {
@@ -10531,6 +11153,12 @@
                       "type": "string"
                     }
                   },
+                  "centos9": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
                   "collectorName": {
                     "type": "string"
                   },
@@ -10555,6 +11183,12 @@
                       "type": "string"
                     }
                   },
+                  "ol9": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
                   "rhel": {
                     "type": "array",
                     "items": {
@@ -10568,6 +11202,30 @@
                     }
                   },
                   "rhel8": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "rhel9": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "rocky": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "rocky8": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "rocky9": {
                     "type": "array",
                     "items": {
                       "type": "string"
@@ -10671,6 +11329,26 @@
                   },
                   "exclude": {
                     "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  }
+                }
+              },
+              "udpPortStatus": {
+                "type": "object",
+                "required": [
+                  "port"
+                ],
+                "properties": {
+                  "collectorName": {
+                    "type": "string"
+                  },
+                  "exclude": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  },
+                  "interface": {
+                    "type": "string"
+                  },
+                  "port": {
+                    "type": "integer"
                   }
                 }
               }

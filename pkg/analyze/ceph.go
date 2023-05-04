@@ -9,6 +9,7 @@ import (
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/replicatedhq/troubleshoot/pkg/collect"
+	"github.com/replicatedhq/troubleshoot/pkg/types"
 )
 
 type CephHealth string
@@ -99,20 +100,47 @@ type PgMap struct {
 	TotalBytes uint64 `json:"bytes_total"`
 }
 
-func cephStatus(analyzer *troubleshootv1beta2.CephStatusAnalyze, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
-	fileName := path.Join(collect.GetCephCollectorFilepath(analyzer.CollectorName, analyzer.Namespace), "status.json")
-	collected, err := getCollectedFileContents(fileName)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to read collected ceph status")
-	}
+type AnalyzeCephStatus struct {
+	analyzer *troubleshootv1beta2.CephStatusAnalyze
+}
 
-	title := analyzer.CheckName
+func (a *AnalyzeCephStatus) Title() string {
+	title := a.analyzer.CheckName
 	if title == "" {
 		title = "Ceph Status"
 	}
 
+	return title
+}
+
+func (a *AnalyzeCephStatus) IsExcluded() (bool, error) {
+	return isExcluded(a.analyzer.Exclude)
+}
+
+func (a *AnalyzeCephStatus) Analyze(getFile getCollectedFileContents, findFiles getChildCollectedFileContents) ([]*AnalyzeResult, error) {
+	result, err := a.cephStatus(a.analyzer, getFile)
+	if err != nil {
+		return nil, err
+	}
+	if result != nil {
+		result.Strict = a.analyzer.Strict.BoolOrDefaultFalse()
+	}
+	return []*AnalyzeResult{result}, nil
+}
+
+func (a *AnalyzeCephStatus) cephStatus(analyzer *troubleshootv1beta2.CephStatusAnalyze, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
+	fileName := path.Join(collect.GetCephCollectorFilepath(analyzer.CollectorName, analyzer.Namespace), "status.json")
+	collected, err := getCollectedFileContents(fileName)
+
+	if err != nil {
+		if _, ok := err.(*types.NotFoundError); ok {
+			return nil, nil
+		}
+		return nil, errors.Wrap(err, "failed to read collected ceph status")
+	}
+
 	analyzeResult := &AnalyzeResult{
-		Title:   title,
+		Title:   a.Title(),
 		IconKey: "rook", // maybe this should be ceph?
 		IconURI: "https://troubleshoot.sh/images/analyzer-icons/rook.svg?w=11&h=16",
 	}

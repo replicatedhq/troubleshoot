@@ -15,7 +15,7 @@ There are [community meetings](https://calendar.google.com/calendar/u/0?cid=Y19m
 
 ## Design Principles
 
-When implementing a new feature please review the [design principles](./design/design-principles.md) to help guide the approach.
+When implementing a new feature please review the [design principles](./docs/design/design-principles.md) to help guide the approach.
 
 ## Development Environment
 
@@ -38,6 +38,7 @@ To run the tests locally run the following:
 
 ```bash
 make test
+make test RUN=TestClusterResources_Merge
 ```
 
 Additionally, e2e tests can be run with:

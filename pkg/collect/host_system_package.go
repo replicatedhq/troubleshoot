@@ -92,6 +92,9 @@ func (c *CollectHostSystemPackages) Collect(progressChan chan<- interface{}) (ma
 		if len(c.hostCollector.CentOS8) > 0 && matchMajorVersion(info.OSVersion, "8") {
 			packages = append(packages, c.hostCollector.CentOS8...)
 		}
+		if len(c.hostCollector.CentOS9) > 0 && matchMajorVersion(info.OSVersion, "9") {
+			packages = append(packages, c.hostCollector.CentOS8...)
+		}
 	case "rhel":
 		if len(c.hostCollector.RHEL) > 0 {
 			packages = append(packages, c.hostCollector.RHEL...)
@@ -102,6 +105,9 @@ func (c *CollectHostSystemPackages) Collect(progressChan chan<- interface{}) (ma
 		if len(c.hostCollector.RHEL8) > 0 && matchMajorVersion(info.OSVersion, "8") {
 			packages = append(packages, c.hostCollector.RHEL8...)
 		}
+		if len(c.hostCollector.RHEL9) > 0 && matchMajorVersion(info.OSVersion, "9") {
+			packages = append(packages, c.hostCollector.RHEL9...)
+		}
 	case "ol":
 		if len(c.hostCollector.OracleLinux) > 0 {
 			packages = append(packages, c.hostCollector.OracleLinux...)
@@ -111,6 +117,19 @@ func (c *CollectHostSystemPackages) Collect(progressChan chan<- interface{}) (ma
 		}
 		if len(c.hostCollector.OracleLinux8) > 0 && matchMajorVersion(info.OSVersion, "8") {
 			packages = append(packages, c.hostCollector.OracleLinux8...)
+		}
+		if len(c.hostCollector.OracleLinux9) > 0 && matchMajorVersion(info.OSVersion, "9") {
+			packages = append(packages, c.hostCollector.OracleLinux9...)
+		}
+	case "rocky":
+		if len(c.hostCollector.RockyLinux) > 0 {
+			packages = append(packages, c.hostCollector.RockyLinux...)
+		}
+		if len(c.hostCollector.RockyLinux8) > 0 && matchMajorVersion(info.OSVersion, "8") {
+			packages = append(packages, c.hostCollector.RockyLinux8...)
+		}
+		if len(c.hostCollector.RockyLinux9) > 0 && matchMajorVersion(info.OSVersion, "9") {
+			packages = append(packages, c.hostCollector.RockyLinux9...)
 		}
 	case "amzn":
 		if len(c.hostCollector.AmazonLinux) > 0 {
@@ -132,7 +151,7 @@ func (c *CollectHostSystemPackages) Collect(progressChan chan<- interface{}) (ma
 		switch info.OS {
 		case "ubuntu":
 			cmd = exec.Command("dpkg", "-s", p)
-		case "centos", "rhel", "amzn", "ol":
+		case "centos", "rhel", "amzn", "ol", "rocky":
 			cmd = exec.Command("rpm", "-qi", p)
 		default:
 			return nil, errors.Errorf("unsupported distribution: %s", info.OS)

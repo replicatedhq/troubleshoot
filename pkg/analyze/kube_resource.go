@@ -8,27 +8,53 @@ import (
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
+	"github.com/replicatedhq/troubleshoot/pkg/constants"
 	iutils "github.com/replicatedhq/troubleshoot/pkg/interfaceutils"
 	"gopkg.in/yaml.v2"
 )
 
 var Filemap = map[string]string{
-	"Deployment":           "deployments",
-	"StatefulSet":          "statefulsets",
-	"NetworkPolicy":        "network-policy",
-	"Pod":                  "pods",
-	"Ingress":              "ingress",
-	"Service":              "services",
-	"ResourceQuota":        "resource-quotas",
-	"Job":                  "jobs",
-	"PersistentVoumeClaim": "pvcs",
-	"pvc":                  "pvcs",
-	"ReplicaSet":           "replicasets",
-	"Namespace":            "namespaces.json",
-	"PersistentVolume":     "pvs.json",
-	"pv":                   "pvs.json",
-	"Node":                 "nodes.json",
-	"StorageClass":         "storage-classes.json",
+	"Deployment":           constants.CLUSTER_RESOURCES_DEPLOYMENTS,
+	"StatefulSet":          constants.CLUSTER_RESOURCES_STATEFULSETS,
+	"NetworkPolicy":        constants.CLUSTER_RESOURCES_NETWORK_POLICY,
+	"Pod":                  constants.CLUSTER_RESOURCES_PODS,
+	"Ingress":              constants.CLUSTER_RESOURCES_INGRESS,
+	"Service":              constants.CLUSTER_RESOURCES_SERVICES,
+	"ResourceQuota":        constants.CLUSTER_RESOURCES_RESOURCE_QUOTA,
+	"Job":                  constants.CLUSTER_RESOURCES_JOBS,
+	"PersistentVoumeClaim": constants.CLUSTER_RESOURCES_PVCS,
+	"pvc":                  constants.CLUSTER_RESOURCES_PVCS,
+	"ReplicaSet":           constants.CLUSTER_RESOURCES_REPLICASETS,
+	"Namespace":            fmt.Sprintf("%s.json", constants.CLUSTER_RESOURCES_NAMESPACES),
+	"PersistentVolume":     fmt.Sprintf("%s.json", constants.CLUSTER_RESOURCES_PVS),
+	"pv":                   fmt.Sprintf("%s.json", constants.CLUSTER_RESOURCES_PVS),
+	"Node":                 fmt.Sprintf("%s.json", constants.CLUSTER_RESOURCES_NODES),
+	"StorageClass":         fmt.Sprintf("%s.json", constants.CLUSTER_RESOURCES_STORAGE_CLASS),
+}
+
+type AnalyzeClusterResource struct {
+	analyzer *troubleshootv1beta2.ClusterResource
+}
+
+func (a *AnalyzeClusterResource) Title() string {
+	title := a.analyzer.CheckName
+	if title == "" {
+		title = a.analyzer.CollectorName
+	}
+
+	return title
+}
+
+func (a *AnalyzeClusterResource) IsExcluded() (bool, error) {
+	return isExcluded(a.analyzer.Exclude)
+}
+
+func (a *AnalyzeClusterResource) Analyze(getFile getCollectedFileContents, findFiles getChildCollectedFileContents) ([]*AnalyzeResult, error) {
+	result, err := a.analyzeResource(a.analyzer, getFile)
+	if err != nil {
+		return nil, err
+	}
+	return []*AnalyzeResult{result}, nil
 }
 
 // FindResource locates and returns a kubernetes resource as an interface{} from a support bundle based on some basic selectors
@@ -43,12 +69,12 @@ func FindResource(kind string, clusterScoped bool, namespace string, name string
 		return nil, errors.New("failed to find resource")
 	}
 
-	datapath = filepath.Join("cluster-resources", resourceLocation)
+	datapath = filepath.Join(constants.CLUSTER_RESOURCES_DIR, resourceLocation)
 	if !clusterScoped {
 		if namespace == "" {
 			namespace = "default"
 		}
-		datapath = filepath.Join("cluster-resources", resourceLocation, fmt.Sprintf("%s.json", namespace))
+		datapath = filepath.Join(constants.CLUSTER_RESOURCES_DIR, resourceLocation, fmt.Sprintf("%s.json", namespace))
 	}
 
 	file, err := getFileContents(datapath)
@@ -81,7 +107,7 @@ func FindResource(kind string, clusterScoped bool, namespace string, name string
 
 }
 
-func analyzeResource(analyzer *troubleshootv1beta2.ClusterResource, getFileContents getCollectedFileContents) (*AnalyzeResult, error) {
+func (a *AnalyzeClusterResource) analyzeResource(analyzer *troubleshootv1beta2.ClusterResource, getFileContents getCollectedFileContents) (*AnalyzeResult, error) {
 
 	selected, err := FindResource(analyzer.Kind, analyzer.ClusterScoped, analyzer.Namespace, analyzer.Name, getFileContents)
 	if err != nil {
@@ -99,13 +125,8 @@ func analyzeResource(analyzer *troubleshootv1beta2.ClusterResource, getFileConte
 		return nil, errors.Wrap(err, "failed to parse expected value as yaml doc")
 	}
 
-	title := analyzer.CheckName
-	if title == "" {
-		title = analyzer.CollectorName
-	}
-
 	result := &AnalyzeResult{
-		Title:   title,
+		Title:   a.Title(),
 		IconKey: "kubernetes_text_analyze",
 		IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg",
 	}
@@ -162,7 +183,7 @@ func analyzeResource(analyzer *troubleshootv1beta2.ClusterResource, getFileConte
 	}
 
 	return &AnalyzeResult{
-		Title:   title,
+		Title:   a.Title(),
 		IconKey: "kubernetes_text_analyze",
 		IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg",
 		IsFail:  true,

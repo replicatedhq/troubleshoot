@@ -1,10 +1,9 @@
-
 ---
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.7.0
+    controller-gen.kubebuilder.io/version: v0.11.2
   creationTimestamp: null
   name: hostpreflights.troubleshoot.sh
 spec:
@@ -634,6 +633,55 @@ spec:
                       required:
                       - outcomes
                       type: object
+                    subnetAvailable:
+                      properties:
+                        annotations:
+                          additionalProperties:
+                            type: string
+                          type: object
+                        checkName:
+                          type: string
+                        collectorName:
+                          type: string
+                        exclude:
+                          type: BoolString
+                        outcomes:
+                          items:
+                            properties:
+                              fail:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
+                              pass:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
+                              warn:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
+                            type: object
+                          type: array
+                        strict:
+                          type: BoolString
+                      required:
+                      - outcomes
+                      type: object
                     systemPackages:
                       properties:
                         annotations:
@@ -879,6 +927,55 @@ spec:
                       required:
                       - outcomes
                       type: object
+                    udpPortStatus:
+                      properties:
+                        annotations:
+                          additionalProperties:
+                            type: string
+                          type: object
+                        checkName:
+                          type: string
+                        collectorName:
+                          type: string
+                        exclude:
+                          type: BoolString
+                        outcomes:
+                          items:
+                            properties:
+                              fail:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
+                              pass:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
+                              warn:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
+                            type: object
+                          type: array
+                        strict:
+                          type: BoolString
+                      required:
+                      - outcomes
+                      type: object
                   type: object
                 type: array
               collectors:
@@ -904,6 +1001,17 @@ spec:
                       required:
                       - certificatePath
                       - keyPath
+                      type: object
+                    copy:
+                      properties:
+                        collectorName:
+                          type: string
+                        exclude:
+                          type: BoolString
+                        path:
+                          type: string
+                      required:
+                      - path
                       type: object
                     cpu:
                       properties:
@@ -1128,6 +1236,20 @@ spec:
                       - args
                       - command
                       type: object
+                    subnetAvailable:
+                      properties:
+                        CIDRRangeAlloc:
+                          type: string
+                        collectorName:
+                          type: string
+                        desiredCIDR:
+                          type: integer
+                        exclude:
+                          type: BoolString
+                      required:
+                      - CIDRRangeAlloc
+                      - desiredCIDR
+                      type: object
                     systemPackages:
                       properties:
                         amzn:
@@ -1150,6 +1272,10 @@ spec:
                           items:
                             type: string
                           type: array
+                        centos9:
+                          items:
+                            type: string
+                          type: array
                         collectorName:
                           type: string
                         exclude:
@@ -1166,6 +1292,10 @@ spec:
                           items:
                             type: string
                           type: array
+                        ol9:
+                          items:
+                            type: string
+                          type: array
                         rhel:
                           items:
                             type: string
@@ -1175,6 +1305,22 @@ spec:
                             type: string
                           type: array
                         rhel8:
+                          items:
+                            type: string
+                          type: array
+                        rhel9:
+                          items:
+                            type: string
+                          type: array
+                        rocky:
+                          items:
+                            type: string
+                          type: array
+                        rocky8:
+                          items:
+                            type: string
+                          type: array
+                        rocky9:
                           items:
                             type: string
                           type: array
@@ -1243,6 +1389,19 @@ spec:
                           type: string
                         exclude:
                           type: BoolString
+                      type: object
+                    udpPortStatus:
+                      properties:
+                        collectorName:
+                          type: string
+                        exclude:
+                          type: BoolString
+                        interface:
+                          type: string
+                        port:
+                          type: integer
+                      required:
+                      - port
                       type: object
                   type: object
                 type: array
@@ -1463,6 +1622,20 @@ spec:
                         exclude:
                           type: BoolString
                       type: object
+                    subnetAvailable:
+                      properties:
+                        CIDRRangeAlloc:
+                          type: string
+                        collectorName:
+                          type: string
+                        desiredCIDR:
+                          type: integer
+                        exclude:
+                          type: BoolString
+                      required:
+                      - CIDRRangeAlloc
+                      - desiredCIDR
+                      type: object
                     systemPackages:
                       properties:
                         collectorName:
@@ -1519,6 +1692,19 @@ spec:
                         exclude:
                           type: BoolString
                       type: object
+                    udpPortStatus:
+                      properties:
+                        collectorName:
+                          type: string
+                        exclude:
+                          type: BoolString
+                        interface:
+                          type: string
+                        port:
+                          type: integer
+                      required:
+                      - port
+                      type: object
                   type: object
                 type: array
             type: object
@@ -1528,9 +1714,3 @@ spec:
         type: object
     served: true
     storage: true
-status:
-  acceptedNames:
-    kind: ""
-    plural: ""
-  conditions: []
-  storedVersions: []

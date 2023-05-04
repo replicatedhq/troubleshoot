@@ -50,6 +50,7 @@ type LogLimits struct {
 	MaxAge    string      `json:"maxAge,omitempty" yaml:"maxAge,omitempty"`
 	MaxLines  int64       `json:"maxLines,omitempty" yaml:"maxLines,omitempty"`
 	SinceTime metav1.Time `json:"sinceTime,omitempty" yaml:"sinceTime,omitempty"`
+	MaxBytes  int64       `json:"maxBytes,omitempty" yaml:"maxBytes,omitempty"`
 }
 
 type Logs struct {
@@ -215,6 +216,13 @@ type RegistryImages struct {
 	ImagePullSecrets *ImagePullSecrets `json:"imagePullSecret,omitempty" yaml:"imagePullSecret,omitempty"`
 }
 
+type Certificates struct {
+	CollectorMeta `json:",inline" yaml:",inline"`
+	Name          string              `json:"name,omitempty" yaml:"name,omitempty"`
+	Secrets       map[string][]string `json:"secrets,omitempty" yaml:"secrets,omitempty"`
+	ConfigMaps    map[string][]string `json:"configMaps,omitempty" yaml:"configMaps,omitempty"`
+}
+
 type Collect struct {
 	ClusterInfo      *ClusterInfo      `json:"clusterInfo,omitempty" yaml:"clusterInfo,omitempty"`
 	ClusterResources *ClusterResources `json:"clusterResources,omitempty" yaml:"clusterResources,omitempty"`
@@ -229,6 +237,7 @@ type Collect struct {
 	CopyFromHost     *CopyFromHost     `json:"copyFromHost,omitempty" yaml:"copyFromHost,omitempty"`
 	HTTP             *HTTP             `json:"http,omitempty" yaml:"http,omitempty"`
 	Postgres         *Database         `json:"postgres,omitempty" yaml:"postgres,omitempty"`
+	Mssql            *Database         `json:"mssql,omitempty" yaml:"mssql,omitempty"`
 	Mysql            *Database         `json:"mysql,omitempty" yaml:"mysql,omitempty"`
 	Redis            *Database         `json:"redis,omitempty" yaml:"redis,omitempty"`
 	Collectd         *Collectd         `json:"collectd,omitempty" yaml:"collectd,omitempty"`
@@ -236,6 +245,7 @@ type Collect struct {
 	Longhorn         *Longhorn         `json:"longhorn,omitempty" yaml:"longhorn,omitempty"`
 	RegistryImages   *RegistryImages   `json:"registryImages,omitempty" yaml:"registryImages,omitempty"`
 	Sysctl           *Sysctl           `json:"sysctl,omitempty" yaml:"sysctl,omitempty"`
+	Certificates     *Certificates     `json:"certificates,omitempty" yaml:"certificates,omitempty"`
 }
 
 func (c *Collect) AccessReviewSpecs(overrideNS string) []authorizationv1.SelfSubjectAccessReviewSpec {
@@ -448,6 +458,7 @@ func (c *Collect) AccessReviewSpecs(overrideNS string) []authorizationv1.SelfSub
 }
 
 func (c *Collect) GetName() string {
+	// TODO: Is this used anywhere? Should we just remove it?
 	var collector, name, selector string
 	if c.ClusterInfo != nil {
 		collector = "cluster-info"
@@ -504,6 +515,10 @@ func (c *Collect) GetName() string {
 		collector = "postgres"
 		name = c.Postgres.CollectorName
 	}
+	if c.Mssql != nil {
+		collector = "mssql"
+		name = c.Mssql.CollectorName
+	}
 	if c.Mysql != nil {
 		collector = "mysql"
 		name = c.Mysql.CollectorName
@@ -531,6 +546,10 @@ func (c *Collect) GetName() string {
 	if c.Sysctl != nil {
 		collector = "sysctl"
 		name = c.Sysctl.Name
+	}
+	if c.Certificates != nil {
+		collector = "certificates"
+		name = c.Certificates.CollectorName
 	}
 
 	if collector == "" {

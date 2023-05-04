@@ -42,12 +42,24 @@ type RemoteTCPPortStatus struct {
 	Port                int    `json:"port"`
 }
 
+type RemoteUDPPortStatus struct {
+	RemoteCollectorMeta `json:",inline" yaml:",inline"`
+	Interface           string `json:"interface,omitempty"`
+	Port                int    `json:"port"`
+}
+
 type RemoteKubernetes struct {
 	RemoteCollectorMeta `json:",inline" yaml:",inline"`
 }
 
 type RemoteIPV4Interfaces struct {
 	RemoteCollectorMeta `json:",inline" yaml:",inline"`
+}
+
+type RemoteSubnetAvailable struct {
+	RemoteCollectorMeta `json:",inline" yaml:",inline"`
+	CIDRRangeAlloc      string `json:"CIDRRangeAlloc" yaml:"CIDRRangeAlloc"`
+	DesiredCIDR         int    `json:"desiredCIDR" yaml:"desiredCIDR"`
 }
 
 type RemoteDiskUsage struct {
@@ -141,7 +153,9 @@ type RemoteCollect struct {
 	TCPLoadBalancer       *RemoteTCPLoadBalancer       `json:"tcpLoadBalancer,omitempty" yaml:"tcpLoadBalancer,omitempty"`
 	HTTPLoadBalancer      *RemoteHTTPLoadBalancer      `json:"httpLoadBalancer,omitempty" yaml:"httpLoadBalancer,omitempty"`
 	TCPPortStatus         *RemoteTCPPortStatus         `json:"tcpPortStatus,omitempty" yaml:"tcpPortStatus,omitempty"`
+	UDPPortStatus         *RemoteUDPPortStatus         `json:"udpPortStatus,omitempty" yaml:"udpPortStatus,omitempty"`
 	IPV4Interfaces        *RemoteIPV4Interfaces        `json:"ipv4Interfaces,omitempty" yaml:"ipv4Interfaces,omitempty"`
+	SubnetAvailable       *RemoteSubnetAvailable       `json:"subnetAvailable,omitempty" yaml:"subnetAvailable,omitempty"`
 	DiskUsage             *RemoteDiskUsage             `json:"diskUsage,omitempty" yaml:"diskUsage,omitempty"`
 	HTTP                  *RemoteHTTP                  `json:"http,omitempty" yaml:"http,omitempty"`
 	Time                  *RemoteTime                  `json:"time,omitempty" yaml:"time,omitempty"`

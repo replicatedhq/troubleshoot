@@ -3,6 +3,8 @@ package supportbundle
 import (
 	"reflect"
 	"testing"
+
+	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 )
 
 func Test_LoadAndConcatSpec(t *testing.T) {
@@ -43,4 +45,28 @@ func Test_LoadAndConcatSpec(t *testing.T) {
 		t.Error("Full bundle and concatenated bundle are not the same.")
 	}
 
+}
+
+func Test_LoadAndConcatSpec_WithNil(t *testing.T) {
+	var bundle *troubleshootv1beta2.SupportBundle
+	// both function arguments are nil
+	bundle4 := ConcatSpec(bundle, bundle)
+	if reflect.DeepEqual(bundle4, (*troubleshootv1beta2.SupportBundle)(nil)) == false {
+		t.Error("concatenating nil pointer with nil pointer has error.")
+	}
+
+	fulldoc, _ := LoadSupportBundleSpec("test/completebundle.yaml")
+	bundle, _ = ParseSupportBundleFromDoc(fulldoc)
+
+	// targetBundle is nil pointer
+	bundle5 := ConcatSpec((*troubleshootv1beta2.SupportBundle)(nil), bundle)
+	if reflect.DeepEqual(bundle5, bundle) == false {
+		t.Error("concatenating targetBundle of nil pointer has error.")
+	}
+
+	// sourceBundle is nil pointer
+	bundle6 := ConcatSpec(bundle, (*troubleshootv1beta2.SupportBundle)(nil))
+	if reflect.DeepEqual(bundle6, bundle) == false {
+		t.Error("concatenating sourceBundle of nil pointer has error.")
+	}
 }

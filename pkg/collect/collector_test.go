@@ -5,6 +5,7 @@ import (
 
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/replicatedhq/troubleshoot/pkg/multitype"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -361,6 +362,86 @@ pwd=somethinggoeshere;`,
 				toString[k] = string(v)
 			}
 			req.EqualValues(tt.want, toString)
+		})
+	}
+}
+
+func TestCollector_DedupCollectors(t *testing.T) {
+	tests := []struct {
+		name       string
+		Collectors []*troubleshootv1beta2.Collect
+		want       []*troubleshootv1beta2.Collect
+	}{
+		{
+			name: "multiple cluster info",
+			Collectors: []*troubleshootv1beta2.Collect{
+				{
+					ClusterInfo: &troubleshootv1beta2.ClusterInfo{},
+				},
+				{
+					ClusterInfo: &troubleshootv1beta2.ClusterInfo{},
+				},
+			},
+			want: []*troubleshootv1beta2.Collect{
+				{
+					ClusterInfo: &troubleshootv1beta2.ClusterInfo{},
+				},
+			},
+		},
+		{
+			name: "multiple cluster resources with matching namespace lists",
+			Collectors: []*troubleshootv1beta2.Collect{
+				{
+					ClusterResources: &troubleshootv1beta2.ClusterResources{
+						Namespaces: []string{"namespace1", "namespace2"},
+					},
+				},
+				{
+					ClusterResources: &troubleshootv1beta2.ClusterResources{
+						Namespaces: []string{"namespace1", "namespace2"},
+					},
+				},
+			},
+			want: []*troubleshootv1beta2.Collect{
+				{
+					ClusterResources: &troubleshootv1beta2.ClusterResources{
+						Namespaces: []string{"namespace1", "namespace2"},
+					},
+				},
+			},
+		},
+		{
+			name: "multiple cluster resources with unnique namespace lists",
+			Collectors: []*troubleshootv1beta2.Collect{
+				{
+					ClusterResources: &troubleshootv1beta2.ClusterResources{
+						Namespaces: []string{"namespace1", "namespace2"},
+					},
+				},
+				{
+					ClusterResources: &troubleshootv1beta2.ClusterResources{
+						Namespaces: []string{"namespace1000", "namespace2000"},
+					},
+				},
+			},
+			want: []*troubleshootv1beta2.Collect{
+				{
+					ClusterResources: &troubleshootv1beta2.ClusterResources{
+						Namespaces: []string{"namespace1", "namespace2"},
+					},
+				},
+				{
+					ClusterResources: &troubleshootv1beta2.ClusterResources{
+						Namespaces: []string{"namespace1000", "namespace2000"},
+					},
+				},
+			},
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got := DedupCollectors(tc.Collectors)
+			assert.Equal(t, tc.want, got)
 		})
 	}
 }

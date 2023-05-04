@@ -1,5 +1,10 @@
 on:
   pull_request:
+    types:
+      - opened
+      - reopened
+      - synchronize
+      - ready_for_review
     branches:
       - main
   push:
@@ -13,10 +18,17 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  fail_if_pull_request_is_draft:
+    if: github.event.pull_request.draft == true
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Fails in order to indicate that pull request needs to be marked as ready to review and unit tests workflow needs to pass.
+        run: exit 1
+
   test:
     runs-on: ubuntu-20.04
     steps:
-      - uses: actions/setup-go@v3
+      - uses: actions/setup-go@v4
         with:
           go-version: "1.19"
 
@@ -30,26 +42,49 @@ jobs:
 
       - run: make test
 
+  test-integration:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/setup-go@v4
+        with:
+          go-version: "1.19"
+
+      - name: setup env
+        run: |
+          echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
+          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
+        shell: bash
+
+      - uses: actions/checkout@v3
+      - uses: replicatedhq/action-k3s@main
+        id: k3s
+        with:
+          version: v1.23.6-k3s1
+
+      - run: make test-integration
+
   ensure-schemas-are-generated:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/setup-go@v3
+      - uses: actions/setup-go@v4
         with:
-          go-version: '1.19'
+          go-version: "1.19"
       - name: setup env
         run: |
           echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
         shell: bash
       - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
       - run: make check-schemas
 
   compile-preflight:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/setup-go@v3
+      - uses: actions/setup-go@v4
         with:
-          go-version: '1.19'
+          go-version: "1.19"
       - name: setup env
         run: |
           echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
@@ -123,9 +158,9 @@ jobs:
   compile-supportbundle:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/setup-go@v3
+      - uses: actions/setup-go@v4
         with:
-          go-version: '1.19'
+          go-version: "1.19"
       - name: setup env
         run: |
           echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
@@ -177,9 +212,9 @@ jobs:
   compile-collect:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/setup-go@v3
+      - uses: actions/setup-go@v4
         with:
-          go-version: '1.19'
+          go-version: "1.19"
       - name: setup env
         run: |
           echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
@@ -199,14 +234,16 @@ jobs:
       matrix:
         goarch: [amd64, arm64]
         goos: [darwin, linux, windows]
+        include:
+          - goarch: arm
+            goos: linux
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
 
-      - name: Unshallow
-        run: git fetch --prune --unshallow
-
-      - uses: actions/setup-go@v3
+      - uses: actions/setup-go@v4
         with:
           go-version: "1.19"
 
@@ -229,16 +266,15 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
 
       - uses: azure/docker-login@v1
         with:
-          username: repldeploy2
+          username: ${{ secrets.DOCKERHUB_USER }}
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
 
-      - name: Unshallow
-        run: git fetch --prune --unshallow
-
-      - uses: actions/setup-go@v3
+      - uses: actions/setup-go@v4
         with:
           go-version: "1.19"
 
@@ -267,12 +303,11 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-
       - name: Update new preflight version in krew-index
-        uses: rajatjindal/krew-release-bot@v0.0.43
+        uses: rajatjindal/krew-release-bot@v0.0.46
         with:
           krew_template_file: deploy/krew/preflight.yaml
       - name: Update new support-bundle version in krew-index
-        uses: rajatjindal/krew-release-bot@v0.0.43
+        uses: rajatjindal/krew-release-bot@v0.0.46
         with:
           krew_template_file: deploy/krew/support-bundle.yaml

@@ -10,13 +10,43 @@ import (
 	"github.com/replicatedhq/troubleshoot/pkg/collect"
 )
 
-func analyzeRedis(analyzer *troubleshootv1beta2.DatabaseAnalyze, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
-	collectorName := analyzer.CollectorName
+type AnalyzeRedis struct {
+	analyzer *troubleshootv1beta2.DatabaseAnalyze
+}
+
+func (a *AnalyzeRedis) Title() string {
+	title := a.analyzer.CheckName
+	if title == "" {
+		title = a.collectorName()
+	}
+
+	return title
+}
+
+func (a *AnalyzeRedis) IsExcluded() (bool, error) {
+	return isExcluded(a.analyzer.Exclude)
+}
+
+func (a *AnalyzeRedis) Analyze(getFile getCollectedFileContents, findFiles getChildCollectedFileContents) ([]*AnalyzeResult, error) {
+	result, err := a.analyzeRedis(a.analyzer, getFile)
+	if err != nil {
+		return nil, err
+	}
+	result.Strict = a.analyzer.Strict.BoolOrDefaultFalse()
+	return []*AnalyzeResult{result}, nil
+}
+
+func (a *AnalyzeRedis) collectorName() string {
+	collectorName := a.analyzer.CollectorName
 	if collectorName == "" {
 		collectorName = "redis"
 	}
 
-	fullPath := path.Join("redis", fmt.Sprintf("%s.json", collectorName))
+	return collectorName
+}
+
+func (a *AnalyzeRedis) analyzeRedis(analyzer *troubleshootv1beta2.DatabaseAnalyze, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
+	fullPath := path.Join("redis", fmt.Sprintf("%s.json", a.collectorName()))
 
 	collected, err := getCollectedFileContents(fullPath)
 	if err != nil {
@@ -28,13 +58,8 @@ func analyzeRedis(analyzer *troubleshootv1beta2.DatabaseAnalyze, getCollectedFil
 		return nil, errors.Wrap(err, "failed to unmarshal database connection result")
 	}
 
-	title := analyzer.CheckName
-	if title == "" {
-		title = collectorName
-	}
-
 	result := &AnalyzeResult{
-		Title:   title,
+		Title:   a.Title(),
 		IconKey: "kubernetes_redis_analyze",
 		IconURI: "https://troubleshoot.sh/images/analyzer-icons/redis-analyze.svg",
 	}
