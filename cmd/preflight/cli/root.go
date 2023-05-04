@@ -25,13 +25,13 @@ func wrapExitCodeInError(theErr error, exitCode int) error {
 		useErr = theErr.Error()
 	}
 
-	return fmt.Errorf("%d::::%s", exitCode, useErr)
+	return fmt.Errorf("%d:-:-:-:%s", exitCode, useErr)
 }
 
 // Returns error (did unwrap succeed), error (the unwrapped error), int (exit code)
 // TODOLATER: consolidate the 2 error responses into 1? any downsides?
 func unwrapExitCodeFromError(inputErr error) (error, error, int) {
-	splitErr := strings.Split(inputErr.Error(), "::::")
+	splitErr := strings.Split(inputErr.Error(), ":-:-:-:")
 	if len(splitErr) != 2 {
 		return fmt.Errorf("Invalid error input, cannot unwrap exit code - %s", inputErr), fmt.Errorf("ERROR"), 1
 	}
