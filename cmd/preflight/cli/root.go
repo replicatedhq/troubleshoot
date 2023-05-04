@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -10,6 +11,7 @@ import (
 	"github.com/replicatedhq/troubleshoot/pkg/k8sutil"
 	"github.com/replicatedhq/troubleshoot/pkg/logger"
 	"github.com/replicatedhq/troubleshoot/pkg/preflight"
+	"github.com/replicatedhq/troubleshoot/pkg/types"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"k8s.io/klog/v2"
@@ -22,7 +24,8 @@ func RootCmd() *cobra.Command {
 		Short: "Run and retrieve preflight checks in a cluster",
 		Long: `A preflight check is a set of validations that can and should be run to ensure
 that a cluster meets the requirements to run an application.`,
-		SilenceUsage: true,
+		SilenceUsage:  true,
+		SilenceErrors: true,
 		PreRun: func(cmd *cobra.Command, args []string) {
 			v := viper.GetViper()
 			v.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
@@ -75,7 +78,14 @@ that a cluster meets the requirements to run an application.`,
 }
 
 func InitAndExecute() {
-	if err := RootCmd().Execute(); err != nil {
+	cmd := RootCmd()
+	err := cmd.Execute()
+	if err != nil {
+		cmd.PrintErrln("Error:", err.Error())
+		var exitErr types.ExitError
+		if errors.As(err, &exitErr) {
+			os.Exit(exitErr.ExitStatus())
+		}
 		os.Exit(1)
 	}
 }

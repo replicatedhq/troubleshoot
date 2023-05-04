@@ -23,6 +23,7 @@ import (
 	"github.com/replicatedhq/troubleshoot/pkg/k8sutil"
 	"github.com/replicatedhq/troubleshoot/pkg/oci"
 	"github.com/replicatedhq/troubleshoot/pkg/specs"
+	"github.com/replicatedhq/troubleshoot/pkg/types"
 	"github.com/spf13/viper"
 	spin "github.com/tj/go-spin"
 	"go.opentelemetry.io/otel"
@@ -61,7 +62,7 @@ func RunPreflights(interactive bool, output string, format string, args []string
 			// format secret/namespace-name/secret-name
 			pathParts := strings.Split(v, "/")
 			if len(pathParts) != 3 {
-				return errors.Errorf("path %s must have 3 components", v)
+				return types.NewSpecIssueError(fmt.Sprintf("path %s must have 3 components", v))
 			}
 
 			spec, err := specs.LoadFromSecret(pathParts[1], pathParts[2], "preflight-spec")
