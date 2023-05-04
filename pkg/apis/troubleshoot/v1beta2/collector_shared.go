@@ -219,8 +219,13 @@ type RegistryImages struct {
 type Certificates struct {
 	CollectorMeta `json:",inline" yaml:",inline"`
 	Name          string              `json:"name,omitempty" yaml:"name,omitempty"`
-	Secrets       map[string][]string `json:"secrets,omitempty" yaml:"secrets,omitempty"`
-	ConfigMaps    map[string][]string `json:"configMaps,omitempty" yaml:"configMaps,omitempty"`
+	Secrets       []CertificateSource `json:"secrets,omitempty" yaml:"secrets,omitempty"`
+	ConfigMaps    []CertificateSource `json:"configMaps,omitempty" yaml:"configMaps,omitempty"`
+}
+
+type CertificateSource struct {
+	Name       string   `json:"name,omitempty" yaml:"name,omitempty"`
+	Namespaces []string `json:"namespaces,omitempty" yaml:"namespaces,omitempty"`
 }
 
 type Collect struct {
