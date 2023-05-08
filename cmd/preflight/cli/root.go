@@ -1,9 +1,9 @@
 package cli
 
 import (
+	"errors"
 	"fmt"
 	"os"
-	"strconv"
 	"strings"
 
 	"github.com/replicatedhq/troubleshoot/cmd/util"
@@ -11,43 +11,11 @@ import (
 	"github.com/replicatedhq/troubleshoot/pkg/k8sutil"
 	"github.com/replicatedhq/troubleshoot/pkg/logger"
 	"github.com/replicatedhq/troubleshoot/pkg/preflight"
+	"github.com/replicatedhq/troubleshoot/pkg/types"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"k8s.io/klog/v2"
 )
-
-// Hacky way of passing the exit code up the stack
-// Ideally I'd pass a custom error struct through, but I can't get cobra.Command to accept one at the moment
-// So we can pass any error + the exit code up the stack
-func wrapExitCodeInError(theErr error, exitCode int) error {
-	useErr := ""
-	if theErr != nil {
-		useErr = theErr.Error()
-	}
-
-	return fmt.Errorf("%d:-:-:-:%s", exitCode, useErr)
-}
-
-// Returns error (did unwrap succeed), error (the unwrapped error), int (exit code)
-// TODOLATER: consolidate the 2 error responses into 1? any downsides?
-func unwrapExitCodeFromError(inputErr error) (error, error, int) {
-	splitErr := strings.Split(inputErr.Error(), ":-:-:-:")
-	if len(splitErr) != 2 {
-		return fmt.Errorf("Invalid error input, cannot unwrap exit code - %s", inputErr), fmt.Errorf("ERROR"), 1
-	}
-
-	exitCode, err := strconv.Atoi(splitErr[0])
-	if err != nil {
-		return err, fmt.Errorf("ERROR"), 1
-	}
-
-	var unwrappedErr error
-	if len(splitErr[1]) > 0 {
-		unwrappedErr = fmt.Errorf(splitErr[1])
-	}
-
-	return nil, unwrappedErr, exitCode
-}
 
 func RootCmd() *cobra.Command {
 	cmd := &cobra.Command{
@@ -79,12 +47,12 @@ that a cluster meets the requirements to run an application.`,
 				defer closer()
 			}
 
-			exitCode, err := preflight.RunPreflights(v.GetBool("interactive"), v.GetString("output"), v.GetString("format"), args)
+			err = preflight.RunPreflights(v.GetBool("interactive"), v.GetString("output"), v.GetString("format"), args)
 			if v.GetBool("debug") || v.IsSet("v") {
 				fmt.Printf("\n%s", traces.GetExporterInstance().GetSummary())
 			}
 
-			return wrapExitCodeInError(err, exitCode)
+			return err
 		},
 		PostRun: func(cmd *cobra.Command, args []string) {
 			if err := util.StopProfiling(); err != nil {
@@ -111,20 +79,20 @@ that a cluster meets the requirements to run an application.`,
 }
 
 func InitAndExecute() {
-	errAndExitCode := RootCmd().Execute()
+	cmd := RootCmd()
+	err := cmd.Execute()
 
-	err, unwrappedErr, exitCode := unwrapExitCodeFromError(errAndExitCode)
 	if err != nil {
-		print(err)
+		var exitErr types.ExitError
+		if errors.As(err, &exitErr) {
+			if len(exitErr.Error()) > 0 {
+				cmd.PrintErrln("Error:", err.Error())
+			}
+			os.Exit(exitErr.ExitStatus())
+		}
 		os.Exit(1)
 	}
-
-	if unwrappedErr != nil {
-		print(unwrappedErr)
-		os.Exit(1)
-	}
-
-	os.Exit(exitCode)
+	os.Exit(1)
 }
 
 func initConfig() {
