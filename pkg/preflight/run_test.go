@@ -7,12 +7,14 @@
 package preflight
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/replicatedhq/troubleshoot/internal/testutils"
 	analyzerunner "github.com/replicatedhq/troubleshoot/pkg/analyze"
+	"github.com/replicatedhq/troubleshoot/pkg/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	/*
@@ -176,7 +178,7 @@ PASS
 			origStderr := os.Stderr
 			os.Stderr = wErr
 
-			tExitCode, tErr := RunPreflights(tt.interactive, tt.output, tt.format, tt.args)
+			tErr := RunPreflights(tt.interactive, tt.output, tt.format, tt.args)
 
 			// Stop redirection of stdout/stderr
 			bufOut := make([]byte, 1024)
@@ -189,12 +191,18 @@ PASS
 			os.Stdout = origStdout
 			os.Stderr = origStderr
 
-			assert.Equal(t, tt.wantExitCode, tExitCode)
+			// It's always an error of some form
+			assert.Error(t, tErr)
 
+			var exitErr types.ExitError
+			// Make sure we can always turn it into an ExitError
+			assert.True(t, errors.As(tErr, &exitErr))
+
+			assert.Equal(t, tt.wantExitCode, exitErr.ExitStatus())
 			if tt.wantErr {
-				assert.Error(t, tErr)
+				assert.NotEmpty(t, exitErr.Error())
 			} else {
-				require.NoError(t, tErr)
+				assert.Empty(t, exitErr.Error())
 			}
 
 			useBufOut := string(bufOut[:nOut])
