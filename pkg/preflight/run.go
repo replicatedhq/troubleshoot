@@ -59,74 +59,71 @@ func RunPreflights(interactive bool, output string, format string, args []string
 	var uploadResultSpecs []*troubleshootv1beta2.Preflight
 	var err error
 
-	catchAllExitCode := 1
-	specIssuesExitCode := 2
-
 	for _, v := range args {
 		if strings.HasPrefix(v, "secret/") {
 			// format secret/namespace-name/secret-name
 			pathParts := strings.Split(v, "/")
 			if len(pathParts) != 3 {
-				return types.NewExitCodeError(specIssuesExitCode, errors.Errorf("path %s must have 3 components", v))
+				return types.NewExitCodeError(constants.EXIT_CODE_SPEC_ISSUES, errors.Errorf("path %s must have 3 components", v))
 			}
 
 			spec, err := specs.LoadFromSecret(pathParts[1], pathParts[2], "preflight-spec")
 			if err != nil {
-				return types.NewExitCodeError(specIssuesExitCode, errors.Wrap(err, "failed to get spec from secret"))
+				return types.NewExitCodeError(constants.EXIT_CODE_SPEC_ISSUES, errors.Wrap(err, "failed to get spec from secret"))
 			}
 
 			preflightContent = spec
 		} else if _, err = os.Stat(v); err == nil {
 			b, err := os.ReadFile(v)
 			if err != nil {
-				return types.NewExitCodeError(specIssuesExitCode, err)
+				return types.NewExitCodeError(constants.EXIT_CODE_SPEC_ISSUES, err)
 			}
 
 			preflightContent = b
 		} else if v == "-" {
 			b, err := io.ReadAll(os.Stdin)
 			if err != nil {
-				return types.NewExitCodeError(catchAllExitCode, err)
+				return types.NewExitCodeError(constants.EXIT_CODE_CATCH_ALL, err)
 			}
 			preflightContent = b
 		} else {
 			u, err := url.Parse(v)
 			if err != nil {
-				return types.NewExitCodeError(specIssuesExitCode, err)
+				return types.NewExitCodeError(constants.EXIT_CODE_SPEC_ISSUES, err)
 			}
 
 			if u.Scheme == "oci" {
 				content, err := oci.PullPreflightFromOCI(v)
 				if err != nil {
 					if err == oci.ErrNoRelease {
-						return types.NewExitCodeError(specIssuesExitCode, errors.Errorf("no release found for %s.\nCheck the oci:// uri for errors or contact the application vendor for support.", v))
+						return types.NewExitCodeError(constants.EXIT_CODE_SPEC_ISSUES, errors.Errorf("no release found for %s.\nCheck the oci:// uri for errors or contact the application vendor for support.", v))
 					}
 
-					return types.NewExitCodeError(specIssuesExitCode, err)
+					return types.NewExitCodeError(constants.EXIT_CODE_SPEC_ISSUES, err)
 				}
 
 				preflightContent = content
 			} else {
 				if !util.IsURL(v) {
-					return types.NewExitCodeError(specIssuesExitCode, fmt.Errorf("%s is not a URL and was not found (err %s)", v, err))
+					return types.NewExitCodeError(constants.EXIT_CODE_SPEC_ISSUES, fmt.Errorf("%s is not a URL and was not found (err %s)", v, err))
 				}
 
 				req, err := http.NewRequest("GET", v, nil)
 				if err != nil {
 					// exit code: should this be catch all or spec issues...?
-					return types.NewExitCodeError(catchAllExitCode, err)
+					return types.NewExitCodeError(constants.EXIT_CODE_CATCH_ALL, err)
 				}
 				req.Header.Set("User-Agent", "Replicated_Preflight/v1beta2")
 				resp, err := http.DefaultClient.Do(req)
 				if err != nil {
 					// exit code: should this be catch all or spec issues...?
-					return types.NewExitCodeError(catchAllExitCode, err)
+					return types.NewExitCodeError(constants.EXIT_CODE_CATCH_ALL, err)
 				}
 				defer resp.Body.Close()
 
 				body, err := io.ReadAll(resp.Body)
 				if err != nil {
-					return types.NewExitCodeError(specIssuesExitCode, err)
+					return types.NewExitCodeError(constants.EXIT_CODE_SPEC_ISSUES, err)
 				}
 
 				preflightContent = body
@@ -145,7 +142,7 @@ func RunPreflights(interactive bool, output string, format string, args []string
 
 			err := yaml.Unmarshal([]byte(doc), &parsedDocHead)
 			if err != nil {
-				return types.NewExitCodeError(specIssuesExitCode, errors.Wrap(err, "failed to parse yaml"))
+				return types.NewExitCodeError(constants.EXIT_CODE_SPEC_ISSUES, errors.Wrap(err, "failed to parse yaml"))
 			}
 
 			if parsedDocHead.Kind != "Preflight" {
@@ -154,14 +151,14 @@ func RunPreflights(interactive bool, output string, format string, args []string
 
 			preflightContent, err = docrewrite.ConvertToV1Beta2([]byte(doc))
 			if err != nil {
-				return types.NewExitCodeError(specIssuesExitCode, errors.Wrap(err, "failed to convert to v1beta2"))
+				return types.NewExitCodeError(constants.EXIT_CODE_SPEC_ISSUES, errors.Wrap(err, "failed to convert to v1beta2"))
 			}
 
 			troubleshootclientsetscheme.AddToScheme(scheme.Scheme)
 			decode := scheme.Codecs.UniversalDeserializer().Decode
 			obj, _, err := decode([]byte(preflightContent), nil, nil)
 			if err != nil {
-				return types.NewExitCodeError(specIssuesExitCode, errors.Wrapf(err, "failed to parse %s", v))
+				return types.NewExitCodeError(constants.EXIT_CODE_SPEC_ISSUES, errors.Wrapf(err, "failed to parse %s", v))
 			}
 
 			if spec, ok := obj.(*troubleshootv1beta2.Preflight); ok {
@@ -200,7 +197,7 @@ func RunPreflights(interactive bool, output string, format string, args []string
 	if preflightSpec != nil {
 		r, err := collectInCluster(ctx, preflightSpec, progressCh)
 		if err != nil {
-			return types.NewExitCodeError(catchAllExitCode, errors.Wrap(err, "failed to collect in cluster"))
+			return types.NewExitCodeError(constants.EXIT_CODE_CATCH_ALL, errors.Wrap(err, "failed to collect in cluster"))
 		}
 		collectResults = append(collectResults, *r)
 		preflightSpecName = preflightSpec.Name
@@ -209,7 +206,7 @@ func RunPreflights(interactive bool, output string, format string, args []string
 		for _, spec := range uploadResultSpecs {
 			r, err := collectInCluster(ctx, spec, progressCh)
 			if err != nil {
-				return types.NewExitCodeError(catchAllExitCode, errors.Wrap(err, "failed to collect in cluster"))
+				return types.NewExitCodeError(constants.EXIT_CODE_CATCH_ALL, errors.Wrap(err, "failed to collect in cluster"))
 			}
 			uploadResultsMap[spec.Spec.UploadResultsTo] = append(uploadResultsMap[spec.Spec.UploadResultsTo], *r)
 			uploadCollectResults = append(collectResults, *r)
@@ -220,14 +217,14 @@ func RunPreflights(interactive bool, output string, format string, args []string
 		if len(hostPreflightSpec.Spec.Collectors) > 0 {
 			r, err := collectHost(ctx, hostPreflightSpec, progressCh)
 			if err != nil {
-				return types.NewExitCodeError(catchAllExitCode, errors.Wrap(err, "failed to collect from host"))
+				return types.NewExitCodeError(constants.EXIT_CODE_CATCH_ALL, errors.Wrap(err, "failed to collect from host"))
 			}
 			collectResults = append(collectResults, *r)
 		}
 		if len(hostPreflightSpec.Spec.RemoteCollectors) > 0 {
 			r, err := collectRemote(ctx, hostPreflightSpec, progressCh)
 			if err != nil {
-				return types.NewExitCodeError(catchAllExitCode, errors.Wrap(err, "failed to collect remotely"))
+				return types.NewExitCodeError(constants.EXIT_CODE_CATCH_ALL, errors.Wrap(err, "failed to collect remotely"))
 			}
 			collectResults = append(collectResults, *r)
 		}
@@ -235,7 +232,7 @@ func RunPreflights(interactive bool, output string, format string, args []string
 	}
 
 	if collectResults == nil && uploadCollectResults == nil {
-		return types.NewExitCodeError(catchAllExitCode, errors.New("no results"))
+		return types.NewExitCodeError(constants.EXIT_CODE_CATCH_ALL, errors.New("no results"))
 	}
 
 	analyzeResults := []*analyzer.AnalyzeResult{}
@@ -264,7 +261,7 @@ func RunPreflights(interactive bool, output string, format string, args []string
 	progressCollection.Wait()
 
 	if len(analyzeResults) == 0 {
-		return types.NewExitCodeError(catchAllExitCode, errors.New("no data has been collected"))
+		return types.NewExitCodeError(constants.EXIT_CODE_CATCH_ALL, errors.New("no data has been collected"))
 	}
 
 	exitCode := checkOutcomesToExitCode(analyzeResults)
