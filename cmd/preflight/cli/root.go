@@ -83,11 +83,9 @@ func InitAndExecute() {
 	err := cmd.Execute()
 
 	if err != nil {
+		cmd.PrintErrln("Error:", err.Error())
 		var exitErr types.ExitError
 		if errors.As(err, &exitErr) {
-			if len(exitErr.Error()) > 0 {
-				cmd.PrintErrln("Error:", err.Error())
-			}
 			os.Exit(exitErr.ExitStatus())
 		}
 		os.Exit(1)
