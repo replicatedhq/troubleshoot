@@ -280,7 +280,7 @@ func RunPreflights(interactive bool, output string, format string, args []string
 		return nil
 	}
 
-	return types.NewExitCodeError(exitCode, err)
+	return types.NewExitCodeError(exitCode, errors.New("preflights failed with warnings or errors"))
 }
 
 // Determine if any preflight checks passed vs failed vs warned
