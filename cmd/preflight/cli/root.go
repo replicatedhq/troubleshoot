@@ -90,7 +90,6 @@ func InitAndExecute() {
 		}
 		os.Exit(1)
 	}
-	os.Exit(1)
 }
 
 func initConfig() {
