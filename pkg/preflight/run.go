@@ -295,9 +295,9 @@ func checkOutcomesToExitCode(analyzeResults []*analyzerunner.AnalyzeResult) int 
 
 	for _, analyzeResult := range analyzeResults {
 		if analyzeResult.IsWarn {
-			exitCode = 4
+			exitCode = constants.EXIT_CODE_WARN
 		} else if analyzeResult.IsFail {
-			exitCode = 3
+			exitCode = constants.EXIT_CODE_FAIL
 			// No need to check further, a fail is a fail
 			return exitCode
 		}

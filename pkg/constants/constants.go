@@ -55,4 +55,6 @@ const (
 	// Custom exit codes
 	EXIT_CODE_CATCH_ALL   = 1
 	EXIT_CODE_SPEC_ISSUES = 2
+	EXIT_CODE_FAIL        = 3
+	EXIT_CODE_WARN        = 4
 )

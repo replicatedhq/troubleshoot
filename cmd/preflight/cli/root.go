@@ -8,6 +8,7 @@ import (
 
 	"github.com/replicatedhq/troubleshoot/cmd/util"
 	"github.com/replicatedhq/troubleshoot/internal/traces"
+	"github.com/replicatedhq/troubleshoot/pkg/constants"
 	"github.com/replicatedhq/troubleshoot/pkg/k8sutil"
 	"github.com/replicatedhq/troubleshoot/pkg/logger"
 	"github.com/replicatedhq/troubleshoot/pkg/preflight"
@@ -83,19 +84,20 @@ func InitAndExecute() {
 	err := cmd.Execute()
 
 	if err != nil {
-		// We need to do this, there's situations where we need the non-zero exit code (which comes as part of the custom error struct)
-		// but there's no actual error, just an exit code.
-		// If there's also an error to output (eg. invalid format etc) then print it as well
-		if len(err.Error()) > 0 {
-			cmd.PrintErrln("Error:", err.Error())
-		}
-
 		var exitErr types.ExitError
 		if errors.As(err, &exitErr) {
+			// We need to do this, there's situations where we need the non-zero exit code (which comes as part of the custom error struct)
+			// but there's no actual error, just an exit code.
+			// If there's also an error to output (eg. invalid format etc) then print it as well
+			if exitErr.ExitStatus() != constants.EXIT_CODE_FAIL && exitErr.ExitStatus() != constants.EXIT_CODE_WARN {
+				cmd.PrintErrln("Error:", err.Error())
+			}
+
 			os.Exit(exitErr.ExitStatus())
 		}
 
 		// Fallback, should almost never be used (the above Exit() should handle almost all situations
+		cmd.PrintErrln("Error:", err.Error())
 		os.Exit(1)
 	}
 }
