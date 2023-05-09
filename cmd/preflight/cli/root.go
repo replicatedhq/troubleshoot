@@ -1,15 +1,18 @@
 package cli
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"strings"
 
 	"github.com/replicatedhq/troubleshoot/cmd/util"
 	"github.com/replicatedhq/troubleshoot/internal/traces"
+	"github.com/replicatedhq/troubleshoot/pkg/constants"
 	"github.com/replicatedhq/troubleshoot/pkg/k8sutil"
 	"github.com/replicatedhq/troubleshoot/pkg/logger"
 	"github.com/replicatedhq/troubleshoot/pkg/preflight"
+	"github.com/replicatedhq/troubleshoot/pkg/types"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"k8s.io/klog/v2"
@@ -22,7 +25,8 @@ func RootCmd() *cobra.Command {
 		Short: "Run and retrieve preflight checks in a cluster",
 		Long: `A preflight check is a set of validations that can and should be run to ensure
 that a cluster meets the requirements to run an application.`,
-		SilenceUsage: true,
+		SilenceUsage:  true,
+		SilenceErrors: true,
 		PreRun: func(cmd *cobra.Command, args []string) {
 			v := viper.GetViper()
 			v.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
@@ -48,6 +52,7 @@ that a cluster meets the requirements to run an application.`,
 			if v.GetBool("debug") || v.IsSet("v") {
 				fmt.Printf("\n%s", traces.GetExporterInstance().GetSummary())
 			}
+
 			return err
 		},
 		PostRun: func(cmd *cobra.Command, args []string) {
@@ -75,7 +80,24 @@ that a cluster meets the requirements to run an application.`,
 }
 
 func InitAndExecute() {
-	if err := RootCmd().Execute(); err != nil {
+	cmd := RootCmd()
+	err := cmd.Execute()
+
+	if err != nil {
+		var exitErr types.ExitError
+		if errors.As(err, &exitErr) {
+			// We need to do this, there's situations where we need the non-zero exit code (which comes as part of the custom error struct)
+			// but there's no actual error, just an exit code.
+			// If there's also an error to output (eg. invalid format etc) then print it as well
+			if exitErr.ExitStatus() != constants.EXIT_CODE_FAIL && exitErr.ExitStatus() != constants.EXIT_CODE_WARN {
+				cmd.PrintErrln("Error:", err.Error())
+			}
+
+			os.Exit(exitErr.ExitStatus())
+		}
+
+		// Fallback, should almost never be used (the above Exit() should handle almost all situations
+		cmd.PrintErrln("Error:", err.Error())
 		os.Exit(1)
 	}
 }

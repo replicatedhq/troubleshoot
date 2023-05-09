@@ -112,10 +112,17 @@ jobs:
           path: bin/
       - run: chmod +x bin/preflight
       - run: |
+          set +e
           ./bin/preflight --interactive=false --format=json https://preflight.replicated.com > result.json
+          EXIT_CODE=$?
           cat result.json
 
           EXIT_STATUS=0
+          if [ $EXIT_CODE -ne 3 ]; then
+            echo "Expected exit code of 3 (some checks failed), got $EXIT_CODE"
+            EXIT_STATUS=1
+          fi
+
           if grep -q "was not collected" result.json; then
             echo "Some files were not collected"
             EXIT_STATUS=1
