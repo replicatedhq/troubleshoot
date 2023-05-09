@@ -98,9 +98,6 @@ func InitAndExecute() {
 		// Fallback, should almost never be used (the above Exit() should handle almost all situations
 		os.Exit(1)
 	}
-
-	// Everything went fine
-	os.Exit(0)
 }
 
 func initConfig() {
