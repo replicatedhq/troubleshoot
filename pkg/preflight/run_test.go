@@ -191,18 +191,18 @@ PASS
 			os.Stdout = origStdout
 			os.Stderr = origStderr
 
-			// It's always an error of some form
-			assert.Error(t, tErr)
-
-			var exitErr types.ExitError
-			// Make sure we can always turn it into an ExitError
-			assert.True(t, errors.As(tErr, &exitErr))
-
-			assert.Equal(t, tt.wantExitCode, exitErr.ExitStatus())
 			if tt.wantErr {
+				// It's always an error of some form
+				assert.Error(t, tErr)
+
+				var exitErr types.ExitError
+				// Make sure we can always turn it into an ExitError
+				assert.True(t, errors.As(tErr, &exitErr))
+
+				assert.Equal(t, tt.wantExitCode, exitErr.ExitStatus())
 				assert.NotEmpty(t, exitErr.Error())
 			} else {
-				assert.Empty(t, exitErr.Error())
+				assert.Nil(t, tErr)
 			}
 
 			useBufOut := string(bufOut[:nOut])
