@@ -266,9 +266,9 @@ func RunPreflights(interactive bool, output string, format string, args []string
 
 	if interactive {
 		err = showInteractiveResults(preflightSpecName, output, analyzeResults)
+	} else {
+		err = showTextResults(format, preflightSpecName, output, analyzeResults)
 	}
-
-	err = showTextResults(format, preflightSpecName, output, analyzeResults)
 
 	var exitCode int
 	if err != nil {
