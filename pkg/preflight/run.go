@@ -271,7 +271,7 @@ func RunPreflights(interactive bool, output string, format string, args []string
 	}
 
 	if err != nil {
-		return errors.Wrap(err, "failed to print preflight results")
+		return err
 	}
 
 	exitCode := checkOutcomesToExitCode(analyzeResults)
