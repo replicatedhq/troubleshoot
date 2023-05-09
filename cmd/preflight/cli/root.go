@@ -83,13 +83,24 @@ func InitAndExecute() {
 	err := cmd.Execute()
 
 	if err != nil {
-		cmd.PrintErrln("Error:", err.Error())
+		// We need to do this, there's situations where we need the non-zero exit code (which comes as part of the custom error struct)
+		// but there's no actual error, just an exit code.
+		// If there's also an error to output (eg. invalid format etc) then print it as well
+		if len(err.Error()) > 0 {
+			cmd.PrintErrln("Error:", err.Error())
+		}
+
 		var exitErr types.ExitError
 		if errors.As(err, &exitErr) {
 			os.Exit(exitErr.ExitStatus())
 		}
+
+		// Fallback, should almost never be used (the above Exit() should handle almost all situations
 		os.Exit(1)
 	}
+
+	// Everything went fine
+	os.Exit(0)
 }
 
 func initConfig() {

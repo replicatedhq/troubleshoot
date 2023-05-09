@@ -264,13 +264,23 @@ func RunPreflights(interactive bool, output string, format string, args []string
 		return types.NewExitCodeError(constants.EXIT_CODE_CATCH_ALL, errors.New("no data has been collected"))
 	}
 
-	exitCode := checkOutcomesToExitCode(analyzeResults)
-
 	if interactive {
 		err = showInteractiveResults(preflightSpecName, output, analyzeResults)
 	}
 
 	err = showTextResults(format, preflightSpecName, output, analyzeResults)
+
+	var exitCode int
+	if err != nil {
+		// Always return a 2 here
+		exitCode = 2
+	} else {
+		exitCode = checkOutcomesToExitCode(analyzeResults)
+	}
+
+	if exitCode == 0 {
+		return nil
+	}
 
 	return types.NewExitCodeError(exitCode, err)
 }
