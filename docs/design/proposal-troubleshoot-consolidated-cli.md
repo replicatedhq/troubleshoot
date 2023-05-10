@@ -18,7 +18,7 @@ Functions of `support-bundle`, `preflight`, `analyze`, `redact`, and `sbctl` bin
 
 ## Detailed Design
 
-- TODO: specify the public APIs we expect users of Troubleshoot to consumem, e.g.
+- TODO: specify the public APIs we expect users of Troubleshoot to consume, e.g.
   - collect()
   - redact()
   - analyze()
