@@ -25,11 +25,11 @@ Functions of `support-bundle`, `preflight`, `analyze`, `redact`, and `sbctl` bin
 
 - generate a support bundle
 
-  `troubleshoot supportbundle.yaml`
+  `troubleshoot collect supportbundle.yaml`
 
-  `troubleshoot supportbundle.yaml secrets/default/kotsadm-appslug-supportbundle`
+  `troubleshoot collect supportbundle.yaml secrets/default/kotsadm-appslug-supportbundle`
 
-  `troubleshoot https://kots.io`
+  `troubleshoot collect https://kots.io`
 
 
 
