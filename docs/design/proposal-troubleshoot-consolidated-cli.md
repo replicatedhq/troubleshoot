@@ -25,21 +25,21 @@ Functions of `support-bundle`, `preflight`, `analyze`, `redact`, and `sbctl` bin
 
 - generate a support bundle
 
-  `kubectl troubleshoot supportbundle.yaml`
+  `troubleshoot supportbundle.yaml`
 
-  `kubectl troubleshoot supportbundle.yaml secrets/default/kotsadm-appslug-supportbundle`
+  `troubleshoot supportbundle.yaml secrets/default/kotsadm-appslug-supportbundle`
 
-  `kubectl troubleshoot https://kots.io`
+  `troubleshoot https://kots.io`
 
 
 
 - use a spec to return a go/no-go preflight outcome
 
-  `kubectl troubleshoot --preflight spec.yaml`
+  `troubleshoot --preflight spec.yaml`
 
 - use a support bundle tarball to execute `sbctl` and shell into a support bundle
 
-  `kubectl troubleshoot --shell support-bundle-12-12-2001.tar.gz`
+  `troubleshoot --shell support-bundle-12-12-2001.tar.gz`
 
 ### Example help text
 
