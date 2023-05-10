@@ -35,11 +35,11 @@ Functions of `support-bundle`, `preflight`, `analyze`, `redact`, and `sbctl` bin
 
 - use a spec to return a go/no-go preflight outcome
 
-  `troubleshoot --preflight spec.yaml`
+  `troubleshoot preflight spec.yaml`
 
-- use a support bundle tarball to execute `sbctl` and shell into a support bundle
+- Interact with an existing support bundle with kubectl.
 
-  `troubleshoot --shell support-bundle-12-12-2001.tar.gz`
+  `troubleshoot inspect support-bundle-12-12-2001.tar.gz`
 
 ### Example help text
 
@@ -58,7 +58,7 @@ Available Commands:
   analyze     Analyze an existing support bundle
   redact      Run redactors across an existing support bundle
   preflight   Run collectors, and analyzers, and provide a pass/fail preflight result with explanation
-  shell       Run sbctl shell using a support bundle
+  inspect     Open an interactive shell to inspect an existing support bundle with kubectl.
   version     Print the current version and exit
 
 Use "troubleshoot [command] --help" for more information about a command.
