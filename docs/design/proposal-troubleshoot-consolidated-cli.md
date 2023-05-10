@@ -23,6 +23,12 @@ Functions of `support-bundle`, `preflight`, `analyze`, `redact`, and `sbctl` bin
   - redact()
   - analyze()
 
+In the interest of being able to work on this quickly without breaking existing use-cases, a new `troubleshoot` command should be created. Utilizing cobra and viper best practices from the cobra.dev docs.
+
+sbctl should be migrated to the troubleshoot repository in a "lift and shift" operation to start with, allowing for it's methods and functions to be called by the new `troubleshoot` command
+
+### Usage patterns
+
 - generate a support bundle
 
   `troubleshoot collect supportbundle.yaml`
@@ -34,6 +40,8 @@ Functions of `support-bundle`, `preflight`, `analyze`, `redact`, and `sbctl` bin
 - use a spec to return a go/no-go preflight outcome
 
   `troubleshoot preflight spec.yaml`
+
+  This should not only clearly state any reasons for failing, but also use standardised exit codes that can be used by automation tools.
 
 - Interact with an existing support bundle with kubectl.
 
@@ -164,6 +172,8 @@ Global Flags:
 
 
 ## Assumptions
+
+- sbctl has no package naming conflicts with troubleshoot
 
 ## Testing
 
