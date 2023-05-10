@@ -27,6 +27,21 @@ In the interest of being able to work on this quickly without breaking existing 
 
 sbctl should be migrated to the troubleshoot repository in a "lift and shift" operation to start with, allowing for it's methods and functions to be called by the new `troubleshoot` command
 
+### Public APIs
+
+The existing package entrypoint we use from the support-bundle command is supportbundle.CollectSupportBundleFromSpec()
+which is an end-to-end function that runs collectors, redactors and then analysis.
+
+The Consolidated cli should be responsible for handling the end-to-end running of this process in the `cmd` leaving the importable `pkg` free to focus on defining the individual collect, redact analyze steps.
+
+this allows us to move functions out from behind `CollectSupportBundleFromSpec` so they can be easier called from other projects importing troubleshoot.
+
+those functions could be then called as:
+
+- `troubleshoot.Collect()`
+- `troubleshoot.Redact()`
+- `troubleshoot.Analyze()`
+
 ### Usage patterns
 
 - generate a support bundle
