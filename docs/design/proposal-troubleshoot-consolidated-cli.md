@@ -25,11 +25,11 @@ Functions of `support-bundle`, `preflight`, `analyze`, `redact`, and `sbctl` bin
 
 In the interest of being able to work on this quickly without breaking existing use-cases, a new `troubleshoot` command should be created. Utilizing cobra and viper best practices from the cobra.dev docs.
 
-sbctl should be migrated to the troubleshoot repository in a "lift and shift" operation to start with, allowing for it's methods and functions to be called by the new `troubleshoot` command
+sbctl should be migrated to the troubleshoot repository in a "lift and shift" operation to start with, allowing for it's methods and functions to be called by the new `troubleshoot` command.
 
 ### Public APIs
 
-The existing package entrypoint we use from the support-bundle command is supportbundle.CollectSupportBundleFromSpec()
+The existing package entrypoint we use from the support-bundle command is `supportbundle.CollectSupportBundleFromSpec()`
 which is an end-to-end function that runs collectors, redactors and then analysis.
 
 The Consolidated cli should be responsible for handling the end-to-end running of this process in the `cmd` leaving the importable `pkg` free to focus on defining the individual collect, redact analyze steps.
@@ -41,6 +41,10 @@ those functions could be then called as:
 - `troubleshoot.Collect()`
 - `troubleshoot.Redact()`
 - `troubleshoot.Analyze()`
+
+This is a breaking change for existing upstream projects, many of which will directly call `CollectSupportBundleFromSpec`
+
+To proceed with this change without breaking impacting the exinsting CLI the new `troubleshoot` command should target the underlying functions, essentially replicating the functionality of `CollectSupportBundleFromSpec`. which can be deprecated once we have a stable replacement.
 
 ### Usage patterns
 
