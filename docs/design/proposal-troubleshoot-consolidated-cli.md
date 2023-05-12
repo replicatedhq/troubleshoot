@@ -47,8 +47,6 @@ To this end we should create a new `pkg` that targets the functionality provided
 Once the stable API is ready we can instruct projects like kurl to target that and work on removing code marked for deprecation.
 
 
-
-
 ### Usage patterns
 
 - generate a support bundle
@@ -58,6 +56,14 @@ Once the stable API is ready we can instruct projects like kurl to target that a
   `troubleshoot collect supportbundle.yaml secrets/default/kotsadm-appslug-supportbundle`
 
   `troubleshoot collect https://kots.io`
+
+  in the troubleshoot cli code this could look like:
+
+```
+spec,_ := troubleshoot.ParseSpecFile("spec.yaml") # reads and parses a spec from file.
+bundleFile,_ := troubleshoot.Collect(spec) # collects the bundle and returns it's path on disk (i.e /tmp/bundle.tgz).
+analysisResults,_ := troubleshoot.Analyze(spec,bundleFile) # analyze the bundle according to the spec. 
+```
 
 - use a spec to return a go/no-go preflight outcome
 
