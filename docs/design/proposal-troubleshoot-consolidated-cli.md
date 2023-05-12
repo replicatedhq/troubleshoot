@@ -46,6 +46,26 @@ To this end we should create a new `pkg` that targets the functionality provided
 
 Once the stable API is ready we can instruct projects like kurl to target that and work on removing code marked for deprecation.
 
+The functionality we want to expose via this api is:
+
+- `CollectBundle(spec) (string,error)`
+  - collect a support bundle from a spec.
+  - takes a parsed spec struct as an parameter.
+  - returns a path to the bundle directory and errors.
+  - to minimise IO and increase collection speed. redactors should be run inline, redacting data in memory before it's saved to a bundle.
+- `RedactBundle(bundle) error`
+  - redact an already collected bundle, takes a path to the bundle as an parameter.
+  - returns any errors
+- `AnalyzeBundle(spec,bundle) (results,error)`
+  - run analysers from the spec and return the analysis results struct
+  - returns analysis struct and errors
+- `ArchiveBundle(string,string,string) error`
+  - generates a tar archive of the bundle directory at the specified path with optional compression
+  - takes bundle path, compression method and destination as parameters.
+  - returns errors
+- `ParseSpecFile(string) (spec,error)`
+  - parses a spec file and returns an unmarshalled troubleshoot spec struct.
+  - could be used for linting
 
 ### Usage patterns
 
@@ -60,9 +80,9 @@ Once the stable API is ready we can instruct projects like kurl to target that a
   in the troubleshoot cli code this could look like:
 
 ```
-spec,_ := troubleshoot.ParseSpecFile("spec.yaml") # reads and parses a spec from file.
-bundleFile,_ := troubleshoot.CollectBundle(spec) # collects the bundle and returns it's path on disk (i.e /tmp/bundle.tgz).
-analysisResults,_ := troubleshoot.AnalyzeBundle(spec,bundleFile) # analyze the bundle according to the spec.
+spec,_ := troubleshoot.ParseSpecFile("spec.yaml")
+bundleFile,_ := troubleshoot.CollectBundle(spec)
+analysisResults,_ := troubleshoot.AnalyzeBundle(spec,bundleFile)
 ```
 
 - use a spec to return a go/no-go preflight outcome
