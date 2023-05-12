@@ -76,6 +76,10 @@ func (c *CollectLogs) CollectWithClient(progressChan chan<- interface{}, client 
 
 		pods, podsErrors := listPodsInSelectors(ctx, client, c.Collector.Namespace, c.Collector.Selector)
 		if len(podsErrors) > 0 {
+			// prevent concurrent map writes to the output map
+			if err := ctx.Err(); err != nil {
+				return
+			}
 			output.SaveResult(c.BundlePath, getLogsErrorsFileName(c.Collector), marshalErrors(podsErrors))
 		}
 
@@ -93,6 +97,10 @@ func (c *CollectLogs) CollectWithClient(progressChan chan<- interface{}, client 
 
 					for _, containerName := range containerNames {
 						podLogs, err := savePodLogs(ctx, c.BundlePath, client, &pod, c.Collector.Name, containerName, c.Collector.Limits, false, true)
+						// prevent concurrent map writes to the output map
+						if err := ctx.Err(); err != nil {
+							return
+						}
 						if err != nil {
 							key := fmt.Sprintf("%s/%s-errors.json", c.Collector.Name, pod.Name)
 							if containerName != "" {
@@ -109,6 +117,10 @@ func (c *CollectLogs) CollectWithClient(progressChan chan<- interface{}, client 
 				} else {
 					for _, container := range c.Collector.ContainerNames {
 						containerLogs, err := savePodLogs(ctx, c.BundlePath, client, &pod, c.Collector.Name, container, c.Collector.Limits, false, true)
+						// prevent concurrent map writes to the output map
+						if err := ctx.Err(); err != nil {
+							return
+						}
 						if err != nil {
 							key := fmt.Sprintf("%s/%s/%s-errors.json", c.Collector.Name, pod.Name, container)
 							err := output.SaveResult(c.BundlePath, key, marshalErrors([]string{err.Error()}))
