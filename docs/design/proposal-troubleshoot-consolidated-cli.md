@@ -40,23 +40,14 @@ Once integrated into the repository, we can begin using functions from it's pack
 The existing package entrypoint we use from the support-bundle command is `supportbundle.CollectSupportBundleFromSpec()`
 which is an end-to-end function that runs collectors, redactors and then analysis.
 
-The Consolidated cli should be responsible for handling the end-to-end running of this process in the `cmd` leaving the importable `pkg` free to focus on defining the individual collect, redact analyze steps.
+The Consolidated cli should be responsible for handling the end-to-end running of this process in the `cmd` leaving the importable packages free to focus on defining the individual collect, redact analyze steps.
 
-this allows us to move functions out from behind `CollectSupportBundleFromSpec` so they can be easier called from other projects importing troubleshoot.
+To this end we should create a new `pkg` that targets the functionality provided by the `collect` and `analyze` packages such as `collect.runHostCollectors()` and provide a stable API to be used by the CLI and other projects. At the same time we can unpublish functionality that should not be exposed (such as the individual collector and analyser functions) and mark code for deprecation.
 
-those functions could be then called as:
+Once the stable API is ready we can instruct projects like kurl to target that and work on removing code marked for deprecation.
 
-- `troubleshoot.Collect()`
-- `troubleshoot.Redact()`
-- `troubleshoot.Analyze()`
 
-This is a breaking change for existing upstream projects, many of which will directly call `CollectSupportBundleFromSpec`
 
-To proceed with this change without breaking impacting the existing CLI and integrations the new `troubleshoot` command should target the underlying functions from the `collect` and `analyze` packages, essentially replicating the functionality of `CollectSupportBundleFromSpec`. which can be deprecated once we have a stable replacement.
-
-The functions from the `collect`, `analyze` and `supportbundle` packages can then be worked on to allow greater deduplication of code for the `preflight` subcommand
-
-We can then move towards a stable importable package that can be used for generating and interacting with support bundles and preflights checks while giving us greater flexibility when working on the CLI.
 
 ### Usage patterns
 
