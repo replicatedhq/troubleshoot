@@ -61,8 +61,8 @@ Once the stable API is ready we can instruct projects like kurl to target that a
 
 ```
 spec,_ := troubleshoot.ParseSpecFile("spec.yaml") # reads and parses a spec from file.
-bundleFile,_ := troubleshoot.Collect(spec) # collects the bundle and returns it's path on disk (i.e /tmp/bundle.tgz).
-analysisResults,_ := troubleshoot.Analyze(spec,bundleFile) # analyze the bundle according to the spec. 
+bundleFile,_ := troubleshoot.CollectBundle(spec) # collects the bundle and returns it's path on disk (i.e /tmp/bundle.tgz).
+analysisResults,_ := troubleshoot.AnalyzeBundle(spec,bundleFile) # analyze the bundle according to the spec.
 ```
 
 - use a spec to return a go/no-go preflight outcome
