@@ -1,6 +1,7 @@
 package preflight
 
 import (
+	"encoding/base64"
 	"fmt"
 	"io"
 	"net/http"
@@ -22,8 +23,10 @@ import (
 )
 
 type documentHead struct {
-	Kind     string           `yaml:"kind"`
-	Metadata documentMetadata `yaml:"metadata",omitempty`
+	Kind       string             `yaml:"kind"`
+	Metadata   documentMetadata   `yaml:"metadata",omitempty`
+	Data       documentData       `yaml:"data",omitempty`
+	StringData documentStringData `yaml:"stringData",omitempty`
 }
 
 type documentMetadata struct {
@@ -32,6 +35,14 @@ type documentMetadata struct {
 
 type documentMetadataLabels struct {
 	TroubleshootKind string `yaml:"troubleshoot.io/kind",omitempty`
+}
+
+type documentData struct {
+	PreflightYaml string `yaml:"preflight.yaml:",omitempty`
+}
+
+type documentStringData struct {
+	PreflightYaml string `yaml:"preflight.yaml:",omitempty`
 }
 
 type PreflightSpecs struct {
@@ -135,6 +146,24 @@ func (p *PreflightSpecs) Read(args []string) error {
 				if parsedDocHead.Metadata.Labels.TroubleshootKind == "preflight" {
 					// In a Secret, we need to get the document out of the data.`preflight.yaml` or stringData.`preflight.yaml` (stringData takes precedence)
 					// TODO: implement
+					if len(parsedDocHead.StringData.PreflightYaml) > 0 {
+						err := yaml.Unmarshal([]byte(parsedDocHead.StringData.PreflightYaml), &doc)
+						if err != nil {
+							return types.NewExitCodeError(constants.EXIT_CODE_SPEC_ISSUES, errors.Wrap(err, "failed to parse preflight secret stringData yaml"))
+						}
+					} else if len(parsedDocHead.Data.PreflightYaml) > 0 {
+						b64DecPreflightYaml, err := base64.StdEncoding.DecodeString(parsedDocHead.Data.PreflightYaml)
+						if err != nil {
+							return types.NewExitCodeError(constants.EXIT_CODE_SPEC_ISSUES, errors.Wrap(err, "failed to base64 decode preflight secret data"))
+						}
+
+						err = yaml.Unmarshal([]byte(b64DecPreflightYaml), &doc)
+						if err != nil {
+							return types.NewExitCodeError(constants.EXIT_CODE_SPEC_ISSUES, errors.Wrap(err, "failed to parse preflight secret data yaml"))
+						}
+					} else {
+						return types.NewExitCodeError(constants.EXIT_CODE_SPEC_ISSUES, errors.Wrap(err, "secret spec with preflight label found, but no preflight stringData or data?"))
+					}
 				} else {
 					// Not a preflight spec, skip
 					continue
