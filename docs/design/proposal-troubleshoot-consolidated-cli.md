@@ -52,7 +52,7 @@ those functions could be then called as:
 
 This is a breaking change for existing upstream projects, many of which will directly call `CollectSupportBundleFromSpec`
 
-To proceed with this change without breaking impacting the exinsting CLI and integrations the new `troubleshoot` command should target the underlying functions from the `collect` and `analyze` packages, essentially replicating the functionality of `CollectSupportBundleFromSpec`. which can be deprecated once we have a stable replacement.
+To proceed with this change without breaking impacting the existing CLI and integrations the new `troubleshoot` command should target the underlying functions from the `collect` and `analyze` packages, essentially replicating the functionality of `CollectSupportBundleFromSpec`. which can be deprecated once we have a stable replacement.
 
 The functions from the `collect`, `analyze` and `supportbundle` packages can then be worked on to allow greater deduplication of code for the `preflight` subcommand
 
