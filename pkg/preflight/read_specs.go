@@ -42,9 +42,6 @@ type PreflightSpecs struct {
 
 func (p *PreflightSpecs) Read(args []string) error {
 	var preflightContent []byte
-	var preflightSpec *troubleshootv1beta2.Preflight
-	var hostPreflightSpec *troubleshootv1beta2.HostPreflight
-	var uploadResultSpecs []*troubleshootv1beta2.Preflight
 	var err error
 
 	for _, v := range args {
@@ -158,12 +155,12 @@ func (p *PreflightSpecs) Read(args []string) error {
 
 			if spec, ok := obj.(*troubleshootv1beta2.Preflight); ok {
 				if spec.Spec.UploadResultsTo == "" {
-					preflightSpec = ConcatPreflightSpec(preflightSpec, spec)
+					p.PreflightSpec = ConcatPreflightSpec(p.PreflightSpec, spec)
 				} else {
-					uploadResultSpecs = append(uploadResultSpecs, spec)
+					p.UploadResultSpecs = append(p.UploadResultSpecs, spec)
 				}
 			} else if spec, ok := obj.(*troubleshootv1beta2.HostPreflight); ok {
-				hostPreflightSpec = ConcatHostPreflightSpec(hostPreflightSpec, spec)
+				p.HostPreflightSpec = ConcatHostPreflightSpec(p.HostPreflightSpec, spec)
 			}
 		}
 	}
