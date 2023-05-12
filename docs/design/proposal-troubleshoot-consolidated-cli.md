@@ -71,6 +71,12 @@ To proceed with this change without breaking impacting the exinsting CLI the new
   This should set the `KUBECONFIG` environment variable, as well as a `TROUBLESHOOT_SHELL` environment variable before spawning a subshell.
   This is to allow prompts and shell environments to be able to detect that they're running in a troubleshoot spawned shell, much like tmux et-al.
 
+  `troubleshoot inspect --non-interactive support-bundle-12-12-2001.tar.gz`
+
+  this should behave much like the `sbctl serve` command does today, printing the path to it's kubeconfig location to stdout or optionally take a flag to specify the kubeconfig location.
+
+  `troubleshoot inspect --non-interactive -f .kube/config support-bundle-12-12-2001.tar.gz`
+
 ### Example help text
 
 Overall top level command:
