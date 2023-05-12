@@ -33,7 +33,7 @@ sbctl should be migrated to the troubleshoot repository in a "lift and shift" op
 
 It should continue to be built as a standalone binary to enable continued use until a stable replacement exists. as such it should me integrated in a way that preserves the existing `cmd` and it's package requirements.
 
-Once integrated into the repository, we can begin calling it's packages from the from the new `troubleshoot` command to enable the `inspect` subcommand.
+Once integrated into the repository, we can begin using functions from it's packages from the from the new `troubleshoot` command to enable the `inspect` subcommand.
 
 ### Public APIs
 
@@ -54,7 +54,7 @@ This is a breaking change for existing upstream projects, many of which will dir
 
 To proceed with this change without breaking impacting the exinsting CLI and integrations the new `troubleshoot` command should target the underlying functions from the `collect` and `analyze` packages, essentially replicating the functionality of `CollectSupportBundleFromSpec`. which can be deprecated once we have a stable replacement.
 
-The functions from the `collect` and `analyze` packages can then be worked on to allow greater deduplication of code for the `preflight` subcommand
+The functions from the `collect`, `analyze` and `supportbundle` packages can then be worked on to allow greater deduplication of code for the `preflight` subcommand
 
 We can then move towards a stable importable package that can be used for generating and interacting with support bundles and preflights checks while giving us greater flexibility when working on the CLI.
 
