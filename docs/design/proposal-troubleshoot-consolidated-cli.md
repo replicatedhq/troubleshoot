@@ -44,6 +44,8 @@ The Consolidated cli should be responsible for handling the end-to-end running o
 
 To this end we should create a new `pkg` that targets the functionality provided by the `collect` and `analyze` packages such as `collect.runHostCollectors()` and provide a stable API to be used by the CLI and other projects. At the same time we can unpublish functionality that should not be exposed (such as the individual collector and analyser functions) and mark code for deprecation.
 
+This new package should be kept as minimal as possible. and serve only as an interface to private functions in the other packages.
+
 Once the stable API is ready we can instruct projects like kurl to target that and work on removing code marked for deprecation.
 
 The functionality we want to expose via this api is:
