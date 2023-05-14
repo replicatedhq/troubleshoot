@@ -175,6 +175,7 @@ func TestPreflightSpecsRead(t *testing.T) {
 		wantUploadResultSpecs []*troubleshootv1beta2.Preflight
 	}{
 		// TODOLATER: URL support? local mock webserver? would prefer for these tests to not require internet :)
+		// TODOLATER: multidoc fixtures
 		{
 			name:                  "file-preflight",
 			args:                  []string{preflightFile},
