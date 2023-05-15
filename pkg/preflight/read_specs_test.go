@@ -1,6 +1,8 @@
 package preflight
 
 import (
+	"log"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -11,8 +13,24 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+type PreflightSpecsReadTests []PreflightSpecsReadTest
+
+type PreflightSpecsReadTest struct {
+	name          string
+	args          []string
+	customStdin   bool
+	stdinDataFile string
+	//
+	wantErr           bool
+	wantPreflightSpec *troubleshootv1beta2.Preflight
+	// TODOLATER: tests around this
+	wantHostPreflightSpec *troubleshootv1beta2.HostPreflight
+	// TODOLATER: tests around this
+	wantUploadResultSpecs []*troubleshootv1beta2.Preflight
+}
+
 func TestPreflightSpecsRead(t *testing.T) {
-	t.Parallel()
+	// NOTE: don't use t.Parallel(), these tests manipulate os.Stdin
 
 	// A very simple preflight spec
 	preflightFile := filepath.Join(testutils.FileDir(), "../../testdata/preflightspec/troubleshoot_v1beta2_preflight_gotest.yaml")
@@ -162,71 +180,66 @@ func TestPreflightSpecsRead(t *testing.T) {
 		},
 	}
 
-	tests := []struct {
-		name string
-		args []string
-		//
-		wantErr           bool
-		wantPreflightSpec *troubleshootv1beta2.Preflight
-		// TODOLATER: tests around this
-		wantHostPreflightSpec *troubleshootv1beta2.HostPreflight
-		// TODOLATER: tests around this
-		wantUploadResultSpecs []*troubleshootv1beta2.Preflight
-	}{
+	tests := PreflightSpecsReadTests{
 		// TODOLATER: URL support? local mock webserver? would prefer for these tests to not require internet :)
 		// TODOLATER: multidoc fixtures
-		{
+		PreflightSpecsReadTest{
 			name:                  "file-preflight",
 			args:                  []string{preflightFile},
+			customStdin:           false,
 			wantErr:               false,
 			wantPreflightSpec:     &expectPreflightSpec,
 			wantHostPreflightSpec: nil,
 			wantUploadResultSpecs: nil,
 		},
-		{
+		PreflightSpecsReadTest{
 			name:                  "file-secret",
 			args:                  []string{preflightSecretFile},
+			customStdin:           false,
+			wantErr:               false,
+			wantPreflightSpec:     &expectSecretPreflightSpec,
+			wantHostPreflightSpec: nil,
+			wantUploadResultSpecs: nil,
+		},
+		PreflightSpecsReadTest{
+			name:                  "stdin-preflight",
+			args:                  []string{"-"},
+			customStdin:           true,
+			stdinDataFile:         preflightFile,
+			wantErr:               false,
+			wantPreflightSpec:     &expectPreflightSpec,
+			wantHostPreflightSpec: nil,
+			wantUploadResultSpecs: nil,
+		},
+		PreflightSpecsReadTest{
+			name:                  "stdin-secret",
+			args:                  []string{"-"},
+			customStdin:           true,
+			stdinDataFile:         preflightSecretFile,
 			wantErr:               false,
 			wantPreflightSpec:     &expectSecretPreflightSpec,
 			wantHostPreflightSpec: nil,
 			wantUploadResultSpecs: nil,
 		},
 		/*
-			{
-				name: "stdin-preflight",
-				args: []string{"-"},
-				// TODO: how do we feed in stdin? contents of preflightFile
-				wantErr:               false,
-				wantPreflightSpec:     &expectPreflightSpec,
-				wantHostPreflightSpec: &expectHostPreflightSpec,
-				wantUploadResultSpecs: expectUploadResultSpecs,
-			},
-			{
-				name: "stdin-secret",
-				args: []string{"-"},
-				// TODO: how do we feed in stdin? contents of preflightSecretFile
-				wantErr:               false,
+			/* TODOLATER: needs a cluster with a spec installed?
+			PreflightSpecsReadTest{
+				name:     "cluster-secret",
+				args:     []string{"/secret/some-secret-spec"},
+				customStdin: false,
+				wantErr:  false,
 				wantPreflightSpec:     &expectSecretPreflightSpec,
 				wantHostPreflightSpec: &expectSecretHostPreflightSpec,
-				wantUploadResultSpecs: expectSecretUploadResultSpecs,
+				wantUploadResultsSpecs: expectSecretUploadResultSpecs,
 			},
-		*/
-		/* TODOLATER: needs a cluster with a spec installed?
-		{
-			name:     "cluster-secret",
-			args:     []string{"/secret/some-secret-spec"},
-			wantErr:  false,
-			wantPreflightSpec:     &expectSecretPreflightSpec,
-			wantHostPreflightSpec: &expectSecretHostPreflightSpec,
-			wantUploadResultsSpecs: expectSecretUploadResultSpecs,
-		},
 		*/
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			specs := PreflightSpecs{}
-			tErr := specs.Read(tt.args)
+
+			tErr := singleTestPreflightSpecsRead(t, &tt, &specs)
 
 			if tt.wantErr {
 				assert.Error(t, tErr)
@@ -239,4 +252,48 @@ func TestPreflightSpecsRead(t *testing.T) {
 			assert.Equal(t, specs.UploadResultSpecs, tt.wantUploadResultSpecs)
 		})
 	}
+}
+
+// Structured as a separate function so we can use defer appropriately
+func singleTestPreflightSpecsRead(t *testing.T, tt *PreflightSpecsReadTest, specs *PreflightSpecs) error {
+	var tmpfile *os.File
+	var err error
+	if tt.customStdin == true {
+		tmpfile, err = os.CreateTemp("", "singleTestPreflightSpecsRead")
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		defer os.Remove(tmpfile.Name()) // clean up
+
+		// Read in data file
+		// TODOLATER: just copy the file...?
+		stdinData, err := os.ReadFile(tt.stdinDataFile)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if _, err := tmpfile.Write(stdinData); err != nil {
+			t.Fatal(err)
+		}
+
+		if _, err := tmpfile.Seek(0, 0); err != nil {
+			t.Fatal(err)
+		}
+
+		oldStdin := os.Stdin
+		defer func() { os.Stdin = oldStdin }() // Restore original Stdin
+
+		os.Stdin = tmpfile
+	}
+
+	err = specs.Read(tt.args)
+
+	if tt.customStdin == true {
+		if err = tmpfile.Close(); err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	return err
 }
