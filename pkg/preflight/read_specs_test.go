@@ -1,7 +1,6 @@
 package preflight
 
 import (
-	"fmt"
 	"path/filepath"
 	"testing"
 
@@ -84,20 +83,20 @@ func TestPreflightSpecsRead(t *testing.T) {
 			},
 		},
 	}
-	expectHostPreflightSpec := troubleshootv1beta2.HostPreflight{}
+
 	/*
-			TypeMeta: metav1.TypeMeta{
-				Kind:       "HostPreflight",
-				APIVersion: "troubleshoot.sh/troubleshootv1beta2",
-			},
-			Spec: troubleshootv1beta2.HostPreflightSpec{
-				Collectors:       []*troubleshootv1beta2.HostCollect(nil),
-				RemoteCollectors: []*troubleshootv1beta2.RemoteCollect(nil),
-				Analyzers:        []*troubleshootv1beta2.HostAnalyze(nil),
-			},
-		}
+		expectHostPreflightSpec := troubleshootv1beta2.HostPreflight{
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "HostPreflight",
+					APIVersion: "troubleshoot.sh/troubleshootv1beta2",
+				},
+				Spec: troubleshootv1beta2.HostPreflightSpec{
+					Collectors:       []*troubleshootv1beta2.HostCollect(nil),
+					RemoteCollectors: []*troubleshootv1beta2.RemoteCollect(nil),
+					Analyzers:        []*troubleshootv1beta2.HostAnalyze(nil),
+				},
+			}
 	*/
-	expectUploadResultSpecs := []*troubleshootv1beta2.Preflight{}
 
 	// A more complexed preflight spec, which resides in a secret
 	preflightSecretFile := filepath.Join(testutils.FileDir(), "../../testdata/preflightspec/troubleshoot_v1beta2_preflight_secret_gotest.yaml")
@@ -114,31 +113,6 @@ func TestPreflightSpecsRead(t *testing.T) {
 			UploadResultsTo:  "",
 			RemoteCollectors: []*troubleshootv1beta2.RemoteCollect(nil),
 			Analyzers: []*troubleshootv1beta2.Analyze{
-				&troubleshootv1beta2.Analyze{
-					ClusterVersion: &troubleshootv1beta2.ClusterVersion{
-						Outcomes: []*troubleshootv1beta2.Outcome{
-							&troubleshootv1beta2.Outcome{
-								Fail: &troubleshootv1beta2.SingleOutcome{
-									When:    "< 1.16.0",
-									Message: "The application requires at least Kubernetes 1.16.0, and recommends 1.18.0.",
-									//Uri:     "https://kubernetes.io",
-								},
-							},
-							&troubleshootv1beta2.Outcome{
-								Warn: &troubleshootv1beta2.SingleOutcome{
-									When:    "< 1.18.0",
-									Message: "Your cluster meets the minimum version of Kubernetes, but we recommend you update to 1.18.0 or later.",
-									//Uri:     "https://kubernetes.io",
-								},
-							},
-							&troubleshootv1beta2.Outcome{
-								Pass: &troubleshootv1beta2.SingleOutcome{
-									Message: "Your cluster meets the recommended and required versions of Kubernetes.",
-								},
-							},
-						},
-					},
-				},
 				&troubleshootv1beta2.Analyze{
 					NodeResources: &troubleshootv1beta2.NodeResources{
 						AnalyzeMeta: troubleshootv1beta2.AnalyzeMeta{
@@ -159,19 +133,44 @@ func TestPreflightSpecsRead(t *testing.T) {
 						},
 					},
 				},
+				&troubleshootv1beta2.Analyze{
+					ClusterVersion: &troubleshootv1beta2.ClusterVersion{
+						Outcomes: []*troubleshootv1beta2.Outcome{
+							&troubleshootv1beta2.Outcome{
+								Fail: &troubleshootv1beta2.SingleOutcome{
+									When:    "< 1.16.0",
+									Message: "The application requires at least Kubernetes 1.16.0, and recommends 1.18.0.",
+									URI:     "https://kubernetes.io",
+								},
+							},
+							&troubleshootv1beta2.Outcome{
+								Warn: &troubleshootv1beta2.SingleOutcome{
+									When:    "< 1.18.0",
+									Message: "Your cluster meets the minimum version of Kubernetes, but we recommend you update to 1.18.0 or later.",
+									URI:     "https://kubernetes.io",
+								},
+							},
+							&troubleshootv1beta2.Outcome{
+								Pass: &troubleshootv1beta2.SingleOutcome{
+									Message: "Your cluster meets the recommended and required versions of Kubernetes.",
+								},
+							},
+						},
+					},
+				},
 			},
 		},
 	}
-	expectSecretHostPreflightSpec := troubleshootv1beta2.HostPreflight{}
-	expectSecretUploadResultSpecs := []*troubleshootv1beta2.Preflight{}
 
 	tests := []struct {
 		name string
 		args []string
 		//
-		wantErr               bool
-		wantPreflightSpec     *troubleshootv1beta2.Preflight
+		wantErr           bool
+		wantPreflightSpec *troubleshootv1beta2.Preflight
+		// TODOLATER: tests around this
 		wantHostPreflightSpec *troubleshootv1beta2.HostPreflight
+		// TODOLATER: tests around this
 		wantUploadResultSpecs []*troubleshootv1beta2.Preflight
 	}{
 		// TODOLATER: URL support? local mock webserver? would prefer for these tests to not require internet :)
@@ -181,16 +180,16 @@ func TestPreflightSpecsRead(t *testing.T) {
 			args:                  []string{preflightFile},
 			wantErr:               false,
 			wantPreflightSpec:     &expectPreflightSpec,
-			wantHostPreflightSpec: &expectHostPreflightSpec,
-			wantUploadResultSpecs: expectUploadResultSpecs,
+			wantHostPreflightSpec: nil,
+			wantUploadResultSpecs: nil,
 		},
 		{
 			name:                  "file-secret",
 			args:                  []string{preflightSecretFile},
 			wantErr:               false,
 			wantPreflightSpec:     &expectSecretPreflightSpec,
-			wantHostPreflightSpec: &expectSecretHostPreflightSpec,
-			wantUploadResultSpecs: expectSecretUploadResultSpecs,
+			wantHostPreflightSpec: nil,
+			wantUploadResultSpecs: nil,
 		},
 		/*
 			{
@@ -228,10 +227,6 @@ func TestPreflightSpecsRead(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			specs := PreflightSpecs{}
 			tErr := specs.Read(tt.args)
-
-			for _, v := range specs.PreflightSpec.Spec.Analyzers {
-				fmt.Printf("%+v\n", *v)
-			}
 
 			if tt.wantErr {
 				assert.Error(t, tErr)
