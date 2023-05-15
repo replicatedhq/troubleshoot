@@ -24,25 +24,25 @@ import (
 
 type documentHead struct {
 	Kind       string             `yaml:"kind"`
-	Metadata   documentMetadata   `yaml:"metadata",omitempty`
-	Data       documentData       `yaml:"data",omitempty`
-	StringData documentStringData `yaml:"stringData",omitempty`
+	Metadata   documentMetadata   `yaml:"metadata,omitempty"`
+	Data       documentData       `yaml:"data,omitempty"`
+	StringData documentStringData `yaml:"stringData,omitempty"`
 }
 
 type documentMetadata struct {
-	Labels documentMetadataLabels `yaml:"labels",omitempty`
+	Labels documentMetadataLabels `yaml:"labels,omitempty"`
 }
 
 type documentMetadataLabels struct {
-	TroubleshootKind string `yaml:"troubleshoot.io/kind",omitempty`
+	TroubleshootKind string `yaml:"troubleshoot.io/kind,omitempty"`
 }
 
 type documentData struct {
-	PreflightYaml string `yaml:"preflight.yaml",omitempty`
+	PreflightYaml string `yaml:"preflight.yaml,omitempty"`
 }
 
 type documentStringData struct {
-	PreflightYaml string `yaml:"preflight.yaml",omitempty`
+	PreflightYaml string `yaml:"preflight.yaml,omitempty"`
 }
 
 type PreflightSpecs struct {
