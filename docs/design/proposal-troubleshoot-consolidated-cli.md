@@ -90,6 +90,10 @@ analysisResults,_ := troubleshoot.AnalyzeBundle(spec,bundleFile)
 
   This should not only clearly state any reasons for failing, but also use standardised exit codes that can be used by automation tools.
 
+  We should also continue to accept standard in, accepting any preflights from a yaml multidoc.
+
+  `helm template | troubleshoot preflight -`
+
 - Interact with an existing support bundle with kubectl.
 
   `troubleshoot inspect support-bundle-12-12-2001.tar.gz`
@@ -102,6 +106,14 @@ analysisResults,_ := troubleshoot.AnalyzeBundle(spec,bundleFile)
   this should behave much like the `sbctl serve` command does today, printing the path to it's kubeconfig location to stdout or optionally take a flag to specify the kubeconfig location.
 
   `troubleshoot inspect --non-interactive -f .kube/config support-bundle-12-12-2001.tar.gz`
+
+- Redact an existing spec
+
+  `troubleshoot redact -f redactors.yaml support-bundle.tar.gz`
+
+- Re-run analysers against an existing support bundle
+
+  `troubleshoot analyze -f spec.yaml support-bundle.tar.gz`
 
 ### Example help text
 
