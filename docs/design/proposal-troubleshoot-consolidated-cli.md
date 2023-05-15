@@ -20,11 +20,6 @@ Functions of `support-bundle`, `preflight`, `analyze`, `redact`, and `sbctl` bin
 
 ## Detailed Design
 
-- TODO: specify the public APIs we expect users of Troubleshoot to consume, e.g.
-  - collect()
-  - redact()
-  - analyze()
-
 In the interest of being able to work on this quickly without breaking existing use-cases, a new `troubleshoot` command should be created. Utilizing cobra and viper best practices from the cobra.dev docs.
 
 ### sbctl → troubleshoot inspect
