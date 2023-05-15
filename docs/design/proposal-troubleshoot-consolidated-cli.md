@@ -50,24 +50,26 @@ Once the stable API is ready we can instruct projects like kurl to target that a
 
 The functionality we want to expose via this api is:
 
-- `CollectBundle(spec) (string,error)`
+- `CollectBundle(spec{}) (bundlePath string, error)`
   - collect a support bundle from a spec.
   - takes a parsed spec struct as an parameter.
   - returns a path to the bundle directory and errors.
   - to minimise IO and increase collection speed. redactors should be run inline, redacting data in memory before it's saved to a bundle.
-- `RedactBundle(bundle) error`
+- `RedactBundle(bundlePath string) error`
   - redact an already collected bundle, takes a path to the bundle as an parameter.
   - returns any errors
-- `AnalyzeBundle(spec,bundle) (results,error)`
+- `AnalyzeBundle(spec{}, bundlePath string) (results{},error)`
   - run analysers from the spec and return the analysis results struct
   - returns analysis struct and errors
-- `ArchiveBundle(string,string,string) error`
+- `ArchiveBundle(bundlePath string, compressionMethod string, destination string) error`
   - generates a tar archive of the bundle directory at the specified path with optional compression
   - takes bundle path, compression method and destination as parameters.
   - returns errors
-- `ParseSpecFile(string) (spec,error)`
+- `ParseSpecFile(specFile string) (spec{},error)`
   - parses a spec file and returns an unmarshalled troubleshoot spec struct.
   - could be used for linting
+- `ServeBundle(bundlePath string, kubeconfig string, port int)`
+  - starts a sbctl server using the specified bundle and port, outputting a kubeconfig at a specified location.
 
 ### Usage patterns
 
