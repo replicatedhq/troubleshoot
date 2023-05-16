@@ -101,11 +101,13 @@ analysisResults,_ := troubleshoot.AnalyzeBundle(spec,bundleFile)
   This should set the `KUBECONFIG` environment variable, as well as a `TROUBLESHOOT_SHELL` environment variable before spawning a subshell.
   This is to allow prompts and shell environments to be able to detect that they're running in a troubleshoot spawned shell, much like tmux et-al.
 
-  `troubleshoot inspect --non-interactive support-bundle-12-12-2001.tar.gz`
+  Alternatively the `--interactive=false` global flag will disable the spawning of a nested shell.
+  this should behave much like the `sbctl serve` command does today,
+  printing the path to it's temporary kubeconfig location to stdout. optionally taking flags to specify the kubeconfig location for use in advanced automation.
 
-  this should behave much like the `sbctl serve` command does today, printing the path to it's kubeconfig location to stdout or optionally take a flag to specify the kubeconfig location.
+  `troubleshoot inspect --interactive=false support-bundle-12-12-2001.tar.gz`
 
-  `troubleshoot inspect --non-interactive -f .kube/config support-bundle-12-12-2001.tar.gz`
+  `troubleshoot inspect --interactive=false -o /path/to/kubeconfig support-bundle-12-12-2001.tar.gz`
 
 - Redact an existing spec
 
@@ -134,11 +136,40 @@ Available Commands:
   preflight   Run collectors, and analyzers, and provide a pass/fail preflight result with explanation
   inspect     Open an interactive shell to inspect an existing support bundle with kubectl.
   version     Print the current version and exit
-
-Use "troubleshoot [command] --help" for more information about a command.
 ```
 
-Collect command:
+### global flags:
+
+```
+      --as string                      Username to impersonate for the operation. User could be a regular user or a service account in a namespace.
+      --as-group stringArray           Group to impersonate for the operation, this flag can be repeated to specify multiple groups.
+      --as-uid string                  UID to impersonate for the operation.
+      --cache-dir string               Default cache directory (default "/Users/xavpaice/.kube/cache")
+      --certificate-authority string   Path to a cert file for the certificate authority
+      --client-certificate string      Path to a client certificate file for TLS
+      --client-key string              Path to a client key file for TLS
+      --cluster string                 The name of the kubeconfig cluster to use
+      --collect-without-permissions    always generate a support bundle, even if it some require additional permissions (default true)
+      --context string                 The name of the kubeconfig context to use
+      --cpuprofile string              File path to write cpu profiling data
+      --debug                          enable debug logging. This is equivalent to --v=0
+      --disable-compression            If true, opt-out of response compression for all requests to the server
+  -h, --help                           help for troubleshoot
+      --insecure-skip-tls-verify       If true, the server's certificate will not be checked for validity. This will make your HTTPS connections insecure
+      --interactive                    enable/disable interactive mode (default true)
+      --kubeconfig string              Path to the kubeconfig file to use for CLI requests.
+      --memprofile string              File path to write memory profiling data
+  -n, --namespace string               If present, the namespace scope for this CLI request
+      --no-uri                         When this flag is used, Troubleshoot does not attempt to retrieve the bundle referenced by the uri: field in the spec.`
+      --request-timeout string         The length of time to wait before giving up on a single server request. Non-zero values should contain a corresponding time unit (e.g. 1s, 2m, 3h). A value of zero means don't timeout requests. (default "0")
+  -s, --server string                  The address and port of the Kubernetes API server
+      --tls-server-name string         Server name to use for server certificate validation. If it is not provided, the hostname used to contact the server is used
+      --token string                   Bearer token for authentication to the API server
+      --user string                    The name of the kubeconfig user to use
+  -v, --v Level
+```
+
+### Collect command:
 
 ```
 Collect a support bundle, which is an archive of files, output, metrics and state
@@ -153,44 +184,16 @@ Usage:
   troubleshoot collect [urls...] [flags] [-]
 
 Flags:
+      -o, --output string              specify the output file path for the support bundle
       --redact                         enable/disable default redactions (default true)
       --redactors strings              names of the additional redactors to use
       --load-cluster-specs             enable/disable loading additional troubleshoot specs found within the cluster. required when no specs are provided on the command line
       --since string                   force pod logs collectors to return logs newer than a relative duration like 5s, 2m, or 3h.
       --since-time string              force pod logs collectors to return logs after a specific date (RFC3339)
-  -l, --spec-labels strings               selector to filter on for loading additional support bundle specs found in secrets within the cluster (default [troubleshoot.io/kind=support-bundle])
-
-Global Flags:
-      --as string                      Username to impersonate for the operation. User could be a regular user or a service account in a namespace.
-      --as-group stringArray           Group to impersonate for the operation, this flag can be repeated to specify multiple groups.
-      --as-uid string                  UID to impersonate for the operation.
-      --cache-dir string               Default cache directory (default "/Users/xavpaice/.kube/cache")
-      --certificate-authority string   Path to a cert file for the certificate authority
-      --client-certificate string      Path to a client certificate file for TLS
-      --client-key string              Path to a client key file for TLS
-      --cluster string                 The name of the kubeconfig cluster to use
-      --collect-without-permissions    always generate a support bundle, even if it some require additional permissions (default true)
-      --context string                 The name of the kubeconfig context to use
-      --cpuprofile string              File path to write cpu profiling data
-      --debug                          enable debug logging. This is equivalent to --v=0
-      --disable-compression            If true, opt-out of response compression for all requests to the server
-  -h, --help                           help for troubleshoot
-      --insecure-skip-tls-verify       If true, the server's certificate will not be checked for validity. This will make your HTTPS connections insecure
-      --interactive                    enable/disable interactive mode (default true)
-      --kubeconfig string              Path to the kubeconfig file to use for CLI requests.
-      --memprofile string              File path to write memory profiling data
-  -n, --namespace string               If present, the namespace scope for this CLI request
-      --no-uri                         When this flag is used, Troubleshoot does not attempt to retrieve the bundle referenced by the uri: field in the spec.`
-  -o, --output string                  specify the output file path for the support bundle
-      --request-timeout string         The length of time to wait before giving up on a single server request. Non-zero values should contain a corresponding time unit (e.g. 1s, 2m, 3h). A value of zero means don't timeout requests. (default "0")
-  -s, --server string                  The address and port of the Kubernetes API server
-      --tls-server-name string         Server name to use for server certificate validation. If it is not provided, the hostname used to contact the server is used
-      --token string                   Bearer token for authentication to the API server
-      --user string                    The name of the kubeconfig user to use
-  -v, --v Level                        number for the log level verbosity
+  -l, --spec-labels strings            selector to filter on for loading additional support bundle specs found in secrets within the cluster (default [troubleshoot.io/kind=support-bundle])
 ```
 
-Preflight:
+### Preflight command:
 
 ```
 A preflight check is a set of validations that can and should be run to ensure
@@ -201,40 +204,31 @@ Usage:
 
 Flags:
       --node-selector string           selector (label query) to filter remote collection nodes on.
-
-Global Flags:
-      --as string                      Username to impersonate for the operation. User could be a regular user or a service account in a namespace.
-      --as-group stringArray           Group to impersonate for the operation, this flag can be repeated to specify multiple groups.
-      --as-uid string                  UID to impersonate for the operation.
-      --cache-dir string               Default cache directory (default "/Users/xavpaice/.kube/cache")
-      --certificate-authority string   Path to a cert file for the certificate authority
-      --client-certificate string      Path to a client certificate file for TLS
-      --client-key string              Path to a client key file for TLS
-      --cluster string                 The name of the kubeconfig cluster to use
-      --collect-without-permissions    always generate a support bundle, even if it some require additional permissions (default true)
-      --context string                 The name of the kubeconfig context to use
-      --cpuprofile string              File path to write cpu profiling data
-      --debug                          enable debug logging. This is equivalent to --v=0
-      --disable-compression            If true, opt-out of response compression for all requests to the server
-  -h, --help                           help for troubleshoot
-      --insecure-skip-tls-verify       If true, the server's certificate will not be checked for validity. This will make your HTTPS connections insecure
-      --interactive                    enable/disable interactive mode (default true)
-      --kubeconfig string              Path to the kubeconfig file to use for CLI requests.
-      --memprofile string              File path to write memory profiling data
-  -n, --namespace string               If present, the namespace scope for this CLI request
-      --no-uri                         When this flag is used, Troubleshoot does not attempt to retrieve the bundle referenced by the uri: field in the spec.`
-  -o, --output string                  specify the output file path for the support bundle
-      --request-timeout string         The length of time to wait before giving up on a single server request. Non-zero values should contain a corresponding time unit (e.g. 1s, 2m, 3h). A value of zero means don't timeout requests. (default "0")
-  -s, --server string                  The address and port of the Kubernetes API server
-      --tls-server-name string         Server name to use for server certificate validation. If it is not provided, the hostname used to contact the server is used
-      --token string                   Bearer token for authentication to the API server
-      --user string                    The name of the kubeconfig user to use
-  -v, --v Level                        number for the log level verbosity
 ```
 
+### Analyze command:
+
+positional arguments:
+
+1. bundle location
+
+flags:
+
+- -f      path to spec file
+
+### Inspect command:
+
+Positional arguments:
+
+1. bundle location
+
+flags:
+
+- -p --port         port to listen on
+- -o --kubeconfig   path for generated kubeconfig
+
+
 ## Limitations
-
-
 
 ## Assumptions
 
