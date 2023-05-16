@@ -220,3 +220,7 @@ lint: fmt vet
 .PHONY: lint-and-fix
 lint-and-fix: fmt vet
 	golangci-lint run --new --fix -c .golangci.yaml ${BUILDPATHS}
+
+.PHONY: watchrsync
+watchrsync: ## Syncronize the code with a remote server. More info: CONTRIBUTING.md
+	bin/watchrsync.js
