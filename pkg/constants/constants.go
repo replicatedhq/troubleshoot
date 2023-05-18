@@ -51,6 +51,7 @@ const (
 	CLUSTER_RESOURCES_ROLE_BINDINGS               = "rolebindings"
 	CLUSTER_RESOURCES_CLUSTER_ROLES               = "clusterroles"
 	CLUSTER_RESOURCES_CLUSTER_ROLE_BINDINGS       = "clusterRoleBindings"
+	CLUSTER_RESOURCES_PRIORITY_CLASS              = "priorityclasses"
 
 	// Custom exit codes
 	EXIT_CODE_CATCH_ALL   = 1
