@@ -83,13 +83,16 @@ func (c *CollectLogs) CollectWithClient(progressChan chan<- interface{}, client 
 			for _, containerName := range containerNames {
 				podLogs, err := savePodLogs(ctx, c.BundlePath, client, &pod, c.Collector.Name, containerName, c.Collector.Limits, false, true)
 				if err != nil {
+					if errors.Is(err, context.DeadlineExceeded) {
+						klog.Errorf("Pod logs timed out for pod %s and container %s: %v", pod.Name, containerName, err)
+					}
 					key := fmt.Sprintf("%s/%s-errors.json", c.Collector.Name, pod.Name)
 					if containerName != "" {
 						key = fmt.Sprintf("%s/%s/%s-errors.json", c.Collector.Name, pod.Name, containerName)
 					}
 					err := output.SaveResult(c.BundlePath, key, marshalErrors([]string{err.Error()}))
 					if err != nil {
-						klog.Errorf("Failed to save result for pod %s and container %s: %v", pod.Name, containerName, err)
+						klog.Errorf("Failed to save pod logs result for pod %s and container %s: %v", pod.Name, containerName, err)
 					}
 					continue
 				}
@@ -99,10 +102,13 @@ func (c *CollectLogs) CollectWithClient(progressChan chan<- interface{}, client 
 			for _, containerName := range c.Collector.ContainerNames {
 				containerLogs, err := savePodLogs(ctx, c.BundlePath, client, &pod, c.Collector.Name, containerName, c.Collector.Limits, false, true)
 				if err != nil {
+					if errors.Is(err, context.DeadlineExceeded) {
+						klog.Errorf("Pod logs timed out for pod %s and container %s: %v", pod.Name, containerName, err)
+					}
 					key := fmt.Sprintf("%s/%s/%s-errors.json", c.Collector.Name, pod.Name, containerName)
 					err := output.SaveResult(c.BundlePath, key, marshalErrors([]string{err.Error()}))
 					if err != nil {
-						klog.Errorf("Failed to save result for pod %s and container %s: %v", pod.Name, containerName, err)
+						klog.Errorf("Failed to save pod logs result for pod %s and container %s: %v", pod.Name, containerName, err)
 					}
 					continue
 				}
