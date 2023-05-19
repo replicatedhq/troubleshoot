@@ -337,12 +337,12 @@ func (c *CollectClusterResources) Collect(progressChan chan<- interface{}) (Coll
 
 	//Cluster Roles
 	clusterRoles, clusterRolesErrors := clusterRoles(ctx, client)
-	output.SaveResult(c.BundlePath, path.Join(constants.CLUSTER_RESOURCES_DIR, constants.CLUSTER_RESOURCES_CLUSTER_ROLES), bytes.NewBuffer(clusterRoles))
+	output.SaveResult(c.BundlePath, path.Join(constants.CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s.json", constants.CLUSTER_RESOURCES_CLUSTER_ROLES)), bytes.NewBuffer(clusterRoles))
 	output.SaveResult(c.BundlePath, path.Join(constants.CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s-errors.json", constants.CLUSTER_RESOURCES_CLUSTER_ROLES)), marshalErrors(clusterRolesErrors))
 
 	//Cluster Role Bindings
 	clusterRoleBindings, clusterRoleBindingsErrors := clusterRoleBindings(ctx, client)
-	output.SaveResult(c.BundlePath, path.Join(constants.CLUSTER_RESOURCES_DIR, constants.CLUSTER_RESOURCES_CLUSTER_ROLE_BINDINGS), bytes.NewBuffer(clusterRoleBindings))
+	output.SaveResult(c.BundlePath, path.Join(constants.CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s.json", constants.CLUSTER_RESOURCES_CLUSTER_ROLE_BINDINGS)), bytes.NewBuffer(clusterRoleBindings))
 	output.SaveResult(c.BundlePath, path.Join(constants.CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s-errors.json", constants.CLUSTER_RESOURCES_CLUSTER_ROLE_BINDINGS)), marshalErrors(clusterRoleBindingsErrors))
 
 	return output, nil
