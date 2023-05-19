@@ -274,9 +274,9 @@ func (c *CollectClusterResources) Collect(progressChan chan<- interface{}) (Coll
 	// crs
 	customResources, crErrors := crs(ctx, dynamicClient, client, c.ClientConfig, namespaceNames)
 	for k, v := range customResources {
-		output.SaveResult(c.BundlePath, path.Join(constants.CLUSTER_RESOURCES_DIR, constants.CLUSTER_RESOURCES_CUSTOM_RESOURCE_DEFINITIONS, k), bytes.NewBuffer(v))
+		output.SaveResult(c.BundlePath, path.Join(constants.CLUSTER_RESOURCES_DIR, constants.CLUSTER_RESOURCES_CUSTOM_RESOURCES, k), bytes.NewBuffer(v))
 	}
-	output.SaveResult(c.BundlePath, path.Join(constants.CLUSTER_RESOURCES_DIR, constants.CLUSTER_RESOURCES_CUSTOM_RESOURCE_DEFINITIONS, fmt.Sprintf("%s-errors.json", constants.CLUSTER_RESOURCES_CUSTOM_RESOURCE_DEFINITIONS)), marshalErrors(crErrors))
+	output.SaveResult(c.BundlePath, path.Join(constants.CLUSTER_RESOURCES_DIR, constants.CLUSTER_RESOURCES_CUSTOM_RESOURCES, fmt.Sprintf("%s-errors.json", constants.CLUSTER_RESOURCES_CUSTOM_RESOURCES)), marshalErrors(crErrors))
 
 	// imagepullsecrets
 	imagePullSecrets, pullSecretsErrors := imagePullSecrets(ctx, client, namespaceNames)
