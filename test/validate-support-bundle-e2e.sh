@@ -56,7 +56,7 @@ if ! tar -xvzf $redacted_archive_name --directory $redact_tmpdir; then
     exit 1
 fi
 
-if ! grep "\*\*\*HIDDEN\*\*\*" "$redact_tmpdir/$bundle_directory_name/static-hi.log"; then
+if ! grep "\*\*\*HIDDEN\*\*\*" "$redact_tmpdir/$bundle_directory_name/static-hi/static-hi.log"; then
     echo "$(cat $redact_tmpdir/$bundle_directory_name/static-hi.log)"
     echo "Hidden content not found in redacted static-hi.log file"
     exit 1
