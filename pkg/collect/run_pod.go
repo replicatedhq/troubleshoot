@@ -114,9 +114,7 @@ func (c *CollectRunPod) Collect(progressChan chan<- interface{}) (CollectorResul
 	case <-time.After(timeout):
 		return result, errors.New("timeout")
 	case output := <-resultCh:
-		for k, v := range output {
-			result[k] = v
-		}
+		result.AddResult(output)
 		return result, nil
 	case err := <-errCh:
 		return result, err
@@ -419,7 +417,7 @@ func savePodDetails(output CollectorResult, bundlePath string, clientConfig *res
 
 	podEventBytes, err := json.MarshalIndent(podEvents, "", "  ")
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to marshal pod status")
+		return nil, errors.Wrap(err, "failed to marshal pod events")
 	}
 
 	output.SaveResult(bundlePath, filepath.Join(runPodCollector.Name, fmt.Sprintf("%s.json", runPodCollector.CollectorName)), bytes.NewBuffer(podBytes))
