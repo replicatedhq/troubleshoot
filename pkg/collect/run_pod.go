@@ -402,7 +402,7 @@ func savePodDetails(output CollectorResult, bundlePath string, clientConfig *res
 
 	ctx := context.Background()
 
-	status, err := client.CoreV1().Pods(pod.Namespace).Get(ctx, pod.Name, metav1.GetOptions{})
+	podStatus, err := client.CoreV1().Pods(pod.Namespace).Get(ctx, pod.Name, metav1.GetOptions{})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get pod")
 	}
@@ -412,7 +412,7 @@ func savePodDetails(output CollectorResult, bundlePath string, clientConfig *res
 		return nil, errors.Wrap(err, "failed to get pod events")
 	}
 
-	podBytes, err := json.MarshalIndent(status, "", "  ")
+	podBytes, err := json.MarshalIndent(podStatus, "", "  ")
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to marshal pod status")
 	}
