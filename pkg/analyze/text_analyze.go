@@ -52,10 +52,26 @@ func (a *AnalyzeTextAnalyze) analyzeTextAnalyze(analyzer *troubleshootv1beta2.Te
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to read collected file name: %s", fullPath)
 	}
-
+	failIfNoFiles := true
 	if len(collected) == 0 {
 		if analyzer.IgnoreIfNoFiles {
 			return nil, nil
+		} else if failIfNoFiles {
+			msg := "No matching files"
+			for _, outcome := range analyzer.Outcomes {
+				if outcome.Fail != nil {
+					msg = outcome.Fail.Message
+				}
+			}
+			return []*AnalyzeResult{
+				{
+					Title:   a.Title(),
+					IconKey: "kubernetes_text_analyze",
+					IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg",
+					IsWarn:  true,
+					Message: msg,
+				},
+			}, nil
 		}
 
 		return []*AnalyzeResult{

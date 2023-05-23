@@ -5,7 +5,9 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
+	"path/filepath"
 	"sync"
 	"time"
 
@@ -48,6 +50,13 @@ func (c *CollectRunPod) Collect(progressChan chan<- interface{}) (CollectorResul
 		return nil, errors.Wrap(err, "failed to create client from config")
 	}
 
+	if c.Collector.CollectorName == "" {
+		c.Collector.CollectorName = "run-pod"
+		if c.Collector.Name != "" {
+			c.Collector.CollectorName = c.Collector.Name
+		}
+	}
+
 	pod, err := runPodWithSpec(ctx, client, c.Collector)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to run pod")
@@ -67,6 +76,16 @@ func (c *CollectRunPod) Collect(progressChan chan<- interface{}) (CollectorResul
 			}
 		}()
 	}
+
+	result := NewResult()
+
+	defer func() {
+		result, err = savePodDetails(result, c.BundlePath, c.ClientConfig, pod, c.Collector)
+		if err != nil {
+			klog.Errorf("failed to save pod details: %v", err)
+		}
+	}()
+
 	if c.Collector.Timeout == "" {
 		return runWithoutTimeout(ctx, c.BundlePath, c.ClientConfig, pod, c.Collector)
 	}
@@ -93,11 +112,14 @@ func (c *CollectRunPod) Collect(progressChan chan<- interface{}) (CollectorResul
 
 	select {
 	case <-time.After(timeout):
-		return nil, errors.New("timeout")
-	case result := <-resultCh:
+		return result, errors.New("timeout")
+	case output := <-resultCh:
+		for k, v := range output {
+			result[k] = v
+		}
 		return result, nil
 	case err := <-errCh:
-		return nil, err
+		return result, err
 	}
 }
 
@@ -110,12 +132,7 @@ func runPodWithSpec(ctx context.Context, client *kubernetes.Clientset, runPodCol
 		namespace = runPodCollector.Namespace
 	}
 
-	podName := "run-pod"
-	if runPodCollector.CollectorName != "" {
-		podName = runPodCollector.CollectorName
-	} else if runPodCollector.Name != "" {
-		podName = runPodCollector.Name
-	}
+	podName := runPodCollector.CollectorName
 
 	pod := corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
@@ -174,13 +191,11 @@ func runWithoutTimeout(ctx context.Context, bundlePath string, clientConfig *res
 
 	output := NewResult()
 
-	collectorName := runPodCollector.Name
-
 	limits := troubleshootv1beta2.LogLimits{
 		MaxLines: 10000,
 		MaxBytes: 5000000,
 	}
-	podLogs, err := savePodLogs(ctx, bundlePath, client, pod, collectorName, "", &limits, true, true)
+	podLogs, err := savePodLogs(ctx, bundlePath, client, pod, runPodCollector.CollectorName, "", &limits, true, true)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get pod logs")
 	}
@@ -377,4 +392,38 @@ func RunPodLogs(ctx context.Context, client v1.CoreV1Interface, podSpec *corev1.
 	defer logs.Close()
 
 	return ioutil.ReadAll(logs)
+}
+
+func savePodDetails(output CollectorResult, bundlePath string, clientConfig *rest.Config, pod *corev1.Pod, runPodCollector *troubleshootv1beta2.RunPod) (CollectorResult, error) {
+	client, err := kubernetes.NewForConfig(clientConfig)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed create client from config")
+	}
+
+	ctx := context.Background()
+
+	status, err := client.CoreV1().Pods(pod.Namespace).Get(ctx, pod.Name, metav1.GetOptions{})
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get pod")
+	}
+
+	podEvents, err := client.CoreV1().Events(pod.Namespace).List(ctx, metav1.ListOptions{FieldSelector: (fmt.Sprintf("involvedObject.name=%s", pod.Name)), TypeMeta: metav1.TypeMeta{Kind: "Pod"}})
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get pod events")
+	}
+
+	podBytes, err := json.MarshalIndent(status, "", "  ")
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to marshal pod status")
+	}
+
+	podEventBytes, err := json.MarshalIndent(podEvents, "", "  ")
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to marshal pod status")
+	}
+
+	output.SaveResult(bundlePath, filepath.Join(runPodCollector.Name, fmt.Sprintf("%s.json", runPodCollector.CollectorName)), bytes.NewBuffer(podBytes))
+	output.SaveResult(bundlePath, filepath.Join(runPodCollector.Name, fmt.Sprintf("%s-events.json", runPodCollector.CollectorName)), bytes.NewBuffer(podEventBytes))
+
+	return output, nil
 }
