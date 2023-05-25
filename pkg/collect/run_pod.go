@@ -413,14 +413,14 @@ func savePodDetails(ctx context.Context, client *kubernetes.Clientset, output Co
 		return nil, errors.Wrap(err, "failed to marshal pod events")
 	}
 
-	err = output.SaveResult(bundlePath, filepath.Join(runPodCollector.Name, fmt.Sprintf("%s.json", runPodCollector.CollectorName)), bytes.NewBuffer(podBytes))
+	err = output.SaveResult(bundlePath, filepath.Join(runPodCollector.Name, fmt.Sprintf("%s.json", runPodCollector.Name)), bytes.NewBuffer(podBytes))
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to save pod status results")
+		klog.Errorf("failed to save pod status results to %s.json: %v", runPodCollector.Name, err)
 	}
 
-	err = output.SaveResult(bundlePath, filepath.Join(runPodCollector.Name, fmt.Sprintf("%s-events.json", runPodCollector.CollectorName)), bytes.NewBuffer(podEventBytes))
+	err = output.SaveResult(bundlePath, filepath.Join(runPodCollector.Name, fmt.Sprintf("%s-events.json", runPodCollector.Name)), bytes.NewBuffer(podEventBytes))
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to save pod events results")
+		klog.Errorf("failed to save pod event results to %s-events.json: %v", runPodCollector.Name, err)
 	}
 	return output, nil
 }
