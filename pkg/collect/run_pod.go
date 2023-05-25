@@ -50,13 +50,6 @@ func (c *CollectRunPod) Collect(progressChan chan<- interface{}) (CollectorResul
 		return nil, errors.Wrap(err, "failed to create client from config")
 	}
 
-	if c.Collector.CollectorName == "" {
-		c.Collector.CollectorName = "run-pod"
-		if c.Collector.Name != "" {
-			c.Collector.CollectorName = c.Collector.Name
-		}
-	}
-
 	pod, err := runPodWithSpec(ctx, client, c.Collector)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to run pod")
@@ -80,7 +73,7 @@ func (c *CollectRunPod) Collect(progressChan chan<- interface{}) (CollectorResul
 	result := NewResult()
 
 	defer func() {
-		result, err = savePodDetails(result, c.BundlePath, c.ClientConfig, pod, c.Collector)
+		result, err = savePodDetails(ctx, client, result, c.BundlePath, c.ClientConfig, pod, c.Collector)
 		if err != nil {
 			klog.Errorf("failed to save pod details: %v", err)
 		}
@@ -130,7 +123,12 @@ func runPodWithSpec(ctx context.Context, client *kubernetes.Clientset, runPodCol
 		namespace = runPodCollector.Namespace
 	}
 
-	podName := runPodCollector.CollectorName
+	podName := "run-pod"
+	if runPodCollector.CollectorName != "" {
+		podName = runPodCollector.CollectorName
+	} else if runPodCollector.Name != "" {
+		podName = runPodCollector.Name
+	}
 
 	pod := corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
@@ -189,11 +187,13 @@ func runWithoutTimeout(ctx context.Context, bundlePath string, clientConfig *res
 
 	output := NewResult()
 
+	collectorName := runPodCollector.Name
+
 	limits := troubleshootv1beta2.LogLimits{
 		MaxLines: 10000,
 		MaxBytes: 5000000,
 	}
-	podLogs, err := savePodLogs(ctx, bundlePath, client, pod, runPodCollector.CollectorName, "", &limits, true, true)
+	podLogs, err := savePodLogs(ctx, bundlePath, client, pod, collectorName, "", &limits, true, true)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get pod logs")
 	}
@@ -392,14 +392,7 @@ func RunPodLogs(ctx context.Context, client v1.CoreV1Interface, podSpec *corev1.
 	return ioutil.ReadAll(logs)
 }
 
-func savePodDetails(output CollectorResult, bundlePath string, clientConfig *rest.Config, pod *corev1.Pod, runPodCollector *troubleshootv1beta2.RunPod) (CollectorResult, error) {
-	client, err := kubernetes.NewForConfig(clientConfig)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed create client from config")
-	}
-
-	ctx := context.Background()
-
+func savePodDetails(ctx context.Context, client *kubernetes.Clientset, output CollectorResult, bundlePath string, clientConfig *rest.Config, pod *corev1.Pod, runPodCollector *troubleshootv1beta2.RunPod) (CollectorResult, error) {
 	podStatus, err := client.CoreV1().Pods(pod.Namespace).Get(ctx, pod.Name, metav1.GetOptions{})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get pod")
