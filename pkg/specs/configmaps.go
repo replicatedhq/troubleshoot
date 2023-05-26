@@ -7,6 +7,7 @@ import (
 	"github.com/replicatedhq/troubleshoot/pkg/k8sutil"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/klog/v2"
 )
 
 func LoadFromConfigMap(namespace string, configMapName string, key string) ([]byte, error) {
@@ -30,6 +31,10 @@ func LoadFromConfigMap(namespace string, configMapName string, key string) ([]by
 		return nil, errors.Errorf("spec not found in configmap %s", configMapName)
 	}
 
+	klog.V(1).InfoS("Loaded spec from config map", "name",
+		foundConfigMap.Name, "namespace", foundConfigMap.Namespace, "data key", key,
+	)
+
 	return []byte(spec), nil
 }
 
@@ -46,6 +51,10 @@ func LoadFromConfigMapMatchingLabel(client kubernetes.Interface, labelSelector s
 		if !ok {
 			continue
 		}
+
+		klog.V(1).InfoS("Loaded spec from config map", "name", configMap.Name,
+			"namespace", configMap.Namespace, "data key", key, "label selector", labelSelector,
+		)
 		configMapMatchingKey = append(configMapMatchingKey, string(spec))
 	}
 
