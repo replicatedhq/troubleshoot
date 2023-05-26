@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: labelled-support-bundle-1
+  labels:
+    troubleshoot.io/kind: support-bundle
+stringData:
+  support-bundle-spec: |
+    apiVersion: troubleshoot.sh/v1beta2
+    kind: SupportBundle
+    metadata:
+      name: labelled-support-bundle-1
+    spec:
+      collectors:
+        - data:
+            name: echo-hi-1
+            data: "I am labelled-support-bundle-1 REDACT FIRST TEXT PLEASE"

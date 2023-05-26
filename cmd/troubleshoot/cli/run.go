@@ -266,7 +266,6 @@ the %s Admin Console to begin analysis.`
 // all namespaces, we will fallback to trying each namespace individually, and eventually
 // default to the configured kubeconfig namespace.
 func loadClusterSpecs() (*troubleshootv1beta2.SupportBundle, *troubleshootv1beta2.Redactor, error) {
-	var parsedBundle *troubleshootv1beta2.SupportBundle
 	redactors := &troubleshootv1beta2.Redactor{}
 
 	v := viper.GetViper() // It's singleton, so we can use it anywhere
@@ -359,13 +358,17 @@ func loadClusterSpecs() (*troubleshootv1beta2.SupportBundle, *troubleshootv1beta
 		bundlesFromCluster = append(bundlesFromCluster, bundlesFromConfigMaps...)
 	}
 
+	parsedBundle := &troubleshootv1beta2.SupportBundle{}
+
 	for _, bundle := range bundlesFromCluster {
 		multidocs := strings.Split(string(bundle), "\n---\n")
-		parsedBundle, err = supportbundle.ParseSupportBundleFromDoc([]byte(multidocs[0]))
+		bundleFromDoc, err := supportbundle.ParseSupportBundleFromDoc([]byte(multidocs[0]))
 		if err != nil {
 			klog.Errorf("failed to parse support bundle spec:  %s", err)
 			continue
 		}
+
+		parsedBundle = supportbundle.ConcatSpec(parsedBundle, bundleFromDoc)
 
 		parsedRedactors, err := supportbundle.ParseRedactorsFromDocs(multidocs)
 		if err != nil {
