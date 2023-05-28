@@ -19,7 +19,7 @@ type AnalyzeCertificates struct {
 func (a *AnalyzeCertificates) Title() string {
 	title := a.analyzer.CheckName
 	if title == "" {
-		return "Cerfiticates Verification"
+		return "Certificates Verification"
 	}
 
 	return title
@@ -51,10 +51,10 @@ func (a *AnalyzeCertificates) AnalyzeCertificates(analyzer *troubleshootv1beta2.
 	return a.analyzeAnalyzeCertificatesResult(collectorCertificates, analyzer.Outcomes)
 }
 
-func (a *AnalyzeCertificates) analyzeAnalyzeCertificatesResult(certifcates []collect.CertCollection, outcomes []*troubleshootv1beta2.Outcome) ([]*AnalyzeResult, error) {
+func (a *AnalyzeCertificates) analyzeAnalyzeCertificatesResult(certificates []collect.CertCollection, outcomes []*troubleshootv1beta2.Outcome) ([]*AnalyzeResult, error) {
 	var results []*AnalyzeResult
 
-	for _, cert := range certifcates {
+	for _, cert := range certificates {
 		var passResults []*AnalyzeResult
 		for _, certChain := range cert.CertificateChain {
 
