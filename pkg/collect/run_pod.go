@@ -5,7 +5,9 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
+	"path/filepath"
 	"sync"
 	"time"
 
@@ -67,6 +69,16 @@ func (c *CollectRunPod) Collect(progressChan chan<- interface{}) (CollectorResul
 			}
 		}()
 	}
+
+	result := NewResult()
+
+	defer func() {
+		result, err = savePodDetails(ctx, client, result, c.BundlePath, c.ClientConfig, pod, c.Collector)
+		if err != nil {
+			klog.Errorf("failed to save pod details: %v", err)
+		}
+	}()
+
 	if c.Collector.Timeout == "" {
 		return runWithoutTimeout(ctx, c.BundlePath, c.ClientConfig, pod, c.Collector)
 	}
@@ -93,11 +105,12 @@ func (c *CollectRunPod) Collect(progressChan chan<- interface{}) (CollectorResul
 
 	select {
 	case <-time.After(timeout):
-		return nil, errors.New("timeout")
-	case result := <-resultCh:
+		return result, errors.New("timeout")
+	case output := <-resultCh:
+		result.AddResult(output)
 		return result, nil
 	case err := <-errCh:
-		return nil, err
+		return result, err
 	}
 }
 
@@ -377,4 +390,37 @@ func RunPodLogs(ctx context.Context, client v1.CoreV1Interface, podSpec *corev1.
 	defer logs.Close()
 
 	return ioutil.ReadAll(logs)
+}
+
+func savePodDetails(ctx context.Context, client *kubernetes.Clientset, output CollectorResult, bundlePath string, clientConfig *rest.Config, pod *corev1.Pod, runPodCollector *troubleshootv1beta2.RunPod) (CollectorResult, error) {
+	podStatus, err := client.CoreV1().Pods(pod.Namespace).Get(ctx, pod.Name, metav1.GetOptions{})
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get pod")
+	}
+
+	podEvents, err := client.CoreV1().Events(pod.Namespace).List(ctx, metav1.ListOptions{FieldSelector: (fmt.Sprintf("involvedObject.name=%s", pod.Name)), TypeMeta: metav1.TypeMeta{Kind: "Pod"}})
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get pod events")
+	}
+
+	podBytes, err := json.MarshalIndent(podStatus, "", "  ")
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to marshal pod status")
+	}
+
+	podEventBytes, err := json.MarshalIndent(podEvents, "", "  ")
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to marshal pod events")
+	}
+
+	err = output.SaveResult(bundlePath, filepath.Join(runPodCollector.Name, fmt.Sprintf("%s.json", runPodCollector.Name)), bytes.NewBuffer(podBytes))
+	if err != nil {
+		klog.Errorf("failed to save pod status results to %s.json: %v", runPodCollector.Name, err)
+	}
+
+	err = output.SaveResult(bundlePath, filepath.Join(runPodCollector.Name, fmt.Sprintf("%s-events.json", runPodCollector.Name)), bytes.NewBuffer(podEventBytes))
+	if err != nil {
+		klog.Errorf("failed to save pod event results to %s-events.json: %v", runPodCollector.Name, err)
+	}
+	return output, nil
 }
