@@ -45,13 +45,13 @@ func Test_clusterResource(t *testing.T) {
 			},
 		},
 		{
-			name:           "not existed resource",
+			name:           "resource does not exist",
 			resourceExists: false,
 			analyzer: troubleshootv1beta2.ClusterResource{
 				CollectorName: "Check namespaced resource",
 				Kind:          "Node",
 				ClusterScoped: true,
-				Name:          "not-existed-resource",
+				Name:          "resource-does-not-exist",
 			},
 		},
 	}
