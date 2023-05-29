@@ -11,6 +11,7 @@ import (
 	"github.com/replicatedhq/troubleshoot/pkg/constants"
 	iutils "github.com/replicatedhq/troubleshoot/pkg/interfaceutils"
 	"gopkg.in/yaml.v2"
+	"k8s.io/klog/v2"
 )
 
 var Filemap = map[string]string{
@@ -110,12 +111,26 @@ func FindResource(kind string, clusterScoped bool, namespace string, name string
 func (a *AnalyzeClusterResource) analyzeResource(analyzer *troubleshootv1beta2.ClusterResource, getFileContents getCollectedFileContents) (*AnalyzeResult, error) {
 	selected, err := FindResource(analyzer.Kind, analyzer.ClusterScoped, analyzer.Namespace, analyzer.Name, getFileContents)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to find resource")
+		klog.Errorf("failed to find resource: %v", err)
+		return &AnalyzeResult{
+			Title:   a.Title(),
+			IconKey: "kubernetes_text_analyze",
+			IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg",
+			IsFail:  true,
+			Message: "resource does not exist",
+		}, nil
 	}
 
 	actual, err := iutils.GetAtPath(selected, analyzer.YamlPath)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get object at path: %s", analyzer.YamlPath)
+		klog.Errorf("failed to get object at path: %s: %v", analyzer.YamlPath, err)
+		return &AnalyzeResult{
+			Title:   a.Title(),
+			IconKey: "kubernetes_text_analyze",
+			IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg",
+			IsFail:  true,
+			Message: "YAML path provided is invalid",
+		}, nil
 	}
 
 	var expected interface{}
@@ -138,7 +153,7 @@ func (a *AnalyzeClusterResource) analyzeResource(analyzer *troubleshootv1beta2.C
 			return result, nil
 		}
 	} else if analyzer.RegexPattern != "" {
-		result, err := analyzeRegexGroups(analyzer.RegexPattern, actualYAML, analyzer.Outcomes, a.Title())
+		result, err := analyzeRegexPattern(analyzer.RegexPattern, actualYAML, analyzer.Outcomes, a.Title())
 		if err != nil {
 			return nil, err
 		}
