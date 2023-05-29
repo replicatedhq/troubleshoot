@@ -108,7 +108,6 @@ func FindResource(kind string, clusterScoped bool, namespace string, name string
 }
 
 func (a *AnalyzeClusterResource) analyzeResource(analyzer *troubleshootv1beta2.ClusterResource, getFileContents getCollectedFileContents) (*AnalyzeResult, error) {
-
 	selected, err := FindResource(analyzer.Kind, analyzer.ClusterScoped, analyzer.Namespace, analyzer.Name, getFileContents)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to find resource")
