@@ -11,12 +11,14 @@ import (
 
 func Test_findResource(t *testing.T) {
 	tests := []struct {
-		name     string
-		isError  bool
-		analyzer troubleshootv1beta2.ClusterResource
+		name           string
+		isError        bool
+		resourceExists bool
+		analyzer       troubleshootv1beta2.ClusterResource
 	}{
 		{
-			name: "namespaced resource",
+			name:           "namespaced resource",
+			resourceExists: true,
 			analyzer: troubleshootv1beta2.ClusterResource{
 				CollectorName: "Check namespaced resource",
 				Kind:          "Deployment",
@@ -25,7 +27,8 @@ func Test_findResource(t *testing.T) {
 			},
 		},
 		{
-			name: "check default fallthrough",
+			name:           "check default fallthrough",
+			resourceExists: true,
 			analyzer: troubleshootv1beta2.ClusterResource{
 				CollectorName: "Check namespaced resource",
 				Kind:          "Deployment",
@@ -33,12 +36,23 @@ func Test_findResource(t *testing.T) {
 			},
 		},
 		{
-			name: "cluster scoped resource",
+			name:           "cluster scoped resource",
+			resourceExists: true,
 			analyzer: troubleshootv1beta2.ClusterResource{
 				CollectorName: "Check namespaced resource",
 				Kind:          "Node",
 				ClusterScoped: true,
 				Name:          "repldev-marc",
+			},
+		},
+		{
+			name:           "resource does not exist",
+			resourceExists: false,
+			analyzer: troubleshootv1beta2.ClusterResource{
+				CollectorName: "Check namespaced resource",
+				Kind:          "Node",
+				ClusterScoped: true,
+				Name:          "resource-does-not-exist",
 			},
 		},
 	}
@@ -50,9 +64,9 @@ func Test_findResource(t *testing.T) {
 			fcp := fileContentProvider{rootDir: rootDir}
 
 			analyzer := &test.analyzer
-			_, err := FindResource(analyzer.Kind, analyzer.ClusterScoped, analyzer.Namespace, analyzer.Name, fcp.getFileContents)
+			item, err := FindResource(analyzer.Kind, analyzer.ClusterScoped, analyzer.Namespace, analyzer.Name, fcp.getFileContents)
+			assert.Equal(t, test.resourceExists, item != nil)
 			assert.Nil(t, err)
-
 		})
 	}
 }

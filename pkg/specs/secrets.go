@@ -7,6 +7,7 @@ import (
 	"github.com/replicatedhq/troubleshoot/pkg/k8sutil"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/klog/v2"
 )
 
 func LoadFromSecret(namespace string, secretName string, key string) ([]byte, error) {
@@ -30,6 +31,9 @@ func LoadFromSecret(namespace string, secretName string, key string) ([]byte, er
 		return nil, errors.Errorf("spec not found in secret %s", secretName)
 	}
 
+	klog.V(1).InfoS("Loaded spec from secret", "name",
+		foundSecret.Name, "namespace", foundSecret.Namespace, "data key", key,
+	)
 	return spec, nil
 }
 
@@ -46,6 +50,10 @@ func LoadFromSecretMatchingLabel(client kubernetes.Interface, labelSelector stri
 		if !ok {
 			continue
 		}
+
+		klog.V(1).InfoS("Loaded spec from secret", "name", secret.Name,
+			"namespace", secret.Namespace, "data key", key, "label selector", labelSelector,
+		)
 		secretsMatchingKey = append(secretsMatchingKey, string(spec))
 	}
 

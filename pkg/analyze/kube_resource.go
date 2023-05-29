@@ -94,11 +94,11 @@ func FindResource(kind string, clusterScoped bool, namespace string, name string
 	}
 	itemslice := items.([]interface{})
 	for _, item := range itemslice {
-		name, err := iutils.GetAtPath(item, "metadata.name")
+		resourceName, err := iutils.GetAtPath(item, "metadata.name")
 		if err != nil {
 			return nil, errors.Wrapf(err, "Failed to find resource with name: %s", name)
 		}
-		if name == name {
+		if resourceName == name {
 			return item, nil
 		}
 	}
