@@ -271,6 +271,12 @@
                       }
                     }
                   },
+                  "regex": {
+                    "type": "string"
+                  },
+                  "regexGroups": {
+                    "type": "string"
+                  },
                   "strict": {
                     "oneOf": [{"type": "string"},{"type": "boolean"}]
                   },
