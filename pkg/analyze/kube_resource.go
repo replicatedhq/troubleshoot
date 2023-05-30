@@ -123,7 +123,7 @@ func (a *AnalyzeClusterResource) analyzeResource(analyzer *troubleshootv1beta2.C
 
 	actual, err := iutils.GetAtPath(selected, analyzer.YamlPath)
 	if err != nil {
-		klog.Errorf("failed to get object at path: %s: %v", analyzer.YamlPath, err)
+		klog.Errorf("invalid yaml path: %s for kind: %s: %v", analyzer.YamlPath, analyzer.Kind, err)
 		return &AnalyzeResult{
 			Title:   a.Title(),
 			IconKey: "kubernetes_text_analyze",
