@@ -34,7 +34,7 @@ To get started we recommend:
 
 ### Syncing to a test cluster with `watchrsync`
 
-1. Do `npm install` from the root of the project to set up npm dependencies.
+1. Install `npm`
 2. Export `REMOTES=<user>@<ip>` so that `watchrsync` knows where to sync.
 3. Maybe run `export GOOS=linux` and `export GOARCH=amd64` so that you build Linux binaries.
 4. run `make watchrsync` to build and sync binaries automatically on saving.
