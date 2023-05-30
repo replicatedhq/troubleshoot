@@ -22,6 +22,7 @@ import (
 
 	kuberneteserrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 type CollectRunPod struct {
@@ -57,6 +58,26 @@ func (c *CollectRunPod) Collect(progressChan chan<- interface{}) (CollectorResul
 	defer func() {
 		if err := client.CoreV1().Pods(pod.Namespace).Delete(context.Background(), pod.Name, metav1.DeleteOptions{}); err != nil {
 			klog.Errorf("Failed to delete pod %s: %v", pod.Name, err)
+		}
+		// Wait until the pod is deleted
+		// 2 minute for the maximum amount of time to wait for Pod deletion.
+		const gracePeriodMinutes = 2 * time.Minute
+		// Poll every second to check if the Pod has been deleted.
+		err := wait.PollUntilContextTimeout(ctx, time.Second, gracePeriodMinutes, true, func(ctx context.Context) (bool, error) {
+			_, getErr := client.CoreV1().Pods(pod.Namespace).Get(ctx, pod.Name, metav1.GetOptions{})
+			// If the Pod is not found, it has been deleted.
+			if kuberneteserrors.IsNotFound(getErr) {
+				return true, nil
+			}
+			// If there is an error from context (e.g., context deadline exceeded), return the error.
+			if ctx.Err() != nil {
+				return false, ctx.Err()
+			}
+			// Otherwise, the Pod has not yet been deleted. Keep polling.
+			return false, nil
+		})
+		if err != nil {
+			klog.Errorf("Failed to wait for pod deletion: %v", err)
 		}
 	}()
 
