@@ -6,6 +6,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/json"
+	"encoding/pem"
 	"fmt"
 	"io"
 	"reflect"
@@ -235,4 +236,25 @@ func checkForExistingServiceAccount(client kubernetes.Interface, namespace strin
 		return errors.Wrapf(err, "Failed to get service account %s", serviceAccountName)
 	}
 	return nil
+}
+
+// decode pem and validate certificate data source contains
+func decodePem(certPEMBlock []byte) (tls.Certificate, string) {
+	var cert tls.Certificate
+	var trackErrors string
+	var certDERBlock *pem.Block
+
+	for {
+		certDERBlock, certPEMBlock = pem.Decode(certPEMBlock)
+		if certDERBlock == nil {
+			break
+		}
+		if certDERBlock.Type == "CERTIFICATE" {
+			cert.Certificate = append(cert.Certificate, certDERBlock.Bytes)
+		}
+	}
+	if len(cert.Certificate) == 0 {
+		trackErrors = "No certificates found in"
+	}
+	return cert, trackErrors
 }
