@@ -149,6 +149,8 @@ type HostAnalyze struct {
 
 	Certificate *CertificateAnalyze `json:"certificate,omitempty" yaml:"certificate,omitempty"`
 
+	Certificates *CertificateAnalyze `json:"certificates,omitempty" yaml:"certificates,omitempty"`
+
 	HostServices *HostServicesAnalyze `json:"hostServices,omitempty" yaml:"hostServices,omitempty"`
 
 	HostOS *HostOSAnalyze `json:"hostOS,omitempty" yaml:"hostOS,omitempty"`

@@ -169,6 +169,11 @@ type Certificate struct {
 	KeyPath           string `json:"keyPath" yaml:"keyPath"`
 }
 
+type HostCertificates struct {
+	HostCollectorMeta `json:",inline" yaml:",inline"`
+	Paths             []string `json:"paths" yaml:"paths"`
+}
+
 type HostServices struct {
 	HostCollectorMeta `json:",inline" yaml:",inline"`
 }
@@ -198,6 +203,7 @@ type HostCollect struct {
 	TCPConnect            *TCPConnect            `json:"tcpConnect,omitempty" yaml:"tcpConnect,omitempty"`
 	FilesystemPerformance *FilesystemPerformance `json:"filesystemPerformance,omitempty" yaml:"filesystemPerformance,omitempty"`
 	Certificate           *Certificate           `json:"certificate,omitempty" yaml:"certificate,omitempty"`
+	Certificates          *HostCertificates      `json:"certificates,omitempty" yaml:"certificates,omitempty"`
 	HostServices          *HostServices          `json:"hostServices,omitempty" yaml:"hostServices,omitempty"`
 	HostOS                *HostOS                `json:"hostOS,omitempty" yaml:"hostOS,omitempty"`
 	HostRun               *HostRun               `json:"run,omitempty" yaml:"run,omitempty"`

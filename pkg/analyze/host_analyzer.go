@@ -44,6 +44,8 @@ func GetHostAnalyzer(analyzer *troubleshootv1beta2.HostAnalyze) (HostAnalyzer, b
 		return &AnalyzeHostFilesystemPerformance{analyzer.FilesystemPerformance}, true
 	case analyzer.Certificate != nil:
 		return &AnalyzeHostCertificate{analyzer.Certificate}, true
+	case analyzer.Certificates != nil:
+		return &AnalyzeHostCertificates{analyzer.Certificates}, true
 	case analyzer.HostServices != nil:
 		return &AnalyzeHostServices{analyzer.HostServices}, true
 	case analyzer.HostOS != nil:
