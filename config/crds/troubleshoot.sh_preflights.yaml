@@ -242,6 +242,10 @@ spec:
                                 type: object
                             type: object
                           type: array
+                        regex:
+                          type: string
+                        regexGroups:
+                          type: string
                         strict:
                           type: BoolString
                         yamlPath:

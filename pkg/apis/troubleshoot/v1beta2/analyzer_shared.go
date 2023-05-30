@@ -68,6 +68,8 @@ type ClusterResource struct {
 	Name          string     `json:"name" yaml:"name"`
 	YamlPath      string     `json:"yamlPath" yaml:"yamlPath"`
 	ExpectedValue string     `json:"expectedValue,omitempty" yaml:"expectedValue,omitempty"`
+	RegexPattern  string     `json:"regex,omitempty" yaml:"regex,omitempty"`
+	RegexGroups   string     `json:"regexGroups,omitempty" yaml:"regexGroups,omitempty"`
 }
 
 type StatefulsetStatus struct {
