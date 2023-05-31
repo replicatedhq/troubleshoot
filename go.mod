@@ -37,7 +37,7 @@ require (
 	github.com/stretchr/testify v1.8.3
 	github.com/tj/go-spin v1.1.0
 	go.opentelemetry.io/otel v1.16.0
-	go.opentelemetry.io/otel/sdk v1.15.1
+	go.opentelemetry.io/otel/sdk v1.16.0
 	golang.org/x/sync v0.2.0
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.27.2
