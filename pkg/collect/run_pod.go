@@ -22,6 +22,7 @@ import (
 
 	kuberneteserrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/wait"
 )
 
 type CollectRunPod struct {
@@ -57,6 +58,31 @@ func (c *CollectRunPod) Collect(progressChan chan<- interface{}) (CollectorResul
 	defer func() {
 		if err := client.CoreV1().Pods(pod.Namespace).Delete(context.Background(), pod.Name, metav1.DeleteOptions{}); err != nil {
 			klog.Errorf("Failed to delete pod %s: %v", pod.Name, err)
+		}
+		// Wait until the pod is deleted
+		// 1 minute for the maximum amount of time to wait for Pod deletion.
+		const gracePeriodMinutes = 1 * time.Minute
+		// Poll every second to check if the Pod has been deleted.
+		err := wait.PollUntilContextTimeout(ctx, time.Second, gracePeriodMinutes, true, func(ctx context.Context) (bool, error) {
+			_, getErr := client.CoreV1().Pods(pod.Namespace).Get(ctx, pod.Name, metav1.GetOptions{})
+			// If the Pod is not found, it has been deleted.
+			if kuberneteserrors.IsNotFound(getErr) {
+				return true, nil
+			}
+			// If there is an error from context (e.g., context deadline exceeded), return the error.
+			if ctx.Err() != nil {
+				return false, ctx.Err()
+			}
+			// Otherwise, the Pod has not yet been deleted. Keep polling.
+			return false, nil
+		})
+		if err != nil {
+			zeroGracePeriod := int64(0)
+			if err := client.CoreV1().Pods(pod.Namespace).Delete(context.Background(), pod.Name, metav1.DeleteOptions{
+				GracePeriodSeconds: &zeroGracePeriod,
+			}); err != nil {
+				klog.Errorf("Failed to wait for pod %s deletion: %v, force deleted", pod.Name, err)
+			}
 		}
 	}()
 
@@ -180,8 +206,22 @@ func runWithoutTimeout(ctx context.Context, bundlePath string, clientConfig *res
 				if v.State.Waiting != nil && v.State.Waiting.Reason == "ImagePullBackOff" {
 					return nil, errors.Errorf("run pod aborted after getting pod status 'ImagePullBackOff'")
 				}
+
+				if v.State.Waiting != nil && v.State.Waiting.Reason == "ContainerCreating" {
+					podEvents, err := client.CoreV1().Events(pod.Namespace).List(ctx, metav1.ListOptions{FieldSelector: (fmt.Sprintf("involvedObject.name=%s", pod.Name)), TypeMeta: metav1.TypeMeta{Kind: "Pod"}})
+					if err != nil {
+						return nil, errors.Wrap(err, "failed to get pod events")
+					}
+
+					for _, podEvent := range podEvents.Items {
+						if podEvent.Reason == "FailedCreatePodSandBox" {
+							return nil, errors.Errorf("run pod aborted after getting pod status 'FailedCreatePodSandBox'")
+						}
+					}
+				}
 			}
 		}
+
 		time.Sleep(time.Second * 1)
 	}
 
