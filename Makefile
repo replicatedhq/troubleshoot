@@ -207,7 +207,7 @@ longhorn:
 .PHONY: scan
 scan:
 	trivy fs \
-		--security-checks vuln \
+		--scanners vuln \
 		--exit-code=1 \
 		--severity="HIGH,CRITICAL" \
 		--ignore-unfixed \

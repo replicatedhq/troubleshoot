@@ -232,6 +232,8 @@ func getAnalyzer(analyzer *troubleshootv1beta2.Analyze) Analyzer {
 		return &AnalyzeSysctl{analyzer: analyzer.Sysctl}
 	case analyzer.ClusterResource != nil:
 		return &AnalyzeClusterResource{analyzer: analyzer.ClusterResource}
+	case analyzer.Certificates != nil:
+		return &AnalyzeCertificates{analyzer: analyzer.Certificates}
 	default:
 		return nil
 	}

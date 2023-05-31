@@ -222,7 +222,6 @@ func CertParser(certName string, certs []byte, currentTime time.Time) ([]ParsedC
 	if currentTime.IsZero() {
 		currentTime = time.Now()
 	}
-
 	certChain, decodePemTrackErrors := decodePem(certs)
 
 	if decodePemTrackErrors != "" {
