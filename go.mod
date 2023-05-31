@@ -6,7 +6,7 @@ require (
 	github.com/ahmetalpbalkan/go-cursor v0.0.0-20131010032410-8136607ea412
 	github.com/apparentlymart/go-cidr v1.1.0
 	github.com/blang/semver/v4 v4.0.0
-	github.com/containers/image/v5 v5.25.0
+	github.com/containers/image/v5 v5.21.1
 	github.com/distribution/distribution/v3 v3.0.0-20221208165359-362910506bc2
 	github.com/fatih/color v1.15.0
 	github.com/go-logr/logr v1.2.4
@@ -25,7 +25,7 @@ require (
 	github.com/mattn/go-isatty v0.0.18
 	github.com/mholt/archiver/v3 v3.5.1
 	github.com/microsoft/go-mssqldb v1.0.0
-	github.com/opencontainers/image-spec v1.1.0-rc2.0.20221005185240-3a7f492d3f1b
+	github.com/opencontainers/image-spec v1.1.0-rc.3
 	github.com/pkg/errors v0.9.1
 	github.com/replicatedhq/termui/v3 v3.1.1-0.20200811145416-f40076d26851
 	github.com/segmentio/ksuid v1.0.4
@@ -47,17 +47,17 @@ require (
 	k8s.io/cli-runtime v0.27.2
 	k8s.io/client-go v0.27.2
 	k8s.io/klog/v2 v2.100.1
-	oras.land/oras-go v1.2.3
+	oras.land/oras-go v1.2.1
 	sigs.k8s.io/controller-runtime v0.15.0
 )
 
 require (
 	cloud.google.com/go/compute/metadata v0.2.3 // indirect
-	github.com/AdaLogics/go-fuzz-headers v0.0.0-20230106234847-43070de90fa1 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.2 // indirect
 	github.com/docker/distribution v2.8.2+incompatible // indirect
 	github.com/emicklei/go-restful/v3 v3.10.2 // indirect
 	github.com/evanphx/json-patch/v5 v5.6.0 // indirect
+	github.com/ghodss/yaml v1.0.0 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/golang-sql/civil v0.0.0-20190719163853-cb61b32ac6fe // indirect
 	github.com/golang-sql/sqlexp v0.1.0 // indirect
@@ -75,7 +75,6 @@ require (
 	go.opentelemetry.io/otel/trace v1.16.0 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	golang.org/x/exp v0.0.0-20230321023759-10a507213a29 // indirect
 	golang.org/x/mod v0.10.0 // indirect
 	golang.org/x/tools v0.9.1 // indirect
 )
@@ -88,7 +87,7 @@ require (
 	github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1 // indirect
 	github.com/BurntSushi/toml v1.2.1 // indirect
 	github.com/Microsoft/go-winio v0.6.0 // indirect
-	github.com/Microsoft/hcsshim v0.10.0-rc.7 // indirect
+	github.com/Microsoft/hcsshim v0.10.0-rc.1 // indirect
 	github.com/andybalholm/brotli v1.0.1 // indirect
 	github.com/aws/aws-sdk-go v1.44.122 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
@@ -97,7 +96,7 @@ require (
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/chzyer/readline v1.5.1 // indirect
 	github.com/containerd/cgroups v1.1.0 // indirect
-	github.com/containerd/containerd v1.7.0 // indirect
+	github.com/containerd/containerd v1.6.19 // indirect
 	github.com/containerd/stargz-snapshotter/estargz v0.14.3 // indirect
 	github.com/containers/libtrust v0.0.0-20230121012942-c1716e8a8d01 // indirect
 	github.com/containers/ocicrypt v1.1.7 // indirect
