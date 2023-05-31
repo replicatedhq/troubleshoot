@@ -46,7 +46,11 @@ func (c *CollectHostCertificates) Collect(progressChan chan<- interface{}) (map[
 		return nil, errResultJson
 	}
 
-	name := filepath.Join("host-collectors/certificates.json")
+	collectorName := c.hostCollector.CollectorName
+	if collectorName == "" {
+		collectorName = "certificates"
+	}
+	name := filepath.Join("host-collectors/certificates", collectorName+".json")
 
 	output := NewResult()
 	output.SaveResult(c.BundlePath, name, bytes.NewBuffer(resultsJson))
