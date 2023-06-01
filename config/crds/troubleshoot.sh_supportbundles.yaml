@@ -1625,8 +1625,6 @@ spec:
                           type: array
                         exclude:
                           type: BoolString
-                        name:
-                          type: string
                         secrets:
                           items:
                             properties:

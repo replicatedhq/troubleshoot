@@ -143,7 +143,6 @@ func TestCertParser(t *testing.T) {
 						CollectorMeta: troubleshootv1beta2.CollectorMeta{
 							CollectorName: "collectorname",
 						},
-						Name: "expired certificate",
 						Secrets: []troubleshootv1beta2.CertificateSource{
 							{
 								Name:       "expiredCert",
@@ -183,7 +182,6 @@ func TestCertParser(t *testing.T) {
 						CollectorMeta: troubleshootv1beta2.CollectorMeta{
 							CollectorName: "collectorname",
 						},
-						Name: "multiple certificate",
 						Secrets: []troubleshootv1beta2.CertificateSource{
 							{
 								Name:       "multiCert",
@@ -232,7 +230,6 @@ func TestCertParser(t *testing.T) {
 						CollectorMeta: troubleshootv1beta2.CollectorMeta{
 							CollectorName: "collectorname",
 						},
-						Name: "valid certificate",
 						Secrets: []troubleshootv1beta2.CertificateSource{
 							{
 								Name:       "validCert",
@@ -277,7 +274,6 @@ func TestCertParser(t *testing.T) {
 						CollectorMeta: troubleshootv1beta2.CollectorMeta{
 							CollectorName: "collectorname",
 						},
-						Name: "non valid certificate",
 						Secrets: []troubleshootv1beta2.CertificateSource{
 							{
 								Name:       "nonCert",

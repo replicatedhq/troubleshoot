@@ -180,7 +180,6 @@ func getCollectorName(c interface{}) string {
 		name = v.Collector.Name
 	case *CollectCertificates:
 		collector = "certificates"
-		name = v.Collector.Name
 	default:
 		collector = "<none>"
 	}
