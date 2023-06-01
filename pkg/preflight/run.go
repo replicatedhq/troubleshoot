@@ -11,7 +11,6 @@ import (
 	"github.com/fatih/color"
 	"github.com/pkg/errors"
 	analyzer "github.com/replicatedhq/troubleshoot/pkg/analyze"
-	analyzerunner "github.com/replicatedhq/troubleshoot/pkg/analyze"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/replicatedhq/troubleshoot/pkg/constants"
 	"github.com/replicatedhq/troubleshoot/pkg/k8sutil"
@@ -122,12 +121,10 @@ func RunPreflights(interactive bool, output string, format string, args []string
 		}
 	}
 
-	if uploadAnalyzeResultsMap != nil {
-		for k, v := range uploadAnalyzeResultsMap {
-			err := uploadResults(k, v)
-			if err != nil {
-				progressCh <- err
-			}
+	for k, v := range uploadAnalyzeResultsMap {
+		err := uploadResults(k, v)
+		if err != nil {
+			progressCh <- err
 		}
 	}
 
@@ -161,7 +158,7 @@ func RunPreflights(interactive bool, output string, format string, args []string
 // If all checks passed: 0
 // If 1 or more checks failed: 3
 // If no checks failed, but 1 or more warn: 4
-func checkOutcomesToExitCode(analyzeResults []*analyzerunner.AnalyzeResult) int {
+func checkOutcomesToExitCode(analyzeResults []*analyzer.AnalyzeResult) int {
 	// Assume pass until they don't
 	exitCode := 0
 
