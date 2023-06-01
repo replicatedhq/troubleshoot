@@ -13,6 +13,7 @@ import (
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
+	"github.com/replicatedhq/troubleshoot/pkg/constants"
 	"github.com/replicatedhq/troubleshoot/pkg/k8sutil"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
@@ -59,11 +60,12 @@ func (c *CollectRunPod) Collect(progressChan chan<- interface{}) (CollectorResul
 		if err := client.CoreV1().Pods(pod.Namespace).Delete(context.Background(), pod.Name, metav1.DeleteOptions{}); err != nil {
 			klog.Errorf("Failed to delete pod %s: %v", pod.Name, err)
 		}
+		klog.V(2).Infof("Pod %s has been scheduled for deletion", pod.Name)
+
 		// Wait until the pod is deleted
-		// 1 minute for the maximum amount of time to wait for Pod deletion.
-		const gracePeriodMinutes = 1 * time.Minute
 		// Poll every second to check if the Pod has been deleted.
-		err := wait.PollUntilContextTimeout(ctx, time.Second, gracePeriodMinutes, true, func(ctx context.Context) (bool, error) {
+		klog.V(2).Infof("Continuously poll each second for Pod %s deletion for maximum %d seconds", pod.Name, constants.MAX_TIME_TO_WAIT_FOR_POD_DELETION/time.Second)
+		err := wait.PollUntilContextTimeout(ctx, time.Second, constants.MAX_TIME_TO_WAIT_FOR_POD_DELETION, true, func(ctx context.Context) (bool, error) {
 			_, getErr := client.CoreV1().Pods(pod.Namespace).Get(ctx, pod.Name, metav1.GetOptions{})
 			// If the Pod is not found, it has been deleted.
 			if kuberneteserrors.IsNotFound(getErr) {
@@ -78,10 +80,11 @@ func (c *CollectRunPod) Collect(progressChan chan<- interface{}) (CollectorResul
 		})
 		if err != nil {
 			zeroGracePeriod := int64(0)
+			klog.V(2).Infof("Pod %s forcefully deleted after reaching the maximum wait time of %d seconds", pod.Name, constants.MAX_TIME_TO_WAIT_FOR_POD_DELETION/time.Second)
 			if err := client.CoreV1().Pods(pod.Namespace).Delete(context.Background(), pod.Name, metav1.DeleteOptions{
 				GracePeriodSeconds: &zeroGracePeriod,
 			}); err != nil {
-				klog.Errorf("Failed to wait for pod %s deletion: %v, force deleted", pod.Name, err)
+				klog.Errorf("Failed to wait for pod %s deletion: %v", pod.Name, err)
 			}
 		}
 	}()
@@ -178,6 +181,8 @@ func runPodWithSpec(ctx context.Context, client *kubernetes.Clientset, runPodCol
 	}
 
 	created, err := client.CoreV1().Pods(namespace).Create(ctx, &pod, metav1.CreateOptions{})
+	klog.V(2).Infof("Pod %s has been created", pod.Name)
+
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create pod")
 	}
@@ -215,6 +220,7 @@ func runWithoutTimeout(ctx context.Context, bundlePath string, clientConfig *res
 
 					for _, podEvent := range podEvents.Items {
 						if podEvent.Reason == "FailedCreatePodSandBox" {
+							klog.V(2).Infof("Pod %s failed to setup network for sandbox", pod.Name)
 							return nil, errors.Errorf("run pod aborted after getting pod status 'FailedCreatePodSandBox'")
 						}
 					}
