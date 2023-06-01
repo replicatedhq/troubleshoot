@@ -2417,9 +2417,6 @@
                   "exclude": {
                     "oneOf": [{"type": "string"},{"type": "boolean"}]
                   },
-                  "name": {
-                    "type": "string"
-                  },
                   "secrets": {
                     "type": "array",
                     "items": {
