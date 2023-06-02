@@ -277,10 +277,6 @@ func loadClusterSpecs() (*troubleshootv1beta2.SupportBundle, *troubleshootv1beta
 		return nil, nil, errors.Wrap(err, "unable to parse selector")
 	}
 
-	if err != nil {
-		return nil, nil, errors.Wrap(err, "unable to parse selector")
-	}
-
 	config, err := k8sutil.GetRESTConfig()
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "failed to convert kube flags to rest config")
@@ -391,7 +387,6 @@ func loadClusterSpecs() (*troubleshootv1beta2.SupportBundle, *troubleshootv1beta
 	var redactorsFromCluster []string
 
 	// Search cluster for redactor specs
-	// klog.V(1).Infof("Search redactor specs from [%q] namespaces using %q selector", strings.Join(namespaces, ", "), parsedSelector.String())
 	for _, parsedSelectorString := range parsedSelectorStrings {
 		for _, ns := range namespaces {
 			klog.V(1).Infof("Search redactor specs from [%q] namespace using %q selector", strings.Join(namespaces, ", "), parsedSelectorString)
