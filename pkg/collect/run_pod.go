@@ -59,6 +59,7 @@ func (c *CollectRunPod) Collect(progressChan chan<- interface{}) (CollectorResul
 	defer func() {
 		if err := client.CoreV1().Pods(pod.Namespace).Delete(context.Background(), pod.Name, metav1.DeleteOptions{}); err != nil {
 			klog.Errorf("Failed to delete pod %s: %v", pod.Name, err)
+			return
 		}
 		klog.V(2).Infof("Pod %s has been scheduled for deletion", pod.Name)
 
@@ -85,7 +86,9 @@ func (c *CollectRunPod) Collect(progressChan chan<- interface{}) (CollectorResul
 				GracePeriodSeconds: &zeroGracePeriod,
 			}); err != nil {
 				klog.Errorf("Failed to wait for pod %s deletion: %v", pod.Name, err)
+				return
 			}
+			klog.V(2).Infof("Pod %s in %s namespace has been deleted", pod.Name, pod.Namespace)
 		}
 	}()
 

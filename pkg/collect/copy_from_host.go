@@ -222,6 +222,7 @@ func copyFromHostCreateDaemonSet(ctx context.Context, client kubernetes.Interfac
 		klog.V(2).Infof("Daemonset %s has been scheduled for deletion", createdDS.Name)
 		if err := client.AppsV1().DaemonSets(namespace).Delete(context.Background(), createdDS.Name, metav1.DeleteOptions{}); err != nil {
 			klog.Errorf("Failed to delete daemonset %s: %v", createdDS.Name, err)
+			return
 		}
 
 		var labelSelector []string
@@ -264,7 +265,9 @@ func copyFromHostCreateDaemonSet(ctx context.Context, client kubernetes.Interfac
 				})
 				if err != nil {
 					klog.Errorf("Failed to wait for pod %s deletion: %v", pod.Name, err)
+					return
 				}
+				klog.V(2).Infof("Daemonset pod %s in %s namespace has been deleted", pod.Name, pod.Namespace)
 			}
 		}
 	})
