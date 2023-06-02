@@ -57,39 +57,7 @@ func (c *CollectRunPod) Collect(progressChan chan<- interface{}) (CollectorResul
 		return nil, errors.Wrap(err, "failed to run pod")
 	}
 	defer func() {
-		if err := client.CoreV1().Pods(pod.Namespace).Delete(context.Background(), pod.Name, metav1.DeleteOptions{}); err != nil {
-			klog.Errorf("Failed to delete pod %s: %v", pod.Name, err)
-			return
-		}
-		klog.V(2).Infof("Pod %s has been scheduled for deletion", pod.Name)
-
-		// Wait until the pod is deleted
-		// Poll every second to check if the Pod has been deleted.
-		klog.V(2).Infof("Continuously poll each second for Pod %s deletion for maximum %d seconds", pod.Name, constants.MAX_TIME_TO_WAIT_FOR_POD_DELETION/time.Second)
-		err := wait.PollUntilContextTimeout(ctx, time.Second, constants.MAX_TIME_TO_WAIT_FOR_POD_DELETION, true, func(ctx context.Context) (bool, error) {
-			_, getErr := client.CoreV1().Pods(pod.Namespace).Get(ctx, pod.Name, metav1.GetOptions{})
-			// If the Pod is not found, it has been deleted.
-			if kuberneteserrors.IsNotFound(getErr) {
-				return true, nil
-			}
-			// If there is an error from context (e.g., context deadline exceeded), return the error.
-			if ctx.Err() != nil {
-				return false, ctx.Err()
-			}
-			// Otherwise, the Pod has not yet been deleted. Keep polling.
-			return false, nil
-		})
-		if err != nil {
-			zeroGracePeriod := int64(0)
-			klog.V(2).Infof("Pod %s forcefully deleted after reaching the maximum wait time of %d seconds", pod.Name, constants.MAX_TIME_TO_WAIT_FOR_POD_DELETION/time.Second)
-			if err := client.CoreV1().Pods(pod.Namespace).Delete(context.Background(), pod.Name, metav1.DeleteOptions{
-				GracePeriodSeconds: &zeroGracePeriod,
-			}); err != nil {
-				klog.Errorf("Failed to wait for pod %s deletion: %v", pod.Name, err)
-				return
-			}
-			klog.V(2).Infof("Pod %s in %s namespace has been deleted", pod.Name, pod.Namespace)
-		}
+		deletePod(ctx, client, pod)
 	}()
 
 	if c.Collector.ImagePullSecret != nil && c.Collector.ImagePullSecret.Data != nil {
@@ -472,4 +440,40 @@ func savePodDetails(ctx context.Context, client *kubernetes.Clientset, output Co
 		klog.Errorf("failed to save pod event results to %s-events.json: %v", runPodCollector.Name, err)
 	}
 	return output, nil
+}
+
+func deletePod(ctx context.Context, client *kubernetes.Clientset, pod *corev1.Pod) {
+	if err := client.CoreV1().Pods(pod.Namespace).Delete(context.Background(), pod.Name, metav1.DeleteOptions{}); err != nil {
+		klog.Errorf("Failed to delete pod %s: %v", pod.Name, err)
+		return
+	}
+	klog.V(2).Infof("Pod %s has been scheduled for deletion", pod.Name)
+
+	// Wait until the pod is deleted
+	// Poll every second to check if the Pod has been deleted.
+	klog.V(2).Infof("Continuously poll each second for Pod %s deletion for maximum %d seconds", pod.Name, constants.MAX_TIME_TO_WAIT_FOR_POD_DELETION/time.Second)
+	err := wait.PollUntilContextTimeout(ctx, time.Second, constants.MAX_TIME_TO_WAIT_FOR_POD_DELETION, true, func(ctx context.Context) (bool, error) {
+		_, getErr := client.CoreV1().Pods(pod.Namespace).Get(ctx, pod.Name, metav1.GetOptions{})
+		// If the Pod is not found, it has been deleted.
+		if kuberneteserrors.IsNotFound(getErr) {
+			return true, nil
+		}
+		// If there is an error from context (e.g., context deadline exceeded), return the error.
+		if ctx.Err() != nil {
+			return false, ctx.Err()
+		}
+		// Otherwise, the Pod has not yet been deleted. Keep polling.
+		return false, nil
+	})
+	if err != nil {
+		zeroGracePeriod := int64(0)
+		klog.V(2).Infof("Pod %s forcefully deleted after reaching the maximum wait time of %d seconds", pod.Name, constants.MAX_TIME_TO_WAIT_FOR_POD_DELETION/time.Second)
+		if err := client.CoreV1().Pods(pod.Namespace).Delete(context.Background(), pod.Name, metav1.DeleteOptions{
+			GracePeriodSeconds: &zeroGracePeriod,
+		}); err != nil {
+			klog.Errorf("Failed to wait for pod %s deletion: %v", pod.Name, err)
+			return
+		}
+		klog.V(2).Infof("Pod %s in %s namespace has been deleted", pod.Name, pod.Namespace)
+	}
 }
