@@ -8,7 +8,7 @@ import (
 )
 
 func TestLoadingHelmTemplate_Succeeds(t *testing.T) {
-	s := testutils.GetTestFixture(t, "helm-template.yaml")
+	s := testutils.GetTestFixture(t, "yamldocs/helm-template.yaml")
 	kinds, err := LoadFromStrings(s)
 	assert.NoError(t, err)
 	assert.NotNil(t, kinds)
