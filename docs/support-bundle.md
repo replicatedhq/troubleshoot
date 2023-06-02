@@ -38,7 +38,7 @@ support-bundle [urls...] [flags]
       --redact                         enable/disable default redactions (default true)
       --redactors strings              names of the additional redactors to use
       --request-timeout string         The length of time to wait before giving up on a single server request. Non-zero values should contain a corresponding time unit (e.g. 1s, 2m, 3h). A value of zero means don't timeout requests. (default "0")
-  -l, --selector strings               selector to filter on for loading additional support bundle specs found in secrets within the cluster (default [troubleshoot.sh/kind=support-bundle])
+  -l, --selector strings               selector to filter on for loading additional support bundle specs found in secrets within the cluster (default [troubleshoot.io/kind=support-bundle,troubleshoot.sh/kind=support-bundle])
   -s, --server string                  The address and port of the Kubernetes API server
       --since string                   force pod logs collectors to return logs newer than a relative duration like 5s, 2m, or 3h.
       --since-time string              force pod logs collectors to return logs after a specific date (RFC3339)
