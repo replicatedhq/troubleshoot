@@ -41,7 +41,18 @@ type TroubleshootV1beta2Kinds struct {
 	SupportBundles   []troubleshootv1beta2.SupportBundle
 }
 
-func newTroubleshootV1beta2Kinds() *TroubleshootV1beta2Kinds {
+func (kinds *TroubleshootV1beta2Kinds) IsEmpty() bool {
+	return len(kinds.Analyzers) == 0 &&
+		len(kinds.Collectors) == 0 &&
+		len(kinds.HostCollectors) == 0 &&
+		len(kinds.HostPreflights) == 0 &&
+		len(kinds.Preflights) == 0 &&
+		len(kinds.Redactors) == 0 &&
+		len(kinds.RemoteCollectors) == 0 &&
+		len(kinds.SupportBundles) == 0
+}
+
+func NewTroubleshootV1beta2Kinds() *TroubleshootV1beta2Kinds {
 	return &TroubleshootV1beta2Kinds{}
 }
 
@@ -122,7 +133,7 @@ func LoadFromStrings(rawSpecs ...string) (*TroubleshootV1beta2Kinds, error) {
 }
 
 func loadFromSplitDocs(splitdocs []string) (*TroubleshootV1beta2Kinds, error) {
-	kinds := newTroubleshootV1beta2Kinds()
+	kinds := NewTroubleshootV1beta2Kinds()
 
 	for _, doc := range splitdocs {
 		converted, err := docrewrite.ConvertToV1Beta2([]byte(doc))

@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/replicatedhq/troubleshoot/internal/testutils"
+	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -48,7 +49,7 @@ array:
 	for _, ts := range tests {
 		kinds, err := LoadFromStrings(ts)
 		assert.NoError(t, err)
-		assert.Equal(t, newTroubleshootV1beta2Kinds(), kinds)
+		assert.Equal(t, NewTroubleshootV1beta2Kinds(), kinds)
 	}
 }
 
@@ -69,4 +70,11 @@ array:- 1
 			assert.Nil(t, kinds)
 		})
 	}
+}
+
+func TestKindsIsEmpty(t *testing.T) {
+	assert.True(t, NewTroubleshootV1beta2Kinds().IsEmpty())
+	kinds := NewTroubleshootV1beta2Kinds()
+	kinds.Analyzers = append(kinds.Analyzers, troubleshootv1beta2.Analyzer{})
+	assert.False(t, kinds.IsEmpty())
 }
