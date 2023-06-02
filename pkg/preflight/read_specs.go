@@ -34,7 +34,7 @@ type documentMetadata struct {
 }
 
 type documentMetadataLabels struct {
-	TroubleshootKind string `yaml:"troubleshoot.io/kind,omitempty"`
+	TroubleshootKind string `yaml:"troubleshoot.sh/kind,omitempty"`
 }
 
 type documentData struct {
@@ -136,7 +136,7 @@ func (p *PreflightSpecs) Read(args []string) error {
 				return types.NewExitCodeError(constants.EXIT_CODE_SPEC_ISSUES, errors.Wrap(err, "failed to parse yaml"))
 			}
 
-			// We're going to look for either of "kind: Preflight" OR "kind: Secret" with the label "troubleshoot.io/kind: preflight"
+			// We're going to look for either of "kind: Preflight" OR "kind: Secret" with the label "troubleshoot.sh/kind: preflight"
 
 			if parsedDocHead.Kind != "Preflight" && parsedDocHead.Kind != "Secret" {
 				continue
