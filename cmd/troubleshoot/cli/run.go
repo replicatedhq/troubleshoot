@@ -257,7 +257,7 @@ the %s Admin Console to begin analysis.`
 }
 
 // loadClusterSpecs loads the support bundle and redactor specs from the cluster
-// based on troubleshoot.io/kind=support-bundle label selector. We search for secrets
+// based on troubleshoot.io/kind=support-bundle,troubleshoot.sh/kind=support-bundle label selector. We search for secrets
 // and configmaps with the label selector and parse the data as a support bundle. If the
 // user does not have sufficient permissions to list & read secrets and configmaps from
 // all namespaces, we will fallback to trying each namespace individually, and eventually
@@ -272,6 +272,11 @@ func loadClusterSpecs() (*troubleshootv1beta2.SupportBundle, *troubleshootv1beta
 	labelSelector := strings.Join(v.GetStringSlice("selector"), ",")
 
 	parsedSelector, err := labels.Parse(labelSelector)
+
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "unable to parse selector")
+	}
+
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "unable to parse selector")
 	}
@@ -331,28 +336,35 @@ func loadClusterSpecs() (*troubleshootv1beta2.SupportBundle, *troubleshootv1beta
 
 	var bundlesFromCluster []string
 
-	// Search cluster for support bundle specs
-	klog.V(1).Infof("Search support bundle specs from [%q] namespaces using %q selector", strings.Join(namespaces, ", "), parsedSelector.String())
-	for _, ns := range namespaces {
-		bundlesFromSecrets, err := specs.LoadFromSecretMatchingLabel(client, parsedSelector.String(), ns, specs.SupportBundleKey)
-		if err != nil {
-			if !k8serrors.IsForbidden(err) {
-				klog.Errorf("failed to load support bundle spec from secrets: %s", err)
-			} else {
-				klog.Warningf("Reading secrets from %q namespace forbidden", ns)
-			}
-		}
-		bundlesFromCluster = append(bundlesFromCluster, bundlesFromSecrets...)
+	parsedSelectorStrings, err := specs.SplitTroubleshootSecretLabelSelector(client, parsedSelector)
+	if err != nil {
+		klog.Errorf("failed to parse troubleshoot labels selector %s", err)
+	}
 
-		bundlesFromConfigMaps, err := specs.LoadFromConfigMapMatchingLabel(client, parsedSelector.String(), ns, specs.SupportBundleKey)
-		if err != nil {
-			if !k8serrors.IsForbidden(err) {
-				klog.Errorf("failed to load support bundle spec from configmap: %s", err)
-			} else {
-				klog.Warningf("Reading configmaps from %q namespace forbidden", ns)
+	// Search cluster for support bundle specs
+	for _, parsedSelectorString := range parsedSelectorStrings {
+		for _, ns := range namespaces {
+			klog.V(1).Infof("Search support bundle specs from [%q] namespace using %q selector", strings.Join(namespaces, ", "), parsedSelectorString)
+			bundlesFromSecrets, err := specs.LoadFromSecretMatchingLabel(client, parsedSelectorString, ns, specs.SupportBundleKey)
+			if err != nil {
+				if !k8serrors.IsForbidden(err) {
+					klog.Errorf("failed to load support bundle spec from secrets: %s", err)
+				} else {
+					klog.Warningf("Reading secrets from %q namespace forbidden", ns)
+				}
 			}
+			bundlesFromCluster = append(bundlesFromCluster, bundlesFromSecrets...)
+
+			bundlesFromConfigMaps, err := specs.LoadFromConfigMapMatchingLabel(client, parsedSelectorString, ns, specs.SupportBundleKey)
+			if err != nil {
+				if !k8serrors.IsForbidden(err) {
+					klog.Errorf("failed to load support bundle spec from configmap: %s", err)
+				} else {
+					klog.Warningf("Reading configmaps from %q namespace forbidden", ns)
+				}
+			}
+			bundlesFromCluster = append(bundlesFromCluster, bundlesFromConfigMaps...)
 		}
-		bundlesFromCluster = append(bundlesFromCluster, bundlesFromConfigMaps...)
 	}
 
 	parsedBundle := &troubleshootv1beta2.SupportBundle{}
@@ -379,27 +391,30 @@ func loadClusterSpecs() (*troubleshootv1beta2.SupportBundle, *troubleshootv1beta
 	var redactorsFromCluster []string
 
 	// Search cluster for redactor specs
-	klog.V(1).Infof("Search redactor specs from [%q] namespaces using %q selector", strings.Join(namespaces, ", "), parsedSelector.String())
-	for _, ns := range namespaces {
-		redactorsFromSecrets, err := specs.LoadFromSecretMatchingLabel(client, parsedSelector.String(), ns, specs.RedactorKey)
-		if err != nil {
-			if !k8serrors.IsForbidden(err) {
-				klog.Errorf("failed to load support bundle spec from secrets: %s", err)
-			} else {
-				klog.Warningf("Reading secrets from %q namespace forbidden", ns)
+	// klog.V(1).Infof("Search redactor specs from [%q] namespaces using %q selector", strings.Join(namespaces, ", "), parsedSelector.String())
+	for _, parsedSelectorString := range parsedSelectorStrings {
+		for _, ns := range namespaces {
+			klog.V(1).Infof("Search redactor specs from [%q] namespace using %q selector", strings.Join(namespaces, ", "), parsedSelectorString)
+			redactorsFromSecrets, err := specs.LoadFromSecretMatchingLabel(client, parsedSelectorString, ns, specs.RedactorKey)
+			if err != nil {
+				if !k8serrors.IsForbidden(err) {
+					klog.Errorf("failed to load support bundle spec from secrets: %s", err)
+				} else {
+					klog.Warningf("Reading secrets from %q namespace forbidden", ns)
+				}
 			}
-		}
-		redactorsFromCluster = append(redactorsFromCluster, redactorsFromSecrets...)
+			redactorsFromCluster = append(redactorsFromCluster, redactorsFromSecrets...)
 
-		redactorsFromConfigMaps, err := specs.LoadFromConfigMapMatchingLabel(client, parsedSelector.String(), ns, specs.RedactorKey)
-		if err != nil {
-			if !k8serrors.IsForbidden(err) {
-				klog.Errorf("failed to load support bundle spec from configmap: %s", err)
-			} else {
-				klog.Warningf("Reading configmaps from %q namespace forbidden", ns)
+			redactorsFromConfigMaps, err := specs.LoadFromConfigMapMatchingLabel(client, parsedSelectorString, ns, specs.RedactorKey)
+			if err != nil {
+				if !k8serrors.IsForbidden(err) {
+					klog.Errorf("failed to load support bundle spec from configmap: %s", err)
+				} else {
+					klog.Warningf("Reading configmaps from %q namespace forbidden", ns)
+				}
 			}
+			redactorsFromCluster = append(redactorsFromCluster, redactorsFromConfigMaps...)
 		}
-		redactorsFromCluster = append(redactorsFromCluster, redactorsFromConfigMaps...)
 	}
 
 	for _, redactor := range redactorsFromCluster {
