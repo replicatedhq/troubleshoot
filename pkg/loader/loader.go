@@ -106,21 +106,21 @@ func LoadFromStrings(rawSpecs ...string) (*TroubleshootV1beta2Kinds, error) {
 			// 3. Extract the raw troubleshoot specs
 			switch v := obj.(type) {
 			case *v1.ConfigMap:
-				spec, err := getSpecFromConfigMap(v)
+				specs, err := getSpecFromConfigMap(v)
 				if err != nil {
 					return nil, types.NewExitCodeError(constants.EXIT_CODE_SPEC_ISSUES, err)
 				}
-				splitdocs = append(splitdocs, spec)
+				splitdocs = append(splitdocs, specs...)
 			case *v1.Secret:
-				spec, err := getSpecFromSecret(v)
+				specs, err := getSpecFromSecret(v)
 				if err != nil {
 					return nil, types.NewExitCodeError(constants.EXIT_CODE_SPEC_ISSUES, err)
 				}
-				splitdocs = append(splitdocs, spec)
+				splitdocs = append(splitdocs, specs...)
 			default:
 				return nil, types.NewExitCodeError(constants.EXIT_CODE_SPEC_ISSUES, errors.Errorf("%T type is not a Secret or ConfigMap", v))
 			}
-		} else if parsed.APIVersion == "troubleshoot.sh/v1beta2" {
+		} else if parsed.APIVersion == constants.Troubleshootv1beta2Kind {
 			// If it's not a configmap or secret, just append it to the splitdocs
 			splitdocs = append(splitdocs, rawDoc)
 		} else {
@@ -188,82 +188,93 @@ func isConfigMap(parsedDocHead parsedDoc) bool {
 	return false
 }
 
-func getSpecFromConfigMap(cm *v1.ConfigMap) (string, error) {
-	spec := ""
-	var err error
+// getSpecFromConfigMap extracts multiple troubleshoot specs from a secret
+func getSpecFromConfigMap(cm *v1.ConfigMap) ([]string, error) {
+	// TODO: Write a test for multiple specs in a configmap
+	specs := []string{}
 
 	str, ok := cm.Data[constants.SupportBundleKey]
 	if ok {
-		spec, err = validateYaml(str)
+		spec, err := validateYaml(str)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
+		specs = append(specs, spec)
 	}
 	str, ok = cm.Data[constants.RedactorKey]
 	if ok {
-		spec, err = validateYaml(str)
+		spec, err := validateYaml(str)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
+		specs = append(specs, spec)
 	}
 	str, ok = cm.Data[constants.PreflightKey]
 	if ok {
-		spec, err = validateYaml(str)
+		spec, err := validateYaml(str)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
+		specs = append(specs, spec)
 	}
 
-	return spec, nil
+	return specs, nil
 }
 
-func getSpecFromSecret(secret *v1.Secret) (string, error) {
-	spec := ""
-	var err error
+// getSpecFromSecret extracts multiple troubleshoot specs from a secret
+func getSpecFromSecret(secret *v1.Secret) ([]string, error) {
+	// TODO: Write a test for multiple specs in a secret
+	specs := []string{}
 
 	specBytes, ok := secret.Data[constants.SupportBundleKey]
 	if ok {
-		spec, err = validateYaml(string(specBytes))
+		spec, err := validateYaml(string(specBytes))
 		if err != nil {
-			return "", err
+			return nil, err
 		}
+		specs = append(specs, spec)
 	}
 	specBytes, ok = secret.Data[constants.RedactorKey]
 	if ok {
-		spec, err = validateYaml(string(specBytes))
+		spec, err := validateYaml(string(specBytes))
 		if err != nil {
-			return "", err
+			return nil, err
 		}
+		specs = append(specs, spec)
 	}
 	specBytes, ok = secret.Data[constants.PreflightKey]
 	if ok {
-		spec, err = validateYaml(string(specBytes))
+		spec, err := validateYaml(string(specBytes))
 		if err != nil {
-			return "", err
+			return nil, err
 		}
+		specs = append(specs, spec)
 	}
 	str, ok := secret.StringData[constants.SupportBundleKey]
 	if ok {
-		spec, err = validateYaml(str)
+		spec, err := validateYaml(str)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
+		specs = append(specs, spec)
 	}
 	str, ok = secret.StringData[constants.RedactorKey]
 	if ok {
-		spec, err = validateYaml(str)
+		spec, err := validateYaml(str)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
+		specs = append(specs, spec)
 	}
 	str, ok = secret.StringData[constants.PreflightKey]
 	if ok {
-		spec, err = validateYaml(str)
+		spec, err := validateYaml(str)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
+		specs = append(specs, spec)
 	}
-	return spec, nil
+	return specs, nil
 }
 
 func validateYaml(raw string) (string, error) {
@@ -272,5 +283,6 @@ func validateYaml(raw string) (string, error) {
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to parse yaml: '%s'", string(raw))
 	}
+
 	return raw, nil
 }
