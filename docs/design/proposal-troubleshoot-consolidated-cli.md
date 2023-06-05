@@ -41,29 +41,29 @@ To this end we should create a new `pkg` that targets the functionality provided
 
 This new package should be kept as minimal as possible. and serve only as an interface to private functions in the other packages.
 
-Once the stable API is ready we can instruct projects like kurl to target that and work on removing code marked for deprecation.
+Once the stable API is ready we can instruct projects like kurl to target that and work on removing code marked for deprecation and migrate non-public functions to an `internal` package to make it clear that it's not intended to be imported.
 
 The functionality we want to expose via this api is:
 
-- `CollectBundle(spec{}) (bundlePath string, error)`
+- `CollectBundle(context.Context, opt CollectOptions) (bundlePath string, error)`
   - collect a support bundle from a spec.
   - takes a parsed spec struct as an parameter.
   - returns a path to the bundle directory and errors.
   - to minimise IO and increase collection speed. redactors should be run inline, redacting data in memory before it's saved to a bundle.
-- `RedactBundle(bundlePath string) error`
+- `RedactBundle(context.Context, opt RedactOptions) error`
   - redact an already collected bundle, takes a path to the bundle as an parameter.
   - returns any errors
-- `AnalyzeBundle(spec{}, bundlePath string) (results{},error)`
+- `AnalyzeBundle(context.Context, opt AnalyzeOptions) (results{},error)`
   - run analysers from the spec and return the analysis results struct
   - returns analysis struct and errors
-- `ArchiveBundle(bundlePath string, compressionMethod string, destination string) error`
+- `ArchiveBundle(context.Context, opt ArchiveOptions) error`
   - generates a tar archive of the bundle directory at the specified path with optional compression
   - takes bundle path, compression method and destination as parameters.
   - returns errors
-- `ParseSpecFile(specFile string) (spec{},error)`
+- `ParseSpecFile(context.Context, opt ParseOptions) (spec{},error)`
   - parses a spec file and returns an unmarshalled troubleshoot spec struct.
   - could be used for linting
-- `ServeBundle(bundlePath string, kubeconfig string, port int)`
+- `ServeBundle(context.Context, opt ServeOptions)`
   - starts a sbctl server using the specified bundle and port, outputting a kubeconfig at a specified location.
 - `LoadFromStrings(rawSpecs ...string) (*TroubleshootV1beta2Kinds, error)`
   - accepts a list of valid yaml documents and extracts all troubleshoot objects from the documents. This includes `Secret` and `ConfigMap` objects that have troubleshoot specs.
@@ -78,13 +78,9 @@ The functionality we want to expose via this api is:
 
   `troubleshoot collect https://kots.io`
 
-  in the troubleshoot cli code this could look like:
+- if no bundle URI/location is specified, search for a spec in-cluster
 
-```
-spec,_ := troubleshoot.ParseSpecFile("spec.yaml")
-bundleFile,_ := troubleshoot.CollectBundle(spec)
-analysisResults,_ := troubleshoot.AnalyzeBundle(spec,bundleFile)
-```
+  `troubleshoot collect`
 
 - use a spec to return a go/no-go preflight outcome
 
