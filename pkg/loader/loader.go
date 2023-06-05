@@ -1,8 +1,9 @@
 package loader
 
 import (
+	"strings"
+
 	"github.com/pkg/errors"
-	"github.com/replicatedhq/troubleshoot/internal/util"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/replicatedhq/troubleshoot/pkg/client/troubleshootclientset/scheme"
 	"github.com/replicatedhq/troubleshoot/pkg/constants"
@@ -78,11 +79,7 @@ func LoadFromStrings(rawSpecs ...string) (*TroubleshootKinds, error) {
 
 	// 1. First split multidoc yaml documents.
 	for _, rawSpec := range rawSpecs {
-		parsed, err := util.SplitMultiDoc(rawSpec)
-		if err != nil {
-			return nil, types.NewExitCodeError(constants.EXIT_CODE_SPEC_ISSUES, errors.Wrapf(err, "failed to split yaml doc: '%s'", string(rawSpec)))
-		}
-		multiRawDocs = append(multiRawDocs, parsed...)
+		multiRawDocs = append(multiRawDocs, strings.Split(rawSpec, "\n---\n")...)
 	}
 
 	// 2. Go through each document to see if it is a configmap, secret or troubleshoot kind
@@ -197,27 +194,27 @@ func getSpecFromConfigMap(cm *v1.ConfigMap) ([]string, error) {
 
 	str, ok := cm.Data[constants.SupportBundleKey]
 	if ok {
-		split, err := util.SplitMultiDoc(str)
+		spec, err := validateYaml(str)
 		if err != nil {
 			return nil, err
 		}
-		specs = append(specs, split...)
+		specs = append(specs, strings.Split(spec, "\n---\n")...)
 	}
 	str, ok = cm.Data[constants.RedactorKey]
 	if ok {
-		split, err := util.SplitMultiDoc(str)
+		spec, err := validateYaml(str)
 		if err != nil {
 			return nil, err
 		}
-		specs = append(specs, split...)
+		specs = append(specs, strings.Split(spec, "\n---\n")...)
 	}
 	str, ok = cm.Data[constants.PreflightKey]
 	if ok {
-		split, err := util.SplitMultiDoc(str)
+		spec, err := validateYaml(str)
 		if err != nil {
 			return nil, err
 		}
-		specs = append(specs, split...)
+		specs = append(specs, strings.Split(spec, "\n---\n")...)
 	}
 
 	return specs, nil
@@ -230,51 +227,61 @@ func getSpecFromSecret(secret *v1.Secret) ([]string, error) {
 
 	specBytes, ok := secret.Data[constants.SupportBundleKey]
 	if ok {
-		split, err := util.SplitMultiDoc(string(specBytes))
+		spec, err := validateYaml(string(specBytes))
 		if err != nil {
 			return nil, err
 		}
-		specs = append(specs, split...)
+		specs = append(specs, strings.Split(spec, "\n---\n")...)
 	}
 	specBytes, ok = secret.Data[constants.RedactorKey]
 	if ok {
-		split, err := util.SplitMultiDoc(string(specBytes))
+		spec, err := validateYaml(string(specBytes))
 		if err != nil {
 			return nil, err
 		}
-		specs = append(specs, split...)
+		specs = append(specs, strings.Split(spec, "\n---\n")...)
 	}
 	specBytes, ok = secret.Data[constants.PreflightKey]
 	if ok {
-		split, err := util.SplitMultiDoc(string(specBytes))
+		spec, err := validateYaml(string(specBytes))
 		if err != nil {
 			return nil, err
 		}
-		specs = append(specs, split...)
+		specs = append(specs, strings.Split(spec, "\n---\n")...)
 	}
 	str, ok := secret.StringData[constants.SupportBundleKey]
 	if ok {
-		split, err := util.SplitMultiDoc(str)
+		spec, err := validateYaml(str)
 		if err != nil {
 			return nil, err
 		}
-		specs = append(specs, split...)
+		specs = append(specs, strings.Split(spec, "\n---\n")...)
 	}
 	str, ok = secret.StringData[constants.RedactorKey]
 	if ok {
-		split, err := util.SplitMultiDoc(str)
+		spec, err := validateYaml(str)
 		if err != nil {
 			return nil, err
 		}
-		specs = append(specs, split...)
+		specs = append(specs, strings.Split(spec, "\n---\n")...)
 	}
 	str, ok = secret.StringData[constants.PreflightKey]
 	if ok {
-		split, err := util.SplitMultiDoc(str)
+		spec, err := validateYaml(str)
 		if err != nil {
 			return nil, err
 		}
-		specs = append(specs, split...)
+		specs = append(specs, strings.Split(spec, "\n---\n")...)
 	}
 	return specs, nil
+}
+
+func validateYaml(raw string) (string, error) {
+	var parsed map[string]any
+	err := yaml.Unmarshal([]byte(raw), &parsed)
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to parse yaml: '%s'", string(raw))
+	}
+
+	return raw, nil
 }
