@@ -105,7 +105,7 @@ func (p *PreflightSpecs) Read(args []string) error {
 			return err
 		}
 
-		for _, v := range kinds.Preflights {
+		for _, v := range kinds.PreflightsV1Beta2 {
 			if v.Spec.UploadResultsTo == "" {
 				p.PreflightSpec = ConcatPreflightSpec(p.PreflightSpec, &v)
 			} else {
@@ -113,7 +113,7 @@ func (p *PreflightSpecs) Read(args []string) error {
 			}
 		}
 
-		for _, v := range kinds.HostPreflights {
+		for _, v := range kinds.HostPreflightsV1Beta2 {
 			p.HostPreflightSpec = ConcatHostPreflightSpec(p.HostPreflightSpec, &v)
 		}
 	}

@@ -30,35 +30,35 @@ type parsedDoc struct {
 	StringData map[string]string `json:"stringData" yaml:"stringData"`
 }
 
-type TroubleshootV1beta2Kinds struct {
-	Analyzers        []troubleshootv1beta2.Analyzer
-	Collectors       []troubleshootv1beta2.Collector
-	HostCollectors   []troubleshootv1beta2.HostCollector
-	HostPreflights   []troubleshootv1beta2.HostPreflight
-	Preflights       []troubleshootv1beta2.Preflight
-	Redactors        []troubleshootv1beta2.Redactor
-	RemoteCollectors []troubleshootv1beta2.RemoteCollector
-	SupportBundles   []troubleshootv1beta2.SupportBundle
+type TroubleshootKinds struct {
+	AnalyzersV1Beta2        []troubleshootv1beta2.Analyzer
+	CollectorsV1Beta2       []troubleshootv1beta2.Collector
+	HostCollectorsV1Beta2   []troubleshootv1beta2.HostCollector
+	HostPreflightsV1Beta2   []troubleshootv1beta2.HostPreflight
+	PreflightsV1Beta2       []troubleshootv1beta2.Preflight
+	RedactorsV1Beta2        []troubleshootv1beta2.Redactor
+	RemoteCollectorsV1Beta2 []troubleshootv1beta2.RemoteCollector
+	SupportBundlesV1Beta2   []troubleshootv1beta2.SupportBundle
 }
 
-func (kinds *TroubleshootV1beta2Kinds) IsEmpty() bool {
-	return len(kinds.Analyzers) == 0 &&
-		len(kinds.Collectors) == 0 &&
-		len(kinds.HostCollectors) == 0 &&
-		len(kinds.HostPreflights) == 0 &&
-		len(kinds.Preflights) == 0 &&
-		len(kinds.Redactors) == 0 &&
-		len(kinds.RemoteCollectors) == 0 &&
-		len(kinds.SupportBundles) == 0
+func (kinds *TroubleshootKinds) IsEmpty() bool {
+	return len(kinds.AnalyzersV1Beta2) == 0 &&
+		len(kinds.CollectorsV1Beta2) == 0 &&
+		len(kinds.HostCollectorsV1Beta2) == 0 &&
+		len(kinds.HostPreflightsV1Beta2) == 0 &&
+		len(kinds.PreflightsV1Beta2) == 0 &&
+		len(kinds.RedactorsV1Beta2) == 0 &&
+		len(kinds.RemoteCollectorsV1Beta2) == 0 &&
+		len(kinds.SupportBundlesV1Beta2) == 0
 }
 
-func NewTroubleshootV1beta2Kinds() *TroubleshootV1beta2Kinds {
-	return &TroubleshootV1beta2Kinds{}
+func NewTroubleshootKinds() *TroubleshootKinds {
+	return &TroubleshootKinds{}
 }
 
-// LoadFromBytes takes a list of bytes and returns a TroubleshootV1beta2Kinds object
+// LoadFromBytes takes a list of bytes and returns a TroubleshootKinds object
 // Under the hood, this function will convert the bytes to strings and call LoadFromStrings.
-func LoadFromBytes(rawSpecs ...[]byte) (*TroubleshootV1beta2Kinds, error) {
+func LoadFromBytes(rawSpecs ...[]byte) (*TroubleshootKinds, error) {
 	asStrings := []string{}
 	for _, rawSpec := range rawSpecs {
 		asStrings = append(asStrings, string(rawSpec))
@@ -67,13 +67,13 @@ func LoadFromBytes(rawSpecs ...[]byte) (*TroubleshootV1beta2Kinds, error) {
 	return LoadFromStrings(asStrings...)
 }
 
-// LoadFromStrings takes a list of strings and returns a TroubleshootV1beta2Kinds object
+// LoadFromStrings takes a list of strings and returns a TroubleshootKinds object
 // that contains all the parsed troubleshooting specs. This function accepts a list of strings (exploded)
 // which need to be valid yaml documents. A string can be a multidoc yaml separated by "---" as well.
 // This function will return an error if any of the documents are not valid yaml.
 // If Secrets or ConfigMaps are found, they will be parsed and the support bundle, redactor or preflight
 // spec will be extracted from them, else they will be ignored. Any other yaml documents will be ignored.
-func LoadFromStrings(rawSpecs ...string) (*TroubleshootV1beta2Kinds, error) {
+func LoadFromStrings(rawSpecs ...string) (*TroubleshootKinds, error) {
 	splitdocs := []string{}
 	multiRawDocs := []string{}
 
@@ -132,8 +132,8 @@ func LoadFromStrings(rawSpecs ...string) (*TroubleshootV1beta2Kinds, error) {
 	return loadFromSplitDocs(splitdocs)
 }
 
-func loadFromSplitDocs(splitdocs []string) (*TroubleshootV1beta2Kinds, error) {
-	kinds := NewTroubleshootV1beta2Kinds()
+func loadFromSplitDocs(splitdocs []string) (*TroubleshootKinds, error) {
+	kinds := NewTroubleshootKinds()
 
 	for _, doc := range splitdocs {
 		converted, err := docrewrite.ConvertToV1Beta2([]byte(doc))
@@ -148,21 +148,21 @@ func loadFromSplitDocs(splitdocs []string) (*TroubleshootV1beta2Kinds, error) {
 
 		switch spec := obj.(type) {
 		case *troubleshootv1beta2.Analyzer:
-			kinds.Analyzers = append(kinds.Analyzers, *spec)
+			kinds.AnalyzersV1Beta2 = append(kinds.AnalyzersV1Beta2, *spec)
 		case *troubleshootv1beta2.Collector:
-			kinds.Collectors = append(kinds.Collectors, *spec)
+			kinds.CollectorsV1Beta2 = append(kinds.CollectorsV1Beta2, *spec)
 		case *troubleshootv1beta2.HostCollector:
-			kinds.HostCollectors = append(kinds.HostCollectors, *spec)
+			kinds.HostCollectorsV1Beta2 = append(kinds.HostCollectorsV1Beta2, *spec)
 		case *troubleshootv1beta2.HostPreflight:
-			kinds.HostPreflights = append(kinds.HostPreflights, *spec)
+			kinds.HostPreflightsV1Beta2 = append(kinds.HostPreflightsV1Beta2, *spec)
 		case *troubleshootv1beta2.Preflight:
-			kinds.Preflights = append(kinds.Preflights, *spec)
+			kinds.PreflightsV1Beta2 = append(kinds.PreflightsV1Beta2, *spec)
 		case *troubleshootv1beta2.Redactor:
-			kinds.Redactors = append(kinds.Redactors, *spec)
+			kinds.RedactorsV1Beta2 = append(kinds.RedactorsV1Beta2, *spec)
 		case *troubleshootv1beta2.RemoteCollector:
-			kinds.RemoteCollectors = append(kinds.RemoteCollectors, *spec)
+			kinds.RemoteCollectorsV1Beta2 = append(kinds.RemoteCollectorsV1Beta2, *spec)
 		case *troubleshootv1beta2.SupportBundle:
-			kinds.SupportBundles = append(kinds.SupportBundles, *spec)
+			kinds.SupportBundlesV1Beta2 = append(kinds.SupportBundlesV1Beta2, *spec)
 		default:
 			return kinds, types.NewExitCodeError(constants.EXIT_CODE_SPEC_ISSUES, errors.Errorf("unknown troubleshoot kind %T", obj))
 		}
