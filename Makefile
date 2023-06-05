@@ -220,3 +220,13 @@ lint: fmt vet
 .PHONY: lint-and-fix
 lint-and-fix: fmt vet
 	golangci-lint run --new --fix -c .golangci.yaml ${BUILDPATHS}
+
+## Syncronize the code with a remote server. More info: CONTRIBUTING.md
+.PHONY: watchrsync
+watchrsync: npm-install
+	bin/watchrsync.js
+
+.PHONY: npm-install
+npm-install:
+	npm --version 2>&1 >/dev/null || ( echo "npm not installed; install npm to set up watchrsync" && exit 1 )
+	npm list gaze-run-interrupt || npm install install gaze-run-interrupt@~2.0.0
