@@ -223,6 +223,9 @@ func TestLoadingMultidocsWithTroubleshootSpecs(t *testing.T) {
 				Kind:       "RemoteCollector",
 				APIVersion: "troubleshoot.sh/v1beta2",
 			},
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "certificate",
+			},
 			Spec: troubleshootv1beta2.RemoteCollectorSpec{
 				Collectors: []*troubleshootv1beta2.RemoteCollect{
 					{
