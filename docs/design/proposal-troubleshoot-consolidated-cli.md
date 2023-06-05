@@ -65,6 +65,8 @@ The functionality we want to expose via this api is:
   - could be used for linting
 - `ServeBundle(bundlePath string, kubeconfig string, port int)`
   - starts a sbctl server using the specified bundle and port, outputting a kubeconfig at a specified location.
+- `LoadFromStrings(rawSpecs ...string) (*TroubleshootV1beta2Kinds, error)`
+  - accepts a list of valid yaml documents and extracts all troubleshoot objects from the documents. This includes `Secret` and `ConfigMap` objects that have troubleshoot specs.
 
 ### Usage patterns
 
