@@ -1,0 +1,36 @@
+# Source: wg-easy/templates/replicated-library.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: sb-spec-2-configmap
+  labels:
+    troubleshoot.io/kind: support-bundle
+data:
+  support-bundle-spec: |-
+    apiVersion: troubleshoot.sh/v1beta2
+    kind: SupportBundle
+    spec:
+      collectors:
+        - logs:
+            name: all-logs
+  redactor-spec: |
+    apiVersion: troubleshoot.sh/v1beta2
+    kind: Redactor
+    spec:
+      redactors:
+        - name: redact-text-1
+          removals:
+            values:
+            -  abc123
+  preflight.yaml: |-
+    apiVersion: troubleshoot.sh/v1beta2
+    kind: Preflight
+    spec:
+      collectors:
+        - clusterResources:
+            ignoreRBAC: true
+      analyzers:
+        - clusterVersion:
+            outcomes:
+            - pass:
+                message: Cluster is up to date

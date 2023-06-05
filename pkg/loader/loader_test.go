@@ -265,6 +265,81 @@ func TestLoadingMultidocsWithTroubleshootSpecs(t *testing.T) {
 	}, kinds.SupportBundlesV1Beta2)
 }
 
+func TestLoadingConfigMapWithMultipleSpecs(t *testing.T) {
+	s := testutils.GetTestFixture(t, "yamldocs/multidoc-spec-2.yaml")
+	kinds, err := LoadFromStrings(s)
+	require.NoError(t, err)
+	require.NotNil(t, kinds)
+
+	assert.Equal(t, &TroubleshootKinds{
+		SupportBundlesV1Beta2: []troubleshootv1beta2.SupportBundle{
+			{
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "SupportBundle",
+					APIVersion: "troubleshoot.sh/v1beta2",
+				},
+				Spec: troubleshootv1beta2.SupportBundleSpec{
+					Collectors: []*troubleshootv1beta2.Collect{
+						{
+							Logs: &troubleshootv1beta2.Logs{
+								Name: "all-logs",
+							},
+						},
+					},
+				},
+			},
+		},
+		RedactorsV1Beta2: []troubleshootv1beta2.Redactor{
+			{
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "Redactor",
+					APIVersion: "troubleshoot.sh/v1beta2",
+				},
+				Spec: troubleshootv1beta2.RedactorSpec{
+					Redactors: []*troubleshootv1beta2.Redact{
+						{
+							Name: "redact-text-1",
+							Removals: troubleshootv1beta2.Removals{
+								Values: []string{"abc123"},
+							},
+						},
+					},
+				},
+			},
+		},
+		PreflightsV1Beta2: []troubleshootv1beta2.Preflight{
+			{
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "Preflight",
+					APIVersion: "troubleshoot.sh/v1beta2",
+				},
+				Spec: troubleshootv1beta2.PreflightSpec{
+					Collectors: []*troubleshootv1beta2.Collect{
+						{
+							ClusterResources: &troubleshootv1beta2.ClusterResources{
+								IgnoreRBAC: true,
+							},
+						},
+					},
+					Analyzers: []*troubleshootv1beta2.Analyze{
+						{
+							ClusterVersion: &troubleshootv1beta2.ClusterVersion{
+								Outcomes: []*troubleshootv1beta2.Outcome{
+									{
+										Pass: &troubleshootv1beta2.SingleOutcome{
+											Message: "Cluster is up to date",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}, kinds)
+}
+
 func TestKindsIsEmpty(t *testing.T) {
 	assert.True(t, NewTroubleshootKinds().IsEmpty())
 	kinds := NewTroubleshootKinds()
