@@ -265,7 +265,7 @@ func TestLoadingMultidocsWithTroubleshootSpecs(t *testing.T) {
 	}, kinds.SupportBundlesV1Beta2)
 }
 
-func TestLoadingConfigMapWithMultipleSpecs(t *testing.T) {
+func TestLoadingConfigMapWithMultipleSpecs_PreflightSupportBundleAndRedactorDataKeys(t *testing.T) {
 	s := testutils.GetTestFixture(t, "yamldocs/multidoc-spec-2.yaml")
 	kinds, err := LoadFromStrings(s)
 	require.NoError(t, err)
@@ -332,6 +332,59 @@ func TestLoadingConfigMapWithMultipleSpecs(t *testing.T) {
 									},
 								},
 							},
+						},
+					},
+				},
+			},
+		},
+	}, kinds)
+}
+
+func TestLoadingConfigMapWithMultipleSpecs_SupportBundleMultidoc(t *testing.T) {
+	s := testutils.GetTestFixture(t, "yamldocs/multidoc-spec-3.yaml")
+	kinds, err := LoadFromStrings(s)
+	require.NoError(t, err)
+	require.NotNil(t, kinds)
+
+	assert.Equal(t, &TroubleshootKinds{
+		SupportBundlesV1Beta2: []troubleshootv1beta2.SupportBundle{
+			{
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "SupportBundle",
+					APIVersion: "troubleshoot.sh/v1beta2",
+				},
+				Spec: troubleshootv1beta2.SupportBundleSpec{
+					Collectors: []*troubleshootv1beta2.Collect{
+						{
+							Logs: &troubleshootv1beta2.Logs{
+								Name: "all-logs",
+							},
+						},
+					},
+				},
+			},
+			{
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "SupportBundle",
+					APIVersion: "troubleshoot.sh/v1beta2",
+				},
+				Spec: troubleshootv1beta2.SupportBundleSpec{
+					Collectors: []*troubleshootv1beta2.Collect{
+						{
+							ClusterResources: &troubleshootv1beta2.ClusterResources{},
+						},
+					},
+				},
+			},
+			{
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "SupportBundle",
+					APIVersion: "troubleshoot.sh/v1beta2",
+				},
+				Spec: troubleshootv1beta2.SupportBundleSpec{
+					Collectors: []*troubleshootv1beta2.Collect{
+						{
+							ClusterInfo: &troubleshootv1beta2.ClusterInfo{},
 						},
 					},
 				},

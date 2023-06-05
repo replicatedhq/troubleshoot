@@ -1,8 +1,7 @@
-# Source: wg-easy/templates/replicated-library.yaml
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: sb-spec-2-configmap
+  name: multi-spec
   labels:
     troubleshoot.io/kind: support-bundle
 data:
