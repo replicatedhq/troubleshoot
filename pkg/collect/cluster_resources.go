@@ -30,6 +30,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
+	"k8s.io/klog/v2"
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 
 	"github.com/replicatedhq/troubleshoot/pkg/k8sutil/discovery"
@@ -100,6 +101,7 @@ EMPTY_NAMESPACE_FOUND:
 }
 
 func (c *CollectClusterResources) Collect(progressChan chan<- interface{}) (CollectorResult, error) {
+	klog.V(4).Infof("CollectClusterResources.Collect")
 	client, err := kubernetes.NewForConfig(c.ClientConfig)
 	if err != nil {
 		return nil, err
@@ -118,16 +120,19 @@ func (c *CollectClusterResources) Collect(progressChan chan<- interface{}) (Coll
 	var namespaceNames []string
 	if len(c.Collector.Namespaces) > 0 {
 		namespaces, namespaceErrors := getNamespaces(ctx, client, c.Collector.Namespaces)
+		klog.V(4).Infof("checking for namespaces access: %s", string(namespaces))
 		namespaceNames = c.Collector.Namespaces
 		output.SaveResult(c.BundlePath, path.Join(constants.CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s.json", constants.CLUSTER_RESOURCES_NAMESPACES)), bytes.NewBuffer(namespaces))
 		output.SaveResult(c.BundlePath, path.Join(constants.CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s-errors.json", constants.CLUSTER_RESOURCES_NAMESPACES)), marshalErrors(namespaceErrors))
 	} else if c.Namespace != "" {
 		namespace, namespaceErrors := getNamespace(ctx, client, c.Namespace)
+		klog.V(4).Infof("checking for namespace access: %s", string(namespace))
 		output.SaveResult(c.BundlePath, path.Join(constants.CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s.json", constants.CLUSTER_RESOURCES_NAMESPACES)), bytes.NewBuffer(namespace))
 		output.SaveResult(c.BundlePath, path.Join(constants.CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s-errors.json", constants.CLUSTER_RESOURCES_NAMESPACES)), marshalErrors(namespaceErrors))
 		namespaceNames = append(namespaceNames, c.Namespace)
 	} else {
 		namespaces, namespaceList, namespaceErrors := getAllNamespaces(ctx, client)
+		klog.V(4).Infof("checking for all namespaces access: %s", string(namespaces))
 		output.SaveResult(c.BundlePath, path.Join(constants.CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s.json", constants.CLUSTER_RESOURCES_NAMESPACES)), bytes.NewBuffer(namespaces))
 		output.SaveResult(c.BundlePath, path.Join(constants.CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s-errors.json", constants.CLUSTER_RESOURCES_NAMESPACES)), marshalErrors(namespaceErrors))
 		if namespaceList != nil {
@@ -139,6 +144,8 @@ func (c *CollectClusterResources) Collect(progressChan chan<- interface{}) (Coll
 	}
 
 	reviewStatuses, reviewStatusErrors := getSelfSubjectRulesReviews(ctx, client, namespaceNames)
+	s, _ := json.MarshalIndent(reviewStatuses, "", "  ")
+	klog.V(4).Infof("checking for self subject rules reviews: %s", s)
 
 	// auth cani
 	authCanI := authCanI(reviewStatuses, namespaceNames)
@@ -1661,6 +1668,7 @@ func events(ctx context.Context, client *kubernetes.Clientset, namespaces []stri
 func canCollectNamespaceResources(status *authorizationv1.SubjectRulesReviewStatus) bool {
 	// This is all very approximate
 
+	klog.V(4).Infof("canCollectNamespaceResources: %+v", status)
 	for _, resource := range status.ResourceRules {
 		hasGet := false
 		for _, verb := range resource.Verbs {
@@ -1668,6 +1676,7 @@ func canCollectNamespaceResources(status *authorizationv1.SubjectRulesReviewStat
 				hasGet = true
 				break
 			}
+			klog.V(4).Infof("resource: %+v hasGet: %t", resource, hasGet)
 		}
 
 		hasAPI := false
@@ -1676,6 +1685,7 @@ func canCollectNamespaceResources(status *authorizationv1.SubjectRulesReviewStat
 				hasAPI = true
 				break
 			}
+			klog.V(4).Infof("group: %+v hasGet: %t", group, hasAPI)
 		}
 
 		hasPods := false
@@ -1684,6 +1694,7 @@ func canCollectNamespaceResources(status *authorizationv1.SubjectRulesReviewStat
 				hasPods = true
 				break
 			}
+			klog.V(4).Infof("resource: %+v hasPods: %t", resource, hasPods)
 		}
 
 		if hasGet && hasAPI && hasPods {
