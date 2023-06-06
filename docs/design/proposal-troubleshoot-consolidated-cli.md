@@ -22,6 +22,10 @@ Functions of `support-bundle`, `preflight`, `analyze`, `redact`, and `sbctl` bin
 
 In the interest of being able to work on this quickly without breaking existing use-cases, a new `troubleshoot` command should be created. Utilizing cobra and viper best practices from the cobra.dev docs.
 
+A guiding principle of this redesign should be that the we are defining a set of "artefacts" (i.e: a support bundle, a spec), and each of the defined public functions acts as an interface to interact with these artefacts. either creating, manipulating, or performing other actions on them. in this way we guarantee that each public function can be re-used on an artefact (support bundle) in any stage of it's existance.
+
+For example, running a set of redactors or analyzers on an existing support bundle without having to re-run collection.
+
 ### sbctl → troubleshoot inspect
 
 sbctl should be migrated to the troubleshoot repository in a "lift and shift" operation to start with.
