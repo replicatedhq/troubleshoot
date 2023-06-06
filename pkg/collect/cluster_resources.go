@@ -214,6 +214,13 @@ func (c *CollectClusterResources) Collect(progressChan chan<- interface{}) (Coll
 	}
 	output.SaveResult(c.BundlePath, path.Join(constants.CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s-errors.json", constants.CLUSTER_RESOURCES_STATEFULSETS)), marshalErrors(statefulsetsErrors))
 
+	// daemonsets
+	daemonsets, daemonsetsErrors := daemonsets(ctx, client, namespaceNames)
+	for k, v := range daemonsets {
+		output.SaveResult(c.BundlePath, path.Join(constants.CLUSTER_RESOURCES_DIR, constants.CLUSTER_RESOURCES_DAEMONSETS, k), bytes.NewBuffer(v))
+	}
+	output.SaveResult(c.BundlePath, path.Join(constants.CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s-errors.json", constants.CLUSTER_RESOURCES_DAEMONSETS)), marshalErrors(daemonsetsErrors))
+
 	// replicasets
 	replicasets, replicasetsErrors := replicasets(ctx, client, namespaceNames)
 	for k, v := range replicasets {
@@ -644,6 +651,43 @@ func statefulsets(ctx context.Context, client *kubernetes.Clientset, namespaces 
 	}
 
 	return statefulsetsByNamespace, errorsByNamespace
+}
+
+func daemonsets(ctx context.Context, client *kubernetes.Clientset, namespaces []string) (map[string][]byte, map[string]string) {
+	daemonsetsByNamespace := make(map[string][]byte)
+	errorsByNamespace := make(map[string]string)
+
+	for _, namespace := range namespaces {
+		daemonsets, err := client.AppsV1().DaemonSets(namespace).List(ctx, metav1.ListOptions{})
+		
+		
+		if err != nil {
+			errorsByNamespace[namespace] = err.Error()
+			continue
+		}
+
+		gvk, err := apiutil.GVKForObject(daemonsets, scheme.Scheme)
+		if err == nil {
+			daemonsets.GetObjectKind().SetGroupVersionKind(gvk)
+		}
+
+		for i, o := range daemonsets.Items {
+			gvk, err := apiutil.GVKForObject(&o, scheme.Scheme)
+			if err == nil {
+				daemonsets.Items[i].GetObjectKind().SetGroupVersionKind(gvk)
+			}
+		}
+
+		b, err := json.MarshalIndent(daemonsets, "", "  ")
+		if err != nil {
+			errorsByNamespace[namespace] = err.Error()
+			continue
+		}
+
+		daemonsetsByNamespace[namespace+".json"] = b
+	}
+
+	return daemonsetsByNamespace, errorsByNamespace
 }
 
 func replicasets(ctx context.Context, client *kubernetes.Clientset, namespaces []string) (map[string][]byte, map[string]string) {

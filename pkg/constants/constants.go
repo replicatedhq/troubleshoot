@@ -31,6 +31,7 @@ const (
 	CLUSTER_RESOURCES_DEPLOYMENTS                 = "deployments"
 	CLUSTER_RESOURCES_REPLICASETS                 = "replicasets"
 	CLUSTER_RESOURCES_STATEFULSETS                = "statefulsets"
+	CLUSTER_RESOURCES_DAEMONSETS                  = "daemonsets"
 	CLUSTER_RESOURCES_JOBS                        = "jobs"
 	CLUSTER_RESOURCES_CRONJOBS                    = "cronjobs"
 	CLUSTER_RESOURCES_INGRESS                     = "ingress"
