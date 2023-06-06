@@ -135,6 +135,7 @@ func compareWhentoResource(w string, actual interface{}) (bool, error) {
 		return false, errors.New("could not cast found value as string")
 	}
 
+	// now we can try checking if it's a "size"
 	actualAsSize, err := humanize.ParseBytes(actualAsString)
 	if err == nil {
 		// it's probably a size, we can do some comparison here
@@ -145,6 +146,7 @@ func compareWhentoResource(w string, actual interface{}) (bool, error) {
 			return false, errors.New("Cannot compare size with not size")
 		}
 		whenIntAsString := strconv.FormatInt(int64(whenAsSize), 10)
+		// re-use that same compare function from earlier, might as well
 		return compareActualToWhen(whenSplit[0]+" "+whenIntAsString, int(actualAsSize))
 
 	}
