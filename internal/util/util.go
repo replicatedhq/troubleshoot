@@ -40,3 +40,7 @@ func AppName(name string) string {
 
 	return strings.Join(casedWords, " ")
 }
+
+func SplitYAML(doc string) []string {
+	return strings.Split(doc, "\n---\n")
+}
