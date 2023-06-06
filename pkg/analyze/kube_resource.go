@@ -124,7 +124,7 @@ func compareWhentoResource(w string, actual interface{}) (bool, error) {
 	actualAsInt, ok := actual.(int)
 	if ok {
 		// it's an int! we can do integer comparison here
-		// we're going to re-use an i'll-fitting bit of code from the deployment analyzer for now
+		// we're going to re-use an ill-fitting bit of code from the deployment analyzer for now
 		return compareActualToWhen(w, actualAsInt)
 	}
 
