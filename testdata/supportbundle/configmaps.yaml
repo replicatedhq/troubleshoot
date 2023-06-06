@@ -4,16 +4,6 @@ metadata:
   name: example-collect-all-configmap-data
 spec:
   collectors:
-    - logs:
-        selector:
-          - app=plex
-          # in default namespace
-    - logs:
-        selector:
-          - k8s-app=kube-dns
-          # not in default namespace
-    - logs:
-        name: kube-proxy
     - configMap:
         name: kube-root-ca.crt
         # expected in default namespace
