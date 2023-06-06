@@ -15,6 +15,8 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/klog/v2"
 )
 
 type ConfigMapOutput struct {
@@ -49,8 +51,16 @@ func (c *CollectConfigMap) Collect(progressChan chan<- interface{}) (CollectorRe
 	output := NewResult()
 
 	configMaps := []corev1.ConfigMap{}
+	namespace := c.Collector.Namespace
+
 	if c.Collector.Name != "" {
-		configMap, err := c.Client.CoreV1().ConfigMaps(c.Collector.Namespace).Get(c.Context, c.Collector.Name, metav1.GetOptions{})
+		if c.Collector.Namespace == "" {
+			klog.V(2).Infof("namespace not provided for configmap %s, using default", c.Collector.Name)
+			clientCfg, _ := clientcmd.NewDefaultClientConfigLoadingRules().Load()
+			namespace = clientCfg.Contexts[clientCfg.CurrentContext].Namespace
+		}
+		klog.V(1).Infof("collecting configmap %s in namespace %s", c.Collector.Name, c.Collector.Namespace)
+		configMap, err := c.Client.CoreV1().ConfigMaps(namespace).Get(c.Context, c.Collector.Name, metav1.GetOptions{})
 		if err != nil {
 			if kuberneteserrors.IsNotFound(err) {
 				filePath, encoded, err := configMapToOutput(c.Collector, nil, c.Collector.Name)

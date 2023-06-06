@@ -13,6 +13,7 @@ import (
 	"github.com/replicatedhq/troubleshoot/pkg/multitype"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"k8s.io/klog/v2"
 )
 
 type Collector interface {
@@ -66,8 +67,10 @@ func GetCollector(collector *troubleshootv1beta2.Collect, bundlePath string, nam
 	case collector.Secret != nil:
 		return &CollectSecret{collector.Secret, bundlePath, namespace, clientConfig, client, ctx, RBACErrors}, true
 	case collector.ConfigMap != nil:
+		klog.V(1).Infof("ConfigMap collector in spec: %+v", collector.ConfigMap)
 		return &CollectConfigMap{collector.ConfigMap, bundlePath, namespace, clientConfig, client, ctx, RBACErrors}, true
 	case collector.Logs != nil:
+		klog.V(1).Infof("Logs collector in spec: %+v", collector.ConfigMap)
 		return &CollectLogs{collector.Logs, bundlePath, namespace, clientConfig, client, ctx, sinceTime, RBACErrors}, true
 	case collector.Run != nil:
 		return &CollectRun{collector.Run, bundlePath, namespace, clientConfig, client, ctx, RBACErrors}, true
