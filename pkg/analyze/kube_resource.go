@@ -202,7 +202,6 @@ func analyzeWhenField(actual interface{}, outcomes []*troubleshootv1beta2.Outcom
 				return result, nil
 			}
 
-
 		}
 		if outcome.Pass != nil {
 
@@ -217,7 +216,7 @@ func analyzeWhenField(actual interface{}, outcomes []*troubleshootv1beta2.Outcom
 					result.URI = outcome.Pass.URI
 					return result, nil
 				}
-			}else {
+			} else {
 				result.IsPass = true
 				result.Message = outcome.Pass.Message
 				result.URI = outcome.Pass.URI
