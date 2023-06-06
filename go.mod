@@ -8,7 +8,6 @@ require (
 	github.com/blang/semver/v4 v4.0.0
 	github.com/containers/image/v5 v5.25.0
 	github.com/distribution/distribution/v3 v3.0.0-20221208165359-362910506bc2
-	github.com/dustin/go-humanize v1.0.0
 	github.com/fatih/color v1.15.0
 	github.com/go-logr/logr v1.2.4
 	github.com/go-redis/redis/v7 v7.4.1

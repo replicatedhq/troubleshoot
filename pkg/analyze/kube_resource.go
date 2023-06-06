@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	humanize "github.com/dustin/go-humanize"
+	"k8s.io/apimachinery/pkg/api/resource"
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/replicatedhq/troubleshoot/pkg/constants"
@@ -135,19 +135,19 @@ func compareWhentoResource(w string, actual interface{}) (bool, error) {
 		return false, errors.New("could not cast found value as string")
 	}
 
-	// now we can try checking if it's a "size"
-	actualAsSize, err := humanize.ParseBytes(actualAsString)
+	// now we can try checking if it's a "quantity"
+	actualASQuantity, err := resource.ParseQuantity(actualAsString)
 	if err == nil {
 		// it's probably a size, we can do some comparison here
 		// but I'm being lazy here so we'll convert our last argument to an int and throw it back at our existing int comparison function
-		whenAsSize, err := humanize.ParseBytes(whenSplit[1])
+		whenAsQuantity, err := resource.ParseQuantity(whenSplit[1])
 		if err != nil {
 			// our when wasn't a size! naughty user
 			return false, errors.New("Cannot compare size with not size")
 		}
-		whenIntAsString := strconv.FormatInt(int64(whenAsSize), 10)
+		whenIntAsString := strconv.FormatInt(whenAsQuantity.Value(), 10)
 		// re-use that same compare function from earlier, might as well
-		return compareActualToWhen(whenSplit[0]+" "+whenIntAsString, int(actualAsSize))
+		return compareActualToWhen(whenSplit[0]+" "+whenIntAsString, int(actualASQuantity.Value()))
 
 	}
 
