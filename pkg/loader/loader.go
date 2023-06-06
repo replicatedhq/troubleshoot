@@ -1,9 +1,11 @@
 package loader
 
 import (
+	"context"
 	"strings"
 
 	"github.com/pkg/errors"
+	"github.com/replicatedhq/troubleshoot/internal/util"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/replicatedhq/troubleshoot/pkg/client/troubleshootclientset/scheme"
 	"github.com/replicatedhq/troubleshoot/pkg/constants"
@@ -28,6 +30,25 @@ type parsedDoc struct {
 	APIVersion string            `json:"apiVersion" yaml:"apiVersion"`
 	Data       map[string]any    `json:"data" yaml:"data"`
 	StringData map[string]string `json:"stringData" yaml:"stringData"`
+}
+
+type LoadOptions struct {
+	RawSpecs []string
+	RawSpec  string
+}
+
+// LoadSpecs takes sources to load specs from and returns a TroubleshootKinds object
+// that contains all the parsed troubleshoot specs.
+//
+// The fetched specs need to be yaml documents. The documents can be a multidoc yaml
+// separated by "---" which get split and parsed one at a time. This function will
+// return an error if any of the documents are not valid yaml. If Secrets or ConfigMaps
+// are found, they will be parsed and the support bundle, redactor or preflight spec
+// will be extracted from them, else they will be ignored.
+// Any other yaml documents will be ignored.
+func LoadSpecs(ctx context.Context, opt LoadOptions) (*TroubleshootKinds, error) {
+	opt.RawSpecs = append(opt.RawSpecs, opt.RawSpec)
+	return loadFromStrings(opt.RawSpecs...)
 }
 
 type TroubleshootKinds struct {
@@ -56,24 +77,8 @@ func NewTroubleshootKinds() *TroubleshootKinds {
 	return &TroubleshootKinds{}
 }
 
-// LoadFromBytes takes a list of bytes and returns a TroubleshootKinds object
-// Under the hood, this function will convert the bytes to strings and call LoadFromStrings.
-func LoadFromBytes(rawSpecs ...[]byte) (*TroubleshootKinds, error) {
-	asStrings := []string{}
-	for _, rawSpec := range rawSpecs {
-		asStrings = append(asStrings, string(rawSpec))
-	}
-
-	return LoadFromStrings(asStrings...)
-}
-
-// LoadFromStrings takes a list of strings and returns a TroubleshootKinds object
-// that contains all the parsed troubleshooting specs. This function accepts a list of strings (exploded)
-// which need to be valid yaml documents. A string can be a multidoc yaml separated by "---" as well.
-// This function will return an error if any of the documents are not valid yaml.
-// If Secrets or ConfigMaps are found, they will be parsed and the support bundle, redactor or preflight
-// spec will be extracted from them, else they will be ignored. Any other yaml documents will be ignored.
-func LoadFromStrings(rawSpecs ...string) (*TroubleshootKinds, error) {
+// loadFromStrings accepts a list of strings (exploded) which should be yaml documents
+func loadFromStrings(rawSpecs ...string) (*TroubleshootKinds, error) {
 	splitdocs := []string{}
 	multiRawDocs := []string{}
 
@@ -163,7 +168,7 @@ func loadFromSplitDocs(splitdocs []string) (*TroubleshootKinds, error) {
 		case *troubleshootv1beta2.SupportBundle:
 			kinds.SupportBundlesV1Beta2 = append(kinds.SupportBundlesV1Beta2, *spec)
 		default:
-			return kinds, types.NewExitCodeError(constants.EXIT_CODE_SPEC_ISSUES, errors.Errorf("unknown troubleshoot kind %T", obj))
+			return nil, types.NewExitCodeError(constants.EXIT_CODE_SPEC_ISSUES, errors.Errorf("unknown troubleshoot kind %T", obj))
 		}
 	}
 
@@ -189,7 +194,6 @@ func isConfigMap(parsedDocHead parsedDoc) bool {
 
 // getSpecFromConfigMap extracts multiple troubleshoot specs from a secret
 func getSpecFromConfigMap(cm *v1.ConfigMap) ([]string, error) {
-	// TODO: Write a test for multiple specs in a configmap
 	specs := []string{}
 
 	str, ok := cm.Data[constants.SupportBundleKey]
@@ -198,7 +202,7 @@ func getSpecFromConfigMap(cm *v1.ConfigMap) ([]string, error) {
 		if err != nil {
 			return nil, err
 		}
-		specs = append(specs, strings.Split(spec, "\n---\n")...)
+		specs = append(specs, util.SplitYAML(spec)...)
 	}
 	str, ok = cm.Data[constants.RedactorKey]
 	if ok {
@@ -206,7 +210,7 @@ func getSpecFromConfigMap(cm *v1.ConfigMap) ([]string, error) {
 		if err != nil {
 			return nil, err
 		}
-		specs = append(specs, strings.Split(spec, "\n---\n")...)
+		specs = append(specs, util.SplitYAML(spec)...)
 	}
 	str, ok = cm.Data[constants.PreflightKey]
 	if ok {
@@ -214,7 +218,7 @@ func getSpecFromConfigMap(cm *v1.ConfigMap) ([]string, error) {
 		if err != nil {
 			return nil, err
 		}
-		specs = append(specs, strings.Split(spec, "\n---\n")...)
+		specs = append(specs, util.SplitYAML(spec)...)
 	}
 
 	return specs, nil
@@ -222,7 +226,6 @@ func getSpecFromConfigMap(cm *v1.ConfigMap) ([]string, error) {
 
 // getSpecFromSecret extracts multiple troubleshoot specs from a secret
 func getSpecFromSecret(secret *v1.Secret) ([]string, error) {
-	// TODO: Write a test for multiple specs in a secret
 	specs := []string{}
 
 	specBytes, ok := secret.Data[constants.SupportBundleKey]
@@ -231,7 +234,7 @@ func getSpecFromSecret(secret *v1.Secret) ([]string, error) {
 		if err != nil {
 			return nil, err
 		}
-		specs = append(specs, strings.Split(spec, "\n---\n")...)
+		specs = append(specs, util.SplitYAML(spec)...)
 	}
 	specBytes, ok = secret.Data[constants.RedactorKey]
 	if ok {
@@ -239,7 +242,7 @@ func getSpecFromSecret(secret *v1.Secret) ([]string, error) {
 		if err != nil {
 			return nil, err
 		}
-		specs = append(specs, strings.Split(spec, "\n---\n")...)
+		specs = append(specs, util.SplitYAML(spec)...)
 	}
 	specBytes, ok = secret.Data[constants.PreflightKey]
 	if ok {
@@ -247,7 +250,7 @@ func getSpecFromSecret(secret *v1.Secret) ([]string, error) {
 		if err != nil {
 			return nil, err
 		}
-		specs = append(specs, strings.Split(spec, "\n---\n")...)
+		specs = append(specs, util.SplitYAML(spec)...)
 	}
 	str, ok := secret.StringData[constants.SupportBundleKey]
 	if ok {
@@ -255,7 +258,7 @@ func getSpecFromSecret(secret *v1.Secret) ([]string, error) {
 		if err != nil {
 			return nil, err
 		}
-		specs = append(specs, strings.Split(spec, "\n---\n")...)
+		specs = append(specs, util.SplitYAML(spec)...)
 	}
 	str, ok = secret.StringData[constants.RedactorKey]
 	if ok {
@@ -263,7 +266,7 @@ func getSpecFromSecret(secret *v1.Secret) ([]string, error) {
 		if err != nil {
 			return nil, err
 		}
-		specs = append(specs, strings.Split(spec, "\n---\n")...)
+		specs = append(specs, util.SplitYAML(spec)...)
 	}
 	str, ok = secret.StringData[constants.PreflightKey]
 	if ok {
@@ -271,7 +274,7 @@ func getSpecFromSecret(secret *v1.Secret) ([]string, error) {
 		if err != nil {
 			return nil, err
 		}
-		specs = append(specs, strings.Split(spec, "\n---\n")...)
+		specs = append(specs, util.SplitYAML(spec)...)
 	}
 	return specs, nil
 }

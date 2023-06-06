@@ -1,6 +1,7 @@
 package preflight
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -100,7 +101,10 @@ func (p *PreflightSpecs) Read(args []string) error {
 			}
 		}
 
-		kinds, err := loader.LoadFromBytes(preflightContent)
+		ctx := context.Background()
+		kinds, err := loader.LoadSpecs(ctx, loader.LoadOptions{
+			RawSpec: string(preflightContent),
+		})
 		if err != nil {
 			return err
 		}

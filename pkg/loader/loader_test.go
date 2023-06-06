@@ -1,6 +1,7 @@
 package loader
 
 import (
+	"context"
 	"testing"
 
 	"github.com/replicatedhq/troubleshoot/internal/testutils"
@@ -12,7 +13,7 @@ import (
 
 func TestLoadingHelmTemplate_Succeeds(t *testing.T) {
 	s := testutils.GetTestFixture(t, "yamldocs/helm-template.yaml")
-	kinds, err := LoadFromStrings(s)
+	kinds, err := loadFromStrings(s)
 	require.NoError(t, err)
 	require.NotNil(t, kinds)
 
@@ -49,7 +50,8 @@ array:
 	}
 
 	for _, ts := range tests {
-		kinds, err := LoadFromStrings(ts)
+		ctx := context.Background()
+		kinds, err := LoadSpecs(ctx, LoadOptions{RawSpecs: []string{ts}})
 		assert.NoError(t, err)
 		assert.Equal(t, NewTroubleshootKinds(), kinds)
 	}
@@ -67,7 +69,8 @@ array:- 1
 
 	for _, ts := range tests {
 		t.Run(ts, func(t *testing.T) {
-			kinds, err := LoadFromStrings(ts)
+			ctx := context.Background()
+			kinds, err := LoadSpecs(ctx, LoadOptions{RawSpec: ts})
 			assert.Error(t, err)
 			assert.Nil(t, kinds)
 		})
@@ -76,7 +79,8 @@ array:- 1
 
 func TestLoadingMultidocsWithTroubleshootSpecs(t *testing.T) {
 	s := testutils.GetTestFixture(t, "yamldocs/multidoc-spec-1.yaml")
-	kinds, err := LoadFromStrings(s)
+	ctx := context.Background()
+	kinds, err := LoadSpecs(ctx, LoadOptions{RawSpec: s})
 	require.NoError(t, err)
 	require.NotNil(t, kinds)
 
@@ -270,7 +274,7 @@ func TestLoadingMultidocsWithTroubleshootSpecs(t *testing.T) {
 
 func TestLoadingConfigMapWithMultipleSpecs_PreflightSupportBundleAndRedactorDataKeys(t *testing.T) {
 	s := testutils.GetTestFixture(t, "yamldocs/multidoc-spec-2.yaml")
-	kinds, err := LoadFromStrings(s)
+	kinds, err := loadFromStrings(s)
 	require.NoError(t, err)
 	require.NotNil(t, kinds)
 
@@ -345,7 +349,7 @@ func TestLoadingConfigMapWithMultipleSpecs_PreflightSupportBundleAndRedactorData
 
 func TestLoadingConfigMapWithMultipleSpecs_SupportBundleMultidoc(t *testing.T) {
 	s := testutils.GetTestFixture(t, "yamldocs/multidoc-spec-3.yaml")
-	kinds, err := LoadFromStrings(s)
+	kinds, err := loadFromStrings(s)
 	require.NoError(t, err)
 	require.NotNil(t, kinds)
 
