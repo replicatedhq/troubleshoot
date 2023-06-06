@@ -66,6 +66,11 @@ preflight-e2e-test:
 support-bundle-e2e-test:
 	./test/validate-support-bundle-e2e.sh
 
+# Build all binaries in parallel ( -j )
+build:
+	@echo "Build cli binaries"
+	$(MAKE) -j support-bundle preflight analyze collect
+
 .PHONY: support-bundle
 support-bundle:
 	go build ${BUILDFLAGS} ${LDFLAGS} -o bin/support-bundle github.com/replicatedhq/troubleshoot/cmd/troubleshoot
