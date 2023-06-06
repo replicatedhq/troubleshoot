@@ -100,6 +100,11 @@ func (p *PreflightSpecs) Read(args []string) error {
 			}
 		}
 
+		kinds, err := loader.LoadFromBytes(preflightContent)
+		if err != nil {
+			return err
+		}
+
 		for _, v := range kinds.PreflightsV1Beta2 {
 			if v.Spec.UploadResultsTo == "" {
 				p.PreflightSpec = ConcatPreflightSpec(p.PreflightSpec, &v)
