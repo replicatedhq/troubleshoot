@@ -66,18 +66,18 @@ The functionality we want to expose via this api is:
   - returns errors
 - `ServeBundle(context.Context, opt ServeOptions)`
   - starts a sbctl server using the specified bundle and port, outputting a kubeconfig at a specified location.
-- `ParseSpecs(context.Context, opt ParseOptions) ([]TroubleshootKind,error)`
-  - parses input []byte from ParseOptions struct and returns any unmarshalled troubleshoot kinds.
 - `LoadSpecs(context.Context, opt LoadOptions) ([]TroubleShootKind,err)`
-  - Takes a list of locations to load specs from and returns a list of parsed troubleshoot kinds.
-  - Uses ParseSpecs behind the scenes but automates the process of obtaining the specs from supported sources (i.e OCI registries)
+  - Takes a loadOptions struct and returns a list of parsed troubleshoot kinds.
 
 
 Some examples of the options structs.
 
 ```go
 type LoadOptions struct {
-  SpecList []string // list of locations for specs to load
+  RawSpecs []string // list of locations for specs to load
+  RawSpec string // a single spec to parse
+  FilePaths []string // list of filepaths to check, can be globbed
+  URIs []string // list of URIs to retrieve specs from
   SearchCluster bool // toggle for searching cluster from context for troubleshoot objects
 }
 ```
