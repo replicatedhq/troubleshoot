@@ -65,11 +65,14 @@ type AnalysisResults struct {
 from there we can build out methods for each to interact with them:
 
 ```go
+// Load loads specs defined by the LoadOptions struct and returns a TroubleshootKinds struct
+func Load(LoadOptions) (TroubleshootKinds,err){}
 kinds, err := Load(LoadOptions)
 
-func (kinds *Bundle) Collect(CollectOptions) (error) {}
+// Bundle.Collect runs collections defined in TroubleshootKinds passed through CollectOptions
+func (bundle *Bundle) Collect(CollectOptions) (error) {}
 
-func (kinds *Bundle) Load(LoadBundleOptions) (error) {}
+func (bundle *Bundle) Load(LoadBundleOptions) (error) {}
 
 func (bundle *Bundle) Analyze(AnalyzeOptions) (AnalysisResults, error) {}
 
