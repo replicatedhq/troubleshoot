@@ -72,6 +72,34 @@ The functionality we want to expose via this api is:
   - Takes a list of locations to load specs from and returns a list of parsed troubleshoot kinds.
   - Uses ParseSpecs behind the scenes but automates the process of obtaining the specs from supported sources (i.e OCI registries)
 
+```go
+type LoadOptions struct {
+  SpecList []string // list of locations for specs to load
+  SearchCluster bool // toggle for searching cluster from context for troubleshoot objects
+}
+```
+
+```go
+type CollectOptions struct {
+  Specs []TroubleshootKind // list of specs to extract collectors and redactors from
+}
+```
+
+```go
+type RedactOptions struct {
+  Specs []troubleshootKind // list of specs to extract redactors from
+}
+```
+Note: this is almost identical to `CollectOptions` for now but remains separate to enable easier addition of redact specific options at a later date
+
+```go
+type ServeOptions struct {
+  Address string // address to listen on including port (0.0.0.0:8080)
+  ConfigPath string // optional path to store generated kubeconfig
+}
+```
+
+
 ### Usage patterns
 
 - generate a support bundle
