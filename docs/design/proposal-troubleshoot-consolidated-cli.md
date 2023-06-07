@@ -60,9 +60,6 @@ type Bundle struct {
 type AnalysisResults struct {
 }
 
-type LoadBundleOptions struct {
-    Path string // Path to archive or directory of bundle files
-}
 ```
 
 from there we can build out methods for each to interact with them:
@@ -93,9 +90,11 @@ type LoadOptions struct {
   URIs []string // list of URIs to retrieve specs from
   SearchCluster bool // toggle for searching cluster from context for troubleshoot objects
 }
-```
 
-```go
+type LoadBundleOptions struct {
+    Path string // Path to archive or directory of bundle files
+}
+
 type CollectOptions struct {
   Specs TroubleshootKinds // list of specs to extract collectors and redactors from
 }
