@@ -66,7 +66,7 @@ The functionality we want to expose via this api is:
   - returns errors
 - `ServeBundle(context.Context, opt ServeOptions)`
   - starts a sbctl server using the specified bundle and port, outputting a kubeconfig at a specified location.
-- `LoadSpecs(context.Context, opt LoadOptions) ([]TroubleShootKind,err)`
+- `LoadSpecs(context.Context, opt LoadOptions) (TroubleshootKinds,err)`
   - Takes a loadOptions struct and returns a list of parsed troubleshoot kinds.
 
 
@@ -84,13 +84,13 @@ type LoadOptions struct {
 
 ```go
 type CollectOptions struct {
-  Specs []TroubleshootKind // list of specs to extract collectors and redactors from
+  Specs TroubleshootKinds // list of specs to extract collectors and redactors from
 }
 ```
 
 ```go
 type RedactOptions struct {
-  Specs []troubleshootKind // list of specs to extract redactors from
+  Specs TroubleshootKinds // list of specs to extract redactors from
 }
 ```
 Note: this is almost identical to `CollectOptions` for now but remains separate to enable easier addition of redact specific options at a later date
