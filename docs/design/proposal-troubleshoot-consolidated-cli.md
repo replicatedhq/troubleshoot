@@ -74,12 +74,16 @@ func (bundle *Bundle) Collect(CollectOptions) (error) {}
 
 func (bundle *Bundle) Load(LoadBundleOptions) (error) {}
 
+// Bundle.Analyze runs analysis defined in TroubleshootKinds passed through AnalyzeOptions
 func (bundle *Bundle) Analyze(AnalyzeOptions) (AnalysisResults, error) {}
 
+// Bundle.Redact runs redaction defined in TroubleshootKinds passed through RedactOptions
 func (bundle *Bundle) Redact(RedactOptions) error {}
 
+// Bundle.Archive produces an archive from a bundle on disk with options passed in ArchiveOptions
 func (bundle *Bundle) Archive(ArchiveOptions) error {}
 
+// Bundle.Serve starts an sbctl-like server with options defined in ServeOptions
 func (bundle *Bundle) Serve(ServeOptions) error {}
 ```
 
