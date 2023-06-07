@@ -59,6 +59,10 @@ type Bundle struct {
 
 type AnalysisResults struct {
 }
+
+type LoadBundleOptions struct {
+    Path string // Path to archive or directory of bundle files
+}
 ```
 
 from there we can build out methods for each to interact with them:
@@ -67,6 +71,8 @@ from there we can build out methods for each to interact with them:
 kinds, err := Load(LoadOptions)
 
 func (kinds *Bundle) Collect(CollectOptions) (error) {}
+
+func (kinds *Bundle) Load(LoadBundleOptions) (error) {}
 
 func (bundle *Bundle) Analyze(AnalyzeOptions) (AnalysisResults, error) {}
 
