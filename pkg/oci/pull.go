@@ -9,7 +9,7 @@ import (
 
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
 	"github.com/pkg/errors"
-	"github.com/replicatedhq/troubleshoot/cmd/util"
+	"github.com/replicatedhq/troubleshoot/internal/util"
 	"github.com/replicatedhq/troubleshoot/pkg/version"
 	"oras.land/oras-go/pkg/auth"
 	dockerauth "oras.land/oras-go/pkg/auth/docker"

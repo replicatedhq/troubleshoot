@@ -19,8 +19,6 @@ import (
 	"github.com/pkg/errors"
 	analyzer "github.com/replicatedhq/troubleshoot/pkg/analyze"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
-	"github.com/replicatedhq/troubleshoot/pkg/client/troubleshootclientset/scheme"
-	troubleshootclientsetscheme "github.com/replicatedhq/troubleshoot/pkg/client/troubleshootclientset/scheme"
 	"github.com/replicatedhq/troubleshoot/pkg/convert"
 	"github.com/replicatedhq/troubleshoot/pkg/httputil"
 	"github.com/replicatedhq/troubleshoot/pkg/k8sutil"
@@ -79,7 +77,6 @@ func runTroubleshoot(v *viper.Viper, arg []string) error {
 
 	var mainBundle *troubleshootv1beta2.SupportBundle
 
-	troubleshootclientsetscheme.AddToScheme(scheme.Scheme)
 	additionalRedactors := &troubleshootv1beta2.Redactor{}
 
 	// Defining `v` below will render using `v` in reference to Viper unusable.
