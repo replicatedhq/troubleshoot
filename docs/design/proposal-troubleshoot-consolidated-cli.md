@@ -64,11 +64,11 @@ The functionality we want to expose via this api is:
   - generates a tar archive of the bundle directory at the specified path with optional compression
   - takes bundle path, compression method and destination as parameters.
   - returns errors
-- `ParseSpecs(context.Context, opt ParseOptions) ([]TroubleshootKind,error)`
-  - parses input []byte returns any unmarshalled troubleshoot kinds.
 - `ServeBundle(context.Context, opt ServeOptions)`
   - starts a sbctl server using the specified bundle and port, outputting a kubeconfig at a specified location.
-- `LoadSpecs(specList []string) ([]TroubleShootKind,err)`
+- `ParseSpecs(context.Context, opt ParseOptions) ([]TroubleshootKind,error)`
+  - parses input []byte from ParseOptions struct and returns any unmarshalled troubleshoot kinds.
+- `LoadSpecs(context.Context, opt LoadOptions) ([]TroubleShootKind,err)`
   - Takes a list of locations to load specs from and returns a list of parsed troubleshoot kinds.
   - Uses ParseSpecs behind the scenes but automates the process of obtaining the specs from supported sources (i.e OCI registries)
 
