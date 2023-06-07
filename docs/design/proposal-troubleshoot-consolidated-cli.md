@@ -66,7 +66,7 @@ from there we can build out methods for each to interact with them:
 ```go
 kinds, err := Load(LoadOptions)
 
-func (kinds *Bundle) Collect(CollectOptions) (Bundle, error) {}
+func (kinds *Bundle) Collect(CollectOptions) (error) {}
 
 func (bundle *Bundle) Analyze(AnalyzeOptions) (AnalysisResults, error) {}
 
