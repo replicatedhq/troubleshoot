@@ -72,6 +72,9 @@ The functionality we want to expose via this api is:
   - Takes a list of locations to load specs from and returns a list of parsed troubleshoot kinds.
   - Uses ParseSpecs behind the scenes but automates the process of obtaining the specs from supported sources (i.e OCI registries)
 
+
+Some examples of the options structs.
+
 ```go
 type LoadOptions struct {
   SpecList []string // list of locations for specs to load
