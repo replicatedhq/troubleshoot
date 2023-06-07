@@ -64,15 +64,13 @@ The functionality we want to expose via this api is:
   - generates a tar archive of the bundle directory at the specified path with optional compression
   - takes bundle path, compression method and destination as parameters.
   - returns errors
-- `ParseSpecFile(context.Context, opt ParseOptions) (spec{},error)`
-  - parses a spec file and returns an unmarshalled troubleshoot spec struct.
-  - could be used for linting
+- `ParseSpecs(context.Context, opt ParseOptions) ([]TroubleshootKind,error)`
+  - parses input []byte returns any unmarshalled troubleshoot kinds.
 - `ServeBundle(context.Context, opt ServeOptions)`
   - starts a sbctl server using the specified bundle and port, outputting a kubeconfig at a specified location.
-- `LoadFromStrings(rawSpecs ...string) (*TroubleshootV1beta2Kinds, error)`
-  - accepts a list of valid yaml documents and extracts all troubleshoot objects from the documents. This includes `Secret` and `ConfigMap` objects that have troubleshoot specs.
-- `LoadFromBytes(rawSpecs ...[]byte) (*TroubleshootKinds, error)`
-  - accepts a list of bytes and returns a TroubleshootKinds object
+- `LoadSpecs(specList []string) ([]TroubleShootKind,err)`
+  - Takes a list of locations to load specs from and returns a list of parsed troubleshoot kinds.
+  - Uses ParseSpecs behind the scenes but automates the process of obtaining the specs from supported sources (i.e OCI registries)
 
 ### Usage patterns
 
