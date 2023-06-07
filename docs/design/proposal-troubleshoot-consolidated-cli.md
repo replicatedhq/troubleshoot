@@ -47,30 +47,43 @@ This new package should be kept as minimal as possible. and serve only as an int
 
 Once the stable API is ready we can instruct projects like kurl to target that and work on removing code marked for deprecation and migrate non-public functions to an `internal` package to make it clear that it's not intended to be imported.
 
-The functionality we want to expose via this api is:
+The core of this api will be exposed via new troubleshoot `types`
 
-- `CollectBundle(context.Context, opt CollectOptions) (bundlePath string, error)`
-  - collect a support bundle from a spec.
-  - takes a parsed spec struct as an parameter.
-  - returns a path to the bundle directory and errors.
-  - to minimise IO and increase collection speed. redactors should be run inline, redacting data in memory before it's saved to a bundle.
-- `RedactBundle(context.Context, opt RedactOptions) error`
-  - redact an already collected bundle, takes a path to the bundle as an parameter.
-  - returns any errors
-- `AnalyzeBundle(context.Context, opt AnalyzeOptions) (results{},error)`
-  - run analysers from the spec and return the analysis results struct
-  - returns analysis struct and errors
-- `ArchiveBundle(context.Context, opt ArchiveOptions) error`
-  - generates a tar archive of the bundle directory at the specified path with optional compression
-  - takes bundle path, compression method and destination as parameters.
-  - returns errors
-- `ServeBundle(context.Context, opt ServeOptions)`
-  - starts a sbctl server using the specified bundle and port, outputting a kubeconfig at a specified location.
-- `LoadSpecs(context.Context, opt LoadOptions) (TroubleshootKinds,err)`
-  - Takes a loadOptions struct and returns a list of parsed troubleshoot kinds.
+```go
+type TroubleshootKinds struct {
+}
+
+type Bundle struct {
+  FilePath string
+  Analyzers string
+  SpecURIs []string
+}
+
+type AnalysisResults struct {
+}
+```
+
+from there we can build out methods for each to interact with them:
 
 
-Some examples of the options structs.
+```go
+func (kinds *TroubleshootKinds) Load(LoadOptions) error {}
+
+var specs TroubleshootKinds
+err := specs.Load(LoadOptions)
+
+func (kinds *TroubleshootKinds) Collect(CollectOptions) (Bundle,error) {}
+
+func (bundle *Bundle) Analyze(AnalyzeOptions) (AnalysisResults,error) {}
+
+func (bundle *Bundle) Redact(RedactOptions) error {}
+
+func (bundle *Bundle) Archive(ArchiveOptions) error {}
+
+func (bundle *Bundle) Serve(ServeOptions) error {}
+```
+
+To Allow for forward flexibility while reducing the impact of potentially breaking changes, options will be passed into these methods via options structs.
 
 ```go
 type LoadOptions struct {
@@ -86,16 +99,13 @@ type LoadOptions struct {
 type CollectOptions struct {
   Specs TroubleshootKinds // list of specs to extract collectors and redactors from
 }
-```
 
-```go
 type RedactOptions struct {
   Specs TroubleshootKinds // list of specs to extract redactors from
 }
-```
-Note: this is almost identical to `CollectOptions` for now but remains separate to enable easier addition of redact specific options at a later date
 
-```go
+// Note: this is almost identical to `CollectOptions` for now but remains separate to enable easier addition of redact specific options at a later date
+
 type ServeOptions struct {
   Address string // address to listen on including port (0.0.0.0:8080)
   ConfigPath string // optional path to store generated kubeconfig
