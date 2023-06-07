@@ -20,6 +20,7 @@ import (
 	"github.com/pkg/errors"
 	analyzer "github.com/replicatedhq/troubleshoot/pkg/analyze"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
+	"github.com/replicatedhq/troubleshoot/pkg/constants"
 	"github.com/replicatedhq/troubleshoot/pkg/convert"
 	"github.com/replicatedhq/troubleshoot/pkg/httputil"
 	"github.com/replicatedhq/troubleshoot/pkg/k8sutil"
@@ -347,7 +348,7 @@ func loadClusterSpecs() (*troubleshootv1beta2.SupportBundle, *troubleshootv1beta
 	for _, parsedSelectorString := range parsedSelectorStrings {
 		klog.V(1).Infof("Search support bundle specs from [%q] namespace using %q selector", strings.Join(namespaces, ", "), parsedSelectorString)
 		for _, ns := range namespaces {
-			bundlesFromSecrets, err := specs.LoadFromSecretMatchingLabel(client, parsedSelectorString, ns, specs.SupportBundleKey)
+			bundlesFromSecrets, err := specs.LoadFromSecretMatchingLabel(client, parsedSelectorString, ns, constants.SupportBundleKey)
 			if err != nil {
 				if !k8serrors.IsForbidden(err) {
 					klog.Errorf("failed to load support bundle spec from secrets: %s", err)
@@ -357,7 +358,7 @@ func loadClusterSpecs() (*troubleshootv1beta2.SupportBundle, *troubleshootv1beta
 			}
 			bundlesFromCluster = append(bundlesFromCluster, bundlesFromSecrets...)
 
-			bundlesFromConfigMaps, err := specs.LoadFromConfigMapMatchingLabel(client, parsedSelectorString, ns, specs.SupportBundleKey)
+			bundlesFromConfigMaps, err := specs.LoadFromConfigMapMatchingLabel(client, parsedSelectorString, ns, constants.SupportBundleKey)
 			if err != nil {
 				if !k8serrors.IsForbidden(err) {
 					klog.Errorf("failed to load support bundle spec from configmap: %s", err)
@@ -396,7 +397,7 @@ func loadClusterSpecs() (*troubleshootv1beta2.SupportBundle, *troubleshootv1beta
 	for _, parsedSelectorString := range parsedSelectorStrings {
 		klog.V(1).Infof("Search redactor specs from [%q] namespace using %q selector", strings.Join(namespaces, ", "), parsedSelectorString)
 		for _, ns := range namespaces {
-			redactorsFromSecrets, err := specs.LoadFromSecretMatchingLabel(client, parsedSelectorString, ns, specs.RedactorKey)
+			redactorsFromSecrets, err := specs.LoadFromSecretMatchingLabel(client, parsedSelectorString, ns, constants.RedactorKey)
 			if err != nil {
 				if !k8serrors.IsForbidden(err) {
 					klog.Errorf("failed to load support bundle spec from secrets: %s", err)
@@ -406,7 +407,7 @@ func loadClusterSpecs() (*troubleshootv1beta2.SupportBundle, *troubleshootv1beta
 			}
 			redactorsFromCluster = append(redactorsFromCluster, redactorsFromSecrets...)
 
-			redactorsFromConfigMaps, err := specs.LoadFromConfigMapMatchingLabel(client, parsedSelectorString, ns, specs.RedactorKey)
+			redactorsFromConfigMaps, err := specs.LoadFromConfigMapMatchingLabel(client, parsedSelectorString, ns, constants.RedactorKey)
 			if err != nil {
 				if !k8serrors.IsForbidden(err) {
 					klog.Errorf("failed to load support bundle spec from configmap: %s", err)

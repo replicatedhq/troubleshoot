@@ -8,15 +8,6 @@ import (
 	"k8s.io/klog/v2"
 )
 
-const (
-	// Preserved for backwards compatibility
-
-	// Deprecated: Use constants.SupportBundleKey instead
-	SupportBundleKey = constants.SupportBundleKey
-	// Deprecated: Use constants.RedactorKey instead
-	RedactorKey = constants.RedactorKey
-)
-
 // SplitTroubleshootSecretLabelSelector splits a label selector into two selectors, if applicable:
 // 1. troubleshoot.io/kind=support-bundle and non-troubleshoot (if contains) labels selector.
 // 2. troubleshoot.sh/kind=support-bundle and non-troubleshoot (if contains) labels selector.
@@ -32,7 +23,7 @@ func SplitTroubleshootSecretLabelSelector(client kubernetes.Interface, labelSele
 	var troubleshootReqs, otherReqs []labels.Requirement
 
 	for _, req := range selectorRequirements {
-		if req.Key() == TroubleshootIOLabelKey || req.Key() == TroubleshootSHLabelKey {
+		if req.Key() == constants.TroubleshootIOLabelKey || req.Key() == constants.TroubleshootSHLabelKey {
 			troubleshootReqs = append(troubleshootReqs, req)
 		} else {
 			otherReqs = append(otherReqs, req)
