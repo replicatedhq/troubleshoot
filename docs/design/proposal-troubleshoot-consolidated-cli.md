@@ -55,8 +55,6 @@ type TroubleshootKinds struct {
 
 type Bundle struct {
   FilePath string
-  Analyzers string
-  SpecURIs []string
 }
 
 type AnalysisResults struct {
@@ -65,16 +63,12 @@ type AnalysisResults struct {
 
 from there we can build out methods for each to interact with them:
 
-
 ```go
-func (kinds *TroubleshootKinds) Load(LoadOptions) error {}
+kinds, err := Load(LoadOptions)
 
-var specs TroubleshootKinds
-err := specs.Load(LoadOptions)
+func (kinds *Bundle) Collect(CollectOptions) (Bundle, error) {}
 
-func (kinds *TroubleshootKinds) Collect(CollectOptions) (Bundle,error) {}
-
-func (bundle *Bundle) Analyze(AnalyzeOptions) (AnalysisResults,error) {}
+func (bundle *Bundle) Analyze(AnalyzeOptions) (AnalysisResults, error) {}
 
 func (bundle *Bundle) Redact(RedactOptions) error {}
 
