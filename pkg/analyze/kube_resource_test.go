@@ -257,6 +257,74 @@ func Test_analyzeResource(t *testing.T) {
 				IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg?w=13&h=16",
 			},
 		},
+		{
+			name: "pass-when-pvc-exists-and-is-at-least-4Gi",
+			analyzer: troubleshootv1beta2.ClusterResource{
+				AnalyzeMeta: troubleshootv1beta2.AnalyzeMeta{
+					CheckName: "check-pvc-is-at-least-4Gi",
+				},
+				Kind:      "PersistentVolumeClaim",
+				Name:      "data-postgresql-0",
+				Namespace: "default",
+				YamlPath:  "spec.resources.requests.storage",
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							When:    ">= 4Gi",
+							Message: "pass",
+						},
+					},
+					{
+						Fail: &troubleshootv1beta2.SingleOutcome{
+							Message: "fail",
+						},
+					},
+				},
+			},
+			expectResult: AnalyzeResult{
+				IsPass:  true,
+				IsWarn:  false,
+				IsFail:  false,
+				Title:   "check-pvc-is-at-least-4Gi",
+				Message: "pass",
+				IconKey: "kubernetes_text_analyze",
+				IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg?w=13&h=16",
+			},
+		},
+		{
+			name: "fail-when-pvc-exists-and-is-not-at-least-16Gi",
+			analyzer: troubleshootv1beta2.ClusterResource{
+				AnalyzeMeta: troubleshootv1beta2.AnalyzeMeta{
+					CheckName: "check-pvc-is-at-least-16Gi",
+				},
+				Kind:      "PersistentVolumeClaim",
+				Name:      "data-postgresql-0",
+				Namespace: "default",
+				YamlPath:  "spec.resources.requests.storage",
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							When:    ">= 16Gi",
+							Message: "pass",
+						},
+					},
+					{
+						Fail: &troubleshootv1beta2.SingleOutcome{
+							Message: "fail",
+						},
+					},
+				},
+			},
+			expectResult: AnalyzeResult{
+				IsPass:  false,
+				IsWarn:  false,
+				IsFail:  true,
+				Title:   "check-pvc-is-at-least-16Gi",
+				Message: "fail",
+				IconKey: "kubernetes_text_analyze",
+				IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg?w=13&h=16",
+			},
+		},
 	}
 	{
 		for _, test := range tests {

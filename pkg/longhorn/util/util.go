@@ -26,7 +26,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/gorilla/handlers"
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 
 	v1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -36,6 +35,7 @@ import (
 	"k8s.io/apimachinery/pkg/util/validation"
 	"k8s.io/apimachinery/pkg/util/version"
 	clientset "k8s.io/client-go/kubernetes"
+	"k8s.io/klog/v2"
 )
 
 const (
@@ -222,16 +222,16 @@ func ExecuteWithTimeout(timeout time.Duration, envs []string, binary string, arg
 	case <-time.After(timeout):
 		if cmd.Process != nil {
 			if err := cmd.Process.Kill(); err != nil {
-				logrus.Warnf("Problem killing process pid=%v: %s", cmd.Process.Pid, err)
+				klog.Warningf("Problem killing process pid=%v: %s", cmd.Process.Pid, err)
 			}
 
 		}
-		return "", fmt.Errorf("Timeout executing: %v %v, output %s, stderr, %s, error %v",
+		return "", fmt.Errorf("timeout executing: %v %v, output %s, stderr, %s, error %v",
 			binary, args, output.String(), stderr.String(), err)
 	}
 
 	if err != nil {
-		return "", fmt.Errorf("Failed to execute: %v %v, output %s, stderr, %s, error %v",
+		return "", fmt.Errorf("failed to execute: %v %v, output %s, stderr, %s, error %v",
 			binary, args, output.String(), stderr.String(), err)
 	}
 	return output.String(), nil
@@ -256,7 +256,7 @@ func TimestampAfterTimeout(ts string, timeout time.Duration) bool {
 	now := time.Now()
 	t, err := time.Parse(time.RFC3339, ts)
 	if err != nil {
-		logrus.Errorf("Cannot parse time %v", ts)
+		klog.Errorf("Cannot parse time %v", ts)
 		return false
 	}
 	deadline := t.Add(timeout)
@@ -266,7 +266,7 @@ func TimestampAfterTimeout(ts string, timeout time.Duration) bool {
 func TimestampWithinLimit(latest time.Time, ts string, limit time.Duration) bool {
 	t, err := time.Parse(time.RFC3339, ts)
 	if err != nil {
-		logrus.Errorf("Cannot parse time %v", ts)
+		klog.Errorf("Cannot parse time %v", ts)
 		return false
 	}
 	deadline := t.Add(limit)
@@ -329,7 +329,7 @@ func RegisterShutdownChannel(done chan struct{}) {
 	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
 	go func() {
 		sig := <-sigs
-		logrus.Infof("Receive %v to exit", sig)
+		klog.V(2).Infof("Receive %v to exit", sig)
 		close(done)
 	}()
 }
@@ -367,14 +367,14 @@ func GetSortedKeysFromMap(maps interface{}) []string {
 func AutoCorrectName(name string, maxLength int) string {
 	newName := strings.ToLower(name)
 	if len(name) > maxLength {
-		logrus.Warnf("Name %v is too long, auto-correct to fit %v characters", name, maxLength)
+		klog.Warningf("Name %v is too long, auto-correct to fit %v characters", name, maxLength)
 		checksum := GetStringChecksum(name)
 		newNameSuffix := "-" + checksum[:8]
 		newNamePrefix := strings.TrimRight(newName[:maxLength-len(newNameSuffix)], "-")
 		newName = newNamePrefix + newNameSuffix
 	}
 	if newName != name {
-		logrus.Warnf("Name auto-corrected from %v to %v", name, newName)
+		klog.Warningf("Name auto-corrected from %v to %v", name, newName)
 	}
 	return newName
 }
