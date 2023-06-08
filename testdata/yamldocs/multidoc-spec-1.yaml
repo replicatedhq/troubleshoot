@@ -1,0 +1,77 @@
+---
+apiVersion: troubleshoot.sh/v1beta2
+kind: Analyzer
+spec:
+  analyzers:
+    - clusterVersion: {}
+  hostAnalyzers:
+    - tcpLoadBalancer: {}
+---
+apiVersion: troubleshoot.sh/v1beta2
+kind: Collector
+spec:
+  collectors:
+  - clusterResources:
+      collectorName: my-cluster-resources
+---
+apiVersion: troubleshoot.sh/v1beta2
+kind: HostCollector
+metadata:
+  name: my-host-collector
+spec:
+  collectors:
+    - cpu: {}
+---
+apiVersion: troubleshoot.sh/v1beta2
+kind: HostPreflight
+spec:
+  remoteCollectors:
+    - certificate:
+        certificatePath: /etc/ssl/corp.crt
+        keyPath: /etc/ssl/corp.key
+  analyzers:
+    - certificate:
+        outcomes:
+          - pass:
+              message: Certificate key pair is valid
+---
+apiVersion: troubleshoot.sh/v1beta2
+kind: Preflight
+spec:
+  collectors:
+    - data:
+        data: "5"
+  analyzers:
+    - clusterVersion: {}
+---
+apiVersion: troubleshoot.sh/v1beta2
+kind: Redactor
+spec:
+  redactors:
+  - name: replace password # names are not used internally, but are useful for recordkeeping
+    fileSelector:
+      file: data/my-password-dump # this targets a single file
+    removals:
+      values:
+      - abc123 # this is a very good password, and I don't want it to be exposed
+---
+apiVersion: troubleshoot.sh/v1beta2
+kind: RemoteCollector
+metadata:
+  name: certificate
+spec:
+  collectors:
+    - cpu: {}
+---
+apiVersion: troubleshoot.sh/v1beta2
+kind: SupportBundle
+metadata:
+  name: my-support-bundle
+spec:
+  collectors:
+    - logs:
+        name: all-logs
+  hostCollectors:
+    - hostOS: {}
+  analyzers:
+    - clusterVersion: {}
