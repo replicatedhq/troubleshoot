@@ -4,9 +4,15 @@ import (
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/replicatedhq/troubleshoot/pkg/client/troubleshootclientset/scheme"
-	troubleshootclientsetscheme "github.com/replicatedhq/troubleshoot/pkg/client/troubleshootclientset/scheme"
 	"github.com/replicatedhq/troubleshoot/pkg/docrewrite"
+	"k8s.io/apimachinery/pkg/runtime"
 )
+
+var decoder runtime.Decoder
+
+func init() {
+	decoder = scheme.Codecs.UniversalDeserializer()
+}
 
 func ParseCollectorFromDoc(doc []byte) (*troubleshootv1beta2.Collector, error) {
 	doc, err := docrewrite.ConvertToV1Beta2(doc)
@@ -14,10 +20,7 @@ func ParseCollectorFromDoc(doc []byte) (*troubleshootv1beta2.Collector, error) {
 		return nil, errors.Wrap(err, "failed to convert to v1beta2")
 	}
 
-	troubleshootclientsetscheme.AddToScheme(scheme.Scheme)
-	decode := scheme.Codecs.UniversalDeserializer().Decode
-
-	obj, _, err := decode(doc, nil, nil)
+	obj, _, err := decoder.Decode(doc, nil, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to parse document")
 	}
@@ -36,10 +39,7 @@ func ParseHostCollectorFromDoc(doc []byte) (*troubleshootv1beta2.HostCollector, 
 		return nil, errors.Wrap(err, "failed to convert to v1beta2")
 	}
 
-	troubleshootclientsetscheme.AddToScheme(scheme.Scheme)
-	decode := scheme.Codecs.UniversalDeserializer().Decode
-
-	obj, _, err := decode(doc, nil, nil)
+	obj, _, err := decoder.Decode(doc, nil, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to parse document")
 	}
@@ -58,10 +58,7 @@ func ParseRemoteCollectorFromDoc(doc []byte) (*troubleshootv1beta2.RemoteCollect
 		return nil, errors.Wrap(err, "failed to convert to v1beta2")
 	}
 
-	troubleshootclientsetscheme.AddToScheme(scheme.Scheme)
-	decode := scheme.Codecs.UniversalDeserializer().Decode
-
-	obj, _, err := decode(doc, nil, nil)
+	obj, _, err := decoder.Decode(doc, nil, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to parse document")
 	}

@@ -10,10 +10,9 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/replicatedhq/troubleshoot/cmd/util"
+	"github.com/replicatedhq/troubleshoot/internal/util"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/replicatedhq/troubleshoot/pkg/client/troubleshootclientset/scheme"
-	troubleshootclientsetscheme "github.com/replicatedhq/troubleshoot/pkg/client/troubleshootclientset/scheme"
 	"github.com/replicatedhq/troubleshoot/pkg/collect"
 	"github.com/replicatedhq/troubleshoot/pkg/docrewrite"
 	"github.com/replicatedhq/troubleshoot/pkg/k8sutil"
@@ -88,7 +87,6 @@ func runCollect(v *viper.Viper, arg string) error {
 
 	multidocs := strings.Split(string(collectorContent), "\n---\n")
 
-	troubleshootclientsetscheme.AddToScheme(scheme.Scheme)
 	decode := scheme.Codecs.UniversalDeserializer().Decode
 
 	redactors, err := supportbundle.GetRedactorsFromURIs(v.GetStringSlice("redactors"))
