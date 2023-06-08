@@ -1,7 +1,7 @@
 package preflight
 
 import (
-	"encoding/base64"
+	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -10,40 +10,14 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	"github.com/replicatedhq/troubleshoot/cmd/util"
+	"github.com/replicatedhq/troubleshoot/internal/util"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
-	troubleshootclientsetscheme "github.com/replicatedhq/troubleshoot/pkg/client/troubleshootclientset/scheme"
 	"github.com/replicatedhq/troubleshoot/pkg/constants"
-	"github.com/replicatedhq/troubleshoot/pkg/docrewrite"
+	"github.com/replicatedhq/troubleshoot/pkg/loader"
 	"github.com/replicatedhq/troubleshoot/pkg/oci"
 	"github.com/replicatedhq/troubleshoot/pkg/specs"
 	"github.com/replicatedhq/troubleshoot/pkg/types"
-	"gopkg.in/yaml.v2"
-	"k8s.io/client-go/kubernetes/scheme"
 )
-
-type documentHead struct {
-	Kind       string             `yaml:"kind"`
-	Metadata   documentMetadata   `yaml:"metadata,omitempty"`
-	Data       documentData       `yaml:"data,omitempty"`
-	StringData documentStringData `yaml:"stringData,omitempty"`
-}
-
-type documentMetadata struct {
-	Labels documentMetadataLabels `yaml:"labels,omitempty"`
-}
-
-type documentMetadataLabels struct {
-	TroubleshootKind string `yaml:"troubleshoot.sh/kind,omitempty"`
-}
-
-type documentData struct {
-	PreflightYaml string `yaml:"preflight.yaml,omitempty"`
-}
-
-type documentStringData struct {
-	PreflightYaml string `yaml:"preflight.yaml,omitempty"`
-}
 
 type PreflightSpecs struct {
 	PreflightSpec     *troubleshootv1beta2.Preflight
@@ -55,6 +29,7 @@ func (p *PreflightSpecs) Read(args []string) error {
 	var preflightContent []byte
 	var err error
 
+	// TODO: Earmarked for cleanup in favour of loader.LoadFromArgs(args []string)
 	for _, v := range args {
 		if strings.HasPrefix(v, "secret/") {
 			// format secret/namespace-name/secret-name
@@ -126,70 +101,24 @@ func (p *PreflightSpecs) Read(args []string) error {
 			}
 		}
 
-		multidocs := strings.Split(string(preflightContent), "\n---\n")
+		ctx := context.Background()
+		kinds, err := loader.LoadSpecs(ctx, loader.LoadOptions{
+			RawSpec: string(preflightContent),
+		})
+		if err != nil {
+			return err
+		}
 
-		for _, doc := range multidocs {
-			var parsedDocHead documentHead
-
-			err := yaml.Unmarshal([]byte(doc), &parsedDocHead)
-			if err != nil {
-				return types.NewExitCodeError(constants.EXIT_CODE_SPEC_ISSUES, errors.Wrap(err, "failed to parse yaml"))
+		for _, v := range kinds.PreflightsV1Beta2 {
+			if v.Spec.UploadResultsTo == "" {
+				p.PreflightSpec = ConcatPreflightSpec(p.PreflightSpec, &v)
+			} else {
+				p.UploadResultSpecs = append(p.UploadResultSpecs, &v)
 			}
+		}
 
-			// We're going to look for either of "kind: Preflight" OR "kind: Secret" with the label "troubleshoot.sh/kind: preflight"
-
-			if parsedDocHead.Kind != "Preflight" && parsedDocHead.Kind != "Secret" {
-				continue
-			}
-
-			if parsedDocHead.Kind == "Secret" {
-				if parsedDocHead.Metadata.Labels.TroubleshootKind == "preflight" {
-					secretSpecDoc := ""
-					// In a Secret, we need to get the document out of the data.`preflight.yaml` or stringData.`preflight.yaml` (stringData takes precedence)
-					if len(parsedDocHead.Data.PreflightYaml) > 0 {
-						b64DecPreflightYaml, err := base64.StdEncoding.DecodeString(parsedDocHead.Data.PreflightYaml)
-						if err != nil {
-							return types.NewExitCodeError(constants.EXIT_CODE_SPEC_ISSUES, errors.Wrap(err, "failed to base64 decode preflight secret data"))
-						}
-						secretSpecDoc = strings.TrimSpace(string(b64DecPreflightYaml))
-					}
-					// Do stringData second, if found overwrite data (as per K8s docs)
-					if len(parsedDocHead.StringData.PreflightYaml) > 0 {
-						secretSpecDoc = parsedDocHead.StringData.PreflightYaml
-					}
-					//
-					if len(secretSpecDoc) > 0 {
-						doc = secretSpecDoc
-					} else {
-						return types.NewExitCodeError(constants.EXIT_CODE_SPEC_ISSUES, errors.Wrap(err, "secret spec with preflight label found, but no preflight stringData or data?"))
-					}
-				} else {
-					// Not a preflight spec, skip
-					continue
-				}
-			}
-
-			preflightContent, err = docrewrite.ConvertToV1Beta2([]byte(doc))
-			if err != nil {
-				return types.NewExitCodeError(constants.EXIT_CODE_SPEC_ISSUES, errors.Wrap(err, "failed to convert to v1beta2"))
-			}
-
-			troubleshootclientsetscheme.AddToScheme(scheme.Scheme)
-			decode := scheme.Codecs.UniversalDeserializer().Decode
-			obj, _, err := decode([]byte(preflightContent), nil, nil)
-			if err != nil {
-				return types.NewExitCodeError(constants.EXIT_CODE_SPEC_ISSUES, errors.Wrapf(err, "failed to parse %s", v))
-			}
-
-			if spec, ok := obj.(*troubleshootv1beta2.Preflight); ok {
-				if spec.Spec.UploadResultsTo == "" {
-					p.PreflightSpec = ConcatPreflightSpec(p.PreflightSpec, spec)
-				} else {
-					p.UploadResultSpecs = append(p.UploadResultSpecs, spec)
-				}
-			} else if spec, ok := obj.(*troubleshootv1beta2.HostPreflight); ok {
-				p.HostPreflightSpec = ConcatHostPreflightSpec(p.HostPreflightSpec, spec)
-			}
+		for _, v := range kinds.HostPreflightsV1Beta2 {
+			p.HostPreflightSpec = ConcatHostPreflightSpec(p.HostPreflightSpec, &v)
 		}
 	}
 
