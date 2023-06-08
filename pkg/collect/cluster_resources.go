@@ -659,8 +659,7 @@ func daemonsets(ctx context.Context, client *kubernetes.Clientset, namespaces []
 
 	for _, namespace := range namespaces {
 		daemonsets, err := client.AppsV1().DaemonSets(namespace).List(ctx, metav1.ListOptions{})
-		
-		
+
 		if err != nil {
 			errorsByNamespace[namespace] = err.Error()
 			continue
