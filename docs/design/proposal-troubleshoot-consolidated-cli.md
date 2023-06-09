@@ -58,6 +58,7 @@ type Bundle struct {
 }
 
 type AnalysisResults struct {
+  Bundle Bundle // include bundle metadata
 }
 
 ```
@@ -67,12 +68,14 @@ from there we can build out methods for each to interact with them:
 ```go
 // Load loads specs defined by the LoadOptions struct and returns a TroubleshootKinds struct
 func Load(LoadOptions) (TroubleshootKinds,err){}
-kinds, err := Load(LoadOptions)
 
 // Bundle.Collect runs collections defined in TroubleshootKinds passed through CollectOptions
 func (bundle *Bundle) Collect(CollectOptions) (error) {}
 
+// Bundle.Load will create a Bundle struct from options in LoadBundleOptions
 func (bundle *Bundle) Load(LoadBundleOptions) (error) {}
+// it's worth noting that while this may appear inefficient now
+// it allows us to extend what we include in the Bundle struct in future without having to continuously extend the load function.
 
 // Bundle.Analyze runs analysis defined in TroubleshootKinds passed through AnalyzeOptions
 func (bundle *Bundle) Analyze(AnalyzeOptions) (AnalysisResults, error) {}
@@ -85,6 +88,9 @@ func (bundle *Bundle) Archive(ArchiveOptions) error {}
 
 // Bundle.Serve starts an sbctl-like server with options defined in ServeOptions
 func (bundle *Bundle) Serve(ServeOptions) error {}
+
+// AnalysisResults.Save saves the results of the analysis according to SaveAnalysisOptions
+func (results *AnalysisResults) Save(SaveAnalysisOptions) error {}
 ```
 
 To Allow for forward flexibility while reducing the impact of potentially breaking changes, options will be passed into these methods via options structs.
@@ -103,19 +109,67 @@ type LoadBundleOptions struct {
 }
 
 type CollectOptions struct {
-  Specs TroubleshootKinds // list of specs to extract collectors and redactors from
+  DefaultCollectors []Collector // list of collectors to run regardless of what's in the spec
+  Specs *TroubleshootKinds // list of specs to extract collectors and redactors from
 }
 
 type RedactOptions struct {
-  Specs TroubleshootKinds // list of specs to extract redactors from
+  Specs *TroubleshootKinds // list of specs to extract redactors from
 }
-
 // Note: this is almost identical to `CollectOptions` for now but remains separate to enable easier addition of redact specific options at a later date
 
 type ServeOptions struct {
   Address string // address to listen on including port (0.0.0.0:8080)
   ConfigPath string // optional path to store generated kubeconfig
 }
+
+type AnalyzeOptions struct {
+  DefaultAnalyzers []Analyzer // list of default analyzers to run regardless of what's defined in spec.
+}
+
+type SaveAnalysisOptions struct {
+  Format string // format to save analysis in: json/yaml/csv/plaintext
+  Path string // where to save the analysis output (default to Bundle.FilePath)
+}
+```
+
+With the above definitions, an example of generating a supoprt bundle:
+
+```go
+// convenience function so we don't have to type "if err != nil" a thousand times
+func check(err error) {
+  if err != nil {
+    log.Panic(err)
+  }
+}
+
+// define where we want our specs to be loaded from
+loadOptions := LoadOptions{
+  URIs: ["https://some.url/spec.yaml"],
+  SearchCluster: true,
+}
+
+// load our specs and parse them into TroubleshootKinds
+kinds, err := Load(LoadOptions)
+check(err)
+
+// define our options for collection
+collectOptions := CollectOptions{
+    DefaultCollectors: [
+      ClusterResources,
+    ]
+    Specs := *kinds,
+}
+
+// declare our new bundle
+var newBundle Bundle
+// run collection for our bundle
+err := newBundle.Collect(collectOptions)
+check(err)
+
+// now we can run analysis on our bundle
+AnalysisResults,err := Bundle.Analyze(nil) // a nil AnalyzeOptions dictates that we want to adhere to the passed spec and _only_ to the spec. (no defaults)
+// from here we can format and display the results however we want or create an archive of the bundle to share / download.
 ```
 
 
