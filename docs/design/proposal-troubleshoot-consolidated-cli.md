@@ -126,7 +126,6 @@ type ServeOptions struct {
 }
 
 type AnalyzeOptions struct {
-  DefaultAnalyzers []Analyzer // list of default analyzers to run regardless of what's defined in spec.
   ProgressChan chan // a channel to write progress information to
 }
 
