@@ -113,6 +113,7 @@ type SaveAnalysisOptions struct {
 
 type AnalysisResults struct {
     Bundle Bundle // include bundle metadata
+    // and whatever resulsts for the analysis
 }
 ```
 
