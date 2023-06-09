@@ -106,11 +106,6 @@ type ServeOptions struct {
     ConfigPath string // optional path to store generated kubeconfig
 }
 
-type SaveAnalysisOptions struct {
-    Format string // format to save analysis in: json/yaml/csv/plaintext
-    Path string // where to save the analysis output (default to Bundle.FilePath)
-}
-
 type AnalysisResults struct {
     Bundle Bundle // include bundle metadata
     // and whatever resulsts for the analysis
