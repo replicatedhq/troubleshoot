@@ -102,6 +102,7 @@ type LoadOptions struct {
   FilePaths []string // list of filepaths to check, can be globbed
   URIs []string // list of URIs to retrieve specs from
   SearchCluster bool // toggle for searching cluster from context for troubleshoot objects
+  ProgressChan chan // a channel to write progress information to
 }
 
 type LoadBundleOptions struct {
