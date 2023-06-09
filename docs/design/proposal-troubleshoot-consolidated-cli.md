@@ -72,9 +72,6 @@ type TroubleshootKinds struct {
     // Any future kinds e.g AnalyzersV1 would end up here
 }
 
-// Load loads specs defined by the LoadOptions struct and returns a TroubleshootKinds object
-func Load(LoadOptions) (TroubleshootKinds, error){}
-
 // To Allow for forward compatibility while reducing the impact of potentially breaking changes, options will be passed into these methods via options structs.
 type LoadOptions struct {
     RawSpecs []string // list of locations for specs to load
@@ -208,6 +205,13 @@ type ObjectTyper interface {
     Type() string // type information that can be used to cast the object back to its original concrete implementation. e.g troubleshootv1beta2.Ceph
                   // NOTE: The concrete type exposed here needs to be a public type
 }
+```
+
+*functions*
+
+```go
+// Load loads specs defined by the LoadOptions struct and returns a TroubleshootKinds object
+func Load(LoadOptions) (TroubleshootKinds, error){}
 ```
 
 With the above definitions, an example of generating a supoprt bundle:
