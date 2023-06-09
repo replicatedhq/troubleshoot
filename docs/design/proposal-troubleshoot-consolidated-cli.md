@@ -123,8 +123,14 @@ type Bundler interface {
     // Collect runs collections defined in TroubleshootKinds passed through CollectOptions
     Collect(CollectOptions) (error) {}
 
+    // We need to expose the bundle data collected in some form of structure as well
+    // We have https://github.com/replicatedhq/troubleshoot/blob/620fa75eb593247a07c4dc39ea96fc6a059be111/pkg/collect/result.go#L15 at the moment
+
     // Analyze runs analysis defined in TroubleshootKinds passed through AnalyzeOptions
     Analyze(AnalyzeOptions) (AnalysisResults, error) {}
+
+    // AnalyzeResults contains the analysis results that the bundle has
+    AnalyzeResults() AnalysisResults
 
     // Redact runs redaction defined in TroubleshootKinds passed through RedactOptions
     Redact(RedactOptions) error {}
