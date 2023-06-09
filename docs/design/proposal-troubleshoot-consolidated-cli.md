@@ -168,7 +168,7 @@ err := newBundle.Collect(collectOptions)
 check(err)
 
 // now we can run analysis on our bundle
-AnalysisResults,err := Bundle.Analyze(nil) // a nil AnalyzeOptions dictates that we want to adhere to the passed spec and _only_ to the spec. (no defaults)
+AnalysisResults,err := newBundle.Analyze(nil) // a nil AnalyzeOptions dictates that we want to adhere to the passed spec and _only_ to the spec. (no defaults)
 // from here we can format and display the results however we want or create an archive of the bundle to share / download.
 ```
 
