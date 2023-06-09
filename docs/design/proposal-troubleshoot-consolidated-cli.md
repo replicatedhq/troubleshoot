@@ -203,6 +203,7 @@ type Redactor interface {
 // TODO: Is this the best name for this? I'm just following go's recommendation - https://go.dev/doc/effective_go#interface-names
 type ObjectTyper interface {
     // TODO: Is there a simpler way?
+    // TODO: Maybe we should limit this interface usage to collectors/analysers/redactor. Call it KindCaster? ObjectKinder?? SpecTyper??
     Object() interface{}  // typeless object that was created e.g troubleshootv1beta2.Ceph collector, or redact.MultiLineRedactor redactor
     Type() string // type information that can be used to cast the object back to its original concrete implementation. e.g troubleshootv1beta2.Ceph
                   // NOTE: The concrete type exposed here needs to be a public type
