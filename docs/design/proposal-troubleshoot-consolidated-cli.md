@@ -111,10 +111,12 @@ type LoadBundleOptions struct {
 type CollectOptions struct {
   DefaultCollectors []Collector // list of collectors to run regardless of what's in the spec
   Specs *TroubleshootKinds // list of specs to extract collectors and redactors from
+  ProgressChan chan // a channel to write progress information to
 }
 
 type RedactOptions struct {
   Specs *TroubleshootKinds // list of specs to extract redactors from
+  ProgressChan chan // a channel to write progress information to
 }
 // Note: this is almost identical to `CollectOptions` for now but remains separate to enable easier addition of redact specific options at a later date
 
@@ -125,6 +127,7 @@ type ServeOptions struct {
 
 type AnalyzeOptions struct {
   DefaultAnalyzers []Analyzer // list of default analyzers to run regardless of what's defined in spec.
+  ProgressChan chan // a channel to write progress information to
 }
 
 type SaveAnalysisOptions struct {
