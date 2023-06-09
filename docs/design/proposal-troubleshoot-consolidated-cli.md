@@ -110,7 +110,6 @@ type LoadBundleOptions struct {
 }
 
 type CollectOptions struct {
-  DefaultCollectors []Collector // list of collectors to run regardless of what's in the spec
   Specs *TroubleshootKinds // list of specs to extract collectors and redactors from
   ProgressChan chan // a channel to write progress information to
 }
