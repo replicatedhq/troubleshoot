@@ -50,7 +50,7 @@ Once the stable API is ready we can instruct projects like kurl to target that a
 The core of this api will be exposed via new troubleshoot `types`
 
 #### Conventions
-* Interfaces instead of concrete types: Where possible, prefer using interfaces that non-public concrete types implement. This abstraction of allows us to
+* Interfaces instead of concrete types: Where possible, prefer using interfaces that concrete types implement. This abstraction of allows us to
   * Create clear API contracts and separation of concerns e.g A `collect.Collect` interface only collects information from various sources into a bundle. The implementor (can implement several interfaces) has to abide to this contract and the consumer expects the contract to be held.
   * Extensibility: Extending or even replacing concrete type implementations is now possible when the public APIs are defined as interfaces. This gives us the ability to maintain the project with minimal risk of introducing breaking changes. It also allows us to have the flexibility of introducing concepts such as plugins in the future.
   * Testability of public APIs: With interfaces, we are able to test our contracts with ease cause we are able to create stubs we can build our tests on.
