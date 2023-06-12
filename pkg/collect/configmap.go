@@ -57,7 +57,7 @@ func (c *CollectConfigMap) Collect(progressChan chan<- interface{}) (CollectorRe
 		if namespace == "" {
 			kubeconfig := k8sutil.GetKubeconfig()
 			ns, _, err := kubeconfig.Namespace()
-			klog.V(2).Infof("no namespace was set for configmap '%s': using namespace '%s' from current kubectl context", c.Collector.Name, ns)
+			klog.V(2).Infof("no namespace was set for configmap '%s': using namespace '%s' from current kubeconfig context", c.Collector.Name, ns)
 			if err != nil {
 				return nil, errors.Wrapf(err, "a namespace was not specified for configmap '%s' and could not be discovered from kubeconfig", c.Collector.Name)
 			}
