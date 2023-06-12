@@ -8,5 +8,5 @@ import (
 )
 
 func Collect(cmd *cobra.Command, args []string) {
-		fmt.Println("collecting with specs at:",strings.Join(args,","),"...")
+	fmt.Println("collecting with specs at:", strings.Join(args, ","), "...")
 }
