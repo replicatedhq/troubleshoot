@@ -144,8 +144,6 @@ func (c *CollectClusterResources) Collect(progressChan chan<- interface{}) (Coll
 	}
 
 	reviewStatuses, reviewStatusErrors := getSelfSubjectRulesReviews(ctx, client, namespaceNames)
-	s, _ := json.MarshalIndent(reviewStatuses, "", "  ")
-	klog.V(4).Infof("checking for self subject rules reviews: %s", s)
 
 	// auth cani
 	authCanI := authCanI(reviewStatuses, namespaceNames)
@@ -163,6 +161,7 @@ func (c *CollectClusterResources) Collect(progressChan chan<- interface{}) (Coll
 			}
 		}
 		namespaceNames = filteredNamespaces
+		klog.V(4).Infof("filtered to namespaceNames %s", namespaceNames)
 	}
 
 	// pods
@@ -1555,6 +1554,10 @@ func getSelfSubjectRulesReviews(ctx context.Context, client *kubernetes.Clientse
 			continue
 		}
 
+		if response.Status.Incomplete == true {
+			errorsByNamespace[namespace] = response.Status.EvaluationError
+		}
+
 		statusByNamespace[namespace] = response.Status.DeepCopy()
 	}
 
@@ -1617,6 +1620,11 @@ func events(ctx context.Context, client *kubernetes.Clientset, namespaces []stri
 
 func canCollectNamespaceResources(status *authorizationv1.SubjectRulesReviewStatus) bool {
 	// This is all very approximate
+
+	if status.Incomplete && (status.EvaluationError == constants.SELFSUBJECTRULESREVIEW_ERROR_AUTHORIZATION_WEBHOOK_UNSUPPORTED) {
+		klog.V(4).Infof("could not negotiate RBAC because of an unsupported authorizer webhook; try to get resources from this namespace anyway.")
+		return true
+	}
 
 	klog.V(4).Infof("canCollectNamespaceResources: %+v", status)
 	for _, resource := range status.ResourceRules {
