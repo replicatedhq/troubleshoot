@@ -53,6 +53,9 @@ const (
 	CLUSTER_RESOURCES_CLUSTER_ROLE_BINDINGS       = "clusterrolebindings"
 	CLUSTER_RESOURCES_PRIORITY_CLASS              = "priorityclasses"
 
+	// SelfSubjectRulesReview evaluation responses
+	SELFSUBJECTRULESREVIEW_ERROR_AUTHORIZATION_WEBHOOK_UNSUPPORTED = "webhook authorizer does not support user rule resolution"
+
 	// Custom exit codes
 	EXIT_CODE_CATCH_ALL   = 1
 	EXIT_CODE_SPEC_ISSUES = 2
