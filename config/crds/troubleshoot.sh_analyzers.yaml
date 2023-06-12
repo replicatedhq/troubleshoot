@@ -1671,7 +1671,7 @@ spec:
                       required:
                       - outcomes
                       type: object
-                    certificates:
+                    certificateValidity:
                       properties:
                         annotations:
                           additionalProperties:

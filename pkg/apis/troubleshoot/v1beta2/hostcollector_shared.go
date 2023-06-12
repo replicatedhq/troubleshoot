@@ -169,7 +169,7 @@ type Certificate struct {
 	KeyPath           string `json:"keyPath" yaml:"keyPath"`
 }
 
-type HostCertificates struct {
+type HostCertificateValidity struct {
 	HostCollectorMeta `json:",inline" yaml:",inline"`
 	Paths             []string `json:"paths" yaml:"paths"`
 }
@@ -185,29 +185,29 @@ type HostRun struct {
 }
 
 type HostCollect struct {
-	CPU                   *CPU                   `json:"cpu,omitempty" yaml:"cpu,omitempty"`
-	Memory                *Memory                `json:"memory,omitempty" yaml:"memory,omitempty"`
-	TCPLoadBalancer       *TCPLoadBalancer       `json:"tcpLoadBalancer,omitempty" yaml:"tcpLoadBalancer,omitempty"`
-	HTTPLoadBalancer      *HTTPLoadBalancer      `json:"httpLoadBalancer,omitempty" yaml:"httpLoadBalancer,omitempty"`
-	TCPPortStatus         *TCPPortStatus         `json:"tcpPortStatus,omitempty" yaml:"tcpPortStatus,omitempty"`
-	UDPPortStatus         *UDPPortStatus         `json:"udpPortStatus,omitempty" yaml:"udpPortStatus,omitempty"`
-	Kubernetes            *Kubernetes            `json:"kubernetes,omitempty" yaml:"kubernetes,omitempty"`
-	IPV4Interfaces        *IPV4Interfaces        `json:"ipv4Interfaces,omitempty" yaml:"ipv4Interfaces,omitempty"`
-	SubnetAvailable       *SubnetAvailable       `json:"subnetAvailable,omitempty" yaml:"subnetAvailable,omitempty"`
-	DiskUsage             *DiskUsage             `json:"diskUsage,omitempty" yaml:"diskUsage,omitempty"`
-	HTTP                  *HostHTTP              `json:"http,omitempty" yaml:"http,omitempty"`
-	Time                  *HostTime              `json:"time,omitempty" yaml:"time,omitempty"`
-	BlockDevices          *HostBlockDevices      `json:"blockDevices,omitempty" yaml:"blockDevices,omitempty"`
-	SystemPackages        *HostSystemPackages    `json:"systemPackages,omitempty" yaml:"systemPackages,omitempty"`
-	KernelModules         *HostKernelModules     `json:"kernelModules,omitempty" yaml:"kernelModules,omitempty"`
-	TCPConnect            *TCPConnect            `json:"tcpConnect,omitempty" yaml:"tcpConnect,omitempty"`
-	FilesystemPerformance *FilesystemPerformance `json:"filesystemPerformance,omitempty" yaml:"filesystemPerformance,omitempty"`
-	Certificate           *Certificate           `json:"certificate,omitempty" yaml:"certificate,omitempty"`
-	Certificates          *HostCertificates      `json:"certificates,omitempty" yaml:"certificates,omitempty"`
-	HostServices          *HostServices          `json:"hostServices,omitempty" yaml:"hostServices,omitempty"`
-	HostOS                *HostOS                `json:"hostOS,omitempty" yaml:"hostOS,omitempty"`
-	HostRun               *HostRun               `json:"run,omitempty" yaml:"run,omitempty"`
-	HostCopy              *HostCopy              `json:"copy,omitempty" yaml:"copy,omitempty"`
+	CPU                   *CPU                     `json:"cpu,omitempty" yaml:"cpu,omitempty"`
+	Memory                *Memory                  `json:"memory,omitempty" yaml:"memory,omitempty"`
+	TCPLoadBalancer       *TCPLoadBalancer         `json:"tcpLoadBalancer,omitempty" yaml:"tcpLoadBalancer,omitempty"`
+	HTTPLoadBalancer      *HTTPLoadBalancer        `json:"httpLoadBalancer,omitempty" yaml:"httpLoadBalancer,omitempty"`
+	TCPPortStatus         *TCPPortStatus           `json:"tcpPortStatus,omitempty" yaml:"tcpPortStatus,omitempty"`
+	UDPPortStatus         *UDPPortStatus           `json:"udpPortStatus,omitempty" yaml:"udpPortStatus,omitempty"`
+	Kubernetes            *Kubernetes              `json:"kubernetes,omitempty" yaml:"kubernetes,omitempty"`
+	IPV4Interfaces        *IPV4Interfaces          `json:"ipv4Interfaces,omitempty" yaml:"ipv4Interfaces,omitempty"`
+	SubnetAvailable       *SubnetAvailable         `json:"subnetAvailable,omitempty" yaml:"subnetAvailable,omitempty"`
+	DiskUsage             *DiskUsage               `json:"diskUsage,omitempty" yaml:"diskUsage,omitempty"`
+	HTTP                  *HostHTTP                `json:"http,omitempty" yaml:"http,omitempty"`
+	Time                  *HostTime                `json:"time,omitempty" yaml:"time,omitempty"`
+	BlockDevices          *HostBlockDevices        `json:"blockDevices,omitempty" yaml:"blockDevices,omitempty"`
+	SystemPackages        *HostSystemPackages      `json:"systemPackages,omitempty" yaml:"systemPackages,omitempty"`
+	KernelModules         *HostKernelModules       `json:"kernelModules,omitempty" yaml:"kernelModules,omitempty"`
+	TCPConnect            *TCPConnect              `json:"tcpConnect,omitempty" yaml:"tcpConnect,omitempty"`
+	FilesystemPerformance *FilesystemPerformance   `json:"filesystemPerformance,omitempty" yaml:"filesystemPerformance,omitempty"`
+	Certificate           *Certificate             `json:"certificate,omitempty" yaml:"certificate,omitempty"`
+	CertificateValidity   *HostCertificateValidity `json:"certificateValidity,omitempty" yaml:"certificateValidity,omitempty"`
+	HostServices          *HostServices            `json:"hostServices,omitempty" yaml:"hostServices,omitempty"`
+	HostOS                *HostOS                  `json:"hostOS,omitempty" yaml:"hostOS,omitempty"`
+	HostRun               *HostRun                 `json:"run,omitempty" yaml:"run,omitempty"`
+	HostCopy              *HostCopy                `json:"copy,omitempty" yaml:"copy,omitempty"`
 }
 
 func (c *HostCollect) GetName() string {

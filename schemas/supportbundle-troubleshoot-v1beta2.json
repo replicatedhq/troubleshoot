@@ -9588,7 +9588,7 @@
                   }
                 }
               },
-              "certificates": {
+              "certificateValidity": {
                 "type": "object",
                 "required": [
                   "outcomes"
@@ -10996,7 +10996,7 @@
                   }
                 }
               },
-              "certificates": {
+              "certificateValidity": {
                 "type": "object",
                 "required": [
                   "paths"

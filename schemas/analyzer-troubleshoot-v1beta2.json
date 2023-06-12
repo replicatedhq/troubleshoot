@@ -2535,7 +2535,7 @@
                   }
                 }
               },
-              "certificates": {
+              "certificateValidity": {
                 "type": "object",
                 "required": [
                   "outcomes"

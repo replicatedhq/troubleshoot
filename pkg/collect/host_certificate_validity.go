@@ -15,27 +15,27 @@ const CertMissing = "cert-missing"
 const CertValid = "cert-valid"
 const CertInvalid = "cert-invalid"
 
-type CollectHostCertificates struct {
-	hostCollector *troubleshootv1beta2.HostCertificates
+type CollectHostCertificateValidity struct {
+	hostCollector *troubleshootv1beta2.HostCertificateValidity
 	BundlePath    string
 }
 
-type HostCertsCollection struct {
+type HostCertificateValidityCollection struct {
 	CertificatePath  string              `json:"certificatePath,omitempty"`
 	CertificateChain []ParsedCertificate `json:"certificateChain,omitempty"`
 	Message          string              `json:"message,omitempty"`
 }
 
-func (c *CollectHostCertificates) Title() string {
-	return hostCollectorTitleOrDefault(c.hostCollector.HostCollectorMeta, "Host Certificate")
+func (c *CollectHostCertificateValidity) Title() string {
+	return hostCollectorTitleOrDefault(c.hostCollector.HostCollectorMeta, "Host Certificate Validity")
 }
 
-func (c *CollectHostCertificates) IsExcluded() (bool, error) {
+func (c *CollectHostCertificateValidity) IsExcluded() (bool, error) {
 	return isExcluded(c.hostCollector.Exclude)
 }
 
-func (c *CollectHostCertificates) Collect(progressChan chan<- interface{}) (map[string][]byte, error) {
-	var results []HostCertsCollection
+func (c *CollectHostCertificateValidity) Collect(progressChan chan<- interface{}) (map[string][]byte, error) {
+	var results []HostCertificateValidityCollection
 
 	for _, certPath := range c.hostCollector.Paths {
 		results = append(results, HostCertsParser(certPath))
@@ -48,9 +48,9 @@ func (c *CollectHostCertificates) Collect(progressChan chan<- interface{}) (map[
 
 	collectorName := c.hostCollector.CollectorName
 	if collectorName == "" {
-		collectorName = "certificates"
+		collectorName = "certificateValidity"
 	}
-	name := filepath.Join("host-collectors/certificates", collectorName+".json")
+	name := filepath.Join("host-collectors/certificateValidity", collectorName+".json")
 
 	output := NewResult()
 	output.SaveResult(c.BundlePath, name, bytes.NewBuffer(resultsJson))
@@ -58,12 +58,12 @@ func (c *CollectHostCertificates) Collect(progressChan chan<- interface{}) (map[
 	return output, nil
 }
 
-func HostCertsParser(certPath string) HostCertsCollection {
+func HostCertsParser(certPath string) HostCertificateValidityCollection {
 	var certInfo []ParsedCertificate
 
 	cert, err := ioutil.ReadFile(certPath)
 	if err != nil {
-		return HostCertsCollection{
+		return HostCertificateValidityCollection{
 			CertificatePath: certPath,
 			Message:         CertMissing,
 		}
@@ -72,7 +72,7 @@ func HostCertsParser(certPath string) HostCertsCollection {
 	certChain, _ := decodePem(cert)
 
 	if len(certChain.Certificate) == 0 {
-		return HostCertsCollection{
+		return HostCertificateValidityCollection{
 			CertificatePath: certPath,
 			Message:         CertInvalid,
 		}
@@ -81,7 +81,7 @@ func HostCertsParser(certPath string) HostCertsCollection {
 	for _, cert := range certChain.Certificate {
 		parsedCert, errParse := x509.ParseCertificate(cert)
 		if errParse != nil {
-			return HostCertsCollection{
+			return HostCertificateValidityCollection{
 				CertificatePath: certPath,
 				Message:         CertInvalid,
 			}
@@ -98,7 +98,7 @@ func HostCertsParser(certPath string) HostCertsCollection {
 		})
 	}
 
-	return HostCertsCollection{
+	return HostCertificateValidityCollection{
 		CertificatePath:  certPath,
 		CertificateChain: certInfo,
 		Message:          CertValid,

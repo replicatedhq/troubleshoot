@@ -104,6 +104,12 @@ type CertificateAnalyze struct {
 	Outcomes      []*Outcome `json:"outcomes" yaml:"outcomes"`
 }
 
+type HostCertificateValidityAnalyze struct {
+	AnalyzeMeta   `json:",inline" yaml:",inline"`
+	CollectorName string     `json:"collectorName,omitempty" yaml:"collectorName,omitempty"`
+	Outcomes      []*Outcome `json:"outcomes" yaml:"outcomes"`
+}
+
 type HostServicesAnalyze struct {
 	AnalyzeMeta   `json:",inline" yaml:",inline"`
 	CollectorName string     `json:"collectorName,omitempty" yaml:"collectorName,omitempty"`
@@ -149,7 +155,7 @@ type HostAnalyze struct {
 
 	Certificate *CertificateAnalyze `json:"certificate,omitempty" yaml:"certificate,omitempty"`
 
-	Certificates *CertificateAnalyze `json:"certificates,omitempty" yaml:"certificates,omitempty"`
+	CertificateValidity *HostCertificateValidityAnalyze `json:"certificateValidity,omitempty" yaml:"certificateValidity,omitempty"`
 
 	HostServices *HostServicesAnalyze `json:"hostServices,omitempty" yaml:"hostServices,omitempty"`
 

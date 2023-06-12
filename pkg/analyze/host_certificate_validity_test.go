@@ -10,11 +10,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestAnalyzeCertificates(t *testing.T) {
+func TestAnalyzeHostCertificateValidity(t *testing.T) {
 	tests := []struct {
 		name         string
 		file         string
-		hostAnalyzer *troubleshootv1beta2.CertificateAnalyze
+		hostAnalyzer *troubleshootv1beta2.HostCertificateValidityAnalyze
 		result       []*AnalyzeResult
 		expectErr    bool
 	}{
@@ -38,7 +38,7 @@ func TestAnalyzeCertificates(t *testing.T) {
 				],
 				"message": "cert-valid"
 			}]`, time.Now().AddDate(1, 0, 0).Format("2006-01-02T15:04:05Z")),
-			hostAnalyzer: &troubleshootv1beta2.CertificateAnalyze{
+			hostAnalyzer: &troubleshootv1beta2.HostCertificateValidityAnalyze{
 				Outcomes: []*troubleshootv1beta2.Outcome{
 					{
 						Pass: &troubleshootv1beta2.SingleOutcome{
@@ -52,7 +52,7 @@ func TestAnalyzeCertificates(t *testing.T) {
 					IsPass:  true,
 					IsWarn:  false,
 					IsFail:  false,
-					Title:   "Host Cerfiticates Verification",
+					Title:   "Host Cerfiticate Validity",
 					Message: "Certificate is valid, obtained from apiserver-kubelet-client.crt",
 				},
 			},
@@ -77,7 +77,7 @@ func TestAnalyzeCertificates(t *testing.T) {
 				],
 				"message": "cert-invalid"
 			}]`,
-			hostAnalyzer: &troubleshootv1beta2.CertificateAnalyze{
+			hostAnalyzer: &troubleshootv1beta2.HostCertificateValidityAnalyze{
 				Outcomes: []*troubleshootv1beta2.Outcome{
 					{
 						Fail: &troubleshootv1beta2.SingleOutcome{
@@ -92,7 +92,7 @@ func TestAnalyzeCertificates(t *testing.T) {
 					IsPass:  false,
 					IsWarn:  false,
 					IsFail:  true,
-					Title:   "Host Cerfiticates Verification",
+					Title:   "Host Cerfiticate Validity",
 					Message: "Certificate has expired, obtained from apiserver-kubelet-client.crt",
 				},
 			},
@@ -117,7 +117,7 @@ func TestAnalyzeCertificates(t *testing.T) {
 				],
 				"message": "cert-valid"
 			}]`, time.Now().AddDate(0, 0, 5).Format("2006-01-02T15:04:05Z")),
-			hostAnalyzer: &troubleshootv1beta2.CertificateAnalyze{
+			hostAnalyzer: &troubleshootv1beta2.HostCertificateValidityAnalyze{
 				Outcomes: []*troubleshootv1beta2.Outcome{
 					{
 						Warn: &troubleshootv1beta2.SingleOutcome{
@@ -132,7 +132,7 @@ func TestAnalyzeCertificates(t *testing.T) {
 					IsPass:  false,
 					IsWarn:  true,
 					IsFail:  false,
-					Title:   "Host Cerfiticates Verification",
+					Title:   "Host Cerfiticate Validity",
 					Message: "Certificate is about to expire in 15 days, obtained from apiserver-kubelet-client.crt",
 				},
 			},
@@ -143,7 +143,7 @@ func TestAnalyzeCertificates(t *testing.T) {
 				"certificatePath": "apiserver-kubelet-client.crt",
 				"message": "cert-missing"
 			}]`,
-			hostAnalyzer: &troubleshootv1beta2.CertificateAnalyze{
+			hostAnalyzer: &troubleshootv1beta2.HostCertificateValidityAnalyze{
 				Outcomes: []*troubleshootv1beta2.Outcome{},
 			},
 			result: []*AnalyzeResult{
@@ -151,7 +151,7 @@ func TestAnalyzeCertificates(t *testing.T) {
 					IsPass:  false,
 					IsWarn:  false,
 					IsFail:  true,
-					Title:   "Host Cerfiticates Verification",
+					Title:   "Host Cerfiticate Validity",
 					Message: "Certificate is missing, cannot be obtained from apiserver-kubelet-client.crt",
 				},
 			},
@@ -176,7 +176,7 @@ func TestAnalyzeCertificates(t *testing.T) {
 				],
 				"message": "cert-valid"
 			}]`, time.Now().AddDate(0, 0, 5).Format("2006-01-02T15:04:05Z")),
-			hostAnalyzer: &troubleshootv1beta2.CertificateAnalyze{
+			hostAnalyzer: &troubleshootv1beta2.HostCertificateValidityAnalyze{
 				Outcomes: []*troubleshootv1beta2.Outcome{
 					{
 						Pass: &troubleshootv1beta2.SingleOutcome{
@@ -194,7 +194,7 @@ func TestAnalyzeCertificates(t *testing.T) {
 					IsPass:  false,
 					IsWarn:  true,
 					IsFail:  false,
-					Title:   "Host Cerfiticates Verification",
+					Title:   "Host Cerfiticate Validity",
 					Message: "Certificate is about to expire in 15 days, obtained from apiserver-kubelet-client.crt",
 				},
 			},
@@ -208,7 +208,7 @@ func TestAnalyzeCertificates(t *testing.T) {
 				return []byte(test.file), nil
 			}
 
-			result, err := (&AnalyzeHostCertificates{test.hostAnalyzer}).Analyze(getCollectedFileContents)
+			result, err := (&AnalyzeHostCertificateValidity{test.hostAnalyzer}).Analyze(getCollectedFileContents)
 			if test.expectErr {
 				req.Error(err)
 			} else {
