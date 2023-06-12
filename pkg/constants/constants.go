@@ -15,7 +15,6 @@ const (
 	DEFAULT_LOGS_COLLECTOR_TIMEOUT = 60 * time.Second
 
 	// Tracing constants
-
 	LIB_TRACER_NAME             = "github.com/replicatedhq/troubleshoot"
 	TROUBLESHOOT_ROOT_SPAN_NAME = "ReplicatedTroubleshootRootSpan"
 	EXCLUDED                    = "excluded"
@@ -31,6 +30,7 @@ const (
 	CLUSTER_RESOURCES_DEPLOYMENTS                 = "deployments"
 	CLUSTER_RESOURCES_REPLICASETS                 = "replicasets"
 	CLUSTER_RESOURCES_STATEFULSETS                = "statefulsets"
+	CLUSTER_RESOURCES_DAEMONSETS                  = "daemonsets"
 	CLUSTER_RESOURCES_JOBS                        = "jobs"
 	CLUSTER_RESOURCES_CRONJOBS                    = "cronjobs"
 	CLUSTER_RESOURCES_INGRESS                     = "ingress"
@@ -58,4 +58,14 @@ const (
 	EXIT_CODE_SPEC_ISSUES = 2
 	EXIT_CODE_FAIL        = 3
 	EXIT_CODE_WARN        = 4
+
+	// Troubleshoot label constants
+	SupportBundleKey       = "support-bundle-spec"
+	RedactorKey            = "redactor-spec"
+	TroubleshootIOLabelKey = "troubleshoot.io/kind"
+	TroubleshootSHLabelKey = "troubleshoot.sh/kind"
+	PreflightKey           = "preflight.yaml" // Shouldn't this be "preflight-spec"?
+
+	// Troubleshoot spec constants
+	Troubleshootv1beta2Kind = "troubleshoot.sh/v1beta2"
 )

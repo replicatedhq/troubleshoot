@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/replicatedhq/troubleshoot/cmd/util"
+	"github.com/replicatedhq/troubleshoot/internal/util"
 	analyzer "github.com/replicatedhq/troubleshoot/pkg/analyze"
 	"github.com/replicatedhq/troubleshoot/pkg/convert"
 	"github.com/spf13/cobra"

@@ -9,10 +9,10 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v2"
 
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/klog/v2"
 
 	"github.com/replicatedhq/troubleshoot/pkg/longhorn/util"
 )
@@ -941,7 +941,7 @@ func GetCustomizedDefaultSettings() (map[string]string, error) {
 
 		// `yaml.Unmarshal()` can return a partial result. We shouldn't allow it
 		if err := yaml.Unmarshal(data, &defaultSettings); err != nil {
-			logrus.Errorf("Failed to unmarshal customized default settings from yaml data %v, will give up using them: %v", string(data), err)
+			klog.Errorf("Failed to unmarshal customized default settings from yaml data %v, will give up using them: %v", string(data), err)
 			defaultSettings = map[string]string{}
 		}
 	}
@@ -951,7 +951,7 @@ func GetCustomizedDefaultSettings() (map[string]string, error) {
 		value = strings.Trim(value, " ")
 		definition, exist := SettingDefinitions[SettingName(name)]
 		if !exist {
-			logrus.Errorf("Customized settings are invalid, will give up using them: undefined setting %v", name)
+			klog.Errorf("Customized settings are invalid, will give up using them: undefined setting %v", name)
 			defaultSettings = map[string]string{}
 			break
 		}
@@ -963,14 +963,14 @@ func GetCustomizedDefaultSettings() (map[string]string, error) {
 		if definition.Type == SettingTypeBool {
 			result, err := strconv.ParseBool(value)
 			if err != nil {
-				logrus.Errorf("Invalid value %v for the boolean setting %v: %v", value, name, err)
+				klog.Errorf("Invalid value %v for the boolean setting %v: %v", value, name, err)
 				defaultSettings = map[string]string{}
 				break
 			}
 			value = strconv.FormatBool(result)
 		}
 		if err := ValidateInitSetting(name, value); err != nil {
-			logrus.Errorf("Customized settings are invalid, will give up using them: the value of customized setting %v is invalid: %v", name, err)
+			klog.Errorf("Customized settings are invalid, will give up using them: the value of customized setting %v is invalid: %v", name, err)
 			defaultSettings = map[string]string{}
 			break
 		}
@@ -986,7 +986,7 @@ func GetCustomizedDefaultSettings() (map[string]string, error) {
 		guaranteedReplicaManagerCPU = defaultSettings[string(SettingNameGuaranteedReplicaManagerCPU)]
 	}
 	if err := ValidateCPUReservationValues(guaranteedEngineManagerCPU, guaranteedReplicaManagerCPU); err != nil {
-		logrus.Errorf("Customized settings GuaranteedEngineManagerCPU and GuaranteedReplicaManagerCPU are invalid, will give up using them: %v", err)
+		klog.Errorf("Customized settings GuaranteedEngineManagerCPU and GuaranteedReplicaManagerCPU are invalid, will give up using them: %v", err)
 		defaultSettings = map[string]string{}
 	}
 
@@ -994,7 +994,7 @@ func GetCustomizedDefaultSettings() (map[string]string, error) {
 }
 
 func OverwriteBuiltInSettingsWithCustomizedValues() error {
-	logrus.Infof("Start overwriting built-in settings with customized values")
+	klog.V(2).Info("Start overwriting built-in settings with customized values")
 	customizedDefaultSettings, err := GetCustomizedDefaultSettings()
 	if err != nil {
 		return err
