@@ -320,6 +320,8 @@ AnalysisResults,err := newBundle.Analyze(nil) // a nil AnalyzeOptions dictates t
 
 ### CLI structure
 
+A prototype CLI that follows this structure can be found in `cmd/prototype` to text and experiment with the UX of the command
+
 Root level command isn't expected to do much.
 
 Subcommands:
