@@ -10,11 +10,13 @@ import (
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
+	"github.com/replicatedhq/troubleshoot/pkg/k8sutil"
 	corev1 "k8s.io/api/core/v1"
 	kuberneteserrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"k8s.io/klog/v2"
 )
 
 type ConfigMapOutput struct {
@@ -49,8 +51,20 @@ func (c *CollectConfigMap) Collect(progressChan chan<- interface{}) (CollectorRe
 	output := NewResult()
 
 	configMaps := []corev1.ConfigMap{}
+	namespace := c.Collector.Namespace
+
 	if c.Collector.Name != "" {
-		configMap, err := c.Client.CoreV1().ConfigMaps(c.Collector.Namespace).Get(c.Context, c.Collector.Name, metav1.GetOptions{})
+		if namespace == "" {
+			kubeconfig := k8sutil.GetKubeconfig()
+			ns, _, err := kubeconfig.Namespace()
+			klog.V(2).Infof("no namespace was set for configmap '%s': using namespace '%s' from current kubeconfig context", c.Collector.Name, ns)
+			if err != nil {
+				return nil, errors.Wrapf(err, "a namespace was not specified for configmap '%s' and could not be discovered from kubeconfig", c.Collector.Name)
+			}
+			namespace = ns
+		}
+		klog.V(1).Infof("looking for configmap '%s' in namespace '%s'", c.Collector.Name, namespace)
+		configMap, err := c.Client.CoreV1().ConfigMaps(namespace).Get(c.Context, c.Collector.Name, metav1.GetOptions{})
 		if err != nil {
 			if kuberneteserrors.IsNotFound(err) {
 				filePath, encoded, err := configMapToOutput(c.Collector, nil, c.Collector.Name)
