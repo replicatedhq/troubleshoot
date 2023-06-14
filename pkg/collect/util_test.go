@@ -10,6 +10,7 @@ import (
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -284,5 +285,50 @@ func createTLSSecret(t *testing.T, client kubernetes.Interface, secretData map[s
 	return &v1beta2.TLSSecret{
 		Namespace: namespace,
 		Name:      secretName,
+	}
+}
+
+func Test_checkForExistingServiceAccount(t *testing.T) {
+	tests := []struct {
+		name               string
+		namespace          string
+		serviceAccountName string
+		mockServiceAccount *corev1.ServiceAccount
+		wantErr            bool
+	}{
+		{
+			name:               "Service account doesn't exist",
+			namespace:          "test-namespace",
+			serviceAccountName: "test-service-account",
+			mockServiceAccount: nil,
+			wantErr:            true,
+		},
+		{
+			name:               "Service account already exists",
+			namespace:          "test-namespace",
+			serviceAccountName: "test-service-account",
+			mockServiceAccount: &corev1.ServiceAccount{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "test-service-account",
+				},
+			},
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := context.Background()
+			client := testclient.NewSimpleClientset()
+			if tt.mockServiceAccount != nil {
+				_, err := client.CoreV1().ServiceAccounts(tt.namespace).Create(ctx, tt.mockServiceAccount, metav1.CreateOptions{})
+				require.NoError(t, err)
+
+				err = checkForExistingServiceAccount(client, tt.namespace, tt.serviceAccountName)
+				assert.Equal(t, tt.wantErr, err != nil)
+			}
+
+			err := checkForExistingServiceAccount(client, tt.namespace, tt.serviceAccountName)
+			assert.Equal(t, tt.wantErr, err != nil)
+		})
 	}
 }
