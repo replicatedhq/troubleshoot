@@ -14,7 +14,7 @@ For the purposes of this design we'll talk about troubleshoot as a standalone bi
 
 ## High Level Design
 
-Functions of `support-bundle`, `preflight`, `analyze`, `redact`, and `sbctl` binaries/tools should be rolled together into a single `troubleshoot` CLI that can perform all necessary functions of the same.
+Functions of `support-bundle`, `preflight`, `analyze`, `redact`, and `sbctl` binaries/tools should be rolled together into a single `troubleshoot` CLI that can perform all necessary functions.
 
 `troubleshoot` CLI should be able to report on the version that is installed in the CLI, and any support bundle generated with `troubleshoot` should report its build/version inside the archive it generates.
 
@@ -22,7 +22,9 @@ Functions of `support-bundle`, `preflight`, `analyze`, `redact`, and `sbctl` bin
 
 In the interest of being able to work on this quickly without breaking existing use-cases, a new `troubleshoot` command should be created. Utilizing cobra and viper best practices from the cobra.dev docs.
 
-A guiding principle of this redesign should be that the we are defining a set of "artefacts" (i.e: a support bundle, a spec), and each of the defined public functions acts as an interface to interact with these artefacts. either creating, manipulating, or performing other actions on them. in this way we guarantee that each public function can be re-used on an artefact (support bundle) in any stage of it's existance.
+To enable the new CLI to be written in a clean and DRY way, we should first address the need for a stable public API for troubleshoot.
+
+A guiding principle of the design of the "Public API" should be that the we are defining a set of "artefacts" (i.e: a support bundle, a spec), and each of the defined public functions acts as an interface to interact with these artefacts. either creating, manipulating, or performing other actions on them. in this way we guarantee that each public function can be re-used on an artefact (support bundle) in any stage of it's existance.
 
 For example, running a set of redactors or analyzers on an existing support bundle without having to re-run collection.
 
