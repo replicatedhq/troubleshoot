@@ -273,7 +273,7 @@ AnalysisResults,err := newBundle.Analyze(nil) // a nil AnalyzeOptions dictates t
 ```
 
 
-### Usage patterns
+### CLI Usage patterns
 
 - generate a support bundle
 
@@ -314,11 +314,11 @@ AnalysisResults,err := newBundle.Analyze(nil) // a nil AnalyzeOptions dictates t
 
 - Redact an existing spec
 
-  `troubleshoot redact -f redactors.yaml support-bundle.tar.gz`
+  `troubleshoot redact support-bundle.tar.gz redactors.yaml...`
 
 - Re-run analysers against an existing support bundle
 
-  `troubleshoot analyze -f spec.yaml support-bundle.tar.gz`
+  `troubleshoot analyze support-bundle.tar.gz spec.yaml... `
 
 ### CLI structure
 
