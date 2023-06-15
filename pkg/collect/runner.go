@@ -155,6 +155,10 @@ func createCollectorPod(client kubernetes.Interface, scheme *runtime.Scheme, own
 		return nil, err
 	}
 
+	if err := checkForExistingServiceAccount(client, namespace, serviceAccountName); err != nil {
+		return nil, err
+	}
+
 	imageName := "replicated/troubleshoot:latest"
 	imagePullPolicy := corev1.PullAlways
 
