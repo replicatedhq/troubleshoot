@@ -8,7 +8,15 @@ spec:
         name: config/replicas.txt
         data: "5"
     - runPod:
-        collectorName: "static-hi"
+        collectorName: "static-hi-1"
+        podSpec:
+          containers:
+          - name: static-hi
+            image: alpine:3
+            command: ["echo", "hi static!"]
+    ## This collector is intentionally duplicated to test same pod should be terminated after success
+    - runPod:
+        collectorName: "static-hi-2"
         podSpec:
           containers:
           - name: static-hi
@@ -47,7 +55,16 @@ spec:
               message: You have at least 5 replicas
     - textAnalyze:
         checkName: Said hi!
-        fileName: /static-hi.log
+        fileName: /static-hi-1.log
+        regex: 'hi static'
+        outcomes:
+          - fail:
+              message: Didn't say hi.
+          - pass:
+              message: Said hi!
+    - textAnalyze:
+        checkName: Said hi!
+        fileName: /static-hi-2.log
         regex: 'hi static'
         outcomes:
           - fail:
