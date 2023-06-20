@@ -61,7 +61,14 @@ A signed SBOM  that includes Troubleshoot dependencies is included in each relea
 
 The following example illustrates using [cosign](https://github.com/sigstore/cosign) to verify that **troubleshoot-sbom.tgz** has
 not been tampered with.
-```
+```sh
 $ cosign verify-blob --key key.pub --signature troubleshoot-sbom.tgz.sig troubleshoot-sbom.tgz
+Verified OK
+```
+
+If you were to get an error similar to the one below, it means you are verifying an SBOM signed using cosign `v1` using a newer `v2` of the binary. This version introduced [breaking changes](https://github.com/sigstore/cosign/blob/main/CHANGELOG.md#breaking-changes) which require an additional flag `--insecure-ignore-tlog=true` to successfully verify SBOMs like so.
+```sh
+$ cosign verify-blob --key key.pub --signature troubleshoot-sbom.tgz.sig troubleshoot-sbom.tgz --insecure-ignore-tlog=true
+WARNING: Skipping tlog verification is an insecure practice that lacks of transparency and auditability verification for the blob.
 Verified OK
 ```
