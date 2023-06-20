@@ -40,9 +40,9 @@ func (a *AnalyzeHostTCPConnect) Analyze(getCollectedFileContents func(string) ([
 	}
 
 	var coll resultCollector
+	result := &AnalyzeResult{Title: a.Title()}
 
 	for _, outcome := range hostAnalyzer.Outcomes {
-		result := &AnalyzeResult{Title: a.Title()}
 
 		if outcome.Fail != nil {
 			if outcome.Fail.When == "" {
@@ -51,7 +51,7 @@ func (a *AnalyzeHostTCPConnect) Analyze(getCollectedFileContents func(string) ([
 				result.URI = outcome.Fail.URI
 
 				coll.push(result)
-
+				break
 			}
 
 			if string(actual.Status) == outcome.Fail.When {
@@ -60,6 +60,7 @@ func (a *AnalyzeHostTCPConnect) Analyze(getCollectedFileContents func(string) ([
 				result.URI = outcome.Fail.URI
 
 				coll.push(result)
+				break
 			}
 		} else if outcome.Warn != nil {
 			if outcome.Warn.When == "" {
@@ -68,7 +69,7 @@ func (a *AnalyzeHostTCPConnect) Analyze(getCollectedFileContents func(string) ([
 				result.URI = outcome.Warn.URI
 
 				coll.push(result)
-
+				break
 			}
 
 			if string(actual.Status) == outcome.Warn.When {
@@ -77,6 +78,7 @@ func (a *AnalyzeHostTCPConnect) Analyze(getCollectedFileContents func(string) ([
 				result.URI = outcome.Warn.URI
 
 				coll.push(result)
+				break
 			}
 		} else if outcome.Pass != nil {
 			if outcome.Pass.When == "" {
@@ -85,7 +87,7 @@ func (a *AnalyzeHostTCPConnect) Analyze(getCollectedFileContents func(string) ([
 				result.URI = outcome.Pass.URI
 
 				coll.push(result)
-
+				break
 			}
 
 			if string(actual.Status) == outcome.Pass.When {
@@ -94,6 +96,7 @@ func (a *AnalyzeHostTCPConnect) Analyze(getCollectedFileContents func(string) ([
 				result.URI = outcome.Pass.URI
 
 				coll.push(result)
+				break
 			}
 		}
 	}

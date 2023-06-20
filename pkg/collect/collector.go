@@ -63,6 +63,8 @@ func GetCollector(collector *troubleshootv1beta2.Collect, bundlePath string, nam
 		return &CollectClusterInfo{collector.ClusterInfo, bundlePath, namespace, clientConfig, RBACErrors}, true
 	case collector.ClusterResources != nil:
 		return &CollectClusterResources{collector.ClusterResources, bundlePath, namespace, clientConfig, RBACErrors}, true
+	case collector.CustomMetrics != nil:
+		return &CollectMetrics{collector.CustomMetrics, bundlePath, clientConfig, client, ctx, RBACErrors}, true
 	case collector.Secret != nil:
 		return &CollectSecret{collector.Secret, bundlePath, namespace, clientConfig, client, ctx, RBACErrors}, true
 	case collector.ConfigMap != nil:
@@ -101,6 +103,8 @@ func GetCollector(collector *troubleshootv1beta2.Collect, bundlePath string, nam
 		return &CollectRegistry{collector.RegistryImages, bundlePath, namespace, clientConfig, client, ctx, RBACErrors}, true
 	case collector.Sysctl != nil:
 		return &CollectSysctl{collector.Sysctl, bundlePath, namespace, clientConfig, client, ctx, RBACErrors}, true
+	case collector.Certificates != nil:
+		return &CollectCertificates{collector.Certificates, bundlePath, namespace, clientConfig, client, ctx, RBACErrors}, true
 	default:
 		return nil, false
 	}
@@ -114,6 +118,9 @@ func getCollectorName(c interface{}) string {
 		collector = "cluster-info"
 	case *CollectClusterResources:
 		collector = "cluster-resources"
+	case *CollectMetrics:
+		collector = "custom-metrics"
+		name = v.Collector.CollectorName
 	case *CollectSecret:
 		collector = "secret"
 		name = v.Collector.CollectorName
@@ -176,6 +183,8 @@ func getCollectorName(c interface{}) string {
 	case *CollectSysctl:
 		collector = "sysctl"
 		name = v.Collector.Name
+	case *CollectCertificates:
+		collector = "certificates"
 	default:
 		collector = "<none>"
 	}

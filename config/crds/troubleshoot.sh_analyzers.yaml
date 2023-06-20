@@ -90,6 +90,53 @@ spec:
                       - namespace
                       - outcomes
                       type: object
+                    certificates:
+                      properties:
+                        annotations:
+                          additionalProperties:
+                            type: string
+                          type: object
+                        checkName:
+                          type: string
+                        exclude:
+                          type: BoolString
+                        outcomes:
+                          items:
+                            properties:
+                              fail:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
+                              pass:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
+                              warn:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
+                            type: object
+                          type: array
+                        strict:
+                          type: BoolString
+                      required:
+                      - outcomes
+                      type: object
                     clusterPodStatuses:
                       properties:
                         annotations:
@@ -195,6 +242,10 @@ spec:
                                 type: object
                             type: object
                           type: array
+                        regex:
+                          type: string
+                        regexGroups:
+                          type: string
                         strict:
                           type: BoolString
                         yamlPath:

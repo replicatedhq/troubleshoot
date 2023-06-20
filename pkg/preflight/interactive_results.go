@@ -7,7 +7,7 @@ import (
 	"github.com/pkg/errors"
 	ui "github.com/replicatedhq/termui/v3"
 	"github.com/replicatedhq/termui/v3/widgets"
-	"github.com/replicatedhq/troubleshoot/cmd/util"
+	"github.com/replicatedhq/troubleshoot/internal/util"
 	analyzerunner "github.com/replicatedhq/troubleshoot/pkg/analyze"
 )
 

@@ -214,6 +214,13 @@ func (c *CollectClusterResources) Collect(progressChan chan<- interface{}) (Coll
 	}
 	output.SaveResult(c.BundlePath, path.Join(constants.CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s-errors.json", constants.CLUSTER_RESOURCES_STATEFULSETS)), marshalErrors(statefulsetsErrors))
 
+	// daemonsets
+	daemonsets, daemonsetsErrors := daemonsets(ctx, client, namespaceNames)
+	for k, v := range daemonsets {
+		output.SaveResult(c.BundlePath, path.Join(constants.CLUSTER_RESOURCES_DIR, constants.CLUSTER_RESOURCES_DAEMONSETS, k), bytes.NewBuffer(v))
+	}
+	output.SaveResult(c.BundlePath, path.Join(constants.CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s-errors.json", constants.CLUSTER_RESOURCES_DAEMONSETS)), marshalErrors(daemonsetsErrors))
+
 	// replicasets
 	replicasets, replicasetsErrors := replicasets(ctx, client, namespaceNames)
 	for k, v := range replicasets {
@@ -261,6 +268,11 @@ func (c *CollectClusterResources) Collect(progressChan chan<- interface{}) (Coll
 	output.SaveResult(c.BundlePath, path.Join(constants.CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s.json", constants.CLUSTER_RESOURCES_STORAGE_CLASS)), bytes.NewBuffer(storageClasses))
 	output.SaveResult(c.BundlePath, path.Join(constants.CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s-errors.json", constants.CLUSTER_RESOURCES_STORAGE_CLASS)), marshalErrors(storageErrors))
 
+	// priority classes
+	priorityClasses, priorityErrors := priorityClasses(ctx, client)
+	output.SaveResult(c.BundlePath, path.Join(constants.CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s.json", constants.CLUSTER_RESOURCES_PRIORITY_CLASS)), bytes.NewBuffer(priorityClasses))
+	output.SaveResult(c.BundlePath, path.Join(constants.CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s-errors.json", constants.CLUSTER_RESOURCES_PRIORITY_CLASS)), marshalErrors(priorityErrors))
+
 	// crds
 	customResourceDefinitions, crdErrors := crds(ctx, client, c.ClientConfig)
 	output.SaveResult(c.BundlePath, path.Join(constants.CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s.json", constants.CLUSTER_RESOURCES_CUSTOM_RESOURCE_DEFINITIONS)), bytes.NewBuffer(customResourceDefinitions))
@@ -269,9 +281,9 @@ func (c *CollectClusterResources) Collect(progressChan chan<- interface{}) (Coll
 	// crs
 	customResources, crErrors := crs(ctx, dynamicClient, client, c.ClientConfig, namespaceNames)
 	for k, v := range customResources {
-		output.SaveResult(c.BundlePath, path.Join(constants.CLUSTER_RESOURCES_DIR, constants.CLUSTER_RESOURCES_CUSTOM_RESOURCE_DEFINITIONS, k), bytes.NewBuffer(v))
+		output.SaveResult(c.BundlePath, path.Join(constants.CLUSTER_RESOURCES_DIR, constants.CLUSTER_RESOURCES_CUSTOM_RESOURCES, k), bytes.NewBuffer(v))
 	}
-	output.SaveResult(c.BundlePath, path.Join(constants.CLUSTER_RESOURCES_DIR, constants.CLUSTER_RESOURCES_CUSTOM_RESOURCE_DEFINITIONS, fmt.Sprintf("%s-errors.json", constants.CLUSTER_RESOURCES_CUSTOM_RESOURCE_DEFINITIONS)), marshalErrors(crErrors))
+	output.SaveResult(c.BundlePath, path.Join(constants.CLUSTER_RESOURCES_DIR, constants.CLUSTER_RESOURCES_CUSTOM_RESOURCES, fmt.Sprintf("%s-errors.json", constants.CLUSTER_RESOURCES_CUSTOM_RESOURCES)), marshalErrors(crErrors))
 
 	// imagepullsecrets
 	imagePullSecrets, pullSecretsErrors := imagePullSecrets(ctx, client, namespaceNames)
@@ -332,13 +344,20 @@ func (c *CollectClusterResources) Collect(progressChan chan<- interface{}) (Coll
 
 	//Cluster Roles
 	clusterRoles, clusterRolesErrors := clusterRoles(ctx, client)
-	output.SaveResult(c.BundlePath, path.Join(constants.CLUSTER_RESOURCES_DIR, constants.CLUSTER_RESOURCES_CLUSTER_ROLES), bytes.NewBuffer(clusterRoles))
+	output.SaveResult(c.BundlePath, path.Join(constants.CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s.json", constants.CLUSTER_RESOURCES_CLUSTER_ROLES)), bytes.NewBuffer(clusterRoles))
 	output.SaveResult(c.BundlePath, path.Join(constants.CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s-errors.json", constants.CLUSTER_RESOURCES_CLUSTER_ROLES)), marshalErrors(clusterRolesErrors))
 
 	//Cluster Role Bindings
 	clusterRoleBindings, clusterRoleBindingsErrors := clusterRoleBindings(ctx, client)
-	output.SaveResult(c.BundlePath, path.Join(constants.CLUSTER_RESOURCES_DIR, constants.CLUSTER_RESOURCES_CLUSTER_ROLE_BINDINGS), bytes.NewBuffer(clusterRoleBindings))
+	output.SaveResult(c.BundlePath, path.Join(constants.CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s.json", constants.CLUSTER_RESOURCES_CLUSTER_ROLE_BINDINGS)), bytes.NewBuffer(clusterRoleBindings))
 	output.SaveResult(c.BundlePath, path.Join(constants.CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s-errors.json", constants.CLUSTER_RESOURCES_CLUSTER_ROLE_BINDINGS)), marshalErrors(clusterRoleBindingsErrors))
+
+	// endpoints
+	endpoints, endpointsErrors := endpoints(ctx, client, namespaceNames)
+	for k, v := range endpoints {
+		output.SaveResult(c.BundlePath, path.Join(constants.CLUSTER_RESOURCES_DIR, constants.CLUSTER_RESOURCES_ENDPOINTS, k), bytes.NewBuffer(v))
+	}
+	output.SaveResult(c.BundlePath, path.Join(constants.CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s-errors.json", constants.CLUSTER_RESOURCES_ENDPOINTS)), marshalErrors(endpointsErrors))
 
 	return output, nil
 }
@@ -639,6 +658,42 @@ func statefulsets(ctx context.Context, client *kubernetes.Clientset, namespaces 
 	}
 
 	return statefulsetsByNamespace, errorsByNamespace
+}
+
+func daemonsets(ctx context.Context, client *kubernetes.Clientset, namespaces []string) (map[string][]byte, map[string]string) {
+	daemonsetsByNamespace := make(map[string][]byte)
+	errorsByNamespace := make(map[string]string)
+
+	for _, namespace := range namespaces {
+		daemonsets, err := client.AppsV1().DaemonSets(namespace).List(ctx, metav1.ListOptions{})
+
+		if err != nil {
+			errorsByNamespace[namespace] = err.Error()
+			continue
+		}
+
+		gvk, err := apiutil.GVKForObject(daemonsets, scheme.Scheme)
+		if err == nil {
+			daemonsets.GetObjectKind().SetGroupVersionKind(gvk)
+		}
+
+		for i, o := range daemonsets.Items {
+			gvk, err := apiutil.GVKForObject(&o, scheme.Scheme)
+			if err == nil {
+				daemonsets.Items[i].GetObjectKind().SetGroupVersionKind(gvk)
+			}
+		}
+
+		b, err := json.MarshalIndent(daemonsets, "", "  ")
+		if err != nil {
+			errorsByNamespace[namespace] = err.Error()
+			continue
+		}
+
+		daemonsetsByNamespace[namespace+".json"] = b
+	}
+
+	return daemonsetsByNamespace, errorsByNamespace
 }
 
 func replicasets(ctx context.Context, client *kubernetes.Clientset, namespaces []string) (map[string][]byte, map[string]string) {
@@ -1002,6 +1057,70 @@ func storageClassesV1beta(ctx context.Context, client *kubernetes.Clientset) ([]
 	}
 
 	b, err := json.MarshalIndent(storageClasses, "", "  ")
+	if err != nil {
+		return nil, []string{err.Error()}
+	}
+
+	return b, nil
+}
+
+func priorityClasses(ctx context.Context, client *kubernetes.Clientset) ([]byte, []string) {
+	ok, err := discovery.HasResource(client, "scheduling.k8s.io/v1", "PriorityClass")
+	if err != nil {
+		return nil, []string{err.Error()}
+	}
+	if ok {
+		return priorityClassesV1(ctx, client)
+	}
+
+	return priorityClassesV1beta1(ctx, client)
+}
+
+func priorityClassesV1(ctx context.Context, client *kubernetes.Clientset) ([]byte, []string) {
+	priorityClasses, err := client.SchedulingV1().PriorityClasses().List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return nil, []string{err.Error()}
+	}
+
+	gvk, err := apiutil.GVKForObject(priorityClasses, scheme.Scheme)
+	if err == nil {
+		priorityClasses.GetObjectKind().SetGroupVersionKind(gvk)
+	}
+
+	for i, o := range priorityClasses.Items {
+		gvk, err := apiutil.GVKForObject(&o, scheme.Scheme)
+		if err == nil {
+			priorityClasses.Items[i].GetObjectKind().SetGroupVersionKind(gvk)
+		}
+	}
+
+	b, err := json.MarshalIndent(priorityClasses, "", "  ")
+	if err != nil {
+		return nil, []string{err.Error()}
+	}
+
+	return b, nil
+}
+
+func priorityClassesV1beta1(ctx context.Context, client *kubernetes.Clientset) ([]byte, []string) {
+	priorityClasses, err := client.SchedulingV1beta1().PriorityClasses().List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return nil, []string{err.Error()}
+	}
+
+	gvk, err := apiutil.GVKForObject(priorityClasses, scheme.Scheme)
+	if err == nil {
+		priorityClasses.GetObjectKind().SetGroupVersionKind(gvk)
+	}
+
+	for i, o := range priorityClasses.Items {
+		gvk, err := apiutil.GVKForObject(&o, scheme.Scheme)
+		if err == nil {
+			priorityClasses.Items[i].GetObjectKind().SetGroupVersionKind(gvk)
+		}
+	}
+
+	b, err := json.MarshalIndent(priorityClasses, "", "  ")
 	if err != nil {
 		return nil, []string{err.Error()}
 	}
@@ -1775,4 +1894,39 @@ func clusterRoleBindings(ctx context.Context, client *kubernetes.Clientset) ([]b
 		return nil, []string{err.Error()}
 	}
 	return b, nil
+}
+
+func endpoints(ctx context.Context, client *kubernetes.Clientset, namespaces []string) (map[string][]byte, map[string]string) {
+	endpointsByNamespace := make(map[string][]byte)
+	errorsByNamespace := make(map[string]string)
+
+	for _, namespace := range namespaces {
+		endpoints, err := client.CoreV1().Endpoints(namespace).List(ctx, metav1.ListOptions{})
+		if err != nil {
+			errorsByNamespace[namespace] = err.Error()
+			continue
+		}
+
+		gvk, err := apiutil.GVKForObject(endpoints, scheme.Scheme)
+		if err == nil {
+			endpoints.GetObjectKind().SetGroupVersionKind(gvk)
+		}
+
+		for i, o := range endpoints.Items {
+			gvk, err := apiutil.GVKForObject(&o, scheme.Scheme)
+			if err == nil {
+				endpoints.Items[i].GetObjectKind().SetGroupVersionKind(gvk)
+			}
+		}
+
+		b, err := json.MarshalIndent(endpoints, "", "  ")
+		if err != nil {
+			errorsByNamespace[namespace] = err.Error()
+			continue
+		}
+
+		endpointsByNamespace[namespace+".json"] = b
+	}
+
+	return endpointsByNamespace, errorsByNamespace
 }

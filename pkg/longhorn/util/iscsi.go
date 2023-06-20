@@ -10,7 +10,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	"github.com/sirupsen/logrus"
+	"k8s.io/klog/v2"
 
 	iscsi_util "github.com/longhorn/go-iscsi-helper/util"
 )
@@ -58,7 +58,7 @@ func RemoveHostDirectoryContent(directory string) (err error) {
 	}
 	// check if the directory already deleted
 	if _, err := nsExec.Execute("ls", []string{dir}); err != nil {
-		logrus.Warnf("cannot find host directory %v for removal", dir)
+		klog.Warningf("cannot find host directory %v for removal", dir)
 		return nil
 	}
 	if _, err := nsExec.Execute("rm", []string{"-rf", dir}); err != nil {
@@ -92,7 +92,7 @@ func CopyHostDirectoryContent(src, dest string) (err error) {
 
 	// There can be no src directory, hence returning nil is fine.
 	if _, err := nsExec.Execute("bash", []string{"-c", fmt.Sprintf("ls %s", filepath.Join(srcDir, "*"))}); err != nil {
-		logrus.Infof("cannot list the content of the src directory %v for the copy, will do nothing: %v", srcDir, err)
+		klog.V(2).Infof("cannot list the content of the src directory %v for the copy, will do nothing: %v", srcDir, err)
 		return nil
 	}
 	// Check if the dest directory exists.
@@ -164,7 +164,7 @@ func ExpandFileSystem(volumeName string) (err error) {
 	mountPoint := ""
 	mountRes, err := nsExec.Execute("bash", []string{"-c", "mount | grep \"/" + volumeName + " \" | awk '{print $3}'"})
 	if err != nil {
-		logrus.Warnf("failed to use command mount to get the mount info of volume %v, consider the volume as unmounted: %v", volumeName, err)
+		klog.Warningf("failed to use command mount to get the mount info of volume %v, consider the volume as unmounted: %v", volumeName, err)
 	} else {
 		// For empty `mountRes`, `mountPoints` is [""]
 		mountPoints := strings.Split(strings.TrimSpace(mountRes), "\n")
@@ -178,13 +178,13 @@ func ExpandFileSystem(volumeName string) (err error) {
 				}
 			}
 			if tmpMountNeeded {
-				logrus.Errorf("BUG: Found mount point records %v for volume %v but there is no valid(non-empty) mount point", mountRes, volumeName)
+				klog.Errorf("BUG: Found mount point records %v for volume %v but there is no valid(non-empty) mount point", mountRes, volumeName)
 			}
 		}
 	}
 	if tmpMountNeeded {
 		mountPoint = filepath.Join(TemporaryMountPointDirectory, volumeName)
-		logrus.Infof("The volume %v is unmounted, hence it will be temporarily mounted on %v for file system expansion", volumeName, mountPoint)
+		klog.V(2).Infof("The volume %v is unmounted, hence it will be temporarily mounted on %v for file system expansion", volumeName, mountPoint)
 		if _, err := nsExec.Execute("mkdir", []string{"-p", mountPoint}); err != nil {
 			return errors.Wrapf(err, "failed to create a temporary mount point %v before file system expansion", mountPoint)
 		}

@@ -32,6 +32,28 @@ To get started we recommend:
 
 6. Install [golangci-lint] linter and run `make lint` to execute additional code linters.
 
+### Syncing to a test cluster with `watchrsync`
+
+1. Install `npm`
+2. Export `REMOTES=<user>@<ip>` so that `watchrsync` knows where to sync.
+3. Maybe run `export GOOS=linux` and `export GOARCH=amd64` so that you build Linux binaries.
+4. run `make watchrsync` to build and sync binaries automatically on saving.
+
+```
+ssh-add --apple-use-keychain ~/.ssh/google_compute_engine
+export REMOTES=ada@35.229.61.56
+export GOOS=linux
+export GOARCH=amd64
+make watchrsync
+# bin/watchrsync.js
+# make support-bundle
+# go build -tags "netgo containers_image_ostree_stub exclude_graphdriver_devicemapper exclude_graphdriver_btrfs containers_image_openpgp" -installsuffix netgo -ldflags " -s -w -X github.com/replicatedhq/troubleshoot/pkg/version.version=`git describe --tags --dirty` -X github.com/replicatedhq/troubleshoot/pkg/version.gitSHA=`git rev-parse HEAD` -X github.com/replicatedhq/troubleshoot/pkg/version.buildTime=`date -u +"%Y-%m-%dT%H:%M:%SZ"` " -o bin/support-bundle github.com/replicatedhq/troubleshoot/cmd/troubleshoot
+# rsync bin/support-bundle ada@35.229.61.56:
+# date
+# Tue May 16 14:14:13 EDT 2023
+# synced
+```
+
 ### Testing
 
 To run the tests locally run the following:
@@ -54,11 +76,13 @@ A running Kubernetes cluster as well as `jq` are required to run e2e tests.
 You are able to collect CPU & memory runtime properties and store the data for analysis in a file. To do so, pass in the file paths using `--cpuprofile` and `--memprofile` flags in the CLI. Once you have your data collected, you can analyse it using [pprof visualization tool](https://github.com/google/pprof/blob/main/doc/README.md). Here is how
 
 Run support bundle and with CPU & memory profile flags
+
 ```sh
 ./bin/support-bundle examples/support-bundle/sample-supportbundle.yaml --cpuprofile=cpu.prof --memprofile=mem.prof
 ```
 
 Visualize using [pprof](https://github.com/google/pprof/blob/main/doc/README.md)
+
 ```sh
 go tool pprof -http=":8000" cpu.prof
 
@@ -76,16 +100,19 @@ This is a rough outline of how to prepare a contribution:
 - Make commits of logical units.
 - When your changes are ready to merge, squash your history to 1 commit.
   - For example, if you want to squash your last 3 commits and write a new commit message:
+
       ```
       git reset --soft HEAD~3 &&
       git commit
       ```
 
   - If you want to keep the previous commit messages and concatenate them all into a new commit, you can do something like this instead:
+
       ```
       git reset --soft HEAD~3 &&
       git commit --edit -m"$(git log --format=%B --reverse HEAD..HEAD@{1})"
       ```
+
 - Push your changes to a topic branch in your fork of the repository.
 - Submit a pull request to the original repository. It will be reviewed in a timely manner.
 

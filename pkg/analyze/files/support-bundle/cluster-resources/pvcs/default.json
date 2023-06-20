@@ -1,0 +1,213 @@
+{
+  "kind": "PersistentVolumeClaimList",
+  "apiVersion": "v1",
+  "metadata": {
+    "resourceVersion": "1463098"
+  },
+  "items": [
+    {
+      "kind": "PersistentVolumeClaim",
+      "apiVersion": "v1",
+      "metadata": {
+        "name": "data-postgresql-0",
+        "namespace": "default",
+        "uid": "b733694c-a969-4763-9960-d3465c9fccd5",
+        "resourceVersion": "1364772",
+        "creationTimestamp": "2023-05-15T21:22:00Z",
+        "labels": {
+          "app.kubernetes.io/component": "primary",
+          "app.kubernetes.io/instance": "some-app",
+          "app.kubernetes.io/name": "postgresql"
+        },
+        "annotations": {
+          "pv.kubernetes.io/bind-completed": "yes",
+          "pv.kubernetes.io/bound-by-controller": "yes",
+          "volume.beta.kubernetes.io/storage-provisioner": "rancher.io/local-path",
+          "volume.kubernetes.io/selected-node": "k3d-mycluster-server-0"
+        },
+        "finalizers": [
+          "kubernetes.io/pvc-protection"
+        ],
+        "managedFields": [
+          {
+            "manager": "k3s",
+            "operation": "Update",
+            "apiVersion": "v1",
+            "time": "2023-05-15T21:22:07Z",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:metadata": {
+                "f:annotations": {
+                  ".": {},
+                  "f:pv.kubernetes.io/bind-completed": {},
+                  "f:pv.kubernetes.io/bound-by-controller": {},
+                  "f:volume.beta.kubernetes.io/storage-provisioner": {},
+                  "f:volume.kubernetes.io/selected-node": {}
+                },
+                "f:labels": {
+                  ".": {},
+                  "f:app.kubernetes.io/component": {},
+                  "f:app.kubernetes.io/instance": {},
+                  "f:app.kubernetes.io/name": {}
+                }
+              },
+              "f:spec": {
+                "f:accessModes": {},
+                "f:resources": {
+                  "f:requests": {
+                    ".": {},
+                    "f:storage": {}
+                  }
+                },
+                "f:volumeMode": {},
+                "f:volumeName": {}
+              }
+            }
+          },
+          {
+            "manager": "k3s",
+            "operation": "Update",
+            "apiVersion": "v1",
+            "time": "2023-05-15T21:22:07Z",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:status": {
+                "f:accessModes": {},
+                "f:capacity": {
+                  ".": {},
+                  "f:storage": {}
+                },
+                "f:phase": {}
+              }
+            },
+            "subresource": "status"
+          }
+        ]
+      },
+      "spec": {
+        "accessModes": [
+          "ReadWriteOnce"
+        ],
+        "resources": {
+          "requests": {
+            "storage": "8Gi"
+          }
+        },
+        "volumeName": "pvc-b733694c-a969-4763-9960-d3465c9fccd5",
+        "storageClassName": "local-path",
+        "volumeMode": "Filesystem"
+      },
+      "status": {
+        "phase": "Bound",
+        "accessModes": [
+          "ReadWriteOnce"
+        ],
+        "capacity": {
+          "storage": "8Gi"
+        }
+      }
+    },
+    {
+      "kind": "PersistentVolumeClaim",
+      "apiVersion": "v1",
+      "metadata": {
+        "name": "redis-data-redis-replicas-0",
+        "namespace": "default",
+        "uid": "4e0ec7d1-5ff1-4054-bede-4cbffec0f595",
+        "resourceVersion": "1450618",
+        "creationTimestamp": "2023-05-25T15:45:35Z",
+        "labels": {
+          "app.kubernetes.io/component": "replica",
+          "app.kubernetes.io/instance": "some-app",
+          "app.kubernetes.io/name": "redis"
+        },
+        "annotations": {
+          "pv.kubernetes.io/bind-completed": "yes",
+          "pv.kubernetes.io/bound-by-controller": "yes",
+          "volume.beta.kubernetes.io/storage-provisioner": "rancher.io/local-path",
+          "volume.kubernetes.io/selected-node": "k3d-mycluster-server-0"
+        },
+        "finalizers": [
+          "kubernetes.io/pvc-protection"
+        ],
+        "managedFields": [
+          {
+            "manager": "k3s",
+            "operation": "Update",
+            "apiVersion": "v1",
+            "time": "2023-05-25T15:45:41Z",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:metadata": {
+                "f:annotations": {
+                  ".": {},
+                  "f:pv.kubernetes.io/bind-completed": {},
+                  "f:pv.kubernetes.io/bound-by-controller": {},
+                  "f:volume.beta.kubernetes.io/storage-provisioner": {},
+                  "f:volume.kubernetes.io/selected-node": {}
+                },
+                "f:labels": {
+                  ".": {},
+                  "f:app.kubernetes.io/component": {},
+                  "f:app.kubernetes.io/instance": {},
+                  "f:app.kubernetes.io/name": {}
+                }
+              },
+              "f:spec": {
+                "f:accessModes": {},
+                "f:resources": {
+                  "f:requests": {
+                    ".": {},
+                    "f:storage": {}
+                  }
+                },
+                "f:volumeMode": {},
+                "f:volumeName": {}
+              }
+            }
+          },
+          {
+            "manager": "k3s",
+            "operation": "Update",
+            "apiVersion": "v1",
+            "time": "2023-05-25T15:45:41Z",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:status": {
+                "f:accessModes": {},
+                "f:capacity": {
+                  ".": {},
+                  "f:storage": {}
+                },
+                "f:phase": {}
+              }
+            },
+            "subresource": "status"
+          }
+        ]
+      },
+      "spec": {
+        "accessModes": [
+          "ReadWriteMany"
+        ],
+        "resources": {
+          "requests": {
+            "storage": "8Gi"
+          }
+        },
+        "volumeName": "pvc-4e0ec7d1-5ff1-4054-bede-4cbffec0f595",
+        "storageClassName": "local-path",
+        "volumeMode": "Filesystem"
+      },
+      "status": {
+        "phase": "Bound",
+        "accessModes": [
+          "ReadWriteMany"
+        ],
+        "capacity": {
+          "storage": "8Gi"
+        }
+      }
+    }
+  ]
+}

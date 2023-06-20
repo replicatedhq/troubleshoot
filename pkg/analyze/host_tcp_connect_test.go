@@ -31,6 +31,17 @@ func TestAnalyzeTCPConnect(t *testing.T) {
 							Message: "Connection was refused",
 						},
 					},
+					{
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							When:    "connected",
+							Message: "Connection was successful",
+						},
+					},
+					{
+						Warn: &troubleshootv1beta2.SingleOutcome{
+							Message: "Unexpected TCP connection status",
+						},
+					},
 				},
 			},
 			result: []*AnalyzeResult{
@@ -42,7 +53,7 @@ func TestAnalyzeTCPConnect(t *testing.T) {
 			},
 		},
 		{
-			name: "connected, fail",
+			name: "connected, success",
 			info: &collect.NetworkStatusResult{
 				Status: collect.NetworkStatusConnected,
 			},
@@ -60,6 +71,11 @@ func TestAnalyzeTCPConnect(t *testing.T) {
 							Message: "Connection was successful",
 						},
 					},
+					{
+						Warn: &troubleshootv1beta2.SingleOutcome{
+							Message: "Unexpected TCP connection status",
+						},
+					},
 				},
 			},
 			result: []*AnalyzeResult{
@@ -67,6 +83,40 @@ func TestAnalyzeTCPConnect(t *testing.T) {
 					Title:   "TCP Connection Attempt",
 					IsPass:  true,
 					Message: "Connection was successful",
+				},
+			},
+		},
+		{
+			name: "unknown status",
+			info: &collect.NetworkStatusResult{
+				Status: "test value",
+			},
+			hostAnalyzer: &troubleshootv1beta2.TCPConnectAnalyze{
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Fail: &troubleshootv1beta2.SingleOutcome{
+							When:    "connection-refused",
+							Message: "Connection was refused",
+						},
+					},
+					{
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							When:    "connected",
+							Message: "Connection was successful",
+						},
+					},
+					{
+						Warn: &troubleshootv1beta2.SingleOutcome{
+							Message: "Unexpected TCP connection status",
+						},
+					},
+				},
+			},
+			result: []*AnalyzeResult{
+				{
+					Title:   "TCP Connection Attempt",
+					IsWarn:  true,
+					Message: "Unexpected TCP connection status",
 				},
 			},
 		},
