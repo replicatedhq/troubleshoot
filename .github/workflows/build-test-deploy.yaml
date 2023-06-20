@@ -306,7 +306,7 @@ jobs:
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v4
         with:
-          version: "v1.18.2"  # Binary version to install
+          version: "v1.x"  # Binary version to install
           args: release --rm-dist --config deploy/.goreleaser.yaml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
