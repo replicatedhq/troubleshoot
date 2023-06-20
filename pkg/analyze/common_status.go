@@ -47,7 +47,7 @@ func commonStatus(outcomes []*troubleshootv1beta2.Outcome, name string, iconKey 
 				}
 			}
 
-			match, err := compareActualToWhen(outcome.Fail.When, readyReplicas, exists)
+			match, err := compareActualToWhen(outcome.Fail.When, readyReplicas)
 			if err != nil {
 				return nil, errors.Wrap(err, "failed to parse fail range")
 			}
@@ -87,7 +87,7 @@ func commonStatus(outcomes []*troubleshootv1beta2.Outcome, name string, iconKey 
 				}
 			}
 
-			match, err := compareActualToWhen(outcome.Warn.When, readyReplicas, exists)
+			match, err := compareActualToWhen(outcome.Warn.When, readyReplicas)
 			if err != nil {
 				return nil, errors.Wrap(err, "failed to parse warn range")
 			}
@@ -127,7 +127,7 @@ func commonStatus(outcomes []*troubleshootv1beta2.Outcome, name string, iconKey 
 				}
 			}
 
-			match, err := compareActualToWhen(outcome.Pass.When, readyReplicas, exists)
+			match, err := compareActualToWhen(outcome.Pass.When, readyReplicas)
 			if err != nil {
 				return nil, errors.Wrap(err, "failed to parse pass range")
 			}
@@ -145,9 +145,8 @@ func commonStatus(outcomes []*troubleshootv1beta2.Outcome, name string, iconKey 
 	return result, nil
 }
 
-func compareActualToWhen(when string, actual int, exists bool) (bool, error) {
+func compareActualToWhen(when string, actual int) (bool, error) {
 	parts := strings.Split(strings.TrimSpace(when), " ")
-
 	// we can make this a lot more flexible
 	if len(parts) != 2 {
 		return false, errors.New("unable to parse when range")

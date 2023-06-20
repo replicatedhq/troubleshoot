@@ -1,11 +1,22 @@
 package collect
 
 import (
-	"strings"
+	"context"
 	"testing"
+	"time"
+
+	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	corev1 "k8s.io/api/core/v1"
+	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
+	testclient "k8s.io/client-go/kubernetes/fake"
 )
 
-var chain = `-----BEGIN CERTIFICATE-----
+var certChains = map[string]string{
+	"expiredCert": `-----BEGIN CERTIFICATE-----
 MIIB0zCCAX2gAwIBAgIJAI/M7BYjwB+uMA0GCSqGSIb3DQEBBQUAMEUxCzAJBgNV
 BAYTAkFVMRMwEQYDVQQIDApTb21lLVN0YXRlMSEwHwYDVQQKDBhJbnRlcm5ldCBX
 aWRnaXRzIFB0eSBMdGQwHhcNMTIwOTEyMjE1MjAyWhcNMTUwOTEyMjE1MjAyWjBF
@@ -16,10 +27,8 @@ rtNuC+BdZ1tMuVCPFZcCAwEAAaNQME4wHQYDVR0OBBYEFJvKs8RfJaXTH08W+SGv
 zQyKn0H8MB8GA1UdIwQYMBaAFJvKs8RfJaXTH08W+SGvzQyKn0H8MAwGA1UdEwQF
 MAMBAf8wDQYJKoZIhvcNAQEFBQADQQBJlffJHybjDGxRMqaRmDhX0+6v02TUKZsW
 r5QuVbpQhH6u+0UgcW0jp9QwpxoPTLTWGXEWBBBurxFwiCBhkQ+V
------END CERTIFICATE-----
-`
-
-var chain2 = `-----BEGIN CERTIFICATE-----
+-----END CERTIFICATE-----`,
+	"multiCert": `-----BEGIN CERTIFICATE-----
 MIIG5jCCBc6gAwIBAgIQAze5KDR8YKauxa2xIX84YDANBgkqhkiG9w0BAQUFADBs
 MQswCQYDVQQGEwJVUzEVMBMGA1UEChMMRGlnaUNlcnQgSW5jMRkwFwYDVQQLExB3
 d3cuZGlnaWNlcnQuY29tMSswKQYDVQQDEyJEaWdpQ2VydCBIaWdoIEFzc3VyYW5j
@@ -80,9 +89,8 @@ hS9OMPagMRYjyOfiZRYzy78aG6A9+MpeizGLYAiJLQwGXFK3xPkKmNEVX58Svnw2
 Yzi9RKR/5CYrCsSXaQ3pjOLAEFe4yHYSkVXySGnYvCoCWw9E1CAx2/S6cCZdkGCe
 vEsXCS+0yx5DaMkHJ8HSXPfqIbloEpw8nL+e/IBcm2PN7EeqJSdnoDfzAIJ9VNep
 +OkuE6N36B9K
------END CERTIFICATE-----`
-
-var chain3 = `-----BEGIN CERTIFICATE-----
+-----END CERTIFICATE-----`,
+	"validCert": `-----BEGIN CERTIFICATE-----
 MIIDejCCAmKgAwIBAgIEAZaq0DANBgkqhkiG9w0BAQsFADAuMRgwFgYDVQQDEw9Q
 cm9qZWN0IENvbnRvdXIxEjAQBgNVBAUTCTYxNTkyOTg5MTAeFw0yMzAyMjQwNDI3
 MThaFw0yNDAyMjUwNDI3MTZaMBAxDjAMBgNVBAMTBWVudm95MIIBIjANBgkqhkiG
@@ -102,10 +110,8 @@ po/R2TjyxywLn4DgM7BAzzu9qfHWf+S4eQjRUHQshPbUEX9CEsSd5tCu8ZHVbBds
 78oERlIoNOlT0cNbFLAlH2svNv1uB4qOThRDha52L+mlUdZfTMYZAwNDJWm52t/M
 NCIm5NJ5jAJpcJmoEb+JMP3j0x6wydHDXFtGm3WRggZRcrjasyodSKK6szbf96+9
 6syzAwvg9xxNtFxwbhRqqplMEz2sDWaggTrxCQzd
------END CERTIFICATE-----
-`
-
-var chain4 = `-----BEGIN CERTIFICATE-----
+-----END CERTIFICATE-----`,
+	"nonCert": `-----BEGIN CERTIFICATE-----
 Oy1is0whDArLNwIDAQABo4G9MIG6
 MA4GA1UdDwEB/wQEAwIE8DAdBgNVHQ4EFgQUbAavOY+vIXgc44k8GvLHH6mdzzYw
 HwYDVR0jBBgwFoAUb+S3Mu7cbwZiqZaEHTEMyUhLyH4waAYDVR0RBGEwX4IFZW52
@@ -117,106 +123,199 @@ po/R2TjyxywLn4DgM7BAzzu9qfHWf+S4eQjRUHQshPbUEX9CEsSd5tCu8ZHVbBds
 78oERlIoNOlT0cNbFLAlH2svNv1uB4qOThRDha52L+mlUdZfTMYZAwNDJWm52t/M
 NCIm5NJ5jAJpcJmoEb+JMP3j0x6wydHDXFtGm3WRggZRcrjasyodSKK6szbf96+9
 6syzAwvg9xxNtFxwbhRqqplMEz2sDWaggTrxCQzd
------END CERTIFICATE-----
-`
+-----END CERTIFICATE-----`,
+}
 
 // tests validate that the certParser function correctly parses a certificate
 func TestCertParser(t *testing.T) {
-
-	expiredCert := []byte(chain)
-	multiCert := []byte(chain2)
-	validCert := []byte(chain3)
-	nonCert := []byte(chain4)
-	//add docs
-
-	certParserTests := []struct {
-		Name      string
-		Certs     []byte
-		CertQty   int
-		IsSubject bool
-		IsCert    bool
-		IsValid   bool
+	tests := []struct {
+		name          string
+		certChainName string
+		Collectors    []troubleshootv1beta2.Collect
+		want          []CertCollection
 	}{
-		// Name, Certs, CertQty, IsSubject, IsCert, IsValid
-		{"Widgits", expiredCert, 1, true, true, false},
-		{"digicert", multiCert, 2, true, true, false}, //IsValid will not be evaluated for multicerts
-		{"envoy", validCert, 1, true, true, true},
-		{"non.crt", nonCert, 1, false, false, false}, // IsSubject and IsValid n/a for non.crt
+		{
+			name:          "expired certificate",
+			certChainName: "expiredCert",
+			Collectors: []troubleshootv1beta2.Collect{
+				{
+					Certificates: &troubleshootv1beta2.Certificates{
+						CollectorMeta: troubleshootv1beta2.CollectorMeta{
+							CollectorName: "collectorname",
+						},
+						Secrets: []troubleshootv1beta2.CertificateSource{
+							{
+								Name:       "expiredCert",
+								Namespaces: []string{"test"},
+							},
+						},
+					},
+				},
+			},
+			want: []CertCollection{
+				{
+					Source: &CertificateSource{
+						Namespace:  "test",
+						SecretName: "expiredCert",
+					},
+					CertificateChain: []ParsedCertificate{
+						{
+							CertName:                "tls.crt",
+							Subject:                 "O=Internet Widgits Pty Ltd,ST=Some-State,C=AU",
+							SubjectAlternativeNames: nil,
+							Issuer:                  "O=Internet Widgits Pty Ltd,ST=Some-State,C=AU",
+							NotAfter:                time.Date(2015, time.September, 12, 21, 52, 2, 0, time.UTC),
+							NotBefore:               time.Date(2012, time.September, 12, 21, 52, 2, 0, time.UTC),
+							IsValid:                 false,
+							IsCA:                    true,
+						},
+					},
+				},
+			},
+		},
+		{
+			name:          "multiple certificate",
+			certChainName: "multiCert",
+			Collectors: []troubleshootv1beta2.Collect{
+				{
+					Certificates: &troubleshootv1beta2.Certificates{
+						CollectorMeta: troubleshootv1beta2.CollectorMeta{
+							CollectorName: "collectorname",
+						},
+						Secrets: []troubleshootv1beta2.CertificateSource{
+							{
+								Name:       "multiCert",
+								Namespaces: []string{"test"},
+							},
+						},
+					},
+				},
+			},
+			want: []CertCollection{
+				{
+					Source: &CertificateSource{
+						Namespace:  "test",
+						SecretName: "multiCert",
+					},
+					CertificateChain: []ParsedCertificate{
+						{
+							CertName:                "tls.crt",
+							Subject:                 "CN=DigiCert High Assurance EV CA-1,OU=www.digicert.com,O=DigiCert Inc,C=US",
+							SubjectAlternativeNames: nil,
+							Issuer:                  "CN=DigiCert High Assurance EV Root CA,OU=www.digicert.com,O=DigiCert Inc,C=US",
+							NotAfter:                time.Date(2021, time.November, 10, 0, 0, 0, 0, time.UTC),
+							NotBefore:               time.Date(2007, time.November, 9, 12, 0, 0, 0, time.UTC),
+							IsValid:                 false,
+							IsCA:                    true,
+						},
+						{
+							CertName:                "tls.crt",
+							Subject:                 "CN=DigiCert High Assurance EV Root CA,OU=www.digicert.com,O=DigiCert Inc,C=US",
+							SubjectAlternativeNames: nil,
+							Issuer:                  "CN=DigiCert High Assurance EV Root CA,OU=www.digicert.com,O=DigiCert Inc,C=US",
+							NotAfter:                time.Date(2031, time.November, 10, 0, 0, 0, 0, time.UTC), NotBefore: time.Date(2006, time.November, 10, 0, 0, 0, 0, time.UTC),
+							IsValid: true,
+							IsCA:    true,
+						},
+					},
+				},
+			},
+		},
+		{
+			name:          "valid certificate",
+			certChainName: "validCert",
+			Collectors: []troubleshootv1beta2.Collect{
+				{
+					Certificates: &troubleshootv1beta2.Certificates{
+						CollectorMeta: troubleshootv1beta2.CollectorMeta{
+							CollectorName: "collectorname",
+						},
+						Secrets: []troubleshootv1beta2.CertificateSource{
+							{
+								Name:       "validCert",
+								Namespaces: []string{"test"},
+							},
+						},
+					},
+				},
+			},
+			want: []CertCollection{
+				{
+					Source: &CertificateSource{
+						Namespace:  "test",
+						SecretName: "validCert",
+					},
+					CertificateChain: []ParsedCertificate{
+						{
+							CertName: "tls.crt",
+							Subject:  "CN=envoy",
+							SubjectAlternativeNames: []string{
+								"envoy",
+								"envoy.projectcontour",
+								"envoy.projectcontour.svc",
+								"envoy.projectcontour.svc.cluster.local",
+							},
+							Issuer:    "SERIALNUMBER=615929891,CN=Project Contour",
+							NotAfter:  time.Date(2024, time.February, 25, 4, 27, 16, 0, time.UTC),
+							NotBefore: time.Date(2023, time.February, 24, 4, 27, 18, 0, time.UTC),
+							IsValid:   true,
+							IsCA:      false,
+						},
+					},
+				},
+			},
+		},
+		{
+			name:          "non valid certificate",
+			certChainName: "nonCert",
+			Collectors: []troubleshootv1beta2.Collect{
+				{
+					Certificates: &troubleshootv1beta2.Certificates{
+						CollectorMeta: troubleshootv1beta2.CollectorMeta{
+							CollectorName: "collectorname",
+						},
+						Secrets: []troubleshootv1beta2.CertificateSource{
+							{
+								Name:       "nonCert",
+								Namespaces: []string{"test"},
+							},
+						},
+					},
+				},
+			},
+			want: []CertCollection{
+				{
+					Source: &CertificateSource{
+						Namespace:  "test",
+						SecretName: "nonCert",
+					},
+					Errors:           []string{"x509: malformed certificate"},
+					CertificateChain: []ParsedCertificate{},
+				},
+			},
+		},
 	}
 
-	for _, e := range certParserTests {
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ns := tt.Collectors[0].Certificates.Secrets[0].Namespaces[0]
+			client := testclient.NewSimpleClientset()
 
-		results, _ := CertParser(e.Name, e.Certs)
-
-		// tests if results contains a list of parsed certificates
-		var isCert bool
-		if len(results) == 0 {
-			isCert = false
-		} else {
-			isCert = true
-		}
-
-		if isCert != e.IsCert {
-			t.Errorf("Expected %v, but got %v that %s is a certificate", e.IsCert, isCert, e.Name)
-			continue
-		}
-
-		for _, cert := range results {
-
-			t.Log(e.Name, cert.Subject)
-
-			// test checks if certificate subject contains a matching string; validates that can parse cert and pull back information
-			if !strings.Contains(cert.Subject, e.Name) {
-				t.Error("unable to parse certificate: ", e.Name)
-
-			} else {
-				isSubject := true
-				if e.IsSubject != isSubject {
-					t.Errorf("You expected that %s certificate contains %s in the Subject line but it was not present; here is the entire subject string: %v", e.Name, e.Name, cert.Subject)
-				}
-			}
-
-			// test checks for expected quantity of certificates in a certificate file
-			numCerts := len(results)
-			if numCerts != e.CertQty {
-				t.Errorf("expected %d certificates in slice but got %d", e.CertQty, numCerts)
-			}
-			if numCerts > 1 {
-				continue
-			}
-
-			// test checks for expected certificate expired
-			if cert.IsValid != e.IsValid {
-				t.Errorf("When checing that %v certificate is expired, you expected %v, but got %v ", e.Name, e.IsValid, cert.IsValid)
-			}
-
-		}
-
+			_, err := createTestSecret(client, tt.certChainName, ns)
+			require.NoError(t, err)
+			got := secretCertCollector(tt.certChainName, ns, client)
+			assert.Equal(t, tt.want, got)
+		})
 	}
-
 }
 
-// validates that certificate count is correct when parsing a certificate input string.
-func Test_decodePem(t *testing.T) {
-	certDecoderTests := []struct {
-		Name      string
-		certInput string
-		certCount int
-	}{
-		{"widgets-cert", chain, 1},
-		{"digi-cert", chain2, 2},
-	}
-	for _, e := range certDecoderTests {
-		results, _ := decodePem(e.certInput)
-		certCount := 0
-
-		for _, cert := range results.Certificate {
-			t.Log(cert)
-			certCount++
-		}
-		if certCount != e.certCount {
-			t.Errorf("cert count -- expected %d, but got %d", e.certCount, certCount)
-		}
-
-	}
+func createTestSecret(client kubernetes.Interface, secretName, ns string) (*corev1.Secret, error) {
+	return client.CoreV1().Secrets(ns).Create(context.TODO(), &v1.Secret{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      secretName,
+			Namespace: ns,
+		}, Data: map[string][]byte{
+			"tls.crt": []byte(certChains[secretName]),
+		},
+	}, metav1.CreateOptions{})
 }

@@ -13,23 +13,22 @@ import (
 )
 
 type BlockDeviceInfo struct {
-	Name               string `json:"name"`
-	KernelName         string `json:"kernel_name"`
-	ParentKernelName   string `json:"parent_kernel_name"`
-	Type               string `json:"type"`
-	Major              int    `json:"major"`
-	Minor              int    `json:"minor"`
-	Size               uint64 `json:"size"`
-	FilesystemType     string `json:"filesystem_type"`
-	Mountpoint         string `json:"mountpoint"`
-	Serial             string `json:"serial"`
-	ReadOnly           bool   `json:"read_only"`
-	Removable          bool   `json:"removable"`
-	PartitionTableType string `json:"partition_table_type"`
+	Name             string `json:"name"`
+	KernelName       string `json:"kernel_name"`
+	ParentKernelName string `json:"parent_kernel_name"`
+	Type             string `json:"type"`
+	Major            int    `json:"major"`
+	Minor            int    `json:"minor"`
+	Size             uint64 `json:"size"`
+	FilesystemType   string `json:"filesystem_type"`
+	Mountpoint       string `json:"mountpoint"`
+	Serial           string `json:"serial"`
+	ReadOnly         bool   `json:"read_only"`
+	Removable        bool   `json:"removable"`
 }
 
-const lsblkColumns = "NAME,KNAME,PKNAME,TYPE,MAJ:MIN,SIZE,FSTYPE,MOUNTPOINT,SERIAL,RO,RM,PTTYPE"
-const lsblkFormat = `NAME=%q KNAME=%q PKNAME=%q TYPE=%q MAJ:MIN="%d:%d" SIZE="%d" FSTYPE=%q MOUNTPOINT=%q SERIAL=%q RO="%d" RM="%d0" PTTYPE=%q`
+const lsblkColumns = "NAME,KNAME,PKNAME,TYPE,MAJ:MIN,SIZE,FSTYPE,MOUNTPOINT,SERIAL,RO,RM"
+const lsblkFormat = `NAME=%q KNAME=%q PKNAME=%q TYPE=%q MAJ:MIN="%d:%d" SIZE="%d" FSTYPE=%q MOUNTPOINT=%q SERIAL=%q RO="%d" RM="%d0"`
 const HostBlockDevicesPath = `host-collectors/system/block_devices.json`
 
 type CollectHostBlockDevices struct {
@@ -46,11 +45,6 @@ func (c *CollectHostBlockDevices) IsExcluded() (bool, error) {
 }
 
 func (c *CollectHostBlockDevices) Collect(progressChan chan<- interface{}) (map[string][]byte, error) {
-	// TODO: Consider using lsblk --json --output <columns> instead.
-	// This simplifies the parsing logic and also represents a parent/child relationship
-	// between devices when there are partitions.
-	// NOTE: Remember to validate the output of lsblk json
-	// NOTE: Check what version of lsblk --json was introduced.
 	cmd := exec.Command("lsblk", "--noheadings", "--bytes", "--pairs", "-o", lsblkColumns)
 	stdout, err := cmd.Output()
 	if err != nil {
@@ -101,7 +95,6 @@ func parseLsblkOutput(output []byte) ([]BlockDeviceInfo, error) {
 			&bdi.Serial,
 			&ro,
 			&rm,
-			&bdi.PartitionTableType,
 		)
 		bdi.ReadOnly = ro == 1
 		bdi.Removable = rm == 1

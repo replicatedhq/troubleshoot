@@ -13,9 +13,9 @@ const (
 	VERSION_FILENAME = "version.yaml"
 	// DEFAULT_LOGS_COLLECTOR_TIMEOUT is the default timeout for logs collector.
 	DEFAULT_LOGS_COLLECTOR_TIMEOUT = 60 * time.Second
-
+	// MAX_TIME_TO_WAIT_FOR_POD_DELETION is the maximum time to wait for pod deletion.
+	MAX_TIME_TO_WAIT_FOR_POD_DELETION = 60 * time.Second
 	// Tracing constants
-
 	LIB_TRACER_NAME             = "github.com/replicatedhq/troubleshoot"
 	TROUBLESHOOT_ROOT_SPAN_NAME = "ReplicatedTroubleshootRootSpan"
 	EXCLUDED                    = "excluded"
@@ -31,6 +31,7 @@ const (
 	CLUSTER_RESOURCES_DEPLOYMENTS                 = "deployments"
 	CLUSTER_RESOURCES_REPLICASETS                 = "replicasets"
 	CLUSTER_RESOURCES_STATEFULSETS                = "statefulsets"
+	CLUSTER_RESOURCES_DAEMONSETS                  = "daemonsets"
 	CLUSTER_RESOURCES_JOBS                        = "jobs"
 	CLUSTER_RESOURCES_CRONJOBS                    = "cronjobs"
 	CLUSTER_RESOURCES_INGRESS                     = "ingress"
@@ -50,5 +51,23 @@ const (
 	CLUSTER_RESOURCES_ROLES                       = "roles"
 	CLUSTER_RESOURCES_ROLE_BINDINGS               = "rolebindings"
 	CLUSTER_RESOURCES_CLUSTER_ROLES               = "clusterroles"
-	CLUSTER_RESOURCES_CLUSTER_ROLE_BINDINGS       = "clusterRoleBindings"
+	CLUSTER_RESOURCES_CLUSTER_ROLE_BINDINGS       = "clusterrolebindings"
+	CLUSTER_RESOURCES_PRIORITY_CLASS              = "priorityclasses"
+	CLUSTER_RESOURCES_ENDPOINTS                   = "endpoints"
+
+	// Custom exit codes
+	EXIT_CODE_CATCH_ALL   = 1
+	EXIT_CODE_SPEC_ISSUES = 2
+	EXIT_CODE_FAIL        = 3
+	EXIT_CODE_WARN        = 4
+
+	// Troubleshoot label constants
+	SupportBundleKey       = "support-bundle-spec"
+	RedactorKey            = "redactor-spec"
+	TroubleshootIOLabelKey = "troubleshoot.io/kind"
+	TroubleshootSHLabelKey = "troubleshoot.sh/kind"
+	PreflightKey           = "preflight.yaml" // Shouldn't this be "preflight-spec"?
+
+	// Troubleshoot spec constants
+	Troubleshootv1beta2Kind = "troubleshoot.sh/v1beta2"
 )

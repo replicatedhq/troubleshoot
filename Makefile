@@ -66,6 +66,11 @@ preflight-e2e-test:
 support-bundle-e2e-test:
 	./test/validate-support-bundle-e2e.sh
 
+# Build all binaries in parallel ( -j )
+build:
+	@echo "Build cli binaries"
+	$(MAKE) -j support-bundle preflight analyze collect
+
 .PHONY: support-bundle
 support-bundle:
 	go build ${BUILDFLAGS} ${LDFLAGS} -o bin/support-bundle github.com/replicatedhq/troubleshoot/cmd/troubleshoot
@@ -207,7 +212,7 @@ longhorn:
 .PHONY: scan
 scan:
 	trivy fs \
-		--security-checks vuln \
+		--scanners vuln \
 		--exit-code=1 \
 		--severity="HIGH,CRITICAL" \
 		--ignore-unfixed \
@@ -220,3 +225,13 @@ lint: fmt vet
 .PHONY: lint-and-fix
 lint-and-fix: fmt vet
 	golangci-lint run --new --fix -c .golangci.yaml ${BUILDPATHS}
+
+## Syncronize the code with a remote server. More info: CONTRIBUTING.md
+.PHONY: watchrsync
+watchrsync: npm-install
+	bin/watchrsync.js
+
+.PHONY: npm-install
+npm-install:
+	npm --version 2>&1 >/dev/null || ( echo "npm not installed; install npm to set up watchrsync" && exit 1 )
+	npm list gaze-run-interrupt || npm install install gaze-run-interrupt@~2.0.0

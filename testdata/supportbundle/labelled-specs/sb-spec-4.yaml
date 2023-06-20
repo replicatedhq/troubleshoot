@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: labelled-support-bundle-4
+  labels:
+    troubleshoot.sh/kind: support-bundle
+  namespace: labelled-specs
+data:
+  support-bundle-spec: |
+    apiVersion: troubleshoot.sh/v1beta2
+    kind: SupportBundle
+    metadata:
+      name: labelled-support-bundle-4
+    spec:
+      collectors:
+        - data:
+            name: echo-hi-4
+            data: "I am labelled-support-bundle-4 REDACT SECOND TEXT PLEASE"

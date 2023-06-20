@@ -27,6 +27,23 @@ type ClusterResources struct {
 	IgnoreRBAC    bool     `json:"ignoreRBAC,omitempty" yaml:"ignoreRBAC"`
 }
 
+// MetricRequest the details of the MetricValuesList to be retrieved
+type MetricRequest struct {
+	// Namespace for which to collect the metric values, empty for non-namespaces resources.
+	Namespace string `json:"namespace,omitempty" yaml:"namespace,omitempty"`
+	// ObjectName for which to collect metric values, all resources when empty.
+	// Note that for namespaced resources a Namespace has to be supplied regardless.
+	ObjectName string `json:"objectName,omitempty" yaml:"objectName,omitempty"`
+	// ResourceMetricName name of the MetricValueList as per the APIResourceList from
+	// custom.metrics.k8s.io/v1beta1
+	ResourceMetricName string `json:"resourceMetricName" yaml:"resourceMetricName"`
+}
+
+type CustomMetrics struct {
+	CollectorMeta  `json:",inline" yaml:",inline"`
+	MetricRequests []MetricRequest `json:"metricRequests,omitempty" yaml:"metricRequests,omitempty"`
+}
+
 type Secret struct {
 	CollectorMeta `json:",inline" yaml:",inline"`
 	Name          string   `json:"name,omitempty" yaml:"name,omitempty"`
@@ -218,15 +235,20 @@ type RegistryImages struct {
 
 type Certificates struct {
 	CollectorMeta `json:",inline" yaml:",inline"`
-	Name          string              `json:"name,omitempty" yaml:"name,omitempty"`
-	Secrets       map[string][]string `json:"secrets,omitempty" yaml:"secrets,omitempty"`
-	ConfigMaps    map[string][]string `json:"configMaps,omitempty" yaml:"configMaps,omitempty"`
+	Secrets       []CertificateSource `json:"secrets,omitempty" yaml:"secrets,omitempty"`
+	ConfigMaps    []CertificateSource `json:"configMaps,omitempty" yaml:"configMaps,omitempty"`
+}
+
+type CertificateSource struct {
+	Name       string   `json:"name,omitempty" yaml:"name,omitempty"`
+	Namespaces []string `json:"namespaces,omitempty" yaml:"namespaces,omitempty"`
 }
 
 type Collect struct {
 	ClusterInfo      *ClusterInfo      `json:"clusterInfo,omitempty" yaml:"clusterInfo,omitempty"`
 	ClusterResources *ClusterResources `json:"clusterResources,omitempty" yaml:"clusterResources,omitempty"`
 	Secret           *Secret           `json:"secret,omitempty" yaml:"secret,omitempty"`
+	CustomMetrics    *CustomMetrics    `json:"customMetrics,omitempty" yaml:"customMetrics,omitempty"`
 	ConfigMap        *ConfigMap        `json:"configMap,omitempty" yaml:"configMap,omitempty"`
 	Logs             *Logs             `json:"logs,omitempty" yaml:"logs,omitempty"`
 	Run              *Run              `json:"run,omitempty" yaml:"run,omitempty"`

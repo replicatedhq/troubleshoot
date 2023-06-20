@@ -33,6 +33,13 @@ echo "Failed preflights found"
 EXIT_STATUS=1
 fi
 
+# test stdin
+cat examples/preflight/e2e.yaml | ./bin/preflight --debug --interactive=false --format=json - > "$tmpdir/result.json"
+if [ $? -ne 0 ]; then
+    echo "preflight command failed"
+    exit $EXIT_STATUS
+fi
+
 rm -rf "$tmpdir"
 
 exit $EXIT_STATUS
