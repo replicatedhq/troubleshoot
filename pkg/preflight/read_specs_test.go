@@ -103,19 +103,51 @@ func TestPreflightSpecsRead(t *testing.T) {
 		},
 	}
 
-	/*
-		expectHostPreflightSpec := troubleshootv1beta2.HostPreflight{
-				TypeMeta: metav1.TypeMeta{
-					Kind:       "HostPreflight",
-					APIVersion: "troubleshoot.sh/troubleshootv1beta2",
+	// A HostPreflight spec
+	hostpreflightFile := filepath.Join(testutils.FileDir(), "../../examples/preflight/host/block-devices.yaml")
+	//
+	expectHostPreflightSpec := troubleshootv1beta2.HostPreflight{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "HostPreflight",
+			APIVersion: "troubleshoot.sh/v1beta2",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "block",
+		},
+		Spec: troubleshootv1beta2.HostPreflightSpec{
+			Collectors: []*troubleshootv1beta2.HostCollect{
+				{
+					BlockDevices: &troubleshootv1beta2.HostBlockDevices{},
 				},
-				Spec: troubleshootv1beta2.HostPreflightSpec{
-					Collectors:       []*troubleshootv1beta2.HostCollect(nil),
-					RemoteCollectors: []*troubleshootv1beta2.RemoteCollect(nil),
-					Analyzers:        []*troubleshootv1beta2.HostAnalyze(nil),
+			},
+			RemoteCollectors: []*troubleshootv1beta2.RemoteCollect(nil),
+			Analyzers: []*troubleshootv1beta2.HostAnalyze{
+				{
+					BlockDevices: &troubleshootv1beta2.BlockDevicesAnalyze{
+						Outcomes: []*troubleshootv1beta2.Outcome{
+							{
+								Pass: &troubleshootv1beta2.SingleOutcome{
+									When:    ".* == 1",
+									Message: "One available block device",
+								},
+							},
+							{
+								Pass: &troubleshootv1beta2.SingleOutcome{
+									When:    ".* > 1",
+									Message: "Multiple available block devices",
+								},
+							},
+							{
+								Fail: &troubleshootv1beta2.SingleOutcome{
+									Message: "No available block devices",
+								},
+							},
+						},
+					},
 				},
-			}
-	*/
+			},
+		},
+	}
 
 	// A more complexed preflight spec, which resides in a secret
 	preflightSecretFile := filepath.Join(testutils.FileDir(), "../../testdata/preflightspec/troubleshoot_v1beta2_preflight_secret_gotest.yaml")
@@ -191,6 +223,15 @@ func TestPreflightSpecsRead(t *testing.T) {
 			wantErr:               false,
 			wantPreflightSpec:     &expectPreflightSpec,
 			wantHostPreflightSpec: nil,
+			wantUploadResultSpecs: nil,
+		},
+		PreflightSpecsReadTest{
+			name:                  "file-hostpreflight",
+			args:                  []string{hostpreflightFile},
+			customStdin:           false,
+			wantErr:               false,
+			wantPreflightSpec:     nil,
+			wantHostPreflightSpec: &expectHostPreflightSpec,
 			wantUploadResultSpecs: nil,
 		},
 		PreflightSpecsReadTest{
