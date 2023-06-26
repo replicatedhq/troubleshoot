@@ -1138,6 +1138,9 @@
                   "fileName": {
                     "type": "string"
                   },
+                  "jsonPath": {
+                    "type": "string"
+                  },
                   "outcomes": {
                     "type": "array",
                     "items": {

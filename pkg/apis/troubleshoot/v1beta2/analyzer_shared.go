@@ -161,6 +161,7 @@ type JsonCompare struct {
 	CollectorName string     `json:"collectorName,omitempty" yaml:"collectorName,omitempty"`
 	FileName      string     `json:"fileName,omitempty" yaml:"fileName,omitempty"`
 	Path          string     `json:"path,omitempty" yaml:"path,omitempty"`
+	JsonPath      string     `json:"jsonPath,omitempty" yaml:"jsonPath,omitempty"`
 	Value         string     `json:"value,omitempty" yaml:"value,omitempty"`
 	Outcomes      []*Outcome `json:"outcomes" yaml:"outcomes"`
 }
