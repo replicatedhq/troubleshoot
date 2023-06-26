@@ -2,15 +2,23 @@
 
 ## Goals
 
-As Troubleshoot grows and gains new features, some of which involves flags for setting options, and to make it easier to add additional subcommands that don't belong underneath either `support-bundle` or `preflight` binaries, we would like to consolidate all of the Troubleshoot commands under one binary.
-
-There is discussion about changing the behaviour of `preflight`, considering that preflights and support-bundles utilize the same specs - the same collectors and analyzers - and only differ in what is returned to the user post-analysis.  For this design proposal, `support-bundle` and `preflight` may be condensed into a single `troubleshoot` binary.
-
-For the purposes of this design we'll talk about troubleshoot as a standalone binary. It will also be available, and likely most commonly installed as, a krew plugin for kubectl.
+- Consolidate all top level Troubleshoot commands (`support-bundle`, `preflight`, `analyze`, `redact`, and `sbctl`) into one exposing subcommands of all the functionality that was implemented by the previous commands.
+- Ensure functional backward compatibility of newly introduces interfaces (CLI and Public APIs)
 
 ## Non-Goals
 
+- Maintain backward compatibility of the CLI interface and the public APIs (new interfaces will be created)
+
 ## Background
+
+- Top level troubleshoot commands (`support-bundle`, `preflight`, `analyze`, `redact`, and `sbctl`) are currently shipped standalone and require separate installation. This makes discovery and logistics of delivering these binaries an extra complexity that is unnecessary, albeit automatable. Consolidating these binaries into one addresses this problem quite well. Users are able to discover features that were otherwise hard to find such as serving a bundle using `sbctl` to run an API server.
+- As Troubleshoot grows and gains new features that may lead to new subcommands, shipping these features would be hard if they lead to new binaries being created. If some of the new features target individual binaries e.g only `sbctl`, users who do not have this binary would not immediately have access to the new features.
+- Troubleshoot top level commands have certain features that are quite similar. An example is the discussion about changing the behaviour of `preflight`, considering that preflights and support-bundles utilize the same specs - the same collectors and analyzers - and only differ in what is returned to the user post-analysis. For this design proposal, `support-bundle` and `preflight` may be condensed into a single `troubleshoot` binary.
+
+### Previous related proposals
+* https://github.com/replicatedhq/troubleshoot/blob/em/original-proposal-troubleshoot-cli/docs/design/proposal-sbctl-integration.md
+* https://github.com/replicatedhq/troubleshoot/blob/em/original-proposal-troubleshoot-cli/docs/design/proposal-consolidate-collection.md
+
 
 ## High Level Design
 
@@ -20,21 +28,23 @@ Functions of `support-bundle`, `preflight`, `analyze`, `redact`, and `sbctl` bin
 
 ## Detailed Design
 
-In the interest of being able to work on this quickly without breaking existing use-cases, a new `troubleshoot` command should be created. Utilizing cobra and viper best practices from the cobra.dev docs.
+In the interest of being able to work on this quickly without breaking existing use-cases, a new `troubleshoot` command should be created utilizing cobra and viper best practices from the cobra.dev docs.
 
 To enable the new CLI to be written in a clean and DRY way, we should first address the need for a stable public API for troubleshoot.
 
-A guiding principle of the design of the "Public API" should be that the we are defining a set of "artefacts" (i.e: a support bundle, a spec), and each of the defined public functions acts as an interface to interact with these artefacts. either creating, manipulating, or performing other actions on them. in this way we guarantee that each public function can be re-used on an artefact (support bundle) in any stage of it's existance.
+A guiding principle of the design of the "Public API" should be that the we are defining a set of "artefacts" (i.e: a support bundle, a spec), and each of the defined public functions acts as an interface to interact with these artefacts, either creating, manipulating, or performing other actions on them. In this way we guarantee that each public function can be re-used on an artefact (support bundle) in any stage of it's existance.
 
 For example, running a set of redactors or analyzers on an existing support bundle without having to re-run collection.
 
-### sbctl → troubleshoot inspect
+### Troubleshoot top-level commands to subcommands
 
-sbctl should be migrated to the troubleshoot repository in a "lift and shift" operation to start with.
+All top level commands (`support-bundle`, `preflight`, `analyze`, `redact`, and `sbctl`) of the Troubleshoot project will now be subcommands e.g `sbctl` is planned to be `troubleshoot inspect`. Some flags and subcommands names may change to best fit completeness of the CLI interface e.g `--interactive=false` will be `--no-input`. Putting the CLI interface together should aim to follow best practises from well known guidelines such as https://clig.dev/ and other mature projects.
 
-It should continue to be built as a standalone binary to enable continued use until a stable replacement exists. as such it should me integrated in a way that preserves the existing `cmd` and it's package requirements.
-
-Once integrated into the repository, we can begin using functions from it's packages from the from the new `troubleshoot` command to enable the `inspect` subcommand.
+- `troubleshoot inspect` - This subcommand will be equivalent to the `sbctl` command.
+- `troubleshoot collect` - This subcommand will be equivalent to the `support-bundle` command.
+- `troubleshoot preflight` - This subcommand will be equivalent to the `preflight` command.
+- `troubleshoot redact` - This subcommand will be equivalent to the `redact` command.
+- `troubleshoot analyze` - This subcommand will be equivalent to the `analyze` command.
 
 ### Public APIs
 
@@ -130,6 +140,8 @@ This is a non-exhaustive list of usage patterns, but it should help guide how fu
 
 ## Limitations
 
+None
+
 ## Assumptions
 
 - sbctl has no package naming conflicts with troubleshoot
@@ -147,4 +159,8 @@ This is a non-exhaustive list of usage patterns, but it should help guide how fu
 
 ## Alternatives Considered
 
+None
+
 ## Security Implications
+
+None
