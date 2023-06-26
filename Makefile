@@ -38,7 +38,7 @@ BUILDFLAGS = -tags "netgo containers_image_ostree_stub exclude_graphdriver_devic
 BUILDPATHS = ./pkg/... ./cmd/... ./internal/...
 TESTFLAGS ?= -v -coverprofile cover.out
 
-all: test support-bundle preflight collect analyze
+all: test build
 
 .PHONY: ffi
 ffi: fmt vet
@@ -69,7 +69,11 @@ support-bundle-e2e-test:
 # Build all binaries in parallel ( -j )
 build:
 	@echo "Build cli binaries"
-	$(MAKE) -j support-bundle preflight analyze collect
+	$(MAKE) -j support-bundle preflight analyze collect troubleshoot
+
+.PHONY: troubleshoot
+troubleshoot:
+	go build ${BUILDFLAGS} ${LDFLAGS} -o bin/troubleshoot github.com/replicatedhq/troubleshoot/cmd/troubleshootv2
 
 .PHONY: support-bundle
 support-bundle:

@@ -7,13 +7,17 @@ import (
 
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
+	"k8s.io/klog/v2"
 )
 
 func HomeDir() string {
-	if h := os.Getenv("HOME"); h != "" {
-		return h
+	homedir, err := os.UserHomeDir()
+	if err != nil {
+		klog.Warningf("Unable to get user home directory: %v", err)
+		return ""
 	}
-	return os.Getenv("USERPROFILE") // windows
+
+	return homedir
 }
 
 func IsURL(str string) bool {
