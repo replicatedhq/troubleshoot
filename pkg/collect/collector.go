@@ -63,6 +63,8 @@ func GetCollector(collector *troubleshootv1beta2.Collect, bundlePath string, nam
 		return &CollectClusterInfo{collector.ClusterInfo, bundlePath, namespace, clientConfig, RBACErrors}, true
 	case collector.ClusterResources != nil:
 		return &CollectClusterResources{collector.ClusterResources, bundlePath, namespace, clientConfig, RBACErrors}, true
+	case collector.CustomMetrics != nil:
+		return &CollectMetrics{collector.CustomMetrics, bundlePath, clientConfig, client, ctx, RBACErrors}, true
 	case collector.Secret != nil:
 		return &CollectSecret{collector.Secret, bundlePath, namespace, clientConfig, client, ctx, RBACErrors}, true
 	case collector.ConfigMap != nil:
@@ -116,6 +118,9 @@ func getCollectorName(c interface{}) string {
 		collector = "cluster-info"
 	case *CollectClusterResources:
 		collector = "cluster-resources"
+	case *CollectMetrics:
+		collector = "custom-metrics"
+		name = v.Collector.CollectorName
 	case *CollectSecret:
 		collector = "secret"
 		name = v.Collector.CollectorName
@@ -180,7 +185,6 @@ func getCollectorName(c interface{}) string {
 		name = v.Collector.Name
 	case *CollectCertificates:
 		collector = "certificates"
-		name = v.Collector.Name
 	default:
 		collector = "<none>"
 	}

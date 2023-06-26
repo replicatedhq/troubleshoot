@@ -112,10 +112,17 @@ jobs:
           path: bin/
       - run: chmod +x bin/preflight
       - run: |
+          set +e
           ./bin/preflight --interactive=false --format=json https://preflight.replicated.com > result.json
+          EXIT_CODE=$?
           cat result.json
 
           EXIT_STATUS=0
+          if [ $EXIT_CODE -ne 3 ]; then
+            echo "Expected exit code of 3 (some checks failed), got $EXIT_CODE"
+            EXIT_STATUS=1
+          fi
+
           if grep -q "was not collected" result.json; then
             echo "Some files were not collected"
             EXIT_STATUS=1
@@ -278,9 +285,10 @@ jobs:
         with:
           go-version: "1.19"
 
-      - uses: sigstore/cosign-installer@main
+      - uses: sigstore/cosign-installer@v3
         with:
-          cosign-release: "v1.2.1"
+          # DO NOT USE v2 until we decide on whether to use Rekor or not
+          cosign-release: "v1.13.1"  # Binary version to install
 
       - name: Get Cosign Key
         run: |
@@ -298,7 +306,7 @@ jobs:
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v4
         with:
-          version: "v0.183.0"
+          version: "v1.x"  # Binary version to install
           args: release --rm-dist --config deploy/.goreleaser.yaml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

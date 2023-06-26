@@ -3,34 +3,24 @@ package preflight
 import (
 	"context"
 	"fmt"
-	"io"
-	"net/http"
-	"net/url"
 	"os"
 	"os/signal"
-	"strings"
 	"time"
 
 	cursor "github.com/ahmetalpbalkan/go-cursor"
 	"github.com/fatih/color"
 	"github.com/pkg/errors"
-	"github.com/replicatedhq/troubleshoot/cmd/util"
 	analyzer "github.com/replicatedhq/troubleshoot/pkg/analyze"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
-	troubleshootclientsetscheme "github.com/replicatedhq/troubleshoot/pkg/client/troubleshootclientset/scheme"
 	"github.com/replicatedhq/troubleshoot/pkg/constants"
-	"github.com/replicatedhq/troubleshoot/pkg/docrewrite"
 	"github.com/replicatedhq/troubleshoot/pkg/k8sutil"
-	"github.com/replicatedhq/troubleshoot/pkg/oci"
-	"github.com/replicatedhq/troubleshoot/pkg/specs"
+	"github.com/replicatedhq/troubleshoot/pkg/types"
 	"github.com/spf13/viper"
 	spin "github.com/tj/go-spin"
 	"go.opentelemetry.io/otel"
 	"golang.org/x/sync/errgroup"
-	"gopkg.in/yaml.v2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
-	"k8s.io/client-go/kubernetes/scheme"
 )
 
 func RunPreflights(interactive bool, output string, format string, args []string) error {
@@ -47,126 +37,14 @@ func RunPreflights(interactive bool, output string, format string, args []string
 		signalChan := make(chan os.Signal, 1)
 		signal.Notify(signalChan, os.Interrupt)
 		<-signalChan
-		os.Exit(0)
+		// exiting due to a signal shouldn't be considered successful
+		os.Exit(1)
 	}()
 
-	var preflightContent []byte
-	var preflightSpec *troubleshootv1beta2.Preflight
-	var hostPreflightSpec *troubleshootv1beta2.HostPreflight
-	var uploadResultSpecs []*troubleshootv1beta2.Preflight
-	var err error
-
-	for _, v := range args {
-		if strings.HasPrefix(v, "secret/") {
-			// format secret/namespace-name/secret-name
-			pathParts := strings.Split(v, "/")
-			if len(pathParts) != 3 {
-				return errors.Errorf("path %s must have 3 components", v)
-			}
-
-			spec, err := specs.LoadFromSecret(pathParts[1], pathParts[2], "preflight-spec")
-			if err != nil {
-				return errors.Wrap(err, "failed to get spec from secret")
-			}
-
-			preflightContent = spec
-		} else if _, err = os.Stat(v); err == nil {
-			b, err := os.ReadFile(v)
-			if err != nil {
-				return err
-			}
-
-			preflightContent = b
-		} else if v == "-" {
-			b, err := io.ReadAll(os.Stdin)
-			if err != nil {
-				return err
-			}
-			preflightContent = b
-		} else {
-			u, err := url.Parse(v)
-			if err != nil {
-				return err
-			}
-
-			if u.Scheme == "oci" {
-				content, err := oci.PullPreflightFromOCI(v)
-				if err != nil {
-					if err == oci.ErrNoRelease {
-						return errors.Errorf("no release found for %s.\nCheck the oci:// uri for errors or contact the application vendor for support.", v)
-					}
-
-					return err
-				}
-
-				preflightContent = content
-			} else {
-				if !util.IsURL(v) {
-					return fmt.Errorf("%s is not a URL and was not found (err %s)", v, err)
-				}
-
-				req, err := http.NewRequest("GET", v, nil)
-				if err != nil {
-					return err
-				}
-				req.Header.Set("User-Agent", "Replicated_Preflight/v1beta2")
-				resp, err := http.DefaultClient.Do(req)
-				if err != nil {
-					return err
-				}
-				defer resp.Body.Close()
-
-				body, err := io.ReadAll(resp.Body)
-				if err != nil {
-					return err
-				}
-
-				preflightContent = body
-			}
-		}
-
-		multidocs := strings.Split(string(preflightContent), "\n---\n")
-
-		for _, doc := range multidocs {
-
-			type documentHead struct {
-				Kind string `yaml:"kind"`
-			}
-
-			var parsedDocHead documentHead
-
-			err := yaml.Unmarshal([]byte(doc), &parsedDocHead)
-			if err != nil {
-				return errors.Wrap(err, "failed to parse yaml")
-			}
-
-			if parsedDocHead.Kind != "Preflight" {
-				continue
-			}
-
-			preflightContent, err = docrewrite.ConvertToV1Beta2([]byte(doc))
-			if err != nil {
-				return errors.Wrap(err, "failed to convert to v1beta2")
-			}
-
-			troubleshootclientsetscheme.AddToScheme(scheme.Scheme)
-			decode := scheme.Codecs.UniversalDeserializer().Decode
-			obj, _, err := decode([]byte(preflightContent), nil, nil)
-			if err != nil {
-				return errors.Wrapf(err, "failed to parse %s", v)
-			}
-
-			if spec, ok := obj.(*troubleshootv1beta2.Preflight); ok {
-				if spec.Spec.UploadResultsTo == "" {
-					preflightSpec = ConcatPreflightSpec(preflightSpec, spec)
-				} else {
-					uploadResultSpecs = append(uploadResultSpecs, spec)
-				}
-			} else if spec, ok := obj.(*troubleshootv1beta2.HostPreflight); ok {
-				hostPreflightSpec = ConcatHostPreflightSpec(hostPreflightSpec, spec)
-			}
-		}
-
+	specs := PreflightSpecs{}
+	err := specs.Read(args)
+	if err != nil {
+		return err
 	}
 
 	var collectResults []CollectResult
@@ -189,45 +67,45 @@ func RunPreflights(interactive bool, output string, format string, args []string
 
 	uploadResultsMap := make(map[string][]CollectResult)
 
-	if preflightSpec != nil {
-		r, err := collectInCluster(ctx, preflightSpec, progressCh)
+	if specs.PreflightSpec != nil {
+		r, err := collectInCluster(ctx, specs.PreflightSpec, progressCh)
 		if err != nil {
-			return errors.Wrap(err, "failed to collect in cluster")
+			return types.NewExitCodeError(constants.EXIT_CODE_CATCH_ALL, errors.Wrap(err, "failed to collect in cluster"))
 		}
 		collectResults = append(collectResults, *r)
-		preflightSpecName = preflightSpec.Name
+		preflightSpecName = specs.PreflightSpec.Name
 	}
-	if uploadResultSpecs != nil {
-		for _, spec := range uploadResultSpecs {
+	if specs.UploadResultSpecs != nil {
+		for _, spec := range specs.UploadResultSpecs {
 			r, err := collectInCluster(ctx, spec, progressCh)
 			if err != nil {
-				return errors.Wrap(err, "failed to collect in cluster")
+				return types.NewExitCodeError(constants.EXIT_CODE_CATCH_ALL, errors.Wrap(err, "failed to collect in cluster"))
 			}
 			uploadResultsMap[spec.Spec.UploadResultsTo] = append(uploadResultsMap[spec.Spec.UploadResultsTo], *r)
 			uploadCollectResults = append(collectResults, *r)
 			preflightSpecName = spec.Name
 		}
 	}
-	if hostPreflightSpec != nil {
-		if len(hostPreflightSpec.Spec.Collectors) > 0 {
-			r, err := collectHost(ctx, hostPreflightSpec, progressCh)
+	if specs.HostPreflightSpec != nil {
+		if len(specs.HostPreflightSpec.Spec.Collectors) > 0 {
+			r, err := collectHost(ctx, specs.HostPreflightSpec, progressCh)
 			if err != nil {
-				return errors.Wrap(err, "failed to collect from host")
+				return types.NewExitCodeError(constants.EXIT_CODE_CATCH_ALL, errors.Wrap(err, "failed to collect from host"))
 			}
 			collectResults = append(collectResults, *r)
 		}
-		if len(hostPreflightSpec.Spec.RemoteCollectors) > 0 {
-			r, err := collectRemote(ctx, hostPreflightSpec, progressCh)
+		if len(specs.HostPreflightSpec.Spec.RemoteCollectors) > 0 {
+			r, err := collectRemote(ctx, specs.HostPreflightSpec, progressCh)
 			if err != nil {
-				return errors.Wrap(err, "failed to collect remotely")
+				return types.NewExitCodeError(constants.EXIT_CODE_CATCH_ALL, errors.Wrap(err, "failed to collect remotely"))
 			}
 			collectResults = append(collectResults, *r)
 		}
-		preflightSpecName = hostPreflightSpec.Name
+		preflightSpecName = specs.HostPreflightSpec.Name
 	}
 
 	if collectResults == nil && uploadCollectResults == nil {
-		return errors.New("no results")
+		return types.NewExitCodeError(constants.EXIT_CODE_CATCH_ALL, errors.New("no results"))
 	}
 
 	analyzeResults := []*analyzer.AnalyzeResult{}
@@ -243,26 +121,58 @@ func RunPreflights(interactive bool, output string, format string, args []string
 		}
 	}
 
-	if uploadAnalyzeResultsMap != nil {
-		for k, v := range uploadAnalyzeResultsMap {
-			err := uploadResults(k, v)
-			if err != nil {
-				progressCh <- err
-			}
+	for k, v := range uploadAnalyzeResultsMap {
+		err := uploadResults(k, v)
+		if err != nil {
+			progressCh <- err
 		}
 	}
 
 	stopProgressCollection()
 	progressCollection.Wait()
 
-	if interactive {
-		if len(analyzeResults) == 0 {
-			return errors.New("no data has been collected")
-		}
-		return showInteractiveResults(preflightSpecName, output, analyzeResults)
+	if len(analyzeResults) == 0 {
+		return types.NewExitCodeError(constants.EXIT_CODE_CATCH_ALL, errors.New("no data has been collected"))
 	}
 
-	return showTextResults(format, preflightSpecName, output, analyzeResults)
+	if interactive {
+		err = showInteractiveResults(preflightSpecName, output, analyzeResults)
+	} else {
+		err = showTextResults(format, preflightSpecName, output, analyzeResults)
+	}
+
+	if err != nil {
+		return err
+	}
+
+	exitCode := checkOutcomesToExitCode(analyzeResults)
+
+	if exitCode == 0 {
+		return nil
+	}
+
+	return types.NewExitCodeError(exitCode, errors.New("preflights failed with warnings or errors"))
+}
+
+// Determine if any preflight checks passed vs failed vs warned
+// If all checks passed: 0
+// If 1 or more checks failed: 3
+// If no checks failed, but 1 or more warn: 4
+func checkOutcomesToExitCode(analyzeResults []*analyzer.AnalyzeResult) int {
+	// Assume pass until they don't
+	exitCode := 0
+
+	for _, analyzeResult := range analyzeResults {
+		if analyzeResult.IsWarn {
+			exitCode = constants.EXIT_CODE_WARN
+		} else if analyzeResult.IsFail {
+			exitCode = constants.EXIT_CODE_FAIL
+			// No need to check further, a fail is a fail
+			return exitCode
+		}
+	}
+
+	return exitCode
 }
 
 func collectInteractiveProgress(ctx context.Context, progressCh <-chan interface{}) func() error {

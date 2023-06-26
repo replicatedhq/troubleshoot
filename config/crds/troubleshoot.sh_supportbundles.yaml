@@ -121,6 +121,53 @@ spec:
                       - namespace
                       - outcomes
                       type: object
+                    certificates:
+                      properties:
+                        annotations:
+                          additionalProperties:
+                            type: string
+                          type: object
+                        checkName:
+                          type: string
+                        exclude:
+                          type: BoolString
+                        outcomes:
+                          items:
+                            properties:
+                              fail:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
+                              pass:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
+                              warn:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
+                            type: object
+                          type: array
+                        strict:
+                          type: BoolString
+                      required:
+                      - outcomes
+                      type: object
                     clusterPodStatuses:
                       properties:
                         annotations:
@@ -226,6 +273,10 @@ spec:
                                 type: object
                             type: object
                           type: array
+                        regex:
+                          type: string
+                        regexGroups:
+                          type: string
                         strict:
                           type: BoolString
                         yamlPath:
@@ -1562,21 +1613,29 @@ spec:
                         collectorName:
                           type: string
                         configMaps:
-                          additionalProperties:
-                            items:
-                              type: string
-                            type: array
-                          type: object
+                          items:
+                            properties:
+                              name:
+                                type: string
+                              namespaces:
+                                items:
+                                  type: string
+                                type: array
+                            type: object
+                          type: array
                         exclude:
                           type: BoolString
-                        name:
-                          type: string
                         secrets:
-                          additionalProperties:
-                            items:
-                              type: string
-                            type: array
-                          type: object
+                          items:
+                            properties:
+                              name:
+                                type: string
+                              namespaces:
+                                items:
+                                  type: string
+                                type: array
+                            type: object
+                          type: array
                       type: object
                     clusterInfo:
                       properties:
@@ -1711,6 +1770,36 @@ spec:
                       - hostPath
                       - image
                       - namespace
+                      type: object
+                    customMetrics:
+                      properties:
+                        collectorName:
+                          type: string
+                        exclude:
+                          type: BoolString
+                        metricRequests:
+                          items:
+                            description: MetricRequest the details of the MetricValuesList
+                              to be retrieved
+                            properties:
+                              namespace:
+                                description: Namespace for which to collect the metric
+                                  values, empty for non-namespaces resources.
+                                type: string
+                              objectName:
+                                description: ObjectName for which to collect metric
+                                  values, all resources when empty. Note that for
+                                  namespaced resources a Namespace has to be supplied
+                                  regardless.
+                                type: string
+                              resourceMetricName:
+                                description: ResourceMetricName name of the MetricValueList
+                                  as per the APIResourceList from custom.metrics.k8s.io/v1beta1
+                                type: string
+                            required:
+                            - resourceMetricName
+                            type: object
+                          type: array
                       type: object
                     data:
                       properties:
@@ -3380,7 +3469,10 @@ spec:
                                                   properties:
                                                     name:
                                                       description: The header field
-                                                        name
+                                                        name. This will be canonicalized
+                                                        upon output, so case-variant
+                                                        names will be understood as
+                                                        the same header.
                                                       type: string
                                                     value:
                                                       description: The header field
@@ -3495,7 +3587,10 @@ spec:
                                                   properties:
                                                     name:
                                                       description: The header field
-                                                        name
+                                                        name. This will be canonicalized
+                                                        upon output, so case-variant
+                                                        names will be understood as
+                                                        the same header.
                                                       type: string
                                                     value:
                                                       description: The header field
@@ -3621,7 +3716,11 @@ spec:
                                                 custom header to be used in HTTP probes
                                               properties:
                                                 name:
-                                                  description: The header field name
+                                                  description: The header field name.
+                                                    This will be canonicalized upon
+                                                    output, so case-variant names
+                                                    will be understood as the same
+                                                    header.
                                                   type: string
                                                 value:
                                                   description: The header field value
@@ -3846,7 +3945,11 @@ spec:
                                                 custom header to be used in HTTP probes
                                               properties:
                                                 name:
-                                                  description: The header field name
+                                                  description: The header field name.
+                                                    This will be canonicalized upon
+                                                    output, so case-variant names
+                                                    will be understood as the same
+                                                    header.
                                                   type: string
                                                 value:
                                                   description: The header field value
@@ -4303,7 +4406,11 @@ spec:
                                                 custom header to be used in HTTP probes
                                               properties:
                                                 name:
-                                                  description: The header field name
+                                                  description: The header field name.
+                                                    This will be canonicalized upon
+                                                    output, so case-variant names
+                                                    will be understood as the same
+                                                    header.
                                                   type: string
                                                 value:
                                                   description: The header field value
@@ -4880,7 +4987,10 @@ spec:
                                                   properties:
                                                     name:
                                                       description: The header field
-                                                        name
+                                                        name. This will be canonicalized
+                                                        upon output, so case-variant
+                                                        names will be understood as
+                                                        the same header.
                                                       type: string
                                                     value:
                                                       description: The header field
@@ -4995,7 +5105,10 @@ spec:
                                                   properties:
                                                     name:
                                                       description: The header field
-                                                        name
+                                                        name. This will be canonicalized
+                                                        upon output, so case-variant
+                                                        names will be understood as
+                                                        the same header.
                                                       type: string
                                                     value:
                                                       description: The header field
@@ -5120,7 +5233,11 @@ spec:
                                                 custom header to be used in HTTP probes
                                               properties:
                                                 name:
-                                                  description: The header field name
+                                                  description: The header field name.
+                                                    This will be canonicalized upon
+                                                    output, so case-variant names
+                                                    will be understood as the same
+                                                    header.
                                                   type: string
                                                 value:
                                                   description: The header field value
@@ -5337,7 +5454,11 @@ spec:
                                                 custom header to be used in HTTP probes
                                               properties:
                                                 name:
-                                                  description: The header field name
+                                                  description: The header field name.
+                                                    This will be canonicalized upon
+                                                    output, so case-variant names
+                                                    will be understood as the same
+                                                    header.
                                                   type: string
                                                 value:
                                                   description: The header field value
@@ -5786,7 +5907,11 @@ spec:
                                                 custom header to be used in HTTP probes
                                               properties:
                                                 name:
-                                                  description: The header field name
+                                                  description: The header field name.
+                                                    This will be canonicalized upon
+                                                    output, so case-variant names
+                                                    will be understood as the same
+                                                    header.
                                                   type: string
                                                 value:
                                                   description: The header field value
@@ -6400,7 +6525,10 @@ spec:
                                                   properties:
                                                     name:
                                                       description: The header field
-                                                        name
+                                                        name. This will be canonicalized
+                                                        upon output, so case-variant
+                                                        names will be understood as
+                                                        the same header.
                                                       type: string
                                                     value:
                                                       description: The header field
@@ -6515,7 +6643,10 @@ spec:
                                                   properties:
                                                     name:
                                                       description: The header field
-                                                        name
+                                                        name. This will be canonicalized
+                                                        upon output, so case-variant
+                                                        names will be understood as
+                                                        the same header.
                                                       type: string
                                                     value:
                                                       description: The header field
@@ -6641,7 +6772,11 @@ spec:
                                                 custom header to be used in HTTP probes
                                               properties:
                                                 name:
-                                                  description: The header field name
+                                                  description: The header field name.
+                                                    This will be canonicalized upon
+                                                    output, so case-variant names
+                                                    will be understood as the same
+                                                    header.
                                                   type: string
                                                 value:
                                                   description: The header field value
@@ -6866,7 +7001,11 @@ spec:
                                                 custom header to be used in HTTP probes
                                               properties:
                                                 name:
-                                                  description: The header field name
+                                                  description: The header field name.
+                                                    This will be canonicalized upon
+                                                    output, so case-variant names
+                                                    will be understood as the same
+                                                    header.
                                                   type: string
                                                 value:
                                                   description: The header field value
@@ -7323,7 +7462,11 @@ spec:
                                                 custom header to be used in HTTP probes
                                               properties:
                                                 name:
-                                                  description: The header field name
+                                                  description: The header field name.
+                                                    This will be canonicalized upon
+                                                    output, so case-variant names
+                                                    will be understood as the same
+                                                    header.
                                                   type: string
                                                 value:
                                                   description: The header field value

@@ -7,6 +7,7 @@
 *.dylib
 bin
 .DS_Store
+node_modules/
 
 # Test binary, build with `go test -c`
 *.test
@@ -26,6 +27,8 @@ vendor
 *.swp
 *.swo
 *~
+.envrc
+
 
 dist
 try.sh

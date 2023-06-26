@@ -1,0 +1,21 @@
+apiVersion: troubleshoot.sh/v1beta2
+kind: SupportBundle
+metadata:
+  name: example-collect-all-configmap-data
+spec:
+  collectors:
+    - configMap:
+        name: kube-root-ca.crt
+        # expected in default namespace
+    - configMap:
+        name: cluster-info
+        # missing namespace parameter
+    - configMap:
+        name: does-not-exist
+    - configMap:
+        selector:
+          - app=kube-proxy
+        # only selector set
+    - configMap:
+        name: coredns
+        namespace: kube-system

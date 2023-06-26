@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: labelled-redactor-spec-2
+  labels:
+    troubleshoot.io/kind: support-bundle
+  namespace: labelled-specs
+stringData:
+  redactor-spec: |
+    apiVersion: troubleshoot.sh/v1beta2
+    kind: Redactor
+    metadata:
+      name: labelled-redactor-spec-2
+    spec:
+      redactors:
+        - name: redact-text-2
+          removals:
+            values:
+            -  REDACT SECOND TEXT PLEASE
