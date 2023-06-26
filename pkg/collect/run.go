@@ -43,6 +43,10 @@ func (c *CollectRun) Collect(progressChan chan<- interface{}) (CollectorResult, 
 		serviceAccountName = c.Collector.ServiceAccountName
 	}
 
+	if err := checkForExistingServiceAccount(c.Client, namespace, serviceAccountName); err != nil {
+		return nil, err
+	}
+
 	runPodSpec := &troubleshootv1beta2.RunPod{
 		CollectorMeta: troubleshootv1beta2.CollectorMeta{
 			CollectorName: c.Collector.CollectorName,

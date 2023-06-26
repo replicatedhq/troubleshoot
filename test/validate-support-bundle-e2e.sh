@@ -99,3 +99,15 @@ if ! grep "labelled-support-bundle-2 \*\*\*HIDDEN\*\*\*" "$tmpdir/$bundle_direct
     echo "Hidden content not found in redacted echo-hi-2 file"
     exit 1
 fi
+
+if ! grep "labelled-support-bundle-3 \*\*\*HIDDEN\*\*\*" "$tmpdir/$bundle_directory_name/echo-hi-3"; then
+    echo "$(cat $tmpdir/$bundle_directory_name/echo-hi-3)"
+    echo "Hidden content not found in redacted echo-hi-3 file"
+    exit 1
+fi
+
+if ! grep "labelled-support-bundle-4 \*\*\*HIDDEN\*\*\*" "$tmpdir/$bundle_directory_name/echo-hi-4"; then
+    echo "$(cat $tmpdir/$bundle_directory_name/echo-hi-4)"
+    echo "Hidden content not found in redacted echo-hi-4 file"
+    exit 1
+fi

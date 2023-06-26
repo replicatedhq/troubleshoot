@@ -29,6 +29,7 @@ type PreflightSpecsReadTest struct {
 	wantUploadResultSpecs []*troubleshootv1beta2.Preflight
 }
 
+// TODO: Simplify tests and rely on the loader tests
 func TestPreflightSpecsRead(t *testing.T) {
 	// NOTE: don't use t.Parallel(), these tests manipulate os.Stdin
 
@@ -46,7 +47,7 @@ func TestPreflightSpecsRead(t *testing.T) {
 		Spec: troubleshootv1beta2.PreflightSpec{
 			UploadResultsTo: "",
 			Collectors: []*troubleshootv1beta2.Collect{
-				&troubleshootv1beta2.Collect{
+				{
 					Data: &troubleshootv1beta2.Data{
 						CollectorMeta: troubleshootv1beta2.CollectorMeta{
 							CollectorName: "",
@@ -72,7 +73,7 @@ func TestPreflightSpecsRead(t *testing.T) {
 			},
 			RemoteCollectors: []*troubleshootv1beta2.RemoteCollect(nil),
 			Analyzers: []*troubleshootv1beta2.Analyze{
-				&troubleshootv1beta2.Analyze{
+				{
 					JsonCompare: &troubleshootv1beta2.JsonCompare{
 						AnalyzeMeta: troubleshootv1beta2.AnalyzeMeta{
 							CheckName: "Compare JSON Example",
@@ -83,13 +84,13 @@ func TestPreflightSpecsRead(t *testing.T) {
 						Value: `123
 `,
 						Outcomes: []*troubleshootv1beta2.Outcome{
-							&troubleshootv1beta2.Outcome{
+							{
 								Fail: &troubleshootv1beta2.SingleOutcome{
 									When:    "false",
 									Message: "The collected data does not match the value.",
 								},
 							},
-							&troubleshootv1beta2.Outcome{
+							{
 								Pass: &troubleshootv1beta2.SingleOutcome{
 									When:    "true",
 									Message: "The collected data matches the value.",
@@ -102,19 +103,51 @@ func TestPreflightSpecsRead(t *testing.T) {
 		},
 	}
 
-	/*
-		expectHostPreflightSpec := troubleshootv1beta2.HostPreflight{
-				TypeMeta: metav1.TypeMeta{
-					Kind:       "HostPreflight",
-					APIVersion: "troubleshoot.sh/troubleshootv1beta2",
+	// A HostPreflight spec
+	hostpreflightFile := filepath.Join(testutils.FileDir(), "../../examples/preflight/host/block-devices.yaml")
+	//
+	expectHostPreflightSpec := troubleshootv1beta2.HostPreflight{
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "HostPreflight",
+			APIVersion: "troubleshoot.sh/v1beta2",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "block",
+		},
+		Spec: troubleshootv1beta2.HostPreflightSpec{
+			Collectors: []*troubleshootv1beta2.HostCollect{
+				{
+					BlockDevices: &troubleshootv1beta2.HostBlockDevices{},
 				},
-				Spec: troubleshootv1beta2.HostPreflightSpec{
-					Collectors:       []*troubleshootv1beta2.HostCollect(nil),
-					RemoteCollectors: []*troubleshootv1beta2.RemoteCollect(nil),
-					Analyzers:        []*troubleshootv1beta2.HostAnalyze(nil),
+			},
+			RemoteCollectors: []*troubleshootv1beta2.RemoteCollect(nil),
+			Analyzers: []*troubleshootv1beta2.HostAnalyze{
+				{
+					BlockDevices: &troubleshootv1beta2.BlockDevicesAnalyze{
+						Outcomes: []*troubleshootv1beta2.Outcome{
+							{
+								Pass: &troubleshootv1beta2.SingleOutcome{
+									When:    ".* == 1",
+									Message: "One available block device",
+								},
+							},
+							{
+								Pass: &troubleshootv1beta2.SingleOutcome{
+									When:    ".* > 1",
+									Message: "Multiple available block devices",
+								},
+							},
+							{
+								Fail: &troubleshootv1beta2.SingleOutcome{
+									Message: "No available block devices",
+								},
+							},
+						},
+					},
 				},
-			}
-	*/
+			},
+		},
+	}
 
 	// A more complexed preflight spec, which resides in a secret
 	preflightSecretFile := filepath.Join(testutils.FileDir(), "../../testdata/preflightspec/troubleshoot_v1beta2_preflight_secret_gotest.yaml")
@@ -131,19 +164,19 @@ func TestPreflightSpecsRead(t *testing.T) {
 			UploadResultsTo:  "",
 			RemoteCollectors: []*troubleshootv1beta2.RemoteCollect(nil),
 			Analyzers: []*troubleshootv1beta2.Analyze{
-				&troubleshootv1beta2.Analyze{
+				{
 					NodeResources: &troubleshootv1beta2.NodeResources{
 						AnalyzeMeta: troubleshootv1beta2.AnalyzeMeta{
 							CheckName: "Node Count Check",
 						},
 						Outcomes: []*troubleshootv1beta2.Outcome{
-							&troubleshootv1beta2.Outcome{
+							{
 								Fail: &troubleshootv1beta2.SingleOutcome{
 									When:    "count() < 3",
 									Message: "The cluster needs a minimum of 3 nodes.",
 								},
 							},
-							&troubleshootv1beta2.Outcome{
+							{
 								Pass: &troubleshootv1beta2.SingleOutcome{
 									Message: "There are not enough nodes to run this application (3 or more)",
 								},
@@ -151,24 +184,24 @@ func TestPreflightSpecsRead(t *testing.T) {
 						},
 					},
 				},
-				&troubleshootv1beta2.Analyze{
+				{
 					ClusterVersion: &troubleshootv1beta2.ClusterVersion{
 						Outcomes: []*troubleshootv1beta2.Outcome{
-							&troubleshootv1beta2.Outcome{
+							{
 								Fail: &troubleshootv1beta2.SingleOutcome{
 									When:    "< 1.16.0",
 									Message: "The application requires at least Kubernetes 1.16.0, and recommends 1.18.0.",
 									URI:     "https://kubernetes.io",
 								},
 							},
-							&troubleshootv1beta2.Outcome{
+							{
 								Warn: &troubleshootv1beta2.SingleOutcome{
 									When:    "< 1.18.0",
 									Message: "Your cluster meets the minimum version of Kubernetes, but we recommend you update to 1.18.0 or later.",
 									URI:     "https://kubernetes.io",
 								},
 							},
-							&troubleshootv1beta2.Outcome{
+							{
 								Pass: &troubleshootv1beta2.SingleOutcome{
 									Message: "Your cluster meets the recommended and required versions of Kubernetes.",
 								},
@@ -190,6 +223,15 @@ func TestPreflightSpecsRead(t *testing.T) {
 			wantErr:               false,
 			wantPreflightSpec:     &expectPreflightSpec,
 			wantHostPreflightSpec: nil,
+			wantUploadResultSpecs: nil,
+		},
+		PreflightSpecsReadTest{
+			name:                  "file-hostpreflight",
+			args:                  []string{hostpreflightFile},
+			customStdin:           false,
+			wantErr:               false,
+			wantPreflightSpec:     nil,
+			wantHostPreflightSpec: &expectHostPreflightSpec,
 			wantUploadResultSpecs: nil,
 		},
 		PreflightSpecsReadTest{
