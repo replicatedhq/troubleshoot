@@ -4,13 +4,14 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"os"
 	"path/filepath"
 	"strings"
 
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
 	"github.com/pkg/errors"
-	"github.com/replicatedhq/troubleshoot/internal/util"
 	"github.com/replicatedhq/troubleshoot/pkg/version"
+	"k8s.io/klog/v2"
 	"oras.land/oras-go/pkg/auth"
 	dockerauth "oras.land/oras-go/pkg/auth/docker"
 	"oras.land/oras-go/pkg/content"
@@ -36,7 +37,7 @@ func PullSupportBundleFromOCI(uri string) ([]byte, error) {
 
 func pullFromOCI(uri string, mediaType string, imageName string) ([]byte, error) {
 	// helm credentials
-	helmCredentialsFile := filepath.Join(util.HomeDir(), HelmCredentialsFileBasename)
+	helmCredentialsFile := filepath.Join(homeDir(), HelmCredentialsFileBasename)
 	dockerauthClient, err := dockerauth.NewClientWithDockerFallback(helmCredentialsFile)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create auth client")
@@ -119,4 +120,17 @@ func pullFromOCI(uri string, mediaType string, imageName string) ([]byte, error)
 	}
 
 	return matchingSpec, nil
+}
+
+// homeDir returns the home directory for the current user
+// TODO: Copied from internal/util package to a avoid cyclic dependency with the package.
+// Use util.HomeDir instead
+func homeDir() string {
+	homedir, err := os.UserHomeDir()
+	if err != nil {
+		klog.Warningf("Unable to get user home directory: %v", err)
+		return ""
+	}
+
+	return homedir
 }
