@@ -2,6 +2,7 @@ package preflight
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -174,6 +175,26 @@ func drawPreflightTable(analyzeResults []*analyzerunner.AnalyzeResult) {
 	ui.Render(table)
 }
 
+func wrapString(text string, lineWidth int) (string, int) {
+	words := strings.Fields(strings.TrimSpace(text))
+	if len(words) == 0 {
+		return text, 1
+	}
+	wrapped := words[0]
+	spaceLeft := lineWidth - len(wrapped)
+	for _, word := range words[1:] {
+		if len(word)+4 > spaceLeft {
+			wrapped += "\n" + word
+			spaceLeft = lineWidth - len(word)
+		} else {
+			wrapped += " " + word
+			spaceLeft -= 1 + len(word)
+		}
+	}
+	return wrapped, strings.Count(wrapped, "\n") + 4
+
+}
+
 func drawDetails(analysisResult *analyzerunner.AnalyzeResult) {
 	termWidth, _ := ui.TerminalDimensions()
 
@@ -194,9 +215,9 @@ func drawDetails(analysisResult *analyzerunner.AnalyzeResult) {
 	currentTop = currentTop + height + 1
 
 	message := widgets.NewParagraph()
-	message.Text = analysisResult.Message
+	message.WrapText = false
+	message.Text, height = wrapString(analysisResult.Message, termWidth/2)
 	message.Border = false
-	height = estimateNumberOfLines(message.Text, termWidth/2) + 2
 	message.SetRect(termWidth/2, currentTop, termWidth, currentTop+height)
 	ui.Render(message)
 	currentTop = currentTop + height + 1
