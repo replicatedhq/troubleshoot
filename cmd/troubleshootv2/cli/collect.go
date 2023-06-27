@@ -85,7 +85,7 @@ func doRun(ctx context.Context, args []string) error {
 	bdl := bundleimpl.NewTroubleshootBundle(bundleimpl.TroubleshootBundleOptions{
 		ProgressChan: progressChan,
 	})
-	klog.Infof("Starting to collecting bundle")
+	klog.Infof("Starting collecting bundle")
 	err = bdl.Collect(ctx, bundle.CollectOptions{
 		Specs:     kinds,
 		BundleDir: bundleDir,
