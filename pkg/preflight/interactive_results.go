@@ -4,11 +4,13 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/mitchellh/go-wordwrap"
 	"github.com/pkg/errors"
 	ui "github.com/replicatedhq/termui/v3"
 	"github.com/replicatedhq/termui/v3/widgets"
 	"github.com/replicatedhq/troubleshoot/internal/util"
 	analyzerunner "github.com/replicatedhq/troubleshoot/pkg/analyze"
+	"github.com/replicatedhq/troubleshoot/pkg/constants"
 )
 
 var (
@@ -179,7 +181,10 @@ func drawDetails(analysisResult *analyzerunner.AnalyzeResult) {
 
 	currentTop := 4
 	title := widgets.NewParagraph()
-	title.Text = analysisResult.Title
+	// WrapText is set to false to prevent internal wordwrap which is not accounting for the padding
+	title.WrapText = false
+	// For long title that lead to wrapping text, the terminal width is divided by 2 and deducted by MESSAGE_TEXT_PADDING to account for the padding
+	title.Text = wordwrap.WrapString(analysisResult.Title, uint(termWidth/2-constants.MESSAGE_TEXT_PADDING))
 	title.Border = false
 	if analysisResult.IsPass {
 		title.TextStyle = ui.NewStyle(ui.ColorGreen, ui.ColorClear, ui.ModifierBold)
@@ -188,33 +193,26 @@ func drawDetails(analysisResult *analyzerunner.AnalyzeResult) {
 	} else if analysisResult.IsFail {
 		title.TextStyle = ui.NewStyle(ui.ColorRed, ui.ColorClear, ui.ModifierBold)
 	}
-	height := estimateNumberOfLines(title.Text, termWidth/2)
+	height := util.EstimateNumberOfLines(title.Text)
 	title.SetRect(termWidth/2, currentTop, termWidth, currentTop+height)
 	ui.Render(title)
 	currentTop = currentTop + height + 1
 
 	message := widgets.NewParagraph()
-	message.Text = analysisResult.Message
+	// WrapText is set to false to prevent internal wordwrap which is not accounting for the padding
+	message.WrapText = false
+	// For long text that lead to wrapping text, the terminal width is divided by 2 and deducted by MESSAGE_TEXT_PADDING to account for the padding
+	message.Text = wordwrap.WrapString(analysisResult.Message, uint(termWidth/2-constants.MESSAGE_TEXT_PADDING))
+	if analysisResult.URI != "" {
+		// Add URL to the message with wordwrap
+		// Add emply lines as separator
+		urlText := wordwrap.WrapString(fmt.Sprintf("For more information: %s", analysisResult.URI), uint(termWidth/2-constants.MESSAGE_TEXT_PADDING))
+		message.Text = message.Text + "\n\n" + urlText
+	}
+	height = util.EstimateNumberOfLines(message.Text) + constants.MESSAGE_TEXT_LINES_MARGIN_TO_BOTTOM
 	message.Border = false
-	height = estimateNumberOfLines(message.Text, termWidth/2) + 2
 	message.SetRect(termWidth/2, currentTop, termWidth, currentTop+height)
 	ui.Render(message)
-	currentTop = currentTop + height + 1
-
-	if analysisResult.URI != "" {
-		uri := widgets.NewParagraph()
-		uri.Text = fmt.Sprintf("For more information: %s", analysisResult.URI)
-		uri.Border = false
-		height = estimateNumberOfLines(uri.Text, termWidth/2)
-		uri.SetRect(termWidth/2, currentTop, termWidth, currentTop+height)
-		ui.Render(uri)
-		currentTop = currentTop + height + 1
-	}
-}
-
-func estimateNumberOfLines(text string, width int) int {
-	lines := len(text)/width + 1
-	return lines
 }
 
 func showSaved(filename string) {
