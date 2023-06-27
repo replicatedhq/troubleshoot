@@ -2,6 +2,7 @@ package preflight
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/mitchellh/go-wordwrap"
@@ -198,23 +199,24 @@ func drawDetails(analysisResult *analyzerunner.AnalyzeResult) {
 	message := widgets.NewParagraph()
 	message.WrapText = false
 	message.Text = wordwrap.WrapString(analysisResult.Message, uint(termWidth/2-constants.MESSAGE_TEXT_PADDING))
-	height = estimateNumberOfLines(message.Text, termWidth/2-constants.MESSAGE_TEXT_PADDING) + constants.MESSAGE_TEXT_LINES_MARGIN_TO_BOTTOM
+
+	if analysisResult.URI != "" {
+		urlText := wordwrap.WrapString(fmt.Sprintf("For more information: %s", analysisResult.URI), uint(termWidth/2-constants.MESSAGE_TEXT_PADDING))
+		message.Text = message.Text + "\n\n" + urlText
+	}
+	numberOfLines := linesStringCount(message.Text)
+	height = numberOfLines + constants.MESSAGE_TEXT_LINES_MARGIN_TO_BOTTOM
 	message.Border = false
 	message.SetRect(termWidth/2, currentTop, termWidth, currentTop+height)
 	ui.Render(message)
-	currentTop = currentTop + height + 1
+}
 
-	if analysisResult.URI != "" {
-		uri := widgets.NewParagraph()
-		uri.WrapText = false
-		uri.Text = fmt.Sprintf("For more information: %s", analysisResult.URI)
-		uri.Text = wordwrap.WrapString(uri.Text, uint(termWidth/2-constants.MESSAGE_TEXT_PADDING))
-		uri.Border = false
-		height = estimateNumberOfLines(uri.Text, termWidth/2) + constants.MESSAGE_TEXT_LINES_MARGIN_TO_BOTTOM
-		uri.SetRect(termWidth/2, currentTop, termWidth, currentTop+height)
-		ui.Render(uri)
-		currentTop = currentTop + height + 1
+func linesStringCount(s string) int {
+	n := strings.Count(s, "\n")
+	if len(s) > 0 && !strings.HasSuffix(s, "\n") {
+		n++
 	}
+	return n
 }
 
 func estimateNumberOfLines(text string, width int) int {
