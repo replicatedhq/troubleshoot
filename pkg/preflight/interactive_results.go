@@ -2,14 +2,15 @@ package preflight
 
 import (
 	"fmt"
-	"strings"
 	"time"
 
+	"github.com/mitchellh/go-wordwrap"
 	"github.com/pkg/errors"
 	ui "github.com/replicatedhq/termui/v3"
 	"github.com/replicatedhq/termui/v3/widgets"
 	"github.com/replicatedhq/troubleshoot/internal/util"
 	analyzerunner "github.com/replicatedhq/troubleshoot/pkg/analyze"
+	"github.com/replicatedhq/troubleshoot/pkg/constants"
 )
 
 var (
@@ -175,26 +176,6 @@ func drawPreflightTable(analyzeResults []*analyzerunner.AnalyzeResult) {
 	ui.Render(table)
 }
 
-func wrapString(text string, lineWidth int) (string, int) {
-	words := strings.Fields(strings.TrimSpace(text))
-	if len(words) == 0 {
-		return text, 1
-	}
-	wrapped := words[0]
-	spaceLeft := lineWidth - len(wrapped)
-	for _, word := range words[1:] {
-		if len(word)+4 > spaceLeft {
-			wrapped += "\n" + word
-			spaceLeft = lineWidth - len(word)
-		} else {
-			wrapped += " " + word
-			spaceLeft -= 1 + len(word)
-		}
-	}
-	return wrapped, strings.Count(wrapped, "\n") + 4
-
-}
-
 func drawDetails(analysisResult *analyzerunner.AnalyzeResult) {
 	termWidth, _ := ui.TerminalDimensions()
 
@@ -216,7 +197,8 @@ func drawDetails(analysisResult *analyzerunner.AnalyzeResult) {
 
 	message := widgets.NewParagraph()
 	message.WrapText = false
-	message.Text, height = wrapString(analysisResult.Message, termWidth/2)
+	message.Text = wordwrap.WrapString(analysisResult.Message, uint(termWidth/2-constants.MESSAGE_TEXT_PADDING))
+	height = estimateNumberOfLines(message.Text, termWidth/2-constants.MESSAGE_TEXT_PADDING) + constants.MESSAGE_TEXT_LINES_MARGIN_TO_BOTTOM
 	message.Border = false
 	message.SetRect(termWidth/2, currentTop, termWidth, currentTop+height)
 	ui.Render(message)
@@ -224,9 +206,11 @@ func drawDetails(analysisResult *analyzerunner.AnalyzeResult) {
 
 	if analysisResult.URI != "" {
 		uri := widgets.NewParagraph()
+		uri.WrapText = false
 		uri.Text = fmt.Sprintf("For more information: %s", analysisResult.URI)
+		uri.Text = wordwrap.WrapString(uri.Text, uint(termWidth/2-constants.MESSAGE_TEXT_PADDING))
 		uri.Border = false
-		height = estimateNumberOfLines(uri.Text, termWidth/2)
+		height = estimateNumberOfLines(uri.Text, termWidth/2) + constants.MESSAGE_TEXT_LINES_MARGIN_TO_BOTTOM
 		uri.SetRect(termWidth/2, currentTop, termWidth, currentTop+height)
 		ui.Render(uri)
 		currentTop = currentTop + height + 1
