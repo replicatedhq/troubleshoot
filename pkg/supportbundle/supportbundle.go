@@ -274,6 +274,7 @@ func ConcatSpec(target *troubleshootv1beta2.SupportBundle, source *troubleshootv
 	} else {
 		newBundle = target.DeepCopy()
 		newBundle.Spec.Collectors = append(target.Spec.Collectors, source.Spec.Collectors...)
+		// TODO: We assume that all results should be uploaded to all destinations defined in after collection
 		newBundle.Spec.AfterCollection = append(target.Spec.AfterCollection, source.Spec.AfterCollection...)
 		newBundle.Spec.HostCollectors = append(target.Spec.HostCollectors, source.Spec.HostCollectors...)
 		newBundle.Spec.HostAnalyzers = append(target.Spec.HostAnalyzers, source.Spec.HostAnalyzers...)

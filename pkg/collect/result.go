@@ -12,10 +12,34 @@ import (
 	"k8s.io/klog/v2"
 )
 
+// TODO: Make data private by using a struct and encapsulating the map
+// TODO: Rename to BundleData
+// TODO: Move to separate package so as not to have all packages depend on collect
+// TODO: Add "bundlePath" as member of struct and remove from all method signatures
 type CollectorResult map[string][]byte
 
 func NewResult() CollectorResult {
 	return map[string][]byte{}
+}
+
+type BundleData struct {
+	data      CollectorResult
+	bundleDir string
+}
+
+func NewBundleData(bundleDir string) *BundleData {
+	return &BundleData{
+		data:      NewResult(),
+		bundleDir: bundleDir,
+	}
+}
+
+func (b *BundleData) BundleDir() string {
+	return b.bundleDir
+}
+
+func (b *BundleData) Data() CollectorResult {
+	return b.data
 }
 
 // SymLinkResult creates a symlink (relativeLinkPath) of relativeFilePath in the bundle. If bundlePath
@@ -84,6 +108,12 @@ func (r CollectorResult) SymLinkResult(bundlePath, relativeLinkPath, relativeFil
 // It also ensures that when operating on the results in memory (e.g preflights),
 // all files are included.
 func (r CollectorResult) AddResult(other CollectorResult) {
+	for k, v := range other {
+		r[k] = v
+	}
+}
+
+func (r CollectorResult) AddMapResult(other map[string][]byte) {
 	for k, v := range other {
 		r[k] = v
 	}
