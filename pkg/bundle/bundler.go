@@ -3,6 +3,8 @@ package bundle
 import (
 	"context"
 
+	analyze "github.com/replicatedhq/troubleshoot/pkg/analyze"
+	"github.com/replicatedhq/troubleshoot/pkg/collect"
 	"github.com/replicatedhq/troubleshoot/pkg/loader"
 )
 
@@ -14,17 +16,19 @@ import (
 // *  Searching files by regex
 type Bundler interface {
 	// Collect runs collections defined in TroubleshootKinds passed through CollectOptions
-	Collect(context.Context, CollectOptions) error
-
-	// We need to expose the bundle data collected in some form of structure as well
-	// We have https://github.com/replicatedhq/troubleshoot/blob/620fa75eb593247a07c4dc39ea96fc6a059be111/pkg/collect/result.go#L15 at the moment
+	Collect(context.Context, CollectOptions) (CollectOutput error)
 
 	// Analyze runs analysis defined in TroubleshootKinds passed through AnalyzeOptions
-	Analyze(context.Context, AnalyzeOptions) (AnalysisResults, error)
+	Analyze(context.Context, AnalyzeOptions) (AnalyzeOutput, error)
+
+	// Bundle returns collected or loaded bundle data
+	// What should this return? CollectorResult? BundleData?
+	// Use this to add data to the bundle that is not collected by collectors
+	BundleData() *collect.BundleData
 
 	// AnalysisResults contains the analysis results that the bundle may have had
-	// TODO: I'm not yet about this
-	AnalysisResults() AnalysisResults
+	// TODO: I'm not yet about this. Maybe it should be in BundleData returned by Bundle()?
+	// AnalysisResults() AnalysisResults
 
 	// Redact runs redaction defined in TroubleshootKinds passed through RedactOptions
 	Redact(context.Context, RedactOptions) error
@@ -42,39 +46,40 @@ type Bundler interface {
 }
 
 type LoadBundleOptions struct {
-	Path string // Path to archive or directory of bundle files
+	Path      string // Path to archive or directory of bundle files
+	BundleDir string // directory to drop bundle files to. TODO: We may not need this
 }
 
 type CollectOptions struct {
-	Specs        *loader.TroubleshootKinds // list of specs to extract collectors and redactors from
-	BundleDir    string                    // directory to write bundle files to
-	ProgressChan chan any                  // a channel to write progress information to
+	Specs     *loader.TroubleshootKinds // list of specs to extract collectors and redactors from
+	BundleDir string                    // directory to write bundle files to
+	Namespace string                    // namespace to limit scope the in-cluster collectors need to run in
+}
+
+type CollectOutput struct {
+	// Nothing for now. Left here for future use
 }
 
 type ArchiveOptions struct {
-	ArchivePath  string   // path to archive file to write
-	ProgressChan chan any // a channel to write progress information to
+	ArchivePath string // path to write archive file to
+}
+
+type AnalyzeOutput struct {
+	Bundle Bundler // include bundle metadata
+	// TODO: Does this need to be a slice of pointers? It's a slice and slices are already pointers
+	Results []*analyze.AnalyzeResult // analysis results
 }
 
 type RedactOptions struct {
-	Specs        *loader.TroubleshootKinds // list of specs to extract redactors from
-	ProgressChan chan any                  // a channel to write progress information to
+	Specs *loader.TroubleshootKinds // list of specs to extract redactors from
 }
 
 // Note: this is almost identical to `CollectOptions` for now but remains separate to enable easier addition of redact specific options at a later date
-
 type AnalyzeOptions struct {
-	Specs        *loader.TroubleshootKinds // list of specs to extract analyzers from
-	PathInBundle string                    // path to store results in the bundle
-	ProgressChan chan any                  // a channel to write progress information to
+	Specs *loader.TroubleshootKinds // list of specs to extract analyzers from
 }
 
 type ServeOptions struct {
 	Address    string // address to listen on including port (0.0.0.0:8080)
 	ConfigPath string // optional path to store generated kubeconfig
-}
-
-type AnalysisResults struct {
-	Bundle Bundler // include bundle metadata
-	// and whatever resulsts for the analysis
 }
