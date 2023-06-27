@@ -44,3 +44,11 @@ func AppName(name string) string {
 func SplitYAML(doc string) []string {
 	return strings.Split(doc, "\n---\n")
 }
+
+func EstimateNumberOfLines(text string) int {
+	n := strings.Count(text, "\n")
+	if len(text) > 0 && !strings.HasSuffix(text, "\n") {
+		n++
+	}
+	return n
+}
