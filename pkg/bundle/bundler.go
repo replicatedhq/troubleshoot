@@ -65,7 +65,6 @@ type ArchiveOptions struct {
 }
 
 type AnalyzeOutput struct {
-	Bundle Bundler // include bundle metadata
 	// TODO: Does this need to be a slice of pointers? It's a slice and slices are already pointers
 	Results []*analyze.AnalyzeResult // analysis results
 }

@@ -27,10 +27,15 @@ type BundleData struct {
 	bundleDir string
 }
 
-func NewBundleData(bundleDir string) *BundleData {
+type BundleDataOptions struct {
+	Data      CollectorResult
+	BundleDir string
+}
+
+func NewBundleData(opt BundleDataOptions) *BundleData {
 	return &BundleData{
-		data:      NewResult(),
-		bundleDir: bundleDir,
+		data:      opt.Data,
+		bundleDir: opt.BundleDir,
 	}
 }
 

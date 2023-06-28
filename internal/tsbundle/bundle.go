@@ -1,5 +1,4 @@
-// Is this naming convention correct? i.e impl is for implementation
-package bundleimpl
+package tsbundle
 
 import (
 	"context"
@@ -8,6 +7,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/replicatedhq/troubleshoot/pkg/bundle"
 	"github.com/replicatedhq/troubleshoot/pkg/collect"
+	"github.com/replicatedhq/troubleshoot/pkg/supportbundle"
 )
 
 // Bundle is the Troubleshoot implementation of the bundle.Bundler interface
@@ -17,7 +17,6 @@ type Bundle struct {
 }
 
 type TroubleshootBundleOptions struct {
-	// TODO: Consider just a callback function. Channels can block if not read from
 	ProgressChan chan any // a channel to write progress information to
 	Namespace    string   // namespace to limit scope the collectors need to run in
 }
@@ -29,24 +28,50 @@ func NewTroubleshootBundle(opt TroubleshootBundleOptions) bundle.Bundler {
 	}
 }
 
-func (b *Bundle) Collect(ctx context.Context, opt bundle.CollectOptions) error {
-	// TODO: Error if b.data is not nil. We do not want to overwrite existing data
-	if b.data != nil {
-		return fmt.Errorf("bundle already has data")
+func (b *Bundle) reportProgress(msg any) {
+	if b.progressChan != nil {
+		// Non-blocking write to channel.
+		// In case there is no listener drop the message.
+		select {
+		case b.progressChan <- msg:
+		default:
+		}
 	}
+}
 
-	b.data = collect.NewBundleData(opt.BundleDir)
+func (b *Bundle) Collect(ctx context.Context, opt bundle.CollectOptions) error {
+	if b.data != nil {
+		return fmt.Errorf("we cannot run collectors if a bundle already exists")
+	}
 
 	results, err := b.doCollect(ctx, opt)
 	if err != nil {
 		return err
 	}
-	b.data.Data().AddResult(results)
+
+	b.data = collect.NewBundleData(collect.BundleDataOptions{
+		Data:      results,
+		BundleDir: opt.BundleDir,
+	})
 	return nil
 }
 
 func (b *Bundle) Analyze(ctx context.Context, opt bundle.AnalyzeOptions) (bundle.AnalyzeOutput, error) {
-	return bundle.AnalyzeOutput{}, nil
+	if b.data == nil {
+		return bundle.AnalyzeOutput{}, errors.New("no bundle data to analyze")
+	}
+
+	sbSpec := supportbundle.ConcatSpecs(opt.Specs.SupportBundlesV1Beta2...)
+
+	// Run Analyzers
+	analyzeResults, err := supportbundle.AnalyzeSupportBundle(ctx, &sbSpec.Spec, b.data.BundleDir())
+	if err != nil {
+		return bundle.AnalyzeOutput{}, err
+	}
+
+	return bundle.AnalyzeOutput{
+		Results: analyzeResults,
+	}, nil
 }
 
 func (b *Bundle) BundleData() *collect.BundleData {
@@ -66,7 +91,10 @@ func (b *Bundle) Archive(ctx context.Context, opt bundle.ArchiveOptions) error {
 }
 
 func (b *Bundle) Load(ctx context.Context, opt bundle.LoadBundleOptions) error {
-	// TODO: Error if b.data is not nil. We do not want to overwrite existing data
+	if b.data != nil {
+		return fmt.Errorf("we cannot run collectors if a bundle already exists")
+	}
+	// TODO: Load bundle from disk or url
 	return nil
 }
 

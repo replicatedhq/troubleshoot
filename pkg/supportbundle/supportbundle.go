@@ -140,7 +140,7 @@ func CollectSupportBundleFromSpec(
 		return nil, errors.Wrap(err, "failed to generate support bundle")
 	}
 
-	version, err := getVersionFile()
+	version, err := GetVersionFile()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get version file")
 	}
@@ -281,4 +281,12 @@ func ConcatSpec(target *troubleshootv1beta2.SupportBundle, source *troubleshootv
 		newBundle.Spec.Analyzers = append(target.Spec.Analyzers, source.Spec.Analyzers...)
 	}
 	return newBundle
+}
+
+func ConcatSpecs(specs ...troubleshootv1beta2.SupportBundle) *troubleshootv1beta2.SupportBundle {
+	target := &troubleshootv1beta2.SupportBundle{}
+	for _, s := range specs {
+		target = ConcatSpec(target, &s)
+	}
+	return target
 }

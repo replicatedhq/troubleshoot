@@ -221,7 +221,8 @@ func findFileName(basename, extension string) (string, error) {
 	}
 }
 
-func getVersionFile() (io.Reader, error) {
+func GetVersionFile() (io.Reader, error) {
+	// TODO: Move to internal package
 	version := troubleshootv1beta2.SupportBundleVersion{
 		ApiVersion: "troubleshoot.sh/v1beta2",
 		Kind:       "SupportBundle",

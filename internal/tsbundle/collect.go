@@ -1,4 +1,4 @@
-package bundleimpl
+package tsbundle
 
 import (
 	"context"
@@ -24,27 +24,17 @@ import (
 func (b *Bundle) doCollect(
 	ctx context.Context, opt bundle.CollectOptions,
 ) (collect.CollectorResult, error) {
-	ctxWrap, root := otel.Tracer(constants.LIB_TRACER_NAME).Start(
-		ctx, constants.TROUBLESHOOT_ROOT_SPAN_NAME,
-	)
-	defer func() {
-		// If this function returns an error, root.End() may not be called.
-		// We want to ensure this happens, so we defer it. It is safe to call
-		// root.End() multiple times.
-		root.End()
-	}()
-
 	allResults := collect.NewResult()
 
-	sbSpec := concatSpecs(opt.Specs.SupportBundlesV1Beta2...)
+	sbSpec := supportbundle.ConcatSpecs(opt.Specs.SupportBundlesV1Beta2...)
 
-	collectedResults, err := b.collectFromHost(ctxWrap, sbSpec.Spec.HostCollectors, opt.BundleDir, b.progressChan)
+	collectedResults, err := b.collectFromHost(ctx, sbSpec.Spec.HostCollectors, opt.BundleDir)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to collect bundle from host")
 	}
 	allResults.AddResult(collectedResults)
 
-	collectedResults, err = b.collectFromCluster(ctxWrap, sbSpec.Spec.Collectors, opt.BundleDir, opt.Namespace)
+	collectedResults, err = b.collectFromCluster(ctx, sbSpec.Spec.Collectors, opt.BundleDir, opt.Namespace)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to collect bundle from cluster")
 	}
@@ -113,7 +103,7 @@ func (b *Bundle) collectFromCluster(
 			mergedCollectors, err := mergeCollector.Merge(collectors)
 			if err != nil {
 				msg := fmt.Sprintf("failed to merge collector: %s: %s", mergeCollector.Title(), err)
-				b.progressChan <- msg
+				b.reportProgress(msg)
 			}
 			allCollectors = append(allCollectors, mergedCollectors...)
 		} else {
@@ -124,7 +114,7 @@ func (b *Bundle) collectFromCluster(
 		for _, collector := range collectors {
 			for _, e := range collector.GetRBACErrors() {
 				foundForbidden = true
-				b.progressChan <- e
+				b.reportProgress(e)
 			}
 		}
 	}
@@ -141,7 +131,7 @@ func (b *Bundle) collectFromCluster(
 		isExcluded, _ := collector.IsExcluded()
 		if isExcluded {
 			msg := fmt.Sprintf("excluding %q collector", collector.Title())
-			b.progressChan <- msg
+			b.reportProgress(msg)
 			span.SetAttributes(attribute.Bool(constants.EXCLUDED, true))
 			span.End()
 			continue
@@ -151,18 +141,18 @@ func (b *Bundle) collectFromCluster(
 		if collector.HasRBACErrors() {
 			if _, ok := collector.(*collect.CollectClusterResources); !ok {
 				msg := fmt.Sprintf("skipping collector %q with insufficient RBAC permissions", collector.Title())
-				b.progressChan <- msg
+				b.reportProgress(msg)
 				span.SetStatus(codes.Error, "skipping collector, insufficient RBAC permissions")
 				span.End()
 				continue
 			}
 		}
 
-		b.progressChan <- collector.Title()
+		b.reportProgress(collector.Title())
 		result, err := collector.Collect(b.progressChan)
 		if err != nil {
 			span.SetStatus(codes.Error, err.Error())
-			b.progressChan <- errors.Errorf("failed to run collector: %s: %v", collector.Title(), err)
+			b.reportProgress(errors.Errorf("failed to run collector: %s: %v", collector.Title(), err))
 		}
 
 		for k, v := range result {
@@ -175,7 +165,7 @@ func (b *Bundle) collectFromCluster(
 }
 
 func (b *Bundle) collectFromHost(
-	ctx context.Context, collectSpecs []*troubleshootv1beta2.HostCollect, bundlePath string, progressChan chan any,
+	ctx context.Context, collectSpecs []*troubleshootv1beta2.HostCollect, bundlePath string,
 ) (collect.CollectorResult, error) {
 	// TODO: Duplicate of runHostCollectors from pkg/supportbundle/collect.go. DRY me up!
 	collectResult := collect.NewResult()
@@ -195,18 +185,18 @@ func (b *Bundle) collectFromHost(
 
 		isExcluded, _ := collector.IsExcluded()
 		if isExcluded {
-			progressChan <- fmt.Sprintf("[%s] Excluding host collector", collector.Title())
+			b.reportProgress(fmt.Sprintf("[%s] Excluding host collector", collector.Title()))
 			span.SetAttributes(attribute.Bool(constants.EXCLUDED, true))
 			span.End()
 			continue
 		}
 
-		progressChan <- fmt.Sprintf("[%s] Running host collector...", collector.Title())
+		b.reportProgress(fmt.Sprintf("[%s] Running host collector...", collector.Title()))
 		// TODO: Convert return type to CollectorResult
-		result, err := collector.Collect(progressChan)
+		result, err := collector.Collect(b.progressChan)
 		if err != nil {
 			span.SetStatus(codes.Error, err.Error())
-			progressChan <- errors.Errorf("failed to run host collector: %s: %v", collector.Title(), err)
+			b.reportProgress(errors.Errorf("failed to run host collector: %s: %v", collector.Title(), err))
 		}
 		span.End()
 		for k, v := range result {
@@ -215,14 +205,6 @@ func (b *Bundle) collectFromHost(
 	}
 
 	return collectResult, nil
-}
-
-func concatSpecs(specs ...troubleshootv1beta2.SupportBundle) *troubleshootv1beta2.SupportBundle {
-	target := &troubleshootv1beta2.SupportBundle{}
-	for _, s := range specs {
-		target = supportbundle.ConcatSpec(target, &s)
-	}
-	return target
 }
 
 func parseTimeFlags(v *viper.Viper) (*time.Time, error) {
