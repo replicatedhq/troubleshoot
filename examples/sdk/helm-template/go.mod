@@ -3,8 +3,8 @@ module helm-template
 go 1.20
 
 // Always use the local version of troubleshoot so as to build using
-// the latest version of the libraries. This will ensure the examples
-// are kept in sync with new features
+// the latest version of the library. This will ensure the example
+// is kept in sync with new features
 replace github.com/replicatedhq/troubleshoot v0.0.0 => ../../../
 
 require (
