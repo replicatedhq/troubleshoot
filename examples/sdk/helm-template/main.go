@@ -16,6 +16,8 @@ import (
 
 func main() {
 	// Load chart from tarball
+	// The helm loader package has a few other ways to load a chart, such as from a directory `loader.LoadDir()`
+	// or from an archive in memory `loader.LoadArchive()` etc.
 	chart, err := loader.LoadFile("mychart-0.1.0.tgz")
 	if err != nil {
 		log.Fatalf("error loading at chart: %v", err)
@@ -30,8 +32,13 @@ func main() {
 		log.Fatalf("error rendering chart: %v", err)
 	}
 
+	fmt.Println("############# Raw helm manifests #############")
+	fmt.Println(renderedManifests)
+
 	// Load rendered manifests into a slice of troubleshoot specs
-	// tsKinds can now be used to run preflights and collect support bundles
+	// 'tsKinds' will contain all the specs. This object will the the
+	// input of other troubleshoot APIs such as ones used to collect
+	// bundles, analyze bundles, redact etc.
 	ctx := context.Background()
 	tsKinds, err := tsloader.LoadSpecs(ctx, tsloader.LoadOptions{
 		RawSpec: renderedManifests,
@@ -62,28 +69,31 @@ func main() {
 
 func renderChartToManifests(chart *chart.Chart, inputValues chartutil.Values) (string, error) {
 	options := chartutil.ReleaseOptions{
-		Name: "my-release",
+		Name: "my-release",	// Not mandatory, but this is how helm sets the release name
 	}
 
 	// Pull in imported values from dependencies to the parent chart
+	// https://helm.sh/docs/topics/charts/#importing-child-values-via-dependencies
 	if err := chartutil.ProcessDependencies(chart, chartutil.Values{}); err != nil {
 		return "", fmt.Errorf("failed to process chart %q dependencies: %w", chart.Name(), err)
 	}
 
 	// Gather all values necessary to render the templates
+	// imported values, values from the chart and user provided values
 	rValues, err := chartutil.ToRenderValues(chart, inputValues, options, nil)
 	if err != nil {
 		return "", fmt.Errorf("failed to render template values: %w", err)
 	}
 
-	// Render the chart templates
+	// Render the chart templates. This will include non YAML files as well
 	renderedTemplates, err := engine.Render(chart, rValues)
 	if err != nil {
 		return "", fmt.Errorf("failed to render template: %w", err)
 	}
 
 	// Combine all rendered templates into a single yaml multidoc string
-	// Only pick up YAML files, ignore any others
+	// Only pick up YAML files, ignore any others. Troubleshoot loader
+	// expects only valid YAML input
 	var out strings.Builder
 	for k, v := range renderedTemplates {
 		if strings.HasSuffix(k, ".yaml") || strings.HasSuffix(k, ".yml") {
