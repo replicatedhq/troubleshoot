@@ -10,11 +10,14 @@ import (
 	"math/rand"
 	"os"
 	"path/filepath"
+	"reflect"
 	"sort"
+	"strings"
 	"sync"
 	"syscall"
 	"time"
 
+	fio "github.com/kastenhq/kubestr/pkg/fio"
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -26,6 +29,18 @@ func init() {
 
 type Durations []time.Duration
 
+// today we only care about checking for write latency so the options struct
+// only has what we need for that
+type FioJobOptions struct {
+	rw        string
+	ioengine  string
+	fdatasync int
+	directory string
+	size      string
+	bs        int
+	name      string
+}
+
 func (d Durations) Len() int {
 	return len(d)
 }
@@ -36,6 +51,59 @@ func (d Durations) Less(i, j int) bool {
 
 func (d Durations) Swap(i, j int) {
 	d[i], d[j] = d[j], d[i]
+}
+
+// support using `fio` to collect filesystem performance information
+
+// collectHostFilesystemPerformance handles setting the collector options and getting files into the bundle
+
+// switch on "use fio" flag, then
+
+//	if useFio
+// 		collectFioResult(fioSettings) returns a FioResult struct
+//		grab latencies from the FioLatencies struct
+// 		convert to a slice of time.Duration in nanoseconds
+
+// else
+//		use the existing logic for collectHostFilesystemPerformance moved to a new function
+
+// return the slice of time.Duration in nanoseconds
+
+func collectFioResult() (fio.FioResult, error) {
+
+	opts := FioJobOptions{
+		rw:        "write",
+		ioengine:  "sync",
+		fdatasync: 1,
+		directory: "/var/lib/etcd",
+		size:      "22m",
+		bs:        2300,
+		name:      "fsperf",
+	}
+
+	command := []string{"fio"}
+	v := reflect.ValueOf(opts)
+	t := reflect.TypeOf(opts)
+	for i := 0; i < v.NumField(); i++ {
+		field := t.Field(i)
+		value := v.Field(i)
+		command = append(command, fmt.Sprintf("--%s=%v", strings.ToLower(field.Name), value.Interface()))
+	}
+
+	output, err := exec.Command(command...).Output()
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to run fio")
+	}
+
+	var result fio.FioResult
+
+	err := json.Unmarshal([]byte(output), &result)
+
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to unmarshal fio result")
+	}
+
+	return result, nil
 }
 
 func collectHostFilesystemPerformance(hostCollector *troubleshootv1beta2.FilesystemPerformance, bundlePath string) (map[string][]byte, error) {
@@ -136,6 +204,7 @@ func collectHostFilesystemPerformance(hostCollector *troubleshootv1beta2.Filesys
 		rand.Read(data)
 
 		start := time.Now()
+		klog.V(4).Infof("begin write %d bytes at time %s", len(data), start.Format(time.RFC3339Nano))
 
 		n, err := f.Write(data)
 		if err != nil {
@@ -194,6 +263,8 @@ func collectHostFilesystemPerformance(hostCollector *troubleshootv1beta2.Filesys
 		P9995:   results[getPercentileIndex(.9995, len(results))],
 		P9999:   results[getPercentileIndex(.9999, len(results))],
 	}
+
+	klog.V(4).Infof("filesystem performance results: %+v", fsPerf)
 
 	collectorName := hostCollector.CollectorName
 	if collectorName == "" {
