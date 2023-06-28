@@ -55,6 +55,9 @@ const (
 	CLUSTER_RESOURCES_PRIORITY_CLASS              = "priorityclasses"
 	CLUSTER_RESOURCES_ENDPOINTS                   = "endpoints"
 
+	// SelfSubjectRulesReview evaluation responses
+	SELFSUBJECTRULESREVIEW_ERROR_AUTHORIZATION_WEBHOOK_UNSUPPORTED = "webhook authorizer does not support user rule resolution"
+
 	// Custom exit codes
 	EXIT_CODE_CATCH_ALL   = 1
 	EXIT_CODE_SPEC_ISSUES = 2
@@ -70,4 +73,8 @@ const (
 
 	// Troubleshoot spec constants
 	Troubleshootv1beta2Kind = "troubleshoot.sh/v1beta2"
+
+	// TermUI Display Constants
+	MESSAGE_TEXT_PADDING                = 4
+	MESSAGE_TEXT_LINES_MARGIN_TO_BOTTOM = 4
 )
