@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"reflect"
 	"time"
 
 	cursor "github.com/ahmetalpbalkan/go-cursor"
@@ -14,6 +15,7 @@ import (
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/replicatedhq/troubleshoot/pkg/constants"
 	"github.com/replicatedhq/troubleshoot/pkg/k8sutil"
+	"github.com/replicatedhq/troubleshoot/pkg/multitype"
 	"github.com/replicatedhq/troubleshoot/pkg/types"
 	"github.com/spf13/viper"
 	spin "github.com/tj/go-spin"
@@ -45,6 +47,13 @@ func RunPreflights(interactive bool, output string, format string, args []string
 	err := specs.Read(args)
 	if err != nil {
 		return err
+	}
+
+	result := validatePreflight(specs)
+
+	if result != "" {
+		fmt.Println(result)
+		return nil
 	}
 
 	var collectResults []CollectResult
@@ -352,4 +361,55 @@ func parseTimeFlags(v *viper.Viper, collectors []*troubleshootv1beta2.Collect) e
 		}
 	}
 	return nil
+}
+
+func validatePreflight(specs PreflightSpecs) string {
+
+	if specs.PreflightSpec == nil && specs.HostPreflightSpec == nil {
+		return "Warning: no preflight spec was provided"
+	}
+
+	if specs.PreflightSpec != nil {
+		numberOfCollectors := len(specs.PreflightSpec.Spec.Collectors)
+		numberOfExcludeCollectors := 0
+
+		if numberOfCollectors == 0 {
+			return "Warning: no collectors were provided"
+		}
+
+		for _, collector := range specs.PreflightSpec.Spec.Collectors {
+			collectorElem := reflect.ValueOf(collector).Elem()
+			for i := 0; i < collectorElem.NumField(); i++ {
+				collectorValue := collectorElem.Field(i)
+				if !collectorValue.IsNil() {
+					elem := collectorValue.Elem()
+					if elem.Kind() == reflect.Struct {
+						excludeField := elem.FieldByName("Exclude")
+						if excludeField.IsValid() {
+							excludeValue, ok := excludeField.Interface().(*multitype.BoolOrString)
+							if ok && excludeValue != nil {
+								if excludeValue.BoolOrDefaultFalse() {
+									numberOfExcludeCollectors++
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+
+		if numberOfExcludeCollectors == numberOfCollectors {
+			return "Warning: all collectors were excluded"
+		}
+	}
+
+	// if specs.PreflightSpec.Spec.Analyzers == nil || specs.HostPreflightSpec.Spec.Analyzers == nil {
+	// 	return "OK: no analyzers were provided"
+	// }
+
+	// if specs.PreflightSpec.Spec.Collectors == nil || specs.HostPreflightSpec.Spec.Collectors == nil {
+	// 	return "OK: no collectors were provided"
+	// }
+
+	return ""
 }
