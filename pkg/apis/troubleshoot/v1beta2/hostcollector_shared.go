@@ -143,6 +143,8 @@ type FilesystemPerformance struct {
 	// Total timeout, including background IOPS setup and warmup if enabled.
 	Timeout string `json:"timeout,omitempty"`
 
+	// Enable the use of the `fio` external tool for benchmarking filesystem performance.
+	UseFio bool `json:"useFio,omitempty"`
 	// Enable the background IOPS feature.
 	EnableBackgroundIOPS bool `json:"enableBackgroundIOPS"`
 	// How long to run the background IOPS read and write workloads prior to starting the benchmarks.

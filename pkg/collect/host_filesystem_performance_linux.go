@@ -9,6 +9,7 @@ import (
 	"log"
 	"math/rand"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"reflect"
 	"sort"
@@ -21,6 +22,7 @@ import (
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"k8s.io/apimachinery/pkg/api/resource"
+	"k8s.io/klog/v2"
 )
 
 func init() {
@@ -32,13 +34,14 @@ type Durations []time.Duration
 // today we only care about checking for write latency so the options struct
 // only has what we need for that
 type FioJobOptions struct {
-	rw        string
-	ioengine  string
-	fdatasync int
-	directory string
-	size      string
-	bs        int
-	name      string
+	Rw        string
+	Ioengine  string
+	Fdatasync int
+	Directory string
+	Size      uint64
+	Bs        uint64
+	Name      string
+	Runtime   string
 }
 
 func (d Durations) Len() int {
@@ -53,33 +56,105 @@ func (d Durations) Swap(i, j int) {
 	d[i], d[j] = d[j], d[i]
 }
 
-// support using `fio` to collect filesystem performance information
+func benchmarkHostFilesystemLatency(fileSize uint64, operationSize uint64, filename string, hostCollector *troubleshootv1beta2.FilesystemPerformance, ctx context.Context) (*FSPerfResults, error) {
 
-// collectHostFilesystemPerformance handles setting the collector options and getting files into the bundle
-
-// switch on "use fio" flag, then
-
-//	if useFio
-// 		collectFioResult(fioSettings) returns a FioResult struct
-//		grab latencies from the FioLatencies struct
-// 		convert to a slice of time.Duration in nanoseconds
-
-// else
-//		use the existing logic for collectHostFilesystemPerformance moved to a new function
-
-// return the slice of time.Duration in nanoseconds
-
-func collectFioResult() (fio.FioResult, error) {
-
-	opts := FioJobOptions{
-		rw:        "write",
-		ioengine:  "sync",
-		fdatasync: 1,
-		directory: "/var/lib/etcd",
-		size:      "22m",
-		bs:        2300,
-		name:      "fsperf",
+	// Create file handle
+	f, err := os.OpenFile(filename, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0600)
+	if err != nil {
+		log.Panic(err)
+		return nil, errors.Wrapf(err, "open %s", filename)
 	}
+	defer func() {
+		if err := f.Close(); err != nil {
+			log.Println(err.Error())
+		}
+		if err := os.Remove(filename); err != nil {
+			log.Println(err.Error())
+		}
+	}()
+
+	// Sequential writes benchmark
+	var written uint64 = 0
+	var results Durations
+
+	for {
+		if written >= fileSize {
+			break
+		}
+
+		data := make([]byte, int(operationSize))
+		rand.Read(data)
+
+		start := time.Now()
+		klog.V(4).Infof("begin write %d bytes at time %s", len(data), start.Format(time.RFC3339Nano))
+
+		n, err := f.Write(data)
+		if err != nil {
+			return nil, errors.Wrapf(err, "write to %s", filename)
+		}
+		if hostCollector.Sync {
+			if err := f.Sync(); err != nil {
+				return nil, errors.Wrapf(err, "sync %s", filename)
+			}
+		} else if hostCollector.Datasync {
+			if err := syscall.Fdatasync(int(f.Fd())); err != nil {
+				return nil, errors.Wrapf(err, "datasync %s", filename)
+			}
+		}
+
+		d := time.Since(start)
+		results = append(results, d)
+		klog.V(4).Infof("end write %d bytes in time %s", len(data), d.String())
+
+		written += uint64(n)
+
+		if ctx.Err() != nil {
+			break
+		}
+	}
+
+	if len(results) == 0 {
+		return nil, errors.New("No filesystem performance results collected")
+	}
+
+	klog.V(4).Infof("results: %+v", results)
+
+	sort.Sort(results)
+
+	var sum time.Duration
+	for _, d := range results {
+		sum += d
+	}
+
+	fsPerf := &FSPerfResults{
+		Min:     results[0],
+		Max:     results[len(results)-1],
+		Average: sum / time.Duration(len(results)),
+		P1:      results[getPercentileIndex(.01, len(results))],
+		P5:      results[getPercentileIndex(.05, len(results))],
+		P10:     results[getPercentileIndex(.1, len(results))],
+		P20:     results[getPercentileIndex(.2, len(results))],
+		P30:     results[getPercentileIndex(.3, len(results))],
+		P40:     results[getPercentileIndex(.4, len(results))],
+		P50:     results[getPercentileIndex(.5, len(results))],
+		P60:     results[getPercentileIndex(.6, len(results))],
+		P70:     results[getPercentileIndex(.7, len(results))],
+		P80:     results[getPercentileIndex(.8, len(results))],
+		P90:     results[getPercentileIndex(.9, len(results))],
+		P95:     results[getPercentileIndex(.95, len(results))],
+		P99:     results[getPercentileIndex(.99, len(results))],
+		P995:    results[getPercentileIndex(.995, len(results))],
+		P999:    results[getPercentileIndex(.999, len(results))],
+		P9995:   results[getPercentileIndex(.9995, len(results))],
+		P9999:   results[getPercentileIndex(.9999, len(results))],
+	}
+
+	klog.V(4).Infof("latency benchmark results: %+v", fsPerf)
+
+	return fsPerf, nil
+}
+
+func collectFioResult(opts FioJobOptions) (*FSPerfResults, error) {
 
 	command := []string{"fio"}
 	v := reflect.ValueOf(opts)
@@ -90,20 +165,29 @@ func collectFioResult() (fio.FioResult, error) {
 		command = append(command, fmt.Sprintf("--%s=%v", strings.ToLower(field.Name), value.Interface()))
 	}
 
-	output, err := exec.Command(command...).Output()
+	// for k, v := range opts {
+	// 	command = append(command, fmt.Sprintf("--%s=%v", string(k), string(v)))
+	// }
+
+	klog.V(2).Infof("executing fio command: %s", strings.Join(command, " "))
+	output, err := exec.Command(command[0], command[1:]...).Output()
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to run fio")
+		return &FSPerfResults{}, errors.Wrap(err, "failed to run fio.  Is it installed?")
 	}
 
 	var result fio.FioResult
 
-	err := json.Unmarshal([]byte(output), &result)
-
+	err = json.Unmarshal([]byte(output), &result)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to unmarshal fio result")
+		return &FSPerfResults{}, errors.Wrap(err, "failed to unmarshal fio result")
 	}
 
-	return result, nil
+	klog.V(4).Infof("fio result: %+v", result)
+
+	fsPerfResults := FSPerfResults{
+		// Min: result,
+	}
+	return &fsPerfResults, nil
 }
 
 func collectHostFilesystemPerformance(hostCollector *troubleshootv1beta2.FilesystemPerformance, bundlePath string) (map[string][]byte, error) {
@@ -120,6 +204,7 @@ func collectHostFilesystemPerformance(hostCollector *troubleshootv1beta2.Filesys
 
 	var operationSize uint64 = 1024
 	if hostCollector.OperationSizeBytes != 0 {
+		klog.V(4).Infof("operationSizeBytes: %d", hostCollector.OperationSizeBytes)
 		operationSize = hostCollector.OperationSizeBytes
 	}
 
@@ -145,19 +230,11 @@ func collectHostFilesystemPerformance(hostCollector *troubleshootv1beta2.Filesys
 	}
 	filename := filepath.Join(hostCollector.Directory, "fsperf")
 
-	f, err := os.OpenFile(filename, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0600)
-	if err != nil {
-		log.Panic(err)
-		return nil, errors.Wrapf(err, "open %s", filename)
+	collectorName := hostCollector.CollectorName
+	if collectorName == "" {
+		collectorName = "filesystemPerformance"
 	}
-	defer func() {
-		if err := f.Close(); err != nil {
-			log.Println(err.Error())
-		}
-		if err := os.Remove(filename); err != nil {
-			log.Println(err.Error())
-		}
-	}()
+	name := filepath.Join("host-collectors/filesystemPerformance", collectorName+".json")
 
 	// Start the background IOPS task and wait for warmup
 	if hostCollector.EnableBackgroundIOPS {
@@ -191,86 +268,24 @@ func collectHostFilesystemPerformance(hostCollector *troubleshootv1beta2.Filesys
 		time.Sleep(time.Second * time.Duration(hostCollector.BackgroundIOPSWarmupSeconds))
 	}
 
-	// Sequential writes benchmark
-	var written uint64 = 0
-	var results Durations
+	var fsPerf *FSPerfResults
 
-	for {
-		if written >= fileSize {
-			break
+	if !hostCollector.UseFio {
+		fsPerf, _ = benchmarkHostFilesystemLatency(fileSize, operationSize, filename, hostCollector, ctx)
+	} else {
+		latencyBenchmarkOptions := FioJobOptions{
+			Rw:        "write",
+			Ioengine:  "sync",
+			Fdatasync: 1,
+			Directory: hostCollector.Directory,
+			Size:      fileSize,
+			Bs:        operationSize,
+			Name:      "fsperf",
+			Runtime:   "120",
 		}
-
-		data := make([]byte, int(operationSize))
-		rand.Read(data)
-
-		start := time.Now()
-		klog.V(4).Infof("begin write %d bytes at time %s", len(data), start.Format(time.RFC3339Nano))
-
-		n, err := f.Write(data)
-		if err != nil {
-			return nil, errors.Wrapf(err, "write to %s", filename)
-		}
-		if hostCollector.Sync {
-			if err := f.Sync(); err != nil {
-				return nil, errors.Wrapf(err, "sync %s", filename)
-			}
-		} else if hostCollector.Datasync {
-			if err := syscall.Fdatasync(int(f.Fd())); err != nil {
-				return nil, errors.Wrapf(err, "datasync %s", filename)
-			}
-		}
-
-		d := time.Now().Sub(start)
-		results = append(results, d)
-
-		written += uint64(n)
-
-		if ctx.Err() != nil {
-			break
-		}
+		fsPerf, _ = collectFioResult(latencyBenchmarkOptions)
 	}
 
-	if len(results) == 0 {
-		return nil, errors.New("No filesystem performance results collected")
-	}
-
-	sort.Sort(results)
-
-	var sum time.Duration
-	for _, d := range results {
-		sum += d
-	}
-
-	fsPerf := &FSPerfResults{
-		Min:     results[0],
-		Max:     results[len(results)-1],
-		Average: sum / time.Duration(len(results)),
-		P1:      results[getPercentileIndex(.01, len(results))],
-		P5:      results[getPercentileIndex(.05, len(results))],
-		P10:     results[getPercentileIndex(.1, len(results))],
-		P20:     results[getPercentileIndex(.2, len(results))],
-		P30:     results[getPercentileIndex(.3, len(results))],
-		P40:     results[getPercentileIndex(.4, len(results))],
-		P50:     results[getPercentileIndex(.5, len(results))],
-		P60:     results[getPercentileIndex(.6, len(results))],
-		P70:     results[getPercentileIndex(.7, len(results))],
-		P80:     results[getPercentileIndex(.8, len(results))],
-		P90:     results[getPercentileIndex(.9, len(results))],
-		P95:     results[getPercentileIndex(.95, len(results))],
-		P99:     results[getPercentileIndex(.99, len(results))],
-		P995:    results[getPercentileIndex(.995, len(results))],
-		P999:    results[getPercentileIndex(.999, len(results))],
-		P9995:   results[getPercentileIndex(.9995, len(results))],
-		P9999:   results[getPercentileIndex(.9999, len(results))],
-	}
-
-	klog.V(4).Infof("filesystem performance results: %+v", fsPerf)
-
-	collectorName := hostCollector.CollectorName
-	if collectorName == "" {
-		collectorName = "filesystemPerformance"
-	}
-	name := filepath.Join("host-collectors/filesystemPerformance", collectorName+".json")
 	b, err := json.Marshal(fsPerf)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to marshal fs perf results")
