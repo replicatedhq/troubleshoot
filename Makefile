@@ -62,6 +62,10 @@ test-integration:
 preflight-e2e-test:
 	./test/validate-preflight-e2e.sh
 
+.PHONY: run-examples
+run-examples:
+	./test/run-examples.sh
+
 .PHONY: support-bundle-e2e-test
 support-bundle-e2e-test:
 	./test/validate-support-bundle-e2e.sh
