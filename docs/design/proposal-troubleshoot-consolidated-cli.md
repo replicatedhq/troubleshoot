@@ -100,7 +100,7 @@ This is a non-exhaustive list of usage patterns, but it should help guide how fu
 
   `troubleshoot support-bundle supportbundle.yaml secrets/default/kotsadm-appslug-supportbundle`
 
-  `troubleshoot collect https://kots.io`
+  `troubleshoot support-bundle https://kots.io`
 
 - if no bundle URI/location is specified, search for a spec in-cluster
 
