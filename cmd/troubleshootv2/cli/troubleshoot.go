@@ -50,7 +50,11 @@ func RootCmd() *cobra.Command {
 	cobra.OnInitialize(initConfig)
 
 	// Subcommands
-	cmd.AddCommand(CollectCmd())
+	cmd.AddCommand(SupporBundleCmd())
+	cmd.AddCommand(PreflightCmd())
+	cmd.AddCommand(AnalyzeCmd())
+	cmd.AddCommand(RedactCmd())
+	cmd.AddCommand(InspectCmd())
 
 	// Initialize klog flags
 	logger.InitKlogFlags(cmd)

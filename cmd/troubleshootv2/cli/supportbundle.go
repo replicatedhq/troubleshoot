@@ -21,7 +21,7 @@ import (
 	"k8s.io/klog/v2"
 )
 
-func CollectCmd() *cobra.Command {
+func SupporBundleCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "support-bundle [urls...]",
 		Args:  cobra.MinimumNArgs(0),
