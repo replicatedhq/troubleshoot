@@ -1,0 +1,19 @@
+apiVersion: troubleshoot.sh/v1beta2
+kind: Preflight
+metadata:
+  name: sample
+spec:
+  collectors:
+    - clusterInfo: {}
+    - clusterResources: {}
+  analyzers:
+    - clusterVersion:
+        exclude: true
+        outcomes:
+        - pass:
+            message: Cluster is up to date
+    - clusterVersion:
+        exclude: true
+        outcomes:
+        - pass:
+            message: Cluster is up to date

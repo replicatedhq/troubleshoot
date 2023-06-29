@@ -323,7 +323,8 @@ func TestCheckOutcomesToExitCode(t *testing.T) {
 func TestValidatePreflight(t *testing.T) {
 	noCollectorsPreflightFile := filepath.Join(testutils.FileDir(), "../../testdata/preflightspec/troubleshoot_v1beta2_preflight_validate_empty_collectors_gotest.yaml")
 	noAnalyzersPreflightFile := filepath.Join(testutils.FileDir(), "../../testdata/preflightspec/troubleshoot_v1beta2_preflight_validate_empty_analyzers_gotest.yaml")
-	// hostpreflightFile := filepath.Join(testutils.FileDir(), "../../examples/preflight/host/block-devices.yaml")
+	excludedCollectorsPreflightFile := filepath.Join(testutils.FileDir(), "../../testdata/preflightspec/troubleshoot_v1beta2_preflight_validate_excluded_collectors_gotest.yaml")
+	excludedAnalyzersPreflightFile := filepath.Join(testutils.FileDir(), "../../testdata/preflightspec/troubleshoot_v1beta2_preflight_validate_excluded_analyzers_gotest.yaml")
 	tests := []struct {
 		name          string
 		preflightSpec string
@@ -343,6 +344,16 @@ func TestValidatePreflight(t *testing.T) {
 			name:          "no-analyzers",
 			preflightSpec: noAnalyzersPreflightFile,
 			wantWarning:   types.NewExitCodeWarning("No analyzers found"),
+		},
+		{
+			name:          "excluded-collectors",
+			preflightSpec: excludedCollectorsPreflightFile,
+			wantWarning:   types.NewExitCodeWarning("All collectors were excluded by the applied values"),
+		},
+		{
+			name:          "excluded-analyzers",
+			preflightSpec: excludedAnalyzersPreflightFile,
+			wantWarning:   types.NewExitCodeWarning("All analyzers were excluded by the applied values"),
 		},
 	}
 
