@@ -396,10 +396,7 @@ func validateSpecItems(collectors []*v1beta2.Collect, analyzers []*v1beta2.Analy
 		return types.NewExitCodeWarning("No analyzers found")
 	}
 
-	numberOfCollectors := 0
-	numberOfAnalyzers := 0
-	numberOfExcludedCollectors := 0
-	numberOfExcludedAnalyzers := 0
+	var numberOfCollectors, numberOfAnalyzers, numberOfExcludedCollectors, numberOfExcludedAnalyzers int
 
 	if collectors != nil || analyzers != nil {
 		collectorsInterface := make([]interface{}, len(collectors))
@@ -429,6 +426,14 @@ func validateSpecItems(collectors []*v1beta2.Collect, analyzers []*v1beta2.Analy
 
 		numberOfCollectors, numberOfExcludedCollectors = countExcludedItems(collectorsInterface)
 		numberOfAnalyzers, numberOfExcludedAnalyzers = countExcludedItems(analyzersInterface)
+	}
+
+	if numberOfCollectors == 0 {
+		return types.NewExitCodeWarning("No collectors found")
+	}
+
+	if numberOfAnalyzers == 0 {
+		return types.NewExitCodeWarning("No analyzers found")
 	}
 
 	if numberOfExcludedCollectors == numberOfCollectors {
