@@ -104,7 +104,7 @@ This is a non-exhaustive list of usage patterns, but it should help guide how fu
 
 - if no bundle URI/location is specified, search for a spec in-cluster
 
-  `troubleshoot collect`
+  `troubleshoot support-bundle`
 
 - use a spec to return a go/no-go preflight outcome
 
