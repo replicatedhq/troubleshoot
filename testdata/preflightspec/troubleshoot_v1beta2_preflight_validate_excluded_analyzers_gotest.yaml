@@ -7,11 +7,14 @@ spec:
     - clusterInfo: {}
     - clusterResources: {}
   analyzers:
-    - clusterVersion:
+    - distribution:
         exclude: true
         outcomes:
-        - pass:
-            message: Cluster is up to date
+          - pass:
+              when: "== k3s"
+              message: K3S is a supported distribution
+          - warn:
+              message: Unable to determine the distribution of Kubernetes
     - clusterVersion:
         exclude: true
         outcomes:

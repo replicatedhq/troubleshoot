@@ -5,18 +5,15 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
-	"reflect"
 	"time"
 
 	cursor "github.com/ahmetalpbalkan/go-cursor"
 	"github.com/fatih/color"
 	"github.com/pkg/errors"
 	analyzer "github.com/replicatedhq/troubleshoot/pkg/analyze"
-	"github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/replicatedhq/troubleshoot/pkg/constants"
 	"github.com/replicatedhq/troubleshoot/pkg/k8sutil"
-	"github.com/replicatedhq/troubleshoot/pkg/multitype"
 	"github.com/replicatedhq/troubleshoot/pkg/types"
 	"github.com/spf13/viper"
 	spin "github.com/tj/go-spin"
@@ -362,113 +359,4 @@ func parseTimeFlags(v *viper.Viper, collectors []*troubleshootv1beta2.Collect) e
 		}
 	}
 	return nil
-}
-
-func validatePreflight(specs PreflightSpecs) *types.ExitCodeWarning {
-
-	if specs.PreflightSpec == nil && specs.HostPreflightSpec == nil {
-		return types.NewExitCodeWarning("no preflight or host preflight spec was found")
-	}
-
-	if specs.PreflightSpec != nil {
-		warning := validateSpecItems(specs.PreflightSpec.Spec.Collectors, specs.PreflightSpec.Spec.Analyzers, nil, nil)
-		if warning != nil {
-			return warning
-		}
-	}
-
-	if specs.HostPreflightSpec != nil {
-		warning := validateSpecItems(nil, nil, specs.HostPreflightSpec.Spec.Collectors, specs.HostPreflightSpec.Spec.Analyzers)
-		if warning != nil {
-			return warning
-		}
-	}
-
-	return nil
-}
-
-func validateSpecItems(collectors []*v1beta2.Collect, analyzers []*v1beta2.Analyze, hostCollectors []*v1beta2.HostCollect, hostAnalyzers []*v1beta2.HostAnalyze) *types.ExitCodeWarning {
-	if collectors == nil && hostAnalyzers == nil {
-		return types.NewExitCodeWarning("No collectors found")
-	}
-
-	if analyzers == nil && hostAnalyzers == nil {
-		return types.NewExitCodeWarning("No analyzers found")
-	}
-
-	var numberOfCollectors, numberOfAnalyzers, numberOfExcludedCollectors, numberOfExcludedAnalyzers int
-
-	if collectors != nil || analyzers != nil {
-		collectorsInterface := make([]interface{}, len(collectors))
-		for i, v := range collectors {
-			collectorsInterface[i] = v
-		}
-
-		analyzersInterface := make([]interface{}, len(analyzers))
-		for i, v := range analyzers {
-			analyzersInterface[i] = v
-		}
-
-		numberOfCollectors, numberOfExcludedCollectors = countExcludedItems(collectorsInterface)
-		numberOfAnalyzers, numberOfExcludedAnalyzers = countExcludedItems(analyzersInterface)
-	}
-
-	if hostCollectors != nil || hostAnalyzers != nil {
-		collectorsInterface := make([]interface{}, len(hostCollectors))
-		for i, v := range hostCollectors {
-			collectorsInterface[i] = v
-		}
-
-		analyzersInterface := make([]interface{}, len(hostAnalyzers))
-		for i, v := range hostAnalyzers {
-			analyzersInterface[i] = v
-		}
-
-		numberOfCollectors, numberOfExcludedCollectors = countExcludedItems(collectorsInterface)
-		numberOfAnalyzers, numberOfExcludedAnalyzers = countExcludedItems(analyzersInterface)
-	}
-
-	if numberOfCollectors == 0 {
-		return types.NewExitCodeWarning("No collectors found")
-	}
-
-	if numberOfAnalyzers == 0 {
-		return types.NewExitCodeWarning("No analyzers found")
-	}
-
-	if numberOfExcludedCollectors == numberOfCollectors {
-		return types.NewExitCodeWarning("All collectors were excluded by the applied values")
-	}
-
-	if numberOfExcludedAnalyzers == numberOfAnalyzers {
-		return types.NewExitCodeWarning("All analyzers were excluded by the applied values")
-	}
-
-	return nil
-}
-
-func countExcludedItems(items []interface{}) (int, int) {
-	numberOfItems := len(items)
-	numberOfExcludedItems := 0
-	for _, item := range items {
-		itemElem := reflect.ValueOf(item).Elem()
-		for i := 0; i < itemElem.NumField(); i++ {
-			itemValue := itemElem.Field(i)
-			if !itemValue.IsNil() {
-				elem := itemValue.Elem()
-				if elem.Kind() == reflect.Struct {
-					excludeField := elem.FieldByName("Exclude")
-					if excludeField.IsValid() {
-						excludeValue, ok := excludeField.Interface().(*multitype.BoolOrString)
-						if ok && excludeValue != nil {
-							if excludeValue.BoolOrDefaultFalse() {
-								numberOfExcludedItems++
-							}
-						}
-					}
-				}
-			}
-		}
-	}
-	return numberOfItems, numberOfExcludedItems
 }
