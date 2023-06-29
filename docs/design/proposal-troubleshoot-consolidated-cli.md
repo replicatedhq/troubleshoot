@@ -3,6 +3,7 @@
 ## Goals
 
 - Consolidate all top level Troubleshoot commands (`support-bundle`, `preflight`, `analyze`, `redact`, and `sbctl`) into one exposing subcommands of all the functionality that was implemented by the previous commands.
+- Standardise and make consistent troubleshoot public APIs in an effort of making it easier to maintain them and easier for users/projects to consume.
 - Ensure functional backward compatibility of newly introduces interfaces (CLI and Public APIs)
 
 ## Non-Goals
