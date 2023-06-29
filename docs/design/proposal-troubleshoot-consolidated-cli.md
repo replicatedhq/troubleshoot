@@ -7,7 +7,7 @@
 
 ## Non-Goals
 
-- Maintain backward compatibility of the CLI interface and the public APIs (new interfaces will be created)
+- Maintain backward compatibility of the CLI interface and the public APIs. _NOTE: The existing CLI will remain supported until such a time as the new CLI is considered to be in common use_
 
 ## Background
 
@@ -41,15 +41,14 @@ For example, running a set of redactors or analyzers on an existing support bund
 All top level commands (`support-bundle`, `preflight`, `analyze`, `redact`, and `sbctl`) of the Troubleshoot project will now be subcommands e.g `sbctl` is planned to be `troubleshoot inspect`. Some flags and subcommands names may change to best fit completeness of the CLI interface e.g `--interactive=false` will be `--no-input`. Putting the CLI interface together should aim to follow best practises from well known guidelines such as https://clig.dev/ and other mature projects.
 
 - `troubleshoot inspect` - This subcommand will be equivalent to the `sbctl` command.
-- `troubleshoot collect` - This subcommand will be equivalent to the `support-bundle` command.
+- `troubleshoot support-bundle` - This subcommand will be equivalent to the `support-bundle` command.
 - `troubleshoot preflight` - This subcommand will be equivalent to the `preflight` command.
 - `troubleshoot redact` - This subcommand will be equivalent to the `redact` command.
 - `troubleshoot analyze` - This subcommand will be equivalent to the `analyze` command.
 
 ### Public APIs
 
-The existing package entrypoint we use from the support-bundle command is `supportbundle.CollectSupportBundleFromSpec()`
-which is an end-to-end function that runs collectors, redactors and then analysis.
+The existing package entrypoint we use from the support-bundle command is `supportbundle.CollectSupportBundleFromSpec()` which is an end-to-end function that runs collectors, redactors and then analysis. We will not break this entry immediately, rather mark it as deprecated and leave it functional to allow users of this API to transition to the new set of APIs.
 
 The Consolidated cli should be responsible for handling the end-to-end running of this process in the `cmd` leaving the importable packages free to focus on defining the individual collect, redact analyze steps.
 
