@@ -44,8 +44,8 @@ All top level commands (`support-bundle`, `preflight`, `analyze`, `redact`, and 
 - `troubleshoot inspect` - Launches a k8s API server from an existing support bundle which one can inspect using `kubectl`. Its equivalent to `sbctl` command.
 - `troubleshoot support-bundle` - Collects, analyses and redacts a support bundle given a cluster or node, and troubleshoot specs. Its equivalent to  `support-bundle` command.
 - `troubleshoot preflight` - Runs preflight checks defined in a troubleshoot spec against a cluster or node . Its equivalent to `preflight` command.
-- `troubleshoot redact` - Redacts an existing support bundle given troubleshoot spec with redactors. Its equivalent to  `redact` command.
-- `troubleshoot analyze` - Redacts an existing support bundle given troubleshoot spec with analysers. Its equivalent to  `analyze` command.
+- `troubleshoot redact` - Redacts an existing support bundle given a troubleshoot spec with redactors. Its equivalent to  `redact` command.
+- `troubleshoot analyze` - Analyse an existing support bundle given a troubleshoot spec with analysers. Its equivalent to  `analyze` command.
 
 ### Public APIs
 
