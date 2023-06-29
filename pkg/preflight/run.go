@@ -12,6 +12,7 @@ import (
 	"github.com/fatih/color"
 	"github.com/pkg/errors"
 	analyzer "github.com/replicatedhq/troubleshoot/pkg/analyze"
+	"github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/replicatedhq/troubleshoot/pkg/constants"
 	"github.com/replicatedhq/troubleshoot/pkg/k8sutil"
@@ -49,10 +50,10 @@ func RunPreflights(interactive bool, output string, format string, args []string
 		return err
 	}
 
-	result := validatePreflight(specs)
+	warning := validatePreflight(specs)
 
-	if result != "" {
-		fmt.Println(result)
+	if warning != nil {
+		fmt.Println(warning.Warning())
 		return nil
 	}
 
@@ -363,53 +364,106 @@ func parseTimeFlags(v *viper.Viper, collectors []*troubleshootv1beta2.Collect) e
 	return nil
 }
 
-func validatePreflight(specs PreflightSpecs) string {
+func validatePreflight(specs PreflightSpecs) *types.ExitCodeWarning {
 
 	if specs.PreflightSpec == nil && specs.HostPreflightSpec == nil {
-		return "Warning: no preflight spec was provided"
+		return types.NewExitCodeWarning("no preflight or host preflight spec was found")
 	}
 
 	if specs.PreflightSpec != nil {
-		numberOfCollectors := len(specs.PreflightSpec.Spec.Collectors)
-		numberOfExcludeCollectors := 0
+		warning := validateSpecItems(specs.PreflightSpec.Spec.Collectors, specs.PreflightSpec.Spec.Analyzers, nil, nil)
+		if warning != nil {
+			return warning
+		}
+	}
 
-		if numberOfCollectors == 0 {
-			return "Warning: no collectors were provided"
+	if specs.HostPreflightSpec != nil {
+		warning := validateSpecItems(nil, nil, specs.HostPreflightSpec.Spec.Collectors, specs.HostPreflightSpec.Spec.Analyzers)
+		if warning != nil {
+			return warning
+		}
+	}
+
+	return nil
+}
+
+func validateSpecItems(collectors []*v1beta2.Collect, analyzers []*v1beta2.Analyze, hostCollectors []*v1beta2.HostCollect, hostAnalyzers []*v1beta2.HostAnalyze) *types.ExitCodeWarning {
+	if collectors == nil && hostAnalyzers == nil {
+		return types.NewExitCodeWarning("No collectors found")
+	}
+
+	if analyzers == nil && hostAnalyzers == nil {
+		return types.NewExitCodeWarning("No analyzers found")
+	}
+
+	numberOfCollectors := 0
+	numberOfAnalyzers := 0
+	numberOfExcludedCollectors := 0
+	numberOfExcludedAnalyzers := 0
+
+	if collectors != nil || analyzers != nil {
+		collectorsInterface := make([]interface{}, len(collectors))
+		for i, v := range collectors {
+			collectorsInterface[i] = v
 		}
 
-		for _, collector := range specs.PreflightSpec.Spec.Collectors {
-			collectorElem := reflect.ValueOf(collector).Elem()
-			for i := 0; i < collectorElem.NumField(); i++ {
-				collectorValue := collectorElem.Field(i)
-				if !collectorValue.IsNil() {
-					elem := collectorValue.Elem()
-					if elem.Kind() == reflect.Struct {
-						excludeField := elem.FieldByName("Exclude")
-						if excludeField.IsValid() {
-							excludeValue, ok := excludeField.Interface().(*multitype.BoolOrString)
-							if ok && excludeValue != nil {
-								if excludeValue.BoolOrDefaultFalse() {
-									numberOfExcludeCollectors++
-								}
+		analyzersInterface := make([]interface{}, len(analyzers))
+		for i, v := range analyzers {
+			analyzersInterface[i] = v
+		}
+
+		numberOfCollectors, numberOfExcludedCollectors = countExcludedItems(collectorsInterface)
+		numberOfAnalyzers, numberOfExcludedAnalyzers = countExcludedItems(analyzersInterface)
+	}
+
+	if hostCollectors != nil || hostAnalyzers != nil {
+		collectorsInterface := make([]interface{}, len(hostCollectors))
+		for i, v := range hostCollectors {
+			collectorsInterface[i] = v
+		}
+
+		analyzersInterface := make([]interface{}, len(hostAnalyzers))
+		for i, v := range hostAnalyzers {
+			analyzersInterface[i] = v
+		}
+
+		numberOfCollectors, numberOfExcludedCollectors = countExcludedItems(collectorsInterface)
+		numberOfAnalyzers, numberOfExcludedAnalyzers = countExcludedItems(analyzersInterface)
+	}
+
+	if numberOfExcludedCollectors == numberOfCollectors {
+		return types.NewExitCodeWarning("All collectors were excluded by the applied values")
+	}
+
+	if numberOfExcludedAnalyzers == numberOfAnalyzers {
+		return types.NewExitCodeWarning("All analyzers were excluded by the applied values")
+	}
+
+	return nil
+}
+
+func countExcludedItems(items []interface{}) (int, int) {
+	numberOfItems := len(items)
+	numberOfExcludedItems := 0
+	for _, item := range items {
+		itemElem := reflect.ValueOf(item).Elem()
+		for i := 0; i < itemElem.NumField(); i++ {
+			itemValue := itemElem.Field(i)
+			if !itemValue.IsNil() {
+				elem := itemValue.Elem()
+				if elem.Kind() == reflect.Struct {
+					excludeField := elem.FieldByName("Exclude")
+					if excludeField.IsValid() {
+						excludeValue, ok := excludeField.Interface().(*multitype.BoolOrString)
+						if ok && excludeValue != nil {
+							if excludeValue.BoolOrDefaultFalse() {
+								numberOfExcludedItems++
 							}
 						}
 					}
 				}
 			}
 		}
-
-		if numberOfExcludeCollectors == numberOfCollectors {
-			return "Warning: all collectors were excluded"
-		}
 	}
-
-	// if specs.PreflightSpec.Spec.Analyzers == nil || specs.HostPreflightSpec.Spec.Analyzers == nil {
-	// 	return "OK: no analyzers were provided"
-	// }
-
-	// if specs.PreflightSpec.Spec.Collectors == nil || specs.HostPreflightSpec.Spec.Collectors == nil {
-	// 	return "OK: no collectors were provided"
-	// }
-
-	return ""
+	return numberOfItems, numberOfExcludedItems
 }
