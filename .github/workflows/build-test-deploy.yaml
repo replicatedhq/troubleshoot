@@ -162,6 +162,12 @@ jobs:
       - run: chmod +x bin/preflight
       - run: make preflight-e2e-test
 
+  run-examples:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - run: make run-examples
+
   compile-supportbundle:
     runs-on: ubuntu-latest
     steps:

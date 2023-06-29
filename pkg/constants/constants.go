@@ -73,4 +73,8 @@ const (
 
 	// Troubleshoot spec constants
 	Troubleshootv1beta2Kind = "troubleshoot.sh/v1beta2"
+
+	// TermUI Display Constants
+	MESSAGE_TEXT_PADDING                = 4
+	MESSAGE_TEXT_LINES_MARGIN_TO_BOTTOM = 4
 )
