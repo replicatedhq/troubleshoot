@@ -96,7 +96,7 @@ This is a non-exhaustive list of usage patterns, but it should help guide how fu
 
 - generate a support bundle
 
-  `troubleshoot collect supportbundle.yaml`
+  `troubleshoot support-bundle supportbundle.yaml`
 
   `troubleshoot collect supportbundle.yaml secrets/default/kotsadm-appslug-supportbundle`
 
