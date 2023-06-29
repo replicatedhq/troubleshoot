@@ -98,7 +98,7 @@ This is a non-exhaustive list of usage patterns, but it should help guide how fu
 
   `troubleshoot support-bundle supportbundle.yaml`
 
-  `troubleshoot collect supportbundle.yaml secrets/default/kotsadm-appslug-supportbundle`
+  `troubleshoot support-bundle supportbundle.yaml secrets/default/kotsadm-appslug-supportbundle`
 
   `troubleshoot collect https://kots.io`
 
