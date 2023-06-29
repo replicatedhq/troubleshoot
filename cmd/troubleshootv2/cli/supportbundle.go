@@ -14,7 +14,6 @@ import (
 	"github.com/replicatedhq/troubleshoot/pkg/bundle"
 	"github.com/replicatedhq/troubleshoot/pkg/constants"
 	"github.com/replicatedhq/troubleshoot/pkg/loader"
-	"github.com/replicatedhq/troubleshoot/pkg/logger"
 	"github.com/replicatedhq/troubleshoot/pkg/supportbundle"
 	"github.com/spf13/cobra"
 	"go.opentelemetry.io/otel"
@@ -23,9 +22,12 @@ import (
 
 func CollectCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "collect",
-		Short: "Collect bundle from a cluster or host",
-		Long:  "Collect bundle from a cluster or host",
+		Use:   "support-bundle [urls...]",
+		Args:  cobra.MinimumNArgs(0),
+		Short: "Generate a support bundle",
+		Long: `A support bundle is an archive of files, output, metrics and state
+from a server that can be used to assist when troubleshooting a Kubernetes cluster.`,
+		SilenceUsage: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			err := doRun(cmd.Context(), args)
 			if err != nil {
@@ -36,10 +38,6 @@ func CollectCmd() *cobra.Command {
 			return nil
 		},
 	}
-
-	// Initialize klog flags
-	// TODO: Make these flags global i.e RootCmd.PersistentFlags()
-	logger.InitKlogFlags(cmd)
 
 	return cmd
 }

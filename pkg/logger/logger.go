@@ -40,7 +40,7 @@ func InitKlogFlags(cmd *cobra.Command) {
 			// If we ever want to expose the klog flags that have underscores ("_") in them
 			// we need to replace them with hyphens ("-") in the flag name using
 			// pflag.NormalizedName(strings.ReplaceAll(name, "_", "-")). Check how kubectl does it
-			cmd.Flags().AddGoFlag(f)
+			cmd.PersistentFlags().AddGoFlag(f)
 		}
 	})
 }
