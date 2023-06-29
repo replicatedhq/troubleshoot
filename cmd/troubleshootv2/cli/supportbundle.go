@@ -13,6 +13,7 @@ import (
 	"github.com/replicatedhq/troubleshoot/internal/util"
 	"github.com/replicatedhq/troubleshoot/pkg/bundle"
 	"github.com/replicatedhq/troubleshoot/pkg/constants"
+	"github.com/replicatedhq/troubleshoot/pkg/k8sutil"
 	"github.com/replicatedhq/troubleshoot/pkg/loader"
 	"github.com/replicatedhq/troubleshoot/pkg/supportbundle"
 	"github.com/spf13/cobra"
@@ -38,6 +39,16 @@ from a server that can be used to assist when troubleshooting a Kubernetes clust
 			return nil
 		},
 	}
+
+	// TODO: Can we group kubectl flags together e.g Kubernetes Flags, like we have Global Flags?
+	// Non-trivial cause cobra doesn't support it. See
+	// https://github.com/spf13/cobra/issues/1327
+	// Related issues/links:
+	// * https://github.com/spf13/cobra/pull/1778
+	// * https://github.com/karmada-io/karmada/blob/3ddee004adb21bf20b9a0807c59c015c2e28ecf5/cmd/controller-manager/app/controllermanager.go#L79-L95
+	// * https://github.com/kubernetes/component-base/blob/b5a495af30a7bb04642ce82f4816b47e75f78dbe/cli/flag/sectioned.go#L33-L41
+	// * https://github.com/aquasecurity/trivy/pull/2488
+	k8sutil.AddFlags(cmd.Flags())
 
 	return cmd
 }

@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/replicatedhq/troubleshoot/cmd/util"
-	"github.com/replicatedhq/troubleshoot/pkg/k8sutil"
 	"github.com/replicatedhq/troubleshoot/pkg/logger"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -21,11 +20,11 @@ import (
 
 func RootCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "troubleshoot [urls...]",
-		Args:  cobra.MinimumNArgs(0),
-		Short: "Generate a support bundle",
-		Long: `A support bundle is an archive of files, output, metrics and state
-from a server that can be used to assist when troubleshooting a Kubernetes cluster.`,
+		Use:   "troubleshoot",
+		Short: "Troubleshoot commandline interface",
+		Long: "A tool for collecting, redacting, analysing support bundles and " +
+			"running preflight checks on Kubernetes clusters.\n\n" +
+			"For more information, visit https://troubleshoot.sh",
 		SilenceUsage: true,
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			v := viper.GetViper()
@@ -52,9 +51,6 @@ from a server that can be used to assist when troubleshooting a Kubernetes clust
 
 	// Subcommands
 	cmd.AddCommand(CollectCmd())
-
-	// TODO: Limit the kubectl flags to only the ones we need
-	k8sutil.AddFlags(cmd.Flags())
 
 	// Initialize klog flags
 	logger.InitKlogFlags(cmd)
