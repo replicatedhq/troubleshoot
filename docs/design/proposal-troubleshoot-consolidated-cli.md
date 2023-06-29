@@ -41,11 +41,11 @@ For example, running a set of redactors or analyzers on an existing support bund
 
 All top level commands (`support-bundle`, `preflight`, `analyze`, `redact`, and `sbctl`) of the Troubleshoot project will now be subcommands e.g `sbctl` is planned to be `troubleshoot inspect`. Some flags and subcommands names may change to best fit completeness of the CLI interface e.g `--interactive=false` will be `--no-input`. Putting the CLI interface together should aim to follow best practises from well known guidelines such as https://clig.dev/ and other mature projects.
 
-- `troubleshoot inspect` - This subcommand will be equivalent to the `sbctl` command.
-- `troubleshoot support-bundle` - This subcommand will be equivalent to the `support-bundle` command.
-- `troubleshoot preflight` - This subcommand will be equivalent to the `preflight` command.
-- `troubleshoot redact` - This subcommand will be equivalent to the `redact` command.
-- `troubleshoot analyze` - This subcommand will be equivalent to the `analyze` command.
+- `troubleshoot inspect` - Launches a k8s API server from an existing support bundle which one can inspect using `kubectl`. Its equivalent to `sbctl` command.
+- `troubleshoot support-bundle` - Collects, analyses and redacts a support bundle given a cluster or node, and troubleshoot specs. Its equivalent to  `support-bundle` command.
+- `troubleshoot preflight` - Runs preflight checks defined in a troubleshoot spec against a cluster or node . Its equivalent to `preflight` command.
+- `troubleshoot redact` - Redacts an existing support bundle given troubleshoot spec with redactors. Its equivalent to  `redact` command.
+- `troubleshoot analyze` - Redacts an existing support bundle given troubleshoot spec with analysers. Its equivalent to  `analyze` command.
 
 ### Public APIs
 
