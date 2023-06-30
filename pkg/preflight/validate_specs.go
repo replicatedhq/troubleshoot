@@ -16,14 +16,14 @@ func validatePreflight(specs PreflightSpecs) *types.ExitCodeWarning {
 	}
 
 	if specs.PreflightSpec != nil {
-		warning := validateSpecItems(specs.PreflightSpec.Spec.Collectors, specs.PreflightSpec.Spec.Analyzers, nil, nil)
+		warning := validatePreflightSpecItems(specs.PreflightSpec.Spec.Collectors, specs.PreflightSpec.Spec.Analyzers)
 		if warning != nil {
 			return warning
 		}
 	}
 
 	if specs.HostPreflightSpec != nil {
-		warning := validateSpecItems(nil, nil, specs.HostPreflightSpec.Spec.Collectors, specs.HostPreflightSpec.Spec.Analyzers)
+		warning := validateHostPreflightSpecItems(specs.HostPreflightSpec.Spec.Collectors, specs.HostPreflightSpec.Spec.Analyzers)
 		if warning != nil {
 			return warning
 		}
@@ -32,71 +32,84 @@ func validatePreflight(specs PreflightSpecs) *types.ExitCodeWarning {
 	return nil
 }
 
-// validateSpecItems validates the collectors and analyzers and returns a warning if there is any
-func validateSpecItems(collectors []*v1beta2.Collect, analyzers []*v1beta2.Analyze, hostCollectors []*v1beta2.HostCollect, hostAnalyzers []*v1beta2.HostAnalyze) *types.ExitCodeWarning {
+// validatePreflightSpecItems validates the preflight spec items and returns a warning if there is any
+// clusterResources and clusterInfo collectors are added automatically to the preflight spec, cannot be excluded
+func validatePreflightSpecItems(collectors []*v1beta2.Collect, analyzers []*v1beta2.Analyze) *types.ExitCodeWarning {
 	var numberOfExcludedCollectors, numberOfExcludedAnalyzers int
-	var numberOfExcluderHostCollectors, numberOfExcludeHostAnalyzers int
-
-	numberOfCollectors := len(collectors)
+	var numberOfExcludedDefaultCollectors int
+	numberOfCollectors := len(collectors) + 2
 	numberOfAnalyzers := len(analyzers)
-	numberOfHostCollectors := len(hostCollectors)
-	numberOfHostAnalyzers := len(hostAnalyzers)
 
-	// if there are no collectors or analyzers, return a warning in both preflight and host preflight
-	if numberOfCollectors == 0 && numberOfHostCollectors == 0 {
-		return types.NewExitCodeWarning("No collectors found")
-	}
-
-	// if there are no collectors or analyzers, return a warning in both preflight and host preflight
-	if numberOfAnalyzers == 0 && numberOfHostAnalyzers == 0 {
-		return types.NewExitCodeWarning("No analyzers found")
-	}
-
-	// if there are collectors or analyzers, but all of them are excluded, return a warning
-	if collectors != nil || analyzers != nil {
+	if numberOfCollectors >= 0 {
 		collectorsInterface := make([]interface{}, len(collectors))
 		for i, v := range collectors {
+			if v.ClusterInfo != nil || v.ClusterResources != nil {
+				numberOfExcludedDefaultCollectors++
+			}
 			collectorsInterface[i] = v
 		}
 
+		numberOfExcludedCollectors += countExcludedItems(collectorsInterface)
+
+		if numberOfExcludedCollectors+numberOfExcludedDefaultCollectors == numberOfCollectors {
+			return types.NewExitCodeWarning("All collectors were excluded by the applied values")
+		}
+	}
+
+	// if there are no analyzers, return a warning
+	// else check if all analyzers are excluded
+	if numberOfAnalyzers == 0 {
+		return types.NewExitCodeWarning("No analyzers found")
+	} else {
 		analyzersInterface := make([]interface{}, len(analyzers))
 		for i, v := range analyzers {
 			analyzersInterface[i] = v
 		}
 
-		numberOfExcludedCollectors = countExcludedItems(collectorsInterface)
 		numberOfExcludedAnalyzers = countExcludedItems(analyzersInterface)
+
+		if numberOfExcludedAnalyzers == numberOfAnalyzers {
+			return types.NewExitCodeWarning("All analyzers were excluded by the applied values")
+		}
 	}
+	return nil
+}
+
+// validateHostPreflightSpecItems validates the host preflight spec items and returns a warning if there is any
+// no collectors are added or excluded automatically to the host preflight spec
+func validateHostPreflightSpecItems(collectors []*v1beta2.HostCollect, analyzers []*v1beta2.HostAnalyze) *types.ExitCodeWarning {
+	var numberOfExcludedCollectors, numberOfExcludedAnalyzers int
+	numberOfCollectors := len(collectors)
+	numberOfAnalyzers := len(analyzers)
+
+	// if there are no collectors, return a warning
+	if numberOfCollectors == 0 {
+		return types.NewExitCodeWarning("No Collectors found")
+	}
+
+	// if there are no analyzers, return a warning
+	if numberOfAnalyzers == 0 {
+		return types.NewExitCodeWarning("No analyzers found")
+	}
+
+	collectorsInterface := make([]interface{}, len(collectors))
+	for i, v := range collectors {
+		collectorsInterface[i] = v
+	}
+
+	analyzersInterface := make([]interface{}, len(analyzers))
+	for i, v := range analyzers {
+		analyzersInterface[i] = v
+	}
+
+	numberOfExcludedCollectors = countExcludedItems(collectorsInterface)
+	numberOfExcludedAnalyzers = countExcludedItems(analyzersInterface)
 
 	if numberOfExcludedCollectors == numberOfCollectors {
 		return types.NewExitCodeWarning("All collectors were excluded by the applied values")
 	}
 
 	if numberOfExcludedAnalyzers == numberOfAnalyzers {
-		return types.NewExitCodeWarning("All analyzers were excluded by the applied values")
-	}
-
-	// if there are host collectors or analyzers, but all of them are excluded, return a warning
-	if hostCollectors != nil || hostAnalyzers != nil {
-		collectorsInterface := make([]interface{}, len(hostCollectors))
-		for i, v := range hostCollectors {
-			collectorsInterface[i] = v
-		}
-
-		analyzersInterface := make([]interface{}, len(hostAnalyzers))
-		for i, v := range hostAnalyzers {
-			analyzersInterface[i] = v
-		}
-
-		numberOfExcluderHostCollectors = countExcludedItems(collectorsInterface)
-		numberOfExcludeHostAnalyzers = countExcludedItems(analyzersInterface)
-	}
-
-	if numberOfExcluderHostCollectors == numberOfHostCollectors {
-		return types.NewExitCodeWarning("All collectors were excluded by the applied values")
-	}
-
-	if numberOfExcludeHostAnalyzers == numberOfHostAnalyzers {
 		return types.NewExitCodeWarning("All analyzers were excluded by the applied values")
 	}
 

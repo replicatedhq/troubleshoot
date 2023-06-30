@@ -10,10 +10,15 @@ import (
 )
 
 func TestValidatePreflight(t *testing.T) {
-	noCollectorsPreflightFile := filepath.Join(testutils.FileDir(), "../../testdata/preflightspec/troubleshoot_v1beta2_preflight_validate_empty_collectors_gotest.yaml")
-	noAnalyzersPreflightFile := filepath.Join(testutils.FileDir(), "../../testdata/preflightspec/troubleshoot_v1beta2_preflight_validate_empty_analyzers_gotest.yaml")
-	excludedCollectorsPreflightFile := filepath.Join(testutils.FileDir(), "../../testdata/preflightspec/troubleshoot_v1beta2_preflight_validate_excluded_collectors_gotest.yaml")
-	excludedAnalyzersPreflightFile := filepath.Join(testutils.FileDir(), "../../testdata/preflightspec/troubleshoot_v1beta2_preflight_validate_excluded_analyzers_gotest.yaml")
+	testingFiles := map[string]string{
+		"noCollectorsPreflightFile":                 "troubleshoot_v1beta2_preflight_validate_empty_collectors_gotest.yaml",
+		"noAnalyzersPreflightFile":                  "troubleshoot_v1beta2_preflight_validate_empty_analyzers_gotest.yaml",
+		"excludedAllDefaultCollectorsPreflightFile": "troubleshoot_v1beta2_preflight_validate_excluded_all_default_collectors_gotest.yaml",
+		"excludedOneDefaultCollectorsPreflightFile": "troubleshoot_v1beta2_preflight_validate_excluded_one_default_collectors_gotest.yaml",
+		"excludedAllNonCollectorsPreflightFile":     "troubleshoot_v1beta2_preflight_validate_excluded_all_non_default_collectors_gotest.yaml",
+		"excludedAnalyzersPreflightFile":            "troubleshoot_v1beta2_preflight_validate_excluded_analyzers_gotest.yaml",
+	}
+
 	tests := []struct {
 		name          string
 		preflightSpec string
@@ -26,32 +31,43 @@ func TestValidatePreflight(t *testing.T) {
 		},
 		{
 			name:          "no-collectores",
-			preflightSpec: noCollectorsPreflightFile,
-			wantWarning:   types.NewExitCodeWarning("No collectors found"),
+			preflightSpec: testingFiles["noCollectorsPreflightFile"],
+			wantWarning:   nil,
 		},
 		{
 			name:          "no-analyzers",
-			preflightSpec: noAnalyzersPreflightFile,
+			preflightSpec: testingFiles["noAnalyzersPreflightFile"],
 			wantWarning:   types.NewExitCodeWarning("No analyzers found"),
 		},
 		{
-			name:          "excluded-collectors",
-			preflightSpec: excludedCollectorsPreflightFile,
+			name:          "excluded-all-default-collectors",
+			preflightSpec: testingFiles["excludedAllDefaultCollectorsPreflightFile"],
 			wantWarning:   types.NewExitCodeWarning("All collectors were excluded by the applied values"),
 		},
 		{
+			name:          "excluded-one-default-collectors",
+			preflightSpec: testingFiles["excludedOneDefaultCollectorsPreflightFile"],
+			wantWarning:   nil,
+		},
+		{
+			name:          "excluded-all-non-default-collectors",
+			preflightSpec: testingFiles["excludedAllNonCollectorsPreflightFile"],
+			wantWarning:   nil,
+		},
+		{
 			name:          "excluded-analyzers",
-			preflightSpec: excludedAnalyzersPreflightFile,
+			preflightSpec: testingFiles["excludedAnalyzersPreflightFile"],
 			wantWarning:   types.NewExitCodeWarning("All analyzers were excluded by the applied values"),
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			testFilePath := filepath.Join(testutils.FileDir(), "../../testdata/preflightspec/"+tt.preflightSpec)
 			specs := PreflightSpecs{}
-			specs.Read([]string{tt.preflightSpec})
+			specs.Read([]string{testFilePath})
 			gotWarning := validatePreflight(specs)
-			assert.Equal(t, tt.wantWarning.Warning(), gotWarning.Warning())
+			assert.Equal(t, tt.wantWarning, gotWarning)
 		})
 	}
 }

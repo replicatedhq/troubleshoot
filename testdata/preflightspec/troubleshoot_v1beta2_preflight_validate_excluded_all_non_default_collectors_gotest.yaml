@@ -1,0 +1,30 @@
+apiVersion: troubleshoot.sh/v1beta2
+kind: Preflight
+metadata:
+  name: sample
+spec:
+  collectors:
+    - http:
+        exclude: true
+        name: healthz
+        get:
+          url: http://api:3000/healthz
+    - data:
+        exclude: true
+        collectorName: my-password-dump
+        name: data
+        data: |
+          my super secret password is abc123
+          another redaction will go here
+  analyzers:
+    - distribution:
+        outcomes:
+          - pass:
+              when: "== k3s"
+              message: K3S is a supported distribution
+          - warn:
+              message: Unable to determine the distribution of Kubernetes
+    - clusterVersion:
+        outcomes:
+        - pass:
+            message: Cluster is up to date

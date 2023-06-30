@@ -3,7 +3,9 @@ kind: Preflight
 metadata:
   name: sample
 spec:
-  collectors: []
+  collectors:
+    - clusterInfo: 
+        exclude: true
   analyzers:
     - clusterVersion:
         outcomes:
