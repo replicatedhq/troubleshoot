@@ -84,7 +84,7 @@ func validateHostPreflightSpecItems(collectors []*v1beta2.HostCollect, analyzers
 
 	// if there are no collectors, return a warning
 	if numberOfCollectors == 0 {
-		return types.NewExitCodeWarning("No Collectors found")
+		return types.NewExitCodeWarning("No collectors found")
 	}
 
 	// if there are no analyzers, return a warning

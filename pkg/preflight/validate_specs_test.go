@@ -17,6 +17,10 @@ func TestValidatePreflight(t *testing.T) {
 		"excludedOneDefaultCollectorsPreflightFile": "troubleshoot_v1beta2_preflight_validate_excluded_one_default_collectors_gotest.yaml",
 		"excludedAllNonCollectorsPreflightFile":     "troubleshoot_v1beta2_preflight_validate_excluded_all_non_default_collectors_gotest.yaml",
 		"excludedAnalyzersPreflightFile":            "troubleshoot_v1beta2_preflight_validate_excluded_analyzers_gotest.yaml",
+		"noCollectorsHostPreflightFile":             "troubleshoot_v1beta2_host_preflight_validate_empty_collectors_gotest.yaml",
+		"noAnalyzersHostPreflightFile":              "troubleshoot_v1beta2_host_preflight_validate_empty_analyzers_gotest.yaml",
+		"excludedHostCollectorsPreflightFile":       "troubleshoot_v1beta2_host_preflight_validate_excluded_collectors_gotest.yaml",
+		"excludedHostAnalyzersPreflightFile":        "troubleshoot_v1beta2_host_preflight_validate_excluded_analyzers_gotest.yaml",
 	}
 
 	tests := []struct {
@@ -57,6 +61,26 @@ func TestValidatePreflight(t *testing.T) {
 		{
 			name:          "excluded-analyzers",
 			preflightSpec: testingFiles["excludedAnalyzersPreflightFile"],
+			wantWarning:   types.NewExitCodeWarning("All analyzers were excluded by the applied values"),
+		},
+		{
+			name:          "no-host-preflight-collectores",
+			preflightSpec: testingFiles["noCollectorsHostPreflightFile"],
+			wantWarning:   types.NewExitCodeWarning("No collectors found"),
+		},
+		{
+			name:          "no-host-preflight-analyzers",
+			preflightSpec: testingFiles["noAnalyzersHostPreflightFile"],
+			wantWarning:   types.NewExitCodeWarning("No analyzers found"),
+		},
+		{
+			name:          "excluded-host-preflight-collectors",
+			preflightSpec: testingFiles["excludedHostCollectorsPreflightFile"],
+			wantWarning:   types.NewExitCodeWarning("All collectors were excluded by the applied values"),
+		},
+		{
+			name:          "excluded-host-preflight-analyzers",
+			preflightSpec: testingFiles["excludedHostAnalyzersPreflightFile"],
 			wantWarning:   types.NewExitCodeWarning("All analyzers were excluded by the applied values"),
 		},
 	}

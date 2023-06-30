@@ -1,0 +1,14 @@
+apiVersion: troubleshoot.sh/v1beta2
+kind: HostPreflight
+metadata:
+  name: sample
+spec:
+  analyzers:
+    - hostOS:
+        outcomes:
+          - fail:
+              when: "ubuntu-16.04-kernel < 4.15"
+              message: unsupported distribution
+          - pass:
+              when: "ubuntu-18.04-kernel >= 4.15"
+              message: supported distribution
