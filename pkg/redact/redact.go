@@ -47,6 +47,7 @@ type Redaction struct {
 }
 
 func Redact(input io.Reader, path string, additionalRedactors []*troubleshootv1beta2.Redact) (io.Reader, error) {
+	// TODO: These should not be hard coded here
 	redactors, err := getRedactors(path)
 	if err != nil {
 		return nil, err

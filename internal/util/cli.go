@@ -18,6 +18,7 @@ import (
 // RawSpecsFromArgs returns a slice of specs from the given args.
 // The args can be a file path, a url, or a secret path.
 // TODO: Load specs from discovered spec in a k8s cluster
+// TODO: We might want to make this public if need be
 func RawSpecsFromArgs(args []string) ([]string, error) {
 	// We can use strings instead of bytes here because the specs are
 	// not meant to be modified, only read. Strings are easier to work with.

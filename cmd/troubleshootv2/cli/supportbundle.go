@@ -76,6 +76,15 @@ func doRun(ctx context.Context, args []string) error {
 		ctx, constants.TROUBLESHOOT_ROOT_SPAN_NAME,
 	)
 	defer root.End()
+	bundleDir, err := os.MkdirTemp("", "troubleshoot")
+	if err != nil {
+		return err
+	}
+	defer os.RemoveAll(bundleDir)
+
+	bdl := tsbundle.NewTroubleshootBundle(tsbundle.TroubleshootBundleOptions{
+		ProgressChan: progressChan,
+	})
 
 	// 1. Load troubleshoot specs from args
 	// TODO: "RawSpecsFromArgs" missing the logic to load specs from the cluster
@@ -91,15 +100,6 @@ func doRun(ctx context.Context, args []string) error {
 	}
 
 	// 2. Collect the support bundle
-	bundleDir, err := os.MkdirTemp("", "troubleshoot")
-	if err != nil {
-		return err
-	}
-	defer os.RemoveAll(bundleDir)
-
-	bdl := tsbundle.NewTroubleshootBundle(tsbundle.TroubleshootBundleOptions{
-		ProgressChan: progressChan,
-	})
 	klog.Infof("Collect support bundle")
 	err = bdl.Collect(ctxWrap, bundle.CollectOptions{
 		Specs:     kinds,
