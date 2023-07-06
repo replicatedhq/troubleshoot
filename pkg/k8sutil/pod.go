@@ -26,8 +26,9 @@ const (
 )
 
 // reference: https://github.com/kubernetes/kubernetes/blob/e8fcd0de98d50f4019561a6b7a0287f5c059267a/pkg/printers/internalversion/printers.go#L741
-func GetPodStatusReason(pod *corev1.Pod) string {
+func GetPodStatusReason(pod *corev1.Pod) (string, string) {
 	reason := string(pod.Status.Phase)
+	message := ""
 	if pod.Status.Reason != "" {
 		reason = pod.Status.Reason
 	}
@@ -61,6 +62,7 @@ func GetPodStatusReason(pod *corev1.Pod) string {
 	}
 	if !initializing {
 		hasRunning := false
+		fmt.Println(pod.Status.Conditions[0].Message)
 		for i := len(pod.Status.ContainerStatuses) - 1; i >= 0; i-- {
 			container := pod.Status.ContainerStatuses[i]
 
@@ -87,6 +89,14 @@ func GetPodStatusReason(pod *corev1.Pod) string {
 				reason = "NotReady"
 			}
 		}
+
+		if len(pod.Status.Conditions) > 0 {
+			for condition := range pod.Status.Conditions {
+				if pod.Status.Conditions[condition].Type == corev1.PodScheduled && pod.Status.Conditions[condition].Status == corev1.ConditionFalse {
+					message += pod.Status.Conditions[condition].Message
+				}
+			}
+		}
 	}
 
 	// "NodeLost" is originally k8s.io/kubernetes/pkg/util/node.NodeUnreachablePodReason but didn't wanna import all of kubernetes package just for this type
@@ -96,7 +106,7 @@ func GetPodStatusReason(pod *corev1.Pod) string {
 		reason = "Terminating"
 	}
 
-	return reason
+	return reason, message
 }
 
 func hasPodReadyCondition(conditions []corev1.PodCondition) bool {
@@ -113,7 +123,7 @@ func IsPodUnhealthy(pod *corev1.Pod) bool {
 		return true
 	}
 
-	reason := GetPodStatusReason(pod)
+	reason, _ := GetPodStatusReason(pod)
 	if PodStatusReason(reason) == PodStatusReasonCompleted {
 		return false // completed pods are healthy pods
 	}

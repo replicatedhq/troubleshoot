@@ -77,7 +77,7 @@ func clusterPodStatuses(analyzer *troubleshootv1beta2.ClusterPodStatuses, getChi
 
 	for _, pod := range pods {
 		if pod.Status.Reason == "" {
-			pod.Status.Reason = k8sutil.GetPodStatusReason(&pod)
+			pod.Status.Reason, pod.Status.Message = k8sutil.GetPodStatusReason(&pod)
 		}
 
 		for _, outcome := range analyzer.Outcomes {
@@ -149,7 +149,7 @@ func clusterPodStatuses(analyzer *troubleshootv1beta2.ClusterPodStatuses, getChi
 			}
 
 			if r.Message == "" {
-				r.Message = "Pod {{ .Namespace }}/{{ .Name }} status is {{ .Status.Reason }}"
+				r.Message = "Pod {{ .Namespace }}/{{ .Name }} status is {{ .Status.Reason }} with messages. {{ .Status.Message }}"
 			}
 
 			tmpl := template.New("pod")
