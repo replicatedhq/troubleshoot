@@ -14,9 +14,10 @@ type Bundler interface {
 	// Collect runs collectors defined in TroubleshootKinds
 	Collect(context.Context, CollectOptions) (CollectOutput error)
 
-	// Analyze runs analysers defined in TroubleshootKinds
-	// TODO: Consider making a new interface type for this function.
-	// It does not modify the bundle. BundleAnalyzer?
+	// Analyze runs analysers defined in TroubleshootKinds passed in AnalyzeOptions
+	// It does not modify the bundle. The AnalyzeOutput can be stored back into
+	// the bundle or used for other purposes.
+	// TODO: Consider new interface??
 	Analyze(context.Context, AnalyzeOptions) (AnalyzeOutput, error)
 
 	// Bundle returns collected or loaded bundle data
@@ -26,12 +27,12 @@ type Bundler interface {
 	// The bundle instance can be reused after reset
 	Reset()
 
-	// Redact runs redactors defined in TroubleshootKinds
+	// Redact runs redactors defined in TroubleshootKinds passed in RedactOptions
 	// It modifies the bundle data in place
 	// TODO: Do we want to report what was redacted in the output, or is progress/log messaging enough?
 	Redact(context.Context, RedactOptions) error
 
-	// Archive produces an archive from a bundle and writes it to the provided output (stream or file)
+	// Archive produces an archive from a bundle and writes it to the provided output pass in ArchiveOptions (stream or file)
 	Archive(context.Context, ArchiveOptions) error
 
 	// Load loads a bundle from source (stream, archive, directory or url)
@@ -41,7 +42,7 @@ type Bundler interface {
 // APIServer interface defines the API for implementing an API server of a read-only kubernetes cluster
 // from a bundle containing cluster resources collected from a live cluster
 type APIServer interface {
-	// Serve starts kubernetes API server to serve a read-only kubernetes cluster
+	// Serve starts a kubernetes API server to serve a read-only kubernetes cluster
 	// TODO: Should we return a channel to stream progress? Logs?
 	// TODO: Should this be a blocking call? Or have a ListenAndServe method?
 	Serve(context.Context, ServeOptions) (ServeOutput, error)
@@ -86,7 +87,7 @@ type AnalyzeOptions struct {
 // ServeOptions defines options for serving a read-only kubernetes cluster
 type ServeOptions struct {
 	BundleData collect.BundleData // bundle data containing cluster resources to serve
-	Address    string             // address to listen on including port (0.0.0.0:8080)
+	Address    string             // optional address to listen on including port (0.0.0.0:8080)
 	ConfigPath string             // optional path to store generated kubeconfig
 	// TODO: How do we stop the server? Signals? Context (in API call)? Explicit channel?
 	StopCh chan struct{} // channel to stop the server ???
