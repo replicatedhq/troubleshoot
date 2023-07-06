@@ -1,0 +1,8 @@
+apiVersion: troubleshoot.sh/v1beta2
+kind: HostPreflight
+metadata:
+  name: sample
+spec:
+  collectors:
+    - cpu: {}
+  analyzers: []
