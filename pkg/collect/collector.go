@@ -15,6 +15,7 @@ import (
 	"k8s.io/client-go/rest"
 )
 
+// Collector is the interface that all collectors must implement
 type Collector interface {
 	Title() string
 	IsExcluded() (bool, error)

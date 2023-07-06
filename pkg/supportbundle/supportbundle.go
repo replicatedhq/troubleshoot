@@ -140,7 +140,7 @@ func CollectSupportBundleFromSpec(
 		return nil, errors.Wrap(err, "failed to generate support bundle")
 	}
 
-	version, err := getVersionFile()
+	version, err := GetVersionFile()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get version file")
 	}
@@ -274,10 +274,19 @@ func ConcatSpec(target *troubleshootv1beta2.SupportBundle, source *troubleshootv
 	} else {
 		newBundle = target.DeepCopy()
 		newBundle.Spec.Collectors = append(target.Spec.Collectors, source.Spec.Collectors...)
+		// TODO: We assume that all results should be uploaded to all destinations defined in after collection
 		newBundle.Spec.AfterCollection = append(target.Spec.AfterCollection, source.Spec.AfterCollection...)
 		newBundle.Spec.HostCollectors = append(target.Spec.HostCollectors, source.Spec.HostCollectors...)
 		newBundle.Spec.HostAnalyzers = append(target.Spec.HostAnalyzers, source.Spec.HostAnalyzers...)
 		newBundle.Spec.Analyzers = append(target.Spec.Analyzers, source.Spec.Analyzers...)
 	}
 	return newBundle
+}
+
+func ConcatSpecs(specs ...troubleshootv1beta2.SupportBundle) *troubleshootv1beta2.SupportBundle {
+	target := &troubleshootv1beta2.SupportBundle{}
+	for _, s := range specs {
+		target = ConcatSpec(target, &s)
+	}
+	return target
 }
