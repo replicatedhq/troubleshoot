@@ -324,7 +324,7 @@ func (c *CollectClusterResources) Collect(progressChan chan<- interface{}) (Coll
 
 	//Persistent Volumes
 	pvs, pvsErrors := pvs(ctx, client)
-	output.SaveResult(c.BundlePath, path.Join(constants.CLUSTER_RESOURCES_DIR, constants.CLUSTER_RESOURCES_PVS), bytes.NewBuffer(pvs))
+	output.SaveResult(c.BundlePath, path.Join(constants.CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s.json", constants.CLUSTER_RESOURCES_PVS)), bytes.NewBuffer(pvs))
 	output.SaveResult(c.BundlePath, path.Join(constants.CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s-errors.json", constants.CLUSTER_RESOURCES_PVS)), marshalErrors(pvsErrors))
 
 	//Persistent Volume Claims
