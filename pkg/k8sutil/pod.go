@@ -58,16 +58,23 @@ func GetPodStatusReason(pod *corev1.Pod) (string, string) {
 			reason = fmt.Sprintf("Init:%d/%d", i, len(pod.Spec.InitContainers))
 			initializing = true
 		}
+
+		if container.LastTerminationState.Terminated != nil && container.LastTerminationState.Terminated.Message != "" {
+			message += container.LastTerminationState.Terminated.Message
+		}
 		break
 	}
 	if !initializing {
 		hasRunning := false
-		fmt.Println(pod.Status.Conditions[0].Message)
+
 		for i := len(pod.Status.ContainerStatuses) - 1; i >= 0; i-- {
 			container := pod.Status.ContainerStatuses[i]
 
 			if container.State.Waiting != nil && container.State.Waiting.Reason != "" {
 				reason = container.State.Waiting.Reason
+				if container.LastTerminationState.Terminated != nil && container.LastTerminationState.Terminated.Message != "" {
+					message += container.LastTerminationState.Terminated.Message
+				}
 			} else if container.State.Terminated != nil && container.State.Terminated.Reason != "" {
 				reason = container.State.Terminated.Reason
 			} else if container.State.Terminated != nil && container.State.Terminated.Reason == "" {

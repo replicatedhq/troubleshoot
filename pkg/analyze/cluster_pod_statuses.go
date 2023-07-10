@@ -3,6 +3,7 @@ package analyzer
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"path/filepath"
 	"strings"
 	"text/template"
@@ -80,6 +81,35 @@ func clusterPodStatuses(analyzer *troubleshootv1beta2.ClusterPodStatuses, getChi
 			pod.Status.Reason, pod.Status.Message = k8sutil.GetPodStatusReason(&pod)
 		}
 
+		if pod.Status.Message == "" {
+			messages := []string{}
+			collectedEvents, err := getChildCollectedFileContents(filepath.Join(constants.CLUSTER_RESOURCES_DIR, "events", fmt.Sprintf("%s.json", pod.Namespace)), excludeFiles)
+			if err != nil {
+				return nil, errors.Wrap(err, "failed to read collected events")
+			}
+
+			for _, fileContent := range collectedEvents {
+				var nsEvents []corev1.Event
+				if err := json.Unmarshal(fileContent, &nsEvents); err != nil {
+					// try new format
+					var nsEventsList corev1.EventList
+					if err := json.Unmarshal(fileContent, &nsEventsList); err != nil {
+						return nil, errors.Wrap(err, "failed to unmarshal events")
+					}
+					nsEvents = nsEventsList.Items
+				}
+
+				for _, event := range nsEvents {
+					if event.InvolvedObject.Kind == "Pod" && event.InvolvedObject.Name == pod.Name && event.InvolvedObject.Namespace == pod.Namespace {
+						if event.Type == "Warning" && event.Message != "" {
+							messages = append(messages, event.Message)
+						}
+					}
+				}
+			}
+			pod.Status.Message = strings.Join(messages, ". ")
+		}
+
 		for _, outcome := range analyzer.Outcomes {
 			r := AnalyzeResult{}
 			when := ""
@@ -149,7 +179,7 @@ func clusterPodStatuses(analyzer *troubleshootv1beta2.ClusterPodStatuses, getChi
 			}
 
 			if r.Message == "" {
-				r.Message = "Pod {{ .Namespace }}/{{ .Name }} status is {{ .Status.Reason }} with messages. {{ .Status.Message }}"
+				r.Message = "Pod {{ .Namespace }}/{{ .Name }} status is {{ .Status.Reason }}. {{ .Status.Message }}"
 			}
 
 			tmpl := template.New("pod")
@@ -176,7 +206,7 @@ func clusterPodStatuses(analyzer *troubleshootv1beta2.ClusterPodStatuses, getChi
 			if err != nil {
 				return nil, errors.Wrap(err, "failed to execute template")
 			}
-			r.Message = m.String()
+			r.Message = strings.TrimSpace(m.String())
 
 			// add to results, break and check the next pod
 			allResults = append(allResults, &r)
