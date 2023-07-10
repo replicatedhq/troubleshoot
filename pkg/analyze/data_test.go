@@ -45,3 +45,6 @@ var defaultPodsUnhealthy string
 
 //go:embed files/pods/other-unhealthy.json
 var otherPodsUnhealthy string
+
+//go:embed files/pods/message-pending-node-affinity.json
+var messagePendingNodeAffinity string

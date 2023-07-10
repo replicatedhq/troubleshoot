@@ -374,6 +374,41 @@ func Test_ClusterPodStatuses(t *testing.T) {
 				"cluster-resources/pods/other-unhealthy.json":   []byte(otherPodsUnhealthy),
 			},
 		},
+		{
+			name: "show_message_of_pending_pods_with_wrong_node_affinity",
+			analyzer: troubleshootv1beta2.ClusterPodStatuses{
+				AnalyzeMeta: troubleshootv1beta2.AnalyzeMeta{
+					CheckName: "show_message_of_pending_pods_with_wrong_node_affinity",
+				},
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Warn: &troubleshootv1beta2.SingleOutcome{
+							When:    "!= Healthy",
+							Message: "A Pod, {{ .Name }}, is unhealthy with a status of: {{ .Status.Reason }}. Message is: {{ .Status.Message }}",
+						},
+					},
+				},
+				Namespaces: []string{"message-pending-node-affinity"},
+			},
+			expectResult: []*AnalyzeResult{
+				{
+					IsPass:  false,
+					IsWarn:  true,
+					IsFail:  false,
+					Title:   "show_message_of_pending_pods_with_wrong_node_affinity",
+					Message: "A Pod, kotsadm-b6cb54c8f-zgzrn, is unhealthy with a status of: Pending. Message is: 0/1 nodes are available: 1 node(s) didn't match Pod's node affinity/selector. preemption: 0/1 nodes are available: 1 Preemption is not helpful for scheduling.",
+					InvolvedObject: &corev1.ObjectReference{
+						APIVersion: "v1",
+						Kind:       "Pod",
+						Namespace:  "message-pending-node-affinity",
+						Name:       "kotsadm-b6cb54c8f-zgzrn",
+					},
+				},
+			},
+			files: map[string][]byte{
+				"cluster-resources/pods/message-pending-node-affinity.json": []byte(messagePendingNodeAffinity),
+			},
+		},
 	}
 
 	for _, test := range tests {
