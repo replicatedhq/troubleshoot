@@ -541,6 +541,144 @@ func Test_jsonCompare(t *testing.T) {
 			},
 			fileContents: []byte(``),
 		},
+		{
+			name: "jsonpath comparison",
+			analyzer: troubleshootv1beta2.JsonCompare{
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							Message: "pass",
+						},
+					},
+					{
+						Fail: &troubleshootv1beta2.SingleOutcome{
+							Message: "fail",
+						},
+					},
+				},
+				CollectorName: "jsonpath-compare-1",
+				FileName:      "jsonpath-compare-1.json",
+				JsonPath:      "{$.morestuff[0]}",
+				Value: `{
+					"foo": {
+						"bar": 123
+					}
+				}`,
+			},
+			expectResult: AnalyzeResult{
+				IsPass:  true,
+				IsWarn:  false,
+				IsFail:  false,
+				Title:   "jsonpath-compare-1",
+				Message: "pass",
+				IconKey: "kubernetes_text_analyze",
+				IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg",
+			},
+			fileContents: []byte(`{
+				"foo": "bar",
+				"stuff": {
+					"foo": "bar",
+					"bar": true
+				},
+				"morestuff": [
+					{
+						"foo": {
+							"bar": 123
+						}
+					}
+				]
+			}`),
+		},
+		{
+			name: "jsonpath comparison, but fail on match",
+			analyzer: troubleshootv1beta2.JsonCompare{
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							Message: "pass",
+							When:    "false",
+						},
+					},
+					{
+						Fail: &troubleshootv1beta2.SingleOutcome{
+							Message: "fail",
+							When:    "true",
+						},
+					},
+				},
+				CollectorName: "jsonpath-compare-1-1",
+				FileName:      "jsonpath-compare-1-1.json",
+				JsonPath:      "{$.morestuff[0].foo.bar}",
+				Value:         `123`,
+			},
+			expectResult: AnalyzeResult{
+				IsPass:  false,
+				IsWarn:  false,
+				IsFail:  true,
+				Title:   "jsonpath-compare-1-1",
+				Message: "fail",
+				IconKey: "kubernetes_text_analyze",
+				IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg",
+			},
+			fileContents: []byte(`{
+				"foo": "bar",
+				"stuff": {
+					"foo": "bar",
+					"bar": true
+				},
+				"morestuff": [
+					{
+						"foo": {
+							"bar": 123
+						}
+					}
+				]
+			}`),
+		},
+		{
+			name: "jsonpath comparison, multiple values",
+			analyzer: troubleshootv1beta2.JsonCompare{
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							Message: "pass",
+						},
+					},
+					{
+						Fail: &troubleshootv1beta2.SingleOutcome{
+							Message: "fail",
+						},
+					},
+				},
+				CollectorName: "jsonpath-compare-2",
+				FileName:      "jsonpath-compare-2.json",
+				JsonPath:      "{$..bar}",
+				Value:         `[true, 123]`,
+			},
+			expectResult: AnalyzeResult{
+				IsPass:  true,
+				IsWarn:  false,
+				IsFail:  false,
+				Title:   "jsonpath-compare-2",
+				Message: "pass",
+				IconKey: "kubernetes_text_analyze",
+				IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg",
+			},
+			fileContents: []byte(`{
+				"foo": "bar",
+				"stuff": {
+					"foo": "bar",
+					"bar": true
+				},
+				"morestuff": [
+					{
+						"foo": {
+							"bar": 123
+						}
+					}
+				]
+			}`),
+		},
 	}
 
 	for _, test := range tests {
