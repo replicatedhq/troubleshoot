@@ -48,3 +48,9 @@ var otherPodsUnhealthy string
 
 //go:embed files/pods/message-pending-node-affinity.json
 var messagePendingNodeAffinity string
+
+//go:embed files/pods/message-container-creating-failed-mount.json
+var messageContainerCreatingFailedMount string
+
+//go:embed files/events/message-container-creating-failed-mount.json
+var messageContainerCreatingFailedMountEvents string

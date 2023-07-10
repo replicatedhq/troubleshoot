@@ -15,6 +15,7 @@ func Test_ClusterPodStatuses(t *testing.T) {
 		analyzer     troubleshootv1beta2.ClusterPodStatuses
 		expectResult []*AnalyzeResult
 		files        map[string][]byte
+		eventFiles   map[string][]byte
 	}{
 		{
 			name: "pass_when_all_pods_are_healthy_in_specific_namespace",
@@ -409,6 +410,44 @@ func Test_ClusterPodStatuses(t *testing.T) {
 				"cluster-resources/pods/message-pending-node-affinity.json": []byte(messagePendingNodeAffinity),
 			},
 		},
+		{
+			name: "show_message_of_container_creating_pod_with_failed_mount",
+			analyzer: troubleshootv1beta2.ClusterPodStatuses{
+				AnalyzeMeta: troubleshootv1beta2.AnalyzeMeta{
+					CheckName: "show_message_of_container_creating_pod_with_failed_mount",
+				},
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Warn: &troubleshootv1beta2.SingleOutcome{
+							When:    "!= Healthy",
+							Message: "A Pod, {{ .Name }}, is unhealthy with a status of: {{ .Status.Reason }}. Message is: {{ .Status.Message }}",
+						},
+					},
+				},
+				Namespaces: []string{"message-container-creating-failed-mount"},
+			},
+			expectResult: []*AnalyzeResult{
+				{
+					IsPass:  false,
+					IsWarn:  true,
+					IsFail:  false,
+					Title:   "show_message_of_container_creating_pod_with_failed_mount",
+					Message: "A Pod, troubleshoot-copyfromhost-4m79m-psdjm, is unhealthy with a status of: ContainerCreating. Message is: MountVolume.SetUp failed for volume \"host\" : hostPath type check failed: /var/lib/collectd is not a directory. Unable to attach or mount volumes: unmounted volumes=[host], unattached volumes=[host kube-api-access-xddvj]: timed out waiting for the condition",
+					InvolvedObject: &corev1.ObjectReference{
+						APIVersion: "v1",
+						Kind:       "Pod",
+						Namespace:  "message-container-creating-failed-mount",
+						Name:       "troubleshoot-copyfromhost-4m79m-psdjm",
+					},
+				},
+			},
+			files: map[string][]byte{
+				"cluster-resources/pods/message-container-creating-failed-mount.json": []byte(messageContainerCreatingFailedMount),
+			},
+			eventFiles: map[string][]byte{
+				"cluster-resources/events/message-container-creating-failed-mount.json": []byte(messageContainerCreatingFailedMountEvents),
+			},
+		},
 	}
 
 	for _, test := range tests {
@@ -422,7 +461,14 @@ func Test_ClusterPodStatuses(t *testing.T) {
 				return test.files, nil
 			}
 
-			actual, err := clusterPodStatuses(&test.analyzer, getFiles)
+			getEventFiles := func(n string, _ []string) (map[string][]byte, error) {
+				if file, ok := test.eventFiles[n]; ok {
+					return map[string][]byte{n: file}, nil
+				}
+				return test.files, nil
+			}
+
+			actual, err := clusterPodStatuses(&test.analyzer, getFiles, getEventFiles)
 			req.NoError(err)
 			req.Equal(len(test.expectResult), len(actual))
 			for _, a := range actual {

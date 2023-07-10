@@ -33,7 +33,7 @@ func (a *AnalyzeClusterPodStatuses) IsExcluded() (bool, error) {
 }
 
 func (a *AnalyzeClusterPodStatuses) Analyze(getFile getCollectedFileContents, findFiles getChildCollectedFileContents) ([]*AnalyzeResult, error) {
-	results, err := clusterPodStatuses(a.analyzer, findFiles)
+	results, err := clusterPodStatuses(a.analyzer, findFiles, findFiles)
 	if err != nil {
 		return nil, err
 	}
@@ -43,7 +43,7 @@ func (a *AnalyzeClusterPodStatuses) Analyze(getFile getCollectedFileContents, fi
 	return results, nil
 }
 
-func clusterPodStatuses(analyzer *troubleshootv1beta2.ClusterPodStatuses, getChildCollectedFileContents getChildCollectedFileContents) ([]*AnalyzeResult, error) {
+func clusterPodStatuses(analyzer *troubleshootv1beta2.ClusterPodStatuses, getChildCollectedFileContents getChildCollectedFileContents, getChildCollectedFileContentsEvents getChildCollectedFileContents) ([]*AnalyzeResult, error) {
 	excludeFiles := []string{}
 	collected, err := getChildCollectedFileContents(filepath.Join(constants.CLUSTER_RESOURCES_DIR, constants.CLUSTER_RESOURCES_PODS, "*.json"), excludeFiles)
 	if err != nil {
@@ -83,7 +83,7 @@ func clusterPodStatuses(analyzer *troubleshootv1beta2.ClusterPodStatuses, getChi
 
 		if pod.Status.Message == "" {
 			messages := []string{}
-			collectedEvents, err := getChildCollectedFileContents(filepath.Join(constants.CLUSTER_RESOURCES_DIR, "events", fmt.Sprintf("%s.json", pod.Namespace)), excludeFiles)
+			collectedEvents, err := getChildCollectedFileContentsEvents(filepath.Join(constants.CLUSTER_RESOURCES_DIR, "events", fmt.Sprintf("%s.json", pod.Namespace)), excludeFiles)
 			if err != nil {
 				return nil, errors.Wrap(err, "failed to read collected events")
 			}
