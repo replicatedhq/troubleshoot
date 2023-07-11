@@ -72,8 +72,12 @@ func GetPodStatusReason(pod *corev1.Pod) (string, string) {
 
 			if container.State.Waiting != nil && container.State.Waiting.Reason != "" {
 				reason = container.State.Waiting.Reason
-				if container.LastTerminationState.Terminated != nil && container.LastTerminationState.Terminated.Message != "" {
-					message += container.LastTerminationState.Terminated.Message
+				if container.LastTerminationState.Terminated != nil {
+					if container.LastTerminationState.Terminated.Message != "" {
+						message += container.LastTerminationState.Terminated.Message
+					} else {
+						message += fmt.Sprintf("ExitCode:%d", container.LastTerminationState.Terminated.ExitCode)
+					}
 				}
 			} else if container.State.Terminated != nil && container.State.Terminated.Reason != "" {
 				reason = container.State.Terminated.Reason
