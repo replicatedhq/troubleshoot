@@ -13,35 +13,35 @@ import (
 	"github.com/replicatedhq/troubleshoot/pkg/collect"
 )
 
-type AnalyzeHostCertificateValidity struct {
-	hostAnalyzer *troubleshootv1beta2.HostCertificateValidityAnalyze
+type AnalyzeHostCertificatesCollection struct {
+	hostAnalyzer *troubleshootv1beta2.HostCertificatesCollectionAnalyze
 }
 
-func (a *AnalyzeHostCertificateValidity) Title() string {
-	return hostAnalyzerTitleOrDefault(a.hostAnalyzer.AnalyzeMeta, "Host Cerfiticate Validity")
+func (a *AnalyzeHostCertificatesCollection) Title() string {
+	return hostAnalyzerTitleOrDefault(a.hostAnalyzer.AnalyzeMeta, "Host Cerfiticates Collection")
 }
 
-func (a *AnalyzeHostCertificateValidity) IsExcluded() (bool, error) {
+func (a *AnalyzeHostCertificatesCollection) IsExcluded() (bool, error) {
 	return isExcluded(a.hostAnalyzer.Exclude)
 }
 
-func (a *AnalyzeHostCertificateValidity) Analyze(getCollectedFileContents func(string) ([]byte, error)) ([]*AnalyzeResult, error) {
+func (a *AnalyzeHostCertificatesCollection) Analyze(getCollectedFileContents func(string) ([]byte, error)) ([]*AnalyzeResult, error) {
 	hostAnalyzer := a.hostAnalyzer
 
 	collectorName := hostAnalyzer.CollectorName
 	if collectorName == "" {
-		collectorName = "certificateValidity"
+		collectorName = "certificatesCollection"
 	}
-	name := filepath.Join("host-collectors/certificateValidity", collectorName+".json")
+	name := filepath.Join("host-collectors/certificatesCollection", collectorName+".json")
 
 	certificatesInfo, err := getCollectedFileContents(name)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to get contents of certificateValidity.json")
+		return nil, errors.Wrap(err, "failed to get contents of certificatesCollection.json")
 	}
 
-	collectorCertificates := []collect.HostCertificateValidityCollection{}
+	collectorCertificates := []collect.HostCertificatesCollection{}
 	if err := json.Unmarshal(certificatesInfo, &collectorCertificates); err != nil {
-		return nil, errors.Wrap(err, "failed to parse certificateValidity.json")
+		return nil, errors.Wrap(err, "failed to parse certificatesCollection.json")
 	}
 
 	var coll resultCollector
@@ -75,7 +75,7 @@ func (a *AnalyzeHostCertificateValidity) Analyze(getCollectedFileContents func(s
 	return coll.get(a.Title()), nil
 }
 
-func (a *AnalyzeHostCertificateValidity) analyzeHostAnalyzeCertificatesResult(certificateChains []collect.ParsedCertificate, outcomes []*troubleshootv1beta2.Outcome, source string) ([]*AnalyzeResult, error) {
+func (a *AnalyzeHostCertificatesCollection) analyzeHostAnalyzeCertificatesResult(certificateChains []collect.ParsedCertificate, outcomes []*troubleshootv1beta2.Outcome, source string) ([]*AnalyzeResult, error) {
 	var coll resultCollector
 	var passResults []*AnalyzeResult
 	when := ""

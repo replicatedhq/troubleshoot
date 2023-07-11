@@ -14,13 +14,13 @@ func Test_HostCertParser(t *testing.T) {
 	tests := []struct {
 		name                string
 		filePath, certChain string
-		want                HostCertificateValidityCollection
+		want                HostCertificatesCollection
 	}{
 		{
 			name:      "valid certificate",
 			filePath:  path,
 			certChain: certChains["validCert"],
-			want: HostCertificateValidityCollection{
+			want: HostCertificatesCollection{
 				CertificatePath: path,
 				CertificateChain: []ParsedCertificate{
 					{
@@ -45,7 +45,7 @@ func Test_HostCertParser(t *testing.T) {
 			name:      "expired certificate",
 			filePath:  path,
 			certChain: certChains["expiredCert"],
-			want: HostCertificateValidityCollection{
+			want: HostCertificatesCollection{
 				CertificatePath: path,
 				CertificateChain: []ParsedCertificate{
 					{
@@ -65,7 +65,7 @@ func Test_HostCertParser(t *testing.T) {
 			name:      "missing certificate",
 			filePath:  "",
 			certChain: "",
-			want: HostCertificateValidityCollection{
+			want: HostCertificatesCollection{
 				CertificatePath: "",
 				Message:         "cert-missing",
 			},

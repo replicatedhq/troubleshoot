@@ -10403,7 +10403,7 @@ spec:
                       required:
                       - outcomes
                       type: object
-                    certificateValidity:
+                    certificatesCollection:
                       properties:
                         annotations:
                           additionalProperties:
@@ -11311,7 +11311,7 @@ spec:
                       - certificatePath
                       - keyPath
                       type: object
-                    certificateValidity:
+                    certificatesCollection:
                       properties:
                         collectorName:
                           type: string
