@@ -28,6 +28,7 @@ const (
 // reference: https://github.com/kubernetes/kubernetes/blob/e8fcd0de98d50f4019561a6b7a0287f5c059267a/pkg/printers/internalversion/printers.go#L741
 func GetPodStatusReason(pod *corev1.Pod) (string, string) {
 	reason := string(pod.Status.Phase)
+	// message is used to store more detailed information about the pod status
 	message := ""
 	if pod.Status.Reason != "" {
 		reason = pod.Status.Reason
@@ -73,6 +74,8 @@ func GetPodStatusReason(pod *corev1.Pod) (string, string) {
 			if container.State.Waiting != nil && container.State.Waiting.Reason != "" {
 				reason = container.State.Waiting.Reason
 				if container.LastTerminationState.Terminated != nil {
+					// if the container is terminated, we should use the message from the last termination state
+					// if no message from the last termination state, we should use the exit code
 					if container.LastTerminationState.Terminated.Message != "" {
 						message += container.LastTerminationState.Terminated.Message
 					} else {
@@ -81,8 +84,10 @@ func GetPodStatusReason(pod *corev1.Pod) (string, string) {
 				}
 			} else if container.State.Terminated != nil && container.State.Terminated.Reason != "" {
 				reason = container.State.Terminated.Reason
-				message = fmt.Sprintf("ExitCode:%d", container.State.Terminated.ExitCode)
+				// add message from the last termination exit code
+				message += fmt.Sprintf("ExitCode:%d", container.State.Terminated.ExitCode)
 			} else if container.State.Terminated != nil && container.State.Terminated.Reason == "" {
+				// no extra message from the last termination state, since the signal or exit code is used as the reason
 				if container.State.Terminated.Signal != 0 {
 					reason = fmt.Sprintf("Signal:%d", container.State.Terminated.Signal)
 				} else {
@@ -102,6 +107,7 @@ func GetPodStatusReason(pod *corev1.Pod) (string, string) {
 			}
 		}
 
+		// if the pod is not running, check if there is any pod condition reporting as "False" status
 		if len(pod.Status.Conditions) > 0 {
 			for condition := range pod.Status.Conditions {
 				if pod.Status.Conditions[condition].Type == corev1.PodScheduled && pod.Status.Conditions[condition].Status == corev1.ConditionFalse {

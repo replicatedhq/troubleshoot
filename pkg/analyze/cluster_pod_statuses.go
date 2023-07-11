@@ -33,6 +33,7 @@ func (a *AnalyzeClusterPodStatuses) IsExcluded() (bool, error) {
 }
 
 func (a *AnalyzeClusterPodStatuses) Analyze(getFile getCollectedFileContents, findFiles getChildCollectedFileContents) ([]*AnalyzeResult, error) {
+	// findFiles is used to get the pod status and events files
 	results, err := clusterPodStatuses(a.analyzer, findFiles, findFiles)
 	if err != nil {
 		return nil, err
@@ -78,9 +79,11 @@ func clusterPodStatuses(analyzer *troubleshootv1beta2.ClusterPodStatuses, getChi
 
 	for _, pod := range pods {
 		if pod.Status.Reason == "" {
+			// get pod status reason and message from the pod
 			pod.Status.Reason, pod.Status.Message = k8sutil.GetPodStatusReason(&pod)
 		}
 
+		// if the pod has no last termination message like pending or container creating, then check the pod events and get the warning messages. Errors will be logged and return empty message.
 		if pod.Status.Message == "" {
 			messages := []string{}
 			collectedEvents, err := getChildCollectedFileContentsEvents(filepath.Join(constants.CLUSTER_RESOURCES_DIR, "events", fmt.Sprintf("%s.json", pod.Namespace)), excludeFiles)
@@ -182,6 +185,7 @@ func clusterPodStatuses(analyzer *troubleshootv1beta2.ClusterPodStatuses, getChi
 				r.Message = "Pod {{ .Namespace }}/{{ .Name }} status is {{ .Status.Reason }}. Message is: {{ .Status.Message }}"
 			}
 
+			// if the pod has no status message, set it to None
 			if pod.Status.Message == "" {
 				pod.Status.Message = "None"
 			}
