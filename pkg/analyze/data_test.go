@@ -54,3 +54,24 @@ var messageContainerCreatingFailedMount string
 
 //go:embed files/events/message-container-creating-failed-mount.json
 var messageContainerCreatingFailedMountEvents string
+
+//go:embed files/pods/message-pod-crashloop-backoff.json
+var messagePodCrashLoopBackOff string
+
+//go:embed files/pods/message-pod-init-crashloop-backoff.json
+var messagePodInitCrashLoopBackOff string
+
+//go:embed files/events/message-pod-init-crashloop-backoff.json
+var messagePodInitCrashLoopBackOffEvents string
+
+//go:embed files/pods/message-pending-pod-resources.json
+var messagePendingPodResources string
+
+//go:embed files/pods/message-oomkill-pod.json
+var messageOOMKillPod string
+
+//go:embed files/pods/message-image-pull-fail.json
+var messageImagePullFail string
+
+//go:embed files/events/message-image-pull-fail.json
+var messageImagePullFailEvents string

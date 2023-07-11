@@ -1,0 +1,913 @@
+{
+  "kind": "EventList",
+  "apiVersion": "v1",
+  "metadata": {
+    "resourceVersion": "986840"
+  },
+  "items": [
+    {
+      "kind": "Event",
+      "apiVersion": "v1",
+      "metadata": {
+        "name": "no-image-deployment-849c4c4958-rxqmt.1770b96096f009dd",
+        "namespace": "message-image-pull-fail",
+        "uid": "3b134296-43f6-4228-9c98-aeb622fb0a9a",
+        "resourceVersion": "986732",
+        "creationTimestamp": "2023-07-11T05:34:44Z",
+        "managedFields": [
+          {
+            "manager": "kube-scheduler",
+            "operation": "Update",
+            "apiVersion": "events.k8s.io/v1",
+            "time": "2023-07-11T05:34:44Z",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:action": {},
+              "f:eventTime": {},
+              "f:note": {},
+              "f:reason": {},
+              "f:regarding": {},
+              "f:reportingController": {},
+              "f:reportingInstance": {},
+              "f:type": {}
+            }
+          }
+        ]
+      },
+      "involvedObject": {
+        "kind": "Pod",
+        "namespace": "message-image-pull-fail",
+        "name": "no-image-deployment-849c4c4958-rxqmt",
+        "uid": "209076ce-26d6-4836-981b-8c05cb0081eb",
+        "apiVersion": "v1",
+        "resourceVersion": "986727"
+      },
+      "reason": "Scheduled",
+      "message": "Successfully assigned default/no-image-deployment-849c4c4958-rxqmt to minikube",
+      "source": {},
+      "firstTimestamp": null,
+      "lastTimestamp": null,
+      "type": "Normal",
+      "eventTime": "2023-07-11T05:34:44.764227Z",
+      "action": "Binding",
+      "reportingComponent": "default-scheduler",
+      "reportingInstance": "default-scheduler-minikube"
+    },
+    {
+      "kind": "Event",
+      "apiVersion": "v1",
+      "metadata": {
+        "name": "no-image-deployment-849c4c4958-rxqmt.1770b960b6f1e0ea",
+        "namespace": "message-image-pull-fail",
+        "uid": "e5ea1f55-0d14-4443-8f79-d5b6ef692f61",
+        "resourceVersion": "986820",
+        "creationTimestamp": "2023-07-11T05:34:45Z",
+        "managedFields": [
+          {
+            "manager": "kubelet",
+            "operation": "Update",
+            "apiVersion": "v1",
+            "time": "2023-07-11T05:36:11Z",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:count": {},
+              "f:firstTimestamp": {},
+              "f:involvedObject": {},
+              "f:lastTimestamp": {},
+              "f:message": {},
+              "f:reason": {},
+              "f:source": {
+                "f:component": {},
+                "f:host": {}
+              },
+              "f:type": {}
+            }
+          }
+        ]
+      },
+      "involvedObject": {
+        "kind": "Pod",
+        "namespace": "message-image-pull-fail",
+        "name": "no-image-deployment-849c4c4958-rxqmt",
+        "uid": "209076ce-26d6-4836-981b-8c05cb0081eb",
+        "apiVersion": "v1",
+        "resourceVersion": "986730",
+        "fieldPath": "spec.containers{demo-deployment-container}"
+      },
+      "reason": "Pulling",
+      "message": "Pulling image \"noimage.com/no-such-image\"",
+      "source": {
+        "component": "kubelet",
+        "host": "minikube"
+      },
+      "firstTimestamp": "2023-07-11T05:34:45Z",
+      "lastTimestamp": "2023-07-11T05:36:11Z",
+      "count": 4,
+      "type": "Normal",
+      "eventTime": null,
+      "reportingComponent": "",
+      "reportingInstance": ""
+    },
+    {
+      "kind": "Event",
+      "apiVersion": "v1",
+      "metadata": {
+        "name": "no-image-deployment-849c4c4958-rxqmt.1770b960f12b4918",
+        "namespace": "message-image-pull-fail",
+        "uid": "4ed0acd0-b3a2-477c-bb33-0e14512f5dd8",
+        "resourceVersion": "986821",
+        "creationTimestamp": "2023-07-11T05:34:46Z",
+        "managedFields": [
+          {
+            "manager": "kubelet",
+            "operation": "Update",
+            "apiVersion": "v1",
+            "time": "2023-07-11T05:36:12Z",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:count": {},
+              "f:firstTimestamp": {},
+              "f:involvedObject": {},
+              "f:lastTimestamp": {},
+              "f:message": {},
+              "f:reason": {},
+              "f:source": {
+                "f:component": {},
+                "f:host": {}
+              },
+              "f:type": {}
+            }
+          }
+        ]
+      },
+      "involvedObject": {
+        "kind": "Pod",
+        "namespace": "message-image-pull-fail",
+        "name": "no-image-deployment-849c4c4958-rxqmt",
+        "uid": "209076ce-26d6-4836-981b-8c05cb0081eb",
+        "apiVersion": "v1",
+        "resourceVersion": "986730",
+        "fieldPath": "spec.containers{demo-deployment-container}"
+      },
+      "reason": "Failed",
+      "message": "Failed to pull image \"noimage.com/no-such-image\": rpc error: code = Unknown desc = Error response from daemon: Get \"https://noimage.com/v2/\": x509: certificate is not valid for any names, but wanted to match noimage.com",
+      "source": {
+        "component": "kubelet",
+        "host": "minikube"
+      },
+      "firstTimestamp": "2023-07-11T05:34:46Z",
+      "lastTimestamp": "2023-07-11T05:36:12Z",
+      "count": 4,
+      "type": "Warning",
+      "eventTime": null,
+      "reportingComponent": "",
+      "reportingInstance": ""
+    },
+    {
+      "kind": "Event",
+      "apiVersion": "v1",
+      "metadata": {
+        "name": "no-image-deployment-849c4c4958-rxqmt.1770b960f12bd46b",
+        "namespace": "message-image-pull-fail",
+        "uid": "4a66c16a-b2ee-4345-8de6-028936861f03",
+        "resourceVersion": "986822",
+        "creationTimestamp": "2023-07-11T05:34:46Z",
+        "managedFields": [
+          {
+            "manager": "kubelet",
+            "operation": "Update",
+            "apiVersion": "v1",
+            "time": "2023-07-11T05:36:12Z",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:count": {},
+              "f:firstTimestamp": {},
+              "f:involvedObject": {},
+              "f:lastTimestamp": {},
+              "f:message": {},
+              "f:reason": {},
+              "f:source": {
+                "f:component": {},
+                "f:host": {}
+              },
+              "f:type": {}
+            }
+          }
+        ]
+      },
+      "involvedObject": {
+        "kind": "Pod",
+        "namespace": "message-image-pull-fail",
+        "name": "no-image-deployment-849c4c4958-rxqmt",
+        "uid": "209076ce-26d6-4836-981b-8c05cb0081eb",
+        "apiVersion": "v1",
+        "resourceVersion": "986730",
+        "fieldPath": "spec.containers{demo-deployment-container}"
+      },
+      "reason": "Failed",
+      "message": "Error: ErrImagePull",
+      "source": {
+        "component": "kubelet",
+        "host": "minikube"
+      },
+      "firstTimestamp": "2023-07-11T05:34:46Z",
+      "lastTimestamp": "2023-07-11T05:36:12Z",
+      "count": 4,
+      "type": "Warning",
+      "eventTime": null,
+      "reportingComponent": "",
+      "reportingInstance": ""
+    },
+    {
+      "kind": "Event",
+      "apiVersion": "v1",
+      "metadata": {
+        "name": "no-image-deployment-849c4c4958-rxqmt.1770b960fa64918a",
+        "namespace": "message-image-pull-fail",
+        "uid": "0b4b988c-faf5-447a-bb2e-367b627152dc",
+        "resourceVersion": "986833",
+        "creationTimestamp": "2023-07-11T05:34:46Z",
+        "managedFields": [
+          {
+            "manager": "kubelet",
+            "operation": "Update",
+            "apiVersion": "v1",
+            "time": "2023-07-11T05:36:25Z",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:count": {},
+              "f:firstTimestamp": {},
+              "f:involvedObject": {},
+              "f:lastTimestamp": {},
+              "f:message": {},
+              "f:reason": {},
+              "f:source": {
+                "f:component": {},
+                "f:host": {}
+              },
+              "f:type": {}
+            }
+          }
+        ]
+      },
+      "involvedObject": {
+        "kind": "Pod",
+        "namespace": "message-image-pull-fail",
+        "name": "no-image-deployment-849c4c4958-rxqmt",
+        "uid": "209076ce-26d6-4836-981b-8c05cb0081eb",
+        "apiVersion": "v1",
+        "resourceVersion": "986730",
+        "fieldPath": "spec.containers{demo-deployment-container}"
+      },
+      "reason": "BackOff",
+      "message": "Back-off pulling image \"noimage.com/no-such-image\"",
+      "source": {
+        "component": "kubelet",
+        "host": "minikube"
+      },
+      "firstTimestamp": "2023-07-11T05:34:46Z",
+      "lastTimestamp": "2023-07-11T05:36:25Z",
+      "count": 5,
+      "type": "Normal",
+      "eventTime": null,
+      "reportingComponent": "",
+      "reportingInstance": ""
+    },
+    {
+      "kind": "Event",
+      "apiVersion": "v1",
+      "metadata": {
+        "name": "no-image-deployment-849c4c4958-rxqmt.1770b960fa64bb88",
+        "namespace": "message-image-pull-fail",
+        "uid": "eae7cb57-316e-4dc7-8e3a-45c01ca369a5",
+        "resourceVersion": "986835",
+        "creationTimestamp": "2023-07-11T05:34:46Z",
+        "managedFields": [
+          {
+            "manager": "kubelet",
+            "operation": "Update",
+            "apiVersion": "v1",
+            "time": "2023-07-11T05:36:25Z",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:count": {},
+              "f:firstTimestamp": {},
+              "f:involvedObject": {},
+              "f:lastTimestamp": {},
+              "f:message": {},
+              "f:reason": {},
+              "f:source": {
+                "f:component": {},
+                "f:host": {}
+              },
+              "f:type": {}
+            }
+          }
+        ]
+      },
+      "involvedObject": {
+        "kind": "Pod",
+        "namespace": "message-image-pull-fail",
+        "name": "no-image-deployment-849c4c4958-rxqmt",
+        "uid": "209076ce-26d6-4836-981b-8c05cb0081eb",
+        "apiVersion": "v1",
+        "resourceVersion": "986730",
+        "fieldPath": "spec.containers{demo-deployment-container}"
+      },
+      "reason": "Failed",
+      "message": "Error: ImagePullBackOff",
+      "source": {
+        "component": "kubelet",
+        "host": "minikube"
+      },
+      "firstTimestamp": "2023-07-11T05:34:46Z",
+      "lastTimestamp": "2023-07-11T05:36:25Z",
+      "count": 5,
+      "type": "Warning",
+      "eventTime": null,
+      "reportingComponent": "",
+      "reportingInstance": ""
+    },
+    {
+      "kind": "Event",
+      "apiVersion": "v1",
+      "metadata": {
+        "name": "no-image-deployment-849c4c4958.1770b96096c622fa",
+        "namespace": "message-image-pull-fail",
+        "uid": "55bc2a37-2ff2-4a17-a29d-c3eab878e353",
+        "resourceVersion": "986728",
+        "creationTimestamp": "2023-07-11T05:34:44Z",
+        "managedFields": [
+          {
+            "manager": "kube-controller-manager",
+            "operation": "Update",
+            "apiVersion": "v1",
+            "time": "2023-07-11T05:34:44Z",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:count": {},
+              "f:firstTimestamp": {},
+              "f:involvedObject": {},
+              "f:lastTimestamp": {},
+              "f:message": {},
+              "f:reason": {},
+              "f:source": {
+                "f:component": {}
+              },
+              "f:type": {}
+            }
+          }
+        ]
+      },
+      "involvedObject": {
+        "kind": "ReplicaSet",
+        "namespace": "message-image-pull-fail",
+        "name": "no-image-deployment-849c4c4958",
+        "uid": "d992c1a5-d2c4-4065-ac5b-3bb893f9000a",
+        "apiVersion": "apps/v1",
+        "resourceVersion": "986723"
+      },
+      "reason": "SuccessfulCreate",
+      "message": "Created pod: no-image-deployment-849c4c4958-rxqmt",
+      "source": {
+        "component": "replicaset-controller"
+      },
+      "firstTimestamp": "2023-07-11T05:34:44Z",
+      "lastTimestamp": "2023-07-11T05:34:44Z",
+      "count": 1,
+      "type": "Normal",
+      "eventTime": null,
+      "reportingComponent": "",
+      "reportingInstance": ""
+    },
+    {
+      "kind": "Event",
+      "apiVersion": "v1",
+      "metadata": {
+        "name": "no-image-deployment.1770b96096492cbe",
+        "namespace": "message-image-pull-fail",
+        "uid": "3feddf40-caa5-45f9-9d8b-bc24796d508f",
+        "resourceVersion": "986725",
+        "creationTimestamp": "2023-07-11T05:34:44Z",
+        "managedFields": [
+          {
+            "manager": "kube-controller-manager",
+            "operation": "Update",
+            "apiVersion": "v1",
+            "time": "2023-07-11T05:34:44Z",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:count": {},
+              "f:firstTimestamp": {},
+              "f:involvedObject": {},
+              "f:lastTimestamp": {},
+              "f:message": {},
+              "f:reason": {},
+              "f:source": {
+                "f:component": {}
+              },
+              "f:type": {}
+            }
+          }
+        ]
+      },
+      "involvedObject": {
+        "kind": "Deployment",
+        "namespace": "message-image-pull-fail",
+        "name": "no-image-deployment",
+        "uid": "abe37ef6-38c5-4f29-a956-f79def48c342",
+        "apiVersion": "apps/v1",
+        "resourceVersion": "986722"
+      },
+      "reason": "ScalingReplicaSet",
+      "message": "Scaled up replica set no-image-deployment-849c4c4958 to 1",
+      "source": {
+        "component": "deployment-controller"
+      },
+      "firstTimestamp": "2023-07-11T05:34:44Z",
+      "lastTimestamp": "2023-07-11T05:34:44Z",
+      "count": 1,
+      "type": "Normal",
+      "eventTime": null,
+      "reportingComponent": "",
+      "reportingInstance": ""
+    },
+    {
+      "kind": "Event",
+      "apiVersion": "v1",
+      "metadata": {
+        "name": "oom-kill-job3-gbb89.1770b6922c75433d",
+        "namespace": "message-image-pull-fail",
+        "uid": "3cfa33ed-cedc-4fa3-a9b7-aa657048784a",
+        "resourceVersion": "984536",
+        "creationTimestamp": "2023-07-11T04:43:19Z",
+        "managedFields": [
+          {
+            "manager": "kube-scheduler",
+            "operation": "Update",
+            "apiVersion": "events.k8s.io/v1",
+            "time": "2023-07-11T04:43:19Z",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:action": {},
+              "f:eventTime": {},
+              "f:note": {},
+              "f:reason": {},
+              "f:regarding": {},
+              "f:reportingController": {},
+              "f:reportingInstance": {},
+              "f:type": {}
+            }
+          }
+        ]
+      },
+      "involvedObject": {
+        "kind": "Pod",
+        "namespace": "message-image-pull-fail",
+        "name": "oom-kill-job3-gbb89",
+        "uid": "c8d3f094-b80c-4ff8-aff7-f0e624f1bf3a",
+        "apiVersion": "v1",
+        "resourceVersion": "984532"
+      },
+      "reason": "Scheduled",
+      "message": "Successfully assigned default/oom-kill-job3-gbb89 to minikube",
+      "source": {},
+      "firstTimestamp": null,
+      "lastTimestamp": null,
+      "type": "Normal",
+      "eventTime": "2023-07-11T04:43:19.191283Z",
+      "action": "Binding",
+      "reportingComponent": "default-scheduler",
+      "reportingInstance": "default-scheduler-minikube"
+    },
+    {
+      "kind": "Event",
+      "apiVersion": "v1",
+      "metadata": {
+        "name": "oom-kill-job3-gbb89.1770b6924d361854",
+        "namespace": "message-image-pull-fail",
+        "uid": "695da2fb-7e2f-4c20-b60a-9a4cd3b1b60e",
+        "resourceVersion": "984539",
+        "creationTimestamp": "2023-07-11T04:43:19Z",
+        "managedFields": [
+          {
+            "manager": "kubelet",
+            "operation": "Update",
+            "apiVersion": "v1",
+            "time": "2023-07-11T04:43:19Z",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:count": {},
+              "f:firstTimestamp": {},
+              "f:involvedObject": {},
+              "f:lastTimestamp": {},
+              "f:message": {},
+              "f:reason": {},
+              "f:source": {
+                "f:component": {},
+                "f:host": {}
+              },
+              "f:type": {}
+            }
+          }
+        ]
+      },
+      "involvedObject": {
+        "kind": "Pod",
+        "namespace": "message-image-pull-fail",
+        "name": "oom-kill-job3-gbb89",
+        "uid": "c8d3f094-b80c-4ff8-aff7-f0e624f1bf3a",
+        "apiVersion": "v1",
+        "resourceVersion": "984533",
+        "fieldPath": "spec.containers{memory-eater}"
+      },
+      "reason": "Pulling",
+      "message": "Pulling image \"us-central1-docker.pkg.dev/genuine-flight-317411/devel/memory-eater:1.0\"",
+      "source": {
+        "component": "kubelet",
+        "host": "minikube"
+      },
+      "firstTimestamp": "2023-07-11T04:43:19Z",
+      "lastTimestamp": "2023-07-11T04:43:19Z",
+      "count": 1,
+      "type": "Normal",
+      "eventTime": null,
+      "reportingComponent": "",
+      "reportingInstance": ""
+    },
+    {
+      "kind": "Event",
+      "apiVersion": "v1",
+      "metadata": {
+        "name": "oom-kill-job3-gbb89.1770b6939d446433",
+        "namespace": "message-image-pull-fail",
+        "uid": "b7ddf622-f531-4822-bdb2-46f6e27218ae",
+        "resourceVersion": "984544",
+        "creationTimestamp": "2023-07-11T04:43:25Z",
+        "managedFields": [
+          {
+            "manager": "kubelet",
+            "operation": "Update",
+            "apiVersion": "v1",
+            "time": "2023-07-11T04:43:25Z",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:count": {},
+              "f:firstTimestamp": {},
+              "f:involvedObject": {},
+              "f:lastTimestamp": {},
+              "f:message": {},
+              "f:reason": {},
+              "f:source": {
+                "f:component": {},
+                "f:host": {}
+              },
+              "f:type": {}
+            }
+          }
+        ]
+      },
+      "involvedObject": {
+        "kind": "Pod",
+        "namespace": "message-image-pull-fail",
+        "name": "oom-kill-job3-gbb89",
+        "uid": "c8d3f094-b80c-4ff8-aff7-f0e624f1bf3a",
+        "apiVersion": "v1",
+        "resourceVersion": "984533",
+        "fieldPath": "spec.containers{memory-eater}"
+      },
+      "reason": "Pulled",
+      "message": "Successfully pulled image \"us-central1-docker.pkg.dev/genuine-flight-317411/devel/memory-eater:1.0\" in 5.638046961s",
+      "source": {
+        "component": "kubelet",
+        "host": "minikube"
+      },
+      "firstTimestamp": "2023-07-11T04:43:25Z",
+      "lastTimestamp": "2023-07-11T04:43:25Z",
+      "count": 1,
+      "type": "Normal",
+      "eventTime": null,
+      "reportingComponent": "",
+      "reportingInstance": ""
+    },
+    {
+      "kind": "Event",
+      "apiVersion": "v1",
+      "metadata": {
+        "name": "oom-kill-job3-gbb89.1770b6939f884130",
+        "namespace": "message-image-pull-fail",
+        "uid": "84e0a635-a3b8-4cdc-b439-a71454e7d7d5",
+        "resourceVersion": "984545",
+        "creationTimestamp": "2023-07-11T04:43:25Z",
+        "managedFields": [
+          {
+            "manager": "kubelet",
+            "operation": "Update",
+            "apiVersion": "v1",
+            "time": "2023-07-11T04:43:25Z",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:count": {},
+              "f:firstTimestamp": {},
+              "f:involvedObject": {},
+              "f:lastTimestamp": {},
+              "f:message": {},
+              "f:reason": {},
+              "f:source": {
+                "f:component": {},
+                "f:host": {}
+              },
+              "f:type": {}
+            }
+          }
+        ]
+      },
+      "involvedObject": {
+        "kind": "Pod",
+        "namespace": "message-image-pull-fail",
+        "name": "oom-kill-job3-gbb89",
+        "uid": "c8d3f094-b80c-4ff8-aff7-f0e624f1bf3a",
+        "apiVersion": "v1",
+        "resourceVersion": "984533",
+        "fieldPath": "spec.containers{memory-eater}"
+      },
+      "reason": "Created",
+      "message": "Created container memory-eater",
+      "source": {
+        "component": "kubelet",
+        "host": "minikube"
+      },
+      "firstTimestamp": "2023-07-11T04:43:25Z",
+      "lastTimestamp": "2023-07-11T04:43:25Z",
+      "count": 1,
+      "type": "Normal",
+      "eventTime": null,
+      "reportingComponent": "",
+      "reportingInstance": ""
+    },
+    {
+      "kind": "Event",
+      "apiVersion": "v1",
+      "metadata": {
+        "name": "oom-kill-job3-gbb89.1770b693a39538e4",
+        "namespace": "message-image-pull-fail",
+        "uid": "a15333ad-0390-4325-8880-34ef36508831",
+        "resourceVersion": "984546",
+        "creationTimestamp": "2023-07-11T04:43:25Z",
+        "managedFields": [
+          {
+            "manager": "kubelet",
+            "operation": "Update",
+            "apiVersion": "v1",
+            "time": "2023-07-11T04:43:25Z",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:count": {},
+              "f:firstTimestamp": {},
+              "f:involvedObject": {},
+              "f:lastTimestamp": {},
+              "f:message": {},
+              "f:reason": {},
+              "f:source": {
+                "f:component": {},
+                "f:host": {}
+              },
+              "f:type": {}
+            }
+          }
+        ]
+      },
+      "involvedObject": {
+        "kind": "Pod",
+        "namespace": "message-image-pull-fail",
+        "name": "oom-kill-job3-gbb89",
+        "uid": "c8d3f094-b80c-4ff8-aff7-f0e624f1bf3a",
+        "apiVersion": "v1",
+        "resourceVersion": "984533",
+        "fieldPath": "spec.containers{memory-eater}"
+      },
+      "reason": "Started",
+      "message": "Started container memory-eater",
+      "source": {
+        "component": "kubelet",
+        "host": "minikube"
+      },
+      "firstTimestamp": "2023-07-11T04:43:25Z",
+      "lastTimestamp": "2023-07-11T04:43:25Z",
+      "count": 1,
+      "type": "Normal",
+      "eventTime": null,
+      "reportingComponent": "",
+      "reportingInstance": ""
+    },
+    {
+      "kind": "Event",
+      "apiVersion": "v1",
+      "metadata": {
+        "name": "oom-kill-job3.1770b6922c53f55c",
+        "namespace": "message-image-pull-fail",
+        "uid": "db095cdc-df52-490d-a308-9b283f99eaa6",
+        "resourceVersion": "984534",
+        "creationTimestamp": "2023-07-11T04:43:19Z",
+        "managedFields": [
+          {
+            "manager": "kube-controller-manager",
+            "operation": "Update",
+            "apiVersion": "v1",
+            "time": "2023-07-11T04:43:19Z",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:count": {},
+              "f:firstTimestamp": {},
+              "f:involvedObject": {},
+              "f:lastTimestamp": {},
+              "f:message": {},
+              "f:reason": {},
+              "f:source": {
+                "f:component": {}
+              },
+              "f:type": {}
+            }
+          }
+        ]
+      },
+      "involvedObject": {
+        "kind": "Job",
+        "namespace": "message-image-pull-fail",
+        "name": "oom-kill-job3",
+        "uid": "a85295e8-54e4-40a4-aeb0-b47c19f1a69f",
+        "apiVersion": "batch/v1",
+        "resourceVersion": "984531"
+      },
+      "reason": "SuccessfulCreate",
+      "message": "Created pod: oom-kill-job3-gbb89",
+      "source": {
+        "component": "job-controller"
+      },
+      "firstTimestamp": "2023-07-11T04:43:19Z",
+      "lastTimestamp": "2023-07-11T04:43:19Z",
+      "count": 1,
+      "type": "Normal",
+      "eventTime": null,
+      "reportingComponent": "",
+      "reportingInstance": ""
+    },
+    {
+      "kind": "Event",
+      "apiVersion": "v1",
+      "metadata": {
+        "name": "oom-kill-job3.1770b6944e3d254b",
+        "namespace": "message-image-pull-fail",
+        "uid": "fb3ea640-2484-44d5-b65d-698d8e5bd3db",
+        "resourceVersion": "984553",
+        "creationTimestamp": "2023-07-11T04:43:28Z",
+        "managedFields": [
+          {
+            "manager": "kube-controller-manager",
+            "operation": "Update",
+            "apiVersion": "v1",
+            "time": "2023-07-11T04:43:28Z",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:count": {},
+              "f:firstTimestamp": {},
+              "f:involvedObject": {},
+              "f:lastTimestamp": {},
+              "f:message": {},
+              "f:reason": {},
+              "f:source": {
+                "f:component": {}
+              },
+              "f:type": {}
+            }
+          }
+        ]
+      },
+      "involvedObject": {
+        "kind": "Job",
+        "namespace": "message-image-pull-fail",
+        "name": "oom-kill-job3",
+        "uid": "a85295e8-54e4-40a4-aeb0-b47c19f1a69f",
+        "apiVersion": "batch/v1",
+        "resourceVersion": "984551"
+      },
+      "reason": "BackoffLimitExceeded",
+      "message": "Job has reached the specified backoff limit",
+      "source": {
+        "component": "job-controller"
+      },
+      "firstTimestamp": "2023-07-11T04:43:28Z",
+      "lastTimestamp": "2023-07-11T04:43:28Z",
+      "count": 1,
+      "type": "Warning",
+      "eventTime": null,
+      "reportingComponent": "",
+      "reportingInstance": ""
+    },
+    {
+      "kind": "Event",
+      "apiVersion": "v1",
+      "metadata": {
+        "name": "pending-pod-resources-5fddcf7688-djjfc.1770b59c8b866b56",
+        "namespace": "message-image-pull-fail",
+        "uid": "64330c31-0f5e-46f3-8fb6-ffdac523bb77",
+        "resourceVersion": "984662",
+        "creationTimestamp": "2023-07-11T04:25:44Z",
+        "managedFields": [
+          {
+            "manager": "kube-scheduler",
+            "operation": "Update",
+            "apiVersion": "events.k8s.io/v1",
+            "time": "2023-07-11T04:46:01Z",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:action": {},
+              "f:eventTime": {},
+              "f:note": {},
+              "f:reason": {},
+              "f:regarding": {},
+              "f:reportingController": {},
+              "f:reportingInstance": {},
+              "f:series": {
+                ".": {},
+                "f:count": {},
+                "f:lastObservedTime": {}
+              },
+              "f:type": {}
+            }
+          }
+        ]
+      },
+      "involvedObject": {
+        "kind": "Pod",
+        "namespace": "message-image-pull-fail",
+        "name": "pending-pod-resources-5fddcf7688-djjfc",
+        "uid": "e4d4c4cc-2c41-4ab7-b41c-9c8b28ded451",
+        "apiVersion": "v1",
+        "resourceVersion": "983556"
+      },
+      "reason": "FailedScheduling",
+      "message": "0/1 nodes are available: 1 Insufficient nvidia.com/gpu. preemption: 0/1 nodes are available: 1 No preemption victims found for incoming pod.",
+      "source": {},
+      "firstTimestamp": null,
+      "lastTimestamp": null,
+      "type": "Warning",
+      "eventTime": "2023-07-11T04:25:44.224298Z",
+      "series": {
+        "count": 3,
+        "lastObservedTime": "2023-07-11T04:40:44.264058Z"
+      },
+      "action": "Scheduling",
+      "reportingComponent": "default-scheduler",
+      "reportingInstance": "default-scheduler-minikube"
+    },
+    {
+      "kind": "Event",
+      "apiVersion": "v1",
+      "metadata": {
+        "name": "pending-pod-resources-5fddcf7688-djjfc.1770b68fb368b5a6",
+        "namespace": "message-image-pull-fail",
+        "uid": "369454df-c891-4e76-96b9-ebdaabe2a6a6",
+        "resourceVersion": "984523",
+        "creationTimestamp": "2023-07-11T04:43:08Z",
+        "managedFields": [
+          {
+            "manager": "kube-scheduler",
+            "operation": "Update",
+            "apiVersion": "events.k8s.io/v1",
+            "time": "2023-07-11T04:43:08Z",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:action": {},
+              "f:eventTime": {},
+              "f:note": {},
+              "f:reason": {},
+              "f:regarding": {},
+              "f:reportingController": {},
+              "f:reportingInstance": {},
+              "f:type": {}
+            }
+          }
+        ]
+      },
+      "involvedObject": {
+        "kind": "Pod",
+        "namespace": "message-image-pull-fail",
+        "name": "pending-pod-resources-5fddcf7688-djjfc",
+        "uid": "e4d4c4cc-2c41-4ab7-b41c-9c8b28ded451",
+        "apiVersion": "v1",
+        "resourceVersion": "984521"
+      },
+      "reason": "FailedScheduling",
+      "message": "skip schedule deleting pod: default/pending-pod-resources-5fddcf7688-djjfc",
+      "source": {},
+      "firstTimestamp": null,
+      "lastTimestamp": null,
+      "type": "Warning",
+      "eventTime": "2023-07-11T04:43:08.570490Z",
+      "action": "Scheduling",
+      "reportingComponent": "default-scheduler",
+      "reportingInstance": "default-scheduler-minikube"
+    }
+  ]
+}

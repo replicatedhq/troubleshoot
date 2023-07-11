@@ -85,7 +85,7 @@ func clusterPodStatuses(analyzer *troubleshootv1beta2.ClusterPodStatuses, getChi
 			messages := []string{}
 			collectedEvents, err := getChildCollectedFileContentsEvents(filepath.Join(constants.CLUSTER_RESOURCES_DIR, "events", fmt.Sprintf("%s.json", pod.Namespace)), excludeFiles)
 			if err != nil {
-				return nil, errors.Wrap(err, "failed to read collected events")
+				klog.V(2).Infof("failed to read collected events for namespace %s: %v", pod.Namespace, err)
 			}
 
 			for _, fileContent := range collectedEvents {
@@ -94,7 +94,7 @@ func clusterPodStatuses(analyzer *troubleshootv1beta2.ClusterPodStatuses, getChi
 					// try new format
 					var nsEventsList corev1.EventList
 					if err := json.Unmarshal(fileContent, &nsEventsList); err != nil {
-						return nil, errors.Wrap(err, "failed to unmarshal events")
+						klog.V(2).Infof("failed to unmarshal events for namespace %s: %v", pod.Namespace, err)
 					}
 					nsEvents = nsEventsList.Items
 				}
@@ -179,7 +179,11 @@ func clusterPodStatuses(analyzer *troubleshootv1beta2.ClusterPodStatuses, getChi
 			}
 
 			if r.Message == "" {
-				r.Message = "Pod {{ .Namespace }}/{{ .Name }} status is {{ .Status.Reason }}. {{ .Status.Message }}"
+				r.Message = "Pod {{ .Namespace }}/{{ .Name }} status is {{ .Status.Reason }}. Message is: {{ .Status.Message }}"
+			}
+
+			if pod.Status.Message == "" {
+				pod.Status.Message = "None"
 			}
 
 			tmpl := template.New("pod")
