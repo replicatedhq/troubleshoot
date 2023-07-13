@@ -365,6 +365,20 @@ func (c *CollectClusterResources) Collect(progressChan chan<- interface{}) (Coll
 	}
 	output.SaveResult(c.BundlePath, path.Join(constants.CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s-errors.json", constants.CLUSTER_RESOURCES_ENDPOINTS)), marshalErrors(endpointsErrors))
 
+	// Service Accounts
+	servicesAccounts, servicesAccountsErrors := serviceAccounts(ctx, client, namespaceNames)
+	for k, v := range servicesAccounts {
+		output.SaveResult(c.BundlePath, path.Join(constants.CLUSTER_RESOURCES_DIR, constants.CLUSTER_RESOURCES_SERVICE_ACCOUNTS, k), bytes.NewBuffer(v))
+	}
+	output.SaveResult(c.BundlePath, path.Join(constants.CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s-errors.json", constants.CLUSTER_RESOURCES_SERVICE_ACCOUNTS)), marshalErrors(servicesAccountsErrors))
+
+	// Leases
+	leases, leasesErrors := leases(ctx, client, namespaceNames)
+	for k, v := range leases {
+		output.SaveResult(c.BundlePath, path.Join(constants.CLUSTER_RESOURCES_DIR, constants.CLUSTER_RESOURCES_LEASES, k), bytes.NewBuffer(v))
+	}
+	output.SaveResult(c.BundlePath, path.Join(constants.CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s-errors.json", constants.CLUSTER_RESOURCES_LEASES)), marshalErrors(leasesErrors))
+
 	return output, nil
 }
 
@@ -1948,4 +1962,74 @@ func endpoints(ctx context.Context, client *kubernetes.Clientset, namespaces []s
 	}
 
 	return endpointsByNamespace, errorsByNamespace
+}
+
+func serviceAccounts(ctx context.Context, client *kubernetes.Clientset, namespaces []string) (map[string][]byte, map[string]string) {
+	serviceAccountsByNamespace := make(map[string][]byte)
+	errorsByNamespace := make(map[string]string)
+
+	for _, namespace := range namespaces {
+		serviceAccounts, err := client.CoreV1().ServiceAccounts(namespace).List(ctx, metav1.ListOptions{})
+		if err != nil {
+			errorsByNamespace[namespace] = err.Error()
+			continue
+		}
+
+		gvk, err := apiutil.GVKForObject(serviceAccounts, scheme.Scheme)
+		if err == nil {
+			serviceAccounts.GetObjectKind().SetGroupVersionKind(gvk)
+		}
+
+		for i, o := range serviceAccounts.Items {
+			gvk, err := apiutil.GVKForObject(&o, scheme.Scheme)
+			if err == nil {
+				serviceAccounts.Items[i].GetObjectKind().SetGroupVersionKind(gvk)
+			}
+		}
+
+		b, err := json.MarshalIndent(serviceAccounts, "", "  ")
+		if err != nil {
+			errorsByNamespace[namespace] = err.Error()
+			continue
+		}
+
+		serviceAccountsByNamespace[namespace+".json"] = b
+	}
+
+	return serviceAccountsByNamespace, errorsByNamespace
+}
+
+func leases(ctx context.Context, client *kubernetes.Clientset, namespaces []string) (map[string][]byte, map[string]string) {
+	leasesByNamespace := make(map[string][]byte)
+	errorsByNamespace := make(map[string]string)
+
+	for _, namespace := range namespaces {
+		leases, err := client.CoordinationV1().Leases(namespace).List(ctx, metav1.ListOptions{})
+		if err != nil {
+			errorsByNamespace[namespace] = err.Error()
+			continue
+		}
+
+		gvk, err := apiutil.GVKForObject(leases, scheme.Scheme)
+		if err == nil {
+			leases.GetObjectKind().SetGroupVersionKind(gvk)
+		}
+
+		for i, o := range leases.Items {
+			gvk, err := apiutil.GVKForObject(&o, scheme.Scheme)
+			if err == nil {
+				leases.Items[i].GetObjectKind().SetGroupVersionKind(gvk)
+			}
+		}
+
+		b, err := json.MarshalIndent(leases, "", "  ")
+		if err != nil {
+			errorsByNamespace[namespace] = err.Error()
+			continue
+		}
+
+		leasesByNamespace[namespace+".json"] = b
+	}
+
+	return leasesByNamespace, errorsByNamespace
 }
