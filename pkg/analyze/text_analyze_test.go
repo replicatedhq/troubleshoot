@@ -822,4 +822,5 @@ func Test_NoFilesInBundle(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, actual, 1)
 	assert.Equal(t, "No matching files", actual[0].Message)
+	assert.True(t, actual[0].IsWarn)
 }
