@@ -24,7 +24,9 @@ func (a *AnalyzeHostUDPPortStatus) IsExcluded() (bool, error) {
 	return isExcluded(a.hostAnalyzer.Exclude)
 }
 
-func (a *AnalyzeHostUDPPortStatus) Analyze(getCollectedFileContents func(string) ([]byte, error)) ([]*AnalyzeResult, error) {
+func (a *AnalyzeHostUDPPortStatus) Analyze(
+	getCollectedFileContents func(string) ([]byte, error), findFiles getChildCollectedFileContents,
+) ([]*AnalyzeResult, error) {
 	hostAnalyzer := a.hostAnalyzer
 
 	fullPath := path.Join("host-collectors/udpPortStatus", "udpPortStatus.json")

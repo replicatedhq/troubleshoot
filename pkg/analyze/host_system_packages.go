@@ -28,7 +28,9 @@ func (a *AnalyzeHostSystemPackages) IsExcluded() (bool, error) {
 	return isExcluded(a.hostAnalyzer.Exclude)
 }
 
-func (a *AnalyzeHostSystemPackages) Analyze(getCollectedFileContents func(string) ([]byte, error)) ([]*AnalyzeResult, error) {
+func (a *AnalyzeHostSystemPackages) Analyze(
+	getCollectedFileContents func(string) ([]byte, error), findFiles getChildCollectedFileContents,
+) ([]*AnalyzeResult, error) {
 	hostAnalyzer := a.hostAnalyzer
 
 	packagesFileName := "host-collectors/system/packages.json"

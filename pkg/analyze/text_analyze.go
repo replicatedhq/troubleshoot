@@ -31,17 +31,12 @@ func (a *AnalyzeTextAnalyze) IsExcluded() (bool, error) {
 }
 
 func (a *AnalyzeTextAnalyze) Analyze(getFile getCollectedFileContents, findFiles getChildCollectedFileContents) ([]*AnalyzeResult, error) {
-	results, err := a.analyzeTextAnalyze(a.analyzer, findFiles)
-	if err != nil {
-		return nil, err
-	}
-	for i := range results {
-		results[i].Strict = a.analyzer.Strict.BoolOrDefaultFalse()
-	}
-	return results, nil
+	return analyzeTextAnalyze(a.analyzer, findFiles, a.Title())
 }
 
-func (a *AnalyzeTextAnalyze) analyzeTextAnalyze(analyzer *troubleshootv1beta2.TextAnalyze, getCollectedFileContents getChildCollectedFileContents) ([]*AnalyzeResult, error) {
+func analyzeTextAnalyze(
+	analyzer *troubleshootv1beta2.TextAnalyze, getCollectedFileContents getChildCollectedFileContents, title string,
+) ([]*AnalyzeResult, error) {
 	fullPath := filepath.Join(analyzer.CollectorName, analyzer.FileName)
 	excludeFiles := []string{}
 	for _, excludeFile := range analyzer.ExcludeFiles {
@@ -60,7 +55,7 @@ func (a *AnalyzeTextAnalyze) analyzeTextAnalyze(analyzer *troubleshootv1beta2.Te
 
 		return []*AnalyzeResult{
 			{
-				Title:   a.Title(),
+				Title:   title,
 				IconKey: "kubernetes_text_analyze",
 				IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg",
 				IsWarn:  true,
@@ -73,7 +68,7 @@ func (a *AnalyzeTextAnalyze) analyzeTextAnalyze(analyzer *troubleshootv1beta2.Te
 
 	if analyzer.RegexPattern != "" {
 		for _, fileContents := range collected {
-			result, err := analyzeRegexPattern(analyzer.RegexPattern, fileContents, analyzer.Outcomes, a.Title())
+			result, err := analyzeRegexPattern(analyzer.RegexPattern, fileContents, analyzer.Outcomes, title)
 			if err != nil {
 				return nil, err
 			}
@@ -85,7 +80,7 @@ func (a *AnalyzeTextAnalyze) analyzeTextAnalyze(analyzer *troubleshootv1beta2.Te
 
 	if analyzer.RegexGroups != "" {
 		for _, fileContents := range collected {
-			result, err := analyzeRegexGroups(analyzer.RegexGroups, fileContents, analyzer.Outcomes, a.Title())
+			result, err := analyzeRegexGroups(analyzer.RegexGroups, fileContents, analyzer.Outcomes, title)
 			if err != nil {
 				return nil, err
 			}
@@ -95,13 +90,17 @@ func (a *AnalyzeTextAnalyze) analyzeTextAnalyze(analyzer *troubleshootv1beta2.Te
 		}
 	}
 
+	for i := range results {
+		results[i].Strict = analyzer.Strict.BoolOrDefaultFalse()
+	}
+
 	if len(results) > 0 {
 		return results, nil
 	}
 
 	return []*AnalyzeResult{
 		{
-			Title:   a.Title(),
+			Title:   title,
 			IconKey: "kubernetes_text_analyze",
 			IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg",
 			IsFail:  true,

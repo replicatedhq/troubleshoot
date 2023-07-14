@@ -22,7 +22,9 @@ func (a *AnalyzeHostTCPLoadBalancer) IsExcluded() (bool, error) {
 	return isExcluded(a.hostAnalyzer.Exclude)
 }
 
-func (a *AnalyzeHostTCPLoadBalancer) Analyze(getCollectedFileContents func(string) ([]byte, error)) ([]*AnalyzeResult, error) {
+func (a *AnalyzeHostTCPLoadBalancer) Analyze(
+	getCollectedFileContents func(string) ([]byte, error), findFiles getChildCollectedFileContents,
+) ([]*AnalyzeResult, error) {
 	hostAnalyzer := a.hostAnalyzer
 
 	collectorName := hostAnalyzer.CollectorName

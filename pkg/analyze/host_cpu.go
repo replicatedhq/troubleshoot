@@ -22,7 +22,9 @@ func (a *AnalyzeHostCPU) IsExcluded() (bool, error) {
 	return isExcluded(a.hostAnalyzer.Exclude)
 }
 
-func (a *AnalyzeHostCPU) Analyze(getCollectedFileContents func(string) ([]byte, error)) ([]*AnalyzeResult, error) {
+func (a *AnalyzeHostCPU) Analyze(
+	getCollectedFileContents func(string) ([]byte, error), findFiles getChildCollectedFileContents,
+) ([]*AnalyzeResult, error) {
 	hostAnalyzer := a.hostAnalyzer
 
 	contents, err := getCollectedFileContents(collect.HostCPUPath)

@@ -470,7 +470,7 @@ func TestAnalyzeKernelModules(t *testing.T) {
 				return b, nil
 			}
 
-			result, err := (&AnalyzeHostKernelModules{test.hostAnalyzer}).Analyze(getCollectedFileContents)
+			result, err := (&AnalyzeHostKernelModules{test.hostAnalyzer}).Analyze(getCollectedFileContents, nil)
 			if test.expectErr {
 				require.Error(t, err)
 				return

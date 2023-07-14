@@ -24,7 +24,9 @@ func (a *AnalyzeHostTCPPortStatus) IsExcluded() (bool, error) {
 	return isExcluded(a.hostAnalyzer.Exclude)
 }
 
-func (a *AnalyzeHostTCPPortStatus) Analyze(getCollectedFileContents func(string) ([]byte, error)) ([]*AnalyzeResult, error) {
+func (a *AnalyzeHostTCPPortStatus) Analyze(
+	getCollectedFileContents func(string) ([]byte, error), findFiles getChildCollectedFileContents,
+) ([]*AnalyzeResult, error) {
 	hostAnalyzer := a.hostAnalyzer
 
 	fullPath := path.Join("host-collectors/tcpPortStatus", "tcpPortStatus.json")

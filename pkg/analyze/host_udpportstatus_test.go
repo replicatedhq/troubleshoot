@@ -90,7 +90,7 @@ func TestAnalyzeUDPPortStatus(t *testing.T) {
 			analyzer := AnalyzeHostUDPPortStatus{
 				hostAnalyzer: &tc.analyzer,
 			}
-			results, err := analyzer.Analyze(fn)
+			results, err := analyzer.Analyze(fn, nil)
 			if tc.wantErr {
 				require.NotNil(t, err)
 				return

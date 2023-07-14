@@ -170,7 +170,7 @@ func TestAnalyzeHostMemory(t *testing.T) {
 				return b, nil
 			}
 
-			result, err := (&AnalyzeHostMemory{test.hostAnalyzer}).Analyze(getCollectedFileContents)
+			result, err := (&AnalyzeHostMemory{test.hostAnalyzer}).Analyze(getCollectedFileContents, nil)
 			if test.expectErr {
 				req.Error(err)
 			} else {
@@ -233,7 +233,7 @@ func TestHostMemoryAnalyze(t *testing.T) {
 					Outcomes: tc.outcomes,
 				},
 			}
-			results, err := analyzer.Analyze(fn)
+			results, err := analyzer.Analyze(fn, nil)
 			if tc.wantErr {
 				require.NotNil(t, err)
 				return

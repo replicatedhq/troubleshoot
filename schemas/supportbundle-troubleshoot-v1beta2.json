@@ -10728,6 +10728,100 @@
                   }
                 }
               },
+              "textAnalyze": {
+                "type": "object",
+                "required": [
+                  "outcomes"
+                ],
+                "properties": {
+                  "annotations": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "string"
+                    }
+                  },
+                  "checkName": {
+                    "type": "string"
+                  },
+                  "collectorName": {
+                    "type": "string"
+                  },
+                  "exclude": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  },
+                  "excludeFiles": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "fileName": {
+                    "type": "string"
+                  },
+                  "ignoreIfNoFiles": {
+                    "type": "boolean"
+                  },
+                  "outcomes": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "fail": {
+                          "type": "object",
+                          "properties": {
+                            "message": {
+                              "type": "string"
+                            },
+                            "uri": {
+                              "type": "string"
+                            },
+                            "when": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "pass": {
+                          "type": "object",
+                          "properties": {
+                            "message": {
+                              "type": "string"
+                            },
+                            "uri": {
+                              "type": "string"
+                            },
+                            "when": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "warn": {
+                          "type": "object",
+                          "properties": {
+                            "message": {
+                              "type": "string"
+                            },
+                            "uri": {
+                              "type": "string"
+                            },
+                            "when": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "regex": {
+                    "type": "string"
+                  },
+                  "regexGroups": {
+                    "type": "string"
+                  },
+                  "strict": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  }
+                }
+              },
               "time": {
                 "type": "object",
                 "required": [

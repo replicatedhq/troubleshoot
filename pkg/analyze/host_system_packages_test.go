@@ -102,7 +102,7 @@ func TestAnalyzeSystemPackages(t *testing.T) {
 				return b, nil
 			}
 
-			result, err := (&AnalyzeHostSystemPackages{test.hostAnalyzer}).Analyze(getCollectedFileContents)
+			result, err := (&AnalyzeHostSystemPackages{test.hostAnalyzer}).Analyze(getCollectedFileContents, nil)
 			if test.expectErr {
 				req.Error(err)
 			} else {
