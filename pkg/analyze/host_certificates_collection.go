@@ -18,7 +18,7 @@ type AnalyzeHostCertificatesCollection struct {
 }
 
 func (a *AnalyzeHostCertificatesCollection) Title() string {
-	return hostAnalyzerTitleOrDefault(a.hostAnalyzer.AnalyzeMeta, "Host Cerfiticates Collection")
+	return hostAnalyzerTitleOrDefault(a.hostAnalyzer.AnalyzeMeta, "Host Certificates Collection")
 }
 
 func (a *AnalyzeHostCertificatesCollection) IsExcluded() (bool, error) {
