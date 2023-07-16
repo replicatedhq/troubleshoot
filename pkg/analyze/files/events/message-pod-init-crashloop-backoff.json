@@ -1,0 +1,928 @@
+{
+  "kind": "EventList",
+  "apiVersion": "v1",
+  "metadata": {
+    "resourceVersion": "982712"
+  },
+  "items": [
+    {
+      "kind": "Event",
+      "apiVersion": "v1",
+      "metadata": {
+        "name": "init-demo.1770b2a98cf7b53c",
+        "namespace": "message-pod-init-crashloop-backoff",
+        "uid": "cfdfe0af-6dc5-4c6c-a3be-f1532d424ab4",
+        "resourceVersion": "981383",
+        "creationTimestamp": "2023-07-11T03:31:41Z",
+        "managedFields": [
+          {
+            "manager": "kube-scheduler",
+            "operation": "Update",
+            "apiVersion": "events.k8s.io/v1",
+            "time": "2023-07-11T03:31:41Z",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:action": {},
+              "f:eventTime": {},
+              "f:note": {},
+              "f:reason": {},
+              "f:regarding": {},
+              "f:reportingController": {},
+              "f:reportingInstance": {},
+              "f:type": {}
+            }
+          }
+        ]
+      },
+      "involvedObject": {
+        "kind": "Pod",
+        "namespace": "message-pod-init-crashloop-backoff",
+        "name": "init-demo",
+        "uid": "8d27f35a-4b45-4752-a5db-7985ea8b38bf",
+        "apiVersion": "v1",
+        "resourceVersion": "981381"
+      },
+      "reason": "Scheduled",
+      "message": "Successfully assigned default/init-demo to minikube",
+      "source": {},
+      "firstTimestamp": null,
+      "lastTimestamp": null,
+      "type": "Normal",
+      "eventTime": "2023-07-11T03:31:41.548190Z",
+      "action": "Binding",
+      "reportingComponent": "default-scheduler",
+      "reportingInstance": "default-scheduler-minikube"
+    },
+    {
+      "kind": "Event",
+      "apiVersion": "v1",
+      "metadata": {
+        "name": "init-demo.1770b2a9adf25515",
+        "namespace": "message-pod-init-crashloop-backoff",
+        "uid": "091c0f14-75df-47e6-af31-309d8a0b0b86",
+        "resourceVersion": "981479",
+        "creationTimestamp": "2023-07-11T03:31:42Z",
+        "managedFields": [
+          {
+            "manager": "kubelet",
+            "operation": "Update",
+            "apiVersion": "v1",
+            "time": "2023-07-11T03:33:12Z",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:count": {},
+              "f:firstTimestamp": {},
+              "f:involvedObject": {},
+              "f:lastTimestamp": {},
+              "f:message": {},
+              "f:reason": {},
+              "f:source": {
+                "f:component": {},
+                "f:host": {}
+              },
+              "f:type": {}
+            }
+          }
+        ]
+      },
+      "involvedObject": {
+        "kind": "Pod",
+        "namespace": "message-pod-init-crashloop-backoff",
+        "name": "init-demo",
+        "uid": "8d27f35a-4b45-4752-a5db-7985ea8b38bf",
+        "apiVersion": "v1",
+        "resourceVersion": "981382",
+        "fieldPath": "spec.containers{nginx}"
+      },
+      "reason": "Pulling",
+      "message": "Pulling image \"nginx\"",
+      "source": {
+        "component": "kubelet",
+        "host": "minikube"
+      },
+      "firstTimestamp": "2023-07-11T03:31:42Z",
+      "lastTimestamp": "2023-07-11T03:33:12Z",
+      "count": 5,
+      "type": "Normal",
+      "eventTime": null,
+      "reportingComponent": "",
+      "reportingInstance": ""
+    },
+    {
+      "kind": "Event",
+      "apiVersion": "v1",
+      "metadata": {
+        "name": "init-demo.1770b2aa4adc35a4",
+        "namespace": "message-pod-init-crashloop-backoff",
+        "uid": "740be04d-5aa8-4bce-ace3-ec61e4d229e0",
+        "resourceVersion": "981389",
+        "creationTimestamp": "2023-07-11T03:31:44Z",
+        "managedFields": [
+          {
+            "manager": "kubelet",
+            "operation": "Update",
+            "apiVersion": "v1",
+            "time": "2023-07-11T03:31:44Z",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:count": {},
+              "f:firstTimestamp": {},
+              "f:involvedObject": {},
+              "f:lastTimestamp": {},
+              "f:message": {},
+              "f:reason": {},
+              "f:source": {
+                "f:component": {},
+                "f:host": {}
+              },
+              "f:type": {}
+            }
+          }
+        ]
+      },
+      "involvedObject": {
+        "kind": "Pod",
+        "namespace": "message-pod-init-crashloop-backoff",
+        "name": "init-demo",
+        "uid": "8d27f35a-4b45-4752-a5db-7985ea8b38bf",
+        "apiVersion": "v1",
+        "resourceVersion": "981382",
+        "fieldPath": "spec.containers{nginx}"
+      },
+      "reason": "Pulled",
+      "message": "Successfully pulled image \"nginx\" in 2.633289584s",
+      "source": {
+        "component": "kubelet",
+        "host": "minikube"
+      },
+      "firstTimestamp": "2023-07-11T03:31:44Z",
+      "lastTimestamp": "2023-07-11T03:31:44Z",
+      "count": 1,
+      "type": "Normal",
+      "eventTime": null,
+      "reportingComponent": "",
+      "reportingInstance": ""
+    },
+    {
+      "kind": "Event",
+      "apiVersion": "v1",
+      "metadata": {
+        "name": "init-demo.1770b2aa4cbb718f",
+        "namespace": "message-pod-init-crashloop-backoff",
+        "uid": "a158f7ff-6b95-45db-ac28-2d02ba1d8ca0",
+        "resourceVersion": "981483",
+        "creationTimestamp": "2023-07-11T03:31:44Z",
+        "managedFields": [
+          {
+            "manager": "kubelet",
+            "operation": "Update",
+            "apiVersion": "v1",
+            "time": "2023-07-11T03:33:15Z",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:count": {},
+              "f:firstTimestamp": {},
+              "f:involvedObject": {},
+              "f:lastTimestamp": {},
+              "f:message": {},
+              "f:reason": {},
+              "f:source": {
+                "f:component": {},
+                "f:host": {}
+              },
+              "f:type": {}
+            }
+          }
+        ]
+      },
+      "involvedObject": {
+        "kind": "Pod",
+        "namespace": "message-pod-init-crashloop-backoff",
+        "name": "init-demo",
+        "uid": "8d27f35a-4b45-4752-a5db-7985ea8b38bf",
+        "apiVersion": "v1",
+        "resourceVersion": "981382",
+        "fieldPath": "spec.containers{nginx}"
+      },
+      "reason": "Created",
+      "message": "Created container nginx",
+      "source": {
+        "component": "kubelet",
+        "host": "minikube"
+      },
+      "firstTimestamp": "2023-07-11T03:31:44Z",
+      "lastTimestamp": "2023-07-11T03:33:15Z",
+      "count": 5,
+      "type": "Normal",
+      "eventTime": null,
+      "reportingComponent": "",
+      "reportingInstance": ""
+    },
+    {
+      "kind": "Event",
+      "apiVersion": "v1",
+      "metadata": {
+        "name": "init-demo.1770b2aa50edfd38",
+        "namespace": "message-pod-init-crashloop-backoff",
+        "uid": "0fc24955-49dd-4c16-8c7b-c4a3316b1f9d",
+        "resourceVersion": "981484",
+        "creationTimestamp": "2023-07-11T03:31:44Z",
+        "managedFields": [
+          {
+            "manager": "kubelet",
+            "operation": "Update",
+            "apiVersion": "v1",
+            "time": "2023-07-11T03:33:15Z",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:count": {},
+              "f:firstTimestamp": {},
+              "f:involvedObject": {},
+              "f:lastTimestamp": {},
+              "f:message": {},
+              "f:reason": {},
+              "f:source": {
+                "f:component": {},
+                "f:host": {}
+              },
+              "f:type": {}
+            }
+          }
+        ]
+      },
+      "involvedObject": {
+        "kind": "Pod",
+        "namespace": "message-pod-init-crashloop-backoff",
+        "name": "init-demo",
+        "uid": "8d27f35a-4b45-4752-a5db-7985ea8b38bf",
+        "apiVersion": "v1",
+        "resourceVersion": "981382",
+        "fieldPath": "spec.containers{nginx}"
+      },
+      "reason": "Failed",
+      "message": "Error: failed to start container \"nginx\": Error response from daemon: failed to create shim task: OCI runtime create failed: runc create failed: unable to start container process: exec: \"wge\": executable file not found in $PATH: unknown",
+      "source": {
+        "component": "kubelet",
+        "host": "minikube"
+      },
+      "firstTimestamp": "2023-07-11T03:31:44Z",
+      "lastTimestamp": "2023-07-11T03:33:15Z",
+      "count": 5,
+      "type": "Warning",
+      "eventTime": null,
+      "reportingComponent": "",
+      "reportingInstance": ""
+    },
+    {
+      "kind": "Event",
+      "apiVersion": "v1",
+      "metadata": {
+        "name": "init-demo.1770b2aae7fb3f76",
+        "namespace": "message-pod-init-crashloop-backoff",
+        "uid": "3c489943-7de7-4a1b-a108-1e9d55a2d6a7",
+        "resourceVersion": "981396",
+        "creationTimestamp": "2023-07-11T03:31:47Z",
+        "managedFields": [
+          {
+            "manager": "kubelet",
+            "operation": "Update",
+            "apiVersion": "v1",
+            "time": "2023-07-11T03:31:47Z",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:count": {},
+              "f:firstTimestamp": {},
+              "f:involvedObject": {},
+              "f:lastTimestamp": {},
+              "f:message": {},
+              "f:reason": {},
+              "f:source": {
+                "f:component": {},
+                "f:host": {}
+              },
+              "f:type": {}
+            }
+          }
+        ]
+      },
+      "involvedObject": {
+        "kind": "Pod",
+        "namespace": "message-pod-init-crashloop-backoff",
+        "name": "init-demo",
+        "uid": "8d27f35a-4b45-4752-a5db-7985ea8b38bf",
+        "apiVersion": "v1",
+        "resourceVersion": "981382",
+        "fieldPath": "spec.containers{nginx}"
+      },
+      "reason": "Pulled",
+      "message": "Successfully pulled image \"nginx\" in 1.952280959s",
+      "source": {
+        "component": "kubelet",
+        "host": "minikube"
+      },
+      "firstTimestamp": "2023-07-11T03:31:47Z",
+      "lastTimestamp": "2023-07-11T03:31:47Z",
+      "count": 1,
+      "type": "Normal",
+      "eventTime": null,
+      "reportingComponent": "",
+      "reportingInstance": ""
+    },
+    {
+      "kind": "Event",
+      "apiVersion": "v1",
+      "metadata": {
+        "name": "init-demo.1770b2ae5cec9549",
+        "namespace": "message-pod-init-crashloop-backoff",
+        "uid": "793ce261-4cb0-4b2a-9c97-fe1924e534e3",
+        "resourceVersion": "981413",
+        "creationTimestamp": "2023-07-11T03:32:02Z",
+        "managedFields": [
+          {
+            "manager": "kubelet",
+            "operation": "Update",
+            "apiVersion": "v1",
+            "time": "2023-07-11T03:32:02Z",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:count": {},
+              "f:firstTimestamp": {},
+              "f:involvedObject": {},
+              "f:lastTimestamp": {},
+              "f:message": {},
+              "f:reason": {},
+              "f:source": {
+                "f:component": {},
+                "f:host": {}
+              },
+              "f:type": {}
+            }
+          }
+        ]
+      },
+      "involvedObject": {
+        "kind": "Pod",
+        "namespace": "message-pod-init-crashloop-backoff",
+        "name": "init-demo",
+        "uid": "8d27f35a-4b45-4752-a5db-7985ea8b38bf",
+        "apiVersion": "v1",
+        "resourceVersion": "981382",
+        "fieldPath": "spec.containers{nginx}"
+      },
+      "reason": "Pulled",
+      "message": "Successfully pulled image \"nginx\" in 2.228363585s",
+      "source": {
+        "component": "kubelet",
+        "host": "minikube"
+      },
+      "firstTimestamp": "2023-07-11T03:32:02Z",
+      "lastTimestamp": "2023-07-11T03:32:02Z",
+      "count": 1,
+      "type": "Normal",
+      "eventTime": null,
+      "reportingComponent": "",
+      "reportingInstance": ""
+    },
+    {
+      "kind": "Event",
+      "apiVersion": "v1",
+      "metadata": {
+        "name": "init-demo.1770b2b1917b81fa",
+        "namespace": "message-pod-init-crashloop-backoff",
+        "uid": "2dbed976-4a5d-42f8-8cd7-8778f2382b7a",
+        "resourceVersion": "982495",
+        "creationTimestamp": "2023-07-11T03:32:15Z",
+        "managedFields": [
+          {
+            "manager": "kubelet",
+            "operation": "Update",
+            "apiVersion": "v1",
+            "time": "2023-07-11T03:56:47Z",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:count": {},
+              "f:firstTimestamp": {},
+              "f:involvedObject": {},
+              "f:lastTimestamp": {},
+              "f:message": {},
+              "f:reason": {},
+              "f:source": {
+                "f:component": {},
+                "f:host": {}
+              },
+              "f:type": {}
+            }
+          }
+        ]
+      },
+      "involvedObject": {
+        "kind": "Pod",
+        "namespace": "message-pod-init-crashloop-backoff",
+        "name": "init-demo",
+        "uid": "8d27f35a-4b45-4752-a5db-7985ea8b38bf",
+        "apiVersion": "v1",
+        "resourceVersion": "981382",
+        "fieldPath": "spec.containers{nginx}"
+      },
+      "reason": "BackOff",
+      "message": "Back-off restarting failed container",
+      "source": {
+        "component": "kubelet",
+        "host": "minikube"
+      },
+      "firstTimestamp": "2023-07-11T03:32:15Z",
+      "lastTimestamp": "2023-07-11T03:56:47Z",
+      "count": 111,
+      "type": "Warning",
+      "eventTime": null,
+      "reportingComponent": "",
+      "reportingInstance": ""
+    },
+    {
+      "kind": "Event",
+      "apiVersion": "v1",
+      "metadata": {
+        "name": "init-demo.1770b2b3b6fab35b",
+        "namespace": "message-pod-init-crashloop-backoff",
+        "uid": "f3d43cf2-f8b7-428a-b834-4826603b414c",
+        "resourceVersion": "981439",
+        "creationTimestamp": "2023-07-11T03:32:25Z",
+        "managedFields": [
+          {
+            "manager": "kubelet",
+            "operation": "Update",
+            "apiVersion": "v1",
+            "time": "2023-07-11T03:32:25Z",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:count": {},
+              "f:firstTimestamp": {},
+              "f:involvedObject": {},
+              "f:lastTimestamp": {},
+              "f:message": {},
+              "f:reason": {},
+              "f:source": {
+                "f:component": {},
+                "f:host": {}
+              },
+              "f:type": {}
+            }
+          }
+        ]
+      },
+      "involvedObject": {
+        "kind": "Pod",
+        "namespace": "message-pod-init-crashloop-backoff",
+        "name": "init-demo",
+        "uid": "8d27f35a-4b45-4752-a5db-7985ea8b38bf",
+        "apiVersion": "v1",
+        "resourceVersion": "981382",
+        "fieldPath": "spec.containers{nginx}"
+      },
+      "reason": "Pulled",
+      "message": "Successfully pulled image \"nginx\" in 2.117272501s",
+      "source": {
+        "component": "kubelet",
+        "host": "minikube"
+      },
+      "firstTimestamp": "2023-07-11T03:32:25Z",
+      "lastTimestamp": "2023-07-11T03:32:25Z",
+      "count": 1,
+      "type": "Normal",
+      "eventTime": null,
+      "reportingComponent": "",
+      "reportingInstance": ""
+    },
+    {
+      "kind": "Event",
+      "apiVersion": "v1",
+      "metadata": {
+        "name": "init-demo.1770b2bf5bb3f082",
+        "namespace": "message-pod-init-crashloop-backoff",
+        "uid": "f9f3da46-c519-43b0-9721-07113e30e2e3",
+        "resourceVersion": "981482",
+        "creationTimestamp": "2023-07-11T03:33:15Z",
+        "managedFields": [
+          {
+            "manager": "kubelet",
+            "operation": "Update",
+            "apiVersion": "v1",
+            "time": "2023-07-11T03:33:15Z",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:count": {},
+              "f:firstTimestamp": {},
+              "f:involvedObject": {},
+              "f:lastTimestamp": {},
+              "f:message": {},
+              "f:reason": {},
+              "f:source": {
+                "f:component": {},
+                "f:host": {}
+              },
+              "f:type": {}
+            }
+          }
+        ]
+      },
+      "involvedObject": {
+        "kind": "Pod",
+        "namespace": "message-pod-init-crashloop-backoff",
+        "name": "init-demo",
+        "uid": "8d27f35a-4b45-4752-a5db-7985ea8b38bf",
+        "apiVersion": "v1",
+        "resourceVersion": "981382",
+        "fieldPath": "spec.containers{nginx}"
+      },
+      "reason": "Pulled",
+      "message": "Successfully pulled image \"nginx\" in 2.219218792s",
+      "source": {
+        "component": "kubelet",
+        "host": "minikube"
+      },
+      "firstTimestamp": "2023-07-11T03:33:15Z",
+      "lastTimestamp": "2023-07-11T03:33:15Z",
+      "count": 1,
+      "type": "Normal",
+      "eventTime": null,
+      "reportingComponent": "",
+      "reportingInstance": ""
+    },
+    {
+      "kind": "Event",
+      "apiVersion": "v1",
+      "metadata": {
+        "name": "init-demo2.1770b446b3f016ce",
+        "namespace": "message-pod-init-crashloop-backoff",
+        "uid": "12009dc6-123f-488f-9b1f-412930c8d28d",
+        "resourceVersion": "982692",
+        "creationTimestamp": "2023-07-11T04:01:16Z",
+        "managedFields": [
+          {
+            "manager": "kube-scheduler",
+            "operation": "Update",
+            "apiVersion": "events.k8s.io/v1",
+            "time": "2023-07-11T04:01:16Z",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:action": {},
+              "f:eventTime": {},
+              "f:note": {},
+              "f:reason": {},
+              "f:regarding": {},
+              "f:reportingController": {},
+              "f:reportingInstance": {},
+              "f:type": {}
+            }
+          }
+        ]
+      },
+      "involvedObject": {
+        "kind": "Pod",
+        "namespace": "message-pod-init-crashloop-backoff",
+        "name": "init-demo2",
+        "uid": "5a560e83-c634-4c91-b308-510ee692ed6a",
+        "apiVersion": "v1",
+        "resourceVersion": "982690"
+      },
+      "reason": "Scheduled",
+      "message": "Successfully assigned default/init-demo2 to minikube",
+      "source": {},
+      "firstTimestamp": null,
+      "lastTimestamp": null,
+      "type": "Normal",
+      "eventTime": "2023-07-11T04:01:16.023486Z",
+      "action": "Binding",
+      "reportingComponent": "default-scheduler",
+      "reportingInstance": "default-scheduler-minikube"
+    },
+    {
+      "kind": "Event",
+      "apiVersion": "v1",
+      "metadata": {
+        "name": "init-demo2.1770b446d40953ed",
+        "namespace": "message-pod-init-crashloop-backoff",
+        "uid": "a5ffd925-1612-4178-b5ce-02e981500ee5",
+        "resourceVersion": "982698",
+        "creationTimestamp": "2023-07-11T04:01:16Z",
+        "managedFields": [
+          {
+            "manager": "kubelet",
+            "operation": "Update",
+            "apiVersion": "v1",
+            "time": "2023-07-11T04:01:16Z",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:count": {},
+              "f:firstTimestamp": {},
+              "f:involvedObject": {},
+              "f:lastTimestamp": {},
+              "f:message": {},
+              "f:reason": {},
+              "f:source": {
+                "f:component": {},
+                "f:host": {}
+              },
+              "f:type": {}
+            }
+          }
+        ]
+      },
+      "involvedObject": {
+        "kind": "Pod",
+        "namespace": "message-pod-init-crashloop-backoff",
+        "name": "init-demo2",
+        "uid": "5a560e83-c634-4c91-b308-510ee692ed6a",
+        "apiVersion": "v1",
+        "resourceVersion": "982691",
+        "fieldPath": "spec.initContainers{install}"
+      },
+      "reason": "Pulled",
+      "message": "Container image \"busybox:1.28\" already present on machine",
+      "source": {
+        "component": "kubelet",
+        "host": "minikube"
+      },
+      "firstTimestamp": "2023-07-11T04:01:16Z",
+      "lastTimestamp": "2023-07-11T04:01:16Z",
+      "count": 2,
+      "type": "Normal",
+      "eventTime": null,
+      "reportingComponent": "",
+      "reportingInstance": ""
+    },
+    {
+      "kind": "Event",
+      "apiVersion": "v1",
+      "metadata": {
+        "name": "init-demo2.1770b446d5539074",
+        "namespace": "message-pod-init-crashloop-backoff",
+        "uid": "f431bae6-64fb-47ba-81ee-ab4f32122024",
+        "resourceVersion": "982700",
+        "creationTimestamp": "2023-07-11T04:01:16Z",
+        "managedFields": [
+          {
+            "manager": "kubelet",
+            "operation": "Update",
+            "apiVersion": "v1",
+            "time": "2023-07-11T04:01:16Z",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:count": {},
+              "f:firstTimestamp": {},
+              "f:involvedObject": {},
+              "f:lastTimestamp": {},
+              "f:message": {},
+              "f:reason": {},
+              "f:source": {
+                "f:component": {},
+                "f:host": {}
+              },
+              "f:type": {}
+            }
+          }
+        ]
+      },
+      "involvedObject": {
+        "kind": "Pod",
+        "namespace": "message-pod-init-crashloop-backoff",
+        "name": "init-demo2",
+        "uid": "5a560e83-c634-4c91-b308-510ee692ed6a",
+        "apiVersion": "v1",
+        "resourceVersion": "982691",
+        "fieldPath": "spec.initContainers{install}"
+      },
+      "reason": "Created",
+      "message": "Created container install",
+      "source": {
+        "component": "kubelet",
+        "host": "minikube"
+      },
+      "firstTimestamp": "2023-07-11T04:01:16Z",
+      "lastTimestamp": "2023-07-11T04:01:16Z",
+      "count": 2,
+      "type": "Normal",
+      "eventTime": null,
+      "reportingComponent": "",
+      "reportingInstance": ""
+    },
+    {
+      "kind": "Event",
+      "apiVersion": "v1",
+      "metadata": {
+        "name": "init-demo2.1770b446d9b392f2",
+        "namespace": "message-pod-init-crashloop-backoff",
+        "uid": "9e237187-eb36-4f2d-a139-3c5c450a75e9",
+        "resourceVersion": "982701",
+        "creationTimestamp": "2023-07-11T04:01:16Z",
+        "managedFields": [
+          {
+            "manager": "kubelet",
+            "operation": "Update",
+            "apiVersion": "v1",
+            "time": "2023-07-11T04:01:17Z",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:count": {},
+              "f:firstTimestamp": {},
+              "f:involvedObject": {},
+              "f:lastTimestamp": {},
+              "f:message": {},
+              "f:reason": {},
+              "f:source": {
+                "f:component": {},
+                "f:host": {}
+              },
+              "f:type": {}
+            }
+          }
+        ]
+      },
+      "involvedObject": {
+        "kind": "Pod",
+        "namespace": "message-pod-init-crashloop-backoff",
+        "name": "init-demo2",
+        "uid": "5a560e83-c634-4c91-b308-510ee692ed6a",
+        "apiVersion": "v1",
+        "resourceVersion": "982691",
+        "fieldPath": "spec.initContainers{install}"
+      },
+      "reason": "Failed",
+      "message": "Error: failed to start container \"install\": Error response from daemon: failed to create shim task: OCI runtime create failed: runc create failed: unable to start container process: exec: \"wge\": executable file not found in $PATH: unknown",
+      "source": {
+        "component": "kubelet",
+        "host": "minikube"
+      },
+      "firstTimestamp": "2023-07-11T04:01:16Z",
+      "lastTimestamp": "2023-07-11T04:01:17Z",
+      "count": 2,
+      "type": "Warning",
+      "eventTime": null,
+      "reportingComponent": "",
+      "reportingInstance": ""
+    },
+    {
+      "kind": "Event",
+      "apiVersion": "v1",
+      "metadata": {
+        "name": "init-demo2.1770b448549c898a",
+        "namespace": "message-pod-init-crashloop-backoff",
+        "uid": "44c503f2-0bd9-46ad-81be-9c2626d3bdf3",
+        "resourceVersion": "982706",
+        "creationTimestamp": "2023-07-11T04:01:23Z",
+        "managedFields": [
+          {
+            "manager": "kubelet",
+            "operation": "Update",
+            "apiVersion": "v1",
+            "time": "2023-07-11T04:01:23Z",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:count": {},
+              "f:firstTimestamp": {},
+              "f:involvedObject": {},
+              "f:lastTimestamp": {},
+              "f:message": {},
+              "f:reason": {},
+              "f:source": {
+                "f:component": {},
+                "f:host": {}
+              },
+              "f:type": {}
+            }
+          }
+        ]
+      },
+      "involvedObject": {
+        "kind": "Pod",
+        "namespace": "message-pod-init-crashloop-backoff",
+        "name": "init-demo2",
+        "uid": "5a560e83-c634-4c91-b308-510ee692ed6a",
+        "apiVersion": "v1",
+        "resourceVersion": "982691",
+        "fieldPath": "spec.initContainers{install}"
+      },
+      "reason": "BackOff",
+      "message": "Back-off restarting failed container",
+      "source": {
+        "component": "kubelet",
+        "host": "minikube"
+      },
+      "firstTimestamp": "2023-07-11T04:01:23Z",
+      "lastTimestamp": "2023-07-11T04:01:23Z",
+      "count": 1,
+      "type": "Warning",
+      "eventTime": null,
+      "reportingComponent": "",
+      "reportingInstance": ""
+    },
+    {
+      "kind": "Event",
+      "apiVersion": "v1",
+      "metadata": {
+        "name": "troubleshoot-copyfromhost-4m79m-psdjm.177058280d4c0493",
+        "namespace": "message-pod-init-crashloop-backoff",
+        "uid": "380bec72-7cfd-4a00-85ff-8725c9fc28f9",
+        "resourceVersion": "981372",
+        "creationTimestamp": "2023-07-09T23:53:09Z",
+        "managedFields": [
+          {
+            "manager": "kubelet",
+            "operation": "Update",
+            "apiVersion": "v1",
+            "time": "2023-07-11T03:31:29Z",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:count": {},
+              "f:firstTimestamp": {},
+              "f:involvedObject": {},
+              "f:lastTimestamp": {},
+              "f:message": {},
+              "f:reason": {},
+              "f:source": {
+                "f:component": {},
+                "f:host": {}
+              },
+              "f:type": {}
+            }
+          }
+        ]
+      },
+      "involvedObject": {
+        "kind": "Pod",
+        "namespace": "message-pod-init-crashloop-backoff",
+        "name": "troubleshoot-copyfromhost-4m79m-psdjm",
+        "uid": "55ca5d14-2541-42a9-9eb1-5eb53133e178",
+        "apiVersion": "v1",
+        "resourceVersion": "938779"
+      },
+      "reason": "FailedMount",
+      "message": "MountVolume.SetUp failed for volume \"host\" : hostPath type check failed: /var/lib/collectd is not a directory",
+      "source": {
+        "component": "kubelet",
+        "host": "minikube"
+      },
+      "firstTimestamp": "2023-07-09T23:53:09Z",
+      "lastTimestamp": "2023-07-11T03:31:29Z",
+      "count": 490,
+      "type": "Warning",
+      "eventTime": null,
+      "reportingComponent": "",
+      "reportingInstance": ""
+    },
+    {
+      "kind": "Event",
+      "apiVersion": "v1",
+      "metadata": {
+        "name": "troubleshoot-copyfromhost-4m79m-psdjm.17705863d9fdab48",
+        "namespace": "message-pod-init-crashloop-backoff",
+        "uid": "bab0a7d9-61a5-43a1-813c-ed2d050aee34",
+        "resourceVersion": "981185",
+        "creationTimestamp": "2023-07-09T23:57:26Z",
+        "managedFields": [
+          {
+            "manager": "kubelet",
+            "operation": "Update",
+            "apiVersion": "v1",
+            "time": "2023-07-11T03:27:03Z",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:count": {},
+              "f:firstTimestamp": {},
+              "f:involvedObject": {},
+              "f:lastTimestamp": {},
+              "f:message": {},
+              "f:reason": {},
+              "f:source": {
+                "f:component": {},
+                "f:host": {}
+              },
+              "f:type": {}
+            }
+          }
+        ]
+      },
+      "involvedObject": {
+        "kind": "Pod",
+        "namespace": "message-pod-init-crashloop-backoff",
+        "name": "troubleshoot-copyfromhost-4m79m-psdjm",
+        "uid": "55ca5d14-2541-42a9-9eb1-5eb53133e178",
+        "apiVersion": "v1",
+        "resourceVersion": "938779"
+      },
+      "reason": "FailedMount",
+      "message": "Unable to attach or mount volumes: unmounted volumes=[host], unattached volumes=[host kube-api-access-xddvj]: timed out waiting for the condition",
+      "source": {
+        "component": "kubelet",
+        "host": "minikube"
+      },
+      "firstTimestamp": "2023-07-09T23:57:26Z",
+      "lastTimestamp": "2023-07-11T03:27:03Z",
+      "count": 324,
+      "type": "Warning",
+      "eventTime": null,
+      "reportingComponent": "",
+      "reportingInstance": ""
+    }
+  ]
+}
