@@ -38,7 +38,8 @@ BUILDFLAGS = -tags "netgo containers_image_ostree_stub exclude_graphdriver_devic
 BUILDPATHS = ./pkg/... ./cmd/... ./internal/...
 TESTFLAGS ?= -v -coverprofile cover.out
 
-all: test support-bundle preflight collect analyze
+.DEFAULT: all
+all: test build
 
 .PHONY: ffi
 ffi: fmt vet

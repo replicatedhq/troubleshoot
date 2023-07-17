@@ -133,7 +133,7 @@ func TestAnalyzeTCPConnect(t *testing.T) {
 				return b, nil
 			}
 
-			result, err := (&AnalyzeHostTCPConnect{test.hostAnalyzer}).Analyze(getCollectedFileContents)
+			result, err := (&AnalyzeHostTCPConnect{test.hostAnalyzer}).Analyze(getCollectedFileContents, nil)
 			if test.expectErr {
 				req.Error(err)
 			} else {

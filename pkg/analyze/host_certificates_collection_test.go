@@ -208,7 +208,11 @@ func TestAnalyzeHostCertificatesCollection(t *testing.T) {
 				return []byte(test.file), nil
 			}
 
-			result, err := (&AnalyzeHostCertificatesCollection{test.hostAnalyzer}).Analyze(getCollectedFileContents)
+			a := AnalyzeHostCertificatesCollection{
+				test.hostAnalyzer,
+			}
+
+			result, err := a.Analyze(getCollectedFileContents, nil)
 			if test.expectErr {
 				req.Error(err)
 			} else {

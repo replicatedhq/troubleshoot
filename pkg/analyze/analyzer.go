@@ -79,7 +79,7 @@ func HostAnalyze(
 		return nil
 	}
 
-	result, err := analyzer.Analyze(getFile)
+	result, err := analyzer.Analyze(getFile, findFiles)
 	if err != nil {
 		return NewAnalyzeResultError(analyzer, errors.Wrap(err, "analyze"))
 	}

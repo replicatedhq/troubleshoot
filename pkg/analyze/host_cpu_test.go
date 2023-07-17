@@ -204,7 +204,7 @@ func TestHostCpuAnalyze(t *testing.T) {
 					Outcomes: tc.outcomes,
 				},
 			}
-			results, err := analyzer.Analyze(fn)
+			results, err := analyzer.Analyze(fn, nil)
 			if tc.wantErr {
 				require.NotNil(t, err)
 				return
