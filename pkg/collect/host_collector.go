@@ -51,6 +51,8 @@ func GetHostCollector(collector *troubleshootv1beta2.HostCollect, bundlePath str
 		return &CollectHostFilesystemPerformance{collector.FilesystemPerformance, bundlePath}, true
 	case collector.Certificate != nil:
 		return &CollectHostCertificate{collector.Certificate, bundlePath}, true
+	case collector.CertificatesCollection != nil:
+		return &CollectHostCertificatesCollection{collector.CertificatesCollection, bundlePath}, true
 	case collector.HostServices != nil:
 		return &CollectHostServices{collector.HostServices, bundlePath}, true
 	case collector.HostOS != nil:
