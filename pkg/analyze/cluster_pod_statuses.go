@@ -3,6 +3,7 @@ package analyzer
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"path/filepath"
 	"strings"
 	"text/template"
@@ -32,7 +33,8 @@ func (a *AnalyzeClusterPodStatuses) IsExcluded() (bool, error) {
 }
 
 func (a *AnalyzeClusterPodStatuses) Analyze(getFile getCollectedFileContents, findFiles getChildCollectedFileContents) ([]*AnalyzeResult, error) {
-	results, err := clusterPodStatuses(a.analyzer, findFiles)
+	// findFiles is used to get the pod status and events files
+	results, err := clusterPodStatuses(a.analyzer, findFiles, findFiles)
 	if err != nil {
 		return nil, err
 	}
@@ -42,7 +44,7 @@ func (a *AnalyzeClusterPodStatuses) Analyze(getFile getCollectedFileContents, fi
 	return results, nil
 }
 
-func clusterPodStatuses(analyzer *troubleshootv1beta2.ClusterPodStatuses, getChildCollectedFileContents getChildCollectedFileContents) ([]*AnalyzeResult, error) {
+func clusterPodStatuses(analyzer *troubleshootv1beta2.ClusterPodStatuses, getChildCollectedFileContents getChildCollectedFileContents, getChildCollectedFileContentsEvents getChildCollectedFileContents) ([]*AnalyzeResult, error) {
 	excludeFiles := []string{}
 	collected, err := getChildCollectedFileContents(filepath.Join(constants.CLUSTER_RESOURCES_DIR, constants.CLUSTER_RESOURCES_PODS, "*.json"), excludeFiles)
 	if err != nil {
@@ -77,7 +79,38 @@ func clusterPodStatuses(analyzer *troubleshootv1beta2.ClusterPodStatuses, getChi
 
 	for _, pod := range pods {
 		if pod.Status.Reason == "" {
-			pod.Status.Reason = k8sutil.GetPodStatusReason(&pod)
+			// get pod status reason and message from the pod
+			pod.Status.Reason, pod.Status.Message = k8sutil.GetPodStatusReason(&pod)
+		}
+
+		// if the pod has no last termination message like pending or container creating, then check the pod events and get the warning messages. Errors will be logged and return empty message.
+		if pod.Status.Message == "" {
+			messages := []string{}
+			collectedEvents, err := getChildCollectedFileContentsEvents(filepath.Join(constants.CLUSTER_RESOURCES_DIR, "events", fmt.Sprintf("%s.json", pod.Namespace)), excludeFiles)
+			if err != nil {
+				klog.V(2).Infof("failed to read collected events for namespace %s: %v", pod.Namespace, err)
+			}
+
+			for _, fileContent := range collectedEvents {
+				var nsEvents []corev1.Event
+				if err := json.Unmarshal(fileContent, &nsEvents); err != nil {
+					// try new format
+					var nsEventsList corev1.EventList
+					if err := json.Unmarshal(fileContent, &nsEventsList); err != nil {
+						klog.V(2).Infof("failed to unmarshal events for namespace %s: %v", pod.Namespace, err)
+					}
+					nsEvents = nsEventsList.Items
+				}
+
+				for _, event := range nsEvents {
+					if event.InvolvedObject.Kind == "Pod" && event.InvolvedObject.Name == pod.Name && event.InvolvedObject.Namespace == pod.Namespace {
+						if event.Type == "Warning" && event.Message != "" {
+							messages = append(messages, event.Message)
+						}
+					}
+				}
+			}
+			pod.Status.Message = strings.Join(messages, ". ")
 		}
 
 		for _, outcome := range analyzer.Outcomes {
@@ -149,7 +182,12 @@ func clusterPodStatuses(analyzer *troubleshootv1beta2.ClusterPodStatuses, getChi
 			}
 
 			if r.Message == "" {
-				r.Message = "Pod {{ .Namespace }}/{{ .Name }} status is {{ .Status.Reason }}"
+				r.Message = "Pod {{ .Namespace }}/{{ .Name }} status is {{ .Status.Reason }}. Message is: {{ .Status.Message }}"
+			}
+
+			// if the pod has no status message, set it to None
+			if pod.Status.Message == "" {
+				pod.Status.Message = "None"
 			}
 
 			tmpl := template.New("pod")
@@ -176,7 +214,7 @@ func clusterPodStatuses(analyzer *troubleshootv1beta2.ClusterPodStatuses, getChi
 			if err != nil {
 				return nil, errors.Wrap(err, "failed to execute template")
 			}
-			r.Message = m.String()
+			r.Message = strings.TrimSpace(m.String())
 
 			// add to results, break and check the next pod
 			allResults = append(allResults, &r)
