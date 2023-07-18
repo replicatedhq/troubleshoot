@@ -117,6 +117,10 @@ func (a *AnalyzeCephStatus) IsExcluded() (bool, error) {
 	return isExcluded(a.analyzer.Exclude)
 }
 
+func (a *AnalyzeCephStatus) IsEnableAI() (bool, error) {
+	return isEnableAI(a.analyzer.EnableAI)
+}
+
 func (a *AnalyzeCephStatus) Analyze(getFile getCollectedFileContents, findFiles getChildCollectedFileContents) ([]*AnalyzeResult, error) {
 	result, err := a.cephStatus(a.analyzer, getFile)
 	if err != nil {

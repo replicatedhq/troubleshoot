@@ -30,6 +30,10 @@ func (a *AnalyzeTextAnalyze) IsExcluded() (bool, error) {
 	return isExcluded(a.analyzer.Exclude)
 }
 
+func (a *AnalyzeTextAnalyze) IsEnableAI() (bool, error) {
+	return isEnableAI(a.analyzer.EnableAI)
+}
+
 func (a *AnalyzeTextAnalyze) Analyze(getFile getCollectedFileContents, findFiles getChildCollectedFileContents) ([]*AnalyzeResult, error) {
 	results, err := a.analyzeTextAnalyze(a.analyzer, findFiles)
 	if err != nil {

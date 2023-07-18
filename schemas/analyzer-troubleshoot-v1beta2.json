@@ -41,6 +41,9 @@
                   "collectorName": {
                     "type": "string"
                   },
+                  "enableAI": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  },
                   "exclude": {
                     "oneOf": [{"type": "string"},{"type": "boolean"}]
                   },
@@ -117,6 +120,9 @@
                   "checkName": {
                     "type": "string"
                   },
+                  "enableAI": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  },
                   "exclude": {
                     "oneOf": [{"type": "string"},{"type": "boolean"}]
                   },
@@ -189,6 +195,9 @@
                   },
                   "checkName": {
                     "type": "string"
+                  },
+                  "enableAI": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
                   },
                   "exclude": {
                     "oneOf": [{"type": "string"},{"type": "boolean"}]
@@ -278,6 +287,9 @@
                   },
                   "collectorName": {
                     "type": "string"
+                  },
+                  "enableAI": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
                   },
                   "exclude": {
                     "oneOf": [{"type": "string"},{"type": "boolean"}]
@@ -373,6 +385,9 @@
                   "checkName": {
                     "type": "string"
                   },
+                  "enableAI": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  },
                   "exclude": {
                     "oneOf": [{"type": "string"},{"type": "boolean"}]
                   },
@@ -450,6 +465,9 @@
                   },
                   "configMapName": {
                     "type": "string"
+                  },
+                  "enableAI": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
                   },
                   "exclude": {
                     "oneOf": [{"type": "string"},{"type": "boolean"}]
@@ -530,6 +548,9 @@
                   "checkName": {
                     "type": "string"
                   },
+                  "enableAI": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  },
                   "exclude": {
                     "oneOf": [{"type": "string"},{"type": "boolean"}]
                   },
@@ -607,6 +628,9 @@
                   "customResourceDefinitionName": {
                     "type": "string"
                   },
+                  "enableAI": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  },
                   "exclude": {
                     "oneOf": [{"type": "string"},{"type": "boolean"}]
                   },
@@ -680,6 +704,9 @@
                   },
                   "checkName": {
                     "type": "string"
+                  },
+                  "enableAI": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
                   },
                   "exclude": {
                     "oneOf": [{"type": "string"},{"type": "boolean"}]
@@ -766,6 +793,9 @@
                   "checkName": {
                     "type": "string"
                   },
+                  "enableAI": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  },
                   "exclude": {
                     "oneOf": [{"type": "string"},{"type": "boolean"}]
                   },
@@ -839,6 +869,9 @@
                   },
                   "checkName": {
                     "type": "string"
+                  },
+                  "enableAI": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
                   },
                   "exclude": {
                     "oneOf": [{"type": "string"},{"type": "boolean"}]
@@ -917,6 +950,9 @@
                   },
                   "checkName": {
                     "type": "string"
+                  },
+                  "enableAI": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
                   },
                   "exclude": {
                     "oneOf": [{"type": "string"},{"type": "boolean"}]
@@ -997,6 +1033,9 @@
                   },
                   "checkName": {
                     "type": "string"
+                  },
+                  "enableAI": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
                   },
                   "exclude": {
                     "oneOf": [{"type": "string"},{"type": "boolean"}]
@@ -1085,6 +1124,9 @@
                   },
                   "collectorName": {
                     "type": "string"
+                  },
+                  "enableAI": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
                   },
                   "exclude": {
                     "oneOf": [{"type": "string"},{"type": "boolean"}]
@@ -1175,6 +1217,9 @@
                   "collectorName": {
                     "type": "string"
                   },
+                  "enableAI": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  },
                   "exclude": {
                     "oneOf": [{"type": "string"},{"type": "boolean"}]
                   },
@@ -1254,6 +1299,9 @@
                   },
                   "collectorName": {
                     "type": "string"
+                  },
+                  "enableAI": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
                   },
                   "exclude": {
                     "oneOf": [{"type": "string"},{"type": "boolean"}]
@@ -1335,6 +1383,9 @@
                   "collectorName": {
                     "type": "string"
                   },
+                  "enableAI": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  },
                   "exclude": {
                     "oneOf": [{"type": "string"},{"type": "boolean"}]
                   },
@@ -1410,6 +1461,9 @@
                   },
                   "checkName": {
                     "type": "string"
+                  },
+                  "enableAI": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
                   },
                   "exclude": {
                     "oneOf": [{"type": "string"},{"type": "boolean"}]
@@ -1531,6 +1585,9 @@
                   "collectorName": {
                     "type": "string"
                   },
+                  "enableAI": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  },
                   "exclude": {
                     "oneOf": [{"type": "string"},{"type": "boolean"}]
                   },
@@ -1610,6 +1667,9 @@
                   },
                   "collectorName": {
                     "type": "string"
+                  },
+                  "enableAI": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
                   },
                   "exclude": {
                     "oneOf": [{"type": "string"},{"type": "boolean"}]
@@ -1691,6 +1751,9 @@
                   "collectorName": {
                     "type": "string"
                   },
+                  "enableAI": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  },
                   "exclude": {
                     "oneOf": [{"type": "string"},{"type": "boolean"}]
                   },
@@ -1765,6 +1828,9 @@
                   },
                   "checkName": {
                     "type": "string"
+                  },
+                  "enableAI": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
                   },
                   "exclude": {
                     "oneOf": [{"type": "string"},{"type": "boolean"}]
@@ -1859,6 +1925,9 @@
                   "checkName": {
                     "type": "string"
                   },
+                  "enableAI": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  },
                   "exclude": {
                     "oneOf": [{"type": "string"},{"type": "boolean"}]
                   },
@@ -1941,6 +2010,9 @@
                   },
                   "checkName": {
                     "type": "string"
+                  },
+                  "enableAI": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
                   },
                   "exclude": {
                     "oneOf": [{"type": "string"},{"type": "boolean"}]
@@ -2027,6 +2099,9 @@
                   "checkName": {
                     "type": "string"
                   },
+                  "enableAI": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  },
                   "exclude": {
                     "oneOf": [{"type": "string"},{"type": "boolean"}]
                   },
@@ -2103,6 +2178,9 @@
                   "checkName": {
                     "type": "string"
                   },
+                  "enableAI": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  },
                   "exclude": {
                     "oneOf": [{"type": "string"},{"type": "boolean"}]
                   },
@@ -2178,6 +2256,9 @@
                   },
                   "collectorName": {
                     "type": "string"
+                  },
+                  "enableAI": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
                   },
                   "exclude": {
                     "oneOf": [{"type": "string"},{"type": "boolean"}]
@@ -2270,6 +2351,9 @@
                   "checkName": {
                     "type": "string"
                   },
+                  "enableAI": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  },
                   "exclude": {
                     "oneOf": [{"type": "string"},{"type": "boolean"}]
                   },
@@ -2298,6 +2382,9 @@
                   },
                   "collectorName": {
                     "type": "string"
+                  },
+                  "enableAI": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
                   },
                   "exclude": {
                     "oneOf": [{"type": "string"},{"type": "boolean"}]
@@ -2394,6 +2481,9 @@
                   "collectorName": {
                     "type": "string"
                   },
+                  "enableAI": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  },
                   "exclude": {
                     "oneOf": [{"type": "string"},{"type": "boolean"}]
                   },
@@ -2477,6 +2567,9 @@
                   "collectorName": {
                     "type": "string"
                   },
+                  "enableAI": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  },
                   "exclude": {
                     "oneOf": [{"type": "string"},{"type": "boolean"}]
                   },
@@ -2552,6 +2645,9 @@
                   },
                   "collectorName": {
                     "type": "string"
+                  },
+                  "enableAI": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
                   },
                   "exclude": {
                     "oneOf": [{"type": "string"},{"type": "boolean"}]
@@ -2629,6 +2725,9 @@
                   "collectorName": {
                     "type": "string"
                   },
+                  "enableAI": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  },
                   "exclude": {
                     "oneOf": [{"type": "string"},{"type": "boolean"}]
                   },
@@ -2704,6 +2803,9 @@
                   },
                   "collectorName": {
                     "type": "string"
+                  },
+                  "enableAI": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
                   },
                   "exclude": {
                     "oneOf": [{"type": "string"},{"type": "boolean"}]
@@ -2781,6 +2883,9 @@
                   "collectorName": {
                     "type": "string"
                   },
+                  "enableAI": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  },
                   "exclude": {
                     "oneOf": [{"type": "string"},{"type": "boolean"}]
                   },
@@ -2856,6 +2961,9 @@
                   },
                   "collectorName": {
                     "type": "string"
+                  },
+                  "enableAI": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
                   },
                   "exclude": {
                     "oneOf": [{"type": "string"},{"type": "boolean"}]
@@ -2933,6 +3041,9 @@
                   "collectorName": {
                     "type": "string"
                   },
+                  "enableAI": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  },
                   "exclude": {
                     "oneOf": [{"type": "string"},{"type": "boolean"}]
                   },
@@ -3008,6 +3119,9 @@
                   },
                   "collectorName": {
                     "type": "string"
+                  },
+                  "enableAI": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
                   },
                   "exclude": {
                     "oneOf": [{"type": "string"},{"type": "boolean"}]
@@ -3085,6 +3199,9 @@
                   "collectorName": {
                     "type": "string"
                   },
+                  "enableAI": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  },
                   "exclude": {
                     "oneOf": [{"type": "string"},{"type": "boolean"}]
                   },
@@ -3160,6 +3277,9 @@
                   },
                   "collectorName": {
                     "type": "string"
+                  },
+                  "enableAI": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
                   },
                   "exclude": {
                     "oneOf": [{"type": "string"},{"type": "boolean"}]
@@ -3237,6 +3357,9 @@
                   "collectorName": {
                     "type": "string"
                   },
+                  "enableAI": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  },
                   "exclude": {
                     "oneOf": [{"type": "string"},{"type": "boolean"}]
                   },
@@ -3312,6 +3435,9 @@
                   },
                   "collectorName": {
                     "type": "string"
+                  },
+                  "enableAI": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
                   },
                   "exclude": {
                     "oneOf": [{"type": "string"},{"type": "boolean"}]
@@ -3389,6 +3515,9 @@
                   "collectorName": {
                     "type": "string"
                   },
+                  "enableAI": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  },
                   "exclude": {
                     "oneOf": [{"type": "string"},{"type": "boolean"}]
                   },
@@ -3464,6 +3593,9 @@
                   },
                   "collectorName": {
                     "type": "string"
+                  },
+                  "enableAI": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
                   },
                   "exclude": {
                     "oneOf": [{"type": "string"},{"type": "boolean"}]
@@ -3541,6 +3673,9 @@
                   "collectorName": {
                     "type": "string"
                   },
+                  "enableAI": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  },
                   "exclude": {
                     "oneOf": [{"type": "string"},{"type": "boolean"}]
                   },
@@ -3616,6 +3751,9 @@
                   },
                   "collectorName": {
                     "type": "string"
+                  },
+                  "enableAI": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
                   },
                   "exclude": {
                     "oneOf": [{"type": "string"},{"type": "boolean"}]
@@ -3693,6 +3831,9 @@
                   "collectorName": {
                     "type": "string"
                   },
+                  "enableAI": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  },
                   "exclude": {
                     "oneOf": [{"type": "string"},{"type": "boolean"}]
                   },
@@ -3768,6 +3909,9 @@
                   },
                   "collectorName": {
                     "type": "string"
+                  },
+                  "enableAI": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
                   },
                   "exclude": {
                     "oneOf": [{"type": "string"},{"type": "boolean"}]

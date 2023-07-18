@@ -52,6 +52,10 @@ func (a *AnalyzeClusterResource) IsExcluded() (bool, error) {
 	return isExcluded(a.analyzer.Exclude)
 }
 
+func (a *AnalyzeClusterResource) IsEnableAI() (bool, error) {
+	return isEnableAI(a.analyzer.EnableAI)
+}
+
 func (a *AnalyzeClusterResource) Analyze(getFile getCollectedFileContents, findFiles getChildCollectedFileContents) ([]*AnalyzeResult, error) {
 	result, err := a.analyzeResource(a.analyzer, getFile)
 	if err != nil {

@@ -2,8 +2,10 @@ package analyzer
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 	"text/template"
@@ -12,6 +14,7 @@ import (
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/replicatedhq/troubleshoot/pkg/constants"
 	"github.com/replicatedhq/troubleshoot/pkg/k8sutil"
+	"github.com/sashabaranov/go-openai"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/klog/v2"
 )
@@ -30,6 +33,10 @@ func (a *AnalyzeClusterPodStatuses) Title() string {
 
 func (a *AnalyzeClusterPodStatuses) IsExcluded() (bool, error) {
 	return isExcluded(a.analyzer.Exclude)
+}
+
+func (a *AnalyzeClusterPodStatuses) IsEnableAI() (bool, error) {
+	return isEnableAI(a.analyzer.EnableAI)
 }
 
 func (a *AnalyzeClusterPodStatuses) Analyze(getFile getCollectedFileContents, findFiles getChildCollectedFileContents) ([]*AnalyzeResult, error) {
@@ -215,6 +222,49 @@ func clusterPodStatuses(analyzer *troubleshootv1beta2.ClusterPodStatuses, getChi
 				return nil, errors.Wrap(err, "failed to execute template")
 			}
 			r.Message = strings.TrimSpace(m.String())
+
+			isEnableAI, _ := isEnableAI(analyzer.EnableAI)
+			if isEnableAI && !r.IsPass {
+				client := openai.NewClient(os.Getenv("OPENAI_API_KEY"))
+				resp, err := client.CreateChatCompletion(
+					context.Background(),
+					openai.ChatCompletionRequest{
+						Model: openai.GPT3Dot5Turbo,
+						Messages: []openai.ChatCompletionMessage{
+							{
+								Role: openai.ChatMessageRoleSystem,
+								Content: `You are a kubernetes expert that solve any k8s issue. You will be asked for explaining the error message from a unhealthy pod. Please provide a short explanation and the most possible solution in a step by step style in no more than 280 characters. Write the output in the json format:
+								{
+									"error": "summary of error message here",
+									"solution": "solution here"
+								}`,
+							},
+							{
+								Role:    openai.ChatMessageRoleUser,
+								Content: `The following are the details of the pod: ### ` + r.Message + ` ###`,
+							},
+						},
+						// Functions: []openai.FunctionDefinition{{
+						// 	Name: "get_solution",
+						// 	Parameters: jsonschema.Definition{
+						// 		Type: jsonschema.Object,
+						// 		Properties: map[string]jsonschema.Definition{
+						// 			"error": {
+						// 				Type:        jsonschema.String,
+						// 				Description: "error message from the pod",
+						// 			},
+						// 		},
+						// 	},
+						// }},
+					},
+				)
+				if err != nil {
+					fmt.Printf("ChatCompletion error: %v\n", err)
+					return nil, errors.Wrap(err, "failed to finish openai chatCompletion")
+				}
+
+				json.Unmarshal([]byte(resp.Choices[0].Message.Content), &r.Advice)
+			}
 
 			// add to results, break and check the next pod
 			allResults = append(allResults, &r)

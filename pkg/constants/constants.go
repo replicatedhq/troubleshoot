@@ -19,6 +19,7 @@ const (
 	LIB_TRACER_NAME             = "github.com/replicatedhq/troubleshoot"
 	TROUBLESHOOT_ROOT_SPAN_NAME = "ReplicatedTroubleshootRootSpan"
 	EXCLUDED                    = "excluded"
+	ENABLEAI                    = "enableai"
 
 	// Cluster Resources Collector Directories
 	CLUSTER_RESOURCES_DIR                         = "cluster-resources"

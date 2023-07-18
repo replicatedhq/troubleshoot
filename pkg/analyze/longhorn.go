@@ -29,6 +29,10 @@ func (a *AnalyzeLonghorn) IsExcluded() (bool, error) {
 	return isExcluded(a.analyzer.Exclude)
 }
 
+func (a *AnalyzeLonghorn) IsEnableAI() (bool, error) {
+	return isEnableAI(a.analyzer.EnableAI)
+}
+
 func (a *AnalyzeLonghorn) Analyze(getFile getCollectedFileContents, findFiles getChildCollectedFileContents) ([]*AnalyzeResult, error) {
 	results, err := longhorn(a.analyzer, getFile, findFiles)
 	if err != nil {

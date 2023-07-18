@@ -25,6 +25,10 @@ func (a *AnalyzeSecret) IsExcluded() (bool, error) {
 	return isExcluded(a.analyzer.Exclude)
 }
 
+func (a *AnalyzeSecret) IsEnableAI() (bool, error) {
+	return isEnableAI(a.analyzer.EnableAI)
+}
+
 func (a *AnalyzeSecret) Analyze(getFile getCollectedFileContents, findFiles getChildCollectedFileContents) ([]*AnalyzeResult, error) {
 	result, err := a.analyzeSecret(a.analyzer, getFile)
 	if err != nil {

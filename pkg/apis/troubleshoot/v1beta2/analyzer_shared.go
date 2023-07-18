@@ -213,6 +213,7 @@ type AnalyzeMeta struct {
 	CheckName   string                  `json:"checkName,omitempty" yaml:"checkName,omitempty"`
 	Exclude     *multitype.BoolOrString `json:"exclude,omitempty" yaml:"exclude,omitempty"`
 	Strict      *multitype.BoolOrString `json:"strict,omitempty" yaml:"strict,omitempty"`
+	EnableAI    *multitype.BoolOrString `json:"enableAI,omitempty" yaml:"enableAI,omitempty"`
 	Annotations map[string]string       `json:"annotations,omitempty" yaml:"annotations,omitempty"`
 }
 

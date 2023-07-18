@@ -29,6 +29,10 @@ func (a *AnalyzeContainerRuntime) IsExcluded() (bool, error) {
 	return isExcluded(a.analyzer.Exclude)
 }
 
+func (a *AnalyzeContainerRuntime) IsEnableAI() (bool, error) {
+	return isEnableAI(a.analyzer.EnableAI)
+}
+
 func (a *AnalyzeContainerRuntime) Analyze(getFile getCollectedFileContents, findFiles getChildCollectedFileContents) ([]*AnalyzeResult, error) {
 	result, err := a.analyzeContainerRuntime(a.analyzer, getFile)
 	if err != nil {

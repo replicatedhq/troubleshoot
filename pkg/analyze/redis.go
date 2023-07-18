@@ -27,6 +27,10 @@ func (a *AnalyzeRedis) IsExcluded() (bool, error) {
 	return isExcluded(a.analyzer.Exclude)
 }
 
+func (a *AnalyzeRedis) IsEnableAI() (bool, error) {
+	return isEnableAI(a.analyzer.EnableAI)
+}
+
 func (a *AnalyzeRedis) Analyze(getFile getCollectedFileContents, findFiles getChildCollectedFileContents) ([]*AnalyzeResult, error) {
 	result, err := a.analyzeRedis(a.analyzer, getFile)
 	if err != nil {

@@ -48,6 +48,8 @@ spec:
                           type: string
                         collectorName:
                           type: string
+                        enableAI:
+                          type: BoolString
                         exclude:
                           type: BoolString
                         includeUnmountedPartitions:
@@ -104,6 +106,8 @@ spec:
                           type: string
                         collectorName:
                           type: string
+                        enableAI:
+                          type: BoolString
                         exclude:
                           type: BoolString
                         outcomes:
@@ -153,6 +157,8 @@ spec:
                           type: string
                         collectorName:
                           type: string
+                        enableAI:
+                          type: BoolString
                         exclude:
                           type: BoolString
                         outcomes:
@@ -202,6 +208,8 @@ spec:
                           type: string
                         collectorName:
                           type: string
+                        enableAI:
+                          type: BoolString
                         exclude:
                           type: BoolString
                         outcomes:
@@ -251,6 +259,8 @@ spec:
                           type: string
                         collectorName:
                           type: string
+                        enableAI:
+                          type: BoolString
                         exclude:
                           type: BoolString
                         outcomes:
@@ -300,6 +310,8 @@ spec:
                           type: string
                         collectorName:
                           type: string
+                        enableAI:
+                          type: BoolString
                         exclude:
                           type: BoolString
                         outcomes:
@@ -349,6 +361,8 @@ spec:
                           type: string
                         collectorName:
                           type: string
+                        enableAI:
+                          type: BoolString
                         exclude:
                           type: BoolString
                         outcomes:
@@ -398,6 +412,8 @@ spec:
                           type: string
                         collectorName:
                           type: string
+                        enableAI:
+                          type: BoolString
                         exclude:
                           type: BoolString
                         outcomes:
@@ -447,6 +463,8 @@ spec:
                           type: string
                         collectorName:
                           type: string
+                        enableAI:
+                          type: BoolString
                         exclude:
                           type: BoolString
                         outcomes:
@@ -496,6 +514,8 @@ spec:
                           type: string
                         collectorName:
                           type: string
+                        enableAI:
+                          type: BoolString
                         exclude:
                           type: BoolString
                         outcomes:
@@ -545,6 +565,8 @@ spec:
                           type: string
                         collectorName:
                           type: string
+                        enableAI:
+                          type: BoolString
                         exclude:
                           type: BoolString
                         outcomes:
@@ -594,6 +616,8 @@ spec:
                           type: string
                         collectorName:
                           type: string
+                        enableAI:
+                          type: BoolString
                         exclude:
                           type: BoolString
                         outcomes:
@@ -643,6 +667,8 @@ spec:
                           type: string
                         collectorName:
                           type: string
+                        enableAI:
+                          type: BoolString
                         exclude:
                           type: BoolString
                         outcomes:
@@ -692,6 +718,8 @@ spec:
                           type: string
                         collectorName:
                           type: string
+                        enableAI:
+                          type: BoolString
                         exclude:
                           type: BoolString
                         outcomes:
@@ -741,6 +769,8 @@ spec:
                           type: string
                         collectorName:
                           type: string
+                        enableAI:
+                          type: BoolString
                         exclude:
                           type: BoolString
                         outcomes:
@@ -790,6 +820,8 @@ spec:
                           type: string
                         collectorName:
                           type: string
+                        enableAI:
+                          type: BoolString
                         exclude:
                           type: BoolString
                         outcomes:
@@ -839,6 +871,8 @@ spec:
                           type: string
                         collectorName:
                           type: string
+                        enableAI:
+                          type: BoolString
                         exclude:
                           type: BoolString
                         outcomes:
@@ -888,6 +922,8 @@ spec:
                           type: string
                         collectorName:
                           type: string
+                        enableAI:
+                          type: BoolString
                         exclude:
                           type: BoolString
                         outcomes:
@@ -937,6 +973,8 @@ spec:
                           type: string
                         collectorName:
                           type: string
+                        enableAI:
+                          type: BoolString
                         exclude:
                           type: BoolString
                         outcomes:

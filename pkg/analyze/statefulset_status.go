@@ -38,6 +38,10 @@ func (a *AnalyzeStatefulsetStatus) IsExcluded() (bool, error) {
 	return isExcluded(a.analyzer.Exclude)
 }
 
+func (a *AnalyzeStatefulsetStatus) IsEnableAI() (bool, error) {
+	return isEnableAI(a.analyzer.EnableAI)
+}
+
 func (a *AnalyzeStatefulsetStatus) Analyze(getFile getCollectedFileContents, findFiles getChildCollectedFileContents) ([]*AnalyzeResult, error) {
 	results, err := analyzeStatefulsetStatus(a.analyzer, findFiles)
 	if err != nil {

@@ -41,6 +41,10 @@ func (a *AnalyzeReplicaSetStatus) IsExcluded() (bool, error) {
 	return isExcluded(a.analyzer.Exclude)
 }
 
+func (a *AnalyzeReplicaSetStatus) IsEnableAI() (bool, error) {
+	return isEnableAI(a.analyzer.EnableAI)
+}
+
 func (a *AnalyzeReplicaSetStatus) Analyze(getFile getCollectedFileContents, findFiles getChildCollectedFileContents) ([]*AnalyzeResult, error) {
 	results, err := analyzeReplicaSetStatus(a.analyzer, findFiles)
 	if err != nil {

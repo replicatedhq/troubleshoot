@@ -3,6 +3,7 @@ package v1beta2
 type SingleOutcome struct {
 	When    string `json:"when,omitempty" yaml:"when,omitempty"`
 	Message string `json:"message,omitempty" yaml:"message,omitempty"`
+	Advice  string `json:"advice,omitempty" yaml:"advice,omitempty"`
 	URI     string `json:"uri,omitempty" yaml:"uri,omitempty"`
 }
 

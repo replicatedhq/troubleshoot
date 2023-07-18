@@ -51,6 +51,10 @@ func (a *AnalyzeWeaveReport) IsExcluded() (bool, error) {
 	return isExcluded(a.analyzer.Exclude)
 }
 
+func (a *AnalyzeWeaveReport) IsEnableAI() (bool, error) {
+	return isEnableAI(a.analyzer.EnableAI)
+}
+
 func (a *AnalyzeWeaveReport) Analyze(getFile getCollectedFileContents, findFiles getChildCollectedFileContents) ([]*AnalyzeResult, error) {
 	results, err := analyzeWeaveReport(a.analyzer, findFiles)
 	if err != nil {

@@ -38,6 +38,10 @@ func (a *AnalyzeDeploymentStatus) IsExcluded() (bool, error) {
 	return isExcluded(a.analyzer.Exclude)
 }
 
+func (a *AnalyzeDeploymentStatus) IsEnableAI() (bool, error) {
+	return isEnableAI(a.analyzer.EnableAI)
+}
+
 func (a *AnalyzeDeploymentStatus) Analyze(getFile getCollectedFileContents, findFiles getChildCollectedFileContents) ([]*AnalyzeResult, error) {
 	results, err := analyzeDeploymentStatus(a.analyzer, findFiles)
 	if err != nil {

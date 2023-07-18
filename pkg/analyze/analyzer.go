@@ -24,13 +24,18 @@ type AnalyzeResult struct {
 	IsWarn bool
 	Strict bool
 
-	Title   string
-	Message string
-	URI     string
-	IconKey string
-	IconURI string
-
+	Title          string
+	Message        string
+	URI            string
+	IconKey        string
+	IconURI        string
+	Advice         Advice
 	InvolvedObject *corev1.ObjectReference
+}
+
+type Advice struct {
+	Error    string `json:"error,omitempty"`
+	Solution string `json:"solution,omitempty"`
 }
 
 type getCollectedFileContents func(string) ([]byte, error)
@@ -50,6 +55,27 @@ func isExcluded(excludeVal *multitype.BoolOrString) (bool, error) {
 	}
 
 	parsed, err := strconv.ParseBool(excludeVal.StrVal)
+	if err != nil {
+		return false, errors.Wrap(err, "failed to parse bool string")
+	}
+
+	return parsed, nil
+}
+
+func isEnableAI(enableAIVal *multitype.BoolOrString) (bool, error) {
+	if enableAIVal == nil {
+		return false, nil
+	}
+
+	if enableAIVal.Type == multitype.Bool {
+		return enableAIVal.BoolVal, nil
+	}
+
+	if enableAIVal.StrVal == "" {
+		return false, nil
+	}
+
+	parsed, err := strconv.ParseBool(enableAIVal.StrVal)
 	if err != nil {
 		return false, errors.Wrap(err, "failed to parse bool string")
 	}
@@ -135,6 +161,15 @@ func Analyze(
 		return nil, nil
 	}
 
+	isEnableAI, err := analyzerInst.IsEnableAI()
+	if err != nil {
+		span.SetStatus(codes.Error, err.Error())
+		return nil, err
+	}
+	if isEnableAI {
+		klog.Infof("enableAI %q analyzer", analyzerInst.Title())
+	}
+
 	results, err := analyzerInst.Analyze(getFile, findFiles)
 	if err != nil {
 		span.SetStatus(codes.Error, err.Error())
@@ -173,6 +208,7 @@ func GetExcludeFlag(analyzer *troubleshootv1beta2.Analyze) *multitype.BoolOrStri
 type Analyzer interface {
 	Title() string
 	IsExcluded() (bool, error)
+	IsEnableAI() (bool, error)
 	Analyze(getFile getCollectedFileContents, findFiles getChildCollectedFileContents) ([]*AnalyzeResult, error)
 }
 

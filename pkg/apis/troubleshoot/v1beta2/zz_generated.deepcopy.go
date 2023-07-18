@@ -251,6 +251,11 @@ func (in *AnalyzeMeta) DeepCopyInto(out *AnalyzeMeta) {
 		*out = new(multitype.BoolOrString)
 		**out = **in
 	}
+	if in.EnableAI != nil {
+		in, out := &in.EnableAI, &out.EnableAI
+		*out = new(multitype.BoolOrString)
+		**out = **in
+	}
 	if in.Annotations != nil {
 		in, out := &in.Annotations, &out.Annotations
 		*out = make(map[string]string, len(*in))

@@ -22,6 +22,10 @@ func (a *AnalyzeClusterVersion) IsExcluded() (bool, error) {
 	return isExcluded(a.analyzer.Exclude)
 }
 
+func (a *AnalyzeClusterVersion) IsEnableAI() (bool, error) {
+	return isEnableAI(a.analyzer.EnableAI)
+}
+
 func (a *AnalyzeClusterVersion) Analyze(getFile getCollectedFileContents, findFiles getChildCollectedFileContents) ([]*AnalyzeResult, error) {
 	result, err := analyzeClusterVersion(a.analyzer, getFile)
 	if err != nil {

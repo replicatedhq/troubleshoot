@@ -27,9 +27,10 @@ type Severity string
 type Insight struct {
 	Meta `json:",inline" yaml:",inline" hcl:",inline"`
 
-	Primary  string   `json:"primary" yaml:"primary" hcl:"primary"`
-	Detail   string   `json:"detail" yaml:"detail" hcl:"detail"`
-	Severity Severity `json:"severity,omitempty" yaml:"severity,omitempty" hcl:"severity,omitempty"`
+	Primary  string         `json:"primary" yaml:"primary" hcl:"primary"`
+	Detail   string         `json:"detail" yaml:"detail" hcl:"detail"`
+	Advice   analyze.Advice `json:"advice,omitempty" yaml:"advice,omitempty" hcl:"advice,omitempty"`
+	Severity Severity       `json:"severity,omitempty" yaml:"severity,omitempty" hcl:"severity,omitempty"`
 }
 
 type Result struct {
@@ -93,6 +94,7 @@ func FromAnalyzerResult(input []*analyze.AnalyzeResult) []*Result {
 				},
 				Primary: i.Title,
 				Detail:  i.Message,
+				Advice:  i.Advice,
 			},
 			AnalyzerSpec:   "",
 			Variables:      map[string]interface{}{},
