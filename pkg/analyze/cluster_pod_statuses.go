@@ -2,10 +2,8 @@ package analyzer
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"fmt"
-	"os"
 	"path/filepath"
 	"strings"
 	"text/template"
@@ -14,7 +12,7 @@ import (
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/replicatedhq/troubleshoot/pkg/constants"
 	"github.com/replicatedhq/troubleshoot/pkg/k8sutil"
-	"github.com/sashabaranov/go-openai"
+	openaillm "github.com/replicatedhq/troubleshoot/pkg/llms/openai"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/klog/v2"
 )
@@ -57,6 +55,8 @@ func clusterPodStatuses(analyzer *troubleshootv1beta2.ClusterPodStatuses, getChi
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to read collected pods")
 	}
+
+	isEnableAI, _ := isEnableAI(analyzer.EnableAI)
 
 	var pods []corev1.Pod
 	for fileName, fileContent := range collected {
@@ -120,156 +120,164 @@ func clusterPodStatuses(analyzer *troubleshootv1beta2.ClusterPodStatuses, getChi
 			pod.Status.Message = strings.Join(messages, ". ")
 		}
 
-		for _, outcome := range analyzer.Outcomes {
+		if isEnableAI && len(analyzer.Outcomes) == 0 {
 			r := AnalyzeResult{}
-			when := ""
+			report := fmt.Sprintf("Pod %s/%s status is %s. Message is: %s", pod.Namespace, pod.Name, pod.Status.Reason, pod.Status.Message)
+			client := openaillm.New()
+			healthy, err := openaillm.CheckPodHeathy(client, report)
 
-			if outcome.Fail != nil {
-				r.IsFail = true
-				r.Message = outcome.Fail.Message
-				r.URI = outcome.Fail.URI
-				when = outcome.Fail.When
-			} else if outcome.Warn != nil {
-				r.IsWarn = true
-				r.Message = outcome.Warn.Message
-				r.URI = outcome.Warn.URI
-				when = outcome.Warn.When
-			} else if outcome.Pass != nil {
-				r.IsPass = true
-				r.Message = outcome.Pass.Message
-				r.URI = outcome.Pass.URI
-				when = outcome.Pass.When
-			} else {
-				klog.Error("error: found an empty outcome in a clusterPodStatuses analyzer\n")
-				continue
+			if err != nil {
+				klog.V(2).Infof("failed to check pod health: %v", err)
+				return nil, errors.Wrap(err, "failed to finish openai checkPodHeathy")
 			}
 
-			operator := ""
-			reason := ""
-			match := false
-			if when != "" {
-				parts := strings.Split(strings.TrimSpace(when), " ")
-				if len(parts) < 2 {
-					klog.Errorf("invalid 'when' format: %s\n", when)
-					continue
-				}
-				operator = parts[0]
-				reason = parts[1]
-
-				switch operator {
-				case "=", "==", "===":
-					if reason == "Healthy" {
-						match = !k8sutil.IsPodUnhealthy(&pod)
-					} else {
-						match = reason == string(pod.Status.Phase) || reason == string(pod.Status.Reason)
-					}
-				case "!=", "!==":
-					if reason == "Healthy" {
-						match = k8sutil.IsPodUnhealthy(&pod)
-					} else {
-						match = reason != string(pod.Status.Phase) && reason != string(pod.Status.Reason)
-					}
-				}
-
-				if !match {
-					continue
-				}
-			}
-
+			r.Title = fmt.Sprintf("Pod %s/%s status", pod.Namespace, pod.Name)
 			r.InvolvedObject = &corev1.ObjectReference{
 				APIVersion: "v1",
 				Kind:       "Pod",
 				Namespace:  pod.Namespace,
 				Name:       pod.Name,
 			}
+			if !healthy {
+				r.IsFail = true
+				r.Message = report
 
-			r.Title = analyzer.CheckName
-			if r.Title == "" {
-				r.Title = "Pod {{ .Namespace }}/{{ .Name }} status"
-			}
-
-			if r.Message == "" {
-				r.Message = "Pod {{ .Namespace }}/{{ .Name }} status is {{ .Status.Reason }}. Message is: {{ .Status.Message }}"
-			}
-
-			// if the pod has no status message, set it to None
-			if pod.Status.Message == "" {
-				pod.Status.Message = "None"
-			}
-
-			tmpl := template.New("pod")
-
-			// template the title
-			titleTmpl, err := tmpl.Parse(r.Title)
-			if err != nil {
-				return nil, errors.Wrap(err, "failed to create new title template")
-			}
-			var t bytes.Buffer
-			err = titleTmpl.Execute(&t, pod)
-			if err != nil {
-				return nil, errors.Wrap(err, "failed to execute template")
-			}
-			r.Title = t.String()
-
-			// template the message
-			msgTmpl, err := tmpl.Parse(r.Message)
-			if err != nil {
-				return nil, errors.Wrap(err, "failed to create new title template")
-			}
-			var m bytes.Buffer
-			err = msgTmpl.Execute(&m, pod)
-			if err != nil {
-				return nil, errors.Wrap(err, "failed to execute template")
-			}
-			r.Message = strings.TrimSpace(m.String())
-
-			isEnableAI, _ := isEnableAI(analyzer.EnableAI)
-			if isEnableAI && !r.IsPass {
-				client := openai.NewClient(os.Getenv("OPENAI_API_KEY"))
-				resp, err := client.CreateChatCompletion(
-					context.Background(),
-					openai.ChatCompletionRequest{
-						Model: openai.GPT3Dot5Turbo,
-						Messages: []openai.ChatCompletionMessage{
-							{
-								Role: openai.ChatMessageRoleSystem,
-								Content: `You are a kubernetes expert that solve any k8s issue. You will be asked for explaining the error message from a unhealthy pod. Please provide a short explanation and the most possible solution in a step by step style in no more than 280 characters. Write the output in the json format:
-								{
-									"error": "summary of error message here",
-									"solution": "solution here"
-								}`,
-							},
-							{
-								Role:    openai.ChatMessageRoleUser,
-								Content: `The following are the details of the pod: ### ` + r.Message + ` ###`,
-							},
-						},
-						// Functions: []openai.FunctionDefinition{{
-						// 	Name: "get_solution",
-						// 	Parameters: jsonschema.Definition{
-						// 		Type: jsonschema.Object,
-						// 		Properties: map[string]jsonschema.Definition{
-						// 			"error": {
-						// 				Type:        jsonschema.String,
-						// 				Description: "error message from the pod",
-						// 			},
-						// 		},
-						// 	},
-						// }},
-					},
-				)
+				solution, err := openaillm.GetAdviceFromUnhealthyPod(client, report)
 				if err != nil {
-					fmt.Printf("ChatCompletion error: %v\n", err)
-					return nil, errors.Wrap(err, "failed to finish openai chatCompletion")
+					klog.V(2).Infof("failed to get pod health advice: %v", err)
+					return nil, errors.Wrap(err, "failed to finish openai getAdviceFromUnhealthyPod")
+				}
+				r.Advice.Solution = solution
+			} else {
+				r.IsPass = true
+				r.Message = fmt.Sprintf("Pod %s/%s status is healthy.", pod.Namespace, pod.Name)
+			}
+			if err != nil {
+				fmt.Printf("ChatCompletion error: %v\n", err)
+				return nil, errors.Wrap(err, "failed to finish openai chatCompletion")
+			}
+
+			allResults = append(allResults, &r)
+		} else {
+			for _, outcome := range analyzer.Outcomes {
+				r := AnalyzeResult{}
+				when := ""
+
+				if outcome.Fail != nil {
+					r.IsFail = true
+					r.Message = outcome.Fail.Message
+					r.URI = outcome.Fail.URI
+					when = outcome.Fail.When
+				} else if outcome.Warn != nil {
+					r.IsWarn = true
+					r.Message = outcome.Warn.Message
+					r.URI = outcome.Warn.URI
+					when = outcome.Warn.When
+				} else if outcome.Pass != nil {
+					r.IsPass = true
+					r.Message = outcome.Pass.Message
+					r.URI = outcome.Pass.URI
+					when = outcome.Pass.When
+				} else {
+					klog.Error("error: found an empty outcome in a clusterPodStatuses analyzer\n")
+					continue
 				}
 
-				json.Unmarshal([]byte(resp.Choices[0].Message.Content), &r.Advice)
-			}
+				operator := ""
+				reason := ""
+				match := false
+				if when != "" {
+					parts := strings.Split(strings.TrimSpace(when), " ")
+					if len(parts) < 2 {
+						klog.Errorf("invalid 'when' format: %s\n", when)
+						continue
+					}
+					operator = parts[0]
+					reason = parts[1]
 
-			// add to results, break and check the next pod
-			allResults = append(allResults, &r)
-			break
+					switch operator {
+					case "=", "==", "===":
+						if reason == "Healthy" {
+							match = !k8sutil.IsPodUnhealthy(&pod)
+						} else {
+							match = reason == string(pod.Status.Phase) || reason == string(pod.Status.Reason)
+						}
+					case "!=", "!==":
+						if reason == "Healthy" {
+							match = k8sutil.IsPodUnhealthy(&pod)
+						} else {
+							match = reason != string(pod.Status.Phase) && reason != string(pod.Status.Reason)
+						}
+					}
+
+					if !match {
+						continue
+					}
+				}
+
+				r.InvolvedObject = &corev1.ObjectReference{
+					APIVersion: "v1",
+					Kind:       "Pod",
+					Namespace:  pod.Namespace,
+					Name:       pod.Name,
+				}
+
+				r.Title = analyzer.CheckName
+				if r.Title == "" {
+					r.Title = "Pod {{ .Namespace }}/{{ .Name }} status"
+				}
+
+				if r.Message == "" {
+					r.Message = "Pod {{ .Namespace }}/{{ .Name }} status is {{ .Status.Reason }}. Message is: {{ .Status.Message }}"
+				}
+
+				// if the pod has no status message, set it to None
+				if pod.Status.Message == "" {
+					pod.Status.Message = "None"
+				}
+
+				tmpl := template.New("pod")
+
+				// template the title
+				titleTmpl, err := tmpl.Parse(r.Title)
+				if err != nil {
+					return nil, errors.Wrap(err, "failed to create new title template")
+				}
+				var t bytes.Buffer
+				err = titleTmpl.Execute(&t, pod)
+				if err != nil {
+					return nil, errors.Wrap(err, "failed to execute template")
+				}
+				r.Title = t.String()
+
+				// template the message
+				msgTmpl, err := tmpl.Parse(r.Message)
+				if err != nil {
+					return nil, errors.Wrap(err, "failed to create new title template")
+				}
+				var m bytes.Buffer
+				err = msgTmpl.Execute(&m, pod)
+				if err != nil {
+					return nil, errors.Wrap(err, "failed to execute template")
+				}
+				r.Message = strings.TrimSpace(m.String())
+
+				if isEnableAI && !r.IsPass {
+					client := openaillm.New()
+					solution, err := openaillm.GetAdviceFromUnhealthyPod(client, r.Message)
+					if err != nil {
+						klog.V(2).Infof("failed to get pod health advice: %v", err)
+						return nil, errors.Wrap(err, "failed to finish openai getAdviceFromUnhealthyPod")
+					}
+					r.Advice.Solution = solution
+				}
+
+				// add to results, break and check the next pod
+				allResults = append(allResults, &r)
+				break
+			}
 		}
+
 	}
 
 	return allResults, nil

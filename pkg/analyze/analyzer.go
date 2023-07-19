@@ -34,7 +34,6 @@ type AnalyzeResult struct {
 }
 
 type Advice struct {
-	Error    string `json:"error,omitempty"`
 	Solution string `json:"solution,omitempty"`
 }
 
