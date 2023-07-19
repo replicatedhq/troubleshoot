@@ -4,6 +4,7 @@ set -euo pipefail
 
 tmpdir="$(mktemp -d)"
 
+echo -e "\n========= Running preflights from e2e spec and checking results ========="
 ./bin/preflight --debug --interactive=false --format=json examples/preflight/e2e.yaml > "$tmpdir/result.json"
 if [ $? -ne 0 ]; then
     echo "preflight command failed"
@@ -33,9 +34,10 @@ echo "Failed preflights found"
 EXIT_STATUS=1
 fi
 
-# test stdin
+echo -e "\n========= Running preflights from stdin using e2e spec ========="
 cat examples/preflight/e2e.yaml | ./bin/preflight --debug --interactive=false --format=json - > "$tmpdir/result.json"
-if [ $? -ne 0 ]; then
+EXIT_STATUS=$?
+if [ $EXIT_STATUS -ne 0 ]; then
     echo "preflight command failed"
     exit $EXIT_STATUS
 fi
