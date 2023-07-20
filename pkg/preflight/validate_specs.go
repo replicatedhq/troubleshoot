@@ -11,7 +11,7 @@ import (
 // validatePreflight validates the preflight spec and returns a warning if there is any
 func validatePreflight(specs PreflightSpecs) *types.ExitCodeWarning {
 
-	if specs.PreflightSpec == nil && specs.HostPreflightSpec == nil {
+	if specs.PreflightSpec == nil && specs.HostPreflightSpec == nil && specs.UploadResultSpecs == nil {
 		return types.NewExitCodeWarning("no preflight or host preflight spec was found")
 	}
 
@@ -26,6 +26,15 @@ func validatePreflight(specs PreflightSpecs) *types.ExitCodeWarning {
 		warning := validateHostPreflightSpecItems(specs.HostPreflightSpec.Spec.Collectors, specs.HostPreflightSpec.Spec.Analyzers)
 		if warning != nil {
 			return warning
+		}
+	}
+
+	if specs.UploadResultSpecs != nil {
+		for _, preflight := range specs.UploadResultSpecs {
+			warning := validatePreflightSpecItems(preflight.Spec.Collectors, preflight.Spec.Analyzers)
+			if warning != nil {
+				return warning
+			}
 		}
 	}
 

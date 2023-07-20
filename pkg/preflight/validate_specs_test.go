@@ -21,6 +21,7 @@ func TestValidatePreflight(t *testing.T) {
 		"noAnalyzersHostPreflightFile":              "troubleshoot_v1beta2_host_preflight_validate_empty_analyzers_gotest.yaml",
 		"excludedHostCollectorsPreflightFile":       "troubleshoot_v1beta2_host_preflight_validate_excluded_collectors_gotest.yaml",
 		"excludedHostAnalyzersPreflightFile":        "troubleshoot_v1beta2_host_preflight_validate_excluded_analyzers_gotest.yaml",
+		"uploadResultsPreflightFile":                "troubleshoot_v1beta2_preflight_validate_spec_with_upload_results_gotest.yaml",
 	}
 
 	tests := []struct {
@@ -82,6 +83,11 @@ func TestValidatePreflight(t *testing.T) {
 			name:          "excluded-host-preflight-analyzers",
 			preflightSpec: testingFiles["excludedHostAnalyzersPreflightFile"],
 			wantWarning:   types.NewExitCodeWarning("All analyzers were excluded by the applied values"),
+		},
+		{
+			name:          "upload-results-preflight",
+			preflightSpec: testingFiles["uploadResultsPreflightFile"],
+			wantWarning:   nil,
 		},
 	}
 
