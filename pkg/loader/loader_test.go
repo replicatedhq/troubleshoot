@@ -125,6 +125,19 @@ func TestLoadingInvalidYaml_IgnoreDocs(t *testing.T) {
 					},
 				},
 			},
+			{
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "SupportBundle",
+					APIVersion: "troubleshoot.sh/v1beta2",
+				},
+				Spec: troubleshootv1beta2.SupportBundleSpec{
+					Collectors: []*troubleshootv1beta2.Collect{
+						{
+							ClusterInfo: &troubleshootv1beta2.ClusterInfo{},
+						},
+					},
+				},
+			},
 		},
 		PreflightsV1Beta2: []troubleshootv1beta2.Preflight{
 			{
@@ -134,6 +147,22 @@ func TestLoadingInvalidYaml_IgnoreDocs(t *testing.T) {
 				},
 				ObjectMeta: metav1.ObjectMeta{
 					Name: "preflight-1",
+				},
+				Spec: troubleshootv1beta2.PreflightSpec{
+					Collectors: []*troubleshootv1beta2.Collect{
+						{
+							ClusterResources: &troubleshootv1beta2.ClusterResources{},
+						},
+					},
+				},
+			},
+			{
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "Preflight",
+					APIVersion: "troubleshoot.sh/v1beta2",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "preflight-2",
 				},
 				Spec: troubleshootv1beta2.PreflightSpec{
 					Collectors: []*troubleshootv1beta2.Collect{

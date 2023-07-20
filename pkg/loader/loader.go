@@ -131,18 +131,12 @@ func (l *specLoader) loadFromStrings(rawSpecs ...string) (*TroubleshootKinds, er
 			case *v1.ConfigMap:
 				specs, err := l.getSpecFromConfigMap(v)
 				if err != nil {
-					if !l.strict {
-						continue
-					}
 					return nil, types.NewExitCodeError(constants.EXIT_CODE_SPEC_ISSUES, err)
 				}
 				splitdocs = append(splitdocs, specs...)
 			case *v1.Secret:
 				specs, err := l.getSpecFromSecret(v)
 				if err != nil {
-					if !l.strict {
-						continue
-					}
 					return nil, types.NewExitCodeError(constants.EXIT_CODE_SPEC_ISSUES, err)
 				}
 				splitdocs = append(splitdocs, specs...)
@@ -170,7 +164,9 @@ func (l *specLoader) loadFromSplitDocs(splitdocs []string) (*TroubleshootKinds, 
 			if !l.strict {
 				continue
 			}
-			return nil, types.NewExitCodeError(constants.EXIT_CODE_SPEC_ISSUES, errors.Wrapf(err, "failed to convert doc to troubleshoot.sh/v1beta2 kind: '%s'", doc))
+			return nil, types.NewExitCodeError(constants.EXIT_CODE_SPEC_ISSUES,
+				errors.Wrapf(err, "failed to convert doc to troubleshoot.sh/v1beta2 kind: '\n%s'", doc),
+			)
 		}
 
 		obj, _, err := decoder.Decode([]byte(converted), nil, nil)
@@ -178,7 +174,9 @@ func (l *specLoader) loadFromSplitDocs(splitdocs []string) (*TroubleshootKinds, 
 			if !l.strict {
 				continue
 			}
-			return nil, types.NewExitCodeError(constants.EXIT_CODE_SPEC_ISSUES, errors.Wrapf(err, "failed to decode '%s'", converted))
+			return nil, types.NewExitCodeError(constants.EXIT_CODE_SPEC_ISSUES,
+				errors.Wrapf(err, "failed to decode '%s'", converted),
+			)
 		}
 
 		switch spec := obj.(type) {
@@ -229,27 +227,15 @@ func (l *specLoader) getSpecFromConfigMap(cm *v1.ConfigMap) ([]string, error) {
 
 	str, ok := cm.Data[constants.SupportBundleKey]
 	if ok {
-		spec, err := validateYaml(str)
-		if err != nil {
-			return nil, err
-		}
-		specs = append(specs, util.SplitYAML(spec)...)
+		specs = append(specs, util.SplitYAML(str)...)
 	}
 	str, ok = cm.Data[constants.RedactorKey]
 	if ok {
-		spec, err := validateYaml(str)
-		if err != nil {
-			return nil, err
-		}
-		specs = append(specs, util.SplitYAML(spec)...)
+		specs = append(specs, util.SplitYAML(str)...)
 	}
 	str, ok = cm.Data[constants.PreflightKey]
 	if ok {
-		spec, err := validateYaml(str)
-		if err != nil {
-			return nil, err
-		}
-		specs = append(specs, util.SplitYAML(spec)...)
+		specs = append(specs, util.SplitYAML(str)...)
 	}
 
 	return specs, nil
@@ -261,61 +247,27 @@ func (l *specLoader) getSpecFromSecret(secret *v1.Secret) ([]string, error) {
 
 	specBytes, ok := secret.Data[constants.SupportBundleKey]
 	if ok {
-		spec, err := validateYaml(string(specBytes))
-		if err != nil {
-			return nil, err
-		}
-		specs = append(specs, util.SplitYAML(spec)...)
+		specs = append(specs, util.SplitYAML(string(specBytes))...)
 	}
 	specBytes, ok = secret.Data[constants.RedactorKey]
 	if ok {
-		spec, err := validateYaml(string(specBytes))
-		if err != nil {
-			return nil, err
-		}
-		specs = append(specs, util.SplitYAML(spec)...)
+		specs = append(specs, util.SplitYAML(string(specBytes))...)
 	}
 	specBytes, ok = secret.Data[constants.PreflightKey]
 	if ok {
-		spec, err := validateYaml(string(specBytes))
-		if err != nil {
-			return nil, err
-		}
-		specs = append(specs, util.SplitYAML(spec)...)
+		specs = append(specs, util.SplitYAML(string(specBytes))...)
 	}
 	str, ok := secret.StringData[constants.SupportBundleKey]
 	if ok {
-		spec, err := validateYaml(str)
-		if err != nil {
-			return nil, err
-		}
-		specs = append(specs, util.SplitYAML(spec)...)
+		specs = append(specs, util.SplitYAML(str)...)
 	}
 	str, ok = secret.StringData[constants.RedactorKey]
 	if ok {
-		spec, err := validateYaml(str)
-		if err != nil {
-			return nil, err
-		}
-		specs = append(specs, util.SplitYAML(spec)...)
+		specs = append(specs, util.SplitYAML(str)...)
 	}
 	str, ok = secret.StringData[constants.PreflightKey]
 	if ok {
-		spec, err := validateYaml(str)
-		if err != nil {
-			return nil, err
-		}
-		specs = append(specs, util.SplitYAML(spec)...)
+		specs = append(specs, util.SplitYAML(str)...)
 	}
 	return specs, nil
-}
-
-func validateYaml(raw string) (string, error) {
-	var parsed map[string]any
-	err := yaml.Unmarshal([]byte(raw), &parsed)
-	if err != nil {
-		return "", errors.Wrapf(err, "failed to parse yaml: '%s'", string(raw))
-	}
-
-	return raw, nil
 }
