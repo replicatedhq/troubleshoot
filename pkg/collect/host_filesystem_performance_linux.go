@@ -12,13 +12,12 @@ import (
 	"os/exec"
 	"path/filepath"
 	"reflect"
-	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"syscall"
 	"time"
 
-	fio "github.com/kastenhq/kubestr/pkg/fio"
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -31,18 +30,13 @@ func init() {
 
 type Durations []time.Duration
 
-// today we only care about checking for write latency so the options struct
-// only has what we need for that
-type FioJobOptions struct {
-	Rw        string
-	Ioengine  string
-	Fdatasync int
-	Directory string
-	Size      uint64
-	Bs        uint64
-	Name      string
-	Runtime   string
-}
+// "github.com/kastenhq/kubestr/pkg/fio" provides some types that are useful for
+// interacting with fio, but we don't need their options struct because we're running on
+// the host from the CLI and not in a container/pod.	So we define our own options struct.
+// Today we only care about checking for write latency so the options struct
+// only has what we need for that.  we'll collect all the results from a single run of fio
+// and filter out the fsync results for analysis.  TODO: update the analyzer so any/all results
+// from fio can be analyzed.
 
 func (d Durations) Len() int {
 	return len(d)
@@ -56,105 +50,7 @@ func (d Durations) Swap(i, j int) {
 	d[i], d[j] = d[j], d[i]
 }
 
-func benchmarkHostFilesystemLatency(fileSize uint64, operationSize uint64, filename string, hostCollector *troubleshootv1beta2.FilesystemPerformance, ctx context.Context) (*FSPerfResults, error) {
-
-	// Create file handle
-	f, err := os.OpenFile(filename, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0600)
-	if err != nil {
-		log.Panic(err)
-		return nil, errors.Wrapf(err, "open %s", filename)
-	}
-	defer func() {
-		if err := f.Close(); err != nil {
-			log.Println(err.Error())
-		}
-		if err := os.Remove(filename); err != nil {
-			log.Println(err.Error())
-		}
-	}()
-
-	// Sequential writes benchmark
-	var written uint64 = 0
-	var results Durations
-
-	for {
-		if written >= fileSize {
-			break
-		}
-
-		data := make([]byte, int(operationSize))
-		rand.Read(data)
-
-		start := time.Now()
-		klog.V(4).Infof("begin write %d bytes at time %s", len(data), start.Format(time.RFC3339Nano))
-
-		n, err := f.Write(data)
-		if err != nil {
-			return nil, errors.Wrapf(err, "write to %s", filename)
-		}
-		if hostCollector.Sync {
-			if err := f.Sync(); err != nil {
-				return nil, errors.Wrapf(err, "sync %s", filename)
-			}
-		} else if hostCollector.Datasync {
-			if err := syscall.Fdatasync(int(f.Fd())); err != nil {
-				return nil, errors.Wrapf(err, "datasync %s", filename)
-			}
-		}
-
-		d := time.Since(start)
-		results = append(results, d)
-		klog.V(4).Infof("end write %d bytes in time %s", len(data), d.String())
-
-		written += uint64(n)
-
-		if ctx.Err() != nil {
-			break
-		}
-	}
-
-	if len(results) == 0 {
-		return nil, errors.New("No filesystem performance results collected")
-	}
-
-	klog.V(4).Infof("results: %+v", results)
-
-	sort.Sort(results)
-
-	var sum time.Duration
-	for _, d := range results {
-		sum += d
-	}
-
-	fsPerf := &FSPerfResults{
-		Min:     results[0],
-		Max:     results[len(results)-1],
-		Average: sum / time.Duration(len(results)),
-		P1:      results[getPercentileIndex(.01, len(results))],
-		P5:      results[getPercentileIndex(.05, len(results))],
-		P10:     results[getPercentileIndex(.1, len(results))],
-		P20:     results[getPercentileIndex(.2, len(results))],
-		P30:     results[getPercentileIndex(.3, len(results))],
-		P40:     results[getPercentileIndex(.4, len(results))],
-		P50:     results[getPercentileIndex(.5, len(results))],
-		P60:     results[getPercentileIndex(.6, len(results))],
-		P70:     results[getPercentileIndex(.7, len(results))],
-		P80:     results[getPercentileIndex(.8, len(results))],
-		P90:     results[getPercentileIndex(.9, len(results))],
-		P95:     results[getPercentileIndex(.95, len(results))],
-		P99:     results[getPercentileIndex(.99, len(results))],
-		P995:    results[getPercentileIndex(.995, len(results))],
-		P999:    results[getPercentileIndex(.999, len(results))],
-		P9995:   results[getPercentileIndex(.9995, len(results))],
-		P9999:   results[getPercentileIndex(.9999, len(results))],
-	}
-
-	klog.V(4).Infof("latency benchmark results: %+v", fsPerf)
-
-	return fsPerf, nil
-}
-
-func collectFioResult(opts FioJobOptions) (*FSPerfResults, error) {
+func collectFioResults(opts FioJobOptions) (*FioResult, error) {
 
 	command := []string{"fio"}
 	v := reflect.ValueOf(opts)
@@ -164,30 +60,23 @@ func collectFioResult(opts FioJobOptions) (*FSPerfResults, error) {
 		value := v.Field(i)
 		command = append(command, fmt.Sprintf("--%s=%v", strings.ToLower(field.Name), value.Interface()))
 	}
+	command = append(command, "--output-format=json")
 
-	// for k, v := range opts {
-	// 	command = append(command, fmt.Sprintf("--%s=%v", string(k), string(v)))
-	// }
+	klog.V(2).Infof("collecting fio results: %s", strings.Join(command, " "))
 
-	klog.V(2).Infof("executing fio command: %s", strings.Join(command, " "))
 	output, err := exec.Command(command[0], command[1:]...).Output()
 	if err != nil {
-		return &FSPerfResults{}, errors.Wrap(err, "failed to run fio.  Is it installed?")
+		return &FioResult{}, errors.Wrap(err, "failed to run fio.  Is it installed?")
 	}
 
-	var result fio.FioResult
+	var result FioResult
 
 	err = json.Unmarshal([]byte(output), &result)
 	if err != nil {
-		return &FSPerfResults{}, errors.Wrap(err, "failed to unmarshal fio result")
+		return &FioResult{}, errors.Wrap(err, "failed to unmarshal fio result")
 	}
 
-	klog.V(4).Infof("fio result: %+v", result)
-
-	fsPerfResults := FSPerfResults{
-		// Min: result,
-	}
-	return &fsPerfResults, nil
+	return &result, nil
 }
 
 func collectHostFilesystemPerformance(hostCollector *troubleshootv1beta2.FilesystemPerformance, bundlePath string) (map[string][]byte, error) {
@@ -228,7 +117,22 @@ func collectHostFilesystemPerformance(hostCollector *troubleshootv1beta2.Filesys
 	if err := os.MkdirAll(hostCollector.Directory, 0700); err != nil {
 		return nil, errors.Wrapf(err, "failed to mkdir %q", hostCollector.Directory)
 	}
+
 	filename := filepath.Join(hostCollector.Directory, "fsperf")
+	// Create file handle
+	f, err := os.OpenFile(filename, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0600)
+	if err != nil {
+		log.Panic(err)
+		return nil, errors.Wrapf(err, "open %s", filename)
+	}
+	defer func() {
+		if err := f.Close(); err != nil {
+			log.Println(err.Error())
+		}
+		if err := os.Remove(filename); err != nil {
+			log.Println(err.Error())
+		}
+	}()
 
 	collectorName := hostCollector.CollectorName
 	if collectorName == "" {
@@ -268,27 +172,28 @@ func collectHostFilesystemPerformance(hostCollector *troubleshootv1beta2.Filesys
 		time.Sleep(time.Second * time.Duration(hostCollector.BackgroundIOPSWarmupSeconds))
 	}
 
-	var fsPerf *FSPerfResults
+	// var fsPerf *FSPerfResults
+	var fioResult *FioResult
 
-	if !hostCollector.UseFio {
-		fsPerf, _ = benchmarkHostFilesystemLatency(fileSize, operationSize, filename, hostCollector, ctx)
-	} else {
-		latencyBenchmarkOptions := FioJobOptions{
-			Rw:        "write",
-			Ioengine:  "sync",
-			Fdatasync: 1,
-			Directory: hostCollector.Directory,
-			Size:      fileSize,
-			Bs:        operationSize,
-			Name:      "fsperf",
-			Runtime:   "120",
-		}
-		fsPerf, _ = collectFioResult(latencyBenchmarkOptions)
+	latencyBenchmarkOptions := FioJobOptions{
+		RW:        "write",
+		IOEngine:  "sync",
+		FDataSync: "1",
+		Directory: hostCollector.Directory,
+		Size:      strconv.FormatUint(fileSize, 10),
+		BS:        strconv.FormatUint(operationSize, 10),
+		Name:      "fsperf",
+		RunTime:   "120",
+	}
+	// fsPerf, _ = collectFioResults(latencyBenchmarkOptions)
+	fioResult, err = collectFioResults(latencyBenchmarkOptions)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to collect fio results")
 	}
 
-	b, err := json.Marshal(fsPerf)
+	b, err := json.Marshal(fioResult)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to marshal fs perf results")
+		return nil, errors.Wrap(err, "failed to unmarshal fio results")
 	}
 
 	output := NewResult()
