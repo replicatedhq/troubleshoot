@@ -77,7 +77,7 @@ array:- 1
 
 			kinds, err = LoadSpecs(ctx, LoadOptions{RawSpec: ts, Strict: false})
 			assert.NoError(t, err)
-			assert.Nil(t, kinds)
+			assert.Equal(t, NewTroubleshootKinds(), kinds)
 		})
 	}
 }
