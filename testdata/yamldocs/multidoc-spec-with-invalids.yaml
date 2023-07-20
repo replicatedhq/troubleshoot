@@ -1,0 +1,79 @@
+---
+"@"
+---
+apiVersion: troubleshoot.sh/v1beta2
+kind: Collector
+spec:
+  collectors:
+  - clusterResources:
+      collectorName: my-cluster-resources
+---
+apiVersion: troubleshoot.sh/v1beta2
+kind: Redactor
+spec:
+  redactors:
+  - : replace password
+---
+apiVersion: troubleshoot.sh/v1beta2
+metadata:
+  name: certificate
+spec:
+  collectors:
+    - cpu: {}
+---
+kind: SupportBundle
+metadata:
+  name: my-support-bundle
+spec:
+  collectors:
+    - logs:
+        name: all-logs
+  hostCollectors:
+    - hostOS: {}
+  analyzers:
+    - clusterVersion: {}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: sb-spec
+  labels:
+    troubleshoot.io/kind: support-bundle
+data:
+  support-bundle-spec: |-
+    apiVersion: troubleshoot.sh/v1beta2
+    kind: SupportBundle
+    spec:
+      collectors:
+        - logs:
+            name: all-logs
+    ---
+    apiVersion: troubleshoot.sh/v1beta2
+    kind: SupportBundle
+    spec:
+      collectors:
+        - : {}
+    ---
+    apiVersion: troubleshoot.sh/v1beta2
+      kind: SupportBundle
+    spec:
+      collectors:
+        - clusterInfo: {}
+---
+apiVersion: v1
+kind: Secret
+stringData:
+  preflight.yaml: |-
+    apiVersion: troubleshoot.sh/v1beta2
+    kind: Preflight
+    metadata:
+      name: preflight-1
+    spec:
+      collectors:
+        - clusterResources: {}
+    ---
+    apiVersion: troubleshoot.sh/v1beta2
+      kind: Preflight
+    spec:
+      :
+        - clusterInfo: {}

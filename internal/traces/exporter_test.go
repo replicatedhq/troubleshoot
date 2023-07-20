@@ -76,7 +76,7 @@ func TestExporter_GetSummary(t *testing.T) {
 			},
 			want: `
 ============ Collectors summary =============
-Suceeded (S), eXcluded (X), Failed (F)
+Succeeded (S), eXcluded (X), Failed (F)
 =============================================
 all-logs (S)           : 60,000ms
 host-os (S)            : 1,000ms
@@ -118,7 +118,7 @@ failed-collector (F)   : 1ms`,
 			},
 			want: `
 ============= Analyzers summary =============
-Suceeded (S), eXcluded (X), Failed (F)
+Succeeded (S), eXcluded (X), Failed (F)
 =============================================
 host-cpu (S)          : 60,000ms
 cluster-version (S)   : 1,000ms

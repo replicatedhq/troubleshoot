@@ -13,7 +13,8 @@ import (
 
 func TestLoadingHelmTemplate_Succeeds(t *testing.T) {
 	s := testutils.GetTestFixture(t, "yamldocs/helm-template.yaml")
-	kinds, err := loadFromStrings(s)
+	l := specLoader{}
+	kinds, err := l.loadFromStrings(s)
 	require.NoError(t, err)
 	require.NotNil(t, kinds)
 
@@ -70,11 +71,80 @@ array:- 1
 	for _, ts := range tests {
 		t.Run(ts, func(t *testing.T) {
 			ctx := context.Background()
-			kinds, err := LoadSpecs(ctx, LoadOptions{RawSpec: ts})
+			kinds, err := LoadSpecs(ctx, LoadOptions{RawSpec: ts, Strict: true})
 			assert.Error(t, err)
+			assert.Nil(t, kinds)
+
+			kinds, err = LoadSpecs(ctx, LoadOptions{RawSpec: ts, Strict: false})
+			assert.NoError(t, err)
 			assert.Nil(t, kinds)
 		})
 	}
+}
+
+func TestLoadingInvalidYaml_IgnoreDocs(t *testing.T) {
+	s := testutils.GetTestFixture(t, "yamldocs/multidoc-spec-with-invalids.yaml")
+	ctx := context.Background()
+	kinds, err := LoadSpecs(ctx, LoadOptions{RawSpec: s})
+	require.NoError(t, err)
+	require.NotNil(t, kinds)
+
+	assert.Equal(t, &TroubleshootKinds{
+		CollectorsV1Beta2: []troubleshootv1beta2.Collector{
+			{
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "Collector",
+					APIVersion: "troubleshoot.sh/v1beta2",
+				},
+				Spec: troubleshootv1beta2.CollectorSpec{
+					Collectors: []*troubleshootv1beta2.Collect{
+						{
+							ClusterResources: &troubleshootv1beta2.ClusterResources{
+								CollectorMeta: troubleshootv1beta2.CollectorMeta{
+									CollectorName: "my-cluster-resources",
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		SupportBundlesV1Beta2: []troubleshootv1beta2.SupportBundle{
+			{
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "SupportBundle",
+					APIVersion: "troubleshoot.sh/v1beta2",
+				},
+				Spec: troubleshootv1beta2.SupportBundleSpec{
+					Collectors: []*troubleshootv1beta2.Collect{
+						{
+							Logs: &troubleshootv1beta2.Logs{
+								Name: "all-logs",
+							},
+						},
+					},
+				},
+			},
+		},
+		PreflightsV1Beta2: []troubleshootv1beta2.Preflight{
+			{
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "Preflight",
+					APIVersion: "troubleshoot.sh/v1beta2",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "preflight-1",
+				},
+				Spec: troubleshootv1beta2.PreflightSpec{
+					Collectors: []*troubleshootv1beta2.Collect{
+						{
+							ClusterResources: &troubleshootv1beta2.ClusterResources{},
+						},
+					},
+				},
+			},
+		},
+	}, kinds)
 }
 
 func TestLoadingMultidocsWithTroubleshootSpecs(t *testing.T) {
@@ -274,7 +344,8 @@ func TestLoadingMultidocsWithTroubleshootSpecs(t *testing.T) {
 
 func TestLoadingConfigMapWithMultipleSpecs_PreflightSupportBundleAndRedactorDataKeys(t *testing.T) {
 	s := testutils.GetTestFixture(t, "yamldocs/multidoc-spec-2.yaml")
-	kinds, err := loadFromStrings(s)
+	l := specLoader{}
+	kinds, err := l.loadFromStrings(s)
 	require.NoError(t, err)
 	require.NotNil(t, kinds)
 
@@ -349,7 +420,8 @@ func TestLoadingConfigMapWithMultipleSpecs_PreflightSupportBundleAndRedactorData
 
 func TestLoadingConfigMapWithMultipleSpecs_SupportBundleMultidoc(t *testing.T) {
 	s := testutils.GetTestFixture(t, "yamldocs/multidoc-spec-3.yaml")
-	kinds, err := loadFromStrings(s)
+	l := specLoader{}
+	kinds, err := l.loadFromStrings(s)
 	require.NoError(t, err)
 	require.NotNil(t, kinds)
 
