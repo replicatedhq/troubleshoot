@@ -2,7 +2,6 @@ package loader
 
 import (
 	"context"
-	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/replicatedhq/troubleshoot/internal/util"
@@ -35,20 +34,34 @@ type parsedDoc struct {
 type LoadOptions struct {
 	RawSpecs []string
 	RawSpec  string
+
+	// If true, the loader will return an error if any of the specs are not valid
+	// else the invalid specs will be ignored
+	Strict bool
 }
 
 // LoadSpecs takes sources to load specs from and returns a TroubleshootKinds object
 // that contains all the parsed troubleshoot specs.
 //
-// The fetched specs need to be yaml documents. The documents can be a multidoc yaml
-// separated by "---" which get split and parsed one at a time. This function will
-// return an error if any of the documents are not valid yaml. If Secrets or ConfigMaps
-// are found, they will be parsed and the support bundle, redactor or preflight spec
-// will be extracted from them, else they will be ignored.
-// Any other yaml documents will be ignored.
+// The fetched specs should be yaml documents. The documents can be multidoc yamls
+// separated by "---" which get split and parsed one at a time. All troubleshoot
+// specs are extracted from the documents and returned in a TroubleshootKinds object.
+//
+// If Secrets or ConfigMaps are found, they are parsed and the support bundle, redactor
+// or preflight spec extracted from them. All other yaml documents will be ignored.
+//
+// If the `Strict` flag is set to true, this function will return an error if any of
+// the documents are not valid, else the invalid documents will be ignored.
 func LoadSpecs(ctx context.Context, opt LoadOptions) (*TroubleshootKinds, error) {
 	opt.RawSpecs = append(opt.RawSpecs, opt.RawSpec)
-	return loadFromStrings(opt.RawSpecs...)
+	l := specLoader{
+		strict: opt.Strict,
+	}
+	return l.loadFromStrings(opt.RawSpecs...)
+}
+
+type specLoader struct {
+	strict bool
 }
 
 type TroubleshootKinds struct {
@@ -78,13 +91,13 @@ func NewTroubleshootKinds() *TroubleshootKinds {
 }
 
 // loadFromStrings accepts a list of strings (exploded) which should be yaml documents
-func loadFromStrings(rawSpecs ...string) (*TroubleshootKinds, error) {
+func (l *specLoader) loadFromStrings(rawSpecs ...string) (*TroubleshootKinds, error) {
 	splitdocs := []string{}
 	multiRawDocs := []string{}
 
 	// 1. First split multidoc yaml documents.
 	for _, rawSpec := range rawSpecs {
-		multiRawDocs = append(multiRawDocs, strings.Split(rawSpec, "\n---\n")...)
+		multiRawDocs = append(multiRawDocs, util.SplitYAML(rawSpec)...)
 	}
 
 	// 2. Go through each document to see if it is a configmap, secret or troubleshoot kind
@@ -95,6 +108,9 @@ func loadFromStrings(rawSpecs ...string) (*TroubleshootKinds, error) {
 
 		err := yaml.Unmarshal([]byte(rawDoc), &parsed)
 		if err != nil {
+			if !l.strict {
+				continue
+			}
 			return nil, types.NewExitCodeError(constants.EXIT_CODE_SPEC_ISSUES, errors.Wrapf(err, "failed to parse yaml: '%s'", string(rawDoc)))
 		}
 
@@ -102,6 +118,9 @@ func loadFromStrings(rawSpecs ...string) (*TroubleshootKinds, error) {
 			// Extract specs from configmap or secret
 			obj, _, err := decoder.Decode([]byte(rawDoc), nil, nil)
 			if err != nil {
+				if !l.strict {
+					continue
+				}
 				return nil, types.NewExitCodeError(constants.EXIT_CODE_SPEC_ISSUES,
 					errors.Wrapf(err, "failed to decode raw spec: '%s'", string(rawDoc)),
 				)
@@ -110,13 +129,13 @@ func loadFromStrings(rawSpecs ...string) (*TroubleshootKinds, error) {
 			// 3. Extract the raw troubleshoot specs
 			switch v := obj.(type) {
 			case *v1.ConfigMap:
-				specs, err := getSpecFromConfigMap(v)
+				specs, err := l.getSpecFromConfigMap(v)
 				if err != nil {
 					return nil, types.NewExitCodeError(constants.EXIT_CODE_SPEC_ISSUES, err)
 				}
 				splitdocs = append(splitdocs, specs...)
 			case *v1.Secret:
-				specs, err := getSpecFromSecret(v)
+				specs, err := l.getSpecFromSecret(v)
 				if err != nil {
 					return nil, types.NewExitCodeError(constants.EXIT_CODE_SPEC_ISSUES, err)
 				}
@@ -133,21 +152,31 @@ func loadFromStrings(rawSpecs ...string) (*TroubleshootKinds, error) {
 	}
 
 	// 4. Then load the specs into the kinds struct
-	return loadFromSplitDocs(splitdocs)
+	return l.loadFromSplitDocs(splitdocs)
 }
 
-func loadFromSplitDocs(splitdocs []string) (*TroubleshootKinds, error) {
+func (l *specLoader) loadFromSplitDocs(splitdocs []string) (*TroubleshootKinds, error) {
 	kinds := NewTroubleshootKinds()
 
 	for _, doc := range splitdocs {
 		converted, err := docrewrite.ConvertToV1Beta2([]byte(doc))
 		if err != nil {
-			return nil, types.NewExitCodeError(constants.EXIT_CODE_SPEC_ISSUES, errors.Wrapf(err, "failed to convert doc to troubleshoot.sh/v1beta2 kind: '%s'", doc))
+			if !l.strict {
+				continue
+			}
+			return nil, types.NewExitCodeError(constants.EXIT_CODE_SPEC_ISSUES,
+				errors.Wrapf(err, "failed to convert doc to troubleshoot.sh/v1beta2 kind: '\n%s'", doc),
+			)
 		}
 
 		obj, _, err := decoder.Decode([]byte(converted), nil, nil)
 		if err != nil {
-			return nil, types.NewExitCodeError(constants.EXIT_CODE_SPEC_ISSUES, errors.Wrapf(err, "failed to decode '%s'", converted))
+			if !l.strict {
+				continue
+			}
+			return nil, types.NewExitCodeError(constants.EXIT_CODE_SPEC_ISSUES,
+				errors.Wrapf(err, "failed to decode '%s'", converted),
+			)
 		}
 
 		switch spec := obj.(type) {
@@ -193,98 +222,52 @@ func isConfigMap(parsedDocHead parsedDoc) bool {
 }
 
 // getSpecFromConfigMap extracts multiple troubleshoot specs from a secret
-func getSpecFromConfigMap(cm *v1.ConfigMap) ([]string, error) {
+func (l *specLoader) getSpecFromConfigMap(cm *v1.ConfigMap) ([]string, error) {
 	specs := []string{}
 
 	str, ok := cm.Data[constants.SupportBundleKey]
 	if ok {
-		spec, err := validateYaml(str)
-		if err != nil {
-			return nil, err
-		}
-		specs = append(specs, util.SplitYAML(spec)...)
+		specs = append(specs, util.SplitYAML(str)...)
 	}
 	str, ok = cm.Data[constants.RedactorKey]
 	if ok {
-		spec, err := validateYaml(str)
-		if err != nil {
-			return nil, err
-		}
-		specs = append(specs, util.SplitYAML(spec)...)
+		specs = append(specs, util.SplitYAML(str)...)
 	}
 	str, ok = cm.Data[constants.PreflightKey]
 	if ok {
-		spec, err := validateYaml(str)
-		if err != nil {
-			return nil, err
-		}
-		specs = append(specs, util.SplitYAML(spec)...)
+		specs = append(specs, util.SplitYAML(str)...)
 	}
 
 	return specs, nil
 }
 
 // getSpecFromSecret extracts multiple troubleshoot specs from a secret
-func getSpecFromSecret(secret *v1.Secret) ([]string, error) {
+func (l *specLoader) getSpecFromSecret(secret *v1.Secret) ([]string, error) {
 	specs := []string{}
 
 	specBytes, ok := secret.Data[constants.SupportBundleKey]
 	if ok {
-		spec, err := validateYaml(string(specBytes))
-		if err != nil {
-			return nil, err
-		}
-		specs = append(specs, util.SplitYAML(spec)...)
+		specs = append(specs, util.SplitYAML(string(specBytes))...)
 	}
 	specBytes, ok = secret.Data[constants.RedactorKey]
 	if ok {
-		spec, err := validateYaml(string(specBytes))
-		if err != nil {
-			return nil, err
-		}
-		specs = append(specs, util.SplitYAML(spec)...)
+		specs = append(specs, util.SplitYAML(string(specBytes))...)
 	}
 	specBytes, ok = secret.Data[constants.PreflightKey]
 	if ok {
-		spec, err := validateYaml(string(specBytes))
-		if err != nil {
-			return nil, err
-		}
-		specs = append(specs, util.SplitYAML(spec)...)
+		specs = append(specs, util.SplitYAML(string(specBytes))...)
 	}
 	str, ok := secret.StringData[constants.SupportBundleKey]
 	if ok {
-		spec, err := validateYaml(str)
-		if err != nil {
-			return nil, err
-		}
-		specs = append(specs, util.SplitYAML(spec)...)
+		specs = append(specs, util.SplitYAML(str)...)
 	}
 	str, ok = secret.StringData[constants.RedactorKey]
 	if ok {
-		spec, err := validateYaml(str)
-		if err != nil {
-			return nil, err
-		}
-		specs = append(specs, util.SplitYAML(spec)...)
+		specs = append(specs, util.SplitYAML(str)...)
 	}
 	str, ok = secret.StringData[constants.PreflightKey]
 	if ok {
-		spec, err := validateYaml(str)
-		if err != nil {
-			return nil, err
-		}
-		specs = append(specs, util.SplitYAML(spec)...)
+		specs = append(specs, util.SplitYAML(str)...)
 	}
 	return specs, nil
-}
-
-func validateYaml(raw string) (string, error) {
-	var parsed map[string]any
-	err := yaml.Unmarshal([]byte(raw), &parsed)
-	if err != nil {
-		return "", errors.Wrapf(err, "failed to parse yaml: '%s'", string(raw))
-	}
-
-	return raw, nil
 }
