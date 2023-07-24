@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"k8s.io/klog/v2"
@@ -67,9 +68,28 @@ func (c *CollectHostCopy) relBundlePath(path string) string {
 func (c *CollectHostCopy) copyFilesToBundle(paths []string, dstDir string) (CollectorResult, error) {
 	result := NewResult()
 
+	var wg sync.WaitGroup
+
+	errChan := make(chan error, len(paths))
+
 	for _, path := range paths {
-		dst := filepath.Join(dstDir, filepath.Base(path))
-		err := c.doCopy(path, dst, result)
+		wg.Add(1)
+
+		go func(path string) {
+			defer wg.Done()
+
+			dst := filepath.Join(dstDir, filepath.Base(path))
+			err := c.doCopy(path, dst, result)
+			if err != nil {
+				errChan <- err
+			}
+		}(path)
+	}
+
+	wg.Wait()
+
+	close(errChan)
+	for err := range errChan {
 		if err != nil {
 			return nil, err
 		}
