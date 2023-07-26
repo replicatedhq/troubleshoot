@@ -25,11 +25,12 @@ func Test_checkDaemonsePodStatus(t *testing.T) {
 			name:      "Pod running without FailedMount event",
 			namespace: "test",
 			podStatus: corev1.PodRunning,
+			labels:    map[string]string{"app.kubernetes.io/managed-by": "troubleshoot.sh"},
 			mockPod: &corev1.Pod{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      "test-pod",
 					Namespace: "test",
-					Labels:    map[string]string{"test": "true"},
+					Labels:    map[string]string{"app.kubernetes.io/managed-by": "troubleshoot.sh"},
 				},
 				Status: corev1.PodStatus{
 					Phase: corev1.PodRunning,
