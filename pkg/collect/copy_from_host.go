@@ -229,6 +229,11 @@ func copyFromHostCreateDaemonSet(ctx context.Context, client kubernetes.Interfac
 	for {
 		select {
 		case <-time.After(1 * time.Second):
+			err = checkDaemonsePodStatus(client, ctx, labels, namespace)
+			if err != nil {
+				return createdDS.Name, cleanup, err
+			}
+
 		case <-childCtx.Done():
 			klog.V(2).Infof("Timed out waiting for daemonset %s to be ready", createdDS.Name)
 			return createdDS.Name, cleanup, errors.Wrap(ctx.Err(), "wait for daemonset")
@@ -386,7 +391,7 @@ func deleteDaemonSet(client kubernetes.Interface, ctx context.Context, createdDS
 	dsPods := &corev1.PodList{}
 	klog.V(2).Infof("Continuously poll each second for Pod deletion of DaemontSet %s for maximum %d seconds", createdDS.Name, constants.MAX_TIME_TO_WAIT_FOR_POD_DELETION/time.Second)
 
-	err := wait.PollUntilContextTimeout(ctx, time.Second, constants.MAX_TIME_TO_WAIT_FOR_POD_DELETION, true, func(ctx context.Context) (bool, error) {
+	err := wait.PollUntilContextTimeout(ctx, time.Second, constants.MAX_TIME_TO_WAIT_FOR_POD_DELETION, false, func(ctx context.Context) (bool, error) {
 		pods, listErr := client.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{
 			LabelSelector: strings.Join(labelSelector, ","),
 		})
@@ -423,4 +428,33 @@ func deleteDaemonSet(client kubernetes.Interface, ctx context.Context, createdDS
 			klog.V(2).Infof("Daemonset pod %s in %s namespace has been deleted", pod.Name, pod.Namespace)
 		}
 	}
+}
+
+func checkDaemonsePodStatus(client kubernetes.Interface, ctx context.Context, labels map[string]string, namespace string) error {
+	var labelSelector []string
+	for k, v := range labels {
+		labelSelector = append(labelSelector, fmt.Sprintf("%s=%s", k, v))
+	}
+	pods, err := client.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{
+		LabelSelector: strings.Join(labelSelector, ","),
+	})
+	if err != nil {
+		return errors.Wrap(err, "get daemonset pods")
+	}
+
+	for _, pod := range pods.Items {
+		if pod.Status.Phase != corev1.PodRunning {
+			events, _ := client.CoreV1().Events(namespace).List(ctx, metav1.ListOptions{
+				FieldSelector: fmt.Sprintf("involvedObject.uid=%s", pod.UID),
+			})
+
+			for _, event := range events.Items {
+				if event.Reason == "FailedMount" {
+					klog.V(2).Infof("pod %s has a FailedMount event: %s", pod.Name, event.Message)
+					return errors.Errorf("path does not exist")
+				}
+			}
+		}
+	}
+	return nil
 }
