@@ -391,6 +391,7 @@ func deleteDaemonSet(client kubernetes.Interface, ctx context.Context, createdDS
 	dsPods := &corev1.PodList{}
 	klog.V(2).Infof("Continuously poll each second for Pod deletion of DaemontSet %s for maximum %d seconds", createdDS.Name, constants.MAX_TIME_TO_WAIT_FOR_POD_DELETION/time.Second)
 
+	// set immediate to false to avoid client rate limiting right after daemonset deletion
 	err := wait.PollUntilContextTimeout(ctx, time.Second, constants.MAX_TIME_TO_WAIT_FOR_POD_DELETION, false, func(ctx context.Context) (bool, error) {
 		pods, listErr := client.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{
 			LabelSelector: strings.Join(labelSelector, ","),
@@ -449,6 +450,8 @@ func checkDaemonsePodStatus(client kubernetes.Interface, ctx context.Context, la
 			})
 
 			for _, event := range events.Items {
+				// If the pod has a FailedMount event, it means that the pod failed to mount the volume and the pod will be stuck in the Pending state.
+				// In this case, we return an error to the caller to indicate that path does not exist.
 				if event.Reason == "FailedMount" {
 					klog.V(2).Infof("pod %s has a FailedMount event: %s", pod.Name, event.Message)
 					return errors.Errorf("path does not exist")
