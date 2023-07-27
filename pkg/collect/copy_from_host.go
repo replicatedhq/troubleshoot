@@ -31,12 +31,13 @@ import (
 )
 
 type CollectCopyFromHost struct {
-	Collector    *troubleshootv1beta2.CopyFromHost
-	BundlePath   string
-	Namespace    string
-	ClientConfig *rest.Config
-	Client       kubernetes.Interface
-	Context      context.Context
+	Collector        *troubleshootv1beta2.CopyFromHost
+	BundlePath       string
+	Namespace        string
+	ClientConfig     *rest.Config
+	Client           kubernetes.Interface
+	Context          context.Context
+	RetryFailedMount bool
 	RBACErrors
 }
 
@@ -73,7 +74,7 @@ func (c *CollectCopyFromHost) Collect(progressChan chan<- interface{}) (Collecto
 		namespace, _, _ = kubeconfig.Namespace()
 	}
 
-	_, cleanup, err := copyFromHostCreateDaemonSet(c.Context, c.Client, c.Collector, hostDir, namespace, "troubleshoot-copyfromhost-", labels)
+	_, cleanup, err := copyFromHostCreateDaemonSet(c.Context, c.Client, c.Collector, c.RetryFailedMount, hostDir, namespace, "troubleshoot-copyfromhost-", labels)
 	defer cleanup()
 	if err != nil {
 		return nil, errors.Wrap(err, "create daemonset")
@@ -125,7 +126,7 @@ func (c *CollectCopyFromHost) Collect(progressChan chan<- interface{}) (Collecto
 	}
 }
 
-func copyFromHostCreateDaemonSet(ctx context.Context, client kubernetes.Interface, collector *troubleshootv1beta2.CopyFromHost, hostPath string, namespace string, generateName string, labels map[string]string) (name string, cleanup func(), err error) {
+func copyFromHostCreateDaemonSet(ctx context.Context, client kubernetes.Interface, collector *troubleshootv1beta2.CopyFromHost, retryFailedMount bool, hostPath string, namespace string, generateName string, labels map[string]string) (name string, cleanup func(), err error) {
 	pullPolicy := corev1.PullIfNotPresent
 	volumeType := corev1.HostPathDirectory
 	if collector.ImagePullPolicy != "" {
@@ -229,7 +230,7 @@ func copyFromHostCreateDaemonSet(ctx context.Context, client kubernetes.Interfac
 	for {
 		select {
 		case <-time.After(1 * time.Second):
-			if !collector.RetryFailedMount {
+			if !retryFailedMount {
 				err = checkDaemonPodStatus(client, ctx, labels, namespace)
 				if err != nil {
 					return createdDS.Name, cleanup, err

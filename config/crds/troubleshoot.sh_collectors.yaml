@@ -156,8 +156,6 @@ spec:
                           type: object
                         namespace:
                           type: string
-                        retryFailedMount:
-                          type: boolean
                         timeout:
                           type: string
                       required:
@@ -240,8 +238,6 @@ spec:
                           type: string
                         namespace:
                           type: string
-                        retryFailedMount:
-                          type: boolean
                         timeout:
                           type: string
                       required:

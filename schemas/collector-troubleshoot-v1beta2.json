@@ -207,9 +207,6 @@
                   "namespace": {
                     "type": "string"
                   },
-                  "retryFailedMount": {
-                    "type": "boolean"
-                  },
                   "timeout": {
                     "type": "string"
                   }
@@ -332,9 +329,6 @@
                   },
                   "namespace": {
                     "type": "string"
-                  },
-                  "retryFailedMount": {
-                    "type": "boolean"
                   },
                   "timeout": {
                     "type": "string"
