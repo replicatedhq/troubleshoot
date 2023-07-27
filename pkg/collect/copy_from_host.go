@@ -229,9 +229,11 @@ func copyFromHostCreateDaemonSet(ctx context.Context, client kubernetes.Interfac
 	for {
 		select {
 		case <-time.After(1 * time.Second):
-			err = checkDaemonsePodStatus(client, ctx, labels, namespace)
-			if err != nil {
-				return createdDS.Name, cleanup, err
+			if !collector.RetryFailedMount {
+				err = checkDaemonPodStatus(client, ctx, labels, namespace)
+				if err != nil {
+					return createdDS.Name, cleanup, err
+				}
 			}
 
 		case <-childCtx.Done():
@@ -431,7 +433,7 @@ func deleteDaemonSet(client kubernetes.Interface, ctx context.Context, createdDS
 	}
 }
 
-func checkDaemonsePodStatus(client kubernetes.Interface, ctx context.Context, labels map[string]string, namespace string) error {
+func checkDaemonPodStatus(client kubernetes.Interface, ctx context.Context, labels map[string]string, namespace string) error {
 	var labelSelector []string
 	for k, v := range labels {
 		labelSelector = append(labelSelector, fmt.Sprintf("%s=%s", k, v))

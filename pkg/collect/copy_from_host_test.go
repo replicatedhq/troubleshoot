@@ -10,7 +10,7 @@ import (
 	testclient "k8s.io/client-go/kubernetes/fake"
 )
 
-func Test_checkDaemonsePodStatus(t *testing.T) {
+func Test_checkDaemonPodStatus(t *testing.T) {
 	tests := []struct {
 		name         string
 		namespace    string
@@ -100,7 +100,7 @@ func Test_checkDaemonsePodStatus(t *testing.T) {
 				}
 			}
 
-			err := checkDaemonsePodStatus(client, ctx, tt.labels, tt.namespace)
+			err := checkDaemonPodStatus(client, ctx, tt.labels, tt.namespace)
 			if tt.expectedErr {
 				require.Error(t, err)
 				if tt.mockEvent != nil {

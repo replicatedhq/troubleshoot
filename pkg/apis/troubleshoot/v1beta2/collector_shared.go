@@ -135,15 +135,16 @@ type Copy struct {
 }
 
 type CopyFromHost struct {
-	CollectorMeta   `json:",inline" yaml:",inline"`
-	Name            string            `json:"name,omitempty" yaml:"name,omitempty"`
-	Namespace       string            `json:"namespace" yaml:"namespace"`
-	Image           string            `json:"image" yaml:"image"`
-	ImagePullPolicy string            `json:"imagePullPolicy,omitempty" yaml:"imagePullPolicy,omitempty"`
-	ImagePullSecret *ImagePullSecrets `json:"imagePullSecret,omitempty" yaml:"imagePullSecret,omitempty"`
-	Timeout         string            `json:"timeout,omitempty" yaml:"timeout,omitempty"`
-	HostPath        string            `json:"hostPath" yaml:"hostPath"`
-	ExtractArchive  bool              `json:"extractArchive,omitempty" yaml:"extractArchive,omitempty"`
+	CollectorMeta    `json:",inline" yaml:",inline"`
+	Name             string            `json:"name,omitempty" yaml:"name,omitempty"`
+	Namespace        string            `json:"namespace" yaml:"namespace"`
+	Image            string            `json:"image" yaml:"image"`
+	ImagePullPolicy  string            `json:"imagePullPolicy,omitempty" yaml:"imagePullPolicy,omitempty"`
+	ImagePullSecret  *ImagePullSecrets `json:"imagePullSecret,omitempty" yaml:"imagePullSecret,omitempty"`
+	Timeout          string            `json:"timeout,omitempty" yaml:"timeout,omitempty"`
+	HostPath         string            `json:"hostPath" yaml:"hostPath"`
+	ExtractArchive   bool              `json:"extractArchive,omitempty" yaml:"extractArchive,omitempty"`
+	RetryFailedMount bool              `json:"retryFailedMount,omitempty" yaml:"retryFailedMount,omitempty"`
 }
 
 type Sysctl struct {
@@ -205,13 +206,14 @@ type TLSSecret struct {
 }
 
 type Collectd struct {
-	CollectorMeta   `json:",inline" yaml:",inline"`
-	Namespace       string            `json:"namespace" yaml:"namespace"`
-	Image           string            `json:"image" yaml:"image"`
-	ImagePullPolicy string            `json:"imagePullPolicy,omitempty" yaml:"imagePullPolicy,omitempty"`
-	ImagePullSecret *ImagePullSecrets `json:"imagePullSecret,omitempty" yaml:"imagePullSecret,omitempty"`
-	Timeout         string            `json:"timeout,omitempty" yaml:"timeout,omitempty"`
-	HostPath        string            `json:"hostPath" yaml:"hostPath"`
+	CollectorMeta    `json:",inline" yaml:",inline"`
+	Namespace        string            `json:"namespace" yaml:"namespace"`
+	Image            string            `json:"image" yaml:"image"`
+	ImagePullPolicy  string            `json:"imagePullPolicy,omitempty" yaml:"imagePullPolicy,omitempty"`
+	ImagePullSecret  *ImagePullSecrets `json:"imagePullSecret,omitempty" yaml:"imagePullSecret,omitempty"`
+	Timeout          string            `json:"timeout,omitempty" yaml:"timeout,omitempty"`
+	HostPath         string            `json:"hostPath" yaml:"hostPath"`
+	RetryFailedMount bool              `json:"retryFailedMount,omitempty" yaml:"retryFailedMount,omitempty"`
 }
 
 type Ceph struct {
