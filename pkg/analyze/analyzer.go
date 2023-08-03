@@ -218,6 +218,8 @@ func getAnalyzer(analyzer *troubleshootv1beta2.Analyze) Analyzer {
 		return &AnalyzePostgres{analyzer: analyzer.Postgres}
 	case analyzer.Mysql != nil:
 		return &AnalyzeMysql{analyzer: analyzer.Mysql}
+	case analyzer.Mssql != nil:
+		return &AnalyzeMssql{analyzer: analyzer.Mssql}
 	case analyzer.Redis != nil:
 		return &AnalyzeRedis{analyzer: analyzer.Redis}
 	case analyzer.CephStatus != nil:

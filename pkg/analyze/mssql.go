@@ -13,6 +13,39 @@ import (
 	"github.com/replicatedhq/troubleshoot/pkg/collect"
 )
 
+type AnalyzeMssql struct {
+	analyzer *troubleshootv1beta2.DatabaseAnalyze
+}
+
+func (a *AnalyzeMssql) Title() string {
+	title := a.analyzer.CheckName
+	if title == "" {
+		title = a.collectorName()
+	}
+
+	return title
+}
+
+func (a *AnalyzeMssql) IsExcluded() (bool, error) {
+	return isExcluded(a.analyzer.Exclude)
+}
+
+func (a *AnalyzeMssql) Analyze(getFile getCollectedFileContents, findFiles getChildCollectedFileContents) ([]*AnalyzeResult, error) {
+	result, err := analyzeMssql(a.analyzer, getFile)
+	if err != nil {
+		return nil, err
+	}
+	result.Strict = a.analyzer.Strict.BoolOrDefaultFalse()
+	return []*AnalyzeResult{result}, nil
+}
+
+func (a *AnalyzeMssql) collectorName() string {
+	if a.analyzer.CollectorName != "" {
+		return a.analyzer.CollectorName
+	}
+	return "mysql"
+}
+
 func compareMssqlConditionalToActual(conditional string, result *collect.DatabaseConnection) (bool, error) {
 	parts := strings.Split(strings.TrimSpace(conditional), " ")
 
@@ -90,9 +123,7 @@ func analyzeMssql(analyzer *troubleshootv1beta2.DatabaseAnalyze, getCollectedFil
 	}
 
 	result := &AnalyzeResult{
-		Title:   title,
-		IconKey: "kubernetes_sqlserver_analyze",
-		IconURI: "https://troubleshoot.sh/images/analyzer-icons/sqlserver-analyze.svg",
+		Title: title,
 	}
 
 	for _, outcome := range analyzer.Outcomes {
