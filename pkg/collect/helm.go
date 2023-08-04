@@ -30,11 +30,12 @@ type CollectHelm struct {
 
 // Helm release information struct
 type ReleaseInfo struct {
-	ReleaseName string        `json:"releaseName"`
-	Chart       string        `json:"chart,omitempty"`
-	AppVersion  string        `json:"appVersion,omitempty"`
-	Namespace   string        `json:"namespace,omitempty"`
-	VersionInfo []VersionInfo `json:"releaseHistory,omitempty"`
+	ReleaseName  string        `json:"releaseName"`
+	Chart        string        `json:"chart,omitempty"`
+	ChartVersion string        `json:"chartVersion,omitempty"`
+	AppVersion   string        `json:"appVersion,omitempty"`
+	Namespace    string        `json:"namespace,omitempty"`
+	VersionInfo  []VersionInfo `json:"releaseHistory,omitempty"`
 }
 
 // Helm release version information struct
@@ -114,11 +115,12 @@ func helmReleaseHistoryCollector(releaseName string, kubeconfig *string) Release
 		versionInfo := getVersionInfo(rel.Name, kubeconfig)
 
 		results = ReleaseInfo{
-			ReleaseName: rel.Name,
-			Chart:       rel.Chart.Name(),
-			AppVersion:  rel.Chart.AppVersion(),
-			Namespace:   rel.Namespace,
-			VersionInfo: versionInfo,
+			ReleaseName:  rel.Name,
+			Chart:        rel.Chart.Name(),
+			ChartVersion: rel.Chart.Metadata.Version,
+			AppVersion:   rel.Chart.AppVersion(),
+			Namespace:    rel.Namespace,
+			VersionInfo:  versionInfo,
 		}
 
 		//slog.Println("mycollection: ", collection)
