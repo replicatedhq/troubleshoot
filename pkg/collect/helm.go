@@ -80,7 +80,6 @@ func (c *CollectHelm) Collect(progressChan chan<- interface{}) (CollectorResult,
 	}
 
 	return output, nil
-
 }
 
 func helmReleaseHistoryCollector(releaseName string, kubeconfig *string) ReleaseInfo {
@@ -97,21 +96,21 @@ func helmReleaseHistoryCollector(releaseName string, kubeconfig *string) Release
 		log.Fatal(err)
 	}
 
-	for _, rel := range releases {
+	for _, release := range releases {
 		actionConfig := new(action.Configuration)
 		err := actionConfig.Init(kube.GetConfig(*kubeconfig, "", ""), "", "", log.Printf)
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		versionInfo := getVersionInfo(rel.Name, kubeconfig)
+		versionInfo := getVersionInfo(release.Name, kubeconfig)
 
 		results = ReleaseInfo{
-			ReleaseName:  rel.Name,
-			Chart:        rel.Chart.Name(),
-			ChartVersion: rel.Chart.Metadata.Version,
-			AppVersion:   rel.Chart.AppVersion(),
-			Namespace:    rel.Namespace,
+			ReleaseName:  release.Name,
+			Chart:        release.Chart.Name(),
+			ChartVersion: release.Chart.Metadata.Version,
+			AppVersion:   release.Chart.AppVersion(),
+			Namespace:    release.Namespace,
 			VersionInfo:  versionInfo,
 		}
 	}
@@ -130,13 +129,13 @@ func getVersionInfo(releaseName string, kubeconfig *string) []VersionInfo {
 
 	history, _ := action.NewHistory(actionConfig).Run(releaseName)
 
-	for _, rel := range history {
+	for _, release := range history {
 
 		versionCollect = append(versionCollect, VersionInfo{
-			Revision:  strconv.Itoa(rel.Version),
-			Date:      rel.Info.LastDeployed.String(),
-			Status:    rel.Info.Status.String(),
-			IsPending: rel.Info.Status.IsPending(),
+			Revision:  strconv.Itoa(release.Version),
+			Date:     release.Info.LastDeployed.String(),
+			Status:   release.Info.Status.String(),
+			IsPending: release.Info.Status.IsPending(),
 		})
 	}
 	return versionCollect
