@@ -55,6 +55,7 @@ func (c *CollectHelm) IsExcluded() (bool, error) {
 }
 
 func (c *CollectHelm) Collect(progressChan chan<- interface{}) (CollectorResult, error) {
+
 	output := NewResult()
 
 	var kubeconfig *string
@@ -97,11 +98,6 @@ func helmReleaseHistoryCollector(releaseName string, kubeconfig *string) Release
 	}
 
 	for _, release := range releases {
-		actionConfig := new(action.Configuration)
-		err := actionConfig.Init(kube.GetConfig(*kubeconfig, "", ""), "", "", log.Printf)
-		if err != nil {
-			log.Fatal(err)
-		}
 
 		versionInfo := getVersionInfo(release.Name, kubeconfig)
 
@@ -133,8 +129,8 @@ func getVersionInfo(releaseName string, kubeconfig *string) []VersionInfo {
 
 		versionCollect = append(versionCollect, VersionInfo{
 			Revision:  strconv.Itoa(release.Version),
-			Date:     release.Info.LastDeployed.String(),
-			Status:   release.Info.Status.String(),
+			Date:      release.Info.LastDeployed.String(),
+			Status:    release.Info.Status.String(),
 			IsPending: release.Info.Status.IsPending(),
 		})
 	}
