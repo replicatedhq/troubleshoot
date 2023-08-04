@@ -65,17 +65,12 @@ func (c *CollectHelm) Collect(progressChan chan<- interface{}) (CollectorResult,
 	}
 	flag.Parse()
 
-	//releaseName := "prod01"
-
 	releaseInfo := helmReleaseHistoryCollector(c.Collector.ReleaseName, kubeconfig)
-	log.Println(releaseInfo)
 
 	helmHistoryJson, errJson := json.MarshalIndent(releaseInfo, "", "\t")
 	if errJson != nil {
-		log.Println(errJson)
+		return nil, errJson
 	}
-
-	log.Println(string(helmHistoryJson))
 
 	filePath := "helm/helm.json"
 
@@ -103,14 +98,11 @@ func helmReleaseHistoryCollector(releaseName string, kubeconfig *string) Release
 	}
 
 	for _, rel := range releases {
-		//log.Println(release.Name)
 		actionConfig := new(action.Configuration)
 		err := actionConfig.Init(kube.GetConfig(*kubeconfig, "", ""), "", "", log.Printf)
 		if err != nil {
 			log.Fatal(err)
 		}
-
-		//	release, _ := action.NewList(actionConfig).Run()
 
 		versionInfo := getVersionInfo(rel.Name, kubeconfig)
 
@@ -122,9 +114,6 @@ func helmReleaseHistoryCollector(releaseName string, kubeconfig *string) Release
 			Namespace:    rel.Namespace,
 			VersionInfo:  versionInfo,
 		}
-
-		//slog.Println("mycollection: ", collection)
-
 	}
 	return results
 }
