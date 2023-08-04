@@ -164,6 +164,11 @@ type HTTP struct {
 	Put           *Put   `json:"put,omitempty" yaml:"put,omitempty"`
 }
 
+type Helm struct {
+	CollectorMeta `json:",inline" yaml:",inline"`
+	ReleaseName   string `json:"releaseName,omitempty" yaml:"releaseName,omitempty"`
+}
+
 type Get struct {
 	URL                string            `json:"url" yaml:"url"`
 	InsecureSkipVerify bool              `json:"insecureSkipVerify,omitempty" yaml:"insecureSkipVerify,omitempty"`
@@ -268,6 +273,7 @@ type Collect struct {
 	RegistryImages   *RegistryImages   `json:"registryImages,omitempty" yaml:"registryImages,omitempty"`
 	Sysctl           *Sysctl           `json:"sysctl,omitempty" yaml:"sysctl,omitempty"`
 	Certificates     *Certificates     `json:"certificates,omitempty" yaml:"certificates,omitempty"`
+	Helm             *Helm             `json:"helm,omitempty" yaml:"helm,omitempty"`
 }
 
 func (c *Collect) AccessReviewSpecs(overrideNS string) []authorizationv1.SelfSubjectAccessReviewSpec {
