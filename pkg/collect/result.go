@@ -151,7 +151,7 @@ func (r CollectorResult) ReplaceResult(bundlePath string, relativePath string, r
 	}
 	defer outFile.Close()
 
-	_, err = io.Copy(outFile, reader)
+	_, err = io.CopyBuffer(outFile, reader, make([]byte, 1024*1024))
 	if err != nil {
 		return errors.Wrap(err, "failed to write tmp file")
 	}
