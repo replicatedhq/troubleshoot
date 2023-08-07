@@ -92,22 +92,25 @@ func helmReleaseHistoryCollector(releaseName string, kubeconfig *string) Release
 
 	var results ReleaseInfo
 
-	releases, err := action.NewHistory(actionConfig).Run(releaseName)
+	releases, err := action.NewList(actionConfig).Run()
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	for _, release := range releases {
 
-		versionInfo := getVersionInfo(release.Name, kubeconfig)
+		if release.Name == releaseName {
 
-		results = ReleaseInfo{
-			ReleaseName:  release.Name,
-			Chart:        release.Chart.Name(),
-			ChartVersion: release.Chart.Metadata.Version,
-			AppVersion:   release.Chart.AppVersion(),
-			Namespace:    release.Namespace,
-			VersionInfo:  versionInfo,
+			versionInfo := getVersionInfo(release.Name, kubeconfig)
+
+			results = ReleaseInfo{
+				ReleaseName:  release.Name,
+				Chart:        release.Chart.Name(),
+				ChartVersion: release.Chart.Metadata.Version,
+				AppVersion:   release.Chart.AppVersion(),
+				Namespace:    release.Namespace,
+				VersionInfo:  versionInfo,
+		 	}
 		}
 	}
 	return results
@@ -123,9 +126,12 @@ func getVersionInfo(releaseName string, kubeconfig *string) []VersionInfo {
 
 	versionCollect := []VersionInfo{}
 
-	history, _ := action.NewHistory(actionConfig).Run(releaseName)
+	releases, err := action.NewList(actionConfig).Run()
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	for _, release := range history {
+	for _, release := range releases {
 
 		versionCollect = append(versionCollect, VersionInfo{
 			Revision:  strconv.Itoa(release.Version),
