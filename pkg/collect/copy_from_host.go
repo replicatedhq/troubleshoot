@@ -379,7 +379,14 @@ func copyFilesFromHost(ctx context.Context, dstPath string, clientConfig *restcl
 
 func deleteDaemonSet(client kubernetes.Interface, ctx context.Context, createdDS *appsv1.DaemonSet, namespace string, labels map[string]string) {
 	klog.V(2).Infof("Daemonset %s has been scheduled for deletion", createdDS.Name)
-	if err := client.AppsV1().DaemonSets(namespace).Delete(context.Background(), createdDS.Name, metav1.DeleteOptions{}); err != nil {
+	zeroGracePeriod := int64(0)
+	// Foreground is used to delete the DaemonSet pods before deleting the DaemonSet
+	deletePropagationForeground := metav1.DeletePropagationForeground
+
+	if err := client.AppsV1().DaemonSets(namespace).Delete(context.Background(), createdDS.Name, metav1.DeleteOptions{
+		GracePeriodSeconds: &zeroGracePeriod,
+		PropagationPolicy:  &deletePropagationForeground,
+	}); err != nil {
 		klog.Errorf("Failed to delete daemonset %s: %v", createdDS.Name, err)
 		return
 	}
@@ -389,11 +396,24 @@ func deleteDaemonSet(client kubernetes.Interface, ctx context.Context, createdDS
 		labelSelector = append(labelSelector, fmt.Sprintf("%s=%s", k, v))
 	}
 
-	dsPods := &corev1.PodList{}
+	dsPods, err := client.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{LabelSelector: strings.Join(labelSelector, ",")})
+	if err != nil {
+		klog.Errorf("Failed to list pods for DaemonSet %s: %v", createdDS.Name, err)
+		return
+	}
+
+	for _, pod := range dsPods.Items {
+		klog.V(2).Infof("Deleting pod %s", pod.Name)
+		if err := client.CoreV1().Pods(namespace).Delete(ctx, pod.Name, metav1.DeleteOptions{
+			GracePeriodSeconds: &zeroGracePeriod,
+		}); err != nil {
+			klog.Errorf("Failed to delete pod %s: %v", pod.Name, err)
+		}
+	}
+
 	klog.V(2).Infof("Continuously poll each second for Pod deletion of DaemontSet %s for maximum %d seconds", createdDS.Name, constants.MAX_TIME_TO_WAIT_FOR_POD_DELETION/time.Second)
 
-	// set immediate to false to avoid client rate limiting right after daemonset deletion
-	err := wait.PollUntilContextTimeout(ctx, time.Second, constants.MAX_TIME_TO_WAIT_FOR_POD_DELETION, false, func(ctx context.Context) (bool, error) {
+	err = wait.PollUntilContextTimeout(ctx, time.Second, constants.MAX_TIME_TO_WAIT_FOR_POD_DELETION, true, func(ctx context.Context) (bool, error) {
 		pods, listErr := client.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{
 			LabelSelector: strings.Join(labelSelector, ","),
 		})
@@ -417,7 +437,6 @@ func deleteDaemonSet(client kubernetes.Interface, ctx context.Context, createdDS
 	// If there was an error from the polling (e.g., the context deadline was exceeded before all pods were deleted),
 	// delete each remaining pod with a zero-second grace period
 	if err != nil {
-		zeroGracePeriod := int64(0)
 		for _, pod := range dsPods.Items {
 			klog.V(2).Infof("Pod %s forcefully deleted after reaching the maximum wait time of %d seconds", pod.Name, constants.MAX_TIME_TO_WAIT_FOR_POD_DELETION/time.Second)
 			err := client.CoreV1().Pods(namespace).Delete(context.TODO(), pod.Name, metav1.DeleteOptions{

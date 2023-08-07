@@ -15,7 +15,7 @@ const (
 	DEFAULT_LOGS_COLLECTOR_TIMEOUT = 60 * time.Second
 	// MAX_TIME_TO_WAIT_FOR_POD_DELETION is the maximum time to wait for pod deletion.
 	// 0 seconds for force deletion.
-	MAX_TIME_TO_WAIT_FOR_POD_DELETION = 0 * time.Second
+	MAX_TIME_TO_WAIT_FOR_POD_DELETION = 60 * time.Second
 	// Tracing constants
 	LIB_TRACER_NAME             = "github.com/replicatedhq/troubleshoot"
 	TROUBLESHOOT_ROOT_SPAN_NAME = "ReplicatedTroubleshootRootSpan"
