@@ -142,21 +142,18 @@ func (r CollectorResult) ReplaceResult(bundlePath string, relativePath string, r
 		return nil
 	}
 
-	tmpFile, err := os.CreateTemp("", "replace-")
-	if err != nil {
-		return errors.Wrap(err, "failed to create temp file")
-	}
-	defer tmpFile.Close()
+	targetPath := filepath.Join(bundlePath, relativePath)
 
-	_, err = io.Copy(tmpFile, reader)
+	// Open the file directly in the desired location
+	outFile, err := os.Create(targetPath)
+	if err != nil {
+		return errors.Wrap(err, "failed to create file")
+	}
+	defer outFile.Close()
+
+	_, err = io.Copy(outFile, reader)
 	if err != nil {
 		return errors.Wrap(err, "failed to write tmp file")
-	}
-
-	// This rename should always be in /tmp, so no cross-partition copying will happen
-	err = os.Rename(tmpFile.Name(), filepath.Join(bundlePath, relativePath))
-	if err != nil {
-		return errors.Wrap(err, "failed to rename tmp file")
 	}
 
 	return nil

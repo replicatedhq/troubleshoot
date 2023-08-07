@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"compress/gzip"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -17,13 +16,21 @@ import (
 )
 
 func RedactResult(bundlePath string, input CollectorResult, additionalRedactors []*troubleshootv1beta2.Redact) error {
+	processedSymlinks := make(map[string]bool)
+
 	for k, v := range input {
 		file := k
 
 		var reader io.Reader
 		if v == nil {
+			// Check if file has been processed already
+			if processedSymlinks[file] {
+				continue
+			}
+
 			// Collected contents are in a file. Get a reader to the file.
-			info, err := os.Lstat(filepath.Join(bundlePath, file))
+			fullPath := filepath.Join(bundlePath, file)
+			info, err := os.Lstat(fullPath)
 			if err != nil {
 				if os.IsNotExist(errors.Cause(err)) {
 					// File not found, moving on.
@@ -38,10 +45,13 @@ func RedactResult(bundlePath string, input CollectorResult, additionalRedactors 
 			// some extra logic to ensure that a spec filtering only symlinks still works.
 			if info.Mode().Type() == os.ModeSymlink {
 				symlink := file
-				target, err := os.Readlink(filepath.Join(bundlePath, symlink))
+				target, err := os.Readlink(fullPath)
 				if err != nil {
 					return errors.Wrap(err, "failed to read symlink")
 				}
+
+				// Mark symlink target as processed
+				processedSymlinks[target] = true
 
 				// Get the relative path to the target file to conform with
 				// the path formats of the CollectorResult
@@ -71,7 +81,7 @@ func RedactResult(bundlePath string, input CollectorResult, additionalRedactors 
 		// If the file is .tar, .tgz or .tar.gz, it must not be redacted. Instead it is
 		// decompressed and each file inside the tar redacted and compressed back into the archive.
 		if filepath.Ext(file) == ".tar" || filepath.Ext(file) == ".tgz" || strings.HasSuffix(file, ".tar.gz") {
-			tmpDir, err := ioutil.TempDir("", "troubleshoot-subresult-")
+			tmpDir, err := os.MkdirTemp("", "troubleshoot-subresult-")
 			if err != nil {
 				return errors.Wrap(err, "failed to create temp dir")
 			}
