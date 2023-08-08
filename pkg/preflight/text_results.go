@@ -64,29 +64,29 @@ func showTextResultsHuman(preflightName string, analyzeResults []*analyzerunner.
 	return results, nil
 }
 
-type textResultOutput struct {
+type TextResultOutput struct {
 	Title   string `json:"title" yaml:"title"`
 	Message string `json:"message" yaml:"message"`
 	URI     string `json:"uri,omitempty" yaml:"uri,omitempty"`
 	Strict  bool   `json:"strict,omitempty" yaml:"strict,omitempty"`
 }
 
-type textOutput struct {
-	Pass []textResultOutput `json:"pass,omitempty" yaml:"pass,omitempty"`
-	Warn []textResultOutput `json:"warn,omitempty" yaml:"warn,omitempty"`
-	Fail []textResultOutput `json:"fail,omitempty" yaml:"fail,omitempty"`
+type TextOutput struct {
+	Pass []TextResultOutput `json:"pass,omitempty" yaml:"pass,omitempty"`
+	Warn []TextResultOutput `json:"warn,omitempty" yaml:"warn,omitempty"`
+	Fail []TextResultOutput `json:"fail,omitempty" yaml:"fail,omitempty"`
 }
 
 // Used by both JSON and YAML outputs
-func showTextResultsStructured(preflightName string, analyzeResults []*analyzerunner.AnalyzeResult) *textOutput {
-	output := textOutput{
-		Pass: []textResultOutput{},
-		Warn: []textResultOutput{},
-		Fail: []textResultOutput{},
+func ShowTextResultsStructured(preflightName string, analyzeResults []*analyzerunner.AnalyzeResult) *TextOutput {
+	output := TextOutput{
+		Pass: []TextResultOutput{},
+		Warn: []TextResultOutput{},
+		Fail: []TextResultOutput{},
 	}
 
 	for _, analyzeResult := range analyzeResults {
-		resultOutput := textResultOutput{
+		resultOutput := TextResultOutput{
 			Title:   analyzeResult.Title,
 			Message: analyzeResult.Message,
 			URI:     analyzeResult.URI,
@@ -109,7 +109,7 @@ func showTextResultsStructured(preflightName string, analyzeResults []*analyzeru
 }
 
 func showTextResultsJSON(preflightName string, analyzeResults []*analyzerunner.AnalyzeResult) (string, error) {
-	output := showTextResultsStructured(preflightName, analyzeResults)
+	output := ShowTextResultsStructured(preflightName, analyzeResults)
 
 	b, err := json.MarshalIndent(*output, "", "  ")
 	if err != nil {
@@ -120,7 +120,7 @@ func showTextResultsJSON(preflightName string, analyzeResults []*analyzerunner.A
 }
 
 func showTextResultsYAML(preflightName string, analyzeResults []*analyzerunner.AnalyzeResult) (string, error) {
-	output := showTextResultsStructured(preflightName, analyzeResults)
+	output := ShowTextResultsStructured(preflightName, analyzeResults)
 
 	b, err := yaml.Marshal(*output)
 	if err != nil {
