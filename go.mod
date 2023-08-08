@@ -199,7 +199,7 @@ require (
 	golang.org/x/oauth2 v0.7.0 // indirect
 	golang.org/x/sys v0.10.0 // indirect
 	golang.org/x/term v0.8.0 // indirect
-	golang.org/x/text v0.11.0
+	golang.org/x/text v0.12.0
 	golang.org/x/time v0.3.0 // indirect
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
 	google.golang.org/api v0.122.0 // indirect
