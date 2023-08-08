@@ -15,7 +15,8 @@ import (
 var (
 	// ErrCollectorNotFound is returned when an undefined host collector is
 	// specified by the user.
-	ErrHostCollectorNotFound = errors.New("unrecognized host collector")
+	ErrHostCollectorNotFound   = errors.New("unrecognized host collector")
+	ErrInsufficientPermissions = errors.New("insufficient permissions to run all collectors")
 )
 
 type CollectorRunOpts struct {
@@ -129,7 +130,7 @@ func CollectRemote(c *troubleshootv1beta2.RemoteCollector, additionalRedactors *
 
 	if foundForbidden && !opts.CollectWithoutPermissions {
 		collectResult.isRBACAllowed = false
-		return collectResult, errors.New("insufficient permissions to run all collectors")
+		return collectResult, ErrInsufficientPermissions
 	}
 
 	// Run collectors synchronously.
