@@ -142,7 +142,7 @@ func runCollectors(ctx context.Context, collectors []*troubleshootv1beta2.Collec
 	}
 
 	if foundForbidden && !opts.CollectWithoutPermissions {
-		return nil, collect.ErrInsufficientPermissions
+		return nil, collect.ErrInsufficientPermissionsToRun
 	}
 
 	for _, collector := range allCollectors {
