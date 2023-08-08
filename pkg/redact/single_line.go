@@ -2,7 +2,6 @@ package redact
 
 import (
 	"bufio"
-	"fmt"
 	"io"
 	"regexp"
 )
@@ -25,10 +24,12 @@ func NewSingleLineRedactor(re, maskText, path, name string, isDefault bool) (*Si
 
 func (r *SingleLineRedactor) Redact(input io.Reader, path string) io.Reader {
 	out, writer := io.Pipe()
+	bufferedWriter := bufio.NewWriter(writer)
 
 	go func() {
 		var err error
 		defer func() {
+			bufferedWriter.Flush()
 			if err == io.EOF {
 				writer.Close()
 			} else {
@@ -38,21 +39,27 @@ func (r *SingleLineRedactor) Redact(input io.Reader, path string) io.Reader {
 
 		substStr := getReplacementPattern(r.re, r.maskText)
 
+		const maxCapacity = 1024 * 1024
+		buf := make([]byte, maxCapacity)
 		scanner := bufio.NewScanner(input)
+		scanner.Buffer(buf, maxCapacity)
+
 		lineNum := 0
 		for scanner.Scan() {
 			lineNum++
 			line := scanner.Text()
 
 			if !r.re.MatchString(line) {
-				fmt.Fprintf(writer, "%s\n", line)
+				bufferedWriter.WriteString(line)
+				bufferedWriter.WriteByte('\n')
 				continue
 			}
 
 			clean := r.re.ReplaceAllString(line, substStr)
 
 			// io.WriteString would be nicer, but scanner strips new lines
-			fmt.Fprintf(writer, "%s\n", clean)
+			bufferedWriter.WriteString(clean)
+			bufferedWriter.WriteByte('\n')
 			if err != nil {
 				return
 			}
@@ -67,6 +74,9 @@ func (r *SingleLineRedactor) Redact(input io.Reader, path string) io.Reader {
 					IsDefaultRedactor: r.isDefault,
 				})
 			}
+		}
+		if scanErr := scanner.Err(); scanErr != nil {
+			err = scanErr
 		}
 	}()
 	return out
