@@ -38,15 +38,11 @@ func (r *SingleLineRedactor) Redact(input io.Reader, path string) io.Reader {
 
 		substStr := getReplacementPattern(r.re, r.maskText)
 
-		reader := bufio.NewReader(input)
+		scanner := bufio.NewScanner(input)
 		lineNum := 0
-		for {
+		for scanner.Scan() {
 			lineNum++
-			var line string
-			line, err = readLine(reader)
-			if err != nil {
-				return
-			}
+			line := scanner.Text()
 
 			if !r.re.MatchString(line) {
 				fmt.Fprintf(writer, "%s\n", line)
