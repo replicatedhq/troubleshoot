@@ -2,7 +2,10 @@ package redact
 
 import (
 	"bufio"
+	"fmt"
 	"io"
+	"os"
+	"path/filepath"
 	"regexp"
 )
 
@@ -14,11 +17,22 @@ type SingleLineRedactor struct {
 	isDefault  bool
 }
 
-func NewSingleLineRedactor(re, maskText, path, name string, isDefault bool) (*SingleLineRedactor, error) {
+func NewSingleLineRedactor(re, maskText, path, bundlePath string, name string, isDefault bool) (*SingleLineRedactor, error) {
 	compiled, err := regexp.Compile(re)
 	if err != nil {
 		return nil, err
 	}
+
+	content, err := os.ReadFile(filepath.Join(bundlePath, path))
+	if err != nil {
+		return nil, err
+	}
+
+	if !compiled.MatchString(string(content)) {
+		fmt.Printf("No matches found for %s in %s\n", re, path)
+		return nil, nil
+	}
+
 	return &SingleLineRedactor{re: compiled, maskText: maskText, filePath: path, redactName: name, isDefault: isDefault}, nil
 }
 
@@ -56,7 +70,7 @@ func (r *SingleLineRedactor) Redact(input io.Reader, path string) io.Reader {
 			}
 
 			clean := r.re.ReplaceAllString(line, substStr)
-
+			fmt.Println("clean: ", clean)
 			// io.WriteString would be nicer, but scanner strips new lines
 			bufferedWriter.WriteString(clean)
 			bufferedWriter.WriteByte('\n')

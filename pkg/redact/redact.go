@@ -46,8 +46,8 @@ type Redaction struct {
 	IsDefaultRedactor bool   `json:"isDefaultRedactor" yaml:"isDefaultRedactor"`
 }
 
-func Redact(input io.Reader, path string, additionalRedactors []*troubleshootv1beta2.Redact) (io.Reader, error) {
-	redactors, err := getRedactors(path)
+func Redact(input io.Reader, path string, bundlePath string, additionalRedactors []*troubleshootv1beta2.Redact) (io.Reader, error) {
+	redactors, err := getRedactors(path, bundlePath)
 	if err != nil {
 		return nil, err
 	}
@@ -110,12 +110,15 @@ func buildAdditionalRedactors(path string, redacts []*troubleshootv1beta2.Redact
 					return nil, errors.Wrapf(err, "multiline redactor %+v", re)
 				}
 			} else {
-				newRedactor, err = NewSingleLineRedactor(re.Redactor, MASK_TEXT, path, redactorName(i, j, redact.Name, "regex"), false)
+				newRedactor, err = NewSingleLineRedactor(re.Redactor, MASK_TEXT, path, "", redactorName(i, j, redact.Name, "regex"), false)
 				if err != nil {
 					return nil, errors.Wrapf(err, "redactor %q", re)
 				}
 			}
-			additionalRedactors = append(additionalRedactors, newRedactor)
+
+			if newRedactor != nil {
+				additionalRedactors = append(additionalRedactors, newRedactor)
+			}
 		}
 
 		for j, yaml := range redact.Removals.YamlPath {
@@ -158,7 +161,7 @@ func redactMatchesPath(path string, redact *troubleshootv1beta2.Redact) (bool, e
 	return false, nil
 }
 
-func getRedactors(path string) ([]Redactor, error) {
+func getRedactors(path string, bundlePath string) ([]Redactor, error) {
 	// TODO: Make this configurable
 
 	// (?i) makes it case insensitive
@@ -252,11 +255,13 @@ func getRedactors(path string) ([]Redactor, error) {
 
 	redactors := make([]Redactor, 0)
 	for _, re := range singleLines {
-		r, err := NewSingleLineRedactor(re.regex, MASK_TEXT, path, re.name, true)
+		r, err := NewSingleLineRedactor(re.regex, MASK_TEXT, path, bundlePath, re.name, true)
 		if err != nil {
 			return nil, err // maybe skip broken ones?
 		}
-		redactors = append(redactors, r)
+		if r != nil {
+			redactors = append(redactors, r)
+		}
 	}
 
 	doubleLines := []struct {

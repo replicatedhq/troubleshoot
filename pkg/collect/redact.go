@@ -111,7 +111,7 @@ func RedactResult(bundlePath string, input CollectorResult, additionalRedactors 
 				return
 			}
 
-			redacted, err := redact.Redact(reader, file, additionalRedactors)
+			redacted, err := redact.Redact(reader, file, bundlePath, additionalRedactors)
 			if err != nil {
 				errorCh <- errors.Wrap(err, "failed to redact io stream")
 				return
