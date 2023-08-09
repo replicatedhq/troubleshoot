@@ -30,9 +30,6 @@ func init() {
 
 type Durations []time.Duration
 
-// "github.com/kastenhq/kubestr/pkg/fio" provides some types that are useful for
-// interacting with fio, but we don't need their options struct because we're running on
-// the host from the CLI and not in a container/pod.	So we define our own options struct.
 // Today we only care about checking for write latency so the options struct
 // only has what we need for that.  we'll collect all the results from a single run of fio
 // and filter out the fsync results for analysis.  TODO: update the analyzer so any/all results
