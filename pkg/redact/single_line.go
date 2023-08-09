@@ -23,13 +23,24 @@ func NewSingleLineRedactor(re, maskText, path, bundlePath string, name string, i
 		return nil, err
 	}
 
-	content, err := os.ReadFile(filepath.Join(bundlePath, path))
+	// Check if file has lines that match the regex
+	file, err := os.Open(filepath.Join(bundlePath, path))
 	if err != nil {
 		return nil, err
 	}
+	defer file.Close()
 
-	if !compiled.MatchString(string(content)) {
-		fmt.Printf("No matches found for %s in %s\n", re, path)
+	scanner := bufio.NewScanner(file)
+	hasMatch := false
+	for scanner.Scan() {
+		line := scanner.Text()
+		if compiled.MatchString(line) {
+			hasMatch = true
+			break
+		}
+	}
+
+	if hasMatch {
 		return nil, nil
 	}
 

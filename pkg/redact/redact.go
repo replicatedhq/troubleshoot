@@ -255,11 +255,13 @@ func getRedactors(path string, bundlePath string) ([]Redactor, error) {
 
 	redactors := make([]Redactor, 0)
 	for _, re := range singleLines {
+		fmt.Println("Start to add redactor for " + re.name)
 		r, err := NewSingleLineRedactor(re.regex, MASK_TEXT, path, bundlePath, re.name, true)
 		if err != nil {
 			return nil, err // maybe skip broken ones?
 		}
 		if r != nil {
+			fmt.Println("Added redactor for " + re.name)
 			redactors = append(redactors, r)
 		}
 	}
