@@ -383,7 +383,7 @@ func deleteDaemonSet(client kubernetes.Interface, ctx context.Context, createdDS
 	// Foreground is used to delete the DaemonSet pods before deleting the DaemonSet
 	deletePropagationForeground := metav1.DeletePropagationForeground
 
-	if err := client.AppsV1().DaemonSets(namespace).Delete(context.Background(), createdDS.Name, metav1.DeleteOptions{
+	if err := client.AppsV1().DaemonSets(namespace).Delete(ctx, createdDS.Name, metav1.DeleteOptions{
 		GracePeriodSeconds: &zeroGracePeriod,
 		PropagationPolicy:  &deletePropagationForeground,
 	}); err != nil {
