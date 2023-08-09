@@ -732,6 +732,8 @@ spec:
                           type: BoolString
                         fileName:
                           type: string
+                        jsonPath:
+                          type: string
                         outcomes:
                           items:
                             properties:
@@ -1669,6 +1671,55 @@ spec:
                       required:
                       - outcomes
                       type: object
+                    certificatesCollection:
+                      properties:
+                        annotations:
+                          additionalProperties:
+                            type: string
+                          type: object
+                        checkName:
+                          type: string
+                        collectorName:
+                          type: string
+                        exclude:
+                          type: BoolString
+                        outcomes:
+                          items:
+                            properties:
+                              fail:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
+                              pass:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
+                              warn:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
+                            type: object
+                          type: array
+                        strict:
+                          type: BoolString
+                      required:
+                      - outcomes
+                      type: object
                     cpu:
                       properties:
                         annotations:
@@ -2399,6 +2450,67 @@ spec:
                                 type: object
                             type: object
                           type: array
+                        strict:
+                          type: BoolString
+                      required:
+                      - outcomes
+                      type: object
+                    textAnalyze:
+                      properties:
+                        annotations:
+                          additionalProperties:
+                            type: string
+                          type: object
+                        checkName:
+                          type: string
+                        collectorName:
+                          type: string
+                        exclude:
+                          type: BoolString
+                        excludeFiles:
+                          items:
+                            type: string
+                          type: array
+                        fileName:
+                          type: string
+                        ignoreIfNoFiles:
+                          type: boolean
+                        outcomes:
+                          items:
+                            properties:
+                              fail:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
+                              pass:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
+                              warn:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
+                            type: object
+                          type: array
+                        regex:
+                          type: string
+                        regexGroups:
+                          type: string
                         strict:
                           type: BoolString
                       required:

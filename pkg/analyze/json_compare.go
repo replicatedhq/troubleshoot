@@ -1,6 +1,7 @@
 package analyzer
 
 import (
+	"bytes"
 	"encoding/json"
 	"path/filepath"
 	"reflect"
@@ -9,6 +10,7 @@ import (
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	iutils "github.com/replicatedhq/troubleshoot/pkg/interfaceutils"
+	"k8s.io/client-go/util/jsonpath"
 )
 
 type AnalyzeJsonCompare struct {
@@ -54,6 +56,32 @@ func (a *AnalyzeJsonCompare) analyzeJsonCompare(analyzer *troubleshootv1beta2.Js
 		actual, err = iutils.GetAtPath(actual, analyzer.Path)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to get object at path: %s", analyzer.Path)
+		}
+	} else if analyzer.JsonPath != "" {
+		jsp := jsonpath.New(analyzer.CheckName)
+		jsp.AllowMissingKeys(true).EnableJSONOutput(true)
+		err = jsp.Parse(analyzer.JsonPath)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to parse jsonpath: %s", analyzer.JsonPath)
+		}
+
+		var data bytes.Buffer
+		err = jsp.Execute(&data, actual)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to execute jsonpath")
+		}
+
+		err = json.NewDecoder(&data).Decode(&actual)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to decode jsonpath result")
+		}
+
+		// If we get back a single result in a slice unwrap it.
+		// Technically this doesn't strictly follow jsonpath, but it makes
+		// things easier downstream. Basically we don't want to require
+		// users to wrap a single result with [].
+		if a, ok := actual.([]interface{}); ok && len(a) == 1 {
+			actual = a[0]
 		}
 	}
 

@@ -31,12 +31,13 @@ import (
 )
 
 type CollectCopyFromHost struct {
-	Collector    *troubleshootv1beta2.CopyFromHost
-	BundlePath   string
-	Namespace    string
-	ClientConfig *rest.Config
-	Client       kubernetes.Interface
-	Context      context.Context
+	Collector        *troubleshootv1beta2.CopyFromHost
+	BundlePath       string
+	Namespace        string
+	ClientConfig     *rest.Config
+	Client           kubernetes.Interface
+	Context          context.Context
+	RetryFailedMount bool
 	RBACErrors
 }
 
@@ -73,7 +74,7 @@ func (c *CollectCopyFromHost) Collect(progressChan chan<- interface{}) (Collecto
 		namespace, _, _ = kubeconfig.Namespace()
 	}
 
-	_, cleanup, err := copyFromHostCreateDaemonSet(c.Context, c.Client, c.Collector, hostDir, namespace, "troubleshoot-copyfromhost-", labels)
+	_, cleanup, err := c.copyFromHostCreateDaemonSet(c.Context, c.Client, c.Collector, hostDir, namespace, "troubleshoot-copyfromhost-", labels)
 	defer cleanup()
 	if err != nil {
 		return nil, errors.Wrap(err, "create daemonset")
@@ -125,7 +126,7 @@ func (c *CollectCopyFromHost) Collect(progressChan chan<- interface{}) (Collecto
 	}
 }
 
-func copyFromHostCreateDaemonSet(ctx context.Context, client kubernetes.Interface, collector *troubleshootv1beta2.CopyFromHost, hostPath string, namespace string, generateName string, labels map[string]string) (name string, cleanup func(), err error) {
+func (c *CollectCopyFromHost) copyFromHostCreateDaemonSet(ctx context.Context, client kubernetes.Interface, collector *troubleshootv1beta2.CopyFromHost, hostPath string, namespace string, generateName string, labels map[string]string) (name string, cleanup func(), err error) {
 	pullPolicy := corev1.PullIfNotPresent
 	volumeType := corev1.HostPathDirectory
 	if collector.ImagePullPolicy != "" {
@@ -229,6 +230,11 @@ func copyFromHostCreateDaemonSet(ctx context.Context, client kubernetes.Interfac
 	for {
 		select {
 		case <-time.After(1 * time.Second):
+			err = checkDaemonPodStatus(client, ctx, labels, namespace, c.RetryFailedMount)
+			if err != nil {
+				return createdDS.Name, cleanup, err
+			}
+
 		case <-childCtx.Done():
 			klog.V(2).Infof("Timed out waiting for daemonset %s to be ready", createdDS.Name)
 			return createdDS.Name, cleanup, errors.Wrap(ctx.Err(), "wait for daemonset")
@@ -373,7 +379,14 @@ func copyFilesFromHost(ctx context.Context, dstPath string, clientConfig *restcl
 
 func deleteDaemonSet(client kubernetes.Interface, ctx context.Context, createdDS *appsv1.DaemonSet, namespace string, labels map[string]string) {
 	klog.V(2).Infof("Daemonset %s has been scheduled for deletion", createdDS.Name)
-	if err := client.AppsV1().DaemonSets(namespace).Delete(context.Background(), createdDS.Name, metav1.DeleteOptions{}); err != nil {
+	zeroGracePeriod := int64(0)
+	// Foreground is used to delete the DaemonSet pods before deleting the DaemonSet
+	deletePropagationForeground := metav1.DeletePropagationForeground
+
+	if err := client.AppsV1().DaemonSets(namespace).Delete(ctx, createdDS.Name, metav1.DeleteOptions{
+		GracePeriodSeconds: &zeroGracePeriod,
+		PropagationPolicy:  &deletePropagationForeground,
+	}); err != nil {
 		klog.Errorf("Failed to delete daemonset %s: %v", createdDS.Name, err)
 		return
 	}
@@ -383,10 +396,24 @@ func deleteDaemonSet(client kubernetes.Interface, ctx context.Context, createdDS
 		labelSelector = append(labelSelector, fmt.Sprintf("%s=%s", k, v))
 	}
 
-	dsPods := &corev1.PodList{}
+	dsPods, err := client.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{LabelSelector: strings.Join(labelSelector, ",")})
+	if err != nil {
+		klog.Errorf("Failed to list pods for DaemonSet %s: %v", createdDS.Name, err)
+		return
+	}
+
+	for _, pod := range dsPods.Items {
+		klog.V(2).Infof("Deleting pod %s", pod.Name)
+		if err := client.CoreV1().Pods(namespace).Delete(ctx, pod.Name, metav1.DeleteOptions{
+			GracePeriodSeconds: &zeroGracePeriod,
+		}); err != nil {
+			klog.Errorf("Failed to delete pod %s: %v", pod.Name, err)
+		}
+	}
+
 	klog.V(2).Infof("Continuously poll each second for Pod deletion of DaemontSet %s for maximum %d seconds", createdDS.Name, constants.MAX_TIME_TO_WAIT_FOR_POD_DELETION/time.Second)
 
-	err := wait.PollUntilContextTimeout(ctx, time.Second, constants.MAX_TIME_TO_WAIT_FOR_POD_DELETION, true, func(ctx context.Context) (bool, error) {
+	err = wait.PollUntilContextTimeout(ctx, time.Second, constants.MAX_TIME_TO_WAIT_FOR_POD_DELETION, true, func(ctx context.Context) (bool, error) {
 		pods, listErr := client.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{
 			LabelSelector: strings.Join(labelSelector, ","),
 		})
@@ -410,7 +437,6 @@ func deleteDaemonSet(client kubernetes.Interface, ctx context.Context, createdDS
 	// If there was an error from the polling (e.g., the context deadline was exceeded before all pods were deleted),
 	// delete each remaining pod with a zero-second grace period
 	if err != nil {
-		zeroGracePeriod := int64(0)
 		for _, pod := range dsPods.Items {
 			klog.V(2).Infof("Pod %s forcefully deleted after reaching the maximum wait time of %d seconds", pod.Name, constants.MAX_TIME_TO_WAIT_FOR_POD_DELETION/time.Second)
 			err := client.CoreV1().Pods(namespace).Delete(context.TODO(), pod.Name, metav1.DeleteOptions{
@@ -423,4 +449,35 @@ func deleteDaemonSet(client kubernetes.Interface, ctx context.Context, createdDS
 			klog.V(2).Infof("Daemonset pod %s in %s namespace has been deleted", pod.Name, pod.Namespace)
 		}
 	}
+}
+
+func checkDaemonPodStatus(client kubernetes.Interface, ctx context.Context, labels map[string]string, namespace string, retryFailedMount bool) error {
+	var labelSelector []string
+	for k, v := range labels {
+		labelSelector = append(labelSelector, fmt.Sprintf("%s=%s", k, v))
+	}
+	pods, err := client.CoreV1().Pods(namespace).List(ctx, metav1.ListOptions{
+		LabelSelector: strings.Join(labelSelector, ","),
+	})
+	if err != nil {
+		return errors.Wrap(err, "get daemonset pods")
+	}
+
+	for _, pod := range pods.Items {
+		if pod.Status.Phase != corev1.PodRunning {
+			events, _ := client.CoreV1().Events(namespace).List(ctx, metav1.ListOptions{
+				FieldSelector: fmt.Sprintf("involvedObject.uid=%s", pod.UID),
+			})
+
+			for _, event := range events.Items {
+				// If the pod has a FailedMount event, it means that the pod failed to mount the volume and the pod will be stuck in the Pending state.
+				// In this case, we return an error to the caller to indicate that path does not exist.
+				if event.Reason == "FailedMount" && !retryFailedMount {
+					klog.V(2).Infof("pod %s has a FailedMount event: %s", pod.Name, event.Message)
+					return errors.Errorf("path does not exist")
+				}
+			}
+		}
+	}
+	return nil
 }

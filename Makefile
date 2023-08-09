@@ -38,7 +38,8 @@ BUILDFLAGS = -tags "netgo containers_image_ostree_stub exclude_graphdriver_devic
 BUILDPATHS = ./pkg/... ./cmd/... ./internal/...
 TESTFLAGS ?= -v -coverprofile cover.out
 
-all: test support-bundle preflight collect analyze
+.DEFAULT: all
+all: test build
 
 .PHONY: ffi
 ffi: fmt vet
@@ -61,6 +62,10 @@ test-integration:
 .PHONY: preflight-e2e-test
 preflight-e2e-test:
 	./test/validate-preflight-e2e.sh
+
+.PHONY: run-examples
+run-examples:
+	./test/run-examples.sh
 
 .PHONY: support-bundle-e2e-test
 support-bundle-e2e-test:

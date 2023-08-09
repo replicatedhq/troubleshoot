@@ -5,7 +5,7 @@ import troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubl
 type HostAnalyzer interface {
 	Title() string
 	IsExcluded() (bool, error)
-	Analyze(getFile func(string) ([]byte, error)) ([]*AnalyzeResult, error)
+	Analyze(getFile func(string) ([]byte, error), findFiles getChildCollectedFileContents) ([]*AnalyzeResult, error)
 }
 
 func GetHostAnalyzer(analyzer *troubleshootv1beta2.HostAnalyze) (HostAnalyzer, bool) {
@@ -44,10 +44,14 @@ func GetHostAnalyzer(analyzer *troubleshootv1beta2.HostAnalyze) (HostAnalyzer, b
 		return &AnalyzeHostFilesystemPerformance{analyzer.FilesystemPerformance}, true
 	case analyzer.Certificate != nil:
 		return &AnalyzeHostCertificate{analyzer.Certificate}, true
+	case analyzer.CertificatesCollection != nil:
+		return &AnalyzeHostCertificatesCollection{analyzer.CertificatesCollection}, true
 	case analyzer.HostServices != nil:
 		return &AnalyzeHostServices{analyzer.HostServices}, true
 	case analyzer.HostOS != nil:
 		return &AnalyzeHostOS{analyzer.HostOS}, true
+	case analyzer.TextAnalyze != nil:
+		return &AnalyzeHostTextAnalyze{analyzer.TextAnalyze}, true
 	default:
 		return nil, false
 	}

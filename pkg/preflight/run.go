@@ -47,6 +47,13 @@ func RunPreflights(interactive bool, output string, format string, args []string
 		return err
 	}
 
+	warning := validatePreflight(specs)
+
+	if warning != nil {
+		fmt.Println(warning.Warning())
+		return nil
+	}
+
 	var collectResults []CollectResult
 	var uploadCollectResults []CollectResult
 	preflightSpecName := ""

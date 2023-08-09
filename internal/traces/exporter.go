@@ -22,7 +22,7 @@ var (
 	printer  = message.NewPrinter(language.English)
 )
 
-const legend = "Suceeded (S), eXcluded (X), Failed (F)\n"
+const legend = "Succeeded (S), eXcluded (X), Failed (F)\n"
 
 // FUTURE WORK: This exporter should only be used by troubleshoot CLIs
 // until the following issue is addressed:

@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -731,7 +732,7 @@ func Test_textAnalyze(t *testing.T) {
 				analyzer: &test.analyzer,
 			}
 
-			actual, err := a.analyzeTextAnalyze(&test.analyzer, getFiles)
+			actual, err := analyzeTextAnalyze(&test.analyzer, getFiles, a.Title())
 			req.NoError(err)
 
 			unPointered := []AnalyzeResult{}
@@ -795,4 +796,31 @@ func Test_compareRegex(t *testing.T) {
 			req.Equal(test.expected, actual)
 		})
 	}
+}
+
+func Test_NoFilesInBundle(t *testing.T) {
+	getFiles := func(n string, excludeFiles []string) (map[string][]byte, error) {
+		return nil, nil
+	}
+
+	a := AnalyzeTextAnalyze{
+		analyzer: &troubleshootv1beta2.TextAnalyze{
+			CollectorName:   "text-collector-1",
+			IgnoreIfNoFiles: true,
+		},
+	}
+
+	actual, err := analyzeTextAnalyze(a.analyzer, getFiles, a.Title())
+	require.NoError(t, err)
+	assert.Nil(t, actual)
+
+	aa := AnalyzeTextAnalyze{
+		analyzer: &troubleshootv1beta2.TextAnalyze{},
+	}
+
+	actual, err = analyzeTextAnalyze(aa.analyzer, getFiles, a.Title())
+	require.NoError(t, err)
+	require.Len(t, actual, 1)
+	assert.Equal(t, "No matching files", actual[0].Message)
+	assert.True(t, actual[0].IsWarn)
 }

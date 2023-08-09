@@ -1,0 +1,8 @@
+apiVersion: troubleshoot.sh/v1beta2
+kind: Preflight
+metadata:
+  name: sample
+spec:
+  collectors:
+    - clusterInfo: {}
+  analyzers: []

@@ -82,7 +82,16 @@ func GetCollector(collector *troubleshootv1beta2.Collect, bundlePath string, nam
 	case collector.Copy != nil:
 		return &CollectCopy{collector.Copy, bundlePath, namespace, clientConfig, client, ctx, RBACErrors}, true
 	case collector.CopyFromHost != nil:
-		return &CollectCopyFromHost{collector.CopyFromHost, bundlePath, namespace, clientConfig, client, ctx, RBACErrors}, true
+		return &CollectCopyFromHost{
+			Collector:        collector.CopyFromHost,
+			BundlePath:       bundlePath,
+			Namespace:        namespace,
+			ClientConfig:     clientConfig,
+			Client:           client,
+			Context:          ctx,
+			RetryFailedMount: true,
+			RBACErrors:       RBACErrors,
+		}, true
 	case collector.HTTP != nil:
 		return &CollectHTTP{collector.HTTP, bundlePath, namespace, clientConfig, client, RBACErrors}, true
 	case collector.Postgres != nil:

@@ -3,10 +3,8 @@ package collect
 import (
 	"bytes"
 	"context"
-	"crypto/tls"
 	"crypto/x509"
 	"encoding/json"
-	"encoding/pem"
 	"time"
 
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
@@ -192,27 +190,6 @@ func secretCertCollector(secretName string, namespace string, client kubernetes.
 	}
 
 	return results
-}
-
-// decode pem and validate data source contains
-func decodePem(certPEMBlock []byte) (tls.Certificate, string) {
-	var cert tls.Certificate
-	var trackErrors string
-	var certDERBlock *pem.Block
-
-	for {
-		certDERBlock, certPEMBlock = pem.Decode(certPEMBlock)
-		if certDERBlock == nil {
-			break
-		}
-		if certDERBlock.Type == "CERTIFICATE" {
-			cert.Certificate = append(cert.Certificate, certDERBlock.Bytes)
-		}
-	}
-	if len(cert.Certificate) == 0 {
-		trackErrors = "No certificates found in"
-	}
-	return cert, trackErrors
 }
 
 // Certificate parser

@@ -1,5 +1,7 @@
 package types
 
+import "fmt"
+
 type NotFoundError struct {
 	Name string
 }
@@ -18,6 +20,10 @@ type ExitCodeError struct {
 	Code int
 }
 
+type ExitCodeWarning struct {
+	Msg string
+}
+
 func (e *ExitCodeError) Error() string {
 	return e.Msg
 }
@@ -32,4 +38,12 @@ func NewExitCodeError(exitCode int, theErr error) *ExitCodeError {
 		useErr = theErr.Error()
 	}
 	return &ExitCodeError{Msg: useErr, Code: exitCode}
+}
+
+func NewExitCodeWarning(theErrMsg string) *ExitCodeWarning {
+	return &ExitCodeWarning{Msg: theErrMsg}
+}
+
+func (e *ExitCodeWarning) Warning() string {
+	return fmt.Sprintf("Warning: %s", e.Msg)
 }

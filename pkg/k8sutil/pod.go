@@ -26,8 +26,10 @@ const (
 )
 
 // reference: https://github.com/kubernetes/kubernetes/blob/e8fcd0de98d50f4019561a6b7a0287f5c059267a/pkg/printers/internalversion/printers.go#L741
-func GetPodStatusReason(pod *corev1.Pod) string {
+func GetPodStatusReason(pod *corev1.Pod) (string, string) {
 	reason := string(pod.Status.Phase)
+	// message is used to store more detailed information about the pod status
+	message := ""
 	if pod.Status.Reason != "" {
 		reason = pod.Status.Reason
 	}
@@ -57,18 +59,35 @@ func GetPodStatusReason(pod *corev1.Pod) string {
 			reason = fmt.Sprintf("Init:%d/%d", i, len(pod.Spec.InitContainers))
 			initializing = true
 		}
+
+		if container.LastTerminationState.Terminated != nil && container.LastTerminationState.Terminated.Message != "" {
+			message += container.LastTerminationState.Terminated.Message
+		}
 		break
 	}
 	if !initializing {
 		hasRunning := false
+
 		for i := len(pod.Status.ContainerStatuses) - 1; i >= 0; i-- {
 			container := pod.Status.ContainerStatuses[i]
 
 			if container.State.Waiting != nil && container.State.Waiting.Reason != "" {
 				reason = container.State.Waiting.Reason
+				if container.LastTerminationState.Terminated != nil {
+					// if the container is terminated, we should use the message from the last termination state
+					// if no message from the last termination state, we should use the exit code
+					if container.LastTerminationState.Terminated.Message != "" {
+						message += container.LastTerminationState.Terminated.Message
+					} else {
+						message += fmt.Sprintf("ExitCode:%d", container.LastTerminationState.Terminated.ExitCode)
+					}
+				}
 			} else if container.State.Terminated != nil && container.State.Terminated.Reason != "" {
 				reason = container.State.Terminated.Reason
+				// add message from the last termination exit code
+				message += fmt.Sprintf("ExitCode:%d", container.State.Terminated.ExitCode)
 			} else if container.State.Terminated != nil && container.State.Terminated.Reason == "" {
+				// no extra message from the last termination state, since the signal or exit code is used as the reason
 				if container.State.Terminated.Signal != 0 {
 					reason = fmt.Sprintf("Signal:%d", container.State.Terminated.Signal)
 				} else {
@@ -87,6 +106,15 @@ func GetPodStatusReason(pod *corev1.Pod) string {
 				reason = "NotReady"
 			}
 		}
+
+		// if the pod is not running, check if there is any pod condition reporting as "False" status
+		if len(pod.Status.Conditions) > 0 {
+			for condition := range pod.Status.Conditions {
+				if pod.Status.Conditions[condition].Type == corev1.PodScheduled && pod.Status.Conditions[condition].Status == corev1.ConditionFalse {
+					message += pod.Status.Conditions[condition].Message
+				}
+			}
+		}
 	}
 
 	// "NodeLost" is originally k8s.io/kubernetes/pkg/util/node.NodeUnreachablePodReason but didn't wanna import all of kubernetes package just for this type
@@ -96,7 +124,7 @@ func GetPodStatusReason(pod *corev1.Pod) string {
 		reason = "Terminating"
 	}
 
-	return reason
+	return reason, message
 }
 
 func hasPodReadyCondition(conditions []corev1.PodCondition) bool {
@@ -113,7 +141,7 @@ func IsPodUnhealthy(pod *corev1.Pod) bool {
 		return true
 	}
 
-	reason := GetPodStatusReason(pod)
+	reason, _ := GetPodStatusReason(pod)
 	if PodStatusReason(reason) == PodStatusReasonCompleted {
 		return false // completed pods are healthy pods
 	}
