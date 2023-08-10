@@ -43,6 +43,10 @@ func RedactResult(bundlePath string, input CollectorResult, additionalRedactors 
 					return
 				}
 
+				// Redact the target file of a symlink
+				// There is an opportunity for improving performance here by skipping symlinks
+				// if a target has been redacted already, but that would require
+				// some extra logic to ensure that a spec filtering only symlinks still works.
 				if info.Mode().Type() == os.ModeSymlink {
 					symlink := file
 					target, err := os.Readlink(filepath.Join(bundlePath, symlink))
