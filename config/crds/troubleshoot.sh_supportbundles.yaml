@@ -11484,10 +11484,6 @@ spec:
                           description: Total timeout, including background IOPS setup
                             and warmup if enabled.
                           type: string
-                        useFio:
-                          description: Enable the use of the `fio` external tool for
-                            benchmarking filesystem performance.
-                          type: boolean
                       required:
                       - backgroundIOPSWarmupSeconds
                       - backgroundReadIOPS
