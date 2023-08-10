@@ -49,10 +49,7 @@ func (r *SingleLineRedactor) Redact(input io.Reader, path string) io.Reader {
 
 		substStr := getReplacementPattern(r.re, r.maskText)
 
-		const maxCapacity = 1024 * 1024
-		buf := make([]byte, maxCapacity)
 		scanner := bufio.NewScanner(input)
-		scanner.Buffer(buf, maxCapacity)
 
 		lineNum := 0
 		for scanner.Scan() {
