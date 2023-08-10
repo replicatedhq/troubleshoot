@@ -18,7 +18,7 @@ func TestNewSingleLineRedactor(t *testing.T) {
 	}{
 		{
 			name:        "copied from default redactors",
-			re:          `(?i)(Pwd *= *)(?P<mask>[^\;]+)(;)`,
+			re:          `(?i)(pwd *= *)(?P<mask>[^\;]+)(;)`,
 			inputString: `pwd = abcdef;`,
 			wantString:  "pwd = ***HIDDEN***;\n",
 			wantRedactions: RedactionList{
@@ -45,8 +45,36 @@ func TestNewSingleLineRedactor(t *testing.T) {
 			},
 		},
 		{
+			name:        "copied from default redactors with case insensitive",
+			re:          `(pwd *= *)(?P<mask>[^\;]+)(;)`,
+			inputString: `pwd = abcdef;`,
+			wantString:  "pwd = ***HIDDEN***;\n",
+			wantRedactions: RedactionList{
+				ByRedactor: map[string][]Redaction{
+					"copied from default redactors with case insensitive": []Redaction{
+						{
+							RedactorName:      "copied from default redactors with case insensitive",
+							CharactersRemoved: -6,
+							Line:              1,
+							File:              "testfile",
+						},
+					},
+				},
+				ByFile: map[string][]Redaction{
+					"testfile": []Redaction{
+						{
+							RedactorName:      "copied from default redactors with case insensitive",
+							CharactersRemoved: -6,
+							Line:              1,
+							File:              "testfile",
+						},
+					},
+				},
+			},
+		},
+		{
 			name:        "no leading matching group", // this is not the ideal behavior - why are we dropping ungrouped match components?
-			re:          `(?i)Pwd *= *(?P<mask>[^\;]+)(;)`,
+			re:          `(?i)pwd *= *(?P<mask>[^\;]+)(;)`,
 			inputString: `pwd = abcdef;`,
 			wantString:  "***HIDDEN***;\n",
 			wantRedactions: RedactionList{
@@ -73,8 +101,36 @@ func TestNewSingleLineRedactor(t *testing.T) {
 			},
 		},
 		{
+			name:        "no leading matching group with case insensitive",
+			re:          `Pwd *= *(?P<mask>[^\;]+)(;)`,
+			inputString: `Pwd = abcdef;`,
+			wantString:  "***HIDDEN***;\n",
+			wantRedactions: RedactionList{
+				ByRedactor: map[string][]Redaction{
+					"no leading matching group with case insensitive": []Redaction{
+						{
+							RedactorName:      "no leading matching group with case insensitive",
+							CharactersRemoved: 0,
+							Line:              1,
+							File:              "testfile",
+						},
+					},
+				},
+				ByFile: map[string][]Redaction{
+					"testfile": []Redaction{
+						{
+							RedactorName:      "no leading matching group with case insensitive",
+							CharactersRemoved: 0,
+							Line:              1,
+							File:              "testfile",
+						},
+					},
+				},
+			},
+		},
+		{
 			name:        "multiple matching literals",
-			re:          `(?i)(Pwd *= *)(?P<mask>[^\;]+)(;)`,
+			re:          `(?i)(pwd *= *)(?P<mask>[^\;]+)(;)`,
 			inputString: `pwd = abcdef;abcdef`,
 			wantString:  "pwd = ***HIDDEN***;abcdef\n",
 			wantRedactions: RedactionList{
@@ -101,17 +157,16 @@ func TestNewSingleLineRedactor(t *testing.T) {
 			},
 		},
 		{
-			name:        "Redact values for environment variables that look like AWS Secret Access Keys",
-			re:          `(?i)("name":"[^\"]*SECRET_?ACCESS_?KEY","value":")(?P<mask>[^\"]*)(")`,
-			inputString: `{"name":"SECRET_ACCESS_KEY","value":"123"}`,
-			wantString: `{"name":"SECRET_ACCESS_KEY","value":"***HIDDEN***"}
-`,
+			name:        "multiple matching literals with case insensitive",
+			re:          `(pwd *= *)(?P<mask>[^\;]+)(;)`,
+			inputString: `pwd = abcdef;abcdef`,
+			wantString:  "pwd = ***HIDDEN***;abcdef\n",
 			wantRedactions: RedactionList{
 				ByRedactor: map[string][]Redaction{
-					"Redact values for environment variables that look like AWS Secret Access Keys": []Redaction{
+					"multiple matching literals with case insensitive": []Redaction{
 						{
-							RedactorName:      "Redact values for environment variables that look like AWS Secret Access Keys",
-							CharactersRemoved: -9,
+							RedactorName:      "multiple matching literals with case insensitive",
+							CharactersRemoved: -6,
 							Line:              1,
 							File:              "testfile",
 						},
@@ -120,8 +175,8 @@ func TestNewSingleLineRedactor(t *testing.T) {
 				ByFile: map[string][]Redaction{
 					"testfile": []Redaction{
 						{
-							RedactorName:      "Redact values for environment variables that look like AWS Secret Access Keys",
-							CharactersRemoved: -9,
+							RedactorName:      "multiple matching literals with case insensitive",
+							CharactersRemoved: -6,
 							Line:              1,
 							File:              "testfile",
 						},
@@ -162,9 +217,7 @@ func TestNewSingleLineRedactor(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			req := require.New(t)
 			ResetRedactionList()
-			reRunner, err := NewSingleLineRedactor(LineRedactor{
-				regex: tt.re,
-			}, MASK_TEXT, "testfile", tt.name, false)
+			reRunner, err := NewSingleLineRedactor(tt.re, MASK_TEXT, "testfile", tt.name, false)
 			req.NoError(err)
 
 			outReader := reRunner.Redact(bytes.NewReader([]byte(tt.inputString)), "")

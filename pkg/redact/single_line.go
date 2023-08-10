@@ -8,29 +8,33 @@ import (
 )
 
 type SingleLineRedactor struct {
-	scan       *regexp.Regexp
-	re         *regexp.Regexp
-	maskText   string
-	filePath   string
-	redactName string
-	isDefault  bool
+	re            *regexp.Regexp
+	insensitiveRe *regexp.Regexp
+	maskText      string
+	filePath      string
+	redactName    string
+	isDefault     bool
 }
 
-func NewSingleLineRedactor(re LineRedactor, maskText, path, name string, isDefault bool) (*SingleLineRedactor, error) {
-	var scanCompiled *regexp.Regexp
-	compiled, err := regexp.Compile(re.regex)
+func NewSingleLineRedactor(re, maskText, path, name string, isDefault bool) (*SingleLineRedactor, error) {
+	var compiledInsensitiveRe *regexp.Regexp
+	compiledRe, err := regexp.Compile(re)
 	if err != nil {
 		return nil, err
 	}
 
-	if re.scan != "" {
-		scanCompiled, err = regexp.Compile(re.scan)
+	// Check if re starts with (?i)
+	isCaseInsensitive := strings.HasPrefix(re, "(?i)")
+	if isCaseInsensitive {
+		// Split re into case-sensitive and case-insensitive versions
+		insensitive := re[4:] // remove the (?i) prefix for the case-sensitive version
+		compiledInsensitiveRe, err = regexp.Compile(insensitive)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	return &SingleLineRedactor{scan: scanCompiled, re: compiled, maskText: maskText, filePath: path, redactName: name, isDefault: isDefault}, nil
+	return &SingleLineRedactor{re: compiledRe, insensitiveRe: compiledInsensitiveRe, maskText: maskText, filePath: path, redactName: name, isDefault: isDefault}, nil
 }
 
 func (r *SingleLineRedactor) Redact(input io.Reader, path string) io.Reader {
@@ -59,15 +63,15 @@ func (r *SingleLineRedactor) Redact(input io.Reader, path string) io.Reader {
 		for scanner.Scan() {
 			lineNum++
 			line := scanner.Text()
-			lowerLine := strings.ToLower(line)
-			// if scan is not nil, do not redact if the line does not match
-			if r.scan != nil && !r.scan.MatchString(lowerLine) {
-				bufferedWriter.WriteString(line)
-				bufferedWriter.WriteByte('\n')
-				continue
+			if r.insensitiveRe != nil {
+				lowerLine := strings.ToLower(line)
+				if !r.insensitiveRe.MatchString(lowerLine) {
+					bufferedWriter.WriteString(line)
+					bufferedWriter.WriteByte('\n')
+					continue
+				}
 			}
 
-			// if scan matches, but re does not, do not redact
 			if !r.re.MatchString(line) {
 				bufferedWriter.WriteString(line)
 				bufferedWriter.WriteByte('\n')

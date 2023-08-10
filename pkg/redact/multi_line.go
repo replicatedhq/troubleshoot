@@ -9,24 +9,28 @@ import (
 )
 
 type MultiLineRedactor struct {
-	scan       *regexp.Regexp
-	re1        *regexp.Regexp
-	re2        *regexp.Regexp
-	maskText   string
-	filePath   string
-	redactName string
-	isDefault  bool
+	re1                    *regexp.Regexp
+	compiledInsensitiveRe1 *regexp.Regexp
+	re2                    *regexp.Regexp
+	maskText               string
+	filePath               string
+	redactName             string
+	isDefault              bool
 }
 
-func NewMultiLineRedactor(re1 LineRedactor, re2 string, maskText, path, name string, isDefault bool) (*MultiLineRedactor, error) {
-	var scanCompiled *regexp.Regexp
-	compiled1, err := regexp.Compile(re1.regex)
+func NewMultiLineRedactor(re1, re2, maskText, path, name string, isDefault bool) (*MultiLineRedactor, error) {
+	var compiledInsensitiveRe1 *regexp.Regexp
+	compiled1, err := regexp.Compile(re1)
 	if err != nil {
 		return nil, err
 	}
 
-	if re1.scan != "" {
-		scanCompiled, err = regexp.Compile(re1.scan)
+	// Check if re starts with (?i)
+	isCaseInsensitive := strings.HasPrefix(re1, "(?i)")
+	if isCaseInsensitive {
+		// Split re into case-sensitive and case-insensitive versions
+		insensitive := re1[4:] // remove the (?i) prefix for the case-sensitive version
+		compiledInsensitiveRe1, err = regexp.Compile(insensitive)
 		if err != nil {
 			return nil, err
 		}
@@ -36,8 +40,7 @@ func NewMultiLineRedactor(re1 LineRedactor, re2 string, maskText, path, name str
 	if err != nil {
 		return nil, err
 	}
-
-	return &MultiLineRedactor{scan: scanCompiled, re1: compiled1, re2: compiled2, maskText: maskText, filePath: path, redactName: name, isDefault: isDefault}, nil
+	return &MultiLineRedactor{re1: compiled1, compiledInsensitiveRe1: compiledInsensitiveRe1, re2: compiled2, maskText: maskText, filePath: path, redactName: name, isDefault: isDefault}, nil
 }
 
 func (r *MultiLineRedactor) Redact(input io.Reader, path string) io.Reader {
@@ -64,15 +67,17 @@ func (r *MultiLineRedactor) Redact(input io.Reader, path string) io.Reader {
 		for err == nil {
 			lineNum++ // the first line that can be redacted is line 2
 
-			// If line1 matches re1, then transform line2 using re2
-			lowerLine1 := strings.ToLower(line1)
-			if r.scan != nil && !r.scan.MatchString(lowerLine1) {
-				fmt.Fprintf(writer, "%s\n", line1)
-				line1, line2, err = getNextTwoLines(reader, &line2)
-				flushLastLine = true
-				continue
+			if r.compiledInsensitiveRe1 != nil {
+				lowerLine1 := strings.ToLower(line1)
+				if !r.compiledInsensitiveRe1.MatchString(lowerLine1) {
+					fmt.Fprintf(writer, "%s\n", line1)
+					line1, line2, err = getNextTwoLines(reader, &line2)
+					flushLastLine = true
+					continue
+				}
 			}
 
+			// If line1 matches re1, then transform line2 using re2
 			if !r.re1.MatchString(line1) {
 				fmt.Fprintf(writer, "%s\n", line1)
 				line1, line2, err = getNextTwoLines(reader, &line2)
