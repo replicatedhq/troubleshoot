@@ -78,7 +78,7 @@ build:
 
 .PHONY: support-bundle
 support-bundle:
-	go build ${BUILDFLAGS} ${LDFLAGS} -o bin/support-bundle github.com/replicatedhq/troubleshoot/cmd/troubleshoot
+	 GOOS=linux GOARCH=amd64 go build ${BUILDFLAGS} ${LDFLAGS} -o bin/support-bundle-linux github.com/replicatedhq/troubleshoot/cmd/troubleshoot
 
 .PHONY: preflight
 preflight:
