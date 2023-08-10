@@ -2,14 +2,12 @@ package redact
 
 import (
 	"bufio"
-	"fmt"
 	"io"
-	"os"
-	"path/filepath"
 	"regexp"
 )
 
 type SingleLineRedactor struct {
+	scan       *regexp.Regexp
 	re         *regexp.Regexp
 	maskText   string
 	filePath   string
@@ -17,34 +15,21 @@ type SingleLineRedactor struct {
 	isDefault  bool
 }
 
-func NewSingleLineRedactor(re, maskText, path, bundlePath string, name string, isDefault bool) (*SingleLineRedactor, error) {
-	compiled, err := regexp.Compile(re)
+func NewSingleLineRedactor(re lineRedactor, maskText, path, name string, isDefault bool) (*SingleLineRedactor, error) {
+	var scanCompiled *regexp.Regexp
+	compiled, err := regexp.Compile(re.regex)
 	if err != nil {
 		return nil, err
 	}
 
-	// Check if file has lines that match the regex
-	file, err := os.Open(filepath.Join(bundlePath, path))
-	if err != nil {
-		return nil, err
-	}
-	defer file.Close()
-
-	scanner := bufio.NewScanner(file)
-	hasMatch := false
-	for scanner.Scan() {
-		line := scanner.Text()
-		if compiled.MatchString(line) {
-			hasMatch = true
-			break
+	if re.scan != "" {
+		scanCompiled, err = regexp.Compile(re.scan)
+		if err != nil {
+			return nil, err
 		}
 	}
 
-	if hasMatch {
-		return nil, nil
-	}
-
-	return &SingleLineRedactor{re: compiled, maskText: maskText, filePath: path, redactName: name, isDefault: isDefault}, nil
+	return &SingleLineRedactor{scan: scanCompiled, re: compiled, maskText: maskText, filePath: path, redactName: name, isDefault: isDefault}, nil
 }
 
 func (r *SingleLineRedactor) Redact(input io.Reader, path string) io.Reader {
@@ -74,6 +59,14 @@ func (r *SingleLineRedactor) Redact(input io.Reader, path string) io.Reader {
 			lineNum++
 			line := scanner.Text()
 
+			// if scan is not nil, do not redact if the line does not match
+			if r.scan != nil && !r.scan.MatchString(line) {
+				bufferedWriter.WriteString(line)
+				bufferedWriter.WriteByte('\n')
+				continue
+			}
+
+			// if scan matches, but re does not, do not redact
 			if !r.re.MatchString(line) {
 				bufferedWriter.WriteString(line)
 				bufferedWriter.WriteByte('\n')
@@ -81,7 +74,7 @@ func (r *SingleLineRedactor) Redact(input io.Reader, path string) io.Reader {
 			}
 
 			clean := r.re.ReplaceAllString(line, substStr)
-			fmt.Println("clean: ", clean)
+
 			// io.WriteString would be nicer, but scanner strips new lines
 			bufferedWriter.WriteString(clean)
 			bufferedWriter.WriteByte('\n')

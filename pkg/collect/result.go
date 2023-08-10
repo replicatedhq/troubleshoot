@@ -127,7 +127,12 @@ func (r CollectorResult) SaveResult(bundlePath string, relativePath string, read
 		return errors.Wrap(err, "failed to copy data")
 	}
 
-	klog.V(2).Infof("Added %q to bundle output", relativePath)
+	fileInfo, err := f.Stat()
+	if err != nil {
+		return errors.Wrap(err, "failed to stat file")
+	}
+
+	klog.V(2).Infof("Added %q (%d MB) to bundle output", relativePath, fileInfo.Size()/(1024*1024))
 	return nil
 }
 

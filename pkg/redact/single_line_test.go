@@ -100,12 +100,71 @@ func TestNewSingleLineRedactor(t *testing.T) {
 				},
 			},
 		},
+		{
+			name:        "Redact values for environment variables that look like AWS Secret Access Keys",
+			re:          `(?i)("name":"[^\"]*SECRET_?ACCESS_?KEY","value":")(?P<mask>[^\"]*)(")`,
+			inputString: `{"name":"SECRET_ACCESS_KEY","value":"123"}`,
+			wantString: `{"name":"SECRET_ACCESS_KEY","value":"***HIDDEN***"}
+`,
+			wantRedactions: RedactionList{
+				ByRedactor: map[string][]Redaction{
+					"Redact values for environment variables that look like AWS Secret Access Keys": []Redaction{
+						{
+							RedactorName:      "Redact values for environment variables that look like AWS Secret Access Keys",
+							CharactersRemoved: -9,
+							Line:              1,
+							File:              "testfile",
+						},
+					},
+				},
+				ByFile: map[string][]Redaction{
+					"testfile": []Redaction{
+						{
+							RedactorName:      "Redact values for environment variables that look like AWS Secret Access Keys",
+							CharactersRemoved: -9,
+							Line:              1,
+							File:              "testfile",
+						},
+					},
+				},
+			},
+		},
+		{
+			name:        "Redact connection strings with username and password",
+			re:          `(?i)(https?|ftp)(:\/\/)(?P<mask>[^:\"\/]+){1}(:)(?P<mask>[^@\"\/]+){1}(?P<host>@[^:\/\s\"]+){1}(?P<port>:[\d]+)?`,
+			inputString: `http://user:password@host:8888`,
+			wantString:  "http://***HIDDEN***:***HIDDEN***@host:8888\n",
+			wantRedactions: RedactionList{
+				ByRedactor: map[string][]Redaction{
+					"Redact connection strings with username and password": []Redaction{
+						{
+							RedactorName:      "Redact connection strings with username and password",
+							CharactersRemoved: -12,
+							Line:              1,
+							File:              "testfile",
+						},
+					},
+				},
+				ByFile: map[string][]Redaction{
+					"testfile": []Redaction{
+						{
+							RedactorName:      "Redact connection strings with username and password",
+							CharactersRemoved: -12,
+							Line:              1,
+							File:              "testfile",
+						},
+					},
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			req := require.New(t)
 			ResetRedactionList()
-			reRunner, err := NewSingleLineRedactor(tt.re, MASK_TEXT, "testfile", tt.name, false)
+			reRunner, err := NewSingleLineRedactor(lineRedactor{
+				regex: tt.re,
+			}, MASK_TEXT, "testfile", tt.name, false)
 			req.NoError(err)
 
 			outReader := reRunner.Redact(bytes.NewReader([]byte(tt.inputString)), "")
