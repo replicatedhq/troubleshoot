@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"regexp"
+	"strings"
 )
 
 type MultiLineRedactor struct {
@@ -64,8 +65,8 @@ func (r *MultiLineRedactor) Redact(input io.Reader, path string) io.Reader {
 			lineNum++ // the first line that can be redacted is line 2
 
 			// If line1 matches re1, then transform line2 using re2
-
-			if r.scan != nil && !r.scan.MatchString(line1) {
+			lowerLine1 := strings.ToLower(line1)
+			if r.scan != nil && !r.scan.MatchString(lowerLine1) {
 				fmt.Fprintf(writer, "%s\n", line1)
 				line1, line2, err = getNextTwoLines(reader, &line2)
 				flushLastLine = true
