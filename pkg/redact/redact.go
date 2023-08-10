@@ -46,6 +46,11 @@ type Redaction struct {
 	IsDefaultRedactor bool   `json:"isDefaultRedactor" yaml:"isDefaultRedactor"`
 }
 
+type LineRedactor struct {
+	regex string
+	scan  string
+}
+
 func Redact(input io.Reader, path string, additionalRedactors []*troubleshootv1beta2.Redact) (io.Reader, error) {
 	redactors, err := getRedactors(path)
 	if err != nil {
@@ -105,14 +110,14 @@ func buildAdditionalRedactors(path string, redacts []*troubleshootv1beta2.Redact
 		for j, re := range redact.Removals.Regex {
 			var newRedactor Redactor
 			if re.Selector != "" {
-				newRedactor, err = NewMultiLineRedactor(lineRedactor{
+				newRedactor, err = NewMultiLineRedactor(LineRedactor{
 					regex: re.Selector,
 				}, re.Redactor, MASK_TEXT, path, redactorName(i, j, redact.Name, "multiLine"), false)
 				if err != nil {
 					return nil, errors.Wrapf(err, "multiline redactor %+v", re)
 				}
 			} else {
-				newRedactor, err = NewSingleLineRedactor(lineRedactor{
+				newRedactor, err = NewSingleLineRedactor(LineRedactor{
 					regex: re.Redactor,
 				}, MASK_TEXT, path, redactorName(i, j, redact.Name, "regex"), false)
 				if err != nil {
@@ -162,11 +167,6 @@ func redactMatchesPath(path string, redact *troubleshootv1beta2.Redact) (bool, e
 	return false, nil
 }
 
-type lineRedactor struct {
-	regex string
-	scan  string
-}
-
 func getRedactors(path string) ([]Redactor, error) {
 	// TODO: Make this configurable
 
@@ -174,26 +174,26 @@ func getRedactors(path string) ([]Redactor, error) {
 	// groups named with `?P<mask>` will be masked
 	// groups named with `?P<drop>` will be removed (replaced with empty strings)
 	singleLines := []struct {
-		regex lineRedactor
+		regex LineRedactor
 		name  string
 	}{
 		// aws secrets
 		{
-			regex: lineRedactor{
+			regex: LineRedactor{
 				regex: `(?i)(\\\"name\\\":\\\"[^\"]*SECRET_?ACCESS_?KEY\\\",\\\"value\\\":\\\")(?P<mask>[^\"]*)(\\\")`,
 				scan:  `(?i)SECRET_?ACCESS_?KEY`,
 			},
 			name: "Redact values for environment variables that look like AWS Secret Access Keys",
 		},
 		{
-			regex: lineRedactor{
+			regex: LineRedactor{
 				regex: `(?i)(\\\"name\\\":\\\"[^\"]*ACCESS_?KEY_?ID\\\",\\\"value\\\":\\\")(?P<mask>[^\"]*)(\\\")`,
 				scan:  `(?i)ACCESS_?KEY_?ID`,
 			},
 			name: "Redact values for environment variables that look like AWS Access Keys",
 		},
 		{
-			regex: lineRedactor{
+			regex: LineRedactor{
 				regex: `(?i)(\\\"name\\\":\\\"[^\"]*OWNER_?ACCOUNT\\\",\\\"value\\\":\\\")(?P<mask>[^\"]*)(\\\")`,
 				scan:  `(?i)OWNER_?ACCOUNT`,
 			},
@@ -201,7 +201,7 @@ func getRedactors(path string) ([]Redactor, error) {
 		},
 		// passwords in general
 		{
-			regex: lineRedactor{
+			regex: LineRedactor{
 				regex: `(?i)(\\\"name\\\":\\\"[^\"]*password[^\"]*\\\",\\\"value\\\":\\\")(?P<mask>[^\"]*)(\\\")`,
 				scan:  `(?i)password`,
 			},
@@ -210,21 +210,21 @@ func getRedactors(path string) ([]Redactor, error) {
 		// tokens in general
 		{
 
-			regex: lineRedactor{
+			regex: LineRedactor{
 				regex: `(?i)(\\\"name\\\":\\\"[^\"]*token[^\"]*\\\",\\\"value\\\":\\\")(?P<mask>[^\"]*)(\\\")`,
 				scan:  `(?i)token`,
 			},
 			name: "Redact values for environment variables with names beginning with 'token'",
 		},
 		{
-			regex: lineRedactor{
+			regex: LineRedactor{
 				regex: `(?i)(\\\"name\\\":\\\"[^\"]*database[^\"]*\\\",\\\"value\\\":\\\")(?P<mask>[^\"]*)(\\\")`,
 				scan:  `(?i)database`,
 			},
 			name: "Redact values for environment variables with names beginning with 'database'",
 		},
 		{
-			regex: lineRedactor{
+			regex: LineRedactor{
 				regex: `(?i)(\\\"name\\\":\\\"[^\"]*user[^\"]*\\\",\\\"value\\\":\\\")(?P<mask>[^\"]*)(\\\")`,
 				scan:  `(?i)user`,
 			},
@@ -233,7 +233,7 @@ func getRedactors(path string) ([]Redactor, error) {
 		// connection strings with username and password
 		// http://user:password@host:8888
 		{
-			regex: lineRedactor{
+			regex: LineRedactor{
 				regex: `(?i)(https?|ftp)(:\/\/)(?P<mask>[^:\"\/]+){1}(:)(?P<mask>[^@\"\/]+){1}(?P<host>@[^:\/\s\"]+){1}(?P<port>:[\d]+)?`,
 				scan:  `(?i)https?|ftp`,
 			},
@@ -241,7 +241,7 @@ func getRedactors(path string) ([]Redactor, error) {
 		},
 		// user:password@tcp(host:3309)/db-name
 		{
-			regex: lineRedactor{
+			regex: LineRedactor{
 				regex: `\b(?P<mask>[^:\"\/]*){1}(:)(?P<mask>[^:\"\/]*){1}(@tcp\()(?P<mask>[^:\"\/]*){1}(?P<port>:[\d]*)?(\)\/)(?P<mask>[\w\d\S-_]+){1}\b`,
 				scan:  `@tcp`,
 			},
@@ -250,63 +250,63 @@ func getRedactors(path string) ([]Redactor, error) {
 		// standard postgres and mysql connection strings
 		// protocol://user:password@host:5432/db
 		{
-			regex: lineRedactor{
+			regex: LineRedactor{
 				regex: `\b(\w*:\/\/)(?P<mask>[^:\"\/]*){1}(:)(?P<mask>[^:\"\/]*){1}(@)(?P<mask>[^:\"\/]*){1}(?P<port>:[\d]*)?(\/)(?P<mask>[\w\d\S-_]+){1}\b`,
 				scan:  `\b(\w*:\/\/)([^:\"\/]*)(:)([^@\"\/]*)(@)([^:\"\/]*)(:[\d]*)?(\/)([\w\d\S-_]+)\b`,
 			},
 			name: "Redact database connection strings that contain username and password",
 		},
 		{
-			regex: lineRedactor{
+			regex: LineRedactor{
 				regex: `(?i)(Data Source *= *)(?P<mask>[^\;]+)(;)`,
 				scan:  `(?i)Data Source`,
 			},
 			name: "Redact 'Data Source' values commonly found in database connection strings",
 		},
 		{
-			regex: lineRedactor{
+			regex: LineRedactor{
 				regex: `(?i)(location *= *)(?P<mask>[^\;]+)(;)`,
 				scan:  `(?i)location`,
 			},
 			name: "Redact 'location' values commonly found in database connection strings",
 		},
 		{
-			regex: lineRedactor{
+			regex: LineRedactor{
 				regex: `(?i)(User ID *= *)(?P<mask>[^\;]+)(;)`,
 				scan:  `(?i)User ID`,
 			},
 			name: "Redact 'User ID' values commonly found in database connection strings",
 		},
 		{
-			regex: lineRedactor{
+			regex: LineRedactor{
 				regex: `(?i)(password *= *)(?P<mask>[^\;]+)(;)`,
 				scan:  `(?i)password`,
 			},
 			name: "Redact 'password' values commonly found in database connection strings",
 		},
 		{
-			regex: lineRedactor{
+			regex: LineRedactor{
 				regex: `(?i)(Server *= *)(?P<mask>[^\;]+)(;)`,
 				scan:  `(?i)Server`,
 			},
 			name: "Redact 'Server' values commonly found in database connection strings",
 		},
 		{
-			regex: lineRedactor{
+			regex: LineRedactor{
 				regex: `(?i)(Database *= *)(?P<mask>[^\;]+)(;)`,
 				scan:  `(?i)Database`,
 			},
 			name: "Redact 'Database' values commonly found in database connection strings",
 		},
 		{
-			regex: lineRedactor{
+			regex: LineRedactor{
 				regex: `(?i)(Uid *= *)(?P<mask>[^\;]+)(;)`,
 				scan:  `(?i)Uid`,
 			},
 			name: "Redact 'UID' values commonly found in database connection strings",
 		},
 		{
-			regex: lineRedactor{
+			regex: LineRedactor{
 				regex: `(?i)(Pwd *= *)(?P<mask>[^\;]+)(;)`,
 				scan:  `(?i)Pwd`,
 			},
@@ -324,12 +324,12 @@ func getRedactors(path string) ([]Redactor, error) {
 	}
 
 	doubleLines := []struct {
-		selector lineRedactor
+		selector LineRedactor
 		redactor string
 		name     string
 	}{
 		{
-			selector: lineRedactor{
+			selector: LineRedactor{
 				regex: `(?i)"name": *"[^\"]*SECRET_?ACCESS_?KEY[^\"]*"`,
 				scan:  `SECRET_?ACCESS_?KEY`,
 			},
@@ -337,7 +337,7 @@ func getRedactors(path string) ([]Redactor, error) {
 			name:     "Redact AWS Secret Access Key values in multiline JSON",
 		},
 		{
-			selector: lineRedactor{
+			selector: LineRedactor{
 				regex: `(?i)"name": *"[^\"]*ACCESS_?KEY_?ID[^\"]*"`,
 				scan:  `(?i)ACCESS_?KEY_?ID`,
 			},
@@ -345,7 +345,7 @@ func getRedactors(path string) ([]Redactor, error) {
 			name:     "Redact AWS Access Key ID values in multiline JSON",
 		},
 		{
-			selector: lineRedactor{
+			selector: LineRedactor{
 				regex: `(?i)"name": *"[^\"]*OWNER_?ACCOUNT[^\"]*"`,
 				scan:  `(?i)OWNER_?ACCOUNT`,
 			},
@@ -353,7 +353,7 @@ func getRedactors(path string) ([]Redactor, error) {
 			name:     "Redact AWS Owner and Account Numbers in multiline JSON",
 		},
 		{
-			selector: lineRedactor{
+			selector: LineRedactor{
 				regex: `(?i)"name": *".*password[^\"]*"`,
 				scan:  `(?i)password`,
 			},
@@ -361,7 +361,7 @@ func getRedactors(path string) ([]Redactor, error) {
 			name:     "Redact password environment variables in multiline JSON",
 		},
 		{
-			selector: lineRedactor{
+			selector: LineRedactor{
 				regex: `(?i)"name": *".*token[^\"]*"`,
 				scan:  `(?i)token`,
 			},
@@ -369,7 +369,7 @@ func getRedactors(path string) ([]Redactor, error) {
 			name:     "Redact values that look like API tokens in multiline JSON",
 		},
 		{
-			selector: lineRedactor{
+			selector: LineRedactor{
 				regex: `(?i)"name": *".*database[^\"]*"`,
 				scan:  `(?i)database`,
 			},
@@ -377,7 +377,7 @@ func getRedactors(path string) ([]Redactor, error) {
 			name:     "Redact database connection strings in multiline JSON",
 		},
 		{
-			selector: lineRedactor{
+			selector: LineRedactor{
 				regex: `(?i)"name": *".*user[^\"]*"`,
 				scan:  `(?i)user`,
 			},
@@ -385,7 +385,7 @@ func getRedactors(path string) ([]Redactor, error) {
 			name:     "Redact usernames in multiline JSON",
 		},
 		{
-			selector: lineRedactor{
+			selector: LineRedactor{
 				regex: `(?i)"entity": *"(osd|client|mgr)\..*[^\"]*"`,
 				scan:  `(?i)(osd|client|mgr)`,
 			},

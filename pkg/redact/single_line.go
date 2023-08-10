@@ -15,7 +15,7 @@ type SingleLineRedactor struct {
 	isDefault  bool
 }
 
-func NewSingleLineRedactor(re lineRedactor, maskText, path, name string, isDefault bool) (*SingleLineRedactor, error) {
+func NewSingleLineRedactor(re LineRedactor, maskText, path, name string, isDefault bool) (*SingleLineRedactor, error) {
 	var scanCompiled *regexp.Regexp
 	compiled, err := regexp.Compile(re.regex)
 	if err != nil {

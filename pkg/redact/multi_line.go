@@ -17,7 +17,7 @@ type MultiLineRedactor struct {
 	isDefault  bool
 }
 
-func NewMultiLineRedactor(re1 lineRedactor, re2 string, maskText, path, name string, isDefault bool) (*MultiLineRedactor, error) {
+func NewMultiLineRedactor(re1 LineRedactor, re2 string, maskText, path, name string, isDefault bool) (*MultiLineRedactor, error) {
 	var scanCompiled *regexp.Regexp
 	compiled1, err := regexp.Compile(re1.regex)
 	if err != nil {

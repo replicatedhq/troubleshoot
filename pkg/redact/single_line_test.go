@@ -162,7 +162,7 @@ func TestNewSingleLineRedactor(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			req := require.New(t)
 			ResetRedactionList()
-			reRunner, err := NewSingleLineRedactor(lineRedactor{
+			reRunner, err := NewSingleLineRedactor(LineRedactor{
 				regex: tt.re,
 			}, MASK_TEXT, "testfile", tt.name, false)
 			req.NoError(err)
