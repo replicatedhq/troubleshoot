@@ -222,7 +222,7 @@ func (s FioStats) Print() string {
 }
 
 func (s FioStats) FSPerfResults() FSPerfResults {
-	var fsPerf = &FSPerfResults{
+	return FSPerfResults{
 		Min:     time.Duration(s.LatNs.Min),
 		Max:     time.Duration(s.LatNs.Max),
 		Average: time.Duration(s.LatNs.Mean),
@@ -244,7 +244,6 @@ func (s FioStats) FSPerfResults() FSPerfResults {
 		P9995:   time.Duration(s.LatNs.Percentile.P9995),
 		P9999:   time.Duration(s.LatNs.Percentile.P9999),
 	}
-	return *fsPerf
 }
 
 type FioNS struct {

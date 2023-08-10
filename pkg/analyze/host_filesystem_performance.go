@@ -47,6 +47,10 @@ func (a *AnalyzeHostFilesystemPerformance) Analyze(
 		return nil, errors.Wrapf(err, "failed to unmarshal fio results from %s", name)
 	}
 
+	if len(fioResult.Jobs) == 0 {
+		return nil, errors.Errorf("no jobs found in fio results from %s", name)
+	}
+
 	fioWriteLatency := fioResult.Jobs[0].Sync
 
 	fsPerf := fioWriteLatency.FSPerfResults()
