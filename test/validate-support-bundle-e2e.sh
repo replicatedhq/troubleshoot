@@ -38,12 +38,23 @@ if grep -q "No matching files" "$tmpdir/$bundle_directory_name/analysis.json"; t
     exit 1
 fi
 
-if [ -d "$tmpdir/$bundle_directory_name/cluster-resources/serviceaccounts" ]; then
-    echo "Service Accounts directory was collected"
-else
-    echo "The serviceaccounts folder does not exist in /cluster-resources/ path."
-    exit 1
-fi 
+base_path="$tmpdir/$bundle_directory_name/cluster-resources"
+folders=("serviceaccounts" "services" "leases")
+
+for folder in "${folders[@]}"; do
+    if [ -d "$base_path/$folder" ]; then
+        echo "$folder directory was collected"
+        if [ "$(ls -A $base_path/$folder)" ]; then
+            echo "$folder directory is not empty"
+        else
+            echo "$folder directory is empty"
+            exit 1
+        fi
+    else
+        echo "The $folder folder does not exist in $base_path path."
+        exit 1
+    fi
+done
 
 EXIT_STATUS=0
 jq -r '.[].insight.severity' "$tmpdir/$bundle_directory_name/analysis.json" | while read i; do
