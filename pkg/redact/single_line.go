@@ -59,12 +59,15 @@ func (r *SingleLineRedactor) Redact(input io.Reader, path string) io.Reader {
 		for scanner.Scan() {
 			lineNum++
 			line := scanner.Text()
-			lowerLine := strings.ToLower(line)
-			// if scan is not nil, do not redact if the line does not match
-			if r.scan != nil && !r.scan.MatchString(lowerLine) {
-				bufferedWriter.WriteString(line)
-				bufferedWriter.WriteByte('\n')
-				continue
+
+			// is scan is not nil, then check if line matches scan by lowercasing it
+			if r.scan != nil {
+				lowerLine := strings.ToLower(line)
+				if !r.scan.MatchString(lowerLine) {
+					bufferedWriter.WriteString(line)
+					bufferedWriter.WriteByte('\n')
+					continue
+				}
 			}
 
 			// if scan matches, but re does not, do not redact
