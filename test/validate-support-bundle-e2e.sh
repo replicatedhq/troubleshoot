@@ -39,7 +39,7 @@ if grep -q "No matching files" "$tmpdir/$bundle_directory_name/analysis.json"; t
 fi
 
 base_path="$tmpdir/$bundle_directory_name/cluster-resources"
-folders=("serviceaccounts" "services" "leases")
+folders=("auth-cani-list" "configmaps" "daemonsets" "endpoints" "events" "deployments" "leases" "services" "pvcs" "pvcs" "jobs" "roles" "statefulsets" "network-policy" "pods" "volumeattachments" "resource-quota" "rolebindings" "serviceaccounts")
 
 for folder in "${folders[@]}"; do
     if [ -d "$base_path/$folder" ]; then
