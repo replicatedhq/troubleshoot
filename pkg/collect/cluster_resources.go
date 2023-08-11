@@ -1978,7 +1978,7 @@ func endpoints(ctx context.Context, client *kubernetes.Clientset, namespaces []s
 	return endpointsByNamespace, errorsByNamespace
 }
 
-func serviceAccounts(ctx context.Context, client *kubernetes.Clientset, namespaces []string) (map[string][]byte, map[string]string) {
+func serviceAccounts(ctx context.Context, client kubernetes.Interface, namespaces []string) (map[string][]byte, map[string]string) {
 	serviceAccountsByNamespace := make(map[string][]byte)
 	errorsByNamespace := make(map[string]string)
 
@@ -2013,7 +2013,7 @@ func serviceAccounts(ctx context.Context, client *kubernetes.Clientset, namespac
 	return serviceAccountsByNamespace, errorsByNamespace
 }
 
-func leases(ctx context.Context, client *kubernetes.Clientset, namespaces []string) (map[string][]byte, map[string]string) {
+func leases(ctx context.Context, client kubernetes.Interface, namespaces []string) (map[string][]byte, map[string]string) {
 	leasesByNamespace := make(map[string][]byte)
 	errorsByNamespace := make(map[string]string)
 

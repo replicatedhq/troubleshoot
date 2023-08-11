@@ -1,13 +1,115 @@
 package collect
 
 import (
+	"context"
 	"reflect"
 	"testing"
 
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	v1 "k8s.io/api/coordination/v1"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
+	testclient "k8s.io/client-go/kubernetes/fake"
 )
+
+func Test_Leases(t *testing.T) {
+	tests := []struct {
+		name       string
+		leaseName  string
+		namespaces []string
+	}{
+		{
+			name:       "single namespace",
+			leaseName:  "default",
+			namespaces: []string{"default"},
+		},
+		{
+			name:       "multiple namespaces",
+			leaseName:  "default",
+			namespaces: []string{"default", "test"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			client := testclient.NewSimpleClientset()
+			ctx := context.Background()
+			err := createTestLeases(client, tt.leaseName, tt.namespaces)
+			require.NoError(t, err)
+
+			leases, _ := leases(ctx, client, tt.namespaces)
+			assert.Equal(t, len(tt.namespaces), len(leases))
+
+			for _, ns := range tt.namespaces {
+				assert.NotEmpty(t, leases[ns+".json"])
+			}
+		})
+	}
+}
+
+func createTestLeases(client kubernetes.Interface, leaseName string, namespaces []string) error {
+	for _, ns := range namespaces {
+		_, err := client.CoordinationV1().Leases(ns).Create(context.Background(), &v1.Lease{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: leaseName,
+			},
+		}, metav1.CreateOptions{})
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func Test_ServiceAccounts(t *testing.T) {
+	tests := []struct {
+		name               string
+		serviceAccountName string
+		namespaces         []string
+	}{
+		{
+			name:               "single namespace",
+			serviceAccountName: "default",
+			namespaces:         []string{"default"},
+		},
+		{
+			name:               "multiple namespaces",
+			serviceAccountName: "default",
+			namespaces:         []string{"default", "test"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			client := testclient.NewSimpleClientset()
+			ctx := context.Background()
+			err := createTestServiceAccounts(client, tt.serviceAccountName, tt.namespaces)
+			require.NoError(t, err)
+
+			servicesAccounts, _ := serviceAccounts(ctx, client, tt.namespaces)
+			assert.Equal(t, len(tt.namespaces), len(servicesAccounts))
+
+			for _, ns := range tt.namespaces {
+				assert.NotEmpty(t, servicesAccounts[ns+".json"])
+			}
+		})
+	}
+}
+
+func createTestServiceAccounts(client kubernetes.Interface, serviceName string, namespaces []string) error {
+	for _, ns := range namespaces {
+		_, err := client.CoreV1().ServiceAccounts(ns).Create(context.Background(), &corev1.ServiceAccount{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: serviceName,
+			},
+		}, metav1.CreateOptions{})
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
 
 func Test_SelectCRDVersionByPriority(t *testing.T) {
 	assert.Equal(t, "v1alpha3", selectCRDVersionByPriority([]string{"v1alpha2", "v1alpha3"}))
