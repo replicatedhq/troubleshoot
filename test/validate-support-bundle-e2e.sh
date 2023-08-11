@@ -38,6 +38,13 @@ if grep -q "No matching files" "$tmpdir/$bundle_directory_name/analysis.json"; t
     exit 1
 fi
 
+if [ -d "$tmpdir/$bundle_directory_name/cluster-resources/serviceaccounts" ]; then
+    echo "Service Accounts directory was collected"
+else
+    echo "The serviceaccounts folder does not exist in /cluster-resources/ path."
+    exit 1
+fi 
+
 EXIT_STATUS=0
 jq -r '.[].insight.severity' "$tmpdir/$bundle_directory_name/analysis.json" | while read i; do
     if [ $i == "error" ]; then
