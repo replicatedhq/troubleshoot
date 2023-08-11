@@ -380,10 +380,8 @@ func (c *CollectClusterResources) Collect(progressChan chan<- interface{}) (Coll
 	output.SaveResult(c.BundlePath, path.Join(constants.CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s-errors.json", constants.CLUSTER_RESOURCES_LEASES)), marshalErrors(leasesErrors))
 
 	// Volume Attachments
-	volumeAttachments, volumeAttachmentsErrors := volumeAttachments(ctx, client, namespaceNames)
-	for k, v := range volumeAttachments {
-		output.SaveResult(c.BundlePath, path.Join(constants.CLUSTER_RESOURCES_DIR, constants.CLUSTER_RESOURCES_VOLUME_ATTACHMENTS, k), bytes.NewBuffer(v))
-	}
+	volumeAttachments, volumeAttachmentsErrors := volumeAttachments(ctx, client)
+	output.SaveResult(c.BundlePath, path.Join(constants.CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s.json", constants.CLUSTER_RESOURCES_VOLUME_ATTACHMENTS)), bytes.NewBuffer(volumeAttachments))
 	output.SaveResult(c.BundlePath, path.Join(constants.CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s-errors.json", constants.CLUSTER_RESOURCES_VOLUME_ATTACHMENTS)), marshalErrors(volumeAttachmentsErrors))
 
 	// ConfigMaps
@@ -2048,42 +2046,33 @@ func leases(ctx context.Context, client kubernetes.Interface, namespaces []strin
 	return leasesByNamespace, errorsByNamespace
 }
 
-func volumeAttachments(ctx context.Context, client *kubernetes.Clientset, namespaces []string) (map[string][]byte, map[string]string) {
-	volumeAttachmentByNamespace := make(map[string][]byte)
-	errorsByNamespace := make(map[string]string)
-
-	for _, namespace := range namespaces {
-		volumeAttachments, err := client.StorageV1().VolumeAttachments().List(ctx, metav1.ListOptions{})
-		if err != nil {
-			errorsByNamespace[namespace] = err.Error()
-			continue
-		}
-
-		gvk, err := apiutil.GVKForObject(volumeAttachments, scheme.Scheme)
-		if err == nil {
-			volumeAttachments.GetObjectKind().SetGroupVersionKind(gvk)
-		}
-
-		for i, o := range volumeAttachments.Items {
-			gvk, err := apiutil.GVKForObject(&o, scheme.Scheme)
-			if err == nil {
-				volumeAttachments.Items[i].GetObjectKind().SetGroupVersionKind(gvk)
-			}
-		}
-
-		b, err := json.MarshalIndent(volumeAttachments, "", "  ")
-		if err != nil {
-			errorsByNamespace[namespace] = err.Error()
-			continue
-		}
-
-		volumeAttachmentByNamespace[namespace+".json"] = b
+func volumeAttachments(ctx context.Context, client kubernetes.Interface) ([]byte, []string) {
+	volumeAttachments, err := client.StorageV1().VolumeAttachments().List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return nil, []string{err.Error()}
 	}
 
-	return volumeAttachmentByNamespace, errorsByNamespace
+	gvk, err := apiutil.GVKForObject(volumeAttachments, scheme.Scheme)
+	if err == nil {
+		volumeAttachments.GetObjectKind().SetGroupVersionKind(gvk)
+	}
+
+	for i, o := range volumeAttachments.Items {
+		gvk, err := apiutil.GVKForObject(&o, scheme.Scheme)
+		if err == nil {
+			volumeAttachments.Items[i].GetObjectKind().SetGroupVersionKind(gvk)
+		}
+	}
+
+	b, err := json.MarshalIndent(volumeAttachments, "", "  ")
+	if err != nil {
+		return nil, []string{err.Error()}
+	}
+
+	return b, nil
 }
 
-func configMaps(ctx context.Context, client *kubernetes.Clientset, namespaces []string) (map[string][]byte, map[string]string) {
+func configMaps(ctx context.Context, client kubernetes.Interface, namespaces []string) (map[string][]byte, map[string]string) {
 	configmapByNamespace := make(map[string][]byte)
 	errorsByNamespace := make(map[string]string)
 
