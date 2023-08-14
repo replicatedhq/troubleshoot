@@ -41,7 +41,7 @@ fi
 base_path="$tmpdir/$bundle_directory_name/cluster-resources"
 folders=("auth-cani-list" "configmaps" "daemonsets" "endpoints" "events" "deployments" "leases" "services" "pvcs" "pvcs" "jobs" "roles" "statefulsets" "network-policy" "pods" "resource-quota" "rolebindings" "serviceaccounts")
 
-files=("namespaces" "volumeattachments" "pvs" "groups" "nodes" "priorityclasses" "resources")
+files=("volumeattachments")
 
 for folder in "${folders[@]}"; do
     if [ -d "$base_path/$folder" ]; then
@@ -61,6 +61,7 @@ done
 for file in "${files[@]}"; do
     if [ -e "$base_path/$file.json" ]
     then
+        cat "$base_path/$file.json"
         echo "$file.json file was collected"
     else
         echo "The $file.json file does not exist in $base_path path."
