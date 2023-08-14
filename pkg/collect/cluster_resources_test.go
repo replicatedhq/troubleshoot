@@ -2,6 +2,7 @@ package collect
 
 import (
 	"context"
+	"encoding/json"
 	"reflect"
 	"testing"
 
@@ -18,47 +19,62 @@ import (
 
 func Test_ConfigMaps(t *testing.T) {
 	tests := []struct {
-		name          string
-		configMapName string
-		namespaces    []string
+		name           string
+		configMapNames []string
+		namespaces     []string
 	}{
 		{
-			name:          "single namespace",
-			configMapName: "default",
-			namespaces:    []string{"default"},
+			name:           "single namespace",
+			configMapNames: []string{"default"},
+			namespaces:     []string{"default"},
 		},
 		{
-			name:          "multiple namespaces",
-			configMapName: "default",
-			namespaces:    []string{"default", "test"},
+			name:           "multiple namespaces",
+			configMapNames: []string{"default"},
+			namespaces:     []string{"default", "test"},
+		},
+		{
+			name:           "multiple in different namespaces",
+			configMapNames: []string{"default", "test-cm"},
+			namespaces:     []string{"default", "test"},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			client := testclient.NewSimpleClientset()
 			ctx := context.Background()
-			err := createConfigMaps(client, tt.configMapName, tt.namespaces)
-			require.NoError(t, err)
+			err := createConfigMaps(client, tt.configMapNames, tt.namespaces)
+			assert.NoError(t, err)
 
 			configMaps, _ := configMaps(ctx, client, tt.namespaces)
 			assert.Equal(t, len(tt.namespaces), len(configMaps))
 
 			for _, ns := range tt.namespaces {
 				assert.NotEmpty(t, configMaps[ns+".json"])
+				var configmapList corev1.ConfigMapList
+				err := json.Unmarshal(configMaps[ns+".json"], &configmapList)
+				assert.NoError(t, err)
+				// Ensure the ConfigMap names match those in the list
+				assert.Equal(t, len(configmapList.Items), len(tt.configMapNames))
+				for _, cm := range configmapList.Items {
+					assert.Contains(t, tt.configMapNames, cm.ObjectMeta.Name)
+				}
 			}
 		})
 	}
 }
 
-func createConfigMaps(client kubernetes.Interface, configMapName string, namespaces []string) error {
+func createConfigMaps(client kubernetes.Interface, configMapNames []string, namespaces []string) error {
 	for _, ns := range namespaces {
-		_, err := client.CoreV1().ConfigMaps(ns).Create(context.Background(), &corev1.ConfigMap{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: configMapName,
-			},
-		}, metav1.CreateOptions{})
-		if err != nil {
-			return err
+		for _, cmName := range configMapNames {
+			_, err := client.CoreV1().ConfigMaps(ns).Create(context.Background(), &corev1.ConfigMap{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: cmName,
+				},
+			}, metav1.CreateOptions{})
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil
@@ -66,78 +82,45 @@ func createConfigMaps(client kubernetes.Interface, configMapName string, namespa
 
 func Test_VolumeAttachments(t *testing.T) {
 	tests := []struct {
-		name      string
-		leaseName string
+		name                  string
+		volumeAttachmentNames []string
 	}{
 		{
-			name:      "single namespace",
-			leaseName: "default",
+			name:                  "single volume attachment",
+			volumeAttachmentNames: []string{"default"},
+		},
+
+		{
+			name:                  "multiple volume attachments",
+			volumeAttachmentNames: []string{"default", "test"},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			client := testclient.NewSimpleClientset()
 			ctx := context.Background()
-			err := createTestVolumeAttachments(client, tt.leaseName)
-			require.NoError(t, err)
+			err := createTestVolumeAttachments(client, tt.volumeAttachmentNames)
+			assert.NoError(t, err)
 
 			volumeAttachments, _ := volumeAttachments(ctx, client)
 			assert.NotEmpty(t, volumeAttachments)
-		})
-	}
-}
-
-func createTestVolumeAttachments(client kubernetes.Interface, leaseName string) error {
-	_, err := client.StorageV1().VolumeAttachments().Create(context.Background(), &storagev1.VolumeAttachment{
-		ObjectMeta: metav1.ObjectMeta{
-			Name: leaseName,
-		},
-	}, metav1.CreateOptions{})
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
-func Test_Leases(t *testing.T) {
-	tests := []struct {
-		name       string
-		leaseName  string
-		namespaces []string
-	}{
-		{
-			name:       "single namespace",
-			leaseName:  "default",
-			namespaces: []string{"default"},
-		},
-		{
-			name:       "multiple namespaces",
-			leaseName:  "default",
-			namespaces: []string{"default", "test"},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			client := testclient.NewSimpleClientset()
-			ctx := context.Background()
-			err := createTestLeases(client, tt.leaseName, tt.namespaces)
-			require.NoError(t, err)
-
-			leases, _ := leases(ctx, client, tt.namespaces)
-			assert.Equal(t, len(tt.namespaces), len(leases))
-
-			for _, ns := range tt.namespaces {
-				assert.NotEmpty(t, leases[ns+".json"])
+			var volumeAttachmentList storagev1.VolumeAttachmentList
+			err = json.Unmarshal(volumeAttachments, &volumeAttachmentList)
+			assert.NoError(t, err)
+			// Ensure the VolumeAttachment names match those in the list
+			assert.Equal(t, len(volumeAttachmentList.Items), len(tt.volumeAttachmentNames))
+			for _, va := range volumeAttachmentList.Items {
+				assert.Contains(t, tt.volumeAttachmentNames, va.ObjectMeta.Name)
 			}
 		})
 	}
 }
 
-func createTestLeases(client kubernetes.Interface, leaseName string, namespaces []string) error {
-	for _, ns := range namespaces {
-		_, err := client.CoordinationV1().Leases(ns).Create(context.Background(), &v1.Lease{
+func createTestVolumeAttachments(client kubernetes.Interface, volumeAttachmentNames []string) error {
+	for _, vaName := range volumeAttachmentNames {
+		_, err := client.StorageV1().VolumeAttachments().Create(context.Background(), &storagev1.VolumeAttachment{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: leaseName,
+				Name: vaName,
 			},
 		}, metav1.CreateOptions{})
 		if err != nil {
@@ -147,49 +130,127 @@ func createTestLeases(client kubernetes.Interface, leaseName string, namespaces 
 	return nil
 }
 
-func Test_ServiceAccounts(t *testing.T) {
+func Test_Leases(t *testing.T) {
 	tests := []struct {
-		name               string
-		serviceAccountName string
-		namespaces         []string
+		name       string
+		leaseNames []string
+		namespaces []string
 	}{
 		{
-			name:               "single namespace",
-			serviceAccountName: "default",
-			namespaces:         []string{"default"},
+			name:       "single namespace",
+			leaseNames: []string{"default"},
+			namespaces: []string{"default"},
 		},
 		{
-			name:               "multiple namespaces",
-			serviceAccountName: "default",
-			namespaces:         []string{"default", "test"},
+			name:       "multiple namespaces",
+			leaseNames: []string{"default"},
+			namespaces: []string{"default", "test"},
+		},
+		{
+			name:       "multiple in different namespaces",
+			leaseNames: []string{"default", "test-lease"},
+			namespaces: []string{"default", "test"},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			client := testclient.NewSimpleClientset()
 			ctx := context.Background()
-			err := createTestServiceAccounts(client, tt.serviceAccountName, tt.namespaces)
-			require.NoError(t, err)
+			err := createTestLeases(client, tt.leaseNames, tt.namespaces)
+			assert.NoError(t, err)
+
+			leases, _ := leases(ctx, client, tt.namespaces)
+			assert.Equal(t, len(tt.namespaces), len(leases))
+
+			for _, ns := range tt.namespaces {
+				assert.NotEmpty(t, leases[ns+".json"])
+				var leaseList v1.LeaseList
+				err := json.Unmarshal(leases[ns+".json"], &leaseList)
+				assert.NoError(t, err)
+				// Ensure the Lease names match those in the list
+				assert.Equal(t, len(leaseList.Items), len(tt.leaseNames))
+				for _, lease := range leaseList.Items {
+					assert.Contains(t, tt.leaseNames, lease.ObjectMeta.Name)
+				}
+			}
+		})
+	}
+}
+
+func createTestLeases(client kubernetes.Interface, leaseNames []string, namespaces []string) error {
+	for _, ns := range namespaces {
+		for _, leaseName := range leaseNames {
+			_, err := client.CoordinationV1().Leases(ns).Create(context.Background(), &v1.Lease{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: leaseName,
+				},
+			}, metav1.CreateOptions{})
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func Test_ServiceAccounts(t *testing.T) {
+	tests := []struct {
+		name                string
+		serviceAccountNames []string
+		namespaces          []string
+	}{
+		{
+			name:                "single namespace",
+			serviceAccountNames: []string{"default"},
+			namespaces:          []string{"default"},
+		},
+		{
+			name:                "multiple namespaces",
+			serviceAccountNames: []string{"default"},
+			namespaces:          []string{"default", "test"},
+		},
+		{
+			name:                "multiple in different namespaces",
+			serviceAccountNames: []string{"default", "test-sa"},
+			namespaces:          []string{"default", "test"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			client := testclient.NewSimpleClientset()
+			ctx := context.Background()
+			err := createTestServiceAccounts(client, tt.serviceAccountNames, tt.namespaces)
+			assert.NoError(t, err)
 
 			servicesAccounts, _ := serviceAccounts(ctx, client, tt.namespaces)
 			assert.Equal(t, len(tt.namespaces), len(servicesAccounts))
 
 			for _, ns := range tt.namespaces {
 				assert.NotEmpty(t, servicesAccounts[ns+".json"])
+				var serviceAccountList corev1.ServiceAccountList
+				err := json.Unmarshal(servicesAccounts[ns+".json"], &serviceAccountList)
+				assert.NoError(t, err)
+				// Ensure the ServiceAccount names match those in the list
+				assert.Equal(t, len(serviceAccountList.Items), len(tt.serviceAccountNames))
+				for _, sa := range serviceAccountList.Items {
+					assert.Contains(t, tt.serviceAccountNames, sa.ObjectMeta.Name)
+				}
 			}
 		})
 	}
 }
 
-func createTestServiceAccounts(client kubernetes.Interface, serviceName string, namespaces []string) error {
+func createTestServiceAccounts(client kubernetes.Interface, serviceAccountNames []string, namespaces []string) error {
 	for _, ns := range namespaces {
-		_, err := client.CoreV1().ServiceAccounts(ns).Create(context.Background(), &corev1.ServiceAccount{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: serviceName,
-			},
-		}, metav1.CreateOptions{})
-		if err != nil {
-			return err
+		for _, saName := range serviceAccountNames {
+			_, err := client.CoreV1().ServiceAccounts(ns).Create(context.Background(), &corev1.ServiceAccount{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: saName,
+				},
+			}, metav1.CreateOptions{})
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil
