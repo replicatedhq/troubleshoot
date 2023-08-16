@@ -97,7 +97,7 @@ func (a *AnalyzeJsonCompare) analyzeJsonCompare(analyzer *troubleshootv1beta2.Js
 		IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg",
 	}
 
-	equal := reflect.DeepEqual(actual, expected)
+	equal := deepEqualWithSlicesOrderingIgnored(actual, expected)
 
 	for _, outcome := range analyzer.Outcomes {
 		if outcome.Fail != nil {
@@ -158,4 +158,48 @@ func (a *AnalyzeJsonCompare) analyzeJsonCompare(analyzer *troubleshootv1beta2.Js
 		IsFail:  true,
 		Message: "Invalid analyzer",
 	}, nil
+}
+
+func deepEqualWithSlicesOrderingIgnored(actual, expected interface{}) bool {
+	ra, re := reflect.ValueOf(actual), reflect.ValueOf(expected)
+
+	// If types are different, they're not equal
+	if ra.Kind() != re.Kind() {
+		return false
+	}
+
+	return compareUnorderedSlices(ra.Interface().([]interface{}), re.Interface().([]interface{}))
+}
+
+// compareUnorderedSlices compares two slices of interfaces and returns true if they contain the same values
+func compareUnorderedSlices(actual, expected []interface{}) bool {
+	if len(actual) != len(expected) {
+		return false
+	}
+
+	ra, re := reflect.ValueOf(actual), reflect.ValueOf(expected)
+
+	for i := 0; i < ra.Len(); i++ {
+		if !elementExistsInSlices(re, ra.Index(i).Interface()) {
+			return false
+		}
+	}
+
+	for i := 0; i < re.Len(); i++ {
+		if !elementExistsInSlices(ra, re.Index(i).Interface()) {
+			return false
+		}
+	}
+
+	return true
+}
+
+func elementExistsInSlices(arr reflect.Value, el interface{}) bool {
+	// Compare slices (reflect.DeepEqual)
+	for i := 0; i < arr.Len(); i++ {
+		if reflect.DeepEqual(arr.Index(i).Interface(), el) {
+			return true
+		}
+	}
+	return false
 }
