@@ -4,8 +4,85 @@ import (
 	"testing"
 
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func Test_compareUnorderedSlices(t *testing.T) {
+	type args struct {
+		actual   []interface{}
+		expected []interface{}
+	}
+
+	tests := []struct {
+		name  string
+		args  args
+		equal bool
+	}{
+		{
+			name: "empty slices",
+			args: args{
+				actual:   []interface{}{},
+				expected: []interface{}{},
+			},
+			equal: true,
+		},
+		{
+			name: "same order slices",
+			args: args{
+				actual:   []interface{}{"a", "b", "c"},
+				expected: []interface{}{"a", "b", "c"},
+			},
+			equal: true,
+		},
+		{
+			name: "unordered slices",
+			args: args{
+				actual:   []interface{}{"a", "b", "c"},
+				expected: []interface{}{"b", "a", "c"},
+			},
+			equal: true,
+		},
+		{
+			name: "different type and unordered slices",
+			args: args{
+				actual:   []interface{}{1, "a", "c"},
+				expected: []interface{}{"a", 1, "c"},
+			},
+			equal: true,
+		},
+		{
+			name: "unordered slices with map",
+			args: args{
+				actual:   []interface{}{map[string]int{"a": 1}, "a", "c"},
+				expected: []interface{}{"a", map[string]int{"a": 1}, "c"},
+			},
+			equal: true,
+		},
+		{
+			name: "unequal slices with duplicates",
+			args: args{
+				actual:   []interface{}{"a", "a", "a", "c"},
+				expected: []interface{}{"a", "a", "c", "c"},
+			},
+			equal: false,
+		},
+		{
+			name: "unordered slices with boolean and strings",
+			args: args{
+				actual:   []interface{}{true, "a", false, true},
+				expected: []interface{}{"a", true, false, true},
+			},
+			equal: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := compareUnorderedSlices(tt.args.actual, tt.args.expected)
+			assert.Equalf(t, tt.equal, got, "compareSlices() = %v, want %v", got, tt.equal)
+		})
+	}
+}
 
 func Test_jsonCompare(t *testing.T) {
 	tests := []struct {

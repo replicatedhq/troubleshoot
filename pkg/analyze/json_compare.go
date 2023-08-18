@@ -3,8 +3,10 @@ package analyzer
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"path/filepath"
 	"reflect"
+	"sort"
 	"strconv"
 
 	"github.com/pkg/errors"
@@ -177,29 +179,40 @@ func compareUnorderedSlices(actual, expected []interface{}) bool {
 		return false
 	}
 
-	ra, re := reflect.ValueOf(actual), reflect.ValueOf(expected)
+	// Sort slices
+	sortSliceOfInterfaces(actual)
+	sortSliceOfInterfaces(expected)
 
-	for i := 0; i < ra.Len(); i++ {
-		if !elementExistsInSlices(re, ra.Index(i).Interface()) {
-			return false
-		}
-	}
-
-	for i := 0; i < re.Len(); i++ {
-		if !elementExistsInSlices(ra, re.Index(i).Interface()) {
-			return false
-		}
-	}
-
-	return true
+	// Compare slices (reflect.DeepEqual)
+	return reflect.DeepEqual(actual, expected)
 }
 
-func elementExistsInSlices(arr reflect.Value, el interface{}) bool {
-	// Compare slices (reflect.DeepEqual)
-	for i := 0; i < arr.Len(); i++ {
-		if reflect.DeepEqual(arr.Index(i).Interface(), el) {
-			return true
+func sortSliceOfInterfaces(slice []interface{}) {
+	sort.Slice(slice, func(i, j int) bool {
+		return order(slice[i], slice[j])
+	})
+}
+
+// order function determines the order of two interface{} values
+func order(a, b interface{}) bool {
+	switch va := a.(type) {
+	case int:
+		if vb, ok := b.(int); ok {
+			return va < vb
+		}
+	case float64:
+		if vb, ok := b.(float64); ok {
+			return va < vb
+		}
+	case string:
+		if vb, ok := b.(string); ok {
+			return va < vb
+		}
+	case bool:
+		if vb, ok := b.(bool); ok {
+			return !va && vb // false < true
 		}
 	}
-	return false
+	// use string representation for comparison
+	return fmt.Sprintf("%v", a) < fmt.Sprintf("%v", b)
 }
