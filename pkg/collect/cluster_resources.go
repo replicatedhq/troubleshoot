@@ -365,6 +365,32 @@ func (c *CollectClusterResources) Collect(progressChan chan<- interface{}) (Coll
 	}
 	output.SaveResult(c.BundlePath, path.Join(constants.CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s-errors.json", constants.CLUSTER_RESOURCES_ENDPOINTS)), marshalErrors(endpointsErrors))
 
+	// Service Accounts
+	servicesAccounts, servicesAccountsErrors := serviceAccounts(ctx, client, namespaceNames)
+	for k, v := range servicesAccounts {
+		output.SaveResult(c.BundlePath, path.Join(constants.CLUSTER_RESOURCES_DIR, constants.CLUSTER_RESOURCES_SERVICE_ACCOUNTS, k), bytes.NewBuffer(v))
+	}
+	output.SaveResult(c.BundlePath, path.Join(constants.CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s-errors.json", constants.CLUSTER_RESOURCES_SERVICE_ACCOUNTS)), marshalErrors(servicesAccountsErrors))
+
+	// Leases
+	leases, leasesErrors := leases(ctx, client, namespaceNames)
+	for k, v := range leases {
+		output.SaveResult(c.BundlePath, path.Join(constants.CLUSTER_RESOURCES_DIR, constants.CLUSTER_RESOURCES_LEASES, k), bytes.NewBuffer(v))
+	}
+	output.SaveResult(c.BundlePath, path.Join(constants.CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s-errors.json", constants.CLUSTER_RESOURCES_LEASES)), marshalErrors(leasesErrors))
+
+	// Volume Attachments
+	volumeAttachments, volumeAttachmentsErrors := volumeAttachments(ctx, client)
+	output.SaveResult(c.BundlePath, path.Join(constants.CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s.json", constants.CLUSTER_RESOURCES_VOLUME_ATTACHMENTS)), bytes.NewBuffer(volumeAttachments))
+	output.SaveResult(c.BundlePath, path.Join(constants.CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s-errors.json", constants.CLUSTER_RESOURCES_VOLUME_ATTACHMENTS)), marshalErrors(volumeAttachmentsErrors))
+
+	// ConfigMaps
+	configMaps, configMapsErrors := configMaps(ctx, client, namespaceNames)
+	for k, v := range configMaps {
+		output.SaveResult(c.BundlePath, path.Join(constants.CLUSTER_RESOURCES_DIR, constants.CLUSTER_RESOURCES_CONFIGMAPS, k), bytes.NewBuffer(v))
+	}
+
+	output.SaveResult(c.BundlePath, path.Join(constants.CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s-errors.json", constants.CLUSTER_RESOURCES_CONFIGMAPS)), marshalErrors(configMapsErrors))
 	return output, nil
 }
 
@@ -1948,4 +1974,135 @@ func endpoints(ctx context.Context, client *kubernetes.Clientset, namespaces []s
 	}
 
 	return endpointsByNamespace, errorsByNamespace
+}
+
+func serviceAccounts(ctx context.Context, client kubernetes.Interface, namespaces []string) (map[string][]byte, map[string]string) {
+	serviceAccountsByNamespace := make(map[string][]byte)
+	errorsByNamespace := make(map[string]string)
+
+	for _, namespace := range namespaces {
+		serviceAccounts, err := client.CoreV1().ServiceAccounts(namespace).List(ctx, metav1.ListOptions{})
+		if err != nil {
+			errorsByNamespace[namespace] = err.Error()
+			continue
+		}
+
+		gvk, err := apiutil.GVKForObject(serviceAccounts, scheme.Scheme)
+		if err == nil {
+			serviceAccounts.GetObjectKind().SetGroupVersionKind(gvk)
+		}
+
+		for i, o := range serviceAccounts.Items {
+			gvk, err := apiutil.GVKForObject(&o, scheme.Scheme)
+			if err == nil {
+				serviceAccounts.Items[i].GetObjectKind().SetGroupVersionKind(gvk)
+			}
+		}
+
+		b, err := json.MarshalIndent(serviceAccounts, "", "  ")
+		if err != nil {
+			errorsByNamespace[namespace] = err.Error()
+			continue
+		}
+
+		serviceAccountsByNamespace[namespace+".json"] = b
+	}
+
+	return serviceAccountsByNamespace, errorsByNamespace
+}
+
+func leases(ctx context.Context, client kubernetes.Interface, namespaces []string) (map[string][]byte, map[string]string) {
+	leasesByNamespace := make(map[string][]byte)
+	errorsByNamespace := make(map[string]string)
+
+	for _, namespace := range namespaces {
+		leases, err := client.CoordinationV1().Leases(namespace).List(ctx, metav1.ListOptions{})
+		if err != nil {
+			errorsByNamespace[namespace] = err.Error()
+			continue
+		}
+
+		gvk, err := apiutil.GVKForObject(leases, scheme.Scheme)
+		if err == nil {
+			leases.GetObjectKind().SetGroupVersionKind(gvk)
+		}
+
+		for i, o := range leases.Items {
+			gvk, err := apiutil.GVKForObject(&o, scheme.Scheme)
+			if err == nil {
+				leases.Items[i].GetObjectKind().SetGroupVersionKind(gvk)
+			}
+		}
+
+		b, err := json.MarshalIndent(leases, "", "  ")
+		if err != nil {
+			errorsByNamespace[namespace] = err.Error()
+			continue
+		}
+
+		leasesByNamespace[namespace+".json"] = b
+	}
+
+	return leasesByNamespace, errorsByNamespace
+}
+
+func volumeAttachments(ctx context.Context, client kubernetes.Interface) ([]byte, []string) {
+	volumeAttachments, err := client.StorageV1().VolumeAttachments().List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return nil, []string{err.Error()}
+	}
+
+	gvk, err := apiutil.GVKForObject(volumeAttachments, scheme.Scheme)
+	if err == nil {
+		volumeAttachments.GetObjectKind().SetGroupVersionKind(gvk)
+	}
+
+	for i, o := range volumeAttachments.Items {
+		gvk, err := apiutil.GVKForObject(&o, scheme.Scheme)
+		if err == nil {
+			volumeAttachments.Items[i].GetObjectKind().SetGroupVersionKind(gvk)
+		}
+	}
+
+	b, err := json.MarshalIndent(volumeAttachments, "", "  ")
+	if err != nil {
+		return nil, []string{err.Error()}
+	}
+
+	return b, nil
+}
+
+func configMaps(ctx context.Context, client kubernetes.Interface, namespaces []string) (map[string][]byte, map[string]string) {
+	configmapByNamespace := make(map[string][]byte)
+	errorsByNamespace := make(map[string]string)
+
+	for _, namespace := range namespaces {
+		configmaps, err := client.CoreV1().ConfigMaps(namespace).List(ctx, metav1.ListOptions{})
+		if err != nil {
+			errorsByNamespace[namespace] = err.Error()
+			continue
+		}
+
+		gvk, err := apiutil.GVKForObject(configmaps, scheme.Scheme)
+		if err == nil {
+			configmaps.GetObjectKind().SetGroupVersionKind(gvk)
+		}
+
+		for i, o := range configmaps.Items {
+			gvk, err := apiutil.GVKForObject(&o, scheme.Scheme)
+			if err == nil {
+				configmaps.Items[i].GetObjectKind().SetGroupVersionKind(gvk)
+			}
+		}
+
+		b, err := json.MarshalIndent(configmaps, "", "  ")
+		if err != nil {
+			errorsByNamespace[namespace] = err.Error()
+			continue
+		}
+
+		configmapByNamespace[namespace+".json"] = b
+	}
+
+	return configmapByNamespace, errorsByNamespace
 }
