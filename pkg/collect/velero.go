@@ -28,6 +28,45 @@ type CollectVelero struct {
 	RBACErrors
 }
 
+type VeleroCommand struct {
+	ID             string
+	Command        []string
+	Args           []string
+	Format         string
+	DefaultTimeout string
+}
+
+var VeleroCommands = []VeleroCommand{
+	{
+		ID:             "get-backups",
+		Command:        []string{"/velero", "get", "backups"},
+		Args:           []string{"-o", "json"},
+		Format:         "json",
+		DefaultTimeout: "30s",
+	},
+	{
+		ID:             "get-restores",
+		Command:        []string{"/velero", "get", "restores"},
+		Args:           []string{"-o", "json"},
+		Format:         "json",
+		DefaultTimeout: "30s",
+	},
+	{
+		ID:             "describe-backups",
+		Command:        []string{"/velero", "describe", "backups"},
+		Args:           []string{"--details", "-o", "json"},
+		Format:         "json",
+		DefaultTimeout: "30s",
+	},
+	{
+		ID:             "describe-restores",
+		Command:        []string{"/velero", "describe", "restores"},
+		Args:           []string{"--details", "-o", "json"},
+		Format:         "json",
+		DefaultTimeout: "30s",
+	},
+}
+
 func (c *CollectVelero) Title() string {
 	return getCollectorName(c)
 }
@@ -70,45 +109,6 @@ func (c *CollectVelero) Collect(progressChan chan<- interface{}) (CollectorResul
 		}
 	}
 	return output, nil
-}
-
-type VeleroCommand struct {
-	ID             string
-	Command        []string
-	Args           []string
-	Format         string
-	DefaultTimeout string
-}
-
-var VeleroCommands = []VeleroCommand{
-	{
-		ID:             "get-backups",
-		Command:        []string{"/velero", "get", "backups"},
-		Args:           []string{"-o", "json"},
-		Format:         "json",
-		DefaultTimeout: "30s",
-	},
-	{
-		ID:             "get-restores",
-		Command:        []string{"/velero", "get", "restores"},
-		Args:           []string{"-o", "json"},
-		Format:         "json",
-		DefaultTimeout: "30s",
-	},
-	{
-		ID:             "describe-backups",
-		Command:        []string{"/velero", "describe", "backups"},
-		Args:           []string{"--details", "-o", "json"},
-		Format:         "json",
-		DefaultTimeout: "30s",
-	},
-	{
-		ID:             "describe-restores",
-		Command:        []string{"/velero", "describe", "restores"},
-		Args:           []string{"--details", "-o", "json"},
-		Format:         "json",
-		DefaultTimeout: "30s",
-	},
 }
 
 func veleroCommandExec(ctx context.Context, progressChan chan<- interface{}, c *CollectVelero, veleroCollector *troubleshootv1beta2.Velero, pod *corev1.Pod, command VeleroCommand, output CollectorResult) error {
