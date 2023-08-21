@@ -3,7 +3,6 @@ package collect
 import (
 	"context"
 	"fmt"
-	"os"
 	"path"
 	"strings"
 
@@ -236,22 +235,4 @@ func labelsToSelector(labels map[string]string) []string {
 		selector = append(selector, fmt.Sprintf("%s=%s", key, value))
 	}
 	return selector
-}
-
-func copyResult(srcResult CollectorResult, dstResult CollectorResult, bundlePath string, srcKey string, dstKey string) error {
-	reader, err := srcResult.GetReader(bundlePath, srcKey)
-	if err != nil {
-		if os.IsNotExist(errors.Cause(err)) {
-			return nil
-		}
-		return errors.Wrap(err, "failed to get reader")
-	}
-	defer reader.Close()
-
-	err = dstResult.SaveResult(bundlePath, dstKey, reader)
-	if err != nil {
-		return errors.Wrap(err, "failed to save file")
-	}
-
-	return nil
 }

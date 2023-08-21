@@ -285,6 +285,7 @@ type Collect struct {
 	Redis            *Database         `json:"redis,omitempty" yaml:"redis,omitempty"`
 	Collectd         *Collectd         `json:"collectd,omitempty" yaml:"collectd,omitempty"`
 	Ceph             *Ceph             `json:"ceph,omitempty" yaml:"ceph,omitempty"`
+	Velero           *Velero           `json:"velero,omitempty" yaml:"velero,omitempty"`
 	Longhorn         *Longhorn         `json:"longhorn,omitempty" yaml:"longhorn,omitempty"`
 	RegistryImages   *RegistryImages   `json:"registryImages,omitempty" yaml:"registryImages,omitempty"`
 	Sysctl           *Sysctl           `json:"sysctl,omitempty" yaml:"sysctl,omitempty"`
@@ -578,6 +579,10 @@ func (c *Collect) GetName() string {
 	if c.Ceph != nil {
 		collector = "ceph"
 		name = c.Ceph.CollectorName
+	}
+	if c.Velero != nil {
+		collector = "velero"
+		name = c.Velero.CollectorName
 	}
 	if c.Longhorn != nil {
 		collector = "longhorn"
