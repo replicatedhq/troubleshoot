@@ -99,7 +99,8 @@ func (a *AnalyzeJsonCompare) analyzeJsonCompare(analyzer *troubleshootv1beta2.Js
 		IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg",
 	}
 
-	equal := deepEqualWithSlicesOrderingIgnored(actual, expected)
+	// due to jsp.Execute may return a slice of results unsorted, we need to sort the slice before comparing
+	equal := deepEqualWithSlicesSorted(actual, expected)
 
 	for _, outcome := range analyzer.Outcomes {
 		if outcome.Fail != nil {
@@ -162,7 +163,10 @@ func (a *AnalyzeJsonCompare) analyzeJsonCompare(analyzer *troubleshootv1beta2.Js
 	}, nil
 }
 
-func deepEqualWithSlicesOrderingIgnored(actual, expected interface{}) bool {
+// deepEqualWithSlicesSorted compares two interfaces and returns true if they contain the same values
+// If the interfaces are slices, they are sorted before comparison to ensure order does not matter
+// If the interfaces are not slices, reflect.DeepEqual is used
+func deepEqualWithSlicesSorted(actual, expected interface{}) bool {
 	ra, re := reflect.ValueOf(actual), reflect.ValueOf(expected)
 
 	// If types are different, they're not equal
@@ -170,11 +174,17 @@ func deepEqualWithSlicesOrderingIgnored(actual, expected interface{}) bool {
 		return false
 	}
 
-	return compareUnorderedSlices(ra.Interface().([]interface{}), re.Interface().([]interface{}))
+	// If types are slices, compare sorted slices
+	if ra.Kind() == reflect.Slice {
+		return compareSortedSlices(ra.Interface().([]interface{}), re.Interface().([]interface{}))
+	}
+
+	// Otherwise, compare values (reflect.DeepEqual)
+	return reflect.DeepEqual(actual, expected)
 }
 
-// compareUnorderedSlices compares two slices of interfaces and returns true if they contain the same values
-func compareUnorderedSlices(actual, expected []interface{}) bool {
+// compareSortedSlices compares two sorted slices of interfaces and returns true if they contain the same values
+func compareSortedSlices(actual, expected []interface{}) bool {
 	if len(actual) != len(expected) {
 		return false
 	}

@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func Test_compareUnorderedSlices(t *testing.T) {
+func Test_compareSortedSlices(t *testing.T) {
 	type args struct {
 		actual   []interface{}
 		expected []interface{}
@@ -78,7 +78,7 @@ func Test_compareUnorderedSlices(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := compareUnorderedSlices(tt.args.actual, tt.args.expected)
+			got := compareSortedSlices(tt.args.actual, tt.args.expected)
 			assert.Equalf(t, tt.equal, got, "compareSlices() = %v, want %v", got, tt.equal)
 		})
 	}
@@ -694,6 +694,50 @@ func Test_jsonCompare(t *testing.T) {
 				IsFail:  true,
 				Title:   "jsonpath-compare-1-1",
 				Message: "fail",
+				IconKey: "kubernetes_text_analyze",
+				IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg",
+			},
+			fileContents: []byte(`{
+				"foo": "bar",
+				"stuff": {
+					"foo": "bar",
+					"bar": true
+				},
+				"morestuff": [
+					{
+						"foo": {
+							"bar": 123
+						}
+					}
+				]
+			}`),
+		},
+		{
+			name: "jsonpath comparison, multiple values",
+			analyzer: troubleshootv1beta2.JsonCompare{
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							Message: "pass",
+						},
+					},
+					{
+						Fail: &troubleshootv1beta2.SingleOutcome{
+							Message: "fail",
+						},
+					},
+				},
+				CollectorName: "jsonpath-compare-2",
+				FileName:      "jsonpath-compare-2.json",
+				JsonPath:      "{$..bar}",
+				Value:         `[true, 123]`,
+			},
+			expectResult: AnalyzeResult{
+				IsPass:  true,
+				IsWarn:  false,
+				IsFail:  false,
+				Title:   "jsonpath-compare-2",
+				Message: "pass",
 				IconKey: "kubernetes_text_analyze",
 				IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg",
 			},
