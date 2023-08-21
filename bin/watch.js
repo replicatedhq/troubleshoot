@@ -15,7 +15,7 @@ const makeList = [
   // 'collect'
 ]
 
-const makeCommands = [
+const commands = [
   // {
   //   command: 'rm',
   //   args: binList,
@@ -39,4 +39,4 @@ commands.push({
 gri([
   'cmd/**/*.go',
   'pkg/**/*.go',
-], makeCommands);
+], commands);
