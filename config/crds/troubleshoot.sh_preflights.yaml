@@ -10326,6 +10326,19 @@ spec:
                       - image
                       - namespace
                       type: object
+                    velero:
+                      properties:
+                        collectorName:
+                          type: string
+                        exclude:
+                          type: BoolString
+                        namespace:
+                          type: string
+                        timeout:
+                          type: string
+                      required:
+                      - namespace
+                      type: object
                   type: object
                 type: array
               remoteCollectors:

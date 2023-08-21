@@ -47,8 +47,28 @@ func (c *CollectVelero) IsExcluded() (bool, error) {
 
 func (c *CollectVelero) Collect(progressChan chan<- interface{}) (CollectorResult, error) {
 	// implement collector
+	ctx := context.TODO()
+
+	if c.Collector.Namespace == "" {
+		c.Collector.Namespace = DefaultVeleroNamespace
+	}
+
+	pod, err := findVeleroPod(ctx, c, c.Collector.Namespace)
+	if err != nil {
+		return nil, err
+	}
 	output := NewResult()
 
+	if pod != nil {
+		for _, command := range VeleroCommands {
+			err := veleroCommandExec(ctx, progressChan, c, c.Collector, pod, command, output)
+			if err != nil {
+				pathPrefix := GetVeleroCollectorFilepath(c.Collector.CollectorName, c.Collector.Namespace)
+				dstFileName := path.Join(pathPrefix, fmt.Sprintf("%s.%s-error", command.ID, command.Format))
+				output.SaveResult(c.BundlePath, dstFileName, strings.NewReader(err.Error()))
+			}
+		}
+	}
 	return output, nil
 }
 
@@ -164,21 +184,3 @@ func GetVeleroCollectorFilepath(name, namespace string) string {
 	parts = append(parts, "velero")
 	return path.Join(parts...)
 }
-
-// func copyResult(srcResult CollectorResult, dstResult CollectorResult, bundlePath string, srcKey string, dstKey string) error {
-// 	reader, err := srcResult.GetReader(bundlePath, srcKey)
-// 	if err != nil {
-// 		if os.IsNotExist(errors.Cause(err)) {
-// 			return nil
-// 		}
-// 		return errors.Wrap(err, "failed to get reader")
-// 	}
-// 	defer reader.Close()
-
-// 	err = dstResult.SaveResult(bundlePath, dstKey, reader)
-// 	if err != nil {
-// 		return errors.Wrap(err, "failed to save file")
-// 	}
-
-// 	return nil
-// }
