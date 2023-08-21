@@ -230,6 +230,12 @@ type Longhorn struct {
 	Timeout       string `json:"timeout,omitempty" yaml:"timeout,omitempty"`
 }
 
+type Velero struct {
+	CollectorMeta `json:",inline" yaml:",inline"`
+	Namespace     string `json:"namespace" yaml:"namespace"`
+	Timeout       string `json:"timeout,omitempty" yaml:"timeout,omitempty"`
+}
+
 type RegistryImages struct {
 	CollectorMeta    `json:",inline" yaml:",inline"`
 	Images           []string          `json:"images" yaml:"images"`
