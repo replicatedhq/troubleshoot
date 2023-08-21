@@ -114,6 +114,8 @@ func GetCollector(collector *troubleshootv1beta2.Collect, bundlePath string, nam
 		return &CollectSysctl{collector.Sysctl, bundlePath, namespace, clientConfig, client, ctx, RBACErrors}, true
 	case collector.Certificates != nil:
 		return &CollectCertificates{collector.Certificates, bundlePath, namespace, clientConfig, client, ctx, RBACErrors}, true
+	case collector.Velero != nil:
+		return &CollectVelero{collector.Velero, bundlePath, namespace, clientConfig, client, ctx, RBACErrors}, true
 	case collector.Helm != nil:
 		return &CollectHelm{collector.Helm, bundlePath, namespace, clientConfig, client, ctx, RBACErrors}, true
 	default:
@@ -184,6 +186,9 @@ func getCollectorName(c interface{}) string {
 		name = v.Collector.CollectorName
 	case *CollectCeph:
 		collector = "ceph"
+		name = v.Collector.CollectorName
+	case *CollectVelero:
+		collector = "velero"
 		name = v.Collector.CollectorName
 	case *CollectLonghorn:
 		collector = "longhorn"
@@ -260,4 +265,12 @@ func DedupCollectors(allCollectors []*troubleshootv1beta2.Collect) []*troublesho
 		}
 	}
 	return finalCollectors
+}
+
+func labelsToSelector(labels map[string]string) []string {
+	selector := []string{}
+	for key, value := range labels {
+		selector = append(selector, fmt.Sprintf("%s=%s", key, value))
+	}
+	return selector
 }

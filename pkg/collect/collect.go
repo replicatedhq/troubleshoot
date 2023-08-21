@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/pkg/errors"
@@ -191,4 +192,22 @@ func CollectRemote(c *troubleshootv1beta2.RemoteCollector, additionalRedactors *
 
 	collectResult.AllCollectedData = allCollectedData
 	return collectResult, nil
+}
+
+func copyResult(srcResult CollectorResult, dstResult CollectorResult, bundlePath string, srcKey string, dstKey string) error {
+	reader, err := srcResult.GetReader(bundlePath, srcKey)
+	if err != nil {
+		if os.IsNotExist(errors.Cause(err)) {
+			return nil
+		}
+		return errors.Wrap(err, "failed to get reader")
+	}
+	defer reader.Close()
+
+	err = dstResult.SaveResult(bundlePath, dstKey, reader)
+	if err != nil {
+		return errors.Wrap(err, "failed to save file")
+	}
+
+	return nil
 }

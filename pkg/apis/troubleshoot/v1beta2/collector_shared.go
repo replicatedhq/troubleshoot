@@ -235,6 +235,12 @@ type Longhorn struct {
 	Timeout       string `json:"timeout,omitempty" yaml:"timeout,omitempty"`
 }
 
+type Velero struct {
+	CollectorMeta `json:",inline" yaml:",inline"`
+	Namespace     string `json:"namespace" yaml:"namespace"`
+	Timeout       string `json:"timeout,omitempty" yaml:"timeout,omitempty"`
+}
+
 type RegistryImages struct {
 	CollectorMeta    `json:",inline" yaml:",inline"`
 	Images           []string          `json:"images" yaml:"images"`
@@ -279,6 +285,7 @@ type Collect struct {
 	Redis            *Database         `json:"redis,omitempty" yaml:"redis,omitempty"`
 	Collectd         *Collectd         `json:"collectd,omitempty" yaml:"collectd,omitempty"`
 	Ceph             *Ceph             `json:"ceph,omitempty" yaml:"ceph,omitempty"`
+	Velero           *Velero           `json:"velero,omitempty" yaml:"velero,omitempty"`
 	Longhorn         *Longhorn         `json:"longhorn,omitempty" yaml:"longhorn,omitempty"`
 	RegistryImages   *RegistryImages   `json:"registryImages,omitempty" yaml:"registryImages,omitempty"`
 	Sysctl           *Sysctl           `json:"sysctl,omitempty" yaml:"sysctl,omitempty"`
@@ -573,6 +580,10 @@ func (c *Collect) GetName() string {
 		collector = "ceph"
 		name = c.Ceph.CollectorName
 	}
+	if c.Velero != nil {
+		collector = "velero"
+		name = c.Velero.CollectorName
+	}
 	if c.Longhorn != nil {
 		collector = "longhorn"
 		name = c.Longhorn.CollectorName
@@ -627,4 +638,12 @@ func GetCollector(collector *Collect) interface{} {
 	}
 
 	return nil
+}
+
+func labelsToSelector(labels map[string]string) []string {
+	selector := []string{}
+	for key, value := range labels {
+		selector = append(selector, fmt.Sprintf("%s=%s", key, value))
+	}
+	return selector
 }

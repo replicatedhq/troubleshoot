@@ -9459,6 +9459,26 @@
                     "type": "string"
                   }
                 }
+              },
+              "velero": {
+                "type": "object",
+                "required": [
+                  "namespace"
+                ],
+                "properties": {
+                  "collectorName": {
+                    "type": "string"
+                  },
+                  "exclude": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  },
+                  "namespace": {
+                    "type": "string"
+                  },
+                  "timeout": {
+                    "type": "string"
+                  }
+                }
               }
             }
           }
