@@ -2,10 +2,16 @@ package collect
 
 import (
 	"context"
+	"fmt"
+	"path"
+	"strings"
 
+	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"k8s.io/klog/v2"
 )
 
 const (
@@ -57,23 +63,122 @@ type VeleroCommand struct {
 var VeleroCommands = []VeleroCommand{
 	{
 		ID:             "get-backups",
-		Command:        []string{"velero", "get", "backups"},
+		Command:        []string{"/velero", "get", "backups"},
 		Args:           []string{"-o", "json"},
 		Format:         "json",
 		DefaultTimeout: "30s",
 	},
 	{
 		ID:             "get-restores",
-		Command:        []string{"velero", "get", "restores"},
+		Command:        []string{"/velero", "get", "restores"},
 		Args:           []string{"-o", "json"},
 		Format:         "json",
 		DefaultTimeout: "30s",
 	},
 	{
 		ID:             "describe-backups",
-		Command:        []string{"velero", "describe", "backups"},
+		Command:        []string{"/velero", "describe", "backups"},
+		Args:           []string{"--details", "-o", "json"},
+		Format:         "json",
+		DefaultTimeout: "30s",
+	},
+	{
+		ID:             "describe-restores",
+		Command:        []string{"/velero", "describe", "restores"},
 		Args:           []string{"--details", "-o", "json"},
 		Format:         "json",
 		DefaultTimeout: "30s",
 	},
 }
+
+func veleroCommandExec(ctx context.Context, progressChan chan<- interface{}, c *CollectVelero, veleroCollector *troubleshootv1beta2.Velero, pod *corev1.Pod, command VeleroCommand, output CollectorResult) error {
+	timeout := veleroCollector.Timeout
+	if timeout == "" {
+		timeout = command.DefaultTimeout
+	}
+
+	execSpec := &troubleshootv1beta2.Exec{
+		Selector:  labelsToSelector(pod.Labels),
+		Namespace: pod.Namespace,
+		Command:   command.Command,
+		Args:      command.Args,
+		Timeout:   timeout,
+	}
+
+	rbacErrors := c.GetRBACErrors()
+	execCollector := &CollectExec{execSpec, c.BundlePath, c.Namespace, c.ClientConfig, c.Client, c.Context, rbacErrors}
+
+	results, err := execCollector.Collect(progressChan)
+	if err != nil {
+		return errors.Wrap(err, "failed to exec velero command")
+	}
+
+	pathPrefix := GetVeleroCollectorFilepath(veleroCollector.CollectorName, veleroCollector.Namespace)
+	for srcFilename := range results {
+		var dstFileName string
+		switch {
+		case strings.HasSuffix(srcFilename, "-stdout.txt"):
+			dstFileName = path.Join(pathPrefix, fmt.Sprintf("%s.%s", command.ID, command.Format))
+		case strings.HasSuffix(srcFilename, "-stderr.txt"):
+			dstFileName = path.Join(pathPrefix, fmt.Sprintf("%s-stderr.txt", command.ID))
+		case strings.HasSuffix(srcFilename, "-errors.json"):
+			dstFileName = path.Join(pathPrefix, fmt.Sprintf("%s-errors.json", command.ID))
+		default:
+			continue
+		}
+
+		err := copyResult(results, output, c.BundlePath, srcFilename, dstFileName)
+		if err != nil {
+			return errors.Wrap(err, "failed to copy file")
+		}
+	}
+
+	return nil
+}
+
+func findVeleroPod(ctx context.Context, c *CollectVelero, namespace string) (*corev1.Pod, error) {
+	client, err := kubernetes.NewForConfig(c.ClientConfig)
+
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create kubernetes client")
+	}
+
+	pods, _ := listPodsInSelectors(ctx, client, namespace, []string{"deploy=velero"})
+	if len(pods) > 0 {
+		return &pods[0], nil
+	}
+
+	klog.Info("velero pod not found in namespace %s", namespace)
+
+	return nil, nil
+}
+
+func GetVeleroCollectorFilepath(name, namespace string) string {
+	parts := []string{}
+	if name != "" {
+		parts = append(parts, name)
+	}
+	if namespace != "" && namespace != DefaultVeleroNamespace {
+		parts = append(parts, namespace)
+	}
+	parts = append(parts, "velero")
+	return path.Join(parts...)
+}
+
+// func copyResult(srcResult CollectorResult, dstResult CollectorResult, bundlePath string, srcKey string, dstKey string) error {
+// 	reader, err := srcResult.GetReader(bundlePath, srcKey)
+// 	if err != nil {
+// 		if os.IsNotExist(errors.Cause(err)) {
+// 			return nil
+// 		}
+// 		return errors.Wrap(err, "failed to get reader")
+// 	}
+// 	defer reader.Close()
+
+// 	err = dstResult.SaveResult(bundlePath, dstKey, reader)
+// 	if err != nil {
+// 		return errors.Wrap(err, "failed to save file")
+// 	}
+
+// 	return nil
+// }

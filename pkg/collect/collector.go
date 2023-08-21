@@ -185,6 +185,9 @@ func getCollectorName(c interface{}) string {
 	case *CollectCeph:
 		collector = "ceph"
 		name = v.Collector.CollectorName
+	case *CollectVelero:
+		collector = "velero"
+		name = v.Collector.CollectorName
 	case *CollectLonghorn:
 		collector = "longhorn"
 		name = v.Collector.CollectorName
