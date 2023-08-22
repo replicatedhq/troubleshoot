@@ -55,7 +55,7 @@ func TestCrashPod(t *testing.T) {
 		}).
 		Assess("check support bundle catch crashloop pod", func(ctx context.Context, t *testing.T, c *envconf.Config) context.Context {
 			var out bytes.Buffer
-			cmd := exec.Command("../../bin/support-bundle", "files/yamls/crashloopPod.yaml", "--interactive=false")
+			cmd := exec.Command("../../../bin/support-bundle", "spec/crashloopPod.yaml", "--interactive=false")
 			cmd.Stdout = &out
 			err := cmd.Run()
 			if err != nil {
