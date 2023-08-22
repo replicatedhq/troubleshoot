@@ -1,37 +1,17 @@
-package analyzer
+package e2e
 
 import (
 	"bytes"
 	"context"
-	"os"
 	"os/exec"
 	"testing"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"sigs.k8s.io/e2e-framework/pkg/env"
 	"sigs.k8s.io/e2e-framework/pkg/envconf"
-	"sigs.k8s.io/e2e-framework/pkg/envfuncs"
 	"sigs.k8s.io/e2e-framework/pkg/features"
 )
-
-var testenv env.Environment
-
-func TestMain(m *testing.M) {
-	testenv = env.New()
-	kindClusterName := envconf.RandomName("crashloop-cluster", 16)
-	namespace := envconf.RandomName("crashloop-ns", 16)
-	testenv.Setup(
-		envfuncs.CreateKindCluster(kindClusterName),
-		envfuncs.CreateNamespace(namespace),
-	)
-	testenv.Finish(
-		envfuncs.DeleteNamespace(namespace),
-		envfuncs.DestroyKindCluster(kindClusterName),
-	)
-	os.Exit(testenv.Run(m))
-}
 
 func TestCrashPod(t *testing.T) {
 	deploymentName := "test-crash-deployment"
