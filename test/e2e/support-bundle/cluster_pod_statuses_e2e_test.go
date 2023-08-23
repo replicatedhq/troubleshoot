@@ -3,11 +3,14 @@ package e2e
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
 	"testing"
 
+	"github.com/replicatedhq/troubleshoot/pkg/convert"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -15,11 +18,11 @@ import (
 	"sigs.k8s.io/e2e-framework/pkg/features"
 )
 
-func TestCrashPod(t *testing.T) {
-	supportBundleName := "crash-deployment"
-	deploymentName := "test-crash-deployment"
+func TestPendingPod(t *testing.T) {
+	supportBundleName := "pod-deployment"
+	deploymentName := "test-pending-deployment"
 	containerName := "curl"
-	feature := features.New("Crashloop Pod Test").
+	feature := features.New("Pending Pod Test").
 		Setup(func(ctx context.Context, t *testing.T, c *envconf.Config) context.Context {
 			deployment := newDeployment(c.Namespace(), deploymentName, 1, containerName)
 			client, err := c.NewClient()
@@ -29,21 +32,42 @@ func TestCrashPod(t *testing.T) {
 			if err = client.Resources().Create(ctx, deployment); err != nil {
 				t.Fatal(err)
 			}
-			// err = wait.For(conditions.New(client.Resources()).DeploymentConditionMatch(deployment, appsv1.DeploymentAvailable, corev1.ConditionTrue), wait.WithTimeout(time.Minute*5))
-			// if err != nil {
-			// 	t.Fatal(err)
-			// }
 
 			return ctx
 		}).
-		Assess("check support bundle catch crashloop pod", func(ctx context.Context, t *testing.T, c *envconf.Config) context.Context {
+		Assess("check support bundle catch pending pod", func(ctx context.Context, t *testing.T, c *envconf.Config) context.Context {
 			var out bytes.Buffer
-			cmd := exec.Command("../../../bin/support-bundle", "spec/crashloopPod.yaml", "--interactive=false", fmt.Sprintf("-o=%s", supportBundleName))
+			var results []*convert.Result
+
+			tarPath := fmt.Sprintf("%s.tar.gz", supportBundleName)
+			targetFile := fmt.Sprintf("%s/analysis.json", supportBundleName)
+
+			cmd := exec.Command("../../../bin/support-bundle", "spec/pod.yaml", "--interactive=false", fmt.Sprintf("-o=%s", supportBundleName))
 			cmd.Stdout = &out
 			err := cmd.Run()
 			if err != nil {
 				t.Fatal(err)
 			}
+
+			analysisJSON, err := readFileFromTar(tarPath, targetFile)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			err = json.Unmarshal(analysisJSON, &results)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			for _, result := range results {
+				if strings.Contains(result.Insight.Detail, deploymentName) {
+					if strings.Contains(result.Insight.Detail, "Pending") {
+						return ctx
+					}
+				}
+			}
+
+			t.Fatal("Pending pod not found")
 			defer func() {
 				err := os.Remove(fmt.Sprintf("%s.tar.gz", supportBundleName))
 				if err != nil {
@@ -56,7 +80,7 @@ func TestCrashPod(t *testing.T) {
 }
 
 func newDeployment(namespace string, name string, replicas int32, containerName string) *appsv1.Deployment {
-	labels := map[string]string{"app": "crash-loop-test"}
+	labels := map[string]string{"app": "pending-test"}
 	return &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: namespace},
 		Spec: appsv1.DeploymentSpec{
