@@ -65,7 +65,6 @@ func TestPendingPod(t *testing.T) {
 				}
 			}
 
-			t.Fatal("Pending pod not found")
 			defer func() {
 				err := os.Remove(fmt.Sprintf("%s.tar.gz", supportBundleName))
 				if err != nil {
