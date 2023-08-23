@@ -5,7 +5,8 @@ metadata:
 spec:
   collectors:
     - clusterResources: {}
-    - clusterInfo: {}
+    - clusterInfo:
+        exclude: false
   analyzers:
     - clusterPodStatuses:
         checkName: "Pod(s) health status(es)"
