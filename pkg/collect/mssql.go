@@ -52,6 +52,7 @@ func (c *CollectMssql) Collect(progressChan chan<- interface{}) (CollectorResult
 		klog.V(2).Infof("Failed to connect to %q MSSQL Database: %w", connUrl.Host, err)
 		databaseConnection.Error = err.Error()
 	} else {
+		defer db.Close()
 		query := `select @@VERSION as version`
 		row := db.QueryRow(query)
 		version := ""
