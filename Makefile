@@ -75,9 +75,9 @@ support-bundle-e2e-test:
 .PHONY: support-bundle-e2e-go-test
 support-bundle-e2e-go-test:
 	if [ -n $(RUN) ]; then \
-		go test ${BUILDFLAGS} ${E2EPATHS} -run $(RUN); \
+		go test ${BUILDFLAGS} ${E2EPATHS} -v -run $(RUN); \
 	else \
-		go test ${BUILDFLAGS} ${E2EPATHS}; \
+		go test ${BUILDFLAGS} ${E2EPATHS} -v; \
 	fi
 
 # Build all binaries in parallel ( -j )

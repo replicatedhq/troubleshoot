@@ -3,6 +3,8 @@ package e2e
 import (
 	"bytes"
 	"context"
+	"fmt"
+	"os"
 	"os/exec"
 	"testing"
 
@@ -14,6 +16,7 @@ import (
 )
 
 func TestCrashPod(t *testing.T) {
+	supportBundleName := "crash-deployment"
 	deploymentName := "test-crash-deployment"
 	containerName := "curl"
 	feature := features.New("Crashloop Pod Test").
@@ -35,12 +38,18 @@ func TestCrashPod(t *testing.T) {
 		}).
 		Assess("check support bundle catch crashloop pod", func(ctx context.Context, t *testing.T, c *envconf.Config) context.Context {
 			var out bytes.Buffer
-			cmd := exec.Command("../../../bin/support-bundle", "spec/crashloopPod.yaml", "--interactive=false")
+			cmd := exec.Command("../../../bin/support-bundle", "spec/crashloopPod.yaml", "--interactive=false", fmt.Sprintf("-o=%s", supportBundleName))
 			cmd.Stdout = &out
 			err := cmd.Run()
 			if err != nil {
 				t.Fatal(err)
 			}
+			defer func() {
+				err := os.Remove(fmt.Sprintf("%s.tar.gz", supportBundleName))
+				if err != nil {
+					t.Fatal("Error remove file:", err)
+				}
+			}()
 			return ctx
 		}).Feature()
 	testenv.Test(t, feature)
