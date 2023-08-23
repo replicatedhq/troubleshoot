@@ -39,7 +39,16 @@ func (c *CollectCollectd) Collect(progressChan chan<- interface{}) (CollectorRes
 	}
 
 	rbacErrors := c.GetRBACErrors()
-	copyFromHostCollector := &CollectCopyFromHost{copyFromHost, c.BundlePath, c.Namespace, c.ClientConfig, c.Client, c.Context, rbacErrors}
+	copyFromHostCollector := &CollectCopyFromHost{
+		Collector:        copyFromHost,
+		BundlePath:       c.BundlePath,
+		Namespace:        c.Namespace,
+		ClientConfig:     c.ClientConfig,
+		Client:           c.Client,
+		Context:          c.Context,
+		RetryFailedMount: false,
+		RBACErrors:       rbacErrors,
+	}
 
 	return copyFromHostCollector.Collect(progressChan)
 }

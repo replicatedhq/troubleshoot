@@ -14,6 +14,7 @@ const (
 	// DEFAULT_LOGS_COLLECTOR_TIMEOUT is the default timeout for logs collector.
 	DEFAULT_LOGS_COLLECTOR_TIMEOUT = 60 * time.Second
 	// MAX_TIME_TO_WAIT_FOR_POD_DELETION is the maximum time to wait for pod deletion.
+	// 0 seconds for force deletion.
 	MAX_TIME_TO_WAIT_FOR_POD_DELETION = 60 * time.Second
 	// Tracing constants
 	LIB_TRACER_NAME             = "github.com/replicatedhq/troubleshoot"
@@ -54,6 +55,10 @@ const (
 	CLUSTER_RESOURCES_CLUSTER_ROLE_BINDINGS       = "clusterrolebindings"
 	CLUSTER_RESOURCES_PRIORITY_CLASS              = "priorityclasses"
 	CLUSTER_RESOURCES_ENDPOINTS                   = "endpoints"
+	CLUSTER_RESOURCES_SERVICE_ACCOUNTS            = "serviceaccounts"
+	CLUSTER_RESOURCES_LEASES                      = "leases"
+	CLUSTER_RESOURCES_VOLUME_ATTACHMENTS          = "volumeattachments"
+	CLUSTER_RESOURCES_CONFIGMAPS                  = "configmaps"
 
 	// SelfSubjectRulesReview evaluation responses
 	SELFSUBJECTRULESREVIEW_ERROR_AUTHORIZATION_WEBHOOK_UNSUPPORTED = "webhook authorizer does not support user rule resolution"

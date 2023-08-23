@@ -227,7 +227,7 @@ func CollectWithContext(ctx context.Context, opts CollectOpts, p *troubleshootv1
 
 	if foundForbidden && !opts.IgnorePermissionErrors {
 		collectResult.isRBACAllowed = false
-		return collectResult, errors.New("insufficient permissions to run all collectors")
+		return collectResult, collect.ErrInsufficientPermissionsToRun
 	}
 
 	for i, collector := range allCollectors {

@@ -38,6 +38,36 @@ if grep -q "No matching files" "$tmpdir/$bundle_directory_name/analysis.json"; t
     exit 1
 fi
 
+base_path="$tmpdir/$bundle_directory_name/cluster-resources"
+folders=("auth-cani-list" "configmaps" "daemonsets" "endpoints" "events" "deployments" "leases" "services" "pvcs" "pvcs" "jobs" "roles" "statefulsets" "network-policy" "pods" "resource-quota" "rolebindings" "serviceaccounts")
+
+files=("namespaces" "volumeattachments" "pvs" "groups" "nodes" "priorityclasses" "resources")
+
+for folder in "${folders[@]}"; do
+    if [ -d "$base_path/$folder" ]; then
+        echo "$folder directory was collected"
+        if [ "$(ls -A $base_path/$folder)" ]; then
+            echo "$folder directory is not empty"
+        else
+            echo "$folder directory is empty"
+            exit 1
+        fi
+    else
+        echo "The $folder folder does not exist in $base_path path."
+        exit 1
+    fi
+done
+
+for file in "${files[@]}"; do
+    if [ -e "$base_path/$file.json" ]
+    then
+        echo "$file.json file was collected"
+    else
+        echo "The $file.json file does not exist in $base_path path."
+        exit 1
+    fi
+done
+
 EXIT_STATUS=0
 jq -r '.[].insight.severity' "$tmpdir/$bundle_directory_name/analysis.json" | while read i; do
     if [ $i == "error" ]; then
