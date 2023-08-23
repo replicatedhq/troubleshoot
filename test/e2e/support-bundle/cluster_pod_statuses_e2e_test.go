@@ -60,10 +60,8 @@ func TestPendingPod(t *testing.T) {
 			}
 
 			for _, result := range results {
-				if strings.Contains(result.Insight.Detail, deploymentName) {
-					if strings.Contains(result.Insight.Detail, "Pending") {
-						return ctx
-					}
+				if strings.Contains(result.Insight.Detail, "Pending") && strings.Contains(result.Insight.Detail, deploymentName) {
+					return ctx
 				}
 			}
 
