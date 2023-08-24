@@ -83,7 +83,6 @@ func (r *MultiLineRedactor) Redact(input io.Reader, path string) io.Reader {
 				continue
 			}
 			flushLastLine = false
-			fmt.Printf("line1: %s\n", line1)
 			clean := r.re2.ReplaceAllString(line2, substStr)
 
 			// io.WriteString would be nicer, but reader strips new lines
