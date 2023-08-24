@@ -100,9 +100,11 @@ func Test_NewMultiLineRedactorr(t *testing.T) {
 			reRunner, err := NewMultiLineRedactor(tt.selector, tt.redactor, MASK_TEXT, "testfile", tt.name, true)
 			req.NoError(err)
 			outReader := reRunner.Redact(bytes.NewReader([]byte(tt.inputString)), "")
+
 			gotBytes, err := ioutil.ReadAll(outReader)
 			req.NoError(err)
 			req.Equal(tt.wantString, string(gotBytes))
+			ResetRedactionList()
 		})
 	}
 }

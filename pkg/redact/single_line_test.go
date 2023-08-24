@@ -327,7 +327,6 @@ func TestNewSingleLineRedactor(t *testing.T) {
 			actualRedactions := GetRedactionList()
 			ResetRedactionList()
 			req.Equal(tt.wantRedactions, actualRedactions)
-			ResetRedactionList()
 		})
 	}
 }
