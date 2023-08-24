@@ -6,6 +6,8 @@ import (
 	"io"
 	"regexp"
 	"strings"
+
+	"github.com/replicatedhq/troubleshoot/pkg/constants"
 )
 
 type SingleLineRedactor struct {
@@ -49,10 +51,9 @@ func (r *SingleLineRedactor) Redact(input io.Reader, path string) io.Reader {
 
 		substStr := getReplacementPattern(r.re, r.maskText)
 
-		const maxCapacity = 1024 * 1024
-		buf := make([]byte, maxCapacity)
+		buf := make([]byte, constants.MAX_BUFFER_CAPACITY)
 		scanner := bufio.NewScanner(input)
-		scanner.Buffer(buf, maxCapacity)
+		scanner.Buffer(buf, constants.MAX_BUFFER_CAPACITY)
 
 		lineNum := 0
 		for scanner.Scan() {
