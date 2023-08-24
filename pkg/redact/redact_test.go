@@ -1720,7 +1720,7 @@ func Test_Redactors(t *testing.T) {
 	  ]`
 
 	wantRedactionsLen := 43
-	wantRedactionsCount := 25
+	wantRedactionsCount := 31
 
 	t.Run("test default redactors", func(t *testing.T) {
 		req := require.New(t)
