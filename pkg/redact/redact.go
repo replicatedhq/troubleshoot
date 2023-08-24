@@ -483,7 +483,6 @@ func addRedaction(redaction Redaction) {
 		defer pendingRedactions.Done()
 		allRedactions.ByRedactor[redaction.RedactorName] = append(allRedactions.ByRedactor[redaction.RedactorName], redaction)
 		allRedactions.ByFile[redaction.File] = append(allRedactions.ByFile[redaction.File], redaction)
-		fmt.Println(len(allRedactions.ByRedactor))
 	}(redaction)
 }
 
