@@ -104,6 +104,7 @@ func Test_NewMultiLineRedactorr(t *testing.T) {
 			gotBytes, err := ioutil.ReadAll(outReader)
 			req.NoError(err)
 			req.Equal(tt.wantString, string(gotBytes))
+			GetRedactionList()
 			ResetRedactionList()
 		})
 	}
