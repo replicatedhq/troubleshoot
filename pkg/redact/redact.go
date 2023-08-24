@@ -259,56 +259,56 @@ func getRedactors(path string) ([]Redactor, error) {
 		{
 			regex: LineRedactor{
 				regex: `(?i)(Data Source *= *)(?P<mask>[^\;]+)(;)`,
-				scan:  `data source *= *`,
+				scan:  `data source`,
 			},
 			name: "Redact 'Data Source' values commonly found in database connection strings",
 		},
 		{
 			regex: LineRedactor{
 				regex: `(?i)(location *= *)(?P<mask>[^\;]+)(;)`,
-				scan:  `location *= *`,
+				scan:  `location`,
 			},
 			name: "Redact 'location' values commonly found in database connection strings",
 		},
 		{
 			regex: LineRedactor{
 				regex: `(?i)(User ID *= *)(?P<mask>[^\;]+)(;)`,
-				scan:  `user id *= *`,
+				scan:  `user id`,
 			},
 			name: "Redact 'User ID' values commonly found in database connection strings",
 		},
 		{
 			regex: LineRedactor{
 				regex: `(?i)(password *= *)(?P<mask>[^\;]+)(;)`,
-				scan:  `password *= *`,
+				scan:  `password`,
 			},
 			name: "Redact 'password' values commonly found in database connection strings",
 		},
 		{
 			regex: LineRedactor{
 				regex: `(?i)(Server *= *)(?P<mask>[^\;]+)(;)`,
-				scan:  `server *= *`,
+				scan:  `server`,
 			},
 			name: "Redact 'Server' values commonly found in database connection strings",
 		},
 		{
 			regex: LineRedactor{
 				regex: `(?i)(Database *= *)(?P<mask>[^\;]+)(;)`,
-				scan:  `database *= *`,
+				scan:  `database`,
 			},
 			name: "Redact 'Database' values commonly found in database connection strings",
 		},
 		{
 			regex: LineRedactor{
 				regex: `(?i)(Uid *= *)(?P<mask>[^\;]+)(;)`,
-				scan:  `uid *= *`,
+				scan:  `uid`,
 			},
 			name: "Redact 'UID' values commonly found in database connection strings",
 		},
 		{
 			regex: LineRedactor{
 				regex: `(?i)(Pwd *= *)(?P<mask>[^\;]+)(;)`,
-				scan:  `pwd *= *`,
+				scan:  `pwd`,
 			},
 			name: "Redact 'Pwd' values commonly found in database connection strings",
 		},
@@ -483,6 +483,7 @@ func addRedaction(redaction Redaction) {
 		defer pendingRedactions.Done()
 		allRedactions.ByRedactor[redaction.RedactorName] = append(allRedactions.ByRedactor[redaction.RedactorName], redaction)
 		allRedactions.ByFile[redaction.File] = append(allRedactions.ByFile[redaction.File], redaction)
+		fmt.Println(len(allRedactions.ByRedactor))
 	}(redaction)
 }
 
