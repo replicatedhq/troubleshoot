@@ -2,6 +2,7 @@ package redact
 
 import (
 	"bufio"
+	"fmt"
 	"io"
 	"regexp"
 	"strings"
@@ -35,12 +36,10 @@ func NewSingleLineRedactor(re LineRedactor, maskText, path, name string, isDefau
 
 func (r *SingleLineRedactor) Redact(input io.Reader, path string) io.Reader {
 	out, writer := io.Pipe()
-	bufferedWriter := bufio.NewWriter(writer)
 
 	go func() {
 		var err error
 		defer func() {
-			bufferedWriter.Flush()
 			if err == io.EOF {
 				writer.Close()
 			} else {
@@ -64,24 +63,22 @@ func (r *SingleLineRedactor) Redact(input io.Reader, path string) io.Reader {
 			if r.scan != nil {
 				lowerLine := strings.ToLower(line)
 				if !r.scan.MatchString(lowerLine) {
-					bufferedWriter.WriteString(line)
-					bufferedWriter.WriteByte('\n')
+					fmt.Fprintf(writer, "%s\n", line)
 					continue
 				}
 			}
 
 			// if scan matches, but re does not, do not redact
 			if !r.re.MatchString(line) {
-				bufferedWriter.WriteString(line)
-				bufferedWriter.WriteByte('\n')
+				fmt.Fprintf(writer, "%s\n", line)
 				continue
 			}
 
 			clean := r.re.ReplaceAllString(line, substStr)
 
 			// io.WriteString would be nicer, but scanner strips new lines
-			bufferedWriter.WriteString(clean)
-			bufferedWriter.WriteByte('\n')
+			fmt.Fprintf(writer, "%s\n", clean)
+
 			if err != nil {
 				return
 			}
