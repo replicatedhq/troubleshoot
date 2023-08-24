@@ -278,6 +278,36 @@ func TestNewSingleLineRedactor(t *testing.T) {
 				},
 			},
 		},
+		{
+			name:        "Redact connection strings With Scan",
+			re:          `(?i)(https?|ftp)(:\/\/)(?P<mask>[^:\"\/]+){1}(:)(?P<mask>[^@\"\/]+){1}(?P<host>@[^:\/\s\"]+){1}(?P<port>:[\d]+)?`,
+			scan:        `https?|ftp`,
+			inputString: `http://user:password@host:8888;`,
+			wantString: `http://***HIDDEN***:***HIDDEN***@host:8888;
+`,
+			wantRedactions: RedactionList{
+				ByRedactor: map[string][]Redaction{
+					"Redact connection strings With Scan": {
+						{
+							RedactorName:      "Redact connection strings With Scan",
+							CharactersRemoved: -12,
+							Line:              1,
+							File:              "testfile",
+						},
+					},
+				},
+				ByFile: map[string][]Redaction{
+					"testfile": {
+						{
+							RedactorName:      "Redact connection strings With Scan",
+							CharactersRemoved: -12,
+							Line:              1,
+							File:              "testfile",
+						},
+					},
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
