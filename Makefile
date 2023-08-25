@@ -240,6 +240,10 @@ lint: fmt vet
 lint-and-fix: fmt vet
 	golangci-lint run --new --fix -c .golangci.yaml ${BUILDPATHS}
 
+.PHONY: watch
+watch: npm-install
+	bin/watch.js
+
 ## Syncronize the code with a remote server. More info: CONTRIBUTING.md
 .PHONY: watchrsync
 watchrsync: npm-install
