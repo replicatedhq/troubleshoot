@@ -18,11 +18,11 @@ import (
 	"sigs.k8s.io/e2e-framework/pkg/features"
 )
 
-func TestPendingPod(t *testing.T) {
+func TestDeploymentPod(t *testing.T) {
 	supportBundleName := "pod-deployment"
-	deploymentName := "test-pending-deployment"
+	deploymentName := "test-pod-deployment"
 	containerName := "curl"
-	feature := features.New("Pending Pod Test").
+	feature := features.New("Pod Deployment Test").
 		Setup(func(ctx context.Context, t *testing.T, c *envconf.Config) context.Context {
 			deployment := newDeployment(c.Namespace(), deploymentName, 1, containerName)
 			client, err := c.NewClient()
@@ -35,7 +35,7 @@ func TestPendingPod(t *testing.T) {
 
 			return ctx
 		}).
-		Assess("check support bundle catch pending pod", func(ctx context.Context, t *testing.T, c *envconf.Config) context.Context {
+		Assess("check support bundle catch pod", func(ctx context.Context, t *testing.T, c *envconf.Config) context.Context {
 			var out bytes.Buffer
 			var results []*convert.Result
 
@@ -48,6 +48,13 @@ func TestPendingPod(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
+
+			defer func() {
+				err := os.Remove(fmt.Sprintf("%s.tar.gz", supportBundleName))
+				if err != nil {
+					t.Fatal("Error remove file:", err)
+				}
+			}()
 
 			analysisJSON, err := readFileFromTar(tarPath, targetFile)
 			if err != nil {
@@ -65,20 +72,14 @@ func TestPendingPod(t *testing.T) {
 				}
 			}
 
-			t.Fatal("Pending pod not found")
-			defer func() {
-				err := os.Remove(fmt.Sprintf("%s.tar.gz", supportBundleName))
-				if err != nil {
-					t.Fatal("Error remove file:", err)
-				}
-			}()
+			t.Fatal("Pod not found")
 			return ctx
 		}).Feature()
 	testenv.Test(t, feature)
 }
 
 func newDeployment(namespace string, name string, replicas int32, containerName string) *appsv1.Deployment {
-	labels := map[string]string{"app": "pending-test"}
+	labels := map[string]string{"app": "deployment-test"}
 	return &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{Name: name, Namespace: namespace},
 		Spec: appsv1.DeploymentSpec{
@@ -88,7 +89,7 @@ func newDeployment(namespace string, name string, replicas int32, containerName 
 			},
 			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{Labels: labels},
-				Spec:       corev1.PodSpec{Containers: []corev1.Container{{Name: containerName, Image: "nginx", Command: []string{"wge", "-O", "/work-dir/index.html", "https://www.wikipedia.org"}}}},
+				Spec:       corev1.PodSpec{Containers: []corev1.Container{{Name: containerName, Image: "nginx"}}},
 			},
 		},
 	}

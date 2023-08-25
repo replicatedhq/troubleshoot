@@ -31,10 +31,8 @@ func Test_HelmCollector(t *testing.T) {
 				t.Fatalf("Failed to extract kind cluster %s from context", ClusterName)
 			}
 			manager := helm.New(cluster.GetKubeconfig())
-			err := manager.RunInstall(helm.WithName(releaseName), helm.WithNamespace(c.Namespace()), helm.WithChart(filepath.Join(curDir, "testdata/charts/nginx-15.2.0.tgz")), helm.WithWait(), helm.WithTimeout("1m"))
-			if err != nil {
-				fmt.Println(err)
-			}
+			manager.RunInstall(helm.WithName(releaseName), helm.WithNamespace(c.Namespace()), helm.WithChart(filepath.Join(curDir, "testdata/charts/nginx-15.2.0.tgz")), helm.WithWait(), helm.WithTimeout("1m"))
+			//ignore error to allow test to speed up, helm collector will catch the pending or deployed helm release status
 			return ctx
 		}).
 		Assess("check support bundle catch helm release", func(ctx context.Context, t *testing.T, c *envconf.Config) context.Context {
@@ -52,6 +50,13 @@ func Test_HelmCollector(t *testing.T) {
 				t.Fatal(err)
 			}
 
+			defer func() {
+				err := os.Remove(fmt.Sprintf("%s.tar.gz", supportBundleName))
+				if err != nil {
+					t.Fatal("Error remove file:", err)
+				}
+			}()
+
 			resultJSON, err := readFileFromTar(tarPath, targetFile)
 			if err != nil {
 				t.Fatal(err)
@@ -65,13 +70,6 @@ func Test_HelmCollector(t *testing.T) {
 			assert.Equal(t, 1, len(results))
 			assert.Equal(t, releaseName, results[0].ReleaseName)
 			assert.Equal(t, "nginx", results[0].Chart)
-
-			defer func() {
-				err := os.Remove(fmt.Sprintf("%s.tar.gz", supportBundleName))
-				if err != nil {
-					t.Fatal("Error remove file:", err)
-				}
-			}()
 			return ctx
 		}).
 		Feature()
