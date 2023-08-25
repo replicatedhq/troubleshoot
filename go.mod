@@ -72,6 +72,7 @@ require (
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/sylabs/sif/v2 v2.11.1 // indirect
 	github.com/tchap/go-patricia/v2 v2.3.1 // indirect
+	github.com/vladimirvivien/gexe v0.2.0 // indirect
 	go.opentelemetry.io/otel/metric v1.16.0 // indirect
 	go.opentelemetry.io/otel/trace v1.16.0 // indirect
 	go.uber.org/atomic v1.10.0 // indirect
@@ -79,6 +80,7 @@ require (
 	golang.org/x/exp v0.0.0-20230321023759-10a507213a29 // indirect
 	golang.org/x/mod v0.10.0 // indirect
 	golang.org/x/tools v0.9.1 // indirect
+	sigs.k8s.io/e2e-framework v0.2.0 // indirect
 )
 
 require (

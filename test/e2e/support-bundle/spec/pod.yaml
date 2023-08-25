@@ -1,0 +1,24 @@
+apiVersion: troubleshoot.sh/v1beta2
+kind: SupportBundle
+metadata:
+  name: sample
+spec:
+  collectors:
+    - clusterResources: {}
+    - clusterInfo:
+        exclude: false
+  analyzers:
+    - clusterPodStatuses:
+        checkName: "Pod(s) health status(es)"
+        outcomes:
+          - fail:
+              title: "Pod {{ .Name }} is unable to pull images"
+              when: "== ImagePullBackOff"
+              message: "A Pod, {{ .Name }}, is unable to pull its image. Status is: {{ .Status.Reason }}. Message is: {{ .Status.Message }}"
+          - warn:
+              title: "Pod {{ .Name }} is unhealthy"
+              when: "!= Healthy"
+              message: "A Pod, {{ .Name }}, is unhealthy with a status of: {{ .Status.Reason }}. Message is: {{ .Status.Message }}"
+          - pass:
+              title: "Pod {{ .Name }} is healthy"
+              message: "Pod {{ .Name }} is healthy"
