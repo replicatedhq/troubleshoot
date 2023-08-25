@@ -32,6 +32,11 @@ To get started we recommend:
 
 6. Install [golangci-lint] linter and run `make lint` to execute additional code linters.
 
+### Build automatically on save with `watch`
+
+1. Install `npm`
+2. Run `make watch` to build binaries automatically on saving.  Note:  you may still have to run `make schemas` if you've added API changes, like a new collector or analyzer type.
+
 ### Syncing to a test cluster with `watchrsync`
 
 1. Install `npm`

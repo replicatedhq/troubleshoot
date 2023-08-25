@@ -3,8 +3,10 @@ package analyzer
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"path/filepath"
 	"reflect"
+	"sort"
 	"strconv"
 
 	"github.com/pkg/errors"
@@ -97,7 +99,8 @@ func (a *AnalyzeJsonCompare) analyzeJsonCompare(analyzer *troubleshootv1beta2.Js
 		IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg",
 	}
 
-	equal := reflect.DeepEqual(actual, expected)
+	// due to jsp.Execute may return a slice of results unsorted, we need to sort the slice before comparing
+	equal := deepEqualWithSlicesSorted(actual, expected)
 
 	for _, outcome := range analyzer.Outcomes {
 		if outcome.Fail != nil {
@@ -158,4 +161,68 @@ func (a *AnalyzeJsonCompare) analyzeJsonCompare(analyzer *troubleshootv1beta2.Js
 		IsFail:  true,
 		Message: "Invalid analyzer",
 	}, nil
+}
+
+// deepEqualWithSlicesSorted compares two interfaces and returns true if they contain the same values
+// If the interfaces are slices, they are sorted before comparison to ensure order does not matter
+// If the interfaces are not slices, reflect.DeepEqual is used
+func deepEqualWithSlicesSorted(actual, expected interface{}) bool {
+	ra, re := reflect.ValueOf(actual), reflect.ValueOf(expected)
+
+	// If types are different, they're not equal
+	if ra.Kind() != re.Kind() {
+		return false
+	}
+
+	// If types are slices, compare sorted slices
+	if ra.Kind() == reflect.Slice {
+		return compareSortedSlices(ra.Interface().([]interface{}), re.Interface().([]interface{}))
+	}
+
+	// Otherwise, compare values (reflect.DeepEqual)
+	return reflect.DeepEqual(actual, expected)
+}
+
+// compareSortedSlices compares two sorted slices of interfaces and returns true if they contain the same values
+func compareSortedSlices(actual, expected []interface{}) bool {
+	if len(actual) != len(expected) {
+		return false
+	}
+
+	// Sort slices
+	sortSliceOfInterfaces(actual)
+	sortSliceOfInterfaces(expected)
+
+	// Compare slices (reflect.DeepEqual)
+	return reflect.DeepEqual(actual, expected)
+}
+
+func sortSliceOfInterfaces(slice []interface{}) {
+	sort.Slice(slice, func(i, j int) bool {
+		return order(slice[i], slice[j])
+	})
+}
+
+// order function determines the order of two interface{} values
+func order(a, b interface{}) bool {
+	switch va := a.(type) {
+	case int:
+		if vb, ok := b.(int); ok {
+			return va < vb
+		}
+	case float64:
+		if vb, ok := b.(float64); ok {
+			return va < vb
+		}
+	case string:
+		if vb, ok := b.(string); ok {
+			return va < vb
+		}
+	case bool:
+		if vb, ok := b.(bool); ok {
+			return !va && vb // false < true
+		}
+	}
+	// use string representation for comparison
+	return fmt.Sprintf("%v", a) < fmt.Sprintf("%v", b)
 }

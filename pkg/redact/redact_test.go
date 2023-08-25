@@ -1741,6 +1741,7 @@ func Test_Redactors(t *testing.T) {
 		ResetRedactionList()
 		req.Len(actualRedactions.ByFile["testpath"], wantRedactionsLen)
 		req.Len(actualRedactions.ByRedactor, wantRedactionsCount)
+		ResetRedactionList()
 	})
 }
 

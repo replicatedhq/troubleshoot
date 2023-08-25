@@ -36,6 +36,7 @@ endef
 
 BUILDFLAGS = -tags "netgo containers_image_ostree_stub exclude_graphdriver_devicemapper exclude_graphdriver_btrfs containers_image_openpgp" -installsuffix netgo
 BUILDPATHS = ./pkg/... ./cmd/... ./internal/...
+E2EPATHS = ./test/e2e/...
 TESTFLAGS ?= -v -coverprofile cover.out
 
 .DEFAULT: all
@@ -70,6 +71,14 @@ run-examples:
 .PHONY: support-bundle-e2e-test
 support-bundle-e2e-test:
 	./test/validate-support-bundle-e2e.sh
+
+.PHONY: support-bundle-e2e-go-test
+support-bundle-e2e-go-test:
+	if [ -n $(RUN) ]; then \
+		go test ${BUILDFLAGS} ${E2EPATHS} -v -run $(RUN); \
+	else \
+		go test ${BUILDFLAGS} ${E2EPATHS} -v; \
+	fi
 
 # Build all binaries in parallel ( -j )
 build:
@@ -230,7 +239,6 @@ lint: fmt vet
 .PHONY: lint-and-fix
 lint-and-fix: fmt vet
 	golangci-lint run --new --fix -c .golangci.yaml ${BUILDPATHS}
-
 
 ## Syncronize the code with a remote server. More info: CONTRIBUTING.md
 .PHONY: watchrsync

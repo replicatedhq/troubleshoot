@@ -15,7 +15,7 @@ require (
 	github.com/gobwas/glob v0.2.3
 	github.com/godbus/dbus/v5 v5.1.0
 	github.com/google/gofuzz v1.2.0
-	github.com/google/uuid v1.3.0
+	github.com/google/uuid v1.3.1
 	github.com/gorilla/handlers v1.5.1
 	github.com/hashicorp/go-getter v1.7.2
 	github.com/hashicorp/go-multierror v1.1.1
@@ -73,6 +73,7 @@ require (
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/sylabs/sif/v2 v2.11.1 // indirect
 	github.com/tchap/go-patricia/v2 v2.3.1 // indirect
+	github.com/vladimirvivien/gexe v0.2.0 // indirect
 	go.opentelemetry.io/otel/metric v1.16.0 // indirect
 	go.opentelemetry.io/otel/trace v1.16.0 // indirect
 	go.starlark.net v0.0.0-20200306205701-8dd3e2ee1dd5 // indirect
@@ -81,6 +82,7 @@ require (
 	golang.org/x/exp v0.0.0-20230321023759-10a507213a29 // indirect
 	golang.org/x/mod v0.10.0 // indirect
 	golang.org/x/tools v0.9.1 // indirect
+	sigs.k8s.io/e2e-framework v0.2.0 // indirect
 )
 
 require (

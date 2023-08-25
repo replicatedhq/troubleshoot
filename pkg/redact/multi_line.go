@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"io"
 	"regexp"
+	"strings"
 )
 
 type MultiLineRedactor struct {
+	scan       *regexp.Regexp
 	re1        *regexp.Regexp
 	re2        *regexp.Regexp
 	maskText   string
@@ -16,16 +18,26 @@ type MultiLineRedactor struct {
 	isDefault  bool
 }
 
-func NewMultiLineRedactor(re1, re2, maskText, path, name string, isDefault bool) (*MultiLineRedactor, error) {
-	compiled1, err := regexp.Compile(re1)
+func NewMultiLineRedactor(re1 LineRedactor, re2 string, maskText, path, name string, isDefault bool) (*MultiLineRedactor, error) {
+	var scanCompiled *regexp.Regexp
+	compiled1, err := regexp.Compile(re1.regex)
 	if err != nil {
 		return nil, err
 	}
+
+	if re1.scan != "" {
+		scanCompiled, err = regexp.Compile(re1.scan)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	compiled2, err := regexp.Compile(re2)
 	if err != nil {
 		return nil, err
 	}
-	return &MultiLineRedactor{re1: compiled1, re2: compiled2, maskText: maskText, filePath: path, redactName: name, isDefault: isDefault}, nil
+
+	return &MultiLineRedactor{scan: scanCompiled, re1: compiled1, re2: compiled2, maskText: maskText, filePath: path, redactName: name, isDefault: isDefault}, nil
 }
 
 func (r *MultiLineRedactor) Redact(input io.Reader, path string) io.Reader {
@@ -52,6 +64,17 @@ func (r *MultiLineRedactor) Redact(input io.Reader, path string) io.Reader {
 		for err == nil {
 			lineNum++ // the first line that can be redacted is line 2
 
+			// is scan is not nil, then check if line1 matches scan by lowercasing it
+			if r.scan != nil {
+				lowerLine1 := strings.ToLower(line1)
+				if !r.scan.MatchString(lowerLine1) {
+					fmt.Fprintf(writer, "%s\n", line1)
+					line1, line2, err = getNextTwoLines(reader, &line2)
+					flushLastLine = true
+					continue
+				}
+			}
+
 			// If line1 matches re1, then transform line2 using re2
 			if !r.re1.MatchString(line1) {
 				fmt.Fprintf(writer, "%s\n", line1)
@@ -60,7 +83,6 @@ func (r *MultiLineRedactor) Redact(input io.Reader, path string) io.Reader {
 				continue
 			}
 			flushLastLine = false
-
 			clean := r.re2.ReplaceAllString(line2, substStr)
 
 			// io.WriteString would be nicer, but reader strips new lines
