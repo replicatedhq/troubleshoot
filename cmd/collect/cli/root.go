@@ -65,7 +65,7 @@ func RootCmd() *cobra.Command {
 	k8sutil.AddFlags(cmd.Flags())
 
 	// Initialize klog flags
-	logger.InitKlogFlags(cmd)
+	logger.InitKlogFlags(cmd.Flags())
 
 	// CPU and memory profiling flags
 	util.AddProfilingFlags(cmd)

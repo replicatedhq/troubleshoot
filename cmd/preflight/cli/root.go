@@ -71,7 +71,7 @@ that a cluster meets the requirements to run an application.`,
 	k8sutil.AddFlags(cmd.Flags())
 
 	// Initialize klog flags
-	logger.InitKlogFlags(cmd)
+	logger.InitKlogFlags(cmd.Flags())
 
 	// CPU and memory profiling flags
 	util.AddProfilingFlags(cmd)

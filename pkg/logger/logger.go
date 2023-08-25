@@ -18,10 +18,11 @@ package logger
 
 import (
 	"flag"
+	"fmt"
 	"sync"
 
 	"github.com/go-logr/logr"
-	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	"k8s.io/klog/v2"
 )
@@ -29,7 +30,7 @@ import (
 var lock sync.Mutex
 
 // InitKlogFlags initializes klog flags and adds them to the cobra command.
-func InitKlogFlags(cmd *cobra.Command) {
+func InitKlogFlags(flags *pflag.FlagSet) {
 	// Initialize klog flags
 	klogFlags := flag.NewFlagSet("klog", flag.ExitOnError)
 	klog.InitFlags(klogFlags)
@@ -40,7 +41,26 @@ func InitKlogFlags(cmd *cobra.Command) {
 			// If we ever want to expose the klog flags that have underscores ("_") in them
 			// we need to replace them with hyphens ("-") in the flag name using
 			// pflag.NormalizedName(strings.ReplaceAll(name, "_", "-")). Check how kubectl does it
-			cmd.Flags().AddGoFlag(f)
+			flags.AddGoFlag(f)
+		}
+	})
+}
+
+// InitKlog initializes klog with a specific verbosity. This is useful when we want to
+// use klog in a library and we want to control the verbosity from the library's caller.
+// We can use this in tests to print instrumented logs for example.
+func InitKlog(verbosity int) {
+	// Initialize klog flags
+	klogFlags := flag.NewFlagSet("klog", flag.ExitOnError)
+	klog.InitFlags(klogFlags)
+
+	klogFlags.VisitAll(func(f *flag.Flag) {
+		// Just the flags we want to expose in our CLI
+		if f.Name == "v" {
+			// If we ever want to expose the klog flags that have underscores ("_") in them
+			// we need to replace them with hyphens ("-") in the flag name using
+			// pflag.NormalizedName(strings.ReplaceAll(name, "_", "-")). Check how kubectl does it
+			f.Value.Set(fmt.Sprintf("%d", verbosity))
 		}
 	})
 }

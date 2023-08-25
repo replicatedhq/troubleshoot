@@ -86,7 +86,7 @@ from a server that can be used to assist when troubleshooting a Kubernetes clust
 	k8sutil.AddFlags(cmd.Flags())
 
 	// Initialize klog flags
-	logger.InitKlogFlags(cmd)
+	logger.InitKlogFlags(cmd.Flags())
 
 	// CPU and memory profiling flags
 	util.AddProfilingFlags(cmd)
