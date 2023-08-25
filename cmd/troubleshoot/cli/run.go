@@ -114,7 +114,7 @@ func runTroubleshoot(v *viper.Viper, arg []string) error {
 			return errors.New("no support bundle specs found in cluster")
 		}
 		for _, sb := range kinds.SupportBundlesV1Beta2 {
-			sb := sb // Why? See https://github.com/golang/go/issues/60078 for more context.
+			sb := sb // Why? https://golang.org/doc/faq#closures_and_goroutines
 			mainBundle = supportbundle.ConcatSpec(mainBundle, &sb)
 		}
 
