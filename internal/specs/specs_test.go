@@ -53,6 +53,12 @@ func Test_SplitTroubleshootSecretLabelSelector(t *testing.T) {
 			expectedSelectors: []string{"a=b"},
 			expectedError:     false,
 		},
+		{
+			name:              "No selector labels to split",
+			selectorString:    "",
+			expectedSelectors: []string{},
+			expectedError:     false,
+		},
 	}
 
 	for _, tt := range tests {
@@ -122,16 +128,14 @@ func TestLoadFromCluster(t *testing.T) {
 			},
 		},
 		{
-			name:      "spec in secret and no selector argument passed default used",
+			name:      "spec in secret and no selector argument passed",
 			namespace: "bigbank",
 			objects: []runtime.Object{
 				secretObject("bigbank", map[string]string{
 					"troubleshoot.io/kind": "support-bundle",
 				}),
 			},
-			want: &loader.TroubleshootKinds{
-				RedactorsV1Beta2: []troubleshootv1beta2.Redactor{theRedactor},
-			},
+			want: loader.NewTroubleshootKinds(),
 		},
 		{
 			name:      "multiple specs default selector",

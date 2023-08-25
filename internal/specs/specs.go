@@ -49,8 +49,9 @@ func SplitTroubleshootSecretLabelSelector(ctx context.Context, labelSelector lab
 
 	parsedSelectorStrings := make([]string, 0)
 	// Combine each troubleshoot requirement with other requirements to form new selectors
-	if len(troubleshootReqs) == 0 {
-		return []string{labelSelector.String()}, nil
+	s := labelSelector.String()
+	if len(troubleshootReqs) == 0 && s != "" {
+		return []string{s}, nil
 	}
 
 	for _, tReq := range troubleshootReqs {
