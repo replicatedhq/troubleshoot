@@ -22,7 +22,7 @@ import (
 	"sync"
 
 	"github.com/go-logr/logr"
-	"github.com/spf13/pflag"
+	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"k8s.io/klog/v2"
 )
@@ -30,7 +30,7 @@ import (
 var lock sync.Mutex
 
 // InitKlogFlags initializes klog flags and adds them to the cobra command.
-func InitKlogFlags(flags *pflag.FlagSet) {
+func InitKlogFlags(cmd *cobra.Command) {
 	// Initialize klog flags
 	klogFlags := flag.NewFlagSet("klog", flag.ExitOnError)
 	klog.InitFlags(klogFlags)
@@ -41,7 +41,7 @@ func InitKlogFlags(flags *pflag.FlagSet) {
 			// If we ever want to expose the klog flags that have underscores ("_") in them
 			// we need to replace them with hyphens ("-") in the flag name using
 			// pflag.NormalizedName(strings.ReplaceAll(name, "_", "-")). Check how kubectl does it
-			flags.AddGoFlag(f)
+			cmd.Flags().AddGoFlag(f)
 		}
 	})
 }

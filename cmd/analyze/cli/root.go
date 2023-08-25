@@ -51,7 +51,7 @@ func RootCmd() *cobra.Command {
 	viper.SetEnvKeyReplacer(strings.NewReplacer("-", "_"))
 
 	// Initialize klog flags
-	logger.InitKlogFlags(cmd.Flags())
+	logger.InitKlogFlags(cmd)
 
 	k8sutil.AddFlags(cmd.Flags())
 
