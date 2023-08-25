@@ -111,7 +111,7 @@ func runTroubleshoot(v *viper.Viper, arg []string) error {
 			return err
 		}
 		if len(kinds.SupportBundlesV1Beta2) == 0 {
-			return errors.New("no specs found in cluster")
+			return errors.New("no support bundle specs found in cluster")
 		}
 		for _, sb := range kinds.SupportBundlesV1Beta2 {
 			sb := sb // Why? See https://github.com/golang/go/issues/60078 for more context.

@@ -63,10 +63,7 @@ func SplitTroubleshootSecretLabelSelector(ctx context.Context, labelSelector lab
 }
 
 func LoadFromCLIArgs(ctx context.Context, client kubernetes.Interface, args []string, vp *viper.Viper) (*loader.TroubleshootKinds, error) {
-	var theSpec []byte
-	var err error
-
-	kinds := loader.NewTroubleshootKinds()
+	rawSpecs := []string{}
 
 	for _, v := range args {
 		if strings.HasPrefix(v, "secret/") {
@@ -81,20 +78,20 @@ func LoadFromCLIArgs(ctx context.Context, client kubernetes.Interface, args []st
 				return nil, types.NewExitCodeError(constants.EXIT_CODE_SPEC_ISSUES, errors.Wrap(err, "failed to get spec from secret"))
 			}
 
-			theSpec = spec
-		} else if _, err = os.Stat(v); err == nil {
+			rawSpecs = append(rawSpecs, string(spec))
+		} else if _, err := os.Stat(v); err == nil {
 			b, err := os.ReadFile(v)
 			if err != nil {
 				return nil, types.NewExitCodeError(constants.EXIT_CODE_SPEC_ISSUES, err)
 			}
 
-			theSpec = b
+			rawSpecs = append(rawSpecs, string(b))
 		} else if v == "-" {
 			b, err := io.ReadAll(os.Stdin)
 			if err != nil {
 				return nil, types.NewExitCodeError(constants.EXIT_CODE_CATCH_ALL, err)
 			}
-			theSpec = b
+			rawSpecs = append(rawSpecs, string(b))
 		} else {
 			u, err := url.Parse(v)
 			if err != nil {
@@ -111,7 +108,7 @@ func LoadFromCLIArgs(ctx context.Context, client kubernetes.Interface, args []st
 					return nil, types.NewExitCodeError(constants.EXIT_CODE_SPEC_ISSUES, err)
 				}
 
-				theSpec = content
+				rawSpecs = append(rawSpecs, string(content))
 			} else {
 				if !util.IsURL(v) {
 					return nil, types.NewExitCodeError(constants.EXIT_CODE_SPEC_ISSUES, fmt.Errorf("%s is not a URL and was not found (err %s)", v, err))
@@ -135,27 +132,25 @@ func LoadFromCLIArgs(ctx context.Context, client kubernetes.Interface, args []st
 					return nil, types.NewExitCodeError(constants.EXIT_CODE_SPEC_ISSUES, err)
 				}
 
-				theSpec = body
+				rawSpecs = append(rawSpecs, string(body))
 			}
 		}
+	}
 
-		k, err := loader.LoadSpecs(ctx, loader.LoadOptions{
-			RawSpec: string(theSpec),
-		})
-		if err != nil {
-			return nil, err
-		}
-
-		kinds.Add(k)
+	kinds, err := loader.LoadSpecs(ctx, loader.LoadOptions{
+		RawSpecs: rawSpecs,
+	})
+	if err != nil {
+		return nil, err
 	}
 
 	if vp.GetBool("load-cluster-specs") {
-		clusterSpecs, err := LoadFromCluster(ctx, client, vp.GetStringSlice("selector"), vp.GetString("namespace"))
+		clusterKinds, err := LoadFromCluster(ctx, client, vp.GetStringSlice("selector"), vp.GetString("namespace"))
 		if err != nil {
 			return nil, types.NewExitCodeError(constants.EXIT_CODE_SPEC_ISSUES, err)
 		}
 
-		kinds.Add(clusterSpecs)
+		kinds.Add(clusterKinds)
 	}
 
 	return kinds, nil
