@@ -83,11 +83,14 @@ func (c *CollectHTTP) Collect(progressChan chan<- interface{}) (CollectorResult,
 }
 
 func doGet(get *troubleshootv1beta2.Get) (*http.Response, error) {
+
 	httpClient := http.DefaultClient
 	if get.InsecureSkipVerify {
 		httpClient = httpInsecureClient
 	}
-
+	if get.Timeout != 0 {
+		httpClient.Timeout = get.Timeout
+	}
 	req, err := http.NewRequest("GET", get.URL, nil)
 	if err != nil {
 		return nil, err
@@ -105,7 +108,9 @@ func doPost(post *troubleshootv1beta2.Post) (*http.Response, error) {
 	if post.InsecureSkipVerify {
 		httpClient = httpInsecureClient
 	}
-
+	if post.Timeout != 0 {
+		httpClient.Timeout = post.Timeout
+	}
 	req, err := http.NewRequest("POST", post.URL, strings.NewReader(post.Body))
 	if err != nil {
 		return nil, err
@@ -123,7 +128,9 @@ func doPut(put *troubleshootv1beta2.Put) (*http.Response, error) {
 	if put.InsecureSkipVerify {
 		httpClient = httpInsecureClient
 	}
-
+	if put.Timeout != 0 {
+		httpClient.Timeout = put.Timeout
+	}
 	req, err := http.NewRequest("PUT", put.URL, strings.NewReader(put.Body))
 	if err != nil {
 		return nil, err
