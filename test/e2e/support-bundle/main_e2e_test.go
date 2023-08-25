@@ -18,17 +18,18 @@ import (
 
 var testenv env.Environment
 
+const ClusterName = "kind-cluster"
+
 func TestMain(m *testing.M) {
 	testenv = env.New()
-	kindClusterName := envconf.RandomName("e2e-cluster", 16)
 	namespace := envconf.RandomName("default", 16)
 	testenv.Setup(
-		envfuncs.CreateKindCluster(kindClusterName),
+		envfuncs.CreateKindCluster(ClusterName),
 		envfuncs.CreateNamespace(namespace),
 	)
 	testenv.Finish(
 		envfuncs.DeleteNamespace(namespace),
-		envfuncs.DestroyKindCluster(kindClusterName),
+		envfuncs.DestroyKindCluster(ClusterName),
 	)
 	os.Exit(testenv.Run(m))
 }
