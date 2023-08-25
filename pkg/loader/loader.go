@@ -86,6 +86,17 @@ func (kinds *TroubleshootKinds) IsEmpty() bool {
 		len(kinds.SupportBundlesV1Beta2) == 0
 }
 
+func (kinds *TroubleshootKinds) Add(other *TroubleshootKinds) {
+	kinds.AnalyzersV1Beta2 = append(kinds.AnalyzersV1Beta2, other.AnalyzersV1Beta2...)
+	kinds.CollectorsV1Beta2 = append(kinds.CollectorsV1Beta2, other.CollectorsV1Beta2...)
+	kinds.HostCollectorsV1Beta2 = append(kinds.HostCollectorsV1Beta2, other.HostCollectorsV1Beta2...)
+	kinds.HostPreflightsV1Beta2 = append(kinds.HostPreflightsV1Beta2, other.HostPreflightsV1Beta2...)
+	kinds.PreflightsV1Beta2 = append(kinds.PreflightsV1Beta2, other.PreflightsV1Beta2...)
+	kinds.RedactorsV1Beta2 = append(kinds.RedactorsV1Beta2, other.RedactorsV1Beta2...)
+	kinds.RemoteCollectorsV1Beta2 = append(kinds.RemoteCollectorsV1Beta2, other.RemoteCollectorsV1Beta2...)
+	kinds.SupportBundlesV1Beta2 = append(kinds.SupportBundlesV1Beta2, other.SupportBundlesV1Beta2...)
+}
+
 func NewTroubleshootKinds() *TroubleshootKinds {
 	return &TroubleshootKinds{}
 }

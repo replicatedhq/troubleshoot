@@ -1,6 +1,7 @@
 package specs
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -51,7 +52,7 @@ func Test_SplitTroubleshootSecretLabelSelector(t *testing.T) {
 				return
 			}
 
-			gotSelectors, err := SplitTroubleshootSecretLabelSelector(nil, selector)
+			gotSelectors, err := SplitTroubleshootSecretLabelSelector(context.TODO(), selector)
 			if (err != nil) != tt.expectedError {
 				t.Errorf("Expected error: %v, got: %v", tt.expectedError, err)
 				return

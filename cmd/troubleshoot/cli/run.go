@@ -259,11 +259,12 @@ the %s Admin Console to begin analysis.`
 }
 
 // loadClusterSpecs loads the support bundle and redactor specs from the cluster
-// based on the provided labels. By default this will be troubleshoot.io/kind=support-bundle and troubleshoot.sh/kind=support-bundle label selectors. We search for secrets
-// and configmaps with the label selector and parse the data as a support bundle. If the
-// user does not have sufficient permissions to list & read secrets and configmaps from
-// all namespaces, we will fallback to trying each namespace individually, and eventually
-// default to the configured kubeconfig namespace.
+// based on the provided labels. By default this will be troubleshoot.io/kind=support-bundle
+// and troubleshoot.sh/kind=support-bundle labels. We search for secrets and configmaps
+// with the label selector and parse the data as a support bundle. If the user does
+// not have sufficient permissions to list & read secrets and configmaps from all namespaces,
+// we will fallback to trying each namespace individually, and eventually default to
+// the configured kubeconfig namespace.
 func loadClusterSpecs() (*troubleshootv1beta2.SupportBundle, *troubleshootv1beta2.Redactor, error) {
 	redactors := &troubleshootv1beta2.Redactor{}
 
@@ -271,6 +272,7 @@ func loadClusterSpecs() (*troubleshootv1beta2.SupportBundle, *troubleshootv1beta
 
 	klog.Info("Discover troubleshoot specs from cluster")
 
+	// TODO: Use specs.LoadFromCluster instead
 	selectors := v.GetStringSlice("selector")
 	if reflect.DeepEqual(selectors, []string{"troubleshoot.sh/kind=support-bundle"}) {
 		// Its the default selector so we append troubleshoot.io/kind=support-bundle to it due to backwards compatibility
