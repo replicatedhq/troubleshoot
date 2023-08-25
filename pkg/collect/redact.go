@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
@@ -17,97 +18,128 @@ import (
 )
 
 func RedactResult(bundlePath string, input CollectorResult, additionalRedactors []*troubleshootv1beta2.Redact) error {
+	wg := &sync.WaitGroup{}
+
+	// Error channel to capture errors from goroutines
+	errorCh := make(chan error, len(input))
+
 	for k, v := range input {
-		file := k
 
-		var reader io.Reader
-		if v == nil {
-			// Collected contents are in a file. Get a reader to the file.
-			info, err := os.Lstat(filepath.Join(bundlePath, file))
-			if err != nil {
-				if os.IsNotExist(errors.Cause(err)) {
-					// File not found, moving on.
-					continue
-				}
-				return errors.Wrap(err, "failed to stat file")
-			}
+		wg.Add(1)
 
-			// Redact the target file of a symlink
-			// There is an opportunity for improving performance here by skipping symlinks
-			// if a target has been redacted already, but that would require
-			// some extra logic to ensure that a spec filtering only symlinks still works.
-			if info.Mode().Type() == os.ModeSymlink {
-				symlink := file
-				target, err := os.Readlink(filepath.Join(bundlePath, symlink))
+		go func(file string, data []byte) {
+			defer wg.Done()
+			var reader io.Reader
+			if data == nil {
+
+				// Collected contents are in a file. Get a reader to the file.
+				info, err := os.Lstat(filepath.Join(bundlePath, file))
 				if err != nil {
-					return errors.Wrap(err, "failed to read symlink")
+					if os.IsNotExist(errors.Cause(err)) {
+						// File not found, moving on.
+						return
+					}
+					errorCh <- errors.Wrap(err, "failed to stat file")
+					return
 				}
 
-				// Get the relative path to the target file to conform with
-				// the path formats of the CollectorResult
-				file, err = filepath.Rel(bundlePath, target)
-				if err != nil {
-					return errors.Wrap(err, "failed to get relative path")
+				// Redact the target file of a symlink
+				// There is an opportunity for improving performance here by skipping symlinks
+				// if a target has been redacted already, but that would require
+				// some extra logic to ensure that a spec filtering only symlinks still works.
+				if info.Mode().Type() == os.ModeSymlink {
+					symlink := file
+					target, err := os.Readlink(filepath.Join(bundlePath, symlink))
+					if err != nil {
+						errorCh <- errors.Wrap(err, "failed to read symlink")
+						return
+					}
+					// Get the relative path to the target file to conform with
+					// the path formats of the CollectorResult
+					file, err = filepath.Rel(bundlePath, target)
+					if err != nil {
+						errorCh <- errors.Wrap(err, "failed to get relative path")
+						return
+					}
+					klog.V(2).Infof("Redacting %s (symlink => %s)\n", file, symlink)
+				} else {
+					klog.V(2).Infof("Redacting %s\n", file)
 				}
-				klog.V(2).Infof("Redacting %s (symlink => %s)\n", file, symlink)
+				r, err := input.GetReader(bundlePath, file)
+				if err != nil {
+					if os.IsNotExist(errors.Cause(err)) {
+						return
+					}
+					errorCh <- errors.Wrap(err, "failed to get reader")
+					return
+				}
+				defer r.Close()
+
+				reader = r
 			} else {
-				klog.V(2).Infof("Redacting %s\n", file)
+				// Collected contents are in memory. Get a reader to the memory buffer.
+				reader = bytes.NewBuffer(data)
 			}
-			r, err := input.GetReader(bundlePath, file)
-			if err != nil {
-				if os.IsNotExist(errors.Cause(err)) {
-					continue
+
+			// If the file is .tar, .tgz or .tar.gz, it must not be redacted. Instead it is
+			// decompressed and each file inside the tar redacted and compressed back into the archive.
+			if filepath.Ext(file) == ".tar" || filepath.Ext(file) == ".tgz" || strings.HasSuffix(file, ".tar.gz") {
+				tmpDir, err := ioutil.TempDir("", "troubleshoot-subresult-")
+				if err != nil {
+					errorCh <- errors.Wrap(err, "failed to create temp dir")
+					return
 				}
-				return errors.Wrap(err, "failed to get reader")
+				defer os.RemoveAll(tmpDir)
+
+				subResult, tarHeaders, err := decompressFile(tmpDir, reader, file)
+				if err != nil {
+					errorCh <- errors.Wrap(err, "failed to decompress file")
+					return
+				}
+				err = RedactResult(tmpDir, subResult, additionalRedactors)
+				if err != nil {
+					errorCh <- errors.Wrap(err, "failed to redact file")
+					return
+				}
+
+				dstFilename := filepath.Join(bundlePath, file)
+				err = compressFiles(tmpDir, subResult, tarHeaders, dstFilename)
+				if err != nil {
+					errorCh <- errors.Wrap(err, "failed to re-compress file")
+					return
+				}
+
+				os.RemoveAll(tmpDir) // ensure clean up on each iteration in addition to the defer
+
+				//Content of the tar file was redacted. return to next file.
+				return
 			}
-			defer r.Close()
 
-			reader = r
-		} else {
-			// Collected contents are in memory. Get a reader to the memory buffer.
-			reader = bytes.NewBuffer(v)
-		}
-
-		// If the file is .tar, .tgz or .tar.gz, it must not be redacted. Instead it is
-		// decompressed and each file inside the tar redacted and compressed back into the archive.
-		if filepath.Ext(file) == ".tar" || filepath.Ext(file) == ".tgz" || strings.HasSuffix(file, ".tar.gz") {
-			tmpDir, err := ioutil.TempDir("", "troubleshoot-subresult-")
+			redacted, err := redact.Redact(reader, file, additionalRedactors)
 			if err != nil {
-				return errors.Wrap(err, "failed to create temp dir")
+				errorCh <- errors.Wrap(err, "failed to redact io stream")
+				return
 			}
-			defer os.RemoveAll(tmpDir)
 
-			subResult, tarHeaders, err := decompressFile(tmpDir, reader, file)
+			err = input.ReplaceResult(bundlePath, file, redacted)
 			if err != nil {
-				return errors.Wrap(err, "failed to decompress file")
+				errorCh <- errors.Wrap(err, "failed to create redacted result")
+				return
 			}
-			err = RedactResult(tmpDir, subResult, additionalRedactors)
-			if err != nil {
-				return errors.Wrap(err, "failed to redact file")
-			}
+		}(k, v)
+	}
 
-			dstFilename := filepath.Join(bundlePath, file)
-			err = compressFiles(tmpDir, subResult, tarHeaders, dstFilename)
-			if err != nil {
-				return errors.Wrap(err, "failed to re-compress file")
-			}
+	go func() {
+		wg.Wait()
+		close(errorCh)
+	}()
 
-			os.RemoveAll(tmpDir) // ensure clean up on each iteration in addition to the defer
-
-			//Content of the tar file was redacted. Continue to next file.
-			continue
-		}
-
-		redacted, err := redact.Redact(reader, file, additionalRedactors)
+	for err := range errorCh {
 		if err != nil {
-			return errors.Wrap(err, "failed to redact io stream")
-		}
-
-		err = input.ReplaceResult(bundlePath, file, redacted)
-		if err != nil {
-			return errors.Wrap(err, "failed to create redacted result")
+			return err
 		}
 	}
+
 	return nil
 }
 

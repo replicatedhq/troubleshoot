@@ -5,9 +5,13 @@ import (
 	"fmt"
 	"io"
 	"regexp"
+	"strings"
+
+	"github.com/replicatedhq/troubleshoot/pkg/constants"
 )
 
 type SingleLineRedactor struct {
+	scan       *regexp.Regexp
 	re         *regexp.Regexp
 	maskText   string
 	filePath   string
@@ -15,12 +19,21 @@ type SingleLineRedactor struct {
 	isDefault  bool
 }
 
-func NewSingleLineRedactor(re, maskText, path, name string, isDefault bool) (*SingleLineRedactor, error) {
-	compiled, err := regexp.Compile(re)
+func NewSingleLineRedactor(re LineRedactor, maskText, path, name string, isDefault bool) (*SingleLineRedactor, error) {
+	var scanCompiled *regexp.Regexp
+	compiled, err := regexp.Compile(re.regex)
 	if err != nil {
 		return nil, err
 	}
-	return &SingleLineRedactor{re: compiled, maskText: maskText, filePath: path, redactName: name, isDefault: isDefault}, nil
+
+	if re.scan != "" {
+		scanCompiled, err = regexp.Compile(re.scan)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return &SingleLineRedactor{scan: scanCompiled, re: compiled, maskText: maskText, filePath: path, redactName: name, isDefault: isDefault}, nil
 }
 
 func (r *SingleLineRedactor) Redact(input io.Reader, path string) io.Reader {
@@ -38,16 +51,25 @@ func (r *SingleLineRedactor) Redact(input io.Reader, path string) io.Reader {
 
 		substStr := getReplacementPattern(r.re, r.maskText)
 
-		reader := bufio.NewReader(input)
+		buf := make([]byte, constants.MAX_BUFFER_CAPACITY)
+		scanner := bufio.NewScanner(input)
+		scanner.Buffer(buf, constants.MAX_BUFFER_CAPACITY)
+
 		lineNum := 0
-		for {
+		for scanner.Scan() {
 			lineNum++
-			var line string
-			line, err = readLine(reader)
-			if err != nil {
-				return
+			line := scanner.Text()
+
+			// is scan is not nil, then check if line matches scan by lowercasing it
+			if r.scan != nil {
+				lowerLine := strings.ToLower(line)
+				if !r.scan.MatchString(lowerLine) {
+					fmt.Fprintf(writer, "%s\n", line)
+					continue
+				}
 			}
 
+			// if scan matches, but re does not, do not redact
 			if !r.re.MatchString(line) {
 				fmt.Fprintf(writer, "%s\n", line)
 				continue
@@ -57,6 +79,7 @@ func (r *SingleLineRedactor) Redact(input io.Reader, path string) io.Reader {
 
 			// io.WriteString would be nicer, but scanner strips new lines
 			fmt.Fprintf(writer, "%s\n", clean)
+
 			if err != nil {
 				return
 			}
@@ -71,6 +94,9 @@ func (r *SingleLineRedactor) Redact(input io.Reader, path string) io.Reader {
 					IsDefaultRedactor: r.isDefault,
 				})
 			}
+		}
+		if scanErr := scanner.Err(); scanErr != nil {
+			err = scanErr
 		}
 	}()
 	return out
