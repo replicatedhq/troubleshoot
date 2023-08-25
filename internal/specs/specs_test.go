@@ -140,6 +140,9 @@ func TestLoadFromCluster(t *testing.T) {
 		{
 			name:      "multiple specs default selector",
 			namespace: "bigbank",
+			selectors: []string{
+				"troubleshoot.sh/kind=support-bundle",
+			},
 			objects: []runtime.Object{
 				secretObject("bigbank", map[string]string{
 					"troubleshoot.io/kind": "support-bundle",
