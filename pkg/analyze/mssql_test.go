@@ -1,8 +1,11 @@
 package analyzer
 
 import (
+	"encoding/json"
+	"reflect"
 	"testing"
 
+	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/replicatedhq/troubleshoot/pkg/collect"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -114,4 +117,110 @@ func Test_compareMssqlConditionalToActual(t *testing.T) {
 
 		})
 	}
+}
+
+func TestAnalyzeMssql_Analyze(t *testing.T) {
+	tests := []struct {
+		name     string
+		analyzer *troubleshootv1beta2.DatabaseAnalyze
+		want     []*AnalyzeResult
+		data     map[string]any
+		wantErr  bool
+	}{
+		{
+			name: "mssql analyze with passing condition",
+			data: map[string]any{
+				"isConnected": true,
+				"version":     "15.0.2000.1565",
+			},
+			analyzer: &troubleshootv1beta2.DatabaseAnalyze{
+				AnalyzeMeta: troubleshootv1beta2.AnalyzeMeta{
+					CheckName: "Must be SQLServer 15.x or later",
+				},
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							Message: "The SQLServer connection checks out",
+						},
+					},
+					{
+						Fail: &troubleshootv1beta2.SingleOutcome{
+							When:    "connected == false",
+							Message: "Cannot connect to SQLServer",
+						},
+					},
+				},
+			},
+			want: []*AnalyzeResult{
+				{
+					Title:   "Must be SQLServer 15.x or later",
+					Message: "The SQLServer connection checks out",
+					IsPass:  true,
+				},
+			},
+		},
+		{
+			name: "mssql analyze with failing condition",
+			data: map[string]any{
+				"isConnected": true,
+				"version":     "14.0.2000.1565",
+			},
+			analyzer: &troubleshootv1beta2.DatabaseAnalyze{
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Fail: &troubleshootv1beta2.SingleOutcome{
+							When:    "version < 15.x",
+							Message: "The SQLServer must be at least version 15",
+						},
+					},
+					{
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							Message: "The SQLServer connection checks out",
+						},
+					},
+				},
+			},
+			want: []*AnalyzeResult{
+				{
+					Title:   "mssql",
+					Message: "The SQLServer must be at least version 15",
+					IsFail:  true,
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			a := &AnalyzeMssql{
+				analyzer: tt.analyzer,
+			}
+
+			getFile := func(_ string) ([]byte, error) {
+				return json.Marshal(tt.data)
+			}
+
+			got, err := a.Analyze(getFile, nil)
+			assert.Equalf(t, tt.wantErr, err != nil, "got error = %v, wantErr %v", err, tt.wantErr)
+
+			got2 := fromPointerSlice(got)
+			want2 := fromPointerSlice(tt.want)
+			if !reflect.DeepEqual(got2, want2) {
+				t.Errorf("got = %v, want %v", toJSON(got2), toJSON(want2))
+			}
+		})
+	}
+}
+
+func fromPointerSlice(in []*AnalyzeResult) []AnalyzeResult {
+	out := make([]AnalyzeResult, len(in))
+	for i := range in {
+		out[i] = *in[i]
+	}
+	return out
+}
+
+func toJSON(in any) string {
+	out, _ := json.MarshalIndent(in, "", "  ")
+	return string(out)
 }
