@@ -228,81 +228,31 @@ func LoadFromCluster(ctx context.Context, client kubernetes.Interface, selectors
 		klog.Errorf("failed to parse troubleshoot labels selector %s", err)
 	}
 
-	// Search cluster for support bundle specs
+	// Iteratively search for troubleshoot specs in all namespaces using the given selectors
 	for _, parsedSelectorString := range parsedSelectorStrings {
-		klog.V(1).Infof("Search support bundle specs from [%q] namespace using %q selector", strings.Join(namespaces, ", "), parsedSelectorString)
+		klog.V(1).Infof("Search specs from [%q] namespace using %q selector", strings.Join(namespaces, ", "), parsedSelectorString)
 		for _, ns := range namespaces {
-			specs, err := LoadFromSecretMatchingLabel(ctx, client, parsedSelectorString, ns, constants.SupportBundleKey)
-			if err != nil {
-				if !k8serrors.IsForbidden(err) {
-					klog.Errorf("failed to load support bundle spec from secrets: %s", err)
-				} else {
-					klog.Warningf("Reading secrets from %q namespace forbidden", ns)
+			for _, key := range []string{constants.SupportBundleKey, constants.PreflightKey, constants.RedactorKey} {
+				specs, err := LoadFromSecretMatchingLabel(ctx, client, parsedSelectorString, ns, key)
+				if err != nil {
+					if !k8serrors.IsForbidden(err) {
+						klog.Errorf("failed to load support bundle spec from secrets: %s", err)
+					} else {
+						klog.Warningf("Reading secrets from %q namespace forbidden", ns)
+					}
 				}
-			}
-			rawSpecs = append(rawSpecs, specs...)
+				rawSpecs = append(rawSpecs, specs...)
 
-			specs, err = LoadFromConfigMapMatchingLabel(ctx, client, parsedSelectorString, ns, constants.SupportBundleKey)
-			if err != nil {
-				if !k8serrors.IsForbidden(err) {
-					klog.Errorf("failed to load support bundle spec from configmap: %s", err)
-				} else {
-					klog.Warningf("Reading configmaps from %q namespace forbidden", ns)
+				specs, err = LoadFromConfigMapMatchingLabel(ctx, client, parsedSelectorString, ns, key)
+				if err != nil {
+					if !k8serrors.IsForbidden(err) {
+						klog.Errorf("failed to load support bundle spec from configmap: %s", err)
+					} else {
+						klog.Warningf("Reading configmaps from %q namespace forbidden", ns)
+					}
 				}
+				rawSpecs = append(rawSpecs, specs...)
 			}
-			rawSpecs = append(rawSpecs, specs...)
-		}
-	}
-
-	// Search cluster for preflight specs
-	for _, parsedSelectorString := range parsedSelectorStrings {
-		klog.V(1).Infof("Search preflight specs from [%q] namespace using %q selector", strings.Join(namespaces, ", "), parsedSelectorString)
-		for _, ns := range namespaces {
-			specs, err := LoadFromSecretMatchingLabel(ctx, client, parsedSelectorString, ns, constants.SupportBundleKey)
-			if err != nil {
-				if !k8serrors.IsForbidden(err) {
-					klog.Errorf("failed to load preflight spec from secrets: %s", err)
-				} else {
-					klog.Warningf("Reading secrets from %q namespace forbidden", ns)
-				}
-			}
-			rawSpecs = append(rawSpecs, specs...)
-
-			specs, err = LoadFromConfigMapMatchingLabel(ctx, client, parsedSelectorString, ns, constants.SupportBundleKey)
-			if err != nil {
-				if !k8serrors.IsForbidden(err) {
-					klog.Errorf("failed to load preflight spec from configmap: %s", err)
-				} else {
-					klog.Warningf("Reading configmaps from %q namespace forbidden", ns)
-				}
-			}
-			rawSpecs = append(rawSpecs, specs...)
-		}
-	}
-
-	// Search cluster for redactor specs
-	for _, parsedSelectorString := range parsedSelectorStrings {
-		klog.V(1).Infof("Search redactor specs from [%q] namespace using %q selector", strings.Join(namespaces, ", "), parsedSelectorString)
-		for _, ns := range namespaces {
-			specs, err := LoadFromSecretMatchingLabel(ctx, client, parsedSelectorString, ns, constants.RedactorKey)
-			if err != nil {
-				if !k8serrors.IsForbidden(err) {
-					klog.Errorf("failed to load support bundle spec from secrets: %s", err)
-				} else {
-					klog.Warningf("Reading secrets from %q namespace forbidden", ns)
-				}
-			}
-			rawSpecs = append(rawSpecs, specs...)
-
-			specs, err = LoadFromConfigMapMatchingLabel(ctx, client, parsedSelectorString, ns, constants.RedactorKey)
-			if err != nil {
-				if !k8serrors.IsForbidden(err) {
-					klog.Errorf("failed to load support bundle spec from configmap: %s", err)
-				} else {
-					klog.Warningf("Reading configmaps from %q namespace forbidden", ns)
-				}
-			}
-			rawSpecs = append(rawSpecs, specs...)
 		}
 	}
 

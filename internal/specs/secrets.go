@@ -29,7 +29,7 @@ func LoadFromSecret(ctx context.Context, client kubernetes.Interface, ns string,
 func LoadFromSecretMatchingLabel(ctx context.Context, client kubernetes.Interface, label string, ns string, key string) ([]string, error) {
 	var secretsMatchingKey []string
 
-	secrets, err := client.CoreV1().Secrets(ns).List(context.TODO(), metav1.ListOptions{LabelSelector: label})
+	secrets, err := client.CoreV1().Secrets(ns).List(ctx, metav1.ListOptions{LabelSelector: label})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to search for secrets in the cluster")
 	}
