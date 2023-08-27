@@ -244,6 +244,12 @@ type CertificateSource struct {
 	Namespaces []string `json:"namespaces,omitempty" yaml:"namespaces,omitempty"`
 }
 
+type Helm struct {
+	CollectorMeta `json:",inline" yaml:",inline"`
+	Namespace     string `json:"namespace,omitempty" yaml:"namespace,omitempty"`
+	ReleaseName   string `json:"releaseName,omitempty" yaml:"releaseName,omitempty"`
+}
+
 type Collect struct {
 	ClusterInfo      *ClusterInfo      `json:"clusterInfo,omitempty" yaml:"clusterInfo,omitempty"`
 	ClusterResources *ClusterResources `json:"clusterResources,omitempty" yaml:"clusterResources,omitempty"`
@@ -268,6 +274,7 @@ type Collect struct {
 	RegistryImages   *RegistryImages   `json:"registryImages,omitempty" yaml:"registryImages,omitempty"`
 	Sysctl           *Sysctl           `json:"sysctl,omitempty" yaml:"sysctl,omitempty"`
 	Certificates     *Certificates     `json:"certificates,omitempty" yaml:"certificates,omitempty"`
+	Helm             *Helm             `json:"helm,omitempty" yaml:"helm,omitempty"`
 }
 
 func (c *Collect) AccessReviewSpecs(overrideNS string) []authorizationv1.SelfSubjectAccessReviewSpec {
