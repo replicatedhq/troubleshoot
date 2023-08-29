@@ -13,7 +13,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-func DumpSpecCmd() *cobra.Command {
+func PrintSpecCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "dump [URI]",
 		Args:  cobra.MinimumNArgs(0),
@@ -51,6 +51,10 @@ func printSpecs(args []string) error {
 		return err
 	}
 
+	// TODO: Considerations
+	// - Apply merge logic to all specs and print the merged spec
+	// - Conside command that called this function i.e preflight, support-bundle etc and print selected spec
+	//   This will mean adding util functions that remove unwanted specs from the kinds object
 	asYaml, err := kinds.ToYaml()
 	if err != nil {
 		return err

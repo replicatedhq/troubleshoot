@@ -62,7 +62,7 @@ from a server that can be used to assist when troubleshooting a Kubernetes clust
 
 	cmd.AddCommand(Analyze())
 	cmd.AddCommand(Redact())
-	cmd.AddCommand(util.DumpSpecCmd())
+	cmd.AddCommand(util.PrintSpecCmd())
 	cmd.AddCommand(util.VersionCmd())
 
 	cmd.Flags().StringSlice("redactors", []string{}, "names of the additional redactors to use")

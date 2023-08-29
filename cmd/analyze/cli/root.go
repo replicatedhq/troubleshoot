@@ -43,7 +43,7 @@ func RootCmd() *cobra.Command {
 
 	cobra.OnInitialize(initConfig)
 
-	cmd.AddCommand(util.DumpSpecCmd())
+	cmd.AddCommand(util.PrintSpecCmd())
 	cmd.AddCommand(util.VersionCmd())
 
 	cmd.Flags().String("analyzers", "", "filename or url of the analyzers to use")

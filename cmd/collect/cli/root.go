@@ -43,7 +43,7 @@ func RootCmd() *cobra.Command {
 
 	cobra.OnInitialize(initConfig)
 
-	cmd.AddCommand(util.DumpSpecCmd())
+	cmd.AddCommand(util.PrintSpecCmd())
 	cmd.AddCommand(util.VersionCmd())
 
 	cmd.Flags().StringSlice("redactors", []string{}, "names of the additional redactors to use")
