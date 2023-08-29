@@ -28,13 +28,20 @@ func (c *CollectHostHTTP) Collect(progressChan chan<- interface{}) (map[string][
 	var response *http.Response
 	var err error
 
-	if httpCollector.Get != nil {
-		response, err = doGet(httpCollector.Get)
-	} else if httpCollector.Post != nil {
-		response, err = doPost(httpCollector.Post)
-	} else if httpCollector.Put != nil {
-		response, err = doPut(httpCollector.Put)
-	} else {
+	switch {
+	case httpCollector.Get != nil:
+		response, err = doRequest(
+			"GET", httpCollector.Get.URL, httpCollector.Get.Headers,
+			"", httpCollector.Get.InsecureSkipVerify, httpCollector.Get.Timeout)
+	case httpCollector.Post != nil:
+		response, err = doRequest(
+			"POST", httpCollector.Post.URL, httpCollector.Post.Headers,
+			httpCollector.Post.Body, httpCollector.Post.InsecureSkipVerify, httpCollector.Post.Timeout)
+	case httpCollector.Put != nil:
+		response, err = doRequest(
+			"PUT", httpCollector.Put.URL, httpCollector.Put.Headers,
+			httpCollector.Put.Body, httpCollector.Put.InsecureSkipVerify, httpCollector.Put.Timeout)
+	default:
 		return nil, errors.New("no supported http request type")
 	}
 
