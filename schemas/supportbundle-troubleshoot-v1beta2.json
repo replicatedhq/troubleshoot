@@ -2787,6 +2787,23 @@
                   }
                 }
               },
+              "helm": {
+                "type": "object",
+                "properties": {
+                  "collectorName": {
+                    "type": "string"
+                  },
+                  "exclude": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  },
+                  "namespace": {
+                    "type": "string"
+                  },
+                  "releaseName": {
+                    "type": "string"
+                  }
+                }
+              },
               "http": {
                 "type": "object",
                 "properties": {
