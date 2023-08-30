@@ -53,10 +53,16 @@ func CreateTestFileWithData(t *testing.T, path, data string) {
 func LogJSON(t *testing.T, v interface{}) {
 	t.Helper()
 
+	t.Log(AsJSON(t, v))
+}
+
+func AsJSON(t *testing.T, v interface{}) string {
+	t.Helper()
+
 	b, err := json.MarshalIndent(v, "", "  ")
 	if err != nil {
-		t.Log(v)
+		return fmt.Sprintf("%#v", v)
 	} else {
-		t.Log(string(b))
+		return string(b)
 	}
 }

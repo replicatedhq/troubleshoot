@@ -263,6 +263,16 @@ func TestPreflightSpecsRead(t *testing.T) {
 			wantHostPreflightSpec: nil,
 			wantUploadResultSpecs: nil,
 		},
+		PreflightSpecsReadTest{
+			name:                  "stdin-secret and file-preflight",
+			args:                  []string{"-", preflightFile},
+			customStdin:           true,
+			stdinDataFile:         preflightSecretFile,
+			wantErr:               false,
+			wantPreflightSpec:     concatSpecs(expectSecretPreflightSpec, expectPreflightSpec),
+			wantHostPreflightSpec: nil,
+			wantUploadResultSpecs: nil,
+		},
 		/*
 			/* TODOLATER: needs a cluster with a spec installed?
 			PreflightSpecsReadTest{
@@ -279,6 +289,7 @@ func TestPreflightSpecsRead(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			tt := tt // pin
 			specs := PreflightSpecs{}
 
 			tErr := singleTestPreflightSpecsRead(t, &tt, &specs)
@@ -294,6 +305,15 @@ func TestPreflightSpecsRead(t *testing.T) {
 			assert.Equal(t, specs.UploadResultSpecs, tt.wantUploadResultSpecs)
 		})
 	}
+}
+
+func concatSpecs(target troubleshootv1beta2.Preflight, source troubleshootv1beta2.Preflight) *troubleshootv1beta2.Preflight {
+	newSpec := target.DeepCopy()
+	newSpec.Spec.Collectors = append(newSpec.Spec.Collectors, source.Spec.Collectors...)
+	newSpec.Spec.RemoteCollectors = append(newSpec.Spec.RemoteCollectors, source.Spec.RemoteCollectors...)
+	newSpec.Spec.Analyzers = append(newSpec.Spec.Analyzers, source.Spec.Analyzers...)
+
+	return newSpec
 }
 
 // Structured as a separate function so we can use defer appropriately

@@ -507,3 +507,18 @@ func TestKindsIsEmpty(t *testing.T) {
 	kinds.AnalyzersV1Beta2 = append(kinds.AnalyzersV1Beta2, troubleshootv1beta2.Analyzer{})
 	assert.False(t, kinds.IsEmpty())
 }
+
+func TestAddingKinds(t *testing.T) {
+	a := troubleshootv1beta2.Analyzer{
+		Spec: troubleshootv1beta2.AnalyzerSpec{},
+	}
+	k1 := NewTroubleshootKinds()
+	k1.Add(&TroubleshootKinds{
+		AnalyzersV1Beta2: []troubleshootv1beta2.Analyzer{a},
+	})
+
+	k2 := &TroubleshootKinds{
+		AnalyzersV1Beta2: []troubleshootv1beta2.Analyzer{a},
+	}
+	assert.Equal(t, k2, k1)
+}
