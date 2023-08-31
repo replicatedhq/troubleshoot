@@ -29,22 +29,24 @@ func readSpecs(args []string) (*loader.TroubleshootKinds, error) {
 		return nil, err
 	}
 
-	// Concatenate all preflight specs that don't have an upload destination
-	specs := []troubleshootv1beta2.Preflight{}
+	ret := loader.NewTroubleshootKinds()
+
+	// Concatenate all preflight inclusterSpecs that don't have an upload destination
+	inclusterSpecs := []troubleshootv1beta2.Preflight{}
 	var concatenatedSpec *troubleshootv1beta2.Preflight
 	for _, v := range kinds.PreflightsV1Beta2 {
 		v := v // https://golang.org/doc/faq#closures_and_goroutines
 		if v.Spec.UploadResultsTo == "" {
 			concatenatedSpec = ConcatPreflightSpec(concatenatedSpec, &v)
 		} else {
-			specs = append(specs, v)
+			inclusterSpecs = append(inclusterSpecs, v)
 		}
 	}
 
 	if concatenatedSpec != nil {
-		specs = append(specs, *concatenatedSpec)
+		inclusterSpecs = append(inclusterSpecs, *concatenatedSpec)
 	}
-	kinds.PreflightsV1Beta2 = specs
+	ret.PreflightsV1Beta2 = inclusterSpecs
 
 	var hostSpec *troubleshootv1beta2.HostPreflight
 	for _, v := range kinds.HostPreflightsV1Beta2 {
@@ -52,8 +54,8 @@ func readSpecs(args []string) (*loader.TroubleshootKinds, error) {
 		hostSpec = ConcatHostPreflightSpec(hostSpec, &v)
 	}
 	if hostSpec != nil {
-		kinds.HostPreflightsV1Beta2 = []troubleshootv1beta2.HostPreflight{*hostSpec}
+		ret.HostPreflightsV1Beta2 = []troubleshootv1beta2.HostPreflight{*hostSpec}
 	}
 
-	return kinds, nil
+	return ret, nil
 }

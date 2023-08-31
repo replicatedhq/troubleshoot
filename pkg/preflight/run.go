@@ -43,7 +43,7 @@ func RunPreflights(interactive bool, output string, format string, args []string
 
 	specs, err := readSpecs(args)
 	if err != nil {
-		return err
+		return types.NewExitCodeError(constants.EXIT_CODE_SPEC_ISSUES, err)
 	}
 
 	if viper.GetBool("dry-run") {

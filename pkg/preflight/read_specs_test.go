@@ -273,6 +273,32 @@ func TestPreflightSpecsRead(t *testing.T) {
 			wantHostPreflightSpec: nil,
 			wantUploadResultSpecs: nil,
 		},
+		PreflightSpecsReadTest{
+			name: "stdin-secret and support-bundle secret",
+			args: []string{
+				"-",
+				filepath.Join(testutils.FileDir(), "../../testdata/supportbundle/labelled-specs/sb-spec-1.yaml"),
+			},
+			customStdin:           true,
+			stdinDataFile:         preflightSecretFile,
+			wantErr:               false,
+			wantPreflightSpec:     &expectSecretPreflightSpec,
+			wantHostPreflightSpec: nil,
+			wantUploadResultSpecs: nil,
+		},
+		PreflightSpecsReadTest{
+			name: "stdin-secret and redact secret",
+			args: []string{
+				"-",
+				filepath.Join(testutils.FileDir(), "../../testdata/supportbundle/labelled-specs/redact-spec-1.yaml"),
+			},
+			customStdin:           true,
+			stdinDataFile:         preflightSecretFile,
+			wantErr:               false,
+			wantPreflightSpec:     &expectSecretPreflightSpec,
+			wantHostPreflightSpec: nil,
+			wantUploadResultSpecs: nil,
+		},
 		/*
 			/* TODOLATER: needs a cluster with a spec installed?
 			PreflightSpecsReadTest{
@@ -312,6 +338,13 @@ func TestPreflightSpecsRead(t *testing.T) {
 					"expected %v to contain %v", testutils.AsJSON(t, specs.HostPreflightsV1Beta2), testutils.AsJSON(t, specs.HostPreflightsV1Beta2),
 				)
 			}
+
+			assert.Len(t, specs.SupportBundlesV1Beta2, 0)
+			assert.Len(t, specs.RedactorsV1Beta2, 0)
+			assert.Len(t, specs.AnalyzersV1Beta2, 0)
+			assert.Len(t, specs.CollectorsV1Beta2, 0)
+			assert.Len(t, specs.RemoteCollectorsV1Beta2, 0)
+			assert.Len(t, specs.HostCollectorsV1Beta2, 0)
 		})
 	}
 }
