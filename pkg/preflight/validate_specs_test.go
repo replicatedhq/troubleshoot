@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/replicatedhq/troubleshoot/internal/testutils"
+	"github.com/replicatedhq/troubleshoot/pkg/loader"
 	"github.com/replicatedhq/troubleshoot/pkg/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -94,9 +95,13 @@ func TestValidatePreflight(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			testFilePath := filepath.Join(testutils.FileDir(), "../../testdata/preflightspec/"+tt.preflightSpec)
-			kinds, err := readSpecs([]string{testFilePath})
-			require.NoError(t, err)
+			kinds := loader.NewTroubleshootKinds()
+			if tt.preflightSpec != "" {
+				testFilePath := filepath.Join(testutils.FileDir(), "../../testdata/preflightspec/"+tt.preflightSpec)
+				var err error
+				kinds, err = readSpecs([]string{testFilePath})
+				require.NoError(t, err)
+			}
 			gotWarning := validatePreflight(kinds)
 			assert.Equal(t, tt.wantWarning, gotWarning)
 		})
