@@ -16,6 +16,7 @@ const (
 	flagSince                     = "since"
 	flagOutput                    = "output"
 	flagDebug                     = "debug"
+	flagDryRun                    = "dry-run"
 )
 
 type PreflightFlags struct {
@@ -29,6 +30,7 @@ type PreflightFlags struct {
 	Since                     *string
 	Output                    *string
 	Debug                     *bool
+	DryRun                    *bool
 }
 
 var preflightFlags *PreflightFlags
@@ -45,6 +47,7 @@ func NewPreflightFlags() *PreflightFlags {
 		Since:                     utilpointer.String(""),
 		Output:                    utilpointer.String("o"),
 		Debug:                     utilpointer.Bool(false),
+		DryRun:                    utilpointer.Bool(false),
 	}
 }
 
@@ -92,5 +95,8 @@ func (f *PreflightFlags) addFlags(flags *flag.FlagSet) {
 	}
 	if f.Debug != nil {
 		flags.BoolVar(f.Debug, flagDebug, *f.Debug, "enable debug logging")
+	}
+	if f.DryRun != nil {
+		flags.BoolVar(f.DryRun, flagDryRun, *f.DryRun, "print the preflight spec without running preflight checks")
 	}
 }
