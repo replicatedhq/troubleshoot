@@ -66,7 +66,6 @@ that a cluster meets the requirements to run an application.`,
 
 	cmd.AddCommand(util.VersionCmd())
 	cmd.AddCommand(OciFetchCmd())
-	cmd.AddCommand(util.PrintSpecCmd())
 	preflight.AddFlags(cmd.PersistentFlags())
 
 	k8sutil.AddFlags(cmd.Flags())
