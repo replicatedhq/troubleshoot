@@ -1,7 +1,6 @@
 package preflight
 
 import (
-	"log"
 	"os"
 	"path/filepath"
 	"testing"
@@ -372,7 +371,7 @@ func singleTestPreflightSpecsRead(t *testing.T, tt *PreflightSpecsReadTest) (*lo
 
 	if tt.customStdin == true {
 		if err = tmpfile.Close(); err != nil {
-			log.Fatal(err)
+			t.Fatal(err)
 		}
 	}
 
