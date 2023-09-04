@@ -38,7 +38,7 @@ jobs:
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
         shell: bash
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - run: make test
 
@@ -55,7 +55,7 @@ jobs:
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
         shell: bash
 
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: replicatedhq/action-k3s@main
         id: k3s
         with:
@@ -74,7 +74,7 @@ jobs:
           echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
         shell: bash
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 0
       - run: make check-schemas
@@ -90,7 +90,7 @@ jobs:
           echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
         shell: bash
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - run: make generate preflight
       - uses: actions/upload-artifact@v3
         with:
@@ -149,7 +149,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: compile-preflight
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: replicatedhq/action-k3s@main
         id: k3s
         with:
@@ -165,7 +165,7 @@ jobs:
   run-examples:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - run: make run-examples
 
   compile-supportbundle:
@@ -179,7 +179,7 @@ jobs:
           echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
         shell: bash
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - run: make generate support-bundle
       - uses: actions/upload-artifact@v3
         with:
@@ -190,7 +190,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: compile-supportbundle
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: replicatedhq/action-k3s@main
         id: k3s
         with:
@@ -209,7 +209,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: compile-supportbundle
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - uses: replicatedhq/action-k3s@main
         id: k3s
         with:
@@ -234,7 +234,7 @@ jobs:
           echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
         shell: bash
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Download support bundle binary
         uses: actions/download-artifact@v3
         with:
@@ -254,7 +254,7 @@ jobs:
           echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
           echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
         shell: bash
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - run: make generate collect
       - uses: actions/upload-artifact@v3
         with:
@@ -273,7 +273,7 @@ jobs:
             goos: linux
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
@@ -299,7 +299,7 @@ jobs:
     if: startsWith(github.ref, 'refs/tags/v')
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
