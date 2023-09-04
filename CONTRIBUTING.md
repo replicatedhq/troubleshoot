@@ -21,7 +21,7 @@ When implementing a new feature please review the [design principles](./docs/des
 
 To get started we recommend:
 
-1. Go (v1.19 or later)
+1. Go (v1.20 or later)
 2. A Kubernetes cluster (we recommend <https://k3d.io/>. This requires Docker v20.10.5 or later)
 3. Fork and clone the repo to $GOPATH/src/github.com/replicatedhq/
 4. Run `make support-bundle preflight` to generate binaries
