@@ -49,7 +49,7 @@ require (
 	k8s.io/klog/v2 v2.100.1
 	oras.land/oras-go v1.2.3
 	sigs.k8s.io/controller-runtime v0.15.1
-	sigs.k8s.io/e2e-framework v0.2.0
+	sigs.k8s.io/e2e-framework v0.3.0
 )
 
 require (
