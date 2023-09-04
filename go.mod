@@ -40,9 +40,9 @@ require (
 	golang.org/x/exp v0.0.0-20230321023759-10a507213a29
 	golang.org/x/sync v0.3.0
 	gopkg.in/yaml.v2 v2.4.0
-	k8s.io/api v0.27.4
+	k8s.io/api v0.28.1
 	k8s.io/apiextensions-apiserver v0.27.3
-	k8s.io/apimachinery v0.27.4
+	k8s.io/apimachinery v0.28.1
 	k8s.io/apiserver v0.27.4
 	k8s.io/cli-runtime v0.27.4
 	k8s.io/client-go v0.27.4
@@ -71,6 +71,7 @@ require (
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/golang-sql/civil v0.0.0-20220223132316-b832511892a9 // indirect
 	github.com/golang-sql/sqlexp v0.1.0 // indirect
+	github.com/google/gnostic-models v0.6.8 // indirect
 	github.com/google/s2a-go v0.1.3 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.2.3 // indirect
 	github.com/gosuri/uitable v0.0.4 // indirect
@@ -221,7 +222,7 @@ require (
 	go.opencensus.io v0.24.0 // indirect
 	go.starlark.net v0.0.0-20200306205701-8dd3e2ee1dd5 // indirect
 	golang.org/x/crypto v0.11.0 // indirect
-	golang.org/x/net v0.10.0 // indirect
+	golang.org/x/net v0.13.0 // indirect
 	golang.org/x/oauth2 v0.7.0 // indirect
 	golang.org/x/sys v0.11.0 // indirect
 	golang.org/x/term v0.10.0 // indirect
@@ -237,7 +238,7 @@ require (
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	helm.sh/helm/v3 v3.12.3
-	k8s.io/kube-openapi v0.0.0-20230501164219-8b0f38b5fd1f // indirect
+	k8s.io/kube-openapi v0.0.0-20230717233707-2695361300d9 // indirect
 	k8s.io/metrics v0.27.4
 	k8s.io/utils v0.0.0-20230406110748-d93618cff8a2
 	periph.io/x/host/v3 v3.8.2
