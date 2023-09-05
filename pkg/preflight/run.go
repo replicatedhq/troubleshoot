@@ -46,18 +46,18 @@ func RunPreflights(interactive bool, output string, format string, args []string
 		return types.NewExitCodeError(constants.EXIT_CODE_SPEC_ISSUES, err)
 	}
 
+	warning := validatePreflight(specs)
+	if warning != nil {
+		fmt.Println(warning.Warning())
+		return nil
+	}
+
 	if viper.GetBool("dry-run") {
 		out, err := specs.ToYaml()
 		if err != nil {
 			return types.NewExitCodeError(constants.EXIT_CODE_CATCH_ALL, errors.Wrap(err, "failed to convert specs to yaml"))
 		}
 		fmt.Printf("%s", out)
-		return nil
-	}
-
-	warning := validatePreflight(specs)
-	if warning != nil {
-		fmt.Println(warning.Warning())
 		return nil
 	}
 

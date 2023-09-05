@@ -68,7 +68,8 @@ that a cluster meets the requirements to run an application.`,
 	cmd.AddCommand(OciFetchCmd())
 	preflight.AddFlags(cmd.PersistentFlags())
 
-	// Dry run flag should not persist between across subcommands. Adding here to avoid that
+	// Dry run flag should be in cmd.PersistentFlags() flags made available to all subcommands
+	// Adding here to avoid that
 	cmd.Flags().Bool("dry-run", false, "print the preflight spec without running preflight checks")
 
 	k8sutil.AddFlags(cmd.Flags())
