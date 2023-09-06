@@ -639,3 +639,11 @@ func GetCollector(collector *Collect) interface{} {
 
 	return nil
 }
+
+func labelsToSelector(labels map[string]string) []string {
+	selector := []string{}
+	for key, value := range labels {
+		selector = append(selector, fmt.Sprintf("%s=%s", key, value))
+	}
+	return selector
+}

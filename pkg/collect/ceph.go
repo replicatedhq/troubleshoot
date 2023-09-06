@@ -228,11 +228,3 @@ func GetCephCollectorFilepath(name, namespace string) string {
 	parts = append(parts, "ceph")
 	return path.Join(parts...)
 }
-
-func labelsToSelector(labels map[string]string) []string {
-	selector := []string{}
-	for key, value := range labels {
-		selector = append(selector, fmt.Sprintf("%s=%s", key, value))
-	}
-	return selector
-}
