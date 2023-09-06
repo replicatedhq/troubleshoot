@@ -1,14 +1,22 @@
 package collect
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"net/http"
 	"path"
+	"path/filepath"
 	"strings"
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
+	veleroclient "github.com/vmware-tanzu/velero/pkg/generated/clientset/versioned"
+
+	"gopkg.in/yaml.v2"
 	corev1 "k8s.io/api/core/v1"
+	apiErrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/klog/v2"
@@ -40,29 +48,29 @@ var VeleroCommands = []VeleroCommand{
 	{
 		ID:             "get-backups",
 		Command:        []string{"/velero", "get", "backups"},
-		Args:           []string{"-o", "json"},
-		Format:         "json",
+		Args:           []string{"-o", "yaml"},
+		Format:         "yaml",
 		DefaultTimeout: "30s",
 	},
 	{
 		ID:             "get-restores",
 		Command:        []string{"/velero", "get", "restores"},
-		Args:           []string{"-o", "json"},
-		Format:         "json",
+		Args:           []string{"-o", "yaml"},
+		Format:         "yaml",
 		DefaultTimeout: "30s",
 	},
 	{
 		ID:             "describe-backups",
 		Command:        []string{"/velero", "describe", "backups"},
-		Args:           []string{"--details", "-o", "json"},
-		Format:         "json",
+		Args:           []string{"--details", "--colorized", "no"},
+		Format:         "txt",
 		DefaultTimeout: "30s",
 	},
 	{
 		ID:             "describe-restores",
 		Command:        []string{"/velero", "describe", "restores"},
-		Args:           []string{"--details", "-o", "json"},
-		Format:         "json",
+		Args:           []string{"--details", "--colorized", "no"},
+		Format:         "txt",
 		DefaultTimeout: "30s",
 	},
 }
@@ -75,21 +83,12 @@ func (c *CollectVelero) IsExcluded() (bool, error) {
 	return isExcluded(c.Collector.Exclude)
 }
 
-// type VeleroOutput struct {
-// 	Namespace              string                `json:"namespace"`
-// 	Name                   string                `json:"name"`
-// 	BackupStorageLocation  string                `json:"backupStorageLocation"`
-// 	VolumeSnapshotLocation string                `json:"volumeSnapshotLocation"`
-// 	RestoreLocation        VeleroRestoreLocation `json:"restoreLocation"`
-// 	ResticRepositories     VeleroResticRepository
-// }
-
 func (c *CollectVelero) Collect(progressChan chan<- interface{}) (CollectorResult, error) {
-	// implement collector
 	ctx := context.TODO()
 
-	if c.Collector.Namespace == "" {
-		c.Collector.Namespace = DefaultVeleroNamespace
+	ns := DefaultVeleroNamespace
+	if c.Collector.Namespace != "" {
+		ns = c.Collector.Namespace
 	}
 
 	pod, err := findVeleroPod(ctx, c, c.Collector.Namespace)
@@ -98,6 +97,7 @@ func (c *CollectVelero) Collect(progressChan chan<- interface{}) (CollectorResul
 	}
 	output := NewResult()
 
+	// collect output from velero binary
 	if pod != nil {
 		for _, command := range VeleroCommands {
 			err := veleroCommandExec(ctx, progressChan, c, c.Collector, pod, command, output)
@@ -108,6 +108,121 @@ func (c *CollectVelero) Collect(progressChan chan<- interface{}) (CollectorResul
 			}
 		}
 	}
+
+	veleroclient, err := veleroclient.NewForConfig(c.ClientConfig)
+
+	// collect backupstoragelocations.velero.io
+	backupStorageLocations, err := veleroclient.VeleroV1().BackupStorageLocations(c.Collector.Namespace).List(ctx, metav1.ListOptions{})
+	if err != nil {
+		if apiErr, ok := err.(*apiErrors.StatusError); ok {
+			if apiErr.ErrStatus.Code == http.StatusNotFound {
+				klog.V(2).Infof("failed to list backup storage locations in namespace %s", c.Collector.Namespace)
+				return NewResult(), nil
+			}
+		}
+		return nil, errors.Wrap(err, "list backupstoragelocations.velero.io")
+	}
+	dir := GetVeleroBackupStorageLocationsDirectory(ns)
+	for _, backupStorageLocation := range backupStorageLocations.Items {
+		b, err := yaml.Marshal(backupStorageLocation)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to marshal backup storage location %s", backupStorageLocation.Name)
+		}
+		key := filepath.Join(dir, backupStorageLocation.Name+".yaml")
+		output.SaveResult(c.BundlePath, key, bytes.NewBuffer(b))
+	}
+
+	// collect backups.velero.io
+
+	backups, err := veleroclient.VeleroV1().Backups(c.Collector.Namespace).List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return nil, errors.Wrap(err, "list backups.velero.io")
+	}
+	dir = GetVeleroBackupsDirectory(ns)
+	for _, backup := range backups.Items {
+		b, err := yaml.Marshal(backup)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to marshal backup %s", backup.Name)
+		}
+		key := filepath.Join(dir, backup.Name+".yaml")
+		output.SaveResult(c.BundlePath, key, bytes.NewBuffer(b))
+	}
+
+	// collect restores.velero.io
+	restores, err := veleroclient.VeleroV1().Restores(c.Collector.Namespace).List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return nil, errors.Wrap(err, "list restores.velero.io")
+	}
+	dir = GetVeleroRestoresDirectory(ns)
+	for _, restore := range restores.Items {
+		b, err := yaml.Marshal(restore)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to marshal restore %s", restore.Name)
+		}
+		key := filepath.Join(dir, restore.Name+".yaml")
+		output.SaveResult(c.BundlePath, key, bytes.NewBuffer(b))
+	}
+
+	// collect resticrepositories.velero.io
+	// resticRepositories, err := veleroclient.VeleroV1().ResticRepositories(c.Collector.Namespace).List(ctx, metav1.ListOptions{})
+	// if err != nil {
+	// 	return nil, errors.Wrap(err, "list resticrepositories.velero.io")
+	// }
+	// dir = GetVeleroResticRepositoriesDirectory(ns)
+	// for _, resticRepository := range resticRepositories.Items {
+	// 	b, err := yaml.Marshal(resticRepository)
+	// 	if err != nil {
+	// 		return nil, errors.Wrapf(err, "failed to marshal restic repository %s", resticRepository.Name)
+	// 	}
+	// 	key := filepath.Join(dir, resticRepository.Name+".yaml")
+	// 	output.SaveResult(c.BundlePath, key, bytes.NewBuffer(b))
+	// }
+
+	// collect backuprepositories.velero.io
+	backupRepositories, err := veleroclient.VeleroV1().BackupRepositories(c.Collector.Namespace).List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return nil, errors.Wrap(err, "list backuprepositories.velero.io")
+	}
+	dir = GetVeleroBackupRepositoriesDirectory(ns)
+	for _, backupRepository := range backupRepositories.Items {
+		b, err := yaml.Marshal(backupRepository)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to marshal backup repository %s", backupRepository.Name)
+		}
+		key := filepath.Join(dir, backupRepository.Name+".yaml")
+		output.SaveResult(c.BundlePath, key, bytes.NewBuffer(b))
+	}
+
+	// collect podvolumebackups.velero.io
+	podVolumeBackups, err := veleroclient.VeleroV1().PodVolumeBackups(c.Collector.Namespace).List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return nil, errors.Wrap(err, "list podvolumebackups.velero.io")
+	}
+	dir = GetVeleroPodVolumeBackupsDirectory(ns)
+	for _, podVolumeBackup := range podVolumeBackups.Items {
+		b, err := yaml.Marshal(podVolumeBackup)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to marshal pod volume backup %s", podVolumeBackup.Name)
+		}
+		key := filepath.Join(dir, podVolumeBackup.Name+".yaml")
+		output.SaveResult(c.BundlePath, key, bytes.NewBuffer(b))
+	}
+
+	// collect podvolumerestores.velero.io
+	podVolumeRestores, err := veleroclient.VeleroV1().PodVolumeRestores(c.Collector.Namespace).List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return nil, errors.Wrap(err, "list podvolumerestores.velero.io")
+	}
+	dir = GetVeleroPodVolumeRestoresDirectory(ns)
+	for _, podVolumeRestore := range podVolumeRestores.Items {
+		b, err := yaml.Marshal(podVolumeRestore)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to marshal pod volume restore %s", podVolumeRestore.Name)
+		}
+		key := filepath.Join(dir, podVolumeRestore.Name+".yaml")
+		output.SaveResult(c.BundlePath, key, bytes.NewBuffer(b))
+	}
+
 	return output, nil
 }
 
@@ -183,4 +298,32 @@ func GetVeleroCollectorFilepath(name, namespace string) string {
 	}
 	parts = append(parts, "velero")
 	return path.Join(parts...)
+}
+
+func GetVeleroBackupsDirectory(namespace string) string {
+	return fmt.Sprintf("velero/%s/backups", namespace)
+}
+
+func GetVeleroBackupStorageLocationsDirectory(namespace string) string {
+	return fmt.Sprintf("velero/%s/backupstoragelocations", namespace)
+}
+
+func GetVeleroRestoresDirectory(namespace string) string {
+	return fmt.Sprintf("velero/%s/restores", namespace)
+}
+
+func GetVeleroResticRepositoriesDirectory(namespace string) string {
+	return fmt.Sprintf("velero/%s/resticrepositories", namespace)
+}
+
+func GetVeleroBackupRepositoriesDirectory(namespace string) string {
+	return fmt.Sprintf("velero/%s/backuprepositories", namespace)
+}
+
+func GetVeleroPodVolumeBackupsDirectory(namespace string) string {
+	return fmt.Sprintf("velero/%s/podvolumebackups", namespace)
+}
+
+func GetVeleroPodVolumeRestoresDirectory(namespace string) string {
+	return fmt.Sprintf("velero/%s/podvolumerestores", namespace)
 }
