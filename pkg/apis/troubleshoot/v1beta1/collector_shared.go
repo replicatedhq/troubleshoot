@@ -3,6 +3,7 @@ package v1beta1
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/replicatedhq/troubleshoot/pkg/multitype"
 	authorizationv1 "k8s.io/api/authorization/v1"
@@ -100,6 +101,7 @@ type Get struct {
 	URL                string            `json:"url" yaml:"url"`
 	InsecureSkipVerify bool              `json:"insecureSkipVerify,omitempty" yaml:"insecureSkipVerify,omitempty"`
 	Headers            map[string]string `json:"headers,omitempty" yaml:"headers,omitempty"`
+	Timeout            time.Duration     `json:"timeout,omitempty" yaml:"timeout,omitempty"`
 }
 
 type Post struct {
@@ -107,6 +109,7 @@ type Post struct {
 	InsecureSkipVerify bool              `json:"insecureSkipVerify,omitempty" yaml:"insecureSkipVerify,omitempty"`
 	Headers            map[string]string `json:"headers,omitempty" yaml:"headers,omitempty"`
 	Body               string            `json:"body,omitempty" yaml:"body,omitempty"`
+	Timeout            time.Duration     `json:"timeout,omitempty" yaml:"timeout,omitempty"`
 }
 
 type Put struct {
@@ -114,6 +117,7 @@ type Put struct {
 	InsecureSkipVerify bool              `json:"insecureSkipVerify,omitempty" yaml:"insecureSkipVerify,omitempty"`
 	Headers            map[string]string `json:"headers,omitempty" yaml:"headers,omitempty"`
 	Body               string            `json:"body,omitempty" yaml:"body,omitempty"`
+	Timeout            time.Duration     `json:"timeout,omitempty" yaml:"timeout,omitempty"`
 }
 
 type Database struct {

@@ -40,11 +40,11 @@ func (a *AnalyzeMysql) collectorName() string {
 	if a.analyzer.CollectorName != "" {
 		return a.analyzer.CollectorName
 	}
-	return "mysql"
+	return "mssql"
 }
 
 func (a *AnalyzeMysql) analyzeMysql(analyzer *troubleshootv1beta2.DatabaseAnalyze, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
-	fullPath := path.Join("mysql", fmt.Sprintf("%s.json", a.collectorName()))
+	fullPath := path.Join("mssql", fmt.Sprintf("%s.json", a.collectorName()))
 
 	collected, err := getCollectedFileContents(fullPath)
 	if err != nil {
@@ -58,7 +58,7 @@ func (a *AnalyzeMysql) analyzeMysql(analyzer *troubleshootv1beta2.DatabaseAnalyz
 
 	result := &AnalyzeResult{
 		Title:   a.Title(),
-		IconKey: "kubernetes_mysql_analyze",
+		IconKey: "kubernetes_mssql_analyze",
 		IconURI: "https://troubleshoot.sh/images/analyzer-icons/mysql-analyze.svg",
 	}
 

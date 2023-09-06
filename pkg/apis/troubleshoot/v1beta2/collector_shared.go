@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
+	"time"
 
 	"github.com/replicatedhq/troubleshoot/pkg/multitype"
 	authorizationv1 "k8s.io/api/authorization/v1"
@@ -168,6 +169,7 @@ type Get struct {
 	URL                string            `json:"url" yaml:"url"`
 	InsecureSkipVerify bool              `json:"insecureSkipVerify,omitempty" yaml:"insecureSkipVerify,omitempty"`
 	Headers            map[string]string `json:"headers,omitempty" yaml:"headers,omitempty"`
+	Timeout            time.Duration     `json:"timeout,omitempty" yaml:"timeout,omitempty"`
 }
 
 type Post struct {
@@ -175,6 +177,7 @@ type Post struct {
 	InsecureSkipVerify bool              `json:"insecureSkipVerify,omitempty" yaml:"insecureSkipVerify,omitempty"`
 	Headers            map[string]string `json:"headers,omitempty" yaml:"headers,omitempty"`
 	Body               string            `json:"body,omitempty" yaml:"body,omitempty"`
+	Timeout            time.Duration     `json:"timeout,omitempty" yaml:"timeout,omitempty"`
 }
 
 type Put struct {
@@ -182,6 +185,7 @@ type Put struct {
 	InsecureSkipVerify bool              `json:"insecureSkipVerify,omitempty" yaml:"insecureSkipVerify,omitempty"`
 	Headers            map[string]string `json:"headers,omitempty" yaml:"headers,omitempty"`
 	Body               string            `json:"body,omitempty" yaml:"body,omitempty"`
+	Timeout            time.Duration     `json:"timeout,omitempty" yaml:"timeout,omitempty"`
 }
 
 type Database struct {
@@ -244,6 +248,12 @@ type CertificateSource struct {
 	Namespaces []string `json:"namespaces,omitempty" yaml:"namespaces,omitempty"`
 }
 
+type Helm struct {
+	CollectorMeta `json:",inline" yaml:",inline"`
+	Namespace     string `json:"namespace,omitempty" yaml:"namespace,omitempty"`
+	ReleaseName   string `json:"releaseName,omitempty" yaml:"releaseName,omitempty"`
+}
+
 type Collect struct {
 	ClusterInfo      *ClusterInfo      `json:"clusterInfo,omitempty" yaml:"clusterInfo,omitempty"`
 	ClusterResources *ClusterResources `json:"clusterResources,omitempty" yaml:"clusterResources,omitempty"`
@@ -268,6 +278,7 @@ type Collect struct {
 	RegistryImages   *RegistryImages   `json:"registryImages,omitempty" yaml:"registryImages,omitempty"`
 	Sysctl           *Sysctl           `json:"sysctl,omitempty" yaml:"sysctl,omitempty"`
 	Certificates     *Certificates     `json:"certificates,omitempty" yaml:"certificates,omitempty"`
+	Helm             *Helm             `json:"helm,omitempty" yaml:"helm,omitempty"`
 }
 
 func (c *Collect) AccessReviewSpecs(overrideNS string) []authorizationv1.SelfSubjectAccessReviewSpec {

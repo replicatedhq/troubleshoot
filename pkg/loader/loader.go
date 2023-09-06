@@ -86,6 +86,17 @@ func (kinds *TroubleshootKinds) IsEmpty() bool {
 		len(kinds.SupportBundlesV1Beta2) == 0
 }
 
+func (kinds *TroubleshootKinds) Add(other *TroubleshootKinds) {
+	kinds.AnalyzersV1Beta2 = append(kinds.AnalyzersV1Beta2, other.AnalyzersV1Beta2...)
+	kinds.CollectorsV1Beta2 = append(kinds.CollectorsV1Beta2, other.CollectorsV1Beta2...)
+	kinds.HostCollectorsV1Beta2 = append(kinds.HostCollectorsV1Beta2, other.HostCollectorsV1Beta2...)
+	kinds.HostPreflightsV1Beta2 = append(kinds.HostPreflightsV1Beta2, other.HostPreflightsV1Beta2...)
+	kinds.PreflightsV1Beta2 = append(kinds.PreflightsV1Beta2, other.PreflightsV1Beta2...)
+	kinds.RedactorsV1Beta2 = append(kinds.RedactorsV1Beta2, other.RedactorsV1Beta2...)
+	kinds.RemoteCollectorsV1Beta2 = append(kinds.RemoteCollectorsV1Beta2, other.RemoteCollectorsV1Beta2...)
+	kinds.SupportBundlesV1Beta2 = append(kinds.SupportBundlesV1Beta2, other.SupportBundlesV1Beta2...)
+}
+
 func NewTroubleshootKinds() *TroubleshootKinds {
 	return &TroubleshootKinds{}
 }
@@ -147,7 +158,7 @@ func (l *specLoader) loadFromStrings(rawSpecs ...string) (*TroubleshootKinds, er
 			// If it's not a configmap or secret, just append it to the splitdocs
 			splitdocs = append(splitdocs, rawDoc)
 		} else {
-			klog.V(1).Infof("skip loading %q kind", parsed.Kind)
+			klog.V(1).Infof("Skip loading %q kind", parsed.Kind)
 		}
 	}
 
@@ -201,7 +212,12 @@ func (l *specLoader) loadFromSplitDocs(splitdocs []string) (*TroubleshootKinds, 
 		}
 	}
 
-	klog.V(1).Info("loaded troubleshoot specs successfully")
+	if kinds.IsEmpty() {
+		klog.V(1).Info("No troubleshoot specs were loaded")
+	} else {
+		klog.V(1).Info("Loaded troubleshoot specs successfully")
+	}
+
 	return kinds, nil
 }
 
