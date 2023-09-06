@@ -99,7 +99,7 @@ func (kinds *TroubleshootKinds) Add(other *TroubleshootKinds) {
 	kinds.SupportBundlesV1Beta2 = append(kinds.SupportBundlesV1Beta2, other.SupportBundlesV1Beta2...)
 }
 
-// ToYaml returns a yaml string of all the parsed specs
+// ToYaml returns a yaml document/multi-doc of all the parsed specs
 // This function utilises reflection to iterate over all the fields
 // of the TroubleshootKinds object then marshals them to yaml.
 func (kinds *TroubleshootKinds) ToYaml() (string, error) {
