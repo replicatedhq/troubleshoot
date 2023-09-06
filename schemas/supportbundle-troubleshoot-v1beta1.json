@@ -1300,6 +1300,11 @@
                       "insecureSkipVerify": {
                         "type": "boolean"
                       },
+                      "timeout": {
+                        "description": "A Duration represents the elapsed time between two instants as an int64 nanosecond count. The representation limits the largest representable duration to approximately 290 years.",
+                        "type": "integer",
+                        "format": "int64"
+                      },
                       "url": {
                         "type": "string"
                       }
@@ -1326,6 +1331,11 @@
                       "insecureSkipVerify": {
                         "type": "boolean"
                       },
+                      "timeout": {
+                        "description": "A Duration represents the elapsed time between two instants as an int64 nanosecond count. The representation limits the largest representable duration to approximately 290 years.",
+                        "type": "integer",
+                        "format": "int64"
+                      },
                       "url": {
                         "type": "string"
                       }
@@ -1348,6 +1358,11 @@
                       },
                       "insecureSkipVerify": {
                         "type": "boolean"
+                      },
+                      "timeout": {
+                        "description": "A Duration represents the elapsed time between two instants as an int64 nanosecond count. The representation limits the largest representable duration to approximately 290 years.",
+                        "type": "integer",
+                        "format": "int64"
                       },
                       "url": {
                         "type": "string"
