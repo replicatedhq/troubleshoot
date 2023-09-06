@@ -63,14 +63,24 @@ func collectFioResults(opts FioJobOptions) (*FioResult, error) {
 
 	output, err := exec.Command(command[0], command[1:]...).Output()
 	if err != nil {
-		return &FioResult{}, errors.Wrap(err, "failed to run fio.  Is it installed?")
+		if exitErr, ok := err.(*exec.ExitError); ok {
+			if exitErr.ExitCode() == 1 {
+				return nil, errors.Wrapf(err, "fio failed; permission denied opening %s.  ensure this collector runs as root", opts.Directory)
+			} else {
+				return nil, errors.Wrapf(err, "fio failed with exit status %d", exitErr.ExitCode())
+			}
+		} else if e, ok := err.(*exec.Error); ok && e.Err == exec.ErrNotFound {
+			return nil, errors.Wrapf(err, "command not found: %v", command)
+		} else {
+			return nil, errors.Wrapf(err, "failed to run command: %v", command)
+		}
 	}
 
 	var result FioResult
 
 	err = json.Unmarshal([]byte(output), &result)
 	if err != nil {
-		return &FioResult{}, errors.Wrap(err, "failed to unmarshal fio result")
+		return nil, errors.Wrap(err, "failed to unmarshal fio result")
 	}
 
 	return &result, nil
@@ -119,8 +129,13 @@ func collectHostFilesystemPerformance(hostCollector *troubleshootv1beta2.Filesys
 	// Create file handle
 	f, err := os.OpenFile(filename, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0600)
 	if err != nil {
-		log.Panic(err)
-		return nil, errors.Wrapf(err, "open %s", filename)
+		if os.IsPermission(err) {
+			return nil, errors.Wrapf(err, "open %s permission denied; please run this collector as root", filename)
+		} else if os.IsNotExist(err) {
+			return nil, errors.Wrapf(err, "open %s no such file or directory", filename)
+		} else {
+			return nil, errors.Wrapf(err, "open %s for writing failed", filename)
+		}
 	}
 	defer func() {
 		if err := f.Close(); err != nil {
