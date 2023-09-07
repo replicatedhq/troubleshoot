@@ -110,6 +110,9 @@ func (c *CollectVelero) Collect(progressChan chan<- interface{}) (CollectorResul
 	}
 
 	veleroclient, err := veleroclient.NewForConfig(c.ClientConfig)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create velero client")
+	}
 
 	// collect backupstoragelocations.velero.io
 	backupStorageLocations, err := veleroclient.VeleroV1().BackupStorageLocations(c.Collector.Namespace).List(ctx, metav1.ListOptions{})
@@ -223,6 +226,13 @@ func (c *CollectVelero) Collect(progressChan chan<- interface{}) (CollectorResul
 		output.SaveResult(c.BundlePath, key, bytes.NewBuffer(b))
 	}
 
+	// collect logs
+
+	err = c.collectVeleroLogs(ns, output, progressChan)
+	if err != nil {
+		return nil, errors.Wrap(err, "collect velero logs")
+	}
+
 	return output, nil
 }
 
@@ -300,30 +310,50 @@ func GetVeleroCollectorFilepath(name, namespace string) string {
 	return path.Join(parts...)
 }
 
+func (c *CollectVelero) collectVeleroLogs(namespace string, results CollectorResult, progressChan chan<- interface{}) error {
+	veleroLogsCollectorSpec := &troubleshootv1beta2.Logs{
+		Selector:  []string{""},
+		Name:      GetVeleroLogsDirectory(namespace),
+		Namespace: namespace,
+	}
+	rbacErrors := c.GetRBACErrors()
+	logsCollector := &CollectLogs{veleroLogsCollectorSpec, c.BundlePath, namespace, c.ClientConfig, c.Client, c.Context, nil, rbacErrors}
+	logs, err := logsCollector.Collect(progressChan)
+	if err != nil {
+		return err
+	}
+	results.AddResult(logs)
+	return nil
+}
+
 func GetVeleroBackupsDirectory(namespace string) string {
-	return fmt.Sprintf("velero/%s/backups", namespace)
+	return fmt.Sprintf("%s/backups", namespace)
 }
 
 func GetVeleroBackupStorageLocationsDirectory(namespace string) string {
-	return fmt.Sprintf("velero/%s/backupstoragelocations", namespace)
+	return fmt.Sprintf("%s/backupstoragelocations", namespace)
 }
 
 func GetVeleroRestoresDirectory(namespace string) string {
-	return fmt.Sprintf("velero/%s/restores", namespace)
+	return fmt.Sprintf("%s/restores", namespace)
 }
 
 func GetVeleroResticRepositoriesDirectory(namespace string) string {
-	return fmt.Sprintf("velero/%s/resticrepositories", namespace)
+	return fmt.Sprintf("%s/resticrepositories", namespace)
 }
 
 func GetVeleroBackupRepositoriesDirectory(namespace string) string {
-	return fmt.Sprintf("velero/%s/backuprepositories", namespace)
+	return fmt.Sprintf("%s/backuprepositories", namespace)
 }
 
 func GetVeleroPodVolumeBackupsDirectory(namespace string) string {
-	return fmt.Sprintf("velero/%s/podvolumebackups", namespace)
+	return fmt.Sprintf("%s/podvolumebackups", namespace)
 }
 
 func GetVeleroPodVolumeRestoresDirectory(namespace string) string {
-	return fmt.Sprintf("velero/%s/podvolumerestores", namespace)
+	return fmt.Sprintf("%s/podvolumerestores", namespace)
+}
+
+func GetVeleroLogsDirectory(namespace string) string {
+	return fmt.Sprintf("%s/logs", namespace)
 }
