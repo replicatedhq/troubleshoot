@@ -111,7 +111,7 @@ func (f FioResult) Print() string {
 	}
 	res += "Disk stats (read/write):\n"
 	for _, du := range f.DiskUtil {
-		res += fmt.Sprintf("%s\n", du.Print())
+		res += fmt.Sprintf("%s\n", du)
 	}
 
 	return res
@@ -314,7 +314,7 @@ type FioPercentile struct {
 	P9999 int `json:"99.990000,omitempty"`
 }
 
-func (d FioDiskUtil) Print() string {
+func (d FioDiskUtil) String() string {
 	//Disk stats (read/write):
 	//rbd4: ios=30022/11982, merge=0/313, ticks=1028675/1022768, in_queue=2063740, util=99.67%
 	var du string
