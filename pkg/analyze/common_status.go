@@ -65,7 +65,7 @@ func commonStatus(outcomes []*troubleshootv1beta2.Outcome, name string, iconKey 
 			if exists == false && outcome.Warn.When != "absent" {
 				result.IsFail = true
 				result.Message = fmt.Sprintf("The %s %q was not found", resourceType, name)
-				result.URI = outcome.Fail.URI
+				result.URI = outcome.Warn.URI
 				return result, nil
 			}
 
