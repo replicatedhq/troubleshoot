@@ -113,7 +113,6 @@ func (r *MultiLineRedactor) Redact(input io.Reader, path string) io.Reader {
 }
 
 func getNextTwoLines(reader *bufio.Reader, curLine2 []byte) (line1 []byte, line2 []byte, err error) {
-	line1 = []byte{}
 	line2 = []byte{}
 
 	if curLine2 == nil {

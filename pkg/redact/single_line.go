@@ -34,6 +34,15 @@ func NewSingleLineRedactor(re LineRedactor, maskText, path, name string, isDefau
 	return &SingleLineRedactor{scan: scanCompiled, re: compiled, maskText: maskText, filePath: path, redactName: name, isDefault: isDefault}, nil
 }
 
+const (
+	// This is the initial size of the buffer allocated.
+	// Under the hood, an array of size N is allocated in memory
+	BUF_INIT_SIZE = 4096 // 4KB
+
+	// This is the muximum size the buffer can grow to
+	SCANNER_MAX_SIZE = 1024 * 1024 // 1MB
+)
+
 func (r *SingleLineRedactor) Redact(input io.Reader, path string) io.Reader {
 	out, writer := io.Pipe()
 
@@ -49,9 +58,9 @@ func (r *SingleLineRedactor) Redact(input io.Reader, path string) io.Reader {
 
 		substStr := []byte(getReplacementPattern(r.re, r.maskText))
 
-		buf := make([]byte, 4096)
+		buf := make([]byte, BUF_INIT_SIZE)
 		scanner := bufio.NewScanner(input)
-		scanner.Buffer(buf, 1024*1024)
+		scanner.Buffer(buf, SCANNER_MAX_SIZE)
 
 		lineNum := 0
 		for scanner.Scan() {

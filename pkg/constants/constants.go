@@ -82,7 +82,4 @@ const (
 	// TermUI Display Constants
 	MESSAGE_TEXT_PADDING                = 4
 	MESSAGE_TEXT_LINES_MARGIN_TO_BOTTOM = 4
-
-	// Bufio Reader Constants
-	MAX_BUFFER_CAPACITY = 4096
 )
