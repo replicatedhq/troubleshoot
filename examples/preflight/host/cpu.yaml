@@ -4,19 +4,18 @@ metadata:
   name: cpu
 spec:
   collectors:
-    - run:
-        collectorName: "ls"
-        command: "ls"
-        args: ["-al", "/"]
+    - cpu: {}
   analyzers:
-    - textAnalyze:
-        checkName: "check-ls"
-        fileName: host-collectors/run-host/ls.txt
-        regex: "Applications"
+    - cpu:
         outcomes:
-          - pass:
-              when: "true"
-              message: "found it"
           - fail:
-              when: "false"
-              message: "did not find it"
+              when: "physical < 4"
+              message: At least 4 physical CPU cores are required
+          - fail:
+              when: "logical < 8"
+              message: At least 8 CPU cores are required
+          - warn:
+              when: "count < 16"
+              message: At least 16 CPU cores preferred
+          - pass:
+              message: This server has sufficient CPU cores
