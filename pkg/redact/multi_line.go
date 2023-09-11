@@ -2,10 +2,10 @@ package redact
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
 	"io"
 	"regexp"
-	"strings"
 )
 
 type MultiLineRedactor struct {
@@ -48,7 +48,7 @@ func (r *MultiLineRedactor) Redact(input io.Reader, path string) io.Reader {
 			writer.CloseWithError(err)
 		}()
 
-		substStr := getReplacementPattern(r.re2, r.maskText)
+		substStr := []byte(getReplacementPattern(r.re2, r.maskText))
 
 		reader := bufio.NewReader(input)
 		line1, line2, err := getNextTwoLines(reader, nil)
@@ -66,24 +66,24 @@ func (r *MultiLineRedactor) Redact(input io.Reader, path string) io.Reader {
 
 			// is scan is not nil, then check if line1 matches scan by lowercasing it
 			if r.scan != nil {
-				lowerLine1 := strings.ToLower(line1)
-				if !r.scan.MatchString(lowerLine1) {
+				lowerLine1 := bytes.ToLower(line1)
+				if !r.scan.Match(lowerLine1) {
 					fmt.Fprintf(writer, "%s\n", line1)
-					line1, line2, err = getNextTwoLines(reader, &line2)
+					line1, line2, err = getNextTwoLines(reader, line2)
 					flushLastLine = true
 					continue
 				}
 			}
 
 			// If line1 matches re1, then transform line2 using re2
-			if !r.re1.MatchString(line1) {
+			if !r.re1.Match(line1) {
 				fmt.Fprintf(writer, "%s\n", line1)
-				line1, line2, err = getNextTwoLines(reader, &line2)
+				line1, line2, err = getNextTwoLines(reader, line2)
 				flushLastLine = true
 				continue
 			}
 			flushLastLine = false
-			clean := r.re2.ReplaceAllString(line2, substStr)
+			clean := r.re2.ReplaceAll(line2, substStr)
 
 			// io.WriteString would be nicer, but reader strips new lines
 			fmt.Fprintf(writer, "%s\n%s\n", line1, clean)
@@ -92,7 +92,7 @@ func (r *MultiLineRedactor) Redact(input io.Reader, path string) io.Reader {
 			}
 
 			// if clean is not equal to line2, a redaction was performed
-			if clean != line2 {
+			if !bytes.Equal(clean, line2) {
 				addRedaction(Redaction{
 					RedactorName:      r.redactName,
 					CharactersRemoved: len(line2) - len(clean),
@@ -112,9 +112,9 @@ func (r *MultiLineRedactor) Redact(input io.Reader, path string) io.Reader {
 	return out
 }
 
-func getNextTwoLines(reader *bufio.Reader, curLine2 *string) (line1 string, line2 string, err error) {
-	line1 = ""
-	line2 = ""
+func getNextTwoLines(reader *bufio.Reader, curLine2 []byte) (line1 []byte, line2 []byte, err error) {
+	line1 = []byte{}
+	line2 = []byte{}
 
 	if curLine2 == nil {
 		line1, err = readLine(reader)
@@ -126,7 +126,7 @@ func getNextTwoLines(reader *bufio.Reader, curLine2 *string) (line1 string, line
 		return
 	}
 
-	line1 = *curLine2
+	line1 = curLine2
 	line2, err = readLine(reader)
 	if err != nil {
 		return

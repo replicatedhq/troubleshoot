@@ -482,13 +482,13 @@ func getReplacementPattern(re *regexp.Regexp, maskText string) string {
 	return substStr
 }
 
-func readLine(r *bufio.Reader) (string, error) {
+func readLine(r *bufio.Reader) ([]byte, error) {
 	var completeLine []byte
 	for {
 		var line []byte
 		line, isPrefix, err := r.ReadLine()
 		if err != nil {
-			return "", err
+			return []byte{}, err
 		}
 
 		completeLine = append(completeLine, line...)
@@ -496,7 +496,7 @@ func readLine(r *bufio.Reader) (string, error) {
 			break
 		}
 	}
-	return string(completeLine), nil
+	return completeLine, nil
 }
 
 func addRedaction(redaction Redaction) {

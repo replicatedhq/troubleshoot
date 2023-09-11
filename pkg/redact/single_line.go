@@ -2,12 +2,10 @@ package redact
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
 	"io"
 	"regexp"
-	"strings"
-
-	"github.com/replicatedhq/troubleshoot/pkg/constants"
 )
 
 type SingleLineRedactor struct {
@@ -49,33 +47,33 @@ func (r *SingleLineRedactor) Redact(input io.Reader, path string) io.Reader {
 			}
 		}()
 
-		substStr := getReplacementPattern(r.re, r.maskText)
+		substStr := []byte(getReplacementPattern(r.re, r.maskText))
 
-		buf := make([]byte, constants.MAX_BUFFER_CAPACITY)
+		buf := make([]byte, 4096)
 		scanner := bufio.NewScanner(input)
-		scanner.Buffer(buf, constants.MAX_BUFFER_CAPACITY)
+		scanner.Buffer(buf, 1024*1024)
 
 		lineNum := 0
 		for scanner.Scan() {
 			lineNum++
-			line := scanner.Text()
+			line := scanner.Bytes()
 
 			// is scan is not nil, then check if line matches scan by lowercasing it
 			if r.scan != nil {
-				lowerLine := strings.ToLower(line)
-				if !r.scan.MatchString(lowerLine) {
+				lowerLine := bytes.ToLower(line)
+				if !r.scan.Match(lowerLine) {
 					fmt.Fprintf(writer, "%s\n", line)
 					continue
 				}
 			}
 
 			// if scan matches, but re does not, do not redact
-			if !r.re.MatchString(line) {
+			if !r.re.Match(line) {
 				fmt.Fprintf(writer, "%s\n", line)
 				continue
 			}
 
-			clean := r.re.ReplaceAllString(line, substStr)
+			clean := r.re.ReplaceAll(line, substStr)
 
 			// io.WriteString would be nicer, but scanner strips new lines
 			fmt.Fprintf(writer, "%s\n", clean)
@@ -85,7 +83,7 @@ func (r *SingleLineRedactor) Redact(input io.Reader, path string) io.Reader {
 			}
 
 			// if clean is not equal to line, a redaction was performed
-			if clean != line {
+			if !bytes.Equal(clean, line) {
 				addRedaction(Redaction{
 					RedactorName:      r.redactName,
 					CharactersRemoved: len(line) - len(clean),

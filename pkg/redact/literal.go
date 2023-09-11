@@ -2,9 +2,9 @@ package redact
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
 	"io"
-	"strings"
 )
 
 type literalRedactor struct {
@@ -35,17 +35,21 @@ func (r literalRedactor) Redact(input io.Reader, path string) io.Reader {
 			}
 		}()
 
+		// TODO: Convert to bytes at source
+		mask := []byte(MASK_TEXT)
+		match := []byte(r.matchString)
+
 		reader := bufio.NewReader(input)
 		lineNum := 0
 		for {
 			lineNum++
-			var line string
+			var line []byte
 			line, err = readLine(reader)
 			if err != nil {
 				return
 			}
 
-			clean := strings.ReplaceAll(line, r.matchString, MASK_TEXT)
+			clean := bytes.ReplaceAll(line, match, mask)
 
 			// io.WriteString would be nicer, but scanner strips new lines
 			fmt.Fprintf(writer, "%s\n", clean)
@@ -53,7 +57,7 @@ func (r literalRedactor) Redact(input io.Reader, path string) io.Reader {
 				return
 			}
 
-			if clean != line {
+			if !bytes.Equal(clean, line) {
 				addRedaction(Redaction{
 					RedactorName:      r.redactName,
 					CharactersRemoved: len(line) - len(clean),
