@@ -20,19 +20,19 @@ type MultiLineRedactor struct {
 
 func NewMultiLineRedactor(re1 LineRedactor, re2 string, maskText, path, name string, isDefault bool) (*MultiLineRedactor, error) {
 	var scanCompiled *regexp.Regexp
-	compiled1, err := regexp.Compile(re1.regex)
+	compiled1, err := compileRegex(re1.regex)
 	if err != nil {
 		return nil, err
 	}
 
 	if re1.scan != "" {
-		scanCompiled, err = regexp.Compile(re1.scan)
+		scanCompiled, err = compileRegex(re1.scan)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	compiled2, err := regexp.Compile(re2)
+	compiled2, err := compileRegex(re2)
 	if err != nil {
 		return nil, err
 	}

@@ -21,13 +21,13 @@ type SingleLineRedactor struct {
 
 func NewSingleLineRedactor(re LineRedactor, maskText, path, name string, isDefault bool) (*SingleLineRedactor, error) {
 	var scanCompiled *regexp.Regexp
-	compiled, err := regexp.Compile(re.regex)
+	compiled, err := compileRegex(re.regex)
 	if err != nil {
 		return nil, err
 	}
 
 	if re.scan != "" {
-		scanCompiled, err = regexp.Compile(re.scan)
+		scanCompiled, err = compileRegex(re.scan)
 		if err != nil {
 			return nil, err
 		}

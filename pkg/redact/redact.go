@@ -17,15 +17,39 @@ const (
 	MASK_TEXT = "***HIDDEN***"
 )
 
-var allRedactions RedactionList
-var redactionListMut sync.Mutex
-var pendingRedactions sync.WaitGroup
+var (
+	allRedactions     RedactionList
+	redactionListMut  sync.Mutex
+	pendingRedactions sync.WaitGroup
+
+	// A regex cache to avoid recompiling the same regexes over and over
+	regexCache     = map[string]*regexp.Regexp{}
+	regexCacheLock sync.Mutex
+)
 
 func init() {
 	allRedactions = RedactionList{
 		ByRedactor: map[string][]Redaction{},
 		ByFile:     map[string][]Redaction{},
 	}
+}
+
+// A regex cache to avoid recompiling the same regexes over and over
+func compileRegex(pattern string) (*regexp.Regexp, error) {
+	regexCacheLock.Lock()
+	defer regexCacheLock.Unlock()
+
+	if cached, ok := regexCache[pattern]; ok {
+		return cached, nil
+	}
+
+	compiled, err := regexp.Compile(pattern)
+	if err != nil {
+		return nil, err
+	}
+
+	regexCache[pattern] = compiled
+	return compiled, nil
 }
 
 type Redactor interface {

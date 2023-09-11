@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"compress/gzip"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -84,7 +83,7 @@ func RedactResult(bundlePath string, input CollectorResult, additionalRedactors 
 			// If the file is .tar, .tgz or .tar.gz, it must not be redacted. Instead it is
 			// decompressed and each file inside the tar redacted and compressed back into the archive.
 			if filepath.Ext(file) == ".tar" || filepath.Ext(file) == ".tgz" || strings.HasSuffix(file, ".tar.gz") {
-				tmpDir, err := ioutil.TempDir("", "troubleshoot-subresult-")
+				tmpDir, err := os.MkdirTemp("", "troubleshoot-subresult-")
 				if err != nil {
 					errorCh <- errors.Wrap(err, "failed to create temp dir")
 					return
