@@ -2,10 +2,11 @@ package analyzer
 
 import (
 	"fmt"
-	"github.com/pkg/errors"
-	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"strconv"
 	"strings"
+
+	"github.com/pkg/errors"
+	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 )
 
 func commonStatus(outcomes []*troubleshootv1beta2.Outcome, name string, iconKey string, iconURI string, readyReplicas int, exists bool, resourceType string) (*AnalyzeResult, error) {
@@ -104,7 +105,7 @@ func commonStatus(outcomes []*troubleshootv1beta2.Outcome, name string, iconKey 
 			if exists == false && outcome.Pass.When != "absent" {
 				result.IsFail = true
 				result.Message = fmt.Sprintf("The %s %q was not found", resourceType, name)
-				result.URI = outcome.Fail.URI
+				result.URI = outcome.Pass.URI
 				return result, nil
 			}
 
