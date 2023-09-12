@@ -15,7 +15,10 @@ import (
 
 func GetTestFixture(t *testing.T, path string) string {
 	t.Helper()
-	p := filepath.Join("../../testdata", path)
+	p := path
+	if !filepath.IsAbs(path) {
+		p = filepath.Join("../../testdata", path)
+	}
 	b, err := os.ReadFile(p)
 	require.NoError(t, err)
 	return string(b)

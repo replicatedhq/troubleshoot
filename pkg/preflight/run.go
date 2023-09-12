@@ -41,16 +41,23 @@ func RunPreflights(interactive bool, output string, format string, args []string
 		os.Exit(1)
 	}()
 
-	specs := PreflightSpecs{}
-	err := specs.Read(args)
+	specs, err := readSpecs(args)
 	if err != nil {
-		return err
+		return types.NewExitCodeError(constants.EXIT_CODE_SPEC_ISSUES, err)
 	}
 
 	warning := validatePreflight(specs)
-
 	if warning != nil {
 		fmt.Println(warning.Warning())
+		return nil
+	}
+
+	if viper.GetBool("dry-run") {
+		out, err := specs.ToYaml()
+		if err != nil {
+			return types.NewExitCodeError(constants.EXIT_CODE_CATCH_ALL, errors.Wrap(err, "failed to convert specs to yaml"))
+		}
+		fmt.Printf("%s", out)
 		return nil
 	}
 
@@ -74,41 +81,37 @@ func RunPreflights(interactive bool, output string, format string, args []string
 
 	uploadResultsMap := make(map[string][]CollectResult)
 
-	if specs.PreflightSpec != nil {
-		r, err := collectInCluster(ctx, specs.PreflightSpec, progressCh)
+	for _, spec := range specs.PreflightsV1Beta2 {
+		r, err := collectInCluster(ctx, &spec, progressCh)
 		if err != nil {
 			return types.NewExitCodeError(constants.EXIT_CODE_CATCH_ALL, errors.Wrap(err, "failed to collect in cluster"))
 		}
-		collectResults = append(collectResults, *r)
-		preflightSpecName = specs.PreflightSpec.Name
-	}
-	if specs.UploadResultSpecs != nil {
-		for _, spec := range specs.UploadResultSpecs {
-			r, err := collectInCluster(ctx, spec, progressCh)
-			if err != nil {
-				return types.NewExitCodeError(constants.EXIT_CODE_CATCH_ALL, errors.Wrap(err, "failed to collect in cluster"))
-			}
+		if spec.Spec.UploadResultsTo != "" {
 			uploadResultsMap[spec.Spec.UploadResultsTo] = append(uploadResultsMap[spec.Spec.UploadResultsTo], *r)
 			uploadCollectResults = append(collectResults, *r)
-			preflightSpecName = spec.Name
+		} else {
+			collectResults = append(collectResults, *r)
 		}
+		// TODO: This spec name will be overwritten by the next spec. Is this intentional?
+		preflightSpecName = spec.Name
 	}
-	if specs.HostPreflightSpec != nil {
-		if len(specs.HostPreflightSpec.Spec.Collectors) > 0 {
-			r, err := collectHost(ctx, specs.HostPreflightSpec, progressCh)
+
+	for _, spec := range specs.HostPreflightsV1Beta2 {
+		if len(spec.Spec.Collectors) > 0 {
+			r, err := collectHost(ctx, &spec, progressCh)
 			if err != nil {
 				return types.NewExitCodeError(constants.EXIT_CODE_CATCH_ALL, errors.Wrap(err, "failed to collect from host"))
 			}
 			collectResults = append(collectResults, *r)
 		}
-		if len(specs.HostPreflightSpec.Spec.RemoteCollectors) > 0 {
-			r, err := collectRemote(ctx, specs.HostPreflightSpec, progressCh)
+		if len(spec.Spec.RemoteCollectors) > 0 {
+			r, err := collectRemote(ctx, &spec, progressCh)
 			if err != nil {
 				return types.NewExitCodeError(constants.EXIT_CODE_CATCH_ALL, errors.Wrap(err, "failed to collect remotely"))
 			}
 			collectResults = append(collectResults, *r)
 		}
-		preflightSpecName = specs.HostPreflightSpec.Name
+		preflightSpecName = spec.Name
 	}
 
 	if collectResults == nil && uploadCollectResults == nil {

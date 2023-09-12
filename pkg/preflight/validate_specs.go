@@ -4,45 +4,37 @@ import (
 	"reflect"
 
 	"github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
+	"github.com/replicatedhq/troubleshoot/pkg/loader"
 	"github.com/replicatedhq/troubleshoot/pkg/multitype"
 	"github.com/replicatedhq/troubleshoot/pkg/types"
 )
 
 // validatePreflight validates the preflight spec and returns a warning if there is any
-func validatePreflight(specs PreflightSpecs) *types.ExitCodeWarning {
+func validatePreflight(kinds *loader.TroubleshootKinds) *types.ExitCodeWarning {
 
-	if specs.PreflightSpec == nil && specs.HostPreflightSpec == nil && specs.UploadResultSpecs == nil {
+	if len(kinds.PreflightsV1Beta2) == 0 && len(kinds.HostPreflightsV1Beta2) == 0 {
 		return types.NewExitCodeWarning("no preflight or host preflight spec was found")
 	}
 
-	if specs.PreflightSpec != nil {
-		warning := validatePreflightSpecItems(specs.PreflightSpec.Spec.Collectors, specs.PreflightSpec.Spec.Analyzers)
+	for _, spec := range kinds.PreflightsV1Beta2 {
+		warning := validatePreflightSpecItems(spec.Spec.Collectors, spec.Spec.Analyzers)
 		if warning != nil {
 			return warning
 		}
 	}
 
-	if specs.HostPreflightSpec != nil {
-		warning := validateHostPreflightSpecItems(specs.HostPreflightSpec.Spec.Collectors, specs.HostPreflightSpec.Spec.Analyzers)
+	for _, spec := range kinds.HostPreflightsV1Beta2 {
+		warning := validateHostPreflightSpecItems(spec.Spec.Collectors, spec.Spec.Analyzers)
 		if warning != nil {
 			return warning
-		}
-	}
-
-	if specs.UploadResultSpecs != nil {
-		for _, preflight := range specs.UploadResultSpecs {
-			warning := validatePreflightSpecItems(preflight.Spec.Collectors, preflight.Spec.Analyzers)
-			if warning != nil {
-				return warning
-			}
 		}
 	}
 
 	return nil
 }
 
-// validatePreflightSpecItems validates the preflight spec items and returns a warning if there is any
-// clusterResources and clusterInfo collectors are added automatically to the preflight spec, cannot be excluded
+// validatePreflightSpecItems validates the preflight spec items and returns a warning if there are any
+// clusterResources or clusterInfo collectors added automatically to the preflight spec. It cannot be excluded
 func validatePreflightSpecItems(collectors []*v1beta2.Collect, analyzers []*v1beta2.Analyze) *types.ExitCodeWarning {
 	var numberOfExcludedCollectors, numberOfExcludedAnalyzers int
 	var numberOfExcludedDefaultCollectors int
