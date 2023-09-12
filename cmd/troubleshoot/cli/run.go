@@ -17,14 +17,17 @@ import (
 	"github.com/fatih/color"
 	"github.com/mattn/go-isatty"
 	"github.com/pkg/errors"
+	"github.com/replicatedhq/troubleshoot/internal/specs"
 	privSpecs "github.com/replicatedhq/troubleshoot/internal/specs"
 	analyzer "github.com/replicatedhq/troubleshoot/pkg/analyze"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
+	"github.com/replicatedhq/troubleshoot/pkg/constants"
 	"github.com/replicatedhq/troubleshoot/pkg/convert"
 	"github.com/replicatedhq/troubleshoot/pkg/httputil"
 	"github.com/replicatedhq/troubleshoot/pkg/k8sutil"
 	"github.com/replicatedhq/troubleshoot/pkg/loader"
 	"github.com/replicatedhq/troubleshoot/pkg/supportbundle"
+	"github.com/replicatedhq/troubleshoot/pkg/types"
 	"github.com/spf13/viper"
 	spin "github.com/tj/go-spin"
 	"k8s.io/client-go/kubernetes"
@@ -32,9 +35,34 @@ import (
 	"k8s.io/klog/v2"
 )
 
-func runTroubleshoot(v *viper.Viper, arg []string) error {
+func runTroubleshoot(v *viper.Viper, args []string) error {
 	ctx := context.Background()
-	if !v.GetBool("load-cluster-specs") && len(arg) < 1 {
+
+	restConfig, err := k8sutil.GetRESTConfig()
+	if err != nil {
+		return errors.Wrap(err, "failed to convert kube flags to rest config")
+	}
+
+	client, err := kubernetes.NewForConfig(restConfig)
+	if err != nil {
+		return errors.Wrap(err, "failed to create kubernetes client")
+	}
+
+	kinds, err := specs.LoadFromCLIArgs(ctx, client, args, viper.GetViper())
+	if err != nil {
+		return err
+	}
+
+	if v.GetBool("dry-run") {
+		out, err := kinds.ToYaml()
+		if err != nil {
+			return types.NewExitCodeError(constants.EXIT_CODE_CATCH_ALL, errors.Wrap(err, "failed to convert specs to yaml"))
+		}
+		fmt.Printf("%s", out)
+		return nil
+	}
+
+	if !v.GetBool("load-cluster-specs") && len(args) < 1 {
 		return errors.New("flag load-cluster-specs must be set if no specs are provided on the command line")
 	}
 
@@ -54,11 +82,6 @@ func runTroubleshoot(v *viper.Viper, arg []string) error {
 		}
 		os.Exit(0)
 	}()
-
-	restConfig, err := k8sutil.GetRESTConfig()
-	if err != nil {
-		return errors.Wrap(err, "failed to convert kube flags to rest config")
-	}
 
 	var sinceTime *time.Time
 	if v.GetString("since-time") != "" || v.GetString("since") != "" {
@@ -80,7 +103,7 @@ func runTroubleshoot(v *viper.Viper, arg []string) error {
 
 	// Defining `v` below will render using `v` in reference to Viper unusable.
 	// Therefore refactoring `v` to `val` will make sure we can still use it.
-	for _, val := range arg {
+	for _, val := range args {
 
 		collectorContent, err := supportbundle.LoadSupportBundleSpec(val)
 		if err != nil {
