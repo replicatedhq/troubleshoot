@@ -7,46 +7,55 @@ import (
 	"github.com/replicatedhq/troubleshoot/internal/specs"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/replicatedhq/troubleshoot/pkg/k8sutil"
+	"github.com/replicatedhq/troubleshoot/pkg/loader"
 	"github.com/spf13/viper"
 	"k8s.io/client-go/kubernetes"
 )
 
-type PreflightSpecs struct {
-	PreflightSpec     *troubleshootv1beta2.Preflight
-	HostPreflightSpec *troubleshootv1beta2.HostPreflight
-	UploadResultSpecs []*troubleshootv1beta2.Preflight
-}
-
-func (p *PreflightSpecs) Read(args []string) error {
+func readSpecs(args []string) (*loader.TroubleshootKinds, error) {
 	config, err := k8sutil.GetRESTConfig()
 	if err != nil {
-		return errors.Wrap(err, "failed to convert kube flags to rest config")
+		return nil, errors.Wrap(err, "failed to convert kube flags to rest config")
 	}
 
 	client, err := kubernetes.NewForConfig(config)
 	if err != nil {
-		return errors.Wrap(err, "failed to convert create k8s client")
+		return nil, errors.Wrap(err, "failed to convert create k8s client")
 	}
 
 	ctx := context.Background()
 	kinds, err := specs.LoadFromCLIArgs(ctx, client, args, viper.GetViper())
 	if err != nil {
-		return err
+		return nil, err
 	}
 
+	ret := loader.NewTroubleshootKinds()
+
+	// Concatenate all preflight inclusterSpecs that don't have an upload destination
+	inclusterSpecs := []troubleshootv1beta2.Preflight{}
+	var concatenatedSpec *troubleshootv1beta2.Preflight
 	for _, v := range kinds.PreflightsV1Beta2 {
 		v := v // https://golang.org/doc/faq#closures_and_goroutines
 		if v.Spec.UploadResultsTo == "" {
-			p.PreflightSpec = ConcatPreflightSpec(p.PreflightSpec, &v)
+			concatenatedSpec = ConcatPreflightSpec(concatenatedSpec, &v)
 		} else {
-			p.UploadResultSpecs = append(p.UploadResultSpecs, &v)
+			inclusterSpecs = append(inclusterSpecs, v)
 		}
 	}
 
+	if concatenatedSpec != nil {
+		inclusterSpecs = append(inclusterSpecs, *concatenatedSpec)
+	}
+	ret.PreflightsV1Beta2 = inclusterSpecs
+
+	var hostSpec *troubleshootv1beta2.HostPreflight
 	for _, v := range kinds.HostPreflightsV1Beta2 {
 		v := v // https://golang.org/doc/faq#closures_and_goroutines
-		p.HostPreflightSpec = ConcatHostPreflightSpec(p.HostPreflightSpec, &v)
+		hostSpec = ConcatHostPreflightSpec(hostSpec, &v)
+	}
+	if hostSpec != nil {
+		ret.HostPreflightsV1Beta2 = []troubleshootv1beta2.HostPreflight{*hostSpec}
 	}
 
-	return nil
+	return ret, nil
 }

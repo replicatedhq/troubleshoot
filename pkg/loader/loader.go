@@ -2,6 +2,8 @@ package loader
 
 import (
 	"context"
+	"reflect"
+	"strings"
 
 	"github.com/pkg/errors"
 	"github.com/replicatedhq/troubleshoot/internal/util"
@@ -10,10 +12,10 @@ import (
 	"github.com/replicatedhq/troubleshoot/pkg/constants"
 	"github.com/replicatedhq/troubleshoot/pkg/docrewrite"
 	"github.com/replicatedhq/troubleshoot/pkg/types"
-	"gopkg.in/yaml.v2"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/klog/v2"
+	"sigs.k8s.io/yaml"
 )
 
 var decoder runtime.Decoder
@@ -95,6 +97,33 @@ func (kinds *TroubleshootKinds) Add(other *TroubleshootKinds) {
 	kinds.RedactorsV1Beta2 = append(kinds.RedactorsV1Beta2, other.RedactorsV1Beta2...)
 	kinds.RemoteCollectorsV1Beta2 = append(kinds.RemoteCollectorsV1Beta2, other.RemoteCollectorsV1Beta2...)
 	kinds.SupportBundlesV1Beta2 = append(kinds.SupportBundlesV1Beta2, other.SupportBundlesV1Beta2...)
+}
+
+// ToYaml returns a yaml document/multi-doc of all the parsed specs
+// This function utilises reflection to iterate over all the fields
+// of the TroubleshootKinds object then marshals them to yaml.
+func (kinds *TroubleshootKinds) ToYaml() (string, error) {
+	rawList := []string{}
+	obj := reflect.ValueOf(*kinds)
+
+	for i := 0; i < obj.NumField(); i++ {
+		field := obj.Field(i)
+		if field.Kind() != reflect.Slice {
+			continue
+		}
+
+		// skip empty slices to avoid empty yaml documents
+		for count := 0; count < field.Len(); count++ {
+			val := field.Index(count)
+			yamlOut, err := yaml.Marshal(val.Interface())
+			if err != nil {
+				return "", err
+			}
+			rawList = append(rawList, string(yamlOut))
+		}
+	}
+
+	return strings.Join(rawList, "---\n"), nil
 }
 
 func NewTroubleshootKinds() *TroubleshootKinds {

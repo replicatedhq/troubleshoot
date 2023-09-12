@@ -522,3 +522,60 @@ func TestAddingKinds(t *testing.T) {
 	}
 	assert.Equal(t, k2, k1)
 }
+
+func TestToYaml(t *testing.T) {
+	k := &TroubleshootKinds{
+		AnalyzersV1Beta2: []troubleshootv1beta2.Analyzer{
+			{
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "Analyzer",
+					APIVersion: "troubleshoot.sh/v1beta2",
+				},
+				Spec: troubleshootv1beta2.AnalyzerSpec{
+					Analyzers: []*troubleshootv1beta2.Analyze{
+						{
+							ClusterVersion: &troubleshootv1beta2.ClusterVersion{
+								Outcomes: []*troubleshootv1beta2.Outcome{
+									{
+										Pass: &troubleshootv1beta2.SingleOutcome{
+											Message: "Cluster is up to date",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		SupportBundlesV1Beta2: []troubleshootv1beta2.SupportBundle{
+			{
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "SupportBundle",
+					APIVersion: "troubleshoot.sh/v1beta2",
+				},
+				Spec: troubleshootv1beta2.SupportBundleSpec{
+					Collectors: []*troubleshootv1beta2.Collect{
+						{
+							ClusterResources: &troubleshootv1beta2.ClusterResources{
+								IgnoreRBAC: true,
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	y, err := k.ToYaml()
+	require.NoError(t, err)
+	assert.Contains(t, string(y), `apiVersion: troubleshoot.sh/v1beta2
+kind: SupportBundle
+metadata:
+  creationTimestamp: null
+spec:
+  collectors:
+  - clusterResources:
+      ignoreRBAC: true`)
+	assert.Contains(t, string(y), "message: Cluster is up to date")
+}

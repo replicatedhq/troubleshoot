@@ -16,6 +16,7 @@ const (
 	flagSince                     = "since"
 	flagOutput                    = "output"
 	flagDebug                     = "debug"
+	flagDryRun                    = "dry-run"
 )
 
 type PreflightFlags struct {

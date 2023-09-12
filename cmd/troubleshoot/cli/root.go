@@ -5,7 +5,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/replicatedhq/troubleshoot/cmd/util"
+	"github.com/replicatedhq/troubleshoot/cmd/internal/util"
 	"github.com/replicatedhq/troubleshoot/internal/traces"
 	"github.com/replicatedhq/troubleshoot/pkg/k8sutil"
 	"github.com/replicatedhq/troubleshoot/pkg/logger"
@@ -62,7 +62,7 @@ from a server that can be used to assist when troubleshooting a Kubernetes clust
 
 	cmd.AddCommand(Analyze())
 	cmd.AddCommand(Redact())
-	cmd.AddCommand(VersionCmd())
+	cmd.AddCommand(util.VersionCmd())
 
 	cmd.Flags().StringSlice("redactors", []string{}, "names of the additional redactors to use")
 	cmd.Flags().Bool("redact", true, "enable/disable default redactions")
