@@ -217,7 +217,7 @@ func TestCollectHTTP_Collect(t *testing.T) {
 					CollectorName: "example-com",
 				},
 				Get: &troubleshootv1beta2.Get{
-					Timeout: 200 * time.Nanosecond,
+					Timeout: "200ms",
 				},
 			},
 			args: args{
@@ -236,7 +236,7 @@ func TestCollectHTTP_Collect(t *testing.T) {
 					CollectorName: "",
 				},
 				Get: &troubleshootv1beta2.Get{
-					Timeout: 3 * time.Millisecond,
+					Timeout: "300ms",
 				},
 			},
 			args: args{
@@ -341,5 +341,38 @@ func (er *ErrorResponse) testCollectHTTP(t *testing.T, tt *CollectorTest, c *Col
 
 	if strings.Contains(strings.TrimSpace(er.Error.Message), "context deadline exceeded") != tt.wantErr {
 		t.Errorf("CollectHTTP.Collect() response = %v, wantErr %v", er.Error.Message, tt.wantErr)
+	}
+}
+
+func Test_parseTimeout(t *testing.T) {
+	tests := []struct {
+		name    string
+		input   string
+		want    time.Duration
+		wantErr bool
+	}{
+		{
+			name:  "1s timeout",
+			input: "1s",
+			want:  time.Second,
+		},
+		{
+			name:  "empty timeout",
+			input: "",
+			want:  0,
+		},
+		{
+			name:    "negative timeout",
+			input:   "-1s",
+			want:    0,
+			wantErr: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := parseTimeout(tt.input)
+			assert.Equal(t, (err != nil), tt.wantErr)
+			assert.Equal(t, got, tt.want)
+		})
 	}
 }
