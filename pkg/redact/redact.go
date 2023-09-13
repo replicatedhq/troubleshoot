@@ -128,7 +128,7 @@ func buildAdditionalRedactors(path string, redacts []*troubleshootv1beta2.Redact
 		}
 
 		for j, literal := range redact.Removals.Values {
-			additionalRedactors = append(additionalRedactors, literalString(literal, path, redactorName(i, j, redact.Name, "literal")))
+			additionalRedactors = append(additionalRedactors, literalString([]byte(literal), path, redactorName(i, j, redact.Name, "literal")))
 		}
 
 		for j, re := range redact.Removals.Regex {

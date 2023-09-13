@@ -8,17 +8,17 @@ import (
 )
 
 type literalRedactor struct {
-	matchString string
-	filePath    string
-	redactName  string
-	isDefault   bool
+	match      []byte
+	filePath   string
+	redactName string
+	isDefault  bool
 }
 
-func literalString(matchString, path, name string) Redactor {
+func literalString(match []byte, path, name string) Redactor {
 	return literalRedactor{
-		matchString: matchString,
-		filePath:    path,
-		redactName:  name,
+		match:      match,
+		filePath:   path,
+		redactName: name,
 	}
 }
 
@@ -35,9 +35,7 @@ func (r literalRedactor) Redact(input io.Reader, path string) io.Reader {
 			}
 		}()
 
-		// TODO: Convert to bytes at source
 		mask := []byte(MASK_TEXT)
-		match := []byte(r.matchString)
 
 		reader := bufio.NewReader(input)
 		lineNum := 0
@@ -49,7 +47,7 @@ func (r literalRedactor) Redact(input io.Reader, path string) io.Reader {
 				return
 			}
 
-			clean := bytes.ReplaceAll(line, match, mask)
+			clean := bytes.ReplaceAll(line, r.match, mask)
 
 			// io.WriteString would be nicer, but scanner strips new lines
 			fmt.Fprintf(writer, "%s\n", clean)

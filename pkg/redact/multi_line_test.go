@@ -2,7 +2,7 @@ package redact
 
 import (
 	"bytes"
-	"io/ioutil"
+	"io"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -101,7 +101,7 @@ func Test_NewMultiLineRedactorr(t *testing.T) {
 			req.NoError(err)
 			outReader := reRunner.Redact(bytes.NewReader([]byte(tt.inputString)), "")
 
-			gotBytes, err := ioutil.ReadAll(outReader)
+			gotBytes, err := io.ReadAll(outReader)
 			req.NoError(err)
 			req.Equal(tt.wantString, string(gotBytes))
 			GetRedactionList()
