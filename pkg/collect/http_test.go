@@ -217,7 +217,7 @@ func TestCollectHTTP_Collect(t *testing.T) {
 					CollectorName: "example-com",
 				},
 				Get: &troubleshootv1beta2.Get{
-					Timeout: "200ms",
+					Timeout: "200ns",
 				},
 			},
 			args: args{
