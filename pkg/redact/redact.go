@@ -110,6 +110,14 @@ func ResetRedactionList() {
 		ByRedactor: map[string][]Redaction{},
 		ByFile:     map[string][]Redaction{},
 	}
+
+	// Clear the regex cache as well. We do not want
+	// to keep this around in long running processes
+	// that continually redact files
+	regexCacheLock.Lock()
+	defer regexCacheLock.Unlock()
+
+	regexCache = map[string]*regexp.Regexp{}
 }
 
 func buildAdditionalRedactors(path string, redacts []*troubleshootv1beta2.Redact) ([]Redactor, error) {
