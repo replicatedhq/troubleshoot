@@ -3,7 +3,6 @@ package redact
 import (
 	"bufio"
 	"bytes"
-	"fmt"
 	"io"
 	"regexp"
 )
@@ -54,8 +53,14 @@ func (r *MultiLineRedactor) Redact(input io.Reader, path string) io.Reader {
 		line1, line2, err := getNextTwoLines(reader, nil)
 		if err != nil {
 			// this will print 2 blank lines for empty input...
-			fmt.Fprintf(writer, "%s\n", line1)
-			fmt.Fprintf(writer, "%s\n", line2)
+			_, err = writer.Write(append(line1, '\n'))
+			if err != nil {
+				return
+			}
+			_, err = writer.Write(append(line2, '\n'))
+			if err != nil {
+				return
+			}
 			return
 		}
 
@@ -68,7 +73,10 @@ func (r *MultiLineRedactor) Redact(input io.Reader, path string) io.Reader {
 			if r.scan != nil {
 				lowerLine1 := bytes.ToLower(line1)
 				if !r.scan.Match(lowerLine1) {
-					fmt.Fprintf(writer, "%s\n", line1)
+					_, err = writer.Write(append(line1, '\n'))
+					if err != nil {
+						return
+					}
 					line1, line2, err = getNextTwoLines(reader, line2)
 					flushLastLine = true
 					continue
@@ -77,7 +85,10 @@ func (r *MultiLineRedactor) Redact(input io.Reader, path string) io.Reader {
 
 			// If line1 matches re1, then transform line2 using re2
 			if !r.re1.Match(line1) {
-				fmt.Fprintf(writer, "%s\n", line1)
+				_, err = writer.Write(append(line1, '\n'))
+				if err != nil {
+					return
+				}
 				line1, line2, err = getNextTwoLines(reader, line2)
 				flushLastLine = true
 				continue
@@ -85,8 +96,8 @@ func (r *MultiLineRedactor) Redact(input io.Reader, path string) io.Reader {
 			flushLastLine = false
 			clean := r.re2.ReplaceAll(line2, substStr)
 
-			// io.WriteString would be nicer, but reader strips new lines
-			fmt.Fprintf(writer, "%s\n%s\n", line1, clean)
+			out := append(append(line1, '\n'), append(clean, '\n')...) // line1 + \n + clean + \n
+			_, err = writer.Write(out)
 			if err != nil {
 				return
 			}
@@ -106,7 +117,10 @@ func (r *MultiLineRedactor) Redact(input io.Reader, path string) io.Reader {
 		}
 
 		if flushLastLine {
-			fmt.Fprintf(writer, "%s\n", line1)
+			_, err = writer.Write(append(line1, '\n')) // Append newline since scanner strips it
+			if err != nil {
+				return
+			}
 		}
 	}()
 	return out

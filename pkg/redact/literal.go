@@ -3,8 +3,9 @@ package redact
 import (
 	"bufio"
 	"bytes"
-	"fmt"
 	"io"
+
+	"github.com/replicatedhq/troubleshoot/pkg/constants"
 )
 
 type literalRedactor struct {
@@ -35,22 +36,18 @@ func (r literalRedactor) Redact(input io.Reader, path string) io.Reader {
 			}
 		}()
 
-		mask := []byte(MASK_TEXT)
+		buf := make([]byte, constants.BUF_INIT_SIZE)
+		scanner := bufio.NewScanner(input)
+		scanner.Buffer(buf, constants.SCANNER_MAX_SIZE)
 
-		reader := bufio.NewReader(input)
 		lineNum := 0
-		for {
+		for scanner.Scan() {
 			lineNum++
-			var line []byte
-			line, err = readLine(reader)
-			if err != nil {
-				return
-			}
+			line := scanner.Bytes()
 
-			clean := bytes.ReplaceAll(line, r.match, mask)
+			clean := bytes.ReplaceAll(line, r.match, maskTextBytes)
 
-			// io.WriteString would be nicer, but scanner strips new lines
-			fmt.Fprintf(writer, "%s\n", clean)
+			_, err = writer.Write(append(clean, '\n')) // Append newline since scanner strips it
 			if err != nil {
 				return
 			}
@@ -64,6 +61,9 @@ func (r literalRedactor) Redact(input io.Reader, path string) io.Reader {
 					IsDefaultRedactor: r.isDefault,
 				})
 			}
+		}
+		if scanErr := scanner.Err(); scanErr != nil {
+			err = scanErr
 		}
 	}()
 	return out

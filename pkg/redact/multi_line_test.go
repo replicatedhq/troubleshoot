@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func Test_NewMultiLineRedactorr(t *testing.T) {
+func Test_NewMultiLineRedactor(t *testing.T) {
 	tests := []struct {
 		name        string
 		selector    LineRedactor

@@ -3,9 +3,10 @@ package redact
 import (
 	"bufio"
 	"bytes"
-	"fmt"
 	"io"
 	"regexp"
+
+	"github.com/replicatedhq/troubleshoot/pkg/constants"
 )
 
 type SingleLineRedactor struct {
@@ -34,15 +35,6 @@ func NewSingleLineRedactor(re LineRedactor, maskText, path, name string, isDefau
 	return &SingleLineRedactor{scan: scanCompiled, re: compiled, maskText: maskText, filePath: path, redactName: name, isDefault: isDefault}, nil
 }
 
-const (
-	// This is the initial size of the buffer allocated.
-	// Under the hood, an array of size N is allocated in memory
-	BUF_INIT_SIZE = 4096 // 4KB
-
-	// This is the muximum size the buffer can grow to
-	SCANNER_MAX_SIZE = 1024 * 1024 // 1MB
-)
-
 func (r *SingleLineRedactor) Redact(input io.Reader, path string) io.Reader {
 	out, writer := io.Pipe()
 
@@ -58,9 +50,9 @@ func (r *SingleLineRedactor) Redact(input io.Reader, path string) io.Reader {
 
 		substStr := []byte(getReplacementPattern(r.re, r.maskText))
 
-		buf := make([]byte, BUF_INIT_SIZE)
+		buf := make([]byte, constants.BUF_INIT_SIZE)
 		scanner := bufio.NewScanner(input)
-		scanner.Buffer(buf, SCANNER_MAX_SIZE)
+		scanner.Buffer(buf, constants.SCANNER_MAX_SIZE)
 
 		lineNum := 0
 		for scanner.Scan() {
@@ -71,22 +63,26 @@ func (r *SingleLineRedactor) Redact(input io.Reader, path string) io.Reader {
 			if r.scan != nil {
 				lowerLine := bytes.ToLower(line)
 				if !r.scan.Match(lowerLine) {
-					fmt.Fprintf(writer, "%s\n", line)
+					_, err = writer.Write(append(line, '\n')) // Append newline since scanner strips it
+					if err != nil {
+						return
+					}
 					continue
 				}
 			}
 
 			// if scan matches, but re does not, do not redact
 			if !r.re.Match(line) {
-				fmt.Fprintf(writer, "%s\n", line)
+				_, err = writer.Write(append(line, '\n')) // Append newline since scanner strips it
+				if err != nil {
+					return
+				}
 				continue
 			}
 
 			clean := r.re.ReplaceAll(line, substStr)
 
-			// io.WriteString would be nicer, but scanner strips new lines
-			fmt.Fprintf(writer, "%s\n", clean)
-
+			_, err = writer.Write(append(clean, '\n')) // Append newline since scanner strips it
 			if err != nil {
 				return
 			}

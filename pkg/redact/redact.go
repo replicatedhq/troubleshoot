@@ -25,6 +25,7 @@ var (
 	// A regex cache to avoid recompiling the same regexes over and over
 	regexCache     = map[string]*regexp.Regexp{}
 	regexCacheLock sync.Mutex
+	maskTextBytes  = []byte(MASK_TEXT)
 )
 
 func init() {
@@ -113,6 +114,7 @@ func ResetRedactionList() {
 
 func buildAdditionalRedactors(path string, redacts []*troubleshootv1beta2.Redact) ([]Redactor, error) {
 	additionalRedactors := []Redactor{}
+
 	for i, redact := range redacts {
 		if redact == nil {
 			continue
@@ -488,7 +490,7 @@ func readLine(r *bufio.Reader) ([]byte, error) {
 		var line []byte
 		line, isPrefix, err := r.ReadLine()
 		if err != nil {
-			return []byte{}, err
+			return nil, err
 		}
 
 		completeLine = append(completeLine, line...)
