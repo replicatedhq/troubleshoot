@@ -77,7 +77,7 @@ fi
 echo "======= Generating support bundle from k8s cluster using --load-cluster-specs ======"
 recreate_tmpdir
 kubectl apply -f "$PRJ_ROOT/testdata/supportbundle/labelled-specs"
-./bin/support-bundle -v1 --interactive=false --load-cluster-specs --output=$tmpdir/$bundle_archive_name
+./bin/support-bundle -v1 --interactive=false --load-cluster-specs --output=$tmpdir/$bundle_archive_name --cpuprofile=$tmpdir/cpu.out --memprofile=$tmpdir/mem.out
 if [ $? -ne 0 ]; then
     echo "support-bundle command failed"
     exit $?
@@ -111,3 +111,7 @@ if ! grep "labelled-support-bundle-4 \*\*\*HIDDEN\*\*\*" "$tmpdir/$bundle_direct
     echo "Hidden content not found in redacted echo-hi-4 file"
     exit 1
 fi
+echo "========= CPU PROFILING =========="
+go tool pprof -top $tmpdir/cpu.out
+echo "========= MEMORY PROFILING =========="
+go tool pprof -top -alloc_space -cum $tmpdir/mem.out
