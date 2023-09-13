@@ -3,10 +3,13 @@ package oci
 import (
 	"context"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"path/filepath"
 	"strings"
+
+	credentials "github.com/oras-project/oras-credentials-go"
 
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
 	"github.com/pkg/errors"
@@ -18,6 +21,14 @@ import (
 	"oras.land/oras-go/pkg/content"
 	"oras.land/oras-go/pkg/oras"
 	"oras.land/oras-go/pkg/registry"
+	oras "oras.land/oras-go/v2"
+	"oras.land/oras-go/v2/content"
+	"oras.land/oras-go/v2/content/memory"
+	"oras.land/oras-go/v2/content/oci"
+	"oras.land/oras-go/v2/registry"
+	"oras.land/oras-go/v2/registry/remote"
+	"oras.land/oras-go/v2/registry/remote/auth"
+	"oras.land/oras-go/v2/registry/remote/retry"
 )
 
 const (
@@ -75,9 +86,58 @@ func PullSpecsFromOCI(ctx context.Context, uri string) ([]string, error) {
 }
 
 func pullFromOCI(ctx context.Context, uri string, mediaType string, imageName string) ([]byte, error) {
+type (
+	// Client works with OCI-compliant registries
+	Client struct {
+		debug       bool
+		enableCache bool
+		// path to repository config file e.g. ~/.docker/config.json
+		credentialsFile  string
+		out              io.Writer
+		authorizer       *auth.Client
+		credentialsStore credentials.Store
+		httpClient       *http.Client
+		plainHTTP        bool
+	}
+
+	// ClientOption allows specifying various settings configurable by the user for overriding the defaults
+	// used when creating a new default client
+	ClientOption func(*Client)
+)
+
+func pullFromOCI(uri string, mediaType string, imageName string) ([]byte, error) {
 	// helm credentials
 	helmCredentialsFile := filepath.Join(util.HomeDir(), HelmCredentialsFileBasename)
 	dockerauthClient, err := dockerauth.NewClientWithDockerFallback(helmCredentialsFile)
+
+	// 0. Create an OCI layout store
+	store, err := oci.New("/tmp/oci-layout-root")
+	if err != nil {
+		return err
+	}
+
+	// 1. Connect to a remote repository
+	ctx := context.Background()
+	reg := "docker.io"
+	repo, err := remote.NewRepository(reg + "/user/my-repo")
+	if err != nil {
+		return err
+	}
+
+	// 2. Get credentials from the docker credential store
+	storeOpts := credentials.StoreOptions{}
+	credStore, err := credentials.NewStoreFromDocker(storeOpts)
+	if err != nil {
+		return err
+	}
+
+	// Prepare the auth client for the registry and credential store
+	repo.Client = &auth.Client{
+		Client:     retry.DefaultClient,
+		Cache:      auth.DefaultCache,
+		Credential: credentials.Credential(credStore), // Use the credential store
+	}
+
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create auth client")
 	}
@@ -92,7 +152,7 @@ func pullFromOCI(ctx context.Context, uri string, mediaType string, imageName st
 		return nil, errors.Wrap(err, "failed to create resolver")
 	}
 
-	memoryStore := content.NewMemory()
+	memoryStore := memory.Store{}
 	allowedMediaTypes := []string{
 		mediaType,
 	}
