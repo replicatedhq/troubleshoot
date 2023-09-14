@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
-	"time"
 
 	"github.com/replicatedhq/troubleshoot/pkg/multitype"
 	authorizationv1 "k8s.io/api/authorization/v1"
@@ -169,7 +168,9 @@ type Get struct {
 	URL                string            `json:"url" yaml:"url"`
 	InsecureSkipVerify bool              `json:"insecureSkipVerify,omitempty" yaml:"insecureSkipVerify,omitempty"`
 	Headers            map[string]string `json:"headers,omitempty" yaml:"headers,omitempty"`
-	Timeout            time.Duration     `json:"timeout,omitempty" yaml:"timeout,omitempty"`
+	// Timeout is the time to wait for a server's response. Its a duration e.g 15s, 2h30m.
+	// Missing value or empty string or means no timeout.
+	Timeout string `json:"timeout,omitempty" yaml:"timeout,omitempty"`
 }
 
 type Post struct {
@@ -177,7 +178,9 @@ type Post struct {
 	InsecureSkipVerify bool              `json:"insecureSkipVerify,omitempty" yaml:"insecureSkipVerify,omitempty"`
 	Headers            map[string]string `json:"headers,omitempty" yaml:"headers,omitempty"`
 	Body               string            `json:"body,omitempty" yaml:"body,omitempty"`
-	Timeout            time.Duration     `json:"timeout,omitempty" yaml:"timeout,omitempty"`
+	// Timeout is the time to wait for a server's response. Its a duration e.g 15s, 2h30m.
+	// Missing value or empty string or means no timeout.
+	Timeout string `json:"timeout,omitempty" yaml:"timeout,omitempty"`
 }
 
 type Put struct {
@@ -185,7 +188,9 @@ type Put struct {
 	InsecureSkipVerify bool              `json:"insecureSkipVerify,omitempty" yaml:"insecureSkipVerify,omitempty"`
 	Headers            map[string]string `json:"headers,omitempty" yaml:"headers,omitempty"`
 	Body               string            `json:"body,omitempty" yaml:"body,omitempty"`
-	Timeout            time.Duration     `json:"timeout,omitempty" yaml:"timeout,omitempty"`
+	// Timeout is the time to wait for a server's response. Its a duration e.g 15s, 2h30m.
+	// Missing value or empty string or means no timeout.
+	Timeout string `json:"timeout,omitempty" yaml:"timeout,omitempty"`
 }
 
 type Database struct {
