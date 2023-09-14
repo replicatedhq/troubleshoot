@@ -45,7 +45,7 @@ from a server that can be used to assist when troubleshooting a Kubernetes clust
 			}
 
 			err = runTroubleshoot(v, args)
-			if v.GetBool("debug") || v.IsSet("v") {
+			if !v.IsSet("dry-run") && (v.GetBool("debug") || v.IsSet("v")) {
 				fmt.Printf("\n%s", traces.GetExporterInstance().GetSummary())
 			}
 
