@@ -16,21 +16,28 @@ import (
 	"k8s.io/klog/v2"
 )
 
+// Max number of concurrent redactors to run
+// Ensure the number is low enough since each of the redactors
+// also spawns goroutines to redact files in tar archives and
+// other goroutines for each redactor spec.
+const MAX_CONCURRENT_REDACTORS = 10
+
 func RedactResult(bundlePath string, input CollectorResult, additionalRedactors []*troubleshootv1beta2.Redact) error {
 	wg := &sync.WaitGroup{}
 
 	// Error channel to capture errors from goroutines
 	errorCh := make(chan error, len(input))
+	limitCh := make(chan struct{}, MAX_CONCURRENT_REDACTORS)
 
-	// TODO: With a large bundle that has many files, this could lead to an explosion of goroutines.
-	// We should consider limiting the number of goroutines that can run. That limit should be
-	// configurable. Having these as standlone functions limits us a bit though.
 	for k, v := range input {
+		limitCh <- struct{}{}
 
 		wg.Add(1)
 
 		go func(file string, data []byte) {
 			defer wg.Done()
+			defer func() { <-limitCh }() // free up after the function execution has run
+
 			var reader io.Reader
 			if data == nil {
 
