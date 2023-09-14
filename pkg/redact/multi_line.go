@@ -96,8 +96,11 @@ func (r *MultiLineRedactor) Redact(input io.Reader, path string) io.Reader {
 			flushLastLine = false
 			clean := r.re2.ReplaceAll(line2, substStr)
 
-			out := append(append(line1, '\n'), append(clean, '\n')...) // line1 + \n + clean + \n
-			_, err = writer.Write(out)
+			_, err = writer.Write(append(line1, '\n'))
+			if err != nil {
+				return
+			}
+			_, err = writer.Write(append(clean, '\n'))
 			if err != nil {
 				return
 			}
