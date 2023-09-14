@@ -3,10 +3,12 @@ package redact
 import (
 	"bufio"
 	"bytes"
+	"fmt"
 	"io"
 	"regexp"
 
 	"github.com/replicatedhq/troubleshoot/pkg/constants"
+	"k8s.io/klog/v2"
 )
 
 type SingleLineRedactor struct {
@@ -41,9 +43,15 @@ func (r *SingleLineRedactor) Redact(input io.Reader, path string) io.Reader {
 	go func() {
 		var err error
 		defer func() {
-			if err == io.EOF {
+			if err == nil || err == io.EOF {
 				writer.Close()
 			} else {
+				if err == bufio.ErrTooLong {
+					s := fmt.Sprintf("Error redacting %q. A line in the file exceeded %d MB max length", path, constants.SCANNER_MAX_SIZE/1024/1024)
+					klog.V(2).Info(s)
+				} else {
+					klog.V(2).Info(fmt.Sprintf("Error redacting %q: %v", path, err))
+				}
 				writer.CloseWithError(err)
 			}
 		}()
