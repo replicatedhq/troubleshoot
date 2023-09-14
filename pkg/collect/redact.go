@@ -22,6 +22,9 @@ func RedactResult(bundlePath string, input CollectorResult, additionalRedactors 
 	// Error channel to capture errors from goroutines
 	errorCh := make(chan error, len(input))
 
+	// TODO: With a large bundle that has many files, this could lead to an explosion of goroutines.
+	// We should consider limiting the number of goroutines that can run. That limit should be
+	// configurable. Having these as standlone functions limits us a bit though.
 	for k, v := range input {
 
 		wg.Add(1)
