@@ -11,7 +11,7 @@ import (
 
 	credentials "github.com/oras-project/oras-credentials-go"
 
-	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
+	// ocispec "github.com/opencontainers/image-spec/specs-go/v1"
 	"github.com/pkg/errors"
 	"github.com/replicatedhq/troubleshoot/internal/util"
 	"github.com/replicatedhq/troubleshoot/pkg/version"
@@ -26,9 +26,15 @@ import (
 	"oras.land/oras-go/v2/content/memory"
 	"oras.land/oras-go/v2/content/oci"
 	"oras.land/oras-go/v2/registry"
+	// "github.com/replicatedhq/troubleshoot/pkg/version"
+	// oras "oras.land/oras-go/v2"
+	// "oras.land/oras-go/v2/content"
+	// "oras.land/oras-go/v2/content/memory"
+	// "oras.land/oras-go/v2/content/oci"
+	// "oras.land/oras-go/v2/registry"
 	"oras.land/oras-go/v2/registry/remote"
 	"oras.land/oras-go/v2/registry/remote/auth"
-	"oras.land/oras-go/v2/registry/remote/retry"
+	// "oras.land/oras-go/v2/registry/remote/retry"
 )
 
 const (
@@ -106,30 +112,17 @@ type (
 )
 
 func pullFromOCI(uri string, mediaType string, imageName string) ([]byte, error) {
-	// helm credentials
-	helmCredentialsFile := filepath.Join(util.HomeDir(), HelmCredentialsFileBasename)
-	dockerauthClient, err := dockerauth.NewClientWithDockerFallback(helmCredentialsFile)
+	// Simplified code with unused parts removed
+	uriParts := strings.Split(uri, ":")
+	reg := fmt.Sprintf("%s/%s", uriParts[0], imageName)
 
-	// 0. Create an OCI layout store
-	store, err := oci.New("/tmp/oci-layout-root")
-	if err != nil {
-		return err
-	}
-
-	// 1. Connect to a remote repository
-	ctx := context.Background()
-	reg := "docker.io"
 	repo, err := remote.NewRepository(reg + "/user/my-repo")
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	// 2. Get credentials from the docker credential store
-	storeOpts := credentials.StoreOptions{}
-	credStore, err := credentials.NewStoreFromDocker(storeOpts)
-	if err != nil {
-		return err
-	}
+	// Here you should set up the credentials
+	// ... (existing code)
 
 	// Prepare the auth client for the registry and credential store
 	repo.Client = &auth.Client{
@@ -173,11 +166,11 @@ func pullFromOCI(uri string, mediaType string, imageName string) ([]byte, error)
 		oras.WithLayerDescriptors(func(l []ocispec.Descriptor) {
 			layers = l
 		}))
+	manifest, err := repo.Pull(context.TODO(), mediaType)
 	if err != nil {
 		if strings.Contains(err.Error(), "not found") {
 			return nil, ErrNoRelease
 		}
-
 		return nil, errors.Wrap(err, "failed to copy")
 	}
 
@@ -209,6 +202,8 @@ func pullFromOCI(uri string, mediaType string, imageName string) ([]byte, error)
 	}
 
 	return matchingSpec, nil
+	// ... (existing code)
+	return nil, nil
 }
 
 func parseURI(in, imageName string) (string, error) {
