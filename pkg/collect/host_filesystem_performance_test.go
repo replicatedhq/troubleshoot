@@ -118,7 +118,7 @@ func Test_parseCollectorOptions(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "Invalid size",
+			name: "Invalid filesize",
 			args: args{
 				hostCollector: &troubleshootv1beta2.FilesystemPerformance{
 					HostCollectorMeta: troubleshootv1beta2.HostCollectorMeta{
