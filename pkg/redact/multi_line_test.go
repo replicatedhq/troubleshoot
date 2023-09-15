@@ -128,6 +128,14 @@ func Test_writeBytes(t *testing.T) {
 			inputBytes: [][]byte{[]byte("hello"), NEW_LINE, []byte("world"), NEW_LINE},
 			want:       "hello\nworld\n",
 		},
+		{
+			name:       "Empty line",
+			inputBytes: [][]byte{NEW_LINE},
+			want:       "\n",
+		},
+		{
+			name: "Nothing",
+		},
 	}
 
 	for _, tt := range tests {

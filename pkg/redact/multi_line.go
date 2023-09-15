@@ -53,7 +53,7 @@ func (r *MultiLineRedactor) Redact(input io.Reader, path string) io.Reader {
 		line1, line2, err := getNextTwoLines(reader, nil)
 		if err != nil {
 			// this will print 2 blank lines for empty input...
-			// Append newlines since scanner strip them
+			// Append newlines since scanner strips them
 			err = writeBytes(writer, line1, NEW_LINE, line2, NEW_LINE)
 			if err != nil {
 				return
@@ -96,7 +96,7 @@ func (r *MultiLineRedactor) Redact(input io.Reader, path string) io.Reader {
 			flushLastLine = false
 			clean := r.re2.ReplaceAll(line2, substStr)
 
-			// Append newlines since scanner strip them
+			// Append newlines since scanner strips them
 			err = writeBytes(writer, line1, NEW_LINE, clean, NEW_LINE)
 			if err != nil {
 				return
