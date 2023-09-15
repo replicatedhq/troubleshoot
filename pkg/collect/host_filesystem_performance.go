@@ -2,18 +2,25 @@ package collect
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"math"
-	"math/rand"
+	"os/exec"
+	"reflect"
+	"strconv"
+	"strings"
 	"text/template"
 	"time"
 
+	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
+	"k8s.io/apimachinery/pkg/api/resource"
+	"k8s.io/klog/v2"
 )
 
-func init() {
-	rand.Seed(time.Now().UnixNano())
-}
+// func init() {
+// 	rand.Seed(time.Now().UnixNano())
+// }
 
 type CollectHostFilesystemPerformance struct {
 	hostCollector *troubleshootv1beta2.FilesystemPerformance
@@ -102,12 +109,12 @@ type FioResult struct {
 	DiskUtil      []FioDiskUtil    `json:"disk_util,omitempty"`
 }
 
-func (f FioResult) Print() string {
+func (f FioResult) String() string {
 	var res string
 	res += fmt.Sprintf("FIO version - %s\n", f.FioVersion)
-	res += fmt.Sprintf("Global options - %s\n\n", f.GlobalOptions.Print())
+	res += fmt.Sprintf("Global options - %s\n\n", f.GlobalOptions)
 	for _, job := range f.Jobs {
-		res += fmt.Sprintf("%s\n", job.Print())
+		res += fmt.Sprintf("%s\n", job)
 	}
 	res += "Disk stats (read/write):\n"
 	for _, du := range f.DiskUtil {
@@ -126,7 +133,7 @@ type FioGlobalOptions struct {
 	GtodReduce string `json:"gtod_reduce,omitempty"`
 }
 
-func (g FioGlobalOptions) Print() string {
+func (g FioGlobalOptions) String() string {
 	return fmt.Sprintf("ioengine=%s verify=%s direct=%s gtod_reduce=%s", g.IOEngine, g.Verify, g.Direct, g.GtodReduce)
 }
 
@@ -159,14 +166,14 @@ type FioJobs struct {
 	LatencyWindow     int32         `json:"latency_window,omitempty"`
 }
 
-func (j FioJobs) Print() string {
+func (j FioJobs) String() string {
 	var job string
-	job += fmt.Sprintf("%s\n", j.JobOptions.Print())
+	job += fmt.Sprintf("%s\n", j.JobOptions)
 	if j.Read.Iops != 0 || j.Read.BW != 0 {
-		job += fmt.Sprintf("read:\n%s\n", j.Read.Print())
+		job += fmt.Sprintf("read:\n%s\n", j.Read)
 	}
 	if j.Write.Iops != 0 || j.Write.BW != 0 {
-		job += fmt.Sprintf("write:\n%s\n", j.Write.Print())
+		job += fmt.Sprintf("write:\n%s\n", j.Write)
 	}
 	return job
 }
@@ -182,7 +189,7 @@ type FioJobOptions struct {
 	RunTime   string `json:"runtime,omitempty"`
 }
 
-func (o FioJobOptions) Print() string {
+func (o FioJobOptions) String() string {
 	return fmt.Sprintf("JobName: %s\n  blocksize=%s filesize=%s rw=%s", o.Name, o.BS, o.Size, o.RW)
 }
 
@@ -213,7 +220,7 @@ type FioStats struct {
 	IopsSamples int32         `json:"iops_samples,omitempty"`
 }
 
-func (s FioStats) Print() string {
+func (s FioStats) String() string {
 	var stats string
 	stats += fmt.Sprintf("  IOPS=%f BW(KiB/s)=%d\n", s.Iops, s.BW)
 	stats += fmt.Sprintf("  iops: min=%d max=%d avg=%f\n", s.IopsMin, s.IopsMax, s.IopsMean)
@@ -321,4 +328,94 @@ func (d FioDiskUtil) String() string {
 	du += fmt.Sprintf("  %s: ios=%d/%d merge=%d/%d ticks=%d/%d in_queue=%d, util=%f%%", d.Name, d.ReadIos,
 		d.WriteIos, d.ReadMerges, d.WriteMerges, d.ReadTicks, d.WriteTicks, d.InQueue, d.Util)
 	return du
+}
+
+func parseCollectorOptions(hostCollector *troubleshootv1beta2.FilesystemPerformance) ([]string, *FioJobOptions, error) {
+
+	var operationSize uint64 = 1024
+	if hostCollector.OperationSizeBytes > 0 {
+		operationSize = hostCollector.OperationSizeBytes
+	}
+	var fileSize uint64 = 10 * 1024 * 1024
+	if hostCollector.FileSize != "" {
+		quantity, err := resource.ParseQuantity(hostCollector.FileSize)
+		if err != nil {
+			return nil, nil, errors.Wrapf(err, "failed to parse fileSize %q", hostCollector.FileSize)
+		}
+		fileSizeInt64, ok := quantity.AsInt64()
+		if !ok {
+			return nil, nil, errors.Wrapf(err, "failed to parse fileSize %q", hostCollector.FileSize)
+		}
+		if fileSizeInt64 <= 0 {
+			return nil, nil, errors.Wrapf(err, "fileSize %q must be greater than 0", hostCollector.FileSize)
+		}
+		fileSize = uint64(fileSizeInt64)
+	}
+
+	if hostCollector.Directory == "" {
+		return nil, nil, errors.New("Directory is required to collect filesystem performance info")
+	}
+
+	latencyBenchmarkOptions := FioJobOptions{
+		RW:        "write",
+		IOEngine:  "sync",
+		FDataSync: "1",
+		Directory: hostCollector.Directory,
+		Size:      strconv.FormatUint(fileSize, 10),
+		BS:        strconv.FormatUint(operationSize, 10),
+		Name:      "fsperf",
+		RunTime:   "120",
+	}
+
+	command := buildFioCommand(latencyBenchmarkOptions)
+
+	return command, &latencyBenchmarkOptions, nil
+}
+
+func buildFioCommand(opts FioJobOptions) []string {
+	command := []string{"fio"}
+	v := reflect.ValueOf(opts)
+	t := reflect.TypeOf(opts)
+	for i := 0; i < v.NumField(); i++ {
+		field := t.Field(i)
+		value := v.Field(i)
+		if !value.IsZero() {
+			command = append(command, fmt.Sprintf("--%s=%v", strings.ToLower(field.Name), value.Interface()))
+		}
+	}
+	command = append(command, "--output-format=json")
+	return command
+}
+
+func collectFioResults(hostCollector *troubleshootv1beta2.FilesystemPerformance) (*FioResult, error) {
+
+	command, opts, err := parseCollectorOptions(hostCollector)
+
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to parse collector options")
+	}
+
+	klog.V(2).Infof("collecting fio results: %s", strings.Join(command, " "))
+	output, err := exec.Command(command[0], command[1:]...).Output()
+	if err != nil {
+		if exitErr, ok := err.(*exec.ExitError); ok {
+			if exitErr.ExitCode() == 1 {
+				return nil, errors.Wrapf(err, "fio failed; permission denied opening %s.  ensure this collector runs as root", opts.Directory)
+			} else {
+				return nil, errors.Wrapf(err, "fio failed with exit status %d", exitErr.ExitCode())
+			}
+		} else if e, ok := err.(*exec.Error); ok && e.Err == exec.ErrNotFound {
+			return nil, errors.Wrapf(err, "command not found: %v", command)
+		} else {
+			return nil, errors.Wrapf(err, "failed to run command: %v", command)
+		}
+	}
+
+	var result FioResult
+	err = json.Unmarshal([]byte(output), &result)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to unmarshal fio result")
+	}
+
+	return &result, nil
 }

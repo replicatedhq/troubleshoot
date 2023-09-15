@@ -9,24 +9,18 @@ import (
 	"log"
 	"math/rand"
 	"os"
-	"os/exec"
 	"path/filepath"
-	"reflect"
-	"strconv"
-	"strings"
 	"sync"
 	"syscall"
 	"time"
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
-	"k8s.io/apimachinery/pkg/api/resource"
-	"k8s.io/klog/v2"
 )
 
-func init() {
-	rand.Seed(time.Now().UnixNano())
-}
+// func init() {
+// 	rand.Seed(time.Now().UnixNano())
+// }
 
 type Durations []time.Duration
 
@@ -47,45 +41,6 @@ func (d Durations) Swap(i, j int) {
 	d[i], d[j] = d[j], d[i]
 }
 
-func collectFioResults(opts FioJobOptions) (*FioResult, error) {
-
-	command := []string{"fio"}
-	v := reflect.ValueOf(opts)
-	t := reflect.TypeOf(opts)
-	for i := 0; i < v.NumField(); i++ {
-		field := t.Field(i)
-		value := v.Field(i)
-		command = append(command, fmt.Sprintf("--%s=%v", strings.ToLower(field.Name), value.Interface()))
-	}
-	command = append(command, "--output-format=json")
-
-	klog.V(2).Infof("collecting fio results: %s", strings.Join(command, " "))
-
-	output, err := exec.Command(command[0], command[1:]...).Output()
-	if err != nil {
-		if exitErr, ok := err.(*exec.ExitError); ok {
-			if exitErr.ExitCode() == 1 {
-				return nil, errors.Wrapf(err, "fio failed; permission denied opening %s.  ensure this collector runs as root", opts.Directory)
-			} else {
-				return nil, errors.Wrapf(err, "fio failed with exit status %d", exitErr.ExitCode())
-			}
-		} else if e, ok := err.(*exec.Error); ok && e.Err == exec.ErrNotFound {
-			return nil, errors.Wrapf(err, "command not found: %v", command)
-		} else {
-			return nil, errors.Wrapf(err, "failed to run command: %v", command)
-		}
-	}
-
-	var result FioResult
-
-	err = json.Unmarshal([]byte(output), &result)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to unmarshal fio result")
-	}
-
-	return &result, nil
-}
-
 func collectHostFilesystemPerformance(hostCollector *troubleshootv1beta2.FilesystemPerformance, bundlePath string) (map[string][]byte, error) {
 	timeout := time.Minute
 	if hostCollector.Timeout != "" {
@@ -98,43 +53,26 @@ func collectHostFilesystemPerformance(hostCollector *troubleshootv1beta2.Filesys
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
-	var operationSize uint64 = 1024
-	if hostCollector.OperationSizeBytes != 0 {
-		klog.V(4).Infof("operationSizeBytes: %d", hostCollector.OperationSizeBytes)
-		operationSize = hostCollector.OperationSizeBytes
+	collectorName := hostCollector.CollectorName
+	if collectorName == "" {
+		collectorName = "filesystemPerformance"
 	}
+	name := filepath.Join("host-collectors/filesystemPerformance", collectorName+".json")
 
-	var fileSize uint64 = 10 * 1024 * 1024
-	if hostCollector.FileSize != "" {
-		quantity, err := resource.ParseQuantity(hostCollector.FileSize)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to parse fileSize %q", hostCollector.FileSize)
-		}
-		fileSizeInt64, ok := quantity.AsInt64()
-		if !ok {
-			return nil, errors.Wrapf(err, "failed to parse fileSize %q", hostCollector.FileSize)
-		}
-		fileSize = uint64(fileSizeInt64)
-	}
-
-	if hostCollector.Directory == "" {
-		return nil, errors.New("Directory is required to collect filesystem performance info")
-	}
-	// TODO: clean up this directory if its created
 	if err := os.MkdirAll(hostCollector.Directory, 0700); err != nil {
-		return nil, errors.Wrapf(err, "failed to mkdir %q", hostCollector.Directory)
+		return nil, nil, errors.Wrapf(err, "failed to mkdir %q", hostCollector.Directory)
 	}
 
-	filename := filepath.Join(hostCollector.Directory, "fsperf")
+	filename := filepath.Join(hostCollector.Directory, latencyBenchmarkOptions.Name)
 	// Create file handle
 	f, err := os.OpenFile(filename, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0600)
 	if err != nil {
 		if os.IsPermission(err) {
-			return nil, errors.Wrapf(err, "open %s permission denied; please run this collector as root", filename)
+			return nil, nil, errors.Wrapf(err, "open %s permission denied; please run this collector as root", filename)
 		} else if os.IsNotExist(err) {
-			return nil, errors.Wrapf(err, "open %s no such file or directory", filename)
+			return nil, nil, errors.Wrapf(err, "open %s no such file or directory", filename)
 		} else {
-			return nil, errors.Wrapf(err, "open %s for writing failed", filename)
+			return nil, nil, errors.Wrapf(err, "open %s for writing failed", filename)
 		}
 	}
 	defer func() {
@@ -145,12 +83,6 @@ func collectHostFilesystemPerformance(hostCollector *troubleshootv1beta2.Filesys
 			log.Println(err.Error())
 		}
 	}()
-
-	collectorName := hostCollector.CollectorName
-	if collectorName == "" {
-		collectorName = "filesystemPerformance"
-	}
-	name := filepath.Join("host-collectors/filesystemPerformance", collectorName+".json")
 
 	// Start the background IOPS task and wait for warmup
 	if hostCollector.EnableBackgroundIOPS {
@@ -184,21 +116,9 @@ func collectHostFilesystemPerformance(hostCollector *troubleshootv1beta2.Filesys
 		time.Sleep(time.Second * time.Duration(hostCollector.BackgroundIOPSWarmupSeconds))
 	}
 
-	// var fsPerf *FSPerfResults
 	var fioResult *FioResult
 
-	latencyBenchmarkOptions := FioJobOptions{
-		RW:        "write",
-		IOEngine:  "sync",
-		FDataSync: "1",
-		Directory: hostCollector.Directory,
-		Size:      strconv.FormatUint(fileSize, 10),
-		BS:        strconv.FormatUint(operationSize, 10),
-		Name:      "fsperf",
-		RunTime:   "120",
-	}
-	// fsPerf, _ = collectFioResults(latencyBenchmarkOptions)
-	fioResult, err = collectFioResults(latencyBenchmarkOptions)
+	fioResult, err := collectFioResults(hostCollector)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to collect fio results")
 	}
