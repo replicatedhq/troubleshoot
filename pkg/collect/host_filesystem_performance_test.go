@@ -117,6 +117,21 @@ func Test_parseCollectorOptions(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name: "Invalid size",
+			args: args{
+				hostCollector: &troubleshootv1beta2.FilesystemPerformance{
+					HostCollectorMeta: troubleshootv1beta2.HostCollectorMeta{
+						CollectorName: "fsperf",
+					},
+					OperationSizeBytes: 1024,
+					FileSize:           "abcd",
+				},
+			},
+			wantCommand: nil,
+			wantOptions: nil,
+			wantErr:     true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -124,12 +139,14 @@ func Test_parseCollectorOptions(t *testing.T) {
 			if (err != nil) != tt.wantErr {
 				t.Errorf("parseCollectorOptions() error = %v, wantErr %v", err, tt.wantErr)
 				return
-			}
-			if !reflect.DeepEqual(gotCommand, tt.wantCommand) {
-				t.Errorf("parseCollectorOptions() got command = %v, want %v", gotCommand, tt.wantCommand)
-			}
-			if !reflect.DeepEqual(gotOptions, tt.wantOptions) {
-				t.Errorf("parseCollectorOptions() got options = %v, want %v", gotOptions, tt.wantOptions)
+			} else {
+				if !reflect.DeepEqual(gotCommand, tt.wantCommand) {
+					t.Errorf("parseCollectorOptions() got command = %v, want %v", gotCommand, tt.wantCommand)
+				}
+				if !reflect.DeepEqual(gotOptions, tt.wantOptions) {
+					t.Errorf("parseCollectorOptions() got options = %v, want %v", gotOptions, tt.wantOptions)
+				}
+				return
 			}
 		})
 	}
