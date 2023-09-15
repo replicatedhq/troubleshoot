@@ -28,6 +28,7 @@ func RedactResult(bundlePath string, input CollectorResult, additionalRedactors 
 	// Error channel to capture errors from goroutines
 	errorCh := make(chan error, len(input))
 	limitCh := make(chan struct{}, MAX_CONCURRENT_REDACTORS)
+	defer close(limitCh)
 
 	for k, v := range input {
 		limitCh <- struct{}{}

@@ -55,7 +55,8 @@ func (r literalRedactor) Redact(input io.Reader, path string) io.Reader {
 
 			clean := bytes.ReplaceAll(line, r.match, maskTextBytes)
 
-			_, err = writer.Write(append(clean, '\n')) // Append newline since scanner strips it
+			// Append newline since scanner strips it
+			err = writeBytes(writer, clean, NEW_LINE)
 			if err != nil {
 				return
 			}

@@ -20,6 +20,8 @@ type SingleLineRedactor struct {
 	isDefault  bool
 }
 
+var NEW_LINE = []byte{'\n'}
+
 func NewSingleLineRedactor(re LineRedactor, maskText, path, name string, isDefault bool) (*SingleLineRedactor, error) {
 	var scanCompiled *regexp.Regexp
 	compiled, err := compileRegex(re.regex)
@@ -71,7 +73,8 @@ func (r *SingleLineRedactor) Redact(input io.Reader, path string) io.Reader {
 			if r.scan != nil {
 				lowerLine := bytes.ToLower(line)
 				if !r.scan.Match(lowerLine) {
-					_, err = writer.Write(append(line, '\n')) // Append newline since scanner strips it
+					// Append newline since scanner strips it
+					err = writeBytes(writer, line, NEW_LINE)
 					if err != nil {
 						return
 					}
@@ -81,7 +84,8 @@ func (r *SingleLineRedactor) Redact(input io.Reader, path string) io.Reader {
 
 			// if scan matches, but re does not, do not redact
 			if !r.re.Match(line) {
-				_, err = writer.Write(append(line, '\n')) // Append newline since scanner strips it
+				// Append newline since scanner strips it
+				err = writeBytes(writer, line, NEW_LINE)
 				if err != nil {
 					return
 				}
@@ -89,8 +93,8 @@ func (r *SingleLineRedactor) Redact(input io.Reader, path string) io.Reader {
 			}
 
 			clean := r.re.ReplaceAll(line, substStr)
-
-			_, err = writer.Write(append(clean, '\n')) // Append newline since scanner strips it
+			// Append newline since scanner strips it
+			err = writeBytes(writer, clean, NEW_LINE)
 			if err != nil {
 				return
 			}

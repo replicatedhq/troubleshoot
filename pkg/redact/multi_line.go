@@ -53,14 +53,12 @@ func (r *MultiLineRedactor) Redact(input io.Reader, path string) io.Reader {
 		line1, line2, err := getNextTwoLines(reader, nil)
 		if err != nil {
 			// this will print 2 blank lines for empty input...
-			_, err = writer.Write(append(line1, '\n'))
+			// Append newlines since scanner strip them
+			err = writeBytes(writer, line1, NEW_LINE, line2, NEW_LINE)
 			if err != nil {
 				return
 			}
-			_, err = writer.Write(append(line2, '\n'))
-			if err != nil {
-				return
-			}
+
 			return
 		}
 
@@ -73,7 +71,8 @@ func (r *MultiLineRedactor) Redact(input io.Reader, path string) io.Reader {
 			if r.scan != nil {
 				lowerLine1 := bytes.ToLower(line1)
 				if !r.scan.Match(lowerLine1) {
-					_, err = writer.Write(append(line1, '\n'))
+					// Append newline since scanner strips it
+					err = writeBytes(writer, line1, NEW_LINE)
 					if err != nil {
 						return
 					}
@@ -85,7 +84,8 @@ func (r *MultiLineRedactor) Redact(input io.Reader, path string) io.Reader {
 
 			// If line1 matches re1, then transform line2 using re2
 			if !r.re1.Match(line1) {
-				_, err = writer.Write(append(line1, '\n'))
+				// Append newline since scanner strips it
+				err = writeBytes(writer, line1, NEW_LINE)
 				if err != nil {
 					return
 				}
@@ -96,11 +96,8 @@ func (r *MultiLineRedactor) Redact(input io.Reader, path string) io.Reader {
 			flushLastLine = false
 			clean := r.re2.ReplaceAll(line2, substStr)
 
-			_, err = writer.Write(append(line1, '\n'))
-			if err != nil {
-				return
-			}
-			_, err = writer.Write(append(clean, '\n'))
+			// Append newlines since scanner strip them
+			err = writeBytes(writer, line1, NEW_LINE, clean, NEW_LINE)
 			if err != nil {
 				return
 			}
@@ -120,7 +117,8 @@ func (r *MultiLineRedactor) Redact(input io.Reader, path string) io.Reader {
 		}
 
 		if flushLastLine {
-			_, err = writer.Write(append(line1, '\n')) // Append newline since scanner strips it
+			// Append newline since scanner strip it
+			err = writeBytes(writer, line1, NEW_LINE)
 			if err != nil {
 				return
 			}
@@ -149,4 +147,16 @@ func getNextTwoLines(reader *bufio.Reader, curLine2 []byte) (line1 []byte, line2
 	}
 
 	return
+}
+
+// writeBytes writes all byte slices to the writer
+// in the order they are passed in the variadic argument
+func writeBytes(w io.Writer, bs ...[]byte) error {
+	for _, b := range bs {
+		_, err := w.Write(b)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
