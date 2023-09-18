@@ -136,7 +136,6 @@ func (c *CollectVelero) Collect(progressChan chan<- interface{}) (CollectorResul
 	}
 
 	// collect backups.velero.io
-
 	backups, err := veleroclient.VeleroV1().Backups(c.Collector.Namespace).List(ctx, metav1.ListOptions{})
 	if err != nil {
 		return nil, errors.Wrap(err, "list backups.velero.io")
