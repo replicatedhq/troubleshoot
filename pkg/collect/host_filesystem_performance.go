@@ -405,7 +405,7 @@ func collectFioResults(hostCollector *troubleshootv1beta2.FilesystemPerformance)
 				return nil, errors.Wrapf(err, "fio failed with exit status %d", exitErr.ExitCode())
 			}
 		} else if e, ok := err.(*exec.Error); ok && e.Err == exec.ErrNotFound {
-			return nil, errors.Wrapf(err, "command not found: %v", command)
+			return nil, errors.Wrapf(err, "command not found: %v. ensure fio is installed", command)
 		} else {
 			return nil, errors.Wrapf(err, "failed to run command: %v", command)
 		}

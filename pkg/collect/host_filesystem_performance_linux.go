@@ -43,6 +43,7 @@ func (d Durations) Swap(i, j int) {
 
 func collectHostFilesystemPerformance(hostCollector *troubleshootv1beta2.FilesystemPerformance, bundlePath string) (map[string][]byte, error) {
 	timeout := time.Minute
+
 	if hostCollector.Timeout != "" {
 		d, err := time.ParseDuration(hostCollector.Timeout)
 		if err != nil {
@@ -60,29 +61,29 @@ func collectHostFilesystemPerformance(hostCollector *troubleshootv1beta2.Filesys
 	name := filepath.Join("host-collectors/filesystemPerformance", collectorName+".json")
 
 	if err := os.MkdirAll(hostCollector.Directory, 0700); err != nil {
-		return nil, nil, errors.Wrapf(err, "failed to mkdir %q", hostCollector.Directory)
+		return nil, errors.Wrapf(err, "failed to mkdir %q", hostCollector.Directory)
 	}
 
-	filename := filepath.Join(hostCollector.Directory, latencyBenchmarkOptions.Name)
-	// Create file handle
-	f, err := os.OpenFile(filename, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0600)
-	if err != nil {
-		if os.IsPermission(err) {
-			return nil, nil, errors.Wrapf(err, "open %s permission denied; please run this collector as root", filename)
-		} else if os.IsNotExist(err) {
-			return nil, nil, errors.Wrapf(err, "open %s no such file or directory", filename)
-		} else {
-			return nil, nil, errors.Wrapf(err, "open %s for writing failed", filename)
-		}
-	}
-	defer func() {
-		if err := f.Close(); err != nil {
-			log.Println(err.Error())
-		}
-		if err := os.Remove(filename); err != nil {
-			log.Println(err.Error())
-		}
-	}()
+	// filename := filepath.Join(hostCollector.Directory, fioJobOptions.Name)
+	// // Create file handle
+	// f, err := os.OpenFile(filename, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0600)
+	// if err != nil {
+	// 	if os.IsPermission(err) {
+	// 		return nil, errors.Wrapf(err, "open %s permission denied; please run this collector as root", filename)
+	// 	} else if os.IsNotExist(err) {
+	// 		return nil, errors.Wrapf(err, "open %s no such file or directory", filename)
+	// 	} else {
+	// 		return nil, errors.Wrapf(err, "open %s for writing failed", filename)
+	// 	}
+	// }
+	// defer func() {
+	// 	if err := f.Close(); err != nil {
+	// 		log.Println(err.Error())
+	// 	}
+	// 	if err := os.Remove(filename); err != nil {
+	// 		log.Println(err.Error())
+	// 	}
+	// }()
 
 	// Start the background IOPS task and wait for warmup
 	if hostCollector.EnableBackgroundIOPS {
@@ -115,8 +116,6 @@ func collectHostFilesystemPerformance(hostCollector *troubleshootv1beta2.Filesys
 
 		time.Sleep(time.Second * time.Duration(hostCollector.BackgroundIOPSWarmupSeconds))
 	}
-
-	var fioResult *FioResult
 
 	fioResult, err := collectFioResults(hostCollector)
 	if err != nil {
