@@ -118,6 +118,19 @@ func Test_parseCollectorOptions(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name: "Empty spec fails",
+			args: args{
+				hostCollector: &troubleshootv1beta2.FilesystemPerformance{
+					HostCollectorMeta: troubleshootv1beta2.HostCollectorMeta{
+						CollectorName: "fsperf",
+					},
+				},
+			},
+			wantCommand: nil,
+			wantOptions: nil,
+			wantErr:     true,
+		},
+		{
 			name: "Invalid filesize",
 			args: args{
 				hostCollector: &troubleshootv1beta2.FilesystemPerformance{
@@ -125,7 +138,30 @@ func Test_parseCollectorOptions(t *testing.T) {
 						CollectorName: "fsperf",
 					},
 					OperationSizeBytes: 1024,
+					Directory:          "/var/lib/etcd",
 					FileSize:           "abcd",
+					Sync:               true,
+					Datasync:           true,
+					Timeout:            "120",
+				},
+			},
+			wantCommand: nil,
+			wantOptions: nil,
+			wantErr:     true,
+		},
+		{
+			name: "invalid path parameter",
+			args: args{
+				hostCollector: &troubleshootv1beta2.FilesystemPerformance{
+					HostCollectorMeta: troubleshootv1beta2.HostCollectorMeta{
+						CollectorName: "fsperf",
+					},
+					OperationSizeBytes: 1024,
+					Directory:          "",
+					FileSize:           "22Mi",
+					Sync:               true,
+					Datasync:           true,
+					Timeout:            "120",
 				},
 			},
 			wantCommand: nil,
