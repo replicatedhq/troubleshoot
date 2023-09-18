@@ -60,26 +60,26 @@ func collectHostFilesystemPerformance(hostCollector *troubleshootv1beta2.Filesys
 		return nil, errors.Wrapf(err, "failed to mkdir %q", hostCollector.Directory)
 	}
 
-	filename := filepath.Join(hostCollector.Directory, fioJobOptions.Name)
-	// Create file handle
-	f, err := os.OpenFile(filename, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0600)
-	if err != nil {
-		if os.IsPermission(err) {
-			return nil, errors.Wrapf(err, "open %s permission denied; please run this collector as root", filename)
-		} else if os.IsNotExist(err) {
-			return nil, errors.Wrapf(err, "open %s no such file or directory", filename)
-		} else {
-			return nil, errors.Wrapf(err, "open %s for writing failed", filename)
-		}
-	}
-	defer func() {
-		if err := f.Close(); err != nil {
-			log.Println(err.Error())
-		}
-		if err := os.Remove(filename); err != nil {
-			log.Println(err.Error())
-		}
-	}()
+	// filename := filepath.Join(hostCollector.Directory, fioJobOptions.Name)
+	// // Create file handle
+	// f, err := os.OpenFile(filename, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0600)
+	// if err != nil {
+	// 	if os.IsPermission(err) {
+	// 		return nil, errors.Wrapf(err, "open %s permission denied; please run this collector as root", filename)
+	// 	} else if os.IsNotExist(err) {
+	// 		return nil, errors.Wrapf(err, "open %s no such file or directory", filename)
+	// 	} else {
+	// 		return nil, errors.Wrapf(err, "open %s for writing failed", filename)
+	// 	}
+	// }
+	// defer func() {
+	// 	if err := f.Close(); err != nil {
+	// 		log.Println(err.Error())
+	// 	}
+	// 	if err := os.Remove(filename); err != nil {
+	// 		log.Println(err.Error())
+	// 	}
+	// }()
 
 	// Start the background IOPS task and wait for warmup
 	if hostCollector.EnableBackgroundIOPS {
