@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"compress/gzip"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -17,18 +16,29 @@ import (
 	"k8s.io/klog/v2"
 )
 
+// Max number of concurrent redactors to run
+// Ensure the number is low enough since each of the redactors
+// also spawns goroutines to redact files in tar archives and
+// other goroutines for each redactor spec.
+const MAX_CONCURRENT_REDACTORS = 10
+
 func RedactResult(bundlePath string, input CollectorResult, additionalRedactors []*troubleshootv1beta2.Redact) error {
 	wg := &sync.WaitGroup{}
 
 	// Error channel to capture errors from goroutines
 	errorCh := make(chan error, len(input))
+	limitCh := make(chan struct{}, MAX_CONCURRENT_REDACTORS)
+	defer close(limitCh)
 
 	for k, v := range input {
+		limitCh <- struct{}{}
 
 		wg.Add(1)
 
 		go func(file string, data []byte) {
 			defer wg.Done()
+			defer func() { <-limitCh }() // free up after the function execution has run
+
 			var reader io.Reader
 			if data == nil {
 
@@ -84,7 +94,7 @@ func RedactResult(bundlePath string, input CollectorResult, additionalRedactors 
 			// If the file is .tar, .tgz or .tar.gz, it must not be redacted. Instead it is
 			// decompressed and each file inside the tar redacted and compressed back into the archive.
 			if filepath.Ext(file) == ".tar" || filepath.Ext(file) == ".tgz" || strings.HasSuffix(file, ".tar.gz") {
-				tmpDir, err := ioutil.TempDir("", "troubleshoot-subresult-")
+				tmpDir, err := os.MkdirTemp("", "troubleshoot-subresult-")
 				if err != nil {
 					errorCh <- errors.Wrap(err, "failed to create temp dir")
 					return

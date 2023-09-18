@@ -1,13 +1,13 @@
 package preflight
 
 import (
-	"log"
 	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/replicatedhq/troubleshoot/internal/testutils"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
+	"github.com/replicatedhq/troubleshoot/pkg/loader"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -26,7 +26,7 @@ type PreflightSpecsReadTest struct {
 	// TODOLATER: tests around this
 	wantHostPreflightSpec *troubleshootv1beta2.HostPreflight
 	// TODOLATER: tests around this
-	wantUploadResultSpecs []*troubleshootv1beta2.Preflight
+	wantUploadResultSpecs []troubleshootv1beta2.Preflight
 }
 
 // TODO: Simplify tests and rely on the loader tests
@@ -273,6 +273,32 @@ func TestPreflightSpecsRead(t *testing.T) {
 			wantHostPreflightSpec: nil,
 			wantUploadResultSpecs: nil,
 		},
+		PreflightSpecsReadTest{
+			name: "stdin-secret and support-bundle secret",
+			args: []string{
+				"-",
+				filepath.Join(testutils.FileDir(), "../../testdata/supportbundle/labelled-specs/sb-spec-1.yaml"),
+			},
+			customStdin:           true,
+			stdinDataFile:         preflightSecretFile,
+			wantErr:               false,
+			wantPreflightSpec:     &expectSecretPreflightSpec,
+			wantHostPreflightSpec: nil,
+			wantUploadResultSpecs: nil,
+		},
+		PreflightSpecsReadTest{
+			name: "stdin-secret and redact secret",
+			args: []string{
+				"-",
+				filepath.Join(testutils.FileDir(), "../../testdata/supportbundle/labelled-specs/redact-spec-1.yaml"),
+			},
+			customStdin:           true,
+			stdinDataFile:         preflightSecretFile,
+			wantErr:               false,
+			wantPreflightSpec:     &expectSecretPreflightSpec,
+			wantHostPreflightSpec: nil,
+			wantUploadResultSpecs: nil,
+		},
 		/*
 			/* TODOLATER: needs a cluster with a spec installed?
 			PreflightSpecsReadTest{
@@ -290,21 +316,46 @@ func TestPreflightSpecsRead(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tt := tt // pin
-			specs := PreflightSpecs{}
 
-			tErr := singleTestPreflightSpecsRead(t, &tt, &specs)
+			specs, tErr := singleTestPreflightSpecsRead(t, &tt)
+			require.Equal(t, tt.wantErr, tErr != nil)
 
-			if tt.wantErr {
-				assert.Error(t, tErr)
-			} else {
-				require.NoError(t, tErr)
+			if tt.wantPreflightSpec != nil {
+				assert.Truef(t,
+					contains(specs.PreflightsV1Beta2, *tt.wantPreflightSpec),
+					"expected %v to contain %v", specs.PreflightsV1Beta2, *tt.wantPreflightSpec,
+				)
+			}
+			for _, wantUploadResultSpec := range tt.wantUploadResultSpecs {
+				assert.Truef(t,
+					contains(specs.PreflightsV1Beta2, wantUploadResultSpec),
+					"expected %v to contain %v", specs.PreflightsV1Beta2, wantUploadResultSpec,
+				)
+			}
+			if tt.wantHostPreflightSpec != nil {
+				assert.Truef(t,
+					contains(specs.HostPreflightsV1Beta2, *tt.wantHostPreflightSpec),
+					"expected %v to contain %v", testutils.AsJSON(t, specs.HostPreflightsV1Beta2), testutils.AsJSON(t, specs.HostPreflightsV1Beta2),
+				)
 			}
 
-			assert.Equal(t, specs.PreflightSpec, tt.wantPreflightSpec)
-			assert.Equal(t, specs.HostPreflightSpec, tt.wantHostPreflightSpec)
-			assert.Equal(t, specs.UploadResultSpecs, tt.wantUploadResultSpecs)
+			assert.Len(t, specs.SupportBundlesV1Beta2, 0)
+			assert.Len(t, specs.RedactorsV1Beta2, 0)
+			assert.Len(t, specs.AnalyzersV1Beta2, 0)
+			assert.Len(t, specs.CollectorsV1Beta2, 0)
+			assert.Len(t, specs.RemoteCollectorsV1Beta2, 0)
+			assert.Len(t, specs.HostCollectorsV1Beta2, 0)
 		})
 	}
+}
+
+func contains[T any](list []T, obj T) bool {
+	for _, item := range list {
+		if assert.ObjectsAreEqual(item, obj) {
+			return true
+		}
+	}
+	return false
 }
 
 func concatSpecs(target troubleshootv1beta2.Preflight, source troubleshootv1beta2.Preflight) *troubleshootv1beta2.Preflight {
@@ -317,7 +368,7 @@ func concatSpecs(target troubleshootv1beta2.Preflight, source troubleshootv1beta
 }
 
 // Structured as a separate function so we can use defer appropriately
-func singleTestPreflightSpecsRead(t *testing.T, tt *PreflightSpecsReadTest, specs *PreflightSpecs) error {
+func singleTestPreflightSpecsRead(t *testing.T, tt *PreflightSpecsReadTest) (*loader.TroubleshootKinds, error) {
 	var tmpfile *os.File
 	var err error
 	if tt.customStdin == true {
@@ -349,13 +400,13 @@ func singleTestPreflightSpecsRead(t *testing.T, tt *PreflightSpecsReadTest, spec
 		os.Stdin = tmpfile
 	}
 
-	err = specs.Read(tt.args)
+	kinds, err := readSpecs(tt.args)
 
 	if tt.customStdin == true {
 		if err = tmpfile.Close(); err != nil {
-			log.Fatal(err)
+			t.Fatal(err)
 		}
 	}
 
-	return err
+	return kinds, err
 }

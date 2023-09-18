@@ -94,6 +94,12 @@ go tool pprof -http=":8000" cpu.prof
 go tool pprof -http=":8001" mem.prof
 ```
 
+**Additional flags for memory profiling**
+- `inuse_space`: Amount of memory allocated and not released yet (default).
+- `inuse_objects`: Amount of objects allocated and not released yet.
+- `alloc_space`: Total amount of memory allocated (regardless of released).
+- `alloc_objects`: Total amount of objects allocated (regardless of released).
+
 More on profiling please visit https://go.dev/doc/diagnostics#profiling
 
 ## Contribution workflow

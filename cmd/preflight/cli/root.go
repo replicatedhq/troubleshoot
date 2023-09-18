@@ -6,7 +6,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/replicatedhq/troubleshoot/cmd/util"
+	"github.com/replicatedhq/troubleshoot/cmd/internal/util"
 	"github.com/replicatedhq/troubleshoot/internal/traces"
 	"github.com/replicatedhq/troubleshoot/pkg/constants"
 	"github.com/replicatedhq/troubleshoot/pkg/k8sutil"
@@ -64,9 +64,13 @@ that a cluster meets the requirements to run an application.`,
 
 	cobra.OnInitialize(initConfig)
 
-	cmd.AddCommand(VersionCmd())
+	cmd.AddCommand(util.VersionCmd())
 	cmd.AddCommand(OciFetchCmd())
 	preflight.AddFlags(cmd.PersistentFlags())
+
+	// Dry run flag should be in cmd.PersistentFlags() flags made available to all subcommands
+	// Adding here to avoid that
+	cmd.Flags().Bool("dry-run", false, "print the preflight spec without running preflight checks")
 
 	k8sutil.AddFlags(cmd.Flags())
 

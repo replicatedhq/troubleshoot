@@ -2,13 +2,15 @@ package redact
 
 import (
 	"bytes"
-	"io/ioutil"
+	"io"
+	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func Test_NewMultiLineRedactorr(t *testing.T) {
+func Test_NewMultiLineRedactor(t *testing.T) {
 	tests := []struct {
 		name        string
 		selector    LineRedactor
@@ -101,11 +103,48 @@ func Test_NewMultiLineRedactorr(t *testing.T) {
 			req.NoError(err)
 			outReader := reRunner.Redact(bytes.NewReader([]byte(tt.inputString)), "")
 
-			gotBytes, err := ioutil.ReadAll(outReader)
+			gotBytes, err := io.ReadAll(outReader)
 			req.NoError(err)
 			req.Equal(tt.wantString, string(gotBytes))
 			GetRedactionList()
 			ResetRedactionList()
+		})
+	}
+}
+
+func Test_writeBytes(t *testing.T) {
+	tests := []struct {
+		name       string
+		inputBytes [][]byte
+		want       string
+	}{
+		{
+			name:       "No newline",
+			inputBytes: [][]byte{[]byte("hello"), []byte("world")},
+			want:       "helloworld",
+		},
+		{
+			name:       "With newline",
+			inputBytes: [][]byte{[]byte("hello"), NEW_LINE, []byte("world"), NEW_LINE},
+			want:       "hello\nworld\n",
+		},
+		{
+			name:       "Empty line",
+			inputBytes: [][]byte{NEW_LINE},
+			want:       "\n",
+		},
+		{
+			name: "Nothing",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var w strings.Builder
+			err := writeBytes(&w, tt.inputBytes...)
+			require.NoError(t, err)
+
+			assert.Equal(t, tt.want, w.String())
 		})
 	}
 }
