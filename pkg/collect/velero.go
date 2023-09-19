@@ -26,6 +26,14 @@ const (
 	DefaultVeleroNamespace = "velero"
 )
 
+var InitContainerNames = []string{
+	"velero-velero-plugin-for-aws",
+	"velero-velero-plugin-for-gcp",
+	"velero-velero-plugin-for-microsoft-azure",
+	"replicated-local-volume-provider",
+	"replicated-kurl-util",
+}
+
 type CollectVelero struct {
 	Collector    *troubleshootv1beta2.Velero
 	BundlePath   string
@@ -195,6 +203,36 @@ func (c *CollectVelero) Collect(progressChan chan<- interface{}) (CollectorResul
 		output.SaveResult(c.BundlePath, key, bytes.NewBuffer(b))
 	}
 
+	// collect deletebackuprequests.velero.io
+	deleteBackupRequests, err := veleroclient.VeleroV1().DeleteBackupRequests(c.Collector.Namespace).List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return nil, errors.Wrap(err, "list deletebackuprequests.velero.io")
+	}
+	dir = GetVeleroDeleteBackupRequestsDirectory(ns)
+	for _, deleteBackupRequest := range deleteBackupRequests.Items {
+		b, err := yaml.Marshal(deleteBackupRequest)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to marshal delete backup request %s", deleteBackupRequest.Name)
+		}
+		key := filepath.Join(dir, deleteBackupRequest.Name+".yaml")
+		output.SaveResult(c.BundlePath, key, bytes.NewBuffer(b))
+	}
+
+	// collect downloadrequests.velero.io
+	downloadRequests, err := veleroclient.VeleroV1().DownloadRequests(c.Collector.Namespace).List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return nil, errors.Wrap(err, "list downloadrequests.velero.io")
+	}
+	dir = GetVeleroDownloadRequestsDirectory(ns)
+	for _, downloadRequest := range downloadRequests.Items {
+		b, err := yaml.Marshal(downloadRequest)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to marshal download request %s", downloadRequest.Name)
+		}
+		key := filepath.Join(dir, downloadRequest.Name+".yaml")
+		output.SaveResult(c.BundlePath, key, bytes.NewBuffer(b))
+	}
+
 	// collect podvolumebackups.velero.io
 	podVolumeBackups, err := veleroclient.VeleroV1().PodVolumeBackups(c.Collector.Namespace).List(ctx, metav1.ListOptions{})
 	if err != nil {
@@ -225,8 +263,67 @@ func (c *CollectVelero) Collect(progressChan chan<- interface{}) (CollectorResul
 		output.SaveResult(c.BundlePath, key, bytes.NewBuffer(b))
 	}
 
-	// collect logs
+	// collect restores.velero.io
+	restores, err = veleroclient.VeleroV1().Restores(c.Collector.Namespace).List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return nil, errors.Wrap(err, "list restores.velero.io")
+	}
+	dir = GetVeleroRestoresDirectory(ns)
+	for _, restore := range restores.Items {
+		b, err := yaml.Marshal(restore)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to marshal restore %s", restore.Name)
+		}
+		key := filepath.Join(dir, restore.Name+".yaml")
+		output.SaveResult(c.BundlePath, key, bytes.NewBuffer(b))
+	}
 
+	// collect schedules.velero.io
+	schedules, err := veleroclient.VeleroV1().Schedules(c.Collector.Namespace).List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return nil, errors.Wrap(err, "list schedules.velero.io")
+	}
+	dir = GetVeleroSchedulesDirectory(ns)
+	for _, schedule := range schedules.Items {
+		b, err := yaml.Marshal(schedule)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to marshal schedule %s", schedule.Name)
+		}
+		key := filepath.Join(dir, schedule.Name+".yaml")
+		output.SaveResult(c.BundlePath, key, bytes.NewBuffer(b))
+	}
+
+	// collect serverstatusrequests.velero.io
+	serverStatusRequests, err := veleroclient.VeleroV1().ServerStatusRequests(c.Collector.Namespace).List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return nil, errors.Wrap(err, "list serverstatusrequests.velero.io")
+	}
+	dir = GetVeleroServerStatusRequestsDirectory(ns)
+	for _, serverStatusRequest := range serverStatusRequests.Items {
+		b, err := yaml.Marshal(serverStatusRequest)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to marshal server status request %s", serverStatusRequest.Name)
+		}
+		key := filepath.Join(dir, serverStatusRequest.Name+".yaml")
+		output.SaveResult(c.BundlePath, key, bytes.NewBuffer(b))
+	}
+
+	// collect volumesnapshotlocations.velero.io
+	volumeSnapshotLocations, err := veleroclient.VeleroV1().VolumeSnapshotLocations(c.Collector.Namespace).List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return nil, errors.Wrap(err, "list volumesnapshotlocations.velero.io")
+	}
+	dir = GetVeleroVolumeSnapshotLocationsDirectory(ns)
+	for _, volumeSnapshotLocation := range volumeSnapshotLocations.Items {
+		b, err := yaml.Marshal(volumeSnapshotLocation)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to marshal volume snapshot location %s", volumeSnapshotLocation.Name)
+		}
+		key := filepath.Join(dir, volumeSnapshotLocation.Name+".yaml")
+		output.SaveResult(c.BundlePath, key, bytes.NewBuffer(b))
+	}
+
+	// collect logs
 	err = c.collectVeleroLogs(ns, output, progressChan)
 	if err != nil {
 		return nil, errors.Wrap(err, "collect velero logs")
@@ -329,20 +426,24 @@ func GetVeleroBackupsDirectory(namespace string) string {
 	return fmt.Sprintf("%s/backups", namespace)
 }
 
+func GetVeleroBackupRepositoriesDirectory(namespace string) string {
+	return fmt.Sprintf("%s/backuprepositories", namespace)
+}
+
 func GetVeleroBackupStorageLocationsDirectory(namespace string) string {
 	return fmt.Sprintf("%s/backupstoragelocations", namespace)
 }
 
-func GetVeleroRestoresDirectory(namespace string) string {
-	return fmt.Sprintf("%s/restores", namespace)
+func GetVeleroDeleteBackupRequestsDirectory(namespace string) string {
+	return fmt.Sprintf("%s/deletebackuprequests", namespace)
 }
 
-func GetVeleroResticRepositoriesDirectory(namespace string) string {
-	return fmt.Sprintf("%s/resticrepositories", namespace)
+func GetVeleroDownloadRequestsDirectory(namespace string) string {
+	return fmt.Sprintf("%s/downloadrequests", namespace)
 }
 
-func GetVeleroBackupRepositoriesDirectory(namespace string) string {
-	return fmt.Sprintf("%s/backuprepositories", namespace)
+func GetVeleroLogsDirectory(namespace string) string {
+	return fmt.Sprintf("%s/logs", namespace)
 }
 
 func GetVeleroPodVolumeBackupsDirectory(namespace string) string {
@@ -353,6 +454,22 @@ func GetVeleroPodVolumeRestoresDirectory(namespace string) string {
 	return fmt.Sprintf("%s/podvolumerestores", namespace)
 }
 
-func GetVeleroLogsDirectory(namespace string) string {
-	return fmt.Sprintf("%s/logs", namespace)
+func GetVeleroRestoresDirectory(namespace string) string {
+	return fmt.Sprintf("%s/restores", namespace)
+}
+
+func GetVeleroSchedulesDirectory(namespace string) string {
+	return fmt.Sprintf("%s/schedules", namespace)
+}
+
+func GetVeleroServerStatusRequestsDirectory(namespace string) string {
+	return fmt.Sprintf("%s/serverstatusrequests", namespace)
+}
+
+func GetVeleroVolumeSnapshotLocationsDirectory(namespace string) string {
+	return fmt.Sprintf("%s/volumesnapshotlocations", namespace)
+}
+
+func GetVeleroResticRepositoriesDirectory(namespace string) string {
+	return fmt.Sprintf("%s/resticrepositories", namespace)
 }
