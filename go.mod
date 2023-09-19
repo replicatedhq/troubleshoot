@@ -238,7 +238,7 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	helm.sh/helm/v3 v3.12.3
 	k8s.io/kube-openapi v0.0.0-20230717233707-2695361300d9 // indirect
-	k8s.io/metrics v0.28.1
+	k8s.io/metrics v0.28.2
 	k8s.io/utils v0.0.0-20230406110748-d93618cff8a2
 	periph.io/x/host/v3 v3.8.2
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
