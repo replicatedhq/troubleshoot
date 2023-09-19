@@ -83,6 +83,11 @@ const (
 	MESSAGE_TEXT_PADDING                = 4
 	MESSAGE_TEXT_LINES_MARGIN_TO_BOTTOM = 4
 
-	// Bufio Reader Constants
-	MAX_BUFFER_CAPACITY = 1024 * 1024
+	// This is the initial size of the buffer allocated.
+	// Under the hood, an array of size N is allocated in memory
+	BUF_INIT_SIZE = 4096 // 4KB
+
+	// This is the muximum size the buffer can grow to
+	// Its not what the buffer will be allocated to initially
+	SCANNER_MAX_SIZE = 10 * 1024 * 1024 // 10MB
 )

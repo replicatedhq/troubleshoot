@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"crypto/tls"
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"path/filepath"
 	"strings"
@@ -80,9 +80,14 @@ func (c *CollectHTTP) Collect(progressChan chan<- interface{}) (CollectorResult,
 	return output, nil
 }
 
-func doRequest(method, url string, headers map[string]string, body string, insecureSkipVerify bool, timeout time.Duration) (*http.Response, error) {
+func doRequest(method, url string, headers map[string]string, body string, insecureSkipVerify bool, timeout string) (*http.Response, error) {
+	t, err := parseTimeout(timeout)
+	if err != nil {
+		return nil, err
+	}
+
 	httpClient := &http.Client{
-		Timeout: timeout,
+		Timeout: t,
 	}
 
 	if insecureSkipVerify {
@@ -112,7 +117,7 @@ func responseToOutput(response *http.Response, err error) ([]byte, error) {
 			Message: err.Error(),
 		}
 	} else {
-		body, err := ioutil.ReadAll(response.Body)
+		body, err := io.ReadAll(response.Body)
 		if err != nil {
 			return nil, err
 		}
@@ -135,4 +140,25 @@ func responseToOutput(response *http.Response, err error) ([]byte, error) {
 	}
 
 	return b, nil
+}
+
+// parseTimeout parses a string into a time.Duration.
+// If the string is empty, it returns 0.
+func parseTimeout(s string) (time.Duration, error) {
+	var timeout time.Duration
+	var err error
+	if s == "" {
+		timeout = 0
+	} else {
+		timeout, err = time.ParseDuration(s)
+		if err != nil {
+			return 0, err
+		}
+	}
+
+	if timeout < 0 {
+		return 0, errors.New("timeout must be a positive duration")
+	}
+
+	return timeout, nil
 }

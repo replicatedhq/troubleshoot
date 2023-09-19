@@ -2783,9 +2783,8 @@
                         "type": "boolean"
                       },
                       "timeout": {
-                        "description": "A Duration represents the elapsed time between two instants as an int64 nanosecond count. The representation limits the largest representable duration to approximately 290 years.",
-                        "type": "integer",
-                        "format": "int64"
+                        "description": "Timeout is the time to wait for a server's response. Its a duration e.g 15s, 2h30m. Missing value or empty string or means no timeout.",
+                        "type": "string"
                       },
                       "url": {
                         "type": "string"
@@ -2814,9 +2813,8 @@
                         "type": "boolean"
                       },
                       "timeout": {
-                        "description": "A Duration represents the elapsed time between two instants as an int64 nanosecond count. The representation limits the largest representable duration to approximately 290 years.",
-                        "type": "integer",
-                        "format": "int64"
+                        "description": "Timeout is the time to wait for a server's response. Its a duration e.g 15s, 2h30m. Missing value or empty string or means no timeout.",
+                        "type": "string"
                       },
                       "url": {
                         "type": "string"
@@ -2842,9 +2840,8 @@
                         "type": "boolean"
                       },
                       "timeout": {
-                        "description": "A Duration represents the elapsed time between two instants as an int64 nanosecond count. The representation limits the largest representable duration to approximately 290 years.",
-                        "type": "integer",
-                        "format": "int64"
+                        "description": "Timeout is the time to wait for a server's response. Its a duration e.g 15s, 2h30m. Missing value or empty string or means no timeout.",
+                        "type": "string"
                       },
                       "url": {
                         "type": "string"
@@ -9610,9 +9607,8 @@
                         "type": "boolean"
                       },
                       "timeout": {
-                        "description": "A Duration represents the elapsed time between two instants as an int64 nanosecond count. The representation limits the largest representable duration to approximately 290 years.",
-                        "type": "integer",
-                        "format": "int64"
+                        "description": "Timeout is the time to wait for a server's response. Its a duration e.g 15s, 2h30m. Missing value or empty string or means no timeout.",
+                        "type": "string"
                       },
                       "url": {
                         "type": "string"
@@ -9638,9 +9634,8 @@
                         "type": "boolean"
                       },
                       "timeout": {
-                        "description": "A Duration represents the elapsed time between two instants as an int64 nanosecond count. The representation limits the largest representable duration to approximately 290 years.",
-                        "type": "integer",
-                        "format": "int64"
+                        "description": "Timeout is the time to wait for a server's response. Its a duration e.g 15s, 2h30m. Missing value or empty string or means no timeout.",
+                        "type": "string"
                       },
                       "url": {
                         "type": "string"
@@ -9666,9 +9661,8 @@
                         "type": "boolean"
                       },
                       "timeout": {
-                        "description": "A Duration represents the elapsed time between two instants as an int64 nanosecond count. The representation limits the largest representable duration to approximately 290 years.",
-                        "type": "integer",
-                        "format": "int64"
+                        "description": "Timeout is the time to wait for a server's response. Its a duration e.g 15s, 2h30m. Missing value or empty string or means no timeout.",
+                        "type": "string"
                       },
                       "url": {
                         "type": "string"
