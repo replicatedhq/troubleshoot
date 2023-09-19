@@ -252,4 +252,4 @@ watchrsync: npm-install
 .PHONY: npm-install
 npm-install:
 	npm --version 2>&1 >/dev/null || ( echo "npm not installed; install npm to set up watchrsync" && exit 1 )
-	npm list gaze-run-interrupt || npm install install gaze-run-interrupt@~2.0.0
+	npm list gaze-run-interrupt || npm install install --no-save gaze-run-interrupt@~2.0.0
