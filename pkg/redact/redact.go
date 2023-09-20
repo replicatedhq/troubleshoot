@@ -17,15 +17,40 @@ const (
 	MASK_TEXT = "***HIDDEN***"
 )
 
-var allRedactions RedactionList
-var redactionListMut sync.Mutex
-var pendingRedactions sync.WaitGroup
+var (
+	allRedactions     RedactionList
+	redactionListMut  sync.Mutex
+	pendingRedactions sync.WaitGroup
+
+	// A regex cache to avoid recompiling the same regexes over and over
+	regexCache     = map[string]*regexp.Regexp{}
+	regexCacheLock sync.Mutex
+	maskTextBytes  = []byte(MASK_TEXT)
+)
 
 func init() {
 	allRedactions = RedactionList{
 		ByRedactor: map[string][]Redaction{},
 		ByFile:     map[string][]Redaction{},
 	}
+}
+
+// A regex cache to avoid recompiling the same regexes over and over
+func compileRegex(pattern string) (*regexp.Regexp, error) {
+	regexCacheLock.Lock()
+	defer regexCacheLock.Unlock()
+
+	if cached, ok := regexCache[pattern]; ok {
+		return cached, nil
+	}
+
+	compiled, err := regexp.Compile(pattern)
+	if err != nil {
+		return nil, err
+	}
+
+	regexCache[pattern] = compiled
+	return compiled, nil
 }
 
 type Redactor interface {
@@ -85,10 +110,19 @@ func ResetRedactionList() {
 		ByRedactor: map[string][]Redaction{},
 		ByFile:     map[string][]Redaction{},
 	}
+
+	// Clear the regex cache as well. We do not want
+	// to keep this around in long running processes
+	// that continually redact files
+	regexCacheLock.Lock()
+	defer regexCacheLock.Unlock()
+
+	regexCache = map[string]*regexp.Regexp{}
 }
 
 func buildAdditionalRedactors(path string, redacts []*troubleshootv1beta2.Redact) ([]Redactor, error) {
 	additionalRedactors := []Redactor{}
+
 	for i, redact := range redacts {
 		if redact == nil {
 			continue
@@ -104,7 +138,7 @@ func buildAdditionalRedactors(path string, redacts []*troubleshootv1beta2.Redact
 		}
 
 		for j, literal := range redact.Removals.Values {
-			additionalRedactors = append(additionalRedactors, literalString(literal, path, redactorName(i, j, redact.Name, "literal")))
+			additionalRedactors = append(additionalRedactors, literalString([]byte(literal), path, redactorName(i, j, redact.Name, "literal")))
 		}
 
 		for j, re := range redact.Removals.Regex {
@@ -458,13 +492,13 @@ func getReplacementPattern(re *regexp.Regexp, maskText string) string {
 	return substStr
 }
 
-func readLine(r *bufio.Reader) (string, error) {
+func readLine(r *bufio.Reader) ([]byte, error) {
 	var completeLine []byte
 	for {
 		var line []byte
 		line, isPrefix, err := r.ReadLine()
 		if err != nil {
-			return "", err
+			return nil, err
 		}
 
 		completeLine = append(completeLine, line...)
@@ -472,7 +506,7 @@ func readLine(r *bufio.Reader) (string, error) {
 			break
 		}
 	}
-	return string(completeLine), nil
+	return completeLine, nil
 }
 
 func addRedaction(redaction Redaction) {
