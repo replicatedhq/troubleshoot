@@ -70,11 +70,12 @@ const (
 	EXIT_CODE_WARN        = 4
 
 	// Troubleshoot label constants
-	SupportBundleKey       = "support-bundle-spec"
-	RedactorKey            = "redactor-spec"
 	TroubleshootIOLabelKey = "troubleshoot.io/kind"
 	TroubleshootSHLabelKey = "troubleshoot.sh/kind"
-	PreflightKey           = "preflight.yaml" // Shouldn't this be "preflight-spec"?
+	SupportBundleKey       = "support-bundle-spec"
+	RedactorKey            = "redactor-spec"
+	PreflightKey           = "preflight.yaml"
+	PreflightKey2          = "preflight-spec"
 
 	// Troubleshoot spec constants
 	Troubleshootv1beta2Kind = "troubleshoot.sh/v1beta2"

@@ -268,6 +268,7 @@ func isConfigMap(parsedDocHead parsedDoc) bool {
 
 // getSpecFromConfigMap extracts multiple troubleshoot specs from a secret
 func (l *specLoader) getSpecFromConfigMap(cm *v1.ConfigMap) ([]string, error) {
+	// TODO: Consider not checking for the existence of the key and just trying to decode
 	specs := []string{}
 
 	str, ok := cm.Data[constants.SupportBundleKey]
@@ -282,12 +283,17 @@ func (l *specLoader) getSpecFromConfigMap(cm *v1.ConfigMap) ([]string, error) {
 	if ok {
 		specs = append(specs, util.SplitYAML(str)...)
 	}
+	str, ok = cm.Data[constants.PreflightKey2]
+	if ok {
+		specs = append(specs, util.SplitYAML(str)...)
+	}
 
 	return specs, nil
 }
 
 // getSpecFromSecret extracts multiple troubleshoot specs from a secret
 func (l *specLoader) getSpecFromSecret(secret *v1.Secret) ([]string, error) {
+	// TODO: Consider not checking for the existence of the key and just trying to decode
 	specs := []string{}
 
 	specBytes, ok := secret.Data[constants.SupportBundleKey]
@@ -302,6 +308,10 @@ func (l *specLoader) getSpecFromSecret(secret *v1.Secret) ([]string, error) {
 	if ok {
 		specs = append(specs, util.SplitYAML(string(specBytes))...)
 	}
+	specBytes, ok = secret.Data[constants.PreflightKey2]
+	if ok {
+		specs = append(specs, util.SplitYAML(string(specBytes))...)
+	}
 	str, ok := secret.StringData[constants.SupportBundleKey]
 	if ok {
 		specs = append(specs, util.SplitYAML(str)...)
@@ -311,6 +321,10 @@ func (l *specLoader) getSpecFromSecret(secret *v1.Secret) ([]string, error) {
 		specs = append(specs, util.SplitYAML(str)...)
 	}
 	str, ok = secret.StringData[constants.PreflightKey]
+	if ok {
+		specs = append(specs, util.SplitYAML(str)...)
+	}
+	str, ok = secret.StringData[constants.PreflightKey2]
 	if ok {
 		specs = append(specs, util.SplitYAML(str)...)
 	}

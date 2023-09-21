@@ -74,7 +74,7 @@ from a server that can be used to assist when troubleshooting a Kubernetes clust
 	cmd.Flags().String("since", "", "force pod logs collectors to return logs newer than a relative duration like 5s, 2m, or 3h.")
 	cmd.Flags().StringP("output", "o", "", "specify the output file path for the support bundle")
 	cmd.Flags().Bool("debug", false, "enable debug logging. This is equivalent to --v=0")
-	cmd.Flags().Bool("dry-run", false, "print the support bundle spec without collecting anything")
+	cmd.Flags().Bool("dry-run", false, "print support bundle spec without collecting anything")
 
 	// hidden in favor of the `insecure-skip-tls-verify` flag
 	cmd.Flags().Bool("allow-insecure-connections", false, "when set, do not verify TLS certs when retrieving spec and reporting results")

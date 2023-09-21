@@ -53,6 +53,21 @@ func runTroubleshoot(v *viper.Viper, args []string) error {
 		return err
 	}
 
+	// Check if we have any collectors to run in the support bundle specs
+	if len(kinds.SupportBundlesV1Beta2) == 0 {
+		return errors.New("no support bundle specs provided to run")
+	}
+	collectorsCount := 0
+	for _, sb := range kinds.SupportBundlesV1Beta2 {
+		collectorsCount += len(sb.Spec.Collectors)
+		collectorsCount += len(sb.Spec.HostCollectors)
+	}
+
+	if collectorsCount == 0 {
+		return errors.New("no collectors specified in support bundle specs")
+	}
+
+	// For --dry-run, we want to print the yaml and exit
 	if v.GetBool("dry-run") {
 		out, err := kinds.ToYaml()
 		if err != nil {
@@ -60,10 +75,6 @@ func runTroubleshoot(v *viper.Viper, args []string) error {
 		}
 		fmt.Printf("%s", out)
 		return nil
-	}
-
-	if !v.GetBool("load-cluster-specs") && len(args) < 1 {
-		return errors.New("flag load-cluster-specs must be set if no specs are provided on the command line")
 	}
 
 	interactive := v.GetBool("interactive") && isatty.IsTerminal(os.Stdout.Fd())

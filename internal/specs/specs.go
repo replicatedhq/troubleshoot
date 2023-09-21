@@ -9,6 +9,7 @@ import (
 	"os"
 	"reflect"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/replicatedhq/troubleshoot/internal/util"
@@ -63,7 +64,20 @@ func SplitTroubleshootSecretLabelSelector(ctx context.Context, labelSelector lab
 	return parsedSelectorStrings, nil
 }
 
+var httpClient = &http.Client{
+	Timeout: 30 * time.Second,
+}
+
+// LoadFromCLIArgs loads troubleshoot specs from args passed to a CLI command.
+// This loader function is meant for troubleshoot CLI commands only, hence not making it public.
+// It will contain opinionated logic for CLI commands such as interpreting viper flags,
+// supporting secret/ uri format, downloading from OCI registry and other URLs, etc.
 func LoadFromCLIArgs(ctx context.Context, client kubernetes.Interface, args []string, vp *viper.Viper) (*loader.TroubleshootKinds, error) {
+	// Let's always ensure we have a context
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
 	rawSpecs := []string{}
 
 	for _, v := range args {
@@ -100,6 +114,7 @@ func LoadFromCLIArgs(ctx context.Context, client kubernetes.Interface, args []st
 			}
 
 			if u.Scheme == "oci" {
+				// TODO: We need to also pull support-bundle images from OCI
 				content, err := oci.PullPreflightFromOCI(v)
 				if err != nil {
 					if err == oci.ErrNoRelease {
@@ -115,13 +130,13 @@ func LoadFromCLIArgs(ctx context.Context, client kubernetes.Interface, args []st
 					return nil, types.NewExitCodeError(constants.EXIT_CODE_SPEC_ISSUES, fmt.Errorf("%s is not a URL and was not found (err %s)", v, err))
 				}
 
-				req, err := http.NewRequest("GET", v, nil)
+				req, err := http.NewRequestWithContext(ctx, "GET", v, nil)
 				if err != nil {
 					// exit code: should this be catch all or spec issues...?
 					return nil, types.NewExitCodeError(constants.EXIT_CODE_CATCH_ALL, err)
 				}
 				req.Header.Set("User-Agent", "Replicated_Preflight/v1beta2")
-				resp, err := http.DefaultClient.Do(req)
+				resp, err := httpClient.Do(req)
 				if err != nil {
 					// exit code: should this be catch all or spec issues...?
 					return nil, types.NewExitCodeError(constants.EXIT_CODE_CATCH_ALL, err)
