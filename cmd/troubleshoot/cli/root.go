@@ -82,7 +82,7 @@ from a server that can be used to assist when troubleshooting a Kubernetes clust
 
 	// `no-uri` references the `followURI` functionality where we can use an upstream spec when creating a support bundle
 	// This flag makes sure we can also disable this and fall back to the default spec.
-	cmd.Flags().Bool("no-uri", false, "When this flag is used, Troubleshoot does not attempt to retrieve the bundle referenced by the uri: field in the spec.`")
+	cmd.Flags().Bool("no-uri", false, "When this flag is used, Troubleshoot does not attempt to retrieve the spec referenced by the uri: field`")
 
 	k8sutil.AddFlags(cmd.Flags())
 

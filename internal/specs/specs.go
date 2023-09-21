@@ -85,15 +85,34 @@ func LoadFromCLIArgs(ctx context.Context, client kubernetes.Interface, args []st
 			// format secret/namespace-name/secret-name
 			pathParts := strings.Split(v, "/")
 			if len(pathParts) != 3 {
-				return nil, types.NewExitCodeError(constants.EXIT_CODE_SPEC_ISSUES, errors.Errorf("path %s must have 3 components", v))
+				return nil, types.NewExitCodeError(constants.EXIT_CODE_SPEC_ISSUES, errors.Errorf("secret path %q must have 3 components", v))
 			}
 
-			spec, err := LoadFromSecret(ctx, client, pathParts[1], pathParts[2], "preflight-spec")
+			data, err := LoadFromSecret(ctx, client, pathParts[1], pathParts[2])
 			if err != nil {
 				return nil, types.NewExitCodeError(constants.EXIT_CODE_SPEC_ISSUES, errors.Wrap(err, "failed to get spec from secret"))
 			}
 
-			rawSpecs = append(rawSpecs, string(spec))
+			// Append all data in the secret. Some may not be specs, but that's ok. They will be ignored.
+			for _, spec := range data {
+				rawSpecs = append(rawSpecs, string(spec))
+			}
+		} else if strings.HasPrefix(v, "configmap/") {
+			// format configmap/namespace-name/configmap-name
+			pathParts := strings.Split(v, "/")
+			if len(pathParts) != 3 {
+				return nil, errors.Errorf("configmap path %q must have 3 components", v)
+			}
+
+			data, err := LoadFromConfigMap(ctx, client, pathParts[1], pathParts[2])
+			if err != nil {
+				return nil, errors.Wrap(err, "failed to get spec from configmap")
+			}
+
+			// Append all data in the configmap. Some may not be specs, but that's ok. They will be ignored.
+			for _, spec := range data {
+				rawSpecs = append(rawSpecs, spec)
+			}
 		} else if _, err := os.Stat(v); err == nil {
 			b, err := os.ReadFile(v)
 			if err != nil {
@@ -154,7 +173,8 @@ func LoadFromCLIArgs(ctx context.Context, client kubernetes.Interface, args []st
 	}
 
 	kinds, err := loader.LoadSpecs(ctx, loader.LoadOptions{
-		RawSpecs: rawSpecs,
+		RawSpecs:              rawSpecs,
+		IgnoreUpdateDownloads: vp.GetBool("no-uri"),
 	})
 	if err != nil {
 		return nil, err

@@ -23,7 +23,17 @@ func LoadFromSecret(namespace string, secretName string, key string) ([]byte, er
 		return nil, errors.Wrap(err, "failed to convert create k8s client")
 	}
 
-	return specs.LoadFromSecret(context.TODO(), client, namespace, secretName, key)
+	data, err := specs.LoadFromSecret(context.TODO(), client, namespace, secretName)
+	if err != nil {
+		return nil, err
+	}
+
+	spec, ok := data[key]
+	if !ok {
+		return nil, errors.Errorf("spec not found in secret %q: key=%q", secretName, key)
+	}
+
+	return spec, nil
 }
 
 // LoadFromSecretMatchingLabel reads data from a secret in the cluster using a label selector

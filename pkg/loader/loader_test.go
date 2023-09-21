@@ -2,6 +2,8 @@ package loader
 
 import (
 	"context"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/replicatedhq/troubleshoot/internal/testutils"
@@ -578,4 +580,49 @@ spec:
   - clusterResources:
       ignoreRBAC: true`)
 	assert.Contains(t, string(y), "message: Cluster is up to date")
+}
+
+func TestDownloadingSpecUpdates(t *testing.T) {
+	// Run a webserver to serve the spec
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(`
+apiVersion: troubleshoot.sh/v1beta2
+kind: SupportBundle
+metadata:
+  name: sb-2
+spec:
+  collectors:
+    - clusterInfo: {}`))
+	}))
+	defer srv.Close()
+
+	orig := `
+apiVersion: troubleshoot.sh/v1beta2
+kind: SupportBundle
+metadata:
+  name: sb-1
+spec:
+  uri: ` + srv.URL + `
+  collectors:
+    - configMap:
+        name: kube-root-ca.crt
+        namespace: default
+`
+
+	ctx := context.Background()
+	kinds, err := LoadSpecs(ctx, LoadOptions{RawSpec: orig})
+	require.NoError(t, err)
+	require.NotNil(t, kinds)
+
+	assert.Len(t, kinds.SupportBundlesV1Beta2, 2)
+	assert.Equal(t, srv.URL, kinds.SupportBundlesV1Beta2[0].Spec.Uri)
+	assert.Equal(t, "kube-root-ca.crt", kinds.SupportBundlesV1Beta2[0].Spec.Collectors[0].ConfigMap.Name)
+	assert.NotNil(t, kinds.SupportBundlesV1Beta2[1].Spec.Collectors[0].ClusterInfo)
+
+	// Ignore updates
+	kinds, err = LoadSpecs(ctx, LoadOptions{RawSpec: orig, IgnoreUpdateDownloads: true})
+	require.NoError(t, err)
+	require.NotNil(t, kinds)
+
+	assert.Len(t, kinds.SupportBundlesV1Beta2, 1)
 }

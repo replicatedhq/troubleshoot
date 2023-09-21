@@ -2,9 +2,17 @@ package loader
 
 import (
 	"context"
+	"crypto/tls"
+	"fmt"
+	"io"
+	"net/http"
+	"os"
 	"reflect"
 	"strings"
+	"time"
 
+	"github.com/manifoldco/promptui"
+	"github.com/mattn/go-isatty"
 	"github.com/pkg/errors"
 	"github.com/replicatedhq/troubleshoot/internal/util"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
@@ -40,6 +48,11 @@ type LoadOptions struct {
 	// If true, the loader will return an error if any of the specs are not valid
 	// else the invalid specs will be ignored
 	Strict bool
+
+	// Ignore downloading specs from URIs defined in the specs e.g in supportbundle,
+	// a Uri field can be defined to download an additional spec from a remote
+	// location. If this flag is set to true, the loader will ignore downloading it
+	IgnoreUpdateDownloads bool
 }
 
 // LoadSpecs takes sources to load specs from and returns a TroubleshootKinds object
@@ -59,11 +72,38 @@ func LoadSpecs(ctx context.Context, opt LoadOptions) (*TroubleshootKinds, error)
 	l := specLoader{
 		strict: opt.Strict,
 	}
-	return l.loadFromStrings(opt.RawSpecs...)
-}
 
-type specLoader struct {
-	strict bool
+	kinds, err := l.loadFromStrings(opt.RawSpecs...)
+	if err != nil {
+		return nil, err
+	}
+
+	// Do not download spec updates from remote URIs
+	if opt.IgnoreUpdateDownloads {
+		return kinds, nil
+	}
+
+	// Follow support bundle URIs to download more specs
+	// Clients can later on merge all the available specs
+	moreRawSpecs := []string{}
+	for _, spec := range kinds.SupportBundlesV1Beta2 {
+		if spec.Spec.Uri != "" && util.IsURL(spec.Spec.Uri) {
+			raw, err := loadSpecFromURL(ctx, spec.Spec.Uri)
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to load support bundle from uri %q", spec.Spec.Uri)
+			}
+			moreRawSpecs = append(moreRawSpecs, string(raw))
+		}
+	}
+
+	moreKinds, err := l.loadFromStrings(moreRawSpecs...)
+	if err != nil {
+		return nil, err
+	}
+
+	kinds.Add(moreKinds)
+
+	return kinds, nil
 }
 
 type TroubleshootKinds struct {
@@ -128,6 +168,10 @@ func (kinds *TroubleshootKinds) ToYaml() (string, error) {
 
 func NewTroubleshootKinds() *TroubleshootKinds {
 	return &TroubleshootKinds{}
+}
+
+type specLoader struct {
+	strict bool
 }
 
 // loadFromStrings accepts a list of strings (exploded) which should be yaml documents
@@ -329,4 +373,58 @@ func (l *specLoader) getSpecFromSecret(secret *v1.Secret) ([]string, error) {
 		specs = append(specs, util.SplitYAML(str)...)
 	}
 	return specs, nil
+}
+
+func loadSpecFromURL(ctx context.Context, uri string) ([]byte, error) {
+	// TODO: DRY ME - Copied from supportbundle package
+	httpClient := &http.Client{
+		Transport: http.DefaultTransport,
+		Timeout:   30 * time.Second,
+	}
+	for {
+		req, err := http.NewRequestWithContext(ctx, "GET", uri, nil)
+		if err != nil {
+			return nil, errors.Wrap(err, "make request")
+		}
+		req.Header.Set("User-Agent", "Replicated_Troubleshoot/v1beta1")
+		req.Header.Set("Bundle-Upload-Host", fmt.Sprintf("%s://%s", req.URL.Scheme, req.URL.Host))
+		resp, err := httpClient.Do(req)
+		if err != nil {
+			if shouldRetryRequest(err, httpClient) {
+				continue
+			}
+			return nil, errors.Wrap(err, "execute request")
+		}
+		defer resp.Body.Close()
+
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return nil, errors.Wrap(err, "read responce body")
+		}
+
+		return body, nil
+	}
+}
+
+func shouldRetryRequest(err error, client *http.Client) bool {
+	// TODO: DRY ME - Copied from supportbundle package
+	if strings.Contains(err.Error(), "x509") && canTryInsecure() {
+		client.Transport.(*http.Transport).TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+		return true
+	}
+	return false
+}
+
+func canTryInsecure() bool {
+	// TODO: DRY ME - Copied from supportbundle package
+	if !isatty.IsTerminal(os.Stdout.Fd()) {
+		return false
+	}
+	prompt := promptui.Prompt{
+		Label:     "Connection appears to be insecure. Would you like to attempt to create a support bundle anyway?",
+		IsConfirm: true,
+	}
+
+	_, err := prompt.Run()
+	return err == nil
 }
