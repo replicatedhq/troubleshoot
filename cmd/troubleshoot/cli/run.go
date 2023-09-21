@@ -23,10 +23,12 @@ import (
 	"github.com/replicatedhq/troubleshoot/pkg/convert"
 	"github.com/replicatedhq/troubleshoot/pkg/httputil"
 	"github.com/replicatedhq/troubleshoot/pkg/k8sutil"
+	"github.com/replicatedhq/troubleshoot/pkg/loader"
 	"github.com/replicatedhq/troubleshoot/pkg/supportbundle"
 	"github.com/replicatedhq/troubleshoot/pkg/types"
 	"github.com/spf13/viper"
 	spin "github.com/tj/go-spin"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/klog/v2"
@@ -45,34 +47,32 @@ func runTroubleshoot(v *viper.Viper, args []string) error {
 		return errors.Wrap(err, "failed to create kubernetes client")
 	}
 
-	argWithRedactors := append(args, v.GetStringSlice("redactors")...)
-	kinds, err := specs.LoadFromCLIArgs(ctx, client, argWithRedactors, viper.GetViper())
+	mainBundle, additionalRedactors, err := loadSpecs(ctx, args, client)
 	if err != nil {
 		return err
 	}
 
-	// Check if we have any collectors to run in the support bundle specs
-	if len(kinds.SupportBundlesV1Beta2) == 0 {
-		return errors.New("no support bundle specs provided to run")
-	}
-	collectorsCount := 0
-	for _, sb := range kinds.SupportBundlesV1Beta2 {
-		collectorsCount += len(sb.Spec.Collectors)
-		collectorsCount += len(sb.Spec.HostCollectors)
-	}
-
-	if collectorsCount == 0 {
-		return errors.New("no collectors specified in support bundle specs")
-	}
-
 	// For --dry-run, we want to print the yaml and exit
 	if v.GetBool("dry-run") {
-		out, err := kinds.ToYaml()
+		k := loader.TroubleshootKinds{
+			SupportBundlesV1Beta2: []troubleshootv1beta2.SupportBundle{*mainBundle},
+		}
+		// If we have redactors, add them to the temp kinds object
+		if len(additionalRedactors.Spec.Redactors) > 0 {
+			k.RedactorsV1Beta2 = []troubleshootv1beta2.Redactor{*additionalRedactors}
+		}
+
+		out, err := k.ToYaml()
 		if err != nil {
 			return types.NewExitCodeError(constants.EXIT_CODE_CATCH_ALL, errors.Wrap(err, "failed to convert specs to yaml"))
 		}
 		fmt.Printf("%s", out)
 		return nil
+	}
+
+	// Check if we have any collectors to run in the support bundle specs
+	if len(mainBundle.Spec.Collectors) == 0 || len(mainBundle.Spec.HostCollectors) == 0 {
+		return errors.New("no collectors specified to run")
 	}
 
 	interactive := v.GetBool("interactive") && isatty.IsTerminal(os.Stdout.Fd())
@@ -105,68 +105,6 @@ func runTroubleshoot(v *viper.Viper, args []string) error {
 			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 		})
 	}
-
-	mainBundle := &troubleshootv1beta2.SupportBundle{}
-	for _, sb := range kinds.SupportBundlesV1Beta2 {
-		sb := sb
-		mainBundle = supportbundle.ConcatSpec(mainBundle, &sb)
-	}
-
-	additionalRedactors := &troubleshootv1beta2.Redactor{}
-	for _, r := range kinds.RedactorsV1Beta2 {
-		additionalRedactors.Spec.Redactors = append(additionalRedactors.Spec.Redactors, r.Spec.Redactors...)
-	}
-
-	// // Defining `v` below will render using `v` in reference to Viper unusable.
-	// // Therefore refactoring `v` to `val` will make sure we can still use it.
-	// for _, val := range args {
-
-	// 	collectorContent, err := supportbundle.LoadSupportBundleSpec(val)
-	// 	if err != nil {
-	// 		return errors.Wrap(err, "failed to load support bundle spec")
-	// 	}
-	// 	multidocs := strings.Split(string(collectorContent), "\n---\n")
-	// 	// Referencing `ParseSupportBundle with a secondary arg of `no-uri`
-	// 	// Will make sure we can enable or disable the use of the `Spec.uri` field for an upstream spec.
-	// 	// This change will not have an impact on KOTS' usage of `ParseSupportBundle`
-	// 	// As Kots uses `load.go` directly.
-	// 	supportBundle, err := supportbundle.ParseSupportBundle([]byte(multidocs[0]), !v.GetBool("no-uri"))
-	// 	if err != nil {
-	// 		return errors.Wrap(err, "failed to parse support bundle spec")
-	// 	}
-
-	// 	mainBundle = supportbundle.ConcatSpec(mainBundle, supportBundle)
-
-	// 	parsedRedactors, err := supportbundle.ParseRedactorsFromDocs(multidocs)
-	// 	if err != nil {
-	// 		return errors.Wrap(err, "failed to parse redactors from doc")
-	// 	}
-	// 	additionalRedactors.Spec.Redactors = append(additionalRedactors.Spec.Redactors, parsedRedactors...)
-	// }
-
-	// if v.GetBool("load-cluster-specs") {
-	// 	kinds, err := loadClusterSpecs(ctx, v)
-	// 	if err != nil {
-	// 		return err
-	// 	}
-	// 	if len(kinds.SupportBundlesV1Beta2) == 0 {
-	// 		return errors.New("no support bundle specs found in cluster")
-	// 	}
-	// 	for _, sb := range kinds.SupportBundlesV1Beta2 {
-	// 		sb := sb // Why? https://golang.org/doc/faq#closures_and_goroutines
-	// 		mainBundle = supportbundle.ConcatSpec(mainBundle, &sb)
-	// 	}
-
-	// 	for _, redactor := range kinds.RedactorsV1Beta2 {
-	// 		additionalRedactors.Spec.Redactors = append(additionalRedactors.Spec.Redactors, redactor.Spec.Redactors...)
-	// 	}
-	// }
-
-	// redactors, err := supportbundle.GetRedactorsFromURIs(v.GetStringSlice("redactors"))
-	// if err != nil {
-	// 	return errors.Wrap(err, "failed to get redactors")
-	// }
-	// additionalRedactors.Spec.Redactors = append(additionalRedactors.Spec.Redactors, redactors...)
 
 	var wg sync.WaitGroup
 	collectorCB := func(c chan interface{}, msg string) { c <- msg }
@@ -294,19 +232,51 @@ the %s Admin Console to begin analysis.`
 	return nil
 }
 
-// func loadClusterSpecs(ctx context.Context, v *viper.Viper) (*loader.TroubleshootKinds, error) {
-// 	config, err := k8sutil.GetRESTConfig()
-// 	if err != nil {
-// 		return nil, errors.Wrap(err, "failed to convert kube flags to rest config")
-// 	}
+func loadSpecs(ctx context.Context, args []string, client kubernetes.Interface) (*troubleshootv1beta2.SupportBundle, *troubleshootv1beta2.Redactor, error) {
+	argsWithRedactors := append(args, viper.GetStringSlice("redactors")...)
+	kinds, err := specs.LoadFromCLIArgs(ctx, client, argsWithRedactors, viper.GetViper())
+	if err != nil {
+		return nil, nil, err
+	}
 
-// 	client, err := kubernetes.NewForConfig(config)
-// 	if err != nil {
-// 		return nil, errors.Wrap(err, "failed to convert create k8s client")
-// 	}
+	// Merge specs
+	mainBundle := &troubleshootv1beta2.SupportBundle{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "troubleshoot.sh/v1beta2",
+			Kind:       "SupportBundle",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "merged-support-bundle-spec",
+		},
+	}
+	for _, sb := range kinds.SupportBundlesV1Beta2 {
+		sb := sb
+		mainBundle = supportbundle.ConcatSpec(mainBundle, &sb)
+	}
 
-// 	return privSpecs.LoadFromCluster(ctx, client, v.GetStringSlice("selector"), v.GetString("namespace"))
-// }
+	for _, c := range kinds.CollectorsV1Beta2 {
+		mainBundle.Spec.Collectors = append(mainBundle.Spec.Collectors, c.Spec.Collectors...)
+	}
+
+	for _, hc := range kinds.HostCollectorsV1Beta2 {
+		mainBundle.Spec.HostCollectors = append(mainBundle.Spec.HostCollectors, hc.Spec.Collectors...)
+	}
+
+	additionalRedactors := &troubleshootv1beta2.Redactor{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "troubleshoot.sh/v1beta2",
+			Kind:       "Redactor",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "merged-redactors-spec",
+		},
+	}
+	for _, r := range kinds.RedactorsV1Beta2 {
+		additionalRedactors.Spec.Redactors = append(additionalRedactors.Spec.Redactors, r.Spec.Redactors...)
+	}
+
+	return mainBundle, additionalRedactors, nil
+}
 
 func parseTimeFlags(v *viper.Viper) (*time.Time, error) {
 	var (
