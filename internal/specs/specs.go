@@ -134,7 +134,7 @@ func LoadFromCLIArgs(ctx context.Context, client kubernetes.Interface, args []st
 
 			if u.Scheme == "oci" {
 				// TODO: We need to also pull support-bundle images from OCI
-				content, err := oci.PullPreflightFromOCI(v)
+				content, err := oci.PullSpecsFromOCI(ctx, v)
 				if err != nil {
 					if err == oci.ErrNoRelease {
 						return nil, types.NewExitCodeError(constants.EXIT_CODE_SPEC_ISSUES, errors.Errorf("no release found for %s.\nCheck the oci:// uri for errors or contact the application vendor for support.", v))
@@ -143,7 +143,7 @@ func LoadFromCLIArgs(ctx context.Context, client kubernetes.Interface, args []st
 					return nil, types.NewExitCodeError(constants.EXIT_CODE_SPEC_ISSUES, err)
 				}
 
-				rawSpecs = append(rawSpecs, string(content))
+				rawSpecs = append(rawSpecs, content...)
 			} else {
 				if !util.IsURL(v) {
 					return nil, types.NewExitCodeError(constants.EXIT_CODE_SPEC_ISSUES, fmt.Errorf("%s is not a URL and was not found (err %s)", v, err))
