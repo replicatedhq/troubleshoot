@@ -133,7 +133,6 @@ func LoadFromCLIArgs(ctx context.Context, client kubernetes.Interface, args []st
 			}
 
 			if u.Scheme == "oci" {
-				// TODO: We need to also pull support-bundle images from OCI
 				content, err := oci.PullSpecsFromOCI(ctx, v)
 				if err != nil {
 					if err == oci.ErrNoRelease {
