@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"net/url"
 	"path/filepath"
 	"strings"
 
@@ -38,9 +39,9 @@ func PullSupportBundleFromOCI(uri string) ([]byte, error) {
 // PullSpecsFromOCI pulls both the preflight and support bundle specs from the given URI
 //
 // The URI is expected to be the same as the one used to install your KOTS application
-// Example oci://registry.replicated.com/thanos-reloaded/unstable will endup pulling
-// preflights from "registry.replicated.com/thanos-reloaded/unstable/replicated-preflight:latest"
-// and support bundles from "registry.replicated.com/thanos-reloaded/unstable/replicated-supportbundle:latest"
+// Example oci://registry.replicated.com/app-slug/unstable will endup pulling
+// preflights from "registry.replicated.com/app-slug/unstable/replicated-preflight:latest"
+// and support bundles from "registry.replicated.com/app-slug/unstable/replicated-supportbundle:latest"
 // Both images have their own media types created when publishing KOTS OCI image.
 // NOTE: This only works with replicated registries for now and for KOTS applications only
 func PullSpecsFromOCI(ctx context.Context, uri string) ([]string, error) {
@@ -99,26 +100,14 @@ func pullFromOCI(ctx context.Context, uri string, mediaType string, imageName st
 	var descriptors, layers []ocispec.Descriptor
 	registryStore := content.Registry{Resolver: resolver}
 
-	// remove the oci://
-	uri = strings.TrimPrefix(uri, "oci://")
-
-	uriParts := strings.Split(uri, ":")
-	uri = fmt.Sprintf("%s/%s", uriParts[0], imageName)
-
-	if len(uriParts) > 1 {
-		uri = fmt.Sprintf("%s:%s", uri, uriParts[1])
-	} else {
-		uri = fmt.Sprintf("%s:latest", uri)
-	}
-
-	parsedRef, err := registry.ParseReference(uri)
+	parsedRef, err := parseURI(uri, imageName)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to parse reference")
+		return nil, err
 	}
 
-	klog.V(1).Infof("Pulling spec from %q OCI uri", parsedRef.String())
+	klog.V(1).Infof("Pulling spec from %q OCI uri", parsedRef)
 
-	manifest, err := oras.Copy(ctx, registryStore, parsedRef.String(), memoryStore, "",
+	manifest, err := oras.Copy(ctx, registryStore, parsedRef, memoryStore, "",
 		oras.WithPullEmptyNameAllowed(),
 		oras.WithAllowedMediaTypes(allowedMediaTypes),
 		oras.WithLayerDescriptors(func(l []ocispec.Descriptor) {
@@ -160,4 +149,35 @@ func pullFromOCI(ctx context.Context, uri string, mediaType string, imageName st
 	}
 
 	return matchingSpec, nil
+}
+
+func parseURI(in, imageName string) (string, error) {
+	u, err := url.Parse(in)
+	if err != nil {
+		return "", err
+	}
+
+	// Always check the scheme. If more schemes need to be supported
+	// we need to compare u.Scheme against a list of supported schemes.
+	// url.Parse(raw) will not return an error if a scheme is not present.
+	if u.Scheme != "oci" {
+		return "", fmt.Errorf("%q is an invalid OCI registry scheme", u.Scheme)
+	}
+
+	// remove unnecessary bits (oci://, tags)
+	uriParts := strings.Split(u.EscapedPath(), ":")
+
+	tag := "latest"
+	if len(uriParts) > 1 {
+		tag = uriParts[1]
+	}
+
+	uri := fmt.Sprintf("%s%s/%s:%s", u.Host, uriParts[0], imageName, tag) // <host>:<port>/path/<imageName>:tag
+
+	parsedRef, err := registry.ParseReference(uri)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to parse OCI uri reference")
+	}
+
+	return parsedRef.String(), nil
 }
