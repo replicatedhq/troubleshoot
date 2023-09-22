@@ -37,6 +37,9 @@ import (
 
 func runTroubleshoot(v *viper.Viper, args []string) error {
 	ctx := context.Background()
+	if !v.GetBool("load-cluster-specs") && len(args) < 1 {
+		return errors.New("flag load-cluster-specs must be set if no specs are provided on the command line")
+	}
 
 	restConfig, err := k8sutil.GetRESTConfig()
 	if err != nil {
@@ -237,6 +240,9 @@ func loadSupportBundleSpecsFromURIs(ctx context.Context, kinds *loader.Troublesh
 	remoteRawSpecs := []string{}
 	for _, s := range kinds.SupportBundlesV1Beta2 {
 		if s.Spec.Uri != "" && util.IsURL(s.Spec.Uri) {
+			// We are using LoadSupportBundleSpec function here since it handles prompting
+			// users to accept insecure connections
+			// There is an opportunity to refactor this code in favour of the Loader APIs
 			rawSpec, err := supportbundle.LoadSupportBundleSpec(s.Spec.Uri)
 			if err != nil {
 				return nil, errors.Wrapf(err, "failed to load support bundle from URI %q", s.Spec.Uri)
@@ -268,6 +274,8 @@ func loadSpecs(ctx context.Context, args []string, client kubernetes.Interface) 
 	}
 
 	// Merge specs
+	// We need to add the default type information to the support bundle spec
+	// since by default these fields would be empty
 	mainBundle := &troubleshootv1beta2.SupportBundle{
 		TypeMeta: metav1.TypeMeta{
 			APIVersion: "troubleshoot.sh/v1beta2",
