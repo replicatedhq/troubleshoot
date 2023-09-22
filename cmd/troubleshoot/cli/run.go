@@ -75,7 +75,7 @@ func runTroubleshoot(v *viper.Viper, args []string) error {
 	}
 
 	// Check if we have any collectors to run in the support bundle specs
-	if len(mainBundle.Spec.Collectors) == 0 || len(mainBundle.Spec.HostCollectors) == 0 {
+	if len(mainBundle.Spec.Collectors) == 0 && len(mainBundle.Spec.HostCollectors) == 0 {
 		return errors.New("no collectors specified to run")
 	}
 
