@@ -17,6 +17,7 @@ import (
 	"github.com/mattn/go-isatty"
 	"github.com/pkg/errors"
 	"github.com/replicatedhq/troubleshoot/internal/specs"
+	"github.com/replicatedhq/troubleshoot/internal/util"
 	analyzer "github.com/replicatedhq/troubleshoot/pkg/analyze"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/replicatedhq/troubleshoot/pkg/constants"
@@ -232,11 +233,38 @@ the %s Admin Console to begin analysis.`
 	return nil
 }
 
+func loadSupportBundleSpecsFromURIs(ctx context.Context, kinds *loader.TroubleshootKinds) (*loader.TroubleshootKinds, error) {
+	remoteRawSpecs := []string{}
+	for _, s := range kinds.SupportBundlesV1Beta2 {
+		if s.Spec.Uri != "" && util.IsURL(s.Spec.Uri) {
+			rawSpec, err := supportbundle.LoadSupportBundleSpec(s.Spec.Uri)
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to load support bundle from URI %q", s.Spec.Uri)
+			}
+			remoteRawSpecs = append(remoteRawSpecs, string(rawSpec))
+		}
+	}
+
+	return loader.LoadSpecs(ctx, loader.LoadOptions{
+		RawSpecs: remoteRawSpecs,
+	})
+}
+
 func loadSpecs(ctx context.Context, args []string, client kubernetes.Interface) (*troubleshootv1beta2.SupportBundle, *troubleshootv1beta2.Redactor, error) {
-	argsWithRedactors := append(args, viper.GetStringSlice("redactors")...)
-	kinds, err := specs.LoadFromCLIArgs(ctx, client, argsWithRedactors, viper.GetViper())
+	// Append redactor uris to the args
+	allArgs := append(args, viper.GetStringSlice("redactors")...)
+	kinds, err := specs.LoadFromCLIArgs(ctx, client, allArgs, viper.GetViper())
 	if err != nil {
 		return nil, nil, err
+	}
+
+	// Load additional specs from support bundle URIs
+	if !viper.GetBool("no-uri") {
+		moreKinds, err := loadSupportBundleSpecsFromURIs(ctx, kinds)
+		if err != nil {
+			return nil, nil, err
+		}
+		kinds.Add(moreKinds)
 	}
 
 	// Merge specs

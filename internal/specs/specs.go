@@ -173,8 +173,7 @@ func LoadFromCLIArgs(ctx context.Context, client kubernetes.Interface, args []st
 	}
 
 	kinds, err := loader.LoadSpecs(ctx, loader.LoadOptions{
-		RawSpecs:              rawSpecs,
-		IgnoreUpdateDownloads: vp.GetBool("no-uri"),
+		RawSpecs: rawSpecs,
 	})
 	if err != nil {
 		return nil, err
