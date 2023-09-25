@@ -148,25 +148,22 @@ func LoadFromCLIArgs(ctx context.Context, client kubernetes.Interface, args []st
 					return nil, types.NewExitCodeError(constants.EXIT_CODE_SPEC_ISSUES, fmt.Errorf("%s is not a URL and was not found (err %s)", v, err))
 				}
 
-				req, err := http.NewRequestWithContext(ctx, "GET", v, nil)
+				// Download preflight specs
+				rawSpec, err := downloadFromHttpURL(ctx, v, map[string]string{"User-Agent": "Replicated_Preflight/v1beta2"})
 				if err != nil {
-					// exit code: should this be catch all or spec issues...?
-					return nil, types.NewExitCodeError(constants.EXIT_CODE_CATCH_ALL, err)
+					return nil, err
 				}
-				req.Header.Set("User-Agent", "Replicated_Preflight/v1beta2")
-				resp, err := httpClient.Do(req)
-				if err != nil {
-					// exit code: should this be catch all or spec issues...?
-					return nil, types.NewExitCodeError(constants.EXIT_CODE_CATCH_ALL, err)
-				}
-				defer resp.Body.Close()
+				rawSpecs = append(rawSpecs, rawSpec)
 
-				body, err := io.ReadAll(resp.Body)
+				// Download support bundle specs
+				rawSpec, err = downloadFromHttpURL(ctx, v, map[string]string{
+					"User-Agent":         "Replicated_Troubleshoot/v1beta1",
+					"Bundle-Upload-Host": fmt.Sprintf("%s://%s", u.Scheme, u.Host),
+				})
 				if err != nil {
-					return nil, types.NewExitCodeError(constants.EXIT_CODE_SPEC_ISSUES, err)
+					return nil, err
 				}
-
-				rawSpecs = append(rawSpecs, string(body))
+				rawSpecs = append(rawSpecs, rawSpec)
 			}
 		}
 	}
@@ -188,6 +185,37 @@ func LoadFromCLIArgs(ctx context.Context, client kubernetes.Interface, args []st
 	}
 
 	return kinds, nil
+}
+
+func downloadFromHttpURL(ctx context.Context, url string, headers map[string]string) (string, error) {
+	hs := []string{}
+	for k, v := range headers {
+		hs = append(hs, fmt.Sprintf("%s: %s", k, v))
+	}
+
+	klog.V(1).Infof("Downloading troubleshoot specs: usr=%s, headers=[%v]", url, strings.Join(hs, ", "))
+	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	if err != nil {
+		// exit code: should this be catch all or spec issues...?
+		return "", types.NewExitCodeError(constants.EXIT_CODE_CATCH_ALL, err)
+	}
+	for k, v := range headers {
+		req.Header.Set(k, v)
+	}
+
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		// exit code: should this be catch all or spec issues...?
+		return "", types.NewExitCodeError(constants.EXIT_CODE_CATCH_ALL, err)
+	}
+	defer resp.Body.Close()
+
+	klog.V(1).Infof("Response status: %s", resp.Status)
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", types.NewExitCodeError(constants.EXIT_CODE_SPEC_ISSUES, err)
+	}
+	return string(body), nil
 }
 
 // LoadFromCluster loads troubleshoot specs from the cluster based on the provided labels.
