@@ -20,6 +20,7 @@ import (
 	"github.com/replicatedhq/troubleshoot/internal/util"
 	analyzer "github.com/replicatedhq/troubleshoot/pkg/analyze"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
+	"github.com/replicatedhq/troubleshoot/pkg/collect"
 	"github.com/replicatedhq/troubleshoot/pkg/constants"
 	"github.com/replicatedhq/troubleshoot/pkg/convert"
 	"github.com/replicatedhq/troubleshoot/pkg/httputil"
@@ -300,6 +301,19 @@ func loadSpecs(ctx context.Context, args []string, client kubernetes.Interface) 
 	for _, hc := range kinds.HostCollectorsV1Beta2 {
 		mainBundle.Spec.HostCollectors = append(mainBundle.Spec.HostCollectors, hc.Spec.Collectors...)
 	}
+
+	// Ensure cluster info and cluster resources collectors are in the merged spec
+	// We need to add them here so when we --dry-run, these collectors are included.
+	// supportbundle.runCollectors duplicates this bit. We'll need to refactor it out later
+	// when its clearer what other code depends on this logic e.g KOTS
+	mainBundle.Spec.Collectors = collect.EnsureCollectorInList(
+		mainBundle.Spec.Collectors,
+		troubleshootv1beta2.Collect{ClusterInfo: &troubleshootv1beta2.ClusterInfo{}},
+	)
+	mainBundle.Spec.Collectors = collect.EnsureCollectorInList(
+		mainBundle.Spec.Collectors,
+		troubleshootv1beta2.Collect{ClusterResources: &troubleshootv1beta2.ClusterResources{}},
+	)
 
 	additionalRedactors := &troubleshootv1beta2.Redactor{
 		TypeMeta: metav1.TypeMeta{
