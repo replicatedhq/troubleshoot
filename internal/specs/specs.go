@@ -193,7 +193,7 @@ func downloadFromHttpURL(ctx context.Context, url string, headers map[string]str
 		hs = append(hs, fmt.Sprintf("%s: %s", k, v))
 	}
 
-	klog.V(1).Infof("Downloading troubleshoot specs: usr=%s, headers=[%v]", url, strings.Join(hs, ", "))
+	klog.V(1).Infof("Downloading troubleshoot specs: url=%s, headers=[%v]", url, strings.Join(hs, ", "))
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
 		// exit code: should this be catch all or spec issues...?
