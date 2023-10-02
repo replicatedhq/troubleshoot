@@ -18,8 +18,6 @@ import (
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 )
 
-type Durations []time.Duration
-
 // Today we only care about checking for write latency so the options struct
 // only has what we need for that.  we'll collect all the results from a single run of fio
 // and filter out the fsync results for analysis.  TODO: update the analyzer so any/all results
