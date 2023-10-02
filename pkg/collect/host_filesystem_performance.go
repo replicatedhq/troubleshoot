@@ -14,13 +14,24 @@ import (
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
+	"golang.org/x/net/context"
 	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/klog/v2"
 )
 
-// func init() {
-// 	rand.Seed(time.Now().UnixNano())
-// }
+type Durations []time.Duration
+
+func (d Durations) Len() int {
+	return len(d)
+}
+
+func (d Durations) Less(i, j int) bool {
+	return d[i] < d[j]
+}
+
+func (d Durations) Swap(i, j int) {
+	d[i], d[j] = d[j], d[i]
+}
 
 type CollectHostFilesystemPerformance struct {
 	hostCollector *troubleshootv1beta2.FilesystemPerformance
@@ -387,7 +398,7 @@ func buildFioCommand(opts FioJobOptions) []string {
 	return command
 }
 
-func collectFioResults(hostCollector *troubleshootv1beta2.FilesystemPerformance) (*FioResult, error) {
+func collectFioResults(ctx context.Context, hostCollector *troubleshootv1beta2.FilesystemPerformance) (*FioResult, error) {
 
 	command, opts, err := parseCollectorOptions(hostCollector)
 
@@ -396,7 +407,7 @@ func collectFioResults(hostCollector *troubleshootv1beta2.FilesystemPerformance)
 	}
 
 	klog.V(2).Infof("collecting fio results: %s", strings.Join(command, " "))
-	output, err := exec.Command(command[0], command[1:]...).Output()
+	output, err := exec.CommandContext(ctx, command[0], command[1:]...).Output()
 	if err != nil {
 		if exitErr, ok := err.(*exec.ExitError); ok {
 			if exitErr.ExitCode() == 1 {

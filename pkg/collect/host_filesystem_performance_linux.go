@@ -25,18 +25,6 @@ type Durations []time.Duration
 // and filter out the fsync results for analysis.  TODO: update the analyzer so any/all results
 // from fio can be analyzed.
 
-func (d Durations) Len() int {
-	return len(d)
-}
-
-func (d Durations) Less(i, j int) bool {
-	return d[i] < d[j]
-}
-
-func (d Durations) Swap(i, j int) {
-	d[i], d[j] = d[j], d[i]
-}
-
 func collectHostFilesystemPerformance(hostCollector *troubleshootv1beta2.FilesystemPerformance, bundlePath string) (map[string][]byte, error) {
 	timeout := time.Minute
 
@@ -113,7 +101,9 @@ func collectHostFilesystemPerformance(hostCollector *troubleshootv1beta2.Filesys
 		time.Sleep(time.Second * time.Duration(hostCollector.BackgroundIOPSWarmupSeconds))
 	}
 
-	fioResult, err := collectFioResults(hostCollector)
+	var fioResult *FioResult
+
+	fioResult, err := collectFioResults(ctx, hostCollector)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to collect fio results")
 	}

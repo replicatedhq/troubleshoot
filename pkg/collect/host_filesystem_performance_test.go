@@ -174,7 +174,6 @@ func Test_parseCollectorOptions(t *testing.T) {
 			gotCommand, gotOptions, err := parseCollectorOptions(tt.args.hostCollector)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("parseCollectorOptions() error = %v, wantErr %v", err, tt.wantErr)
-				return
 			} else {
 				if !reflect.DeepEqual(gotCommand, tt.wantCommand) {
 					t.Errorf("parseCollectorOptions() got command = %v, want %v", gotCommand, tt.wantCommand)
@@ -182,7 +181,6 @@ func Test_parseCollectorOptions(t *testing.T) {
 				if !reflect.DeepEqual(gotOptions, tt.wantOptions) {
 					t.Errorf("parseCollectorOptions() got options = %v, want %v", gotOptions, tt.wantOptions)
 				}
-				return
 			}
 		})
 	}
