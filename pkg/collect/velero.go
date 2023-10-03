@@ -26,14 +26,6 @@ const (
 	DefaultVeleroNamespace = "velero"
 )
 
-var InitContainerNames = []string{
-	"velero-velero-plugin-for-aws",
-	"velero-velero-plugin-for-gcp",
-	"velero-velero-plugin-for-microsoft-azure",
-	"replicated-local-volume-provider",
-	"replicated-kurl-util",
-}
-
 type CollectVelero struct {
 	Collector    *troubleshootv1beta2.Velero
 	BundlePath   string
@@ -146,6 +138,12 @@ func (c *CollectVelero) Collect(progressChan chan<- interface{}) (CollectorResul
 	// collect backups.velero.io
 	backups, err := veleroclient.VeleroV1().Backups(c.Collector.Namespace).List(ctx, metav1.ListOptions{})
 	if err != nil {
+		if apiErr, ok := err.(*apiErrors.StatusError); ok {
+			if apiErr.ErrStatus.Code == http.StatusNotFound {
+				klog.V(2).Infof("failed to list backups in namespace %s", c.Collector.Namespace)
+				return NewResult(), nil
+			}
+		}
 		return nil, errors.Wrap(err, "list backups.velero.io")
 	}
 	dir = GetVeleroBackupsDirectory(ns)
@@ -155,6 +153,27 @@ func (c *CollectVelero) Collect(progressChan chan<- interface{}) (CollectorResul
 			return nil, errors.Wrapf(err, "failed to marshal backup %s", backup.Name)
 		}
 		key := filepath.Join(dir, backup.Name+".yaml")
+		output.SaveResult(c.BundlePath, key, bytes.NewBuffer(b))
+	}
+
+	// collect backuprepositories.velero.io
+	backupRepositories, err := veleroclient.VeleroV1().BackupRepositories(c.Collector.Namespace).List(ctx, metav1.ListOptions{})
+	if err != nil {
+		if apiErr, ok := err.(*apiErrors.StatusError); ok {
+			if apiErr.ErrStatus.Code == http.StatusNotFound {
+				klog.V(2).Infof("failed to list backuprepositories in namespace %s", c.Collector.Namespace)
+				return NewResult(), nil
+			}
+		}
+		return nil, errors.Wrap(err, "list backuprepositories.velero.io")
+	}
+	dir = GetVeleroBackupRepositoriesDirectory(ns)
+	for _, backupRepository := range backupRepositories.Items {
+		b, err := yaml.Marshal(backupRepository)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to marshal backup repository %s", backupRepository.Name)
+		}
+		key := filepath.Join(dir, backupRepository.Name+".yaml")
 		output.SaveResult(c.BundlePath, key, bytes.NewBuffer(b))
 	}
 
@@ -187,21 +206,6 @@ func (c *CollectVelero) Collect(progressChan chan<- interface{}) (CollectorResul
 	// 	key := filepath.Join(dir, resticRepository.Name+".yaml")
 	// 	output.SaveResult(c.BundlePath, key, bytes.NewBuffer(b))
 	// }
-
-	// collect backuprepositories.velero.io
-	backupRepositories, err := veleroclient.VeleroV1().BackupRepositories(c.Collector.Namespace).List(ctx, metav1.ListOptions{})
-	if err != nil {
-		return nil, errors.Wrap(err, "list backuprepositories.velero.io")
-	}
-	dir = GetVeleroBackupRepositoriesDirectory(ns)
-	for _, backupRepository := range backupRepositories.Items {
-		b, err := yaml.Marshal(backupRepository)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to marshal backup repository %s", backupRepository.Name)
-		}
-		key := filepath.Join(dir, backupRepository.Name+".yaml")
-		output.SaveResult(c.BundlePath, key, bytes.NewBuffer(b))
-	}
 
 	// collect deletebackuprequests.velero.io
 	deleteBackupRequests, err := veleroclient.VeleroV1().DeleteBackupRequests(c.Collector.Namespace).List(ctx, metav1.ListOptions{})
