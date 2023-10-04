@@ -42,7 +42,18 @@ func (a *AnalyzeHostFilesystemPerformance) Analyze(
 		return nil, errors.Wrapf(err, "failed to get collected file %s", name)
 	}
 
-	fsPerf := collect.FSPerfResults{}
+	fioResult := collect.FioResult{}
+	if err := json.Unmarshal(contents, &fioResult); err != nil {
+		return nil, errors.Wrapf(err, "failed to unmarshal fio results from %s", name)
+	}
+
+	if len(fioResult.Jobs) == 0 {
+		return nil, errors.Errorf("no jobs found in fio results from %s", name)
+	}
+
+	fioWriteLatency := fioResult.Jobs[0].Sync
+
+	fsPerf := fioWriteLatency.FSPerfResults()
 	if err := json.Unmarshal(contents, &fsPerf); err != nil {
 		return nil, errors.Wrapf(err, "failed to unmarshal filesystem performance results from %s", name)
 	}
@@ -179,7 +190,7 @@ func compareHostFilesystemPerformanceConditionalToActual(conditional string, fsP
 		return doCompareHostFilesystemPerformance(comparator, fsPerf.P9999, desiredDuration)
 	}
 
-	return false, fmt.Errorf("Unknown filesystem performance keyword %q", keyword)
+	return false, fmt.Errorf("unknown filesystem performance keyword %q", keyword)
 }
 
 func doCompareHostFilesystemPerformance(operator string, actual time.Duration, desired time.Duration) (bool, error) {
@@ -196,7 +207,7 @@ func doCompareHostFilesystemPerformance(operator string, actual time.Duration, d
 		return actual == desired, nil
 	}
 
-	return false, fmt.Errorf("Unknown filesystem performance operator %q", operator)
+	return false, fmt.Errorf("unknown filesystem performance operator %q", operator)
 }
 
 func renderFSPerfOutcome(outcome string, fsPerf collect.FSPerfResults) string {
