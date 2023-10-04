@@ -62,14 +62,14 @@ var VeleroCommands = []VeleroCommand{
 	{
 		ID:             "describe-backups",
 		Command:        []string{"/velero", "describe", "backups"},
-		Args:           []string{"--details", "--colorized", "no"},
+		Args:           []string{"--details", "--colorized", "false"},
 		Format:         "txt",
 		DefaultTimeout: "30s",
 	},
 	{
 		ID:             "describe-restores",
 		Command:        []string{"/velero", "describe", "restores"},
-		Args:           []string{"--details", "--colorized", "no"},
+		Args:           []string{"--details", "--colorized", "false"},
 		Format:         "txt",
 		DefaultTimeout: "30s",
 	},
