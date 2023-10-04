@@ -271,6 +271,8 @@ jobs:
         include:
           - goarch: arm
             goos: linux
+          - goarch: riscv64
+            goos: linux
     steps:
       - name: Checkout
         uses: actions/checkout@v4
