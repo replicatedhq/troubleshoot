@@ -1,19 +1,15 @@
 package analyzer
 
 import (
-	"bufio"
-	"bytes"
 	"fmt"
 	"path/filepath"
 	"reflect"
-	"strings"
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/replicatedhq/troubleshoot/pkg/collect"
 	longhornv1beta1 "github.com/replicatedhq/troubleshoot/pkg/longhorn/apis/longhorn/v1beta1"
 	longhorntypes "github.com/replicatedhq/troubleshoot/pkg/longhorn/types"
-	"github.com/replicatedhq/troubleshoot/pkg/redact"
 	"gopkg.in/yaml.v2"
 )
 
@@ -239,21 +235,6 @@ func analyzeLonghornEngine(engine *longhornv1beta1.Engine) *AnalyzeResult {
 	result.Message = fmt.Sprintf("Engine is %s", actual)
 
 	return result
-}
-
-func stripRedactedLines(yaml []byte) []byte {
-	buf := bytes.NewBuffer(yaml)
-	scanner := bufio.NewScanner(buf)
-
-	out := []byte{}
-
-	for scanner.Scan() {
-		line := strings.ReplaceAll(scanner.Text(), redact.MASK_TEXT, "HIDDEN")
-		out = append(out, []byte(line)...)
-		out = append(out, '\n')
-	}
-
-	return out
 }
 
 func analyzeLonghornReplicaChecksums(volumeName string, checksums []map[string]string) *AnalyzeResult {
