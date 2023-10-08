@@ -1,16 +1,20 @@
 package analyzer
 
 import (
+	"bufio"
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"reflect"
 	"strconv"
+	"strings"
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/replicatedhq/troubleshoot/pkg/constants"
 	"github.com/replicatedhq/troubleshoot/pkg/multitype"
+	"github.com/replicatedhq/troubleshoot/pkg/redact"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
@@ -226,6 +230,8 @@ func getAnalyzer(analyzer *troubleshootv1beta2.Analyze) Analyzer {
 		return &AnalyzeRedis{analyzer: analyzer.Redis}
 	case analyzer.CephStatus != nil:
 		return &AnalyzeCephStatus{analyzer: analyzer.CephStatus}
+	case analyzer.Velero != nil:
+		return &AnalyzeVelero{analyzer: analyzer.Velero}
 	case analyzer.Longhorn != nil:
 		return &AnalyzeLonghorn{analyzer: analyzer.Longhorn}
 	case analyzer.RegistryImages != nil:
@@ -264,4 +270,19 @@ func DedupAnalyzers(allAnalyzers []*troubleshootv1beta2.Analyze) []*troubleshoot
 		}
 	}
 	return finalAnalyzers
+}
+
+func stripRedactedLines(yaml []byte) []byte {
+	buf := bytes.NewBuffer(yaml)
+	scanner := bufio.NewScanner(buf)
+
+	out := []byte{}
+
+	for scanner.Scan() {
+		line := strings.ReplaceAll(scanner.Text(), redact.MASK_TEXT, "HIDDEN")
+		out = append(out, []byte(line)...)
+		out = append(out, '\n')
+	}
+
+	return out
 }

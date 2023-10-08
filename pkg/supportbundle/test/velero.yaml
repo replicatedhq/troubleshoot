@@ -1,0 +1,12 @@
+apiVersion: troubleshoot.sh/v1beta2
+kind: SupportBundle
+metadata:
+  name: velero
+spec:
+  collectors:
+    - logs:
+        namespace: velero
+        name: velero/logs
+  analyzers:
+    - velero:
+        strict: true

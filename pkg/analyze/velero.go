@@ -1,0 +1,733 @@
+package analyzer
+
+import (
+	"encoding/json"
+	"fmt"
+	"path/filepath"
+	"strings"
+
+	"github.com/pkg/errors"
+	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
+	velerov1 "github.com/vmware-tanzu/velero/pkg/apis/velero/v1"
+	// velerov1beta1 "github.com/vmware-tanzu/velero/pkg/apis/velero/v1beta1"
+)
+
+const (
+	DefaultVeleroNamespace = "velero"
+)
+
+type AnalyzeVelero struct {
+	analyzer *troubleshootv1beta2.VeleroAnalyze
+}
+
+func (a *AnalyzeVelero) Title() string {
+	title := a.analyzer.CheckName
+	if title == "" {
+		title = "Velero"
+	}
+
+	return title
+}
+
+func (a *AnalyzeVelero) IsExcluded() (bool, error) {
+	return isExcluded(a.analyzer.Exclude)
+}
+
+func (a *AnalyzeVelero) Analyze(getFile getCollectedFileContents, findFiles getChildCollectedFileContents) ([]*AnalyzeResult, error) {
+	results, err := a.veleroStatus(a.analyzer, getFile, findFiles)
+	if err != nil {
+		return nil, err
+	}
+	for i := range results {
+		results[i].Strict = a.analyzer.Strict.BoolOrDefaultFalse()
+	}
+	return results, nil
+}
+
+func (a *AnalyzeVelero) veleroStatus(analyzer *troubleshootv1beta2.VeleroAnalyze, getFileContents getCollectedFileContents, findFiles getChildCollectedFileContents) ([]*AnalyzeResult, error) {
+	ns := DefaultVeleroNamespace
+	if analyzer.Namespace != "" {
+		ns = analyzer.Namespace
+	}
+
+	excludeFiles := []string{}
+
+	// get backuprepositories.velero.io
+	backupRepositoriesDir := GetVeleroBackupRepositoriesDirectory(ns)
+	fmt.Println(backupRepositoriesDir)
+	backupRepositoriesGlob := filepath.Join(backupRepositoriesDir, "*.json")
+	backupRepositoriesJson, err := findFiles(backupRepositoriesGlob, excludeFiles)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to find velero backup repositories files under %s", backupRepositoriesDir)
+	}
+	backupRepositories := []*velerov1.BackupRepository{}
+	for key, backupRepositoryJson := range backupRepositoriesJson {
+		var backupRepositoryArray []*velerov1.BackupRepository
+		// backupRepository := &velerov1.BackupRepository{}
+		err := json.Unmarshal(backupRepositoryJson, &backupRepositoryArray)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to unmarshal backup repository json from %s", key)
+		}
+		backupRepositories = append(backupRepositories, backupRepositoryArray...)
+	}
+	// print len of backupRepositories
+	fmt.Printf("\n..found %d velero backup repositories\n", len(backupRepositories))
+
+	// get backups.velero.io
+	backupsDir := GetVeleroBackupsDirectory(ns)
+	backupsGlob := filepath.Join(backupsDir, "*.json")
+	fmt.Println(backupsDir)
+	veleroJSONs, err := findFiles(backupsGlob, excludeFiles)
+	// print files for debugging
+	fmt.Printf("\n..found %d velero backup jsons\n", len(veleroJSONs))
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to find velero backup files")
+	}
+	backups := []*velerov1.Backup{}
+	for _, veleroJSON := range veleroJSONs {
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to read velero backup file %s", veleroJSON)
+		}
+		var veleroBackups []*velerov1.Backup
+		err = json.Unmarshal(veleroJSON, &veleroBackups)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to unmarshal velero backup file %s", veleroJSON)
+		}
+		backups = append(backups, veleroBackups...)
+	}
+	fmt.Printf("\n..found %d backups\n", len(backups))
+
+	// // velerov1.BackupRepositoryTypeRestic
+	// // // get resticrepositories.velero.io
+	// resticRepositoriesDir := GetVeleroResticRepositoriesDirectory(ns)
+	// resticRepositoriesGlob := filepath.Join(resticRepositoriesDir, "*.json")
+	// resticRepositoriesYaml, err := findFiles(resticRepositoriesGlob, excludeFiles)
+	// if err != nil {
+	// 	return nil, errors.Wrapf(err, "failed to find velero restic repositories files under %s", resticRepositoriesDir)
+	// }
+	// resticRepositories := []*velerov1beta1.ResticRepository{}
+	// for key, resticRepositoryYaml := range resticRepositoriesYaml {
+	// 	resticRepository := &velerov1beta1.ResticRepository{}
+	// 	err := json.Unmarshal(resticRepositoryYaml, resticRepository)
+	// 	if err != nil {
+	// 		return nil, errors.Wrapf(err, "failed to unmarshal restic repository json from %s", key)
+	// 	}
+	// 	resticRepositories = append(resticRepositories, resticRepository)
+	// }
+
+	// get backupstoragelocations.velero.io
+	backupStorageLocationsDir := GetVeleroBackupStorageLocationsDirectory(ns)
+	backupStorageLocationsGlob := filepath.Join(backupStorageLocationsDir, "*.json")
+	backupStorageLocationsJson, err := findFiles(backupStorageLocationsGlob, excludeFiles)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to find velero backup storage locations files under %s", backupStorageLocationsDir)
+	}
+	backupStorageLocations := []*velerov1.BackupStorageLocation{}
+	for key, backupStorageLocationYaml := range backupStorageLocationsJson {
+		var backupStorageLocationArray []*velerov1.BackupStorageLocation
+		err := json.Unmarshal(backupStorageLocationYaml, &backupStorageLocationArray)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to unmarshal backup storage location json from %s", key)
+		}
+		backupStorageLocations = append(backupStorageLocations, backupStorageLocationArray...)
+	}
+	fmt.Printf("\n..found %d velero backup storage locations\n", len(backupStorageLocations))
+
+	// get deletebackuprequests.velero.io
+	deleteBackupRequestsDir := GetVeleroDeleteBackupRequestsDirectory(ns)
+	deleteBackupRequestsGlob := filepath.Join(deleteBackupRequestsDir, "*.json")
+	deleteBackupRequestsJson, err := findFiles(deleteBackupRequestsGlob, excludeFiles)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to find velero delete backup requests files under %s", deleteBackupRequestsDir)
+	}
+	deleteBackupRequests := []*velerov1.DeleteBackupRequest{}
+	for key, deleteBackupRequestYaml := range deleteBackupRequestsJson {
+		var deleteBackupRequestArray []*velerov1.DeleteBackupRequest
+		err := json.Unmarshal(deleteBackupRequestYaml, &deleteBackupRequestArray)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to unmarshal delete backup request json from %s", key)
+		}
+		deleteBackupRequests = append(deleteBackupRequests, deleteBackupRequestArray...)
+	}
+	fmt.Printf("\n..found %d velero delete backup requests\n", len(deleteBackupRequests))
+
+	// get downloadrequests.velero.io
+	// downloadRequestsDir := GetVeleroDownloadRequestsDirectory(ns)
+	// downloadRequestsGlob := filepath.Join(downloadRequestsDir, "*.json")
+	// downloadRequestsYaml, err := findFiles(downloadRequestsGlob, excludeFiles)
+	// if err != nil {
+	// 	return nil, errors.Wrapf(err, "failed to find velero download requests files under %s", downloadRequestsDir)
+	// }
+	// downloadRequests := []*velerov1.DownloadRequest{}
+	// for key, downloadRequestYaml := range downloadRequestsYaml {
+	// 	downloadRequest := &velerov1.DownloadRequest{}
+	// 	err := json.Unmarshal(downloadRequestYaml, downloadRequest)
+	// 	if err != nil {
+	// 		return nil, errors.Wrapf(err, "failed to unmarshal download request json from %s", key)
+	// 	}
+	// 	downloadRequests = append(downloadRequests, downloadRequest)
+	// }
+
+	// get podvolumebackups.velero.io
+	podVolumeBackupsDir := GetVeleroPodVolumeBackupsDirectory(ns)
+	podVolumeBackupsGlob := filepath.Join(podVolumeBackupsDir, "*.json")
+	podVolumeBackupsJson, err := findFiles(podVolumeBackupsGlob, excludeFiles)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to find velero pod volume backups files under %s", podVolumeBackupsDir)
+	}
+	podVolumeBackups := []*velerov1.PodVolumeBackup{}
+	for key, podVolumeBackupJson := range podVolumeBackupsJson {
+		var podVolumeBackupArray []*velerov1.PodVolumeBackup
+		err := json.Unmarshal(podVolumeBackupJson, &podVolumeBackupArray)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to unmarshal pod volume backup json from %s", key)
+		}
+		podVolumeBackups = append(podVolumeBackups, podVolumeBackupArray...)
+	}
+
+	// get podvolumerestores.velero.io
+	podVolumeRestoresDir := GetVeleroPodVolumeRestoresDirectory(ns)
+	podVolumeRestoresGlob := filepath.Join(podVolumeRestoresDir, "*.json")
+	podVolumeRestoresJson, err := findFiles(podVolumeRestoresGlob, excludeFiles)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to find velero pod volume restores files under %s", podVolumeRestoresDir)
+	}
+	podVolumeRestores := []*velerov1.PodVolumeRestore{}
+	for key, podVolumeRestoreYaml := range podVolumeRestoresJson {
+		var podVolumeRestoreArray []*velerov1.PodVolumeRestore
+		err := json.Unmarshal(podVolumeRestoreYaml, &podVolumeRestoreArray)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to unmarshal pod volume restore json from %s", key)
+		}
+		podVolumeRestores = append(podVolumeRestores, podVolumeRestoreArray...)
+	}
+	fmt.Println("FIRST----------")
+
+	// get restores.velero.io
+	restoresDir := GetVeleroRestoresDirectory(ns)
+	restoresGlob := filepath.Join(restoresDir, "*.json")
+	restoresJson, err := findFiles(restoresGlob, excludeFiles)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to find velero restores files under %s", restoresDir)
+	}
+	restores := []*velerov1.Restore{}
+	for key, restoreYaml := range restoresJson {
+		var restoreArray []*velerov1.Restore
+		err := json.Unmarshal(restoreYaml, &restoreArray)
+		if err != nil {
+			fmt.Println("ERROR----------", key, err)
+			return nil, errors.Wrapf(err, "failed to unmarshal restore json from %s", key)
+		}
+		restores = append(restores, restoreArray...)
+	}
+	fmt.Println("THIRD----------")
+
+	// get schedules.velero.io
+	schedulesDir := GetVeleroSchedulesDirectory(ns)
+	schedulesGlob := filepath.Join(schedulesDir, "*.json")
+	schedulesYaml, err := findFiles(schedulesGlob, excludeFiles)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to find velero schedules files under %s", schedulesDir)
+	}
+	schedules := []*velerov1.Schedule{}
+	for key, scheduleYaml := range schedulesYaml {
+		var scheduleArray []*velerov1.Schedule
+		err := json.Unmarshal(scheduleYaml, &scheduleArray)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to unmarshal schedule json from %s", key)
+		}
+		schedules = append(schedules, scheduleArray...)
+	}
+
+	// get serverstatusrequests.velero.io
+	serverStatusRequestsDir := GetVeleroServerStatusRequestsDirectory(ns)
+	serverStatusRequestsGlob := filepath.Join(serverStatusRequestsDir, "*.json")
+	serverStatusRequestsYaml, err := findFiles(serverStatusRequestsGlob, excludeFiles)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to find velero server status requests files under %s", serverStatusRequestsDir)
+	}
+	serverStatusRequests := []*velerov1.ServerStatusRequest{}
+	for key, serverStatusRequestYaml := range serverStatusRequestsYaml {
+		var serverStatusRequestArray []*velerov1.ServerStatusRequest
+		err := json.Unmarshal(serverStatusRequestYaml, &serverStatusRequestArray)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to unmarshal server status request json from %s", key)
+		}
+		serverStatusRequests = append(serverStatusRequests, serverStatusRequestArray...)
+	}
+
+	// get volumesnapshotlocations.velero.io
+	volumeSnapshotLocationsDir := GetVeleroVolumeSnapshotLocationsDirectory(ns)
+	volumeSnapshotLocationsGlob := filepath.Join(volumeSnapshotLocationsDir, "*.json")
+	volumeSnapshotLocationsYaml, err := findFiles(volumeSnapshotLocationsGlob, excludeFiles)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to find velero volume snapshot locations files under %s", volumeSnapshotLocationsDir)
+	}
+	volumeSnapshotLocations := []*velerov1.VolumeSnapshotLocation{}
+	for key, volumeSnapshotLocationYaml := range volumeSnapshotLocationsYaml {
+		var volumeSnapshotLocationArray []*velerov1.VolumeSnapshotLocation
+		err := json.Unmarshal(volumeSnapshotLocationYaml, &volumeSnapshotLocationArray)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to unmarshal volume snapshot location json from %s", key)
+		}
+		volumeSnapshotLocations = append(volumeSnapshotLocations, volumeSnapshotLocationArray...)
+	}
+
+	logsDir := GetVeleroLogsDirectory(ns)
+	fmt.Println(logsDir)
+	logsGlob := filepath.Join(logsDir, "node-agent*", "*.log")
+	logs, err := findFiles(logsGlob, excludeFiles)
+
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to find velero logs files under %s", logsDir)
+	}
+
+	results := []*AnalyzeResult{}
+	results = append(results, analyzeLogs(logs)...)
+	results = append(results, analyzeBackupRepositories(backupRepositories)...)
+	results = append(results, analyzeBackups(backups)...)
+	// results = append(results, analyzeResticRepositories(resticRepositories)...)
+	results = append(results, analyzeBackupStorageLocations(backupStorageLocations)...)
+	results = append(results, analyzeDeleteBackupRequests(deleteBackupRequests)...)
+	// results = append(results, analyzeDownloadRequests(downloadRequests)...)
+	results = append(results, analyzePodVolumeBackups(podVolumeBackups)...)
+	results = append(results, analyzePodVolumeRestores(podVolumeRestores)...)
+	results = append(results, analyzeRestores(restores)...)
+	results = append(results, analyzeSchedules(schedules)...)
+	results = append(results, analyzeServerStatusRequests(serverStatusRequests)...)
+	results = append(results, analyzeVolumeSnapshotLocations(volumeSnapshotLocations)...)
+
+	return aggregateResults(results), nil
+}
+
+func analyzeBackupRepositories(backupRepositories []*velerov1.BackupRepository) []*AnalyzeResult {
+	results := []*AnalyzeResult{}
+	readyCount := 0
+	backupRepositoriesResult := &AnalyzeResult{
+		Title: "At least 1 Velero Backup Repository configured",
+	}
+	if len(backupRepositories) == 0 {
+		backupRepositoriesResult.IsFail = true
+		backupRepositoriesResult.Message = "No backup repositories configured"
+	} else {
+		for _, backupRepository := range backupRepositories {
+			if backupRepository.Status.Phase != velerov1.BackupRepositoryPhaseReady {
+				result := &AnalyzeResult{
+					Title: fmt.Sprintf("Backup Repository %s", backupRepository.Name),
+				}
+				result.Message = fmt.Sprintf("Backup Repository [%s] is in phase %s", backupRepository.Name, backupRepository.Status.Phase)
+				result.IsWarn = true
+				results = append(results, result)
+			} else {
+				readyCount++
+			}
+		}
+		if readyCount > 0 {
+			backupRepositoriesResult.IsPass = true
+			backupRepositoriesResult.Message = fmt.Sprintf("Found %d backup repositories configured and %d Ready", len(backupRepositories), readyCount)
+		} else {
+			backupRepositoriesResult.IsWarn = true
+			backupRepositoriesResult.Message = fmt.Sprintf("Found %d configured backup repositories, but none are ready", len(backupRepositories))
+		}
+	}
+	results = append(results, backupRepositoriesResult)
+
+	return results
+
+}
+
+func analyzeBackups(backups []*velerov1.Backup) []*AnalyzeResult {
+	results := []*AnalyzeResult{}
+
+	failedPhases := map[velerov1.BackupPhase]bool{
+		velerov1.BackupPhaseFailed:                                    true,
+		velerov1.BackupPhasePartiallyFailed:                           true,
+		velerov1.BackupPhaseFailedValidation:                          true,
+		velerov1.BackupPhaseFinalizingPartiallyFailed:                 true,
+		velerov1.BackupPhaseWaitingForPluginOperationsPartiallyFailed: true,
+	}
+
+	for _, backup := range backups {
+
+		if failedPhases[backup.Status.Phase] {
+			result := &AnalyzeResult{
+				Title: fmt.Sprintf("Backup %s", backup.Name),
+			}
+			result.IsFail = true
+			result.Message = fmt.Sprintf("Backup %s phase is %s", backup.Name, backup.Status.Phase)
+			results = append(results, result)
+
+		}
+	}
+	if len(backups) > 0 {
+		results = append(results, &AnalyzeResult{
+			Title:   "Velero Backups",
+			IsPass:  true,
+			Message: fmt.Sprintf("Found %d backups", len(backups)),
+		})
+	}
+	return results
+}
+
+func analyzeBackupStorageLocations(backupStorageLocations []*velerov1.BackupStorageLocation) []*AnalyzeResult {
+	results := []*AnalyzeResult{}
+	// atleast 1 backup storage location Phase Available
+	availableCount := 0
+	bslResult := &AnalyzeResult{
+		Title: "At least 1 Velero Backup Storage Location configured",
+	}
+
+	if len(backupStorageLocations) == 0 {
+		bslResult.IsFail = true
+		bslResult.Message = "No backup storage locations configured"
+	} else {
+		for _, backupStorageLocation := range backupStorageLocations {
+			if backupStorageLocation.Status.Phase != velerov1.BackupStorageLocationPhaseAvailable {
+				result := &AnalyzeResult{
+					Title: fmt.Sprintf("Backup Storage Location %s", backupStorageLocation.Name),
+				}
+				result.Message = fmt.Sprintf("Backup Storage Location [%s] is in phase %s", backupStorageLocation.Name, backupStorageLocation.Status.Phase)
+				result.IsWarn = true
+				results = append(results, result)
+				// result.Strict = false
+			} else {
+				availableCount++
+			}
+		}
+		if availableCount > 0 {
+			bslResult.IsPass = true
+			bslResult.Message = fmt.Sprintf("Found %d backup storage locations configured and %d Available", len(backupStorageLocations), availableCount)
+		} else {
+			bslResult.IsWarn = true
+			bslResult.Message = fmt.Sprintf("Found %d configured backup storage locations, but none are available", len(backupStorageLocations))
+		}
+	}
+	results = append(results, bslResult)
+
+	return results
+}
+
+func analyzeDeleteBackupRequests(deleteBackupRequests []*velerov1.DeleteBackupRequest) []*AnalyzeResult {
+	results := []*AnalyzeResult{}
+	// all in progress, new and processed
+	inProgressCount := 0
+	if len(deleteBackupRequests) > 0 {
+		for _, deleteBackupRequest := range deleteBackupRequests {
+			if deleteBackupRequest.Status.Phase == velerov1.DeleteBackupRequestPhaseInProgress {
+				inProgressCount++
+			}
+		}
+		if inProgressCount > 0 {
+			deleteBackupRequestsResult := &AnalyzeResult{
+				Title: "Delete Backup Requests summary",
+			}
+			deleteBackupRequestsResult.IsWarn = true
+			deleteBackupRequestsResult.Message = fmt.Sprintf("Found %d delete backup requests in progress", inProgressCount)
+			results = append(results, deleteBackupRequestsResult)
+		}
+	}
+
+	return results
+}
+
+// func analyzeDownloadRequests(downloadRequests []*velerov1.DownloadRequest) []*AnalyzeResult {
+// 	results := []*AnalyzeResult{}
+// 	// all
+// 	processedCount := 0
+// 	newCount := 0
+// 	if len(downloadRequests) > 0 {
+// 		for _, downloadRequest := range downloadRequests {
+// 			if downloadRequest.Status.Phase == velerov1.DownloadRequestPhaseProcessed {
+// 				processedCount++
+// 			} else if downloadRequest.Status.Phase == velerov1.DownloadRequestPhaseNew {
+// 				newCount++
+// 			}
+// 		}
+// 		if processedCount > 0 || newCount > 0 {
+// 			downloadRequestsResult := &AnalyzeResult{
+// 				Title: "Download Requests summary",
+// 			}
+// 			downloadRequestsResult.IsPass = true
+// 			downloadRequestsResult.Message = fmt.Sprintf("Found %d processed and %d new download requests", processedCount, newCount)
+// 			results = append(results, downloadRequestsResult)
+// 		}
+// 	}
+
+// 	return results
+// }
+
+func analyzePodVolumeBackups(podVolumeBackups []*velerov1.PodVolumeBackup) []*AnalyzeResult {
+	results := []*AnalyzeResult{}
+	failures := 0
+	// isFail if any pod volume backup phase is Failed
+	if len(podVolumeBackups) > 0 {
+		// look for PodVolumeBackupPhaseFailed (only 1)
+		for _, podVolumeBackup := range podVolumeBackups {
+			if podVolumeBackup.Status.Phase == velerov1.PodVolumeBackupPhaseFailed {
+				result := &AnalyzeResult{
+					Title: fmt.Sprintf("Pod Volume Backup %s", podVolumeBackup.Name),
+				}
+				result.IsFail = true
+				// result.Strict = true
+				result.Message = fmt.Sprintf("Pod Volume Backup %s phase is %s", podVolumeBackup.Name, podVolumeBackup.Status.Phase)
+				results = append(results, result)
+				failures++
+			}
+		}
+
+		if failures == 0 {
+			results = append(results, &AnalyzeResult{
+				Title:   "Pod Volume Backups",
+				IsPass:  true,
+				Message: fmt.Sprintf("Found %d pod volume backups", len(podVolumeBackups)),
+			})
+		}
+	}
+
+	return results
+}
+
+func analyzePodVolumeRestores(podVolumeRestores []*velerov1.PodVolumeRestore) []*AnalyzeResult {
+	results := []*AnalyzeResult{}
+	failures := 0
+
+	if len(podVolumeRestores) > 0 {
+		for _, podVolumeRestore := range podVolumeRestores {
+			if podVolumeRestore.Status.Phase == velerov1.PodVolumeRestorePhaseFailed {
+				result := &AnalyzeResult{
+					Title: fmt.Sprintf("Pod Volume Restore %s", podVolumeRestore.Name),
+				}
+				result.IsFail = true
+				// result.Strict = true
+				result.Message = fmt.Sprintf("Pod Volume Restore %s phase is %s", podVolumeRestore.Name, podVolumeRestore.Status.Phase)
+				results = append(results, result)
+				failures++
+			}
+		}
+		if failures == 0 {
+			results = append(results, &AnalyzeResult{
+				Title:   "Pod Volume Restores",
+				IsPass:  true,
+				Message: fmt.Sprintf("Found %d pod volume restores", len(podVolumeRestores)),
+			})
+		}
+	}
+	return results
+}
+
+func analyzeRestores(restores []*velerov1.Restore) []*AnalyzeResult {
+	results := []*AnalyzeResult{}
+	failures := 0
+
+	if len(restores) > 0 {
+
+		failedPhases := map[velerov1.RestorePhase]bool{
+			velerov1.RestorePhaseFailed:                                    true,
+			velerov1.RestorePhasePartiallyFailed:                           true,
+			velerov1.RestorePhaseFailedValidation:                          true,
+			velerov1.RestorePhaseWaitingForPluginOperationsPartiallyFailed: true,
+		}
+
+		for _, restore := range restores {
+			if failedPhases[restore.Status.Phase] {
+				result := &AnalyzeResult{
+					Title: fmt.Sprintf("Restore %s", restore.Name),
+				}
+				result.IsFail = true
+				// result.Strict = true
+				result.Message = fmt.Sprintf("Restore %s phase is %s", restore.Name, restore.Status.Phase)
+				results = append(results, result)
+				failures++
+			}
+			// else if restore.Status.Phase == velerov1.RestorePhaseCompleted {
+			// 	result.IsPass = true
+			// 	// result.Strict = true
+			// } else {
+			// 	// may indicate phases like:
+			// 	// - velerov1.RestorePhaseWaitingForPluginOperations
+			// 	// - velerov1.RestorePhaseFinalizing
+			// 	result.IsWarn = true
+			// }
+		}
+		if failures == 0 {
+			results = append(results, &AnalyzeResult{
+				Title:   "Velero Restores",
+				IsPass:  true,
+				Message: fmt.Sprintf("Found %d restores", len(restores)),
+			})
+		}
+	}
+
+	return results
+}
+
+func analyzeSchedules(schedules []*velerov1.Schedule) []*AnalyzeResult {
+	results := []*AnalyzeResult{}
+	// check for velerov1.SchedulePhaseFailedValidation
+	failures := 0
+	if len(schedules) > 0 {
+		for _, schedule := range schedules {
+			if schedule.Status.Phase == velerov1.SchedulePhaseFailedValidation {
+				result := &AnalyzeResult{
+					Title: fmt.Sprintf("Schedule %s", schedule.Name),
+				}
+				result.IsFail = true
+				// result.Strict = true
+				result.Message = fmt.Sprintf("Schedule %s phase is %s", schedule.Name, schedule.Status.Phase)
+				results = append(results, result)
+				failures++
+			}
+		}
+		if failures == 0 {
+			results = append(results, &AnalyzeResult{
+				Title:   "Velero Schedules",
+				IsPass:  true,
+				Message: fmt.Sprintf("Found %d schedules", len(schedules)),
+			})
+		}
+	}
+	return results
+}
+
+func analyzeServerStatusRequests(serverStatusRequests []*velerov1.ServerStatusRequest) []*AnalyzeResult {
+	results := []*AnalyzeResult{}
+	// TODO
+	return results
+}
+
+func analyzeVolumeSnapshotLocations(volumeSnapshotLocations []*velerov1.VolumeSnapshotLocation) []*AnalyzeResult {
+	results := []*AnalyzeResult{}
+	// fail on velerov1.VolumeSnapshotLocationPhaseUnavailable
+	failures := 0
+	if len(volumeSnapshotLocations) > 0 {
+		for _, volumeSnapshotLocation := range volumeSnapshotLocations {
+			if volumeSnapshotLocation.Status.Phase == velerov1.VolumeSnapshotLocationPhaseUnavailable {
+				result := &AnalyzeResult{
+					Title: fmt.Sprintf("Volume Snapshot Location %s", volumeSnapshotLocation.Name),
+				}
+				result.IsFail = true
+				// result.Strict = true
+				result.Message = fmt.Sprintf("Volume Snapshot Location %s phase is %s", volumeSnapshotLocation.Name, volumeSnapshotLocation.Status.Phase)
+				results = append(results, result)
+				failures++
+			}
+		}
+		if failures == 0 {
+			results = append(results, &AnalyzeResult{
+				Title:   "Velero Volume Snapshot Locations",
+				IsPass:  true,
+				Message: fmt.Sprintf("Found %d volume snapshot locations", len(volumeSnapshotLocations)),
+			})
+		}
+	}
+
+	return results
+}
+
+func analyzeLogs(logs map[string][]byte) []*AnalyzeResult {
+	results := []*AnalyzeResult{}
+	if len(logs) > 0 {
+		// fileName
+		for _, logBytes := range logs {
+			logContent := string(logBytes)
+			result := &AnalyzeResult{
+				Title: fmt.Sprintf("Velero logs for pod [node-agent] "),
+			}
+			if strings.Contains(logContent, "permission denied") {
+				result.IsFail = true
+				// result.Strict = true
+				result.Message = fmt.Sprintf("Found 'permission denied' in node-agent log file(s)")
+				results = append(results, result)
+				continue
+			}
+
+			if strings.Contains(logContent, "error") || strings.Contains(logContent, "panic") || strings.Contains(logContent, "fatal") {
+				result.IsWarn = true
+				// result.Strict = false
+				result.Message = fmt.Sprintf("Found error|panic|fatal in node-agent log file(s)")
+				results = append(results, result)
+			}
+		}
+
+		results = append(results, &AnalyzeResult{
+			Title:   "Velero Logs",
+			IsPass:  true,
+			Message: fmt.Sprintf("Found %d log files", len(logs)),
+		})
+	}
+	return results
+}
+
+func aggregateResults(results []*AnalyzeResult) []*AnalyzeResult {
+	out := []*AnalyzeResult{}
+	resultFailed := false
+	for _, result := range results {
+		if result.IsFail {
+			resultFailed = true
+			// continue
+		}
+		out = append(out, result)
+	}
+
+	if resultFailed == false {
+		out = append(out, &AnalyzeResult{
+			Title:   "Velero Status",
+			IsPass:  true,
+			Message: "Backups and CRDs are healthy",
+		})
+	}
+
+	return out
+}
+
+func GetVeleroBackupsDirectory(namespace string) string {
+	return fmt.Sprintf("cluster-resources/custom-resources/backups.velero.io")
+}
+
+func GetVeleroBackupRepositoriesDirectory(namespace string) string {
+	return fmt.Sprintf("cluster-resources/custom-resources/backuprepositories.velero.io")
+}
+
+func GetVeleroBackupStorageLocationsDirectory(namespace string) string {
+	return fmt.Sprintf("cluster-resources/custom-resources/backupstoragelocations.velero.io")
+}
+
+func GetVeleroDeleteBackupRequestsDirectory(namespace string) string {
+	return fmt.Sprintf("cluster-resources/custom-resources/deletebackuprequests.velero.io")
+}
+
+func GetVeleroDownloadRequestsDirectory(namespace string) string {
+	return fmt.Sprintf("cluster-resources/custom-resources/downloadrequests.velero.io")
+}
+
+func GetVeleroLogsDirectory(namespace string) string {
+	return fmt.Sprintf("velero/logs")
+}
+
+func GetVeleroPodVolumeBackupsDirectory(namespace string) string {
+	return fmt.Sprintf("cluster-resources/custom-resources/podvolumebackups.velero.io")
+}
+
+func GetVeleroPodVolumeRestoresDirectory(namespace string) string {
+	return fmt.Sprintf("cluster-resources/custom-resources/podvolumerestores.velero.io")
+}
+
+func GetVeleroRestoresDirectory(namespace string) string {
+	return fmt.Sprintf("cluster-resources/custom-resources/restores.velero.io")
+}
+
+func GetVeleroSchedulesDirectory(namespace string) string {
+	return fmt.Sprintf("cluster-resources/custom-resources/schedules.velero.io")
+}
+
+func GetVeleroServerStatusRequestsDirectory(namespace string) string {
+	return fmt.Sprintf("cluster-resources/custom-resources/serverstatusrequests.velero.io")
+}
+
+func GetVeleroVolumeSnapshotLocationsDirectory(namespace string) string {
+	return fmt.Sprintf("cluster-resources/custom-resources/volumesnapshotlocations.velero.io")
+}
+
+func GetVeleroResticRepositoriesDirectory(namespace string) string {
+	return fmt.Sprintf("cluster-resources/custom-resources/resticrepositories.velero.io")
+}
