@@ -43,7 +43,7 @@ func (a *AnalyzeMssql) collectorName() string {
 	if a.analyzer.CollectorName != "" {
 		return a.analyzer.CollectorName
 	}
-	return "mysql"
+	return "mssql"
 }
 
 func compareMssqlConditionalToActual(conditional string, result *collect.DatabaseConnection) (bool, error) {
