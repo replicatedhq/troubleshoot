@@ -49,7 +49,7 @@ that a cluster meets the requirements to run an application.`,
 			}
 
 			err = preflight.RunPreflights(v.GetBool("interactive"), v.GetString("output"), v.GetString("format"), args)
-			if v.GetBool("debug") || v.IsSet("v") {
+			if !v.GetBool("dry-run") && (v.GetBool("debug") || v.IsSet("v")) {
 				fmt.Printf("\n%s", traces.GetExporterInstance().GetSummary())
 			}
 

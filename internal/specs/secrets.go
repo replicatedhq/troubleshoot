@@ -9,21 +9,13 @@ import (
 	"k8s.io/klog/v2"
 )
 
-func LoadFromSecret(ctx context.Context, client kubernetes.Interface, ns string, name string, key string) ([]byte, error) {
+func LoadFromSecret(ctx context.Context, client kubernetes.Interface, ns string, name string) (map[string][]byte, error) {
 	foundSecret, err := client.CoreV1().Secrets(ns).Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get secret")
 	}
 
-	spec, ok := foundSecret.Data[key]
-	if !ok {
-		return nil, errors.Errorf("spec not found in secret %s", name)
-	}
-
-	klog.V(1).InfoS("Loaded spec from secret", "name",
-		foundSecret.Name, "namespace", foundSecret.Namespace, "data key", key,
-	)
-	return spec, nil
+	return foundSecret.Data, nil
 }
 
 func LoadFromSecretMatchingLabel(ctx context.Context, client kubernetes.Interface, label string, ns string, key string) ([]string, error) {

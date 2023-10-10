@@ -278,6 +278,7 @@ func ConcatSpec(target *troubleshootv1beta2.SupportBundle, source *troubleshootv
 		newBundle.Spec.HostCollectors = append(target.Spec.HostCollectors, source.Spec.HostCollectors...)
 		newBundle.Spec.HostAnalyzers = append(target.Spec.HostAnalyzers, source.Spec.HostAnalyzers...)
 		newBundle.Spec.Analyzers = append(target.Spec.Analyzers, source.Spec.Analyzers...)
+		// TODO: What to do with the Uri field?
 	}
 	return newBundle
 }
