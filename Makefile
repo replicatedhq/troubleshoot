@@ -85,6 +85,9 @@ build:
 	@echo "Build cli binaries"
 	$(MAKE) -j support-bundle preflight analyze collect
 
+mod-tidy:
+	go mod tidy
+
 .PHONY: support-bundle
 support-bundle:
 	go build ${BUILDFLAGS} ${LDFLAGS} -o bin/support-bundle github.com/replicatedhq/troubleshoot/cmd/troubleshoot
@@ -151,7 +154,7 @@ CONTROLLER_GEN=$(shell which controller-gen)
 .PHONY: client-gen
 client-gen:
 ifeq (, $(shell which client-gen 2>/dev/null))
-	go install k8s.io/code-generator/cmd/client-gen@v0.26.1
+	go install k8s.io/code-generator/cmd/client-gen@v0.28.2
 CLIENT_GEN=$(shell go env GOPATH)/bin/client-gen
 else
 CLIENT_GEN=$(shell which client-gen)
