@@ -18,6 +18,8 @@ import (
 	"k8s.io/klog/v2"
 )
 
+const FILE_NOT_COLLECTED = "fileNotCollected"
+
 type AnalyzeResult struct {
 	IsPass bool
 	IsFail bool
