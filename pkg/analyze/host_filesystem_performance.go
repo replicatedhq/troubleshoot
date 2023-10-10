@@ -32,6 +32,10 @@ func (a *AnalyzeHostFilesystemPerformance) Analyze(
 ) ([]*AnalyzeResult, error) {
 	hostAnalyzer := a.hostAnalyzer
 
+	result := &AnalyzeResult{
+		Title: a.Title(),
+	}
+
 	collectorName := hostAnalyzer.CollectorName
 	if collectorName == "" {
 		collectorName = "filesystemPerformance"
@@ -39,6 +43,29 @@ func (a *AnalyzeHostFilesystemPerformance) Analyze(
 	name := filepath.Join("host-collectors/filesystemPerformance", collectorName+".json")
 	contents, err := getCollectedFileContents(name)
 	if err != nil {
+		if len(hostAnalyzer.Outcomes) >= 1 {
+			// if the very first outcome is FILE_NOT_COLLECTED', then use that outcome
+			// otherwise, return the error
+			if hostAnalyzer.Outcomes[0].Fail != nil && hostAnalyzer.Outcomes[0].Fail.When == FILE_NOT_COLLECTED {
+				result.IsFail = true
+				result.Message = renderFSPerfOutcome(hostAnalyzer.Outcomes[0].Fail.Message, collect.FSPerfResults{})
+				result.URI = hostAnalyzer.Outcomes[0].Fail.URI
+				return []*AnalyzeResult{result}, nil
+			}
+			if hostAnalyzer.Outcomes[0].Warn != nil && hostAnalyzer.Outcomes[0].Warn.When == FILE_NOT_COLLECTED {
+				result.IsWarn = true
+				result.Message = renderFSPerfOutcome(hostAnalyzer.Outcomes[0].Warn.Message, collect.FSPerfResults{})
+				result.URI = hostAnalyzer.Outcomes[0].Warn.URI
+				return []*AnalyzeResult{result}, nil
+			}
+			if hostAnalyzer.Outcomes[0].Pass != nil && hostAnalyzer.Outcomes[0].Pass.When == FILE_NOT_COLLECTED {
+				result.IsPass = true
+				result.Message = renderFSPerfOutcome(hostAnalyzer.Outcomes[0].Pass.Message, collect.FSPerfResults{})
+				result.URI = hostAnalyzer.Outcomes[0].Pass.URI
+				return []*AnalyzeResult{result}, nil
+			}
+		}
+
 		return nil, errors.Wrapf(err, "failed to get collected file %s", name)
 	}
 
@@ -56,10 +83,6 @@ func (a *AnalyzeHostFilesystemPerformance) Analyze(
 	fsPerf := fioWriteLatency.FSPerfResults()
 	if err := json.Unmarshal(contents, &fsPerf); err != nil {
 		return nil, errors.Wrapf(err, "failed to unmarshal filesystem performance results from %s", name)
-	}
-
-	result := &AnalyzeResult{
-		Title: a.Title(),
 	}
 
 	for _, outcome := range hostAnalyzer.Outcomes {
@@ -135,6 +158,10 @@ func (a *AnalyzeHostFilesystemPerformance) Analyze(
 }
 
 func compareHostFilesystemPerformanceConditionalToActual(conditional string, fsPerf collect.FSPerfResults) (res bool, err error) {
+	if conditional == FILE_NOT_COLLECTED {
+		return false, nil
+	}
+
 	parts := strings.Split(conditional, " ")
 	if len(parts) != 3 {
 		return false, fmt.Errorf("conditional must have exactly 3 parts, got %d", len(parts))

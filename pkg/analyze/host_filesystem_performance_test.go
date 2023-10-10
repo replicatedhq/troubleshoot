@@ -1,10 +1,10 @@
 package analyzer
 
 import (
+	"fmt"
 	"testing"
 
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -861,6 +861,12 @@ func TestAnalyzeHostFilesystemPerformance(t *testing.T) {
 				CollectorName: "file system performance",
 				Outcomes: []*troubleshootv1beta2.Outcome{
 					{
+						Warn: &troubleshootv1beta2.SingleOutcome{
+							When:    "fileNotCollected",
+							Message: "Warn when the file was not collected",
+						},
+					},
+					{
 						Pass: &troubleshootv1beta2.SingleOutcome{
 							When:    "p99 < 10ms",
 							Message: "Acceptable write latency",
@@ -954,7 +960,136 @@ func TestAnalyzeHostFilesystemPerformance(t *testing.T) {
 				req.NoError(err)
 			}
 
-			assert.Equal(t, test.result, result)
+			req.Equal(test.result, result)
+		})
+	}
+}
+
+func TestAnalyzeHostFilesystemPerformanceNoFile(t *testing.T) {
+	tests := []struct {
+		name         string
+		hostAnalyzer *troubleshootv1beta2.FilesystemPerformanceAnalyze
+		result       []*AnalyzeResult
+		expectErr    bool
+	}{
+		{
+			name: "default behavior",
+			hostAnalyzer: &troubleshootv1beta2.FilesystemPerformanceAnalyze{
+				CollectorName: "irrel",
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Fail: &troubleshootv1beta2.SingleOutcome{
+							Message: "a nonexistent file should not be analyzed",
+						},
+					},
+				},
+			},
+			expectErr: true,
+		},
+		{
+			name: "fail case",
+			hostAnalyzer: &troubleshootv1beta2.FilesystemPerformanceAnalyze{
+				CollectorName: "irrel",
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Fail: &troubleshootv1beta2.SingleOutcome{
+							When:    "fileNotCollected",
+							Message: "the required file was not collected",
+						},
+					},
+				},
+			},
+			expectErr: false,
+			result: []*AnalyzeResult{
+				{
+					Title:   "Filesystem Performance",
+					IsFail:  true,
+					Message: "the required file was not collected",
+				},
+			},
+		},
+		{
+			name: "warn case",
+			hostAnalyzer: &troubleshootv1beta2.FilesystemPerformanceAnalyze{
+				CollectorName: "irrel",
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Warn: &troubleshootv1beta2.SingleOutcome{
+							When:    "fileNotCollected",
+							Message: "the required file was not collected",
+						},
+					},
+				},
+			},
+			expectErr: false,
+			result: []*AnalyzeResult{
+				{
+					Title:   "Filesystem Performance",
+					IsWarn:  true,
+					Message: "the required file was not collected",
+				},
+			},
+		},
+		{
+			name: "pass case",
+			hostAnalyzer: &troubleshootv1beta2.FilesystemPerformanceAnalyze{
+				CollectorName: "irrel",
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							When:    "fileNotCollected",
+							Message: "the required file was not collected",
+						},
+					},
+				},
+			},
+			expectErr: false,
+			result: []*AnalyzeResult{
+				{
+					Title:   "Filesystem Performance",
+					IsPass:  true,
+					Message: "the required file was not collected",
+				},
+			},
+		},
+		{
+			name: "fileNotCollected is only tested if it is the first result",
+			hostAnalyzer: &troubleshootv1beta2.FilesystemPerformanceAnalyze{
+				CollectorName: "irrel",
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Fail: &troubleshootv1beta2.SingleOutcome{
+							Message: "a nonexistent file should not be analyzed",
+						},
+					},
+					{
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							When:    "fileNotCollected",
+							Message: "the required file was not collected",
+						},
+					},
+				},
+			},
+			expectErr: true,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			req := require.New(t)
+
+			getCollectedFileContents := func(filename string) ([]byte, error) {
+				return nil, fmt.Errorf("file not found")
+			}
+
+			a := AnalyzeHostFilesystemPerformance{test.hostAnalyzer}
+			result, err := a.Analyze(getCollectedFileContents, nil)
+			if test.expectErr {
+				req.Error(err)
+			} else {
+				req.NoError(err)
+			}
+
+			req.Equal(test.result, result)
 		})
 	}
 }
