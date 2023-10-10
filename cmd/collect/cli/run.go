@@ -50,7 +50,7 @@ func runCollect(v *viper.Viper, arg string) error {
 
 		collectorContent = spec
 	} else if _, err = os.Stat(arg); err == nil {
-		b, err := ioutil.ReadFile(arg)
+		b, err := os.ReadFile(arg)
 		if err != nil {
 			return err
 		}
