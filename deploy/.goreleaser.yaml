@@ -1,8 +1,4 @@
 project_name: troubleshoot
-release:
-  github:
-    owner: replicatedhq
-    name: troubleshoot
 builds:
   - id: preflight
     # NOTE: if you add any additional goos/goarch values, ensure you update ../.github/workflows/build-test-deploy.yaml
