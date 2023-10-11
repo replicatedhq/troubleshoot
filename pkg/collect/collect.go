@@ -10,6 +10,7 @@ import (
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
+	"gopkg.in/yaml.v2"
 	"k8s.io/client-go/rest"
 )
 
@@ -209,5 +210,25 @@ func copyResult(srcResult CollectorResult, dstResult CollectorResult, bundlePath
 		return errors.Wrap(err, "failed to save file")
 	}
 
+	return nil
+}
+
+// storeCustomResource stores a custom resource as JSON and YAML
+// We use both formats for backwards compatibility. This way we
+// avoid breaking existing tools and analysers that already rely on
+// the YAML format.
+func storeCustomResource(name string, objects any, m map[string][]byte) error {
+	j, err := json.MarshalIndent(objects, "", "  ")
+	if err != nil {
+		return err
+	}
+
+	y, err := yaml.Marshal(objects)
+	if err != nil {
+		return err
+	}
+
+	m[fmt.Sprintf("%s.json", name)] = j
+	m[fmt.Sprintf("%s.yaml", name)] = y
 	return nil
 }

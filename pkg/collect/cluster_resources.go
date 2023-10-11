@@ -14,7 +14,6 @@ import (
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/replicatedhq/troubleshoot/pkg/constants"
 	"github.com/replicatedhq/troubleshoot/pkg/k8sutil"
-	"gopkg.in/yaml.v2"
 	authorizationv1 "k8s.io/api/authorization/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
@@ -2110,24 +2109,4 @@ func configMaps(ctx context.Context, client kubernetes.Interface, namespaces []s
 	}
 
 	return configmapByNamespace, errorsByNamespace
-}
-
-// storeCustomResource stores a custom resource as JSON and YAML
-// We use both formats for backwards compatibility. This way we
-// avoid breaking existing tools and analysers that already rely on
-// the YAML format.
-func storeCustomResource(name string, objects any, m map[string][]byte) error {
-	j, err := json.MarshalIndent(objects, "", "  ")
-	if err != nil {
-		return err
-	}
-
-	y, err := yaml.Marshal(objects)
-	if err != nil {
-		return err
-	}
-
-	m[fmt.Sprintf("%s.json", name)] = j
-	m[fmt.Sprintf("%s.yaml", name)] = y
-	return nil
 }
