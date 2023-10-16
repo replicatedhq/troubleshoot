@@ -3,6 +3,7 @@ package version
 import (
 	"fmt"
 	"runtime"
+	"runtime/debug"
 	"time"
 )
 
@@ -27,12 +28,32 @@ type GoInfo struct {
 	Arch     string `json:"arch,omitempty"`
 }
 
-// initBuild sets up the version info from build args
+// initBuild sets up the version info from build args or imported modules in go.mod
 func initBuild() {
+	// TODO: Can we get the module name at runtime somehow?
+	tsModuleName := "github.com/replicatedhq/troubleshoot"
+
+	if version == "" {
+		// Lets attempt to get the version from runtime build info
+		// We will go through all the dependencies to find the
+		// troubleshoot module version. Its OK if we cannot read
+		// the buildinfo, we just won't have a version set
+		bi, ok := debug.ReadBuildInfo()
+		if ok {
+			for _, dep := range bi.Deps {
+				if dep.Path == tsModuleName {
+					version = dep.Version
+					break
+				}
+			}
+		}
+	}
+
 	build.Version = version
 	if len(gitSHA) >= 7 {
 		build.GitSHA = gitSHA[:7]
 	}
+
 	var err error
 	build.BuildTime, err = time.Parse(time.RFC3339, buildTime)
 	if err != nil {
