@@ -15,3 +15,13 @@ stringData:
         - data:
             name: echo-hi-1
             data: "I am labelled-support-bundle-1 REDACT FIRST TEXT PLEASE"
+  custom-spec-key: |
+    apiVersion: troubleshoot.sh/v1beta2
+    kind: SupportBundle
+    metadata:
+      name: custom-spec-key
+    spec:
+      collectors:
+        - data:
+            name: echo-hi-3
+            data: "I am custom-spec-key REDACT FIRST TEXT PLEASE"

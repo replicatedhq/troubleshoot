@@ -16,3 +16,14 @@ data:
           removals:
             values:
             -  REDACT FIRST TEXT PLEASE
+  customer-redactor-spec: |
+    apiVersion: troubleshoot.sh/v1beta2
+    kind: Redactor
+    metadata:
+      name: labelled-redactor-spec-1
+    spec:
+      redactors:
+        - name: redact-text-1
+          removals:
+            values:
+            -  REDACT FIRST TEXT PLEASE
