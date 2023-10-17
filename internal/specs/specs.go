@@ -103,7 +103,7 @@ func LoadFromCLIArgs(ctx context.Context, client kubernetes.Interface, args []st
 					rawSpecs = append(rawSpecs, string(spec))
 				}
 			} else {
-				// Append all data in the configmap. Some may not be specs, but that's ok. They will be ignored.
+				// Append all data in the secret. Some may not be specs, but that's ok. They will be ignored.
 				for _, spec := range data {
 					rawSpecs = append(rawSpecs, string(spec))
 				}
