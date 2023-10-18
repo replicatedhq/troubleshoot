@@ -82,10 +82,13 @@ func LoadFromCLIArgs(ctx context.Context, client kubernetes.Interface, args []st
 
 	for _, v := range args {
 		if strings.HasPrefix(v, "secret/") {
-			// format secret/namespace-name/secret-name
+			// format secret/namespace-name/secret-name[/data-key]
 			pathParts := strings.Split(v, "/")
-			if len(pathParts) != 3 {
-				return nil, types.NewExitCodeError(constants.EXIT_CODE_SPEC_ISSUES, errors.Errorf("secret path %q must have 3 components", v))
+			if len(pathParts) > 4 {
+				return nil, types.NewExitCodeError(constants.EXIT_CODE_SPEC_ISSUES, errors.Errorf("secret path %s must have at most 4 components", v))
+			}
+			if len(pathParts) < 3 {
+				return nil, types.NewExitCodeError(constants.EXIT_CODE_SPEC_ISSUES, errors.Errorf("secret path %s must have at least 3 components", v))
 			}
 
 			data, err := LoadFromSecret(ctx, client, pathParts[1], pathParts[2])
@@ -93,25 +96,44 @@ func LoadFromCLIArgs(ctx context.Context, client kubernetes.Interface, args []st
 				return nil, types.NewExitCodeError(constants.EXIT_CODE_SPEC_ISSUES, errors.Wrap(err, "failed to get spec from secret"))
 			}
 
-			// Append all data in the secret. Some may not be specs, but that's ok. They will be ignored.
-			for _, spec := range data {
-				rawSpecs = append(rawSpecs, string(spec))
+			// If we have a key defined, then load specs from that key only.
+			if len(pathParts) == 4 {
+				spec, ok := data[pathParts[3]]
+				if ok {
+					rawSpecs = append(rawSpecs, string(spec))
+				}
+			} else {
+				// Append all data in the secret. Some may not be specs, but that's ok. They will be ignored.
+				for _, spec := range data {
+					rawSpecs = append(rawSpecs, string(spec))
+				}
 			}
 		} else if strings.HasPrefix(v, "configmap/") {
-			// format configmap/namespace-name/configmap-name
+			// format configmap/namespace-name/configmap-name[/data-key]
 			pathParts := strings.Split(v, "/")
-			if len(pathParts) != 3 {
-				return nil, errors.Errorf("configmap path %q must have 3 components", v)
+			if len(pathParts) > 4 {
+				return nil, types.NewExitCodeError(constants.EXIT_CODE_SPEC_ISSUES, errors.Errorf("configmap path %s must have at most 4 components", v))
+			}
+			if len(pathParts) < 3 {
+				return nil, types.NewExitCodeError(constants.EXIT_CODE_SPEC_ISSUES, errors.Errorf("configmap path %s must have at least 3 components", v))
 			}
 
 			data, err := LoadFromConfigMap(ctx, client, pathParts[1], pathParts[2])
 			if err != nil {
-				return nil, errors.Wrap(err, "failed to get spec from configmap")
+				return nil, types.NewExitCodeError(constants.EXIT_CODE_SPEC_ISSUES, errors.Wrap(err, "failed to get spec from configmap"))
 			}
 
-			// Append all data in the configmap. Some may not be specs, but that's ok. They will be ignored.
-			for _, spec := range data {
-				rawSpecs = append(rawSpecs, spec)
+			// If we have a key defined, then load specs from that key only.
+			if len(pathParts) == 4 {
+				spec, ok := data[pathParts[3]]
+				if ok {
+					rawSpecs = append(rawSpecs, spec)
+				}
+			} else {
+				// Append all data in the configmap. Some may not be specs, but that's ok. They will be ignored.
+				for _, spec := range data {
+					rawSpecs = append(rawSpecs, spec)
+				}
 			}
 		} else if _, err := os.Stat(v); err == nil {
 			b, err := os.ReadFile(v)
