@@ -93,14 +93,14 @@ func (a *AnalyzeVelero) veleroStatus(analyzer *troubleshootv1beta2.VeleroAnalyze
 	// get resticrepositories.velero.io
 	// resticRepositoriesDir := GetVeleroResticRepositoriesDirectory(ns)
 	// resticRepositoriesGlob := filepath.Join(resticRepositoriesDir, "*.json")
-	// resticRepositoriesYaml, err := findFiles(resticRepositoriesGlob, excludeFiles)
+	// resticRepositoriesJson, err := findFiles(resticRepositoriesGlob, excludeFiles)
 	// if err != nil {
 	// 	return nil, errors.Wrapf(err, "failed to find velero restic repositories files under %s", resticRepositoriesDir)
 	// }
 	// resticRepositories := []*velerov1beta1.ResticRepository{}
-	// for key, resticRepositoryYaml := range resticRepositoriesYaml {
+	// for key, resticRepositoryJson := range resticRepositoriesJson {
 	// 	resticRepository := &velerov1beta1.ResticRepository{}
-	// 	err := json.Unmarshal(resticRepositoryYaml, resticRepository)
+	// 	err := json.Unmarshal(resticRepositoryJson, resticRepository)
 	// 	if err != nil {
 	// 		return nil, errors.Wrapf(err, "failed to unmarshal restic repository json from %s", key)
 	// 	}
@@ -115,9 +115,9 @@ func (a *AnalyzeVelero) veleroStatus(analyzer *troubleshootv1beta2.VeleroAnalyze
 		return nil, errors.Wrapf(err, "failed to find velero backup storage locations files under %s", backupStorageLocationsDir)
 	}
 	backupStorageLocations := []*velerov1.BackupStorageLocation{}
-	for key, backupStorageLocationYaml := range backupStorageLocationsJson {
+	for key, backupStorageLocationJson := range backupStorageLocationsJson {
 		var backupStorageLocationArray []*velerov1.BackupStorageLocation
-		err := json.Unmarshal(backupStorageLocationYaml, &backupStorageLocationArray)
+		err := json.Unmarshal(backupStorageLocationJson, &backupStorageLocationArray)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to unmarshal backup storage location json from %s", key)
 		}
@@ -132,9 +132,9 @@ func (a *AnalyzeVelero) veleroStatus(analyzer *troubleshootv1beta2.VeleroAnalyze
 		return nil, errors.Wrapf(err, "failed to find velero delete backup requests files under %s", deleteBackupRequestsDir)
 	}
 	deleteBackupRequests := []*velerov1.DeleteBackupRequest{}
-	for key, deleteBackupRequestYaml := range deleteBackupRequestsJson {
+	for key, deleteBackupRequestJson := range deleteBackupRequestsJson {
 		var deleteBackupRequestArray []*velerov1.DeleteBackupRequest
-		err := json.Unmarshal(deleteBackupRequestYaml, &deleteBackupRequestArray)
+		err := json.Unmarshal(deleteBackupRequestJson, &deleteBackupRequestArray)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to unmarshal delete backup request json from %s", key)
 		}
@@ -144,14 +144,14 @@ func (a *AnalyzeVelero) veleroStatus(analyzer *troubleshootv1beta2.VeleroAnalyze
 	// get downloadrequests.velero.io
 	// downloadRequestsDir := GetVeleroDownloadRequestsDirectory(ns)
 	// downloadRequestsGlob := filepath.Join(downloadRequestsDir, "*.json")
-	// downloadRequestsYaml, err := findFiles(downloadRequestsGlob, excludeFiles)
+	// downloadRequestsJson, err := findFiles(downloadRequestsGlob, excludeFiles)
 	// if err != nil {
 	// 	return nil, errors.Wrapf(err, "failed to find velero download requests files under %s", downloadRequestsDir)
 	// }
 	// downloadRequests := []*velerov1.DownloadRequest{}
-	// for key, downloadRequestYaml := range downloadRequestsYaml {
+	// for key, downloadRequestJson := range downloadRequestsJson {
 	// 	downloadRequest := &velerov1.DownloadRequest{}
-	// 	err := json.Unmarshal(downloadRequestYaml, downloadRequest)
+	// 	err := json.Unmarshal(downloadRequestJson, downloadRequest)
 	// 	if err != nil {
 	// 		return nil, errors.Wrapf(err, "failed to unmarshal download request json from %s", key)
 	// 	}
@@ -183,9 +183,9 @@ func (a *AnalyzeVelero) veleroStatus(analyzer *troubleshootv1beta2.VeleroAnalyze
 		return nil, errors.Wrapf(err, "failed to find velero pod volume restores files under %s", podVolumeRestoresDir)
 	}
 	podVolumeRestores := []*velerov1.PodVolumeRestore{}
-	for key, podVolumeRestoreYaml := range podVolumeRestoresJson {
+	for key, podVolumeRestoreJson := range podVolumeRestoresJson {
 		var podVolumeRestoreArray []*velerov1.PodVolumeRestore
-		err := json.Unmarshal(podVolumeRestoreYaml, &podVolumeRestoreArray)
+		err := json.Unmarshal(podVolumeRestoreJson, &podVolumeRestoreArray)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to unmarshal pod volume restore json from %s", key)
 		}
@@ -200,9 +200,9 @@ func (a *AnalyzeVelero) veleroStatus(analyzer *troubleshootv1beta2.VeleroAnalyze
 		return nil, errors.Wrapf(err, "failed to find velero restores files under %s", restoresDir)
 	}
 	restores := []*velerov1.Restore{}
-	for key, restoreYaml := range restoresJson {
+	for key, restoreJson := range restoresJson {
 		var restoreArray []*velerov1.Restore
-		err := json.Unmarshal(restoreYaml, &restoreArray)
+		err := json.Unmarshal(restoreJson, &restoreArray)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to unmarshal restore json from %s", key)
 		}
@@ -212,14 +212,14 @@ func (a *AnalyzeVelero) veleroStatus(analyzer *troubleshootv1beta2.VeleroAnalyze
 	// get schedules.velero.io
 	schedulesDir := GetVeleroSchedulesDirectory(ns)
 	schedulesGlob := filepath.Join(schedulesDir, "*.json")
-	schedulesYaml, err := findFiles(schedulesGlob, excludeFiles)
+	schedulesJson, err := findFiles(schedulesGlob, excludeFiles)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to find velero schedules files under %s", schedulesDir)
 	}
 	schedules := []*velerov1.Schedule{}
-	for key, scheduleYaml := range schedulesYaml {
+	for key, scheduleJson := range schedulesJson {
 		var scheduleArray []*velerov1.Schedule
-		err := json.Unmarshal(scheduleYaml, &scheduleArray)
+		err := json.Unmarshal(scheduleJson, &scheduleArray)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to unmarshal schedule json from %s", key)
 		}
@@ -229,14 +229,14 @@ func (a *AnalyzeVelero) veleroStatus(analyzer *troubleshootv1beta2.VeleroAnalyze
 	// get serverstatusrequests.velero.io
 	serverStatusRequestsDir := GetVeleroServerStatusRequestsDirectory(ns)
 	serverStatusRequestsGlob := filepath.Join(serverStatusRequestsDir, "*.json")
-	serverStatusRequestsYaml, err := findFiles(serverStatusRequestsGlob, excludeFiles)
+	serverStatusRequestsJson, err := findFiles(serverStatusRequestsGlob, excludeFiles)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to find velero server status requests files under %s", serverStatusRequestsDir)
 	}
 	serverStatusRequests := []*velerov1.ServerStatusRequest{}
-	for key, serverStatusRequestYaml := range serverStatusRequestsYaml {
+	for key, serverStatusRequestJson := range serverStatusRequestsJson {
 		var serverStatusRequestArray []*velerov1.ServerStatusRequest
-		err := json.Unmarshal(serverStatusRequestYaml, &serverStatusRequestArray)
+		err := json.Unmarshal(serverStatusRequestJson, &serverStatusRequestArray)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to unmarshal server status request json from %s", key)
 		}
@@ -246,14 +246,14 @@ func (a *AnalyzeVelero) veleroStatus(analyzer *troubleshootv1beta2.VeleroAnalyze
 	// get volumesnapshotlocations.velero.io
 	volumeSnapshotLocationsDir := GetVeleroVolumeSnapshotLocationsDirectory(ns)
 	volumeSnapshotLocationsGlob := filepath.Join(volumeSnapshotLocationsDir, "*.json")
-	volumeSnapshotLocationsYaml, err := findFiles(volumeSnapshotLocationsGlob, excludeFiles)
+	volumeSnapshotLocationsJson, err := findFiles(volumeSnapshotLocationsGlob, excludeFiles)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to find velero volume snapshot locations files under %s", volumeSnapshotLocationsDir)
 	}
 	volumeSnapshotLocations := []*velerov1.VolumeSnapshotLocation{}
-	for key, volumeSnapshotLocationYaml := range volumeSnapshotLocationsYaml {
+	for key, volumeSnapshotLocationJson := range volumeSnapshotLocationsJson {
 		var volumeSnapshotLocationArray []*velerov1.VolumeSnapshotLocation
-		err := json.Unmarshal(volumeSnapshotLocationYaml, &volumeSnapshotLocationArray)
+		err := json.Unmarshal(volumeSnapshotLocationJson, &volumeSnapshotLocationArray)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to unmarshal volume snapshot location json from %s", key)
 		}
