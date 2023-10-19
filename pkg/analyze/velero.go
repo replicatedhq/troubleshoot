@@ -54,7 +54,6 @@ func (a *AnalyzeVelero) veleroStatus(analyzer *troubleshootv1beta2.VeleroAnalyze
 
 	// get backuprepositories.velero.io
 	backupRepositoriesDir := GetVeleroBackupRepositoriesDirectory(ns)
-	fmt.Println(backupRepositoriesDir)
 	backupRepositoriesGlob := filepath.Join(backupRepositoriesDir, "*.json")
 	backupRepositoriesJson, err := findFiles(backupRepositoriesGlob, excludeFiles)
 	if err != nil {
@@ -63,23 +62,17 @@ func (a *AnalyzeVelero) veleroStatus(analyzer *troubleshootv1beta2.VeleroAnalyze
 	backupRepositories := []*velerov1.BackupRepository{}
 	for key, backupRepositoryJson := range backupRepositoriesJson {
 		var backupRepositoryArray []*velerov1.BackupRepository
-		// backupRepository := &velerov1.BackupRepository{}
 		err := json.Unmarshal(backupRepositoryJson, &backupRepositoryArray)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to unmarshal backup repository json from %s", key)
 		}
 		backupRepositories = append(backupRepositories, backupRepositoryArray...)
 	}
-	// print len of backupRepositories
-	fmt.Printf("\n..found %d velero backup repositories\n", len(backupRepositories))
 
 	// get backups.velero.io
 	backupsDir := GetVeleroBackupsDirectory(ns)
 	backupsGlob := filepath.Join(backupsDir, "*.json")
-	fmt.Println(backupsDir)
 	veleroJSONs, err := findFiles(backupsGlob, excludeFiles)
-	// print files for debugging
-	fmt.Printf("\n..found %d velero backup jsons\n", len(veleroJSONs))
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to find velero backup files")
 	}
@@ -95,10 +88,9 @@ func (a *AnalyzeVelero) veleroStatus(analyzer *troubleshootv1beta2.VeleroAnalyze
 		}
 		backups = append(backups, veleroBackups...)
 	}
-	fmt.Printf("\n..found %d backups\n", len(backups))
 
-	// // velerov1.BackupRepositoryTypeRestic
-	// // // get resticrepositories.velero.io
+	// velerov1.BackupRepositoryTypeRestic
+	// get resticrepositories.velero.io
 	// resticRepositoriesDir := GetVeleroResticRepositoriesDirectory(ns)
 	// resticRepositoriesGlob := filepath.Join(resticRepositoriesDir, "*.json")
 	// resticRepositoriesYaml, err := findFiles(resticRepositoriesGlob, excludeFiles)
@@ -131,7 +123,6 @@ func (a *AnalyzeVelero) veleroStatus(analyzer *troubleshootv1beta2.VeleroAnalyze
 		}
 		backupStorageLocations = append(backupStorageLocations, backupStorageLocationArray...)
 	}
-	fmt.Printf("\n..found %d velero backup storage locations\n", len(backupStorageLocations))
 
 	// get deletebackuprequests.velero.io
 	deleteBackupRequestsDir := GetVeleroDeleteBackupRequestsDirectory(ns)
@@ -149,7 +140,6 @@ func (a *AnalyzeVelero) veleroStatus(analyzer *troubleshootv1beta2.VeleroAnalyze
 		}
 		deleteBackupRequests = append(deleteBackupRequests, deleteBackupRequestArray...)
 	}
-	fmt.Printf("\n..found %d velero delete backup requests\n", len(deleteBackupRequests))
 
 	// get downloadrequests.velero.io
 	// downloadRequestsDir := GetVeleroDownloadRequestsDirectory(ns)
@@ -201,7 +191,6 @@ func (a *AnalyzeVelero) veleroStatus(analyzer *troubleshootv1beta2.VeleroAnalyze
 		}
 		podVolumeRestores = append(podVolumeRestores, podVolumeRestoreArray...)
 	}
-	fmt.Println("FIRST----------")
 
 	// get restores.velero.io
 	restoresDir := GetVeleroRestoresDirectory(ns)
@@ -215,12 +204,10 @@ func (a *AnalyzeVelero) veleroStatus(analyzer *troubleshootv1beta2.VeleroAnalyze
 		var restoreArray []*velerov1.Restore
 		err := json.Unmarshal(restoreYaml, &restoreArray)
 		if err != nil {
-			fmt.Println("ERROR----------", key, err)
 			return nil, errors.Wrapf(err, "failed to unmarshal restore json from %s", key)
 		}
 		restores = append(restores, restoreArray...)
 	}
-	fmt.Println("THIRD----------")
 
 	// get schedules.velero.io
 	schedulesDir := GetVeleroSchedulesDirectory(ns)
@@ -274,7 +261,6 @@ func (a *AnalyzeVelero) veleroStatus(analyzer *troubleshootv1beta2.VeleroAnalyze
 	}
 
 	logsDir := GetVeleroLogsDirectory(ns)
-	fmt.Println(logsDir)
 	logsGlob := filepath.Join(logsDir, "node-agent*", "*.log")
 	logs, err := findFiles(logsGlob, excludeFiles)
 
@@ -371,7 +357,6 @@ func analyzeBackups(backups []*velerov1.Backup) []*AnalyzeResult {
 
 func analyzeBackupStorageLocations(backupStorageLocations []*velerov1.BackupStorageLocation) []*AnalyzeResult {
 	results := []*AnalyzeResult{}
-	// atleast 1 backup storage location Phase Available
 	availableCount := 0
 	bslResult := &AnalyzeResult{
 		Title: "At least 1 Velero Backup Storage Location configured",
@@ -409,7 +394,6 @@ func analyzeBackupStorageLocations(backupStorageLocations []*velerov1.BackupStor
 
 func analyzeDeleteBackupRequests(deleteBackupRequests []*velerov1.DeleteBackupRequest) []*AnalyzeResult {
 	results := []*AnalyzeResult{}
-	// all in progress, new and processed
 	inProgressCount := 0
 	if len(deleteBackupRequests) > 0 {
 		for _, deleteBackupRequest := range deleteBackupRequests {
@@ -459,16 +443,13 @@ func analyzeDeleteBackupRequests(deleteBackupRequests []*velerov1.DeleteBackupRe
 func analyzePodVolumeBackups(podVolumeBackups []*velerov1.PodVolumeBackup) []*AnalyzeResult {
 	results := []*AnalyzeResult{}
 	failures := 0
-	// isFail if any pod volume backup phase is Failed
 	if len(podVolumeBackups) > 0 {
-		// look for PodVolumeBackupPhaseFailed (only 1)
 		for _, podVolumeBackup := range podVolumeBackups {
 			if podVolumeBackup.Status.Phase == velerov1.PodVolumeBackupPhaseFailed {
 				result := &AnalyzeResult{
 					Title: fmt.Sprintf("Pod Volume Backup %s", podVolumeBackup.Name),
 				}
 				result.IsFail = true
-				// result.Strict = true
 				result.Message = fmt.Sprintf("Pod Volume Backup %s phase is %s", podVolumeBackup.Name, podVolumeBackup.Status.Phase)
 				results = append(results, result)
 				failures++
@@ -534,20 +515,10 @@ func analyzeRestores(restores []*velerov1.Restore) []*AnalyzeResult {
 					Title: fmt.Sprintf("Restore %s", restore.Name),
 				}
 				result.IsFail = true
-				// result.Strict = true
 				result.Message = fmt.Sprintf("Restore %s phase is %s", restore.Name, restore.Status.Phase)
 				results = append(results, result)
 				failures++
 			}
-			// else if restore.Status.Phase == velerov1.RestorePhaseCompleted {
-			// 	result.IsPass = true
-			// 	// result.Strict = true
-			// } else {
-			// 	// may indicate phases like:
-			// 	// - velerov1.RestorePhaseWaitingForPluginOperations
-			// 	// - velerov1.RestorePhaseFinalizing
-			// 	result.IsWarn = true
-			// }
 		}
 		if failures == 0 {
 			results = append(results, &AnalyzeResult{
@@ -563,7 +534,6 @@ func analyzeRestores(restores []*velerov1.Restore) []*AnalyzeResult {
 
 func analyzeSchedules(schedules []*velerov1.Schedule) []*AnalyzeResult {
 	results := []*AnalyzeResult{}
-	// check for velerov1.SchedulePhaseFailedValidation
 	failures := 0
 	if len(schedules) > 0 {
 		for _, schedule := range schedules {
@@ -572,7 +542,6 @@ func analyzeSchedules(schedules []*velerov1.Schedule) []*AnalyzeResult {
 					Title: fmt.Sprintf("Schedule %s", schedule.Name),
 				}
 				result.IsFail = true
-				// result.Strict = true
 				result.Message = fmt.Sprintf("Schedule %s phase is %s", schedule.Name, schedule.Status.Phase)
 				results = append(results, result)
 				failures++
@@ -597,7 +566,6 @@ func analyzeServerStatusRequests(serverStatusRequests []*velerov1.ServerStatusRe
 
 func analyzeVolumeSnapshotLocations(volumeSnapshotLocations []*velerov1.VolumeSnapshotLocation) []*AnalyzeResult {
 	results := []*AnalyzeResult{}
-	// fail on velerov1.VolumeSnapshotLocationPhaseUnavailable
 	failures := 0
 	if len(volumeSnapshotLocations) > 0 {
 		for _, volumeSnapshotLocation := range volumeSnapshotLocations {
@@ -627,7 +595,6 @@ func analyzeVolumeSnapshotLocations(volumeSnapshotLocations []*velerov1.VolumeSn
 func analyzeLogs(logs map[string][]byte) []*AnalyzeResult {
 	results := []*AnalyzeResult{}
 	if len(logs) > 0 {
-		// fileName
 		for _, logBytes := range logs {
 			logContent := string(logBytes)
 			result := &AnalyzeResult{
@@ -635,7 +602,6 @@ func analyzeLogs(logs map[string][]byte) []*AnalyzeResult {
 			}
 			if strings.Contains(logContent, "permission denied") {
 				result.IsFail = true
-				// result.Strict = true
 				result.Message = fmt.Sprintf("Found 'permission denied' in node-agent log file(s)")
 				results = append(results, result)
 				continue
@@ -643,7 +609,6 @@ func analyzeLogs(logs map[string][]byte) []*AnalyzeResult {
 
 			if strings.Contains(logContent, "error") || strings.Contains(logContent, "panic") || strings.Contains(logContent, "fatal") {
 				result.IsWarn = true
-				// result.Strict = false
 				result.Message = fmt.Sprintf("Found error|panic|fatal in node-agent log file(s)")
 				results = append(results, result)
 			}
@@ -664,7 +629,6 @@ func aggregateResults(results []*AnalyzeResult) []*AnalyzeResult {
 	for _, result := range results {
 		if result.IsFail {
 			resultFailed = true
-			// continue
 		}
 		out = append(out, result)
 	}
