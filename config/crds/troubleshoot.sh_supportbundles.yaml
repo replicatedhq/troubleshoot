@@ -11686,11 +11686,29 @@ spec:
                           type: string
                         command:
                           type: string
+                        env:
+                          items:
+                            type: string
+                          type: array
                         exclude:
                           type: BoolString
+                        inheritEnvs:
+                          items:
+                            type: string
+                          type: array
+                        inheritParentEnvs:
+                          type: boolean
+                        input:
+                          additionalProperties:
+                            type: string
+                          type: object
+                        outputDir:
+                          type: string
                       required:
                       - args
                       - command
+                      - inheritEnvs
+                      - inheritParentEnvs
                       type: object
                     subnetAvailable:
                       properties:

@@ -11452,7 +11452,9 @@
                 "type": "object",
                 "required": [
                   "args",
-                  "command"
+                  "command",
+                  "inheritEnvs",
+                  "inheritParentEnvs"
                 ],
                 "properties": {
                   "args": {
@@ -11467,8 +11469,32 @@
                   "command": {
                     "type": "string"
                   },
+                  "env": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
                   "exclude": {
                     "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  },
+                  "inheritEnvs": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "inheritParentEnvs": {
+                    "type": "boolean"
+                  },
+                  "input": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "string"
+                    }
+                  },
+                  "outputDir": {
+                    "type": "string"
                   }
                 }
               },
