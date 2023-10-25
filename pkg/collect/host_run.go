@@ -11,6 +11,7 @@ import (
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
+	"k8s.io/klog/v2"
 )
 
 type HostRunInfo struct {
@@ -126,6 +127,7 @@ func (c *CollectHostRun) Collect(progressChan chan<- interface{}) (map[string][]
 	if runHostCollector.OutputDir != "" {
 		runInfo.OutputDir = runHostCollector.OutputDir
 		bundleOutputRelativePath = filepath.Join(collectorRelativePath, runHostCollector.OutputDir)
+		klog.V(2).Infof("saving run host command output to %s", runHostCollector.OutputDir)
 		output.SaveResults(c.BundlePath, bundleOutputRelativePath, cmdOutputTempDir)
 	}
 
@@ -136,6 +138,11 @@ func (c *CollectHostRun) processEnvVars(cmd *exec.Cmd) error {
 	runHostCollector := c.hostCollector
 
 	if runHostCollector.IgnoreParentEnvs {
+		klog.V(2).Info("Not inheriting the environment variables!")
+		if runHostCollector.InheritEnvs != nil {
+			klog.V(2).Infof("the following environment variables will not be loaded to the command: %",
+				strings.Join(runHostCollector.InheritEnvs, " "))
+		}
 		// clears the parent env vars
 		cmd.Env = []string{}
 	} else if runHostCollector.InheritEnvs != nil {
