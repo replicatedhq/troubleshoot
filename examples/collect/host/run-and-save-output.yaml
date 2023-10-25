@@ -1,0 +1,34 @@
+apiVersion: troubleshoot.sh/v1beta2
+kind: HostCollector
+metadata:
+  name: run-host-cmd-and-save-output
+spec:
+  collectors:
+    - run:
+        collectorName: "my-custom-run"
+        command: "cat $TS_INPUT_DIR/dummy.yaml"
+        args: [ "--timeout", "10m" ]
+        outputDir: "myCommandOutputs"
+        env:
+          - AWS_REGION=us-west-1
+        # if ignoreParentEnvs is true, it will not inherit envs from parent process.
+        # values specified in inheritEnv will not be used either
+        # ignoreParentEnvs: true
+        inheritEnvs:
+          - USER
+        input:
+          dummy.conf: |-
+            [hello]
+            hello = 1
+            
+            [bye]
+            bye = 2
+          dummy.yaml: |-
+            username: postgres
+            password: <my-pass>
+            dbHost: <hostname>
+            map:
+              key: value
+            list:
+              - val1
+              - val2
