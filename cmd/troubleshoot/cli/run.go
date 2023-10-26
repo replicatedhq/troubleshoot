@@ -251,11 +251,8 @@ func loadSupportBundleSpecsFromURIs(ctx context.Context, kinds *loader.Troublesh
 		}
 	}
 
-	// If we don't have any remote specs, return nil as opposed to erroring out
-	// This is to implicitly handle airgap scenarios
 	if len(remoteRawSpecs) == 0 {
-		klog.Warningf("unable to load any support bundles from URIs")
-		return nil, nil
+		return nil, fmt.Errorf("no support bundles to load")
 	}
 
 	return loader.LoadSpecs(ctx, loader.LoadOptions{
@@ -275,9 +272,10 @@ func loadSpecs(ctx context.Context, args []string, client kubernetes.Interface) 
 	if !viper.GetBool("no-uri") {
 		moreKinds, err := loadSupportBundleSpecsFromURIs(ctx, kinds)
 		if err != nil {
-			return nil, nil, err
+			klog.Warningf("unable to load support bundles from URIs: %v", err)
+		} else {
+			kinds.Add(moreKinds)
 		}
-		kinds.Add(moreKinds)
 	}
 
 	// Check if we have any collectors to run in the troubleshoot specs
