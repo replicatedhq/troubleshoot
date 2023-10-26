@@ -28,7 +28,6 @@ import (
 	"github.com/replicatedhq/troubleshoot/pkg/loader"
 	"github.com/replicatedhq/troubleshoot/pkg/supportbundle"
 	"github.com/replicatedhq/troubleshoot/pkg/types"
-	"github.com/replicatedhq/vandoor/analyze-api/vendor/k8s.io/klog/v2"
 	"github.com/spf13/viper"
 	spin "github.com/tj/go-spin"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
