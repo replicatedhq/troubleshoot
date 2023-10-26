@@ -28,6 +28,7 @@ import (
 	"github.com/replicatedhq/troubleshoot/pkg/loader"
 	"github.com/replicatedhq/troubleshoot/pkg/supportbundle"
 	"github.com/replicatedhq/troubleshoot/pkg/types"
+	"github.com/replicatedhq/vandoor/analyze-api/vendor/k8s.io/klog/v2"
 	"github.com/spf13/viper"
 	spin "github.com/tj/go-spin"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -232,6 +233,7 @@ the %s Admin Console to begin analysis.`
 	return nil
 }
 
+// loadSupportBundleSpecsFromURIs loads support bundle specs from URIs
 func loadSupportBundleSpecsFromURIs(ctx context.Context, kinds *loader.TroubleshootKinds) (*loader.TroubleshootKinds, error) {
 	remoteRawSpecs := []string{}
 	for _, s := range kinds.SupportBundlesV1Beta2 {
@@ -241,10 +243,19 @@ func loadSupportBundleSpecsFromURIs(ctx context.Context, kinds *loader.Troublesh
 			// There is an opportunity to refactor this code in favour of the Loader APIs
 			rawSpec, err := supportbundle.LoadSupportBundleSpec(s.Spec.Uri)
 			if err != nil {
-				return nil, errors.Wrapf(err, "failed to load support bundle from URI %q", s.Spec.Uri)
+				// In the event a spec can't be loaded, we'll just skip it and print a warning
+				klog.Warningf("unable to load support bundle from URI: %q: %v", s.Spec.Uri, err)
+				continue
 			}
 			remoteRawSpecs = append(remoteRawSpecs, string(rawSpec))
 		}
+	}
+
+	// If we don't have any remote specs, return nil as opposed to erroring out
+	// This is to implicitly handle airgap scenarios
+	if len(remoteRawSpecs) == 0 {
+		klog.Warningf("unable to load any support bundles from URIs")
+		return nil, nil
 	}
 
 	return loader.LoadSpecs(ctx, loader.LoadOptions{
