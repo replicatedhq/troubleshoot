@@ -240,6 +240,7 @@ func loadSupportBundleSpecsFromURIs(ctx context.Context, kinds *loader.Troublesh
 			// We are using LoadSupportBundleSpec function here since it handles prompting
 			// users to accept insecure connections
 			// There is an opportunity to refactor this code in favour of the Loader APIs
+			// TODO: Pass ctx to LoadSupportBundleSpec
 			rawSpec, err := supportbundle.LoadSupportBundleSpec(s.Spec.Uri)
 			if err != nil {
 				// In the event a spec can't be loaded, we'll just skip it and print a warning
@@ -251,7 +252,7 @@ func loadSupportBundleSpecsFromURIs(ctx context.Context, kinds *loader.Troublesh
 	}
 
 	if len(remoteRawSpecs) == 0 {
-		return nil, fmt.Errorf("no support bundles to load")
+		return kinds, nil
 	}
 
 	return loader.LoadSpecs(ctx, loader.LoadOptions{
