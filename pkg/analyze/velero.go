@@ -9,7 +9,6 @@ import (
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	velerov1 "github.com/vmware-tanzu/velero/pkg/apis/velero/v1"
-	// velerov1beta1 "github.com/vmware-tanzu/velero/pkg/apis/velero/v1beta1"
 )
 
 const (
@@ -89,24 +88,6 @@ func (a *AnalyzeVelero) veleroStatus(analyzer *troubleshootv1beta2.VeleroAnalyze
 		backups = append(backups, veleroBackups...)
 	}
 
-	// velerov1.BackupRepositoryTypeRestic
-	// get resticrepositories.velero.io
-	// resticRepositoriesDir := GetVeleroResticRepositoriesDirectory(ns)
-	// resticRepositoriesGlob := filepath.Join(resticRepositoriesDir, "*.json")
-	// resticRepositoriesJson, err := findFiles(resticRepositoriesGlob, excludeFiles)
-	// if err != nil {
-	// 	return nil, errors.Wrapf(err, "failed to find velero restic repositories files under %s", resticRepositoriesDir)
-	// }
-	// resticRepositories := []*velerov1beta1.ResticRepository{}
-	// for key, resticRepositoryJson := range resticRepositoriesJson {
-	// 	resticRepository := &velerov1beta1.ResticRepository{}
-	// 	err := json.Unmarshal(resticRepositoryJson, resticRepository)
-	// 	if err != nil {
-	// 		return nil, errors.Wrapf(err, "failed to unmarshal restic repository json from %s", key)
-	// 	}
-	// 	resticRepositories = append(resticRepositories, resticRepository)
-	// }
-
 	// get backupstoragelocations.velero.io
 	backupStorageLocationsDir := GetVeleroBackupStorageLocationsDirectory(ns)
 	backupStorageLocationsGlob := filepath.Join(backupStorageLocationsDir, "*.json")
@@ -140,23 +121,6 @@ func (a *AnalyzeVelero) veleroStatus(analyzer *troubleshootv1beta2.VeleroAnalyze
 		}
 		deleteBackupRequests = append(deleteBackupRequests, deleteBackupRequestArray...)
 	}
-
-	// get downloadrequests.velero.io
-	// downloadRequestsDir := GetVeleroDownloadRequestsDirectory(ns)
-	// downloadRequestsGlob := filepath.Join(downloadRequestsDir, "*.json")
-	// downloadRequestsJson, err := findFiles(downloadRequestsGlob, excludeFiles)
-	// if err != nil {
-	// 	return nil, errors.Wrapf(err, "failed to find velero download requests files under %s", downloadRequestsDir)
-	// }
-	// downloadRequests := []*velerov1.DownloadRequest{}
-	// for key, downloadRequestJson := range downloadRequestsJson {
-	// 	downloadRequest := &velerov1.DownloadRequest{}
-	// 	err := json.Unmarshal(downloadRequestJson, downloadRequest)
-	// 	if err != nil {
-	// 		return nil, errors.Wrapf(err, "failed to unmarshal download request json from %s", key)
-	// 	}
-	// 	downloadRequests = append(downloadRequests, downloadRequest)
-	// }
 
 	// get podvolumebackups.velero.io
 	podVolumeBackupsDir := GetVeleroPodVolumeBackupsDirectory(ns)
@@ -272,15 +236,12 @@ func (a *AnalyzeVelero) veleroStatus(analyzer *troubleshootv1beta2.VeleroAnalyze
 	results = append(results, analyzeLogs(logs)...)
 	results = append(results, analyzeBackupRepositories(backupRepositories)...)
 	results = append(results, analyzeBackups(backups)...)
-	// results = append(results, analyzeResticRepositories(resticRepositories)...)
 	results = append(results, analyzeBackupStorageLocations(backupStorageLocations)...)
 	results = append(results, analyzeDeleteBackupRequests(deleteBackupRequests)...)
-	// results = append(results, analyzeDownloadRequests(downloadRequests)...)
 	results = append(results, analyzePodVolumeBackups(podVolumeBackups)...)
 	results = append(results, analyzePodVolumeRestores(podVolumeRestores)...)
 	results = append(results, analyzeRestores(restores)...)
 	results = append(results, analyzeSchedules(schedules)...)
-	results = append(results, analyzeServerStatusRequests(serverStatusRequests)...)
 	results = append(results, analyzeVolumeSnapshotLocations(volumeSnapshotLocations)...)
 
 	return aggregateResults(results), nil
@@ -374,7 +335,6 @@ func analyzeBackupStorageLocations(backupStorageLocations []*velerov1.BackupStor
 				result.Message = fmt.Sprintf("Backup Storage Location [%s] is in phase %s", backupStorageLocation.Name, backupStorageLocation.Status.Phase)
 				result.IsWarn = true
 				results = append(results, result)
-				// result.Strict = false
 			} else {
 				availableCount++
 			}
@@ -413,32 +373,6 @@ func analyzeDeleteBackupRequests(deleteBackupRequests []*velerov1.DeleteBackupRe
 
 	return results
 }
-
-// func analyzeDownloadRequests(downloadRequests []*velerov1.DownloadRequest) []*AnalyzeResult {
-// 	results := []*AnalyzeResult{}
-// 	// all
-// 	processedCount := 0
-// 	newCount := 0
-// 	if len(downloadRequests) > 0 {
-// 		for _, downloadRequest := range downloadRequests {
-// 			if downloadRequest.Status.Phase == velerov1.DownloadRequestPhaseProcessed {
-// 				processedCount++
-// 			} else if downloadRequest.Status.Phase == velerov1.DownloadRequestPhaseNew {
-// 				newCount++
-// 			}
-// 		}
-// 		if processedCount > 0 || newCount > 0 {
-// 			downloadRequestsResult := &AnalyzeResult{
-// 				Title: "Download Requests summary",
-// 			}
-// 			downloadRequestsResult.IsPass = true
-// 			downloadRequestsResult.Message = fmt.Sprintf("Found %d processed and %d new download requests", processedCount, newCount)
-// 			results = append(results, downloadRequestsResult)
-// 		}
-// 	}
-
-// 	return results
-// }
 
 func analyzePodVolumeBackups(podVolumeBackups []*velerov1.PodVolumeBackup) []*AnalyzeResult {
 	results := []*AnalyzeResult{}
@@ -479,7 +413,6 @@ func analyzePodVolumeRestores(podVolumeRestores []*velerov1.PodVolumeRestore) []
 					Title: fmt.Sprintf("Pod Volume Restore %s", podVolumeRestore.Name),
 				}
 				result.IsFail = true
-				// result.Strict = true
 				result.Message = fmt.Sprintf("Pod Volume Restore %s phase is %s", podVolumeRestore.Name, podVolumeRestore.Status.Phase)
 				results = append(results, result)
 				failures++
@@ -558,12 +491,6 @@ func analyzeSchedules(schedules []*velerov1.Schedule) []*AnalyzeResult {
 	return results
 }
 
-func analyzeServerStatusRequests(serverStatusRequests []*velerov1.ServerStatusRequest) []*AnalyzeResult {
-	results := []*AnalyzeResult{}
-	// TODO
-	return results
-}
-
 func analyzeVolumeSnapshotLocations(volumeSnapshotLocations []*velerov1.VolumeSnapshotLocation) []*AnalyzeResult {
 	results := []*AnalyzeResult{}
 	failures := 0
@@ -574,7 +501,6 @@ func analyzeVolumeSnapshotLocations(volumeSnapshotLocations []*velerov1.VolumeSn
 					Title: fmt.Sprintf("Volume Snapshot Location %s", volumeSnapshotLocation.Name),
 				}
 				result.IsFail = true
-				// result.Strict = true
 				result.Message = fmt.Sprintf("Volume Snapshot Location %s phase is %s", volumeSnapshotLocation.Name, volumeSnapshotLocation.Status.Phase)
 				results = append(results, result)
 				failures++
@@ -598,24 +524,24 @@ func analyzeLogs(logs map[string][]byte) []*AnalyzeResult {
 		for _, logBytes := range logs {
 			logContent := string(logBytes)
 			result := &AnalyzeResult{
-				Title: fmt.Sprintf("Velero logs for pod [node-agent] "),
+				Title: fmt.Sprintf("Velero logs for pod [node-agent]"),
 			}
 			if strings.Contains(logContent, "permission denied") {
-				result.IsFail = true
-				result.Message = fmt.Sprintf("Found 'permission denied' in node-agent log file(s)")
+				result.IsWarn = true
+				result.Message = fmt.Sprintf("Found 'permission denied' in node-agent* pod log file(s)")
 				results = append(results, result)
 				continue
 			}
 
 			if strings.Contains(logContent, "error") || strings.Contains(logContent, "panic") || strings.Contains(logContent, "fatal") {
 				result.IsWarn = true
-				result.Message = fmt.Sprintf("Found error|panic|fatal in node-agent log file(s)")
+				result.Message = fmt.Sprintf("Found error|panic|fatal in node-agent* pod log file(s)")
 				results = append(results, result)
 			}
 		}
 
 		results = append(results, &AnalyzeResult{
-			Title:   "Velero Logs",
+			Title:   "Velero Logs analysis",
 			IsPass:  true,
 			Message: fmt.Sprintf("Found %d log files", len(logs)),
 		})
@@ -632,13 +558,21 @@ func aggregateResults(results []*AnalyzeResult) []*AnalyzeResult {
 		}
 		out = append(out, result)
 	}
-
-	if resultFailed == false {
-		out = append(out, &AnalyzeResult{
-			Title:   "Velero Status",
-			IsPass:  true,
-			Message: "Backups and CRDs are healthy",
-		})
+	if len(results) > 0 {
+		if resultFailed == false {
+			out = append(out, &AnalyzeResult{
+				Title:   "Velero Status",
+				IsPass:  true,
+				Message: "Velero setup is healthy",
+			})
+		}
+		if resultFailed == true {
+			out = append(out, &AnalyzeResult{
+				Title:   "Velero Status",
+				IsWarn:  true,
+				Message: "Velero setup is not entirely healthy",
+			})
+		}
 	}
 
 	return out
