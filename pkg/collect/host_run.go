@@ -79,14 +79,9 @@ func (c *CollectHostRun) Collect(progressChan chan<- interface{}) (map[string][]
 		if err != nil {
 			return nil, errors.New("failed to created temp dir for host run input")
 		}
-		for inFilename, inFileContent := range runHostCollector.Input {
-			if strings.Contains(inFileContent, "/") {
+		for inFilename := range runHostCollector.Input {
+			if strings.Contains(inFilename, "/") {
 				return nil, errors.New("Input filename contains '/'")
-			}
-			cmdInputFilePath := filepath.Join(cmdInputTempDir, inFilename)
-			err = os.WriteFile(cmdInputFilePath, []byte(inFileContent), 0644)
-			if err != nil {
-				return nil, errors.Wrap(err, fmt.Sprintf("failed to write input file: %s to temp directory", inFilename))
 			}
 		}
 		cmd.Env = append(cmd.Env,
