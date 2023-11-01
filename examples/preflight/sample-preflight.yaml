@@ -72,6 +72,9 @@ spec:
           - pass:
               when: "== k3s"
               message: K3S is a supported distribution
+          - pass:
+              when: "== oke"
+              message: OKE is a supported distribution
           - warn:
               message: Unable to determine the distribution of Kubernetes
     - nodeResources:
