@@ -1374,12 +1374,12 @@ spec:
                           type: array
                         exclude:
                           type: BoolString
+                        ignoreParentEnvs:
+                          type: boolean
                         inheritEnvs:
                           items:
                             type: string
                           type: array
-                        inheritParentEnvs:
-                          type: boolean
                         input:
                           additionalProperties:
                             type: string
@@ -1389,8 +1389,8 @@ spec:
                       required:
                       - args
                       - command
+                      - ignoreParentEnvs
                       - inheritEnvs
-                      - inheritParentEnvs
                       type: object
                     subnetAvailable:
                       properties:

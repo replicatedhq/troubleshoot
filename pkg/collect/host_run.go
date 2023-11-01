@@ -145,6 +145,7 @@ func (c *CollectHostRun) processEnvVars(cmd *exec.Cmd) error {
 		}
 		// clears the parent env vars
 		cmd.Env = []string{}
+		populateGuaranteedEnvVars(cmd)
 	} else if runHostCollector.InheritEnvs != nil {
 		for _, key := range runHostCollector.InheritEnvs {
 			envVal, found := os.LookupEnv(key)
@@ -154,15 +155,9 @@ func (c *CollectHostRun) processEnvVars(cmd *exec.Cmd) error {
 			cmd.Env = append(cmd.Env,
 				fmt.Sprintf("%s=%s", key, envVal))
 		}
-	}
-
-	guaranteedEnvs := []string{"PATH", "KUBECONFIG"}
-	for _, key := range guaranteedEnvs {
-		guaranteedEnvVal, found := os.LookupEnv(key)
-		if found {
-			cmd.Env = append(cmd.Env,
-				fmt.Sprintf("%s=%s", key, guaranteedEnvVal))
-		}
+		populateGuaranteedEnvVars(cmd)
+	} else {
+		cmd.Env = os.Environ()
 	}
 
 	if runHostCollector.Env != nil {
@@ -178,4 +173,15 @@ func (c *CollectHostRun) processEnvVars(cmd *exec.Cmd) error {
 	}
 
 	return nil
+}
+
+func populateGuaranteedEnvVars(cmd *exec.Cmd) {
+	guaranteedEnvs := []string{"PATH", "KUBECONFIG", "PWD"}
+	for _, key := range guaranteedEnvs {
+		guaranteedEnvVal, found := os.LookupEnv(key)
+		if found {
+			cmd.Env = append(cmd.Env,
+				fmt.Sprintf("%s=%s", key, guaranteedEnvVal))
+		}
+	}
 }

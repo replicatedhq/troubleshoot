@@ -11453,8 +11453,8 @@
                 "required": [
                   "args",
                   "command",
-                  "inheritEnvs",
-                  "inheritParentEnvs"
+                  "ignoreParentEnvs",
+                  "inheritEnvs"
                 ],
                 "properties": {
                   "args": {
@@ -11478,14 +11478,14 @@
                   "exclude": {
                     "oneOf": [{"type": "string"},{"type": "boolean"}]
                   },
+                  "ignoreParentEnvs": {
+                    "type": "boolean"
+                  },
                   "inheritEnvs": {
                     "type": "array",
                     "items": {
                       "type": "string"
                     }
-                  },
-                  "inheritParentEnvs": {
-                    "type": "boolean"
                   },
                   "input": {
                     "type": "object",
