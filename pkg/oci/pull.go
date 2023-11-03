@@ -3,44 +3,30 @@ package oci
 import (
 	"context"
 	"fmt"
-	"io"
-	"net/http"
 	"net/url"
-	"path/filepath"
+	"os"
 	"strings"
-
-	credentials "github.com/oras-project/oras-credentials-go"
 
 	// ocispec "github.com/opencontainers/image-spec/specs-go/v1"
 	"github.com/pkg/errors"
-	"github.com/replicatedhq/troubleshoot/internal/util"
-	"github.com/replicatedhq/troubleshoot/pkg/version"
-	"k8s.io/klog/v2"
-	dockerauth "oras.land/oras-go/pkg/auth/docker"
 
-	oras "oras.land/oras-go/v2"
-	"oras.land/oras-go/v2/content/memory"
 	"oras.land/oras-go/v2/registry"
+
 	// "github.com/replicatedhq/troubleshoot/pkg/version"
 	// oras "oras.land/oras-go/v2"
 	// "oras.land/oras-go/v2/content"
 	// "oras.land/oras-go/v2/content/memory"
 	// "oras.land/oras-go/v2/content/oci"
 	// "oras.land/oras-go/v2/registry"
-	"oras.land/oras-go/v2/registry/remote"
-	"oras.land/oras-go/v2/registry/remote/auth"
+
 	// "oras.land/oras-go/v2/registry/remote/retry"
 	credentials "github.com/oras-project/oras-credentials-go"
-    "oras.land/oras-go/v2"
-    "oras.land/oras-go/v2/content"
-    "oras.land/oras-go/v2/content/oci"
-    "oras.land/oras-go/v2/registry/remote"
-    "oras.land/oras-go/v2/registry/remote/auth"
-    "oras.land/oras-go/v2/registry/remote/retry"	
-)
-
-const (
-	HelmCredentialsFileBasename = ".config/helm/registry/config.json"
+	"oras.land/oras-go/v2"
+	"oras.land/oras-go/v2/content"
+	"oras.land/oras-go/v2/content/oci"
+	"oras.land/oras-go/v2/registry/remote"
+	"oras.land/oras-go/v2/registry/remote/auth"
+	"oras.land/oras-go/v2/registry/remote/retry"
 )
 
 var (
@@ -48,64 +34,64 @@ var (
 )
 
 func PullPreflightFromOCI(uri string) ([]byte, error) {
-	return pullFromOCI(context.Background(), uri, "replicated.preflight.spec", "replicated-preflight")
+	return pullImageSpecsOCI(context.Background(), uri, "replicated.preflight.spec", "replicated-preflight")
 }
 
 func PullSupportBundleFromOCI(uri string) ([]byte, error) {
-	return pullFromOCI(context.Background(), uri, "replicated.supportbundle.spec", "replicated-supportbundle")
+	return pullImageSpecsOCI(context.Background(), uri, "replicated.supportbundle.spec", "replicated-supportbundle")
 }
 
-func pullImage(uri string, mediaType string, imageName string) ([]byte, error) {
+func pullImageSpecsOCI(ctx context.Context, uri string, mediaType string, imageName string) ([]byte, error) {
 
-    // 0. Create an OCI layout store
+	// 0. Create an OCI layout store
 	tempDir, err := os.MkdirTemp("", "oci-layout-root")
 	if err != nil {
-		return err
+		return []byte{}, err
 	}
 
-    store, err := oci.NewLayout(tempDir)
-    if err != nil {
-        return err
-    }
+	store, err := oci.New(tempDir)
+	if err != nil {
+		return []byte{}, err
+	}
 
-    // 1. Connect to a remote repository
-    ctx := context.Background()
-    reg := "registry.replicated.com"
-    repo, err := remote.NewRepository(reg + "/library/replicated")
-    if err != nil {
-        return err
-    }
+	// 1. Connect to a remote repository
+	// ctx := context.Background()
+	reg := "registry.replicated.com"
+	repo, err := remote.NewRepository(reg + "/library/replicated")
+	if err != nil {
+		return []byte{}, err
+	}
 
-    // 2. Get credentials from the docker credential store
-    storeOpts := credentials.StoreOptions{}
-    credStore, err := credentials.NewStoreFromDocker(storeOpts)
-    if err != nil {
-        return err
-    }
+	// 2. Get credentials from the docker credential store
+	storeOpts := credentials.StoreOptions{}
+	credStore, err := credentials.NewStoreFromDocker(storeOpts)
+	if err != nil {
+		return []byte{}, err
+	}
 
-    // Prepare the auth client for the registry and credential store
-    repo.Client = &auth.Client{
-        Client:     retry.DefaultClient,
-        Cache:      auth.DefaultCache,
-        Credential: credentials.Credential(credStore), // Use the credential store
-    }
+	// Prepare the auth client for the registry and credential store
+	repo.Client = &auth.Client{
+		Client:     retry.DefaultClient,
+		Cache:      auth.DefaultCache,
+		Credential: credentials.Credential(credStore), // Use the credential store
+	}
 
-    // 3. Copy from the remote repository to the OCI layout store
-    tag := "1.0.0-beta.10"
-    manifestDescriptor, err := oras.Copy(ctx, repo, tag, store, tag, oras.DefaultCopyOptions)
-    if err != nil {
-        return err
-    }
+	// 3. Copy from the remote repository to the OCI layout store
+	tag := "1.0.0-beta.10"
+	manifestDescriptor, err := oras.Copy(ctx, repo, tag, store, tag, oras.DefaultCopyOptions)
+	if err != nil {
+		return []byte{}, err
+	}
 
-    fmt.Println("manifest pulled:", manifestDescriptor.Digest, manifestDescriptor.MediaType)
+	fmt.Println("manifest pulled:", manifestDescriptor.Digest, manifestDescriptor.MediaType)
 
-    // 3. Fetch from OCI layout store to verify
-    fetched, err := content.FetchAll(ctx, store, manifestDescriptor)
-    if err != nil {
-        return err
-    }
-    fmt.Printf("manifest content:\n%s", fetched)
-    return nil
+	// 3. Fetch from OCI layout store to verify
+	fetched, err := content.FetchAll(ctx, store, manifestDescriptor)
+	if err != nil {
+		return []byte{}, err
+	}
+	fmt.Printf("manifest content:\n%s", fetched)
+	return fetched, nil
 }
 
 // PullSpecsFromOCI pulls both the preflight and support bundle specs from the given URI
@@ -125,7 +111,7 @@ func PullSpecsFromOCI(ctx context.Context, uri string) ([]string, error) {
 	rawSpecs := []string{}
 
 	// First try to pull the preflight spec
-	rawPreflight, err := pullFromOCI(ctx, uri, "replicated.preflight.spec", "replicated-preflight")
+	rawPreflight, err := pullImageSpecsOCI(ctx, uri, "replicated.preflight.spec", "replicated-preflight")
 	if err != nil {
 		// Ignore "not found" error and continue fetching the support bundle spec
 		if !errors.Is(err, ErrNoRelease) {
@@ -136,7 +122,7 @@ func PullSpecsFromOCI(ctx context.Context, uri string) ([]string, error) {
 	}
 
 	// Then try to pull the support bundle spec
-	rawSupportBundle, err := pullFromOCI(ctx, uri, "replicated.supportbundle.spec", "replicated-supportbundle")
+	rawSupportBundle, err := pullImageSpecsOCI(ctx, uri, "replicated.supportbundle.spec", "replicated-supportbundle")
 	// If we had found a preflight spec, do not return an error
 	if err != nil && len(rawSpecs) == 0 {
 		return nil, err
@@ -146,120 +132,24 @@ func PullSpecsFromOCI(ctx context.Context, uri string) ([]string, error) {
 	return rawSpecs, nil
 }
 
-func pullFromOCI(ctx context.Context, uri string, mediaType string, imageName string) ([]byte, error) {
-type (
-	// Client works with OCI-compliant registries
-	Client struct {
-		debug       bool
-		enableCache bool
-		// path to repository config file e.g. ~/.docker/config.json
-		credentialsFile  string
-		out              io.Writer
-		authorizer       *auth.Client
-		credentialsStore credentials.Store
-		httpClient       *http.Client
-		plainHTTP        bool
-	}
+// type (
+// 	// Client works with OCI-compliant registries
+// 	Client struct {
+// 		debug       bool
+// 		enableCache bool
+// 		// path to repository config file e.g. ~/.docker/config.json
+// 		credentialsFile  string
+// 		out              io.Writer
+// 		authorizer       *auth.Client
+// 		credentialsStore credentials.Store
+// 		httpClient       *http.Client
+// 		plainHTTP        bool
+// 	}
 
-	// ClientOption allows specifying various settings configurable by the user for overriding the defaults
-	// used when creating a new default client
-	ClientOption func(*Client)
-)
-
-func pullFromOCI(uri string, mediaType string, imageName string) ([]byte, error) {
-	// Simplified code with unused parts removed
-	uriParts := strings.Split(uri, ":")
-	reg := fmt.Sprintf("%s/%s", uriParts[0], imageName)
-
-	repo, err := remote.NewRepository(reg + "/user/my-repo")
-	if err != nil {
-		return nil, err
-	}
-
-	// Here you should set up the credentials
-	// ... (existing code)
-
-	// Prepare the auth client for the registry and credential store
-	repo.Client = &auth.Client{
-		Client:     retry.DefaultClient,
-		Cache:      auth.DefaultCache,
-		Credential: credentials.Credential(credStore), // Use the credential store
-	}
-
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to create auth client")
-	}
-
-	authClient := dockerauthClient
-
-	headers := http.Header{}
-	headers.Set("User-Agent", version.GetUserAgent())
-	opts := []auth.ResolverOption{auth.WithResolverHeaders(headers)}
-	resolver, err := authClient.ResolverWithOpts(opts...)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to create resolver")
-	}
-
-	memoryStore := memory.Store{}
-	allowedMediaTypes := []string{
-		mediaType,
-	}
-
-	var descriptors, layers []ocispec.Descriptor
-	registryStore := content.Registry{Resolver: resolver}
-
-	parsedRef, err := parseURI(uri, imageName)
-	if err != nil {
-		return nil, err
-	}
-
-	klog.V(1).Infof("Pulling spec from %q OCI uri", parsedRef)
-
-	manifest, err := oras.Copy(ctx, registryStore, parsedRef, memoryStore, "",
-		oras.WithPullEmptyNameAllowed(),
-		oras.WithAllowedMediaTypes(allowedMediaTypes),
-		oras.WithLayerDescriptors(func(l []ocispec.Descriptor) {
-			layers = l
-		}))
-	manifest, err := repo.Pull(context.TODO(), mediaType)
-	if err != nil {
-		if strings.Contains(err.Error(), "not found") {
-			return nil, ErrNoRelease
-		}
-		return nil, errors.Wrap(err, "failed to copy")
-	}
-
-	descriptors = append(descriptors, manifest)
-	descriptors = append(descriptors, layers...)
-
-	// expect 2 descriptors
-	if len(descriptors) != 2 {
-		return nil, fmt.Errorf("expected 2 descriptor, got %d", len(descriptors))
-	}
-
-	var matchingDescriptor *ocispec.Descriptor
-
-	for _, descriptor := range descriptors {
-		d := descriptor
-		switch d.MediaType {
-		case mediaType:
-			matchingDescriptor = &d
-		}
-	}
-
-	if matchingDescriptor == nil {
-		return nil, fmt.Errorf("no descriptor found with media type: %s", mediaType)
-	}
-
-	_, matchingSpec, ok := memoryStore.Get(*matchingDescriptor)
-	if !ok {
-		return nil, fmt.Errorf("failed to get matching descriptor")
-	}
-
-	return matchingSpec, nil
-	// ... (existing code)
-	return nil, nil
-}
+// 	// ClientOption allows specifying various settings configurable by the user for overriding the defaults
+// 	// used when creating a new default client
+// 	ClientOption func(*Client)
+// )
 
 func parseURI(in, imageName string) (string, error) {
 	u, err := url.Parse(in)

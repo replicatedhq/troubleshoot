@@ -114,6 +114,7 @@ require (
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20230920204549-e6e6cdab5c13 // indirect
 	k8s.io/component-base v0.28.1 // indirect
 	k8s.io/kubectl v0.28.1 // indirect
+	oras.land/oras-go v1.2.3 // indirect
 )
 
 require (
