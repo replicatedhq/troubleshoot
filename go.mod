@@ -35,9 +35,11 @@ require (
 	github.com/spf13/viper v1.17.0
 	github.com/stretchr/testify v1.8.4
 	github.com/tj/go-spin v1.1.0
+	github.com/vmware-tanzu/velero v1.12.0
 	go.opentelemetry.io/otel v1.19.0
 	go.opentelemetry.io/otel/sdk v1.19.0
 	golang.org/x/exp v0.0.0-20230905200255-921286631fa9
+	golang.org/x/mod v0.12.0
 	golang.org/x/sync v0.4.0
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.28.2
@@ -86,7 +88,6 @@ require (
 	github.com/mistifyio/go-zfs/v3 v3.0.0 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
-	github.com/onsi/ginkgo v1.14.0 // indirect
 	github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c // indirect
 	github.com/rubenv/sql-migrate v1.3.1 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
@@ -105,7 +106,6 @@ require (
 	go.opentelemetry.io/otel/metric v1.19.0 // indirect
 	go.opentelemetry.io/otel/trace v1.19.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	golang.org/x/mod v0.12.0 // indirect
 	golang.org/x/tools v0.13.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20230913181813-007df8e322eb // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20230920204549-e6e6cdab5c13 // indirect
@@ -123,7 +123,7 @@ require (
 	github.com/Microsoft/go-winio v0.6.0 // indirect
 	github.com/Microsoft/hcsshim v0.10.0-rc.7 // indirect
 	github.com/andybalholm/brotli v1.0.1 // indirect
-	github.com/aws/aws-sdk-go v1.44.198 // indirect
+	github.com/aws/aws-sdk-go v1.44.253 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bgentry/go-netrc v0.0.0-20140422174119-9fd32a8b3d3d // indirect
 	github.com/c9s/goprocinfo v0.0.0-20170724085704-0010a05ce49f // indirect

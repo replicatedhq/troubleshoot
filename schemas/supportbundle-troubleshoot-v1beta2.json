@@ -2301,6 +2301,26 @@
                   }
                 }
               },
+              "velero": {
+                "type": "object",
+                "properties": {
+                  "annotations": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "string"
+                    }
+                  },
+                  "checkName": {
+                    "type": "string"
+                  },
+                  "exclude": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  },
+                  "strict": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  }
+                }
+              },
               "weaveReport": {
                 "type": "object",
                 "required": [
