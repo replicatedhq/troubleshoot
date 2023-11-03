@@ -16,15 +16,10 @@ import (
 	"github.com/replicatedhq/troubleshoot/internal/util"
 	"github.com/replicatedhq/troubleshoot/pkg/version"
 	"k8s.io/klog/v2"
-	"oras.land/oras-go/pkg/auth"
 	dockerauth "oras.land/oras-go/pkg/auth/docker"
-	"oras.land/oras-go/pkg/content"
-	"oras.land/oras-go/pkg/oras"
-	"oras.land/oras-go/pkg/registry"
+
 	oras "oras.land/oras-go/v2"
-	"oras.land/oras-go/v2/content"
 	"oras.land/oras-go/v2/content/memory"
-	"oras.land/oras-go/v2/content/oci"
 	"oras.land/oras-go/v2/registry"
 	// "github.com/replicatedhq/troubleshoot/pkg/version"
 	// oras "oras.land/oras-go/v2"
@@ -35,6 +30,13 @@ import (
 	"oras.land/oras-go/v2/registry/remote"
 	"oras.land/oras-go/v2/registry/remote/auth"
 	// "oras.land/oras-go/v2/registry/remote/retry"
+	credentials "github.com/oras-project/oras-credentials-go"
+    "oras.land/oras-go/v2"
+    "oras.land/oras-go/v2/content"
+    "oras.land/oras-go/v2/content/oci"
+    "oras.land/oras-go/v2/registry/remote"
+    "oras.land/oras-go/v2/registry/remote/auth"
+    "oras.land/oras-go/v2/registry/remote/retry"	
 )
 
 const (
@@ -51,6 +53,59 @@ func PullPreflightFromOCI(uri string) ([]byte, error) {
 
 func PullSupportBundleFromOCI(uri string) ([]byte, error) {
 	return pullFromOCI(context.Background(), uri, "replicated.supportbundle.spec", "replicated-supportbundle")
+}
+
+func pullImage(uri string, mediaType string, imageName string) ([]byte, error) {
+
+    // 0. Create an OCI layout store
+	tempDir, err := os.MkdirTemp("", "oci-layout-root")
+	if err != nil {
+		return err
+	}
+
+    store, err := oci.NewLayout(tempDir)
+    if err != nil {
+        return err
+    }
+
+    // 1. Connect to a remote repository
+    ctx := context.Background()
+    reg := "registry.replicated.com"
+    repo, err := remote.NewRepository(reg + "/library/replicated")
+    if err != nil {
+        return err
+    }
+
+    // 2. Get credentials from the docker credential store
+    storeOpts := credentials.StoreOptions{}
+    credStore, err := credentials.NewStoreFromDocker(storeOpts)
+    if err != nil {
+        return err
+    }
+
+    // Prepare the auth client for the registry and credential store
+    repo.Client = &auth.Client{
+        Client:     retry.DefaultClient,
+        Cache:      auth.DefaultCache,
+        Credential: credentials.Credential(credStore), // Use the credential store
+    }
+
+    // 3. Copy from the remote repository to the OCI layout store
+    tag := "1.0.0-beta.10"
+    manifestDescriptor, err := oras.Copy(ctx, repo, tag, store, tag, oras.DefaultCopyOptions)
+    if err != nil {
+        return err
+    }
+
+    fmt.Println("manifest pulled:", manifestDescriptor.Digest, manifestDescriptor.MediaType)
+
+    // 3. Fetch from OCI layout store to verify
+    fetched, err := content.FetchAll(ctx, store, manifestDescriptor)
+    if err != nil {
+        return err
+    }
+    fmt.Printf("manifest content:\n%s", fetched)
+    return nil
 }
 
 // PullSpecsFromOCI pulls both the preflight and support bundle specs from the given URI
