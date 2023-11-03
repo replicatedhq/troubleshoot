@@ -267,13 +267,16 @@ func (a *AnalyzeVelero) veleroStatus(analyzer *troubleshootv1beta2.VeleroAnalyze
 
 	logsDir := GetVeleroLogsDirectory()
 	logsGlob := filepath.Join(logsDir, "node-agent*", "*.log")
-	logs, err := findFiles(logsGlob, excludeFiles)
-
+	nodeAgentlogs, err := findFiles(logsGlob, excludeFiles)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to find velero logs files under %s", logsDir)
 	}
 
-	results = append(results, analyzeLogs(logs)...)
+	veleroLogsGlob := filepath.Join(logsDir, "velero*", "*.log")
+	veleroLogs, err := findFiles(veleroLogsGlob, excludeFiles)
+
+	results = append(results, analyzeLogs(nodeAgentlogs, "node-agent*")...)
+	results = append(results, analyzeLogs(veleroLogs, "velero*")...)
 	results = append(results, analyzeBackups(backups)...)
 	results = append(results, analyzeBackupStorageLocations(backupStorageLocations)...)
 	results = append(results, analyzeDeleteBackupRequests(deleteBackupRequests)...)
@@ -595,30 +598,30 @@ func analyzeVolumeSnapshotLocations(volumeSnapshotLocations []*velerov1.VolumeSn
 	return results
 }
 
-func analyzeLogs(logs map[string][]byte) []*AnalyzeResult {
+func analyzeLogs(logs map[string][]byte, kind string) []*AnalyzeResult {
 	results := []*AnalyzeResult{}
 	if len(logs) > 0 {
-		for _, logBytes := range logs {
+		for key, logBytes := range logs {
 			logContent := string(logBytes)
 			result := &AnalyzeResult{
-				Title: fmt.Sprintf("Velero logs for pod [node-agent]"),
+				Title: fmt.Sprintf("Velero logs for pod [%s]", key),
 			}
 			if strings.Contains(logContent, "permission denied") {
 				result.IsWarn = true
-				result.Message = fmt.Sprintf("Found 'permission denied' in node-agent* pod log file(s)")
+				result.Message = fmt.Sprintf("Found 'permission denied' in %s pod log file(s)", kind)
 				results = append(results, result)
 				continue
 			}
 
 			if strings.Contains(logContent, "error") || strings.Contains(logContent, "panic") || strings.Contains(logContent, "fatal") {
 				result.IsWarn = true
-				result.Message = fmt.Sprintf("Found error|panic|fatal in node-agent* pod log file(s)")
+				result.Message = fmt.Sprintf("Found error|panic|fatal in %s pod log file(s)", kind)
 				results = append(results, result)
 			}
 		}
 
 		results = append(results, &AnalyzeResult{
-			Title:   "Velero Logs analysis",
+			Title:   fmt.Sprintf("Velero Logs analysis for kind [%s]", kind),
 			IsPass:  true,
 			Message: fmt.Sprintf("Found %d log files", len(logs)),
 		})

@@ -861,6 +861,7 @@ func TestAnalyzeVelero_VolumeSnapshotLocations(t *testing.T) {
 func TestAnalyzeVelero_Logs(t *testing.T) {
 	type args struct {
 		logs map[string][]byte
+		kind string
 	}
 	tests := []struct {
 		name string
@@ -871,39 +872,58 @@ func TestAnalyzeVelero_Logs(t *testing.T) {
 			name: "no logs",
 			args: args{
 				logs: map[string][]byte{},
+				kind: "node-agent*",
 			},
 			want: []*AnalyzeResult{},
 		},
 		{
-			name: "logs - no errors",
+			name: "logs - no errors in node-agent* pods",
 			args: args{
 				logs: map[string][]byte{
 					"node-agent-m6n9j": []byte("level=info msg=... backup=velero/sample-app controller=podvolumebacku"),
 				},
+				kind: "node-agent*",
 			},
 			want: []*AnalyzeResult{
 				{
-					Title:   "Velero Logs analysis",
+					Title:   "Velero Logs analysis for kind [node-agent*]",
 					Message: "Found 1 log files",
 					IsPass:  true,
 				},
 			},
 		},
 		{
-			name: "logs - errors",
+			name: "logs - no errors in velero* pods",
+			args: args{
+				logs: map[string][]byte{
+					"velero-788ff7c9dd-mslfl": []byte("level=info msg=BackupStorageLocations... controller=backup-storage-location"),
+				},
+				kind: "velero*",
+			},
+			want: []*AnalyzeResult{
+				{
+					Title:   "Velero Logs analysis for kind [velero*]",
+					Message: "Found 1 log files",
+					IsPass:  true,
+				},
+			},
+		},
+		{
+			name: "logs - errors in node-agent* pods",
 			args: args{
 				logs: map[string][]byte{
 					"node-agent-m6n9j": []byte("level=error msg=... backup=velero/sample-app controller=podvolumebacku"),
 				},
+				kind: "node-agent*",
 			},
 			want: []*AnalyzeResult{
 				{
-					Title:   "Velero logs for pod [node-agent]",
+					Title:   "Velero logs for pod [node-agent-m6n9j]",
 					Message: "Found error|panic|fatal in node-agent* pod log file(s)",
 					IsWarn:  true,
 				},
 				{
-					Title:   "Velero Logs analysis",
+					Title:   "Velero Logs analysis for kind [node-agent*]",
 					Message: "Found 1 log files",
 					IsPass:  true,
 				},
@@ -912,8 +932,11 @@ func TestAnalyzeVelero_Logs(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := analyzeLogs(tt.args.logs); !reflect.DeepEqual(got, tt.want) {
+			if got := analyzeLogs(tt.args.logs, tt.args.kind); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("analyzeLogs() = %v, want %v", got, tt.want)
+				gotJSON, _ := json.MarshalIndent(got, "", "  ")
+				wantJSON, _ := json.MarshalIndent(tt.want, "", "  ")
+				t.Logf("\nGot: %s\nWant: %s", gotJSON, wantJSON)
 			}
 		})
 	}
