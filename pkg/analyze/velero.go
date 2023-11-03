@@ -6,7 +6,10 @@ import (
 	"path/filepath"
 	"strings"
 
+	appsV1 "k8s.io/api/apps/v1"
+
 	restic_types "github.com/replicatedhq/troubleshoot/pkg/analyze/types"
+	"golang.org/x/mod/semver"
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
@@ -43,40 +46,67 @@ func (a *AnalyzeVelero) Analyze(getFile getCollectedFileContents, findFiles getC
 
 func (a *AnalyzeVelero) veleroStatus(analyzer *troubleshootv1beta2.VeleroAnalyze, getFileContents getCollectedFileContents, findFiles getChildCollectedFileContents) ([]*AnalyzeResult, error) {
 	excludeFiles := []string{}
+	results := []*AnalyzeResult{}
 
-	// get backuprepositories.velero.io
-	backupRepositoriesDir := GetVeleroBackupRepositoriesDirectory()
-	backupRepositoriesGlob := filepath.Join(backupRepositoriesDir, "*.json")
-	backupRepositoriesJson, err := findFiles(backupRepositoriesGlob, excludeFiles)
+	oldVeleroRepoType := false
+	veleroVersion, err := getVeleroVersion(excludeFiles, findFiles)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to find velero backup repositories files under %s", backupRepositoriesDir)
-	}
-	backupRepositories := []*velerov1.BackupRepository{}
-	for key, backupRepositoryJson := range backupRepositoriesJson {
-		var backupRepositoryArray []*velerov1.BackupRepository
-		err := json.Unmarshal(backupRepositoryJson, &backupRepositoryArray)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to unmarshal backup repository json from %s", key)
-		}
-		backupRepositories = append(backupRepositories, backupRepositoryArray...)
+		return nil, errors.Wrap(err, "Unable to find velero deployment")
 	}
 
-	// old velero (v1.9.x) has a BackupRepositoryTypeRestic
-	// get resticrepositories.velero.io
-	resticRepositoriesDir := GetVeleroResticRepositoriesDirectory()
-	resticRepositoriesGlob := filepath.Join(resticRepositoriesDir, "*.json")
-	resticRepositoriesJson, err := findFiles(resticRepositoriesGlob, excludeFiles)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to find velero restic repositories files under %s", resticRepositoriesDir)
+	// Check if the version string is valid erer
+	if !semver.IsValid(veleroVersion) {
+		return nil, errors.Errorf("Invalid velero semver: %s", veleroVersion)
 	}
-	resticRepositories := []*restic_types.ResticRepository{}
-	for key, resticRepositoryJson := range resticRepositoriesJson {
-		var resticRepositoryArray []*restic_types.ResticRepository
-		err := json.Unmarshal(resticRepositoryJson, &resticRepositories)
+
+	// check if veleroVersion is less than 1.10.x
+	compareResult := semver.Compare(veleroVersion, "1.10.0")
+	if compareResult < 0 {
+		fmt.Printf("Version %s is less than %s\n", veleroVersion, "1.10.0")
+		oldVeleroRepoType = true
+	}
+
+	if oldVeleroRepoType == true {
+		// old velero (v1.9.x) has a BackupRepositoryTypeRestic
+		// get resticrepositories.velero.io
+		resticRepositoriesDir := GetVeleroResticRepositoriesDirectory()
+		resticRepositoriesGlob := filepath.Join(resticRepositoriesDir, "*.json")
+		resticRepositoriesJson, err := findFiles(resticRepositoriesGlob, excludeFiles)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to unmarshal restic repository json from %s", key)
+			return nil, errors.Wrapf(err, "failed to find velero restic repositories files under %s", resticRepositoriesDir)
 		}
-		resticRepositories = append(resticRepositories, resticRepositoryArray...)
+		resticRepositories := []*restic_types.ResticRepository{}
+		for key, resticRepositoryJson := range resticRepositoriesJson {
+			var resticRepositoryArray []*restic_types.ResticRepository
+			err := json.Unmarshal(resticRepositoryJson, &resticRepositories)
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to unmarshal restic repository json from %s", key)
+			}
+			resticRepositories = append(resticRepositories, resticRepositoryArray...)
+		}
+		results = append(results, analyzeResticRepositories(resticRepositories)...)
+
+	} else {
+
+		// velerov1.Version
+		// get backuprepositories.velero.io
+		backupRepositoriesDir := GetVeleroBackupRepositoriesDirectory()
+		backupRepositoriesGlob := filepath.Join(backupRepositoriesDir, "*.json")
+		backupRepositoriesJson, err := findFiles(backupRepositoriesGlob, excludeFiles)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to find velero backup repositories files under %s", backupRepositoriesDir)
+		}
+		backupRepositories := []*velerov1.BackupRepository{}
+		for key, backupRepositoryJson := range backupRepositoriesJson {
+			var backupRepositoryArray []*velerov1.BackupRepository
+			err := json.Unmarshal(backupRepositoryJson, &backupRepositoryArray)
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to unmarshal backup repository json from %s", key)
+			}
+			backupRepositories = append(backupRepositories, backupRepositoryArray...)
+		}
+		results = append(results, analyzeBackupRepositories(backupRepositories)...)
+
 	}
 
 	// get backups.velero.io
@@ -243,10 +273,7 @@ func (a *AnalyzeVelero) veleroStatus(analyzer *troubleshootv1beta2.VeleroAnalyze
 		return nil, errors.Wrapf(err, "failed to find velero logs files under %s", logsDir)
 	}
 
-	results := []*AnalyzeResult{}
 	results = append(results, analyzeLogs(logs)...)
-	results = append(results, analyzeBackupRepositories(backupRepositories)...)
-	results = append(results, analyzeResticRepositories(resticRepositories)...)
 	results = append(results, analyzeBackups(backups)...)
 	results = append(results, analyzeBackupStorageLocations(backupStorageLocations)...)
 	results = append(results, analyzeDeleteBackupRequests(deleteBackupRequests)...)
@@ -626,6 +653,36 @@ func aggregateResults(results []*AnalyzeResult) []*AnalyzeResult {
 	}
 
 	return out
+}
+
+func getVeleroVersion(excludedFiles []string, findFiles getChildCollectedFileContents) (string, error) {
+	veleroDeploymentDir := "cluster-resources/deployments"
+	veleroVersion := ""
+	veleroDeploymentGlob := filepath.Join(veleroDeploymentDir, "velero.json")
+	veleroDeploymentJson, err := findFiles(veleroDeploymentGlob, excludedFiles)
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to find velero deployment file under %s", veleroDeploymentDir)
+	}
+	var deploymentList *appsV1.DeploymentList
+	// should run only once
+	for key, veleroDeploymentJsonBytes := range veleroDeploymentJson {
+		err := json.Unmarshal(veleroDeploymentJsonBytes, &deploymentList)
+		if err != nil {
+			return "", errors.Wrapf(err, "failed to unmarshal velero deployment json from %s", key)
+		}
+		break
+	}
+	for _, deployment := range deploymentList.Items {
+		for _, container := range deployment.Spec.Template.Spec.Containers {
+			if container.Name == "velero" {
+				container_image := container.Image
+				veleroVersion = strings.Split(container_image, ":")[1]
+				return veleroVersion, nil
+			}
+		}
+	}
+
+	return "", errors.Errorf("Unable to get velero version. Could not find velero container in deployment!")
 }
 
 func GetVeleroBackupsDirectory() string {
