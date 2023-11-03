@@ -187,10 +187,7 @@ type CephStatusAnalyze struct {
 }
 
 type VeleroAnalyze struct {
-	AnalyzeMeta   `json:",inline" yaml:",inline"`
-	Outcomes      []*Outcome `json:"outcomes" yaml:"outcomes"`
-	CollectorName string     `json:"collectorName,omitempty" yaml:"collectorName,omitempty"`
-	Namespace     string     `json:"namespace" yaml:"namespace"`
+	AnalyzeMeta `json:",inline" yaml:",inline"`
 }
 
 type LonghornAnalyze struct {

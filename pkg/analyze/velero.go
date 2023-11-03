@@ -62,7 +62,6 @@ func (a *AnalyzeVelero) veleroStatus(analyzer *troubleshootv1beta2.VeleroAnalyze
 	// check if veleroVersion is less than 1.10.x
 	compareResult := semver.Compare(veleroVersion, "1.10.0")
 	if compareResult < 0 {
-		fmt.Printf("Version %s is less than %s\n", veleroVersion, "1.10.0")
 		oldVeleroRepoType = true
 	}
 
@@ -335,11 +334,6 @@ func analyzeResticRepositories(resticRepositories []*restic_types.ResticReposito
 		resticRepositoriesResult.Message = "No restic repositories configured"
 	} else {
 		for _, resticRepository := range resticRepositories {
-			// phase, _, err := unstructured.NestedString(resticRepository.Object, "status", "phase")
-			// if err != nil {
-			// 	klog.V(2).Infof("Failed to get phase for restic repository %s: %v", resticRepository.GetName(), err)
-			// }
-			// if phase != "Ready" {
 			if resticRepository.Status.Phase != restic_types.ResticRepositoryPhaseReady {
 				result := &AnalyzeResult{
 					Title: fmt.Sprintf("Restic Repository %s", resticRepository.GetName()),

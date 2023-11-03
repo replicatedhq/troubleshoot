@@ -2257,10 +2257,6 @@
               },
               "velero": {
                 "type": "object",
-                "required": [
-                  "namespace",
-                  "outcomes"
-                ],
                 "properties": {
                   "annotations": {
                     "type": "object",
@@ -2271,64 +2267,8 @@
                   "checkName": {
                     "type": "string"
                   },
-                  "collectorName": {
-                    "type": "string"
-                  },
                   "exclude": {
                     "oneOf": [{"type": "string"},{"type": "boolean"}]
-                  },
-                  "namespace": {
-                    "type": "string"
-                  },
-                  "outcomes": {
-                    "type": "array",
-                    "items": {
-                      "type": "object",
-                      "properties": {
-                        "fail": {
-                          "type": "object",
-                          "properties": {
-                            "message": {
-                              "type": "string"
-                            },
-                            "uri": {
-                              "type": "string"
-                            },
-                            "when": {
-                              "type": "string"
-                            }
-                          }
-                        },
-                        "pass": {
-                          "type": "object",
-                          "properties": {
-                            "message": {
-                              "type": "string"
-                            },
-                            "uri": {
-                              "type": "string"
-                            },
-                            "when": {
-                              "type": "string"
-                            }
-                          }
-                        },
-                        "warn": {
-                          "type": "object",
-                          "properties": {
-                            "message": {
-                              "type": "string"
-                            },
-                            "uri": {
-                              "type": "string"
-                            },
-                            "when": {
-                              "type": "string"
-                            }
-                          }
-                        }
-                      }
-                    }
                   },
                   "strict": {
                     "oneOf": [{"type": "string"},{"type": "boolean"}]

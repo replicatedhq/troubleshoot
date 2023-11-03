@@ -1497,49 +1497,10 @@ spec:
                           type: object
                         checkName:
                           type: string
-                        collectorName:
-                          type: string
                         exclude:
                           type: BoolString
-                        namespace:
-                          type: string
-                        outcomes:
-                          items:
-                            properties:
-                              fail:
-                                properties:
-                                  message:
-                                    type: string
-                                  uri:
-                                    type: string
-                                  when:
-                                    type: string
-                                type: object
-                              pass:
-                                properties:
-                                  message:
-                                    type: string
-                                  uri:
-                                    type: string
-                                  when:
-                                    type: string
-                                type: object
-                              warn:
-                                properties:
-                                  message:
-                                    type: string
-                                  uri:
-                                    type: string
-                                  when:
-                                    type: string
-                                type: object
-                            type: object
-                          type: array
                         strict:
                           type: BoolString
-                      required:
-                      - namespace
-                      - outcomes
                       type: object
                     weaveReport:
                       properties:
