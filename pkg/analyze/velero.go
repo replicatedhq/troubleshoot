@@ -9,6 +9,7 @@ import (
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	velerov1 "github.com/vmware-tanzu/velero/pkg/apis/velero/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
 const (
@@ -52,7 +53,7 @@ func (a *AnalyzeVelero) veleroStatus(analyzer *troubleshootv1beta2.VeleroAnalyze
 	excludeFiles := []string{}
 
 	// get backuprepositories.velero.io
-	backupRepositoriesDir := GetVeleroBackupRepositoriesDirectory(ns)
+	backupRepositoriesDir := GetVeleroBackupRepositoriesDirectory()
 	backupRepositoriesGlob := filepath.Join(backupRepositoriesDir, "*.json")
 	backupRepositoriesJson, err := findFiles(backupRepositoriesGlob, excludeFiles)
 	if err != nil {
@@ -68,8 +69,24 @@ func (a *AnalyzeVelero) veleroStatus(analyzer *troubleshootv1beta2.VeleroAnalyze
 		backupRepositories = append(backupRepositories, backupRepositoryArray...)
 	}
 
+	// old velero (v1.9.x) has a BackupRepositoryTypeRestic
+	// get resticrepositories.velero.io
+	resticRepositoriesDir := GetVeleroResticRepositoriesDirectory()
+	resticRepositoriesGlob := filepath.Join(resticRepositoriesDir, "*.json")
+	resticRepositoriesJson, err := findFiles(resticRepositoriesGlob, excludeFiles)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to find velero restic repositories files under %s", resticRepositoriesDir)
+	}
+	resticRepositories := []unstructured.Unstructured{}
+	for key, resticRepositoryJson := range resticRepositoriesJson {
+		err := json.Unmarshal(resticRepositoryJson, &resticRepositories)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to unmarshal restic repository json from %s", key)
+		}
+	}
+
 	// get backups.velero.io
-	backupsDir := GetVeleroBackupsDirectory(ns)
+	backupsDir := GetVeleroBackupsDirectory()
 	backupsGlob := filepath.Join(backupsDir, "*.json")
 	veleroJSONs, err := findFiles(backupsGlob, excludeFiles)
 	if err != nil {
@@ -89,7 +106,7 @@ func (a *AnalyzeVelero) veleroStatus(analyzer *troubleshootv1beta2.VeleroAnalyze
 	}
 
 	// get backupstoragelocations.velero.io
-	backupStorageLocationsDir := GetVeleroBackupStorageLocationsDirectory(ns)
+	backupStorageLocationsDir := GetVeleroBackupStorageLocationsDirectory()
 	backupStorageLocationsGlob := filepath.Join(backupStorageLocationsDir, "*.json")
 	backupStorageLocationsJson, err := findFiles(backupStorageLocationsGlob, excludeFiles)
 	if err != nil {
@@ -106,7 +123,7 @@ func (a *AnalyzeVelero) veleroStatus(analyzer *troubleshootv1beta2.VeleroAnalyze
 	}
 
 	// get deletebackuprequests.velero.io
-	deleteBackupRequestsDir := GetVeleroDeleteBackupRequestsDirectory(ns)
+	deleteBackupRequestsDir := GetVeleroDeleteBackupRequestsDirectory()
 	deleteBackupRequestsGlob := filepath.Join(deleteBackupRequestsDir, "*.json")
 	deleteBackupRequestsJson, err := findFiles(deleteBackupRequestsGlob, excludeFiles)
 	if err != nil {
@@ -123,7 +140,7 @@ func (a *AnalyzeVelero) veleroStatus(analyzer *troubleshootv1beta2.VeleroAnalyze
 	}
 
 	// get podvolumebackups.velero.io
-	podVolumeBackupsDir := GetVeleroPodVolumeBackupsDirectory(ns)
+	podVolumeBackupsDir := GetVeleroPodVolumeBackupsDirectory()
 	podVolumeBackupsGlob := filepath.Join(podVolumeBackupsDir, "*.json")
 	podVolumeBackupsJson, err := findFiles(podVolumeBackupsGlob, excludeFiles)
 	if err != nil {
@@ -140,7 +157,7 @@ func (a *AnalyzeVelero) veleroStatus(analyzer *troubleshootv1beta2.VeleroAnalyze
 	}
 
 	// get podvolumerestores.velero.io
-	podVolumeRestoresDir := GetVeleroPodVolumeRestoresDirectory(ns)
+	podVolumeRestoresDir := GetVeleroPodVolumeRestoresDirectory()
 	podVolumeRestoresGlob := filepath.Join(podVolumeRestoresDir, "*.json")
 	podVolumeRestoresJson, err := findFiles(podVolumeRestoresGlob, excludeFiles)
 	if err != nil {
@@ -157,7 +174,7 @@ func (a *AnalyzeVelero) veleroStatus(analyzer *troubleshootv1beta2.VeleroAnalyze
 	}
 
 	// get restores.velero.io
-	restoresDir := GetVeleroRestoresDirectory(ns)
+	restoresDir := GetVeleroRestoresDirectory()
 	restoresGlob := filepath.Join(restoresDir, "*.json")
 	restoresJson, err := findFiles(restoresGlob, excludeFiles)
 	if err != nil {
@@ -174,7 +191,7 @@ func (a *AnalyzeVelero) veleroStatus(analyzer *troubleshootv1beta2.VeleroAnalyze
 	}
 
 	// get schedules.velero.io
-	schedulesDir := GetVeleroSchedulesDirectory(ns)
+	schedulesDir := GetVeleroSchedulesDirectory()
 	schedulesGlob := filepath.Join(schedulesDir, "*.json")
 	schedulesJson, err := findFiles(schedulesGlob, excludeFiles)
 	if err != nil {
@@ -191,7 +208,7 @@ func (a *AnalyzeVelero) veleroStatus(analyzer *troubleshootv1beta2.VeleroAnalyze
 	}
 
 	// get serverstatusrequests.velero.io
-	serverStatusRequestsDir := GetVeleroServerStatusRequestsDirectory(ns)
+	serverStatusRequestsDir := GetVeleroServerStatusRequestsDirectory()
 	serverStatusRequestsGlob := filepath.Join(serverStatusRequestsDir, "*.json")
 	serverStatusRequestsJson, err := findFiles(serverStatusRequestsGlob, excludeFiles)
 	if err != nil {
@@ -208,7 +225,7 @@ func (a *AnalyzeVelero) veleroStatus(analyzer *troubleshootv1beta2.VeleroAnalyze
 	}
 
 	// get volumesnapshotlocations.velero.io
-	volumeSnapshotLocationsDir := GetVeleroVolumeSnapshotLocationsDirectory(ns)
+	volumeSnapshotLocationsDir := GetVeleroVolumeSnapshotLocationsDirectory()
 	volumeSnapshotLocationsGlob := filepath.Join(volumeSnapshotLocationsDir, "*.json")
 	volumeSnapshotLocationsJson, err := findFiles(volumeSnapshotLocationsGlob, excludeFiles)
 	if err != nil {
@@ -578,54 +595,54 @@ func aggregateResults(results []*AnalyzeResult) []*AnalyzeResult {
 	return out
 }
 
-func GetVeleroBackupsDirectory(namespace string) string {
-	return fmt.Sprintf("cluster-resources/custom-resources/backups.velero.io")
+func GetVeleroBackupsDirectory() string {
+	return "cluster-resources/custom-resources/backups.velero.io"
 }
 
-func GetVeleroBackupRepositoriesDirectory(namespace string) string {
-	return fmt.Sprintf("cluster-resources/custom-resources/backuprepositories.velero.io")
+func GetVeleroBackupRepositoriesDirectory() string {
+	return "cluster-resources/custom-resources/backuprepositories.velero.io"
 }
 
-func GetVeleroBackupStorageLocationsDirectory(namespace string) string {
-	return fmt.Sprintf("cluster-resources/custom-resources/backupstoragelocations.velero.io")
+func GetVeleroBackupStorageLocationsDirectory() string {
+	return "cluster-resources/custom-resources/backupstoragelocations.velero.io"
 }
 
-func GetVeleroDeleteBackupRequestsDirectory(namespace string) string {
-	return fmt.Sprintf("cluster-resources/custom-resources/deletebackuprequests.velero.io")
+func GetVeleroDeleteBackupRequestsDirectory() string {
+	return "cluster-resources/custom-resources/deletebackuprequests.velero.io"
 }
 
-func GetVeleroDownloadRequestsDirectory(namespace string) string {
-	return fmt.Sprintf("cluster-resources/custom-resources/downloadrequests.velero.io")
+func GetVeleroDownloadRequestsDirectory() string {
+	return "cluster-resources/custom-resources/downloadrequests.velero.io"
 }
 
 func GetVeleroLogsDirectory(namespace string) string {
-	return fmt.Sprintf("velero/logs")
+	return fmt.Sprint("%s/logs", namespace)
 }
 
-func GetVeleroPodVolumeBackupsDirectory(namespace string) string {
-	return fmt.Sprintf("cluster-resources/custom-resources/podvolumebackups.velero.io")
+func GetVeleroPodVolumeBackupsDirectory() string {
+	return "cluster-resources/custom-resources/podvolumebackups.velero.io"
 }
 
-func GetVeleroPodVolumeRestoresDirectory(namespace string) string {
-	return fmt.Sprintf("cluster-resources/custom-resources/podvolumerestores.velero.io")
+func GetVeleroPodVolumeRestoresDirectory() string {
+	return "cluster-resources/custom-resources/podvolumerestores.velero.io"
 }
 
-func GetVeleroRestoresDirectory(namespace string) string {
-	return fmt.Sprintf("cluster-resources/custom-resources/restores.velero.io")
+func GetVeleroRestoresDirectory() string {
+	return "cluster-resources/custom-resources/restores.velero.io"
 }
 
-func GetVeleroSchedulesDirectory(namespace string) string {
-	return fmt.Sprintf("cluster-resources/custom-resources/schedules.velero.io")
+func GetVeleroSchedulesDirectory() string {
+	return "cluster-resources/custom-resources/schedules.velero.io"
 }
 
-func GetVeleroServerStatusRequestsDirectory(namespace string) string {
-	return fmt.Sprintf("cluster-resources/custom-resources/serverstatusrequests.velero.io")
+func GetVeleroServerStatusRequestsDirectory() string {
+	return "cluster-resources/custom-resources/serverstatusrequests.velero.io"
 }
 
-func GetVeleroVolumeSnapshotLocationsDirectory(namespace string) string {
-	return fmt.Sprintf("cluster-resources/custom-resources/volumesnapshotlocations.velero.io")
+func GetVeleroVolumeSnapshotLocationsDirectory() string {
+	return "cluster-resources/custom-resources/volumesnapshotlocations.velero.io"
 }
 
-func GetVeleroResticRepositoriesDirectory(namespace string) string {
-	return fmt.Sprintf("cluster-resources/custom-resources/resticrepositories.velero.io")
+func GetVeleroResticRepositoriesDirectory() string {
+	return "cluster-resources/custom-resources/resticrepositories.velero.io"
 }
