@@ -8,5 +8,4 @@ spec:
         namespace: velero
         name: velero/logs
   analyzers:
-    - velero:
-        strict: true
+    - velero: {}

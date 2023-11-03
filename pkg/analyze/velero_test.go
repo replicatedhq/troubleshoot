@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	restic_types "github.com/replicatedhq/troubleshoot/pkg/analyze/types"
 	velerov1 "github.com/vmware-tanzu/velero/pkg/apis/velero/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -27,7 +28,7 @@ func TestAnalyzeVelero_BackupRepositories(t *testing.T) {
 			},
 			want: []*AnalyzeResult{
 				{
-					Title:   "At least 1 Velero Backup Repository configured",
+					Title:   "At least 1 Backup Repository configured",
 					Message: "No backup repositories configured",
 					IsFail:  true,
 				},
@@ -50,7 +51,7 @@ func TestAnalyzeVelero_BackupRepositories(t *testing.T) {
 			},
 			want: []*AnalyzeResult{
 				{
-					Title:   "At least 1 Velero Backup Repository configured",
+					Title:   "At least 1 Backup Repository configured",
 					Message: "Found 1 backup repositories configured and 1 Ready",
 					IsPass:  true,
 				},
@@ -95,7 +96,7 @@ func TestAnalyzeVelero_BackupRepositories(t *testing.T) {
 					IsWarn:  true,
 				},
 				{
-					Title:   "At least 1 Velero Backup Repository configured",
+					Title:   "At least 1 Backup Repository configured",
 					Message: "Found 2 backup repositories configured and 1 Ready",
 					IsPass:  true,
 				},
@@ -127,7 +128,7 @@ func TestAnalyzeVelero_BackupRepositories(t *testing.T) {
 					IsWarn:  true,
 				},
 				{
-					Title:   "At least 1 Velero Backup Repository configured",
+					Title:   "At least 1 Backup Repository configured",
 					Message: "Found 1 configured backup repositories, but none are ready",
 					IsWarn:  true,
 				},
@@ -138,6 +139,65 @@ func TestAnalyzeVelero_BackupRepositories(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if got := analyzeBackupRepositories(tt.args.backupRepositories); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("analyzeBackupRepositories() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestAnalyzeVelero_ResticRepositories(t *testing.T) {
+	type args struct {
+		resticRepositories []*restic_types.ResticRepository
+	}
+	tests := []struct {
+		name string
+		args args
+		want []*AnalyzeResult
+	}{
+		{
+			name: "no restic repositories",
+			args: args{
+				resticRepositories: []*restic_types.ResticRepository{},
+			},
+			want: []*AnalyzeResult{
+				{
+					Title:   "At least 1 Restic Repository configured",
+					Message: "No restic repositories configured",
+					IsFail:  true,
+				},
+			},
+		},
+		{
+			name: "1 restic repository and 1 Ready",
+			args: args{
+				resticRepositories: []*restic_types.ResticRepository{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name:      "default-default-restic-245sd",
+							Namespace: "velero",
+						},
+						Spec: restic_types.ResticRepositorySpec{
+							BackupStorageLocation: "default",
+							VolumeNamespace:       "velero",
+						},
+						Status: restic_types.ResticRepositoryStatus{
+							Phase: restic_types.ResticRepositoryPhaseReady,
+						},
+					},
+				},
+			},
+			want: []*AnalyzeResult{
+				{
+					Title:   "At least 1 Restic Repository configured",
+					Message: "Found 1 restic repositories configured and 1 Ready",
+					IsPass:  true,
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := analyzeResticRepositories(tt.args.resticRepositories); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("analyzeResticRepositories() = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -242,7 +302,7 @@ func TestAnalyzeVelero_BackupStorageLocations(t *testing.T) {
 			},
 			want: []*AnalyzeResult{
 				{
-					Title:   "At least 1 Velero Backup Storage Location configured",
+					Title:   "At least 1 Backup Storage Location configured",
 					Message: "No backup storage locations configured",
 					IsFail:  true,
 				},
@@ -268,7 +328,7 @@ func TestAnalyzeVelero_BackupStorageLocations(t *testing.T) {
 			},
 			want: []*AnalyzeResult{
 				{
-					Title:   "At least 1 Velero Backup Storage Location configured",
+					Title:   "At least 1 Backup Storage Location configured",
 					Message: "Found 1 backup storage locations configured and 1 Available",
 					IsPass:  true,
 				},
@@ -299,7 +359,7 @@ func TestAnalyzeVelero_BackupStorageLocations(t *testing.T) {
 					IsWarn:  true,
 				},
 				{
-					Title:   "At least 1 Velero Backup Storage Location configured",
+					Title:   "At least 1 Backup Storage Location configured",
 					Message: "Found 1 configured backup storage locations, but none are available",
 					IsWarn:  true,
 				},

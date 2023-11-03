@@ -6,14 +6,11 @@ import (
 	"path/filepath"
 	"strings"
 
+	restic_types "github.com/replicatedhq/troubleshoot/pkg/analyze/types"
+
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	velerov1 "github.com/vmware-tanzu/velero/pkg/apis/velero/v1"
-	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
-)
-
-const (
-	DefaultVeleroNamespace = "velero"
 )
 
 type AnalyzeVelero struct {
@@ -45,11 +42,6 @@ func (a *AnalyzeVelero) Analyze(getFile getCollectedFileContents, findFiles getC
 }
 
 func (a *AnalyzeVelero) veleroStatus(analyzer *troubleshootv1beta2.VeleroAnalyze, getFileContents getCollectedFileContents, findFiles getChildCollectedFileContents) ([]*AnalyzeResult, error) {
-	ns := DefaultVeleroNamespace
-	if analyzer.Namespace != "" {
-		ns = analyzer.Namespace
-	}
-
 	excludeFiles := []string{}
 
 	// get backuprepositories.velero.io
@@ -77,12 +69,14 @@ func (a *AnalyzeVelero) veleroStatus(analyzer *troubleshootv1beta2.VeleroAnalyze
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to find velero restic repositories files under %s", resticRepositoriesDir)
 	}
-	resticRepositories := []unstructured.Unstructured{}
+	resticRepositories := []*restic_types.ResticRepository{}
 	for key, resticRepositoryJson := range resticRepositoriesJson {
+		var resticRepositoryArray []*restic_types.ResticRepository
 		err := json.Unmarshal(resticRepositoryJson, &resticRepositories)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to unmarshal restic repository json from %s", key)
 		}
+		resticRepositories = append(resticRepositories, resticRepositoryArray...)
 	}
 
 	// get backups.velero.io
@@ -241,7 +235,7 @@ func (a *AnalyzeVelero) veleroStatus(analyzer *troubleshootv1beta2.VeleroAnalyze
 		volumeSnapshotLocations = append(volumeSnapshotLocations, volumeSnapshotLocationArray...)
 	}
 
-	logsDir := GetVeleroLogsDirectory(ns)
+	logsDir := GetVeleroLogsDirectory()
 	logsGlob := filepath.Join(logsDir, "node-agent*", "*.log")
 	logs, err := findFiles(logsGlob, excludeFiles)
 
@@ -252,6 +246,7 @@ func (a *AnalyzeVelero) veleroStatus(analyzer *troubleshootv1beta2.VeleroAnalyze
 	results := []*AnalyzeResult{}
 	results = append(results, analyzeLogs(logs)...)
 	results = append(results, analyzeBackupRepositories(backupRepositories)...)
+	results = append(results, analyzeResticRepositories(resticRepositories)...)
 	results = append(results, analyzeBackups(backups)...)
 	results = append(results, analyzeBackupStorageLocations(backupStorageLocations)...)
 	results = append(results, analyzeDeleteBackupRequests(deleteBackupRequests)...)
@@ -268,7 +263,7 @@ func analyzeBackupRepositories(backupRepositories []*velerov1.BackupRepository) 
 	results := []*AnalyzeResult{}
 	readyCount := 0
 	backupRepositoriesResult := &AnalyzeResult{
-		Title: "At least 1 Velero Backup Repository configured",
+		Title: "At least 1 Backup Repository configured",
 	}
 	if len(backupRepositories) == 0 {
 		backupRepositoriesResult.IsFail = true
@@ -295,9 +290,47 @@ func analyzeBackupRepositories(backupRepositories []*velerov1.BackupRepository) 
 		}
 	}
 	results = append(results, backupRepositoriesResult)
-
 	return results
 
+}
+
+func analyzeResticRepositories(resticRepositories []*restic_types.ResticRepository) []*AnalyzeResult {
+	results := []*AnalyzeResult{}
+	readyCount := 0
+	resticRepositoriesResult := &AnalyzeResult{
+		Title: "At least 1 Restic Repository configured",
+	}
+	if len(resticRepositories) == 0 {
+		resticRepositoriesResult.IsFail = true
+		resticRepositoriesResult.Message = "No restic repositories configured"
+	} else {
+		for _, resticRepository := range resticRepositories {
+			// phase, _, err := unstructured.NestedString(resticRepository.Object, "status", "phase")
+			// if err != nil {
+			// 	klog.V(2).Infof("Failed to get phase for restic repository %s: %v", resticRepository.GetName(), err)
+			// }
+			// if phase != "Ready" {
+			if resticRepository.Status.Phase != restic_types.ResticRepositoryPhaseReady {
+				result := &AnalyzeResult{
+					Title: fmt.Sprintf("Restic Repository %s", resticRepository.GetName()),
+				}
+				result.Message = fmt.Sprintf("Restic Repository [%s] is in phase %s", resticRepository.Name, resticRepository.Status.Phase)
+				result.IsWarn = true
+				results = append(results, result)
+			} else {
+				readyCount++
+			}
+		}
+		if readyCount > 0 {
+			resticRepositoriesResult.IsPass = true
+			resticRepositoriesResult.Message = fmt.Sprintf("Found %d restic repositories configured and %d Ready", len(resticRepositories), readyCount)
+		} else {
+			resticRepositoriesResult.IsWarn = true
+			resticRepositoriesResult.Message = fmt.Sprintf("Found %d configured restic repositories, but none are ready", len(resticRepositories))
+		}
+	}
+	results = append(results, resticRepositoriesResult)
+	return results
 }
 
 func analyzeBackups(backups []*velerov1.Backup) []*AnalyzeResult {
@@ -337,7 +370,7 @@ func analyzeBackupStorageLocations(backupStorageLocations []*velerov1.BackupStor
 	results := []*AnalyzeResult{}
 	availableCount := 0
 	bslResult := &AnalyzeResult{
-		Title: "At least 1 Velero Backup Storage Location configured",
+		Title: "At least 1 Backup Storage Location configured",
 	}
 
 	if len(backupStorageLocations) == 0 {
@@ -615,8 +648,8 @@ func GetVeleroDownloadRequestsDirectory() string {
 	return "cluster-resources/custom-resources/downloadrequests.velero.io"
 }
 
-func GetVeleroLogsDirectory(namespace string) string {
-	return fmt.Sprint("%s/logs", namespace)
+func GetVeleroLogsDirectory() string {
+	return "velero/logs"
 }
 
 func GetVeleroPodVolumeBackupsDirectory() string {
