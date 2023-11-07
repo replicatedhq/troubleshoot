@@ -66,7 +66,7 @@ func (c *CollectHostRun) Collect(progressChan chan<- interface{}) (map[string][]
 		cmdOutputTempDir, err = os.MkdirTemp("", runHostCollector.OutputDir)
 		defer os.RemoveAll(cmdOutputTempDir)
 		if err != nil {
-			return nil, errors.New(fmt.Sprintf("failed to created temp dir for: %s", runHostCollector.OutputDir))
+			return nil, errors.New(fmt.Sprintf("failed to create temp dir for: %s", runHostCollector.OutputDir))
 		}
 		cmd.Env = append(cmd.Env,
 			fmt.Sprintf("TS_WORKSPACE_DIR=%s", cmdOutputTempDir),
@@ -77,7 +77,7 @@ func (c *CollectHostRun) Collect(progressChan chan<- interface{}) (map[string][]
 		cmdInputTempDir, err = os.MkdirTemp("", "input")
 		defer os.RemoveAll(cmdInputTempDir)
 		if err != nil {
-			return nil, errors.New("failed to created temp dir for host run input")
+			return nil, errors.New("failed to create temp dir for host run input")
 		}
 		for inFilename, inFileContent := range runHostCollector.Input {
 			if strings.Contains(inFileContent, "/") {
@@ -140,8 +140,8 @@ func (c *CollectHostRun) processEnvVars(cmd *exec.Cmd) error {
 	if runHostCollector.IgnoreParentEnvs {
 		klog.V(2).Info("Not inheriting the environment variables!")
 		if runHostCollector.InheritEnvs != nil {
-			klog.V(2).Infof("the following environment variables will not be loaded to the command: %",
-				strings.Join(runHostCollector.InheritEnvs, " "))
+			klog.V(2).Infof("The following environment variables will not be loaded to the command: [%s]",
+				strings.Join(runHostCollector.InheritEnvs, ","))
 		}
 		// clears the parent env vars
 		cmd.Env = []string{}

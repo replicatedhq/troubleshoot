@@ -6,8 +6,11 @@ spec:
   collectors:
     - run:
         collectorName: "my-custom-run"
-        command: "cat $TS_INPUT_DIR/dummy.yaml"
-        args: [ "--timeout", "10m" ]
+        command: "sh"
+        # this is for demonstration purpose only -- you probably don't want to drop your input to the bundle!
+        args:
+          - "-c"
+          - "cat $TS_INPUT_DIR/dummy.yaml > $TS_WORKSPACE_DIR/dummy_content.yaml"
         outputDir: "myCommandOutputs"
         env:
           - AWS_REGION=us-west-1
