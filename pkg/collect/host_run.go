@@ -138,7 +138,7 @@ func (c *CollectHostRun) Collect(progressChan chan<- interface{}) (map[string][]
 	if runHostCollector.OutputDir != "" {
 		runInfo.OutputDir = runHostCollector.OutputDir
 		bundleOutputRelativePath = filepath.Join(collectorRelativePath, runHostCollector.OutputDir)
-		klog.V(2).Infof("saving run host command output to %s", runHostCollector.OutputDir)
+		klog.V(2).Infof("Saving command output to %q in bundle", bundleOutputRelativePath)
 		output.SaveResults(c.BundlePath, bundleOutputRelativePath, cmdOutputTempDir)
 	}
 
