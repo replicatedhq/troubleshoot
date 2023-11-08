@@ -51,6 +51,7 @@ func (c *CollectHostRun) Collect(progressChan chan<- interface{}) (map[string][]
 
 	cmd := exec.Command(runHostCollector.Command, runHostCollector.Args...)
 
+	klog.V(2).Infof("Run host collector command: %q", cmd.String())
 	runInfo := &HostRunInfo{
 		Command:  cmd.String(),
 		ExitCode: "0",
