@@ -49,7 +49,7 @@ func (c *CollectHostRun) Collect(progressChan chan<- interface{}) (map[string][]
 		collectorName = "run-host"
 	}
 
-	cmd := exec.Command(runHostCollector.Command, runHostCollector.Args...)
+	cmd := exec.Command(c.attemptToConvertCmdToAbsPath(), runHostCollector.Args...)
 
 	klog.V(2).Infof("Run host collector command: %q", cmd.String())
 	runInfo := &HostRunInfo{
@@ -85,7 +85,7 @@ func (c *CollectHostRun) Collect(progressChan chan<- interface{}) (map[string][]
 	}
 
 	if runHostCollector.Input != nil {
-		cmdInputTempDir = filepath.Join(cmdInputTempDir, "input")
+		cmdInputTempDir = filepath.Join(wkdir, "input")
 		err = os.MkdirAll(cmdInputTempDir, 0755)
 		if err != nil {
 			return nil, errors.New("failed to create temp dir for host run input")
@@ -195,4 +195,26 @@ func populateGuaranteedEnvVars(cmd *exec.Cmd) {
 				fmt.Sprintf("%s=%s", key, guaranteedEnvVal))
 		}
 	}
+}
+
+// attemptToConvertCmdToAbsPath checks if the command is a file path or command name
+// If it is a file path, it will return the absolute path else
+// it will return the command name as is and leave the resolution to cmd.Run()
+// This enables passing commands using relative paths e.g. "./my-command"
+// which is not possible with cmd.Run() since the child process runs
+// in a different working directory
+func (c *CollectHostRun) attemptToConvertCmdToAbsPath() string {
+	// Attempt to check if the command is file path or command name
+	cmdAbsPath, err := filepath.Abs(c.hostCollector.Command)
+	if err != nil {
+		return c.hostCollector.Command
+	}
+
+	// Check if the file exists
+	_, err = os.Stat(cmdAbsPath)
+	if err != nil {
+		return c.hostCollector.Command
+	}
+
+	return cmdAbsPath
 }
