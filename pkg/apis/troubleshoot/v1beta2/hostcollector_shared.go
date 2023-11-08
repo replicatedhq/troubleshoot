@@ -180,8 +180,13 @@ type HostServices struct {
 
 type HostRun struct {
 	HostCollectorMeta `json:",inline" yaml:",inline"`
-	Command           string   `json:"command"`
-	Args              []string `json:"args"`
+	Command           string            `json:"command"`
+	Args              []string          `json:"args"`
+	OutputDir         string            `json:"outputDir,omitempty" yaml:"outputDir,omitempty"`
+	Input             map[string]string `json:"input,omitempty" yaml:"input,omitempty"`
+	Env               []string          `json:"env,omitempty" yaml:"env,omitempty"`
+	InheritEnvs       []string          `json:"inheritEnvs" yaml:"inheritEnvs,omitempty"`
+	IgnoreParentEnvs  bool              `json:"ignoreParentEnvs" yaml:"ignoreParentEnvs,omitempty"`
 }
 
 type HostCollect struct {
