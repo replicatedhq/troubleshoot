@@ -1489,6 +1489,19 @@ spec:
                       required:
                       - outcomes
                       type: object
+                    velero:
+                      properties:
+                        annotations:
+                          additionalProperties:
+                            type: string
+                          type: object
+                        checkName:
+                          type: string
+                        exclude:
+                          type: BoolString
+                        strict:
+                          type: BoolString
+                      type: object
                     weaveReport:
                       properties:
                         annotations:

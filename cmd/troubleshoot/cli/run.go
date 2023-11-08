@@ -232,6 +232,7 @@ the %s Admin Console to begin analysis.`
 	return nil
 }
 
+// loadSupportBundleSpecsFromURIs loads support bundle specs from URIs
 func loadSupportBundleSpecsFromURIs(ctx context.Context, kinds *loader.TroubleshootKinds) (*loader.TroubleshootKinds, error) {
 	remoteRawSpecs := []string{}
 	for _, s := range kinds.SupportBundlesV1Beta2 {
@@ -239,12 +240,19 @@ func loadSupportBundleSpecsFromURIs(ctx context.Context, kinds *loader.Troublesh
 			// We are using LoadSupportBundleSpec function here since it handles prompting
 			// users to accept insecure connections
 			// There is an opportunity to refactor this code in favour of the Loader APIs
+			// TODO: Pass ctx to LoadSupportBundleSpec
 			rawSpec, err := supportbundle.LoadSupportBundleSpec(s.Spec.Uri)
 			if err != nil {
-				return nil, errors.Wrapf(err, "failed to load support bundle from URI %q", s.Spec.Uri)
+				// In the event a spec can't be loaded, we'll just skip it and print a warning
+				klog.Warningf("unable to load support bundle from URI: %q: %v", s.Spec.Uri, err)
+				continue
 			}
 			remoteRawSpecs = append(remoteRawSpecs, string(rawSpec))
 		}
+	}
+
+	if len(remoteRawSpecs) == 0 {
+		return kinds, nil
 	}
 
 	return loader.LoadSpecs(ctx, loader.LoadOptions{
@@ -264,9 +272,10 @@ func loadSpecs(ctx context.Context, args []string, client kubernetes.Interface) 
 	if !viper.GetBool("no-uri") {
 		moreKinds, err := loadSupportBundleSpecsFromURIs(ctx, kinds)
 		if err != nil {
-			return nil, nil, err
+			klog.Warningf("unable to load support bundles from URIs: %v", err)
+		} else {
+			kinds.Add(moreKinds)
 		}
-		kinds.Add(moreKinds)
 	}
 
 	// Check if we have any collectors to run in the troubleshoot specs
