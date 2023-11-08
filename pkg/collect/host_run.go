@@ -61,12 +61,22 @@ func (c *CollectHostRun) Collect(progressChan chan<- interface{}) (map[string][]
 		return nil, errors.Wrap(err, "failed to parse env variable")
 	}
 
+	// Create a working directory for the command
+	wkdir, err := os.MkdirTemp("", collectorName)
+	defer os.RemoveAll(wkdir)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create temp dir for host run")
+	}
+	// Change the working directory for the command to ensure the command
+	// does not polute the parent/caller working directory
+	cmd.Dir = wkdir
+
 	// if we choose to save result for the command run
 	if runHostCollector.OutputDir != "" {
-		cmdOutputTempDir, err = os.MkdirTemp("", runHostCollector.OutputDir)
-		defer os.RemoveAll(cmdOutputTempDir)
+		cmdOutputTempDir = filepath.Join(wkdir, runHostCollector.OutputDir)
+		err = os.MkdirAll(cmdOutputTempDir, 0755)
 		if err != nil {
-			return nil, errors.New(fmt.Sprintf("failed to create temp dir for: %s", runHostCollector.OutputDir))
+			return nil, errors.New(fmt.Sprintf("failed to create dir for: %s", runHostCollector.OutputDir))
 		}
 		cmd.Env = append(cmd.Env,
 			fmt.Sprintf("TS_WORKSPACE_DIR=%s", cmdOutputTempDir),
@@ -74,8 +84,8 @@ func (c *CollectHostRun) Collect(progressChan chan<- interface{}) (map[string][]
 	}
 
 	if runHostCollector.Input != nil {
-		cmdInputTempDir, err = os.MkdirTemp("", "input")
-		defer os.RemoveAll(cmdInputTempDir)
+		cmdInputTempDir = filepath.Join(cmdInputTempDir, "input")
+		err = os.MkdirAll(cmdInputTempDir, 0755)
 		if err != nil {
 			return nil, errors.New("failed to create temp dir for host run input")
 		}
