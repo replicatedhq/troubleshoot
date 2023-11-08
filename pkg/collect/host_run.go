@@ -90,7 +90,7 @@ func (c *CollectHostRun) Collect(progressChan chan<- interface{}) (map[string][]
 			return nil, errors.New("failed to create temp dir for host run input")
 		}
 		for inFilename, inFileContent := range runHostCollector.Input {
-			if strings.Contains(inFileContent, "/") {
+			if strings.Contains(inFilename, "/") {
 				return nil, errors.New("Input filename contains '/'")
 			}
 			cmdInputFilePath := filepath.Join(cmdInputTempDir, inFilename)
