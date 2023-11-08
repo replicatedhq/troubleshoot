@@ -10,7 +10,7 @@ spec:
         # this is for demonstration purpose only -- you probably don't want to drop your input to the bundle!
         args:
           - "-c"
-          - "cat $TS_INPUT_DIR/dummy.yaml > $TS_WORKSPACE_DIR/dummy_content.yaml"
+          - "cat $TS_INPUT_DIR/dummy.yaml > $TS_OUTPUT_DIR/dummy_content.yaml"
         outputDir: "myCommandOutputs"
         env:
           - AWS_REGION=us-west-1
@@ -23,7 +23,7 @@ spec:
           dummy.conf: |-
             [hello]
             hello = 1
-            
+
             [bye]
             bye = 2
           dummy.yaml: |-

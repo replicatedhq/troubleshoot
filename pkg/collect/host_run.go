@@ -80,7 +80,7 @@ func (c *CollectHostRun) Collect(progressChan chan<- interface{}) (map[string][]
 			return nil, errors.New(fmt.Sprintf("failed to create dir for: %s", runHostCollector.OutputDir))
 		}
 		cmd.Env = append(cmd.Env,
-			fmt.Sprintf("TS_WORKSPACE_DIR=%s", cmdOutputTempDir),
+			fmt.Sprintf("TS_OUTPUT_DIR=%s", cmdOutputTempDir),
 		)
 	}
 

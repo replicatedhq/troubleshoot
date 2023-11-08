@@ -117,7 +117,7 @@ func TestCollectHostRun_Collect(t *testing.T) {
 						CollectorName: "my-cmd-with-output",
 					},
 					Command: "sh",
-					Args:    []string{"-c", "echo ${TS_INPUT_DIR}/dummy.conf > $TS_WORKSPACE_DIR/input-file.txt"},
+					Args:    []string{"-c", "echo ${TS_INPUT_DIR}/dummy.conf > $TS_OUTPUT_DIR/input-file.txt"},
 					Input: map[string]string{
 						"dummy.conf": "[hello]\nhello = 1",
 					},
