@@ -11472,9 +11472,7 @@
                 "type": "object",
                 "required": [
                   "args",
-                  "command",
-                  "ignoreParentEnvs",
-                  "inheritEnvs"
+                  "command"
                 ],
                 "properties": {
                   "args": {

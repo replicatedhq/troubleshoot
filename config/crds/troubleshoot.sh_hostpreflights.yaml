@@ -1389,8 +1389,6 @@ spec:
                       required:
                       - args
                       - command
-                      - ignoreParentEnvs
-                      - inheritEnvs
                       type: object
                     subnetAvailable:
                       properties:

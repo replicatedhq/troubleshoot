@@ -185,8 +185,8 @@ type HostRun struct {
 	OutputDir         string            `json:"outputDir,omitempty" yaml:"outputDir,omitempty"`
 	Input             map[string]string `json:"input,omitempty" yaml:"input,omitempty"`
 	Env               []string          `json:"env,omitempty" yaml:"env,omitempty"`
-	InheritEnvs       []string          `json:"inheritEnvs" yaml:"inheritEnvs,omitempty"`
-	IgnoreParentEnvs  bool              `json:"ignoreParentEnvs" yaml:"ignoreParentEnvs,omitempty"`
+	InheritEnvs       []string          `json:"inheritEnvs,omitempty" yaml:"inheritEnvs,omitempty"`
+	IgnoreParentEnvs  bool              `json:"ignoreParentEnvs,omitempty" yaml:"ignoreParentEnvs,omitempty"`
 }
 
 type HostCollect struct {
