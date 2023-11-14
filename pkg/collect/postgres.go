@@ -52,6 +52,8 @@ func (c *CollectPostgres) createConnectConfig() (*pgx.ConnConfig, error) {
 
 		// Drop the TLS params to files and set the paths to their
 		// respective environment variables
+		// The environment variables are unset after the connection config
+		// is created. Their respective files are deleted as well.
 		tmpdir, err := os.MkdirTemp("", "ts-postgres-collector")
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to create temp dir to store postgres collector TLS files")
