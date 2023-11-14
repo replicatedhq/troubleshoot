@@ -2,7 +2,9 @@ package collect
 
 import (
 	"context"
+	"crypto/rsa"
 	"crypto/x509"
+	"encoding/pem"
 	"testing"
 
 	"github.com/replicatedhq/troubleshoot/internal/testutils"
@@ -114,11 +116,21 @@ func TestCollectPostgres_createConnectConfigTLS(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, connCfg)
 	assert.Equal(t, connCfg.Host, "my-pghost")
+
+	// Check client cert
 	require.Len(t, connCfg.TLSConfig.Certificates, 1)
 	require.Len(t, connCfg.TLSConfig.Certificates[0].Certificate, 1)
-	clientCert, err := x509.ParseCertificate(connCfg.TLSConfig.Certificates[0].Certificate[0])
+	cert := connCfg.TLSConfig.Certificates[0]
+	clientCert, err := x509.ParseCertificate(cert.Certificate[0])
 	require.NoError(t, err)
 	assert.Equal(t, "CN=client,L=Didcot,ST=Oxfordshire,C=UK", clientCert.Subject.String())
+
+	// Check client key
+	block, _ := pem.Decode([]byte(testutils.GetTestFixture(t, "db/client-key.pem")))
+	key, err := x509.ParsePKCS1PrivateKey(block.Bytes)
+	require.NoError(t, err)
+	assert.True(t, key.Equal(cert.PrivateKey.(*rsa.PrivateKey)))
+
 	assert.NotNil(t, connCfg.TLSConfig.RootCAs)
 	assert.False(t, connCfg.TLSConfig.InsecureSkipVerify)
 }
