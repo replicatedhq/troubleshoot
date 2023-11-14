@@ -2,6 +2,7 @@ package collect
 
 import (
 	"context"
+	"crypto/x509"
 	"testing"
 
 	"github.com/replicatedhq/troubleshoot/internal/testutils"
@@ -100,7 +101,7 @@ func TestCollectPostgres_createConnectConfigTLS(t *testing.T) {
 		Client:  k8sClient,
 		Context: context.Background(),
 		Collector: &v1beta2.Database{
-			URI: "postgresql://user:password@my-pghost:5432/defaultdb?sslmode=require",
+			URI: "postgresql://user:password@my-pghost:5432/defaultdb?sslmode=verify-full",
 			TLS: &v1beta2.TLSParams{
 				CACert:     testutils.GetTestFixture(t, "db/ca.pem"),
 				ClientCert: testutils.GetTestFixture(t, "db/client.pem"),
@@ -113,7 +114,11 @@ func TestCollectPostgres_createConnectConfigTLS(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, connCfg)
 	assert.Equal(t, connCfg.Host, "my-pghost")
-	assert.NotNil(t, connCfg.TLSConfig.Certificates)
+	require.Len(t, connCfg.TLSConfig.Certificates, 1)
+	require.Len(t, connCfg.TLSConfig.Certificates[0].Certificate, 1)
+	clientCert, err := x509.ParseCertificate(connCfg.TLSConfig.Certificates[0].Certificate[0])
+	require.NoError(t, err)
+	assert.Equal(t, "CN=client,L=Didcot,ST=Oxfordshire,C=UK", clientCert.Subject.String())
 	assert.NotNil(t, connCfg.TLSConfig.RootCAs)
 	assert.False(t, connCfg.TLSConfig.InsecureSkipVerify)
 }

@@ -120,19 +120,16 @@ func (c *CollectClusterResources) Collect(progressChan chan<- interface{}) (Coll
 	var namespaceNames []string
 	if len(c.Collector.Namespaces) > 0 {
 		namespaces, namespaceErrors := getNamespaces(ctx, client, c.Collector.Namespaces)
-		klog.V(4).Infof("checking for namespaces access: %s", string(namespaces))
 		namespaceNames = c.Collector.Namespaces
 		output.SaveResult(c.BundlePath, path.Join(constants.CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s.json", constants.CLUSTER_RESOURCES_NAMESPACES)), bytes.NewBuffer(namespaces))
 		output.SaveResult(c.BundlePath, path.Join(constants.CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s-errors.json", constants.CLUSTER_RESOURCES_NAMESPACES)), marshalErrors(namespaceErrors))
 	} else if c.Namespace != "" {
 		namespace, namespaceErrors := getNamespace(ctx, client, c.Namespace)
-		klog.V(4).Infof("checking for namespace access: %s", string(namespace))
 		output.SaveResult(c.BundlePath, path.Join(constants.CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s.json", constants.CLUSTER_RESOURCES_NAMESPACES)), bytes.NewBuffer(namespace))
 		output.SaveResult(c.BundlePath, path.Join(constants.CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s-errors.json", constants.CLUSTER_RESOURCES_NAMESPACES)), marshalErrors(namespaceErrors))
 		namespaceNames = append(namespaceNames, c.Namespace)
 	} else {
 		namespaces, namespaceList, namespaceErrors := getAllNamespaces(ctx, client)
-		klog.V(4).Infof("checking for all namespaces access: %s", string(namespaces))
 		output.SaveResult(c.BundlePath, path.Join(constants.CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s.json", constants.CLUSTER_RESOURCES_NAMESPACES)), bytes.NewBuffer(namespaces))
 		output.SaveResult(c.BundlePath, path.Join(constants.CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s-errors.json", constants.CLUSTER_RESOURCES_NAMESPACES)), marshalErrors(namespaceErrors))
 		if namespaceList != nil {
@@ -146,6 +143,7 @@ func (c *CollectClusterResources) Collect(progressChan chan<- interface{}) (Coll
 	reviewStatuses, reviewStatusErrors := getSelfSubjectRulesReviews(ctx, client, namespaceNames)
 
 	// auth cani
+	klog.V(2).Infof("checking [%s] namespaces for permissions to collect resources", strings.Join(namespaceNames, ", "))
 	authCanI := authCanI(reviewStatuses, namespaceNames)
 	for k, v := range authCanI {
 		output.SaveResult(c.BundlePath, path.Join(constants.CLUSTER_RESOURCES_DIR, constants.CLUSTER_RESOURCES_AUTH_CANI, k), bytes.NewBuffer(v))
@@ -160,8 +158,12 @@ func (c *CollectClusterResources) Collect(progressChan chan<- interface{}) (Coll
 				filteredNamespaces = append(filteredNamespaces, ns)
 			}
 		}
+		if len(filteredNamespaces) != len(namespaceNames) {
+			klog.V(2).Infof("filtered namespaces down to [%s] after evaluating permissions", strings.Join(filteredNamespaces, ", "))
+		} else {
+			klog.V(2).Infof("no namespaces filtered out after evaluating permissions")
+		}
 		namespaceNames = filteredNamespaces
-		klog.V(4).Infof("filtered to namespaceNames %s", namespaceNames)
 	}
 
 	// pods
