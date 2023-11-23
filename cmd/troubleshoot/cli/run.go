@@ -311,18 +311,20 @@ func loadSpecs(ctx context.Context, args []string, client kubernetes.Interface) 
 		mainBundle.Spec.HostCollectors = append(mainBundle.Spec.HostCollectors, hc.Spec.Collectors...)
 	}
 
-	// Ensure cluster info and cluster resources collectors are in the merged spec
-	// We need to add them here so when we --dry-run, these collectors are included.
-	// supportbundle.runCollectors duplicates this bit. We'll need to refactor it out later
-	// when its clearer what other code depends on this logic e.g KOTS
-	mainBundle.Spec.Collectors = collect.EnsureCollectorInList(
-		mainBundle.Spec.Collectors,
-		troubleshootv1beta2.Collect{ClusterInfo: &troubleshootv1beta2.ClusterInfo{}},
-	)
-	mainBundle.Spec.Collectors = collect.EnsureCollectorInList(
-		mainBundle.Spec.Collectors,
-		troubleshootv1beta2.Collect{ClusterResources: &troubleshootv1beta2.ClusterResources{}},
-	)
+	if len(mainBundle.Spec.Collectors) > 0 {
+		// If we have in-cluster collectors, ensure cluster info and cluster resources
+		// collectors are in the merged spec. We need to add them here so when we --dry-run,
+		// these collectors are included. supportbundle.runCollectors duplicates this bit.
+		// We'll need to refactor it out later when its clearer what other code depends on this logic e.g KOTS
+		mainBundle.Spec.Collectors = collect.EnsureCollectorInList(
+			mainBundle.Spec.Collectors,
+			troubleshootv1beta2.Collect{ClusterInfo: &troubleshootv1beta2.ClusterInfo{}},
+		)
+		mainBundle.Spec.Collectors = collect.EnsureCollectorInList(
+			mainBundle.Spec.Collectors,
+			troubleshootv1beta2.Collect{ClusterResources: &troubleshootv1beta2.ClusterResources{}},
+		)
+	}
 
 	additionalRedactors := &troubleshootv1beta2.Redactor{
 		TypeMeta: metav1.TypeMeta{
