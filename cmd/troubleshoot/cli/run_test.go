@@ -49,12 +49,13 @@ spec:
 	require.NoError(t, err)
 	require.NotNil(t, kinds)
 
-	assert.Len(t, kinds.SupportBundlesV1Beta2, 0)
+	assert.Len(t, kinds.SupportBundlesV1Beta2, 1)
+	assert.NotNil(t, kinds.SupportBundlesV1Beta2[0].Spec.Collectors[0].ConfigMap)
 	err = loadSupportBundleSpecsFromURIs(ctx, kinds)
 	require.NoError(t, err)
 
-	require.Len(t, kinds.SupportBundlesV1Beta2, 1)
-	assert.NotNil(t, kinds.SupportBundlesV1Beta2[0].Spec.Collectors[0].ClusterInfo)
+	require.Len(t, kinds.SupportBundlesV1Beta2, 2)
+	assert.NotNil(t, kinds.SupportBundlesV1Beta2[1].Spec.Collectors[0].ClusterInfo)
 }
 
 func Test_loadSupportBundleSpecsFromURIs_TimeoutError(t *testing.T) {
