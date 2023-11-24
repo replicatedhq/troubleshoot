@@ -2,6 +2,7 @@ package cli
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -48,11 +49,12 @@ spec:
 	require.NoError(t, err)
 	require.NotNil(t, kinds)
 
-	moreKinds, err := loadSupportBundleSpecsFromURIs(ctx, kinds)
+	assert.Len(t, kinds.SupportBundlesV1Beta2, 0)
+	err = loadSupportBundleSpecsFromURIs(ctx, kinds)
 	require.NoError(t, err)
 
-	require.Len(t, moreKinds.SupportBundlesV1Beta2, 1)
-	assert.NotNil(t, moreKinds.SupportBundlesV1Beta2[0].Spec.Collectors[0].ClusterInfo)
+	require.Len(t, kinds.SupportBundlesV1Beta2, 1)
+	assert.NotNil(t, kinds.SupportBundlesV1Beta2[0].Spec.Collectors[0].ClusterInfo)
 }
 
 func Test_loadSupportBundleSpecsFromURIs_TimeoutError(t *testing.T) {
@@ -76,8 +78,14 @@ func Test_loadSupportBundleSpecsFromURIs_TimeoutError(t *testing.T) {
 		httputil.GetHttpClient().Timeout = before
 	}()
 
-	kindsAfter, err := loadSupportBundleSpecsFromURIs(ctx, kinds)
+	beforeJSON, err := json.Marshal(kinds)
 	require.NoError(t, err)
 
-	assert.Equal(t, kinds, kindsAfter)
+	err = loadSupportBundleSpecsFromURIs(ctx, kinds)
+	require.NoError(t, err)
+
+	afterJSON, err := json.Marshal(kinds)
+	require.NoError(t, err)
+
+	assert.JSONEq(t, string(beforeJSON), string(afterJSON))
 }

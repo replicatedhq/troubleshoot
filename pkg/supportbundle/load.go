@@ -225,7 +225,7 @@ func loadSpec(arg string) ([]byte, error) {
 	}
 
 	if !util.IsURL(arg) {
-		return nil, fmt.Errorf("%s is not a URL and was not found (err %s)", arg, err)
+		return nil, fmt.Errorf("%s is not a URL and was not found", arg)
 	}
 
 	spec, err := loadSpecFromURL(arg)

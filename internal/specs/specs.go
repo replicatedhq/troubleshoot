@@ -167,7 +167,7 @@ func LoadFromCLIArgs(ctx context.Context, client kubernetes.Interface, args []st
 				rawSpecs = append(rawSpecs, content...)
 			} else {
 				if !util.IsURL(v) {
-					return nil, types.NewExitCodeError(constants.EXIT_CODE_SPEC_ISSUES, fmt.Errorf("%s is not a URL and was not found (err %s)", v, err))
+					return nil, types.NewExitCodeError(constants.EXIT_CODE_SPEC_ISSUES, fmt.Errorf("%s is not a URL and was not found", v))
 				}
 
 				// Download preflight specs
