@@ -27,7 +27,7 @@ func runAnalyzers(v *viper.Viper, bundlePath string) error {
 	} else {
 		if !util.IsURL(specPath) {
 			// TODO: Better error message when we do not have a file/url etc
-			return fmt.Errorf("%s is not a URL and was not found (err %s)", specPath, err)
+			return fmt.Errorf("%s is not a URL and was not found", specPath)
 		}
 
 		req, err := http.NewRequest("GET", specPath, nil)

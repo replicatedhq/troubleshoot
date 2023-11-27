@@ -137,7 +137,10 @@ func CollectSupportBundleFromSpec(
 	} else if hostFiles != nil {
 		result = hostFiles
 	} else {
-		return nil, errors.Wrap(err, "failed to generate support bundle")
+		if len(collectorsErrs) > 0 {
+			return nil, fmt.Errorf("failed to generate support bundle: %s", strings.Join(collectorsErrs, "\n"))
+		}
+		return nil, fmt.Errorf("failed to generate support bundle")
 	}
 
 	version, err := getVersionFile()

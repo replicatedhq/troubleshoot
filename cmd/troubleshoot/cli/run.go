@@ -233,7 +233,7 @@ the %s Admin Console to begin analysis.`
 }
 
 // loadSupportBundleSpecsFromURIs loads support bundle specs from URIs
-func loadSupportBundleSpecsFromURIs(ctx context.Context, kinds *loader.TroubleshootKinds) (*loader.TroubleshootKinds, error) {
+func loadSupportBundleSpecsFromURIs(ctx context.Context, kinds *loader.TroubleshootKinds) error {
 	remoteRawSpecs := []string{}
 	for _, s := range kinds.SupportBundlesV1Beta2 {
 		if s.Spec.Uri != "" && util.IsURL(s.Spec.Uri) {
@@ -252,12 +252,18 @@ func loadSupportBundleSpecsFromURIs(ctx context.Context, kinds *loader.Troublesh
 	}
 
 	if len(remoteRawSpecs) == 0 {
-		return kinds, nil
+		return nil
 	}
 
-	return loader.LoadSpecs(ctx, loader.LoadOptions{
+	moreKinds, err := loader.LoadSpecs(ctx, loader.LoadOptions{
 		RawSpecs: remoteRawSpecs,
 	})
+	if err != nil {
+		return err
+	}
+
+	kinds.Add(moreKinds)
+	return nil
 }
 
 func loadSpecs(ctx context.Context, args []string, client kubernetes.Interface) (*troubleshootv1beta2.SupportBundle, *troubleshootv1beta2.Redactor, error) {
@@ -270,11 +276,9 @@ func loadSpecs(ctx context.Context, args []string, client kubernetes.Interface) 
 
 	// Load additional specs from support bundle URIs
 	if !viper.GetBool("no-uri") {
-		moreKinds, err := loadSupportBundleSpecsFromURIs(ctx, kinds)
+		err := loadSupportBundleSpecsFromURIs(ctx, kinds)
 		if err != nil {
 			klog.Warningf("unable to load support bundles from URIs: %v", err)
-		} else {
-			kinds.Add(moreKinds)
 		}
 	}
 
@@ -304,25 +308,27 @@ func loadSpecs(ctx context.Context, args []string, client kubernetes.Interface) 
 	}
 
 	for _, c := range kinds.CollectorsV1Beta2 {
-		mainBundle.Spec.Collectors = append(mainBundle.Spec.Collectors, c.Spec.Collectors...)
+		mainBundle.Spec.Collectors = util.Append(mainBundle.Spec.Collectors, c.Spec.Collectors)
 	}
 
 	for _, hc := range kinds.HostCollectorsV1Beta2 {
-		mainBundle.Spec.HostCollectors = append(mainBundle.Spec.HostCollectors, hc.Spec.Collectors...)
+		mainBundle.Spec.HostCollectors = util.Append(mainBundle.Spec.HostCollectors, hc.Spec.Collectors)
 	}
 
-	// Ensure cluster info and cluster resources collectors are in the merged spec
-	// We need to add them here so when we --dry-run, these collectors are included.
-	// supportbundle.runCollectors duplicates this bit. We'll need to refactor it out later
-	// when its clearer what other code depends on this logic e.g KOTS
-	mainBundle.Spec.Collectors = collect.EnsureCollectorInList(
-		mainBundle.Spec.Collectors,
-		troubleshootv1beta2.Collect{ClusterInfo: &troubleshootv1beta2.ClusterInfo{}},
-	)
-	mainBundle.Spec.Collectors = collect.EnsureCollectorInList(
-		mainBundle.Spec.Collectors,
-		troubleshootv1beta2.Collect{ClusterResources: &troubleshootv1beta2.ClusterResources{}},
-	)
+	if mainBundle.Spec.Collectors != nil {
+		// If we have in-cluster collectors, ensure cluster info and cluster resources
+		// collectors are in the merged spec. We need to add them here so when we --dry-run,
+		// these collectors are included. supportbundle.runCollectors duplicates this bit.
+		// We'll need to refactor it out later when its clearer what other code depends on this logic e.g KOTS
+		mainBundle.Spec.Collectors = collect.EnsureCollectorInList(
+			mainBundle.Spec.Collectors,
+			troubleshootv1beta2.Collect{ClusterInfo: &troubleshootv1beta2.ClusterInfo{}},
+		)
+		mainBundle.Spec.Collectors = collect.EnsureCollectorInList(
+			mainBundle.Spec.Collectors,
+			troubleshootv1beta2.Collect{ClusterResources: &troubleshootv1beta2.ClusterResources{}},
+		)
+	}
 
 	additionalRedactors := &troubleshootv1beta2.Redactor{
 		TypeMeta: metav1.TypeMeta{
@@ -334,7 +340,7 @@ func loadSpecs(ctx context.Context, args []string, client kubernetes.Interface) 
 		},
 	}
 	for _, r := range kinds.RedactorsV1Beta2 {
-		additionalRedactors.Spec.Redactors = append(additionalRedactors.Spec.Redactors, r.Spec.Redactors...)
+		additionalRedactors.Spec.Redactors = util.Append(additionalRedactors.Spec.Redactors, r.Spec.Redactors)
 	}
 
 	return mainBundle, additionalRedactors, nil

@@ -153,6 +153,10 @@ func (l *specLoader) loadFromStrings(rawSpecs ...string) (*TroubleshootKinds, er
 	// For secrets and configmaps, extract support bundle, redactor or preflight specs
 	// For troubleshoot kinds, pass them through
 	for _, rawDoc := range multiRawDocs {
+		if rawDoc == "" {
+			continue
+		}
+
 		var parsed parsedDoc
 
 		err := yaml.Unmarshal([]byte(rawDoc), &parsed)
