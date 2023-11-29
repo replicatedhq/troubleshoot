@@ -3,6 +3,8 @@ package specs
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"reflect"
 	"testing"
 
@@ -10,6 +12,7 @@ import (
 	"github.com/replicatedhq/troubleshoot/internal/testutils"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/replicatedhq/troubleshoot/pkg/loader"
+	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
@@ -200,4 +203,24 @@ spec:
           - TEXT`),
 		},
 	}
+}
+
+func TestLoadFromURI(t *testing.T) {
+	m := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(`apiVersion: troubleshoot.sh/v1beta2
+apiVersion: troubleshoot.sh/v1beta2
+kind: HostCollector
+metadata:
+  name: cpu
+spec:
+  collectors:
+    - cpu: {}
+`))
+	}))
+	defer m.Close()
+
+	client := testclient.NewSimpleClientset()
+	specs, err := LoadFromCLIArgs(context.Background(), client, []string{m.URL}, viper.New())
+	require.NoError(t, err)
+	require.Len(t, specs.HostCollectorsV1Beta2, 1)
 }
