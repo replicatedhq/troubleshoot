@@ -170,22 +170,26 @@ func LoadFromCLIArgs(ctx context.Context, client kubernetes.Interface, args []st
 					return nil, types.NewExitCodeError(constants.EXIT_CODE_SPEC_ISSUES, fmt.Errorf("%s is not a URL and was not found", v))
 				}
 
-				// Download preflight specs
-				rawSpec, err := downloadFromHttpURL(ctx, v, map[string]string{"User-Agent": "Replicated_Preflight/v1beta2"})
+				parsedURL, err := url.ParseRequestURI(v)
 				if err != nil {
-					return nil, err
+					return nil, types.NewExitCodeError(constants.EXIT_CODE_SPEC_ISSUES, err)
 				}
-				rawSpecs = append(rawSpecs, rawSpec)
-
-				// Download support bundle specs
-				rawSpec, err = downloadFromHttpURL(ctx, v, map[string]string{
-					"User-Agent":         "Replicated_Troubleshoot/v1beta1",
-					"Bundle-Upload-Host": fmt.Sprintf("%s://%s", u.Scheme, u.Host),
-				})
-				if err != nil {
-					return nil, err
+				if parsedURL.Host == "kots.io" {
+					// To download specs from kots.io, we need to set the User-Agent header
+					rawSpec, err := downloadFromHttpURL(ctx, v, map[string]string{
+						"User-Agent": "Replicated_Troubleshoot/v1beta1",
+					})
+					if err != nil {
+						return nil, err
+					}
+					rawSpecs = append(rawSpecs, rawSpec)
+				} else {
+					rawSpec, err := downloadFromHttpURL(ctx, v, nil)
+					if err != nil {
+						return nil, err
+					}
+					rawSpecs = append(rawSpecs, rawSpec)
 				}
-				rawSpecs = append(rawSpecs, rawSpec)
 			}
 		}
 	}
