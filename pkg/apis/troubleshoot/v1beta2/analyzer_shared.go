@@ -225,6 +225,13 @@ type CertificatesAnalyze struct {
 	Outcomes    []*Outcome `json:"outcomes" yaml:"outcomes"`
 }
 
+type GoldpingerAnalyze struct {
+	AnalyzeMeta   `json:",inline" yaml:",inline"`
+	Outcomes      []*Outcome `json:"outcomes" yaml:"outcomes"`
+	CollectorName string     `json:"collectorName" yaml:"collectorName"`
+	FileName      string     `json:"fileName,omitempty" yaml:"fileName,omitempty"`
+}
+
 type Analyze struct {
 	ClusterVersion           *ClusterVersion           `json:"clusterVersion,omitempty" yaml:"clusterVersion,omitempty"`
 	StorageClass             *StorageClass             `json:"storageClass,omitempty" yaml:"storageClass,omitempty"`
