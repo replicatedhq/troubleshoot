@@ -147,15 +147,16 @@ func createCollectorPod(client kubernetes.Interface, scheme *runtime.Scheme, own
 	if serviceAccountName == "" {
 		serviceAccountName = "default"
 	}
+	ctx := context.Background()
 
-	_, err := client.CoreV1().Pods(namespace).Get(context.Background(), name, metav1.GetOptions{})
+	_, err := client.CoreV1().Pods(namespace).Get(ctx, name, metav1.GetOptions{})
 	if err == nil {
 		return nil, fmt.Errorf("pod %q already exists", name)
 	} else if !kuberneteserrors.IsNotFound(err) {
 		return nil, err
 	}
 
-	if err := checkForExistingServiceAccount(client, namespace, serviceAccountName); err != nil {
+	if err := checkForExistingServiceAccount(ctx, client, namespace, serviceAccountName); err != nil {
 		return nil, err
 	}
 

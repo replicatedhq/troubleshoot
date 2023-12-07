@@ -241,8 +241,8 @@ func getTLSParamsFromSecret(ctx context.Context, client kubernetes.Interface, se
 	return caCert, clientCert, clientKey, nil
 }
 
-func checkForExistingServiceAccount(client kubernetes.Interface, namespace string, serviceAccountName string) error {
-	_, err := client.CoreV1().ServiceAccounts(namespace).Get(context.Background(), serviceAccountName, metav1.GetOptions{})
+func checkForExistingServiceAccount(ctx context.Context, client kubernetes.Interface, namespace string, serviceAccountName string) error {
+	_, err := client.CoreV1().ServiceAccounts(namespace).Get(ctx, serviceAccountName, metav1.GetOptions{})
 
 	if err != nil {
 		return errors.Wrapf(err, "Failed to get service account %s", serviceAccountName)

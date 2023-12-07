@@ -47,6 +47,7 @@ func (c *CollectExec) Collect(progressChan chan<- interface{}) (CollectorResult,
 	errCh := make(chan error, 1)
 	resultCh := make(chan CollectorResult, 1)
 
+	// TODO: Use a context with timeout instead of a goroutine
 	go func() {
 		b, err := execWithoutTimeout(c.ClientConfig, c.BundlePath, c.Collector)
 		if err != nil {
@@ -78,12 +79,12 @@ func execWithoutTimeout(clientConfig *rest.Config, bundlePath string, execCollec
 
 	pods, podsErrors := listPodsInSelectors(ctx, client, execCollector.Namespace, execCollector.Selector)
 	if len(podsErrors) > 0 {
-		output.SaveResult(bundlePath, getExecErrosFileName(execCollector), marshalErrors(podsErrors))
+		output.SaveResult(bundlePath, getExecErrorsFileName(execCollector), marshalErrors(podsErrors))
 	}
 
 	if len(pods) > 0 {
 		for _, pod := range pods {
-			stdout, stderr, execErrors := getExecOutputs(clientConfig, client, pod, execCollector)
+			stdout, stderr, execErrors := getExecOutputs(ctx, clientConfig, client, pod, execCollector)
 
 			path := filepath.Join(execCollector.Name, pod.Namespace, pod.Name)
 			if len(stdout) > 0 {
@@ -103,7 +104,9 @@ func execWithoutTimeout(clientConfig *rest.Config, bundlePath string, execCollec
 	return output, nil
 }
 
-func getExecOutputs(clientConfig *rest.Config, client *kubernetes.Clientset, pod corev1.Pod, execCollector *troubleshootv1beta2.Exec) ([]byte, []byte, []string) {
+func getExecOutputs(
+	ctx context.Context, clientConfig *rest.Config, client *kubernetes.Clientset, pod corev1.Pod, execCollector *troubleshootv1beta2.Exec,
+) ([]byte, []byte, []string) {
 	container := pod.Spec.Containers[0].Name
 	if execCollector.ContainerName != "" {
 		container = execCollector.ContainerName
@@ -133,7 +136,7 @@ func getExecOutputs(clientConfig *rest.Config, client *kubernetes.Clientset, pod
 	stdout := new(bytes.Buffer)
 	stderr := new(bytes.Buffer)
 
-	err = exec.Stream(remotecommand.StreamOptions{
+	err = exec.StreamWithContext(ctx, remotecommand.StreamOptions{
 		Stdin:  nil,
 		Stdout: stdout,
 		Stderr: stderr,
@@ -147,7 +150,7 @@ func getExecOutputs(clientConfig *rest.Config, client *kubernetes.Clientset, pod
 	return stdout.Bytes(), stderr.Bytes(), nil
 }
 
-func getExecErrosFileName(execCollector *troubleshootv1beta2.Exec) string {
+func getExecErrorsFileName(execCollector *troubleshootv1beta2.Exec) string {
 	if len(execCollector.Name) > 0 {
 		return fmt.Sprintf("%s-errors.json", execCollector.Name)
 	}

@@ -43,7 +43,7 @@ func (c *CollectRun) Collect(progressChan chan<- interface{}) (CollectorResult, 
 		serviceAccountName = c.Collector.ServiceAccountName
 	}
 
-	if err := checkForExistingServiceAccount(c.Client, namespace, serviceAccountName); err != nil {
+	if err := checkForExistingServiceAccount(c.Context, c.Client, namespace, serviceAccountName); err != nil {
 		return nil, err
 	}
 
