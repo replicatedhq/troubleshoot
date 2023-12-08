@@ -3,6 +3,7 @@ package collect
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/replicatedhq/troubleshoot/internal/util"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
+	"github.com/replicatedhq/troubleshoot/pkg/constants"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -47,7 +49,7 @@ func (c *CollectGoldpinger) Collect(progressChan chan<- interface{}) (CollectorR
 		results, err = c.fetchCheckAllOutput()
 		if err != nil {
 			klog.V(2).Infof("Failed to query goldpinger endpoint: %v", err)
-			err = output.SaveResult(c.BundlePath, "goldpinger/error.json", marshalErrors(err))
+			err = output.SaveResult(c.BundlePath, "goldpinger/error.txt", bytes.NewBuffer([]byte(err.Error())))
 			return output, err
 		}
 	} else {
@@ -55,12 +57,12 @@ func (c *CollectGoldpinger) Collect(progressChan chan<- interface{}) (CollectorR
 		results, err = c.runPodAndCollectCheckOutput(progressChan)
 		if err != nil {
 			klog.V(2).Infof("Failed to run pod and collect goldpinger results: %v", err)
-			err = output.SaveResult(c.BundlePath, "goldpinger/error.json", marshalErrors(err))
+			err = output.SaveResult(c.BundlePath, "goldpinger/error.txt", bytes.NewBuffer([]byte(err.Error())))
 			return output, err
 		}
 	}
 
-	err = output.SaveResult(c.BundlePath, "goldpinger/check_all.json", bytes.NewBuffer(results))
+	err = output.SaveResult(c.BundlePath, constants.GP_CHECK_ALL_RESULTS_PATH, bytes.NewBuffer(results))
 	return output, err
 }
 
@@ -85,6 +87,10 @@ func (c *CollectGoldpinger) fetchCheckAllOutput() ([]byte, error) {
 		return nil, err
 	}
 
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("unexpected status code: %d, body: %s", resp.StatusCode, string(body))
+	}
+
 	return body, nil
 }
 
@@ -103,12 +109,13 @@ func (c *CollectGoldpinger) runPodAndCollectCheckOutput(progressChan chan<- inte
 		return nil, err
 	}
 
-	image := "busybox:1" // TODO: Will we always have busybox? Perhaps netshoot?
+	image := "alpine:3" // TODO: Will this image always be in airgaps? Perhaps netshoot?
 	if c.Collector.PodLaunchSpec.Image != "" {
 		image = c.Collector.PodLaunchSpec.Image
 	}
 
 	runPodCollectorName := "ts-goldpinger-collector"
+	wgetContainerName := "wget-collector"
 	runPodSpec := &troubleshootv1beta2.RunPod{
 		CollectorMeta: troubleshootv1beta2.CollectorMeta{
 			CollectorName: runPodCollectorName,
@@ -125,7 +132,7 @@ func (c *CollectGoldpinger) runPodAndCollectCheckOutput(progressChan chan<- inte
 				{
 					Image:           image,
 					ImagePullPolicy: corev1.PullIfNotPresent,
-					Name:            "collector",
+					Name:            wgetContainerName,
 					Command:         []string{"wget"},
 					Args:            []string{"-q", "-O-", c.endpoint()},
 				},
@@ -137,17 +144,36 @@ func (c *CollectGoldpinger) runPodAndCollectCheckOutput(progressChan chan<- inte
 	// Pass an empty bundle path since we don't need to save the results
 	runPodCollector := &CollectRunPod{runPodSpec, "", c.Namespace, c.ClientConfig, c.Client, c.Context, rbacErrors}
 
-	res, err := runPodCollector.Collect(progressChan)
+	output, err := runPodCollector.Collect(progressChan)
 	if err != nil {
 		return nil, err
 	}
 
-	podLogsPath := fmt.Sprintf("%s/%s.log", runPodCollectorName, runPodCollectorName)
-	return res[podLogsPath], nil
+	// Check if the wget container exited with an error
+	var pod corev1.Pod
+	err = json.Unmarshal(output[fmt.Sprintf("%s/%s.json", runPodCollectorName, runPodCollectorName)], &pod)
+	if err != nil {
+		return nil, err
+	}
+
+	exitedWithError := false
+	for _, status := range pod.Status.ContainerStatuses {
+		if status.Name == wgetContainerName {
+			if status.State.Terminated.ExitCode != 0 {
+				exitedWithError = true
+			}
+		}
+	}
+
+	podLogs := output[fmt.Sprintf("%s/%s.log", runPodCollectorName, runPodCollectorName)]
+	if exitedWithError {
+		return nil, fmt.Errorf("wget container exited with an error: %q", string(podLogs))
+	}
+	return podLogs, nil
 }
 
 func (c *CollectGoldpinger) endpoint() string {
-	namespace := c.Namespace
+	namespace := c.Collector.Namespace
 	if namespace == "" {
 		namespace = "kurl"
 	}

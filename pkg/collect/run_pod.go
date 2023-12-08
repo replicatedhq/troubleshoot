@@ -44,7 +44,7 @@ func (c *CollectRunPod) IsExcluded() (bool, error) {
 	return isExcluded(c.Collector.Exclude)
 }
 
-func (c *CollectRunPod) Collect(progressChan chan<- interface{}) (CollectorResult, error) {
+func (c *CollectRunPod) Collect(progressChan chan<- interface{}) (result CollectorResult, err error) {
 	ctx := context.Background()
 
 	client, err := kubernetes.NewForConfig(c.ClientConfig)
@@ -70,7 +70,7 @@ func (c *CollectRunPod) Collect(progressChan chan<- interface{}) (CollectorResul
 		}()
 	}
 
-	result := NewResult()
+	result = NewResult()
 
 	defer func() {
 		result, err = savePodDetails(ctx, client, result, c.BundlePath, c.ClientConfig, pod, c.Collector)

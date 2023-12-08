@@ -91,4 +91,7 @@ const (
 	// This is the muximum size the buffer can grow to
 	// Its not what the buffer will be allocated to initially
 	SCANNER_MAX_SIZE = 10 * 1024 * 1024 // 10MB
+
+	// Goldpinger constants
+	GP_CHECK_ALL_RESULTS_PATH = "goldpinger/check_all.json"
 )

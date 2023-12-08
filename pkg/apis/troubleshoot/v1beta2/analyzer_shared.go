@@ -229,7 +229,7 @@ type GoldpingerAnalyze struct {
 	AnalyzeMeta   `json:",inline" yaml:",inline"`
 	Outcomes      []*Outcome `json:"outcomes" yaml:"outcomes"`
 	CollectorName string     `json:"collectorName" yaml:"collectorName"`
-	FileName      string     `json:"fileName,omitempty" yaml:"fileName,omitempty"`
+	FilePath      string     `json:"filePath,omitempty" yaml:"filePath,omitempty"`
 }
 
 type Analyze struct {

@@ -6,6 +6,7 @@ import (
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
+	"github.com/replicatedhq/troubleshoot/pkg/constants"
 )
 
 type AnalyzeGoldpinger struct {
@@ -53,9 +54,15 @@ func (a *AnalyzeGoldpinger) IsExcluded() (bool, error) {
 }
 
 func (a *AnalyzeGoldpinger) Analyze(getFile getCollectedFileContents, findFiles getChildCollectedFileContents) ([]*AnalyzeResult, error) {
-	collected, err := getFile(a.analyzer.FileName)
+	caoFilePath := constants.GP_CHECK_ALL_RESULTS_PATH
+	// To allow analysing older support bundles, we can provide a custom file path
+	if a.analyzer.FilePath != "" {
+		caoFilePath = a.analyzer.FilePath
+	}
+
+	collected, err := getFile(caoFilePath)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to read collected file name: %q", a.analyzer.FileName)
+		return nil, errors.Wrapf(err, "failed to read collected file path: %q", caoFilePath)
 	}
 
 	var cao checkAllOutput
@@ -118,8 +125,8 @@ func (a *AnalyzeGoldpinger) podPingsAnalysis(cao *checkAllOutput) []*AnalyzeResu
 				IconKey: "kubernetes",
 				Strict:  a.analyzer.Strict.BoolOrDefaultFalse(),
 				IsPass:  true,
-				Title:   fmt.Sprintf("Pings to %q pod from all other pods succeeded", targetPod),
-				Message: fmt.Sprintf("Pings to %q pod from all other pods succeeded", targetPod),
+				Title:   fmt.Sprintf("Pings to %q pod succeeded", targetPod),
+				Message: fmt.Sprintf("Pings to %q pod from all other pods in the cluster succeeded", targetPod),
 			})
 		}
 	}

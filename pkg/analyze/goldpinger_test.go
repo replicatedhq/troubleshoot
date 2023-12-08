@@ -35,20 +35,20 @@ func TestAnalyzeGoldpinger_podPingsAnalysis(t *testing.T) {
 			cao:  caoFixture(t, "goldpinger/checkall-success.json"),
 			want: []*AnalyzeResult{
 				{
-					Title:   "Pings to \"goldpinger-kpz4g\" pod from all other pods succeeded",
-					Message: "Pings to \"goldpinger-kpz4g\" pod from all other pods succeeded",
+					Title:   "Pings to \"goldpinger-kpz4g\" succeeded",
+					Message: "Pings to \"goldpinger-kpz4g\" pod from all other pods in the cluster succeeded",
 					IconKey: "kubernetes",
 					IsPass:  true,
 				},
 				{
-					Title:   "Pings to \"goldpinger-k6d2j\" pod from all other pods succeeded",
-					Message: "Pings to \"goldpinger-k6d2j\" pod from all other pods succeeded",
+					Title:   "Pings to \"goldpinger-k6d2j\" succeeded",
+					Message: "Pings to \"goldpinger-k6d2j\" pod from all other pods in the cluster succeeded",
 					IconKey: "kubernetes",
 					IsPass:  true,
 				},
 				{
-					Title:   "Pings to \"goldpinger-5ck4d\" pod from all other pods succeeded",
-					Message: "Pings to \"goldpinger-5ck4d\" pod from all other pods succeeded",
+					Title:   "Pings to \"goldpinger-5ck4d\" succeeded",
+					Message: "Pings to \"goldpinger-5ck4d\" pod from all other pods in the cluster succeeded",
 					IconKey: "kubernetes",
 					IsPass:  true,
 				},
