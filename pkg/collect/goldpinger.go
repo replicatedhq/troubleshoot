@@ -7,8 +7,10 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"time"
 
+	"github.com/pkg/errors"
 	"github.com/replicatedhq/troubleshoot/internal/util"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/replicatedhq/troubleshoot/pkg/constants"
@@ -117,7 +119,7 @@ func (c *CollectGoldpinger) runPodAndCollectCheckOutput(progressChan chan<- inte
 	}
 
 	runPodCollectorName := "ts-goldpinger-collector"
-	wgetContainerName := "curl-collector"
+	collectorContainerName := "curl-collector"
 	runPodSpec := &troubleshootv1beta2.RunPod{
 		CollectorMeta: troubleshootv1beta2.CollectorMeta{
 			CollectorName: runPodCollectorName,
@@ -133,7 +135,7 @@ func (c *CollectGoldpinger) runPodAndCollectCheckOutput(progressChan chan<- inte
 				{
 					Image:           image,
 					ImagePullPolicy: corev1.PullIfNotPresent,
-					Name:            wgetContainerName,
+					Name:            collectorContainerName,
 					Command:         []string{"curl"},
 					Args:            []string{"-s", c.endpoint()},
 				},
@@ -157,18 +159,30 @@ func (c *CollectGoldpinger) runPodAndCollectCheckOutput(progressChan chan<- inte
 		return nil, err
 	}
 
-	exitedWithError := false
+	var terminationError *corev1.ContainerStateTerminated
 	for _, status := range pod.Status.ContainerStatuses {
-		if status.Name == wgetContainerName {
+		if status.Name == collectorContainerName {
 			if status.State.Terminated.ExitCode != 0 {
-				exitedWithError = true
+				terminationError = status.State.Terminated
 			}
 		}
 	}
 
 	podLogs := output[fmt.Sprintf("%s/%s.log", runPodCollectorName, runPodCollectorName)]
-	if exitedWithError {
-		return nil, fmt.Errorf("wget container exited with an error: %q", string(podLogs))
+	if terminationError != nil {
+		m := map[string]string{
+			"podName":  pod.Name,
+			"exitCode": strconv.Itoa(int(terminationError.ExitCode)),
+			"reason":   terminationError.Reason,
+			"message":  terminationError.Message,
+			"logs":     string(podLogs),
+		}
+
+		b, err := json.MarshalIndent(m, "", "  ")
+		if err != nil {
+			return nil, err
+		}
+		return nil, errors.New(string(b))
 	}
 	return podLogs, nil
 }
