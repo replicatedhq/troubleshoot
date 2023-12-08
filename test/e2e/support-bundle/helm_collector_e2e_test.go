@@ -11,7 +11,6 @@ import (
 	"testing"
 
 	"sigs.k8s.io/e2e-framework/pkg/envconf"
-	"sigs.k8s.io/e2e-framework/pkg/envfuncs"
 	"sigs.k8s.io/e2e-framework/pkg/features"
 	"sigs.k8s.io/e2e-framework/third_party/helm"
 
@@ -26,10 +25,7 @@ func Test_HelmCollector(t *testing.T) {
 
 	feature := features.New("Collector Helm Release").
 		Setup(func(ctx context.Context, t *testing.T, c *envconf.Config) context.Context {
-			cluster, ok := envfuncs.GetKindClusterFromContext(ctx, ClusterName)
-			if !ok {
-				t.Fatalf("Failed to extract kind cluster %s from context", ClusterName)
-			}
+			cluster := getClusterFromContext(t, ctx, ClusterName)
 			manager := helm.New(cluster.GetKubeconfig())
 			manager.RunInstall(helm.WithName(releaseName), helm.WithNamespace(c.Namespace()), helm.WithChart(filepath.Join(curDir, "testdata/charts/nginx-15.2.0.tgz")), helm.WithWait(), helm.WithTimeout("1m"))
 			//ignore error to allow test to speed up, helm collector will catch the pending or deployed helm release status

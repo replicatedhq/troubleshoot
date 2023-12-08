@@ -4,6 +4,7 @@ import (
 	"archive/tar"
 	"bytes"
 	"compress/gzip"
+	"context"
 	"fmt"
 	"io"
 	"os"
@@ -14,6 +15,7 @@ import (
 	"sigs.k8s.io/e2e-framework/pkg/env"
 	"sigs.k8s.io/e2e-framework/pkg/envconf"
 	"sigs.k8s.io/e2e-framework/pkg/envfuncs"
+	"sigs.k8s.io/e2e-framework/support/kind"
 )
 
 var testenv env.Environment
@@ -32,6 +34,19 @@ func TestMain(m *testing.M) {
 		envfuncs.DestroyKindCluster(ClusterName),
 	)
 	os.Exit(testenv.Run(m))
+}
+
+func getClusterFromContext(t *testing.T, ctx context.Context, clusterName string) *kind.Cluster {
+	provider, ok := envfuncs.GetClusterFromContext(ctx, ClusterName)
+	if !ok {
+		t.Fatalf("Failed to extract kind cluster %s from context", ClusterName)
+	}
+	cluster, ok := provider.(*kind.Cluster)
+	if !ok {
+		t.Fatalf("Failed to cast kind cluster %s from provider", ClusterName)
+	}
+
+	return cluster
 }
 
 func readFilesAndFoldersFromTar(tarPath, targetFolder string) ([]string, []string, error) {
@@ -112,5 +127,5 @@ func readFileFromTar(tarPath, targetFile string) ([]byte, error) {
 			return buf.Bytes(), nil
 		}
 	}
-	return nil, fmt.Errorf("File not found: %s", targetFile)
+	return nil, fmt.Errorf("File not found: %q", targetFile)
 }
