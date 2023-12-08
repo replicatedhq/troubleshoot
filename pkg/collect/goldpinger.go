@@ -48,16 +48,18 @@ func (c *CollectGoldpinger) Collect(progressChan chan<- interface{}) (CollectorR
 		klog.V(2).Infof("Collector running in cluster, querying goldpinger endpoint straight away")
 		results, err = c.fetchCheckAllOutput()
 		if err != nil {
-			klog.V(2).Infof("Failed to query goldpinger endpoint: %v", err)
-			err = output.SaveResult(c.BundlePath, "goldpinger/error.txt", bytes.NewBuffer([]byte(err.Error())))
+			errMsg := fmt.Sprintf("Failed to query goldpinger endpoint in cluster: %v", err)
+			klog.V(2).Infof(errMsg)
+			err = output.SaveResult(c.BundlePath, "goldpinger/error.txt", bytes.NewBuffer([]byte(errMsg)))
 			return output, err
 		}
 	} else {
 		klog.V(2).Infof("Launch pod to query goldpinger endpoint then collect results from pod logs")
 		results, err = c.runPodAndCollectCheckOutput(progressChan)
 		if err != nil {
-			klog.V(2).Infof("Failed to run pod and collect goldpinger results: %v", err)
-			err = output.SaveResult(c.BundlePath, "goldpinger/error.txt", bytes.NewBuffer([]byte(err.Error())))
+			errMsg := fmt.Sprintf("Failed to run pod to collect goldpinger results: %v", err)
+			klog.V(2).Infof(errMsg)
+			err = output.SaveResult(c.BundlePath, "goldpinger/error.txt", bytes.NewBuffer([]byte(errMsg)))
 			return output, err
 		}
 	}
@@ -68,7 +70,7 @@ func (c *CollectGoldpinger) Collect(progressChan chan<- interface{}) (CollectorR
 
 func (c *CollectGoldpinger) fetchCheckAllOutput() ([]byte, error) {
 	client := &http.Client{
-		Timeout: 60 * time.Second, // Long enough timeout
+		Timeout: time.Minute, // Long enough timeout
 	}
 
 	req, err := http.NewRequestWithContext(c.Context, "GET", c.endpoint(), nil)
@@ -96,35 +98,34 @@ func (c *CollectGoldpinger) fetchCheckAllOutput() ([]byte, error) {
 
 func (c *CollectGoldpinger) runPodAndCollectCheckOutput(progressChan chan<- interface{}) ([]byte, error) {
 	namespace := "default"
-	if c.Collector.PodLaunchSpec.Namespace != "" {
-		namespace = c.Collector.PodLaunchSpec.Namespace
+	if c.Collector.PodLaunchOptions.Namespace != "" {
+		namespace = c.Collector.PodLaunchOptions.Namespace
 	}
 
 	serviceAccountName := "default"
-	if c.Collector.PodLaunchSpec.ServiceAccountName != "" {
-		serviceAccountName = c.Collector.PodLaunchSpec.ServiceAccountName
+	if c.Collector.PodLaunchOptions.ServiceAccountName != "" {
+		serviceAccountName = c.Collector.PodLaunchOptions.ServiceAccountName
 	}
 
 	if err := checkForExistingServiceAccount(c.Context, c.Client, namespace, serviceAccountName); err != nil {
 		return nil, err
 	}
 
-	image := "alpine:3" // TODO: Will this image always be in airgaps? Perhaps netshoot?
-	if c.Collector.PodLaunchSpec.Image != "" {
-		image = c.Collector.PodLaunchSpec.Image
+	image := constants.KURL_UTILS_IMAGE
+	if c.Collector.PodLaunchOptions.Image != "" {
+		image = c.Collector.PodLaunchOptions.Image
 	}
 
 	runPodCollectorName := "ts-goldpinger-collector"
-	wgetContainerName := "wget-collector"
+	wgetContainerName := "curl-collector"
 	runPodSpec := &troubleshootv1beta2.RunPod{
 		CollectorMeta: troubleshootv1beta2.CollectorMeta{
 			CollectorName: runPodCollectorName,
 		},
 		Name:            runPodCollectorName,
 		Namespace:       namespace,
-		Timeout:         c.Collector.PodLaunchSpec.Timeout,
-		ImagePullSecret: c.Collector.PodLaunchSpec.ImagePullSecret,
-		// TODO: Lets pass the pod spec in the collector spec
+		Timeout:         c.Collector.PodLaunchOptions.Timeout,
+		ImagePullSecret: c.Collector.PodLaunchOptions.ImagePullSecret,
 		PodSpec: corev1.PodSpec{
 			RestartPolicy:      corev1.RestartPolicyNever,
 			ServiceAccountName: serviceAccountName,
@@ -133,8 +134,8 @@ func (c *CollectGoldpinger) runPodAndCollectCheckOutput(progressChan chan<- inte
 					Image:           image,
 					ImagePullPolicy: corev1.PullIfNotPresent,
 					Name:            wgetContainerName,
-					Command:         []string{"wget"},
-					Args:            []string{"-q", "-O-", c.endpoint()},
+					Command:         []string{"curl"},
+					Args:            []string{"-s", c.endpoint()},
 				},
 			},
 		},

@@ -260,12 +260,12 @@ type Helm struct {
 }
 
 type Goldpinger struct {
-	CollectorMeta `json:",inline" yaml:",inline"`
-	Namespace     string        `json:"namespace,omitempty" yaml:"namespace,omitempty"`
-	PodLaunchSpec PodLaunchSpec `json:"podLaunchSpec,omitempty" yaml:"podLaunchSpec,omitempty"`
+	CollectorMeta    `json:",inline" yaml:",inline"`
+	Namespace        string           `json:"namespace,omitempty" yaml:"namespace,omitempty"`
+	PodLaunchOptions PodLaunchOptions `json:"podLaunchOptions,omitempty" yaml:"podLaunchOptions,omitempty"`
 }
 
-type PodLaunchSpec struct {
+type PodLaunchOptions struct {
 	Namespace          string            `json:"namespace,omitempty" yaml:"namespace,omitempty"`
 	Image              string            `json:"image" yaml:"image"`
 	ImagePullPolicy    string            `json:"imagePullPolicy,omitempty" yaml:"imagePullPolicy,omitempty"`

@@ -46,6 +46,7 @@ func (c *CollectRunPod) IsExcluded() (bool, error) {
 
 func (c *CollectRunPod) Collect(progressChan chan<- interface{}) (result CollectorResult, err error) {
 	ctx := context.Background()
+	result = NewResult()
 
 	client, err := kubernetes.NewForConfig(c.ClientConfig)
 	if err != nil {
@@ -69,8 +70,6 @@ func (c *CollectRunPod) Collect(progressChan chan<- interface{}) (result Collect
 			}
 		}()
 	}
-
-	result = NewResult()
 
 	defer func() {
 		result, err = savePodDetails(ctx, client, result, c.BundlePath, c.ClientConfig, pod, c.Collector)

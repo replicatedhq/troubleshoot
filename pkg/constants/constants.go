@@ -94,4 +94,6 @@ const (
 
 	// Goldpinger constants
 	GP_CHECK_ALL_RESULTS_PATH = "goldpinger/check_all.json"
+
+	KURL_UTILS_IMAGE = "replicated/kurl-util" // This image will always be available in airgap envs
 )
