@@ -78,6 +78,6 @@ func Append[T any](target []T, src []T) []T {
 // IsInCluster returns true if the code is running in a kubernetes cluster pod
 func IsInCluster() bool {
 	// Is this enough to determine if we are in a cluster?
-	// Should we check the downstream API volume mount?
+	// Should we check the downward API volume mount?
 	return os.Getenv("KUBERNETES_SERVICE_HOST") != ""
 }

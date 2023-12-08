@@ -95,5 +95,9 @@ const (
 	// Goldpinger constants
 	GP_CHECK_ALL_RESULTS_PATH = "goldpinger/check_all.json"
 
-	KURL_UTILS_IMAGE = "replicated/kurl-util" // This image will always be available in airgap envs
+	// GP_DEFAULT_IMAGE is the default image used for goldpinger
+	// "replicated/kurl-util" would be better
+	// since its always in airgap envs, but its tagged
+	// with the kurl versions which would do not have
+	GP_DEFAULT_IMAGE = "alpine:3"
 )

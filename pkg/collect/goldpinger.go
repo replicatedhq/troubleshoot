@@ -57,7 +57,7 @@ func (c *CollectGoldpinger) Collect(progressChan chan<- interface{}) (CollectorR
 		}
 	} else {
 		klog.V(2).Infof("Launch pod to query goldpinger endpoint then collect results from pod logs")
-		results, err = c.runPodAndCollectCheckOutput(progressChan)
+		results, err = c.runPodAndCollectGPResults(progressChan)
 		if err != nil {
 			errMsg := fmt.Sprintf("Failed to run pod to collect goldpinger results: %v", err)
 			klog.V(2).Infof(errMsg)
@@ -98,7 +98,7 @@ func (c *CollectGoldpinger) fetchCheckAllOutput() ([]byte, error) {
 	return body, nil
 }
 
-func (c *CollectGoldpinger) runPodAndCollectCheckOutput(progressChan chan<- interface{}) ([]byte, error) {
+func (c *CollectGoldpinger) runPodAndCollectGPResults(progressChan chan<- interface{}) ([]byte, error) {
 	namespace := "default"
 	if c.Collector.PodLaunchOptions.Namespace != "" {
 		namespace = c.Collector.PodLaunchOptions.Namespace
@@ -113,13 +113,13 @@ func (c *CollectGoldpinger) runPodAndCollectCheckOutput(progressChan chan<- inte
 		return nil, err
 	}
 
-	image := constants.KURL_UTILS_IMAGE
+	image := constants.GP_DEFAULT_IMAGE
 	if c.Collector.PodLaunchOptions.Image != "" {
 		image = c.Collector.PodLaunchOptions.Image
 	}
 
 	runPodCollectorName := "ts-goldpinger-collector"
-	collectorContainerName := "curl-collector"
+	collectorContainerName := "collector"
 	runPodSpec := &troubleshootv1beta2.RunPod{
 		CollectorMeta: troubleshootv1beta2.CollectorMeta{
 			CollectorName: runPodCollectorName,
@@ -136,8 +136,8 @@ func (c *CollectGoldpinger) runPodAndCollectCheckOutput(progressChan chan<- inte
 					Image:           image,
 					ImagePullPolicy: corev1.PullIfNotPresent,
 					Name:            collectorContainerName,
-					Command:         []string{"curl"},
-					Args:            []string{"-s", c.endpoint()},
+					Command:         []string{"wget"},
+					Args:            []string{"-q", "-O-", c.endpoint()},
 				},
 			},
 		},
@@ -152,7 +152,7 @@ func (c *CollectGoldpinger) runPodAndCollectCheckOutput(progressChan chan<- inte
 		return nil, err
 	}
 
-	// Check if the wget container exited with an error
+	// Check if the collector container exited with an error
 	var pod corev1.Pod
 	err = json.Unmarshal(output[fmt.Sprintf("%s/%s.json", runPodCollectorName, runPodCollectorName)], &pod)
 	if err != nil {
