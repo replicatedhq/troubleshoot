@@ -68,6 +68,12 @@ func Test_HelmCollector(t *testing.T) {
 			assert.Equal(t, "nginx", results[0].Chart)
 			return ctx
 		}).
+		Teardown(func(ctx context.Context, t *testing.T, c *envconf.Config) context.Context {
+			cluster := getClusterFromContext(t, ctx, ClusterName)
+			manager := helm.New(cluster.GetKubeconfig())
+			manager.RunUninstall(helm.WithName(releaseName), helm.WithNamespace(c.Namespace()))
+			return ctx
+		}).
 		Feature()
 	testenv.Test(t, feature)
 }

@@ -34,12 +34,14 @@ spec:
 `
 
 func Test_GoldpingerCollector(t *testing.T) {
+	releaseName := "goldpinger"
+
 	feature := features.New("Goldpinger collector and analyser").
 		Setup(func(ctx context.Context, t *testing.T, c *envconf.Config) context.Context {
 			cluster := getClusterFromContext(t, ctx, ClusterName)
 			manager := helm.New(cluster.GetKubeconfig())
 			err := manager.RunInstall(
-				helm.WithName("goldpinger"),
+				helm.WithName(releaseName),
 				helm.WithNamespace(c.Namespace()),
 				helm.WithChart(testutils.TestFixtureFilePath(t, "charts/goldpinger-6.0.1.tgz")),
 				helm.WithWait(),
@@ -80,6 +82,12 @@ func Test_GoldpingerCollector(t *testing.T) {
 			require.Equal(t, 1, len(analysisResults))
 			assert.True(t, strings.HasPrefix(analysisResults[0].Name, "missing.ping.results.for.goldpinger."))
 			assert.Equal(t, convert.SeverityWarn, analysisResults[0].Severity)
+			return ctx
+		}).
+		Teardown(func(ctx context.Context, t *testing.T, c *envconf.Config) context.Context {
+			cluster := getClusterFromContext(t, ctx, ClusterName)
+			manager := helm.New(cluster.GetKubeconfig())
+			manager.RunUninstall(helm.WithName(releaseName), helm.WithNamespace(c.Namespace()))
 			return ctx
 		}).
 		Feature()
