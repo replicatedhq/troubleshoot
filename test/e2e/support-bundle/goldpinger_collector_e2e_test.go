@@ -62,10 +62,9 @@ func Test_GoldpingerCollector(t *testing.T) {
 			require.NoError(t, err)
 
 			tarPath := filepath.Join(t.TempDir(), fmt.Sprintf("%s.tar.gz", supportBundleName))
-			cmd := exec.CommandContext(ctx, "../../../bin/support-bundle", specPath, "--interactive=false", "-v=2", fmt.Sprintf("-o=%s", tarPath))
+			cmd := exec.CommandContext(ctx, sbBinary(), specPath, "--interactive=false", "-v=2", fmt.Sprintf("-o=%s", tarPath))
 			cmd.Stdout = &out
 			err = cmd.Run()
-			t.Log(out.String())
 			require.NoError(t, err)
 
 			analysisJSON, err := readFileFromTar(tarPath, fmt.Sprintf("%s/analysis.json", supportBundleName))
@@ -75,7 +74,7 @@ func Test_GoldpingerCollector(t *testing.T) {
 			err = json.Unmarshal(analysisJSON, &analysisResults)
 			require.NoError(t, err)
 
-			// Check that we analysis results for goldpinger.
+			// Check that we analysed collected goldpinger results.
 			// There won't be any ping results because goldpinger would not have run yet.
 			// The test is fine since this checks that we query the goldpinger results correctly
 			// and the analyser is working.

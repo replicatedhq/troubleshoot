@@ -26,12 +26,12 @@ func TestMain(m *testing.M) {
 	testenv = env.New()
 	namespace := envconf.RandomName("default", 16)
 	testenv.Setup(
-		envfuncs.CreateKindCluster(ClusterName),
+		envfuncs.CreateCluster(kind.NewProvider(), ClusterName),
 		envfuncs.CreateNamespace(namespace),
 	)
 	testenv.Finish(
 		envfuncs.DeleteNamespace(namespace),
-		envfuncs.DestroyKindCluster(ClusterName),
+		envfuncs.DestroyCluster(ClusterName),
 	)
 	os.Exit(testenv.Run(m))
 }
@@ -128,4 +128,8 @@ func readFileFromTar(tarPath, targetFile string) ([]byte, error) {
 		}
 	}
 	return nil, fmt.Errorf("File not found: %q", targetFile)
+}
+
+func sbBinary() string {
+	return "../../../bin/support-bundle"
 }
