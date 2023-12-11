@@ -33,7 +33,7 @@ func TestFixtureFilePath(t *testing.T, path string) string {
 	}
 }
 
-// FileDir returns the directory of the current source file.
+// FileDir returns the directory of this source file
 func FileDir() string {
 	_, filename, _, _ := runtime.Caller(0)
 	return filepath.Dir(filename)

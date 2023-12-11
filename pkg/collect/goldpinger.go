@@ -100,18 +100,19 @@ func (c *CollectGoldpinger) fetchCheckAllOutput() ([]byte, error) {
 }
 
 func (c *CollectGoldpinger) runPodAndCollectGPResults(progressChan chan<- interface{}) ([]byte, error) {
+	rest.InClusterConfig()
+
 	namespace := "default"
 	if c.Collector.PodLaunchOptions.Namespace != "" {
 		namespace = c.Collector.PodLaunchOptions.Namespace
 	}
 
-	serviceAccountName := "default"
+	serviceAccountName := ""
 	if c.Collector.PodLaunchOptions.ServiceAccountName != "" {
 		serviceAccountName = c.Collector.PodLaunchOptions.ServiceAccountName
-	}
-
-	if err := checkForExistingServiceAccount(c.Context, c.Client, namespace, serviceAccountName); err != nil {
-		return nil, err
+		if err := checkForExistingServiceAccount(c.Context, c.Client, namespace, serviceAccountName); err != nil {
+			return nil, err
+		}
 	}
 
 	image := constants.GP_DEFAULT_IMAGE
@@ -201,7 +202,7 @@ func (c *CollectGoldpinger) runPodAndCollectGPResults(progressChan chan<- interf
 func (c *CollectGoldpinger) endpoint() string {
 	namespace := c.Collector.Namespace
 	if namespace == "" {
-		namespace = "kurl"
+		namespace = constants.GP_DEFAULT_NAMESPACE
 	}
 
 	return fmt.Sprintf("http://goldpinger.%s.svc.cluster.local:80/check_all", namespace)
