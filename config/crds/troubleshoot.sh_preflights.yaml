@@ -1892,8 +1892,6 @@ spec:
                           properties:
                             image:
                               type: string
-                            imagePullPolicy:
-                              type: string
                             imagePullSecret:
                               properties:
                                 data:
@@ -1908,8 +1906,6 @@ spec:
                             namespace:
                               type: string
                             serviceAccountName:
-                              type: string
-                            timeout:
                               type: string
                           required:
                           - image

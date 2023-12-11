@@ -2862,9 +2862,6 @@
                       "image": {
                         "type": "string"
                       },
-                      "imagePullPolicy": {
-                        "type": "string"
-                      },
                       "imagePullSecret": {
                         "type": "object",
                         "properties": {
@@ -2886,9 +2883,6 @@
                         "type": "string"
                       },
                       "serviceAccountName": {
-                        "type": "string"
-                      },
-                      "timeout": {
                         "type": "string"
                       }
                     }
