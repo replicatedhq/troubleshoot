@@ -65,8 +65,8 @@ func Test_GoldpingerCollector(t *testing.T) {
 			cmd := exec.CommandContext(ctx, sbBinary(), specPath, "--interactive=false", "-v=2", fmt.Sprintf("-o=%s", tarPath))
 			cmd.Stdout = &out
 			err = cmd.Run()
-			require.NoError(t, err)
 			t.Log(out.String())
+			require.NoError(t, err)
 
 			analysisJSON, err := readFileFromTar(tarPath, fmt.Sprintf("%s/analysis.json", supportBundleName))
 			require.NoError(t, err)
