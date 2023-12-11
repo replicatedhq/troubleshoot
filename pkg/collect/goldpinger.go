@@ -128,7 +128,7 @@ func (c *CollectGoldpinger) runPodAndCollectGPResults(progressChan chan<- interf
 		},
 		Name:            runPodCollectorName,
 		Namespace:       namespace,
-		Timeout:         c.Collector.PodLaunchOptions.Timeout,
+		Timeout:         time.Minute.String(),
 		ImagePullSecret: c.Collector.PodLaunchOptions.ImagePullSecret,
 		PodSpec: corev1.PodSpec{
 			RestartPolicy:      corev1.RestartPolicyNever,

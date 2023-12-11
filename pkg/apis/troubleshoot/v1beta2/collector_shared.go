@@ -268,10 +268,8 @@ type Goldpinger struct {
 type PodLaunchOptions struct {
 	Namespace          string            `json:"namespace,omitempty" yaml:"namespace,omitempty"`
 	Image              string            `json:"image" yaml:"image"`
-	ImagePullPolicy    string            `json:"imagePullPolicy,omitempty" yaml:"imagePullPolicy,omitempty"`
 	ImagePullSecret    *ImagePullSecrets `json:"imagePullSecret,omitempty" yaml:"imagePullSecret,omitempty"`
 	ServiceAccountName string            `json:"serviceAccountName,omitempty" yaml:"serviceAccountName,omitempty"`
-	Timeout            string            `json:"timeout,omitempty" yaml:"timeout,omitempty"`
 }
 
 type Collect struct {
