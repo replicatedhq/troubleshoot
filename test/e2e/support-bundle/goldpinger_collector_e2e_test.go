@@ -66,6 +66,7 @@ func Test_GoldpingerCollector(t *testing.T) {
 			cmd.Stdout = &out
 			err = cmd.Run()
 			require.NoError(t, err)
+			t.Log(out.String())
 
 			analysisJSON, err := readFileFromTar(tarPath, fmt.Sprintf("%s/analysis.json", supportBundleName))
 			require.NoError(t, err)
