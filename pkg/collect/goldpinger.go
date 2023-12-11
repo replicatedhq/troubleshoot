@@ -103,21 +103,26 @@ func (c *CollectGoldpinger) runPodAndCollectGPResults(progressChan chan<- interf
 	rest.InClusterConfig()
 
 	namespace := "default"
-	if c.Collector.PodLaunchOptions.Namespace != "" {
-		namespace = c.Collector.PodLaunchOptions.Namespace
-	}
-
 	serviceAccountName := ""
-	if c.Collector.PodLaunchOptions.ServiceAccountName != "" {
-		serviceAccountName = c.Collector.PodLaunchOptions.ServiceAccountName
-		if err := checkForExistingServiceAccount(c.Context, c.Client, namespace, serviceAccountName); err != nil {
-			return nil, err
-		}
-	}
-
 	image := constants.GP_DEFAULT_IMAGE
-	if c.Collector.PodLaunchOptions.Image != "" {
-		image = c.Collector.PodLaunchOptions.Image
+	var imagePullSecret *troubleshootv1beta2.ImagePullSecrets
+
+	if c.Collector.PodLaunchOptions != nil {
+		if c.Collector.PodLaunchOptions.Namespace != "" {
+			namespace = c.Collector.PodLaunchOptions.Namespace
+		}
+
+		if c.Collector.PodLaunchOptions.ServiceAccountName != "" {
+			serviceAccountName = c.Collector.PodLaunchOptions.ServiceAccountName
+			if err := checkForExistingServiceAccount(c.Context, c.Client, namespace, serviceAccountName); err != nil {
+				return nil, err
+			}
+		}
+
+		if c.Collector.PodLaunchOptions.Image != "" {
+			image = c.Collector.PodLaunchOptions.Image
+		}
+		imagePullSecret = c.Collector.PodLaunchOptions.ImagePullSecret
 	}
 
 	runPodCollectorName := "ts-goldpinger-collector"
@@ -129,7 +134,7 @@ func (c *CollectGoldpinger) runPodAndCollectGPResults(progressChan chan<- interf
 		Name:            runPodCollectorName,
 		Namespace:       namespace,
 		Timeout:         time.Minute.String(),
-		ImagePullSecret: c.Collector.PodLaunchOptions.ImagePullSecret,
+		ImagePullSecret: imagePullSecret,
 		PodSpec: corev1.PodSpec{
 			RestartPolicy:      corev1.RestartPolicyNever,
 			ServiceAccountName: serviceAccountName,

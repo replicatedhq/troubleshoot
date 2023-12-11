@@ -609,7 +609,6 @@ spec:
                           type: BoolString
                       required:
                       - collectorName
-                      - outcomes
                       type: object
                     imagePullSecret:
                       properties:
@@ -1907,8 +1906,6 @@ spec:
                               type: string
                             serviceAccountName:
                               type: string
-                          required:
-                          - image
                           type: object
                       type: object
                     helm:

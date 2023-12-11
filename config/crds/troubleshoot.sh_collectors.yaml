@@ -345,8 +345,6 @@ spec:
                               type: string
                             serviceAccountName:
                               type: string
-                          required:
-                          - image
                           type: object
                       type: object
                     helm:

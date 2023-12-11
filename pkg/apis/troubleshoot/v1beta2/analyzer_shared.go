@@ -227,7 +227,7 @@ type CertificatesAnalyze struct {
 
 type GoldpingerAnalyze struct {
 	AnalyzeMeta   `json:",inline" yaml:",inline"`
-	Outcomes      []*Outcome `json:"outcomes" yaml:"outcomes"`
+	Outcomes      []*Outcome `json:"outcomes,omitempty" yaml:"outcomes,omitempty"`
 	CollectorName string     `json:"collectorName" yaml:"collectorName"`
 	FilePath      string     `json:"filePath,omitempty" yaml:"filePath,omitempty"`
 }

@@ -827,8 +827,7 @@
               "goldpinger": {
                 "type": "object",
                 "required": [
-                  "collectorName",
-                  "outcomes"
+                  "collectorName"
                 ],
                 "properties": {
                   "annotations": {
@@ -2855,9 +2854,6 @@
                   },
                   "podLaunchOptions": {
                     "type": "object",
-                    "required": [
-                      "image"
-                    ],
                     "properties": {
                       "image": {
                         "type": "string"

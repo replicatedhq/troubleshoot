@@ -609,7 +609,6 @@ spec:
                           type: BoolString
                       required:
                       - collectorName
-                      - outcomes
                       type: object
                     imagePullSecret:
                       properties:
