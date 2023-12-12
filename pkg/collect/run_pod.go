@@ -467,13 +467,17 @@ func deletePod(ctx context.Context, client *kubernetes.Clientset, pod *corev1.Po
 	})
 	if err != nil {
 		zeroGracePeriod := int64(0)
-		klog.V(2).Infof("Pod %s forcefully deleted after reaching the maximum wait time of %d seconds", pod.Name, constants.MAX_TIME_TO_WAIT_FOR_POD_DELETION/time.Second)
+		klog.V(2).Infof("Pod %s forcefully deleted after reaching the maximum wait time of %d seconds due to err=%v",
+			pod.Name, constants.MAX_TIME_TO_WAIT_FOR_POD_DELETION/time.Second, err,
+		)
 		if err := client.CoreV1().Pods(pod.Namespace).Delete(context.Background(), pod.Name, metav1.DeleteOptions{
 			GracePeriodSeconds: &zeroGracePeriod,
 		}); err != nil {
 			klog.Errorf("Failed to wait for pod %s deletion: %v", pod.Name, err)
 			return
 		}
+		klog.V(2).Infof("Pod %s in %s namespace has been deleted", pod.Name, pod.Namespace)
+	} else {
 		klog.V(2).Infof("Pod %s in %s namespace has been deleted", pod.Name, pod.Namespace)
 	}
 }
