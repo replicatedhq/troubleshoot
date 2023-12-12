@@ -6,7 +6,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"path/filepath"
 	"sync"
 	"time"
@@ -44,8 +44,9 @@ func (c *CollectRunPod) IsExcluded() (bool, error) {
 	return isExcluded(c.Collector.Exclude)
 }
 
-func (c *CollectRunPod) Collect(progressChan chan<- interface{}) (CollectorResult, error) {
+func (c *CollectRunPod) Collect(progressChan chan<- interface{}) (result CollectorResult, err error) {
 	ctx := context.Background()
+	result = NewResult()
 
 	client, err := kubernetes.NewForConfig(c.ClientConfig)
 	if err != nil {
@@ -70,8 +71,6 @@ func (c *CollectRunPod) Collect(progressChan chan<- interface{}) (CollectorResul
 		}()
 	}
 
-	result := NewResult()
-
 	defer func() {
 		result, err = savePodDetails(ctx, client, result, c.BundlePath, c.ClientConfig, pod, c.Collector)
 		if err != nil {
@@ -94,6 +93,7 @@ func (c *CollectRunPod) Collect(progressChan chan<- interface{}) (CollectorResul
 	timeoutCtx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
+	// TODO: Use context with timeout instead of go routine
 	go func() {
 		b, err := runWithoutTimeout(timeoutCtx, c.BundlePath, c.ClientConfig, pod, c.Collector)
 		if err != nil {
@@ -406,7 +406,7 @@ func RunPodLogs(ctx context.Context, client v1.CoreV1Interface, podSpec *corev1.
 	}
 	defer logs.Close()
 
-	return ioutil.ReadAll(logs)
+	return io.ReadAll(logs)
 }
 
 func savePodDetails(ctx context.Context, client *kubernetes.Clientset, output CollectorResult, bundlePath string, clientConfig *rest.Config, pod *corev1.Pod, runPodCollector *troubleshootv1beta2.RunPod) (CollectorResult, error) {

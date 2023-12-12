@@ -1,0 +1,143 @@
+{
+    "hosts": [
+        {
+            "hostIP": "10.154.0.7",
+            "podIP": "10.32.0.11",
+            "podName": "goldpinger-kpz4g"
+        },
+        {
+            "hostIP": "10.154.0.6",
+            "podIP": "10.32.2.2",
+            "podName": "goldpinger-k6d2j"
+        },
+        {
+            "hostIP": "10.154.0.8",
+            "podIP": "10.32.1.2",
+            "podName": "goldpinger-5ck4d"
+        }
+    ],
+    "responses": {
+        "goldpinger-5ck4d": {
+            "HostIP": "10.154.0.8",
+            "OK": true,
+            "PodIP": "10.32.1.2",
+            "response": {
+                "podResults": {
+                    "goldpinger-5ck4d": {
+                        "HostIP": "10.154.0.8",
+                        "OK": true,
+                        "PingTime": "2023-12-06T18:06:20.161Z",
+                        "PodIP": "10.32.1.2",
+                        "response": {
+                            "boot_time": "2023-12-06T17:05:45.419Z"
+                        },
+                        "status-code": 200
+                    },
+                    "goldpinger-k6d2j": {
+                        "HostIP": "10.154.0.6",
+                        "OK": true,
+                        "PingTime": "2023-12-06T18:06:14.566Z",
+                        "PodIP": "10.32.2.2",
+                        "response": {
+                            "boot_time": "2023-12-06T17:05:51.891Z"
+                        },
+                        "response-time-ms": 1,
+                        "status-code": 200
+                    },
+                    "goldpinger-kpz4g": {
+                        "HostIP": "10.154.0.7",
+                        "OK": true,
+                        "PingTime": "2023-12-06T18:06:23.707Z",
+                        "PodIP": "10.32.0.11",
+                        "response": {
+                            "boot_time": "2023-12-06T16:58:27.431Z"
+                        },
+                        "response-time-ms": 1,
+                        "status-code": 200
+                    }
+                }
+            }
+        },
+        "goldpinger-k6d2j": {
+            "HostIP": "10.154.0.6",
+            "OK": true,
+            "PodIP": "10.32.2.2",
+            "response": {
+                "podResults": {
+                    "goldpinger-5ck4d": {
+                        "HostIP": "10.154.0.8",
+                        "OK": true,
+                        "PingTime": "2023-12-06T18:06:25.458Z",
+                        "PodIP": "10.32.1.2",
+                        "response": {
+                            "boot_time": "2023-12-06T17:05:45.419Z"
+                        },
+                        "status-code": 200
+                    },
+                    "goldpinger-k6d2j": {
+                        "HostIP": "10.154.0.6",
+                        "OK": true,
+                        "PingTime": "2023-12-06T18:06:24.382Z",
+                        "PodIP": "10.32.2.2",
+                        "response": {
+                            "boot_time": "2023-12-06T17:05:51.891Z"
+                        },
+                        "status-code": 200
+                    },
+                    "goldpinger-kpz4g": {
+                        "HostIP": "10.154.0.7",
+                        "OK": true,
+                        "PingTime": "2023-12-06T18:06:13.015Z",
+                        "PodIP": "10.32.0.11",
+                        "response": {
+                            "boot_time": "2023-12-06T16:58:27.431Z"
+                        },
+                        "response-time-ms": 1,
+                        "status-code": 200
+                    }
+                }
+            }
+        },
+        "goldpinger-kpz4g": {
+            "HostIP": "10.154.0.7",
+            "OK": true,
+            "PodIP": "10.32.0.11",
+            "response": {
+                "podResults": {
+                    "goldpinger-5ck4d": {
+                        "HostIP": "10.154.0.8",
+                        "OK": true,
+                        "PingTime": "2023-12-06T18:05:59.907Z",
+                        "PodIP": "10.32.1.2",
+                        "response": {
+                            "boot_time": "2023-12-06T17:05:45.419Z"
+                        },
+                        "response-time-ms": 1,
+                        "status-code": 200
+                    },
+                    "goldpinger-k6d2j": {
+                        "HostIP": "10.154.0.6",
+                        "OK": true,
+                        "PingTime": "2023-12-06T18:06:13.706Z",
+                        "PodIP": "10.32.2.2",
+                        "response": {
+                            "boot_time": "2023-12-06T17:05:51.891Z"
+                        },
+                        "response-time-ms": 1,
+                        "status-code": 200
+                    },
+                    "goldpinger-kpz4g": {
+                        "HostIP": "10.154.0.7",
+                        "OK": true,
+                        "PingTime": "2023-12-06T18:05:59.226Z",
+                        "PodIP": "10.32.0.11",
+                        "response": {
+                            "boot_time": "2023-12-06T16:58:27.431Z"
+                        },
+                        "status-code": 200
+                    }
+                }
+            }
+        }
+    }
+}

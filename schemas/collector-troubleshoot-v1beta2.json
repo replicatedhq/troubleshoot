@@ -435,6 +435,51 @@
                   }
                 }
               },
+              "goldpinger": {
+                "type": "object",
+                "properties": {
+                  "collectorName": {
+                    "type": "string"
+                  },
+                  "exclude": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  },
+                  "namespace": {
+                    "type": "string"
+                  },
+                  "podLaunchOptions": {
+                    "type": "object",
+                    "properties": {
+                      "image": {
+                        "type": "string"
+                      },
+                      "imagePullSecret": {
+                        "type": "object",
+                        "properties": {
+                          "data": {
+                            "type": "object",
+                            "additionalProperties": {
+                              "type": "string"
+                            }
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "type": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "namespace": {
+                        "type": "string"
+                      },
+                      "serviceAccountName": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              },
               "helm": {
                 "type": "object",
                 "properties": {

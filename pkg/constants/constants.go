@@ -91,4 +91,15 @@ const (
 	// This is the muximum size the buffer can grow to
 	// Its not what the buffer will be allocated to initially
 	SCANNER_MAX_SIZE = 10 * 1024 * 1024 // 10MB
+
+	// Goldpinger constants
+	GP_CHECK_ALL_RESULTS_PATH = "goldpinger/check_all.json"
+
+	// GP_DEFAULT_IMAGE is the default image used for goldpinger
+	// "replicated/kurl-util" would be better
+	// since its always in airgap envs, but its tagged
+	// with the kurl versions which would not work since they
+	// are not always the same
+	GP_DEFAULT_IMAGE     = "alpine:3"
+	GP_DEFAULT_NAMESPACE = "default"
 )

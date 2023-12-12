@@ -590,6 +590,57 @@ spec:
                       required:
                       - outcomes
                       type: object
+                    goldpinger:
+                      properties:
+                        annotations:
+                          additionalProperties:
+                            type: string
+                          type: object
+                        checkName:
+                          type: string
+                        collectorName:
+                          type: string
+                        exclude:
+                          type: BoolString
+                        filePath:
+                          type: string
+                        outcomes:
+                          items:
+                            properties:
+                              fail:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
+                              pass:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
+                              warn:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
+                            type: object
+                          type: array
+                        strict:
+                          type: BoolString
+                      required:
+                      - collectorName
+                      type: object
                     imagePullSecret:
                       properties:
                         annotations:
@@ -1858,6 +1909,35 @@ spec:
                       required:
                       - namespace
                       - selector
+                      type: object
+                    goldpinger:
+                      properties:
+                        collectorName:
+                          type: string
+                        exclude:
+                          type: BoolString
+                        namespace:
+                          type: string
+                        podLaunchOptions:
+                          properties:
+                            image:
+                              type: string
+                            imagePullSecret:
+                              properties:
+                                data:
+                                  additionalProperties:
+                                    type: string
+                                  type: object
+                                name:
+                                  type: string
+                                type:
+                                  type: string
+                              type: object
+                            namespace:
+                              type: string
+                            serviceAccountName:
+                              type: string
+                          type: object
                       type: object
                     helm:
                       properties:

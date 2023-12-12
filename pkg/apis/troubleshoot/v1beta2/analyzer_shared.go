@@ -225,6 +225,13 @@ type CertificatesAnalyze struct {
 	Outcomes    []*Outcome `json:"outcomes" yaml:"outcomes"`
 }
 
+type GoldpingerAnalyze struct {
+	AnalyzeMeta   `json:",inline" yaml:",inline"`
+	Outcomes      []*Outcome `json:"outcomes,omitempty" yaml:"outcomes,omitempty"`
+	CollectorName string     `json:"collectorName" yaml:"collectorName"`
+	FilePath      string     `json:"filePath,omitempty" yaml:"filePath,omitempty"`
+}
+
 type Analyze struct {
 	ClusterVersion           *ClusterVersion           `json:"clusterVersion,omitempty" yaml:"clusterVersion,omitempty"`
 	StorageClass             *StorageClass             `json:"storageClass,omitempty" yaml:"storageClass,omitempty"`
@@ -256,4 +263,5 @@ type Analyze struct {
 	Sysctl                   *SysctlAnalyze            `json:"sysctl,omitempty" yaml:"sysctl,omitempty"`
 	ClusterResource          *ClusterResource          `json:"clusterResource,omitempty" yaml:"clusterResource,omitempty"`
 	Certificates             *CertificatesAnalyze      `json:"certificates,omitempty" yaml:"certificates,omitempty"`
+	Goldpinger               *GoldpingerAnalyze        `json:"goldpinger,omitempty" yaml:"goldpinger,omitempty"`
 }

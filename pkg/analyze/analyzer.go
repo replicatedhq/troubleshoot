@@ -244,6 +244,8 @@ func getAnalyzer(analyzer *troubleshootv1beta2.Analyze) Analyzer {
 		return &AnalyzeClusterResource{analyzer: analyzer.ClusterResource}
 	case analyzer.Certificates != nil:
 		return &AnalyzeCertificates{analyzer: analyzer.Certificates}
+	case analyzer.Goldpinger != nil:
+		return &AnalyzeGoldpinger{analyzer: analyzer.Goldpinger}
 	default:
 		return nil
 	}

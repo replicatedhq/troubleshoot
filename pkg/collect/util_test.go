@@ -323,11 +323,11 @@ func Test_checkForExistingServiceAccount(t *testing.T) {
 				_, err := client.CoreV1().ServiceAccounts(tt.namespace).Create(ctx, tt.mockServiceAccount, metav1.CreateOptions{})
 				require.NoError(t, err)
 
-				err = checkForExistingServiceAccount(client, tt.namespace, tt.serviceAccountName)
+				err = checkForExistingServiceAccount(ctx, client, tt.namespace, tt.serviceAccountName)
 				assert.Equal(t, tt.wantErr, err != nil)
 			}
 
-			err := checkForExistingServiceAccount(client, tt.namespace, tt.serviceAccountName)
+			err := checkForExistingServiceAccount(ctx, client, tt.namespace, tt.serviceAccountName)
 			assert.Equal(t, tt.wantErr, err != nil)
 		})
 	}

@@ -74,3 +74,15 @@ func Append[T any](target []T, src []T) []T {
 	}
 	return append(target, src...)
 }
+
+// IsInCluster returns true if the code is running within a process
+// inside a kubernetes pod
+func IsInCluster() bool {
+	// This is a best effort check, it's not guaranteed to be accurate
+	host, port := os.Getenv("KUBERNETES_SERVICE_HOST"), os.Getenv("KUBERNETES_SERVICE_PORT")
+	if len(host) == 0 || len(port) == 0 {
+		return false
+	}
+
+	return true
+}

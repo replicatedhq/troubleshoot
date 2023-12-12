@@ -318,6 +318,35 @@ spec:
                       - namespace
                       - selector
                       type: object
+                    goldpinger:
+                      properties:
+                        collectorName:
+                          type: string
+                        exclude:
+                          type: BoolString
+                        namespace:
+                          type: string
+                        podLaunchOptions:
+                          properties:
+                            image:
+                              type: string
+                            imagePullSecret:
+                              properties:
+                                data:
+                                  additionalProperties:
+                                    type: string
+                                  type: object
+                                name:
+                                  type: string
+                                type:
+                                  type: string
+                              type: object
+                            namespace:
+                              type: string
+                            serviceAccountName:
+                              type: string
+                          type: object
+                      type: object
                     helm:
                       properties:
                         collectorName:

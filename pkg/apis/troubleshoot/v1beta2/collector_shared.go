@@ -259,6 +259,19 @@ type Helm struct {
 	ReleaseName   string `json:"releaseName,omitempty" yaml:"releaseName,omitempty"`
 }
 
+type Goldpinger struct {
+	CollectorMeta    `json:",inline" yaml:",inline"`
+	Namespace        string            `json:"namespace,omitempty" yaml:"namespace,omitempty"`
+	PodLaunchOptions *PodLaunchOptions `json:"podLaunchOptions,omitempty" yaml:"podLaunchOptions,omitempty"`
+}
+
+type PodLaunchOptions struct {
+	Namespace          string            `json:"namespace,omitempty" yaml:"namespace,omitempty"`
+	Image              string            `json:"image,omitempty" yaml:"image,omitempty"`
+	ImagePullSecret    *ImagePullSecrets `json:"imagePullSecret,omitempty" yaml:"imagePullSecret,omitempty"`
+	ServiceAccountName string            `json:"serviceAccountName,omitempty" yaml:"serviceAccountName,omitempty"`
+}
+
 type Collect struct {
 	ClusterInfo      *ClusterInfo      `json:"clusterInfo,omitempty" yaml:"clusterInfo,omitempty"`
 	ClusterResources *ClusterResources `json:"clusterResources,omitempty" yaml:"clusterResources,omitempty"`
@@ -284,6 +297,7 @@ type Collect struct {
 	Sysctl           *Sysctl           `json:"sysctl,omitempty" yaml:"sysctl,omitempty"`
 	Certificates     *Certificates     `json:"certificates,omitempty" yaml:"certificates,omitempty"`
 	Helm             *Helm             `json:"helm,omitempty" yaml:"helm,omitempty"`
+	Goldpinger       *Goldpinger       `json:"goldpinger,omitempty" yaml:"goldpinger,omitempty"`
 }
 
 func (c *Collect) AccessReviewSpecs(overrideNS string) []authorizationv1.SelfSubjectAccessReviewSpec {
