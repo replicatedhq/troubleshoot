@@ -67,10 +67,9 @@ func Test_GoldpingerCollector(t *testing.T) {
 			cmd.Stdout = &out
 			cmd.Stderr = &stdErr
 			err = cmd.Run()
-			t.Logf("Stdout: %s\n", out.String())
-			t.Logf("Stderr: %s\n", stdErr.String())
 			if err != nil {
-
+				t.Logf("Stdout: %s\n", out.String())
+				t.Logf("Stderr: %s\n", stdErr.String())
 				t.Fatal(err)
 			}
 
