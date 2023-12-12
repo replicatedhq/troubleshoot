@@ -52,6 +52,7 @@ func Test_GoldpingerCollector(t *testing.T) {
 		}).
 		Assess("collect and analyse goldpinger pings", func(ctx context.Context, t *testing.T, c *envconf.Config) context.Context {
 			var out bytes.Buffer
+			var stdErr bytes.Buffer
 
 			namespace := c.Namespace()
 			supportBundleName := "goldpinger-test"
@@ -64,8 +65,10 @@ func Test_GoldpingerCollector(t *testing.T) {
 			tarPath := filepath.Join(t.TempDir(), fmt.Sprintf("%s.tar.gz", supportBundleName))
 			cmd := exec.CommandContext(ctx, sbBinary(), specPath, "--interactive=false", "-v=2", fmt.Sprintf("-o=%s", tarPath))
 			cmd.Stdout = &out
+			cmd.Stderr = &stdErr
 			err = cmd.Run()
-			t.Log(out.String())
+			t.Logf("Stdout: %s\n", out.String())
+			t.Logf("Stderr: %s\n", stdErr.String())
 			require.NoError(t, err)
 
 			analysisJSON, err := readFileFromTar(tarPath, fmt.Sprintf("%s/analysis.json", supportBundleName))
