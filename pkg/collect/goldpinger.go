@@ -178,7 +178,7 @@ func (c *CollectGoldpinger) runPodAndCollectGPResults(progressChan chan<- interf
 
 	var terminationError *corev1.ContainerStateTerminated
 	for _, status := range pod.Status.ContainerStatuses {
-		if status.Name == collectorContainerName {
+		if status.Name == collectorContainerName && status.State.Terminated != nil {
 			if status.State.Terminated.ExitCode != 0 {
 				terminationError = status.State.Terminated
 			}
