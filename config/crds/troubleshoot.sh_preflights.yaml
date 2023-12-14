@@ -1910,6 +1910,8 @@ spec:
                       type: object
                     helm:
                       properties:
+                        collectValues:
+                          type: boolean
                         collectorName:
                           type: string
                         exclude:

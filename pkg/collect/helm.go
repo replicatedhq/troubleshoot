@@ -39,10 +39,11 @@ type ReleaseInfo struct {
 
 // Helm release version information struct
 type VersionInfo struct {
-	Revision  string `json:"revision"`
-	Date      string `json:"date"`
-	Status    string `json:"status"`
-	IsPending bool   `json:"isPending,omitempty"`
+	Revision  string                 `json:"revision"`
+	Date      string                 `json:"date"`
+	Status    string                 `json:"status"`
+	IsPending bool                   `json:"isPending,omitempty"`
+	Values    map[string]interface{} `json:"values,omitempty"`
 }
 
 func (c *CollectHelm) Title() string {
@@ -57,7 +58,7 @@ func (c *CollectHelm) Collect(progressChan chan<- interface{}) (CollectorResult,
 
 	output := NewResult()
 
-	releaseInfos, err := helmReleaseHistoryCollector(c.Collector.ReleaseName, c.Collector.Namespace)
+	releaseInfos, err := helmReleaseHistoryCollector(c.Collector.ReleaseName, c.Collector.Namespace, c.Collector.CollectValues)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get Helm release history")
 	}
@@ -72,6 +73,9 @@ func (c *CollectHelm) Collect(progressChan chan<- interface{}) (CollectorResult,
 		}
 
 		filePath := fmt.Sprintf("helm/%s.json", namespace)
+		if c.Collector.ReleaseName != "" {
+			filePath = fmt.Sprintf("helm/%s/%s.json", namespace, c.Collector.ReleaseName)
+		}
 
 		err := output.SaveResult(c.BundlePath, filePath, bytes.NewBuffer(helmHistoryJson))
 		if err != nil {
@@ -82,7 +86,7 @@ func (c *CollectHelm) Collect(progressChan chan<- interface{}) (CollectorResult,
 	return output, nil
 }
 
-func helmReleaseHistoryCollector(releaseName string, namespace string) ([]ReleaseInfo, error) {
+func helmReleaseHistoryCollector(releaseName string, namespace string, collectValues bool) ([]ReleaseInfo, error) {
 	var results []ReleaseInfo
 
 	actionConfig := new(action.Configuration)
@@ -103,7 +107,7 @@ func helmReleaseHistoryCollector(releaseName string, namespace string) ([]Releas
 			ChartVersion: r.Chart.Metadata.Version,
 			AppVersion:   r.Chart.Metadata.AppVersion,
 			Namespace:    r.Namespace,
-			VersionInfo:  getVersionInfo(actionConfig, releaseName),
+			VersionInfo:  getVersionInfo(actionConfig, releaseName, collectValues),
 		})
 		return results, nil
 	}
@@ -124,26 +128,31 @@ func helmReleaseHistoryCollector(releaseName string, namespace string) ([]Releas
 			ChartVersion: r.Chart.Metadata.Version,
 			AppVersion:   r.Chart.Metadata.AppVersion,
 			Namespace:    r.Namespace,
-			VersionInfo:  getVersionInfo(actionConfig, r.Name),
+			VersionInfo:  getVersionInfo(actionConfig, r.Name, collectValues),
 		})
 	}
 
 	return results, nil
 }
 
-func getVersionInfo(actionConfig *action.Configuration, releaseName string) []VersionInfo {
+func getVersionInfo(actionConfig *action.Configuration, releaseName string, collectValues bool) []VersionInfo {
 
 	versionCollect := []VersionInfo{}
 
 	history, _ := action.NewHistory(actionConfig).Run(releaseName)
 
 	for _, release := range history {
+		values := map[string]interface{}{}
+		if collectValues {
+			values = getHelmValues(actionConfig, releaseName, release.Version)
+		}
 
 		versionCollect = append(versionCollect, VersionInfo{
 			Revision:  strconv.Itoa(release.Version),
 			Date:      release.Info.LastDeployed.String(),
 			Status:    release.Info.Status.String(),
 			IsPending: release.Info.Status.IsPending(),
+			Values:    values,
 		})
 	}
 	return versionCollect
@@ -157,4 +166,11 @@ func helmReleaseInfoByNamespaces(releaseInfo []ReleaseInfo) map[string][]Release
 	}
 
 	return releaseInfoByNamespace
+}
+
+func getHelmValues(actionConfig *action.Configuration, releaseName string, revision int) map[string]interface{} {
+	getAction := action.NewGetValues(actionConfig)
+	getAction.Version = revision
+	helmValues, _ := getAction.Run(releaseName)
+	return helmValues
 }

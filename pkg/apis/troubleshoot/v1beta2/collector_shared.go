@@ -257,6 +257,7 @@ type Helm struct {
 	CollectorMeta `json:",inline" yaml:",inline"`
 	Namespace     string `json:"namespace,omitempty" yaml:"namespace,omitempty"`
 	ReleaseName   string `json:"releaseName,omitempty" yaml:"releaseName,omitempty"`
+	CollectValues bool   `json:"collectValues,omitempty" yaml:"collectValues,omitempty"`
 }
 
 type Goldpinger struct {
