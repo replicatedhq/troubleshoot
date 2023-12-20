@@ -92,7 +92,7 @@ jobs:
         shell: bash
       - uses: actions/checkout@v4
       - run: make generate preflight
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: preflight
           path: bin/preflight
@@ -181,7 +181,7 @@ jobs:
         shell: bash
       - uses: actions/checkout@v4
       - run: make generate support-bundle
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: support-bundle
           path: bin/support-bundle
@@ -256,7 +256,7 @@ jobs:
         shell: bash
       - uses: actions/checkout@v4
       - run: make generate collect
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: collect
           path: bin/collect
