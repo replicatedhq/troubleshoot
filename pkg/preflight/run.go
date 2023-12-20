@@ -114,8 +114,8 @@ func RunPreflights(interactive bool, output string, format string, args []string
 		preflightSpecName = spec.Name
 	}
 
-	if collectResults == nil && uploadCollectResults == nil {
-		return types.NewExitCodeError(constants.EXIT_CODE_CATCH_ALL, errors.New("no results"))
+	if len(collectResults) == 0 && len(uploadCollectResults) == 0 {
+		return types.NewExitCodeError(constants.EXIT_CODE_CATCH_ALL, errors.New("no data was collected"))
 	}
 
 	analyzeResults := []*analyzer.AnalyzeResult{}
@@ -142,7 +142,7 @@ func RunPreflights(interactive bool, output string, format string, args []string
 	progressCollection.Wait()
 
 	if len(analyzeResults) == 0 {
-		return types.NewExitCodeError(constants.EXIT_CODE_CATCH_ALL, errors.New("no data has been collected"))
+		return types.NewExitCodeError(constants.EXIT_CODE_CATCH_ALL, errors.New("completed with no analysis results"))
 	}
 
 	if interactive {
