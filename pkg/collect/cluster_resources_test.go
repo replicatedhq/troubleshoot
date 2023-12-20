@@ -3,19 +3,28 @@ package collect
 import (
 	"context"
 	"encoding/json"
+	"os"
 	"reflect"
 	"testing"
 
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
+	"github.com/replicatedhq/troubleshoot/pkg/client/troubleshootclientset/scheme"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	v1 "k8s.io/api/coordination/v1"
 	corev1 "k8s.io/api/core/v1"
 	storagev1 "k8s.io/api/storage/v1"
+	apixfake "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/fake"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	testdynamicclient "k8s.io/client-go/dynamic/fake"
 	"k8s.io/client-go/kubernetes"
 	testclient "k8s.io/client-go/kubernetes/fake"
+	"sigs.k8s.io/yaml"
 )
+
+func init() {
+	apixfake.AddToScheme(scheme.Scheme)
+}
 
 func Test_ConfigMaps(t *testing.T) {
 	tests := []struct {
@@ -457,4 +466,60 @@ func TestClusterResources_Merge(t *testing.T) {
 			req.EqualValues(tt.want, clusterResourceCollector)
 		})
 	}
+}
+
+func TestCollectClusterResources_CustomResource(t *testing.T) {
+	ctx := context.Background()
+
+	// Register supportbundle troubleshoot CRD
+	dat, err := os.ReadFile("../../config/crds/troubleshoot.sh_supportbundles.yaml")
+	require.NoError(t, err)
+
+	obj, _, err := scheme.Codecs.UniversalDeserializer().Decode(dat, nil, nil)
+	require.NoError(t, err)
+	apixClient := apixfake.NewSimpleClientset(obj)
+
+	// Create a CR
+	sbObject := troubleshootv1beta2.SupportBundle{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "supportbundle",
+			Namespace: "default",
+		},
+		TypeMeta: metav1.TypeMeta{
+			Kind:       "SupportBundle",
+			APIVersion: "troubleshoot.sh/v1beta2",
+		},
+		Spec: troubleshootv1beta2.SupportBundleSpec{
+			Collectors: []*troubleshootv1beta2.Collect{
+				{
+					ClusterResources: &troubleshootv1beta2.ClusterResources{},
+				},
+			},
+		},
+	}
+
+	dynamicClient := testdynamicclient.NewSimpleDynamicClient(scheme.Scheme, &sbObject)
+
+	// Fetch the CR from cluster
+	res, errs := crsV1(ctx, dynamicClient, apixClient.ApiextensionsV1(), []string{"default"})
+	assert.Empty(t, errs)
+	require.Equal(t, 2, len(res))
+	assert.Equal(t, fromJSON(t, res["supportbundles.troubleshoot.sh/default.json"]), sbObject)
+	assert.Equal(t, fromYAML(t, res["supportbundles.troubleshoot.sh/default.yaml"]), sbObject)
+}
+
+func fromYAML(t *testing.T, dat []byte) troubleshootv1beta2.SupportBundle {
+	sb := []troubleshootv1beta2.SupportBundle{}
+	err := yaml.Unmarshal(dat, &sb)
+	require.NoError(t, err)
+	require.Equal(t, 1, len(sb))
+	return sb[0]
+}
+
+func fromJSON(t *testing.T, dat []byte) troubleshootv1beta2.SupportBundle {
+	sb := []troubleshootv1beta2.SupportBundle{}
+	err := json.Unmarshal(dat, &sb)
+	require.NoError(t, err)
+	require.Equal(t, 1, len(sb))
+	return sb[0]
 }

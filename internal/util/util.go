@@ -52,3 +52,37 @@ func EstimateNumberOfLines(text string) int {
 	}
 	return n
 }
+
+// Append appends elements in src to target.
+// We have this function because of how append()
+// treats nil slices the same as empty slices.
+// An empty array in YAML like below is not the
+// same as when the array is not specified.
+//
+//	 spec:
+//		  collectors: []
+func Append[T any](target []T, src []T) []T {
+	// Do nothing only if src is nil
+	if src == nil {
+		return target
+	}
+
+	// In case target is nil, we need to initialize it
+	// since append() will not do it for us when len(src) == 0
+	if target == nil {
+		target = []T{}
+	}
+	return append(target, src...)
+}
+
+// IsInCluster returns true if the code is running within a process
+// inside a kubernetes pod
+func IsInCluster() bool {
+	// This is a best effort check, it's not guaranteed to be accurate
+	host, port := os.Getenv("KUBERNETES_SERVICE_HOST"), os.Getenv("KUBERNETES_SERVICE_PORT")
+	if len(host) == 0 || len(port) == 0 {
+		return false
+	}
+
+	return true
+}

@@ -36,7 +36,7 @@ type podRunner struct {
 }
 
 func (r *podRunner) run(ctx context.Context, collector *troubleshootv1beta2.HostCollect, namespace string, name string, nodeName string, results chan<- map[string][]byte) error {
-	cm, pod, err := CreateCollector(r.client, r.scheme, nil, name, namespace, nodeName, runnerServiceAccountName, runnerJobType, collector, r.image, r.pullPolicy)
+	cm, pod, err := CreateCollector(ctx, r.client, r.scheme, nil, name, namespace, nodeName, runnerServiceAccountName, runnerJobType, collector, r.image, r.pullPolicy)
 	if err != nil {
 		return errors.Wrap(err, "failed to create collector")
 	}
@@ -62,13 +62,13 @@ func (r *podRunner) run(ctx context.Context, collector *troubleshootv1beta2.Host
 	return nil
 }
 
-func CreateCollector(client *kubernetes.Clientset, scheme *runtime.Scheme, ownerRef metav1.Object, name string, namespace string, nodeName string, serviceAccountName string, jobType string, collect *troubleshootv1beta2.HostCollect, image string, pullPolicy string) (*corev1.ConfigMap, *corev1.Pod, error) {
+func CreateCollector(ctx context.Context, client *kubernetes.Clientset, scheme *runtime.Scheme, ownerRef metav1.Object, name string, namespace string, nodeName string, serviceAccountName string, jobType string, collect *troubleshootv1beta2.HostCollect, image string, pullPolicy string) (*corev1.ConfigMap, *corev1.Pod, error) {
 	configMap, err := createCollectorConfigMap(client, scheme, ownerRef, name, namespace, collect)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	pod, err := createCollectorPod(client, scheme, ownerRef, name, namespace, nodeName, serviceAccountName, jobType, collect, configMap, image, pullPolicy)
+	pod, err := createCollectorPod(ctx, client, scheme, ownerRef, name, namespace, nodeName, serviceAccountName, jobType, collect, configMap, image, pullPolicy)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -143,19 +143,19 @@ func createCollectorConfigMap(client *kubernetes.Clientset, scheme *runtime.Sche
 	return created, nil
 }
 
-func createCollectorPod(client kubernetes.Interface, scheme *runtime.Scheme, ownerRef metav1.Object, name string, namespace string, nodeName string, serviceAccountName string, jobType string, collect *troubleshootv1beta2.HostCollect, configMap *corev1.ConfigMap, image string, pullPolicy string) (*corev1.Pod, error) {
+func createCollectorPod(ctx context.Context, client kubernetes.Interface, scheme *runtime.Scheme, ownerRef metav1.Object, name string, namespace string, nodeName string, serviceAccountName string, jobType string, collect *troubleshootv1beta2.HostCollect, configMap *corev1.ConfigMap, image string, pullPolicy string) (*corev1.Pod, error) {
 	if serviceAccountName == "" {
 		serviceAccountName = "default"
 	}
 
-	_, err := client.CoreV1().Pods(namespace).Get(context.Background(), name, metav1.GetOptions{})
+	_, err := client.CoreV1().Pods(namespace).Get(ctx, name, metav1.GetOptions{})
 	if err == nil {
 		return nil, fmt.Errorf("pod %q already exists", name)
 	} else if !kuberneteserrors.IsNotFound(err) {
 		return nil, err
 	}
 
-	if err := checkForExistingServiceAccount(client, namespace, serviceAccountName); err != nil {
+	if err := checkForExistingServiceAccount(ctx, client, namespace, serviceAccountName); err != nil {
 		return nil, err
 	}
 
@@ -261,7 +261,7 @@ func createCollectorPod(client kubernetes.Interface, scheme *runtime.Scheme, own
 
 	var created *corev1.Pod
 	createFn := func() error {
-		created, err = client.CoreV1().Pods(namespace).Create(context.Background(), &pod, metav1.CreateOptions{})
+		created, err = client.CoreV1().Pods(namespace).Create(ctx, &pod, metav1.CreateOptions{})
 		if err != nil && !kerrors.IsAlreadyExists(err) {
 			return err
 		}

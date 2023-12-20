@@ -9,6 +9,7 @@ import (
 	"os"
 	"reflect"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/replicatedhq/troubleshoot/internal/util"
@@ -63,23 +64,77 @@ func SplitTroubleshootSecretLabelSelector(ctx context.Context, labelSelector lab
 	return parsedSelectorStrings, nil
 }
 
+var httpClient = &http.Client{
+	Timeout: 30 * time.Second,
+}
+
+// LoadFromCLIArgs loads troubleshoot specs from args passed to a CLI command.
+// This loader function is meant for troubleshoot CLI commands only, hence not making it public.
+// It will contain opinionated logic for CLI commands such as interpreting viper flags,
+// supporting secret/ uri format, downloading from OCI registry and other URLs, etc.
 func LoadFromCLIArgs(ctx context.Context, client kubernetes.Interface, args []string, vp *viper.Viper) (*loader.TroubleshootKinds, error) {
+	// Let's always ensure we have a context
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
 	rawSpecs := []string{}
 
 	for _, v := range args {
 		if strings.HasPrefix(v, "secret/") {
-			// format secret/namespace-name/secret-name
+			// format secret/namespace-name/secret-name[/data-key]
 			pathParts := strings.Split(v, "/")
-			if len(pathParts) != 3 {
-				return nil, types.NewExitCodeError(constants.EXIT_CODE_SPEC_ISSUES, errors.Errorf("path %s must have 3 components", v))
+			if len(pathParts) > 4 {
+				return nil, types.NewExitCodeError(constants.EXIT_CODE_SPEC_ISSUES, errors.Errorf("secret path %s must have at most 4 components", v))
+			}
+			if len(pathParts) < 3 {
+				return nil, types.NewExitCodeError(constants.EXIT_CODE_SPEC_ISSUES, errors.Errorf("secret path %s must have at least 3 components", v))
 			}
 
-			spec, err := LoadFromSecret(ctx, client, pathParts[1], pathParts[2], "preflight-spec")
+			data, err := LoadFromSecret(ctx, client, pathParts[1], pathParts[2])
 			if err != nil {
 				return nil, types.NewExitCodeError(constants.EXIT_CODE_SPEC_ISSUES, errors.Wrap(err, "failed to get spec from secret"))
 			}
 
-			rawSpecs = append(rawSpecs, string(spec))
+			// If we have a key defined, then load specs from that key only.
+			if len(pathParts) == 4 {
+				spec, ok := data[pathParts[3]]
+				if ok {
+					rawSpecs = append(rawSpecs, string(spec))
+				}
+			} else {
+				// Append all data in the secret. Some may not be specs, but that's ok. They will be ignored.
+				for _, spec := range data {
+					rawSpecs = append(rawSpecs, string(spec))
+				}
+			}
+		} else if strings.HasPrefix(v, "configmap/") {
+			// format configmap/namespace-name/configmap-name[/data-key]
+			pathParts := strings.Split(v, "/")
+			if len(pathParts) > 4 {
+				return nil, types.NewExitCodeError(constants.EXIT_CODE_SPEC_ISSUES, errors.Errorf("configmap path %s must have at most 4 components", v))
+			}
+			if len(pathParts) < 3 {
+				return nil, types.NewExitCodeError(constants.EXIT_CODE_SPEC_ISSUES, errors.Errorf("configmap path %s must have at least 3 components", v))
+			}
+
+			data, err := LoadFromConfigMap(ctx, client, pathParts[1], pathParts[2])
+			if err != nil {
+				return nil, types.NewExitCodeError(constants.EXIT_CODE_SPEC_ISSUES, errors.Wrap(err, "failed to get spec from configmap"))
+			}
+
+			// If we have a key defined, then load specs from that key only.
+			if len(pathParts) == 4 {
+				spec, ok := data[pathParts[3]]
+				if ok {
+					rawSpecs = append(rawSpecs, spec)
+				}
+			} else {
+				// Append all data in the configmap. Some may not be specs, but that's ok. They will be ignored.
+				for _, spec := range data {
+					rawSpecs = append(rawSpecs, spec)
+				}
+			}
 		} else if _, err := os.Stat(v); err == nil {
 			b, err := os.ReadFile(v)
 			if err != nil {
@@ -100,7 +155,7 @@ func LoadFromCLIArgs(ctx context.Context, client kubernetes.Interface, args []st
 			}
 
 			if u.Scheme == "oci" {
-				content, err := oci.PullPreflightFromOCI(v)
+				content, err := oci.PullSpecsFromOCI(ctx, v)
 				if err != nil {
 					if err == oci.ErrNoRelease {
 						return nil, types.NewExitCodeError(constants.EXIT_CODE_SPEC_ISSUES, errors.Errorf("no release found for %s.\nCheck the oci:// uri for errors or contact the application vendor for support.", v))
@@ -109,31 +164,32 @@ func LoadFromCLIArgs(ctx context.Context, client kubernetes.Interface, args []st
 					return nil, types.NewExitCodeError(constants.EXIT_CODE_SPEC_ISSUES, err)
 				}
 
-				rawSpecs = append(rawSpecs, string(content))
+				rawSpecs = append(rawSpecs, content...)
 			} else {
 				if !util.IsURL(v) {
-					return nil, types.NewExitCodeError(constants.EXIT_CODE_SPEC_ISSUES, fmt.Errorf("%s is not a URL and was not found (err %s)", v, err))
+					return nil, types.NewExitCodeError(constants.EXIT_CODE_SPEC_ISSUES, fmt.Errorf("%s is not a URL and was not found", v))
 				}
 
-				req, err := http.NewRequest("GET", v, nil)
-				if err != nil {
-					// exit code: should this be catch all or spec issues...?
-					return nil, types.NewExitCodeError(constants.EXIT_CODE_CATCH_ALL, err)
-				}
-				req.Header.Set("User-Agent", "Replicated_Preflight/v1beta2")
-				resp, err := http.DefaultClient.Do(req)
-				if err != nil {
-					// exit code: should this be catch all or spec issues...?
-					return nil, types.NewExitCodeError(constants.EXIT_CODE_CATCH_ALL, err)
-				}
-				defer resp.Body.Close()
-
-				body, err := io.ReadAll(resp.Body)
+				parsedURL, err := url.ParseRequestURI(v)
 				if err != nil {
 					return nil, types.NewExitCodeError(constants.EXIT_CODE_SPEC_ISSUES, err)
 				}
-
-				rawSpecs = append(rawSpecs, string(body))
+				if parsedURL.Host == "kots.io" {
+					// To download specs from kots.io, we need to set the User-Agent header
+					rawSpec, err := downloadFromHttpURL(ctx, v, map[string]string{
+						"User-Agent": "Replicated_Troubleshoot/v1beta1",
+					})
+					if err != nil {
+						return nil, err
+					}
+					rawSpecs = append(rawSpecs, rawSpec)
+				} else {
+					rawSpec, err := downloadFromHttpURL(ctx, v, nil)
+					if err != nil {
+						return nil, err
+					}
+					rawSpecs = append(rawSpecs, rawSpec)
+				}
 			}
 		}
 	}
@@ -155,6 +211,37 @@ func LoadFromCLIArgs(ctx context.Context, client kubernetes.Interface, args []st
 	}
 
 	return kinds, nil
+}
+
+func downloadFromHttpURL(ctx context.Context, url string, headers map[string]string) (string, error) {
+	hs := []string{}
+	for k, v := range headers {
+		hs = append(hs, fmt.Sprintf("%s: %s", k, v))
+	}
+
+	klog.V(1).Infof("Downloading troubleshoot specs: url=%s, headers=[%v]", url, strings.Join(hs, ", "))
+	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	if err != nil {
+		// exit code: should this be catch all or spec issues...?
+		return "", types.NewExitCodeError(constants.EXIT_CODE_CATCH_ALL, err)
+	}
+	for k, v := range headers {
+		req.Header.Set(k, v)
+	}
+
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		// exit code: should this be catch all or spec issues...?
+		return "", types.NewExitCodeError(constants.EXIT_CODE_CATCH_ALL, err)
+	}
+	defer resp.Body.Close()
+
+	klog.V(1).Infof("Response status: %s", resp.Status)
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return "", types.NewExitCodeError(constants.EXIT_CODE_SPEC_ISSUES, err)
+	}
+	return string(body), nil
 }
 
 // LoadFromCluster loads troubleshoot specs from the cluster based on the provided labels.

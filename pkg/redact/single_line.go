@@ -2,12 +2,13 @@ package redact
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
 	"io"
 	"regexp"
-	"strings"
 
 	"github.com/replicatedhq/troubleshoot/pkg/constants"
+	"k8s.io/klog/v2"
 )
 
 type SingleLineRedactor struct {
@@ -19,15 +20,17 @@ type SingleLineRedactor struct {
 	isDefault  bool
 }
 
+var NEW_LINE = []byte{'\n'}
+
 func NewSingleLineRedactor(re LineRedactor, maskText, path, name string, isDefault bool) (*SingleLineRedactor, error) {
 	var scanCompiled *regexp.Regexp
-	compiled, err := regexp.Compile(re.regex)
+	compiled, err := compileRegex(re.regex)
 	if err != nil {
 		return nil, err
 	}
 
 	if re.scan != "" {
-		scanCompiled, err = regexp.Compile(re.scan)
+		scanCompiled, err = compileRegex(re.scan)
 		if err != nil {
 			return nil, err
 		}
@@ -42,50 +45,62 @@ func (r *SingleLineRedactor) Redact(input io.Reader, path string) io.Reader {
 	go func() {
 		var err error
 		defer func() {
-			if err == io.EOF {
+			if err == nil || err == io.EOF {
 				writer.Close()
 			} else {
+				if err == bufio.ErrTooLong {
+					s := fmt.Sprintf("Error redacting %q. A line in the file exceeded %d MB max length", path, constants.SCANNER_MAX_SIZE/1024/1024)
+					klog.V(2).Info(s)
+				} else {
+					klog.V(2).Info(fmt.Sprintf("Error redacting %q: %v", path, err))
+				}
 				writer.CloseWithError(err)
 			}
 		}()
 
-		substStr := getReplacementPattern(r.re, r.maskText)
+		substStr := []byte(getReplacementPattern(r.re, r.maskText))
 
-		buf := make([]byte, constants.MAX_BUFFER_CAPACITY)
+		buf := make([]byte, constants.BUF_INIT_SIZE)
 		scanner := bufio.NewScanner(input)
-		scanner.Buffer(buf, constants.MAX_BUFFER_CAPACITY)
+		scanner.Buffer(buf, constants.SCANNER_MAX_SIZE)
 
 		lineNum := 0
 		for scanner.Scan() {
 			lineNum++
-			line := scanner.Text()
+			line := scanner.Bytes()
 
 			// is scan is not nil, then check if line matches scan by lowercasing it
 			if r.scan != nil {
-				lowerLine := strings.ToLower(line)
-				if !r.scan.MatchString(lowerLine) {
-					fmt.Fprintf(writer, "%s\n", line)
+				lowerLine := bytes.ToLower(line)
+				if !r.scan.Match(lowerLine) {
+					// Append newline since scanner strips it
+					err = writeBytes(writer, line, NEW_LINE)
+					if err != nil {
+						return
+					}
 					continue
 				}
 			}
 
 			// if scan matches, but re does not, do not redact
-			if !r.re.MatchString(line) {
-				fmt.Fprintf(writer, "%s\n", line)
+			if !r.re.Match(line) {
+				// Append newline since scanner strips it
+				err = writeBytes(writer, line, NEW_LINE)
+				if err != nil {
+					return
+				}
 				continue
 			}
 
-			clean := r.re.ReplaceAllString(line, substStr)
-
-			// io.WriteString would be nicer, but scanner strips new lines
-			fmt.Fprintf(writer, "%s\n", clean)
-
+			clean := r.re.ReplaceAll(line, substStr)
+			// Append newline since scanner strips it
+			err = writeBytes(writer, clean, NEW_LINE)
 			if err != nil {
 				return
 			}
 
 			// if clean is not equal to line, a redaction was performed
-			if clean != line {
+			if !bytes.Equal(clean, line) {
 				addRedaction(Redaction{
 					RedactorName:      r.redactName,
 					CharactersRemoved: len(line) - len(clean),

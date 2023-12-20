@@ -2,7 +2,7 @@ package supportbundle
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"os"
@@ -20,6 +20,7 @@ import (
 	"k8s.io/klog/v2"
 )
 
+// GetSupportBundleFromURI downloads and parses a support bundle from a URI and returns a SupportBundle object
 func GetSupportBundleFromURI(bundleURI string) (*troubleshootv1beta2.SupportBundle, error) {
 	collectorContent, err := LoadSupportBundleSpec(bundleURI)
 	if err != nil {
@@ -36,6 +37,8 @@ func GetSupportBundleFromURI(bundleURI string) (*troubleshootv1beta2.SupportBund
 	return supportbundle, nil
 }
 
+// ParseSupportBundle parses a support bundle from a byte array into a SupportBundle object
+// Deprecated: use loader.LoadSpecs instead
 func ParseSupportBundle(doc []byte, followURI bool) (*troubleshootv1beta2.SupportBundle, error) {
 	doc, err := docrewrite.ConvertToV1Beta2(doc)
 	if err != nil {
@@ -98,10 +101,14 @@ func ParseSupportBundle(doc []byte, followURI bool) (*troubleshootv1beta2.Suppor
 	return nil, errors.New("spec was not parseable as a troubleshoot kind")
 }
 
+// ParseSupportBundle parses a support bundle from a byte array into a SupportBundle object
+// Deprecated: use loader.LoadSpecs instead
 func ParseSupportBundleFromDoc(doc []byte) (*troubleshootv1beta2.SupportBundle, error) {
 	return ParseSupportBundle(doc, true)
 }
 
+// GetRedactorFromURI parses a redactor from a URI into a Redactor object
+// Deprecated: use loader.LoadSpecs instead
 func GetRedactorFromURI(redactorURI string) (*troubleshootv1beta2.Redactor, error) {
 	redactorContent, err := LoadRedactorSpec(redactorURI)
 	if err != nil {
@@ -119,6 +126,8 @@ func GetRedactorFromURI(redactorURI string) (*troubleshootv1beta2.Redactor, erro
 	return redactor, nil
 }
 
+// GetRedactorsFromURIs parses redactors from a URIs Redactor objects
+// Deprecated: use loader.LoadSpecs instead
 func GetRedactorsFromURIs(redactorURIs []string) ([]*troubleshootv1beta2.Redact, error) {
 	redactors := []*troubleshootv1beta2.Redact{}
 	for _, redactor := range redactorURIs {
@@ -189,7 +198,7 @@ func LoadRedactorSpec(arg string) ([]byte, error) {
 func loadSpec(arg string) ([]byte, error) {
 	var err error
 	if _, err = os.Stat(arg); err == nil {
-		b, err := ioutil.ReadFile(arg)
+		b, err := os.ReadFile(arg)
 		if err != nil {
 			return nil, errors.Wrap(err, "read spec file")
 		}
@@ -216,7 +225,7 @@ func loadSpec(arg string) ([]byte, error) {
 	}
 
 	if !util.IsURL(arg) {
-		return nil, fmt.Errorf("%s is not a URL and was not found (err %s)", arg, err)
+		return nil, fmt.Errorf("%s is not a URL and was not found", arg)
 	}
 
 	spec, err := loadSpecFromURL(arg)
@@ -244,7 +253,7 @@ func loadSpecFromURL(arg string) ([]byte, error) {
 		}
 		defer resp.Body.Close()
 
-		body, err := ioutil.ReadAll(resp.Body)
+		body, err := io.ReadAll(resp.Body)
 		if err != nil {
 			return nil, errors.Wrap(err, "read responce body")
 		}
@@ -253,6 +262,8 @@ func loadSpecFromURL(arg string) ([]byte, error) {
 	}
 }
 
+// ParseRedactorsFromDocs parses a slice of YAML docs and returns a slice of Redactors
+// Deprecated: use loader.LoadSpecs instead
 func ParseRedactorsFromDocs(docs []string) ([]*troubleshootv1beta2.Redact, error) {
 	var redactors []*troubleshootv1beta2.Redact
 

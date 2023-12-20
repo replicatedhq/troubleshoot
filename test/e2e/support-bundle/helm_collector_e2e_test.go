@@ -11,7 +11,6 @@ import (
 	"testing"
 
 	"sigs.k8s.io/e2e-framework/pkg/envconf"
-	"sigs.k8s.io/e2e-framework/pkg/envfuncs"
 	"sigs.k8s.io/e2e-framework/pkg/features"
 	"sigs.k8s.io/e2e-framework/third_party/helm"
 
@@ -26,10 +25,7 @@ func Test_HelmCollector(t *testing.T) {
 
 	feature := features.New("Collector Helm Release").
 		Setup(func(ctx context.Context, t *testing.T, c *envconf.Config) context.Context {
-			cluster, ok := envfuncs.GetKindClusterFromContext(ctx, ClusterName)
-			if !ok {
-				t.Fatalf("Failed to extract kind cluster %s from context", ClusterName)
-			}
+			cluster := getClusterFromContext(t, ctx, ClusterName)
 			manager := helm.New(cluster.GetKubeconfig())
 			manager.RunInstall(helm.WithName(releaseName), helm.WithNamespace(c.Namespace()), helm.WithChart(filepath.Join(curDir, "testdata/charts/nginx-15.2.0.tgz")), helm.WithWait(), helm.WithTimeout("1m"))
 			//ignore error to allow test to speed up, helm collector will catch the pending or deployed helm release status
@@ -43,7 +39,7 @@ func Test_HelmCollector(t *testing.T) {
 			namespace := c.Namespace()
 			tarPath := fmt.Sprintf("%s.tar.gz", supportBundleName)
 			targetFile := fmt.Sprintf("%s/helm/%s.json", supportBundleName, namespace)
-			cmd := exec.Command("../../../bin/support-bundle", "spec/helm.yaml", "--interactive=false", fmt.Sprintf("-o=%s", supportBundleName))
+			cmd := exec.CommandContext(ctx, sbBinary(), "spec/helm.yaml", "--interactive=false", fmt.Sprintf("-o=%s", supportBundleName))
 			cmd.Stdout = &out
 			err := cmd.Run()
 			if err != nil {
@@ -70,6 +66,12 @@ func Test_HelmCollector(t *testing.T) {
 			assert.Equal(t, 1, len(results))
 			assert.Equal(t, releaseName, results[0].ReleaseName)
 			assert.Equal(t, "nginx", results[0].Chart)
+			return ctx
+		}).
+		Teardown(func(ctx context.Context, t *testing.T, c *envconf.Config) context.Context {
+			cluster := getClusterFromContext(t, ctx, ClusterName)
+			manager := helm.New(cluster.GetKubeconfig())
+			manager.RunUninstall(helm.WithName(releaseName), helm.WithNamespace(c.Namespace()))
 			return ctx
 		}).
 		Feature()

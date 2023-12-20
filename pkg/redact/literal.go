@@ -2,23 +2,26 @@ package redact
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
 	"io"
-	"strings"
+
+	"github.com/replicatedhq/troubleshoot/pkg/constants"
+	"k8s.io/klog/v2"
 )
 
 type literalRedactor struct {
-	matchString string
-	filePath    string
-	redactName  string
-	isDefault   bool
+	match      []byte
+	filePath   string
+	redactName string
+	isDefault  bool
 }
 
-func literalString(matchString, path, name string) Redactor {
+func literalString(match []byte, path, name string) Redactor {
 	return literalRedactor{
-		matchString: matchString,
-		filePath:    path,
-		redactName:  name,
+		match:      match,
+		filePath:   path,
+		redactName: name,
 	}
 }
 
@@ -28,32 +31,37 @@ func (r literalRedactor) Redact(input io.Reader, path string) io.Reader {
 	go func() {
 		var err error
 		defer func() {
-			if err == io.EOF {
+			if err == nil || err == io.EOF {
 				writer.Close()
 			} else {
+				if err == bufio.ErrTooLong {
+					s := fmt.Sprintf("Error redacting %q. A line in the file exceeded %d MB max length", path, constants.SCANNER_MAX_SIZE/1024/1024)
+					klog.V(2).Info(s)
+				} else {
+					klog.V(2).Info(fmt.Sprintf("Error redacting %q: %v", path, err))
+				}
 				writer.CloseWithError(err)
 			}
 		}()
 
-		reader := bufio.NewReader(input)
+		buf := make([]byte, constants.BUF_INIT_SIZE)
+		scanner := bufio.NewScanner(input)
+		scanner.Buffer(buf, constants.SCANNER_MAX_SIZE)
+
 		lineNum := 0
-		for {
+		for scanner.Scan() {
 			lineNum++
-			var line string
-			line, err = readLine(reader)
+			line := scanner.Bytes()
+
+			clean := bytes.ReplaceAll(line, r.match, maskTextBytes)
+
+			// Append newline since scanner strips it
+			err = writeBytes(writer, clean, NEW_LINE)
 			if err != nil {
 				return
 			}
 
-			clean := strings.ReplaceAll(line, r.matchString, MASK_TEXT)
-
-			// io.WriteString would be nicer, but scanner strips new lines
-			fmt.Fprintf(writer, "%s\n", clean)
-			if err != nil {
-				return
-			}
-
-			if clean != line {
+			if !bytes.Equal(clean, line) {
 				addRedaction(Redaction{
 					RedactorName:      r.redactName,
 					CharactersRemoved: len(line) - len(clean),
@@ -62,6 +70,9 @@ func (r literalRedactor) Redact(input io.Reader, path string) io.Reader {
 					IsDefaultRedactor: r.isDefault,
 				})
 			}
+		}
+		if scanErr := scanner.Err(); scanErr != nil {
+			err = scanErr
 		}
 	}()
 	return out

@@ -4,9 +4,12 @@ import (
 	"archive/tar"
 	"bytes"
 	"compress/gzip"
+	"fmt"
 	"io"
 	"os"
+	"path"
 	"path/filepath"
+	"strings"
 
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
@@ -132,7 +135,45 @@ func (r CollectorResult) SaveResult(bundlePath string, relativePath string, read
 		return errors.Wrap(err, "failed to stat file")
 	}
 
-	klog.V(2).Infof("Added %q (%d MB) to bundle output", relativePath, fileInfo.Size()/(1024*1024))
+	klog.V(2).Infof("Added %q (%d KB) to bundle output", relativePath, fileInfo.Size()/(1024))
+	return nil
+}
+
+// SaveResults walk a target directory and call SaveResult on all files retrieved from the walk.
+func (r CollectorResult) SaveResults(bundlePath, relativePath, targetDir string) error {
+	dirPath := path.Join(bundlePath, relativePath)
+	if err := os.MkdirAll(dirPath, 0777); err != nil {
+		return errors.Wrap(err, "failed to create output file directory")
+	}
+
+	err := filepath.WalkDir(targetDir, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			return errors.Wrap(err, "error from WalkDirFunc")
+		}
+
+		if !d.IsDir() {
+			file, err := os.Open(path)
+			if err != nil {
+				return errors.Wrap(err, fmt.Sprintf("failed to open file: %s", path))
+			}
+			fileBytes, err := io.ReadAll(file)
+			if err != nil {
+				return errors.Wrap(err, fmt.Sprintf("failed to read file: %s", path))
+			}
+			bundleRelativePath := filepath.Join(relativePath, strings.TrimPrefix(path, targetDir+"/"))
+			err = r.SaveResult(bundlePath, bundleRelativePath, bytes.NewBuffer(fileBytes))
+			if err != nil {
+				return errors.Wrap(err, "error from SaveResult call")
+			}
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return errors.Wrap(err, "error from WalkDir call")
+	}
+
 	return nil
 }
 

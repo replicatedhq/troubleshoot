@@ -2,19 +2,6 @@
 
 const gri = require('gaze-run-interrupt');
 
-const binList = [
-  // 'bin/analyze',
-  // 'bin/preflight',
-  'bin/support-bundle',
-  // 'bin/collect'
-]
-const makeList = [
-  // 'analyze',
-  // 'preflight',
-  'support-bundle',
-  // 'collect'
-]
-
 const commands = [
   // {
   //   command: 'rm',
@@ -22,7 +9,7 @@ const commands = [
   // },
   {
     command: 'make',
-    args: makeList,
+    args: ['build'],
   },
 ];
 

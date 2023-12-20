@@ -7,7 +7,10 @@
 *.dylib
 bin
 .DS_Store
+
+# npm generated files
 node_modules/
+package*.json
 
 # Test binary, build with `go test -c`
 *.test

@@ -50,7 +50,7 @@ func runCollect(v *viper.Viper, arg string) error {
 
 		collectorContent = spec
 	} else if _, err = os.Stat(arg); err == nil {
-		b, err := ioutil.ReadFile(arg)
+		b, err := os.ReadFile(arg)
 		if err != nil {
 			return err
 		}
@@ -58,7 +58,7 @@ func runCollect(v *viper.Viper, arg string) error {
 		collectorContent = b
 	} else {
 		if !util.IsURL(arg) {
-			return fmt.Errorf("%s is not a URL and was not found (err %s)", arg, err)
+			return fmt.Errorf("%s is not a URL and was not found", arg)
 		}
 
 		req, err := http.NewRequest("GET", arg, nil)

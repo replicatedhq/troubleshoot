@@ -1,0 +1,132 @@
+{
+    "hosts": [
+        {
+            "hostIP": "100.64.0.1",
+            "podIP": "10.32.0.9",
+            "podName": "goldpinger-4hctt"
+        },
+        {
+            "hostIP": "100.64.0.2",
+            "podIP": "10.32.1.2",
+            "podName": "goldpinger-tbdsb"
+        },
+        {
+            "hostIP": "100.64.0.3",
+            "podIP": "10.32.2.2",
+            "podName": "goldpinger-jj9mw"
+        }
+    ],
+    "responses": {
+        "goldpinger-4hctt": {
+            "HostIP": "100.64.0.1",
+            "OK": true,
+            "PodIP": "10.32.0.9",
+            "response": {
+                "podResults": {
+                    "goldpinger-4hctt": {
+                        "HostIP": "100.64.0.1",
+                        "OK": true,
+                        "PingTime": "2023-12-06T16:45:41.971Z",
+                        "PodIP": "10.32.0.9",
+                        "response": {
+                            "boot_time": "2023-12-06T14:13:58.540Z"
+                        },
+                        "status-code": 200
+                    },
+                    "goldpinger-jj9mw": {
+                        "HostIP": "100.64.0.3",
+                        "OK": false,
+                        "PingTime": "2023-12-06T16:45:22.113Z",
+                        "PodIP": "10.32.2.2",
+                        "error": "Get \"http://10.32.2.2:80/ping\": context deadline exceeded",
+                        "response-time-ms": 300,
+                        "status-code": 504
+                    },
+                    "goldpinger-tbdsb": {
+                        "HostIP": "100.64.0.2",
+                        "OK": false,
+                        "PingTime": "2023-12-06T16:45:23.265Z",
+                        "PodIP": "10.32.1.2",
+                        "error": "Get \"http://10.32.1.2:80/ping\": context deadline exceeded",
+                        "response-time-ms": 300,
+                        "status-code": 504
+                    }
+                }
+            }
+        },
+        "goldpinger-jj9mw": {
+            "HostIP": "100.64.0.3",
+            "OK": true,
+            "PodIP": "10.32.2.2",
+            "response": {
+                "podResults": {
+                    "goldpinger-4hctt": {
+                        "HostIP": "100.64.0.1",
+                        "OK": false,
+                        "PingTime": "2023-12-06T16:45:38.170Z",
+                        "PodIP": "10.32.0.9",
+                        "error": "Get \"http://10.32.0.9:80/ping\": context deadline exceeded",
+                        "response-time-ms": 300,
+                        "status-code": 504
+                    },
+                    "goldpinger-jj9mw": {
+                        "HostIP": "100.64.0.3",
+                        "OK": true,
+                        "PingTime": "2023-12-06T16:45:15.316Z",
+                        "PodIP": "10.32.2.2",
+                        "response": {
+                            "boot_time": "2023-12-06T14:17:08.210Z"
+                        },
+                        "status-code": 200
+                    },
+                    "goldpinger-tbdsb": {
+                        "HostIP": "100.64.0.2",
+                        "OK": false,
+                        "PingTime": "2023-12-06T16:45:15.977Z",
+                        "PodIP": "10.32.1.2",
+                        "error": "Get \"http://10.32.1.2:80/ping\": context deadline exceeded",
+                        "response-time-ms": 300,
+                        "status-code": 504
+                    }
+                }
+            }
+        },
+        "goldpinger-tbdsb": {
+            "HostIP": "100.64.0.2",
+            "OK": true,
+            "PodIP": "10.32.1.2",
+            "response": {
+                "podResults": {
+                    "goldpinger-4hctt": {
+                        "HostIP": "100.64.0.1",
+                        "OK": false,
+                        "PingTime": "2023-12-06T16:45:14.628Z",
+                        "PodIP": "10.32.0.9",
+                        "error": "Get \"http://10.32.0.9:80/ping\": context deadline exceeded",
+                        "response-time-ms": 300,
+                        "status-code": 504
+                    },
+                    "goldpinger-jj9mw": {
+                        "HostIP": "100.64.0.3",
+                        "OK": false,
+                        "PingTime": "2023-12-06T16:45:42.398Z",
+                        "PodIP": "10.32.2.2",
+                        "error": "Get \"http://10.32.2.2:80/ping\": context deadline exceeded",
+                        "response-time-ms": 300,
+                        "status-code": 504
+                    },
+                    "goldpinger-tbdsb": {
+                        "HostIP": "100.64.0.2",
+                        "OK": true,
+                        "PingTime": "2023-12-06T16:45:15.259Z",
+                        "PodIP": "10.32.1.2",
+                        "response": {
+                            "boot_time": "2023-12-06T14:17:03.586Z"
+                        },
+                        "status-code": 200
+                    }
+                }
+            }
+        }
+    }
+}

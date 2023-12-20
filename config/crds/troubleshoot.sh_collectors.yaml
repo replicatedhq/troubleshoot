@@ -318,6 +318,35 @@ spec:
                       - namespace
                       - selector
                       type: object
+                    goldpinger:
+                      properties:
+                        collectorName:
+                          type: string
+                        exclude:
+                          type: BoolString
+                        namespace:
+                          type: string
+                        podLaunchOptions:
+                          properties:
+                            image:
+                              type: string
+                            imagePullSecret:
+                              properties:
+                                data:
+                                  additionalProperties:
+                                    type: string
+                                  type: object
+                                name:
+                                  type: string
+                                type:
+                                  type: string
+                              type: object
+                            namespace:
+                              type: string
+                            serviceAccountName:
+                              type: string
+                          type: object
+                      type: object
                     helm:
                       properties:
                         collectorName:
@@ -344,12 +373,10 @@ spec:
                             insecureSkipVerify:
                               type: boolean
                             timeout:
-                              description: A Duration represents the elapsed time
-                                between two instants as an int64 nanosecond count.
-                                The representation limits the largest representable
-                                duration to approximately 290 years.
-                              format: int64
-                              type: integer
+                              description: Timeout is the time to wait for a server's
+                                response. Its a duration e.g 15s, 2h30m. Missing value
+                                or empty string or means no timeout.
+                              type: string
                             url:
                               type: string
                           required:
@@ -368,12 +395,10 @@ spec:
                             insecureSkipVerify:
                               type: boolean
                             timeout:
-                              description: A Duration represents the elapsed time
-                                between two instants as an int64 nanosecond count.
-                                The representation limits the largest representable
-                                duration to approximately 290 years.
-                              format: int64
-                              type: integer
+                              description: Timeout is the time to wait for a server's
+                                response. Its a duration e.g 15s, 2h30m. Missing value
+                                or empty string or means no timeout.
+                              type: string
                             url:
                               type: string
                           required:
@@ -390,12 +415,10 @@ spec:
                             insecureSkipVerify:
                               type: boolean
                             timeout:
-                              description: A Duration represents the elapsed time
-                                between two instants as an int64 nanosecond count.
-                                The representation limits the largest representable
-                                duration to approximately 290 years.
-                              format: int64
-                              type: integer
+                              description: Timeout is the time to wait for a server's
+                                response. Its a duration e.g 15s, 2h30m. Missing value
+                                or empty string or means no timeout.
+                              type: string
                             url:
                               type: string
                           required:

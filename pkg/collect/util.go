@@ -139,10 +139,28 @@ func listNodesInSelector(ctx context.Context, client *kubernetes.Clientset, sele
 
 	nodes, err := client.CoreV1().Nodes().List(ctx, listOptions)
 	if err != nil {
-		return nil, fmt.Errorf("Can't get the list of nodes, got: %w", err)
+		return nil, fmt.Errorf("can't get the list of nodes, got: %w", err)
 	}
 
 	return nodes.Items, nil
+}
+
+func getTLSParamTriplet(
+	ctx context.Context, client kubernetes.Interface, params *troubleshootv1beta2.TLSParams,
+) (string, string, string, error) {
+	var caCert, clientCert, clientKey string
+	if params.Secret != nil {
+		var err error
+		caCert, clientCert, clientKey, err = getTLSParamsFromSecret(ctx, client, params.Secret)
+		if err != nil {
+			return caCert, clientCert, clientKey, err
+		}
+	} else {
+		caCert = params.CACert
+		clientCert = params.ClientCert
+		clientKey = params.ClientKey
+	}
+	return caCert, clientCert, clientKey, nil
 }
 
 func createTLSConfig(ctx context.Context, client kubernetes.Interface, params *troubleshootv1beta2.TLSParams) (*tls.Config, error) {
@@ -158,21 +176,15 @@ func createTLSConfig(ctx context.Context, client kubernetes.Interface, params *t
 		return tlsCfg, nil
 	}
 
-	var caCert, clientCert, clientKey string
-	if params.Secret != nil {
-		caCert, clientCert, clientKey, err = getTLSParamsFromSecret(ctx, client, params.Secret)
-		if err != nil {
-			return nil, err
-		}
-	} else {
-		caCert = params.CACert
-		clientCert = params.ClientCert
-		clientKey = params.ClientKey
+	caCert, clientCert, clientKey, err := getTLSParamTriplet(ctx, client, params)
+	if err != nil {
+		return nil, err
 	}
 
 	if ok := rootCA.AppendCertsFromPEM([]byte(caCert)); !ok {
 		return nil, fmt.Errorf("failed to append CA cert to root CA bundle")
 	}
+
 	tlsCfg.RootCAs = rootCA
 
 	if clientCert == "" && clientKey == "" {
@@ -229,8 +241,8 @@ func getTLSParamsFromSecret(ctx context.Context, client kubernetes.Interface, se
 	return caCert, clientCert, clientKey, nil
 }
 
-func checkForExistingServiceAccount(client kubernetes.Interface, namespace string, serviceAccountName string) error {
-	_, err := client.CoreV1().ServiceAccounts(namespace).Get(context.Background(), serviceAccountName, metav1.GetOptions{})
+func checkForExistingServiceAccount(ctx context.Context, client kubernetes.Interface, namespace string, serviceAccountName string) error {
+	_, err := client.CoreV1().ServiceAccounts(namespace).Get(ctx, serviceAccountName, metav1.GetOptions{})
 
 	if err != nil {
 		return errors.Wrapf(err, "Failed to get service account %s", serviceAccountName)

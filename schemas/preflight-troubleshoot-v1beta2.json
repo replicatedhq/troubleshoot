@@ -824,6 +824,85 @@
                   }
                 }
               },
+              "goldpinger": {
+                "type": "object",
+                "required": [
+                  "collectorName"
+                ],
+                "properties": {
+                  "annotations": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "string"
+                    }
+                  },
+                  "checkName": {
+                    "type": "string"
+                  },
+                  "collectorName": {
+                    "type": "string"
+                  },
+                  "exclude": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  },
+                  "filePath": {
+                    "type": "string"
+                  },
+                  "outcomes": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "fail": {
+                          "type": "object",
+                          "properties": {
+                            "message": {
+                              "type": "string"
+                            },
+                            "uri": {
+                              "type": "string"
+                            },
+                            "when": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "pass": {
+                          "type": "object",
+                          "properties": {
+                            "message": {
+                              "type": "string"
+                            },
+                            "uri": {
+                              "type": "string"
+                            },
+                            "when": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "warn": {
+                          "type": "object",
+                          "properties": {
+                            "message": {
+                              "type": "string"
+                            },
+                            "uri": {
+                              "type": "string"
+                            },
+                            "when": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "strict": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  }
+                }
+              },
               "imagePullSecret": {
                 "type": "object",
                 "required": [
@@ -2255,6 +2334,26 @@
                   }
                 }
               },
+              "velero": {
+                "type": "object",
+                "properties": {
+                  "annotations": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "string"
+                    }
+                  },
+                  "checkName": {
+                    "type": "string"
+                  },
+                  "exclude": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  },
+                  "strict": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  }
+                }
+              },
               "weaveReport": {
                 "type": "object",
                 "required": [
@@ -2741,6 +2840,51 @@
                   }
                 }
               },
+              "goldpinger": {
+                "type": "object",
+                "properties": {
+                  "collectorName": {
+                    "type": "string"
+                  },
+                  "exclude": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  },
+                  "namespace": {
+                    "type": "string"
+                  },
+                  "podLaunchOptions": {
+                    "type": "object",
+                    "properties": {
+                      "image": {
+                        "type": "string"
+                      },
+                      "imagePullSecret": {
+                        "type": "object",
+                        "properties": {
+                          "data": {
+                            "type": "object",
+                            "additionalProperties": {
+                              "type": "string"
+                            }
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "type": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "namespace": {
+                        "type": "string"
+                      },
+                      "serviceAccountName": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              },
               "helm": {
                 "type": "object",
                 "properties": {
@@ -2783,9 +2927,8 @@
                         "type": "boolean"
                       },
                       "timeout": {
-                        "description": "A Duration represents the elapsed time between two instants as an int64 nanosecond count. The representation limits the largest representable duration to approximately 290 years.",
-                        "type": "integer",
-                        "format": "int64"
+                        "description": "Timeout is the time to wait for a server's response. Its a duration e.g 15s, 2h30m. Missing value or empty string or means no timeout.",
+                        "type": "string"
                       },
                       "url": {
                         "type": "string"
@@ -2814,9 +2957,8 @@
                         "type": "boolean"
                       },
                       "timeout": {
-                        "description": "A Duration represents the elapsed time between two instants as an int64 nanosecond count. The representation limits the largest representable duration to approximately 290 years.",
-                        "type": "integer",
-                        "format": "int64"
+                        "description": "Timeout is the time to wait for a server's response. Its a duration e.g 15s, 2h30m. Missing value or empty string or means no timeout.",
+                        "type": "string"
                       },
                       "url": {
                         "type": "string"
@@ -2842,9 +2984,8 @@
                         "type": "boolean"
                       },
                       "timeout": {
-                        "description": "A Duration represents the elapsed time between two instants as an int64 nanosecond count. The representation limits the largest representable duration to approximately 290 years.",
-                        "type": "integer",
-                        "format": "int64"
+                        "description": "Timeout is the time to wait for a server's response. Its a duration e.g 15s, 2h30m. Missing value or empty string or means no timeout.",
+                        "type": "string"
                       },
                       "url": {
                         "type": "string"
@@ -9590,9 +9731,8 @@
                         "type": "boolean"
                       },
                       "timeout": {
-                        "description": "A Duration represents the elapsed time between two instants as an int64 nanosecond count. The representation limits the largest representable duration to approximately 290 years.",
-                        "type": "integer",
-                        "format": "int64"
+                        "description": "Timeout is the time to wait for a server's response. Its a duration e.g 15s, 2h30m. Missing value or empty string or means no timeout.",
+                        "type": "string"
                       },
                       "url": {
                         "type": "string"
@@ -9618,9 +9758,8 @@
                         "type": "boolean"
                       },
                       "timeout": {
-                        "description": "A Duration represents the elapsed time between two instants as an int64 nanosecond count. The representation limits the largest representable duration to approximately 290 years.",
-                        "type": "integer",
-                        "format": "int64"
+                        "description": "Timeout is the time to wait for a server's response. Its a duration e.g 15s, 2h30m. Missing value or empty string or means no timeout.",
+                        "type": "string"
                       },
                       "url": {
                         "type": "string"
@@ -9646,9 +9785,8 @@
                         "type": "boolean"
                       },
                       "timeout": {
-                        "description": "A Duration represents the elapsed time between two instants as an int64 nanosecond count. The representation limits the largest representable duration to approximately 290 years.",
-                        "type": "integer",
-                        "format": "int64"
+                        "description": "Timeout is the time to wait for a server's response. Its a duration e.g 15s, 2h30m. Missing value or empty string or means no timeout.",
+                        "type": "string"
                       },
                       "url": {
                         "type": "string"

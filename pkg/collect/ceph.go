@@ -99,6 +99,13 @@ var CephCommands = []CephCommand{
 		DefaultTimeout: "30s",
 	},
 	{
+		ID:             "df", // the disk usage of each pool
+		Command:        []string{"ceph", "df"},
+		Args:           []string{"-f", "json-pretty"},
+		Format:         "json",
+		DefaultTimeout: "30s",
+	},
+	{
 		ID:             "osd-df",
 		Command:        []string{"ceph", "osd", "df"},
 		Args:           []string{"-f", "json-pretty"},

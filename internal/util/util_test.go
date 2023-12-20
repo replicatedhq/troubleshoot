@@ -194,3 +194,55 @@ func Test_EstimateNumberOfLines(t *testing.T) {
 		})
 	}
 }
+
+func TestAppend(t *testing.T) {
+	tests := []struct {
+		name   string
+		target []string
+		src    []string
+		want   []string
+	}{
+		{
+			name:   "empty target",
+			target: []string{},
+			src:    []string{"a", "b", "c"},
+			want:   []string{"a", "b", "c"},
+		},
+		{
+			name:   "empty src",
+			target: []string{"a", "b", "c"},
+			src:    []string{},
+			want:   []string{"a", "b", "c"},
+		},
+		{
+			name:   "non-empty target and src",
+			target: []string{"a", "b", "c"},
+			src:    []string{"d", "e", "f"},
+			want:   []string{"a", "b", "c", "d", "e", "f"},
+		},
+		{
+			name:   "nil target",
+			target: nil,
+			src:    []string{"a", "b", "c"},
+			want:   []string{"a", "b", "c"},
+		},
+		{
+			name:   "nil src",
+			target: []string{"a", "b", "c"},
+			src:    nil,
+			want:   []string{"a", "b", "c"},
+		},
+		{
+			name:   "nil target and empty src",
+			target: nil,
+			src:    []string{},
+			want:   []string{},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := Append(tt.target, tt.src)
+			assert.Equal(t, tt.want, got, "Append() = %v, want %v", got, tt.want)
+		})
+	}
+}

@@ -579,3 +579,24 @@ spec:
       ignoreRBAC: true`)
 	assert.Contains(t, string(y), "message: Cluster is up to date")
 }
+
+func TestLoadingEmptySpec(t *testing.T) {
+	s := testutils.GetTestFixture(t, "supportbundle/empty.yaml")
+	kinds, err := LoadSpecs(context.Background(), LoadOptions{RawSpec: s})
+	require.NoError(t, err)
+	require.NotNil(t, kinds)
+
+	assert.Equal(t, &TroubleshootKinds{
+		SupportBundlesV1Beta2: []troubleshootv1beta2.SupportBundle{
+			{
+				TypeMeta: metav1.TypeMeta{
+					Kind:       "SupportBundle",
+					APIVersion: "troubleshoot.sh/v1beta2",
+				},
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "empty",
+				},
+			},
+		},
+	}, kinds)
+}

@@ -69,7 +69,7 @@ func TestClusterResources(t *testing.T) {
 			supportBundleName := "cluster-resources"
 			tarPath := fmt.Sprintf("%s.tar.gz", supportBundleName)
 			targetFolder := fmt.Sprintf("%s/cluster-resources/", supportBundleName)
-			cmd := exec.Command("../../../bin/support-bundle", "spec/clusterResources.yaml", "--interactive=false", fmt.Sprintf("-o=%s", supportBundleName))
+			cmd := exec.CommandContext(ctx, sbBinary(), "spec/clusterResources.yaml", "--interactive=false", fmt.Sprintf("-o=%s", supportBundleName))
 			cmd.Stdout = &out
 			err := cmd.Run()
 			if err != nil {

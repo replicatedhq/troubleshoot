@@ -70,11 +70,12 @@ const (
 	EXIT_CODE_WARN        = 4
 
 	// Troubleshoot label constants
-	SupportBundleKey       = "support-bundle-spec"
-	RedactorKey            = "redactor-spec"
 	TroubleshootIOLabelKey = "troubleshoot.io/kind"
 	TroubleshootSHLabelKey = "troubleshoot.sh/kind"
-	PreflightKey           = "preflight.yaml" // Shouldn't this be "preflight-spec"?
+	SupportBundleKey       = "support-bundle-spec"
+	RedactorKey            = "redactor-spec"
+	PreflightKey           = "preflight.yaml"
+	PreflightKey2          = "preflight-spec"
 
 	// Troubleshoot spec constants
 	Troubleshootv1beta2Kind = "troubleshoot.sh/v1beta2"
@@ -83,6 +84,22 @@ const (
 	MESSAGE_TEXT_PADDING                = 4
 	MESSAGE_TEXT_LINES_MARGIN_TO_BOTTOM = 4
 
-	// Bufio Reader Constants
-	MAX_BUFFER_CAPACITY = 1024 * 1024
+	// This is the initial size of the buffer allocated.
+	// Under the hood, an array of size N is allocated in memory
+	BUF_INIT_SIZE = 4096 // 4KB
+
+	// This is the muximum size the buffer can grow to
+	// Its not what the buffer will be allocated to initially
+	SCANNER_MAX_SIZE = 10 * 1024 * 1024 // 10MB
+
+	// Goldpinger constants
+	GP_CHECK_ALL_RESULTS_PATH = "goldpinger/check_all.json"
+
+	// GP_DEFAULT_IMAGE is the default image used for goldpinger
+	// "replicated/kurl-util" would be better
+	// since its always in airgap envs, but its tagged
+	// with the kurl versions which would not work since they
+	// are not always the same
+	GP_DEFAULT_IMAGE     = "alpine:3"
+	GP_DEFAULT_NAMESPACE = "default"
 )

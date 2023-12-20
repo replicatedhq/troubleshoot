@@ -120,19 +120,16 @@ func (c *CollectClusterResources) Collect(progressChan chan<- interface{}) (Coll
 	var namespaceNames []string
 	if len(c.Collector.Namespaces) > 0 {
 		namespaces, namespaceErrors := getNamespaces(ctx, client, c.Collector.Namespaces)
-		klog.V(4).Infof("checking for namespaces access: %s", string(namespaces))
 		namespaceNames = c.Collector.Namespaces
 		output.SaveResult(c.BundlePath, path.Join(constants.CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s.json", constants.CLUSTER_RESOURCES_NAMESPACES)), bytes.NewBuffer(namespaces))
 		output.SaveResult(c.BundlePath, path.Join(constants.CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s-errors.json", constants.CLUSTER_RESOURCES_NAMESPACES)), marshalErrors(namespaceErrors))
 	} else if c.Namespace != "" {
 		namespace, namespaceErrors := getNamespace(ctx, client, c.Namespace)
-		klog.V(4).Infof("checking for namespace access: %s", string(namespace))
 		output.SaveResult(c.BundlePath, path.Join(constants.CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s.json", constants.CLUSTER_RESOURCES_NAMESPACES)), bytes.NewBuffer(namespace))
 		output.SaveResult(c.BundlePath, path.Join(constants.CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s-errors.json", constants.CLUSTER_RESOURCES_NAMESPACES)), marshalErrors(namespaceErrors))
 		namespaceNames = append(namespaceNames, c.Namespace)
 	} else {
 		namespaces, namespaceList, namespaceErrors := getAllNamespaces(ctx, client)
-		klog.V(4).Infof("checking for all namespaces access: %s", string(namespaces))
 		output.SaveResult(c.BundlePath, path.Join(constants.CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s.json", constants.CLUSTER_RESOURCES_NAMESPACES)), bytes.NewBuffer(namespaces))
 		output.SaveResult(c.BundlePath, path.Join(constants.CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s-errors.json", constants.CLUSTER_RESOURCES_NAMESPACES)), marshalErrors(namespaceErrors))
 		if namespaceList != nil {
@@ -146,6 +143,7 @@ func (c *CollectClusterResources) Collect(progressChan chan<- interface{}) (Coll
 	reviewStatuses, reviewStatusErrors := getSelfSubjectRulesReviews(ctx, client, namespaceNames)
 
 	// auth cani
+	klog.V(2).Infof("checking [%s] namespaces for permissions to collect resources", strings.Join(namespaceNames, ", "))
 	authCanI := authCanI(reviewStatuses, namespaceNames)
 	for k, v := range authCanI {
 		output.SaveResult(c.BundlePath, path.Join(constants.CLUSTER_RESOURCES_DIR, constants.CLUSTER_RESOURCES_AUTH_CANI, k), bytes.NewBuffer(v))
@@ -160,8 +158,12 @@ func (c *CollectClusterResources) Collect(progressChan chan<- interface{}) (Coll
 				filteredNamespaces = append(filteredNamespaces, ns)
 			}
 		}
+		if len(filteredNamespaces) != len(namespaceNames) {
+			klog.V(2).Infof("filtered namespaces down to [%s] after evaluating permissions", strings.Join(filteredNamespaces, ", "))
+		} else {
+			klog.V(2).Infof("no namespaces filtered out after evaluating permissions")
+		}
 		namespaceNames = filteredNamespaces
-		klog.V(4).Infof("filtered to namespaceNames %s", namespaceNames)
 	}
 
 	// pods
@@ -1235,15 +1237,26 @@ func crdsV1beta(ctx context.Context, config *rest.Config) ([]byte, []string) {
 }
 
 func crs(ctx context.Context, dyn dynamic.Interface, client *kubernetes.Clientset, config *rest.Config, namespaces []string) (map[string][]byte, map[string]string) {
+	errorList := make(map[string]string)
 	ok, err := discovery.HasResource(client, "apiextensions.k8s.io/v1", "CustomResourceDefinition")
 	if err != nil {
 		return nil, map[string]string{"discover apiextensions.k8s.io/v1": err.Error()}
 	}
 	if ok {
-		return crsV1(ctx, dyn, config, namespaces)
+		crdClient, err := apiextensionsv1clientset.NewForConfig(config)
+		if err != nil {
+			errorList["crdClient"] = err.Error()
+			return map[string][]byte{}, errorList
+		}
+		return crsV1(ctx, dyn, crdClient, namespaces)
 	}
 
-	return crsV1beta(ctx, dyn, config, namespaces)
+	crdClient, err := apiextensionsv1beta1clientset.NewForConfig(config)
+	if err != nil {
+		errorList["crdClient"] = err.Error()
+		return map[string][]byte{}, errorList
+	}
+	return crsV1beta(ctx, dyn, crdClient, namespaces)
 }
 
 // Selects the newest version by kube-aware priority.
@@ -1258,15 +1271,14 @@ func selectCRDVersionByPriority(versions []string) string {
 	return versions[len(versions)-1]
 }
 
-func crsV1(ctx context.Context, client dynamic.Interface, config *rest.Config, namespaces []string) (map[string][]byte, map[string]string) {
+func crsV1(
+	ctx context.Context,
+	client dynamic.Interface,
+	crdClient apiextensionsv1clientset.ApiextensionsV1Interface,
+	namespaces []string,
+) (map[string][]byte, map[string]string) {
 	customResources := make(map[string][]byte)
 	errorList := make(map[string]string)
-
-	crdClient, err := apiextensionsv1clientset.NewForConfig(config)
-	if err != nil {
-		errorList["crdClient"] = err.Error()
-		return customResources, errorList
-	}
 
 	crds, err := crdClient.CustomResourceDefinitions().List(ctx, metav1.ListOptions{})
 	if err != nil {
@@ -1319,12 +1331,11 @@ func crsV1(ctx context.Context, client dynamic.Interface, config *rest.Config, n
 			for _, item := range customResourceList.Items {
 				objects = append(objects, item.Object)
 			}
-			b, err := yaml.Marshal(objects)
+			err := storeCustomResource(crd.Name, objects, customResources)
 			if err != nil {
 				errorList[crd.Name] = err.Error()
 				continue
 			}
-			customResources[fmt.Sprintf("%s.yaml", crd.Name)] = b
 		} else {
 			// Group fetched resources by the namespace
 			perNamespace := map[string][]map[string]interface{}{}
@@ -1353,13 +1364,11 @@ func crsV1(ctx context.Context, client dynamic.Interface, config *rest.Config, n
 				}
 
 				namespacedName := fmt.Sprintf("%s/%s", crd.Name, ns)
-				b, err := yaml.Marshal(perNamespace[ns])
+				err := storeCustomResource(namespacedName, perNamespace[ns], customResources)
 				if err != nil {
 					errorList[namespacedName] = err.Error()
 					continue
 				}
-
-				customResources[fmt.Sprintf("%s.yaml", namespacedName)] = b
 			}
 		}
 	}
@@ -1367,15 +1376,14 @@ func crsV1(ctx context.Context, client dynamic.Interface, config *rest.Config, n
 	return customResources, errorList
 }
 
-func crsV1beta(ctx context.Context, client dynamic.Interface, config *rest.Config, namespaces []string) (map[string][]byte, map[string]string) {
+func crsV1beta(
+	ctx context.Context,
+	client dynamic.Interface,
+	crdClient apiextensionsv1beta1clientset.ApiextensionsV1beta1Interface,
+	namespaces []string,
+) (map[string][]byte, map[string]string) {
 	customResources := make(map[string][]byte)
 	errorList := make(map[string]string)
-
-	crdClient, err := apiextensionsv1beta1clientset.NewForConfig(config)
-	if err != nil {
-		errorList["crdClient"] = err.Error()
-		return customResources, errorList
-	}
 
 	crds, err := crdClient.CustomResourceDefinitions().List(ctx, metav1.ListOptions{})
 	if err != nil {
@@ -1430,12 +1438,13 @@ func crsV1beta(ctx context.Context, client dynamic.Interface, config *rest.Confi
 			for _, item := range customResourceList.Items {
 				objects = append(objects, item.Object)
 			}
-			b, err := yaml.Marshal(customResourceList.Items)
+
+			err = storeCustomResource(crd.Name, objects, customResources)
 			if err != nil {
 				errorList[crd.Name] = err.Error()
 				continue
 			}
-			customResources[fmt.Sprintf("%s.yaml", crd.Name)] = b
+
 		} else {
 			// Group fetched resources by the namespace
 			perNamespace := map[string][]map[string]interface{}{}
@@ -1464,13 +1473,11 @@ func crsV1beta(ctx context.Context, client dynamic.Interface, config *rest.Confi
 				}
 
 				namespacedName := fmt.Sprintf("%s/%s", crd.Name, ns)
-				b, err := yaml.Marshal(perNamespace[ns])
+				err := storeCustomResource(namespacedName, perNamespace[ns], customResources)
 				if err != nil {
 					errorList[namespacedName] = err.Error()
 					continue
 				}
-
-				customResources[fmt.Sprintf("%s.yaml", namespacedName)] = b
 			}
 		}
 	}
@@ -1630,7 +1637,7 @@ func getSelfSubjectRulesReviews(ctx context.Context, client *kubernetes.Clientse
 			continue
 		}
 
-		if response.Status.Incomplete == true {
+		if response.Status.Incomplete {
 			errorsByNamespace[namespace] = response.Status.EvaluationError
 		}
 
@@ -2105,4 +2112,24 @@ func configMaps(ctx context.Context, client kubernetes.Interface, namespaces []s
 	}
 
 	return configmapByNamespace, errorsByNamespace
+}
+
+// storeCustomResource stores a custom resource as JSON and YAML
+// We use both formats for backwards compatibility. This way we
+// avoid breaking existing tools and analysers that already rely on
+// the YAML format.
+func storeCustomResource(name string, objects any, m map[string][]byte) error {
+	j, err := json.MarshalIndent(objects, "", "  ")
+	if err != nil {
+		return err
+	}
+
+	y, err := yaml.Marshal(objects)
+	if err != nil {
+		return err
+	}
+
+	m[fmt.Sprintf("%s.json", name)] = j
+	m[fmt.Sprintf("%s.yaml", name)] = y
+	return nil
 }

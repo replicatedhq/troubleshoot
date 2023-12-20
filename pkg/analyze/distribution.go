@@ -26,6 +26,7 @@ type providers struct {
 	minikube      bool
 	rke2          bool
 	k3s           bool
+	oke           bool
 }
 
 type Provider int
@@ -45,6 +46,7 @@ const (
 	minikube      Provider = iota
 	rke2          Provider = iota
 	k3s           Provider = iota
+	oke           Provider = iota
 )
 
 type AnalyzeDistribution struct {
@@ -124,6 +126,11 @@ func ParseNodesForProviders(nodes []corev1.Node) (providers, string) {
 			if k == "beta.kubernetes.io/instance-type" && v == "k3s" {
 				foundProviders.k3s = true
 				stringProvider = "k3s"
+			}
+			if k == "oci.oraclecloud.com/fault-domain" {
+				// Based on: https://docs.oracle.com/en-us/iaas/Content/ContEng/Reference/contengsupportedlabelsusecases.htm
+				foundProviders.oke = true
+				stringProvider = "oke"
 			}
 		}
 
@@ -326,6 +333,8 @@ func compareDistributionConditionalToActual(conditional string, actual providers
 		isMatch = actual.rke2
 	case k3s:
 		isMatch = actual.k3s
+	case oke:
+		isMatch = actual.oke
 	}
 
 	switch parts[0] {
@@ -366,6 +375,8 @@ func mustNormalizeDistributionName(raw string) Provider {
 		return rke2
 	case "k3s":
 		return k3s
+	case "oke":
+		return oke
 	}
 
 	return unknown

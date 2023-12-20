@@ -18,7 +18,7 @@ func runAnalyzers(v *viper.Viper, bundlePath string) error {
 	specContent := ""
 	var err error
 	if _, err = os.Stat(specPath); err == nil {
-		b, err := ioutil.ReadFile(specPath)
+		b, err := os.ReadFile(specPath)
 		if err != nil {
 			return err
 		}
@@ -26,7 +26,8 @@ func runAnalyzers(v *viper.Viper, bundlePath string) error {
 		specContent = string(b)
 	} else {
 		if !util.IsURL(specPath) {
-			return fmt.Errorf("%s is not a URL and was not found (err %s)", specPath, err)
+			// TODO: Better error message when we do not have a file/url etc
+			return fmt.Errorf("%s is not a URL and was not found", specPath)
 		}
 
 		req, err := http.NewRequest("GET", specPath, nil)

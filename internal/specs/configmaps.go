@@ -9,22 +9,17 @@ import (
 	"k8s.io/klog/v2"
 )
 
-func LoadFromConfigMap(ctx context.Context, client kubernetes.Interface, ns string, name string, key string) ([]byte, error) {
+func LoadFromConfigMap(ctx context.Context, client kubernetes.Interface, ns string, name string) (map[string]string, error) {
 	foundConfigMap, err := client.CoreV1().ConfigMaps(ns).Get(ctx, name, metav1.GetOptions{})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get configmap")
 	}
 
-	spec, ok := foundConfigMap.Data[key]
-	if !ok {
-		return nil, errors.Errorf("spec not found in configmap %s", name)
-	}
-
-	klog.V(1).InfoS("Loaded spec from config map", "name",
-		foundConfigMap.Name, "namespace", foundConfigMap.Namespace, "data key", key,
+	klog.V(1).InfoS("Loaded data from config map", "name",
+		foundConfigMap.Name, "namespace", foundConfigMap.Namespace,
 	)
 
-	return []byte(spec), nil
+	return foundConfigMap.Data, nil
 }
 
 func LoadFromConfigMapMatchingLabel(ctx context.Context, client kubernetes.Interface, label string, ns string, key string) ([]string, error) {

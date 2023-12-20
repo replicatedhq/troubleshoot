@@ -15,16 +15,25 @@ import (
 
 func GetTestFixture(t *testing.T, path string) string {
 	t.Helper()
-	p := path
-	if !filepath.IsAbs(path) {
-		p = filepath.Join("../../testdata", path)
-	}
-	b, err := os.ReadFile(p)
+
+	b, err := os.ReadFile(TestFixtureFilePath(t, path))
 	require.NoError(t, err)
 	return string(b)
 }
 
-// FileDir returns the directory of the current source file.
+func TestFixtureFilePath(t *testing.T, path string) string {
+	t.Helper()
+
+	if !filepath.IsAbs(path) {
+		p, err := filepath.Abs(filepath.Join(FileDir(), "../../testdata", path))
+		require.NoError(t, err)
+		return p
+	} else {
+		return path
+	}
+}
+
+// FileDir returns the directory of this source file
 func FileDir() string {
 	_, filename, _, _ := runtime.Caller(0)
 	return filepath.Dir(filename)
