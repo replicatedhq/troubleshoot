@@ -23,7 +23,6 @@ import (
 	v1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
-	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
 	testing "k8s.io/client-go/testing"
@@ -35,9 +34,9 @@ type FakeHostPreflights struct {
 	ns   string
 }
 
-var hostpreflightsResource = schema.GroupVersionResource{Group: "troubleshoot.sh", Version: "v1beta2", Resource: "hostpreflights"}
+var hostpreflightsResource = v1beta2.SchemeGroupVersion.WithResource("hostpreflights")
 
-var hostpreflightsKind = schema.GroupVersionKind{Group: "troubleshoot.sh", Version: "v1beta2", Kind: "HostPreflight"}
+var hostpreflightsKind = v1beta2.SchemeGroupVersion.WithKind("HostPreflight")
 
 // Get takes name of the hostPreflight, and returns the corresponding hostPreflight object, and an error if there is any.
 func (c *FakeHostPreflights) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1beta2.HostPreflight, err error) {
@@ -116,7 +115,7 @@ func (c *FakeHostPreflights) UpdateStatus(ctx context.Context, hostPreflight *v1
 // Delete takes name of the hostPreflight and deletes it. Returns an error if one occurs.
 func (c *FakeHostPreflights) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewDeleteAction(hostpreflightsResource, c.ns, name), &v1beta2.HostPreflight{})
+		Invokes(testing.NewDeleteActionWithOptions(hostpreflightsResource, c.ns, name, opts), &v1beta2.HostPreflight{})
 
 	return err
 }

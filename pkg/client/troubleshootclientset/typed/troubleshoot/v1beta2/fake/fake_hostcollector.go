@@ -23,7 +23,6 @@ import (
 	v1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
-	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
 	testing "k8s.io/client-go/testing"
@@ -35,9 +34,9 @@ type FakeHostCollectors struct {
 	ns   string
 }
 
-var hostcollectorsResource = schema.GroupVersionResource{Group: "troubleshoot.sh", Version: "v1beta2", Resource: "hostcollectors"}
+var hostcollectorsResource = v1beta2.SchemeGroupVersion.WithResource("hostcollectors")
 
-var hostcollectorsKind = schema.GroupVersionKind{Group: "troubleshoot.sh", Version: "v1beta2", Kind: "HostCollector"}
+var hostcollectorsKind = v1beta2.SchemeGroupVersion.WithKind("HostCollector")
 
 // Get takes name of the hostCollector, and returns the corresponding hostCollector object, and an error if there is any.
 func (c *FakeHostCollectors) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1beta2.HostCollector, err error) {
@@ -116,7 +115,7 @@ func (c *FakeHostCollectors) UpdateStatus(ctx context.Context, hostCollector *v1
 // Delete takes name of the hostCollector and deletes it. Returns an error if one occurs.
 func (c *FakeHostCollectors) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewDeleteAction(hostcollectorsResource, c.ns, name), &v1beta2.HostCollector{})
+		Invokes(testing.NewDeleteActionWithOptions(hostcollectorsResource, c.ns, name, opts), &v1beta2.HostCollector{})
 
 	return err
 }

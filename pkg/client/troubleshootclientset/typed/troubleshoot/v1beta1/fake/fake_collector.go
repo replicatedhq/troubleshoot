@@ -23,7 +23,6 @@ import (
 	v1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
-	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
 	testing "k8s.io/client-go/testing"
@@ -35,9 +34,9 @@ type FakeCollectors struct {
 	ns   string
 }
 
-var collectorsResource = schema.GroupVersionResource{Group: "troubleshoot.replicated.com", Version: "v1beta1", Resource: "collectors"}
+var collectorsResource = v1beta1.SchemeGroupVersion.WithResource("collectors")
 
-var collectorsKind = schema.GroupVersionKind{Group: "troubleshoot.replicated.com", Version: "v1beta1", Kind: "Collector"}
+var collectorsKind = v1beta1.SchemeGroupVersion.WithKind("Collector")
 
 // Get takes name of the collector, and returns the corresponding collector object, and an error if there is any.
 func (c *FakeCollectors) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1beta1.Collector, err error) {
@@ -116,7 +115,7 @@ func (c *FakeCollectors) UpdateStatus(ctx context.Context, collector *v1beta1.Co
 // Delete takes name of the collector and deletes it. Returns an error if one occurs.
 func (c *FakeCollectors) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewDeleteAction(collectorsResource, c.ns, name), &v1beta1.Collector{})
+		Invokes(testing.NewDeleteActionWithOptions(collectorsResource, c.ns, name, opts), &v1beta1.Collector{})
 
 	return err
 }
