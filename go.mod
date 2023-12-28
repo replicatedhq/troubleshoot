@@ -49,7 +49,7 @@ require (
 	k8s.io/cli-runtime v0.28.2
 	k8s.io/client-go v0.28.2
 	k8s.io/klog/v2 v2.100.1
-	oras.land/oras-go v1.2.3
+	oras.land/oras-go v1.2.4
 	sigs.k8s.io/controller-runtime v0.16.2
 	sigs.k8s.io/e2e-framework v0.3.0
 )

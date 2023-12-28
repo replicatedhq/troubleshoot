@@ -1699,6 +1699,8 @@ k8s.io/utils v0.0.0-20230406110748-d93618cff8a2 h1:qY1Ad8PODbnymg2pRbkyMT/ylpTrC
 k8s.io/utils v0.0.0-20230406110748-d93618cff8a2/go.mod h1:OLgZIPagt7ERELqWJFomSt595RzquPNLL48iOWgYOg0=
 oras.land/oras-go v1.2.3 h1:v8PJl+gEAntI1pJ/LCrDgsuk+1PKVavVEPsYIHFE5uY=
 oras.land/oras-go v1.2.3/go.mod h1:M/uaPdYklze0Vf3AakfarnpoEckvw0ESbRdN8Z1vdJg=
+oras.land/oras-go v1.2.4 h1:djpBY2/2Cs1PV87GSJlxv4voajVOMZxqqtq9AB8YNvY=
+oras.land/oras-go v1.2.4/go.mod h1:DYcGfb3YF1nKjcezfX2SNlDAeQFKSXmf+qrFmrh4324=
 periph.io/x/host/v3 v3.8.2 h1:ayKUDzgUCN0g8+/xM9GTkWaOBhSLVcVHGTfjAOi8OsQ=
 periph.io/x/host/v3 v3.8.2/go.mod h1:yFL76AesNHR68PboofSWYaQTKmvPXsQH2Apvp/ls/K4=
 rsc.io/binaryregexp v0.2.0/go.mod h1:qTv7/COck+e2FymRvadv62gMdZztPaShugOCi3I+8D8=
