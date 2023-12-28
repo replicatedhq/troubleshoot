@@ -23,7 +23,6 @@ import (
 	v1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
-	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
 	testing "k8s.io/client-go/testing"
@@ -35,9 +34,9 @@ type FakeRemoteCollectors struct {
 	ns   string
 }
 
-var remotecollectorsResource = schema.GroupVersionResource{Group: "troubleshoot.sh", Version: "v1beta2", Resource: "remotecollectors"}
+var remotecollectorsResource = v1beta2.SchemeGroupVersion.WithResource("remotecollectors")
 
-var remotecollectorsKind = schema.GroupVersionKind{Group: "troubleshoot.sh", Version: "v1beta2", Kind: "RemoteCollector"}
+var remotecollectorsKind = v1beta2.SchemeGroupVersion.WithKind("RemoteCollector")
 
 // Get takes name of the remoteCollector, and returns the corresponding remoteCollector object, and an error if there is any.
 func (c *FakeRemoteCollectors) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1beta2.RemoteCollector, err error) {
@@ -116,7 +115,7 @@ func (c *FakeRemoteCollectors) UpdateStatus(ctx context.Context, remoteCollector
 // Delete takes name of the remoteCollector and deletes it. Returns an error if one occurs.
 func (c *FakeRemoteCollectors) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewDeleteAction(remotecollectorsResource, c.ns, name), &v1beta2.RemoteCollector{})
+		Invokes(testing.NewDeleteActionWithOptions(remotecollectorsResource, c.ns, name, opts), &v1beta2.RemoteCollector{})
 
 	return err
 }

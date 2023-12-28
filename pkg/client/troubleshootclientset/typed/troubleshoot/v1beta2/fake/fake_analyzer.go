@@ -23,7 +23,6 @@ import (
 	v1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	labels "k8s.io/apimachinery/pkg/labels"
-	schema "k8s.io/apimachinery/pkg/runtime/schema"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
 	testing "k8s.io/client-go/testing"
@@ -35,9 +34,9 @@ type FakeAnalyzers struct {
 	ns   string
 }
 
-var analyzersResource = schema.GroupVersionResource{Group: "troubleshoot.sh", Version: "v1beta2", Resource: "analyzers"}
+var analyzersResource = v1beta2.SchemeGroupVersion.WithResource("analyzers")
 
-var analyzersKind = schema.GroupVersionKind{Group: "troubleshoot.sh", Version: "v1beta2", Kind: "Analyzer"}
+var analyzersKind = v1beta2.SchemeGroupVersion.WithKind("Analyzer")
 
 // Get takes name of the analyzer, and returns the corresponding analyzer object, and an error if there is any.
 func (c *FakeAnalyzers) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1beta2.Analyzer, err error) {
@@ -116,7 +115,7 @@ func (c *FakeAnalyzers) UpdateStatus(ctx context.Context, analyzer *v1beta2.Anal
 // Delete takes name of the analyzer and deletes it. Returns an error if one occurs.
 func (c *FakeAnalyzers) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
 	_, err := c.Fake.
-		Invokes(testing.NewDeleteAction(analyzersResource, c.ns, name), &v1beta2.Analyzer{})
+		Invokes(testing.NewDeleteActionWithOptions(analyzersResource, c.ns, name, opts), &v1beta2.Analyzer{})
 
 	return err
 }
