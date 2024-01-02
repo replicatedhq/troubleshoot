@@ -183,7 +183,6 @@ spec:
 			sb, _, err := loadSpecs(ctx, test.args, client)
 			require.NoError(t, err)
 
-			testutils.LogJSON(t, sb.Spec)
 			assert.Equal(t, test.expected, sb.Spec)
 		})
 	}
