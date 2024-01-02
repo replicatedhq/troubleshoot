@@ -14,6 +14,7 @@ import (
 	"github.com/fatih/color"
 	"github.com/pkg/errors"
 	"github.com/replicatedhq/troubleshoot/internal/traces"
+	"github.com/replicatedhq/troubleshoot/internal/util"
 	analyzer "github.com/replicatedhq/troubleshoot/pkg/analyze"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/replicatedhq/troubleshoot/pkg/collect"
@@ -276,11 +277,11 @@ func ConcatSpec(target *troubleshootv1beta2.SupportBundle, source *troubleshootv
 		newBundle = source
 	} else {
 		newBundle = target.DeepCopy()
-		newBundle.Spec.Collectors = append(target.Spec.Collectors, source.Spec.Collectors...)
-		newBundle.Spec.AfterCollection = append(target.Spec.AfterCollection, source.Spec.AfterCollection...)
-		newBundle.Spec.HostCollectors = append(target.Spec.HostCollectors, source.Spec.HostCollectors...)
-		newBundle.Spec.HostAnalyzers = append(target.Spec.HostAnalyzers, source.Spec.HostAnalyzers...)
-		newBundle.Spec.Analyzers = append(target.Spec.Analyzers, source.Spec.Analyzers...)
+		newBundle.Spec.Collectors = util.Append(target.Spec.Collectors, source.Spec.Collectors)
+		newBundle.Spec.AfterCollection = util.Append(target.Spec.AfterCollection, source.Spec.AfterCollection)
+		newBundle.Spec.HostCollectors = util.Append(target.Spec.HostCollectors, source.Spec.HostCollectors)
+		newBundle.Spec.HostAnalyzers = util.Append(target.Spec.HostAnalyzers, source.Spec.HostAnalyzers)
+		newBundle.Spec.Analyzers = util.Append(target.Spec.Analyzers, source.Spec.Analyzers)
 		// TODO: What to do with the Uri field?
 	}
 	return newBundle

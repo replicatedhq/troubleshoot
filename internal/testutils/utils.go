@@ -41,9 +41,13 @@ func FileDir() string {
 
 // Generates a temporary filename
 func TempFilename(prefix string) string {
+	return filepath.Join(os.TempDir(), generateTempName(prefix))
+}
+
+func generateTempName(prefix string) string {
 	randBytes := make([]byte, 16)
 	rand.Read(randBytes)
-	return filepath.Join(os.TempDir(), fmt.Sprintf("%s_%s", prefix, hex.EncodeToString(randBytes)))
+	return fmt.Sprintf("%s_%s", prefix, hex.EncodeToString(randBytes))
 }
 
 func CreateTestFile(t *testing.T, path string) {
@@ -77,4 +81,12 @@ func AsJSON(t *testing.T, v interface{}) string {
 	} else {
 		return string(b)
 	}
+}
+
+func ServeFromFilePath(t *testing.T, data string) string {
+	t.Helper()
+
+	path := filepath.Join(t.TempDir(), generateTempName("testfile"))
+	CreateTestFileWithData(t, path, data)
+	return path
 }

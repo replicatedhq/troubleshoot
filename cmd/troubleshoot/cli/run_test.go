@@ -9,10 +9,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/replicatedhq/troubleshoot/internal/testutils"
+	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/replicatedhq/troubleshoot/pkg/httputil"
 	"github.com/replicatedhq/troubleshoot/pkg/loader"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	testclient "k8s.io/client-go/kubernetes/fake"
 )
 
 var orig = `
@@ -89,4 +92,99 @@ func Test_loadSupportBundleSpecsFromURIs_TimeoutError(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.JSONEq(t, string(beforeJSON), string(afterJSON))
+}
+
+func Test_loadSupportBundleSpecs(t *testing.T) {
+	tests := []struct {
+		name     string
+		args     []string
+		expected troubleshootv1beta2.SupportBundleSpec
+	}{
+		{
+			name: "empty collectors array in spec, default collectors added",
+			args: []string{testutils.ServeFromFilePath(t, `
+apiVersion: troubleshoot.sh/v1beta2
+kind: SupportBundle
+metadata:
+  name: spec
+spec:
+  collectors: []
+`)},
+			expected: troubleshootv1beta2.SupportBundleSpec{
+				Collectors: []*troubleshootv1beta2.Collect{
+					{
+						ClusterInfo: &troubleshootv1beta2.ClusterInfo{},
+					},
+					{
+						ClusterResources: &troubleshootv1beta2.ClusterResources{},
+					},
+				},
+			},
+		},
+		{
+			name: "no collectors defined in spec, default collectors added",
+			args: []string{testutils.ServeFromFilePath(t, `
+apiVersion: troubleshoot.sh/v1beta2
+kind: SupportBundle
+metadata:
+  name: spec
+spec:
+  analyzers: []
+`)},
+			expected: troubleshootv1beta2.SupportBundleSpec{
+				Collectors: []*troubleshootv1beta2.Collect{
+					{
+						ClusterInfo: &troubleshootv1beta2.ClusterInfo{},
+					},
+					{
+						ClusterResources: &troubleshootv1beta2.ClusterResources{},
+					},
+				},
+				Analyzers: []*troubleshootv1beta2.Analyze{},
+			},
+		},
+		{
+			name: "collectors present but defaults missing, default collectors added",
+			args: []string{testutils.ServeFromFilePath(t, `
+apiVersion: troubleshoot.sh/v1beta2
+kind: SupportBundle
+metadata:
+  name: spec
+spec:
+  collectors:
+  - logs: {}
+`)},
+			expected: troubleshootv1beta2.SupportBundleSpec{
+				Collectors: []*troubleshootv1beta2.Collect{
+					{
+						Logs: &troubleshootv1beta2.Logs{},
+					},
+					{
+						ClusterInfo: &troubleshootv1beta2.ClusterInfo{},
+					},
+					{
+						ClusterResources: &troubleshootv1beta2.ClusterResources{},
+					},
+				},
+			},
+		},
+		{
+			name:     "empty support bundle spec remains empty",
+			args:     []string{testutils.TestFixtureFilePath(t, "supportbundle/empty.yaml")},
+			expected: troubleshootv1beta2.SupportBundleSpec{},
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			ctx := context.Background()
+			client := testclient.NewSimpleClientset()
+
+			sb, _, err := loadSpecs(ctx, test.args, client)
+			require.NoError(t, err)
+
+			testutils.LogJSON(t, sb.Spec)
+			assert.Equal(t, test.expected, sb.Spec)
+		})
+	}
 }

@@ -315,7 +315,7 @@ func loadSpecs(ctx context.Context, args []string, client kubernetes.Interface) 
 		mainBundle.Spec.HostCollectors = util.Append(mainBundle.Spec.HostCollectors, hc.Spec.Collectors)
 	}
 
-	if mainBundle.Spec.Collectors != nil {
+	if mainBundle.Spec.Collectors != nil || mainBundle.Spec.Analyzers != nil {
 		// If we have in-cluster collectors, ensure cluster info and cluster resources
 		// collectors are in the merged spec. We need to add them here so when we --dry-run,
 		// these collectors are included. supportbundle.runCollectors duplicates this bit.
