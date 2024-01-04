@@ -315,11 +315,12 @@ func loadSpecs(ctx context.Context, args []string, client kubernetes.Interface) 
 		mainBundle.Spec.HostCollectors = util.Append(mainBundle.Spec.HostCollectors, hc.Spec.Collectors)
 	}
 
-	if mainBundle.Spec.Collectors != nil || mainBundle.Spec.Analyzers != nil {
-		// If we have in-cluster collectors, ensure cluster info and cluster resources
-		// collectors are in the merged spec. We need to add them here so when we --dry-run,
-		// these collectors are included. supportbundle.runCollectors duplicates this bit.
-		// We'll need to refactor it out later when its clearer what other code depends on this logic e.g KOTS
+	if !(len(mainBundle.Spec.HostCollectors) > 0 && len(mainBundle.Spec.Collectors) == 0) {
+		// Always add default collectors unless we only have host collectors
+		// We need to add them here so when we --dry-run, these collectors
+		// are included. supportbundle.runCollectors duplicates this bit.
+		// We'll need to refactor it out later when its clearer what other
+		// code depends on this logic e.g KOTS
 		mainBundle.Spec.Collectors = collect.EnsureCollectorInList(
 			mainBundle.Spec.Collectors,
 			troubleshootv1beta2.Collect{ClusterInfo: &troubleshootv1beta2.ClusterInfo{}},

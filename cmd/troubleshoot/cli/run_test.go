@@ -169,9 +169,55 @@ spec:
 			},
 		},
 		{
-			name:     "empty support bundle spec remains empty",
-			args:     []string{testutils.TestFixtureFilePath(t, "supportbundle/empty.yaml")},
-			expected: troubleshootv1beta2.SupportBundleSpec{},
+			name: "empty support bundle spec adds default collectors",
+			args: []string{testutils.ServeFromFilePath(t, `
+apiVersion: troubleshoot.sh/v1beta2
+kind: SupportBundle
+`)},
+			expected: troubleshootv1beta2.SupportBundleSpec{
+				Collectors: []*troubleshootv1beta2.Collect{
+					{
+						ClusterInfo: &troubleshootv1beta2.ClusterInfo{},
+					},
+					{
+						ClusterResources: &troubleshootv1beta2.ClusterResources{},
+					},
+				},
+			},
+		},
+		{
+			name: "sb spec with host collectors does not add default collectors",
+			args: []string{testutils.ServeFromFilePath(t, `
+apiVersion: troubleshoot.sh/v1beta2
+kind: SupportBundle
+spec:
+  hostCollectors:
+  - cpu: {}
+`)},
+			expected: troubleshootv1beta2.SupportBundleSpec{
+				HostCollectors: []*troubleshootv1beta2.HostCollect{
+					{
+						CPU: &troubleshootv1beta2.CPU{},
+					},
+				},
+			},
+		},
+		{
+			name: "host collector spec with collectors does not add default collectors",
+			args: []string{testutils.ServeFromFilePath(t, `
+apiVersion: troubleshoot.sh/v1beta2
+kind: HostCollector
+spec:
+  collectors:
+  - cpu: {}
+`)},
+			expected: troubleshootv1beta2.SupportBundleSpec{
+				HostCollectors: []*troubleshootv1beta2.HostCollect{
+					{
+						CPU: &troubleshootv1beta2.CPU{},
+					},
+				},
+			},
 		},
 	}
 
