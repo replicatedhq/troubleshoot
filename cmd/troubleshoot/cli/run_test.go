@@ -105,8 +105,6 @@ func Test_loadSupportBundleSpecs(t *testing.T) {
 			args: []string{testutils.ServeFromFilePath(t, `
 apiVersion: troubleshoot.sh/v1beta2
 kind: SupportBundle
-metadata:
-  name: spec
 spec:
   collectors: []
 `)},
@@ -126,8 +124,6 @@ spec:
 			args: []string{testutils.ServeFromFilePath(t, `
 apiVersion: troubleshoot.sh/v1beta2
 kind: SupportBundle
-metadata:
-  name: spec
 spec:
   analyzers: []
 `)},
@@ -148,8 +144,6 @@ spec:
 			args: []string{testutils.ServeFromFilePath(t, `
 apiVersion: troubleshoot.sh/v1beta2
 kind: SupportBundle
-metadata:
-  name: spec
 spec:
   collectors:
   - logs: {}
@@ -217,6 +211,55 @@ spec:
 						CPU: &troubleshootv1beta2.CPU{},
 					},
 				},
+			},
+		},
+		{
+			name: "sb spec with host and in-cluster collectors adds default collectors",
+			args: []string{testutils.ServeFromFilePath(t, `
+apiVersion: troubleshoot.sh/v1beta2
+kind: SupportBundle
+spec:
+  hostCollectors:
+  - cpu: {}
+  collectors:
+  - logs: {}
+`)},
+			expected: troubleshootv1beta2.SupportBundleSpec{
+				HostCollectors: []*troubleshootv1beta2.HostCollect{
+					{
+						CPU: &troubleshootv1beta2.CPU{},
+					},
+				},
+				Collectors: []*troubleshootv1beta2.Collect{
+					{
+						Logs: &troubleshootv1beta2.Logs{},
+					},
+					{
+						ClusterInfo: &troubleshootv1beta2.ClusterInfo{},
+					},
+					{
+						ClusterResources: &troubleshootv1beta2.ClusterResources{},
+					},
+				},
+			},
+		},
+		{
+			name: "sb spec with host collectors and empty in-cluster collectors does not default collectors",
+			args: []string{testutils.ServeFromFilePath(t, `
+apiVersion: troubleshoot.sh/v1beta2
+kind: SupportBundle
+spec:
+  hostCollectors:
+  - cpu: {}
+  collectors: []
+`)},
+			expected: troubleshootv1beta2.SupportBundleSpec{
+				HostCollectors: []*troubleshootv1beta2.HostCollect{
+					{
+						CPU: &troubleshootv1beta2.CPU{},
+					},
+				},
+				Collectors: []*troubleshootv1beta2.Collect{},
 			},
 		},
 	}
