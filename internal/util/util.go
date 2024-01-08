@@ -54,13 +54,9 @@ func EstimateNumberOfLines(text string) int {
 }
 
 // Append appends elements in src to target.
-// We have this function because of how append()
-// treats nil slices the same as empty slices.
-// An empty array in YAML like below is not the
-// same as when the array is not specified.
-//
-//	 spec:
-//		  collectors: []
+// We have this function because of how the
+// builtin append() function works. It treats
+// target nil slices the same as empty slices.
 func Append[T any](target []T, src []T) []T {
 	// Do nothing only if src is nil
 	if src == nil {
