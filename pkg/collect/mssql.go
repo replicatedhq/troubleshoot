@@ -49,7 +49,7 @@ func (c *CollectMssql) Collect(progressChan chan<- interface{}) (CollectorResult
 
 	db, err := sql.Open("mssql", c.Collector.URI)
 	if err != nil {
-		klog.V(2).Infof("Failed to connect to %q MSSQL Database: %w", connUrl.Host, err)
+		klog.V(2).Infof("Failed to connect to %q MSSQL Database: %v", connUrl.Host, err)
 		databaseConnection.Error = err.Error()
 	} else {
 		defer db.Close()
