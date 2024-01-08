@@ -5,12 +5,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"strconv"
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
-
 	"helm.sh/helm/v3/pkg/action"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -60,7 +58,9 @@ func (c *CollectHelm) Collect(progressChan chan<- interface{}) (CollectorResult,
 
 	releaseInfos, err := helmReleaseHistoryCollector(c.Collector.ReleaseName, c.Collector.Namespace, c.Collector.CollectValues)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to get Helm release history")
+		output.SaveResult(c.BundlePath, "helm/errors.json", marshalErrors(err))
+		klog.Error(err)
+		return nil, nil
 	}
 
 	releaseInfoByNamespace := helmReleaseInfoByNamespaces(releaseInfos)
@@ -77,21 +77,19 @@ func (c *CollectHelm) Collect(progressChan chan<- interface{}) (CollectorResult,
 			filePath = fmt.Sprintf("helm/%s/%s.json", namespace, c.Collector.ReleaseName)
 		}
 
-		err := output.SaveResult(c.BundlePath, filePath, bytes.NewBuffer(helmHistoryJson))
-		if err != nil {
-			return nil, err
-		}
+		output.SaveResult(c.BundlePath, filePath, bytes.NewBuffer(helmHistoryJson))
 	}
 
 	return output, nil
 }
 
-func helmReleaseHistoryCollector(releaseName string, namespace string, collectValues bool) ([]ReleaseInfo, error) {
+func helmReleaseHistoryCollector(releaseName string, namespace string, collectValues bool) ([]ReleaseInfo, []error) {
 	var results []ReleaseInfo
+	error_list := []error{}
 
 	actionConfig := new(action.Configuration)
 	if err := actionConfig.Init(nil, namespace, "", klog.V(2).Infof); err != nil {
-		return nil, errors.Wrap(err, "failed to initialize Helm action config")
+		return nil, []error{err}
 	}
 
 	// If releaseName is specified, get the history of that release
@@ -99,17 +97,18 @@ func helmReleaseHistoryCollector(releaseName string, namespace string, collectVa
 		getAction := action.NewGet(actionConfig)
 		r, err := getAction.Run(releaseName)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to get Helm release %s", releaseName)
+			return nil, []error{err}
 		}
+		versionInfo, err := getVersionInfo(actionConfig, r.Name, collectValues)
 		results = append(results, ReleaseInfo{
 			ReleaseName:  r.Name,
 			Chart:        r.Chart.Metadata.Name,
 			ChartVersion: r.Chart.Metadata.Version,
 			AppVersion:   r.Chart.Metadata.AppVersion,
 			Namespace:    r.Namespace,
-			VersionInfo:  getVersionInfo(actionConfig, releaseName, collectValues),
+			VersionInfo:  versionInfo,
 		})
-		return results, nil
+		return results, []error{err}
 	}
 
 	// If releaseName is not specified, get the history of all releases
@@ -118,33 +117,46 @@ func helmReleaseHistoryCollector(releaseName string, namespace string, collectVa
 	listAction := action.NewList(actionConfig)
 	releases, err := listAction.Run()
 	if err != nil {
-		log.Fatalf("Failed to list Helm releases: %v", err)
+		return nil, []error{err}
 	}
 
 	for _, r := range releases {
+		versionInfo, err := getVersionInfo(actionConfig, r.Name, collectValues)
+		if err != nil {
+			error_list = append(error_list, err)
+		}
 		results = append(results, ReleaseInfo{
 			ReleaseName:  r.Name,
 			Chart:        r.Chart.Metadata.Name,
 			ChartVersion: r.Chart.Metadata.Version,
 			AppVersion:   r.Chart.Metadata.AppVersion,
 			Namespace:    r.Namespace,
-			VersionInfo:  getVersionInfo(actionConfig, r.Name, collectValues),
+			VersionInfo:  versionInfo,
 		})
 	}
-
+	if len(error_list) > 0 {
+		return nil, error_list
+	}
 	return results, nil
 }
 
-func getVersionInfo(actionConfig *action.Configuration, releaseName string, collectValues bool) []VersionInfo {
+func getVersionInfo(actionConfig *action.Configuration, releaseName string, collectValues bool) ([]VersionInfo, error) {
 
 	versionCollect := []VersionInfo{}
+	error_list := []error{}
 
-	history, _ := action.NewHistory(actionConfig).Run(releaseName)
+	history, err := action.NewHistory(actionConfig).Run(releaseName)
+	if err != nil {
+		return nil, err
+	}
 
 	for _, release := range history {
 		values := map[string]interface{}{}
 		if collectValues {
-			values = getHelmValues(actionConfig, releaseName, release.Version)
+			values, err = getHelmValues(actionConfig, releaseName, release.Version)
+			if err != nil {
+				error_list = append(error_list, err)
+			}
 		}
 
 		versionCollect = append(versionCollect, VersionInfo{
@@ -155,7 +167,11 @@ func getVersionInfo(actionConfig *action.Configuration, releaseName string, coll
 			Values:    values,
 		})
 	}
-	return versionCollect
+	if len(error_list) > 0 {
+		errs, _ := json.MarshalIndent(error_list, "", " ")
+		return nil, errors.New(string(errs))
+	}
+	return versionCollect, nil
 }
 
 func helmReleaseInfoByNamespaces(releaseInfo []ReleaseInfo) map[string][]ReleaseInfo {
@@ -168,9 +184,10 @@ func helmReleaseInfoByNamespaces(releaseInfo []ReleaseInfo) map[string][]Release
 	return releaseInfoByNamespace
 }
 
-func getHelmValues(actionConfig *action.Configuration, releaseName string, revision int) map[string]interface{} {
+func getHelmValues(actionConfig *action.Configuration, releaseName string, revision int) (map[string]interface{}, error) {
 	getAction := action.NewGetValues(actionConfig)
+	getAction.AllValues = true
 	getAction.Version = revision
-	helmValues, _ := getAction.Run(releaseName)
-	return helmValues
+	helmValues, err := getAction.Run(releaseName)
+	return helmValues, err
 }
