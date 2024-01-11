@@ -1,7 +1,9 @@
+---
 apiVersion: troubleshoot.sh/v1beta2
 kind: SupportBundle
 metadata:
   name: default
 spec:
   collectors:
-    - helm: {}
+    - helm:
+        collectValues: true

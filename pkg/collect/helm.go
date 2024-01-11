@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
@@ -99,7 +100,7 @@ func helmReleaseHistoryCollector(releaseName string, namespace string, collectVa
 		if err != nil {
 			return nil, []error{err}
 		}
-		versionInfo, err := getVersionInfo(actionConfig, r.Name, collectValues)
+		versionInfo, err := getVersionInfo(actionConfig, r.Name, r.Namespace, collectValues)
 		results = append(results, ReleaseInfo{
 			ReleaseName:  r.Name,
 			Chart:        r.Chart.Metadata.Name,
@@ -121,7 +122,7 @@ func helmReleaseHistoryCollector(releaseName string, namespace string, collectVa
 	}
 
 	for _, r := range releases {
-		versionInfo, err := getVersionInfo(actionConfig, r.Name, collectValues)
+		versionInfo, err := getVersionInfo(actionConfig, r.Name, r.Namespace, collectValues)
 		if err != nil {
 			error_list = append(error_list, err)
 		}
@@ -140,7 +141,7 @@ func helmReleaseHistoryCollector(releaseName string, namespace string, collectVa
 	return results, nil
 }
 
-func getVersionInfo(actionConfig *action.Configuration, releaseName string, collectValues bool) ([]VersionInfo, error) {
+func getVersionInfo(actionConfig *action.Configuration, releaseName, namespace string, collectValues bool) ([]VersionInfo, error) {
 
 	versionCollect := []VersionInfo{}
 	error_list := []error{}
@@ -153,7 +154,7 @@ func getVersionInfo(actionConfig *action.Configuration, releaseName string, coll
 	for _, release := range history {
 		values := map[string]interface{}{}
 		if collectValues {
-			values, err = getHelmValues(actionConfig, releaseName, release.Version)
+			values, err = getHelmValues(releaseName, namespace, release.Version)
 			if err != nil {
 				error_list = append(error_list, err)
 			}
@@ -168,8 +169,11 @@ func getVersionInfo(actionConfig *action.Configuration, releaseName string, coll
 		})
 	}
 	if len(error_list) > 0 {
-		errs, _ := json.MarshalIndent(error_list, "", " ")
-		return nil, errors.New(string(errs))
+		errs := []string{}
+		for _, e := range error_list {
+			errs = append(errs, e.Error())
+		}
+		return nil, errors.New(strings.Join(errs, "\n"))
 	}
 	return versionCollect, nil
 }
@@ -184,7 +188,11 @@ func helmReleaseInfoByNamespaces(releaseInfo []ReleaseInfo) map[string][]Release
 	return releaseInfoByNamespace
 }
 
-func getHelmValues(actionConfig *action.Configuration, releaseName string, revision int) (map[string]interface{}, error) {
+func getHelmValues(releaseName, namespace string, revision int) (map[string]interface{}, error) {
+	actionConfig := new(action.Configuration)
+	if err := actionConfig.Init(nil, namespace, "", klog.V(2).Infof); err != nil {
+		return nil, err
+	}
 	getAction := action.NewGetValues(actionConfig)
 	getAction.AllValues = true
 	getAction.Version = revision
