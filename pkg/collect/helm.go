@@ -59,9 +59,13 @@ func (c *CollectHelm) Collect(progressChan chan<- interface{}) (CollectorResult,
 
 	releaseInfos, err := helmReleaseHistoryCollector(c.Collector.ReleaseName, c.Collector.Namespace, c.Collector.CollectValues)
 	if err != nil {
-		output.SaveResult(c.BundlePath, "helm/errors.json", marshalErrors(err))
-		klog.Error(err)
-		return nil, nil
+		errsToMarhsal := []string{}
+		for _, e := range err {
+			errsToMarhsal = append(errsToMarhsal, e.Error())
+		}
+		output.SaveResult(c.BundlePath, "helm/errors.json", marshalErrors(errsToMarhsal))
+		klog.Errorf("error collecting helm release info: %v", err)
+		return output, nil
 	}
 
 	releaseInfoByNamespace := helmReleaseInfoByNamespaces(releaseInfos)

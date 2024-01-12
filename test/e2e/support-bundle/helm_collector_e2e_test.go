@@ -62,11 +62,11 @@ func Test_HelmCollector(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-
 			assert.Equal(t, 1, len(results))
 			assert.Equal(t, releaseName, results[0].ReleaseName)
 			assert.Equal(t, "nginx", results[0].Chart)
-			assert.Equal(t, []interface{}([]interface{}{map[string]interface{}{"name": "TEST_ENV_VAR", "value": "test-value"}}), results[0].VersionInfo[0].Values["extraEnvVars"])
+			assert.Equal(t, map[string]interface{}{"name": "TEST_ENV_VAR", "value": "test-value"}, results[0].VersionInfo[0].Values["extraEnvVars"].([]interface{})[0])
+			assert.Equal(t, "1.25.2-debian-11-r3", results[0].VersionInfo[0].Values["image"].(map[string]interface{})["tag"])
 			return ctx
 		}).
 		Teardown(func(ctx context.Context, t *testing.T, c *envconf.Config) context.Context {
