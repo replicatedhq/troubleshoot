@@ -1,0 +1,4 @@
+---
+extraEnvVars:
+  - name: TEST_ENV_VAR
+    value: "test-value"

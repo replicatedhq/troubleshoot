@@ -27,7 +27,7 @@ func Test_HelmCollector(t *testing.T) {
 		Setup(func(ctx context.Context, t *testing.T, c *envconf.Config) context.Context {
 			cluster := getClusterFromContext(t, ctx, ClusterName)
 			manager := helm.New(cluster.GetKubeconfig())
-			manager.RunInstall(helm.WithName(releaseName), helm.WithNamespace(c.Namespace()), helm.WithChart(filepath.Join(curDir, "testdata/charts/nginx-15.2.0.tgz")), helm.WithWait(), helm.WithTimeout("1m"))
+			manager.RunInstall(helm.WithName(releaseName), helm.WithNamespace(c.Namespace()), helm.WithChart(filepath.Join(curDir, "testdata/charts/nginx-15.2.0.tgz")), helm.WithArgs("-f "+filepath.Join(curDir, "testdata/helm-values.yaml")), helm.WithWait(), helm.WithTimeout("1m"))
 			//ignore error to allow test to speed up, helm collector will catch the pending or deployed helm release status
 			return ctx
 		}).
@@ -62,10 +62,11 @@ func Test_HelmCollector(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-
 			assert.Equal(t, 1, len(results))
 			assert.Equal(t, releaseName, results[0].ReleaseName)
 			assert.Equal(t, "nginx", results[0].Chart)
+			assert.Equal(t, map[string]interface{}{"name": "TEST_ENV_VAR", "value": "test-value"}, results[0].VersionInfo[0].Values["extraEnvVars"].([]interface{})[0])
+			assert.Equal(t, "1.25.2-debian-11-r3", results[0].VersionInfo[0].Values["image"].(map[string]interface{})["tag"])
 			return ctx
 		}).
 		Teardown(func(ctx context.Context, t *testing.T, c *envconf.Config) context.Context {

@@ -2888,6 +2888,9 @@
               "helm": {
                 "type": "object",
                 "properties": {
+                  "collectValues": {
+                    "type": "boolean"
+                  },
                   "collectorName": {
                     "type": "string"
                   },
