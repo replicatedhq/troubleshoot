@@ -430,6 +430,45 @@ otherstuff:
 			},
 			fileContents: []byte(``),
 		},
+		{
+			name: "basic comparison with outcome message templated",
+			analyzer: troubleshootv1beta2.YamlCompare{
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							Message: "Status: {{ .stuff.status }}, Info: {{ .stuff.info }}",
+							When:    "true",
+						},
+					},
+					{
+						Fail: &troubleshootv1beta2.SingleOutcome{
+							Message: "Status: {{ .stuff.status }}, Info: {{ .stuff.info }}",
+							When:    "false",
+						},
+					},
+				},
+				CollectorName: "yaml-compare",
+				FileName:      "yaml-compare.yaml",
+				Value:         `ready`,
+				Path:          "stuff.status",
+			},
+			expectResult: AnalyzeResult{
+				IsPass:  true,
+				IsWarn:  false,
+				IsFail:  false,
+				Title:   "yaml-compare",
+				Message: "Status: ready, Info: stuff is ready",
+				IconKey: "kubernetes_text_analyze",
+				IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg",
+			},
+			fileContents: []byte(`
+stuff:
+  status: ready
+  info: stuff is ready
+morestuff:
+  status: notready
+  info: morestuff is not ready`),
+		},
 	}
 
 	for _, test := range tests {

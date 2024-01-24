@@ -153,12 +153,8 @@ CONTROLLER_GEN=$(shell which controller-gen)
 
 .PHONY: client-gen
 client-gen:
-ifeq (, $(shell which client-gen 2>/dev/null))
 	go install k8s.io/code-generator/cmd/client-gen@v0.28.2
 CLIENT_GEN=$(shell go env GOPATH)/bin/client-gen
-else
-CLIENT_GEN=$(shell which client-gen)
-endif
 
 .PHONY: release
 release: export GITHUB_TOKEN = $(shell echo ${GITHUB_TOKEN_TROUBLESHOOT})

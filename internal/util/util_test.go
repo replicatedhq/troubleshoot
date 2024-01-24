@@ -246,3 +246,59 @@ func TestAppend(t *testing.T) {
 		})
 	}
 }
+
+func TestRenderTemplate(t *testing.T) {
+	tests := []struct {
+		name    string
+		tpl     string
+		data    interface{}
+		want    string
+		wantErr bool
+	}{
+		{
+			name:    "empty template and data",
+			tpl:     "",
+			data:    nil,
+			want:    "",
+			wantErr: false,
+		},
+		{
+			name:    "empty template with data",
+			tpl:     "",
+			data:    map[string]string{"Name": "World"},
+			want:    "",
+			wantErr: false,
+		},
+		{
+			name:    "empty data with template with no keys",
+			tpl:     "Hello, World!",
+			data:    nil,
+			want:    "Hello, World!",
+			wantErr: false,
+		},
+		{
+			name:    "simple template",
+			tpl:     "Hello, {{ .Name }}!",
+			data:    map[string]string{"Name": "World"},
+			want:    "Hello, World!",
+			wantErr: false,
+		},
+		{
+			name:    "template with missing key",
+			tpl:     "Hello, {{ .Name }}!",
+			data:    map[string]string{"Name2": "World"},
+			want:    "Hello, <no value>!",
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := RenderTemplate(tt.tpl, tt.data)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("RenderTemplate() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			assert.Equal(t, tt.want, got, "RenderTemplate() = %v, want %v", got, tt.want)
+		})
+	}
+}

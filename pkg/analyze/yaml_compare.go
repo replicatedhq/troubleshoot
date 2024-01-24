@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"github.com/pkg/errors"
+	util "github.com/replicatedhq/troubleshoot/internal/util"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	iutils "github.com/replicatedhq/troubleshoot/pkg/interfaceutils"
 	"gopkg.in/yaml.v2"
@@ -50,6 +51,8 @@ func (a *AnalyzeYamlCompare) analyzeYamlCompare(analyzer *troubleshootv1beta2.Ya
 		return nil, errors.Wrap(err, "failed to parse collected data as yaml doc")
 	}
 
+	originalActual := actual
+
 	if analyzer.Path != "" {
 		actual, err = iutils.GetAtPath(actual, analyzer.Path)
 		if err != nil {
@@ -81,6 +84,11 @@ func (a *AnalyzeYamlCompare) analyzeYamlCompare(analyzer *troubleshootv1beta2.Ya
 				}
 			}
 
+			outcome.Fail.Message, err = util.RenderTemplate(outcome.Fail.Message, originalActual)
+			if err != nil {
+				return nil, errors.Wrap(err, "failed to render template on outcome message")
+			}
+
 			if when == equal {
 				result.IsFail = true
 				result.Message = outcome.Fail.Message
@@ -96,6 +104,11 @@ func (a *AnalyzeYamlCompare) analyzeYamlCompare(analyzer *troubleshootv1beta2.Ya
 				}
 			}
 
+			outcome.Warn.Message, err = util.RenderTemplate(outcome.Warn.Message, originalActual)
+			if err != nil {
+				return nil, errors.Wrap(err, "failed to render template on outcome message")
+			}
+
 			if when == equal {
 				result.IsWarn = true
 				result.Message = outcome.Warn.Message
@@ -109,6 +122,11 @@ func (a *AnalyzeYamlCompare) analyzeYamlCompare(analyzer *troubleshootv1beta2.Ya
 				if err != nil {
 					return nil, errors.Wrapf(err, "failed to process when statement: %s", outcome.Pass.When)
 				}
+			}
+
+			outcome.Pass.Message, err = util.RenderTemplate(outcome.Pass.Message, originalActual)
+			if err != nil {
+				return nil, errors.Wrap(err, "failed to render template on outcome message")
 			}
 
 			if when == equal {
