@@ -244,5 +244,3 @@ func order(a, b interface{}) bool {
 	// use string representation for comparison
 	return fmt.Sprintf("%v", a) < fmt.Sprintf("%v", b)
 }
-
-//
