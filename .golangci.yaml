@@ -10,3 +10,4 @@ linters:
     - gocyclo
     - gofmt
     - gosec
+    - govet
