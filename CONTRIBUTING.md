@@ -23,12 +23,12 @@ To get started we recommend:
 
 1. Go (v1.20 or later)
 2. A Kubernetes cluster (we recommend <https://k3d.io/>. This requires Docker v20.10.5 or later)
-3. Fork and clone the repo to $GOPATH/src/github.com/replicatedhq/
-4. Run `make support-bundle preflight` to generate binaries
-5. Run `make run-troubleshoot` to generate a support bundle with the `sample-troubleshoot.yaml` in the root of the repo
+3. Fork and clone repo
+4. Run `make clean build` to generate binaries
+5. Run `make run-support-bundle` to generate a support bundle with the `sample-troubleshoot.yaml` in the root of the repo
 
 > Note: recent versions of Go support easy cross-compilation.  For example, to cross-compile a Linux binary from MacOS:
-> `GOOS=linux GOARCH=amd64 make support-bundle preflight`
+> `GOOS=linux GOARCH=amd64 make clean build`
 
 6. Install [golangci-lint] linter and run `make lint` to execute additional code linters.
 

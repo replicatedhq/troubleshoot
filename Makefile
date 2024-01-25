@@ -39,8 +39,8 @@ BUILDPATHS = ./pkg/... ./cmd/... ./internal/...
 E2EPATHS = ./test/e2e/...
 TESTFLAGS ?= -v -coverprofile cover.out
 
-.DEFAULT: all
-all: test build
+.DEFAULT_GOAL := all
+all: build test
 
 .PHONY: ffi
 ffi: fmt vet
@@ -81,27 +81,35 @@ support-bundle-e2e-go-test:
 	fi
 
 # Build all binaries in parallel ( -j )
-build:
+build: tidy
 	@echo "Build cli binaries"
-	$(MAKE) -j support-bundle preflight analyze collect
+	$(MAKE) -j bin/support-bundle bin/preflight bin/analyze bin/collect
 
-mod-tidy:
+.PHONY: clean
+clean:
+	@rm -f bin/analyze
+	@rm -f bin/support-bundle
+	@rm -f bin/collect
+	@rm -f bin/preflight
+	@rm -f bin/troubleshoot.h
+	@rm -f bin/troubleshoot.so
+	@rm -f bin/schemagen
+	@rm -f bin/docsgen
+
+.PHONY: tidy
+tidy:
 	go mod tidy
 
-.PHONY: support-bundle
-support-bundle:
+bin/support-bundle:
 	go build ${BUILDFLAGS} ${LDFLAGS} -o bin/support-bundle github.com/replicatedhq/troubleshoot/cmd/troubleshoot
 
-.PHONY: preflight
-preflight:
+bin/preflight:
 	go build ${BUILDFLAGS} ${LDFLAGS} -o bin/preflight github.com/replicatedhq/troubleshoot/cmd/preflight
 
-.PHONY: analyze
-analyze:
+bin/analyze:
 	go build ${BUILDFLAGS} ${LDFLAGS} -o bin/analyze github.com/replicatedhq/troubleshoot/cmd/analyze
 
-.PHONY: collect
-collect:
+bin/collect:
 	go build ${BUILDFLAGS} ${LDFLAGS} -o bin/collect github.com/replicatedhq/troubleshoot/cmd/collect
 
 .PHONY: fmt
@@ -138,14 +146,18 @@ check-schemas: generate schemas
 	fi
 
 .PHONY: schemas
-schemas: fmt vet openapischema
-	go build ${LDFLAGS} -o bin/schemagen github.com/replicatedhq/troubleshoot/cmd/schemagen
+schemas: fmt vet openapischema bin/schemagen
 	./bin/schemagen --output-dir ./schemas
 
+bin/schemagen:
+	go build ${LDFLAGS} -o bin/schemagen github.com/replicatedhq/troubleshoot/cmd/schemagen
+
 .PHONY: docs
-docs: fmt vet
-	go build ${LDFLAGS} -o bin/docsgen github.com/replicatedhq/troubleshoot/cmd/docsgen
+docs: fmt vet bin/docsgen
 	./bin/docsgen
+
+bin/docsgen:
+	go build ${LDFLAGS} -o bin/docsgen github.com/replicatedhq/troubleshoot/cmd/docsgen
 
 controller-gen:
 	go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.11.2
@@ -180,15 +192,15 @@ local-release:
 	docker push localhost:32000/preflight:alpha
 
 .PHONY: run-preflight
-run-preflight: preflight
+run-preflight: bin/preflight
 	./bin/preflight ./examples/preflight/sample-preflight.yaml
 
-.PHONY: run-troubleshoot
-run-troubleshoot: support-bundle
+.PHONY: run-support-bundle
+run-support-bundle: bin/support-bundle
 	./bin/support-bundle ./examples/support-bundle/sample-supportbundle.yaml
 
 .PHONY: run-analyze
-run-analyze: analyze
+run-analyze: bin/analyze
 	./bin/analyze --analyzers ./examples/support-bundle/sample-analyzers.yaml ./support-bundle.tar.gz
 
 .PHONY: init-sbom
@@ -212,20 +224,6 @@ sbom: sbom/assets/troubleshoot-sbom.tgz
 	cosign sign-blob -key cosign.key sbom/assets/troubleshoot-sbom.tgz > sbom/assets/troubleshoot-sbom.tgz.sig
 	cosign public-key -key cosign.key -outfile sbom/assets/key.pub
 
-longhorn:
-	git clone https://github.com/longhorn/longhorn-manager.git
-	cd longhorn-manager && git checkout v1.2.2 && cd ..
-	rm -rf pkg/longhorn
-	mv longhorn-manager/k8s/pkg pkg/longhorn
-	mv longhorn-manager/types pkg/longhorn/types
-	mv longhorn-manager/util pkg/longhorn/util
-	rm -rf pkg/longhorn/util/daemon
-	rm -rf pkg/longhorn/util/server
-	find pkg/longhorn -type f | xargs sed -i "s/github.com\/longhorn\/longhorn-manager\/k8s\/pkg/github.com\/replicatedhq\/troubleshoot\/pkg\/longhorn/g"
-	find pkg/longhorn -type f | xargs sed -i "s/github.com\/longhorn\/longhorn-manager\/types/github.com\/replicatedhq\/troubleshoot\/pkg\/longhorn\/types/g"
-	find pkg/longhorn -type f | xargs sed -i "s/github.com\/longhorn\/longhorn-manager\/util/github.com\/replicatedhq\/troubleshoot\/pkg\/longhorn\/util/g"
-	rm -rf longhorn-manager
-
 .PHONY: scan
 scan:
 	trivy fs \
@@ -236,11 +234,11 @@ scan:
 		./
 
 .PHONY: lint
-lint: fmt vet
+lint:
 	golangci-lint run --new -c .golangci.yaml ${BUILDPATHS}
 
 .PHONY: lint-and-fix
-lint-and-fix: fmt vet
+lint-and-fix:
 	golangci-lint run --new --fix -c .golangci.yaml ${BUILDPATHS}
 
 .PHONY: watch
@@ -256,3 +254,35 @@ watchrsync: npm-install
 npm-install:
 	npm --version 2>&1 >/dev/null || ( echo "npm not installed; install npm to set up watchrsync" && exit 1 )
 	npm list gaze-run-interrupt || npm install install --no-save gaze-run-interrupt@~2.0.0
+
+
+######## Lagacy make targets ###########
+# Deprecated: These can be removed
+.PHONY: support-bundle
+support-bundle: clean bin/support-bundle
+
+.PHONY: preflight
+preflight: clean bin/preflight
+
+.PHONY: analyze
+analyze: clean bin/analyze
+
+.PHONY: collect
+collect: clean bin/collect
+
+.PHONY: run-troubleshoot
+run-troubleshoot: run-support-bundle
+
+longhorn:
+	git clone https://github.com/longhorn/longhorn-manager.git
+	cd longhorn-manager && git checkout v1.2.2 && cd ..
+	rm -rf pkg/longhorn
+	mv longhorn-manager/k8s/pkg pkg/longhorn
+	mv longhorn-manager/types pkg/longhorn/types
+	mv longhorn-manager/util pkg/longhorn/util
+	rm -rf pkg/longhorn/util/daemon
+	rm -rf pkg/longhorn/util/server
+	find pkg/longhorn -type f | xargs sed -i "s/github.com\/longhorn\/longhorn-manager\/k8s\/pkg/github.com\/replicatedhq\/troubleshoot\/pkg\/longhorn/g"
+	find pkg/longhorn -type f | xargs sed -i "s/github.com\/longhorn\/longhorn-manager\/types/github.com\/replicatedhq\/troubleshoot\/pkg\/longhorn\/types/g"
+	find pkg/longhorn -type f | xargs sed -i "s/github.com\/longhorn\/longhorn-manager\/util/github.com\/replicatedhq\/troubleshoot\/pkg\/longhorn\/util/g"
+	rm -rf longhorn-manager
