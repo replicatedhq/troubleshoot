@@ -1,9 +1,11 @@
 package util
 
 import (
+	"bytes"
 	"net/url"
 	"os"
 	"strings"
+	"text/template"
 
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
@@ -81,4 +83,25 @@ func IsInCluster() bool {
 	}
 
 	return true
+}
+
+// RenderTemplate renders a template and returns the result as a string
+func RenderTemplate(tpl string, data interface{}) (string, error) {
+	// Create a new template and parse the letter into it
+	t, err := template.New("data").Parse(tpl)
+	if err != nil {
+		return "", err
+	}
+
+	// Create a new buffer
+	buf := new(bytes.Buffer)
+
+	// Execute the template and write the bytes to the buffer
+	err = t.Execute(buf, data)
+	if err != nil {
+		return "", err
+	}
+
+	// Return the string representation of the buffer
+	return buf.String(), nil
 }

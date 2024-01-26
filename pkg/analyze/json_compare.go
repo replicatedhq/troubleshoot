@@ -10,6 +10,7 @@ import (
 	"strconv"
 
 	"github.com/pkg/errors"
+	util "github.com/replicatedhq/troubleshoot/internal/util"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	iutils "github.com/replicatedhq/troubleshoot/pkg/interfaceutils"
 	"k8s.io/client-go/util/jsonpath"
@@ -53,6 +54,8 @@ func (a *AnalyzeJsonCompare) analyzeJsonCompare(analyzer *troubleshootv1beta2.Js
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to parse collected data as json")
 	}
+
+	originalActual := actual
 
 	if analyzer.Path != "" {
 		actual, err = iutils.GetAtPath(actual, analyzer.Path)
@@ -112,6 +115,11 @@ func (a *AnalyzeJsonCompare) analyzeJsonCompare(analyzer *troubleshootv1beta2.Js
 				}
 			}
 
+			outcome.Fail.Message, err = util.RenderTemplate(outcome.Fail.Message, originalActual)
+			if err != nil {
+				return nil, errors.Wrap(err, "failed to render template on outcome message")
+			}
+
 			if when == equal {
 				result.IsFail = true
 				result.Message = outcome.Fail.Message
@@ -128,6 +136,11 @@ func (a *AnalyzeJsonCompare) analyzeJsonCompare(analyzer *troubleshootv1beta2.Js
 				}
 			}
 
+			outcome.Warn.Message, err = util.RenderTemplate(outcome.Warn.Message, originalActual)
+			if err != nil {
+				return nil, errors.Wrap(err, "failed to render template on outcome message")
+			}
+
 			if when == equal {
 				result.IsWarn = true
 				result.Message = outcome.Warn.Message
@@ -142,6 +155,11 @@ func (a *AnalyzeJsonCompare) analyzeJsonCompare(analyzer *troubleshootv1beta2.Js
 				if err != nil {
 					return nil, errors.Wrapf(err, "failed to process when statement: %s", outcome.Pass.When)
 				}
+			}
+
+			outcome.Pass.Message, err = util.RenderTemplate(outcome.Pass.Message, originalActual)
+			if err != nil {
+				return nil, errors.Wrap(err, "failed to render template on outcome message")
 			}
 
 			if when == equal {

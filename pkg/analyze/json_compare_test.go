@@ -756,6 +756,48 @@ func Test_jsonCompare(t *testing.T) {
 				]
 			}`),
 		},
+		{
+			name: "basic comparison with outcome message templated",
+			analyzer: troubleshootv1beta2.JsonCompare{
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							Message: "Status: {{ .morestuff.status }}, Info: {{ .morestuff.info }}",
+							When:    "true",
+						},
+					},
+					{
+						Fail: &troubleshootv1beta2.SingleOutcome{
+							Message: "Status: {{ .morestuff.status }}, Info: {{ .morestuff.info }}",
+							When:    "false",
+						},
+					},
+				},
+				CollectorName: "json-compare",
+				FileName:      "json-compare.json",
+				Path:          "morestuff.status",
+				Value:         `"ready"`,
+			},
+			expectResult: AnalyzeResult{
+				IsPass:  false,
+				IsWarn:  false,
+				IsFail:  true,
+				Title:   "json-compare",
+				Message: "Status: notready, Info: morestuff is not ready",
+				IconKey: "kubernetes_text_analyze",
+				IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg",
+			},
+			fileContents: []byte(`{
+			    "stuff": {
+			      "status": "ready",
+			      "info": "this stuff is ready"
+			    },
+			    "morestuff": {
+			      "status": "notready",
+			      "info": "morestuff is not ready"
+			    }
+			}`),
+		},
 	}
 
 	for _, test := range tests {
