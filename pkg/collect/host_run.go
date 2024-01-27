@@ -2,12 +2,14 @@ package collect
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
@@ -49,7 +51,23 @@ func (c *CollectHostRun) Collect(progressChan chan<- interface{}) (map[string][]
 		collectorName = "run-host"
 	}
 
-	cmd := exec.Command(c.attemptToConvertCmdToAbsPath(), runHostCollector.Args...)
+	var (
+		timeout            time.Duration
+		cmd                *exec.Cmd
+		errInvalidDuration error
+	)
+
+	ctx := context.Background()
+	cmdPath := c.attemptToConvertCmdToAbsPath()
+
+	timeout, errInvalidDuration = time.ParseDuration(runHostCollector.Timeout)
+	if errInvalidDuration != nil || timeout < time.Duration(0) {
+		cmd = exec.Command(cmdPath, runHostCollector.Args...)
+	} else {
+		timeoutCtx, cancel := context.WithTimeout(ctx, timeout)
+		defer cancel()
+		cmd = exec.CommandContext(timeoutCtx, cmdPath, runHostCollector.Args...)
+	}
 
 	klog.V(2).Infof("Run host collector command: %q", cmd.String())
 	runInfo := &HostRunInfo{
@@ -118,6 +136,9 @@ func (c *CollectHostRun) Collect(progressChan chan<- interface{}) (map[string][]
 		if werr, ok := err.(*exec.ExitError); ok {
 			runInfo.ExitCode = strings.TrimPrefix(werr.Error(), "exit status ")
 			runInfo.Error = stderr.String()
+		} else if err == context.DeadlineExceeded {
+			runInfo.ExitCode = "0"
+			runInfo.Error = fmt.Sprintf("command timed out after %s", timeout.String())
 		} else {
 			return nil, errors.Wrap(err, "failed to run")
 		}

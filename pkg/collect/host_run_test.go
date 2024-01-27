@@ -158,3 +158,63 @@ func TestCollectHostRun_Collect(t *testing.T) {
 		}
 	}
 }
+
+func TestCollectHostRunCollectWithTimeout(t *testing.T) {
+	tests := []struct {
+		name      string
+		collector *CollectHostRun
+		wantError bool
+	}{
+		{
+			name: "no timeout",
+			collector: &CollectHostRun{
+				hostCollector: &troubleshootv1beta2.HostRun{
+					HostCollectorMeta: troubleshootv1beta2.HostCollectorMeta{
+						CollectorName: "no timeout",
+					},
+					Command: "echo",
+					Args:    []string{"1"},
+				},
+			},
+			wantError: false,
+		},
+		{
+			name: "negative timeout",
+			collector: &CollectHostRun{
+				hostCollector: &troubleshootv1beta2.HostRun{
+					HostCollectorMeta: troubleshootv1beta2.HostCollectorMeta{
+						CollectorName: "negative timeout",
+					},
+					Command: "echo",
+					Args:    []string{"1"},
+					Timeout: "-10s",
+				},
+			},
+			wantError: false,
+		},
+		{
+			name: "endless command with timeout",
+			collector: &CollectHostRun{
+				hostCollector: &troubleshootv1beta2.HostRun{
+					HostCollectorMeta: troubleshootv1beta2.HostCollectorMeta{
+						CollectorName: "endless command",
+					},
+					Command: "ping",
+					Args:    []string{"google.com"},
+					Timeout: "200ms",
+				},
+			},
+			wantError: false,
+		},
+	}
+
+	for _, test := range tests {
+		got, err := test.collector.Collect(nil)
+		if test.wantError {
+			assert.Error(t, err)
+		} else {
+			assert.NoError(t, err)
+			assert.NotNil(t, got)
+		}
+	}
+}
