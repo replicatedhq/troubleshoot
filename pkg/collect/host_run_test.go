@@ -179,6 +179,20 @@ func TestCollectHostRunCollectWithTimeout(t *testing.T) {
 			wantError: false,
 		},
 		{
+			name: "invalid timeout",
+			collector: &CollectHostRun{
+				hostCollector: &troubleshootv1beta2.HostRun{
+					HostCollectorMeta: troubleshootv1beta2.HostCollectorMeta{
+						CollectorName: "negative timeout",
+					},
+					Command: "echo",
+					Args:    []string{"1"},
+					Timeout: "thisistheway",
+				},
+			},
+			wantError: true,
+		},
+		{
 			name: "negative timeout",
 			collector: &CollectHostRun{
 				hostCollector: &troubleshootv1beta2.HostRun{

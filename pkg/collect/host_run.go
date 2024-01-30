@@ -60,8 +60,14 @@ func (c *CollectHostRun) Collect(progressChan chan<- interface{}) (map[string][]
 	ctx := context.Background()
 	cmdPath := c.attemptToConvertCmdToAbsPath()
 
-	timeout, errInvalidDuration = time.ParseDuration(runHostCollector.Timeout)
-	if errInvalidDuration != nil || timeout < time.Duration(0) {
+	if runHostCollector.Timeout != "" {
+		timeout, errInvalidDuration = time.ParseDuration(runHostCollector.Timeout)
+		if errInvalidDuration != nil {
+			return nil, errors.Wrapf(errInvalidDuration, "failed to parse timeout %q", runHostCollector.Timeout)
+		}
+	}
+
+	if timeout <= time.Duration(0) {
 		cmd = exec.Command(cmdPath, runHostCollector.Args...)
 	} else {
 		timeoutCtx, cancel := context.WithTimeout(ctx, timeout)
