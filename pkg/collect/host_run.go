@@ -143,7 +143,7 @@ func (c *CollectHostRun) Collect(progressChan chan<- interface{}) (map[string][]
 			runInfo.ExitCode = strings.TrimPrefix(werr.Error(), "exit status ")
 			runInfo.Error = stderr.String()
 		} else if err == context.DeadlineExceeded {
-			runInfo.ExitCode = "0"
+			runInfo.ExitCode = "-1"
 			runInfo.Error = fmt.Sprintf("command timed out after %s", timeout.String())
 		} else {
 			return nil, errors.Wrap(err, "failed to run")
