@@ -37,7 +37,7 @@ require (
 	github.com/spf13/viper v1.18.2
 	github.com/stretchr/testify v1.8.4
 	github.com/tj/go-spin v1.1.0
-	github.com/vmware-tanzu/velero v1.12.0
+	github.com/vmware-tanzu/velero v1.13.0
 	go.opentelemetry.io/otel v1.19.0
 	go.opentelemetry.io/otel/sdk v1.19.0
 	golang.org/x/exp v0.0.0-20231006140011-7918f672742d
