@@ -1386,6 +1386,8 @@ spec:
                           type: object
                         outputDir:
                           type: string
+                        timeout:
+                          type: string
                       required:
                       - args
                       - command

@@ -11839,6 +11839,9 @@
                   },
                   "outputDir": {
                     "type": "string"
+                  },
+                  "timeout": {
+                    "type": "string"
                   }
                 }
               },

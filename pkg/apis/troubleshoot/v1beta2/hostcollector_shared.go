@@ -187,6 +187,7 @@ type HostRun struct {
 	Env               []string          `json:"env,omitempty" yaml:"env,omitempty"`
 	InheritEnvs       []string          `json:"inheritEnvs,omitempty" yaml:"inheritEnvs,omitempty"`
 	IgnoreParentEnvs  bool              `json:"ignoreParentEnvs,omitempty" yaml:"ignoreParentEnvs,omitempty"`
+	Timeout           string            `json:"timeout,omitempty" yaml:"timeout,omitempty"`
 }
 
 type HostCollect struct {
