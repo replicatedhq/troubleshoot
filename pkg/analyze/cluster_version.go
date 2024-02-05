@@ -42,7 +42,7 @@ func analyzeClusterVersion(analyzer *troubleshootv1beta2.ClusterVersion, getColl
 		return nil, errors.Wrap(err, "failed to parse cluster_version.json")
 	}
 
-	k8sVersion, err := semver.Make(strings.TrimLeft(collectorClusterVersion.String, "v"))
+	k8sVersion, err := parseK8sVersionString(collectorClusterVersion.String)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to parse semver from cluster_version.json")
 	}
@@ -56,6 +56,16 @@ func title(checkName string) string {
 	}
 
 	return checkName
+}
+
+func parseK8sVersionString(version string) (semver.Version, error) {
+	// Workaround for https://github.com/aws/containers-roadmap/issues/1404
+	// for EKS, replace pre-release gitVersion string with the release version
+	if strings.Contains(version, "-eks-") {
+		version = strings.Split(version, "-")[0]
+	}
+
+	return semver.Make(strings.TrimLeft(version, "v"))
 }
 
 func analyzeClusterVersionResult(k8sVersion semver.Version, outcomes []*troubleshootv1beta2.Outcome, checkName string) (*AnalyzeResult, error) {
