@@ -16,6 +16,7 @@ const (
 	flagSince                     = "since"
 	flagOutput                    = "output"
 	flagDebug                     = "debug"
+	flagAddDefaultCollectors      = "add-default-collectors"
 )
 
 type PreflightFlags struct {
@@ -29,6 +30,7 @@ type PreflightFlags struct {
 	Since                     *string
 	Output                    *string
 	Debug                     *bool
+	AddDefaultCollectors      *bool
 }
 
 var preflightFlags *PreflightFlags
@@ -45,6 +47,7 @@ func NewPreflightFlags() *PreflightFlags {
 		Since:                     utilpointer.String(""),
 		Output:                    utilpointer.String("o"),
 		Debug:                     utilpointer.Bool(false),
+		AddDefaultCollectors:      utilpointer.Bool(true),
 	}
 }
 
@@ -92,5 +95,8 @@ func (f *PreflightFlags) addFlags(flags *flag.FlagSet) {
 	}
 	if f.Debug != nil {
 		flags.BoolVar(f.Debug, flagDebug, *f.Debug, "enable debug logging")
+	}
+	if f.AddDefaultCollectors != nil {
+		flags.BoolVar(f.AddDefaultCollectors, flagAddDefaultCollectors, *f.AddDefaultCollectors, "add default collectors to the preflight spec")
 	}
 }

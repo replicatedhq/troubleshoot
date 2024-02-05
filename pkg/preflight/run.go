@@ -247,10 +247,11 @@ func collectInCluster(ctx context.Context, preflightSpec *troubleshootv1beta2.Pr
 	}
 
 	collectOpts := CollectOpts{
-		Namespace:              v.GetString("namespace"),
-		IgnorePermissionErrors: v.GetBool("collect-without-permissions"),
-		ProgressChan:           progressCh,
-		KubernetesRestConfig:   restConfig,
+		Namespace:                v.GetString("namespace"),
+		IgnorePermissionErrors:   v.GetBool("collect-without-permissions"),
+		ProgressChan:             progressCh,
+		KubernetesRestConfig:     restConfig,
+		IncludeDefaultCollectors: v.GetBool("add-default-collectors"),
 	}
 
 	if v.GetString("since") != "" || v.GetString("since-time") != "" {

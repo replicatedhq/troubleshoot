@@ -89,7 +89,13 @@ func TestAddFlagsBool(t *testing.T) {
 		flag:    "debug",
 		want:    false,
 		wantErr: false,
-	}}
+	}, {
+		name:    "expect add-default-collectors=true, err=nil when add-default-collectors flag is set",
+		flag:    "add-default-collectors",
+		want:    true,
+		wantErr: false,
+	},
+	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

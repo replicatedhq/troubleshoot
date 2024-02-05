@@ -22,14 +22,15 @@ import (
 )
 
 type CollectOpts struct {
-	Namespace              string
-	IgnorePermissionErrors bool
-	KubernetesRestConfig   *rest.Config
-	Image                  string
-	PullPolicy             string
-	LabelSelector          string
-	Timeout                time.Duration
-	ProgressChan           chan interface{}
+	Namespace                string
+	IgnorePermissionErrors   bool
+	KubernetesRestConfig     *rest.Config
+	Image                    string
+	PullPolicy               string
+	LabelSelector            string
+	Timeout                  time.Duration
+	ProgressChan             chan interface{}
+	IncludeDefaultCollectors bool
 }
 
 type CollectProgress struct {
@@ -158,12 +159,15 @@ func CollectWithContext(ctx context.Context, opts CollectOpts, p *troubleshootv1
 	if p != nil && p.Spec.Collectors != nil {
 		collectSpecs = append(collectSpecs, p.Spec.Collectors...)
 	}
-	collectSpecs = collect.EnsureCollectorInList(
-		collectSpecs, troubleshootv1beta2.Collect{ClusterInfo: &troubleshootv1beta2.ClusterInfo{}},
-	)
-	collectSpecs = collect.EnsureCollectorInList(
-		collectSpecs, troubleshootv1beta2.Collect{ClusterResources: &troubleshootv1beta2.ClusterResources{}},
-	)
+
+	if opts.IncludeDefaultCollectors {
+		collectSpecs = collect.EnsureCollectorInList(
+			collectSpecs, troubleshootv1beta2.Collect{ClusterInfo: &troubleshootv1beta2.ClusterInfo{}},
+		)
+		collectSpecs = collect.EnsureCollectorInList(
+			collectSpecs, troubleshootv1beta2.Collect{ClusterResources: &troubleshootv1beta2.ClusterResources{}},
+		)
+	}
 	collectSpecs = collect.DedupCollectors(collectSpecs)
 	collectSpecs = collect.EnsureClusterResourcesFirst(collectSpecs)
 
