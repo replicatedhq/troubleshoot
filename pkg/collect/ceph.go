@@ -36,10 +36,22 @@ var CephCommands = []CephCommand{
 		DefaultTimeout: "30s",
 	},
 	{
+		ID:             "status-txt",
+		Command:        []string{"ceph", "status"},
+		Format:         "txt",
+		DefaultTimeout: "30s",
+	},
+	{
 		ID:             "fs",
 		Command:        []string{"ceph", "fs", "status"},
 		Args:           []string{"-f", "json-pretty"},
 		Format:         "json",
+		DefaultTimeout: "30s",
+	},
+	{
+		ID:             "fs-txt",
+		Command:        []string{"ceph", "fs", "status"},
+		Format:         "txt",
 		DefaultTimeout: "30s",
 	},
 	{
@@ -53,7 +65,7 @@ var CephCommands = []CephCommand{
 		ID:             "osd-status",
 		Command:        []string{"ceph", "osd", "status"},
 		Args:           []string{"-f", "json-pretty"},
-		Format:         "txt",
+		Format:         "json",
 		DefaultTimeout: "30s",
 	},
 	{
@@ -88,15 +100,17 @@ var CephCommands = []CephCommand{
 		ID:             "rgw-stats", // the disk usage (and other stats) of each object store bucket
 		Command:        []string{"radosgw-admin", "bucket", "stats"},
 		Args:           []string{"--rgw-cache-enabled=false"},
-		Format:         "txt",
+		Format:         "json",
 		DefaultTimeout: "30s", // include a default timeout because this command will hang if the RGW daemon isn't running/is unhealthy
 	},
 	{
-		ID:             "rbd-du", // the disk usage of each PVC
-		Command:        []string{"rbd", "du"},
-		Args:           []string{"--pool=replicapool"},
-		Format:         "txt",
-		DefaultTimeout: "30s",
+		ID:      "rbd-du-txt", // the disk usage of each PVC
+		Command: []string{"rbd", "du"},
+		Args:    []string{"--pool=replicapool"},
+		Format:  "txt",
+		// On ceph clusters with a lot of data, this command can take a long time to run
+		// especially if fast-diff rbd_default_features is disabled
+		DefaultTimeout: "60s",
 	},
 	{
 		ID:             "df", // the disk usage of each pool
@@ -106,10 +120,22 @@ var CephCommands = []CephCommand{
 		DefaultTimeout: "30s",
 	},
 	{
+		ID:             "df-txt", // the disk usage of each pool
+		Command:        []string{"ceph", "df"},
+		Format:         "txt",
+		DefaultTimeout: "30s",
+	},
+	{
 		ID:             "osd-df",
 		Command:        []string{"ceph", "osd", "df"},
 		Args:           []string{"-f", "json-pretty"},
 		Format:         "json",
+		DefaultTimeout: "30s",
+	},
+	{
+		ID:             "osd-df-txt",
+		Command:        []string{"ceph", "osd", "df"},
+		Format:         "txt",
 		DefaultTimeout: "30s",
 	},
 }
