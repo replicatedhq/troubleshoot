@@ -6,6 +6,7 @@ import (
 
 	"github.com/blang/semver/v4"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
+	"github.com/stretchr/testify/assert"
 )
 
 func Test_analyzeClusterVersionResult(t *testing.T) {
@@ -100,6 +101,44 @@ func Test_analyzeClusterVersionResult(t *testing.T) {
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("analyzeClusterVersionResult() = %v, want %v", got, tt.want)
 			}
+		})
+	}
+}
+
+func Test_parseVersionString(t *testing.T) {
+	tests := []struct {
+		name       string
+		rawVersion string
+		want       semver.Version
+		wantErr    bool
+	}{
+		{
+			name:       "valid version",
+			rawVersion: "1.17.0",
+			want:       semver.MustParse("1.17.0"),
+		},
+		{
+			name:       "valid version with v prefix",
+			rawVersion: "v1.17.0",
+			want:       semver.MustParse("1.17.0"),
+		},
+		{
+			name:       "invalid version",
+			rawVersion: "v1.17",
+			want:       semver.Version{},
+			wantErr:    true,
+		},
+		{
+			name:       "EKS version",
+			rawVersion: "v1.25.16-eks-8cb36c9",
+			want:       semver.MustParse("1.25.16"),
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := parseVersionString(tt.rawVersion)
+			assert.Equal(t, tt.wantErr, err != nil, "parseVersionString() error = %v, wantErr %v", err, tt.wantErr)
+			assert.Equal(t, tt.want, got, "parseVersionString() = %v, want %v", got, tt.want)
 		})
 	}
 }
