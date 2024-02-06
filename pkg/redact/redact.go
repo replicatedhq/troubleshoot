@@ -456,7 +456,7 @@ func getRedactors(path string) ([]Redactor, error) {
 
 	uniqueCRs := map[string]bool{}
 	for _, cr := range customResources {
-		fileglob := fmt.Sprintf("%s/%s/%s/*", constants.CLUSTER_RESOURCES_DIR, constants.CLUSTER_RESOURCES_CUSTOM_RESOURCES, cr.resource)
+		fileglob := fmt.Sprintf("%s/%s/%s/*.yaml", constants.CLUSTER_RESOURCES_DIR, constants.CLUSTER_RESOURCES_CUSTOM_RESOURCES, cr.resource)
 		redactors = append(redactors, NewYamlRedactor(cr.yamlPath, fileglob, ""))
 
 		// redact kubectl last applied annotation once for each resource since it contains copies of
