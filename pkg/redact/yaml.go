@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"bytes"
 	"io"
-	"io/ioutil"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -50,7 +49,7 @@ func (r *YamlRedactor) Redact(input io.Reader, path string) io.Reader {
 		reader := bufio.NewReader(input)
 
 		var doc []byte
-		doc, err = ioutil.ReadAll(reader)
+		doc, err = io.ReadAll(reader)
 		var yamlInterface interface{}
 		err = yaml.Unmarshal(doc, &yamlInterface)
 		if err != nil {
@@ -84,8 +83,6 @@ func (r *YamlRedactor) Redact(input io.Reader, path string) io.Reader {
 			File:              path,
 			IsDefaultRedactor: r.isDefault,
 		})
-
-		return
 	}()
 	return reader
 }

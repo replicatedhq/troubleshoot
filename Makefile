@@ -40,7 +40,7 @@ E2EPATHS = ./test/e2e/...
 TESTFLAGS ?= -v -coverprofile cover.out
 
 .DEFAULT_GOAL := all
-all: build test
+all: clean build test
 
 .PHONY: ffi
 ffi: fmt vet
