@@ -271,7 +271,7 @@ func getPodNodeAtCompletion(ctx context.Context, client v1.CoreV1Interface, pod 
 }
 
 // waitForDaemonSetPods waits for the DaemonSet to have the desired number of pods scheduled
-func waitForDaemonSetPods(ctx context.Context, client *kubernetes.Clientset, ds *appsv1.DaemonSet) error {
+func waitForDaemonSetPods(ctx context.Context, client kubernetes.Interface, ds *appsv1.DaemonSet) error {
 	ticker := time.NewTicker(time.Second)
 	defer ticker.Stop()
 
