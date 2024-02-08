@@ -75,6 +75,8 @@ func GetCollector(collector *troubleshootv1beta2.Collect, bundlePath string, nam
 		return &CollectRun{collector.Run, bundlePath, namespace, clientConfig, client, ctx, RBACErrors}, true
 	case collector.RunPod != nil:
 		return &CollectRunPod{collector.RunPod, bundlePath, namespace, clientConfig, client, ctx, RBACErrors}, true
+	case collector.RunDaemonSet != nil:
+		return &CollectRunDaemonSet{collector.RunDaemonSet, bundlePath, namespace, clientConfig, client, ctx, RBACErrors}, true
 	case collector.Exec != nil:
 		return &CollectExec{collector.Exec, bundlePath, namespace, clientConfig, client, ctx, RBACErrors}, true
 	case collector.Data != nil:
@@ -151,6 +153,9 @@ func getCollectorName(c interface{}) string {
 		name = v.Collector.CollectorName
 	case *CollectRunPod:
 		collector = "run-pod"
+		name = v.Collector.CollectorName
+	case *CollectRunDaemonSet:
+		collector = "run-daemonset"
 		name = v.Collector.CollectorName
 	case *CollectExec:
 		collector = "exec"
