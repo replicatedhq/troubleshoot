@@ -170,7 +170,8 @@ func (c *CollectRunDaemonSet) Collect(progressChan chan<- interface{}) (Collecto
 
 	output := NewResult()
 	for k, v := range results {
-		err := output.SaveResult(c.BundlePath, filepath.Join("run-daemonset", k), bytes.NewBuffer(v))
+		filename := k + ".log"
+		err := output.SaveResult(c.BundlePath, filepath.Join(c.Collector.Name, filename), bytes.NewBuffer(v))
 		if err != nil {
 			return nil, err
 		}
