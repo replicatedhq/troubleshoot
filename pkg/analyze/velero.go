@@ -361,11 +361,9 @@ func analyzeBackups(backups []*velerov1.Backup) []*AnalyzeResult {
 	results := []*AnalyzeResult{}
 
 	failedPhases := map[velerov1.BackupPhase]bool{
-		velerov1.BackupPhaseFailed:                                    true,
-		velerov1.BackupPhasePartiallyFailed:                           true,
-		velerov1.BackupPhaseFailedValidation:                          true,
-		velerov1.BackupPhaseFinalizingPartiallyFailed:                 true,
-		velerov1.BackupPhaseWaitingForPluginOperationsPartiallyFailed: true,
+		velerov1.BackupPhaseFailed:           true,
+		velerov1.BackupPhasePartiallyFailed:  true,
+		velerov1.BackupPhaseFailedValidation: true,
 	}
 
 	for _, backup := range backups {
@@ -510,10 +508,9 @@ func analyzeRestores(restores []*velerov1.Restore) []*AnalyzeResult {
 	if len(restores) > 0 {
 
 		failedPhases := map[velerov1.RestorePhase]bool{
-			velerov1.RestorePhaseFailed:                                    true,
-			velerov1.RestorePhasePartiallyFailed:                           true,
-			velerov1.RestorePhaseFailedValidation:                          true,
-			velerov1.RestorePhaseWaitingForPluginOperationsPartiallyFailed: true,
+			velerov1.RestorePhaseFailed:           true,
+			velerov1.RestorePhasePartiallyFailed:  true,
+			velerov1.RestorePhaseFailedValidation: true,
 		}
 
 		for _, restore := range restores {

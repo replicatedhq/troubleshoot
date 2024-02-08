@@ -191,7 +191,7 @@ github.com/14rcole/gopopulate v0.0.0-20180821133914-b175b219e774 h1:SCbEWT58NSt7
 github.com/14rcole/gopopulate v0.0.0-20180821133914-b175b219e774/go.mod h1:6/0dYRLLXyJjbkIPeeGyoJ/eKOSI0eU6eTlCBYibgd0=
 github.com/AdaLogics/go-fuzz-headers v0.0.0-20230811130428-ced1acdcaa24 h1:bvDV9vkmnHYOMsOr4WLk+Vo07yKIzd94sVoIqshQ4bU=
 github.com/AdaLogics/go-fuzz-headers v0.0.0-20230811130428-ced1acdcaa24/go.mod h1:8o94RPi1/7XTJvwPpRSzSUedZrtlirdB3r9Z20bi2f8=
-github.com/Azure/azure-sdk-for-go v67.2.0+incompatible h1:Uu/Ww6ernvPTrpq31kITVTIm/I5jlJ1wjtEH/bmSB2k=
+github.com/Azure/azure-sdk-for-go v61.4.0+incompatible h1:BF2Pm3aQWIa6q9KmxyF1JYKYXtVw67vtvu2Wd54NGuY=
 github.com/Azure/azure-sdk-for-go/sdk/azcore v1.7.1 h1:/iHxaJhsFr0+xVFfbMr5vxz848jyiWuIEDhYq3y5odY=
 github.com/Azure/azure-sdk-for-go/sdk/azcore v1.7.1/go.mod h1:bjGvMhVMb+EEm3VRNQawDMUyMMjo+S5ewNjflkep/0Q=
 github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.3.0 h1:vcYCAze6p19qBW7MhZybIsqD8sMV8js0NyQM8JDnVtg=
@@ -890,8 +890,8 @@ github.com/vbatts/tar-split v0.11.5 h1:3bHCTIheBm1qFTcgh9oPu+nNBtX+XJIupG/vacinC
 github.com/vbatts/tar-split v0.11.5/go.mod h1:yZbwRsSeGjusneWgA781EKej9HF8vme8okylkAeNKLk=
 github.com/vladimirvivien/gexe v0.2.0 h1:nbdAQ6vbZ+ZNsolCgSVb9Fno60kzSuvtzVh6Ytqi/xY=
 github.com/vladimirvivien/gexe v0.2.0/go.mod h1:LHQL00w/7gDUKIak24n801ABp8C+ni6eBht9vGVst8w=
-github.com/vmware-tanzu/velero v1.12.0 h1:gN8PbQMYOAMv8OYE3RkIvxr6s6IoMS0Daxc+IQN0X5U=
-github.com/vmware-tanzu/velero v1.12.0/go.mod h1:rY2UfdC2K9je9jtjnSBsZr8Zmg8hzePjG2W00Oe/CT4=
+github.com/vmware-tanzu/velero v1.10.3 h1:prE24sOog/jhBt7LivY+k6NbKwU+0nl1JAbJWA91mdo=
+github.com/vmware-tanzu/velero v1.10.3/go.mod h1:3/m52SOiTP/L+Qp0E6+Gk688niyVxowLCLniQbTkSPA=
 github.com/xeipuuv/gojsonpointer v0.0.0-20180127040702-4e3ac2762d5f/go.mod h1:N2zxlSyiKSe5eX1tZViRH5QA0qijqEDrYZiPEAiq3wU=
 github.com/xeipuuv/gojsonpointer v0.0.0-20190905194746-02993c407bfb h1:zGWFAtiMcyryUHoUjUJX0/lt1H2+i2Ka2n+D3DImSNo=
 github.com/xeipuuv/gojsonpointer v0.0.0-20190905194746-02993c407bfb/go.mod h1:N2zxlSyiKSe5eX1tZViRH5QA0qijqEDrYZiPEAiq3wU=

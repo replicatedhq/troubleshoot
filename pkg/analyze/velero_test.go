@@ -626,32 +626,6 @@ func TestAnalyzeVelero_Restores(t *testing.T) {
 				},
 			},
 		},
-		{
-			name: "restores - failures",
-			args: args{
-				restores: []*velerov1.Restore{
-					{
-						ObjectMeta: metav1.ObjectMeta{
-							Name:      "observability-backup-20210308150016",
-							Namespace: "velero",
-						},
-						Spec: velerov1.RestoreSpec{
-							BackupName: "observability-backup",
-						},
-						Status: velerov1.RestoreStatus{
-							Phase: velerov1.RestorePhaseWaitingForPluginOperationsPartiallyFailed,
-						},
-					},
-				},
-			},
-			want: []*AnalyzeResult{
-				{
-					Title:   "Restore observability-backup-20210308150016",
-					Message: "Restore observability-backup-20210308150016 phase is WaitingForPluginOperationsPartiallyFailed",
-					IsFail:  true,
-				},
-			},
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
