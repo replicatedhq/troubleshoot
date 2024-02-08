@@ -506,7 +506,7 @@ func pods(ctx context.Context, client *kubernetes.Clientset, namespaces []string
 }
 
 func getPodDisruptionBudgets(ctx context.Context, client *kubernetes.Clientset, namespaces []string) (map[string][]byte, map[string]string) {
-	ok, err := discovery.HasResource(client, "policy.k8s.io/v1", "PodDisruptionBudgets")
+	ok, err := discovery.HasResource(client, "policy/v1", "PodDisruptionBudgets")
 	if err != nil {
 		return nil, map[string]string{"": err.Error()}
 	}
@@ -801,7 +801,7 @@ func jobs(ctx context.Context, client *kubernetes.Clientset, namespaces []string
 }
 
 func cronJobs(ctx context.Context, client *kubernetes.Clientset, namespaces []string) (map[string][]byte, map[string]string) {
-	ok, err := discovery.HasResource(client, "batch.k8s.io/v1", "CronJobs")
+	ok, err := discovery.HasResource(client, "batch/v1", "CronJobs")
 	if err != nil {
 		return nil, map[string]string{"": err.Error()}
 	}
