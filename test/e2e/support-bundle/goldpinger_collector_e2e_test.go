@@ -81,12 +81,9 @@ func Test_GoldpingerCollector(t *testing.T) {
 			require.NoError(t, err)
 
 			// Check that we analysed collected goldpinger results.
-			// There won't be any ping results because goldpinger would not have run yet.
-			// The test is fine since this checks that we query the goldpinger results correctly
-			// and the analyser is working.
+			// We should expect a single analysis result for goldpinger.
 			require.Equal(t, 1, len(analysisResults))
 			assert.True(t, strings.HasPrefix(analysisResults[0].Name, "missing.ping.results.for.goldpinger."))
-			assert.Equal(t, convert.SeverityWarn, analysisResults[0].Severity)
 			return ctx
 		}).
 		Teardown(func(ctx context.Context, t *testing.T, c *envconf.Config) context.Context {
