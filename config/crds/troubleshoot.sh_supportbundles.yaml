@@ -19324,6 +19324,15 @@ spec:
                             type: string
                           type: array
                       type: object
+                    sonobuoy:
+                      properties:
+                        collectorName:
+                          type: string
+                        exclude:
+                          type: BoolString
+                        namespace:
+                          type: string
+                      type: object
                     sysctl:
                       properties:
                         collectorName:

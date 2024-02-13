@@ -282,6 +282,11 @@ type PodLaunchOptions struct {
 	ServiceAccountName string            `json:"serviceAccountName,omitempty" yaml:"serviceAccountName,omitempty"`
 }
 
+type Sonobuoy struct {
+	CollectorMeta `json:",inline" yaml:",inline"`
+	Namespace     string `json:"namespace,omitempty" yaml:"namespace,omitempty"`
+}
+
 type Collect struct {
 	ClusterInfo      *ClusterInfo      `json:"clusterInfo,omitempty" yaml:"clusterInfo,omitempty"`
 	ClusterResources *ClusterResources `json:"clusterResources,omitempty" yaml:"clusterResources,omitempty"`
@@ -309,6 +314,7 @@ type Collect struct {
 	Certificates     *Certificates     `json:"certificates,omitempty" yaml:"certificates,omitempty"`
 	Helm             *Helm             `json:"helm,omitempty" yaml:"helm,omitempty"`
 	Goldpinger       *Goldpinger       `json:"goldpinger,omitempty" yaml:"goldpinger,omitempty"`
+	Sonobuoy         *Sonobuoy         `json:"sonobuoy,omitempty" yaml:"sonobuoy,omitempty"`
 }
 
 func (c *Collect) AccessReviewSpecs(overrideNS string) []authorizationv1.SelfSubjectAccessReviewSpec {

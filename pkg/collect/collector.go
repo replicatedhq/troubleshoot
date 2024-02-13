@@ -120,6 +120,8 @@ func GetCollector(collector *troubleshootv1beta2.Collect, bundlePath string, nam
 		return &CollectHelm{collector.Helm, bundlePath, namespace, clientConfig, client, ctx, RBACErrors}, true
 	case collector.Goldpinger != nil:
 		return &CollectGoldpinger{collector.Goldpinger, bundlePath, namespace, clientConfig, client, ctx, RBACErrors}, true
+	case collector.Sonobuoy != nil:
+		return &CollectSonobuoyResults{collector.Sonobuoy, bundlePath, namespace, clientConfig, client, ctx, RBACErrors}, true
 	default:
 		return nil, false
 	}
@@ -207,6 +209,8 @@ func getCollectorName(c interface{}) string {
 		collector = "helm"
 	case *CollectGoldpinger:
 		collector = "goldpinger"
+	case *CollectSonobuoyResults:
+		collector = "sonobuoy"
 	default:
 		collector = "<none>"
 	}
