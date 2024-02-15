@@ -7,15 +7,18 @@ import (
 	"fmt"
 	"io"
 	"path/filepath"
+	"strings"
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/replicatedhq/troubleshoot/pkg/client/troubleshootclientset/scheme"
 	corev1 "k8s.io/api/core/v1"
+	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/remotecommand"
+	"k8s.io/klog/v2"
 )
 
 const (
@@ -54,7 +57,9 @@ func (c *CollectSonobuoyResults) Collect(progressChan chan<- interface{}) (Colle
 	containerName := DefaultSonobuoyAggregatorContainerName
 
 	_, err := c.Client.CoreV1().Pods(namespace).Get(c.Context, podName, metav1.GetOptions{})
-	if err != nil {
+	if kerrors.IsNotFound(err) {
+		return nil, fmt.Errorf("sonobuoy pod %s in namespace %s not found", podName, namespace)
+	} else if err != nil {
 		return nil, fmt.Errorf("failed to get sonobuoy pod %s in namespace %s: %v", podName, namespace, err)
 	}
 
@@ -91,6 +96,7 @@ func (c *CollectSonobuoyResults) Collect(progressChan chan<- interface{}) (Colle
 				continue
 			}
 			filename := filepath.Clean(header.Name) // sanitize the filename
+			klog.V(2).Infof("Sonobuoy collector found file: %s", filename)
 			err = output.SaveResult(c.BundlePath, filepath.Join("sonobuoy", filename), tr)
 			if err != nil {
 				ec2 <- errors.Wrapf(err, "failed to save result for %s", filename)
@@ -121,6 +127,12 @@ func sonobuoyRetrieveResults(
 ) (io.Reader, <-chan error, error) {
 	ec := make(chan error, 1)
 
+	cmd := sonobuoyTarCmd(path)
+
+	klog.V(2).Infof(
+		"Sonobuoy collector runing command: kubectl exec -n %s %s -c %s -- %s",
+		namespace, podName, containerName, strings.Join(cmd, " "),
+	)
 	restClient := client.CoreV1().RESTClient()
 	req := restClient.Post().
 		Resource("pods").
@@ -130,7 +142,7 @@ func sonobuoyRetrieveResults(
 		Param("container", containerName)
 	req.VersionedParams(&corev1.PodExecOptions{
 		Container: containerName,
-		Command:   sonobuoyTarCmd(path),
+		Command:   cmd,
 		Stdin:     false,
 		Stdout:    true,
 		Stderr:    false,
