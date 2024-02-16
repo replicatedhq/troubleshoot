@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"compress/gzip"
 	"context"
+	"flag"
 	"fmt"
 	"io"
 	"os"
@@ -12,6 +13,7 @@ import (
 	"strings"
 	"testing"
 
+	"k8s.io/klog/v2"
 	"sigs.k8s.io/e2e-framework/pkg/env"
 	"sigs.k8s.io/e2e-framework/pkg/envconf"
 	"sigs.k8s.io/e2e-framework/pkg/envfuncs"
@@ -23,6 +25,12 @@ var testenv env.Environment
 const ClusterName = "kind-cluster"
 
 func TestMain(m *testing.M) {
+	// enable klog
+	klog.InitFlags(nil)
+	if os.Getenv("E2E_VERBOSE") == "1" {
+		_ = flag.Set("v", "10")
+	}
+
 	testenv = env.New()
 	namespace := envconf.RandomName("default", 16)
 	testenv.Setup(
@@ -77,7 +85,10 @@ func readFilesAndFoldersFromTar(tarPath, targetFolder string) ([]string, []strin
 		}
 
 		if strings.HasPrefix(header.Name, targetFolder) {
-			relativePath := strings.TrimPrefix(header.Name, targetFolder)
+			relativePath, err := filepath.Rel(targetFolder, header.Name)
+			if err != nil {
+				return nil, nil, fmt.Errorf("Error getting relative path: %w", err)
+			}
 			if relativePath != "" {
 				relativeDir := filepath.Dir(relativePath)
 				if relativeDir != "." {

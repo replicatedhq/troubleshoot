@@ -16051,6 +16051,20 @@
                   }
                 }
               },
+              "sonobuoy": {
+                "type": "object",
+                "properties": {
+                  "collectorName": {
+                    "type": "string"
+                  },
+                  "exclude": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  },
+                  "namespace": {
+                    "type": "string"
+                  }
+                }
+              },
               "sysctl": {
                 "type": "object",
                 "required": [
