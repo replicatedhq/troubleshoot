@@ -246,6 +246,8 @@ func getAnalyzer(analyzer *troubleshootv1beta2.Analyze) Analyzer {
 		return &AnalyzeCertificates{analyzer: analyzer.Certificates}
 	case analyzer.Goldpinger != nil:
 		return &AnalyzeGoldpinger{analyzer: analyzer.Goldpinger}
+	case analyzer.Event != nil:
+		return &AnalyzeEvent{analyzer: analyzer.Event}
 	default:
 		return nil
 	}

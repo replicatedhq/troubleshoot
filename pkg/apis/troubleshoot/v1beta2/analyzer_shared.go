@@ -232,6 +232,16 @@ type GoldpingerAnalyze struct {
 	FilePath      string     `json:"filePath,omitempty" yaml:"filePath,omitempty"`
 }
 
+type EventAnalyze struct {
+	AnalyzeMeta   `json:",inline" yaml:",inline"`
+	CollectorName string     `json:"collectorName" yaml:"collectorName"`
+	Namespace     string     `json:"namespace,omitempty" yaml:"namespace,omitempty"`
+	Kind          string     `json:"kind,omitempty" yaml:"kind,omitempty"`
+	Reason        string     `json:"reason,omitempty" yaml:"reason,omitempty"`
+	RegexPattern  string     `json:"regex,omitempty" yaml:"regex,omitempty"`
+	Outcomes      []*Outcome `json:"outcomes" yaml:"outcomes"`
+}
+
 type Analyze struct {
 	ClusterVersion           *ClusterVersion           `json:"clusterVersion,omitempty" yaml:"clusterVersion,omitempty"`
 	StorageClass             *StorageClass             `json:"storageClass,omitempty" yaml:"storageClass,omitempty"`
@@ -264,4 +274,5 @@ type Analyze struct {
 	ClusterResource          *ClusterResource          `json:"clusterResource,omitempty" yaml:"clusterResource,omitempty"`
 	Certificates             *CertificatesAnalyze      `json:"certificates,omitempty" yaml:"certificates,omitempty"`
 	Goldpinger               *GoldpingerAnalyze        `json:"goldpinger,omitempty" yaml:"goldpinger,omitempty"`
+	Event                    *EventAnalyze             `json:"event,omitempty" yaml:"event,omitempty"`
 }

@@ -590,6 +590,64 @@ spec:
                       required:
                       - outcomes
                       type: object
+                    event:
+                      properties:
+                        annotations:
+                          additionalProperties:
+                            type: string
+                          type: object
+                        checkName:
+                          type: string
+                        collectorName:
+                          type: string
+                        exclude:
+                          type: BoolString
+                        kind:
+                          type: string
+                        namespace:
+                          type: string
+                        outcomes:
+                          items:
+                            properties:
+                              fail:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
+                              pass:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
+                              warn:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
+                            type: object
+                          type: array
+                        reason:
+                          type: string
+                        regex:
+                          type: string
+                        strict:
+                          type: BoolString
+                      required:
+                      - collectorName
+                      - outcomes
+                      type: object
                     goldpinger:
                       properties:
                         annotations:
