@@ -20,9 +20,9 @@ type AnalyzeEvent struct {
 }
 
 type eventFilter struct {
-	kind     string
-	reason   string
-	msgRegex string
+	kind   string
+	reason string
+	regex  string
 }
 
 func (a *AnalyzeEvent) Title() string {
@@ -55,13 +55,19 @@ func (a *AnalyzeEvent) Analyze(getFile getCollectedFileContents, findFiles getCh
 	}
 
 	// filter if there's single event matched with the given criteria
-	// match: Reason && Kind (optional) && MessageRegex (optional)
+	// match: Reason (optional) && Kind (optional) && regex (optional)
 	// e.g. Reason: Unhealthy. Kind: Pod. Message: Readiness probe failed:...
-	event := getEvent(events, eventFilter{
-		kind:     a.analyzer.Kind,
-		reason:   a.analyzer.Reason,
-		msgRegex: a.analyzer.RegexPattern,
-	})
+	filter := eventFilter{
+		kind:   a.analyzer.Kind,
+		reason: a.analyzer.Reason,
+		regex:  a.analyzer.RegexPattern,
+	}
+
+	if filter.reason == "" && filter.regex == "" {
+		return nil, errors.New("Reason or regex pattern is required")
+	}
+
+	event := getEvent(events, filter)
 
 	return analyzeEventResult(event, a.analyzer.Outcomes, a.Title())
 
@@ -91,8 +97,9 @@ func getEvent(events *corev1.EventList, filter eventFilter) *corev1.Event {
 		if !matchKind(event.InvolvedObject.Kind, filter.kind) {
 			continue
 		}
-		if matchMessage(event.Message, filter.msgRegex) {
-			klog.V(2).Infof("event matched: %v for reason: %s kind: %s messageRegex: %s ", event, filter.reason, filter.kind, filter.msgRegex)
+		toSearch := fmt.Sprintf("%s %s", event.Reason, event.Message)
+		if matchRegex(toSearch, filter.regex) {
+			klog.V(2).Infof("event matched: %v for reason: %s kind: %s regex: %s ", event, filter.reason, filter.kind, filter.regex)
 			return &event
 		}
 	}
@@ -100,9 +107,9 @@ func getEvent(events *corev1.EventList, filter eventFilter) *corev1.Event {
 }
 
 func matchReason(actual, expected string) bool {
-	// not possible to have empty reason
+	// reason is optional
 	if expected == "" {
-		return false
+		return true
 	}
 	return strings.EqualFold(actual, expected)
 }
@@ -115,8 +122,8 @@ func matchKind(actual, expected string) bool {
 	return strings.EqualFold(actual, expected)
 }
 
-func matchMessage(actual, expectedRegex string) bool {
-	// message Regex is optional
+func matchRegex(actual, expectedRegex string) bool {
+	// regex is optional
 	if expectedRegex == "" {
 		return true
 	}
