@@ -13,6 +13,11 @@ updates:
       - "type::chore"
     schedule:
       interval: "weekly"
+    groups:
+      security:
+        update-types:
+          - "patch"
+          - "minor"
       
   # Maintain dependencies for GitHub Actions
   - package-ecosystem: "github-actions"
