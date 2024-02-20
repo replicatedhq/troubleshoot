@@ -8,7 +8,7 @@ updates:
   - package-ecosystem: "gomod" # See documentation for possible values
     directory: "/" # Location of package manifests
     labels:
-      - "dependabot"
+      - "dependencies"
       - "go"
       - "type::chore"
     schedule:
@@ -25,7 +25,7 @@ updates:
     # default location of `.github/workflows`
     directory: "/"
     labels:
-      - "dependabot"
+      - "dependencies"
       - "github-actions"
       - "type::chore"
     schedule:
