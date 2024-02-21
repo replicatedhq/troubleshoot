@@ -23,21 +23,13 @@ jobs:
 
           # list prs that are less than 24h old and exclude prs from forks
 
-          dependabot_prs=$(
+          prs=$(
             gh pr list \
               --author 'dependabot[bot]' \
               --json url,createdAt,headRefName,headRepository,headRepositoryOwner \
               -q '.[] | select((.createdAt | fromdateiso8601 > now - 24*60*60) and .headRepositoryOwner.login == "replicatedhq" and .headRepository.name == "troubleshoot")'
           )
 
-          replicated_ci_troubleshoot_prs=$(
-            gh pr list \
-              --author 'replicated-ci-troubleshoot' \
-              --json url,createdAt,headRefName,headRepository,headRepositoryOwner \
-              -q '.[] | select((.createdAt | fromdateiso8601 > now - 24*60*60) and .headRepositoryOwner.login == "replicatedhq" and .headRepository.name == "troubleshoot")'
-          )
-
-          prs=$(echo "$dependabot_prs" "$replicated_ci_troubleshoot_prs" | jq -sc '. | unique')
           echo "prs=$prs" >> "$GITHUB_OUTPUT"
 
   process-prs:
@@ -75,20 +67,18 @@ jobs:
             exit 0
           fi
 
-          # If all tests and required checks passed, approve and merge.
+          # If all checks passed, approve and merge.
 
-          if gh run view "$run_id" --json jobs -q '.jobs[] | select(.name == "validate-success") | .conclusion' | grep -q "success"; then
-            if gh pr checks "${{ matrix.pr.url }}" --required; then
-              echo "All tests and required checks passed. Approving and merging."
-              echo -e "LGTM :thumbsup: \n\nThis PR was automatically approved and merged by the [automated-prs-manager](https://github.com/replicatedhq/troubleshoot/blob/main/.github/workflows/automated-prs-manager.yaml) GitHub action" > body.txt
-              gh pr review --approve "${{ matrix.pr.url }}" --body-file body.txt
-              gh pr merge --auto --squash "${{ matrix.pr.url }}"
-              sleep 10
-              exit 0
-            else
-              echo "All tests passed, but some required PR checks have not. Skipping."
-              exit 0
-            fi
+          if gh pr checks "${{ matrix.pr.url }}" ; then
+            echo "All tests passed. Approving and merging."
+            echo -e "LGTM :thumbsup: \n\nThis PR was automatically approved and merged by the [automated-prs-manager](https://github.com/replicatedhq/troubleshoot/blob/main/.github/workflows/automated-prs-manager.yaml) GitHub action" > body.txt
+            gh pr review --approve "${{ matrix.pr.url }}" --body-file body.txt
+            gh pr merge --auto --squash "${{ matrix.pr.url }}"
+            sleep 10
+            exit 0
+          else
+            echo "Some checks did not pass. Skipping."
+            exit 0
           fi
 
           # If more than half of the validate-* jobs are successful, re-run the failed jobs.
