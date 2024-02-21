@@ -68,26 +68,27 @@ jobs:
           fi
 
           # If all checks passed, approve and merge.
-
-          if gh pr checks "${{ matrix.pr.url }}" ; then
-            echo "All tests passed. Approving and merging."
-            echo -e "LGTM :thumbsup: \n\nThis PR was automatically approved and merged by the [automated-prs-manager](https://github.com/replicatedhq/troubleshoot/blob/main/.github/workflows/automated-prs-manager.yaml) GitHub action" > body.txt
-            gh pr review --approve "${{ matrix.pr.url }}" --body-file body.txt
-            gh pr merge --auto --squash "${{ matrix.pr.url }}"
-            sleep 10
-            exit 0
-          else
-            echo "Some checks did not pass. Skipping."
-            exit 0
+          if gh run view "$run_id" --json jobs -q '.jobs[] | select(.name == "validate-success") | .conclusion' | grep -q "success"; then
+            if gh pr checks "${{ matrix.pr.url }}" ; then
+              echo "All tests passed. Approving and merging."
+              echo -e "LGTM :thumbsup: \n\nThis PR was automatically approved and merged by the [automated-prs-manager](https://github.com/replicatedhq/troubleshoot/blob/main/.github/workflows/automated-prs-manager.yaml) GitHub action" > body.txt
+              gh pr review --approve "${{ matrix.pr.url }}" --body-file body.txt
+              gh pr merge --auto --squash "${{ matrix.pr.url }}"
+              sleep 10
+              exit 0
+            else
+              echo "Some checks did not pass. Skipping."
+              exit 0
+            fi
           fi
 
-          # If more than half of the validate-* jobs are successful, re-run the failed jobs.
+          # If more than half of the jobs are successful, re-run the failed jobs.
 
-          num_of_jobs=$(gh run view "$run_id" --json jobs -q '.jobs[] | select(.name | startswith("validate-")) | .name' | wc -l)
-          num_of_successful_jobs=$(gh run view "$run_id" --json jobs -q '.jobs[] | select((.name | startswith("validate-")) and (.conclusion == "success")) | .name' | wc -l)
+          num_of_jobs=$(gh run view "$run_id" --json jobs -q '.jobs[].name ' | wc -l)
+          num_of_successful_jobs=$(gh run view "$run_id" --json jobs -q '.jobs[] | select (.conclusion == "success")) |.name ' | wc -l)
 
           if [ "$num_of_successful_jobs" -gt $((num_of_jobs / 2)) ]; then
-            echo "More than half of the validate-* jobs are successful. Re-running failed jobs."
+            echo "More than half of the jobs are successful. Re-running failed jobs."
             gh run rerun "$run_id" --failed
             exit 0
           fi
