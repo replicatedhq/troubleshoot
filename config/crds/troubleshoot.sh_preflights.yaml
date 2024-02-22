@@ -616,6 +616,7 @@ spec:
                       required:
                       - collectorName
                       - outcomes
+                      - reason
                       type: object
                     goldpinger:
                       properties:

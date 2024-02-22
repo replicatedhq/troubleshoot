@@ -15,7 +15,55 @@ func TestAnalyzeEvent(t *testing.T) {
 		analyzer     troubleshootv1beta2.EventAnalyze
 		expectResult []AnalyzeResult
 		files        map[string][]byte
+		err          error
 	}{
+		{
+			name: "reason is required",
+			analyzer: troubleshootv1beta2.EventAnalyze{
+				CollectorName: "event-collector-0",
+				Kind:          "Pod",
+				Namespace:     "default",
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Fail: &troubleshootv1beta2.SingleOutcome{
+							When:    "true",
+							Message: "test",
+						},
+					},
+				},
+			},
+			err: errors.New("reason is required"),
+			files: map[string][]byte{
+				"cluster-resources/events/default.json": []byte(`
+					{
+						"kind": "EventList",
+						"apiVersion": "v1",
+						"metadata": {
+						  "resourceVersion": "722"
+						},
+						"items": [
+						  {
+							"kind": "Event",
+							"apiVersion": "v1",
+							"metadata": {
+							  "name": "nginx-rc",
+							  "namespace": "default",
+							  "creationTimestamp": "2022-01-01T00:00:00Z"
+							},
+							"involvedObject": {
+							  "kind": "Pod",
+							  "name": "nginx-rc-12345",
+							  "namespace": "default"
+							},
+							"reason": "OOMKilled",
+							"message": "The container was killed due to an out-of-memory condition.",
+							"type": "Warning"
+						  }
+						]
+					}
+					`),
+			},
+		},
 		{
 			name: "fail when OOMKilled event is present",
 			analyzer: troubleshootv1beta2.EventAnalyze{
@@ -27,7 +75,7 @@ func TestAnalyzeEvent(t *testing.T) {
 					{
 						Fail: &troubleshootv1beta2.SingleOutcome{
 							When:    "true",
-							Message: "OOMKilled event detected",
+							Message: "Detect OOMKilled event with {{ .InvolvedObject.Kind }}-{{ .InvolvedObject.Name }} with message {{ .Message }}",
 						},
 						Pass: &troubleshootv1beta2.SingleOutcome{
 							When:    "false",
@@ -44,7 +92,7 @@ func TestAnalyzeEvent(t *testing.T) {
 					IsFail:  true,
 					IsWarn:  false,
 					IsPass:  false,
-					Message: "OOMKilled event detected. Name: nginx-rc-12345 Message: The container was killed due to an out-of-memory condition.",
+					Message: "Detect OOMKilled event with Pod-nginx-rc-12345 with message The container was killed due to an out-of-memory condition.",
 				},
 			},
 			files: map[string][]byte{
@@ -174,8 +222,12 @@ func TestAnalyzeEvent(t *testing.T) {
 				analyzer: &test.analyzer,
 			}
 			actual, err := a.Analyze(getFile, findFiles)
-			req.NoError(err)
+			if test.err != nil {
+				req.EqualError(err, test.err.Error())
+				return
+			}
 
+			req.NoError(err)
 			unPointered := []AnalyzeResult{}
 			for _, v := range actual {
 				unPointered = append(unPointered, *v)

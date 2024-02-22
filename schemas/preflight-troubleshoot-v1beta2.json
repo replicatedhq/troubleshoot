@@ -828,7 +828,8 @@
                 "type": "object",
                 "required": [
                   "collectorName",
-                  "outcomes"
+                  "outcomes",
+                  "reason"
                 ],
                 "properties": {
                   "annotations": {

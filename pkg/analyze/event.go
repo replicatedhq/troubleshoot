@@ -1,12 +1,14 @@
 package analyzer
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"path"
 	"regexp"
 	"strconv"
 	"strings"
+	"text/template"
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
@@ -40,6 +42,11 @@ func (a *AnalyzeEvent) IsExcluded() (bool, error) {
 }
 
 func (a *AnalyzeEvent) Analyze(getFile getCollectedFileContents, findFiles getChildCollectedFileContents) ([]*AnalyzeResult, error) {
+	// required check
+	if a.analyzer.Reason == "" {
+		return nil, errors.New("reason is required")
+	}
+
 	// read collected events based on namespace
 	namespace := getNamespace(a.analyzer.Namespace)
 	fullPath := path.Join(constants.CLUSTER_RESOURCES_DIR, constants.CLUSTER_RESOURCES_EVENTS, namespace)
@@ -191,6 +198,21 @@ func decorateMessage(message string, event *corev1.Event) string {
 	if event == nil {
 		return message
 	}
-	out := fmt.Sprintf("%s. Name: %s Message: %s", message, event.InvolvedObject.Name, event.Message)
-	return out
+	out := fmt.Sprintf("Event matched. Reason: %s Name: %s Message: %s", event.Reason, event.InvolvedObject.Name, event.Message)
+
+	tmpl := template.New("event")
+	msgTmpl, err := tmpl.Parse(message)
+	if err != nil {
+		klog.V(2).Infof("failed to parse message template: %v", err)
+		return out
+	}
+
+	var m bytes.Buffer
+	err = msgTmpl.Execute(&m, event)
+	if err != nil {
+		klog.V(2).Infof("failed to render message template: %v", err)
+		return out
+	}
+
+	return strings.TrimSpace(m.String())
 }

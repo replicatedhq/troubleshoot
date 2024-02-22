@@ -237,7 +237,7 @@ type EventAnalyze struct {
 	CollectorName string     `json:"collectorName" yaml:"collectorName"`
 	Namespace     string     `json:"namespace,omitempty" yaml:"namespace,omitempty"`
 	Kind          string     `json:"kind,omitempty" yaml:"kind,omitempty"`
-	Reason        string     `json:"reason,omitempty" yaml:"reason,omitempty"`
+	Reason        string     `json:"reason" yaml:"reason"`
 	RegexPattern  string     `json:"regex,omitempty" yaml:"regex,omitempty"`
 	Outcomes      []*Outcome `json:"outcomes" yaml:"outcomes"`
 }
