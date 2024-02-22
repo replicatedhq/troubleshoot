@@ -18,7 +18,20 @@ updates:
         update-types:
           - "patch"
           - "minor"
-      
+  - package-ecosystem: "gomod" # See documentation for possible values
+    directory: "/examples/sdk/helm-template" # Location of package manifests
+    labels:
+      - "dependencies"
+      - "go"
+      - "type::chore"
+    schedule:
+      interval: "weekly"
+    groups:
+      security:
+        update-types:
+          - "patch"
+          - "minor"
+  
   # Maintain dependencies for GitHub Actions
   - package-ecosystem: "github-actions"
     # Workflow files stored in the
