@@ -271,7 +271,7 @@ func TestAnalyzeEventResult(t *testing.T) {
 			IsFail:  true,
 			IsWarn:  false,
 			IsPass:  false,
-			Message: "No unhealthy pods allowed. Name: foo-pod Message: foo-message",
+			Message: "No unhealthy pods allowed",
 		},
 	}
 
