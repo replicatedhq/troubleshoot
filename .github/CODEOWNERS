@@ -15,3 +15,7 @@
 
 * @replicatedhq/troubleshoot
 *.md @replicatedhq/cre
+go.mod
+go.sum
+/examples/sdk/helm-template/go.mod
+/examples/sdk/helm-template/go.sum
