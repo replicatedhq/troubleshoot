@@ -93,4 +93,4 @@ jobs:
             exit 0
           fi
 
-          echo "Less than half of the validate-* jobs are successful. Skipping."
+          echo "Less than half of the jobs are successful. Skipping."
