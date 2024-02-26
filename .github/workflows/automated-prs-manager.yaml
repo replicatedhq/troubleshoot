@@ -58,7 +58,7 @@ jobs:
           gh pr edit "${{ matrix.pr.url }}" --add-label "type::security"
 
           echo "Checking status of tests..."
-          run_id=$(gh run list --branch "${{ matrix.pr.headRefName }}" --workflow build-test --limit 1 --json databaseId -q '.[0].databaseId')
+          run_id=$(gh run list --branch "${{ matrix.pr.headRefName }}" --workflow build-test-deploy --limit 1 --json databaseId -q '.[0].databaseId')
 
           # If there are still pending jobs, skip.
 
@@ -70,7 +70,7 @@ jobs:
 
           # If all checks passed, approve and merge.
           if gh run view "$run_id" --json jobs -q '.jobs[] | select(.name == "validate-success") | .conclusion' | grep -q "success"; then
-            if gh pr checks "${{ matrix.pr.url }}" ; then
+            if gh pr checks "${{ matrix.pr.url }}"; then
               echo "All tests passed. Approving and merging."
               echo -e "LGTM :thumbsup: \n\nThis PR was automatically approved and merged by the [automated-prs-manager](https://github.com/replicatedhq/troubleshoot/blob/main/.github/workflows/automated-prs-manager.yaml) GitHub action" > body.txt
               gh pr review --approve "${{ matrix.pr.url }}" --body-file body.txt
@@ -86,7 +86,7 @@ jobs:
           # If more than half of the jobs are successful, re-run the failed jobs.
 
           num_of_jobs=$(gh run view "$run_id" --json jobs -q '.jobs[].name ' | wc -l)
-          num_of_successful_jobs=$(gh run view "$run_id" --json jobs -q '.jobs[] | select (.conclusion == "success")) |.name ' | wc -l)
+          num_of_successful_jobs=$(gh run view "$run_id" --json jobs -q '.jobs[] | select(.conclusion == "success") | .name' | wc -l)
 
           if [ "$num_of_successful_jobs" -gt $((num_of_jobs / 2)) ]; then
             echo "More than half of the jobs are successful. Re-running failed jobs."
