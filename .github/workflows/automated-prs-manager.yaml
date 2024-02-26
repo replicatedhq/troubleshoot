@@ -23,13 +23,14 @@ jobs:
 
           # list prs that are less than 24h old and exclude prs from forks
 
-          prs=$(
+          dependabot_prs=$(
             gh pr list \
               --author 'dependabot[bot]' \
               --json url,createdAt,headRefName,headRepository,headRepositoryOwner \
               -q '.[] | select((.createdAt | fromdateiso8601 > now - 24*60*60) and .headRepositoryOwner.login == "replicatedhq" and .headRepository.name == "troubleshoot")'
           )
 
+          prs=$(echo "$dependabot_prs" | jq -sc '. | unique')
           echo "prs=$prs" >> "$GITHUB_OUTPUT"
 
   process-prs:
