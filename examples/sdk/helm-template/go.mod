@@ -11,7 +11,7 @@ replace github.com/replicatedhq/troubleshoot v0.0.0 => ../../../
 
 require (
 	github.com/replicatedhq/troubleshoot v0.0.0
-	helm.sh/helm/v3 v3.14.1
+	helm.sh/helm/v3 v3.14.2
 	sigs.k8s.io/yaml v1.4.0
 )
 
