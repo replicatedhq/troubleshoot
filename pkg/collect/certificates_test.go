@@ -91,25 +91,23 @@ vEsXCS+0yx5DaMkHJ8HSXPfqIbloEpw8nL+e/IBcm2PN7EeqJSdnoDfzAIJ9VNep
 +OkuE6N36B9K
 -----END CERTIFICATE-----`,
 	"validCert": `-----BEGIN CERTIFICATE-----
-MIIDejCCAmKgAwIBAgIEAZaq0DANBgkqhkiG9w0BAQsFADAuMRgwFgYDVQQDEw9Q
-cm9qZWN0IENvbnRvdXIxEjAQBgNVBAUTCTYxNTkyOTg5MTAeFw0yMzAyMjQwNDI3
-MThaFw0yNDAyMjUwNDI3MTZaMBAxDjAMBgNVBAMTBWVudm95MIIBIjANBgkqhkiG
-9w0BAQEFAAOCAQ8AMIIBCgKCAQEAqsNmmxb1ICso6Ay25lapcRyvLxAX/5u422uV
-eiNn5jseCVXfg1jJr2Symrgou2dgMtIpZoVKT7w0el8sNpD+az5oMOWUNfTGEpYI
-5zNAhtiedxCWcX15gfezOZ/DECL7HP8U37JFVdazm0CjvlQWI+8rFGvFQJJFDLYJ
-h0fHGfbX6L/ST6cANtkXZyIU6CYFSgniuuDjHmQnQr6CC8lkisJxY5QVS7MZ02RR
-nU/dK14ABY+mo/0ZeBKR5si04hr4i18nJJnk4DnHN+jQ/WWWSO1yLqr9kAOj37dA
-nRAeKuzkx/VbU8DC/3sh0otcazoWO470D+irOy1is0whDArLNwIDAQABo4G9MIG6
-MA4GA1UdDwEB/wQEAwIE8DAdBgNVHQ4EFgQUbAavOY+vIXgc44k8GvLHH6mdzzYw
-HwYDVR0jBBgwFoAUb+S3Mu7cbwZiqZaEHTEMyUhLyH4waAYDVR0RBGEwX4IFZW52
-b3mCFGVudm95LnByb2plY3Rjb250b3VyghhlbnZveS5wcm9qZWN0Y29udG91ci5z
-dmOCJmVudm95LnByb2plY3Rjb250b3VyLnN2Yy5jbHVzdGVyLmxvY2FsMA0GCSqG
-SIb3DQEBCwUAA4IBAQBIKpBD1T9tugzJF7lajbdulXTb9qGibwQALqauskX9Sq57
-po/R2TjyxywLn4DgM7BAzzu9qfHWf+S4eQjRUHQshPbUEX9CEsSd5tCu8ZHVbBds
-6qFagl2+YQ9ng0Xwta9ezvctM3T6Dy9Kkf5OOe9ysMEsBX7s8NFxe68Qku+cExr3
-78oERlIoNOlT0cNbFLAlH2svNv1uB4qOThRDha52L+mlUdZfTMYZAwNDJWm52t/M
-NCIm5NJ5jAJpcJmoEb+JMP3j0x6wydHDXFtGm3WRggZRcrjasyodSKK6szbf96+9
-6syzAwvg9xxNtFxwbhRqqplMEz2sDWaggTrxCQzd
+MIIDEjCCAfqgAwIBAgIUWG+wobb7huLDKQ4bUn80QKsbVSQwDQYJKoZIhvcNAQEL
+BQAwGDEWMBQGA1UEAwwNRXhhbXBsZVNlcnZlcjAeFw0yNDAyMjYyMjA5MjdaFw0y
+OTAyMjQyMjA5MjdaMBgxFjAUBgNVBAMMDUV4YW1wbGVTZXJ2ZXIwggEiMA0GCSqG
+SIb3DQEBAQUAA4IBDwAwggEKAoIBAQCsb9MSNERE7l4b/vxzkRnL6qvkjodbY3yQ
+DDCbG29jJ71wSwYoz0v4n/Q/tDaJDBUcSjSPIa+L6Gn1BGLNUD2LFec5H5XlwcDq
+A0D8qzvPLMYaIw4p04M/2Wvkqme79yQta8jXaCnPxTkgysno/FuQR+nDMqXoyW01
+wMmj8JAYFs9MVPbmP97RqbVHnn7cydzvQvi4+dfBuII9L+TvTQY2o42bbCqCcmov
+16m0uXp98j4CFfv/8KhCmQcqS0uyvp+J/iJZzEow+1NP72pozPEPv9JhXsYDb+vH
+KxX5k44fYXVYVQHxYQllLjDDRcbz2DJh2DQXMZTiTLE63tC0m2RjAgMBAAGjVDBS
+MDEGA1UdEQQqMCiCCGV4YW1wbGUxgghleGFtcGxlMoIIZXhhbXBsZTOCCGV4YW1w
+bGU0MB0GA1UdDgQWBBTEkowqyNS1ez5XJ0shro/18UQlqTANBgkqhkiG9w0BAQsF
+AAOCAQEANhnxV81NZmt8FcgrcRt73WdKDCE0hQbci65ZkAbcTVOCAs6Rw+aEC04L
+0gKJT4Zmx3kR3fUwcDQRhjoXIrhmvP59k/8SN0N+Ua50oEYikaetsxEDr8oikwP2
+eHDKU451jZZfcyII2Jx8XjgtiExcNZL3N9ZtSstp3I9n9BSmMdQHDIvPxNeGdJri
+l4YGTm+sJLs+c5efSNaEPw1Dr6bhAPamNQwvIspuASJlCTcMCLw2+F3dEolAFUuM
+E5wI9498c+P3pvl85UfiQISTu95jOl7YmZOYl8xBpu9yhQ7kjWhVRdVAnhl9Ts9F
+3TD68rCMXegJYyg5VbiwVdSPkcw3eQ==
 -----END CERTIFICATE-----`,
 	"nonCert": `-----BEGIN CERTIFICATE-----
 Oy1is0whDArLNwIDAQABo4G9MIG6
@@ -248,16 +246,16 @@ func TestCertParser(t *testing.T) {
 					CertificateChain: []ParsedCertificate{
 						{
 							CertName: "tls.crt",
-							Subject:  "CN=envoy",
+							Subject:  "CN=ExampleServer",
 							SubjectAlternativeNames: []string{
-								"envoy",
-								"envoy.projectcontour",
-								"envoy.projectcontour.svc",
-								"envoy.projectcontour.svc.cluster.local",
+								"example1",
+								"example2",
+								"example3",
+								"example4",
 							},
-							Issuer:    "SERIALNUMBER=615929891,CN=Project Contour",
-							NotAfter:  time.Date(2024, time.February, 25, 4, 27, 16, 0, time.UTC),
-							NotBefore: time.Date(2023, time.February, 24, 4, 27, 18, 0, time.UTC),
+							Issuer:    "CN=ExampleServer",
+							NotAfter:  time.Date(2029, time.February, 24, 22, 9, 27, 0, time.UTC),
+							NotBefore: time.Date(2024, time.February, 26, 22, 9, 27, 0, time.UTC),
 							IsValid:   true,
 							IsCA:      false,
 						},
