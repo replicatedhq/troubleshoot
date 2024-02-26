@@ -58,7 +58,7 @@ jobs:
           gh pr edit "${{ matrix.pr.url }}" --add-label "type::security"
 
           echo "Checking status of tests..."
-          run_id=$(gh run list --branch "${{ matrix.pr.headRefName }}" --workflow build-test --limit 1 --json databaseId -q '.[0].databaseId')
+          run_id=$(gh run list --branch "${{ matrix.pr.headRefName }}" --workflow build-test-deploy --limit 1 --json databaseId -q '.[0].databaseId')
 
           # If there are still pending jobs, skip.
 
