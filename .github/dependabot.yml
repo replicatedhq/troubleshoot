@@ -10,7 +10,7 @@ updates:
     labels:
       - "dependencies"
       - "go"
-      - "type::chore"
+      - "type::security"
     schedule:
       interval: "weekly"
     groups:
@@ -23,7 +23,7 @@ updates:
     labels:
       - "dependencies"
       - "go"
-      - "type::chore"
+      - "type::security"
     schedule:
       interval: "weekly"
     groups:
@@ -40,6 +40,6 @@ updates:
     labels:
       - "dependencies"
       - "github-actions"
-      - "type::chore"
+      - "type::security"
     schedule:
       interval: "weekly"
