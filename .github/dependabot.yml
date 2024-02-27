@@ -17,12 +17,12 @@ updates:
         update-types:
           - "patch"
           - "minor"
-          - "type::security"
   - package-ecosystem: "gomod" # See documentation for possible values
     directory: "/examples/sdk/helm-template" # Location of package manifests
     labels:
       - "dependencies"
       - "go"
+      - "type::security"
     schedule:
       interval: "weekly"
     groups:
