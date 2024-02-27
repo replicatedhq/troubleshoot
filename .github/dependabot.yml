@@ -10,6 +10,7 @@ updates:
     labels:
       - "dependencies"
       - "go"
+      - "type::security"
     schedule:
       interval: "weekly"
     groups:
