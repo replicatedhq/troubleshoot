@@ -74,8 +74,8 @@ jobs:
               echo "All tests passed. Approving and merging."
               echo -e "LGTM :thumbsup: \n\nThis PR was automatically approved and merged by the [automated-prs-manager](https://github.com/replicatedhq/troubleshoot/blob/main/.github/workflows/automated-prs-manager.yaml) GitHub action" > body.txt
               gh pr review --approve "${{ matrix.pr.url }}" --body-file body.txt
-              gh pr merge --auto --squash "${{ matrix.pr.url }}"
               sleep 10
+              gh pr merge --auto --squash "${{ matrix.pr.url }}"
               exit 0
             else
               echo "Some checks did not pass. Skipping."
