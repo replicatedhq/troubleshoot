@@ -655,16 +655,22 @@ func getVeleroVersion(excludedFiles []string, findFiles getChildCollectedFileCon
 	veleroDeploymentGlob := filepath.Join(veleroDeploymentDir, "velero.json")
 	veleroDeploymentJson, err := findFiles(veleroDeploymentGlob, excludedFiles)
 	if err != nil {
-		return "", errors.Wrapf(err, "failed to find velero deployment file under %s", veleroDeploymentDir)
+		return "", errors.Wrapf(err, "failed to find Velero deployment")
+	}
+	if len(veleroDeploymentJson) == 0 {
+		return "", errors.Errorf("could not find Velero deployment in %s", veleroDeploymentDir)
 	}
 	var deploymentList *appsV1.DeploymentList
 	// should run only once
 	for key, veleroDeploymentJsonBytes := range veleroDeploymentJson {
 		err := json.Unmarshal(veleroDeploymentJsonBytes, &deploymentList)
 		if err != nil {
-			return "", errors.Wrapf(err, "failed to unmarshal velero deployment json from %s", key)
+			return "", errors.Wrapf(err, "failed to unmarshal Velero deployment json from %s", key)
 		}
 		break
+	}
+	if deploymentList == nil {
+		return "", errors.Errorf("could not find Velero deployment")
 	}
 	for _, deployment := range deploymentList.Items {
 		for _, container := range deployment.Spec.Template.Spec.Containers {
@@ -676,7 +682,7 @@ func getVeleroVersion(excludedFiles []string, findFiles getChildCollectedFileCon
 		}
 	}
 
-	return "", errors.Errorf("Unable to get velero version. Could not find velero container in deployment!")
+	return "", errors.Errorf("could not find Velero container in deployment")
 }
 
 func GetVeleroBackupsDirectory() string {
