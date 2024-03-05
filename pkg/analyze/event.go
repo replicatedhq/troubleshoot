@@ -91,6 +91,19 @@ func convertToEventList(data []byte) (*corev1.EventList, error) {
 }
 
 func getEvent(events *corev1.EventList, filter eventFilter) *corev1.Event {
+	var (
+		re            *regexp.Regexp
+		errParseRegex error
+	)
+
+	if filter.msgRegex != "" {
+		re, errParseRegex = regexp.Compile(filter.msgRegex)
+		if errParseRegex != nil {
+			klog.V(2).Infof("failed to read message regex: %v", errParseRegex)
+			return nil
+		}
+	}
+
 	for _, event := range events.Items {
 		if !matchReason(event.Reason, filter.reason) {
 			continue
@@ -98,7 +111,7 @@ func getEvent(events *corev1.EventList, filter eventFilter) *corev1.Event {
 		if !matchKind(event.InvolvedObject.Kind, filter.kind) {
 			continue
 		}
-		if matchMessage(event.Message, filter.msgRegex) {
+		if re == nil || re.MatchString(event.Message) {
 			klog.V(2).Infof("event matched: %v for reason: %s kind: %s messageRegex: %s ", event, filter.reason, filter.kind, filter.msgRegex)
 			return &event
 		}
@@ -120,19 +133,6 @@ func matchKind(actual, expected string) bool {
 		return true
 	}
 	return strings.EqualFold(actual, expected)
-}
-
-func matchMessage(actual, expectedRegex string) bool {
-	// message Regex is optional
-	if expectedRegex == "" {
-		return true
-	}
-	re, err := regexp.Compile(expectedRegex)
-	if err != nil {
-		klog.V(2).Infof("failed to read message regex: %v", err)
-		return false
-	}
-	return re.MatchString(actual)
 }
 
 func analyzeEventResult(event *corev1.Event, outcomes []*troubleshootv1beta2.Outcome, checkName string) ([]*AnalyzeResult, error) {
