@@ -653,7 +653,10 @@ func getVeleroVersion(excludedFiles []string, findFiles getChildCollectedFileCon
 	veleroDeploymentDir := "cluster-resources/deployments"
 	veleroVersion := ""
 	veleroDeploymentGlob := filepath.Join(veleroDeploymentDir, "velero.json")
-	veleroDeploymentJson, _ := findFiles(veleroDeploymentGlob, excludedFiles)
+	veleroDeploymentJson, err := findFiles(veleroDeploymentGlob, excludedFiles)
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to find Velero deployment")
+	}
 	if len(veleroDeploymentJson) == 0 {
 		return "", errors.Errorf("could not find Velero deployment in %s", veleroDeploymentDir)
 	}
