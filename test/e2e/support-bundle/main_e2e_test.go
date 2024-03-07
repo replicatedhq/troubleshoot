@@ -45,13 +45,13 @@ func TestMain(m *testing.M) {
 }
 
 func getClusterFromContext(t *testing.T, ctx context.Context, clusterName string) *kind.Cluster {
-	provider, ok := envfuncs.GetClusterFromContext(ctx, ClusterName)
+	provider, ok := envfuncs.GetClusterFromContext(ctx, clusterName)
 	if !ok {
-		t.Fatalf("Failed to extract kind cluster %s from context", ClusterName)
+		t.Fatalf("Failed to extract kind cluster %s from context", clusterName)
 	}
 	cluster, ok := provider.(*kind.Cluster)
 	if !ok {
-		t.Fatalf("Failed to cast kind cluster %s from provider", ClusterName)
+		t.Fatalf("Failed to cast kind cluster %s from provider", clusterName)
 	}
 
 	return cluster
