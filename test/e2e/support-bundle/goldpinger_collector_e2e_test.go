@@ -45,7 +45,7 @@ func Test_GoldpingerCollector(t *testing.T) {
 				helm.WithNamespace(c.Namespace()),
 				helm.WithChart(testutils.TestFixtureFilePath(t, "charts/goldpinger-6.0.1.tgz")),
 				helm.WithWait(),
-				helm.WithTimeout("1m"),
+				helm.WithTimeout("2m"),
 			)
 			require.NoError(t, err)
 			return ctx
@@ -82,8 +82,15 @@ func Test_GoldpingerCollector(t *testing.T) {
 
 			// Check that we analysed collected goldpinger results.
 			// We should expect a single analysis result for goldpinger.
-			require.Equal(t, 1, len(analysisResults))
+			assert.Equal(t, 1, len(analysisResults))
+			if t.Failed() {
+				t.Logf("Analysis results: %s\n", analysisJSON)
+				t.Logf("Stdout: %s\n", out.String())
+				t.Logf("Stderr: %s\n", stdErr.String())
+				t.FailNow()
+			}
 			assert.True(t, strings.HasPrefix(analysisResults[0].Name, "missing.ping.results.for.goldpinger."))
+
 			return ctx
 		}).
 		Teardown(func(ctx context.Context, t *testing.T, c *envconf.Config) context.Context {
