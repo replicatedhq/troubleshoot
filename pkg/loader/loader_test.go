@@ -371,6 +371,38 @@ func TestLoadingMultidocsWithTroubleshootSpecs(t *testing.T) {
 	}, kinds.SupportBundlesV1Beta2)
 }
 
+func TestLoadingV1Beta1CollectorSpec(t *testing.T) {
+	kinds, err := LoadSpecs(context.Background(), LoadOptions{RawSpec: `kind: Collector
+apiVersion: troubleshoot.replicated.com/v1beta1
+metadata:
+  name: collector-sample
+spec:
+  collectors:
+    - clusterInfo: {}
+`})
+	require.NoError(t, err)
+	require.NotNil(t, kinds)
+
+	assert.Equal(t, []troubleshootv1beta2.Collector{
+		{
+			TypeMeta: metav1.TypeMeta{
+				Kind:       "Collector",
+				APIVersion: "troubleshoot.sh/v1beta2",
+			},
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "collector-sample",
+			},
+			Spec: troubleshootv1beta2.CollectorSpec{
+				Collectors: []*troubleshootv1beta2.Collect{
+					{
+						ClusterInfo: &troubleshootv1beta2.ClusterInfo{},
+					},
+				},
+			},
+		},
+	}, kinds.CollectorsV1Beta2)
+}
+
 func TestLoadingConfigMapWithMultipleSpecs_PreflightSupportBundleAndRedactorDataKeys(t *testing.T) {
 	s := testutils.GetTestFixture(t, "yamldocs/multidoc-spec-2.yaml")
 	l := specLoader{}
