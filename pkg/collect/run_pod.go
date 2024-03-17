@@ -72,6 +72,9 @@ func (c *CollectRunPod) Collect(progressChan chan<- interface{}) (result Collect
 	}
 
 	defer func() {
+		if err != nil {
+			return
+		}
 		result, err = savePodDetails(ctx, client, result, c.BundlePath, c.ClientConfig, pod, c.Collector)
 		if err != nil {
 			klog.Errorf("failed to save pod details: %v", err)
@@ -410,9 +413,6 @@ func RunPodLogs(ctx context.Context, client v1.CoreV1Interface, podSpec *corev1.
 }
 
 func savePodDetails(ctx context.Context, client *kubernetes.Clientset, output CollectorResult, bundlePath string, clientConfig *rest.Config, pod *corev1.Pod, runPodCollector *troubleshootv1beta2.RunPod) (CollectorResult, error) {
-	if output == nil {
-		return nil, errors.New("unable to save pod details")
-	}
 	podStatus, err := client.CoreV1().Pods(pod.Namespace).Get(ctx, pod.Name, metav1.GetOptions{})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get pod")
