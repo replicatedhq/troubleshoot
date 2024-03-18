@@ -72,6 +72,9 @@ func (c *CollectRunPod) Collect(progressChan chan<- interface{}) (result Collect
 	}
 
 	defer func() {
+		if err != nil {
+			return
+		}
 		result, err = savePodDetails(ctx, client, result, c.BundlePath, c.ClientConfig, pod, c.Collector)
 		if err != nil {
 			klog.Errorf("failed to save pod details: %v", err)
