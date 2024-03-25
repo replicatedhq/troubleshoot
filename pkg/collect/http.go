@@ -14,12 +14,14 @@ import (
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"k8s.io/klog/v2"
 )
 
 type HTTPResponse struct {
 	Status  int               `json:"status"`
 	Body    string            `json:"body"`
 	Headers map[string]string `json:"headers"`
+	RawJSON json.RawMessage   `json:"raw_json,omitempty"`
 }
 
 type HTTPError struct {
@@ -127,10 +129,17 @@ func responseToOutput(response *http.Response, err error) ([]byte, error) {
 			headers[k] = strings.Join(v, ",")
 		}
 
+		var rawJSON json.RawMessage
+		if err := json.Unmarshal(body, &rawJSON); err != nil {
+			klog.Infof("failed to unmarshal response body as JSON: %v", err)
+			rawJSON = json.RawMessage{}
+		}
+
 		output["response"] = HTTPResponse{
 			Status:  response.StatusCode,
 			Body:    string(body),
 			Headers: headers,
+			RawJSON: rawJSON,
 		}
 	}
 
