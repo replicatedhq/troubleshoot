@@ -16,7 +16,6 @@ import (
 	"github.com/fatih/color"
 	"github.com/mattn/go-isatty"
 	"github.com/pkg/errors"
-	cmdUtil "github.com/replicatedhq/troubleshoot/cmd/internal/util"
 	"github.com/replicatedhq/troubleshoot/internal/specs"
 	"github.com/replicatedhq/troubleshoot/internal/util"
 	analyzer "github.com/replicatedhq/troubleshoot/pkg/analyze"
@@ -113,8 +112,9 @@ func runTroubleshoot(v *viper.Viper, args []string) error {
 	}
 
 	if interactive {
-		if len(mainBundle.Spec.HostCollectors) > 0 && !cmdUtil.IsRunningAsRoot() {
-			if cmdUtil.PromptYesNo("Some host collectors may require elevated privileges to run.\nDo you want to exit and rerun the command as a privileged user?") {
+		if len(mainBundle.Spec.HostCollectors) > 0 && !util.IsRunningAsRoot() {
+			msg := "Some host collectors may require elevated privileges to run.\nDo you want to exit and rerun the command as a privileged user?"
+			if util.PromptYesNo(msg) {
 				fmt.Println("Exiting...")
 				return nil
 			}

@@ -10,6 +10,7 @@ import (
 	cursor "github.com/ahmetalpbalkan/go-cursor"
 	"github.com/fatih/color"
 	"github.com/pkg/errors"
+	"github.com/replicatedhq/troubleshoot/internal/util"
 	analyzer "github.com/replicatedhq/troubleshoot/pkg/analyze"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/replicatedhq/troubleshoot/pkg/constants"
@@ -44,6 +45,15 @@ func RunPreflights(interactive bool, output string, format string, args []string
 	specs, err := readSpecs(args)
 	if err != nil {
 		return types.NewExitCodeError(constants.EXIT_CODE_SPEC_ISSUES, err)
+	}
+
+	if interactive {
+		if len(specs.HostPreflightsV1Beta2) > 0 && !util.IsRunningAsRoot() {
+			if util.PromptYesNo("Some host collectors may require elevated privileges to run.\nDo you want to exit and rerun the command as a privileged user?") {
+				fmt.Println("Exiting...")
+				return nil
+			}
+		}
 	}
 
 	warning := validatePreflight(specs)
