@@ -107,6 +107,20 @@ func runTroubleshoot(v *viper.Viper, args []string) error {
 		})
 	}
 
+	if interactive {
+		c := color.New()
+		c.Println(fmt.Sprintf("\r%s\r", cursor.ClearEntireLine()))
+	}
+
+	if interactive {
+		if len(mainBundle.Spec.HostCollectors) > 0 && !cmdUtil.IsRunningAsRoot() {
+			if cmdUtil.PromptYesNo("Some host collectors may require elevated privileges to run.\nDo you want to exit and rerun the command as a privileged user?") {
+				fmt.Println("Exiting...")
+				return nil
+			}
+		}
+	}
+
 	var wg sync.WaitGroup
 	collectorCB := func(c chan interface{}, msg string) { c <- msg }
 	progressChan := make(chan interface{})
@@ -174,37 +188,6 @@ func runTroubleshoot(v *viper.Viper, args []string) error {
 	}
 
 	nonInteractiveOutput := analysisOutput{}
-
-	if interactive {
-		c := color.New()
-		c.Println(fmt.Sprintf("\r%s\r", cursor.ClearEntireLine()))
-	}
-
-	// Check if any of the collectors need to run as root and prompt the user
-	// to elevate the command. If the user does not want to elevate the command,
-	// collectors that require root permissions will report errors.
-	if !cmdUtil.IsRunningAsRoot() {
-		rootCollectorNames := []string{}
-		if interactive {
-			for _, hc := range mainBundle.Spec.HostCollectors {
-				collector, ok := collect.GetHostCollector(hc, "")
-				if ok {
-					if collector.Flags().RequiresRoot() {
-						rootCollectorNames = append(rootCollectorNames, collector.Title())
-					}
-				}
-			}
-		}
-
-		// We have some collectors that require root permissions
-		if len(rootCollectorNames) > 0 {
-			msg := "Some collectors require elevated permissions to run.\nDo you want to exit and run this command with `sudo` or `su`?"
-			if cmdUtil.PromptYesNo(msg) {
-				fmt.Println("Exiting...")
-				return nil
-			}
-		}
-	}
 
 	response, err := supportbundle.CollectSupportBundleFromSpec(&mainBundle.Spec, additionalRedactors, createOpts)
 	if err != nil {

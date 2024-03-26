@@ -6,6 +6,9 @@ import (
 	"os"
 	"os/user"
 	"strings"
+
+	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
+	"github.com/replicatedhq/troubleshoot/pkg/collect"
 )
 
 func IsRunningAsRoot() bool {
