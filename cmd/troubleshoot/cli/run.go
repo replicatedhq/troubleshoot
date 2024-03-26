@@ -16,6 +16,7 @@ import (
 	"github.com/fatih/color"
 	"github.com/mattn/go-isatty"
 	"github.com/pkg/errors"
+	cmdUtil "github.com/replicatedhq/troubleshoot/cmd/internal/util"
 	"github.com/replicatedhq/troubleshoot/internal/specs"
 	"github.com/replicatedhq/troubleshoot/internal/util"
 	analyzer "github.com/replicatedhq/troubleshoot/pkg/analyze"
@@ -106,6 +107,20 @@ func runTroubleshoot(v *viper.Viper, args []string) error {
 		})
 	}
 
+	if interactive {
+		c := color.New()
+		c.Println(fmt.Sprintf("\r%s\r", cursor.ClearEntireLine()))
+	}
+
+	if interactive {
+		if len(mainBundle.Spec.HostCollectors) > 0 && !cmdUtil.IsRunningAsRoot() {
+			if cmdUtil.PromptYesNo("Some host collectors may require elevated privileges to run.\nDo you want to exit and rerun the command as a privileged user?") {
+				fmt.Println("Exiting...")
+				return nil
+			}
+		}
+	}
+
 	var wg sync.WaitGroup
 	collectorCB := func(c chan interface{}, msg string) { c <- msg }
 	progressChan := make(chan interface{})
@@ -173,11 +188,6 @@ func runTroubleshoot(v *viper.Viper, args []string) error {
 	}
 
 	nonInteractiveOutput := analysisOutput{}
-
-	if interactive {
-		c := color.New()
-		c.Println(fmt.Sprintf("\r%s\r", cursor.ClearEntireLine()))
-	}
 
 	response, err := supportbundle.CollectSupportBundleFromSpec(&mainBundle.Spec, additionalRedactors, createOpts)
 	if err != nil {
