@@ -106,6 +106,23 @@ func runTroubleshoot(v *viper.Viper, args []string) error {
 		})
 	}
 
+	if interactive {
+		c := color.New()
+		c.Println(fmt.Sprintf("\r%s\r", cursor.ClearEntireLine()))
+	}
+
+	if interactive {
+		if len(mainBundle.Spec.HostCollectors) > 0 && !util.IsRunningAsRoot() {
+			msg := "Some host collectors may require elevated privileges to run.\nDo you want to exit and rerun the command as a privileged user?"
+			fmt.Print(cursor.Show())
+			if util.PromptYesNo(msg) {
+				fmt.Println("Exiting...")
+				return nil
+			}
+			fmt.Print(cursor.Hide())
+		}
+	}
+
 	var wg sync.WaitGroup
 	collectorCB := func(c chan interface{}, msg string) { c <- msg }
 	progressChan := make(chan interface{})
@@ -173,11 +190,6 @@ func runTroubleshoot(v *viper.Viper, args []string) error {
 	}
 
 	nonInteractiveOutput := analysisOutput{}
-
-	if interactive {
-		c := color.New()
-		c.Println(fmt.Sprintf("\r%s\r", cursor.ClearEntireLine()))
-	}
 
 	response, err := supportbundle.CollectSupportBundleFromSpec(&mainBundle.Spec, additionalRedactors, createOpts)
 	if err != nil {
