@@ -15,6 +15,10 @@ type CollectHostCopy struct {
 	BundlePath    string
 }
 
+func (c *CollectHostCopy) Flags() CollectorFlags {
+	return EmptyFlags
+}
+
 func (c *CollectHostCopy) Title() string {
 	return hostCollectorTitleOrDefault(c.hostCollector.HostCollectorMeta, "copy")
 }

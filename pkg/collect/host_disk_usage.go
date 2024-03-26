@@ -22,6 +22,10 @@ type CollectHostDiskUsage struct {
 	BundlePath    string
 }
 
+func (c *CollectHostDiskUsage) Flags() CollectorFlags {
+	return EmptyFlags
+}
+
 func (c *CollectHostDiskUsage) Title() string {
 	return hostCollectorTitleOrDefault(c.hostCollector.HostCollectorMeta, fmt.Sprintf("Disk Usage %s", c.hostCollector.CollectorName))
 }

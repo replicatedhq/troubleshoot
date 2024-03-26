@@ -23,6 +23,10 @@ type CollectHostOS struct {
 	BundlePath    string
 }
 
+func (c *CollectHostOS) Flags() CollectorFlags {
+	return EmptyFlags
+}
+
 func (c *CollectHostOS) Title() string {
 	return hostCollectorTitleOrDefault(c.hostCollector.HostCollectorMeta, "Host OS Info")
 }

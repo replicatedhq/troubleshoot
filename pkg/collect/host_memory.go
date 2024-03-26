@@ -20,6 +20,10 @@ type CollectHostMemory struct {
 	BundlePath    string
 }
 
+func (c *CollectHostMemory) Flags() CollectorFlags {
+	return EmptyFlags
+}
+
 func (c *CollectHostMemory) Title() string {
 	return hostCollectorTitleOrDefault(c.hostCollector.HostCollectorMeta, "Amount of Memory")
 }

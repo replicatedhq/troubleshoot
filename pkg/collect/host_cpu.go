@@ -29,6 +29,10 @@ func (c *CollectHostCPU) IsExcluded() (bool, error) {
 	return isExcluded(c.hostCollector.Exclude)
 }
 
+func (c *CollectHostCPU) Flags() CollectorFlags {
+	return EmptyFlags
+}
+
 func (c *CollectHostCPU) Collect(progressChan chan<- interface{}) (map[string][]byte, error) {
 	cpuInfo := CPUInfo{}
 

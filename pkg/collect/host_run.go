@@ -30,6 +30,10 @@ type CollectHostRun struct {
 	BundlePath    string
 }
 
+func (c *CollectHostRun) Flags() CollectorFlags {
+	return EmptyFlags
+}
+
 func (c *CollectHostRun) Title() string {
 	return hostCollectorTitleOrDefault(c.hostCollector.HostCollectorMeta, "Run Host")
 }

@@ -16,6 +16,10 @@ type CollectHostUDPPortStatus struct {
 	BundlePath    string
 }
 
+func (c *CollectHostUDPPortStatus) Flags() CollectorFlags {
+	return EmptyFlags
+}
+
 func (c *CollectHostUDPPortStatus) Title() string {
 	return hostCollectorTitleOrDefault(c.hostCollector.HostCollectorMeta, "UDP Port Status")
 }

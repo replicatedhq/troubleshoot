@@ -27,6 +27,10 @@ type CollectHostTime struct {
 	BundlePath    string
 }
 
+func (c *CollectHostTime) Flags() CollectorFlags {
+	return EmptyFlags
+}
+
 func (c *CollectHostTime) Title() string {
 	return hostCollectorTitleOrDefault(c.hostCollector.HostCollectorMeta, "TCP Port Status")
 }

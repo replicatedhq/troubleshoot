@@ -16,6 +16,10 @@ type CollectHostIPV4Interfaces struct {
 	BundlePath    string
 }
 
+func (c *CollectHostIPV4Interfaces) Flags() CollectorFlags {
+	return EmptyFlags
+}
+
 func (c *CollectHostIPV4Interfaces) Title() string {
 	return hostCollectorTitleOrDefault(c.hostCollector.HostCollectorMeta, "IPv4 Interfaces")
 }

@@ -23,6 +23,10 @@ type CollectHostHTTPLoadBalancer struct {
 	BundlePath    string
 }
 
+func (c *CollectHostHTTPLoadBalancer) Flags() CollectorFlags {
+	return EmptyFlags
+}
+
 func (c *CollectHostHTTPLoadBalancer) Title() string {
 	return hostCollectorTitleOrDefault(c.hostCollector.HostCollectorMeta, "HTTP Load Balancer")
 }

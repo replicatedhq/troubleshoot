@@ -14,6 +14,10 @@ type CollectHostHTTP struct {
 	BundlePath    string
 }
 
+func (c *CollectHostHTTP) Flags() CollectorFlags {
+	return EmptyFlags
+}
+
 func (c *CollectHostHTTP) Title() string {
 	return hostCollectorTitleOrDefault(c.hostCollector.HostCollectorMeta, "HTTP Request")
 }

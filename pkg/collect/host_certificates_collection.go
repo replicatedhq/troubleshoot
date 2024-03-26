@@ -26,6 +26,10 @@ type HostCertificatesCollection struct {
 	Message          string              `json:"message,omitempty"`
 }
 
+func (c *CollectHostCertificatesCollection) Flags() CollectorFlags {
+	return EmptyFlags
+}
+
 func (c *CollectHostCertificatesCollection) Title() string {
 	return hostCollectorTitleOrDefault(c.hostCollector.HostCollectorMeta, "Host Certificates Collection")
 }

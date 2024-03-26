@@ -22,6 +22,10 @@ type CollectHostCertificate struct {
 	BundlePath    string
 }
 
+func (c *CollectHostCertificate) Flags() CollectorFlags {
+	return EmptyFlags
+}
+
 func (c *CollectHostCertificate) Title() string {
 	return hostCollectorTitleOrDefault(c.hostCollector.HostCollectorMeta, "Certificate Key Pair")
 }

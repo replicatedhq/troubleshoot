@@ -26,6 +26,10 @@ type CollectHostServices struct {
 	BundlePath    string
 }
 
+func (c *CollectHostServices) Flags() CollectorFlags {
+	return EmptyFlags
+}
+
 func (c *CollectHostServices) Title() string {
 	return hostCollectorTitleOrDefault(c.hostCollector.HostCollectorMeta, "Block Devices")
 }

@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -32,6 +32,10 @@ type CollectHostSystemPackages struct {
 	BundlePath    string
 }
 
+func (c *CollectHostSystemPackages) Flags() CollectorFlags {
+	return EmptyFlags
+}
+
 func (c *CollectHostSystemPackages) Title() string {
 	return hostCollectorTitleOrDefault(c.hostCollector.HostCollectorMeta, "System Packages")
 }
@@ -49,7 +53,7 @@ func (c *CollectHostSystemPackages) Collect(progressChan chan<- interface{}) (ma
 
 	if info.OS == "" {
 		// special case for Amazon 2014.03
-		b, err := ioutil.ReadFile("/etc/system-release")
+		b, err := os.ReadFile("/etc/system-release")
 		if err == nil && bytes.Contains(b, []byte("Amazon Linux")) {
 			info.OS = "amzn"
 			v, err := exec.Command("awk", "/Amazon Linux/{print $NF}", "/etc/system-release").Output()

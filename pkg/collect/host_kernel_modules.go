@@ -47,6 +47,10 @@ type CollectHostKernelModules struct {
 	loaded        kernelModuleCollector
 }
 
+func (c *CollectHostKernelModules) Flags() CollectorFlags {
+	return EmptyFlags
+}
+
 // Title is the name of the collector.
 func (c *CollectHostKernelModules) Title() string {
 	return hostCollectorTitleOrDefault(c.hostCollector.HostCollectorMeta, "Kernel Modules")

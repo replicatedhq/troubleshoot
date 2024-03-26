@@ -38,6 +38,10 @@ type CollectHostFilesystemPerformance struct {
 	BundlePath    string
 }
 
+func (c *CollectHostFilesystemPerformance) Flags() CollectorFlags {
+	return EmptyFlags
+}
+
 func (c *CollectHostFilesystemPerformance) Title() string {
 	return hostCollectorTitleOrDefault(c.hostCollector.HostCollectorMeta, "Filesystem Performance")
 }

@@ -17,6 +17,10 @@ type CollectHostTCPConnect struct {
 	BundlePath    string
 }
 
+func (c *CollectHostTCPConnect) Flags() CollectorFlags {
+	return EmptyFlags
+}
+
 func (c *CollectHostTCPConnect) Title() string {
 	return hostCollectorTitleOrDefault(c.hostCollector.HostCollectorMeta, "TCP Connection Attempt")
 }

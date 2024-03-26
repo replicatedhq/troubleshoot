@@ -36,6 +36,10 @@ type CollectHostSubnetAvailable struct {
 	BundlePath    string
 }
 
+func (c *CollectHostSubnetAvailable) Flags() CollectorFlags {
+	return EmptyFlags
+}
+
 func (c *CollectHostSubnetAvailable) Title() string {
 	return hostCollectorTitleOrDefault(c.hostCollector.HostCollectorMeta, "Subnet Available")
 }

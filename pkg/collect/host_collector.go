@@ -8,6 +8,7 @@ type HostCollector interface {
 	Title() string
 	IsExcluded() (bool, error)
 	Collect(progressChan chan<- interface{}) (map[string][]byte, error)
+	Flags() CollectorFlags
 }
 
 func GetHostCollector(collector *troubleshootv1beta2.HostCollect, bundlePath string) (HostCollector, bool) {
