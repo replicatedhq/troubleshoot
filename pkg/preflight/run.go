@@ -49,10 +49,12 @@ func RunPreflights(interactive bool, output string, format string, args []string
 
 	if interactive {
 		if len(specs.HostPreflightsV1Beta2) > 0 && !util.IsRunningAsRoot() {
+			fmt.Print(cursor.Show())
 			if util.PromptYesNo("Some host collectors may require elevated privileges to run.\nDo you want to exit and rerun the command as a privileged user?") {
 				fmt.Println("Exiting...")
 				return nil
 			}
+			fmt.Print(cursor.Hide())
 		}
 	}
 
