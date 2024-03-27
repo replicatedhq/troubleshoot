@@ -3,8 +3,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.11.2
-  creationTimestamp: null
+    controller-gen.kubebuilder.io/version: v0.14.0
   name: supportbundles.troubleshoot.replicated.com
 spec:
   group: troubleshoot.replicated.com
@@ -21,14 +20,19 @@ spec:
         description: SupportBundle is the Schema for the SupportBundles API
         properties:
           apiVersion:
-            description: 'APIVersion defines the versioned schema of this representation
-              of an object. Servers should convert recognized schemas to the latest
-              internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
             type: string
           kind:
-            description: 'Kind is a string value representing the REST resource this
-              object represents. Servers may infer this from the endpoint the client
-              submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
             type: string
           metadata:
             type: object
@@ -867,10 +871,10 @@ spec:
                             insecureSkipVerify:
                               type: boolean
                             timeout:
-                              description: A Duration represents the elapsed time
-                                between two instants as an int64 nanosecond count.
-                                The representation limits the largest representable
-                                duration to approximately 290 years.
+                              description: |-
+                                A Duration represents the elapsed time between two instants
+                                as an int64 nanosecond count. The representation limits the
+                                largest representable duration to approximately 290 years.
                               format: int64
                               type: integer
                             url:
@@ -891,10 +895,10 @@ spec:
                             insecureSkipVerify:
                               type: boolean
                             timeout:
-                              description: A Duration represents the elapsed time
-                                between two instants as an int64 nanosecond count.
-                                The representation limits the largest representable
-                                duration to approximately 290 years.
+                              description: |-
+                                A Duration represents the elapsed time between two instants
+                                as an int64 nanosecond count. The representation limits the
+                                largest representable duration to approximately 290 years.
                               format: int64
                               type: integer
                             url:
@@ -913,10 +917,10 @@ spec:
                             insecureSkipVerify:
                               type: boolean
                             timeout:
-                              description: A Duration represents the elapsed time
-                                between two instants as an int64 nanosecond count.
-                                The representation limits the largest representable
-                                duration to approximately 290 years.
+                              description: |-
+                                A Duration represents the elapsed time between two instants
+                                as an int64 nanosecond count. The representation limits the
+                                largest representable duration to approximately 290 years.
                               format: int64
                               type: integer
                             url:

@@ -160,12 +160,12 @@ bin/docsgen:
 	go build ${LDFLAGS} -o bin/docsgen github.com/replicatedhq/troubleshoot/cmd/docsgen
 
 controller-gen:
-	go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.11.2
+	go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.14.0
 CONTROLLER_GEN=$(shell which controller-gen)
 
 .PHONY: client-gen
 client-gen:
-	go install k8s.io/code-generator/cmd/client-gen@v0.28.2
+	go install k8s.io/code-generator/cmd/client-gen@v0.28.8
 CLIENT_GEN=$(shell which client-gen)
 
 .PHONY: release
