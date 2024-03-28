@@ -2202,6 +2202,21 @@ spec:
                       required:
                       - uri
                       type: object
+                    nodeMetrics:
+                      properties:
+                        collectorName:
+                          type: string
+                        exclude:
+                          type: BoolString
+                        nodeNames:
+                          items:
+                            type: string
+                          type: array
+                        selector:
+                          items:
+                            type: string
+                          type: array
+                      type: object
                     postgres:
                       properties:
                         collectorName:
