@@ -70,7 +70,7 @@ func (c *CollectNodeMetrics) constructNodesMap() map[string]string {
 	nodesMap := map[string]string{}
 
 	if c.Collector.NodeNames == nil && c.Collector.Selector == nil {
-		// If no node names or selector is provided, collect all nodes
+		// If no node names or selectors are provided, collect all nodes
 		nodes, err := c.Client.CoreV1().Nodes().List(c.Context, metav1.ListOptions{})
 		if err != nil {
 			klog.Errorf("failed to list nodes: %v", err)
@@ -81,7 +81,6 @@ func (c *CollectNodeMetrics) constructNodesMap() map[string]string {
 		return nodesMap
 	}
 
-	// Use a map to deduplicate node names i.e create a set collection
 	for _, nodeName := range c.Collector.NodeNames {
 		nodesMap[nodeName] = fmt.Sprintf(summaryUrlTemplate, nodeName)
 	}
