@@ -80,8 +80,10 @@ support-bundle-e2e-go-test:
 		go test ${BUILDFLAGS} ${E2EPATHS} -v; \
 	fi
 
+rebuild: clean build
+
 # Build all binaries in parallel ( -j )
-build: tidy
+build: clean tidy
 	@echo "Build cli binaries"
 	$(MAKE) -j bin/support-bundle bin/preflight bin/analyze bin/collect
 

@@ -25,7 +25,7 @@ func NewResult() CollectorResult {
 // is empty, no symlink is created. The relativeLinkPath is always saved in the result map.
 func (r CollectorResult) SymLinkResult(bundlePath, relativeLinkPath, relativeFilePath string) error {
 	// We should have saved the result this symlink is pointing to prior to creating it
-	klog.V(2).Info("Creating symlink ", relativeLinkPath, " -> ", relativeFilePath)
+	klog.V(4).Info("Creating symlink ", relativeLinkPath, " -> ", relativeFilePath)
 	data, ok := r[relativeFilePath]
 	if !ok {
 		return errors.Errorf("cannot create symlink, result in %q not found", relativeFilePath)
@@ -75,7 +75,7 @@ func (r CollectorResult) SymLinkResult(bundlePath, relativeLinkPath, relativeFil
 		return errors.Wrap(err, "failed to create symlink")
 	}
 
-	klog.V(2).Infof("Added %q symlink of %q in bundle output", relativeLinkPath, relativeFilePath)
+	klog.V(4).Infof("Added %q symlink of %q in bundle output", relativeLinkPath, relativeFilePath)
 	// store the file name referencing the symlink to have archived
 	r[relativeLinkPath] = nil
 
@@ -105,7 +105,7 @@ func (r CollectorResult) SaveResult(bundlePath string, relativePath string, read
 			return errors.Wrap(err, "failed to read data")
 		}
 		// Memory only bundle
-		klog.V(2).Infof("Added %q to bundle output", relativePath)
+		klog.V(4).Infof("Added %q to bundle output", relativePath)
 		r[relativePath] = data
 		return nil
 	}
@@ -135,7 +135,7 @@ func (r CollectorResult) SaveResult(bundlePath string, relativePath string, read
 		return errors.Wrap(err, "failed to stat file")
 	}
 
-	klog.V(2).Infof("Added %q (%d KB) to bundle output", relativePath, fileInfo.Size()/(1024))
+	klog.V(4).Infof("Added %q (%d KB) to bundle output", relativePath, fileInfo.Size()/(1024))
 	return nil
 }
 
@@ -340,7 +340,7 @@ func (r CollectorResult) ArchiveSupportBundle(bundlePath string, outputFilename 
 			if fileMode.Type() == os.ModeSymlink {
 				// Don't copy the symlink, just write the header which
 				// will create a symlink in the tarball
-				klog.V(2).Infof("Added %q symlink to bundle archive", hdr.Linkname)
+				klog.V(4).Infof("Added %q symlink to bundle archive", hdr.Linkname)
 				return nil
 			}
 
@@ -354,7 +354,7 @@ func (r CollectorResult) ArchiveSupportBundle(bundlePath string, outputFilename 
 			if err != nil {
 				return errors.Wrap(err, "failed to copy file into archive")
 			}
-			klog.V(2).Infof("Added %q file to bundle archive", hdr.Name)
+			klog.V(4).Infof("Added %q file to bundle archive", hdr.Name)
 
 			return nil
 		}()
