@@ -14,10 +14,6 @@ import (
 	"golang.org/x/text/language"
 )
 
-type EmptyType struct{}
-
-var Empty EmptyType
-
 func HomeDir() string {
 	if h := os.Getenv("HOME"); h != "" {
 		return h
