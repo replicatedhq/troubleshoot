@@ -1,8 +1,10 @@
 package collect
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -373,6 +375,67 @@ func Test_parseTimeout(t *testing.T) {
 			got, err := parseTimeout(tt.input)
 			assert.Equal(t, (err != nil), tt.wantErr)
 			assert.Equal(t, got, tt.want)
+		})
+	}
+}
+
+func Test_responseToOutput(t *testing.T) {
+	tests := []struct {
+		name     string
+		response *http.Response
+		err      error
+		want     []byte
+		wantErr  bool
+	}{
+		{
+			name: "valid JSON response",
+			response: &http.Response{
+				Body:       io.NopCloser(bytes.NewBufferString(`{"ok": false, "error": "invalid_auth"}`)),
+				Header:     http.Header{"Content-Type": []string{"application/json; charset=utf-8"}},
+				StatusCode: http.StatusOK,
+			},
+			err: nil,
+			want: []byte(`
+			{
+				"response":
+				{
+					"status":200,
+					"body":"{\"ok\": false, \"error\": \"invalid_auth\"}",
+					"headers":{"Content-Type":"application/json; charset=utf-8"},
+					"raw_json":{"ok":false,"error":"invalid_auth"}
+				}
+			}`),
+			wantErr: false,
+		},
+		{
+			name: "invalid JSON response",
+			response: &http.Response{
+				Body:       io.NopCloser(bytes.NewBufferString(`foobar`)),
+				Header:     http.Header{"Content-Type": []string{"text/html; charset=utf-8"}},
+				StatusCode: http.StatusOK,
+			},
+			err: nil,
+			want: []byte(`
+			{
+				"response":
+				{
+					"status":200,
+					"body":"foobar",
+					"headers":{"Content-Type":"text/html; charset=utf-8"}
+				}
+			}`),
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := responseToOutput(tt.response, tt.err)
+			if tt.wantErr {
+				assert.Error(t, err)
+				return
+			}
+			assert.NoError(t, err)
+			assert.JSONEq(t, string(got), string(tt.want))
 		})
 	}
 }
