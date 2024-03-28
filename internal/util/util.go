@@ -14,6 +14,8 @@ import (
 	"golang.org/x/text/language"
 )
 
+const HOST_COLLECTORS_RUN_AS_ROOT_PROMPT = "Some host collectors need to be run as root.\nDo you want to exit and rerun the command using sudo?"
+
 func HomeDir() string {
 	if h := os.Getenv("HOME"); h != "" {
 		return h
