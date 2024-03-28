@@ -83,7 +83,7 @@ support-bundle-e2e-go-test:
 rebuild: clean build
 
 # Build all binaries in parallel ( -j )
-build: clean tidy
+build: tidy
 	@echo "Build cli binaries"
 	$(MAKE) -j bin/support-bundle bin/preflight bin/analyze bin/collect
 
