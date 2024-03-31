@@ -91,7 +91,6 @@ func TestCollectNodeMetrics_constructNodesMap(t *testing.T) {
 			}
 
 			got := c.constructNodesMap()
-			t.Log(got)
 			assert.Equalf(t, tt.want, got, "constructNodesMap() = %v, want %v", got, tt.want)
 		})
 	}
