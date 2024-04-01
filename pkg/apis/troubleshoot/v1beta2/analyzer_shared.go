@@ -242,6 +242,22 @@ type EventAnalyze struct {
 	Outcomes      []*Outcome `json:"outcomes" yaml:"outcomes"`
 }
 
+type NodeMetricsAnalyze struct {
+	AnalyzeMeta   `json:",inline" yaml:",inline"`
+	CollectorName string                    `json:"collectorName" yaml:"collectorName"`
+	Filters       NodeMetricsAnalyzeFilters `json:"filters,omitempty" yaml:"filters,omitempty"`
+	Outcomes      []*Outcome                `json:"outcomes" yaml:"outcomes"`
+}
+
+type NodeMetricsAnalyzeFilters struct {
+	PVC *PVCRef `json:"pvc,omitempty" yaml:"pvc,omitempty"`
+}
+
+type PVCRef struct {
+	NameRegex string `json:"nameRegex,omitempty" yaml:"nameRegex,omitempty"`
+	Namespace string `json:"namespace,omitempty" yaml:"namespace,omitempty"`
+}
+
 type Analyze struct {
 	ClusterVersion           *ClusterVersion           `json:"clusterVersion,omitempty" yaml:"clusterVersion,omitempty"`
 	StorageClass             *StorageClass             `json:"storageClass,omitempty" yaml:"storageClass,omitempty"`
@@ -275,4 +291,5 @@ type Analyze struct {
 	Certificates             *CertificatesAnalyze      `json:"certificates,omitempty" yaml:"certificates,omitempty"`
 	Goldpinger               *GoldpingerAnalyze        `json:"goldpinger,omitempty" yaml:"goldpinger,omitempty"`
 	Event                    *EventAnalyze             `json:"event,omitempty" yaml:"event,omitempty"`
+	NodeMetrics              *NodeMetricsAnalyze       `json:"nodeMetrics,omitempty" yaml:"nodeMetrics,omitempty"`
 }

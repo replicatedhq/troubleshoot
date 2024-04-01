@@ -248,6 +248,8 @@ func getAnalyzer(analyzer *troubleshootv1beta2.Analyze) Analyzer {
 		return &AnalyzeGoldpinger{analyzer: analyzer.Goldpinger}
 	case analyzer.Event != nil:
 		return &AnalyzeEvent{analyzer: analyzer.Event}
+	case analyzer.NodeMetrics != nil:
+		return &AnalyzeNodeMetrics{analyzer: analyzer.NodeMetrics}
 	default:
 		return nil
 	}
