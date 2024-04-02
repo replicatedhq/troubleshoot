@@ -20,6 +20,21 @@ type AnalyzeNodeMetrics struct {
 	analyzer *troubleshootv1beta2.NodeMetricsAnalyze
 }
 
+type nodeMetricsComparisonResults struct {
+	PVC pvcTemplateData
+}
+
+type pvcTemplateData struct {
+	UsedPercentage    float64
+	ConcatenatedNames string
+	Names             []string
+}
+
+type pvcUsageStats struct {
+	PvcName string
+	Used    float64
+}
+
 func (a *AnalyzeNodeMetrics) Title() string {
 	title := a.analyzer.CheckName
 	if title == "" {
@@ -143,11 +158,6 @@ func (a *AnalyzeNodeMetrics) compareCollectedMetricsWithOutcomes(summaries []kub
 	return nil, nil
 }
 
-type pvcUsageStats struct {
-	PvcName string
-	Used    float64
-}
-
 func (a *AnalyzeNodeMetrics) findPVCUsageStats(summaries []kubeletv1alpha1.Summary) ([]pvcUsageStats, error) {
 	// We just collect usage percentages for now. If other stats are needed, we can add them.
 	stats := []pvcUsageStats{}
@@ -207,10 +217,6 @@ func (a *AnalyzeNodeMetrics) findPVCUsageStats(summaries []kubeletv1alpha1.Summa
 	}
 
 	return stats, nil
-}
-
-type nodeMetricsComparisonResults struct {
-	ConcatenatedPVCNames string
 }
 
 // compareNodeMetricConditionalsToStats compares the conditional with the collected node metrics
@@ -278,7 +284,10 @@ func (a *AnalyzeNodeMetrics) compareNodeMetricConditionalsToStats(conditional st
 		}
 
 		// Concatenate all matched PVC names
-		out.ConcatenatedPVCNames = strings.Join(matchedPVCs, ", ")
+		out.PVC = pvcTemplateData{
+			Names:             matchedPVCs,
+			ConcatenatedNames: strings.Join(matchedPVCs, ", "),
+		}
 		return len(matchedPVCs) > 0, out, nil
 	}
 

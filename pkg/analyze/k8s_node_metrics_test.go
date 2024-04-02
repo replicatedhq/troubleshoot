@@ -200,7 +200,7 @@ func TestAnalyzeNodeMetrics_Analyze(t *testing.T) {
 					{
 						Fail: &troubleshootv1beta2.SingleOutcome{
 							When:    "pvcUsedPercentage >= 75",
-							Message: "PVC space usage is too high for pvcs [{{ .ConcatenatedPVCNames }}]",
+							Message: "PVC space usage is too high for pvcs [{{ .PVC.ConcatenatedNames }}]",
 						},
 					},
 					{
