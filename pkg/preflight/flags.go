@@ -2,7 +2,7 @@ package preflight
 
 import (
 	flag "github.com/spf13/pflag"
-	utilpointer "k8s.io/utils/pointer"
+	utilpointer "k8s.io/utils/ptr"
 )
 
 const (
@@ -35,16 +35,16 @@ var preflightFlags *PreflightFlags
 
 func NewPreflightFlags() *PreflightFlags {
 	return &PreflightFlags{
-		Interactive:               utilpointer.Bool(true),
-		Format:                    utilpointer.String("human"),
-		CollectorImage:            utilpointer.String(""),
-		CollectorPullPolicy:       utilpointer.String(""),
-		CollectWithoutPermissions: utilpointer.Bool(true),
-		Selector:                  utilpointer.String(""),
-		SinceTime:                 utilpointer.String(""),
-		Since:                     utilpointer.String(""),
-		Output:                    utilpointer.String("o"),
-		Debug:                     utilpointer.Bool(false),
+		Interactive:               utilpointer.To(true),
+		Format:                    utilpointer.To("human"),
+		CollectorImage:            utilpointer.To(""),
+		CollectorPullPolicy:       utilpointer.To(""),
+		CollectWithoutPermissions: utilpointer.To(true),
+		Selector:                  utilpointer.To(""),
+		SinceTime:                 utilpointer.To(""),
+		Since:                     utilpointer.To(""),
+		Output:                    utilpointer.To("o"),
+		Debug:                     utilpointer.To(false),
 	}
 }
 

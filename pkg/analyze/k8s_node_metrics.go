@@ -25,6 +25,9 @@ func (a *AnalyzeNodeMetrics) Title() string {
 	if title == "" {
 		title = a.analyzer.CollectorName
 	}
+	if title == "" {
+		title = "Node Metrics"
+	}
 
 	return title
 }
@@ -79,14 +82,9 @@ func (a *AnalyzeNodeMetrics) compareCollectedMetricsWithOutcomes(summaries []kub
 					return nil, errors.Wrap(err, "failed to compare node metrics conditional with summary stats")
 				}
 
-				msg, err := renderNodeMetricsTemplate(outcome.Fail.Message, out)
-				if err != nil {
-					return nil, errors.Wrap(err, "failed to render node metrics template")
-				}
-
 				if isMatch {
 					result.IsFail = true
-					result.Message = msg
+					result.Message = renderTemplate(outcome.Fail.Message, out)
 					result.URI = outcome.Fail.URI
 				}
 			}
@@ -102,15 +100,10 @@ func (a *AnalyzeNodeMetrics) compareCollectedMetricsWithOutcomes(summaries []kub
 					return nil, errors.Wrap(err, "failed to compare node metrics conditional with summary stats")
 				}
 
-				msg, err := renderNodeMetricsTemplate(outcome.Warn.Message, out)
-				if err != nil {
-					return nil, errors.Wrap(err, "failed to render node metrics template")
-				}
-
 				if isMatch {
 					result.IsWarn = true
-					result.Message = msg
-					result.URI = outcome.Pass.URI
+					result.Message = renderTemplate(outcome.Warn.Message, out)
+					result.URI = outcome.Warn.URI
 				}
 			}
 		} else if outcome.Pass != nil {
@@ -124,14 +117,9 @@ func (a *AnalyzeNodeMetrics) compareCollectedMetricsWithOutcomes(summaries []kub
 					return nil, errors.Wrap(err, "failed to compare node metrics conditional with summary stats")
 				}
 
-				msg, err := renderNodeMetricsTemplate(outcome.Pass.Message, out)
-				if err != nil {
-					return nil, errors.Wrap(err, "failed to render node metrics template")
-				}
-
 				if isMatch {
 					result.IsPass = true
-					result.Message = msg
+					result.Message = renderTemplate(outcome.Pass.Message, out)
 					result.URI = outcome.Pass.URI
 				}
 			}
@@ -292,18 +280,23 @@ func (a *AnalyzeNodeMetrics) compareNodeMetricConditionalsToStats(conditional st
 	return false, out, errors.New("unknown node metric conditional")
 }
 
-func renderNodeMetricsTemplate(tmpMsg string, r nodeMetricsComparisonResults) (string, error) {
-	// Create a new template and parse the letter into it.
+func renderTemplate(tmpMsg string, data any) string {
+	if data == nil {
+		return tmpMsg
+	}
+
 	t, err := template.New("msg").Parse(tmpMsg)
 	if err != nil {
-		return "", err
+		klog.V(2).Infof("Failed to parse template: %s", err)
+		return tmpMsg
 	}
 
 	var m bytes.Buffer
-	err = t.Execute(&m, r)
+	err = t.Execute(&m, data)
 	if err != nil {
-		return "", err
+		klog.V(2).Infof("Failed to execute template: %s", err)
+		return tmpMsg
 	}
 
-	return m.String(), nil
+	return m.String()
 }
