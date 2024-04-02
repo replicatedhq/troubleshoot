@@ -78,6 +78,8 @@ func (a *AnalyzeNodeMetrics) compareCollectedMetricsWithOutcomes(summaries []kub
 				result.IsFail = true
 				result.Message = outcome.Fail.Message
 				result.URI = outcome.Fail.URI
+
+				return result, nil
 			} else {
 				isMatch, out, err := a.compareNodeMetricConditionalsToStats(outcome.Fail.When, summaries)
 				if err != nil {
@@ -98,6 +100,8 @@ func (a *AnalyzeNodeMetrics) compareCollectedMetricsWithOutcomes(summaries []kub
 				result.IsWarn = true
 				result.Message = outcome.Warn.Message
 				result.URI = outcome.Warn.URI
+
+				return result, nil
 			} else {
 				isMatch, out, err := a.compareNodeMetricConditionalsToStats(outcome.Warn.When, summaries)
 				if err != nil {
@@ -117,6 +121,8 @@ func (a *AnalyzeNodeMetrics) compareCollectedMetricsWithOutcomes(summaries []kub
 				result.IsPass = true
 				result.Message = outcome.Pass.Message
 				result.URI = outcome.Pass.URI
+
+				return result, nil
 			} else {
 				isMatch, out, err := a.compareNodeMetricConditionalsToStats(outcome.Pass.When, summaries)
 				if err != nil {
