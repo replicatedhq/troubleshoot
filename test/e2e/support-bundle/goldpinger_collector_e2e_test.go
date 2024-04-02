@@ -10,11 +10,16 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/replicatedhq/troubleshoot/internal/testutils"
 	"github.com/replicatedhq/troubleshoot/pkg/convert"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	v1 "k8s.io/api/core/v1"
+	"sigs.k8s.io/e2e-framework/klient/k8s/resources"
+	"sigs.k8s.io/e2e-framework/klient/wait"
+	"sigs.k8s.io/e2e-framework/klient/wait/conditions"
 	"sigs.k8s.io/e2e-framework/pkg/envconf"
 	"sigs.k8s.io/e2e-framework/pkg/features"
 	"sigs.k8s.io/e2e-framework/third_party/helm"
@@ -27,6 +32,10 @@ metadata:
   name: goldpinger
 spec:
   collectors:
+    - clusterResources:
+        exclude: true
+    - clusterInfo:
+        exclude: true
     - goldpinger:
         namespace: $NAMESPACE
   analyzers:
@@ -46,6 +55,22 @@ func Test_GoldpingerCollector(t *testing.T) {
 				helm.WithChart(testutils.TestFixtureFilePath(t, "charts/goldpinger-6.0.1.tgz")),
 				helm.WithWait(),
 				helm.WithTimeout("2m"),
+			)
+			require.NoError(t, err)
+			client, err := c.NewClient()
+			require.NoError(t, err)
+			pods := &v1.PodList{}
+
+			// Lets wait for the goldpinger pods to be running
+			err = client.Resources().WithNamespace(c.Namespace()).List(ctx, pods,
+				resources.WithLabelSelector("app.kubernetes.io/name=goldpinger"),
+			)
+			require.NoError(t, err)
+			require.Len(t, pods.Items, 1)
+
+			err = wait.For(
+				conditions.New(client.Resources()).PodRunning(&pods.Items[0]),
+				wait.WithTimeout(time.Second*30),
 			)
 			require.NoError(t, err)
 			return ctx
@@ -83,13 +108,13 @@ func Test_GoldpingerCollector(t *testing.T) {
 			// Check that we analysed collected goldpinger results.
 			// We should expect a single analysis result for goldpinger.
 			assert.Equal(t, 1, len(analysisResults))
+			assert.True(t, strings.HasPrefix(analysisResults[0].Name, "missing.ping.results.for.goldpinger."))
 			if t.Failed() {
 				t.Logf("Analysis results: %s\n", analysisJSON)
 				t.Logf("Stdout: %s\n", out.String())
 				t.Logf("Stderr: %s\n", stdErr.String())
 				t.FailNow()
 			}
-			assert.True(t, strings.HasPrefix(analysisResults[0].Name, "missing.ping.results.for.goldpinger."))
 
 			return ctx
 		}).
