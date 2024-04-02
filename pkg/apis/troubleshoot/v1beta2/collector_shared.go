@@ -44,6 +44,12 @@ type CustomMetrics struct {
 	MetricRequests []MetricRequest `json:"metricRequests,omitempty" yaml:"metricRequests,omitempty"`
 }
 
+type NodeMetrics struct {
+	CollectorMeta `json:",inline" yaml:",inline"`
+	NodeNames     []string `json:"nodeNames,omitempty" yaml:"nodeNames,omitempty"`
+	Selector      []string `json:"selector,omitempty" yaml:"selector,omitempty"`
+}
+
 type Secret struct {
 	CollectorMeta `json:",inline" yaml:",inline"`
 	Name          string   `json:"name,omitempty" yaml:"name,omitempty"`
@@ -315,6 +321,7 @@ type Collect struct {
 	Helm             *Helm             `json:"helm,omitempty" yaml:"helm,omitempty"`
 	Goldpinger       *Goldpinger       `json:"goldpinger,omitempty" yaml:"goldpinger,omitempty"`
 	Sonobuoy         *Sonobuoy         `json:"sonobuoy,omitempty" yaml:"sonobuoy,omitempty"`
+	NodeMetrics      *NodeMetrics      `json:"nodeMetrics,omitempty" yaml:"nodeMetrics,omitempty"`
 }
 
 func (c *Collect) AccessReviewSpecs(overrideNS string) []authorizationv1.SelfSubjectAccessReviewSpec {
