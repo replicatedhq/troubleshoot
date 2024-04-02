@@ -55,17 +55,19 @@ func (a *AnalyzeNodeMetrics) Analyze(getFile getCollectedFileContents, findFiles
 	}
 
 	// Run through all outcomes to generate results
-	results, err := a.compareCollectedMetricsWithOutcomes(summaries)
+	result, err := a.compareCollectedMetricsWithOutcomes(summaries)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to compare node metrics with outcomes")
 	}
+	if result == nil {
+		return []*AnalyzeResult{}, nil
+	}
+	result.Strict = a.analyzer.Strict.BoolOrDefaultFalse()
 
-	return results, nil
+	return []*AnalyzeResult{result}, nil
 }
 
-func (a *AnalyzeNodeMetrics) compareCollectedMetricsWithOutcomes(summaries []kubeletv1alpha1.Summary) ([]*AnalyzeResult, error) {
-	results := []*AnalyzeResult{}
-
+func (a *AnalyzeNodeMetrics) compareCollectedMetricsWithOutcomes(summaries []kubeletv1alpha1.Summary) (*AnalyzeResult, error) {
 	for _, outcome := range a.analyzer.Outcomes {
 		result := &AnalyzeResult{
 			Title: a.Title(),
@@ -86,6 +88,8 @@ func (a *AnalyzeNodeMetrics) compareCollectedMetricsWithOutcomes(summaries []kub
 					result.IsFail = true
 					result.Message = renderTemplate(outcome.Fail.Message, out)
 					result.URI = outcome.Fail.URI
+
+					return result, nil
 				}
 			}
 
@@ -104,6 +108,8 @@ func (a *AnalyzeNodeMetrics) compareCollectedMetricsWithOutcomes(summaries []kub
 					result.IsWarn = true
 					result.Message = renderTemplate(outcome.Warn.Message, out)
 					result.URI = outcome.Warn.URI
+
+					return result, nil
 				}
 			}
 		} else if outcome.Pass != nil {
@@ -121,21 +127,14 @@ func (a *AnalyzeNodeMetrics) compareCollectedMetricsWithOutcomes(summaries []kub
 					result.IsPass = true
 					result.Message = renderTemplate(outcome.Pass.Message, out)
 					result.URI = outcome.Pass.URI
+
+					return result, nil
 				}
 			}
 		}
-		results = append(results, result)
 	}
 
-	if len(results) == 0 {
-		klog.V(2).Infof("No results to report for node metrics analysis")
-	} else {
-		for i := range results {
-			results[i].Strict = a.analyzer.Strict.BoolOrDefaultFalse()
-		}
-	}
-
-	return results, nil
+	return nil, nil
 }
 
 type pvcUsageStats struct {
