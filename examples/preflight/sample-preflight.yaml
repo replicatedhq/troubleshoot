@@ -75,6 +75,9 @@ spec:
           - pass:
               when: "== oke"
               message: OKE is a supported distribution
+          - pass:
+              when: "== kind"
+              message: Kind is a supported distribution
           - warn:
               message: Unable to determine the distribution of Kubernetes
     - nodeResources:

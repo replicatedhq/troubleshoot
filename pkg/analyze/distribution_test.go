@@ -39,6 +39,14 @@ func Test_compareDistributionConditionalToActual(t *testing.T) {
 			},
 			expected: true,
 		},
+		{
+			name:        "== kind when kind is found",
+			conditional: "== kind",
+			input: providers{
+				kind: true,
+			},
+			expected: true,
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
