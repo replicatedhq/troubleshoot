@@ -27,6 +27,7 @@ type providers struct {
 	rke2          bool
 	k3s           bool
 	oke           bool
+	kind          bool
 }
 
 type Provider int
@@ -47,6 +48,7 @@ const (
 	rke2          Provider = iota
 	k3s           Provider = iota
 	oke           Provider = iota
+	kind          Provider = iota
 )
 
 type AnalyzeDistribution struct {
@@ -161,6 +163,10 @@ func ParseNodesForProviders(nodes []corev1.Node) (providers, string) {
 		if strings.HasPrefix(node.Spec.ProviderID, "ibm:") {
 			foundProviders.ibm = true
 			stringProvider = "ibm"
+		}
+		if strings.HasPrefix(node.Spec.ProviderID, "kind:") {
+			foundProviders.kind = true
+			stringProvider = "kind"
 		}
 	}
 
@@ -335,6 +341,8 @@ func compareDistributionConditionalToActual(conditional string, actual providers
 		isMatch = actual.k3s
 	case oke:
 		isMatch = actual.oke
+	case kind:
+		isMatch = actual.kind
 	}
 
 	switch parts[0] {
@@ -377,6 +385,8 @@ func mustNormalizeDistributionName(raw string) Provider {
 		return k3s
 	case "oke":
 		return oke
+	case "kind":
+		return kind
 	}
 
 	return unknown
