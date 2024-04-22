@@ -1,8 +1,7 @@
 module github.com/replicatedhq/troubleshoot
 
 go 1.21
-
-toolchain go1.21.5
+toolchain go1.22.2
 
 require (
 	github.com/ahmetalpbalkan/go-cursor v0.0.0-20131010032410-8136607ea412
@@ -26,7 +25,7 @@ require (
 	github.com/manifoldco/promptui v0.9.0
 	github.com/mattn/go-isatty v0.0.20
 	github.com/mholt/archiver/v3 v3.5.1
-	github.com/microsoft/go-mssqldb v1.7.0
+	github.com/microsoft/go-mssqldb v1.7.1
 	github.com/opencontainers/image-spec v1.1.0
 	github.com/pkg/errors v0.9.1
 	github.com/replicatedhq/termui/v3 v3.1.1-0.20200811145416-f40076d26851
@@ -37,19 +36,19 @@ require (
 	github.com/spf13/viper v1.18.2
 	github.com/stretchr/testify v1.9.0
 	github.com/tj/go-spin v1.1.0
-	github.com/vmware-tanzu/velero v1.13.1
+	github.com/vmware-tanzu/velero v1.13.2
 	go.opentelemetry.io/otel v1.25.0
 	go.opentelemetry.io/otel/sdk v1.25.0
 	golang.org/x/exp v0.0.0-20240222234643-814bf88cf225
 	golang.org/x/mod v0.17.0
 	golang.org/x/sync v0.7.0
 	gopkg.in/yaml.v2 v2.4.0
-	k8s.io/api v0.29.3
-	k8s.io/apiextensions-apiserver v0.29.3
-	k8s.io/apimachinery v0.29.3
-	k8s.io/apiserver v0.29.3
-	k8s.io/cli-runtime v0.29.3
-	k8s.io/client-go v0.29.3
+	k8s.io/api v0.30.0
+	k8s.io/apiextensions-apiserver v0.30.0
+	k8s.io/apimachinery v0.30.0
+	k8s.io/apiserver v0.30.0
+	k8s.io/cli-runtime v0.30.0
+	k8s.io/client-go v0.30.0
 	k8s.io/klog/v2 v2.120.1
 	oras.land/oras-go v1.2.5
 	sigs.k8s.io/controller-runtime v0.17.3
@@ -123,7 +122,7 @@ require (
 	golang.org/x/tools v0.18.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20231106174013-bbf56f31fb17 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20231120223509-83a465c0220f // indirect
-	k8s.io/component-base v0.29.3 // indirect
+	k8s.io/component-base v0.30.0 // indirect
 	k8s.io/kubectl v0.29.0 // indirect
 )
 
@@ -251,9 +250,9 @@ require (
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	helm.sh/helm/v3 v3.14.4
-	k8s.io/kube-openapi v0.0.0-20231010175941-2dd684a91f00 // indirect
-	k8s.io/kubelet v0.29.3
-	k8s.io/metrics v0.29.3
+	k8s.io/kube-openapi v0.0.0-20240228011516-70dd3763d340 // indirect
+	k8s.io/kubelet v0.30.0
+	k8s.io/metrics v0.30.0
 	k8s.io/utils v0.0.0-20230726121419-3b25d923346b
 	periph.io/x/host/v3 v3.8.2
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
