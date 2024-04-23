@@ -28,6 +28,7 @@ type providers struct {
 	k3s           bool
 	oke           bool
 	kind          bool
+	k0s           bool
 }
 
 type Provider int
@@ -49,6 +50,7 @@ const (
 	k3s           Provider = iota
 	oke           Provider = iota
 	kind          Provider = iota
+	k0s           Provider = iota
 )
 
 type AnalyzeDistribution struct {
@@ -133,6 +135,10 @@ func ParseNodesForProviders(nodes []corev1.Node) (providers, string) {
 				// Based on: https://docs.oracle.com/en-us/iaas/Content/ContEng/Reference/contengsupportedlabelsusecases.htm
 				foundProviders.oke = true
 				stringProvider = "oke"
+			}
+			if k == "node.k0sproject.io/role" {
+				foundProviders.k0s = true
+				stringProvider = "k0s"
 			}
 		}
 
@@ -343,6 +349,8 @@ func compareDistributionConditionalToActual(conditional string, actual providers
 		isMatch = actual.oke
 	case kind:
 		isMatch = actual.kind
+	case k0s:
+		isMatch = actual.k0s
 	}
 
 	switch parts[0] {
@@ -387,6 +395,8 @@ func mustNormalizeDistributionName(raw string) Provider {
 		return oke
 	case "kind":
 		return kind
+	case "k0s":
+		return k0s
 	}
 
 	return unknown
