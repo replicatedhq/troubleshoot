@@ -1,8 +1,6 @@
 module github.com/replicatedhq/troubleshoot
 
-go 1.21
-
-toolchain go1.21.5
+go 1.22.0
 
 require (
 	github.com/ahmetalpbalkan/go-cursor v0.0.0-20131010032410-8136607ea412
@@ -44,12 +42,12 @@ require (
 	golang.org/x/mod v0.17.0
 	golang.org/x/sync v0.7.0
 	gopkg.in/yaml.v2 v2.4.0
-	k8s.io/api v0.29.3
-	k8s.io/apiextensions-apiserver v0.29.3
-	k8s.io/apimachinery v0.29.3
-	k8s.io/apiserver v0.29.3
-	k8s.io/cli-runtime v0.29.3
-	k8s.io/client-go v0.29.3
+	k8s.io/api v0.30.0
+	k8s.io/apiextensions-apiserver v0.30.0
+	k8s.io/apimachinery v0.30.0
+	k8s.io/apiserver v0.30.0
+	k8s.io/cli-runtime v0.30.0
+	k8s.io/client-go v0.30.0
 	k8s.io/klog/v2 v2.120.1
 	oras.land/oras-go v1.2.5
 	sigs.k8s.io/controller-runtime v0.17.3
@@ -123,7 +121,7 @@ require (
 	golang.org/x/tools v0.18.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20231106174013-bbf56f31fb17 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20231120223509-83a465c0220f // indirect
-	k8s.io/component-base v0.29.3 // indirect
+	k8s.io/component-base v0.30.0 // indirect
 	k8s.io/kubectl v0.29.0 // indirect
 )
 
@@ -251,9 +249,9 @@ require (
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	helm.sh/helm/v3 v3.14.4
-	k8s.io/kube-openapi v0.0.0-20231010175941-2dd684a91f00 // indirect
-	k8s.io/kubelet v0.29.3
-	k8s.io/metrics v0.29.3
+	k8s.io/kube-openapi v0.0.0-20240228011516-70dd3763d340 // indirect
+	k8s.io/kubelet v0.30.0
+	k8s.io/metrics v0.30.0
 	k8s.io/utils v0.0.0-20230726121419-3b25d923346b
 	periph.io/x/host/v3 v3.8.2
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
