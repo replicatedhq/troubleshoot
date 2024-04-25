@@ -47,6 +47,14 @@ func Test_compareDistributionConditionalToActual(t *testing.T) {
 			},
 			expected: true,
 		},
+		{
+			name:        "== k0s when k0s is found",
+			conditional: "== k0s",
+			input: providers{
+				k0s: true,
+			},
+			expected: true,
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
