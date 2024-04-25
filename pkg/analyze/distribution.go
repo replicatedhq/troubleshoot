@@ -13,44 +13,46 @@ import (
 )
 
 type providers struct {
-	microk8s      bool
-	dockerDesktop bool
-	eks           bool
-	gke           bool
-	digitalOcean  bool
-	openShift     bool
-	tanzu         bool
-	kurl          bool
-	aks           bool
-	ibm           bool
-	minikube      bool
-	rke2          bool
-	k3s           bool
-	oke           bool
-	kind          bool
-	k0s           bool
+	microk8s        bool
+	dockerDesktop   bool
+	eks             bool
+	gke             bool
+	digitalOcean    bool
+	openShift       bool
+	tanzu           bool
+	kurl            bool
+	aks             bool
+	ibm             bool
+	minikube        bool
+	rke2            bool
+	k3s             bool
+	oke             bool
+	kind            bool
+	k0s             bool
+	embeddedCluster bool
 }
 
 type Provider int
 
 const (
-	unknown       Provider = iota
-	microk8s      Provider = iota
-	dockerDesktop Provider = iota
-	eks           Provider = iota
-	gke           Provider = iota
-	digitalOcean  Provider = iota
-	openShift     Provider = iota
-	tanzu         Provider = iota
-	kurl          Provider = iota
-	aks           Provider = iota
-	ibm           Provider = iota
-	minikube      Provider = iota
-	rke2          Provider = iota
-	k3s           Provider = iota
-	oke           Provider = iota
-	kind          Provider = iota
-	k0s           Provider = iota
+	unknown         Provider = iota
+	microk8s        Provider = iota
+	dockerDesktop   Provider = iota
+	eks             Provider = iota
+	gke             Provider = iota
+	digitalOcean    Provider = iota
+	openShift       Provider = iota
+	tanzu           Provider = iota
+	kurl            Provider = iota
+	aks             Provider = iota
+	ibm             Provider = iota
+	minikube        Provider = iota
+	rke2            Provider = iota
+	k3s             Provider = iota
+	oke             Provider = iota
+	kind            Provider = iota
+	k0s             Provider = iota
+	embeddedCluster Provider = iota
 )
 
 type AnalyzeDistribution struct {
@@ -139,6 +141,11 @@ func ParseNodesForProviders(nodes []corev1.Node) (providers, string) {
 			if k == "node.k0sproject.io/role" {
 				foundProviders.k0s = true
 				stringProvider = "k0s"
+			}
+
+			if k == "kots.io/embedded-cluster-role" {
+				foundProviders.embeddedCluster = true
+				stringProvider = "embedded-cluster"
 			}
 		}
 
@@ -351,6 +358,8 @@ func compareDistributionConditionalToActual(conditional string, actual providers
 		isMatch = actual.kind
 	case k0s:
 		isMatch = actual.k0s
+	case embeddedCluster:
+		isMatch = actual.embeddedCluster
 	}
 
 	switch parts[0] {
@@ -397,6 +406,8 @@ func mustNormalizeDistributionName(raw string) Provider {
 		return kind
 	case "k0s":
 		return k0s
+	case "embeddedcluster":
+		return embeddedCluster
 	}
 
 	return unknown

@@ -42,7 +42,7 @@ An initially unintended benefit of using the Aggregation Layer is that any HostC
 * [microk8s implementation](https://github.com/canonical/microk8s/blob/master/build-scripts/patches/0000-Kubelite-integration.patch) - bundles slightly modified binaries
 * [k0s uses upstream binaries statically compiled](https://docs.k0sproject.io/v1.23.8+k0s.0/architecture/) - bundles statically compiled binaries that self extract and uses a process monitor to run them
 
-2. Can you in fact push metadat like "Status" into an api-server or do we have to write directly to etcd?
+2. Can you in fact push metadata like "Status" into an api-server or do we have to write directly to etcd?
 
 * If we can't push to the api-server is just writing the information directly into etcd something we can do and have a reasonable expectation of compatibility?
 

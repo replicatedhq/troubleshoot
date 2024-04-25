@@ -55,6 +55,14 @@ func Test_compareDistributionConditionalToActual(t *testing.T) {
 			},
 			expected: true,
 		},
+		{
+			name:        "== embedded-cluster when embedded-cluster is found",
+			conditional: "== embedded-cluster",
+			input: providers{
+				embeddedCluster: true,
+			},
+			expected: true,
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -87,6 +95,66 @@ func Test_mustNormalizeDistributionName(t *testing.T) {
 		},
 		{
 			raw:      "Docker-Desktop",
+			expected: dockerDesktop,
+		},
+		{
+			raw:      "embedded-cluster",
+			expected: embeddedCluster,
+		},
+		{
+			raw:      "k0s",
+			expected: k0s,
+		},
+		{
+			raw:      "kind",
+			expected: kind,
+		},
+		{
+			raw:      "k3s",
+			expected: k3s,
+		},
+		{
+			raw:      "ibm",
+			expected: ibm,
+		},
+		{
+			raw:      "ibmcloud",
+			expected: ibm,
+		},
+		{
+			raw:      "ibm cloud",
+			expected: ibm,
+		},
+		{
+			raw:      "gke",
+			expected: gke,
+		},
+		{
+			raw:      "aks",
+			expected: aks,
+		},
+		{
+			raw:      "eks",
+			expected: eks,
+		},
+		{
+			raw:      "oke",
+			expected: oke,
+		},
+		{
+			raw:      "rke2",
+			expected: rke2,
+		},
+		{
+			raw:      "dockerdesktop",
+			expected: dockerDesktop,
+		},
+		{
+			raw:      "docker desktop",
+			expected: dockerDesktop,
+		},
+		{
+			raw:      "docker-desktop",
 			expected: dockerDesktop,
 		},
 	}
