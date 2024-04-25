@@ -60,7 +60,7 @@ func isValidLoadBalancerAddress(address string) bool {
 
 		// Check for isValidIP
 
-		test := validation.IsValidIP(hostAddress)
+		test := validation.IsValidIP(nil, hostAddress)
 		return len(test) == 0
 
 	}
