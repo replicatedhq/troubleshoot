@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"bufio"
 	"context"
 	"crypto/tls"
 	"encoding/json"
@@ -38,6 +39,40 @@ import (
 
 func runTroubleshoot(v *viper.Viper, args []string) error {
 	ctx := context.Background()
+	if len(args) == 1 && args[0] == "lint" {
+		// Read from stdin
+		scanner := bufio.NewScanner(os.Stdin)
+		specYaml := ""
+		for scanner.Scan() {
+			input := scanner.Text()
+			specYaml = fmt.Sprintf("%s\n%s", specYaml, input)
+		}
+		if err := scanner.Err(); err != nil {
+			return fmt.Errorf("error reading standard input: %v", err)
+		}
+		fmt.Println(specYaml)
+		return nil
+	} else if len(args) > 1 && args[0] == "lint" {
+		mainBundle, additionalRedactors, err := validateSpecs(args[1:], "")
+		if err != nil {
+			return err
+		}
+		k := loader.TroubleshootKinds{
+			SupportBundlesV1Beta2: []troubleshootv1beta2.SupportBundle{*mainBundle},
+		}
+		// If we have redactors, add them to the temp kinds object
+		if len(additionalRedactors.Spec.Redactors) > 0 {
+			k.RedactorsV1Beta2 = []troubleshootv1beta2.Redactor{*additionalRedactors}
+		}
+
+		out, err := k.ToYaml()
+		if err != nil {
+			return types.NewExitCodeError(constants.EXIT_CODE_CATCH_ALL, errors.Wrap(err, "failed to convert specs to yaml"))
+		}
+		fmt.Printf("%s", out)
+		return nil
+	}
+
 	if !v.GetBool("load-cluster-specs") && len(args) < 1 {
 		return errors.New("flag load-cluster-specs must be set if no specs are provided on the command line")
 	}
@@ -275,6 +310,80 @@ func loadSupportBundleSpecsFromURIs(ctx context.Context, kinds *loader.Troublesh
 
 	kinds.Add(moreKinds)
 	return nil
+}
+
+func validateSpecs(args []string, specYaml string) (*troubleshootv1beta2.SupportBundle, *troubleshootv1beta2.Redactor, error) {
+	// Append redactor uris to the args
+	allArgs := append(args, viper.GetStringSlice("redactors")...)
+	fmt.Println(allArgs)
+	kinds, err := specs.LoadFromCLIArgs(context.TODO(), nil, allArgs, viper.GetViper())
+	if err != nil {
+		return nil, nil, err
+	}
+
+	// Check if we have any collectors to run in the troubleshoot specs
+	// TODO: Do we use the RemoteCollectors anymore?
+	if len(kinds.CollectorsV1Beta2) == 0 &&
+		len(kinds.HostCollectorsV1Beta2) == 0 &&
+		len(kinds.SupportBundlesV1Beta2) == 0 {
+		return nil, nil, errors.New("no collectors specified to run")
+	}
+
+	// Merge specs
+	// We need to add the default type information to the support bundle spec
+	// since by default these fields would be empty
+	mainBundle := &troubleshootv1beta2.SupportBundle{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "troubleshoot.sh/v1beta2",
+			Kind:       "SupportBundle",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "merged-support-bundle-spec",
+		},
+	}
+	for _, sb := range kinds.SupportBundlesV1Beta2 {
+		sb := sb
+		mainBundle = supportbundle.ConcatSpec(mainBundle, &sb)
+	}
+
+	for _, c := range kinds.CollectorsV1Beta2 {
+		mainBundle.Spec.Collectors = util.Append(mainBundle.Spec.Collectors, c.Spec.Collectors)
+	}
+
+	for _, hc := range kinds.HostCollectorsV1Beta2 {
+		mainBundle.Spec.HostCollectors = util.Append(mainBundle.Spec.HostCollectors, hc.Spec.Collectors)
+	}
+
+	if !(len(mainBundle.Spec.HostCollectors) > 0 && len(mainBundle.Spec.Collectors) == 0) {
+		// Always add default collectors unless we only have host collectors
+		// We need to add them here so when we --dry-run, these collectors
+		// are included. supportbundle.runCollectors duplicates this bit.
+		// We'll need to refactor it out later when its clearer what other
+		// code depends on this logic e.g KOTS
+		mainBundle.Spec.Collectors = collect.EnsureCollectorInList(
+			mainBundle.Spec.Collectors,
+			troubleshootv1beta2.Collect{ClusterInfo: &troubleshootv1beta2.ClusterInfo{}},
+		)
+		mainBundle.Spec.Collectors = collect.EnsureCollectorInList(
+			mainBundle.Spec.Collectors,
+			troubleshootv1beta2.Collect{ClusterResources: &troubleshootv1beta2.ClusterResources{}},
+		)
+	}
+
+	additionalRedactors := &troubleshootv1beta2.Redactor{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "troubleshoot.sh/v1beta2",
+			Kind:       "Redactor",
+		},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "merged-redactors-spec",
+		},
+	}
+	for _, r := range kinds.RedactorsV1Beta2 {
+		additionalRedactors.Spec.Redactors = util.Append(additionalRedactors.Spec.Redactors, r.Spec.Redactors)
+	}
+
+	return mainBundle, additionalRedactors, nil
 }
 
 func loadSpecs(ctx context.Context, args []string, client kubernetes.Interface) (*troubleshootv1beta2.SupportBundle, *troubleshootv1beta2.Redactor, error) {
