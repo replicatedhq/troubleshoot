@@ -10,6 +10,8 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"reflect"
+	"strings"
 	"sync"
 	"time"
 
@@ -31,6 +33,7 @@ import (
 	"github.com/replicatedhq/troubleshoot/pkg/types"
 	"github.com/spf13/viper"
 	spin "github.com/tj/go-spin"
+	"gopkg.in/yaml.v3"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -53,22 +56,20 @@ func runTroubleshoot(v *viper.Viper, args []string) error {
 		fmt.Println(specYaml)
 		return nil
 	} else if len(args) > 1 && args[0] == "lint" {
-		mainBundle, additionalRedactors, err := validateSpecs(args[1:], "")
+		supportBundles, err := validateSpecs(args[1:], "")
 		if err != nil {
 			return err
 		}
+
 		k := loader.TroubleshootKinds{
-			SupportBundlesV1Beta2: []troubleshootv1beta2.SupportBundle{*mainBundle},
-		}
-		// If we have redactors, add them to the temp kinds object
-		if len(additionalRedactors.Spec.Redactors) > 0 {
-			k.RedactorsV1Beta2 = []troubleshootv1beta2.Redactor{*additionalRedactors}
+			SupportBundlesV1Beta2: *supportBundles,
 		}
 
 		out, err := k.ToYaml()
 		if err != nil {
 			return types.NewExitCodeError(constants.EXIT_CODE_CATCH_ALL, errors.Wrap(err, "failed to convert specs to yaml"))
 		}
+		fmt.Println("-----------\n")
 		fmt.Printf("%s", out)
 		return nil
 	}
@@ -312,78 +313,124 @@ func loadSupportBundleSpecsFromURIs(ctx context.Context, kinds *loader.Troublesh
 	return nil
 }
 
-func validateSpecs(args []string, specYaml string) (*troubleshootv1beta2.SupportBundle, *troubleshootv1beta2.Redactor, error) {
+func validateSpecs(args []string, specYaml string) (*[]troubleshootv1beta2.SupportBundle, error) {
 	// Append redactor uris to the args
 	allArgs := append(args, viper.GetStringSlice("redactors")...)
-	fmt.Println(allArgs)
 	kinds, err := specs.LoadFromCLIArgs(context.TODO(), nil, allArgs, viper.GetViper())
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	// Check if we have any collectors to run in the troubleshoot specs
-	// TODO: Do we use the RemoteCollectors anymore?
 	if len(kinds.CollectorsV1Beta2) == 0 &&
 		len(kinds.HostCollectorsV1Beta2) == 0 &&
 		len(kinds.SupportBundlesV1Beta2) == 0 {
-		return nil, nil, errors.New("no collectors specified to run")
+		return nil, errors.New("no collectors specified to run")
 	}
 
-	// Merge specs
-	// We need to add the default type information to the support bundle spec
-	// since by default these fields would be empty
-	mainBundle := &troubleshootv1beta2.SupportBundle{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: "troubleshoot.sh/v1beta2",
-			Kind:       "SupportBundle",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "merged-support-bundle-spec",
-		},
+	for _, arg := range args {
+		err := checkSpecStructure(arg)
+		if err != nil {
+			return nil, err
+		}
 	}
+
 	for _, sb := range kinds.SupportBundlesV1Beta2 {
 		sb := sb
-		mainBundle = supportbundle.ConcatSpec(mainBundle, &sb)
+		warning := validateTroubleshootSpecsItems(sb.Spec.Collectors, sb.Spec.Analyzers)
+		if warning != nil {
+			return nil, errors.New(warning.Warning())
+		}
 	}
 
-	for _, c := range kinds.CollectorsV1Beta2 {
-		mainBundle.Spec.Collectors = util.Append(mainBundle.Spec.Collectors, c.Spec.Collectors)
+	// for _, c := range kinds.CollectorsV1Beta2 {
+	// 	mainBundle.Spec.Collectors = util.Append(mainBundle.Spec.Collectors, c.Spec.Collectors)
+	// }
+
+	// for _, hc := range kinds.HostCollectorsV1Beta2 {
+	// 	mainBundle.Spec.HostCollectors = util.Append(mainBundle.Spec.HostCollectors, hc.Spec.Collectors)
+	// }
+
+	return &kinds.SupportBundlesV1Beta2, nil
+}
+
+func validateTroubleshootSpecsItems(collectors []*troubleshootv1beta2.Collect, analyzers []*troubleshootv1beta2.Analyze) *types.ExitCodeWarning {
+	numberOfCollectors := len(collectors)
+	numberOfAnalyzers := len(analyzers)
+
+	if numberOfCollectors > 0 {
+		for _, c := range collectors {
+			if isStructEmpty(c) {
+				return types.NewExitCodeWarning("Wrong collector found")
+			}
+		}
+	} else {
+		return types.NewExitCodeWarning("No collectors found")
 	}
 
-	for _, hc := range kinds.HostCollectorsV1Beta2 {
-		mainBundle.Spec.HostCollectors = util.Append(mainBundle.Spec.HostCollectors, hc.Spec.Collectors)
+	if numberOfAnalyzers > 0 {
+		for _, a := range analyzers {
+			if isStructEmpty(a) {
+				return types.NewExitCodeWarning("Wrong analyzer found")
+			}
+		}
+	} else {
+		return types.NewExitCodeWarning("No analyzers found")
+	}
+	return nil
+}
+
+func checkSpecStructure(path string) error {
+	if _, err := os.Stat(path); err == nil {
+		rawSpec, err := os.ReadFile(path)
+		if err != nil {
+			return types.NewExitCodeError(constants.EXIT_CODE_SPEC_ISSUES, err)
+		}
+
+		decoder := yaml.NewDecoder(strings.NewReader(string(rawSpec)))
+		var node yaml.Node
+		err = decoder.Decode(&node)
+		if err != nil {
+			return err
+		}
+
+		for _, n := range node.Content[0].Content { // Traverse the root map
+			if n.Kind == yaml.MappingNode && n.Tag == "!!map" {
+				for i := 0; i < len(n.Content); i += 2 {
+					keyNode := n.Content[i]
+					valNode := n.Content[i+1]
+					if keyNode.Value == "analyzers" {
+						for _, specNode := range valNode.Content {
+							for j := 0; j < len(specNode.Content); j += 2 {
+								analyzerKey := specNode.Content[j]
+								analyzerVal := specNode.Content[j+1]
+								if analyzerKey.Value == "distribution" {
+									if len(analyzerVal.Content) == 0 {
+										fmt.Println("distribution is empty")
+										if specNode.Content[j+2] != nil && specNode.Content[j+2].Value == "outcomes" {
+											fmt.Println("outcomes is misaligned in distribution")
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
 	}
 
-	if !(len(mainBundle.Spec.HostCollectors) > 0 && len(mainBundle.Spec.Collectors) == 0) {
-		// Always add default collectors unless we only have host collectors
-		// We need to add them here so when we --dry-run, these collectors
-		// are included. supportbundle.runCollectors duplicates this bit.
-		// We'll need to refactor it out later when its clearer what other
-		// code depends on this logic e.g KOTS
-		mainBundle.Spec.Collectors = collect.EnsureCollectorInList(
-			mainBundle.Spec.Collectors,
-			troubleshootv1beta2.Collect{ClusterInfo: &troubleshootv1beta2.ClusterInfo{}},
-		)
-		mainBundle.Spec.Collectors = collect.EnsureCollectorInList(
-			mainBundle.Spec.Collectors,
-			troubleshootv1beta2.Collect{ClusterResources: &troubleshootv1beta2.ClusterResources{}},
-		)
-	}
+	return nil
+}
 
-	additionalRedactors := &troubleshootv1beta2.Redactor{
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: "troubleshoot.sh/v1beta2",
-			Kind:       "Redactor",
-		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "merged-redactors-spec",
-		},
+func isStructEmpty(s interface{}) bool {
+	val := reflect.ValueOf(s).Elem()
+	for i := 0; i < val.NumField(); i++ {
+		if !val.Field(i).IsNil() {
+			return false
+		}
 	}
-	for _, r := range kinds.RedactorsV1Beta2 {
-		additionalRedactors.Spec.Redactors = util.Append(additionalRedactors.Spec.Redactors, r.Spec.Redactors)
-	}
-
-	return mainBundle, additionalRedactors, nil
+	return true
 }
 
 func loadSpecs(ctx context.Context, args []string, client kubernetes.Interface) (*troubleshootv1beta2.SupportBundle, *troubleshootv1beta2.Redactor, error) {
