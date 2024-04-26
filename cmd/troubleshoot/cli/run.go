@@ -394,6 +394,10 @@ func checkSpecStructure(path string) error {
 			return err
 		}
 
+		analyzerFields := listFieldNames(&troubleshootv1beta2.Analyze{})
+
+		analyzeFieldsInLowerCamelCase := strings.ToLower(strings.Join(analyzerFields, " "))
+
 		for _, n := range node.Content[0].Content { // Traverse the root map
 			if n.Kind == yaml.MappingNode && n.Tag == "!!map" {
 				for i := 0; i < len(n.Content); i += 2 {
@@ -404,11 +408,15 @@ func checkSpecStructure(path string) error {
 							for j := 0; j < len(specNode.Content); j += 2 {
 								analyzerKey := specNode.Content[j]
 								analyzerVal := specNode.Content[j+1]
-								if analyzerKey.Value == "distribution" {
+								if strings.Contains(analyzeFieldsInLowerCamelCase, strings.ToLower(analyzerKey.Value)) {
 									if len(analyzerVal.Content) == 0 {
-										fmt.Println("distribution is empty")
-										if specNode.Content[j+2] != nil && specNode.Content[j+2].Value == "outcomes" {
-											fmt.Println("outcomes is misaligned in distribution")
+										fmt.Println("====================")
+										fmt.Printf("%s analyzer is empty\n", analyzerKey.Value)
+										fmt.Println("--------------------")
+										for k := j + 2; k < len(specNode.Content); k += 2 {
+											if specNode.Content[k].Value != "" && !strings.Contains(analyzeFieldsInLowerCamelCase, strings.ToLower(specNode.Content[k].Value)) {
+												fmt.Printf("%s is misaligned in %s\n", specNode.Content[k].Value, analyzerKey.Value)
+											}
 										}
 									}
 								}
@@ -419,8 +427,16 @@ func checkSpecStructure(path string) error {
 			}
 		}
 	}
-
 	return nil
+}
+
+func listFieldNames(v interface{}) []string {
+	val := reflect.ValueOf(v).Elem()
+	fieldNames := make([]string, val.NumField())
+	for i := 0; i < val.NumField(); i++ {
+		fieldNames[i] = val.Type().Field(i).Name
+	}
+	return fieldNames
 }
 
 func isStructEmpty(s interface{}) bool {
