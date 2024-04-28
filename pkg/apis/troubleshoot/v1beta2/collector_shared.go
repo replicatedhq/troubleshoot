@@ -293,6 +293,11 @@ type Sonobuoy struct {
 	Namespace     string `json:"namespace,omitempty" yaml:"namespace,omitempty"`
 }
 
+type DNS struct {
+	CollectorMeta `json:",inline" yaml:",inline"`
+	Timeout       string `json:"timeout,omitempty" yaml:"timeout,omitempty"`
+}
+
 type Collect struct {
 	ClusterInfo      *ClusterInfo      `json:"clusterInfo,omitempty" yaml:"clusterInfo,omitempty"`
 	ClusterResources *ClusterResources `json:"clusterResources,omitempty" yaml:"clusterResources,omitempty"`
@@ -322,6 +327,7 @@ type Collect struct {
 	Goldpinger       *Goldpinger       `json:"goldpinger,omitempty" yaml:"goldpinger,omitempty"`
 	Sonobuoy         *Sonobuoy         `json:"sonobuoy,omitempty" yaml:"sonobuoy,omitempty"`
 	NodeMetrics      *NodeMetrics      `json:"nodeMetrics,omitempty" yaml:"nodeMetrics,omitempty"`
+	DNS              *DNS              `json:"dns,omitempty" yaml:"dns,omitempty"`
 }
 
 func (c *Collect) AccessReviewSpecs(overrideNS string) []authorizationv1.SelfSubjectAccessReviewSpec {

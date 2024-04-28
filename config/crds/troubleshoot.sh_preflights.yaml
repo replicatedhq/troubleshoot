@@ -1972,6 +1972,15 @@ spec:
                       required:
                       - data
                       type: object
+                    dns:
+                      properties:
+                        collectorName:
+                          type: string
+                        exclude:
+                          type: BoolString
+                        timeout:
+                          type: string
+                      type: object
                     exec:
                       properties:
                         args:
