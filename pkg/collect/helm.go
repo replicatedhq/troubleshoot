@@ -105,6 +105,9 @@ func helmReleaseHistoryCollector(releaseName string, namespace string, collectVa
 			return nil, []error{err}
 		}
 		versionInfo, err := getVersionInfo(actionConfig, r.Name, r.Namespace, collectValues)
+		if err != nil {
+			return nil, []error{err}
+		}
 		results = append(results, ReleaseInfo{
 			ReleaseName:  r.Name,
 			Chart:        r.Chart.Metadata.Name,
@@ -113,7 +116,7 @@ func helmReleaseHistoryCollector(releaseName string, namespace string, collectVa
 			Namespace:    r.Namespace,
 			VersionInfo:  versionInfo,
 		})
-		return results, []error{err}
+		return results, nil
 	}
 
 	// If releaseName is not specified, get the history of all releases
