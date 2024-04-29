@@ -3,6 +3,7 @@ package collect
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"path/filepath"
@@ -17,6 +18,10 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/klog/v2"
+)
+
+const (
+	dnsUtilsImage = "registry.k8s.io/e2e-test-images/jessie-dnsutils:1.3"
 )
 
 type CollectDNS struct {
@@ -46,26 +51,41 @@ func (c *CollectDNS) Collect(progressChan chan<- interface{}) (CollectorResult, 
 
 	// get kubernetes Cluster IP
 	clusterIP, err := getKubernetesClusterIP(c.Client, ctx)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to get kubernetes cluster IP")
+	if err == nil {
+		sb.WriteString(fmt.Sprintf("=== Kubernetes Cluster IP from API Server: %s\n", clusterIP))
+	} else {
+		sb.WriteString(fmt.Sprintf("=== Failed to detect Kubernetes Cluster IP: %v\n", err))
 	}
-	sb.WriteString(fmt.Sprintf("=== Kubernetes Cluster IP from API Server: %s\n", clusterIP))
 
 	// run a pod and perform DNS lookup
-	podLog, err := troubleshootPodDNS(c.Client, ctx)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to troubleshoot pod DNS")
+	podLog, err := troubleshootDNSFromPod(c.Client, ctx)
+	if err == nil {
+		sb.WriteString(fmt.Sprintf("=== Test DNS resolution in pod %s: \n", dnsUtilsImage))
+		sb.WriteString(podLog)
+	} else {
+		sb.WriteString(fmt.Sprintf("=== Failed to run commands from pod: %v\n", err))
 	}
-	sb.WriteString("=== Run commands from pod... \n")
-	sb.WriteString(podLog)
 
-	// get CoreDNS config
+	// is DNS pods running?
+	sb.WriteString(fmt.Sprintf("=== Running kube-dns pods: %s\n", getRunningKubeDNSPodNames(c.Client, ctx)))
+
+	// is DNS service up?
+	sb.WriteString(fmt.Sprintf("=== Running kube-dns service: %s\n", getKubeDNSServiceClusterIP(c.Client, ctx)))
+
+	// are DNS endpoints exposed?
+	sb.WriteString(fmt.Sprintf("=== kube-dns endpoints: %s\n", getKubeDNSEndpoints(c.Client, ctx)))
+
+	// get DNS server config
 	coreDNSConfig, err := getCoreDNSConfig(c.Client, ctx)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to get CoreDNS config")
+	if err == nil {
+		sb.WriteString("=== CoreDNS config: \n")
+		sb.WriteString(coreDNSConfig)
 	}
-	sb.WriteString("=== CoreDNS Config: \n")
-	sb.WriteString(coreDNSConfig)
+	kubeDNSConfig, err := getKubeDNSConfig(c.Client, ctx)
+	if err == nil {
+		sb.WriteString("=== KubeDNS config: \n")
+		sb.WriteString(kubeDNSConfig)
+	}
 
 	data := sb.String()
 	output := NewResult()
@@ -77,23 +97,23 @@ func (c *CollectDNS) Collect(progressChan chan<- interface{}) (CollectorResult, 
 func getKubernetesClusterIP(client kubernetes.Interface, ctx context.Context) (string, error) {
 	service, err := client.CoreV1().Services("default").Get(ctx, "kubernetes", metav1.GetOptions{})
 	if err != nil {
+		klog.V(2).Infof("Failed to detect Kubernetes Cluster IP: %v", err)
 		return "", err
 	}
 
 	return service.Spec.ClusterIP, nil
 }
 
-func troubleshootPodDNS(client kubernetes.Interface, ctx context.Context) (string, error) {
+func troubleshootDNSFromPod(client kubernetes.Interface, ctx context.Context) (string, error) {
 	namespace := "default"
-	image := "nicolaka/netshoot"
-	command := []string{"/bin/bash", "-c", `
+	command := []string{"/bin/sh", "-c", `
 		set -x
-		dig +short kubernetes.default.svc.cluster.local
 		cat /etc/resolv.conf
+		nslookup -debug kubernetes
 		exit 0
 	`}
 
-	// TODO: image pull secret
+	// TODO: image pull secret?
 	podLabels := map[string]string{
 		"troubleshoot-role": "dns-collector",
 	}
@@ -107,7 +127,7 @@ func troubleshootPodDNS(client kubernetes.Interface, ctx context.Context) (strin
 			Containers: []corev1.Container{
 				{
 					Name:    "troubleshoot-dns",
-					Image:   image,
+					Image:   dnsUtilsImage,
 					Command: command,
 				},
 			},
@@ -178,8 +198,73 @@ func troubleshootPodDNS(client kubernetes.Interface, ctx context.Context) (strin
 func getCoreDNSConfig(client kubernetes.Interface, ctx context.Context) (string, error) {
 	configMap, err := client.CoreV1().ConfigMaps("kube-system").Get(ctx, "coredns", metav1.GetOptions{})
 	if err != nil {
+		klog.V(2).Infof("Failed to detect CoreDNS config: %v", err)
 		return "", err
 	}
 
 	return configMap.Data["Corefile"], nil
+}
+
+func getKubeDNSConfig(client kubernetes.Interface, ctx context.Context) (string, error) {
+	configMap, err := client.CoreV1().ConfigMaps("kube-system").Get(ctx, "kube-dns", metav1.GetOptions{})
+	if err != nil {
+		klog.V(2).Infof("Failed to detect KubeDNS config: %v", err)
+		return "", err
+	}
+
+	if configMap.Data == nil {
+		return "", nil
+	}
+
+	dataBytes, err := json.Marshal(configMap.Data)
+	if err != nil {
+		return "", err
+	}
+
+	return string(dataBytes), nil
+}
+
+func getRunningKubeDNSPodNames(client kubernetes.Interface, ctx context.Context) string {
+	pods, err := client.CoreV1().Pods("kube-system").List(ctx, metav1.ListOptions{
+		LabelSelector: "k8s-app=kube-dns",
+	})
+	if err != nil {
+		klog.V(2).Infof("failed to list kube-dns pods: %v", err)
+		return ""
+	}
+
+	var podNames []string
+	for _, pod := range pods.Items {
+		if pod.Status.Phase == corev1.PodRunning {
+			podNames = append(podNames, pod.Name)
+		}
+	}
+
+	return strings.Join(podNames, ", ")
+}
+
+func getKubeDNSServiceClusterIP(client kubernetes.Interface, ctx context.Context) string {
+	service, err := client.CoreV1().Services("kube-system").Get(ctx, "kube-dns", metav1.GetOptions{})
+	if err != nil {
+		klog.V(2).Infof("failed to get kube-dns service: %v", err)
+		return ""
+	}
+
+	return service.Spec.ClusterIP
+}
+
+func getKubeDNSEndpoints(client kubernetes.Interface, ctx context.Context) string {
+	endpoints, err := client.CoreV1().Endpoints("kube-system").Get(ctx, "kube-dns", metav1.GetOptions{})
+	if err != nil {
+		klog.V(2).Infof("failed to get kube-dns endpoints: %v", err)
+	}
+
+	var endpointStrings []string
+	for _, subset := range endpoints.Subsets {
+		for _, address := range subset.Addresses {
+			endpointStrings = append(endpointStrings, fmt.Sprintf("%s:%d", address.IP, subset.Ports[0].Port))
+		}
+	}
+
+	return strings.Join(endpointStrings, ", ")
 }
