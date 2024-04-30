@@ -257,12 +257,15 @@ func getKubeDNSEndpoints(client kubernetes.Interface, ctx context.Context) strin
 	endpoints, err := client.CoreV1().Endpoints("kube-system").Get(ctx, "kube-dns", metav1.GetOptions{})
 	if err != nil {
 		klog.V(2).Infof("failed to get kube-dns endpoints: %v", err)
+		return ""
 	}
 
 	var endpointStrings []string
 	for _, subset := range endpoints.Subsets {
 		for _, address := range subset.Addresses {
-			endpointStrings = append(endpointStrings, fmt.Sprintf("%s:%d", address.IP, subset.Ports[0].Port))
+			if len(subset.Ports) > 0 {
+				endpointStrings = append(endpointStrings, fmt.Sprintf("%s:%d", address.IP, subset.Ports[0].Port))
+			}
 		}
 	}
 
