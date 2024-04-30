@@ -101,6 +101,10 @@ func analyzeOneReplicaSetStatus(analyzer *troubleshootv1beta2.ReplicaSetStatus, 
 		}
 	}
 
+	if result == nil {
+		return nil, nil
+	}
+
 	return []*AnalyzeResult{result}, nil
 }
 
