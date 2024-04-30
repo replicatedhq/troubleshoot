@@ -47,9 +47,7 @@ func (a *AnalyzeReplicaSetStatus) Analyze(getFile getCollectedFileContents, find
 		return nil, err
 	}
 	for i := range results {
-		if results[i] != nil {
-			results[i].Strict = a.analyzer.Strict.BoolOrDefaultFalse()
-		}
+		results[i].Strict = a.analyzer.Strict.BoolOrDefaultFalse()
 	}
 	return results, nil
 }
