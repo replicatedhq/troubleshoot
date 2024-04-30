@@ -2978,6 +2978,20 @@
                   }
                 }
               },
+              "dns": {
+                "type": "object",
+                "properties": {
+                  "collectorName": {
+                    "type": "string"
+                  },
+                  "exclude": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  },
+                  "timeout": {
+                    "type": "string"
+                  }
+                }
+              },
               "exec": {
                 "type": "object",
                 "required": [

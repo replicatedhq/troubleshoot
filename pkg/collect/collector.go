@@ -124,6 +124,8 @@ func GetCollector(collector *troubleshootv1beta2.Collect, bundlePath string, nam
 		return &CollectSonobuoyResults{collector.Sonobuoy, bundlePath, namespace, clientConfig, client, ctx, RBACErrors}, true
 	case collector.NodeMetrics != nil:
 		return &CollectNodeMetrics{collector.NodeMetrics, bundlePath, clientConfig, client, ctx, RBACErrors}, true
+	case collector.DNS != nil:
+		return &CollectDNS{collector.DNS, bundlePath, namespace, clientConfig, client, ctx, RBACErrors}, true
 	default:
 		return nil, false
 	}
@@ -215,6 +217,8 @@ func getCollectorName(c interface{}) string {
 		collector = "sonobuoy"
 	case *CollectNodeMetrics:
 		collector = "node-metrics"
+	case *CollectDNS:
+		collector = "dns"
 	default:
 		collector = "<none>"
 	}
