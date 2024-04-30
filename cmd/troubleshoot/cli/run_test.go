@@ -57,8 +57,9 @@ spec:
 	err = loadSupportBundleSpecsFromURIs(ctx, kinds)
 	require.NoError(t, err)
 
-	require.Len(t, kinds.SupportBundlesV1Beta2, 2)
-	assert.NotNil(t, kinds.SupportBundlesV1Beta2[1].Spec.Collectors[0].ClusterInfo)
+	// valid uri spec will replace the original spec
+	require.Len(t, kinds.SupportBundlesV1Beta2, 1)
+	assert.NotNil(t, kinds.SupportBundlesV1Beta2[0].Spec.Collectors[0].ClusterInfo)
 }
 
 func Test_loadSupportBundleSpecsFromURIs_TimeoutError(t *testing.T) {
