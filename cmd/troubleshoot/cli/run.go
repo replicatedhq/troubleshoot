@@ -273,8 +273,7 @@ func loadSupportBundleSpecsFromURIs(ctx context.Context, kinds *loader.Troublesh
 		return err
 	}
 
-	// uri spec replaces the original spec
-	*kinds = *moreKinds
+	kinds.Add(moreKinds)
 	return nil
 }
 
