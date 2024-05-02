@@ -19,6 +19,8 @@ import (
 	"github.com/fatih/color"
 	"github.com/mattn/go-isatty"
 	"github.com/pkg/errors"
+	kjs "github.com/replicatedhq/kots-lint/kubernetes_json_schema"
+	"github.com/replicatedhq/kots-lint/pkg/kots"
 	"github.com/replicatedhq/troubleshoot/internal/specs"
 	"github.com/replicatedhq/troubleshoot/internal/util"
 	analyzer "github.com/replicatedhq/troubleshoot/pkg/analyze"
@@ -46,14 +48,38 @@ func runTroubleshoot(v *viper.Viper, args []string) error {
 		// Read from stdin
 		scanner := bufio.NewScanner(os.Stdin)
 		specYaml := ""
+		specYamlWithLineNumber := ""
+		lineNumber := 1
 		for scanner.Scan() {
 			input := scanner.Text()
 			specYaml = fmt.Sprintf("%s\n%s", specYaml, input)
+			specYamlWithLineNumber = fmt.Sprintf("%s\n%d: %s", specYamlWithLineNumber, lineNumber, input)
+			lineNumber++
 		}
 		if err := scanner.Err(); err != nil {
 			return fmt.Errorf("error reading standard input: %v", err)
 		}
-		fmt.Println(specYaml)
+		schemaDir, err := kjs.InitKubernetesJsonSchemaDir()
+		if err != nil {
+			return errors.Wrap(err, "failed to init kubernetes json schema dir")
+		}
+
+		if err := kots.InitOPALinting(); err != nil {
+			return errors.Wrap(err, "failed to init opa linting")
+		}
+
+		defer os.RemoveAll(schemaDir)
+		results, err := kots.TroubleshootLintSpec(specYaml)
+		if err != nil {
+			return errors.Wrap(err, "failed to lint spec")
+		}
+
+		fmt.Println(specYamlWithLineNumber)
+		for _, result := range results {
+			for i := range result.Positions {
+				fmt.Printf("Line %d | %s\n", result.Positions[i].Start.Line, result.Message)
+			}
+		}
 		return nil
 	} else if len(args) > 1 && args[0] == "lint" {
 		supportBundles, err := validateSpecs(args[1:], "")
