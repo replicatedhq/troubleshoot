@@ -244,10 +244,10 @@ the %s Admin Console to begin analysis.`
 }
 
 // loadSupportBundleSpecsFromURIs loads support bundle specs from URIs
-// iterate through original kinds and replace any spec with provided uri
 func loadSupportBundleSpecsFromURIs(ctx context.Context, kinds *loader.TroubleshootKinds) error {
 	moreKinds := loader.NewTroubleshootKinds()
 
+	// iterate through original kinds and replace any support bundle spec with provided uri spec
 	for _, s := range kinds.SupportBundlesV1Beta2 {
 		if s.Spec.Uri == "" || !util.IsURL(s.Spec.Uri) {
 			moreKinds.SupportBundlesV1Beta2 = append(moreKinds.SupportBundlesV1Beta2, s)
@@ -279,8 +279,7 @@ func loadSupportBundleSpecsFromURIs(ctx context.Context, kinds *loader.Troublesh
 
 	}
 
-	// replace original kinds the new kinds with uri spec
-	*kinds = *moreKinds
+	kinds.SupportBundlesV1Beta2 = moreKinds.SupportBundlesV1Beta2
 
 	return nil
 }
