@@ -279,23 +279,22 @@ func DedupAnalyzers(allAnalyzers []*troubleshootv1beta2.Analyze) []*troubleshoot
 }
 
 func DedupHostAnalyzers(allAnalyzers []*troubleshootv1beta2.HostAnalyze) []*troubleshootv1beta2.HostAnalyze {
-	uniqueAnalyzers := make(map[string]bool)
-	finalAnalyzers := []*troubleshootv1beta2.HostAnalyze{}
+	seen := make(map[string]bool)
+	out := []*troubleshootv1beta2.HostAnalyze{}
 
 	for _, analyzer := range allAnalyzers {
 		data, err := json.Marshal(analyzer)
 		if err != nil {
-			// return analyzer as is if for whatever reason it can't be marshalled into json
-			finalAnalyzers = append(finalAnalyzers, analyzer)
-		} else {
-			stringData := string(data)
-			if _, value := uniqueAnalyzers[stringData]; !value {
-				uniqueAnalyzers[stringData] = true
-				finalAnalyzers = append(finalAnalyzers, analyzer)
-			}
+			out = append(out, analyzer)
+			continue
+		}
+		key := string(data)
+		if _, ok := seen[key]; !ok {
+			out = append(out, analyzer)
+			seen[key] = true
 		}
 	}
-	return finalAnalyzers
+	return out
 }
 
 func stripRedactedLines(yaml []byte) []byte {

@@ -194,21 +194,20 @@ func CollectRemote(c *troubleshootv1beta2.RemoteCollector, additionalRedactors *
 }
 
 func DedupHostCollectors(allCollectors []*troubleshootv1beta2.HostCollect) []*troubleshootv1beta2.HostCollect {
-	uniqueCollectors := make(map[string]bool)
-	finalCollectors := []*troubleshootv1beta2.HostCollect{}
+	seen := make(map[string]bool)
+	out := []*troubleshootv1beta2.HostCollect{}
 
 	for _, collector := range allCollectors {
 		data, err := json.Marshal(collector)
 		if err != nil {
-			// return collector as is if for whatever reason it can't be marshalled into json
-			finalCollectors = append(finalCollectors, collector)
-		} else {
-			stringData := string(data)
-			if _, value := uniqueCollectors[stringData]; !value {
-				uniqueCollectors[stringData] = true
-				finalCollectors = append(finalCollectors, collector)
-			}
+			out = append(out, collector)
+			continue
+		}
+		key := string(data)
+		if _, ok := seen[key]; !ok {
+			out = append(out, collector)
+			seen[key] = true
 		}
 	}
-	return finalCollectors
+	return out
 }
