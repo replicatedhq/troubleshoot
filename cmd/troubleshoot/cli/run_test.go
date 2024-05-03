@@ -18,7 +18,8 @@ import (
 	testclient "k8s.io/client-go/kubernetes/fake"
 )
 
-var orig = `
+func templSpec() string {
+	return `
 apiVersion: troubleshoot.sh/v1beta2
 kind: SupportBundle
 metadata:
@@ -30,6 +31,7 @@ spec:
         name: kube-root-ca.crt
         namespace: default
 `
+}
 
 func Test_loadSupportBundleSpecsFromURIs(t *testing.T) {
 	// Run a webserver to serve the spec
@@ -45,7 +47,7 @@ spec:
 	}))
 	defer srv.Close()
 
-	orig := strings.ReplaceAll(orig, "$MY_URI", srv.URL)
+	orig := strings.ReplaceAll(templSpec(), "$MY_URI", srv.URL)
 
 	ctx := context.Background()
 	kinds, err := loader.LoadSpecs(ctx, loader.LoadOptions{RawSpec: orig})
@@ -57,8 +59,73 @@ spec:
 	err = loadSupportBundleSpecsFromURIs(ctx, kinds)
 	require.NoError(t, err)
 
-	require.Len(t, kinds.SupportBundlesV1Beta2, 2)
-	assert.NotNil(t, kinds.SupportBundlesV1Beta2[1].Spec.Collectors[0].ClusterInfo)
+	require.Len(t, kinds.SupportBundlesV1Beta2, 1)
+	assert.NotNil(t, kinds.SupportBundlesV1Beta2[0].Spec.Collectors[0].ClusterInfo)
+}
+
+func Test_loadMultipleSupportBundleSpecsWithNoURIs(t *testing.T) {
+	ctx := context.Background()
+	client := testclient.NewSimpleClientset()
+	specs := []string{testutils.ServeFromFilePath(t, `
+apiVersion: troubleshoot.sh/v1beta2
+kind: SupportBundle
+metadata:
+  name: sb-1
+spec:
+  collectors:
+    - clusterInfo:{}`), testutils.ServeFromFilePath(t, `
+apiVersion: troubleshoot.sh/v1beta2
+kind: SupportBundle
+metadata:
+  name: sb-2
+  spec:
+    collectors:
+      - clusterInfo: {}`)}
+
+	sb, _, err := loadSpecs(ctx, specs, client)
+	require.NoError(t, err)
+	require.Len(t, sb.Spec.Collectors, 2)
+}
+
+func Test_loadMultipleSupportBundleSpecsWithURIs(t *testing.T) {
+	ctx := context.Background()
+	client := testclient.NewSimpleClientset()
+
+	specFile := testutils.ServeFromFilePath(t, `
+apiVersion: troubleshoot.sh/v1beta2
+kind: SupportBundle
+metadata:
+  name: sb-file
+spec:
+  collectors:
+    - logs:
+        name: podlogs/kotsadm
+        selector:
+          - app=kotsadm
+`)
+
+	// Run a webserver to serve the spec
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(`
+apiVersion: troubleshoot.sh/v1beta2
+kind: SupportBundle
+metadata:
+  name: sb-uri
+spec:
+  collectors:
+    - clusterInfo: {}`))
+	}))
+	defer srv.Close()
+
+	orig := strings.ReplaceAll(templSpec(), "$MY_URI", srv.URL)
+	specUri := testutils.ServeFromFilePath(t, orig)
+	specs := []string{specFile, specUri}
+
+	sb, _, err := loadSpecs(ctx, specs, client)
+	require.NoError(t, err)
+	assert.NotNil(t, sb.Spec.Collectors[0].Logs)
+	assert.Nil(t, sb.Spec.Collectors[1].ConfigMap)      // original spec gone
+	assert.NotNil(t, sb.Spec.Collectors[1].ClusterInfo) // new spec from URI
 }
 
 func Test_loadSupportBundleSpecsFromURIs_TimeoutError(t *testing.T) {
@@ -69,7 +136,7 @@ func Test_loadSupportBundleSpecsFromURIs_TimeoutError(t *testing.T) {
 	ctx := context.Background()
 
 	kinds, err := loader.LoadSpecs(ctx, loader.LoadOptions{
-		RawSpec: strings.ReplaceAll(orig, "$MY_URI", srv.URL),
+		RawSpec: strings.ReplaceAll(templSpec(), "$MY_URI", srv.URL),
 	})
 	require.NoError(t, err)
 

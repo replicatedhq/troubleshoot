@@ -245,35 +245,42 @@ the %s Admin Console to begin analysis.`
 
 // loadSupportBundleSpecsFromURIs loads support bundle specs from URIs
 func loadSupportBundleSpecsFromURIs(ctx context.Context, kinds *loader.TroubleshootKinds) error {
-	remoteRawSpecs := []string{}
+	moreKinds := loader.NewTroubleshootKinds()
+
+	// iterate through original kinds and replace any support bundle spec with provided uri spec
 	for _, s := range kinds.SupportBundlesV1Beta2 {
-		if s.Spec.Uri != "" && util.IsURL(s.Spec.Uri) {
-			// We are using LoadSupportBundleSpec function here since it handles prompting
-			// users to accept insecure connections
-			// There is an opportunity to refactor this code in favour of the Loader APIs
-			// TODO: Pass ctx to LoadSupportBundleSpec
-			rawSpec, err := supportbundle.LoadSupportBundleSpec(s.Spec.Uri)
-			if err != nil {
-				// In the event a spec can't be loaded, we'll just skip it and print a warning
-				klog.Warningf("unable to load support bundle from URI: %q: %v", s.Spec.Uri, err)
-				continue
-			}
-			remoteRawSpecs = append(remoteRawSpecs, string(rawSpec))
+		if s.Spec.Uri == "" || !util.IsURL(s.Spec.Uri) {
+			moreKinds.SupportBundlesV1Beta2 = append(moreKinds.SupportBundlesV1Beta2, s)
+			continue
 		}
+
+		// We are using LoadSupportBundleSpec function here since it handles prompting
+		// users to accept insecure connections
+		// There is an opportunity to refactor this code in favour of the Loader APIs
+		// TODO: Pass ctx to LoadSupportBundleSpec
+		rawSpec, err := supportbundle.LoadSupportBundleSpec(s.Spec.Uri)
+		if err != nil {
+			// add back original spec
+			moreKinds.SupportBundlesV1Beta2 = append(moreKinds.SupportBundlesV1Beta2, s)
+			// In the event a spec can't be loaded, we'll just skip it and print a warning
+			klog.Warningf("unable to load support bundle from URI: %q: %v", s.Spec.Uri, err)
+			continue
+		}
+		k, err := loader.LoadSpecs(ctx, loader.LoadOptions{RawSpec: string(rawSpec)})
+		if err != nil {
+			// add back original spec
+			moreKinds.SupportBundlesV1Beta2 = append(moreKinds.SupportBundlesV1Beta2, s)
+			klog.Warningf("unable to load spec: %v", err)
+			continue
+		}
+
+		// finally append the uri spec
+		moreKinds.SupportBundlesV1Beta2 = append(moreKinds.SupportBundlesV1Beta2, k.SupportBundlesV1Beta2...)
+
 	}
 
-	if len(remoteRawSpecs) == 0 {
-		return nil
-	}
+	kinds.SupportBundlesV1Beta2 = moreKinds.SupportBundlesV1Beta2
 
-	moreKinds, err := loader.LoadSpecs(ctx, loader.LoadOptions{
-		RawSpecs: remoteRawSpecs,
-	})
-	if err != nil {
-		return err
-	}
-
-	kinds.Add(moreKinds)
 	return nil
 }
 
