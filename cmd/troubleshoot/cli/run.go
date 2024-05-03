@@ -1,6 +1,7 @@
 package cli
 
 import (
+	"bufio"
 	"context"
 	"crypto/tls"
 	"encoding/json"
@@ -9,6 +10,8 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"reflect"
+	"strings"
 	"sync"
 	"time"
 
@@ -16,6 +19,8 @@ import (
 	"github.com/fatih/color"
 	"github.com/mattn/go-isatty"
 	"github.com/pkg/errors"
+	kjs "github.com/replicatedhq/kots-lint/kubernetes_json_schema"
+	"github.com/replicatedhq/kots-lint/pkg/kots"
 	"github.com/replicatedhq/troubleshoot/internal/specs"
 	"github.com/replicatedhq/troubleshoot/internal/util"
 	analyzer "github.com/replicatedhq/troubleshoot/pkg/analyze"
@@ -30,6 +35,7 @@ import (
 	"github.com/replicatedhq/troubleshoot/pkg/types"
 	"github.com/spf13/viper"
 	spin "github.com/tj/go-spin"
+	"gopkg.in/yaml.v3"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -38,6 +44,62 @@ import (
 
 func runTroubleshoot(v *viper.Viper, args []string) error {
 	ctx := context.Background()
+	if len(args) == 1 && args[0] == "lint" {
+		// Read from stdin
+		scanner := bufio.NewScanner(os.Stdin)
+		specYaml := ""
+		specYamlWithLineNumber := ""
+		lineNumber := 1
+		for scanner.Scan() {
+			input := scanner.Text()
+			specYaml = fmt.Sprintf("%s\n%s", specYaml, input)
+			specYamlWithLineNumber = fmt.Sprintf("%s\n%d: %s", specYamlWithLineNumber, lineNumber, input)
+			lineNumber++
+		}
+		if err := scanner.Err(); err != nil {
+			return fmt.Errorf("error reading standard input: %v", err)
+		}
+		schemaDir, err := kjs.InitKubernetesJsonSchemaDir()
+		if err != nil {
+			return errors.Wrap(err, "failed to init kubernetes json schema dir")
+		}
+
+		if err := kots.InitOPALinting(); err != nil {
+			return errors.Wrap(err, "failed to init opa linting")
+		}
+
+		defer os.RemoveAll(schemaDir)
+		results, err := kots.TroubleshootLintSpec(specYaml)
+		if err != nil {
+			return errors.Wrap(err, "failed to lint spec")
+		}
+
+		fmt.Println(specYamlWithLineNumber)
+		for _, result := range results {
+			for i := range result.Positions {
+				fmt.Printf("Line %d | %s\n", result.Positions[i].Start.Line, result.Message)
+			}
+		}
+		return nil
+	} else if len(args) > 1 && args[0] == "lint" {
+		supportBundles, err := validateSpecs(args[1:], "")
+		if err != nil {
+			return err
+		}
+
+		k := loader.TroubleshootKinds{
+			SupportBundlesV1Beta2: *supportBundles,
+		}
+
+		out, err := k.ToYaml()
+		if err != nil {
+			return types.NewExitCodeError(constants.EXIT_CODE_CATCH_ALL, errors.Wrap(err, "failed to convert specs to yaml"))
+		}
+		fmt.Println("-----------\n")
+		fmt.Printf("%s", out)
+		return nil
+	}
+
 	if !v.GetBool("load-cluster-specs") && len(args) < 1 {
 		return errors.New("flag load-cluster-specs must be set if no specs are provided on the command line")
 	}
@@ -282,6 +344,142 @@ func loadSupportBundleSpecsFromURIs(ctx context.Context, kinds *loader.Troublesh
 	kinds.SupportBundlesV1Beta2 = moreKinds.SupportBundlesV1Beta2
 
 	return nil
+}
+
+func validateSpecs(args []string, specYaml string) (*[]troubleshootv1beta2.SupportBundle, error) {
+	// Append redactor uris to the args
+	allArgs := append(args, viper.GetStringSlice("redactors")...)
+	kinds, err := specs.LoadFromCLIArgs(context.TODO(), nil, allArgs, viper.GetViper())
+	if err != nil {
+		return nil, err
+	}
+
+	// Check if we have any collectors to run in the troubleshoot specs
+	if len(kinds.CollectorsV1Beta2) == 0 &&
+		len(kinds.HostCollectorsV1Beta2) == 0 &&
+		len(kinds.SupportBundlesV1Beta2) == 0 {
+		return nil, errors.New("no collectors specified to run")
+	}
+
+	for _, arg := range args {
+		err := checkSpecStructure(arg)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	for _, sb := range kinds.SupportBundlesV1Beta2 {
+		sb := sb
+		warning := validateTroubleshootSpecsItems(sb.Spec.Collectors, sb.Spec.Analyzers)
+		if warning != nil {
+			return nil, errors.New(warning.Warning())
+		}
+	}
+
+	// for _, c := range kinds.CollectorsV1Beta2 {
+	// 	mainBundle.Spec.Collectors = util.Append(mainBundle.Spec.Collectors, c.Spec.Collectors)
+	// }
+
+	// for _, hc := range kinds.HostCollectorsV1Beta2 {
+	// 	mainBundle.Spec.HostCollectors = util.Append(mainBundle.Spec.HostCollectors, hc.Spec.Collectors)
+	// }
+
+	return &kinds.SupportBundlesV1Beta2, nil
+}
+
+func validateTroubleshootSpecsItems(collectors []*troubleshootv1beta2.Collect, analyzers []*troubleshootv1beta2.Analyze) *types.ExitCodeWarning {
+	numberOfCollectors := len(collectors)
+	numberOfAnalyzers := len(analyzers)
+
+	if numberOfCollectors > 0 {
+		for _, c := range collectors {
+			if isStructEmpty(c) {
+				return types.NewExitCodeWarning("Wrong collector found")
+			}
+		}
+	} else {
+		return types.NewExitCodeWarning("No collectors found")
+	}
+
+	if numberOfAnalyzers > 0 {
+		for _, a := range analyzers {
+			if isStructEmpty(a) {
+				return types.NewExitCodeWarning("Wrong analyzer found")
+			}
+		}
+	} else {
+		return types.NewExitCodeWarning("No analyzers found")
+	}
+	return nil
+}
+
+func checkSpecStructure(path string) error {
+	if _, err := os.Stat(path); err == nil {
+		rawSpec, err := os.ReadFile(path)
+		if err != nil {
+			return types.NewExitCodeError(constants.EXIT_CODE_SPEC_ISSUES, err)
+		}
+
+		decoder := yaml.NewDecoder(strings.NewReader(string(rawSpec)))
+		var node yaml.Node
+		err = decoder.Decode(&node)
+		if err != nil {
+			return err
+		}
+
+		analyzerFields := listFieldNames(&troubleshootv1beta2.Analyze{})
+
+		analyzeFieldsInLowerCamelCase := strings.ToLower(strings.Join(analyzerFields, " "))
+
+		for _, n := range node.Content[0].Content { // Traverse the root map
+			if n.Kind == yaml.MappingNode && n.Tag == "!!map" {
+				for i := 0; i < len(n.Content); i += 2 {
+					keyNode := n.Content[i]
+					valNode := n.Content[i+1]
+					if keyNode.Value == "analyzers" {
+						for _, specNode := range valNode.Content {
+							for j := 0; j < len(specNode.Content); j += 2 {
+								analyzerKey := specNode.Content[j]
+								analyzerVal := specNode.Content[j+1]
+								if strings.Contains(analyzeFieldsInLowerCamelCase, strings.ToLower(analyzerKey.Value)) {
+									if len(analyzerVal.Content) == 0 {
+										fmt.Println("====================")
+										fmt.Printf("%s analyzer is empty\n", analyzerKey.Value)
+										fmt.Println("--------------------")
+										for k := j + 2; k < len(specNode.Content); k += 2 {
+											if specNode.Content[k].Value != "" && !strings.Contains(analyzeFieldsInLowerCamelCase, strings.ToLower(specNode.Content[k].Value)) {
+												fmt.Printf("%s is misaligned in %s\n", specNode.Content[k].Value, analyzerKey.Value)
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+	return nil
+}
+
+func listFieldNames(v interface{}) []string {
+	val := reflect.ValueOf(v).Elem()
+	fieldNames := make([]string, val.NumField())
+	for i := 0; i < val.NumField(); i++ {
+		fieldNames[i] = val.Type().Field(i).Name
+	}
+	return fieldNames
+}
+
+func isStructEmpty(s interface{}) bool {
+	val := reflect.ValueOf(s).Elem()
+	for i := 0; i < val.NumField(); i++ {
+		if !val.Field(i).IsNil() {
+			return false
+		}
+	}
+	return true
 }
 
 func loadSpecs(ctx context.Context, args []string, client kubernetes.Interface) (*troubleshootv1beta2.SupportBundle, *troubleshootv1beta2.Redactor, error) {
