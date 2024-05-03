@@ -363,6 +363,10 @@ func loadSpecs(ctx context.Context, args []string, client kubernetes.Interface) 
 	}
 
 	// dedupe specs
+	if len(mainBundle.Spec.Analyzers) > 0 {
+		mainBundle.Spec.Analyzers = analyzer.DedupAnalyzers(mainBundle.Spec.Analyzers)
+	}
+
 	if len(mainBundle.Spec.HostCollectors) > 0 {
 		mainBundle.Spec.HostCollectors = collect.DedupHostCollectors(mainBundle.Spec.HostCollectors)
 	}
