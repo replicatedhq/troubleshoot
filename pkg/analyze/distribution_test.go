@@ -172,10 +172,10 @@ func Test_mustNormalizeDistributionName(t *testing.T) {
 
 func TestParseNodesForProviders(t *testing.T) {
 	tests := []struct {
-		name  string
-		nodes []corev1.Node
-		want  providers
-		want1 string
+		name               string
+		nodes              []corev1.Node
+		wantProviders      providers
+		wantProviderString string
 	}{
 		{
 			name: "embedded-cluster",
@@ -198,15 +198,19 @@ func TestParseNodesForProviders(t *testing.T) {
 					},
 				},
 			},
-			want:  providers{embeddedCluster: true},
-			want1: "embedded-cluster",
+			wantProviders:      providers{embeddedCluster: true, k0s: true},
+			wantProviderString: "embedded-cluster",
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			provider, stringProvider := ParseNodesForProviders(tt.nodes)
-			assert.Equalf(t, tt.want, provider, "ParseNodesForProviders() got = %v, provider %v", provider, tt.want)
-			assert.Equalf(t, tt.want1, stringProvider, "ParseNodesForProviders() got1 = %v, stringProvider %v", stringProvider, tt.want1)
+			providers, stringProvider := ParseNodesForProviders(tt.nodes)
+			assert.Equalf(t, tt.wantProviders, providers,
+				"ParseNodesForProviders() gotProviders = %v, providers %v", providers, tt.wantProviders,
+			)
+			assert.Equalf(t, tt.wantProviderString, stringProvider,
+				"ParseNodesForProviders() gotStringProvider = %v, stringProvider %v", stringProvider, tt.wantProviderString,
+			)
 		})
 	}
 }
