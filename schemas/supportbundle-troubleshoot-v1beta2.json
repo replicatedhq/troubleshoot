@@ -18833,6 +18833,17 @@
                   }
                 }
               },
+              "kernelConfigs": {
+                "type": "object",
+                "properties": {
+                  "collectorName": {
+                    "type": "string"
+                  },
+                  "exclude": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  }
+                }
+              },
               "kernelModules": {
                 "type": "object",
                 "properties": {

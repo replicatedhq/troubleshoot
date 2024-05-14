@@ -19888,6 +19888,13 @@ spec:
                         exclude:
                           type: BoolString
                       type: object
+                    kernelConfigs:
+                      properties:
+                        collectorName:
+                          type: string
+                        exclude:
+                          type: BoolString
+                      type: object
                     kernelModules:
                       properties:
                         collectorName:
