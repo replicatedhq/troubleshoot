@@ -17,7 +17,7 @@ func TestParseKConfigs(t *testing.T) {
 	tests := []struct {
 		name     string
 		input    string
-		expected kConfigs
+		expected KConfigs
 	}{
 		{
 			name: "Valid input",
@@ -33,7 +33,7 @@ CONFIG_CLANG_VERSION=0
 CONFIG_AS_IS_GNU=y
 CONFIG_AS_VERSION=23800
 CONFIG_IKHEADERS=m`,
-			expected: kConfigs{
+			expected: KConfigs{
 				"CONFIG_CC_IS_GCC": kConfigBuiltIn,
 				"CONFIG_AS_IS_GNU": kConfigBuiltIn,
 				"CONFIG_IKHEADERS": kConfigAsModule,
@@ -42,7 +42,7 @@ CONFIG_IKHEADERS=m`,
 		{
 			name:     "Empty input",
 			input:    "",
-			expected: kConfigs{},
+			expected: KConfigs{},
 		},
 		{
 			name: "Invalid input",
@@ -51,7 +51,7 @@ foobar
    CONFIG_AS_IS_GNU=y
 CONFIG_IKHEADERS = m
 			`,
-			expected: kConfigs{},
+			expected: KConfigs{},
 		},
 	}
 

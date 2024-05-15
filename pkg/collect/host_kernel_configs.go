@@ -22,16 +22,14 @@ type CollectHostKernelConfigs struct {
 	BundlePath    string
 }
 
-type kConfigs map[string]kConfigOption
-type kConfigOption string
+type KConfigs map[string]string
 
 const HostKernelConfigsPath = `host-collectors/system/kernel-configs.json`
 
 const (
-	kConfigUnknown  kConfigOption = ""
-	kConfigBuiltIn  kConfigOption = "y"
-	kConfigAsModule kConfigOption = "m"
-	kConfigLeftOut  kConfigOption = "n"
+	kConfigBuiltIn  string = "y"
+	kConfigAsModule string = "m"
+	kConfigLeftOut  string = "n"
 )
 
 func (c *CollectHostKernelConfigs) Title() string {
@@ -49,7 +47,7 @@ func (c *CollectHostKernelConfigs) Collect(progressChan chan<- interface{}) (map
 		return nil, errors.Wrap(err, "failed to get kernel release")
 	}
 
-	var kConfigs kConfigs
+	var kConfigs KConfigs
 	kConfigs, err = loadKConfigs(kernelRelease)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to load kernel configs")
@@ -78,7 +76,7 @@ func getKernelRelease() (string, error) {
 // https://github.com/k0sproject/k0s/blob/ddee3f980443e19620e678a6e1dc136ff053bff9/internal/pkg/sysinfo/probes/linux/kernel.go#L282
 // loadKConfigs checks a list of well-known file system paths for kernel
 // configuration files and tries to parse them.
-func loadKConfigs(kernelRelease string) (kConfigs, error) {
+func loadKConfigs(kernelRelease string) (KConfigs, error) {
 	// At least some references to those paths may be fond here:
 	// https://github.com/torvalds/linux/blob/v4.3/init/Kconfig#L794
 	// https://github.com/torvalds/linux/blob/v4.3/init/Kconfig#L9
@@ -124,8 +122,8 @@ func loadKConfigs(kernelRelease string) (kConfigs, error) {
 }
 
 // parseKConfigs parses `r` line by line, extracting all kernel config options.
-func parseKConfigs(r io.Reader) (kConfigs, error) {
-	configs := kConfigs{}
+func parseKConfigs(r io.Reader) (KConfigs, error) {
+	configs := KConfigs{}
 	kConfigLineRegex := regexp.MustCompile(fmt.Sprintf(
 		"^(CONFIG_[A-Z0-9_]+)=([%s%s%s])$",
 		string(kConfigBuiltIn), string(kConfigLeftOut), string(kConfigAsModule),
@@ -137,7 +135,7 @@ func parseKConfigs(r io.Reader) (kConfigs, error) {
 		}
 
 		if matches := kConfigLineRegex.FindStringSubmatch(s.Text()); matches != nil {
-			configs[matches[1]] = kConfigOption(matches[2])
+			configs[matches[1]] = matches[2]
 		}
 	}
 	return configs, nil
