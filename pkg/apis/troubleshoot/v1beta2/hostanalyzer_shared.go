@@ -122,6 +122,12 @@ type HostOSAnalyze struct {
 	Outcomes      []*Outcome `json:"outcomes" yaml:"outcomes"`
 }
 
+type KernelConfigsAnalyze struct {
+	AnalyzeMeta   `json:",inline" yaml:",inline"`
+	CollectorName string     `json:"collectorName,omitempty" yaml:"collectorName,omitempty"`
+	Outcomes      []*Outcome `json:"outcomes" yaml:"outcomes"`
+}
+
 type HostAnalyze struct {
 	CPU                    *CPUAnalyze                        `json:"cpu,omitempty" yaml:"cpu,omitempty"`
 	TCPLoadBalancer        *TCPLoadBalancerAnalyze            `json:"tcpLoadBalancer,omitempty" yaml:"tcpLoadBalancer,omitempty"`
@@ -144,4 +150,5 @@ type HostAnalyze struct {
 	HostServices           *HostServicesAnalyze               `json:"hostServices,omitempty" yaml:"hostServices,omitempty"`
 	HostOS                 *HostOSAnalyze                     `json:"hostOS,omitempty" yaml:"hostOS,omitempty"`
 	TextAnalyze            *TextAnalyze                       `json:"textAnalyze,omitempty" yaml:"textAnalyze,omitempty"`
+	KernelConfigs          *KernelConfigsAnalyze              `json:"kernelConfigs,omitempty" yaml:"kernelConfigs,omitempty"`
 }
