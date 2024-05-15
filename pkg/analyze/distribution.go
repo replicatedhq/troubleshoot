@@ -191,6 +191,11 @@ func ParseNodesForProviders(nodes []corev1.Node) (providers, string) {
 		}
 	}
 
+	// If k0s and embedded-cluster are both found, prefer embedded-cluster
+	if foundProviders.k0s && foundProviders.embeddedCluster {
+		stringProvider = "embedded-cluster"
+	}
+
 	return foundProviders, stringProvider
 }
 

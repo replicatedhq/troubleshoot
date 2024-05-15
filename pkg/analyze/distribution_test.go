@@ -5,6 +5,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func Test_compareDistributionConditionalToActual(t *testing.T) {
@@ -164,6 +166,51 @@ func Test_mustNormalizeDistributionName(t *testing.T) {
 			actual := mustNormalizeDistributionName(test.raw)
 
 			assert.Equal(t, test.expected, actual)
+		})
+	}
+}
+
+func TestParseNodesForProviders(t *testing.T) {
+	tests := []struct {
+		name               string
+		nodes              []corev1.Node
+		wantProviders      providers
+		wantProviderString string
+	}{
+		{
+			name: "embedded-cluster",
+			nodes: []corev1.Node{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "embedded-cluster",
+						Labels: map[string]string{
+							"beta.kubernetes.io/arch":               "amd64",
+							"beta.kubernetes.io/os":                 "linux",
+							"kots.io/embedded-cluster-role":         "total-1",
+							"kots.io/embedded-cluster-role-0":       "management",
+							"kubernetes.io/arch":                    "amd64",
+							"kubernetes.io/hostname":                "evans-vm1",
+							"kubernetes.io/os":                      "linux",
+							"management":                            "true",
+							"node-role.kubernetes.io/control-plane": "true",
+							"node.k0sproject.io/role":               "control-plane",
+						},
+					},
+				},
+			},
+			wantProviders:      providers{embeddedCluster: true, k0s: true},
+			wantProviderString: "embedded-cluster",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			providers, stringProvider := ParseNodesForProviders(tt.nodes)
+			assert.Equalf(t, tt.wantProviders, providers,
+				"ParseNodesForProviders() gotProviders = %v, providers %v", providers, tt.wantProviders,
+			)
+			assert.Equalf(t, tt.wantProviderString, stringProvider,
+				"ParseNodesForProviders() gotStringProvider = %v, stringProvider %v", stringProvider, tt.wantProviderString,
+			)
 		})
 	}
 }
