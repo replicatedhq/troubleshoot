@@ -61,6 +61,8 @@ func GetHostCollector(collector *troubleshootv1beta2.HostCollect, bundlePath str
 		return &CollectHostRun{collector.HostRun, bundlePath}, true
 	case collector.HostCopy != nil:
 		return &CollectHostCopy{collector.HostCopy, bundlePath}, true
+	case collector.HostKernelConfigs != nil:
+		return &CollectHostKernelConfigs{collector.HostKernelConfigs, bundlePath}, true
 	default:
 		return nil, false
 	}
