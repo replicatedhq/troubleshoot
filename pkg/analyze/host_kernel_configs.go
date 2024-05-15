@@ -79,7 +79,11 @@ func analyzeSingleOutcome(kConfigs collect.KConfigs, result *AnalyzeResult, outc
 	result.Message = outcome.Message
 	result.URI = outcome.URI
 
+	// if no match, set pass outcome to fail
 	if !isMatch {
+		if outcomeType == constants.OUTCOME_PASS {
+			result.IsFail = true
+		}
 		return nil
 	}
 
