@@ -351,6 +351,8 @@ kind: SupportBundle
 metadata:
   name: sb
 spec:
+  collectors:
+  - helm: {}
   analyzers:
   - clusterVersion: {}
   hostCollectors:
@@ -364,6 +366,7 @@ spec:
 	client := testclient.NewSimpleClientset()
 	sb, _, err := loadSpecs(ctx, args, client)
 	require.NoError(t, err)
+	assert.Len(t, sb.Spec.Collectors, 1+2) // default clusterInfo + clusterResources
 	assert.Len(t, sb.Spec.Analyzers, 1)
 	assert.Len(t, sb.Spec.HostCollectors, 1)
 	assert.Len(t, sb.Spec.HostAnalyzers, 1)

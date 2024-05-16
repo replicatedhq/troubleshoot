@@ -278,25 +278,6 @@ func DedupAnalyzers(allAnalyzers []*troubleshootv1beta2.Analyze) []*troubleshoot
 	return finalAnalyzers
 }
 
-func DedupHostAnalyzers(allAnalyzers []*troubleshootv1beta2.HostAnalyze) []*troubleshootv1beta2.HostAnalyze {
-	seen := make(map[string]bool)
-	out := []*troubleshootv1beta2.HostAnalyze{}
-
-	for _, analyzer := range allAnalyzers {
-		data, err := json.Marshal(analyzer)
-		if err != nil {
-			out = append(out, analyzer)
-			continue
-		}
-		key := string(data)
-		if _, ok := seen[key]; !ok {
-			out = append(out, analyzer)
-			seen[key] = true
-		}
-	}
-	return out
-}
-
 func stripRedactedLines(yaml []byte) []byte {
 	buf := bytes.NewBuffer(yaml)
 	scanner := bufio.NewScanner(buf)
