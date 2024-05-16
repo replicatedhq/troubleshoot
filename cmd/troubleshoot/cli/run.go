@@ -362,6 +362,12 @@ func loadSpecs(ctx context.Context, args []string, client kubernetes.Interface) 
 		additionalRedactors.Spec.Redactors = util.Append(additionalRedactors.Spec.Redactors, r.Spec.Redactors)
 	}
 
+	// dedupe specs
+	mainBundle.Spec.Collectors = util.Dedup(mainBundle.Spec.Collectors)
+	mainBundle.Spec.Analyzers = util.Dedup(mainBundle.Spec.Analyzers)
+	mainBundle.Spec.HostCollectors = util.Dedup(mainBundle.Spec.HostCollectors)
+	mainBundle.Spec.HostAnalyzers = util.Dedup(mainBundle.Spec.HostAnalyzers)
+
 	return mainBundle, additionalRedactors, nil
 }
 
