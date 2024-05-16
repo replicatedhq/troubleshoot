@@ -106,6 +106,7 @@ func TestAnalyzeKernelConfigs(t *testing.T) {
 				{
 					Title:   "Kernel Configs",
 					IsPass:  false,
+					IsFail:  true,
 					Message: "IPv4 NAT option",
 				},
 			},
@@ -126,6 +127,7 @@ func TestAnalyzeKernelConfigs(t *testing.T) {
 				{
 					Title:   "Kernel Configs",
 					IsPass:  false,
+					IsFail:  true,
 					Message: "CONFIG_CGROUP_FREEZER is disabled",
 				},
 			},
