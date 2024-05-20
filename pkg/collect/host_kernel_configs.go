@@ -67,7 +67,7 @@ func (c *CollectHostKernelConfigs) Collect(progressChan chan<- interface{}) (map
 func getKernelRelease() (string, error) {
 	out, err := exec.Command("uname", "-r").Output()
 	if err != nil {
-		return "", errors.Wrap(err, "failed to determine kernel release")
+		return "", errors.Wrap(err, "failed to determine kernel release using uname -r")
 	}
 	release := strings.TrimSpace(string(out))
 	return release, nil
