@@ -21,13 +21,13 @@ func Test_findResource(t *testing.T) {
 			resourceExists: true,
 			analyzer: troubleshootv1beta2.ClusterResource{
 				CollectorName: "Check namespaced resource",
-				Kind:          "Deployment",
+				Kind:          "deployment",
 				Namespace:     "kube-system",
 				Name:          "coredns",
 			},
 		},
 		{
-			name:           "check default fallthrough",
+			name:           "check default fallthrough with case insensitivity",
 			resourceExists: true,
 			analyzer: troubleshootv1beta2.ClusterResource{
 				CollectorName: "Check namespaced resource",
@@ -40,7 +40,7 @@ func Test_findResource(t *testing.T) {
 			resourceExists: true,
 			analyzer: troubleshootv1beta2.ClusterResource{
 				CollectorName: "Check namespaced resource",
-				Kind:          "Node",
+				Kind:          "node",
 				ClusterScoped: true,
 				Name:          "repldev-marc",
 			},
@@ -50,7 +50,7 @@ func Test_findResource(t *testing.T) {
 			resourceExists: false,
 			analyzer: troubleshootv1beta2.ClusterResource{
 				CollectorName: "Check namespaced resource",
-				Kind:          "Node",
+				Kind:          "node",
 				ClusterScoped: true,
 				Name:          "resource-does-not-exist",
 			},

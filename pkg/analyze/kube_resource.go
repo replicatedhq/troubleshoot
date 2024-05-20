@@ -17,22 +17,22 @@ import (
 )
 
 var Filemap = map[string]string{
-	"Deployment":            constants.CLUSTER_RESOURCES_DEPLOYMENTS,
-	"StatefulSet":           constants.CLUSTER_RESOURCES_STATEFULSETS,
-	"NetworkPolicy":         constants.CLUSTER_RESOURCES_NETWORK_POLICY,
-	"Pod":                   constants.CLUSTER_RESOURCES_PODS,
-	"Ingress":               constants.CLUSTER_RESOURCES_INGRESS,
-	"Service":               constants.CLUSTER_RESOURCES_SERVICES,
-	"ResourceQuota":         constants.CLUSTER_RESOURCES_RESOURCE_QUOTA,
-	"Job":                   constants.CLUSTER_RESOURCES_JOBS,
-	"PersistentVolumeClaim": constants.CLUSTER_RESOURCES_PVCS,
+	"deployment":            constants.CLUSTER_RESOURCES_DEPLOYMENTS,
+	"statefulset":           constants.CLUSTER_RESOURCES_STATEFULSETS,
+	"networkpolicy":         constants.CLUSTER_RESOURCES_NETWORK_POLICY,
+	"pod":                   constants.CLUSTER_RESOURCES_PODS,
+	"ingress":               constants.CLUSTER_RESOURCES_INGRESS,
+	"service":               constants.CLUSTER_RESOURCES_SERVICES,
+	"resourcequota":         constants.CLUSTER_RESOURCES_RESOURCE_QUOTA,
+	"job":                   constants.CLUSTER_RESOURCES_JOBS,
+	"persistentvolumeclaim": constants.CLUSTER_RESOURCES_PVCS,
 	"pvc":                   constants.CLUSTER_RESOURCES_PVCS,
-	"ReplicaSet":            constants.CLUSTER_RESOURCES_REPLICASETS,
-	"Namespace":             fmt.Sprintf("%s.json", constants.CLUSTER_RESOURCES_NAMESPACES),
-	"PersistentVolume":      fmt.Sprintf("%s.json", constants.CLUSTER_RESOURCES_PVS),
+	"replicaset":            constants.CLUSTER_RESOURCES_REPLICASETS,
+	"namespace":             fmt.Sprintf("%s.json", constants.CLUSTER_RESOURCES_NAMESPACES),
+	"persistentvolume":      fmt.Sprintf("%s.json", constants.CLUSTER_RESOURCES_PVS),
 	"pv":                    fmt.Sprintf("%s.json", constants.CLUSTER_RESOURCES_PVS),
-	"Node":                  fmt.Sprintf("%s.json", constants.CLUSTER_RESOURCES_NODES),
-	"StorageClass":          fmt.Sprintf("%s.json", constants.CLUSTER_RESOURCES_STORAGE_CLASS),
+	"node":                  fmt.Sprintf("%s.json", constants.CLUSTER_RESOURCES_NODES),
+	"storageclass":          fmt.Sprintf("%s.json", constants.CLUSTER_RESOURCES_STORAGE_CLASS),
 }
 
 type AnalyzeClusterResource struct {
@@ -65,6 +65,9 @@ func (a *AnalyzeClusterResource) Analyze(getFile getCollectedFileContents, findF
 func FindResource(kind string, clusterScoped bool, namespace string, name string, getFileContents getCollectedFileContents) (interface{}, error) {
 
 	var datapath string
+
+	// lowercase the kind to avoid case sensitivity
+	kind = strings.ToLower(kind)
 
 	resourceLocation, ok := Filemap[kind]
 
