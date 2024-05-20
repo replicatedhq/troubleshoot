@@ -28,6 +28,7 @@ var Filemap = map[string]string{
 	"persistentvolumeclaim": constants.CLUSTER_RESOURCES_PVCS,
 	"pvc":                   constants.CLUSTER_RESOURCES_PVCS,
 	"replicaset":            constants.CLUSTER_RESOURCES_REPLICASETS,
+	"configmap":             constants.CLUSTER_RESOURCES_CONFIGMAPS,
 	"namespace":             fmt.Sprintf("%s.json", constants.CLUSTER_RESOURCES_NAMESPACES),
 	"persistentvolume":      fmt.Sprintf("%s.json", constants.CLUSTER_RESOURCES_PVS),
 	"pv":                    fmt.Sprintf("%s.json", constants.CLUSTER_RESOURCES_PVS),

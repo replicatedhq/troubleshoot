@@ -55,6 +55,16 @@ func Test_findResource(t *testing.T) {
 				Name:          "resource-does-not-exist",
 			},
 		},
+		{
+			name:           "configmap does exist",
+			resourceExists: true,
+			analyzer: troubleshootv1beta2.ClusterResource{
+				CollectorName: "Check namespaced resource",
+				Kind:          "configmap",
+				Namespace:     "kube-public",
+				Name:          "kube-root-ca.crt",
+			},
+		},
 	}
 
 	for _, test := range tests {
