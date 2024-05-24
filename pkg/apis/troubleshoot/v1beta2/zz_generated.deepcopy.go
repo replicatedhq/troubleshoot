@@ -2854,6 +2854,11 @@ func (in *JsonCompare) DeepCopy() *JsonCompare {
 func (in *KernelConfigsAnalyze) DeepCopyInto(out *KernelConfigsAnalyze) {
 	*out = *in
 	in.AnalyzeMeta.DeepCopyInto(&out.AnalyzeMeta)
+	if in.SelectedConfigs != nil {
+		in, out := &in.SelectedConfigs, &out.SelectedConfigs
+		*out = make([]string, len(*in))
+		copy(*out, *in)
+	}
 	if in.Outcomes != nil {
 		in, out := &in.Outcomes, &out.Outcomes
 		*out = make([]*Outcome, len(*in))
