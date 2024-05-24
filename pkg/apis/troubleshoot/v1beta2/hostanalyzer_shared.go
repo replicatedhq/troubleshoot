@@ -123,9 +123,10 @@ type HostOSAnalyze struct {
 }
 
 type KernelConfigsAnalyze struct {
-	AnalyzeMeta   `json:",inline" yaml:",inline"`
-	CollectorName string     `json:"collectorName,omitempty" yaml:"collectorName,omitempty"`
-	Outcomes      []*Outcome `json:"outcomes" yaml:"outcomes"`
+	AnalyzeMeta     `json:",inline" yaml:",inline"`
+	CollectorName   string     `json:"collectorName,omitempty" yaml:"collectorName,omitempty"`
+	SelectedConfigs []string   `json:"selectedConfigs" yaml:"selectedConfigs"`
+	Outcomes        []*Outcome `json:"outcomes" yaml:"outcomes"`
 }
 
 type HostAnalyze struct {

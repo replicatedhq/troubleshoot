@@ -15,26 +15,21 @@ func TestAnalyzeKernelConfigs(t *testing.T) {
 	}
 
 	tests := []struct {
-		name      string
-		kConfigs  collect.KConfigs
-		outcomes  []*troubleshootv1beta2.Outcome
-		results   []*AnalyzeResult
-		expectErr bool
+		name            string
+		kConfigs        collect.KConfigs
+		selectedConfigs []string
+		outcomes        []*troubleshootv1beta2.Outcome
+		results         []*AnalyzeResult
+		expectErr       bool
 	}{
 		{
-			name:     "all pass",
-			kConfigs: kConfigs,
+			name:            "all pass",
+			kConfigs:        kConfigs,
+			selectedConfigs: []string{"CONFIG_CGROUP_FREEZER=y", "CONFIG_NETFILTER_XTABLES=m"},
 			outcomes: []*troubleshootv1beta2.Outcome{
 				{
 					Pass: &troubleshootv1beta2.SingleOutcome{
-						When:    "CONFIG_CGROUP_FREEZER=y",
-						Message: "Freezer cgroup subsystem built-in",
-					},
-				},
-				{
-					Pass: &troubleshootv1beta2.SingleOutcome{
-						When:    "CONFIG_NETFILTER_XTABLES=m",
-						Message: "Netfilter Xtables support module",
+						Message: "required kernel configs are available",
 					},
 				},
 			},
@@ -42,23 +37,19 @@ func TestAnalyzeKernelConfigs(t *testing.T) {
 				{
 					Title:   "Kernel Configs",
 					IsPass:  true,
-					Message: "Freezer cgroup subsystem built-in",
-				}, {
-					Title:   "Kernel Configs",
-					IsPass:  true,
-					Message: "Netfilter Xtables support module",
+					Message: "required kernel configs are available",
 				},
 			},
 			expectErr: false,
 		},
 		{
-			name:     "has fail",
-			kConfigs: kConfigs,
+			name:            "has fail",
+			kConfigs:        kConfigs,
+			selectedConfigs: []string{"CONFIG_UTS_NS=y"},
 			outcomes: []*troubleshootv1beta2.Outcome{
 				{
 					Fail: &troubleshootv1beta2.SingleOutcome{
-						When:    "CONFIG_NETFILTER_XTABLES=m",
-						Message: "Netfilter Xtables support module",
+						Message: "missing kernel config(s): {{ .ConfigsNotFound }}",
 					},
 				},
 			},
@@ -66,84 +57,36 @@ func TestAnalyzeKernelConfigs(t *testing.T) {
 				{
 					Title:   "Kernel Configs",
 					IsFail:  true,
-					Message: "Netfilter Xtables support module",
+					Message: "missing kernel config(s): CONFIG_UTS_NS=y",
 				},
 			},
 			expectErr: false,
 		},
 		{
-			name:     "has warn",
-			kConfigs: kConfigs,
+			name:            "kernel config disabled",
+			kConfigs:        kConfigs,
+			selectedConfigs: []string{"CONFIG_CGROUP_FREEZER=n"},
 			outcomes: []*troubleshootv1beta2.Outcome{
 				{
-					Warn: &troubleshootv1beta2.SingleOutcome{
-						When:    "CONFIG_NETFILTER_XTABLES=m",
-						Message: "Netfilter Xtables support module",
+					Fail: &troubleshootv1beta2.SingleOutcome{
+						Message: "missing kernel config(s): {{ .ConfigsNotFound }}",
 					},
 				},
 			},
 			results: []*AnalyzeResult{
 				{
 					Title:   "Kernel Configs",
-					IsWarn:  true,
-					Message: "Netfilter Xtables support module",
-				},
-			},
-			expectErr: false,
-		},
-		{
-			name:     "missing kernel config",
-			kConfigs: kConfigs,
-			outcomes: []*troubleshootv1beta2.Outcome{
-				{
-					Pass: &troubleshootv1beta2.SingleOutcome{
-						When:    "CONFIG_NF_NAT_IPV4=y",
-						Message: "IPv4 NAT option",
-					},
-				},
-			},
-			results: []*AnalyzeResult{
-				{
-					Title:   "Kernel Configs",
-					IsPass:  false,
 					IsFail:  true,
-					Message: "IPv4 NAT option",
+					Message: "missing kernel config(s): CONFIG_CGROUP_FREEZER=n",
 				},
 			},
 			expectErr: false,
 		},
 		{
-			name:     "kernel config disabled",
-			kConfigs: kConfigs,
-			outcomes: []*troubleshootv1beta2.Outcome{
-				{
-					Pass: &troubleshootv1beta2.SingleOutcome{
-						When:    "CONFIG_CGROUP_FREEZER=n",
-						Message: "CONFIG_CGROUP_FREEZER is disabled",
-					},
-				},
-			},
-			results: []*AnalyzeResult{
-				{
-					Title:   "Kernel Configs",
-					IsPass:  false,
-					IsFail:  true,
-					Message: "CONFIG_CGROUP_FREEZER is disabled",
-				},
-			},
-			expectErr: false,
-		},
-		{
-			name: "missing when attribute",
-			outcomes: []*troubleshootv1beta2.Outcome{
-				{
-					Pass: &troubleshootv1beta2.SingleOutcome{
-						Message: "CONFIG_foo is enabled",
-						When:    "",
-					},
-				},
-			},
-			expectErr: true,
+			name:            "invalid kernel config",
+			kConfigs:        kConfigs,
+			selectedConfigs: []string{"foobar=n"},
+			expectErr:       true,
 		},
 	}
 
@@ -159,7 +102,8 @@ func TestAnalyzeKernelConfigs(t *testing.T) {
 					AnalyzeMeta: troubleshootv1beta2.AnalyzeMeta{
 						CheckName: "Kernel Configs",
 					},
-					Outcomes: tt.outcomes,
+					SelectedConfigs: tt.selectedConfigs,
+					Outcomes:        tt.outcomes,
 				},
 			}
 

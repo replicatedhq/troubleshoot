@@ -2343,10 +2343,15 @@ spec:
                                 type: object
                             type: object
                           type: array
+                        selectedConfigs:
+                          items:
+                            type: string
+                          type: array
                         strict:
                           type: BoolString
                       required:
                       - outcomes
+                      - selectedConfigs
                       type: object
                     kernelModules:
                       properties:

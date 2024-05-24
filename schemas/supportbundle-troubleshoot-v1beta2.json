@@ -17734,7 +17734,8 @@
               "kernelConfigs": {
                 "type": "object",
                 "required": [
-                  "outcomes"
+                  "outcomes",
+                  "selectedConfigs"
                 ],
                 "properties": {
                   "annotations": {
@@ -17800,6 +17801,12 @@
                           }
                         }
                       }
+                    }
+                  },
+                  "selectedConfigs": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
                     }
                   },
                   "strict": {

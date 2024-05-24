@@ -2,12 +2,14 @@ package analyzer
 
 import (
 	"encoding/json"
+	"regexp"
+
 	"strings"
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/replicatedhq/troubleshoot/pkg/collect"
-	"github.com/replicatedhq/troubleshoot/pkg/constants"
+	"k8s.io/klog/v2"
 )
 
 type AnalyzeHostKernelConfigs struct {
@@ -37,6 +39,30 @@ func (a *AnalyzeHostKernelConfigs) Analyze(
 		return nil, errors.Wrap(err, "failed to read kernel configs")
 	}
 
+	var configsNotFound []string
+	kConfigRegex := regexp.MustCompile("^(CONFIG_[A-Z0-9_]+)=([ymn])$")
+	for _, config := range hostAnalyzer.SelectedConfigs {
+		matches := kConfigRegex.FindStringSubmatch(config)
+		// zero tolerance for invalid kernel config
+		if matches == nil || len(matches) < 3 {
+			return nil, errors.Errorf("invalid kernel config: %s", config)
+		}
+
+		key := matches[1]
+		value := matches[2]
+
+		// check if the kernel config exists
+		if _, ok := kConfigs[key]; !ok {
+			configsNotFound = append(configsNotFound, config)
+			continue
+		}
+		// check if the kernel config value matches
+		if kConfigs[key] != value {
+			klog.V(2).Infof("collected kernel config %s=%s does not match expected value %s", key, kConfigs[key], value)
+			configsNotFound = append(configsNotFound, config)
+		}
+	}
+
 	var results []*AnalyzeResult
 	for _, outcome := range hostAnalyzer.Outcomes {
 		result := &AnalyzeResult{
@@ -44,73 +70,28 @@ func (a *AnalyzeHostKernelConfigs) Analyze(
 			Strict: hostAnalyzer.Strict.BoolOrDefaultFalse(),
 		}
 
-		if err := analyzeSingleOutcome(kConfigs, result, outcome.Pass, constants.OUTCOME_PASS); err != nil {
-			return nil, errors.Wrap(err, "failed to analyze pass outcome")
+		if outcome.Pass != nil && len(configsNotFound) == 0 {
+			result.IsPass = true
+			result.Message = outcome.Pass.Message
+			results = append(results, result)
+			break
 		}
 
-		if err := analyzeSingleOutcome(kConfigs, result, outcome.Fail, constants.OUTCOME_FAIL); err != nil {
-			return nil, errors.Wrap(err, "failed to analyze fail outcome")
+		if outcome.Fail != nil && len(configsNotFound) > 0 {
+			result.IsFail = true
+			result.Message = addMissingKernelConfigs(outcome.Fail.Message, configsNotFound)
+			results = append(results, result)
+			break
 		}
 
-		if err := analyzeSingleOutcome(kConfigs, result, outcome.Warn, constants.OUTCOME_WARN); err != nil {
-			return nil, errors.Wrap(err, "failed to analyze warn outcome")
-		}
-
-		results = append(results, result)
 	}
 
 	return results, nil
 }
 
-func analyzeSingleOutcome(kConfigs collect.KConfigs, result *AnalyzeResult, outcome *troubleshootv1beta2.SingleOutcome, outcomeType string) error {
-	if outcome == nil {
-		return nil
+func addMissingKernelConfigs(message string, missingConfigs []string) string {
+	if message == "" && len(missingConfigs) == 0 {
+		return message
 	}
-
-	if outcome.When == "" {
-		return errors.New("when attribute is required")
-	}
-
-	isMatch, err := match(kConfigs, outcome.When)
-	if err != nil {
-		return errors.Wrap(err, "failed to match")
-	}
-
-	result.Message = outcome.Message
-	result.URI = outcome.URI
-
-	// if no match, set pass outcome to fail
-	if !isMatch {
-		if outcomeType == constants.OUTCOME_PASS {
-			result.IsFail = true
-		}
-		return nil
-	}
-
-	switch outcomeType {
-	case constants.OUTCOME_PASS:
-		result.IsPass = true
-	case constants.OUTCOME_FAIL:
-		result.IsFail = true
-	case constants.OUTCOME_WARN:
-		result.IsWarn = true
-	}
-
-	return nil
-}
-
-func match(kConfigs collect.KConfigs, when string) (bool, error) {
-	parts := strings.SplitN(when, "=", 2)
-	if len(parts) != 2 {
-		return false, errors.New("invalid when attribute")
-	}
-	key, value := parts[0], parts[1]
-
-	// check if the key exists
-	if kConfig, ok := kConfigs[key]; ok {
-		return kConfig == strings.TrimSpace(value), nil
-	}
-
-	// kernel config not found
-	return false, nil
+	return strings.ReplaceAll(message, "{{ .ConfigsNotFound }}", strings.Join(missingConfigs, ", "))
 }
