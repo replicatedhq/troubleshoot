@@ -103,4 +103,9 @@ const (
 	// are not always the same
 	GP_DEFAULT_IMAGE     = "alpine:3"
 	GP_DEFAULT_NAMESPACE = "default"
+
+	// Analyzer Outcome types
+	OUTCOME_PASS = "pass"
+	OUTCOME_WARN = "warn"
+	OUTCOME_FAIL = "fail"
 )

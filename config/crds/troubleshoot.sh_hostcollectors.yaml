@@ -588,6 +588,60 @@ spec:
                       required:
                       - outcomes
                       type: object
+                    kernelConfigs:
+                      properties:
+                        annotations:
+                          additionalProperties:
+                            type: string
+                          type: object
+                        checkName:
+                          type: string
+                        collectorName:
+                          type: string
+                        exclude:
+                          type: BoolString
+                        outcomes:
+                          items:
+                            properties:
+                              fail:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
+                              pass:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
+                              warn:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
+                            type: object
+                          type: array
+                        selectedConfigs:
+                          items:
+                            type: string
+                          type: array
+                        strict:
+                          type: BoolString
+                      required:
+                      - outcomes
+                      - selectedConfigs
+                      type: object
                     kernelModules:
                       properties:
                         annotations:
@@ -1332,6 +1386,13 @@ spec:
                       - port
                       type: object
                     ipv4Interfaces:
+                      properties:
+                        collectorName:
+                          type: string
+                        exclude:
+                          type: BoolString
+                      type: object
+                    kernelConfigs:
                       properties:
                         collectorName:
                           type: string

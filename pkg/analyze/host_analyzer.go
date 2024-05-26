@@ -52,6 +52,8 @@ func GetHostAnalyzer(analyzer *troubleshootv1beta2.HostAnalyze) (HostAnalyzer, b
 		return &AnalyzeHostOS{analyzer.HostOS}, true
 	case analyzer.TextAnalyze != nil:
 		return &AnalyzeHostTextAnalyze{analyzer.TextAnalyze}, true
+	case analyzer.KernelConfigs != nil:
+		return &AnalyzeHostKernelConfigs{analyzer.KernelConfigs}, true
 	default:
 		return nil, false
 	}
