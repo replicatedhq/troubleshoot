@@ -307,7 +307,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: azure/docker-login@v1
+      - uses: azure/docker-login@v2
         with:
           username: ${{ secrets.DOCKERHUB_USER }}
           password: ${{ secrets.DOCKERHUB_PASSWORD }}
