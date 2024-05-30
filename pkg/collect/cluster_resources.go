@@ -801,7 +801,7 @@ func jobs(ctx context.Context, client *kubernetes.Clientset, namespaces []string
 }
 
 func cronJobs(ctx context.Context, client *kubernetes.Clientset, namespaces []string) (map[string][]byte, map[string]string) {
-	ok, err := discovery.HasResource(client, "batch/v1", "CronJobs")
+	ok, err := discovery.HasResource(client, "batch/v1", "CronJob")
 	if err != nil {
 		return nil, map[string]string{"": err.Error()}
 	}
