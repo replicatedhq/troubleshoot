@@ -26,7 +26,6 @@ func TestClusterResources(t *testing.T) {
 				"pvs.json",
 				"pod-disruption-budgets-errors.json",
 				"resources.json",
-				"cronjobs-errors.json",
 				"custom-resource-definitions.json",
 				"groups.json",
 				"priorityclasses.json",
@@ -38,6 +37,7 @@ func TestClusterResources(t *testing.T) {
 		},
 		{
 			paths: []string{
+				"cronjobs",
 				"limitranges",
 				"daemonsets",
 				"deployments",
