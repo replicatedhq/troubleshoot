@@ -286,7 +286,7 @@ jobs:
           go-version: "1.22"
 
       - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v5
+        uses: goreleaser/goreleaser-action@v6
         with:
           version: "v0.183.0"
           args: build --rm-dist --snapshot --config deploy/.goreleaser.yaml --single-target
@@ -335,7 +335,7 @@ jobs:
           COSIGN_KEY: ${{ secrets.COSIGN_KEY }}
 
       - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v5
+        uses: goreleaser/goreleaser-action@v6
         with:
           version: "v1.x"  # Binary version to install
           args: release --rm-dist --config deploy/.goreleaser.yaml
