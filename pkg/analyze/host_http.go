@@ -38,7 +38,41 @@ func (a *AnalyzeHostHTTP) Analyze(
 	if hostAnalyzer.CollectorName != "" {
 		name = filepath.Join("host-collectors/http", hostAnalyzer.CollectorName+".json")
 	}
-	contents, err := getCollectedFileContents(name)
+
+	return analyzeHTTPResult(hostAnalyzer, name, getCollectedFileContents, a.Title())
+}
+
+func compareHostHTTPConditionalToActual(conditional string, result *httpResult) (res bool, err error) {
+	if conditional == "error" {
+		return result.Error != nil, nil
+	}
+
+	parts := strings.Split(conditional, " ")
+	if len(parts) != 3 {
+		return false, fmt.Errorf("Failed to parse conditional: got %d parts", len(parts))
+	}
+
+	if parts[0] != "statusCode" {
+		return false, errors.New(`Conditional must begin with keyword "statusCode"`)
+	}
+
+	if parts[1] != "=" && parts[1] != "==" && parts[1] != "===" {
+		return false, errors.New(`Only supported operator is "=="`)
+	}
+
+	i, err := strconv.Atoi(parts[2])
+	if err != nil {
+		return false, err
+	}
+
+	if result.Response == nil {
+		return false, err
+	}
+	return result.Response.Status == i, nil
+}
+
+func analyzeHTTPResult(analyzer *troubleshootv1beta2.HTTPAnalyze, fileName string, getCollectedFileContents getCollectedFileContents, title string) ([]*AnalyzeResult, error) {
+	contents, err := getCollectedFileContents(fileName)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get collected file")
 	}
@@ -49,10 +83,10 @@ func (a *AnalyzeHostHTTP) Analyze(
 	}
 
 	result := &AnalyzeResult{
-		Title: a.Title(),
+		Title: title,
 	}
 
-	for _, outcome := range hostAnalyzer.Outcomes {
+	for _, outcome := range analyzer.Outcomes {
 		if outcome.Fail != nil {
 			if outcome.Fail.When == "" {
 				result.IsFail = true
@@ -121,33 +155,4 @@ func (a *AnalyzeHostHTTP) Analyze(
 	}
 
 	return []*AnalyzeResult{result}, nil
-}
-
-func compareHostHTTPConditionalToActual(conditional string, result *httpResult) (res bool, err error) {
-	if conditional == "error" {
-		return result.Error != nil, nil
-	}
-
-	parts := strings.Split(conditional, " ")
-	if len(parts) != 3 {
-		return false, fmt.Errorf("Failed to parse conditional: got %d parts", len(parts))
-	}
-
-	if parts[0] != "statusCode" {
-		return false, errors.New(`Conditional must begin with keyword "statusCode"`)
-	}
-
-	if parts[1] != "=" && parts[1] != "==" && parts[1] != "===" {
-		return false, errors.New(`Only supported operator is "=="`)
-	}
-
-	i, err := strconv.Atoi(parts[2])
-	if err != nil {
-		return false, err
-	}
-
-	if result.Response == nil {
-		return false, err
-	}
-	return result.Response.Status == i, nil
 }

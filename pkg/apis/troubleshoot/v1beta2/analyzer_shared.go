@@ -292,4 +292,5 @@ type Analyze struct {
 	Goldpinger               *GoldpingerAnalyze        `json:"goldpinger,omitempty" yaml:"goldpinger,omitempty"`
 	Event                    *EventAnalyze             `json:"event,omitempty" yaml:"event,omitempty"`
 	NodeMetrics              *NodeMetricsAnalyze       `json:"nodeMetrics,omitempty" yaml:"nodeMetrics,omitempty"`
+	HTTP                     *HTTPAnalyze              `json:"http,omitempty" yaml:"http,omitempty"`
 }
