@@ -250,6 +250,8 @@ func getAnalyzer(analyzer *troubleshootv1beta2.Analyze) Analyzer {
 		return &AnalyzeEvent{analyzer: analyzer.Event}
 	case analyzer.NodeMetrics != nil:
 		return &AnalyzeNodeMetrics{analyzer: analyzer.NodeMetrics}
+	case analyzer.HTTP != nil:
+		return &AnalyzeHTTPAnalyze{analyzer: analyzer.HTTP}
 	default:
 		return nil
 	}
