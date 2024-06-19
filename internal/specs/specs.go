@@ -78,6 +78,7 @@ func LoadFromCLIArgs(ctx context.Context, client kubernetes.Interface, args []st
 		ctx = context.Background()
 	}
 
+	var kindsFromURL *loader.TroubleshootKinds
 	rawSpecs := []string{}
 
 	for _, v := range args {
@@ -174,22 +175,35 @@ func LoadFromCLIArgs(ctx context.Context, client kubernetes.Interface, args []st
 				if err != nil {
 					return nil, types.NewExitCodeError(constants.EXIT_CODE_SPEC_ISSUES, err)
 				}
+
+				var specFromURL string
 				if parsedURL.Host == "kots.io" {
 					// To download specs from kots.io, we need to set the User-Agent header
-					rawSpec, err := downloadFromHttpURL(ctx, v, map[string]string{
+					specFromURL, err = downloadFromHttpURL(ctx, v, map[string]string{
 						"User-Agent": "Replicated_Troubleshoot/v1beta1",
 					})
 					if err != nil {
 						return nil, err
 					}
-					rawSpecs = append(rawSpecs, rawSpec)
 				} else {
-					rawSpec, err := downloadFromHttpURL(ctx, v, nil)
+					specFromURL, err = downloadFromHttpURL(ctx, v, nil)
 					if err != nil {
 						return nil, err
 					}
-					rawSpecs = append(rawSpecs, rawSpec)
 				}
+
+				// load URL spec first to remove URI key from the spec
+				kindsFromURL, err = loader.LoadSpecs(ctx, loader.LoadOptions{
+					RawSpec: specFromURL,
+				})
+				if err != nil {
+					return nil, err
+				}
+				// remove URI key from the spec if any
+				for i := range kindsFromURL.SupportBundlesV1Beta2 {
+					kindsFromURL.SupportBundlesV1Beta2[i].Spec.Uri = ""
+				}
+
 			}
 		}
 	}
@@ -199,6 +213,9 @@ func LoadFromCLIArgs(ctx context.Context, client kubernetes.Interface, args []st
 	})
 	if err != nil {
 		return nil, err
+	}
+	if kindsFromURL != nil {
+		kinds.Add(kindsFromURL)
 	}
 
 	if vp.GetBool("load-cluster-specs") {
