@@ -293,7 +293,8 @@ func loadSpecs(ctx context.Context, args []string, client kubernetes.Interface) 
 	}
 
 	// Load additional specs from support bundle URIs
-	if !viper.GetBool("no-uri") {
+	// only when no-uri flag is not set and no URLs are provided in the args
+	if !viper.GetBool("no-uri") && !hasURL(args) {
 		err := loadSupportBundleSpecsFromURIs(ctx, kinds)
 		if err != nil {
 			klog.Warningf("unable to load support bundles from URIs: %v", err)
@@ -419,4 +420,13 @@ func (a *analysisOutput) FormattedAnalysisOutput() (outputJson string, err error
 		return "", fmt.Errorf("\r * Failed to format analysis: %v\n", err)
 	}
 	return string(formatted), nil
+}
+
+func hasURL(args []string) bool {
+	for _, arg := range args {
+		if util.IsURL(arg) {
+			return true
+		}
+	}
+	return false
 }
