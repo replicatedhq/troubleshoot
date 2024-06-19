@@ -8,7 +8,6 @@ import (
 	"net/url"
 	"os"
 	"reflect"
-	"regexp"
 	"strings"
 	"time"
 
@@ -175,26 +174,20 @@ func LoadFromCLIArgs(ctx context.Context, client kubernetes.Interface, args []st
 				if err != nil {
 					return nil, types.NewExitCodeError(constants.EXIT_CODE_SPEC_ISSUES, err)
 				}
-				var rawSpec string
 				if parsedURL.Host == "kots.io" {
 					// To download specs from kots.io, we need to set the User-Agent header
-					rawSpec, err = downloadFromHttpURL(ctx, v, map[string]string{
+					rawSpec, err := downloadFromHttpURL(ctx, v, map[string]string{
 						"User-Agent": "Replicated_Troubleshoot/v1beta1",
 					})
 					if err != nil {
 						return nil, err
 					}
+					rawSpecs = append(rawSpecs, rawSpec)
 				} else {
-					rawSpec, err = downloadFromHttpURL(ctx, v, nil)
+					rawSpec, err := downloadFromHttpURL(ctx, v, nil)
 					if err != nil {
 						return nil, err
 					}
-				}
-				if rawSpec != "" {
-					re := regexp.MustCompile(`\n\s\suri:.*?\n`)
-					// we don't need uri: in the spec when an explicit URL is provided
-					rawSpec = re.ReplaceAllString(rawSpec, "\n")
-					fmt.Println(rawSpec)
 					rawSpecs = append(rawSpecs, rawSpec)
 				}
 			}
