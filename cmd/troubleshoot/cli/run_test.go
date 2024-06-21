@@ -376,16 +376,16 @@ func Test_loadSpecsFromURL(t *testing.T) {
 	// Run a webserver to serve the URI spec
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte(`
-	apiVersion: troubleshoot.sh/v1beta2
-	kind: SupportBundle
-	metadata:
-	  name: sb-2
-	spec:
-	  collectors:
-	    - logs:
-          name: podlogs/kotsadm
-          selector:
-            - app=kotsadm`))
+apiVersion: troubleshoot.sh/v1beta2
+kind: SupportBundle
+metadata:
+  name: sb-2
+spec:
+  collectors:
+    - logs:
+        name: podlogs/kotsadm
+        selector:
+          - app=kotsadm`))
 	}))
 	defer srv.Close()
 
