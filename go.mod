@@ -6,7 +6,7 @@ require (
 	github.com/ahmetalpbalkan/go-cursor v0.0.0-20131010032410-8136607ea412
 	github.com/apparentlymart/go-cidr v1.1.0
 	github.com/blang/semver/v4 v4.0.0
-	github.com/containers/image/v5 v5.31.0
+	github.com/containers/image/v5 v5.31.1
 	github.com/distribution/distribution/v3 v3.0.0-alpha.1
 	github.com/fatih/color v1.17.0
 	github.com/go-logr/logr v1.4.2
@@ -17,7 +17,7 @@ require (
 	github.com/google/gofuzz v1.2.0
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/handlers v1.5.2
-	github.com/hashicorp/go-getter v1.7.4
+	github.com/hashicorp/go-getter v1.7.5
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/jackc/pgx/v5 v5.6.0
 	github.com/longhorn/go-iscsi-helper v0.0.0-20210330030558-49a327fb024e
@@ -48,7 +48,7 @@ require (
 	k8s.io/apiserver v0.30.2
 	k8s.io/cli-runtime v0.30.2
 	k8s.io/client-go v0.30.2
-	k8s.io/klog/v2 v2.130.0
+	k8s.io/klog/v2 v2.130.1
 	oras.land/oras-go v1.2.5
 	sigs.k8s.io/controller-runtime v0.18.4
 	sigs.k8s.io/e2e-framework v0.4.0
