@@ -371,3 +371,49 @@ spec:
 	assert.Len(t, sb.Spec.HostCollectors, 1)
 	assert.Len(t, sb.Spec.HostAnalyzers, 1)
 }
+
+func Test_loadSpecsFromURL(t *testing.T) {
+	// Run a webserver to serve the URI spec
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(`
+apiVersion: troubleshoot.sh/v1beta2
+kind: SupportBundle
+metadata:
+  name: sb-2
+spec:
+  collectors:
+    - logs:
+        name: podlogs/kotsadm
+        selector:
+          - app=kotsadm`))
+	}))
+	defer srv.Close()
+
+	// update URI spec with the server URL
+	orig := strings.ReplaceAll(templSpec(), "$MY_URI", srv.URL)
+
+	// now create a webserver to serve the spec with URI
+	srv = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(orig))
+	}))
+	defer srv.Close()
+
+	fileSpec := testutils.ServeFromFilePath(t, `
+apiVersion: troubleshoot.sh/v1beta2
+kind: SupportBundle
+metadata:
+  name: sb
+spec:
+  collectors:
+    - helm: {}`)
+
+	// test and ensure that URI spec is not loaded
+	ctx := context.Background()
+	client := testclient.NewSimpleClientset()
+	sb, _, err := loadSpecs(ctx, []string{fileSpec, srv.URL}, client)
+	require.NoError(t, err)
+	assert.Len(t, sb.Spec.Collectors, 2+2)            // default + clusterInfo + clusterResources
+	assert.NotNil(t, sb.Spec.Collectors[0].Helm)      // come from the file spec
+	assert.NotNil(t, sb.Spec.Collectors[1].ConfigMap) // come from the original spec
+	assert.Nil(t, sb.Spec.Collectors[1].Logs)         // come from the URI spec
+}

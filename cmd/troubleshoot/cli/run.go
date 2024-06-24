@@ -293,6 +293,7 @@ func loadSpecs(ctx context.Context, args []string, client kubernetes.Interface) 
 	}
 
 	// Load additional specs from support bundle URIs
+	// only when no-uri flag is not set and no URLs are provided in the args
 	if !viper.GetBool("no-uri") {
 		err := loadSupportBundleSpecsFromURIs(ctx, kinds)
 		if err != nil {
