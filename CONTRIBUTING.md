@@ -143,3 +143,5 @@ Commit messages should follow the general guidelines:
   - First line, 50 chars or less, as a heading/title that people can find
   - Then a paragraph explaining things
 - Consider a footer with links to which bugs they fix etc, bearing in mind that Github does some of this magic already
+
+this is a test do not merge me
