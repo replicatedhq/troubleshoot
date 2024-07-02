@@ -1,6 +1,7 @@
 package collect
 
 import (
+	"encoding/base64"
 	"fmt"
 	"testing"
 
@@ -10,22 +11,60 @@ import (
 )
 
 func TestGetImageAuthConfigFromData(t *testing.T) {
-	imageRef, err := alltransports.ParseImageName(fmt.Sprintf("docker://%s", "docker.io/myimage"))
-	assert.NoError(t, err)
-
-	// {"auths":{"docker.io":{"auth":"auth","username":"username","password":"password"}}}
-	pullSecrets := &v1beta2.ImagePullSecrets{
-		SecretType: "kubernetes.io/dockerconfigjson",
-		Data: map[string]string{
-			".dockerconfigjson": "eyJhdXRocyI6eyJkb2NrZXIuaW8iOnsiYXV0aCI6ImF1dGgiLCJ1c2VybmFtZSI6InVzZXJuYW1lIiwicGFzc3dvcmQiOiJwYXNzd29yZCJ9fX0=",
+	tests := []struct {
+		name             string
+		imageName        string
+		dockerConfigJSON string
+		expectedUsername string
+		expectedPassword string
+		expectedError    bool
+	}{
+		{
+			name:             "docker.io auth",
+			imageName:        "docker.io/myimage",
+			dockerConfigJSON: `{"auths":{"docker.io":{"auth":"username:password"}}}`,
+			expectedUsername: "username",
+			expectedPassword: "password",
+			expectedError:    false,
+		},
+		{
+			name:             "docker.io auth multi colon",
+			imageName:        "docker.io/myimage",
+			dockerConfigJSON: `{"auths":{"docker.io":{"auth":"user:name:pass:word"}}}`,
+			expectedError:    true,
+		},
+		{
+			name:             "gcr.io auth",
+			imageName:        "gcr.io/myimage",
+			dockerConfigJSON: `{"auths":{"gcr.io":{"username":"_json_key","password":"sa-key"}}}`,
+			expectedUsername: "_json_key",
+			expectedPassword: "sa-key",
+			expectedError:    false,
 		},
 	}
 
-	authConfig, err := getImageAuthConfigFromData(imageRef, pullSecrets)
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			imageRef, err := alltransports.ParseImageName(fmt.Sprintf("docker://%s", test.imageName))
+			assert.NoError(t, err)
+
+			pullSecrets := &v1beta2.ImagePullSecrets{
+				SecretType: "kubernetes.io/dockerconfigjson",
+				Data: map[string]string{
+					".dockerconfigjson": base64.StdEncoding.EncodeToString([]byte(test.dockerConfigJSON)),
+				},
+			}
+
+			authConfig, err := getImageAuthConfigFromData(imageRef, pullSecrets)
+			if test.expectedError {
+				assert.Error(t, err)
+				return
+			}
+
+			assert.NoError(t, err)
+			assert.NotNil(t, authConfig)
+			assert.Equal(t, test.expectedUsername, authConfig.username)
+			assert.Equal(t, test.expectedPassword, authConfig.password)
+		})
 	}
-	assert.NotNil(t, authConfig)
-	assert.Equal(t, "username", authConfig.username)
-	assert.Equal(t, "password", authConfig.password)
 }

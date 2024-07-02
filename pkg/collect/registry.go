@@ -193,7 +193,7 @@ func getImageAuthConfigFromData(imageRef types.ImageReference, pullSecrets *v1be
 
 	dockerCfgJSON := struct {
 		Auths map[string]struct {
-			Auth     []byte `json:"auth"`
+			Auth     string `json:"auth"`
 			Username string `json:"username"`
 			Password string `json:"password"`
 		} `json:"auths"`
@@ -228,7 +228,7 @@ func getImageAuthConfigFromData(imageRef types.ImageReference, pullSecrets *v1be
 
 	authConfig := registryAuthConfig{
 		username: parts[0],
-		password: parts[1],
+		password: strings.Trim(parts[1], "\x00"),
 	}
 
 	return &authConfig, nil
