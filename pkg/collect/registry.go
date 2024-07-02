@@ -21,6 +21,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"k8s.io/klog/v2"
 )
 
 type RegistryImage struct {
@@ -97,6 +98,7 @@ func imageExists(namespace string, clientConfig *rest.Config, registryCollector 
 
 	authConfig, err := getImageAuthConfig(namespace, clientConfig, registryCollector, imageRef)
 	if err != nil {
+		klog.Errorf("failed to get auth config: %v", err)
 		return false, errors.Wrap(err, "failed to get auth config")
 	}
 
@@ -115,9 +117,12 @@ func imageExists(namespace string, clientConfig *rest.Config, registryCollector 
 
 		remoteImage, err := imageRef.NewImage(context.Background(), &sysCtx)
 		if err == nil {
+			klog.Infof("image %s exists", image)
 			remoteImage.Close()
 			return true, nil
 		}
+
+		klog.Errorf("failed to get image %s: %v", image, err)
 
 		if strings.Contains(err.Error(), "no image found in manifest list for architecture") {
 			// manifest was downloaded, but no matching architecture found in manifest
@@ -188,7 +193,9 @@ func getImageAuthConfigFromData(imageRef types.ImageReference, pullSecrets *v1be
 
 	dockerCfgJSON := struct {
 		Auths map[string]struct {
-			Auth []byte `json:"auth"`
+			Auth     []byte `json:"auth"`
+			Username string `json:"username"`
+			Password string `json:"password"`
 		} `json:"auths"`
 	}{}
 
@@ -203,9 +210,20 @@ func getImageAuthConfigFromData(imageRef types.ImageReference, pullSecrets *v1be
 		return nil, nil
 	}
 
+	// gcr.io auth uses username and password, e.g. username: _json_key, password: <sa_key>
+	if auth.Username != "" && auth.Password != "" {
+		return &registryAuthConfig{
+			username: auth.Username,
+			password: auth.Password,
+		}, nil
+	}
+
+	// docker.io auth uses auth, e.g. auth: <base64_encoded_username_password>
+	// username and password can't contain colon
+	// at least according to https://github.com/docker/cli/blob/v27.0.3/cli/config/configfile/file.go#L247
 	parts := strings.Split(string(auth.Auth), ":")
 	if len(parts) != 2 {
-		return nil, errors.Errorf("expected 2 parts in the string, but found %d", len(parts))
+		return nil, errors.Errorf("expected 2 parts in the auth string, but found %d", len(parts))
 	}
 
 	authConfig := registryAuthConfig{
