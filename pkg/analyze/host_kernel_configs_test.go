@@ -12,6 +12,7 @@ func TestAnalyzeKernelConfigs(t *testing.T) {
 	kConfigs := collect.KConfigs{
 		"CONFIG_CGROUP_FREEZER":    "y",
 		"CONFIG_NETFILTER_XTABLES": "m",
+		"CONFIG_BRIDGE":            "y",
 	}
 
 	tests := []struct {
@@ -88,13 +89,33 @@ func TestAnalyzeKernelConfigs(t *testing.T) {
 			selectedConfigs: []string{"foobar=n"},
 			expectErr:       true,
 		},
+		{
+			name:            "select multiple kernel config values",
+			kConfigs:        kConfigs,
+			selectedConfigs: []string{"CONFIG_BRIDGE=my"},
+			outcomes: []*troubleshootv1beta2.Outcome{
+				{
+					Pass: &troubleshootv1beta2.SingleOutcome{
+						Message: "required kernel configs are available",
+					},
+				},
+			},
+			results: []*AnalyzeResult{
+				{
+					Title:   "Kernel Configs",
+					IsPass:  true,
+					Message: "required kernel configs are available",
+				},
+			},
+			expectErr: false,
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
 			fn := func(_ string) ([]byte, error) {
-				return []byte(`{"CONFIG_CGROUP_FREEZER": "y", "CONFIG_NETFILTER_XTABLES": "m"}`), nil
+				return []byte(`{"CONFIG_CGROUP_FREEZER": "y", "CONFIG_NETFILTER_XTABLES": "m", "CONFIG_BRIDGE": "y"}`), nil
 			}
 
 			analyzer := AnalyzeHostKernelConfigs{
