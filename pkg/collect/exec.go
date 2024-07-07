@@ -83,21 +83,20 @@ func execWithoutTimeout(clientConfig *rest.Config, bundlePath string, execCollec
 	}
 
 	if len(pods) > 0 {
-		for _, pod := range pods {
-			stdout, stderr, execErrors := getExecOutputs(ctx, clientConfig, client, pod, execCollector)
+		// When the selector refers to more than one replica of a pod, the exec collector will execute in only one of the pods
+		pod := pods[0]
+		stdout, stderr, execErrors := getExecOutputs(ctx, clientConfig, client, pod, execCollector)
 
-			path := filepath.Join(execCollector.Name, pod.Namespace, pod.Name)
-			if len(stdout) > 0 {
-				output.SaveResult(bundlePath, filepath.Join(path, execCollector.CollectorName+"-stdout.txt"), bytes.NewBuffer(stdout))
-			}
-			if len(stderr) > 0 {
-				output.SaveResult(bundlePath, filepath.Join(path, execCollector.CollectorName+"-stderr.txt"), bytes.NewBuffer(stderr))
-			}
+		path := filepath.Join(execCollector.Name, pod.Namespace, pod.Name)
+		if len(stdout) > 0 {
+			output.SaveResult(bundlePath, filepath.Join(path, execCollector.CollectorName+"-stdout.txt"), bytes.NewBuffer(stdout))
+		}
+		if len(stderr) > 0 {
+			output.SaveResult(bundlePath, filepath.Join(path, execCollector.CollectorName+"-stderr.txt"), bytes.NewBuffer(stderr))
+		}
 
-			if len(execErrors) > 0 {
-				output.SaveResult(bundlePath, filepath.Join(path, execCollector.CollectorName+"-errors.json"), marshalErrors(execErrors))
-				continue
-			}
+		if len(execErrors) > 0 {
+			output.SaveResult(bundlePath, filepath.Join(path, execCollector.CollectorName+"-errors.json"), marshalErrors(execErrors))
 		}
 	}
 
