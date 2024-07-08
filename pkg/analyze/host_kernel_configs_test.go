@@ -4,19 +4,13 @@ import (
 	"testing"
 
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
-	"github.com/replicatedhq/troubleshoot/pkg/collect"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestAnalyzeKernelConfigs(t *testing.T) {
-	kConfigs := collect.KConfigs{
-		"CONFIG_CGROUP_FREEZER":    "y",
-		"CONFIG_NETFILTER_XTABLES": "m",
-	}
 
 	tests := []struct {
 		name            string
-		kConfigs        collect.KConfigs
 		selectedConfigs []string
 		outcomes        []*troubleshootv1beta2.Outcome
 		results         []*AnalyzeResult
@@ -24,7 +18,6 @@ func TestAnalyzeKernelConfigs(t *testing.T) {
 	}{
 		{
 			name:            "all pass",
-			kConfigs:        kConfigs,
 			selectedConfigs: []string{"CONFIG_CGROUP_FREEZER=y", "CONFIG_NETFILTER_XTABLES=m"},
 			outcomes: []*troubleshootv1beta2.Outcome{
 				{
@@ -44,7 +37,6 @@ func TestAnalyzeKernelConfigs(t *testing.T) {
 		},
 		{
 			name:            "has fail",
-			kConfigs:        kConfigs,
 			selectedConfigs: []string{"CONFIG_UTS_NS=y"},
 			outcomes: []*troubleshootv1beta2.Outcome{
 				{
@@ -64,7 +56,6 @@ func TestAnalyzeKernelConfigs(t *testing.T) {
 		},
 		{
 			name:            "kernel config disabled",
-			kConfigs:        kConfigs,
 			selectedConfigs: []string{"CONFIG_CGROUP_FREEZER=n"},
 			outcomes: []*troubleshootv1beta2.Outcome{
 				{
@@ -84,17 +75,35 @@ func TestAnalyzeKernelConfigs(t *testing.T) {
 		},
 		{
 			name:            "invalid kernel config",
-			kConfigs:        kConfigs,
 			selectedConfigs: []string{"foobar=n"},
 			expectErr:       true,
+		},
+		{
+			name:            "select multiple kernel config values",
+			selectedConfigs: []string{"CONFIG_BRIDGE=my"},
+			outcomes: []*troubleshootv1beta2.Outcome{
+				{
+					Pass: &troubleshootv1beta2.SingleOutcome{
+						Message: "required kernel configs are available",
+					},
+				},
+			},
+			results: []*AnalyzeResult{
+				{
+					Title:   "Kernel Configs",
+					IsPass:  true,
+					Message: "required kernel configs are available",
+				},
+			},
+			expectErr: false,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			fn := func(_ string) ([]byte, error) {
-				return []byte(`{"CONFIG_CGROUP_FREEZER": "y", "CONFIG_NETFILTER_XTABLES": "m"}`), nil
+			mockKernelFile := func(_ string) ([]byte, error) {
+				return []byte(`{"CONFIG_CGROUP_FREEZER": "y", "CONFIG_NETFILTER_XTABLES": "m", "CONFIG_BRIDGE": "y"}`), nil
 			}
 
 			analyzer := AnalyzeHostKernelConfigs{
@@ -107,7 +116,7 @@ func TestAnalyzeKernelConfigs(t *testing.T) {
 				},
 			}
 
-			results, err := analyzer.Analyze(fn, nil)
+			results, err := analyzer.Analyze(mockKernelFile, nil)
 
 			if tt.expectErr {
 				assert.Error(t, err)

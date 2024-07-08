@@ -40,7 +40,7 @@ func (a *AnalyzeHostKernelConfigs) Analyze(
 	}
 
 	var configsNotFound []string
-	kConfigRegex := regexp.MustCompile("^(CONFIG_[A-Z0-9_]+)=([ymn])$")
+	kConfigRegex := regexp.MustCompile("^(CONFIG_[A-Z0-9_]+)=([ymn]+)$")
 	for _, config := range hostAnalyzer.SelectedConfigs {
 		matches := kConfigRegex.FindStringSubmatch(config)
 		// zero tolerance for invalid kernel config
@@ -49,7 +49,7 @@ func (a *AnalyzeHostKernelConfigs) Analyze(
 		}
 
 		key := matches[1]
-		value := matches[2]
+		values := matches[2] // values can contain multiple values in any order y, m, n
 
 		// check if the kernel config exists
 		if _, ok := kConfigs[key]; !ok {
@@ -57,8 +57,8 @@ func (a *AnalyzeHostKernelConfigs) Analyze(
 			continue
 		}
 		// check if the kernel config value matches
-		if kConfigs[key] != value {
-			klog.V(2).Infof("collected kernel config %s=%s does not match expected value %s", key, kConfigs[key], value)
+		if !strings.Contains(values, kConfigs[key]) {
+			klog.V(2).Infof("collected kernel config %s=%s does not in expected values %s", key, kConfigs[key], values)
 			configsNotFound = append(configsNotFound, config)
 		}
 	}
