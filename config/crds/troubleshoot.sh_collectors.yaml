@@ -16878,6 +16878,8 @@ spec:
                       type: object
                   type: object
                 type: array
+              uri:
+                type: string
             type: object
           status:
             description: CollectorStatus defines the observed state of Collector

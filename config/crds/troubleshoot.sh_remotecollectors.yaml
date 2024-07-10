@@ -388,6 +388,8 @@ spec:
                 additionalProperties:
                   type: string
                 type: object
+              uri:
+                type: string
             type: object
           status:
             description: CollectorStatus defines the observed state of Collector

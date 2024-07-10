@@ -1937,6 +1937,8 @@ spec:
                       type: object
                   type: object
                 type: array
+              uri:
+                type: string
             type: object
           status:
             description: HostPreflightStatus defines the observed state of HostPreflight
