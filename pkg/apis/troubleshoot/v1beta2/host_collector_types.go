@@ -24,6 +24,7 @@ import (
 type HostCollectorSpec struct {
 	Collectors []*HostCollect `json:"collectors,omitempty" yaml:"collectors,omitempty"`
 	Analyzers  []*HostAnalyze `json:"analyzers,omitempty" yaml:"analyzers,omitempty"`
+	Uri        string         `json:"uri,omitempty" yaml:"uri,omitempty"`
 }
 
 // HostCollectorStatus defines the observed state of HostCollector

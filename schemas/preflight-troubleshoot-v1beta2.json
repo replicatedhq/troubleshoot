@@ -17338,6 +17338,9 @@
         },
         "uploadResultsTo": {
           "type": "string"
+        },
+        "uri": {
+          "type": "string"
         }
       }
     },

@@ -25,6 +25,7 @@ type HostPreflightSpec struct {
 	Collectors       []*HostCollect   `json:"collectors,omitempty" yaml:"collectors,omitempty"`
 	RemoteCollectors []*RemoteCollect `json:"remoteCollectors,omitempty" yaml:"remoteCollectors,omitempty"`
 	Analyzers        []*HostAnalyze   `json:"analyzers,omitempty" yaml:"analyzers,omitempty"`
+	Uri              string           `json:"uri,omitempty" yaml:"uri,omitempty"`
 }
 
 // HostPreflightStatus defines the observed state of HostPreflight

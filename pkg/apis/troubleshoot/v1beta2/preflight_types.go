@@ -26,6 +26,7 @@ type PreflightSpec struct {
 	Collectors       []*Collect       `json:"collectors,omitempty" yaml:"collectors,omitempty"`
 	RemoteCollectors []*RemoteCollect `json:"remoteCollectors,omitempty" yaml:"remoteCollectors,omitempty"`
 	Analyzers        []*Analyze       `json:"analyzers,omitempty" yaml:"analyzers,omitempty"`
+	Uri              string           `json:"uri,omitempty" yaml:"uri,omitempty"`
 }
 
 // PreflightStatus defines the observed state of Preflight

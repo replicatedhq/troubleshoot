@@ -18923,6 +18923,8 @@ spec:
                 type: array
               uploadResultsTo:
                 type: string
+              uri:
+                type: string
             type: object
           status:
             description: PreflightStatus defines the observed state of Preflight

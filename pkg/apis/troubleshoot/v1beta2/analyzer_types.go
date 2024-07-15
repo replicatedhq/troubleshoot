@@ -24,6 +24,7 @@ import (
 type AnalyzerSpec struct {
 	Analyzers     []*Analyze     `json:"analyzers,omitempty"`
 	HostAnalyzers []*HostAnalyze `json:"hostAnalyzers,omitempty" yaml:"hostAnalyzers,omitempty"`
+	Uri           string         `json:"uri,omitempty" yaml:"uri,omitempty"`
 }
 
 // AnalyzerStatus defines the observed state of Analyzer

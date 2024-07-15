@@ -23,6 +23,7 @@ import (
 // RedactorSpec defines the desired state of Redactor
 type RedactorSpec struct {
 	Redactors []*Redact `json:"redactors,omitempty"`
+	Uri       string    `json:"uri,omitempty" yaml:"uri,omitempty"`
 }
 
 // RedactorStatus defines the observed state of Redactor

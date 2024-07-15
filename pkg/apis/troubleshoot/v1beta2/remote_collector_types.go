@@ -25,6 +25,7 @@ type RemoteCollectorSpec struct {
 	Collectors      []*RemoteCollect   `json:"collectors,omitempty" yaml:"collectors,omitempty"`
 	AfterCollection []*AfterCollection `json:"afterCollection,omitempty" yaml:"afterCollection,omitempty"`
 	NodeSelector    map[string]string  `json:"nodeSelector,omitempty" yaml:"nodeSelector,omitempty"`
+	Uri             string             `json:"uri,omitempty" yaml:"uri,omitempty"`
 }
 
 // +genclient
