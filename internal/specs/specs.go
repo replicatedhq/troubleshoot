@@ -361,3 +361,31 @@ func LoadFromCluster(ctx context.Context, client kubernetes.Interface, selectors
 		RawSpecs: rawSpecs,
 	})
 }
+
+// LoadAdditionalSpecFromURIs loads additional specs from the URIs provided in the troubleshoot kinds.
+// This function will modify kinds in place.
+func LoadAdditionalSpecFromURIs(ctx context.Context, kinds *loader.TroubleshootKinds) {
+	uris := kinds.GetURIs()
+	if len(uris) == 0 {
+		klog.Info("No additional URIs found in all specs")
+		return
+	}
+	for _, uri := range uris {
+		rawSpec, err := downloadFromHttpURL(ctx, uri, nil)
+		if err != nil {
+			klog.Warningf("failed to download spec from URI %q: %v", uri, err)
+			continue
+		}
+		k, err := loader.LoadSpecs(ctx, loader.LoadOptions{RawSpec: string(rawSpec)})
+		if err != nil {
+			klog.Warningf("failed to load spec from URI %q: %v", uri, err)
+			continue
+		}
+		kinds.Add(k)
+	}
+
+	// dedup these top level specs
+	kinds.SupportBundlesV1Beta2 = util.Dedup(kinds.SupportBundlesV1Beta2)
+	kinds.PreflightsV1Beta2 = util.Dedup(kinds.PreflightsV1Beta2)
+	kinds.HostPreflightsV1Beta2 = util.Dedup(kinds.HostPreflightsV1Beta2)
+}
