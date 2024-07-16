@@ -133,8 +133,8 @@ func (kinds *TroubleshootKinds) ToYaml() (string, error) {
 
 // GetURIs dynamically extracts all the URIs from the troubleshoot kinds
 // .Spec.Uri field
-func (kinds *TroubleshootKinds) GetURIs() []string {
-	uris := []string{}
+func (kinds *TroubleshootKinds) GetURIs() map[string]bool {
+	uris := map[string]bool{}
 	obj := reflect.ValueOf(*kinds)
 
 	for i := 0; i < obj.NumField(); i++ {
@@ -154,7 +154,7 @@ func (kinds *TroubleshootKinds) GetURIs() []string {
 				continue
 			}
 
-			uris = append(uris, uriField.String())
+			uris[uriField.String()] = true
 		}
 	}
 

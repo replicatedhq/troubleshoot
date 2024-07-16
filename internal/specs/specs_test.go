@@ -224,3 +224,39 @@ spec:
 	require.NoError(t, err)
 	require.Len(t, specs.HostCollectorsV1Beta2, 1)
 }
+
+func TestLoadAdditionalSpecFromURIs(t *testing.T) {
+	m := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(`apiVersion: troubleshoot.sh/v1beta2
+apiVersion: troubleshoot.sh/v1beta2
+kind: Preflight
+metadata:
+  name: preflight-2
+spec:
+  collectors:
+    - ceph: {}
+`))
+	}))
+	defer m.Close()
+	kinds := loader.NewTroubleshootKinds()
+	kinds.PreflightsV1Beta2 = []troubleshootv1beta2.Preflight{
+		{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "preflight-1",
+			},
+			Spec: troubleshootv1beta2.PreflightSpec{
+				Uri: m.URL,
+				Collectors: []*troubleshootv1beta2.Collect{
+					{
+						DNS: &troubleshootv1beta2.DNS{},
+					},
+				},
+			},
+		},
+	}
+
+	LoadAdditionalSpecFromURIs(context.Background(), kinds)
+	require.Len(t, kinds.PreflightsV1Beta2, 2)
+	require.Len(t, kinds.PreflightsV1Beta2[0].Spec.Collectors, 1) // ceph
+	require.Len(t, kinds.PreflightsV1Beta2[1].Spec.Collectors, 1) // dns
+}

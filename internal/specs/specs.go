@@ -370,7 +370,7 @@ func LoadAdditionalSpecFromURIs(ctx context.Context, kinds *loader.TroubleshootK
 		klog.Info("No additional URIs found in all specs")
 		return
 	}
-	for _, uri := range uris {
+	for uri := range uris {
 		rawSpec, err := downloadFromHttpURL(ctx, uri, nil)
 		if err != nil {
 			klog.Warningf("failed to download spec from URI %q: %v", uri, err)
