@@ -632,33 +632,3 @@ func TestLoadingEmptySpec(t *testing.T) {
 		},
 	}, kinds)
 }
-
-func TestGetURIs(t *testing.T) {
-	kinds := NewTroubleshootKinds()
-	kinds.SupportBundlesV1Beta2 = []troubleshootv1beta2.SupportBundle{
-		{
-			Spec: troubleshootv1beta2.SupportBundleSpec{
-				Uri: "https://supportbundle.com",
-			},
-		},
-	}
-	kinds.PreflightsV1Beta2 = []troubleshootv1beta2.Preflight{
-		{
-			Spec: troubleshootv1beta2.PreflightSpec{
-				Uri: "https://preflight.com",
-			},
-		},
-	}
-	kinds.CollectorsV1Beta2 = []troubleshootv1beta2.Collector{
-		{
-			Spec: troubleshootv1beta2.CollectorSpec{
-				Uri: "https://supportbundle.com",
-			},
-		},
-	}
-	uris := kinds.GetURIs()
-	assert.Equal(t, map[string]bool{
-		"https://supportbundle.com": true,
-		"https://preflight.com":     true,
-	}, uris)
-}

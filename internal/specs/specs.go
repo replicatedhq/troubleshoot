@@ -362,30 +362,80 @@ func LoadFromCluster(ctx context.Context, client kubernetes.Interface, selectors
 	})
 }
 
-// LoadAdditionalSpecFromURIs loads additional specs from the URIs provided in the troubleshoot kinds.
+// LoadAdditionalSpecFromURIs loads additional specs from the URIs provided in the kinds.
 // This function will modify kinds in place.
 func LoadAdditionalSpecFromURIs(ctx context.Context, kinds *loader.TroubleshootKinds) {
-	uris := kinds.GetURIs()
-	if len(uris) == 0 {
-		klog.Info("No additional URIs found in all specs")
-		return
-	}
-	for uri := range uris {
-		rawSpec, err := downloadFromHttpURL(ctx, uri, nil)
-		if err != nil {
-			klog.Warningf("failed to download spec from URI %q: %v", uri, err)
-			continue
-		}
-		k, err := loader.LoadSpecs(ctx, loader.LoadOptions{RawSpec: string(rawSpec)})
-		if err != nil {
-			klog.Warningf("failed to load spec from URI %q: %v", uri, err)
-			continue
-		}
-		kinds.Add(k)
-	}
 
-	// dedup these top level specs
-	kinds.SupportBundlesV1Beta2 = util.Dedup(kinds.SupportBundlesV1Beta2)
-	kinds.PreflightsV1Beta2 = util.Dedup(kinds.PreflightsV1Beta2)
-	kinds.HostPreflightsV1Beta2 = util.Dedup(kinds.HostPreflightsV1Beta2)
+	obj := reflect.ValueOf(*kinds)
+
+	// iterate over all fields of the TroubleshootKinds
+	// e.g. SupportBundlesV1Beta2, PreflightsV1Beta2, etc.
+	for i := 0; i < obj.NumField(); i++ {
+		field := obj.Field(i)
+		if field.Kind() != reflect.Slice {
+			continue
+		}
+
+		// look at each spec in the slice
+		// e.g. each spec in []PreflightsV1Beta2
+		for count := 0; count < field.Len(); count++ {
+			currentSpec := field.Index(count)
+			specName := currentSpec.Type().Name()
+
+			// check if .Spec.Uri exists
+			specField := currentSpec.FieldByName("Spec")
+			if !specField.IsValid() {
+				continue
+			}
+			uriField := specField.FieldByName("Uri")
+			if uriField.Kind() != reflect.String {
+				continue
+			}
+
+			// download spec from URI
+			uri := uriField.String()
+			if uri == "" {
+				continue
+			}
+			rawSpec, err := downloadFromHttpURL(ctx, uri, nil)
+			if err != nil {
+				klog.Warningf("failed to download spec from URI %q: %v", uri, err)
+				continue
+			}
+
+			// load spec from raw spec
+			uriKinds, err := loader.LoadSpecs(ctx, loader.LoadOptions{RawSpec: string(rawSpec)})
+			if err != nil {
+				klog.Warningf("failed to load spec from URI %q: %v", uri, err)
+				continue
+			}
+
+			// replace original spec with the loaded spec from URI
+			newSpec := getFirstSpecOf(uriKinds, specName)
+			if !newSpec.IsValid() {
+				klog.Warningf("failed to read spec of type %s in URI %s", specName, uri)
+				continue
+			}
+			currentSpec.Set(newSpec)
+		}
+	}
+}
+
+// dynamically get spec from kinds of given name
+// return first element of the spec slice
+func getFirstSpecOf(kinds *loader.TroubleshootKinds, name string) reflect.Value {
+	obj := reflect.ValueOf(*kinds)
+	for i := 0; i < obj.NumField(); i++ {
+		field := obj.Field(i)
+		if field.Kind() != reflect.Slice {
+			continue
+		}
+		if field.Len() > 0 {
+			if field.Index(0).Type().Name() == name {
+				// return first element
+				return field.Index(0)
+			}
+		}
+	}
+	return reflect.Value{}
 }

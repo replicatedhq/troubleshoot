@@ -256,7 +256,7 @@ spec:
 	}
 
 	LoadAdditionalSpecFromURIs(context.Background(), kinds)
-	require.Len(t, kinds.PreflightsV1Beta2, 2)
-	require.Len(t, kinds.PreflightsV1Beta2[0].Spec.Collectors, 1) // ceph
-	require.Len(t, kinds.PreflightsV1Beta2[1].Spec.Collectors, 1) // dns
+	require.Len(t, kinds.PreflightsV1Beta2, 1)
+	require.Len(t, kinds.PreflightsV1Beta2[0].Spec.Collectors, 1)
+	require.NotNil(t, kinds.PreflightsV1Beta2[0].Spec.Collectors[0].Ceph)
 }

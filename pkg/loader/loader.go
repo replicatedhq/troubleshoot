@@ -131,36 +131,6 @@ func (kinds *TroubleshootKinds) ToYaml() (string, error) {
 	return strings.Join(rawList, "---\n"), nil
 }
 
-// GetURIs dynamically extracts all the URIs from the troubleshoot kinds
-// .Spec.Uri field
-func (kinds *TroubleshootKinds) GetURIs() map[string]bool {
-	uris := map[string]bool{}
-	obj := reflect.ValueOf(*kinds)
-
-	for i := 0; i < obj.NumField(); i++ {
-		field := obj.Field(i)
-		if field.Kind() != reflect.Slice {
-			continue
-		}
-
-		for count := 0; count < field.Len(); count++ {
-			val := field.Index(count)
-			specField := val.FieldByName("Spec")
-			if !specField.IsValid() {
-				continue
-			}
-			uriField := specField.FieldByName("Uri")
-			if !uriField.IsValid() || uriField.Kind() != reflect.String {
-				continue
-			}
-
-			uris[uriField.String()] = true
-		}
-	}
-
-	return uris
-}
-
 func NewTroubleshootKinds() *TroubleshootKinds {
 	return &TroubleshootKinds{}
 }
