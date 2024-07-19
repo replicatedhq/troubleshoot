@@ -152,4 +152,5 @@ type HostAnalyze struct {
 	HostOS                 *HostOSAnalyze                     `json:"hostOS,omitempty" yaml:"hostOS,omitempty"`
 	TextAnalyze            *TextAnalyze                       `json:"textAnalyze,omitempty" yaml:"textAnalyze,omitempty"`
 	KernelConfigs          *KernelConfigsAnalyze              `json:"kernelConfigs,omitempty" yaml:"kernelConfigs,omitempty"`
+	JsonCompare            *JsonCompare                       `json:"jsonCompare,omitempty" yaml:"jsonCompare,omitempty"`
 }
