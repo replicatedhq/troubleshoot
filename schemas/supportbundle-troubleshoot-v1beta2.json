@@ -18728,6 +18728,20 @@
                   }
                 }
               },
+              "cgroups": {
+                "type": "object",
+                "properties": {
+                  "collectorName": {
+                    "type": "string"
+                  },
+                  "exclude": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  },
+                  "mountPath": {
+                    "type": "string"
+                  }
+                }
+              },
               "copy": {
                 "type": "object",
                 "required": [
