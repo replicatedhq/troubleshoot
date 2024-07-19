@@ -17807,6 +17807,94 @@
                   }
                 }
               },
+              "jsonCompare": {
+                "type": "object",
+                "required": [
+                  "outcomes"
+                ],
+                "properties": {
+                  "annotations": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "string"
+                    }
+                  },
+                  "checkName": {
+                    "type": "string"
+                  },
+                  "collectorName": {
+                    "type": "string"
+                  },
+                  "exclude": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  },
+                  "fileName": {
+                    "type": "string"
+                  },
+                  "jsonPath": {
+                    "type": "string"
+                  },
+                  "outcomes": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "fail": {
+                          "type": "object",
+                          "properties": {
+                            "message": {
+                              "type": "string"
+                            },
+                            "uri": {
+                              "type": "string"
+                            },
+                            "when": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "pass": {
+                          "type": "object",
+                          "properties": {
+                            "message": {
+                              "type": "string"
+                            },
+                            "uri": {
+                              "type": "string"
+                            },
+                            "when": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "warn": {
+                          "type": "object",
+                          "properties": {
+                            "message": {
+                              "type": "string"
+                            },
+                            "uri": {
+                              "type": "string"
+                            },
+                            "when": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "path": {
+                    "type": "string"
+                  },
+                  "strict": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  },
+                  "value": {
+                    "type": "string"
+                  }
+                }
+              },
               "kernelConfigs": {
                 "type": "object",
                 "required": [
