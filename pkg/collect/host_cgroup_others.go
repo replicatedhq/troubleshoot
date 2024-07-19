@@ -6,6 +6,6 @@ import (
 	"fmt"
 )
 
-func discoverConfiguration(mountPath string) (cgroupsResult, error) {
+func discoverConfiguration(_ string) (cgroupsResult, error) {
 	return cgroupsResult{}, fmt.Errorf("Discovery of cgroups not inimplemented for this OS")
 }

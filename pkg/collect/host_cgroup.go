@@ -24,7 +24,7 @@ type CollectHostCGroups struct {
 
 type cgroupResult struct {
 	Enabled     bool     `json:"enabled"`
-	Mounts      []string `json:"mounts"`
+	MountPoint  string   `json:"mountPoint"`
 	Controllers []string `json:"controllers"`
 }
 
@@ -46,11 +46,11 @@ func (c *CollectHostCGroups) Collect(progressChan chan<- interface{}) (map[strin
 	// https://man7.org/linux/man-pages/man7/cgroups.7.html
 	// Implementation is based on https://github.com/k0sproject/k0s/blob/main/internal/pkg/sysinfo/probes/linux/cgroups.go
 
-	if c.hostCollector.MountPath == "" {
-		c.hostCollector.MountPath = "/sys/fs/cgroup"
+	if c.hostCollector.MountPoint == "" {
+		c.hostCollector.MountPoint = "/sys/fs/cgroup"
 	}
 
-	results, err := discoverConfiguration(c.hostCollector.MountPath)
+	results, err := discoverConfiguration(c.hostCollector.MountPoint)
 	if err != nil {
 		return nil, err
 	}

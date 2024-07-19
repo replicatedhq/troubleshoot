@@ -78,7 +78,7 @@ type HostCopy struct {
 
 type HostCGroups struct {
 	HostCollectorMeta `json:",inline" yaml:",inline"`
-	MountPath         string `json:"mountPath,omitempty" yaml:"mountPath,omitempty"`
+	MountPoint        string `json:"mountPoint,omitempty" yaml:"mountPoint,omitempty"`
 }
 
 type HostTime struct {

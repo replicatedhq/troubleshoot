@@ -18737,7 +18737,7 @@
                   "exclude": {
                     "oneOf": [{"type": "string"},{"type": "boolean"}]
                   },
-                  "mountPath": {
+                  "mountPoint": {
                     "type": "string"
                   }
                 }

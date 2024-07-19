@@ -1189,7 +1189,7 @@ spec:
                           type: string
                         exclude:
                           type: BoolString
-                        mountPath:
+                        mountPoint:
                           type: string
                       type: object
                     copy:

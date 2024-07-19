@@ -23,41 +23,41 @@ import (
 	"k8s.io/utils/ptr"
 )
 
-func discoverConfiguration(mountPath string) (cgroupsResult, error) {
+func discoverConfiguration(mountPoint string) (cgroupsResult, error) {
 	results := cgroupsResult{}
 
 	var st syscall.Statfs_t
-	if err := syscall.Statfs(mountPath, &st); err != nil {
+	if err := syscall.Statfs(mountPoint, &st); err != nil {
 		if os.IsNotExist(err) {
-			klog.V(2).Infof("no file system mounted at %q", mountPath)
+			klog.V(2).Infof("no file system mounted at %q", mountPoint)
 			return results, nil
 		}
 
-		return results, fmt.Errorf("failed to stat %q: %w", mountPath, err)
+		return results, fmt.Errorf("failed to stat %q: %w", mountPoint, err)
 	}
 
 	switch st.Type {
 	case unix.CGROUP2_SUPER_MAGIC:
-		klog.V(2).Infof("cgroup v2 mounted at %q", mountPath)
+		klog.V(2).Infof("cgroup v2 mounted at %q", mountPoint)
 		// Discover cgroup2 and controllers enabled
 		// https://www.kernel.org/doc/html/v5.16/admin-guide/cgroup-v2.html#mounting
-		v, err := discoverV2Configuration(mountPath)
+		v, err := discoverV2Configuration(mountPoint)
 		if err != nil {
 			return results, err
 		}
 		results.CGroupV2 = v
 	case unix.CGROUP_SUPER_MAGIC, unix.TMPFS_MAGIC:
-		klog.V(2).Infof("cgroup v1 mounted at %q", mountPath)
+		klog.V(2).Infof("cgroup v1 mounted at %q", mountPoint)
 		// Discover cgroup1 and controllers enabled
 		// https://git.kernel.org/pub/scm/docs/man-pages/man-pages.git/tree/man7/cgroups.7?h=man-pages-5.13#n159
 		// https://www.kernel.org/doc/html/v5.16/admin-guide/cgroup-v1/cgroups.html#how-do-i-use-cgroups
-		r, err := discoverV1Configuration(mountPath)
+		r, err := discoverV1Configuration(mountPoint)
 		if err != nil {
 			return results, err
 		}
 		results.CGroupV1 = r
 	default:
-		return results, fmt.Errorf("unexpected file system type of %q: 0x%x", mountPath, st.Type)
+		return results, fmt.Errorf("unexpected file system type of %q: 0x%x", mountPoint, st.Type)
 	}
 
 	// If cgroup1 or cgroup2 is enabled
@@ -66,7 +66,7 @@ func discoverConfiguration(mountPath string) (cgroupsResult, error) {
 	return results, nil
 }
 
-func discoverV1Configuration(mountPath string) (cgroupResult, error) {
+func discoverV1Configuration(mountPoint string) (cgroupResult, error) {
 	res := cgroupResult{}
 	// Get the available controllers from /proc/cgroups.
 	// See https://www.man7.org/linux/man-pages/man7/cgroups.7.html#NOTES
@@ -84,31 +84,31 @@ func discoverV1Configuration(mountPath string) (cgroupResult, error) {
 
 	res.Enabled = true
 	res.Controllers = names
-	res.Mounts = []string{mountPath}
+	res.MountPoint = mountPoint
 
 	return res, nil
 }
 
-func discoverV2Configuration(mountPath string) (cgroupResult, error) {
+func discoverV2Configuration(mountPoint string) (cgroupResult, error) {
 	res := cgroupResult{}
 
 	// Detect all the listed root controllers.
-	controllers, err := detectV2Controllers(mountPath)
+	controllers, err := detectV2Controllers(mountPoint)
 	if err != nil {
 		return res, err
 	}
 
 	res.Enabled = true
 	res.Controllers = controllers
-	res.Mounts = []string{mountPath}
+	res.MountPoint = mountPoint
 	return res, nil
 }
 
 // Detects all the listed root controllers.
 //
 // https://github.com/torvalds/linux/blob/v5.3/Documentation/admin-guide/cgroup-v2.rst#core-interface-files
-func detectV2Controllers(mountPath string) ([]string, error) {
-	root, err := cgroup2.Load("/", cgroup2.WithMountpoint(mountPath))
+func detectV2Controllers(mountPoint string) ([]string, error) {
+	root, err := cgroup2.Load("/", cgroup2.WithMountpoint(mountPoint))
 	if err != nil {
 		return nil, fmt.Errorf("failed to load root cgroup: %w", err)
 	}
@@ -120,12 +120,12 @@ func detectV2Controllers(mountPath string) ([]string, error) {
 	}
 
 	// Detect freezer controller
-	if detectV2FreezerController(mountPath) {
+	if detectV2FreezerController(mountPoint) {
 		controllerNames = append(controllerNames, "freezer")
 	}
 
 	// Detect devices controller
-	if detectV2DevicesController(mountPath) {
+	if detectV2DevicesController(mountPoint) {
 		controllerNames = append(controllerNames, "devices")
 	}
 
@@ -140,8 +140,8 @@ func detectV2Controllers(mountPath string) ([]string, error) {
 // such as RHEL and friends.
 //
 // https://github.com/torvalds/linux/blob/v5.3/Documentation/admin-guide/cgroup-v2.rst#device-controller
-func detectV2DevicesController(mountPath string) bool {
-	err := attachDummyDeviceFilter(mountPath)
+func detectV2DevicesController(mountPoint string) bool {
+	err := attachDummyDeviceFilter(mountPoint)
 	switch {
 	case err == nil:
 		klog.V(2).Info("eBPF device filter program successfully attached")
@@ -248,7 +248,7 @@ func eBPFProgramUnsupported(err error) bool {
 // instead, or try to create a dummy cgroup if troubleshoot runs in the root cgroup.
 //
 // https://github.com/torvalds/linux/blob/v5.3/Documentation/admin-guide/cgroup-v2.rst#core-interface-files
-func detectV2FreezerController(mountPath string) bool {
+func detectV2FreezerController(mountPoint string) bool {
 
 	// Detect the freezer controller by checking troubleshoot's cgroup for the existence
 	// of the cgroup.freeze file.
@@ -260,9 +260,9 @@ func detectV2FreezerController(mountPath string) bool {
 	}
 
 	if cgroupPath != "/" {
-		cgroupPath = filepath.Join(mountPath, cgroupPath)
+		cgroupPath = filepath.Join(mountPoint, cgroupPath)
 	} else { // The root cgroup cannot be frozen. Try to create a dummy cgroup.
-		tmpCgroupPath, err := os.MkdirTemp(mountPath, "troubleshoot-freezer-detection-*")
+		tmpCgroupPath, err := os.MkdirTemp(mountPoint, "troubleshoot-freezer-detection-*")
 		if err != nil {
 			if errors.Is(err, os.ErrPermission) && os.Geteuid() != 0 {
 				// Insufficient permissions. Creating a cgroup requires elevated permissions
