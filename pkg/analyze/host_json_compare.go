@@ -9,7 +9,7 @@ type AnalyzeHostJsonCompare struct {
 }
 
 func (a *AnalyzeHostJsonCompare) Title() string {
-	return hostAnalyzerTitleOrDefault(a.hostAnalyzer.AnalyzeMeta, "json compare")
+	return jsonCompareTitle(a.hostAnalyzer)
 }
 
 func (a *AnalyzeHostJsonCompare) IsExcluded() (bool, error) {

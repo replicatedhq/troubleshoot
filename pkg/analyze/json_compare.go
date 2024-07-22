@@ -21,9 +21,16 @@ type AnalyzeJsonCompare struct {
 }
 
 func (a *AnalyzeJsonCompare) Title() string {
-	title := a.analyzer.CheckName
+	return jsonCompareTitle(a.analyzer)
+}
+
+func jsonCompareTitle(analyser *troubleshootv1beta2.JsonCompare) string {
+	title := analyser.CheckName
 	if title == "" {
-		title = a.analyzer.CollectorName
+		title = analyser.CollectorName
+	}
+	if title == "" {
+		title = "Json Compare"
 	}
 
 	return title
