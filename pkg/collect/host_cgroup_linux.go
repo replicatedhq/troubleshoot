@@ -11,6 +11,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"syscall"
 
@@ -62,6 +63,18 @@ func discoverConfiguration(mountPoint string) (cgroupsResult, error) {
 
 	// If cgroup1 or cgroup2 is enabled
 	results.CGroupEnabled = results.CGroupV1.Enabled || results.CGroupV2.Enabled
+
+	// Sort controllers for consistent output
+	if len(results.CGroupV1.Controllers) > 0 {
+		sort.Strings(results.CGroupV1.Controllers)
+	} else {
+		results.CGroupV1.Controllers = []string{}
+	}
+	if len(results.CGroupV2.Controllers) > 0 {
+		sort.Strings(results.CGroupV1.Controllers)
+	} else {
+		results.CGroupV2.Controllers = []string{}
+	}
 
 	return results, nil
 }
