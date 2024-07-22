@@ -89,6 +89,7 @@ func discoverConfiguration(mountPoint string) (cgroupsResult, error) {
 	for c := range set {
 		results.AllControllers = append(results.AllControllers, c)
 	}
+	sort.Strings(results.AllControllers)
 
 	return results, nil
 }
