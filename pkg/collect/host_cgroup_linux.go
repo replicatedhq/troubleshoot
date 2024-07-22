@@ -76,6 +76,20 @@ func discoverConfiguration(mountPoint string) (cgroupsResult, error) {
 		results.CGroupV2.Controllers = []string{}
 	}
 
+	// Combine all controllers
+	set := make(map[string]struct{})
+	for _, c := range results.CGroupV1.Controllers {
+		set[c] = struct{}{}
+	}
+
+	for _, c := range results.CGroupV2.Controllers {
+		set[c] = struct{}{}
+	}
+
+	for c := range set {
+		results.AllControllers = append(results.AllControllers, c)
+	}
+
 	return results, nil
 }
 

@@ -32,6 +32,8 @@ type cgroupsResult struct {
 	CGroupEnabled bool         `json:"cgroup-enabled"`
 	CGroupV1      cgroupResult `json:"cgroup-v1"`
 	CGroupV2      cgroupResult `json:"cgroup-v2"`
+	// AllControllers is a list of all cgroup controllers found in the system
+	AllControllers []string `json:"allControllers"`
 }
 
 func (c *CollectHostCGroups) Title() string {
