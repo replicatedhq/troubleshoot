@@ -128,8 +128,8 @@ func analyzeOSVersionResult(osInfo collect.HostOSInfo, outcomes []*troubleshootv
 					return []*AnalyzeResult{&result}, nil
 				}
 			}
-		// Match the platform version
-		// e.g "centos == 8.2"
+			// Match the platform version
+			// e.g "centos == 8.2"
 		} else if platform == osInfo.Platform {
 			fixedDistVer := fixVersion(osInfo.PlatformVersion)
 			toleratedDistVer, err := semver.ParseTolerant(fixedDistVer)
