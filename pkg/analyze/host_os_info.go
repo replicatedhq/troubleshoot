@@ -111,7 +111,6 @@ func analyzeOSVersionResult(osInfo collect.HostOSInfo, outcomes []*troubleshootv
 			if whenRange(toleratedKernelVer) {
 				return []*AnalyzeResult{&result}, nil
 			}
-			return []*AnalyzeResult{}, nil
 		}
 
 		// Match the platform version and and kernel version passed in as
