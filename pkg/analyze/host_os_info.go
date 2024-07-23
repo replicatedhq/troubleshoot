@@ -86,19 +86,37 @@ func analyzeOSVersionResult(osInfo collect.HostOSInfo, outcomes []*troubleshootv
 		}
 
 		parts := strings.Split(when, " ")
-		platform := parts[0]
+		if len(parts) < 3 {
+			return []*AnalyzeResult{&result}, errors.New("when condition must have at least 3 parts")
+		}
 		expectedVer := fixVersion(parts[2])
 		toleratedVer, err := semver.ParseTolerant(expectedVer)
 		if err != nil {
-			return []*AnalyzeResult{&result}, errors.Wrapf(err, "failed to parse tolerant: %s", expectedVer)
+			return []*AnalyzeResult{&result}, errors.Wrapf(err, "failed to parse version: %s", expectedVer)
 		}
-
 		when = fmt.Sprintf("%s %v", parts[1], toleratedVer)
 		whenRange, err := semver.ParseRange(when)
 		if err != nil {
-			return []*AnalyzeResult{&result}, errors.Wrapf(err, "failed to parse range: %s", when)
+			return []*AnalyzeResult{&result}, errors.Wrapf(err, "failed to parse version range: %s", when)
 		}
 
+		// Match the kernel version regardless of the platform
+		// e.g "kernelVersion == 4.15"
+		if parts[0] == "kernelVersion" {
+			fixedKernelVer := fixVersion(osInfo.KernelVersion)
+			toleratedKernelVer, err := semver.ParseTolerant(fixedKernelVer)
+			if err != nil {
+				return []*AnalyzeResult{}, errors.Wrapf(err, "failed to parse tolerant: %v", fixedKernelVer)
+			}
+			if whenRange(toleratedKernelVer) {
+				return []*AnalyzeResult{&result}, nil
+			}
+			return []*AnalyzeResult{}, nil
+		}
+
+		// Match the platform version and and kernel version passed in as
+		// "<platform>-<kernelVersion>-kernel" e.g "centos-8.2-kernel == 8.2"
+		platform := parts[0]
 		kernelInfo := fmt.Sprintf("%s-%s-kernel", osInfo.Platform, osInfo.PlatformVersion)
 		if len(strings.Split(platform, "-")) == 3 && strings.Split(platform, "-")[2] == "kernel" {
 			if platform == kernelInfo {
@@ -111,6 +129,8 @@ func analyzeOSVersionResult(osInfo collect.HostOSInfo, outcomes []*troubleshootv
 					return []*AnalyzeResult{&result}, nil
 				}
 			}
+		// Match the platform version
+		// e.g "centos == 8.2"
 		} else if platform == osInfo.Platform {
 			fixedDistVer := fixVersion(osInfo.PlatformVersion)
 			toleratedDistVer, err := semver.ParseTolerant(fixedDistVer)
