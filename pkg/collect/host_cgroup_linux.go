@@ -44,7 +44,7 @@ func discoverConfiguration(mountPoint string) (cgroupsResult, error) {
 		// https://www.kernel.org/doc/html/v5.16/admin-guide/cgroup-v2.html#mounting
 		v, err := discoverV2Configuration(mountPoint)
 		if err != nil {
-			return results, err
+			return results, fmt.Errorf("failed to discover cgroup v2 configuration from %s mount point: %w", mountPoint, err)
 		}
 		results.CGroupV2 = v
 	case unix.CGROUP_SUPER_MAGIC, unix.TMPFS_MAGIC:
@@ -54,7 +54,7 @@ func discoverConfiguration(mountPoint string) (cgroupsResult, error) {
 		// https://www.kernel.org/doc/html/v5.16/admin-guide/cgroup-v1/cgroups.html#how-do-i-use-cgroups
 		r, err := discoverV1Configuration(mountPoint)
 		if err != nil {
-			return results, err
+			return results, fmt.Errorf("failed to discover cgroup v1 configuration from %s mount point: %w", mountPoint, err)
 		}
 		results.CGroupV1 = r
 	default:
@@ -71,7 +71,7 @@ func discoverConfiguration(mountPoint string) (cgroupsResult, error) {
 		results.CGroupV1.Controllers = []string{}
 	}
 	if len(results.CGroupV2.Controllers) > 0 {
-		sort.Strings(results.CGroupV1.Controllers)
+		sort.Strings(results.CGroupV2.Controllers)
 	} else {
 		results.CGroupV2.Controllers = []string{}
 	}
