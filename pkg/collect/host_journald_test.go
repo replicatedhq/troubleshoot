@@ -31,6 +31,7 @@ func TestGenerateOptions(t *testing.T) {
 		"-n", "100",
 		"--reverse",
 		"--utc",
+		"--no-pager",
 	}
 
 	options, err := generateOptions(jd)

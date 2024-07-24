@@ -136,6 +136,9 @@ func generateOptions(jd *troubleshootv1beta2.HostJournald) ([]string, error) {
 		options = append(options, "--utc")
 	}
 
+	// opinionated on --no-pager
+	options = append(options, "--no-pager")
+
 	return options, nil
 }
 
