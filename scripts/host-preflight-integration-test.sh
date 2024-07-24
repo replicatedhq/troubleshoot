@@ -23,7 +23,5 @@ do
 
     say "Running Test ${FILE}"
 
-    ../bin/preflight --interactive=false  $FILE 
+    ../bin/preflight --interactive=false  $FILE
 done
-
-
