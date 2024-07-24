@@ -147,6 +147,15 @@ func detectV2Controllers(mountPoint string) ([]string, error) {
 		return nil, fmt.Errorf("failed to list cgroup root controllers: %w", err)
 	}
 
+	for _, c := range controllerNames {
+		if c == "cpu" {
+			// If the cpu controller is enabled, the cpuacct controller is also enabled.
+			// This controller succeeded v1's cpuacct and cpu controllers.
+			// https://www.man7.org/linux/man-pages/man7/cgroups.7.html
+			controllerNames = append(controllerNames, "cpuacct")
+		}
+	}
+
 	// Detect freezer controller
 	if detectV2FreezerController(mountPoint) {
 		controllerNames = append(controllerNames, "freezer")
