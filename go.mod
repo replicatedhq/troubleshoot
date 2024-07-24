@@ -1,13 +1,15 @@
 module github.com/replicatedhq/troubleshoot
 
-go 1.22.3
+go 1.22.4
+
+toolchain go1.22.5
 
 require (
 	github.com/ahmetalpbalkan/go-cursor v0.0.0-20131010032410-8136607ea412
 	github.com/apparentlymart/go-cidr v1.1.0
 	github.com/blang/semver/v4 v4.0.0
 	github.com/containers/image/v5 v5.31.1
-	github.com/distribution/distribution/v3 v3.0.0-alpha.1
+	github.com/distribution/distribution/v3 v3.0.0-beta.1
 	github.com/fatih/color v1.17.0
 	github.com/go-logr/logr v1.4.2
 	github.com/go-redis/redis/v7 v7.4.1
