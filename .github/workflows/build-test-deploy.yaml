@@ -147,28 +147,34 @@ jobs:
 
           exit $EXIT_STATUS
 
-  # validate-preflight-e2e:
-  #   runs-on: ubuntu-latest
-  #   needs: compile-preflight
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #     - uses: replicatedhq/action-k3s@main
-  #       id: k3s
-  #       with:
-  #         version: v1.23.6-k3s1
-  #     - name: Download preflight binary
-  #       uses: actions/download-artifact@v4
-  #       with:
-  #         name: preflight
-  #         path: bin/
-  #     - run: chmod +x bin/preflight
-  #     - run: make preflight-e2e-test
+  validate-preflight-e2e:
+    runs-on: ubuntu-latest
+    needs: compile-preflight
+    steps:
+      - uses: actions/checkout@v4
+      - uses: replicatedhq/action-k3s@main
+        id: k3s
+        with:
+          version: v1.23.6-k3s1
+      - name: Download preflight binary
+        uses: actions/download-artifact@v4
+        with:
+          name: preflight
+          path: bin/
+      - run: chmod +x bin/preflight
+      - run: make preflight-e2e-test
 
   run-examples:
     runs-on: ubuntu-latest
     needs: compile-preflight
     steps:
       - uses: actions/checkout@v4
+      - name: Download preflight binary
+        uses: actions/download-artifact@v4
+        with:
+          name: preflight
+          path: bin/
+      - run: chmod +x bin/preflight
       - run: make run-examples
 
   # compile-supportbundle:
