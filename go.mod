@@ -8,6 +8,8 @@ require (
 	github.com/ahmetalpbalkan/go-cursor v0.0.0-20131010032410-8136607ea412
 	github.com/apparentlymart/go-cidr v1.1.0
 	github.com/blang/semver/v4 v4.0.0
+	github.com/cilium/ebpf v0.11.0
+	github.com/containerd/cgroups/v3 v3.0.3
 	github.com/containers/image/v5 v5.31.1
 	github.com/distribution/distribution/v3 v3.0.0-beta.1
 	github.com/fatih/color v1.17.0
@@ -68,9 +70,9 @@ require (
 	github.com/Masterminds/squirrel v1.5.4 // indirect
 	github.com/asaskevich/govalidator v0.0.0-20230301143203-a9d515a09cc2 // indirect
 	github.com/chai2010/gettext-go v1.0.2 // indirect
-	github.com/containerd/cgroups/v3 v3.0.3 // indirect
 	github.com/containerd/errdefs v0.1.0 // indirect
 	github.com/containerd/log v0.1.0 // indirect
+	github.com/coreos/go-systemd/v22 v22.5.0 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.4 // indirect
 	github.com/distribution/reference v0.6.0 // indirect
 	github.com/docker/distribution v2.8.3+incompatible // indirect
@@ -207,7 +209,7 @@ require (
 	github.com/nsf/termbox-go v0.0.0-20190121233118-02980233997d // indirect
 	github.com/nwaples/rardecode v1.1.2 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
-	github.com/opencontainers/runtime-spec v1.2.0 // indirect
+	github.com/opencontainers/runtime-spec v1.2.0
 	github.com/opencontainers/selinux v1.11.0 // indirect
 	github.com/ostreedev/ostree-go v0.0.0-20210805093236-719684c64e4f // indirect
 	github.com/pelletier/go-toml/v2 v2.2.2 // indirect
@@ -235,7 +237,7 @@ require (
 	golang.org/x/crypto v0.25.0 // indirect
 	golang.org/x/net v0.27.0
 	golang.org/x/oauth2 v0.20.0 // indirect
-	golang.org/x/sys v0.22.0 // indirect
+	golang.org/x/sys v0.22.0
 	golang.org/x/term v0.22.0 // indirect
 	golang.org/x/text v0.16.0
 	golang.org/x/time v0.5.0 // indirect

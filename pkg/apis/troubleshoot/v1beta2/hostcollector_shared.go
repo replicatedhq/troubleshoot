@@ -76,6 +76,11 @@ type HostCopy struct {
 	Path              string `json:"path" yaml:"path"`
 }
 
+type HostCGroups struct {
+	HostCollectorMeta `json:",inline" yaml:",inline"`
+	MountPoint        string `json:"mountPoint,omitempty" yaml:"mountPoint,omitempty"`
+}
+
 type HostTime struct {
 	HostCollectorMeta `json:",inline" yaml:",inline"`
 }
@@ -219,8 +224,11 @@ type HostCollect struct {
 	HostRun                *HostRun                    `json:"run,omitempty" yaml:"run,omitempty"`
 	HostCopy               *HostCopy                   `json:"copy,omitempty" yaml:"copy,omitempty"`
 	HostKernelConfigs      *HostKernelConfigs          `json:"kernelConfigs,omitempty" yaml:"kernelConfigs,omitempty"`
+	HostCGroups            *HostCGroups                `json:"cgroups,omitempty" yaml:"cgroups,omitempty"`
 }
 
+// GetName gets the name of the collector
+// Deprecated: This function is not used anywhere and should be removed. Do not use it.
 func (c *HostCollect) GetName() string {
 	// TODO: Is this used anywhere? Should we just remove it?
 	var collector string

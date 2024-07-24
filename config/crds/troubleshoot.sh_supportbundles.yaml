@@ -19839,6 +19839,15 @@ spec:
                       required:
                       - paths
                       type: object
+                    cgroups:
+                      properties:
+                        collectorName:
+                          type: string
+                        exclude:
+                          type: BoolString
+                        mountPoint:
+                          type: string
+                      type: object
                     copy:
                       properties:
                         collectorName:

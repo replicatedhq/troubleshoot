@@ -18816,6 +18816,20 @@
                   }
                 }
               },
+              "cgroups": {
+                "type": "object",
+                "properties": {
+                  "collectorName": {
+                    "type": "string"
+                  },
+                  "exclude": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  },
+                  "mountPoint": {
+                    "type": "string"
+                  }
+                }
+              },
               "copy": {
                 "type": "object",
                 "required": [
