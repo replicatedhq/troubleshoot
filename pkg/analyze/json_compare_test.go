@@ -808,11 +808,7 @@ func Test_jsonCompare(t *testing.T) {
 				return test.fileContents, nil
 			}
 
-			a := AnalyzeJsonCompare{
-				analyzer: &test.analyzer,
-			}
-
-			actual, err := a.analyzeJsonCompare(&test.analyzer, getCollectedFileContents)
+			actual, err := analyzeJsonCompare(&test.analyzer, getCollectedFileContents, test.analyzer.CollectorName)
 			if !test.isError {
 				req.NoError(err)
 				req.Equal(test.expectResult, *actual)
