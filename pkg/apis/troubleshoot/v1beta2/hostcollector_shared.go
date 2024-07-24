@@ -199,6 +199,19 @@ type HostKernelConfigs struct {
 	HostCollectorMeta `json:",inline" yaml:",inline"`
 }
 
+type HostJournald struct {
+	HostCollectorMeta `json:",inline" yaml:",inline"`
+	System            bool     `json:"system,omitempty" yaml:"system,omitempty"`
+	Dmesg             bool     `json:"dmesg,omitempty" yaml:"dmesg,omitempty"`
+	Units             []string `json:"units,omitempty" yaml:"units,omitempty"`
+	Since             string   `json:"since,omitempty" yaml:"since,omitempty"`
+	Until             string   `json:"until,omitempty" yaml:"until,omitempty"`
+	Output            string   `json:"output,omitempty" yaml:"output,omitempty"`
+	Lines             int      `json:"lines,omitempty" yaml:"lines,omitempty"`
+	Reverse           bool     `json:"reverse,omitempty" yaml:"reverse,omitempty"`
+	Utc               bool     `json:"utc,omitempty" yaml:"utc,omitempty"`
+}
+
 type HostCollect struct {
 	CPU                    *CPU                        `json:"cpu,omitempty" yaml:"cpu,omitempty"`
 	Memory                 *Memory                     `json:"memory,omitempty" yaml:"memory,omitempty"`
@@ -224,6 +237,7 @@ type HostCollect struct {
 	HostRun                *HostRun                    `json:"run,omitempty" yaml:"run,omitempty"`
 	HostCopy               *HostCopy                   `json:"copy,omitempty" yaml:"copy,omitempty"`
 	HostKernelConfigs      *HostKernelConfigs          `json:"kernelConfigs,omitempty" yaml:"kernelConfigs,omitempty"`
+	HostJournald           *HostJournald               `json:"journald,omitempty" yaml:"journald,omitempty"`
 	HostCGroups            *HostCGroups                `json:"cgroups,omitempty" yaml:"cgroups,omitempty"`
 }
 
