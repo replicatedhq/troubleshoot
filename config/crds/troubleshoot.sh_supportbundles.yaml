@@ -20075,6 +20075,8 @@ spec:
                           type: string
                         system:
                           type: boolean
+                        timeout:
+                          type: string
                         units:
                           items:
                             type: string

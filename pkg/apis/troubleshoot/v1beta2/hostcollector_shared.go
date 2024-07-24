@@ -210,6 +210,7 @@ type HostJournald struct {
 	Lines             int      `json:"lines,omitempty" yaml:"lines,omitempty"`
 	Reverse           bool     `json:"reverse,omitempty" yaml:"reverse,omitempty"`
 	Utc               bool     `json:"utc,omitempty" yaml:"utc,omitempty"`
+	Timeout           string   `json:"timeout,omitempty" yaml:"timeout,omitempty"`
 }
 
 type HostCollect struct {

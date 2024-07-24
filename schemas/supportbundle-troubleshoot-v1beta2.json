@@ -19121,6 +19121,9 @@
                   "system": {
                     "type": "boolean"
                   },
+                  "timeout": {
+                    "type": "string"
+                  },
                   "units": {
                     "type": "array",
                     "items": {
