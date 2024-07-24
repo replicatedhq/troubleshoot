@@ -1,0 +1,292 @@
+apiVersion: troubleshoot.sh/v1beta2
+kind: HostPreflight
+metadata:
+  name: ec-cluster-preflight
+spec:
+  collectors:
+    - diskUsage:
+        collectorName: root-disk-usage
+        path: /
+    - diskUsage:
+        collectorName: embedded-cluster-path-usage
+        path: /var/lib/embedded-cluster
+    - diskUsage:
+        collectorName: k0s-path-usage
+        path: /var/lib/k0s
+    - diskUsage:
+        collectorName: openebs-path-usage
+        path: /opt/openebs
+    - diskUsage:
+        collectorName: tmp-path-usage
+        path: /tmp
+    - memory: {}
+    - cpu: {}
+    - time: {}
+    - ipv4Interfaces: {}
+    - run:
+        collectorName: 'ip-route-table'
+        command: 'ip'
+        args: ['route']
+    # External k0s dependencies
+    # https://docs.k0sproject.io/stable/external-runtime-deps/
+    - cgroups: {}
+    - run:
+        collectorName: 'check-proc-filesystem'
+        command: 'sh'
+        args: ['-c', 'stat -f -c "%T" /proc']
+    - run:
+        collectorName: 'check-modprobe'
+        command: 'sh'
+        args: ['-c', 'command -v modprobe']
+    - run:
+        collectorName: 'check-mount'
+        command: 'sh'
+        args: ['-c', 'command -v mount']
+    - run:
+        collectorName: 'check-umount'
+        command: 'sh'
+        args: ['-c', 'command -v umount']
+    - hostOS: {}
+  analyzers:
+    - cpu:
+        checkName: 'Check minimum CPU cores'
+        outcomes:
+          - fail:
+              when: 'count < 2'
+              message: At least 2 CPU cores are required
+          - pass:
+              message: At least 2 CPU cores are present
+    - memory:
+        checkName: Check required minimum memory
+        outcomes:
+          - fail:
+              when: '< 2G'
+              message: At least 2GB of memory is required
+          - pass:
+              message: At least 2GB of memory is present
+    - diskUsage:
+        checkName: Embedded Cluster Disk Space
+        collectorName: embedded-cluster-path-usage
+        outcomes:
+          - fail:
+              when: 'total < 40Gi'
+              message: The filesystem at /var/lib/embedded-cluster has less than 40Gi of total space
+          - pass:
+              message: The filesystem at /var/lib/embedded-cluster has sufficient space
+    - diskUsage:
+        checkName: k0s Disk Space
+        collectorName: k0s-path-usage
+        outcomes:
+          - fail:
+              when: 'total < 40Gi'
+              message: The filesystem at /var/lib/k0s has less than 40Gi of total space
+          - fail:
+              when: 'used/total > 80%'
+              message: The filesystem at /var/lib/k0s is more than 80% full
+          - pass:
+              message: The filesystem at /var/lib/k0s has sufficient space
+    - diskUsage:
+        checkName: OpenEBS Disk Space
+        collectorName: openebs-path-usage
+        outcomes:
+          - fail:
+              when: 'total < 5Gi'
+              message: The filesystem at /opt/openebs has less than 5Gi of total space
+          - pass:
+              message: The filesystem at /opt/openebs has sufficient space
+    - diskUsage:
+        checkName: tmp Disk Space
+        collectorName: tmp-path-usage
+        outcomes:
+          - fail:
+              when: 'total < 5Gi'
+              message: The filesystem at /tmp has less than 5Gi of total space
+          - pass:
+              message: The filesystem at /tmp has sufficient space
+    - textAnalyze:
+        checkName: Default Route
+        fileName: host-collectors/run-host/ip-route-table.txt
+        regex: 'default'
+        outcomes:
+          - fail:
+              when: 'false'
+              message: 'No default route found. A default route is required.'
+          - pass:
+              when: 'true'
+              message: 'Host has a default route'
+    - ipv4Interfaces:
+        outcomes:
+          - fail:
+              when: 'count == 0'
+              message: No IPv4 interfaces detected
+          - pass:
+              when: 'count >= 1'
+              message: IPv4 interface detected
+    - time:
+        checkName: System Clock
+        outcomes:
+          - fail:
+              when: 'ntp == unsynchronized+inactive'
+              message: 'System clock is not synchronized'
+          - fail:
+              when: 'ntp == unsynchronized+active'
+              message: System clock is not yet synchronized
+          - pass:
+              when: 'ntp == synchronized+active'
+              message: 'System clock is synchronized'
+    - jsonCompare:
+        checkName: Check if either cgroup v1 or v2 is enabled
+        fileName: host-collectors/system/cgroups.json
+        path: 'cgroup-enabled'
+        value: |
+          true
+        outcomes:
+          - fail:
+              when: 'false'
+              message: 'Neither cgroup v1 nor v2 is enabled'
+          - pass:
+              when: 'true'
+              message: 'One of cgroup v1 or v2 is enabled'
+    - jsonCompare:
+        checkName: Check if cpu cgroup controller is enabled
+        fileName: host-collectors/system/cgroups.json
+        jsonPath: "{$.allControllers[?(@ == 'cpu')]}"
+        value: |
+          "cpu"
+        outcomes:
+          - fail:
+              when: 'false'
+              message: "'cpu' cgroup controller is not enabled"
+          - pass:
+              when: 'true'
+              message: "'cpu' cgroup controller is enabled"
+    - jsonCompare:
+        checkName: Check if cpuacct cgroup controller is enabled
+        fileName: host-collectors/system/cgroups.json
+        jsonPath: "{$.allControllers[?(@ == 'cpuacct')]}"
+        value: |
+          "cpuacct"
+        outcomes:
+          - fail:
+              when: 'false'
+              message: "'cpuacct' cgroup controller is not enabled"
+          - pass:
+              when: 'true'
+              message: "'cpuacct' cgroup controller is enabled"
+    - jsonCompare:
+        checkName: Check if cpuset cgroup controller is enabled
+        fileName: host-collectors/system/cgroups.json
+        jsonPath: "{$.allControllers[?(@ == 'cpuset')]}"
+        value: |
+          "cpuset"
+        outcomes:
+          - fail:
+              when: 'false'
+              message: "'cpuset' cgroup controller is not enabled"
+          - pass:
+              when: 'true'
+              message: "'cpuset' cgroup controller is enabled"
+    - jsonCompare:
+        checkName: Check if memory cgroup controller is enabled
+        fileName: host-collectors/system/cgroups.json
+        jsonPath: "{$.allControllers[?(@ == 'memory')]}"
+        value: |
+          "memory"
+        outcomes:
+          - fail:
+              when: 'false'
+              message: "'memory' cgroup controller is not enabled"
+          - pass:
+              when: 'true'
+              message: "'memory' cgroup controller is enabled"
+    - jsonCompare:
+        checkName: Check if devices cgroup controller is enabled
+        fileName: host-collectors/system/cgroups.json
+        jsonPath: "{$.allControllers[?(@ == 'devices')]}"
+        value: |
+          "devices"
+        outcomes:
+          - fail:
+              when: 'false'
+              message: "'devices' cgroup controller is not enabled"
+          - pass:
+              when: 'true'
+              message: "'devices' cgroup controller is enabled"
+    - jsonCompare:
+        checkName: Check if freezer cgroup controller is enabled
+        fileName: host-collectors/system/cgroups.json
+        jsonPath: "{$.allControllers[?(@ == 'freezer')]}"
+        value: |
+          "freezer"
+        outcomes:
+          - fail:
+              when: 'false'
+              message: "'freezer' cgroup controller is not enabled"
+          - pass:
+              when: 'true'
+              message: "'freezer' cgroup controller is enabled"
+    - jsonCompare:
+        checkName: Check if pids cgroup controller is enabled
+        fileName: host-collectors/system/cgroups.json
+        jsonPath: "{$.allControllers[?(@ == 'pids')]}"
+        value: |
+          "pids"
+        outcomes:
+          - fail:
+              when: 'false'
+              message: "'pids' cgroup controller is not enabled"
+          - pass:
+              when: 'true'
+              message: "'pids' cgroup controller is enabled"
+    - textAnalyze:
+        checkName: Check if /proc filesystem is mounted
+        fileName: host-collectors/run-host/check-proc-filesystem.txt
+        regex: 'proc'
+        outcomes:
+          - pass:
+              when: "true"
+              message: "/proc filesystem is mounted"
+          - fail:
+              when: "false"
+              message: "/proc filesystem is not mounted"
+    - textAnalyze:
+        checkName: Check if 'modprobe' command exists in PATH
+        fileName: host-collectors/run-host/check-modprobe.txt
+        regex: '/usr/sbin/modprobe'
+        outcomes:
+          - pass:
+              when: "true"
+              message: "'modprobe' command exists in PATH"
+          - fail:
+              when: "false"
+              message: "'modprobe' command does not exist in PATH"
+    - textAnalyze:
+        checkName: Check if 'mount' command exists in PATH
+        fileName: host-collectors/run-host/check-mount.txt
+        regex: '/usr/bin/mount'
+        outcomes:
+          - pass:
+              when: "true"
+              message: "'mount' command exists in PATH"
+          - fail:
+              when: "false"
+              message: "'mount' command does not exist in PATH"
+    - textAnalyze:
+        checkName: Check if 'umount' command exists in PATH
+        fileName: host-collectors/run-host/check-umount.txt
+        regex: '/usr/bin/umount'
+        outcomes:
+          - pass:
+              when: "true"
+              message: "'umount' command exists in PATH"
+          - fail:
+              when: "false"
+              message: "'umount' command does not exist in PATH"
+    - hostOS:
+        checkName: Check minimum kernel version
+        outcomes:
+          - pass:
+              when: "kernelVersion >= 3.10"
+              message: "Minimum kernel version of 3.10 has been met"
+          - fail:
+              message: "Minimum kernel version of 3.10 has not been met"
