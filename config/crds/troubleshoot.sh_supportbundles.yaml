@@ -19187,6 +19187,63 @@ spec:
                       required:
                       - outcomes
                       type: object
+                    jsonCompare:
+                      properties:
+                        annotations:
+                          additionalProperties:
+                            type: string
+                          type: object
+                        checkName:
+                          type: string
+                        collectorName:
+                          type: string
+                        exclude:
+                          type: BoolString
+                        fileName:
+                          type: string
+                        jsonPath:
+                          type: string
+                        outcomes:
+                          items:
+                            properties:
+                              fail:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
+                              pass:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
+                              warn:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
+                            type: object
+                          type: array
+                        path:
+                          type: string
+                        strict:
+                          type: BoolString
+                        value:
+                          type: string
+                      required:
+                      - outcomes
+                      type: object
                     kernelConfigs:
                       properties:
                         annotations:

@@ -319,6 +319,34 @@ func TestAnalyzeHostOS(t *testing.T) {
 				},
 			},
 		},
+
+		{
+			name: "test kernelVersion >= 6.4.9-abc",
+			hostInfo: collect.HostOSInfo{
+				Name:            "my-host",
+				KernelVersion:   "6.5.0-1024-gcp",
+				PlatformVersion: "22.04",
+				Platform:        "ubuntu",
+			},
+			hostAnalyzer: &troubleshootv1beta2.HostOSAnalyze{
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							When:    "kernelVersion >= 6.4.9-abc",
+							Message: "supported kernel version >= 6.4.9-abc",
+						},
+					},
+				},
+			},
+
+			result: []*AnalyzeResult{
+				{
+					Title:   "Host OS Info",
+					IsPass:  true,
+					Message: "supported kernel version >= 6.4.9-abc",
+				},
+			},
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {

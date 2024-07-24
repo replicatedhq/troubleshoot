@@ -29,6 +29,12 @@ func readSpecs(args []string) (*loader.TroubleshootKinds, error) {
 		return nil, err
 	}
 
+	// Load additional specs from URIs
+	// only when no-uri flag is not set
+	if !viper.GetBool("no-uri") {
+		specs.LoadAdditionalSpecFromURIs(ctx, kinds)
+	}
+
 	ret := loader.NewTroubleshootKinds()
 
 	// Concatenate all preflight inclusterSpecs that don't have an upload destination

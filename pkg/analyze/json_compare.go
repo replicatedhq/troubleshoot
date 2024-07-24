@@ -21,9 +21,16 @@ type AnalyzeJsonCompare struct {
 }
 
 func (a *AnalyzeJsonCompare) Title() string {
-	title := a.analyzer.CheckName
+	return jsonCompareTitle(a.analyzer)
+}
+
+func jsonCompareTitle(analyser *troubleshootv1beta2.JsonCompare) string {
+	title := analyser.CheckName
 	if title == "" {
-		title = a.analyzer.CollectorName
+		title = analyser.CollectorName
+	}
+	if title == "" {
+		title = "Json Compare"
 	}
 
 	return title
@@ -34,7 +41,7 @@ func (a *AnalyzeJsonCompare) IsExcluded() (bool, error) {
 }
 
 func (a *AnalyzeJsonCompare) Analyze(getFile getCollectedFileContents, findFiles getChildCollectedFileContents) ([]*AnalyzeResult, error) {
-	result, err := a.analyzeJsonCompare(a.analyzer, getFile)
+	result, err := analyzeJsonCompare(a.analyzer, getFile, a.Title())
 	if err != nil {
 		return nil, err
 	}
@@ -42,7 +49,7 @@ func (a *AnalyzeJsonCompare) Analyze(getFile getCollectedFileContents, findFiles
 	return []*AnalyzeResult{result}, nil
 }
 
-func (a *AnalyzeJsonCompare) analyzeJsonCompare(analyzer *troubleshootv1beta2.JsonCompare, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
+func analyzeJsonCompare(analyzer *troubleshootv1beta2.JsonCompare, getCollectedFileContents func(string) ([]byte, error), title string) (*AnalyzeResult, error) {
 	fullPath := filepath.Join(analyzer.CollectorName, analyzer.FileName)
 	collected, err := getCollectedFileContents(fullPath)
 	if err != nil {
@@ -97,7 +104,7 @@ func (a *AnalyzeJsonCompare) analyzeJsonCompare(analyzer *troubleshootv1beta2.Js
 	}
 
 	result := &AnalyzeResult{
-		Title:   a.Title(),
+		Title:   title,
 		IconKey: "kubernetes_text_analyze",
 		IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg",
 	}
@@ -173,7 +180,7 @@ func (a *AnalyzeJsonCompare) analyzeJsonCompare(analyzer *troubleshootv1beta2.Js
 	}
 
 	return &AnalyzeResult{
-		Title:   a.Title(),
+		Title:   title,
 		IconKey: "kubernetes_text_analyze",
 		IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg",
 		IsFail:  true,
