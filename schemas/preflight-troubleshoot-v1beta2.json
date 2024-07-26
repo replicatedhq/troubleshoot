@@ -3068,6 +3068,17 @@
                   }
                 }
               },
+              "etcd": {
+                "type": "object",
+                "properties": {
+                  "collectorName": {
+                    "type": "string"
+                  },
+                  "exclude": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  }
+                }
+              },
               "exec": {
                 "type": "object",
                 "required": [

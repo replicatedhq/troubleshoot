@@ -2061,6 +2061,13 @@ spec:
                         timeout:
                           type: string
                       type: object
+                    etcd:
+                      properties:
+                        collectorName:
+                          type: string
+                        exclude:
+                          type: BoolString
+                      type: object
                     exec:
                       properties:
                         args:
