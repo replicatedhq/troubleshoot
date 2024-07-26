@@ -219,6 +219,8 @@ func getCollectorName(c interface{}) string {
 		collector = "node-metrics"
 	case *CollectDNS:
 		collector = "dns"
+	case *CollectEtcd:
+		collector = "etcd"
 	default:
 		collector = "<none>"
 	}
