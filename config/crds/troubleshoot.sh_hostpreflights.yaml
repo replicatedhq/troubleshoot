@@ -1458,6 +1458,35 @@ spec:
                         exclude:
                           type: BoolString
                       type: object
+                    journald:
+                      properties:
+                        collectorName:
+                          type: string
+                        dmesg:
+                          type: boolean
+                        exclude:
+                          type: BoolString
+                        lines:
+                          type: integer
+                        output:
+                          type: string
+                        reverse:
+                          type: boolean
+                        since:
+                          type: string
+                        system:
+                          type: boolean
+                        timeout:
+                          type: string
+                        units:
+                          items:
+                            type: string
+                          type: array
+                        until:
+                          type: string
+                        utc:
+                          type: boolean
+                      type: object
                     kernelConfigs:
                       properties:
                         collectorName:

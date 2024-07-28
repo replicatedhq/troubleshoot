@@ -19094,6 +19094,50 @@
                   }
                 }
               },
+              "journald": {
+                "type": "object",
+                "properties": {
+                  "collectorName": {
+                    "type": "string"
+                  },
+                  "dmesg": {
+                    "type": "boolean"
+                  },
+                  "exclude": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  },
+                  "lines": {
+                    "type": "integer"
+                  },
+                  "output": {
+                    "type": "string"
+                  },
+                  "reverse": {
+                    "type": "boolean"
+                  },
+                  "since": {
+                    "type": "string"
+                  },
+                  "system": {
+                    "type": "boolean"
+                  },
+                  "timeout": {
+                    "type": "string"
+                  },
+                  "units": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "until": {
+                    "type": "string"
+                  },
+                  "utc": {
+                    "type": "boolean"
+                  }
+                }
+              },
               "kernelConfigs": {
                 "type": "object",
                 "properties": {
