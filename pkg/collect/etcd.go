@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/pkg/errors"
-	analyzer "github.com/replicatedhq/troubleshoot/pkg/analyze"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -54,7 +53,7 @@ func (c *CollectEtcd) Collect(progressChan chan<- interface{}) (CollectorResult,
 		},
 	}
 
-	distribution, err := c.getDistro()
+	distribution, err := debugInstance.getSupportedDistro()
 	if err != nil {
 		return nil, err
 	}
@@ -78,6 +77,8 @@ func (c *CollectEtcd) Collect(progressChan chan<- interface{}) (CollectorResult,
 	if err != nil {
 		return nil, err
 	}
+
+	// finally exec etcdctl troubleshoot commands
 
 	return nil, nil
 }
@@ -125,6 +126,37 @@ func getEtcdArgsByDistribution(distribution string) ([]string, string, error) {
 	}, c.hostPath, nil
 }
 
+// getSupportedDistro returns the distro that etcd collector can run on
+// either due to the distro has static etcd pod (kurl by kubeadm) or
+// the distro has etcd running as a process (k0s, embedded-cluster)
+func (c *etcdDebug) getSupportedDistro() (string, error) {
+	// extract distro logic from analyzer.ParseNodesForProviders
+	// pkg/analyze/distribution.go
+	// we can't import analyzer because of circular dependency
+	// TODO: may refactor this to a common package
+
+	nodes, err := c.client.CoreV1().Nodes().List(c.context, metav1.ListOptions{})
+	if err != nil {
+		return "", errors.Wrap(err, "failed to list nodes")
+	}
+
+	for _, node := range nodes.Items {
+		for k, v := range node.ObjectMeta.Labels {
+			if k == "kurl.sh/cluster" && v == "true" {
+				return "kurl", nil
+			}
+			if k == "node.k0sproject.io/role" {
+				return "k0s", nil
+			}
+			if k == "kots.io/embedded-cluster-role" {
+				return "embedded-cluster", nil
+			}
+		}
+	}
+
+	return "", errors.New("current k8s distribution does not support etcd collector")
+}
+
 func (c *etcdDebug) getOrCreateEtcdPod() error {
 	// if ephemeral, create a etcd client pod to exec into
 	// the pod will use hostNetwork: true to access the etcd server
@@ -142,22 +174,13 @@ func (c *etcdDebug) getOrCreateEtcdPod() error {
 		LabelSelector: label,
 	})
 	if err != nil {
-		return errors.Wrap(err, fmt.Sprintf("failed to list pods with label %s", label))
+		return errors.Wrap(err, fmt.Sprintf("failed to list etcd pods with label %s", label))
 	}
 	if len(pods.Items) == 0 {
-		return errors.New("no static etcd pods found")
+		return errors.New("no static etcd pod found")
 	}
 	c.pod = &pods.Items[0]
 	return nil
-}
-
-func (c *CollectEtcd) getDistro() (string, error) {
-	nodes, err := c.Client.CoreV1().Nodes().List(c.Context, metav1.ListOptions{})
-	if err != nil {
-		return "", errors.Wrap(err, "failed to list nodes")
-	}
-	_, distro := analyzer.ParseNodesForProviders(nodes.Items)
-	return distro, nil
 }
 
 func (c *etcdDebug) cleanup() {

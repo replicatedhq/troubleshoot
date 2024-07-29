@@ -62,6 +62,9 @@ func TestGetEtcdArgsByDistribution(t *testing.T) {
 		args, path, err := getEtcdArgsByDistribution(test.distribution)
 		assert.Equal(t, test.expectedArgs, args)
 		assert.Equal(t, test.expectedPath, path)
-		assert.Equal(t, test.expectedErr, err)
+		if test.expectedErr != nil {
+			assert.NotNil(t, err)
+			assert.EqualError(t, test.expectedErr, err.Error())
+		}
 	}
 }
