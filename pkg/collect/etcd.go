@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
@@ -86,6 +87,12 @@ func (c *CollectEtcd) Collect(progressChan chan<- interface{}) (CollectorResult,
 		return nil, err
 	}
 
+	// wait until the pod is running
+	err = debugInstance.waitForPodReady()
+	if err != nil {
+		return nil, err
+	}
+
 	// finally exec etcdctl troubleshoot commands
 	output := NewResult()
 
@@ -105,7 +112,7 @@ func (c *CollectEtcd) Collect(progressChan chan<- interface{}) (CollectorResult,
 		}
 	}
 
-	return nil, nil
+	return output, nil
 }
 
 func getEtcdArgsByDistribution(distribution string) ([]string, string, error) {
@@ -204,6 +211,8 @@ func (c *etcdDebug) getOrCreateEtcdPod() error {
 	if len(pods.Items) == 0 {
 		return errors.New("no static etcd pod found")
 	}
+
+	klog.V(2).Infof("found etcd pod %s in namespace %s", pods.Items[0].Name, pods.Items[0].Namespace)
 	c.pod = &pods.Items[0]
 	return nil
 }
@@ -214,6 +223,7 @@ func (c *etcdDebug) cleanup() {
 	}
 
 	// delete the pod
+	klog.V(2).Infof("deleting etcd troubleshoot pod %s in namespace %s", c.pod.Name, c.pod.Namespace)
 	err := c.client.CoreV1().Pods(c.pod.Namespace).Delete(context.Background(), c.pod.Name, metav1.DeleteOptions{
 		GracePeriodSeconds: new(int64), // delete immediately
 	})
@@ -241,6 +251,15 @@ func (c *etcdDebug) createEtcdPod() error {
 					Image:   "quay.io/coreos/etcd:latest",
 					Command: []string{"sleep"},
 					Args:    []string{"1d"},
+					Env: []corev1.EnvVar{
+						{
+							Name:  "ETCDCTL_API",
+							Value: "3",
+						}, {
+							Name:  "ETCDCTL_INSECURE_SKIP_TLS_VERIFY",
+							Value: "true",
+						},
+					},
 					VolumeMounts: []corev1.VolumeMount{
 						{
 							Name:      "etcd-certs",
@@ -263,6 +282,7 @@ func (c *etcdDebug) createEtcdPod() error {
 		},
 	}
 
+	klog.V(2).Infof("creating etcd troubleshoot pod in namespace %s", namespace)
 	pod, err := c.client.CoreV1().Pods(namespace).Create(c.context, spec, metav1.CreateOptions{})
 	if err != nil {
 		return errors.Wrap(err, "failed to create etcd troubleshoot pod")
@@ -274,6 +294,13 @@ func (c *etcdDebug) createEtcdPod() error {
 // executeCommand exec into the pod and run the command
 // it returns the stdout, stderr and error if any of the command
 func (c *etcdDebug) executeCommand(command string) ([]byte, []byte, error) {
+
+	// split command into a slice of strings
+	// e.g. "etcdctl endpoint health" -> ["etcdctl", "endpoint", "health"]
+	cdmArgs := strings.Fields(command)
+	cdmArgs = append(cdmArgs, c.args...)
+	klog.V(2).Infof("executing command: %q in pod %q (namespace %q)", strings.Join(cdmArgs, " "), c.pod.Name, c.pod.Namespace)
+
 	req := c.client.CoreV1().RESTClient().Post().
 		Resource("pods").
 		Name(c.pod.Name).
@@ -281,7 +308,7 @@ func (c *etcdDebug) executeCommand(command string) ([]byte, []byte, error) {
 		SubResource("exec")
 
 	req.VersionedParams(&corev1.PodExecOptions{
-		Command: append([]string{command}, c.args...),
+		Command: cdmArgs,
 		Stdin:   false,
 		Stdout:  true,
 		Stderr:  true,
@@ -300,6 +327,32 @@ func (c *etcdDebug) executeCommand(command string) ([]byte, []byte, error) {
 	})
 
 	return stdout.Bytes(), stderr.Bytes(), err
+}
+
+// waitForPodReady waits until the etcd troubleshooting pod is running
+func (c *etcdDebug) waitForPodReady() error {
+	timeout := 60 * time.Second
+	ticker := time.NewTicker(1 * time.Second)
+
+	ctx, cancel := context.WithTimeout(c.context, timeout)
+	defer cancel()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return errors.New("timeout waiting for etcd troubleshooting pod to be running")
+		case <-ticker.C:
+			pod, err := c.client.CoreV1().Pods(c.pod.Namespace).Get(c.context, c.pod.Name, metav1.GetOptions{})
+			if err != nil {
+				return errors.Wrap(err, "failed to get etcd troubleshoot pod")
+			}
+			if pod.Status.Phase == corev1.PodRunning {
+				// ok, pod is running
+				return nil
+			}
+			klog.V(2).Infof("waiting for etcd troubleshoot pod %q to be running, current status: %q", c.pod.Name, pod.Status.Phase)
+		}
+	}
 }
 
 // generateFilenameFromCommand generates a filename from the command
