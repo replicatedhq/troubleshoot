@@ -1,17 +1,23 @@
 package collect
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/remotecommand"
 	"k8s.io/klog/v2"
 )
+
+const etcdOutputDir = "etcd"
 
 type CollectEtcd struct {
 	Collector    *troubleshootv1beta2.Etcd
@@ -24,13 +30,14 @@ type CollectEtcd struct {
 
 // etcdDebug is a helper struct to exec into an etcd pod
 type etcdDebug struct {
-	context   context.Context
-	client    kubernetes.Interface
-	pod       *corev1.Pod // etcd pod to exec into
-	ephemeral bool        // if true, the pod will be deleted after the collector is done
-	commands  []string    // list of commands to run in the etcd pod
-	args      []string    // list of args to pass to each command
-	hostPath  string      // path to the host's etcd certs
+	context      context.Context
+	clientConfig *rest.Config
+	client       kubernetes.Interface
+	pod          *corev1.Pod // etcd pod to exec into
+	ephemeral    bool        // if true, the pod will be deleted after the collector is done
+	commands     []string    // list of commands to run in the etcd pod
+	args         []string    // list of args to pass to each command
+	hostPath     string      // path to the host's etcd certs
 }
 
 func (c *CollectEtcd) Title() string {
@@ -43,8 +50,9 @@ func (c *CollectEtcd) IsExcluded() (bool, error) {
 
 func (c *CollectEtcd) Collect(progressChan chan<- interface{}) (CollectorResult, error) {
 	debugInstance := etcdDebug{
-		context: c.Context,
-		client:  c.Client,
+		context:      c.Context,
+		clientConfig: c.ClientConfig,
+		client:       c.Client,
 		commands: []string{
 			"etcdctl endpoint health",
 			"etcdctl endpoint status",
@@ -79,6 +87,23 @@ func (c *CollectEtcd) Collect(progressChan chan<- interface{}) (CollectorResult,
 	}
 
 	// finally exec etcdctl troubleshoot commands
+	output := NewResult()
+
+	for _, command := range debugInstance.commands {
+		fileName := generateFilenameFromCommand(command)
+		stdout, stderr, err := debugInstance.executeCommand(command)
+		if err != nil {
+			klog.Infof("failed to exec command %s: %v", command, err)
+			continue
+		}
+		if len(stdout) > 0 {
+			output.SaveResult(c.BundlePath, getFullPath(fileName), bytes.NewBuffer(stdout))
+		}
+		if len(stderr) > 0 {
+			fileName := fmt.Sprintf("%s-stderr", fileName)
+			output.SaveResult(c.BundlePath, getFullPath(fileName), bytes.NewBuffer(stderr))
+		}
+	}
 
 	return nil, nil
 }
@@ -244,4 +269,51 @@ func (c *etcdDebug) createEtcdPod() error {
 	}
 	c.pod = pod
 	return nil
+}
+
+// executeCommand exec into the pod and run the command
+// it returns the stdout, stderr and error if any of the command
+func (c *etcdDebug) executeCommand(command string) ([]byte, []byte, error) {
+	req := c.client.CoreV1().RESTClient().Post().
+		Resource("pods").
+		Name(c.pod.Name).
+		Namespace(c.pod.Namespace).
+		SubResource("exec")
+
+	req.VersionedParams(&corev1.PodExecOptions{
+		Command: append([]string{command}, c.args...),
+		Stdin:   false,
+		Stdout:  true,
+		Stderr:  true,
+		TTY:     false,
+	}, scheme.ParameterCodec)
+
+	exec, err := remotecommand.NewSPDYExecutor(c.clientConfig, "POST", req.URL())
+	if err != nil {
+		return nil, nil, err
+	}
+
+	var stdout, stderr bytes.Buffer
+	err = exec.StreamWithContext(c.context, remotecommand.StreamOptions{
+		Stdout: &stdout,
+		Stderr: &stderr,
+	})
+
+	return stdout.Bytes(), stderr.Bytes(), err
+}
+
+// generateFilenameFromCommand generates a filename from the command
+// e.g. "etcdctl endpoint health" -> "endpoint-health"
+func generateFilenameFromCommand(command string) string {
+	parts := strings.Fields(command)
+	if len(parts) == 0 {
+		return ""
+	}
+	return strings.Join(parts[1:], "-")
+}
+
+// getFullPath returns the full path to the file
+// e.g. "endpoint-health" -> "etcd/endpoint-health.txt"
+func getFullPath(fileName string) string {
+	return fmt.Sprintf("%s/%s.txt", etcdOutputDir, fileName)
 }
