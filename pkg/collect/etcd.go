@@ -64,6 +64,7 @@ func (c *CollectEtcd) Collect(progressChan chan<- interface{}) (CollectorResult,
 
 	distribution, err := debugInstance.getSupportedDistro()
 	if err != nil {
+		klog.V(2).Infof("etcd collector is not supported on this distribution: %v", err)
 		return nil, err
 	}
 
@@ -217,21 +218,7 @@ func (c *etcdDebug) getOrCreateEtcdPod() error {
 	return nil
 }
 
-func (c *etcdDebug) cleanup() {
-	if !c.ephemeral || c.pod == nil {
-		return
-	}
-
-	// delete the pod
-	klog.V(2).Infof("deleting etcd troubleshoot pod %s in namespace %s", c.pod.Name, c.pod.Namespace)
-	err := c.client.CoreV1().Pods(c.pod.Namespace).Delete(context.Background(), c.pod.Name, metav1.DeleteOptions{
-		GracePeriodSeconds: new(int64), // delete immediately
-	})
-	if err != nil {
-		klog.Errorf("failed to delete pod %s: %v", c.pod.Name, err)
-	}
-}
-
+// createEtcdPod creates a etcd client pod to exec into
 func (c *etcdDebug) createEtcdPod() error {
 	namespace := "default"
 	labels := map[string]string{
@@ -239,7 +226,7 @@ func (c *etcdDebug) createEtcdPod() error {
 	}
 	spec := &corev1.Pod{
 		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: "etcd-collector",
+			GenerateName: "etcd-collector-",
 			Namespace:    namespace,
 			Labels:       labels,
 		},
@@ -291,6 +278,22 @@ func (c *etcdDebug) createEtcdPod() error {
 	return nil
 }
 
+// cleanup deletes the etcd troubleshoot pod if it's ephemeral
+func (c *etcdDebug) cleanup() {
+	if !c.ephemeral || c.pod == nil {
+		return
+	}
+
+	// delete the pod
+	klog.V(2).Infof("deleting etcd troubleshoot pod %s in namespace %s", c.pod.Name, c.pod.Namespace)
+	err := c.client.CoreV1().Pods(c.pod.Namespace).Delete(context.Background(), c.pod.Name, metav1.DeleteOptions{
+		GracePeriodSeconds: new(int64), // delete immediately
+	})
+	if err != nil {
+		klog.Errorf("failed to delete pod %s: %v", c.pod.Name, err)
+	}
+}
+
 // executeCommand exec into the pod and run the command
 // it returns the stdout, stderr and error if any of the command
 func (c *etcdDebug) executeCommand(command string) ([]byte, []byte, error) {
@@ -329,7 +332,7 @@ func (c *etcdDebug) executeCommand(command string) ([]byte, []byte, error) {
 	return stdout.Bytes(), stderr.Bytes(), err
 }
 
-// waitForPodReady waits until the etcd troubleshooting pod is running
+// waitForPodReady waits until the etcd troubleshoot pod is running
 func (c *etcdDebug) waitForPodReady() error {
 	timeout := 60 * time.Second
 	ticker := time.NewTicker(1 * time.Second)
