@@ -126,16 +126,16 @@ func getEtcdArgsByDistribution(distribution string) ([]string, string, error) {
 
 	lookup := map[string]certs{
 		"k0s": {
-			hostPath: "/var/lib/k0s/pki",
+			hostPath: "/var/lib/k0s/pki/etcd",
 			ca:       "ca.crt",
-			cert:     "apiserver-etcd-client.crt",
-			key:      "apiserver-etcd-client.key",
+			cert:     "peer.crt",
+			key:      "peer.key",
 		},
 		"embedded-cluster": {
-			hostPath: "/var/lib/k0s/pki",
+			hostPath: "/var/lib/k0s/pki/etcd",
 			ca:       "ca.crt",
-			cert:     "apiserver-etcd-client.crt",
-			key:      "apiserver-etcd-client.key",
+			cert:     "peer.crt",
+			key:      "peer.key",
 		},
 		"kurl": {
 			hostPath: "/etc/kubernetes/pki/etcd",
