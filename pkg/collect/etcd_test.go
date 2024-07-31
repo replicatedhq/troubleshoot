@@ -17,25 +17,25 @@ func TestGetEtcdArgsByDistribution(t *testing.T) {
 		{
 			distribution: "k0s",
 			expectedArgs: []string{
-				"--cacert", "/var/lib/k0s/pki/ca.crt",
-				"--cert", "/var/lib/k0s/pki/apiserver-etcd-client.crt",
-				"--key", "/var/lib/k0s/pki/apiserver-etcd-client.key",
+				"--cacert", "/var/lib/k0s/pki/etcd/ca.crt",
+				"--cert", "/var/lib/k0s/pki/etcd/peer.crt",
+				"--key", "/var/lib/k0s/pki/etcd/peer.key",
 				"--write-out", "json",
 				"--endpoints", "https://127.0.0.1:2379",
 			},
-			expectedPath: "/var/lib/k0s/pki",
+			expectedPath: "/var/lib/k0s/pki/etcd",
 			expectedErr:  nil,
 		},
 		{
 			distribution: "embedded-cluster",
 			expectedArgs: []string{
-				"--cacert", "/var/lib/k0s/pki/ca.crt",
-				"--cert", "/var/lib/k0s/pki/apiserver-etcd-client.crt",
-				"--key", "/var/lib/k0s/pki/apiserver-etcd-client.key",
+				"--cacert", "/var/lib/k0s/pki/etcd/ca.crt",
+				"--cert", "/var/lib/k0s/pki/etcd/peer.crt",
+				"--key", "/var/lib/k0s/pki/etcd/peer.key",
 				"--write-out", "json",
 				"--endpoints", "https://127.0.0.1:2379",
 			},
-			expectedPath: "/var/lib/k0s/pki",
+			expectedPath: "/var/lib/k0s/pki/etcd",
 			expectedErr:  nil,
 		},
 		{
