@@ -3,6 +3,7 @@ package collect
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -109,7 +110,7 @@ func (c *CollectEtcd) Collect(progressChan chan<- interface{}) (CollectorResult,
 		}
 		if len(stderr) > 0 {
 			fileName := fmt.Sprintf("%s-stderr", fileName)
-			output.SaveResult(c.BundlePath, getFullPath(fileName), bytes.NewBuffer(stderr))
+			output.SaveResult(c.BundlePath, getFullPath(fileName), bytes.NewBuffer(stderrToJson(stderr)))
 		}
 	}
 
@@ -369,7 +370,20 @@ func generateFilenameFromCommand(command string) string {
 }
 
 // getFullPath returns the full path to the file
-// e.g. "endpoint-health" -> "etcd/endpoint-health.txt"
+// e.g. "endpoint-health" -> "etcd/endpoint-health.json"
 func getFullPath(fileName string) string {
-	return fmt.Sprintf("%s/%s.txt", etcdOutputDir, fileName)
+	return fmt.Sprintf("%s/%s.json", etcdOutputDir, fileName)
+}
+
+// stderrToJson converts stderr output to json bytes
+func stderrToJson(stderr []byte) []byte {
+	jsonObj := map[string]string{
+		"stderr": string(stderr),
+	}
+	jsonBytes, err := json.Marshal(jsonObj)
+	if err != nil {
+		klog.Errorf("failed to marshal stderr to json: %v", err)
+		return []byte{}
+	}
+	return jsonBytes
 }
