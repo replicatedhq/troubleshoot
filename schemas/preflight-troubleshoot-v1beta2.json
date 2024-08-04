@@ -3070,12 +3070,18 @@
               },
               "etcd": {
                 "type": "object",
+                "required": [
+                  "image"
+                ],
                 "properties": {
                   "collectorName": {
                     "type": "string"
                   },
                   "exclude": {
                     "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  },
+                  "image": {
+                    "type": "string"
                   }
                 }
               },

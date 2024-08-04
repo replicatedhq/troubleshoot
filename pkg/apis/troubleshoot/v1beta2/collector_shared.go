@@ -301,6 +301,7 @@ type DNS struct {
 
 type Etcd struct {
 	CollectorMeta `json:",inline" yaml:",inline"`
+	Image         string `json:"image" yaml:"image"`
 }
 
 type Collect struct {

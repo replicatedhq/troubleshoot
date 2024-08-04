@@ -40,6 +40,7 @@ type etcdDebug struct {
 	commands     []string    // list of commands to run in the etcd pod
 	args         []string    // list of args to pass to each command
 	hostPath     string      // path to the host's etcd certs
+	image        string      // image to use for the etcd client pod
 }
 
 func (c *CollectEtcd) Title() string {
@@ -61,6 +62,7 @@ func (c *CollectEtcd) Collect(progressChan chan<- interface{}) (CollectorResult,
 			"etcdctl member list",
 			"etcdctl alarm list",
 		},
+		image: c.Collector.Image,
 	}
 
 	distribution, err := debugInstance.getSupportedDistro()
@@ -204,7 +206,7 @@ func (c *etcdDebug) getOrCreateEtcdPod() error {
 	// if not ephemeral, find the static etcd pod to exec into
 	// get the first etcd pod in the cluster with label "component=etcd" in all namespaces
 	label := "component=etcd"
-	pods, err := c.client.CoreV1().Pods("").List(context.Background(), metav1.ListOptions{
+	pods, err := c.client.CoreV1().Pods("").List(c.context, metav1.ListOptions{
 		LabelSelector: label,
 	})
 	if err != nil {
@@ -221,6 +223,9 @@ func (c *etcdDebug) getOrCreateEtcdPod() error {
 
 // createEtcdPod creates a etcd client pod to exec into
 func (c *etcdDebug) createEtcdPod() error {
+	if c.image == "" {
+		c.image = "quay.io/coreos/etcd:latest"
+	}
 	namespace := "default"
 	labels := map[string]string{
 		"troubleshoot-role": "etcd-collector",
@@ -236,9 +241,9 @@ func (c *etcdDebug) createEtcdPod() error {
 			Containers: []corev1.Container{
 				{
 					Name:    "etcd-client",
-					Image:   "quay.io/coreos/etcd:latest",
+					Image:   c.image,
 					Command: []string{"sleep"},
-					Args:    []string{"1d"},
+					Args:    []string{"5m"},
 					Env: []corev1.EnvVar{
 						{
 							Name:  "ETCDCTL_API",

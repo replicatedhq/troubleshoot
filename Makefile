@@ -105,9 +105,6 @@ tidy:
 bin/support-bundle:
 	go build ${BUILDFLAGS} ${LDFLAGS} -o bin/support-bundle github.com/replicatedhq/troubleshoot/cmd/troubleshoot
 
-bin/support-bundle-linux:
-	GOOS=linux GOARCH=amd64 go build ${BUILDFLAGS} ${LDFLAGS} -o bin/support-bundle github.com/replicatedhq/troubleshoot/cmd/troubleshoot
-
 bin/preflight:
 	go build ${BUILDFLAGS} ${LDFLAGS} -o bin/preflight github.com/replicatedhq/troubleshoot/cmd/preflight
 
@@ -116,6 +113,10 @@ bin/analyze:
 
 bin/collect:
 	go build ${BUILDFLAGS} ${LDFLAGS} -o bin/collect github.com/replicatedhq/troubleshoot/cmd/collect
+
+build-linux: tidy
+	@echo "Build cli binaries for Linux"
+	GOOS=linux GOARCH=amd64 $(MAKE) -j bin/support-bundle bin/preflight bin/analyze bin/collect
 
 .PHONY: fmt
 fmt:

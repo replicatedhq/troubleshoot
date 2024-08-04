@@ -2036,6 +2036,10 @@ spec:
                           type: string
                         exclude:
                           type: BoolString
+                        image:
+                          type: string
+                      required:
+                      - image
                       type: object
                     exec:
                       properties:
