@@ -10497,6 +10497,10 @@ spec:
                       type: object
                     runPod:
                       properties:
+                        annotations:
+                          additionalProperties:
+                            type: string
+                          type: object
                         collectorName:
                           type: string
                         exclude:

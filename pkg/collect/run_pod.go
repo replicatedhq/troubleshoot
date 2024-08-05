@@ -118,33 +118,7 @@ func (c *CollectRunPod) Collect(progressChan chan<- interface{}) (result Collect
 }
 
 func runPodWithSpec(ctx context.Context, client *kubernetes.Clientset, runPodCollector *troubleshootv1beta2.RunPod) (*corev1.Pod, error) {
-	podLabels := make(map[string]string)
-	podLabels["troubleshoot-role"] = "run-collector"
-
-	namespace := "default"
-	if runPodCollector.Namespace != "" {
-		namespace = runPodCollector.Namespace
-	}
-
-	podName := "run-pod"
-	if runPodCollector.CollectorName != "" {
-		podName = runPodCollector.CollectorName
-	} else if runPodCollector.Name != "" {
-		podName = runPodCollector.Name
-	}
-
-	pod := corev1.Pod{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      podName,
-			Namespace: namespace,
-			Labels:    podLabels,
-		},
-		TypeMeta: metav1.TypeMeta{
-			APIVersion: "v1",
-			Kind:       "Pod",
-		},
-		Spec: runPodCollector.PodSpec,
-	}
+	pod := createPodStruct(runPodCollector)
 
 	if runPodCollector.ImagePullSecret != nil && runPodCollector.ImagePullSecret.Data != nil {
 		secretName, err := createSecret(ctx, client, pod.Namespace, runPodCollector.ImagePullSecret)
@@ -154,7 +128,7 @@ func runPodWithSpec(ctx context.Context, client *kubernetes.Clientset, runPodCol
 		pod.Spec.ImagePullSecrets = append(pod.Spec.ImagePullSecrets, corev1.LocalObjectReference{Name: secretName})
 	}
 
-	created, err := client.CoreV1().Pods(namespace).Create(ctx, &pod, metav1.CreateOptions{})
+	created, err := client.CoreV1().Pods(pod.Namespace).Create(ctx, &pod, metav1.CreateOptions{})
 	klog.V(2).Infof("Pod %s has been created", pod.Name)
 
 	if err != nil {
@@ -483,4 +457,37 @@ func deletePod(ctx context.Context, client *kubernetes.Clientset, pod *corev1.Po
 	} else {
 		klog.V(2).Infof("Pod %s in %s namespace has been deleted", pod.Name, pod.Namespace)
 	}
+}
+
+func createPodStruct(runPodCollector *troubleshootv1beta2.RunPod) corev1.Pod {
+	podLabels := make(map[string]string)
+	podLabels["troubleshoot-role"] = "run-collector"
+
+	namespace := "default"
+	if runPodCollector.Namespace != "" {
+		namespace = runPodCollector.Namespace
+	}
+
+	podName := "run-pod"
+	if runPodCollector.CollectorName != "" {
+		podName = runPodCollector.CollectorName
+	} else if runPodCollector.Name != "" {
+		podName = runPodCollector.Name
+	}
+
+	pod := corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:        podName,
+			Namespace:   namespace,
+			Labels:      podLabels,
+			Annotations: runPodCollector.Annotations,
+		},
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: "v1",
+			Kind:       "Pod",
+		},
+		Spec: runPodCollector.PodSpec,
+	}
+
+	return pod
 }
