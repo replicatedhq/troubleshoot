@@ -7595,6 +7595,12 @@
                   "namespace"
                 ],
                 "properties": {
+                  "annotations": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "string"
+                    }
+                  },
                   "collectorName": {
                     "type": "string"
                   },

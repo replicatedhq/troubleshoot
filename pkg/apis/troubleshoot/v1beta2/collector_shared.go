@@ -111,6 +111,7 @@ type RunPod struct {
 	Timeout         string            `json:"timeout,omitempty" yaml:"timeout,omitempty"`
 	ImagePullSecret *ImagePullSecrets `json:"imagePullSecret,omitempty" yaml:"imagePullSecret,omitempty"`
 	PodSpec         corev1.PodSpec    `json:"podSpec,omitempty" yaml:"podSpec,omitempty"`
+	Annotations     map[string]string `json:"annotations,omitempty" yaml:"annotations,omitempty"`
 }
 
 type RunDaemonSet struct {
