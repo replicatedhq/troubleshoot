@@ -114,6 +114,10 @@ bin/analyze:
 bin/collect:
 	go build ${BUILDFLAGS} ${LDFLAGS} -o bin/collect github.com/replicatedhq/troubleshoot/cmd/collect
 
+build-linux: tidy
+	@echo "Build cli binaries for Linux"
+	GOOS=linux GOARCH=amd64 $(MAKE) -j bin/support-bundle bin/preflight bin/analyze bin/collect
+
 .PHONY: fmt
 fmt:
 	go fmt ${BUILDPATHS}
