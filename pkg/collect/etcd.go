@@ -61,6 +61,7 @@ func (c *CollectEtcd) Collect(progressChan chan<- interface{}) (CollectorResult,
 			"etcdctl endpoint status",
 			"etcdctl member list",
 			"etcdctl alarm list",
+			"etcdctl version",
 		},
 		image: c.Collector.Image,
 	}
