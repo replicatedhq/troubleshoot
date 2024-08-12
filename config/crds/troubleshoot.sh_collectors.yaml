@@ -301,6 +301,17 @@ spec:
                         timeout:
                           type: string
                       type: object
+                    etcd:
+                      properties:
+                        collectorName:
+                          type: string
+                        exclude:
+                          type: BoolString
+                        image:
+                          type: string
+                      required:
+                      - image
+                      type: object
                     exec:
                       properties:
                         args:

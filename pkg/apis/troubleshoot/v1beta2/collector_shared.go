@@ -299,6 +299,11 @@ type DNS struct {
 	Timeout       string `json:"timeout,omitempty" yaml:"timeout,omitempty"`
 }
 
+type Etcd struct {
+	CollectorMeta `json:",inline" yaml:",inline"`
+	Image         string `json:"image" yaml:"image"`
+}
+
 type Collect struct {
 	ClusterInfo      *ClusterInfo      `json:"clusterInfo,omitempty" yaml:"clusterInfo,omitempty"`
 	ClusterResources *ClusterResources `json:"clusterResources,omitempty" yaml:"clusterResources,omitempty"`
@@ -329,6 +334,7 @@ type Collect struct {
 	Sonobuoy         *Sonobuoy         `json:"sonobuoy,omitempty" yaml:"sonobuoy,omitempty"`
 	NodeMetrics      *NodeMetrics      `json:"nodeMetrics,omitempty" yaml:"nodeMetrics,omitempty"`
 	DNS              *DNS              `json:"dns,omitempty" yaml:"dns,omitempty"`
+	Etcd             *Etcd             `json:"etcd,omitempty" yaml:"etcd,omitempty"`
 }
 
 func (c *Collect) AccessReviewSpecs(overrideNS string) []authorizationv1.SelfSubjectAccessReviewSpec {
