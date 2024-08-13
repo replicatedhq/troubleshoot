@@ -10,7 +10,7 @@ require (
 	github.com/blang/semver/v4 v4.0.0
 	github.com/cilium/ebpf v0.16.0
 	github.com/containerd/cgroups/v3 v3.0.3
-	github.com/containers/image/v5 v5.32.0
+	github.com/containers/image/v5 v5.32.1
 	github.com/distribution/distribution/v3 v3.0.0-beta.1
 	github.com/fatih/color v1.17.0
 	github.com/go-logr/logr v1.4.2
@@ -54,7 +54,7 @@ require (
 	k8s.io/client-go v0.30.3
 	k8s.io/klog/v2 v2.130.1
 	oras.land/oras-go v1.2.6
-	sigs.k8s.io/controller-runtime v0.18.4
+	sigs.k8s.io/controller-runtime v0.18.5
 	sigs.k8s.io/e2e-framework v0.4.0
 )
 
@@ -194,7 +194,7 @@ require (
 	github.com/magiconair/properties v1.8.7 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
-	github.com/mattn/go-runewidth v0.0.15 // indirect
+	github.com/mattn/go-runewidth v0.0.16 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 	github.com/mitchellh/go-testing-interface v1.14.1 // indirect
 	github.com/mitchellh/go-wordwrap v1.0.1
@@ -235,12 +235,12 @@ require (
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.starlark.net v0.0.0-20230525235612-a134d8f9ddca // indirect
-	golang.org/x/crypto v0.25.0 // indirect
-	golang.org/x/net v0.27.0
-	golang.org/x/oauth2 v0.21.0 // indirect
-	golang.org/x/sys v0.23.0
-	golang.org/x/term v0.22.0 // indirect
-	golang.org/x/text v0.16.0
+	golang.org/x/crypto v0.26.0 // indirect
+	golang.org/x/net v0.28.0
+	golang.org/x/oauth2 v0.22.0 // indirect
+	golang.org/x/sys v0.24.0
+	golang.org/x/term v0.23.0 // indirect
+	golang.org/x/text v0.17.0
 	golang.org/x/time v0.5.0 // indirect
 	google.golang.org/api v0.172.0 // indirect
 	google.golang.org/genproto v0.0.0-20240227224415-6ceb2ff114de // indirect
