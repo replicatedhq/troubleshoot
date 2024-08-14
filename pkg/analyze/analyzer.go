@@ -119,11 +119,8 @@ func Analyze(
 
 	analyzerInst := getAnalyzer(analyzer)
 	if analyzerInst == nil {
-		return []*AnalyzeResult{{
-			IsFail:  true,
-			Title:   "nonexistent analyzer",
-			Message: "Analyzer not found",
-		}}, nil
+		klog.Info("Non-existent analyzer found in the spec. Please double-check the spelling and indentation of the analyzers in the spec.")
+		return nil, nil
 	}
 
 	_, span := otel.Tracer(constants.LIB_TRACER_NAME).Start(ctx, analyzerInst.Title())
