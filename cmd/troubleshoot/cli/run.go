@@ -200,7 +200,7 @@ func runTroubleshoot(v *viper.Viper, args []string) error {
 
 	if len(response.AnalyzerResults) > 0 {
 		if interactive {
-			if err := showInteractiveResults(mainBundle.Name, response.AnalyzerResults); err != nil {
+			if err := showInteractiveResults(mainBundle.Name, response.AnalyzerResults, response.ArchivePath); err != nil {
 				interactive = false
 			}
 		} else {
@@ -227,7 +227,7 @@ the %s Admin Console to begin analysis.`
 			return nil
 		}
 
-		fmt.Printf("\n%s\n", response.ArchivePath)
+		fmt.Printf("\nA support bundle was generated and saved at %s. Please send this file to your software vendor for support.\n", response.ArchivePath)
 		return nil
 	}
 

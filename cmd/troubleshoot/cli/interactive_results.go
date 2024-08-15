@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
+	"strings"
 	"time"
 
 	"github.com/mitchellh/go-wordwrap"
@@ -22,7 +23,7 @@ var (
 	isShowingSaved = false
 )
 
-func showInteractiveResults(supportBundleName string, analyzeResults []*analyzerunner.AnalyzeResult) error {
+func showInteractiveResults(supportBundleName string, analyzeResults []*analyzerunner.AnalyzeResult, archivePath string) error {
 	if err := ui.Init(); err != nil {
 		return errors.Wrap(err, "failed to create terminal ui")
 	}
@@ -49,7 +50,7 @@ func showInteractiveResults(supportBundleName string, analyzeResults []*analyzer
 				if err != nil {
 					// show
 				} else {
-					showSaved(filename)
+					showSaved(filename, archivePath)
 					go func() {
 						time.Sleep(time.Second * 5)
 						isShowingSaved = false
@@ -214,18 +215,36 @@ func drawDetails(analysisResult *analyzerunner.AnalyzeResult) {
 	ui.Render(message)
 }
 
-func showSaved(filename string) {
+func showSaved(filename string, archivePath string) {
 	termWidth, termHeight := ui.TerminalDimensions()
 
+	f := `A support bundle was generated and saved at %s. 
+Please send this file to your software vendor for support.`
+	additionalMessageText := fmt.Sprintf(f, archivePath)
+
 	savedMessage := widgets.NewParagraph()
-	savedMessage.Text = fmt.Sprintf("Support Bundle analysis results saved to\n\n%s", filename)
+	savedMessage.Text = fmt.Sprintf("Support Bundle analysis results saved to\n\n%s\n\n%s", filename, additionalMessageText)
 	savedMessage.WrapText = true
 	savedMessage.Border = true
 
-	left := termWidth/2 - 20
-	right := termWidth/2 + 20
-	top := termHeight/2 - 4
-	bottom := termHeight/2 + 4
+	// Split the text into lines and find the longest line
+	lines := strings.Split(savedMessage.Text, "\n")
+	maxLineLength := 0
+	for _, line := range lines {
+		if len(line) > maxLineLength {
+			// maxLineLength is set to half of the line length to prevent the showing text with more space than needed
+			maxLineLength = len(line)/2 + constants.MESSAGE_TEXT_PADDING
+		}
+	}
+
+	if maxLineLength > termWidth/2 {
+		maxLineLength = termWidth / 2
+	}
+
+	left := termWidth/2 - maxLineLength
+	right := termWidth/2 + maxLineLength
+	top := termHeight/2 - len(lines)
+	bottom := termHeight/2 + len(lines)
 
 	savedMessage.SetRect(left, top, right, bottom)
 	ui.Render(savedMessage)
