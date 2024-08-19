@@ -89,6 +89,11 @@ func HostAnalyze(
 	if err != nil {
 		return NewAnalyzeResultError(analyzer, errors.Wrap(err, "analyze"))
 	}
+
+	if len(result) == 0 {
+		klog.Errorf("no outcome matched for %q host analyzer", analyzer.Title())
+	}
+
 	return result
 }
 
@@ -146,6 +151,10 @@ func Analyze(
 
 	if results == nil {
 		results = []*AnalyzeResult{}
+	}
+
+	if len(results) == 0 {
+		klog.Errorf("no outcome matched for %q analyzer", analyzerInst.Title())
 	}
 
 	return results, nil
