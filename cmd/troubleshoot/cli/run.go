@@ -38,9 +38,6 @@ import (
 
 func runTroubleshoot(v *viper.Viper, args []string) error {
 	ctx := context.Background()
-	if !v.GetBool("load-cluster-specs") && len(args) < 1 {
-		return errors.New("flag load-cluster-specs must be set if no specs are provided on the command line")
-	}
 
 	restConfig, err := k8sutil.GetRESTConfig()
 	if err != nil {
@@ -306,7 +303,7 @@ func loadSpecs(ctx context.Context, args []string, client kubernetes.Interface) 
 	if len(kinds.CollectorsV1Beta2) == 0 &&
 		len(kinds.HostCollectorsV1Beta2) == 0 &&
 		len(kinds.SupportBundlesV1Beta2) == 0 {
-		return nil, nil, errors.New("no collectors specified to run")
+		return nil, nil, errors.New("no collectors specified to run. Use --debug and/or -v=2 to see more information")
 	}
 
 	// Merge specs
