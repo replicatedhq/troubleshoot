@@ -20,7 +20,11 @@ bundle_directory_name="support-bundle"
 
 echo "====== Generating support bundle from k8s cluster ======"
 recreate_tmpdir
-./bin/support-bundle --debug --interactive=false examples/support-bundle/e2e.yaml --output=$tmpdir/$bundle_archive_name
+./bin/support-bundle --debug \
+                     --interactive=false \
+                     examples/support-bundle/e2e.yaml \
+                     --output=$tmpdir/$bundle_archive_name \
+                     --load-cluster-specs=false
 if [ $? -ne 0 ]; then
     echo "support-bundle command failed"
     exit $?
@@ -117,7 +121,8 @@ recreate_tmpdir
 kubectl apply -f "$PRJ_ROOT/testdata/supportbundle/labelled-specs"
 ./bin/support-bundle -v1 --interactive=false secret/default/labelled-support-bundle-1/custom-spec-key \
                     --redactors configmap/default/labelled-redactor-spec-1/customer-redactor-spec \
-                    --output=$tmpdir/$bundle_archive_name
+                    --output=$tmpdir/$bundle_archive_name \
+                    --load-cluster-specs=false
 if [ $? -ne 0 ]; then
     echo "support-bundle command failed"
     exit $?
@@ -137,7 +142,11 @@ fi
 echo "======= Generating support bundle from k8s configmap/<namespace-name>/<configmap-name> ======"
 recreate_tmpdir
 kubectl apply -f "$PRJ_ROOT/testdata/supportbundle/labelled-specs"
-./bin/support-bundle -v1 --interactive=false configmap/labelled-specs/labelled-support-bundle-2 --output=$tmpdir/$bundle_archive_name
+./bin/support-bundle -v1 \
+                     --interactive=false \
+                     configmap/labelled-specs/labelled-support-bundle-2 \
+                     --output=$tmpdir/$bundle_archive_name \
+                     --load-cluster-specs=false
 if [ $? -ne 0 ]; then
     echo "support-bundle command failed"
     exit $?
