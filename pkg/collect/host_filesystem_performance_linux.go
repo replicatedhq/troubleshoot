@@ -33,8 +33,13 @@ func collectHostFilesystemPerformance(hostCollector *troubleshootv1beta2.Filesys
 		}
 		timeout = d
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
-	defer cancel()
+	timeoutCtx, timeoutCancel := context.WithTimeout(context.Background(), timeout)
+	defer timeoutCancel()
+
+	// Start a new context for the fio collector and handle the timeout separately so we can
+	// distinguish between the timeout and a command failure in the analyzer.
+	collectCtx, collectCancel := context.WithCancel(context.Background())
+	defer collectCancel()
 
 	collectorName := hostCollector.CollectorName
 	if collectorName == "" {
@@ -53,7 +58,7 @@ func collectHostFilesystemPerformance(hostCollector *troubleshootv1beta2.Filesys
 		jobs := hostCollector.BackgroundReadIOPSJobs + hostCollector.BackgroundWriteIOPSJobs
 		done := make(chan bool, jobs)
 		defer func() {
-			cancel()
+			collectCancel()
 			for i := 0; i < jobs; i++ {
 				<-done
 			}
@@ -65,7 +70,7 @@ func collectHostFilesystemPerformance(hostCollector *troubleshootv1beta2.Filesys
 			jobs:      hostCollector.BackgroundReadIOPSJobs,
 			directory: hostCollector.Directory,
 		}
-		backgroundIOPS(ctx, opts, done)
+		backgroundIOPS(collectCtx, opts, done)
 
 		opts = backgroundIOPSOpts{
 			read:      false,
@@ -73,16 +78,26 @@ func collectHostFilesystemPerformance(hostCollector *troubleshootv1beta2.Filesys
 			jobs:      hostCollector.BackgroundWriteIOPSJobs,
 			directory: hostCollector.Directory,
 		}
-		backgroundIOPS(ctx, opts, done)
+		backgroundIOPS(collectCtx, opts, done)
 
 		time.Sleep(time.Second * time.Duration(hostCollector.BackgroundIOPSWarmupSeconds))
 	}
 
 	var fioResult *FioResult
+	errCh := make(chan error, 1)
+	go func() {
+		var err error
+		fioResult, err = collectFioResults(collectCtx, hostCollector)
+		errCh <- err
+	}()
 
-	fioResult, err := collectFioResults(ctx, hostCollector)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to collect fio results")
+	select {
+	case <-timeoutCtx.Done():
+		return nil, errors.New("timeout")
+	case err := <-errCh:
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to collect fio results")
+		}
 	}
 
 	b, err := json.Marshal(fioResult)

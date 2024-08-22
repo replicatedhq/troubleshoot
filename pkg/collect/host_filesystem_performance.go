@@ -19,6 +19,10 @@ import (
 	"k8s.io/klog/v2"
 )
 
+const (
+	DefaultFioRunTime = "120"
+)
+
 type Durations []time.Duration
 
 func (d Durations) Len() int {
@@ -367,6 +371,11 @@ func parseCollectorOptions(hostCollector *troubleshootv1beta2.FilesystemPerforma
 		return nil, nil, errors.New("Directory is required to collect filesystem performance info")
 	}
 
+	runtime, err := getFioRuntime(hostCollector.RunTime)
+	if err != nil {
+		return nil, nil, err
+	}
+
 	latencyBenchmarkOptions := FioJobOptions{
 		RW:        "write",
 		IOEngine:  "sync",
@@ -375,12 +384,32 @@ func parseCollectorOptions(hostCollector *troubleshootv1beta2.FilesystemPerforma
 		Size:      strconv.FormatUint(fileSize, 10),
 		BS:        strconv.FormatUint(operationSize, 10),
 		Name:      "fsperf",
-		RunTime:   "120",
+		RunTime:   runtime,
 	}
 
 	command := buildFioCommand(latencyBenchmarkOptions)
 
 	return command, &latencyBenchmarkOptions, nil
+}
+
+// getFioRuntime returns the runTime value or the default if runTime is nil, empty or <= 0.
+// This attepmts to maintain backwards compatibility prior to adding runTime to the collector spec,
+// defaulting to 120 seconds.
+func getFioRuntime(runTime *string) (string, error) {
+	if runTime == nil {
+		return DefaultFioRunTime, nil
+	}
+	if *runTime == "" {
+		return "", nil // disable
+	}
+	i, err := strconv.Atoi(*runTime)
+	if err != nil {
+		return "", errors.Wrapf(err, "failed to parse runTime %q", *runTime)
+	}
+	if i <= 0 {
+		return "", nil // disable
+	}
+	return *runTime, nil
 }
 
 func buildFioCommand(opts FioJobOptions) []string {
@@ -407,7 +436,7 @@ func collectFioResults(ctx context.Context, hostCollector *troubleshootv1beta2.F
 	}
 
 	klog.V(2).Infof("collecting fio results: %s", strings.Join(command, " "))
-	output, err := exec.CommandContext(ctx, command[0], command[1:]...).Output()
+	output, err := exec.CommandContext(ctx, command[0], command[1:]...).Output() // #nosec G204
 	if err != nil {
 		if exitErr, ok := err.(*exec.ExitError); ok {
 			if exitErr.ExitCode() == 1 {
