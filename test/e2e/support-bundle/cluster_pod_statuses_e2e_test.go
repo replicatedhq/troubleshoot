@@ -42,7 +42,7 @@ func TestDeploymentPod(t *testing.T) {
 			tarPath := fmt.Sprintf("%s.tar.gz", supportBundleName)
 			targetFile := fmt.Sprintf("%s/analysis.json", supportBundleName)
 
-			cmd := exec.CommandContext(ctx, sbBinary(), "spec/pod.yaml", "--interactive=false", fmt.Sprintf("-o=%s", supportBundleName))
+			cmd := exec.CommandContext(ctx, sbBinary(), "spec/pod.yaml", "--load-cluster-specs=false", "--interactive=false", fmt.Sprintf("-o=%s", supportBundleName))
 			cmd.Stdout = &out
 			err := cmd.Run()
 			if err != nil {
