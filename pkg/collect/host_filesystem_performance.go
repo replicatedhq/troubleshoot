@@ -20,6 +20,7 @@ import (
 )
 
 const (
+	FioJobName        = "fsperf"
 	DefaultFioRunTime = "120"
 )
 
@@ -383,7 +384,7 @@ func parseCollectorOptions(hostCollector *troubleshootv1beta2.FilesystemPerforma
 		Directory: hostCollector.Directory,
 		Size:      strconv.FormatUint(fileSize, 10),
 		BS:        strconv.FormatUint(operationSize, 10),
-		Name:      "fsperf",
+		Name:      FioJobName,
 		RunTime:   runtime,
 	}
 

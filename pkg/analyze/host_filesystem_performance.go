@@ -74,11 +74,18 @@ func (a *AnalyzeHostFilesystemPerformance) Analyze(
 		return nil, errors.Wrapf(err, "failed to unmarshal fio results from %s", name)
 	}
 
-	if len(fioResult.Jobs) == 0 {
-		return nil, errors.Errorf("no jobs found in fio results from %s", name)
+	var job *collect.FioJobs
+	for _, j := range fioResult.Jobs {
+		if j.JobName == collect.FioJobName {
+			job = &j
+			break
+		}
+	}
+	if job == nil {
+		return nil, errors.Errorf("no job named 'fsperf' found in fio results from %s", name)
 	}
 
-	fioWriteLatency := fioResult.Jobs[0].Sync
+	fioWriteLatency := job.Sync
 
 	fsPerf := fioWriteLatency.FSPerfResults()
 	if err := json.Unmarshal(contents, &fsPerf); err != nil {
