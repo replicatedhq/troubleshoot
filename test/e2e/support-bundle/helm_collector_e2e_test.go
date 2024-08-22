@@ -39,7 +39,7 @@ func Test_HelmCollector(t *testing.T) {
 			namespace := c.Namespace()
 			tarPath := fmt.Sprintf("%s.tar.gz", supportBundleName)
 			targetFile := fmt.Sprintf("%s/helm/%s.json", supportBundleName, namespace)
-			cmd := exec.CommandContext(ctx, sbBinary(), "spec/helm.yaml", "--interactive=false", fmt.Sprintf("-o=%s", supportBundleName))
+			cmd := exec.CommandContext(ctx, sbBinary(), "spec/helm.yaml", "--load-cluster-specs=false", "--interactive=false", fmt.Sprintf("-o=%s", supportBundleName))
 			cmd.Stdout = &out
 			err := cmd.Run()
 			if err != nil {
