@@ -116,6 +116,10 @@ type RemoteFilesystemPerformance struct {
 	Datasync bool `json:"datasync,omitempty"`
 	// Total timeout, including background IOPS setup and warmup if enabled.
 	Timeout string `json:"timeout,omitempty"`
+	// Limit runtime. The test will run until it completes the configured I/O workload or until it
+	// has run for this specified amount of time, whichever occurs first. When the unit is omitted,
+	// the value is interpreted in seconds. Defaults to 120 seconds. Set to "0" to disable.
+	RunTime *string `json:"runTime,omitempty"`
 
 	// Enable the background IOPS feature.
 	EnableBackgroundIOPS bool `json:"enableBackgroundIOPS"`

@@ -17058,6 +17058,10 @@
                     "type": "integer",
                     "format": "int64"
                   },
+                  "runTime": {
+                    "description": "Limit runtime. The test will run until it completes the configured I/O workload or until it\nhas run for this specified amount of time, whichever occurs first. When the unit is omitted,\nthe value is interpreted in seconds. Defaults to 120 seconds. Set to \"0\" to disable.",
+                    "type": "string"
+                  },
                   "sync": {
                     "description": "Whether to call sync on the file after each write. Does not apply to background IOPS task.",
                     "type": "boolean"
