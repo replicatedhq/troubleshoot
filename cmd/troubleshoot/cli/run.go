@@ -282,11 +282,23 @@ func loadSupportBundleSpecsFromURIs(ctx context.Context, kinds *loader.Troublesh
 }
 
 func loadSpecs(ctx context.Context, args []string, client kubernetes.Interface) (*troubleshootv1beta2.SupportBundle, *troubleshootv1beta2.Redactor, error) {
-	// Append redactor uris to the args
-	allArgs := append(args, viper.GetStringSlice("redactors")...)
-	kinds, err := specs.LoadFromCLIArgs(ctx, client, allArgs, viper.GetViper())
-	if err != nil {
-		return nil, nil, err
+	var (
+		kinds   = loader.NewTroubleshootKinds()
+		vp      = viper.GetViper()
+		allArgs = append(args, vp.GetStringSlice("redactors")...)
+		err     error
+	)
+
+	if len(args) < 1 {
+		kinds, err = specs.LoadFromCluster(ctx, client, vp.GetStringSlice("selector"), vp.GetString("namespace"))
+		if err != nil {
+			return nil, nil, errors.Wrap(err, "failed to load specs from cluster, and no specs were provided as arguments")
+		}
+	} else {
+		kinds, err = specs.LoadFromCLIArgs(ctx, client, allArgs, vp)
+		if err != nil {
+			return nil, nil, errors.Wrap(err, "failed to load specs from CLI args")
+		}
 	}
 
 	// Load additional specs from support bundle URIs

@@ -88,7 +88,7 @@ func Test_GoldpingerCollector(t *testing.T) {
 			require.NoError(t, err)
 
 			tarPath := filepath.Join(t.TempDir(), fmt.Sprintf("%s.tar.gz", supportBundleName))
-			cmd := exec.CommandContext(ctx, sbBinary(), specPath, "--interactive=false", "--load-cluster-specs=false", "-v=2", fmt.Sprintf("-o=%s", tarPath))
+			cmd := exec.CommandContext(ctx, sbBinary(), specPath, "--interactive=false", "-v=2", fmt.Sprintf("-o=%s", tarPath))
 			cmd.Stdout = &out
 			cmd.Stderr = &stdErr
 			err = cmd.Run()

@@ -221,8 +221,7 @@ func LoadFromCLIArgs(ctx context.Context, client kubernetes.Interface, args []st
 	if vp.GetBool("load-cluster-specs") {
 		clusterKinds, err := LoadFromCluster(ctx, client, vp.GetStringSlice("selector"), vp.GetString("namespace"))
 		if err != nil {
-			klog.Infof("failed to load specs from cluster: %v", types.NewExitCodeError(constants.EXIT_CODE_SPEC_ISSUES, err))
-			return kinds, nil
+			return nil, types.NewExitCodeError(constants.EXIT_CODE_SPEC_ISSUES, err)
 		}
 
 		kinds.Add(clusterKinds)
