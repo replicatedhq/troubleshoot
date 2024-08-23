@@ -157,8 +157,10 @@ kubectl delete -f "$PRJ_ROOT/testdata/supportbundle/labelled-specs"
 
 echo "======= Generating support bundle from k8s cluster using 0 arguments and no spec in the cluster ======"
 recreate_tmpdir
+set +e
 ./bin/support-bundle -v1 --interactive=false --output="$tmpdir/$bundle_archive_name"
 exit_code=$?
+set -e
 if [ $exit_code -eq 0 ]; then
     echo "support-bundle command should have failed"
     exit 1
