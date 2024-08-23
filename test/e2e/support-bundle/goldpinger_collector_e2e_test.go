@@ -69,6 +69,10 @@ func Test_GoldpingerCollector(t *testing.T) {
 				wait.WithTimeout(time.Second*30),
 			)
 			require.NoError(t, err)
+
+			// HACK: wait for goldpinger to do its thing
+			time.Sleep(time.Second * 30)
+
 			return ctx
 		}).
 		Assess("collect and analyse goldpinger pings", func(ctx context.Context, t *testing.T, c *envconf.Config) context.Context {
@@ -104,7 +108,7 @@ func Test_GoldpingerCollector(t *testing.T) {
 			// Check that we analysed collected goldpinger results.
 			// We should expect a single analysis result for goldpinger.
 			assert.Equal(t, 1, len(analysisResults))
-			assert.True(t, strings.HasPrefix(analysisResults[0].Name, "missing.ping.results.for.goldpinger."))
+			assert.True(t, strings.HasPrefix(analysisResults[0].Name, "pings.to.goldpinger."))
 			if t.Failed() {
 				t.Logf("Analysis results: %s\n", analysisJSON)
 				t.Logf("Stdout: %s\n", out.String())
