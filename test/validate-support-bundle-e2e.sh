@@ -114,6 +114,7 @@ if ! grep "labelled-support-bundle-4 \*\*\*HIDDEN\*\*\*" "$tmpdir/$bundle_direct
     echo "Hidden content not found in redacted echo-hi-4 file"
     exit 1
 fi
+kubectl delete -f "$PRJ_ROOT/testdata/supportbundle/labelled-specs"
 
 echo "======= Generating support bundle from k8s cluster using 0 arguments and a spec in the cluster ======"
 recreate_tmpdir
@@ -152,6 +153,7 @@ if ! grep "labelled-support-bundle-4 \*\*\*HIDDEN\*\*\*" "$tmpdir/$bundle_direct
     echo "Hidden content not found in redacted echo-hi-4 file"
     exit 1
 fi
+kubectl delete -f "$PRJ_ROOT/testdata/supportbundle/labelled-specs"
 
 echo "======= Generating support bundle from k8s cluster using 0 arguments and no spec in the cluster ======"
 recreate_tmpdir
@@ -183,6 +185,7 @@ if ! grep "custom-spec-key \*\*\*HIDDEN\*\*\*" "$tmpdir/$bundle_directory_name/e
     echo "Hidden content not found in redacted echo-hi-3 file"
     exit 1
 fi
+kubectl delete -f "$PRJ_ROOT/testdata/supportbundle/labelled-specs"
 
 echo "======= Generating support bundle from k8s configmap/<namespace-name>/<configmap-name> ======"
 recreate_tmpdir
@@ -206,3 +209,4 @@ if ! grep "labelled-support-bundle-2 REDACT" "$tmpdir/$bundle_directory_name/ech
     echo "Hidden content not found in redacted echo-hi-2 file"
     exit 1
 fi
+kubectl delete -f "$PRJ_ROOT/testdata/supportbundle/labelled-specs"
