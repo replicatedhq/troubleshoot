@@ -209,6 +209,7 @@ func (l *specLoader) loadFromStrings(rawSpecs ...string) (*TroubleshootKinds, er
 }
 
 func (l *specLoader) loadFromSplitDocs(splitdocs []string) (*TroubleshootKinds, error) {
+	var err error
 	kinds := NewTroubleshootKinds()
 
 	for _, doc := range splitdocs {
@@ -256,6 +257,8 @@ func (l *specLoader) loadFromSplitDocs(splitdocs []string) (*TroubleshootKinds, 
 
 	if kinds.IsEmpty() {
 		klog.V(1).Info("No troubleshoot specs were loaded")
+		return nil, types.NewExitCodeError(constants.EXIT_CODE_SPEC_ISSUES,
+			errors.Wrap(err, "no troubleshoot specs were loaded"))
 	} else {
 		klog.V(1).Info("Loaded troubleshoot specs successfully")
 	}
