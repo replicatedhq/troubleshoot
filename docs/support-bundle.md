@@ -1,11 +1,19 @@
 ## support-bundle
 
-Generate a support bundle
+Generate a support bundle from a Kubernetes cluster or specified sources
 
 ### Synopsis
 
-A support bundle is an archive of files, output, metrics and state
-from a server that can be used to assist when troubleshooting a Kubernetes cluster.
+Generate a support bundle, an archive containing files, output, metrics, and cluster state to aid in troubleshooting Kubernetes clusters.
+
+If no arguments are provided, specs are automatically loaded from the cluster by default.
+
+**Argument Types**:
+1. **Secret**: Load specs from a Kubernetes Secret. Format: "secret/namespace-name/secret-name[/data-key]"
+2. **ConfigMap**: Load specs from a Kubernetes ConfigMap. Format: "configmap/namespace-name/configmap-name[/data-key]"
+3. **File**: Load specs from a local file. Format: Local file path
+4. **Standard Input**: Read specs from stdin. Format: "-"
+5. **URL**: Load specs from a URL. Supports HTTP and OCI registry URLs.
 
 ```
 support-bundle [urls...] [flags]
@@ -32,7 +40,7 @@ support-bundle [urls...] [flags]
       --insecure-skip-tls-verify       If true, the server's certificate will not be checked for validity. This will make your HTTPS connections insecure
       --interactive                    enable/disable interactive mode (default true)
       --kubeconfig string              Path to the kubeconfig file to use for CLI requests.
-      --load-cluster-specs             enable/disable loading additional troubleshoot specs found within the cluster
+      --load-cluster-specs             enable/disable loading additional troubleshoot specs found within the cluster. This is the default behavior if no spec is provided as an argument
       --memprofile string              File path to write memory profiling data
   -n, --namespace string               If present, the namespace scope for this CLI request
       --no-uri                         When this flag is used, Troubleshoot does not attempt to retrieve the spec referenced by the uri: field`
