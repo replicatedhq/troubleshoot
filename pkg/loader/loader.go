@@ -256,7 +256,6 @@ func (l *specLoader) loadFromSplitDocs(splitdocs []string) (*TroubleshootKinds, 
 
 	if kinds.IsEmpty() {
 		klog.V(1).Info("No troubleshoot specs were loaded")
-		return nil, errors.New("no troubleshooting specs were loaded")
 	} else {
 		klog.V(1).Info("Loaded troubleshoot specs successfully")
 	}
