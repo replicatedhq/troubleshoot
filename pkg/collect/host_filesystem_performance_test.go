@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
+	"k8s.io/utils/ptr"
 )
 
 func TestGetPercentileIndex(t *testing.T) {
@@ -118,6 +119,51 @@ func Test_parseCollectorOptions(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name: "Disable runtime",
+			args: args{
+				hostCollector: &troubleshootv1beta2.FilesystemPerformance{
+					HostCollectorMeta: troubleshootv1beta2.HostCollectorMeta{
+						CollectorName: "fsperf",
+					},
+					OperationSizeBytes:          1024,
+					Directory:                   "/var/lib/etcd",
+					FileSize:                    "22Mi",
+					Sync:                        true,
+					Datasync:                    true,
+					Timeout:                     "120",
+					EnableBackgroundIOPS:        true,
+					BackgroundIOPSWarmupSeconds: 10,
+					BackgroundWriteIOPS:         100,
+					BackgroundReadIOPS:          100,
+					BackgroundWriteIOPSJobs:     1,
+					BackgroundReadIOPSJobs:      1,
+					RunTime:                     ptr.To("0"),
+				},
+			},
+			wantCommand: []string{
+				"fio",
+				"--name=fsperf",
+				"--bs=1024",
+				"--directory=/var/lib/etcd",
+				"--rw=write",
+				"--ioengine=sync",
+				"--fdatasync=1",
+				"--size=23068672",
+				"--output-format=json",
+			},
+			wantOptions: &FioJobOptions{
+				RW:        "write",
+				IOEngine:  "sync",
+				FDataSync: "1",
+				Directory: "/var/lib/etcd",
+				Size:      "23068672",
+				BS:        "1024",
+				Name:      "fsperf",
+				RunTime:   "",
+			},
+			wantErr: false,
+		},
+		{
 			name: "Empty spec fails",
 			args: args{
 				hostCollector: &troubleshootv1beta2.FilesystemPerformance{
@@ -168,6 +214,45 @@ func Test_parseCollectorOptions(t *testing.T) {
 			wantOptions: nil,
 			wantErr:     true,
 		},
+		{
+			name: "embedded cluster spec",
+			args: args{
+				hostCollector: &troubleshootv1beta2.FilesystemPerformance{
+					HostCollectorMeta: troubleshootv1beta2.HostCollectorMeta{
+						CollectorName: "fsperf",
+					},
+					OperationSizeBytes: 2300,
+					Directory:          "/var/lib/k0s/etcd",
+					FileSize:           "22Mi",
+					Sync:               true,
+					Datasync:           true,
+					Timeout:            "120",
+					RunTime:            ptr.To("0"),
+				},
+			},
+			wantCommand: []string{
+				"fio",
+				"--name=fsperf",
+				"--bs=2300",
+				"--directory=/var/lib/k0s/etcd",
+				"--rw=write",
+				"--ioengine=sync",
+				"--fdatasync=1",
+				"--size=23068672",
+				"--output-format=json",
+			},
+			wantOptions: &FioJobOptions{
+				RW:        "write",
+				IOEngine:  "sync",
+				FDataSync: "1",
+				Directory: "/var/lib/k0s/etcd",
+				Size:      "23068672",
+				BS:        "2300",
+				Name:      "fsperf",
+				RunTime:   "",
+			},
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -181,6 +266,79 @@ func Test_parseCollectorOptions(t *testing.T) {
 				if !reflect.DeepEqual(gotOptions, tt.wantOptions) {
 					t.Errorf("parseCollectorOptions() got options = %v, want %v", gotOptions, tt.wantOptions)
 				}
+			}
+		})
+	}
+}
+
+func Test_getFioRuntime(t *testing.T) {
+	type args struct {
+		runTime *string
+	}
+	tests := []struct {
+		name    string
+		args    args
+		want    string
+		wantErr bool
+	}{
+		{
+			name: "nil runTime should use default",
+			args: args{
+				runTime: nil,
+			},
+			want:    "120",
+			wantErr: false,
+		},
+		{
+			name: "empty runTime should disable",
+			args: args{
+				runTime: ptr.To(""),
+			},
+			want:    "",
+			wantErr: false,
+		},
+		{
+			name: "invalid runTime should return error",
+			args: args{
+				runTime: ptr.To("abc"),
+			},
+			want:    "",
+			wantErr: true,
+		},
+		{
+			name: "valid runTime should return value",
+			args: args{
+				runTime: ptr.To("30"),
+			},
+			want:    "30",
+			wantErr: false,
+		},
+		{
+			name: "0 runTime should disable",
+			args: args{
+				runTime: ptr.To("0"),
+			},
+			want:    "",
+			wantErr: false,
+		},
+		{
+			name: "negative runTime should disable",
+			args: args{
+				runTime: ptr.To("-1"),
+			},
+			want:    "",
+			wantErr: false,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := getFioRuntime(tt.args.runTime)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("getFioRuntime() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("getFioRuntime() = %v, want %v", got, tt.want)
 			}
 		})
 	}

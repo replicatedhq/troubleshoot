@@ -16,8 +16,8 @@ import (
 	"github.com/replicatedhq/troubleshoot/pkg/convert"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	v1 "k8s.io/api/core/v1"
-	"sigs.k8s.io/e2e-framework/klient/k8s/resources"
+	appsv1 "k8s.io/api/apps/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/e2e-framework/klient/wait"
 	"sigs.k8s.io/e2e-framework/klient/wait/conditions"
 	"sigs.k8s.io/e2e-framework/pkg/envconf"
@@ -48,6 +48,7 @@ func Test_GoldpingerCollector(t *testing.T) {
 	feature := features.New("Goldpinger collector and analyser").
 		Setup(func(ctx context.Context, t *testing.T, c *envconf.Config) context.Context {
 			cluster := getClusterFromContext(t, ctx, ClusterName)
+
 			manager := helm.New(cluster.GetKubeconfig())
 			err := manager.RunInstall(
 				helm.WithName(releaseName),
@@ -57,22 +58,21 @@ func Test_GoldpingerCollector(t *testing.T) {
 				helm.WithTimeout("2m"),
 			)
 			require.NoError(t, err)
+
 			client, err := c.NewClient()
 			require.NoError(t, err)
-			pods := &v1.PodList{}
 
 			// Lets wait for the goldpinger pods to be running
-			err = client.Resources().WithNamespace(c.Namespace()).List(ctx, pods,
-				resources.WithLabelSelector("app.kubernetes.io/name=goldpinger"),
-			)
-			require.NoError(t, err)
-			require.Len(t, pods.Items, 1)
-
+			ds := &appsv1.DaemonSet{ObjectMeta: metav1.ObjectMeta{Name: "goldpinger", Namespace: c.Namespace()}}
 			err = wait.For(
-				conditions.New(client.Resources()).PodRunning(&pods.Items[0]),
+				conditions.New(client.Resources()).DaemonSetReady(ds),
 				wait.WithTimeout(time.Second*30),
 			)
 			require.NoError(t, err)
+
+			// HACK: wait for goldpinger to do its thing
+			time.Sleep(time.Second * 30)
+
 			return ctx
 		}).
 		Assess("collect and analyse goldpinger pings", func(ctx context.Context, t *testing.T, c *envconf.Config) context.Context {
@@ -108,7 +108,7 @@ func Test_GoldpingerCollector(t *testing.T) {
 			// Check that we analysed collected goldpinger results.
 			// We should expect a single analysis result for goldpinger.
 			assert.Equal(t, 1, len(analysisResults))
-			assert.True(t, strings.HasPrefix(analysisResults[0].Name, "missing.ping.results.for.goldpinger."))
+			assert.True(t, strings.HasPrefix(analysisResults[0].Name, "pings.to.goldpinger."))
 			if t.Failed() {
 				t.Logf("Analysis results: %s\n", analysisJSON)
 				t.Logf("Stdout: %s\n", out.String())
@@ -121,7 +121,8 @@ func Test_GoldpingerCollector(t *testing.T) {
 		Teardown(func(ctx context.Context, t *testing.T, c *envconf.Config) context.Context {
 			cluster := getClusterFromContext(t, ctx, ClusterName)
 			manager := helm.New(cluster.GetKubeconfig())
-			manager.RunUninstall(helm.WithName(releaseName), helm.WithNamespace(c.Namespace()))
+			err := manager.RunUninstall(helm.WithName(releaseName), helm.WithNamespace(c.Namespace()))
+			require.NoError(t, err)
 			return ctx
 		}).
 		Feature()
