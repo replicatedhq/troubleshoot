@@ -155,11 +155,11 @@ fi
 
 echo "======= Generating support bundle from k8s cluster using 0 arguments and no spec in the cluster ======"
 recreate_tmpdir
-kubectl apply -f "$PRJ_ROOT/testdata/supportbundle/labelled-specs"
-./bin/support-bundle -v1 --interactive=false --output=$tmpdir/$bundle_archive_name
-if [ $? -ne 0 ]; then
+./bin/support-bundle -v1 --interactive=false --output="$tmpdir/$bundle_archive_name"
+exit_code=$?
+if [ $exit_code -eq 0 ]; then
     echo "support-bundle command should have failed"
-    exit $?
+    exit 1
 fi
 
 echo "======= Generating support bundle from k8s secret/<namespace-name>/<secret-name>/<data-key> ======"
