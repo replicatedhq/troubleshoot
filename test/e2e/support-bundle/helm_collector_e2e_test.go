@@ -16,6 +16,7 @@ import (
 
 	collect "github.com/replicatedhq/troubleshoot/pkg/collect"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 var curDir, _ = os.Getwd()
@@ -27,8 +28,15 @@ func Test_HelmCollector(t *testing.T) {
 		Setup(func(ctx context.Context, t *testing.T, c *envconf.Config) context.Context {
 			cluster := getClusterFromContext(t, ctx, ClusterName)
 			manager := helm.New(cluster.GetKubeconfig())
-			manager.RunInstall(helm.WithName(releaseName), helm.WithNamespace(c.Namespace()), helm.WithChart(filepath.Join(curDir, "testdata/charts/nginx-15.2.0.tgz")), helm.WithArgs("-f "+filepath.Join(curDir, "testdata/helm-values.yaml")), helm.WithWait(), helm.WithTimeout("1m"))
-			//ignore error to allow test to speed up, helm collector will catch the pending or deployed helm release status
+			manager.RunInstall(
+				helm.WithName(releaseName),
+				helm.WithNamespace(c.Namespace()),
+				helm.WithChart(filepath.Join(curDir, "testdata/charts/nginx-15.2.0.tgz")),
+				helm.WithArgs("-f "+filepath.Join(curDir, "testdata/helm-values.yaml")),
+				helm.WithWait(),
+				helm.WithTimeout("1m"),
+			)
+			// ignore error to allow test to speed up, helm collector will catch the pending or deployed helm release status
 			return ctx
 		}).
 		Assess("check support bundle catch helm release", func(ctx context.Context, t *testing.T, c *envconf.Config) context.Context {
@@ -62,7 +70,7 @@ func Test_HelmCollector(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			assert.Equal(t, 1, len(results))
+			require.Equal(t, 1, len(results))
 			assert.Equal(t, releaseName, results[0].ReleaseName)
 			assert.Equal(t, "nginx", results[0].Chart)
 			assert.Equal(t, map[string]interface{}{"name": "TEST_ENV_VAR", "value": "test-value"}, results[0].VersionInfo[0].Values["extraEnvVars"].([]interface{})[0])
@@ -72,7 +80,8 @@ func Test_HelmCollector(t *testing.T) {
 		Teardown(func(ctx context.Context, t *testing.T, c *envconf.Config) context.Context {
 			cluster := getClusterFromContext(t, ctx, ClusterName)
 			manager := helm.New(cluster.GetKubeconfig())
-			manager.RunUninstall(helm.WithName(releaseName), helm.WithNamespace(c.Namespace()))
+			err := manager.RunUninstall(helm.WithName(releaseName), helm.WithNamespace(c.Namespace()))
+			require.NoError(t, err)
 			return ctx
 		}).
 		Feature()
