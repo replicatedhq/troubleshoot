@@ -209,7 +209,6 @@ func (l *specLoader) loadFromStrings(rawSpecs ...string) (*TroubleshootKinds, er
 }
 
 func (l *specLoader) loadFromSplitDocs(splitdocs []string) (*TroubleshootKinds, error) {
-	var err error
 	kinds := NewTroubleshootKinds()
 
 	for _, doc := range splitdocs {
