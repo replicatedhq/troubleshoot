@@ -18,9 +18,17 @@ func RootCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "support-bundle [urls...]",
 		Args:  cobra.MinimumNArgs(0),
-		Short: "Generate a support bundle",
-		Long: `A support bundle is an archive of files, output, metrics and state
-from a server that can be used to assist when troubleshooting a Kubernetes cluster.`,
+		Short: "Generate a support bundle from a Kubernetes cluster or specified sources",
+		Long: `Generate a support bundle, an archive containing files, output, metrics, and cluster state to aid in troubleshooting Kubernetes clusters.
+
+If no arguments are provided, specs are automatically loaded from the cluster by default.
+
+**Argument Types**:
+1. **Secret**: Load specs from a Kubernetes Secret. Format: "secret/namespace-name/secret-name[/data-key]"
+2. **ConfigMap**: Load specs from a Kubernetes ConfigMap. Format: "configmap/namespace-name/configmap-name[/data-key]"
+3. **File**: Load specs from a local file. Format: Local file path
+4. **Standard Input**: Read specs from stdin. Format: "-"
+5. **URL**: Load specs from a URL. Supports HTTP and OCI registry URLs.`,
 		SilenceUsage: true,
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 			v := viper.GetViper()
@@ -69,7 +77,7 @@ from a server that can be used to assist when troubleshooting a Kubernetes clust
 	cmd.Flags().Bool("interactive", true, "enable/disable interactive mode")
 	cmd.Flags().Bool("collect-without-permissions", true, "always generate a support bundle, even if it some require additional permissions")
 	cmd.Flags().StringSliceP("selector", "l", []string{"troubleshoot.sh/kind=support-bundle"}, "selector to filter on for loading additional support bundle specs found in secrets within the cluster")
-	cmd.Flags().Bool("load-cluster-specs", false, "enable/disable loading additional troubleshoot specs found within the cluster. required when no specs are provided on the command line")
+	cmd.Flags().Bool("load-cluster-specs", false, "enable/disable loading additional troubleshoot specs found within the cluster. This is the default behavior if no spec is provided as an argument")
 	cmd.Flags().String("since-time", "", "force pod logs collectors to return logs after a specific date (RFC3339)")
 	cmd.Flags().String("since", "", "force pod logs collectors to return logs newer than a relative duration like 5s, 2m, or 3h.")
 	cmd.Flags().StringP("output", "o", "", "specify the output file path for the support bundle")

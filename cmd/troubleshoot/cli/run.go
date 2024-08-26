@@ -38,9 +38,6 @@ import (
 
 func runTroubleshoot(v *viper.Viper, args []string) error {
 	ctx := context.Background()
-	if !v.GetBool("load-cluster-specs") && len(args) < 1 {
-		return errors.New("flag load-cluster-specs must be set if no specs are provided on the command line")
-	}
 
 	restConfig, err := k8sutil.GetRESTConfig()
 	if err != nil {
@@ -285,11 +282,24 @@ func loadSupportBundleSpecsFromURIs(ctx context.Context, kinds *loader.Troublesh
 }
 
 func loadSpecs(ctx context.Context, args []string, client kubernetes.Interface) (*troubleshootv1beta2.SupportBundle, *troubleshootv1beta2.Redactor, error) {
-	// Append redactor uris to the args
-	allArgs := append(args, viper.GetStringSlice("redactors")...)
-	kinds, err := specs.LoadFromCLIArgs(ctx, client, allArgs, viper.GetViper())
-	if err != nil {
-		return nil, nil, err
+	var (
+		kinds   = loader.NewTroubleshootKinds()
+		vp      = viper.GetViper()
+		allArgs = append(args, vp.GetStringSlice("redactors")...)
+		err     error
+	)
+
+	if len(args) < 1 {
+		fmt.Println("\r\033[36mNo specs provided, attempting to load from cluster...\033[m")
+		kinds, err = specs.LoadFromCluster(ctx, client, vp.GetStringSlice("selector"), vp.GetString("namespace"))
+		if err != nil {
+			return nil, nil, errors.Wrap(err, "failed to load specs from cluster, and no specs were provided as arguments")
+		}
+	} else {
+		kinds, err = specs.LoadFromCLIArgs(ctx, client, allArgs, vp)
+		if err != nil {
+			return nil, nil, errors.Wrap(err, "failed to load specs from CLI args")
+		}
 	}
 
 	// Load additional specs from support bundle URIs
@@ -306,7 +316,7 @@ func loadSpecs(ctx context.Context, args []string, client kubernetes.Interface) 
 	if len(kinds.CollectorsV1Beta2) == 0 &&
 		len(kinds.HostCollectorsV1Beta2) == 0 &&
 		len(kinds.SupportBundlesV1Beta2) == 0 {
-		return nil, nil, errors.New("no collectors specified to run")
+		return nil, nil, types.NewExitCodeError(constants.EXIT_CODE_CATCH_ALL, errors.Wrap(err, "no collectors specified to run. Use --debug and/or -v=2 to see more information"))
 	}
 
 	// Merge specs

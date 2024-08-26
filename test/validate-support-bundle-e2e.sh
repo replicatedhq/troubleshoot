@@ -20,7 +20,10 @@ bundle_directory_name="support-bundle"
 
 echo "====== Generating support bundle from k8s cluster ======"
 recreate_tmpdir
-./bin/support-bundle --debug --interactive=false examples/support-bundle/e2e.yaml --output=$tmpdir/$bundle_archive_name
+./bin/support-bundle --debug \
+                     --interactive=false \
+                     examples/support-bundle/e2e.yaml \
+                     --output=$tmpdir/$bundle_archive_name
 if [ $? -ne 0 ]; then
     echo "support-bundle command failed"
     exit $?
@@ -111,6 +114,57 @@ if ! grep "labelled-support-bundle-4 \*\*\*HIDDEN\*\*\*" "$tmpdir/$bundle_direct
     echo "Hidden content not found in redacted echo-hi-4 file"
     exit 1
 fi
+kubectl delete -f "$PRJ_ROOT/testdata/supportbundle/labelled-specs"
+
+echo "======= Generating support bundle from k8s cluster using 0 arguments and a spec in the cluster ======"
+recreate_tmpdir
+kubectl apply -f "$PRJ_ROOT/testdata/supportbundle/labelled-specs"
+./bin/support-bundle -v1 --interactive=false --output=$tmpdir/$bundle_archive_name
+if [ $? -ne 0 ]; then
+    echo "support-bundle command failed"
+    exit $?
+fi
+
+if ! tar -xvzf $tmpdir/$bundle_archive_name --directory $tmpdir; then
+    echo "A valid support bundle archive was not generated"
+    exit 1
+fi
+
+if ! grep "labelled-support-bundle-1 \*\*\*HIDDEN\*\*\*" "$tmpdir/$bundle_directory_name/echo-hi-1"; then
+    echo "$(cat $tmpdir/$bundle_directory_name/echo-hi-1)"
+    echo "Hidden content not found in redacted echo-hi-1 file"
+    exit 1
+fi
+
+if ! grep "labelled-support-bundle-2 \*\*\*HIDDEN\*\*\*" "$tmpdir/$bundle_directory_name/echo-hi-2"; then
+    echo "$(cat $tmpdir/$bundle_directory_name/echo-hi-2)"
+    echo "Hidden content not found in redacted echo-hi-2 file"
+    exit 1
+fi
+
+if ! grep "labelled-support-bundle-3 \*\*\*HIDDEN\*\*\*" "$tmpdir/$bundle_directory_name/echo-hi-3"; then
+    echo "$(cat $tmpdir/$bundle_directory_name/echo-hi-3)"
+    echo "Hidden content not found in redacted echo-hi-3 file"
+    exit 1
+fi
+
+if ! grep "labelled-support-bundle-4 \*\*\*HIDDEN\*\*\*" "$tmpdir/$bundle_directory_name/echo-hi-4"; then
+    echo "$(cat $tmpdir/$bundle_directory_name/echo-hi-4)"
+    echo "Hidden content not found in redacted echo-hi-4 file"
+    exit 1
+fi
+kubectl delete -f "$PRJ_ROOT/testdata/supportbundle/labelled-specs"
+
+echo "======= Generating support bundle from k8s cluster using 0 arguments and no spec in the cluster ======"
+recreate_tmpdir
+set +e
+./bin/support-bundle -v1 --interactive=false --output="$tmpdir/$bundle_archive_name"
+exit_code=$?
+set -e
+if [ $exit_code -eq 0 ]; then
+    echo "support-bundle command should have failed"
+    exit 1
+fi
 
 echo "======= Generating support bundle from k8s secret/<namespace-name>/<secret-name>/<data-key> ======"
 recreate_tmpdir
@@ -133,11 +187,15 @@ if ! grep "custom-spec-key \*\*\*HIDDEN\*\*\*" "$tmpdir/$bundle_directory_name/e
     echo "Hidden content not found in redacted echo-hi-3 file"
     exit 1
 fi
+kubectl delete -f "$PRJ_ROOT/testdata/supportbundle/labelled-specs"
 
 echo "======= Generating support bundle from k8s configmap/<namespace-name>/<configmap-name> ======"
 recreate_tmpdir
 kubectl apply -f "$PRJ_ROOT/testdata/supportbundle/labelled-specs"
-./bin/support-bundle -v1 --interactive=false configmap/labelled-specs/labelled-support-bundle-2 --output=$tmpdir/$bundle_archive_name
+./bin/support-bundle -v1 \
+                     --interactive=false \
+                     configmap/labelled-specs/labelled-support-bundle-2 \
+                     --output=$tmpdir/$bundle_archive_name
 if [ $? -ne 0 ]; then
     echo "support-bundle command failed"
     exit $?
@@ -153,3 +211,4 @@ if ! grep "labelled-support-bundle-2 REDACT" "$tmpdir/$bundle_directory_name/ech
     echo "Hidden content not found in redacted echo-hi-2 file"
     exit 1
 fi
+kubectl delete -f "$PRJ_ROOT/testdata/supportbundle/labelled-specs"
