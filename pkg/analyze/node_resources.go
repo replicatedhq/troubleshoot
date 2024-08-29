@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	util "github.com/replicatedhq/troubleshoot/internal/util"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/replicatedhq/troubleshoot/pkg/constants"
 	corev1 "k8s.io/api/core/v1"
@@ -18,12 +19,16 @@ type AnalyzeNodeResources struct {
 	analyzer *troubleshootv1beta2.NodeResources
 }
 
+type NodeResourceMsg struct {
+	*troubleshootv1beta2.NodeResourceFilters
+	NodeCount int
+}
+
 func (a *AnalyzeNodeResources) Title() string {
 	title := a.analyzer.CheckName
 	if title == "" {
 		title = "Node Resources"
 	}
-
 	return title
 }
 
@@ -41,6 +46,7 @@ func (a *AnalyzeNodeResources) Analyze(getFile getCollectedFileContents, findFil
 }
 
 func (a *AnalyzeNodeResources) analyzeNodeResources(analyzer *troubleshootv1beta2.NodeResources, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
+
 	collected, err := getCollectedFileContents(fmt.Sprintf("%s/%s.json", constants.CLUSTER_RESOURCES_DIR, constants.CLUSTER_RESOURCES_NODES))
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get contents of nodes.json")
@@ -78,10 +84,15 @@ func (a *AnalyzeNodeResources) analyzeNodeResources(analyzer *troubleshootv1beta
 			}
 
 			if isWhenMatch {
+				nodeMsg := NodeResourceMsg{
+					analyzer.Filters, len(matchingNodes),
+				}
 				result.IsFail = true
-				result.Message = outcome.Fail.Message
+				result.Message, err = util.RenderTemplate(outcome.Fail.Message, nodeMsg)
+				if err != nil {
+					return nil, errors.Wrap(err, "failed to render message template")
+				}
 				result.URI = outcome.Fail.URI
-
 				return result, nil
 			}
 		} else if outcome.Warn != nil {
