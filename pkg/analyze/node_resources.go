@@ -76,6 +76,10 @@ func (a *AnalyzeNodeResources) analyzeNodeResources(analyzer *troubleshootv1beta
 		IconURI: "https://troubleshoot.sh/images/analyzer-icons/node-resources.svg?w=16&h=18",
 	}
 
+	nodeMsg := NodeResourceMsg{
+		analyzer.Filters, len(matchingNodes),
+	}
+
 	for _, outcome := range analyzer.Outcomes {
 		if outcome.Fail != nil {
 			isWhenMatch, err := compareNodeResourceConditionalToActual(outcome.Fail.When, matchingNodes)
@@ -84,9 +88,6 @@ func (a *AnalyzeNodeResources) analyzeNodeResources(analyzer *troubleshootv1beta
 			}
 
 			if isWhenMatch {
-				nodeMsg := NodeResourceMsg{
-					analyzer.Filters, len(matchingNodes),
-				}
 				result.IsFail = true
 				result.Message, err = util.RenderTemplate(outcome.Fail.Message, nodeMsg)
 				if err != nil {
@@ -103,7 +104,10 @@ func (a *AnalyzeNodeResources) analyzeNodeResources(analyzer *troubleshootv1beta
 
 			if isWhenMatch {
 				result.IsWarn = true
-				result.Message = outcome.Warn.Message
+				result.Message, err = util.RenderTemplate(outcome.Warn.Message, nodeMsg)
+				if err != nil {
+					return nil, errors.Wrap(err, "failed to render message template")
+				}
 				result.URI = outcome.Warn.URI
 
 				return result, nil
@@ -116,7 +120,10 @@ func (a *AnalyzeNodeResources) analyzeNodeResources(analyzer *troubleshootv1beta
 
 			if isWhenMatch {
 				result.IsPass = true
-				result.Message = outcome.Pass.Message
+				result.Message, err = util.RenderTemplate(outcome.Pass.Message, nodeMsg)
+				if err != nil {
+					return nil, errors.Wrap(err, "failed to render message template")
+				}
 				result.URI = outcome.Pass.URI
 
 				return result, nil
@@ -384,8 +391,8 @@ func nodeMatchesFilters(node corev1.Node, filters *troubleshootv1beta2.NodeResou
 		}
 	}
 
-	if filters.Architecture != "" {
-		parsed := filters.Architecture
+	if filters.CPUArchitecture != "" {
+		parsed := filters.CPUArchitecture
 
 		if !strings.EqualFold(node.Status.NodeInfo.Architecture, parsed) {
 			return false, nil

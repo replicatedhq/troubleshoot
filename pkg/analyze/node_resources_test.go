@@ -445,7 +445,7 @@ func Test_nodeMatchesFilters(t *testing.T) {
 			name: "true when cpu arch is amd64",
 			node: node,
 			filters: &troubleshootv1beta2.NodeResourceFilters{
-				Architecture: "amd64",
+				CPUArchitecture: "amd64",
 			},
 			expectResult: true,
 		},
@@ -453,7 +453,7 @@ func Test_nodeMatchesFilters(t *testing.T) {
 			name: "false when cpu arch is not amd64",
 			node: node,
 			filters: &troubleshootv1beta2.NodeResourceFilters{
-				Architecture: "armhf",
+				CPUArchitecture: "armhf",
 			},
 			expectResult: false,
 		},
@@ -751,7 +751,44 @@ func Test_analyzeNodeResources(t *testing.T) {
 					},
 				},
 				Filters: &troubleshootv1beta2.NodeResourceFilters{
-					Architecture: "amd64",
+					CPUArchitecture: "amd64",
+				},
+			},
+			want: &AnalyzeResult{
+				IsPass:  true,
+				IsFail:  false,
+				IsWarn:  false,
+				Title:   "amd64-exists",
+				Message: "There is a node with at least 8 cores on amd64 arch",
+				URI:     "",
+				IconKey: "kubernetes_node_resources",
+				IconURI: "https://troubleshoot.sh/images/analyzer-icons/node-resources.svg?w=16&h=18",
+			},
+		},
+		{
+			name: "at least 8 cores on amd64 with message templating", // filter for a node with enough amd64 cores with message templating
+			analyzer: &troubleshootv1beta2.NodeResources{
+				AnalyzeMeta: troubleshootv1beta2.AnalyzeMeta{
+					CheckName: "amd64-exists",
+				},
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Fail: &troubleshootv1beta2.SingleOutcome{
+							When:    "max(cpuCapacity) < 8",
+							Message: "There isn't a node with 8 or more cores on {{ .CPUArchitecture }} arch",
+							URI:     "",
+						},
+					},
+					{
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							When:    "max(cpuCapacity) >= 8",
+							Message: "There is a node with at least 8 cores on {{ .CPUArchitecture }} arch",
+							URI:     "",
+						},
+					},
+				},
+				Filters: &troubleshootv1beta2.NodeResourceFilters{
+					CPUArchitecture: "amd64",
 				},
 			},
 			want: &AnalyzeResult{
@@ -893,6 +930,162 @@ func Test_analyzeNodeResources(t *testing.T) {
 				IsWarn:  false,
 				Title:   "memory filter",
 				Message: "more than 8 CPUs in nodes with 8Gb of ram",
+				URI:     "",
+				IconKey: "kubernetes_node_resources",
+				IconURI: "https://troubleshoot.sh/images/analyzer-icons/node-resources.svg?w=16&h=18",
+			},
+		},
+		{
+			name: "8 cores in nodes with at least 8gb of ram with message templating", // validate that filtering based on memory capacity works with message templating
+			analyzer: &troubleshootv1beta2.NodeResources{
+				AnalyzeMeta: troubleshootv1beta2.AnalyzeMeta{
+					CheckName: "memory filter",
+				},
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Fail: &troubleshootv1beta2.SingleOutcome{
+							When:    "sum(cpuCapacity) < 8",
+							Message: "less than 8 CPUs in nodes with {{ .MemoryCapacity }} of ram",
+							URI:     "",
+						},
+					},
+					{
+						Warn: &troubleshootv1beta2.SingleOutcome{
+							When:    "sum(cpuCapacity) = 8",
+							Message: "exactly 8 CPUs total in nodes with {{ .MemoryCapacity }} of ram",
+							URI:     "",
+						},
+					},
+					{
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							When:    "sum(cpuCapacity) > 8",
+							Message: "more than 8 CPUs in nodes with {{ .MemoryCapacity }} of ram",
+							URI:     "",
+						},
+					},
+				},
+				Filters: &troubleshootv1beta2.NodeResourceFilters{
+					MemoryCapacity: "8Gi",
+				},
+			},
+			want: &AnalyzeResult{
+				IsPass:  true,
+				IsFail:  false,
+				IsWarn:  false,
+				Title:   "memory filter",
+				Message: "more than 8 CPUs in nodes with 8Gi of ram",
+				URI:     "",
+				IconKey: "kubernetes_node_resources",
+				IconURI: "https://troubleshoot.sh/images/analyzer-icons/node-resources.svg?w=16&h=18",
+			},
+		},
+		{
+			name: "at least 1 node on arm64 with message templating", // filter for arm64 nodes with message templating
+			analyzer: &troubleshootv1beta2.NodeResources{
+				AnalyzeMeta: troubleshootv1beta2.AnalyzeMeta{
+					CheckName: "arm64-exists",
+				},
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Fail: &troubleshootv1beta2.SingleOutcome{
+							When:    "count() < 3",
+							Message: "This application requires at least 3 nodes. {{ .CPUArchitecture }}, it should only return the {{ .NodeCount }} nodes that match that filter",
+							URI:     "",
+						},
+					},
+					{
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							When:    "count() >= 3",
+							Message: "There are {{ .NodeCount }} nodes that match that filter",
+							URI:     "",
+						},
+					},
+				},
+				Filters: &troubleshootv1beta2.NodeResourceFilters{
+					CPUArchitecture: "arm64",
+				},
+			},
+			want: &AnalyzeResult{
+				IsPass:  false,
+				IsFail:  true,
+				IsWarn:  false,
+				Title:   "arm64-exists",
+				Message: "This application requires at least 3 nodes. arm64, it should only return the 0 nodes that match that filter",
+				URI:     "",
+				IconKey: "kubernetes_node_resources",
+				IconURI: "https://troubleshoot.sh/images/analyzer-icons/node-resources.svg?w=16&h=18",
+			},
+		},
+		{
+			name: "at least 1 node on amd64 with message templating", // filter for amd64 nodes with message templating
+			analyzer: &troubleshootv1beta2.NodeResources{
+				AnalyzeMeta: troubleshootv1beta2.AnalyzeMeta{
+					CheckName: "amd64-exists",
+				},
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Fail: &troubleshootv1beta2.SingleOutcome{
+							When:    "count() < 3",
+							Message: "This application requires at least 3 nodes. {{ .CPUArchitecture }}, it should only return the {{ .NodeCount }} nodes that match that filter",
+							URI:     "",
+						},
+					},
+					{
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							When:    "count() >= 3",
+							Message: "There are {{ .NodeCount }} nodes that match that filter",
+							URI:     "",
+						},
+					},
+				},
+				Filters: &troubleshootv1beta2.NodeResourceFilters{
+					CPUArchitecture: "amd64",
+				},
+			},
+			want: &AnalyzeResult{
+				IsPass:  true,
+				IsFail:  false,
+				IsWarn:  false,
+				Title:   "amd64-exists",
+				Message: "There are 6 nodes that match that filter",
+				URI:     "",
+				IconKey: "kubernetes_node_resources",
+				IconURI: "https://troubleshoot.sh/images/analyzer-icons/node-resources.svg?w=16&h=18",
+			},
+		},
+		{
+			name: "Only 5 Nodes with amd64 and 2 CPU with message templating", // filter for amd64 and 2 CPU nodes with message templating
+			analyzer: &troubleshootv1beta2.NodeResources{
+				AnalyzeMeta: troubleshootv1beta2.AnalyzeMeta{
+					CheckName: "amd64-exists",
+				},
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Fail: &troubleshootv1beta2.SingleOutcome{
+							When:    "count() < 3",
+							Message: "This application requires at least 3 nodes. {{ .CPUArchitecture }}, it should only return the {{ .NodeCount }} nodes that match that filter",
+							URI:     "",
+						},
+					},
+					{
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							When:    "count() >= 3",
+							Message: "There are {{ .NodeCount }} nodes that match that filter {{ .CPUArchitecture }} and {{ .CPUCapacity }} CPU cores",
+							URI:     "",
+						},
+					},
+				},
+				Filters: &troubleshootv1beta2.NodeResourceFilters{
+					CPUArchitecture: "amd64",
+					CPUCapacity:     "2",
+				},
+			},
+			want: &AnalyzeResult{
+				IsPass:  true,
+				IsFail:  false,
+				IsWarn:  false,
+				Title:   "amd64-exists",
+				Message: "There are 5 nodes that match that filter amd64 and 2 CPU cores",
 				URI:     "",
 				IconKey: "kubernetes_node_resources",
 				IconURI: "https://troubleshoot.sh/images/analyzer-icons/node-resources.svg?w=16&h=18",

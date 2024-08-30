@@ -1166,9 +1166,9 @@ spec:
                           type: BoolString
                         filters:
                           properties:
-                            architecture:
-                              type: string
                             cpuAllocatable:
+                              type: string
+                            cpuArchitecture:
                               type: string
                             cpuCapacity:
                               type: string
