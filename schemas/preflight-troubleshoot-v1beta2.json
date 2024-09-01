@@ -1755,10 +1755,10 @@
                   "filters": {
                     "type": "object",
                     "properties": {
-                      "architecture": {
+                      "cpuAllocatable": {
                         "type": "string"
                       },
-                      "cpuAllocatable": {
+                      "cpuArchitecture": {
                         "type": "string"
                       },
                       "cpuCapacity": {

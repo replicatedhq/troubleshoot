@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	util "github.com/replicatedhq/troubleshoot/internal/util"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/replicatedhq/troubleshoot/pkg/constants"
 	corev1 "k8s.io/api/core/v1"
@@ -18,12 +19,16 @@ type AnalyzeNodeResources struct {
 	analyzer *troubleshootv1beta2.NodeResources
 }
 
+type NodeResourceMsg struct {
+	*troubleshootv1beta2.NodeResourceFilters
+	NodeCount int
+}
+
 func (a *AnalyzeNodeResources) Title() string {
 	title := a.analyzer.CheckName
 	if title == "" {
 		title = "Node Resources"
 	}
-
 	return title
 }
 
@@ -41,6 +46,7 @@ func (a *AnalyzeNodeResources) Analyze(getFile getCollectedFileContents, findFil
 }
 
 func (a *AnalyzeNodeResources) analyzeNodeResources(analyzer *troubleshootv1beta2.NodeResources, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
+
 	collected, err := getCollectedFileContents(fmt.Sprintf("%s/%s.json", constants.CLUSTER_RESOURCES_DIR, constants.CLUSTER_RESOURCES_NODES))
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get contents of nodes.json")
@@ -70,6 +76,10 @@ func (a *AnalyzeNodeResources) analyzeNodeResources(analyzer *troubleshootv1beta
 		IconURI: "https://troubleshoot.sh/images/analyzer-icons/node-resources.svg?w=16&h=18",
 	}
 
+	nodeMsg := NodeResourceMsg{
+		analyzer.Filters, len(matchingNodes),
+	}
+
 	for _, outcome := range analyzer.Outcomes {
 		if outcome.Fail != nil {
 			isWhenMatch, err := compareNodeResourceConditionalToActual(outcome.Fail.When, matchingNodes)
@@ -79,9 +89,11 @@ func (a *AnalyzeNodeResources) analyzeNodeResources(analyzer *troubleshootv1beta
 
 			if isWhenMatch {
 				result.IsFail = true
-				result.Message = outcome.Fail.Message
+				result.Message, err = util.RenderTemplate(outcome.Fail.Message, nodeMsg)
+				if err != nil {
+					return nil, errors.Wrap(err, "failed to render message template")
+				}
 				result.URI = outcome.Fail.URI
-
 				return result, nil
 			}
 		} else if outcome.Warn != nil {
@@ -92,7 +104,10 @@ func (a *AnalyzeNodeResources) analyzeNodeResources(analyzer *troubleshootv1beta
 
 			if isWhenMatch {
 				result.IsWarn = true
-				result.Message = outcome.Warn.Message
+				result.Message, err = util.RenderTemplate(outcome.Warn.Message, nodeMsg)
+				if err != nil {
+					return nil, errors.Wrap(err, "failed to render message template")
+				}
 				result.URI = outcome.Warn.URI
 
 				return result, nil
@@ -105,7 +120,10 @@ func (a *AnalyzeNodeResources) analyzeNodeResources(analyzer *troubleshootv1beta
 
 			if isWhenMatch {
 				result.IsPass = true
-				result.Message = outcome.Pass.Message
+				result.Message, err = util.RenderTemplate(outcome.Pass.Message, nodeMsg)
+				if err != nil {
+					return nil, errors.Wrap(err, "failed to render message template")
+				}
 				result.URI = outcome.Pass.URI
 
 				return result, nil
@@ -373,8 +391,8 @@ func nodeMatchesFilters(node corev1.Node, filters *troubleshootv1beta2.NodeResou
 		}
 	}
 
-	if filters.Architecture != "" {
-		parsed := filters.Architecture
+	if filters.CPUArchitecture != "" {
+		parsed := filters.CPUArchitecture
 
 		if !strings.EqualFold(node.Status.NodeInfo.Architecture, parsed) {
 			return false, nil
