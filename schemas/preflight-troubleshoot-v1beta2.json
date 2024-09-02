@@ -3066,6 +3066,9 @@
                   "image": {
                     "type": "string"
                   },
+                  "nonResolvable": {
+                    "type": "string"
+                  },
                   "timeout": {
                     "type": "string"
                   }

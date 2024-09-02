@@ -21,7 +21,8 @@ import (
 )
 
 const (
-	dnsUtilsImage = "registry.k8s.io/e2e-test-images/jessie-dnsutils:1.3"
+	dnsUtilsImage       = "registry.k8s.io/e2e-test-images/jessie-dnsutils:1.3"
+	nonResolvableDomain = "non-existent-domain"
 )
 
 type CollectDNS struct {
@@ -79,18 +80,20 @@ func (c *CollectDNS) Collect(progressChan chan<- interface{}) (CollectorResult, 
 	}
 
 	// run a pod and perform DNS lookup
-	// TODO: should nonResolvableDomain be configurable?
-	nonResolvableDomain := "non-existent-domain"
-	dnsDebug.Query.NonResolvableDomain.Name = nonResolvableDomain
+	testDomain := c.Collector.NonResolvable
+	if testDomain == "" {
+		testDomain = nonResolvableDomain
+	}
+	dnsDebug.Query.NonResolvableDomain.Name = testDomain
 
 	image := c.Collector.Image
 	if image == "" {
 		image = dnsUtilsImage
 	}
 
-	podLog, err := troubleshootDNSFromPod(c.Client, ctx, nonResolvableDomain, image)
+	podLog, err := troubleshootDNSFromPod(c.Client, ctx, testDomain, image)
 	if err == nil {
-		sb.WriteString(fmt.Sprintf("=== Test DNS resolution in pod %s: \n", dnsUtilsImage))
+		sb.WriteString(fmt.Sprintf("=== Test DNS resolution in pod %s: \n", image))
 		sb.WriteString(podLog)
 	} else {
 		sb.WriteString(fmt.Sprintf("=== Failed to run commands from pod: %v\n", err))

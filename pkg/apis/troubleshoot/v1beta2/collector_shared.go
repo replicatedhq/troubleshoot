@@ -298,6 +298,7 @@ type DNS struct {
 	CollectorMeta `json:",inline" yaml:",inline"`
 	Timeout       string `json:"timeout,omitempty" yaml:"timeout,omitempty"`
 	Image         string `json:"image,omitempty" yaml:"image,omitempty"`
+	NonResolvable string `json:"nonResolvable,omitempty" yaml:"nonResolvable,omitempty"`
 }
 
 type Etcd struct {
