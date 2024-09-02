@@ -7,7 +7,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"path/filepath"
 	"strings"
 	"time"
 
@@ -22,8 +21,7 @@ import (
 )
 
 const (
-	dnsUtilsImage    = "registry.k8s.io/e2e-test-images/jessie-dnsutils:1.3"
-	DNSCollectorPath = "dns"
+	dnsUtilsImage = "registry.k8s.io/e2e-test-images/jessie-dnsutils:1.3"
 )
 
 type CollectDNS struct {
@@ -81,7 +79,10 @@ func (c *CollectDNS) Collect(progressChan chan<- interface{}) (CollectorResult, 
 	}
 
 	// run a pod and perform DNS lookup
-	podLog, err := troubleshootDNSFromPod(c.Client, ctx)
+	// TODO: should nonResolvableDomain be configurable?
+	nonResolvableDomain := "non-existent-domain"
+	dnsDebug.Query.NonResolvableDomain.Name = nonResolvableDomain
+	podLog, err := troubleshootDNSFromPod(c.Client, ctx, nonResolvableDomain)
 	if err == nil {
 		sb.WriteString(fmt.Sprintf("=== Test DNS resolution in pod %s: \n", dnsUtilsImage))
 		sb.WriteString(podLog)
@@ -126,14 +127,14 @@ func (c *CollectDNS) Collect(progressChan chan<- interface{}) (CollectorResult, 
 	output := NewResult()
 
 	// save raw debug output
-	output.SaveResult(c.BundlePath, filepath.Join(DNSCollectorPath, c.Collector.CollectorName), bytes.NewBuffer([]byte(data)))
+	output.SaveResult(c.BundlePath, "dns/debug.txt", bytes.NewBuffer([]byte(data)))
 
 	// save structured debug output as JSON file
 	jsonData, err := json.Marshal(dnsDebug)
 	if err != nil {
 		return output, errors.Wrap(err, "failed to marshal DNS troubleshooting data")
 	}
-	output.SaveResult(c.BundlePath, filepath.Join(DNSCollectorPath, "debug.json"), bytes.NewBuffer(jsonData))
+	output.SaveResult(c.BundlePath, "dns/debug.json", bytes.NewBuffer(jsonData))
 
 	return output, nil
 }
@@ -148,17 +149,17 @@ func getKubernetesClusterIP(client kubernetes.Interface, ctx context.Context) (s
 	return service.Spec.ClusterIP, nil
 }
 
-func troubleshootDNSFromPod(client kubernetes.Interface, ctx context.Context) (string, error) {
+func troubleshootDNSFromPod(client kubernetes.Interface, ctx context.Context, nonResolvableDomain string) (string, error) {
 	namespace := "default"
-	command := []string{"/bin/sh", "-c", `
+	command := []string{"/bin/sh", "-c", fmt.Sprintf(`
 		echo "=== /etc/resolv.conf ==="
 		cat /etc/resolv.conf
 		echo "=== dig kubernetes ==="
 		dig +search +short kubernetes
 		echo "=== dig non-existent-domain ==="
-		dig +short non-existent-domain
+		dig +short %s
 		exit 0
-	`}
+	`, nonResolvableDomain)}
 
 	// TODO: image pull secret?
 	podLabels := map[string]string{
@@ -342,7 +343,6 @@ func extractDNSQueriesFromPodLog(podLog string, dnsDebug *DNSTroubleshootResult)
 				dnsDebug.Query.Kubernetes.Name = "kubernetes"
 				dnsDebug.Query.Kubernetes.AddressResult = line
 			case "nonResolvableDomain":
-				dnsDebug.Query.NonResolvableDomain.Name = "non-existent-domain"
 				dnsDebug.Query.NonResolvableDomain.AddressResult = line
 			}
 		}
