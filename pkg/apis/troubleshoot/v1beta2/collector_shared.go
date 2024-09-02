@@ -297,6 +297,7 @@ type Sonobuoy struct {
 type DNS struct {
 	CollectorMeta `json:",inline" yaml:",inline"`
 	Timeout       string `json:"timeout,omitempty" yaml:"timeout,omitempty"`
+	Image         string `json:"image,omitempty" yaml:"image,omitempty"`
 }
 
 type Etcd struct {

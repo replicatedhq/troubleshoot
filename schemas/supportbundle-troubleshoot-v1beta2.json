@@ -3109,6 +3109,9 @@
                   "exclude": {
                     "oneOf": [{"type": "string"},{"type": "boolean"}]
                   },
+                  "image": {
+                    "type": "string"
+                  },
                   "timeout": {
                     "type": "string"
                   }

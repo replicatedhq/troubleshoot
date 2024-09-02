@@ -82,7 +82,13 @@ func (c *CollectDNS) Collect(progressChan chan<- interface{}) (CollectorResult, 
 	// TODO: should nonResolvableDomain be configurable?
 	nonResolvableDomain := "non-existent-domain"
 	dnsDebug.Query.NonResolvableDomain.Name = nonResolvableDomain
-	podLog, err := troubleshootDNSFromPod(c.Client, ctx, nonResolvableDomain)
+
+	image := c.Collector.Image
+	if image == "" {
+		image = dnsUtilsImage
+	}
+
+	podLog, err := troubleshootDNSFromPod(c.Client, ctx, nonResolvableDomain, image)
 	if err == nil {
 		sb.WriteString(fmt.Sprintf("=== Test DNS resolution in pod %s: \n", dnsUtilsImage))
 		sb.WriteString(podLog)
@@ -149,7 +155,7 @@ func getKubernetesClusterIP(client kubernetes.Interface, ctx context.Context) (s
 	return service.Spec.ClusterIP, nil
 }
 
-func troubleshootDNSFromPod(client kubernetes.Interface, ctx context.Context, nonResolvableDomain string) (string, error) {
+func troubleshootDNSFromPod(client kubernetes.Interface, ctx context.Context, nonResolvableDomain string, image string) (string, error) {
 	namespace := "default"
 	command := []string{"/bin/sh", "-c", fmt.Sprintf(`
 		echo "=== /etc/resolv.conf ==="
@@ -175,7 +181,7 @@ func troubleshootDNSFromPod(client kubernetes.Interface, ctx context.Context, no
 			Containers: []corev1.Container{
 				{
 					Name:    "troubleshoot-dns",
-					Image:   dnsUtilsImage,
+					Image:   image,
 					Command: command,
 				},
 			},

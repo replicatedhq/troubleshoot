@@ -2058,6 +2058,8 @@ spec:
                           type: string
                         exclude:
                           type: BoolString
+                        image:
+                          type: string
                         timeout:
                           type: string
                       type: object
