@@ -41,12 +41,12 @@ type DNSTroubleshootResult struct {
 	PodResolvConf       string `json:"podResolvConf"`
 	Query               struct {
 		Kubernetes struct {
-			Name          string `json:"name"`
-			AddressResult string `json:"address_result"`
+			Name    string `json:"name"`
+			Address string `json:"address"`
 		} `json:"kubernetes"`
 		NonResolvableDomain struct {
-			Name          string `json:"name"`
-			AddressResult string `json:"address_result"`
+			Name    string `json:"name"`
+			Address string `json:"address"`
 		} `json:"nonResolvableDomain"`
 	} `json:"query"`
 	KubeDNSPods      []string `json:"kubeDNSPods"`
@@ -350,9 +350,9 @@ func extractDNSQueriesFromPodLog(podLog string, dnsDebug *DNSTroubleshootResult)
 				dnsDebug.PodResolvConf += line + "\n"
 			case "kubernetes":
 				dnsDebug.Query.Kubernetes.Name = "kubernetes"
-				dnsDebug.Query.Kubernetes.AddressResult = line
+				dnsDebug.Query.Kubernetes.Address = line
 			case "nonResolvableDomain":
-				dnsDebug.Query.NonResolvableDomain.AddressResult = line
+				dnsDebug.Query.NonResolvableDomain.Address = line
 			}
 		}
 	}
