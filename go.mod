@@ -1,6 +1,7 @@
 module github.com/replicatedhq/troubleshoot
 
-go 1.22.4
+go 1.22.6
+
 require (
 	github.com/ahmetalpbalkan/go-cursor v0.0.0-20131010032410-8136607ea412
 	github.com/apparentlymart/go-cidr v1.1.0
