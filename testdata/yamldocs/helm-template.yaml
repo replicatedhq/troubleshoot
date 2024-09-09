@@ -35,6 +35,25 @@ data:
             collectorName: wg-easy
 ---
 # Source: wg-easy/templates/replicated-library.yaml
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: sb-spec-3-configmap
+  labels:
+    troubleshoot.io/kind: support-bundle
+data:
+  support-bundle-spec: |-
+    apiVersion: troubleshoot.sh/v1beta2
+    kind: SupportBundle
+    metadata:
+      name: sb-spec-3
+      runHostCollectorsInPod: true
+    spec:
+      collectors:
+        - logs:
+            collectorName: wg-easy
+---
+# Source: wg-easy/templates/replicated-library.yaml
 kind: PersistentVolumeClaim
 apiVersion: v1
 metadata:
