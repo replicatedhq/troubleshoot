@@ -197,7 +197,7 @@ func runTroubleshoot(v *viper.Viper, args []string) error {
 
 	if len(response.AnalyzerResults) > 0 {
 		if interactive {
-			if err := showInteractiveResults(mainBundle.Name, response.AnalyzerResults, response.ArchivePath); err != nil {
+			if err := showInteractiveResults(mainBundle.Metadata.Name, response.AnalyzerResults, response.ArchivePath); err != nil {
 				interactive = false
 			}
 		} else {
@@ -206,7 +206,7 @@ func runTroubleshoot(v *viper.Viper, args []string) error {
 	}
 
 	if !response.FileUploaded {
-		if appName := mainBundle.Labels["applicationName"]; appName != "" {
+		if appName := mainBundle.Metadata.Labels["applicationName"]; appName != "" {
 			f := `A support bundle for %s has been created in this directory
 named %s. Please upload it on the Troubleshoot page of
 the %s Admin Console to begin analysis.`
@@ -335,14 +335,22 @@ func loadSpecs(ctx context.Context, args []string, client kubernetes.Interface) 
 			APIVersion: "troubleshoot.sh/v1beta2",
 			Kind:       "SupportBundle",
 		},
-		ObjectMeta: metav1.ObjectMeta{
-			Name: "merged-support-bundle-spec",
+		Metadata: troubleshootv1beta2.SupportBundleMetadata{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "merged-support-bundle-spec",
+			},
+			RunHostCollectorsInPod: false,
 		},
 	}
+
+	var enableRunHostCollectorsInPod bool
+
 	for _, sb := range kinds.SupportBundlesV1Beta2 {
 		sb := sb
 		mainBundle = supportbundle.ConcatSpec(mainBundle, &sb)
+		enableRunHostCollectorsInPod = enableRunHostCollectorsInPod || sb.Metadata.RunHostCollectorsInPod
 	}
+	mainBundle.Metadata.RunHostCollectorsInPod = enableRunHostCollectorsInPod
 
 	for _, c := range kinds.CollectorsV1Beta2 {
 		mainBundle.Spec.Collectors = util.Append(mainBundle.Spec.Collectors, c.Spec.Collectors)

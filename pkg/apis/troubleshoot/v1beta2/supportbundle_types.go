@@ -20,6 +20,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+type SupportBundleMetadata struct {
+	metav1.ObjectMeta      `json:",inline" yaml:",inline"`
+	RunHostCollectorsInPod bool `json:"runHostCollectorsInPod,omitempty" yaml:"runHostCollectorsInPod,omitempty"`
+}
+
 // SupportBundleSpec defines the desired state of SupportBundle
 type SupportBundleSpec struct {
 	AfterCollection []*AfterCollection `json:"afterCollection,omitempty" yaml:"afterCollection,omitempty"`
@@ -43,8 +48,8 @@ type SupportBundleStatus struct {
 // SupportBundle is the Schema for the SupportBundles API
 // +k8s:openapi-gen=true
 type SupportBundle struct {
-	metav1.TypeMeta   `json:",inline" yaml:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty" yaml:"metadata,omitempty"`
+	metav1.TypeMeta `json:",inline" yaml:",inline"`
+	Metadata        SupportBundleMetadata `json:"metadata,omitempty" yaml:"metadata,omitempty"`
 
 	Spec   SupportBundleSpec   `json:"spec,omitempty" yaml:"spec,omitempty"`
 	Status SupportBundleStatus `json:"status,omitempty"`

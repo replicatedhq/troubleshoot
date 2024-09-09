@@ -4594,7 +4594,7 @@ func (in *SubnetAvailableAnalyze) DeepCopy() *SubnetAvailableAnalyze {
 func (in *SupportBundle) DeepCopyInto(out *SupportBundle) {
 	*out = *in
 	out.TypeMeta = in.TypeMeta
-	in.ObjectMeta.DeepCopyInto(&out.ObjectMeta)
+	in.Metadata.DeepCopyInto(&out.Metadata.ObjectMeta)
 	in.Spec.DeepCopyInto(&out.Spec)
 	out.Status = in.Status
 }

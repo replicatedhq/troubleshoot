@@ -30,8 +30,8 @@ func TestLoadingHelmTemplate_Succeeds(t *testing.T) {
 	// Assert a few fields from the loaded troubleshoot specs
 	assert.Equal(t, "redactor-spec-1", kinds.RedactorsV1Beta2[0].ObjectMeta.Name)
 	assert.Equal(t, "REDACT SECOND TEXT PLEASE", kinds.RedactorsV1Beta2[0].Spec.Redactors[0].Removals.Values[0])
-	assert.Equal(t, "sb-spec-1", kinds.SupportBundlesV1Beta2[0].ObjectMeta.Name)
-	assert.Equal(t, "sb-spec-2", kinds.SupportBundlesV1Beta2[1].ObjectMeta.Name)
+	assert.Equal(t, "sb-spec-1", kinds.SupportBundlesV1Beta2[0].Metadata.Name)
+	assert.Equal(t, "sb-spec-2", kinds.SupportBundlesV1Beta2[1].Metadata.Name)
 	assert.Equal(t, "wg-easy", kinds.SupportBundlesV1Beta2[1].Spec.Collectors[0].Logs.CollectorName)
 	assert.Equal(t, "Node Count Check", kinds.PreflightsV1Beta2[0].Spec.Analyzers[0].NodeResources.CheckName)
 	assert.Len(t, kinds.PreflightsV1Beta2[0].Spec.Collectors, 0)
@@ -345,8 +345,10 @@ func TestLoadingMultidocsWithTroubleshootSpecs(t *testing.T) {
 				Kind:       "SupportBundle",
 				APIVersion: "troubleshoot.sh/v1beta2",
 			},
-			ObjectMeta: metav1.ObjectMeta{
-				Name: "my-support-bundle",
+			Metadata: troubleshootv1beta2.SupportBundleMetadata{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "my-support-bundle",
+				},
 			},
 			Spec: troubleshootv1beta2.SupportBundleSpec{
 				Collectors: []*troubleshootv1beta2.Collect{
@@ -625,8 +627,10 @@ func TestLoadingEmptySpec(t *testing.T) {
 					Kind:       "SupportBundle",
 					APIVersion: "troubleshoot.sh/v1beta2",
 				},
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "empty",
+				Metadata: troubleshootv1beta2.SupportBundleMetadata{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "empty",
+					},
 				},
 			},
 		},
