@@ -24,7 +24,7 @@ func (c *CollectHostIPV4Interfaces) IsExcluded() (bool, error) {
 	return isExcluded(c.hostCollector.Exclude)
 }
 
-func (c *CollectHostIPV4Interfaces) Collect(progressChan chan<- interface{}) (map[string][]byte, error) {
+func (c *CollectHostIPV4Interfaces) Collect(progressChan chan<- interface{}, opts CollectorRunOpts) (map[string][]byte, error) {
 	var ipv4Interfaces []net.Interface
 
 	interfaces, err := net.Interfaces()

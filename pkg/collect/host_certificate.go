@@ -30,7 +30,7 @@ func (c *CollectHostCertificate) IsExcluded() (bool, error) {
 	return isExcluded(c.hostCollector.Exclude)
 }
 
-func (c *CollectHostCertificate) Collect(progressChan chan<- interface{}) (map[string][]byte, error) {
+func (c *CollectHostCertificate) Collect(progressChan chan<- interface{}, opts CollectorRunOpts) (map[string][]byte, error) {
 	var result = KeyPairValid
 
 	_, err := tls.LoadX509KeyPair(c.hostCollector.CertificatePath, c.hostCollector.KeyPath)

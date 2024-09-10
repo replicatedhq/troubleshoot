@@ -51,7 +51,7 @@ func (c *CollectHostFilesystemPerformance) IsExcluded() (bool, error) {
 	return isExcluded(c.hostCollector.Exclude)
 }
 
-func (c *CollectHostFilesystemPerformance) Collect(progressChan chan<- interface{}) (map[string][]byte, error) {
+func (c *CollectHostFilesystemPerformance) Collect(progressChan chan<- interface{}, opts CollectorRunOpts) (map[string][]byte, error) {
 	return collectHostFilesystemPerformance(c.hostCollector, c.BundlePath)
 }
 

@@ -25,7 +25,7 @@ func (c *CollectHostTCPPortStatus) IsExcluded() (bool, error) {
 	return isExcluded(c.hostCollector.Exclude)
 }
 
-func (c *CollectHostTCPPortStatus) Collect(progressChan chan<- interface{}) (map[string][]byte, error) {
+func (c *CollectHostTCPPortStatus) Collect(progressChan chan<- interface{}, opts CollectorRunOpts) (map[string][]byte, error) {
 	dialAddress := ""
 	listenAddress := fmt.Sprintf("0.0.0.0:%d", c.hostCollector.Port)
 

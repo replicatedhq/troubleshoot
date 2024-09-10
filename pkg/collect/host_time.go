@@ -35,7 +35,7 @@ func (c *CollectHostTime) IsExcluded() (bool, error) {
 	return isExcluded(c.hostCollector.Exclude)
 }
 
-func (c *CollectHostTime) Collect(progressChan chan<- interface{}) (map[string][]byte, error) {
+func (c *CollectHostTime) Collect(progressChan chan<- interface{}, opts CollectorRunOpts) (map[string][]byte, error) {
 	timeInfo := TimeInfo{}
 
 	conn, err := dbus.SystemBus()

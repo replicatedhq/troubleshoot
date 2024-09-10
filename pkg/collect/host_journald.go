@@ -30,7 +30,7 @@ func (c *CollectHostJournald) IsExcluded() (bool, error) {
 	return isExcluded(c.hostCollector.Exclude)
 }
 
-func (c *CollectHostJournald) Collect(progressChan chan<- interface{}) (map[string][]byte, error) {
+func (c *CollectHostJournald) Collect(progressChan chan<- interface{}, opts CollectorRunOpts) (map[string][]byte, error) {
 
 	// collector name check
 	collectorName := c.hostCollector.CollectorName

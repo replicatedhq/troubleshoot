@@ -34,7 +34,7 @@ func (c *CollectHostCertificatesCollection) IsExcluded() (bool, error) {
 	return isExcluded(c.hostCollector.Exclude)
 }
 
-func (c *CollectHostCertificatesCollection) Collect(progressChan chan<- interface{}) (map[string][]byte, error) {
+func (c *CollectHostCertificatesCollection) Collect(progressChan chan<- interface{}, opts CollectorRunOpts) (map[string][]byte, error) {
 	var results []HostCertificatesCollection
 
 	for _, certPath := range c.hostCollector.Paths {

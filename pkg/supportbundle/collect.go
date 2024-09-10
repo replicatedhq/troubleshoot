@@ -49,8 +49,13 @@ func runHostCollectors(ctx context.Context, hostCollectors []*troubleshootv1beta
 			continue
 		}
 
-		opts.ProgressChan <- fmt.Sprintf("[%s] Running host collector...", collector.Title())
-		result, err := collector.Collect(opts.ProgressChan)
+		runOpts := collect.CollectorRunOpts{
+			ProgressChan:           opts.ProgressChan,
+			RunHostCollectorsInPod: opts.RunHostCollectorsInPod,
+		}
+
+		runOpts.ProgressChan <- fmt.Sprintf("[%s] Running host collector...", collector.Title())
+		result, err := collector.Collect(opts.ProgressChan, runOpts)
 		if err != nil {
 			span.SetStatus(codes.Error, err.Error())
 			opts.ProgressChan <- errors.Errorf("failed to run host collector: %s: %v", collector.Title(), err)

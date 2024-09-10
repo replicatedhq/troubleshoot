@@ -31,7 +31,7 @@ func (c *CollectHostOS) IsExcluded() (bool, error) {
 	return isExcluded(c.hostCollector.Exclude)
 }
 
-func (c *CollectHostOS) Collect(progressChan chan<- interface{}) (map[string][]byte, error) {
+func (c *CollectHostOS) Collect(progressChan chan<- interface{}, opts CollectorRunOpts) (map[string][]byte, error) {
 	infoStat, err := osutils.Info()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get os info")

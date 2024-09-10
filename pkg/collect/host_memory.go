@@ -28,7 +28,7 @@ func (c *CollectHostMemory) IsExcluded() (bool, error) {
 	return isExcluded(c.hostCollector.Exclude)
 }
 
-func (c *CollectHostMemory) Collect(progressChan chan<- interface{}) (map[string][]byte, error) {
+func (c *CollectHostMemory) Collect(progressChan chan<- interface{}, opts CollectorRunOpts) (map[string][]byte, error) {
 	memoryInfo := MemoryInfo{}
 
 	vmstat, err := mem.VirtualMemory()

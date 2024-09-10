@@ -37,6 +37,7 @@ type SupportBundleCreateOpts struct {
 	OutputPath                string
 	Redact                    bool
 	FromCLI                   bool
+	RunHostCollectorsInPod    bool
 }
 
 type SupportBundleResponse struct {

@@ -25,7 +25,7 @@ func (c *CollectHostTCPConnect) IsExcluded() (bool, error) {
 	return isExcluded(c.hostCollector.Exclude)
 }
 
-func (c *CollectHostTCPConnect) Collect(progressChan chan<- interface{}) (map[string][]byte, error) {
+func (c *CollectHostTCPConnect) Collect(progressChan chan<- interface{}, opts CollectorRunOpts) (map[string][]byte, error) {
 	address := c.hostCollector.Address
 
 	timeout := 10 * time.Second

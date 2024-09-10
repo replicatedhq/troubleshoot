@@ -29,7 +29,7 @@ func (c *CollectHostCPU) IsExcluded() (bool, error) {
 	return isExcluded(c.hostCollector.Exclude)
 }
 
-func (c *CollectHostCPU) Collect(progressChan chan<- interface{}) (map[string][]byte, error) {
+func (c *CollectHostCPU) Collect(progressChan chan<- interface{}, opts CollectorRunOpts) (map[string][]byte, error) {
 	cpuInfo := CPUInfo{}
 
 	logicalCount, err := cpu.Counts(true)

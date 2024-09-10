@@ -29,6 +29,7 @@ type CollectorRunOpts struct {
 	LabelSelector             string
 	Timeout                   time.Duration
 	ProgressChan              chan interface{}
+	RunHostCollectorsInPod    bool
 }
 
 type CollectProgress struct {
@@ -77,7 +78,7 @@ func CollectHost(c *troubleshootv1beta2.HostCollector, additionalRedactors *trou
 		}
 
 		opts.ProgressChan <- fmt.Sprintf("[%s] Running collector...", collector.Title())
-		result, err := collector.Collect(opts.ProgressChan)
+		result, err := collector.Collect(opts.ProgressChan, opts)
 		if err != nil {
 			opts.ProgressChan <- errors.Errorf("failed to run collector: %s: %v", collector.Title(), err)
 		}

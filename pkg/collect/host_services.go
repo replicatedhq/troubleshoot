@@ -34,7 +34,7 @@ func (c *CollectHostServices) IsExcluded() (bool, error) {
 	return isExcluded(c.hostCollector.Exclude)
 }
 
-func (c *CollectHostServices) Collect(progressChan chan<- interface{}) (map[string][]byte, error) {
+func (c *CollectHostServices) Collect(progressChan chan<- interface{}, opts CollectorRunOpts) (map[string][]byte, error) {
 	var devices []ServiceInfo
 
 	cmd := exec.Command("systemctl", "list-units", "--type=service", "--no-legend", "--all")

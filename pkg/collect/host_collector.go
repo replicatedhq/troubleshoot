@@ -7,7 +7,7 @@ import (
 type HostCollector interface {
 	Title() string
 	IsExcluded() (bool, error)
-	Collect(progressChan chan<- interface{}) (map[string][]byte, error)
+	Collect(progressChan chan<- interface{}, opts CollectorRunOpts) (map[string][]byte, error)
 }
 
 func GetHostCollector(collector *troubleshootv1beta2.HostCollect, bundlePath string) (HostCollector, bool) {

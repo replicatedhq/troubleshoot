@@ -40,7 +40,7 @@ func (c *CollectHostSystemPackages) IsExcluded() (bool, error) {
 	return isExcluded(c.hostCollector.Exclude)
 }
 
-func (c *CollectHostSystemPackages) Collect(progressChan chan<- interface{}) (map[string][]byte, error) {
+func (c *CollectHostSystemPackages) Collect(progressChan chan<- interface{}, opts CollectorRunOpts) (map[string][]byte, error) {
 	info := SystemPackagesInfo{}
 
 	osReleaseMap := distro.OSRelease()

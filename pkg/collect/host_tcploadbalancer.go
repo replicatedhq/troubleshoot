@@ -24,7 +24,7 @@ func (c *CollectHostTCPLoadBalancer) IsExcluded() (bool, error) {
 	return isExcluded(c.hostCollector.Exclude)
 }
 
-func (c *CollectHostTCPLoadBalancer) Collect(progressChan chan<- interface{}) (map[string][]byte, error) {
+func (c *CollectHostTCPLoadBalancer) Collect(progressChan chan<- interface{}, opts CollectorRunOpts) (map[string][]byte, error) {
 	listenAddress := fmt.Sprintf("0.0.0.0:%d", c.hostCollector.Port)
 	dialAddress := c.hostCollector.Address
 

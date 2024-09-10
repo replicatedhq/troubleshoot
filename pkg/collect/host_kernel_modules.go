@@ -75,7 +75,7 @@ func (c *CollectHostKernelModules) IsExcluded() (bool, error) {
 // Module status may be: loaded, loadable, loading, unloading or unknown.  When
 // a module is loaded, it may have one or more instances.  The size represents
 // the amount of memory (in bytes) that the module is using.
-func (c *CollectHostKernelModules) Collect(progressChan chan<- interface{}) (map[string][]byte, error) {
+func (c *CollectHostKernelModules) Collect(progressChan chan<- interface{}, opts CollectorRunOpts) (map[string][]byte, error) {
 	modules, err := c.loadable.collect()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to read loadable kernel modules")
