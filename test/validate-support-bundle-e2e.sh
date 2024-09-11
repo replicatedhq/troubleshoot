@@ -155,6 +155,28 @@ if ! grep "labelled-support-bundle-4 \*\*\*HIDDEN\*\*\*" "$tmpdir/$bundle_direct
 fi
 kubectl delete -f "$PRJ_ROOT/testdata/supportbundle/labelled-specs"
 
+echo "======= Generating support bundle from k8s cluster using discovered cluster spec and redactor from the CLI ======"
+recreate_tmpdir
+kubectl apply -f "$PRJ_ROOT/testdata/supportbundle/labelled-bundle-unlabelled-redactor"
+./bin/support-bundle -v1 --interactive=false --output=$tmpdir/$bundle_archive_name --redactors=configmap/default/unlabelled-redactor-spec-1/redactor-spec
+if [ $? -ne 0 ]; then
+    echo "support-bundle command failed"
+    exit $?
+fi
+
+if ! tar -xvzf $tmpdir/$bundle_archive_name --directory $tmpdir; then
+    echo "A valid support bundle archive was not generated"
+    exit 1
+fi
+
+if ! grep "labelled-support-bundle-1 \*\*\*HIDDEN\*\*\*" "$tmpdir/$bundle_directory_name/echo-hi-1"; then
+    echo "$(cat $tmpdir/$bundle_directory_name/echo-hi-1)"
+    echo "Hidden content not found in redacted echo-hi-1 file"
+    exit 1
+fi
+
+kubectl delete -f "$PRJ_ROOT/testdata/supportbundle/labelled-bundle-unlabelled-redactor"
+
 echo "======= Generating support bundle from k8s cluster using 0 arguments and no spec in the cluster ======"
 recreate_tmpdir
 set +e

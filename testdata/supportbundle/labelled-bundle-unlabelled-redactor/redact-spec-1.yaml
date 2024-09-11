@@ -1,0 +1,28 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: unlabelled-redactor-spec-1
+data:
+  redactor-spec: |
+    apiVersion: troubleshoot.sh/v1beta2
+    kind: Redactor
+    metadata:
+      name: unlabelled-redactor-spec-1
+    spec:
+      redactors:
+        - name: redact-text-1
+          removals:
+            values:
+            -  REDACT FIRST TEXT PLEASE
+  customer-redactor-spec: |
+    apiVersion: troubleshoot.sh/v1beta2
+    kind: Redactor
+    metadata:
+      name: unlabelled-redactor-spec-1
+    spec:
+      redactors:
+        - name: redact-text-1
+          removals:
+            values:
+            -  REDACT FIRST TEXT PLEASE
+  garbagge: MWdRRTlBRi9YNzB3eUE2VEgvWjdhRFVUR1UvRmU3TXdUR3Q4cnE4Nkti
