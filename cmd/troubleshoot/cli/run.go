@@ -283,10 +283,11 @@ func loadSupportBundleSpecsFromURIs(ctx context.Context, kinds *loader.Troublesh
 
 func loadSpecs(ctx context.Context, args []string, client kubernetes.Interface) (*troubleshootv1beta2.SupportBundle, *troubleshootv1beta2.Redactor, error) {
 	var (
-		kinds   = loader.NewTroubleshootKinds()
-		vp      = viper.GetViper()
-		allArgs = append(args, vp.GetStringSlice("redactors")...)
-		err     error
+		kinds     = loader.NewTroubleshootKinds()
+		vp        = viper.GetViper()
+		redactors = vp.GetStringSlice("redactors")
+		allArgs   = append(args, redactors...)
+		err       error
 	)
 
 	if len(args) < 1 {
@@ -294,6 +295,13 @@ func loadSpecs(ctx context.Context, args []string, client kubernetes.Interface) 
 		kinds, err = specs.LoadFromCluster(ctx, client, vp.GetStringSlice("selector"), vp.GetString("namespace"))
 		if err != nil {
 			return nil, nil, errors.Wrap(err, "failed to load specs from cluster, and no specs were provided as arguments")
+		}
+		if len(redactors) > 0 {
+			additionalKinds, err := specs.LoadFromCLIArgs(ctx, client, allArgs, vp)
+			if err != nil {
+				return nil, nil, errors.Wrap(err, "failed to load redactors from CLI args")
+			}
+			kinds.RedactorsV1Beta2 = append(kinds.RedactorsV1Beta2, additionalKinds.RedactorsV1Beta2...)
 		}
 	} else {
 		kinds, err = specs.LoadFromCLIArgs(ctx, client, allArgs, vp)
