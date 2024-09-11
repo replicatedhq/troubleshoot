@@ -1,12 +1,12 @@
 package collect
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"io"
-	"path/filepath"
 	"strings"
 	"time"
 
@@ -21,7 +21,8 @@ import (
 )
 
 const (
-	dnsUtilsImage = "registry.k8s.io/e2e-test-images/jessie-dnsutils:1.3"
+	dnsUtilsImage       = "registry.k8s.io/e2e-test-images/agnhost:2.39"
+	nonResolvableDomain = "non-existent-domain"
 )
 
 type CollectDNS struct {
@@ -32,6 +33,25 @@ type CollectDNS struct {
 	Client       kubernetes.Interface
 	Context      context.Context
 	RBACErrors
+}
+
+// DNSTroubleshootResult represents the structure of the DNS troubleshooting JSON data
+type DNSTroubleshootResult struct {
+	KubernetesClusterIP string `json:"kubernetesClusterIP"`
+	PodResolvConf       string `json:"podResolvConf"`
+	Query               struct {
+		Kubernetes struct {
+			Name    string `json:"name"`
+			Address string `json:"address"`
+		} `json:"kubernetes"`
+		NonResolvableDomain struct {
+			Name    string `json:"name"`
+			Address string `json:"address"`
+		} `json:"nonResolvableDomain"`
+	} `json:"query"`
+	KubeDNSPods      []string `json:"kubeDNSPods"`
+	KubeDNSService   string   `json:"kubeDNSService"`
+	KubeDNSEndpoints string   `json:"kubeDNSEndpoints"`
 }
 
 func (c *CollectDNS) Title() string {
@@ -48,32 +68,57 @@ func (c *CollectDNS) Collect(progressChan chan<- interface{}) (CollectorResult, 
 	defer cancel()
 
 	sb := strings.Builder{}
+	dnsDebug := DNSTroubleshootResult{}
 
 	// get kubernetes Cluster IP
 	clusterIP, err := getKubernetesClusterIP(c.Client, ctx)
 	if err == nil {
 		sb.WriteString(fmt.Sprintf("=== Kubernetes Cluster IP from API Server: %s\n", clusterIP))
+		dnsDebug.KubernetesClusterIP = clusterIP
 	} else {
 		sb.WriteString(fmt.Sprintf("=== Failed to detect Kubernetes Cluster IP: %v\n", err))
 	}
 
 	// run a pod and perform DNS lookup
-	podLog, err := troubleshootDNSFromPod(c.Client, ctx)
+	testDomain := c.Collector.NonResolvable
+	if testDomain == "" {
+		testDomain = nonResolvableDomain
+	}
+	dnsDebug.Query.NonResolvableDomain.Name = testDomain
+
+	image := c.Collector.Image
+	if image == "" {
+		image = dnsUtilsImage
+	}
+
+	podLog, err := troubleshootDNSFromPod(c.Client, ctx, testDomain, image)
 	if err == nil {
-		sb.WriteString(fmt.Sprintf("=== Test DNS resolution in pod %s: \n", dnsUtilsImage))
+		sb.WriteString(fmt.Sprintf("=== Test DNS resolution in pod %s: \n", image))
 		sb.WriteString(podLog)
 	} else {
 		sb.WriteString(fmt.Sprintf("=== Failed to run commands from pod: %v\n", err))
 	}
 
+	// extract DNS queries from pod log
+	err = extractDNSQueriesFromPodLog(podLog, &dnsDebug)
+	if err != nil {
+		sb.WriteString(fmt.Sprintf("=== Failed to extract DNS queries from pod log: %v\n", err))
+	}
+
 	// is DNS pods running?
-	sb.WriteString(fmt.Sprintf("=== Running kube-dns pods: %s\n", getRunningKubeDNSPodNames(c.Client, ctx)))
+	kubeDNSPods := getRunningKubeDNSPodNames(c.Client, ctx)
+	sb.WriteString(fmt.Sprintf("=== Running kube-dns pods: %s\n", kubeDNSPods))
+	dnsDebug.KubeDNSPods = strings.Split(kubeDNSPods, ", ")
 
 	// is DNS service up?
-	sb.WriteString(fmt.Sprintf("=== Running kube-dns service: %s\n", getKubeDNSServiceClusterIP(c.Client, ctx)))
+	kubeDNSService := getKubeDNSServiceClusterIP(c.Client, ctx)
+	sb.WriteString(fmt.Sprintf("=== Running kube-dns service: %s\n", kubeDNSService))
+	dnsDebug.KubeDNSService = kubeDNSService
 
 	// are DNS endpoints exposed?
-	sb.WriteString(fmt.Sprintf("=== kube-dns endpoints: %s\n", getKubeDNSEndpoints(c.Client, ctx)))
+	kubeDNSEndpoints := getKubeDNSEndpoints(c.Client, ctx)
+	sb.WriteString(fmt.Sprintf("=== kube-dns endpoints: %s\n", kubeDNSEndpoints))
+	dnsDebug.KubeDNSEndpoints = kubeDNSEndpoints
 
 	// get DNS server config
 	coreDNSConfig, err := getCoreDNSConfig(c.Client, ctx)
@@ -89,7 +134,16 @@ func (c *CollectDNS) Collect(progressChan chan<- interface{}) (CollectorResult, 
 
 	data := sb.String()
 	output := NewResult()
-	output.SaveResult(c.BundlePath, filepath.Join("dns", c.Collector.CollectorName), bytes.NewBuffer([]byte(data)))
+
+	// save raw debug output
+	output.SaveResult(c.BundlePath, "dns/debug.txt", bytes.NewBuffer([]byte(data)))
+
+	// save structured debug output as JSON file
+	jsonData, err := json.Marshal(dnsDebug)
+	if err != nil {
+		return output, errors.Wrap(err, "failed to marshal DNS troubleshooting data")
+	}
+	output.SaveResult(c.BundlePath, "dns/debug.json", bytes.NewBuffer(jsonData))
 
 	return output, nil
 }
@@ -104,14 +158,17 @@ func getKubernetesClusterIP(client kubernetes.Interface, ctx context.Context) (s
 	return service.Spec.ClusterIP, nil
 }
 
-func troubleshootDNSFromPod(client kubernetes.Interface, ctx context.Context) (string, error) {
+func troubleshootDNSFromPod(client kubernetes.Interface, ctx context.Context, nonResolvableDomain string, image string) (string, error) {
 	namespace := "default"
-	command := []string{"/bin/sh", "-c", `
-		set -x
+	command := []string{"/bin/sh", "-c", fmt.Sprintf(`
+		echo "=== /etc/resolv.conf ==="
 		cat /etc/resolv.conf
-		nslookup -debug kubernetes
+		echo "=== dig kubernetes ==="
+		dig +search +short kubernetes
+		echo "=== dig non-existent-domain ==="
+		dig +short %s
 		exit 0
-	`}
+	`, nonResolvableDomain)}
 
 	// TODO: image pull secret?
 	podLabels := map[string]string{
@@ -127,7 +184,7 @@ func troubleshootDNSFromPod(client kubernetes.Interface, ctx context.Context) (s
 			Containers: []corev1.Container{
 				{
 					Name:    "troubleshoot-dns",
-					Image:   dnsUtilsImage,
+					Image:   image,
 					Command: command,
 				},
 			},
@@ -270,4 +327,36 @@ func getKubeDNSEndpoints(client kubernetes.Interface, ctx context.Context) strin
 	}
 
 	return strings.Join(endpointStrings, ", ")
+}
+
+func extractDNSQueriesFromPodLog(podLog string, dnsDebug *DNSTroubleshootResult) error {
+	scanner := bufio.NewScanner(strings.NewReader(podLog))
+
+	var currentSection string
+
+	for scanner.Scan() {
+		line := scanner.Text()
+
+		switch {
+		case strings.Contains(line, "=== /etc/resolv.conf ==="):
+			currentSection = "podResolvConf"
+		case strings.Contains(line, "=== dig kubernetes ==="):
+			currentSection = "kubernetes"
+		case strings.Contains(line, "=== dig non-existent-domain ==="):
+			currentSection = "nonResolvableDomain"
+		default:
+			switch currentSection {
+			case "podResolvConf":
+				dnsDebug.PodResolvConf += line + "\n"
+			case "kubernetes":
+				dnsDebug.Query.Kubernetes.Name = "kubernetes"
+				dnsDebug.Query.Kubernetes.Address = line
+			case "nonResolvableDomain":
+				dnsDebug.Query.NonResolvableDomain.Address = line
+			}
+		}
+	}
+
+	return nil
+
 }

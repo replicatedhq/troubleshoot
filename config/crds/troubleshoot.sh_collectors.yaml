@@ -298,6 +298,10 @@ spec:
                           type: string
                         exclude:
                           type: BoolString
+                        image:
+                          type: string
+                        nonResolvable:
+                          type: string
                         timeout:
                           type: string
                       type: object

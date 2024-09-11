@@ -399,6 +399,12 @@
                   "exclude": {
                     "oneOf": [{"type": "string"},{"type": "boolean"}]
                   },
+                  "image": {
+                    "type": "string"
+                  },
+                  "nonResolvable": {
+                    "type": "string"
+                  },
                   "timeout": {
                     "type": "string"
                   }
