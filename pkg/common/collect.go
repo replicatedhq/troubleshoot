@@ -1,9 +1,8 @@
-package collect
+package common
 
 import (
-	"context"
 	"encoding/json"
-	"fmt"
+
 	"net/http"
 	"time"
 
@@ -19,6 +18,13 @@ var (
 	ErrInsufficientPermissionsToRun = errors.New("insufficient permissions to run all collectors")
 )
 
+type CollectProgress struct {
+	CurrentName    string
+	CurrentStatus  string
+	CompletedCount int
+	TotalCount     int
+}
+
 type CollectorRunOpts struct {
 	Namespace                 string
 	CollectWithoutPermissions bool
@@ -32,65 +38,11 @@ type CollectorRunOpts struct {
 	RunHostCollectorsInPod    bool
 }
 
-type CollectProgress struct {
-	CurrentName    string
-	CurrentStatus  string
-	CompletedCount int
-	TotalCount     int
-}
-
-type HostCollectResult struct {
-	AllCollectedData map[string][]byte
-	Collectors       []HostCollector
-	Spec             *troubleshootv1beta2.HostCollector
-}
-
 type RemoteCollectResult struct {
 	AllCollectedData map[string][]byte
 	Collectors       RemoteCollectors
 	Spec             *troubleshootv1beta2.RemoteCollector
 	IsRBACAllowed    bool
-}
-
-// CollectHost runs the collection phase for a local collector.
-func CollectHost(c *troubleshootv1beta2.HostCollector, additionalRedactors *troubleshootv1beta2.Redactor, opts CollectorRunOpts) (*HostCollectResult, error) {
-	allCollectedData := make(map[string][]byte)
-
-	var collectors []HostCollector
-	for _, desiredCollector := range c.Spec.Collectors {
-		collector, ok := GetHostCollector(desiredCollector, "")
-		if !ok {
-			return nil, ErrHostCollectorNotFound
-		}
-		collectors = append(collectors, collector)
-	}
-
-	collectResult := &HostCollectResult{
-		Collectors: collectors,
-		Spec:       c,
-	}
-
-	for _, collector := range collectors {
-		isExcluded, _ := collector.IsExcluded()
-		if isExcluded {
-			opts.ProgressChan <- fmt.Sprintf("[%s] Excluding collector", collector.Title())
-			continue
-		}
-
-		opts.ProgressChan <- fmt.Sprintf("[%s] Running collector...", collector.Title())
-		result, err := collector.Collect(opts.ProgressChan, opts)
-		if err != nil {
-			opts.ProgressChan <- errors.Errorf("failed to run collector: %s: %v", collector.Title(), err)
-		}
-		for k, v := range result {
-			allCollectedData[k] = v
-		}
-	}
-
-	collectResult.AllCollectedData = allCollectedData
-
-	return collectResult, nil
-
 }
 
 // CollectRemote runs the collection phase for a remote collector.
@@ -117,9 +69,9 @@ func CollectRemote(c *troubleshootv1beta2.RemoteCollector, additionalRedactors *
 		Spec:       c,
 	}
 
-	if err := collectors.CheckRBAC(context.Background()); err != nil {
-		return collectResult, errors.Wrap(err, "failed to check RBAC for collectors")
-	}
+	// if err := collectors.CheckRBAC(context.Background()); err != nil {
+	// 	return collectResult, errors.Wrap(err, "failed to check RBAC for collectors")
+	// }
 
 	foundForbidden := false
 	for _, c := range collectors {

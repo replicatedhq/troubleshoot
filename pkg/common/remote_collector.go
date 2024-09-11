@@ -1,4 +1,4 @@
-package collect
+package common
 
 import (
 	"context"
@@ -21,6 +21,8 @@ const (
 	remoteCollectorNamePrefix      = "preflight-remote"
 )
 
+type CollectorResult map[string][]byte
+
 type RemoteCollector struct {
 	Collect       *troubleshootv1beta2.RemoteCollect
 	Redact        bool
@@ -42,15 +44,15 @@ type runner interface {
 
 // checks if a given collector has a spec with 'exclude' that evaluates to true.
 func (c *RemoteCollector) IsExcluded() bool {
-	if c.Collect.KernelModules != nil {
-		isExcludedResult, err := isExcluded(c.Collect.KernelModules.Exclude)
-		if err != nil {
-			return true
-		}
-		if isExcludedResult {
-			return true
-		}
-	}
+	// if c.Collect.KernelModules != nil {
+	// 	isExcludedResult, err := isExcluded(c.Collect.KernelModules.Exclude)
+	// 	if err != nil {
+	// 		return true
+	// 	}
+	// 	if isExcludedResult {
+	// 		return true
+	// 	}
+	// }
 	return false
 }
 
@@ -107,10 +109,10 @@ func (c *RemoteCollector) RunCollectorSync(globalRedactors []*troubleshootv1beta
 		return result, nil
 	}
 
-	if err = RedactResult("", result, globalRedactors); err != nil {
-		// Returning result on error to be consistent with local collector.
-		return result, errors.Wrap(err, "failed to redact remote collector results")
-	}
+	// if err = RedactResult("", result, globalRedactors); err != nil {
+	// 	// Returning result on error to be consistent with local collector.
+	// 	return result, errors.Wrap(err, "failed to redact remote collector results")
+	// }
 	return result, nil
 }
 
