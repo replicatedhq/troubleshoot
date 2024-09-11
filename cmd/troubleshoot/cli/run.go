@@ -289,7 +289,7 @@ func loadSpecs(ctx context.Context, args []string, client kubernetes.Interface) 
 		err     error
 	)
 
-	if len(args) < 1 {
+	if len(allArgs) < 1 {
 		fmt.Println("\r\033[36mNo specs provided, attempting to load from cluster...\033[m")
 		kinds, err = specs.LoadFromCluster(ctx, client, vp.GetStringSlice("selector"), vp.GetString("namespace"))
 		if err != nil {
