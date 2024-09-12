@@ -145,6 +145,6 @@ func (c *CollectHostKernelConfigs) RemoteCollect(progressChan chan<- interface{}
 	return nil, errors.New("not implemented")
 }
 
-func (c *CollectHostKernelConfigs) IsPrivileged() bool {
+func (c *CollectHostKernelConfigs) HasRemoted() bool {
 	return false
 }

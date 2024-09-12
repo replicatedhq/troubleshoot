@@ -281,6 +281,6 @@ func (c *CollectHostSubnetAvailable) RemoteCollect(progressChan chan<- interface
 	return nil, errors.New("not implemented")
 }
 
-func (c *CollectHostSubnetAvailable) IsPrivileged() bool {
+func (c *CollectHostSubnetAvailable) HasRemoted() bool {
 	return false
 }

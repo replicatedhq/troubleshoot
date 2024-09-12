@@ -9,7 +9,7 @@ type HostCollector interface {
 	IsExcluded() (bool, error)
 	Collect(progressChan chan<- interface{}) (map[string][]byte, error)
 	RemoteCollect(progressChan chan<- interface{}) (map[string][]byte, error)
-	IsPrivileged() bool
+	HasRemoted() bool
 }
 
 func GetHostCollector(collector *troubleshootv1beta2.HostCollect, bundlePath string) (HostCollector, bool) {

@@ -162,6 +162,6 @@ func (c *CollectHostJournald) RemoteCollect(progressChan chan<- interface{}) (ma
 	return nil, errors.New("not implemented")
 }
 
-func (c *CollectHostJournald) IsPrivileged() bool {
+func (c *CollectHostJournald) HasRemoted() bool {
 	return false
 }

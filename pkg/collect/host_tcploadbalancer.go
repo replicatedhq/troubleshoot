@@ -81,6 +81,6 @@ func (c *CollectHostTCPLoadBalancer) RemoteCollect(progressChan chan<- interface
 	return nil, errors.New("not implemented")
 }
 
-func (c *CollectHostTCPLoadBalancer) IsPrivileged() bool {
+func (c *CollectHostTCPLoadBalancer) HasRemoted() bool {
 	return false
 }

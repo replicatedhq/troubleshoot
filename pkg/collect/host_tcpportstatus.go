@@ -123,6 +123,6 @@ func (c *CollectHostTCPPortStatus) RemoteCollect(progressChan chan<- interface{}
 	return nil, errors.New("not implemented")
 }
 
-func (c *CollectHostTCPPortStatus) IsPrivileged() bool {
+func (c *CollectHostTCPPortStatus) HasRemoted() bool {
 	return false
 }

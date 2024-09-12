@@ -50,7 +50,7 @@ func runHostCollectors(ctx context.Context, hostCollectors []*troubleshootv1beta
 		}
 
 		opts.ProgressChan <- fmt.Sprintf("[%s] Running host collector...", collector.Title())
-		if opts.RunHostCollectorsInPod && collector.IsPrivileged() {
+		if opts.RunHostCollectorsInPod && collector.HasRemoted() {
 			result, err := collector.RemoteCollect(opts.ProgressChan)
 			if err != nil {
 				span.SetStatus(codes.Error, err.Error())

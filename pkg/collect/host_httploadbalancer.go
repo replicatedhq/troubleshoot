@@ -186,6 +186,6 @@ func (c *CollectHostHTTPLoadBalancer) RemoteCollect(progressChan chan<- interfac
 	return nil, errors.New("not implemented")
 }
 
-func (c *CollectHostHTTPLoadBalancer) IsPrivileged() bool {
+func (c *CollectHostHTTPLoadBalancer) HasRemoted() bool {
 	return false
 }

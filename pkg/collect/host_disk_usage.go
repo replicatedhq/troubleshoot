@@ -91,6 +91,6 @@ func (c *CollectHostDiskUsage) RemoteCollect(progressChan chan<- interface{}) (m
 	return nil, errors.New("not implemented")
 }
 
-func (c *CollectHostDiskUsage) IsPrivileged() bool {
+func (c *CollectHostDiskUsage) HasRemoted() bool {
 	return false
 }

@@ -120,6 +120,6 @@ func (c *CollectHostOS) RemoteCollect(progressChan chan<- interface{}) (map[stri
 	return nil, errors.New("failed to find host os info")
 }
 
-func (c *CollectHostOS) IsPrivileged() bool {
+func (c *CollectHostOS) HasRemoted() bool {
 	return true
 }

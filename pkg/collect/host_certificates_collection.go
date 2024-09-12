@@ -110,6 +110,6 @@ func (c *CollectHostCertificatesCollection) RemoteCollect(progressChan chan<- in
 	return nil, errors.New("not implemented")
 }
 
-func (c *CollectHostCertificatesCollection) IsPrivileged() bool {
+func (c *CollectHostCertificatesCollection) HasRemoted() bool {
 	return false
 }

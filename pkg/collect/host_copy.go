@@ -143,6 +143,6 @@ func (c *CollectHostCopy) RemoteCollect(progressChan chan<- interface{}) (map[st
 	return nil, errors.New("not implemented")
 }
 
-func (c *CollectHostCopy) IsPrivileged() bool {
+func (c *CollectHostCopy) HasRemoted() bool {
 	return false
 }

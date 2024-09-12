@@ -63,6 +63,6 @@ func (c *CollectHostIPV4Interfaces) RemoteCollect(progressChan chan<- interface{
 	return nil, errors.New("not implemented")
 }
 
-func (c *CollectHostIPV4Interfaces) IsPrivileged() bool {
+func (c *CollectHostIPV4Interfaces) HasRemoted() bool {
 	return false
 }

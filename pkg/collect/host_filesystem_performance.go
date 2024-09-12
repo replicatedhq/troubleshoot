@@ -465,6 +465,6 @@ func (c *CollectHostFilesystemPerformance) RemoteCollect(progressChan chan<- int
 	return nil, errors.New("not implemented")
 }
 
-func (c *CollectHostFilesystemPerformance) IsPrivileged() bool {
+func (c *CollectHostFilesystemPerformance) HasRemoted() bool {
 	return false
 }

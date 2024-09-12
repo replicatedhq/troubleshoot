@@ -81,6 +81,6 @@ func (c *CollectHostUDPPortStatus) RemoteCollect(progressChan chan<- interface{}
 	return nil, errors.New("not implemented")
 }
 
-func (c *CollectHostUDPPortStatus) IsPrivileged() bool {
+func (c *CollectHostUDPPortStatus) HasRemoted() bool {
 	return false
 }
