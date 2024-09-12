@@ -19,7 +19,6 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
-	"gopkg.in/yaml.v2"
 	"k8s.io/client-go/kubernetes"
 )
 
@@ -219,22 +218,6 @@ func findFileName(basename, extension string) (string, error) {
 		name = fmt.Sprintf("%s (%d)", basename, n)
 		n = n + 1
 	}
-}
-
-func getVersionFile() (io.Reader, error) {
-	version := troubleshootv1beta2.SupportBundleVersion{
-		ApiVersion: "troubleshoot.sh/v1beta2",
-		Kind:       "SupportBundle",
-		Spec: troubleshootv1beta2.SupportBundleVersionSpec{
-			VersionNumber: version.Version(),
-		},
-	}
-	b, err := yaml.Marshal(version)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to marshal version data")
-	}
-
-	return bytes.NewBuffer(b), nil
 }
 
 const AnalysisFilename = "analysis.json"

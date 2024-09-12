@@ -71,6 +71,7 @@ that a cluster meets the requirements to run an application.`,
 	// Dry run flag should be in cmd.PersistentFlags() flags made available to all subcommands
 	// Adding here to avoid that
 	cmd.Flags().Bool("dry-run", false, "print the preflight spec without running preflight checks")
+	cmd.Flags().Bool("save-bundle", false, "Save collected data to a bundle archive in the current directory. The file path will follow preflightbundle-YYYY-MM-DDTHH_MM_SS.tar.gz format")
 	cmd.Flags().Bool("no-uri", false, "When this flag is used, Preflight does not attempt to retrieve the spec referenced by the uri: field`")
 
 	k8sutil.AddFlags(cmd.Flags())

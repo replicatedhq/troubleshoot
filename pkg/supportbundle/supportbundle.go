@@ -15,6 +15,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/replicatedhq/troubleshoot/internal/traces"
 	"github.com/replicatedhq/troubleshoot/internal/util"
+	"github.com/replicatedhq/troubleshoot/internal/version"
 	analyzer "github.com/replicatedhq/troubleshoot/pkg/analyze"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/replicatedhq/troubleshoot/pkg/collect"
@@ -144,7 +145,7 @@ func CollectSupportBundleFromSpec(
 		return nil, fmt.Errorf("failed to generate support bundle")
 	}
 
-	version, err := getVersionFile()
+	version, err := version.GetVersionFile()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get version file")
 	}

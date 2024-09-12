@@ -5,14 +5,17 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"time"
 
 	cursor "github.com/ahmetalpbalkan/go-cursor"
 	"github.com/fatih/color"
 	"github.com/pkg/errors"
 	"github.com/replicatedhq/troubleshoot/internal/util"
+	"github.com/replicatedhq/troubleshoot/internal/version"
 	analyzer "github.com/replicatedhq/troubleshoot/pkg/analyze"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
+	"github.com/replicatedhq/troubleshoot/pkg/collect"
 	"github.com/replicatedhq/troubleshoot/pkg/constants"
 	"github.com/replicatedhq/troubleshoot/pkg/k8sutil"
 	"github.com/replicatedhq/troubleshoot/pkg/types"
@@ -22,6 +25,7 @@ import (
 	"golang.org/x/sync/errgroup"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/klog/v2"
 )
 
 func RunPreflights(interactive bool, output string, format string, args []string) error {
@@ -76,6 +80,25 @@ func RunPreflights(interactive bool, output string, format string, args []string
 	var collectResults []CollectResult
 	var uploadCollectResults []CollectResult
 	preflightSpecName := ""
+	bundlePath := ""
+	archivePath := ""
+
+	// Create a temporary directory to save the preflight bundle
+	if viper.GetBool("save-bundle") {
+		tmpDir, err := os.MkdirTemp("", "preflightbundle-")
+		if err != nil {
+			return errors.Wrap(err, "create temp dir for preflightbundle")
+		}
+		defer os.RemoveAll(tmpDir)
+		bundleFileName := fmt.Sprintf("preflightbundle-%s", time.Now().Format("2006-01-02T15_04_05"))
+		bundlePath = filepath.Join(tmpDir, bundleFileName)
+		if err := os.MkdirAll(bundlePath, 0777); err != nil {
+			return errors.Wrap(err, "failed to create preflight bundle dir")
+		}
+
+		archivePath = fmt.Sprintf("%s.tar.gz", bundleFileName)
+		klog.V(2).Infof("Preflight data collected in temporary directory: %s", tmpDir)
+	}
 
 	progressCh := make(chan interface{})
 	defer close(progressCh)
@@ -92,12 +115,21 @@ func RunPreflights(interactive bool, output string, format string, args []string
 	}
 
 	uploadResultsMap := make(map[string][]CollectResult)
+	collectorResults := collect.CollectorResult{}
+	analyzers := []*troubleshootv1beta2.Analyze{}
+	hostAnalyzers := []*troubleshootv1beta2.HostAnalyze{}
 
 	for _, spec := range specs.PreflightsV1Beta2 {
-		r, err := collectInCluster(ctx, &spec, progressCh)
+		r, err := collectInCluster(ctx, &spec, progressCh, bundlePath)
 		if err != nil {
 			return types.NewExitCodeError(constants.EXIT_CODE_CATCH_ALL, errors.Wrap(err, "failed to collect in cluster"))
 		}
+		collectorResult, ok := (*r).(ClusterCollectResult)
+		if !ok {
+			return errors.Errorf("unexpected result type: %T", collectResults)
+		}
+		collectorResults.AddResult(collect.CollectorResult(collectorResult.AllCollectedData))
+
 		if spec.Spec.UploadResultsTo != "" {
 			uploadResultsMap[spec.Spec.UploadResultsTo] = append(uploadResultsMap[spec.Spec.UploadResultsTo], *r)
 			uploadCollectResults = append(collectResults, *r)
@@ -106,15 +138,21 @@ func RunPreflights(interactive bool, output string, format string, args []string
 		}
 		// TODO: This spec name will be overwritten by the next spec. Is this intentional?
 		preflightSpecName = spec.Name
+		analyzers = append(analyzers, spec.Spec.Analyzers...)
 	}
 
 	for _, spec := range specs.HostPreflightsV1Beta2 {
 		if len(spec.Spec.Collectors) > 0 {
-			r, err := collectHost(ctx, &spec, progressCh)
+			r, err := collectHost(ctx, &spec, progressCh, bundlePath)
 			if err != nil {
 				return types.NewExitCodeError(constants.EXIT_CODE_CATCH_ALL, errors.Wrap(err, "failed to collect from host"))
 			}
 			collectResults = append(collectResults, *r)
+			collectorResult, ok := (*r).(HostCollectResult)
+			if !ok {
+				return errors.Errorf("unexpected result type: %T", collectResults)
+			}
+			collectorResults.AddResult(collect.CollectorResult(collectorResult.AllCollectedData))
 		}
 		if len(spec.Spec.RemoteCollectors) > 0 {
 			r, err := collectRemote(ctx, &spec, progressCh)
@@ -122,17 +160,40 @@ func RunPreflights(interactive bool, output string, format string, args []string
 				return types.NewExitCodeError(constants.EXIT_CODE_CATCH_ALL, errors.Wrap(err, "failed to collect remotely"))
 			}
 			collectResults = append(collectResults, *r)
+			collectorResult, ok := (*r).(RemoteCollectResult)
+			if !ok {
+				return errors.Errorf("unexpected result type: %T", collectResults)
+			}
+			collectorResults.AddResult(collect.CollectorResult(collectorResult.AllCollectedData))
 		}
 		preflightSpecName = spec.Name
+		hostAnalyzers = append(hostAnalyzers, spec.Spec.Analyzers...)
 	}
 
 	if len(collectResults) == 0 && len(uploadCollectResults) == 0 {
 		return types.NewExitCodeError(constants.EXIT_CODE_CATCH_ALL, errors.New("no data was collected"))
 	}
 
+	version, err := version.GetVersionFile()
+	if err != nil {
+		return errors.Wrap(err, "failed to get version file")
+	}
+
+	err = collectorResults.SaveResult(bundlePath, constants.VERSION_FILENAME, version)
+	if err != nil {
+		return errors.Wrap(err, "failed to write version")
+	}
+
 	analyzeResults := []*analyzer.AnalyzeResult{}
-	for _, res := range collectResults {
-		analyzeResults = append(analyzeResults, res.Analyze()...)
+	if viper.GetBool("save-bundle") {
+		analyzeResults, err = analyzer.AnalyzeLocal(ctx, bundlePath, analyzers, hostAnalyzers)
+		if err != nil {
+			return errors.Wrap(err, "failed to analyze support bundle")
+		}
+	} else {
+		for _, res := range collectResults {
+			analyzeResults = append(analyzeResults, res.Analyze()...)
+		}
 	}
 
 	uploadAnalyzeResultsMap := make(map[string][]*analyzer.AnalyzeResult)
@@ -147,6 +208,14 @@ func RunPreflights(interactive bool, output string, format string, args []string
 		err := uploadResults(k, v)
 		if err != nil {
 			progressCh <- err
+		}
+	}
+
+	if viper.GetBool("save-bundle") {
+		// Archive preflight bundle
+		klog.Infof("Archiving preflight bundle to %s", archivePath)
+		if err := collectorResults.ArchiveBundle(bundlePath, archivePath); err != nil {
+			return errors.Wrapf(err, "failed to create %s archive", archivePath)
 		}
 	}
 
@@ -250,7 +319,9 @@ func collectNonInteractiveProgess(ctx context.Context, progressCh <-chan interfa
 	}
 }
 
-func collectInCluster(ctx context.Context, preflightSpec *troubleshootv1beta2.Preflight, progressCh chan interface{}) (*CollectResult, error) {
+func collectInCluster(
+	ctx context.Context, preflightSpec *troubleshootv1beta2.Preflight, progressCh chan interface{}, bundlePath string,
+) (*CollectResult, error) {
 	v := viper.GetViper()
 
 	restConfig, err := k8sutil.GetRESTConfig()
@@ -263,6 +334,7 @@ func collectInCluster(ctx context.Context, preflightSpec *troubleshootv1beta2.Pr
 		IgnorePermissionErrors: v.GetBool("collect-without-permissions"),
 		ProgressChan:           progressCh,
 		KubernetesRestConfig:   restConfig,
+		BundlePath:             bundlePath,
 	}
 
 	if v.GetString("since") != "" || v.GetString("since-time") != "" {
@@ -289,7 +361,7 @@ func collectInCluster(ctx context.Context, preflightSpec *troubleshootv1beta2.Pr
 	return &collectResults, nil
 }
 
-func collectRemote(ctx context.Context, preflightSpec *troubleshootv1beta2.HostPreflight, progressCh chan interface{}) (*CollectResult, error) {
+func collectRemote(_ context.Context, preflightSpec *troubleshootv1beta2.HostPreflight, progressCh chan interface{}) (*CollectResult, error) {
 	v := viper.GetViper()
 
 	restConfig, err := k8sutil.GetRESTConfig()
@@ -331,9 +403,12 @@ func collectRemote(ctx context.Context, preflightSpec *troubleshootv1beta2.HostP
 	return &collectResults, nil
 }
 
-func collectHost(ctx context.Context, hostPreflightSpec *troubleshootv1beta2.HostPreflight, progressCh chan interface{}) (*CollectResult, error) {
+func collectHost(
+	_ context.Context, hostPreflightSpec *troubleshootv1beta2.HostPreflight, progressCh chan interface{}, bundlePath string,
+) (*CollectResult, error) {
 	collectOpts := CollectOpts{
 		ProgressChan: progressCh,
+		BundlePath:   bundlePath,
 	}
 
 	collectResults, err := CollectHost(collectOpts, hostPreflightSpec)

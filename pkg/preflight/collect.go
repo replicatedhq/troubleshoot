@@ -30,6 +30,9 @@ type CollectOpts struct {
 	LabelSelector          string
 	Timeout                time.Duration
 	ProgressChan           chan interface{}
+
+	// Optional path to the bundle directory to store the collected data
+	BundlePath string
 }
 
 type CollectProgress struct {
@@ -96,7 +99,7 @@ func CollectHost(opts CollectOpts, p *troubleshootv1beta2.HostPreflight) (Collec
 func CollectHostWithContext(
 	ctx context.Context, opts CollectOpts, p *troubleshootv1beta2.HostPreflight,
 ) (CollectResult, error) {
-	collectSpecs := make([]*troubleshootv1beta2.HostCollect, 0, 0)
+	collectSpecs := make([]*troubleshootv1beta2.HostCollect, 0)
 	if p != nil && p.Spec.Collectors != nil {
 		collectSpecs = append(collectSpecs, p.Spec.Collectors...)
 	}
@@ -105,7 +108,7 @@ func CollectHostWithContext(
 
 	var collectors []collect.HostCollector
 	for _, desiredCollector := range collectSpecs {
-		collector, ok := collect.GetHostCollector(desiredCollector, "")
+		collector, ok := collect.GetHostCollector(desiredCollector, opts.BundlePath)
 		if ok {
 			collectors = append(collectors, collector)
 		}
@@ -140,6 +143,7 @@ func CollectHostWithContext(
 		span.End()
 	}
 
+	// The values of map entries will contain the collected data in bytes if the data was not stored to disk
 	collectResult.AllCollectedData = allCollectedData
 
 	return collectResult, nil
@@ -154,7 +158,7 @@ func CollectWithContext(ctx context.Context, opts CollectOpts, p *troubleshootv1
 	var allCollectors []collect.Collector
 	var foundForbidden bool
 
-	collectSpecs := make([]*troubleshootv1beta2.Collect, 0, 0)
+	collectSpecs := make([]*troubleshootv1beta2.Collect, 0)
 	if p != nil && p.Spec.Collectors != nil {
 		collectSpecs = append(collectSpecs, p.Spec.Collectors...)
 	}
@@ -180,7 +184,7 @@ func CollectWithContext(ctx context.Context, opts CollectOpts, p *troubleshootv1
 	allCollectedData := make(map[string][]byte)
 
 	for _, desiredCollector := range collectSpecs {
-		if collectorInterface, ok := collect.GetCollector(desiredCollector, "", opts.Namespace, opts.KubernetesRestConfig, k8sClient, nil); ok {
+		if collectorInterface, ok := collect.GetCollector(desiredCollector, opts.BundlePath, opts.Namespace, opts.KubernetesRestConfig, k8sClient, nil); ok {
 			if collector, ok := collectorInterface.(collect.Collector); ok {
 				err := collector.CheckRBAC(ctx, collector, desiredCollector, opts.KubernetesRestConfig, opts.Namespace)
 				if err != nil {
@@ -305,6 +309,7 @@ func CollectWithContext(ctx context.Context, opts CollectOpts, p *troubleshootv1
 		span.End()
 	}
 
+	// The values of map entries will contain the collected data in bytes if the data was not stored to disk
 	collectResult.AllCollectedData = allCollectedData
 
 	return collectResult, nil
