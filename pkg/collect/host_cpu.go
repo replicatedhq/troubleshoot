@@ -29,7 +29,7 @@ func (c *CollectHostCPU) IsExcluded() (bool, error) {
 	return isExcluded(c.hostCollector.Exclude)
 }
 
-func (c *CollectHostCPU) Collect(progressChan chan<- interface{}, opts CollectorRunOpts) (map[string][]byte, error) {
+func (c *CollectHostCPU) Collect(progressChan chan<- interface{}) (map[string][]byte, error) {
 	cpuInfo := CPUInfo{}
 
 	logicalCount, err := cpu.Counts(true)
@@ -53,4 +53,12 @@ func (c *CollectHostCPU) Collect(progressChan chan<- interface{}, opts Collector
 	output.SaveResult(c.BundlePath, HostCPUPath, bytes.NewBuffer(b))
 
 	return output, nil
+}
+
+func (c *CollectHostCPU) RemoteCollect(progressChan chan<- interface{}) (map[string][]byte, error) {
+	return nil, errors.New("not implemented")
+}
+
+func (c *CollectHostCPU) IsPrivileged() bool {
+	return false
 }

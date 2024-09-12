@@ -44,7 +44,7 @@ func (c *CollectHostSubnetAvailable) IsExcluded() (bool, error) {
 	return isExcluded(c.hostCollector.Exclude)
 }
 
-func (c *CollectHostSubnetAvailable) Collect(progressChan chan<- interface{}, opts CollectorRunOpts) (map[string][]byte, error) {
+func (c *CollectHostSubnetAvailable) Collect(progressChan chan<- interface{}) (map[string][]byte, error) {
 	procNetRoute, err := os.ReadFile("/proc/net/route")
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to read contents of /proc/net/route")
@@ -274,5 +274,13 @@ func netOverlaps(n1, n2 *net.IPNet) bool {
 		return true
 	}
 
+	return false
+}
+
+func (c *CollectHostSubnetAvailable) RemoteCollect(progressChan chan<- interface{}) (map[string][]byte, error) {
+	return nil, errors.New("not implemented")
+}
+
+func (c *CollectHostSubnetAvailable) IsPrivileged() bool {
 	return false
 }

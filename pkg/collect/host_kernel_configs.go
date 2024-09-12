@@ -40,7 +40,7 @@ func (c *CollectHostKernelConfigs) IsExcluded() (bool, error) {
 	return isExcluded(c.hostCollector.Exclude)
 }
 
-func (c *CollectHostKernelConfigs) Collect(progressChan chan<- interface{}, opts CollectorRunOpts) (map[string][]byte, error) {
+func (c *CollectHostKernelConfigs) Collect(progressChan chan<- interface{}) (map[string][]byte, error) {
 
 	kernelRelease, err := getKernelRelease()
 	if err != nil {
@@ -139,4 +139,12 @@ func parseKConfigs(r io.Reader) (KConfigs, error) {
 		}
 	}
 	return configs, nil
+}
+
+func (c *CollectHostKernelConfigs) RemoteCollect(progressChan chan<- interface{}) (map[string][]byte, error) {
+	return nil, errors.New("not implemented")
+}
+
+func (c *CollectHostKernelConfigs) IsPrivileged() bool {
+	return false
 }

@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/pkg/errors"
+
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 )
 
@@ -30,7 +32,7 @@ func (c *CollectHostCertificate) IsExcluded() (bool, error) {
 	return isExcluded(c.hostCollector.Exclude)
 }
 
-func (c *CollectHostCertificate) Collect(progressChan chan<- interface{}, opts CollectorRunOpts) (map[string][]byte, error) {
+func (c *CollectHostCertificate) Collect(progressChan chan<- interface{}) (map[string][]byte, error) {
 	var result = KeyPairValid
 
 	_, err := tls.LoadX509KeyPair(c.hostCollector.CertificatePath, c.hostCollector.KeyPath)
@@ -76,4 +78,12 @@ func isEncryptedKey(filename string) (bool, error) {
 		return false, err
 	}
 	return bytes.Contains(data, []byte("ENCRYPTED")), nil
+}
+
+func (c *CollectHostCertificate) RemoteCollect(progressChan chan<- interface{}) (map[string][]byte, error) {
+	return nil, errors.New("not implemented")
+}
+
+func (c *CollectHostCertificate) IsPrivileged() bool {
+	return false
 }

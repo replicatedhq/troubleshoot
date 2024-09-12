@@ -51,7 +51,7 @@ func (c *CollectHostFilesystemPerformance) IsExcluded() (bool, error) {
 	return isExcluded(c.hostCollector.Exclude)
 }
 
-func (c *CollectHostFilesystemPerformance) Collect(progressChan chan<- interface{}, opts CollectorRunOpts) (map[string][]byte, error) {
+func (c *CollectHostFilesystemPerformance) Collect(progressChan chan<- interface{}) (map[string][]byte, error) {
 	return collectHostFilesystemPerformance(c.hostCollector, c.BundlePath)
 }
 
@@ -459,4 +459,12 @@ func collectFioResults(ctx context.Context, hostCollector *troubleshootv1beta2.F
 	}
 
 	return &result, nil
+}
+
+func (c *CollectHostFilesystemPerformance) RemoteCollect(progressChan chan<- interface{}) (map[string][]byte, error) {
+	return nil, errors.New("not implemented")
+}
+
+func (c *CollectHostFilesystemPerformance) IsPrivileged() bool {
+	return false
 }

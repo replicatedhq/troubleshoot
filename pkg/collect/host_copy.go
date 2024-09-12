@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"k8s.io/klog/v2"
 )
@@ -23,7 +24,7 @@ func (c *CollectHostCopy) IsExcluded() (bool, error) {
 	return isExcluded(c.hostCollector.Exclude)
 }
 
-func (c *CollectHostCopy) Collect(progressChan chan<- interface{}, opts CollectorRunOpts) (map[string][]byte, error) {
+func (c *CollectHostCopy) Collect(progressChan chan<- interface{}) (map[string][]byte, error) {
 	// 1. Construct subdirectory path in the bundle path to copy files into
 	// output.SaveResult() will create the directory if it doesn't exist
 	bundleRelPath := filepath.Join("host-collectors", c.Title())
@@ -136,4 +137,12 @@ func (c *CollectHostCopy) copyDir(src, dst string, result CollectorResult) error
 	}
 
 	return nil
+}
+
+func (c *CollectHostCopy) RemoteCollect(progressChan chan<- interface{}) (map[string][]byte, error) {
+	return nil, errors.New("not implemented")
+}
+
+func (c *CollectHostCopy) IsPrivileged() bool {
+	return false
 }

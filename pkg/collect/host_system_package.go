@@ -40,7 +40,7 @@ func (c *CollectHostSystemPackages) IsExcluded() (bool, error) {
 	return isExcluded(c.hostCollector.Exclude)
 }
 
-func (c *CollectHostSystemPackages) Collect(progressChan chan<- interface{}, opts CollectorRunOpts) (map[string][]byte, error) {
+func (c *CollectHostSystemPackages) Collect(progressChan chan<- interface{}) (map[string][]byte, error) {
 	info := SystemPackagesInfo{}
 
 	osReleaseMap := distro.OSRelease()
@@ -204,5 +204,13 @@ func matchMajorVersion(version string, major string) bool {
 	if strings.HasPrefix(version, fmt.Sprintf("%s.", major)) {
 		return true
 	}
+	return false
+}
+
+func (c *CollectHostSystemPackages) RemoteCollect(progressChan chan<- interface{}) (map[string][]byte, error) {
+	return nil, errors.New("not implemented")
+}
+
+func (c *CollectHostSystemPackages) IsPrivileged() bool {
 	return false
 }

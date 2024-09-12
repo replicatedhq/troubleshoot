@@ -38,7 +38,7 @@ func (c *CollectHostRun) IsExcluded() (bool, error) {
 	return isExcluded(c.hostCollector.Exclude)
 }
 
-func (c *CollectHostRun) Collect(progressChan chan<- interface{}, opts CollectorRunOpts) (map[string][]byte, error) {
+func (c *CollectHostRun) Collect(progressChan chan<- interface{}) (map[string][]byte, error) {
 	var (
 		cmdOutputTempDir         string
 		cmdInputTempDir          string
@@ -244,4 +244,12 @@ func (c *CollectHostRun) attemptToConvertCmdToAbsPath() string {
 	}
 
 	return cmdAbsPath
+}
+
+func (c *CollectHostRun) RemoteCollect(progressChan chan<- interface{}) (map[string][]byte, error) {
+	return nil, errors.New("not implemented")
+}
+
+func (c *CollectHostRun) IsPrivileged() bool {
+	return false
 }

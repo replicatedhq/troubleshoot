@@ -30,7 +30,7 @@ func (c *CollectHostDiskUsage) IsExcluded() (bool, error) {
 	return isExcluded(c.hostCollector.Exclude)
 }
 
-func (c *CollectHostDiskUsage) Collect(progressChan chan<- interface{}, opts CollectorRunOpts) (map[string][]byte, error) {
+func (c *CollectHostDiskUsage) Collect(progressChan chan<- interface{}) (map[string][]byte, error) {
 	result := map[string][]byte{}
 
 	if c.hostCollector == nil {
@@ -85,4 +85,12 @@ func traverseFiletreeDirExists(filename string) (string, error) {
 		}
 	}
 	return "", errors.New("max recursion exceeded")
+}
+
+func (c *CollectHostDiskUsage) RemoteCollect(progressChan chan<- interface{}) (map[string][]byte, error) {
+	return nil, errors.New("not implemented")
+}
+
+func (c *CollectHostDiskUsage) IsPrivileged() bool {
+	return false
 }

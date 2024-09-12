@@ -11,6 +11,7 @@ import (
 	"io"
 	"strings"
 
+	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"k8s.io/klog/v2"
 )
@@ -44,7 +45,7 @@ func (c *CollectHostCGroups) IsExcluded() (bool, error) {
 	return isExcluded(c.hostCollector.Exclude)
 }
 
-func (c *CollectHostCGroups) Collect(progressChan chan<- interface{}, opts CollectorRunOpts) (map[string][]byte, error) {
+func (c *CollectHostCGroups) Collect(progressChan chan<- interface{}) (map[string][]byte, error) {
 	// https://man7.org/linux/man-pages/man7/cgroups.7.html
 	// Implementation is based on https://github.com/k0sproject/k0s/blob/main/internal/pkg/sysinfo/probes/linux/cgroups.go
 
@@ -96,4 +97,12 @@ func parseV1ControllerNames(r io.Reader) ([]string, error) {
 	klog.V(2).Info("cgroup v1 controllers loaded")
 
 	return names, nil
+}
+
+func (c *CollectHostCGroups) RemoteCollect(progressChan chan<- interface{}) (map[string][]byte, error) {
+	return nil, errors.New("not implemented")
+}
+
+func (c *CollectHostCGroups) IsPrivileged() bool {
+	return false
 }

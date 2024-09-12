@@ -22,7 +22,7 @@ func (c *CollectHostHTTP) IsExcluded() (bool, error) {
 	return isExcluded(c.hostCollector.Exclude)
 }
 
-func (c *CollectHostHTTP) Collect(progressChan chan<- interface{}, opts CollectorRunOpts) (map[string][]byte, error) {
+func (c *CollectHostHTTP) Collect(progressChan chan<- interface{}) (map[string][]byte, error) {
 	httpCollector := c.hostCollector
 
 	var response *http.Response
@@ -64,4 +64,12 @@ func (c *CollectHostHTTP) Collect(progressChan chan<- interface{}, opts Collecto
 	}
 
 	return httpOutput, nil
+}
+
+func (c *CollectHostHTTP) RemoteCollect(progressChan chan<- interface{}) (map[string][]byte, error) {
+	return nil, errors.New("not implemented")
+}
+
+func (c *CollectHostHTTP) IsPrivileged() bool {
+	return false
 }

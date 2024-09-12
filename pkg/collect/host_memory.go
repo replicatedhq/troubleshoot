@@ -28,7 +28,7 @@ func (c *CollectHostMemory) IsExcluded() (bool, error) {
 	return isExcluded(c.hostCollector.Exclude)
 }
 
-func (c *CollectHostMemory) Collect(progressChan chan<- interface{}, opts CollectorRunOpts) (map[string][]byte, error) {
+func (c *CollectHostMemory) Collect(progressChan chan<- interface{}) (map[string][]byte, error) {
 	memoryInfo := MemoryInfo{}
 
 	vmstat, err := mem.VirtualMemory()
@@ -46,4 +46,12 @@ func (c *CollectHostMemory) Collect(progressChan chan<- interface{}, opts Collec
 	output.SaveResult(c.BundlePath, HostMemoryPath, bytes.NewBuffer(b))
 
 	return output, nil
+}
+
+func (c *CollectHostMemory) RemoteCollect(progressChan chan<- interface{}) (map[string][]byte, error) {
+	return nil, errors.New("not implemented")
+}
+
+func (c *CollectHostMemory) IsPrivileged() bool {
+	return false
 }

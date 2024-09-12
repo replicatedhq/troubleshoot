@@ -34,7 +34,7 @@ func (c *CollectHostServices) IsExcluded() (bool, error) {
 	return isExcluded(c.hostCollector.Exclude)
 }
 
-func (c *CollectHostServices) Collect(progressChan chan<- interface{}, opts CollectorRunOpts) (map[string][]byte, error) {
+func (c *CollectHostServices) Collect(progressChan chan<- interface{}) (map[string][]byte, error) {
 	var devices []ServiceInfo
 
 	cmd := exec.Command("systemctl", "list-units", "--type=service", "--no-legend", "--all")
@@ -70,4 +70,12 @@ func (c *CollectHostServices) Collect(progressChan chan<- interface{}, opts Coll
 	return map[string][]byte{
 		HostServicesPath: b,
 	}, nil
+}
+
+func (c *CollectHostServices) RemoteCollect(progressChan chan<- interface{}) (map[string][]byte, error) {
+	return nil, errors.New("not implemented")
+}
+
+func (c *CollectHostServices) IsPrivileged() bool {
+	return false
 }

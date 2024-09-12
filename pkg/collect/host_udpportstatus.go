@@ -24,7 +24,7 @@ func (c *CollectHostUDPPortStatus) IsExcluded() (bool, error) {
 	return isExcluded(c.hostCollector.Exclude)
 }
 
-func (c *CollectHostUDPPortStatus) Collect(progressChan chan<- interface{}, opts CollectorRunOpts) (map[string][]byte, error) {
+func (c *CollectHostUDPPortStatus) Collect(progressChan chan<- interface{}) (map[string][]byte, error) {
 	listenAddress := net.UDPAddr{
 		IP:   net.ParseIP("0.0.0.0"),
 		Port: c.hostCollector.Port,
@@ -75,4 +75,12 @@ func (c *CollectHostUDPPortStatus) Collect(progressChan chan<- interface{}, opts
 	return map[string][]byte{
 		name: b,
 	}, nil
+}
+
+func (c *CollectHostUDPPortStatus) RemoteCollect(progressChan chan<- interface{}) (map[string][]byte, error) {
+	return nil, errors.New("not implemented")
+}
+
+func (c *CollectHostUDPPortStatus) IsPrivileged() bool {
+	return false
 }

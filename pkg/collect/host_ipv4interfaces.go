@@ -24,7 +24,7 @@ func (c *CollectHostIPV4Interfaces) IsExcluded() (bool, error) {
 	return isExcluded(c.hostCollector.Exclude)
 }
 
-func (c *CollectHostIPV4Interfaces) Collect(progressChan chan<- interface{}, opts CollectorRunOpts) (map[string][]byte, error) {
+func (c *CollectHostIPV4Interfaces) Collect(progressChan chan<- interface{}) (map[string][]byte, error) {
 	var ipv4Interfaces []net.Interface
 
 	interfaces, err := net.Interfaces()
@@ -57,4 +57,12 @@ func (c *CollectHostIPV4Interfaces) Collect(progressChan chan<- interface{}, opt
 	return map[string][]byte{
 		HostIPV4InterfacesPath: b,
 	}, nil
+}
+
+func (c *CollectHostIPV4Interfaces) RemoteCollect(progressChan chan<- interface{}) (map[string][]byte, error) {
+	return nil, errors.New("not implemented")
+}
+
+func (c *CollectHostIPV4Interfaces) IsPrivileged() bool {
+	return false
 }

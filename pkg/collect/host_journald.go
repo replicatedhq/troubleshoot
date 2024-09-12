@@ -30,7 +30,7 @@ func (c *CollectHostJournald) IsExcluded() (bool, error) {
 	return isExcluded(c.hostCollector.Exclude)
 }
 
-func (c *CollectHostJournald) Collect(progressChan chan<- interface{}, opts CollectorRunOpts) (map[string][]byte, error) {
+func (c *CollectHostJournald) Collect(progressChan chan<- interface{}) (map[string][]byte, error) {
 
 	// collector name check
 	collectorName := c.hostCollector.CollectorName
@@ -156,4 +156,12 @@ func getTimeout(timeout string) (time.Duration, error) {
 	}
 
 	return time.ParseDuration(timeout)
+}
+
+func (c *CollectHostJournald) RemoteCollect(progressChan chan<- interface{}) (map[string][]byte, error) {
+	return nil, errors.New("not implemented")
+}
+
+func (c *CollectHostJournald) IsPrivileged() bool {
+	return false
 }

@@ -36,11 +36,7 @@ func (c *CollectHostOS) IsExcluded() (bool, error) {
 	return isExcluded(c.hostCollector.Exclude)
 }
 
-func (c *CollectHostOS) Collect(progressChan chan<- interface{}, opts CollectorRunOpts) (map[string][]byte, error) {
-	if opts.RunHostCollectorsInPod {
-		return c.CollectFromPrivilegedPod(progressChan)
-	}
-
+func (c *CollectHostOS) Collect(progressChan chan<- interface{}) (map[string][]byte, error) {
 	infoStat, err := osutils.Info()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get os info")
@@ -62,7 +58,7 @@ func (c *CollectHostOS) Collect(progressChan chan<- interface{}, opts CollectorR
 	return output, nil
 }
 
-func (c *CollectHostOS) CollectFromPrivilegedPod(progressChan chan<- interface{}) (map[string][]byte, error) {
+func (c *CollectHostOS) RemoteCollect(progressChan chan<- interface{}) (map[string][]byte, error) {
 	restConfig, err := k8sutil.GetRESTConfig()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to convert kube flags to rest config")
@@ -122,4 +118,8 @@ func (c *CollectHostOS) CollectFromPrivilegedPod(progressChan chan<- interface{}
 	}
 
 	return nil, errors.New("failed to find host os info")
+}
+
+func (c *CollectHostOS) IsPrivileged() bool {
+	return true
 }

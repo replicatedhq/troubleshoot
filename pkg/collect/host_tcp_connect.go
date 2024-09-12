@@ -25,7 +25,7 @@ func (c *CollectHostTCPConnect) IsExcluded() (bool, error) {
 	return isExcluded(c.hostCollector.Exclude)
 }
 
-func (c *CollectHostTCPConnect) Collect(progressChan chan<- interface{}, opts CollectorRunOpts) (map[string][]byte, error) {
+func (c *CollectHostTCPConnect) Collect(progressChan chan<- interface{}) (map[string][]byte, error) {
 	address := c.hostCollector.Address
 
 	timeout := 10 * time.Second
@@ -74,4 +74,12 @@ func attemptConnect(address string, timeout time.Duration) NetworkStatus {
 
 	conn.Close()
 	return NetworkStatusConnected
+}
+
+func (c *CollectHostTCPConnect) RemoteCollect(progressChan chan<- interface{}) (map[string][]byte, error) {
+	return nil, errors.New("not implemented")
+}
+
+func (c *CollectHostTCPConnect) IsPrivileged() bool {
+	return false
 }
