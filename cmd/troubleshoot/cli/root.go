@@ -54,7 +54,7 @@ If no arguments are provided, specs are automatically loaded from the cluster by
 
 			err = runTroubleshoot(v, args)
 			if !v.IsSet("dry-run") && (v.GetBool("debug") || v.IsSet("v")) {
-				fmt.Printf("\n%s", traces.GetExporterInstance().GetSummary())
+				fmt.Fprintf(os.Stderr, "\n%s", traces.GetExporterInstance().GetSummary())
 			}
 
 			return err

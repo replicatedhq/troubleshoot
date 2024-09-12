@@ -2,10 +2,21 @@
 
 set -euo pipefail
 
+PREFLIGHT_BIN=$(pwd)/bin/preflight
+
 tmpdir="$(mktemp -d)"
+trap cleanup SIGHUP SIGINT SIGTERM EXIT
+cleanup() {
+    rm -rf $tmpdir
+}
+
+reset_tmp() {
+    rm -rf "$tmpdir"
+    tmpdir="$(mktemp -d)"
+}
 
 echo -e "\n========= Running preflights from e2e spec and checking results ========="
-./bin/preflight --debug --interactive=false --format=json examples/preflight/e2e.yaml > "$tmpdir/result.json"
+$PREFLIGHT_BIN --debug --interactive=false --format=json examples/preflight/e2e.yaml > "$tmpdir/result.json"
 if [ $? -ne 0 ]; then
     echo "preflight command failed"
     exit $EXIT_STATUS
@@ -35,11 +46,34 @@ EXIT_STATUS=1
 fi
 
 echo -e "\n========= Running preflights from stdin using e2e spec ========="
-cat examples/preflight/e2e.yaml | ./bin/preflight --debug --interactive=false --format=json - > "$tmpdir/result.json"
+cat examples/preflight/e2e.yaml | $PREFLIGHT_BIN --debug --interactive=false --format=json - > "$tmpdir/result.json"
 EXIT_STATUS=$?
 if [ $EXIT_STATUS -ne 0 ]; then
     echo "preflight command failed"
     exit $EXIT_STATUS
+fi
+
+echo -e "\n========= Running preflights and storing bundle in current working directory ========="
+E2E_PREFLIGHT=$(pwd)/examples/preflight/e2e.yaml
+
+# We need a clean slate
+reset_tmp
+pushd $tmpdir >/dev/null
+echo $E2E_PREFLIGHT
+cat $E2E_PREFLIGHT | $PREFLIGHT_BIN --save-bundle --debug --interactive=false -
+EXIT_STATUS=$?
+popd >/dev/null
+
+if [ $EXIT_STATUS -ne 0 ]; then
+    echo "preflight command failed"
+    exit $EXIT_STATUS
+fi
+ls -al $tmpdir
+if ls $tmpdir/preflightbundle-*.tar.gz; then
+    echo "preflight bundle exists"
+else
+    echo "Failed to find collected preflight bundle"
+    exit 1
 fi
 
 rm -rf "$tmpdir"
