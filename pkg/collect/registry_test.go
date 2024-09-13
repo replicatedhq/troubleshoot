@@ -41,6 +41,14 @@ func TestGetImageAuthConfigFromData(t *testing.T) {
 			expectedPassword: "sa-key",
 			expectedError:    false,
 		},
+		{
+			name:             "proxy.replicated.com auth base64 encoded",
+			imageName:        "proxy.replicated.com/app-slug/myimage",
+			dockerConfigJSON: `{"auths":{"proxy.replicated.com":{"auth":"bGljZW5zZV9pZF8xOmxpY2Vuc2VfaWRfMQ=="}}}`,
+			expectedUsername: "license_id_1",
+			expectedPassword: "license_id_1",
+			expectedError:    false,
+		},
 	}
 
 	for _, test := range tests {
