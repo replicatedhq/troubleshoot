@@ -83,25 +83,21 @@ func RunPreflights(interactive bool, output string, format string, args []string
 	var collectResults []CollectResult
 	var uploadCollectResults []CollectResult
 	preflightSpecName := ""
-	bundlePath := ""
-	archivePath := ""
 
 	// Create a temporary directory to save the preflight bundle
-	if viper.GetBool("save-bundle") {
-		tmpDir, err := os.MkdirTemp("", "preflightbundle-")
-		if err != nil {
-			return errors.Wrap(err, "create temp dir for preflightbundle")
-		}
-		defer os.RemoveAll(tmpDir)
-		bundleFileName := fmt.Sprintf("preflightbundle-%s", time.Now().Format("2006-01-02T15_04_05"))
-		bundlePath = filepath.Join(tmpDir, bundleFileName)
-		if err := os.MkdirAll(bundlePath, 0777); err != nil {
-			return errors.Wrap(err, "failed to create preflight bundle dir")
-		}
-
-		archivePath = fmt.Sprintf("%s.tar.gz", bundleFileName)
-		klog.V(2).Infof("Preflight data collected in temporary directory: %s", tmpDir)
+	tmpDir, err := os.MkdirTemp("", "preflightbundle-")
+	if err != nil {
+		return errors.Wrap(err, "create temp dir for preflightbundle")
 	}
+	defer os.RemoveAll(tmpDir)
+	bundleFileName := fmt.Sprintf("preflightbundle-%s", time.Now().Format("2006-01-02T15_04_05"))
+	bundlePath := filepath.Join(tmpDir, bundleFileName)
+	if err := os.MkdirAll(bundlePath, 0777); err != nil {
+		return errors.Wrap(err, "failed to create preflight bundle dir")
+	}
+
+	archivePath := fmt.Sprintf("%s.tar.gz", bundleFileName)
+	klog.V(2).Infof("Preflight data collected in temporary directory: %s", tmpDir)
 
 	progressCh := make(chan interface{})
 	defer close(progressCh)
@@ -182,20 +178,13 @@ func RunPreflights(interactive bool, output string, format string, args []string
 		return errors.Wrap(err, "failed to save version file")
 	}
 
-	analyzeResults := []*analyzer.AnalyzeResult{}
-	if viper.GetBool("save-bundle") {
-		analyzeResults, err = analyzer.AnalyzeLocal(ctx, bundlePath, analyzers, hostAnalyzers)
-		if err != nil {
-			return errors.Wrap(err, "failed to analyze support bundle")
-		}
-		err = saveAnalysisResultsToBundle(collectorResults, analyzeResults, bundlePath)
-		if err != nil {
-			return errors.Wrap(err, "failed to save analysis results to bundle")
-		}
-	} else {
-		for _, res := range collectResults {
-			analyzeResults = append(analyzeResults, res.Analyze()...)
-		}
+	analyzeResults, err := analyzer.AnalyzeLocal(ctx, bundlePath, analyzers, hostAnalyzers)
+	if err != nil {
+		return errors.Wrap(err, "failed to analyze support bundle")
+	}
+	err = saveAnalysisResultsToBundle(collectorResults, analyzeResults, bundlePath)
+	if err != nil {
+		return errors.Wrap(err, "failed to save analysis results to bundle")
 	}
 
 	uploadAnalyzeResultsMap := make(map[string][]*analyzer.AnalyzeResult)
@@ -213,12 +202,10 @@ func RunPreflights(interactive bool, output string, format string, args []string
 		}
 	}
 
-	if viper.GetBool("save-bundle") {
-		// Archive preflight bundle
-		klog.Infof("Archiving preflight bundle to %s", archivePath)
-		if err := collectorResults.ArchiveBundle(bundlePath, archivePath); err != nil {
-			return errors.Wrapf(err, "failed to create %s archive", archivePath)
-		}
+	// Archive preflight bundle
+	klog.Infof("Archiving preflight bundle to %s", archivePath)
+	if err := collectorResults.ArchiveBundle(bundlePath, archivePath); err != nil {
+		return errors.Wrapf(err, "failed to create %s archive", archivePath)
 	}
 
 	stopProgressCollection()

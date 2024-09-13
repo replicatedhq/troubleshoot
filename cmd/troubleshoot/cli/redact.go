@@ -64,7 +64,7 @@ For more information on redactors visit https://troubleshoot.sh/docs/redact/
 			if output == "" {
 				output = fmt.Sprintf("redacted-support-bundle-%s.tar.gz", time.Now().Format("2006-01-02T15_04_05"))
 			}
-			err = collectorResult.ArchiveSupportBundle(bundleDir, output)
+			err = collectorResult.ArchiveBundle(bundleDir, output)
 			if err != nil {
 				return errors.Wrap(err, "failed to create support bundle archive")
 			}

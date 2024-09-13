@@ -411,5 +411,5 @@ func CollectorResultFromBundle(bundleDir string) (CollectorResult, error) {
 // Deprecated: Remove in a future version (v1.0)
 func TarSupportBundleDir(bundlePath string, input CollectorResult, outputFilename string) error {
 	// Is this used anywhere external anyway?
-	return input.ArchiveSupportBundle(bundlePath, outputFilename)
+	return input.ArchiveBundle(bundlePath, outputFilename)
 }

@@ -60,7 +60,7 @@ E2E_PREFLIGHT=$(pwd)/examples/preflight/e2e.yaml
 reset_tmp
 pushd $tmpdir >/dev/null
 echo $E2E_PREFLIGHT
-cat $E2E_PREFLIGHT | $PREFLIGHT_BIN --save-bundle --debug --interactive=false -
+cat $E2E_PREFLIGHT | $PREFLIGHT_BIN --debug --interactive=false -
 EXIT_STATUS=$?
 popd >/dev/null
 

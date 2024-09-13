@@ -189,7 +189,7 @@ func CollectSupportBundleFromSpec(
 	}
 
 	// Archive Support Bundle
-	if err := result.ArchiveSupportBundle(bundlePath, filename); err != nil {
+	if err := result.ArchiveBundle(bundlePath, filename); err != nil {
 		return nil, errors.Wrap(err, "create bundle file")
 	}
 
