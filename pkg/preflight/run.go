@@ -114,7 +114,7 @@ func RunPreflights(interactive bool, output string, format string, args []string
 	}
 
 	uploadResultsMap := make(map[string][]CollectResult)
-	collectorResults := collect.CollectorResult{}
+	collectorResults := collect.NewResult()
 	analyzers := []*troubleshootv1beta2.Analyze{}
 	hostAnalyzers := []*troubleshootv1beta2.HostAnalyze{}
 
