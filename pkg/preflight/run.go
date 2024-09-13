@@ -1,6 +1,7 @@
 package preflight
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 	"os"
@@ -12,13 +13,13 @@ import (
 	"github.com/fatih/color"
 	"github.com/pkg/errors"
 	"github.com/replicatedhq/troubleshoot/internal/util"
-	"github.com/replicatedhq/troubleshoot/internal/version"
 	analyzer "github.com/replicatedhq/troubleshoot/pkg/analyze"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/replicatedhq/troubleshoot/pkg/collect"
 	"github.com/replicatedhq/troubleshoot/pkg/constants"
 	"github.com/replicatedhq/troubleshoot/pkg/k8sutil"
 	"github.com/replicatedhq/troubleshoot/pkg/types"
+	"github.com/replicatedhq/troubleshoot/pkg/version"
 	"github.com/spf13/viper"
 	spin "github.com/tj/go-spin"
 	"go.opentelemetry.io/otel"
@@ -179,7 +180,7 @@ func RunPreflights(interactive bool, output string, format string, args []string
 		return errors.Wrap(err, "failed to get version file")
 	}
 
-	err = collectorResults.SaveResult(bundlePath, constants.VERSION_FILENAME, version)
+	err = collectorResults.SaveResult(bundlePath, constants.VERSION_FILENAME, bytes.NewBuffer([]byte(version)))
 	if err != nil {
 		return errors.Wrap(err, "failed to write version")
 	}

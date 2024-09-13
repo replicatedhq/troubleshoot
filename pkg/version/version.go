@@ -5,6 +5,10 @@ import (
 	"runtime"
 	"runtime/debug"
 	"time"
+
+	"github.com/pkg/errors"
+	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
+	"gopkg.in/yaml.v2"
 )
 
 var (
@@ -95,4 +99,22 @@ func getGoInfo() GoInfo {
 
 func GetUserAgent() string {
 	return fmt.Sprintf("Replicated_Troubleshoot/%s", Version())
+}
+
+func GetVersionFile() (string, error) {
+	// TODO: Should this type be agnostic to the tool?
+	// i.e should it be a TroubleshootVersion instead?
+	version := troubleshootv1beta2.SupportBundleVersion{
+		ApiVersion: "troubleshoot.sh/v1beta2",
+		Kind:       "SupportBundle",
+		Spec: troubleshootv1beta2.SupportBundleVersionSpec{
+			VersionNumber: Version(),
+		},
+	}
+	b, err := yaml.Marshal(version)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to marshal version data")
+	}
+
+	return string(b), nil
 }

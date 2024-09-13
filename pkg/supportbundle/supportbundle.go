@@ -15,12 +15,12 @@ import (
 	"github.com/pkg/errors"
 	"github.com/replicatedhq/troubleshoot/internal/traces"
 	"github.com/replicatedhq/troubleshoot/internal/util"
-	"github.com/replicatedhq/troubleshoot/internal/version"
 	analyzer "github.com/replicatedhq/troubleshoot/pkg/analyze"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/replicatedhq/troubleshoot/pkg/collect"
 	"github.com/replicatedhq/troubleshoot/pkg/constants"
 	"github.com/replicatedhq/troubleshoot/pkg/convert"
+	"github.com/replicatedhq/troubleshoot/pkg/version"
 	"go.opentelemetry.io/otel"
 	"k8s.io/client-go/rest"
 	"k8s.io/klog/v2"
@@ -150,7 +150,7 @@ func CollectSupportBundleFromSpec(
 		return nil, errors.Wrap(err, "failed to get version file")
 	}
 
-	err = result.SaveResult(bundlePath, constants.VERSION_FILENAME, version)
+	err = result.SaveResult(bundlePath, constants.VERSION_FILENAME, bytes.NewBuffer([]byte(version)))
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to write version")
 	}
