@@ -206,9 +206,7 @@ func RunPreflights(interactive bool, output string, format string, args []string
 	if err := collectorResults.ArchiveBundle(bundlePath, archivePath); err != nil {
 		return errors.Wrapf(err, "failed to create %s archive", archivePath)
 	}
-	if !interactive {
-		defer fmt.Fprintf(os.Stderr, "\nSaving preflight bundle to %s\n", archivePath)
-	}
+	defer fmt.Fprintf(os.Stderr, "\nSaving preflight bundle to %s\n", archivePath)
 
 	stopProgressCollection()
 	progressCollection.Wait()
