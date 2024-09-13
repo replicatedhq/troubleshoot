@@ -239,7 +239,7 @@ scan:
 lint:
 	golangci-lint run --new -c .golangci.yaml ${BUILDPATHS}
 
-.PHONY: lint-and-fix
+.PHONY: fmt lint-and-fix
 lint-and-fix:
 	golangci-lint run --new --fix -c .golangci.yaml ${BUILDPATHS}
 
