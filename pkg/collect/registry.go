@@ -221,7 +221,14 @@ func getImageAuthConfigFromData(imageRef types.ImageReference, pullSecrets *v1be
 	// docker.io auth uses auth, e.g. auth: <base64_encoded_username_password>
 	// username and password can't contain colon
 	// at least according to https://github.com/docker/cli/blob/v27.0.3/cli/config/configfile/file.go#L247
-	parts := strings.Split(string(auth.Auth), ":")
+	// fallback to not decode for compatibility
+	authStr := auth.Auth
+	decodedAuth, err := base64.StdEncoding.DecodeString(authStr)
+	if err == nil {
+		authStr = string(decodedAuth)
+	}
+
+	parts := strings.Split(authStr, ":")
 	if len(parts) != 2 {
 		return nil, errors.Errorf("expected 2 parts in the auth string, but found %d", len(parts))
 	}
