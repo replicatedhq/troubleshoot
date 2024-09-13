@@ -220,8 +220,6 @@ func findFileName(basename, extension string) (string, error) {
 	}
 }
 
-const AnalysisFilename = "analysis.json"
-
 func getAnalysisFile(analyzeResults []*analyze.AnalyzeResult) (io.Reader, error) {
 	data := convert.FromAnalyzerResult(analyzeResults)
 	analysis, err := json.MarshalIndent(data, "", "    ")

@@ -20,6 +20,7 @@ const (
 	LIB_TRACER_NAME             = "github.com/replicatedhq/troubleshoot"
 	TROUBLESHOOT_ROOT_SPAN_NAME = "ReplicatedTroubleshootRootSpan"
 	EXCLUDED                    = "excluded"
+	ANALYSIS_FILENAME           = "analysis.json"
 
 	// Cluster Resources Collector Directories
 	CLUSTER_RESOURCES_DIR                         = "cluster-resources"

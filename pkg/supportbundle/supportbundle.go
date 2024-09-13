@@ -173,7 +173,7 @@ func CollectSupportBundleFromSpec(
 		return nil, errors.Wrap(err, "failed to get analysis file")
 	}
 
-	err = result.SaveResult(bundlePath, AnalysisFilename, analysis)
+	err = result.SaveResult(bundlePath, constants.ANALYSIS_FILENAME, analysis)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to write analysis")
 	}

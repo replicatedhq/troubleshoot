@@ -3,6 +3,7 @@ package preflight
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/signal"
@@ -17,6 +18,7 @@ import (
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/replicatedhq/troubleshoot/pkg/collect"
 	"github.com/replicatedhq/troubleshoot/pkg/constants"
+	"github.com/replicatedhq/troubleshoot/pkg/convert"
 	"github.com/replicatedhq/troubleshoot/pkg/k8sutil"
 	"github.com/replicatedhq/troubleshoot/pkg/types"
 	"github.com/replicatedhq/troubleshoot/pkg/version"
@@ -175,14 +177,9 @@ func RunPreflights(interactive bool, output string, format string, args []string
 		return types.NewExitCodeError(constants.EXIT_CODE_CATCH_ALL, errors.New("no data was collected"))
 	}
 
-	version, err := version.GetVersionFile()
+	err = saveTSVersionToBundle(collectorResults, bundlePath)
 	if err != nil {
-		return errors.Wrap(err, "failed to get version file")
-	}
-
-	err = collectorResults.SaveResult(bundlePath, constants.VERSION_FILENAME, bytes.NewBuffer([]byte(version)))
-	if err != nil {
-		return errors.Wrap(err, "failed to write version")
+		return errors.Wrap(err, "failed to save version file")
 	}
 
 	analyzeResults := []*analyzer.AnalyzeResult{}
@@ -190,6 +187,10 @@ func RunPreflights(interactive bool, output string, format string, args []string
 		analyzeResults, err = analyzer.AnalyzeLocal(ctx, bundlePath, analyzers, hostAnalyzers)
 		if err != nil {
 			return errors.Wrap(err, "failed to analyze support bundle")
+		}
+		err = saveAnalysisResultsToBundle(collectorResults, analyzeResults, bundlePath)
+		if err != nil {
+			return errors.Wrap(err, "failed to save analysis results to bundle")
 		}
 	} else {
 		for _, res := range collectResults {
@@ -244,6 +245,37 @@ func RunPreflights(interactive bool, output string, format string, args []string
 	}
 
 	return types.NewExitCodeError(exitCode, errors.New("preflights failed with warnings or errors"))
+}
+
+func saveAnalysisResultsToBundle(
+	results collect.CollectorResult, analyzeResults []*analyzer.AnalyzeResult, bundlePath string,
+) error {
+	data := convert.FromAnalyzerResult(analyzeResults)
+	analysis, err := json.MarshalIndent(data, "", "    ")
+	if err != nil {
+		return err
+	}
+
+	err = results.SaveResult(bundlePath, "analysis.json", bytes.NewBuffer(analysis))
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func saveTSVersionToBundle(results collect.CollectorResult, bundlePath string) error {
+	version, err := version.GetVersionFile()
+	if err != nil {
+		return err
+	}
+
+	err = results.SaveResult(bundlePath, constants.VERSION_FILENAME, bytes.NewBuffer([]byte(version)))
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // Determine if any preflight checks passed vs failed vs warned
