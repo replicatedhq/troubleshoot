@@ -68,14 +68,12 @@ if [ $EXIT_STATUS -ne 0 ]; then
     echo "preflight command failed"
     exit $EXIT_STATUS
 fi
-ls -al $tmpdir
+
 if ls $tmpdir/preflightbundle-*.tar.gz; then
     echo "preflight bundle exists"
 else
     echo "Failed to find collected preflight bundle"
     exit 1
 fi
-
-rm -rf "$tmpdir"
 
 exit $EXIT_STATUS
