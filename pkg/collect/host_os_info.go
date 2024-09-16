@@ -75,6 +75,7 @@ func (c *CollectHostOS) RemoteCollect(progressChan chan<- interface{}) (map[stri
 		Image:                "replicated/troubleshoot:latest",
 		Namespace:            "default",
 		Timeout:              defaultTimeout,
+		NamePrefix:           "hostos-remote",
 		ProgressChan:         progressCh,
 	}
 

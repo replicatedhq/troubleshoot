@@ -29,6 +29,7 @@ type CollectorRunOpts struct {
 	LabelSelector             string
 	Timeout                   time.Duration
 	ProgressChan              chan interface{}
+	NamePrefix                string
 }
 
 type CollectProgress struct {
@@ -107,6 +108,7 @@ func CollectRemote(c *troubleshootv1beta2.RemoteCollector, additionalRedactors *
 			LabelSelector: opts.LabelSelector,
 			Namespace:     opts.Namespace,
 			Timeout:       opts.Timeout,
+			NamePrefix:    opts.NamePrefix,
 		}
 		collectors = append(collectors, &collector)
 	}
