@@ -20,6 +20,7 @@ import (
 	"github.com/replicatedhq/troubleshoot/pkg/collect"
 	"github.com/replicatedhq/troubleshoot/pkg/constants"
 	"github.com/replicatedhq/troubleshoot/pkg/convert"
+	"github.com/replicatedhq/troubleshoot/pkg/version"
 	"go.opentelemetry.io/otel"
 	"k8s.io/client-go/rest"
 	"k8s.io/klog/v2"
@@ -144,12 +145,12 @@ func CollectSupportBundleFromSpec(
 		return nil, fmt.Errorf("failed to generate support bundle")
 	}
 
-	version, err := getVersionFile()
+	version, err := version.GetVersionFile()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get version file")
 	}
 
-	err = result.SaveResult(bundlePath, constants.VERSION_FILENAME, version)
+	err = result.SaveResult(bundlePath, constants.VERSION_FILENAME, bytes.NewBuffer([]byte(version)))
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to write version")
 	}
@@ -172,7 +173,7 @@ func CollectSupportBundleFromSpec(
 		return nil, errors.Wrap(err, "failed to get analysis file")
 	}
 
-	err = result.SaveResult(bundlePath, AnalysisFilename, analysis)
+	err = result.SaveResult(bundlePath, constants.ANALYSIS_FILENAME, analysis)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to write analysis")
 	}
@@ -188,7 +189,7 @@ func CollectSupportBundleFromSpec(
 	}
 
 	// Archive Support Bundle
-	if err := result.ArchiveSupportBundle(bundlePath, filename); err != nil {
+	if err := result.ArchiveBundle(bundlePath, filename); err != nil {
 		return nil, errors.Wrap(err, "create bundle file")
 	}
 

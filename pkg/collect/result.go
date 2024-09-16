@@ -270,7 +270,14 @@ func (r CollectorResult) CloseWriter(bundlePath string, relativePath string, wri
 	return errors.Errorf("cannot close writer of type %T", writer)
 }
 
+// ArchiveSupportBundle creates an archive of the files in the bundle directory
+// Deprecated: Use better named ArchiveBundle since this method is used to archive any directory
 func (r CollectorResult) ArchiveSupportBundle(bundlePath string, outputFilename string) error {
+	return r.ArchiveBundle(bundlePath, outputFilename)
+}
+
+// ArchiveBundle creates an archive of the files in the bundle directory
+func (r CollectorResult) ArchiveBundle(bundlePath string, outputFilename string) error {
 	fileWriter, err := os.Create(outputFilename)
 	if err != nil {
 		return errors.Wrap(err, "failed to create output file")
@@ -404,5 +411,5 @@ func CollectorResultFromBundle(bundleDir string) (CollectorResult, error) {
 // Deprecated: Remove in a future version (v1.0)
 func TarSupportBundleDir(bundlePath string, input CollectorResult, outputFilename string) error {
 	// Is this used anywhere external anyway?
-	return input.ArchiveSupportBundle(bundlePath, outputFilename)
+	return input.ArchiveBundle(bundlePath, outputFilename)
 }
