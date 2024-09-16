@@ -6,7 +6,6 @@ import (
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
-	"github.com/replicatedhq/troubleshoot/pkg/common"
 	"github.com/replicatedhq/troubleshoot/pkg/k8sutil"
 	osutils "github.com/shirou/gopsutil/v3/host"
 )
@@ -71,7 +70,7 @@ func (c *CollectHostOS) RemoteCollect(progressChan chan<- interface{}) (map[stri
 		}
 	}()
 
-	createOpts := common.CollectorRunOpts{
+	createOpts := CollectorRunOpts{
 		KubernetesRestConfig: restConfig,
 		Image:                "replicated/troubleshoot:latest",
 		Namespace:            "default",
@@ -88,14 +87,17 @@ func (c *CollectHostOS) RemoteCollect(progressChan chan<- interface{}) (map[stri
 			},
 		},
 	}
+	// empty redactor for now
 	additionalRedactors := &troubleshootv1beta2.Redactor{}
-	results, err := common.CollectRemote(remoteCollector, additionalRedactors, createOpts)
+	// re-use the collect.CollectRemote function to run the remote collector
+	results, err := CollectRemote(remoteCollector, additionalRedactors, createOpts)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to run remote collector")
 	}
 
 	output := NewResult()
 
+	// save the first result we find in the node and save it
 	for _, result := range results.AllCollectedData {
 		var nodeResult map[string]string
 		if err := json.Unmarshal(result, &nodeResult); err != nil {
