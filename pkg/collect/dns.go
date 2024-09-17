@@ -22,7 +22,7 @@ import (
 
 const (
 	dnsUtilsImage       = "registry.k8s.io/e2e-test-images/agnhost:2.39"
-	nonResolvableDomain = "non-existent-domain"
+	nonResolvableDomain = "*"
 )
 
 type CollectDNS struct {

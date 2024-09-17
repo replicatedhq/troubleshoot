@@ -19,8 +19,7 @@ type CollectHostDNS struct {
 }
 
 const (
-	HostDNSPath          = "host-collectors/dns/"
-	nonResolveableDomain = "*"
+	HostDNSPath = "host-collectors/dns/"
 )
 
 func (c *CollectHostDNS) Title() string {
@@ -51,10 +50,14 @@ func (c *CollectHostDNS) Collect(progressChan chan<- interface{}) (map[string][]
 		for _, server := range dnsConfig.Servers {
 			m := &dns.Msg{}
 			m.SetQuestion(dns.Fqdn(name), dns.TypeA)
+			klog.V(2).Infof("Querying DNS server %s for name %s", server, name)
 			in, err := dns.Exchange(m, server+":"+dnsConfig.Port)
 			if err != nil {
 				klog.Errorf("failed to query DNS server %s for name %s: %v", server, name, err)
 				continue
+			}
+			if len(in.Answer) == 0 {
+				dnsResult[name] = ""
 			}
 			for _, answer := range in.Answer {
 				dnsResult[name] = answer.String()
