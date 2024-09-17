@@ -32,7 +32,7 @@ func (c *CollectHostDNS) IsExcluded() (bool, error) {
 
 func (c *CollectHostDNS) Collect(progressChan chan<- interface{}) (map[string][]byte, error) {
 
-	names := c.hostCollector.Names
+	names := c.hostCollector.Hostnames
 	if len(names) == 0 {
 		// if no names are provided, query a wilcard to detect wildcard DNS if any
 		names = append(names, "*")
@@ -45,11 +45,7 @@ func (c *CollectHostDNS) Collect(progressChan chan<- interface{}) (map[string][]
 		return nil, errors.Wrap(err, "failed to read DNS resolve config")
 	}
 
-	// from this dns config, get a name list to query
-	queryList := dnsConfig.NameList(nonResolvableDomain)
-	klog.V(2).Infof("DNS query list: %v", queryList)
-
-	// for each name in the list, query all the servers
+	// query DNS for each name
 	dnsResult := make(map[string]string)
 	for _, name := range names {
 		ip, err := resolveName(name, dnsConfig)

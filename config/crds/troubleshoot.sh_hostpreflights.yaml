@@ -1284,7 +1284,7 @@ spec:
                           type: string
                         exclude:
                           type: BoolString
-                        names:
+                        hostnames:
                           items:
                             type: string
                           type: array

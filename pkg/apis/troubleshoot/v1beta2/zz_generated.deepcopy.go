@@ -2297,8 +2297,8 @@ func (in *HostCopy) DeepCopy() *HostCopy {
 func (in *HostDNS) DeepCopyInto(out *HostDNS) {
 	*out = *in
 	in.HostCollectorMeta.DeepCopyInto(&out.HostCollectorMeta)
-	if in.Names != nil {
-		in, out := &in.Names, &out.Names
+	if in.Hostnames != nil {
+		in, out := &in.Hostnames, &out.Hostnames
 		*out = make([]string, len(*in))
 		copy(*out, *in)
 	}
