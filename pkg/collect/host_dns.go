@@ -48,9 +48,9 @@ func (c *CollectHostDNS) Collect(progressChan chan<- interface{}) (map[string][]
 	dnsResult := make(map[string]string)
 	for _, name := range queryList {
 		for _, server := range dnsConfig.Servers {
+			klog.V(2).Infof("Querying DNS server %s for name %s", server, name)
 			m := &dns.Msg{}
 			m.SetQuestion(dns.Fqdn(name), dns.TypeA)
-			klog.V(2).Infof("Querying DNS server %s for name %s", server, name)
 			in, err := dns.Exchange(m, server+":"+dnsConfig.Port)
 			if err != nil {
 				klog.Errorf("failed to query DNS server %s for name %s: %v", server, name, err)
