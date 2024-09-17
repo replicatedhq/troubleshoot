@@ -19850,6 +19850,13 @@ spec:
                       required:
                       - path
                       type: object
+                    dns:
+                      properties:
+                        collectorName:
+                          type: string
+                        exclude:
+                          type: BoolString
+                      type: object
                     filesystemPerformance:
                       description: |-
                         FilesystemPerformance benchmarks sequential write latency on a single file.

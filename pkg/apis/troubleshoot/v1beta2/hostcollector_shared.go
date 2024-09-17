@@ -218,6 +218,10 @@ type HostJournald struct {
 	Timeout           string   `json:"timeout,omitempty" yaml:"timeout,omitempty"`
 }
 
+type HostDNS struct {
+	HostCollectorMeta `json:",inline" yaml:",inline"`
+}
+
 type HostCollect struct {
 	CPU                    *CPU                        `json:"cpu,omitempty" yaml:"cpu,omitempty"`
 	Memory                 *Memory                     `json:"memory,omitempty" yaml:"memory,omitempty"`
@@ -245,6 +249,7 @@ type HostCollect struct {
 	HostKernelConfigs      *HostKernelConfigs          `json:"kernelConfigs,omitempty" yaml:"kernelConfigs,omitempty"`
 	HostJournald           *HostJournald               `json:"journald,omitempty" yaml:"journald,omitempty"`
 	HostCGroups            *HostCGroups                `json:"cgroups,omitempty" yaml:"cgroups,omitempty"`
+	HostDNS                *HostDNS                    `json:"dns,omitempty" yaml:"dns,omitempty"`
 }
 
 // GetName gets the name of the collector
