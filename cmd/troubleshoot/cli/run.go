@@ -183,7 +183,7 @@ func runTroubleshoot(v *viper.Viper, args []string) error {
 		OutputPath:                v.GetString("output"),
 		Redact:                    v.GetBool("redact"),
 		FromCLI:                   true,
-		RunHostCollectorsInPod:    false || mainBundle.Metadata.RunHostCollectorsInPod,
+		RunHostCollectorsInPod:    mainBundle.Metadata.RunHostCollectorsInPod,
 	}
 
 	nonInteractiveOutput := analysisOutput{}
