@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"reflect"
 	"sync"
 	"time"
 
@@ -349,7 +350,10 @@ func loadSpecs(ctx context.Context, args []string, client kubernetes.Interface) 
 	for _, sb := range kinds.SupportBundlesV1Beta2 {
 		sb := sb
 		mainBundle = supportbundle.ConcatSpec(mainBundle, &sb)
-		enableRunHostCollectorsInPod = enableRunHostCollectorsInPod || sb.Metadata.RunHostCollectorsInPod
+		//check if sb has metadata and if it has RunHostCollectorsInPod set to true
+		if !reflect.DeepEqual(sb.Metadata.ObjectMeta, metav1.ObjectMeta{}) && sb.Metadata.RunHostCollectorsInPod {
+			enableRunHostCollectorsInPod = sb.Metadata.RunHostCollectorsInPod
+		}
 	}
 	mainBundle.Metadata.RunHostCollectorsInPod = enableRunHostCollectorsInPod
 
