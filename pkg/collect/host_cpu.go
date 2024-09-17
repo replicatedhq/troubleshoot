@@ -7,11 +7,13 @@ import (
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/shirou/gopsutil/v3/cpu"
+	"github.com/shirou/gopsutil/v3/host"
 )
 
 type CPUInfo struct {
-	LogicalCount  int `json:"logicalCount"`
-	PhysicalCount int `json:"physicalCount"`
+	LogicalCount  int    `json:"logicalCount"`
+	PhysicalCount int    `json:"physicalCount"`
+	MachineArch   string `json:"machineArch"`
 }
 
 const HostCPUPath = `host-collectors/system/cpu.json`
@@ -43,6 +45,11 @@ func (c *CollectHostCPU) Collect(progressChan chan<- interface{}) (map[string][]
 		return nil, errors.Wrap(err, "failed to count physical cpus")
 	}
 	cpuInfo.PhysicalCount = physicalCount
+
+	cpuInfo.MachineArch, err = host.KernelArch()
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to fetch cpu architecture")
+	}
 
 	b, err := json.Marshal(cpuInfo)
 	if err != nil {
