@@ -220,6 +220,7 @@ type HostJournald struct {
 
 type HostDNS struct {
 	HostCollectorMeta `json:",inline" yaml:",inline"`
+	Names             []string `json:"names,omitempty" yaml:"names,omitempty"`
 }
 
 type HostCollect struct {

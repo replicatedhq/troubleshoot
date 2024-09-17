@@ -19856,6 +19856,10 @@ spec:
                           type: string
                         exclude:
                           type: BoolString
+                        names:
+                          items:
+                            type: string
+                          type: array
                       type: object
                     filesystemPerformance:
                       description: |-

@@ -32,6 +32,11 @@ func (c *CollectHostDNS) IsExcluded() (bool, error) {
 
 func (c *CollectHostDNS) Collect(progressChan chan<- interface{}) (map[string][]byte, error) {
 
+	names := c.hostCollector.Names
+	if len(names) == 0 {
+		// if no names are provided, query a wilcard to detect wildcard DNS if any
+		names = append(names, "*")
+	}
 	output := NewResult()
 
 	// first, read default /etc/resolv.conf file
@@ -46,23 +51,13 @@ func (c *CollectHostDNS) Collect(progressChan chan<- interface{}) (map[string][]
 
 	// for each name in the list, query all the servers
 	dnsResult := make(map[string]string)
-	for _, name := range queryList {
-		for _, server := range dnsConfig.Servers {
-			klog.V(2).Infof("Querying DNS server %s for name %s", server, name)
-			m := &dns.Msg{}
-			m.SetQuestion(dns.Fqdn(name), dns.TypeA)
-			in, err := dns.Exchange(m, server+":"+dnsConfig.Port)
-			if err != nil {
-				klog.Errorf("failed to query DNS server %s for name %s: %v", server, name, err)
-				continue
-			}
-			if len(in.Answer) == 0 {
-				dnsResult[name] = ""
-			}
-			for _, answer := range in.Answer {
-				dnsResult[name] = answer.String()
-			}
+	for _, name := range names {
+		ip, err := resolveName(name, dnsConfig)
+		if err != nil {
+			klog.V(2).Infof("Failed to resolve name %s: %v", name, err)
+			dnsResult[name] = ""
 		}
+		dnsResult[name] = ip
 	}
 
 	// convert dnsResult to a JSON string
@@ -92,4 +87,30 @@ func readResolvConf() (*dns.ClientConfig, error) {
 	}
 
 	return config, nil
+}
+
+func resolveName(name string, config *dns.ClientConfig) (string, error) {
+	// get a name list based on the config
+	queryList := config.NameList(name)
+	klog.V(2).Infof("DNS query list: %v", queryList)
+
+	// for each name in the list, query all the servers
+	// return as soon as a result is found
+	for _, n := range queryList {
+		for _, server := range config.Servers {
+			klog.V(2).Infof("Querying DNS server %s for name %s", server, n)
+			m := &dns.Msg{}
+			m.SetQuestion(dns.Fqdn(n), dns.TypeA)
+			in, err := dns.Exchange(m, server+":"+config.Port)
+			if err != nil {
+				klog.Errorf("failed to query DNS server %s for name %s: %v", server, n, err)
+				continue
+			}
+			if len(in.Answer) == 0 {
+				continue
+			}
+			return in.Answer[0].String(), nil
+		}
+	}
+	return "", nil
 }
