@@ -20,6 +20,7 @@ type CollectHostDNS struct {
 
 const (
 	HostDNSPath = "host-collectors/dns/"
+	resolvConf  = "/etc/resolv.conf"
 )
 
 func (c *CollectHostDNS) Title() string {
@@ -39,8 +40,8 @@ func (c *CollectHostDNS) Collect(progressChan chan<- interface{}) (map[string][]
 	}
 	output := NewResult()
 
-	// first, read default /etc/resolv.conf file
-	dnsConfig, err := readResolvConf()
+	// first, get DNS config from /etc/resolv.conf
+	dnsConfig, err := getDNSConfig()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to read DNS resolve config")
 	}
@@ -62,16 +63,22 @@ func (c *CollectHostDNS) Collect(progressChan chan<- interface{}) (map[string][]
 		return nil, errors.Wrap(err, "failed to marshal DNS query result to JSON")
 	}
 
-	outputFile := filepath.Join(HostDNSPath, "dns.json")
+	outputFile := filepath.Join(HostDNSPath, "results.json")
 	output.SaveResult(c.BundlePath, outputFile, bytes.NewBuffer(dnsResultJSON))
+
+	// write /etc/resolv.conf to a file
+	resolvConfData, err := getResolvConf()
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to read DNS resolve config")
+	}
+	outputFile = filepath.Join(HostDNSPath, "resolv.conf")
+	output.SaveResult(c.BundlePath, outputFile, bytes.NewBuffer(resolvConfData))
 
 	return output, nil
 }
 
-func readResolvConf() (*dns.ClientConfig, error) {
-	defaultResolvPath := "/etc/resolv.conf"
-
-	file, err := os.Open(defaultResolvPath)
+func getDNSConfig() (*dns.ClientConfig, error) {
+	file, err := os.Open(resolvConf)
 	if err != nil {
 		return nil, err
 	}
@@ -109,4 +116,12 @@ func resolveName(name string, config *dns.ClientConfig) (string, error) {
 		}
 	}
 	return "", nil
+}
+
+func getResolvConf() ([]byte, error) {
+	data, err := os.ReadFile(resolvConf)
+	if err != nil {
+		return nil, err
+	}
+	return data, nil
 }
