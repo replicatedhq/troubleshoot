@@ -66,9 +66,10 @@ type DiskUsage struct {
 
 type HostHTTP struct {
 	HostCollectorMeta `json:",inline" yaml:",inline"`
-	Get               *Get  `json:"get,omitempty" yaml:"get,omitempty"`
-	Post              *Post `json:"post,omitempty" yaml:"post,omitempty"`
-	Put               *Put  `json:"put,omitempty" yaml:"put,omitempty"`
+	Get               *Get       `json:"get,omitempty" yaml:"get,omitempty"`
+	Post              *Post      `json:"post,omitempty" yaml:"post,omitempty"`
+	Put               *Put       `json:"put,omitempty" yaml:"put,omitempty"`
+	TLS               *TLSParams `json:"tls,omitempty" yaml:"tls,omitempty"`
 }
 
 type HostCopy struct {

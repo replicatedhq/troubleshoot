@@ -174,10 +174,11 @@ type Sysctl struct {
 
 type HTTP struct {
 	CollectorMeta `json:",inline" yaml:",inline"`
-	Name          string `json:"name,omitempty" yaml:"name,omitempty"`
-	Get           *Get   `json:"get,omitempty" yaml:"get,omitempty"`
-	Post          *Post  `json:"post,omitempty" yaml:"post,omitempty"`
-	Put           *Put   `json:"put,omitempty" yaml:"put,omitempty"`
+	Name          string     `json:"name,omitempty" yaml:"name,omitempty"`
+	Get           *Get       `json:"get,omitempty" yaml:"get,omitempty"`
+	Post          *Post      `json:"post,omitempty" yaml:"post,omitempty"`
+	Put           *Put       `json:"put,omitempty" yaml:"put,omitempty"`
+	TLS           *TLSParams `json:"tls,omitempty" yaml:"tls,omitempty"`
 }
 
 type Get struct {
