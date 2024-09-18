@@ -54,7 +54,7 @@ func runHostCollectors(ctx context.Context, hostCollectors []*troubleshootv1beta
 			result, err := collector.RemoteCollect(opts.ProgressChan)
 			if err != nil {
 				// If the collector does not have a remote collector implementation, try to run it locally
-				if err == collect.ErrRemoteCollectorNotImplemented {
+				if errors.Is(err, collect.ErrRemoteCollectorNotImplemented) {
 					result, err = collector.Collect(opts.ProgressChan)
 					if err != nil {
 						span.SetStatus(codes.Error, err.Error())
