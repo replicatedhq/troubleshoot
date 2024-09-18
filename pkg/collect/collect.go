@@ -29,7 +29,7 @@ type CollectorRunOpts struct {
 	PullPolicy                string
 	LabelSelector             string
 	Timeout                   time.Duration
-	ProgressChan              chan interface{}
+	ProgressChan              chan<- interface{}
 	NamePrefix                string
 }
 

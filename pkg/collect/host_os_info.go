@@ -63,20 +63,13 @@ func (c *CollectHostOS) RemoteCollect(progressChan chan<- interface{}) (map[stri
 		return nil, errors.Wrap(err, "failed to convert kube flags to rest config")
 	}
 
-	progressCh := make(chan interface{})
-	defer close(progressCh)
-	go func() {
-		for range progressCh {
-		}
-	}()
-
 	createOpts := CollectorRunOpts{
 		KubernetesRestConfig: restConfig,
 		Image:                "replicated/troubleshoot:latest",
 		Namespace:            "default",
 		Timeout:              defaultTimeout,
 		NamePrefix:           "hostos-remote",
-		ProgressChan:         progressCh,
+		ProgressChan:         progressChan,
 	}
 
 	remoteCollector := &troubleshootv1beta2.RemoteCollector{
