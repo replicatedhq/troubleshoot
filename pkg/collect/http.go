@@ -3,6 +3,7 @@ package collect
 import (
 	"bytes"
 	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -53,15 +54,15 @@ func (c *CollectHTTP) Collect(progressChan chan<- interface{}) (CollectorResult,
 	case c.Collector.Get != nil:
 		response, err = doRequest(
 			"GET", c.Collector.Get.URL, c.Collector.Get.Headers,
-			"", c.Collector.Get.InsecureSkipVerify, c.Collector.Get.Timeout)
+			"", c.Collector.Get.InsecureSkipVerify, c.Collector.Get.Timeout, c.Collector.TLS.CACert)
 	case c.Collector.Post != nil:
 		response, err = doRequest(
 			"POST", c.Collector.Post.URL, c.Collector.Post.Headers,
-			c.Collector.Post.Body, c.Collector.Post.InsecureSkipVerify, c.Collector.Post.Timeout)
+			c.Collector.Post.Body, c.Collector.Post.InsecureSkipVerify, c.Collector.Post.Timeout, c.Collector.TLS.CACert)
 	case c.Collector.Put != nil:
 		response, err = doRequest(
 			"PUT", c.Collector.Put.URL, c.Collector.Put.Headers,
-			c.Collector.Put.Body, c.Collector.Put.InsecureSkipVerify, c.Collector.Put.Timeout)
+			c.Collector.Put.Body, c.Collector.Put.InsecureSkipVerify, c.Collector.Put.Timeout, c.Collector.TLS.CACert)
 	default:
 		return nil, errors.New("no supported http request type")
 	}
@@ -82,7 +83,7 @@ func (c *CollectHTTP) Collect(progressChan chan<- interface{}) (CollectorResult,
 	return output, nil
 }
 
-func doRequest(method, url string, headers map[string]string, body string, insecureSkipVerify bool, timeout string) (*http.Response, error) {
+func doRequest(method, url string, headers map[string]string, body string, insecureSkipVerify bool, timeout string, cacert string) (*http.Response, error) {
 	t, err := parseTimeout(timeout)
 	if err != nil {
 		return nil, err
@@ -92,11 +93,27 @@ func doRequest(method, url string, headers map[string]string, body string, insec
 		Timeout: t,
 	}
 
-	if insecureSkipVerify {
+	var tlsConfig *tls.Config
+
+	if cacert != "" {
+		certPool := x509.NewCertPool()
+
+		if !certPool.AppendCertsFromPEM([]byte(cacert)) {
+			return nil, errors.New("failed to append certificate to cert pool")
+		}
+
+		tlsConfig = &tls.Config{
+			RootCAs: certPool,
+		}
+	} else if insecureSkipVerify {
+		tlsConfig = &tls.Config{
+			InsecureSkipVerify: true,
+		}
+	}
+
+	if tlsConfig != nil {
 		httpClient.Transport = &http.Transport{
-			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: true,
-			},
+			TLSClientConfig: tlsConfig,
 		}
 	}
 
