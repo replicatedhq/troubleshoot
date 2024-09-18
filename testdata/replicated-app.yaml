@@ -1,0 +1,61 @@
+apiVersion: troubleshoot.sh/v1beta2
+kind: HostPreflight
+metadata:
+  name: replicated-app
+spec:
+  collectors:
+    - http:
+        collectorName: replicated-app
+        get:
+          url: https://replicated.app
+        tls:
+          cacert: |-
+            -----BEGIN PRIVATE KEY-----
+            MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDgGFUX3096w6S0
+            XwBU52uLdsqayH5qlrjXu87fxNeQwbX+gOLly5EfvpHQeqIeBFGYBY+UL3RaH7sQ
+            72exQDvRlWBSGMlLGLK4TXRAVNJEEDVwVyWwb2jn+vMUOkuoukn7fluXwuxSrcvh
+            kvDwtNdsy9sATUDNzC/6RTKBb3heA0lDu0xHo93YrJavhY+PXjMnjCRo1C4mCcWE
+            +pogX2qqcDycSaX5WDpmxfH0CUyqxkr8B1unvMugDlnLbkz8TilCkZCnxm6zjDGD
+            qV/D9w+n0ci/nWaCEXoWKXrjKdxRH5gdvMUIeBufZ4WILG1Puwlk8lKzEYmcYJQj
+            hPitghF9AgMBAAECggEAANtAQ4bJcf+KTLfvuSRNTyp+M4LlLI03fyui8kx7OWIG
+            aY2C89QDZMoTUCBi9lVREj74/FzudFj592ZP2VPCfyAAAI+a1tU5hK3z0WRoSJH/
+            BQjbVark1AW5IDWoUbm5+OldaSjuPysIxQhMIVV3XMxBXtvEm0U5J9Zfbq0aSgPl
+            DgJHrxirW+7D/uayCCMj9zP78RMzgtm3s2M7KFn7d5DNPXX4iR6L2mHJ1en+1+Xm
+            dE9FuExT3EL8Ltmw7YmxeL+w62VYv4QvEbrcG627XPjoV7UzKUkjgFaAKoz2M6sw
+            glZBlfWtfAzQLM+IndWIVnbejK8tK2OwJNoMc3lzbwKBgQD3sIFJi0q4/dayY24l
+            ZMkRLzof8oQ0++1AnH6Nqyke4svag740p1w9e+yzYspXN5lr71awBJHUxWfce8/8
+            QPwSv/3UpbECT+zXbeZ8RpHZk2s3Up5twIWPrtK5/NyDsY1tzS6vjxIsJSbYRQVm
+            re9p6HCOWYcdZeSmbvCC46d+wwKBgQDnnSqQ+BN7c6Nq+uSCT3XqSB/Rc0pwc2Ii
+            zZ02Wtx2XFTaIKxtaCCBgospOYrygfugdyayprY5bUFYV1YcnaP3aUNWPtDhguVY
+            azcmyxOdqF0EWkPtjvesNeVQXYC18QVo4OSBbQ/yfIi1jH2YdYK2Rc/45sanT8cC
+            cR3bRV+qvwKBgGafIaHn7UiiGx8D5THnBQtypsFvyGjvbAgWDrUBkmLykoVxig/k
+            u2nZ+2MDblQefBllK2R4MDeYpoSKY8ze29Gk7DT7hVAw7y7+oL0iu/EKjCR6vZs5
+            Zdz3EOXwJykFGlTA6zPfsibKKcL3Ldqx+/zESkYgP8PlYIu4cTu5uL7jAoGAcbom
+            kJB/YHrjn0AavDGwQJ2xofLudlDxuw0jSPFMl4G22HR6ti4O6AjltBRhObrBh4V6
+            JvbdO01+bJZV3i85t96kBdFKV7EiVEwxBIdq1ls5cU2xVRCCZLkCJHgFH1F9yoXD
+            LhoTXonvxtV5RkdNK5sUB6+pk7YEjhplAqoJ05kCgYEAri5I5UF5dt9hHVpWAEZU
+            bspdDwYZtumABnqVk3GaU3er1JfP3IOboUY5crMMMB6m1uX0DGHH6PKVBerF3jWZ
+            pHocLE5yrVYZlCP4kj6x19qMGdV49Vh/+tPgR5GyRJkgbxEV9lTwB8Eo+4BbobIR
+            +5uSFuBABnTgvc3ztOfQjy0=
+            -----END PRIVATE KEY-----
+            -----BEGIN CERTIFICATE-----
+            MIIDfTCCAmWgAwIBAgIUStJWsJdkt8D/SmiFUBLkAFqht4owDQYJKoZIhvcNAQEL
+            BQAwTjELMAkGA1UEBhMCVVMxDjAMBgNVBAgMBVN0YXRlMQ0wCwYDVQQHDARDaXR5
+            MRMwEQYDVQQKDApSZXBsaWNhdGVkMQswCQYDVQQLDAJJVDAeFw0yNDA5MTcxNDQ0
+            MzVaFw0yNDA5MjQxNDQ0MzVaME4xCzAJBgNVBAYTAlVTMQ4wDAYDVQQIDAVTdGF0
+            ZTENMAsGA1UEBwwEQ2l0eTETMBEGA1UECgwKUmVwbGljYXRlZDELMAkGA1UECwwC
+            SVQwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDgGFUX3096w6S0XwBU
+            52uLdsqayH5qlrjXu87fxNeQwbX+gOLly5EfvpHQeqIeBFGYBY+UL3RaH7sQ72ex
+            QDvRlWBSGMlLGLK4TXRAVNJEEDVwVyWwb2jn+vMUOkuoukn7fluXwuxSrcvhkvDw
+            tNdsy9sATUDNzC/6RTKBb3heA0lDu0xHo93YrJavhY+PXjMnjCRo1C4mCcWE+pog
+            X2qqcDycSaX5WDpmxfH0CUyqxkr8B1unvMugDlnLbkz8TilCkZCnxm6zjDGDqV/D
+            9w+n0ci/nWaCEXoWKXrjKdxRH5gdvMUIeBufZ4WILG1Puwlk8lKzEYmcYJQjhPit
+            ghF9AgMBAAGjUzBRMB0GA1UdDgQWBBQot0LK1Vjf4S16SVwwNB2KFWeGgTAfBgNV
+            HSMEGDAWgBQot0LK1Vjf4S16SVwwNB2KFWeGgTAPBgNVHRMBAf8EBTADAQH/MA0G
+            CSqGSIb3DQEBCwUAA4IBAQAMAst1v+nV3P/FLg0rniCJyJHsaTi8W8HipBR6PKT2
+            iXA0w8vFP5vSSa3PidFx0wGzIr/QivODBg43gcdatyTqfMDm7RedPjI0mRBbV51o
+            6Bs/xCTglr6Ij74LF/rGHibzmF8VuA8d01g6sZ9hggE3ZOc2MGak8r5qd6MVGu2E
+            KJKk3Z4pjoacAG2pc4r+d9gD0f+t0n4teyhZC22dSk6b3vob4Q8mSoBp3yNCP84W
+            4dha7zuPW6YudGzw1unIHssa4iZF3O9liRLtVCrKkTze4KVQujAfoIl3ad/JrsLp
+            IS1lVuEZUAKJLQeNUwhuNF2+I09OE2tKeODnsIitfAsG
+            -----END CERTIFICATE-----
