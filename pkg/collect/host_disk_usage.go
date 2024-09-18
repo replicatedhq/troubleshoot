@@ -88,9 +88,5 @@ func traverseFiletreeDirExists(filename string) (string, error) {
 }
 
 func (c *CollectHostDiskUsage) RemoteCollect(progressChan chan<- interface{}) (map[string][]byte, error) {
-	return nil, errors.New("not implemented")
-}
-
-func (c *CollectHostDiskUsage) HasRemoted() bool {
-	return false
+	return nil, ErrRemoteCollectorNotImplemented
 }

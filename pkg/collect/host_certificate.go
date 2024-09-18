@@ -7,8 +7,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/pkg/errors"
-
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 )
 
@@ -81,9 +79,5 @@ func isEncryptedKey(filename string) (bool, error) {
 }
 
 func (c *CollectHostCertificate) RemoteCollect(progressChan chan<- interface{}) (map[string][]byte, error) {
-	return nil, errors.New("not implemented")
-}
-
-func (c *CollectHostCertificate) HasRemoted() bool {
-	return false
+	return nil, ErrRemoteCollectorNotImplemented
 }

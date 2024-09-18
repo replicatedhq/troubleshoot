@@ -159,9 +159,5 @@ func getTimeout(timeout string) (time.Duration, error) {
 }
 
 func (c *CollectHostJournald) RemoteCollect(progressChan chan<- interface{}) (map[string][]byte, error) {
-	return nil, errors.New("not implemented")
-}
-
-func (c *CollectHostJournald) HasRemoted() bool {
-	return false
+	return nil, ErrRemoteCollectorNotImplemented
 }

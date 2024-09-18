@@ -120,9 +120,5 @@ func getLocalIPv4() (net.IP, error) {
 }
 
 func (c *CollectHostTCPPortStatus) RemoteCollect(progressChan chan<- interface{}) (map[string][]byte, error) {
-	return nil, errors.New("not implemented")
-}
-
-func (c *CollectHostTCPPortStatus) HasRemoted() bool {
-	return false
+	return nil, ErrRemoteCollectorNotImplemented
 }

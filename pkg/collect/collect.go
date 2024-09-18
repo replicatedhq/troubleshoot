@@ -15,8 +15,9 @@ import (
 var (
 	// ErrCollectorNotFound is returned when an undefined host collector is
 	// specified by the user.
-	ErrHostCollectorNotFound        = errors.New("unrecognized host collector")
-	ErrInsufficientPermissionsToRun = errors.New("insufficient permissions to run all collectors")
+	ErrHostCollectorNotFound         = errors.New("unrecognized host collector")
+	ErrInsufficientPermissionsToRun  = errors.New("insufficient permissions to run all collectors")
+	ErrRemoteCollectorNotImplemented = errors.New("unimplemented remote collector")
 )
 
 type CollectorRunOpts struct {

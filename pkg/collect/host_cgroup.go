@@ -11,7 +11,6 @@ import (
 	"io"
 	"strings"
 
-	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"k8s.io/klog/v2"
 )
@@ -100,9 +99,5 @@ func parseV1ControllerNames(r io.Reader) ([]string, error) {
 }
 
 func (c *CollectHostCGroups) RemoteCollect(progressChan chan<- interface{}) (map[string][]byte, error) {
-	return nil, errors.New("not implemented")
-}
-
-func (c *CollectHostCGroups) HasRemoted() bool {
-	return false
+	return nil, ErrRemoteCollectorNotImplemented
 }

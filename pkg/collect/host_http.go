@@ -67,9 +67,5 @@ func (c *CollectHostHTTP) Collect(progressChan chan<- interface{}) (map[string][
 }
 
 func (c *CollectHostHTTP) RemoteCollect(progressChan chan<- interface{}) (map[string][]byte, error) {
-	return nil, errors.New("not implemented")
-}
-
-func (c *CollectHostHTTP) HasRemoted() bool {
-	return false
+	return nil, ErrRemoteCollectorNotImplemented
 }

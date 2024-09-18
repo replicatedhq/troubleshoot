@@ -247,9 +247,5 @@ func (c *CollectHostRun) attemptToConvertCmdToAbsPath() string {
 }
 
 func (c *CollectHostRun) RemoteCollect(progressChan chan<- interface{}) (map[string][]byte, error) {
-	return nil, errors.New("not implemented")
-}
-
-func (c *CollectHostRun) HasRemoted() bool {
-	return false
+	return nil, ErrRemoteCollectorNotImplemented
 }

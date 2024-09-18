@@ -78,9 +78,5 @@ func (c *CollectHostTCPLoadBalancer) Collect(progressChan chan<- interface{}) (m
 }
 
 func (c *CollectHostTCPLoadBalancer) RemoteCollect(progressChan chan<- interface{}) (map[string][]byte, error) {
-	return nil, errors.New("not implemented")
-}
-
-func (c *CollectHostTCPLoadBalancer) HasRemoted() bool {
-	return false
+	return nil, ErrRemoteCollectorNotImplemented
 }

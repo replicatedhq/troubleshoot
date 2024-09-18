@@ -77,9 +77,5 @@ func attemptConnect(address string, timeout time.Duration) NetworkStatus {
 }
 
 func (c *CollectHostTCPConnect) RemoteCollect(progressChan chan<- interface{}) (map[string][]byte, error) {
-	return nil, errors.New("not implemented")
-}
-
-func (c *CollectHostTCPConnect) HasRemoted() bool {
-	return false
+	return nil, ErrRemoteCollectorNotImplemented
 }

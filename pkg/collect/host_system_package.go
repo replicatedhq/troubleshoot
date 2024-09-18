@@ -208,9 +208,5 @@ func matchMajorVersion(version string, major string) bool {
 }
 
 func (c *CollectHostSystemPackages) RemoteCollect(progressChan chan<- interface{}) (map[string][]byte, error) {
-	return nil, errors.New("not implemented")
-}
-
-func (c *CollectHostSystemPackages) HasRemoted() bool {
-	return false
+	return nil, ErrRemoteCollectorNotImplemented
 }

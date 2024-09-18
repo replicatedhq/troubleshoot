@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"k8s.io/klog/v2"
 )
@@ -140,9 +139,5 @@ func (c *CollectHostCopy) copyDir(src, dst string, result CollectorResult) error
 }
 
 func (c *CollectHostCopy) RemoteCollect(progressChan chan<- interface{}) (map[string][]byte, error) {
-	return nil, errors.New("not implemented")
-}
-
-func (c *CollectHostCopy) HasRemoted() bool {
-	return false
+	return nil, ErrRemoteCollectorNotImplemented
 }

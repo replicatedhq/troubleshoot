@@ -60,9 +60,5 @@ func (c *CollectHostIPV4Interfaces) Collect(progressChan chan<- interface{}) (ma
 }
 
 func (c *CollectHostIPV4Interfaces) RemoteCollect(progressChan chan<- interface{}) (map[string][]byte, error) {
-	return nil, errors.New("not implemented")
-}
-
-func (c *CollectHostIPV4Interfaces) HasRemoted() bool {
-	return false
+	return nil, ErrRemoteCollectorNotImplemented
 }

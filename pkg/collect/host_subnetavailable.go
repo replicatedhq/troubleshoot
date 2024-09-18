@@ -278,9 +278,5 @@ func netOverlaps(n1, n2 *net.IPNet) bool {
 }
 
 func (c *CollectHostSubnetAvailable) RemoteCollect(progressChan chan<- interface{}) (map[string][]byte, error) {
-	return nil, errors.New("not implemented")
-}
-
-func (c *CollectHostSubnetAvailable) HasRemoted() bool {
-	return false
+	return nil, ErrRemoteCollectorNotImplemented
 }

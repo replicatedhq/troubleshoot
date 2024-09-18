@@ -78,9 +78,5 @@ func (c *CollectHostUDPPortStatus) Collect(progressChan chan<- interface{}) (map
 }
 
 func (c *CollectHostUDPPortStatus) RemoteCollect(progressChan chan<- interface{}) (map[string][]byte, error) {
-	return nil, errors.New("not implemented")
-}
-
-func (c *CollectHostUDPPortStatus) HasRemoted() bool {
-	return false
+	return nil, ErrRemoteCollectorNotImplemented
 }

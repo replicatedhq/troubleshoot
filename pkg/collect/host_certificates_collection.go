@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 )
 
@@ -107,9 +106,5 @@ func HostCertsParser(certPath string) HostCertificatesCollection {
 }
 
 func (c *CollectHostCertificatesCollection) RemoteCollect(progressChan chan<- interface{}) (map[string][]byte, error) {
-	return nil, errors.New("not implemented")
-}
-
-func (c *CollectHostCertificatesCollection) HasRemoted() bool {
-	return false
+	return nil, ErrRemoteCollectorNotImplemented
 }
