@@ -19,9 +19,6 @@ type HostOSInfo struct {
 
 const HostOSInfoPath = `host-collectors/system/hostos_info.json`
 
-type NodeInfo struct {
-	HostOSInfo HostOSInfo
-}
 type CollectHostOS struct {
 	hostCollector *troubleshootv1beta2.HostOS
 	BundlePath    string
