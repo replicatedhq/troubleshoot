@@ -31,7 +31,30 @@ func (a *AnalyzeHostOS) Analyze(
 	result := AnalyzeResult{}
 	result.Title = a.Title()
 
-	contents, err := getCollectedFileContents(collect.HostOSInfoPath)
+	//check if the host os info directory exists
+	contents, err := getCollectedFileContents(collect.HostOSNodes)
+	if err == nil {
+		var nodes collect.HostOSInfoNodes
+		if err := json.Unmarshal(contents, &nodes); err != nil {
+			return []*AnalyzeResult{&result}, errors.Wrap(err, "failed to unmarshal host os info nodes")
+		}
+
+		for _, node := range nodes.Nodes {
+			contents, err := getCollectedFileContents(collect.HostOSInfoDir + "/" + node + "/" + collect.HostOSInfoJSON)
+			if err != nil {
+				return []*AnalyzeResult{&result}, errors.Wrap(err, "failed to get collected file")
+			}
+
+			var osInfo collect.HostOSInfo
+			if err := json.Unmarshal(contents, &osInfo); err != nil {
+				return []*AnalyzeResult{&result}, errors.Wrap(err, "failed to unmarshal host os info")
+			}
+
+			return analyzeOSVersionResult(osInfo, a.hostAnalyzer.Outcomes, a.Title())
+		}
+	}
+
+	contents, err = getCollectedFileContents(collect.HostOSInfoPath)
 	if err != nil {
 		return []*AnalyzeResult{&result}, errors.Wrap(err, "failed to get collected file")
 	}
