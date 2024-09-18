@@ -69,10 +69,11 @@ func (c *CollectHostDNS) Collect(progressChan chan<- interface{}) (map[string][]
 	// write /etc/resolv.conf to a file
 	resolvConfData, err := getResolvConf()
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to read DNS resolve config")
+		klog.V(2).Infof("failed to read DNS resolve config: %v", err)
+	} else {
+		outputFile = filepath.Join(HostDNSPath, "resolv.conf")
+		output.SaveResult(c.BundlePath, outputFile, bytes.NewBuffer(resolvConfData))
 	}
-	outputFile = filepath.Join(HostDNSPath, "resolv.conf")
-	output.SaveResult(c.BundlePath, outputFile, bytes.NewBuffer(resolvConfData))
 
 	return output, nil
 }
