@@ -3336,6 +3336,38 @@
                         "type": "string"
                       }
                     }
+                  },
+                  "tls": {
+                    "type": "object",
+                    "properties": {
+                      "cacert": {
+                        "type": "string"
+                      },
+                      "clientCert": {
+                        "type": "string"
+                      },
+                      "clientKey": {
+                        "type": "string"
+                      },
+                      "secret": {
+                        "type": "object",
+                        "required": [
+                          "name",
+                          "namespace"
+                        ],
+                        "properties": {
+                          "name": {
+                            "type": "string"
+                          },
+                          "namespace": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "skipVerify": {
+                        "type": "boolean"
+                      }
+                    }
                   }
                 }
               },
@@ -19165,6 +19197,38 @@
                       },
                       "url": {
                         "type": "string"
+                      }
+                    }
+                  },
+                  "tls": {
+                    "type": "object",
+                    "properties": {
+                      "cacert": {
+                        "type": "string"
+                      },
+                      "clientCert": {
+                        "type": "string"
+                      },
+                      "clientKey": {
+                        "type": "string"
+                      },
+                      "secret": {
+                        "type": "object",
+                        "required": [
+                          "name",
+                          "namespace"
+                        ],
+                        "properties": {
+                          "name": {
+                            "type": "string"
+                          },
+                          "namespace": {
+                            "type": "string"
+                          }
+                        }
+                      },
+                      "skipVerify": {
+                        "type": "boolean"
                       }
                     }
                   }
