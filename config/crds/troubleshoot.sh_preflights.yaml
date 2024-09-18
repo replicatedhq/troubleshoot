@@ -2189,6 +2189,27 @@ spec:
                           required:
                           - url
                           type: object
+                        tls:
+                          properties:
+                            cacert:
+                              type: string
+                            clientCert:
+                              type: string
+                            clientKey:
+                              type: string
+                            secret:
+                              properties:
+                                name:
+                                  type: string
+                                namespace:
+                                  type: string
+                              required:
+                              - name
+                              - namespace
+                              type: object
+                            skipVerify:
+                              type: boolean
+                          type: object
                       type: object
                     logs:
                       properties:
