@@ -18,6 +18,18 @@ type CollectHostDNS struct {
 	BundlePath    string
 }
 
+type DNSResult struct {
+	Query DNSQuery `json:"query"`
+}
+
+type DNSQuery map[string][]DNSEntry
+
+type DNSEntry struct {
+	Server string `json:"server"`
+	Name   string `json:"name"`
+	Answer string `json:"answer"`
+}
+
 const (
 	HostDNSPath = "host-collectors/dns/"
 	resolvConf  = "/etc/resolv.conf"
@@ -47,15 +59,15 @@ func (c *CollectHostDNS) Collect(progressChan chan<- interface{}) (map[string][]
 	}
 
 	// query DNS for each name
-	dnsResult := make(map[string]string)
+	dnsEntries := make(map[string][]DNSEntry)
 	for _, name := range names {
-		ip, err := resolveName(name, dnsConfig)
+		entries, err := resolveName(name, dnsConfig)
 		if err != nil {
 			klog.V(2).Infof("Failed to resolve name %s: %v", name, err)
-			dnsResult[name] = ""
 		}
-		dnsResult[name] = ip
+		dnsEntries[name] = entries
 	}
+	dnsResult := DNSResult{Query: dnsEntries}
 
 	// convert dnsResult to a JSON string
 	dnsResultJSON, err := json.MarshalIndent(dnsResult, "", "  ")
@@ -93,30 +105,39 @@ func getDNSConfig() (*dns.ClientConfig, error) {
 	return config, nil
 }
 
-func resolveName(name string, config *dns.ClientConfig) (string, error) {
+func resolveName(name string, config *dns.ClientConfig) ([]DNSEntry, error) {
+
+	results := []DNSEntry{}
+
 	// get a name list based on the config
 	queryList := config.NameList(name)
 	klog.V(2).Infof("DNS query list: %v", queryList)
 
 	// for each name in the list, query all the servers
-	// return as soon as a result is found
-	for _, n := range queryList {
+	// we will query all search domains for each name
+	for _, query := range queryList {
 		for _, server := range config.Servers {
-			klog.V(2).Infof("Querying DNS server %s for name %s", server, n)
+			klog.V(2).Infof("Querying DNS server %s for name %s", server, query)
 			m := &dns.Msg{}
-			m.SetQuestion(dns.Fqdn(n), dns.TypeA)
+			m.SetQuestion(dns.Fqdn(query), dns.TypeA)
 			in, err := dns.Exchange(m, server+":"+config.Port)
+
+			entry := DNSEntry{Name: query, Server: server, Answer: ""}
+
 			if err != nil {
-				klog.Errorf("failed to query DNS server %s for name %s: %v", server, n, err)
+				klog.Errorf("failed to query DNS server %s for name %s: %v", server, query, err)
+				results = append(results, entry)
 				continue
 			}
 			if len(in.Answer) == 0 {
+				results = append(results, entry)
 				continue
 			}
-			return in.Answer[0].String(), nil
+			entry.Answer = in.Answer[0].String()
+			results = append(results, entry)
 		}
 	}
-	return "", nil
+	return results, nil
 }
 
 func getResolvConf() ([]byte, error) {
