@@ -32,15 +32,15 @@ func (c *CollectHostHTTP) Collect(progressChan chan<- interface{}) (map[string][
 	case httpCollector.Get != nil:
 		response, err = doRequest(
 			"GET", httpCollector.Get.URL, httpCollector.Get.Headers,
-			"", httpCollector.Get.InsecureSkipVerify, httpCollector.Get.Timeout)
+			"", httpCollector.Get.InsecureSkipVerify, httpCollector.Get.Timeout, httpCollector.TLS.CACert)
 	case httpCollector.Post != nil:
 		response, err = doRequest(
 			"POST", httpCollector.Post.URL, httpCollector.Post.Headers,
-			httpCollector.Post.Body, httpCollector.Post.InsecureSkipVerify, httpCollector.Post.Timeout)
+			httpCollector.Post.Body, httpCollector.Post.InsecureSkipVerify, httpCollector.Post.Timeout, httpCollector.TLS.CACert)
 	case httpCollector.Put != nil:
 		response, err = doRequest(
 			"PUT", httpCollector.Put.URL, httpCollector.Put.Headers,
-			httpCollector.Put.Body, httpCollector.Put.InsecureSkipVerify, httpCollector.Put.Timeout)
+			httpCollector.Put.Body, httpCollector.Put.InsecureSkipVerify, httpCollector.Put.Timeout, httpCollector.TLS.CACert)
 	default:
 		return nil, errors.New("no supported http request type")
 	}
