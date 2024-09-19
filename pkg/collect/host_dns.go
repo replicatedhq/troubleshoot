@@ -10,6 +10,7 @@ import (
 
 	"github.com/miekg/dns"
 	"github.com/pkg/errors"
+	"github.com/replicatedhq/troubleshoot/internal/util"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"k8s.io/klog/v2"
 )
@@ -20,15 +21,9 @@ type CollectHostDNS struct {
 }
 
 type DNSResult struct {
-	Query DNSQuery `json:"query"`
+	Query              DNSQuery `json:"query"`
+	ResolvedFromSearch string   `json:"resolvedFromSearch"`
 }
-
-type DNSSummary struct {
-	Resolved ResolvedSearches `json:"resolved"`
-}
-
-// ResolvedSearches is a map of name to search domains that resolved the name
-type ResolvedSearches map[string]string
 
 type DNSQuery map[string][]DNSEntry
 
@@ -57,10 +52,8 @@ func (c *CollectHostDNS) Collect(progressChan chan<- interface{}) (map[string][]
 
 	names := c.hostCollector.Hostnames
 	if len(names) == 0 {
-		// if no names are provided, query a wilcard to detect wildcard DNS if any
-		names = append(names, "*")
+		return nil, errors.New("hostnames is required")
 	}
-	output := NewResult()
 
 	// first, get DNS config from /etc/resolv.conf
 	dnsConfig, err := getDNSConfig()
@@ -70,7 +63,8 @@ func (c *CollectHostDNS) Collect(progressChan chan<- interface{}) (map[string][]
 
 	// query DNS for each name
 	dnsEntries := make(map[string][]DNSEntry)
-	dnsSummary := &DNSSummary{Resolved: make(ResolvedSearches)}
+	dnsResult := DNSResult{Query: dnsEntries}
+	allResolvedSearches := []string{}
 
 	for _, name := range names {
 		entries, resolvedSearches, err := resolveName(name, dnsConfig)
@@ -78,9 +72,11 @@ func (c *CollectHostDNS) Collect(progressChan chan<- interface{}) (map[string][]
 			klog.V(2).Infof("Failed to resolve name %s: %v", name, err)
 		}
 		dnsEntries[name] = entries
-		dnsSummary.Resolved[name] = resolvedSearches
+		allResolvedSearches = append(allResolvedSearches, resolvedSearches...)
 	}
-	dnsResult := DNSResult{Query: dnsEntries}
+
+	// deduplicate resolved searches
+	dnsResult.ResolvedFromSearch = strings.Join(util.Dedup(allResolvedSearches), ", ")
 
 	// convert dnsResult to a JSON string
 	dnsResultJSON, err := json.MarshalIndent(dnsResult, "", "  ")
@@ -88,16 +84,9 @@ func (c *CollectHostDNS) Collect(progressChan chan<- interface{}) (map[string][]
 		return nil, errors.Wrap(err, "failed to marshal DNS query result to JSON")
 	}
 
+	output := NewResult()
 	outputFile := c.getOutputFilePath("result.json")
 	output.SaveResult(c.BundlePath, outputFile, bytes.NewBuffer(dnsResultJSON))
-
-	// convert dnsSummary to a JSON string
-	dnsSummaryJSON, err := json.MarshalIndent(dnsSummary, "", "  ")
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to marshal DNS summary to JSON")
-	}
-	outputFile = c.getOutputFilePath("summary.json")
-	output.SaveResult(c.BundlePath, outputFile, bytes.NewBuffer(dnsSummaryJSON))
 
 	// write /etc/resolv.conf to a file
 	resolvConfData, err := getResolvConf()
@@ -132,7 +121,7 @@ func getDNSConfig() (*dns.ClientConfig, error) {
 	return config, nil
 }
 
-func resolveName(name string, config *dns.ClientConfig) ([]DNSEntry, string, error) {
+func resolveName(name string, config *dns.ClientConfig) ([]DNSEntry, []string, error) {
 
 	results := []DNSEntry{}
 	resolvedSearches := []string{}
@@ -175,7 +164,7 @@ func resolveName(name string, config *dns.ClientConfig) ([]DNSEntry, string, err
 			results = append(results, entry)
 		}
 	}
-	return results, strings.Join(resolvedSearches, ","), nil
+	return results, resolvedSearches, nil
 }
 
 func getResolvConf() ([]byte, error) {
