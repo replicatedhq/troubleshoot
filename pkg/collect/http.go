@@ -5,8 +5,10 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
+	"net/http/httputil"
 	"path/filepath"
 	"strings"
 	"time"
@@ -89,10 +91,7 @@ func doRequest(method, url string, headers map[string]string, body string, insec
 		return nil, err
 	}
 
-	httpClient := &http.Client{
-		Timeout: t,
-	}
-
+	var httpClient *http.Client
 	var tlsConfig *tls.Config
 
 	if cacert != "" {
@@ -105,15 +104,39 @@ func doRequest(method, url string, headers map[string]string, body string, insec
 		tlsConfig = &tls.Config{
 			RootCAs: certPool,
 		}
+
+		fmt.Printf("Using tlsConfig cert: %v", tlsConfig)
+
+		httpClient = &http.Client{
+			Timeout: t,
+			Transport: &LoggingTransport{
+				Transport: &http.Transport{
+					TLSClientConfig: tlsConfig,
+				},
+			},
+		}
+
 	} else if insecureSkipVerify {
+
 		tlsConfig = &tls.Config{
 			InsecureSkipVerify: true,
 		}
-	}
 
-	if tlsConfig != nil {
-		httpClient.Transport = &http.Transport{
-			TLSClientConfig: tlsConfig,
+		httpClient = &http.Client{
+			Timeout: t,
+			Transport: &LoggingTransport{
+				Transport: &http.Transport{
+					TLSClientConfig: tlsConfig,
+				},
+			},
+		}
+
+	} else {
+		httpClient = &http.Client{
+			Timeout: t,
+			Transport: &LoggingTransport{
+				Transport: &http.Transport{},
+			},
 		}
 	}
 
@@ -127,6 +150,36 @@ func doRequest(method, url string, headers map[string]string, body string, insec
 	}
 
 	return httpClient.Do(req)
+}
+
+type LoggingTransport struct {
+	Transport http.RoundTripper
+}
+
+func (t *LoggingTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	// Log the request
+	dumpReq, err := httputil.DumpRequestOut(req, true)
+	if err != nil {
+		klog.V(2).Infof("Failed to dump request: %v", err)
+	} else {
+		klog.V(2).Infof("Request: %s", dumpReq)
+	}
+
+	resp, err := t.Transport.RoundTrip(req)
+
+	// Log the response
+	if err != nil {
+		klog.V(2).Infof("Request failed: %v", err)
+	} else {
+		dumpResp, err := httputil.DumpResponse(resp, true)
+		if err != nil {
+			klog.V(2).Infof("Failed to dump response: %v", err)
+		} else {
+			klog.V(2).Infof("Response: %s", dumpResp)
+		}
+	}
+
+	return resp, err
 }
 
 func responseToOutput(response *http.Response, err error) ([]byte, error) {
