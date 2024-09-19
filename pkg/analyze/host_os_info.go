@@ -27,7 +27,7 @@ func (a *AnalyzeHostOS) IsExcluded() (bool, error) {
 func (a *AnalyzeHostOS) Analyze(
 	getCollectedFileContents func(string) ([]byte, error), findFiles getChildCollectedFileContents,
 ) ([]*AnalyzeResult, error) {
-
+	var results []*AnalyzeResult
 	result := AnalyzeResult{}
 	result.Title = a.Title()
 
@@ -49,9 +49,13 @@ func (a *AnalyzeHostOS) Analyze(
 			if err := json.Unmarshal(contents, &osInfo); err != nil {
 				return []*AnalyzeResult{&result}, errors.Wrap(err, "failed to unmarshal host os info")
 			}
-
-			return analyzeOSVersionResult(osInfo, a.hostAnalyzer.Outcomes, a.Title())
+			analyzeOSVersionResult, err := analyzeOSVersionResult(osInfo, a.hostAnalyzer.Outcomes, a.Title())
+			if err != nil {
+				return []*AnalyzeResult{&result}, errors.Wrap(err, "failed to analyze os version result")
+			}
+			results = append(results, analyzeOSVersionResult...)
 		}
+		return results, nil
 	}
 
 	contents, err = getCollectedFileContents(collect.HostOSInfoPath)
