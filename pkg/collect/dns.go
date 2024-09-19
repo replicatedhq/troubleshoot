@@ -22,7 +22,7 @@ import (
 
 const (
 	dnsUtilsImage       = "registry.k8s.io/e2e-test-images/agnhost:2.39"
-	nonResolvableDomain = "non-existent-domain"
+	nonResolvableDomain = "*"
 )
 
 type CollectDNS struct {
@@ -166,7 +166,7 @@ func troubleshootDNSFromPod(client kubernetes.Interface, ctx context.Context, no
 		echo "=== dig kubernetes ==="
 		dig +search +short kubernetes
 		echo "=== dig non-existent-domain ==="
-		dig +short %s
+		dig +search +short %s
 		exit 0
 	`, nonResolvableDomain)}
 
