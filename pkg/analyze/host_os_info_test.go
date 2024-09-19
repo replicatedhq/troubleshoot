@@ -371,3 +371,102 @@ func TestAnalyzeHostOS(t *testing.T) {
 		})
 	}
 }
+
+func TestAnalyzeOSVersionResult(t *testing.T) {
+	tests := []struct {
+		name         string
+		outcomes     []*troubleshootv1beta2.Outcome
+		nodeOSInfo   []NodeOSInfo
+		expectResult []*AnalyzeResult
+	}{
+		{
+			name: "pass if ubuntu >= 0.1.2",
+			nodeOSInfo: []NodeOSInfo{
+				{
+					NodeName: "node1",
+					HostOSInfo: collect.HostOSInfo{
+						Name:            "myhost",
+						KernelVersion:   "5.4.0-1034-gcp",
+						PlatformVersion: "00.1.2",
+						Platform:        "ubuntu",
+					},
+				},
+			},
+			outcomes: []*troubleshootv1beta2.Outcome{
+				{
+					Pass: &troubleshootv1beta2.SingleOutcome{
+						When:    "ubuntu >= 00.1.2",
+						Message: "supported distribution matches ubuntu >= 00.1.2",
+					},
+				},
+				{
+					Fail: &troubleshootv1beta2.SingleOutcome{
+						Message: "unsupported distribution",
+					},
+				},
+			},
+			expectResult: []*AnalyzeResult{
+				{
+					Title:   "Host OS Info - Node node1",
+					IsPass:  true,
+					Message: "supported distribution matches ubuntu >= 00.1.2",
+				},
+			},
+		},
+		{
+			name: "fail if ubuntu <= 11.04",
+			nodeOSInfo: []NodeOSInfo{
+				{
+					NodeName: "node1",
+					HostOSInfo: collect.HostOSInfo{
+						Name:            "myhost",
+						KernelVersion:   "5.4.0-1034-gcp",
+						PlatformVersion: "11.04",
+						Platform:        "ubuntu",
+					},
+				},
+				{
+					NodeName: "node2",
+					HostOSInfo: collect.HostOSInfo{
+						Name:            "myhost",
+						KernelVersion:   "5.4.0-1034-gcp",
+						PlatformVersion: "11.04",
+						Platform:        "ubuntu",
+					},
+				},
+			},
+			outcomes: []*troubleshootv1beta2.Outcome{
+				{
+					Fail: &troubleshootv1beta2.SingleOutcome{
+						When:    "ubuntu <= 11.04",
+						Message: "unsupported ubuntu version 11.04",
+					},
+				},
+				{
+					Pass: &troubleshootv1beta2.SingleOutcome{
+						Message: "supported distribution",
+					},
+				},
+			},
+			expectResult: []*AnalyzeResult{
+				{
+					Title:   "Host OS Info - Node node1",
+					IsFail:  true,
+					Message: "unsupported ubuntu version 11.04",
+				},
+				{
+					Title:   "Host OS Info - Node node2",
+					IsFail:  true,
+					Message: "unsupported ubuntu version 11.04",
+				},
+			},
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			result, err := analyzeOSVersionResult(test.nodeOSInfo, test.outcomes, "Host OS Info")
+			require.NoError(t, err)
+			assert.Equal(t, test.expectResult, result)
+		})
+	}
+}
