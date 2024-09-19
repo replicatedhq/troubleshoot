@@ -19860,6 +19860,8 @@ spec:
                           items:
                             type: string
                           type: array
+                      required:
+                      - hostnames
                       type: object
                     filesystemPerformance:
                       description: |-

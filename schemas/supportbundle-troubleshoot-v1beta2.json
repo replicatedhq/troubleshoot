@@ -18988,6 +18988,9 @@
               },
               "dns": {
                 "type": "object",
+                "required": [
+                  "hostnames"
+                ],
                 "properties": {
                   "collectorName": {
                     "type": "string"
