@@ -135,33 +135,13 @@ func resolveName(name string, config *dns.ClientConfig) ([]DNSEntry, []string, e
 	for _, query := range queryList {
 		for _, server := range config.Servers {
 			klog.V(2).Infof("Querying DNS server %s for name %s", server, query)
-			m := &dns.Msg{}
-			m.SetQuestion(dns.Fqdn(query), dns.TypeA)
-			in, err := dns.Exchange(m, server+":"+config.Port)
 
-			entry := DNSEntry{Name: query, Server: server, Answer: ""}
+			entry := queryDNS(name, query, server+":"+config.Port)
+			results = append(results, entry)
 
-			// e.g. foo.test.com -> test.com
-			entry.Search = strings.Replace(query, name, "", 1)
-
-			if err != nil {
-				klog.Errorf("failed to query DNS server %s for name %s: %v", server, query, err)
-				results = append(results, entry)
-				continue
-			}
-			if len(in.Answer) == 0 {
-				results = append(results, entry)
-				continue
-			}
-			entry.Answer = in.Answer[0].String()
-			record, ok := in.Answer[0].(*dns.A)
-			if ok {
-				klog.V(2).Infof("Resolved %s to %s", query, record.A.String())
-				entry.Record = record.A.String()
+			if entry.Search != "" {
 				resolvedSearches = append(resolvedSearches, entry.Search)
 			}
-
-			results = append(results, entry)
 		}
 	}
 	return results, resolvedSearches, nil
@@ -173,4 +153,53 @@ func getResolvConf() ([]byte, error) {
 		return nil, err
 	}
 	return data, nil
+}
+
+func queryDNS(name, query, server string) DNSEntry {
+	recordTypes := []uint16{dns.TypeA, dns.TypeAAAA, dns.TypeCNAME}
+	entry := DNSEntry{Name: query, Server: server, Answer: ""}
+
+	for _, rec := range recordTypes {
+		m := &dns.Msg{}
+		m.SetQuestion(dns.Fqdn(query), rec)
+		in, err := dns.Exchange(m, server)
+
+		if err != nil {
+			klog.Errorf("failed to query DNS server %s for name %s: %v", server, query, err)
+			continue
+		}
+
+		if len(in.Answer) == 0 {
+			continue
+		}
+
+		entry.Answer = in.Answer[0].String()
+
+		// remember the search domain that resolved the query
+		// e.g. foo.test.com -> test.com
+		entry.Search = strings.Replace(query, name, "", 1)
+
+		// populate record detail
+		switch rec {
+		case dns.TypeA:
+			record, ok := in.Answer[0].(*dns.A)
+			if ok {
+				entry.Record = record.A.String()
+			}
+		case dns.TypeAAAA:
+			record, ok := in.Answer[0].(*dns.AAAA)
+			if ok {
+				entry.Record = record.AAAA.String()
+			}
+		case dns.TypeCNAME:
+			record, ok := in.Answer[0].(*dns.CNAME)
+			if ok {
+				entry.Record = record.Target
+			}
+		}
+
+		// break on the first successful query
+		break
+	}
+	return entry
 }
