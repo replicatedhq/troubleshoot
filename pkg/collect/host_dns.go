@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/miekg/dns"
 	"github.com/pkg/errors"
@@ -22,12 +23,21 @@ type DNSResult struct {
 	Query DNSQuery `json:"query"`
 }
 
+type DNSSummary struct {
+	Resolved ResolvedSearches `json:"resolved"`
+}
+
+// ResolvedSearches is a map of name to search domains that resolved the name
+type ResolvedSearches map[string]string
+
 type DNSQuery map[string][]DNSEntry
 
 type DNSEntry struct {
 	Server string `json:"server"`
+	Search string `json:"search"`
 	Name   string `json:"name"`
 	Answer string `json:"answer"`
+	Record string `json:"record"`
 }
 
 const (
@@ -60,12 +70,15 @@ func (c *CollectHostDNS) Collect(progressChan chan<- interface{}) (map[string][]
 
 	// query DNS for each name
 	dnsEntries := make(map[string][]DNSEntry)
+	dnsSummary := &DNSSummary{Resolved: make(ResolvedSearches)}
+
 	for _, name := range names {
-		entries, err := resolveName(name, dnsConfig)
+		entries, resolvedSearches, err := resolveName(name, dnsConfig)
 		if err != nil {
 			klog.V(2).Infof("Failed to resolve name %s: %v", name, err)
 		}
 		dnsEntries[name] = entries
+		dnsSummary.Resolved[name] = resolvedSearches
 	}
 	dnsResult := DNSResult{Query: dnsEntries}
 
@@ -75,19 +88,33 @@ func (c *CollectHostDNS) Collect(progressChan chan<- interface{}) (map[string][]
 		return nil, errors.Wrap(err, "failed to marshal DNS query result to JSON")
 	}
 
-	outputFile := filepath.Join(HostDNSPath, "results.json")
+	outputFile := c.getOutputFilePath("result.json")
 	output.SaveResult(c.BundlePath, outputFile, bytes.NewBuffer(dnsResultJSON))
+
+	// convert dnsSummary to a JSON string
+	dnsSummaryJSON, err := json.MarshalIndent(dnsSummary, "", "  ")
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to marshal DNS summary to JSON")
+	}
+	outputFile = c.getOutputFilePath("summary.json")
+	output.SaveResult(c.BundlePath, outputFile, bytes.NewBuffer(dnsSummaryJSON))
 
 	// write /etc/resolv.conf to a file
 	resolvConfData, err := getResolvConf()
 	if err != nil {
 		klog.V(2).Infof("failed to read DNS resolve config: %v", err)
 	} else {
-		outputFile = filepath.Join(HostDNSPath, "resolv.conf")
+		outputFile = c.getOutputFilePath("resolv.conf")
 		output.SaveResult(c.BundlePath, outputFile, bytes.NewBuffer(resolvConfData))
 	}
 
 	return output, nil
+}
+
+func (c *CollectHostDNS) getOutputFilePath(name string) string {
+	// normalize title to be used as a directory name, replace spaces with underscores
+	title := strings.ReplaceAll(c.Title(), " ", "_")
+	return filepath.Join(HostDNSPath, title, name)
 }
 
 func getDNSConfig() (*dns.ClientConfig, error) {
@@ -105,9 +132,10 @@ func getDNSConfig() (*dns.ClientConfig, error) {
 	return config, nil
 }
 
-func resolveName(name string, config *dns.ClientConfig) ([]DNSEntry, error) {
+func resolveName(name string, config *dns.ClientConfig) ([]DNSEntry, string, error) {
 
 	results := []DNSEntry{}
+	resolvedSearches := []string{}
 
 	// get a name list based on the config
 	queryList := config.NameList(name)
@@ -124,6 +152,9 @@ func resolveName(name string, config *dns.ClientConfig) ([]DNSEntry, error) {
 
 			entry := DNSEntry{Name: query, Server: server, Answer: ""}
 
+			// e.g. foo.test.com -> test.com
+			entry.Search = strings.Replace(query, name, "", 1)
+
 			if err != nil {
 				klog.Errorf("failed to query DNS server %s for name %s: %v", server, query, err)
 				results = append(results, entry)
@@ -134,10 +165,17 @@ func resolveName(name string, config *dns.ClientConfig) ([]DNSEntry, error) {
 				continue
 			}
 			entry.Answer = in.Answer[0].String()
+			record, ok := in.Answer[0].(*dns.A)
+			if ok {
+				klog.V(2).Infof("Resolved %s to %s", query, record.A.String())
+				entry.Record = record.A.String()
+				resolvedSearches = append(resolvedSearches, entry.Search)
+			}
+
 			results = append(results, entry)
 		}
 	}
-	return results, nil
+	return results, strings.Join(resolvedSearches, ","), nil
 }
 
 func getResolvConf() ([]byte, error) {
