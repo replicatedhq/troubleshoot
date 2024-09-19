@@ -10,3 +10,25 @@ spec:
           url: https://replicated.app
         tls:
           cacert: |-
+            -----BEGIN CERTIFICATE-----
+            MIIDfTCCAmWgAwIBAgIUZcB/nVtn9Om4jnZ53IFyF9OStTwwDQYJKoZIhvcNAQEL
+            BQAwTjELMAkGA1UEBhMCVVMxDjAMBgNVBAgMBVN0YXRlMQ0wCwYDVQQHDARDaXR5
+            MRMwEQYDVQQKDApSZXBsaWNhdGVkMQswCQYDVQQLDAJJVDAeFw0yNDA5MTkyMTMz
+            MzNaFw0yNDA5MjYyMTMzMzNaME4xCzAJBgNVBAYTAlVTMQ4wDAYDVQQIDAVTdGF0
+            ZTENMAsGA1UEBwwEQ2l0eTETMBEGA1UECgwKUmVwbGljYXRlZDELMAkGA1UECwwC
+            SVQwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDBytrLuzK/OxhhADS0
+            Sz7VbC1+4N2Bz0/jj6VCVAmsd2iSKW1FdPm859dzZyjydSHeZMLHz/F8KoQhMUSD
+            XrVvagURmuXsNBO30FHEWxWh3xZxUcW21nGHrDOroMWxRlYBUEBd5V/OQHTkKSSp
+            pTcp4dwPr1ABonFzHvCYeUNTA+HrbO52IdSlHQQfafDqFFRtQgzTskB2lOquIIfM
+            A17Y59eLp1aVfmtPbEkL+RWOYkgDo8BbitwotqZSNBCulz/iyzh8NRFLSe4jC6tw
+            mtPwQMYzM47et4MDuuuHZQ38tt+3Z4LJeLmDR75dfHlM47YLGYsInH8wLevIqY09
+            Gm/3AgMBAAGjUzBRMB0GA1UdDgQWBBS+iYJGdI4ukoj2V6UGczfX9qqVnjAfBgNV
+            HSMEGDAWgBS+iYJGdI4ukoj2V6UGczfX9qqVnjAPBgNVHRMBAf8EBTADAQH/MA0G
+            CSqGSIb3DQEBCwUAA4IBAQCd2TU1Ov/uIfe+/j7KBjLev0DMGvDCC3sD87clfVkl
+            oh2URXq7q/6h+CGx6ClsY1Gl8rmuA1m7p6TKutRlBMsyd7ohtwwrAoWhep3d3bJW
+            MTe/OJ41OHnRYSXCTZCmhGun/YuhWvNZCvgBuVyzw9JZvSMLPHzICez5Hspd3/IP
+            Exs4AubDoTXTqsRe8zNHCP/J7Oq+EU1A2IlIpMefb4Q8096acYdTn87fi5N3MUKA
+            5dSaVPMH/afHI/opEMCYeZRqk6bCstCwUY+807YJi4fkREcmUp+Kqp+5ZDGqR/54
+            VyUuq6pnw3zD4ijfZfB/16yV8KXuosdrD7ZLJsAQl9oV
+            -----END CERTIFICATE-----
+        proxy: https://10.128.0.40:3130

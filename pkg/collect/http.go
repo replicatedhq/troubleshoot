@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httputil"
+	neturl "net/url"
 	"path/filepath"
 	"strings"
 	"time"
@@ -56,15 +57,15 @@ func (c *CollectHTTP) Collect(progressChan chan<- interface{}) (CollectorResult,
 	case c.Collector.Get != nil:
 		response, err = doRequest(
 			"GET", c.Collector.Get.URL, c.Collector.Get.Headers,
-			"", c.Collector.Get.InsecureSkipVerify, c.Collector.Get.Timeout, c.Collector.TLS.CACert)
+			"", c.Collector.Get.InsecureSkipVerify, c.Collector.Get.Timeout, c.Collector.TLS.CACert, c.Collector.Proxy)
 	case c.Collector.Post != nil:
 		response, err = doRequest(
 			"POST", c.Collector.Post.URL, c.Collector.Post.Headers,
-			c.Collector.Post.Body, c.Collector.Post.InsecureSkipVerify, c.Collector.Post.Timeout, c.Collector.TLS.CACert)
+			c.Collector.Post.Body, c.Collector.Post.InsecureSkipVerify, c.Collector.Post.Timeout, c.Collector.TLS.CACert, c.Collector.Proxy)
 	case c.Collector.Put != nil:
 		response, err = doRequest(
 			"PUT", c.Collector.Put.URL, c.Collector.Put.Headers,
-			c.Collector.Put.Body, c.Collector.Put.InsecureSkipVerify, c.Collector.Put.Timeout, c.Collector.TLS.CACert)
+			c.Collector.Put.Body, c.Collector.Put.InsecureSkipVerify, c.Collector.Put.Timeout, c.Collector.TLS.CACert, c.Collector.Proxy)
 	default:
 		return nil, errors.New("no supported http request type")
 	}
@@ -85,7 +86,7 @@ func (c *CollectHTTP) Collect(progressChan chan<- interface{}) (CollectorResult,
 	return output, nil
 }
 
-func doRequest(method, url string, headers map[string]string, body string, insecureSkipVerify bool, timeout string, cacert string) (*http.Response, error) {
+func doRequest(method, url string, headers map[string]string, body string, insecureSkipVerify bool, timeout string, cacert string, proxy string) (*http.Response, error) {
 	t, err := parseTimeout(timeout)
 	if err != nil {
 		return nil, err
@@ -102,15 +103,21 @@ func doRequest(method, url string, headers map[string]string, body string, insec
 		}
 
 		tlsConfig = &tls.Config{
-			RootCAs: certPool,
+			RootCAs:            certPool,
+			InsecureSkipVerify: true,
 		}
 
-		fmt.Printf("Using tlsConfig cert: %v", tlsConfig)
+		fmt.Printf("Using tlsConfig cert: %+v", tlsConfig)
+
+		fn := func(req *http.Request) (*neturl.URL, error) {
+			return neturl.Parse(proxy)
+		}
 
 		httpClient = &http.Client{
 			Timeout: t,
 			Transport: &LoggingTransport{
 				Transport: &http.Transport{
+					Proxy:           fn,
 					TLSClientConfig: tlsConfig,
 				},
 			},
@@ -166,6 +173,8 @@ func (t *LoggingTransport) RoundTrip(req *http.Request) (*http.Response, error) 
 	}
 
 	resp, err := t.Transport.RoundTrip(req)
+
+	fmt.Printf("Response: %v", resp)
 
 	// Log the response
 	if err != nil {
