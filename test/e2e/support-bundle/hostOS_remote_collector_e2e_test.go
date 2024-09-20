@@ -32,7 +32,7 @@ func TestHostOSRemoteCollector(t *testing.T) {
 			supportbundleName := "host-os-remote-collector"
 			tarPath := fmt.Sprintf("%s.tar.gz", supportbundleName)
 			targetFolder := fmt.Sprintf("%s/host-collectors/system/", supportbundleName)
-			cmd := exec.CommandContext(context.Background(), sbBinary(), "spec/hostOSRemoteCollector.yaml", "--interactive=false", fmt.Sprintf("-o=%s", supportbundleName))
+			cmd := exec.CommandContext(ctx, sbBinary(), "spec/hostOSRemoteCollector.yaml", "--interactive=false", fmt.Sprintf("-o=%s", supportbundleName))
 			cmd.Stdout = &out
 			err := cmd.Run()
 			if err != nil {
