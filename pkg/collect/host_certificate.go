@@ -77,3 +77,7 @@ func isEncryptedKey(filename string) (bool, error) {
 	}
 	return bytes.Contains(data, []byte("ENCRYPTED")), nil
 }
+
+func (c *CollectHostCertificate) RemoteCollect(progressChan chan<- interface{}) (map[string][]byte, error) {
+	return nil, ErrRemoteCollectorNotImplemented
+}

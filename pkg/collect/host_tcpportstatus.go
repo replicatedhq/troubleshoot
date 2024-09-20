@@ -118,3 +118,7 @@ func getLocalIPv4() (net.IP, error) {
 
 	return nil, errors.New("No network interface has an IPv4 address")
 }
+
+func (c *CollectHostTCPPortStatus) RemoteCollect(progressChan chan<- interface{}) (map[string][]byte, error) {
+	return nil, ErrRemoteCollectorNotImplemented
+}

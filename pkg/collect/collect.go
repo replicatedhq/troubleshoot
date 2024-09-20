@@ -15,8 +15,9 @@ import (
 var (
 	// ErrCollectorNotFound is returned when an undefined host collector is
 	// specified by the user.
-	ErrHostCollectorNotFound        = errors.New("unrecognized host collector")
-	ErrInsufficientPermissionsToRun = errors.New("insufficient permissions to run all collectors")
+	ErrHostCollectorNotFound         = errors.New("unrecognized host collector")
+	ErrInsufficientPermissionsToRun  = errors.New("insufficient permissions to run all collectors")
+	ErrRemoteCollectorNotImplemented = errors.New("unimplemented remote collector")
 )
 
 type CollectorRunOpts struct {
@@ -28,7 +29,8 @@ type CollectorRunOpts struct {
 	PullPolicy                string
 	LabelSelector             string
 	Timeout                   time.Duration
-	ProgressChan              chan interface{}
+	ProgressChan              chan<- interface{}
+	NamePrefix                string
 }
 
 type CollectProgress struct {
@@ -48,7 +50,7 @@ type RemoteCollectResult struct {
 	AllCollectedData map[string][]byte
 	Collectors       RemoteCollectors
 	Spec             *troubleshootv1beta2.RemoteCollector
-	isRBACAllowed    bool
+	IsRBACAllowed    bool
 }
 
 // CollectHost runs the collection phase for a local collector.
@@ -107,6 +109,7 @@ func CollectRemote(c *troubleshootv1beta2.RemoteCollector, additionalRedactors *
 			LabelSelector: opts.LabelSelector,
 			Namespace:     opts.Namespace,
 			Timeout:       opts.Timeout,
+			NamePrefix:    opts.NamePrefix,
 		}
 		collectors = append(collectors, &collector)
 	}
@@ -129,7 +132,7 @@ func CollectRemote(c *troubleshootv1beta2.RemoteCollector, additionalRedactors *
 	}
 
 	if foundForbidden && !opts.CollectWithoutPermissions {
-		collectResult.isRBACAllowed = false
+		collectResult.IsRBACAllowed = false
 		return collectResult, ErrInsufficientPermissionsToRun
 	}
 

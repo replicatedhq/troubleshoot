@@ -32,6 +32,7 @@ type RemoteCollector struct {
 	Namespace     string
 	BundlePath    string
 	Timeout       time.Duration
+	NamePrefix    string
 }
 
 type RemoteCollectors []*RemoteCollector
@@ -98,7 +99,11 @@ func (c *RemoteCollector) RunCollectorSync(globalRedactors []*troubleshootv1beta
 		return nil, errors.Wrap(err, "failed to get the list of nodes matching a nodeSelector")
 	}
 
-	result, err := c.RunRemote(ctx, runner, nodes, hostCollector, names.SimpleNameGenerator, remoteCollectorNamePrefix)
+	if c.NamePrefix == "" {
+		c.NamePrefix = remoteCollectorNamePrefix
+	}
+
+	result, err := c.RunRemote(ctx, runner, nodes, hostCollector, names.SimpleNameGenerator, c.NamePrefix)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to run collector remotely")
 	}
@@ -308,6 +313,13 @@ func (c *RemoteCollector) toHostCollector() (*troubleshootv1beta2.HostCollect, e
 			HostCollectorMeta: troubleshootv1beta2.HostCollectorMeta{
 				CollectorName: c.Collect.HostServices.CollectorName,
 				Exclude:       c.Collect.HostServices.Exclude,
+			},
+		}
+	case c.Collect.HostOS != nil:
+		hostCollect.HostOS = &troubleshootv1beta2.HostOS{
+			HostCollectorMeta: troubleshootv1beta2.HostCollectorMeta{
+				CollectorName: c.Collect.HostOS.CollectorName,
+				Exclude:       c.Collect.HostOS.Exclude,
 			},
 		}
 	default:

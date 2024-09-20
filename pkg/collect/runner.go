@@ -18,6 +18,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/util/retry"
 	"k8s.io/klog/v2"
+	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 )
 
@@ -189,6 +190,9 @@ func createCollectorPod(ctx context.Context, client kubernetes.Interface, scheme
 			Kind:       "Pod",
 		},
 		Spec: corev1.PodSpec{
+			HostNetwork:        true,
+			HostPID:            true,
+			HostIPC:            true,
 			NodeSelector:       nodeSelector,
 			ServiceAccountName: serviceAccountName,
 			RestartPolicy:      corev1.RestartPolicyNever,
@@ -197,11 +201,14 @@ func createCollectorPod(ctx context.Context, client kubernetes.Interface, scheme
 					Image:           imageName,
 					ImagePullPolicy: imagePullPolicy,
 					Name:            runnerContainerName,
-					Command:         []string{"collect"},
+					Command:         []string{"/bin/bash", "-c"},
 					Args: []string{
-						"--collect-without-permissions",
-						"--format=raw",
-						"/troubleshoot/specs/collector.json",
+						`cp /troubleshoot/collect /host/collect &&
+						cp /troubleshoot/specs/collector.json /host/collector.json &&
+						chroot /host /bin/bash -c './collect --collect-without-permissions --format=raw collector.json'`,
+					},
+					SecurityContext: &corev1.SecurityContext{
+						Privileged: ptr.To(true),
 					},
 					VolumeMounts: []corev1.VolumeMount{
 						{
@@ -210,14 +217,8 @@ func createCollectorPod(ctx context.Context, client kubernetes.Interface, scheme
 							ReadOnly:  true,
 						},
 						{
-							Name:      "kernel-modules",
-							MountPath: "/lib/modules",
-							ReadOnly:  true,
-						},
-						{
-							Name:      "ntp",
-							MountPath: "/run/dbus",
-							ReadOnly:  true,
+							Name:      "host-root",
+							MountPath: "/host",
 						},
 					},
 				},
@@ -234,18 +235,10 @@ func createCollectorPod(ctx context.Context, client kubernetes.Interface, scheme
 					},
 				},
 				{
-					Name: "kernel-modules",
+					Name: "host-root",
 					VolumeSource: corev1.VolumeSource{
 						HostPath: &corev1.HostPathVolumeSource{
-							Path: "/lib/modules",
-						},
-					},
-				},
-				{
-					Name: "ntp",
-					VolumeSource: corev1.VolumeSource{
-						HostPath: &corev1.HostPathVolumeSource{
-							Path: "/run/dbus",
+							Path: "/",
 						},
 					},
 				},

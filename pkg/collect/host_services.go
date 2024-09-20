@@ -71,3 +71,7 @@ func (c *CollectHostServices) Collect(progressChan chan<- interface{}) (map[stri
 		HostServicesPath: b,
 	}, nil
 }
+
+func (c *CollectHostServices) RemoteCollect(progressChan chan<- interface{}) (map[string][]byte, error) {
+	return nil, ErrRemoteCollectorNotImplemented
+}

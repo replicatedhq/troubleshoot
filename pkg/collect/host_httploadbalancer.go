@@ -181,3 +181,7 @@ func attemptPOST(address string, request []byte, response []byte) NetworkStatus 
 
 	return NetworkStatusConnected
 }
+
+func (c *CollectHostHTTPLoadBalancer) RemoteCollect(progressChan chan<- interface{}) (map[string][]byte, error) {
+	return nil, ErrRemoteCollectorNotImplemented
+}

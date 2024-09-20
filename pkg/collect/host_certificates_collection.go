@@ -104,3 +104,7 @@ func HostCertsParser(certPath string) HostCertificatesCollection {
 		Message:          CertValid,
 	}
 }
+
+func (c *CollectHostCertificatesCollection) RemoteCollect(progressChan chan<- interface{}) (map[string][]byte, error) {
+	return nil, ErrRemoteCollectorNotImplemented
+}

@@ -97,3 +97,7 @@ func parseV1ControllerNames(r io.Reader) ([]string, error) {
 
 	return names, nil
 }
+
+func (c *CollectHostCGroups) RemoteCollect(progressChan chan<- interface{}) (map[string][]byte, error) {
+	return nil, ErrRemoteCollectorNotImplemented
+}

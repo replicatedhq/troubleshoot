@@ -58,3 +58,7 @@ func (c *CollectHostIPV4Interfaces) Collect(progressChan chan<- interface{}) (ma
 		HostIPV4InterfacesPath: b,
 	}, nil
 }
+
+func (c *CollectHostIPV4Interfaces) RemoteCollect(progressChan chan<- interface{}) (map[string][]byte, error) {
+	return nil, ErrRemoteCollectorNotImplemented
+}

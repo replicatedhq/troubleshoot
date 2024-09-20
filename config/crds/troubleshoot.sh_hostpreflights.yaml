@@ -1860,6 +1860,13 @@ spec:
                       - backgroundWriteIOPSJobs
                       - enableBackgroundIOPS
                       type: object
+                    hostOS:
+                      properties:
+                        collectorName:
+                          type: string
+                        exclude:
+                          type: BoolString
+                      type: object
                     hostServices:
                       properties:
                         collectorName:

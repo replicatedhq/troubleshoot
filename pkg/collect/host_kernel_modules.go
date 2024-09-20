@@ -190,3 +190,7 @@ func (l kernelModulesLoaded) collect() (map[string]KernelModuleInfo, error) {
 	}
 	return modules, nil
 }
+
+func (c *CollectHostKernelModules) RemoteCollect(progressChan chan<- interface{}) (map[string][]byte, error) {
+	return nil, ErrRemoteCollectorNotImplemented
+}

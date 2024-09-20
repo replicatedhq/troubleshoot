@@ -54,3 +54,7 @@ func (c *CollectHostCPU) Collect(progressChan chan<- interface{}) (map[string][]
 
 	return output, nil
 }
+
+func (c *CollectHostCPU) RemoteCollect(progressChan chan<- interface{}) (map[string][]byte, error) {
+	return nil, ErrRemoteCollectorNotImplemented
+}
