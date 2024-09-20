@@ -40,7 +40,7 @@ func (a *AnalyzeHostOS) Analyze(
 	contents, err := getCollectedFileContents(collect.HostOSInfoPath)
 	if err != nil {
 		//check if the host os info nodes file exists (remote mode)
-		contents, err := getCollectedFileContents(collect.HostOSNodes)
+		contents, err := getCollectedFileContents(collect.NodeListFile)
 		if err != nil {
 			return []*AnalyzeResult{&result}, errors.Wrap(err, "failed to get collected file")
 		}
@@ -52,7 +52,7 @@ func (a *AnalyzeHostOS) Analyze(
 
 		// iterate over each node and analyze the host os info
 		for _, node := range nodes.Nodes {
-			contents, err := getCollectedFileContents(collect.HostOSInfoDir + "/" + node + "/" + collect.HostOSInfoJSON)
+			contents, err := getCollectedFileContents(collect.NodeInfoBaseDir + "/" + node + "/" + collect.HostInfoFileName)
 			if err != nil {
 				return []*AnalyzeResult{&result}, errors.Wrap(err, "failed to get collected file")
 			}
