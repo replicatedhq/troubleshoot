@@ -43,33 +43,33 @@ func (a *AnalyzeHostOS) Analyze(
 		contents, err := getCollectedFileContents(collect.HostOSNodes)
 		if err != nil {
 			return []*AnalyzeResult{&result}, errors.Wrap(err, "failed to get collected file")
-		} else {
-			var nodes collect.HostOSInfoNodes
-			if err := json.Unmarshal(contents, &nodes); err != nil {
-				return []*AnalyzeResult{&result}, errors.Wrap(err, "failed to unmarshal host os info nodes")
-			}
-
-			// iterate over each node and analyze the host os info
-			for _, node := range nodes.Nodes {
-				contents, err := getCollectedFileContents(collect.HostOSInfoDir + "/" + node + "/" + collect.HostOSInfoJSON)
-				if err != nil {
-					return []*AnalyzeResult{&result}, errors.Wrap(err, "failed to get collected file")
-				}
-
-				var osInfo collect.HostOSInfo
-				if err := json.Unmarshal(contents, &osInfo); err != nil {
-					return []*AnalyzeResult{&result}, errors.Wrap(err, "failed to unmarshal host os info")
-				}
-
-				nodesOSInfo = append(nodesOSInfo, NodeOSInfo{NodeName: node, HostOSInfo: osInfo})
-			}
-
-			results, err := analyzeOSVersionResult(nodesOSInfo, a.hostAnalyzer.Outcomes, a.Title())
-			if err != nil {
-				return []*AnalyzeResult{&result}, errors.Wrap(err, "failed to analyze os version result")
-			}
-			return results, nil
 		}
+
+		var nodes collect.HostOSInfoNodes
+		if err := json.Unmarshal(contents, &nodes); err != nil {
+			return []*AnalyzeResult{&result}, errors.Wrap(err, "failed to unmarshal host os info nodes")
+		}
+
+		// iterate over each node and analyze the host os info
+		for _, node := range nodes.Nodes {
+			contents, err := getCollectedFileContents(collect.HostOSInfoDir + "/" + node + "/" + collect.HostOSInfoJSON)
+			if err != nil {
+				return []*AnalyzeResult{&result}, errors.Wrap(err, "failed to get collected file")
+			}
+
+			var osInfo collect.HostOSInfo
+			if err := json.Unmarshal(contents, &osInfo); err != nil {
+				return []*AnalyzeResult{&result}, errors.Wrap(err, "failed to unmarshal host os info")
+			}
+
+			nodesOSInfo = append(nodesOSInfo, NodeOSInfo{NodeName: node, HostOSInfo: osInfo})
+		}
+
+		results, err := analyzeOSVersionResult(nodesOSInfo, a.hostAnalyzer.Outcomes, a.Title())
+		if err != nil {
+			return []*AnalyzeResult{&result}, errors.Wrap(err, "failed to analyze os version result")
+		}
+		return results, nil
 	}
 
 	var osInfo collect.HostOSInfo
