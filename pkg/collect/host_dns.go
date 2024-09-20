@@ -203,3 +203,7 @@ func queryDNS(name, query, server string) DNSEntry {
 	}
 	return entry
 }
+
+func (c *CollectHostDNS) RemoteCollect(progressChan chan<- interface{}) (map[string][]byte, error) {
+	return nil, ErrRemoteCollectorNotImplemented
+}
