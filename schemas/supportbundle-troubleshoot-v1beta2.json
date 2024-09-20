@@ -18986,6 +18986,26 @@
                   }
                 }
               },
+              "dns": {
+                "type": "object",
+                "required": [
+                  "hostnames"
+                ],
+                "properties": {
+                  "collectorName": {
+                    "type": "string"
+                  },
+                  "exclude": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  },
+                  "hostnames": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
               "filesystemPerformance": {
                 "description": "FilesystemPerformance benchmarks sequential write latency on a single file.\nThe optional background IOPS feature attempts to mimic real-world conditions by running read and\nwrite workloads prior to and during benchmark execution.",
                 "type": "object",
