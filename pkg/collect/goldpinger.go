@@ -162,7 +162,7 @@ func parseCollectDelay(delay, defaultDelay string) (time.Duration, error) {
 func (c *CollectGoldpinger) DiscoverOrCreateGoldpinger(ns string) (string, createdResources, error) {
 	// Check if goldpinger is running in the cluster by searching for goldpinger's service
 	ret := createdResources{}
-	gpSvc, err := getGPService(c.Context, c.Client, ns)
+	gpSvc, err := c.getGoldpingerService(ns)
 	if err != nil {
 		return "", ret, errors.Wrap(err, "failed to get goldpinger service")
 	}
@@ -189,21 +189,21 @@ func (c *CollectGoldpinger) DiscoverOrCreateGoldpinger(ns string) (string, creat
 	if serviceAccountName == "" {
 		serviceAccountName = "ts-goldpinger-serviceaccount"
 
-		svcAcc, err := createServiceAccount(c.Context, c.Client, ns, serviceAccountName)
+		svcAcc, err := c.createGoldpingerServiceAccount(ns, serviceAccountName)
 		if err != nil {
 			return "", ret, errors.Wrap(err, "failed to create goldpinger service account")
 		}
 		ret.ServiceAccnt = svcAcc
 		klog.V(2).Infof("%s ServiceAccount created", svcAcc.Name)
 
-		r, err := createGoldpingerRole(c.Context, c.Client, ns)
+		r, err := c.createGoldpingerRole(ns)
 		if err != nil {
 			return "", ret, errors.Wrap(err, "failed to create goldpinger role")
 		}
 		ret.Role = r
 		klog.V(2).Infof("%s Role created", r.Name)
 
-		rb, err := createGoldpingerRoleBinding(c.Context, c.Client, ns)
+		rb, err := c.createGoldpingerRoleBinding(ns)
 		if err != nil {
 			return "", ret, errors.Wrap(err, "failed to create goldpinger role binding")
 		}
@@ -215,7 +215,7 @@ func (c *CollectGoldpinger) DiscoverOrCreateGoldpinger(ns string) (string, creat
 		}
 	}
 
-	ds, err := createGPDaemonSetSpec(c.Context, c.Client, ns, serviceAccountName)
+	ds, err := c.createGoldpingerDaemonSet(ns, serviceAccountName)
 	if err != nil {
 		return "", ret, errors.Wrap(err, "failed to create goldpinger daemonset")
 	}
@@ -234,7 +234,7 @@ func (c *CollectGoldpinger) DiscoverOrCreateGoldpinger(ns string) (string, creat
 
 	time.Sleep(delay)
 
-	svc, err := createGPService(c.Context, c.Client, ns)
+	svc, err := c.createGoldpingerService(ns)
 	if err != nil {
 		return "", ret, errors.Wrap(err, "failed to create goldpinger service")
 	}
@@ -244,7 +244,7 @@ func (c *CollectGoldpinger) DiscoverOrCreateGoldpinger(ns string) (string, creat
 	return getUrlFromService(svc), ret, nil
 }
 
-func createServiceAccount(ctx context.Context, client kubernetes.Interface, ns, name string) (*corev1.ServiceAccount, error) {
+func (c *CollectGoldpinger) createGoldpingerServiceAccount(ns, name string) (*corev1.ServiceAccount, error) {
 	svcAcc := &corev1.ServiceAccount{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
@@ -252,10 +252,10 @@ func createServiceAccount(ctx context.Context, client kubernetes.Interface, ns, 
 		},
 	}
 
-	return client.CoreV1().ServiceAccounts(ns).Create(ctx, svcAcc, metav1.CreateOptions{})
+	return c.Client.CoreV1().ServiceAccounts(ns).Create(c.Context, svcAcc, metav1.CreateOptions{})
 }
 
-func createGoldpingerRole(ctx context.Context, client kubernetes.Interface, ns string) (*rbacv1.Role, error) {
+func (c *CollectGoldpinger) createGoldpingerRole(ns string) (*rbacv1.Role, error) {
 	role := &rbacv1.Role{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "ts-goldpinger-role",
@@ -270,10 +270,10 @@ func createGoldpingerRole(ctx context.Context, client kubernetes.Interface, ns s
 		},
 	}
 
-	return client.RbacV1().Roles(ns).Create(ctx, role, metav1.CreateOptions{})
+	return c.Client.RbacV1().Roles(ns).Create(c.Context, role, metav1.CreateOptions{})
 }
 
-func createGoldpingerRoleBinding(ctx context.Context, client kubernetes.Interface, ns string) (*rbacv1.RoleBinding, error) {
+func (c *CollectGoldpinger) createGoldpingerRoleBinding(ns string) (*rbacv1.RoleBinding, error) {
 	roleBinding := &rbacv1.RoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "ts-goldpinger-rolebinding",
@@ -293,10 +293,10 @@ func createGoldpingerRoleBinding(ctx context.Context, client kubernetes.Interfac
 		},
 	}
 
-	return client.RbacV1().RoleBindings(ns).Create(ctx, roleBinding, metav1.CreateOptions{})
+	return c.Client.RbacV1().RoleBindings(ns).Create(c.Context, roleBinding, metav1.CreateOptions{})
 }
 
-func createGPDaemonSetSpec(ctx context.Context, client kubernetes.Interface, ns, svcAccName string) (*appsv1.DaemonSet, error) {
+func (c *CollectGoldpinger) createGoldpingerDaemonSet(ns, svcAccName string) (*appsv1.DaemonSet, error) {
 	ds := &appsv1.DaemonSet{}
 
 	ds.ObjectMeta = metav1.ObjectMeta{
@@ -405,10 +405,10 @@ func createGPDaemonSetSpec(ctx context.Context, client kubernetes.Interface, ns,
 		},
 	}
 
-	return client.AppsV1().DaemonSets(ns).Create(ctx, ds, metav1.CreateOptions{})
+	return c.Client.AppsV1().DaemonSets(ns).Create(c.Context, ds, metav1.CreateOptions{})
 }
 
-func createGPService(ctx context.Context, client kubernetes.Interface, ns string) (*corev1.Service, error) {
+func (c *CollectGoldpinger) createGoldpingerService(ns string) (*corev1.Service, error) {
 	svc := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "ts-goldpinger",
@@ -429,11 +429,11 @@ func createGPService(ctx context.Context, client kubernetes.Interface, ns string
 		},
 	}
 
-	return client.CoreV1().Services(ns).Create(ctx, svc, metav1.CreateOptions{})
+	return c.Client.CoreV1().Services(ns).Create(c.Context, svc, metav1.CreateOptions{})
 }
 
-func getGPService(ctx context.Context, client kubernetes.Interface, ns string) (*corev1.Service, error) {
-	svcs, err := client.CoreV1().Services(ns).List(ctx, metav1.ListOptions{
+func (c *CollectGoldpinger) getGoldpingerService(ns string) (*corev1.Service, error) {
+	svcs, err := c.Client.CoreV1().Services(ns).List(c.Context, metav1.ListOptions{
 		LabelSelector: gpNameLabelSelector(),
 	})
 	if err != nil {
