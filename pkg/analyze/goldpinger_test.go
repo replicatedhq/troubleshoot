@@ -96,6 +96,18 @@ func TestAnalyzeGoldpinger_podPingsAnalysis(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "no ping errors for one pod",
+			cao:  caoFixture(t, "goldpinger/checkall-one-pod.json"),
+			want: []*AnalyzeResult{
+				{
+					Title:   "Pings to \"gp-goldpinger-xn9rg\" pod succeeded",
+					Message: "Pings to \"gp-goldpinger-xn9rg\" pod from all other pods in the cluster succeeded",
+					IconKey: "kubernetes",
+					IsPass:  true,
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
