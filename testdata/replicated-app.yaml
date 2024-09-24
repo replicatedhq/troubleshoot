@@ -5,30 +5,64 @@ metadata:
 spec:
   collectors:
     - http:
-        collectorName: replicated-app
+        collectorName: https-replicated-proxy
         get:
           url: https://replicated.app
         tls:
           cacert: |-
             -----BEGIN CERTIFICATE-----
-            MIIDfTCCAmWgAwIBAgIUZcB/nVtn9Om4jnZ53IFyF9OStTwwDQYJKoZIhvcNAQEL
+            MIIDfTCCAmWgAwIBAgIUWXcWMApcJqjf/tKlJVWaV6GzbVUwDQYJKoZIhvcNAQEL
             BQAwTjELMAkGA1UEBhMCVVMxDjAMBgNVBAgMBVN0YXRlMQ0wCwYDVQQHDARDaXR5
-            MRMwEQYDVQQKDApSZXBsaWNhdGVkMQswCQYDVQQLDAJJVDAeFw0yNDA5MTkyMTMz
-            MzNaFw0yNDA5MjYyMTMzMzNaME4xCzAJBgNVBAYTAlVTMQ4wDAYDVQQIDAVTdGF0
+            MRMwEQYDVQQKDApSZXBsaWNhdGVkMQswCQYDVQQLDAJJVDAeFw0yNDA5MjQxNzA3
+            MzNaFw0yNDEwMDExNzA3MzNaME4xCzAJBgNVBAYTAlVTMQ4wDAYDVQQIDAVTdGF0
             ZTENMAsGA1UEBwwEQ2l0eTETMBEGA1UECgwKUmVwbGljYXRlZDELMAkGA1UECwwC
-            SVQwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDBytrLuzK/OxhhADS0
-            Sz7VbC1+4N2Bz0/jj6VCVAmsd2iSKW1FdPm859dzZyjydSHeZMLHz/F8KoQhMUSD
-            XrVvagURmuXsNBO30FHEWxWh3xZxUcW21nGHrDOroMWxRlYBUEBd5V/OQHTkKSSp
-            pTcp4dwPr1ABonFzHvCYeUNTA+HrbO52IdSlHQQfafDqFFRtQgzTskB2lOquIIfM
-            A17Y59eLp1aVfmtPbEkL+RWOYkgDo8BbitwotqZSNBCulz/iyzh8NRFLSe4jC6tw
-            mtPwQMYzM47et4MDuuuHZQ38tt+3Z4LJeLmDR75dfHlM47YLGYsInH8wLevIqY09
-            Gm/3AgMBAAGjUzBRMB0GA1UdDgQWBBS+iYJGdI4ukoj2V6UGczfX9qqVnjAfBgNV
-            HSMEGDAWgBS+iYJGdI4ukoj2V6UGczfX9qqVnjAPBgNVHRMBAf8EBTADAQH/MA0G
-            CSqGSIb3DQEBCwUAA4IBAQCd2TU1Ov/uIfe+/j7KBjLev0DMGvDCC3sD87clfVkl
-            oh2URXq7q/6h+CGx6ClsY1Gl8rmuA1m7p6TKutRlBMsyd7ohtwwrAoWhep3d3bJW
-            MTe/OJ41OHnRYSXCTZCmhGun/YuhWvNZCvgBuVyzw9JZvSMLPHzICez5Hspd3/IP
-            Exs4AubDoTXTqsRe8zNHCP/J7Oq+EU1A2IlIpMefb4Q8096acYdTn87fi5N3MUKA
-            5dSaVPMH/afHI/opEMCYeZRqk6bCstCwUY+807YJi4fkREcmUp+Kqp+5ZDGqR/54
-            VyUuq6pnw3zD4ijfZfB/16yV8KXuosdrD7ZLJsAQl9oV
-            -----END CERTIFICATE-----
+            SVQwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDLeaa5l1O10B6G75nL
+            e1raPAdrG7xuLx7qUb2eXjThJybZs5RApeuTaOIuwpElmqDUnpY6MY+kOeumbfl1
+            4oltTSy0Pzd8G/u9EIuSX5dH2oNET5ipj0wssJoekIEA6Mg5jAi9+emaFXOfOh++
+            +Uqm5WH3MCFCqb+IHaypZjgZSBwn9oS1uCt9mAgKmyQcQiRhqsXEdgqsMsHNmYvQ
+            dm6+8tr7/LT9qPJmGeu/GMs32UkxtQ0PLLx3SyhRSe7PVvNWWMlDBRF7Vj3gkK9f
+            vih8rAmUWkg+kZORdVME637RlN6oevorWPq+NL4h+iBqYw4U5EikC8ZOqYhwqKSt
+            +A7hAgMBAAGjUzBRMB0GA1UdDgQWBBRapyoz7HfKJAHYeinJyeCEvsU4WTAfBgNV
+            HSMEGDAWgBRapyoz7HfKJAHYeinJyeCEvsU4WTAPBgNVHRMBAf8EBTADAQH/MA0G
+            CSqGSIb3DQEBCwUAA4IBAQDAuR/Pme0UYPycjf0p0LmI8xJE8RtuEMoumxpukpoG
+            PYmr8Z1G0AUUkqSGqTx/bED2IgFKj+xt50vpbduQwmrit1BP7IdXbHquToq7Ey10
+            lfhMq3RY4kJ86+LYVRFCLBg9RMaK2YfMl0NpaSMXqaWO74gDYVq3oqeSWik3ltGq
+            5lhMo5eD2WpqJaw9qqI2Vt48E69yg3ImqJh3NvTILLnDXLNpeQIk/MjJBgbSMAaf
+            oSs9fZui4oP9mPaatQ1qzRZCiP8NU+03iIDl9j1/tHufejVHFMYeZ5dy0Ipau/6E
+            UjfXm9Be3Ap5ZvXUSz+6KNpmd6vvOGNNv6nALb6bI33k
         proxy: https://10.128.0.40:3130
+    - http:
+        collectorName: http-replicated-proxy
+        get:
+          url: http://replicated.app
+        proxy: https://10.128.0.40:3130
+    - http:
+        collectorName: https-replicated-noproxy
+        get:
+          url: http://replicated.app
+        tls:
+          cacert: |-
+            -----BEGIN CERTIFICATE-----
+            MIIDfTCCAmWgAwIBAgIUWXcWMApcJqjf/tKlJVWaV6GzbVUwDQYJKoZIhvcNAQEL
+            BQAwTjELMAkGA1UEBhMCVVMxDjAMBgNVBAgMBVN0YXRlMQ0wCwYDVQQHDARDaXR5
+            MRMwEQYDVQQKDApSZXBsaWNhdGVkMQswCQYDVQQLDAJJVDAeFw0yNDA5MjQxNzA3
+            MzNaFw0yNDEwMDExNzA3MzNaME4xCzAJBgNVBAYTAlVTMQ4wDAYDVQQIDAVTdGF0
+            ZTENMAsGA1UEBwwEQ2l0eTETMBEGA1UECgwKUmVwbGljYXRlZDELMAkGA1UECwwC
+            SVQwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDLeaa5l1O10B6G75nL
+            e1raPAdrG7xuLx7qUb2eXjThJybZs5RApeuTaOIuwpElmqDUnpY6MY+kOeumbfl1
+            4oltTSy0Pzd8G/u9EIuSX5dH2oNET5ipj0wssJoekIEA6Mg5jAi9+emaFXOfOh++
+            +Uqm5WH3MCFCqb+IHaypZjgZSBwn9oS1uCt9mAgKmyQcQiRhqsXEdgqsMsHNmYvQ
+            dm6+8tr7/LT9qPJmGeu/GMs32UkxtQ0PLLx3SyhRSe7PVvNWWMlDBRF7Vj3gkK9f
+            vih8rAmUWkg+kZORdVME637RlN6oevorWPq+NL4h+iBqYw4U5EikC8ZOqYhwqKSt
+            +A7hAgMBAAGjUzBRMB0GA1UdDgQWBBRapyoz7HfKJAHYeinJyeCEvsU4WTAfBgNV
+            HSMEGDAWgBRapyoz7HfKJAHYeinJyeCEvsU4WTAPBgNVHRMBAf8EBTADAQH/MA0G
+            CSqGSIb3DQEBCwUAA4IBAQDAuR/Pme0UYPycjf0p0LmI8xJE8RtuEMoumxpukpoG
+            PYmr8Z1G0AUUkqSGqTx/bED2IgFKj+xt50vpbduQwmrit1BP7IdXbHquToq7Ey10
+            lfhMq3RY4kJ86+LYVRFCLBg9RMaK2YfMl0NpaSMXqaWO74gDYVq3oqeSWik3ltGq
+            5lhMo5eD2WpqJaw9qqI2Vt48E69yg3ImqJh3NvTILLnDXLNpeQIk/MjJBgbSMAaf
+            oSs9fZui4oP9mPaatQ1qzRZCiP8NU+03iIDl9j1/tHufejVHFMYeZ5dy0Ipau/6E
+            UjfXm9Be3Ap5ZvXUSz+6KNpmd6vvOGNNv6nALb6bI33k
+    - http:
+        collectorName: http-replicated-noproxy
+        get:
+          url: http://replicated.app

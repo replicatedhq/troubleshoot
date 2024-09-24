@@ -56,16 +56,13 @@ func (c *CollectHTTP) Collect(progressChan chan<- interface{}) (CollectorResult,
 	switch {
 	case c.Collector.Get != nil:
 		response, err = doRequest(
-			"GET", c.Collector.Get.URL, c.Collector.Get.Headers,
-			"", c.Collector.Get.InsecureSkipVerify, c.Collector.Get.Timeout, c.Collector.TLS.CACert, c.Collector.Proxy)
+			"GET", c.Collector.Get.URL, c.Collector.Get.Headers, "", c.Collector.Get.InsecureSkipVerify, c.Collector.Get.Timeout, c.Collector.TLS.CACert, c.Collector.Proxy)
 	case c.Collector.Post != nil:
 		response, err = doRequest(
-			"POST", c.Collector.Post.URL, c.Collector.Post.Headers,
-			c.Collector.Post.Body, c.Collector.Post.InsecureSkipVerify, c.Collector.Post.Timeout, c.Collector.TLS.CACert, c.Collector.Proxy)
+			"POST", c.Collector.Post.URL, c.Collector.Post.Headers, c.Collector.Post.Body, c.Collector.Post.InsecureSkipVerify, c.Collector.Post.Timeout, c.Collector.TLS.CACert, c.Collector.Proxy)
 	case c.Collector.Put != nil:
 		response, err = doRequest(
-			"PUT", c.Collector.Put.URL, c.Collector.Put.Headers,
-			c.Collector.Put.Body, c.Collector.Put.InsecureSkipVerify, c.Collector.Put.Timeout, c.Collector.TLS.CACert, c.Collector.Proxy)
+			"PUT", c.Collector.Put.URL, c.Collector.Put.Headers, c.Collector.Put.Body, c.Collector.Put.InsecureSkipVerify, c.Collector.Put.Timeout, c.Collector.TLS.CACert, c.Collector.Proxy)
 	default:
 		return nil, errors.New("no supported http request type")
 	}
@@ -96,15 +93,18 @@ func doRequest(method, url string, headers map[string]string, body string, insec
 	var tlsConfig *tls.Config
 
 	if cacert != "" {
-		certPool := x509.NewCertPool()
+		certPool, err := x509.SystemCertPool()
 
-		if !certPool.AppendCertsFromPEM([]byte(cacert)) {
-			return nil, errors.New("failed to append certificate to cert pool")
+		if err != nil {
+			if !certPool.AppendCertsFromPEM([]byte(cacert)) {
+				return nil, errors.New("failed to append certificate to cert pool")
+			}
+		} else {
+			return nil, errors.New("failed to get system cert pool")
 		}
 
 		tlsConfig = &tls.Config{
-			RootCAs:            certPool,
-			InsecureSkipVerify: true,
+			RootCAs: certPool,
 		}
 
 		fmt.Printf("Using tlsConfig cert: %+v", tlsConfig)
