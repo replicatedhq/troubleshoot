@@ -36,6 +36,7 @@ type HTTPLoadBalancer struct {
 type TCPPortStatus struct {
 	HostCollectorMeta `json:",inline" yaml:",inline"`
 	Interface         string `json:"interface,omitempty"`
+	DialInterface     string `json:"dialInterface,omitempty"`
 	Port              int    `json:"port"`
 }
 

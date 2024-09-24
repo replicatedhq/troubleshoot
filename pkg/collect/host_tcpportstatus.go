@@ -30,16 +30,20 @@ func (c *CollectHostTCPPortStatus) Collect(progressChan chan<- interface{}) (map
 	listenAddress := fmt.Sprintf("0.0.0.0:%d", c.hostCollector.Port)
 
 	if c.hostCollector.Interface != "" {
-		iface, err := net.InterfaceByName(c.hostCollector.Interface)
+		ip, err := getIPv4FromInterfaceByName(c.hostCollector.Interface)
 		if err != nil {
-			return nil, errors.Wrapf(err, "lookup interface %s", c.hostCollector.Interface)
-		}
-		ip, err := getIPv4FromInterface(iface)
-		if err != nil {
-			return nil, errors.Wrapf(err, "get ipv4 address for interface %s", c.hostCollector.Interface)
+			return nil, errors.Wrapf(err, "get ip by interface name %s", c.hostCollector.Interface)
 		}
 		listenAddress = fmt.Sprintf("%s:%d", ip, c.hostCollector.Port)
 		dialAddress = listenAddress
+	}
+
+	if c.hostCollector.DialInterface != "" {
+		ip, err := getIPv4FromInterfaceByName(c.hostCollector.DialInterface)
+		if err != nil {
+			return nil, errors.Wrapf(err, "get ip by interface name %s", c.hostCollector.Interface)
+		}
+		dialAddress = fmt.Sprintf("%s:%d", ip, c.hostCollector.Port)
 	}
 
 	if dialAddress == "" {
@@ -75,6 +79,18 @@ func (c *CollectHostTCPPortStatus) Collect(progressChan chan<- interface{}) (map
 	return map[string][]byte{
 		name: b,
 	}, nil
+}
+
+func getIPv4FromInterfaceByName(name string) (string, error) {
+	iface, err := net.InterfaceByName(name)
+	if err != nil {
+		return "", errors.Wrapf(err, "lookup interface %s", name)
+	}
+	ip, err := getIPv4FromInterface(iface)
+	if err != nil {
+		return "", errors.Wrapf(err, "get ipv4 address for interface %s", name)
+	}
+	return ip.String(), nil
 }
 
 func getIPv4FromInterface(iface *net.Interface) (net.IP, error) {

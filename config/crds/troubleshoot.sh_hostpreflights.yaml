@@ -1693,6 +1693,8 @@ spec:
                       properties:
                         collectorName:
                           type: string
+                        dialInterface:
+                          type: string
                         exclude:
                           type: BoolString
                         interface:
