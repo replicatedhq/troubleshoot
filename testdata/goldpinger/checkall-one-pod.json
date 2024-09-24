@@ -1,0 +1,30 @@
+{
+    "hosts": [
+        {
+            "hostIP": "172.18.0.3",
+            "podIP": "10.42.0.17",
+            "podName": "gp-goldpinger-xn9rg"
+        }
+    ],
+    "responses": {
+        "gp-goldpinger-xn9rg": {
+            "HostIP": "172.18.0.3",
+            "OK": true,
+            "PodIP": "10.42.0.17",
+            "response": {
+                "podResults": {
+                    "gp-goldpinger-xn9rg": {
+                        "HostIP": "172.18.0.3",
+                        "OK": true,
+                        "PingTime": "2024-09-24T07:10:10.431Z",
+                        "PodIP": "10.42.0.17",
+                        "response": {
+                            "boot_time": "2024-09-24T07:09:40.411Z"
+                        },
+                        "status-code": 200
+                    }
+                }
+            }
+        }
+    }
+}
