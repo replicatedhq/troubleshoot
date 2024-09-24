@@ -2077,6 +2077,8 @@ spec:
                       type: object
                     goldpinger:
                       properties:
+                        collectDelay:
+                          type: string
                         collectorName:
                           type: string
                         exclude:
@@ -2103,6 +2105,8 @@ spec:
                             serviceAccountName:
                               type: string
                           type: object
+                        serviceAccountName:
+                          type: string
                       type: object
                     helm:
                       properties:

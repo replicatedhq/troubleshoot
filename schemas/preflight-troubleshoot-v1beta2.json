@@ -3139,6 +3139,9 @@
               "goldpinger": {
                 "type": "object",
                 "properties": {
+                  "collectDelay": {
+                    "type": "string"
+                  },
                   "collectorName": {
                     "type": "string"
                   },
@@ -3178,6 +3181,9 @@
                         "type": "string"
                       }
                     }
+                  },
+                  "serviceAccountName": {
+                    "type": "string"
                   }
                 }
               },
