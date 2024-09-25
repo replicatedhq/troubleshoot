@@ -16,6 +16,11 @@ type AnalyzeHostOS struct {
 	hostAnalyzer *troubleshootv1beta2.HostOSAnalyze
 }
 
+type NodeOSInfo struct {
+	NodeName string
+	collect.HostOSInfo
+}
+
 func (a *AnalyzeHostOS) Title() string {
 	return hostAnalyzerTitleOrDefault(a.hostAnalyzer.AnalyzeMeta, "Host OS Info")
 }
@@ -27,30 +32,93 @@ func (a *AnalyzeHostOS) IsExcluded() (bool, error) {
 func (a *AnalyzeHostOS) Analyze(
 	getCollectedFileContents func(string) ([]byte, error), findFiles getChildCollectedFileContents,
 ) ([]*AnalyzeResult, error) {
-
+	var nodesOSInfo []NodeOSInfo
 	result := AnalyzeResult{}
 	result.Title = a.Title()
 
+	// check if the host os info file exists (local mode)
 	contents, err := getCollectedFileContents(collect.HostOSInfoPath)
 	if err != nil {
-		return []*AnalyzeResult{&result}, errors.Wrap(err, "failed to get collected file")
+		//check if the node list file exists (remote mode)
+		contents, err := getCollectedFileContents(collect.NODE_LIST_FILE)
+		if err != nil {
+			return []*AnalyzeResult{&result}, errors.Wrap(err, "failed to get collected file")
+		}
+
+		var nodes collect.HostOSInfoNodes
+		if err := json.Unmarshal(contents, &nodes); err != nil {
+			return []*AnalyzeResult{&result}, errors.Wrap(err, "failed to unmarshal host os info nodes")
+		}
+
+		// iterate over each node and analyze the host os info
+		for _, node := range nodes.Nodes {
+			contents, err := getCollectedFileContents(collect.NodeInfoBaseDir + "/" + node + "/" + collect.HostInfoFileName)
+			if err != nil {
+				return []*AnalyzeResult{&result}, errors.Wrap(err, "failed to get collected file")
+			}
+
+			var osInfo collect.HostOSInfo
+			if err := json.Unmarshal(contents, &osInfo); err != nil {
+				return []*AnalyzeResult{&result}, errors.Wrap(err, "failed to unmarshal host os info")
+			}
+
+			nodesOSInfo = append(nodesOSInfo, NodeOSInfo{NodeName: node, HostOSInfo: osInfo})
+		}
+
+		results, err := analyzeOSVersionResult(nodesOSInfo, a.hostAnalyzer.Outcomes, a.Title())
+		if err != nil {
+			return []*AnalyzeResult{&result}, errors.Wrap(err, "failed to analyze os version result")
+		}
+		return results, nil
 	}
 
 	var osInfo collect.HostOSInfo
 	if err := json.Unmarshal(contents, &osInfo); err != nil {
 		return []*AnalyzeResult{&result}, errors.Wrap(err, "failed to unmarshal host os info")
 	}
-
-	return analyzeOSVersionResult(osInfo, a.hostAnalyzer.Outcomes, a.Title())
+	nodesOSInfo = append(nodesOSInfo, NodeOSInfo{NodeName: "", HostOSInfo: osInfo})
+	return analyzeOSVersionResult(nodesOSInfo, a.hostAnalyzer.Outcomes, a.Title())
 }
 
-func analyzeOSVersionResult(osInfo collect.HostOSInfo, outcomes []*troubleshootv1beta2.Outcome, title string) ([]*AnalyzeResult, error) {
+func analyzeOSVersionResult(nodesOSInfo []NodeOSInfo, outcomes []*troubleshootv1beta2.Outcome, title string) ([]*AnalyzeResult, error) {
+	var results []*AnalyzeResult
+	for _, osInfo := range nodesOSInfo {
+		if title == "" {
+			title = "Host OS Info"
+		}
 
-	if title == "" {
-		title = "Host OS Info"
+		analyzeResult, err := analyzeByOutcomes(outcomes, osInfo, title)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to analyze condition")
+		}
+		results = append(results, analyzeResult...)
 	}
 
+	return results, nil
+}
+
+var rx = regexp.MustCompile(`^[0-9]+\.?[0-9]*\.?[0-9]*`)
+
+func fixVersion(versionStr string) string {
+
+	splitStr := strings.Split(versionStr, ".")
+	for i := 0; i < len(splitStr); i++ {
+		if splitStr[i] != "0" {
+			splitStr[i] = strings.TrimPrefix(splitStr[i], "0")
+		}
+	}
+	fixTrailZero := strings.Join(splitStr, ".")
+	version := rx.FindString(fixTrailZero)
+	version = strings.TrimRight(version, ".")
+	return version
+}
+
+func analyzeByOutcomes(outcomes []*troubleshootv1beta2.Outcome, osInfo NodeOSInfo, title string) ([]*AnalyzeResult, error) {
+	var results []*AnalyzeResult
 	for _, outcome := range outcomes {
+		if osInfo.NodeName != "" {
+			title = fmt.Sprintf("%s - Node %s", title, osInfo.NodeName)
+		}
 
 		result := AnalyzeResult{
 			Title: title,
@@ -82,7 +150,8 @@ func analyzeOSVersionResult(osInfo collect.HostOSInfo, outcomes []*troubleshootv
 		result.URI = uri
 		// When is usually empty as the final case and should be treated as true
 		if when == "" {
-			return []*AnalyzeResult{&result}, nil
+			results = append(results, &result)
+			return results, nil
 		}
 
 		parts := strings.Split(when, " ")
@@ -109,7 +178,8 @@ func analyzeOSVersionResult(osInfo collect.HostOSInfo, outcomes []*troubleshootv
 				return []*AnalyzeResult{}, errors.Wrapf(err, "failed to parse tolerant: %v", fixedKernelVer)
 			}
 			if whenRange(toleratedKernelVer) {
-				return []*AnalyzeResult{&result}, nil
+				results = append(results, &result)
+				return results, nil
 			}
 		}
 
@@ -125,7 +195,8 @@ func analyzeOSVersionResult(osInfo collect.HostOSInfo, outcomes []*troubleshootv
 					return []*AnalyzeResult{&result}, errors.Wrapf(err, "failed to parse tolerant: %v", fixedKernelVer)
 				}
 				if whenRange(toleratedKernelVer) {
-					return []*AnalyzeResult{&result}, nil
+					results = append(results, &result)
+					return results, nil
 				}
 			}
 			// Match the platform version
@@ -137,26 +208,10 @@ func analyzeOSVersionResult(osInfo collect.HostOSInfo, outcomes []*troubleshootv
 				return []*AnalyzeResult{&result}, errors.Wrapf(err, "failed to parse tolerant: %v", fixedDistVer)
 			}
 			if whenRange(toleratedDistVer) {
-				return []*AnalyzeResult{&result}, nil
+				results = append(results, &result)
+				return results, nil
 			}
 		}
 	}
-
-	return []*AnalyzeResult{}, nil
-}
-
-var rx = regexp.MustCompile(`^[0-9]+\.?[0-9]*\.?[0-9]*`)
-
-func fixVersion(versionStr string) string {
-
-	splitStr := strings.Split(versionStr, ".")
-	for i := 0; i < len(splitStr); i++ {
-		if splitStr[i] != "0" {
-			splitStr[i] = strings.TrimPrefix(splitStr[i], "0")
-		}
-	}
-	fixTrailZero := strings.Join(splitStr, ".")
-	version := rx.FindString(fixTrailZero)
-	version = strings.TrimRight(version, ".")
-	return version
+	return results, nil
 }

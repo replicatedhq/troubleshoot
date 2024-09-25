@@ -12,6 +12,8 @@ import (
 	"k8s.io/client-go/rest"
 )
 
+const NODE_LIST_FILE = "host-collectors/system/node_list.json"
+
 var (
 	// ErrCollectorNotFound is returned when an undefined host collector is
 	// specified by the user.

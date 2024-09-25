@@ -20,7 +20,7 @@ func TestHostOSRemoteCollector(t *testing.T) {
 	}{
 		{
 			paths: []string{
-				"hostos_info.json",
+				"node_list.json",
 			},
 			expectType: "file",
 		},
