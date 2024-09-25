@@ -102,17 +102,17 @@ clean:
 tidy:
 	go mod tidy
 
-bin/support-bundle:
-	go build ${BUILDFLAGS} ${LDFLAGS} -o bin/support-bundle github.com/replicatedhq/troubleshoot/cmd/troubleshoot
+bin/support-bundle: $(shell find cmd/troubleshoot/ -name '*.go') $(shell find pkg/ -name '*.go')
+		go build ${BUILDFLAGS} ${LDFLAGS} -o bin/support-bundle github.com/replicatedhq/troubleshoot/cmd/troubleshoot
 
-bin/preflight:
-	go build ${BUILDFLAGS} ${LDFLAGS} -o bin/preflight github.com/replicatedhq/troubleshoot/cmd/preflight
+bin/preflight: $(shell find cmd/preflight/ -name '*.go') $(shell find pkg/ -name '*.go')
+		go build ${BUILDFLAGS} ${LDFLAGS} -o bin/preflight github.com/replicatedhq/troubleshoot/cmd/preflight
 
-bin/analyze:
-	go build ${BUILDFLAGS} ${LDFLAGS} -o bin/analyze github.com/replicatedhq/troubleshoot/cmd/analyze
+bin/analyze: $(shell find cmd/analyze/ -name '*.go') $(shell find pkg/ -name '*.go')
+		go build ${BUILDFLAGS} ${LDFLAGS} -o bin/analyze github.com/replicatedhq/troubleshoot/cmd/analyze
 
-bin/collect:
-	go build ${BUILDFLAGS} ${LDFLAGS} -o bin/collect github.com/replicatedhq/troubleshoot/cmd/collect
+bin/collect: $(shell find cmd/collect/ -name '*.go') $(shell find pkg/ -name '*.go')
+		go build ${BUILDFLAGS} ${LDFLAGS} -o bin/collect github.com/replicatedhq/troubleshoot/cmd/collect
 
 build-linux: tidy
 	@echo "Build cli binaries for Linux"
@@ -146,9 +146,9 @@ openapischema: controller-gen
 
 check-schemas: generate schemas
 	@if [ -n "$(shell git status --short)" ]; then \
-    	echo -e "\033[31mThe git repo is dirty :( Ensure all generated files are committed e.g CRD schema files\033[0;m"; \
-    	git status --short; \
-    	exit 1; \
+			echo -e "\033[31mThe git repo is dirty :( Ensure all generated files are committed e.g CRD schema files\033[0;m"; \
+			git status --short; \
+			exit 1; \
 	fi
 
 .PHONY: schemas
