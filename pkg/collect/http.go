@@ -5,11 +5,11 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/json"
-	"fmt"
 	"io"
 	"net/http"
 	"net/http/httputil"
 	neturl "net/url"
+	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -83,68 +83,69 @@ func (c *CollectHTTP) Collect(progressChan chan<- interface{}) (CollectorResult,
 	return output, nil
 }
 
+func handleFileOrDir(path string) (bool, error) {
+	f, err := os.Stat(path)
+	if err != nil {
+		klog.V(2).Infof("Failed to stat file path: %s\n", err)
+		return false, err
+	}
+	if f.IsDir() {
+		os.Setenv("SSL_CERT_DIR", path)
+		klog.V(2).Infof("Using SSL_CERT_DIR: %s\n", path)
+	} else if f.Mode().IsRegular() {
+		os.Setenv("SSL_CERT_FILE", path)
+		klog.V(2).Infof("Using SSL_CERT_FILE: %s\n", path)
+	}
+	return true, nil
+}
+
+func isPEMCertificate(s string) bool {
+	return strings.Contains(s, "BEGIN CERTIFICATE") || strings.Contains(s, "BEGIN RSA PRIVATE KEY")
+}
+
 func doRequest(method, url string, headers map[string]string, body string, insecureSkipVerify bool, timeout string, cacert string, proxy string) (*http.Response, error) {
+
 	t, err := parseTimeout(timeout)
 	if err != nil {
 		return nil, err
 	}
 
-	var httpClient *http.Client
-	var tlsConfig *tls.Config
+	tlsConfig := &tls.Config{}
+	httpTransport := &http.Transport{}
 
 	if cacert != "" {
-		certPool, err := x509.SystemCertPool()
-
-		if err != nil {
+		if isPEMCertificate(cacert) {
+			klog.V(2).Infof("Using PEM certificate from spec\n")
+			certPool, err := x509.SystemCertPool()
+			if err != nil {
+				return nil, errors.Wrap(err, "failed to get system cert pool")
+			}
 			if !certPool.AppendCertsFromPEM([]byte(cacert)) {
 				return nil, errors.New("failed to append certificate to cert pool")
 			}
-		} else {
-			return nil, errors.New("failed to get system cert pool")
+			tlsConfig.RootCAs = certPool
+		} else if _, err := handleFileOrDir(cacert); err != nil {
+			return nil, errors.Wrap(err, "failed to handle cacert file path")
 		}
+	}
 
-		tlsConfig = &tls.Config{
-			RootCAs: certPool,
-		}
+	if insecureSkipVerify {
+		tlsConfig.InsecureSkipVerify = true
+	}
 
-		fmt.Printf("Using tlsConfig cert: %+v", tlsConfig)
+	httpTransport.TLSClientConfig = tlsConfig
 
-		fn := func(req *http.Request) (*neturl.URL, error) {
+	if proxy != "" {
+		httpTransport.Proxy = func(req *http.Request) (*neturl.URL, error) {
 			return neturl.Parse(proxy)
 		}
+	}
 
-		httpClient = &http.Client{
-			Timeout: t,
-			Transport: &LoggingTransport{
-				Transport: &http.Transport{
-					Proxy:           fn,
-					TLSClientConfig: tlsConfig,
-				},
-			},
-		}
-
-	} else if insecureSkipVerify {
-
-		tlsConfig = &tls.Config{
-			InsecureSkipVerify: true,
-		}
-
-		httpClient = &http.Client{
-			Timeout: t,
-			Transport: &LoggingTransport{
-				Transport: &http.Transport{
-					TLSClientConfig: tlsConfig,
-				},
-			},
-		}
-
-	} else {
-		httpClient = &http.Client{
-			Timeout: t,
-			Transport: &LoggingTransport{
-				Transport: &http.Transport{},
-			},
-		}
+	httpClient := &http.Client{
+		Timeout: t,
+		Transport: &LoggingTransport{
+			Transport: httpTransport,
+		},
 	}
 
 	req, err := http.NewRequest(method, url, strings.NewReader(body))
@@ -167,24 +168,22 @@ func (t *LoggingTransport) RoundTrip(req *http.Request) (*http.Response, error) 
 	// Log the request
 	dumpReq, err := httputil.DumpRequestOut(req, true)
 	if err != nil {
-		klog.V(2).Infof("Failed to dump request: %v", err)
+		klog.V(2).Infof("Failed to dump request: %+v\n", err)
 	} else {
-		klog.V(2).Infof("Request: %s", dumpReq)
+		klog.V(2).Infof("Request: %s\n", dumpReq)
 	}
 
 	resp, err := t.Transport.RoundTrip(req)
 
-	fmt.Printf("Response: %v", resp)
-
 	// Log the response
 	if err != nil {
-		klog.V(2).Infof("Request failed: %v", err)
+		klog.V(2).Infof("Request failed: %+v\n", err)
 	} else {
 		dumpResp, err := httputil.DumpResponse(resp, true)
 		if err != nil {
-			klog.V(2).Infof("Failed to dump response: %v", err)
+			klog.V(2).Infof("Failed to dump response: %v+\n", err)
 		} else {
-			klog.V(2).Infof("Response: %s", dumpResp)
+			klog.V(2).Infof("Response: %s\n", dumpResp)
 		}
 	}
 
@@ -209,11 +208,15 @@ func responseToOutput(response *http.Response, err error) ([]byte, error) {
 		}
 
 		var rawJSON json.RawMessage
-		if err := json.Unmarshal(body, &rawJSON); err != nil {
-			klog.Infof("failed to unmarshal response body as JSON: %v", err)
+		if len(body) > 0 {
+			if err := json.Unmarshal(body, &rawJSON); err != nil {
+				klog.Infof("failed to unmarshal response body as JSON: %+v", err)
+				rawJSON = json.RawMessage{}
+			}
+		} else {
 			rawJSON = json.RawMessage{}
+			klog.V(2).Infof("empty response body\n")
 		}
-
 		output["response"] = HTTPResponse{
 			Status:  response.StatusCode,
 			Body:    string(body),
