@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"os"
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
@@ -25,7 +26,6 @@ type HostOSInfoNodes struct {
 const HostOSInfoPath = `host-collectors/system/hostos_info.json`
 const NodeInfoBaseDir = `host-collectors/system`
 const HostInfoFileName = `hostos_info.json`
-const NodeListFile = `host-collectors/system/hostos_info_nodes.json`
 
 type CollectHostOS struct {
 	hostCollector *troubleshootv1beta2.HostOS
@@ -119,10 +119,15 @@ func (c *CollectHostOS) RemoteCollect(progressChan chan<- interface{}) (map[stri
 		}
 	}
 
-	nodesBytes, err := json.MarshalIndent(HostOSInfoNodes{Nodes: nodes}, "", " ")
+	// check if NODE_LIST_FILE exists
+	_, err = os.Stat(NODE_LIST_FILE)
+	// if it not exists, save the nodes list
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to marshal host os info nodes")
+		nodesBytes, err := json.MarshalIndent(HostOSInfoNodes{Nodes: nodes}, "", " ")
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to marshal host os info nodes")
+		}
+		output.SaveResult(c.BundlePath, NODE_LIST_FILE, bytes.NewBuffer(nodesBytes))
 	}
-	output.SaveResult(c.BundlePath, NodeListFile, bytes.NewBuffer(nodesBytes))
 	return output, nil
 }

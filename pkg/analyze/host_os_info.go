@@ -39,8 +39,8 @@ func (a *AnalyzeHostOS) Analyze(
 	// check if the host os info file exists (local mode)
 	contents, err := getCollectedFileContents(collect.HostOSInfoPath)
 	if err != nil {
-		//check if the host os info nodes file exists (remote mode)
-		contents, err := getCollectedFileContents(collect.NodeListFile)
+		//check if the node list file exists (remote mode)
+		contents, err := getCollectedFileContents(collect.NODE_LIST_FILE)
 		if err != nil {
 			return []*AnalyzeResult{&result}, errors.Wrap(err, "failed to get collected file")
 		}
