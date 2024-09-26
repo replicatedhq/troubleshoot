@@ -31,6 +31,8 @@ import (
 	"k8s.io/klog/v2"
 )
 
+type empty struct{}
+
 func RunPreflights(interactive bool, output string, format string, args []string) error {
 	ctx, root := otel.Tracer(
 		constants.LIB_TRACER_NAME).Start(context.Background(), constants.TROUBLESHOOT_ROOT_SPAN_NAME)
@@ -113,7 +115,7 @@ func RunPreflights(interactive bool, output string, format string, args []string
 		progressCollection.Go(collectNonInteractiveProgess(ctx, progressCh))
 	}
 
-	uploadResultsMap := make(map[string][]CollectResult)
+	uploadResultsMap := make(map[string]empty)
 	collectorResults := collect.NewResult()
 	analyzers := []*troubleshootv1beta2.Analyze{}
 	hostAnalyzers := []*troubleshootv1beta2.HostAnalyze{}
@@ -130,7 +132,7 @@ func RunPreflights(interactive bool, output string, format string, args []string
 		collectorResults.AddResult(collect.CollectorResult(collectorResult.AllCollectedData))
 
 		if spec.Spec.UploadResultsTo != "" {
-			uploadResultsMap[spec.Spec.UploadResultsTo] = append(uploadResultsMap[spec.Spec.UploadResultsTo], *r)
+			uploadResultsMap[spec.Spec.UploadResultsTo] = empty{}
 			uploadCollectResults = append(collectResults, *r)
 		} else {
 			collectResults = append(collectResults, *r)
@@ -188,11 +190,8 @@ func RunPreflights(interactive bool, output string, format string, args []string
 	}
 
 	uploadAnalyzeResultsMap := make(map[string][]*analyzer.AnalyzeResult)
-	for location, results := range uploadResultsMap {
-		for _, res := range results {
-			uploadAnalyzeResultsMap[location] = append(uploadAnalyzeResultsMap[location], res.Analyze()...)
-			analyzeResults = append(analyzeResults, uploadAnalyzeResultsMap[location]...)
-		}
+	for location := range uploadResultsMap {
+		uploadAnalyzeResultsMap[location] = append(uploadAnalyzeResultsMap[location], analyzeResults...)
 	}
 
 	for k, v := range uploadAnalyzeResultsMap {
