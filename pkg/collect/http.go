@@ -56,13 +56,13 @@ func (c *CollectHTTP) Collect(progressChan chan<- interface{}) (CollectorResult,
 	switch {
 	case c.Collector.Get != nil:
 		response, err = doRequest(
-			"GET", c.Collector.Get.URL, c.Collector.Get.Headers, "", c.Collector.Get.InsecureSkipVerify, c.Collector.Get.Timeout, c.Collector.TLS.CACert, c.Collector.Proxy)
+			"GET", c.Collector.Get.URL, c.Collector.Get.Headers, "", c.Collector.Get.InsecureSkipVerify, c.Collector.Get.Timeout, c.Collector.Get.TLS, c.Collector.Get.Proxy)
 	case c.Collector.Post != nil:
 		response, err = doRequest(
-			"POST", c.Collector.Post.URL, c.Collector.Post.Headers, c.Collector.Post.Body, c.Collector.Post.InsecureSkipVerify, c.Collector.Post.Timeout, c.Collector.TLS.CACert, c.Collector.Proxy)
+			"POST", c.Collector.Post.URL, c.Collector.Post.Headers, c.Collector.Post.Body, c.Collector.Post.InsecureSkipVerify, c.Collector.Post.Timeout, c.Collector.Post.TLS, c.Collector.Post.Proxy)
 	case c.Collector.Put != nil:
 		response, err = doRequest(
-			"PUT", c.Collector.Put.URL, c.Collector.Put.Headers, c.Collector.Put.Body, c.Collector.Put.InsecureSkipVerify, c.Collector.Put.Timeout, c.Collector.TLS.CACert, c.Collector.Proxy)
+			"PUT", c.Collector.Put.URL, c.Collector.Put.Headers, c.Collector.Put.Body, c.Collector.Put.InsecureSkipVerify, c.Collector.Put.Timeout, c.Collector.Put.TLS, c.Collector.Put.Proxy)
 	default:
 		return nil, errors.New("no supported http request type")
 	}
@@ -103,7 +103,7 @@ func isPEMCertificate(s string) bool {
 	return strings.Contains(s, "BEGIN CERTIFICATE") || strings.Contains(s, "BEGIN RSA PRIVATE KEY")
 }
 
-func doRequest(method, url string, headers map[string]string, body string, insecureSkipVerify bool, timeout string, cacert string, proxy string) (*http.Response, error) {
+func doRequest(method, url string, headers map[string]string, body string, insecureSkipVerify bool, timeout string, tlsParams *troubleshootv1beta2.TLSParams, proxy string) (*http.Response, error) {
 
 	t, err := parseTimeout(timeout)
 	if err != nil {
@@ -113,18 +113,18 @@ func doRequest(method, url string, headers map[string]string, body string, insec
 	tlsConfig := &tls.Config{}
 	httpTransport := &http.Transport{}
 
-	if cacert != "" {
-		if isPEMCertificate(cacert) {
+	if tlsParams != nil && tlsParams.CACert != "" {
+		if isPEMCertificate(tlsParams.CACert) {
 			klog.V(2).Infof("Using PEM certificate from spec\n")
 			certPool, err := x509.SystemCertPool()
 			if err != nil {
 				return nil, errors.Wrap(err, "failed to get system cert pool")
 			}
-			if !certPool.AppendCertsFromPEM([]byte(cacert)) {
+			if !certPool.AppendCertsFromPEM([]byte(tlsParams.CACert)) {
 				return nil, errors.New("failed to append certificate to cert pool")
 			}
 			tlsConfig.RootCAs = certPool
-		} else if _, err := handleFileOrDir(cacert); err != nil {
+		} else if _, err := handleFileOrDir(tlsParams.CACert); err != nil {
 			return nil, errors.Wrap(err, "failed to handle cacert file path")
 		}
 	}
@@ -135,9 +135,15 @@ func doRequest(method, url string, headers map[string]string, body string, insec
 
 	httpTransport.TLSClientConfig = tlsConfig
 
-	if proxy != "" {
-		httpTransport.Proxy = func(req *http.Request) (*neturl.URL, error) {
-			return neturl.Parse(proxy)
+	if proxy != "" || os.Getenv("HTTPS_PROXY") != "" {
+		if proxy != "" {
+			klog.V(2).Infof("Using proxy from spec: %s\n", proxy)
+			httpTransport.Proxy = func(req *http.Request) (*neturl.URL, error) {
+				return neturl.Parse(proxy)
+			}
+		} else {
+			klog.V(2).Infof("Using proxy from environment: %s\n", os.Getenv("HTTPS_PROXY"))
+			httpTransport.Proxy = http.ProxyFromEnvironment
 		}
 	}
 

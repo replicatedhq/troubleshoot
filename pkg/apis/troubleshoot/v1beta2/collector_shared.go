@@ -174,12 +174,10 @@ type Sysctl struct {
 
 type HTTP struct {
 	CollectorMeta `json:",inline" yaml:",inline"`
-	Name          string     `json:"name,omitempty" yaml:"name,omitempty"`
-	Get           *Get       `json:"get,omitempty" yaml:"get,omitempty"`
-	Post          *Post      `json:"post,omitempty" yaml:"post,omitempty"`
-	Put           *Put       `json:"put,omitempty" yaml:"put,omitempty"`
-	TLS           *TLSParams `json:"tls,omitempty" yaml:"tls,omitempty"`
-	Proxy         string     `json:"proxy,omitempty" yaml:"proxy,omitempty"`
+	Name          string `json:"name,omitempty" yaml:"name,omitempty"`
+	Get           *Get   `json:"get,omitempty" yaml:"get,omitempty"`
+	Post          *Post  `json:"post,omitempty" yaml:"post,omitempty"`
+	Put           *Put   `json:"put,omitempty" yaml:"put,omitempty"`
 }
 
 type Get struct {
@@ -188,7 +186,9 @@ type Get struct {
 	Headers            map[string]string `json:"headers,omitempty" yaml:"headers,omitempty"`
 	// Timeout is the time to wait for a server's response. Its a duration e.g 15s, 2h30m.
 	// Missing value or empty string or means no timeout.
-	Timeout string `json:"timeout,omitempty" yaml:"timeout,omitempty"`
+	Timeout string     `json:"timeout,omitempty" yaml:"timeout,omitempty"`
+	TLS     *TLSParams `json:"tls,omitempty" yaml:"tls,omitempty"`
+	Proxy   string     `json:"proxy,omitempty" yaml:"proxy,omitempty"`
 }
 
 type Post struct {
@@ -198,7 +198,9 @@ type Post struct {
 	Body               string            `json:"body,omitempty" yaml:"body,omitempty"`
 	// Timeout is the time to wait for a server's response. Its a duration e.g 15s, 2h30m.
 	// Missing value or empty string or means no timeout.
-	Timeout string `json:"timeout,omitempty" yaml:"timeout,omitempty"`
+	Timeout string     `json:"timeout,omitempty" yaml:"timeout,omitempty"`
+	TLS     *TLSParams `json:"tls,omitempty" yaml:"tls,omitempty"`
+	Proxy   string     `json:"proxy,omitempty" yaml:"proxy,omitempty"`
 }
 
 type Put struct {
@@ -208,7 +210,9 @@ type Put struct {
 	Body               string            `json:"body,omitempty" yaml:"body,omitempty"`
 	// Timeout is the time to wait for a server's response. Its a duration e.g 15s, 2h30m.
 	// Missing value or empty string or means no timeout.
-	Timeout string `json:"timeout,omitempty" yaml:"timeout,omitempty"`
+	Timeout string     `json:"timeout,omitempty" yaml:"timeout,omitempty"`
+	TLS     *TLSParams `json:"tls,omitempty" yaml:"tls,omitempty"`
+	Proxy   string     `json:"proxy,omitempty" yaml:"proxy,omitempty"`
 }
 
 type Database struct {

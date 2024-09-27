@@ -1,53 +1,59 @@
 apiVersion: troubleshoot.sh/v1beta2
-kind: SupportBundle
+kind: HostPreflight
 metadata:
-  name: replicated-app
+  name: mitm-proxy
 spec:
   collectors:
     - http:
-        collectorName: https-google-proxy
-        get:
-          url: https://www.google.com
-        proxy: https://10.128.0.4:3130
-    - http:
-        collectorName: https-replicated-proxy-cert-dir
+        collectorName: https-proxy
         get:
           url: https://replicated.app
-        tls:
-          cacert: /usr/local/share/ca-certificates/replicated.app
-        proxy: https://10.128.0.4:3130
+          tls:
+            cacert: &ca |-
+              -----BEGIN CERTIFICATE-----
+              MIIDajCCAlKgAwIBAgIUFlUns1qeD6ss4cdXz52287KtPQswDQYJKoZIhvcNAQEL
+              BQAwTjELMAkGA1UEBhMCVVMxDjAMBgNVBAgMBVN0YXRlMQ0wCwYDVQQHDARDaXR5
+              MRMwEQYDVQQKDApSZXBsaWNhdGVkMQswCQYDVQQLDAJJVDAeFw0yNDA5MjcxNTU5
+              MDJaFw0yNDEwMDQxNTU5MDJaME4xCzAJBgNVBAYTAlVTMQ4wDAYDVQQIDAVTdGF0
+              ZTENMAsGA1UEBwwEQ2l0eTETMBEGA1UECgwKUmVwbGljYXRlZDELMAkGA1UECwwC
+              SVQwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDLe7PlgdPiApQzZzkY
+              0dN/NDBib72Y5TAEhNguPVDY1Rj4PLiKjUXvHbVsRLpP8DrKJAeK/kJqeR4xr1O5
+              dQenCoTZTHX24TLFx0D1SKfdUtpxzKta8jd+O5TwaY/tLsi9YcJ6mz8n7+giJH1r
+              ZH5Isa9JkZ3fb2+VoX054I/C88MfsvdZahL7/RHLvolRiLeV7X86Zx2EJ3hUFWoZ
+              kYeIggbt2BeikeDlHQDBmxzpIaP1IMl3LHOjZhj7TiNuSYtDiE8OQIV34c9IZ1yi
+              lcUjrwKQCfzaE9lZK5UbS3KRD1XFSrSP4tWVsUmesYeFD+nc5/wku/J+PXDM1QAu
+              B8q9AgMBAAGjQDA+MA8GA1UdEQQIMAaHBAoKHskwDAYDVR0TBAUwAwEB/zAdBgNV
+              HQ4EFgQUuwXZYrzbdQVGCS5O0sdlCJo761cwDQYJKoZIhvcNAQELBQADggEBAH3G
+              9C6sJ+uR9ZAOnFyCQEdBVaw02NMOY0ajc8gMrmgl9btx1rLnS8r+zLf9Jev0YxiG
+              Pq6HbkceQNa6Rl6l6JH4O0sV0KUXe5r7kPPYv9pMsy+JZYH9H1ppUr0a13s4vrgA
+              4YbFE3TispC6WXFng4w85ODc9nmXGDvjPX6mzZxcsxooDX5+PPAo+WueKutOZMvT
+              yvB2hUgb4hy6CT6OvJJFb9Lh1Hl5aE/9FKgF3u/Tq2U3SSzMHMZiWzUVfAO0J1Ev
+              jcr8Mb5t3iQwH3t2eT07K2fouPa70vbOfj1kSiexUoUllHgoOXUeOpGv4Aykly7m
+              C/XdeJyP1tnZ3j2ozPo=
+              -----END CERTIFICATE-----
+          proxy: &proxy https://10.10.30.201:3130
     - http:
-        collectorName: https-replicated-proxy-file
+        collectorName: https-proxy-failed
         get:
           url: https://replicated.app
-        tls:
-          cacert: /usr/local/share/ca-certificates/replicated.app/replicated.crt
-        proxy: https://10.128.0.4:3130
+          proxy: *proxy
+
+  analyzers:
     - http:
-        collectorName: https-replicated-proxy-literal
-        get:
-          url: https://replicated.app
-        tls:
-          cacert: |-
-            -----BEGIN CERTIFICATE-----
-            MIIDajCCAlKgAwIBAgIUZJdSAOMxiY3cKU34KCtpK2ztkhUwDQYJKoZIhvcNAQEL
-            BQAwTjELMAkGA1UEBhMCVVMxDjAMBgNVBAgMBVN0YXRlMQ0wCwYDVQQHDARDaXR5
-            MRMwEQYDVQQKDApSZXBsaWNhdGVkMQswCQYDVQQLDAJJVDAeFw0yNDA5MjUxNDI0
-            NTVaFw0yNDEwMDIxNDI0NTVaME4xCzAJBgNVBAYTAlVTMQ4wDAYDVQQIDAVTdGF0
-            ZTENMAsGA1UEBwwEQ2l0eTETMBEGA1UECgwKUmVwbGljYXRlZDELMAkGA1UECwwC
-            SVQwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDFaoJSv18TVLGFq2WC
-            q6KOmlwfZpBXdgU1CYtg1HDwKUZ4/+WIcoHo+7yp+tt5TRA55r5d9YTlHWvQ+efh
-            pRbIxmi7aTI9JyV9/jw3lDdVjShiNmdlNEGW7PYAihQkWLErMVcLspiZqmWB2Ar5
-            bvkRGoLV8Mf7QdAIEPZzK3RxL9oQSk0F5T+n/TxEOlN3XCJxWvgZUFNslnTNkx9d
-            ABeMBfoB22gJtcRqJ2Rsp3HrkNzOu4i5xHQtj3f4UdEkxBAUZwME1SK3qFVOfI4i
-            Gon4jFW0y0NYRuzYTypBuLbGoQ3RcOmpLfOSzhZL/aEE95QXHNH3L6QzVF4kZUin
-            7sIRAgMBAAGjQDA+MA8GA1UdEQQIMAaHBAqAAAQwDAYDVR0TBAUwAwEB/zAdBgNV
-            HQ4EFgQUqJTkHiOkT65YvZelWCn/JziGN5AwDQYJKoZIhvcNAQELBQADggEBADPt
-            pdL++z00Ix75MVmjxU7QeLorpSeiU1j4z26VgomkuiC6iJrMKrYOGBsn7uMmALO8
-            lVHDUCfAHs0Jv1vijkczT6I+fJiRYz0gnXYfMlPTH3Z082wVB5i0/ZZzv2hbO/cH
-            Z8nmQvX3S+vOH5t9s/af1lxYzRno4Bo5CRzV5yoWHJT0dkAL8Xq16PWl+KUp6hel
-            pVoo6uhBGcaJK5HY0WczyUY6ecMJ2BEwc0jNyYBKdkLAB3110axgFvtdBweHsEQv
-            ISeaclwXuzYuVFr0BawyUSjenl0t8ybbKFfNrLyv6FHTNiqRup6SxORr3eLSv4dZ
-            6Qg1Og0ne2dGJrebKy0=
-            -----END CERTIFICATE-----
-        proxy: https://10.128.0.4:3130
+        checkName: https-proxy
+        collectorName: https-proxy
+        outcomes:
+          - pass:
+              when: "statusCode == 200"
+              message: checking https://replicated.app passed
+          - fail:
+              message: checking https://replicated.app failed
+    - http:
+        checkName: https-proxy-failed
+        collectorName: https-proxy-failed
+        outcomes:
+          - pass:
+              when: "statusCode == 200"
+              message: checking https://replicated.app passed
+          - fail:
+              message: checking https://replicated.app failed
