@@ -20,12 +20,13 @@ func TestCollectHostCPU_Collect(t *testing.T) {
 	require.Contains(t, got, "host-collectors/system/cpu.json")
 	values := got["host-collectors/system/cpu.json"]
 
-	var m map[string]int
+	var m map[string]interface{}
 	err = json.Unmarshal(values, &m)
 	require.NoError(t, err)
 
 	// Check if values exist. They will be different on different machines.
-	assert.Equal(t, 2, len(m))
+	assert.Equal(t, 3, len(m))
 	assert.Contains(t, m, "logicalCount")
 	assert.Contains(t, m, "physicalCount")
+	assert.Contains(t, m, "flags")
 }
