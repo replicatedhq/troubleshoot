@@ -3,6 +3,7 @@ package supportbundle
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
@@ -22,6 +23,8 @@ import (
 	"github.com/replicatedhq/troubleshoot/pkg/convert"
 	"github.com/replicatedhq/troubleshoot/pkg/version"
 	"go.opentelemetry.io/otel"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/klog/v2"
 )
@@ -44,6 +47,11 @@ type SupportBundleResponse struct {
 	AnalyzerResults []*analyzer.AnalyzeResult
 	ArchivePath     string
 	FileUploaded    bool
+}
+
+// NodeList is a list of remote nodes to collect data from in a support bundle
+type NodeList struct {
+	Nodes []string `json:"nodes"`
 }
 
 // CollectSupportBundleFromSpec collects support bundle from start to finish, including running
@@ -98,7 +106,7 @@ func CollectSupportBundleFromSpec(
 		return nil, errors.Wrap(err, "create bundle dir")
 	}
 
-	var result, files, hostFiles collect.CollectorResult
+	result := make(collect.CollectorResult)
 
 	ctx, root := otel.Tracer(constants.LIB_TRACER_NAME).Start(
 		context.Background(), constants.TROUBLESHOOT_ROOT_SPAN_NAME,
@@ -110,10 +118,32 @@ func CollectSupportBundleFromSpec(
 		root.End()
 	}()
 
+	// only create a node list if we are running host collectors in a pod
+	if opts.RunHostCollectorsInPod {
+		clientset, err := kubernetes.NewForConfig(opts.KubernetesRestConfig)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to create kubernetes clientset to run host collectors in pod")
+		}
+		nodeList, err := getNodeList(clientset, opts)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to get remote node list")
+		}
+		nodeListBytes, err := json.MarshalIndent(nodeList, "", "  ")
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to marshal remote node list")
+		}
+		err = result.SaveResult(bundlePath, constants.NODE_LIST_FILE, bytes.NewBuffer(nodeListBytes))
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to write remote node list")
+		}
+	}
+
 	// Cache error returned by collectors and return it at the end of the function
 	// so as to have a chance to run analyzers and archive the support bundle after.
 	// If both host and in cluster collectors fail, the errors will be wrapped
 	collectorsErrs := []string{}
+	var files, hostFiles collect.CollectorResult
+
 	if spec.HostCollectors != nil {
 		// Run host collectors
 		hostFiles, err = runHostCollectors(ctx, spec.HostCollectors, additionalRedactors, bundlePath, opts)
@@ -130,16 +160,16 @@ func CollectSupportBundleFromSpec(
 		}
 	}
 
-	if files != nil && hostFiles != nil {
-		result = files
-		for k, v := range hostFiles {
-			result[k] = v
-		}
-	} else if files != nil {
-		result = files
-	} else if hostFiles != nil {
-		result = hostFiles
-	} else {
+	// merge in-cluster and host collectors results
+	for k, v := range files {
+		result[k] = v
+	}
+
+	for k, v := range hostFiles {
+		result[k] = v
+	}
+
+	if len(result) == 0 {
 		if len(collectorsErrs) > 0 {
 			return nil, fmt.Errorf("failed to generate support bundle: %s", strings.Join(collectorsErrs, "\n"))
 		}
@@ -287,4 +317,19 @@ func ConcatSpec(target *troubleshootv1beta2.SupportBundle, source *troubleshootv
 		// TODO: What to do with the Uri field?
 	}
 	return newBundle
+}
+
+func getNodeList(clientset kubernetes.Interface, opts SupportBundleCreateOpts) (*NodeList, error) {
+	// todo: any node filtering on opts?
+	nodes, err := clientset.CoreV1().Nodes().List(context.Background(), metav1.ListOptions{})
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to list nodes")
+	}
+
+	nodeList := NodeList{}
+	for _, node := range nodes.Items {
+		nodeList.Nodes = append(nodeList.Nodes, node.Name)
+	}
+
+	return &nodeList, nil
 }

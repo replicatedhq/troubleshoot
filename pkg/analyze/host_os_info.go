@@ -10,6 +10,7 @@ import (
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/replicatedhq/troubleshoot/pkg/collect"
+	"github.com/replicatedhq/troubleshoot/pkg/constants"
 )
 
 type AnalyzeHostOS struct {
@@ -39,8 +40,8 @@ func (a *AnalyzeHostOS) Analyze(
 	// check if the host os info file exists (local mode)
 	contents, err := getCollectedFileContents(collect.HostOSInfoPath)
 	if err != nil {
-		//check if the node list file exists (remote mode)
-		contents, err := getCollectedFileContents(collect.NODE_LIST_FILE)
+		// check if the node list file exists (remote mode)
+		contents, err := getCollectedFileContents(constants.NODE_LIST_FILE)
 		if err != nil {
 			return []*AnalyzeResult{&result}, errors.Wrap(err, "failed to get collected file")
 		}
