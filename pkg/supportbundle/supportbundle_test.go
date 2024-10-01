@@ -79,6 +79,7 @@ func Test_getNodeList(t *testing.T) {
 	tests := []struct {
 		name        string
 		clientset   kubernetes.Interface
+		opts        SupportBundleCreateOpts
 		expected    *NodeList
 		expectError bool
 	}{
@@ -92,6 +93,7 @@ func Test_getNodeList(t *testing.T) {
 					},
 				},
 			),
+			opts: SupportBundleCreateOpts{},
 			expected: &NodeList{
 				Nodes: []string{"node1", "node2"},
 			},
@@ -101,7 +103,7 @@ func Test_getNodeList(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			nodeList, err := getNodeList(tt.clientset)
+			nodeList, err := getNodeList(tt.clientset, tt.opts)
 			if (err != nil) != tt.expectError {
 				t.Errorf("getNodeList() error = %v, expectError %v", err, tt.expectError)
 				return
