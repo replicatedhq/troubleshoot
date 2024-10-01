@@ -161,16 +161,12 @@ func CollectSupportBundleFromSpec(
 	}
 
 	// merge in-cluster and host collectors results
-	if files != nil {
-		for k, v := range files {
-			result[k] = v
-		}
+	for k, v := range files {
+		result[k] = v
 	}
 
-	if hostFiles != nil {
-		for k, v := range hostFiles {
-			result[k] = v
-		}
+	for k, v := range hostFiles {
+		result[k] = v
 	}
 
 	if len(result) == 0 {
