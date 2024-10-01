@@ -177,7 +177,7 @@ func queryDNS(name, query, server string) DNSEntry {
 
 		// remember the search domain that resolved the query
 		// e.g. foo.test.com -> test.com
-		entry.Search = strings.Replace(query, name, "", 1)
+		entry.Search = extractSearchFromFQDN(query, name)
 
 		// populate record detail
 		switch rec {
@@ -206,4 +206,14 @@ func queryDNS(name, query, server string) DNSEntry {
 
 func (c *CollectHostDNS) RemoteCollect(progressChan chan<- interface{}) (map[string][]byte, error) {
 	return nil, ErrRemoteCollectorNotImplemented
+}
+
+func extractSearchFromFQDN(fqdn, name string) string {
+	// no search domain
+	if fqdn == name {
+		return ""
+	}
+	search := strings.TrimPrefix(fqdn, name+".") // remove name
+	search = strings.TrimSuffix(search, ".")     // remove root dot
+	return search
 }

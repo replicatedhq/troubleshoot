@@ -3,6 +3,7 @@ package collect
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
@@ -17,7 +18,13 @@ type HostOSInfo struct {
 	Platform        string `json:"platform"`
 }
 
+type HostOSInfoNodes struct {
+	Nodes []string `json:"nodes"`
+}
+
 const HostOSInfoPath = `host-collectors/system/hostos_info.json`
+const NodeInfoBaseDir = `host-collectors/system`
+const HostInfoFileName = `hostos_info.json`
 
 type CollectHostOS struct {
 	hostCollector *troubleshootv1beta2.HostOS
@@ -89,7 +96,7 @@ func (c *CollectHostOS) RemoteCollect(progressChan chan<- interface{}) (map[stri
 	output := NewResult()
 
 	// save the first result we find in the node and save it
-	for _, result := range results.AllCollectedData {
+	for node, result := range results.AllCollectedData {
 		var nodeResult map[string]string
 		if err := json.Unmarshal(result, &nodeResult); err != nil {
 			return nil, errors.Wrap(err, "failed to marshal node results")
@@ -105,10 +112,9 @@ func (c *CollectHostOS) RemoteCollect(progressChan chan<- interface{}) (map[stri
 			if err != nil {
 				return nil, errors.Wrap(err, "failed to marshal host os info")
 			}
-			output.SaveResult(c.BundlePath, HostOSInfoPath, bytes.NewBuffer(b))
-			return output, nil
+			output.SaveResult(c.BundlePath, fmt.Sprintf("host-collectors/system/%s/%s", node, HostInfoFileName), bytes.NewBuffer(b))
 		}
 	}
 
-	return nil, errors.New("failed to find host os info")
+	return output, nil
 }

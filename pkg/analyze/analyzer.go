@@ -122,7 +122,7 @@ func Analyze(
 		return nil, errors.New("nil analyzer")
 	}
 
-	analyzerInst := getAnalyzer(analyzer)
+	analyzerInst := GetAnalyzer(analyzer)
 	if analyzerInst == nil {
 		klog.Info("Non-existent analyzer found in the spec. Please double-check the spelling and indentation of the analyzers in the spec.")
 		return nil, nil
@@ -188,7 +188,7 @@ type Analyzer interface {
 	Analyze(getFile getCollectedFileContents, findFiles getChildCollectedFileContents) ([]*AnalyzeResult, error)
 }
 
-func getAnalyzer(analyzer *troubleshootv1beta2.Analyze) Analyzer {
+func GetAnalyzer(analyzer *troubleshootv1beta2.Analyze) Analyzer {
 	switch {
 	case analyzer.ClusterVersion != nil:
 		return &AnalyzeClusterVersion{analyzer: analyzer.ClusterVersion}

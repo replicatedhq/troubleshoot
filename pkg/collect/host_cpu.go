@@ -10,8 +10,9 @@ import (
 )
 
 type CPUInfo struct {
-	LogicalCount  int `json:"logicalCount"`
-	PhysicalCount int `json:"physicalCount"`
+	LogicalCount  int      `json:"logicalCount"`
+	PhysicalCount int      `json:"physicalCount"`
+	Flags         []string `json:"flags"`
 }
 
 const HostCPUPath = `host-collectors/system/cpu.json`
@@ -43,6 +44,25 @@ func (c *CollectHostCPU) Collect(progressChan chan<- interface{}) (map[string][]
 		return nil, errors.Wrap(err, "failed to count physical cpus")
 	}
 	cpuInfo.PhysicalCount = physicalCount
+
+	// XXX even though the cpu.Info() returns a slice per CPU it is way
+	// common to have the same flags for all CPUs. We consolidate them here
+	// so the output is a list of all different flags present in all CPUs.
+	info, err := cpu.Info()
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get cpu info")
+	}
+
+	seen := make(map[string]bool)
+	for _, infoForCPU := range info {
+		for _, flag := range infoForCPU.Flags {
+			if seen[flag] {
+				continue
+			}
+			seen[flag] = true
+			cpuInfo.Flags = append(cpuInfo.Flags, flag)
+		}
+	}
 
 	b, err := json.Marshal(cpuInfo)
 	if err != nil {

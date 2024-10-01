@@ -10,6 +10,7 @@ import (
 	"github.com/replicatedhq/troubleshoot/pkg/constants"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/klog/v2"
 )
 
 type providers struct {
@@ -75,7 +76,8 @@ func (a *AnalyzeDistribution) IsExcluded() (bool, error) {
 func (a *AnalyzeDistribution) Analyze(getFile getCollectedFileContents, findFiles getChildCollectedFileContents) ([]*AnalyzeResult, error) {
 	result, err := a.analyzeDistribution(a.analyzer, getFile)
 	if err != nil {
-		return nil, err
+		klog.Errorf("failed to analyze distribution: %v", err)
+		return nil, errors.Wrapf(err, "failed to analyze distribution")
 	}
 	result.Strict = a.analyzer.Strict.BoolOrDefaultFalse()
 	return []*AnalyzeResult{result}, nil

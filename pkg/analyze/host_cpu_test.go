@@ -81,6 +81,7 @@ func Test_compareHostCPUConditionalToActual(t *testing.T) {
 		when          string
 		logicalCount  int
 		physicalCount int
+		flags         []string
 		expected      bool
 	}{
 		{
@@ -139,12 +140,36 @@ func Test_compareHostCPUConditionalToActual(t *testing.T) {
 			physicalCount: 4,
 			expected:      true,
 		},
+		{
+			name:     "supports x86-64-v2 microarchitecture",
+			when:     "supports x86-64-v2",
+			flags:    []string{""},
+			expected: false,
+		},
+		{
+			name:     "supports x86-64-v2 microarchitecture",
+			when:     "supports x86-64-v2",
+			flags:    []string{"cmov", "cx8", "fpu", "fxsr", "mmx", "syscall", "sse", "sse2", "cx16", "lahf_lm", "popcnt", "ssse3", "sse4_1", "sse4_2", "ssse3"},
+			expected: true,
+		},
+		{
+			name:     "has a non existent flag",
+			when:     "hasFlags cmov,doesNotExist",
+			flags:    []string{"cmov", "cx8", "fpu", "fxsr", "mmx", "syscall", "sse", "sse2", "cx16", "lahf_lm", "popcnt", "ssse3", "sse4_1", "sse4_2", "ssse3"},
+			expected: false,
+		},
+		{
+			name:     "has flags",
+			when:     "hasFlags a,b,c",
+			flags:    []string{"a", "b", "c", "d", "e"},
+			expected: true,
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			req := require.New(t)
 
-			actual, err := compareHostCPUConditionalToActual(test.when, test.logicalCount, test.physicalCount)
+			actual, err := compareHostCPUConditionalToActual(test.when, test.logicalCount, test.physicalCount, test.flags)
 			req.NoError(err)
 
 			assert.Equal(t, test.expected, actual)
