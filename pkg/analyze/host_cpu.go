@@ -52,7 +52,7 @@ func (a *AnalyzeHostCPU) Analyze(
 				return []*AnalyzeResult{&result}, nil
 			}
 
-			isMatch, err := compareHostCPUConditionalToActual(outcome.Fail.When, cpuInfo.LogicalCount, cpuInfo.PhysicalCount)
+			isMatch, err := compareHostCPUConditionalToActual(outcome.Fail.When, cpuInfo.LogicalCount, cpuInfo.PhysicalCount, cpuInfo.MachineArch)
 			if err != nil {
 				return nil, errors.Wrap(err, "failed to compare")
 			}
@@ -73,7 +73,7 @@ func (a *AnalyzeHostCPU) Analyze(
 				return []*AnalyzeResult{&result}, nil
 			}
 
-			isMatch, err := compareHostCPUConditionalToActual(outcome.Warn.When, cpuInfo.LogicalCount, cpuInfo.PhysicalCount)
+			isMatch, err := compareHostCPUConditionalToActual(outcome.Warn.When, cpuInfo.LogicalCount, cpuInfo.PhysicalCount, cpuInfo.MachineArch)
 			if err != nil {
 				return nil, errors.Wrap(err, "failed to compare")
 			}
@@ -94,7 +94,7 @@ func (a *AnalyzeHostCPU) Analyze(
 				return []*AnalyzeResult{&result}, nil
 			}
 
-			isMatch, err := compareHostCPUConditionalToActual(outcome.Pass.When, cpuInfo.LogicalCount, cpuInfo.PhysicalCount)
+			isMatch, err := compareHostCPUConditionalToActual(outcome.Pass.When, cpuInfo.LogicalCount, cpuInfo.PhysicalCount, cpuInfo.MachineArch)
 			if err != nil {
 				return nil, errors.Wrap(err, "failed to compare")
 			}
@@ -112,14 +112,18 @@ func (a *AnalyzeHostCPU) Analyze(
 	return []*AnalyzeResult{&result}, nil
 }
 
-func compareHostCPUConditionalToActual(conditional string, logicalCount int, physicalCount int) (res bool, err error) {
+func compareHostCPUConditionalToActual(conditional string, logicalCount int, physicalCount int, machineArch string) (res bool, err error) {
 	compareLogical := false
 	comparePhysical := false
 	compareUnspecified := false
+	compareMachineArch := false
 
 	comparator := ""
 	desired := ""
 
+	/* When the conditional is in the format of "logical <comparator> <desired>"
+	   example: when: "count < 2" 
+	*/
 	parts := strings.Split(conditional, " ")
 	if len(parts) == 3 {
 		comparator = parts[1]
@@ -130,14 +134,16 @@ func compareHostCPUConditionalToActual(conditional string, logicalCount int, phy
 			comparePhysical = true
 		} else if strings.ToLower(parts[0]) == "count" {
 			compareUnspecified = true
-		}
+		} else if strings.ToLower(parts[0]) == "machineArch" {
+			compareMachineArch = true 
+		}	
 	} else if len(parts) == 2 {
 		compareUnspecified = true
 		comparator = parts[0]
 		desired = parts[1]
 	}
 
-	if !compareLogical && !comparePhysical && !compareUnspecified {
+	if !compareLogical && !comparePhysical && !compareUnspecified && !compareMachineArch {
 		return false, errors.New("unable to parse conditional")
 	}
 
@@ -145,7 +151,9 @@ func compareHostCPUConditionalToActual(conditional string, logicalCount int, phy
 		return doCompareHostCPU(comparator, desired, logicalCount)
 	} else if comparePhysical {
 		return doCompareHostCPU(comparator, desired, physicalCount)
-	} else {
+	} else if compareMachineArch {
+		return doCompareMachineArch(comparator, desired, machineArch)
+	}	else {
 		actual := logicalCount
 		if physicalCount > logicalCount {
 			actual = physicalCount
@@ -153,6 +161,16 @@ func compareHostCPUConditionalToActual(conditional string, logicalCount int, phy
 
 		return doCompareHostCPU(comparator, desired, actual)
 	}
+}
+
+func doCompareMachineArch(operator string, desired string, actual string) (bool, error) {
+	switch operator {
+	case "=", "==", "===":
+		return actual == desired, nil
+	case "!=", "!==":
+		return actual != desired, nil
+	}
+	return false, errors.New("unknown operator")
 }
 
 func doCompareHostCPU(operator string, desired string, actual int) (bool, error) {
@@ -172,6 +190,8 @@ func doCompareHostCPU(operator string, desired string, actual int) (bool, error)
 		return actual >= int(desiredInt), nil
 	case "=", "==", "===":
 		return actual == int(desiredInt), nil
+	case "!=", "!==":
+		return actual != int(desiredInt), nil
 	}
 
 	return false, errors.New("unknown operator")
