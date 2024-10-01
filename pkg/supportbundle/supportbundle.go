@@ -106,7 +106,7 @@ func CollectSupportBundleFromSpec(
 		return nil, errors.Wrap(err, "create bundle dir")
 	}
 
-	var result, files, hostFiles collect.CollectorResult
+	result := make(collect.CollectorResult)
 
 	ctx, root := otel.Tracer(constants.LIB_TRACER_NAME).Start(
 		context.Background(), constants.TROUBLESHOOT_ROOT_SPAN_NAME,
@@ -128,11 +128,11 @@ func CollectSupportBundleFromSpec(
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to get remote node list")
 		}
-		nodeListBytes, err := json.Marshal(nodeList)
+		nodeListBytes, err := json.MarshalIndent(nodeList, "", "  ")
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to marshal remote node list")
 		}
-		err = result.SaveResult(bundlePath, constants.NODE_LIST_FILE, bytes.NewReader(nodeListBytes))
+		err = result.SaveResult(bundlePath, constants.NODE_LIST_FILE, bytes.NewBuffer(nodeListBytes))
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to write remote node list")
 		}
@@ -142,6 +142,8 @@ func CollectSupportBundleFromSpec(
 	// so as to have a chance to run analyzers and archive the support bundle after.
 	// If both host and in cluster collectors fail, the errors will be wrapped
 	collectorsErrs := []string{}
+	var files, hostFiles collect.CollectorResult
+
 	if spec.HostCollectors != nil {
 		// Run host collectors
 		hostFiles, err = runHostCollectors(ctx, spec.HostCollectors, additionalRedactors, bundlePath, opts)
@@ -158,16 +160,20 @@ func CollectSupportBundleFromSpec(
 		}
 	}
 
-	if files != nil && hostFiles != nil {
-		result = files
+	// merge in-cluster and host collectors results
+	if files != nil {
+		for k, v := range files {
+			result[k] = v
+		}
+	}
+
+	if hostFiles != nil {
 		for k, v := range hostFiles {
 			result[k] = v
 		}
-	} else if files != nil {
-		result = files
-	} else if hostFiles != nil {
-		result = hostFiles
-	} else {
+	}
+
+	if len(result) == 0 {
 		if len(collectorsErrs) > 0 {
 			return nil, fmt.Errorf("failed to generate support bundle: %s", strings.Join(collectorsErrs, "\n"))
 		}
