@@ -30,7 +30,7 @@ func runHostCollectors(ctx context.Context, hostCollectors []*troubleshootv1beta
 
 	var collectors []collect.HostCollector
 	for _, desiredCollector := range collectSpecs {
-		collector, ok := collect.GetHostCollector(desiredCollector, bundlePath)
+		collector, ok := collect.GetHostCollector(desiredCollector, bundlePath, opts.KubernetesRestConfig)
 		if ok {
 			collectors = append(collectors, collector)
 		}

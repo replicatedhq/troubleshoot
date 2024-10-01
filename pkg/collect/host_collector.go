@@ -1,7 +1,14 @@
 package collect
 
 import (
+	"context"
+	"time"
+
+	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
+	"golang.org/x/sync/errgroup"
+	"k8s.io/apiserver/pkg/storage/names"
+	"k8s.io/client-go/rest"
 )
 
 type HostCollector interface {
@@ -11,7 +18,7 @@ type HostCollector interface {
 	RemoteCollect(progressChan chan<- interface{}) (map[string][]byte, error) // RemoteCollect is used to priviledge pods to collect data from different nodes
 }
 
-func GetHostCollector(collector *troubleshootv1beta2.HostCollect, bundlePath string) (HostCollector, bool) {
+func GetHostCollector(collector *troubleshootv1beta2.HostCollect, bundlePath string, restConfig *rest.Config) (HostCollector, bool) {
 	switch {
 	case collector.CPU != nil:
 		return &CollectHostCPU{collector.CPU, bundlePath}, true
@@ -57,7 +64,8 @@ func GetHostCollector(collector *troubleshootv1beta2.HostCollect, bundlePath str
 	case collector.HostServices != nil:
 		return &CollectHostServices{collector.HostServices, bundlePath}, true
 	case collector.HostOS != nil:
-		return &CollectHostOS{collector.HostOS, bundlePath}, true
+		c := &CollectHostOS{collector.HostOS, bundlePath, restConfig, "replicated/troubleshoot:latest", "", "", "default", (120 * time.Second), "hostos-remote", nil}
+		return c, true
 	case collector.HostRun != nil:
 		return &CollectHostRun{collector.HostRun, bundlePath}, true
 	case collector.HostCopy != nil:
@@ -80,4 +88,35 @@ func hostCollectorTitleOrDefault(meta troubleshootv1beta2.HostCollectorMeta, def
 		return meta.CollectorName
 	}
 	return defaultTitle
+}
+
+func runRemote(ctx context.Context, runner runner, nodes []string, collector *troubleshootv1beta2.HostCollect, nameGenerator names.NameGenerator, namePrefix string, namespace string) (map[string][]byte, error) {
+	g, ctx := errgroup.WithContext(ctx)
+	results := make(chan map[string][]byte, len(nodes))
+
+	for _, node := range nodes {
+		node := node
+		g.Go(func() error {
+			// May need to evaluate error and log warning.  Otherwise any error
+			// here will cancel the context of other goroutines and no results
+			// will be returned.
+			return runner.run(ctx, collector, namespace, nameGenerator.GenerateName(namePrefix+"-"), node, results)
+		})
+	}
+
+	// Wait for all collectors to complete or return the first error.
+	if err := g.Wait(); err != nil {
+		return nil, errors.Wrap(err, "failed remote collection")
+	}
+	close(results)
+
+	output := make(map[string][]byte)
+	for result := range results {
+		r := result
+		for k, v := range r {
+			output[k] = v
+		}
+	}
+
+	return output, nil
 }
