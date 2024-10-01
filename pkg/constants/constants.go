@@ -109,4 +109,7 @@ const (
 	OUTCOME_PASS = "pass"
 	OUTCOME_WARN = "warn"
 	OUTCOME_FAIL = "fail"
+
+	// List of remote nodes to collect data from in a support bundle
+	NODE_LIST_FILE = "host-collectors/system/node_list.json"
 )

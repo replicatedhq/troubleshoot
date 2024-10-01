@@ -5,6 +5,10 @@ import (
 	"testing"
 
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes"
+	testclient "k8s.io/client-go/kubernetes/fake"
 )
 
 func Test_LoadAndConcatSpec(t *testing.T) {
@@ -68,5 +72,43 @@ func Test_LoadAndConcatSpec_WithNil(t *testing.T) {
 	bundle6 := ConcatSpec(bundle, (*troubleshootv1beta2.SupportBundle)(nil))
 	if reflect.DeepEqual(bundle6, bundle) == false {
 		t.Error("concatenating sourceBundle of nil pointer has error.")
+	}
+}
+
+func Test_getNodeList(t *testing.T) {
+	tests := []struct {
+		name        string
+		clientset   kubernetes.Interface
+		expected    *NodeList
+		expectError bool
+	}{
+		{
+			name: "successful node list",
+			clientset: testclient.NewSimpleClientset(
+				&corev1.NodeList{
+					Items: []corev1.Node{
+						{ObjectMeta: metav1.ObjectMeta{Name: "node1"}},
+						{ObjectMeta: metav1.ObjectMeta{Name: "node2"}},
+					},
+				},
+			),
+			expected: &NodeList{
+				Nodes: []string{"node1", "node2"},
+			},
+			expectError: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			nodeList, err := getNodeList(tt.clientset)
+			if (err != nil) != tt.expectError {
+				t.Errorf("getNodeList() error = %v, expectError %v", err, tt.expectError)
+				return
+			}
+			if !reflect.DeepEqual(nodeList, tt.expected) {
+				t.Errorf("getNodeList() = %v, expected %v", nodeList, tt.expected)
+			}
+		})
 	}
 }
