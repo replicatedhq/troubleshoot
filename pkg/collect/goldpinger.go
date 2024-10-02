@@ -64,7 +64,7 @@ func (c *CollectGoldpinger) Collect(progressChan chan<- interface{}) (CollectorR
 		GoldpingerImage = c.Collector.Image
 	}
 
-	url, resources, err := c.DiscoverOrCreateGoldpinger(namespace)
+	url, resources, err := c.DiscoverOrCreateGoldpinger(namespace, GoldpingerImage)
 	if err != nil {
 		klog.Errorf("Failed to ensure goldpinger is running: %v", err)
 		return nil, errors.Wrap(err, "failed to ensure goldpinger is running")
@@ -165,7 +165,7 @@ func parseCollectDelay(delay, defaultDelay string) (time.Duration, error) {
 	return time.ParseDuration(delay)
 }
 
-func (c *CollectGoldpinger) DiscoverOrCreateGoldpinger(ns string) (string, createdResources, error) {
+func (c *CollectGoldpinger) DiscoverOrCreateGoldpinger(ns string, image string) (string, createdResources, error) {
 	// Check if goldpinger is running in the cluster by searching for goldpinger's service
 	ret := createdResources{}
 	gpSvc, err := c.getGoldpingerService(ns)
@@ -221,7 +221,7 @@ func (c *CollectGoldpinger) DiscoverOrCreateGoldpinger(ns string) (string, creat
 		}
 	}
 
-	ds, err := c.createGoldpingerDaemonSet(ns, serviceAccountName)
+	ds, err := c.createGoldpingerDaemonSet(ns, image, serviceAccountName)
 	if err != nil {
 		return "", ret, errors.Wrap(err, "failed to create goldpinger daemonset")
 	}
@@ -302,7 +302,7 @@ func (c *CollectGoldpinger) createGoldpingerRoleBinding(ns string) (*rbacv1.Role
 	return c.Client.RbacV1().RoleBindings(ns).Create(c.Context, roleBinding, metav1.CreateOptions{})
 }
 
-func (c *CollectGoldpinger) createGoldpingerDaemonSet(ns, svcAccName string) (*appsv1.DaemonSet, error) {
+func (c *CollectGoldpinger) createGoldpingerDaemonSet(ns, image, svcAccName string) (*appsv1.DaemonSet, error) {
 	ds := &appsv1.DaemonSet{}
 
 	ds.ObjectMeta = metav1.ObjectMeta{
@@ -326,7 +326,7 @@ func (c *CollectGoldpinger) createGoldpingerDaemonSet(ns, svcAccName string) (*a
 				Containers: []corev1.Container{
 					{
 						Name:            "goldpinger-daemon",
-						Image:           GoldpingerImage,
+						Image:           image,
 						ImagePullPolicy: corev1.PullIfNotPresent,
 						Env: []corev1.EnvVar{
 							{
@@ -485,6 +485,10 @@ func (c *CollectGoldpinger) runPodAndCollectGPResults(url string, progressChan c
 	namespace := "default"
 	serviceAccountName := ""
 	image := constants.GP_DEFAULT_IMAGE
+	if c.Collector.UtilImage != "" {
+		image = c.Collector.UtilImage
+	}
+
 	var imagePullSecret *troubleshootv1beta2.ImagePullSecrets
 
 	if c.Collector.PodLaunchOptions != nil {

@@ -280,6 +280,7 @@ type Goldpinger struct {
 	CollectorMeta      `json:",inline" yaml:",inline"`
 	Namespace          string            `json:"namespace,omitempty" yaml:"namespace,omitempty"`
 	Image              string            `json:"image,omitempty" yaml:"image,omitempty"`
+	UtilImage          string            `json:"utilImage,omitempty" yaml:"utilImage,omitempty"`
 	ServiceAccountName string            `json:"serviceAccountName,omitempty" yaml:"serviceAccountName,omitempty"`
 	CollectDelay       string            `json:"collectDelay,omitempty" yaml:"collectDelay,omitempty"`
 	PodLaunchOptions   *PodLaunchOptions `json:"podLaunchOptions,omitempty" yaml:"podLaunchOptions,omitempty"`

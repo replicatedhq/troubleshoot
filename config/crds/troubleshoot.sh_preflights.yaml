@@ -2109,6 +2109,8 @@ spec:
                           type: object
                         serviceAccountName:
                           type: string
+                        utilImage:
+                          type: string
                       type: object
                     helm:
                       properties:
