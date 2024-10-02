@@ -292,24 +292,17 @@ func loadSpecs(ctx context.Context, args []string, client kubernetes.Interface) 
 		err       error
 	)
 
-	if len(args) < 1 {
-		fmt.Println("\r\033[36mNo specs provided, attempting to load from cluster...\033[m")
-		kinds, err = specs.LoadFromCluster(ctx, client, vp.GetStringSlice("selector"), vp.GetString("namespace"))
+	kinds, err = specs.LoadFromCLIArgs(ctx, client, allArgs, vp)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "failed to load specs from CLI args")
+	}
+
+	if len(redactors) > 0 {
+		additionalKinds, err := specs.LoadFromCLIArgs(ctx, client, allArgs, vp)
 		if err != nil {
-			return nil, nil, errors.Wrap(err, "failed to load specs from cluster, and no specs were provided as arguments")
+			return nil, nil, errors.Wrap(err, "failed to load redactors from CLI args")
 		}
-		if len(redactors) > 0 {
-			additionalKinds, err := specs.LoadFromCLIArgs(ctx, client, allArgs, vp)
-			if err != nil {
-				return nil, nil, errors.Wrap(err, "failed to load redactors from CLI args")
-			}
-			kinds.RedactorsV1Beta2 = append(kinds.RedactorsV1Beta2, additionalKinds.RedactorsV1Beta2...)
-		}
-	} else {
-		kinds, err = specs.LoadFromCLIArgs(ctx, client, allArgs, vp)
-		if err != nil {
-			return nil, nil, errors.Wrap(err, "failed to load specs from CLI args")
-		}
+		kinds.RedactorsV1Beta2 = append(kinds.RedactorsV1Beta2, additionalKinds.RedactorsV1Beta2...)
 	}
 
 	// Load additional specs from support bundle URIs
