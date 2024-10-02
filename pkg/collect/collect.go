@@ -96,47 +96,6 @@ func CollectHost(c *troubleshootv1beta2.HostCollector, additionalRedactors *trou
 
 }
 
-// CollectHostRemote runs the collection phase for a remote host collector.
-func CollectHostRemote(c *troubleshootv1beta2.HostCollector, additionalRedactors *troubleshootv1beta2.Redactor, opts CollectorRunOpts) (*HostCollectResult, error) {
-	allCollectedData := make(map[string][]byte)
-
-	var collectors []HostCollector
-	for _, desiredCollector := range c.Spec.Collectors {
-		collector, ok := GetHostCollector(desiredCollector, "", opts.KubernetesRestConfig)
-		if !ok {
-			return nil, ErrHostCollectorNotFound
-		}
-		collectors = append(collectors, collector)
-	}
-
-	collectResult := &HostCollectResult{
-		Collectors: collectors,
-		Spec:       c,
-	}
-
-	for _, collector := range collectors {
-		isExcluded, _ := collector.IsExcluded()
-		if isExcluded {
-			opts.ProgressChan <- fmt.Sprintf("[%s] Excluding collector", collector.Title())
-			continue
-		}
-
-		opts.ProgressChan <- fmt.Sprintf("[%s] Running collector...", collector.Title())
-		result, err := collector.RemoteCollect(opts.ProgressChan)
-		if err != nil {
-			opts.ProgressChan <- errors.Errorf("failed to run collector: %s: %v", collector.Title(), err)
-		}
-		for k, v := range result {
-			allCollectedData[k] = v
-		}
-	}
-
-	collectResult.AllCollectedData = allCollectedData
-
-	return collectResult, nil
-
-}
-
 // CollectRemote runs the collection phase for a remote collector.
 func CollectRemote(c *troubleshootv1beta2.RemoteCollector, additionalRedactors *troubleshootv1beta2.Redactor, opts CollectorRunOpts) (*RemoteCollectResult, error) {
 	allCollectedData := make(map[string][]byte)

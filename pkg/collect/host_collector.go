@@ -29,7 +29,7 @@ type RemoteCollectParams struct {
 	ProgressChan  chan<- interface{}
 	HostCollector *troubleshootv1beta2.HostCollect
 	BundlePath    string
-	ClientConfig  interface{} // specify actual type
+	ClientConfig  *rest.Config // specify actual type
 	Image         string
 	PullPolicy    string        // specify actual type if needed
 	Timeout       time.Duration // specify duration type if needed
@@ -119,7 +119,7 @@ func remoteHostCollect(params RemoteCollectParams) (map[string][]byte, error) {
 		return nil, errors.Wrap(err, "failed to add runtime scheme")
 	}
 
-	client, err := kubernetes.NewForConfig(clientConfig)
+	client, err := kubernetes.NewForConfig(params.ClientConfig)
 	if err != nil {
 		return nil, err
 	}
