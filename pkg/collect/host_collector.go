@@ -1,13 +1,20 @@
 package collect
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
+	"fmt"
+	"os"
 	"time"
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"golang.org/x/sync/errgroup"
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apiserver/pkg/storage/names"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 )
 
@@ -16,6 +23,20 @@ type HostCollector interface {
 	IsExcluded() (bool, error)
 	Collect(progressChan chan<- interface{}) (map[string][]byte, error)
 	RemoteCollect(progressChan chan<- interface{}) (map[string][]byte, error) // RemoteCollect is used to priviledge pods to collect data from different nodes
+}
+
+type RemoteCollectParams struct {
+	ProgressChan  chan<- interface{}
+	HostCollector *troubleshootv1beta2.HostCollect
+	BundlePath    string
+	ClientConfig  interface{} // specify actual type
+	Image         string
+	PullPolicy    string        // specify actual type if needed
+	Timeout       time.Duration // specify duration type if needed
+	LabelSelector string
+	NamePrefix    string
+	Namespace     string
+	Title         string
 }
 
 func GetHostCollector(collector *troubleshootv1beta2.HostCollect, bundlePath string, restConfig *rest.Config) (HostCollector, bool) {
@@ -88,6 +109,109 @@ func hostCollectorTitleOrDefault(meta troubleshootv1beta2.HostCollectorMeta, def
 		return meta.CollectorName
 	}
 	return defaultTitle
+}
+
+func remoteHostCollect(params RemoteCollectParams) (map[string][]byte, error) {
+	allCollectedData := make(map[string][]byte)
+
+	scheme := runtime.NewScheme()
+	if err := corev1.AddToScheme(scheme); err != nil {
+		return nil, errors.Wrap(err, "failed to add runtime scheme")
+	}
+
+	client, err := kubernetes.NewForConfig(clientConfig)
+	if err != nil {
+		return nil, err
+	}
+
+	runner := &podRunner{
+		client:       client,
+		scheme:       scheme,
+		image:        params.Image,
+		pullPolicy:   params.PullPolicy,
+		waitInterval: remoteCollectorDefaultInterval,
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), params.Timeout)
+	defer cancel()
+
+	// Get all the nodes where we should run.
+	nodes, err := listNodesNamesInSelector(ctx, client, params.LabelSelector)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to get the list of nodes matching a nodeSelector")
+	}
+
+	if params.NamePrefix == "" {
+		params.NamePrefix = remoteCollectorNamePrefix
+	}
+
+	result, err := runRemote(ctx, runner, nodes, params.HostCollector, names.SimpleNameGenerator, params.NamePrefix, params.Namespace)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to run collector remotely")
+	}
+
+	for k, v := range result {
+		if curBytes, ok := allCollectedData[k]; ok {
+			var curResults map[string]string
+			if err := json.Unmarshal(curBytes, &curResults); err != nil {
+				params.ProgressChan <- errors.Errorf("failed to read existing results for collector %s: %v\n", params.Title, err)
+				continue
+			}
+			var newResults map[string]string
+			if err := json.Unmarshal(v, &newResults); err != nil {
+				params.ProgressChan <- errors.Errorf("failed to read new results for collector %s: %v\n", params.Title, err)
+				continue
+			}
+			for file, data := range newResults {
+				curResults[file] = data
+			}
+			combinedResults, err := json.Marshal(curResults)
+			if err != nil {
+				params.ProgressChan <- errors.Errorf("failed to combine results for collector %s: %v\n", params.Title, err)
+				continue
+			}
+			allCollectedData[k] = combinedResults
+		} else {
+			allCollectedData[k] = v
+		}
+
+	}
+
+	output := NewResult()
+
+	// save the first result we find in the node and save it
+	for node, result := range allCollectedData {
+		var nodeResult map[string]string
+		if err := json.Unmarshal(result, &nodeResult); err != nil {
+			return nil, errors.Wrap(err, "failed to marshal node results")
+		}
+
+		for _, collectorResult := range nodeResult {
+			var collectedItems HostOSInfo
+			if err := json.Unmarshal([]byte(collectorResult), &collectedItems); err != nil {
+				return nil, errors.Wrap(err, "failed to marshal collector results")
+			}
+
+			b, err := json.MarshalIndent(collectedItems, "", " ")
+			if err != nil {
+				return nil, errors.Wrap(err, "failed to marshal host os info")
+			}
+			nodes = append(nodes, node)
+			output.SaveResult(params.BundlePath, fmt.Sprintf("host-collectors/system/%s/%s", node, HostInfoFileName), bytes.NewBuffer(b))
+		}
+	}
+
+	// check if NODE_LIST_FILE exists
+	_, err = os.Stat(NODE_LIST_FILE)
+	// if it not exists, save the nodes list
+	if err != nil {
+		nodesBytes, err := json.MarshalIndent(HostOSInfoNodes{Nodes: nodes}, "", " ")
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to marshal host os info nodes")
+		}
+		output.SaveResult(params.BundlePath, NODE_LIST_FILE, bytes.NewBuffer(nodesBytes))
+	}
+	return output, nil
 }
 
 func runRemote(ctx context.Context, runner runner, nodes []string, collector *troubleshootv1beta2.HostCollect, nameGenerator names.NameGenerator, namePrefix string, namespace string) (map[string][]byte, error) {
