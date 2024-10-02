@@ -85,8 +85,9 @@ func GetHostCollector(collector *troubleshootv1beta2.HostCollect, bundlePath str
 	case collector.HostServices != nil:
 		return &CollectHostServices{collector.HostServices, bundlePath}, true
 	case collector.HostOS != nil:
-		c := &CollectHostOS{collector.HostOS, bundlePath, restConfig, "replicated/troubleshoot:latest", "", "", "default", (120 * time.Second), "hostos-remote", nil}
-		return c, true
+		// Just something quick to verify that remote collection works
+		// Need to pass these in as parameters to GetHostCollector
+		return &CollectHostOS{collector.HostOS, bundlePath, restConfig, "replicated/troubleshoot:latest", "", "", "default", (120 * time.Second), "hostos-remote", nil}, true
 	case collector.HostRun != nil:
 		return &CollectHostRun{collector.HostRun, bundlePath}, true
 	case collector.HostCopy != nil:
