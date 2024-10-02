@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"reflect"
+	"strings"
 	"sync"
 
 	"github.com/pkg/errors"
@@ -249,7 +250,7 @@ func runLocalHostCollectors(ctx context.Context, hostCollectors []*troubleshootv
 }
 
 func runRemoteHostCollectors(ctx context.Context, hostCollectors []*troubleshootv1beta2.HostCollect, bundlePath string, opts SupportBundleCreateOpts) map[string][]byte {
-	// TODO: verify that we have access to the cluster
+	output := collect.NewResult()
 
 	// convert host collectors into a HostCollector spec
 	spec := createHostCollectorsSpec(hostCollectors)
@@ -266,6 +267,13 @@ func runRemoteHostCollectors(ctx context.Context, hostCollectors []*troubleshoot
 		return nil
 	}
 
+	nodeList, err := getNodeList(clientset, opts)
+	if err != nil {
+		// TODO: error handling
+		return nil
+	}
+	klog.V(2).Infof("Node list to run remote host collectors: %s", nodeList.Nodes)
+
 	// create a config map for the HostCollector spec
 	cm, err := createHostCollectorConfigMap(ctx, clientset, specJSON)
 	if err != nil {
@@ -273,13 +281,6 @@ func runRemoteHostCollectors(ctx context.Context, hostCollectors []*troubleshoot
 		return nil
 	}
 	klog.V(2).Infof("Created Remote Host Collector ConfigMap %s", cm.Name)
-
-	nodeList, err := getNodeList(clientset, opts)
-	if err != nil {
-		// TODO: error handling
-		return nil
-	}
-	klog.V(2).Infof("Node list to run remote host collectors: %s", nodeList.Nodes)
 
 	// create remote pod for each node
 	labels := map[string]string{
@@ -334,12 +335,12 @@ func runRemoteHostCollectors(ctx context.Context, hostCollectors []*troubleshoot
 	klog.V(2).Infof("All remote host collectors completed")
 
 	defer func() {
+		// TODO:
 		// delete the config map
 		// delete the remote pods
 	}()
 
 	// aggregate results
-	output := collect.NewResult()
 	for node, logs := range nodeLogs {
 		var nodeResult map[string]string
 		if err := json.Unmarshal(logs, &nodeResult); err != nil {
@@ -347,12 +348,26 @@ func runRemoteHostCollectors(ctx context.Context, hostCollectors []*troubleshoot
 			return nil
 		}
 		for file, data := range nodeResult {
+			// trim host-collectors/ prefix
+			file = strings.TrimPrefix(file, "host-collectors/")
 			err := output.SaveResult(bundlePath, fmt.Sprintf("host-collectors/%s/%s", node, file), bytes.NewBufferString(data))
 			if err != nil {
 				// TODO: error handling
 				return nil
 			}
 		}
+	}
+
+	// save node list to bundle for analyzer to use later
+	nodeListBytes, err := json.MarshalIndent(nodeList, "", "  ")
+	if err != nil {
+		// TODO: error handling
+		return nil
+	}
+	err = output.SaveResult(bundlePath, constants.NODE_LIST_FILE, bytes.NewBuffer(nodeListBytes))
+	if err != nil {
+		// TODO: error handling
+		return nil
 	}
 
 	return output
