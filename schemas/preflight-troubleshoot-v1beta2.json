@@ -3187,9 +3187,6 @@
                   },
                   "serviceAccountName": {
                     "type": "string"
-                  },
-                  "utilImage": {
-                    "type": "string"
                   }
                 }
               },

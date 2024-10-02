@@ -485,9 +485,6 @@ func (c *CollectGoldpinger) runPodAndCollectGPResults(url string, progressChan c
 	namespace := "default"
 	serviceAccountName := ""
 	image := constants.GP_DEFAULT_IMAGE
-	if c.Collector.UtilImage != "" {
-		image = c.Collector.UtilImage
-	}
 
 	var imagePullSecret *troubleshootv1beta2.ImagePullSecrets
 
