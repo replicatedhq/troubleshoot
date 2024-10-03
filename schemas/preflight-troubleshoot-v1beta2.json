@@ -3148,6 +3148,9 @@
                   "exclude": {
                     "oneOf": [{"type": "string"},{"type": "boolean"}]
                   },
+                  "image": {
+                    "type": "string"
+                  },
                   "namespace": {
                     "type": "string"
                   },
