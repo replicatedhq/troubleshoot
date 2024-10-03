@@ -60,11 +60,7 @@ func (c *CollectGoldpinger) Collect(progressChan chan<- interface{}) (CollectorR
 		namespace = c.Collector.Namespace
 	}
 
-	if c.Collector.Image != "" {
-		GoldpingerImage = c.Collector.Image
-	}
-
-	url, resources, err := c.DiscoverOrCreateGoldpinger(namespace, GoldpingerImage)
+	url, resources, err := c.DiscoverOrCreateGoldpinger(namespace)
 	if err != nil {
 		klog.Errorf("Failed to ensure goldpinger is running: %v", err)
 		return nil, errors.Wrap(err, "failed to ensure goldpinger is running")
@@ -165,7 +161,7 @@ func parseCollectDelay(delay, defaultDelay string) (time.Duration, error) {
 	return time.ParseDuration(delay)
 }
 
-func (c *CollectGoldpinger) DiscoverOrCreateGoldpinger(ns string, image string) (string, createdResources, error) {
+func (c *CollectGoldpinger) DiscoverOrCreateGoldpinger(ns string) (string, createdResources, error) {
 	// Check if goldpinger is running in the cluster by searching for goldpinger's service
 	ret := createdResources{}
 	gpSvc, err := c.getGoldpingerService(ns)
@@ -221,7 +217,7 @@ func (c *CollectGoldpinger) DiscoverOrCreateGoldpinger(ns string, image string) 
 		}
 	}
 
-	ds, err := c.createGoldpingerDaemonSet(ns, image, serviceAccountName)
+	ds, err := c.createGoldpingerDaemonSet(ns, serviceAccountName)
 	if err != nil {
 		return "", ret, errors.Wrap(err, "failed to create goldpinger daemonset")
 	}
@@ -302,8 +298,12 @@ func (c *CollectGoldpinger) createGoldpingerRoleBinding(ns string) (*rbacv1.Role
 	return c.Client.RbacV1().RoleBindings(ns).Create(c.Context, roleBinding, metav1.CreateOptions{})
 }
 
-func (c *CollectGoldpinger) createGoldpingerDaemonSet(ns, image, svcAccName string) (*appsv1.DaemonSet, error) {
+func (c *CollectGoldpinger) createGoldpingerDaemonSet(ns, svcAccName string) (*appsv1.DaemonSet, error) {
 	ds := &appsv1.DaemonSet{}
+
+	if c.Collector.Image != "" {
+		goldpingerImage = c.Collector.Image
+	}
 
 	ds.ObjectMeta = metav1.ObjectMeta{
 		Name:      "ts-goldpinger",
@@ -326,7 +326,7 @@ func (c *CollectGoldpinger) createGoldpingerDaemonSet(ns, image, svcAccName stri
 				Containers: []corev1.Container{
 					{
 						Name:            "goldpinger-daemon",
-						Image:           image,
+						Image:           goldpingerImage,
 						ImagePullPolicy: corev1.PullIfNotPresent,
 						Env: []corev1.EnvVar{
 							{
