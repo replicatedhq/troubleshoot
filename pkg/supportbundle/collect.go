@@ -1,6 +1,7 @@
 package supportbundle
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"encoding/json"
@@ -10,6 +11,7 @@ import (
 	"reflect"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/pkg/errors"
 	analyze "github.com/replicatedhq/troubleshoot/pkg/analyze"
@@ -267,6 +269,8 @@ func runRemoteHostCollectors(ctx context.Context, hostCollectors []*troubleshoot
 		return nil
 	}
 
+	// TODO: rbac check
+
 	nodeList, err := getNodeList(clientset, opts)
 	if err != nil {
 		// TODO: error handling
@@ -309,6 +313,8 @@ func runRemoteHostCollectors(ctx context.Context, hostCollectors []*troubleshoot
 			}
 			klog.V(2).Infof("Created Remote Host Collector Pod %s", pod.Name)
 
+			go streamPodLogs(ctx, clientset, pod, node, opts)
+
 			// wait for the pod to complete
 			err = waitForPodCompletion(ctx, clientset, pod)
 			if err != nil {
@@ -323,6 +329,9 @@ func runRemoteHostCollectors(ctx context.Context, hostCollectors []*troubleshoot
 				// TODO: error handling
 				return
 			}
+
+			// wait for log stream to catch up
+			time.Sleep(1 * time.Second)
 
 			mu.Lock()
 			nodeLogs[node] = logs
@@ -446,7 +455,7 @@ func createHostCollectorPod(ctx context.Context, clientset kubernetes.Interface,
 					Args: []string{
 						`cp /troubleshoot/collect /host/collect &&
 						cp /troubleshoot/specs/collector.json /host/collector.json &&
-						chroot /host /bin/bash -c './collect --collect-without-permissions --format=raw collector.json'`,
+						chroot /host /bin/bash -c './collect --collect-without-permissions --format=raw -v=5 collector.json 2>collector.log'`,
 					},
 					SecurityContext: &corev1.SecurityContext{
 						Privileged: ptr.To(true),
@@ -457,6 +466,18 @@ func createHostCollectorPod(ctx context.Context, clientset kubernetes.Interface,
 							MountPath: "/troubleshoot/specs",
 							ReadOnly:  true,
 						},
+						{
+							Name:      "host-root",
+							MountPath: "/host",
+						},
+					},
+				},
+				{
+					Image:   "busybox",
+					Name:    "log-tailer",
+					Command: []string{"sh", "-c"},
+					Args:    []string{"tail -F /host/collector.log"},
+					VolumeMounts: []corev1.VolumeMount{
 						{
 							Name:      "host-root",
 							MountPath: "/host",
@@ -509,8 +530,15 @@ func waitForPodCompletion(ctx context.Context, clientset kubernetes.Interface, p
 		if !ok {
 			continue
 		}
-		if podEvent.Status.Phase == v1.PodSucceeded || podEvent.Status.Phase == v1.PodFailed {
-			return nil
+		for _, containerStatus := range podEvent.Status.ContainerStatuses {
+			if containerStatus.Name == "remote-collector" {
+				if containerStatus.State.Terminated != nil {
+					if containerStatus.State.Terminated.ExitCode == 0 {
+						return nil
+					}
+					return fmt.Errorf("container %s in pod %s failed with exit code %d", containerStatus.Name, pod.Name, containerStatus.State.Terminated.ExitCode)
+				}
+			}
 		}
 	}
 	return fmt.Errorf("pod %s did not complete", pod.Name)
@@ -528,4 +556,59 @@ func getPodLogs(ctx context.Context, clientset kubernetes.Interface, pod *corev1
 	defer logs.Close()
 
 	return io.ReadAll(logs)
+}
+
+func streamPodLogs(ctx context.Context, clientset kubernetes.Interface, pod *corev1.Pod, node string, opts SupportBundleCreateOpts) {
+
+	// todo: timeout
+
+	send := func(msg string) {
+		opts.ProgressChan <- fmt.Sprintf("[%s] %s", node, msg)
+	}
+
+	// wait for pod container log-tailer to start
+	watcher, err := clientset.CoreV1().Pods(pod.Namespace).Watch(ctx, metav1.ListOptions{
+		FieldSelector: fmt.Sprintf("metadata.name=%s", pod.Name),
+	})
+	if err != nil {
+		send(errors.Wrap(err, "failed to start pod watcher").Error())
+		return
+	}
+	defer watcher.Stop()
+
+	for event := range watcher.ResultChan() {
+		podEvent, ok := event.Object.(*corev1.Pod)
+		if !ok {
+			continue
+		}
+		for _, containerStatus := range podEvent.Status.ContainerStatuses {
+			if containerStatus.Name == "log-tailer" {
+				if containerStatus.State.Running != nil {
+					goto StartLogStream
+				}
+			}
+		}
+	}
+
+StartLogStream:
+	// stream logs from container named log-tailer in the pod
+	podLogOpts := corev1.PodLogOptions{
+		Container: "log-tailer",
+		Follow:    true,
+	}
+	req := clientset.CoreV1().Pods(pod.Namespace).GetLogs(pod.Name, &podLogOpts)
+	logs, err := req.Stream(ctx)
+	if err != nil {
+		send(errors.Wrap(err, "failed to get log stream").Error())
+		return
+	}
+	defer logs.Close()
+	scanner := bufio.NewScanner(logs)
+	for scanner.Scan() {
+		send(scanner.Text())
+	}
+	if err := scanner.Err(); err != nil {
+		send(errors.Wrap(err, "failed to read log stream").Error())
+	}
+	send("Log stream ended")
 }
