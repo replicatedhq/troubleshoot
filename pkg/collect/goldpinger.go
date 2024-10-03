@@ -26,6 +26,8 @@ import (
 	"k8s.io/utils/ptr"
 )
 
+var goldpingerImage = "bloomberg/goldpinger:3.10.1"
+
 // Collect goldpinger results from goldpinger service running in a cluster
 // The results are stored in goldpinger/check_all.json since we use
 // the /check_all endpoint
@@ -299,6 +301,10 @@ func (c *CollectGoldpinger) createGoldpingerRoleBinding(ns string) (*rbacv1.Role
 func (c *CollectGoldpinger) createGoldpingerDaemonSet(ns, svcAccName string) (*appsv1.DaemonSet, error) {
 	ds := &appsv1.DaemonSet{}
 
+	if c.Collector.Image != "" {
+		goldpingerImage = c.Collector.Image
+	}
+
 	ds.ObjectMeta = metav1.ObjectMeta{
 		Name:      "ts-goldpinger",
 		Namespace: ns,
@@ -320,7 +326,7 @@ func (c *CollectGoldpinger) createGoldpingerDaemonSet(ns, svcAccName string) (*a
 				Containers: []corev1.Container{
 					{
 						Name:            "goldpinger-daemon",
-						Image:           "bloomberg/goldpinger:3.10.1",
+						Image:           goldpingerImage,
 						ImagePullPolicy: corev1.PullIfNotPresent,
 						Env: []corev1.EnvVar{
 							{
@@ -479,6 +485,7 @@ func (c *CollectGoldpinger) runPodAndCollectGPResults(url string, progressChan c
 	namespace := "default"
 	serviceAccountName := ""
 	image := constants.GP_DEFAULT_IMAGE
+
 	var imagePullSecret *troubleshootv1beta2.ImagePullSecrets
 
 	if c.Collector.PodLaunchOptions != nil {
