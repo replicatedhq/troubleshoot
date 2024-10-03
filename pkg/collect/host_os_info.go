@@ -3,12 +3,10 @@ package collect
 import (
 	"bytes"
 	"encoding/json"
-	"time"
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	osutils "github.com/shirou/gopsutil/v3/host"
-	"k8s.io/client-go/rest"
 )
 
 type HostOSInfo struct {
@@ -29,14 +27,6 @@ const HostInfoFileName = `hostos_info.json`
 type CollectHostOS struct {
 	hostCollector *troubleshootv1beta2.HostOS
 	BundlePath    string
-	ClientConfig  *rest.Config
-	Image         string
-	PullPolicy    string
-	LabelSelector string
-	Namespace     string
-	Timeout       time.Duration
-	NamePrefix    string
-	RBACErrors    []error
 }
 
 func (c *CollectHostOS) Title() string {
@@ -66,27 +56,5 @@ func (c *CollectHostOS) Collect(progressChan chan<- interface{}) (map[string][]b
 	output := NewResult()
 	output.SaveResult(c.BundlePath, HostOSInfoPath, bytes.NewBuffer(b))
 
-	return output, nil
-}
-
-func (c *CollectHostOS) RemoteCollect(progressChan chan<- interface{}) (map[string][]byte, error) {
-	params := &RemoteCollectParams{
-		ProgressChan:  progressChan,
-		HostCollector: &troubleshootv1beta2.HostCollect{HostOS: c.hostCollector},
-		BundlePath:    c.BundlePath,
-		ClientConfig:  c.ClientConfig,
-		Image:         c.Image,
-		PullPolicy:    c.PullPolicy,
-		Timeout:       c.Timeout,
-		LabelSelector: c.LabelSelector,
-		NamePrefix:    c.NamePrefix,
-		Namespace:     c.Namespace,
-		Title:         c.Title(),
-	}
-
-	output, err := remoteHostCollect(*params)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to run remote host os collector")
-	}
 	return output, nil
 }

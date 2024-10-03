@@ -8,6 +8,7 @@ import (
 	"io"
 	"os"
 	"reflect"
+	"time"
 
 	"github.com/pkg/errors"
 	analyze "github.com/replicatedhq/troubleshoot/pkg/analyze"
@@ -29,49 +30,58 @@ func runHostCollectors(ctx context.Context, hostCollectors []*troubleshootv1beta
 	allCollectedData := make(map[string][]byte)
 
 	var collectors []collect.HostCollector
-	for _, desiredCollector := range collectSpecs {
-		collector, ok := collect.GetHostCollector(desiredCollector, bundlePath, opts.KubernetesRestConfig)
-		if ok {
-			collectors = append(collectors, collector)
-		}
-	}
 
-	for _, collector := range collectors {
-		// TODO: Add context to host collectors
-		_, span := otel.Tracer(constants.LIB_TRACER_NAME).Start(ctx, collector.Title())
-		span.SetAttributes(attribute.String("type", reflect.TypeOf(collector).String()))
-
-		isExcluded, _ := collector.IsExcluded()
-		if isExcluded {
-			opts.ProgressChan <- fmt.Sprintf("[%s] Excluding host collector", collector.Title())
-			span.SetAttributes(attribute.Bool(constants.EXCLUDED, true))
-			span.End()
-			continue
-		}
-
-		opts.ProgressChan <- fmt.Sprintf("[%s] Running host collector...", collector.Title())
-		if opts.RunHostCollectorsInPod {
-			result, err := collector.RemoteCollect(opts.ProgressChan)
-			if err != nil {
-				// If the collector does not have a remote collector implementation, try to run it locally
-				if errors.Is(err, collect.ErrRemoteCollectorNotImplemented) {
-					result, err = collector.Collect(opts.ProgressChan)
-					if err != nil {
-						span.SetStatus(codes.Error, err.Error())
-						opts.ProgressChan <- errors.Errorf("failed to run host collector: %s: %v", collector.Title(), err)
-					}
-				} else {
-					// If the collector has a remote collector implementation, but it failed to run, return the error
-					span.SetStatus(codes.Error, err.Error())
-					opts.ProgressChan <- errors.Errorf("failed to run host collector: %s: %v", collector.Title(), err)
-				}
+	if opts.RunHostCollectorsInPod {
+		for _, desiredCollector := range collectSpecs {
+			collector, ok := collect.GetHostCollector(desiredCollector, bundlePath, opts.KubernetesRestConfig)
+			if !ok {
+				return nil, collect.ErrHostCollectorNotFound
 			}
-			// If the collector has a remote collector implementation, and it ran successfully, return the result
+
+			_, span := otel.Tracer(constants.LIB_TRACER_NAME).Start(ctx, collector.Title())
+			span.SetAttributes(attribute.String("type", reflect.TypeOf(collector).String()))
+
+			isExcluded, _ := collector.IsExcluded()
+			if isExcluded {
+				opts.ProgressChan <- fmt.Sprintf("[%s] Excluding host collector", collector.Title())
+				span.SetAttributes(attribute.Bool(constants.EXCLUDED, true))
+				span.End()
+				continue
+			}
+			opts.ProgressChan <- fmt.Sprintf("[%s] Running host collector...", collector.Title())
+			params := &collect.RemoteCollectParams{
+				ProgressChan:  opts.ProgressChan,
+				HostCollector: desiredCollector,
+				BundlePath:    bundlePath,
+				ClientConfig:  opts.KubernetesRestConfig,
+				Image:         "replicated/troubleshoot:latest",
+				PullPolicy:    "",
+				Timeout:       120 * time.Second,
+				LabelSelector: "",
+				NamePrefix:    "hostos-remote",
+				Namespace:     "default",
+				Title:         collector.Title(),
+			}
+
+			result, err := collect.RemoteHostCollect(*params)
+			if err != nil {
+				return nil, errors.Wrap(err, "failed to run remote host collector")
+			}
 			span.End()
 			for k, v := range result {
 				allCollectedData[k] = v
 			}
-		} else {
+		}
+	} else {
+		for _, desiredCollector := range collectSpecs {
+			collector, ok := collect.GetHostCollector(desiredCollector, bundlePath, opts.KubernetesRestConfig)
+			if ok {
+				collectors = append(collectors, collector)
+			}
+		}
+		for _, collector := range collectors {
+			_, span := otel.Tracer(constants.LIB_TRACER_NAME).Start(ctx, collector.Title())
+			span.SetAttributes(attribute.String("type", reflect.TypeOf(collector).String()))
 			// If the collector does not enable run host collectors in pod, run it locally
 			result, err := collector.Collect(opts.ProgressChan)
 			if err != nil {

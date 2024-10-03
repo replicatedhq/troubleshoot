@@ -22,7 +22,6 @@ type HostCollector interface {
 	Title() string
 	IsExcluded() (bool, error)
 	Collect(progressChan chan<- interface{}) (map[string][]byte, error)
-	RemoteCollect(progressChan chan<- interface{}) (map[string][]byte, error) // RemoteCollect is used to priviledge pods to collect data from different nodes
 }
 
 type RemoteCollectParams struct {
@@ -85,9 +84,7 @@ func GetHostCollector(collector *troubleshootv1beta2.HostCollect, bundlePath str
 	case collector.HostServices != nil:
 		return &CollectHostServices{collector.HostServices, bundlePath}, true
 	case collector.HostOS != nil:
-		// Just something quick to verify that remote collection works
-		// Need to pass these in as parameters to GetHostCollector
-		return &CollectHostOS{collector.HostOS, bundlePath, restConfig, "replicated/troubleshoot:latest", "", "", "default", (120 * time.Second), "hostos-remote", nil}, true
+		return &CollectHostOS{collector.HostOS, bundlePath}, true
 	case collector.HostRun != nil:
 		return &CollectHostRun{collector.HostRun, bundlePath}, true
 	case collector.HostCopy != nil:
@@ -112,7 +109,7 @@ func hostCollectorTitleOrDefault(meta troubleshootv1beta2.HostCollectorMeta, def
 	return defaultTitle
 }
 
-func remoteHostCollect(params RemoteCollectParams) (map[string][]byte, error) {
+func RemoteHostCollect(params RemoteCollectParams) (map[string][]byte, error) {
 	allCollectedData := make(map[string][]byte)
 
 	scheme := runtime.NewScheme()
