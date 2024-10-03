@@ -26,7 +26,7 @@ import (
 	"k8s.io/utils/ptr"
 )
 
-var GoldpingerImage = "bloomberg/goldpinger:3.10.1"
+var goldpingerImage = "bloomberg/goldpinger:3.10.1"
 
 // Collect goldpinger results from goldpinger service running in a cluster
 // The results are stored in goldpinger/check_all.json since we use
