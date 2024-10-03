@@ -33,7 +33,7 @@ func runHostCollectors(ctx context.Context, hostCollectors []*troubleshootv1beta
 
 	if opts.RunHostCollectorsInPod {
 		for _, desiredCollector := range collectSpecs {
-			collector, ok := collect.GetHostCollector(desiredCollector, bundlePath, opts.KubernetesRestConfig)
+			collector, ok := collect.GetHostCollector(desiredCollector, bundlePath)
 			if !ok {
 				return nil, collect.ErrHostCollectorNotFound
 			}

@@ -38,7 +38,7 @@ type RemoteCollectParams struct {
 	Title         string
 }
 
-func GetHostCollector(collector *troubleshootv1beta2.HostCollect, bundlePath string, restConfig *rest.Config) (HostCollector, bool) {
+func GetHostCollector(collector *troubleshootv1beta2.HostCollect, bundlePath string) (HostCollector, bool) {
 	switch {
 	case collector.CPU != nil:
 		return &CollectHostCPU{collector.CPU, bundlePath}, true
