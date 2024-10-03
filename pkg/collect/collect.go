@@ -61,7 +61,7 @@ func CollectHost(c *troubleshootv1beta2.HostCollector, additionalRedactors *trou
 
 	var collectors []HostCollector
 	for _, desiredCollector := range c.Spec.Collectors {
-		collector, ok := GetHostCollector(desiredCollector, "", opts.KubernetesRestConfig)
+		collector, ok := GetHostCollector(desiredCollector, "")
 		if !ok {
 			return nil, ErrHostCollectorNotFound
 		}
