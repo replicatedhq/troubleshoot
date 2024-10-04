@@ -81,6 +81,7 @@ func Test_compareHostCPUConditionalToActual(t *testing.T) {
 		when          string
 		logicalCount  int
 		physicalCount int
+		machineArch   string
 		expected      bool
 	}{
 		{
@@ -144,7 +145,7 @@ func Test_compareHostCPUConditionalToActual(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			req := require.New(t)
 
-			actual, err := compareHostCPUConditionalToActual(test.when, test.logicalCount, test.physicalCount)
+			actual, err := compareHostCPUConditionalToActual(test.when, test.logicalCount, test.physicalCount, test.machineArch)
 			req.NoError(err)
 
 			assert.Equal(t, test.expected, actual)

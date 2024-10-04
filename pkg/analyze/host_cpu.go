@@ -122,7 +122,7 @@ func compareHostCPUConditionalToActual(conditional string, logicalCount int, phy
 	desired := ""
 
 	/* When the conditional is in the format of "logical <comparator> <desired>"
-	   example: when: "count < 2" 
+	   example: when: "count < 2"
 	*/
 	parts := strings.Split(conditional, " ")
 	if len(parts) == 3 {
@@ -134,9 +134,9 @@ func compareHostCPUConditionalToActual(conditional string, logicalCount int, phy
 			comparePhysical = true
 		} else if strings.ToLower(parts[0]) == "count" {
 			compareUnspecified = true
-		} else if strings.ToLower(parts[0]) == "machineArch" {
-			compareMachineArch = true 
-		}	
+		} else if strings.ToLower(parts[0]) == "machinearch" {
+			compareMachineArch = true
+		}
 	} else if len(parts) == 2 {
 		compareUnspecified = true
 		comparator = parts[0]
@@ -153,7 +153,7 @@ func compareHostCPUConditionalToActual(conditional string, logicalCount int, phy
 		return doCompareHostCPU(comparator, desired, physicalCount)
 	} else if compareMachineArch {
 		return doCompareMachineArch(comparator, desired, machineArch)
-	}	else {
+	} else {
 		actual := logicalCount
 		if physicalCount > logicalCount {
 			actual = physicalCount
