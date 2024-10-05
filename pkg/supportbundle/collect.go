@@ -20,13 +20,28 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
+	authorizationv1 "k8s.io/api/authorization/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/rest"
 )
 
-// Struct to couple spec and collector
 type FilteredCollector struct {
 	Spec      troubleshootv1beta2.HostCollect
 	Collector collect.HostCollector
+}
+
+// Custom error type for RBAC permission errors
+type RBACPermissionError struct {
+	Forbidden []error
+}
+
+func (e *RBACPermissionError) Error() string {
+	return fmt.Sprintf("insufficient permissions: %v", e.Forbidden)
+}
+
+func (e *RBACPermissionError) HasErrors() bool {
+	return len(e.Forbidden) > 0
 }
 
 func runHostCollectors(ctx context.Context, hostCollectors []*troubleshootv1beta2.HostCollect, additionalRedactors *troubleshootv1beta2.Redactor, bundlePath string, opts SupportBundleCreateOpts) (collect.CollectorResult, error) {
@@ -34,19 +49,30 @@ func runHostCollectors(ctx context.Context, hostCollectors []*troubleshootv1beta
 	collectedData := make(map[string][]byte)
 
 	// Filter out excluded collectors
-	filteredCollectors, err := filterHostCollectors(collectSpecs, bundlePath, opts)
+	filteredCollectors, err := filterHostCollectors(ctx, collectSpecs, bundlePath, opts)
 	if err != nil {
 		return nil, err
 	}
 
 	if opts.RunHostCollectorsInPod {
-		// Execute remote collectors
-		if err := executeRemoteCollectors(ctx, filteredCollectors, bundlePath, opts, collectedData); err != nil {
+		if err := checkRBAC(ctx, opts.KubernetesRestConfig, "Remote Host Collectors", opts.Namespace); err != nil {
+			if rbacErr, ok := err.(*RBACPermissionError); ok {
+				for _, forbiddenErr := range rbacErr.Forbidden {
+					opts.ProgressChan <- forbiddenErr
+				}
+
+				if !opts.CollectWithoutPermissions {
+					return nil, collect.ErrInsufficientPermissionsToRun
+				}
+			} else {
+				return nil, err
+			}
+		}
+		if err := collectRemoteHost(ctx, filteredCollectors, bundlePath, opts, collectedData); err != nil {
 			return nil, err
 		}
 	} else {
-		// Execute local collectors
-		if err := executeLocalCollectors(ctx, filteredCollectors, opts, collectedData); err != nil {
+		if err := collectHost(ctx, filteredCollectors, opts, collectedData); err != nil {
 			return nil, err
 		}
 	}
@@ -208,29 +234,8 @@ func getAnalysisFile(analyzeResults []*analyze.AnalyzeResult) (io.Reader, error)
 	return bytes.NewBuffer(analysis), nil
 }
 
-func filterHostCollectors(collectSpecs []*troubleshootv1beta2.HostCollect, bundlePath string, opts SupportBundleCreateOpts) ([]FilteredCollector, error) {
-	var filteredCollectors []FilteredCollector
-
-	for _, desiredCollector := range collectSpecs {
-		collector, ok := collect.GetHostCollector(desiredCollector, bundlePath)
-		if !ok {
-			return nil, collect.ErrHostCollectorNotFound
-		}
-		isExcluded, _ := collector.IsExcluded()
-		if !isExcluded {
-			filteredCollectors = append(filteredCollectors, FilteredCollector{
-				Spec:      *desiredCollector,
-				Collector: collector,
-			})
-		} else {
-			opts.ProgressChan <- fmt.Sprintf("[%s] Excluding host collector", collector.Title())
-		}
-	}
-
-	return filteredCollectors, nil
-}
-
-func executeRemoteCollectors(ctx context.Context, filteredCollectors []FilteredCollector, bundlePath string, opts SupportBundleCreateOpts, collectedData map[string][]byte) error {
+// collectRemoteHost runs remote host collectors sequentially
+func collectRemoteHost(ctx context.Context, filteredCollectors []FilteredCollector, bundlePath string, opts SupportBundleCreateOpts, collectedData map[string][]byte) error {
 	// Run remote collectors sequentially
 	for _, collectorData := range filteredCollectors {
 		collector := collectorData.Collector
@@ -279,7 +284,8 @@ func executeRemoteCollectors(ctx context.Context, filteredCollectors []FilteredC
 	return nil
 }
 
-func executeLocalCollectors(ctx context.Context, filteredCollectors []FilteredCollector, opts SupportBundleCreateOpts, collectedData map[string][]byte) error {
+// collectHost runs host collectors sequentially
+func collectHost(ctx context.Context, filteredCollectors []FilteredCollector, opts SupportBundleCreateOpts, collectedData map[string][]byte) error {
 	// Run local collectors sequentially
 	for _, collectorData := range filteredCollectors {
 		collector := collectorData.Collector
@@ -324,9 +330,82 @@ func redactResults(ctx context.Context, bundlePath string, collectedData collect
 	return nil
 }
 
+// getGlobalRedactors returns the global redactors from the support bundle spec
 func getGlobalRedactors(additionalRedactors *troubleshootv1beta2.Redactor) []*troubleshootv1beta2.Redact {
 	if additionalRedactors != nil {
 		return additionalRedactors.Spec.Redactors
 	}
 	return []*troubleshootv1beta2.Redact{}
+}
+
+// filterHostCollectors filters out excluded collectors and returns a list of collectors to run
+func filterHostCollectors(ctx context.Context, collectSpecs []*troubleshootv1beta2.HostCollect, bundlePath string, opts SupportBundleCreateOpts) ([]FilteredCollector, error) {
+	var filteredCollectors []FilteredCollector
+
+	for _, desiredCollector := range collectSpecs {
+		collector, ok := collect.GetHostCollector(desiredCollector, bundlePath)
+		if !ok {
+			return nil, collect.ErrHostCollectorNotFound
+		}
+
+		isExcluded, _ := collector.IsExcluded()
+		if isExcluded {
+			opts.ProgressChan <- fmt.Sprintf("[%s] Excluding host collector", collector.Title())
+			continue
+		}
+
+		filteredCollectors = append(filteredCollectors, FilteredCollector{
+			Spec:      *desiredCollector,
+			Collector: collector,
+		})
+	}
+
+	return filteredCollectors, nil
+}
+
+// checkRBAC checks if the current user has the necessary permissions to run the collectors
+func checkRBAC(ctx context.Context, clientConfig *rest.Config, title string, namespace string) error {
+	client, err := kubernetes.NewForConfig(clientConfig)
+	if err != nil {
+		return errors.Wrap(err, "failed to create client from config")
+	}
+
+	var forbidden []error
+
+	spec := authorizationv1.SelfSubjectAccessReviewSpec{
+		ResourceAttributes: &authorizationv1.ResourceAttributes{
+			Namespace:   namespace,
+			Verb:        "create,delete",
+			Group:       "",
+			Version:     "",
+			Resource:    "pods,configmap",
+			Subresource: "",
+			Name:        "",
+		},
+		NonResourceAttributes: nil,
+	}
+
+	sar := &authorizationv1.SelfSubjectAccessReview{
+		Spec: spec,
+	}
+	resp, err := client.AuthorizationV1().SelfSubjectAccessReviews().Create(ctx, sar, metav1.CreateOptions{})
+	if err != nil {
+		return errors.Wrap(err, "failed to run subject review")
+	}
+
+	if !resp.Status.Allowed {
+		forbidden = append(forbidden, collect.RBACError{
+			DisplayName: title,
+			Namespace:   spec.ResourceAttributes.Namespace,
+			Resource:    spec.ResourceAttributes.Resource,
+			Verb:        spec.ResourceAttributes.Verb,
+		})
+	}
+	fmt.Println(resp)
+
+	if len(forbidden) > 0 {
+		return &RBACPermissionError{Forbidden: forbidden}
+	}
+
+	return nil
 }

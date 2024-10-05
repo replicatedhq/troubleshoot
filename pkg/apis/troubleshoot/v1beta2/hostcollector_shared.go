@@ -2,6 +2,7 @@ package v1beta2
 
 import (
 	"github.com/replicatedhq/troubleshoot/pkg/multitype"
+	authorizationv1 "k8s.io/api/authorization/v1"
 )
 
 type HostCollectorMeta struct {
@@ -251,6 +252,23 @@ type HostCollect struct {
 	HostJournald           *HostJournald               `json:"journald,omitempty" yaml:"journald,omitempty"`
 	HostCGroups            *HostCGroups                `json:"cgroups,omitempty" yaml:"cgroups,omitempty"`
 	HostDNS                *HostDNS                    `json:"dns,omitempty" yaml:"dns,omitempty"`
+}
+
+func (c *HostCollect) AccessReviewSpecs(overrideNS string) []authorizationv1.SelfSubjectAccessReviewSpec {
+	return []authorizationv1.SelfSubjectAccessReviewSpec{
+		{
+			ResourceAttributes: &authorizationv1.ResourceAttributes{
+				Namespace:   overrideNS,
+				Verb:        "create,delete",
+				Group:       "",
+				Version:     "",
+				Resource:    "pods,configmap",
+				Subresource: "",
+				Name:        "",
+			},
+			NonResourceAttributes: nil,
+		},
+	}
 }
 
 // GetName gets the name of the collector
