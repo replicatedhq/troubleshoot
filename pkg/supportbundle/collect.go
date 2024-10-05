@@ -401,7 +401,6 @@ func checkRBAC(ctx context.Context, clientConfig *rest.Config, title string, nam
 			Verb:        spec.ResourceAttributes.Verb,
 		})
 	}
-	fmt.Println(resp)
 
 	if len(forbidden) > 0 {
 		return &RBACPermissionError{Forbidden: forbidden}
