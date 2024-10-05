@@ -23,98 +23,42 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
+// Struct to couple spec and collector
+type FilteredCollector struct {
+	Spec      troubleshootv1beta2.HostCollect
+	Collector collect.HostCollector
+}
+
 func runHostCollectors(ctx context.Context, hostCollectors []*troubleshootv1beta2.HostCollect, additionalRedactors *troubleshootv1beta2.Redactor, bundlePath string, opts SupportBundleCreateOpts) (collect.CollectorResult, error) {
-	collectSpecs := make([]*troubleshootv1beta2.HostCollect, 0)
-	collectSpecs = append(collectSpecs, hostCollectors...)
+	collectSpecs := append([]*troubleshootv1beta2.HostCollect{}, hostCollectors...)
+	collectedData := make(map[string][]byte)
 
-	allCollectedData := make(map[string][]byte)
-
-	var collectors []collect.HostCollector
-
-	if opts.RunHostCollectorsInPod {
-		for _, desiredCollector := range collectSpecs {
-			collector, ok := collect.GetHostCollector(desiredCollector, bundlePath)
-			if !ok {
-				return nil, collect.ErrHostCollectorNotFound
-			}
-
-			_, span := otel.Tracer(constants.LIB_TRACER_NAME).Start(ctx, collector.Title())
-			span.SetAttributes(attribute.String("type", reflect.TypeOf(collector).String()))
-
-			isExcluded, _ := collector.IsExcluded()
-			if isExcluded {
-				opts.ProgressChan <- fmt.Sprintf("[%s] Excluding host collector", collector.Title())
-				span.SetAttributes(attribute.Bool(constants.EXCLUDED, true))
-				span.End()
-				continue
-			}
-			opts.ProgressChan <- fmt.Sprintf("[%s] Running host collector...", collector.Title())
-			params := &collect.RemoteCollectParams{
-				ProgressChan:  opts.ProgressChan,
-				HostCollector: desiredCollector,
-				BundlePath:    bundlePath,
-				ClientConfig:  opts.KubernetesRestConfig,
-				Image:         "replicated/troubleshoot:latest",
-				PullPolicy:    "",
-				Timeout:       120 * time.Second,
-				LabelSelector: "",
-				NamePrefix:    "hostos-remote",
-				Namespace:     "default",
-				Title:         collector.Title(),
-			}
-
-			result, err := collect.RemoteHostCollect(*params)
-			if err != nil {
-				return nil, errors.Wrap(err, "failed to run remote host collector")
-			}
-			span.End()
-			for k, v := range result {
-				allCollectedData[k] = v
-			}
-		}
-	} else {
-		for _, desiredCollector := range collectSpecs {
-			collector, ok := collect.GetHostCollector(desiredCollector, bundlePath, opts.KubernetesRestConfig)
-			if ok {
-				collectors = append(collectors, collector)
-			}
-		}
-		for _, collector := range collectors {
-			_, span := otel.Tracer(constants.LIB_TRACER_NAME).Start(ctx, collector.Title())
-			span.SetAttributes(attribute.String("type", reflect.TypeOf(collector).String()))
-			// If the collector does not enable run host collectors in pod, run it locally
-			result, err := collector.Collect(opts.ProgressChan)
-			if err != nil {
-				span.SetStatus(codes.Error, err.Error())
-				opts.ProgressChan <- errors.Errorf("failed to run host collector: %s: %v", collector.Title(), err)
-			}
-			span.End()
-			for k, v := range result {
-				allCollectedData[k] = v
-			}
-		}
+	// Filter out excluded collectors
+	filteredCollectors, err := filterHostCollectors(collectSpecs, bundlePath, opts)
+	if err != nil {
+		return nil, err
 	}
 
-	collectResult := allCollectedData
-
-	globalRedactors := []*troubleshootv1beta2.Redact{}
-	if additionalRedactors != nil {
-		globalRedactors = additionalRedactors.Spec.Redactors
+	if opts.RunHostCollectorsInPod {
+		// Execute remote collectors
+		if err := executeRemoteCollectors(ctx, filteredCollectors, bundlePath, opts, collectedData); err != nil {
+			return nil, err
+		}
+	} else {
+		// Execute local collectors
+		if err := executeLocalCollectors(ctx, filteredCollectors, opts, collectedData); err != nil {
+			return nil, err
+		}
 	}
 
 	if opts.Redact {
-		_, span := otel.Tracer(constants.LIB_TRACER_NAME).Start(ctx, "Host collectors")
-		span.SetAttributes(attribute.String("type", "Redactors"))
-		err := collect.RedactResult(bundlePath, collectResult, globalRedactors)
-		if err != nil {
-			err = errors.Wrap(err, "failed to redact host collector results")
-			span.SetStatus(codes.Error, err.Error())
-			return collectResult, err
+		globalRedactors := getGlobalRedactors(additionalRedactors)
+		if err := redactResults(ctx, bundlePath, collectedData, globalRedactors); err != nil {
+			return collectedData, err
 		}
-		span.End()
 	}
 
-	return collectResult, nil
+	return collectedData, nil
 }
 
 func runCollectors(ctx context.Context, collectors []*troubleshootv1beta2.Collect, additionalRedactors *troubleshootv1beta2.Redactor, bundlePath string, opts SupportBundleCreateOpts) (collect.CollectorResult, error) {
@@ -262,4 +206,127 @@ func getAnalysisFile(analyzeResults []*analyze.AnalyzeResult) (io.Reader, error)
 	}
 
 	return bytes.NewBuffer(analysis), nil
+}
+
+func filterHostCollectors(collectSpecs []*troubleshootv1beta2.HostCollect, bundlePath string, opts SupportBundleCreateOpts) ([]FilteredCollector, error) {
+	var filteredCollectors []FilteredCollector
+
+	for _, desiredCollector := range collectSpecs {
+		collector, ok := collect.GetHostCollector(desiredCollector, bundlePath)
+		if !ok {
+			return nil, collect.ErrHostCollectorNotFound
+		}
+		isExcluded, _ := collector.IsExcluded()
+		if !isExcluded {
+			filteredCollectors = append(filteredCollectors, FilteredCollector{
+				Spec:      *desiredCollector,
+				Collector: collector,
+			})
+		} else {
+			opts.ProgressChan <- fmt.Sprintf("[%s] Excluding host collector", collector.Title())
+		}
+	}
+
+	return filteredCollectors, nil
+}
+
+func executeRemoteCollectors(ctx context.Context, filteredCollectors []FilteredCollector, bundlePath string, opts SupportBundleCreateOpts, collectedData map[string][]byte) error {
+	// Run remote collectors sequentially
+	for _, collectorData := range filteredCollectors {
+		collector := collectorData.Collector
+		spec := collectorData.Spec
+
+		// Send progress event: starting the collector
+		opts.ProgressChan <- fmt.Sprintf("[%s] Running host collector...", collector.Title())
+
+		// Start a span for tracing
+		_, span := otel.Tracer(constants.LIB_TRACER_NAME).Start(ctx, collector.Title())
+		span.SetAttributes(attribute.String("type", reflect.TypeOf(collector).String()))
+
+		// Parameters for remote collection
+		params := &collect.RemoteCollectParams{
+			ProgressChan:  opts.ProgressChan,
+			HostCollector: &spec,
+			BundlePath:    bundlePath,
+			ClientConfig:  opts.KubernetesRestConfig,
+			Image:         "replicated/troubleshoot:latest",
+			PullPolicy:    "IfNotPresent",
+			Timeout:       time.Duration(60 * time.Second),
+			LabelSelector: "",
+			NamePrefix:    "hostos-remote",
+			Namespace:     "default",
+			Title:         collector.Title(),
+		}
+
+		// Perform the collection
+		result, err := collect.RemoteHostCollect(*params)
+		if err != nil {
+			span.SetStatus(codes.Error, err.Error())
+			opts.ProgressChan <- fmt.Sprintf("[%s] Error: %v", collector.Title(), err)
+			return errors.Wrap(err, "failed to run remote host collector")
+		}
+
+		// Send progress event: completed successfully
+		opts.ProgressChan <- fmt.Sprintf("[%s] Completed host collector", collector.Title())
+
+		// Aggregate the results
+		for k, v := range result {
+			collectedData[k] = v
+		}
+
+		span.End()
+	}
+	return nil
+}
+
+func executeLocalCollectors(ctx context.Context, filteredCollectors []FilteredCollector, opts SupportBundleCreateOpts, collectedData map[string][]byte) error {
+	// Run local collectors sequentially
+	for _, collectorData := range filteredCollectors {
+		collector := collectorData.Collector
+
+		// Send progress event: starting the collector
+		opts.ProgressChan <- fmt.Sprintf("[%s] Running host collector...", collector.Title())
+
+		// Start a span for tracing
+		_, span := otel.Tracer(constants.LIB_TRACER_NAME).Start(ctx, collector.Title())
+		span.SetAttributes(attribute.String("type", reflect.TypeOf(collector).String()))
+
+		// Run local collector sequentially
+		result, err := collector.Collect(opts.ProgressChan)
+		if err != nil {
+			span.SetStatus(codes.Error, err.Error())
+			opts.ProgressChan <- fmt.Sprintf("[%s] Error: %v", collector.Title(), err)
+			return errors.Wrap(err, "failed to run host collector")
+		}
+
+		// Send progress event: completed successfully
+		opts.ProgressChan <- fmt.Sprintf("[%s] Completed host collector", collector.Title())
+
+		// Aggregate the results
+		for k, v := range result {
+			collectedData[k] = v
+		}
+
+		span.End()
+	}
+	return nil
+}
+
+func redactResults(ctx context.Context, bundlePath string, collectedData collect.CollectorResult, redactors []*troubleshootv1beta2.Redact) error {
+	_, span := otel.Tracer(constants.LIB_TRACER_NAME).Start(ctx, "Host collectors")
+	defer span.End()
+
+	err := collect.RedactResult(bundlePath, collectedData, redactors)
+	if err != nil {
+		span.SetStatus(codes.Error, err.Error())
+		return errors.Wrap(err, "failed to redact host collector results")
+	}
+	return nil
+}
+
+func getGlobalRedactors(additionalRedactors *troubleshootv1beta2.Redactor) []*troubleshootv1beta2.Redact {
+	if additionalRedactors != nil {
+		return additionalRedactors.Spec.Redactors
+	}
+	return []*troubleshootv1beta2.Redact{}
 }
