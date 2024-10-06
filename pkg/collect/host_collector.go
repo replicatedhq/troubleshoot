@@ -188,6 +188,7 @@ func RemoteHostCollect(params RemoteCollectParams) (map[string][]byte, error) {
 		for file, collectorResult := range nodeResult {
 			directory := filepath.Dir(file)
 			fileName := filepath.Base(file)
+			// expected file name for remote collectors will be the normal path separated by / and the node name
 			output.SaveResult(params.BundlePath, fmt.Sprintf("%s/%s/%s", directory, node, fileName), bytes.NewBufferString(collectorResult))
 		}
 	}

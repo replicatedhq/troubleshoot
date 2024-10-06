@@ -31,19 +31,6 @@ type FilteredCollector struct {
 	Collector collect.HostCollector
 }
 
-// Custom error type for RBAC permission errors
-type RBACPermissionError struct {
-	Forbidden []error
-}
-
-func (e *RBACPermissionError) Error() string {
-	return fmt.Sprintf("insufficient permissions: %v", e.Forbidden)
-}
-
-func (e *RBACPermissionError) HasErrors() bool {
-	return len(e.Forbidden) > 0
-}
-
 func runHostCollectors(ctx context.Context, hostCollectors []*troubleshootv1beta2.HostCollect, additionalRedactors *troubleshootv1beta2.Redactor, bundlePath string, opts SupportBundleCreateOpts) (collect.CollectorResult, error) {
 	collectSpecs := append([]*troubleshootv1beta2.HostCollect{}, hostCollectors...)
 	collectedData := make(map[string][]byte)
