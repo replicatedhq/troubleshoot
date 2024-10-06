@@ -20,10 +20,7 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
-	authorizationv1 "k8s.io/api/authorization/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	"k8s.io/client-go/rest"
 )
 
 type FilteredCollector struct {
@@ -42,7 +39,7 @@ func runHostCollectors(ctx context.Context, hostCollectors []*troubleshootv1beta
 	}
 
 	if opts.RunHostCollectorsInPod {
-		if err := checkRBAC(ctx, opts.KubernetesRestConfig, "Remote Host Collectors", opts.Namespace); err != nil {
+		if err := checkRemoteCollectorRBAC(ctx, opts.KubernetesRestConfig, "Remote Host Collectors", opts.Namespace); err != nil {
 			if rbacErr, ok := err.(*RBACPermissionError); ok {
 				for _, forbiddenErr := range rbacErr.Forbidden {
 					opts.ProgressChan <- forbiddenErr
@@ -348,50 +345,4 @@ func filterHostCollectors(ctx context.Context, collectSpecs []*troubleshootv1bet
 	}
 
 	return filteredCollectors, nil
-}
-
-// checkRBAC checks if the current user has the necessary permissions to run the collectors
-func checkRBAC(ctx context.Context, clientConfig *rest.Config, title string, namespace string) error {
-	client, err := kubernetes.NewForConfig(clientConfig)
-	if err != nil {
-		return errors.Wrap(err, "failed to create client from config")
-	}
-
-	var forbidden []error
-
-	spec := authorizationv1.SelfSubjectAccessReviewSpec{
-		ResourceAttributes: &authorizationv1.ResourceAttributes{
-			Namespace:   namespace,
-			Verb:        "create,delete",
-			Group:       "",
-			Version:     "",
-			Resource:    "pods,configmap",
-			Subresource: "",
-			Name:        "",
-		},
-		NonResourceAttributes: nil,
-	}
-
-	sar := &authorizationv1.SelfSubjectAccessReview{
-		Spec: spec,
-	}
-	resp, err := client.AuthorizationV1().SelfSubjectAccessReviews().Create(ctx, sar, metav1.CreateOptions{})
-	if err != nil {
-		return errors.Wrap(err, "failed to run subject review")
-	}
-
-	if !resp.Status.Allowed {
-		forbidden = append(forbidden, collect.RBACError{
-			DisplayName: title,
-			Namespace:   spec.ResourceAttributes.Namespace,
-			Resource:    spec.ResourceAttributes.Resource,
-			Verb:        spec.ResourceAttributes.Verb,
-		})
-	}
-
-	if len(forbidden) > 0 {
-		return &RBACPermissionError{Forbidden: forbidden}
-	}
-
-	return nil
 }
