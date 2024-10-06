@@ -2083,6 +2083,8 @@ spec:
                           type: string
                         exclude:
                           type: BoolString
+                        image:
+                          type: string
                         namespace:
                           type: string
                         podLaunchOptions:
