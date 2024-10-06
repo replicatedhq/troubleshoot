@@ -11,6 +11,7 @@ import (
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
+	"github.com/replicatedhq/troubleshoot/pkg/constants"
 	"golang.org/x/sync/errgroup"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -194,14 +195,14 @@ func RemoteHostCollect(params RemoteCollectParams) (map[string][]byte, error) {
 	}
 
 	// check if NODE_LIST_FILE exists
-	_, err = os.Stat(NODE_LIST_FILE)
+	_, err = os.Stat(constants.NODE_LIST_FILE)
 	// if it not exists, save the nodes list
 	if err != nil {
 		nodesBytes, err := json.MarshalIndent(HostOSInfoNodes{Nodes: nodes}, "", " ")
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to marshal host os info nodes")
 		}
-		output.SaveResult(params.BundlePath, NODE_LIST_FILE, bytes.NewBuffer(nodesBytes))
+		output.SaveResult(params.BundlePath, constants.NODE_LIST_FILE, bytes.NewBuffer(nodesBytes))
 	}
 	return output, nil
 }
