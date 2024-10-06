@@ -110,7 +110,7 @@ func runTroubleshoot(v *viper.Viper, args []string) error {
 	}
 
 	if interactive {
-		if len(mainBundle.Spec.HostCollectors) > 0 && !util.IsRunningAsRoot() {
+		if len(mainBundle.Spec.HostCollectors) > 0 && !util.IsRunningAsRoot() && !mainBundle.Metadata.RunHostCollectorsInPod {
 			fmt.Print(cursor.Show())
 			if util.PromptYesNo(util.HOST_COLLECTORS_RUN_AS_ROOT_PROMPT) {
 				fmt.Println("Exiting...")

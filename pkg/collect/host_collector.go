@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/pkg/errors"
@@ -184,18 +185,10 @@ func RemoteHostCollect(params RemoteCollectParams) (map[string][]byte, error) {
 			return nil, errors.Wrap(err, "failed to marshal node results")
 		}
 
-		for _, collectorResult := range nodeResult {
-			var collectedItems HostOSInfo
-			if err := json.Unmarshal([]byte(collectorResult), &collectedItems); err != nil {
-				return nil, errors.Wrap(err, "failed to marshal collector results")
-			}
-
-			b, err := json.MarshalIndent(collectedItems, "", " ")
-			if err != nil {
-				return nil, errors.Wrap(err, "failed to marshal host os info")
-			}
-			nodes = append(nodes, node)
-			output.SaveResult(params.BundlePath, fmt.Sprintf("host-collectors/system/%s/%s", node, HostInfoFileName), bytes.NewBuffer(b))
+		for file, collectorResult := range nodeResult {
+			directory := filepath.Dir(file)
+			fileName := filepath.Base(file)
+			output.SaveResult(params.BundlePath, fmt.Sprintf("%s/%s/%s", directory, node, fileName), bytes.NewBufferString(collectorResult))
 		}
 	}
 
