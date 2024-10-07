@@ -220,10 +220,14 @@ func getAnalysisFile(analyzeResults []*analyze.AnalyzeResult) (io.Reader, error)
 
 // collectRemoteHost runs remote host collectors sequentially
 func collectRemoteHost(ctx context.Context, filteredCollectors []FilteredCollector, bundlePath string, opts SupportBundleCreateOpts, collectedData map[string][]byte) error {
+	opts.KubernetesRestConfig.QPS = constants.DEFAULT_CLIENT_QPS
+	opts.KubernetesRestConfig.Burst = constants.DEFAULT_CLIENT_BURST
+	opts.KubernetesRestConfig.UserAgent = fmt.Sprintf("%s/%s", constants.DEFAULT_CLIENT_USER_AGENT, version.Version())
+
 	// Run remote collectors sequentially
-	for _, collectorData := range filteredCollectors {
-		collector := collectorData.Collector
-		spec := collectorData.Spec
+	for _, c := range filteredCollectors {
+		collector := c.Collector
+		spec := c.Spec
 
 		// Send progress event: starting the collector
 		opts.ProgressChan <- fmt.Sprintf("[%s] Running host collector...", collector.Title())
@@ -242,7 +246,7 @@ func collectRemoteHost(ctx context.Context, filteredCollectors []FilteredCollect
 			PullPolicy:    "IfNotPresent",
 			Timeout:       time.Duration(60 * time.Second),
 			LabelSelector: "",
-			NamePrefix:    "hostos-remote",
+			NamePrefix:    "host-remote",
 			Namespace:     "default",
 			Title:         collector.Title(),
 		}
@@ -271,8 +275,8 @@ func collectRemoteHost(ctx context.Context, filteredCollectors []FilteredCollect
 // collectHost runs host collectors sequentially
 func collectHost(ctx context.Context, filteredCollectors []FilteredCollector, opts SupportBundleCreateOpts, collectedData map[string][]byte) error {
 	// Run local collectors sequentially
-	for _, collectorData := range filteredCollectors {
-		collector := collectorData.Collector
+	for _, c := range filteredCollectors {
+		collector := c.Collector
 
 		// Send progress event: starting the collector
 		opts.ProgressChan <- fmt.Sprintf("[%s] Running host collector...", collector.Title())
