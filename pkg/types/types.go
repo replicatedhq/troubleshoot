@@ -20,6 +20,7 @@ type ExitError interface {
 type ExitCodeError struct {
 	Msg  string
 	Code int
+	Err error
 }
 
 type ExitCodeWarning struct {
@@ -28,6 +29,10 @@ type ExitCodeWarning struct {
 
 func (e *ExitCodeError) Error() string {
 	return e.Msg
+}
+
+func (e *ExitCodeError) Unwrap() error {
+	return e.Err
 }
 
 func (e *ExitCodeError) ExitStatus() int {
@@ -39,7 +44,7 @@ func NewExitCodeError(exitCode int, theErr error) *ExitCodeError {
 	if theErr != nil {
 		useErr = theErr.Error()
 	}
-	return &ExitCodeError{Msg: useErr, Code: exitCode}
+	return &ExitCodeError{Msg: useErr, Code: exitCode, Err: theErr}
 }
 
 func NewExitCodeWarning(theErrMsg string) *ExitCodeWarning {
