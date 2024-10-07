@@ -297,14 +297,6 @@ func loadSpecs(ctx context.Context, args []string, client kubernetes.Interface) 
 		return nil, nil, errors.Wrap(err, "failed to load specs from CLI args")
 	}
 
-	if len(redactors) > 0 {
-		additionalKinds, err := specs.LoadFromCLIArgs(ctx, client, allArgs, vp)
-		if err != nil {
-			return nil, nil, errors.Wrap(err, "failed to load redactors from CLI args")
-		}
-		kinds.RedactorsV1Beta2 = append(kinds.RedactorsV1Beta2, additionalKinds.RedactorsV1Beta2...)
-	}
-
 	// Load additional specs from support bundle URIs
 	// only when no-uri flag is not set and no URLs are provided in the args
 	if !viper.GetBool("no-uri") {
