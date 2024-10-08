@@ -2,7 +2,7 @@ apiVersion: troubleshoot.sh/v1beta2
 kind: SupportBundle
 metadata:
   name: sb
-  runHostCollectorsInPod: true  # default is false 
 spec:
+  runHostCollectorsInPod: true
   hostCollectors:
   - hostOS: {}
