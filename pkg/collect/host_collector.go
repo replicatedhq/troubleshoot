@@ -112,8 +112,6 @@ func hostCollectorTitleOrDefault(meta troubleshootv1beta2.HostCollectorMeta, def
 }
 
 func RemoteHostCollect(ctx context.Context, params RemoteCollectParams) (map[string][]byte, error) {
-	allCollectedData := make(map[string][]byte)
-
 	scheme := runtime.NewScheme()
 	if err := corev1.AddToScheme(scheme); err != nil {
 		return nil, errors.Wrap(err, "failed to add runtime scheme")
@@ -147,33 +145,7 @@ func RemoteHostCollect(ctx context.Context, params RemoteCollectParams) (map[str
 		return nil, errors.Wrap(err, "failed to run collector remotely")
 	}
 
-	for k, v := range result {
-		if curBytes, ok := allCollectedData[k]; ok {
-			var curResults map[string]string
-			if err := json.Unmarshal(curBytes, &curResults); err != nil {
-				params.ProgressChan <- errors.Errorf("failed to read existing results for collector %s: %v\n", params.Title, err)
-				continue
-			}
-			var newResults map[string]string
-			if err := json.Unmarshal(v, &newResults); err != nil {
-				params.ProgressChan <- errors.Errorf("failed to read new results for collector %s: %v\n", params.Title, err)
-				continue
-			}
-			for file, data := range newResults {
-				curResults[file] = data
-			}
-			combinedResults, err := json.Marshal(curResults)
-			if err != nil {
-				params.ProgressChan <- errors.Errorf("failed to combine results for collector %s: %v\n", params.Title, err)
-				continue
-			}
-			allCollectedData[k] = combinedResults
-		} else {
-			allCollectedData[k] = v
-		}
-
-	}
-
+	allCollectedData := mapCollectorResultToOutput(result, params)
 	output := NewResult()
 
 	// save the first result we find in the node and save it
@@ -233,4 +205,36 @@ func runRemote(ctx context.Context, runner runner, nodes []string, collector *tr
 	}
 
 	return output, nil
+}
+
+func mapCollectorResultToOutput(result map[string][]byte, params RemoteCollectParams) map[string][]byte {
+	allCollectedData := make(map[string][]byte)
+
+	for k, v := range result {
+		if curBytes, ok := allCollectedData[k]; ok {
+			var curResults map[string]string
+			if err := json.Unmarshal(curBytes, &curResults); err != nil {
+				params.ProgressChan <- errors.Errorf("failed to read existing results for collector %s: %v\n", params.Title, err)
+				continue
+			}
+			var newResults map[string]string
+			if err := json.Unmarshal(v, &newResults); err != nil {
+				params.ProgressChan <- errors.Errorf("failed to read new results for collector %s: %v\n", params.Title, err)
+				continue
+			}
+			for file, data := range newResults {
+				curResults[file] = data
+			}
+			combinedResults, err := json.Marshal(curResults)
+			if err != nil {
+				params.ProgressChan <- errors.Errorf("failed to combine results for collector %s: %v\n", params.Title, err)
+				continue
+			}
+			allCollectedData[k] = combinedResults
+		} else {
+			allCollectedData[k] = v
+		}
+
+	}
+	return allCollectedData
 }
