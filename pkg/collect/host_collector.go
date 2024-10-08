@@ -111,7 +111,7 @@ func hostCollectorTitleOrDefault(meta troubleshootv1beta2.HostCollectorMeta, def
 	return defaultTitle
 }
 
-func RemoteHostCollect(params RemoteCollectParams) (map[string][]byte, error) {
+func RemoteHostCollect(ctx context.Context, params RemoteCollectParams) (map[string][]byte, error) {
 	allCollectedData := make(map[string][]byte)
 
 	scheme := runtime.NewScheme()
@@ -131,9 +131,6 @@ func RemoteHostCollect(params RemoteCollectParams) (map[string][]byte, error) {
 		pullPolicy:   params.PullPolicy,
 		waitInterval: remoteCollectorDefaultInterval,
 	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), params.Timeout)
-	defer cancel()
 
 	// Get all the nodes where we should run.
 	nodes, err := listNodesNamesInSelector(ctx, client, params.LabelSelector)

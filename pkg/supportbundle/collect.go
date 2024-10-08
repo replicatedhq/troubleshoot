@@ -252,7 +252,7 @@ func collectRemoteHost(ctx context.Context, filteredCollectors []FilteredCollect
 		}
 
 		// Perform the collection
-		result, err := collect.RemoteHostCollect(*params)
+		result, err := collect.RemoteHostCollect(ctx, *params)
 		if err != nil {
 			span.SetStatus(codes.Error, err.Error())
 			opts.ProgressChan <- fmt.Sprintf("[%s] Error: %v", collector.Title(), err)
@@ -332,6 +332,9 @@ func filterHostCollectors(ctx context.Context, collectSpecs []*troubleshootv1bet
 
 	for _, desiredCollector := range collectSpecs {
 		collector, ok := collect.GetHostCollector(desiredCollector, bundlePath)
+		_, span := otel.Tracer(constants.LIB_TRACER_NAME).Start(ctx, collector.Title())
+		span.SetAttributes(attribute.String("type", reflect.TypeOf(collector).String()))
+
 		if !ok {
 			return nil, collect.ErrHostCollectorNotFound
 		}
@@ -339,6 +342,8 @@ func filterHostCollectors(ctx context.Context, collectSpecs []*troubleshootv1bet
 		isExcluded, _ := collector.IsExcluded()
 		if isExcluded {
 			opts.ProgressChan <- fmt.Sprintf("[%s] Excluding host collector", collector.Title())
+			span.SetAttributes(attribute.Bool(constants.EXCLUDED, true))
+			span.End()
 			continue
 		}
 
