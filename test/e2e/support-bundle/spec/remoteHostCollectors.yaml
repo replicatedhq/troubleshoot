@@ -14,7 +14,7 @@ spec:
   - kernelConfigs: {}
   - copy:
       collectorName: etc-resolv
-      path: /etc/resolv.conf   # glob pattern to collect access logs
+      path: /etc/resolv.conf
   - dns:
       collectorName: replicated-app-resolve
       hostnames:
@@ -29,7 +29,6 @@ spec:
       collectorName: get-replicated-app
       get:
         url: https://replicated.app
-  # Run collectors for system information & metrics
   - run:
       collectorName: uptime
       command: uptime
