@@ -48,6 +48,7 @@ data:
     metadata:
       name: sb-spec-3
     spec:
+      runHostCollectorsInPod: true
       collectors:
         - logs:
             collectorName: wg-easy

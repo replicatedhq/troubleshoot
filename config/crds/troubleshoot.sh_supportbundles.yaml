@@ -2114,6 +2114,8 @@ spec:
                           type: string
                         exclude:
                           type: BoolString
+                        image:
+                          type: string
                         namespace:
                           type: string
                         podLaunchOptions:
@@ -20313,6 +20315,8 @@ spec:
                       type: object
                   type: object
                 type: array
+              runHostCollectorsInPod:
+                type: boolean
               uri:
                 description: URI optionally defines a location which is the source
                   of this spec to allow updating of the spec at runtime

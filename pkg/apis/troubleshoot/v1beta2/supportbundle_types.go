@@ -45,7 +45,7 @@ type SupportBundleStatus struct {
 // +k8s:openapi-gen=true
 type SupportBundle struct {
 	metav1.TypeMeta   `json:",inline" yaml:",inline"`
-	metav1.ObjectMeta `json:",inline" yaml:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty" yaml:"metadata,omitempty"`
 
 	Spec   SupportBundleSpec   `json:"spec,omitempty" yaml:"spec,omitempty"`
 	Status SupportBundleStatus `json:"status,omitempty"`
