@@ -20,7 +20,7 @@ type ExitError interface {
 type ExitCodeError struct {
 	Msg  string
 	Code int
-	Err error
+	Err  error
 }
 
 type ExitCodeWarning struct {
