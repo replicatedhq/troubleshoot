@@ -78,7 +78,7 @@ if ! grep "\*\*\*HIDDEN\*\*\*" "$tmpdir/$bundle_directory_name/static-hi.log"; t
     exit 1
 fi
 
-echo "======= Generating support bundle from k8s cluster using default --load-cluster-specs ======"
+echo "======= Generating support bundle from k8s cluster using --load-cluster-specs ======"
 recreate_tmpdir
 kubectl apply -f "$PRJ_ROOT/testdata/supportbundle/labelled-specs"
 ./bin/support-bundle -v1 --interactive=false --load-cluster-specs --output=$tmpdir/$bundle_archive_name
