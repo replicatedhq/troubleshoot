@@ -313,7 +313,7 @@ func loadSpecs(ctx context.Context, args []string, client kubernetes.Interface) 
 		len(kinds.SupportBundlesV1Beta2) == 0 {
 		return nil, nil, types.NewExitCodeError(
 			constants.EXIT_CODE_CATCH_ALL,
-			fmt.Errorf("no collectors specified to run. Use --debug and/or -v=2 to see more information"),
+			errors.New("no collectors specified to run. Use --debug and/or -v=2 to see more information"),
 		)
 	}
 
