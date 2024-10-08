@@ -137,3 +137,7 @@ func (c *CollectHostCopy) copyDir(src, dst string, result CollectorResult) error
 
 	return nil
 }
+
+func (c *CollectHostCopy) RemoteCollect(progressChan chan<- interface{}) (map[string][]byte, error) {
+	return nil, ErrRemoteCollectorNotImplemented
+}

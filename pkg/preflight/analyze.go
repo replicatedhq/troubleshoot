@@ -103,11 +103,17 @@ func doAnalyze(
 				klog.Errorf("failed to determine if analyzer %v is strict: %s", analyzer, strictErr)
 			}
 
+			title := "Analyzer Failed"
+			analyzerInst := analyze.GetAnalyzer(analyzer)
+			if analyzerInst != nil {
+				title = analyzerInst.Title()
+			}
+
 			analyzeResult = []*analyze.AnalyzeResult{
 				{
 					Strict:  strict,
 					IsFail:  true,
-					Title:   "Analyzer Failed",
+					Title:   title,
 					Message: err.Error(),
 				},
 			}

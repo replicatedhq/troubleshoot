@@ -75,3 +75,7 @@ func attemptConnect(address string, timeout time.Duration) NetworkStatus {
 	conn.Close()
 	return NetworkStatusConnected
 }
+
+func (c *CollectHostTCPConnect) RemoteCollect(progressChan chan<- interface{}) (map[string][]byte, error) {
+	return nil, ErrRemoteCollectorNotImplemented
+}

@@ -101,3 +101,7 @@ func (c *CollectHostTime) Collect(progressChan chan<- interface{}) (map[string][
 		HostTimePath: b,
 	}, nil
 }
+
+func (c *CollectHostTime) RemoteCollect(progressChan chan<- interface{}) (map[string][]byte, error) {
+	return nil, ErrRemoteCollectorNotImplemented
+}

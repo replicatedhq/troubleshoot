@@ -3139,11 +3139,17 @@
               "goldpinger": {
                 "type": "object",
                 "properties": {
+                  "collectDelay": {
+                    "type": "string"
+                  },
                   "collectorName": {
                     "type": "string"
                   },
                   "exclude": {
                     "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  },
+                  "image": {
+                    "type": "string"
                   },
                   "namespace": {
                     "type": "string"
@@ -3178,6 +3184,9 @@
                         "type": "string"
                       }
                     }
+                  },
+                  "serviceAccountName": {
+                    "type": "string"
                   }
                 }
               },
@@ -17157,6 +17166,17 @@
                   "timeout": {
                     "description": "Total timeout, including background IOPS setup and warmup if enabled.",
                     "type": "string"
+                  }
+                }
+              },
+              "hostOS": {
+                "type": "object",
+                "properties": {
+                  "collectorName": {
+                    "type": "string"
+                  },
+                  "exclude": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
                   }
                 }
               },

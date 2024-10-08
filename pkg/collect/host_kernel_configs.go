@@ -140,3 +140,7 @@ func parseKConfigs(r io.Reader) (KConfigs, error) {
 	}
 	return configs, nil
 }
+
+func (c *CollectHostKernelConfigs) RemoteCollect(progressChan chan<- interface{}) (map[string][]byte, error) {
+	return nil, ErrRemoteCollectorNotImplemented
+}

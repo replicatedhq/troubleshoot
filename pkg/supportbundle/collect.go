@@ -50,14 +50,38 @@ func runHostCollectors(ctx context.Context, hostCollectors []*troubleshootv1beta
 		}
 
 		opts.ProgressChan <- fmt.Sprintf("[%s] Running host collector...", collector.Title())
-		result, err := collector.Collect(opts.ProgressChan)
-		if err != nil {
-			span.SetStatus(codes.Error, err.Error())
-			opts.ProgressChan <- errors.Errorf("failed to run host collector: %s: %v", collector.Title(), err)
-		}
-		span.End()
-		for k, v := range result {
-			allCollectedData[k] = v
+		if opts.RunHostCollectorsInPod {
+			result, err := collector.RemoteCollect(opts.ProgressChan)
+			if err != nil {
+				// If the collector does not have a remote collector implementation, try to run it locally
+				if errors.Is(err, collect.ErrRemoteCollectorNotImplemented) {
+					result, err = collector.Collect(opts.ProgressChan)
+					if err != nil {
+						span.SetStatus(codes.Error, err.Error())
+						opts.ProgressChan <- errors.Errorf("failed to run host collector: %s: %v", collector.Title(), err)
+					}
+				} else {
+					// If the collector has a remote collector implementation, but it failed to run, return the error
+					span.SetStatus(codes.Error, err.Error())
+					opts.ProgressChan <- errors.Errorf("failed to run host collector: %s: %v", collector.Title(), err)
+				}
+			}
+			// If the collector has a remote collector implementation, and it ran successfully, return the result
+			span.End()
+			for k, v := range result {
+				allCollectedData[k] = v
+			}
+		} else {
+			// If the collector does not enable run host collectors in pod, run it locally
+			result, err := collector.Collect(opts.ProgressChan)
+			if err != nil {
+				span.SetStatus(codes.Error, err.Error())
+				opts.ProgressChan <- errors.Errorf("failed to run host collector: %s: %v", collector.Title(), err)
+			}
+			span.End()
+			for k, v := range result {
+				allCollectedData[k] = v
+			}
 		}
 	}
 

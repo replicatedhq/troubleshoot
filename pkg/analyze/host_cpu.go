@@ -2,6 +2,7 @@ package analyzer
 
 import (
 	"encoding/json"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -9,6 +10,16 @@ import (
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/replicatedhq/troubleshoot/pkg/collect"
 )
+
+// microarchs holds a list of features present in each microarchitecture.
+// ref: https://gitlab.com/x86-psABIs/x86-64-ABI
+// ref: https://developers.redhat.com/blog/2021/01/05/building-red-hat-enterprise-linux-9-for-the-x86-64-v2-microarchitecture-level
+var microarchs = map[string][]string{
+	"x86-64":    {"cmov", "cx8", "fpu", "fxsr", "mmx", "syscall", "sse", "sse2"},
+	"x86-64-v2": {"cx16", "lahf_lm", "popcnt", "ssse3", "sse4_1", "sse4_2", "ssse3"},
+	"x86-64-v3": {"avx", "avx2", "bmi1", "bmi2", "f16c", "fma", "lzcnt", "movbe", "xsave"},
+	"x86-64-v4": {"avx512f", "avx512bw", "avx512cd", "avx512dq", "avx512vl"},
+}
 
 type AnalyzeHostCPU struct {
 	hostAnalyzer *troubleshootv1beta2.CPUAnalyze
@@ -52,7 +63,7 @@ func (a *AnalyzeHostCPU) Analyze(
 				return []*AnalyzeResult{&result}, nil
 			}
 
-			isMatch, err := compareHostCPUConditionalToActual(outcome.Fail.When, cpuInfo.LogicalCount, cpuInfo.PhysicalCount, cpuInfo.MachineArch)
+			isMatch, err := compareHostCPUConditionalToActual(outcome.Fail.When, cpuInfo.LogicalCount, cpuInfo.PhysicalCount, cpuInfo.MachineArch, cpuInfo.Flags)
 			if err != nil {
 				return nil, errors.Wrap(err, "failed to compare")
 			}
@@ -73,7 +84,7 @@ func (a *AnalyzeHostCPU) Analyze(
 				return []*AnalyzeResult{&result}, nil
 			}
 
-			isMatch, err := compareHostCPUConditionalToActual(outcome.Warn.When, cpuInfo.LogicalCount, cpuInfo.PhysicalCount, cpuInfo.MachineArch)
+			isMatch, err := compareHostCPUConditionalToActual(outcome.Warn.When, cpuInfo.LogicalCount, cpuInfo.PhysicalCount, cpuInfo.MachineArch, cpuInfo.Flags)
 			if err != nil {
 				return nil, errors.Wrap(err, "failed to compare")
 			}
@@ -94,7 +105,7 @@ func (a *AnalyzeHostCPU) Analyze(
 				return []*AnalyzeResult{&result}, nil
 			}
 
-			isMatch, err := compareHostCPUConditionalToActual(outcome.Pass.When, cpuInfo.LogicalCount, cpuInfo.PhysicalCount, cpuInfo.MachineArch)
+			isMatch, err := compareHostCPUConditionalToActual(outcome.Pass.When, cpuInfo.LogicalCount, cpuInfo.PhysicalCount, cpuInfo.MachineArch, cpuInfo.Flags)
 			if err != nil {
 				return nil, errors.Wrap(err, "failed to compare")
 			}
@@ -112,7 +123,48 @@ func (a *AnalyzeHostCPU) Analyze(
 	return []*AnalyzeResult{&result}, nil
 }
 
-func compareHostCPUConditionalToActual(conditional string, logicalCount int, physicalCount int, machineArch string) (res bool, err error) {
+func doCompareHostCPUMicroArchitecture(microarch string, flags []string) (res bool, err error) {
+	specifics := make([]string, 0)
+	switch microarch {
+	case "x86-64-v4":
+		specifics = append(specifics, microarchs["x86-64-v4"]...)
+		fallthrough
+	case "x86-64-v3":
+		specifics = append(specifics, microarchs["x86-64-v3"]...)
+		fallthrough
+	case "x86-64-v2":
+		specifics = append(specifics, microarchs["x86-64-v2"]...)
+		fallthrough
+	case "x86-64":
+		specifics = append(specifics, microarchs["x86-64"]...)
+	default:
+		return false, errors.Errorf("troubleshoot does not yet support microarchitecture %q", microarch)
+	}
+
+	for _, flag := range specifics {
+		if slices.Contains(flags, flag) {
+			continue
+		}
+		return false, nil
+	}
+	return true, nil
+}
+
+func doCompareHostCPUFlags(expected string, flags []string) (res bool, err error) {
+	expectedFlags := strings.Split(expected, ",")
+	if len(expectedFlags) == 0 {
+		return false, errors.New("expected flags cannot be empty")
+	}
+	for _, flag := range expectedFlags {
+		if slices.Contains(flags, flag) {
+			continue
+		}
+		return false, nil
+	}
+	return true, nil
+}
+
+func compareHostCPUConditionalToActual(conditional string, logicalCount int, physicalCount int, machineArch string, flags []string) (res bool, err error) {
 	compareLogical := false
 	comparePhysical := false
 	compareUnspecified := false
@@ -141,6 +193,16 @@ func compareHostCPUConditionalToActual(conditional string, logicalCount int, phy
 		compareUnspecified = true
 		comparator = parts[0]
 		desired = parts[1]
+	}
+
+	// analyze if the cpu supports a specific set of features, aka as micrarchitecture.
+	if strings.ToLower(comparator) == "supports" {
+		return doCompareHostCPUMicroArchitecture(desired, flags)
+	}
+
+	// hasFlags allows users to query for specific flags on the CPU.
+	if strings.ToLower(comparator) == "hasflags" {
+		return doCompareHostCPUFlags(desired, flags)
 	}
 
 	if !compareLogical && !comparePhysical && !compareUnspecified && !compareMachineArch {

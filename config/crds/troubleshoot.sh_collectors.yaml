@@ -348,10 +348,14 @@ spec:
                       type: object
                     goldpinger:
                       properties:
+                        collectDelay:
+                          type: string
                         collectorName:
                           type: string
                         exclude:
                           type: BoolString
+                        image:
+                          type: string
                         namespace:
                           type: string
                         podLaunchOptions:
@@ -374,6 +378,8 @@ spec:
                             serviceAccountName:
                               type: string
                           type: object
+                        serviceAccountName:
+                          type: string
                       type: object
                     helm:
                       properties:

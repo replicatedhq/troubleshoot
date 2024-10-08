@@ -86,3 +86,7 @@ func traverseFiletreeDirExists(filename string) (string, error) {
 	}
 	return "", errors.New("max recursion exceeded")
 }
+
+func (c *CollectHostDiskUsage) RemoteCollect(progressChan chan<- interface{}) (map[string][]byte, error) {
+	return nil, ErrRemoteCollectorNotImplemented
+}

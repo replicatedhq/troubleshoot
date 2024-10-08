@@ -64,7 +64,7 @@ func (c *FakeSupportBundles) List(ctx context.Context, opts v1.ListOptions) (res
 	}
 	list := &v1beta2.SupportBundleList{ListMeta: obj.(*v1beta2.SupportBundleList).ListMeta}
 	for _, item := range obj.(*v1beta2.SupportBundleList).Items {
-		if label.Matches(labels.Set(item.Labels)) {
+		if label.Matches(labels.Set(item.Metadata.Labels)) {
 			list.Items = append(list.Items, item)
 		}
 	}

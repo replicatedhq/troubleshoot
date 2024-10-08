@@ -475,11 +475,17 @@
               "goldpinger": {
                 "type": "object",
                 "properties": {
+                  "collectDelay": {
+                    "type": "string"
+                  },
                   "collectorName": {
                     "type": "string"
                   },
                   "exclude": {
                     "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  },
+                  "image": {
+                    "type": "string"
                   },
                   "namespace": {
                     "type": "string"
@@ -514,6 +520,9 @@
                         "type": "string"
                       }
                     }
+                  },
+                  "serviceAccountName": {
+                    "type": "string"
                   }
                 }
               },

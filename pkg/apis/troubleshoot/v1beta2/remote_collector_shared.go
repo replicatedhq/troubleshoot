@@ -16,6 +16,9 @@ type RemoteCollectorMeta struct {
 type RemoteCPU struct {
 	RemoteCollectorMeta `json:",inline" yaml:",inline"`
 }
+type RemoteHostOS struct {
+	RemoteCollectorMeta `json:",inline" yaml:",inline"`
+}
 
 type RemoteMemory struct {
 	RemoteCollectorMeta `json:",inline" yaml:",inline"`
@@ -170,6 +173,7 @@ type RemoteCollect struct {
 	FilesystemPerformance *RemoteFilesystemPerformance `json:"filesystemPerformance,omitempty" yaml:"filesystemPerformance,omitempty"`
 	Certificate           *RemoteCertificate           `json:"certificate,omitempty" yaml:"certificate,omitempty"`
 	HostServices          *RemoteServices              `json:"hostServices,omitempty" yaml:"hostServices,omitempty"`
+	HostOS                *RemoteHostOS                `json:"hostOS,omitempty" yaml:"hostOS,omitempty"`
 }
 
 func (c *RemoteCollect) AccessReviewSpecs(overrideNS string) []authorizationv1.SelfSubjectAccessReviewSpec {

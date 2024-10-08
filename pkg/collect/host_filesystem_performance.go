@@ -460,3 +460,7 @@ func collectFioResults(ctx context.Context, hostCollector *troubleshootv1beta2.F
 
 	return &result, nil
 }
+
+func (c *CollectHostFilesystemPerformance) RemoteCollect(progressChan chan<- interface{}) (map[string][]byte, error) {
+	return nil, ErrRemoteCollectorNotImplemented
+}

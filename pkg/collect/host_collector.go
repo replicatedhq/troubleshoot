@@ -8,6 +8,7 @@ type HostCollector interface {
 	Title() string
 	IsExcluded() (bool, error)
 	Collect(progressChan chan<- interface{}) (map[string][]byte, error)
+	RemoteCollect(progressChan chan<- interface{}) (map[string][]byte, error) // RemoteCollect is used to priviledge pods to collect data from different nodes
 }
 
 func GetHostCollector(collector *troubleshootv1beta2.HostCollect, bundlePath string) (HostCollector, bool) {
@@ -67,6 +68,8 @@ func GetHostCollector(collector *troubleshootv1beta2.HostCollect, bundlePath str
 		return &CollectHostJournald{collector.HostJournald, bundlePath}, true
 	case collector.HostCGroups != nil:
 		return &CollectHostCGroups{collector.HostCGroups, bundlePath}, true
+	case collector.HostDNS != nil:
+		return &CollectHostDNS{collector.HostDNS, bundlePath}, true
 	default:
 		return nil, false
 	}

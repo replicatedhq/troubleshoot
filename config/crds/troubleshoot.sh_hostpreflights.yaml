@@ -1278,6 +1278,19 @@ spec:
                       required:
                       - path
                       type: object
+                    dns:
+                      properties:
+                        collectorName:
+                          type: string
+                        exclude:
+                          type: BoolString
+                        hostnames:
+                          items:
+                            type: string
+                          type: array
+                      required:
+                      - hostnames
+                      type: object
                     filesystemPerformance:
                       description: |-
                         FilesystemPerformance benchmarks sequential write latency on a single file.
@@ -1846,6 +1859,13 @@ spec:
                       - backgroundWriteIOPS
                       - backgroundWriteIOPSJobs
                       - enableBackgroundIOPS
+                      type: object
+                    hostOS:
+                      properties:
+                        collectorName:
+                          type: string
+                        exclude:
+                          type: BoolString
                       type: object
                     hostServices:
                       properties:

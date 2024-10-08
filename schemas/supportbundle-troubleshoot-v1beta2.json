@@ -3185,6 +3185,9 @@
               "goldpinger": {
                 "type": "object",
                 "properties": {
+                  "collectDelay": {
+                    "type": "string"
+                  },
                   "collectorName": {
                     "type": "string"
                   },
@@ -3224,6 +3227,9 @@
                         "type": "string"
                       }
                     }
+                  },
+                  "serviceAccountName": {
+                    "type": "string"
                   }
                 }
               },
@@ -18983,6 +18989,26 @@
                   },
                   "path": {
                     "type": "string"
+                  }
+                }
+              },
+              "dns": {
+                "type": "object",
+                "required": [
+                  "hostnames"
+                ],
+                "properties": {
+                  "collectorName": {
+                    "type": "string"
+                  },
+                  "exclude": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  },
+                  "hostnames": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
                   }
                 }
               },
