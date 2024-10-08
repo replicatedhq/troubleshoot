@@ -47,7 +47,6 @@ data:
     kind: SupportBundle
     metadata:
       name: sb-spec-3
-      runHostCollectorsInPod: true
     spec:
       collectors:
         - logs:
