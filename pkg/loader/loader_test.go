@@ -348,10 +348,8 @@ func TestLoadingMultidocsWithTroubleshootSpecs(t *testing.T) {
 				Kind:       "SupportBundle",
 				APIVersion: "troubleshoot.sh/v1beta2",
 			},
-			Metadata: troubleshootv1beta2.SupportBundleMetadata{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "my-support-bundle",
-				},
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "my-support-bundle",
 			},
 			Spec: troubleshootv1beta2.SupportBundleSpec{
 				Collectors: []*troubleshootv1beta2.Collect{
@@ -630,10 +628,8 @@ func TestLoadingEmptySpec(t *testing.T) {
 					Kind:       "SupportBundle",
 					APIVersion: "troubleshoot.sh/v1beta2",
 				},
-				Metadata: troubleshootv1beta2.SupportBundleMetadata{
-					ObjectMeta: metav1.ObjectMeta{
-						Name: "empty",
-					},
+				ObjectMeta: metav1.ObjectMeta{
+					Name: "empty",
 				},
 			},
 		},

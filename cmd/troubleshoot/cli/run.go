@@ -110,7 +110,7 @@ func runTroubleshoot(v *viper.Viper, args []string) error {
 	}
 
 	if interactive {
-		if len(mainBundle.Spec.HostCollectors) > 0 && !util.IsRunningAsRoot() && !mainBundle.Metadata.RunHostCollectorsInPod {
+		if len(mainBundle.Spec.HostCollectors) > 0 && !util.IsRunningAsRoot() && !mainBundle.Spec.RunHostCollectorsInPod {
 			fmt.Print(cursor.Show())
 			if util.PromptYesNo(util.HOST_COLLECTORS_RUN_AS_ROOT_PROMPT) {
 				fmt.Println("Exiting...")
@@ -199,7 +199,7 @@ func runTroubleshoot(v *viper.Viper, args []string) error {
 
 	if len(response.AnalyzerResults) > 0 {
 		if interactive {
-			if err := showInteractiveResults(mainBundle.Metadata.Name, response.AnalyzerResults, response.ArchivePath); err != nil {
+			if err := showInteractiveResults(mainBundle.Name, response.AnalyzerResults, response.ArchivePath); err != nil {
 				interactive = false
 			}
 		} else {
@@ -208,7 +208,7 @@ func runTroubleshoot(v *viper.Viper, args []string) error {
 	}
 
 	if !response.FileUploaded {
-		if appName := mainBundle.Metadata.Labels["applicationName"]; appName != "" {
+		if appName := mainBundle.Labels["applicationName"]; appName != "" {
 			f := `A support bundle for %s has been created in this directory
 named %s. Please upload it on the Troubleshoot page of
 the %s Admin Console to begin analysis.`
