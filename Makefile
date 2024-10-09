@@ -7,6 +7,7 @@ VERSION_PACKAGE = github.com/replicatedhq/troubleshoot/pkg/version
 VERSION ?=`git describe --tags --dirty`
 DATE=`date -u +"%Y-%m-%dT%H:%M:%SZ"`
 RUN?=""
+GOLANGCI_LINT_VERSION ?= "v1.61.0"
 
 GIT_TREE = $(shell git rev-parse --is-inside-work-tree 2>/dev/null)
 ifneq "$(GIT_TREE)" ""
@@ -152,7 +153,7 @@ check-schemas: generate schemas
 	fi
 
 .PHONY: schemas
-schemas: fmt vet openapischema bin/schemagen
+schemas: openapischema bin/schemagen
 	./bin/schemagen --output-dir ./schemas
 
 bin/schemagen:
@@ -236,12 +237,16 @@ scan:
 		./
 
 .PHONY: lint
-lint:
+lint: vet
 	golangci-lint run --new -c .golangci.yaml ${BUILDPATHS}
 
-.PHONY: fmt lint-and-fix
-lint-and-fix:
+.PHONY: lint-and-fix
+lint-and-fix: fmt vet
 	golangci-lint run --new --fix -c .golangci.yaml ${BUILDPATHS}
+
+.PHONY: install-golangci-lint
+install-golangci-lint:
+	go install github.com/golangci/golangci-lint/cmd/golangci-lint@${GOLANGCI_LINT_VERSION}
 
 .PHONY: watch
 watch: npm-install

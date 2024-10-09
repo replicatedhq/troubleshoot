@@ -22,30 +22,27 @@ concurrency:
 jobs:
   fail_if_pull_request_is_draft:
     if: github.event.pull_request.draft == true
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
       - name: Fails in order to indicate that pull request needs to be marked as ready to review and unit tests workflow needs to pass.
         run: exit 1
 
   test:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-go@v5
         with:
           go-version: "1.22"
-
-      - name: setup env
-        run: |
-          echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
-          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
-        shell: bash
-
-      - uses: actions/checkout@v4
-
-      - run: make test
+      - name: Run linters
+        run: make install-golangci-lint lint
+      - name: Run tests
+        run: make test
 
   test-integration:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/setup-go@v5
         with:
