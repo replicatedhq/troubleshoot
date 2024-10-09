@@ -29,4 +29,5 @@ func TestCollectHostCPU_Collect(t *testing.T) {
 	assert.Contains(t, m, "logicalCount")
 	assert.Contains(t, m, "physicalCount")
 	assert.Contains(t, m, "flags")
+	//assert.Contains(t, m, "machineArch")
 }
