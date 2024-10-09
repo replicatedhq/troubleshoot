@@ -35,7 +35,8 @@ define LDFLAGS
 "
 endef
 
-BUILDFLAGS = -tags "netgo containers_image_ostree_stub exclude_graphdriver_devicemapper exclude_graphdriver_btrfs containers_image_openpgp" -installsuffix netgo
+BUILDTAGS = "netgo containers_image_ostree_stub exclude_graphdriver_devicemapper exclude_graphdriver_btrfs containers_image_openpgp"
+BUILDFLAGS = -tags ${BUILDTAGS} -installsuffix netgo
 BUILDPATHS = ./pkg/... ./cmd/... ./internal/...
 E2EPATHS = ./test/e2e/...
 TESTFLAGS ?= -v -coverprofile cover.out
@@ -238,11 +239,11 @@ scan:
 
 .PHONY: lint
 lint: vet
-	golangci-lint run --new -c .golangci.yaml ${BUILDPATHS}
+	golangci-lint run --new -c .golangci.yaml --build-tags ${BUILDTAGS} ${BUILDPATHS}
 
 .PHONY: lint-and-fix
 lint-and-fix: fmt vet
-	golangci-lint run --new --fix -c .golangci.yaml ${BUILDPATHS}
+	golangci-lint run --new --fix -c .golangci.yaml --build-tags ${BUILDTAGS} ${BUILDPATHS}
 
 .PHONY: install-golangci-lint
 install-golangci-lint:
