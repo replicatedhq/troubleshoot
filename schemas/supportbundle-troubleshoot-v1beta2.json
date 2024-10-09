@@ -3194,6 +3194,9 @@
                   "exclude": {
                     "oneOf": [{"type": "string"},{"type": "boolean"}]
                   },
+                  "image": {
+                    "type": "string"
+                  },
                   "namespace": {
                     "type": "string"
                   },
@@ -19629,6 +19632,10 @@
               }
             }
           }
+        },
+        "runHostCollectorsInPod": {
+          "description": "RunHostCollectorsInPod optionally defines whether to run host collectors in a privileged pod",
+          "type": "boolean"
         },
         "uri": {
           "description": "URI optionally defines a location which is the source of this spec to allow updating of the spec at runtime",
