@@ -62,9 +62,7 @@ func ParseSupportBundle(doc []byte, followURI bool) (*troubleshootv1beta2.Suppor
 				APIVersion: "troubleshoot.sh/v1beta2",
 				Kind:       "SupportBundle",
 			},
-			Metadata: troubleshootv1beta2.SupportBundleMetadata{
-				ObjectMeta: collector.ObjectMeta,
-			},
+			ObjectMeta: collector.ObjectMeta,
 			Spec: troubleshootv1beta2.SupportBundleSpec{
 				Collectors:      collector.Spec.Collectors,
 				Analyzers:       []*troubleshootv1beta2.Analyze{},

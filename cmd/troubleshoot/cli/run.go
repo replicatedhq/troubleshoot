@@ -110,7 +110,7 @@ func runTroubleshoot(v *viper.Viper, args []string) error {
 	}
 
 	if interactive {
-		if len(mainBundle.Spec.HostCollectors) > 0 && !util.IsRunningAsRoot() {
+		if len(mainBundle.Spec.HostCollectors) > 0 && !util.IsRunningAsRoot() && !mainBundle.Spec.RunHostCollectorsInPod {
 			fmt.Print(cursor.Show())
 			if util.PromptYesNo(util.HOST_COLLECTORS_RUN_AS_ROOT_PROMPT) {
 				fmt.Println("Exiting...")
@@ -184,7 +184,7 @@ func runTroubleshoot(v *viper.Viper, args []string) error {
 		OutputPath:                v.GetString("output"),
 		Redact:                    v.GetBool("redact"),
 		FromCLI:                   true,
-		RunHostCollectorsInPod:    mainBundle.Metadata.RunHostCollectorsInPod,
+		RunHostCollectorsInPod:    mainBundle.Spec.RunHostCollectorsInPod,
 	}
 
 	nonInteractiveOutput := analysisOutput{}
@@ -199,7 +199,7 @@ func runTroubleshoot(v *viper.Viper, args []string) error {
 
 	if len(response.AnalyzerResults) > 0 {
 		if interactive {
-			if err := showInteractiveResults(mainBundle.Metadata.Name, response.AnalyzerResults, response.ArchivePath); err != nil {
+			if err := showInteractiveResults(mainBundle.Name, response.AnalyzerResults, response.ArchivePath); err != nil {
 				interactive = false
 			}
 		} else {
@@ -208,7 +208,7 @@ func runTroubleshoot(v *viper.Viper, args []string) error {
 	}
 
 	if !response.FileUploaded {
-		if appName := mainBundle.Metadata.Labels["applicationName"]; appName != "" {
+		if appName := mainBundle.Labels["applicationName"]; appName != "" {
 			f := `A support bundle for %s has been created in this directory
 named %s. Please upload it on the Troubleshoot page of
 the %s Admin Console to begin analysis.`
@@ -337,11 +337,8 @@ func loadSpecs(ctx context.Context, args []string, client kubernetes.Interface) 
 			APIVersion: "troubleshoot.sh/v1beta2",
 			Kind:       "SupportBundle",
 		},
-		Metadata: troubleshootv1beta2.SupportBundleMetadata{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: "merged-support-bundle-spec",
-			},
-			RunHostCollectorsInPod: false,
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "merged-support-bundle-spec",
 		},
 	}
 
@@ -351,11 +348,11 @@ func loadSpecs(ctx context.Context, args []string, client kubernetes.Interface) 
 		sb := sb
 		mainBundle = supportbundle.ConcatSpec(mainBundle, &sb)
 		//check if sb has metadata and if it has RunHostCollectorsInPod set to true
-		if !reflect.DeepEqual(sb.Metadata.ObjectMeta, metav1.ObjectMeta{}) && sb.Metadata.RunHostCollectorsInPod {
-			enableRunHostCollectorsInPod = sb.Metadata.RunHostCollectorsInPod
+		if !reflect.DeepEqual(sb.ObjectMeta, metav1.ObjectMeta{}) && sb.Spec.RunHostCollectorsInPod {
+			enableRunHostCollectorsInPod = sb.Spec.RunHostCollectorsInPod
 		}
 	}
-	mainBundle.Metadata.RunHostCollectorsInPod = enableRunHostCollectorsInPod
+	mainBundle.Spec.RunHostCollectorsInPod = enableRunHostCollectorsInPod
 
 	for _, c := range kinds.CollectorsV1Beta2 {
 		mainBundle.Spec.Collectors = util.Append(mainBundle.Spec.Collectors, c.Spec.Collectors)

@@ -1,0 +1,34 @@
+apiVersion: troubleshoot.sh/v1beta2
+kind: SupportBundle
+metadata:
+  name: "remote-host-collectors"
+spec:
+  runHostCollectorsInPod: true
+  hostCollectors:
+  - ipv4Interfaces: {}
+  - hostServices: {}
+  - cpu: {}
+  - hostOS: {}
+  - memory: {}
+  - blockDevices: {}
+  - kernelConfigs: {}
+  - copy:
+      collectorName: etc-resolv
+      path: /etc/resolv.conf
+  - dns:
+      collectorName: replicated-app-resolve
+      hostnames:
+        - replicated.app
+  - diskUsage:
+      collectorName: root-disk-usage
+      path: /
+  - diskUsage:
+      collectorName: tmp
+      path: /tmp
+  - http:
+      collectorName: get-replicated-app
+      get:
+        url: https://replicated.app
+  - run:
+      collectorName: uptime
+      command: uptime
