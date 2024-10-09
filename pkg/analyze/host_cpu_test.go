@@ -166,10 +166,10 @@ func Test_compareHostCPUConditionalToActual(t *testing.T) {
 			expected: true,
 		},
 		{
-			name:     "machine arch matches",
-			when:     "machineArch == x86_64",
+			name:        "machine arch matches",
+			when:        "machineArch == x86_64",
 			machineArch: "x86_64",
-			expected: true,
+			expected:    true,
 		},
 	}
 	for _, test := range tests {

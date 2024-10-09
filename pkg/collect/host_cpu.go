@@ -47,12 +47,10 @@ func (c *CollectHostCPU) Collect(progressChan chan<- interface{}) (map[string][]
 	}
 	cpuInfo.PhysicalCount = physicalCount
 
-	
 	cpuInfo.MachineArch, err = host.KernelArch()
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to fetch cpu architecture")
 	}
-	
 
 	// XXX even though the cpu.Info() returns a slice per CPU it is way
 	// common to have the same flags for all CPUs. We consolidate them here
