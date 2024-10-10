@@ -25,8 +25,9 @@ func TestCollectHostCPU_Collect(t *testing.T) {
 	require.NoError(t, err)
 
 	// Check if values exist. They will be different on different machines.
-	assert.Equal(t, 3, len(m))
+	assert.Equal(t, 4, len(m))
 	assert.Contains(t, m, "logicalCount")
 	assert.Contains(t, m, "physicalCount")
 	assert.Contains(t, m, "flags")
+	assert.Contains(t, m, "machineArch")
 }

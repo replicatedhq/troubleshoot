@@ -82,6 +82,7 @@ func Test_compareHostCPUConditionalToActual(t *testing.T) {
 		logicalCount  int
 		physicalCount int
 		flags         []string
+		machineArch   string
 		expected      bool
 	}{
 		{
@@ -164,12 +165,18 @@ func Test_compareHostCPUConditionalToActual(t *testing.T) {
 			flags:    []string{"a", "b", "c", "d", "e"},
 			expected: true,
 		},
+		{
+			name:        "machine arch matches",
+			when:        "machineArch == x86_64",
+			machineArch: "x86_64",
+			expected:    true,
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			req := require.New(t)
 
-			actual, err := compareHostCPUConditionalToActual(test.when, test.logicalCount, test.physicalCount, test.flags)
+			actual, err := compareHostCPUConditionalToActual(test.when, test.logicalCount, test.physicalCount, test.flags, test.machineArch)
 			req.NoError(err)
 
 			assert.Equal(t, test.expected, actual)

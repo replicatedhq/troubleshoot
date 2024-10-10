@@ -63,7 +63,7 @@ func (a *AnalyzeHostCPU) Analyze(
 				return []*AnalyzeResult{&result}, nil
 			}
 
-			isMatch, err := compareHostCPUConditionalToActual(outcome.Fail.When, cpuInfo.LogicalCount, cpuInfo.PhysicalCount, cpuInfo.Flags)
+			isMatch, err := compareHostCPUConditionalToActual(outcome.Fail.When, cpuInfo.LogicalCount, cpuInfo.PhysicalCount, cpuInfo.Flags, cpuInfo.MachineArch)
 			if err != nil {
 				return nil, errors.Wrap(err, "failed to compare")
 			}
@@ -84,7 +84,7 @@ func (a *AnalyzeHostCPU) Analyze(
 				return []*AnalyzeResult{&result}, nil
 			}
 
-			isMatch, err := compareHostCPUConditionalToActual(outcome.Warn.When, cpuInfo.LogicalCount, cpuInfo.PhysicalCount, cpuInfo.Flags)
+			isMatch, err := compareHostCPUConditionalToActual(outcome.Warn.When, cpuInfo.LogicalCount, cpuInfo.PhysicalCount, cpuInfo.Flags, cpuInfo.MachineArch)
 			if err != nil {
 				return nil, errors.Wrap(err, "failed to compare")
 			}
@@ -105,7 +105,7 @@ func (a *AnalyzeHostCPU) Analyze(
 				return []*AnalyzeResult{&result}, nil
 			}
 
-			isMatch, err := compareHostCPUConditionalToActual(outcome.Pass.When, cpuInfo.LogicalCount, cpuInfo.PhysicalCount, cpuInfo.Flags)
+			isMatch, err := compareHostCPUConditionalToActual(outcome.Pass.When, cpuInfo.LogicalCount, cpuInfo.PhysicalCount, cpuInfo.Flags, cpuInfo.MachineArch)
 			if err != nil {
 				return nil, errors.Wrap(err, "failed to compare")
 			}
@@ -164,13 +164,18 @@ func doCompareHostCPUFlags(expected string, flags []string) (res bool, err error
 	return true, nil
 }
 
-func compareHostCPUConditionalToActual(conditional string, logicalCount int, physicalCount int, flags []string) (res bool, err error) {
+func compareHostCPUConditionalToActual(conditional string, logicalCount int, physicalCount int, flags []string, machineArch string) (res bool, err error) {
 	compareLogical := false
 	comparePhysical := false
 	compareUnspecified := false
+	compareMachineArch := false
 
 	comparator := ""
 	desired := ""
+
+	/* When the conditional is in the format of "logical <comparator> <desired>"
+	   example: when: "count < 2"
+	*/
 
 	parts := strings.Split(conditional, " ")
 	if len(parts) == 3 {
@@ -182,6 +187,8 @@ func compareHostCPUConditionalToActual(conditional string, logicalCount int, phy
 			comparePhysical = true
 		} else if strings.ToLower(parts[0]) == "count" {
 			compareUnspecified = true
+		} else if strings.ToLower(parts[0]) == "machinearch" {
+			compareMachineArch = true
 		}
 	} else if len(parts) == 2 {
 		compareUnspecified = true
@@ -199,7 +206,7 @@ func compareHostCPUConditionalToActual(conditional string, logicalCount int, phy
 		return doCompareHostCPUFlags(desired, flags)
 	}
 
-	if !compareLogical && !comparePhysical && !compareUnspecified {
+	if !compareLogical && !comparePhysical && !compareUnspecified && !compareMachineArch {
 		return false, errors.New("unable to parse conditional")
 	}
 
@@ -207,6 +214,8 @@ func compareHostCPUConditionalToActual(conditional string, logicalCount int, phy
 		return doCompareHostCPU(comparator, desired, logicalCount)
 	} else if comparePhysical {
 		return doCompareHostCPU(comparator, desired, physicalCount)
+	} else if compareMachineArch {
+		return doCompareMachineArch(comparator, desired, machineArch)
 	} else {
 		actual := logicalCount
 		if physicalCount > logicalCount {
@@ -215,6 +224,16 @@ func compareHostCPUConditionalToActual(conditional string, logicalCount int, phy
 
 		return doCompareHostCPU(comparator, desired, actual)
 	}
+}
+
+func doCompareMachineArch(operator string, desired string, actual string) (bool, error) {
+	switch operator {
+	case "=", "==", "===":
+		return actual == desired, nil
+	case "!=", "!==":
+		return actual != desired, nil
+	}
+	return false, errors.New("unknown operator")
 }
 
 func doCompareHostCPU(operator string, desired string, actual int) (bool, error) {
@@ -234,6 +253,8 @@ func doCompareHostCPU(operator string, desired string, actual int) (bool, error)
 		return actual >= int(desiredInt), nil
 	case "=", "==", "===":
 		return actual == int(desiredInt), nil
+	case "!=", "!==":
+		return actual != int(desiredInt), nil
 	}
 
 	return false, errors.New("unknown operator")
