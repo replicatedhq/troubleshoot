@@ -22,6 +22,7 @@ import (
 
 	v1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	labels "k8s.io/apimachinery/pkg/labels"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
 	testing "k8s.io/client-go/testing"
@@ -56,7 +57,6 @@ func (c *FakeSupportBundles) List(ctx context.Context, opts v1.ListOptions) (res
 	if obj == nil {
 		return nil, err
 	}
-<<<<<<< HEAD
 
 	label, _, _ := testing.ExtractFromListOptions(opts)
 	if label == nil {
@@ -69,9 +69,6 @@ func (c *FakeSupportBundles) List(ctx context.Context, opts v1.ListOptions) (res
 		}
 	}
 	return list, err
-=======
-	return obj.(*v1beta2.SupportBundleList), err
->>>>>>> 8dd96e2 (move tls params into get, put, post methods)
 }
 
 // Watch returns a watch.Interface that watches the requested supportBundles.
