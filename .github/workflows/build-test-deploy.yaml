@@ -80,6 +80,8 @@ jobs:
         with:
           fetch-depth: 0
       - run: make check-schemas
+      - name: Setup tmate session
+        uses: mxschmitt/action-tmate@v3
 
   compile-preflight:
     runs-on: ubuntu-latest
