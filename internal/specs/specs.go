@@ -268,6 +268,8 @@ func downloadFromHttpURL(ctx context.Context, url string, headers map[string]str
 // to list & read secrets and configmaps from all namespaces, we will fallback to trying each
 // namespace individually, and eventually default to the configured kubeconfig namespace.
 func LoadFromCluster(ctx context.Context, client kubernetes.Interface, selectors []string, ns string) (*loader.TroubleshootKinds, error) {
+	klog.V(1).Infof("Load troubleshoot specs from the cluster using selectors: %v", selectors)
+
 	if reflect.DeepEqual(selectors, []string{"troubleshoot.sh/kind=support-bundle"}) {
 		// Its the default selector so we append troubleshoot.io/kind=support-bundle to it due to backwards compatibility
 		selectors = append(selectors, "troubleshoot.io/kind=support-bundle")

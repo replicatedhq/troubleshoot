@@ -44,6 +44,18 @@ If no arguments are provided, specs are automatically loaded from the cluster by
 		RunE: func(cmd *cobra.Command, args []string) error {
 			v := viper.GetViper()
 
+			// If there are no locations to load specs from passed in the cli args, we should
+			// load them from the cluster by setting "load-cluster-specs=true". If the caller
+			// provided "--load-cluster-specs" cli option, we should respect it.
+			if len(args) == 0 {
+				// Check if --load-cluster-specs was set by the cli caller to avoid overriding it
+				flg := cmd.Flags().Lookup("load-cluster-specs")
+				if flg != nil && !flg.Changed {
+					// Load specs from the cluster if no spec(s) is(are) provided in the cli args
+					v.Set("load-cluster-specs", true)
+				}
+			}
+
 			closer, err := traces.ConfigureTracing("support-bundle")
 			if err != nil {
 				// Do not fail running support-bundle if tracing fails
@@ -77,7 +89,7 @@ If no arguments are provided, specs are automatically loaded from the cluster by
 	cmd.Flags().Bool("interactive", true, "enable/disable interactive mode")
 	cmd.Flags().Bool("collect-without-permissions", true, "always generate a support bundle, even if it some require additional permissions")
 	cmd.Flags().StringSliceP("selector", "l", []string{"troubleshoot.sh/kind=support-bundle"}, "selector to filter on for loading additional support bundle specs found in secrets within the cluster")
-	cmd.Flags().Bool("load-cluster-specs", false, "enable/disable loading additional troubleshoot specs found within the cluster. This is the default behavior if no spec is provided as an argument")
+	cmd.Flags().Bool("load-cluster-specs", false, "enable/disable loading additional troubleshoot specs found within the cluster. Do not load by default unless no specs are provided in the cli args")
 	cmd.Flags().String("since-time", "", "force pod logs collectors to return logs after a specific date (RFC3339)")
 	cmd.Flags().String("since", "", "force pod logs collectors to return logs newer than a relative duration like 5s, 2m, or 3h.")
 	cmd.Flags().StringP("output", "o", "", "specify the output file path for the support bundle")
