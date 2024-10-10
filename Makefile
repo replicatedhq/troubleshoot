@@ -149,6 +149,8 @@ check-schemas: generate schemas
     	echo -e "\033[31mThe git repo is dirty :( Ensure all generated files are committed e.g CRD schema files\033[0;m"; \
     	git status --short; \
     	exit 1; \
+	else \
+	    echo "No changes to generated files"; \
 	fi
 
 .PHONY: schemas
