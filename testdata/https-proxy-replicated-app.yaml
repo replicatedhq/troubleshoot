@@ -5,9 +5,9 @@ metadata:
 spec:
   collectors:
     - http:
-        collectorName: https-proxy
+        collectorName: &https https
         get:
-          url: https://replicated.app
+          url: &url https://replicated.app
           tls:
             cacert: &ca |-
               -----BEGIN CERTIFICATE-----
@@ -31,29 +31,44 @@ spec:
               jcr8Mb5t3iQwH3t2eT07K2fouPa70vbOfj1kSiexUoUllHgoOXUeOpGv4Aykly7m
               C/XdeJyP1tnZ3j2ozPo=
               -----END CERTIFICATE-----
+    - http:
+        collectorName: &https-proxy https-proxy
+        get:
+          url: *url
+          tls:
+            cacert: *ca
           proxy: &proxy https://10.10.30.201:3130
     - http:
-        collectorName: https-proxy-failed
+        collectorName: &https-proxy-nocert https-proxy-nocert
         get:
-          url: https://replicated.app
+          url: *url
           proxy: *proxy
 
   analyzers:
     - http:
-        checkName: https-proxy
-        collectorName: https-proxy
+        checkName: *https-proxy
+        collectorName: *https-proxy
         outcomes:
           - pass:
-              when: "statusCode == 200"
-              message: checking https://replicated.app passed
+              when: &200 "statusCode == 200"
+              message: &passed checking https://replicated.app passed
           - fail:
-              message: checking https://replicated.app failed
+              message: &failed checking https://replicated.app failed
     - http:
-        checkName: https-proxy-failed
-        collectorName: https-proxy-failed
+        checkName: *https-proxy-nocert
+        collectorName: *https-proxy-nocert
         outcomes:
           - pass:
-              when: "statusCode == 200"
-              message: checking https://replicated.app passed
+              when: *200
+              message: *passed
           - fail:
-              message: checking https://replicated.app failed
+              message: *failed
+    - http:
+        checkName: *https
+        collectorName: *https
+        outcomes:
+          - pass:
+              when: *200
+              message: *passed
+          - fail:
+              message: *failed
