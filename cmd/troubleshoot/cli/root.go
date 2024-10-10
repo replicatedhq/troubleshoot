@@ -44,12 +44,11 @@ If no arguments are provided, specs are automatically loaded from the cluster by
 		RunE: func(cmd *cobra.Command, args []string) error {
 			v := viper.GetViper()
 
-			// If there are not locations to load specs passed in the cli args, we should
+			// If there are no locations to load specs from passed in the cli args, we should
 			// load them from the cluster by setting "load-cluster-specs=true". If the caller
-			// provided "--load-cluster-specs" cli option, we should respect that.
+			// provided "--load-cluster-specs" cli option, we should respect it.
 			if len(args) == 0 {
-				// Check if --load-cluster-specs was set by the cli caller by
-				// checking if the flag was not changed from the default value
+				// Check if --load-cluster-specs was set by the cli caller to avoid overriding it
 				flg := cmd.Flags().Lookup("load-cluster-specs")
 				if flg != nil && !flg.Changed {
 					// Load specs from the cluster if no spec(s) is(are) provided in the cli args
