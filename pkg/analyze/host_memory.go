@@ -8,6 +8,7 @@ import (
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/replicatedhq/troubleshoot/pkg/collect"
+	"github.com/replicatedhq/troubleshoot/pkg/constants"
 	"k8s.io/apimachinery/pkg/api/resource"
 )
 
@@ -26,122 +27,97 @@ func (a *AnalyzeHostMemory) IsExcluded() (bool, error) {
 func (a *AnalyzeHostMemory) Analyze(
 	getCollectedFileContents func(string) ([]byte, error), findFiles getChildCollectedFileContents,
 ) ([]*AnalyzeResult, error) {
-	hostAnalyzer := a.hostAnalyzer
+	var results []*AnalyzeResult
+	var memoryInfo collect.MemoryInfo
+	var remoteCollectContents []RemoteCollectContent
+	result := AnalyzeResult{}
+	result.Title = a.Title()
+	//hostAnalyzer := a.hostAnalyzer
 
+	// check if the host os info file exists (local mode)
 	contents, err := getCollectedFileContents(collect.HostMemoryPath)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to get collected file")
-	}
+	if err == nil {
+		if err := json.Unmarshal(contents, &memoryInfo); err != nil {
+			return []*AnalyzeResult{&result}, errors.Wrap(err, "failed to unmarshal host os info")
+		}
+		remoteCollectContents = append(remoteCollectContents, RemoteCollectContent{NodeName: "", Content: memoryInfo})
+		return analyzeOSVersionResult(remoteCollectContents, a.hostAnalyzer.Outcomes, a.Title())
+	} else {
+		// check if the node list file exists (remote mode)
+		contents, err := getCollectedFileContents(constants.NODE_LIST_FILE)
+		if err != nil {
+			return []*AnalyzeResult{&result}, errors.Wrap(err, "failed to get collected file")
+		}
 
-	memoryInfo := collect.MemoryInfo{}
-	if err := json.Unmarshal(contents, &memoryInfo); err != nil {
-		return nil, errors.Wrap(err, "failed to unmarshal memory info")
-	}
+		var nodeNames NodesInfo
+		if err := json.Unmarshal(contents, &nodeNames); err != nil {
+			return []*AnalyzeResult{&result}, errors.Wrap(err, "failed to unmarshal node names")
+		}
 
-	result := AnalyzeResult{
-		Title: a.Title(),
-	}
-
-	for _, outcome := range hostAnalyzer.Outcomes {
-
-		if outcome.Fail != nil {
-			if outcome.Fail.When == "" {
-				result.IsFail = true
-				result.Message = outcome.Fail.Message
-				result.URI = outcome.Fail.URI
-
-				return []*AnalyzeResult{&result}, nil
-			}
-
-			isMatch, err := compareHostMemoryConditionalToActual(outcome.Fail.When, memoryInfo.Total)
+		for _, nodeName := range nodeNames.Nodes {
+			contents, err := getCollectedFileContents(fmt.Sprintf("%s/%s/%s", collect.NodeInfoBaseDir, nodeName, collect.HostMemoryFileName))
 			if err != nil {
-				return nil, errors.Wrapf(err, "failed to compare %s", outcome.Fail.When)
+				return []*AnalyzeResult{&result}, errors.Wrap(err, "failed to get collected file")
 			}
 
-			if isMatch {
-				result.IsFail = true
-				result.Message = outcome.Fail.Message
-				result.URI = outcome.Fail.URI
-
-				return []*AnalyzeResult{&result}, nil
-			}
-		} else if outcome.Warn != nil {
-			if outcome.Warn.When == "" {
-				result.IsWarn = true
-				result.Message = outcome.Warn.Message
-				result.URI = outcome.Warn.URI
-
-				return []*AnalyzeResult{&result}, nil
+			if err := json.Unmarshal(contents, &memoryInfo); err != nil {
+				return []*AnalyzeResult{&result}, errors.Wrap(err, "failed to unmarshal host os info")
 			}
 
-			isMatch, err := compareHostMemoryConditionalToActual(outcome.Warn.When, memoryInfo.Total)
+			remoteCollectContents = append(remoteCollectContents, RemoteCollectContent{NodeName: nodeName, Content: memoryInfo})
+		}
+
+		for _, memoryInfo := range remoteCollectContents {
+
+			currentTitle := a.Title()
+			if memoryInfo.NodeName != "" {
+				currentTitle = fmt.Sprintf("%s - Node %s", a.Title(), memoryInfo.NodeName)
+			}
+
+			memoryInfo, ok := memoryInfo.Content.(collect.MemoryInfo)
+			if !ok {
+				return nil, errors.New("failed to convert interface to memory info")
+			}
+
+			checkCondition := func(when string) (bool, error) {
+				parts := strings.Split(when, " ")
+				if len(parts) != 2 {
+					return false, fmt.Errorf("Expected 2 parts in conditional, got %d", len(parts))
+				}
+
+				operator := parts[0]
+				desired := parts[1]
+				quantity, err := resource.ParseQuantity(desired)
+				if err != nil {
+					return false, fmt.Errorf("could not parse quantity %q", desired)
+				}
+				desiredInt, ok := quantity.AsInt64()
+				if !ok {
+					return false, fmt.Errorf("could not parse quantity %q", desired)
+				}
+
+				switch operator {
+				case "<":
+					return memoryInfo.Total < uint64(desiredInt), nil
+				case "<=":
+					return memoryInfo.Total <= uint64(desiredInt), nil
+				case ">":
+					return memoryInfo.Total > uint64(desiredInt), nil
+				case ">=":
+					return memoryInfo.Total >= uint64(desiredInt), nil
+				case "=", "==", "===":
+					return memoryInfo.Total == uint64(desiredInt), nil
+				}
+
+				return false, errors.New("unknown operator")
+			}
+
+			analyzeResult, err := evaluateOutcomes(a.hostAnalyzer.Outcomes, checkCondition, currentTitle)
 			if err != nil {
-				return nil, errors.Wrapf(err, "failed to compare %s", outcome.Warn.When)
+				return nil, errors.Wrap(err, "failed to evaluate outcomes")
 			}
-
-			if isMatch {
-				result.IsWarn = true
-				result.Message = outcome.Warn.Message
-				result.URI = outcome.Warn.URI
-
-				return []*AnalyzeResult{&result}, nil
-			}
-		} else if outcome.Pass != nil {
-			if outcome.Pass.When == "" {
-				result.IsPass = true
-				result.Message = outcome.Pass.Message
-				result.URI = outcome.Pass.URI
-
-				return []*AnalyzeResult{&result}, nil
-			}
-
-			isMatch, err := compareHostMemoryConditionalToActual(outcome.Pass.When, memoryInfo.Total)
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed to compare %s", outcome.Pass.When)
-			}
-
-			if isMatch {
-				result.IsPass = true
-				result.Message = outcome.Pass.Message
-				result.URI = outcome.Pass.URI
-
-				return []*AnalyzeResult{&result}, nil
-			}
+			results = append(results, analyzeResult...)
 		}
 	}
-
-	return []*AnalyzeResult{&result}, nil
-}
-
-func compareHostMemoryConditionalToActual(conditional string, total uint64) (res bool, err error) {
-	parts := strings.Split(conditional, " ")
-	if len(parts) != 2 {
-		return false, fmt.Errorf("Expected 2 parts in conditional, got %d", len(parts))
-	}
-
-	operator := parts[0]
-	desired := parts[1]
-	quantity, err := resource.ParseQuantity(desired)
-	if err != nil {
-		return false, fmt.Errorf("could not parse quantity %q", desired)
-	}
-	desiredInt, ok := quantity.AsInt64()
-	if !ok {
-		return false, fmt.Errorf("could not parse quantity %q", desired)
-	}
-
-	switch operator {
-	case "<":
-		return total < uint64(desiredInt), nil
-	case "<=":
-		return total <= uint64(desiredInt), nil
-	case ">":
-		return total > uint64(desiredInt), nil
-	case ">=":
-		return total >= uint64(desiredInt), nil
-	case "=", "==", "===":
-		return total == uint64(desiredInt), nil
-	}
-
-	return false, errors.New("unknown operator")
+	return results, nil
 }
