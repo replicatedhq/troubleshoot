@@ -37,13 +37,20 @@ func (a *AnalyzeHostOS) IsExcluded() (bool, error) {
 func (a *AnalyzeHostOS) Analyze(
 	getCollectedFileContents func(string) ([]byte, error), findFiles getChildCollectedFileContents,
 ) ([]*AnalyzeResult, error) {
+	var osInfo collect.HostOSInfo
 	var remoteCollectContents []RemoteCollectContent
 	result := AnalyzeResult{}
 	result.Title = a.Title()
 
 	// check if the host os info file exists (local mode)
 	contents, err := getCollectedFileContents(collect.HostOSInfoPath)
-	if err != nil {
+	if err == nil {
+		if err := json.Unmarshal(contents, &osInfo); err != nil {
+			return []*AnalyzeResult{&result}, errors.Wrap(err, "failed to unmarshal host os info")
+		}
+		remoteCollectContents = append(remoteCollectContents, RemoteCollectContent{NodeName: "", Content: osInfo})
+		return analyzeOSVersionResult(remoteCollectContents, a.hostAnalyzer.Outcomes, a.Title())
+	} else {
 		// check if the node list file exists (remote mode)
 		contents, err := getCollectedFileContents(constants.NODE_LIST_FILE)
 		if err != nil {
@@ -61,7 +68,6 @@ func (a *AnalyzeHostOS) Analyze(
 				return []*AnalyzeResult{&result}, errors.Wrap(err, "failed to get collected file")
 			}
 
-			var osInfo collect.HostOSInfo
 			if err := json.Unmarshal(contents, &osInfo); err != nil {
 				return []*AnalyzeResult{&result}, errors.Wrap(err, "failed to unmarshal host os info")
 			}
@@ -80,13 +86,6 @@ func (a *AnalyzeHostOS) Analyze(
 		}
 		return results, nil
 	}
-
-	var osInfo collect.HostOSInfo
-	if err := json.Unmarshal(contents, &osInfo); err != nil {
-		return []*AnalyzeResult{&result}, errors.Wrap(err, "failed to unmarshal host os info")
-	}
-	remoteCollectContents = append(remoteCollectContents, RemoteCollectContent{NodeName: "", Content: osInfo})
-	return analyzeOSVersionResult(remoteCollectContents, a.hostAnalyzer.Outcomes, a.Title())
 }
 
 func analyzeOSVersionResult(collectedContent []RemoteCollectContent, outcomes []*troubleshootv1beta2.Outcome, title string) ([]*AnalyzeResult, error) {
