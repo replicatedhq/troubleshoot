@@ -81,14 +81,8 @@ jobs:
           fetch-depth: 0
           path: github.com/replicatedhq/troubleshoot
       - run: |
-          
-          pwd
           cd github.com/replicatedhq/troubleshoot
           make check-schemas
-      - run: |
-          pwd
-          echo $(pwd)
-          cat $(pwd)/../../../github.com/replicatedhq/troubleshoot/pkg/client/troubleshootclientset/typed/troubleshoot/v1beta2/supportbundle.go
 
   compile-preflight:
     runs-on: ubuntu-latest
