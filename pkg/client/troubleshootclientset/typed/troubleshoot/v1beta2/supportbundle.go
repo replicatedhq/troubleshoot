@@ -142,7 +142,7 @@ func (c *supportBundles) UpdateStatus(ctx context.Context, supportBundle *v1beta
 	err = c.client.Put().
 		Namespace(c.ns).
 		Resource("supportbundles").
-		Name(supportBundle.Metadata.Name).
+		Name(supportBundle.Name).
 		SubResource("status").
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(supportBundle).

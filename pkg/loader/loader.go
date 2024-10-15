@@ -83,14 +83,18 @@ type TroubleshootKinds struct {
 }
 
 func (kinds *TroubleshootKinds) IsEmpty() bool {
-	return len(kinds.AnalyzersV1Beta2) == 0 &&
-		len(kinds.CollectorsV1Beta2) == 0 &&
-		len(kinds.HostCollectorsV1Beta2) == 0 &&
-		len(kinds.HostPreflightsV1Beta2) == 0 &&
-		len(kinds.PreflightsV1Beta2) == 0 &&
-		len(kinds.RedactorsV1Beta2) == 0 &&
-		len(kinds.RemoteCollectorsV1Beta2) == 0 &&
-		len(kinds.SupportBundlesV1Beta2) == 0
+	return kinds.Len() == 0
+}
+
+func (kinds *TroubleshootKinds) Len() int {
+	return len(kinds.AnalyzersV1Beta2) +
+		len(kinds.CollectorsV1Beta2) +
+		len(kinds.HostCollectorsV1Beta2) +
+		len(kinds.HostPreflightsV1Beta2) +
+		len(kinds.PreflightsV1Beta2) +
+		len(kinds.RedactorsV1Beta2) +
+		len(kinds.RemoteCollectorsV1Beta2) +
+		len(kinds.SupportBundlesV1Beta2)
 }
 
 func (kinds *TroubleshootKinds) Add(other *TroubleshootKinds) {
@@ -200,7 +204,7 @@ func (l *specLoader) loadFromStrings(rawSpecs ...string) (*TroubleshootKinds, er
 			// If it's not a configmap or secret, just append it to the splitdocs
 			splitdocs = append(splitdocs, rawDoc)
 		} else {
-			klog.V(1).Infof("Skip loading %q kind", parsed.Kind)
+			klog.V(2).Infof("Skip loading %q kind", parsed.Kind)
 		}
 	}
 
@@ -254,11 +258,7 @@ func (l *specLoader) loadFromSplitDocs(splitdocs []string) (*TroubleshootKinds, 
 		}
 	}
 
-	if kinds.IsEmpty() {
-		klog.V(1).Info("No troubleshoot specs were loaded")
-	} else {
-		klog.V(1).Info("Loaded troubleshoot specs successfully")
-	}
+	klog.V(2).Infof("Loaded %d troubleshoot specs successfully", kinds.Len())
 
 	return kinds, nil
 }

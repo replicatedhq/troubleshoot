@@ -39,8 +39,8 @@ require (
 	github.com/stretchr/testify v1.9.0
 	github.com/tj/go-spin v1.1.0
 	github.com/vmware-tanzu/velero v1.14.1
-	go.opentelemetry.io/otel v1.30.0
-	go.opentelemetry.io/otel/sdk v1.30.0
+	go.opentelemetry.io/otel v1.31.0
+	go.opentelemetry.io/otel/sdk v1.31.0
 	golang.org/x/exp v0.0.0-20240613232115-7f521ea00fb8
 	golang.org/x/mod v0.21.0
 	golang.org/x/sync v0.8.0
@@ -122,15 +122,15 @@ require (
 	github.com/xeipuuv/gojsonschema v1.2.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.53.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.53.0 // indirect
-	go.opentelemetry.io/otel/metric v1.30.0 // indirect
-	go.opentelemetry.io/otel/trace v1.30.0 // indirect
+	go.opentelemetry.io/otel/metric v1.31.0 // indirect
+	go.opentelemetry.io/otel/trace v1.31.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/tools v0.22.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20240528184218-531527333157 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240701130421-f6361c86f094 // indirect
 	gopkg.in/evanphx/json-patch.v4 v4.12.0 // indirect
 	k8s.io/component-base v0.31.1 // indirect
-	k8s.io/kubectl v0.31.0 // indirect
+	k8s.io/kubectl v0.31.1 // indirect
 )
 
 require (
@@ -252,7 +252,7 @@ require (
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	helm.sh/helm/v3 v3.16.1
+	helm.sh/helm/v3 v3.16.2
 	k8s.io/kube-openapi v0.0.0-20240228011516-70dd3763d340 // indirect
 	k8s.io/kubelet v0.31.1
 	k8s.io/metrics v0.31.1

@@ -481,11 +481,9 @@ func TestCollectClusterResources_CustomResource(t *testing.T) {
 
 	// Create a CR
 	sbObject := troubleshootv1beta2.SupportBundle{
-		Metadata: troubleshootv1beta2.SupportBundleMetadata{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "supportbundle",
-				Namespace: "default",
-			},
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "supportbundle",
+			Namespace: "default",
 		},
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "SupportBundle",
