@@ -1,6 +1,11 @@
 package analyzer
 
-import troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
+import (
+	"fmt"
+
+	"github.com/pkg/errors"
+	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
+)
 
 type HostAnalyzer interface {
 	Title() string
@@ -82,4 +87,97 @@ func (c *resultCollector) get(title string) []*AnalyzeResult {
 		return c.results
 	}
 	return []*AnalyzeResult{{Title: title, IsWarn: true, Message: "no results"}}
+}
+
+func analyzeHostCollectorResults(collectedContent []CollectedContent, outcomes []*troubleshootv1beta2.Outcome, checkCondition func(string, CollectorData) (bool, error), title string) ([]*AnalyzeResult, error) {
+	var results []*AnalyzeResult
+	for _, content := range collectedContent {
+		currentTitle := title
+		if content.NodeName != "" {
+			currentTitle = fmt.Sprintf("%s - Node %s", title, content.NodeName)
+		}
+
+		analyzeResult, err := evaluateOutcomes(outcomes, checkCondition, content.Data, currentTitle)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to evaluate outcomes")
+		}
+		results = append(results, analyzeResult...)
+	}
+	return results, nil
+}
+
+func evaluateOutcomes(outcomes []*troubleshootv1beta2.Outcome, checkCondition func(string, CollectorData) (bool, error), data CollectorData, title string) ([]*AnalyzeResult, error) {
+	var results []*AnalyzeResult
+
+	for _, outcome := range outcomes {
+		result := AnalyzeResult{
+			Title: title,
+		}
+		if outcome.Fail != nil {
+			if outcome.Fail.When == "" {
+				result.IsFail = true
+				result.Message = outcome.Fail.Message
+				result.URI = outcome.Fail.URI
+				results = append(results, &result)
+				return results, nil
+			}
+
+			isMatch, err := checkCondition(outcome.Fail.When, data)
+			if err != nil {
+				return []*AnalyzeResult{&result}, errors.Wrapf(err, "failed to compare %s", outcome.Fail.When)
+			}
+
+			if isMatch {
+				result.IsFail = true
+				result.Message = outcome.Fail.Message
+				result.URI = outcome.Fail.URI
+				results = append(results, &result)
+				return results, nil
+			}
+		} else if outcome.Warn != nil {
+			if outcome.Warn.When == "" {
+				result.IsWarn = true
+				result.Message = outcome.Warn.Message
+				result.URI = outcome.Warn.URI
+				results = append(results, &result)
+				return results, nil
+			}
+
+			isMatch, err := checkCondition(outcome.Warn.When, data)
+			if err != nil {
+				return []*AnalyzeResult{&result}, errors.Wrapf(err, "failed to compare %s", outcome.Warn.When)
+			}
+
+			if isMatch {
+				result.IsWarn = true
+				result.Message = outcome.Warn.Message
+				result.URI = outcome.Warn.URI
+				results = append(results, &result)
+				return results, nil
+			}
+		} else if outcome.Pass != nil {
+			if outcome.Pass.When == "" {
+				result.IsPass = true
+				result.Message = outcome.Pass.Message
+				result.URI = outcome.Pass.URI
+				results = append(results, &result)
+				return results, nil
+			}
+
+			isMatch, err := checkCondition(outcome.Pass.When, data)
+			if err != nil {
+				return []*AnalyzeResult{&result}, errors.Wrapf(err, "failed to compare %s", outcome.Pass.When)
+			}
+
+			if isMatch {
+				result.IsPass = true
+				result.Message = outcome.Pass.Message
+				result.URI = outcome.Pass.URI
+				results = append(results, &result)
+				return results, nil
+			}
+		}
+	}
+
+	return nil, nil
 }
