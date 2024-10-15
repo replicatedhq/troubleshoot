@@ -4,469 +4,234 @@ import (
 	"encoding/json"
 	"testing"
 
+	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/replicatedhq/troubleshoot/pkg/collect"
+	"github.com/replicatedhq/troubleshoot/pkg/constants"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func TestAnalyzeHostOS(t *testing.T) {
+func TestAnalyzeHostOSCheckCondition(t *testing.T) {
 	tests := []struct {
-		name         string
-		hostInfo     collect.HostOSInfo
-		hostAnalyzer *troubleshootv1beta2.HostOSAnalyze
-		result       []*AnalyzeResult
-		expectErr    bool
+		name        string
+		conditional string
+		osInfo      collect.HostOSInfo
+		expected    bool
+		expectErr   bool
 	}{
 		{
-			name: "pass if ubuntu >= 0.1.2",
-			hostInfo: collect.HostOSInfo{
-				Name:            "myhost",
-				KernelVersion:   "5.4.0-1034-gcp",
-				PlatformVersion: "00.1.2",
-				Platform:        "ubuntu",
+			name:        "kernelVersion == 4.15 when actual is 4.15",
+			conditional: "kernelVersion == 4.15",
+			osInfo: collect.HostOSInfo{
+				KernelVersion: "4.15.0",
 			},
-			hostAnalyzer: &troubleshootv1beta2.HostOSAnalyze{
-				Outcomes: []*troubleshootv1beta2.Outcome{
-					{
-						Pass: &troubleshootv1beta2.SingleOutcome{
-							When:    "ubuntu >= 00.1.2",
-							Message: "supported distribution matches ubuntu >= 00.1.2",
-						},
-					},
-					{
-						Fail: &troubleshootv1beta2.SingleOutcome{
-							Message: "unsupported distribution",
-						},
-					},
-				},
-			},
-			result: []*AnalyzeResult{
-				{
-					Title:   "Host OS Info",
-					IsPass:  true,
-					Message: "supported distribution matches ubuntu >= 00.1.2",
-				},
-			},
-		},
-
-		{
-			name: "pass if ubuntu >= 1.0.2",
-			hostInfo: collect.HostOSInfo{
-				Name:            "myhost",
-				KernelVersion:   "5.4.0-1034-gcp",
-				PlatformVersion: "1.0.2",
-				Platform:        "ubuntu",
-			},
-			hostAnalyzer: &troubleshootv1beta2.HostOSAnalyze{
-				Outcomes: []*troubleshootv1beta2.Outcome{
-					{
-						Pass: &troubleshootv1beta2.SingleOutcome{
-							When:    "ubuntu >= 1.0.2",
-							Message: "supported distribution matches ubuntu >= 1.0.2",
-						},
-					},
-					{
-						Fail: &troubleshootv1beta2.SingleOutcome{
-							Message: "unsupported distribution",
-						},
-					},
-				},
-			},
-			result: []*AnalyzeResult{
-				{
-					Title:   "Host OS Info",
-					IsPass:  true,
-					Message: "supported distribution matches ubuntu >= 1.0.2",
-				},
-			},
+			expected:  true,
+			expectErr: false,
 		},
 		{
-			name: "pass if ubuntu >= 1.2.0",
-			hostInfo: collect.HostOSInfo{
-				Name:            "myhost",
-				KernelVersion:   "5.4.0-1034-gcp",
-				PlatformVersion: "1.2.0",
-				Platform:        "ubuntu",
+			name:        "kernelVersion < 4.15 when actual is 4.16",
+			conditional: "kernelVersion < 4.15",
+			osInfo: collect.HostOSInfo{
+				KernelVersion: "4.16.0",
 			},
-			hostAnalyzer: &troubleshootv1beta2.HostOSAnalyze{
-				Outcomes: []*troubleshootv1beta2.Outcome{
-					{
-						Pass: &troubleshootv1beta2.SingleOutcome{
-							When:    "ubuntu >= 1.0.2",
-							Message: "supported distribution matches ubuntu >= 1.2.0",
-						},
-					},
-					{
-						Fail: &troubleshootv1beta2.SingleOutcome{
-							Message: "unsupported distribution",
-						},
-					},
-				},
-			},
-			result: []*AnalyzeResult{
-				{
-					Title:   "Host OS Info",
-					IsPass:  true,
-					Message: "supported distribution matches ubuntu >= 1.2.0",
-				},
-			},
+			expected:  false,
+			expectErr: false,
 		},
 		{
-			name: "pass if ubuntu-1.2.0-kernel >= 1.2.0",
-			hostInfo: collect.HostOSInfo{
-				Name:            "myhost",
-				KernelVersion:   "1.2.0-1034-gcp",
-				PlatformVersion: "1.2.0",
+			name:        "centos == 8.2 when actual is 8.2",
+			conditional: "centos == 8.2",
+			osInfo: collect.HostOSInfo{
 				Platform:        "centos",
-			},
-			hostAnalyzer: &troubleshootv1beta2.HostOSAnalyze{
-				Outcomes: []*troubleshootv1beta2.Outcome{
-					{
-						Pass: &troubleshootv1beta2.SingleOutcome{
-							When:    "centos-1.2.0-kernel >= 1.2.0",
-							Message: "supported kernel matches centos-1.2.0-kernel >= 1.2.0",
-						},
-					},
-					{
-						Fail: &troubleshootv1beta2.SingleOutcome{
-							Message: "unsupported distribution",
-						},
-					},
-				},
-			},
-			result: []*AnalyzeResult{
-				{
-					Title:   "Host OS Info",
-					IsPass:  true,
-					Message: "supported kernel matches centos-1.2.0-kernel >= 1.2.0",
-				},
-			},
-		},
-		{
-			name: "pass if ubuntu-0.1.2-kernel >= 0.1.2",
-			hostInfo: collect.HostOSInfo{
-				Name:            "myhost",
-				KernelVersion:   "0.01.2-1034-gcp",
 				PlatformVersion: "8.2",
-				Platform:        "centos",
 			},
-			hostAnalyzer: &troubleshootv1beta2.HostOSAnalyze{
-				Outcomes: []*troubleshootv1beta2.Outcome{
-					{
-						Pass: &troubleshootv1beta2.SingleOutcome{
-							When:    "centos-8.2-kernel >= 0.01.2",
-							Message: "supported kernel matches centos-8.2-kernel >= 0.01.2",
-						},
-					},
-					{
-						Fail: &troubleshootv1beta2.SingleOutcome{
-							Message: "unsupported distribution",
-						},
-					},
-				},
-			},
-			result: []*AnalyzeResult{
-				{
-					Title:   "Host OS Info",
-					IsPass:  true,
-					Message: "supported kernel matches centos-8.2-kernel >= 0.01.2",
-				},
-			},
+			expected:  true,
+			expectErr: false,
 		},
-
 		{
-			name: "fail if ubuntu <= 11.04",
-			hostInfo: collect.HostOSInfo{
-				Name:            "myhost",
-				KernelVersion:   "5.4.0-1034-gcp",
-				PlatformVersion: "11.04",
+			name:        "ubuntu == 20.04 when actual is 18.04",
+			conditional: "ubuntu == 20.04",
+			osInfo: collect.HostOSInfo{
 				Platform:        "ubuntu",
-			},
-			hostAnalyzer: &troubleshootv1beta2.HostOSAnalyze{
-				Outcomes: []*troubleshootv1beta2.Outcome{
-					{
-						Fail: &troubleshootv1beta2.SingleOutcome{
-							When:    "ubuntu <= 11.04",
-							Message: "unsupported ubuntu version 11.04",
-						},
-					},
-					{
-						Pass: &troubleshootv1beta2.SingleOutcome{
-							Message: "supported distribution",
-						},
-					},
-				},
-			},
-			result: []*AnalyzeResult{
-				{
-					Title:   "Host OS Info",
-					IsFail:  true,
-					Message: "unsupported ubuntu version 11.04",
-				},
-			},
-		},
-		{
-			name: "fail if none of the kernel distribution versions match",
-			hostInfo: collect.HostOSInfo{
-				Name:            "my-host",
-				KernelVersion:   "4.4",
 				PlatformVersion: "18.04",
-				Platform:        "ubuntu",
 			},
-			hostAnalyzer: &troubleshootv1beta2.HostOSAnalyze{
-				Outcomes: []*troubleshootv1beta2.Outcome{
-					{
-						Pass: &troubleshootv1beta2.SingleOutcome{
-							When:    "centos-18.04-kernel > 4.15",
-							Message: "supported distribution matches centos-18.04-kernel >= 4.15",
-						},
-					},
-					{
-						Pass: &troubleshootv1beta2.SingleOutcome{
-							When:    "ubuntu-18.04-kernel > 4.15",
-							Message: "supported distribution matches ubuntu-18.04-kernel >= 4.15",
-						},
-					},
-					{
-						Warn: &troubleshootv1beta2.SingleOutcome{
-							When:    "ubuntu-16.04-kernel == 4.15",
-							Message: "supported distribution matches ubuntu-16.04-kernel == 4.15 ",
-						},
-					},
-					{
-						Fail: &troubleshootv1beta2.SingleOutcome{
-							Message: "None matched, centos-18.04-kernel >= 4.15,ubuntu-18.04-kernel >= 4.15, supported distribution",
-						},
-					},
-				},
-			},
-			result: []*AnalyzeResult{
-				{
-					Title:   "Host OS Info",
-					IsFail:  true,
-					Message: "None matched, centos-18.04-kernel >= 4.15,ubuntu-18.04-kernel >= 4.15, supported distribution",
-				},
-			},
+			expected:  false,
+			expectErr: false,
 		},
 		{
-			name: "test if centos kernel > 4.15",
-			hostInfo: collect.HostOSInfo{
-				Name:            "my-host",
-				KernelVersion:   "4.15",
+			name:        "kernelVersion == 5.10 when actual is 5.10.42",
+			conditional: "kernelVersion == 5.10",
+			osInfo: collect.HostOSInfo{
+				KernelVersion: "5.10.42",
+			},
+			expected:  true,
+			expectErr: false,
+		},
+		{
+			name:        "invalid conditional format",
+			conditional: "invalid conditional",
+			osInfo: collect.HostOSInfo{
+				Platform:        "ubuntu",
 				PlatformVersion: "18.04",
-				Platform:        "centos",
 			},
-			hostAnalyzer: &troubleshootv1beta2.HostOSAnalyze{
-				Outcomes: []*troubleshootv1beta2.Outcome{
-					{
-						Pass: &troubleshootv1beta2.SingleOutcome{
-							When:    "centos-18.04-kernel >= 4.15",
-							Message: "supported distribution matches centos-18.04-kernel >= 4.15",
-						},
-					},
-					{
-						Pass: &troubleshootv1beta2.SingleOutcome{
-							When:    "ubuntu-18.04-kernel > 4.15",
-							Message: "supported distribution matches ubuntu-18.04-kernel >= 4.15",
-						},
-					},
-					{
-						Warn: &troubleshootv1beta2.SingleOutcome{
-							When:    "ubuntu-16.04-kernel == 4.15",
-							Message: "supported distribution matches ubuntu-16.04-kernel == 4.15 ",
-						},
-					},
-					{
-						Fail: &troubleshootv1beta2.SingleOutcome{
-							Message: "None matched, centos-18.04-kernel >= 4.15,ubuntu-18.04-kernel >= 4.15, supported distribution",
-						},
-					},
-				},
-			},
-			result: []*AnalyzeResult{
-				{
-					Title:   "Host OS Info",
-					IsPass:  true,
-					Message: "supported distribution matches centos-18.04-kernel >= 4.15",
-				},
-			},
-		},
-		{
-			name: "test ubuntu 16 kernel >= 4.15-abc",
-			hostInfo: collect.HostOSInfo{
-				Name:            "my-host",
-				KernelVersion:   "4.14-abc",
-				PlatformVersion: "16.04",
-				Platform:        "ubuntu",
-			},
-			hostAnalyzer: &troubleshootv1beta2.HostOSAnalyze{
-				Outcomes: []*troubleshootv1beta2.Outcome{
-					{
-						Pass: &troubleshootv1beta2.SingleOutcome{
-							When:    "ubuntu-16.04-kernel >= 4.14",
-							Message: "supported distribution match 4.14",
-						},
-					},
-				},
-			},
-
-			result: []*AnalyzeResult{
-				{
-					Title:   "Host OS Info",
-					IsPass:  true,
-					Message: "supported distribution match 4.14",
-				},
-			},
-		},
-
-		{
-			name: "test kernelVersion >= 6.4.9-abc",
-			hostInfo: collect.HostOSInfo{
-				Name:            "my-host",
-				KernelVersion:   "6.5.0-1024-gcp",
-				PlatformVersion: "22.04",
-				Platform:        "ubuntu",
-			},
-			hostAnalyzer: &troubleshootv1beta2.HostOSAnalyze{
-				Outcomes: []*troubleshootv1beta2.Outcome{
-					{
-						Pass: &troubleshootv1beta2.SingleOutcome{
-							When:    "kernelVersion >= 6.4.9-abc",
-							Message: "supported kernel version >= 6.4.9-abc",
-						},
-					},
-				},
-			},
-
-			result: []*AnalyzeResult{
-				{
-					Title:   "Host OS Info",
-					IsPass:  true,
-					Message: "supported kernel version >= 6.4.9-abc",
-				},
-			},
+			expected:  false,
+			expectErr: true,
 		},
 	}
+
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			req := require.New(t)
-			b, err := json.Marshal(test.hostInfo)
-			if err != nil {
-				t.Fatal(err)
-			}
+			// Create the AnalyzeHostOS object
+			analyzeHostOS := AnalyzeHostOS{}
 
-			getCollectedFileContents := func(filename string) ([]byte, error) {
-				return b, nil
-			}
+			// Simulate the OS info as JSON-encoded data
+			rawData, err := json.Marshal(test.osInfo)
+			require.NoError(t, err)
 
-			result, err := (&AnalyzeHostOS{test.hostAnalyzer}).Analyze(getCollectedFileContents, nil)
+			// Call the CheckCondition method
+			result, err := analyzeHostOS.CheckCondition(test.conditional, rawData)
 			if test.expectErr {
-				req.Error(err)
+				require.Error(t, err)
 			} else {
-				req.NoError(err)
+				require.NoError(t, err)
+				assert.Equal(t, test.expected, result)
 			}
-
-			assert.Equal(t, test.result, result)
 		})
 	}
 }
 
-func TestAnalyzeOSVersionResult(t *testing.T) {
+func TestAnalyzeHostOS(t *testing.T) {
 	tests := []struct {
-		name         string
-		outcomes     []*troubleshootv1beta2.Outcome
-		nodeOSInfo   []NodeOSInfo
-		expectResult []*AnalyzeResult
+		name                     string
+		hostAnalyzer             *troubleshootv1beta2.HostOSAnalyze // Different types of analyzers per test case
+		getCollectedFileContents func(string) ([]byte, error)       // Mock function
+		findFiles                getChildCollectedFileContents
+		expectedResults          []*AnalyzeResult
+		expectedError            string
 	}{
 		{
-			name: "pass if ubuntu >= 0.1.2",
-			nodeOSInfo: []NodeOSInfo{
-				{
-					NodeName: "node1",
-					HostOSInfo: collect.HostOSInfo{
-						Name:            "myhost",
-						KernelVersion:   "5.4.0-1034-gcp",
-						PlatformVersion: "00.1.2",
-						Platform:        "ubuntu",
+			name: "successfully retrieve local content and analyze",
+			hostAnalyzer: &troubleshootv1beta2.HostOSAnalyze{
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							When:    "os == localOS",
+							Message: "local content analyzed",
+						},
 					},
 				},
 			},
-			outcomes: []*troubleshootv1beta2.Outcome{
+			getCollectedFileContents: func(path string) ([]byte, error) {
+				if path == collect.HostOSInfoPath {
+					return []byte(`{"Name": "localOS"}`), nil
+				}
+				return nil, errors.New("file not found")
+			},
+			expectedResults: []*AnalyzeResult{
 				{
-					Pass: &troubleshootv1beta2.SingleOutcome{
-						When:    "ubuntu >= 00.1.2",
-						Message: "supported distribution matches ubuntu >= 00.1.2",
-					},
+					Title:   "Host OS Info",
+					IsPass:  true,
+					Message: "local content analyzed",
 				},
-				{
-					Fail: &troubleshootv1beta2.SingleOutcome{
-						Message: "unsupported distribution",
+			},
+			expectedError: "",
+		},
+		{
+			name: "local content not found, retrieve and analyze remote content",
+			hostAnalyzer: &troubleshootv1beta2.HostOSAnalyze{
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							When:    "os == remoteOS",
+							Message: "remote content analyzed",
+						},
 					},
 				},
 			},
-			expectResult: []*AnalyzeResult{
+			getCollectedFileContents: func(path string) ([]byte, error) {
+				if path == constants.NODE_LIST_FILE {
+					nodeNames := NodeNames{Nodes: []string{"node1"}}
+					return json.Marshal(nodeNames)
+				}
+				if path == "remoteBaseDir/node1/remoteFileName" {
+					return []byte(`{"Name": "remoteOS"}`), nil
+				}
+				return nil, errors.New("file not found")
+			},
+			expectedResults: []*AnalyzeResult{
 				{
 					Title:   "Host OS Info - Node node1",
 					IsPass:  true,
-					Message: "supported distribution matches ubuntu >= 00.1.2",
+					Message: "remote content analyzed",
 				},
 			},
+			expectedError: "",
 		},
 		{
-			name: "fail if ubuntu <= 11.04",
-			nodeOSInfo: []NodeOSInfo{
-				{
-					NodeName: "node1",
-					HostOSInfo: collect.HostOSInfo{
-						Name:            "myhost",
-						KernelVersion:   "5.4.0-1034-gcp",
-						PlatformVersion: "11.04",
-						Platform:        "ubuntu",
-					},
-				},
-				{
-					NodeName: "node2",
-					HostOSInfo: collect.HostOSInfo{
-						Name:            "myhost",
-						KernelVersion:   "5.4.0-1034-gcp",
-						PlatformVersion: "11.04",
-						Platform:        "ubuntu",
+			name: "fail to retrieve both local and remote content",
+			hostAnalyzer: &troubleshootv1beta2.HostOSAnalyze{
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Fail: &troubleshootv1beta2.SingleOutcome{
+							Message: "failed analysis",
+						},
 					},
 				},
 			},
-			outcomes: []*troubleshootv1beta2.Outcome{
+			getCollectedFileContents: func(path string) ([]byte, error) {
+				return nil, errors.New("file not found")
+			},
+			expectedResults: []*AnalyzeResult{
 				{
-					Fail: &troubleshootv1beta2.SingleOutcome{
-						When:    "ubuntu <= 11.04",
-						Message: "unsupported ubuntu version 11.04",
-					},
+					Title: "Host OS Info",
 				},
-				{
-					Pass: &troubleshootv1beta2.SingleOutcome{
-						Message: "supported distribution",
+			},
+			expectedError: "failed to get node list",
+		},
+		{
+			name: "error during content analysis",
+			hostAnalyzer: &troubleshootv1beta2.HostOSAnalyze{
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Fail: &troubleshootv1beta2.SingleOutcome{
+							Message: "analysis failed",
+						},
 					},
 				},
 			},
-			expectResult: []*AnalyzeResult{
-				{
-					Title:   "Host OS Info - Node node1",
-					IsFail:  true,
-					Message: "unsupported ubuntu version 11.04",
-				},
-				{
-					Title:   "Host OS Info - Node node2",
-					IsFail:  true,
-					Message: "unsupported ubuntu version 11.04",
-				},
+			getCollectedFileContents: func(path string) ([]byte, error) {
+				if path == constants.NODE_LIST_FILE {
+					nodeNames := NodeNames{Nodes: []string{"node1"}}
+					return json.Marshal(nodeNames)
+				}
+				if path == "remoteBaseDir/node1/remoteFileName" {
+					return []byte(`{"Name": "remoteOS"}`), nil
+				}
+				return nil, errors.New("file not found")
 			},
+			expectedResults: nil,
+			expectedError:   "failed to analyze OS version",
 		},
 	}
+
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			result, err := analyzeOSVersionResult(test.nodeOSInfo, test.outcomes, "Host OS Info")
-			require.NoError(t, err)
-			assert.Equal(t, test.expectResult, result)
+			// Set up the AnalyzeHostOS object with the custom hostAnalyzer per test
+			analyzeHostOS := AnalyzeHostOS{
+				hostAnalyzer: test.hostAnalyzer,
+			}
+
+			// Call the Analyze function
+			results, err := analyzeHostOS.Analyze(test.getCollectedFileContents, test.findFiles)
+
+			// Check for errors and compare results
+			if test.expectedError != "" {
+				require.Error(t, err)
+				assert.Contains(t, err.Error(), test.expectedError)
+			} else {
+				require.NoError(t, err)
+				assert.Equal(t, test.expectedResults, results)
+			}
 		})
 	}
 }
