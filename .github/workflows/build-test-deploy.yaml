@@ -79,14 +79,17 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          path: github.com/replicatedhq/
       - name: check files
         run: |
           cat pkg/client/troubleshootclientset/typed/troubleshoot/v1beta2/supportbundle.go
-      - run: make check-schemas
+      - run: |
+          cd github.com/replicatedhq/troubleshoot
+          make check-schemas
       - run: |
           pwd
           echo $(pwd)
-          cat pkg/client/troubleshootclientset/typed/troubleshoot/v1beta2/supportbundle.go
+          cat $(pwd)/../../../github.com/replicatedhq/troubleshoot/pkg/client/troubleshootclientset/typed/troubleshoot/v1beta2/supportbundle.go
 
   compile-preflight:
     runs-on: ubuntu-latest
