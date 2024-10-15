@@ -79,10 +79,11 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          path: github.com/replicatedhq/
+          path: github.com/replicatedhq/troubleshoot
       - run: |
-          ls -la
+          
           pwd
+          cd github.com/replicatedhq/troubleshoot
           make check-schemas
       - run: |
           pwd
