@@ -84,7 +84,9 @@ jobs:
           cat pkg/client/troubleshootclientset/typed/troubleshoot/v1beta2/supportbundle.go
       - run: make check-schemas
       - run: |
-          ls $$(pwd)/../../../github.com/replicatedhq/troubleshoot/pkg/client
+          pwd
+          echo $$(pwd)
+          cat pkg/client/troubleshootclientset/typed/troubleshoot/v1beta2/supportbundle.go
 
   compile-preflight:
     runs-on: ubuntu-latest
