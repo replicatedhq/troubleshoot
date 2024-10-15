@@ -2,10 +2,13 @@ package analyzer
 
 import (
 	"encoding/json"
+	"fmt"
 	"testing"
 
+	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/replicatedhq/troubleshoot/pkg/collect"
+	"github.com/replicatedhq/troubleshoot/pkg/constants"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -102,7 +105,7 @@ func TestAnalyzeHostMemory(t *testing.T) {
 		expectedError            string
 	}{
 		{
-			name: "Pass on memory available",
+			name: "Pass on memory available (local)",
 			hostAnalyzer: &troubleshootv1beta2.MemoryAnalyze{
 				Outcomes: []*troubleshootv1beta2.Outcome{
 					{
@@ -113,11 +116,15 @@ func TestAnalyzeHostMemory(t *testing.T) {
 					},
 				},
 			},
-			getCollectedFileContents: func(filename string) ([]byte, error) {
-				memoryInfo := collect.MemoryInfo{
-					Total: 8 * 1024 * 1024 * 1024, // 8GiB
+			getCollectedFileContents: func(path string) ([]byte, error) {
+				// Simulate local memory content retrieval
+				if path == collect.HostMemoryPath {
+					memoryInfo := collect.MemoryInfo{
+						Total: 8 * 1024 * 1024 * 1024, // 8GiB
+					}
+					return json.Marshal(memoryInfo)
 				}
-				return json.Marshal(memoryInfo)
+				return nil, errors.New("file not found")
 			},
 			expectedResults: []*AnalyzeResult{
 				{
@@ -129,7 +136,7 @@ func TestAnalyzeHostMemory(t *testing.T) {
 			expectedError: "",
 		},
 		{
-			name: "Fail on memory available",
+			name: "Fail on memory available (remote node)",
 			hostAnalyzer: &troubleshootv1beta2.MemoryAnalyze{
 				Outcomes: []*troubleshootv1beta2.Outcome{
 					{
@@ -140,15 +147,23 @@ func TestAnalyzeHostMemory(t *testing.T) {
 					},
 				},
 			},
-			getCollectedFileContents: func(filename string) ([]byte, error) {
-				memoryInfo := collect.MemoryInfo{
-					Total: 8 * 1024 * 1024 * 1024, // 8GiB
+			getCollectedFileContents: func(path string) ([]byte, error) {
+				// Simulate remote node list and memory content retrieval
+				if path == constants.NODE_LIST_FILE {
+					nodeNames := NodeNames{Nodes: []string{"node1"}}
+					return json.Marshal(nodeNames)
 				}
-				return json.Marshal(memoryInfo)
+				if path == fmt.Sprintf("%s/node1/%s", collect.NodeInfoBaseDir, collect.HostMemoryFileName) {
+					memoryInfo := collect.MemoryInfo{
+						Total: 8 * 1024 * 1024 * 1024, // 8GiB for remote node
+					}
+					return json.Marshal(memoryInfo)
+				}
+				return nil, errors.New("file not found")
 			},
 			expectedResults: []*AnalyzeResult{
 				{
-					Title:   "Amount of Memory",
+					Title:   "Amount of Memory - Node node1",
 					IsFail:  true,
 					Message: "System requires at least 16Gi of memory",
 				},
@@ -156,7 +171,7 @@ func TestAnalyzeHostMemory(t *testing.T) {
 			expectedError: "",
 		},
 		{
-			name: "Warn on memory available",
+			name: "Warn on memory available (remote node)",
 			hostAnalyzer: &troubleshootv1beta2.MemoryAnalyze{
 				Outcomes: []*troubleshootv1beta2.Outcome{
 					{
@@ -167,15 +182,23 @@ func TestAnalyzeHostMemory(t *testing.T) {
 					},
 				},
 			},
-			getCollectedFileContents: func(filename string) ([]byte, error) {
-				memoryInfo := collect.MemoryInfo{
-					Total: 8 * 1024 * 1024 * 1024, // 8GiB
+			getCollectedFileContents: func(path string) ([]byte, error) {
+				// Simulate remote node list and memory content retrieval
+				if path == constants.NODE_LIST_FILE {
+					nodeNames := NodeNames{Nodes: []string{"node1"}}
+					return json.Marshal(nodeNames)
 				}
-				return json.Marshal(memoryInfo)
+				if path == fmt.Sprintf("%s/node1/%s", collect.NodeInfoBaseDir, collect.HostMemoryFileName) {
+					memoryInfo := collect.MemoryInfo{
+						Total: 8 * 1024 * 1024 * 1024, // 8GiB for remote node
+					}
+					return json.Marshal(memoryInfo)
+				}
+				return nil, errors.New("file not found")
 			},
 			expectedResults: []*AnalyzeResult{
 				{
-					Title:   "Amount of Memory",
+					Title:   "Amount of Memory - Node node1",
 					IsWarn:  true,
 					Message: "System performs best with more than 8Gi of memory",
 				},
@@ -183,7 +206,7 @@ func TestAnalyzeHostMemory(t *testing.T) {
 			expectedError: "",
 		},
 		{
-			name: "Pass on empty pass predicate",
+			name: "Pass on empty pass predicate (local)",
 			hostAnalyzer: &troubleshootv1beta2.MemoryAnalyze{
 				Outcomes: []*troubleshootv1beta2.Outcome{
 					{
@@ -200,17 +223,58 @@ func TestAnalyzeHostMemory(t *testing.T) {
 					},
 				},
 			},
-			getCollectedFileContents: func(filename string) ([]byte, error) {
-				memoryInfo := collect.MemoryInfo{
-					Total: 16 * 1024 * 1024 * 1024, // 16GiB
+			getCollectedFileContents: func(path string) ([]byte, error) {
+				// Simulate local memory content retrieval
+				if path == collect.HostMemoryPath {
+					memoryInfo := collect.MemoryInfo{
+						Total: 16 * 1024 * 1024 * 1024, // 16GiB
+					}
+					return json.Marshal(memoryInfo)
 				}
-				return json.Marshal(memoryInfo)
+				return nil, errors.New("file not found")
 			},
 			expectedResults: []*AnalyzeResult{
 				{
 					Title:   "Amount of Memory",
 					IsPass:  true,
 					Message: "Memory is sufficient",
+				},
+			},
+			expectedError: "",
+		},
+		{
+			name: "Fix for empty pass predicate",
+			hostAnalyzer: &troubleshootv1beta2.MemoryAnalyze{
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Fail: &troubleshootv1beta2.SingleOutcome{
+							When:    "< 8Gi",
+							Message: "oops",
+						},
+					},
+					{
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							When:    "",
+							Message: "it passed",
+						},
+					},
+				},
+			},
+			getCollectedFileContents: func(path string) ([]byte, error) {
+				// Simulate local memory content retrieval
+				if path == collect.HostMemoryPath {
+					memoryInfo := collect.MemoryInfo{
+						Total: 16 * 1024 * 1024 * 1024, // 16GiB
+					}
+					return json.Marshal(memoryInfo)
+				}
+				return nil, errors.New("file not found")
+			},
+			expectedResults: []*AnalyzeResult{
+				{
+					Title:   "Amount of Memory",
+					IsPass:  true,
+					Message: "it passed",
 				},
 			},
 			expectedError: "",

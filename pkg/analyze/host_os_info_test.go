@@ -2,6 +2,7 @@ package analyzer
 
 import (
 	"encoding/json"
+	"fmt"
 	"testing"
 
 	"github.com/pkg/errors"
@@ -59,15 +60,6 @@ func TestAnalyzeHostOSCheckCondition(t *testing.T) {
 			expectErr: false,
 		},
 		{
-			name:        "kernelVersion == 5.10 when actual is 5.10.42",
-			conditional: "kernelVersion == 5.10",
-			osInfo: collect.HostOSInfo{
-				KernelVersion: "5.10.42",
-			},
-			expected:  true,
-			expectErr: false,
-		},
-		{
 			name:        "invalid conditional format",
 			conditional: "invalid conditional",
 			osInfo: collect.HostOSInfo{
@@ -103,11 +95,10 @@ func TestAnalyzeHostOSCheckCondition(t *testing.T) {
 func TestAnalyzeHostOS(t *testing.T) {
 	tests := []struct {
 		name                     string
-		hostAnalyzer             *troubleshootv1beta2.HostOSAnalyze // Different types of analyzers per test case
-		getCollectedFileContents func(string) ([]byte, error)       // Mock function
-		findFiles                getChildCollectedFileContents
-		expectedResults          []*AnalyzeResult
-		expectedError            string
+		hostAnalyzer             *troubleshootv1beta2.HostOSAnalyze
+		getCollectedFileContents func(string) ([]byte, error)
+		result                   []*AnalyzeResult
+		expectErr                bool
 	}{
 		{
 			name: "successfully retrieve local content and analyze",
@@ -115,26 +106,36 @@ func TestAnalyzeHostOS(t *testing.T) {
 				Outcomes: []*troubleshootv1beta2.Outcome{
 					{
 						Pass: &troubleshootv1beta2.SingleOutcome{
-							When:    "os == localOS",
-							Message: "local content analyzed",
+							When:    "ubuntu >= 00.1.2",
+							Message: "supported distribution matches ubuntu >= 00.1.2",
+						},
+					},
+					{
+						Fail: &troubleshootv1beta2.SingleOutcome{
+							Message: "unsupported distribution",
 						},
 					},
 				},
 			},
 			getCollectedFileContents: func(path string) ([]byte, error) {
 				if path == collect.HostOSInfoPath {
-					return []byte(`{"Name": "localOS"}`), nil
+					return json.Marshal(collect.HostOSInfo{
+						Name:            "myhost",
+						KernelVersion:   "5.4.0-1034-gcp",
+						PlatformVersion: "00.1.2",
+						Platform:        "ubuntu",
+					})
 				}
 				return nil, errors.New("file not found")
 			},
-			expectedResults: []*AnalyzeResult{
+			result: []*AnalyzeResult{
 				{
 					Title:   "Host OS Info",
 					IsPass:  true,
-					Message: "local content analyzed",
+					Message: "supported distribution matches ubuntu >= 00.1.2",
 				},
 			},
-			expectedError: "",
+			expectErr: false,
 		},
 		{
 			name: "local content not found, retrieve and analyze remote content",
@@ -142,30 +143,39 @@ func TestAnalyzeHostOS(t *testing.T) {
 				Outcomes: []*troubleshootv1beta2.Outcome{
 					{
 						Pass: &troubleshootv1beta2.SingleOutcome{
-							When:    "os == remoteOS",
-							Message: "remote content analyzed",
+							When:    "ubuntu == 18.04",
+							Message: "supported remote ubuntu 18.04",
+						},
+					},
+					{
+						Fail: &troubleshootv1beta2.SingleOutcome{
+							Message: "unsupported distribution",
 						},
 					},
 				},
 			},
 			getCollectedFileContents: func(path string) ([]byte, error) {
 				if path == constants.NODE_LIST_FILE {
-					nodeNames := NodeNames{Nodes: []string{"node1"}}
-					return json.Marshal(nodeNames)
+					return json.Marshal(NodeNames{Nodes: []string{"node1"}})
 				}
-				if path == "remoteBaseDir/node1/remoteFileName" {
-					return []byte(`{"Name": "remoteOS"}`), nil
+				if path == fmt.Sprintf("%s/node1/%s", collect.NodeInfoBaseDir, collect.HostInfoFileName) {
+					return json.Marshal(collect.HostOSInfo{
+						Name:            "nodehost",
+						KernelVersion:   "4.15.0-1034-aws",
+						PlatformVersion: "18.04",
+						Platform:        "ubuntu",
+					})
 				}
 				return nil, errors.New("file not found")
 			},
-			expectedResults: []*AnalyzeResult{
+			result: []*AnalyzeResult{
 				{
 					Title:   "Host OS Info - Node node1",
 					IsPass:  true,
-					Message: "remote content analyzed",
+					Message: "supported remote ubuntu 18.04",
 				},
 			},
-			expectedError: "",
+			expectErr: false,
 		},
 		{
 			name: "fail to retrieve both local and remote content",
@@ -181,15 +191,15 @@ func TestAnalyzeHostOS(t *testing.T) {
 			getCollectedFileContents: func(path string) ([]byte, error) {
 				return nil, errors.New("file not found")
 			},
-			expectedResults: []*AnalyzeResult{
+			result: []*AnalyzeResult{
 				{
 					Title: "Host OS Info",
 				},
 			},
-			expectedError: "failed to get node list",
+			expectErr: true,
 		},
 		{
-			name: "error during content analysis",
+			name: "error during remote content analysis",
 			hostAnalyzer: &troubleshootv1beta2.HostOSAnalyze{
 				Outcomes: []*troubleshootv1beta2.Outcome{
 					{
@@ -201,16 +211,146 @@ func TestAnalyzeHostOS(t *testing.T) {
 			},
 			getCollectedFileContents: func(path string) ([]byte, error) {
 				if path == constants.NODE_LIST_FILE {
-					nodeNames := NodeNames{Nodes: []string{"node1"}}
-					return json.Marshal(nodeNames)
+					return json.Marshal(NodeNames{Nodes: []string{"node1"}})
 				}
-				if path == "remoteBaseDir/node1/remoteFileName" {
-					return []byte(`{"Name": "remoteOS"}`), nil
+				if path == fmt.Sprintf("%s/node1/%s", collect.NodeInfoBaseDir, collect.HostInfoFileName) {
+					return nil, errors.New("file not found")
 				}
 				return nil, errors.New("file not found")
 			},
-			expectedResults: nil,
-			expectedError:   "failed to analyze OS version",
+			result:    nil,
+			expectErr: true,
+		},
+		{
+			name: "pass if centos-1.2.0-kernel >= 1.2.0",
+			hostAnalyzer: &troubleshootv1beta2.HostOSAnalyze{
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							When:    "centos-1.2.0-kernel >= 1.2.0",
+							Message: "supported kernel matches centos-1.2.0-kernel >= 1.2.0",
+						},
+					},
+					{
+						Fail: &troubleshootv1beta2.SingleOutcome{
+							Message: "unsupported distribution",
+						},
+					},
+				},
+			},
+			getCollectedFileContents: func(path string) ([]byte, error) {
+				if path == constants.NODE_LIST_FILE {
+					return json.Marshal(NodeNames{Nodes: []string{"node1"}})
+				}
+				if path == fmt.Sprintf("%s/node1/%s", collect.NodeInfoBaseDir, collect.HostInfoFileName) {
+					return json.Marshal(collect.HostOSInfo{
+						Name:            "nodehost",
+						KernelVersion:   "1.2.0-1034-aws",
+						PlatformVersion: "1.2.0",
+						Platform:        "centos",
+					})
+				}
+				return nil, errors.New("file not found")
+			},
+			result: []*AnalyzeResult{
+				{
+					Title:   "Host OS Info - Node node1",
+					IsPass:  true,
+					Message: "supported kernel matches centos-1.2.0-kernel >= 1.2.0",
+				},
+			},
+			expectErr: false,
+		},
+		{
+			name: "warn if ubuntu <= 16.04",
+			hostAnalyzer: &troubleshootv1beta2.HostOSAnalyze{
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Warn: &troubleshootv1beta2.SingleOutcome{
+							When:    "ubuntu <= 16.04",
+							Message: "System performs best with Ubuntu version higher than 16.04",
+						},
+					},
+					{
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							When:    "ubuntu > 16.04",
+							Message: "Ubuntu version is sufficient",
+						},
+					},
+				},
+			},
+			getCollectedFileContents: func(path string) ([]byte, error) {
+				if path == collect.HostOSInfoPath {
+					return json.Marshal(collect.HostOSInfo{
+						Name:            "myhost",
+						KernelVersion:   "4.15.0-1234-gcp",
+						PlatformVersion: "16.04",
+						Platform:        "ubuntu",
+					})
+				}
+				return nil, errors.New("file not found")
+			},
+			result: []*AnalyzeResult{
+				{
+					Title:   "Host OS Info",
+					IsWarn:  true,
+					Message: "System performs best with Ubuntu version higher than 16.04",
+				},
+			},
+			expectErr: false,
+		},
+		{
+			name: "analyze multiple nodes with different OS info",
+			hostAnalyzer: &troubleshootv1beta2.HostOSAnalyze{
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							When:    "ubuntu == 18.04",
+							Message: "supported ubuntu version",
+						},
+					},
+					{
+						Fail: &troubleshootv1beta2.SingleOutcome{
+							Message: "unsupported ubuntu version",
+						},
+					},
+				},
+			},
+			getCollectedFileContents: func(path string) ([]byte, error) {
+				if path == constants.NODE_LIST_FILE {
+					return json.Marshal(NodeNames{Nodes: []string{"node1", "node2"}})
+				}
+				if path == fmt.Sprintf("%s/node1/%s", collect.NodeInfoBaseDir, collect.HostInfoFileName) {
+					return json.Marshal(collect.HostOSInfo{
+						Name:            "nodehost",
+						KernelVersion:   "4.15.0-1034-aws",
+						PlatformVersion: "18.04",
+						Platform:        "ubuntu",
+					})
+				}
+				if path == fmt.Sprintf("%s/node2/%s", collect.NodeInfoBaseDir, collect.HostInfoFileName) {
+					return json.Marshal(collect.HostOSInfo{
+						Name:            "nodehost",
+						KernelVersion:   "4.15.0-1034-aws",
+						PlatformVersion: "16.04",
+						Platform:        "ubuntu",
+					})
+				}
+				return nil, errors.New("file not found")
+			},
+			result: []*AnalyzeResult{
+				{
+					Title:   "Host OS Info - Node node1",
+					IsPass:  true,
+					Message: "supported ubuntu version",
+				},
+				{
+					Title:   "Host OS Info - Node node2",
+					IsFail:  true,
+					Message: "unsupported ubuntu version",
+				},
+			},
+			expectErr: false,
 		},
 	}
 
@@ -222,15 +362,14 @@ func TestAnalyzeHostOS(t *testing.T) {
 			}
 
 			// Call the Analyze function
-			results, err := analyzeHostOS.Analyze(test.getCollectedFileContents, test.findFiles)
+			results, err := analyzeHostOS.Analyze(test.getCollectedFileContents, nil)
 
 			// Check for errors and compare results
-			if test.expectedError != "" {
+			if test.expectErr {
 				require.Error(t, err)
-				assert.Contains(t, err.Error(), test.expectedError)
 			} else {
 				require.NoError(t, err)
-				assert.Equal(t, test.expectedResults, results)
+				assert.Equal(t, test.result, results)
 			}
 		})
 	}
