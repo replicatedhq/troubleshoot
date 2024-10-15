@@ -126,7 +126,7 @@ func (c *supportBundles) Update(ctx context.Context, supportBundle *v1beta2.Supp
 	result = &v1beta2.SupportBundle{}
 	err = c.client.Put().
 		Namespace(c.ns).
-		Resource("supportbundles").
+		Resource("supportbundless").
 		Name(supportBundle.Metadata.Name).
 		VersionedParams(&opts, scheme.ParameterCodec).
 		Body(supportBundle).
