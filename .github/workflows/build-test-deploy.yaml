@@ -82,9 +82,6 @@ jobs:
         with:
           fetch-depth: 0
           path: github.com/replicatedhq/troubleshoot
-      - name: check file
-        run: |
-          cat github.com/replicatedhq/troubleshoot/pkg/client/troubleshootclientset/typed/troubleshoot/v1beta2/supportbundle.go
       - run: |
           cd github.com/replicatedhq/troubleshoot
           make check-schemas
