@@ -81,7 +81,7 @@ jobs:
           fetch-depth: 0
           path: github.com/replicatedhq/
       - run: |
-          cd github.com/replicatedhq/troubleshoot
+          ls -la
           pwd
           make check-schemas
       - run: |
