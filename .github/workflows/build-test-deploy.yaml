@@ -80,9 +80,6 @@ jobs:
         with:
           fetch-depth: 0
           path: github.com/replicatedhq/
-      - name: check files
-        run: |
-          cat pkg/client/troubleshootclientset/typed/troubleshoot/v1beta2/supportbundle.go
       - run: |
           cd github.com/replicatedhq/troubleshoot
           pwd
