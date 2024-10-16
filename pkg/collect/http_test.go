@@ -83,6 +83,13 @@ func TestCollectHTTP_Collect(t *testing.T) {
 		res.WriteHeader(http.StatusInternalServerError)
 		res.Write([]byte("{\"error\": { \"message\": \"context deadline exceeded\"}}"))
 	})
+	mux.HandleFunc("/certificate-mismatch", func(res http.ResponseWriter, req *http.Request) {
+		time.Sleep(1 * time.Millisecond)
+		fmt.Println("Sleeping for 2 seconds on /error call")
+		res.Header().Set("Content-Type", "application/json; charset=utf-8")
+		res.WriteHeader(http.StatusInternalServerError)
+		res.Write([]byte("{\"error\": { \"message\": \"Request failed: proxyconnect tcp: tls: failed to verify certificate: x509: \"10.0.0.254\" certificate is not trusted\"}}"))
+	})
 
 	sample_get_response := &ResponseData{
 		Response: Response{
@@ -125,8 +132,14 @@ func TestCollectHTTP_Collect(t *testing.T) {
 			Message: "context deadline exceeded",
 		},
 	}
-
 	sample_error_bytes, _ := sample_error_response.ToJSONbytes()
+
+	sample_certificate_untrusted := &ErrorResponse{
+		Error: HTTPError{
+			Message: "Request failed: proxyconnect tcp: tls: failed to verify certificate: x509: \"10.0.0.254\" certificate is not trusted",
+		},
+	}
+	sample_certificate_untrusted_bytes, _ := sample_certificate_untrusted.ToJSONbytes()
 
 	tests := []CollectorTest{
 		{
@@ -250,7 +263,25 @@ func TestCollectHTTP_Collect(t *testing.T) {
 			checkTimeout: true,
 			wantErr:      false,
 		},
-		// TODO: add TLS cert case
+		{
+			name: "TLS: certificate is not trusted",
+			Collector: &troubleshootv1beta2.HTTP{
+				CollectorMeta: troubleshootv1beta2.CollectorMeta{
+					CollectorName: "",
+				},
+				Get: &troubleshootv1beta2.Get{
+					Timeout: "300ms",
+				},
+			},
+			args: args{
+				progressChan: nil,
+			},
+			want: CollectorResult{
+				"result.json": sample_certificate_untrusted_bytes,
+			},
+			checkTimeout: true,
+			wantErr:      true,
+		},
 	}
 	for _, tt := range tests {
 		var ts *httptest.Server
@@ -272,6 +303,9 @@ func TestCollectHTTP_Collect(t *testing.T) {
 				if tt.checkTimeout && tt.wantErr {
 					c.Collector.Get.URL = fmt.Sprintf("%s%s", url, "/error")
 					response_data := sample_error_response
+					response_data.testCollectHTTP(t, &tt, c)
+					c.Collector.Get.URL = fmt.Sprintf("%s%s", url, "/certificate-mismatch")
+					response_data = sample_certificate_untrusted
 					response_data.testCollectHTTP(t, &tt, c)
 				} else {
 					c.Collector.Get.URL = fmt.Sprintf("%s%s", url, "/get")

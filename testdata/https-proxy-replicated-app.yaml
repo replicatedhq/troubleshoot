@@ -1,0 +1,74 @@
+apiVersion: troubleshoot.sh/v1beta2
+kind: HostPreflight
+metadata:
+  name: mitm-proxy
+spec:
+  collectors:
+    - http:
+        collectorName: &https https
+        get:
+          url: &url https://replicated.app
+          tls:
+            cacert: &ca |-
+              -----BEGIN CERTIFICATE-----
+              MIIDajCCAlKgAwIBAgIUFlUns1qeD6ss4cdXz52287KtPQswDQYJKoZIhvcNAQEL
+              BQAwTjELMAkGA1UEBhMCVVMxDjAMBgNVBAgMBVN0YXRlMQ0wCwYDVQQHDARDaXR5
+              MRMwEQYDVQQKDApSZXBsaWNhdGVkMQswCQYDVQQLDAJJVDAeFw0yNDA5MjcxNTU5
+              MDJaFw0yNDEwMDQxNTU5MDJaME4xCzAJBgNVBAYTAlVTMQ4wDAYDVQQIDAVTdGF0
+              ZTENMAsGA1UEBwwEQ2l0eTETMBEGA1UECgwKUmVwbGljYXRlZDELMAkGA1UECwwC
+              SVQwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEKAoIBAQDLe7PlgdPiApQzZzkY
+              0dN/NDBib72Y5TAEhNguPVDY1Rj4PLiKjUXvHbVsRLpP8DrKJAeK/kJqeR4xr1O5
+              dQenCoTZTHX24TLFx0D1SKfdUtpxzKta8jd+O5TwaY/tLsi9YcJ6mz8n7+giJH1r
+              ZH5Isa9JkZ3fb2+VoX054I/C88MfsvdZahL7/RHLvolRiLeV7X86Zx2EJ3hUFWoZ
+              kYeIggbt2BeikeDlHQDBmxzpIaP1IMl3LHOjZhj7TiNuSYtDiE8OQIV34c9IZ1yi
+              lcUjrwKQCfzaE9lZK5UbS3KRD1XFSrSP4tWVsUmesYeFD+nc5/wku/J+PXDM1QAu
+              B8q9AgMBAAGjQDA+MA8GA1UdEQQIMAaHBAoKHskwDAYDVR0TBAUwAwEB/zAdBgNV
+              HQ4EFgQUuwXZYrzbdQVGCS5O0sdlCJo761cwDQYJKoZIhvcNAQELBQADggEBAH3G
+              9C6sJ+uR9ZAOnFyCQEdBVaw02NMOY0ajc8gMrmgl9btx1rLnS8r+zLf9Jev0YxiG
+              Pq6HbkceQNa6Rl6l6JH4O0sV0KUXe5r7kPPYv9pMsy+JZYH9H1ppUr0a13s4vrgA
+              4YbFE3TispC6WXFng4w85ODc9nmXGDvjPX6mzZxcsxooDX5+PPAo+WueKutOZMvT
+              yvB2hUgb4hy6CT6OvJJFb9Lh1Hl5aE/9FKgF3u/Tq2U3SSzMHMZiWzUVfAO0J1Ev
+              jcr8Mb5t3iQwH3t2eT07K2fouPa70vbOfj1kSiexUoUllHgoOXUeOpGv4Aykly7m
+              C/XdeJyP1tnZ3j2ozPo=
+              -----END CERTIFICATE-----
+    - http:
+        collectorName: &https-proxy https-proxy
+        get:
+          url: *url
+          tls:
+            cacert: *ca
+          proxy: &proxy https://10.10.30.201:3130
+    - http:
+        collectorName: &https-proxy-nocert https-proxy-nocert
+        get:
+          url: *url
+          proxy: *proxy
+
+  analyzers:
+    - http:
+        checkName: *https-proxy
+        collectorName: *https-proxy
+        outcomes:
+          - pass:
+              when: &200 "statusCode == 200"
+              message: &passed checking https://replicated.app passed
+          - fail:
+              message: &failed checking https://replicated.app failed
+    - http:
+        checkName: *https-proxy-nocert
+        collectorName: *https-proxy-nocert
+        outcomes:
+          - pass:
+              when: *200
+              message: *passed
+          - fail:
+              message: *failed
+    - http:
+        checkName: *https
+        collectorName: *https
+        outcomes:
+          - pass:
+              when: *200
+              message: *passed
+          - fail:
+              message: *failed
