@@ -75,6 +75,9 @@ func (a *AnalyzeHostMemory) CheckCondition(when string, data CollectorData) (boo
 	if !ok {
 		return false, fmt.Errorf("could not parse quantity %q", desired)
 	}
+	if desiredInt < 0 {
+		return false, fmt.Errorf("desired value must be a positive integer, got %d", desiredInt)
+	}
 
 	switch operator {
 	case "<":
@@ -87,7 +90,8 @@ func (a *AnalyzeHostMemory) CheckCondition(when string, data CollectorData) (boo
 		return memInfo.Total >= uint64(desiredInt), nil
 	case "=", "==", "===":
 		return memInfo.Total == uint64(desiredInt), nil
+	default:
+		return false, fmt.Errorf("unsupported operator: %q", operator)
 	}
 
-	return false, errors.New("unknown operator")
 }
