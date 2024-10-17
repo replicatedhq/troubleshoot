@@ -113,7 +113,9 @@ func evaluateOutcomes(outcomes []*troubleshootv1beta2.Outcome, checkCondition fu
 		result := AnalyzeResult{
 			Title: title,
 		}
-		if outcome.Fail != nil {
+
+		switch {
+		case outcome.Fail != nil:
 			if outcome.Fail.When == "" {
 				result.IsFail = true
 				result.Message = outcome.Fail.Message
@@ -134,7 +136,8 @@ func evaluateOutcomes(outcomes []*troubleshootv1beta2.Outcome, checkCondition fu
 				results = append(results, &result)
 				return results, nil
 			}
-		} else if outcome.Warn != nil {
+
+		case outcome.Warn != nil:
 			if outcome.Warn.When == "" {
 				result.IsWarn = true
 				result.Message = outcome.Warn.Message
@@ -155,7 +158,8 @@ func evaluateOutcomes(outcomes []*troubleshootv1beta2.Outcome, checkCondition fu
 				results = append(results, &result)
 				return results, nil
 			}
-		} else if outcome.Pass != nil {
+
+		case outcome.Pass != nil:
 			if outcome.Pass.When == "" {
 				result.IsPass = true
 				result.Message = outcome.Pass.Message
