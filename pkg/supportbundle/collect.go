@@ -332,6 +332,9 @@ func filterHostCollectors(ctx context.Context, collectSpecs []*troubleshootv1bet
 
 	for _, desiredCollector := range collectSpecs {
 		collector, ok := collect.GetHostCollector(desiredCollector, bundlePath)
+		if collector == nil {
+			continue
+		}
 		_, span := otel.Tracer(constants.LIB_TRACER_NAME).Start(ctx, collector.Title())
 		span.SetAttributes(attribute.String("type", reflect.TypeOf(collector).String()))
 
