@@ -7,7 +7,7 @@ labels: 'epic'
 
 # Design Proposal
 
-Link to the [proposal](https://github.com/replicatedhq/troubleshoot/tree/main/design/template.md)
+Link to the [proposal](https://github.com/replicatedhq/troubleshoot/tree/main/docs/design/template.md)
 
 # Definition of done
 
