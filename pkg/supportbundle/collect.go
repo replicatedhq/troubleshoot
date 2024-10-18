@@ -290,7 +290,6 @@ func collectHost(ctx context.Context, filteredCollectors []FilteredCollector, op
 		if err != nil {
 			span.SetStatus(codes.Error, err.Error())
 			opts.ProgressChan <- fmt.Sprintf("[%s] Error: %v", collector.Title(), err)
-			return errors.Wrap(err, "failed to run host collector")
 		}
 
 		// Send progress event: completed successfully
@@ -332,15 +331,13 @@ func filterHostCollectors(ctx context.Context, collectSpecs []*troubleshootv1bet
 
 	for _, desiredCollector := range collectSpecs {
 		collector, ok := collect.GetHostCollector(desiredCollector, bundlePath)
-		if collector == nil {
+		if !ok {
+			opts.ProgressChan <- "Host collector not found"
 			continue
 		}
+
 		_, span := otel.Tracer(constants.LIB_TRACER_NAME).Start(ctx, collector.Title())
 		span.SetAttributes(attribute.String("type", reflect.TypeOf(collector).String()))
-
-		if !ok {
-			return nil, collect.ErrHostCollectorNotFound
-		}
 
 		isExcluded, _ := collector.IsExcluded()
 		if isExcluded {
