@@ -89,7 +89,7 @@ func (c *resultCollector) get(title string) []*AnalyzeResult {
 	return []*AnalyzeResult{{Title: title, IsWarn: true, Message: "no results"}}
 }
 
-func analyzeHostCollectorResults(collectedContent []CollectedContent, outcomes []*troubleshootv1beta2.Outcome, checkCondition func(string, CollectorData) (bool, error), title string) ([]*AnalyzeResult, error) {
+func analyzeHostCollectorResults(collectedContent []collectedContent, outcomes []*troubleshootv1beta2.Outcome, checkCondition func(string, collectorData) (bool, error), title string) ([]*AnalyzeResult, error) {
 	var results []*AnalyzeResult
 	for _, content := range collectedContent {
 		currentTitle := title
@@ -101,12 +101,14 @@ func analyzeHostCollectorResults(collectedContent []CollectedContent, outcomes [
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to evaluate outcomes")
 		}
-		results = append(results, analyzeResult...)
+		if analyzeResult != nil {
+			results = append(results, analyzeResult...)
+		}
 	}
 	return results, nil
 }
 
-func evaluateOutcomes(outcomes []*troubleshootv1beta2.Outcome, checkCondition func(string, CollectorData) (bool, error), data CollectorData, title string) ([]*AnalyzeResult, error) {
+func evaluateOutcomes(outcomes []*troubleshootv1beta2.Outcome, checkCondition func(string, collectorData) (bool, error), data collectorData, title string) ([]*AnalyzeResult, error) {
 	var results []*AnalyzeResult
 
 	for _, outcome := range outcomes {

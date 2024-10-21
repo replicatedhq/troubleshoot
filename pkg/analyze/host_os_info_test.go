@@ -156,7 +156,7 @@ func TestAnalyzeHostOS(t *testing.T) {
 			},
 			getCollectedFileContents: func(path string) ([]byte, error) {
 				if path == constants.NODE_LIST_FILE {
-					return json.Marshal(NodeNames{Nodes: []string{"node1"}})
+					return json.Marshal(nodeNames{Nodes: []string{"node1"}})
 				}
 				if path == fmt.Sprintf("%s/node1/%s", collect.NodeInfoBaseDir, collect.HostInfoFileName) {
 					return json.Marshal(collect.HostOSInfo{
@@ -211,7 +211,7 @@ func TestAnalyzeHostOS(t *testing.T) {
 			},
 			getCollectedFileContents: func(path string) ([]byte, error) {
 				if path == constants.NODE_LIST_FILE {
-					return json.Marshal(NodeNames{Nodes: []string{"node1"}})
+					return json.Marshal(nodeNames{Nodes: []string{"node1"}})
 				}
 				if path == fmt.Sprintf("%s/node1/%s", collect.NodeInfoBaseDir, collect.HostInfoFileName) {
 					return nil, errors.New("file not found")
@@ -240,7 +240,7 @@ func TestAnalyzeHostOS(t *testing.T) {
 			},
 			getCollectedFileContents: func(path string) ([]byte, error) {
 				if path == constants.NODE_LIST_FILE {
-					return json.Marshal(NodeNames{Nodes: []string{"node1"}})
+					return json.Marshal(nodeNames{Nodes: []string{"node1"}})
 				}
 				if path == fmt.Sprintf("%s/node1/%s", collect.NodeInfoBaseDir, collect.HostInfoFileName) {
 					return json.Marshal(collect.HostOSInfo{
@@ -318,7 +318,7 @@ func TestAnalyzeHostOS(t *testing.T) {
 			},
 			getCollectedFileContents: func(path string) ([]byte, error) {
 				if path == constants.NODE_LIST_FILE {
-					return json.Marshal(NodeNames{Nodes: []string{"node1", "node2"}})
+					return json.Marshal(nodeNames{Nodes: []string{"node1", "node2"}})
 				}
 				if path == fmt.Sprintf("%s/node1/%s", collect.NodeInfoBaseDir, collect.HostInfoFileName) {
 					return json.Marshal(collect.HostOSInfo{

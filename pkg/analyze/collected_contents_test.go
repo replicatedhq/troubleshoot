@@ -17,7 +17,7 @@ func TestRetrieveCollectedContents(t *testing.T) {
 		localPath                string
 		remoteNodeBaseDir        string
 		remoteFileName           string
-		expectedResult           []CollectedContent
+		expectedResult           []collectedContent
 		expectedError            string
 	}{
 		{
@@ -31,7 +31,7 @@ func TestRetrieveCollectedContents(t *testing.T) {
 			localPath:         "localPath",
 			remoteNodeBaseDir: "remoteBaseDir",
 			remoteFileName:    "remoteFileName",
-			expectedResult: []CollectedContent{
+			expectedResult: []collectedContent{
 				{
 					NodeName: "",
 					Data:     []byte("localContent"),
@@ -43,7 +43,7 @@ func TestRetrieveCollectedContents(t *testing.T) {
 			name: "local content not found, retrieve remote node content successfully",
 			getCollectedFileContents: func(path string) ([]byte, error) {
 				if path == constants.NODE_LIST_FILE {
-					nodeNames := NodeNames{Nodes: []string{"node1", "node2"}}
+					nodeNames := nodeNames{Nodes: []string{"node1", "node2"}}
 					return json.Marshal(nodeNames)
 				}
 				if path == "remoteBaseDir/node1/remoteFileName" {
@@ -57,7 +57,7 @@ func TestRetrieveCollectedContents(t *testing.T) {
 			localPath:         "localPath",
 			remoteNodeBaseDir: "remoteBaseDir",
 			remoteFileName:    "remoteFileName",
-			expectedResult: []CollectedContent{
+			expectedResult: []collectedContent{
 				{
 					NodeName: "node1",
 					Data:     []byte("remoteContent1"),
@@ -84,7 +84,7 @@ func TestRetrieveCollectedContents(t *testing.T) {
 			name: "fail to retrieve content for one of the nodes",
 			getCollectedFileContents: func(path string) ([]byte, error) {
 				if path == constants.NODE_LIST_FILE {
-					nodeNames := NodeNames{Nodes: []string{"node1", "node2"}}
+					nodeNames := nodeNames{Nodes: []string{"node1", "node2"}}
 					return json.Marshal(nodeNames)
 				}
 				if path == "remoteBaseDir/node1/remoteFileName" {

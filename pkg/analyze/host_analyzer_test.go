@@ -14,13 +14,13 @@ func TestAnalyzeHostCollectorResults(t *testing.T) {
 	tests := []struct {
 		name             string
 		outcomes         []*troubleshootv1beta2.Outcome
-		collectedContent []CollectedContent
-		checkCondition   func(string, CollectorData) (bool, error)
+		collectedContent []collectedContent
+		checkCondition   func(string, collectorData) (bool, error)
 		expectResult     []*AnalyzeResult
 	}{
 		{
 			name: "pass if ubuntu >= 00.1.2",
-			collectedContent: []CollectedContent{
+			collectedContent: []collectedContent{
 				{
 					NodeName: "node1",
 					Data: collect.HostOSInfo{
@@ -44,7 +44,7 @@ func TestAnalyzeHostCollectorResults(t *testing.T) {
 					},
 				},
 			},
-			checkCondition: func(when string, data CollectorData) (bool, error) {
+			checkCondition: func(when string, data collectorData) (bool, error) {
 				osInfo := data.(collect.HostOSInfo)
 				return osInfo.Platform == "ubuntu" && osInfo.PlatformVersion >= "00.1.2", nil
 			},
@@ -58,7 +58,7 @@ func TestAnalyzeHostCollectorResults(t *testing.T) {
 		},
 		{
 			name: "fail if ubuntu <= 11.04",
-			collectedContent: []CollectedContent{
+			collectedContent: []collectedContent{
 				{
 					NodeName: "node1",
 					Data: collect.HostOSInfo{
@@ -91,7 +91,7 @@ func TestAnalyzeHostCollectorResults(t *testing.T) {
 					},
 				},
 			},
-			checkCondition: func(when string, data CollectorData) (bool, error) {
+			checkCondition: func(when string, data collectorData) (bool, error) {
 				osInfo := data.(collect.HostOSInfo)
 				return osInfo.Platform == "ubuntu" && osInfo.PlatformVersion <= "11.04", nil
 			},
@@ -110,7 +110,7 @@ func TestAnalyzeHostCollectorResults(t *testing.T) {
 		},
 		{
 			name: "title does not include node name if empty",
-			collectedContent: []CollectedContent{
+			collectedContent: []collectedContent{
 				{
 					NodeName: "",
 					Data: collect.HostOSInfo{
@@ -134,7 +134,7 @@ func TestAnalyzeHostCollectorResults(t *testing.T) {
 					},
 				},
 			},
-			checkCondition: func(when string, data CollectorData) (bool, error) {
+			checkCondition: func(when string, data collectorData) (bool, error) {
 				osInfo := data.(collect.HostOSInfo)
 				return osInfo.Platform == "ubuntu" && osInfo.PlatformVersion >= "20.04", nil
 			},
@@ -162,8 +162,8 @@ func TestEvaluateOutcomes(t *testing.T) {
 	tests := []struct {
 		name           string
 		outcomes       []*troubleshootv1beta2.Outcome
-		checkCondition func(string, CollectorData) (bool, error)
-		data           CollectorData
+		checkCondition func(string, collectorData) (bool, error)
+		data           collectorData
 		expectedResult []*AnalyzeResult
 	}{
 		{
@@ -176,7 +176,7 @@ func TestEvaluateOutcomes(t *testing.T) {
 					},
 				},
 			},
-			checkCondition: func(when string, data CollectorData) (bool, error) {
+			checkCondition: func(when string, data collectorData) (bool, error) {
 				// Return true if the condition being checked matches "failCondition"
 				return when == "failCondition", nil
 			},
@@ -199,7 +199,7 @@ func TestEvaluateOutcomes(t *testing.T) {
 					},
 				},
 			},
-			checkCondition: func(when string, data CollectorData) (bool, error) {
+			checkCondition: func(when string, data collectorData) (bool, error) {
 				// Return true if the condition being checked matches "warnCondition"
 				return when == "warnCondition", nil
 			},
@@ -222,7 +222,7 @@ func TestEvaluateOutcomes(t *testing.T) {
 					},
 				},
 			},
-			checkCondition: func(when string, data CollectorData) (bool, error) {
+			checkCondition: func(when string, data collectorData) (bool, error) {
 				// Return true if the condition being checked matches "passCondition"
 				return when == "passCondition", nil
 			},
@@ -253,7 +253,7 @@ func TestEvaluateOutcomes(t *testing.T) {
 					},
 				},
 			},
-			checkCondition: func(when string, data CollectorData) (bool, error) {
+			checkCondition: func(when string, data collectorData) (bool, error) {
 				// Always return false to simulate no condition matching
 				return false, nil
 			},
@@ -270,7 +270,7 @@ func TestEvaluateOutcomes(t *testing.T) {
 					},
 				},
 			},
-			checkCondition: func(when string, data CollectorData) (bool, error) {
+			checkCondition: func(when string, data collectorData) (bool, error) {
 				// Simulate an error occurring during condition evaluation
 				return false, errors.New("mock error")
 			},

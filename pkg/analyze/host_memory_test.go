@@ -150,7 +150,7 @@ func TestAnalyzeHostMemory(t *testing.T) {
 			getCollectedFileContents: func(path string) ([]byte, error) {
 				// Simulate remote node list and memory content retrieval
 				if path == constants.NODE_LIST_FILE {
-					nodeNames := NodeNames{Nodes: []string{"node1"}}
+					nodeNames := nodeNames{Nodes: []string{"node1"}}
 					return json.Marshal(nodeNames)
 				}
 				if path == fmt.Sprintf("%s/node1/%s", collect.NodeInfoBaseDir, collect.HostMemoryFileName) {
@@ -185,7 +185,7 @@ func TestAnalyzeHostMemory(t *testing.T) {
 			getCollectedFileContents: func(path string) ([]byte, error) {
 				// Simulate remote node list and memory content retrieval
 				if path == constants.NODE_LIST_FILE {
-					nodeNames := NodeNames{Nodes: []string{"node1"}}
+					nodeNames := nodeNames{Nodes: []string{"node1"}}
 					return json.Marshal(nodeNames)
 				}
 				if path == fmt.Sprintf("%s/node1/%s", collect.NodeInfoBaseDir, collect.HostMemoryFileName) {

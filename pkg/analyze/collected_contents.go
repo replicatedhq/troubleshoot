@@ -8,26 +8,26 @@ import (
 	"github.com/replicatedhq/troubleshoot/pkg/constants"
 )
 
-type CollectedContent struct {
+type collectedContent struct {
 	NodeName string
-	Data     CollectorData
+	Data     collectorData
 }
 
-type CollectorData interface{}
+type collectorData interface{}
 
-type NodeNames struct {
+type nodeNames struct {
 	Nodes []string `json:"nodes"`
 }
 
 func retrieveCollectedContents(
 	getCollectedFileContents func(string) ([]byte, error),
 	localPath string, remoteNodeBaseDir string, remoteFileName string,
-) ([]CollectedContent, error) {
-	var collectedContents []CollectedContent
+) ([]collectedContent, error) {
+	var collectedContents []collectedContent
 
 	// Try to retrieve local data first
 	if contents, err := getCollectedFileContents(localPath); err == nil {
-		collectedContents = append(collectedContents, CollectedContent{NodeName: "", Data: contents})
+		collectedContents = append(collectedContents, collectedContent{NodeName: "", Data: contents})
 		// Return immediately if local content is available
 		return collectedContents, nil
 	}
@@ -38,7 +38,7 @@ func retrieveCollectedContents(
 		return nil, errors.Wrap(err, "failed to get node list")
 	}
 
-	var nodeNames NodeNames
+	var nodeNames nodeNames
 	if err := json.Unmarshal(nodeListContents, &nodeNames); err != nil {
 		return nil, errors.Wrap(err, "failed to unmarshal node names")
 	}
@@ -51,7 +51,7 @@ func retrieveCollectedContents(
 			return nil, errors.Wrapf(err, "failed to retrieve content for node %s", node)
 		}
 
-		collectedContents = append(collectedContents, CollectedContent{NodeName: node, Data: nodeContents})
+		collectedContents = append(collectedContents, collectedContent{NodeName: node, Data: nodeContents})
 	}
 
 	return collectedContents, nil

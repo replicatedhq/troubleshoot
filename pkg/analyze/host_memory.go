@@ -49,7 +49,7 @@ func (a *AnalyzeHostMemory) Analyze(
 }
 
 // checkCondition checks the condition of the when clause
-func (a *AnalyzeHostMemory) CheckCondition(when string, data CollectorData) (bool, error) {
+func (a *AnalyzeHostMemory) CheckCondition(when string, data collectorData) (bool, error) {
 	rawData, ok := data.([]byte)
 	if !ok {
 		return false, fmt.Errorf("expected data to be []uint8 (raw bytes), got: %v", reflect.TypeOf(data))
