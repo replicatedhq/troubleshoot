@@ -66,6 +66,7 @@ func ParseSupportBundle(doc []byte, followURI bool) (*troubleshootv1beta2.Suppor
 				Collectors:      collector.Spec.Collectors,
 				HostCollectors:  collector.Spec.HostCollectors,
 				Analyzers:       []*troubleshootv1beta2.Analyze{},
+				HostAnalyzers:   []*troubleshootv1beta2.HostAnalyze{},
 				AfterCollection: collector.Spec.AfterCollection,
 			},
 		}
