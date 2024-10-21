@@ -1094,6 +1094,17 @@ func (in *CollectorSpec) DeepCopyInto(out *CollectorSpec) {
 			}
 		}
 	}
+	if in.HostCollectors != nil {
+		in, out := &in.HostCollectors, &out.HostCollectors
+		*out = make([]*HostCollect, len(*in))
+		for i := range *in {
+			if (*in)[i] != nil {
+				in, out := &(*in)[i], &(*out)[i]
+				*out = new(HostCollect)
+				(*in).DeepCopyInto(*out)
+			}
+		}
+	}
 	if in.AfterCollection != nil {
 		in, out := &in.AfterCollection, &out.AfterCollection
 		*out = make([]*AfterCollection, len(*in))

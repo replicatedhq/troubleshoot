@@ -34,6 +34,7 @@ type AfterCollection struct {
 // CollectorSpec defines the desired state of Collector
 type CollectorSpec struct {
 	Collectors      []*Collect         `json:"collectors,omitempty" yaml:"collectors,omitempty"`
+	HostCollectors  []*HostCollect     `json:"hostCollectors,omitempty" yaml:"hostCollectors,omitempty"`
 	AfterCollection []*AfterCollection `json:"afterCollection,omitempty" yaml:"afterCollection,omitempty"`
 	Uri             string             `json:"uri,omitempty" yaml:"uri,omitempty"`
 }
