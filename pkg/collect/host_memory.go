@@ -14,6 +14,7 @@ type MemoryInfo struct {
 }
 
 const HostMemoryPath = `host-collectors/system/memory.json`
+const HostMemoryFileName = `memory.json`
 
 type CollectHostMemory struct {
 	hostCollector *troubleshootv1beta2.Memory

@@ -23,20 +23,9 @@ import (
 	"k8s.io/client-go/kubernetes"
 )
 
-type FilteredCollector struct {
-	Spec      troubleshootv1beta2.HostCollect
-	Collector collect.HostCollector
-}
-
 func runHostCollectors(ctx context.Context, hostCollectors []*troubleshootv1beta2.HostCollect, additionalRedactors *troubleshootv1beta2.Redactor, bundlePath string, opts SupportBundleCreateOpts) (collect.CollectorResult, error) {
 	collectSpecs := append([]*troubleshootv1beta2.HostCollect{}, hostCollectors...)
 	collectedData := make(map[string][]byte)
-
-	// Filter out excluded collectors
-	filteredCollectors, err := filterHostCollectors(ctx, collectSpecs, bundlePath, opts)
-	if err != nil {
-		return nil, err
-	}
 
 	if opts.RunHostCollectorsInPod {
 		if err := checkRemoteCollectorRBAC(ctx, opts.KubernetesRestConfig, "Remote Host Collectors", opts.Namespace); err != nil {
@@ -52,11 +41,11 @@ func runHostCollectors(ctx context.Context, hostCollectors []*troubleshootv1beta
 				return nil, err
 			}
 		}
-		if err := collectRemoteHost(ctx, filteredCollectors, bundlePath, opts, collectedData); err != nil {
+		if err := collectRemoteHost(ctx, collectSpecs, bundlePath, opts, collectedData); err != nil {
 			return nil, err
 		}
 	} else {
-		if err := collectHost(ctx, filteredCollectors, opts, collectedData); err != nil {
+		if err := collectHost(ctx, collectSpecs, bundlePath, opts, collectedData); err != nil {
 			return nil, err
 		}
 	}
@@ -219,27 +208,38 @@ func getAnalysisFile(analyzeResults []*analyze.AnalyzeResult) (io.Reader, error)
 }
 
 // collectRemoteHost runs remote host collectors sequentially
-func collectRemoteHost(ctx context.Context, filteredCollectors []FilteredCollector, bundlePath string, opts SupportBundleCreateOpts, collectedData map[string][]byte) error {
+func collectRemoteHost(ctx context.Context, collectSpecs []*troubleshootv1beta2.HostCollect, bundlePath string, opts SupportBundleCreateOpts, collectedData map[string][]byte) error {
 	opts.KubernetesRestConfig.QPS = constants.DEFAULT_CLIENT_QPS
 	opts.KubernetesRestConfig.Burst = constants.DEFAULT_CLIENT_BURST
 	opts.KubernetesRestConfig.UserAgent = fmt.Sprintf("%s/%s", constants.DEFAULT_CLIENT_USER_AGENT, version.Version())
 
 	// Run remote collectors sequentially
-	for _, c := range filteredCollectors {
-		collector := c.Collector
-		spec := c.Spec
-
-		// Send progress event: starting the collector
-		opts.ProgressChan <- fmt.Sprintf("[%s] Running host collector...", collector.Title())
+	for _, spec := range collectSpecs {
+		collector, ok := collect.GetHostCollector(spec, bundlePath)
+		if !ok {
+			opts.ProgressChan <- "Host collector not found"
+			continue
+		}
 
 		// Start a span for tracing
 		_, span := otel.Tracer(constants.LIB_TRACER_NAME).Start(ctx, collector.Title())
 		span.SetAttributes(attribute.String("type", reflect.TypeOf(collector).String()))
 
+		isExcluded, _ := collector.IsExcluded()
+		if isExcluded {
+			opts.ProgressChan <- fmt.Sprintf("[%s] Excluding host collector", collector.Title())
+			span.SetAttributes(attribute.Bool(constants.EXCLUDED, true))
+			span.End()
+			continue
+		}
+
+		// Send progress event: starting the collector
+		opts.ProgressChan <- fmt.Sprintf("[%s] Running host collector...", collector.Title())
+
 		// Parameters for remote collection
 		params := &collect.RemoteCollectParams{
 			ProgressChan:  opts.ProgressChan,
-			HostCollector: &spec,
+			HostCollector: spec,
 			BundlePath:    bundlePath,
 			ClientConfig:  opts.KubernetesRestConfig,
 			Image:         "replicated/troubleshoot:latest",
@@ -273,10 +273,14 @@ func collectRemoteHost(ctx context.Context, filteredCollectors []FilteredCollect
 }
 
 // collectHost runs host collectors sequentially
-func collectHost(ctx context.Context, filteredCollectors []FilteredCollector, opts SupportBundleCreateOpts, collectedData map[string][]byte) error {
+func collectHost(ctx context.Context, collectSpecs []*troubleshootv1beta2.HostCollect, bundlePath string, opts SupportBundleCreateOpts, collectedData map[string][]byte) error {
 	// Run local collectors sequentially
-	for _, c := range filteredCollectors {
-		collector := c.Collector
+	for _, spec := range collectSpecs {
+		collector, ok := collect.GetHostCollector(spec, bundlePath)
+		if !ok {
+			opts.ProgressChan <- "Host collector not found"
+			continue
+		}
 
 		// Send progress event: starting the collector
 		opts.ProgressChan <- fmt.Sprintf("[%s] Running host collector...", collector.Title())
@@ -284,6 +288,14 @@ func collectHost(ctx context.Context, filteredCollectors []FilteredCollector, op
 		// Start a span for tracing
 		_, span := otel.Tracer(constants.LIB_TRACER_NAME).Start(ctx, collector.Title())
 		span.SetAttributes(attribute.String("type", reflect.TypeOf(collector).String()))
+
+		isExcluded, _ := collector.IsExcluded()
+		if isExcluded {
+			opts.ProgressChan <- fmt.Sprintf("[%s] Excluding host collector", collector.Title())
+			span.SetAttributes(attribute.Bool(constants.EXCLUDED, true))
+			span.End()
+			continue
+		}
 
 		// Run local collector sequentially
 		result, err := collector.Collect(opts.ProgressChan)
@@ -323,35 +335,4 @@ func getGlobalRedactors(additionalRedactors *troubleshootv1beta2.Redactor) []*tr
 		return additionalRedactors.Spec.Redactors
 	}
 	return []*troubleshootv1beta2.Redact{}
-}
-
-// filterHostCollectors filters out excluded collectors and returns a list of collectors to run
-func filterHostCollectors(ctx context.Context, collectSpecs []*troubleshootv1beta2.HostCollect, bundlePath string, opts SupportBundleCreateOpts) ([]FilteredCollector, error) {
-	var filteredCollectors []FilteredCollector
-
-	for _, desiredCollector := range collectSpecs {
-		collector, ok := collect.GetHostCollector(desiredCollector, bundlePath)
-		if !ok {
-			opts.ProgressChan <- "Host collector not found"
-			continue
-		}
-
-		_, span := otel.Tracer(constants.LIB_TRACER_NAME).Start(ctx, collector.Title())
-		span.SetAttributes(attribute.String("type", reflect.TypeOf(collector).String()))
-
-		isExcluded, _ := collector.IsExcluded()
-		if isExcluded {
-			opts.ProgressChan <- fmt.Sprintf("[%s] Excluding host collector", collector.Title())
-			span.SetAttributes(attribute.Bool(constants.EXCLUDED, true))
-			span.End()
-			continue
-		}
-
-		filteredCollectors = append(filteredCollectors, FilteredCollector{
-			Spec:      *desiredCollector,
-			Collector: collector,
-		})
-	}
-
-	return filteredCollectors, nil
 }
