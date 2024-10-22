@@ -38,7 +38,6 @@ func GetSupportBundleFromURI(bundleURI string) (*troubleshootv1beta2.SupportBund
 }
 
 // ParseSupportBundle parses a support bundle from a byte array into a SupportBundle object
-// We will deprecate this in favour of use loader.LoadSpecs once the new API is stable
 func ParseSupportBundle(doc []byte, followURI bool) (*troubleshootv1beta2.SupportBundle, error) {
 	doc, err := docrewrite.ConvertToV1Beta2(doc)
 	if err != nil {
@@ -65,7 +64,9 @@ func ParseSupportBundle(doc []byte, followURI bool) (*troubleshootv1beta2.Suppor
 			ObjectMeta: collector.ObjectMeta,
 			Spec: troubleshootv1beta2.SupportBundleSpec{
 				Collectors:      collector.Spec.Collectors,
+				HostCollectors:  collector.Spec.HostCollectors,
 				Analyzers:       []*troubleshootv1beta2.Analyze{},
+				HostAnalyzers:   []*troubleshootv1beta2.HostAnalyze{},
 				AfterCollection: collector.Spec.AfterCollection,
 			},
 		}
