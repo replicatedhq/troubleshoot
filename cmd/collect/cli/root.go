@@ -3,7 +3,6 @@ package cli
 import (
 	"os"
 	"strings"
-	"syscall"
 
 	"github.com/replicatedhq/troubleshoot/cmd/internal/util"
 	"github.com/replicatedhq/troubleshoot/pkg/k8sutil"
@@ -77,16 +76,6 @@ func RootCmd() *cobra.Command {
 	util.AddProfilingFlags(cmd)
 
 	return cmd
-}
-
-func checkAndSetChroot(newroot string) error {
-	if newroot == "" {
-		return nil
-	}
-	if err := syscall.Chroot(newroot); err != nil {
-		return err
-	}
-	return nil
 }
 
 func InitAndExecute() {
