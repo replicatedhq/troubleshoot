@@ -2,6 +2,7 @@ package cli
 
 import (
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -49,6 +50,13 @@ func runCollect(v *viper.Viper, arg string) error {
 		}
 
 		collectorContent = spec
+	} else if arg == "-" {
+		b, err := io.ReadAll(os.Stdin)
+		if err != nil {
+			return err
+		}
+
+		collectorContent = b
 	} else if _, err = os.Stat(arg); err == nil {
 		b, err := os.ReadFile(arg)
 		if err != nil {
