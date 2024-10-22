@@ -3,6 +3,7 @@ package cli
 import (
 	"os"
 	"strings"
+	"syscall"
 
 	"github.com/replicatedhq/troubleshoot/cmd/internal/util"
 	"github.com/replicatedhq/troubleshoot/pkg/k8sutil"
@@ -32,6 +33,10 @@ func RootCmd() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			v := viper.GetViper()
 
+			if err := checkAndSetChroot(v.GetString("chroot")); err != nil {
+				return err
+			}
+
 			return runCollect(v, args[0])
 		},
 		PostRun: func(cmd *cobra.Command, args []string) {
@@ -53,6 +58,7 @@ func RootCmd() *cobra.Command {
 	cmd.Flags().String("selector", "", "selector (label query) to filter remote collection nodes on.")
 	cmd.Flags().Bool("collect-without-permissions", false, "always generate a support bundle, even if it some require additional permissions")
 	cmd.Flags().Bool("debug", false, "enable debug logging")
+	cmf.Flags().String("chroot", "", "Chroot to path")
 
 	// hidden in favor of the `insecure-skip-tls-verify` flag
 	cmd.Flags().Bool("allow-insecure-connections", false, "when set, do not verify TLS certs when retrieving spec and reporting results")
@@ -71,6 +77,16 @@ func RootCmd() *cobra.Command {
 	util.AddProfilingFlags(cmd)
 
 	return cmd
+}
+
+func checkAndSetChroot(newroot string) error {
+	if newroot == "" {
+		return nil
+	}
+	if err := syscall.Chroot(newroot); err != nil {
+		return err
+	}
+	return nil
 }
 
 func InitAndExecute() {
