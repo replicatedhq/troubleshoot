@@ -110,7 +110,7 @@ func doRequest(method, url string, headers map[string]string, body string, insec
 		return nil, err
 	}
 
-	tlsConfig := &tls.Config{}
+	tlsConfig := &tls.Config{MinVersion: tls.VersionTLS12}
 	httpTransport := &http.Transport{}
 
 	if tlsParams != nil && tlsParams.CACert != "" {
