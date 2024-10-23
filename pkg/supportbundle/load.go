@@ -38,7 +38,6 @@ func GetSupportBundleFromURI(bundleURI string) (*troubleshootv1beta2.SupportBund
 }
 
 // ParseSupportBundle parses a support bundle from a byte array into a SupportBundle object
-// Deprecated: use loader.LoadSpecs instead
 func ParseSupportBundle(doc []byte, followURI bool) (*troubleshootv1beta2.SupportBundle, error) {
 	doc, err := docrewrite.ConvertToV1Beta2(doc)
 	if err != nil {
@@ -65,7 +64,9 @@ func ParseSupportBundle(doc []byte, followURI bool) (*troubleshootv1beta2.Suppor
 			ObjectMeta: collector.ObjectMeta,
 			Spec: troubleshootv1beta2.SupportBundleSpec{
 				Collectors:      collector.Spec.Collectors,
+				HostCollectors:  collector.Spec.HostCollectors,
 				Analyzers:       []*troubleshootv1beta2.Analyze{},
+				HostAnalyzers:   []*troubleshootv1beta2.HostAnalyze{},
 				AfterCollection: collector.Spec.AfterCollection,
 			},
 		}
@@ -102,13 +103,13 @@ func ParseSupportBundle(doc []byte, followURI bool) (*troubleshootv1beta2.Suppor
 }
 
 // ParseSupportBundle parses a support bundle from a byte array into a SupportBundle object
-// Deprecated: use loader.LoadSpecs instead
+// We will deprecate this in favour of use loader.LoadSpecs once the new API is stable
 func ParseSupportBundleFromDoc(doc []byte) (*troubleshootv1beta2.SupportBundle, error) {
 	return ParseSupportBundle(doc, true)
 }
 
 // GetRedactorFromURI parses a redactor from a URI into a Redactor object
-// Deprecated: use loader.LoadSpecs instead
+// We will deprecate this in favour of use loader.LoadSpecs once the new API is stable
 func GetRedactorFromURI(redactorURI string) (*troubleshootv1beta2.Redactor, error) {
 	redactorContent, err := LoadRedactorSpec(redactorURI)
 	if err != nil {
@@ -127,7 +128,7 @@ func GetRedactorFromURI(redactorURI string) (*troubleshootv1beta2.Redactor, erro
 }
 
 // GetRedactorsFromURIs parses redactors from a URIs Redactor objects
-// Deprecated: use loader.LoadSpecs instead
+// We will deprecate this in favour of use loader.LoadSpecs once the new API is stable
 func GetRedactorsFromURIs(redactorURIs []string) ([]*troubleshootv1beta2.Redact, error) {
 	redactors := []*troubleshootv1beta2.Redact{}
 	for _, redactor := range redactorURIs {
@@ -263,7 +264,7 @@ func loadSpecFromURL(arg string) ([]byte, error) {
 }
 
 // ParseRedactorsFromDocs parses a slice of YAML docs and returns a slice of Redactors
-// Deprecated: use loader.LoadSpecs instead
+// We will deprecate this in favour of use loader.LoadSpecs once the new API is stable
 func ParseRedactorsFromDocs(docs []string) ([]*troubleshootv1beta2.Redact, error) {
 	var redactors []*troubleshootv1beta2.Redact
 

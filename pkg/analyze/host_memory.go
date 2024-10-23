@@ -3,6 +3,7 @@ package analyzer
 import (
 	"encoding/json"
 	"fmt"
+	"reflect"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -26,95 +27,40 @@ func (a *AnalyzeHostMemory) IsExcluded() (bool, error) {
 func (a *AnalyzeHostMemory) Analyze(
 	getCollectedFileContents func(string) ([]byte, error), findFiles getChildCollectedFileContents,
 ) ([]*AnalyzeResult, error) {
-	hostAnalyzer := a.hostAnalyzer
+	result := AnalyzeResult{Title: a.Title()}
 
-	contents, err := getCollectedFileContents(collect.HostMemoryPath)
+	// Use the generic function to collect both local and remote data
+	collectedContents, err := retrieveCollectedContents(
+		getCollectedFileContents,
+		collect.HostMemoryPath,     // Local path
+		collect.NodeInfoBaseDir,    // Remote base directory
+		collect.HostMemoryFileName, // Remote file name
+	)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to get collected file")
+		return []*AnalyzeResult{&result}, err
 	}
 
-	memoryInfo := collect.MemoryInfo{}
-	if err := json.Unmarshal(contents, &memoryInfo); err != nil {
-		return nil, errors.Wrap(err, "failed to unmarshal memory info")
+	results, err := analyzeHostCollectorResults(collectedContents, a.hostAnalyzer.Outcomes, a.CheckCondition, a.Title())
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to analyze OS version")
 	}
 
-	result := AnalyzeResult{
-		Title: a.Title(),
-	}
-
-	for _, outcome := range hostAnalyzer.Outcomes {
-
-		if outcome.Fail != nil {
-			if outcome.Fail.When == "" {
-				result.IsFail = true
-				result.Message = outcome.Fail.Message
-				result.URI = outcome.Fail.URI
-
-				return []*AnalyzeResult{&result}, nil
-			}
-
-			isMatch, err := compareHostMemoryConditionalToActual(outcome.Fail.When, memoryInfo.Total)
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed to compare %s", outcome.Fail.When)
-			}
-
-			if isMatch {
-				result.IsFail = true
-				result.Message = outcome.Fail.Message
-				result.URI = outcome.Fail.URI
-
-				return []*AnalyzeResult{&result}, nil
-			}
-		} else if outcome.Warn != nil {
-			if outcome.Warn.When == "" {
-				result.IsWarn = true
-				result.Message = outcome.Warn.Message
-				result.URI = outcome.Warn.URI
-
-				return []*AnalyzeResult{&result}, nil
-			}
-
-			isMatch, err := compareHostMemoryConditionalToActual(outcome.Warn.When, memoryInfo.Total)
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed to compare %s", outcome.Warn.When)
-			}
-
-			if isMatch {
-				result.IsWarn = true
-				result.Message = outcome.Warn.Message
-				result.URI = outcome.Warn.URI
-
-				return []*AnalyzeResult{&result}, nil
-			}
-		} else if outcome.Pass != nil {
-			if outcome.Pass.When == "" {
-				result.IsPass = true
-				result.Message = outcome.Pass.Message
-				result.URI = outcome.Pass.URI
-
-				return []*AnalyzeResult{&result}, nil
-			}
-
-			isMatch, err := compareHostMemoryConditionalToActual(outcome.Pass.When, memoryInfo.Total)
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed to compare %s", outcome.Pass.When)
-			}
-
-			if isMatch {
-				result.IsPass = true
-				result.Message = outcome.Pass.Message
-				result.URI = outcome.Pass.URI
-
-				return []*AnalyzeResult{&result}, nil
-			}
-		}
-	}
-
-	return []*AnalyzeResult{&result}, nil
+	return results, nil
 }
 
-func compareHostMemoryConditionalToActual(conditional string, total uint64) (res bool, err error) {
-	parts := strings.Split(conditional, " ")
+// checkCondition checks the condition of the when clause
+func (a *AnalyzeHostMemory) CheckCondition(when string, data collectorData) (bool, error) {
+	rawData, ok := data.([]byte)
+	if !ok {
+		return false, fmt.Errorf("expected data to be []uint8 (raw bytes), got: %v", reflect.TypeOf(data))
+	}
+
+	var memInfo collect.MemoryInfo
+	if err := json.Unmarshal(rawData, &memInfo); err != nil {
+		return false, fmt.Errorf("failed to unmarshal data into MemoryInfo: %v", err)
+	}
+
+	parts := strings.Split(when, " ")
 	if len(parts) != 2 {
 		return false, fmt.Errorf("Expected 2 parts in conditional, got %d", len(parts))
 	}
@@ -129,19 +75,23 @@ func compareHostMemoryConditionalToActual(conditional string, total uint64) (res
 	if !ok {
 		return false, fmt.Errorf("could not parse quantity %q", desired)
 	}
+	if desiredInt < 0 {
+		return false, fmt.Errorf("desired value must be a positive integer, got %d", desiredInt)
+	}
 
 	switch operator {
 	case "<":
-		return total < uint64(desiredInt), nil
+		return memInfo.Total < uint64(desiredInt), nil
 	case "<=":
-		return total <= uint64(desiredInt), nil
+		return memInfo.Total <= uint64(desiredInt), nil
 	case ">":
-		return total > uint64(desiredInt), nil
+		return memInfo.Total > uint64(desiredInt), nil
 	case ">=":
-		return total >= uint64(desiredInt), nil
+		return memInfo.Total >= uint64(desiredInt), nil
 	case "=", "==", "===":
-		return total == uint64(desiredInt), nil
+		return memInfo.Total == uint64(desiredInt), nil
+	default:
+		return false, fmt.Errorf("unsupported operator: %q", operator)
 	}
 
-	return false, errors.New("unknown operator")
 }
