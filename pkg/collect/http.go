@@ -117,9 +117,6 @@ func doRequest(method, url string, headers map[string]string, body string, insec
 		if isPEMCertificate(tlsParams.CACert) {
 			klog.V(2).Infof("Using PEM certificate from spec\n")
 			certPool := x509.NewCertPool()
-			if err != nil {
-				return nil, errors.Wrap(err, "failed to get system cert pool")
-			}
 			if !certPool.AppendCertsFromPEM([]byte(tlsParams.CACert)) {
 				return nil, errors.New("failed to append certificate to cert pool")
 			}
