@@ -214,7 +214,7 @@ func collectRemoteHost(ctx context.Context, collectSpecs []*troubleshootv1beta2.
 	opts.KubernetesRestConfig.UserAgent = fmt.Sprintf("%s/%s", constants.DEFAULT_CLIENT_USER_AGENT, version.Version())
 
 	// Run remote collectors sequentially
-	for i, spec := range collectSpecs {
+	for _, spec := range collectSpecs {
 		collector, ok := collect.GetHostCollector(spec, bundlePath)
 		if !ok {
 			opts.ProgressChan <- "Host collector not found"
@@ -227,19 +227,16 @@ func collectRemoteHost(ctx context.Context, collectSpecs []*troubleshootv1beta2.
 
 		isExcluded, _ := collector.IsExcluded()
 		if isExcluded {
-			opts.ProgressChan <- fmt.Sprintf("[%s] Excluding host collector", collector.Title())
+			msg := fmt.Sprintf("[%s] Excluding host collector", collector.Title())
+			opts.CollectorProgressCallback(opts.ProgressChan, msg)
 			span.SetAttributes(attribute.Bool(constants.EXCLUDED, true))
 			span.End()
 			continue
 		}
 
 		// Send progress event: starting the collector
-		opts.ProgressChan <- collect.CollectProgress{
-			CurrentName:    collector.Title(),
-			CurrentStatus:  "running",
-			CompletedCount: i,
-			TotalCount:     len(collectSpecs),
-		}
+		msg := fmt.Sprintf("[%s] Running host collector...", collector.Title())
+		opts.CollectorProgressCallback(opts.ProgressChan, msg)
 
 		// Parameters for remote collection
 		params := &collect.RemoteCollectParams{
@@ -260,13 +257,13 @@ func collectRemoteHost(ctx context.Context, collectSpecs []*troubleshootv1beta2.
 		result, err := collect.RemoteHostCollect(ctx, *params)
 		if err != nil {
 			span.SetStatus(codes.Error, err.Error())
-			opts.ProgressChan <- fmt.Sprintf("[%s] Error: %v", collector.Title(), err)
+			msg = fmt.Sprintf("[%s] Error: %v", collector.Title(), err)
+			opts.CollectorProgressCallback(opts.ProgressChan, msg)
 			return errors.Wrap(err, "failed to run remote host collector")
 		}
 
 		// Send progress event: completed successfully
-		msg := fmt.Sprintf("[%s] Completed host collector", collector.Title())
-
+		msg = fmt.Sprintf("[%s] Completed host collector", collector.Title())
 		opts.CollectorProgressCallback(opts.ProgressChan, msg)
 
 		// Aggregate the results
