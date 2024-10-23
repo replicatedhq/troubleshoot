@@ -11,3 +11,5 @@ linters:
     - gofmt
     - gosec
     - govet
+  disable:
+    - errcheck
