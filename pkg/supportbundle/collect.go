@@ -214,7 +214,7 @@ func collectRemoteHost(ctx context.Context, collectSpecs []*troubleshootv1beta2.
 	opts.KubernetesRestConfig.UserAgent = fmt.Sprintf("%s/%s", constants.DEFAULT_CLIENT_USER_AGENT, version.Version())
 
 	// Run remote collectors sequentially
-	for _, spec := range collectSpecs {
+	for i, spec := range collectSpecs {
 		collector, ok := collect.GetHostCollector(spec, bundlePath)
 		if !ok {
 			opts.ProgressChan <- "Host collector not found"
@@ -234,7 +234,12 @@ func collectRemoteHost(ctx context.Context, collectSpecs []*troubleshootv1beta2.
 		}
 
 		// Send progress event: starting the collector
-		opts.ProgressChan <- fmt.Sprintf("[%s] Running host collector...", collector.Title())
+		opts.ProgressChan <- collect.CollectProgress{
+			CurrentName:    collector.Title(),
+			CurrentStatus:  "running",
+			CompletedCount: i,
+			TotalCount:     len(collectSpecs),
+		}
 
 		// Parameters for remote collection
 		params := &collect.RemoteCollectParams{
@@ -260,7 +265,9 @@ func collectRemoteHost(ctx context.Context, collectSpecs []*troubleshootv1beta2.
 		}
 
 		// Send progress event: completed successfully
-		opts.ProgressChan <- fmt.Sprintf("[%s] Completed host collector", collector.Title())
+		msg := fmt.Sprintf("[%s] Completed host collector", collector.Title())
+
+		opts.CollectorProgressCallback(opts.ProgressChan, msg)
 
 		// Aggregate the results
 		for k, v := range result {
