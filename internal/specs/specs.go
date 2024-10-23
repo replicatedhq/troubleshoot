@@ -224,7 +224,7 @@ func LoadFromCLIArgs(ctx context.Context, client kubernetes.Interface, args []st
 			if kinds.IsEmpty() {
 				return nil, types.NewExitCodeError(constants.EXIT_CODE_SPEC_ISSUES, err)
 			}
-			klog.Warningf("failed to load specs from the cluster: %v", err)
+			fmt.Printf("failed to load specs from the cluster: %v\n", err)
 		} else {
 			kinds.Add(clusterKinds)
 		}
