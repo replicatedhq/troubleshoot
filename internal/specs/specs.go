@@ -221,10 +221,14 @@ func LoadFromCLIArgs(ctx context.Context, client kubernetes.Interface, args []st
 	if vp.GetBool("load-cluster-specs") {
 		clusterKinds, err := LoadFromCluster(ctx, client, vp.GetStringSlice("selector"), vp.GetString("namespace"))
 		if err != nil {
-			return nil, types.NewExitCodeError(constants.EXIT_CODE_SPEC_ISSUES, err)
+			if kinds.IsEmpty() {
+				return nil, types.NewExitCodeError(constants.EXIT_CODE_SPEC_ISSUES, err)
+			}
+			// TODO: Consider colour coding and graceful failures when loading specs
+			fmt.Printf("failed to load specs from the cluster: %v\n", err)
+		} else {
+			kinds.Add(clusterKinds)
 		}
-
-		kinds.Add(clusterKinds)
 	}
 
 	return kinds, nil
