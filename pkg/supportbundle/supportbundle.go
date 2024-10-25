@@ -308,9 +308,9 @@ func getNodeList(clientset kubernetes.Interface, opts SupportBundleCreateOpts) (
 
 	nodeList := NodeList{}
 	for _, node := range nodes.Items {
-		if isMasterNode(node) {
-			continue
-		}
+		// if isMasterNode(node) {
+		// 	continue
+		// }
 		nodeList.Nodes = append(nodeList.Nodes, node.Name)
 	}
 
