@@ -2,11 +2,6 @@ package cli
 
 import (
 	"fmt"
-	"io/ioutil"
-	"os"
-	"path"
-	"strings"
-	"time"
 
 	"github.com/mitchellh/go-wordwrap"
 	"github.com/pkg/errors"
@@ -20,7 +15,6 @@ import (
 var (
 	selectedResult = 0
 	table          = widgets.NewTable()
-	isShowingSaved = false
 )
 
 func showInteractiveResults(supportBundleName string, analyzeResults []*analyzerunner.AnalyzeResult, archivePath string) error {
@@ -28,7 +22,7 @@ func showInteractiveResults(supportBundleName string, analyzeResults []*analyzer
 		return errors.Wrap(err, "failed to create terminal ui")
 	}
 	defer ui.Close()
-	drawUI(supportBundleName, analyzeResults)
+	drawUI(supportBundleName, analyzeResults, archivePath)
 
 	uiEvents := ui.PollEvents()
 	for {
@@ -38,29 +32,10 @@ func showInteractiveResults(supportBundleName string, analyzeResults []*analyzer
 			case "<C-c>":
 				return nil
 			case "q":
-				if isShowingSaved == true {
-					isShowingSaved = false
-					ui.Clear()
-					drawUI(supportBundleName, analyzeResults)
-				} else {
-					return nil
-				}
-			case "s":
-				filename, err := save(analyzeResults)
-				if err != nil {
-					// show
-				} else {
-					showSaved(filename, archivePath)
-					go func() {
-						time.Sleep(time.Second * 5)
-						isShowingSaved = false
-						ui.Clear()
-						drawUI(supportBundleName, analyzeResults)
-					}()
-				}
+				return nil
 			case "<Resize>":
 				ui.Clear()
-				drawUI(supportBundleName, analyzeResults)
+				drawUI(supportBundleName, analyzeResults, archivePath)
 			case "<Down>":
 				if selectedResult < len(analyzeResults)-1 {
 					selectedResult++
@@ -70,7 +45,7 @@ func showInteractiveResults(supportBundleName string, analyzeResults []*analyzer
 				}
 				table.ScrollDown()
 				ui.Clear()
-				drawUI(supportBundleName, analyzeResults)
+				drawUI(supportBundleName, analyzeResults, archivePath)
 			case "<Up>":
 				if selectedResult > 0 {
 					selectedResult--
@@ -80,16 +55,16 @@ func showInteractiveResults(supportBundleName string, analyzeResults []*analyzer
 				}
 				table.ScrollUp()
 				ui.Clear()
-				drawUI(supportBundleName, analyzeResults)
+				drawUI(supportBundleName, analyzeResults, archivePath)
 			}
 		}
 	}
 }
 
-func drawUI(supportBundleName string, analyzeResults []*analyzerunner.AnalyzeResult) {
+func drawUI(supportBundleName string, analyzeResults []*analyzerunner.AnalyzeResult, archivePath string) {
 	drawGrid(analyzeResults)
 	drawHeader(supportBundleName)
-	drawFooter()
+	drawFooter(archivePath)
 }
 
 func drawGrid(analyzeResults []*analyzerunner.AnalyzeResult) {
@@ -102,9 +77,7 @@ func drawHeader(supportBundleName string) {
 
 	title := widgets.NewParagraph()
 	title.Text = fmt.Sprintf("%s Support Bundle Analysis", util.AppName(supportBundleName))
-	title.TextStyle.Fg = ui.ColorWhite
-	title.TextStyle.Bg = ui.ColorClear
-	title.TextStyle.Modifier = ui.ModifierBold
+	title.TextStyle = ui.NewStyle(ui.ColorWhite, ui.ColorClear, ui.ModifierBold)
 	title.Border = false
 
 	left := termWidth/2 - 2*len(title.Text)/3
@@ -114,11 +87,18 @@ func drawHeader(supportBundleName string) {
 	ui.Render(title)
 }
 
-func drawFooter() {
+func drawFooter(archivePath string) {
 	termWidth, termHeight := ui.TerminalDimensions()
 
+	archivePathMsg := widgets.NewParagraph()
+	archivePathMsg.Text = "Support bundle archive: " + archivePath
+	archivePathMsg.Border = false
+	archivePathMsg.TextStyle = ui.NewStyle(ui.ColorWhite, ui.ColorClear, ui.ModifierBold)
+
+	archivePathMsg.SetRect(0, termHeight-3, termWidth, termHeight-2)
+
 	instructions := widgets.NewParagraph()
-	instructions.Text = "[q] quit    [s] save    [↑][↓] scroll"
+	instructions.Text = "[q] quit    [↑][↓] scroll"
 	instructions.Border = false
 
 	left := 0
@@ -127,13 +107,13 @@ func drawFooter() {
 	bottom := termHeight
 
 	instructions.SetRect(left, top, right, bottom)
-	ui.Render(instructions)
+	ui.Render(archivePathMsg, instructions)
 }
 
 func drawAnalyzersTable(analyzeResults []*analyzerunner.AnalyzeResult) {
 	termWidth, termHeight := ui.TerminalDimensions()
 
-	table.SetRect(0, 3, termWidth/2, termHeight-6)
+	table.SetRect(0, 3, termWidth/2, termHeight-4)
 	table.FillRow = true
 	table.Border = true
 	table.Rows = [][]string{}
@@ -213,79 +193,4 @@ func drawDetails(analysisResult *analyzerunner.AnalyzeResult) {
 	message.Border = false
 	message.SetRect(termWidth/2, currentTop, termWidth, currentTop+height)
 	ui.Render(message)
-}
-
-func showSaved(filename string, archivePath string) {
-	termWidth, termHeight := ui.TerminalDimensions()
-
-	f := `A support bundle was generated and saved at %s. 
-Please send this file to your software vendor for support.`
-	additionalMessageText := fmt.Sprintf(f, archivePath)
-
-	savedMessage := widgets.NewParagraph()
-	savedMessage.Text = fmt.Sprintf("Support Bundle analysis results saved to\n\n%s\n\n%s", filename, additionalMessageText)
-	savedMessage.WrapText = true
-	savedMessage.Border = true
-
-	// Split the text into lines and find the longest line
-	lines := strings.Split(savedMessage.Text, "\n")
-	maxLineLength := 0
-	for _, line := range lines {
-		if len(line) > maxLineLength {
-			// maxLineLength is set to half of the line length to prevent the showing text with more space than needed
-			maxLineLength = len(line)/2 + constants.MESSAGE_TEXT_PADDING
-		}
-	}
-
-	if maxLineLength > termWidth/2 {
-		maxLineLength = termWidth / 2
-	}
-
-	left := termWidth/2 - maxLineLength
-	right := termWidth/2 + maxLineLength
-	top := termHeight/2 - len(lines)
-	bottom := termHeight/2 + len(lines)
-
-	savedMessage.SetRect(left, top, right, bottom)
-	ui.Render(savedMessage)
-
-	isShowingSaved = true
-}
-
-func save(analyzeResults []*analyzerunner.AnalyzeResult) (string, error) {
-	filename := path.Join(util.HomeDir(), fmt.Sprintf("%s-results.txt", "support-bundle"))
-	_, err := os.Stat(filename)
-	if err == nil {
-		os.Remove(filename)
-	}
-
-	results := ""
-	for _, analyzeResult := range analyzeResults {
-		result := ""
-
-		if analyzeResult.IsPass {
-			result = "Check PASS\n"
-		} else if analyzeResult.IsWarn {
-			result = "Check WARN\n"
-		} else if analyzeResult.IsFail {
-			result = "Check FAIL\n"
-		}
-
-		result = result + fmt.Sprintf("Title: %s\n", analyzeResult.Title)
-		result = result + fmt.Sprintf("Message: %s\n", analyzeResult.Message)
-
-		if analyzeResult.URI != "" {
-			result = result + fmt.Sprintf("URI: %s\n", analyzeResult.URI)
-		}
-
-		result = result + "\n------------\n"
-
-		results = results + result
-	}
-
-	if err := ioutil.WriteFile(filename, []byte(results), 0644); err != nil {
-		return "", errors.Wrap(err, "failed to save preflight results")
-	}
-
-	return filename, nil
 }
