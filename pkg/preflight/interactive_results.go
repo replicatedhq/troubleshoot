@@ -130,7 +130,7 @@ func drawFooter() {
 func drawPreflightTable(analyzeResults []*analyzerunner.AnalyzeResult) {
 	termWidth, termHeight := ui.TerminalDimensions()
 
-	table.SetRect(0, 3, termWidth/2, termHeight-6)
+	table.SetRect(0, 3, termWidth/2, termHeight-4)
 	table.FillRow = true
 	table.Border = true
 	table.Rows = [][]string{}
