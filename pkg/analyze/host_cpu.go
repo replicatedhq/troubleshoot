@@ -59,9 +59,9 @@ func (a *AnalyzeHostCPU) Analyze(
 	// Use the generic function to collect both local and remote data
 	collectedContents, err := retrieveCollectedContents(
 		getCollectedFileContents,
-		collect.HostCPUPath,        // Local path
-		collect.NodeInfoBaseDir,    // Remote base directory
-		collect.HostMemoryFileName, // Remote file name
+		collect.HostCPUPath,     // Local path
+		collect.NodeInfoBaseDir, // Remote base directory
+		collect.HostCPUFileName, // Remote file name
 	)
 	if err != nil {
 		return []*AnalyzeResult{&result}, err
