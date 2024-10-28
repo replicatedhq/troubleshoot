@@ -11,8 +11,9 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func collectorToBytes(collector any) []byte {
-	jsonData, _ := json.Marshal(collector)
+func collectorToBytes(t *testing.T, collector any) []byte {
+	jsonData, err := json.Marshal(collector)
+	require.NoError(t, err)
 	return jsonData
 }
 
@@ -28,7 +29,7 @@ func TestAnalyzeHostCollectorResults(t *testing.T) {
 			collectedContent: []collectedContent{
 				{
 					NodeName: "node1",
-					Data: collectorToBytes(collect.HostOSInfo{
+					Data: collectorToBytes(t, collect.HostOSInfo{
 						Name:            "myhost",
 						KernelVersion:   "5.4.0-1034-gcp",
 						PlatformVersion: "00.1.2",
@@ -62,7 +63,7 @@ func TestAnalyzeHostCollectorResults(t *testing.T) {
 			collectedContent: []collectedContent{
 				{
 					NodeName: "node1",
-					Data: collectorToBytes(collect.HostOSInfo{
+					Data: collectorToBytes(t, collect.HostOSInfo{
 						Name:            "myhost",
 						KernelVersion:   "5.4.0-1034-gcp",
 						PlatformVersion: "11.04",
@@ -71,7 +72,7 @@ func TestAnalyzeHostCollectorResults(t *testing.T) {
 				},
 				{
 					NodeName: "node2",
-					Data: collectorToBytes(collect.HostOSInfo{
+					Data: collectorToBytes(t, collect.HostOSInfo{
 						Name:            "myhost",
 						KernelVersion:   "5.4.0-1034-gcp",
 						PlatformVersion: "11.04",
@@ -110,7 +111,7 @@ func TestAnalyzeHostCollectorResults(t *testing.T) {
 			collectedContent: []collectedContent{
 				{
 					NodeName: "",
-					Data: collectorToBytes(collect.HostOSInfo{
+					Data: collectorToBytes(t, collect.HostOSInfo{
 						Name:            "myhost",
 						KernelVersion:   "5.4.0-1034-gcp",
 						PlatformVersion: "20.04",
