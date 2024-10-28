@@ -1,6 +1,7 @@
 package analyzer
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/pkg/errors"
@@ -10,12 +11,16 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func collectorToBytes(collector any) []byte {
+	jsonData, _ := json.Marshal(collector)
+	return jsonData
+}
+
 func TestAnalyzeHostCollectorResults(t *testing.T) {
 	tests := []struct {
 		name             string
 		outcomes         []*troubleshootv1beta2.Outcome
 		collectedContent []collectedContent
-		checkCondition   func(string, collectorData) (bool, error)
 		expectResult     []*AnalyzeResult
 	}{
 		{
@@ -23,12 +28,12 @@ func TestAnalyzeHostCollectorResults(t *testing.T) {
 			collectedContent: []collectedContent{
 				{
 					NodeName: "node1",
-					Data: collect.HostOSInfo{
+					Data: collectorToBytes(collect.HostOSInfo{
 						Name:            "myhost",
 						KernelVersion:   "5.4.0-1034-gcp",
 						PlatformVersion: "00.1.2",
 						Platform:        "ubuntu",
-					},
+					}),
 				},
 			},
 			outcomes: []*troubleshootv1beta2.Outcome{
@@ -44,10 +49,6 @@ func TestAnalyzeHostCollectorResults(t *testing.T) {
 					},
 				},
 			},
-			checkCondition: func(when string, data collectorData) (bool, error) {
-				osInfo := data.(collect.HostOSInfo)
-				return osInfo.Platform == "ubuntu" && osInfo.PlatformVersion >= "00.1.2", nil
-			},
 			expectResult: []*AnalyzeResult{
 				{
 					Title:   "Host OS Info - Node node1",
@@ -61,21 +62,21 @@ func TestAnalyzeHostCollectorResults(t *testing.T) {
 			collectedContent: []collectedContent{
 				{
 					NodeName: "node1",
-					Data: collect.HostOSInfo{
+					Data: collectorToBytes(collect.HostOSInfo{
 						Name:            "myhost",
 						KernelVersion:   "5.4.0-1034-gcp",
 						PlatformVersion: "11.04",
 						Platform:        "ubuntu",
-					},
+					}),
 				},
 				{
 					NodeName: "node2",
-					Data: collect.HostOSInfo{
+					Data: collectorToBytes(collect.HostOSInfo{
 						Name:            "myhost",
 						KernelVersion:   "5.4.0-1034-gcp",
 						PlatformVersion: "11.04",
 						Platform:        "ubuntu",
-					},
+					}),
 				},
 			},
 			outcomes: []*troubleshootv1beta2.Outcome{
@@ -90,10 +91,6 @@ func TestAnalyzeHostCollectorResults(t *testing.T) {
 						Message: "supported distribution",
 					},
 				},
-			},
-			checkCondition: func(when string, data collectorData) (bool, error) {
-				osInfo := data.(collect.HostOSInfo)
-				return osInfo.Platform == "ubuntu" && osInfo.PlatformVersion <= "11.04", nil
 			},
 			expectResult: []*AnalyzeResult{
 				{
@@ -113,12 +110,12 @@ func TestAnalyzeHostCollectorResults(t *testing.T) {
 			collectedContent: []collectedContent{
 				{
 					NodeName: "",
-					Data: collect.HostOSInfo{
+					Data: collectorToBytes(collect.HostOSInfo{
 						Name:            "myhost",
 						KernelVersion:   "5.4.0-1034-gcp",
 						PlatformVersion: "20.04",
 						Platform:        "ubuntu",
-					},
+					}),
 				},
 			},
 			outcomes: []*troubleshootv1beta2.Outcome{
@@ -134,10 +131,6 @@ func TestAnalyzeHostCollectorResults(t *testing.T) {
 					},
 				},
 			},
-			checkCondition: func(when string, data collectorData) (bool, error) {
-				osInfo := data.(collect.HostOSInfo)
-				return osInfo.Platform == "ubuntu" && osInfo.PlatformVersion >= "20.04", nil
-			},
 			expectResult: []*AnalyzeResult{
 				{
 					Title:   "Host OS Info", // Ensuring the title does not include node name if it's empty
@@ -150,8 +143,14 @@ func TestAnalyzeHostCollectorResults(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			a := AnalyzeHostOS{}
 			// Call the new analyzeHostCollectorResults function with the test data
-			result, err := analyzeHostCollectorResults(test.collectedContent, test.outcomes, test.checkCondition, "Host OS Info")
+			result, err := analyzeHostCollectorResults(
+				test.collectedContent,
+				test.outcomes,
+				a.CheckCondition,
+				"Host OS Info",
+			)
 			require.NoError(t, err)
 			assert.Equal(t, test.expectResult, result)
 		})
@@ -162,8 +161,8 @@ func TestEvaluateOutcomes(t *testing.T) {
 	tests := []struct {
 		name           string
 		outcomes       []*troubleshootv1beta2.Outcome
-		checkCondition func(string, collectorData) (bool, error)
-		data           collectorData
+		checkCondition func(string, []byte) (bool, error)
+		data           []byte
 		expectedResult []*AnalyzeResult
 	}{
 		{
@@ -176,11 +175,11 @@ func TestEvaluateOutcomes(t *testing.T) {
 					},
 				},
 			},
-			checkCondition: func(when string, data collectorData) (bool, error) {
+			checkCondition: func(when string, data []byte) (bool, error) {
 				// Return true if the condition being checked matches "failCondition"
 				return when == "failCondition", nil
 			},
-			data: "someData",
+			data: []byte("someData"),
 			expectedResult: []*AnalyzeResult{
 				{
 					Title:   "Test Title",
@@ -199,11 +198,11 @@ func TestEvaluateOutcomes(t *testing.T) {
 					},
 				},
 			},
-			checkCondition: func(when string, data collectorData) (bool, error) {
+			checkCondition: func(when string, data []byte) (bool, error) {
 				// Return true if the condition being checked matches "warnCondition"
 				return when == "warnCondition", nil
 			},
-			data: "someData",
+			data: []byte("someData"),
 			expectedResult: []*AnalyzeResult{
 				{
 					Title:   "Test Title",
@@ -222,11 +221,11 @@ func TestEvaluateOutcomes(t *testing.T) {
 					},
 				},
 			},
-			checkCondition: func(when string, data collectorData) (bool, error) {
+			checkCondition: func(when string, data []byte) (bool, error) {
 				// Return true if the condition being checked matches "passCondition"
 				return when == "passCondition", nil
 			},
-			data: "someData",
+			data: []byte("someData"),
 			expectedResult: []*AnalyzeResult{
 				{
 					Title:   "Test Title",
@@ -253,11 +252,11 @@ func TestEvaluateOutcomes(t *testing.T) {
 					},
 				},
 			},
-			checkCondition: func(when string, data collectorData) (bool, error) {
+			checkCondition: func(when string, data []byte) (bool, error) {
 				// Always return false to simulate no condition matching
 				return false, nil
 			},
-			data:           "someData",
+			data:           []byte("someData"),
 			expectedResult: nil, // No condition matches, so we expect no results
 		},
 		{
@@ -270,11 +269,11 @@ func TestEvaluateOutcomes(t *testing.T) {
 					},
 				},
 			},
-			checkCondition: func(when string, data collectorData) (bool, error) {
+			checkCondition: func(when string, data []byte) (bool, error) {
 				// Simulate an error occurring during condition evaluation
 				return false, errors.New("mock error")
 			},
-			data: "someData",
+			data: []byte("someData"),
 			expectedResult: []*AnalyzeResult{
 				{
 					Title:  "Test Title",

@@ -3,7 +3,6 @@ package analyzer
 import (
 	"encoding/json"
 	"fmt"
-	"reflect"
 	"slices"
 	"strconv"
 	"strings"
@@ -35,15 +34,10 @@ func (a *AnalyzeHostCPU) IsExcluded() (bool, error) {
 	return isExcluded(a.hostAnalyzer.Exclude)
 }
 
-func (a *AnalyzeHostCPU) CheckCondition(when string, data collectorData) (bool, error) {
-	rawData, ok := data.([]byte)
-
-	if !ok {
-		return false, fmt.Errorf("expected data to be []uint8 (raw bytes), got: %v", reflect.TypeOf(data))
-	}
+func (a *AnalyzeHostCPU) CheckCondition(when string, data []byte) (bool, error) {
 
 	cpuInfo := collect.CPUInfo{}
-	if err := json.Unmarshal(rawData, &cpuInfo); err != nil {
+	if err := json.Unmarshal(data, &cpuInfo); err != nil {
 		return false, fmt.Errorf("failed to unmarshal data into CPUInfo: %v", err)
 	}
 
