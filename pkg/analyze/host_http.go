@@ -3,7 +3,7 @@ package analyzer
 import (
 	"encoding/json"
 	"fmt"
-	"path/filepath"
+	"reflect"
 	"strconv"
 	"strings"
 
@@ -32,14 +32,31 @@ func (a *AnalyzeHostHTTP) IsExcluded() (bool, error) {
 func (a *AnalyzeHostHTTP) Analyze(
 	getCollectedFileContents func(string) ([]byte, error), findFiles getChildCollectedFileContents,
 ) ([]*AnalyzeResult, error) {
-	hostAnalyzer := a.hostAnalyzer
 
-	name := filepath.Join("host-collectors/http", "result.json")
-	if hostAnalyzer.CollectorName != "" {
-		name = filepath.Join("host-collectors/http", hostAnalyzer.CollectorName+".json")
+	collectorName := a.hostAnalyzer.CollectorName
+	if collectorName == "" {
+		collectorName = "result"
 	}
 
-	return analyzeHTTPResult(hostAnalyzer, name, getCollectedFileContents, a.Title())
+	localPath := fmt.Sprintf("host-collector/http/%s.json", collectorName)
+	fileName := fmt.Sprintf("%s.json", collectorName)
+
+	collectedContents, err := retrieveCollectedContents(
+		getCollectedFileContents,
+		localPath,
+		collect.NodeInfoBaseDir,
+		fileName,
+	)
+	if err != nil {
+		return []*AnalyzeResult{{Title: a.Title()}}, err
+	}
+
+	results, err := analyzeHostCollectorResults(collectedContents, a.hostAnalyzer.Outcomes, a.CheckCondition, a.Title())
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to analyze http request")
+	}
+
+	return results, nil
 }
 
 func compareHostHTTPConditionalToActual(conditional string, result *httpResult) (res bool, err error) {
@@ -155,4 +172,17 @@ func analyzeHTTPResult(analyzer *troubleshootv1beta2.HTTPAnalyze, fileName strin
 	}
 
 	return []*AnalyzeResult{result}, nil
+}
+
+func (a *AnalyzeHostHTTP) CheckCondition(when string, data collectorData) (bool, error) {
+	rawData, ok := data.([]byte)
+	if !ok {
+		return false, fmt.Errorf("expected data to be []uint8 (raw bytes), got: %v", reflect.TypeOf(data))
+	}
+
+	var httpInfo httpResult
+	if err := json.Unmarshal(rawData, &httpInfo); err != nil {
+		return false, fmt.Errorf("failed to unmarshal data into httpResult: %v", err)
+	}
+	return compareHostHTTPConditionalToActual(when, &httpInfo)
 }
