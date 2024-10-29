@@ -18,6 +18,7 @@ require (
 	github.com/godbus/dbus/v5 v5.1.0
 	github.com/google/gofuzz v1.2.0
 	github.com/google/uuid v1.6.0
+	github.com/gopacket/gopacket v1.2.0
 	github.com/gorilla/handlers v1.5.2
 	github.com/hashicorp/go-getter v1.7.6
 	github.com/hashicorp/go-multierror v1.1.1
