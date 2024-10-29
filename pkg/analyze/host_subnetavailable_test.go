@@ -32,6 +32,8 @@ func TestAnalyzeSubnetAvailable(t *testing.T) {
 							When:    "a-subnet-is-available",
 							Message: "available /22 subnet found",
 						},
+					},
+					{
 						Fail: &troubleshootv1beta2.SingleOutcome{
 							When:    "no-subnet-available",
 							Message: "failed to find available subnet",
@@ -44,6 +46,37 @@ func TestAnalyzeSubnetAvailable(t *testing.T) {
 					Title:   "Subnet Available",
 					IsPass:  true,
 					Message: "available /22 subnet found",
+				},
+			},
+		},
+		{
+			name: "subnet not available",
+			info: &collect.SubnetAvailableResult{
+				CIDRRangeAlloc: "10.0.0.0/8",
+				DesiredCIDR:    22,
+				Status:         collect.SubnetStatusNoneAvailable,
+			},
+			hostAnalyzer: &troubleshootv1beta2.SubnetAvailableAnalyze{
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							When:    "a-subnet-is-available",
+							Message: "available /22 subnet found",
+						},
+					},
+					{
+						Fail: &troubleshootv1beta2.SingleOutcome{
+							When:    "no-subnet-available",
+							Message: "failed to find available subnet",
+						},
+					},
+				},
+			},
+			result: []*AnalyzeResult{
+				{
+					Title:   "Subnet Available",
+					IsFail:  true,
+					Message: "failed to find available subnet",
 				},
 			},
 		},

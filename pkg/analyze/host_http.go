@@ -38,7 +38,7 @@ func (a *AnalyzeHostHTTP) Analyze(
 		collectorName = "result"
 	}
 
-	localPath := fmt.Sprintf("host-collector/http/%s.json", collectorName)
+	localPath := fmt.Sprintf("host-collectors/http/%s.json", collectorName)
 	fileName := fmt.Sprintf("%s.json", collectorName)
 
 	collectedContents, err := retrieveCollectedContents(
