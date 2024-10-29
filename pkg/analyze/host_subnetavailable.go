@@ -2,7 +2,7 @@ package analyzer
 
 import (
 	"encoding/json"
-	"path/filepath"
+	"fmt"
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
@@ -24,61 +24,42 @@ func (a *AnalyzeHostSubnetAvailable) IsExcluded() (bool, error) {
 func (a *AnalyzeHostSubnetAvailable) Analyze(
 	getCollectedFileContents func(string) ([]byte, error), findFiles getChildCollectedFileContents,
 ) ([]*AnalyzeResult, error) {
-	hostAnalyzer := a.hostAnalyzer
-
-	name := filepath.Join("host-collectors/subnetAvailable", "result.json")
-	if hostAnalyzer.CollectorName != "" {
-		name = filepath.Join("host-collectors/subnetAvailable", hostAnalyzer.CollectorName+".json")
+	collectorName := a.hostAnalyzer.CollectorName
+	if collectorName == "" {
+		collectorName = "result"
 	}
-	contents, err := getCollectedFileContents(name)
+
+	localPath := fmt.Sprintf("host-collectors/subnetAvailable/%s.json", collectorName)
+	fileName := fmt.Sprintf("%s.json", collectorName)
+
+	collectedContents, err := retrieveCollectedContents(
+		getCollectedFileContents,
+		localPath,
+		collect.NodeInfoBaseDir,
+		fileName,
+	)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to get collected file")
+		return []*AnalyzeResult{{Title: a.Title()}}, err
+	}
+
+	results, err := analyzeHostCollectorResults(collectedContents, a.hostAnalyzer.Outcomes, a.CheckCondition, a.Title())
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to analyze HTTP Load Balancer")
+	}
+
+	return results, nil
+}
+
+func (a *AnalyzeHostSubnetAvailable) CheckCondition(when string, data collectorData) (bool, error) {
+	rawData, ok := data.([]byte)
+	if !ok {
+		return false, errors.Errorf("expected data to be []uint8 (raw bytes), got: %T", data)
 	}
 
 	isSubnetAvailable := &collect.SubnetAvailableResult{}
-	if err := json.Unmarshal(contents, isSubnetAvailable); err != nil {
-		return nil, errors.Wrap(err, "failed to unmarshal subnetAvailable result")
+	if err := json.Unmarshal(rawData, isSubnetAvailable); err != nil {
+		return false, errors.Wrap(err, "failed to unmarshal subnetAvailable result")
 	}
 
-	result := &AnalyzeResult{
-		Title: a.Title(),
-	}
-
-	for _, outcome := range hostAnalyzer.Outcomes {
-		if outcome.Fail != nil {
-			if outcome.Fail.When == "" {
-				result.IsFail = true
-				result.Message = outcome.Fail.Message
-				result.URI = outcome.Fail.URI
-
-				return []*AnalyzeResult{result}, nil
-			}
-
-			if string(isSubnetAvailable.Status) == outcome.Fail.When {
-				result.IsFail = true
-				result.Message = outcome.Fail.Message
-				result.URI = outcome.Fail.URI
-
-				return []*AnalyzeResult{result}, nil
-			}
-		} else if outcome.Pass != nil {
-			if outcome.Pass.When == "" {
-				result.IsPass = true
-				result.Message = outcome.Pass.Message
-				result.URI = outcome.Pass.URI
-
-				return []*AnalyzeResult{result}, nil
-			}
-
-			if string(isSubnetAvailable.Status) == outcome.Pass.When {
-				result.IsPass = true
-				result.Message = outcome.Pass.Message
-				result.URI = outcome.Pass.URI
-
-				return []*AnalyzeResult{result}, nil
-			}
-		}
-	}
-
-	return []*AnalyzeResult{result}, nil
+	return string(isSubnetAvailable.Status) == when, nil
 }
