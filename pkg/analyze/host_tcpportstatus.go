@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"path"
+	"reflect"
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
@@ -27,76 +28,42 @@ func (a *AnalyzeHostTCPPortStatus) IsExcluded() (bool, error) {
 func (a *AnalyzeHostTCPPortStatus) Analyze(
 	getCollectedFileContents func(string) ([]byte, error), findFiles getChildCollectedFileContents,
 ) ([]*AnalyzeResult, error) {
-	hostAnalyzer := a.hostAnalyzer
-
-	fullPath := path.Join("host-collectors/tcpPortStatus", "tcpPortStatus.json")
-	if hostAnalyzer.CollectorName != "" {
-		fullPath = path.Join("host-collectors/tcpPortStatus", fmt.Sprintf("%s.json", hostAnalyzer.CollectorName))
+	collectorName := a.hostAnalyzer.CollectorName
+	if collectorName == "" {
+		collectorName = "tcpPortStatus"
 	}
+	localPath := path.Join("host-collectors/tcpPortStatus", collectorName+".json")
+	fileName := collectorName + ".json"
 
-	collected, err := getCollectedFileContents(fullPath)
+	collectedContents, err := retrieveCollectedContents(
+		getCollectedFileContents,
+		localPath,
+		collect.NodeInfoBaseDir,
+		fileName,
+	)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to read collected file name: %s", fullPath)
-	}
-	actual := collect.NetworkStatusResult{}
-	if err := json.Unmarshal(collected, &actual); err != nil {
-		return nil, errors.Wrap(err, "failed to unmarshal collected")
+		return []*AnalyzeResult{{Title: a.Title()}}, err
 	}
 
-	result := &AnalyzeResult{Title: a.Title()}
-
-	for _, outcome := range hostAnalyzer.Outcomes {
-
-		if outcome.Fail != nil {
-			if outcome.Fail.When == "" {
-				result.IsFail = true
-				result.Message = outcome.Fail.Message
-				result.URI = outcome.Fail.URI
-
-				return []*AnalyzeResult{result}, nil
-			}
-
-			if string(actual.Status) == outcome.Fail.When {
-				result.IsFail = true
-				result.Message = outcome.Fail.Message
-				result.URI = outcome.Fail.URI
-
-				return []*AnalyzeResult{result}, nil
-			}
-		} else if outcome.Warn != nil {
-			if outcome.Warn.When == "" {
-				result.IsWarn = true
-				result.Message = outcome.Warn.Message
-				result.URI = outcome.Warn.URI
-
-				return []*AnalyzeResult{result}, nil
-			}
-
-			if string(actual.Status) == outcome.Warn.When {
-				result.IsWarn = true
-				result.Message = outcome.Warn.Message
-				result.URI = outcome.Warn.URI
-
-				return []*AnalyzeResult{result}, nil
-			}
-		} else if outcome.Pass != nil {
-			if outcome.Pass.When == "" {
-				result.IsPass = true
-				result.Message = outcome.Pass.Message
-				result.URI = outcome.Pass.URI
-
-				return []*AnalyzeResult{result}, nil
-			}
-
-			if string(actual.Status) == outcome.Pass.When {
-				result.IsPass = true
-				result.Message = outcome.Pass.Message
-				result.URI = outcome.Pass.URI
-
-				return []*AnalyzeResult{result}, nil
-			}
-		}
+	results, err := analyzeHostCollectorResults(collectedContents, a.hostAnalyzer.Outcomes, a.CheckCondition, a.Title())
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to analyze tcp port status")
 	}
 
-	return []*AnalyzeResult{result}, nil
+	return results, nil
+
+}
+
+func (a *AnalyzeHostTCPPortStatus) CheckCondition(when string, data collectorData) (bool, error) {
+	rawData, ok := data.([]byte)
+	if !ok {
+		return false, fmt.Errorf("expected data to be []uint8 (raw bytes), got: %v", reflect.TypeOf(data))
+	}
+
+	var tcpPortStatus collect.NetworkStatusResult
+	if err := json.Unmarshal(rawData, &tcpPortStatus); err != nil {
+		return false, fmt.Errorf("failed to unmarshal data into NetworkStatusResult: %v", err)
+	}
+
+	return string(tcpPortStatus.Status) == when, nil
 }
