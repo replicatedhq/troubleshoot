@@ -29,13 +29,15 @@ func (a *AnalyzeHostTCPConnect) Analyze(
 	if collectorName == "" {
 		collectorName = "connect"
 	}
-	localPath := fmt.Sprintf("host-collectors/connect/%s.json", collectorName)
+
+	const nodeBaseDir = "host-collectors/connect"
+	localPath := fmt.Sprintf("%s/%s.json", nodeBaseDir, collectorName)
 	fileName := fmt.Sprintf("%s.json", collectorName)
 
 	collectedContents, err := retrieveCollectedContents(
 		getCollectedFileContents,
 		localPath,
-		collect.NodeInfoBaseDir,
+		nodeBaseDir,
 		fileName,
 	)
 	if err != nil {

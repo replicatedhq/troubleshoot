@@ -38,13 +38,14 @@ func (a *AnalyzeHostHTTP) Analyze(
 		collectorName = "result"
 	}
 
-	localPath := fmt.Sprintf("host-collectors/http/%s.json", collectorName)
+	const nodeBaseDir = "host-collectors/http"
+	localPath := fmt.Sprintf("%s/%s.json", nodeBaseDir, collectorName)
 	fileName := fmt.Sprintf("%s.json", collectorName)
 
 	collectedContents, err := retrieveCollectedContents(
 		getCollectedFileContents,
 		localPath,
-		collect.NodeInfoBaseDir,
+		nodeBaseDir,
 		fileName,
 	)
 	if err != nil {

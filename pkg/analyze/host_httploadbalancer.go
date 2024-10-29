@@ -30,13 +30,14 @@ func (a *AnalyzeHostHTTPLoadBalancer) Analyze(
 		collectorName = "httpLoadBalancer"
 	}
 
-	localPath := fmt.Sprintf("host-collectors/httpLoadBalancer/%s.json", collectorName)
+	const nodeBaseDir = "host-collectors/httpLoadBalancer"
+	localPath := fmt.Sprintf("%s/%s.json", nodeBaseDir, collectorName)
 	fileName := fmt.Sprintf("%s.json", collectorName)
 
 	collectedContents, err := retrieveCollectedContents(
 		getCollectedFileContents,
 		localPath,
-		collect.NodeInfoBaseDir,
+		nodeBaseDir,
 		fileName,
 	)
 	if err != nil {

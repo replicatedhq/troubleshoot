@@ -3,7 +3,6 @@ package analyzer
 import (
 	"encoding/json"
 	"fmt"
-	"path"
 	"reflect"
 
 	"github.com/pkg/errors"
@@ -32,13 +31,15 @@ func (a *AnalyzeHostTCPPortStatus) Analyze(
 	if collectorName == "" {
 		collectorName = "tcpPortStatus"
 	}
-	localPath := path.Join("host-collectors/tcpPortStatus", collectorName+".json")
-	fileName := collectorName + ".json"
+
+	const nodeBaseDir = "host-collectors/tcpPortStatus"
+	localPath := fmt.Sprintf("%s/%s.json", nodeBaseDir, collectorName)
+	fileName := fmt.Sprintf("%s.json", collectorName)
 
 	collectedContents, err := retrieveCollectedContents(
 		getCollectedFileContents,
 		localPath,
-		collect.NodeInfoBaseDir,
+		nodeBaseDir,
 		fileName,
 	)
 	if err != nil {

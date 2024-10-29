@@ -31,13 +31,15 @@ func (a *AnalyzeHostUDPPortStatus) Analyze(
 	if collectorName == "" {
 		collectorName = "udpPortStatus"
 	}
-	localPath := fmt.Sprintf("host-collectors/udpPortStatus/%s.json", collectorName)
+
+	const nodeBaseDir = "host-collectors/udpPortStatus"
+	localPath := fmt.Sprintf("%s/%s.json", nodeBaseDir, collectorName)
 	fileName := fmt.Sprintf("%s.json", collectorName)
 
 	collectedContents, err := retrieveCollectedContents(
 		getCollectedFileContents,
 		localPath,
-		collect.NodeInfoBaseDir,
+		nodeBaseDir,
 		fileName,
 	)
 	if err != nil {
