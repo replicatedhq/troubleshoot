@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net"
-	"reflect"
 	"strconv"
 	"strings"
 
@@ -85,14 +84,10 @@ func compareHostIPV4InterfacesConditionalToActual(conditional string, ipv4Interf
 	return false, fmt.Errorf("Unknown operator %q. Supported operators are: <, <=, ==, >=, >", operator)
 }
 
-func (a *AnalyzeHostIPV4Interfaces) CheckCondition(when string, data collectorData) (bool, error) {
-	rawData, ok := data.([]byte)
-	if !ok {
-		return false, fmt.Errorf("expected data to be []uint8 (raw bytes), got: %v", reflect.TypeOf(data))
-	}
+func (a *AnalyzeHostIPV4Interfaces) CheckCondition(when string, data []byte) (bool, error) {
 
 	var ipv4Interfaces []net.Interface
-	if err := json.Unmarshal(rawData, &ipv4Interfaces); err != nil {
+	if err := json.Unmarshal(data, &ipv4Interfaces); err != nil {
 		return false, fmt.Errorf("failed to unmarshal data into []net.Interface: %v", err)
 	}
 

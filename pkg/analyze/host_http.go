@@ -3,7 +3,6 @@ package analyzer
 import (
 	"encoding/json"
 	"fmt"
-	"reflect"
 	"strconv"
 	"strings"
 
@@ -175,14 +174,10 @@ func analyzeHTTPResult(analyzer *troubleshootv1beta2.HTTPAnalyze, fileName strin
 	return []*AnalyzeResult{result}, nil
 }
 
-func (a *AnalyzeHostHTTP) CheckCondition(when string, data collectorData) (bool, error) {
-	rawData, ok := data.([]byte)
-	if !ok {
-		return false, fmt.Errorf("expected data to be []uint8 (raw bytes), got: %v", reflect.TypeOf(data))
-	}
+func (a *AnalyzeHostHTTP) CheckCondition(when string, data []byte) (bool, error) {
 
 	var httpInfo httpResult
-	if err := json.Unmarshal(rawData, &httpInfo); err != nil {
+	if err := json.Unmarshal(data, &httpInfo); err != nil {
 		return false, fmt.Errorf("failed to unmarshal data into httpResult: %v", err)
 	}
 	return compareHostHTTPConditionalToActual(when, &httpInfo)

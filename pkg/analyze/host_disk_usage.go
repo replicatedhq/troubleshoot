@@ -3,7 +3,6 @@ package analyzer
 import (
 	"encoding/json"
 	"fmt"
-	"reflect"
 	"strconv"
 	"strings"
 
@@ -138,14 +137,10 @@ func doCompareHostDiskUsagePercent(operator string, desired string, actual float
 	return false, errors.New("unknown operator")
 }
 
-func (a *AnalyzeHostDiskUsage) CheckCondition(when string, data collectorData) (bool, error) {
-	rawData, ok := data.([]byte)
-	if !ok {
-		return false, fmt.Errorf("expected data to be []uint8 (raw bytes), got: %v", reflect.TypeOf(data))
-	}
+func (a *AnalyzeHostDiskUsage) CheckCondition(when string, data []byte) (bool, error) {
 
 	var diskUsageInfo collect.DiskUsageInfo
-	if err := json.Unmarshal(rawData, &diskUsageInfo); err != nil {
+	if err := json.Unmarshal(data, &diskUsageInfo); err != nil {
 		return false, fmt.Errorf("failed to unmarshal data into DiskUsageInfo: %v", err)
 	}
 

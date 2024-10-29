@@ -3,7 +3,6 @@ package analyzer
 import (
 	"encoding/json"
 	"fmt"
-	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
@@ -141,14 +140,10 @@ func isEligibleBlockDevice(rx *regexp.Regexp, minimumAcceptableSize uint64, incl
 	return true
 }
 
-func (a *AnalyzeHostBlockDevices) CheckCondition(when string, data collectorData) (bool, error) {
-	rawData, ok := data.([]byte)
-	if !ok {
-		return false, fmt.Errorf("expected data to be []uint8 (raw bytes), got: %v", reflect.TypeOf(data))
-	}
+func (a *AnalyzeHostBlockDevices) CheckCondition(when string, data []byte) (bool, error) {
 
 	var devices []collect.BlockDeviceInfo
-	if err := json.Unmarshal(rawData, &devices); err != nil {
+	if err := json.Unmarshal(data, &devices); err != nil {
 		return false, errors.Wrap(err, "failed to unmarshal block devices info")
 	}
 

@@ -2,7 +2,6 @@ package analyzer
 
 import (
 	"fmt"
-	"reflect"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -52,11 +51,6 @@ func (a *AnalyzeHostCertificate) Analyze(
 	return results, nil
 }
 
-func (a *AnalyzeHostCertificate) CheckCondition(when string, data collectorData) (bool, error) {
-	rawData, ok := data.([]byte)
-	if !ok {
-		return false, fmt.Errorf("expected data to be []uint8 (raw bytes), got: %v", reflect.TypeOf(data))
-	}
-
-	return strings.TrimSpace(string(rawData)) == when, nil
+func (a *AnalyzeHostCertificate) CheckCondition(when string, data []byte) (bool, error) {
+	return strings.TrimSpace(string(data)) == when, nil
 }

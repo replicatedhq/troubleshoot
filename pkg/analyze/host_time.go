@@ -3,7 +3,6 @@ package analyzer
 import (
 	"encoding/json"
 	"fmt"
-	"reflect"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -92,14 +91,10 @@ func compareHostTimeStatusToActual(status string, timeInfo collect.TimeInfo) (re
 	return false, fmt.Errorf("Unknown keyword: %s", parts[0])
 }
 
-func (a *AnalyzeHostTime) CheckCondition(when string, data collectorData) (bool, error) {
-	rawData, ok := data.([]byte)
-	if !ok {
-		return false, fmt.Errorf("expected data to be []uint8 (raw bytes), got: %v", reflect.TypeOf(data))
-	}
+func (a *AnalyzeHostTime) CheckCondition(when string, data []byte) (bool, error) {
 
 	var timeInfo collect.TimeInfo
-	if err := json.Unmarshal(rawData, &timeInfo); err != nil {
+	if err := json.Unmarshal(data, &timeInfo); err != nil {
 		return false, fmt.Errorf("failed to unmarshal data into TimeInfo: %v", err)
 	}
 

@@ -3,7 +3,6 @@ package analyzer
 import (
 	"encoding/json"
 	"fmt"
-	"reflect"
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
@@ -52,14 +51,10 @@ func (a *AnalyzeHostHTTPLoadBalancer) Analyze(
 	return results, nil
 }
 
-func (a *AnalyzeHostHTTPLoadBalancer) CheckCondition(when string, data collectorData) (bool, error) {
-	rawData, ok := data.([]byte)
-	if !ok {
-		return false, fmt.Errorf("expected data to be []uint8 (raw bytes), got: %v", reflect.TypeOf(data))
-	}
+func (a *AnalyzeHostHTTPLoadBalancer) CheckCondition(when string, data []byte) (bool, error) {
 
 	var httpLoadBalancer collect.NetworkStatusResult
-	if err := json.Unmarshal(rawData, &httpLoadBalancer); err != nil {
+	if err := json.Unmarshal(data, &httpLoadBalancer); err != nil {
 		return false, fmt.Errorf("failed to unmarshal data into NetworkStatusResult: %v", err)
 	}
 

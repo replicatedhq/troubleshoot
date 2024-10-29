@@ -50,14 +50,9 @@ func (a *AnalyzeHostSubnetAvailable) Analyze(
 	return results, nil
 }
 
-func (a *AnalyzeHostSubnetAvailable) CheckCondition(when string, data collectorData) (bool, error) {
-	rawData, ok := data.([]byte)
-	if !ok {
-		return false, errors.Errorf("expected data to be []uint8 (raw bytes), got: %T", data)
-	}
-
+func (a *AnalyzeHostSubnetAvailable) CheckCondition(when string, data []byte) (bool, error) {
 	isSubnetAvailable := &collect.SubnetAvailableResult{}
-	if err := json.Unmarshal(rawData, isSubnetAvailable); err != nil {
+	if err := json.Unmarshal(data, isSubnetAvailable); err != nil {
 		return false, errors.Wrap(err, "failed to unmarshal subnetAvailable result")
 	}
 

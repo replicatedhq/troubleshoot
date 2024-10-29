@@ -3,7 +3,6 @@ package analyzer
 import (
 	"encoding/json"
 	"fmt"
-	"reflect"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -119,14 +118,10 @@ func isServiceMatch(serviceName string, matchName string) bool {
 	return false
 }
 
-func (a *AnalyzeHostServices) CheckCondition(when string, data collectorData) (bool, error) {
-	rawData, ok := data.([]byte)
-	if !ok {
-		return false, fmt.Errorf("expected data to be []uint8 (raw bytes), got: %v", reflect.TypeOf(data))
-	}
+func (a *AnalyzeHostServices) CheckCondition(when string, data []byte) (bool, error) {
 
 	var services []collect.ServiceInfo
-	if err := json.Unmarshal(rawData, &services); err != nil {
+	if err := json.Unmarshal(data, &services); err != nil {
 		return false, fmt.Errorf("failed to unmarshal data into ServiceInfo: %v", err)
 	}
 
