@@ -10,10 +10,8 @@ import (
 
 type collectedContent struct {
 	NodeName string
-	Data     collectorData
+	Data     []byte
 }
-
-type collectorData interface{}
 
 type nodeNames struct {
 	Nodes []string `json:"nodes"`

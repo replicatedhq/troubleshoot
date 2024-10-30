@@ -25,6 +25,7 @@ type CollectHostKernelConfigs struct {
 type KConfigs map[string]string
 
 const HostKernelConfigsPath = `host-collectors/system/kernel-configs.json`
+const HostKernelConfigsFileName = `kernel-configs.json`
 
 const (
 	kConfigBuiltIn  string = "y"
