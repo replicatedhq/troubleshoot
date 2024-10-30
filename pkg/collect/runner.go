@@ -57,7 +57,7 @@ func (r *podRunner) run(ctx context.Context, collector *troubleshootv1beta2.Host
 	}
 
 	results <- map[string][]byte{
-		nodeName: []byte(logs),
+		nodeName: logs,
 	}
 
 	return nil
@@ -314,16 +314,16 @@ func WaitForPodCompleted(ctx context.Context, client kubernetes.Interface, names
 	})
 }
 
-func GetContainerLogs(ctx context.Context, client kubernetes.Interface, namespace string, podName string, containerName string, waitForComplete bool, interval time.Duration) (string, error) {
+func GetContainerLogs(ctx context.Context, client kubernetes.Interface, namespace string, podName string, containerName string, waitForComplete bool, interval time.Duration) ([]byte, error) {
 	if waitForComplete {
 		if err := WaitForPodCompleted(ctx, client, namespace, podName, interval); err != nil {
-			return "", err
+			return nil, err
 		}
 	}
 	return getContainerLogsInternal(ctx, client, namespace, podName, containerName, false)
 }
 
-func getContainerLogsInternal(ctx context.Context, client kubernetes.Interface, namespace string, podName string, containerName string, previous bool) (string, error) {
+func getContainerLogsInternal(ctx context.Context, client kubernetes.Interface, namespace string, podName string, containerName string, previous bool) ([]byte, error) {
 	var logs []byte
 	var err error
 
@@ -349,11 +349,11 @@ func getContainerLogsInternal(ctx context.Context, client kubernetes.Interface, 
 
 	err = retry.OnError(retry.DefaultBackoff, retryableFn, logsFn)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	if strings.Contains(string(logs), "Internal Error") {
-		return "", fmt.Errorf("Fetched log contains \"Internal Error\": %q", string(logs))
+		return nil, fmt.Errorf("Fetched log contains \"Internal Error\": %q", string(logs))
 	}
 
-	return string(logs), nil
+	return logs, nil
 }
