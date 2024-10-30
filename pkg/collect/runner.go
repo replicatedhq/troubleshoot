@@ -351,7 +351,7 @@ func getContainerLogsInternal(ctx context.Context, client kubernetes.Interface, 
 	if err != nil {
 		return nil, err
 	}
-	if strings.Contains(string(logs), "Internal Error") {
+	if bytes.Contains(logs, []byte("Internal Error")) {
 		return nil, fmt.Errorf("Fetched log contains \"Internal Error\": %q", string(logs))
 	}
 
