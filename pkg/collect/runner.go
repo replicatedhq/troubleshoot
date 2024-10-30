@@ -1,11 +1,11 @@
 package collect
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"fmt"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/pkg/errors"
