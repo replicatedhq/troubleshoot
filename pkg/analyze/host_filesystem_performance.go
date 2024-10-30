@@ -190,7 +190,8 @@ func (a *AnalyzeHostFilesystemPerformance) analyzeSingleNode(content collectedCo
 
 	for _, outcome := range hostAnalyzer.Outcomes {
 
-		if outcome.Fail != nil {
+		switch {
+		case outcome.Fail != nil:
 			if outcome.Fail.When == "" {
 				result.IsFail = true
 				result.Message = renderFSPerfOutcome(outcome.Fail.Message, fsPerf)
@@ -211,7 +212,7 @@ func (a *AnalyzeHostFilesystemPerformance) analyzeSingleNode(content collectedCo
 
 				return []*AnalyzeResult{result}, nil
 			}
-		} else if outcome.Warn != nil {
+		case outcome.Warn != nil:
 			if outcome.Warn.When == "" {
 				result.IsWarn = true
 				result.Message = renderFSPerfOutcome(outcome.Warn.Message, fsPerf)
@@ -232,7 +233,7 @@ func (a *AnalyzeHostFilesystemPerformance) analyzeSingleNode(content collectedCo
 
 				return []*AnalyzeResult{result}, nil
 			}
-		} else if outcome.Pass != nil {
+		case outcome.Pass != nil:
 			if outcome.Pass.When == "" {
 				result.IsPass = true
 				result.Message = renderFSPerfOutcome(outcome.Pass.Message, fsPerf)
@@ -253,7 +254,8 @@ func (a *AnalyzeHostFilesystemPerformance) analyzeSingleNode(content collectedCo
 
 				return []*AnalyzeResult{result}, nil
 			}
-
+		default:
+			return nil, errors.New("unexpected outcome")
 		}
 	}
 
