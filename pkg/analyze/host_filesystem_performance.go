@@ -29,7 +29,10 @@ func (a *AnalyzeHostFilesystemPerformance) IsExcluded() (bool, error) {
 func (a *AnalyzeHostFilesystemPerformance) Analyze(
 	getCollectedFileContents func(string) ([]byte, error), findFiles getChildCollectedFileContents,
 ) ([]*AnalyzeResult, error) {
+	result := &AnalyzeResult{Title: a.Title()}
+	hostAnalyzer := a.hostAnalyzer
 	collectorName := a.hostAnalyzer.CollectorName
+
 	if collectorName == "" {
 		collectorName = "filesystemPerformance"
 	}
@@ -44,7 +47,29 @@ func (a *AnalyzeHostFilesystemPerformance) Analyze(
 		fileName,
 	)
 	if err != nil {
-		return []*AnalyzeResult{{Title: a.Title()}}, err
+		if len(hostAnalyzer.Outcomes) >= 1 {
+			// if the very first outcome is FILE_NOT_COLLECTED', then use that outcome
+			// otherwise, return the error
+			if hostAnalyzer.Outcomes[0].Fail != nil && hostAnalyzer.Outcomes[0].Fail.When == FILE_NOT_COLLECTED {
+				result.IsFail = true
+				result.Message = renderFSPerfOutcome(hostAnalyzer.Outcomes[0].Fail.Message, collect.FSPerfResults{})
+				result.URI = hostAnalyzer.Outcomes[0].Fail.URI
+				return []*AnalyzeResult{result}, nil
+			}
+			if hostAnalyzer.Outcomes[0].Warn != nil && hostAnalyzer.Outcomes[0].Warn.When == FILE_NOT_COLLECTED {
+				result.IsWarn = true
+				result.Message = renderFSPerfOutcome(hostAnalyzer.Outcomes[0].Warn.Message, collect.FSPerfResults{})
+				result.URI = hostAnalyzer.Outcomes[0].Warn.URI
+				return []*AnalyzeResult{result}, nil
+			}
+			if hostAnalyzer.Outcomes[0].Pass != nil && hostAnalyzer.Outcomes[0].Pass.When == FILE_NOT_COLLECTED {
+				result.IsPass = true
+				result.Message = renderFSPerfOutcome(hostAnalyzer.Outcomes[0].Pass.Message, collect.FSPerfResults{})
+				result.URI = hostAnalyzer.Outcomes[0].Pass.URI
+				return []*AnalyzeResult{result}, nil
+			}
+			return nil, errors.Wrapf(err, "failed to get collected file %s", localPath)
+		}
 	}
 
 	var results []*AnalyzeResult
