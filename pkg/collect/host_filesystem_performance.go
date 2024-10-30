@@ -22,6 +22,8 @@ import (
 const (
 	FioJobName        = "fsperf"
 	DefaultFioRunTime = "120"
+	FioPath           = ""
+	FioFileName       = ""
 )
 
 type Durations []time.Duration

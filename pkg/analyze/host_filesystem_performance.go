@@ -27,51 +27,10 @@ func (a *AnalyzeHostFilesystemPerformance) IsExcluded() (bool, error) {
 	return isExcluded(a.hostAnalyzer.Exclude)
 }
 
-func (a *AnalyzeHostFilesystemPerformance) Analyze(
-	getCollectedFileContents func(string) ([]byte, error), findFiles getChildCollectedFileContents,
-) ([]*AnalyzeResult, error) {
-	hostAnalyzer := a.hostAnalyzer
-
-	result := &AnalyzeResult{
-		Title: a.Title(),
-	}
-
-	collectorName := hostAnalyzer.CollectorName
-	if collectorName == "" {
-		collectorName = "filesystemPerformance"
-	}
-	name := filepath.Join("host-collectors/filesystemPerformance", collectorName+".json")
-	contents, err := getCollectedFileContents(name)
-	if err != nil {
-		if len(hostAnalyzer.Outcomes) >= 1 {
-			// if the very first outcome is FILE_NOT_COLLECTED', then use that outcome
-			// otherwise, return the error
-			if hostAnalyzer.Outcomes[0].Fail != nil && hostAnalyzer.Outcomes[0].Fail.When == FILE_NOT_COLLECTED {
-				result.IsFail = true
-				result.Message = renderFSPerfOutcome(hostAnalyzer.Outcomes[0].Fail.Message, collect.FSPerfResults{})
-				result.URI = hostAnalyzer.Outcomes[0].Fail.URI
-				return []*AnalyzeResult{result}, nil
-			}
-			if hostAnalyzer.Outcomes[0].Warn != nil && hostAnalyzer.Outcomes[0].Warn.When == FILE_NOT_COLLECTED {
-				result.IsWarn = true
-				result.Message = renderFSPerfOutcome(hostAnalyzer.Outcomes[0].Warn.Message, collect.FSPerfResults{})
-				result.URI = hostAnalyzer.Outcomes[0].Warn.URI
-				return []*AnalyzeResult{result}, nil
-			}
-			if hostAnalyzer.Outcomes[0].Pass != nil && hostAnalyzer.Outcomes[0].Pass.When == FILE_NOT_COLLECTED {
-				result.IsPass = true
-				result.Message = renderFSPerfOutcome(hostAnalyzer.Outcomes[0].Pass.Message, collect.FSPerfResults{})
-				result.URI = hostAnalyzer.Outcomes[0].Pass.URI
-				return []*AnalyzeResult{result}, nil
-			}
-		}
-
-		return nil, errors.Wrapf(err, "failed to get collected file %s", name)
-	}
-
+func (a *AnalyzeHostFilesystemPerformance) CheckCondition(when string, data []byte) (bool, error) {
 	fioResult := collect.FioResult{}
-	if err := json.Unmarshal(contents, &fioResult); err != nil {
-		return nil, errors.Wrapf(err, "failed to unmarshal fio results from %s", name)
+	if err := json.Unmarshal(data, &fioResult); err != nil {
+		return false, fmt.Errorf("failed to unmarshal data into FioResult: %v", err)
 	}
 
 	var job *collect.FioJobs
@@ -82,86 +41,75 @@ func (a *AnalyzeHostFilesystemPerformance) Analyze(
 		}
 	}
 	if job == nil {
-		return nil, errors.Errorf("no job named 'fsperf' found in fio results from %s", name)
+		return false, errors.New("no job named 'fsperf' found in fio results")
 	}
 
 	fioWriteLatency := job.Sync
 
 	fsPerf := fioWriteLatency.FSPerfResults()
-	if err := json.Unmarshal(contents, &fsPerf); err != nil {
-		return nil, errors.Wrapf(err, "failed to unmarshal filesystem performance results from %s", name)
+	if err := json.Unmarshal(data, &fsPerf); err != nil {
+		return false, fmt.Errorf("failed to unmarshal filesystem performance results from %v", err)
 	}
 
-	for _, outcome := range hostAnalyzer.Outcomes {
+	return compareHostFilesystemPerformanceConditionalToActual(when, fsPerf)
+}
 
-		if outcome.Fail != nil {
-			if outcome.Fail.When == "" {
+func (a *AnalyzeHostFilesystemPerformance) Analyze(
+	getCollectedFileContents func(string) ([]byte, error), findFiles getChildCollectedFileContents,
+) ([]*AnalyzeResult, error) {
+	hostAnalyzer := a.hostAnalyzer
+	result := AnalyzeResult{Title: a.Title()}
+
+	collectorName := hostAnalyzer.CollectorName
+	if collectorName == "" {
+		collectorName = "filesystemPerformance"
+	}
+
+	name := collectorName + ".json"
+	localPath := filepath.Join("host-collectors", "filesystemPerformance", name)
+	collectedContents, err := retrieveCollectedContents(
+		getCollectedFileContents,
+		localPath,
+		collect.FioPath,
+		name,
+	)
+	if err != nil {
+		if len(hostAnalyzer.Outcomes) >= 1 {
+			// if the very first outcome is FILE_NOT_COLLECTED', then use that outcome
+			// otherwise, return the error
+			if hostAnalyzer.Outcomes[0].Fail != nil && hostAnalyzer.Outcomes[0].Fail.When == FILE_NOT_COLLECTED {
 				result.IsFail = true
-				result.Message = renderFSPerfOutcome(outcome.Fail.Message, fsPerf)
-				result.URI = outcome.Fail.URI
-
-				return []*AnalyzeResult{result}, nil
+				result.Message = renderFSPerfOutcome(hostAnalyzer.Outcomes[0].Fail.Message, collect.FSPerfResults{})
+				result.URI = hostAnalyzer.Outcomes[0].Fail.URI
+				return []*AnalyzeResult{&result}, nil
 			}
-
-			isMatch, err := compareHostFilesystemPerformanceConditionalToActual(outcome.Fail.When, fsPerf)
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed to compare %q", outcome.Fail.When)
-			}
-
-			if isMatch {
-				result.IsFail = true
-				result.Message = renderFSPerfOutcome(outcome.Fail.Message, fsPerf)
-				result.URI = outcome.Fail.URI
-
-				return []*AnalyzeResult{result}, nil
-			}
-		} else if outcome.Warn != nil {
-			if outcome.Warn.When == "" {
+			if hostAnalyzer.Outcomes[0].Warn != nil && hostAnalyzer.Outcomes[0].Warn.When == FILE_NOT_COLLECTED {
 				result.IsWarn = true
-				result.Message = renderFSPerfOutcome(outcome.Warn.Message, fsPerf)
-				result.URI = outcome.Warn.URI
-
-				return []*AnalyzeResult{result}, nil
+				result.Message = renderFSPerfOutcome(hostAnalyzer.Outcomes[0].Warn.Message, collect.FSPerfResults{})
+				result.URI = hostAnalyzer.Outcomes[0].Warn.URI
+				return []*AnalyzeResult{&result}, nil
 			}
-
-			isMatch, err := compareHostFilesystemPerformanceConditionalToActual(outcome.Warn.When, fsPerf)
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed to compare %q", outcome.Warn.When)
-			}
-
-			if isMatch {
-				result.IsWarn = true
-				result.Message = renderFSPerfOutcome(outcome.Warn.Message, fsPerf)
-				result.URI = outcome.Warn.URI
-
-				return []*AnalyzeResult{result}, nil
-			}
-		} else if outcome.Pass != nil {
-			if outcome.Pass.When == "" {
+			if hostAnalyzer.Outcomes[0].Pass != nil && hostAnalyzer.Outcomes[0].Pass.When == FILE_NOT_COLLECTED {
 				result.IsPass = true
-				result.Message = renderFSPerfOutcome(outcome.Pass.Message, fsPerf)
-				result.URI = outcome.Pass.URI
-
-				return []*AnalyzeResult{result}, nil
+				result.Message = renderFSPerfOutcome(hostAnalyzer.Outcomes[0].Pass.Message, collect.FSPerfResults{})
+				result.URI = hostAnalyzer.Outcomes[0].Pass.URI
+				return []*AnalyzeResult{&result}, nil
 			}
-
-			isMatch, err := compareHostFilesystemPerformanceConditionalToActual(outcome.Pass.When, fsPerf)
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed to compare %q", outcome.Pass.When)
-			}
-
-			if isMatch {
-				result.IsPass = true
-				result.Message = renderFSPerfOutcome(outcome.Pass.Message, fsPerf)
-				result.URI = outcome.Pass.URI
-
-				return []*AnalyzeResult{result}, nil
-			}
-
 		}
 	}
 
-	return []*AnalyzeResult{result}, nil
+	results, err := analyzeHostCollectorResults(collectedContents, hostAnalyzer.Outcomes, a.CheckCondition, a.Title())
+
+	// TODO work out how to get fsPerf available here
+	// for _,result := range results {
+	// 	result.Message = renderFSPerfOutcome(result.Message, fsPerf)
+	// }
+
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to analyze fio results")
+	}
+
+	return results, nil
 }
 
 func compareHostFilesystemPerformanceConditionalToActual(conditional string, fsPerf collect.FSPerfResults) (res bool, err error) {
