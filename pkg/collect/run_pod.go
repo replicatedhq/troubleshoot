@@ -64,7 +64,7 @@ func (c *CollectRunPod) Collect(progressChan chan<- interface{}) (result Collect
 	if c.Collector.ImagePullSecret != nil && c.Collector.ImagePullSecret.Data != nil {
 		defer func() {
 			if c.Collector.ImagePullSecret.Name != "" {
-				if err := client.CoreV1().Secrets(pod.Namespace).Delete(context.Background(), c.Collector.ImagePullSecret.Name, metav1.DeleteOptions{}); err != nil {
+				if err := client.CoreV1().Secrets(pod.Namespace).Delete(ctx, c.Collector.ImagePullSecret.Name, metav1.DeleteOptions{}); err != nil {
 					klog.Errorf("Failed to delete secret %s: %v", c.Collector.ImagePullSecret.Name, err)
 				}
 			}
