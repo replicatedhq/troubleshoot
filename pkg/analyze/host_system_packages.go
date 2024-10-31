@@ -32,93 +32,40 @@ func (a *AnalyzeHostSystemPackages) Analyze(
 	getCollectedFileContents func(string) ([]byte, error), findFiles getChildCollectedFileContents,
 ) ([]*AnalyzeResult, error) {
 	hostAnalyzer := a.hostAnalyzer
-
-	packagesFileName := "host-collectors/system/packages.json"
-	if a.hostAnalyzer.CollectorName != "" {
-		packagesFileName = fmt.Sprintf("host-collectors/system/%s-packages.json", a.hostAnalyzer.CollectorName)
+	collectorName := hostAnalyzer.CollectorName
+	if collectorName == "" {
+		collectorName = "packages"
 	}
 
-	contents, err := getCollectedFileContents(packagesFileName)
+	localPath := fmt.Sprintf("%s/%s-packages.json", collect.NodeInfoBaseDir, collectorName)
+	packagesFileName := fmt.Sprintf("%s-packages.json", collectorName)
+
+	collectedContents, err := retrieveCollectedContents(
+		getCollectedFileContents,
+		localPath,
+		collect.NodeInfoBaseDir,
+		packagesFileName,
+	)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to get collected file")
+		return []*AnalyzeResult{{Title: a.Title()}}, err
 	}
 
-	var info collect.SystemPackagesInfo
-	if err := json.Unmarshal(contents, &info); err != nil {
-		return nil, errors.Wrap(err, "failed to unmarshal system packages info")
-	}
-
-	allResults := []*AnalyzeResult{}
-
-	for _, pkg := range info.Packages {
-		templateMap := getSystemPackageTemplateMap(pkg, info.OS, info.OSVersion)
-
-		for _, outcome := range hostAnalyzer.Outcomes {
-			r := AnalyzeResult{}
-			when := ""
-
-			if outcome.Fail != nil {
-				r.IsFail = true
-				r.Message = outcome.Fail.Message
-				r.URI = outcome.Fail.URI
-				when = outcome.Fail.When
-			} else if outcome.Warn != nil {
-				r.IsWarn = true
-				r.Message = outcome.Warn.Message
-				r.URI = outcome.Warn.URI
-				when = outcome.Warn.When
-			} else if outcome.Pass != nil {
-				r.IsPass = true
-				r.Message = outcome.Pass.Message
-				r.URI = outcome.Pass.URI
-				when = outcome.Pass.When
-			} else {
-				println("error: found an empty outcome in a systemPackages analyzer") // don't stop
-				continue
-			}
-
-			match, err := compareSystemPackagesConditionalToActual(when, templateMap)
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed to compare %s", when)
-			}
-
-			if !match {
-				continue
-			}
-
-			tmpl := template.New("package")
-
-			// template the title
-			titleTmpl, err := tmpl.Parse(a.Title())
-			if err != nil {
-				return nil, errors.Wrap(err, "failed to create new title template")
-			}
-			var t bytes.Buffer
-			err = titleTmpl.Execute(&t, templateMap)
-			if err != nil {
-				return nil, errors.Wrap(err, "failed to execute title template")
-			}
-			r.Title = t.String()
-
-			// template the message
-			msgTmpl, err := tmpl.Parse(r.Message)
-			if err != nil {
-				return nil, errors.Wrap(err, "failed to create new message template")
-			}
-			var m bytes.Buffer
-			err = msgTmpl.Execute(&m, templateMap)
-			if err != nil {
-				return nil, errors.Wrap(err, "failed to execute message template")
-			}
-			r.Message = m.String()
-
-			// add to results, break and check the next pod
-			allResults = append(allResults, &r)
-			break
+	var results []*AnalyzeResult
+	for _, content := range collectedContents {
+		currentTitle := a.Title()
+		if content.NodeName != "" {
+			currentTitle = fmt.Sprintf("%s - Node %s", a.Title(), content.NodeName)
+		}
+		result, err := a.analyzeSingleNode(content, currentTitle)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to analyze system packages for %s", currentTitle)
+		}
+		if result != nil {
+			results = append(results, result...)
 		}
 	}
 
-	return allResults, nil
+	return results, nil
 }
 
 func getSystemPackageTemplateMap(pkg collect.SystemPackage, osName string, osVersion string) map[string]interface{} {
@@ -230,4 +177,74 @@ func compareSystemPackagesConditionalToActual(conditional string, templateMap ma
 	}
 
 	return t, nil
+}
+
+func (a *AnalyzeHostSystemPackages) analyzeSingleNode(content collectedContent, currentTitle string) ([]*AnalyzeResult, error) {
+	hostAnalyzer := a.hostAnalyzer
+	var info collect.SystemPackagesInfo
+	if err := json.Unmarshal(content.Data, &info); err != nil {
+		return nil, errors.Wrapf(err, "failed to unmarshal system packages info from %s", currentTitle)
+	}
+
+	allResults := []*AnalyzeResult{}
+
+	for _, pkg := range info.Packages {
+		templateMap := getSystemPackageTemplateMap(pkg, info.OS, info.OSVersion)
+
+		for _, outcome := range hostAnalyzer.Outcomes {
+			r := AnalyzeResult{}
+			when := ""
+
+			if outcome.Fail != nil {
+				r.IsFail = true
+				r.Message = outcome.Fail.Message
+				r.URI = outcome.Fail.URI
+				when = outcome.Fail.When
+			} else if outcome.Warn != nil {
+				r.IsWarn = true
+				r.Message = outcome.Warn.Message
+				r.URI = outcome.Warn.URI
+				when = outcome.Warn.When
+			} else if outcome.Pass != nil {
+				r.IsPass = true
+				r.Message = outcome.Pass.Message
+				r.URI = outcome.Pass.URI
+				when = outcome.Pass.When
+			} else {
+				println("error: found an empty outcome in a systemPackages analyzer") // don't stop
+				continue
+			}
+
+			match, err := compareSystemPackagesConditionalToActual(when, templateMap)
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to compare %s", when)
+			}
+
+			if !match {
+				continue
+			}
+
+			tmpl := template.New("package")
+
+			r.Title = currentTitle
+
+			// template the message
+			msgTmpl, err := tmpl.Parse(r.Message)
+			if err != nil {
+				return nil, errors.Wrap(err, "failed to create new message template")
+			}
+			var m bytes.Buffer
+			err = msgTmpl.Execute(&m, templateMap)
+			if err != nil {
+				return nil, errors.Wrap(err, "failed to execute message template")
+			}
+			r.Message = m.String()
+
+			// add to results, break and check the next pod
+			allResults = append(allResults, &r)
+			break
+		}
+	}
+
+	return allResults, nil
 }
