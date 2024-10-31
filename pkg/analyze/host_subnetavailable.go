@@ -29,13 +29,14 @@ func (a *AnalyzeHostSubnetAvailable) Analyze(
 		collectorName = "result"
 	}
 
-	localPath := fmt.Sprintf("host-collectors/subnetAvailable/%s.json", collectorName)
+	const nodeBaseDir = "host-collectors/subnetAvailable"
+	localPath := fmt.Sprintf("%s/%s.json", nodeBaseDir, collectorName)
 	fileName := fmt.Sprintf("%s.json", collectorName)
 
 	collectedContents, err := retrieveCollectedContents(
 		getCollectedFileContents,
 		localPath,
-		collect.NodeInfoBaseDir,
+		nodeBaseDir,
 		fileName,
 	)
 	if err != nil {
