@@ -194,25 +194,24 @@ func (a *AnalyzeHostSystemPackages) analyzeSingleNode(content collectedContent, 
 		for _, outcome := range hostAnalyzer.Outcomes {
 			r := AnalyzeResult{}
 			when := ""
-
-			if outcome.Fail != nil {
+			switch {
+			case outcome.Fail != nil:
 				r.IsFail = true
 				r.Message = outcome.Fail.Message
 				r.URI = outcome.Fail.URI
 				when = outcome.Fail.When
-			} else if outcome.Warn != nil {
+			case outcome.Warn != nil:
 				r.IsWarn = true
 				r.Message = outcome.Warn.Message
 				r.URI = outcome.Warn.URI
 				when = outcome.Warn.When
-			} else if outcome.Pass != nil {
+			case outcome.Pass != nil:
 				r.IsPass = true
 				r.Message = outcome.Pass.Message
 				r.URI = outcome.Pass.URI
 				when = outcome.Pass.When
-			} else {
-				println("error: found an empty outcome in a systemPackages analyzer") // don't stop
-				continue
+			default:
+				return nil, errors.New("invalid outcome")
 			}
 
 			match, err := compareSystemPackagesConditionalToActual(when, templateMap)
