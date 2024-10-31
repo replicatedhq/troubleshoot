@@ -38,6 +38,8 @@ require (
 	github.com/spf13/viper v1.19.0
 	github.com/stretchr/testify v1.9.0
 	github.com/tj/go-spin v1.1.0
+	github.com/vishvananda/netlink v1.2.1-beta.2
+	github.com/vishvananda/netns v0.0.4
 	github.com/vmware-tanzu/velero v1.14.1
 	go.opentelemetry.io/otel v1.31.0
 	go.opentelemetry.io/otel/sdk v1.31.0
@@ -113,6 +115,7 @@ require (
 	github.com/shopspring/decimal v1.4.0 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/sourcegraph/conc v0.3.0 // indirect
+	github.com/stretchr/objx v0.5.2 // indirect
 	github.com/sylabs/sif/v2 v2.18.0 // indirect
 	github.com/tchap/go-patricia/v2 v2.3.1 // indirect
 	github.com/vladimirvivien/gexe v0.3.0 // indirect

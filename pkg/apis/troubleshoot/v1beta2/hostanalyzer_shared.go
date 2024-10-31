@@ -6,6 +6,12 @@ type CPUAnalyze struct {
 	Outcomes      []*Outcome `json:"outcomes" yaml:"outcomes"`
 }
 
+type NetworkNamespaceConnectivityAnalyze struct {
+	AnalyzeMeta   `json:",inline" yaml:",inline"`
+	CollectorName string     `json:"collectorName,omitempty" yaml:"collectorName,omitempty"`
+	Outcomes      []*Outcome `json:"outcomes" yaml:"outcomes"`
+}
+
 type MemoryAnalyze struct {
 	AnalyzeMeta   `json:",inline" yaml:",inline"`
 	CollectorName string     `json:"collectorName,omitempty" yaml:"collectorName,omitempty"`
@@ -130,27 +136,28 @@ type KernelConfigsAnalyze struct {
 }
 
 type HostAnalyze struct {
-	CPU                    *CPUAnalyze                        `json:"cpu,omitempty" yaml:"cpu,omitempty"`
-	TCPLoadBalancer        *TCPLoadBalancerAnalyze            `json:"tcpLoadBalancer,omitempty" yaml:"tcpLoadBalancer,omitempty"`
-	HTTPLoadBalancer       *HTTPLoadBalancerAnalyze           `json:"httpLoadBalancer,omitempty" yaml:"httpLoadBalancer,omitempty"`
-	DiskUsage              *DiskUsageAnalyze                  `json:"diskUsage,omitempty" yaml:"diskUsage,omitempty"`
-	Memory                 *MemoryAnalyze                     `json:"memory,omitempty" yaml:"memory,omitempty"`
-	TCPPortStatus          *TCPPortStatusAnalyze              `json:"tcpPortStatus,omitempty" yaml:"tcpPortStatus,omitempty"`
-	UDPPortStatus          *UDPPortStatusAnalyze              `json:"udpPortStatus,omitempty" yaml:"udpPortStatus,omitempty"`
-	HTTP                   *HTTPAnalyze                       `json:"http,omitempty" yaml:"http,omitempty"`
-	Time                   *TimeAnalyze                       `json:"time,omitempty" yaml:"time,omitempty"`
-	BlockDevices           *BlockDevicesAnalyze               `json:"blockDevices,omitempty" yaml:"blockDevices,omitempty"`
-	SystemPackages         *SystemPackagesAnalyze             `json:"systemPackages,omitempty" yaml:"systemPackages,omitempty"`
-	KernelModules          *KernelModulesAnalyze              `json:"kernelModules,omitempty" yaml:"kernelModules,omitempty"`
-	TCPConnect             *TCPConnectAnalyze                 `json:"tcpConnect,omitempty" yaml:"tcpConnect,omitempty"`
-	IPV4Interfaces         *IPV4InterfacesAnalyze             `json:"ipv4Interfaces,omitempty" yaml:"ipv4Interfaces,omitempty"`
-	SubnetAvailable        *SubnetAvailableAnalyze            `json:"subnetAvailable,omitempty" yaml:"subnetAvailable,omitempty"`
-	FilesystemPerformance  *FilesystemPerformanceAnalyze      `json:"filesystemPerformance,omitempty" yaml:"filesystemPerformance,omitempty"`
-	Certificate            *CertificateAnalyze                `json:"certificate,omitempty" yaml:"certificate,omitempty"`
-	CertificatesCollection *HostCertificatesCollectionAnalyze `json:"certificatesCollection,omitempty" yaml:"certificatesCollection,omitempty"`
-	HostServices           *HostServicesAnalyze               `json:"hostServices,omitempty" yaml:"hostServices,omitempty"`
-	HostOS                 *HostOSAnalyze                     `json:"hostOS,omitempty" yaml:"hostOS,omitempty"`
-	TextAnalyze            *TextAnalyze                       `json:"textAnalyze,omitempty" yaml:"textAnalyze,omitempty"`
-	KernelConfigs          *KernelConfigsAnalyze              `json:"kernelConfigs,omitempty" yaml:"kernelConfigs,omitempty"`
-	JsonCompare            *JsonCompare                       `json:"jsonCompare,omitempty" yaml:"jsonCompare,omitempty"`
+	CPU                          *CPUAnalyze                          `json:"cpu,omitempty" yaml:"cpu,omitempty"`
+	TCPLoadBalancer              *TCPLoadBalancerAnalyze              `json:"tcpLoadBalancer,omitempty" yaml:"tcpLoadBalancer,omitempty"`
+	HTTPLoadBalancer             *HTTPLoadBalancerAnalyze             `json:"httpLoadBalancer,omitempty" yaml:"httpLoadBalancer,omitempty"`
+	DiskUsage                    *DiskUsageAnalyze                    `json:"diskUsage,omitempty" yaml:"diskUsage,omitempty"`
+	Memory                       *MemoryAnalyze                       `json:"memory,omitempty" yaml:"memory,omitempty"`
+	TCPPortStatus                *TCPPortStatusAnalyze                `json:"tcpPortStatus,omitempty" yaml:"tcpPortStatus,omitempty"`
+	UDPPortStatus                *UDPPortStatusAnalyze                `json:"udpPortStatus,omitempty" yaml:"udpPortStatus,omitempty"`
+	HTTP                         *HTTPAnalyze                         `json:"http,omitempty" yaml:"http,omitempty"`
+	Time                         *TimeAnalyze                         `json:"time,omitempty" yaml:"time,omitempty"`
+	BlockDevices                 *BlockDevicesAnalyze                 `json:"blockDevices,omitempty" yaml:"blockDevices,omitempty"`
+	SystemPackages               *SystemPackagesAnalyze               `json:"systemPackages,omitempty" yaml:"systemPackages,omitempty"`
+	KernelModules                *KernelModulesAnalyze                `json:"kernelModules,omitempty" yaml:"kernelModules,omitempty"`
+	TCPConnect                   *TCPConnectAnalyze                   `json:"tcpConnect,omitempty" yaml:"tcpConnect,omitempty"`
+	IPV4Interfaces               *IPV4InterfacesAnalyze               `json:"ipv4Interfaces,omitempty" yaml:"ipv4Interfaces,omitempty"`
+	SubnetAvailable              *SubnetAvailableAnalyze              `json:"subnetAvailable,omitempty" yaml:"subnetAvailable,omitempty"`
+	FilesystemPerformance        *FilesystemPerformanceAnalyze        `json:"filesystemPerformance,omitempty" yaml:"filesystemPerformance,omitempty"`
+	Certificate                  *CertificateAnalyze                  `json:"certificate,omitempty" yaml:"certificate,omitempty"`
+	CertificatesCollection       *HostCertificatesCollectionAnalyze   `json:"certificatesCollection,omitempty" yaml:"certificatesCollection,omitempty"`
+	HostServices                 *HostServicesAnalyze                 `json:"hostServices,omitempty" yaml:"hostServices,omitempty"`
+	HostOS                       *HostOSAnalyze                       `json:"hostOS,omitempty" yaml:"hostOS,omitempty"`
+	TextAnalyze                  *TextAnalyze                         `json:"textAnalyze,omitempty" yaml:"textAnalyze,omitempty"`
+	KernelConfigs                *KernelConfigsAnalyze                `json:"kernelConfigs,omitempty" yaml:"kernelConfigs,omitempty"`
+	JsonCompare                  *JsonCompare                         `json:"jsonCompare,omitempty" yaml:"jsonCompare,omitempty"`
+	NetworkNamespaceConnectivity *NetworkNamespaceConnectivityAnalyze `json:"networkNamespaceConnectivity,omitempty" yaml:"networkNamespaceConnectivity,omitempty"`
 }
