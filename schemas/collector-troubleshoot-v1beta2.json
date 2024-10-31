@@ -15024,6 +15024,31 @@
                   }
                 }
               },
+              "networkNamespaceConnectivity": {
+                "type": "object",
+                "required": [
+                  "fromCIDR",
+                  "port",
+                  "toCIDR"
+                ],
+                "properties": {
+                  "collectorName": {
+                    "type": "string"
+                  },
+                  "exclude": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  },
+                  "fromCIDR": {
+                    "type": "string"
+                  },
+                  "port": {
+                    "type": "integer"
+                  },
+                  "toCIDR": {
+                    "type": "string"
+                  }
+                }
+              },
               "run": {
                 "type": "object",
                 "required": [

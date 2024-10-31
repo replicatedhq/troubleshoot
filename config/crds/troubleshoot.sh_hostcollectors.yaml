@@ -797,6 +797,55 @@ spec:
                       required:
                       - outcomes
                       type: object
+                    networkNamespaceConnectivity:
+                      properties:
+                        annotations:
+                          additionalProperties:
+                            type: string
+                          type: object
+                        checkName:
+                          type: string
+                        collectorName:
+                          type: string
+                        exclude:
+                          type: BoolString
+                        outcomes:
+                          items:
+                            properties:
+                              fail:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
+                              pass:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
+                              warn:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
+                            type: object
+                          type: array
+                        strict:
+                          type: BoolString
+                      required:
+                      - outcomes
+                      type: object
                     subnetAvailable:
                       properties:
                         annotations:
@@ -1602,6 +1651,23 @@ spec:
                           type: string
                         exclude:
                           type: BoolString
+                      type: object
+                    networkNamespaceConnectivity:
+                      properties:
+                        collectorName:
+                          type: string
+                        exclude:
+                          type: BoolString
+                        fromCIDR:
+                          type: string
+                        port:
+                          type: integer
+                        toCIDR:
+                          type: string
+                      required:
+                      - fromCIDR
+                      - port
+                      - toCIDR
                       type: object
                     run:
                       properties:
