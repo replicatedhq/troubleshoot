@@ -3,7 +3,6 @@ package supportbundle
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
@@ -117,26 +116,6 @@ func CollectSupportBundleFromSpec(
 		// root.End() multiple times.
 		root.End()
 	}()
-
-	// only create a node list if we are running host collectors in a pod
-	if opts.RunHostCollectorsInPod {
-		clientset, err := kubernetes.NewForConfig(opts.KubernetesRestConfig)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to create kubernetes clientset to run host collectors in pod")
-		}
-		nodeList, err := getNodeList(clientset, opts)
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to get remote node list")
-		}
-		nodeListBytes, err := json.MarshalIndent(nodeList, "", "  ")
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to marshal remote node list")
-		}
-		err = result.SaveResult(bundlePath, constants.NODE_LIST_FILE, bytes.NewBuffer(nodeListBytes))
-		if err != nil {
-			return nil, errors.Wrap(err, "failed to write remote node list")
-		}
-	}
 
 	// Cache error returned by collectors and return it at the end of the function
 	// so as to have a chance to run analyzers and archive the support bundle after.
