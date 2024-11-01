@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
+	"golang.org/x/sync/errgroup"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
@@ -42,10 +43,14 @@ const (
 
 func runHostCollectors(ctx context.Context, hostCollectors []*troubleshootv1beta2.HostCollect, additionalRedactors *troubleshootv1beta2.Redactor, bundlePath string, opts SupportBundleCreateOpts) (collect.CollectorResult, error) {
 
+	var err error
 	var collectResult map[string][]byte
 
 	if opts.RunHostCollectorsInPod {
-		collectResult = runRemoteHostCollectors(ctx, hostCollectors, bundlePath, opts)
+		collectResult, err = runRemoteHostCollectors(ctx, hostCollectors, bundlePath, opts)
+		if err != nil {
+			return collectResult, err
+		}
 	} else {
 		collectResult = runLocalHostCollectors(ctx, hostCollectors, bundlePath, opts)
 	}
@@ -304,21 +309,19 @@ func getExecOutputs(
 	return stdout.Bytes(), stderr.Bytes(), nil
 }
 
-func runRemoteHostCollectors(ctx context.Context, hostCollectors []*troubleshootv1beta2.HostCollect, bundlePath string, opts SupportBundleCreateOpts) map[string][]byte {
+func runRemoteHostCollectors(ctx context.Context, hostCollectors []*troubleshootv1beta2.HostCollect, bundlePath string, opts SupportBundleCreateOpts) (map[string][]byte, error) {
 	output := collect.NewResult()
 
 	clientset, err := kubernetes.NewForConfig(opts.KubernetesRestConfig)
 	if err != nil {
-		// TODO: error handling
-		return nil
+		return nil, err
 	}
 
 	// TODO: rbac check
 
 	nodeList, err := getNodeList(clientset, opts)
 	if err != nil {
-		// TODO: error handling
-		return nil
+		return nil, err
 	}
 	klog.V(2).Infof("Node list to run remote host collectors: %s", nodeList.Nodes)
 
@@ -327,21 +330,18 @@ func runRemoteHostCollectors(ctx context.Context, hostCollectors []*troubleshoot
 		"troubleshoot.sh/remote-collector": "true",
 	}
 
-	var wg sync.WaitGroup
 	var mu sync.Mutex
 	nodeLogs := make(map[string]map[string][]byte)
 
 	ds, err := createHostCollectorDS(ctx, clientset, labels)
 	if err != nil {
-		// TODO: error handling
-		return map[string][]byte{}
+		return nil, err
 	}
 
 	// wait for at least one pod to be scheduled
 	err = waitForDS(ctx, clientset, ds)
 	if err != nil {
-		// TODO error handling
-		return map[string][]byte{}
+		return nil, err
 	}
 
 	klog.V(2).Infof("Created Remote Host Collector Daemonset %s", ds.Name)
@@ -351,33 +351,27 @@ func runRemoteHostCollectors(ctx context.Context, hostCollectors []*troubleshoot
 		Limit:          0,
 	})
 
+	var eg errgroup.Group
 	for _, pod := range pods.Items {
-		wg.Add(1)
-		go func(pod corev1.Pod) {
-			defer wg.Done()
-
+		eg.Go(func() error {
 			// TODO: set timeout waiting
-
 			err := waitForPodRunning(ctx, clientset, &pod)
 			if err != nil {
-				// TODO error handling
-				return
+				return err
 			}
-
 			results := map[string][]byte{}
 			for _, collectorSpec := range hostCollectors {
 				// convert host collectors into a HostCollector spec
 				spec := createHostCollectorsSpec([]*troubleshootv1beta2.HostCollect{collectorSpec})
 				specJSON, err := json.Marshal(spec)
 				if err != nil {
-					// TODO: error handling
-					return
+					return err
 				}
 				klog.V(2).Infof("HostCollector spec: %s", specJSON)
 
 				stdout, _, err := getExecOutputs(ctx, opts.KubernetesRestConfig, clientset, pod, specJSON)
 				if err != nil {
-					return
+					return err
 				}
 				result := map[string][]byte{}
 				json.Unmarshal(stdout, &result)
@@ -393,10 +387,13 @@ func runRemoteHostCollectors(ctx context.Context, hostCollectors []*troubleshoot
 			mu.Lock()
 			nodeLogs[pod.Spec.NodeName] = results
 			mu.Unlock()
-
-		}(pod)
+			return nil
+		})
 	}
-	wg.Wait()
+	err = eg.Wait()
+	if err != nil {
+		return nil, err
+	}
 
 	klog.V(2).Infof("All remote host collectors completed")
 
@@ -414,7 +411,7 @@ func runRemoteHostCollectors(ctx context.Context, hostCollectors []*troubleshoot
 			err := output.SaveResult(bundlePath, fmt.Sprintf("host-collectors/%s/%s", node, file), bytes.NewBuffer(data))
 			if err != nil {
 				// TODO: error handling
-				return nil
+				return nil, err
 			}
 		}
 	}
@@ -423,15 +420,15 @@ func runRemoteHostCollectors(ctx context.Context, hostCollectors []*troubleshoot
 	nodeListBytes, err := json.MarshalIndent(nodeList, "", "  ")
 	if err != nil {
 		// TODO: error handling
-		return nil
+		return nil, err
 	}
 	err = output.SaveResult(bundlePath, constants.NODE_LIST_FILE, bytes.NewBuffer(nodeListBytes))
 	if err != nil {
 		// TODO: error handling
-		return nil
+		return nil, err
 	}
 
-	return output
+	return output, nil
 }
 
 func createHostCollectorsSpec(hostCollectors []*troubleshootv1beta2.HostCollect) *troubleshootv1beta2.HostCollector {
