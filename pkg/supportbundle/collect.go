@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
+	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -32,6 +33,11 @@ import (
 	"k8s.io/client-go/tools/remotecommand"
 	"k8s.io/klog/v2"
 	"k8s.io/utils/ptr"
+)
+
+const (
+	selectorLabelKey   = "ds-selector-label"
+	selectorLabelValue = "remote-host-collector"
 )
 
 func runHostCollectors(ctx context.Context, hostCollectors []*troubleshootv1beta2.HostCollect, additionalRedactors *troubleshootv1beta2.Redactor, bundlePath string, opts SupportBundleCreateOpts) (collect.CollectorResult, error) {
@@ -254,45 +260,45 @@ func runLocalHostCollectors(ctx context.Context, hostCollectors []*troubleshootv
 	return allCollectedData
 }
 
+// getExecOutputs executes `collect -` with collector data passed to stdin and returns stdout, stderr and error
 func getExecOutputs(
-	ctx context.Context, clientConfig *rest.Config, client *kubernetes.Clientset, pod corev1.Pod, execCollector *troubleshootv1beta2.HostCollect,
-) ([]byte, []byte, []string) {
+	ctx context.Context, clientConfig *rest.Config, client *kubernetes.Clientset, pod corev1.Pod, collectorData []byte,
+) ([]byte, []byte, error) {
 	container := pod.Spec.Containers[0].Name
 
 	req := client.CoreV1().RESTClient().Post().Resource("pods").Name(pod.Name).Namespace(pod.Namespace).SubResource("exec")
 	scheme := runtime.NewScheme()
 	if err := corev1.AddToScheme(scheme); err != nil {
-		return nil, nil, []string{err.Error()}
+		return nil, nil, err
 	}
 
 	parameterCodec := runtime.NewParameterCodec(scheme)
 	req.VersionedParams(&corev1.PodExecOptions{
-		Command:   []string{"/troubleshoot/collect", "-"},
+		Command:   []string{"/troubleshoot/collect", "-", "--chroot", "/host", "--format", "raw"},
 		Container: container,
 		Stdin:     true,
-		Stdout:    false,
+		Stdout:    true,
 		Stderr:    true,
 		TTY:       false,
 	}, parameterCodec)
 
 	exec, err := remotecommand.NewSPDYExecutor(clientConfig, "POST", req.URL())
 	if err != nil {
-		return nil, nil, []string{err.Error()}
+		return nil, nil, err
 	}
 
-	stdin := new(bytes.Buffer)
 	stdout := new(bytes.Buffer)
 	stderr := new(bytes.Buffer)
 
 	err = exec.StreamWithContext(ctx, remotecommand.StreamOptions{
-		Stdin:  stdin,
+		Stdin:  bytes.NewBuffer(collectorData),
 		Stdout: stdout,
 		Stderr: stderr,
 		Tty:    false,
 	})
 
 	if err != nil {
-		return stdout.Bytes(), stderr.Bytes(), []string{err.Error()}
+		return stdout.Bytes(), stderr.Bytes(), err
 	}
 
 	return stdout.Bytes(), stderr.Bytes(), nil
@@ -300,15 +306,6 @@ func getExecOutputs(
 
 func runRemoteHostCollectors(ctx context.Context, hostCollectors []*troubleshootv1beta2.HostCollect, bundlePath string, opts SupportBundleCreateOpts) map[string][]byte {
 	output := collect.NewResult()
-
-	// convert host collectors into a HostCollector spec
-	spec := createHostCollectorsSpec(hostCollectors)
-	specJSON, err := convertHostCollectorSpecToJSON(spec)
-	if err != nil {
-		// TODO: error handling
-		return nil
-	}
-	klog.V(2).Infof("HostCollector spec: %s", specJSON)
 
 	clientset, err := kubernetes.NewForConfig(opts.KubernetesRestConfig)
 	if err != nil {
@@ -332,52 +329,72 @@ func runRemoteHostCollectors(ctx context.Context, hostCollectors []*troubleshoot
 
 	var wg sync.WaitGroup
 	var mu sync.Mutex
-	nodeLogs := make(map[string][]byte)
+	nodeLogs := make(map[string]map[string][]byte)
 
-	for _, node := range nodeList.Nodes {
+	ds, err := createHostCollectorDS(ctx, clientset, labels)
+	if err != nil {
+		// TODO: error handling
+		return map[string][]byte{}
+	}
+
+	// wait for at least one pod to be scheduled
+	err = waitForDS(ctx, clientset, ds)
+	if err != nil {
+		// TODO error handling
+		return map[string][]byte{}
+	}
+
+	klog.V(2).Infof("Created Remote Host Collector Daemonset %s", ds.Name)
+	pods, err := clientset.CoreV1().Pods(ds.Namespace).List(ctx, metav1.ListOptions{
+		LabelSelector:  selectorLabelKey + "=" + selectorLabelValue,
+		TimeoutSeconds: new(int64),
+		Limit:          0,
+	})
+
+	for _, pod := range pods.Items {
 		wg.Add(1)
-		go func(node string) {
+		go func(pod corev1.Pod) {
 			defer wg.Done()
 
 			// TODO: set timeout waiting
 
-			// create a remote pod spec to run the host collectors
-			nodeSelector := map[string]string{
-				"kubernetes.io/hostname": node,
-			}
-			pod, err := createHostCollectorPod(ctx, clientset, nodeSelector, labels)
+			err := waitForPodRunning(ctx, clientset, &pod)
 			if err != nil {
-				// TODO: error handling
+				// TODO error handling
 				return
 			}
-			klog.V(2).Infof("Created Remote Host Collector Pod %s", pod.Name)
 
-			// wait for the pod to be running
-			// err = waitForPodRunning(ctx, clientset, pod)
-			// if err != nil {
-			// 	// TODO: error handling
-			// 	return
-			// }
-			time.Sleep(10 * time.Second)
+			results := map[string][]byte{}
+			for _, collectorSpec := range hostCollectors {
+				// convert host collectors into a HostCollector spec
+				spec := createHostCollectorsSpec([]*troubleshootv1beta2.HostCollect{collectorSpec})
+				specJSON, err := json.Marshal(spec)
+				if err != nil {
+					// TODO: error handling
+					return
+				}
+				klog.V(2).Infof("HostCollector spec: %s", specJSON)
 
-			getExecOutputs()
-
-			// // extract logs from the pod
-			// var logs []byte
-			// logs, err = getPodLogs(ctx, clientset, pod)
-			// if err != nil {
-			// 	// TODO: error handling
-			// 	return
-			// }
+				stdout, _, err := getExecOutputs(ctx, opts.KubernetesRestConfig, clientset, pod, specJSON)
+				if err != nil {
+					return
+				}
+				result := map[string][]byte{}
+				json.Unmarshal(stdout, &result)
+				for file, data := range result {
+					results[file] = data
+				}
+				time.Sleep(1 * time.Second)
+			}
 
 			// wait for log stream to catch up
 			time.Sleep(1 * time.Second)
 
 			mu.Lock()
-			nodeLogs[node] = logs
+			nodeLogs[pod.Spec.NodeName] = results
 			mu.Unlock()
 
-		}(node)
+		}(pod)
 	}
 	wg.Wait()
 
@@ -387,19 +404,14 @@ func runRemoteHostCollectors(ctx context.Context, hostCollectors []*troubleshoot
 		// TODO:
 		// delete the config map
 		// delete the remote pods
+		clientset.AppsV1().DaemonSets(ds.Namespace).Delete(ctx, ds.Name, metav1.DeleteOptions{})
 	}()
 
-	// aggregate results
 	for node, logs := range nodeLogs {
-		var nodeResult map[string]string
-		if err := json.Unmarshal(logs, &nodeResult); err != nil {
-			// TODO: error handling
-			return nil
-		}
-		for file, data := range nodeResult {
+		for file, data := range logs {
 			// trim host-collectors/ prefix
 			file = strings.TrimPrefix(file, "host-collectors/")
-			err := output.SaveResult(bundlePath, fmt.Sprintf("host-collectors/%s/%s", node, file), bytes.NewBufferString(data))
+			err := output.SaveResult(bundlePath, fmt.Sprintf("host-collectors/%s/%s", node, file), bytes.NewBuffer(data))
 			if err != nil {
 				// TODO: error handling
 				return nil
@@ -469,88 +481,79 @@ func createHostCollectorConfigMap(ctx context.Context, clientset kubernetes.Inte
 	return createdConfigMap, nil
 }
 
-func createHostCollectorPod(ctx context.Context, clientset kubernetes.Interface, nodeSelector map[string]string, labels map[string]string) (*corev1.Pod, error) {
+func createHostCollectorDS(ctx context.Context, clientset kubernetes.Interface, labels map[string]string) (*appsv1.DaemonSet, error) {
 	ns := "default"
 	imageName := "replicated/troubleshoot:latest"
 	imagePullPolicy := corev1.PullAlways
 
-	pod := &corev1.Pod{
-		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: "remote-host-collector-",
-			Namespace:    ns,
-			Labels:       labels,
-		},
-		Spec: corev1.PodSpec{
-			NodeSelector:  nodeSelector,
-			HostNetwork:   true,
-			HostPID:       true,
-			HostIPC:       true,
-			RestartPolicy: corev1.RestartPolicyNever,
-			Containers: []corev1.Container{
-				{
-					Image:           imageName,
-					ImagePullPolicy: imagePullPolicy,
-					Name:            "remote-collector",
-					Command:         []string{"/bin/bash", "-c"},
-					Args:            []string{"while true; do sleep 30; done;"},
-					SecurityContext: &corev1.SecurityContext{
-						Privileged: ptr.To(true),
-					},
-					VolumeMounts: []corev1.VolumeMount{
-						{
-							Name:      "host-root",
-							MountPath: "/host",
-						},
+	labels[selectorLabelKey] = selectorLabelValue
+
+	podSpec := corev1.PodSpec{
+		HostNetwork: true,
+		HostPID:     true,
+		HostIPC:     true,
+		Containers: []corev1.Container{
+			{
+				Image:           imageName,
+				ImagePullPolicy: imagePullPolicy,
+				Name:            "remote-collector",
+				Command:         []string{"/bin/bash", "-c"},
+				Args:            []string{"while true; do sleep 30; done;"},
+				SecurityContext: &corev1.SecurityContext{
+					Privileged: ptr.To(true),
+				},
+				VolumeMounts: []corev1.VolumeMount{
+					{
+						Name:      "host-root",
+						MountPath: "/host",
 					},
 				},
 			},
-			Volumes: []corev1.Volume{
-				{
-					Name: "host-root",
-					VolumeSource: corev1.VolumeSource{
-						HostPath: &corev1.HostPathVolumeSource{
-							Path: "/",
-						},
+		},
+		Volumes: []corev1.Volume{
+			{
+				Name: "host-root",
+				VolumeSource: corev1.VolumeSource{
+					HostPath: &corev1.HostPathVolumeSource{
+						Path: "/",
 					},
 				},
 			},
 		},
 	}
 
-	createdPod, err := clientset.CoreV1().Pods(ns).Create(ctx, pod, metav1.CreateOptions{})
+	ds := &appsv1.DaemonSet{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "remote-host-collector",
+			Namespace: ns,
+			Labels:    labels,
+		},
+		Spec: appsv1.DaemonSetSpec{
+			Selector: &metav1.LabelSelector{
+				MatchLabels: labels,
+				MatchExpressions: []metav1.LabelSelectorRequirement{
+					{
+						Key:      selectorLabelKey,
+						Operator: "In",
+						Values:   []string{selectorLabelValue},
+					},
+				},
+			},
+			Template: v1.PodTemplateSpec{
+				ObjectMeta: metav1.ObjectMeta{
+					Labels: labels,
+				},
+				Spec: podSpec,
+			},
+		},
+	}
+
+	createdDS, err := clientset.AppsV1().DaemonSets(ns).Create(ctx, ds, metav1.CreateOptions{})
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create Remote Host Collector Pod")
 	}
 
-	return createdPod, nil
-}
-
-func waitForPodCompletion(ctx context.Context, clientset kubernetes.Interface, pod *corev1.Pod) error {
-	watcher, err := clientset.CoreV1().Pods(pod.Namespace).Watch(ctx, metav1.ListOptions{
-		FieldSelector: fmt.Sprintf("metadata.name=%s", pod.Name),
-	})
-	if err != nil {
-		return err
-	}
-	defer watcher.Stop()
-
-	for event := range watcher.ResultChan() {
-		podEvent, ok := event.Object.(*v1.Pod)
-		if !ok {
-			continue
-		}
-		for _, containerStatus := range podEvent.Status.ContainerStatuses {
-			if containerStatus.Name == "remote-collector" {
-				if containerStatus.State.Terminated != nil {
-					if containerStatus.State.Terminated.ExitCode == 0 {
-						return nil
-					}
-					return fmt.Errorf("container %s in pod %s failed with exit code %d", containerStatus.Name, pod.Name, containerStatus.State.Terminated.ExitCode)
-				}
-			}
-		}
-	}
-	return fmt.Errorf("pod %s did not complete", pod.Name)
+	return createdDS, nil
 }
 
 func waitForPodRunning(ctx context.Context, clientset kubernetes.Interface, pod *corev1.Pod) error {
@@ -576,6 +579,27 @@ func waitForPodRunning(ctx context.Context, clientset kubernetes.Interface, pod 
 		}
 	}
 	return fmt.Errorf("pod %s did not complete", pod.Name)
+}
+
+func waitForDS(ctx context.Context, clientset kubernetes.Interface, ds *appsv1.DaemonSet) error {
+	watcher, err := clientset.AppsV1().DaemonSets(ds.Namespace).Watch(ctx, metav1.ListOptions{
+		FieldSelector: fmt.Sprintf("metadata.name=%s", ds.Name),
+	})
+	if err != nil {
+		return err
+	}
+	defer watcher.Stop()
+
+	for event := range watcher.ResultChan() {
+		dsEvent, ok := event.Object.(*appsv1.DaemonSet)
+		if !ok {
+			continue
+		}
+		if dsEvent.Status.NumberReady > 1 {
+			return nil
+		}
+	}
+	return fmt.Errorf("pod %s did not complete", ds.Name)
 }
 
 func getPodLogs(ctx context.Context, clientset kubernetes.Interface, pod *corev1.Pod) ([]byte, error) {

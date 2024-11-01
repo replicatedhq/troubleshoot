@@ -22,7 +22,6 @@ import (
 
 	v1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	labels "k8s.io/apimachinery/pkg/labels"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
 	testing "k8s.io/client-go/testing"
@@ -57,18 +56,7 @@ func (c *FakeSupportBundles) List(ctx context.Context, opts v1.ListOptions) (res
 	if obj == nil {
 		return nil, err
 	}
-
-	label, _, _ := testing.ExtractFromListOptions(opts)
-	if label == nil {
-		label = labels.Everything()
-	}
-	list := &v1beta2.SupportBundleList{ListMeta: obj.(*v1beta2.SupportBundleList).ListMeta}
-	for _, item := range obj.(*v1beta2.SupportBundleList).Items {
-		if label.Matches(labels.Set(item.Metadata.Labels)) {
-			list.Items = append(list.Items, item)
-		}
-	}
-	return list, err
+	return obj.(*v1beta2.SupportBundleList), err
 }
 
 // Watch returns a watch.Interface that watches the requested supportBundles.
