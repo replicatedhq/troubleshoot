@@ -356,11 +356,6 @@ func collectInCluster(
 		BundlePath:             bundlePath,
 	}
 
-	if collectOpts.Namespace == "" {
-		kubeconfig := k8sutil.GetKubeconfig()
-		collectOpts.Namespace, _, _ = kubeconfig.Namespace()
-	}
-
 	if v.GetString("since") != "" || v.GetString("since-time") != "" {
 		err := parseTimeFlags(v, preflightSpec.Spec.Collectors)
 		if err != nil {
