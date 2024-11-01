@@ -41,9 +41,6 @@ func runHostCollectors(ctx context.Context, hostCollectors []*troubleshootv1beta
 				return nil, err
 			}
 		}
-		if err := saveNodeList(opts, bundlePath); err != nil {
-			return nil, err
-		}
 		if err := collectRemoteHost(ctx, collectSpecs, bundlePath, opts, collectedData); err != nil {
 			return nil, err
 		}
@@ -215,6 +212,10 @@ func collectRemoteHost(ctx context.Context, collectSpecs []*troubleshootv1beta2.
 	opts.KubernetesRestConfig.QPS = constants.DEFAULT_CLIENT_QPS
 	opts.KubernetesRestConfig.Burst = constants.DEFAULT_CLIENT_BURST
 	opts.KubernetesRestConfig.UserAgent = fmt.Sprintf("%s/%s", constants.DEFAULT_CLIENT_USER_AGENT, version.Version())
+
+	if err := saveNodeList(opts, bundlePath); err != nil {
+		return err
+	}
 
 	// Run remote collectors sequentially
 	for _, spec := range collectSpecs {
