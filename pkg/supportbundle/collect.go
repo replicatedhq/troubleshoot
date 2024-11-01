@@ -1,7 +1,6 @@
 package supportbundle
 
 import (
-	"bufio"
 	"bytes"
 	"context"
 	"encoding/json"
@@ -350,6 +349,9 @@ func runRemoteHostCollectors(ctx context.Context, hostCollectors []*troubleshoot
 		TimeoutSeconds: new(int64),
 		Limit:          0,
 	})
+	if err != nil {
+		return nil, err
+	}
 
 	var eg errgroup.Group
 	for _, pod := range pods.Items {
@@ -444,38 +446,6 @@ func createHostCollectorsSpec(hostCollectors []*troubleshootv1beta2.HostCollect)
 			Collectors: hostCollectors,
 		},
 	}
-}
-
-func convertHostCollectorSpecToJSON(spec *troubleshootv1beta2.HostCollector) (string, error) {
-	jsonData, err := json.Marshal(spec)
-	if err != nil {
-		return "", errors.Wrap(err, "failed to marshal Host Collector spec")
-	}
-	return string(jsonData), nil
-}
-
-func createHostCollectorConfigMap(ctx context.Context, clientset kubernetes.Interface, spec string) (*corev1.ConfigMap, error) {
-	// TODO: configurable namespaces?
-	ns := "default"
-
-	data := map[string]string{
-		"collector.json": spec,
-	}
-
-	cm := &corev1.ConfigMap{
-		ObjectMeta: metav1.ObjectMeta{
-			GenerateName: "remote-host-collector-specs-",
-			Namespace:    ns,
-		},
-		Data: data,
-	}
-
-	createdConfigMap, err := clientset.CoreV1().ConfigMaps(ns).Create(ctx, cm, metav1.CreateOptions{})
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to create Remote Host Collector Spec ConfigMap")
-	}
-
-	return createdConfigMap, nil
 }
 
 func createHostCollectorDS(ctx context.Context, clientset kubernetes.Interface, labels map[string]string) (*appsv1.DaemonSet, error) {
@@ -597,73 +567,4 @@ func waitForDS(ctx context.Context, clientset kubernetes.Interface, ds *appsv1.D
 		}
 	}
 	return fmt.Errorf("pod %s did not complete", ds.Name)
-}
-
-func getPodLogs(ctx context.Context, clientset kubernetes.Interface, pod *corev1.Pod) ([]byte, error) {
-	podLogOpts := corev1.PodLogOptions{
-		Container: pod.Spec.Containers[0].Name,
-	}
-	req := clientset.CoreV1().Pods(pod.Namespace).GetLogs(pod.Name, &podLogOpts)
-	logs, err := req.Stream(ctx)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to get log stream")
-	}
-	defer logs.Close()
-
-	return io.ReadAll(logs)
-}
-
-func streamPodLogs(ctx context.Context, clientset kubernetes.Interface, pod *corev1.Pod, node string, opts SupportBundleCreateOpts) {
-
-	// todo: timeout
-
-	send := func(msg string) {
-		opts.ProgressChan <- fmt.Sprintf("[%s] %s", node, msg)
-	}
-
-	// wait for pod container log-tailer to start
-	watcher, err := clientset.CoreV1().Pods(pod.Namespace).Watch(ctx, metav1.ListOptions{
-		FieldSelector: fmt.Sprintf("metadata.name=%s", pod.Name),
-	})
-	if err != nil {
-		send(errors.Wrap(err, "failed to start pod watcher").Error())
-		return
-	}
-	defer watcher.Stop()
-
-	for event := range watcher.ResultChan() {
-		podEvent, ok := event.Object.(*corev1.Pod)
-		if !ok {
-			continue
-		}
-		for _, containerStatus := range podEvent.Status.ContainerStatuses {
-			if containerStatus.Name == "log-tailer" {
-				if containerStatus.State.Running != nil {
-					goto StartLogStream
-				}
-			}
-		}
-	}
-
-StartLogStream:
-	// stream logs from container named log-tailer in the pod
-	podLogOpts := corev1.PodLogOptions{
-		Container: "log-tailer",
-		Follow:    true,
-	}
-	req := clientset.CoreV1().Pods(pod.Namespace).GetLogs(pod.Name, &podLogOpts)
-	logs, err := req.Stream(ctx)
-	if err != nil {
-		send(errors.Wrap(err, "failed to get log stream").Error())
-		return
-	}
-	defer logs.Close()
-	scanner := bufio.NewScanner(logs)
-	for scanner.Scan() {
-		send(scanner.Text())
-	}
-	if err := scanner.Err(); err != nil {
-		send(errors.Wrap(err, "failed to read log stream").Error())
-	}
-	send("Log stream ended")
 }
