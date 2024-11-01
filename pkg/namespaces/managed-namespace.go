@@ -3,7 +3,6 @@ package namespaces
 import (
 	"fmt"
 	"net"
-	"net/http"
 
 	"github.com/apparentlymart/go-cidr/cidr"
 )
@@ -15,7 +14,6 @@ type ManagedNetworkNamespace struct {
 	*NetworkNamespace
 	*InterfacePair
 
-	httpServer *http.Server
 	InternalIP net.IP
 	ExternalIP net.IP
 	cfg        Configuration
