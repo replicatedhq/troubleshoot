@@ -187,6 +187,11 @@ func runTroubleshoot(v *viper.Viper, args []string) error {
 		RunHostCollectorsInPod:    mainBundle.Spec.RunHostCollectorsInPod,
 	}
 
+	if createOpts.Namespace == "" {
+		kubeconfig := k8sutil.GetKubeconfig()
+		createOpts.Namespace, _, _ = kubeconfig.Namespace()
+	}
+
 	nonInteractiveOutput := analysisOutput{}
 
 	response, err := supportbundle.CollectSupportBundleFromSpec(&mainBundle.Spec, additionalRedactors, createOpts)

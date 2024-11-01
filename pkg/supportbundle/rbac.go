@@ -37,6 +37,11 @@ func checkRemoteCollectorRBAC(ctx context.Context, clientConfig *rest.Config, ti
 	resourceAttributesList := []authorizationv1.ResourceAttributes{
 		{
 			Namespace: namespace,
+			Verb:      "get",
+			Resource:  "pods",
+		},
+		{
+			Namespace: namespace,
 			Verb:      "create",
 			Resource:  "pods",
 		},
@@ -46,13 +51,33 @@ func checkRemoteCollectorRBAC(ctx context.Context, clientConfig *rest.Config, ti
 			Resource:  "pods",
 		},
 		{
+			Namespace: namespace,
+			Verb:      "get",
+			Resource:  "pods/log",
+		},
+		{
 			Verb:     "list",
 			Resource: "nodes",
 		},
 		{
 			Namespace: namespace,
+			Verb:      "get",
+			Resource:  "configmaps",
+		},
+		{
+			Namespace: namespace,
 			Verb:      "create",
 			Resource:  "configmaps",
+		},
+		{
+			Namespace: namespace,
+			Verb:      "delete",
+			Resource:  "configmaps",
+		},
+		{
+			Namespace: namespace,
+			Verb:      "get",
+			Resource:  "serviceaccounts",
 		},
 	}
 
