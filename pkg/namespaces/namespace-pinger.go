@@ -109,6 +109,13 @@ func (n *NamespacePinger) startTCPEchoServer(ready chan struct{}) (err error) {
 	}
 	defer listener.Close()
 
+	deadline := time.Now().Add(30 * time.Second)
+	tcplistener := listener.(*net.TCPListener)
+	if err = tcplistener.SetDeadline(deadline); err != nil {
+		close(ready)
+		return fmt.Errorf("error setting tcp listener deadline: %w", err)
+	}
+
 	go func() {
 		// XXX: here be dragons. we can't signalize we are ready until
 		// the call to read is done so we artificially sleep for a bit
@@ -166,6 +173,12 @@ func (n *NamespacePinger) startUDPEchoServer(ready chan struct{}) (err error) {
 		return fmt.Errorf("error starting udp server: %w", err)
 	}
 	defer conn.Close()
+
+	deadline := time.Now().Add(30 * time.Second)
+	if err = conn.SetDeadline(deadline); err != nil {
+		close(ready)
+		return fmt.Errorf("error setting udp listener deadline: %w", err)
+	}
 
 	go func() {
 		// XXX: here be dragons. we can't signalize we are ready until
