@@ -367,6 +367,13 @@ func (c *CollectClusterResources) Collect(progressChan chan<- interface{}) (Coll
 	}
 	output.SaveResult(c.BundlePath, path.Join(constants.CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s-errors.json", constants.CLUSTER_RESOURCES_ENDPOINTS)), marshalErrors(endpointsErrors))
 
+	// endpointslices
+	endpointslices, endpointslicesErrors := endpointslices(ctx, client, namespaceNames)
+	for k, v := range endpointslices {
+		_ = output.SaveResult(c.BundlePath, path.Join(constants.CLUSTER_RESOURCES_DIR, constants.CLUSTER_RESOURCES_ENDPOINTSICES, k), bytes.NewBuffer(v))
+	}
+	_ = output.SaveResult(c.BundlePath, path.Join(constants.CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s-errors.json", constants.CLUSTER_RESOURCES_ENDPOINTSICES)), marshalErrors(endpointslicesErrors))
+
 	// Service Accounts
 	servicesAccounts, servicesAccountsErrors := serviceAccounts(ctx, client, namespaceNames)
 	for k, v := range servicesAccounts {
@@ -1981,6 +1988,42 @@ func endpoints(ctx context.Context, client *kubernetes.Clientset, namespaces []s
 	}
 
 	return endpointsByNamespace, errorsByNamespace
+}
+
+func endpointslices(ctx context.Context, client *kubernetes.Clientset, namespaces []string) (map[string][]byte, map[string]string) {
+	objsByNamespace := make(map[string][]byte)
+	errorsByNamespace := make(map[string]string)
+
+	for _, namespace := range namespaces {
+		objs, err := client.DiscoveryV1().EndpointSlices(namespace).List(ctx, metav1.ListOptions{})
+		if err != nil {
+			errorsByNamespace[namespace] = err.Error()
+			continue
+		}
+
+		// TODO: Can we DRY this? We repeat this pattern a lot
+		gvk, err := apiutil.GVKForObject(objs, scheme.Scheme)
+		if err == nil {
+			objs.GetObjectKind().SetGroupVersionKind(gvk)
+		}
+
+		for i, o := range objs.Items {
+			gvk, err := apiutil.GVKForObject(&o, scheme.Scheme)
+			if err == nil {
+				objs.Items[i].GetObjectKind().SetGroupVersionKind(gvk)
+			}
+		}
+
+		b, err := json.MarshalIndent(objs, "", "  ")
+		if err != nil {
+			errorsByNamespace[namespace] = err.Error()
+			continue
+		}
+
+		objsByNamespace[namespace+".json"] = b
+	}
+
+	return objsByNamespace, errorsByNamespace
 }
 
 func serviceAccounts(ctx context.Context, client kubernetes.Interface, namespaces []string) (map[string][]byte, map[string]string) {

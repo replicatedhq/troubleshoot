@@ -16,6 +16,7 @@ type RemoteCollectorMeta struct {
 type RemoteCPU struct {
 	RemoteCollectorMeta `json:",inline" yaml:",inline"`
 }
+
 type RemoteHostOS struct {
 	RemoteCollectorMeta `json:",inline" yaml:",inline"`
 }

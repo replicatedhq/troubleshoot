@@ -3,9 +3,13 @@ package collect
 import (
 	"bytes"
 	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
 	"io"
 	"net/http"
+	"net/http/httputil"
+	neturl "net/url"
+	"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -52,16 +56,13 @@ func (c *CollectHTTP) Collect(progressChan chan<- interface{}) (CollectorResult,
 	switch {
 	case c.Collector.Get != nil:
 		response, err = doRequest(
-			"GET", c.Collector.Get.URL, c.Collector.Get.Headers,
-			"", c.Collector.Get.InsecureSkipVerify, c.Collector.Get.Timeout)
+			"GET", c.Collector.Get.URL, c.Collector.Get.Headers, "", c.Collector.Get.InsecureSkipVerify, c.Collector.Get.Timeout, c.Collector.Get.TLS, c.Collector.Get.Proxy)
 	case c.Collector.Post != nil:
 		response, err = doRequest(
-			"POST", c.Collector.Post.URL, c.Collector.Post.Headers,
-			c.Collector.Post.Body, c.Collector.Post.InsecureSkipVerify, c.Collector.Post.Timeout)
+			"POST", c.Collector.Post.URL, c.Collector.Post.Headers, c.Collector.Post.Body, c.Collector.Post.InsecureSkipVerify, c.Collector.Post.Timeout, c.Collector.Post.TLS, c.Collector.Post.Proxy)
 	case c.Collector.Put != nil:
 		response, err = doRequest(
-			"PUT", c.Collector.Put.URL, c.Collector.Put.Headers,
-			c.Collector.Put.Body, c.Collector.Put.InsecureSkipVerify, c.Collector.Put.Timeout)
+			"PUT", c.Collector.Put.URL, c.Collector.Put.Headers, c.Collector.Put.Body, c.Collector.Put.InsecureSkipVerify, c.Collector.Put.Timeout, c.Collector.Put.TLS, c.Collector.Put.Proxy)
 	default:
 		return nil, errors.New("no supported http request type")
 	}
@@ -82,22 +83,72 @@ func (c *CollectHTTP) Collect(progressChan chan<- interface{}) (CollectorResult,
 	return output, nil
 }
 
-func doRequest(method, url string, headers map[string]string, body string, insecureSkipVerify bool, timeout string) (*http.Response, error) {
+func handleFileOrDir(path string) (bool, error) {
+	f, err := os.Stat(path)
+	if err != nil {
+		klog.V(2).Infof("Failed to stat file path: %s\n", err)
+		return false, err
+	}
+	if f.IsDir() {
+		os.Setenv("SSL_CERT_DIR", path)
+		klog.V(2).Infof("Using SSL_CERT_DIR: %s\n", path)
+	} else if f.Mode().IsRegular() {
+		os.Setenv("SSL_CERT_FILE", path)
+		klog.V(2).Infof("Using SSL_CERT_FILE: %s\n", path)
+	}
+	return true, nil
+}
+
+func isPEMCertificate(s string) bool {
+	return strings.Contains(s, "BEGIN CERTIFICATE") || strings.Contains(s, "BEGIN RSA PRIVATE KEY")
+}
+
+func doRequest(method, url string, headers map[string]string, body string, insecureSkipVerify bool, timeout string, tlsParams *troubleshootv1beta2.TLSParams, proxy string) (*http.Response, error) {
+
 	t, err := parseTimeout(timeout)
 	if err != nil {
 		return nil, err
 	}
 
-	httpClient := &http.Client{
-		Timeout: t,
+	tlsConfig := &tls.Config{MinVersion: tls.VersionTLS12}
+	httpTransport := &http.Transport{}
+
+	if tlsParams != nil && tlsParams.CACert != "" {
+		if isPEMCertificate(tlsParams.CACert) {
+			klog.V(2).Infof("Using PEM certificate from spec\n")
+			certPool := x509.NewCertPool()
+			if !certPool.AppendCertsFromPEM([]byte(tlsParams.CACert)) {
+				return nil, errors.New("failed to append certificate to cert pool")
+			}
+			tlsConfig.RootCAs = certPool
+		} else if _, err := handleFileOrDir(tlsParams.CACert); err != nil {
+			return nil, errors.Wrap(err, "failed to handle cacert file path")
+		}
 	}
 
 	if insecureSkipVerify {
-		httpClient.Transport = &http.Transport{
-			TLSClientConfig: &tls.Config{
-				InsecureSkipVerify: true,
-			},
+		tlsConfig.InsecureSkipVerify = true
+	}
+
+	httpTransport.TLSClientConfig = tlsConfig
+
+	if proxy != "" || os.Getenv("HTTPS_PROXY") != "" {
+		if proxy != "" {
+			klog.V(2).Infof("Using proxy from spec: %s\n", proxy)
+			httpTransport.Proxy = func(req *http.Request) (*neturl.URL, error) {
+				return neturl.Parse(proxy)
+			}
+		} else {
+			klog.V(2).Infof("Using proxy from environment: %s\n", os.Getenv("HTTPS_PROXY"))
+			httpTransport.Proxy = http.ProxyFromEnvironment
 		}
+	}
+
+	httpClient := &http.Client{
+		Timeout: t,
+		Transport: &LoggingTransport{
+			Transport: httpTransport,
+		},
 	}
 
 	req, err := http.NewRequest(method, url, strings.NewReader(body))
@@ -110,6 +161,36 @@ func doRequest(method, url string, headers map[string]string, body string, insec
 	}
 
 	return httpClient.Do(req)
+}
+
+type LoggingTransport struct {
+	Transport http.RoundTripper
+}
+
+func (t *LoggingTransport) RoundTrip(req *http.Request) (*http.Response, error) {
+	// Log the request
+	dumpReq, err := httputil.DumpRequestOut(req, true)
+	if err != nil {
+		klog.V(2).Infof("Failed to dump request: %+v\n", err)
+	} else {
+		klog.V(2).Infof("Request: %s\n", dumpReq)
+	}
+
+	resp, err := t.Transport.RoundTrip(req)
+
+	// Log the response
+	if err != nil {
+		klog.V(2).Infof("Request failed: %+v\n", err)
+	} else {
+		dumpResp, err := httputil.DumpResponse(resp, true)
+		if err != nil {
+			klog.V(2).Infof("Failed to dump response: %v+\n", err)
+		} else {
+			klog.V(2).Infof("Response: %s\n", dumpResp)
+		}
+	}
+
+	return resp, err
 }
 
 func responseToOutput(response *http.Response, err error) ([]byte, error) {
@@ -130,11 +211,15 @@ func responseToOutput(response *http.Response, err error) ([]byte, error) {
 		}
 
 		var rawJSON json.RawMessage
-		if err := json.Unmarshal(body, &rawJSON); err != nil {
-			klog.Infof("failed to unmarshal response body as JSON: %v", err)
+		if len(body) > 0 {
+			if err := json.Unmarshal(body, &rawJSON); err != nil {
+				klog.Infof("failed to unmarshal response body as JSON: %+v", err)
+				rawJSON = json.RawMessage{}
+			}
+		} else {
 			rawJSON = json.RawMessage{}
+			klog.V(2).Infof("empty response body\n")
 		}
-
 		output["response"] = HTTPResponse{
 			Status:  response.StatusCode,
 			Body:    string(body),

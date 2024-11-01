@@ -354,6 +354,8 @@ spec:
                           type: string
                         exclude:
                           type: BoolString
+                        image:
+                          type: string
                         namespace:
                           type: string
                         podLaunchOptions:
@@ -406,11 +408,34 @@ spec:
                               type: object
                             insecureSkipVerify:
                               type: boolean
+                            proxy:
+                              type: string
                             timeout:
                               description: |-
                                 Timeout is the time to wait for a server's response. Its a duration e.g 15s, 2h30m.
                                 Missing value or empty string or means no timeout.
                               type: string
+                            tls:
+                              properties:
+                                cacert:
+                                  type: string
+                                clientCert:
+                                  type: string
+                                clientKey:
+                                  type: string
+                                secret:
+                                  properties:
+                                    name:
+                                      type: string
+                                    namespace:
+                                      type: string
+                                  required:
+                                  - name
+                                  - namespace
+                                  type: object
+                                skipVerify:
+                                  type: boolean
+                              type: object
                             url:
                               type: string
                           required:
@@ -428,11 +453,34 @@ spec:
                               type: object
                             insecureSkipVerify:
                               type: boolean
+                            proxy:
+                              type: string
                             timeout:
                               description: |-
                                 Timeout is the time to wait for a server's response. Its a duration e.g 15s, 2h30m.
                                 Missing value or empty string or means no timeout.
                               type: string
+                            tls:
+                              properties:
+                                cacert:
+                                  type: string
+                                clientCert:
+                                  type: string
+                                clientKey:
+                                  type: string
+                                secret:
+                                  properties:
+                                    name:
+                                      type: string
+                                    namespace:
+                                      type: string
+                                  required:
+                                  - name
+                                  - namespace
+                                  type: object
+                                skipVerify:
+                                  type: boolean
+                              type: object
                             url:
                               type: string
                           required:
@@ -448,11 +496,34 @@ spec:
                               type: object
                             insecureSkipVerify:
                               type: boolean
+                            proxy:
+                              type: string
                             timeout:
                               description: |-
                                 Timeout is the time to wait for a server's response. Its a duration e.g 15s, 2h30m.
                                 Missing value or empty string or means no timeout.
                               type: string
+                            tls:
+                              properties:
+                                cacert:
+                                  type: string
+                                clientCert:
+                                  type: string
+                                clientKey:
+                                  type: string
+                                secret:
+                                  properties:
+                                    name:
+                                      type: string
+                                    namespace:
+                                      type: string
+                                  required:
+                                  - name
+                                  - namespace
+                                  type: object
+                                skipVerify:
+                                  type: boolean
+                              type: object
                             url:
                               type: string
                           required:
@@ -16852,6 +16923,609 @@ spec:
                       required:
                       - image
                       - namespace
+                      type: object
+                  type: object
+                type: array
+              hostCollectors:
+                items:
+                  properties:
+                    blockDevices:
+                      properties:
+                        collectorName:
+                          type: string
+                        exclude:
+                          type: BoolString
+                      type: object
+                    certificate:
+                      properties:
+                        certificatePath:
+                          type: string
+                        collectorName:
+                          type: string
+                        exclude:
+                          type: BoolString
+                        keyPath:
+                          type: string
+                      required:
+                      - certificatePath
+                      - keyPath
+                      type: object
+                    certificatesCollection:
+                      properties:
+                        collectorName:
+                          type: string
+                        exclude:
+                          type: BoolString
+                        paths:
+                          items:
+                            type: string
+                          type: array
+                      required:
+                      - paths
+                      type: object
+                    cgroups:
+                      properties:
+                        collectorName:
+                          type: string
+                        exclude:
+                          type: BoolString
+                        mountPoint:
+                          type: string
+                      type: object
+                    copy:
+                      properties:
+                        collectorName:
+                          type: string
+                        exclude:
+                          type: BoolString
+                        path:
+                          type: string
+                      required:
+                      - path
+                      type: object
+                    cpu:
+                      properties:
+                        collectorName:
+                          type: string
+                        exclude:
+                          type: BoolString
+                      type: object
+                    diskUsage:
+                      properties:
+                        collectorName:
+                          type: string
+                        exclude:
+                          type: BoolString
+                        path:
+                          type: string
+                      required:
+                      - path
+                      type: object
+                    dns:
+                      properties:
+                        collectorName:
+                          type: string
+                        exclude:
+                          type: BoolString
+                        hostnames:
+                          items:
+                            type: string
+                          type: array
+                      required:
+                      - hostnames
+                      type: object
+                    filesystemPerformance:
+                      description: |-
+                        FilesystemPerformance benchmarks sequential write latency on a single file.
+                        The optional background IOPS feature attempts to mimic real-world conditions by running read and
+                        write workloads prior to and during benchmark execution.
+                      properties:
+                        backgroundIOPSWarmupSeconds:
+                          description: How long to run the background IOPS read and
+                            write workloads prior to starting the benchmarks.
+                          type: integer
+                        backgroundReadIOPS:
+                          description: |-
+                            The target read IOPS to run while benchmarking. This is a limit and there is no guarantee
+                            it will be reached. This is the total IOPS for all background read jobs.
+                          type: integer
+                        backgroundReadIOPSJobs:
+                          description: |-
+                            Number of threads to use for background read IOPS. This should be set high enough to reach
+                            the target specified in BackgrounReadIOPS.
+                          type: integer
+                        backgroundWriteIOPS:
+                          description: |-
+                            The target write IOPS to run while benchmarking. This is a limit and there is no guarantee
+                            it will be reached. This is the total IOPS for all background write jobs.
+                          type: integer
+                        backgroundWriteIOPSJobs:
+                          description: |-
+                            Number of threads to use for background write IOPS. This should be set high enough to reach
+                            the target specified in BackgroundWriteIOPS.
+                            Example: If BackgroundWriteIOPS is 100 and write latency is 10ms then a single job would
+                            barely be able to reach 100 IOPS so this should be at least 2.
+                          type: integer
+                        collectorName:
+                          type: string
+                        datasync:
+                          description: |-
+                            Whether to call datasync on the file after each write. Skipped if Sync is also true. Does not
+                            apply to background IOPS task.
+                          type: boolean
+                        directory:
+                          description: The directory where the benchmark will create
+                            files.
+                          type: string
+                        enableBackgroundIOPS:
+                          description: Enable the background IOPS feature.
+                          type: boolean
+                        exclude:
+                          type: BoolString
+                        fileSize:
+                          description: |-
+                            The size of the file used in the benchmark. The number of IO operations for the benchmark
+                            will be FileSize / OperationSizeBytes. Accepts valid Kubernetes resource units such as Mi.
+                          type: string
+                        operationSize:
+                          description: |-
+                            The size of each write operation performed while benchmarking. This does not apply to the
+                            background IOPS feature if enabled, since those must be fixed at 4096.
+                          format: int64
+                          type: integer
+                        runTime:
+                          description: |-
+                            Limit runtime. The test will run until it completes the configured I/O workload or until it
+                            has run for this specified amount of time, whichever occurs first. When the unit is omitted,
+                            the value is interpreted in seconds. Defaults to 120 seconds. Set to "0" to disable.
+                          type: string
+                        sync:
+                          description: Whether to call sync on the file after each
+                            write. Does not apply to background IOPS task.
+                          type: boolean
+                        timeout:
+                          description: Total timeout, including background IOPS setup
+                            and warmup if enabled.
+                          type: string
+                      required:
+                      - backgroundIOPSWarmupSeconds
+                      - backgroundReadIOPS
+                      - backgroundReadIOPSJobs
+                      - backgroundWriteIOPS
+                      - backgroundWriteIOPSJobs
+                      - enableBackgroundIOPS
+                      type: object
+                    hostOS:
+                      properties:
+                        collectorName:
+                          type: string
+                        exclude:
+                          type: BoolString
+                      type: object
+                    hostServices:
+                      properties:
+                        collectorName:
+                          type: string
+                        exclude:
+                          type: BoolString
+                      type: object
+                    http:
+                      properties:
+                        collectorName:
+                          type: string
+                        exclude:
+                          type: BoolString
+                        get:
+                          properties:
+                            headers:
+                              additionalProperties:
+                                type: string
+                              type: object
+                            insecureSkipVerify:
+                              type: boolean
+                            proxy:
+                              type: string
+                            timeout:
+                              description: |-
+                                Timeout is the time to wait for a server's response. Its a duration e.g 15s, 2h30m.
+                                Missing value or empty string or means no timeout.
+                              type: string
+                            tls:
+                              properties:
+                                cacert:
+                                  type: string
+                                clientCert:
+                                  type: string
+                                clientKey:
+                                  type: string
+                                secret:
+                                  properties:
+                                    name:
+                                      type: string
+                                    namespace:
+                                      type: string
+                                  required:
+                                  - name
+                                  - namespace
+                                  type: object
+                                skipVerify:
+                                  type: boolean
+                              type: object
+                            url:
+                              type: string
+                          required:
+                          - url
+                          type: object
+                        post:
+                          properties:
+                            body:
+                              type: string
+                            headers:
+                              additionalProperties:
+                                type: string
+                              type: object
+                            insecureSkipVerify:
+                              type: boolean
+                            proxy:
+                              type: string
+                            timeout:
+                              description: |-
+                                Timeout is the time to wait for a server's response. Its a duration e.g 15s, 2h30m.
+                                Missing value or empty string or means no timeout.
+                              type: string
+                            tls:
+                              properties:
+                                cacert:
+                                  type: string
+                                clientCert:
+                                  type: string
+                                clientKey:
+                                  type: string
+                                secret:
+                                  properties:
+                                    name:
+                                      type: string
+                                    namespace:
+                                      type: string
+                                  required:
+                                  - name
+                                  - namespace
+                                  type: object
+                                skipVerify:
+                                  type: boolean
+                              type: object
+                            url:
+                              type: string
+                          required:
+                          - url
+                          type: object
+                        put:
+                          properties:
+                            body:
+                              type: string
+                            headers:
+                              additionalProperties:
+                                type: string
+                              type: object
+                            insecureSkipVerify:
+                              type: boolean
+                            proxy:
+                              type: string
+                            timeout:
+                              description: |-
+                                Timeout is the time to wait for a server's response. Its a duration e.g 15s, 2h30m.
+                                Missing value or empty string or means no timeout.
+                              type: string
+                            tls:
+                              properties:
+                                cacert:
+                                  type: string
+                                clientCert:
+                                  type: string
+                                clientKey:
+                                  type: string
+                                secret:
+                                  properties:
+                                    name:
+                                      type: string
+                                    namespace:
+                                      type: string
+                                  required:
+                                  - name
+                                  - namespace
+                                  type: object
+                                skipVerify:
+                                  type: boolean
+                              type: object
+                            url:
+                              type: string
+                          required:
+                          - url
+                          type: object
+                      type: object
+                    httpLoadBalancer:
+                      properties:
+                        address:
+                          type: string
+                        collectorName:
+                          type: string
+                        exclude:
+                          type: BoolString
+                        path:
+                          type: string
+                        port:
+                          type: integer
+                        timeout:
+                          type: string
+                      required:
+                      - address
+                      - path
+                      - port
+                      type: object
+                    ipv4Interfaces:
+                      properties:
+                        collectorName:
+                          type: string
+                        exclude:
+                          type: BoolString
+                      type: object
+                    journald:
+                      properties:
+                        collectorName:
+                          type: string
+                        dmesg:
+                          type: boolean
+                        exclude:
+                          type: BoolString
+                        lines:
+                          type: integer
+                        output:
+                          type: string
+                        reverse:
+                          type: boolean
+                        since:
+                          type: string
+                        system:
+                          type: boolean
+                        timeout:
+                          type: string
+                        units:
+                          items:
+                            type: string
+                          type: array
+                        until:
+                          type: string
+                        utc:
+                          type: boolean
+                      type: object
+                    kernelConfigs:
+                      properties:
+                        collectorName:
+                          type: string
+                        exclude:
+                          type: BoolString
+                      type: object
+                    kernelModules:
+                      properties:
+                        collectorName:
+                          type: string
+                        exclude:
+                          type: BoolString
+                      type: object
+                    kubernetes:
+                      properties:
+                        collectorName:
+                          type: string
+                        exclude:
+                          type: BoolString
+                      type: object
+                    memory:
+                      properties:
+                        collectorName:
+                          type: string
+                        exclude:
+                          type: BoolString
+                      type: object
+                    run:
+                      properties:
+                        args:
+                          items:
+                            type: string
+                          type: array
+                        collectorName:
+                          type: string
+                        command:
+                          type: string
+                        env:
+                          items:
+                            type: string
+                          type: array
+                        exclude:
+                          type: BoolString
+                        ignoreParentEnvs:
+                          type: boolean
+                        inheritEnvs:
+                          items:
+                            type: string
+                          type: array
+                        input:
+                          additionalProperties:
+                            type: string
+                          type: object
+                        outputDir:
+                          type: string
+                        timeout:
+                          type: string
+                      required:
+                      - args
+                      - command
+                      type: object
+                    subnetAvailable:
+                      properties:
+                        CIDRRangeAlloc:
+                          type: string
+                        collectorName:
+                          type: string
+                        desiredCIDR:
+                          type: integer
+                        exclude:
+                          type: BoolString
+                      required:
+                      - CIDRRangeAlloc
+                      - desiredCIDR
+                      type: object
+                    systemPackages:
+                      properties:
+                        amzn:
+                          items:
+                            type: string
+                          type: array
+                        amzn2:
+                          items:
+                            type: string
+                          type: array
+                        centos:
+                          items:
+                            type: string
+                          type: array
+                        centos7:
+                          items:
+                            type: string
+                          type: array
+                        centos8:
+                          items:
+                            type: string
+                          type: array
+                        centos9:
+                          items:
+                            type: string
+                          type: array
+                        collectorName:
+                          type: string
+                        exclude:
+                          type: BoolString
+                        ol:
+                          items:
+                            type: string
+                          type: array
+                        ol7:
+                          items:
+                            type: string
+                          type: array
+                        ol8:
+                          items:
+                            type: string
+                          type: array
+                        ol9:
+                          items:
+                            type: string
+                          type: array
+                        rhel:
+                          items:
+                            type: string
+                          type: array
+                        rhel7:
+                          items:
+                            type: string
+                          type: array
+                        rhel8:
+                          items:
+                            type: string
+                          type: array
+                        rhel9:
+                          items:
+                            type: string
+                          type: array
+                        rocky:
+                          items:
+                            type: string
+                          type: array
+                        rocky8:
+                          items:
+                            type: string
+                          type: array
+                        rocky9:
+                          items:
+                            type: string
+                          type: array
+                        ubuntu:
+                          items:
+                            type: string
+                          type: array
+                        ubuntu16:
+                          items:
+                            type: string
+                          type: array
+                        ubuntu18:
+                          items:
+                            type: string
+                          type: array
+                        ubuntu20:
+                          items:
+                            type: string
+                          type: array
+                      type: object
+                    tcpConnect:
+                      properties:
+                        address:
+                          type: string
+                        collectorName:
+                          type: string
+                        exclude:
+                          type: BoolString
+                        timeout:
+                          type: string
+                      required:
+                      - address
+                      type: object
+                    tcpLoadBalancer:
+                      properties:
+                        address:
+                          type: string
+                        collectorName:
+                          type: string
+                        exclude:
+                          type: BoolString
+                        port:
+                          type: integer
+                        timeout:
+                          type: string
+                      required:
+                      - address
+                      - port
+                      type: object
+                    tcpPortStatus:
+                      properties:
+                        collectorName:
+                          type: string
+                        exclude:
+                          type: BoolString
+                        interface:
+                          type: string
+                        port:
+                          type: integer
+                      required:
+                      - port
+                      type: object
+                    time:
+                      properties:
+                        collectorName:
+                          type: string
+                        exclude:
+                          type: BoolString
+                      type: object
+                    udpPortStatus:
+                      properties:
+                        collectorName:
+                          type: string
+                        exclude:
+                          type: BoolString
+                        interface:
+                          type: string
+                        port:
+                          type: integer
+                      required:
+                      - port
                       type: object
                   type: object
                 type: array

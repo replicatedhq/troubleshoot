@@ -199,7 +199,7 @@ func runTroubleshoot(v *viper.Viper, args []string) error {
 
 	if len(response.AnalyzerResults) > 0 {
 		if interactive {
-			if err := showInteractiveResults(mainBundle.Metadata.Name, response.AnalyzerResults, response.ArchivePath); err != nil {
+			if err := showInteractiveResults(mainBundle.Name, response.AnalyzerResults, response.ArchivePath); err != nil {
 				interactive = false
 			}
 		} else {
@@ -208,7 +208,7 @@ func runTroubleshoot(v *viper.Viper, args []string) error {
 	}
 
 	if !response.FileUploaded {
-		if appName := mainBundle.Metadata.Labels["applicationName"]; appName != "" {
+		if appName := mainBundle.Labels["applicationName"]; appName != "" {
 			f := `A support bundle for %s has been created in this directory
 named %s. Please upload it on the Troubleshoot page of
 the %s Admin Console to begin analysis.`
@@ -292,24 +292,9 @@ func loadSpecs(ctx context.Context, args []string, client kubernetes.Interface) 
 		err       error
 	)
 
-	if len(args) < 1 {
-		fmt.Println("\r\033[36mNo specs provided, attempting to load from cluster...\033[m")
-		kinds, err = specs.LoadFromCluster(ctx, client, vp.GetStringSlice("selector"), vp.GetString("namespace"))
-		if err != nil {
-			return nil, nil, errors.Wrap(err, "failed to load specs from cluster, and no specs were provided as arguments")
-		}
-		if len(redactors) > 0 {
-			additionalKinds, err := specs.LoadFromCLIArgs(ctx, client, allArgs, vp)
-			if err != nil {
-				return nil, nil, errors.Wrap(err, "failed to load redactors from CLI args")
-			}
-			kinds.RedactorsV1Beta2 = append(kinds.RedactorsV1Beta2, additionalKinds.RedactorsV1Beta2...)
-		}
-	} else {
-		kinds, err = specs.LoadFromCLIArgs(ctx, client, allArgs, vp)
-		if err != nil {
-			return nil, nil, errors.Wrap(err, "failed to load specs from CLI args")
-		}
+	kinds, err = specs.LoadFromCLIArgs(ctx, client, allArgs, vp)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "failed to load specs from CLI args")
 	}
 
 	// Load additional specs from support bundle URIs
@@ -326,7 +311,10 @@ func loadSpecs(ctx context.Context, args []string, client kubernetes.Interface) 
 	if len(kinds.CollectorsV1Beta2) == 0 &&
 		len(kinds.HostCollectorsV1Beta2) == 0 &&
 		len(kinds.SupportBundlesV1Beta2) == 0 {
-		return nil, nil, types.NewExitCodeError(constants.EXIT_CODE_CATCH_ALL, errors.Wrap(err, "no collectors specified to run. Use --debug and/or -v=2 to see more information"))
+		return nil, nil, types.NewExitCodeError(
+			constants.EXIT_CODE_CATCH_ALL,
+			errors.New("no collectors specified to run. Use --debug and/or -v=2 to see more information"),
+		)
 	}
 
 	// Merge specs
@@ -337,10 +325,8 @@ func loadSpecs(ctx context.Context, args []string, client kubernetes.Interface) 
 			APIVersion: "troubleshoot.sh/v1beta2",
 			Kind:       "SupportBundle",
 		},
-		Metadata: troubleshootv1beta2.SupportBundleMetadata{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: "merged-support-bundle-spec",
-			},
+		ObjectMeta: metav1.ObjectMeta{
+			Name: "merged-support-bundle-spec",
 		},
 	}
 
@@ -350,7 +336,7 @@ func loadSpecs(ctx context.Context, args []string, client kubernetes.Interface) 
 		sb := sb
 		mainBundle = supportbundle.ConcatSpec(mainBundle, &sb)
 		//check if sb has metadata and if it has RunHostCollectorsInPod set to true
-		if !reflect.DeepEqual(sb.Metadata.ObjectMeta, metav1.ObjectMeta{}) && sb.Spec.RunHostCollectorsInPod {
+		if !reflect.DeepEqual(sb.ObjectMeta, metav1.ObjectMeta{}) && sb.Spec.RunHostCollectorsInPod {
 			enableRunHostCollectorsInPod = sb.Spec.RunHostCollectorsInPod
 		}
 	}

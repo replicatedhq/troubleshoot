@@ -66,11 +66,15 @@ func (a *AnalyzeCustomResourceDefinition) analyzeCustomResourceDefinition(analyz
 		}
 	}
 
-	result.IsFail = true
 	for _, outcome := range analyzer.Outcomes {
 		if outcome.Fail != nil {
+			result.IsFail = true
 			result.Message = outcome.Fail.Message
 			result.URI = outcome.Fail.URI
+		} else if outcome.Warn != nil {
+			result.IsWarn = true
+			result.Message = outcome.Warn.Message
+			result.URI = outcome.Warn.URI
 		}
 	}
 

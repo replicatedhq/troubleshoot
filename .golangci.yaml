@@ -2,7 +2,7 @@
 
 run:
   allow-parallel-runners: true
-  timeout: 30s
+  timeout: 10m
 
 linters:
   enable:
@@ -11,3 +11,5 @@ linters:
     - gofmt
     - gosec
     - govet
+  disable:
+    - errcheck

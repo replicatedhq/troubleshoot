@@ -7,12 +7,14 @@ import (
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/shirou/gopsutil/v3/cpu"
+	"github.com/shirou/gopsutil/v3/host"
 )
 
 type CPUInfo struct {
 	LogicalCount  int      `json:"logicalCount"`
 	PhysicalCount int      `json:"physicalCount"`
 	Flags         []string `json:"flags"`
+	MachineArch   string   `json:"machineArch"`
 }
 
 const HostCPUPath = `host-collectors/system/cpu.json`
@@ -44,6 +46,11 @@ func (c *CollectHostCPU) Collect(progressChan chan<- interface{}) (map[string][]
 		return nil, errors.Wrap(err, "failed to count physical cpus")
 	}
 	cpuInfo.PhysicalCount = physicalCount
+
+	cpuInfo.MachineArch, err = host.KernelArch()
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to fetch cpu architecture")
+	}
 
 	// XXX even though the cpu.Info() returns a slice per CPU it is way
 	// common to have the same flags for all CPUs. We consolidate them here

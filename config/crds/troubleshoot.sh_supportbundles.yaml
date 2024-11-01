@@ -2114,6 +2114,8 @@ spec:
                           type: string
                         exclude:
                           type: BoolString
+                        image:
+                          type: string
                         namespace:
                           type: string
                         podLaunchOptions:
@@ -2166,11 +2168,34 @@ spec:
                               type: object
                             insecureSkipVerify:
                               type: boolean
+                            proxy:
+                              type: string
                             timeout:
                               description: |-
                                 Timeout is the time to wait for a server's response. Its a duration e.g 15s, 2h30m.
                                 Missing value or empty string or means no timeout.
                               type: string
+                            tls:
+                              properties:
+                                cacert:
+                                  type: string
+                                clientCert:
+                                  type: string
+                                clientKey:
+                                  type: string
+                                secret:
+                                  properties:
+                                    name:
+                                      type: string
+                                    namespace:
+                                      type: string
+                                  required:
+                                  - name
+                                  - namespace
+                                  type: object
+                                skipVerify:
+                                  type: boolean
+                              type: object
                             url:
                               type: string
                           required:
@@ -2188,11 +2213,34 @@ spec:
                               type: object
                             insecureSkipVerify:
                               type: boolean
+                            proxy:
+                              type: string
                             timeout:
                               description: |-
                                 Timeout is the time to wait for a server's response. Its a duration e.g 15s, 2h30m.
                                 Missing value or empty string or means no timeout.
                               type: string
+                            tls:
+                              properties:
+                                cacert:
+                                  type: string
+                                clientCert:
+                                  type: string
+                                clientKey:
+                                  type: string
+                                secret:
+                                  properties:
+                                    name:
+                                      type: string
+                                    namespace:
+                                      type: string
+                                  required:
+                                  - name
+                                  - namespace
+                                  type: object
+                                skipVerify:
+                                  type: boolean
+                              type: object
                             url:
                               type: string
                           required:
@@ -2208,11 +2256,34 @@ spec:
                               type: object
                             insecureSkipVerify:
                               type: boolean
+                            proxy:
+                              type: string
                             timeout:
                               description: |-
                                 Timeout is the time to wait for a server's response. Its a duration e.g 15s, 2h30m.
                                 Missing value or empty string or means no timeout.
                               type: string
+                            tls:
+                              properties:
+                                cacert:
+                                  type: string
+                                clientCert:
+                                  type: string
+                                clientKey:
+                                  type: string
+                                secret:
+                                  properties:
+                                    name:
+                                      type: string
+                                    namespace:
+                                      type: string
+                                  required:
+                                  - name
+                                  - namespace
+                                  type: object
+                                skipVerify:
+                                  type: boolean
+                              type: object
                             url:
                               type: string
                           required:
@@ -19976,11 +20047,34 @@ spec:
                               type: object
                             insecureSkipVerify:
                               type: boolean
+                            proxy:
+                              type: string
                             timeout:
                               description: |-
                                 Timeout is the time to wait for a server's response. Its a duration e.g 15s, 2h30m.
                                 Missing value or empty string or means no timeout.
                               type: string
+                            tls:
+                              properties:
+                                cacert:
+                                  type: string
+                                clientCert:
+                                  type: string
+                                clientKey:
+                                  type: string
+                                secret:
+                                  properties:
+                                    name:
+                                      type: string
+                                    namespace:
+                                      type: string
+                                  required:
+                                  - name
+                                  - namespace
+                                  type: object
+                                skipVerify:
+                                  type: boolean
+                              type: object
                             url:
                               type: string
                           required:
@@ -19996,11 +20090,34 @@ spec:
                               type: object
                             insecureSkipVerify:
                               type: boolean
+                            proxy:
+                              type: string
                             timeout:
                               description: |-
                                 Timeout is the time to wait for a server's response. Its a duration e.g 15s, 2h30m.
                                 Missing value or empty string or means no timeout.
                               type: string
+                            tls:
+                              properties:
+                                cacert:
+                                  type: string
+                                clientCert:
+                                  type: string
+                                clientKey:
+                                  type: string
+                                secret:
+                                  properties:
+                                    name:
+                                      type: string
+                                    namespace:
+                                      type: string
+                                  required:
+                                  - name
+                                  - namespace
+                                  type: object
+                                skipVerify:
+                                  type: boolean
+                              type: object
                             url:
                               type: string
                           required:
@@ -20016,11 +20133,34 @@ spec:
                               type: object
                             insecureSkipVerify:
                               type: boolean
+                            proxy:
+                              type: string
                             timeout:
                               description: |-
                                 Timeout is the time to wait for a server's response. Its a duration e.g 15s, 2h30m.
                                 Missing value or empty string or means no timeout.
                               type: string
+                            tls:
+                              properties:
+                                cacert:
+                                  type: string
+                                clientCert:
+                                  type: string
+                                clientKey:
+                                  type: string
+                                secret:
+                                  properties:
+                                    name:
+                                      type: string
+                                    namespace:
+                                      type: string
+                                  required:
+                                  - name
+                                  - namespace
+                                  type: object
+                                skipVerify:
+                                  type: boolean
+                              type: object
                             url:
                               type: string
                           required:
@@ -20313,6 +20453,8 @@ spec:
                       type: object
                   type: object
                 type: array
+              runHostCollectorsInPod:
+                type: boolean
               uri:
                 description: URI optionally defines a location which is the source
                   of this spec to allow updating of the spec at runtime

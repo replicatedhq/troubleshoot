@@ -7,6 +7,7 @@ VERSION_PACKAGE = github.com/replicatedhq/troubleshoot/pkg/version
 VERSION ?=`git describe --tags --dirty`
 DATE=`date -u +"%Y-%m-%dT%H:%M:%SZ"`
 RUN?=""
+GOLANGCI_LINT_VERSION ?= "v1.61.0"
 
 GIT_TREE = $(shell git rev-parse --is-inside-work-tree 2>/dev/null)
 ifneq "$(GIT_TREE)" ""
@@ -34,7 +35,8 @@ define LDFLAGS
 "
 endef
 
-BUILDFLAGS = -tags "netgo containers_image_ostree_stub exclude_graphdriver_devicemapper exclude_graphdriver_btrfs containers_image_openpgp" -installsuffix netgo
+BUILDTAGS = "netgo containers_image_ostree_stub exclude_graphdriver_devicemapper exclude_graphdriver_btrfs containers_image_openpgp"
+BUILDFLAGS = -tags ${BUILDTAGS} -installsuffix netgo
 BUILDPATHS = ./pkg/... ./cmd/... ./internal/...
 E2EPATHS = ./test/e2e/...
 TESTFLAGS ?= -v -coverprofile cover.out
@@ -131,7 +133,7 @@ generate: controller-gen client-gen
 	$(CONTROLLER_GEN) \
 		object:headerFile=./hack/boilerplate.go.txt paths=./pkg/apis/...
 	$(CLIENT_GEN) \
-		--output-base=./../../../ \
+		--output-base=$$(pwd)/../../../ \
 		--output-package=github.com/replicatedhq/troubleshoot/pkg/client \
 		--clientset-name troubleshootclientset \
 		--input-base github.com/replicatedhq/troubleshoot/pkg/apis \
@@ -145,14 +147,14 @@ openapischema: controller-gen
 	controller-gen crd +output:dir=./config/crds  paths=./pkg/apis/troubleshoot/v1beta2
 
 check-schemas: generate schemas
-	@if [ -n "$(shell git status --short)" ]; then \
+	@if [ -n "$$(git status --short)" ]; then \
     	echo -e "\033[31mThe git repo is dirty :( Ensure all generated files are committed e.g CRD schema files\033[0;m"; \
     	git status --short; \
     	exit 1; \
 	fi
 
 .PHONY: schemas
-schemas: fmt vet openapischema bin/schemagen
+schemas: openapischema bin/schemagen
 	./bin/schemagen --output-dir ./schemas
 
 bin/schemagen:
@@ -236,12 +238,16 @@ scan:
 		./
 
 .PHONY: lint
-lint:
-	golangci-lint run --new -c .golangci.yaml ${BUILDPATHS}
+lint: vet
+	golangci-lint run --new -c .golangci.yaml --build-tags ${BUILDTAGS} ${BUILDPATHS}
 
-.PHONY: fmt lint-and-fix
-lint-and-fix:
-	golangci-lint run --new --fix -c .golangci.yaml ${BUILDPATHS}
+.PHONY: lint-and-fix
+lint-and-fix: fmt vet
+	golangci-lint run --new --fix -c .golangci.yaml --build-tags ${BUILDTAGS} ${BUILDPATHS}
+
+.PHONY: install-golangci-lint
+install-golangci-lint:
+	go install github.com/golangci/golangci-lint/cmd/golangci-lint@${GOLANGCI_LINT_VERSION}
 
 .PHONY: watch
 watch: npm-install

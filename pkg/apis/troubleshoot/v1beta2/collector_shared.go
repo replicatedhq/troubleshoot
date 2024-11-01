@@ -186,7 +186,9 @@ type Get struct {
 	Headers            map[string]string `json:"headers,omitempty" yaml:"headers,omitempty"`
 	// Timeout is the time to wait for a server's response. Its a duration e.g 15s, 2h30m.
 	// Missing value or empty string or means no timeout.
-	Timeout string `json:"timeout,omitempty" yaml:"timeout,omitempty"`
+	Timeout string     `json:"timeout,omitempty" yaml:"timeout,omitempty"`
+	TLS     *TLSParams `json:"tls,omitempty" yaml:"tls,omitempty"`
+	Proxy   string     `json:"proxy,omitempty" yaml:"proxy,omitempty"`
 }
 
 type Post struct {
@@ -196,7 +198,9 @@ type Post struct {
 	Body               string            `json:"body,omitempty" yaml:"body,omitempty"`
 	// Timeout is the time to wait for a server's response. Its a duration e.g 15s, 2h30m.
 	// Missing value or empty string or means no timeout.
-	Timeout string `json:"timeout,omitempty" yaml:"timeout,omitempty"`
+	Timeout string     `json:"timeout,omitempty" yaml:"timeout,omitempty"`
+	TLS     *TLSParams `json:"tls,omitempty" yaml:"tls,omitempty"`
+	Proxy   string     `json:"proxy,omitempty" yaml:"proxy,omitempty"`
 }
 
 type Put struct {
@@ -206,7 +210,9 @@ type Put struct {
 	Body               string            `json:"body,omitempty" yaml:"body,omitempty"`
 	// Timeout is the time to wait for a server's response. Its a duration e.g 15s, 2h30m.
 	// Missing value or empty string or means no timeout.
-	Timeout string `json:"timeout,omitempty" yaml:"timeout,omitempty"`
+	Timeout string     `json:"timeout,omitempty" yaml:"timeout,omitempty"`
+	TLS     *TLSParams `json:"tls,omitempty" yaml:"tls,omitempty"`
+	Proxy   string     `json:"proxy,omitempty" yaml:"proxy,omitempty"`
 }
 
 type Database struct {
@@ -279,6 +285,7 @@ type Helm struct {
 type Goldpinger struct {
 	CollectorMeta      `json:",inline" yaml:",inline"`
 	Namespace          string            `json:"namespace,omitempty" yaml:"namespace,omitempty"`
+	Image              string            `json:"image,omitempty" yaml:"image,omitempty"`
 	ServiceAccountName string            `json:"serviceAccountName,omitempty" yaml:"serviceAccountName,omitempty"`
 	CollectDelay       string            `json:"collectDelay,omitempty" yaml:"collectDelay,omitempty"`
 	PodLaunchOptions   *PodLaunchOptions `json:"podLaunchOptions,omitempty" yaml:"podLaunchOptions,omitempty"`
