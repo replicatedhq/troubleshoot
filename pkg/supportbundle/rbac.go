@@ -34,34 +34,50 @@ func checkRemoteCollectorRBAC(ctx context.Context, clientConfig *rest.Config, ti
 
 	var forbidden []error
 
-	spec := authorizationv1.SelfSubjectAccessReviewSpec{
-		ResourceAttributes: &authorizationv1.ResourceAttributes{
-			Namespace:   namespace,
-			Verb:        "create,delete",
-			Group:       "",
-			Version:     "",
-			Resource:    "pods,configmap",
-			Subresource: "",
-			Name:        "",
+	resourceAttributesList := []authorizationv1.ResourceAttributes{
+		{
+			Namespace: namespace,
+			Verb:      "create",
+			Resource:  "pods",
 		},
-		NonResourceAttributes: nil,
+		{
+			Namespace: namespace,
+			Verb:      "delete",
+			Resource:  "pods",
+		},
+		{
+			Verb:     "list",
+			Resource: "nodes",
+		},
+		{
+			Namespace: namespace,
+			Verb:      "create",
+			Resource:  "configmaps",
+		},
 	}
 
-	sar := &authorizationv1.SelfSubjectAccessReview{
-		Spec: spec,
-	}
-	resp, err := client.AuthorizationV1().SelfSubjectAccessReviews().Create(ctx, sar, metav1.CreateOptions{})
-	if err != nil {
-		return errors.Wrap(err, "failed to run subject review")
-	}
+	for _, resourceAttributes := range resourceAttributesList {
+		spec := authorizationv1.SelfSubjectAccessReviewSpec{
+			ResourceAttributes: &resourceAttributes,
+		}
 
-	if !resp.Status.Allowed {
-		forbidden = append(forbidden, collect.RBACError{
-			DisplayName: title,
-			Namespace:   spec.ResourceAttributes.Namespace,
-			Resource:    spec.ResourceAttributes.Resource,
-			Verb:        spec.ResourceAttributes.Verb,
-		})
+		sar := &authorizationv1.SelfSubjectAccessReview{
+			Spec: spec,
+		}
+
+		resp, err := client.AuthorizationV1().SelfSubjectAccessReviews().Create(ctx, sar, metav1.CreateOptions{})
+		if err != nil {
+			return errors.Wrap(err, "failed to run subject review")
+		}
+
+		if !resp.Status.Allowed {
+			forbidden = append(forbidden, collect.RBACError{
+				DisplayName: title,
+				Namespace:   spec.ResourceAttributes.Namespace,
+				Resource:    spec.ResourceAttributes.Resource,
+				Verb:        spec.ResourceAttributes.Verb,
+			})
+		}
 	}
 
 	if len(forbidden) > 0 {
