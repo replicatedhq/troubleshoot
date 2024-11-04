@@ -22,7 +22,6 @@ import (
 	"github.com/replicatedhq/troubleshoot/pkg/convert"
 	"github.com/replicatedhq/troubleshoot/pkg/version"
 	"go.opentelemetry.io/otel"
-	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -308,20 +307,8 @@ func getNodeList(clientset kubernetes.Interface, opts SupportBundleCreateOpts) (
 
 	nodeList := NodeList{}
 	for _, node := range nodes.Items {
-		if isMasterNode(node) {
-			continue
-		}
 		nodeList.Nodes = append(nodeList.Nodes, node.Name)
 	}
 
 	return &nodeList, nil
-}
-
-func isMasterNode(node v1.Node) bool {
-	for label := range node.Labels {
-		if label == "node-role.kubernetes.io/master" || label == "node-role.kubernetes.io/control-plane" {
-			return true
-		}
-	}
-	return false
 }
