@@ -305,21 +305,7 @@ func getExecOutputs(
 		return stdout.Bytes(), stderr.Bytes(), err
 	}
 
-	// Poll until stdout is non-empty or the context times out
-	ticker := time.NewTicker(100 * time.Millisecond) // Adjust polling frequency as needed
-	defer ticker.Stop()
-
-	for {
-		select {
-		case <-ticker.C:
-			if stdout.Len() > 0 {
-				return stdout.Bytes(), stderr.Bytes(), nil
-			}
-		case <-ctx.Done():
-			// Return whatever we have if context is canceled
-			return stdout.Bytes(), stderr.Bytes(), ctx.Err()
-		}
-	}
+	return stdout.Bytes(), stderr.Bytes(), nil
 }
 
 func runRemoteHostCollectors(ctx context.Context, hostCollectors []*troubleshootv1beta2.HostCollect, bundlePath string, opts SupportBundleCreateOpts) (map[string][]byte, error) {
@@ -398,7 +384,12 @@ func runRemoteHostCollectors(ctx context.Context, hostCollectors []*troubleshoot
 				for file, data := range result {
 					results[file] = []byte(data)
 				}
+
+				time.Sleep(1 * time.Second)
 			}
+
+			// wait for log stream to catch up
+			time.Sleep(1 * time.Second)
 
 			mu.Lock()
 			nodeLogs[pod.Spec.NodeName] = results
