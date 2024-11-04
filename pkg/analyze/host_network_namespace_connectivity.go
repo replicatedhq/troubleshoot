@@ -26,37 +26,46 @@ func (a *AnalyzeHostNetworkNamespaceConnectivity) Analyze(
 ) ([]*AnalyzeResult, error) {
 	hostAnalyzer := a.hostAnalyzer
 
-	name := filepath.Join("host-collectors/system", "networkNamespaceConnectivity.json")
+	collectedPath := filepath.Join("host-collectors/system", "networkNamespaceConnectivity.json")
+	fileName := "networkNamespaceConnectivity.json"
 	if hostAnalyzer.CollectorName != "" {
-		name = filepath.Join("host-collectors/system", hostAnalyzer.CollectorName+".json")
+		collectedPath = filepath.Join("host-collectors/system", hostAnalyzer.CollectorName+".json")
+		fileName = hostAnalyzer.CollectorName + ".json"
 	}
 
-	contents, err := getCollectedFileContents(name)
+	collectedContents, err := retrieveCollectedContents(
+		getCollectedFileContents,
+		collectedPath,
+		collect.NodeInfoBaseDir,
+		fileName,
+	)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get collected file %s: %w", name, err)
-	}
-
-	var info collect.NetworkNamespaceConnectivityInfo
-	if err := json.Unmarshal(contents, &info); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal disk usage info from %s: %w", name, err)
+		return nil, fmt.Errorf("failed to retrieve collected contents: %w", err)
 	}
 
 	var results []*AnalyzeResult
-	for _, outcome := range hostAnalyzer.Outcomes {
-		result := &AnalyzeResult{Title: a.Title()}
-
-		if outcome.Pass != nil && info.Success {
-			result.IsPass = true
-			result.Message = outcome.Pass.Message
-			results = append(results, result)
-			break
+	for _, collected := range collectedContents {
+		var info collect.NetworkNamespaceConnectivityInfo
+		if err := json.Unmarshal(collected.Data, &info); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal disk usage info: %w", err)
 		}
 
-		if outcome.Fail != nil && !info.Success {
-			result.IsFail = true
-			result.Message = outcome.Fail.Message
-			results = append(results, result)
-			break
+		for _, outcome := range hostAnalyzer.Outcomes {
+			result := &AnalyzeResult{Title: a.Title()}
+
+			if outcome.Pass != nil && info.Success {
+				result.IsPass = true
+				result.Message = outcome.Pass.Message
+				results = append(results, result)
+				break
+			}
+
+			if outcome.Fail != nil && !info.Success {
+				result.IsFail = true
+				result.Message = outcome.Fail.Message
+				results = append(results, result)
+				break
+			}
 		}
 	}
 
