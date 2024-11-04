@@ -305,7 +305,21 @@ func getExecOutputs(
 		return stdout.Bytes(), stderr.Bytes(), err
 	}
 
-	return stdout.Bytes(), stderr.Bytes(), nil
+	// Poll until stdout is non-empty or the context times out
+	ticker := time.NewTicker(100 * time.Millisecond) // Adjust polling frequency as needed
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			if stdout.Len() > 0 {
+				return stdout.Bytes(), stderr.Bytes(), nil
+			}
+		case <-ctx.Done():
+			// Return whatever we have if context is canceled
+			return stdout.Bytes(), stderr.Bytes(), ctx.Err()
+		}
+	}
 }
 
 func runRemoteHostCollectors(ctx context.Context, hostCollectors []*troubleshootv1beta2.HostCollect, bundlePath string, opts SupportBundleCreateOpts) (map[string][]byte, error) {
@@ -357,10 +371,10 @@ func runRemoteHostCollectors(ctx context.Context, hostCollectors []*troubleshoot
 	for _, pod := range pods.Items {
 		eg.Go(func() error {
 			// TODO: set timeout waiting
-			err := waitForPodRunning(ctx, clientset, &pod)
-			if err != nil {
+			if err := waitForPodRunning(ctx, clientset, &pod); err != nil {
 				return err
 			}
+
 			results := map[string][]byte{}
 			for _, collectorSpec := range hostCollectors {
 				// convert host collectors into a HostCollector spec
@@ -375,16 +389,16 @@ func runRemoteHostCollectors(ctx context.Context, hostCollectors []*troubleshoot
 				if err != nil {
 					return err
 				}
-				result := map[string][]byte{}
-				json.Unmarshal(stdout, &result)
-				for file, data := range result {
-					results[file] = data
-				}
-				time.Sleep(1 * time.Second)
-			}
 
-			// wait for log stream to catch up
-			time.Sleep(1 * time.Second)
+				result := map[string]string{}
+				if err := json.Unmarshal(stdout, &result); err != nil {
+					return err
+				}
+
+				for file, data := range result {
+					results[file] = []byte(data)
+				}
+			}
 
 			mu.Lock()
 			nodeLogs[pod.Spec.NodeName] = results
