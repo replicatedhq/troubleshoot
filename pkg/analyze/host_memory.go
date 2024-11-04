@@ -3,7 +3,6 @@ package analyzer
 import (
 	"encoding/json"
 	"fmt"
-	"reflect"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -49,14 +48,10 @@ func (a *AnalyzeHostMemory) Analyze(
 }
 
 // checkCondition checks the condition of the when clause
-func (a *AnalyzeHostMemory) CheckCondition(when string, data collectorData) (bool, error) {
-	rawData, ok := data.([]byte)
-	if !ok {
-		return false, fmt.Errorf("expected data to be []uint8 (raw bytes), got: %v", reflect.TypeOf(data))
-	}
+func (a *AnalyzeHostMemory) CheckCondition(when string, data []byte) (bool, error) {
 
 	var memInfo collect.MemoryInfo
-	if err := json.Unmarshal(rawData, &memInfo); err != nil {
+	if err := json.Unmarshal(data, &memInfo); err != nil {
 		return false, fmt.Errorf("failed to unmarshal data into MemoryInfo: %v", err)
 	}
 

@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"path/filepath"
 	"strings"
 	"text/template"
 	"time"
@@ -30,18 +29,23 @@ func (a *AnalyzeHostFilesystemPerformance) IsExcluded() (bool, error) {
 func (a *AnalyzeHostFilesystemPerformance) Analyze(
 	getCollectedFileContents func(string) ([]byte, error), findFiles getChildCollectedFileContents,
 ) ([]*AnalyzeResult, error) {
+	result := &AnalyzeResult{Title: a.Title()}
 	hostAnalyzer := a.hostAnalyzer
+	collectorName := a.hostAnalyzer.CollectorName
 
-	result := &AnalyzeResult{
-		Title: a.Title(),
-	}
-
-	collectorName := hostAnalyzer.CollectorName
 	if collectorName == "" {
 		collectorName = "filesystemPerformance"
 	}
-	name := filepath.Join("host-collectors/filesystemPerformance", collectorName+".json")
-	contents, err := getCollectedFileContents(name)
+	const nodeBaseDir = "host-collectors/filesystemPerformance"
+	localPath := fmt.Sprintf("%s/%s.json", nodeBaseDir, collectorName)
+	fileName := fmt.Sprintf("%s.json", collectorName)
+
+	collectedContents, err := retrieveCollectedContents(
+		getCollectedFileContents,
+		localPath,
+		nodeBaseDir,
+		fileName,
+	)
 	if err != nil {
 		if len(hostAnalyzer.Outcomes) >= 1 {
 			// if the very first outcome is FILE_NOT_COLLECTED', then use that outcome
@@ -64,104 +68,26 @@ func (a *AnalyzeHostFilesystemPerformance) Analyze(
 				result.URI = hostAnalyzer.Outcomes[0].Pass.URI
 				return []*AnalyzeResult{result}, nil
 			}
-		}
-
-		return nil, errors.Wrapf(err, "failed to get collected file %s", name)
-	}
-
-	fioResult := collect.FioResult{}
-	if err := json.Unmarshal(contents, &fioResult); err != nil {
-		return nil, errors.Wrapf(err, "failed to unmarshal fio results from %s", name)
-	}
-
-	var job *collect.FioJobs
-	for _, j := range fioResult.Jobs {
-		if j.JobName == collect.FioJobName {
-			job = &j
-			break
-		}
-	}
-	if job == nil {
-		return nil, errors.Errorf("no job named 'fsperf' found in fio results from %s", name)
-	}
-
-	fioWriteLatency := job.Sync
-
-	fsPerf := fioWriteLatency.FSPerfResults()
-	if err := json.Unmarshal(contents, &fsPerf); err != nil {
-		return nil, errors.Wrapf(err, "failed to unmarshal filesystem performance results from %s", name)
-	}
-
-	for _, outcome := range hostAnalyzer.Outcomes {
-
-		if outcome.Fail != nil {
-			if outcome.Fail.When == "" {
-				result.IsFail = true
-				result.Message = renderFSPerfOutcome(outcome.Fail.Message, fsPerf)
-				result.URI = outcome.Fail.URI
-
-				return []*AnalyzeResult{result}, nil
-			}
-
-			isMatch, err := compareHostFilesystemPerformanceConditionalToActual(outcome.Fail.When, fsPerf)
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed to compare %q", outcome.Fail.When)
-			}
-
-			if isMatch {
-				result.IsFail = true
-				result.Message = renderFSPerfOutcome(outcome.Fail.Message, fsPerf)
-				result.URI = outcome.Fail.URI
-
-				return []*AnalyzeResult{result}, nil
-			}
-		} else if outcome.Warn != nil {
-			if outcome.Warn.When == "" {
-				result.IsWarn = true
-				result.Message = renderFSPerfOutcome(outcome.Warn.Message, fsPerf)
-				result.URI = outcome.Warn.URI
-
-				return []*AnalyzeResult{result}, nil
-			}
-
-			isMatch, err := compareHostFilesystemPerformanceConditionalToActual(outcome.Warn.When, fsPerf)
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed to compare %q", outcome.Warn.When)
-			}
-
-			if isMatch {
-				result.IsWarn = true
-				result.Message = renderFSPerfOutcome(outcome.Warn.Message, fsPerf)
-				result.URI = outcome.Warn.URI
-
-				return []*AnalyzeResult{result}, nil
-			}
-		} else if outcome.Pass != nil {
-			if outcome.Pass.When == "" {
-				result.IsPass = true
-				result.Message = renderFSPerfOutcome(outcome.Pass.Message, fsPerf)
-				result.URI = outcome.Pass.URI
-
-				return []*AnalyzeResult{result}, nil
-			}
-
-			isMatch, err := compareHostFilesystemPerformanceConditionalToActual(outcome.Pass.When, fsPerf)
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed to compare %q", outcome.Pass.When)
-			}
-
-			if isMatch {
-				result.IsPass = true
-				result.Message = renderFSPerfOutcome(outcome.Pass.Message, fsPerf)
-				result.URI = outcome.Pass.URI
-
-				return []*AnalyzeResult{result}, nil
-			}
-
+			return nil, errors.Wrapf(err, "failed to get collected file %s", localPath)
 		}
 	}
 
-	return []*AnalyzeResult{result}, nil
+	var results []*AnalyzeResult
+	for _, content := range collectedContents {
+		currentTitle := a.Title()
+		if content.NodeName != "" {
+			currentTitle = fmt.Sprintf("%s - Node %s", a.Title(), content.NodeName)
+		}
+		result, err := a.analyzeSingleNode(content, currentTitle)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to analyze filesystem performance for %s", currentTitle)
+		}
+		if result != nil {
+			results = append(results, result...)
+		}
+	}
+
+	return results, nil
 }
 
 func compareHostFilesystemPerformanceConditionalToActual(conditional string, fsPerf collect.FSPerfResults) (res bool, err error) {
@@ -257,4 +183,106 @@ func renderFSPerfOutcome(outcome string, fsPerf collect.FSPerfResults) string {
 		return outcome
 	}
 	return buf.String()
+}
+
+func (a *AnalyzeHostFilesystemPerformance) analyzeSingleNode(content collectedContent, currentTitle string) ([]*AnalyzeResult, error) {
+	hostAnalyzer := a.hostAnalyzer
+	result := &AnalyzeResult{
+		Title: currentTitle,
+	}
+	fioResult := collect.FioResult{}
+	if err := json.Unmarshal(content.Data, &fioResult); err != nil {
+		return nil, errors.Wrapf(err, "failed to unmarshal fio results from %s", currentTitle)
+	}
+
+	var job *collect.FioJobs
+	for _, j := range fioResult.Jobs {
+		if j.JobName == collect.FioJobName {
+			job = &j
+			break
+		}
+	}
+	if job == nil {
+		return nil, errors.Errorf("no job named 'fsperf' found in fio results from %s", currentTitle)
+	}
+
+	fioWriteLatency := job.Sync
+
+	fsPerf := fioWriteLatency.FSPerfResults()
+	if err := json.Unmarshal(content.Data, &fsPerf); err != nil {
+		return nil, errors.Wrapf(err, "failed to unmarshal filesystem performance results from %s", currentTitle)
+	}
+
+	for _, outcome := range hostAnalyzer.Outcomes {
+
+		switch {
+		case outcome.Fail != nil:
+			if outcome.Fail.When == "" {
+				result.IsFail = true
+				result.Message = renderFSPerfOutcome(outcome.Fail.Message, fsPerf)
+				result.URI = outcome.Fail.URI
+
+				return []*AnalyzeResult{result}, nil
+			}
+
+			isMatch, err := compareHostFilesystemPerformanceConditionalToActual(outcome.Fail.When, fsPerf)
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to compare %q", outcome.Fail.When)
+			}
+
+			if isMatch {
+				result.IsFail = true
+				result.Message = renderFSPerfOutcome(outcome.Fail.Message, fsPerf)
+				result.URI = outcome.Fail.URI
+
+				return []*AnalyzeResult{result}, nil
+			}
+		case outcome.Warn != nil:
+			if outcome.Warn.When == "" {
+				result.IsWarn = true
+				result.Message = renderFSPerfOutcome(outcome.Warn.Message, fsPerf)
+				result.URI = outcome.Warn.URI
+
+				return []*AnalyzeResult{result}, nil
+			}
+
+			isMatch, err := compareHostFilesystemPerformanceConditionalToActual(outcome.Warn.When, fsPerf)
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to compare %q", outcome.Warn.When)
+			}
+
+			if isMatch {
+				result.IsWarn = true
+				result.Message = renderFSPerfOutcome(outcome.Warn.Message, fsPerf)
+				result.URI = outcome.Warn.URI
+
+				return []*AnalyzeResult{result}, nil
+			}
+		case outcome.Pass != nil:
+			if outcome.Pass.When == "" {
+				result.IsPass = true
+				result.Message = renderFSPerfOutcome(outcome.Pass.Message, fsPerf)
+				result.URI = outcome.Pass.URI
+
+				return []*AnalyzeResult{result}, nil
+			}
+
+			isMatch, err := compareHostFilesystemPerformanceConditionalToActual(outcome.Pass.When, fsPerf)
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to compare %q", outcome.Pass.When)
+			}
+
+			if isMatch {
+				result.IsPass = true
+				result.Message = renderFSPerfOutcome(outcome.Pass.Message, fsPerf)
+				result.URI = outcome.Pass.URI
+
+				return []*AnalyzeResult{result}, nil
+			}
+		default:
+			return nil, errors.New("unexpected outcome")
+		}
+	}
+
+	return []*AnalyzeResult{result}, nil
 }

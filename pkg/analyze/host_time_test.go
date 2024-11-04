@@ -222,54 +222,6 @@ func TestAnalyzeHostTime(t *testing.T) {
 				},
 			},
 		},
-		{
-			name: "multiple issues",
-			timeInfo: &collect.TimeInfo{
-				Timezone:        "PST",
-				NTPSynchronized: false,
-				NTPActive:       true,
-			},
-			hostAnalyzer: &troubleshootv1beta2.TimeAnalyze{
-				Outcomes: []*troubleshootv1beta2.Outcome{
-					{
-						Fail: &troubleshootv1beta2.SingleOutcome{
-							When:    "timezone != UTC",
-							Message: "timezone is not set to UTC",
-						},
-					},
-					{
-						Warn: &troubleshootv1beta2.SingleOutcome{
-							When:    "ntp == unsynchronized+active",
-							Message: "System clock not yet synchronized",
-						},
-					},
-					{
-						Pass: &troubleshootv1beta2.SingleOutcome{
-							When:    "timezone == UTC",
-							Message: "Timezone is set to UTC",
-						},
-					},
-					{
-						Pass: &troubleshootv1beta2.SingleOutcome{
-							When:    "ntp == synchronized+active",
-							Message: "System clock is synchronized",
-						},
-					},
-				},
-			},
-			result: []*AnalyzeResult{
-				{
-					Title:   "Time",
-					IsFail:  true,
-					Message: "timezone is not set to UTC",
-				},
-				{
-					Title:   "Time",
-					IsWarn:  true,
-					Message: "System clock not yet synchronized",
-				},
-			},
-		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {

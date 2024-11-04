@@ -25,94 +25,24 @@ func (a *AnalyzeHostServices) IsExcluded() (bool, error) {
 func (a *AnalyzeHostServices) Analyze(
 	getCollectedFileContents func(string) ([]byte, error), findFiles getChildCollectedFileContents,
 ) ([]*AnalyzeResult, error) {
-	hostAnalyzer := a.hostAnalyzer
+	result := AnalyzeResult{Title: a.Title()}
 
-	contents, err := getCollectedFileContents(collect.HostServicesPath)
+	collectedContents, err := retrieveCollectedContents(
+		getCollectedFileContents,
+		collect.HostServicesPath,
+		collect.NodeInfoBaseDir,
+		collect.HostServicesFileName,
+	)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to get collected file")
+		return []*AnalyzeResult{&result}, err
 	}
 
-	var services []collect.ServiceInfo
-	if err := json.Unmarshal(contents, &services); err != nil {
-		return nil, errors.Wrap(err, "failed to unmarshal systemctl service info")
+	results, err := analyzeHostCollectorResults(collectedContents, a.hostAnalyzer.Outcomes, a.CheckCondition, a.Title())
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to analyze host services")
 	}
 
-	var coll resultCollector
-
-	for _, outcome := range hostAnalyzer.Outcomes {
-		result := &AnalyzeResult{Title: a.Title()}
-
-		if outcome.Fail != nil {
-			if outcome.Fail.When == "" {
-				result.IsFail = true
-				result.Message = outcome.Fail.Message
-				result.URI = outcome.Fail.URI
-
-				coll.push(result)
-				continue
-			}
-
-			isMatch, err := compareHostServicesConditionalToActual(outcome.Fail.When, services)
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed to compare %s", outcome.Fail.When)
-			}
-
-			if isMatch {
-				result.IsFail = true
-				result.Message = outcome.Fail.Message
-				result.URI = outcome.Fail.URI
-
-				coll.push(result)
-			}
-		} else if outcome.Warn != nil {
-			if outcome.Warn.When == "" {
-				result.IsWarn = true
-				result.Message = outcome.Warn.Message
-				result.URI = outcome.Warn.URI
-
-				coll.push(result)
-				continue
-			}
-
-			isMatch, err := compareHostServicesConditionalToActual(outcome.Warn.When, services)
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed to compare %s", outcome.Warn.When)
-			}
-
-			if isMatch {
-				result.IsWarn = true
-				result.Message = outcome.Warn.Message
-				result.URI = outcome.Warn.URI
-
-				coll.push(result)
-			}
-		} else if outcome.Pass != nil {
-			if outcome.Pass.When == "" {
-				result.IsPass = true
-				result.Message = outcome.Pass.Message
-				result.URI = outcome.Pass.URI
-
-				coll.push(result)
-				continue
-			}
-
-			isMatch, err := compareHostServicesConditionalToActual(outcome.Pass.When, services)
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed to compare %s", outcome.Pass.When)
-			}
-
-			if isMatch {
-				result.IsPass = true
-				result.Message = outcome.Pass.Message
-				result.URI = outcome.Pass.URI
-
-				coll.push(result)
-			}
-
-		}
-	}
-
-	return coll.get(a.Title()), nil
+	return results, nil
 }
 
 // <service> <op> <state>
@@ -186,4 +116,14 @@ func isServiceMatch(serviceName string, matchName string) bool {
 	}
 
 	return false
+}
+
+func (a *AnalyzeHostServices) CheckCondition(when string, data []byte) (bool, error) {
+
+	var services []collect.ServiceInfo
+	if err := json.Unmarshal(data, &services); err != nil {
+		return false, fmt.Errorf("failed to unmarshal data into ServiceInfo: %v", err)
+	}
+
+	return compareHostServicesConditionalToActual(when, services)
 }

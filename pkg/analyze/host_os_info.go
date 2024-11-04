@@ -3,7 +3,6 @@ package analyzer
 import (
 	"encoding/json"
 	"fmt"
-	"reflect"
 	"regexp"
 	"strings"
 
@@ -50,14 +49,10 @@ func (a *AnalyzeHostOS) Analyze(
 }
 
 // checkCondition checks the condition of the when clause
-func (a *AnalyzeHostOS) CheckCondition(when string, data collectorData) (bool, error) {
-	rawData, ok := data.([]byte)
-	if !ok {
-		return false, fmt.Errorf("expected data to be []uint8 (raw bytes), got: %v", reflect.TypeOf(data))
-	}
+func (a *AnalyzeHostOS) CheckCondition(when string, data []byte) (bool, error) {
 
 	var osInfo collect.HostOSInfo
-	if err := json.Unmarshal(rawData, &osInfo); err != nil {
+	if err := json.Unmarshal(data, &osInfo); err != nil {
 		return false, fmt.Errorf("failed to unmarshal data into HostOSInfo: %v", err)
 	}
 
