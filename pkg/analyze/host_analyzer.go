@@ -91,7 +91,7 @@ func (c *resultCollector) get(title string) []*AnalyzeResult {
 	return []*AnalyzeResult{{Title: title, IsWarn: true, Message: "no results"}}
 }
 
-func analyzeHostCollectorResults(collectedContent []collectedContent, outcomes []*troubleshootv1beta2.Outcome, checkCondition func(string, collectorData) (bool, error), title string) ([]*AnalyzeResult, error) {
+func analyzeHostCollectorResults(collectedContent []collectedContent, outcomes []*troubleshootv1beta2.Outcome, checkCondition func(string, []byte) (bool, error), title string) ([]*AnalyzeResult, error) {
 	var results []*AnalyzeResult
 	for _, content := range collectedContent {
 		currentTitle := title
@@ -110,7 +110,7 @@ func analyzeHostCollectorResults(collectedContent []collectedContent, outcomes [
 	return results, nil
 }
 
-func evaluateOutcomes(outcomes []*troubleshootv1beta2.Outcome, checkCondition func(string, collectorData) (bool, error), data collectorData, title string) ([]*AnalyzeResult, error) {
+func evaluateOutcomes(outcomes []*troubleshootv1beta2.Outcome, checkCondition func(string, []byte) (bool, error), data []byte, title string) ([]*AnalyzeResult, error) {
 	var results []*AnalyzeResult
 
 	for _, outcome := range outcomes {

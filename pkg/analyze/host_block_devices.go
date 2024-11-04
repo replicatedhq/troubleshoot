@@ -27,90 +27,24 @@ func (a *AnalyzeHostBlockDevices) IsExcluded() (bool, error) {
 func (a *AnalyzeHostBlockDevices) Analyze(
 	getCollectedFileContents func(string) ([]byte, error), findFiles getChildCollectedFileContents,
 ) ([]*AnalyzeResult, error) {
-	hostAnalyzer := a.hostAnalyzer
+	result := AnalyzeResult{Title: a.Title()}
 
-	contents, err := getCollectedFileContents(collect.HostBlockDevicesPath)
+	collectedContents, err := retrieveCollectedContents(
+		getCollectedFileContents,
+		collect.HostBlockDevicesPath,
+		collect.NodeInfoBaseDir,
+		collect.HostBlockDevicesFileName,
+	)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to get collected file")
+		return []*AnalyzeResult{&result}, err
 	}
 
-	var devices []collect.BlockDeviceInfo
-	if err := json.Unmarshal(contents, &devices); err != nil {
-		return nil, errors.Wrap(err, "failed to unmarshal block devices info")
+	results, err := analyzeHostCollectorResults(collectedContents, a.hostAnalyzer.Outcomes, a.CheckCondition, a.Title())
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to analyze block devices")
 	}
 
-	result := AnalyzeResult{}
-
-	result.Title = a.Title()
-
-	for _, outcome := range hostAnalyzer.Outcomes {
-		if outcome.Fail != nil {
-			if outcome.Fail.When == "" {
-				result.IsFail = true
-				result.Message = outcome.Fail.Message
-				result.URI = outcome.Fail.URI
-
-				return []*AnalyzeResult{&result}, nil
-			}
-
-			isMatch, err := compareHostBlockDevicesConditionalToActual(outcome.Fail.When, hostAnalyzer.MinimumAcceptableSize, hostAnalyzer.IncludeUnmountedPartitions, devices)
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed to compare %s", outcome.Fail.When)
-			}
-
-			if isMatch {
-				result.IsFail = true
-				result.Message = outcome.Fail.Message
-				result.URI = outcome.Fail.URI
-
-				return []*AnalyzeResult{&result}, nil
-			}
-		} else if outcome.Warn != nil {
-			if outcome.Warn.When == "" {
-				result.IsWarn = true
-				result.Message = outcome.Warn.Message
-				result.URI = outcome.Warn.URI
-
-				return []*AnalyzeResult{&result}, nil
-			}
-
-			isMatch, err := compareHostBlockDevicesConditionalToActual(outcome.Warn.When, hostAnalyzer.MinimumAcceptableSize, hostAnalyzer.IncludeUnmountedPartitions, devices)
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed to compare %s", outcome.Warn.When)
-			}
-
-			if isMatch {
-				result.IsWarn = true
-				result.Message = outcome.Warn.Message
-				result.URI = outcome.Warn.URI
-
-				return []*AnalyzeResult{&result}, nil
-			}
-		} else if outcome.Pass != nil {
-			if outcome.Pass.When == "" {
-				result.IsPass = true
-				result.Message = outcome.Pass.Message
-				result.URI = outcome.Pass.URI
-
-				return []*AnalyzeResult{&result}, nil
-			}
-
-			isMatch, err := compareHostBlockDevicesConditionalToActual(outcome.Pass.When, hostAnalyzer.MinimumAcceptableSize, hostAnalyzer.IncludeUnmountedPartitions, devices)
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed to compare %s", outcome.Pass.When)
-			}
-
-			if isMatch {
-				result.IsPass = true
-				result.Message = outcome.Pass.Message
-				result.URI = outcome.Pass.URI
-
-				return []*AnalyzeResult{&result}, nil
-			}
-		}
-	}
-
-	return []*AnalyzeResult{&result}, nil
+	return results, nil
 }
 
 // <regexp> <op> <count>
@@ -204,4 +138,15 @@ func isEligibleBlockDevice(rx *regexp.Regexp, minimumAcceptableSize uint64, incl
 	}
 
 	return true
+}
+
+func (a *AnalyzeHostBlockDevices) CheckCondition(when string, data []byte) (bool, error) {
+
+	var devices []collect.BlockDeviceInfo
+	if err := json.Unmarshal(data, &devices); err != nil {
+		return false, errors.Wrap(err, "failed to unmarshal block devices info")
+	}
+
+	return compareHostBlockDevicesConditionalToActual(when, a.hostAnalyzer.MinimumAcceptableSize, a.hostAnalyzer.IncludeUnmountedPartitions, devices)
+
 }

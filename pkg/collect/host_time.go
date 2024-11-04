@@ -21,6 +21,7 @@ type TimeInfo struct {
 }
 
 const HostTimePath = `host-collectors/system/time.json`
+const HostTimeFileName = `time.json`
 
 type CollectHostTime struct {
 	hostCollector *troubleshootv1beta2.HostTime

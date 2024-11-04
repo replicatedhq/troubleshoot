@@ -3,7 +3,6 @@ package analyzer
 import (
 	"encoding/json"
 	"fmt"
-	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -28,97 +27,32 @@ func (a *AnalyzeHostDiskUsage) IsExcluded() (bool, error) {
 func (a *AnalyzeHostDiskUsage) Analyze(
 	getCollectedFileContents func(string) ([]byte, error), findFiles getChildCollectedFileContents,
 ) ([]*AnalyzeResult, error) {
-	hostAnalyzer := a.hostAnalyzer
 
-	name := filepath.Join("host-collectors/diskUsage", "diskUsage.json")
-	if hostAnalyzer.CollectorName != "" {
-		name = filepath.Join("host-collectors/diskUsage", hostAnalyzer.CollectorName+".json")
+	collectorName := a.hostAnalyzer.CollectorName
+	if collectorName == "" {
+		collectorName = "diskUsage"
 	}
-	contents, err := getCollectedFileContents(name)
+
+	const nodeBaseDir = "host-collectors/diskUsage"
+	localPath := fmt.Sprintf("%s/%s.json", nodeBaseDir, collectorName)
+	fileName := fmt.Sprintf("%s.json", collectorName)
+
+	collectedContents, err := retrieveCollectedContents(
+		getCollectedFileContents,
+		localPath,
+		nodeBaseDir,
+		fileName,
+	)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to get collected file %s", name)
+		return []*AnalyzeResult{{Title: a.Title()}}, err
 	}
 
-	diskUsageInfo := collect.DiskUsageInfo{}
-	if err := json.Unmarshal(contents, &diskUsageInfo); err != nil {
-		return nil, errors.Wrapf(err, "failed to unmarshal disk usage info from %s", name)
+	results, err := analyzeHostCollectorResults(collectedContents, a.hostAnalyzer.Outcomes, a.CheckCondition, a.Title())
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to analyze disk usage")
 	}
 
-	result := AnalyzeResult{
-		Title: a.Title(),
-	}
-
-	for _, outcome := range hostAnalyzer.Outcomes {
-		result := &AnalyzeResult{Title: a.Title()}
-
-		if outcome.Fail != nil {
-			if outcome.Fail.When == "" {
-				result.IsFail = true
-				result.Message = outcome.Fail.Message
-				result.URI = outcome.Fail.URI
-
-				return []*AnalyzeResult{result}, nil
-			}
-
-			isMatch, err := compareHostDiskUsageConditionalToActual(outcome.Fail.When, diskUsageInfo.TotalBytes, diskUsageInfo.UsedBytes)
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed to compare %q", outcome.Fail.When)
-			}
-
-			if isMatch {
-				result.IsFail = true
-				result.Message = outcome.Fail.Message
-				result.URI = outcome.Fail.URI
-
-				return []*AnalyzeResult{result}, nil
-			}
-		} else if outcome.Warn != nil {
-			if outcome.Warn.When == "" {
-				result.IsWarn = true
-				result.Message = outcome.Warn.Message
-				result.URI = outcome.Warn.URI
-
-				return []*AnalyzeResult{result}, nil
-			}
-
-			isMatch, err := compareHostDiskUsageConditionalToActual(outcome.Warn.When, diskUsageInfo.TotalBytes, diskUsageInfo.UsedBytes)
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed to compare %q", outcome.Warn.When)
-			}
-
-			if isMatch {
-				result.IsWarn = true
-				result.Message = outcome.Warn.Message
-				result.URI = outcome.Warn.URI
-
-				return []*AnalyzeResult{result}, nil
-			}
-		} else if outcome.Pass != nil {
-			if outcome.Pass.When == "" {
-				result.IsPass = true
-				result.Message = outcome.Pass.Message
-				result.URI = outcome.Pass.URI
-
-				return []*AnalyzeResult{result}, nil
-			}
-
-			isMatch, err := compareHostDiskUsageConditionalToActual(outcome.Pass.When, diskUsageInfo.TotalBytes, diskUsageInfo.UsedBytes)
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed to compare %q", outcome.Pass.When)
-			}
-
-			if isMatch {
-				result.IsPass = true
-				result.Message = outcome.Pass.Message
-				result.URI = outcome.Pass.URI
-
-				return []*AnalyzeResult{result}, nil
-			}
-
-		}
-	}
-
-	return []*AnalyzeResult{&result}, nil
+	return results, nil
 }
 
 func compareHostDiskUsageConditionalToActual(conditional string, totalBytes uint64, usedBytes uint64) (res bool, err error) {
@@ -201,4 +135,14 @@ func doCompareHostDiskUsagePercent(operator string, desired string, actual float
 	}
 
 	return false, errors.New("unknown operator")
+}
+
+func (a *AnalyzeHostDiskUsage) CheckCondition(when string, data []byte) (bool, error) {
+
+	var diskUsageInfo collect.DiskUsageInfo
+	if err := json.Unmarshal(data, &diskUsageInfo); err != nil {
+		return false, fmt.Errorf("failed to unmarshal data into DiskUsageInfo: %v", err)
+	}
+
+	return compareHostDiskUsageConditionalToActual(when, diskUsageInfo.TotalBytes, diskUsageInfo.UsedBytes)
 }
