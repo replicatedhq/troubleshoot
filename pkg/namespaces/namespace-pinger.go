@@ -29,7 +29,7 @@ func (n *NamespacePinger) PingUDP(dst net.IP) error {
 			return fmt.Errorf("error writing to udp socket: %w", err)
 		}
 
-		deadline := time.Now().Add(time.Second)
+		deadline := time.Now().Add(n.cfg.Timeout)
 		if err := conn.SetReadDeadline(deadline); err != nil {
 			return fmt.Errorf("error setting udp read deadline: %w", err)
 		}
@@ -52,7 +52,7 @@ func (n *NamespacePinger) PingTCP(dst net.IP) error {
 	n.cfg.Logf("reaching to %q from %q with tcp", dst, n.InternalIP)
 	pinger := func() error {
 		addr := fmt.Sprintf("%s:%d", dst, n.cfg.Port)
-		conn, err := net.Dial("tcp", addr)
+		conn, err := net.DialTimeout("tcp", addr, n.cfg.Timeout)
 		if err != nil {
 			return fmt.Errorf("error dialing tcp: %w", err)
 		}
@@ -109,7 +109,7 @@ func (n *NamespacePinger) startTCPEchoServer(ready chan struct{}) (err error) {
 	}
 	defer listener.Close()
 
-	deadline := time.Now().Add(30 * time.Second)
+	deadline := time.Now().Add(n.cfg.Timeout)
 	tcplistener := listener.(*net.TCPListener)
 	if err = tcplistener.SetDeadline(deadline); err != nil {
 		close(ready)
@@ -174,7 +174,7 @@ func (n *NamespacePinger) startUDPEchoServer(ready chan struct{}) (err error) {
 	}
 	defer conn.Close()
 
-	deadline := time.Now().Add(30 * time.Second)
+	deadline := time.Now().Add(n.cfg.Timeout)
 	if err = conn.SetDeadline(deadline); err != nil {
 		close(ready)
 		return fmt.Errorf("error setting udp listener deadline: %w", err)

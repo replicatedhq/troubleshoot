@@ -29,8 +29,10 @@ type NetworkNamespaceConnectivityInfo struct {
 type NetworkNamespaceConnectivityErrors struct {
 	FromNamespaceCreation string `json:"from_namespace_creation"`
 	ToNamespaceCreation   string `json:"to_namespace_creation"`
-	UDPConnection         string `json:"udp_connection"`
-	TCPConnection         string `json:"tcp_connection"`
+	UDPClient             string `json:"udp_client"`
+	UDPServer             string `json:"udp_server"`
+	TCPClient             string `json:"tcp_client"`
+	TCPServer             string `json:"tcp_server"`
 }
 
 // NetworkNamespaceConnectivityOutput is a struct that contains the logs from
@@ -126,8 +128,20 @@ func (c *CollectHostNetworkNamespaceConnectivity) Collect(progressChan chan<- in
 	}
 
 	opts := []namespaces.Option{namespaces.WithLogf(result.Output.Printf)}
+
+	// if user has chosen to use a specific port, use it.
 	if c.hostCollector.Port != 0 {
 		opts = append(opts, namespaces.WithPort(c.hostCollector.Port))
+	}
+
+	// if user has chosen to use a specific timeout and it is valid, use it.
+	if c.hostCollector.Timeout != "" {
+		timeout, err := time.ParseDuration(c.hostCollector.Timeout)
+		if err != nil {
+			return nil, fmt.Errorf("invalid timeout %s", c.hostCollector.Timeout)
+		}
+		result.Output.Printf("using user provided timeout of %q", c.hostCollector.Timeout)
+		opts = append(opts, namespaces.WithTimeout(timeout))
 	}
 
 	fromNS, err := namespaces.NewNamespacePinger("from", c.hostCollector.FromCIDR, opts...)
@@ -148,29 +162,28 @@ func (c *CollectHostNetworkNamespaceConnectivity) Collect(progressChan chan<- in
 	toNS.StartUDPEchoServer(udpErrors)
 	toNS.StartTCPEchoServer(tcpErrors)
 
+	success := true
 	if err := fromNS.PingUDP(toNS.InternalIP); err != nil {
-		result.Errors.UDPConnection = err.Error()
-		return c.marshal(result)
+		result.Errors.UDPClient = err.Error()
+		success = false
 	}
 
 	if err := <-udpErrors; err != nil {
-		result.Errors.UDPConnection = err.Error()
-		return c.marshal(result)
+		result.Errors.UDPServer = err.Error()
+		success = false
 	}
-	result.Output.Printf("udp server returned no errors")
 
 	if err := fromNS.PingTCP(toNS.InternalIP); err != nil {
-		result.Errors.TCPConnection = err.Error()
-		return c.marshal(result)
+		result.Errors.TCPClient = err.Error()
+		success = false
 	}
 
 	if err := <-tcpErrors; err != nil {
-		result.Errors.TCPConnection = err.Error()
-		return c.marshal(result)
+		result.Errors.TCPServer = err.Error()
+		success = false
 	}
-	result.Output.Printf("tcp connection succeeded")
 
-	result.Success = true
-	result.Output.Printf("network namespace connectivity test succeeded")
+	result.Success = success
+	result.Output.Printf("network namespace connectivity test finished")
 	return c.marshal(result)
 }

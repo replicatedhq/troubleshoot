@@ -80,6 +80,7 @@ type HostNetworkNamespaceConnectivity struct {
 	HostCollectorMeta `json:",inline" yaml:",inline"`
 	FromCIDR          string `json:"fromCIDR" yaml:"fromCIDR"`
 	ToCIDR            string `json:"toCIDR" yaml:"toCIDR"`
+	Timeout           string `json:"timeout,omitempty" yaml:"timeout,omitempty"`
 	Port              int    `json:"port" yaml:"port"`
 }
 
