@@ -27,94 +27,24 @@ func (a *AnalyzeHostIPV4Interfaces) IsExcluded() (bool, error) {
 func (a *AnalyzeHostIPV4Interfaces) Analyze(
 	getCollectedFileContents func(string) ([]byte, error), findFiles getChildCollectedFileContents,
 ) ([]*AnalyzeResult, error) {
-	hostAnalyzer := a.hostAnalyzer
+	result := AnalyzeResult{Title: a.Title()}
 
-	contents, err := getCollectedFileContents(collect.HostIPV4InterfacesPath)
+	collectedContents, err := retrieveCollectedContents(
+		getCollectedFileContents,
+		collect.HostIPV4InterfacesPath,
+		collect.NodeInfoBaseDir,
+		collect.HostIPV4FileName,
+	)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to get collected file")
+		return []*AnalyzeResult{&result}, err
 	}
 
-	var ipv4Interfaces []net.Interface
-	if err := json.Unmarshal(contents, &ipv4Interfaces); err != nil {
-		return nil, errors.Wrap(err, "failed to unmarshal ipv4Interfaces")
+	results, err := analyzeHostCollectorResults(collectedContents, a.hostAnalyzer.Outcomes, a.CheckCondition, a.Title())
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to analyze IPv4 interfaces")
 	}
 
-	var coll resultCollector
-
-	for _, outcome := range hostAnalyzer.Outcomes {
-		result := &AnalyzeResult{Title: a.Title()}
-
-		if outcome.Fail != nil {
-			if outcome.Fail.When == "" {
-				result.IsFail = true
-				result.Message = outcome.Fail.Message
-				result.URI = outcome.Fail.URI
-
-				coll.push(result)
-				continue
-			}
-
-			isMatch, err := compareHostIPV4InterfacesConditionalToActual(outcome.Fail.When, ipv4Interfaces)
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed to compare %s", outcome.Fail.When)
-			}
-
-			if isMatch {
-				result.IsFail = true
-				result.Message = outcome.Fail.Message
-				result.URI = outcome.Fail.URI
-
-				coll.push(result)
-			}
-		} else if outcome.Warn != nil {
-			if outcome.Warn.When == "" {
-				result.IsWarn = true
-				result.Message = outcome.Warn.Message
-				result.URI = outcome.Warn.URI
-
-				coll.push(result)
-				continue
-			}
-
-			isMatch, err := compareHostIPV4InterfacesConditionalToActual(outcome.Warn.When, ipv4Interfaces)
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed to compare %s", outcome.Warn.When)
-			}
-
-			if isMatch {
-				result.IsWarn = true
-				result.Message = outcome.Warn.Message
-				result.URI = outcome.Warn.URI
-
-				coll.push(result)
-			}
-		} else if outcome.Pass != nil {
-			if outcome.Pass.When == "" {
-				result.IsPass = true
-				result.Message = outcome.Pass.Message
-				result.URI = outcome.Pass.URI
-
-				coll.push(result)
-				continue
-			}
-
-			isMatch, err := compareHostIPV4InterfacesConditionalToActual(outcome.Pass.When, ipv4Interfaces)
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed to compare %s", outcome.Pass.When)
-			}
-
-			if isMatch {
-				result.IsPass = true
-				result.Message = outcome.Pass.Message
-				result.URI = outcome.Pass.URI
-
-				coll.push(result)
-			}
-
-		}
-	}
-
-	return coll.get(a.Title()), nil
+	return results, nil
 }
 
 func compareHostIPV4InterfacesConditionalToActual(conditional string, ipv4Interfaces []net.Interface) (res bool, err error) {
@@ -152,4 +82,14 @@ func compareHostIPV4InterfacesConditionalToActual(conditional string, ipv4Interf
 	}
 
 	return false, fmt.Errorf("Unknown operator %q. Supported operators are: <, <=, ==, >=, >", operator)
+}
+
+func (a *AnalyzeHostIPV4Interfaces) CheckCondition(when string, data []byte) (bool, error) {
+
+	var ipv4Interfaces []net.Interface
+	if err := json.Unmarshal(data, &ipv4Interfaces); err != nil {
+		return false, fmt.Errorf("failed to unmarshal data into []net.Interface: %v", err)
+	}
+
+	return compareHostIPV4InterfacesConditionalToActual(when, ipv4Interfaces)
 }

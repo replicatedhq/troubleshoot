@@ -20,6 +20,7 @@ type ServiceInfo struct {
 
 const systemctlFormat = `%s %s %s %s` // this leaves off the description
 const HostServicesPath = `host-collectors/system/systemctl_services.json`
+const HostServicesFileName = `systemctl_services.json`
 
 type CollectHostServices struct {
 	hostCollector *troubleshootv1beta2.HostServices

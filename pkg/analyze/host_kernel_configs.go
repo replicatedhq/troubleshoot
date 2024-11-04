@@ -2,6 +2,7 @@ package analyzer
 
 import (
 	"encoding/json"
+	"fmt"
 	"regexp"
 
 	"strings"
@@ -16,6 +17,8 @@ type AnalyzeHostKernelConfigs struct {
 	hostAnalyzer *troubleshootv1beta2.KernelConfigsAnalyze
 }
 
+var kConfigRegex = regexp.MustCompile("^(CONFIG_[A-Z0-9_]+)=([ymn]+)$")
+
 func (a *AnalyzeHostKernelConfigs) Title() string {
 	return hostAnalyzerTitleOrDefault(a.hostAnalyzer.AnalyzeMeta, "Kernel Configs")
 }
@@ -27,20 +30,50 @@ func (a *AnalyzeHostKernelConfigs) IsExcluded() (bool, error) {
 func (a *AnalyzeHostKernelConfigs) Analyze(
 	getCollectedFileContents func(string) ([]byte, error), findFiles getChildCollectedFileContents,
 ) ([]*AnalyzeResult, error) {
-	hostAnalyzer := a.hostAnalyzer
-
-	contents, err := getCollectedFileContents(collect.HostKernelConfigsPath)
+	collectedContents, err := retrieveCollectedContents(
+		getCollectedFileContents,
+		collect.HostKernelConfigsPath,
+		collect.NodeInfoBaseDir,
+		collect.HostKernelConfigsFileName,
+	)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to get collected file")
+		return []*AnalyzeResult{{Title: a.Title()}}, err
 	}
 
+	var results []*AnalyzeResult
+
+	for _, content := range collectedContents {
+		currentTitle := a.Title()
+		if content.NodeName != "" {
+			currentTitle = fmt.Sprintf("%s - Node %s", a.Title(), content.NodeName)
+		}
+		result, err := a.analyzeSingleNode(content, currentTitle)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to analyze kernel configs for %s", currentTitle)
+		}
+		if result != nil {
+			results = append(results, result...)
+		}
+	}
+
+	return results, nil
+}
+
+func addMissingKernelConfigs(message string, missingConfigs []string) string {
+	if message == "" && len(missingConfigs) == 0 {
+		return message
+	}
+	return strings.ReplaceAll(message, "{{ .ConfigsNotFound }}", strings.Join(missingConfigs, ", "))
+}
+
+func (a *AnalyzeHostKernelConfigs) analyzeSingleNode(content collectedContent, currentTitle string) ([]*AnalyzeResult, error) {
+	hostAnalyzer := a.hostAnalyzer
 	kConfigs := collect.KConfigs{}
-	if err := json.Unmarshal(contents, &kConfigs); err != nil {
+	if err := json.Unmarshal(content.Data, &kConfigs); err != nil {
 		return nil, errors.Wrap(err, "failed to read kernel configs")
 	}
 
 	var configsNotFound []string
-	kConfigRegex := regexp.MustCompile("^(CONFIG_[A-Z0-9_]+)=([ymn]+)$")
 	for _, config := range hostAnalyzer.SelectedConfigs {
 		matches := kConfigRegex.FindStringSubmatch(config)
 		// zero tolerance for invalid kernel config
@@ -66,8 +99,8 @@ func (a *AnalyzeHostKernelConfigs) Analyze(
 	var results []*AnalyzeResult
 	for _, outcome := range hostAnalyzer.Outcomes {
 		result := &AnalyzeResult{
-			Title:  a.Title(),
-			Strict: hostAnalyzer.Strict.BoolOrDefaultFalse(),
+			Title:  currentTitle,
+			Strict: a.hostAnalyzer.Strict.BoolOrDefaultFalse(),
 		}
 
 		if outcome.Pass != nil && len(configsNotFound) == 0 {
@@ -87,11 +120,4 @@ func (a *AnalyzeHostKernelConfigs) Analyze(
 	}
 
 	return results, nil
-}
-
-func addMissingKernelConfigs(message string, missingConfigs []string) string {
-	if message == "" && len(missingConfigs) == 0 {
-		return message
-	}
-	return strings.ReplaceAll(message, "{{ .ConfigsNotFound }}", strings.Join(missingConfigs, ", "))
 }
