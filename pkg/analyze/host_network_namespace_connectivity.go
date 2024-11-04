@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"path/filepath"
 
+	util "github.com/replicatedhq/troubleshoot/internal/util"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/replicatedhq/troubleshoot/pkg/collect"
 )
@@ -62,7 +63,10 @@ func (a *AnalyzeHostNetworkNamespaceConnectivity) Analyze(
 
 			if outcome.Fail != nil && !info.Success {
 				result.IsFail = true
-				result.Message = outcome.Fail.Message
+				result.Message, err = util.RenderTemplate(outcome.Fail.Message, info.Errors)
+				if err != nil {
+					return nil, fmt.Errorf("failed to render template on outcome message: %w", err)
+				}
 				results = append(results, result)
 				break
 			}

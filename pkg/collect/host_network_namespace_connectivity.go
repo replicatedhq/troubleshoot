@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -33,6 +34,42 @@ type NetworkNamespaceConnectivityErrors struct {
 	UDPServer             string `json:"udp_server"`
 	TCPClient             string `json:"tcp_client"`
 	TCPServer             string `json:"tcp_server"`
+}
+
+// Errors returns a string representation of the errors found during the
+// network namespace connectivity test.
+func (e NetworkNamespaceConnectivityErrors) Errors() string {
+	var sb strings.Builder
+	if e.FromNamespaceCreation != "" {
+		sb.WriteString("Failed to create 'from' namespace: ")
+		sb.WriteString(e.FromNamespaceCreation + "\n")
+	}
+
+	if e.ToNamespaceCreation != "" {
+		sb.WriteString("Failed to create 'to' namespace: ")
+		sb.WriteString(e.ToNamespaceCreation + "\n")
+	}
+
+	if e.UDPClient != "" {
+		sb.WriteString("UDP connection failed with: ")
+		sb.WriteString(e.UDPClient + "\n")
+	}
+
+	if e.UDPServer != "" {
+		sb.WriteString("UDP server failed with: ")
+		sb.WriteString(e.UDPServer + "\n")
+	}
+
+	if e.TCPClient != "" {
+		sb.WriteString("TCP connection failed with: ")
+		sb.WriteString(e.TCPClient + "\n")
+	}
+
+	if e.TCPServer != "" {
+		sb.WriteString("TCP server failed with: ")
+		sb.WriteString(e.TCPServer + "\n")
+	}
+	return sb.String()
 }
 
 // NetworkNamespaceConnectivityOutput is a struct that contains the logs from
