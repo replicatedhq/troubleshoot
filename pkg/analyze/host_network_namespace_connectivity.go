@@ -56,14 +56,17 @@ func (a *AnalyzeHostNetworkNamespaceConnectivity) Analyze(
 
 			if outcome.Pass != nil && info.Success {
 				result.IsPass = true
-				result.Message = outcome.Pass.Message
+				result.Message, err = util.RenderTemplate(outcome.Pass.Message, &info)
+				if err != nil {
+					return nil, fmt.Errorf("failed to render template on outcome message: %w", err)
+				}
 				results = append(results, result)
 				break
 			}
 
 			if outcome.Fail != nil && !info.Success {
 				result.IsFail = true
-				result.Message, err = util.RenderTemplate(outcome.Fail.Message, info.Errors)
+				result.Message, err = util.RenderTemplate(outcome.Fail.Message, &info)
 				if err != nil {
 					return nil, fmt.Errorf("failed to render template on outcome message: %w", err)
 				}

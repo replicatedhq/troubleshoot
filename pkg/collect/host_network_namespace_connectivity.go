@@ -25,6 +25,11 @@ type NetworkNamespaceConnectivityInfo struct {
 	Success       bool                               `json:"success"`
 }
 
+// ErrorMessage returns the error message from the errors field.
+func (n *NetworkNamespaceConnectivityInfo) ErrorMessage() string {
+	return n.Errors.Errors()
+}
+
 // NetworkNamespaceConnectivityErrors is a struct that contains the errors that
 // occurred during the network namespace connectivity test
 type NetworkNamespaceConnectivityErrors struct {
