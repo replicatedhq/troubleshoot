@@ -16,12 +16,14 @@ func TestHostRemoteCollector(t *testing.T) {
 	feature := features.New("Host OS Remote Collector Test").
 		Assess("run support bundle command successfully", func(ctx context.Context, t *testing.T, c *envconf.Config) context.Context {
 			var out bytes.Buffer
+			var errOut bytes.Buffer
 			supportbundleName := "host-os-remote-collector"
 			cmd := exec.CommandContext(ctx, sbBinary(), "spec/remoteHostCollectors.yaml", "--interactive=false", fmt.Sprintf("-o=%s", supportbundleName))
 			cmd.Stdout = &out
+			cmd.Stderr = &errOut
 			err := cmd.Run()
 			if err != nil {
-				t.Fatalf("Failed to run the binary: %v", err)
+				t.Fatalf("Failed to run the binary: %v\n%s", err, errOut.String())
 			}
 
 			defer func() {
