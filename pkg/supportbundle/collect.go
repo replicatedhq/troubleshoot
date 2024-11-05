@@ -362,6 +362,29 @@ func runRemoteHostCollectors(ctx context.Context, hostCollectors []*troubleshoot
 
 			results := map[string][]byte{}
 			for _, collectorSpec := range hostCollectors {
+				collector, ok := collect.GetHostCollector(collectorSpec, bundlePath)
+				if !ok {
+					opts.ProgressChan <- "Host collector not found"
+					continue
+				}
+
+				// Start a span for tracing
+				_, span := otel.Tracer(constants.LIB_TRACER_NAME).Start(ctx, collector.Title())
+				span.SetAttributes(attribute.String("type", "Collect"))
+
+				isExcluded, _ := collector.IsExcluded()
+				if isExcluded {
+					msg := fmt.Sprintf("[%s] Excluding host collector", collector.Title())
+					opts.CollectorProgressCallback(opts.ProgressChan, msg)
+					span.SetAttributes(attribute.Bool(constants.EXCLUDED, true))
+					span.End()
+					continue
+				}
+
+				// Send progress event: starting the collector
+				msg := fmt.Sprintf("[%s] Running host collector...", collector.Title())
+				opts.CollectorProgressCallback(opts.ProgressChan, msg)
+
 				// convert host collectors into a HostCollector spec
 				spec := createHostCollectorsSpec([]*troubleshootv1beta2.HostCollect{collectorSpec})
 				specJSON, err := json.Marshal(spec)
@@ -372,7 +395,10 @@ func runRemoteHostCollectors(ctx context.Context, hostCollectors []*troubleshoot
 
 				stdout, _, err := getExecOutputs(ctx, opts.KubernetesRestConfig, clientset, pod, specJSON)
 				if err != nil {
-					return err
+					// span.SetStatus(codes.Error, err.Error())
+					msg := fmt.Sprintf("[%s] Error: %v", collector.Title(), err)
+					opts.CollectorProgressCallback(opts.ProgressChan, msg)
+					return errors.Wrap(err, "failed to run remote host collector")
 				}
 
 				result := map[string]string{}
@@ -380,10 +406,16 @@ func runRemoteHostCollectors(ctx context.Context, hostCollectors []*troubleshoot
 					return err
 				}
 
+				// Send progress event: completed successfully
+				msg = fmt.Sprintf("[%s] Completed host collector", collector.Title())
+				opts.CollectorProgressCallback(opts.ProgressChan, msg)
+
+				// Aggregate the results
 				for file, data := range result {
 					results[file] = []byte(data)
 				}
 
+				span.End()
 				time.Sleep(1 * time.Second)
 			}
 
