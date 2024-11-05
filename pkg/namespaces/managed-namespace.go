@@ -100,6 +100,9 @@ func NewManagedNetworkNamespace(name, cidraddr string, options ...Option) (*Mana
 // to worry about deleting the namespace as the veth pair will be deleted
 // automatically.
 func (n *ManagedNetworkNamespace) Close() error {
+	if err := n.InterfacePair.Close(); err != nil {
+		return fmt.Errorf("error closing interface pair: %w", err)
+	}
 	if err := n.NetworkNamespace.Close(); err != nil {
 		return fmt.Errorf("error closing namespace: %w", err)
 	}

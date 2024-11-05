@@ -3,7 +3,9 @@
 package namespaces
 
 import (
+	"errors"
 	"fmt"
+	"syscall"
 
 	"github.com/vishvananda/netlink"
 )
@@ -40,8 +42,14 @@ func (p *InterfacePair) SetExternalIP(outaddr string) error {
 // Close deletes the interface pair. by deleting one of the interfaces, the
 // other is deleted as well.
 func (p *InterfacePair) Close() error {
-	if err := p.nethandler.LinkDel(p.out); err != nil {
-		return fmt.Errorf("error deleting veth pair: %w", err)
+	for _, ifc := range []netlink.Link{p.in, p.out} {
+		if err := p.nethandler.LinkDel(ifc); err != nil {
+			var scerr syscall.Errno
+			if errors.As(err, &scerr) && scerr == syscall.ENODEV {
+				continue
+			}
+			return fmt.Errorf("error deleting %s: %w", ifc.Attrs().Name, scerr)
+		}
 	}
 	return nil
 }
