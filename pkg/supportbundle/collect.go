@@ -439,7 +439,16 @@ func runRemoteHostCollectors(ctx context.Context, hostCollectors []*troubleshoot
 		// TODO:
 		// delete the config map
 		// delete the remote pods
-		clientset.AppsV1().DaemonSets(ds.Namespace).Delete(ctx, ds.Name, metav1.DeleteOptions{})
+		// check if the daemonset still exists
+		_, err := clientset.AppsV1().DaemonSets(ds.Namespace).Get(ctx, ds.Name, metav1.GetOptions{})
+		if err != nil {
+			klog.Errorf("Failed to verify remote host collector daemonset %s still exists: %v", ds.Name, err)
+			return
+		}
+
+		if err := clientset.AppsV1().DaemonSets(ds.Namespace).Delete(ctx, ds.Name, metav1.DeleteOptions{}); err != nil {
+			klog.Errorf("Failed to delete remote host collector daemonset %s: %v", ds.Name, err)
+		}
 	}()
 
 	for node, logs := range nodeLogs {
