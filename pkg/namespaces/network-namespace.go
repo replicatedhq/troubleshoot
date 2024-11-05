@@ -82,7 +82,7 @@ func (n *NetworkNamespace) Leave() error {
 }
 
 // Join makes the thread join the namespace. The current thread is saved in the
-// origin field. Callers are responsible for calling Laave() once they are
+// origin field. Callers are responsible for calling Leave() once they are
 // done. This namespace can only be joined once and this is by design. You need
 // to Leave() before Joining again. The current OS thread will be locked to the
 // namespace.
