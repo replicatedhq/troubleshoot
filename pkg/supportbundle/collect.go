@@ -27,6 +27,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apiserver/pkg/storage/names"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/remotecommand"
@@ -418,7 +419,6 @@ func runRemoteHostCollectors(ctx context.Context, hostCollectors []*troubleshoot
 				mu.Unlock()
 				return nil
 			})
-			// time.Sleep(1 * time.Second)
 		}
 
 		err = eg.Wait()
@@ -426,7 +426,6 @@ func runRemoteHostCollectors(ctx context.Context, hostCollectors []*troubleshoot
 			return nil, err
 		}
 		span.End()
-		// time.Sleep(1 * time.Second)
 	}
 
 	klog.V(2).Infof("All remote host collectors completed")
@@ -532,7 +531,7 @@ func createHostCollectorDS(ctx context.Context, clientset kubernetes.Interface, 
 
 	ds := &appsv1.DaemonSet{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "remote-host-collector",
+			Name:      names.SimpleNameGenerator.GenerateName("remote-host-collector" + "-"),
 			Namespace: ns,
 			Labels:    labels,
 		},

@@ -7,7 +7,6 @@ import (
 	"os"
 	"os/exec"
 	"testing"
-	"time"
 
 	"sigs.k8s.io/e2e-framework/pkg/envconf"
 	"sigs.k8s.io/e2e-framework/pkg/features"
@@ -19,7 +18,6 @@ func TestHostRemoteCollector(t *testing.T) {
 			var out bytes.Buffer
 			var errOut bytes.Buffer
 			supportbundleName := "host-os-remote-collector"
-			time.Sleep(5 * time.Second)
 			cmd := exec.CommandContext(ctx, sbBinary(), "spec/remoteHostCollectors.yaml", "--interactive=false", fmt.Sprintf("-o=%s", supportbundleName))
 			cmd.Stdout = &out
 			cmd.Stderr = &errOut
