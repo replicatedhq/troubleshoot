@@ -10,7 +10,6 @@ import (
 	"reflect"
 	"strings"
 	"sync"
-	"time"
 
 	"github.com/pkg/errors"
 	analyze "github.com/replicatedhq/troubleshoot/pkg/analyze"
@@ -416,11 +415,11 @@ func runRemoteHostCollectors(ctx context.Context, hostCollectors []*troubleshoot
 				}
 
 				span.End()
-				time.Sleep(1 * time.Second)
+				// time.Sleep(1 * time.Second)
 			}
 
-			// wait for log stream to catch up
-			time.Sleep(1 * time.Second)
+			// // wait for log stream to catch up
+			// time.Sleep(1 * time.Second)
 
 			mu.Lock()
 			nodeLogs[pod.Spec.NodeName] = results
