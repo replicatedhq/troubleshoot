@@ -345,8 +345,9 @@ func runRemoteHostCollectors(ctx context.Context, hostCollectors []*troubleshoot
 
 	klog.V(2).Infof("Created Remote Host Collector Daemonset %s", ds.Name)
 	pods, err := clientset.CoreV1().Pods(ds.Namespace).List(ctx, metav1.ListOptions{
-		LabelSelector:  selectorLabelKey + "=" + ds.Name,
-		TimeoutSeconds: new(int64),
+		LabelSelector: selectorLabelKey + "=" + ds.Name,
+		// use the default logs collector timeout for now
+		TimeoutSeconds: ptr.To(int64(constants.DEFAULT_LOGS_COLLECTOR_TIMEOUT.Seconds())),
 		Limit:          0,
 	})
 	if err != nil {
@@ -436,6 +437,10 @@ func runRemoteHostCollectors(ctx context.Context, hostCollectors []*troubleshoot
 		// delete the config map
 		// delete the remote pods
 		// check if the daemonset still exists
+		if ds == nil || ds.Name == "" {
+			return
+		}
+
 		if err := clientset.AppsV1().DaemonSets(ds.Namespace).Delete(ctx, ds.Name, metav1.DeleteOptions{}); err != nil {
 			if kuberneteserrors.IsNotFound(err) {
 				klog.Errorf("Remote host collector daemonset %s not found", ds.Name)
@@ -492,7 +497,7 @@ func createHostCollectorDS(ctx context.Context, clientset kubernetes.Interface, 
 	dsName := names.SimpleNameGenerator.GenerateName("remote-host-collector" + "-")
 	ns := "default"
 	imageName := "replicated/troubleshoot:latest"
-	imagePullPolicy := corev1.PullAlways
+	imagePullPolicy := corev1.PullIfNotPresent
 
 	labels[selectorLabelKey] = dsName
 
