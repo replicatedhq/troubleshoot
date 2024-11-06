@@ -3,7 +3,6 @@ package analyzer
 import (
 	"encoding/json"
 	"fmt"
-	"path"
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
@@ -25,82 +24,43 @@ func (a *AnalyzeHostHTTPLoadBalancer) IsExcluded() (bool, error) {
 func (a *AnalyzeHostHTTPLoadBalancer) Analyze(
 	getCollectedFileContents func(string) ([]byte, error), findFiles getChildCollectedFileContents,
 ) ([]*AnalyzeResult, error) {
-	hostAnalyzer := a.hostAnalyzer
-
-	collectorName := hostAnalyzer.CollectorName
+	collectorName := a.hostAnalyzer.CollectorName
 	if collectorName == "" {
 		collectorName = "httpLoadBalancer"
 	}
-	fullPath := path.Join("host-collectors/httpLoadBalancer", fmt.Sprintf("%s.json", collectorName))
 
-	collected, err := getCollectedFileContents(fullPath)
+	const nodeBaseDir = "host-collectors/httpLoadBalancer"
+	localPath := fmt.Sprintf("%s/%s.json", nodeBaseDir, collectorName)
+	fileName := fmt.Sprintf("%s.json", collectorName)
+
+	collectedContents, err := retrieveCollectedContents(
+		getCollectedFileContents,
+		localPath,
+		nodeBaseDir,
+		fileName,
+	)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to read collected file name: %s", fullPath)
-	}
-	actual := collect.NetworkStatusResult{}
-	if err := json.Unmarshal(collected, &actual); err != nil {
-		return nil, errors.Wrap(err, "failed to unmarshal collected")
+		return []*AnalyzeResult{{Title: a.Title()}}, err
 	}
 
-	var coll resultCollector
-
-	for _, outcome := range hostAnalyzer.Outcomes {
-		result := &AnalyzeResult{Title: a.Title()}
-
-		if outcome.Fail != nil {
-			if outcome.Fail.When == "" {
-				result.IsFail = true
-				result.Message = outcome.Fail.Message
-				result.URI = outcome.Fail.URI
-
-				coll.push(result)
-				continue
-			}
-
-			if string(actual.Status) == outcome.Fail.When {
-				result.IsFail = true
-				result.Message = outcome.Fail.Message
-				result.URI = outcome.Fail.URI
-
-				coll.push(result)
-			}
-		} else if outcome.Warn != nil {
-			if outcome.Warn.When == "" {
-				result.IsWarn = true
-				result.Message = outcome.Warn.Message
-				result.URI = outcome.Warn.URI
-
-				coll.push(result)
-				continue
-			}
-
-			if string(actual.Status) == outcome.Warn.When {
-				result.IsWarn = true
-				result.Message = outcome.Warn.Message
-				result.URI = outcome.Warn.URI
-
-				coll.push(result)
-			}
-		} else if outcome.Pass != nil {
-			if outcome.Pass.When == "" {
-				result.IsPass = true
-				result.Message = outcome.Pass.Message
-				result.URI = outcome.Pass.URI
-
-				coll.push(result)
-				continue
-			}
-
-			if string(actual.Status) == outcome.Pass.When {
-				result.IsPass = true
-				result.Message = outcome.Pass.Message
-				result.URI = outcome.Pass.URI
-
-				coll.push(result)
-			}
-
-		}
+	results, err := analyzeHostCollectorResults(collectedContents, a.hostAnalyzer.Outcomes, a.CheckCondition, a.Title())
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to analyze HTTP Load Balancer")
 	}
 
-	return coll.get(a.Title()), nil
+	return results, nil
+}
+
+func (a *AnalyzeHostHTTPLoadBalancer) CheckCondition(when string, data []byte) (bool, error) {
+
+	var httpLoadBalancer collect.NetworkStatusResult
+	if err := json.Unmarshal(data, &httpLoadBalancer); err != nil {
+		return false, fmt.Errorf("failed to unmarshal data into NetworkStatusResult: %v", err)
+	}
+
+	if string(httpLoadBalancer.Status) == when {
+		return true, nil
+	}
+
+	return false, nil
 }

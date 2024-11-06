@@ -32,95 +32,25 @@ func (a *AnalyzeHostTime) IsExcluded() (bool, error) {
 func (a *AnalyzeHostTime) Analyze(
 	getCollectedFileContents func(string) ([]byte, error), findFiles getChildCollectedFileContents,
 ) ([]*AnalyzeResult, error) {
-	hostAnalyzer := a.hostAnalyzer
+	result := AnalyzeResult{Title: a.Title()}
 
-	contents, err := getCollectedFileContents(collect.HostTimePath)
+	collectedContents, err := retrieveCollectedContents(
+		getCollectedFileContents,
+		collect.HostTimePath,
+		collect.NodeInfoBaseDir,
+		collect.HostMemoryFileName,
+	)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to get collected file")
+		return []*AnalyzeResult{&result}, err
 	}
 
-	timeInfo := collect.TimeInfo{}
-	if err := json.Unmarshal(contents, &timeInfo); err != nil {
-		return nil, errors.Wrap(err, "failed to unmarshal time info")
+	results, err := analyzeHostCollectorResults(collectedContents, a.hostAnalyzer.Outcomes, a.CheckCondition, a.Title())
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to analyze OS version")
 	}
 
-	var coll resultCollector
+	return results, nil
 
-	for _, outcome := range hostAnalyzer.Outcomes {
-		result := &AnalyzeResult{Title: a.Title()}
-
-		if outcome.Fail != nil {
-			if outcome.Fail.When == "" {
-				result.IsFail = true
-				result.Message = outcome.Fail.Message
-				result.URI = outcome.Fail.URI
-
-				coll.push(result)
-				continue
-			}
-
-			isMatch, err := compareHostTimeStatusToActual(outcome.Fail.When, timeInfo)
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed to compare %s", outcome.Fail.When)
-			}
-
-			if isMatch {
-				result.IsFail = true
-				result.Message = outcome.Fail.Message
-				result.URI = outcome.Fail.URI
-
-				coll.push(result)
-			}
-		} else if outcome.Warn != nil {
-			if outcome.Warn.When == "" {
-				result.IsWarn = true
-				result.Message = outcome.Warn.Message
-				result.URI = outcome.Warn.URI
-
-				coll.push(result)
-				continue
-			}
-
-			isMatch, err := compareHostTimeStatusToActual(outcome.Warn.When, timeInfo)
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed to compare %s", outcome.Warn.When)
-			}
-
-			if isMatch {
-				result.IsWarn = true
-				result.Message = outcome.Warn.Message
-				result.URI = outcome.Warn.URI
-
-				coll.push(result)
-			}
-
-		} else if outcome.Pass != nil {
-			if outcome.Pass.When == "" {
-				result.IsPass = true
-				result.Message = outcome.Pass.Message
-				result.URI = outcome.Pass.URI
-
-				coll.push(result)
-				continue
-			}
-
-			isMatch, err := compareHostTimeStatusToActual(outcome.Pass.When, timeInfo)
-			if err != nil {
-				return nil, errors.Wrapf(err, "failed to compare %s", outcome.Pass.When)
-			}
-
-			if isMatch {
-				result.IsPass = true
-				result.Message = outcome.Pass.Message
-				result.URI = outcome.Pass.URI
-
-				coll.push(result)
-			}
-
-		}
-	}
-
-	return coll.get(a.Title()), nil
 }
 
 func compareHostTimeStatusToActual(status string, timeInfo collect.TimeInfo) (res bool, err error) {
@@ -159,4 +89,14 @@ func compareHostTimeStatusToActual(status string, timeInfo collect.TimeInfo) (re
 	}
 
 	return false, fmt.Errorf("Unknown keyword: %s", parts[0])
+}
+
+func (a *AnalyzeHostTime) CheckCondition(when string, data []byte) (bool, error) {
+
+	var timeInfo collect.TimeInfo
+	if err := json.Unmarshal(data, &timeInfo); err != nil {
+		return false, fmt.Errorf("failed to unmarshal data into TimeInfo: %v", err)
+	}
+
+	return compareHostTimeStatusToActual(when, timeInfo)
 }

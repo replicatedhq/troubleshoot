@@ -146,12 +146,7 @@ func TestAnalyzeHostCollectorResults(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			a := AnalyzeHostOS{}
 			// Call the new analyzeHostCollectorResults function with the test data
-			result, err := analyzeHostCollectorResults(
-				test.collectedContent,
-				test.outcomes,
-				a.CheckCondition,
-				"Host OS Info",
-			)
+			result, err := analyzeHostCollectorResults(test.collectedContent, test.outcomes, a.CheckCondition, "Host OS Info")
 			require.NoError(t, err)
 			assert.Equal(t, test.expectResult, result)
 		})

@@ -10,6 +10,7 @@ import (
 )
 
 const HostIPV4InterfacesPath = `host-collectors/system/ipv4Interfaces.json`
+const HostIPV4FileName = `ipv4Interfaces.json`
 
 type CollectHostIPV4Interfaces struct {
 	hostCollector *troubleshootv1beta2.IPV4Interfaces
