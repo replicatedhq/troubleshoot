@@ -334,7 +334,7 @@ func runRemoteHostCollectors(ctx context.Context, hostCollectors []*troubleshoot
 	var mu sync.Mutex
 	nodeLogs := make(map[string]map[string][]byte)
 
-	ds, err := createHostCollectorDS(ctx, clientset, labels)
+	ds, err := createHostCollectorDS(ctx, clientset, labels, "default")
 	if err != nil {
 		return nil, err
 	}
@@ -495,9 +495,8 @@ func createHostCollectorsSpec(hostCollectors []*troubleshootv1beta2.HostCollect)
 	}
 }
 
-func createHostCollectorDS(ctx context.Context, clientset kubernetes.Interface, labels map[string]string) (*appsv1.DaemonSet, error) {
+func createHostCollectorDS(ctx context.Context, clientset kubernetes.Interface, labels map[string]string, ns string) (*appsv1.DaemonSet, error) {
 	dsName := names.SimpleNameGenerator.GenerateName("remote-host-collector" + "-")
-	ns := "default"
 	imageName := "replicated/troubleshoot:latest"
 	imagePullPolicy := corev1.PullIfNotPresent
 
