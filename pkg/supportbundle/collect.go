@@ -10,6 +10,7 @@ import (
 	"reflect"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/pkg/errors"
 	analyze "github.com/replicatedhq/troubleshoot/pkg/analyze"
@@ -39,6 +40,7 @@ import (
 const (
 	selectorLabelKey   = "ds-selector-label"
 	selectorLabelValue = "remote-host-collector"
+	defaultTimeout     = 30
 )
 
 func runHostCollectors(ctx context.Context, hostCollectors []*troubleshootv1beta2.HostCollect, additionalRedactors *troubleshootv1beta2.Redactor, bundlePath string, opts SupportBundleCreateOpts) (collect.CollectorResult, error) {
@@ -347,7 +349,7 @@ func runRemoteHostCollectors(ctx context.Context, hostCollectors []*troubleshoot
 	pods, err := clientset.CoreV1().Pods(ds.Namespace).List(ctx, metav1.ListOptions{
 		LabelSelector: selectorLabelKey + "=" + ds.Name,
 		// use the default logs collector timeout for now
-		TimeoutSeconds: ptr.To(int64(constants.DEFAULT_LOGS_COLLECTOR_TIMEOUT.Seconds())),
+		TimeoutSeconds: ptr.To(int64(defaultTimeout)),
 		Limit:          0,
 	})
 	if err != nil {
@@ -571,47 +573,54 @@ func createHostCollectorDS(ctx context.Context, clientset kubernetes.Interface, 
 }
 
 func waitForPodRunning(ctx context.Context, clientset kubernetes.Interface, pod *corev1.Pod) error {
-	watcher, err := clientset.CoreV1().Pods(pod.Namespace).Watch(ctx, metav1.ListOptions{
-		FieldSelector: fmt.Sprintf("metadata.name=%s", pod.Name),
-	})
-	if err != nil {
-		return err
-	}
-	defer watcher.Stop()
+	timeoutCh := time.After(defaultTimeout * time.Second)
+	ticker := time.NewTicker(100 * time.Millisecond)
+	defer ticker.Stop()
 
-	for event := range watcher.ResultChan() {
-		podEvent, ok := event.Object.(*v1.Pod)
-		if !ok {
-			continue
-		}
-		for _, containerStatus := range podEvent.Status.ContainerStatuses {
-			if containerStatus.Name == "remote-collector" {
-				if containerStatus.State.Running != nil && containerStatus.State.Terminated == nil && containerStatus.Ready {
-					return nil
+	for {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-timeoutCh:
+			return fmt.Errorf("timed out waiting for pod %s to be running", pod.Name)
+		case <-ticker.C:
+			currentPod, err := clientset.CoreV1().Pods(pod.Namespace).Get(ctx, pod.Name, metav1.GetOptions{})
+			if err != nil {
+				return fmt.Errorf("failed to get pod %s: %w", pod.Name, err)
+			}
+
+			// Check container status
+			for _, containerStatus := range currentPod.Status.ContainerStatuses {
+				if containerStatus.Name == "remote-collector" {
+					if containerStatus.State.Running != nil && containerStatus.State.Terminated == nil && containerStatus.Ready {
+						return nil
+					}
 				}
 			}
 		}
 	}
-	return fmt.Errorf("pod %s did not complete", pod.Name)
 }
 
 func waitForDS(ctx context.Context, clientset kubernetes.Interface, ds *appsv1.DaemonSet) error {
-	watcher, err := clientset.AppsV1().DaemonSets(ds.Namespace).Watch(ctx, metav1.ListOptions{
-		FieldSelector: fmt.Sprintf("metadata.name=%s", ds.Name),
-	})
-	if err != nil {
-		return err
-	}
-	defer watcher.Stop()
+	timeoutCh := time.After(defaultTimeout * time.Second)
+	ticker := time.NewTicker(100 * time.Millisecond)
+	defer ticker.Stop()
 
-	for event := range watcher.ResultChan() {
-		dsEvent, ok := event.Object.(*appsv1.DaemonSet)
-		if !ok {
-			continue
-		}
-		if dsEvent.Status.NumberReady > 0 && dsEvent.Status.DesiredNumberScheduled == dsEvent.Status.NumberReady {
-			return nil
+	for {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-timeoutCh:
+			return fmt.Errorf("timed out waiting for DaemonSet %s to be ready", ds.Name)
+		case <-ticker.C:
+			currentDS, err := clientset.AppsV1().DaemonSets(ds.Namespace).Get(ctx, ds.Name, metav1.GetOptions{})
+			if err != nil {
+				return fmt.Errorf("failed to get DaemonSet %s: %w", ds.Name, err)
+			}
+
+			if currentDS.Status.NumberReady > 0 && currentDS.Status.DesiredNumberScheduled == currentDS.Status.NumberReady {
+				return nil
+			}
 		}
 	}
-	return fmt.Errorf("pod %s did not complete", ds.Name)
 }
