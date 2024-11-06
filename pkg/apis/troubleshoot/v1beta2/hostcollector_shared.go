@@ -231,6 +231,10 @@ type HostDNS struct {
 	Hostnames         []string `json:"hostnames" yaml:"hostnames"`
 }
 
+type HostSysctl struct {
+	HostCollectorMeta `json:",inline" yaml:",inline"`
+}
+
 type HostCollect struct {
 	CPU                          *CPU                              `json:"cpu,omitempty" yaml:"cpu,omitempty"`
 	Memory                       *Memory                           `json:"memory,omitempty" yaml:"memory,omitempty"`
