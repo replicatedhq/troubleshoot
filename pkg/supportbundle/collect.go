@@ -579,7 +579,7 @@ func waitForPodRunning(ctx context.Context, clientset kubernetes.Interface, pod 
 		}
 		for _, containerStatus := range podEvent.Status.ContainerStatuses {
 			if containerStatus.Name == "remote-collector" {
-				if containerStatus.State.Running != nil && containerStatus.State.Terminated == nil {
+				if containerStatus.State.Running != nil && containerStatus.State.Terminated == nil && containerStatus.Ready {
 					return nil
 				}
 			}
