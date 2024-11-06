@@ -61,6 +61,8 @@ func GetHostAnalyzer(analyzer *troubleshootv1beta2.HostAnalyze) (HostAnalyzer, b
 		return &AnalyzeHostKernelConfigs{analyzer.KernelConfigs}, true
 	case analyzer.JsonCompare != nil:
 		return &AnalyzeHostJsonCompare{analyzer.JsonCompare}, true
+	case analyzer.NetworkNamespaceConnectivity != nil:
+		return &AnalyzeHostNetworkNamespaceConnectivity{analyzer.NetworkNamespaceConnectivity}, true
 	default:
 		return nil, false
 	}

@@ -17326,6 +17326,25 @@ spec:
                         exclude:
                           type: BoolString
                       type: object
+                    networkNamespaceConnectivity:
+                      properties:
+                        collectorName:
+                          type: string
+                        exclude:
+                          type: BoolString
+                        fromCIDR:
+                          type: string
+                        port:
+                          type: integer
+                        timeout:
+                          type: string
+                        toCIDR:
+                          type: string
+                      required:
+                      - fromCIDR
+                      - port
+                      - toCIDR
+                      type: object
                     run:
                       properties:
                         args:
