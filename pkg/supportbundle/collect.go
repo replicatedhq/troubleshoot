@@ -25,6 +25,7 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	v1 "k8s.io/api/core/v1"
+	kuberneteserrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apiserver/pkg/storage/names"
@@ -435,14 +436,13 @@ func runRemoteHostCollectors(ctx context.Context, hostCollectors []*troubleshoot
 		// delete the config map
 		// delete the remote pods
 		// check if the daemonset still exists
-		_, err := clientset.AppsV1().DaemonSets(ds.Namespace).Get(ctx, ds.Name, metav1.GetOptions{})
-		if err != nil {
-			klog.Errorf("Failed to verify remote host collector daemonset %s still exists: %v", ds.Name, err)
-			return
-		}
-
 		if err := clientset.AppsV1().DaemonSets(ds.Namespace).Delete(ctx, ds.Name, metav1.DeleteOptions{}); err != nil {
-			klog.Errorf("Failed to delete remote host collector daemonset %s: %v", ds.Name, err)
+			if kuberneteserrors.IsNotFound(err) {
+				klog.Errorf("Remote host collector daemonset %s not found", ds.Name)
+			} else {
+				klog.Errorf("Failed to delete remote host collector daemonset %s: %v", ds.Name, err)
+			}
+			return
 		}
 	}()
 
