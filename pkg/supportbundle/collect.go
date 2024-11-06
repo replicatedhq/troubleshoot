@@ -602,7 +602,7 @@ func waitForDS(ctx context.Context, clientset kubernetes.Interface, ds *appsv1.D
 		if !ok {
 			continue
 		}
-		if dsEvent.Status.NumberReady > 0 {
+		if dsEvent.Status.NumberReady > 0 && dsEvent.Status.DesiredNumberScheduled == dsEvent.Status.NumberReady {
 			return nil
 		}
 	}
