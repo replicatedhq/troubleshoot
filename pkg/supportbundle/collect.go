@@ -344,7 +344,7 @@ func runRemoteHostCollectors(ctx context.Context, hostCollectors []*troubleshoot
 
 	klog.V(2).Infof("Created Remote Host Collector Daemonset %s", ds.Name)
 	pods, err := clientset.CoreV1().Pods(ds.Namespace).List(ctx, metav1.ListOptions{
-		LabelSelector:  selectorLabelKey + "=" + selectorLabelValue,
+		LabelSelector:  selectorLabelKey + "=" + ds.Name,
 		TimeoutSeconds: new(int64),
 		Limit:          0,
 	})
@@ -489,11 +489,12 @@ func createHostCollectorsSpec(hostCollectors []*troubleshootv1beta2.HostCollect)
 }
 
 func createHostCollectorDS(ctx context.Context, clientset kubernetes.Interface, labels map[string]string) (*appsv1.DaemonSet, error) {
+	dsName := names.SimpleNameGenerator.GenerateName("remote-host-collector" + "-")
 	ns := "default"
 	imageName := "replicated/troubleshoot:latest"
 	imagePullPolicy := corev1.PullAlways
 
-	labels[selectorLabelKey] = selectorLabelValue
+	labels[selectorLabelKey] = dsName
 
 	podSpec := corev1.PodSpec{
 		HostNetwork: true,
@@ -531,7 +532,7 @@ func createHostCollectorDS(ctx context.Context, clientset kubernetes.Interface, 
 
 	ds := &appsv1.DaemonSet{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      names.SimpleNameGenerator.GenerateName("remote-host-collector" + "-"),
+			Name:      dsName,
 			Namespace: ns,
 			Labels:    labels,
 		},
@@ -542,7 +543,7 @@ func createHostCollectorDS(ctx context.Context, clientset kubernetes.Interface, 
 					{
 						Key:      selectorLabelKey,
 						Operator: "In",
-						Values:   []string{selectorLabelValue},
+						Values:   []string{dsName},
 					},
 				},
 			},
@@ -556,6 +557,7 @@ func createHostCollectorDS(ctx context.Context, clientset kubernetes.Interface, 
 	}
 
 	createdDS, err := clientset.AppsV1().DaemonSets(ns).Create(ctx, ds, metav1.CreateOptions{})
+
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create Remote Host Collector Pod")
 	}
