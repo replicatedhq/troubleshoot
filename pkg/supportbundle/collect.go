@@ -497,7 +497,7 @@ func createHostCollectorsSpec(hostCollectors []*troubleshootv1beta2.HostCollect)
 
 func createHostCollectorDS(ctx context.Context, clientset kubernetes.Interface, labels map[string]string, ns string) (*appsv1.DaemonSet, error) {
 	dsName := names.SimpleNameGenerator.GenerateName("remote-host-collector" + "-")
-	imageName := "replicated/troubleshoot:latest"
+	imageName := "replicated/troubleshoot:" + version.SemVersion()
 	imagePullPolicy := corev1.PullIfNotPresent
 
 	labels[selectorLabelKey] = dsName
