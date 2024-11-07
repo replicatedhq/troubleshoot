@@ -8,6 +8,7 @@ import (
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 )
 
+// Ensure `CollectHostSysctl` implements `HostCollector` interface at compile time.
 var _ HostCollector = (*CollectHostSysctl)(nil)
 
 var execCommand = exec.Command
