@@ -264,6 +264,7 @@ type HostCollect struct {
 	HostCGroups                  *HostCGroups                      `json:"cgroups,omitempty" yaml:"cgroups,omitempty"`
 	HostDNS                      *HostDNS                          `json:"dns,omitempty" yaml:"dns,omitempty"`
 	NetworkNamespaceConnectivity *HostNetworkNamespaceConnectivity `json:"networkNamespaceConnectivity,omitempty" yaml:"networkNamespaceConnectivity,omitempty"`
+	HostSysctl                   *HostSysctl                       `json:"sysctl,omitempty" yaml:"sysctl,omitempty"`
 }
 
 // GetName gets the name of the collector

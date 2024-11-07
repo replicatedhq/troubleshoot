@@ -2,8 +2,9 @@ package collect
 
 import (
 	"bytes"
-	"os/exec"
+	"encoding/json"
 
+	"github.com/lorenzosaino/go-sysctl"
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 )
@@ -11,9 +12,10 @@ import (
 // Ensure `CollectHostSysctl` implements `HostCollector` interface at compile time.
 var _ HostCollector = (*CollectHostSysctl)(nil)
 
-var execCommand = exec.Command
+// Path to the kernel virtual files, defaults to /proc/sys
+var sysctlVirtualFiles = sysctl.DefaultPath
 
-const HostSysctlPath = `host-collectors/system/sysctl.txt`
+const HostSysctlPath = `host-collectors/system/sysctl.json`
 
 type CollectHostSysctl struct {
 	hostCollector *troubleshootv1beta2.HostSysctl
@@ -29,18 +31,22 @@ func (c *CollectHostSysctl) IsExcluded() (bool, error) {
 }
 
 func (c *CollectHostSysctl) Collect(progressChan chan<- interface{}) (map[string][]byte, error) {
-
-	cmd := execCommand("sysctl", "-a")
-	out, err := cmd.Output()
+	client, err := sysctl.NewClient(sysctlVirtualFiles)
 	if err != nil {
-		if exitErr, ok := err.(*exec.ExitError); ok {
-			return nil, errors.Wrapf(err, "failed to run sysctl exit-code=%d stderr=%s", exitErr.ExitCode(), exitErr.Stderr)
-		} else {
-			return nil, errors.Wrap(err, "failed to run sysctl")
-		}
+		return nil, errors.Wrap(err, "failed to initialize sysctl client")
+	}
+
+	values, err := client.GetAll()
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to run sysctl client")
+	}
+
+	payload, err := json.Marshal(values)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to marshal data to json")
 	}
 
 	output := NewResult()
-	output.SaveResult(c.BundlePath, HostSysctlPath, bytes.NewBuffer(out))
+	output.SaveResult(c.BundlePath, HostSysctlPath, bytes.NewBuffer(payload))
 	return output, nil
 }
