@@ -100,7 +100,7 @@ func TestCollectHostSysctl_(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			req := require.New(t)
 
-			setExecStub(exec.Command("echo", "-n", test.cmdOut))
+			setExecStub(exec.Command("echo", "-n", test.cmdOut)) // #nosec G204
 
 			tmpDir := t.TempDir()
 			c := &CollectHostSysctl{

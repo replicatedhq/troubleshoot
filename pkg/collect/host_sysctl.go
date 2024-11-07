@@ -71,14 +71,16 @@ func parseSysctlParameters(output []byte) map[string]string {
 		l := scanner.Text()
 		// <1:key> <2:separator> <3:value>
 		matches := sysctlLineRegex.FindStringSubmatch(l)
+
+		switch len(matches) {
 		// there are no matches for the value and separator, ignore and log
-		if len(matches) < 3 {
+		case 0, 1, 2:
 			klog.V(2).Infof("skipping sysctl line since we found no matches for it: %s", l)
-			// key exists but value could be empty, register as an empty string value but log something for reference
-		} else if len(matches) < 4 {
+		// key exists but value could be empty, register as an empty string value but log something for reference
+		case 3:
 			klog.V(2).Infof("found no value for sysctl line, keeping it with an empty value: %s", l)
 			result[matches[1]] = ""
-		} else {
+		default:
 			result[matches[1]] = matches[3]
 		}
 	}
