@@ -45,11 +45,11 @@ func TestCollectHostSysctl(t *testing.T) {
 	err := os.MkdirAll(ipv4All, 0777)
 	req.NoError(err)
 
-	err = os.WriteFile(fmt.Sprintf("%s/arp_ignore", ipv4All), []byte("0"), 0777)
+	err = os.WriteFile(fmt.Sprintf("%s/arp_ignore", ipv4All), []byte("0"), 0600)
 	req.NoError(err)
-	err = os.WriteFile(fmt.Sprintf("%s/arp_filter", ipv4All), []byte("1"), 0777)
+	err = os.WriteFile(fmt.Sprintf("%s/arp_filter", ipv4All), []byte("1"), 0600)
 	req.NoError(err)
-	err = os.WriteFile(fmt.Sprintf("%s/arp_evict_nocarrier", ipv4All), []byte("1"), 0777)
+	err = os.WriteFile(fmt.Sprintf("%s/arp_evict_nocarrier", ipv4All), []byte("1"), 0600)
 	req.NoError(err)
 
 	c := &CollectHostSysctl{
