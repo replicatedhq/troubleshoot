@@ -15124,6 +15124,17 @@
                   }
                 }
               },
+              "sysctl": {
+                "type": "object",
+                "properties": {
+                  "collectorName": {
+                    "type": "string"
+                  },
+                  "exclude": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  }
+                }
+              },
               "systemPackages": {
                 "type": "object",
                 "properties": {
