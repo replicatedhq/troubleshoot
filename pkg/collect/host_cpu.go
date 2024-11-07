@@ -18,6 +18,7 @@ type CPUInfo struct {
 }
 
 const HostCPUPath = `host-collectors/system/cpu.json`
+const HostCPUFileName = `cpu.json`
 
 type CollectHostCPU struct {
 	hostCollector *troubleshootv1beta2.CPU
