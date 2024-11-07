@@ -142,7 +142,6 @@ jobs:
           path: bin/
       - run: chmod +x bin/support-bundle
       - run: make support-bundle-e2e-test
-      - run: make support-bundle-e2e-go-test
   
   # Additional e2e tests for support bundle that run in Go, these create a Kind cluster
   validate-supportbundle-e2e-go:
