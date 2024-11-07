@@ -44,7 +44,7 @@ jobs:
       - uses: replicatedhq/action-k3s@main
         id: k3s
         with:
-          version: v1.31.2+k3s1
+          version: v1.31.2-k3s1
       # test-integration includes unit tests
       - run: make test-integration
 
@@ -93,7 +93,7 @@ jobs:
       - uses: replicatedhq/action-k3s@main
         id: k3s
         with:
-          version: v1.23.6-k3s1
+          version: v1.31.2-k3s1
       - name: Download preflight binary
         uses: actions/download-artifact@v4
         with:
@@ -134,7 +134,7 @@ jobs:
       - uses: replicatedhq/action-k3s@main
         id: k3s
         with:
-          version: v1.31.2+k3s1
+          version: v1.31.2-k3s1
       - name: Download support bundle binary
         uses: actions/download-artifact@v4
         with:
