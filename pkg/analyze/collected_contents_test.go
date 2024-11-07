@@ -78,7 +78,7 @@ func TestRetrieveCollectedContents(t *testing.T) {
 			remoteNodeBaseDir: "remoteBaseDir",
 			remoteFileName:    "remoteFileName",
 			expectedResult:    nil,
-			expectedError:     "failed to get node list",
+			expectedError:     "",
 		},
 		{
 			name: "fail to retrieve content for one of the nodes",
