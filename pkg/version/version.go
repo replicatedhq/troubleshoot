@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"runtime"
 	"runtime/debug"
-	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -24,7 +23,6 @@ type Build struct {
 	TimeFallback string     `json:"buildTimeFallback,omitempty"`
 	GoInfo       GoInfo     `json:"go,omitempty"`
 	RunAt        *time.Time `json:"runAt,omitempty"`
-	SemVersion   string     `json:"semVersion,omitempty"`
 }
 
 type GoInfo struct {
@@ -56,8 +54,6 @@ func initBuild() {
 	}
 
 	build.Version = version
-	build.SemVersion = extractSemVer(version)
-
 	if len(gitSHA) >= 7 {
 		build.GitSHA = gitSHA[:7]
 	}
@@ -80,10 +76,6 @@ func GetBuild() Build {
 // Version gets the version
 func Version() string {
 	return build.Version
-}
-
-func SemVersion() string {
-	return build.SemVersion
 }
 
 // GitSHA gets the gitsha
@@ -125,16 +117,4 @@ func GetVersionFile() (string, error) {
 	}
 
 	return string(b), nil
-}
-
-// extractSemVer extracts the semantic version from the full version string.
-func extractSemVer(fullVersion string) string {
-	// Remove the leading 'v' if it exists
-	fullVersion = strings.TrimPrefix(fullVersion, "v")
-	// Split the string by '-' and return the first part
-	parts := strings.Split(fullVersion, "-")
-	if len(parts) > 0 {
-		return parts[0]
-	}
-	return fullVersion // Fallback to the original string if no '-' is found
 }
