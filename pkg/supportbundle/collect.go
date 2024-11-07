@@ -213,6 +213,10 @@ func collectRemoteHost(ctx context.Context, collectSpecs []*troubleshootv1beta2.
 	opts.KubernetesRestConfig.Burst = constants.DEFAULT_CLIENT_BURST
 	opts.KubernetesRestConfig.UserAgent = fmt.Sprintf("%s/%s", constants.DEFAULT_CLIENT_USER_AGENT, version.Version())
 
+	if err := saveNodeList(opts, bundlePath); err != nil {
+		return err
+	}
+
 	// Run remote collectors sequentially
 	for _, spec := range collectSpecs {
 		collector, ok := collect.GetHostCollector(spec, bundlePath)
@@ -339,4 +343,30 @@ func getGlobalRedactors(additionalRedactors *troubleshootv1beta2.Redactor) []*tr
 		return additionalRedactors.Spec.Redactors
 	}
 	return []*troubleshootv1beta2.Redact{}
+}
+
+func saveNodeList(opts SupportBundleCreateOpts, bundlePath string) error {
+	result := make(collect.CollectorResult)
+
+	clientset, err := kubernetes.NewForConfig(opts.KubernetesRestConfig)
+	if err != nil {
+		return errors.Wrap(err, "failed to create kubernetes clientset to run host collectors in pod")
+	}
+
+	nodeList, err := getNodeList(clientset, opts)
+	if err != nil {
+		return errors.Wrap(err, "failed to get remote node list")
+	}
+
+	nodeListBytes, err := json.MarshalIndent(nodeList, "", "  ")
+	if err != nil {
+		return errors.Wrap(err, "failed to marshal remote node list")
+	}
+
+	err = result.SaveResult(bundlePath, constants.NODE_LIST_FILE, bytes.NewBuffer(nodeListBytes))
+	if err != nil {
+		return errors.Wrap(err, "failed to write remote node list")
+	}
+
+	return nil
 }
