@@ -6,6 +6,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/replicatedhq/troubleshoot/pkg/constants"
+	"github.com/replicatedhq/troubleshoot/pkg/types"
 )
 
 type collectedContent struct {
@@ -33,6 +34,9 @@ func retrieveCollectedContents(
 	// Local data not available, move to remote collection
 	nodeListContents, err := getCollectedFileContents(constants.NODE_LIST_FILE)
 	if err != nil {
+		if _, ok := err.(*types.NotFoundError); ok {
+			return collectedContents, nil
+		}
 		return nil, errors.Wrap(err, "failed to get node list")
 	}
 
