@@ -103,7 +103,7 @@ func getPodDetailsFromFiles(files map[string][]byte, podNamespace string, podNam
 
 // GetFilesContents will return the file contents for filenames matching the filenames parameter.
 func GetFilesContents(bundleArchive string, filenames []string) (map[string][]byte, error) {
-	bundleDir, err := ioutil.TempDir("", "troubleshoot")
+	bundleDir, err := os.MkdirTemp("", "troubleshoot")
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create tmp dir")
 	}
