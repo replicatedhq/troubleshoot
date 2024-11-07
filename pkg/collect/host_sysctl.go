@@ -1,19 +1,22 @@
 package collect
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/json"
+	"os/exec"
+	"regexp"
 
-	"github.com/lorenzosaino/go-sysctl"
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
+	"k8s.io/klog/v2"
 )
 
 // Ensure `CollectHostSysctl` implements `HostCollector` interface at compile time.
 var _ HostCollector = (*CollectHostSysctl)(nil)
 
-// Path to the kernel virtual files, defaults to /proc/sys
-var sysctlVirtualFiles = sysctl.DefaultPath
+// Helper var to allow stubbing `exec.Command` for tests
+var execCommand = exec.Command
 
 const HostSysctlPath = `host-collectors/system/sysctl.json`
 
@@ -31,22 +34,53 @@ func (c *CollectHostSysctl) IsExcluded() (bool, error) {
 }
 
 func (c *CollectHostSysctl) Collect(progressChan chan<- interface{}) (map[string][]byte, error) {
-	client, err := sysctl.NewClient(sysctlVirtualFiles)
+	klog.V(2).Info("Running sysctl collector")
+	cmd := execCommand("sysctl", "-a")
+	out, err := cmd.Output()
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to initialize sysctl client")
+		klog.V(2).ErrorS(err, "failed to run sysctl")
+		if exitErr, ok := err.(*exec.ExitError); ok {
+			return nil, errors.Wrapf(err, "failed to run sysctl exit-code=%d stderr=%s", exitErr.ExitCode(), exitErr.Stderr)
+		} else {
+			return nil, errors.Wrap(err, "failed to run sysctl")
+		}
 	}
-
-	values, err := client.GetAll()
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to run sysctl client")
-	}
+	values := parseSysctlParameters(out)
 
 	payload, err := json.Marshal(values)
 	if err != nil {
+		klog.V(2).ErrorS(err, "failed to marshal data to json")
 		return nil, errors.Wrap(err, "failed to marshal data to json")
 	}
 
 	output := NewResult()
 	output.SaveResult(c.BundlePath, HostSysctlPath, bytes.NewBuffer(payload))
+	klog.V(2).Info("Finished writing JSON output")
 	return output, nil
+}
+
+// Linux sysctl outputs <key> = <value> where in Darwin you get <key> : <value>
+// where <value> can be a string, number or multiple space separated strings
+var sysctlLineRegex = regexp.MustCompile(`(\S+)\s*(=|:)\s*(.*)$`)
+
+func parseSysctlParameters(output []byte) map[string]string {
+	scanner := bufio.NewScanner(bytes.NewReader(output))
+
+	result := map[string]string{}
+	for scanner.Scan() {
+		l := scanner.Text()
+		// <1:key> <2:separator> <3:value>
+		matches := sysctlLineRegex.FindStringSubmatch(l)
+		// there are no matches for the value and separator, ignore and log
+		if len(matches) < 3 {
+			klog.V(2).Infof("skipping sysctl line since we found no matches for it: %s", l)
+			// key exists but value could be empty, register as an empty string value but log something for reference
+		} else if len(matches) < 4 {
+			klog.V(2).Infof("found no value for sysctl line, keeping it with an empty value: %s", l)
+			result[matches[1]] = ""
+		} else {
+			result[matches[1]] = matches[3]
+		}
+	}
+	return result
 }

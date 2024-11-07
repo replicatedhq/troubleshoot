@@ -2,8 +2,7 @@ package collect
 
 import (
 	"encoding/json"
-	"fmt"
-	"os"
+	"os/exec"
 	"testing"
 
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
@@ -11,62 +10,116 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func setKernelVirtualFilesPath(path string) {
-	sysctlVirtualFiles = path
+type execStub struct {
+	cmd  *exec.Cmd
+	name string
+	args []string
+}
+
+func (s *execStub) testExecCommand(name string, args ...string) *exec.Cmd {
+	s.name = name
+	s.args = args
+	return s.cmd
+}
+
+func setExecStub(c *exec.Cmd) {
+	e := &execStub{
+		cmd: c,
+	}
+	execCommand = e.testExecCommand
 }
 
 func TestCollectHostSysctl_Error(t *testing.T) {
 	req := require.New(t)
+	setExecStub(exec.Command("sh", "-c", "exit 1"))
+
 	tmpDir := t.TempDir()
-
-	setKernelVirtualFilesPath(fmt.Sprintf("%s/does/not/exist", tmpDir))
-
 	c := &CollectHostSysctl{
 		BundlePath: tmpDir,
 	}
 
 	_, err := c.Collect(nil)
-	req.ErrorContains(err, "failed to initialize sysctl client")
+	req.ErrorContains(err, "failed to run sysctl exit-code=1")
 }
 
-func TestCollectHostSysctl(t *testing.T) {
-	req := require.New(t)
-	expectedOut := map[string]string{
-		"net.ipv4.conf.all.arp_ignore":          "0",
-		"net.ipv4.conf.all.arp_filter":          "1",
-		"net.ipv4.conf.all.arp_evict_nocarrier": "1",
+func TestCollectHostSysctl_(t *testing.T) {
+	tests := []struct {
+		name     string
+		cmdOut   string
+		expected map[string]string
+	}{
+		{
+			name: "linux",
+			cmdOut: `
+				net.ipv4.conf.all.arp_evict_nocarrier = 1
+				net.ipv4.conf.all.arp_filter = 0
+				net.ipv4.conf.all.arp_ignore = 0
+			`,
+			expected: map[string]string{
+				"net.ipv4.conf.all.arp_evict_nocarrier": "1",
+				"net.ipv4.conf.all.arp_filter":          "0",
+				"net.ipv4.conf.all.arp_ignore":          "0",
+			},
+		},
+		{
+			name: "darwin",
+			cmdOut: `
+				kern.prng.pool_31.max_sample_count: 16420665
+				kern.crypto.sha1: SHA1_VNG_ARM
+				kern.crypto.sha512: SHA512_VNG_ARM_HW
+				kern.crypto.aes.ecb.encrypt: AES_ECB_ARM
+				kern.monotonicclock: 4726514
+				kern.monotonicclock_usecs: 4726514658233 13321990885027
+			`,
+			expected: map[string]string{
+				"kern.prng.pool_31.max_sample_count": "16420665",
+				"kern.crypto.sha1":                   "SHA1_VNG_ARM",
+				"kern.crypto.sha512":                 "SHA512_VNG_ARM_HW",
+				"kern.crypto.aes.ecb.encrypt":        "AES_ECB_ARM",
+				"kern.monotonicclock":                "4726514",
+				"kern.monotonicclock_usecs":          "4726514658233 13321990885027",
+			},
+		},
+		{
+			name: "skip non valid entries and keep empty values",
+			cmdOut: `
+				net.ipv4.conf.all.arp_ignore = 
+				kern.prng.pool_31.max_sample_count:
+				not-valid
+				net.ipv4.conf.all.arp_filter = 0
+			`,
+			expected: map[string]string{
+				"net.ipv4.conf.all.arp_ignore":       "",
+				"kern.prng.pool_31.max_sample_count": "",
+				"net.ipv4.conf.all.arp_filter":       "0",
+			},
+		},
 	}
 
-	tmpDir := t.TempDir()
-	virtualFilesPath := fmt.Sprintf("%s/proc/sys/", tmpDir)
-	ipv4All := fmt.Sprintf("%s/net/ipv4/conf/all", virtualFilesPath)
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			req := require.New(t)
 
-	setKernelVirtualFilesPath(virtualFilesPath)
-	err := os.MkdirAll(ipv4All, 0777)
-	req.NoError(err)
+			setExecStub(exec.Command("echo", "-n", test.cmdOut))
 
-	err = os.WriteFile(fmt.Sprintf("%s/arp_ignore", ipv4All), []byte("0"), 0600)
-	req.NoError(err)
-	err = os.WriteFile(fmt.Sprintf("%s/arp_filter", ipv4All), []byte("1"), 0600)
-	req.NoError(err)
-	err = os.WriteFile(fmt.Sprintf("%s/arp_evict_nocarrier", ipv4All), []byte("1"), 0600)
-	req.NoError(err)
+			tmpDir := t.TempDir()
+			c := &CollectHostSysctl{
+				BundlePath: tmpDir,
+			}
 
-	c := &CollectHostSysctl{
-		BundlePath: tmpDir,
+			out, err := c.Collect(nil)
+			req.NoError(err)
+			res := CollectorResult(out)
+			reader, err := res.GetReader(tmpDir, HostSysctlPath)
+			req.NoError(err)
+
+			parameters := map[string]string{}
+			err = json.NewDecoder(reader).Decode(&parameters)
+			req.NoError(err)
+
+			req.Equal(test.expected, parameters)
+		})
 	}
-
-	out, err := c.Collect(nil)
-	req.NoError(err)
-	res := CollectorResult(out)
-	reader, err := res.GetReader(tmpDir, HostSysctlPath)
-	req.NoError(err)
-
-	parameters := map[string]string{}
-	err = json.NewDecoder(reader).Decode(&parameters)
-	req.NoError(err)
-
-	req.Equal(parameters, expectedOut)
 }
 
 func TestCollectHostSysctl_Title(t *testing.T) {
