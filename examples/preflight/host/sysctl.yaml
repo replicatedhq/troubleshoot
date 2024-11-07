@@ -1,0 +1,10 @@
+apiVersion: troubleshoot.sh/v1beta2
+kind: HostPreflight
+metadata:
+  name: sysctl
+spec:
+  collectors:
+    - sysctl:
+        collectorName: sysctl
+  #TODO add analyzer once implemented
+  analyzers: []

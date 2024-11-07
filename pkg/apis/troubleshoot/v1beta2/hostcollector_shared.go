@@ -231,6 +231,10 @@ type HostDNS struct {
 	Hostnames         []string `json:"hostnames" yaml:"hostnames"`
 }
 
+type HostSysctl struct {
+	HostCollectorMeta `json:",inline" yaml:",inline"`
+}
+
 type HostCollect struct {
 	CPU                          *CPU                              `json:"cpu,omitempty" yaml:"cpu,omitempty"`
 	Memory                       *Memory                           `json:"memory,omitempty" yaml:"memory,omitempty"`
@@ -260,6 +264,7 @@ type HostCollect struct {
 	HostCGroups                  *HostCGroups                      `json:"cgroups,omitempty" yaml:"cgroups,omitempty"`
 	HostDNS                      *HostDNS                          `json:"dns,omitempty" yaml:"dns,omitempty"`
 	NetworkNamespaceConnectivity *HostNetworkNamespaceConnectivity `json:"networkNamespaceConnectivity,omitempty" yaml:"networkNamespaceConnectivity,omitempty"`
+	HostSysctl                   *HostSysctl                       `json:"sysctl,omitempty" yaml:"sysctl,omitempty"`
 }
 
 // GetName gets the name of the collector
