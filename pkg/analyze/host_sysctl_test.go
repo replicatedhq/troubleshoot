@@ -61,7 +61,7 @@ func TestAnalyzeHostSysctlCheckCondition(t *testing.T) {
 			conditional: "net.ipv4.conf.all.arp_filter <== 0",
 			collected:   `{"net.ipv4.conf.all.arp_filter": "0"}`,
 			expected:    false,
-			expectErr:   `unsupported operator "<=="`,
+			expectErr:   `failed to parse comparison operator "<=="`,
 		},
 		{
 			name:        "equals with ints",

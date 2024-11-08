@@ -64,38 +64,43 @@ func (a *AnalyzeHostSysctl) CheckCondition(when string, data []byte) (bool, erro
 	}
 
 	param := matches[1]
-	operator := matches[2]
 	expected := matches[3]
+	opString := matches[2]
+	operator, err := ParseComparisonOperator(opString)
+	if err != nil {
+		return false, errors.Wrap(err, fmt.Sprintf("failed to parse comparison operator %q", opString))
+	}
+
 	if _, ok := sysctl[param]; !ok {
 		return false, fmt.Errorf("kernel parameter %q does not exist on collected sysctl output", param)
 	}
 
 	switch operator {
-	case "=", "==", "===":
+	case Equal:
 		return expected == sysctl[param], nil
 	}
 
 	// operator used is an inequality operator, the only valid inputs should be ints, if not we'll error out
 	value, err := strconv.Atoi(sysctl[param])
 	if err != nil {
-		return false, fmt.Errorf("collected sysctl param %q has value %q, cannot be used with provided operator %q", param, sysctl[param], operator)
+		return false, fmt.Errorf("collected sysctl param %q has value %q, cannot be used with provided operator %q", param, sysctl[param], opString)
 	}
 	expectedInt, err := strconv.Atoi(expected)
 	if err != nil {
-		return false, fmt.Errorf("expected value for sysctl param %q has value %q, cannot be used with provided operator %q", param, expected, operator)
+		return false, fmt.Errorf("expected value for sysctl param %q has value %q, cannot be used with provided operator %q", param, expected, opString)
 	}
 
 	switch operator {
-	case "<":
+	case LessThan:
 		return value < expectedInt, nil
-	case "<=":
+	case LessThanOrEqual:
 		return value <= expectedInt, nil
-	case ">":
+	case GreaterThan:
 		return value > expectedInt, nil
-	case ">=":
+	case GreaterThanOrEqual:
 		return value >= expectedInt, nil
 	default:
-		return false, fmt.Errorf("unsupported operator %q", operator)
+		return false, fmt.Errorf("unsupported operator %q", opString)
 	}
 
 }
