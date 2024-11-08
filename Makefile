@@ -59,8 +59,8 @@ test: generate fmt vet
 # Go tests that require a K8s instance
 # TODOLATER: merge with test, so we get unified coverage reports? it'll add 21~sec to the test job though...
 .PHONY: test-integration
-test-integration:
-	go test -v --tags "integration exclude_graphdriver_devicemapper exclude_graphdriver_btrfs" ${BUILDPATHS}
+test-integration: generate fmt vet
+	go test -v --tags="integration exclude_graphdriver_devicemapper exclude_graphdriver_btrfs" ${BUILDPATHS}
 
 .PHONY: preflight-e2e-test
 preflight-e2e-test:
@@ -236,18 +236,6 @@ scan:
 		--severity="HIGH,CRITICAL" \
 		--ignore-unfixed \
 		./
-
-.PHONY: lint
-lint: vet
-	golangci-lint run --new -c .golangci.yaml --build-tags ${BUILDTAGS} ${BUILDPATHS}
-
-.PHONY: lint-and-fix
-lint-and-fix: fmt vet
-	golangci-lint run --new --fix -c .golangci.yaml --build-tags ${BUILDTAGS} ${BUILDPATHS}
-
-.PHONY: install-golangci-lint
-install-golangci-lint:
-	go install github.com/golangci/golangci-lint/cmd/golangci-lint@${GOLANGCI_LINT_VERSION}
 
 .PHONY: watch
 watch: npm-install
