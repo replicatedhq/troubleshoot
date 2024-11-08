@@ -38,7 +38,7 @@ func (a *AnalyzeHostTime) Analyze(
 		getCollectedFileContents,
 		collect.HostTimePath,
 		collect.NodeInfoBaseDir,
-		collect.HostMemoryFileName,
+		collect.HostTimeFileName,
 	)
 	if err != nil {
 		return []*AnalyzeResult{&result}, err

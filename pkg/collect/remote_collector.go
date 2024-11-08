@@ -322,6 +322,13 @@ func (c *RemoteCollector) toHostCollector() (*troubleshootv1beta2.HostCollect, e
 				Exclude:       c.Collect.HostOS.Exclude,
 			},
 		}
+	case c.Collect.Sysctl != nil:
+		hostCollect.HostSysctl = &troubleshootv1beta2.HostSysctl{
+			HostCollectorMeta: troubleshootv1beta2.HostCollectorMeta{
+				CollectorName: c.Collect.Sysctl.CollectorName,
+				Exclude:       c.Collect.Sysctl.Exclude,
+			},
+		}
 	default:
 		return nil, errors.New("no spec found to run")
 	}

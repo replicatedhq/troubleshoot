@@ -18980,6 +18980,13 @@ spec:
                       - CIDRRangeAlloc
                       - desiredCIDR
                       type: object
+                    sysctl:
+                      properties:
+                        collectorName:
+                          type: string
+                        exclude:
+                          type: BoolString
+                      type: object
                     systemPackages:
                       properties:
                         collectorName:
