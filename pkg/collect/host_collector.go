@@ -101,6 +101,8 @@ func GetHostCollector(collector *troubleshootv1beta2.HostCollect, bundlePath str
 		return &CollectHostDNS{collector.HostDNS, bundlePath}, true
 	case collector.NetworkNamespaceConnectivity != nil:
 		return &CollectHostNetworkNamespaceConnectivity{collector.NetworkNamespaceConnectivity, bundlePath}, true
+	case collector.HostSysctl != nil:
+		return &CollectHostSysctl{collector.HostSysctl, bundlePath}, true
 	default:
 		return nil, false
 	}

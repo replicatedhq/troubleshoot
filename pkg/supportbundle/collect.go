@@ -320,12 +320,6 @@ func runRemoteHostCollectors(ctx context.Context, hostCollectors []*troubleshoot
 
 	// TODO: rbac check
 
-	nodeList, err := getNodeList(clientset, opts)
-	if err != nil {
-		return nil, err
-	}
-	klog.V(2).Infof("Node list to run remote host collectors: %s", nodeList.Nodes)
-
 	// create remote pod for each node
 	labels := map[string]string{
 		"troubleshoot.sh/remote-collector": "true",
@@ -357,6 +351,10 @@ func runRemoteHostCollectors(ctx context.Context, hostCollectors []*troubleshoot
 	}
 
 	var eg errgroup.Group
+
+	if err := saveNodeList(opts, bundlePath); err != nil {
+		return nil, err
+	}
 
 	for _, collectorSpec := range hostCollectors {
 		collector, ok := collect.GetHostCollector(collectorSpec, bundlePath)
@@ -463,18 +461,6 @@ func runRemoteHostCollectors(ctx context.Context, hostCollectors []*troubleshoot
 				return nil, err
 			}
 		}
-	}
-
-	// save node list to bundle for analyzer to use later
-	nodeListBytes, err := json.MarshalIndent(nodeList, "", "  ")
-	if err != nil {
-		// TODO: error handling
-		return nil, err
-	}
-	err = output.SaveResult(bundlePath, constants.NODE_LIST_FILE, bytes.NewBuffer(nodeListBytes))
-	if err != nil {
-		// TODO: error handling
-		return nil, err
 	}
 
 	return output, nil
@@ -621,4 +607,30 @@ func waitForDS(ctx context.Context, clientset kubernetes.Interface, ds *appsv1.D
 			}
 		}
 	}
+}
+
+func saveNodeList(opts SupportBundleCreateOpts, bundlePath string) error {
+	result := make(collect.CollectorResult)
+
+	clientset, err := kubernetes.NewForConfig(opts.KubernetesRestConfig)
+	if err != nil {
+		return errors.Wrap(err, "failed to create kubernetes clientset to run host collectors in pod")
+	}
+
+	nodeList, err := getNodeList(clientset, opts)
+	if err != nil {
+		return errors.Wrap(err, "failed to get remote node list")
+	}
+
+	nodeListBytes, err := json.MarshalIndent(nodeList, "", "  ")
+	if err != nil {
+		return errors.Wrap(err, "failed to marshal remote node list")
+	}
+
+	err = result.SaveResult(bundlePath, constants.NODE_LIST_FILE, bytes.NewBuffer(nodeListBytes))
+	if err != nil {
+		return errors.Wrap(err, "failed to write remote node list")
+	}
+
+	return nil
 }
