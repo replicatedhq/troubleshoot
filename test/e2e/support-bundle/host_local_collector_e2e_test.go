@@ -25,6 +25,7 @@ func TestHostLocalCollector(t *testing.T) {
 				"hostos_info.json",
 				"ipv4Interfaces.json",
 				"memory.json",
+				"sysctl.json",
 			},
 			notExpectedPaths: []string{
 				"node_list.json",
