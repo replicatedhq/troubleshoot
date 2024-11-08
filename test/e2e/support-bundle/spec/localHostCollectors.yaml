@@ -11,6 +11,7 @@ spec:
   - memory: {}
   - blockDevices: {}
   - kernelConfigs: {}
+  - sysctl: {}
   - copy:
       collectorName: etc-resolv
       path: /etc/resolv.conf
