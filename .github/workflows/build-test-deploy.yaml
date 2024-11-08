@@ -155,6 +155,12 @@ jobs:
           name: support-bundle
           path: bin/
       - run: chmod +x bin/support-bundle
+      - name: Download preflight binary
+        uses: actions/download-artifact@v4
+        with:
+          name: preflight
+          path: bin/
+      - run: chmod +x bin/preflight
       - run: make support-bundle-e2e-go-test
 
   compile-collect:
