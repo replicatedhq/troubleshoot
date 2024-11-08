@@ -42,19 +42,19 @@ func TestHostLocalCollector(t *testing.T) {
 			cmd.Stdout = &out
 			err := cmd.Run()
 			if err != nil {
-				t.Fatal(err)
+				t.Error(err)
 			}
 
 			defer func() {
 				err := os.Remove(fmt.Sprintf("%s.tar.gz", supportbundleName))
 				if err != nil {
-					t.Fatal("Error remove file:", err)
+					t.Error("Error remove file:", err)
 				}
 			}()
 
 			files, _, err := readFilesAndFoldersFromTar(tarPath, targetFile)
 			if err != nil {
-				t.Fatal(err)
+				t.Error(err)
 			}
 
 			for _, test := range tests {
