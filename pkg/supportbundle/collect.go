@@ -121,6 +121,9 @@ func runCollectors(ctx context.Context, collectors []*troubleshootv1beta2.Collec
 		return nil, collect.ErrInsufficientPermissionsToRun
 	}
 
+	// move Copy Collectors if any to the end of the execution list
+	allCollectors = collect.EnsureCopyLast(allCollectors)
+
 	for _, collector := range allCollectors {
 		_, span := otel.Tracer(constants.LIB_TRACER_NAME).Start(ctx, collector.Title())
 		span.SetAttributes(attribute.String("type", reflect.TypeOf(collector).String()))
