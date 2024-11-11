@@ -352,7 +352,7 @@ func runRemoteHostCollectors(ctx context.Context, hostCollectors []*troubleshoot
 
 	var eg errgroup.Group
 
-	if err := saveNodeList(opts, bundlePath); err != nil {
+	if err := saveNodeList(output, opts, bundlePath); err != nil {
 		return nil, err
 	}
 
@@ -609,9 +609,7 @@ func waitForDS(ctx context.Context, clientset kubernetes.Interface, ds *appsv1.D
 	}
 }
 
-func saveNodeList(opts SupportBundleCreateOpts, bundlePath string) error {
-	result := make(collect.CollectorResult)
-
+func saveNodeList(result collect.CollectorResult, opts SupportBundleCreateOpts, bundlePath string) error {
 	clientset, err := kubernetes.NewForConfig(opts.KubernetesRestConfig)
 	if err != nil {
 		return errors.Wrap(err, "failed to create kubernetes clientset to run host collectors in pod")
