@@ -19,6 +19,7 @@ var _ HostCollector = (*CollectHostSysctl)(nil)
 var execCommand = exec.Command
 
 const HostSysctlPath = `host-collectors/system/sysctl.json`
+const HostSysctlFileName = `sysctl.json`
 
 type CollectHostSysctl struct {
 	hostCollector *troubleshootv1beta2.HostSysctl

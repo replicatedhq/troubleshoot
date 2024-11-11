@@ -5,6 +5,14 @@ metadata:
 spec:
   collectors:
     - sysctl:
-        collectorName: sysctl
-  #TODO add analyzer once implemented
-  analyzers: []
+        collectorName: host sysctl
+  analyzers:
+    - sysctl:
+        collectorName: host sysctl
+        outcomes:
+        - warn:
+            when: 'kern.ostype == Darwin'
+            message: "Running sysctl on a Darwin host"
+        - pass:
+            when: 'net.ipv4.conf.default.arp_ignore > 0'
+            message: "ARP ignore is enabled for the default interfaces interfaces on the host."
