@@ -121,9 +121,11 @@ func analyzeRegexPattern(pattern string, collected []byte, outcomes []*troublesh
 		IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg",
 	}
 
+	isMatch := re.MatchString(string(collected))
+
 	for _, outcome := range outcomes {
 		if outcome.Fail != nil {
-			isMatch := re.MatchString(string(collected))
+
 			// if the outcome.Fail.When is not set, default to false
 			if outcome.Fail.When == "" {
 				outcome.Fail.When = "false"
@@ -141,7 +143,6 @@ func analyzeRegexPattern(pattern string, collected []byte, outcomes []*troublesh
 				result.URI = outcome.Fail.URI
 			}
 		} else if outcome.Warn != nil {
-			isMatch := re.MatchString(string(collected))
 			// if the outcome.Warn.When is not set, default to false
 			if outcome.Warn.When == "" {
 				outcome.Warn.When = "false"
@@ -158,7 +159,6 @@ func analyzeRegexPattern(pattern string, collected []byte, outcomes []*troublesh
 				result.URI = outcome.Warn.URI
 			}
 		} else if outcome.Pass != nil {
-			isMatch := re.MatchString(string(collected))
 			// if the outcome.Pass.When is not set, default to true
 			if outcome.Pass.When == "" {
 				outcome.Pass.When = "true"
