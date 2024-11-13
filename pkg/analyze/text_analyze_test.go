@@ -223,6 +223,40 @@ func Test_textAnalyze(t *testing.T) {
 			},
 		},
 		{
+			name: "warn case 1",
+			analyzer: troubleshootv1beta2.TextAnalyze{
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							Message: "success",
+						},
+					},
+					{
+						Warn: &troubleshootv1beta2.SingleOutcome{
+							Message: "warning",
+						},
+					},
+				},
+				CollectorName: "text-collector-6",
+				FileName:      "cfile-6.txt",
+				RegexPattern:  "([a-zA-Z0-9\\-_:*\\s])*succe([a-zA-Z0-9\\-_:*\\s!])*",
+			},
+			expectResult: []AnalyzeResult{
+				{
+					IsPass:  false,
+					IsWarn:  true,
+					IsFail:  false,
+					Title:   "text-collector-6",
+					Message: "warning",
+					IconKey: "kubernetes_text_analyze",
+					IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg",
+				},
+			},
+			files: map[string][]byte{
+				"text-collector-6/cfile-6.txt": []byte("A different message"),
+			},
+		},
+		{
 			name: "multiple results case 1",
 			analyzer: troubleshootv1beta2.TextAnalyze{
 				Outcomes: []*troubleshootv1beta2.Outcome{
@@ -300,6 +334,56 @@ func Test_textAnalyze(t *testing.T) {
 			files: map[string][]byte{
 				"text-collector-1/cfile-1.txt": []byte("Yes it all succeeded"),
 				"text-collector-1/cfile-2.log": []byte("no success here"),
+				"text-collector-2/cfile-3.txt": []byte("Yes it all succeeded"),
+			},
+		},
+		{
+			name: "multiple results with both warn and fail case 1, only fail",
+			analyzer: troubleshootv1beta2.TextAnalyze{
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							Message: "pass",
+						},
+					},
+					{
+						Warn: &troubleshootv1beta2.SingleOutcome{
+							Message: "warning",
+						},
+					},
+					{
+						Fail: &troubleshootv1beta2.SingleOutcome{
+							Message: "fail",
+						},
+					},
+				},
+				CollectorName: "text-collector-1",
+				FileName:      "cfile",
+				RegexPattern:  "succeeded",
+			},
+			expectResult: []AnalyzeResult{
+				{
+					IsPass:  true,
+					IsWarn:  false,
+					IsFail:  false,
+					Title:   "text-collector-1",
+					Message: "pass",
+					IconKey: "kubernetes_text_analyze",
+					IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg",
+				},
+				{
+					IsPass:  false,
+					IsWarn:  false,
+					IsFail:  true,
+					Title:   "text-collector-1",
+					Message: "fail",
+					IconKey: "kubernetes_text_analyze",
+					IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg",
+				},
+			},
+			files: map[string][]byte{
+				"text-collector-1/cfile-1.txt": []byte("Yes it all succeeded"),
+				"text-collector-1/cfile-2.txt": []byte("no success here"),
 				"text-collector-2/cfile-3.txt": []byte("Yes it all succeeded"),
 			},
 		},
