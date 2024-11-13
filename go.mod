@@ -1,6 +1,7 @@
 module github.com/replicatedhq/troubleshoot
 
-go 1.22.6
+go 1.22.8
+
 toolchain go1.22.9
 
 require (
