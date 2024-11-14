@@ -286,3 +286,20 @@ func DedupCollectors(allCollectors []*troubleshootv1beta2.Collect) []*troublesho
 	}
 	return finalCollectors
 }
+
+// Ensure Copy collectors are last in the list
+// This is because copy collectors are expected to copy files from other collectors such as Exec, RunPod, RunDaemonSet
+func EnsureCopyLast(allCollectors []Collector) []Collector {
+	otherCollectors := make([]Collector, 0)
+	copyCollectors := make([]Collector, 0)
+
+	for _, collector := range allCollectors {
+		if _, ok := collector.(*CollectCopy); ok {
+			copyCollectors = append(copyCollectors, collector)
+		} else {
+			otherCollectors = append(otherCollectors, collector)
+		}
+	}
+
+	return append(otherCollectors, copyCollectors...)
+}
