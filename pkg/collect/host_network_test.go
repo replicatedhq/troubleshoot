@@ -44,8 +44,18 @@ func Test_isValidLoadBalancerAddress(t *testing.T) {
 			want: false,
 		},
 		{
-			name: "Too many characters",
-			args: args{address: "howlongcanwemakethiswithoutrunningoutofwordsbecasueweneedtohitatleast64.com:80"},
+			name: "Too many characters less than 64, rfc1123 not compliant",
+			args: args{address: "howlongcanwemakethiswithoutrunningoutofwordsbecasueweneedto.com:80"},
+			want: false,
+		},
+		{
+			name: "Too many characters less than 64, rfc1123 compliant",
+			args: args{address: "howlongcanwemakethiswithoutrunningoutofwordsbecasueweneedto.aws.com:80"},
+			want: true,
+		},
+		{
+			name: "Too many characters bigger than 255",
+			args: args{address: "howlongcanwemakethiswithouthowlongcanwemakethiswithouthowlongcanwemakethiswithouthowlongcanwemakethiswithoutrunningoutofwordsbecasueweneedtohitatleast64howlongcanwemakethiswithouthowlongcanwemakethiswithouthowlongcanwemakethiswithouthowlongcanwemakethiswithoutrunningoutofwordsbecasueweneedtohitatleast64.com:80"},
 			want: false,
 		},
 		{

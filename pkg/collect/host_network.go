@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	validator "github.com/go-playground/validator/v10"
 	"github.com/pkg/errors"
 	"github.com/replicatedhq/troubleshoot/pkg/debug"
 	"github.com/segmentio/ksuid"
@@ -66,7 +67,14 @@ func isValidLoadBalancerAddress(address string) bool {
 	}
 
 	errs := validation.IsQualifiedName(hostAddress)
-
+	if len(errs) > 0 {
+		if len(hostAddress) < 255 {
+			err := validator.New().Var(hostAddress, "hostname_rfc1123")
+			return err == nil
+		} else {
+			return false
+		}
+	}
 	return len(errs) == 0
 }
 
