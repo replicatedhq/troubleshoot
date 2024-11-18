@@ -66,16 +66,12 @@ func isValidLoadBalancerAddress(address string) bool {
 
 	}
 
-	errs := validation.IsQualifiedName(hostAddress)
-	if len(errs) > 0 {
-		if len(hostAddress) < 255 {
-			err := validator.New().Var(hostAddress, "hostname_rfc1123")
-			return err == nil
-		} else {
-			return false
-		}
+	if len(hostAddress) > 255 {
+		return false
 	}
-	return len(errs) == 0
+
+	err = validator.New().Var(hostAddress, "hostname")
+	return err == nil
 }
 
 func checkTCPConnection(progressChan chan<- interface{}, listenAddress string, dialAddress string, timeout time.Duration) (NetworkStatus, error) {
