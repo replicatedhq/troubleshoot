@@ -1,10 +1,13 @@
 package specs
 
 import (
+	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"reflect"
 	"testing"
 
@@ -223,6 +226,46 @@ spec:
 	specs, err := LoadFromCLIArgs(context.Background(), client, []string{m.URL}, viper.New())
 	require.NoError(t, err)
 	require.Len(t, specs.HostCollectorsV1Beta2, 1)
+}
+
+func TestLoadFromMultipleURIs(t *testing.T) {
+	server1 := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(`apiVersion: troubleshoot.sh/v1beta2
+kind: HostCollector
+metadata:
+  name: cpu
+spec:
+  collectors:
+    - cpu: {}
+`))
+	}))
+	defer server1.Close()
+
+	server2 := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+	}))
+	// immediately close the server to force the error
+	server2.Close()
+
+	// Capture stdout
+	oldStdout := os.Stdout
+	r, w, _ := os.Pipe()
+	os.Stdout = w
+
+	client := testclient.NewSimpleClientset()
+	specs, err := LoadFromCLIArgs(context.Background(), client, []string{server1.URL, server2.URL}, viper.New())
+
+	// Restore stdout
+	w.Close()
+	os.Stdout = oldStdout
+
+	var buf bytes.Buffer
+	io.Copy(&buf, r)
+	output := buf.String()
+
+	require.NoError(t, err)
+	require.Len(t, specs.HostCollectorsV1Beta2, 1)
+	assert.Contains(t, output, "failed to download spec from URI")
 }
 
 func TestLoadAdditionalSpecFromURIs(t *testing.T) {

@@ -115,54 +115,66 @@ func analyzeRegexPattern(pattern string, collected []byte, outcomes []*troublesh
 		return nil, errors.Wrapf(err, "failed to compile regex: %s", pattern)
 	}
 
-	var failOutcome *troubleshootv1beta2.SingleOutcome
-	var passOutcome *troubleshootv1beta2.SingleOutcome
-	for _, outcome := range outcomes {
-		if outcome.Fail != nil {
-			failOutcome = outcome.Fail
-		} else if outcome.Pass != nil {
-			passOutcome = outcome.Pass
-		}
-	}
 	result := AnalyzeResult{
 		Title:   checkName,
 		IconKey: "kubernetes_text_analyze",
 		IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg",
 	}
 
-	reMatch := re.MatchString(string(collected))
-	failWhen := false
-	if failOutcome != nil && failOutcome.When != "" {
-		failWhen, err = strconv.ParseBool(failOutcome.When)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to process when statement: %s", failOutcome.When)
-		}
-	}
-	passWhen := true
-	if passOutcome != nil && passOutcome.When != "" {
-		passWhen, err = strconv.ParseBool(passOutcome.When)
-		if err != nil {
-			return nil, errors.Wrapf(err, "failed to process when statement: %s", passOutcome.When)
-		}
-	}
+	isMatch := re.MatchString(string(collected))
 
-	if passWhen == failWhen {
-		return nil, errors.Wrap(err, "outcome when conditions for fail and pass are equal")
-	}
+	for _, outcome := range outcomes {
+		if outcome.Fail != nil {
 
-	if reMatch == passWhen {
-		result.IsPass = true
-		if passOutcome != nil {
-			result.Message = passOutcome.Message
-			result.URI = passOutcome.URI
+			// if the outcome.Fail.When is not set, default to false
+			if outcome.Fail.When == "" {
+				outcome.Fail.When = "false"
+			}
+
+			failWhen, err := strconv.ParseBool(outcome.Fail.When)
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to process when statement: %s", outcome.Fail.When)
+			}
+
+			if isMatch == failWhen {
+				result.IsFail = true
+				result.IsWarn = false
+				result.Message = outcome.Fail.Message
+				result.URI = outcome.Fail.URI
+			}
+		} else if outcome.Warn != nil {
+			// if the outcome.Warn.When is not set, default to false
+			if outcome.Warn.When == "" {
+				outcome.Warn.When = "false"
+			}
+
+			warnWhen, err := strconv.ParseBool(outcome.Warn.When)
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to process when statement: %s", outcome.Warn.When)
+			}
+
+			if isMatch == warnWhen {
+				result.IsWarn = true
+				result.Message = outcome.Warn.Message
+				result.URI = outcome.Warn.URI
+			}
+		} else if outcome.Pass != nil {
+			// if the outcome.Pass.When is not set, default to true
+			if outcome.Pass.When == "" {
+				outcome.Pass.When = "true"
+			}
+
+			passWhen, err := strconv.ParseBool(outcome.Pass.When)
+			if err != nil {
+				return nil, errors.Wrapf(err, "failed to process when statement: %s", outcome.Pass.When)
+			}
+
+			if isMatch == passWhen {
+				result.IsPass = true
+				result.Message = outcome.Pass.Message
+				result.URI = outcome.Pass.URI
+			}
 		}
-		return &result, nil
-	}
-
-	result.IsFail = true
-	if failOutcome != nil {
-		result.Message = failOutcome.Message
-		result.URI = failOutcome.URI
 	}
 	return &result, nil
 }

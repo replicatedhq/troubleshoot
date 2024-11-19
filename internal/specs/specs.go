@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/fatih/color"
 	"github.com/pkg/errors"
 	"github.com/replicatedhq/troubleshoot/internal/util"
 	"github.com/replicatedhq/troubleshoot/pkg/constants"
@@ -78,7 +79,7 @@ func LoadFromCLIArgs(ctx context.Context, client kubernetes.Interface, args []st
 		ctx = context.Background()
 	}
 
-	var kindsFromURL *loader.TroubleshootKinds
+	allURLSpecs := loader.NewTroubleshootKinds()
 	rawSpecs := []string{}
 
 	for _, v := range args {
@@ -176,33 +177,32 @@ func LoadFromCLIArgs(ctx context.Context, client kubernetes.Interface, args []st
 					return nil, types.NewExitCodeError(constants.EXIT_CODE_SPEC_ISSUES, err)
 				}
 
-				var specFromURL string
+				var rawURLSpec string
+				headers := map[string]string{}
+
 				if parsedURL.Host == "kots.io" {
-					// To download specs from kots.io, we need to set the User-Agent header
-					specFromURL, err = downloadFromHttpURL(ctx, v, map[string]string{
-						"User-Agent": "Replicated_Troubleshoot/v1beta1",
-					})
-					if err != nil {
-						return nil, err
-					}
-				} else {
-					specFromURL, err = downloadFromHttpURL(ctx, v, nil)
-					if err != nil {
-						return nil, err
-					}
+					headers["User-Agent"] = "Replicated_Troubleshoot/v1beta1"
+				}
+				rawURLSpec, err = downloadFromHttpURL(ctx, v, headers)
+				if err != nil {
+					fmt.Println(color.YellowString("failed to download spec from URI %q: %v\n", v, err))
+					continue
 				}
 
 				// load URL spec first to remove URI key from the spec
-				kindsFromURL, err = loader.LoadSpecs(ctx, loader.LoadOptions{
-					RawSpec: specFromURL,
+				urlSpec, err := loader.LoadSpecs(ctx, loader.LoadOptions{
+					RawSpec: rawURLSpec,
 				})
 				if err != nil {
-					return nil, err
+					fmt.Println(color.YellowString("failed to load spec from URI %q: %v\n", v, err))
+					continue
 				}
 				// remove URI key from the spec if any
-				for i := range kindsFromURL.SupportBundlesV1Beta2 {
-					kindsFromURL.SupportBundlesV1Beta2[i].Spec.Uri = ""
+				for i := range urlSpec.SupportBundlesV1Beta2 {
+					urlSpec.SupportBundlesV1Beta2[i].Spec.Uri = ""
 				}
+
+				allURLSpecs.Add(urlSpec)
 
 			}
 		}
@@ -214,8 +214,8 @@ func LoadFromCLIArgs(ctx context.Context, client kubernetes.Interface, args []st
 	if err != nil {
 		return nil, err
 	}
-	if kindsFromURL != nil {
-		kinds.Add(kindsFromURL)
+	if allURLSpecs.Len() > 0 {
+		kinds.Add(allURLSpecs)
 	}
 
 	if vp.GetBool("load-cluster-specs") {
@@ -224,8 +224,7 @@ func LoadFromCLIArgs(ctx context.Context, client kubernetes.Interface, args []st
 			if kinds.IsEmpty() {
 				return nil, types.NewExitCodeError(constants.EXIT_CODE_SPEC_ISSUES, err)
 			}
-			// TODO: Consider colour coding and graceful failures when loading specs
-			fmt.Printf("failed to load specs from the cluster: %v\n", err)
+			fmt.Println(color.YellowString("failed to load specs from cluster: %v\n", err))
 		} else {
 			kinds.Add(clusterKinds)
 		}

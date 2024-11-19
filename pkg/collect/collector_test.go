@@ -445,3 +445,84 @@ func TestCollector_DedupCollectors(t *testing.T) {
 		})
 	}
 }
+func TestEnsureCopyLast(t *testing.T) {
+	tests := []struct {
+		name          string
+		allCollectors []Collector
+		want          []Collector
+	}{
+		{
+			name: "no copy collectors",
+			allCollectors: []Collector{
+				&CollectClusterInfo{},
+				&CollectClusterResources{},
+			},
+			want: []Collector{
+				&CollectClusterInfo{},
+				&CollectClusterResources{},
+			},
+		},
+		{
+			name: "only copy collectors",
+			allCollectors: []Collector{
+				&CollectCopy{},
+				&CollectCopy{},
+			},
+			want: []Collector{
+				&CollectCopy{},
+				&CollectCopy{},
+			},
+		},
+		{
+			name: "mixed collectors",
+			allCollectors: []Collector{
+				&CollectClusterInfo{},
+				&CollectCopy{},
+				&CollectClusterResources{},
+				&CollectCopy{},
+			},
+			want: []Collector{
+				&CollectClusterInfo{},
+				&CollectClusterResources{},
+				&CollectCopy{},
+				&CollectCopy{},
+			},
+		},
+		{
+			name: "copy collectors at the beginning",
+			allCollectors: []Collector{
+				&CollectCopy{},
+				&CollectCopy{},
+				&CollectClusterInfo{},
+				&CollectClusterResources{},
+			},
+			want: []Collector{
+				&CollectClusterInfo{},
+				&CollectClusterResources{},
+				&CollectCopy{},
+				&CollectCopy{},
+			},
+		},
+		{
+			name: "copy collectors at the end",
+			allCollectors: []Collector{
+				&CollectClusterInfo{},
+				&CollectClusterResources{},
+				&CollectCopy{},
+				&CollectCopy{},
+			},
+			want: []Collector{
+				&CollectClusterInfo{},
+				&CollectClusterResources{},
+				&CollectCopy{},
+				&CollectCopy{},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := EnsureCopyLast(tt.allCollectors)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}
