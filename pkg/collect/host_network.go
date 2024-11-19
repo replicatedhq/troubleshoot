@@ -65,8 +65,8 @@ func isValidLoadBalancerAddress(address string) bool {
 
 	}
 
-	errs := validation.IsQualifiedName(hostAddress)
-
+	// Checking for DNS name for RFC1123, DNS1123SubdomainMaxLength int = 253
+	errs := validation.IsDNS1123Subdomain(hostAddress)
 	return len(errs) == 0
 }
 

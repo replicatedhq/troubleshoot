@@ -44,8 +44,13 @@ func Test_isValidLoadBalancerAddress(t *testing.T) {
 			want: false,
 		},
 		{
-			name: "Too many characters",
+			name: "Valid long DNS domain but less than 255 characters, RFC1123 compliant",
 			args: args{address: "howlongcanwemakethiswithoutrunningoutofwordsbecasueweneedtohitatleast64.com:80"},
+			want: true,
+		},
+		{
+			name: "Non-valid long DNS domain but more than 255 characters, RFC1123 not compliant",
+			args: args{address: "howlongcanwemakethiswithouthowlongcanwemakethiswithouthowlongcanwemakethiswithoutrunningoutofwordsbecasueweneedtohitatleast64howlongcanwemakethiswithouthowlongcanwemakethiswithouthowlongcanwemakethiswithoutrunningoutofwordsbecasueweneedtohitatleast64dssdfasdffs.com:80"},
 			want: false,
 		},
 		{
