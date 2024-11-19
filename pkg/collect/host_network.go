@@ -8,7 +8,6 @@ import (
 	"strings"
 	"time"
 
-	validator "github.com/go-playground/validator/v10"
 	"github.com/pkg/errors"
 	"github.com/replicatedhq/troubleshoot/pkg/debug"
 	"github.com/segmentio/ksuid"
@@ -66,12 +65,9 @@ func isValidLoadBalancerAddress(address string) bool {
 
 	}
 
-	if len(hostAddress) > 255 {
-		return false
-	}
-
-	err = validator.New().Var(hostAddress, "hostname")
-	return err == nil
+	// Checking for DNS name for RFC1123, DNS1123SubdomainMaxLength int = 253
+	errs := validation.IsDNS1123Subdomain(hostAddress)
+	return len(errs) == 0
 }
 
 func checkTCPConnection(progressChan chan<- interface{}, listenAddress string, dialAddress string, timeout time.Duration) (NetworkStatus, error) {
