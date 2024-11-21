@@ -18,11 +18,11 @@ import (
 // have the logs, the information from the source and destination namespaces,
 // errors and a success flag.
 type NetworkNamespaceConnectivityInfo struct {
-	FromNamespace string                             `json:"from_namespace"`
-	ToNamespace   string                             `json:"to_namespace"`
-	Errors        NetworkNamespaceConnectivityErrors `json:"errors"`
-	Output        NetworkNamespaceConnectivityOutput `json:"output"`
-	Success       bool                               `json:"success"`
+	FromCIDR string                             `json:"from_cidr"`
+	ToCIDR   string                             `json:"to_cidr"`
+	Errors   NetworkNamespaceConnectivityErrors `json:"errors"`
+	Output   NetworkNamespaceConnectivityOutput `json:"output"`
+	Success  bool                               `json:"success"`
 }
 
 // ErrorMessage returns the error message from the errors field.
@@ -33,26 +33,26 @@ func (n *NetworkNamespaceConnectivityInfo) ErrorMessage() string {
 // NetworkNamespaceConnectivityErrors is a struct that contains the errors that
 // occurred during the network namespace connectivity test
 type NetworkNamespaceConnectivityErrors struct {
-	FromNamespaceCreation string `json:"from_namespace_creation"`
-	ToNamespaceCreation   string `json:"to_namespace_creation"`
-	UDPClient             string `json:"udp_client"`
-	UDPServer             string `json:"udp_server"`
-	TCPClient             string `json:"tcp_client"`
-	TCPServer             string `json:"tcp_server"`
+	FromCIDRCreation string `json:"from_cidr_creation"`
+	ToCIDRCreation   string `json:"to_cidr_creation"`
+	UDPClient        string `json:"udp_client"`
+	UDPServer        string `json:"udp_server"`
+	TCPClient        string `json:"tcp_client"`
+	TCPServer        string `json:"tcp_server"`
 }
 
 // Errors returns a string representation of the errors found during the
 // network namespace connectivity test.
 func (e NetworkNamespaceConnectivityErrors) Errors() string {
 	var sb strings.Builder
-	if e.FromNamespaceCreation != "" {
+	if e.FromCIDRCreation != "" {
 		sb.WriteString("Failed to create 'from' namespace: ")
-		sb.WriteString(e.FromNamespaceCreation + "\n")
+		sb.WriteString(e.FromCIDRCreation + "\n")
 	}
 
-	if e.ToNamespaceCreation != "" {
+	if e.ToCIDRCreation != "" {
 		sb.WriteString("Failed to create 'to' namespace: ")
-		sb.WriteString(e.ToNamespaceCreation + "\n")
+		sb.WriteString(e.ToCIDRCreation + "\n")
 	}
 
 	if e.UDPClient != "" {
@@ -165,8 +165,8 @@ func (c *CollectHostNetworkNamespaceConnectivity) Collect(progressChan chan<- in
 	}
 
 	result := &NetworkNamespaceConnectivityInfo{
-		FromNamespace: c.hostCollector.FromCIDR,
-		ToNamespace:   c.hostCollector.ToCIDR,
+		FromCIDR: c.hostCollector.FromCIDR,
+		ToCIDR:   c.hostCollector.ToCIDR,
 	}
 
 	opts := []namespaces.Option{namespaces.WithLogf(result.Output.Printf)}
@@ -188,14 +188,14 @@ func (c *CollectHostNetworkNamespaceConnectivity) Collect(progressChan chan<- in
 
 	fromNS, err := namespaces.NewNamespacePinger("from", c.hostCollector.FromCIDR, opts...)
 	if err != nil {
-		result.Errors.ToNamespaceCreation = err.Error()
+		result.Errors.ToCIDRCreation = err.Error()
 		return c.marshal(result)
 	}
 	defer fromNS.Close()
 
 	toNS, err := namespaces.NewNamespacePinger("to", c.hostCollector.ToCIDR, opts...)
 	if err != nil {
-		result.Errors.FromNamespaceCreation = err.Error()
+		result.Errors.FromCIDRCreation = err.Error()
 		return c.marshal(result)
 	}
 	defer toNS.Close()
