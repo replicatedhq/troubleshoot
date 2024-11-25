@@ -252,6 +252,14 @@ func loadSpecFromURL(arg string) ([]byte, error) {
 			}
 			return nil, errors.Wrap(err, "execute request")
 		}
+
+		// handle non 2xx http statuses
+		// redirects appear to already be handled by the go http client
+		// TODO: handle potential for redirect loops breaking this?
+		if resp.StatusCode != 200 {
+			return nil, errors.New("request returned non 200 response")
+		}
+
 		defer resp.Body.Close()
 
 		body, err := io.ReadAll(resp.Body)
