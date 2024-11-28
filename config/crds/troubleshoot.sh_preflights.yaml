@@ -141,6 +141,63 @@ spec:
                       required:
                       - outcomes
                       type: object
+                    clusterContainerStatuses:
+                      properties:
+                        annotations:
+                          additionalProperties:
+                            type: string
+                          type: object
+                        checkName:
+                          type: string
+                        exclude:
+                          type: BoolString
+                        namespaces:
+                          items:
+                            type: string
+                          type: array
+                        outcomes:
+                          items:
+                            properties:
+                              fail:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
+                              pass:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
+                              warn:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
+                            type: object
+                          type: array
+                        ready:
+                          type: boolean
+                        restartCount:
+                          type: integer
+                        strict:
+                          type: BoolString
+                      required:
+                      - outcomes
+                      - ready
+                      - restartCount
+                      type: object
                     clusterPodStatuses:
                       properties:
                         annotations:

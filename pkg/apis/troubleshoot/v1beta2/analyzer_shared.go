@@ -103,6 +103,14 @@ type ClusterPodStatuses struct {
 	Namespaces  []string   `json:"namespaces,omitempty" yaml:"namespaces,omitempty"`
 }
 
+type ClusterContainerStatuses struct {
+	AnalyzeMeta  `json:",inline" yaml:",inline"`
+	Outcomes     []*Outcome `json:"outcomes" yaml:"outcomes"`
+	Namespaces   []string   `json:"namespaces,omitempty" yaml:"namespaces,omitempty"`
+	Ready        bool       `json:"ready" yaml:"ready"`
+	RestartCount int        `json:"restartCount" yaml:"restartCount"`
+}
+
 type ContainerRuntime struct {
 	AnalyzeMeta `json:",inline" yaml:",inline"`
 	Outcomes    []*Outcome `json:"outcomes" yaml:"outcomes"`
@@ -271,6 +279,7 @@ type Analyze struct {
 	JobStatus                *JobStatus                `json:"jobStatus,omitempty" yaml:"jobStatus,omitempty"`
 	ReplicaSetStatus         *ReplicaSetStatus         `json:"replicasetStatus,omitempty" yaml:"replicasetStatus,omitempty"`
 	ClusterPodStatuses       *ClusterPodStatuses       `json:"clusterPodStatuses,omitempty" yaml:"clusterPodStatuses,omitempty"`
+	ClusterContainerStatuses *ClusterContainerStatuses `json:"clusterContainerStatuses,omitempty" yaml:"clusterContainerStatuses,omitempty"`
 	ContainerRuntime         *ContainerRuntime         `json:"containerRuntime,omitempty" yaml:"containerRuntime,omitempty"`
 	Distribution             *Distribution             `json:"distribution,omitempty" yaml:"distribution,omitempty"`
 	NodeResources            *NodeResources            `json:"nodeResources,omitempty" yaml:"nodeResources,omitempty"`
