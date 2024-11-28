@@ -1,6 +1,8 @@
 package v1beta2
 
 import (
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"github.com/replicatedhq/troubleshoot/pkg/multitype"
 )
 
@@ -133,7 +135,8 @@ type NodeResourceFilters struct {
 }
 
 type NodeResourceSelectors struct {
-	MatchLabel map[string]string `json:"matchLabel,omitempty" yaml:"matchLabel,omitempty"`
+	MatchLabel       map[string]string                 `json:"matchLabel,omitempty" yaml:"matchLabel,omitempty"`
+	MatchExpressions []metav1.LabelSelectorRequirement `json:"matchExpressions,omitempty" yaml:"matchExpressions,omitempty"`
 }
 
 type TextAnalyze struct {
