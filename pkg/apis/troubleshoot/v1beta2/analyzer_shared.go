@@ -107,7 +107,6 @@ type ClusterContainerStatuses struct {
 	AnalyzeMeta  `json:",inline" yaml:",inline"`
 	Outcomes     []*Outcome `json:"outcomes" yaml:"outcomes"`
 	Namespaces   []string   `json:"namespaces,omitempty" yaml:"namespaces,omitempty"`
-	Ready        bool       `json:"ready" yaml:"ready"`
 	RestartCount int        `json:"restartCount" yaml:"restartCount"`
 }
 

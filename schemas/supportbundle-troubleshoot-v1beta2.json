@@ -225,7 +225,6 @@
                 "type": "object",
                 "required": [
                   "outcomes",
-                  "ready",
                   "restartCount"
                 ],
                 "properties": {
@@ -296,9 +295,6 @@
                         }
                       }
                     }
-                  },
-                  "ready": {
-                    "type": "boolean"
                   },
                   "restartCount": {
                     "type": "integer"

@@ -113,6 +113,11 @@ func (in *Analyze) DeepCopyInto(out *Analyze) {
 		*out = new(ClusterPodStatuses)
 		(*in).DeepCopyInto(*out)
 	}
+	if in.ClusterContainerStatuses != nil {
+		in, out := &in.ClusterContainerStatuses, &out.ClusterContainerStatuses
+		*out = new(ClusterContainerStatuses)
+		(*in).DeepCopyInto(*out)
+	}
 	if in.ContainerRuntime != nil {
 		in, out := &in.ContainerRuntime, &out.ContainerRuntime
 		*out = new(ContainerRuntime)

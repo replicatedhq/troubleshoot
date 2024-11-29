@@ -187,15 +187,12 @@ spec:
                                 type: object
                             type: object
                           type: array
-                        ready:
-                          type: boolean
                         restartCount:
                           type: integer
                         strict:
                           type: BoolString
                       required:
                       - outcomes
-                      - ready
                       - restartCount
                       type: object
                     clusterPodStatuses:
