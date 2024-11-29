@@ -179,6 +179,7 @@ func (a *AnalyzeClusterContainerStatuses) analyzeContainerStatuses(podContainers
 
 // matchContainerReason iterates over the containerStatuses and returns true on the first reason that matches
 func matchContainerReason(reason string, podName string, namespace string, containerStatuses []corev1.ContainerStatus) (bool, matchedContainerInfo) {
+	var matched bool
 	info := matchedContainerInfo{}
 	info.Namespace = namespace
 	info.PodName = podName
@@ -189,20 +190,19 @@ func matchContainerReason(reason string, podName string, namespace string, conta
 		info.Ready = containerStatus.Ready
 		info.RestartCount = containerStatus.RestartCount
 
-		if state.Terminated != nil {
-			info.Message = state.Terminated.Message
-			return strings.EqualFold(state.Terminated.Reason, reason), info
-		}
-		if containerStatus.LastTerminationState.Terminated != nil {
+		switch {
+		case containerStatus.LastTerminationState.Terminated != nil && strings.EqualFold(containerStatus.LastTerminationState.Terminated.Reason, reason):
+			matched = true
 			info.Message = containerStatus.LastTerminationState.Terminated.Message
-			return strings.EqualFold(containerStatus.LastTerminationState.Terminated.Reason, reason), info
-		}
-		if state.Waiting != nil {
+		case state.Terminated != nil && strings.EqualFold(state.Terminated.Reason, reason):
+			info.Message = state.Terminated.Message
+			matched = true
+		case state.Waiting != nil && strings.EqualFold(state.Waiting.Reason, reason):
+			matched = true
 			info.Message = state.Waiting.Message
-			return strings.EqualFold(state.Waiting.Reason, reason), info
 		}
 	}
-	return false, info
+	return matched, info
 }
 
 // parseWhen parses the when string into operator and reason
