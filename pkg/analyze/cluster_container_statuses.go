@@ -73,7 +73,7 @@ func (a *AnalyzeClusterContainerStatuses) getPodsMatchingFilters(podListFiles ma
 
 	for fileName, fileContent := range podListFiles {
 		// pod list fileName is the namespace name, e.g. default.json
-		currentNamespace := filepath.Base(fileName)
+		currentNamespace := strings.TrimSuffix(filepath.Base(fileName), ".json")
 		selectedNamespaces := a.analyzer.Namespaces
 		if len(selectedNamespaces) > 0 {
 			if !slices.Contains(selectedNamespaces, currentNamespace) {
@@ -189,13 +189,17 @@ func matchContainerReason(reason string, podName string, namespace string, conta
 		info.Ready = containerStatus.Ready
 		info.RestartCount = containerStatus.RestartCount
 
-		if state.Waiting != nil {
-			info.Message = state.Waiting.Message
-			return strings.EqualFold(state.Waiting.Reason, reason), info
-		}
 		if state.Terminated != nil {
 			info.Message = state.Terminated.Message
 			return strings.EqualFold(state.Terminated.Reason, reason), info
+		}
+		if containerStatus.LastTerminationState.Terminated != nil {
+			info.Message = containerStatus.LastTerminationState.Terminated.Message
+			return strings.EqualFold(containerStatus.LastTerminationState.Terminated.Reason, reason), info
+		}
+		if state.Waiting != nil {
+			info.Message = state.Waiting.Message
+			return strings.EqualFold(state.Waiting.Reason, reason), info
 		}
 	}
 	return false, info
@@ -205,6 +209,9 @@ func matchContainerReason(reason string, podName string, namespace string, conta
 // return error if reason is not in the expected format
 func parseWhen(when string) (string, bool, error) {
 	parts := strings.Split(strings.TrimSpace(when), " ")
+	if len(parts) != 2 {
+		return "", false, errors.Errorf("expected 2 parts in when %q", when)
+	}
 	operator := parts[0]
 	reason := parts[1]
 	var isEqualityOp bool
