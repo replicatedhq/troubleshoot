@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"testing"
 
+	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -299,6 +300,179 @@ func TestRenderTemplate(t *testing.T) {
 				return
 			}
 			assert.Equal(t, tt.want, got, "RenderTemplate() = %v, want %v", got, tt.want)
+		})
+	}
+}
+
+func Test_DedupCollectors(t *testing.T) {
+	tests := []struct {
+		name       string
+		Collectors []*troubleshootv1beta2.Collect
+		want       []*troubleshootv1beta2.Collect
+	}{
+		{
+			name: "multiple cluster info",
+			Collectors: []*troubleshootv1beta2.Collect{
+				{
+					ClusterInfo: &troubleshootv1beta2.ClusterInfo{},
+				},
+				{
+					ClusterInfo: &troubleshootv1beta2.ClusterInfo{},
+				},
+			},
+			want: []*troubleshootv1beta2.Collect{
+				{
+					ClusterInfo: &troubleshootv1beta2.ClusterInfo{},
+				},
+			},
+		},
+		{
+			name: "multiple cluster resources with matching namespace lists",
+			Collectors: []*troubleshootv1beta2.Collect{
+				{
+					ClusterResources: &troubleshootv1beta2.ClusterResources{
+						Namespaces: []string{"namespace1", "namespace2"},
+					},
+				},
+				{
+					ClusterResources: &troubleshootv1beta2.ClusterResources{
+						Namespaces: []string{"namespace1", "namespace2"},
+					},
+				},
+			},
+			want: []*troubleshootv1beta2.Collect{
+				{
+					ClusterResources: &troubleshootv1beta2.ClusterResources{
+						Namespaces: []string{"namespace1", "namespace2"},
+					},
+				},
+			},
+		},
+		{
+			name: "multiple cluster resources with unnique namespace lists",
+			Collectors: []*troubleshootv1beta2.Collect{
+				{
+					ClusterResources: &troubleshootv1beta2.ClusterResources{
+						Namespaces: []string{"namespace1", "namespace2"},
+					},
+				},
+				{
+					ClusterResources: &troubleshootv1beta2.ClusterResources{
+						Namespaces: []string{"namespace1000", "namespace2000"},
+					},
+				},
+			},
+			want: []*troubleshootv1beta2.Collect{
+				{
+					ClusterResources: &troubleshootv1beta2.ClusterResources{
+						Namespaces: []string{"namespace1", "namespace2"},
+					},
+				},
+				{
+					ClusterResources: &troubleshootv1beta2.ClusterResources{
+						Namespaces: []string{"namespace1000", "namespace2000"},
+					},
+				},
+			},
+		},
+		{
+			name: "multiple custom metrics",
+			Collectors: []*troubleshootv1beta2.Collect{
+				{
+					CustomMetrics: &troubleshootv1beta2.CustomMetrics{
+						MetricRequests: []troubleshootv1beta2.MetricRequest{
+							{
+								Namespace:          "default",
+								ResourceMetricName: "pods/cpu_usage",
+							},
+						},
+					},
+				},
+				{
+					CustomMetrics: &troubleshootv1beta2.CustomMetrics{
+						MetricRequests: []troubleshootv1beta2.MetricRequest{
+							{
+								Namespace:          "default",
+								ResourceMetricName: "pods/cpu_usage",
+							},
+						},
+					},
+				},
+			},
+			want: []*troubleshootv1beta2.Collect{
+				{
+					CustomMetrics: &troubleshootv1beta2.CustomMetrics{
+						MetricRequests: []troubleshootv1beta2.MetricRequest{
+							{
+								Namespace:          "default",
+								ResourceMetricName: "pods/cpu_usage",
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "multiple secrets",
+			Collectors: []*troubleshootv1beta2.Collect{
+				{
+					Secret: &troubleshootv1beta2.Secret{
+						Name:         "my-app-postgres",
+						Namespace:    "default",
+						Key:          "uri",
+						IncludeValue: false,
+					},
+				},
+				{
+					Secret: &troubleshootv1beta2.Secret{
+						Name:         "my-app-postgres",
+						Namespace:    "default",
+						Key:          "uri",
+						IncludeValue: false,
+					},
+				},
+			},
+			want: []*troubleshootv1beta2.Collect{
+				{
+					Secret: &troubleshootv1beta2.Secret{
+						Name:         "my-app-postgres",
+						Namespace:    "default",
+						Key:          "uri",
+						IncludeValue: false,
+					},
+				},
+			},
+		},
+		{
+			name: "multiple logs",
+			Collectors: []*troubleshootv1beta2.Collect{
+				{
+					ConfigMap: &troubleshootv1beta2.ConfigMap{
+						Name:     "my-app-config",
+						Selector: []string{"app.kubernetes.io/name=nginx"},
+					},
+				},
+				{
+					ConfigMap: &troubleshootv1beta2.ConfigMap{
+						Name:     "my-app-config",
+						Selector: []string{"app.kubernetes.io/name=nginx"},
+					},
+				},
+			},
+			want: []*troubleshootv1beta2.Collect{
+				{
+					ConfigMap: &troubleshootv1beta2.ConfigMap{
+						Name:     "my-app-config",
+						Selector: []string{"app.kubernetes.io/name=nginx"},
+					},
+				},
+			},
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			got := Dedup(tc.Collectors)
+			assert.Equal(t, tc.want, got)
 		})
 	}
 }
