@@ -3,12 +3,13 @@ package analyzer
 import (
 	"testing"
 
-	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 )
 
 func Test_compareNodeResourceConditionalToActual(t *testing.T) {
@@ -500,6 +501,130 @@ func Test_nodeMatchesFilters(t *testing.T) {
 				},
 			},
 			expectResult: true,
+		},
+		{
+			name: "true when the label expression matches with operator In",
+			node: node,
+			filters: &troubleshootv1beta2.NodeResourceFilters{
+				Selector: &troubleshootv1beta2.NodeResourceSelectors{
+					MatchExpressions: []metav1.LabelSelectorRequirement{
+						{
+							Key:      "label",
+							Operator: metav1.LabelSelectorOpIn,
+							Values:   []string{"value"},
+						},
+					},
+				},
+			},
+			expectResult: true,
+		},
+		{
+			name: "false when the label expression does not match with operator In",
+			node: node,
+			filters: &troubleshootv1beta2.NodeResourceFilters{
+				Selector: &troubleshootv1beta2.NodeResourceSelectors{
+					MatchExpressions: []metav1.LabelSelectorRequirement{
+						{
+							Key:      "label",
+							Operator: metav1.LabelSelectorOpIn,
+							Values:   []string{"value2"},
+						},
+					},
+				},
+			},
+			expectResult: false,
+		},
+		{
+			name: "true when the label expression matches with operator NotIn",
+			node: node,
+			filters: &troubleshootv1beta2.NodeResourceFilters{
+				Selector: &troubleshootv1beta2.NodeResourceSelectors{
+					MatchExpressions: []metav1.LabelSelectorRequirement{
+						{
+							Key:      "label",
+							Operator: metav1.LabelSelectorOpNotIn,
+							Values:   []string{"value2"},
+						},
+					},
+				},
+			},
+			expectResult: true,
+		},
+		{
+			name: "false when the label expression does not match with operator NotIn",
+			node: node,
+			filters: &troubleshootv1beta2.NodeResourceFilters{
+				Selector: &troubleshootv1beta2.NodeResourceSelectors{
+					MatchExpressions: []metav1.LabelSelectorRequirement{
+						{
+							Key:      "label",
+							Operator: metav1.LabelSelectorOpNotIn,
+							Values:   []string{"value"},
+						},
+					},
+				},
+			},
+			expectResult: false,
+		},
+		{
+			name: "true when the label expression matches with operator Exists",
+			node: node,
+			filters: &troubleshootv1beta2.NodeResourceFilters{
+				Selector: &troubleshootv1beta2.NodeResourceSelectors{
+					MatchExpressions: []metav1.LabelSelectorRequirement{
+						{
+							Key:      "label",
+							Operator: metav1.LabelSelectorOpExists,
+						},
+					},
+				},
+			},
+			expectResult: true,
+		},
+		{
+			name: "false when the label expression matches with operator Exists",
+			node: node,
+			filters: &troubleshootv1beta2.NodeResourceFilters{
+				Selector: &troubleshootv1beta2.NodeResourceSelectors{
+					MatchExpressions: []metav1.LabelSelectorRequirement{
+						{
+							Key:      "label2",
+							Operator: metav1.LabelSelectorOpExists,
+						},
+					},
+				},
+			},
+			expectResult: false,
+		},
+		{
+			name: "true when the label expression matches with operator DoesNotExist",
+			node: node,
+			filters: &troubleshootv1beta2.NodeResourceFilters{
+				Selector: &troubleshootv1beta2.NodeResourceSelectors{
+					MatchExpressions: []metav1.LabelSelectorRequirement{
+						{
+							Key:      "label2",
+							Operator: metav1.LabelSelectorOpDoesNotExist,
+						},
+					},
+				},
+			},
+			expectResult: true,
+		},
+		{
+			name: "false when the label expression does not match with operator DoesNotExist",
+			node: node,
+			filters: &troubleshootv1beta2.NodeResourceFilters{
+				Selector: &troubleshootv1beta2.NodeResourceSelectors{
+					MatchExpressions: []metav1.LabelSelectorRequirement{
+						{
+							Key:      "label",
+							Operator: metav1.LabelSelectorOpDoesNotExist,
+						},
+					},
+				},
+			},
+			expectResult: false,
 		},
 	}
 
