@@ -297,7 +297,8 @@
                     }
                   },
                   "restartCount": {
-                    "type": "integer"
+                    "type": "integer",
+                    "format": "int32"
                   },
                   "strict": {
                     "oneOf": [{"type": "string"},{"type": "boolean"}]

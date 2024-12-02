@@ -69,8 +69,10 @@ func (a *AnalyzeClusterContainerStatuses) Analyze(getFile getCollectedFileConten
 }
 
 func (a *AnalyzeClusterContainerStatuses) getPodsMatchingFilters(podListFiles map[string][]byte) (podsWithContainers, error) {
+	var podsMatchedNamespace []corev1.Pod
 	matchedPods := podsWithContainers{}
 
+	// filter pods matched namespace selector
 	for fileName, fileContent := range podListFiles {
 		// pod list fileName is the namespace name, e.g. default.json
 		currentNamespace := strings.TrimSuffix(filepath.Base(fileName), ".json")
@@ -82,7 +84,6 @@ func (a *AnalyzeClusterContainerStatuses) getPodsMatchingFilters(podListFiles ma
 		}
 
 		// filter pods by namespace
-		var podsMatchedNamespace []corev1.Pod
 		var podList corev1.PodList
 		if err := json.Unmarshal(fileContent, &podList); err != nil {
 			var pods []corev1.Pod
@@ -94,32 +95,33 @@ func (a *AnalyzeClusterContainerStatuses) getPodsMatchingFilters(podListFiles ma
 		} else {
 			podsMatchedNamespace = append(podsMatchedNamespace, podList.Items...)
 		}
+	}
 
-		// filter pods by container restart count
-		for _, pod := range podsMatchedNamespace {
-			for _, containerStatus := range pod.Status.ContainerStatuses {
-				if containerStatus.RestartCount < int32(a.analyzer.RestartCount) {
-					continue
-				}
-				// check if the pod has already been matched
-				key := string(pod.UID)
-				if _, ok := matchedPods[key]; !ok {
-					matchedPods[key] = struct {
-						name              string
-						namespace         string
-						containerStatuses []corev1.ContainerStatus
-					}{
-						name:              pod.Name,
-						namespace:         pod.Namespace,
-						containerStatuses: []corev1.ContainerStatus{containerStatus},
-					}
-					continue
-				}
-				entry := matchedPods[key]
-				entry.containerStatuses = append(entry.containerStatuses, containerStatus)
+	// filter pods by container criteria
+	for _, pod := range podsMatchedNamespace {
+		for _, containerStatus := range pod.Status.ContainerStatuses {
+			if containerStatus.RestartCount < a.analyzer.RestartCount {
+				continue
 			}
+			// check if the pod has already been matched
+			key := string(pod.UID)
+			if _, ok := matchedPods[key]; !ok {
+				matchedPods[key] = struct {
+					name              string
+					namespace         string
+					containerStatuses []corev1.ContainerStatus
+				}{
+					name:              pod.Name,
+					namespace:         pod.Namespace,
+					containerStatuses: []corev1.ContainerStatus{containerStatus},
+				}
+				continue
+			}
+			entry := matchedPods[key]
+			entry.containerStatuses = append(entry.containerStatuses, containerStatus)
 		}
 	}
+
 	return matchedPods, nil
 }
 
@@ -156,10 +158,12 @@ func (a *AnalyzeClusterContainerStatuses) analyzeContainerStatuses(podContainers
 			continue
 		}
 
+		// empty when indicates final case, let's return the result
 		if when == "" {
-			continue
+			return []*AnalyzeResult{&r}, nil
 		}
 
+		// continue matching with when condition
 		reason, isEqualityOp, err := parseWhen(when)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to parse when")

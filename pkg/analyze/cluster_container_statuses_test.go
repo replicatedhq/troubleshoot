@@ -45,6 +45,42 @@ func Test_analyzeContainerStatuses(t *testing.T) {
 				"cluster-resources/pods/message-oomkill-pod.json": []byte(messageOOMKillPod),
 			},
 		},
+		{
+			name: "pass when there is no status detected",
+			analyzer: troubleshootv1beta2.ClusterContainerStatuses{
+				AnalyzeMeta: troubleshootv1beta2.AnalyzeMeta{
+					CheckName: "oomkilled-container",
+				},
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Fail: &troubleshootv1beta2.SingleOutcome{
+							When:    "== OOMKilled",
+							Message: "Container {{ .ContainerName }} from pod {{ .Namespace }}/{{ .PodName }} has OOMKilled",
+						},
+					},
+					{
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							Message: "No OOMKilled container found",
+						},
+					},
+				},
+				Namespaces: []string{"default"},
+			},
+			expectResult: []*AnalyzeResult{
+				{
+					IsFail:  false,
+					IsWarn:  false,
+					IsPass:  true,
+					Title:   "oomkilled-container",
+					Message: "No OOMKilled container found",
+					IconKey: "kubernetes_container_statuses",
+					IconURI: "https://troubleshoot.sh/images/analyzer-icons/kubernetes.svg?w=16&h=16",
+				},
+			},
+			files: map[string][]byte{
+				"cluster-resources/pods/default.json": []byte(defaultPods),
+			},
+		},
 	}
 
 	for _, test := range tests {

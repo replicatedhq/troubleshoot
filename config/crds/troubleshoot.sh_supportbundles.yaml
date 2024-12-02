@@ -219,6 +219,7 @@ spec:
                             type: object
                           type: array
                         restartCount:
+                          format: int32
                           type: integer
                         strict:
                           type: BoolString
