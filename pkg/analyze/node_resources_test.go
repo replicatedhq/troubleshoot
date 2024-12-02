@@ -14,7 +14,7 @@ import (
 
 func Test_compareNodeResourceConditionalToActual(t *testing.T) {
 	nodeData := []corev1.Node{
-		corev1.Node{
+		{
 			TypeMeta: metav1.TypeMeta{
 				APIVersion: "v1",
 				Kind:       "Node",
@@ -28,16 +28,18 @@ func Test_compareNodeResourceConditionalToActual(t *testing.T) {
 					"ephemeral-storage": resource.MustParse("20959212Ki"),
 					"memory":            resource.MustParse("3999Ki"),
 					"pods":              resource.MustParse("15"),
+					gpuResourceName:     resource.MustParse("4"),
 				},
 				Allocatable: corev1.ResourceList{
 					"cpu":               resource.MustParse("1.5"),
 					"ephemeral-storage": resource.MustParse("19316009748"),
 					"memory":            resource.MustParse("16Ki"),
 					"pods":              resource.MustParse("14"),
+					gpuResourceName:     resource.MustParse("4"),
 				},
 			},
 		},
-		corev1.Node{
+		{
 			TypeMeta: metav1.TypeMeta{
 				APIVersion: "v1",
 				Kind:       "Node",
@@ -365,6 +367,70 @@ func Test_compareNodeResourceConditionalToActual(t *testing.T) {
 			totalNodeCount: len(nodeData),
 			expected:       false,
 			isError:        true,
+		},
+		{
+			name:           "sum(gpuCapacity) > 1 (true)",
+			conditional:    "sum(gpuCapacity) > 1",
+			matchingNodes:  nodeData,
+			totalNodeCount: len(nodeData),
+			expected:       true,
+			isError:        false,
+		},
+		{
+			name:           "sum(gpuCapacity) >= 8 (false)",
+			conditional:    "sum(gpuCapacity) >= 8",
+			matchingNodes:  nodeData,
+			totalNodeCount: len(nodeData),
+			expected:       false,
+			isError:        false,
+		},
+		{
+			name:           "min(gpuCapacity) > 1 (false)",
+			conditional:    "min(gpuCapacity) > 1",
+			matchingNodes:  nodeData,
+			totalNodeCount: len(nodeData),
+			expected:       false,
+			isError:        false,
+		},
+		{
+			name:           "min(gpuAllocatable) > 1 (false)",
+			conditional:    "min(gpuAllocatable) > 1",
+			matchingNodes:  nodeData,
+			totalNodeCount: len(nodeData),
+			expected:       false,
+			isError:        false,
+		},
+		{
+			name:           "max(gpuCapacity) == 4 (true)",
+			conditional:    "max(gpuCapacity) == 4",
+			matchingNodes:  nodeData,
+			totalNodeCount: len(nodeData),
+			expected:       true,
+			isError:        false,
+		},
+		{
+			name:           "max(gpuAllocatable) == 4 (true)",
+			conditional:    "max(gpuAllocatable) == 4",
+			matchingNodes:  nodeData,
+			totalNodeCount: len(nodeData),
+			expected:       true,
+			isError:        false,
+		},
+		{
+			name:           "sum(gpuAllocatable) > 1 (true)",
+			conditional:    "sum(gpuAllocatable) > 1",
+			matchingNodes:  nodeData,
+			totalNodeCount: len(nodeData),
+			expected:       true,
+			isError:        false,
+		},
+		{
+			name:           "sum(gpuAllocatable) >= 8 (false)",
+			conditional:    "sum(gpuAllocatable) >= 8",
+			matchingNodes:  nodeData,
+			totalNodeCount: len(nodeData),
+			expected:       false,
+			isError:        false,
 		},
 	}
 
