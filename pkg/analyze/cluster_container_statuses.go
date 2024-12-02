@@ -160,6 +160,10 @@ func (a *AnalyzeClusterContainerStatuses) analyzeContainerStatuses(podContainers
 
 		// empty when indicates final case, let's return the result
 		if when == "" {
+			// return collected results if any
+			if len(results) > 0 {
+				return results, nil
+			}
 			return []*AnalyzeResult{&r}, nil
 		}
 
