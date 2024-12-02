@@ -133,13 +133,15 @@ generate: controller-gen client-gen
 	$(CONTROLLER_GEN) \
 		object:headerFile=./hack/boilerplate.go.txt paths=./pkg/apis/...
 	$(CLIENT_GEN) \
-		--output-base=$$(pwd)/../../../ \
+		--output-base=. \
 		--output-package=github.com/replicatedhq/troubleshoot/pkg/client \
 		--clientset-name troubleshootclientset \
 		--input-base github.com/replicatedhq/troubleshoot/pkg/apis \
 		--input troubleshoot/v1beta1 \
 		--input troubleshoot/v1beta2 \
 		-h ./hack/boilerplate.go.txt
+	cp -r github.com/replicatedhq/troubleshoot/pkg/client/troubleshootclientset pkg/client
+	rm -rf github.com
 
 .PHONY: openapischema
 openapischema: controller-gen
