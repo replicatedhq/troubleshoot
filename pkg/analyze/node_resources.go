@@ -8,11 +8,14 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
-	util "github.com/replicatedhq/troubleshoot/internal/util"
-	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
-	"github.com/replicatedhq/troubleshoot/pkg/constants"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/resource"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/labels"
+
+	"github.com/replicatedhq/troubleshoot/internal/util"
+	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
+	"github.com/replicatedhq/troubleshoot/pkg/constants"
 )
 
 type AnalyzeNodeResources struct {
@@ -381,13 +384,19 @@ func nodeMatchesFilters(node corev1.Node, filters *troubleshootv1beta2.NodeResou
 
 	// all filters must pass for this to pass
 	if filters.Selector != nil {
-		for k, v := range filters.Selector.MatchLabel {
-			l, found := node.Labels[k]
-			if !found {
-				return false, nil
-			} else if l != v {
-				return false, nil
-			}
+		selector, err := metav1.LabelSelectorAsSelector(
+			&metav1.LabelSelector{
+				MatchLabels:      filters.Selector.MatchLabel,
+				MatchExpressions: filters.Selector.MatchExpressions,
+			},
+		)
+		if err != nil {
+			return false, errors.Wrap(err, "failed to create label selector")
+		}
+
+		found := selector.Matches(labels.Set(node.Labels))
+		if !found {
+			return false, nil
 		}
 	}
 

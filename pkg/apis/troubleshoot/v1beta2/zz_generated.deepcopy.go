@@ -22,6 +22,7 @@ package v1beta2
 
 import (
 	"github.com/replicatedhq/troubleshoot/pkg/multitype"
+	"k8s.io/apimachinery/pkg/apis/meta/v1"
 	runtime "k8s.io/apimachinery/pkg/runtime"
 )
 
@@ -3443,6 +3444,13 @@ func (in *NodeResourceSelectors) DeepCopyInto(out *NodeResourceSelectors) {
 		*out = make(map[string]string, len(*in))
 		for key, val := range *in {
 			(*out)[key] = val
+		}
+	}
+	if in.MatchExpressions != nil {
+		in, out := &in.MatchExpressions, &out.MatchExpressions
+		*out = make([]v1.LabelSelectorRequirement, len(*in))
+		for i := range *in {
+			(*in)[i].DeepCopyInto(&(*out)[i])
 		}
 	}
 }
