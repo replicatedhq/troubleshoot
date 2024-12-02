@@ -404,6 +404,7 @@ func Test_nodeMatchesFilters(t *testing.T) {
 				"hugepages-2Mi":              resource.MustParse("0"),
 				"memory":                     resource.MustParse("7951376Ki"),
 				"pods":                       resource.MustParse("29"),
+				gpuResourceName:              resource.MustParse("1"),
 			},
 			Allocatable: corev1.ResourceList{
 				"attachable-volumes-aws-ebs": resource.MustParse("25"),
@@ -413,6 +414,7 @@ func Test_nodeMatchesFilters(t *testing.T) {
 				"hugepages-2Mi":              resource.MustParse("0"),
 				"memory":                     resource.MustParse("7848976Ki"),
 				"pods":                       resource.MustParse("29"),
+				gpuResourceName:              resource.MustParse("1"),
 			},
 		},
 	}
@@ -623,6 +625,38 @@ func Test_nodeMatchesFilters(t *testing.T) {
 						},
 					},
 				},
+			},
+			expectResult: false,
+		},
+		{
+			name: "true when gpu capacity is available",
+			node: node,
+			filters: &troubleshootv1beta2.NodeResourceFilters{
+				GPUCapacity: "1",
+			},
+			expectResult: true,
+		},
+		{
+			name: "true when allocatable gpu is available",
+			node: node,
+			filters: &troubleshootv1beta2.NodeResourceFilters{
+				GPUAllocatable: "1",
+			},
+			expectResult: true,
+		},
+		{
+			name: "false when gpu capacity is not available",
+			node: node,
+			filters: &troubleshootv1beta2.NodeResourceFilters{
+				GPUCapacity: "2",
+			},
+			expectResult: false,
+		},
+		{
+			name: "false when allocatable gpu is not available",
+			node: node,
+			filters: &troubleshootv1beta2.NodeResourceFilters{
+				GPUAllocatable: "2",
 			},
 			expectResult: false,
 		},
