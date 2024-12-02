@@ -185,6 +185,7 @@ type Certificate struct {
 	HostCollectorMeta `json:",inline" yaml:",inline"`
 	CertificatePath   string `json:"certificatePath" yaml:"certificatepath"`
 	KeyPath           string `json:"keyPath" yaml:"keyPath"`
+	GenerateTest      string `json:"generateTest,omitempty" yaml:"generateTest,omitempty"`
 }
 
 type HostCertificatesCollection struct {

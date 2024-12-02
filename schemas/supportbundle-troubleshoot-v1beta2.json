@@ -19197,6 +19197,9 @@
                   "exclude": {
                     "oneOf": [{"type": "string"},{"type": "boolean"}]
                   },
+                  "generateTest": {
+                    "type": "string"
+                  },
                   "keyPath": {
                     "type": "string"
                   }

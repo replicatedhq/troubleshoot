@@ -19996,6 +19996,8 @@ spec:
                           type: string
                         exclude:
                           type: BoolString
+                        generateTest:
+                          type: string
                         keyPath:
                           type: string
                       required:
