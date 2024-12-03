@@ -214,6 +214,8 @@ func GetAnalyzer(analyzer *troubleshootv1beta2.Analyze) Analyzer {
 		return &AnalyzeReplicaSetStatus{analyzer: analyzer.ReplicaSetStatus}
 	case analyzer.ClusterPodStatuses != nil:
 		return &AnalyzeClusterPodStatuses{analyzer: analyzer.ClusterPodStatuses}
+	case analyzer.ClusterContainerStatuses != nil:
+		return &AnalyzeClusterContainerStatuses{analyzer: analyzer.ClusterContainerStatuses}
 	case analyzer.ContainerRuntime != nil:
 		return &AnalyzeContainerRuntime{analyzer: analyzer.ContainerRuntime}
 	case analyzer.Distribution != nil:
