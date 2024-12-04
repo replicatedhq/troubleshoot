@@ -1262,6 +1262,10 @@ spec:
                               type: string
                             ephemeralStorageCapacity:
                               type: string
+                            gpuAllocatable:
+                              type: string
+                            gpuCapacity:
+                              type: string
                             memoryAllocatable:
                               type: string
                             memoryCapacity:

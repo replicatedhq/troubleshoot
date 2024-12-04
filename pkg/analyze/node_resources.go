@@ -18,6 +18,8 @@ import (
 	"github.com/replicatedhq/troubleshoot/pkg/constants"
 )
 
+const gpuResourceName = "nvidia.com/gpu"
+
 type AnalyzeNodeResources struct {
 	analyzer *troubleshootv1beta2.NodeResources
 }
@@ -329,6 +331,10 @@ func getQuantity(node corev1.Node, property string) *resource.Quantity {
 		return node.Status.Capacity.StorageEphemeral()
 	case "ephemeralStorageAllocatable":
 		return node.Status.Allocatable.StorageEphemeral()
+	case "gpuCapacity":
+		return node.Status.Capacity.Name(gpuResourceName, resource.DecimalSI)
+	case "gpuAllocatable":
+		return node.Status.Allocatable.Name(gpuResourceName, resource.DecimalSI)
 	}
 	return nil
 }
@@ -488,6 +494,27 @@ func nodeMatchesFilters(node corev1.Node, filters *troubleshootv1beta2.NodeResou
 		}
 
 		if node.Status.Allocatable.StorageEphemeral().Cmp(parsed) == -1 {
+			return false, nil
+		}
+	}
+
+	if filters.GPUCapacity != "" {
+		parsed, err := resource.ParseQuantity(filters.GPUCapacity)
+		if err != nil {
+			return false, errors.Wrap(err, "failed to parse gpu capacity")
+		}
+
+		if node.Status.Capacity.Name(gpuResourceName, resource.DecimalSI).Cmp(parsed) == -1 {
+			return false, nil
+		}
+	}
+	if filters.GPUAllocatable != "" {
+		parsed, err := resource.ParseQuantity(filters.GPUAllocatable)
+		if err != nil {
+			return false, errors.Wrap(err, "failed to parse gpu allocatable")
+		}
+
+		if node.Status.Allocatable.Name(gpuResourceName, resource.DecimalSI).Cmp(parsed) == -1 {
 			return false, nil
 		}
 	}
