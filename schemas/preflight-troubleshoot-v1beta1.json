@@ -604,6 +604,12 @@
                       "podCapacity": {
                         "type": "string"
                       },
+                      "resourceAllocatable": {
+                        "type": "string"
+                      },
+                      "resourceName": {
+                        "type": "string"
+                      },
                       "selector": {
                         "type": "object",
                         "properties": {

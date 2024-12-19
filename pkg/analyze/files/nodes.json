@@ -2865,6 +2865,391 @@
           }
         ]
       }
-    }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Node",
+      "metadata": {
+          "annotations": {
+              "flannel.alpha.coreos.com/backend-data": "{\"VNI\":1,\"VtepMAC\":\"c6:c2:b9:1b:49:2e\"}",
+              "flannel.alpha.coreos.com/backend-type": "vxlan",
+              "flannel.alpha.coreos.com/kube-subnet-manager": "true",
+              "flannel.alpha.coreos.com/public-ip": "172.31.21.92",
+              "kubeadm.alpha.kubernetes.io/cri-socket": "unix:///run/containerd/containerd.sock",
+              "nfd.node.kubernetes.io/feature-labels": "cpu-cpuid.ADX,cpu-cpuid.AESNI,cpu-cpuid.AVX,cpu-cpuid.AVX2,cpu-cpuid.AVX512BW,cpu-cpuid.AVX512CD,cpu-cpuid.AVX512DQ,cpu-cpuid.AVX512F,cpu-cpuid.AVX512VL,cpu-cpuid.AVX512VNNI,cpu-cpuid.CMPXCHG8,cpu-cpuid.FMA3,cpu-cpuid.FXSR,cpu-cpuid.FXSROPT,cpu-cpuid.HYPERVISOR,cpu-cpuid.LAHF,cpu-cpuid.MOVBE,cpu-cpuid.MPX,cpu-cpuid.OSXSAVE,cpu-cpuid.SYSCALL,cpu-cpuid.SYSEE,cpu-cpuid.X87,cpu-cpuid.XGETBV1,cpu-cpuid.XSAVE,cpu-cpuid.XSAVEC,cpu-cpuid.XSAVEOPT,cpu-cpuid.XSAVES,cpu-hardware_multithreading,cpu-model.family,cpu-model.id,cpu-model.vendor_id,kernel-config.NO_HZ,kernel-config.NO_HZ_FULL,kernel-version.full,kernel-version.major,kernel-version.minor,kernel-version.revision,nvidia.com/cuda.driver-version.full,nvidia.com/cuda.driver-version.major,nvidia.com/cuda.driver-version.minor,nvidia.com/cuda.driver-version.revision,nvidia.com/cuda.driver.major,nvidia.com/cuda.driver.minor,nvidia.com/cuda.driver.rev,nvidia.com/cuda.runtime-version.full,nvidia.com/cuda.runtime-version.major,nvidia.com/cuda.runtime-version.minor,nvidia.com/cuda.runtime.major,nvidia.com/cuda.runtime.minor,nvidia.com/gfd.timestamp,nvidia.com/gpu.compute.major,nvidia.com/gpu.compute.minor,nvidia.com/gpu.count,nvidia.com/gpu.family,nvidia.com/gpu.machine,nvidia.com/gpu.memory,nvidia.com/gpu.mode,nvidia.com/gpu.product,nvidia.com/gpu.replicas,nvidia.com/gpu.sharing-strategy,nvidia.com/mig.capable,nvidia.com/mig.strategy,nvidia.com/mps.capable,nvidia.com/vgpu.present,pci-10de.present,pci-1d0f.present,storage-nonrotationaldisk,system-os_release.ID,system-os_release.VERSION_ID,system-os_release.VERSION_ID.major,system-os_release.VERSION_ID.minor",
+              "node.alpha.kubernetes.io/ttl": "0",
+              "nvidia.com/gpu-driver-upgrade-enabled": "true",
+              "volumes.kubernetes.io/controller-managed-attach-detach": "true"
+          },
+          "creationTimestamp": "2024-12-18T22:04:55Z",
+          "labels": {
+              "beta.kubernetes.io/arch": "amd64",
+              "beta.kubernetes.io/os": "linux",
+              "feature.node.kubernetes.io/cpu-cpuid.ADX": "true",
+              "feature.node.kubernetes.io/cpu-cpuid.AESNI": "true",
+              "feature.node.kubernetes.io/cpu-cpuid.AVX": "true",
+              "feature.node.kubernetes.io/cpu-cpuid.AVX2": "true",
+              "feature.node.kubernetes.io/cpu-cpuid.AVX512BW": "true",
+              "feature.node.kubernetes.io/cpu-cpuid.AVX512CD": "true",
+              "feature.node.kubernetes.io/cpu-cpuid.AVX512DQ": "true",
+              "feature.node.kubernetes.io/cpu-cpuid.AVX512F": "true",
+              "feature.node.kubernetes.io/cpu-cpuid.AVX512VL": "true",
+              "feature.node.kubernetes.io/cpu-cpuid.AVX512VNNI": "true",
+              "feature.node.kubernetes.io/cpu-cpuid.CMPXCHG8": "true",
+              "feature.node.kubernetes.io/cpu-cpuid.FMA3": "true",
+              "feature.node.kubernetes.io/cpu-cpuid.FXSR": "true",
+              "feature.node.kubernetes.io/cpu-cpuid.FXSROPT": "true",
+              "feature.node.kubernetes.io/cpu-cpuid.HYPERVISOR": "true",
+              "feature.node.kubernetes.io/cpu-cpuid.LAHF": "true",
+              "feature.node.kubernetes.io/cpu-cpuid.MOVBE": "true",
+              "feature.node.kubernetes.io/cpu-cpuid.MPX": "true",
+              "feature.node.kubernetes.io/cpu-cpuid.OSXSAVE": "true",
+              "feature.node.kubernetes.io/cpu-cpuid.SYSCALL": "true",
+              "feature.node.kubernetes.io/cpu-cpuid.SYSEE": "true",
+              "feature.node.kubernetes.io/cpu-cpuid.X87": "true",
+              "feature.node.kubernetes.io/cpu-cpuid.XGETBV1": "true",
+              "feature.node.kubernetes.io/cpu-cpuid.XSAVE": "true",
+              "feature.node.kubernetes.io/cpu-cpuid.XSAVEC": "true",
+              "feature.node.kubernetes.io/cpu-cpuid.XSAVEOPT": "true",
+              "feature.node.kubernetes.io/cpu-cpuid.XSAVES": "true",
+              "feature.node.kubernetes.io/cpu-hardware_multithreading": "true",
+              "feature.node.kubernetes.io/cpu-model.family": "6",
+              "feature.node.kubernetes.io/cpu-model.id": "85",
+              "feature.node.kubernetes.io/cpu-model.vendor_id": "Intel",
+              "feature.node.kubernetes.io/kernel-config.NO_HZ": "true",
+              "feature.node.kubernetes.io/kernel-config.NO_HZ_FULL": "true",
+              "feature.node.kubernetes.io/kernel-version.full": "6.8.0-1015-aws",
+              "feature.node.kubernetes.io/kernel-version.major": "6",
+              "feature.node.kubernetes.io/kernel-version.minor": "8",
+              "feature.node.kubernetes.io/kernel-version.revision": "0",
+              "feature.node.kubernetes.io/pci-10de.present": "true",
+              "feature.node.kubernetes.io/pci-1d0f.present": "true",
+              "feature.node.kubernetes.io/storage-nonrotationaldisk": "true",
+              "feature.node.kubernetes.io/system-os_release.ID": "ubuntu",
+              "feature.node.kubernetes.io/system-os_release.VERSION_ID": "22.04",
+              "feature.node.kubernetes.io/system-os_release.VERSION_ID.major": "22",
+              "feature.node.kubernetes.io/system-os_release.VERSION_ID.minor": "04",
+              "kubernetes.io/arch": "amd64",
+              "kubernetes.io/hostname": "ip-172-31-21-92",
+              "kubernetes.io/os": "linux",
+              "kurl.sh/cluster": "true",
+              "node-role.kubernetes.io/control-plane": "",
+              "node-role.kubernetes.io/master": "",
+              "node.kubernetes.io/exclude-from-external-load-balancers": "",
+              "nvidia.com/cuda.driver-version.full": "550.127.08",
+              "nvidia.com/cuda.driver-version.major": "550",
+              "nvidia.com/cuda.driver-version.minor": "127",
+              "nvidia.com/cuda.driver-version.revision": "08",
+              "nvidia.com/cuda.driver.major": "550",
+              "nvidia.com/cuda.driver.minor": "127",
+              "nvidia.com/cuda.driver.rev": "08",
+              "nvidia.com/cuda.runtime-version.full": "12.4",
+              "nvidia.com/cuda.runtime-version.major": "12",
+              "nvidia.com/cuda.runtime-version.minor": "4",
+              "nvidia.com/cuda.runtime.major": "12",
+              "nvidia.com/cuda.runtime.minor": "4",
+              "nvidia.com/gfd.timestamp": "1734575658",
+              "nvidia.com/gpu-driver-upgrade-state": "upgrade-done",
+              "nvidia.com/gpu.compute.major": "7",
+              "nvidia.com/gpu.compute.minor": "5",
+              "nvidia.com/gpu.count": "1",
+              "nvidia.com/gpu.deploy.container-toolkit": "true",
+              "nvidia.com/gpu.deploy.dcgm": "true",
+              "nvidia.com/gpu.deploy.dcgm-exporter": "true",
+              "nvidia.com/gpu.deploy.device-plugin": "true",
+              "nvidia.com/gpu.deploy.driver": "true",
+              "nvidia.com/gpu.deploy.gpu-feature-discovery": "true",
+              "nvidia.com/gpu.deploy.node-status-exporter": "true",
+              "nvidia.com/gpu.deploy.nvsm": "",
+              "nvidia.com/gpu.deploy.operator-validator": "true",
+              "nvidia.com/gpu.family": "turing",
+              "nvidia.com/gpu.machine": "g4dn.xlarge",
+              "nvidia.com/gpu.memory": "15360",
+              "nvidia.com/gpu.mode": "compute",
+              "nvidia.com/gpu.present": "true",
+              "nvidia.com/gpu.product": "Tesla-T4",
+              "nvidia.com/gpu.replicas": "1",
+              "nvidia.com/gpu.sharing-strategy": "none",
+              "nvidia.com/mig.capable": "false",
+              "nvidia.com/mig.strategy": "single",
+              "nvidia.com/mps.capable": "false",
+              "nvidia.com/vgpu.present": "false"
+          },
+          "name": "ip-172-31-21-92",
+          "resourceVersion": "36620",
+          "uid": "aed93ed6-f460-4578-a7b0-574574237a0a"
+      },
+      "spec": {
+          "podCIDR": "10.32.0.0/24",
+          "podCIDRs": [
+              "10.32.0.0/24"
+          ]
+      },
+      "status": {
+          "addresses": [
+              {
+                  "address": "172.31.21.92",
+                  "type": "InternalIP"
+              },
+              {
+                  "address": "ip-172-31-21-92",
+                  "type": "Hostname"
+              }
+          ],
+          "allocatable": {
+              "cpu": "1",
+              "ephemeral-storage": "93478772582",
+              "hugepages-1Gi": "0",
+              "hugepages-2Mi": "0",
+              "memory": "16064760Ki",
+              "nvidia.com/gpu": "1",
+              "pods": "110"
+          },
+          "capacity": {
+              "cpu": "1",
+              "ephemeral-storage": "101430960Ki",
+              "hugepages-1Gi": "0",
+              "hugepages-2Mi": "0",
+              "memory": "16167160Ki",
+              "nvidia.com/gpu": "1",
+              "pods": "110"
+          },
+          "conditions": [
+              {
+                  "lastHeartbeatTime": "2024-12-19T02:27:57Z",
+                  "lastTransitionTime": "2024-12-19T02:27:57Z",
+                  "message": "Flannel is running on this node",
+                  "reason": "FlannelIsUp",
+                  "status": "False",
+                  "type": "NetworkUnavailable"
+              },
+              {
+                  "lastHeartbeatTime": "2024-12-19T02:59:48Z",
+                  "lastTransitionTime": "2024-12-18T22:04:54Z",
+                  "message": "kubelet has sufficient memory available",
+                  "reason": "KubeletHasSufficientMemory",
+                  "status": "False",
+                  "type": "MemoryPressure"
+              },
+              {
+                  "lastHeartbeatTime": "2024-12-19T02:59:48Z",
+                  "lastTransitionTime": "2024-12-18T22:04:54Z",
+                  "message": "kubelet has no disk pressure",
+                  "reason": "KubeletHasNoDiskPressure",
+                  "status": "False",
+                  "type": "DiskPressure"
+              },
+              {
+                  "lastHeartbeatTime": "2024-12-19T02:59:48Z",
+                  "lastTransitionTime": "2024-12-18T22:04:54Z",
+                  "message": "kubelet has sufficient PID available",
+                  "reason": "KubeletHasSufficientPID",
+                  "status": "False",
+                  "type": "PIDPressure"
+              },
+              {
+                  "lastHeartbeatTime": "2024-12-19T02:59:48Z",
+                  "lastTransitionTime": "2024-12-19T02:27:52Z",
+                  "message": "kubelet is posting ready status. AppArmor enabled",
+                  "reason": "KubeletReady",
+                  "status": "True",
+                  "type": "Ready"
+              }
+          ],
+          "daemonEndpoints": {
+              "kubeletEndpoint": {
+                  "Port": 10250
+              }
+          },
+          "images": [
+              {
+                  "names": [
+                      "nvcr.io/nvidia/driver@sha256:495706c38ad8afcd6c9bca1b436e23d3990631511645933325d0340ed2a87794",
+                      "nvcr.io/nvidia/driver:550.127.08-ubuntu22.04"
+                  ],
+                  "sizeBytes": 676042363
+              },
+              {
+                  "names": [
+                      "docker.io/replicated/kurl-util:v2024.12.04-0"
+                  ],
+                  "sizeBytes": 606430157
+              },
+              {
+                  "names": [
+                      "nvcr.io/nvidia/cloud-native/k8s-driver-manager@sha256:b072c5793be65eee556eaff1b9cbbd115a1ef29982be95b2959adfcb4bc72382",
+                      "nvcr.io/nvidia/cloud-native/k8s-driver-manager:v0.7.0"
+                  ],
+                  "sizeBytes": 225657726
+              },
+              {
+                  "names": [
+                      "nvcr.io/nvidia/gpu-operator@sha256:db8451bc4861b11c2c18a8b439357178b43e9f831dd5908868d0e8dea73804a6",
+                      "nvcr.io/nvidia/gpu-operator:v24.9.1"
+                  ],
+                  "sizeBytes": 221606441
+              },
+              {
+                  "names": [
+                      "docker.io/replicated/ekco:v0.28.7"
+                  ],
+                  "sizeBytes": 194820836
+              },
+              {
+                  "names": [
+                      "nvcr.io/nvidia/k8s-device-plugin@sha256:7089559ce6153018806857f5049085bae15b3bf6f1c8bd19d8b12f707d087dea",
+                      "nvcr.io/nvidia/k8s-device-plugin:v0.17.0"
+                  ],
+                  "sizeBytes": 187560257
+              },
+              {
+                  "names": [
+                      "nvcr.io/nvidia/cloud-native/gpu-operator-validator@sha256:420869a5601e0bff799ffe57ca1883c429ef9071d380050de0223d0a5278517c",
+                      "nvcr.io/nvidia/cloud-native/gpu-operator-validator:v24.9.1"
+                  ],
+                  "sizeBytes": 183027141
+              },
+              {
+                  "names": [
+                      "docker.io/minio/minio:RELEASE.2024-11-07T00-52-20Z"
+                  ],
+                  "sizeBytes": 165802842
+              },
+              {
+                  "names": [
+                      "docker.io/envoyproxy/envoy:v1.31.0"
+                  ],
+                  "sizeBytes": 156987178
+              },
+              {
+                  "names": [
+                      "k8s.gcr.io/etcd:3.5.16-0",
+                      "registry.k8s.io/etcd:3.5.16-0"
+                  ],
+                  "sizeBytes": 151015693
+              },
+              {
+                  "names": [
+                      "nvcr.io/nvidia/k8s/container-toolkit@sha256:35b40720f7009eec5acfb5318ac118cb4aed4dda39b190d0b75da2e8b3830383",
+                      "nvcr.io/nvidia/k8s/container-toolkit:v1.17.3-ubuntu20.04"
+                  ],
+                  "sizeBytes": 132728008
+              },
+              {
+                  "names": [
+                      "k8s.gcr.io/kube-apiserver:v1.29.11",
+                      "registry.k8s.io/kube-apiserver:v1.29.11"
+                  ],
+                  "sizeBytes": 128856468
+              },
+              {
+                  "names": [
+                      "nvcr.io/nvidia/k8s/dcgm-exporter@sha256:3d4e0dfa5fc4d7d12689d29fc6b56cd6c610750e8d187a393882e341fbba6c12",
+                      "nvcr.io/nvidia/k8s/dcgm-exporter:3.3.9-3.6.1-ubuntu22.04"
+                  ],
+                  "sizeBytes": 127723011
+              },
+              {
+                  "names": [
+                      "k8s.gcr.io/kube-controller-manager:v1.29.11",
+                      "registry.k8s.io/kube-controller-manager:v1.29.11"
+                  ],
+                  "sizeBytes": 123998458
+              },
+              {
+                  "names": [
+                      "k8s.gcr.io/kube-proxy:v1.29.11",
+                      "registry.k8s.io/kube-proxy:v1.29.11"
+                  ],
+                  "sizeBytes": 84241069
+              },
+              {
+                  "names": [
+                      "docker.io/flannel/flannel:v0.26.1"
+                  ],
+                  "sizeBytes": 83929242
+              },
+              {
+                  "names": [
+                      "docker.io/openebs/provisioner-localpv:4.1.0"
+                  ],
+                  "sizeBytes": 77454375
+              },
+              {
+                  "names": [
+                      "registry.k8s.io/nfd/node-feature-discovery@sha256:19ebca8b3804bfe2ee7324de4873875ab0a9112b51e0ace9dfd7c470beecf4a9",
+                      "registry.k8s.io/nfd/node-feature-discovery:v0.16.6"
+                  ],
+                  "sizeBytes": 69405547
+              },
+              {
+                  "names": [
+                      "docker.io/openebs/linux-utils:4.1.0"
+                  ],
+                  "sizeBytes": 65541306
+              },
+              {
+                  "names": [
+                      "k8s.gcr.io/kube-scheduler:v1.29.11",
+                      "registry.k8s.io/kube-scheduler:v1.29.11"
+                  ],
+                  "sizeBytes": 61288697
+              },
+              {
+                  "names": [
+                      "k8s.gcr.io/coredns/coredns:v1.11.1",
+                      "k8s.gcr.io/coredns:v1.11.1",
+                      "registry.k8s.io/coredns/coredns:v1.11.1",
+                      "registry.k8s.io/coredns:v1.11.1"
+                  ],
+                  "sizeBytes": 61240402
+              },
+              {
+                  "names": [
+                      "ghcr.io/projectcontour/contour:v1.30.0"
+                  ],
+                  "sizeBytes": 53207021
+              },
+              {
+                  "names": [
+                      "docker.io/library/haproxy:2.9.7-alpine3.20"
+                  ],
+                  "sizeBytes": 26917938
+              },
+              {
+                  "names": [
+                      "docker.io/flannel/flannel-cni-plugin:v1.5.1-flannel2"
+                  ],
+                  "sizeBytes": 10918841
+              },
+              {
+                  "names": [
+                      "k8s.gcr.io/pause:3.9",
+                      "registry.k8s.io/pause:3.9"
+                  ],
+                  "sizeBytes": 747356
+              },
+              {
+                  "names": [
+                      "k8s.gcr.io/pause:3.6",
+                      "registry.k8s.io/pause:3.6"
+                  ],
+                  "sizeBytes": 685844
+              }
+          ],
+          "nodeInfo": {
+              "architecture": "x86_64",
+              "bootID": "b20715e0-443d-4368-9b23-10a8882c9896",
+              "containerRuntimeVersion": "containerd://1.6.33",
+              "kernelVersion": "6.8.0-1015-aws",
+              "kubeProxyVersion": "v1.29.11",
+              "kubeletVersion": "v1.29.11",
+              "machineID": "ec29e5a82f5ff79a06bc334c099a4ca4",
+              "operatingSystem": "linux",
+              "osImage": "Ubuntu 22.04.5 LTS",
+              "systemUUID": "ec29e5a8-2f5f-f79a-06bc-334c099a4ca4"
+          }
+      }
+  }
   ]
 }

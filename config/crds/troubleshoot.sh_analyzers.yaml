@@ -1239,6 +1239,10 @@ spec:
                               type: string
                             podCapacity:
                               type: string
+                            resourceAllocatable:
+                              type: string
+                            resourceName:
+                              type: string
                             selector:
                               properties:
                                 matchExpressions:
