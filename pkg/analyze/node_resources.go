@@ -193,7 +193,7 @@ func compareNodeResourceConditionalToActual(conditional string, matchingNodes []
 	property := match[2]
 	resourceName := ""
 
-	if filters != nil && filters.ResourceName != "" {
+	if filters != nil {
 		resourceName = filters.ResourceName
 	}
 
@@ -335,6 +335,12 @@ func getQuantity(node corev1.Node, property string, resourceName string) *resour
 		return node.Status.Capacity.StorageEphemeral()
 	case "ephemeralStorageAllocatable":
 		return node.Status.Allocatable.StorageEphemeral()
+	case "resourceCapacity":
+		capacity, ok := node.Status.Capacity[corev1.ResourceName(resourceName)]
+		if !ok {
+			return nil
+		}
+		return &capacity
 	case "resourceAllocatable":
 		allocatable, ok := node.Status.Allocatable[corev1.ResourceName(resourceName)]
 		if !ok {
@@ -395,16 +401,29 @@ func nodeMatchesFilters(node corev1.Node, filters *troubleshootv1beta2.NodeResou
 	}
 
 	if filters.ResourceName != "" {
+		capacity, capacityExists := node.Status.Capacity[corev1.ResourceName(filters.ResourceName)]
+		allocatable, allocatableExists := node.Status.Allocatable[corev1.ResourceName(filters.ResourceName)]
+
+		if !capacityExists && !allocatableExists {
+			return false, nil
+		}
+
+		if filters.ResourceCapacity != "" {
+			parsed, err := resource.ParseQuantity(filters.ResourceCapacity)
+			if err != nil {
+				return false, errors.Wrap(err, "failed to parse resource capacity")
+			}
+
+			// Compare the capacity value with the parsed value
+			if capacity.Cmp(parsed) == -1 {
+				return false, nil
+			}
+		}
+
 		if filters.ResourceAllocatable != "" {
 			parsed, err := resource.ParseQuantity(filters.ResourceAllocatable)
 			if err != nil {
 				return false, errors.Wrap(err, "failed to parse resource allocatable")
-			}
-
-			allocatable, ok := node.Status.Allocatable[corev1.ResourceName(filters.ResourceName)]
-			if !ok {
-				// Resource not found on the node
-				return false, nil
 			}
 
 			// Compare the allocatable value with the parsed value

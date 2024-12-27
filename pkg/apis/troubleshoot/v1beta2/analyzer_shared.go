@@ -141,6 +141,7 @@ type NodeResourceFilters struct {
 	Selector                    *NodeResourceSelectors `json:"selector,omitempty" yaml:"selector,omitempty"`
 	ResourceName                string                 `json:"resourceName,omitempty" yaml:"resourceName,omitempty"`
 	ResourceAllocatable         string                 `json:"resourceAllocatable,omitempty" yaml:"resourceAllocatable,omitempty"`
+	ResourceCapacity            string                 `json:"resourceCapacity,omitempty" yaml:"resourceCapacity,omitempty"`
 }
 
 type NodeResourceSelectors struct {

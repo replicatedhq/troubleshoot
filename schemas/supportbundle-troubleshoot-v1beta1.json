@@ -653,6 +653,9 @@
                       "resourceAllocatable": {
                         "type": "string"
                       },
+                      "resourceCapacity": {
+                        "type": "string"
+                      },
                       "resourceName": {
                         "type": "string"
                       },

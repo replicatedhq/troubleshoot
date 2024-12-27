@@ -450,6 +450,8 @@ spec:
                               type: string
                             resourceAllocatable:
                               type: string
+                            resourceCapacity:
+                              type: string
                             resourceName:
                               type: string
                             selector:
