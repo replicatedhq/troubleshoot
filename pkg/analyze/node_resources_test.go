@@ -404,7 +404,7 @@ func Test_compareNodeResourceConditionalToActual(t *testing.T) {
 			isError:        false,
 		},
 		{
-			name:        "GPU count() == 0 (true)",
+			name:        "GPU count() == 1 (false)",
 			conditional: "count() == 1",
 			filters: &troubleshootv1beta2.NodeResourceFilters{
 				ResourceName: "gpu.intel.com/i915",
@@ -677,7 +677,7 @@ func Test_nodeMatchesFilters(t *testing.T) {
 			expectResult: false,
 		},
 		{
-			name: "true when gpu is available",
+			name: "true when allocatable gpu is available",
 			node: node,
 			filters: &troubleshootv1beta2.NodeResourceFilters{
 				ResourceName:        "nvidia.com/gpu",
@@ -686,7 +686,7 @@ func Test_nodeMatchesFilters(t *testing.T) {
 			expectResult: true,
 		},
 		{
-			name: "true when gpu is available",
+			name: "true when gpu capacity is available",
 			node: node,
 			filters: &troubleshootv1beta2.NodeResourceFilters{
 				ResourceName:     "nvidia.com/gpu",
@@ -695,7 +695,7 @@ func Test_nodeMatchesFilters(t *testing.T) {
 			expectResult: true,
 		},
 		{
-			name: "false when gpu is available",
+			name: "false when no gpu is available",
 			node: node,
 			filters: &troubleshootv1beta2.NodeResourceFilters{
 				ResourceName: "gpu.intel.com/i915",
@@ -1353,7 +1353,7 @@ func Test_analyzeNodeResources(t *testing.T) {
 			},
 		},
 		{
-			name: "1 GPU in nodes filted by ResourceAllocatable", // validate that the pass message is not always shown
+			name: "1 GPU in nodes filtered by ResourceAllocatable", // validate that the pass message is not always shown
 			analyzer: &troubleshootv1beta2.NodeResources{
 				AnalyzeMeta: troubleshootv1beta2.AnalyzeMeta{
 					CheckName: "GPU filter by ResourceAllocatable",
@@ -1384,7 +1384,7 @@ func Test_analyzeNodeResources(t *testing.T) {
 			},
 		},
 		{
-			name: "1 GPU in nodes filted by ResourceCapacity", // validate that the pass message is not always shown
+			name: "1 GPU in nodes filtered by ResourceCapacity", // validate that the pass message is not always shown
 			analyzer: &troubleshootv1beta2.NodeResources{
 				AnalyzeMeta: troubleshootv1beta2.AnalyzeMeta{
 					CheckName: "GPU filter by ResourceCapacity",
