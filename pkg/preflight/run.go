@@ -20,6 +20,7 @@ import (
 	"github.com/replicatedhq/troubleshoot/pkg/constants"
 	"github.com/replicatedhq/troubleshoot/pkg/convert"
 	"github.com/replicatedhq/troubleshoot/pkg/k8sutil"
+	"github.com/replicatedhq/troubleshoot/pkg/loader"
 	"github.com/replicatedhq/troubleshoot/pkg/types"
 	"github.com/replicatedhq/troubleshoot/pkg/version"
 	"github.com/spf13/viper"
@@ -178,6 +179,13 @@ func RunPreflights(interactive bool, output string, format string, args []string
 	err = saveTSVersionToBundle(collectorResults, bundlePath)
 	if err != nil {
 		return errors.Wrap(err, "failed to save version file")
+	}
+
+	// save final preflight spec used to geneate the preflight checks
+	err = savePreflightSpecToBundle(specs, collectorResults, bundlePath)
+	if err != nil {
+		// still allow the preflight to be created
+		klog.Errorf("failed to save preflight YAML spec: %v", err)
 	}
 
 	analyzeResults, err := analyzer.AnalyzeLocal(ctx, bundlePath, analyzers, hostAnalyzers)
@@ -466,6 +474,27 @@ func parseTimeFlags(v *viper.Viper, collectors []*troubleshootv1beta2.Collect) e
 			}
 			collector.Logs.Limits.SinceTime = metav1.NewTime(sinceTime)
 		}
+	}
+	return nil
+}
+
+func savePreflightSpecToBundle(specs *loader.TroubleshootKinds, result collect.CollectorResult, bundlePath string) error {
+	yamlContent, err := specs.ToYaml()
+	if err != nil {
+		return errors.Wrap(err, "failed to convert preflight specs to yaml")
+	}
+	err = result.SaveResult(bundlePath, constants.SPEC_FILENAME, bytes.NewBuffer([]byte(yamlContent)))
+	if err != nil {
+		return errors.Wrap(err, "failed to write preflight spec to bundle")
+	}
+	// redact the final YAML spec
+	singleResult := map[string][]byte{
+		constants.SPEC_FILENAME: []byte(yamlContent),
+	}
+
+	err = collect.RedactResult(bundlePath, singleResult, nil)
+	if err != nil {
+		return errors.Wrap(err, "failed to redact final preflight yaml spec")
 	}
 	return nil
 }

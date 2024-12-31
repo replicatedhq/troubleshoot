@@ -344,7 +344,7 @@ func saveAndRedactFinalSpec(spec *troubleshootv1beta2.SupportBundleSpec, result 
 		return errors.Wrap(err, "failed to write final support bundle yaml spec")
 	}
 
-	// react the final YAML spec
+	// redact the final YAML spec
 	singleResult := map[string][]byte{
 		constants.SPEC_FILENAME: []byte(yamlContent),
 	}
