@@ -14,7 +14,7 @@ import (
 
 func Test_compareNodeResourceConditionalToActual(t *testing.T) {
 	nodeData := []corev1.Node{
-		corev1.Node{
+		{
 			TypeMeta: metav1.TypeMeta{
 				APIVersion: "v1",
 				Kind:       "Node",
@@ -28,16 +28,18 @@ func Test_compareNodeResourceConditionalToActual(t *testing.T) {
 					"ephemeral-storage": resource.MustParse("20959212Ki"),
 					"memory":            resource.MustParse("3999Ki"),
 					"pods":              resource.MustParse("15"),
+					gpuResourceName:     resource.MustParse("4"),
 				},
 				Allocatable: corev1.ResourceList{
 					"cpu":               resource.MustParse("1.5"),
 					"ephemeral-storage": resource.MustParse("19316009748"),
 					"memory":            resource.MustParse("16Ki"),
 					"pods":              resource.MustParse("14"),
+					gpuResourceName:     resource.MustParse("4"),
 				},
 			},
 		},
-		corev1.Node{
+		{
 			TypeMeta: metav1.TypeMeta{
 				APIVersion: "v1",
 				Kind:       "Node",
@@ -366,6 +368,70 @@ func Test_compareNodeResourceConditionalToActual(t *testing.T) {
 			expected:       false,
 			isError:        true,
 		},
+		{
+			name:           "sum(gpuCapacity) > 1 (true)",
+			conditional:    "sum(gpuCapacity) > 1",
+			matchingNodes:  nodeData,
+			totalNodeCount: len(nodeData),
+			expected:       true,
+			isError:        false,
+		},
+		{
+			name:           "sum(gpuCapacity) >= 8 (false)",
+			conditional:    "sum(gpuCapacity) >= 8",
+			matchingNodes:  nodeData,
+			totalNodeCount: len(nodeData),
+			expected:       false,
+			isError:        false,
+		},
+		{
+			name:           "min(gpuCapacity) > 1 (false)",
+			conditional:    "min(gpuCapacity) > 1",
+			matchingNodes:  nodeData,
+			totalNodeCount: len(nodeData),
+			expected:       false,
+			isError:        false,
+		},
+		{
+			name:           "min(gpuAllocatable) > 1 (false)",
+			conditional:    "min(gpuAllocatable) > 1",
+			matchingNodes:  nodeData,
+			totalNodeCount: len(nodeData),
+			expected:       false,
+			isError:        false,
+		},
+		{
+			name:           "max(gpuCapacity) == 4 (true)",
+			conditional:    "max(gpuCapacity) == 4",
+			matchingNodes:  nodeData,
+			totalNodeCount: len(nodeData),
+			expected:       true,
+			isError:        false,
+		},
+		{
+			name:           "max(gpuAllocatable) == 4 (true)",
+			conditional:    "max(gpuAllocatable) == 4",
+			matchingNodes:  nodeData,
+			totalNodeCount: len(nodeData),
+			expected:       true,
+			isError:        false,
+		},
+		{
+			name:           "sum(gpuAllocatable) > 1 (true)",
+			conditional:    "sum(gpuAllocatable) > 1",
+			matchingNodes:  nodeData,
+			totalNodeCount: len(nodeData),
+			expected:       true,
+			isError:        false,
+		},
+		{
+			name:           "sum(gpuAllocatable) >= 8 (false)",
+			conditional:    "sum(gpuAllocatable) >= 8",
+			matchingNodes:  nodeData,
+			totalNodeCount: len(nodeData),
+			expected:       false,
+			isError:        false,
+		},
 	}
 
 	for _, test := range tests {
@@ -404,6 +470,7 @@ func Test_nodeMatchesFilters(t *testing.T) {
 				"hugepages-2Mi":              resource.MustParse("0"),
 				"memory":                     resource.MustParse("7951376Ki"),
 				"pods":                       resource.MustParse("29"),
+				gpuResourceName:              resource.MustParse("1"),
 			},
 			Allocatable: corev1.ResourceList{
 				"attachable-volumes-aws-ebs": resource.MustParse("25"),
@@ -413,6 +480,7 @@ func Test_nodeMatchesFilters(t *testing.T) {
 				"hugepages-2Mi":              resource.MustParse("0"),
 				"memory":                     resource.MustParse("7848976Ki"),
 				"pods":                       resource.MustParse("29"),
+				gpuResourceName:              resource.MustParse("1"),
 			},
 		},
 	}
@@ -623,6 +691,38 @@ func Test_nodeMatchesFilters(t *testing.T) {
 						},
 					},
 				},
+			},
+			expectResult: false,
+		},
+		{
+			name: "true when gpu capacity is available",
+			node: node,
+			filters: &troubleshootv1beta2.NodeResourceFilters{
+				GPUCapacity: "1",
+			},
+			expectResult: true,
+		},
+		{
+			name: "true when allocatable gpu is available",
+			node: node,
+			filters: &troubleshootv1beta2.NodeResourceFilters{
+				GPUAllocatable: "1",
+			},
+			expectResult: true,
+		},
+		{
+			name: "false when gpu capacity is not available",
+			node: node,
+			filters: &troubleshootv1beta2.NodeResourceFilters{
+				GPUCapacity: "2",
+			},
+			expectResult: false,
+		},
+		{
+			name: "false when allocatable gpu is not available",
+			node: node,
+			filters: &troubleshootv1beta2.NodeResourceFilters{
+				GPUAllocatable: "2",
 			},
 			expectResult: false,
 		},
