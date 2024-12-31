@@ -929,8 +929,8 @@ github.com/vishvananda/netns v0.0.5 h1:DfiHV+j8bA32MFM7bfEunvT8IAqQ/NzSJHtcmW5zd
 github.com/vishvananda/netns v0.0.5/go.mod h1:SpkAiCQRtJ6TvvxPnOSyH3BMl6unz3xZlaprSwhNNJM=
 github.com/vladimirvivien/gexe v0.3.0 h1:4xwiOwGrDob5OMR6E92B9olDXYDglXdHhzR1ggYtWJM=
 github.com/vladimirvivien/gexe v0.3.0/go.mod h1:fp7cy60ON1xjhtEI/+bfSEIXX35qgmI+iRYlGOqbBFM=
-github.com/vmware-tanzu/velero v1.15.0 h1:+S/lNSDwQqlROGWfmNuZnnabopGmco978COIt3AP09c=
-github.com/vmware-tanzu/velero v1.15.0/go.mod h1:28VhzPJRBo91GBRkgs4Ird0fx2vCpepBWmhF+5Pn/WQ=
+github.com/vmware-tanzu/velero v1.15.1 h1:kKT4I6ZMQn+aiPYIalF+0Ui8VLbt9XK+3jwnCU09T0M=
+github.com/vmware-tanzu/velero v1.15.1/go.mod h1:bZbnBC9OcwXfsovU0uCHwPlbm3ba8N9fwvBkwnU2vls=
 github.com/x448/float16 v0.8.4 h1:qLwI1I70+NjRFUR3zs1JPUCgaCXSh3SW62uAKT1mSBM=
 github.com/x448/float16 v0.8.4/go.mod h1:14CWIYCyZA/cWjXOioeEpHeN/83MdbZDRQHoFcYsOfg=
 github.com/xeipuuv/gojsonpointer v0.0.0-20180127040702-4e3ac2762d5f/go.mod h1:N2zxlSyiKSe5eX1tZViRH5QA0qijqEDrYZiPEAiq3wU=
