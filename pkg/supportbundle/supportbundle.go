@@ -20,6 +20,7 @@ import (
 	"github.com/replicatedhq/troubleshoot/pkg/collect"
 	"github.com/replicatedhq/troubleshoot/pkg/constants"
 	"github.com/replicatedhq/troubleshoot/pkg/convert"
+	"github.com/replicatedhq/troubleshoot/pkg/loader"
 	"github.com/replicatedhq/troubleshoot/pkg/version"
 	"go.opentelemetry.io/otel"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -163,6 +164,13 @@ func CollectSupportBundleFromSpec(
 	err = result.SaveResult(bundlePath, constants.VERSION_FILENAME, bytes.NewBuffer([]byte(version)))
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to write version")
+	}
+
+	// save final YAML spec used to geneate the support bundle
+	err = saveAndRedactFinalSpec(spec, &result, bundlePath, additionalRedactors)
+	if err != nil {
+		// still allow the support bundle to be created
+		klog.Errorf("failed to save and redact final spec: %v", err)
 	}
 
 	// Run Analyzers
@@ -311,4 +319,40 @@ func getNodeList(clientset kubernetes.Interface, opts SupportBundleCreateOpts) (
 	}
 
 	return &nodeList, nil
+}
+
+func saveAndRedactFinalSpec(spec *troubleshootv1beta2.SupportBundleSpec, result *collect.CollectorResult, bundlePath string, additionalRedactors *troubleshootv1beta2.Redactor) error {
+	// generate the final YAML spec
+	k := loader.TroubleshootKinds{
+		SupportBundlesV1Beta2: []troubleshootv1beta2.SupportBundle{
+			{
+				TypeMeta: metav1.TypeMeta{
+					APIVersion: "troubleshoot.sh/v1beta2",
+					Kind:       "SupportBundle",
+				},
+				Spec: *spec,
+			},
+		},
+	}
+	yamlContent, err := k.ToYaml()
+	if err != nil {
+		return errors.Wrap(err, "failed to convert final support bundle spec to yaml")
+	}
+
+	err = result.SaveResult(bundlePath, constants.SPEC_FILENAME, bytes.NewBuffer([]byte(yamlContent)))
+	if err != nil {
+		return errors.Wrap(err, "failed to write final support bundle yaml spec")
+	}
+
+	// react the final YAML spec
+	singleResult := map[string][]byte{
+		constants.SPEC_FILENAME: []byte(yamlContent),
+	}
+
+	err = collect.RedactResult(bundlePath, singleResult, additionalRedactors.Spec.Redactors)
+	if err != nil {
+		return errors.Wrap(err, "failed to redact final support bundle yaml spec")
+	}
+
+	return nil
 }
