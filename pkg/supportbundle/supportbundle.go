@@ -349,7 +349,11 @@ func saveAndRedactFinalSpec(spec *troubleshootv1beta2.SupportBundleSpec, result 
 		constants.SPEC_FILENAME: []byte(yamlContent),
 	}
 
-	err = collect.RedactResult(bundlePath, singleResult, additionalRedactors.Spec.Redactors)
+	var redactors []*troubleshootv1beta2.Redact
+	if additionalRedactors != nil {
+		redactors = additionalRedactors.Spec.Redactors
+	}
+	err = collect.RedactResult(bundlePath, singleResult, redactors)
 	if err != nil {
 		return errors.Wrap(err, "failed to redact final support bundle yaml spec")
 	}
