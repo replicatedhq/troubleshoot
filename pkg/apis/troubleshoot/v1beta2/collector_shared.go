@@ -9,6 +9,7 @@ import (
 	authorizationv1 "k8s.io/api/authorization/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 )
 
 type CollectorMeta struct {
@@ -112,6 +113,11 @@ type RunPod struct {
 	ImagePullSecret *ImagePullSecrets `json:"imagePullSecret,omitempty" yaml:"imagePullSecret,omitempty"`
 	PodSpec         corev1.PodSpec    `json:"podSpec,omitempty" yaml:"podSpec,omitempty"`
 	Annotations     map[string]string `json:"annotations,omitempty" yaml:"annotations,omitempty"`
+	PreExecute      []PreExecuteSpec  `json:"preExecute,omitempty" yaml:"preExecute,omitempty"`
+}
+
+type PreExecuteSpec struct {
+	Resource runtime.RawExtension `json:"resource" yaml:"resource"`
 }
 
 type RunDaemonSet struct {
