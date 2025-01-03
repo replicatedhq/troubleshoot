@@ -475,8 +475,13 @@ func getRedactors(path string) ([]Redactor, error) {
 	// todo: any other TLS keys to redact?
 	tlsKeys := []string{"clientKey"}
 	for _, key := range tlsKeys {
-		yamlPath := fmt.Sprintf("spec.collectors.*.*.tls.%s", key)
-		redactors = append(redactors, NewYamlRedactor(yamlPath, constants.SPEC_FILENAME, "Redact TLS private key"))
+		yamlPaths := []string{
+			fmt.Sprintf("spec.collectors.*.*.tls.%s", key),   // Database collector
+			fmt.Sprintf("spec.collectors.*.*.*.tls.%s", key), // HTTP collector
+		}
+		for _, yamlPath := range yamlPaths {
+			redactors = append(redactors, NewYamlRedactor(yamlPath, constants.SPEC_FILENAME, "Redact TLS private key"))
+		}
 	}
 
 	return redactors, nil

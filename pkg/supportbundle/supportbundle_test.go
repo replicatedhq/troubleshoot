@@ -136,6 +136,14 @@ func Test_saveAndRedactFinalSpec(t *testing.T) {
 						ClientKey:  `PRIVATE KEY`,
 					},
 				},
+				HTTP: &troubleshootv1beta2.HTTP{
+					Get: &troubleshootv1beta2.Get{
+						URL: "http:api:3000/healthz",
+						TLS: &troubleshootv1beta2.TLSParams{
+							ClientKey: `PRIVATE KEY`,
+						},
+					},
+				},
 			},
 		},
 	}
@@ -157,6 +165,11 @@ spec:
         cacert: CA CERT
         clientCert: CLIENT CERT
         clientKey: "***HIDDEN***"
+    http:
+      get:
+        url: http:api:3000/healthz
+        tls:
+          clientKey: "***HIDDEN***"
 status: {}
 `
 
