@@ -130,6 +130,11 @@ func Test_saveAndRedactFinalSpec(t *testing.T) {
 				ClusterResources: &troubleshootv1beta2.ClusterResources{},
 				Postgres: &troubleshootv1beta2.Database{
 					URI: "postgresql://user:password@hostname:5432/defaultdb?sslmode=require",
+					TLS: &troubleshootv1beta2.TLSParams{
+						CACert:     `CA CERT`,
+						ClientCert: `CLIENT CERT`,
+						ClientKey:  `PRIVATE KEY`,
+					},
 				},
 			},
 		},
@@ -147,8 +152,13 @@ spec:
   - clusterInfo: {}
     clusterResources: {}
     postgres:
-     uri: postgresql://***HIDDEN***:***HIDDEN***@***HIDDEN***:5432/***HIDDEN***
-status: {}`
+      uri: postgresql://***HIDDEN***:***HIDDEN***@***HIDDEN***:5432/***HIDDEN***
+      tls:
+        cacert: CA CERT
+        clientCert: CLIENT CERT
+        clientKey: "***HIDDEN***"
+status: {}
+`
 
 	err := saveAndRedactFinalSpec(spec, &result, bundlePath, nil)
 	if err != nil {

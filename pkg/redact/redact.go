@@ -470,6 +470,15 @@ func getRedactors(path string) ([]Redactor, error) {
 		}
 	}
 
+	// redact final YAML spec used to generate the support bundle/preflight
+	// redact TLS private key if any
+	// todo: any other TLS keys to redact?
+	tlsKeys := []string{"clientKey"}
+	for _, key := range tlsKeys {
+		yamlPath := fmt.Sprintf("spec.collectors.*.*.tls.%s", key)
+		redactors = append(redactors, NewYamlRedactor(yamlPath, constants.SPEC_FILENAME, "Redact TLS private key"))
+	}
+
 	return redactors, nil
 }
 
