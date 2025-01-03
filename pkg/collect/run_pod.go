@@ -22,8 +22,10 @@ import (
 	"k8s.io/klog/v2"
 
 	kuberneteserrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/client-go/discovery"
@@ -70,8 +72,8 @@ func (c *CollectRunPod) Collect(progressChan chan<- interface{}) (result Collect
 
 	// Execute pre-execute resources
 	if len(c.Collector.PreExecute) > 0 {
-		for _, preExec := range c.Collector.PreExecute {
-			ref, err := executePreResource(ctx, dynamicClient, c.ClientConfig, c.Collector.Namespace, &preExec)
+		for _, rawResource := range c.Collector.PreExecute {
+			ref, err := executePreResource(ctx, dynamicClient, c.ClientConfig, c.Collector.Namespace, &rawResource)
 			if err != nil {
 				// Clean up any resources that were created before the error
 				cleanupPreExecuteResources(ctx, dynamicClient, createdResources)
@@ -501,83 +503,75 @@ type resourceRef struct {
 	Name                 string
 }
 
-func executePreResource(ctx context.Context, client dynamic.Interface, clientConfig *rest.Config, namespace string, preExec *troubleshootv1beta2.PreExecuteSpec) (resourceRef, error) {
-	// Convert RawExtension to Unstructured
+func isNamespacedResource(dc discovery.DiscoveryInterface, mapping *meta.RESTMapping) (bool, error) {
+	resources, err := dc.ServerResourcesForGroupVersion(mapping.GroupVersionKind.GroupVersion().String())
+	if err != nil {
+		return false, errors.Wrap(err, "failed to get resources for group version")
+	}
+
+	for _, r := range resources.APIResources {
+		if r.Name == mapping.Resource.Resource {
+			return r.Namespaced, nil
+		}
+	}
+
+	return false, errors.New("resource type not found in api resources")
+}
+
+func executePreResource(ctx context.Context, client dynamic.Interface, clientConfig *rest.Config, namespace string, rawResource *runtime.RawExtension) (resourceRef, error) {
 	var obj unstructured.Unstructured
-	if err := json.Unmarshal(preExec.Resource.Raw, &obj); err != nil {
+	if err := json.Unmarshal(rawResource.Raw, &obj); err != nil {
 		return resourceRef{}, errors.Wrap(err, "failed to unmarshal pre-execute resource")
 	}
 
-	// Ensure namespace is set before any operations
-	if obj.GetNamespace() == "" {
-		if namespace == "" {
-			namespace = "default" // Fallback to default namespace if none provided
-		}
-		obj.SetNamespace(namespace)
-	}
-
-	klog.V(2).Infof("Attempting to create resource: Kind=%s, APIVersion=%s, Name=%s, Namespace=%s",
-		obj.GetKind(),
-		obj.GetAPIVersion(),
-		obj.GetName(),
-		obj.GetNamespace())
-
-	// Create discovery client and REST mapper
 	dc, err := discovery.NewDiscoveryClientForConfig(clientConfig)
 	if err != nil {
 		return resourceRef{}, errors.Wrap(err, "failed to create discovery client")
 	}
 	mapper := restmapper.NewDeferredDiscoveryRESTMapper(memory.NewMemCacheClient(dc))
 
-	// Get the GVR for the resource
 	gvk := obj.GroupVersionKind()
 	mapping, err := mapper.RESTMapping(gvk.GroupKind(), gvk.Version)
 	if err != nil {
 		return resourceRef{}, errors.Wrap(err, "failed to get REST mapping")
 	}
 
-	// Log the mapping details
-	klog.V(2).Infof("Resource mapping: Group=%s, Version=%s, Resource=%s",
-		mapping.Resource.Group,
-		mapping.Resource.Version,
-		mapping.Resource.Resource)
-
-	// Create the resource
-	if obj.GetNamespace() == "" {
-		obj.SetNamespace(namespace)
-	}
-
-	created, err := client.Resource(mapping.Resource).Namespace(obj.GetNamespace()).Create(ctx, &obj, metav1.CreateOptions{})
+	isNamespaced, err := isNamespacedResource(dc, mapping)
 	if err != nil {
-		// Log more details about the error
-		klog.Errorf("Failed to create resource: %v", err)
-		return resourceRef{}, errors.Wrap(err, "failed to create pre-execute resource")
+		return resourceRef{}, errors.Wrap(err, "failed to check if resource is namespaced")
 	}
 
-	ref := resourceRef{
+	if isNamespaced {
+		if obj.GetNamespace() == "" {
+			if namespace == "" {
+				namespace = "default"
+			}
+			obj.SetNamespace(namespace)
+		}
+	} else {
+		obj.SetNamespace("")
+	}
+
+	var created *unstructured.Unstructured
+	if isNamespaced {
+		created, err = client.Resource(mapping.Resource).Namespace(obj.GetNamespace()).Create(ctx, &obj, metav1.CreateOptions{})
+	} else {
+		created, err = client.Resource(mapping.Resource).Create(ctx, &obj, metav1.CreateOptions{})
+	}
+
+	if err != nil {
+		msg := "failed to create pre-execute resource"
+		if kuberneteserrors.IsAlreadyExists(err) {
+			msg = fmt.Sprintf("resource %s/%s of type %s already exists", obj.GetNamespace(), obj.GetName(), mapping.Resource.Resource)
+		}
+		return resourceRef{}, errors.Wrap(err, msg)
+	}
+
+	return resourceRef{
 		GroupVersionResource: mapping.Resource,
 		Namespace:            created.GetNamespace(),
 		Name:                 created.GetName(),
-	}
-
-	// Try listing resources first to check permissions
-	_, err = client.Resource(mapping.Resource).Namespace(obj.GetNamespace()).List(ctx, metav1.ListOptions{})
-	if err != nil {
-		klog.Errorf("Permission check failed - cannot list resources: %v", err)
-	}
-
-	// After getting the discovery client, list available resources
-	resources, err := dc.ServerResourcesForGroupVersion(gvk.GroupVersion().String())
-	if err != nil {
-		klog.Errorf("Failed to get resources for group version %s: %v", gvk.GroupVersion().String(), err)
-	} else {
-		klog.V(2).Infof("Available resources for %s:", gvk.GroupVersion().String())
-		for _, r := range resources.APIResources {
-			klog.V(2).Infof("  - %s (namespaced: %v)", r.Name, r.Namespaced)
-		}
-	}
-
-	return ref, nil
+	}, nil
 }
 
 func cleanupPreExecuteResources(ctx context.Context, client dynamic.Interface, resources []resourceRef) error {

@@ -107,17 +107,13 @@ type Run struct {
 
 type RunPod struct {
 	CollectorMeta   `json:",inline" yaml:",inline"`
-	Name            string            `json:"name,omitempty" yaml:"name,omitempty"`
-	Namespace       string            `json:"namespace" yaml:"namespace"`
-	Timeout         string            `json:"timeout,omitempty" yaml:"timeout,omitempty"`
-	ImagePullSecret *ImagePullSecrets `json:"imagePullSecret,omitempty" yaml:"imagePullSecret,omitempty"`
-	PodSpec         corev1.PodSpec    `json:"podSpec,omitempty" yaml:"podSpec,omitempty"`
-	Annotations     map[string]string `json:"annotations,omitempty" yaml:"annotations,omitempty"`
-	PreExecute      []PreExecuteSpec  `json:"preExecute,omitempty" yaml:"preExecute,omitempty"`
-}
-
-type PreExecuteSpec struct {
-	Resource runtime.RawExtension `json:"resource" yaml:"resource"`
+	Name            string                 `json:"name,omitempty" yaml:"name,omitempty"`
+	Namespace       string                 `json:"namespace" yaml:"namespace"`
+	Timeout         string                 `json:"timeout,omitempty" yaml:"timeout,omitempty"`
+	ImagePullSecret *ImagePullSecrets      `json:"imagePullSecret,omitempty" yaml:"imagePullSecret,omitempty"`
+	PodSpec         corev1.PodSpec         `json:"podSpec,omitempty" yaml:"podSpec,omitempty"`
+	Annotations     map[string]string      `json:"annotations,omitempty" yaml:"annotations,omitempty"`
+	PreExecute      []runtime.RawExtension `json:"preExecute,omitempty"`
 }
 
 type RunDaemonSet struct {
