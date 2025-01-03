@@ -34,6 +34,7 @@ func Test_compareNodeResourceConditionalToActual(t *testing.T) {
 					"ephemeral-storage": resource.MustParse("19316009748"),
 					"memory":            resource.MustParse("16Ki"),
 					"pods":              resource.MustParse("14"),
+					"nvidia.com/gpu":    resource.MustParse("1"),
 				},
 			},
 		},
@@ -57,6 +58,7 @@ func Test_compareNodeResourceConditionalToActual(t *testing.T) {
 					"ephemeral-storage": resource.MustParse("12316009748"),
 					"memory":            resource.MustParse("7848976Ki"),
 					"pods":              resource.MustParse("12"),
+					"nvidia.com/gpu":    resource.MustParse("1"),
 				},
 			},
 		},
@@ -65,6 +67,7 @@ func Test_compareNodeResourceConditionalToActual(t *testing.T) {
 	tests := []struct {
 		name           string
 		conditional    string
+		filters        *troubleshootv1beta2.NodeResourceFilters
 		totalNodeCount int
 		matchingNodes  []corev1.Node
 		expected       bool
@@ -366,13 +369,58 @@ func Test_compareNodeResourceConditionalToActual(t *testing.T) {
 			expected:       false,
 			isError:        true,
 		},
+		{
+			name:        "GPU min(resourceAllocatable) == 1 (true)",
+			conditional: "min(resourceAllocatable) == 1",
+			filters: &troubleshootv1beta2.NodeResourceFilters{
+				ResourceName: "nvidia.com/gpu",
+			},
+			matchingNodes:  nodeData,
+			totalNodeCount: len(nodeData),
+			expected:       true,
+			isError:        false,
+		},
+		{
+			name:        "GPU max(resourceAllocatable) > 1 (false)",
+			conditional: "max(resourceAllocatable) > 1",
+			filters: &troubleshootv1beta2.NodeResourceFilters{
+				ResourceName: "nvidia.com/gpu",
+			},
+			matchingNodes:  nodeData,
+			totalNodeCount: 0,
+			expected:       false,
+			isError:        false,
+		},
+		{
+			name:        "GPU count() == 2 (true)",
+			conditional: "count() == 2",
+			filters: &troubleshootv1beta2.NodeResourceFilters{
+				ResourceName:        "nvidia.com/gpu",
+				ResourceAllocatable: "1",
+			},
+			matchingNodes:  nodeData,
+			totalNodeCount: len(nodeData),
+			expected:       true,
+			isError:        false,
+		},
+		{
+			name:        "GPU count() == 1 (false)",
+			conditional: "count() == 1",
+			filters: &troubleshootv1beta2.NodeResourceFilters{
+				ResourceName: "gpu.intel.com/i915",
+			},
+			matchingNodes:  nodeData,
+			totalNodeCount: 0,
+			expected:       false,
+			isError:        false,
+		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			req := require.New(t)
 
-			actual, err := compareNodeResourceConditionalToActual(test.conditional, test.matchingNodes)
+			actual, err := compareNodeResourceConditionalToActual(test.conditional, test.matchingNodes, test.filters)
 			if test.isError {
 				req.Error(err)
 			} else {
@@ -404,6 +452,7 @@ func Test_nodeMatchesFilters(t *testing.T) {
 				"hugepages-2Mi":              resource.MustParse("0"),
 				"memory":                     resource.MustParse("7951376Ki"),
 				"pods":                       resource.MustParse("29"),
+				"nvidia.com/gpu":             resource.MustParse("1"),
 			},
 			Allocatable: corev1.ResourceList{
 				"attachable-volumes-aws-ebs": resource.MustParse("25"),
@@ -413,6 +462,7 @@ func Test_nodeMatchesFilters(t *testing.T) {
 				"hugepages-2Mi":              resource.MustParse("0"),
 				"memory":                     resource.MustParse("7848976Ki"),
 				"pods":                       resource.MustParse("29"),
+				"nvidia.com/gpu":             resource.MustParse("1"),
 			},
 		},
 	}
@@ -623,6 +673,32 @@ func Test_nodeMatchesFilters(t *testing.T) {
 						},
 					},
 				},
+			},
+			expectResult: false,
+		},
+		{
+			name: "true when allocatable gpu is available",
+			node: node,
+			filters: &troubleshootv1beta2.NodeResourceFilters{
+				ResourceName:        "nvidia.com/gpu",
+				ResourceAllocatable: "1",
+			},
+			expectResult: true,
+		},
+		{
+			name: "true when gpu capacity is available",
+			node: node,
+			filters: &troubleshootv1beta2.NodeResourceFilters{
+				ResourceName:     "nvidia.com/gpu",
+				ResourceCapacity: "1",
+			},
+			expectResult: true,
+		},
+		{
+			name: "false when no gpu is available",
+			node: node,
+			filters: &troubleshootv1beta2.NodeResourceFilters{
+				ResourceName: "gpu.intel.com/i915",
 			},
 			expectResult: false,
 		},
@@ -1239,6 +1315,165 @@ func Test_analyzeNodeResources(t *testing.T) {
 				IsWarn:  false,
 				Title:   "no outcome",
 				Message: "",
+				URI:     "",
+				IconKey: "kubernetes_node_resources",
+				IconURI: "https://troubleshoot.sh/images/analyzer-icons/node-resources.svg?w=16&h=18",
+			},
+		},
+
+		{
+			name: "1 GPU in nodes", // validate that the pass message is not always shown
+			analyzer: &troubleshootv1beta2.NodeResources{
+				AnalyzeMeta: troubleshootv1beta2.AnalyzeMeta{
+					CheckName: "GPU filter",
+				},
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							When:    "count() >= 1",
+							Message: "There is a node with at least 1 GPU",
+							URI:     "",
+						},
+					},
+				},
+				Filters: &troubleshootv1beta2.NodeResourceFilters{
+					ResourceName:        "nvidia.com/gpu",
+					ResourceAllocatable: "1",
+				},
+			},
+			want: &AnalyzeResult{
+				IsPass:  true,
+				IsFail:  false,
+				IsWarn:  false,
+				Title:   "GPU filter",
+				Message: "There is a node with at least 1 GPU",
+				URI:     "",
+				IconKey: "kubernetes_node_resources",
+				IconURI: "https://troubleshoot.sh/images/analyzer-icons/node-resources.svg?w=16&h=18",
+			},
+		},
+		{
+			name: "1 GPU in nodes filtered by ResourceAllocatable", // validate that the pass message is not always shown
+			analyzer: &troubleshootv1beta2.NodeResources{
+				AnalyzeMeta: troubleshootv1beta2.AnalyzeMeta{
+					CheckName: "GPU filter by ResourceAllocatable",
+				},
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							When:    "count() >= 1",
+							Message: "There is a node with at least 1 GPU",
+							URI:     "",
+						},
+					},
+				},
+				Filters: &troubleshootv1beta2.NodeResourceFilters{
+					ResourceName:        "nvidia.com/gpu",
+					ResourceAllocatable: "1",
+				},
+			},
+			want: &AnalyzeResult{
+				IsPass:  true,
+				IsFail:  false,
+				IsWarn:  false,
+				Title:   "GPU filter by ResourceAllocatable",
+				Message: "There is a node with at least 1 GPU",
+				URI:     "",
+				IconKey: "kubernetes_node_resources",
+				IconURI: "https://troubleshoot.sh/images/analyzer-icons/node-resources.svg?w=16&h=18",
+			},
+		},
+		{
+			name: "1 GPU in nodes filtered by ResourceCapacity", // validate that the pass message is not always shown
+			analyzer: &troubleshootv1beta2.NodeResources{
+				AnalyzeMeta: troubleshootv1beta2.AnalyzeMeta{
+					CheckName: "GPU filter by ResourceCapacity",
+				},
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							When:    "count() >= 1",
+							Message: "There is a node with at least 1 GPU",
+							URI:     "",
+						},
+					},
+				},
+				Filters: &troubleshootv1beta2.NodeResourceFilters{
+					ResourceName:     "nvidia.com/gpu",
+					ResourceCapacity: "1",
+				},
+			},
+			want: &AnalyzeResult{
+				IsPass:  true,
+				IsFail:  false,
+				IsWarn:  false,
+				Title:   "GPU filter by ResourceCapacity",
+				Message: "There is a node with at least 1 GPU",
+				URI:     "",
+				IconKey: "kubernetes_node_resources",
+				IconURI: "https://troubleshoot.sh/images/analyzer-icons/node-resources.svg?w=16&h=18",
+			},
+		},
+		{
+			name: "Sum 1 GPU in nodes", // validate that the pass message is not always shown
+			analyzer: &troubleshootv1beta2.NodeResources{
+				AnalyzeMeta: troubleshootv1beta2.AnalyzeMeta{
+					CheckName: "GPU sum",
+				},
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							When:    "sum(resourceAllocatable) >= 1",
+							Message: "There is a node with at least 1 GPU",
+							URI:     "",
+						},
+					},
+				},
+				Filters: &troubleshootv1beta2.NodeResourceFilters{
+					ResourceName:        "nvidia.com/gpu",
+					ResourceAllocatable: "1",
+				},
+			},
+			want: &AnalyzeResult{
+				IsPass:  true,
+				IsFail:  false,
+				IsWarn:  false,
+				Title:   "GPU sum",
+				Message: "There is a node with at least 1 GPU",
+				URI:     "",
+				IconKey: "kubernetes_node_resources",
+				IconURI: "https://troubleshoot.sh/images/analyzer-icons/node-resources.svg?w=16&h=18",
+			},
+		},
+		{
+			name: "Count 0 Intel GPU in nodes", // validate that the pass message is not always shown
+			analyzer: &troubleshootv1beta2.NodeResources{
+				AnalyzeMeta: troubleshootv1beta2.AnalyzeMeta{
+					CheckName: "GPU Intel Count",
+				},
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							When:    "count() >= 1",
+							Message: "There is a node with at least 1 Intel GPU",
+							URI:     "",
+						},
+						Fail: &troubleshootv1beta2.SingleOutcome{
+							Message: "There is no node with at least 1 Intel GPU",
+							URI:     "",
+						},
+					},
+				},
+				Filters: &troubleshootv1beta2.NodeResourceFilters{
+					ResourceName: "gpu.intel.com/i915",
+				},
+			},
+			want: &AnalyzeResult{
+				IsPass:  false,
+				IsFail:  true,
+				IsWarn:  false,
+				Title:   "GPU Intel Count",
+				Message: "There is no node with at least 1 Intel GPU",
 				URI:     "",
 				IconKey: "kubernetes_node_resources",
 				IconURI: "https://troubleshoot.sh/images/analyzer-icons/node-resources.svg?w=16&h=18",

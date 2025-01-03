@@ -85,7 +85,8 @@ func (a *AnalyzeNodeResources) analyzeNodeResources(analyzer *troubleshootv1beta
 
 	for _, outcome := range analyzer.Outcomes {
 		if outcome.Fail != nil {
-			isWhenMatch, err := compareNodeResourceConditionalToActual(outcome.Fail.When, matchingNodes)
+			isWhenMatch, err := compareNodeResourceConditionalToActual(outcome.Fail.When, matchingNodes, analyzer.Filters)
+
 			if err != nil {
 				return nil, errors.Wrap(err, "failed to parse when")
 			}
@@ -100,7 +101,7 @@ func (a *AnalyzeNodeResources) analyzeNodeResources(analyzer *troubleshootv1beta
 				return result, nil
 			}
 		} else if outcome.Warn != nil {
-			isWhenMatch, err := compareNodeResourceConditionalToActual(outcome.Warn.When, matchingNodes)
+			isWhenMatch, err := compareNodeResourceConditionalToActual(outcome.Warn.When, matchingNodes, analyzer.Filters)
 			if err != nil {
 				return nil, errors.Wrap(err, "failed to parse when")
 			}
@@ -116,7 +117,7 @@ func (a *AnalyzeNodeResources) analyzeNodeResources(analyzer *troubleshootv1beta
 				return result, nil
 			}
 		} else if outcome.Pass != nil {
-			isWhenMatch, err := compareNodeResourceConditionalToActual(outcome.Pass.When, matchingNodes)
+			isWhenMatch, err := compareNodeResourceConditionalToActual(outcome.Pass.When, matchingNodes, analyzer.Filters)
 			if err != nil {
 				return nil, errors.Wrap(err, "failed to parse when")
 			}
@@ -137,7 +138,7 @@ func (a *AnalyzeNodeResources) analyzeNodeResources(analyzer *troubleshootv1beta
 	return result, nil
 }
 
-func compareNodeResourceConditionalToActual(conditional string, matchingNodes []corev1.Node) (res bool, err error) {
+func compareNodeResourceConditionalToActual(conditional string, matchingNodes []corev1.Node, filters *troubleshootv1beta2.NodeResourceFilters) (res bool, err error) {
 	res = false
 	err = nil
 
@@ -190,6 +191,11 @@ func compareNodeResourceConditionalToActual(conditional string, matchingNodes []
 
 	function := match[1]
 	property := match[2]
+	resourceName := ""
+
+	if filters != nil {
+		resourceName = filters.ResourceName
+	}
 
 	var actualValue interface{}
 
@@ -197,11 +203,11 @@ func compareNodeResourceConditionalToActual(conditional string, matchingNodes []
 	case "count":
 		actualValue = len(matchingNodes)
 	case "min":
-		actualValue = findMin(matchingNodes, property)
+		actualValue = findMin(matchingNodes, property, resourceName)
 	case "max":
-		actualValue = findMax(matchingNodes, property)
+		actualValue = findMax(matchingNodes, property, resourceName)
 	case "sum":
-		actualValue = findSum(matchingNodes, property)
+		actualValue = findSum(matchingNodes, property, resourceName)
 	case "nodeCondition":
 		operatorChecker := regexp.MustCompile(`={1,3}`)
 		if !operatorChecker.MatchString(operator) {
@@ -311,7 +317,7 @@ func compareNodeResourceConditionalToActual(conditional string, matchingNodes []
 	return
 }
 
-func getQuantity(node corev1.Node, property string) *resource.Quantity {
+func getQuantity(node corev1.Node, property string, resourceName string) *resource.Quantity {
 	switch property {
 	case "cpuCapacity":
 		return node.Status.Capacity.Cpu()
@@ -329,15 +335,27 @@ func getQuantity(node corev1.Node, property string) *resource.Quantity {
 		return node.Status.Capacity.StorageEphemeral()
 	case "ephemeralStorageAllocatable":
 		return node.Status.Allocatable.StorageEphemeral()
+	case "resourceCapacity":
+		capacity, ok := node.Status.Capacity[corev1.ResourceName(resourceName)]
+		if !ok {
+			return nil
+		}
+		return &capacity
+	case "resourceAllocatable":
+		allocatable, ok := node.Status.Allocatable[corev1.ResourceName(resourceName)]
+		if !ok {
+			return nil
+		}
+		return &allocatable
 	}
 	return nil
 }
 
-func findSum(nodes []corev1.Node, property string) *resource.Quantity {
+func findSum(nodes []corev1.Node, property string, resourceName string) *resource.Quantity {
 	sum := resource.Quantity{}
 
 	for _, node := range nodes {
-		if quant := getQuantity(node, property); quant != nil {
+		if quant := getQuantity(node, property, resourceName); quant != nil {
 			sum.Add(*quant)
 		}
 	}
@@ -345,11 +363,11 @@ func findSum(nodes []corev1.Node, property string) *resource.Quantity {
 	return &sum
 }
 
-func findMin(nodes []corev1.Node, property string) *resource.Quantity {
+func findMin(nodes []corev1.Node, property string, resourceName string) *resource.Quantity {
 	var min *resource.Quantity
 
 	for _, node := range nodes {
-		if quant := getQuantity(node, property); quant != nil {
+		if quant := getQuantity(node, property, resourceName); quant != nil {
 			if min == nil {
 				min = quant
 			} else if quant.Cmp(*min) == -1 {
@@ -361,11 +379,11 @@ func findMin(nodes []corev1.Node, property string) *resource.Quantity {
 	return min
 }
 
-func findMax(nodes []corev1.Node, property string) *resource.Quantity {
+func findMax(nodes []corev1.Node, property string, resourceName string) *resource.Quantity {
 	var max *resource.Quantity
 
 	for _, node := range nodes {
-		if quant := getQuantity(node, property); quant != nil {
+		if quant := getQuantity(node, property, resourceName); quant != nil {
 			if max == nil {
 				max = quant
 			} else if quant.Cmp(*max) == 1 {
@@ -380,6 +398,39 @@ func findMax(nodes []corev1.Node, property string) *resource.Quantity {
 func nodeMatchesFilters(node corev1.Node, filters *troubleshootv1beta2.NodeResourceFilters) (bool, error) {
 	if filters == nil {
 		return true, nil
+	}
+
+	if filters.ResourceName != "" {
+		capacity, capacityExists := node.Status.Capacity[corev1.ResourceName(filters.ResourceName)]
+		allocatable, allocatableExists := node.Status.Allocatable[corev1.ResourceName(filters.ResourceName)]
+
+		if !capacityExists && !allocatableExists {
+			return false, nil
+		}
+
+		if filters.ResourceCapacity != "" {
+			parsed, err := resource.ParseQuantity(filters.ResourceCapacity)
+			if err != nil {
+				return false, errors.Wrap(err, "failed to parse resource capacity")
+			}
+
+			// Compare the capacity value with the parsed value
+			if capacity.Cmp(parsed) == -1 {
+				return false, nil
+			}
+		}
+
+		if filters.ResourceAllocatable != "" {
+			parsed, err := resource.ParseQuantity(filters.ResourceAllocatable)
+			if err != nil {
+				return false, errors.Wrap(err, "failed to parse resource allocatable")
+			}
+
+			// Compare the allocatable value with the parsed value
+			if allocatable.Cmp(parsed) == -1 {
+				return false, nil
+			}
+		}
 	}
 
 	// all filters must pass for this to pass
