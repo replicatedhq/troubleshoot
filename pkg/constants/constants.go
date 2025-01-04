@@ -11,8 +11,6 @@ const (
 	DEFAULT_CLIENT_USER_AGENT = "ReplicatedTroubleshoot"
 	// VERSION_FILENAME is the name of the file that contains the support bundle version.
 	VERSION_FILENAME = "version.yaml"
-	// SPEC_FILENAME is the name of the file that contains the support bundle/preflight spec.
-	SPEC_FILENAME = "spec.yaml"
 	// DEFAULT_LOGS_COLLECTOR_TIMEOUT is the default timeout for logs collector.
 	DEFAULT_LOGS_COLLECTOR_TIMEOUT = 60 * time.Second
 	// MAX_TIME_TO_WAIT_FOR_POD_DELETION is the maximum time to wait for pod deletion.

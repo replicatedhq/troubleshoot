@@ -1,17 +1,10 @@
 package supportbundle
 
 import (
-	"os"
-	"path/filepath"
 	"reflect"
 	"testing"
 
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
-	"github.com/replicatedhq/troubleshoot/pkg/collect"
-	"github.com/replicatedhq/troubleshoot/pkg/constants"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"gopkg.in/yaml.v2"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
@@ -120,71 +113,4 @@ func Test_getNodeList(t *testing.T) {
 			}
 		})
 	}
-}
-
-func Test_saveAndRedactFinalSpec(t *testing.T) {
-	spec := &troubleshootv1beta2.SupportBundleSpec{
-		Collectors: []*troubleshootv1beta2.Collect{
-			{
-				ClusterInfo:      &troubleshootv1beta2.ClusterInfo{},
-				ClusterResources: &troubleshootv1beta2.ClusterResources{},
-				Postgres: &troubleshootv1beta2.Database{
-					URI: "postgresql://user:password@hostname:5432/defaultdb?sslmode=require",
-					TLS: &troubleshootv1beta2.TLSParams{
-						CACert:     `CA CERT`,
-						ClientCert: `CLIENT CERT`,
-						ClientKey:  `PRIVATE KEY`,
-					},
-				},
-				HTTP: &troubleshootv1beta2.HTTP{
-					Get: &troubleshootv1beta2.Get{
-						URL: "http:api:3000/healthz",
-						TLS: &troubleshootv1beta2.TLSParams{
-							ClientKey: `PRIVATE KEY`,
-						},
-					},
-				},
-			},
-		},
-	}
-
-	result := make(collect.CollectorResult)
-	bundlePath := t.TempDir()
-	expectedYAML := `
-apiVersion: troubleshoot.sh/v1beta2
-kind: SupportBundle
-metadata:
-  creationTimestamp: null
-spec:
-  collectors:
-  - clusterInfo: {}
-    clusterResources: {}
-    postgres:
-      uri: postgresql://***HIDDEN***:***HIDDEN***@***HIDDEN***:5432/***HIDDEN***
-      tls:
-        cacert: CA CERT
-        clientCert: CLIENT CERT
-        clientKey: "***HIDDEN***"
-    http:
-      get:
-        url: http:api:3000/healthz
-        tls:
-          clientKey: "***HIDDEN***"
-status: {}
-`
-
-	err := saveAndRedactFinalSpec(spec, &result, bundlePath, nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	actualYAML, err := os.ReadFile(filepath.Join(bundlePath, constants.SPEC_FILENAME))
-	require.NoError(t, err)
-
-	var expectedData, actualData interface{}
-	err = yaml.Unmarshal([]byte(expectedYAML), &expectedData)
-	require.NoError(t, err)
-	err = yaml.Unmarshal(actualYAML, &actualData)
-	require.NoError(t, err)
-	assert.Equal(t, expectedData, actualData)
 }
