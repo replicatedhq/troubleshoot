@@ -417,3 +417,21 @@ spec:
 	assert.NotNil(t, sb.Spec.Collectors[1].ConfigMap) // come from the original spec
 	assert.Nil(t, sb.Spec.Collectors[1].Logs)         // come from the URI spec
 }
+
+func Test_loadInvalidURISpec(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(`invalid spec`))
+	}))
+	defer srv.Close()
+
+	// update URI spec with the server URL
+	orig := strings.ReplaceAll(templSpec(), "$MY_URI", srv.URL)
+	specFile := testutils.ServeFromFilePath(t, orig)
+
+	ctx := context.Background()
+	client := testclient.NewSimpleClientset()
+	sb, _, err := loadSpecs(ctx, []string{specFile}, client)
+	require.NoError(t, err)
+	assert.Len(t, sb.Spec.Collectors, 3)              // default + clusterInfo + clusterResources
+	assert.NotNil(t, sb.Spec.Collectors[0].ConfigMap) // come from the original spec
+}
