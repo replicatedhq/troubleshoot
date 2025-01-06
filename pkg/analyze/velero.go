@@ -545,9 +545,9 @@ func analyzeRestores(restores []*velerov1.Restore, count int) []*AnalyzeResult {
 			velerov1.RestorePhaseFailedValidation: true,
 		}
 
-		failureReasons := []string{
-			"found a restore with status \"InProgress\" during the server starting, mark it as \"Failed\"",
-		}
+		// failureReasons := []string{
+		// 	"found a restore with status \"InProgress\" during the server starting, mark it as \"Failed\"",
+		// }
 
 		for _, restore := range restores {
 			if failedPhases[restore.Status.Phase] {
