@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	appsV1 "k8s.io/api/apps/v1"
@@ -63,6 +64,17 @@ func (a *AnalyzeVelero) veleroStatus(analyzer *troubleshootv1beta2.VeleroAnalyze
 	compareResult := semver.Compare(veleroVersion, "1.10.0")
 	if compareResult < 0 {
 		oldVeleroRepoType = true
+	}
+
+	// default to only the most recent Backup and Restore object if not specified in the analyzer spec
+	backupCount := analyzer.BackupsCount
+	if backupCount <= 0 {
+		backupCount = 1
+	}
+
+	restoreCount := analyzer.RestoresCount
+	if restoreCount <= 0 {
+		restoreCount = 1
 	}
 
 	if oldVeleroRepoType == true {
@@ -276,12 +288,12 @@ func (a *AnalyzeVelero) veleroStatus(analyzer *troubleshootv1beta2.VeleroAnalyze
 
 	results = append(results, analyzeLogs(nodeAgentlogs, "node-agent*")...)
 	results = append(results, analyzeLogs(veleroLogs, "velero*")...)
-	results = append(results, analyzeBackups(backups)...)
+	results = append(results, analyzeBackups(backups, backupCount)...)
 	results = append(results, analyzeBackupStorageLocations(backupStorageLocations)...)
 	results = append(results, analyzeDeleteBackupRequests(deleteBackupRequests)...)
 	results = append(results, analyzePodVolumeBackups(podVolumeBackups)...)
 	results = append(results, analyzePodVolumeRestores(podVolumeRestores)...)
-	results = append(results, analyzeRestores(restores)...)
+	results = append(results, analyzeRestores(restores, restoreCount)...)
 	results = append(results, analyzeSchedules(schedules)...)
 	results = append(results, analyzeVolumeSnapshotLocations(volumeSnapshotLocations)...)
 
@@ -357,8 +369,18 @@ func analyzeResticRepositories(resticRepositories []*restic_types.ResticReposito
 	return results
 }
 
-func analyzeBackups(backups []*velerov1.Backup) []*AnalyzeResult {
+func analyzeBackups(backups []*velerov1.Backup, count int) []*AnalyzeResult {
 	results := []*AnalyzeResult{}
+
+	// Sort backups by StartTimestamp in descending order
+	sort.SliceStable(backups, func(i, j int) bool {
+		return backups[i].Status.StartTimestamp.After(backups[j].Status.StartTimestamp.Time)
+	})
+
+	// Limit to the most recent backupCount items
+	if len(backups) > count {
+		backups = backups[:count]
+	}
 
 	failedPhases := map[velerov1.BackupPhase]bool{
 		velerov1.BackupPhaseFailed:           true,
@@ -501,9 +523,19 @@ func analyzePodVolumeRestores(podVolumeRestores []*velerov1.PodVolumeRestore) []
 	return results
 }
 
-func analyzeRestores(restores []*velerov1.Restore) []*AnalyzeResult {
+func analyzeRestores(restores []*velerov1.Restore, count int) []*AnalyzeResult {
 	results := []*AnalyzeResult{}
 	failures := 0
+
+	// Sort restores by StartTimestamp in descending order
+	sort.SliceStable(restores, func(i, j int) bool {
+		return restores[i].Status.StartTimestamp.After(restores[j].Status.StartTimestamp.Time)
+	})
+
+	// Limit to the most recent restoreCount items
+	if len(restores) > count {
+		restores = restores[:count]
+	}
 
 	if len(restores) > 0 {
 
@@ -511,6 +543,10 @@ func analyzeRestores(restores []*velerov1.Restore) []*AnalyzeResult {
 			velerov1.RestorePhaseFailed:           true,
 			velerov1.RestorePhasePartiallyFailed:  true,
 			velerov1.RestorePhaseFailedValidation: true,
+		}
+
+		failureReasons := []string{
+			"found a restore with status \"InProgress\" during the server starting, mark it as \"Failed\"",
 		}
 
 		for _, restore := range restores {
