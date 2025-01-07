@@ -273,6 +273,13 @@ func loadSupportBundleSpecsFromURIs(ctx context.Context, kinds *loader.Troublesh
 			continue
 		}
 
+		if len(k.SupportBundlesV1Beta2) == 0 {
+			// add back original spec
+			moreKinds.SupportBundlesV1Beta2 = append(moreKinds.SupportBundlesV1Beta2, s)
+			klog.Warningf("no support bundle spec found in URI: %s", s.Spec.Uri)
+			continue
+		}
+
 		// finally append the uri spec
 		moreKinds.SupportBundlesV1Beta2 = append(moreKinds.SupportBundlesV1Beta2, k.SupportBundlesV1Beta2...)
 
