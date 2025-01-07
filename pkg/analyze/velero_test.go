@@ -279,7 +279,7 @@ func TestAnalyzeVelero_Backups(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := analyzeBackups(tt.args.backups); !reflect.DeepEqual(got, tt.want) {
+			if got := analyzeBackups(tt.args.backups, 1); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("analyzeBackups() = %v, want %v", got, tt.want)
 			}
 		})
@@ -629,7 +629,7 @@ func TestAnalyzeVelero_Restores(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := analyzeRestores(tt.args.restores); !reflect.DeepEqual(got, tt.want) {
+			if got := analyzeRestores(tt.args.restores, 1); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("analyzeRestores() = %v, want %v", got, tt.want)
 			}
 		})
