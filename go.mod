@@ -259,11 +259,11 @@ require (
 	github.com/xlab/treeprint v1.2.0 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.opencensus.io v0.24.0 // indirect
-	golang.org/x/crypto v0.31.0 // indirect
-	golang.org/x/net v0.33.0
+	golang.org/x/crypto v0.32.0 // indirect
+	golang.org/x/net v0.34.0
 	golang.org/x/oauth2 v0.23.0 // indirect
-	golang.org/x/sys v0.28.0
-	golang.org/x/term v0.27.0 // indirect
+	golang.org/x/sys v0.29.0
+	golang.org/x/term v0.28.0 // indirect
 	golang.org/x/text v0.21.0
 	golang.org/x/time v0.7.0 // indirect
 	google.golang.org/api v0.197.0 // indirect
