@@ -388,16 +388,30 @@ func analyzeBackups(backups []*velerov1.Backup, count int) []*AnalyzeResult {
 		velerov1.BackupPhaseFailedValidation: true,
 	}
 
-	for _, backup := range backups {
+	// knownFailureReasons is a map of known failure messages to their resolutions
+	knownFailureReasons := map[string]string{
+		"some known error message": "Resolution for the known error.",
+	}
 
+	for _, backup := range backups {
 		if failedPhases[backup.Status.Phase] {
 			result := &AnalyzeResult{
 				Title: fmt.Sprintf("Backup %s", backup.Name),
 			}
-			result.IsFail = true
-			result.Message = fmt.Sprintf("Backup %s phase is %s", backup.Name, backup.Status.Phase)
-			results = append(results, result)
 
+			// Check if the backup has a failure reason and it's in the map
+			if backup.Status.FailureReason != "" {
+				if resolution, found := knownFailureReasons[backup.Status.FailureReason]; found {
+					result.Message = fmt.Sprintf("Backup %s phase is %s. Reason: %s. Resolution: %s", backup.Name, backup.Status.Phase, backup.Status.FailureReason, resolution)
+				} else {
+					result.Message = fmt.Sprintf("Backup %s phase is %s. Reason: %s", backup.Name, backup.Status.Phase, backup.Status.FailureReason)
+				}
+			} else {
+				result.Message = fmt.Sprintf("Backup %s phase is %s", backup.Name, backup.Status.Phase)
+			}
+
+			result.IsFail = true
+			results = append(results, result)
 		}
 	}
 	if len(backups) > 0 {
@@ -471,14 +485,31 @@ func analyzeDeleteBackupRequests(deleteBackupRequests []*velerov1.DeleteBackupRe
 func analyzePodVolumeBackups(podVolumeBackups []*velerov1.PodVolumeBackup) []*AnalyzeResult {
 	results := []*AnalyzeResult{}
 	failures := 0
+
+	// knownFailureMessages is a map of known failure messages to their resolutions
+	knownFailureMessages := map[string]string{
+		"example known error message": "Resolution for the known pod volume backup error.",
+	}
+
 	if len(podVolumeBackups) > 0 {
 		for _, podVolumeBackup := range podVolumeBackups {
 			if podVolumeBackup.Status.Phase == velerov1.PodVolumeBackupPhaseFailed {
 				result := &AnalyzeResult{
 					Title: fmt.Sprintf("Pod Volume Backup %s", podVolumeBackup.Name),
 				}
+
+				// Check if the pod volume backup has a status message and it's in the map
+				if podVolumeBackup.Status.Message != "" {
+					if resolution, found := knownFailureMessages[podVolumeBackup.Status.Message]; found {
+						result.Message = fmt.Sprintf("Pod Volume Backup %s phase is %s. Message: %s. Resolution: %s", podVolumeBackup.Name, podVolumeBackup.Status.Phase, podVolumeBackup.Status.Message, resolution)
+					} else {
+						result.Message = fmt.Sprintf("Pod Volume Backup %s phase is %s. Message: %s", podVolumeBackup.Name, podVolumeBackup.Status.Phase, podVolumeBackup.Status.Message)
+					}
+				} else {
+					result.Message = fmt.Sprintf("Pod Volume Backup %s phase is %s", podVolumeBackup.Name, podVolumeBackup.Status.Phase)
+				}
+
 				result.IsFail = true
-				result.Message = fmt.Sprintf("Pod Volume Backup %s phase is %s", podVolumeBackup.Name, podVolumeBackup.Status.Phase)
 				results = append(results, result)
 				failures++
 			}
@@ -545,17 +576,29 @@ func analyzeRestores(restores []*velerov1.Restore, count int) []*AnalyzeResult {
 			velerov1.RestorePhaseFailedValidation: true,
 		}
 
-		// failureReasons := []string{
-		// 	"found a restore with status \"InProgress\" during the server starting, mark it as \"Failed\"",
-		// }
+		// knownFailureReasons is a map of strings to strings that are used to detect specific failure messages and return a resolution
+		knownFailureReasons := map[string]string{
+			"found a restore with status \"InProgress\" during the server starting, mark it as \"Failed\"": "The Velero pod exited or restarted while a restore was already in progress, most likely due to running out of memory. Check the resource allocation of the velero pod and increase it or remove the memory limit.",
+		}
 
 		for _, restore := range restores {
-			if failedPhases[restore.Status.Phase] {
+			if failedPhases[restore.Status.Phase] || restore.Status.FailureReason != "" {
 				result := &AnalyzeResult{
 					Title: fmt.Sprintf("Restore %s", restore.Name),
 				}
+
+				// Check if the restore has a failure reason and it's in the map
+				if restore.Status.FailureReason != "" {
+					if resolution, found := knownFailureReasons[restore.Status.FailureReason]; found {
+						result.Message = fmt.Sprintf("Restore %s reported a FailureReason: %s. Resolution: %s", restore.Name, restore.Status.FailureReason, resolution)
+					} else {
+						result.Message = fmt.Sprintf("Restore %s phase is %s. Reason: %s", restore.Name, restore.Status.Phase, restore.Status.FailureReason)
+					}
+				} else {
+					result.Message = fmt.Sprintf("Restore %s phase is %s", restore.Name, restore.Status.Phase)
+				}
+
 				result.IsFail = true
-				result.Message = fmt.Sprintf("Restore %s phase is %s", restore.Name, restore.Status.Phase)
 				results = append(results, result)
 				failures++
 			}
