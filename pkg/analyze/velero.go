@@ -677,7 +677,7 @@ func analyzeLogs(logs map[string][]byte, kind string) []*AnalyzeResult {
 				Title: fmt.Sprintf("Velero logs for pod [%s]", key),
 			}
 			if strings.Contains(logContent, "permission denied") {
-				result.IsWarn = true
+				result.IsFail = true
 				result.Message = fmt.Sprintf("Found 'permission denied' in %s pod log file(s)", kind)
 				results = append(results, result)
 				continue
