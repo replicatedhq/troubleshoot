@@ -77,7 +77,7 @@ func (a *AnalyzeVelero) veleroStatus(analyzer *troubleshootv1beta2.VeleroAnalyze
 		restoreCount = 1
 	}
 
-	if oldVeleroRepoType == true {
+	if oldVeleroRepoType {
 		// old velero (v1.9.x) has a BackupRepositoryTypeRestic
 		// get resticrepositories.velero.io
 		resticRepositoriesDir := GetVeleroResticRepositoriesDirectory()
@@ -284,7 +284,7 @@ func (a *AnalyzeVelero) veleroStatus(analyzer *troubleshootv1beta2.VeleroAnalyze
 	}
 
 	veleroLogsGlob := filepath.Join(logsDir, "velero*", "*.log")
-	veleroLogs, err := findFiles(veleroLogsGlob, excludeFiles)
+	veleroLogs, _ := findFiles(veleroLogsGlob, excludeFiles)
 
 	results = append(results, analyzeLogs(nodeAgentlogs, "node-agent*")...)
 	results = append(results, analyzeLogs(veleroLogs, "velero*")...)
@@ -666,14 +666,14 @@ func aggregateResults(results []*AnalyzeResult) []*AnalyzeResult {
 		out = append(out, result)
 	}
 	if len(results) > 0 {
-		if resultFailed == false {
+		if !resultFailed {
 			out = append(out, &AnalyzeResult{
 				Title:   "Velero Status",
 				IsPass:  true,
 				Message: "Velero setup is healthy",
 			})
 		}
-		if resultFailed == true {
+		if resultFailed {
 			out = append(out, &AnalyzeResult{
 				Title:   "Velero Status",
 				IsWarn:  true,
