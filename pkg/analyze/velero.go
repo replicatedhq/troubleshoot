@@ -684,7 +684,7 @@ func analyzeLogs(logs map[string][]byte, kind string) []*AnalyzeResult {
 			}
 
 			if strings.Contains(logContent, "error") || strings.Contains(logContent, "panic") || strings.Contains(logContent, "fatal") {
-				result.IsWarn = true
+				result.IsFail = true
 				result.Message = fmt.Sprintf("Found error|panic|fatal in %s pod log file(s)", kind)
 				results = append(results, result)
 			}
