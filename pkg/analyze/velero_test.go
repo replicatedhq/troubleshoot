@@ -921,7 +921,7 @@ func TestAnalyzeVelero_Logs(t *testing.T) {
 				{
 					Title:   "Velero logs for pod [node-agent-m6n9j]",
 					Message: "Found error|panic|fatal in node-agent* pod log file(s)",
-					IsWarn:  true,
+					IsFail:  true,
 				},
 				{
 					Title:   "Velero Logs analysis for kind [node-agent*]",
