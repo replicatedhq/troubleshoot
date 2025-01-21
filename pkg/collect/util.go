@@ -208,20 +208,20 @@ func getTLSParamsFromSecret(ctx context.Context, client kubernetes.Interface, se
 		return "", "", "", errors.Wrap(err, "failed to get secret")
 	}
 
-	if val, ok := secret.StringData["cacert"]; ok {
-		caCert = val
+	if val, ok := secret.Data["cacert"]; ok {
+		caCert = string(val)
 	} else {
 		return "", "", "", fmt.Errorf("failed to find 'cacert' key for CA cert data in secret")
 	}
 
 	var foundClientCert, foundClientKey bool
-	if val, ok := secret.StringData["clientCert"]; ok {
-		clientCert = val
+	if val, ok := secret.Data["clientCert"]; ok {
+		clientCert = string(val)
 		foundClientCert = true
 	}
 
-	if val, ok := secret.StringData["clientKey"]; ok {
-		clientKey = val
+	if val, ok := secret.Data["clientKey"]; ok {
+		clientKey = string(val)
 		foundClientKey = true
 	}
 
