@@ -29,7 +29,7 @@ require (
 	github.com/mattn/go-isatty v0.0.20
 	github.com/mholt/archiver/v3 v3.5.1
 	github.com/microsoft/go-mssqldb v1.8.0
-	github.com/miekg/dns v1.1.62
+	github.com/miekg/dns v1.1.63
 	github.com/opencontainers/image-spec v1.1.0
 	github.com/pkg/errors v0.9.1
 	github.com/replicatedhq/termui/v3 v3.1.1-0.20200811145416-f40076d26851
@@ -57,7 +57,7 @@ require (
 	k8s.io/client-go v0.32.1
 	k8s.io/klog/v2 v2.130.1
 	oras.land/oras-go v1.2.6
-	sigs.k8s.io/controller-runtime v0.20.0
+	sigs.k8s.io/controller-runtime v0.20.1
 	sigs.k8s.io/e2e-framework v0.6.0
 )
 
