@@ -270,13 +270,18 @@ func createTLSSecret(t *testing.T, client kubernetes.Interface, secretData map[s
 	secretName := "secret-name-" + randStringRunes(20)
 	namespace := "namespace-" + randStringRunes(20)
 
+	data := make(map[string][]byte)
+	for k, v := range secretData {
+		data[k] = []byte(v)
+	}
+
 	_, err := client.CoreV1().Secrets(namespace).Create(
 		context.Background(),
 		&v1.Secret{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: secretName,
 			},
-			StringData: secretData,
+			Data: data,
 		},
 		metav1.CreateOptions{},
 	)
