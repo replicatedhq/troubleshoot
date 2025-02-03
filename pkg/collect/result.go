@@ -188,15 +188,30 @@ func (r CollectorResult) ReplaceResult(bundlePath string, relativePath string, r
 		return nil
 	}
 
+	// Create a temporary file in the same directory as the target file to prevent cross-device issues
 	tmpFile, err := os.CreateTemp("", "replace-")
 	if err != nil {
 		return errors.Wrap(err, "failed to create temp file")
 	}
-	defer tmpFile.Close()
 
+	// Ensure the temp file is closed and deleted if there's an error
+	defer func() {
+		tmpFile.Close()
+		// Remove temp file if the rename fails
+		if err != nil {
+			os.Remove(tmpFile.Name())
+		}
+	}()
+
+	// Write data to the temporary file
 	_, err = io.Copy(tmpFile, reader)
 	if err != nil {
 		return errors.Wrap(err, "failed to write tmp file")
+	}
+
+	// Explicitly close the file before renaming (required on Windows)
+	if err := tmpFile.Close(); err != nil {
+		return errors.Wrap(err, "failed to close temp file")
 	}
 
 	// This rename should always be in /tmp, so no cross-partition copying will happen
