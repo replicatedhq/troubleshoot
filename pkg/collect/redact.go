@@ -40,7 +40,6 @@ func RedactResult(bundlePath string, input CollectorResult, additionalRedactors 
 			defer func() { <-limitCh }() // free up after the function execution has run
 
 			var reader io.Reader
-			var readerCloseFn func() error // Function to close reader if needed
 			if data == nil {
 
 				// Collected contents are in a file. Get a reader to the file.
@@ -84,13 +83,12 @@ func RedactResult(bundlePath string, input CollectorResult, additionalRedactors 
 					errorCh <- errors.Wrap(err, "failed to get reader")
 					return
 				}
+				defer r.Close()
 
 				reader = r
-				readerCloseFn = r.Close // Ensure we close the file later
 			} else {
 				// Collected contents are in memory. Get a reader to the memory buffer.
 				reader = bytes.NewBuffer(data)
-				readerCloseFn = func() error { return nil } // No-op for in-memory data
 			}
 
 			// If the file is .tar, .tgz or .tar.gz, it must not be redacted. Instead it is
@@ -124,13 +122,6 @@ func RedactResult(bundlePath string, input CollectorResult, additionalRedactors 
 				os.RemoveAll(tmpDir) // ensure clean up on each iteration in addition to the defer
 
 				//Content of the tar file was redacted. return to next file.
-				return
-			}
-
-			// Close the file BEFORE calling ReplaceResult() to avoid Windows locking issues
-			if err := readerCloseFn(); err != nil {
-				klog.Warningf("Failed to close reader for %s: %v", file, err)
-				errorCh <- errors.Wrap(err, "failed to close reader before replace")
 				return
 			}
 
