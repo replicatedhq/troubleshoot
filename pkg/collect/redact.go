@@ -93,13 +93,6 @@ func RedactResult(bundlePath string, input CollectorResult, additionalRedactors 
 				readerCloseFn = func() error { return nil } // No-op for in-memory data
 			}
 
-			// Close the file BEFORE calling ReplaceResult() to avoid Windows locking issues
-			if err := readerCloseFn(); err != nil {
-				klog.Warningf("Failed to close reader for %s: %v", file, err)
-				errorCh <- errors.Wrap(err, "failed to close reader before replace")
-				return
-			}
-
 			// If the file is .tar, .tgz or .tar.gz, it must not be redacted. Instead it is
 			// decompressed and each file inside the tar redacted and compressed back into the archive.
 			if filepath.Ext(file) == ".tar" || filepath.Ext(file) == ".tgz" || strings.HasSuffix(file, ".tar.gz") {
@@ -131,6 +124,13 @@ func RedactResult(bundlePath string, input CollectorResult, additionalRedactors 
 				os.RemoveAll(tmpDir) // ensure clean up on each iteration in addition to the defer
 
 				//Content of the tar file was redacted. return to next file.
+				return
+			}
+
+			// Close the file BEFORE calling ReplaceResult() to avoid Windows locking issues
+			if err := readerCloseFn(); err != nil {
+				klog.Warningf("Failed to close reader for %s: %v", file, err)
+				errorCh <- errors.Wrap(err, "failed to close reader before replace")
 				return
 			}
 
