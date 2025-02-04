@@ -201,11 +201,10 @@ func (r CollectorResult) ReplaceResult(bundlePath string, relativePath string, r
 	}
 
 	// Close the file to ensure all data is written
-	name := tmpFile.Name()
 	tmpFile.Close()
 
 	// This rename should always be in /tmp, so no cross-partition copying will happen
-	err = os.Rename(name, filepath.Join(bundlePath, relativePath))
+	err = os.Rename(tmpFile.Name(), filepath.Join(bundlePath, relativePath))
 	if err != nil {
 		return errors.Wrap(err, "failed to rename tmp file")
 	}
