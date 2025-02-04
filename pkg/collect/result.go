@@ -188,12 +188,16 @@ func (r CollectorResult) ReplaceResult(bundlePath string, relativePath string, r
 		return nil
 	}
 
+	// Create a temporary file in the same directory as the target file to prevent cross-device issues
 	tmpFile, err := os.CreateTemp("", "replace-")
 	if err != nil {
 		return errors.Wrap(err, "failed to create temp file")
 	}
+
+	// Ensure the temp file is closed and deleted if there's an error
 	defer tmpFile.Close()
 
+	// Write data to the temporary file
 	_, err = io.Copy(tmpFile, reader)
 	if err != nil {
 		return errors.Wrap(err, "failed to write tmp file")
