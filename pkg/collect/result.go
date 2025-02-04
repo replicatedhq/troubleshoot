@@ -194,17 +194,17 @@ func (r CollectorResult) ReplaceResult(bundlePath string, relativePath string, r
 		return errors.Wrap(err, "failed to create temp file")
 	}
 
-	// Ensure the temp file is closed and deleted if there's an error
-	defer tmpFile.Close()
-
 	// Write data to the temporary file
 	_, err = io.Copy(tmpFile, reader)
 	if err != nil {
 		return errors.Wrap(err, "failed to write tmp file")
 	}
 
+	name := tmpFile.Name()
+	tmpFile.Close()
+
 	// This rename should always be in /tmp, so no cross-partition copying will happen
-	err = os.Rename(tmpFile.Name(), filepath.Join(bundlePath, relativePath))
+	err = os.Rename(name, filepath.Join(bundlePath, relativePath))
 	if err != nil {
 		return errors.Wrap(err, "failed to rename tmp file")
 	}
