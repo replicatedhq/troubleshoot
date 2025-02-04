@@ -194,15 +194,6 @@ func (r CollectorResult) ReplaceResult(bundlePath string, relativePath string, r
 		return errors.Wrap(err, "failed to create temp file")
 	}
 
-	// Ensure the temp file is closed and deleted if there's an error
-	defer func() {
-		tmpFile.Close()
-		// Remove temp file if the rename fails
-		if err != nil {
-			os.Remove(tmpFile.Name())
-		}
-	}()
-
 	// Write data to the temporary file
 	_, err = io.Copy(tmpFile, reader)
 	if err != nil {
