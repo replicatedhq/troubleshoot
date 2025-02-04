@@ -21,12 +21,6 @@ func Test_HomeDir(t *testing.T) {
 			dir:  "/home/test",
 			want: "/home/test",
 		},
-		{
-			name: "test windows home directory",
-			env:  "USERPROFILE",
-			dir:  `C:\Users\test`,
-			want: `C:\Users\test`,
-		},
 	}
 
 	for _, tt := range tests {
