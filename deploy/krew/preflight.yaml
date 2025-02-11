@@ -60,17 +60,6 @@ spec:
     - from: LICENSE
       to: .
     bin: preflight
-  - selector:
-      matchLabels:
-        os: windows
-        arch: amd64
-    {{addURIAndSha "https://github.com/replicatedhq/troubleshoot/releases/download/{{ .TagName }}/preflight_windows_amd64.zip" .TagName }}
-    files:
-    - from: preflight.exe
-      to: .
-    - from: LICENSE
-      to: .
-    bin: preflight.exe
   shortDescription: Executes application preflight tests in a cluster
   homepage: https://github.com/replicatedhq/troubleshoot
   description: |

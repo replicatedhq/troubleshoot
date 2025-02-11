@@ -60,17 +60,6 @@ spec:
     - from: LICENSE
       to: .
     bin: support-bundle
-  - selector:
-      matchLabels:
-        os: windows
-        arch: amd64
-    {{addURIAndSha "https://github.com/replicatedhq/troubleshoot/releases/download/{{ .TagName }}/support-bundle_windows_amd64.zip" .TagName }}
-    files:
-    - from: support-bundle.exe
-      to: .
-    - from: LICENSE
-      to: .
-    bin: support-bundle.exe
   shortDescription: Creates support bundles for off-cluster analysis
   homepage: https://github.com/replicatedhq/troubleshoot
   description: |
