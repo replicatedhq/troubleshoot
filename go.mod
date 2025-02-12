@@ -11,7 +11,7 @@ require (
 	github.com/cilium/ebpf v0.17.2
 	github.com/containerd/cgroups/v3 v3.0.5
 	github.com/containers/image/v5 v5.34.0
-	github.com/distribution/distribution/v3 v3.0.0-rc.2
+	github.com/distribution/distribution/v3 v3.0.0-rc.3
 	github.com/fatih/color v1.18.0
 	github.com/go-logr/logr v1.4.2
 	github.com/go-redis/redis/v7 v7.4.1
