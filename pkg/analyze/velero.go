@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	appsV1 "k8s.io/api/apps/v1"
@@ -65,7 +66,18 @@ func (a *AnalyzeVelero) veleroStatus(analyzer *troubleshootv1beta2.VeleroAnalyze
 		oldVeleroRepoType = true
 	}
 
-	if oldVeleroRepoType == true {
+	// default to only the most recent Backup and Restore object if not specified in the analyzer spec
+	backupCount := analyzer.BackupsCount
+	if backupCount <= 0 {
+		backupCount = 1
+	}
+
+	restoreCount := analyzer.RestoresCount
+	if restoreCount <= 0 {
+		restoreCount = 1
+	}
+
+	if oldVeleroRepoType {
 		// old velero (v1.9.x) has a BackupRepositoryTypeRestic
 		// get resticrepositories.velero.io
 		resticRepositoriesDir := GetVeleroResticRepositoriesDirectory()
@@ -272,16 +284,16 @@ func (a *AnalyzeVelero) veleroStatus(analyzer *troubleshootv1beta2.VeleroAnalyze
 	}
 
 	veleroLogsGlob := filepath.Join(logsDir, "velero*", "*.log")
-	veleroLogs, err := findFiles(veleroLogsGlob, excludeFiles)
+	veleroLogs, _ := findFiles(veleroLogsGlob, excludeFiles)
 
 	results = append(results, analyzeLogs(nodeAgentlogs, "node-agent*")...)
 	results = append(results, analyzeLogs(veleroLogs, "velero*")...)
-	results = append(results, analyzeBackups(backups)...)
+	results = append(results, analyzeBackups(backups, backupCount)...)
 	results = append(results, analyzeBackupStorageLocations(backupStorageLocations)...)
 	results = append(results, analyzeDeleteBackupRequests(deleteBackupRequests)...)
 	results = append(results, analyzePodVolumeBackups(podVolumeBackups)...)
 	results = append(results, analyzePodVolumeRestores(podVolumeRestores)...)
-	results = append(results, analyzeRestores(restores)...)
+	results = append(results, analyzeRestores(restores, restoreCount)...)
 	results = append(results, analyzeSchedules(schedules)...)
 	results = append(results, analyzeVolumeSnapshotLocations(volumeSnapshotLocations)...)
 
@@ -357,8 +369,18 @@ func analyzeResticRepositories(resticRepositories []*restic_types.ResticReposito
 	return results
 }
 
-func analyzeBackups(backups []*velerov1.Backup) []*AnalyzeResult {
+func analyzeBackups(backups []*velerov1.Backup, count int) []*AnalyzeResult {
 	results := []*AnalyzeResult{}
+
+	// Sort backups by StartTimestamp in descending order
+	sort.SliceStable(backups, func(i, j int) bool {
+		return backups[i].Status.StartTimestamp.After(backups[j].Status.StartTimestamp.Time)
+	})
+
+	// Limit to the most recent backupCount items
+	if len(backups) > count {
+		backups = backups[:count]
+	}
 
 	failedPhases := map[velerov1.BackupPhase]bool{
 		velerov1.BackupPhaseFailed:           true,
@@ -366,16 +388,30 @@ func analyzeBackups(backups []*velerov1.Backup) []*AnalyzeResult {
 		velerov1.BackupPhaseFailedValidation: true,
 	}
 
-	for _, backup := range backups {
+	// knownFailureReasons is a map of known failure messages to their resolutions
+	knownFailureReasons := map[string]string{
+		"some known error message": "Resolution for the known error.",
+	}
 
+	for _, backup := range backups {
 		if failedPhases[backup.Status.Phase] {
 			result := &AnalyzeResult{
 				Title: fmt.Sprintf("Backup %s", backup.Name),
 			}
-			result.IsFail = true
-			result.Message = fmt.Sprintf("Backup %s phase is %s", backup.Name, backup.Status.Phase)
-			results = append(results, result)
 
+			// Check if the backup has a failure reason and it's in the map
+			if backup.Status.FailureReason != "" {
+				if resolution, found := knownFailureReasons[backup.Status.FailureReason]; found {
+					result.Message = fmt.Sprintf("Backup %s phase is %s. Reason: %s. Resolution: %s", backup.Name, backup.Status.Phase, backup.Status.FailureReason, resolution)
+				} else {
+					result.Message = fmt.Sprintf("Backup %s phase is %s. Reason: %s", backup.Name, backup.Status.Phase, backup.Status.FailureReason)
+				}
+			} else {
+				result.Message = fmt.Sprintf("Backup %s phase is %s", backup.Name, backup.Status.Phase)
+			}
+
+			result.IsFail = true
+			results = append(results, result)
 		}
 	}
 	if len(backups) > 0 {
@@ -449,14 +485,31 @@ func analyzeDeleteBackupRequests(deleteBackupRequests []*velerov1.DeleteBackupRe
 func analyzePodVolumeBackups(podVolumeBackups []*velerov1.PodVolumeBackup) []*AnalyzeResult {
 	results := []*AnalyzeResult{}
 	failures := 0
+
+	// knownFailureMessages is a map of known failure messages to their resolutions
+	knownFailureMessages := map[string]string{
+		"example known error message": "Resolution for the known pod volume backup error.",
+	}
+
 	if len(podVolumeBackups) > 0 {
 		for _, podVolumeBackup := range podVolumeBackups {
 			if podVolumeBackup.Status.Phase == velerov1.PodVolumeBackupPhaseFailed {
 				result := &AnalyzeResult{
 					Title: fmt.Sprintf("Pod Volume Backup %s", podVolumeBackup.Name),
 				}
+
+				// Check if the pod volume backup has a status message and it's in the map
+				if podVolumeBackup.Status.Message != "" {
+					if resolution, found := knownFailureMessages[podVolumeBackup.Status.Message]; found {
+						result.Message = fmt.Sprintf("Pod Volume Backup %s phase is %s. Message: %s. Resolution: %s", podVolumeBackup.Name, podVolumeBackup.Status.Phase, podVolumeBackup.Status.Message, resolution)
+					} else {
+						result.Message = fmt.Sprintf("Pod Volume Backup %s phase is %s. Message: %s", podVolumeBackup.Name, podVolumeBackup.Status.Phase, podVolumeBackup.Status.Message)
+					}
+				} else {
+					result.Message = fmt.Sprintf("Pod Volume Backup %s phase is %s", podVolumeBackup.Name, podVolumeBackup.Status.Phase)
+				}
+
 				result.IsFail = true
-				result.Message = fmt.Sprintf("Pod Volume Backup %s phase is %s", podVolumeBackup.Name, podVolumeBackup.Status.Phase)
 				results = append(results, result)
 				failures++
 			}
@@ -501,9 +554,19 @@ func analyzePodVolumeRestores(podVolumeRestores []*velerov1.PodVolumeRestore) []
 	return results
 }
 
-func analyzeRestores(restores []*velerov1.Restore) []*AnalyzeResult {
+func analyzeRestores(restores []*velerov1.Restore, count int) []*AnalyzeResult {
 	results := []*AnalyzeResult{}
 	failures := 0
+
+	// Sort restores by StartTimestamp in descending order
+	sort.SliceStable(restores, func(i, j int) bool {
+		return restores[i].Status.StartTimestamp.After(restores[j].Status.StartTimestamp.Time)
+	})
+
+	// Limit to the most recent restoreCount items
+	if len(restores) > count {
+		restores = restores[:count]
+	}
 
 	if len(restores) > 0 {
 
@@ -513,13 +576,29 @@ func analyzeRestores(restores []*velerov1.Restore) []*AnalyzeResult {
 			velerov1.RestorePhaseFailedValidation: true,
 		}
 
+		// knownFailureReasons is a map of strings to strings that are used to detect specific failure messages and return a resolution
+		knownFailureReasons := map[string]string{
+			"found a restore with status \"InProgress\" during the server starting, mark it as \"Failed\"": "The Velero pod exited or restarted while a restore was already in progress, most likely due to running out of memory. Check the resource allocation of the velero pod and increase it or remove the memory limit.",
+		}
+
 		for _, restore := range restores {
-			if failedPhases[restore.Status.Phase] {
+			if failedPhases[restore.Status.Phase] || restore.Status.FailureReason != "" {
 				result := &AnalyzeResult{
 					Title: fmt.Sprintf("Restore %s", restore.Name),
 				}
+
+				// Check if the restore has a failure reason and it's in the map
+				if restore.Status.FailureReason != "" {
+					if resolution, found := knownFailureReasons[restore.Status.FailureReason]; found {
+						result.Message = fmt.Sprintf("Restore %s reported a FailureReason: %s. Resolution: %s", restore.Name, restore.Status.FailureReason, resolution)
+					} else {
+						result.Message = fmt.Sprintf("Restore %s phase is %s. Reason: %s", restore.Name, restore.Status.Phase, restore.Status.FailureReason)
+					}
+				} else {
+					result.Message = fmt.Sprintf("Restore %s phase is %s", restore.Name, restore.Status.Phase)
+				}
+
 				result.IsFail = true
-				result.Message = fmt.Sprintf("Restore %s phase is %s", restore.Name, restore.Status.Phase)
 				results = append(results, result)
 				failures++
 			}
@@ -598,14 +677,14 @@ func analyzeLogs(logs map[string][]byte, kind string) []*AnalyzeResult {
 				Title: fmt.Sprintf("Velero logs for pod [%s]", key),
 			}
 			if strings.Contains(logContent, "permission denied") {
-				result.IsWarn = true
+				result.IsFail = true
 				result.Message = fmt.Sprintf("Found 'permission denied' in %s pod log file(s)", kind)
 				results = append(results, result)
 				continue
 			}
 
 			if strings.Contains(logContent, "error") || strings.Contains(logContent, "panic") || strings.Contains(logContent, "fatal") {
-				result.IsWarn = true
+				result.IsFail = true
 				result.Message = fmt.Sprintf("Found error|panic|fatal in %s pod log file(s)", kind)
 				results = append(results, result)
 			}
@@ -630,14 +709,14 @@ func aggregateResults(results []*AnalyzeResult) []*AnalyzeResult {
 		out = append(out, result)
 	}
 	if len(results) > 0 {
-		if resultFailed == false {
+		if !resultFailed {
 			out = append(out, &AnalyzeResult{
 				Title:   "Velero Status",
 				IsPass:  true,
 				Message: "Velero setup is healthy",
 			})
 		}
-		if resultFailed == true {
+		if resultFailed {
 			out = append(out, &AnalyzeResult{
 				Title:   "Velero Status",
 				IsWarn:  true,
