@@ -59,12 +59,6 @@ type SubnetAvailable struct {
 	DesiredCIDR       int    `json:"desiredCIDR" yaml:"desiredCIDR"`
 }
 
-type SubnetContainsIP struct {
-	HostCollectorMeta `json:",inline" yaml:",inline"`
-	CIDR              string `json:"cidr" yaml:"cidr"`
-	IP                string `json:"ip" yaml:"ip"`
-}
-
 type DiskUsage struct {
 	HostCollectorMeta `json:",inline" yaml:",inline"`
 	Path              string `json:"path" yaml:"path"`
@@ -251,7 +245,6 @@ type HostCollect struct {
 	Kubernetes                   *Kubernetes                       `json:"kubernetes,omitempty" yaml:"kubernetes,omitempty"`
 	IPV4Interfaces               *IPV4Interfaces                   `json:"ipv4Interfaces,omitempty" yaml:"ipv4Interfaces,omitempty"`
 	SubnetAvailable              *SubnetAvailable                  `json:"subnetAvailable,omitempty" yaml:"subnetAvailable,omitempty"`
-	SubnetContainsIP             *SubnetContainsIP                 `json:"subnetContainsIP,omitempty" yaml:"subnetContainsIP,omitempty"`
 	DiskUsage                    *DiskUsage                        `json:"diskUsage,omitempty" yaml:"diskUsage,omitempty"`
 	HTTP                         *HostHTTP                         `json:"http,omitempty" yaml:"http,omitempty"`
 	Time                         *HostTime                         `json:"time,omitempty" yaml:"time,omitempty"`

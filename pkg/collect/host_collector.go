@@ -77,8 +77,6 @@ func GetHostCollector(collector *troubleshootv1beta2.HostCollect, bundlePath str
 		return &CollectHostIPV4Interfaces{collector.IPV4Interfaces, bundlePath}, true
 	case collector.SubnetAvailable != nil:
 		return &CollectHostSubnetAvailable{collector.SubnetAvailable, bundlePath}, true
-	case collector.SubnetContainsIP != nil:
-		return &CollectHostSubnetContainsIP{collector.SubnetContainsIP, bundlePath}, true
 	case collector.FilesystemPerformance != nil:
 		return &CollectHostFilesystemPerformance{collector.FilesystemPerformance, bundlePath}, true
 	case collector.Certificate != nil:

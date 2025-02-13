@@ -19845,10 +19845,14 @@ spec:
                           type: object
                         checkName:
                           type: string
+                        cidr:
+                          type: string
                         collectorName:
                           type: string
                         exclude:
                           type: BoolString
+                        ip:
+                          type: string
                         outcomes:
                           items:
                             properties:
@@ -19884,6 +19888,8 @@ spec:
                         strict:
                           type: BoolString
                       required:
+                      - cidr
+                      - ip
                       - outcomes
                       type: object
                     sysctl:
@@ -20758,20 +20764,6 @@ spec:
                       required:
                       - CIDRRangeAlloc
                       - desiredCIDR
-                      type: object
-                    subnetContainsIP:
-                      properties:
-                        cidr:
-                          type: string
-                        collectorName:
-                          type: string
-                        exclude:
-                          type: BoolString
-                        ip:
-                          type: string
-                      required:
-                      - cidr
-                      - ip
                       type: object
                     sysctl:
                       properties:

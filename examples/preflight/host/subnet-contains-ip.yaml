@@ -3,14 +3,10 @@ kind: HostPreflight
 metadata:
   name: subnet-contains-ip
 spec:
-  collectors:
-    - subnetContainsIP:
-        collectorName: check-ip-in-subnet
-        cidr: "10.0.0.0/8"
-        ip: "10.0.0.5"
   analyzers:
     - subnetContainsIP:
-        collectorName: check-ip-in-subnet
+        cidr: "10.0.0.0/8"
+        ip: "10.0.0.5"
         outcomes:
           - fail:
               when: "false"

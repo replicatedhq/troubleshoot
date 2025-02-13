@@ -4177,6 +4177,8 @@
               "subnetContainsIP": {
                 "type": "object",
                 "required": [
+                  "cidr",
+                  "ip",
                   "outcomes"
                 ],
                 "properties": {
@@ -4189,11 +4191,17 @@
                   "checkName": {
                     "type": "string"
                   },
+                  "cidr": {
+                    "type": "string"
+                  },
                   "collectorName": {
                     "type": "string"
                   },
                   "exclude": {
                     "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  },
+                  "ip": {
+                    "type": "string"
                   },
                   "outcomes": {
                     "type": "array",

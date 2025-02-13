@@ -17830,27 +17830,6 @@
                   }
                 }
               },
-              "subnetContainsIP": {
-                "type": "object",
-                "required": [
-                  "cidr",
-                  "ip"
-                ],
-                "properties": {
-                  "cidr": {
-                    "type": "string"
-                  },
-                  "collectorName": {
-                    "type": "string"
-                  },
-                  "exclude": {
-                    "oneOf": [{"type": "string"},{"type": "boolean"}]
-                  },
-                  "ip": {
-                    "type": "string"
-                  }
-                }
-              },
               "systemPackages": {
                 "type": "object",
                 "properties": {

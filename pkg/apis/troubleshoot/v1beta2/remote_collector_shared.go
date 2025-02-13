@@ -66,12 +66,6 @@ type RemoteSubnetAvailable struct {
 	DesiredCIDR         int    `json:"desiredCIDR" yaml:"desiredCIDR"`
 }
 
-type RemoteSubnetContainsIP struct {
-	RemoteCollectorMeta `json:",inline" yaml:",inline"`
-	CIDR                string `json:"cidr" yaml:"cidr"`
-	IP                  string `json:"ip" yaml:"ip"`
-}
-
 type RemoteDiskUsage struct {
 	RemoteCollectorMeta `json:",inline" yaml:",inline"`
 	Path                string `json:"path"`
@@ -170,7 +164,6 @@ type RemoteCollect struct {
 	UDPPortStatus         *RemoteUDPPortStatus         `json:"udpPortStatus,omitempty" yaml:"udpPortStatus,omitempty"`
 	IPV4Interfaces        *RemoteIPV4Interfaces        `json:"ipv4Interfaces,omitempty" yaml:"ipv4Interfaces,omitempty"`
 	SubnetAvailable       *RemoteSubnetAvailable       `json:"subnetAvailable,omitempty" yaml:"subnetAvailable,omitempty"`
-	SubnetContainsIP      *RemoteSubnetContainsIP      `json:"subnetContainsIP,omitempty" yaml:"subnetContainsIP,omitempty"`
 	DiskUsage             *RemoteDiskUsage             `json:"diskUsage,omitempty" yaml:"diskUsage,omitempty"`
 	HTTP                  *RemoteHTTP                  `json:"http,omitempty" yaml:"http,omitempty"`
 	Time                  *RemoteTime                  `json:"time,omitempty" yaml:"time,omitempty"`

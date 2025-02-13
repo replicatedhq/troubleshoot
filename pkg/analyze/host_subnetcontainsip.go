@@ -1,12 +1,10 @@
 package analyzer
 
 import (
-	"encoding/json"
-	"fmt"
+	"net"
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
-	"github.com/replicatedhq/troubleshoot/pkg/collect"
 )
 
 type AnalyzeHostSubnetContainsIP struct {
@@ -24,26 +22,19 @@ func (a *AnalyzeHostSubnetContainsIP) IsExcluded() (bool, error) {
 func (a *AnalyzeHostSubnetContainsIP) Analyze(
 	getCollectedFileContents func(string) ([]byte, error), findFiles getChildCollectedFileContents,
 ) ([]*AnalyzeResult, error) {
-	collectorName := a.hostAnalyzer.CollectorName
-	if collectorName == "" {
-		collectorName = "result"
-	}
-
-	const nodeBaseDir = "host-collectors/subnetContainsIP"
-	localPath := fmt.Sprintf("%s/%s.json", nodeBaseDir, collectorName)
-	fileName := fmt.Sprintf("%s.json", collectorName)
-
-	collectedContents, err := retrieveCollectedContents(
-		getCollectedFileContents,
-		localPath,
-		nodeBaseDir,
-		fileName,
-	)
+	_, ipNet, err := net.ParseCIDR(a.hostAnalyzer.CIDR)
 	if err != nil {
-		return []*AnalyzeResult{{Title: a.Title()}}, err
+		return nil, errors.Wrapf(err, "failed to parse CIDR %s", a.hostAnalyzer.CIDR)
 	}
 
-	results, err := analyzeHostCollectorResults(collectedContents, a.hostAnalyzer.Outcomes, a.CheckCondition, a.Title())
+	ip := net.ParseIP(a.hostAnalyzer.IP)
+	if ip == nil {
+		return nil, errors.Errorf("failed to parse IP address %s", a.hostAnalyzer.IP)
+	}
+
+	contains := ipNet.Contains(ip)
+
+	results, err := analyzeHostCollectorResults([]collectedContent{{Data: []byte(contains)}}, a.hostAnalyzer.Outcomes, a.CheckCondition, a.Title())
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to analyze Subnet Contains IP")
 	}
@@ -52,16 +43,11 @@ func (a *AnalyzeHostSubnetContainsIP) Analyze(
 }
 
 func (a *AnalyzeHostSubnetContainsIP) CheckCondition(when string, data []byte) (bool, error) {
-	var result collect.SubnetContainsIPResult
-	if err := json.Unmarshal(data, &result); err != nil {
-		return false, errors.Wrap(err, "failed to unmarshal subnetContainsIP result")
-	}
-
 	switch when {
 	case "true":
-		return result.Contains, nil
+		return string(data) == "true", nil
 	case "false":
-		return !result.Contains, nil
+		return string(data) == "false", nil
 	}
 
 	return false, errors.Errorf("unknown condition: %q", when)

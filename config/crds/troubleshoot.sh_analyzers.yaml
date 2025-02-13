@@ -2754,10 +2754,14 @@ spec:
                           type: object
                         checkName:
                           type: string
+                        cidr:
+                          type: string
                         collectorName:
                           type: string
                         exclude:
                           type: BoolString
+                        ip:
+                          type: string
                         outcomes:
                           items:
                             properties:
@@ -2793,6 +2797,8 @@ spec:
                         strict:
                           type: BoolString
                       required:
+                      - cidr
+                      - ip
                       - outcomes
                       type: object
                     sysctl:

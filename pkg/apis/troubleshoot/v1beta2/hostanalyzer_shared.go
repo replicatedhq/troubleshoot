@@ -101,6 +101,8 @@ type SubnetAvailableAnalyze struct {
 type SubnetContainsIPAnalyze struct {
 	AnalyzeMeta   `json:",inline" yaml:",inline"`
 	CollectorName string     `json:"collectorName,omitempty" yaml:"collectorName,omitempty"`
+	CIDR          string     `json:"cidr" yaml:"cidr"`
+	IP            string     `json:"ip" yaml:"ip"`
 	Outcomes      []*Outcome `json:"outcomes" yaml:"outcomes"`
 }
 
