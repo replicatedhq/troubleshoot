@@ -257,16 +257,16 @@ npm-install:
 ######## Lagacy make targets ###########
 # Deprecated: These can be removed
 .PHONY: support-bundle
-support-bundle: clean bin/support-bundle
+support-bundle: bin/support-bundle
 
 .PHONY: preflight
-preflight: clean bin/preflight
+preflight: bin/preflight
 
 .PHONY: analyze
-analyze: clean bin/analyze
+analyze: bin/analyze
 
 .PHONY: collect
-collect: clean bin/collect
+collect: bin/collect
 
 .PHONY: run-troubleshoot
 run-troubleshoot: run-support-bundle
