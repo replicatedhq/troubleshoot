@@ -12,6 +12,7 @@ import (
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
+	"k8s.io/klog/v2"
 )
 
 const (
@@ -120,7 +121,14 @@ func (l kernelModulesLoadable) collect() (map[string]KernelModuleInfo, error) {
 	}
 	kernel := strings.TrimSpace(string(out))
 
-	cmd := exec.Command("/usr/bin/find", "/lib/modules/"+kernel, "-type", "f", "-name", "*.ko*")
+	kernelPath := "/lib/modules/" + kernel
+
+	if _, err := os.Stat(kernelPath); os.IsNotExist(err) {
+		klog.V(2).Infof("modules are not loadable because kernel path %q does not exist, assuming we are in a container", kernelPath)
+		return modules, nil
+	}
+
+	cmd := exec.Command("/usr/bin/find", kernelPath, "-type", "f", "-name", "*.ko*")
 	stdout, err := cmd.Output()
 	if err != nil {
 		return nil, err
