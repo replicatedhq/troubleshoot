@@ -26,7 +26,7 @@ func (a *AnalyzeHostSubnetContainsIP) Analyze(
 ) ([]*AnalyzeResult, error) {
 	collectorName := a.hostAnalyzer.CollectorName
 	if collectorName == "" {
-		collectorName = "subnetContainsIP"
+		collectorName = "result"
 	}
 
 	const nodeBaseDir = "host-collectors/subnetContainsIP"
