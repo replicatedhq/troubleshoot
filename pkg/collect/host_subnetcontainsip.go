@@ -53,7 +53,7 @@ func (c *CollectHostSubnetContainsIP) Collect(progressChan chan<- interface{}) (
 
 	collectorName := c.hostCollector.CollectorName
 	if collectorName == "" {
-		collectorName = "subnetContainsIP"
+		collectorName = "result"
 	}
 	name := filepath.Join("host-collectors/subnetContainsIP", collectorName+".json")
 
