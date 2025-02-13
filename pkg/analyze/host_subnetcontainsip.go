@@ -1,6 +1,7 @@
 package analyzer
 
 import (
+	"fmt"
 	"net"
 
 	"github.com/pkg/errors"
@@ -32,7 +33,7 @@ func (a *AnalyzeHostSubnetContainsIP) Analyze(
 		return nil, errors.Errorf("failed to parse IP address %s", a.hostAnalyzer.IP)
 	}
 
-	contains := ipNet.Contains(ip)
+	contains := fmt.Sprintf("%t", ipNet.Contains(ip))
 
 	results, err := analyzeHostCollectorResults([]collectedContent{{Data: []byte(contains)}}, a.hostAnalyzer.Outcomes, a.CheckCondition, a.Title())
 	if err != nil {
