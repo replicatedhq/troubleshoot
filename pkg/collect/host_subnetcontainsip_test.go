@@ -81,7 +81,7 @@ func TestCollectHostSubnetContainsIP(t *testing.T) {
 			assert.Len(t, result, 1)
 
 			var resultValue SubnetContainsIPResult
-			err = json.Unmarshal(result["host-collectors/subnetContainsIP/subnetContainsIP.json"], &resultValue)
+			err = json.Unmarshal(result["host-collectors/subnetContainsIP/result.json"], &resultValue)
 			req.NoError(err)
 
 			assert.Equal(t, test.expectValue, resultValue)
