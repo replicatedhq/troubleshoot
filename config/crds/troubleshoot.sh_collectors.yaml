@@ -17597,6 +17597,20 @@ spec:
                       - CIDRRangeAlloc
                       - desiredCIDR
                       type: object
+                    subnetContainsIP:
+                      properties:
+                        cidr:
+                          type: string
+                        collectorName:
+                          type: string
+                        exclude:
+                          type: BoolString
+                        ip:
+                          type: string
+                      required:
+                      - cidr
+                      - ip
+                      type: object
                     sysctl:
                       properties:
                         collectorName:

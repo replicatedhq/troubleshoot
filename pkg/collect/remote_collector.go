@@ -279,6 +279,17 @@ func (c *RemoteCollector) toHostCollector() (*troubleshootv1beta2.HostCollect, e
 				CollectorName: c.Collect.IPV4Interfaces.CollectorName,
 				Exclude:       c.Collect.IPV4Interfaces.Exclude,
 			},
+			CIDRRangeAlloc: c.Collect.SubnetAvailable.CIDRRangeAlloc,
+			DesiredCIDR:    c.Collect.SubnetAvailable.DesiredCIDR,
+		}
+	case c.Collect.SubnetContainsIP != nil:
+		hostCollect.SubnetContainsIP = &troubleshootv1beta2.SubnetContainsIP{
+			HostCollectorMeta: troubleshootv1beta2.HostCollectorMeta{
+				CollectorName: c.Collect.SubnetContainsIP.CollectorName,
+				Exclude:       c.Collect.SubnetContainsIP.Exclude,
+			},
+			CIDR: c.Collect.SubnetContainsIP.CIDR,
+			IP:   c.Collect.SubnetContainsIP.IP,
 		}
 	case c.Collect.FilesystemPerformance != nil:
 		hostCollect.FilesystemPerformance = &troubleshootv1beta2.FilesystemPerformance{

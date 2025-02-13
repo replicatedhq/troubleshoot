@@ -98,6 +98,12 @@ type SubnetAvailableAnalyze struct {
 	Outcomes      []*Outcome `json:"outcomes" yaml:"outcomes"`
 }
 
+type SubnetContainsIPAnalyze struct {
+	AnalyzeMeta   `json:",inline" yaml:",inline"`
+	CollectorName string     `json:"collectorName,omitempty" yaml:"collectorName,omitempty"`
+	Outcomes      []*Outcome `json:"outcomes" yaml:"outcomes"`
+}
+
 type FilesystemPerformanceAnalyze struct {
 	AnalyzeMeta   `json:",inline" yaml:",inline"`
 	CollectorName string     `json:"collectorName,omitempty" yaml:"collectorName,omitempty"`
@@ -157,6 +163,7 @@ type HostAnalyze struct {
 	TCPConnect                   *TCPConnectAnalyze                   `json:"tcpConnect,omitempty" yaml:"tcpConnect,omitempty"`
 	IPV4Interfaces               *IPV4InterfacesAnalyze               `json:"ipv4Interfaces,omitempty" yaml:"ipv4Interfaces,omitempty"`
 	SubnetAvailable              *SubnetAvailableAnalyze              `json:"subnetAvailable,omitempty" yaml:"subnetAvailable,omitempty"`
+	SubnetContainsIP             *SubnetContainsIPAnalyze             `json:"subnetContainsIP,omitempty" yaml:"subnetContainsIP,omitempty"`
 	FilesystemPerformance        *FilesystemPerformanceAnalyze        `json:"filesystemPerformance,omitempty" yaml:"filesystemPerformance,omitempty"`
 	Certificate                  *CertificateAnalyze                  `json:"certificate,omitempty" yaml:"certificate,omitempty"`
 	CertificatesCollection       *HostCertificatesCollectionAnalyze   `json:"certificatesCollection,omitempty" yaml:"certificatesCollection,omitempty"`

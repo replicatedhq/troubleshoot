@@ -1,0 +1,18 @@
+apiVersion: troubleshoot.sh/v1beta2
+kind: HostPreflight
+metadata:
+  name: subnet-contains-ip
+spec:
+  collectors:
+    - subnetContainsIP:
+        cidr: "10.0.0.0/8"
+        ip: "10.0.0.5"
+  analyzers:
+    - subnetContainsIP:
+        outcomes:
+          - fail:
+              when: "false"
+              message: The IP address is not within the subnet range
+          - pass:
+              when: "true"
+              message: The IP address is within the subnet range

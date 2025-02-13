@@ -45,6 +45,8 @@ func GetHostAnalyzer(analyzer *troubleshootv1beta2.HostAnalyze) (HostAnalyzer, b
 		return &AnalyzeHostIPV4Interfaces{analyzer.IPV4Interfaces}, true
 	case analyzer.SubnetAvailable != nil:
 		return &AnalyzeHostSubnetAvailable{analyzer.SubnetAvailable}, true
+	case analyzer.SubnetContainsIP != nil:
+		return &AnalyzeHostSubnetContainsIP{analyzer.SubnetContainsIP}, true
 	case analyzer.FilesystemPerformance != nil:
 		return &AnalyzeHostFilesystemPerformance{analyzer.FilesystemPerformance}, true
 	case analyzer.Certificate != nil:
