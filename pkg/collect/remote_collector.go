@@ -279,6 +279,8 @@ func (c *RemoteCollector) toHostCollector() (*troubleshootv1beta2.HostCollect, e
 				CollectorName: c.Collect.IPV4Interfaces.CollectorName,
 				Exclude:       c.Collect.IPV4Interfaces.Exclude,
 			},
+			CIDRRangeAlloc: c.Collect.SubnetAvailable.CIDRRangeAlloc,
+			DesiredCIDR:    c.Collect.SubnetAvailable.DesiredCIDR,
 		}
 	case c.Collect.FilesystemPerformance != nil:
 		hostCollect.FilesystemPerformance = &troubleshootv1beta2.FilesystemPerformance{
