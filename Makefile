@@ -7,7 +7,6 @@ VERSION_PACKAGE = github.com/replicatedhq/troubleshoot/pkg/version
 VERSION ?=`git describe --tags --dirty`
 DATE=`date -u +"%Y-%m-%dT%H:%M:%SZ"`
 RUN?=""
-GOLANGCI_LINT_VERSION ?= "v1.61.0"
 
 GIT_TREE = $(shell git rev-parse --is-inside-work-tree 2>/dev/null)
 ifneq "$(GIT_TREE)" ""
@@ -104,17 +103,32 @@ clean:
 tidy:
 	go mod tidy
 
-bin/support-bundle:
+# Only build when any of the files in SOURCES changes, or if bin/<file> is absent
+MAKEFILE_DIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
+SOURCES := $(shell find $(MAKEFILE_DIR) -type f \( -name "*.go" -o -name "go.mod" -o -name "go.sum" \))
+bin/support-bundle: $(SOURCES)
 	go build ${BUILDFLAGS} ${LDFLAGS} -o bin/support-bundle github.com/replicatedhq/troubleshoot/cmd/troubleshoot
 
-bin/preflight:
+bin/preflight: $(SOURCES)
 	go build ${BUILDFLAGS} ${LDFLAGS} -o bin/preflight github.com/replicatedhq/troubleshoot/cmd/preflight
 
-bin/analyze:
+bin/analyze: $(SOURCES)
 	go build ${BUILDFLAGS} ${LDFLAGS} -o bin/analyze github.com/replicatedhq/troubleshoot/cmd/analyze
 
-bin/collect:
+bin/collect: $(SOURCES)
 	go build ${BUILDFLAGS} ${LDFLAGS} -o bin/collect github.com/replicatedhq/troubleshoot/cmd/collect
+
+.PHONY: support-bundle
+support-bundle: bin/support-bundle
+
+.PHONY: preflight
+preflight: bin/preflight
+
+.PHONY: analyze
+analyze: bin/analyze
+
+.PHONY: collect
+collect: bin/collect
 
 build-linux: tidy
 	@echo "Build cli binaries for Linux"
@@ -256,18 +270,6 @@ npm-install:
 
 ######## Lagacy make targets ###########
 # Deprecated: These can be removed
-.PHONY: support-bundle
-support-bundle: bin/support-bundle
-
-.PHONY: preflight
-preflight: bin/preflight
-
-.PHONY: analyze
-analyze: bin/analyze
-
-.PHONY: collect
-collect: bin/collect
-
 .PHONY: run-troubleshoot
 run-troubleshoot: run-support-bundle
 
