@@ -2,6 +2,7 @@ package collect
 
 import (
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/pkg/errors"
@@ -160,6 +161,54 @@ func TestCollectHostKernelModules_Collect(t *testing.T) {
 			}
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("CollectHostKernelModules.Collect() = \n%v, want \n%v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_parseBuiltin(t *testing.T) {
+	tests := []struct {
+		name    string
+		content string
+		want    map[string]KernelModuleInfo
+	}{
+		{
+			name:    "empty",
+			content: "",
+			want:    map[string]KernelModuleInfo{},
+		},
+		{
+			name: "basic",
+			content: `kernel/arch/x86/events/rapl.ko
+kernel/arch/x86/events/amd/amd-uncore.ko
+kernel/arch/x86/events/intel/intel-uncore.ko
+kernel/arch/x86/events/intel/intel-cstate.ko`,
+			want: map[string]KernelModuleInfo{
+				"rapl": {
+					Status: KernelModuleLoaded,
+				},
+				"amd-uncore": {
+					Status: KernelModuleLoaded,
+				},
+				"intel-uncore": {
+					Status: KernelModuleLoaded,
+				},
+				"intel-cstate": {
+					Status: KernelModuleLoaded,
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			l := kernelModulesLoaded{}
+			got, err := l.parseBuiltin(strings.NewReader(tt.content))
+			if err != nil {
+				t.Errorf("parseBuiltin() error = %v", err)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("parseBuiltin() = %v, want %v", got, tt.want)
 			}
 		})
 	}
