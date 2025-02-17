@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -157,6 +158,26 @@ type kernelModulesLoaded struct{}
 
 // collect the list of modules that the kernel is aware of.
 func (l kernelModulesLoaded) collect() (map[string]KernelModuleInfo, error) {
+	modules, err := l.collectProc()
+	if err != nil {
+		return nil, err
+	}
+
+	builtin, err := l.collectBuiltin()
+	if err != nil {
+		return nil, err
+	}
+
+	for name, module := range builtin {
+		if _, ok := modules[name]; !ok {
+			modules[name] = module
+		}
+	}
+
+	return modules, nil
+}
+
+func (l kernelModulesLoaded) collectProc() (map[string]KernelModuleInfo, error) {
 	modules := make(map[string]KernelModuleInfo)
 
 	file, err := os.Open("/proc/modules")
@@ -194,6 +215,37 @@ func (l kernelModulesLoaded) collect() (map[string]KernelModuleInfo, error) {
 			Size:      uint64(sizeInt),
 			Instances: uint(instancesInt),
 			Status:    status,
+		}
+	}
+	return modules, nil
+}
+
+func (l kernelModulesLoaded) collectBuiltin() (map[string]KernelModuleInfo, error) {
+	modules := make(map[string]KernelModuleInfo)
+
+	out, err := exec.Command("uname", "-r").Output()
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to determine kernel release")
+	}
+	kernel := strings.TrimSpace(string(out))
+
+	file, err := os.Open(fmt.Sprintf("/usr/lib/modules/%s/modules.builtin", kernel))
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+	scanner := bufio.NewScanner(file)
+
+	for scanner.Scan() {
+		_, file := filepath.Split(scanner.Text())
+		name := strings.TrimSuffix(file, filepath.Ext(file))
+
+		if name == "" {
+			continue
+		}
+
+		modules[name] = KernelModuleInfo{
+			Status: KernelModuleLoaded,
 		}
 	}
 	return modules, nil
