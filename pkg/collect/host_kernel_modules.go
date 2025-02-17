@@ -230,6 +230,9 @@ func (l kernelModulesLoaded) collectBuiltin() (map[string]KernelModuleInfo, erro
 
 	file, err := os.Open(fmt.Sprintf("/usr/lib/modules/%s/modules.builtin", kernel))
 	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, nil
+		}
 		return nil, err
 	}
 	defer file.Close()
