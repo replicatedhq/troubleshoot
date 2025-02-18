@@ -123,11 +123,13 @@ func (l kernelModulesLoadable) collect() (map[string]KernelModuleInfo, error) {
 	}
 	kernel := strings.TrimSpace(string(out))
 
-	kernelPath := "/lib/modules/" + kernel
-
+	kernelPath := filepath.Join("/lib/modules/", kernel)
 	if _, err := os.Stat(kernelPath); os.IsNotExist(err) {
-		klog.V(2).Infof("modules are not loadable because kernel path %q does not exist, assuming we are in a container", kernelPath)
-		return modules, nil
+		kernelPath = filepath.Join("/usr/lib/modules/", kernel)
+		if _, err := os.Stat(kernelPath); os.IsNotExist(err) {
+			klog.V(2).Infof("kernel modules are not loadable because path %q does not exist, assuming we are in a container", kernelPath)
+			return modules, nil
+		}
 	}
 
 	cmd := exec.Command("/usr/bin/find", kernelPath, "-type", "f", "-name", "*.ko*")
@@ -228,7 +230,16 @@ func (l kernelModulesLoaded) collectBuiltin() (map[string]KernelModuleInfo, erro
 	}
 	kernel := strings.TrimSpace(string(out))
 
-	file, err := os.Open(fmt.Sprintf("/lib/modules/%s/modules.builtin", kernel))
+	builtinPath := filepath.Join("/lib/modules/", kernel, "modules.builtin")
+	if _, err := os.Stat(builtinPath); os.IsNotExist(err) {
+		builtinPath = filepath.Join("/usr/lib/modules/", kernel, "modules.builtin")
+		if _, err := os.Stat(builtinPath); os.IsNotExist(err) {
+			klog.V(2).Infof("kernel builtin modules path %q does not exist, assuming we are in a container", builtinPath)
+			return nil, nil
+		}
+	}
+
+	file, err := os.Open(builtinPath)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return nil, nil
