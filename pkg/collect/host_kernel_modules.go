@@ -128,6 +128,7 @@ func (l kernelModulesLoadable) collect(kernelRelease string) (map[string]KernelM
 	if _, err := os.Stat(kernelPath); os.IsNotExist(err) {
 		kernelPath = filepath.Join("/usr/lib/modules", kernelRelease)
 		if _, err := os.Stat(kernelPath); os.IsNotExist(err) {
+			kernelPath = filepath.Join("/lib/modules", kernelRelease)
 			klog.V(2).Infof("kernel modules are not loadable because path %q does not exist, assuming we are in a container", kernelPath)
 			return modules, nil
 		}
@@ -231,6 +232,7 @@ func (l kernelModulesLoaded) collectBuiltin(kernelRelease string) (map[string]Ke
 	if _, err := fs.Stat(l.fs, builtinPath); os.IsNotExist(err) {
 		builtinPath = filepath.Join("usr/lib/modules", kernelRelease, "modules.builtin")
 		if _, err := fs.Stat(l.fs, builtinPath); os.IsNotExist(err) {
+			builtinPath = filepath.Join("lib/modules", kernelRelease, "modules.builtin")
 			klog.V(2).Infof("kernel builtin modules path %q does not exist, assuming we are in a container", builtinPath)
 			return nil, nil
 		}
