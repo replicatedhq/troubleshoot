@@ -1,9 +1,11 @@
 package collect
 
 import (
+	"io/fs"
 	"reflect"
 	"strings"
 	"testing"
+	"testing/fstest"
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
@@ -14,7 +16,7 @@ type mockKernelModulesCollector struct {
 	err    error
 }
 
-func (m mockKernelModulesCollector) collect() (map[string]KernelModuleInfo, error) {
+func (m mockKernelModulesCollector) collect(kernelRelease string) (map[string]KernelModuleInfo, error) {
 	if m.err != nil {
 		return nil, m.err
 	}
@@ -209,6 +211,130 @@ kernel/arch/x86/events/intel/intel-cstate.ko`,
 			}
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("parseBuiltin() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_kernelModulesLoaded_collect(t *testing.T) {
+	tests := []struct {
+		name          string
+		fs            fs.FS
+		kernelRelease string
+		want          map[string]KernelModuleInfo
+		wantErr       bool
+	}{
+		{
+			name: "lib modules path",
+			fs: &fstest.MapFS{
+				"proc/modules": &fstest.MapFile{
+					Data: []byte(`module1 1000 2 - Live 0x0000000000000000
+module2 2000 1 - Loading 0x0000000000000000
+`),
+					Mode: 0444,
+				},
+				"lib/modules/5.4.0/modules.builtin": &fstest.MapFile{
+					Data: []byte(`kernel/builtin1.ko
+kernel/builtin2.ko
+`),
+					Mode: 0644,
+				},
+			},
+			kernelRelease: "5.4.0",
+			want: map[string]KernelModuleInfo{
+				"module1": {
+					Size:      1000,
+					Instances: 2,
+					Status:    KernelModuleLoaded,
+				},
+				"module2": {
+					Size:      2000,
+					Instances: 1,
+					Status:    KernelModuleLoading,
+				},
+				"builtin1": {
+					Status: KernelModuleLoaded,
+				},
+				"builtin2": {
+					Status: KernelModuleLoaded,
+				},
+			},
+		},
+		{
+			name: "usr lib modules path",
+			fs: &fstest.MapFS{
+				"proc/modules": &fstest.MapFile{
+					Data: []byte(`module1 1000 2 - Live 0x0000000000000000
+`),
+					Mode: 0444,
+				},
+				"usr/lib/modules/5.4.0/modules.builtin": &fstest.MapFile{
+					Data: []byte(`kernel/builtin1.ko
+kernel/builtin2.ko
+`),
+					Mode: 0644,
+				},
+			},
+			kernelRelease: "5.4.0",
+			want: map[string]KernelModuleInfo{
+				"module1": {
+					Size:      1000,
+					Instances: 2,
+					Status:    KernelModuleLoaded,
+				},
+				"builtin1": {
+					Status: KernelModuleLoaded,
+				},
+				"builtin2": {
+					Status: KernelModuleLoaded,
+				},
+			},
+		},
+		{
+			name: "no builtin modules file",
+			fs: &fstest.MapFS{
+				"proc/modules": &fstest.MapFile{
+					Data: []byte(`module1 1000 2 - Live 0x0000000000000000
+`),
+					Mode: 0444,
+				},
+			},
+			kernelRelease: "5.4.0",
+			want: map[string]KernelModuleInfo{
+				"module1": {
+					Size:      1000,
+					Instances: 2,
+					Status:    KernelModuleLoaded,
+				},
+			},
+		},
+		{
+			name: "no proc modules file should error",
+			fs: &fstest.MapFS{
+				"lib/modules/5.4.0/modules.builtin": &fstest.MapFile{
+					Data: []byte(`kernel/builtin1.ko
+kernel/builtin2.ko
+`),
+					Mode: 0644,
+				},
+			},
+			kernelRelease: "5.4.0",
+			wantErr:       true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			l := kernelModulesLoaded{
+				fs: tt.fs,
+			}
+			got, err := l.collect(tt.kernelRelease)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("kernelModulesLoaded.collect() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("kernelModulesLoaded.collect() = %v, want %v", got, tt.want)
 			}
 		})
 	}
