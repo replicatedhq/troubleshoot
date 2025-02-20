@@ -73,10 +73,21 @@ func TestAnalyzeHostOSCheckCondition(t *testing.T) {
 			name:        "centos < 8 when actual is rhel 7.2", // this tests that we properly exclude other OSes despite the version matching
 			conditional: "centos < 8",
 			osInfo: collect.HostOSInfo{
-				Platform:        "rhel",
+				Platform:        "redhat",
 				PlatformVersion: "7.2",
 			},
 			expected:  false,
+			expectErr: false,
+		},
+		{
+			name:        "rhel == 8.2 when actual is 8.2", // this tests that we match on either platform or platform family
+			conditional: "rhel == 8.2",
+			osInfo: collect.HostOSInfo{
+				Platform:        "centos",
+				PlatformFamily:  "rhel",
+				PlatformVersion: "8.2",
+			},
+			expected:  true,
 			expectErr: false,
 		},
 		{
@@ -98,6 +109,56 @@ func TestAnalyzeHostOSCheckCondition(t *testing.T) {
 			},
 			expected:  false,
 			expectErr: true,
+		},
+		{
+			name:        "multiple conditionals, neither true",
+			conditional: "ubuntu > 20.04 || <= 18.04",
+			osInfo: collect.HostOSInfo{
+				Platform:        "ubuntu",
+				PlatformVersion: "20.04",
+			},
+			expected:  false,
+			expectErr: false,
+		},
+		{
+			name:        "multiple conditionals, first true",
+			conditional: "ubuntu > 20.04 || <= 18.04",
+			osInfo: collect.HostOSInfo{
+				Platform:        "ubuntu",
+				PlatformVersion: "22.04",
+			},
+			expected:  true,
+			expectErr: false,
+		},
+		{
+			name:        "multiple conditionals, second true",
+			conditional: "ubuntu > 20.04 || <= 18.04",
+			osInfo: collect.HostOSInfo{
+				Platform:        "ubuntu",
+				PlatformVersion: "18.04",
+			},
+			expected:  true,
+			expectErr: false,
+		},
+		{
+			name:        "multiple conditionals, between the two",
+			conditional: "redhat >= 8 && < 9",
+			osInfo: collect.HostOSInfo{
+				Platform:        "redhat",
+				PlatformVersion: "8.2",
+			},
+			expected:  true,
+			expectErr: false,
+		},
+		{
+			name:        "multiple conditionals, outside the two",
+			conditional: "redhat >= 8 && < 9",
+			osInfo: collect.HostOSInfo{
+				Platform:        "redhat",
+				PlatformVersion: "9.2",
+			},
+			expected:  false,
+			expectErr: false,
 		},
 	}
 
