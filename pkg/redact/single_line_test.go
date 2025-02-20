@@ -308,6 +308,16 @@ func TestNewSingleLineRedactor(t *testing.T) {
 				},
 			},
 		},
+		{
+			name:        "Multiple newlines with no match",
+			re:          `abcd`,
+			inputString: "no match\n\n no match \n\n",
+			wantString:  "no match\n\n no match \n\n",
+			wantRedactions: RedactionList{
+				ByRedactor: map[string][]Redaction{},
+				ByFile:     map[string][]Redaction{},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

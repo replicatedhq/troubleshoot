@@ -76,7 +76,7 @@ func (r *MultiLineRedactor) Redact(input io.Reader, path string) io.Reader {
 					if err != nil {
 						return
 					}
-					line1, line2, err = getNextTwoLines(reader, line2)
+					line1, line2, err = getNextTwoLines(reader, &line2)
 					flushLastLine = true
 					continue
 				}
@@ -89,7 +89,7 @@ func (r *MultiLineRedactor) Redact(input io.Reader, path string) io.Reader {
 				if err != nil {
 					return
 				}
-				line1, line2, err = getNextTwoLines(reader, line2)
+				line1, line2, err = getNextTwoLines(reader, &line2)
 				flushLastLine = true
 				continue
 			}
@@ -127,7 +127,7 @@ func (r *MultiLineRedactor) Redact(input io.Reader, path string) io.Reader {
 	return out
 }
 
-func getNextTwoLines(reader *bufio.Reader, curLine2 []byte) (line1 []byte, line2 []byte, err error) {
+func getNextTwoLines(reader *bufio.Reader, curLine2 *[]byte) (line1 []byte, line2 []byte, err error) {
 	line2 = []byte{}
 
 	if curLine2 == nil {
@@ -140,7 +140,7 @@ func getNextTwoLines(reader *bufio.Reader, curLine2 []byte) (line1 []byte, line2
 		return
 	}
 
-	line1 = curLine2
+	line1 = *curLine2
 	line2, err = readLine(reader)
 	if err != nil {
 		return
