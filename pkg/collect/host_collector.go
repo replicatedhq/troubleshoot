@@ -69,7 +69,9 @@ func GetHostCollector(collector *troubleshootv1beta2.HostCollect, bundlePath str
 			hostCollector: collector.KernelModules,
 			BundlePath:    bundlePath,
 			loadable:      kernelModulesLoadable{},
-			loaded:        kernelModulesLoaded{},
+			loaded: kernelModulesLoaded{
+				fs: os.DirFS("/"),
+			},
 		}, true
 	case collector.TCPConnect != nil:
 		return &CollectHostTCPConnect{collector.TCPConnect, bundlePath}, true

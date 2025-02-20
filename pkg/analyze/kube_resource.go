@@ -18,6 +18,7 @@ import (
 
 var Filemap = map[string]string{
 	"deployment":            constants.CLUSTER_RESOURCES_DEPLOYMENTS,
+	"daemonset":             constants.CLUSTER_RESOURCES_DAEMONSETS,
 	"statefulset":           constants.CLUSTER_RESOURCES_STATEFULSETS,
 	"networkpolicy":         constants.CLUSTER_RESOURCES_NETWORK_POLICY,
 	"pod":                   constants.CLUSTER_RESOURCES_PODS,
