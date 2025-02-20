@@ -76,6 +76,7 @@ func (a *AnalyzeHostOS) CheckCondition(when string, data []byte) (bool, error) {
 	stringToParse = fmt.Sprintf("%s %s", parts[1], toleratedVer.String())
 
 	trimmedParts := strings.Split(when, " ")
+	// read through the next three parts if they exist - this could look like "|| < 20.04" or "&& >= 8"
 	for len(trimmedParts) > 3 {
 		trimmedParts = trimmedParts[3:]
 
