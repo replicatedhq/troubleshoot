@@ -25,9 +25,10 @@ func TestCollectHostOS_Collect(t *testing.T) {
 	require.NoError(t, err)
 
 	// Check if values exist. They will be different on different machines.
-	assert.Equal(t, 4, len(m))
+	assert.Equal(t, 5, len(m))
 	assert.Contains(t, m, "name")
 	assert.Contains(t, m, "kernelVersion")
 	assert.Contains(t, m, "platformVersion")
-	assert.Contains(t, m, "platformVersion")
+	assert.Contains(t, m, "platform")
+	assert.Contains(t, m, "platformFamily")
 }
