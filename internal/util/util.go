@@ -17,6 +17,10 @@ import (
 
 const HOST_COLLECTORS_RUN_AS_ROOT_PROMPT = "Some host collectors need to be run as root.\nDo you want to exit and rerun the command using sudo?"
 
+type Keyer interface {
+	UniqKey() string
+}
+
 func HomeDir() string {
 	if h := os.Getenv("HOME"); h != "" {
 		return h
@@ -156,16 +160,25 @@ func Dedup[T any](objs []T) []T {
 	}
 
 	for _, o := range objs {
-		data, err := json.Marshal(o)
-		if err != nil {
-			out = append(out, o)
-			continue
+		var key string
+
+		// Check if the object implements the Keyer interface
+		if k, ok := any(o).(Keyer); ok {
+			key = k.UniqKey()
+		} else {
+			data, err := json.Marshal(o)
+			if err != nil {
+				out = append(out, o)
+				continue
+			}
+			key = string(data)
 		}
-		key := string(data)
+
 		if _, ok := seen[key]; !ok {
 			out = append(out, o)
 			seen[key] = true
 		}
 	}
+
 	return out
 }
