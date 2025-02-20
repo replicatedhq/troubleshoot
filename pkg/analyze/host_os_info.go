@@ -60,13 +60,46 @@ func (a *AnalyzeHostOS) CheckCondition(when string, data []byte) (bool, error) {
 	if len(parts) < 3 {
 		return false, errors.New("when condition must have at least 3 parts")
 	}
+
+	// handle things like "ubuntu == 20.04", but also "ubuntu == 20.04 || < 20.04" or "ubuntu == 20.04 || < 20.04 || >= 20.04" etc
+	// the number of parts should be a multiple of 3
+	if len(parts)%3 != 0 {
+		return false, errors.New("when condition must have a multiple of 3 parts, such as 'ubuntu == 20.04' or 'rhel >= 8 && < 9'")
+	}
+
+	stringToParse := ""
 	expectedVer := fixVersion(parts[2])
 	toleratedVer, err := semver.ParseTolerant(expectedVer)
 	if err != nil {
 		return false, errors.Wrapf(err, "failed to parse version: %s", expectedVer)
 	}
-	when = fmt.Sprintf("%s %v", parts[1], toleratedVer)
-	whenRange, err := semver.ParseRange(when)
+	stringToParse = fmt.Sprintf("%s %s", parts[1], toleratedVer.String())
+
+	trimmedParts := strings.Split(when, " ")
+	// read through the next three parts if they exist - this could look like "|| < 20.04" or "&& >= 8"
+	for len(trimmedParts) > 3 {
+		trimmedParts = trimmedParts[3:]
+
+		expectedVer = fixVersion(trimmedParts[2])
+		toleratedVer, err = semver.ParseTolerant(expectedVer)
+		if err != nil {
+			return false, errors.Wrapf(err, "failed to parse version: %s", expectedVer)
+		}
+
+		// first part is either "||" or "&&"
+		// if it's "&&", it is assumed by the semver package and should not be included
+		// second part is the conditional
+		// third part is the version
+		if trimmedParts[0] == "||" {
+			stringToParse = fmt.Sprintf("%s %s %s %s", stringToParse, trimmedParts[0], trimmedParts[1], toleratedVer.String())
+		} else if trimmedParts[0] == "&&" {
+			stringToParse = fmt.Sprintf("%s %s %s", stringToParse, trimmedParts[1], toleratedVer.String())
+		} else {
+			return false, errors.Errorf("invalid conditional, expected either && or ||, got %q", trimmedParts[0])
+		}
+	}
+
+	whenRange, err := semver.ParseRange(stringToParse)
 	if err != nil {
 		return false, errors.Wrapf(err, "failed to parse version range: %s", when)
 	}
@@ -97,7 +130,7 @@ func (a *AnalyzeHostOS) CheckCondition(when string, data []byte) (bool, error) {
 				return true, nil
 			}
 		}
-	} else if platform == osInfo.Platform {
+	} else if platform == osInfo.Platform || platform == osInfo.PlatformFamily {
 		fixedDistVer := fixVersion(osInfo.PlatformVersion)
 		toleratedDistVer, err := semver.ParseTolerant(fixedDistVer)
 		if err != nil {

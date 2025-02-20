@@ -14,6 +14,7 @@ type HostOSInfo struct {
 	KernelVersion   string `json:"kernelVersion"`
 	PlatformVersion string `json:"platformVersion"`
 	Platform        string `json:"platform"`
+	PlatformFamily  string `json:"platformFamily"`
 }
 
 type HostOSInfoNodes struct {
@@ -44,6 +45,7 @@ func (c *CollectHostOS) Collect(progressChan chan<- interface{}) (map[string][]b
 	}
 	hostInfo := HostOSInfo{}
 	hostInfo.Platform = infoStat.Platform
+	hostInfo.PlatformFamily = infoStat.PlatformFamily
 	hostInfo.KernelVersion = infoStat.KernelVersion
 	hostInfo.Name = infoStat.Hostname
 	hostInfo.PlatformVersion = infoStat.PlatformVersion
