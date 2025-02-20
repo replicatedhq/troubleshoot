@@ -50,6 +50,36 @@ func TestAnalyzeHostOSCheckCondition(t *testing.T) {
 			expectErr: false,
 		},
 		{
+			name:        "centos < 8 when actual is 7.2",
+			conditional: "centos < 8",
+			osInfo: collect.HostOSInfo{
+				Platform:        "centos",
+				PlatformVersion: "7.2",
+			},
+			expected:  true,
+			expectErr: false,
+		},
+		{
+			name:        "centos < 8 when actual is 8.2",
+			conditional: "centos < 8",
+			osInfo: collect.HostOSInfo{
+				Platform:        "centos",
+				PlatformVersion: "8.2",
+			},
+			expected:  false,
+			expectErr: false,
+		},
+		{
+			name:        "centos < 8 when actual is rhel 7.2", // this tests that we properly exclude other OSes despite the version matching
+			conditional: "centos < 8",
+			osInfo: collect.HostOSInfo{
+				Platform:        "rhel",
+				PlatformVersion: "7.2",
+			},
+			expected:  false,
+			expectErr: false,
+		},
+		{
 			name:        "ubuntu == 20.04 when actual is 18.04",
 			conditional: "ubuntu == 20.04",
 			osInfo: collect.HostOSInfo{
