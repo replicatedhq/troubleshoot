@@ -1,15 +1,14 @@
 package analyzer
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"path/filepath"
 	"slices"
 	"strings"
-	"text/template"
 
 	"github.com/pkg/errors"
+	"github.com/replicatedhq/troubleshoot/internal/util"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/replicatedhq/troubleshoot/pkg/constants"
 	corev1 "k8s.io/api/core/v1"
@@ -240,21 +239,14 @@ func renderContainerMessage(message string, info *matchedContainerInfo) string {
 	if info == nil {
 		return message
 	}
+
 	out := fmt.Sprintf("Container matched. Container: %s, Namespace: %s, Pod: %s", info.ContainerName, info.Namespace, info.PodName)
 
-	tmpl := template.New("container")
-	msgTmpl, err := tmpl.Parse(message)
-	if err != nil {
-		klog.V(2).Infof("failed to parse message template: %v", err)
-		return out
-	}
-
-	var m bytes.Buffer
-	err = msgTmpl.Execute(&m, info)
+	renderedMsg, err := util.RenderTemplate(message, info)
 	if err != nil {
 		klog.V(2).Infof("failed to render message template: %v", err)
 		return out
 	}
 
-	return strings.TrimSpace(m.String())
+	return strings.TrimSpace(renderedMsg)
 }

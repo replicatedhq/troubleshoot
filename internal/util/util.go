@@ -11,6 +11,7 @@ import (
 	"strings"
 	"text/template"
 
+	"github.com/Masterminds/sprig/v3"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 )
@@ -94,7 +95,7 @@ func IsInCluster() bool {
 // RenderTemplate renders a template and returns the result as a string
 func RenderTemplate(tpl string, data interface{}) (string, error) {
 	// Create a new template and parse the letter into it
-	t, err := template.New("data").Parse(tpl)
+	t, err := template.New("data").Funcs(sprig.FuncMap()).Parse(tpl)
 	if err != nil {
 		return "", err
 	}

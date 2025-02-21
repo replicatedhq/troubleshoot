@@ -1,14 +1,13 @@
 package analyzer
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"path/filepath"
 	"strings"
-	"text/template"
 
 	"github.com/pkg/errors"
+	"github.com/replicatedhq/troubleshoot/internal/util"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/replicatedhq/troubleshoot/pkg/constants"
 	"github.com/replicatedhq/troubleshoot/pkg/k8sutil"
@@ -190,31 +189,19 @@ func clusterPodStatuses(analyzer *troubleshootv1beta2.ClusterPodStatuses, getChi
 				pod.Status.Message = "None"
 			}
 
-			tmpl := template.New("pod")
-
 			// template the title
-			titleTmpl, err := tmpl.Parse(r.Title)
+			renderedTitle, err := util.RenderTemplate(r.Title, pod)
 			if err != nil {
-				return nil, errors.Wrap(err, "failed to create new title template")
+				return nil, errors.Wrap(err, "failed to render template")
 			}
-			var t bytes.Buffer
-			err = titleTmpl.Execute(&t, pod)
-			if err != nil {
-				return nil, errors.Wrap(err, "failed to execute template")
-			}
-			r.Title = t.String()
+			r.Title = renderedTitle
 
 			// template the message
-			msgTmpl, err := tmpl.Parse(r.Message)
+			renderedMsg, err := util.RenderTemplate(r.Message, pod)
 			if err != nil {
 				return nil, errors.Wrap(err, "failed to create new title template")
 			}
-			var m bytes.Buffer
-			err = msgTmpl.Execute(&m, pod)
-			if err != nil {
-				return nil, errors.Wrap(err, "failed to execute template")
-			}
-			r.Message = strings.TrimSpace(m.String())
+			r.Message = strings.TrimSpace(renderedMsg)
 
 			// add to results, break and check the next pod
 			allResults = append(allResults, &r)
