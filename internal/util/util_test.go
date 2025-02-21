@@ -284,6 +284,20 @@ func TestRenderTemplate(t *testing.T) {
 			want:    "Hello, <no value>!",
 			wantErr: false,
 		},
+		{
+			name:    "template with sprig function works",
+			tpl:     "{{ \"hello \" | upper }}{{ .Name }}",
+			data:    map[string]string{"Name": "World"},
+			want:    "HELLO World",
+			wantErr: false,
+		},
+		{
+			name:    "template with undefined sprig function errors",
+			tpl:     "{{ \"hello \" | upp }}{{ .Name }}",
+			data:    map[string]string{"Name": "World"},
+			want:    "",
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
