@@ -94,6 +94,16 @@ func Test_NewMultiLineRedactor(t *testing.T) {
 "key": "***HIDDEN***"
 `,
 		},
+		{
+			name: "Multiple newlines with no match",
+			selector: LineRedactor{
+				regex: `(?i)"name": *"[^\"]*SECRET_?ACCESS_?KEY[^\"]*"`,
+				scan:  `secret_?access_?key`,
+			},
+			redactor:    `(?i)("value": *")(?P<mask>.*[^\"]*)(")`,
+			inputString: "no match\n\n no match \n\n",
+			wantString:  "no match\n\n no match \n\n",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
