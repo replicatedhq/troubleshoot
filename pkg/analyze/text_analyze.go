@@ -272,6 +272,11 @@ func compareRegex(conditional string, foundMatches map[string]string) (bool, err
 	operator := parts[1]
 	lookForValue := parts[2]
 
+	// handle empty strings
+	if lookForValue == "''" || lookForValue == `""` {
+		lookForValue = ""
+	}
+
 	foundValue, ok := foundMatches[lookForMatchName]
 	if !ok {
 		// not an error, just wasn't matched
