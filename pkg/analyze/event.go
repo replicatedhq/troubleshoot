@@ -1,16 +1,15 @@
 package analyzer
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"path"
 	"regexp"
 	"strconv"
 	"strings"
-	"text/template"
 
 	"github.com/pkg/errors"
+	"github.com/replicatedhq/troubleshoot/internal/util"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/replicatedhq/troubleshoot/pkg/constants"
 	corev1 "k8s.io/api/core/v1"
@@ -198,21 +197,14 @@ func decorateMessage(message string, event *corev1.Event) string {
 	if event == nil {
 		return message
 	}
+
 	out := fmt.Sprintf("Event matched. Reason: %s Name: %s Message: %s", event.Reason, event.InvolvedObject.Name, event.Message)
 
-	tmpl := template.New("event")
-	msgTmpl, err := tmpl.Parse(message)
+	renderedMsg, err := util.RenderTemplate(message, event)
 	if err != nil {
 		klog.V(2).Infof("failed to parse message template: %v", err)
 		return out
 	}
 
-	var m bytes.Buffer
-	err = msgTmpl.Execute(&m, event)
-	if err != nil {
-		klog.V(2).Infof("failed to render message template: %v", err)
-		return out
-	}
-
-	return strings.TrimSpace(m.String())
+	return strings.TrimSpace(renderedMsg)
 }

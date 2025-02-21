@@ -1,15 +1,14 @@
 package analyzer
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"log"
 	"strings"
-	"text/template"
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/replicatedhq/troubleshoot/internal/util"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/replicatedhq/troubleshoot/pkg/collect"
 )
@@ -171,18 +170,12 @@ func doCompareHostFilesystemPerformance(operator string, actual time.Duration, d
 }
 
 func renderFSPerfOutcome(outcome string, fsPerf collect.FSPerfResults) string {
-	t, err := template.New("").Parse(outcome)
-	if err != nil {
-		log.Printf("Failed to parse filesystem performance outcome: %v", err)
-		return outcome
-	}
-	var buf bytes.Buffer
-	err = t.Execute(&buf, fsPerf)
+	rendered, err := util.RenderTemplate(outcome, fsPerf)
 	if err != nil {
 		log.Printf("Failed to render filesystem performance outcome: %v", err)
 		return outcome
 	}
-	return buf.String()
+	return rendered
 }
 
 func (a *AnalyzeHostFilesystemPerformance) analyzeSingleNode(content collectedContent, currentTitle string) ([]*AnalyzeResult, error) {

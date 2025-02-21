@@ -1,15 +1,14 @@
 package analyzer
 
 import (
-	"bytes"
 	"fmt"
 	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
-	"text/template"
 
 	"github.com/pkg/errors"
+	"github.com/replicatedhq/troubleshoot/internal/util"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 )
 
@@ -210,7 +209,7 @@ func analyzeRegexGroups(pattern string, collected []byte, outcomes []*troublesho
 
 			if isMatch {
 				result.IsFail = true
-				tplMessage, err := templateRegExGroup(outcome.Fail.Message, foundMatches)
+				tplMessage, err := util.RenderTemplate(outcome.Fail.Message, foundMatches)
 				if err != nil {
 					return result, errors.Wrap(err, "failed to template message in outcome.Fail block")
 				}
@@ -227,7 +226,7 @@ func analyzeRegexGroups(pattern string, collected []byte, outcomes []*troublesho
 
 			if isMatch {
 				result.IsWarn = true
-				tplMessage, err := templateRegExGroup(outcome.Warn.Message, foundMatches)
+				tplMessage, err := util.RenderTemplate(outcome.Warn.Message, foundMatches)
 				if err != nil {
 					return result, errors.Wrap(err, "failed to template message in outcome.Warn block")
 				}
@@ -244,7 +243,7 @@ func analyzeRegexGroups(pattern string, collected []byte, outcomes []*troublesho
 
 			if isMatch {
 				result.IsPass = true
-				tplMessage, err := templateRegExGroup(outcome.Pass.Message, foundMatches)
+				tplMessage, err := util.RenderTemplate(outcome.Pass.Message, foundMatches)
 				if err != nil {
 					return result, errors.Wrap(err, "failed to template message in outcome.Pass block")
 				}
@@ -257,20 +256,6 @@ func analyzeRegexGroups(pattern string, collected []byte, outcomes []*troublesho
 	}
 
 	return result, nil
-}
-
-// templateRegExGroup takes a tpl and replaces the variables using matches.
-func templateRegExGroup(tpl string, matches map[string]string) (string, error) {
-	t, err := template.New("").Parse(tpl)
-	if err != nil {
-		return "", err
-	}
-	var msg bytes.Buffer
-	err = t.Execute(&msg, matches)
-	if err != nil {
-		return "", err
-	}
-	return msg.String(), nil
 }
 
 func compareRegex(conditional string, foundMatches map[string]string) (bool, error) {
@@ -286,6 +271,11 @@ func compareRegex(conditional string, foundMatches map[string]string) (bool, err
 	lookForMatchName := parts[0]
 	operator := parts[1]
 	lookForValue := parts[2]
+
+	// handle empty strings
+	if lookForValue == "''" || lookForValue == `""` {
+		lookForValue = ""
+	}
 
 	foundValue, ok := foundMatches[lookForMatchName]
 	if !ok {

@@ -9,9 +9,8 @@ import (
 	"strings"
 	"unicode"
 
-	"text/template"
-
 	"github.com/pkg/errors"
+	"github.com/replicatedhq/troubleshoot/internal/util"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/replicatedhq/troubleshoot/pkg/collect"
 )
@@ -158,20 +157,12 @@ func compareSystemPackagesConditionalToActual(conditional string, templateMap ma
 		return true, nil
 	}
 
-	tmpl := template.New("conditional")
-
-	conditionalTmpl, err := tmpl.Parse(conditional)
+	when, err := util.RenderTemplate(conditional, templateMap)
 	if err != nil {
-		return false, errors.Wrap(err, "failed to create new when template")
+		return false, errors.Wrap(err, "failed to render when template")
 	}
 
-	var when bytes.Buffer
-	err = conditionalTmpl.Execute(&when, templateMap)
-	if err != nil {
-		return false, errors.Wrap(err, "failed to execute when template")
-	}
-
-	t, err := strconv.ParseBool(when.String())
+	t, err := strconv.ParseBool(when)
 	if err != nil {
 		return false, errors.Wrap(err, "failed to parse templated when expression as a boolean")
 	}
@@ -223,21 +214,14 @@ func (a *AnalyzeHostSystemPackages) analyzeSingleNode(content collectedContent, 
 				continue
 			}
 
-			tmpl := template.New("package")
-
 			r.Title = currentTitle
 
 			// template the message
-			msgTmpl, err := tmpl.Parse(r.Message)
+			renderedMsg, err := util.RenderTemplate(r.Message, templateMap)
 			if err != nil {
 				return nil, errors.Wrap(err, "failed to create new message template")
 			}
-			var m bytes.Buffer
-			err = msgTmpl.Execute(&m, templateMap)
-			if err != nil {
-				return nil, errors.Wrap(err, "failed to execute message template")
-			}
-			r.Message = m.String()
+			r.Message = renderedMsg
 
 			// add to results, break and check the next pod
 			allResults = append(allResults, &r)

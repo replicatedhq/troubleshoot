@@ -1,16 +1,15 @@
 package analyzer
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
-	"text/template"
 
 	"github.com/pkg/errors"
+	"github.com/replicatedhq/troubleshoot/internal/util"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"k8s.io/klog/v2"
 	kubeletv1alpha1 "k8s.io/kubelet/pkg/apis/stats/v1alpha1"
@@ -299,18 +298,11 @@ func renderTemplate(tmpMsg string, data any) string {
 		return tmpMsg
 	}
 
-	t, err := template.New("msg").Parse(tmpMsg)
+	rendered, err := util.RenderTemplate(tmpMsg, data)
 	if err != nil {
-		klog.V(2).Infof("Failed to parse template: %s", err)
+		klog.V(2).Infof("Failed to render template: %s", err)
 		return tmpMsg
 	}
 
-	var m bytes.Buffer
-	err = t.Execute(&m, data)
-	if err != nil {
-		klog.V(2).Infof("Failed to execute template: %s", err)
-		return tmpMsg
-	}
-
-	return m.String()
+	return rendered
 }
