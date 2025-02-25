@@ -279,7 +279,7 @@ func TestAnalyzeVelero_Backups(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := analyzeBackups(tt.args.backups); !reflect.DeepEqual(got, tt.want) {
+			if got := analyzeBackups(tt.args.backups, 1); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("analyzeBackups() = %v, want %v", got, tt.want)
 			}
 		})
@@ -626,10 +626,37 @@ func TestAnalyzeVelero_Restores(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "restore failureReason - velero pod restarted",
+			args: args{
+				restores: []*velerov1.Restore{
+					{
+						ObjectMeta: metav1.ObjectMeta{
+							Name: "instance-abcdef.kotsadm",
+						},
+						Spec: velerov1.RestoreSpec{
+							BackupName: "instance-abcdef",
+						},
+						Status: velerov1.RestoreStatus{
+							Phase:         velerov1.RestorePhaseCompleted,
+							FailureReason: "found a restore with status \"InProgress\" during the server starting, mark it as \"Failed\"",
+						},
+					},
+				},
+			},
+			want: []*AnalyzeResult{
+				{
+					Title:   "Restore instance-abcdef.kotsadm",
+					Message: "Restore instance-abcdef.kotsadm reported a FailureReason: found a restore with status \"InProgress\" during the server starting, mark it as \"Failed\". Resolution: The Velero pod exited or restarted while a restore was already in progress, most likely due to running out of memory. Check the resource allocation of the velero pod and increase it or remove the memory limit.",
+					IsPass:  false,
+					IsFail:  true,
+				},
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := analyzeRestores(tt.args.restores); !reflect.DeepEqual(got, tt.want) {
+			if got := analyzeRestores(tt.args.restores, 1); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("analyzeRestores() = %v, want %v", got, tt.want)
 			}
 		})
@@ -894,7 +921,7 @@ func TestAnalyzeVelero_Logs(t *testing.T) {
 				{
 					Title:   "Velero logs for pod [node-agent-m6n9j]",
 					Message: "Found error|panic|fatal in node-agent* pod log file(s)",
-					IsWarn:  true,
+					IsFail:  true,
 				},
 				{
 					Title:   "Velero Logs analysis for kind [node-agent*]",
