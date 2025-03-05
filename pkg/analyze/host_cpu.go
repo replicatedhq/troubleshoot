@@ -46,28 +46,39 @@ func (a *AnalyzeHostCPU) CheckCondition(when string, data []byte) (bool, error) 
 }
 
 func (a *AnalyzeHostCPU) Analyze(
-	getCollectedFileContents func(string) ([]byte, error), findFiles getChildCollectedFileContents,
+	getCollectedFileContents func(string) ([]byte, error),
+	findFiles getChildCollectedFileContents,
 ) ([]*AnalyzeResult, error) {
 	result := AnalyzeResult{Title: a.Title()}
 
-	// Use the generic function to collect both local and remote data
 	collectedContents, err := retrieveCollectedContents(
 		getCollectedFileContents,
-		collect.HostCPUPath,     // Local path
-		collect.NodeInfoBaseDir, // Remote base directory
-		collect.HostCPUFileName, // Remote file name
+		collect.HostCPUPath,
+		collect.NodeInfoBaseDir,
+		collect.HostCPUFileName,
 	)
 	if err != nil {
 		return []*AnalyzeResult{&result}, err
 	}
 
+	content := collectedContents[0].Data
+
+	cpuInfo := collect.CPUInfo{}
+	if err := json.Unmarshal(content, &cpuInfo); err != nil {
+		return nil, errors.Wrap(err, "failed to unmarshal cpu info")
+	}
+
 	results, err := analyzeHostCollectorResults(collectedContents, a.hostAnalyzer.Outcomes, a.CheckCondition, a.Title())
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to analyze OS version")
+		return nil, errors.Wrap(err, "failed to analyze CPU info")
+	}
+
+	// Add machine arch info to the results
+	for _, r := range results {
+		r.Message = strings.ReplaceAll(r.Message, "{{ Info.MachineArch }}", cpuInfo.MachineArch)
 	}
 
 	return results, nil
-
 }
 
 func doCompareHostCPUMicroArchitecture(microarch string, flags []string) (res bool, err error) {
