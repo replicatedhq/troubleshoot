@@ -231,12 +231,12 @@ func TestHostCpuAnalyze(t *testing.T) {
 				{
 					Fail: &troubleshootv1beta2.SingleOutcome{
 						When:    "machineArch != x86_64",
-						Message: "Current architecture {{ Info.MachineArch }} is not supported",
+						Message: "Current architecture {{ .Info.MachineArch }} is not supported",
 					},
 				},
 				{
 					Pass: &troubleshootv1beta2.SingleOutcome{
-						Message: "Architecture {{ Info.MachineArch }} is supported",
+						Message: "Architecture {{ .Info.MachineArch }} is supported",
 					},
 				},
 			},
