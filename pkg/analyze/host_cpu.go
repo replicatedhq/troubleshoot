@@ -13,6 +13,9 @@ import (
 	"github.com/replicatedhq/troubleshoot/pkg/collect"
 )
 
+// microarchs holds a list of features present in each microarchitecture.
+// ref: https://gitlab.com/x86-psABIs/x86-64-ABI
+// ref: https://developers.redhat.com/blog/2021/01/05/building-red-hat-enterprise-linux-9-for-the-x86-64-v2-microarchitecture-level
 var microarchs = map[string][]string{
 	"x86-64-v2": {"cx16", "lahf_lm", "popcnt", "sse4_1", "sse4_2", "ssse3"},
 	"x86-64-v3": {"avx", "avx2", "bmi1", "bmi2", "f16c", "fma", "abm", "movbe", "xsave"},
