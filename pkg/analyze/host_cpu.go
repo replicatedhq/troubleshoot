@@ -63,11 +63,21 @@ func (a *AnalyzeHostCPU) Analyze(
 
 	results, err := analyzeHostCollectorResults(collectedContents, a.hostAnalyzer.Outcomes, a.CheckCondition, a.Title())
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to analyze OS version")
+		return nil, errors.Wrap(err, "failed to analyze CPU info")
+	}
+
+	// Add template support
+	content := collectedContents[0].Data
+	cpuInfo := collect.CPUInfo{}
+	if err := json.Unmarshal(content, &cpuInfo); err != nil {
+		return nil, errors.Wrap(err, "failed to unmarshal cpu info")
+	}
+
+	for _, r := range results {
+		r.Message = strings.ReplaceAll(r.Message, "{{ Info.MachineArch }}", cpuInfo.MachineArch)
 	}
 
 	return results, nil
-
 }
 
 func doCompareHostCPUMicroArchitecture(microarch string, flags []string) (res bool, err error) {

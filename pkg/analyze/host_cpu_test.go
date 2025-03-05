@@ -220,6 +220,34 @@ func TestHostCpuAnalyze(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "test machine architecture template",
+			cpuInfo: collect.CPUInfo{
+				LogicalCount:  16,
+				PhysicalCount: 8,
+				MachineArch:   "x86_64",
+			},
+			outcomes: []*troubleshootv1beta2.Outcome{
+				{
+					Fail: &troubleshootv1beta2.SingleOutcome{
+						When:    "machineArch != x86_64",
+						Message: "Current architecture {{ Info.MachineArch }} is not supported",
+					},
+				},
+				{
+					Pass: &troubleshootv1beta2.SingleOutcome{
+						Message: "Architecture {{ Info.MachineArch }} is supported",
+					},
+				},
+			},
+			results: []*AnalyzeResult{
+				{
+					IsPass:  true,
+					Message: "Architecture x86_64 is supported",
+					Title:   "Number of CPUs",
+				},
+			},
+		},
 	}
 
 	for _, tc := range tt {
