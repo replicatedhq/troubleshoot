@@ -1,11 +1,13 @@
 package analyzer
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"slices"
 	"strconv"
 	"strings"
+	"text/template"
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
@@ -46,28 +48,55 @@ func (a *AnalyzeHostCPU) CheckCondition(when string, data []byte) (bool, error) 
 }
 
 func (a *AnalyzeHostCPU) Analyze(
-	getCollectedFileContents func(string) ([]byte, error), findFiles getChildCollectedFileContents,
+	getCollectedFileContents func(string) ([]byte, error),
+	findFiles getChildCollectedFileContents,
 ) ([]*AnalyzeResult, error) {
 	result := AnalyzeResult{Title: a.Title()}
 
-	// Use the generic function to collect both local and remote data
 	collectedContents, err := retrieveCollectedContents(
 		getCollectedFileContents,
-		collect.HostCPUPath,     // Local path
-		collect.NodeInfoBaseDir, // Remote base directory
-		collect.HostCPUFileName, // Remote file name
+		collect.HostCPUPath,
+		collect.NodeInfoBaseDir,
+		collect.HostCPUFileName,
 	)
 	if err != nil {
 		return []*AnalyzeResult{&result}, err
 	}
 
+	content := collectedContents[0].Data
+	cpuInfo := collect.CPUInfo{}
+	if err := json.Unmarshal(content, &cpuInfo); err != nil {
+		return nil, errors.Wrap(err, "failed to unmarshal cpu info")
+	}
+
+	// Create template context with CPU info
+	templateContext := map[string]interface{}{
+		"Info": map[string]interface{}{
+			"MachineArch": cpuInfo.MachineArch,
+		},
+	}
+
 	results, err := analyzeHostCollectorResults(collectedContents, a.hostAnalyzer.Outcomes, a.CheckCondition, a.Title())
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to analyze OS version")
+		return nil, errors.Wrap(err, "failed to analyze CPU info")
+	}
+
+	// Apply template context to results
+	for _, r := range results {
+		tmpl, err := template.New("message").Parse(r.Message)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to parse message template")
+		}
+
+		var buf bytes.Buffer
+		if err := tmpl.Execute(&buf, templateContext); err != nil {
+			return nil, errors.Wrap(err, "failed to execute message template")
+		}
+
+		r.Message = buf.String()
 	}
 
 	return results, nil
-
 }
 
 func doCompareHostCPUMicroArchitecture(microarch string, flags []string) (res bool, err error) {
