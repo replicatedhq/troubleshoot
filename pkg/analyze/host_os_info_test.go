@@ -160,6 +160,26 @@ func TestAnalyzeHostOSCheckCondition(t *testing.T) {
 			expected:  false,
 			expectErr: false,
 		},
+		{
+			name:        "multiple conditionals, outside the three",
+			conditional: "redhat >= 8 && < 9 || == 9.1.0",
+			osInfo: collect.HostOSInfo{
+				Platform:        "redhat",
+				PlatformVersion: "9.2",
+			},
+			expected:  false,
+			expectErr: false,
+		},
+		{
+			name:        "multiple conditionals, matches the third",
+			conditional: "redhat >= 8 && < 9 || == 9.2.0",
+			osInfo: collect.HostOSInfo{
+				Platform:        "redhat",
+				PlatformVersion: "9.2",
+			},
+			expected:  true,
+			expectErr: false,
+		},
 	}
 
 	for _, test := range tests {
