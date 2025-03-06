@@ -241,8 +241,13 @@ sbom/assets/troubleshoot-sbom.tgz: generate-sbom
 	tar -czf sbom/assets/troubleshoot-sbom.tgz sbom/spdx/*.spdx
 
 sbom: sbom/assets/troubleshoot-sbom.tgz
-	cosign sign-blob -key cosign.key sbom/assets/troubleshoot-sbom.tgz > sbom/assets/troubleshoot-sbom.tgz.sig
-	cosign public-key -key cosign.key -outfile sbom/assets/key.pub
+	cosign sign-blob \
+		--key ./cosign.key \
+		--tlog-upload \
+		--yes \
+		--rekor-url=https://rekor.sigstore.dev \
+		sbom/assets/troubleshoot-sbom.tgz > sbom/assets/troubleshoot-sbom.tgz.sig
+	cosign public-key --key cosign.key --outfile sbom/assets/key.pub
 
 .PHONY: scan
 scan:
