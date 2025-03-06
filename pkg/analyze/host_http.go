@@ -3,6 +3,7 @@ package analyzer
 import (
 	"encoding/json"
 	"fmt"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -10,6 +11,8 @@ import (
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/replicatedhq/troubleshoot/pkg/collect"
 )
+
+var allowedCompareOperators = []string{"==", "!=", "=", "===", "!==", ">=", ">", ">==", "<", "<=", "<=="}
 
 type httpResult struct {
 	Error    *collect.HTTPError
@@ -73,8 +76,10 @@ func compareHostHTTPConditionalToActual(conditional string, result *httpResult) 
 		return false, errors.New(`Conditional must begin with keyword "statusCode"`)
 	}
 
-	if parts[1] != "=" && parts[1] != "==" && parts[1] != "===" {
-		return false, errors.New(`Only supported operator is "=="`)
+	operator := parts[1]
+	// Check if operator is allowed
+	if !slices.Contains(allowedCompareOperators, operator) {
+		return false, fmt.Errorf("Operator %q is not supported. Must be one of: %s", operator, strings.Join(allowedCompareOperators, ", "))
 	}
 
 	i, err := strconv.Atoi(parts[2])
@@ -83,9 +88,26 @@ func compareHostHTTPConditionalToActual(conditional string, result *httpResult) 
 	}
 
 	if result.Response == nil {
-		return false, err
+		return false, nil
 	}
-	return result.Response.Status == i, nil
+
+	switch operator {
+	case "==", "=", "===":
+		return result.Response.Status == i, nil
+	case "!=", "!==":
+		return result.Response.Status != i, nil
+	case ">=", ">==":
+		return result.Response.Status >= i, nil
+	case ">":
+		return result.Response.Status > i, nil
+	case "<=", "<==":
+		return result.Response.Status <= i, nil
+	case "<":
+		return result.Response.Status < i, nil
+	default:
+		// This should never happen due to the validation above
+		return false, fmt.Errorf("Operator %q is not supported. Must be one of: %s", operator, strings.Join(allowedCompareOperators, ", "))
+	}
 }
 
 func analyzeHTTPResult(analyzer *troubleshootv1beta2.HTTPAnalyze, fileName string, getCollectedFileContents getCollectedFileContents, title string) ([]*AnalyzeResult, error) {

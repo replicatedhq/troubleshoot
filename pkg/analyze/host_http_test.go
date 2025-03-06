@@ -2,6 +2,7 @@ package analyzer
 
 import (
 	"encoding/json"
+	"strconv"
 	"testing"
 
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
@@ -113,6 +114,62 @@ func TestAnalyzeHostHTTP(t *testing.T) {
 				},
 			},
 		},
+		{
+			name:      "invalid compare operator",
+			expectErr: true,
+			httpResult: &httpResult{
+				Response: &collect.HTTPResponse{
+					Status: 200,
+				},
+			},
+			hostAnalyzer: &troubleshootv1beta2.HTTPAnalyze{
+				CollectorName: "collector",
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							When:    "statusCode #$ 200",
+							Message: "passed",
+						},
+					},
+					{
+						Warn: &troubleshootv1beta2.SingleOutcome{
+							Message: "default",
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "!= compare operator",
+			httpResult: &httpResult{
+				Response: &collect.HTTPResponse{
+					Status: 201,
+				},
+			},
+			hostAnalyzer: &troubleshootv1beta2.HTTPAnalyze{
+				CollectorName: "collector",
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							When:    "statusCode != 200",
+							Message: "passed",
+						},
+					},
+					{
+						Warn: &troubleshootv1beta2.SingleOutcome{
+							Message: "default",
+						},
+					},
+				},
+			},
+			result: []*AnalyzeResult{
+				{
+					Title:   "HTTP Request",
+					IsPass:  true,
+					Message: "passed",
+				},
+			},
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -134,6 +191,111 @@ func TestAnalyzeHostHTTP(t *testing.T) {
 			}
 
 			assert.Equal(t, test.result, result)
+		})
+	}
+}
+
+func TestAnalyzeHostHTTPHTTPCodesAndCompareOperators(t *testing.T) {
+	httpResult := &httpResult{
+		Response: &collect.HTTPResponse{
+			Status: 200,
+		},
+	}
+
+	tests := []struct {
+		name               string
+		expectedStatusCode int
+		comparator         string
+		expectOutcome      bool
+	}{
+		{
+			name:               "== 200",
+			expectedStatusCode: 200,
+			comparator:         "==",
+		},
+		{
+			name:               "=== 200",
+			expectedStatusCode: 200,
+			comparator:         "===",
+		},
+		{
+			name:               "= 200",
+			expectedStatusCode: 200,
+			comparator:         "=",
+		},
+		{
+			name:               "!= 201",
+			expectedStatusCode: 201,
+			comparator:         "!=",
+		},
+		{
+			name:               "!== 200",
+			expectedStatusCode: 201,
+			comparator:         "!==",
+		},
+		{
+			name:               ">= 200",
+			expectedStatusCode: 200,
+			comparator:         ">=",
+		},
+		{
+			name:               "> 199",
+			expectedStatusCode: 199,
+			comparator:         ">",
+		},
+		{
+			name:               ">== 200",
+			expectedStatusCode: 200,
+			comparator:         ">==",
+		},
+		{
+			name:               "<= 200",
+			expectedStatusCode: 200,
+			comparator:         "<=",
+		},
+		{
+			name:               "<= 201",
+			expectedStatusCode: 201,
+			comparator:         "<=",
+		},
+		{
+			name:               "< 201",
+			expectedStatusCode: 201,
+			comparator:         "<",
+		},
+		{
+			name:               "<== 200",
+			expectedStatusCode: 200,
+			comparator:         "<==",
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			hostAnalyzer := &troubleshootv1beta2.HTTPAnalyze{
+				CollectorName: "registry",
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							When: "statusCode " + test.comparator + " " + strconv.Itoa(test.expectedStatusCode),
+						},
+					},
+				},
+			}
+
+			req := require.New(t)
+			b, err := json.Marshal(httpResult)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			getCollectedFileContents := func(filename string) ([]byte, error) {
+				return b, nil
+			}
+
+			result, err := (&AnalyzeHostHTTP{hostAnalyzer}).Analyze(getCollectedFileContents, nil)
+			req.NoError(err)
+			assert.Equal(t, 1, len(result))
+			assert.Equal(t, true, result[0].IsPass)
 		})
 	}
 }
