@@ -9,6 +9,7 @@ require (
 	github.com/ahmetalpbalkan/go-cursor v0.0.0-20131010032410-8136607ea412
 	github.com/apparentlymart/go-cidr v1.1.0
 	github.com/blang/semver/v4 v4.0.0
+	github.com/casbin/govaluate v1.3.0
 	github.com/cilium/ebpf v0.17.3
 	github.com/containerd/cgroups/v3 v3.0.5
 	github.com/containers/image/v5 v5.34.1

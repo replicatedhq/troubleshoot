@@ -3,10 +3,9 @@ package analyzer
 import (
 	"encoding/json"
 	"fmt"
-	"slices"
-	"strconv"
 	"strings"
 
+	"github.com/casbin/govaluate"
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/replicatedhq/troubleshoot/pkg/collect"
@@ -67,47 +66,33 @@ func compareHostHTTPConditionalToActual(conditional string, result *httpResult) 
 		return result.Error != nil, nil
 	}
 
-	parts := strings.Split(conditional, " ")
-	if len(parts) != 3 {
-		return false, fmt.Errorf("Failed to parse conditional: got %d parts", len(parts))
-	}
+	conditional = strings.ReplaceAll(conditional, " = ", " == ")
+	conditional = strings.ReplaceAll(conditional, " === ", " == ")
 
-	if parts[0] != "statusCode" {
-		return false, errors.New(`Conditional must begin with keyword "statusCode"`)
-	}
-
-	operator := parts[1]
-	// Check if operator is allowed
-	if !slices.Contains(allowedCompareOperators, operator) {
-		return false, fmt.Errorf("Operator %q is not supported. Must be one of: %s", operator, strings.Join(allowedCompareOperators, ", "))
-	}
-
-	i, err := strconv.Atoi(parts[2])
+	expression, err := govaluate.NewEvaluableExpression(conditional)
 	if err != nil {
-		return false, err
+		return false, errors.Wrap(err, "failed to create evaluable expression")
 	}
 
 	if result.Response == nil {
 		return false, nil
 	}
 
-	switch operator {
-	case "==", "=", "===":
-		return result.Response.Status == i, nil
-	case "!=", "!==":
-		return result.Response.Status != i, nil
-	case ">=", ">==":
-		return result.Response.Status >= i, nil
-	case ">":
-		return result.Response.Status > i, nil
-	case "<=", "<==":
-		return result.Response.Status <= i, nil
-	case "<":
-		return result.Response.Status < i, nil
-	default:
-		// This should never happen due to the validation above
-		return false, fmt.Errorf("Operator %q is not supported. Must be one of: %s", operator, strings.Join(allowedCompareOperators, ", "))
+	parameters := make(map[string]interface{}, 8)
+	parameters["statusCode"] = result.Response.Status
+
+	comparisonResult, err := expression.Evaluate(parameters)
+
+	if err != nil {
+		return false, errors.Wrap(err, "failed to evaluate expression")
 	}
+
+	boolResult, ok := comparisonResult.(bool)
+	if !ok {
+		return false, fmt.Errorf("expression did not evaluate to a boolean value")
+	}
+
+	return boolResult, nil
 }
 
 func analyzeHTTPResult(analyzer *troubleshootv1beta2.HTTPAnalyze, fileName string, getCollectedFileContents getCollectedFileContents, title string) ([]*AnalyzeResult, error) {

@@ -2,7 +2,6 @@ package analyzer
 
 import (
 	"encoding/json"
-	"strconv"
 	"testing"
 
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
@@ -170,6 +169,68 @@ func TestAnalyzeHostHTTP(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "Looking for 2xx status codes",
+			httpResult: &httpResult{
+				Response: &collect.HTTPResponse{
+					Status: 201,
+				},
+			},
+			hostAnalyzer: &troubleshootv1beta2.HTTPAnalyze{
+				CollectorName: "collector",
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Fail: &troubleshootv1beta2.SingleOutcome{
+							When:    "statusCode >= 300 || statusCode < 200",
+							Message: "expected 2xx status code",
+						},
+					},
+					{
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							Message: "default",
+						},
+					},
+				},
+			},
+			result: []*AnalyzeResult{
+				{
+					Title:   "HTTP Request",
+					IsPass:  true,
+					Message: "default",
+				},
+			},
+		},
+		{
+			name: "Looking for 2xx status codes does not match",
+			httpResult: &httpResult{
+				Response: &collect.HTTPResponse{
+					Status: 300,
+				},
+			},
+			hostAnalyzer: &troubleshootv1beta2.HTTPAnalyze{
+				CollectorName: "collector",
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Fail: &troubleshootv1beta2.SingleOutcome{
+							When:    "statusCode >= 300 || statusCode < 200",
+							Message: "expected 2xx status code",
+						},
+					},
+					{
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							Message: "default",
+						},
+					},
+				},
+			},
+			result: []*AnalyzeResult{
+				{
+					Title:   "HTTP Request",
+					IsFail:  true,
+					Message: "expected 2xx status code",
+				},
+			},
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -203,70 +264,40 @@ func TestAnalyzeHostHTTPHTTPCodesAndCompareOperators(t *testing.T) {
 	}
 
 	tests := []struct {
-		name               string
-		expectedStatusCode int
-		comparator         string
-		expectOutcome      bool
+		name string
 	}{
 		{
-			name:               "== 200",
-			expectedStatusCode: 200,
-			comparator:         "==",
+			name: "statusCode == 200",
 		},
 		{
-			name:               "=== 200",
-			expectedStatusCode: 200,
-			comparator:         "===",
+			name: "statusCode === 200",
 		},
 		{
-			name:               "= 200",
-			expectedStatusCode: 200,
-			comparator:         "=",
+			name: "statusCode = 200",
 		},
 		{
-			name:               "!= 201",
-			expectedStatusCode: 201,
-			comparator:         "!=",
+			name: "statusCode != 201",
 		},
 		{
-			name:               "!== 200",
-			expectedStatusCode: 201,
-			comparator:         "!==",
+			name: "statusCode >= 200",
 		},
 		{
-			name:               ">= 200",
-			expectedStatusCode: 200,
-			comparator:         ">=",
+			name: "statusCode > 199",
 		},
 		{
-			name:               "> 199",
-			expectedStatusCode: 199,
-			comparator:         ">",
+			name: "statusCode <= 200",
 		},
 		{
-			name:               ">== 200",
-			expectedStatusCode: 200,
-			comparator:         ">==",
+			name: "statusCode <= 201",
 		},
 		{
-			name:               "<= 200",
-			expectedStatusCode: 200,
-			comparator:         "<=",
+			name: "statusCode < 201",
 		},
 		{
-			name:               "<= 201",
-			expectedStatusCode: 201,
-			comparator:         "<=",
+			name: "statusCode < 201 && statusCode > 199",
 		},
 		{
-			name:               "< 201",
-			expectedStatusCode: 201,
-			comparator:         "<",
-		},
-		{
-			name:               "<== 200",
-			expectedStatusCode: 200,
-			comparator:         "<==",
+			name: "statusCode < 201 || statusCode > 199 && statusCode == 200",
 		},
 	}
 	for _, test := range tests {
@@ -276,8 +307,7 @@ func TestAnalyzeHostHTTPHTTPCodesAndCompareOperators(t *testing.T) {
 				Outcomes: []*troubleshootv1beta2.Outcome{
 					{
 						Pass: &troubleshootv1beta2.SingleOutcome{
-							When: "statusCode " + test.comparator + " " + strconv.Itoa(test.expectedStatusCode),
-						},
+							When: test.name},
 					},
 				},
 			}
@@ -294,8 +324,8 @@ func TestAnalyzeHostHTTPHTTPCodesAndCompareOperators(t *testing.T) {
 
 			result, err := (&AnalyzeHostHTTP{hostAnalyzer}).Analyze(getCollectedFileContents, nil)
 			req.NoError(err)
-			assert.Equal(t, 1, len(result))
-			assert.Equal(t, true, result[0].IsPass)
+			req.Len(result, 1)
+			req.Equal(true, result[0].IsPass)
 		})
 	}
 }
