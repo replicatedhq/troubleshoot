@@ -11,8 +11,6 @@ import (
 	"github.com/replicatedhq/troubleshoot/pkg/collect"
 )
 
-var allowedCompareOperators = []string{"==", "!=", "=", "===", "!==", ">=", ">", ">==", "<", "<=", "<=="}
-
 type httpResult struct {
 	Error    *collect.HTTPError
 	Response *collect.HTTPResponse
