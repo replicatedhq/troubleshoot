@@ -233,10 +233,10 @@ jobs:
         with:
           go-version: "1.23"
 
-      - uses: sigstore/cosign-installer@v3
+      - uses: sigstore/cosign-installer@v3.8.1
         with:
           # DO NOT USE v2 until we decide on whether to use Rekor or not
-          cosign-release: "v1.13.1"  # Binary version to install
+          cosign-release: "v2.4.3"  # Binary version to install
 
       - name: Get Cosign Key
         run: |
