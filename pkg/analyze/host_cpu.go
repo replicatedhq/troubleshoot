@@ -1,8 +1,9 @@
 package analyzer
 
 import (
+	"bytes"
 	"encoding/json"
-	"fmt"
+	"html/template"
 	"slices"
 	"strconv"
 	"strings"
@@ -16,9 +17,8 @@ import (
 // ref: https://gitlab.com/x86-psABIs/x86-64-ABI
 // ref: https://developers.redhat.com/blog/2021/01/05/building-red-hat-enterprise-linux-9-for-the-x86-64-v2-microarchitecture-level
 var microarchs = map[string][]string{
-	"x86-64":    {"cmov", "cx8", "fpu", "fxsr", "mmx", "syscall", "sse", "sse2"},
-	"x86-64-v2": {"cx16", "lahf_lm", "popcnt", "ssse3", "sse4_1", "sse4_2", "ssse3"},
-	"x86-64-v3": {"avx", "avx2", "bmi1", "bmi2", "f16c", "fma", "lzcnt", "movbe", "xsave"},
+	"x86-64-v2": {"cx16", "lahf_lm", "popcnt", "sse4_1", "sse4_2", "ssse3"},
+	"x86-64-v3": {"avx", "avx2", "bmi1", "bmi2", "f16c", "fma", "abm", "movbe", "xsave"},
 	"x86-64-v4": {"avx512f", "avx512bw", "avx512cd", "avx512dq", "avx512vl"},
 }
 
@@ -27,47 +27,73 @@ type AnalyzeHostCPU struct {
 }
 
 func (a *AnalyzeHostCPU) Title() string {
-	return hostAnalyzerTitleOrDefault(a.hostAnalyzer.AnalyzeMeta, "Number of CPUs")
+	return a.hostAnalyzer.CheckName
 }
 
 func (a *AnalyzeHostCPU) IsExcluded() (bool, error) {
 	return isExcluded(a.hostAnalyzer.Exclude)
 }
 
-func (a *AnalyzeHostCPU) CheckCondition(when string, data []byte) (bool, error) {
-
-	cpuInfo := collect.CPUInfo{}
-	if err := json.Unmarshal(data, &cpuInfo); err != nil {
-		return false, fmt.Errorf("failed to unmarshal data into CPUInfo: %v", err)
-	}
-
-	return compareHostCPUConditionalToActual(when, cpuInfo.LogicalCount, cpuInfo.PhysicalCount, cpuInfo.Flags, cpuInfo.MachineArch)
-
-}
-
 func (a *AnalyzeHostCPU) Analyze(
-	getCollectedFileContents func(string) ([]byte, error), findFiles getChildCollectedFileContents,
+	getCollectedFileContents func(string) ([]byte, error),
+	findFiles getChildCollectedFileContents,
 ) ([]*AnalyzeResult, error) {
 	result := AnalyzeResult{Title: a.Title()}
 
-	// Use the generic function to collect both local and remote data
 	collectedContents, err := retrieveCollectedContents(
 		getCollectedFileContents,
-		collect.HostCPUPath,     // Local path
-		collect.NodeInfoBaseDir, // Remote base directory
-		collect.HostCPUFileName, // Remote file name
+		collect.HostCPUPath,
+		collect.NodeInfoBaseDir,
+		collect.HostCPUFileName,
 	)
 	if err != nil {
 		return []*AnalyzeResult{&result}, err
 	}
 
+	content := collectedContents[0].Data
+	cpuInfo := collect.CPUInfo{}
+	if err := json.Unmarshal(content, &cpuInfo); err != nil {
+		return nil, errors.Wrap(err, "failed to unmarshal cpu info")
+	}
+
+	// Create template context
+	templateContext := map[string]interface{}{
+		"Info": map[string]string{
+			"MachineArch": cpuInfo.MachineArch,
+		},
+	}
+
 	results, err := analyzeHostCollectorResults(collectedContents, a.hostAnalyzer.Outcomes, a.CheckCondition, a.Title())
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to analyze OS version")
+		return nil, errors.Wrap(err, "failed to analyze CPU info")
+	}
+
+	// Apply template context to results
+	for _, r := range results {
+		tmpl := template.New("message").Option("missingkey=zero")
+		tmpl, err := tmpl.Parse(r.Message)
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to parse message template")
+		}
+
+		var buf bytes.Buffer
+		if err := tmpl.Execute(&buf, templateContext); err != nil {
+			return nil, errors.Wrap(err, "failed to execute message template")
+		}
+
+		r.Message = buf.String()
 	}
 
 	return results, nil
+}
 
+func (a *AnalyzeHostCPU) CheckCondition(condition string, content []byte) (bool, error) {
+	cpuInfo := collect.CPUInfo{}
+	if err := json.Unmarshal(content, &cpuInfo); err != nil {
+		return false, errors.Wrap(err, "failed to unmarshal cpu info")
+	}
+
+	return compareHostCPUConditionalToActual(condition, cpuInfo.LogicalCount, cpuInfo.PhysicalCount, cpuInfo.Flags, cpuInfo.MachineArch)
 }
 
 func doCompareHostCPUMicroArchitecture(microarch string, flags []string) (res bool, err error) {
