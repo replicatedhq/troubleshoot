@@ -231,7 +231,7 @@ func TestHostCpuAnalyze(t *testing.T) {
 				{
 					Fail: &troubleshootv1beta2.SingleOutcome{
 						When:    "machineArch != x86_64",
-						Message: "Current architecture {{ .Info.MachineArch }} is not supported",
+						Message: "Current architecture {{ .Info.MachineArch }} with {{ .Info.LogicalCount }} logical and {{ .Info.PhysicalCount }} physical cores is not supported",
 					},
 				},
 				{
@@ -244,6 +244,69 @@ func TestHostCpuAnalyze(t *testing.T) {
 				{
 					IsPass:  true,
 					Message: "Architecture x86_64 is supported",
+					Title:   "Number of CPUs",
+				},
+			},
+		},
+		{
+			name: "test machine architecture template, failure",
+			cpuInfo: collect.CPUInfo{
+				LogicalCount:  16,
+				PhysicalCount: 8,
+				MachineArch:   "arm64",
+			},
+			outcomes: []*troubleshootv1beta2.Outcome{
+				{
+					Fail: &troubleshootv1beta2.SingleOutcome{
+						When:    "machineArch != x86_64",
+						Message: "Current architecture {{ .Info.MachineArch }} with {{ .Info.LogicalCount }} logical and {{ .Info.PhysicalCount }} physical cores is not supported",
+					},
+				},
+				{
+					Pass: &troubleshootv1beta2.SingleOutcome{
+						Message: "Architecture {{ .Info.MachineArch }} is supported",
+					},
+				},
+			},
+			results: []*AnalyzeResult{
+				{
+					IsFail:  true,
+					Message: "Current architecture arm64 with 16 logical and 8 physical cores is not supported",
+					Title:   "Number of CPUs",
+				},
+			},
+		},
+		{
+			name: "this is x86_64 but not x86_64-v2",
+			cpuInfo: collect.CPUInfo{
+				LogicalCount:  16,
+				PhysicalCount: 8,
+				Flags:         []string{"cmov", "cx8", "fpu", "fxsr", "mmx", "syscall", "sse", "sse2", "afew", "unknown", "flags", "plus", "one", "from", "v2", "sse4_2"},
+				MachineArch:   "x86_64",
+			},
+			outcomes: []*troubleshootv1beta2.Outcome{
+				{
+					Pass: &troubleshootv1beta2.SingleOutcome{
+						When:    "machineArch supports x86-64-v2",
+						Message: "Current architecture {{ .Info.MachineArch }} supports x86_64_v2",
+					},
+				},
+				{
+					Warn: &troubleshootv1beta2.SingleOutcome{
+						When:    "machineArch supports x86-64",
+						Message: "Current architecture {{ .Info.MachineArch }} supports x86_64, but not x86_64_v2",
+					},
+				},
+				{
+					Fail: &troubleshootv1beta2.SingleOutcome{
+						Message: "Architecture {{ .Info.MachineArch }} does not support x86_64_v2",
+					},
+				},
+			},
+			results: []*AnalyzeResult{
+				{
+					IsWarn:  true,
+					Message: "Current architecture x86_64 supports x86_64, but not x86_64_v2",
 					Title:   "Number of CPUs",
 				},
 			},

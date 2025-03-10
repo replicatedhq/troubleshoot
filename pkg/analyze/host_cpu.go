@@ -17,8 +17,9 @@ import (
 // ref: https://gitlab.com/x86-psABIs/x86-64-ABI
 // ref: https://developers.redhat.com/blog/2021/01/05/building-red-hat-enterprise-linux-9-for-the-x86-64-v2-microarchitecture-level
 var microarchs = map[string][]string{
-	"x86-64-v2": {"cx16", "lahf_lm", "popcnt", "sse4_1", "sse4_2", "ssse3"},
-	"x86-64-v3": {"avx", "avx2", "bmi1", "bmi2", "f16c", "fma", "abm", "movbe", "xsave"},
+	"x86-64":    {"cmov", "cx8", "fpu", "fxsr", "mmx", "syscall", "sse", "sse2"},
+	"x86-64-v2": {"cx16", "lahf_lm", "popcnt", "ssse3", "sse4_1", "sse4_2"},
+	"x86-64-v3": {"avx", "avx2", "bmi1", "bmi2", "f16c", "fma", "lzcnt", "movbe", "xsave"},
 	"x86-64-v4": {"avx512f", "avx512bw", "avx512cd", "avx512dq", "avx512vl"},
 }
 
@@ -40,11 +41,12 @@ func (a *AnalyzeHostCPU) Analyze(
 ) ([]*AnalyzeResult, error) {
 	result := AnalyzeResult{Title: a.Title()}
 
+	// Use the generic function to collect both local and remote data
 	collectedContents, err := retrieveCollectedContents(
 		getCollectedFileContents,
-		collect.HostCPUPath,
-		collect.NodeInfoBaseDir,
-		collect.HostCPUFileName,
+		collect.HostCPUPath,     // Local path
+		collect.NodeInfoBaseDir, // Remote base directory
+		collect.HostCPUFileName, // Remote file name
 	)
 	if err != nil {
 		return []*AnalyzeResult{&result}, err
@@ -58,9 +60,7 @@ func (a *AnalyzeHostCPU) Analyze(
 
 	// Create template context
 	templateContext := map[string]interface{}{
-		"Info": map[string]string{
-			"MachineArch": cpuInfo.MachineArch,
-		},
+		"Info": cpuInfo,
 	}
 
 	results, err := analyzeHostCollectorResults(collectedContents, a.hostAnalyzer.Outcomes, a.CheckCondition, a.Title())
@@ -169,7 +169,7 @@ func compareHostCPUConditionalToActual(conditional string, logicalCount int, phy
 		desired = parts[1]
 	}
 
-	// analyze if the cpu supports a specific set of features, aka as micrarchitecture.
+	// analyze if the cpu supports a specific set of features, aka as microarchitecture.
 	if strings.ToLower(comparator) == "supports" {
 		return doCompareHostCPUMicroArchitecture(desired, flags)
 	}
