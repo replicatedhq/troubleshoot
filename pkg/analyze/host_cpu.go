@@ -35,6 +35,15 @@ func (a *AnalyzeHostCPU) IsExcluded() (bool, error) {
 	return isExcluded(a.hostAnalyzer.Exclude)
 }
 
+func (a *AnalyzeHostCPU) CheckCondition(condition string, content []byte) (bool, error) {
+	cpuInfo := collect.CPUInfo{}
+	if err := json.Unmarshal(content, &cpuInfo); err != nil {
+		return false, errors.Wrap(err, "failed to unmarshal cpu info")
+	}
+
+	return compareHostCPUConditionalToActual(condition, cpuInfo.LogicalCount, cpuInfo.PhysicalCount, cpuInfo.Flags, cpuInfo.MachineArch)
+}
+
 func (a *AnalyzeHostCPU) Analyze(
 	getCollectedFileContents func(string) ([]byte, error),
 	findFiles getChildCollectedFileContents,
@@ -85,15 +94,6 @@ func (a *AnalyzeHostCPU) Analyze(
 	}
 
 	return results, nil
-}
-
-func (a *AnalyzeHostCPU) CheckCondition(condition string, content []byte) (bool, error) {
-	cpuInfo := collect.CPUInfo{}
-	if err := json.Unmarshal(content, &cpuInfo); err != nil {
-		return false, errors.Wrap(err, "failed to unmarshal cpu info")
-	}
-
-	return compareHostCPUConditionalToActual(condition, cpuInfo.LogicalCount, cpuInfo.PhysicalCount, cpuInfo.Flags, cpuInfo.MachineArch)
 }
 
 func doCompareHostCPUMicroArchitecture(microarch string, flags []string) (res bool, err error) {
