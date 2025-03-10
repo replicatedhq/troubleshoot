@@ -3,6 +3,7 @@ package analyzer
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"slices"
 	"strconv"
 	"strings"
@@ -35,13 +36,13 @@ func (a *AnalyzeHostCPU) IsExcluded() (bool, error) {
 	return isExcluded(a.hostAnalyzer.Exclude)
 }
 
-func (a *AnalyzeHostCPU) CheckCondition(condition string, content []byte) (bool, error) {
+func (a *AnalyzeHostCPU) CheckCondition(when string, data []byte) (bool, error) {
 	cpuInfo := collect.CPUInfo{}
-	if err := json.Unmarshal(content, &cpuInfo); err != nil {
-		return false, errors.Wrap(err, "failed to unmarshal cpu info")
+	if err := json.Unmarshal(data, &cpuInfo); err != nil {
+		return false, fmt.Errorf("failed to unmarshal data into CPUInfo: %v", err)
 	}
 
-	return compareHostCPUConditionalToActual(condition, cpuInfo.LogicalCount, cpuInfo.PhysicalCount, cpuInfo.Flags, cpuInfo.MachineArch)
+	return compareHostCPUConditionalToActual(when, cpuInfo.LogicalCount, cpuInfo.PhysicalCount, cpuInfo.Flags, cpuInfo.MachineArch)
 }
 
 func (a *AnalyzeHostCPU) Analyze(
