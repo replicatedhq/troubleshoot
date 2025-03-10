@@ -29,7 +29,7 @@ type AnalyzeHostCPU struct {
 }
 
 func (a *AnalyzeHostCPU) Title() string {
-	return a.hostAnalyzer.CheckName
+	return hostAnalyzerTitleOrDefault(a.hostAnalyzer.AnalyzeMeta, "Number of CPUs")
 }
 
 func (a *AnalyzeHostCPU) IsExcluded() (bool, error) {
