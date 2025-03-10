@@ -3,10 +3,10 @@ package analyzer
 import (
 	"bytes"
 	"encoding/json"
-	"html/template"
 	"slices"
 	"strconv"
 	"strings"
+	"text/template"
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
