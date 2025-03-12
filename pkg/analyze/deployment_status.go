@@ -21,7 +21,7 @@ func (a *AnalyzeDeploymentStatus) Title() string {
 	}
 
 	if a.analyzer.Name != "" && a.analyzer.Namespace != "" {
-		return fmt.Sprintf("%s/%s Deployment Status", a.analyzer.Name, a.analyzer.Name)
+		return fmt.Sprintf("%s/%s Deployment Status", a.analyzer.Namespace, a.analyzer.Name)
 	}
 
 	if a.analyzer.Name != "" {
