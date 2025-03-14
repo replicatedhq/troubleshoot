@@ -191,7 +191,7 @@ func Test_analyzeResource(t *testing.T) {
 				IsWarn:  false,
 				IsFail:  true,
 				Title:   "check-pvc-exists",
-				Message: "PersistentVolumeClaim data-postgresql-00 does not exist",
+				Message: "PersistentVolumeClaim data-postgresql-00 in namespace default does not exist",
 				IconKey: "kubernetes_text_analyze",
 				IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg",
 			},
