@@ -191,7 +191,7 @@ func Test_analyzeResource(t *testing.T) {
 				IsWarn:  false,
 				IsFail:  true,
 				Title:   "check-pvc-exists",
-				Message: "YAML path provided is invalid",
+				Message: "PersistentVolumeClaim data-postgresql-00 does not exist",
 				IconKey: "kubernetes_text_analyze",
 				IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg",
 			},
@@ -333,6 +333,111 @@ func Test_analyzeResource(t *testing.T) {
 				Message: "fail",
 				IconKey: "kubernetes_text_analyze",
 				IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg?w=13&h=16",
+			},
+		},
+		{
+			name: "pass when namespace exists",
+			analyzer: troubleshootv1beta2.ClusterResource{
+				AnalyzeMeta: troubleshootv1beta2.AnalyzeMeta{
+					CheckName: "namespace-check",
+				},
+				Kind:          "namespace",
+				Name:          "kube-node-lease",
+				ClusterScoped: true,
+				YamlPath:      "status.phase",
+				RegexPattern:  "Active",
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							When:    "true",
+							Message: "pass",
+						},
+					},
+					{
+						Fail: &troubleshootv1beta2.SingleOutcome{
+							Message: "fail",
+						},
+					},
+				},
+			},
+			expectResult: AnalyzeResult{
+				IsPass:  true,
+				IsWarn:  false,
+				IsFail:  false,
+				Title:   "namespace-check",
+				Message: "pass",
+				IconKey: "kubernetes_text_analyze",
+				IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg",
+			},
+		},
+		{
+			name: "fail when the namespace does not match the regex",
+			analyzer: troubleshootv1beta2.ClusterResource{
+				AnalyzeMeta: troubleshootv1beta2.AnalyzeMeta{
+					CheckName: "namespace-check",
+				},
+				Kind:          "namespace",
+				Name:          "local-path-storage",
+				ClusterScoped: true,
+				YamlPath:      "status.phase",
+				RegexPattern:  "Active",
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							When:    "true",
+							Message: "pass",
+						},
+					},
+					{
+						Fail: &troubleshootv1beta2.SingleOutcome{
+							Message: "my custom fail message",
+						},
+					},
+				},
+			},
+			expectResult: AnalyzeResult{
+				IsPass:  false,
+				IsWarn:  false,
+				IsFail:  true,
+				Title:   "namespace-check",
+				Message: "my custom fail message",
+				IconKey: "kubernetes_text_analyze",
+				IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg",
+			},
+		},
+		{
+			name: "fail when the namespace does not exist",
+			analyzer: troubleshootv1beta2.ClusterResource{
+				AnalyzeMeta: troubleshootv1beta2.AnalyzeMeta{
+					CheckName: "namespace-check",
+				},
+				Kind:          "namespace",
+				Name:          "foobar",
+				ClusterScoped: true,
+				YamlPath:      "status.phase",
+				RegexPattern:  "Active",
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							When:    "true",
+							Message: "pass",
+						},
+					},
+					{
+						Fail: &troubleshootv1beta2.SingleOutcome{
+							Message: "fail",
+						},
+					},
+				},
+			},
+			expectResult: AnalyzeResult{
+				IsPass:  false,
+				IsWarn:  false,
+				IsFail:  true,
+				Title:   "namespace-check",
+				Message: "namespace foobar does not exist",
+				IconKey: "kubernetes_text_analyze",
+				IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg",
 			},
 		},
 	}
