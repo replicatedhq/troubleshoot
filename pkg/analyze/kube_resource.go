@@ -246,12 +246,20 @@ func (a *AnalyzeClusterResource) analyzeResource(analyzer *troubleshootv1beta2.C
 	selected, err := FindResource(analyzer.Kind, analyzer.ClusterScoped, analyzer.Namespace, analyzer.Name, getFileContents)
 	if err != nil {
 		klog.Errorf("failed to find resource: %v", err)
+	}
+	if err != nil || selected == nil {
+		var message string
+		if analyzer.ClusterScoped {
+			message = fmt.Sprintf("%s %s does not exist", analyzer.Kind, analyzer.Name)
+		} else {
+			message = fmt.Sprintf("%s %s in namespace %s does not exist", analyzer.Kind, analyzer.Name, analyzer.Namespace)
+		}
 		return &AnalyzeResult{
 			Title:   a.Title(),
 			IconKey: "kubernetes_text_analyze",
 			IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg",
 			IsFail:  true,
-			Message: "resource does not exist",
+			Message: message,
 		}, nil
 	}
 
