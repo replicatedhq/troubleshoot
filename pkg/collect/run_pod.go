@@ -111,7 +111,7 @@ func (c *CollectRunPod) Collect(progressChan chan<- interface{}) (result Collect
 	}
 }
 
-func (c *CollectRunPod) deleteImagePullSecret(ctx context.Context, client *kubernetes.Clientset, pod *corev1.Pod) {
+func (c *CollectRunPod) deleteImagePullSecret(ctx context.Context, client kubernetes.Interface, pod *corev1.Pod) {
 	for _, k := range pod.Spec.ImagePullSecrets {
 		secret, err := client.CoreV1().Secrets(pod.Namespace).Get(ctx, k.Name, metav1.GetOptions{})
 		if err != nil {

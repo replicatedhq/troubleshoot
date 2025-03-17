@@ -1,11 +1,17 @@
 package collect
 
 import (
+	"context"
 	"testing"
 
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	corev1 "k8s.io/api/core/v1"
+	kuberneteserrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/kubernetes/fake"
 )
 
 func TestCreatePodStruct(t *testing.T) {
@@ -89,5 +95,147 @@ func TestCreatePodStruct(t *testing.T) {
 		if pod.Spec.Containers[i].Image != container.Image {
 			t.Errorf("Expected container image %s, but got %s", container.Image, pod.Spec.Containers[i].Image)
 		}
+	}
+}
+
+func Test_deleteImagePullSecret(t *testing.T) {
+	tests := []struct {
+		name         string
+		pod          *corev1.Pod
+		existingObjs []runtime.Object
+		validateFunc func(t *testing.T, client *fake.Clientset)
+	}{
+		{
+			name: "successfully deletes managed secret",
+			pod: &corev1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-pod",
+					Namespace: "test-ns",
+				},
+				Spec: corev1.PodSpec{
+					ImagePullSecrets: []corev1.LocalObjectReference{
+						{Name: "managed-secret"},
+					},
+				},
+			},
+			existingObjs: []runtime.Object{
+				&corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "managed-secret",
+						Namespace: "test-ns",
+						Labels: map[string]string{
+							"app.kubernetes.io/managed-by": "troubleshoot.sh",
+						},
+					},
+				},
+			},
+			validateFunc: func(t *testing.T, client *fake.Clientset) {
+				// Secret should be deleted
+				_, err := client.CoreV1().Secrets("test-ns").Get(context.Background(), "managed-secret", metav1.GetOptions{})
+				require.True(t, kuberneteserrors.IsNotFound(err))
+			},
+		},
+		{
+			name: "does not delete unmanaged secret",
+			pod: &corev1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-pod",
+					Namespace: "test-ns",
+				},
+				Spec: corev1.PodSpec{
+					ImagePullSecrets: []corev1.LocalObjectReference{
+						{Name: "unmanaged-secret"},
+					},
+				},
+			},
+			existingObjs: []runtime.Object{
+				&corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "unmanaged-secret",
+						Namespace: "test-ns",
+					},
+				},
+			},
+			validateFunc: func(t *testing.T, client *fake.Clientset) {
+				// Secret should still exist
+				secret, err := client.CoreV1().Secrets("test-ns").Get(context.Background(), "unmanaged-secret", metav1.GetOptions{})
+				require.NoError(t, err)
+				assert.NotNil(t, secret)
+			},
+		},
+		{
+			name: "handles non-existent secret",
+			pod: &corev1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-pod",
+					Namespace: "test-ns",
+				},
+				Spec: corev1.PodSpec{
+					ImagePullSecrets: []corev1.LocalObjectReference{
+						{Name: "non-existent-secret"},
+					},
+				},
+			},
+			existingObjs: []runtime.Object{},
+			validateFunc: func(t *testing.T, client *fake.Clientset) {
+				// No error should occur
+			},
+		},
+		{
+			name: "does everything all at once",
+			pod: &corev1.Pod{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      "test-pod",
+					Namespace: "test-ns",
+				},
+				Spec: corev1.PodSpec{
+					ImagePullSecrets: []corev1.LocalObjectReference{
+						{Name: "unmanaged-secret"},
+						{Name: "non-existent-secret"},
+						{Name: "managed-secret"},
+					},
+				},
+			},
+			existingObjs: []runtime.Object{
+				&corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "managed-secret",
+						Namespace: "test-ns",
+						Labels: map[string]string{
+							"app.kubernetes.io/managed-by": "troubleshoot.sh",
+						},
+					},
+				},
+				&corev1.Secret{
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      "unmanaged-secret",
+						Namespace: "test-ns",
+					},
+				},
+			},
+			validateFunc: func(t *testing.T, client *fake.Clientset) {
+				// Secret should be deleted
+				_, err := client.CoreV1().Secrets("test-ns").Get(context.Background(), "managed-secret", metav1.GetOptions{})
+				require.True(t, kuberneteserrors.IsNotFound(err))
+
+				// Secret should still exist
+				secret, err := client.CoreV1().Secrets("test-ns").Get(context.Background(), "unmanaged-secret", metav1.GetOptions{})
+				require.NoError(t, err)
+				assert.NotNil(t, secret)
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			client := fake.NewSimpleClientset(tt.existingObjs...)
+			collector := &CollectRunPod{}
+
+			collector.deleteImagePullSecret(context.Background(), client, tt.pod)
+
+			if tt.validateFunc != nil {
+				tt.validateFunc(t, client)
+			}
+		})
 	}
 }
