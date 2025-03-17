@@ -62,13 +62,7 @@ func (c *CollectRunPod) Collect(progressChan chan<- interface{}) (result Collect
 	}()
 
 	if c.Collector.ImagePullSecret != nil && c.Collector.ImagePullSecret.Data != nil {
-		defer func() {
-			if c.Collector.ImagePullSecret.Name != "" {
-				if err := client.CoreV1().Secrets(pod.Namespace).Delete(ctx, c.Collector.ImagePullSecret.Name, metav1.DeleteOptions{}); err != nil {
-					klog.Errorf("Failed to delete secret %s: %v", c.Collector.ImagePullSecret.Name, err)
-				}
-			}
-		}()
+		defer c.deleteImagePullSecret(context.Background(), client, pod)
 	}
 
 	defer func() {
@@ -114,6 +108,27 @@ func (c *CollectRunPod) Collect(progressChan chan<- interface{}) (result Collect
 		return result, nil
 	case err := <-errCh:
 		return result, err
+	}
+}
+
+func (c *CollectRunPod) deleteImagePullSecret(ctx context.Context, client kubernetes.Interface, pod *corev1.Pod) {
+	for _, k := range pod.Spec.ImagePullSecrets {
+		secret, err := client.CoreV1().Secrets(pod.Namespace).Get(ctx, k.Name, metav1.GetOptions{})
+		if err != nil {
+			if kuberneteserrors.IsNotFound(err) {
+				klog.V(2).Infof("Secret %s in namespace %s not found", k.Name, pod.Namespace)
+			} else {
+				klog.Errorf("Failed to get secret %s in namespace %s: %v", k.Name, pod.Namespace, err)
+			}
+			continue
+		}
+		if secret.Labels["app.kubernetes.io/managed-by"] == "troubleshoot.sh" {
+			if err := client.CoreV1().Secrets(pod.Namespace).Delete(context.Background(), k.Name, metav1.DeleteOptions{}); err != nil {
+				klog.Errorf("Failed to delete secret %s in namespace %s: %v", k.Name, pod.Namespace, err)
+			} else {
+				klog.V(2).Infof("Deleted secret %s in namespace %s", k.Name, pod.Namespace)
+			}
+		}
 	}
 }
 
