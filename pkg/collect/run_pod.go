@@ -122,14 +122,11 @@ func (c *CollectRunPod) deleteImagePullSecret(ctx context.Context, client *kuber
 			}
 			continue
 		}
-		for _, label := range secret.Labels {
-			if label == "app.kubernetes.io/managed-by=troubleshoot.sh" {
-				if err := client.CoreV1().Secrets(pod.Namespace).Delete(context.Background(), k.Name, metav1.DeleteOptions{}); err != nil {
-					klog.Errorf("Failed to delete secret %s in namespace %s: %v", k.Name, pod.Namespace, err)
-				} else {
-					klog.V(2).Infof("Deleted secret %s in namespace %s", k.Name, pod.Namespace)
-				}
-				break
+		if secret.Labels["app.kubernetes.io/managed-by"] == "troubleshoot.sh" {
+			if err := client.CoreV1().Secrets(pod.Namespace).Delete(context.Background(), k.Name, metav1.DeleteOptions{}); err != nil {
+				klog.Errorf("Failed to delete secret %s in namespace %s: %v", k.Name, pod.Namespace, err)
+			} else {
+				klog.V(2).Infof("Deleted secret %s in namespace %s", k.Name, pod.Namespace)
 			}
 		}
 	}
