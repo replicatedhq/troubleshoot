@@ -5,6 +5,7 @@ import (
 	"k8s.io/cli-runtime/pkg/genericclioptions"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+	"k8s.io/apimachinery/pkg/api/meta"
 )
 
 var (
@@ -25,4 +26,8 @@ func GetKubeconfig() clientcmd.ClientConfig {
 
 func GetRESTConfig() (*rest.Config, error) {
 	return kubernetesConfigFlags.ToRESTConfig()
+}
+
+func GetRESTMapper() (meta.RESTMapper, error) {
+	return kubernetesConfigFlags.ToRESTMapper()
 }

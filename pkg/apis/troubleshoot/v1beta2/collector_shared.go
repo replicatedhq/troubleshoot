@@ -9,6 +9,7 @@ import (
 	authorizationv1 "k8s.io/api/authorization/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 )
 
 type CollectorMeta struct {
@@ -106,12 +107,13 @@ type Run struct {
 
 type RunPod struct {
 	CollectorMeta   `json:",inline" yaml:",inline"`
-	Name            string            `json:"name,omitempty" yaml:"name,omitempty"`
-	Namespace       string            `json:"namespace" yaml:"namespace"`
-	Timeout         string            `json:"timeout,omitempty" yaml:"timeout,omitempty"`
-	ImagePullSecret *ImagePullSecrets `json:"imagePullSecret,omitempty" yaml:"imagePullSecret,omitempty"`
-	PodSpec         corev1.PodSpec    `json:"podSpec,omitempty" yaml:"podSpec,omitempty"`
-	Annotations     map[string]string `json:"annotations,omitempty" yaml:"annotations,omitempty"`
+	Name            string                 `json:"name,omitempty" yaml:"name,omitempty"`
+	Namespace       string                 `json:"namespace" yaml:"namespace"`
+	Timeout         string                 `json:"timeout,omitempty" yaml:"timeout,omitempty"`
+	ImagePullSecret *ImagePullSecrets      `json:"imagePullSecret,omitempty" yaml:"imagePullSecret,omitempty"`
+	PodSpec         corev1.PodSpec         `json:"podSpec,omitempty" yaml:"podSpec,omitempty"`
+	Annotations     map[string]string      `json:"annotations,omitempty" yaml:"annotations,omitempty"`
+	PreExecute      []runtime.RawExtension `json:"preExecute,omitempty"`
 }
 
 type RunDaemonSet struct {
