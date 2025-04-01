@@ -64,7 +64,7 @@ func (a *AnalyzeHostTLS) CheckCondition(when string, data []byte) (bool, error) 
 
 // currently this supports only checks like "issuer == foo"
 func compareHostTLSResult(when string, tlsInfo *types.TLSInfo) (bool, error) {
-	parts := strings.Split(when, " ")
+	parts := strings.SplitN(when, " ", 3)
 	if len(parts) < 3 {
 		return false, fmt.Errorf("invalid when clause: %s", when)
 	}
@@ -74,7 +74,7 @@ func compareHostTLSResult(when string, tlsInfo *types.TLSInfo) (bool, error) {
 		return false, fmt.Errorf("invalid check type: %s", checkType)
 	}
 
-	issuer := strings.Join(parts[2:], " ")
+	issuer := parts[2]
 
 	for _, cert := range tlsInfo.PeerCertificates {
 		if cert.Issuer == issuer {
