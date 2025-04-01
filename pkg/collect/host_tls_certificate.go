@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"path/filepath"
 	"strings"
 	"time"
@@ -29,7 +30,11 @@ func (c *CollectHostTLSCertificate) IsExcluded() (bool, error) {
 func (c *CollectHostTLSCertificate) Collect(progressChan chan<- interface{}) (map[string][]byte, error) {
 	tlsInfo := types.TLSInfo{}
 
-	resp, err := doRequest("GET", fmt.Sprintf("https://%s", c.hostCollector.Address), nil, "", true, "", nil, c.hostCollector.HttpsProxy)
+	headers := map[string]string{
+		"tls-request-hostname": c.hostCollector.Address,
+	}
+
+	resp, err := doRequest("GET", fmt.Sprintf("https://%s/%s", c.hostCollector.Address, c.hostCollector.ExpectedCertSubpath), headers, "", true, "", nil, c.hostCollector.HttpsProxy)
 	if err != nil {
 		tlsInfo.Error = err.Error()
 	} else {
@@ -49,6 +54,20 @@ func (c *CollectHostTLSCertificate) Collect(progressChan chan<- interface{}) (ma
 		}
 
 		tlsInfo.PeerCertificates = cleanedCerts
+
+		if c.hostCollector.ExpectedCertSubpath != "" {
+			readBody, err := io.ReadAll(resp.Body)
+			if err != nil {
+				tlsInfo.Error = fmt.Sprintf("failed to read response body: %s", err)
+			}
+
+			// parse the response body as a JSON object
+			var expectedCerts []types.CertInfo
+			if err := json.Unmarshal(readBody, &expectedCerts); err != nil {
+				tlsInfo.Error = fmt.Sprintf("failed to unmarshal response body as JSON: %s", err)
+			}
+			tlsInfo.ExpectedCerts = expectedCerts
+		}
 	}
 
 	b, err := json.Marshal(tlsInfo)

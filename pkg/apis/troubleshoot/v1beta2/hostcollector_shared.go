@@ -236,9 +236,10 @@ type HostSysctl struct {
 }
 
 type HostTLSCertificate struct {
-	HostCollectorMeta `json:",inline" yaml:",inline"`
-	Address           string `json:"address"`
-	HttpsProxy        string `json:"httpsProxy,omitempty"`
+	HostCollectorMeta   `json:",inline" yaml:",inline"`
+	Address             string `json:"address"`
+	HttpsProxy          string `json:"httpsProxy,omitempty"`
+	ExpectedCertSubpath string `json:"expectedCertSubpath,omitempty"`
 }
 
 type HostCollect struct {

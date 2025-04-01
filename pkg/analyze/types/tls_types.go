@@ -12,5 +12,6 @@ type CertInfo struct {
 
 type TLSInfo struct {
 	PeerCertificates []CertInfo `json:"peer_certificates"`
+	ExpectedCerts    []CertInfo `json:"expected_certs"`
 	Error            string     `json:"error"`
 }

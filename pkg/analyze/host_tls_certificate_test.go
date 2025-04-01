@@ -199,6 +199,130 @@ func TestAnalyzeHostTLS(t *testing.T) {
 				},
 			},
 		},
+
+		{
+			name: "replicated.app comparison results",
+			tlsInfo: &types.TLSInfo{
+				PeerCertificates: []types.CertInfo{
+					{
+						Issuer:    "E5",
+						Subject:   "replicated.app",
+						Serial:    "366647399446765119739694467366731491294821",
+						NotBefore: "2025-02-12T20:48:06Z",
+						NotAfter:  "2025-05-13T20:48:05Z",
+						IsCA:      false,
+					},
+					{
+						Issuer:    "ISRG Root X1",
+						Subject:   "E5",
+						Serial:    "174873564306387906651619802726858882526",
+						NotBefore: "2024-03-13T00:00:00Z",
+						NotAfter:  "2027-03-12T23:59:59Z",
+						IsCA:      true,
+					},
+				},
+				ExpectedCerts: []types.CertInfo{
+					{
+						Issuer:    "E5",
+						Subject:   "replicated.app",
+						Serial:    "366647399446765119739694467366731491294821",
+						NotBefore: "2025-02-12T20:48:06Z",
+						NotAfter:  "2025-05-13T20:48:05Z",
+						IsCA:      false,
+					},
+					{
+						Issuer:    "ISRG Root X1",
+						Subject:   "E5",
+						Serial:    "174873564306387906651619802726858882526",
+						NotBefore: "2024-03-13T00:00:00Z",
+						NotAfter:  "2027-03-12T23:59:59Z",
+						IsCA:      true,
+					},
+				},
+			},
+			hostAnalyzer: &troubleshootv1beta2.TLSAnalyze{
+				CollectorName: "test-tls",
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							When:    "matchesExpected",
+							Message: "The issuer for replicated.app is as expected",
+						},
+					},
+					{
+						Fail: &troubleshootv1beta2.SingleOutcome{
+							When:    "",
+							Message: "The issuer for replicated.app is not as expected",
+						},
+					},
+				},
+			},
+			result: []*AnalyzeResult{
+				{
+					Title:   "TLSCertificate",
+					IsPass:  true,
+					Message: "The issuer for replicated.app is as expected",
+				},
+			},
+		},
+
+		{
+			name: "replicated.app MITM comparison results",
+			tlsInfo: &types.TLSInfo{
+				PeerCertificates: []types.CertInfo{
+					{
+						Issuer:    "foo",
+						Subject:   "replicated.app",
+						Serial:    "different",
+						NotBefore: "2025-02-12T20:48:06Z",
+						NotAfter:  "2025-05-13T20:48:05Z",
+						IsCA:      false,
+					},
+				},
+				ExpectedCerts: []types.CertInfo{
+					{
+						Issuer:    "E5",
+						Subject:   "replicated.app",
+						Serial:    "366647399446765119739694467366731491294821",
+						NotBefore: "2025-02-12T20:48:06Z",
+						NotAfter:  "2025-05-13T20:48:05Z",
+						IsCA:      false,
+					},
+					{
+						Issuer:    "ISRG Root X1",
+						Subject:   "E5",
+						Serial:    "174873564306387906651619802726858882526",
+						NotBefore: "2024-03-13T00:00:00Z",
+						NotAfter:  "2027-03-12T23:59:59Z",
+						IsCA:      true,
+					},
+				},
+			},
+			hostAnalyzer: &troubleshootv1beta2.TLSAnalyze{
+				CollectorName: "test-tls",
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							When:    "matchesExpected",
+							Message: "The issuer for replicated.app is as expected",
+						},
+					},
+					{
+						Fail: &troubleshootv1beta2.SingleOutcome{
+							When:    "",
+							Message: "The issuer for replicated.app is not as expected",
+						},
+					},
+				},
+			},
+			result: []*AnalyzeResult{
+				{
+					Title:   "TLSCertificate",
+					IsFail:  true,
+					Message: "The issuer for replicated.app is not as expected",
+				},
+			},
+		},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {

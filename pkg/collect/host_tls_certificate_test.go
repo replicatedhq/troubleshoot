@@ -8,6 +8,7 @@ import (
 	"crypto/x509/pkix"
 	"encoding/json"
 	"encoding/pem"
+	"fmt"
 	"math/big"
 	"net/http"
 	"net/http/httptest"
@@ -54,6 +55,7 @@ func TestCollectHostTLS_Collect(t *testing.T) {
 		name          string
 		hostCollector *troubleshootv1beta2.HostTLSCertificate
 		certFields    []certFields
+		expectedCerts []certFields
 		wantErr       bool
 	}{
 		{
@@ -83,6 +85,31 @@ func TestCollectHostTLS_Collect(t *testing.T) {
 			},
 			wantErr: true,
 		},
+		{
+			name: "successful collection with expected cert",
+			hostCollector: &troubleshootv1beta2.HostTLSCertificate{
+				Address:             serverAddr,
+				ExpectedCertSubpath: "expected-cert",
+				HostCollectorMeta: troubleshootv1beta2.HostCollectorMeta{
+					CollectorName: "test-tls",
+				},
+			},
+			certFields: []certFields{
+				{
+					Issuer:  "localhost",
+					Subject: "localhost",
+					IsCA:    false,
+				},
+			},
+			expectedCerts: []certFields{
+				{
+					Issuer:  "expected",
+					Subject: serverAddr,
+					IsCA:    true,
+				},
+			},
+			wantErr: false,
+		},
 	}
 
 	for _, tt := range tests {
@@ -96,7 +123,7 @@ func TestCollectHostTLS_Collect(t *testing.T) {
 			require.NoError(t, err)
 			require.NotNil(t, collected)
 
-			expectedFilename := filepath.Join("host-collectors/tls", tt.hostCollector.CollectorName+".json")
+			expectedFilename := filepath.Join("host-collectors/tls-certificate", tt.hostCollector.CollectorName+".json")
 			assert.Contains(t, collected, expectedFilename)
 
 			// Validate the content
@@ -109,16 +136,25 @@ func TestCollectHostTLS_Collect(t *testing.T) {
 				require.NotNil(t, tlsInfo.Error)
 				return
 			}
+			require.Equal(t, "", tlsInfo.Error)
 
 			// Verify we have certificate information
 			require.NotEmpty(t, tlsInfo.PeerCertificates)
 
 			// Verify the certificate fields match the expected values
 			require.Equal(t, len(tt.certFields), len(tlsInfo.PeerCertificates))
-			for i, cert := range tlsInfo.PeerCertificates {
-				assert.Equal(t, tt.certFields[i].Issuer, cert.Issuer)
-				assert.Equal(t, tt.certFields[i].Subject, cert.Subject)
-				assert.Equal(t, tt.certFields[i].IsCA, cert.IsCA)
+			for i, crt := range tlsInfo.PeerCertificates {
+				assert.Equal(t, tt.certFields[i].Issuer, crt.Issuer)
+				assert.Equal(t, tt.certFields[i].Subject, crt.Subject)
+				assert.Equal(t, tt.certFields[i].IsCA, crt.IsCA)
+			}
+
+			// verify that the expected certs array (returned by the server) matches the expected certs array
+			require.Equal(t, len(tt.expectedCerts), len(tlsInfo.ExpectedCerts))
+			for i, crt := range tlsInfo.ExpectedCerts {
+				assert.Equal(t, tt.expectedCerts[i].Issuer, crt.Issuer)
+				assert.Equal(t, tt.expectedCerts[i].Subject, crt.Subject)
+				assert.Equal(t, tt.expectedCerts[i].IsCA, crt.IsCA)
 			}
 		})
 	}
@@ -179,6 +215,14 @@ func startTestHttpsServer(certDER, keyDER []byte) (string, func(), error) {
 
 	// Create a simple HTTP handler
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Println(r.URL.Path)
+		if r.URL.Path == "/expected-cert" {
+			w.WriteHeader(http.StatusOK)
+			subject := r.Header.Get("tls-request-hostname")
+			resp := fmt.Sprintf(`[{"issuer": "expected", "subject": "%s", "serial": "1234567890", "not_before": "abc", "not_after": "xyz", "is_ca": true}]`, subject)
+			w.Write([]byte(resp))
+			return
+		}
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte("TLSCertificate Test Server"))
 	})

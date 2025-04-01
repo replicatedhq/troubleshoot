@@ -63,23 +63,36 @@ func (a *AnalyzeHostTLSCertificate) CheckCondition(when string, data []byte) (bo
 
 // currently this supports only checks like "issuer == foo"
 func compareHostTLSResult(when string, tlsInfo *types.TLSInfo) (bool, error) {
-	parts := strings.SplitN(when, " ", 3)
-	if len(parts) < 3 {
-		return false, fmt.Errorf("invalid when clause: %s", when)
-	}
+	parts := strings.Split(when, " ")
 
 	checkType := parts[0]
-	if checkType != "issuer" {
+	switch checkType {
+	case "issuer":
+		// check that the issuer matches the provided expected value
+		if len(parts) < 3 {
+			return false, fmt.Errorf("invalid when clause: %s", when)
+		}
+
+		expected := strings.Join(parts[2:], " ")
+
+		for _, cert := range tlsInfo.PeerCertificates {
+			if cert.Issuer == expected {
+				return true, nil
+			}
+		}
+		return false, nil
+	case "matchesExpected":
+		// check that the certificate's information matches what the server returned inside the response body
+		if tlsInfo.ExpectedCerts == nil {
+			return false, fmt.Errorf("expected certs not found in response")
+		}
+
+		// only check the issuer of the first expected cert today
+		expected := tlsInfo.ExpectedCerts[0]
+		comparison := tlsInfo.PeerCertificates[0]
+
+		return expected.Issuer == comparison.Issuer, nil
+	default:
 		return false, fmt.Errorf("invalid check type: %s", checkType)
 	}
-
-	issuer := parts[2]
-
-	for _, cert := range tlsInfo.PeerCertificates {
-		if cert.Issuer == issuer {
-			return true, nil
-		}
-	}
-
-	return false, nil
 }
