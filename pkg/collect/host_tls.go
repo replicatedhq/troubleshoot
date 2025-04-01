@@ -29,7 +29,7 @@ func (c *CollectHostTLS) IsExcluded() (bool, error) {
 func (c *CollectHostTLS) Collect(progressChan chan<- interface{}) (map[string][]byte, error) {
 	tlsInfo := types.TLSInfo{}
 
-	resp, err := doRequest("GET", fmt.Sprintf("https://%s", c.hostCollector.Address), nil, "", true, "", nil, "")
+	resp, err := doRequest("GET", fmt.Sprintf("https://%s", c.hostCollector.Address), nil, "", true, "", nil, c.hostCollector.HttpsProxy)
 	if err != nil {
 		tlsInfo.Error = err.Error()
 	} else {

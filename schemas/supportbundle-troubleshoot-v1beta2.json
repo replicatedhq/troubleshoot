@@ -20443,6 +20443,9 @@
                   },
                   "exclude": {
                     "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  },
+                  "httpsProxy": {
+                    "type": "string"
                   }
                 }
               },

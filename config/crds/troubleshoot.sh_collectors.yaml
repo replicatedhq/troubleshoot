@@ -17752,6 +17752,8 @@ spec:
                           type: string
                         exclude:
                           type: BoolString
+                        httpsProxy:
+                          type: string
                       required:
                       - address
                       type: object

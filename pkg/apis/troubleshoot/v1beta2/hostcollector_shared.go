@@ -238,6 +238,7 @@ type HostSysctl struct {
 type HostTLS struct {
 	HostCollectorMeta `json:",inline" yaml:",inline"`
 	Address           string `json:"address"`
+	HttpsProxy        string `json:"httpsProxy,omitempty"`
 }
 
 type HostCollect struct {
