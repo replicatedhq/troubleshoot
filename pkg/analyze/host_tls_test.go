@@ -28,6 +28,7 @@ func TestAnalyzeHostTLS(t *testing.T) {
 				},
 			},
 			hostAnalyzer: &troubleshootv1beta2.TLSAnalyze{
+				CollectorName: "test-tls",
 				Outcomes: []*troubleshootv1beta2.Outcome{
 					{
 						Fail: &troubleshootv1beta2.SingleOutcome{
@@ -68,6 +69,7 @@ func TestAnalyzeHostTLS(t *testing.T) {
 				},
 			},
 			hostAnalyzer: &troubleshootv1beta2.TLSAnalyze{
+				CollectorName: "test-tls",
 				Outcomes: []*troubleshootv1beta2.Outcome{
 					{
 						Fail: &troubleshootv1beta2.SingleOutcome{
@@ -88,6 +90,7 @@ func TestAnalyzeHostTLS(t *testing.T) {
 				},
 			},
 			hostAnalyzer: &troubleshootv1beta2.TLSAnalyze{
+				CollectorName: "test-tls",
 				Outcomes: []*troubleshootv1beta2.Outcome{
 					{
 						Pass: &troubleshootv1beta2.SingleOutcome{
@@ -124,6 +127,7 @@ func TestAnalyzeHostTLS(t *testing.T) {
 				},
 			},
 			hostAnalyzer: &troubleshootv1beta2.TLSAnalyze{
+				CollectorName: "test-tls",
 				Outcomes: []*troubleshootv1beta2.Outcome{
 					{
 						Pass: &troubleshootv1beta2.SingleOutcome{
@@ -171,6 +175,7 @@ func TestAnalyzeHostTLS(t *testing.T) {
 				},
 			},
 			hostAnalyzer: &troubleshootv1beta2.TLSAnalyze{
+				CollectorName: "test-tls",
 				Outcomes: []*troubleshootv1beta2.Outcome{
 					{
 						Pass: &troubleshootv1beta2.SingleOutcome{
