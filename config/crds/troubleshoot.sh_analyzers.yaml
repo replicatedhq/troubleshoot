@@ -3156,7 +3156,7 @@ spec:
                       required:
                       - outcomes
                       type: object
-                    tls:
+                    tlsCertificate:
                       properties:
                         annotations:
                           additionalProperties:

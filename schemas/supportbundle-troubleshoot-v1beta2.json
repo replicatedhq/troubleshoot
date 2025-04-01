@@ -19399,7 +19399,7 @@
                   }
                 }
               },
-              "tls": {
+              "tlsCertificate": {
                 "type": "object",
                 "required": [
                   "outcomes"
@@ -20429,7 +20429,7 @@
                   }
                 }
               },
-              "tls": {
+              "tlsCertificate": {
                 "type": "object",
                 "required": [
                   "address"
@@ -20443,6 +20443,9 @@
                   },
                   "exclude": {
                     "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  },
+                  "expectedCertSubpath": {
+                    "type": "string"
                   },
                   "httpsProxy": {
                     "type": "string"

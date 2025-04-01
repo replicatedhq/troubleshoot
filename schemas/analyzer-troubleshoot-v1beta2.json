@@ -4808,7 +4808,7 @@
                   }
                 }
               },
-              "tls": {
+              "tlsCertificate": {
                 "type": "object",
                 "required": [
                   "outcomes"
