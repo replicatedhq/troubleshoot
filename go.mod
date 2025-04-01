@@ -2,7 +2,7 @@ module github.com/replicatedhq/troubleshoot
 
 go 1.23.0
 
-toolchain go1.23.4
+toolchain go1.24.1
 
 require (
 	github.com/Masterminds/sprig/v3 v3.3.0
@@ -12,7 +12,7 @@ require (
 	github.com/casbin/govaluate v1.3.0
 	github.com/cilium/ebpf v0.17.3
 	github.com/containerd/cgroups/v3 v3.0.5
-	github.com/containers/image/v5 v5.34.2
+	github.com/containers/image/v5 v5.34.3
 	github.com/distribution/distribution/v3 v3.0.0-rc.3
 	github.com/fatih/color v1.18.0
 	github.com/go-logr/logr v1.4.2
@@ -25,7 +25,7 @@ require (
 	github.com/gorilla/handlers v1.5.2
 	github.com/hashicorp/go-getter v1.7.8
 	github.com/hashicorp/go-multierror v1.1.1
-	github.com/jackc/pgx/v5 v5.7.3
+	github.com/jackc/pgx/v5 v5.7.4
 	github.com/longhorn/go-iscsi-helper v0.0.0-20210330030558-49a327fb024e
 	github.com/manifoldco/promptui v0.9.0
 	github.com/mattn/go-isatty v0.0.20
@@ -39,7 +39,7 @@ require (
 	github.com/shirou/gopsutil/v4 v4.25.2
 	github.com/spf13/cobra v1.9.1
 	github.com/spf13/pflag v1.0.6
-	github.com/spf13/viper v1.20.0
+	github.com/spf13/viper v1.20.1
 	github.com/stretchr/testify v1.10.0
 	github.com/tj/go-spin v1.1.0
 	github.com/vishvananda/netlink v1.3.0
@@ -172,7 +172,7 @@ require (
 	github.com/c9s/goprocinfo v0.0.0-20170724085704-0010a05ce49f // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/chzyer/readline v1.5.1 // indirect
-	github.com/containerd/containerd v1.7.24 // indirect
+	github.com/containerd/containerd v1.7.27 // indirect
 	github.com/containerd/stargz-snapshotter/estargz v0.16.3 // indirect
 	github.com/containers/libtrust v0.0.0-20230121012942-c1716e8a8d01 // indirect
 	github.com/containers/ocicrypt v1.2.1 // indirect
@@ -257,7 +257,7 @@ require (
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	golang.org/x/crypto v0.36.0 // indirect
-	golang.org/x/net v0.37.0
+	golang.org/x/net v0.38.0
 	golang.org/x/oauth2 v0.25.0 // indirect
 	golang.org/x/sys v0.31.0
 	golang.org/x/term v0.30.0 // indirect
@@ -274,7 +274,7 @@ require (
 	k8s.io/kubelet v0.32.3
 	k8s.io/metrics v0.32.3
 	k8s.io/utils v0.0.0-20241104100929-3ea5e8cea738
-	periph.io/x/host/v3 v3.8.3
+	periph.io/x/host/v3 v3.8.4
 	sigs.k8s.io/json v0.0.0-20241010143419-9aa6b5e7a4b3 // indirect
 	sigs.k8s.io/kustomize/api v0.18.0 // indirect
 	sigs.k8s.io/kustomize/kyaml v0.18.1 // indirect
