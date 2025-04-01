@@ -238,7 +238,6 @@ type HostSysctl struct {
 type HostTLS struct {
 	HostCollectorMeta `json:",inline" yaml:",inline"`
 	Address           string `json:"address"`
-	ExpectedIssuer    string `json:"expectedIssuer,omitempty"`
 }
 
 type HostCollect struct {

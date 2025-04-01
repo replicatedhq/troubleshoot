@@ -23,8 +23,7 @@ type CertInfo struct {
 }
 
 type TLSInfo struct {
-	PeerCertificates      []CertInfo `json:"peer_certificates"`
-	MatchesExpectedIssuer bool       `json:"matches_expected_issuer"`
+	PeerCertificates []CertInfo `json:"peer_certificates"`
 }
 
 type CollectHostTLS struct {
@@ -68,14 +67,6 @@ func (c *CollectHostTLS) Collect(progressChan chan<- interface{}) (map[string][]
 	}
 
 	tlsInfo.PeerCertificates = cleanedCerts
-
-	if c.hostCollector.ExpectedIssuer != "" {
-		if len(certs) == 0 {
-			tlsInfo.MatchesExpectedIssuer = false
-		} else {
-			tlsInfo.MatchesExpectedIssuer = c.hostCollector.ExpectedIssuer == certs[0].Issuer.CommonName
-		}
-	}
 
 	b, err := json.Marshal(tlsInfo)
 	if err != nil {

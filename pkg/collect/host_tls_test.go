@@ -43,46 +43,34 @@ func TestCollectHostTLS_Collect(t *testing.T) {
 	err = os.MkdirAll(hostTimePath, 0755)
 	require.NoError(t, err)
 
+	type certFields struct {
+		Issuer  string `json:"issuer"`
+		Subject string `json:"subject"`
+		IsCA    bool   `json:"is_ca"`
+	}
+
 	tests := []struct {
 		name          string
 		hostCollector *troubleshootv1beta2.HostTLS
-		issuerMatches bool
+		certFields    []certFields
 		wantErr       bool
 	}{
 		{
-			name: "successful collection with matching issuer",
+			name: "successful collection",
 			hostCollector: &troubleshootv1beta2.HostTLS{
-				Address:        serverAddr,
-				ExpectedIssuer: "localhost",
+				Address: serverAddr,
 				HostCollectorMeta: troubleshootv1beta2.HostCollectorMeta{
 					CollectorName: "test-tls",
 				},
 			},
-			issuerMatches: true,
-			wantErr:       false,
-		},
-		{
-			name: "successful collection with non-matching issuer",
-			hostCollector: &troubleshootv1beta2.HostTLS{
-				Address:        serverAddr,
-				ExpectedIssuer: "Different Issuer",
-				HostCollectorMeta: troubleshootv1beta2.HostCollectorMeta{
-					CollectorName: "test-tls-wrong-issuer",
+			certFields: []certFields{
+				{
+					Issuer:  "localhost",
+					Subject: "localhost",
+					IsCA:    false,
 				},
 			},
-			issuerMatches: false,
-			wantErr:       false,
-		},
-		{
-			name: "successful collection without expected issuer",
-			hostCollector: &troubleshootv1beta2.HostTLS{
-				Address: serverAddr,
-				HostCollectorMeta: troubleshootv1beta2.HostCollectorMeta{
-					CollectorName: "test-tls-no-issuer",
-				},
-			},
-			issuerMatches: false,
-			wantErr:       false,
+			wantErr: false,
 		},
 		{
 			name: "failed connection",
@@ -92,8 +80,7 @@ func TestCollectHostTLS_Collect(t *testing.T) {
 					CollectorName: "test-tls-failed",
 				},
 			},
-			issuerMatches: false,
-			wantErr:       true,
+			wantErr: true,
 		},
 	}
 
@@ -119,14 +106,19 @@ func TestCollectHostTLS_Collect(t *testing.T) {
 			// Validate the content
 			var tlsInfo TLSInfo
 			err = json.Unmarshal(collected[expectedFilename], &tlsInfo)
-			
+
 			require.NoError(t, err)
 
 			// Verify we have certificate information
 			require.NotEmpty(t, tlsInfo.PeerCertificates)
 
-			// If expected issuer is set, verify the match status
-			require.Equal(t, tt.issuerMatches, tlsInfo.MatchesExpectedIssuer)
+			// Verify the certificate fields match the expected values
+			require.Equal(t, len(tt.certFields), len(tlsInfo.PeerCertificates))
+			for i, cert := range tlsInfo.PeerCertificates {
+				assert.Equal(t, tt.certFields[i].Issuer, cert.Issuer)
+				assert.Equal(t, tt.certFields[i].Subject, cert.Subject)
+				assert.Equal(t, tt.certFields[i].IsCA, cert.IsCA)
+			}
 		})
 	}
 }
