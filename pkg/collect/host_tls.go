@@ -2,8 +2,8 @@ package collect
 
 import (
 	"bytes"
-	"crypto/tls"
 	"encoding/json"
+	"fmt"
 	"path/filepath"
 	"strings"
 	"time"
@@ -29,16 +29,12 @@ func (c *CollectHostTLS) IsExcluded() (bool, error) {
 func (c *CollectHostTLS) Collect(progressChan chan<- interface{}) (map[string][]byte, error) {
 	tlsInfo := types.TLSInfo{}
 
-	conf := &tls.Config{
-		InsecureSkipVerify: true,
-	}
-
-	conn, err := tls.Dial("tcp", c.hostCollector.Address, conf)
+	resp, err := doRequest("GET", fmt.Sprintf("https://%s", c.hostCollector.Address), nil, "", true, "", nil, "")
 	if err != nil {
 		tlsInfo.Error = err.Error()
 	} else {
-		defer conn.Close()
-		certs := conn.ConnectionState().PeerCertificates
+		defer resp.Body.Close()
+		certs := resp.TLS.PeerCertificates
 		cleanedCerts := make([]types.CertInfo, len(certs))
 		for i, cert := range certs {
 			cleanedCerts[i] = types.CertInfo{
