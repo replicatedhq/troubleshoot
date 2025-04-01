@@ -264,7 +264,7 @@ func TestCollectHTTP_Collect(t *testing.T) {
 			wantErr:      false,
 		},
 		{
-			name: "TLS: certificate is not trusted",
+			name: "TLSCertificate: certificate is not trusted",
 			Collector: &troubleshootv1beta2.HTTP{
 				CollectorMeta: troubleshootv1beta2.CollectorMeta{
 					CollectorName: "",

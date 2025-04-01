@@ -168,7 +168,7 @@ func Test_createTLSConfig(t *testing.T) {
 			caCertOnly: true,
 		},
 		{
-			name:     "empty TLS parameters fails to create config with error",
+			name:     "empty TLSCertificate parameters fails to create config with error",
 			hasError: true,
 		},
 		{
@@ -239,7 +239,7 @@ func Test_createTLSConfig(t *testing.T) {
 					assert.Nil(t, tlsCfg.RootCAs)
 					assert.Nil(t, tlsCfg.Certificates)
 				} else {
-					// TLS parameter objects are opaque. Just check if they were created.
+					// TLSCertificate parameter objects are opaque. Just check if they were created.
 					// There is no trivial way to inspect their metadata. Trust me :)
 					assert.NotNil(t, tlsCfg.RootCAs)
 					assert.Equal(t, tt.caCertOnly, tlsCfg.Certificates == nil)

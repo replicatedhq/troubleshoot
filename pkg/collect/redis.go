@@ -40,7 +40,7 @@ func (c *CollectRedis) createClient() (*redis.Client, error) {
 	}
 
 	if c.Collector.TLS != nil {
-		klog.V(2).Infof("Connecting to redis in mutual TLS")
+		klog.V(2).Infof("Connecting to redis in mutual TLSCertificate")
 		return c.createMTLSClient(opt)
 	}
 

@@ -10,19 +10,19 @@ import (
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 )
 
-type AnalyzeHostTLS struct {
+type AnalyzeHostTLSCertificate struct {
 	hostAnalyzer *troubleshootv1beta2.TLSAnalyze
 }
 
-func (a *AnalyzeHostTLS) Title() string {
-	return hostAnalyzerTitleOrDefault(a.hostAnalyzer.AnalyzeMeta, "TLS")
+func (a *AnalyzeHostTLSCertificate) Title() string {
+	return hostAnalyzerTitleOrDefault(a.hostAnalyzer.AnalyzeMeta, "TLSCertificate")
 }
 
-func (a *AnalyzeHostTLS) IsExcluded() (bool, error) {
+func (a *AnalyzeHostTLSCertificate) IsExcluded() (bool, error) {
 	return isExcluded(a.hostAnalyzer.Exclude)
 }
 
-func (a *AnalyzeHostTLS) Analyze(
+func (a *AnalyzeHostTLSCertificate) Analyze(
 	getCollectedFileContents func(string) ([]byte, error), findFiles getChildCollectedFileContents,
 ) ([]*AnalyzeResult, error) {
 
@@ -31,7 +31,7 @@ func (a *AnalyzeHostTLS) Analyze(
 		return nil, fmt.Errorf("collector name is required")
 	}
 
-	const nodeBaseDir = "host-collectors/tls"
+	const nodeBaseDir = "host-collectors/tls-certificate"
 	localPath := fmt.Sprintf("%s/%s.json", nodeBaseDir, collectorName)
 	fileName := fmt.Sprintf("%s.json", collectorName)
 
@@ -53,7 +53,7 @@ func (a *AnalyzeHostTLS) Analyze(
 	return results, nil
 }
 
-func (a *AnalyzeHostTLS) CheckCondition(when string, data []byte) (bool, error) {
+func (a *AnalyzeHostTLSCertificate) CheckCondition(when string, data []byte) (bool, error) {
 	var tlsInfo types.TLSInfo
 	if err := json.Unmarshal(data, &tlsInfo); err != nil {
 		return false, fmt.Errorf("failed to unmarshal data into tlsInfo: %v", err)

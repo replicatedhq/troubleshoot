@@ -182,5 +182,5 @@ type HostAnalyze struct {
 	JsonCompare                  *JsonCompare                         `json:"jsonCompare,omitempty" yaml:"jsonCompare,omitempty"`
 	NetworkNamespaceConnectivity *NetworkNamespaceConnectivityAnalyze `json:"networkNamespaceConnectivity,omitempty" yaml:"networkNamespaceConnectivity,omitempty"`
 	Sysctl                       *HostSysctlAnalyze                   `json:"sysctl,omitempty" yaml:"sysctl,omitempty"`
-	TLS                          *TLSAnalyze                          `json:"tls,omitempty" yaml:"tls,omitempty"`
+	TLSCertificate               *TLSAnalyze                          `json:"tlsCertificate,omitempty" yaml:"tlsCertificate,omitempty"`
 }

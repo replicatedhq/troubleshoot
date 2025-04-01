@@ -60,7 +60,7 @@ func RootCmd() *cobra.Command {
 	cmd.Flags().String("chroot", "", "Chroot to path")
 
 	// hidden in favor of the `insecure-skip-tls-verify` flag
-	cmd.Flags().Bool("allow-insecure-connections", false, "when set, do not verify TLS certs when retrieving spec and reporting results")
+	cmd.Flags().Bool("allow-insecure-connections", false, "when set, do not verify TLSCertificate certs when retrieving spec and reporting results")
 	cmd.Flags().MarkHidden("allow-insecure-connections")
 
 	viper.BindPFlags(cmd.Flags())

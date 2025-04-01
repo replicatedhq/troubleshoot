@@ -5,7 +5,7 @@ metadata:
 spec:
     collectors:
       - cpu: {}
-      - tls:
+      - tlsCertificate:
           address: "replicated.app:443"
           collectorName: tls
     analyzers:
@@ -20,7 +20,7 @@ spec:
                 message: At least 4 CPU cores are recommended
             - pass:
                 message: This server has at least 4 CPU cores
-      - tls:
+      - tlsCertificate:
           checkName: "replicated.app TLS certificate"
           collectorName: tls
           outcomes:

@@ -13,20 +13,20 @@ import (
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 )
 
-type CollectHostTLS struct {
-	hostCollector *troubleshootv1beta2.HostTLS
+type CollectHostTLSCertificate struct {
+	hostCollector *troubleshootv1beta2.HostTLSCertificate
 	BundlePath    string
 }
 
-func (c *CollectHostTLS) Title() string {
+func (c *CollectHostTLSCertificate) Title() string {
 	return hostCollectorTitleOrDefault(c.hostCollector.HostCollectorMeta, "TCP Port Status")
 }
 
-func (c *CollectHostTLS) IsExcluded() (bool, error) {
+func (c *CollectHostTLSCertificate) IsExcluded() (bool, error) {
 	return isExcluded(c.hostCollector.Exclude)
 }
 
-func (c *CollectHostTLS) Collect(progressChan chan<- interface{}) (map[string][]byte, error) {
+func (c *CollectHostTLSCertificate) Collect(progressChan chan<- interface{}) (map[string][]byte, error) {
 	tlsInfo := types.TLSInfo{}
 
 	resp, err := doRequest("GET", fmt.Sprintf("https://%s", c.hostCollector.Address), nil, "", true, "", nil, c.hostCollector.HttpsProxy)
@@ -60,7 +60,7 @@ func (c *CollectHostTLS) Collect(progressChan chan<- interface{}) (map[string][]
 	if collectorName == "" {
 		collectorName = strings.ReplaceAll(c.hostCollector.Address, ":", "-")
 	}
-	name := filepath.Join("host-collectors/tls", collectorName+".json")
+	name := filepath.Join("host-collectors/tls-certificate", collectorName+".json")
 
 	output := NewResult()
 	err = output.SaveResult(c.BundlePath, name, bytes.NewBuffer(b))
@@ -73,6 +73,6 @@ func (c *CollectHostTLS) Collect(progressChan chan<- interface{}) (map[string][]
 	}, nil
 }
 
-func (c *CollectHostTLS) RemoteCollect(progressChan chan<- interface{}) (map[string][]byte, error) {
+func (c *CollectHostTLSCertificate) RemoteCollect(progressChan chan<- interface{}) (map[string][]byte, error) {
 	return nil, ErrRemoteCollectorNotImplemented
 }

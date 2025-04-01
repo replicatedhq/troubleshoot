@@ -29,7 +29,7 @@ func TestCollectHostTLS_Collect(t *testing.T) {
 	cert, key, err := generateTestSelfSignedCert()
 	require.NoError(t, err)
 
-	// Start a test TLS server
+	// Start a test TLSCertificate server
 	serverAddr, closeServer, err := startTestHttpsServer(cert, key)
 	require.NoError(t, err)
 	defer closeServer()
@@ -52,13 +52,13 @@ func TestCollectHostTLS_Collect(t *testing.T) {
 
 	tests := []struct {
 		name          string
-		hostCollector *troubleshootv1beta2.HostTLS
+		hostCollector *troubleshootv1beta2.HostTLSCertificate
 		certFields    []certFields
 		wantErr       bool
 	}{
 		{
 			name: "successful collection",
-			hostCollector: &troubleshootv1beta2.HostTLS{
+			hostCollector: &troubleshootv1beta2.HostTLSCertificate{
 				Address: serverAddr,
 				HostCollectorMeta: troubleshootv1beta2.HostCollectorMeta{
 					CollectorName: "test-tls",
@@ -75,7 +75,7 @@ func TestCollectHostTLS_Collect(t *testing.T) {
 		},
 		{
 			name: "failed connection",
-			hostCollector: &troubleshootv1beta2.HostTLS{
+			hostCollector: &troubleshootv1beta2.HostTLSCertificate{
 				Address: "invalid-address:9999",
 				HostCollectorMeta: troubleshootv1beta2.HostCollectorMeta{
 					CollectorName: "test-tls-failed",
@@ -87,7 +87,7 @@ func TestCollectHostTLS_Collect(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			c := &CollectHostTLS{
+			c := &CollectHostTLSCertificate{
 				hostCollector: tt.hostCollector,
 				BundlePath:    bundlePath,
 			}
@@ -166,7 +166,7 @@ func generateTestSelfSignedCert() ([]byte, []byte, error) {
 	return derBytes, privateKeyDER, nil
 }
 
-// Helper function to start a test TLS server
+// Helper function to start a test TLSCertificate server
 func startTestHttpsServer(certDER, keyDER []byte) (string, func(), error) {
 	// Encode certificate and key in PEM format
 	certPEM := pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: certDER})
@@ -180,10 +180,10 @@ func startTestHttpsServer(certDER, keyDER []byte) (string, func(), error) {
 	// Create a simple HTTP handler
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte("TLS Test Server"))
+		w.Write([]byte("TLSCertificate Test Server"))
 	})
 
-	// Use httptest package to create a TLS server
+	// Use httptest package to create a TLSCertificate server
 	testServer := httptest.NewUnstartedServer(handler)
 	testServer.TLS = &tls.Config{
 		Certificates: []tls.Certificate{pair},

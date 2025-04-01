@@ -52,7 +52,7 @@ func TestAnalyzeHostTLS(t *testing.T) {
 			},
 			result: []*AnalyzeResult{
 				{
-					Title:   "TLS",
+					Title:   "TLSCertificate",
 					IsPass:  true,
 					Message: "issuer was foo",
 				},
@@ -108,7 +108,7 @@ func TestAnalyzeHostTLS(t *testing.T) {
 			},
 			result: []*AnalyzeResult{
 				{
-					Title:   "TLS",
+					Title:   "TLSCertificate",
 					IsFail:  true,
 					Message: "issuer was not abc",
 				},
@@ -145,7 +145,7 @@ func TestAnalyzeHostTLS(t *testing.T) {
 			},
 			result: []*AnalyzeResult{
 				{
-					Title:   "TLS",
+					Title:   "TLSCertificate",
 					IsPass:  true,
 					Message: "issuer was bar",
 				},
@@ -193,7 +193,7 @@ func TestAnalyzeHostTLS(t *testing.T) {
 			},
 			result: []*AnalyzeResult{
 				{
-					Title:   "TLS",
+					Title:   "TLSCertificate",
 					IsPass:  true,
 					Message: "The issuer for replicated.app is E5 (letsencrypt) as expected",
 				},
@@ -212,7 +212,7 @@ func TestAnalyzeHostTLS(t *testing.T) {
 				return b, nil
 			}
 
-			result, err := (&AnalyzeHostTLS{test.hostAnalyzer}).Analyze(getCollectedFileContents, nil)
+			result, err := (&AnalyzeHostTLSCertificate{test.hostAnalyzer}).Analyze(getCollectedFileContents, nil)
 			if test.expectErr {
 				req.Error(err)
 			} else {
