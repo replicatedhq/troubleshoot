@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"crypto/tls"
 	"encoding/json"
-	"log"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -35,25 +35,25 @@ func (c *CollectHostTLS) Collect(progressChan chan<- interface{}) (map[string][]
 
 	conn, err := tls.Dial("tcp", c.hostCollector.Address, conf)
 	if err != nil {
-		log.Println("Error in Dial", err)
-		return nil, errors.Wrap(err, "failed to dial tls")
-	}
-	defer conn.Close()
-	certs := conn.ConnectionState().PeerCertificates
-	cleanedCerts := make([]types.CertInfo, len(certs))
-	for i, cert := range certs {
-		cleanedCerts[i] = types.CertInfo{
-			Issuer:    cert.Issuer.CommonName,
-			Subject:   cert.Subject.CommonName,
-			Serial:    cert.SerialNumber.String(),
-			NotBefore: cert.NotBefore.Format(time.RFC3339),
-			NotAfter:  cert.NotAfter.Format(time.RFC3339),
-			IsCA:      cert.IsCA,
-			Raw:       cert.Raw,
+		tlsInfo.Error = err.Error()
+	} else {
+		defer conn.Close()
+		certs := conn.ConnectionState().PeerCertificates
+		cleanedCerts := make([]types.CertInfo, len(certs))
+		for i, cert := range certs {
+			cleanedCerts[i] = types.CertInfo{
+				Issuer:    cert.Issuer.CommonName,
+				Subject:   cert.Subject.CommonName,
+				Serial:    cert.SerialNumber.String(),
+				NotBefore: cert.NotBefore.Format(time.RFC3339),
+				NotAfter:  cert.NotAfter.Format(time.RFC3339),
+				IsCA:      cert.IsCA,
+				Raw:       cert.Raw,
+			}
 		}
-	}
 
-	tlsInfo.PeerCertificates = cleanedCerts
+		tlsInfo.PeerCertificates = cleanedCerts
+	}
 
 	b, err := json.Marshal(tlsInfo)
 	if err != nil {
@@ -65,7 +65,7 @@ func (c *CollectHostTLS) Collect(progressChan chan<- interface{}) (map[string][]
 
 	collectorName := c.hostCollector.CollectorName
 	if collectorName == "" {
-		collectorName = "result"
+		collectorName = strings.ReplaceAll(c.hostCollector.Address, ":", "-")
 	}
 	name := filepath.Join("host-collectors/tls", collectorName+".json")
 

@@ -93,11 +93,6 @@ func TestCollectHostTLS_Collect(t *testing.T) {
 			}
 
 			collected, err := c.Collect(nil)
-			if tt.wantErr {
-				require.Error(t, err)
-				return
-			}
-
 			require.NoError(t, err)
 			require.NotNil(t, collected)
 
@@ -109,6 +104,11 @@ func TestCollectHostTLS_Collect(t *testing.T) {
 			err = json.Unmarshal(collected[expectedFilename], &tlsInfo)
 
 			require.NoError(t, err)
+
+			if tt.wantErr {
+				require.NotNil(t, tlsInfo.Error)
+				return
+			}
 
 			// Verify we have certificate information
 			require.NotEmpty(t, tlsInfo.PeerCertificates)
