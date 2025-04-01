@@ -17744,6 +17744,17 @@ spec:
                         exclude:
                           type: BoolString
                       type: object
+                    tls:
+                      properties:
+                        address:
+                          type: string
+                        collectorName:
+                          type: string
+                        exclude:
+                          type: BoolString
+                      required:
+                      - address
+                      type: object
                     udpPortStatus:
                       properties:
                         collectorName:
