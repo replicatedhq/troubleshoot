@@ -97,7 +97,7 @@ If no arguments are provided, specs are automatically loaded from the cluster by
 	cmd.Flags().Bool("dry-run", false, "print support bundle spec without collecting anything")
 
 	// hidden in favor of the `insecure-skip-tls-verify` flag
-	cmd.Flags().Bool("allow-insecure-connections", false, "when set, do not verify TLS certs when retrieving spec and reporting results")
+	cmd.Flags().Bool("allow-insecure-connections", false, "when set, do not verify TLSCertificate certs when retrieving spec and reporting results")
 	cmd.Flags().MarkHidden("allow-insecure-connections")
 
 	// `no-uri` references the `followURI` functionality where we can use an upstream spec when creating a support bundle

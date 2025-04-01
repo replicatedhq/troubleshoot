@@ -105,6 +105,8 @@ func GetHostCollector(collector *troubleshootv1beta2.HostCollect, bundlePath str
 		return &CollectHostNetworkNamespaceConnectivity{collector.NetworkNamespaceConnectivity, bundlePath}, true
 	case collector.HostSysctl != nil:
 		return &CollectHostSysctl{collector.HostSysctl, bundlePath}, true
+	case collector.HostTLSCertificate != nil:
+		return &CollectHostTLSCertificate{collector.HostTLSCertificate, bundlePath}, true
 	default:
 		return nil, false
 	}

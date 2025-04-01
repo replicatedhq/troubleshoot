@@ -235,6 +235,13 @@ type HostSysctl struct {
 	HostCollectorMeta `json:",inline" yaml:",inline"`
 }
 
+type HostTLSCertificate struct {
+	HostCollectorMeta   `json:",inline" yaml:",inline"`
+	Address             string `json:"address"`
+	HttpsProxy          string `json:"httpsProxy,omitempty"`
+	ExpectedCertSubpath string `json:"expectedCertSubpath,omitempty"`
+}
+
 type HostCollect struct {
 	CPU                          *CPU                              `json:"cpu,omitempty" yaml:"cpu,omitempty"`
 	Memory                       *Memory                           `json:"memory,omitempty" yaml:"memory,omitempty"`
@@ -265,6 +272,7 @@ type HostCollect struct {
 	HostDNS                      *HostDNS                          `json:"dns,omitempty" yaml:"dns,omitempty"`
 	NetworkNamespaceConnectivity *HostNetworkNamespaceConnectivity `json:"networkNamespaceConnectivity,omitempty" yaml:"networkNamespaceConnectivity,omitempty"`
 	HostSysctl                   *HostSysctl                       `json:"sysctl,omitempty" yaml:"sysctl,omitempty"`
+	HostTLSCertificate           *HostTLSCertificate               `json:"tlsCertificate,omitempty" yaml:"tlsCertificate,omitempty"`
 }
 
 // GetName gets the name of the collector

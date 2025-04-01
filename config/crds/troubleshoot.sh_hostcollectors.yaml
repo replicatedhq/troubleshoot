@@ -1305,6 +1305,55 @@ spec:
                       required:
                       - outcomes
                       type: object
+                    tlsCertificate:
+                      properties:
+                        annotations:
+                          additionalProperties:
+                            type: string
+                          type: object
+                        checkName:
+                          type: string
+                        collectorName:
+                          type: string
+                        exclude:
+                          type: BoolString
+                        outcomes:
+                          items:
+                            properties:
+                              fail:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
+                              pass:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
+                              warn:
+                                properties:
+                                  message:
+                                    type: string
+                                  uri:
+                                    type: string
+                                  when:
+                                    type: string
+                                type: object
+                            type: object
+                          type: array
+                        strict:
+                          type: BoolString
+                      required:
+                      - outcomes
+                      type: object
                     udpPortStatus:
                       properties:
                         annotations:
@@ -1969,6 +2018,21 @@ spec:
                           type: string
                         exclude:
                           type: BoolString
+                      type: object
+                    tlsCertificate:
+                      properties:
+                        address:
+                          type: string
+                        collectorName:
+                          type: string
+                        exclude:
+                          type: BoolString
+                        expectedCertSubpath:
+                          type: string
+                        httpsProxy:
+                          type: string
+                      required:
+                      - address
                       type: object
                     udpPortStatus:
                       properties:

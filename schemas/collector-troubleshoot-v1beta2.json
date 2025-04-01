@@ -15483,6 +15483,29 @@
                   }
                 }
               },
+              "tlsCertificate": {
+                "type": "object",
+                "required": [
+                  "address"
+                ],
+                "properties": {
+                  "address": {
+                    "type": "string"
+                  },
+                  "collectorName": {
+                    "type": "string"
+                  },
+                  "exclude": {
+                    "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  },
+                  "expectedCertSubpath": {
+                    "type": "string"
+                  },
+                  "httpsProxy": {
+                    "type": "string"
+                  }
+                }
+              },
               "udpPortStatus": {
                 "type": "object",
                 "required": [

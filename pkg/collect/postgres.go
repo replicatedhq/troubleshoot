@@ -41,22 +41,22 @@ func (c *CollectPostgres) createConnectConfig() (*pgx.ConnConfig, error) {
 	}
 
 	if c.Collector.TLS != nil {
-		klog.V(2).Infof("Connecting to postgres with TLS client config")
-		// Set the libpq TLS environment variables since pgx parses them to
-		// create the TLS configuration (tls.Config instance) to connect with
+		klog.V(2).Infof("Connecting to postgres with TLSCertificate client config")
+		// Set the libpq TLSCertificate environment variables since pgx parses them to
+		// create the TLSCertificate configuration (tls.Config instance) to connect with
 		// https://www.postgresql.org/docs/current/libpq-envars.html
 		caCert, clientCert, clientKey, err := getTLSParamTriplet(c.Context, c.Client, c.Collector.TLS)
 		if err != nil {
 			return nil, err
 		}
 
-		// Drop the TLS params to files and set the paths to their
+		// Drop the TLSCertificate params to files and set the paths to their
 		// respective environment variables
 		// The environment variables are unset after the connection config
 		// is created. Their respective files are deleted as well.
 		tmpdir, err := os.MkdirTemp("", "ts-postgres-collector")
 		if err != nil {
-			return nil, errors.Wrap(err, "failed to create temp dir to store postgres collector TLS files")
+			return nil, errors.Wrap(err, "failed to create temp dir to store postgres collector TLSCertificate files")
 		}
 		defer os.RemoveAll(tmpdir)
 

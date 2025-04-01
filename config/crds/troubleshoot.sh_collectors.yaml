@@ -17744,6 +17744,21 @@ spec:
                         exclude:
                           type: BoolString
                       type: object
+                    tlsCertificate:
+                      properties:
+                        address:
+                          type: string
+                        collectorName:
+                          type: string
+                        exclude:
+                          type: BoolString
+                        expectedCertSubpath:
+                          type: string
+                        httpsProxy:
+                          type: string
+                      required:
+                      - address
+                      type: object
                     udpPortStatus:
                       properties:
                         collectorName:
