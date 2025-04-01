@@ -60,6 +60,12 @@ type TimeAnalyze struct {
 	Outcomes      []*Outcome `json:"outcomes" yaml:"outcomes"`
 }
 
+type TLSAnalyze struct {
+	AnalyzeMeta   `json:",inline" yaml:",inline"`
+	CollectorName string     `json:"collectorName,omitempty" yaml:"collectorName,omitempty"`
+	Outcomes      []*Outcome `json:"outcomes" yaml:"outcomes"`
+}
+
 type BlockDevicesAnalyze struct {
 	AnalyzeMeta                `json:",inline" yaml:",inline"`
 	CollectorName              string     `json:"collectorName,omitempty" yaml:"collectorName,omitempty"`

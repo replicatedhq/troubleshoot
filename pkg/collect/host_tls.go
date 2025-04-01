@@ -9,22 +9,9 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/replicatedhq/troubleshoot/pkg/analyze/types"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 )
-
-type CertInfo struct {
-	Issuer    string `json:"issuer"`
-	Subject   string `json:"subject"`
-	Serial    string `json:"serial"`
-	NotBefore string `json:"not_before"`
-	NotAfter  string `json:"not_after"`
-	IsCA      bool   `json:"is_ca"`
-	Raw       []byte `json:"raw"`
-}
-
-type TLSInfo struct {
-	PeerCertificates []CertInfo `json:"peer_certificates"`
-}
 
 type CollectHostTLS struct {
 	hostCollector *troubleshootv1beta2.HostTLS
@@ -40,7 +27,7 @@ func (c *CollectHostTLS) IsExcluded() (bool, error) {
 }
 
 func (c *CollectHostTLS) Collect(progressChan chan<- interface{}) (map[string][]byte, error) {
-	tlsInfo := TLSInfo{}
+	tlsInfo := types.TLSInfo{}
 
 	conf := &tls.Config{
 		InsecureSkipVerify: true,
@@ -53,9 +40,9 @@ func (c *CollectHostTLS) Collect(progressChan chan<- interface{}) (map[string][]
 	}
 	defer conn.Close()
 	certs := conn.ConnectionState().PeerCertificates
-	cleanedCerts := make([]CertInfo, len(certs))
+	cleanedCerts := make([]types.CertInfo, len(certs))
 	for i, cert := range certs {
-		cleanedCerts[i] = CertInfo{
+		cleanedCerts[i] = types.CertInfo{
 			Issuer:    cert.Issuer.CommonName,
 			Subject:   cert.Subject.CommonName,
 			Serial:    cert.SerialNumber.String(),

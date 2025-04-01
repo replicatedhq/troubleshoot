@@ -18,6 +18,7 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/replicatedhq/troubleshoot/pkg/analyze/types"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -104,7 +105,7 @@ func TestCollectHostTLS_Collect(t *testing.T) {
 			assert.Contains(t, collected, expectedFilename)
 
 			// Validate the content
-			var tlsInfo TLSInfo
+			var tlsInfo types.TLSInfo
 			err = json.Unmarshal(collected[expectedFilename], &tlsInfo)
 
 			require.NoError(t, err)
