@@ -5,6 +5,9 @@ metadata:
 spec:
     collectors:
       - cpu: {}
+      - tls:
+          address: "replicated.app:443"
+          collectorName: tls
     analyzers:
       - cpu:
           checkName: "Number of CPUs"
@@ -17,3 +20,11 @@ spec:
                 message: At least 4 CPU cores are recommended
             - pass:
                 message: This server has at least 4 CPU cores
+      - tls:
+          collectorName: tls
+          outcomes:
+            - pass:
+                when: "issuer == E5"
+                message: The TLS certificate for replicated.app is issued by E5 (letsencrypt)
+            - fail:
+                message: The TLS certificate for replicated.app is not issued by E5 (letsencrypt)

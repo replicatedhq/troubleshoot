@@ -32,3 +32,6 @@ spec:
   - run:
       collectorName: uptime
       command: uptime
+  - tls:
+      address: "replicated.app:443"
+      collectorName: tls
