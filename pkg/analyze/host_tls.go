@@ -54,7 +54,6 @@ func (a *AnalyzeHostTLS) Analyze(
 }
 
 func (a *AnalyzeHostTLS) CheckCondition(when string, data []byte) (bool, error) {
-
 	var tlsInfo types.TLSInfo
 	if err := json.Unmarshal(data, &tlsInfo); err != nil {
 		return false, fmt.Errorf("failed to unmarshal data into tlsInfo: %v", err)

@@ -21,6 +21,7 @@ spec:
             - pass:
                 message: This server has at least 4 CPU cores
       - tls:
+          checkName: "replicated.app TLS certificate"
           collectorName: tls
           outcomes:
             - pass:

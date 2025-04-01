@@ -60,14 +60,17 @@ func (c *CollectHostTLS) Collect(progressChan chan<- interface{}) (map[string][]
 		return nil, errors.Wrap(err, "failed to marshal tls info")
 	}
 
-	output := NewResult()
-	output.SaveResult(c.BundlePath, HostTimePath, bytes.NewBuffer(b))
-
 	collectorName := c.hostCollector.CollectorName
 	if collectorName == "" {
 		collectorName = strings.ReplaceAll(c.hostCollector.Address, ":", "-")
 	}
 	name := filepath.Join("host-collectors/tls", collectorName+".json")
+
+	output := NewResult()
+	err = output.SaveResult(c.BundlePath, name, bytes.NewBuffer(b))
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to save result")
+	}
 
 	return map[string][]byte{
 		name: b,
