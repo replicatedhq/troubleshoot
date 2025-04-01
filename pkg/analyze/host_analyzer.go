@@ -67,6 +67,8 @@ func GetHostAnalyzer(analyzer *troubleshootv1beta2.HostAnalyze) (HostAnalyzer, b
 		return &AnalyzeHostNetworkNamespaceConnectivity{analyzer.NetworkNamespaceConnectivity}, true
 	case analyzer.Sysctl != nil:
 		return &AnalyzeHostSysctl{analyzer.Sysctl}, true
+	case analyzer.TLS != nil:
+		return &AnalyzeHostTLS{analyzer.TLS}, true
 	default:
 		return nil, false
 	}
