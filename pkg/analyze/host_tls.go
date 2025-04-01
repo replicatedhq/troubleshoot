@@ -28,7 +28,7 @@ func (a *AnalyzeHostTLS) Analyze(
 
 	collectorName := a.hostAnalyzer.CollectorName
 	if collectorName == "" {
-		collectorName = "result"
+		return nil, fmt.Errorf("collector name is required")
 	}
 
 	const nodeBaseDir = "host-collectors/tls"
