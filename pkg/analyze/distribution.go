@@ -149,6 +149,11 @@ func ParseNodesForProviders(nodes []corev1.Node) (providers, string) {
 				foundProviders.embeddedCluster = true
 				stringProvider = "embedded-cluster"
 			}
+
+			if k == "run.tanzu.vmware.com/kubernetesDistributionVersion" {
+				foundProviders.tanzu = true
+				stringProvider = "tanzu"
+			}
 		}
 
 		for k := range node.ObjectMeta.Annotations {
