@@ -201,6 +201,45 @@ func TestParseNodesForProviders(t *testing.T) {
 			wantProviders:      providers{embeddedCluster: true, k0s: true},
 			wantProviderString: "embedded-cluster",
 		},
+		{
+			name: "tanzu",
+			nodes: []corev1.Node{
+				{
+					ObjectMeta: metav1.ObjectMeta{
+						Name: "t-node",
+						Annotations: map[string]string{
+							"cluster.x-k8s.io/cluster-name":                          "test-cluster-name",
+							"cluster.x-k8s.io/cluster-namespace":                     "dev",
+							"cluster.x-k8s.io/labels-from-machine":                   "machinelabel",
+							"cluster.x-k8s.io/machine":                               "machinename",
+							"cluster.x-k8s.io/owner-kind":                            "KubeadmControlPlane",
+							"cluster.x-k8s.io/owner-name":                            "owner-name",
+							"csi.volume.kubernetes.io/nodeid":                        "{\"csi.vsphere.vmware.com\":\"test-node-id\"}",
+							"kubeadm.alpha.kubernetes.io/cri-socket":                 "unix:///var/run/containerd/containerd.sock",
+							"node.alpha.kubernetes.io/ttl":                           "0",
+							"volumes.kubernetes.io/controller-managed-attach-detach": "true",
+							"creationTimestamp":                                      "2025-02-19T09:16:51Z",
+						},
+						Labels: map[string]string{
+							"beta.kubernetes.io/arch":                                 "amd64",
+							"beta.kubernetes.io/os":                                   "linux",
+							"failure-domain.beta.kubernetes.io/zone":                  "tanzu-zone-1",
+							"kubernetes.io/arch":                                      "amd64",
+							"kubernetes.io/hostname":                                  "machinename",
+							"kubernetes.io/os":                                        "linux",
+							"node-role.kubernetes.io/control-plane":                   "",
+							"node.cluster.x-k8s.io/esxi-host":                         "esxi-host",
+							"node.kubernetes.io/exclude-from-external-load-balancers": "",
+							"run.tanzu.vmware.com/kubernetesDistributionVersion":      "v1.27.11---vmware.1-fips.1-tkg.2",
+							"run.tanzu.vmware.com/tkr":                                "v1.27.11---vmware.1-fips.1-tkg.2",
+							"topology.kubernetes.io/zone":                             "tanzu-zone-1",
+						},
+					},
+				},
+			},
+			wantProviders:      providers{tanzu: true},
+			wantProviderString: "tanzu",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
