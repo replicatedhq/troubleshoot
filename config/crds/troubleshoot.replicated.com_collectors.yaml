@@ -252,6 +252,8 @@ spec:
                           items:
                             type: string
                           type: array
+                        timestamps:
+                          type: boolean
                       required:
                       - selector
                       type: object
