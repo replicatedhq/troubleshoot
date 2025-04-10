@@ -112,6 +112,10 @@ func (c *CollectHostNetworkNamespaceConnectivity) IsExcluded() (bool, error) {
 	return isExcluded(c.hostCollector.Exclude)
 }
 
+func (c *CollectHostNetworkNamespaceConnectivity) SkipRedaction() bool {
+	return c.hostCollector.SkipRedaction
+}
+
 // marshal marshals the network namespace connectivity info into a JSON file,
 // writes it to the bundle path and returns the file name and the data.
 func (c *CollectHostNetworkNamespaceConnectivity) marshal(info *NetworkNamespaceConnectivityInfo) (map[string][]byte, error) {

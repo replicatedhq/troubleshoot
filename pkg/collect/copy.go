@@ -37,6 +37,10 @@ func (c *CollectCopy) IsExcluded() (bool, error) {
 	return isExcluded(c.Collector.Exclude)
 }
 
+func (c *CollectCopy) SkipRedaction() bool {
+	return c.Collector.SkipRedaction
+}
+
 // Copy function gets a file or folder from a container specified in the specs.
 func (c *CollectCopy) Collect(progressChan chan<- interface{}) (CollectorResult, error) {
 	client, err := kubernetes.NewForConfig(c.ClientConfig)
@@ -101,10 +105,8 @@ func copyFilesFromPod(ctx context.Context, dstPath string, clientConfig *restcli
 	req.VersionedParams(&corev1.PodExecOptions{
 		Command:   command,
 		Container: containerName,
-		Stdin:     true,
-		Stdout:    false,
+		Stdout:    true,
 		Stderr:    true,
-		TTY:       false,
 	}, parameterCodec)
 
 	exec, err := remotecommand.NewSPDYExecutor(clientConfig, "POST", req.URL())
@@ -162,11 +164,9 @@ func copyFilesFromPod(ctx context.Context, dstPath string, clientConfig *restcli
 	}
 
 	var stderr bytes.Buffer
-	copyError = exec.Stream(remotecommand.StreamOptions{
-		Stdin:  nil,
+	copyError = exec.StreamWithContext(ctx, remotecommand.StreamOptions{
 		Stdout: stdoutWriter,
 		Stderr: &stderr,
-		Tty:    false,
 	})
 	if copyError != nil {
 		return result, stderr.Bytes(), errors.Wrap(copyError, "failed to stream command output")

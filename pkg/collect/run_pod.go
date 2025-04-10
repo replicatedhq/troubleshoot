@@ -44,6 +44,10 @@ func (c *CollectRunPod) IsExcluded() (bool, error) {
 	return isExcluded(c.Collector.Exclude)
 }
 
+func (c *CollectRunPod) SkipRedaction() bool {
+	return c.Collector.SkipRedaction
+}
+
 func (c *CollectRunPod) Collect(progressChan chan<- interface{}) (result CollectorResult, err error) {
 	ctx := context.Background()
 	result = NewResult()

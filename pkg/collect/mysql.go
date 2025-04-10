@@ -32,6 +32,10 @@ func (c *CollectMysql) IsExcluded() (bool, error) {
 	return isExcluded(c.Collector.Exclude)
 }
 
+func (c *CollectMysql) SkipRedaction() bool {
+	return c.Collector.SkipRedaction
+}
+
 func (c *CollectMysql) Collect(progressChan chan<- interface{}) (CollectorResult, error) {
 	databaseConnection := DatabaseConnection{}
 

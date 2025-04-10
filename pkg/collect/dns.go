@@ -62,6 +62,10 @@ func (c *CollectDNS) IsExcluded() (bool, error) {
 	return isExcluded(c.Collector.Exclude)
 }
 
+func (c *CollectDNS) SkipRedaction() bool {
+	return c.Collector.SkipRedaction
+}
+
 func (c *CollectDNS) Collect(progressChan chan<- interface{}) (CollectorResult, error) {
 
 	ctx, cancel := context.WithTimeout(c.Context, time.Duration(60*time.Second))

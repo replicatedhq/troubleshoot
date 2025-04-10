@@ -34,6 +34,10 @@ func (c *CollectExec) IsExcluded() (bool, error) {
 	return isExcluded(c.Collector.Exclude)
 }
 
+func (c *CollectExec) SkipRedaction() bool {
+	return c.Collector.SkipRedaction
+}
+
 func (c *CollectExec) Collect(progressChan chan<- interface{}) (CollectorResult, error) {
 	if c.Collector.Timeout == "" {
 		return execWithoutTimeout(c.ClientConfig, c.BundlePath, c.Collector)

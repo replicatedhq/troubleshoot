@@ -35,6 +35,10 @@ func (c *CollectNodeMetrics) IsExcluded() (bool, error) {
 	return isExcluded(c.Collector.Exclude)
 }
 
+func (c *CollectNodeMetrics) SkipRedaction() bool {
+	return c.Collector.SkipRedaction
+}
+
 func (c *CollectNodeMetrics) Collect(progressChan chan<- interface{}) (CollectorResult, error) {
 	output := NewResult()
 	nodesMap := c.constructNodesMap()

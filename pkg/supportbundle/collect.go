@@ -47,6 +47,7 @@ func runHostCollectors(ctx context.Context, hostCollectors []*troubleshootv1beta
 
 	var err error
 	var collectResult map[string][]byte
+	var skipRedaction map[string]bool
 
 	if opts.RunHostCollectorsInPod {
 		collectResult, err = runRemoteHostCollectors(ctx, hostCollectors, bundlePath, opts)
@@ -54,7 +55,7 @@ func runHostCollectors(ctx context.Context, hostCollectors []*troubleshootv1beta
 			return collectResult, err
 		}
 	} else {
-		collectResult = runLocalHostCollectors(ctx, hostCollectors, bundlePath, opts)
+		collectResult, skipRedaction = runLocalHostCollectors(ctx, hostCollectors, bundlePath, opts)
 	}
 
 	// redact result if any
@@ -66,7 +67,7 @@ func runHostCollectors(ctx context.Context, hostCollectors []*troubleshootv1beta
 	if opts.Redact {
 		_, span := otel.Tracer(constants.LIB_TRACER_NAME).Start(ctx, "Host collectors")
 		span.SetAttributes(attribute.String("type", "Redactors"))
-		err := collect.RedactResult(bundlePath, collectResult, globalRedactors)
+		err := collect.RedactResult(bundlePath, collectResult, globalRedactors, skipRedaction)
 		if err != nil {
 			err = errors.Wrap(err, "failed to redact host collector results")
 			span.SetStatus(codes.Error, err.Error())
@@ -102,15 +103,13 @@ func runCollectors(ctx context.Context, collectors []*troubleshootv1beta2.Collec
 	allCollectedData := make(map[string][]byte)
 
 	for _, desiredCollector := range collectSpecs {
-		if collectorInterface, ok := collect.GetCollector(desiredCollector, bundlePath, opts.Namespace, opts.KubernetesRestConfig, k8sClient, opts.SinceTime); ok {
-			if collector, ok := collectorInterface.(collect.Collector); ok {
-				err := collector.CheckRBAC(ctx, collector, desiredCollector, opts.KubernetesRestConfig, opts.Namespace)
-				if err != nil {
-					return nil, errors.Wrap(err, "failed to check RBAC for collectors")
-				}
-				collectorType := reflect.TypeOf(collector)
-				allCollectorsMap[collectorType] = append(allCollectorsMap[collectorType], collector)
+		if collector, ok := collect.GetCollector(desiredCollector, bundlePath, opts.Namespace, opts.KubernetesRestConfig, k8sClient, opts.SinceTime); ok {
+			err := collector.CheckRBAC(ctx, collector, desiredCollector, opts.KubernetesRestConfig, opts.Namespace)
+			if err != nil {
+				return nil, errors.Wrap(err, "failed to check RBAC for collectors")
 			}
+			collectorType := reflect.TypeOf(collector)
+			allCollectorsMap[collectorType] = append(allCollectorsMap[collectorType], collector)
 		}
 	}
 
@@ -141,6 +140,8 @@ func runCollectors(ctx context.Context, collectors []*troubleshootv1beta2.Collec
 
 	// move Copy Collectors if any to the end of the execution list
 	allCollectors = collect.EnsureCopyLast(allCollectors)
+
+	skipRedaction := map[string]bool{}
 
 	for _, collector := range allCollectors {
 		_, span := otel.Tracer(constants.LIB_TRACER_NAME).Start(ctx, collector.Title())
@@ -174,6 +175,7 @@ func runCollectors(ctx context.Context, collectors []*troubleshootv1beta2.Collec
 
 		for k, v := range result {
 			allCollectedData[k] = v
+			skipRedaction[k] = collector.SkipRedaction()
 		}
 		span.End()
 	}
@@ -189,7 +191,7 @@ func runCollectors(ctx context.Context, collectors []*troubleshootv1beta2.Collec
 		// TODO: Should we record how long each redactor takes?
 		_, span := otel.Tracer(constants.LIB_TRACER_NAME).Start(ctx, "In-cluster collectors")
 		span.SetAttributes(attribute.String("type", "Redactors"))
-		err := collect.RedactResult(bundlePath, collectResult, globalRedactors)
+		err := collect.RedactResult(bundlePath, collectResult, globalRedactors, skipRedaction)
 		if err != nil {
 			err := errors.Wrap(err, "failed to redact in cluster collector results")
 			span.SetStatus(codes.Error, err.Error())
@@ -214,7 +216,7 @@ func findFileName(basename, extension string) (string, error) {
 		}
 
 		name = fmt.Sprintf("%s (%d)", basename, n)
-		n = n + 1
+		n++
 	}
 }
 
@@ -228,7 +230,7 @@ func getAnalysisFile(analyzeResults []*analyze.AnalyzeResult) (io.Reader, error)
 	return bytes.NewBuffer(analysis), nil
 }
 
-func runLocalHostCollectors(ctx context.Context, hostCollectors []*troubleshootv1beta2.HostCollect, bundlePath string, opts SupportBundleCreateOpts) map[string][]byte {
+func runLocalHostCollectors(ctx context.Context, hostCollectors []*troubleshootv1beta2.HostCollect, bundlePath string, opts SupportBundleCreateOpts) (map[string][]byte, map[string]bool) {
 	collectSpecs := make([]*troubleshootv1beta2.HostCollect, 0)
 	collectSpecs = append(collectSpecs, hostCollectors...)
 
@@ -241,6 +243,8 @@ func runLocalHostCollectors(ctx context.Context, hostCollectors []*troubleshootv
 			collectors = append(collectors, collector)
 		}
 	}
+
+	skipRedaction := map[string]bool{}
 
 	for _, collector := range collectors {
 		// TODO: Add context to host collectors
@@ -264,10 +268,11 @@ func runLocalHostCollectors(ctx context.Context, hostCollectors []*troubleshootv
 		span.End()
 		for k, v := range result {
 			allCollectedData[k] = v
+			skipRedaction[k] = collector.SkipRedaction()
 		}
 	}
 
-	return allCollectedData
+	return allCollectedData, skipRedaction
 }
 
 // getExecOutputs executes `collect -` with collector data passed to stdin and returns stdout, stderr and error

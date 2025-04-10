@@ -38,6 +38,10 @@ func (c *CollectHostOS) IsExcluded() (bool, error) {
 	return isExcluded(c.hostCollector.Exclude)
 }
 
+func (c *CollectHostOS) SkipRedaction() bool {
+	return c.hostCollector.SkipRedaction
+}
+
 func (c *CollectHostOS) Collect(progressChan chan<- interface{}) (map[string][]byte, error) {
 	infoStat, err := osutils.Info()
 	if err != nil {

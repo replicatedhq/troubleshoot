@@ -49,6 +49,10 @@ func (c *CollectGoldpinger) IsExcluded() (bool, error) {
 	return isExcluded(c.Collector.Exclude)
 }
 
+func (c *CollectGoldpinger) SkipRedaction() bool {
+	return c.Collector.SkipRedaction
+}
+
 func (c *CollectGoldpinger) Collect(progressChan chan<- interface{}) (CollectorResult, error) {
 	output := NewResult()
 	var results []byte

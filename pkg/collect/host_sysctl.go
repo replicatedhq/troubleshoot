@@ -34,6 +34,10 @@ func (c *CollectHostSysctl) IsExcluded() (bool, error) {
 	return isExcluded(c.hostCollector.Exclude)
 }
 
+func (c *CollectHostSysctl) SkipRedaction() bool {
+	return c.hostCollector.SkipRedaction
+}
+
 func (c *CollectHostSysctl) Collect(progressChan chan<- interface{}) (map[string][]byte, error) {
 	klog.V(2).Info("Running sysctl collector")
 	cmd := execCommand("sysctl", "-a")

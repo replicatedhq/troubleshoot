@@ -31,6 +31,10 @@ func (c *CollectHostHTTPLoadBalancer) IsExcluded() (bool, error) {
 	return isExcluded(c.hostCollector.Exclude)
 }
 
+func (c *CollectHostHTTPLoadBalancer) SkipRedaction() bool {
+	return c.hostCollector.SkipRedaction
+}
+
 func (c *CollectHostHTTPLoadBalancer) Collect(progressChan chan<- interface{}) (map[string][]byte, error) {
 	listenAddress := fmt.Sprintf("0.0.0.0:%d", c.hostCollector.Port)
 

@@ -49,6 +49,10 @@ func (c *CollectCopyFromHost) IsExcluded() (bool, error) {
 	return isExcluded(c.Collector.Exclude)
 }
 
+func (c *CollectCopyFromHost) SkipRedaction() bool {
+	return c.Collector.SkipRedaction
+}
+
 // copies a file or directory from a host or hosts to include in the bundle.
 func (c *CollectCopyFromHost) Collect(progressChan chan<- interface{}) (CollectorResult, error) {
 	var namespace string

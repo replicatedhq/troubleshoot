@@ -34,6 +34,10 @@ func (c *CollectSysctl) IsExcluded() (bool, error) {
 	return isExcluded(c.Collector.Exclude)
 }
 
+func (c *CollectSysctl) SkipRedaction() bool {
+	return c.Collector.SkipRedaction
+}
+
 func (c *CollectSysctl) Collect(progressChan chan<- interface{}) (CollectorResult, error) {
 	if c.Collector.Timeout != "" {
 		timeout, err := time.ParseDuration(c.Collector.Timeout)

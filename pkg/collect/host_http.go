@@ -22,6 +22,10 @@ func (c *CollectHostHTTP) IsExcluded() (bool, error) {
 	return isExcluded(c.hostCollector.Exclude)
 }
 
+func (c *CollectHostHTTP) SkipRedaction() bool {
+	return c.hostCollector.SkipRedaction
+}
+
 func (c *CollectHostHTTP) Collect(progressChan chan<- interface{}) (map[string][]byte, error) {
 	httpCollector := c.hostCollector
 

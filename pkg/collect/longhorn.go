@@ -48,6 +48,10 @@ func (c *CollectLonghorn) IsExcluded() (bool, error) {
 	return isExcluded(c.Collector.Exclude)
 }
 
+func (c *CollectLonghorn) SkipRedaction() bool {
+	return c.Collector.SkipRedaction
+}
+
 func (c *CollectLonghorn) Collect(progressChan chan<- interface{}) (CollectorResult, error) {
 	ctx := context.TODO()
 

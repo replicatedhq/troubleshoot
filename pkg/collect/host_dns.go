@@ -48,6 +48,10 @@ func (c *CollectHostDNS) IsExcluded() (bool, error) {
 	return isExcluded(c.hostCollector.Exclude)
 }
 
+func (c *CollectHostDNS) SkipRedaction() bool {
+	return c.hostCollector.SkipRedaction
+}
+
 func (c *CollectHostDNS) Collect(progressChan chan<- interface{}) (map[string][]byte, error) {
 
 	names := c.hostCollector.Hostnames

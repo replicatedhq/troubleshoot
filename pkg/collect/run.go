@@ -27,6 +27,10 @@ func (c *CollectRun) IsExcluded() (bool, error) {
 	return isExcluded(c.Collector.Exclude)
 }
 
+func (c *CollectRun) SkipRedaction() bool {
+	return c.Collector.SkipRedaction
+}
+
 func (c *CollectRun) Collect(progressChan chan<- interface{}) (CollectorResult, error) {
 	pullPolicy := corev1.PullIfNotPresent
 	if c.Collector.ImagePullPolicy != "" {

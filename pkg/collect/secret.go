@@ -44,6 +44,10 @@ func (c *CollectSecret) IsExcluded() (bool, error) {
 	return isExcluded(c.Collector.Exclude)
 }
 
+func (c *CollectSecret) SkipRedaction() bool {
+	return c.Collector.SkipRedaction
+}
+
 func (c *CollectSecret) Collect(progressChan chan<- interface{}) (CollectorResult, error) {
 	output := NewResult()
 

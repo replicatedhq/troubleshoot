@@ -54,7 +54,7 @@ For more information on redactors visit https://troubleshoot.sh/docs/redact/
 			}
 
 			// 4. Perform redaction on the bundle
-			err = collect.RedactResult(bundleDir, collectorResult, redactors)
+			err = collect.RedactResult(bundleDir, collectorResult, redactors, nil)
 			if err != nil {
 				return errors.Wrap(err, "failed to redact support bundle")
 			}

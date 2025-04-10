@@ -29,6 +29,10 @@ func (c *CollectHostMemory) IsExcluded() (bool, error) {
 	return isExcluded(c.hostCollector.Exclude)
 }
 
+func (c *CollectHostMemory) SkipRedaction() bool {
+	return c.hostCollector.SkipRedaction
+}
+
 func (c *CollectHostMemory) Collect(progressChan chan<- interface{}) (map[string][]byte, error) {
 	memoryInfo := MemoryInfo{}
 

@@ -51,6 +51,10 @@ func (c *CollectEtcd) IsExcluded() (bool, error) {
 	return isExcluded(c.Collector.Exclude)
 }
 
+func (c *CollectEtcd) SkipRedaction() bool {
+	return c.Collector.SkipRedaction
+}
+
 func (c *CollectEtcd) Collect(progressChan chan<- interface{}) (CollectorResult, error) {
 	debugInstance := etcdDebug{
 		context:      c.Context,

@@ -158,6 +158,10 @@ func (c *CollectCeph) IsExcluded() (bool, error) {
 	return isExcluded(c.Collector.Exclude)
 }
 
+func (c *CollectCeph) SkipRedaction() bool {
+	return c.Collector.SkipRedaction
+}
+
 func (c *CollectCeph) Collect(progressChan chan<- interface{}) (CollectorResult, error) {
 	ctx := context.TODO()
 

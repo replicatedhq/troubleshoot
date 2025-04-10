@@ -33,6 +33,10 @@ func (c *CollectRedis) IsExcluded() (bool, error) {
 	return isExcluded(c.Collector.Exclude)
 }
 
+func (c *CollectRedis) SkipRedaction() bool {
+	return c.Collector.SkipRedaction
+}
+
 func (c *CollectRedis) createClient() (*redis.Client, error) {
 	opt, err := redis.ParseURL(c.Collector.URI)
 	if err != nil {

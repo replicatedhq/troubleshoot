@@ -30,6 +30,10 @@ func (c *CollectHostJournald) IsExcluded() (bool, error) {
 	return isExcluded(c.hostCollector.Exclude)
 }
 
+func (c *CollectHostJournald) SkipRedaction() bool {
+	return c.hostCollector.SkipRedaction
+}
+
 func (c *CollectHostJournald) Collect(progressChan chan<- interface{}) (map[string][]byte, error) {
 
 	// collector name check
