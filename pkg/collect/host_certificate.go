@@ -30,6 +30,10 @@ func (c *CollectHostCertificate) IsExcluded() (bool, error) {
 	return isExcluded(c.hostCollector.Exclude)
 }
 
+func (c *CollectHostCertificate) SkipRedaction() bool {
+	return c.hostCollector.SkipRedaction
+}
+
 func (c *CollectHostCertificate) Collect(progressChan chan<- interface{}) (map[string][]byte, error) {
 	var result = KeyPairValid
 

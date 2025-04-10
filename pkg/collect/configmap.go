@@ -47,6 +47,10 @@ func (c *CollectConfigMap) IsExcluded() (bool, error) {
 	return isExcluded(c.Collector.Exclude)
 }
 
+func (c *CollectConfigMap) SkipRedaction() bool {
+	return c.Collector.SkipRedaction
+}
+
 func (c *CollectConfigMap) Collect(progressChan chan<- interface{}) (CollectorResult, error) {
 	output := NewResult()
 

@@ -44,6 +44,10 @@ func (c *CollectRunDaemonSet) IsExcluded() (bool, error) {
 	return isExcluded(c.Collector.Exclude)
 }
 
+func (c *CollectRunDaemonSet) SkipRedaction() bool {
+	return c.Collector.SkipRedaction
+}
+
 func (c *CollectRunDaemonSet) Collect(progressChan chan<- interface{}) (CollectorResult, error) {
 	ctx := context.Background()
 

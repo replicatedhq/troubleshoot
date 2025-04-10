@@ -56,6 +56,10 @@ func (c *CollectRegistry) IsExcluded() (bool, error) {
 	return isExcluded(c.Collector.Exclude)
 }
 
+func (c *CollectRegistry) SkipRedaction() bool {
+	return c.Collector.SkipRedaction
+}
+
 func (c *CollectRegistry) Collect(progressChan chan<- interface{}) (CollectorResult, error) {
 	registryInfo := RegistryInfo{
 		Images: map[string]RegistryImage{},

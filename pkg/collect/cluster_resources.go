@@ -52,6 +52,10 @@ func (c *CollectClusterResources) IsExcluded() (bool, error) {
 	return isExcluded(c.Collector.Exclude)
 }
 
+func (c *CollectClusterResources) SkipRedaction() bool {
+	return c.Collector.SkipRedaction
+}
+
 func (c *CollectClusterResources) Merge(allCollectors []Collector) ([]Collector, error) {
 	var result []Collector
 	uniqueNamespaces := make(map[string]bool)
