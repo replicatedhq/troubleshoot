@@ -183,7 +183,7 @@ func (c *CollectClusterResources) Collect(progressChan chan<- interface{}) (Coll
 				// that is too old/not relevant.
 				MaxBytes: 5000000,
 			}
-			podLogs, err := savePodLogs(ctx, c.BundlePath, client, &pod, "", container.Name, limits, false, false)
+			podLogs, err := savePodLogs(ctx, c.BundlePath, client, &pod, "", container.Name, limits, false, false, false)
 			if err != nil {
 				errPath := filepath.Join(constants.CLUSTER_RESOURCES_DIR, constants.CLUSTER_RESOURCES_PODS_LOGS, pod.Namespace, pod.Name, fmt.Sprintf("%s-logs-errors.log", container.Name))
 				output.SaveResult(c.BundlePath, errPath, bytes.NewBuffer([]byte(err.Error())))

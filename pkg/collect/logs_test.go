@@ -103,6 +103,7 @@ func Test_savePodLogs(t *testing.T) {
 		withContainerName bool
 		collectorName     string
 		createSymLinks    bool
+		timestamps        bool
 		want              CollectorResult
 	}{
 		{
@@ -150,6 +151,16 @@ func Test_savePodLogs(t *testing.T) {
 				"cluster-resources/pods/logs/my-namespace/test-pod/nginx-previous.log": []byte("fake logs"),
 			},
 		},
+		{
+			name:              "with timestamps",
+			withContainerName: true,
+			collectorName:     "all-logs",
+			timestamps:        true,
+			want: CollectorResult{
+				"cluster-resources/pods/logs/my-namespace/test-pod/nginx.log":          []byte("fake logs"),
+				"cluster-resources/pods/logs/my-namespace/test-pod/nginx-previous.log": []byte("fake logs"),
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -165,7 +176,7 @@ func Test_savePodLogs(t *testing.T) {
 			if !tt.withContainerName {
 				containerName = ""
 			}
-			got, err := savePodLogs(ctx, "", client, pod, tt.collectorName, containerName, limits, false, tt.createSymLinks)
+			got, err := savePodLogs(ctx, "", client, pod, tt.collectorName, containerName, limits, false, tt.createSymLinks, tt.timestamps)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.want, got)
 		})
