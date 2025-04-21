@@ -33,6 +33,10 @@ func (c *CollectClusterInfo) IsExcluded() (bool, error) {
 	return isExcluded(c.Collector.Exclude)
 }
 
+func (c *CollectClusterInfo) SkipRedaction() bool {
+	return c.Collector.SkipRedaction
+}
+
 func (c *CollectClusterInfo) Collect(progressChan chan<- interface{}) (CollectorResult, error) {
 	client, err := kubernetes.NewForConfig(c.ClientConfig)
 	if err != nil {

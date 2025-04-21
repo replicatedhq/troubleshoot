@@ -61,6 +61,10 @@ func (c *CollectHostKernelModules) IsExcluded() (bool, error) {
 	return isExcluded(c.hostCollector.Exclude)
 }
 
+func (c *CollectHostKernelModules) SkipRedaction() bool {
+	return c.hostCollector.SkipRedaction
+}
+
 // Collect the kernel module status from the host.   Modules are returned as a
 // map keyed on the module name used by the kernel, e.g:
 //

@@ -34,6 +34,10 @@ func (c *CollectHostCertificatesCollection) IsExcluded() (bool, error) {
 	return isExcluded(c.hostCollector.Exclude)
 }
 
+func (c *CollectHostCertificatesCollection) SkipRedaction() bool {
+	return c.hostCollector.SkipRedaction
+}
+
 func (c *CollectHostCertificatesCollection) Collect(progressChan chan<- interface{}) (map[string][]byte, error) {
 	var results []HostCertificatesCollection
 

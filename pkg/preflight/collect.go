@@ -184,15 +184,13 @@ func CollectWithContext(ctx context.Context, opts CollectOpts, p *troubleshootv1
 	allCollectedData := make(map[string][]byte)
 
 	for _, desiredCollector := range collectSpecs {
-		if collectorInterface, ok := collect.GetCollector(desiredCollector, opts.BundlePath, opts.Namespace, opts.KubernetesRestConfig, k8sClient, nil); ok {
-			if collector, ok := collectorInterface.(collect.Collector); ok {
-				err := collector.CheckRBAC(ctx, collector, desiredCollector, opts.KubernetesRestConfig, opts.Namespace)
-				if err != nil {
-					return nil, errors.Wrap(err, "failed to check RBAC for collectors")
-				}
-				collectorType := reflect.TypeOf(collector)
-				allCollectorsMap[collectorType] = append(allCollectorsMap[collectorType], collector)
+		if collector, ok := collect.GetCollector(desiredCollector, opts.BundlePath, opts.Namespace, opts.KubernetesRestConfig, k8sClient, nil); ok {
+			err := collector.CheckRBAC(ctx, collector, desiredCollector, opts.KubernetesRestConfig, opts.Namespace)
+			if err != nil {
+				return nil, errors.Wrap(err, "failed to check RBAC for collectors")
 			}
+			collectorType := reflect.TypeOf(collector)
+			allCollectorsMap[collectorType] = append(allCollectorsMap[collectorType], collector)
 		}
 	}
 

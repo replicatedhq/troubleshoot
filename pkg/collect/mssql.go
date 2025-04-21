@@ -35,6 +35,10 @@ func (c *CollectMssql) IsExcluded() (bool, error) {
 	return isExcluded(c.Collector.Exclude)
 }
 
+func (c *CollectMssql) SkipRedaction() bool {
+	return c.Collector.SkipRedaction
+}
+
 func (c *CollectMssql) Collect(progressChan chan<- interface{}) (CollectorResult, error) {
 	databaseConnection := DatabaseConnection{}
 

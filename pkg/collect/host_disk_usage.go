@@ -30,6 +30,10 @@ func (c *CollectHostDiskUsage) IsExcluded() (bool, error) {
 	return isExcluded(c.hostCollector.Exclude)
 }
 
+func (c *CollectHostDiskUsage) SkipRedaction() bool {
+	return c.hostCollector.SkipRedaction
+}
+
 func (c *CollectHostDiskUsage) Collect(progressChan chan<- interface{}) (map[string][]byte, error) {
 	result := map[string][]byte{}
 

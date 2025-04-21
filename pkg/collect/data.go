@@ -28,6 +28,10 @@ func (c *CollectData) IsExcluded() (bool, error) {
 	return isExcluded(c.Collector.Exclude)
 }
 
+func (c *CollectData) SkipRedaction() bool {
+	return c.Collector.SkipRedaction
+}
+
 func (c *CollectData) Collect(progressChan chan<- interface{}) (CollectorResult, error) {
 	bundlePath := filepath.Join(c.Collector.Name, c.Collector.CollectorName)
 
