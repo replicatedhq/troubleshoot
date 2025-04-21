@@ -1,8 +1,6 @@
 module github.com/replicatedhq/troubleshoot
 
-go 1.23.0
-
-toolchain go1.24.1
+go 1.24.2
 
 require (
 	github.com/Masterminds/sprig/v3 v3.3.0
@@ -13,7 +11,7 @@ require (
 	github.com/cilium/ebpf v0.18.0
 	github.com/containerd/cgroups/v3 v3.0.5
 	github.com/containers/image/v5 v5.34.3
-	github.com/distribution/distribution/v3 v3.0.0-rc.3
+	github.com/distribution/distribution/v3 v3.0.0
 	github.com/fatih/color v1.18.0
 	github.com/go-logr/logr v1.4.2
 	github.com/go-redis/redis/v7 v7.4.1
@@ -258,7 +256,7 @@ require (
 	go.opencensus.io v0.24.0 // indirect
 	golang.org/x/crypto v0.37.0 // indirect
 	golang.org/x/net v0.39.0
-	golang.org/x/oauth2 v0.27.0 // indirect
+	golang.org/x/oauth2 v0.28.0 // indirect
 	golang.org/x/sys v0.32.0
 	golang.org/x/term v0.31.0 // indirect
 	golang.org/x/text v0.24.0

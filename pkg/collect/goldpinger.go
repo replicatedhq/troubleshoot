@@ -76,7 +76,7 @@ func (c *CollectGoldpinger) Collect(progressChan chan<- interface{}) (CollectorR
 		results, err = c.fetchCheckAllOutput(url)
 		if err != nil {
 			errMsg := fmt.Sprintf("Failed to query goldpinger endpoint in cluster: %v", err)
-			klog.V(2).Infof(errMsg)
+			klog.V(2).Infof("%s", errMsg)
 			err = output.SaveResult(c.BundlePath, "goldpinger/error.txt", bytes.NewBuffer([]byte(errMsg)))
 			return output, err
 		}
@@ -85,7 +85,7 @@ func (c *CollectGoldpinger) Collect(progressChan chan<- interface{}) (CollectorR
 		results, err = c.runPodAndCollectGPResults(url, progressChan)
 		if err != nil {
 			errMsg := fmt.Sprintf("Failed to run pod to collect goldpinger results: %v", err)
-			klog.V(2).Infof(errMsg)
+			klog.V(2).Infof("%s", errMsg)
 			err = output.SaveResult(c.BundlePath, "goldpinger/error.txt", bytes.NewBuffer([]byte(errMsg)))
 			return output, err
 		}

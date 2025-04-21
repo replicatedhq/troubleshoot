@@ -292,7 +292,7 @@ func detectV2FreezerController(mountPoint string) bool {
 	// https://github.com/torvalds/linux/blob/v5.3/Documentation/admin-guide/cgroup-v2.rst#processes
 	cgroupPath, err := cgroup2.NestedGroupPath("")
 	if err != nil {
-		klog.V(2).Infof(fmt.Errorf("failed to get troubleshoot cgroup: %w", err).Error())
+		klog.V(2).Infof("failed to get troubleshoot cgroup: %v", err)
 		return false
 	}
 
