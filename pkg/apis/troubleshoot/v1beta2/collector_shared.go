@@ -83,6 +83,7 @@ type Logs struct {
 	Namespace      string     `json:"namespace,omitempty" yaml:"namespace,omitempty"`
 	ContainerNames []string   `json:"containerNames,omitempty" yaml:"containerNames,omitempty"`
 	Limits         *LogLimits `json:"limits,omitempty" yaml:"limits,omitempty"`
+	Timestamps     bool       `json:"timestamps,omitempty" yaml:"timestamps,omitempty"`
 }
 
 type Data struct {
