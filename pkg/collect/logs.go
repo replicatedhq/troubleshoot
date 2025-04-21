@@ -81,7 +81,7 @@ func (c *CollectLogs) CollectWithClient(progressChan chan<- interface{}, client 
 			}
 
 			for _, containerName := range containerNames {
-				podLogs, err := savePodLogs(ctx, c.BundlePath, client, &pod, c.Collector.Name, containerName, c.Collector.Limits, false, true)
+				podLogs, err := savePodLogs(ctx, c.BundlePath, client, &pod, c.Collector.Name, containerName, c.Collector.Limits, false, true, c.Collector.Timestamps)
 				if err != nil {
 					if errors.Is(err, context.DeadlineExceeded) {
 						klog.Errorf("Pod logs timed out for pod %s and container %s: %v", pod.Name, containerName, err)
@@ -100,7 +100,7 @@ func (c *CollectLogs) CollectWithClient(progressChan chan<- interface{}, client 
 			}
 		} else {
 			for _, containerName := range c.Collector.ContainerNames {
-				containerLogs, err := savePodLogs(ctx, c.BundlePath, client, &pod, c.Collector.Name, containerName, c.Collector.Limits, false, true)
+				containerLogs, err := savePodLogs(ctx, c.BundlePath, client, &pod, c.Collector.Name, containerName, c.Collector.Limits, false, true, c.Collector.Timestamps)
 				if err != nil {
 					if errors.Is(err, context.DeadlineExceeded) {
 						klog.Errorf("Pod logs timed out for pod %s and container %s: %v", pod.Name, containerName, err)
@@ -144,10 +144,12 @@ func savePodLogs(
 	limits *troubleshootv1beta2.LogLimits,
 	follow bool,
 	createSymLinks bool,
+	timestamps bool,
 ) (CollectorResult, error) {
 	podLogOpts := corev1.PodLogOptions{
-		Follow:    follow,
-		Container: container,
+		Follow:     follow,
+		Container:  container,
+		Timestamps: timestamps,
 	}
 
 	result := NewResult()

@@ -3624,6 +3624,9 @@
                     "items": {
                       "type": "string"
                     }
+                  },
+                  "timestamps": {
+                    "type": "boolean"
                   }
                 }
               },
