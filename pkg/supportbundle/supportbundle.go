@@ -218,7 +218,7 @@ func CollectSupportBundleFromSpec(
 	if len(collectorsErrs) > 0 {
 		// TODO: Consider a collectors error type
 		// TODO: use errors.Join in go 1.20 (https://pkg.go.dev/errors#Join)
-		return &resultsResponse, fmt.Errorf(strings.Join(collectorsErrs, "\n"))
+		return &resultsResponse, fmt.Errorf("%s", strings.Join(collectorsErrs, "\n"))
 	}
 
 	return &resultsResponse, nil
