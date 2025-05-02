@@ -22,8 +22,16 @@ import (
 	"k8s.io/klog/v2"
 
 	kuberneteserrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/wait"
+	"k8s.io/client-go/discovery"
+	"k8s.io/client-go/discovery/cached/memory"
+	"k8s.io/client-go/dynamic"
+	"k8s.io/client-go/restmapper"
 )
 
 type CollectRunPod struct {
@@ -52,6 +60,37 @@ func (c *CollectRunPod) Collect(progressChan chan<- interface{}) (result Collect
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create client from config")
 	}
+
+	// Create dynamic client for pre-execute resources
+	dynamicClient, err := dynamic.NewForConfig(c.ClientConfig)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create dynamic client")
+	}
+
+	// Track created resources for cleanup
+	var createdResources []resourceRef
+
+	// Execute pre-execute resources
+	if len(c.Collector.PreExecute) > 0 {
+		for _, rawResource := range c.Collector.PreExecute {
+			ref, err := executePreResource(ctx, dynamicClient, c.ClientConfig, c.Collector.Namespace, &rawResource)
+			if err != nil {
+				// Clean up any resources that were created before the error
+				cleanupPreExecuteResources(ctx, dynamicClient, createdResources)
+				return nil, errors.Wrap(err, "failed to execute pre-execute resource")
+			}
+			createdResources = append(createdResources, ref)
+		}
+	}
+
+	// Ensure cleanup happens after pod collection
+	defer func() {
+		if len(createdResources) > 0 {
+			if cleanupErr := cleanupPreExecuteResources(ctx, dynamicClient, createdResources); cleanupErr != nil {
+				klog.Errorf("Failed to cleanup pre-execute resources: %v", cleanupErr)
+			}
+		}
+	}()
 
 	pod, err := runPodWithSpec(ctx, client, c.Collector)
 	if err != nil {
@@ -190,7 +229,6 @@ func runWithoutTimeout(ctx context.Context, bundlePath string, clientConfig *res
 				}
 			}
 		}
-
 		time.Sleep(time.Second * 1)
 	}
 
@@ -472,6 +510,98 @@ func deletePod(ctx context.Context, client *kubernetes.Clientset, pod *corev1.Po
 	} else {
 		klog.V(2).Infof("Pod %s in %s namespace has been deleted", pod.Name, pod.Namespace)
 	}
+}
+
+type resourceRef struct {
+	GroupVersionResource schema.GroupVersionResource
+	Namespace            string
+	Name                 string
+}
+
+func isNamespacedResource(dc discovery.DiscoveryInterface, mapping *meta.RESTMapping) (bool, error) {
+	resources, err := dc.ServerResourcesForGroupVersion(mapping.GroupVersionKind.GroupVersion().String())
+	if err != nil {
+		return false, errors.Wrap(err, "failed to get resources for group version")
+	}
+
+	for _, r := range resources.APIResources {
+		if r.Name == mapping.Resource.Resource {
+			return r.Namespaced, nil
+		}
+	}
+
+	return false, errors.New("resource type not found in api resources")
+}
+
+func executePreResource(ctx context.Context, client dynamic.Interface, clientConfig *rest.Config, namespace string, rawResource *runtime.RawExtension) (resourceRef, error) {
+	var obj unstructured.Unstructured
+	if err := json.Unmarshal(rawResource.Raw, &obj); err != nil {
+		return resourceRef{}, errors.Wrap(err, "failed to unmarshal pre-execute resource")
+	}
+
+	dc, err := discovery.NewDiscoveryClientForConfig(clientConfig)
+	if err != nil {
+		return resourceRef{}, errors.Wrap(err, "failed to create discovery client")
+	}
+	mapper := restmapper.NewDeferredDiscoveryRESTMapper(memory.NewMemCacheClient(dc))
+
+	gvk := obj.GroupVersionKind()
+	mapping, err := mapper.RESTMapping(gvk.GroupKind(), gvk.Version)
+	if err != nil {
+		return resourceRef{}, errors.Wrap(err, "failed to get REST mapping")
+	}
+
+	isNamespaced, err := isNamespacedResource(dc, mapping)
+	if err != nil {
+		return resourceRef{}, errors.Wrap(err, "failed to check if resource is namespaced")
+	}
+
+	if isNamespaced {
+		if obj.GetNamespace() == "" {
+			if namespace == "" {
+				namespace = "default"
+			}
+			obj.SetNamespace(namespace)
+		}
+	} else {
+		obj.SetNamespace("")
+	}
+
+	var created *unstructured.Unstructured
+	if isNamespaced {
+		created, err = client.Resource(mapping.Resource).Namespace(obj.GetNamespace()).Create(ctx, &obj, metav1.CreateOptions{})
+	} else {
+		created, err = client.Resource(mapping.Resource).Create(ctx, &obj, metav1.CreateOptions{})
+	}
+
+	if err != nil {
+		msg := "failed to create pre-execute resource"
+		if kuberneteserrors.IsAlreadyExists(err) {
+			msg = fmt.Sprintf("resource %s/%s of type %s already exists", obj.GetNamespace(), obj.GetName(), mapping.Resource.Resource)
+		}
+		return resourceRef{}, errors.Wrap(err, msg)
+	}
+
+	return resourceRef{
+		GroupVersionResource: mapping.Resource,
+		Namespace:            created.GetNamespace(),
+		Name:                 created.GetName(),
+	}, nil
+}
+
+func cleanupPreExecuteResources(ctx context.Context, client dynamic.Interface, resources []resourceRef) error {
+	var errs []error
+	for _, res := range resources {
+		err := client.Resource(res.GroupVersionResource).Namespace(res.Namespace).Delete(ctx, res.Name, metav1.DeleteOptions{})
+		if err != nil && !kuberneteserrors.IsNotFound(err) {
+			errs = append(errs, errors.Wrapf(err, "failed to delete resource %s/%s", res.Namespace, res.Name))
+		}
+	}
+
+	if len(errs) > 0 {
+		return errors.Errorf("failed to cleanup resources: %v", errs)
+	}
+	return nil
 }
 
 func createPodStruct(runPodCollector *troubleshootv1beta2.RunPod) corev1.Pod {
