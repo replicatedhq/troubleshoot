@@ -1,9 +1,14 @@
 apiVersion: troubleshoot.sh/v1beta2
 kind: SupportBundle
 metadata:
-  name: my-application-name
+  name:sample
 spec:
   collectors:
+    - copy:
+        selector:
+          - app=netshoot
+        namespace: default
+        containerPath: /tmp/test
   - clusterInfo:
       collectorName: my-cluster-info
   - clusterResources:
