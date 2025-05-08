@@ -390,6 +390,7 @@ func RunPodLogs(ctx context.Context, client v1.CoreV1Interface, podSpec *corev1.
 	// 3. Logs
 	podLogOpts := corev1.PodLogOptions{
 		Container: pod.Spec.Containers[0].Name,
+		Follow:    true,
 	}
 	req := client.Pods(pod.Namespace).GetLogs(pod.Name, &podLogOpts)
 	logs, err := req.Stream(ctx)

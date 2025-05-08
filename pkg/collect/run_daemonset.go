@@ -224,6 +224,7 @@ func getLabelSelector(ds *appsv1.DaemonSet) string {
 func getPodLog(ctx context.Context, client v1.CoreV1Interface, pod corev1.Pod) ([]byte, error) {
 	podLogOpts := corev1.PodLogOptions{
 		Container: pod.Spec.Containers[0].Name,
+		Follow:    true,
 	}
 	req := client.Pods(pod.Namespace).GetLogs(pod.Name, &podLogOpts)
 	logs, err := req.Stream(ctx)
@@ -232,7 +233,12 @@ func getPodLog(ctx context.Context, client v1.CoreV1Interface, pod corev1.Pod) (
 	}
 	defer logs.Close()
 
-	return io.ReadAll(logs)
+	logsBytes, err := io.ReadAll(logs)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to read log stream")
+	}
+
+	return logsBytes, nil
 }
 
 // getPodNodeAtCompletion waits for the Pod to complete and returns the node name
