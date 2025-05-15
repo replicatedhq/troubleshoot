@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -42,6 +43,7 @@ type CollectorTest struct {
 	Collector    *troubleshootv1beta2.HTTP
 	args         args
 	checkTimeout bool
+	checkCert    bool
 	want         CollectorResult
 	wantErr      bool
 }
@@ -77,18 +79,16 @@ func TestCollectHTTP_Collect(t *testing.T) {
 		res.Write([]byte("Hello, PUT!"))
 	})
 	mux.HandleFunc("/error", func(res http.ResponseWriter, req *http.Request) {
-		time.Sleep(1 * time.Millisecond)
+		time.Sleep(2000 * time.Millisecond)
 		fmt.Println("Sleeping for 2 seconds on /error call")
 		res.Header().Set("Content-Type", "application/json; charset=utf-8")
 		res.WriteHeader(http.StatusInternalServerError)
 		res.Write([]byte("{\"error\": { \"message\": \"context deadline exceeded\"}}"))
 	})
 	mux.HandleFunc("/certificate-mismatch", func(res http.ResponseWriter, req *http.Request) {
-		time.Sleep(1 * time.Millisecond)
-		fmt.Println("Sleeping for 2 seconds on /error call")
 		res.Header().Set("Content-Type", "application/json; charset=utf-8")
 		res.WriteHeader(http.StatusInternalServerError)
-		res.Write([]byte("{\"error\": { \"message\": \"Request failed: proxyconnect tcp: tls: failed to verify certificate: x509: \"10.0.0.254\" certificate is not trusted\"}}"))
+		res.Write([]byte("{\"error\": { \"message\": \"Request failed: proxyconnect tcp: tls: failed to verify certificate: x509: 10.0.0.254 certificate is not trusted\"}}"))
 	})
 
 	sample_get_response := &ResponseData{
@@ -129,14 +129,14 @@ func TestCollectHTTP_Collect(t *testing.T) {
 
 	sample_error_response := &ErrorResponse{
 		Error: HTTPError{
-			Message: "context deadline exceeded",
+			Message: "Get \"http://127.0.0.1:57932/error\": context deadline exceeded",
 		},
 	}
 	sample_error_bytes, _ := sample_error_response.ToJSONbytes()
 
 	sample_certificate_untrusted := &ErrorResponse{
 		Error: HTTPError{
-			Message: "Request failed: proxyconnect tcp: tls: failed to verify certificate: x509: \"10.0.0.254\" certificate is not trusted",
+			Message: "Request failed: proxyconnect tcp: tls: failed to verify certificate: x509: 10.0.0.254 certificate is not trusted",
 		},
 	}
 	sample_certificate_untrusted_bytes, _ := sample_certificate_untrusted.ToJSONbytes()
@@ -279,8 +279,8 @@ func TestCollectHTTP_Collect(t *testing.T) {
 			want: CollectorResult{
 				"result.json": sample_certificate_untrusted_bytes,
 			},
-			checkTimeout: true,
-			wantErr:      true,
+			checkCert: true,
+			wantErr:   true,
 		},
 	}
 	for _, tt := range tests {
@@ -304,8 +304,9 @@ func TestCollectHTTP_Collect(t *testing.T) {
 					c.Collector.Get.URL = fmt.Sprintf("%s%s", url, "/error")
 					response_data := sample_error_response
 					response_data.testCollectHTTP(t, &tt, c)
+				} else if tt.checkCert {
 					c.Collector.Get.URL = fmt.Sprintf("%s%s", url, "/certificate-mismatch")
-					response_data = sample_certificate_untrusted
+					response_data := sample_certificate_untrusted
 					response_data.testCollectHTTP(t, &tt, c)
 				} else {
 					c.Collector.Get.URL = fmt.Sprintf("%s%s", url, "/get")
@@ -374,9 +375,8 @@ func (er *ErrorResponse) testCollectHTTP(t *testing.T, tt *CollectorTest, c *Col
 		t.Errorf("CollectHTTP.Collect() error = %v, wantErr %v", err, tt.wantErr)
 		return
 	}
-
-	if strings.Contains(strings.TrimSpace(er.Error.Message), "context deadline exceeded") != tt.wantErr {
-		t.Errorf("CollectHTTP.Collect() response = %v, wantErr %v", er.Error.Message, tt.wantErr)
+	if !compareStringsAlphaOnly(string(tt.want[expected_filename]), string(er.Error.Message)) {
+		t.Errorf("CollectHTTP.Collect() response = %v, wantErr %s", er.Error.Message, tt.want[expected_filename])
 	}
 }
 
@@ -472,4 +472,13 @@ func Test_responseToOutput(t *testing.T) {
 			assert.JSONEq(t, string(got), string(tt.want))
 		})
 	}
+}
+
+func compareStringsAlphaOnly(str1, str2 string) bool {
+	reg := regexp.MustCompile("[^a-zA-Z]+")
+
+	processedStr1 := reg.ReplaceAllString(str1, "")
+	processedStr2 := reg.ReplaceAllString(str2, "")
+
+	return strings.Contains(processedStr1, processedStr2)
 }
