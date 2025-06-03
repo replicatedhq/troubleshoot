@@ -9,7 +9,7 @@ replace github.com/replicatedhq/troubleshoot v0.0.0 => ../../../
 
 require (
 	github.com/replicatedhq/troubleshoot v0.0.0
-	helm.sh/helm/v3 v3.18.0
+	helm.sh/helm/v3 v3.18.2
 	sigs.k8s.io/yaml v1.4.0
 )
 
