@@ -1,15 +1,16 @@
 package supportbundle
 
 import (
+	"archive/tar"
+	"compress/gzip"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
 
-	"github.com/mholt/archiver/v3"
 	"github.com/pkg/errors"
 	"github.com/replicatedhq/troubleshoot/pkg/constants"
 	types "github.com/replicatedhq/troubleshoot/pkg/supportbundle/types"
@@ -109,12 +110,7 @@ func GetFilesContents(bundleArchive string, filenames []string) (map[string][]by
 	}
 	defer os.RemoveAll(bundleDir)
 
-	tarGz := archiver.TarGz{
-		Tar: &archiver.Tar{
-			ImplicitTopLevelFolder: false,
-		},
-	}
-	if err := tarGz.Unarchive(bundleArchive, bundleDir); err != nil {
+	if err := unarchive(bundleArchive, bundleDir); err != nil {
 		return nil, errors.Wrap(err, "failed to unarchive")
 	}
 
@@ -155,7 +151,7 @@ func GetFilesContents(bundleArchive string, filenames []string) (map[string][]by
 				continue
 			}
 			if trimmedRelPath == trimmedFileName {
-				content, err := ioutil.ReadFile(path)
+				content, err := os.ReadFile(path)
 				if err != nil {
 					return errors.Wrap(err, "failed to read file")
 				}
@@ -172,4 +168,76 @@ func GetFilesContents(bundleArchive string, filenames []string) (map[string][]by
 	}
 
 	return files, nil
+}
+
+// unarchive extracts a tar.gz archive to the specified destination directory
+func unarchive(archivePath, destDir string) error {
+	// Open the archive file
+	f, err := os.Open(archivePath)
+	if err != nil {
+		return errors.Wrap(err, "failed to open archive")
+	}
+	defer f.Close()
+
+	// Create a gzip reader
+	gzr, err := gzip.NewReader(f)
+	if err != nil {
+		return errors.Wrap(err, "failed to create gzip reader")
+	}
+	defer gzr.Close()
+
+	// Create a tar reader
+	tr := tar.NewReader(gzr)
+
+	// Extract each file from the archive
+	for {
+		header, err := tr.Next()
+		if err == io.EOF {
+			break // End of archive
+		}
+		if err != nil {
+			return errors.Wrap(err, "failed to read tar header")
+		}
+
+		// Skip if not a file
+		if header.Typeflag != tar.TypeReg {
+			continue
+		}
+
+		// Prevent directory traversal attacks (gosec G305) by validating file paths
+		// and ensuring they don't escape the destination directory
+		sanitizedName := filepath.Clean(header.Name)
+		if strings.HasPrefix(sanitizedName, "../") || strings.HasPrefix(sanitizedName, "/") {
+			continue // Skip this file as it's trying to escape
+		}
+
+		// Create the directory structure
+		target := filepath.Join(destDir, sanitizedName)
+
+		// Ensure the target path is still within destDir
+		if !strings.HasPrefix(filepath.Clean(target), filepath.Clean(destDir)) {
+			continue // Skip this file as it's trying to escape
+		}
+
+		dir := filepath.Dir(target)
+		if err := os.MkdirAll(dir, 0755); err != nil {
+			return errors.Wrap(err, "failed to create directory")
+		}
+
+		// Create the file
+		f, err := os.OpenFile(target, os.O_CREATE|os.O_RDWR, header.FileInfo().Mode())
+		if err != nil {
+			return errors.Wrap(err, "failed to create file")
+		}
+
+		// Copy the file data with size limit to prevent decompression bomb (gosec G110)
+		const maxDecompressedFileSize = 100 * 1024 * 1024 // 100MB limit per file
+		if _, err := io.Copy(f, io.LimitReader(tr, maxDecompressedFileSize)); err != nil {
+			f.Close()
+			return errors.Wrap(err, "failed to write file")
+		}
+		f.Close()
+	}
+
+	return nil
 }
