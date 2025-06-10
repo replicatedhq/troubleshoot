@@ -44,6 +44,10 @@ func (c *CollectHostCGroups) IsExcluded() (bool, error) {
 	return isExcluded(c.hostCollector.Exclude)
 }
 
+func (c *CollectHostCGroups) SkipRedaction() bool {
+	return c.hostCollector.SkipRedaction
+}
+
 func (c *CollectHostCGroups) Collect(progressChan chan<- interface{}) (map[string][]byte, error) {
 	// https://man7.org/linux/man-pages/man7/cgroups.7.html
 	// Implementation is based on https://github.com/k0sproject/k0s/blob/main/internal/pkg/sysinfo/probes/linux/cgroups.go

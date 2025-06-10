@@ -22,7 +22,7 @@ import (
 // other goroutines for each redactor spec.
 const MAX_CONCURRENT_REDACTORS = 10
 
-func RedactResult(bundlePath string, input CollectorResult, additionalRedactors []*troubleshootv1beta2.Redact) error {
+func RedactResult(bundlePath string, input CollectorResult, additionalRedactors []*troubleshootv1beta2.Redact, skipRedaction map[string]bool) error {
 	wg := &sync.WaitGroup{}
 
 	// Error channel to capture errors from goroutines
@@ -38,6 +38,10 @@ func RedactResult(bundlePath string, input CollectorResult, additionalRedactors 
 		go func(file string, data []byte) {
 			defer wg.Done()
 			defer func() { <-limitCh }() // free up after the function execution has run
+
+			if skipRedaction[file] {
+				return
+			}
 
 			var reader io.Reader
 			var readerCloseFn func() error // Function to close reader if needed
@@ -116,7 +120,7 @@ func RedactResult(bundlePath string, input CollectorResult, additionalRedactors 
 					return
 				}
 
-				err = RedactResult(tmpDir, subResult, additionalRedactors)
+				err = RedactResult(tmpDir, subResult, additionalRedactors, nil)
 				if err != nil {
 					errorCh <- errors.Wrap(err, "failed to redact file")
 					return

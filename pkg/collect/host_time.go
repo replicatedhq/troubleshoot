@@ -36,6 +36,10 @@ func (c *CollectHostTime) IsExcluded() (bool, error) {
 	return isExcluded(c.hostCollector.Exclude)
 }
 
+func (c *CollectHostTime) SkipRedaction() bool {
+	return c.hostCollector.SkipRedaction
+}
+
 func (c *CollectHostTime) Collect(progressChan chan<- interface{}) (map[string][]byte, error) {
 	timeInfo := TimeInfo{}
 

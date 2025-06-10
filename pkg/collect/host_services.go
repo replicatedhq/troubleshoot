@@ -35,6 +35,10 @@ func (c *CollectHostServices) IsExcluded() (bool, error) {
 	return isExcluded(c.hostCollector.Exclude)
 }
 
+func (c *CollectHostServices) SkipRedaction() bool {
+	return c.hostCollector.SkipRedaction
+}
+
 func (c *CollectHostServices) Collect(progressChan chan<- interface{}) (map[string][]byte, error) {
 	var devices []ServiceInfo
 

@@ -45,6 +45,10 @@ func (c *CollectHostBlockDevices) IsExcluded() (bool, error) {
 	return isExcluded(c.hostCollector.Exclude)
 }
 
+func (c *CollectHostBlockDevices) SkipRedaction() bool {
+	return c.hostCollector.SkipRedaction
+}
+
 func (c *CollectHostBlockDevices) Collect(progressChan chan<- interface{}) (map[string][]byte, error) {
 	cmd := exec.Command("lsblk", "--noheadings", "--bytes", "--pairs", "-o", lsblkColumns)
 	stdout, err := cmd.Output()
