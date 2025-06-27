@@ -5,3 +5,12 @@ metadata:
 spec:
   collectors:
     - clusterResources: {}
+  analyzers:
+    - nodeResources:
+        checkName: Total CPU Cores in the cluster is 2 or greater
+        outcomes:
+          - fail:
+              when: "sum(cpuCapacity) < 2"
+              message: "The cluster must contain at least 2 cores."
+          - pass:
+              message: "There are at least 2 cores in the cluster."

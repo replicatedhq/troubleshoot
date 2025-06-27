@@ -57,6 +57,10 @@ func (c *CollectCertificates) IsExcluded() (bool, error) {
 	return isExcluded(c.Collector.Exclude)
 }
 
+func (c *CollectCertificates) SkipRedaction() bool {
+	return c.Collector.SkipRedaction
+}
+
 func (c *CollectCertificates) Collect(progressChan chan<- interface{}) (CollectorResult, error) {
 
 	output := NewResult()
