@@ -213,7 +213,7 @@ func responseToOutput(response *http.Response, err error) ([]byte, error) {
 		var rawJSON json.RawMessage
 		if len(body) > 0 {
 			if err := json.Unmarshal(body, &rawJSON); err != nil {
-				klog.Infof("failed to unmarshal response body as JSON: %+v", err)
+				klog.Infof("response body is not in JSON format: %+v", err)
 				rawJSON = json.RawMessage{}
 			}
 		} else {
