@@ -17313,6 +17313,9 @@
                   "exclude": {
                     "oneOf": [{"type": "string"},{"type": "boolean"}]
                   },
+                  "includeAllData": {
+                    "type": "boolean"
+                  },
                   "includeValue": {
                     "type": "boolean"
                   },
