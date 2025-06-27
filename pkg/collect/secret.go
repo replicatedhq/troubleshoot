@@ -96,13 +96,11 @@ func secretToOutput(secretCollector *troubleshootv1beta2.Secret, secret *corev1.
 		foundSecret.SecretExists = true
 
 		if secretCollector.IncludeAllData {
-			// Just give them all the data - they can find what they need
 			foundSecret.Data = make(map[string]string)
 			for k, v := range secret.Data {
 				foundSecret.Data[k] = string(v)
 			}
 		} else if secretCollector.Key != "" {
-			// Only do key-specific logic if they're NOT asking for all data
 			if val, ok := secret.Data[secretCollector.Key]; ok {
 				foundSecret.KeyExists = true
 				if secretCollector.IncludeValue {
