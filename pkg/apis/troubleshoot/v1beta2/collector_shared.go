@@ -21,10 +21,19 @@ type ClusterInfo struct {
 	CollectorMeta `json:",inline" yaml:",inline"`
 }
 
+func (c *ClusterInfo) UniqKey() string {
+	return c.CollectorName
+}
+
 type ClusterResources struct {
 	CollectorMeta `json:",inline" yaml:",inline"`
 	Namespaces    []string `json:"namespaces,omitempty" yaml:"namespaces,omitempty"`
 	IgnoreRBAC    bool     `json:"ignoreRBAC,omitempty" yaml:"ignoreRBAC"`
+}
+
+func (c *ClusterResources) UniqKey() string {
+	// use namespace and IgnoreRBAC as key
+	return fmt.Sprintf("%s-%t", strings.Join(c.Namespaces, ","), c.IgnoreRBAC)
 }
 
 // MetricRequest the details of the MetricValuesList to be retrieved
@@ -59,6 +68,10 @@ type Secret struct {
 	IncludeValue  bool     `json:"includeValue,omitempty" yaml:"includeValue,omitempty"`
 }
 
+func (s *Secret) UniqKey() string {
+	return fmt.Sprintf("%s-%s-%s-%t", s.Name, strings.Join(s.Selector, ","), s.Namespace, s.IncludeValue)
+}
+
 type ConfigMap struct {
 	CollectorMeta  `json:",inline" yaml:",inline"`
 	Name           string   `json:"name,omitempty" yaml:"name,omitempty"`
@@ -67,6 +80,10 @@ type ConfigMap struct {
 	Key            string   `json:"key,omitempty" yaml:"key,omitempty"`
 	IncludeValue   bool     `json:"includeValue,omitempty" yaml:"includeValue,omitempty"`
 	IncludeAllData bool     `json:"includeAllData,omitempty" yaml:"includeAllData,omitempty"`
+}
+
+func (c *ConfigMap) UniqKey() string {
+	return fmt.Sprintf("%s-%s-%s-%t-%t", c.Name, strings.Join(c.Selector, ","), c.Namespace, c.IncludeValue, c.IncludeAllData)
 }
 
 type LogLimits struct {
