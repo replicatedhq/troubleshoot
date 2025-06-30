@@ -18,12 +18,13 @@ import (
 )
 
 type SecretOutput struct {
-	Namespace    string `json:"namespace"`
-	Name         string `json:"name"`
-	Key          string `json:"key"`
-	SecretExists bool   `json:"secretExists"`
-	KeyExists    bool   `json:"keyExists"`
-	Value        string `json:"value,omitempty"`
+	Namespace    string            `json:"namespace"`
+	Name         string            `json:"name"`
+	Key          string            `json:"key"`
+	SecretExists bool              `json:"secretExists"`
+	KeyExists    bool              `json:"keyExists"`
+	Value        string            `json:"value,omitempty"`
+	Data         map[string]string `json:"data,omitempty"`
 }
 
 type CollectSecret struct {
@@ -93,7 +94,13 @@ func secretToOutput(secretCollector *troubleshootv1beta2.Secret, secret *corev1.
 
 	if secret != nil {
 		foundSecret.SecretExists = true
-		if secretCollector.Key != "" {
+
+		if secretCollector.IncludeAllData {
+			foundSecret.Data = make(map[string]string)
+			for k, v := range secret.Data {
+				foundSecret.Data[k] = string(v)
+			}
+		} else if secretCollector.Key != "" {
 			if val, ok := secret.Data[secretCollector.Key]; ok {
 				foundSecret.KeyExists = true
 				if secretCollector.IncludeValue {
@@ -134,7 +141,8 @@ func marshalSecretOutput(secretCollector *troubleshootv1beta2.Secret, secret Sec
 
 func GetSecretFileName(secretCollector *troubleshootv1beta2.Secret, name string) string {
 	parts := []string{"secrets", secretCollector.Namespace, name}
-	if secretCollector.Key != "" {
+	// Only include key in filename when doing key-specific processing
+	if secretCollector.Key != "" && !secretCollector.IncludeAllData {
 		parts = append(parts, secretCollector.Key)
 	}
 	return fmt.Sprintf("%s.json", filepath.Join(parts...))
@@ -147,7 +155,8 @@ func GetSecretErrorsFileName(secretCollector *troubleshootv1beta2.Secret) string
 	} else {
 		parts = append(parts, selectorToString(secretCollector.Selector))
 	}
-	if secretCollector.Key != "" {
+	// Only include key in filename when doing key-specific processing
+	if secretCollector.Key != "" && !secretCollector.IncludeAllData {
 		parts = append(parts, secretCollector.Key)
 	}
 	return fmt.Sprintf("%s.json", filepath.Join(parts...))

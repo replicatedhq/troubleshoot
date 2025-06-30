@@ -51,12 +51,13 @@ type NodeMetrics struct {
 }
 
 type Secret struct {
-	CollectorMeta `json:",inline" yaml:",inline"`
-	Name          string   `json:"name,omitempty" yaml:"name,omitempty"`
-	Selector      []string `json:"selector,omitempty" yaml:"selector,omitempty"`
-	Namespace     string   `json:"namespace,omitempty" yaml:"namespace,omitempty"`
-	Key           string   `json:"key,omitempty" yaml:"key,omitempty"`
-	IncludeValue  bool     `json:"includeValue,omitempty" yaml:"includeValue,omitempty"`
+	CollectorMeta  `json:",inline" yaml:",inline"`
+	Name           string   `json:"name,omitempty" yaml:"name,omitempty"`
+	Selector       []string `json:"selector,omitempty" yaml:"selector,omitempty"`
+	Namespace      string   `json:"namespace,omitempty" yaml:"namespace,omitempty"`
+	Key            string   `json:"key,omitempty" yaml:"key,omitempty"`
+	IncludeValue   bool     `json:"includeValue,omitempty" yaml:"includeValue,omitempty"`
+	IncludeAllData bool     `json:"includeAllData,omitempty" yaml:"includeAllData,omitempty"`
 }
 
 type ConfigMap struct {
