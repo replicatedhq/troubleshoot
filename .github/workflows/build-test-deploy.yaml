@@ -30,12 +30,6 @@ jobs:
   test-integration:
     runs-on: ubuntu-latest
     steps:
-      - name: setup env
-        run: |
-          echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
-          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
-        shell: bash
-
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
@@ -50,11 +44,6 @@ jobs:
   ensure-schemas-are-generated:
     runs-on: ubuntu-latest
     steps:
-      - name: setup env
-        run: |
-          echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
-          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
-        shell: bash
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -67,11 +56,6 @@ jobs:
   compile-preflight:
     runs-on: ubuntu-latest
     steps:
-      - name: setup env
-        run: |
-          echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
-          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
-        shell: bash
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
@@ -108,11 +92,6 @@ jobs:
   compile-supportbundle:
     runs-on: ubuntu-latest
     steps:
-      - name: setup env
-        run: |
-          echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
-          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
-        shell: bash
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
@@ -163,11 +142,6 @@ jobs:
   compile-collect:
     runs-on: ubuntu-latest
     steps:
-      - name: setup env
-        run: |
-          echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
-          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
-        shell: bash
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
