@@ -30,17 +30,10 @@ jobs:
   test-integration:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.24"
-
-      - name: setup env
-        run: |
-          echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
-          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
-        shell: bash
-
-      - uses: actions/checkout@v4
+          go-version-file: 'go.mod'
       - uses: replicatedhq/action-k3s@main
         id: k3s
         with:
@@ -51,34 +44,22 @@ jobs:
   ensure-schemas-are-generated:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/setup-go@v5
-        with:
-          go-version: "1.24"
-      - name: setup env
-        run: |
-          echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
-          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
-        shell: bash
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          path: github.com/replicatedhq/troubleshoot
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: 'go.mod'
       - run: |
-          cd github.com/replicatedhq/troubleshoot
           make check-schemas
 
   compile-preflight:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.24"
-      - name: setup env
-        run: |
-          echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
-          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
-        shell: bash
-      - uses: actions/checkout@v4
+          go-version-file: 'go.mod'
       - run: make generate preflight
       - uses: actions/upload-artifact@v4
         with:
@@ -111,15 +92,10 @@ jobs:
   compile-supportbundle:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.24"
-      - name: setup env
-        run: |
-          echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
-          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
-        shell: bash
-      - uses: actions/checkout@v4
+          go-version-file: 'go.mod'
       - run: make generate support-bundle
       - uses: actions/upload-artifact@v4
         with:
@@ -142,7 +118,7 @@ jobs:
           path: bin/
       - run: chmod +x bin/support-bundle
       - run: make support-bundle-e2e-test
-  
+
   # Additional e2e tests for support bundle that run in Go, these create a Kind cluster
   validate-supportbundle-e2e-go:
      runs-on: ubuntu-latest
@@ -166,15 +142,10 @@ jobs:
   compile-collect:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.24"
-      - name: setup env
-        run: |
-          echo "GOPATH=$(go env GOPATH)" >> $GITHUB_ENV
-          echo "$(go env GOPATH)/bin" >> $GITHUB_PATH
-        shell: bash
-      - uses: actions/checkout@v4
+          go-version-file: 'go.mod'
       - run: make generate collect
       - uses: actions/upload-artifact@v4
         with:
@@ -201,7 +172,7 @@ jobs:
 
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.24"
+          go-version-file: 'go.mod'
 
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v6
@@ -231,7 +202,7 @@ jobs:
 
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.24"
+          go-version-file: 'go.mod'
 
       - uses: sigstore/cosign-installer@v3.9.1
 
