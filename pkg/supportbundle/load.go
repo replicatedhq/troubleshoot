@@ -80,7 +80,7 @@ func ParseSupportBundle(doc []byte, followURI bool) (*troubleshootv1beta2.Suppor
 		// use the upstream spec, otherwise fall back to
 		// what's defined in the current spec
 		if supportBundle.Spec.Uri != "" && followURI {
-			klog.Infof("using upstream reference: %+v\n", supportBundle.Spec.Uri)
+			klog.V(1).Infof("using upstream reference: %+v\n", supportBundle.Spec.Uri)
 			upstreamSupportBundleContent, err := LoadSupportBundleSpec(supportBundle.Spec.Uri)
 			if err != nil {
 				klog.Errorf("failed to load upstream supportbundle, falling back")

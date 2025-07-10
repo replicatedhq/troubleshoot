@@ -80,7 +80,7 @@ func HostAnalyze(
 
 	isExcluded, _ := analyzer.IsExcluded()
 	if isExcluded {
-		klog.Infof("excluding %q analyzer", analyzer.Title())
+		klog.V(1).Infof("excluding %q analyzer", analyzer.Title())
 		span.SetAttributes(attribute.Bool(constants.EXCLUDED, true))
 		return nil
 	}
@@ -124,7 +124,7 @@ func Analyze(
 
 	analyzerInst := GetAnalyzer(analyzer)
 	if analyzerInst == nil {
-		klog.Info("Non-existent analyzer found in the spec. Please double-check the spelling and indentation of the analyzers in the spec.")
+		klog.V(1).Info("Non-existent analyzer found in the spec. Please double-check the spelling and indentation of the analyzers in the spec.")
 		return nil, nil
 	}
 
@@ -138,7 +138,7 @@ func Analyze(
 		return nil, err
 	}
 	if isExcluded {
-		klog.Infof("excluding %q analyzer", analyzerInst.Title())
+		klog.V(1).Infof("excluding %q analyzer", analyzerInst.Title())
 		span.SetAttributes(attribute.Bool(constants.EXCLUDED, true))
 		return nil, nil
 	}

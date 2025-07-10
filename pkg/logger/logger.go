@@ -67,8 +67,17 @@ func InitKlog(verbosity int) {
 
 // SetupLogger sets up klog logger based on viper configuration.
 func SetupLogger(v *viper.Viper) {
-	quiet := v.GetBool("debug") || v.IsSet("v")
-	SetQuiet(!quiet)
+	shouldShowLogs := v.GetBool("debug") || v.IsSet("v")
+	SetQuiet(!shouldShowLogs)
+
+	// If verbosity is set, configure klog verbosity level
+	if v.IsSet("v") {
+		verbosity := v.GetInt("v")
+		if verbosity > 0 {
+			// Use the existing InitKlog function to set verbosity
+			InitKlog(verbosity)
+		}
+	}
 }
 
 // SetQuiet enables or disables klog logger.

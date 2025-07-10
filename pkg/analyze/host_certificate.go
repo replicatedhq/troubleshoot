@@ -30,7 +30,7 @@ func (a *AnalyzeHostCertificate) Analyze(
 	}
 
 	const nodeBaseDir = "host-collectors/certificate"
-	localPath := fmt.Sprintf("%s/%s", nodeBaseDir, collectorName)
+	localPath := fmt.Sprintf("%s/%s.json", nodeBaseDir, collectorName)
 	fileName := fmt.Sprintf("%s.json", collectorName)
 
 	collectedContents, err := retrieveCollectedContents(

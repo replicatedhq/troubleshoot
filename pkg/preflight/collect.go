@@ -243,7 +243,7 @@ func CollectWithContext(ctx context.Context, opts CollectOpts, p *troubleshootv1
 
 		isExcluded, _ := collector.IsExcluded()
 		if isExcluded {
-			klog.Infof("excluding %q collector", collector.Title())
+			klog.V(1).Infof("excluding %q collector", collector.Title())
 			span.SetAttributes(attribute.Bool(constants.EXCLUDED, true))
 			span.End()
 			continue
