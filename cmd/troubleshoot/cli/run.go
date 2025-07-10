@@ -140,7 +140,7 @@ func runTroubleshoot(v *viper.Viper, args []string) error {
 		go func() {
 			defer wg.Done()
 			for msg := range progressChan {
-				klog.Infof("Collecting support bundle: %v", msg)
+				klog.V(2).Infof("Collecting support bundle: %v", msg)
 			}
 		}()
 	} else {

@@ -105,7 +105,7 @@ func (c *CollectEtcd) Collect(progressChan chan<- interface{}) (CollectorResult,
 		fileName := generateFilenameFromCommand(command)
 		stdout, stderr, err := debugInstance.executeCommand(command)
 		if err != nil {
-			klog.Infof("failed to exec command %s: %v", command, err)
+			klog.V(2).Infof("failed to exec command %s: %v", command, err)
 			continue
 		}
 		if len(stdout) > 0 {

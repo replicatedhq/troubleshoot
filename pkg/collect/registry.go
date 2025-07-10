@@ -117,7 +117,7 @@ func imageExists(namespace string, clientConfig *rest.Config, registryCollector 
 
 		remoteImage, err := imageRef.NewImage(context.Background(), &sysCtx)
 		if err == nil {
-			klog.Infof("image %s exists", image)
+			klog.V(2).Infof("image %s exists", image)
 			remoteImage.Close()
 			return true, nil
 		}

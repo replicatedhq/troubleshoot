@@ -246,7 +246,7 @@ func findRookCephToolsPod(ctx context.Context, c *CollectCeph, namespace string)
 		return &pods[0], nil
 	}
 
-	klog.Info("rook ceph tools pod not found")
+	klog.V(1).Info("rook ceph tools pod not found")
 
 	return nil, nil
 }
