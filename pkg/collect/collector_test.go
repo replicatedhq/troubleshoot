@@ -277,8 +277,7 @@ pwd=somethinggoeshere;`,
 
 			var result CollectorResult
 
-			collector, _ := GetCollector(tt.Collect, "", "", nil, nil, nil)
-			regCollector, _ := collector.(Collector)
+			regCollector, _ := GetCollector(tt.Collect, "", "", nil, nil, nil)
 
 			if excluded, err := regCollector.IsExcluded(); !excluded {
 				req.NoError(err)
@@ -286,7 +285,7 @@ pwd=somethinggoeshere;`,
 				result, err = regCollector.Collect(nil)
 				req.NoError(err)
 
-				err = RedactResult("", result, tt.Redactors)
+				err = RedactResult("", result, tt.Redactors, nil)
 
 				req.NoError(err)
 			}
@@ -346,8 +345,7 @@ pwd=somethinggoeshere;`,
 
 			var result CollectorResult
 
-			collector, _ := GetCollector(tt.Collect, "", "", nil, nil, nil)
-			regCollector, _ := collector.(Collector)
+			regCollector, _ := GetCollector(tt.Collect, "", "", nil, nil, nil)
 
 			if excluded, err := regCollector.IsExcluded(); !excluded {
 				req.NoError(err)

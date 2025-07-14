@@ -23,6 +23,10 @@ func (c *CollectHostCopy) IsExcluded() (bool, error) {
 	return isExcluded(c.hostCollector.Exclude)
 }
 
+func (c *CollectHostCopy) SkipRedaction() bool {
+	return c.hostCollector.SkipRedaction
+}
+
 func (c *CollectHostCopy) Collect(progressChan chan<- interface{}) (map[string][]byte, error) {
 	// 1. Construct subdirectory path in the bundle path to copy files into
 	// output.SaveResult() will create the directory if it doesn't exist
