@@ -171,7 +171,7 @@ func runWithoutTimeout(ctx context.Context, bundlePath string, clientConfig *res
 		}
 		if status.Status.Phase == corev1.PodPending {
 			for _, v := range status.Status.ContainerStatuses {
-				if v.State.Waiting != nil && v.State.Waiting.Reason == "ImagePullBackOff" {
+				if v.State.Waiting != nil && v.State.Waiting.Reason == "ImagePullBackOff" && !runPodCollector.AllowImagePullRetries {
 					return nil, errors.Errorf("run pod aborted after getting pod status 'ImagePullBackOff'")
 				}
 
@@ -355,6 +355,11 @@ func RunPodsReadyNodes(ctx context.Context, client v1.CoreV1Interface, opts RunP
 
 // RunPodLogs runs a pod to completion on a node and returns its logs
 func RunPodLogs(ctx context.Context, client v1.CoreV1Interface, podSpec *corev1.Pod) ([]byte, error) {
+	return RunPodLogsWithOptions(ctx, client, podSpec, false)
+}
+
+// RunPodLogsWithOptions runs a pod to completion on a node and returns its logs with configurable options
+func RunPodLogsWithOptions(ctx context.Context, client v1.CoreV1Interface, podSpec *corev1.Pod, allowImagePullRetries bool) ([]byte, error) {
 	// 1. Create
 	pod, err := client.Pods(podSpec.Namespace).Create(ctx, podSpec, metav1.CreateOptions{})
 	if err != nil {
@@ -380,7 +385,7 @@ func RunPodLogs(ctx context.Context, client v1.CoreV1Interface, podSpec *corev1.
 
 		if pod.Status.Phase == corev1.PodPending {
 			for _, v := range pod.Status.ContainerStatuses {
-				if v.State.Waiting != nil && v.State.Waiting.Reason == "ImagePullBackOff" {
+				if v.State.Waiting != nil && v.State.Waiting.Reason == "ImagePullBackOff" && !allowImagePullRetries {
 					return nil, errors.New("wait for pod aborted after getting pod status 'ImagePullBackOff'")
 				}
 			}

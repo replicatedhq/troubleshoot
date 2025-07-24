@@ -10688,6 +10688,9 @@
                   "namespace"
                 ],
                 "properties": {
+                  "allowImagePullRetries": {
+                    "type": "boolean"
+                  },
                   "annotations": {
                     "type": "object",
                     "additionalProperties": {
