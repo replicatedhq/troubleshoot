@@ -232,7 +232,7 @@ jobs:
         uses: goreleaser/goreleaser-action@v6
         with:
           version: "v1.x"  # Binary version to install
-          args: release --rm-dist --config deploy/.goreleaser.yaml
+          args: release --clean --config deploy/.goreleaser.yaml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
