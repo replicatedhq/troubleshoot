@@ -27,7 +27,7 @@ jobs:
       - name: Fails in order to indicate that pull request needs to be marked as ready to review and unit tests workflow needs to pass.
         run: exit 1
 
-  tidy-diff:
+  tidy-check:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -250,7 +250,7 @@ jobs:
   validate-pr-tests:
     runs-on: ubuntu-latest
     needs:
-      - build
+      - tidy-check
       - test-integration
       - run-examples
       - compile-collect
