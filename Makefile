@@ -103,6 +103,11 @@ clean:
 tidy:
 	go mod tidy
 
+# Prints  the diff of the changes that would be made by `go mod tidy`. Used in CI
+.PHONY: tidy-diff
+tidy-diff:
+	go mod tidy -diff
+
 # Only build when any of the files in SOURCES changes, or if bin/<file> is absent
 MAKEFILE_DIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
 SOURCES := $(shell find $(MAKEFILE_DIR) -type f \( -name "*.go" -o -name "go.mod" -o -name "go.sum" \))

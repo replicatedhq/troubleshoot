@@ -27,14 +27,14 @@ jobs:
       - name: Fails in order to indicate that pull request needs to be marked as ready to review and unit tests workflow needs to pass.
         run: exit 1
 
-  build:
+  tidy-diff:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
           go-version-file: 'go.mod'
-      - run: make build
+      - run: make tidy-diff
 
   test-integration:
     runs-on: ubuntu-latest
