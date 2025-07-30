@@ -213,7 +213,7 @@ jobs:
         with:
           go-version-file: 'go.mod'
 
-      - uses: sigstore/cosign-installer@v3.9.1
+      - uses: sigstore/cosign-installer@v3.9.2
 
       - name: Get Cosign Key
         run: |
