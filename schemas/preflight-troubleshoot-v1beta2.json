@@ -2724,11 +2724,17 @@
                       "type": "string"
                     }
                   },
+                  "backupCount": {
+                    "type": "integer"
+                  },
                   "checkName": {
                     "type": "string"
                   },
                   "exclude": {
                     "oneOf": [{"type": "string"},{"type": "boolean"}]
+                  },
+                  "restoreCount": {
+                    "type": "integer"
                   },
                   "strict": {
                     "oneOf": [{"type": "string"},{"type": "boolean"}]
