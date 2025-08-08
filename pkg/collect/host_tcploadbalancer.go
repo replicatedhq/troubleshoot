@@ -24,6 +24,10 @@ func (c *CollectHostTCPLoadBalancer) IsExcluded() (bool, error) {
 	return isExcluded(c.hostCollector.Exclude)
 }
 
+func (c *CollectHostTCPLoadBalancer) SkipRedaction() bool {
+	return c.hostCollector.SkipRedaction
+}
+
 func (c *CollectHostTCPLoadBalancer) Collect(progressChan chan<- interface{}) (map[string][]byte, error) {
 	listenAddress := fmt.Sprintf("0.0.0.0:%d", c.hostCollector.Port)
 	dialAddress := c.hostCollector.Address

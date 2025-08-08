@@ -44,6 +44,10 @@ func (c *CollectHostSubnetAvailable) IsExcluded() (bool, error) {
 	return isExcluded(c.hostCollector.Exclude)
 }
 
+func (c *CollectHostSubnetAvailable) SkipRedaction() bool {
+	return c.hostCollector.SkipRedaction
+}
+
 func (c *CollectHostSubnetAvailable) Collect(progressChan chan<- interface{}) (map[string][]byte, error) {
 	procNetRoute, err := os.ReadFile("/proc/net/route")
 	if err != nil {
