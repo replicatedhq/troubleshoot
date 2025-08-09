@@ -307,4 +307,14 @@ type Analyze struct {
 	Event                    *EventAnalyze             `json:"event,omitempty" yaml:"event,omitempty"`
 	NodeMetrics              *NodeMetricsAnalyze       `json:"nodeMetrics,omitempty" yaml:"nodeMetrics,omitempty"`
 	HTTP                     *HTTPAnalyze              `json:"http,omitempty" yaml:"http,omitempty"`
+	LLM                      *LLMAnalyze               `json:"llm,omitempty" yaml:"llm,omitempty"`
+}
+
+type LLMAnalyze struct {
+	AnalyzeMeta   `json:",inline" yaml:",inline"`
+	Outcomes      []*Outcome `json:"outcomes" yaml:"outcomes"`
+	CollectorName string     `json:"collectorName,omitempty" yaml:"collectorName,omitempty"`
+	FileName      string     `json:"fileName,omitempty" yaml:"fileName,omitempty"`
+	MaxFiles      int        `json:"maxFiles,omitempty" yaml:"maxFiles,omitempty"`
+	Model         string     `json:"model,omitempty" yaml:"model,omitempty"`
 }
