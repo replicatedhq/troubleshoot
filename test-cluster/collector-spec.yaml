@@ -1,0 +1,88 @@
+apiVersion: troubleshoot.sh/v1beta2
+kind: SupportBundle
+metadata:
+  name: test-cluster-bundle
+spec:
+  collectors:
+    - clusterInfo: {}
+    - clusterResources: {}
+    - logs:
+        selector:
+          - app=memory-hog
+        namespace: test-oom
+        name: oom-logs
+        limits:
+          maxAge: 1h
+          maxLines: 1000
+    - logs:
+        selector:
+          - app=crash-loop
+        namespace: test-crash
+        name: crash-loop-logs
+        limits:
+          maxAge: 1h
+          maxLines: 1000
+    - logs:
+        selector:
+          - app=connection-test
+        namespace: test-connection
+        name: connection-logs
+        limits:
+          maxAge: 1h
+          maxLines: 1000
+    - configMap:
+        namespace: test-connection
+        name: app-config
+        includeValue: true
+    - exec:
+        name: pod-statuses
+        selector:
+          - app=memory-hog
+        namespace: test-oom
+        command: ["sh", "-c", "kubectl get pods -n test-oom -o wide"]
+        timeout: 10s
+    - exec:
+        name: describe-pods
+        selector:
+          - app=crash-loop
+        namespace: test-crash
+        command: ["sh", "-c", "kubectl describe pods -n test-crash"]
+        timeout: 10s
+    - exec:
+        name: events
+        selector:
+          - app=connection-test
+        namespace: test-connection
+        command: ["sh", "-c", "kubectl get events -n test-connection --sort-by='.lastTimestamp'"]
+        timeout: 10s
+  analyzers:
+    - textAnalyze:
+        checkName: "OOMKilled Detection"
+        fileName: "cluster-resources/pods/*.json"
+        regex: "OOMKilled"
+        outcomes:
+          - fail:
+              when: "true"
+              message: "Pod killed due to out of memory"
+          - pass:
+              message: "No OOM issues detected"
+    - textAnalyze:
+        checkName: "CrashLoopBackOff Detection"
+        fileName: "cluster-resources/pods/*.json"
+        regex: "CrashLoopBackOff"
+        outcomes:
+          - fail:
+              when: "true"
+              message: "Pod is in CrashLoopBackOff state"
+          - pass:
+              message: "No crash loops detected"
+    - textAnalyze:
+        checkName: "Connection Issues"
+        fileName: "*/connection-logs/*.log"
+        regex: "connection refused|authentication failed"
+        outcomes:
+          - fail:
+              when: "true"
+              message: "Database connection issues detected"
+          - pass:
+              message: "No connection issues found"

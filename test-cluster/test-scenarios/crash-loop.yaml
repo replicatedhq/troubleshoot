@@ -1,0 +1,32 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: test-crash
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: crash-loop-app
+  namespace: test-crash
+  labels:
+    app: crash-loop
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: crash-loop
+  template:
+    metadata:
+      labels:
+        app: crash-loop
+    spec:
+      containers:
+      - name: failing-app
+        image: busybox
+        command: ["/bin/sh"]
+        args: ["-c", "echo 'Starting application...'; sleep 5; echo 'ERROR: Database connection failed!'; exit 1"]
+        env:
+        - name: DATABASE_URL
+          value: "postgres://user:pass@db:5432/myapp"
+        - name: ENVIRONMENT
+          value: "production"

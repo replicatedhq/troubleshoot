@@ -1,0 +1,55 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: test-connection
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+  namespace: test-connection
+data:
+  database.conf: |
+    host=postgres-service.default.svc.cluster.local
+    port=5432
+    database=myapp
+    user=wronguser
+    password=wrongpass
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: connection-test-app
+  namespace: test-connection
+  labels:
+    app: connection-test
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: connection-test
+  template:
+    metadata:
+      labels:
+        app: connection-test
+    spec:
+      containers:
+      - name: app
+        image: busybox
+        command: ["/bin/sh"]
+        args: 
+          - -c
+          - |
+            while true; do
+              echo "[$(date)] Attempting to connect to database..."
+              echo "[$(date)] ERROR: Connection refused - FATAL: password authentication failed for user 'wronguser'"
+              echo "[$(date)] Retrying in 10 seconds..."
+              sleep 10
+            done
+        volumeMounts:
+        - name: config
+          mountPath: /etc/app
+      volumes:
+      - name: config
+        configMap:
+          name: app-config
