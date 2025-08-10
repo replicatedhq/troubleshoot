@@ -316,5 +316,6 @@ type LLMAnalyze struct {
 	CollectorName string     `json:"collectorName,omitempty" yaml:"collectorName,omitempty"`
 	FileName      string     `json:"fileName,omitempty" yaml:"fileName,omitempty"`
 	MaxFiles      int        `json:"maxFiles,omitempty" yaml:"maxFiles,omitempty"`
+	MaxSize       int        `json:"maxSize,omitempty" yaml:"maxSize,omitempty"`
 	Model         string     `json:"model,omitempty" yaml:"model,omitempty"`
 }

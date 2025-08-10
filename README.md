@@ -113,6 +113,7 @@ kubectl support-bundle analyze --bundle support-bundle-2024-01-20T10-30-00.tar.g
 
 - **model**: AI model to use (gpt-5, gpt-4o-mini, gpt-4o, etc.)
 - **maxFiles**: Maximum number of files to analyze (prevents token limits)
+- **maxSize**: Maximum total size of files in KB (default: 500KB)
 - **fileName**: Pattern to match files (e.g., "*.log", "error-*")
 - **collectorName**: Name of the collector to analyze files from
 - **exclude**: Boolean to exclude this analyzer (default: false)

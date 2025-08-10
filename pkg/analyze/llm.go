@@ -87,7 +87,10 @@ func (a *AnalyzeLLM) Analyze(getFile getCollectedFileContents, findFiles getChil
 func (a *AnalyzeLLM) collectFiles(getFile getCollectedFileContents, findFiles getChildCollectedFileContents) (map[string]string, error) {
 	files := make(map[string]string)
 	totalSize := 0
-	maxSize := 500 * 1024 // 500KB
+	maxSize := 500 * 1024 // 500KB default
+	if a.analyzer.MaxSize > 0 {
+		maxSize = a.analyzer.MaxSize * 1024 // Convert from KB to bytes
+	}
 	maxFiles := 10
 	if a.analyzer.MaxFiles > 0 {
 		maxFiles = a.analyzer.MaxFiles
@@ -139,21 +142,16 @@ func (a *AnalyzeLLM) collectFiles(getFile getCollectedFileContents, findFiles ge
 				continue
 			}
 
-			for _, filePath := range matchingFiles {
+			for filePath, content := range matchingFiles {
 				if len(files) >= maxFiles {
 					break
-				}
-
-				content, err := getFile(string(filePath))
-				if err != nil {
-					continue
 				}
 
 				if totalSize+len(content) > maxSize {
 					break
 				}
 
-				files[string(filePath)] = string(content)
+				files[filePath] = string(content)
 				totalSize += len(content)
 			}
 		}
@@ -244,8 +242,8 @@ func (a *AnalyzeLLM) callLLM(apiKey, problemDescription string, files map[string
 		return nil, errors.Wrap(err, "failed to marshal request")
 	}
 
-	// Create HTTP request with timeout
-	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	// Create HTTP request with timeout (120s for large analyses)
+	ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
 	defer cancel()
 
 	req, err := http.NewRequestWithContext(ctx, "POST", "https://api.openai.com/v1/chat/completions", bytes.NewBuffer(jsonData))
@@ -297,6 +295,9 @@ func (a *AnalyzeLLM) callLLM(apiKey, problemDescription string, files map[string
 	}
 
 	if err := json.Unmarshal([]byte(content), &analysis); err != nil {
+		// Log the parsing error for debugging
+		fmt.Fprintf(os.Stderr, "Warning: Failed to parse LLM JSON response: %v\nRaw response: %s\n", err, content)
+		
 		// If JSON parsing fails, create a basic analysis from the text
 		analysis = llmAnalysis{
 			IssueFound: strings.Contains(strings.ToLower(content), "error") ||
@@ -353,6 +354,8 @@ func (a *AnalyzeLLM) mapToOutcomes(analysis *llmAnalysis) []*AnalyzeResult {
 					result.IsPass = false
 					if outcome.Fail.Message != "" {
 						result.Message = strings.ReplaceAll(outcome.Fail.Message, "{{.Summary}}", analysis.Summary)
+						result.Message = strings.ReplaceAll(result.Message, "{{.Issue}}", analysis.Issue)
+						result.Message = strings.ReplaceAll(result.Message, "{{.Solution}}", analysis.Solution)
 					}
 					break
 				}
@@ -363,6 +366,8 @@ func (a *AnalyzeLLM) mapToOutcomes(analysis *llmAnalysis) []*AnalyzeResult {
 					result.IsPass = false
 					if outcome.Warn.Message != "" {
 						result.Message = strings.ReplaceAll(outcome.Warn.Message, "{{.Summary}}", analysis.Summary)
+						result.Message = strings.ReplaceAll(result.Message, "{{.Issue}}", analysis.Issue)
+						result.Message = strings.ReplaceAll(result.Message, "{{.Solution}}", analysis.Solution)
 					}
 					break
 				}

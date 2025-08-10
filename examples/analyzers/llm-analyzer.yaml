@@ -28,6 +28,7 @@ spec:
         fileName: "*"  # Analyze all files in the collector
         model: "gpt-4o-mini"  # Cost-effective model with 128K context
         maxFiles: 10  # Limit files to prevent token overflow
+        maxSize: 1000  # Limit total size to 1MB
         outcomes:
           - fail:
               when: "issue_found"
