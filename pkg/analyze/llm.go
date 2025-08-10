@@ -66,7 +66,7 @@ func (a *AnalyzeLLM) Analyze(getFile getCollectedFileContents, findFiles getChil
 		debugPattern := filepath.Join(a.analyzer.CollectorName, a.analyzer.FileName)
 		debugFiles, _ := findFiles(debugPattern, []string{})
 		debugMsg := fmt.Sprintf("No files found. Pattern: %s, Found count: %d", debugPattern, len(debugFiles))
-		
+
 		return []*AnalyzeResult{{
 			Title:   a.Title(),
 			IsWarn:  true,
@@ -186,12 +186,12 @@ type openAIResponse struct {
 }
 
 type llmAnalysis struct {
-	IssueFound  bool   `json:"issue_found"`
-	Summary     string `json:"summary"`
-	Issue       string `json:"issue"`
-	Solution    string `json:"solution"`
-	Severity    string `json:"severity"` // "critical", "warning", "info"
-	Confidence  float64 `json:"confidence"`
+	IssueFound bool    `json:"issue_found"`
+	Summary    string  `json:"summary"`
+	Issue      string  `json:"issue"`
+	Solution   string  `json:"solution"`
+	Severity   string  `json:"severity"` // "critical", "warning", "info"
+	Confidence float64 `json:"confidence"`
 }
 
 func (a *AnalyzeLLM) callLLM(apiKey, problemDescription string, files map[string]string) (*llmAnalysis, error) {
@@ -288,7 +288,7 @@ func (a *AnalyzeLLM) callLLM(apiKey, problemDescription string, files map[string
 	// Parse LLM's JSON response
 	var analysis llmAnalysis
 	content := openAIResp.Choices[0].Message.Content
-	
+
 	// Try to extract JSON from the response (in case LLM added extra text)
 	startIdx := strings.Index(content, "{")
 	endIdx := strings.LastIndex(content, "}")
@@ -299,9 +299,9 @@ func (a *AnalyzeLLM) callLLM(apiKey, problemDescription string, files map[string
 	if err := json.Unmarshal([]byte(content), &analysis); err != nil {
 		// If JSON parsing fails, create a basic analysis from the text
 		analysis = llmAnalysis{
-			IssueFound: strings.Contains(strings.ToLower(content), "error") || 
-			           strings.Contains(strings.ToLower(content), "fail") ||
-			           strings.Contains(strings.ToLower(content), "issue"),
+			IssueFound: strings.Contains(strings.ToLower(content), "error") ||
+				strings.Contains(strings.ToLower(content), "fail") ||
+				strings.Contains(strings.ToLower(content), "issue"),
 			Summary:    content,
 			Severity:   "warning",
 			Confidence: 0.5,

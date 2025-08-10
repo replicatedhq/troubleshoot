@@ -68,7 +68,7 @@ func runTroubleshoot(v *viper.Viper, args []string) error {
 
 	if hasLLMAnalyzer {
 		problemDescription := v.GetString("problem-description")
-		
+
 		// If no problem description provided and interactive mode, prompt for it
 		if problemDescription == "" && v.GetBool("interactive") && isatty.IsTerminal(os.Stdin.Fd()) {
 			fmt.Print("Please describe the problem you're experiencing: ")
@@ -79,7 +79,7 @@ func runTroubleshoot(v *viper.Viper, args []string) error {
 			}
 			problemDescription = strings.TrimSpace(problemDescription)
 		}
-		
+
 		// Set the global variable for the LLM analyzer to use
 		analyzer.GlobalProblemDescription = problemDescription
 	}
