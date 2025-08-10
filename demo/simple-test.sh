@@ -7,10 +7,17 @@ echo "🤖 LLM Analyzer Simple Test"
 echo "==========================="
 echo
 
+# Source .envrc if it exists and API key isn't already set
+if [ -z "$OPENAI_API_KEY" ] && [ -f ".envrc" ]; then
+    echo "📂 Loading API key from .envrc..."
+    source .envrc
+fi
+
 # Check for API key
 if [ -z "$OPENAI_API_KEY" ]; then
     echo "⚠️  Please set your OpenAI API key:"
     echo "   export OPENAI_API_KEY='sk-...'"
+    echo "   Or add it to .envrc file"
     echo
     echo "   Get one at: https://platform.openai.com/api-keys"
     exit 1

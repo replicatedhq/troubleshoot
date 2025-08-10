@@ -37,6 +37,7 @@ func (a *AnalyzeLLM) IsExcluded() (bool, error) {
 func (a *AnalyzeLLM) Analyze(getFile getCollectedFileContents, findFiles getChildCollectedFileContents) ([]*AnalyzeResult, error) {
 	// Get API key from environment
 	apiKey := os.Getenv("OPENAI_API_KEY")
+	
 	if apiKey == "" {
 		return []*AnalyzeResult{{
 			Title:   a.Title(),
@@ -411,7 +412,7 @@ Files to analyze:
 		reqBody.Messages[0].Content += " Respond with a JSON object following the provided schema."
 	} else {
 		// Fall back to prompting for JSON
-		reqBody.Messages[0].Content += " Always respond with valid JSON containing: issue_found, summary, issue, solution, severity, confidence, commands, documentation, root_cause, affected_pods, next_steps, related_issues."
+		reqBody.Messages[0].Content += " Always respond with valid JSON containing: issue_found (boolean), summary (string), issue (string), solution (string), severity (string: 'critical', 'warning', or 'info'), confidence (number between 0.0 and 1.0), commands (array of strings), documentation (array of strings), root_cause (string), affected_pods (array of strings), next_steps (array of strings), related_issues (array of strings). IMPORTANT: confidence must be a decimal number between 0.0 and 1.0, not a string."
 	}
 
 	jsonData, err := json.Marshal(reqBody)
