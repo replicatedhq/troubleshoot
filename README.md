@@ -75,6 +75,7 @@ spec:
         fileName: "*.log"
         # model defaults to gpt-4o-mini, override for specific needs:
         # model: "gpt-5"  # For complex issues requiring advanced reasoning
+        # useStructuredOutput: true  # Default: true for supported models (gpt-4o, gpt-4o-mini)
         outcomes:
           - fail:
               when: "issue_found"
@@ -123,12 +124,16 @@ kubectl support-bundle analyze --bundle support-bundle-2024-01-20T10-30-00.tar.g
 - **skipPatterns**: File patterns to skip (default: images and archives)
 - **preferRecent**: Prioritize recent files based on timestamps (default: false)
 
+#### Structured Output (New)
+- **useStructuredOutput**: Use OpenAI's structured outputs for guaranteed valid JSON (default: true for gpt-4o/gpt-4o-mini, false for older models)
+
 ### Model Selection Guide
 
-- **gpt-4o-mini**: (Default) Cost-effective with 128K context window, recommended for most use cases
-- **gpt-5**: Most capable, best for complex issues requiring advanced reasoning
-- **gpt-4o**: Good balance of capability and cost for medium complexity
-- **gpt-3.5-turbo**: Budget option for simple analysis
+- **gpt-4o-mini**: (Default) Cost-effective with 128K context window, recommended for most use cases ($0.15/1M input tokens)
+- **gpt-5**: Most advanced model for complex issues requiring cutting-edge reasoning (pricing TBD)
+- **gpt-4o**: Latest GPT-4 Omni model with 128K context, excellent for complex analysis ($2.50/1M input tokens)
+- **gpt-4-turbo**: Previous generation, still very capable ($10/1M input tokens)
+- **gpt-3.5-turbo**: Budget option for simple analysis ($0.50/1M input tokens) - Note: Does not support structured outputs
 
 ### Enhanced Output
 

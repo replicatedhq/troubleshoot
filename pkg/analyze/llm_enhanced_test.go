@@ -449,3 +449,45 @@ func TestAnalyzeLLM_CollectFilesWithSmartSelection(t *testing.T) {
 	// Should have at most MaxFiles
 	assert.LessOrEqual(t, len(collectedFiles), 3)
 }
+
+func TestAnalyzeLLM_StructuredOutputSchema(t *testing.T) {
+	// Test the JSON schema generation
+	schema := buildAnalysisSchema()
+	
+	// Verify schema structure
+	assert.Equal(t, "object", schema["type"])
+	
+	properties, ok := schema["properties"].(map[string]interface{})
+	require.True(t, ok, "properties should be a map")
+	
+	// Check required fields are in schema
+	requiredFields := []string{
+		"issue_found", "summary", "issue", "solution", 
+		"severity", "confidence", "commands", "documentation",
+		"root_cause", "affected_pods", "next_steps", "related_issues",
+	}
+	
+	for _, field := range requiredFields {
+		assert.Contains(t, properties, field, "Schema should contain field: %s", field)
+	}
+	
+	// Check severity enum
+	severityProp := properties["severity"].(map[string]interface{})
+	severityEnum := severityProp["enum"].([]string)
+	assert.Equal(t, []string{"critical", "warning", "info"}, severityEnum)
+	
+	// Check confidence constraints
+	confidenceProp := properties["confidence"].(map[string]interface{})
+	assert.Equal(t, 0.0, confidenceProp["minimum"])
+	assert.Equal(t, 1.0, confidenceProp["maximum"])
+	
+	// Check required fields list
+	required := schema["required"].([]string)
+	assert.Contains(t, required, "issue_found")
+	assert.Contains(t, required, "summary")
+	assert.Contains(t, required, "severity")
+	assert.Contains(t, required, "confidence")
+	
+	// Check additionalProperties is false
+	assert.Equal(t, false, schema["additionalProperties"])
+}

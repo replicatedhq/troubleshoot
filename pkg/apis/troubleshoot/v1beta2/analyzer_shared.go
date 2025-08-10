@@ -322,4 +322,6 @@ type LLMAnalyze struct {
 	PriorityPatterns []string   `json:"priorityPatterns,omitempty" yaml:"priorityPatterns,omitempty"`
 	SkipPatterns     []string   `json:"skipPatterns,omitempty" yaml:"skipPatterns,omitempty"`
 	PreferRecent     bool       `json:"preferRecent,omitempty" yaml:"preferRecent,omitempty"`
+	// Structured output control
+	UseStructuredOutput bool   `json:"useStructuredOutput,omitempty" yaml:"useStructuredOutput,omitempty"`
 }

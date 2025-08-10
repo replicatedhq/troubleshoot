@@ -33,6 +33,7 @@ spec:
         priorityPatterns: ["error", "fatal", "exception", "OOM", "crash", "panic"]
         skipPatterns: ["*.png", "*.jpg", "debug-*", "*.gz"]
         preferRecent: true  # Analyze newer files first
+        useStructuredOutput: true  # Use OpenAI's structured outputs for guaranteed JSON (default: true)
         outcomes:
           - fail:
               when: "issue_found"

@@ -205,9 +205,21 @@ func (a *AnalyzeLLM) collectFiles(getFile getCollectedFileContents, findFiles ge
 }
 
 type openAIRequest struct {
-	Model    string          `json:"model"`
-	Messages []openAIMessage `json:"messages"`
-	Timeout  int             `json:"timeout,omitempty"`
+	Model          string          `json:"model"`
+	Messages       []openAIMessage `json:"messages"`
+	Timeout        int             `json:"timeout,omitempty"`
+	ResponseFormat *responseFormat `json:"response_format,omitempty"`
+}
+
+type responseFormat struct {
+	Type       string      `json:"type"`
+	JSONSchema *jsonSchema `json:"json_schema,omitempty"`
+}
+
+type jsonSchema struct {
+	Name   string                 `json:"name"`
+	Strict bool                   `json:"strict"`
+	Schema map[string]interface{} `json:"schema"`
 }
 
 type openAIMessage struct {
@@ -243,6 +255,88 @@ type llmAnalysis struct {
 	RelatedIssues []string `json:"related_issues,omitempty"` // other potential problems
 }
 
+// buildAnalysisSchema returns the JSON schema for structured outputs
+func buildAnalysisSchema() map[string]interface{} {
+	return map[string]interface{}{
+		"type": "object",
+		"properties": map[string]interface{}{
+			"issue_found": map[string]interface{}{
+				"type":        "boolean",
+				"description": "Whether an issue was identified",
+			},
+			"summary": map[string]interface{}{
+				"type":        "string",
+				"description": "Brief summary of findings",
+			},
+			"issue": map[string]interface{}{
+				"type":        "string",
+				"description": "Detailed description of the issue if found",
+			},
+			"solution": map[string]interface{}{
+				"type":        "string",
+				"description": "Recommended solution if an issue was found",
+			},
+			"severity": map[string]interface{}{
+				"type":        "string",
+				"enum":        []string{"critical", "warning", "info"},
+				"description": "Severity level of the issue",
+			},
+			"confidence": map[string]interface{}{
+				"type":        "number",
+				"minimum":     0.0,
+				"maximum":     1.0,
+				"description": "Confidence level from 0.0 to 1.0",
+			},
+			"commands": map[string]interface{}{
+				"type": "array",
+				"items": map[string]interface{}{
+					"type": "string",
+				},
+				"description": "kubectl commands that could help resolve the issue",
+			},
+			"documentation": map[string]interface{}{
+				"type": "array",
+				"items": map[string]interface{}{
+					"type": "string",
+				},
+				"description": "Relevant Kubernetes documentation URLs",
+			},
+			"root_cause": map[string]interface{}{
+				"type":        "string",
+				"description": "The identified root cause of the problem",
+			},
+			"affected_pods": map[string]interface{}{
+				"type": "array",
+				"items": map[string]interface{}{
+					"type": "string",
+				},
+				"description": "List of affected pod names",
+			},
+			"next_steps": map[string]interface{}{
+				"type": "array",
+				"items": map[string]interface{}{
+					"type": "string",
+				},
+				"description": "Ordered list of recommended actions",
+			},
+			"related_issues": map[string]interface{}{
+				"type": "array",
+				"items": map[string]interface{}{
+					"type": "string",
+				},
+				"description": "Other potential problems found",
+			},
+		},
+		"required": []string{
+			"issue_found",
+			"summary",
+			"severity",
+			"confidence",
+		},
+		"additionalProperties": false,
+	}
+}
+
 func (a *AnalyzeLLM) callLLM(apiKey, problemDescription string, files map[string]string) (*llmAnalysis, error) {
 	// Build prompt
 	var promptBuilder strings.Builder
@@ -250,19 +344,7 @@ func (a *AnalyzeLLM) callLLM(apiKey, problemDescription string, files map[string
 
 Problem Description: %s
 
-Please analyze the following files and respond with a JSON object containing:
-- issue_found (boolean): whether an issue was identified
-- summary (string): brief summary of findings
-- issue (string): detailed description of the issue if found
-- solution (string): recommended solution if an issue was found
-- severity (string): 'critical', 'warning', or 'info'
-- confidence (number): confidence level from 0.0 to 1.0
-- commands (array): kubectl commands that could help resolve the issue
-- documentation (array): relevant Kubernetes documentation URLs
-- root_cause (string): the identified root cause of the problem
-- affected_pods (array): list of affected pod names
-- next_steps (array): ordered list of recommended actions
-- related_issues (array): other potential problems found
+Please analyze the following files and provide a comprehensive analysis.
 
 Files to analyze:
 
@@ -284,19 +366,53 @@ Files to analyze:
 		model = a.analyzer.Model
 	}
 
+	// Check if we should use structured outputs (default true for compatible models)
+	// Structured outputs are supported by gpt-4o, gpt-4o-mini, and newer models
+	// but NOT by gpt-3.5-turbo or older completion models
+	useStructuredOutput := true
+	if a.analyzer.UseStructuredOutput == false {
+		useStructuredOutput = false
+	}
+	// Only disable for models we know don't support structured outputs
+	// This way, future models (like gpt-5, gpt-4-turbo-2024, etc.) will default to using it
+	if strings.Contains(strings.ToLower(model), "gpt-3.5") || 
+	   strings.Contains(strings.ToLower(model), "davinci") || 
+	   strings.Contains(strings.ToLower(model), "curie") || 
+	   strings.Contains(strings.ToLower(model), "babbage") || 
+	   strings.Contains(strings.ToLower(model), "ada") {
+		useStructuredOutput = false
+	}
+
 	// Create request
 	reqBody := openAIRequest{
 		Model: model,
 		Messages: []openAIMessage{
 			{
 				Role:    "system",
-				Content: "You are a Kubernetes troubleshooting expert. Analyze support bundles and identify issues. Always respond with valid JSON.",
+				Content: "You are a Kubernetes troubleshooting expert. Analyze support bundles and identify issues.",
 			},
 			{
 				Role:    "user",
 				Content: promptBuilder.String(),
 			},
 		},
+	}
+
+	// Add structured output format if supported
+	if useStructuredOutput {
+		reqBody.ResponseFormat = &responseFormat{
+			Type: "json_schema",
+			JSONSchema: &jsonSchema{
+				Name:   "kubernetes_analysis",
+				Strict: true,
+				Schema: buildAnalysisSchema(),
+			},
+		}
+		// Mention JSON requirement in system message for clarity
+		reqBody.Messages[0].Content += " Respond with a JSON object following the provided schema."
+	} else {
+		// Fall back to prompting for JSON
+		reqBody.Messages[0].Content += " Always respond with valid JSON containing: issue_found, summary, issue, solution, severity, confidence, commands, documentation, root_cause, affected_pods, next_steps, related_issues."
 	}
 
 	jsonData, err := json.Marshal(reqBody)
@@ -349,25 +465,34 @@ Files to analyze:
 	var analysis llmAnalysis
 	content := openAIResp.Choices[0].Message.Content
 
-	// Try to extract JSON from the response (in case LLM added extra text)
-	startIdx := strings.Index(content, "{")
-	endIdx := strings.LastIndex(content, "}")
-	if startIdx >= 0 && endIdx >= 0 && endIdx > startIdx {
-		content = content[startIdx : endIdx+1]
-	}
+	// With structured outputs, JSON should always be valid
+	if useStructuredOutput {
+		if err := json.Unmarshal([]byte(content), &analysis); err != nil {
+			// This should rarely happen with structured outputs enabled
+			return nil, errors.Wrapf(err, "failed to parse structured JSON response: %s", content)
+		}
+	} else {
+		// Without structured outputs, try to extract JSON and handle failures gracefully
+		// Try to extract JSON from the response (in case LLM added extra text)
+		startIdx := strings.Index(content, "{")
+		endIdx := strings.LastIndex(content, "}")
+		if startIdx >= 0 && endIdx >= 0 && endIdx > startIdx {
+			content = content[startIdx : endIdx+1]
+		}
 
-	if err := json.Unmarshal([]byte(content), &analysis); err != nil {
-		// Log the parsing error for debugging
-		fmt.Fprintf(os.Stderr, "Warning: Failed to parse LLM JSON response: %v\nRaw response: %s\n", err, content)
-		
-		// If JSON parsing fails, create a basic analysis from the text
-		analysis = llmAnalysis{
-			IssueFound: strings.Contains(strings.ToLower(content), "error") ||
-				strings.Contains(strings.ToLower(content), "fail") ||
-				strings.Contains(strings.ToLower(content), "issue"),
-			Summary:    content,
-			Severity:   "warning",
-			Confidence: 0.5,
+		if err := json.Unmarshal([]byte(content), &analysis); err != nil {
+			// Log the parsing error for debugging
+			fmt.Fprintf(os.Stderr, "Warning: Failed to parse LLM JSON response: %v\nRaw response: %s\n", err, content)
+			
+			// If JSON parsing fails, create a basic analysis from the text
+			analysis = llmAnalysis{
+				IssueFound: strings.Contains(strings.ToLower(content), "error") ||
+					strings.Contains(strings.ToLower(content), "fail") ||
+					strings.Contains(strings.ToLower(content), "issue"),
+				Summary:    content,
+				Severity:   "warning",
+				Confidence: 0.5,
+			}
 		}
 	}
 
