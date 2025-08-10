@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
@@ -95,6 +96,18 @@ func (a *AnalyzeLLM) collectFiles(getFile getCollectedFileContents, findFiles ge
 	if a.analyzer.MaxFiles > 0 {
 		maxFiles = a.analyzer.MaxFiles
 	}
+	
+	// Default priority patterns if not specified
+	priorityPatterns := a.analyzer.PriorityPatterns
+	if len(priorityPatterns) == 0 {
+		priorityPatterns = []string{"error", "fatal", "exception", "panic", "crash", "OOM", "kill", "fail"}
+	}
+	
+	// Default skip patterns
+	skipPatterns := a.analyzer.SkipPatterns
+	if len(skipPatterns) == 0 {
+		skipPatterns = []string{"*.png", "*.jpg", "*.jpeg", "*.gif", "*.ico", "*.svg", "*.zip", "*.tar", "*.gz"}
+	}
 
 	// If specific file pattern is provided
 	if a.analyzer.FileName != "" || a.analyzer.CollectorName != "" {
@@ -112,17 +125,48 @@ func (a *AnalyzeLLM) collectFiles(getFile getCollectedFileContents, findFiles ge
 			return nil, errors.Wrap(err, "failed to find files")
 		}
 
+		// Score and sort files if using smart selection
+		type scoredFile struct {
+			path    string
+			content []byte
+			score   int
+		}
+		
+		var scoredFiles []scoredFile
 		for filePath, content := range matchingFiles {
+			// Skip files based on patterns
+			if a.shouldSkipFile(filePath, skipPatterns) {
+				continue
+			}
+			
+			// Skip binary files
+			if isBinaryFile(content) {
+				continue
+			}
+			
+			score := a.fileScore(filePath, content, priorityPatterns)
+			scoredFiles = append(scoredFiles, scoredFile{
+				path:    filePath,
+				content: content,
+				score:   score,
+			})
+		}
+		
+		// Sort by score (highest first)
+		sort.Slice(scoredFiles, func(i, j int) bool {
+			return scoredFiles[i].score > scoredFiles[j].score
+		})
+		
+		// Add files up to limits
+		for _, sf := range scoredFiles {
 			if len(files) >= maxFiles {
 				break
 			}
-
-			if totalSize+len(content) > maxSize {
+			if totalSize+len(sf.content) > maxSize {
 				break
 			}
-
-			files[filePath] = string(content)
-			totalSize += len(content)
+			files[sf.path] = string(sf.content)
+			totalSize += len(sf.content)
 		}
 	} else {
 		// Default: get some common log files
@@ -184,12 +228,19 @@ type openAIResponse struct {
 }
 
 type llmAnalysis struct {
-	IssueFound bool    `json:"issue_found"`
-	Summary    string  `json:"summary"`
-	Issue      string  `json:"issue"`
-	Solution   string  `json:"solution"`
-	Severity   string  `json:"severity"` // "critical", "warning", "info"
-	Confidence float64 `json:"confidence"`
+	IssueFound    bool     `json:"issue_found"`
+	Summary       string   `json:"summary"`
+	Issue         string   `json:"issue"`
+	Solution      string   `json:"solution"`
+	Severity      string   `json:"severity"` // "critical", "warning", "info"
+	Confidence    float64  `json:"confidence"`
+	// Enhanced fields for more actionable output
+	Commands      []string `json:"commands,omitempty"`       // kubectl commands to run
+	Documentation []string `json:"documentation,omitempty"` // relevant doc links
+	RootCause     string   `json:"root_cause,omitempty"`     // identified root cause
+	AffectedPods  []string `json:"affected_pods,omitempty"`  // list of affected resources
+	NextSteps     []string `json:"next_steps,omitempty"`     // ordered action items
+	RelatedIssues []string `json:"related_issues,omitempty"` // other potential problems
 }
 
 func (a *AnalyzeLLM) callLLM(apiKey, problemDescription string, files map[string]string) (*llmAnalysis, error) {
@@ -203,7 +254,13 @@ func (a *AnalyzeLLM) callLLM(apiKey, problemDescription string, files map[string
 	promptBuilder.WriteString("- issue (string): detailed description of the issue if found\n")
 	promptBuilder.WriteString("- solution (string): recommended solution if an issue was found\n")
 	promptBuilder.WriteString("- severity (string): 'critical', 'warning', or 'info'\n")
-	promptBuilder.WriteString("- confidence (number): confidence level from 0.0 to 1.0\n\n")
+	promptBuilder.WriteString("- confidence (number): confidence level from 0.0 to 1.0\n")
+	promptBuilder.WriteString("- commands (array): kubectl commands that could help resolve the issue\n")
+	promptBuilder.WriteString("- documentation (array): relevant Kubernetes documentation URLs\n")
+	promptBuilder.WriteString("- root_cause (string): the identified root cause of the problem\n")
+	promptBuilder.WriteString("- affected_pods (array): list of affected pod names\n")
+	promptBuilder.WriteString("- next_steps (array): ordered list of recommended actions\n")
+	promptBuilder.WriteString("- related_issues (array): other potential problems found\n\n")
 	promptBuilder.WriteString("Files to analyze:\n\n")
 
 	for path, content := range files {
@@ -317,13 +374,43 @@ func (a *AnalyzeLLM) mapToOutcomes(analysis *llmAnalysis) []*AnalyzeResult {
 		Title: a.Title(),
 	}
 
-	// Build message with template variables
+	// Build enhanced message with all available information
 	message := analysis.Summary
+	if analysis.RootCause != "" {
+		message = fmt.Sprintf("%s\n\nRoot Cause: %s", message, analysis.RootCause)
+	}
 	if analysis.Issue != "" {
 		message = fmt.Sprintf("%s\n\nIssue: %s", message, analysis.Issue)
 	}
 	if analysis.Solution != "" {
 		message = fmt.Sprintf("%s\n\nSolution: %s", message, analysis.Solution)
+	}
+	if len(analysis.NextSteps) > 0 {
+		message = fmt.Sprintf("%s\n\nNext Steps:", message)
+		for i, step := range analysis.NextSteps {
+			message = fmt.Sprintf("%s\n%d. %s", message, i+1, step)
+		}
+	}
+	if len(analysis.Commands) > 0 {
+		message = fmt.Sprintf("%s\n\nRecommended Commands:", message)
+		for _, cmd := range analysis.Commands {
+			message = fmt.Sprintf("%s\n  %s", message, cmd)
+		}
+	}
+	if len(analysis.AffectedPods) > 0 {
+		message = fmt.Sprintf("%s\n\nAffected Pods: %s", message, strings.Join(analysis.AffectedPods, ", "))
+	}
+	if len(analysis.Documentation) > 0 {
+		message = fmt.Sprintf("%s\n\nRelevant Documentation:", message)
+		for _, doc := range analysis.Documentation {
+			message = fmt.Sprintf("%s\n  - %s", message, doc)
+		}
+	}
+	if len(analysis.RelatedIssues) > 0 {
+		message = fmt.Sprintf("%s\n\nRelated Issues:", message)
+		for _, issue := range analysis.RelatedIssues {
+			message = fmt.Sprintf("%s\n  - %s", message, issue)
+		}
 	}
 
 	// Map to outcomes based on analysis
@@ -353,9 +440,9 @@ func (a *AnalyzeLLM) mapToOutcomes(analysis *llmAnalysis) []*AnalyzeResult {
 					result.IsWarn = false
 					result.IsPass = false
 					if outcome.Fail.Message != "" {
-						result.Message = strings.ReplaceAll(outcome.Fail.Message, "{{.Summary}}", analysis.Summary)
-						result.Message = strings.ReplaceAll(result.Message, "{{.Issue}}", analysis.Issue)
-						result.Message = strings.ReplaceAll(result.Message, "{{.Solution}}", analysis.Solution)
+						result.Message = a.replaceTemplateVars(outcome.Fail.Message, analysis)
+					} else {
+						result.Message = message
 					}
 					break
 				}
@@ -365,9 +452,9 @@ func (a *AnalyzeLLM) mapToOutcomes(analysis *llmAnalysis) []*AnalyzeResult {
 					result.IsWarn = true
 					result.IsPass = false
 					if outcome.Warn.Message != "" {
-						result.Message = strings.ReplaceAll(outcome.Warn.Message, "{{.Summary}}", analysis.Summary)
-						result.Message = strings.ReplaceAll(result.Message, "{{.Issue}}", analysis.Issue)
-						result.Message = strings.ReplaceAll(result.Message, "{{.Solution}}", analysis.Solution)
+						result.Message = a.replaceTemplateVars(outcome.Warn.Message, analysis)
+					} else {
+						result.Message = message
 					}
 					break
 				}
@@ -386,4 +473,201 @@ func (a *AnalyzeLLM) mapToOutcomes(analysis *llmAnalysis) []*AnalyzeResult {
 	}
 
 	return []*AnalyzeResult{result}
+}
+
+// GenerateMarkdownReport creates a detailed Markdown report from the analysis
+func (a *AnalyzeLLM) GenerateMarkdownReport(analysis *llmAnalysis) string {
+	var report strings.Builder
+	
+	report.WriteString("# LLM Analysis Report\n\n")
+	
+	// Executive Summary
+	report.WriteString("## Executive Summary\n")
+	report.WriteString(fmt.Sprintf("**Status:** %s\n", func() string {
+		if !analysis.IssueFound {
+			return "✅ No Issues Found"
+		}
+		switch analysis.Severity {
+		case "critical":
+			return "🔴 Critical Issue"
+		case "warning":
+			return "🟡 Warning"
+		default:
+			return "ℹ️ Information"
+		}
+	}()))
+	report.WriteString(fmt.Sprintf("**Confidence:** %.0f%%\n\n", analysis.Confidence*100))
+	report.WriteString(fmt.Sprintf("%s\n\n", analysis.Summary))
+	
+	if analysis.IssueFound {
+		// Root Cause
+		if analysis.RootCause != "" {
+			report.WriteString("## Root Cause Analysis\n")
+			report.WriteString(fmt.Sprintf("%s\n\n", analysis.RootCause))
+		}
+		
+		// Issue Details
+		if analysis.Issue != "" {
+			report.WriteString("## Issue Details\n")
+			report.WriteString(fmt.Sprintf("%s\n\n", analysis.Issue))
+		}
+		
+		// Solution
+		if analysis.Solution != "" {
+			report.WriteString("## Recommended Solution\n")
+			report.WriteString(fmt.Sprintf("%s\n\n", analysis.Solution))
+		}
+		
+		// Next Steps
+		if len(analysis.NextSteps) > 0 {
+			report.WriteString("## Action Plan\n")
+			for i, step := range analysis.NextSteps {
+				report.WriteString(fmt.Sprintf("%d. %s\n", i+1, step))
+			}
+			report.WriteString("\n")
+		}
+		
+		// Commands
+		if len(analysis.Commands) > 0 {
+			report.WriteString("## Recommended Commands\n")
+			report.WriteString("```bash\n")
+			for _, cmd := range analysis.Commands {
+				report.WriteString(fmt.Sprintf("%s\n", cmd))
+			}
+			report.WriteString("```\n\n")
+		}
+		
+		// Affected Resources
+		if len(analysis.AffectedPods) > 0 {
+			report.WriteString("## Affected Resources\n")
+			report.WriteString("### Pods\n")
+			for _, pod := range analysis.AffectedPods {
+				report.WriteString(fmt.Sprintf("- %s\n", pod))
+			}
+			report.WriteString("\n")
+		}
+		
+		// Related Issues
+		if len(analysis.RelatedIssues) > 0 {
+			report.WriteString("## Related Issues\n")
+			for _, issue := range analysis.RelatedIssues {
+				report.WriteString(fmt.Sprintf("- %s\n", issue))
+			}
+			report.WriteString("\n")
+		}
+		
+		// Documentation
+		if len(analysis.Documentation) > 0 {
+			report.WriteString("## References\n")
+			for _, doc := range analysis.Documentation {
+				report.WriteString(fmt.Sprintf("- [%s](%s)\n", doc, doc))
+			}
+			report.WriteString("\n")
+		}
+	}
+	
+	report.WriteString("---\n")
+	report.WriteString("*Generated by Troubleshoot LLM Analyzer*\n")
+	
+	return report.String()
+}
+
+// fileScore calculates a relevance score for a file based on its path and content
+func (a *AnalyzeLLM) fileScore(filePath string, content []byte, priorityPatterns []string) int {
+	score := 0
+	contentStr := strings.ToLower(string(content))
+	filePathLower := strings.ToLower(filePath)
+	
+	// Check for priority patterns in content and filename
+	for _, pattern := range priorityPatterns {
+		patternLower := strings.ToLower(pattern)
+		// Higher score for content matches
+		score += strings.Count(contentStr, patternLower) * 2
+		// Lower score for filename matches
+		if strings.Contains(filePathLower, patternLower) {
+			score += 5
+		}
+	}
+	
+	// Boost score for log files
+	if strings.HasSuffix(filePathLower, ".log") {
+		score += 10
+	}
+	
+	// Slightly lower score for JSON (structured but less readable)
+	if strings.HasSuffix(filePathLower, ".json") {
+		score += 5
+	}
+	
+	// Check for recent timestamps in content (simple heuristic)
+	if strings.Contains(contentStr, "2024") || strings.Contains(contentStr, "2025") {
+		score += 3
+	}
+	
+	return score
+}
+
+// shouldSkipFile checks if a file should be skipped based on patterns
+func (a *AnalyzeLLM) shouldSkipFile(filePath string, skipPatterns []string) bool {
+	for _, pattern := range skipPatterns {
+		matched, err := filepath.Match(pattern, filepath.Base(filePath))
+		if err == nil && matched {
+			return true
+		}
+	}
+	
+	// Check if file appears to be binary (simple heuristic)
+	return false
+}
+
+// isBinaryFile performs a simple check to see if content appears to be binary
+func isBinaryFile(content []byte) bool {
+	if len(content) == 0 {
+		return false
+	}
+	
+	// Check first 512 bytes for null bytes (common in binary files)
+	checkLen := 512
+	if len(content) < checkLen {
+		checkLen = len(content)
+	}
+	
+	nullCount := 0
+	for i := 0; i < checkLen; i++ {
+		if content[i] == 0 {
+			nullCount++
+		}
+	}
+	
+	// If more than 10% null bytes, probably binary
+	return nullCount > checkLen/10
+}
+
+// replaceTemplateVars replaces all template variables with actual values from analysis
+func (a *AnalyzeLLM) replaceTemplateVars(template string, analysis *llmAnalysis) string {
+	result := template
+	
+	// Replace basic fields
+	result = strings.ReplaceAll(result, "{{.Summary}}", analysis.Summary)
+	result = strings.ReplaceAll(result, "{{.Issue}}", analysis.Issue)
+	result = strings.ReplaceAll(result, "{{.Solution}}", analysis.Solution)
+	result = strings.ReplaceAll(result, "{{.RootCause}}", analysis.RootCause)
+	result = strings.ReplaceAll(result, "{{.Severity}}", analysis.Severity)
+	result = strings.ReplaceAll(result, "{{.Confidence}}", fmt.Sprintf("%.0f%%", analysis.Confidence*100))
+	
+	// Replace array fields
+	if len(analysis.Commands) > 0 {
+		result = strings.ReplaceAll(result, "{{.Commands}}", strings.Join(analysis.Commands, "; "))
+	}
+	if len(analysis.AffectedPods) > 0 {
+		result = strings.ReplaceAll(result, "{{.AffectedPods}}", strings.Join(analysis.AffectedPods, ", "))
+	}
+	if len(analysis.NextSteps) > 0 {
+		result = strings.ReplaceAll(result, "{{.NextSteps}}", strings.Join(analysis.NextSteps, "; "))
+	}
+	if len(analysis.RelatedIssues) > 0 {
+		result = strings.ReplaceAll(result, "{{.RelatedIssues}}", strings.Join(analysis.RelatedIssues, "; "))
+	}
+	
+	return result
 }

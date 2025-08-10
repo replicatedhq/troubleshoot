@@ -311,11 +311,15 @@ type Analyze struct {
 }
 
 type LLMAnalyze struct {
-	AnalyzeMeta   `json:",inline" yaml:",inline"`
-	Outcomes      []*Outcome `json:"outcomes" yaml:"outcomes"`
-	CollectorName string     `json:"collectorName,omitempty" yaml:"collectorName,omitempty"`
-	FileName      string     `json:"fileName,omitempty" yaml:"fileName,omitempty"`
-	MaxFiles      int        `json:"maxFiles,omitempty" yaml:"maxFiles,omitempty"`
-	MaxSize       int        `json:"maxSize,omitempty" yaml:"maxSize,omitempty"`
-	Model         string     `json:"model,omitempty" yaml:"model,omitempty"`
+	AnalyzeMeta      `json:",inline" yaml:",inline"`
+	Outcomes         []*Outcome `json:"outcomes" yaml:"outcomes"`
+	CollectorName    string     `json:"collectorName,omitempty" yaml:"collectorName,omitempty"`
+	FileName         string     `json:"fileName,omitempty" yaml:"fileName,omitempty"`
+	MaxFiles         int        `json:"maxFiles,omitempty" yaml:"maxFiles,omitempty"`
+	MaxSize          int        `json:"maxSize,omitempty" yaml:"maxSize,omitempty"`
+	Model            string     `json:"model,omitempty" yaml:"model,omitempty"`
+	// Smart file selection fields
+	PriorityPatterns []string   `json:"priorityPatterns,omitempty" yaml:"priorityPatterns,omitempty"`
+	SkipPatterns     []string   `json:"skipPatterns,omitempty" yaml:"skipPatterns,omitempty"`
+	PreferRecent     bool       `json:"preferRecent,omitempty" yaml:"preferRecent,omitempty"`
 }

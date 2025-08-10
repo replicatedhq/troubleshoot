@@ -85,7 +85,12 @@ spec:
                 AI Analysis Results:
                 {{.Summary}}
                 
+                Root Cause: {{.RootCause}}
                 Issue: {{.Issue}}
                 Solution: {{.Solution}}
+                
+                Affected Pods: {{.AffectedPods}}
+                Next Steps: {{.NextSteps}}
+                Commands: {{.Commands}}
           - pass:
               message: "AI analysis found no significant issues"
