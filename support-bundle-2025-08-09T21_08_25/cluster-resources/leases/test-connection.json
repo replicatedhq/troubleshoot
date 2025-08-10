@@ -1,8 +1,0 @@
-{
-  "kind": "LeaseList",
-  "apiVersion": "coordination.k8s.io/v1",
-  "metadata": {
-    "resourceVersion": "8769"
-  },
-  "items": null
-}
