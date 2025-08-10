@@ -1,12 +1,15 @@
 package cli
 
 import (
+	"bufio"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"os"
+	"strings"
 
+	"github.com/mattn/go-isatty"
 	"github.com/replicatedhq/troubleshoot/internal/util"
 	analyzer "github.com/replicatedhq/troubleshoot/pkg/analyze"
 	"github.com/replicatedhq/troubleshoot/pkg/convert"
@@ -31,6 +34,25 @@ func Analyze() *cobra.Command {
 			analyzerSpec, err := downloadAnalyzerSpec(specPath)
 			if err != nil {
 				return err
+			}
+
+			// Handle problem description for LLM analyzer
+			problemDescription := v.GetString("problem-description")
+			if problemDescription == "" && isatty.IsTerminal(os.Stdin.Fd()) {
+				// Check if spec contains LLM analyzer
+				if strings.Contains(analyzerSpec, "llm:") {
+					fmt.Print("Please describe the problem you're experiencing: ")
+					reader := bufio.NewReader(os.Stdin)
+					problemDescription, err = reader.ReadString('\n')
+					if err == nil {
+						problemDescription = strings.TrimSpace(problemDescription)
+					}
+				}
+			}
+			
+			// Set the global variable for the LLM analyzer to use
+			if problemDescription != "" {
+				analyzer.GlobalProblemDescription = problemDescription
 			}
 
 			result, err := analyzer.DownloadAndAnalyze(v.GetString("bundle"), analyzerSpec)
@@ -71,6 +93,7 @@ func Analyze() *cobra.Command {
 	cmd.Flags().String("compatibility", "", "output compatibility mode: support-bundle")
 	cmd.Flags().MarkHidden("compatibility")
 	cmd.Flags().Bool("quiet", false, "enable/disable error messaging and only show parseable output")
+	cmd.Flags().String("problem-description", "", "describe the problem for LLM analysis (interactive prompt if not provided)")
 
 	return cmd
 }
