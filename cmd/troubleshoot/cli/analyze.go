@@ -50,9 +50,9 @@ func Analyze() *cobra.Command {
 				}
 			}
 			
-			// Set the global variable for the LLM analyzer to use
+			// Set problem description via environment variable for LLM analyzer
 			if problemDescription != "" {
-				analyzer.GlobalProblemDescription = problemDescription
+				os.Setenv("PROBLEM_DESCRIPTION", problemDescription)
 			}
 
 			result, err := analyzer.DownloadAndAnalyze(v.GetString("bundle"), analyzerSpec)

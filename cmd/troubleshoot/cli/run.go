@@ -80,8 +80,10 @@ func runTroubleshoot(v *viper.Viper, args []string) error {
 			problemDescription = strings.TrimSpace(problemDescription)
 		}
 
-		// Set the global variable for the LLM analyzer to use
-		analyzer.GlobalProblemDescription = problemDescription
+		// Set problem description via environment variable for LLM analyzer
+		if problemDescription != "" {
+			os.Setenv("PROBLEM_DESCRIPTION", problemDescription)
+		}
 	}
 
 	// For --dry-run, we want to print the yaml and exit
