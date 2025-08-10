@@ -47,89 +47,59 @@ And see our other tool [sbctl](https://github.com/replicatedhq/sbctl) that makes
 
 ## LLM Analyzer (AI-Powered Analysis)
 
-The LLM analyzer uses artificial intelligence to automatically analyze support bundle contents and identify issues without pre-written deterministic rules. This enables dynamic problem detection based on actual log patterns and system state.
+The LLM analyzer uses OpenAI to automatically analyze Kubernetes logs and identify issues. It understands context, finds root causes, and correlates problems across multiple components.
 
-### Prerequisites
+### What's Different
 
-- OpenAI API key set as environment variable: `export OPENAI_API_KEY=your-api-key`
-- Supported models: `gpt-5`, `gpt-4o-mini`, `gpt-4o`, `gpt-4-turbo`, `gpt-3.5-turbo`
+- **No rules to write** - AI understands logs and errors automatically
+- **Finds root causes** - Identifies why problems occur, not just symptoms  
+- **Correlates issues** - Understands relationships (e.g., DB crash → app failures)
+- **Natural language** - Describe problems in plain English
 
-### Basic Usage
+### Setup
 
-1. **Add LLM analyzer to your spec:**
+1. **Get an OpenAI API key** from [platform.openai.com](https://platform.openai.com)
+2. **Create a `.env` file**:
+   ```bash
+   echo 'OPENAI_API_KEY=sk-...' > .env
+   ```
+   The tool automatically loads `.env` files.
+
+### How to Use
+
+Add the `llm` analyzer to your spec:
 
 ```yaml
 apiVersion: troubleshoot.sh/v1beta2
 kind: SupportBundle
-metadata:
-  name: my-app-support
 spec:
   collectors:
     - logs:
-        name: pod-logs
+        name: app-logs
         namespace: default
   analyzers:
     - llm:
-        checkName: "AI Problem Detection"
-        collectorName: "pod-logs"
-        fileName: "*.log"
-        # model defaults to gpt-4o-mini, override for specific needs:
-        # model: "gpt-5"  # For complex issues requiring advanced reasoning
-        # useStructuredOutput: true  # Default: true for supported models (gpt-4o, gpt-4o-mini)
+        checkName: "AI Analysis"
+        collectorName: "app-logs"
+        fileName: "**/*.log"  # Use **/* for nested dirs
+        model: "gpt-4o-mini"  # Cost-effective, ~$0.01 per analysis
         outcomes:
           - fail:
               when: "issue_found"
-              message: "Issue detected: {{.Summary}}"
-          - warn:
-              when: "potential_issue"
-              message: "Warning: {{.Summary}}"
+              message: "Found: {{.Summary}}"
           - pass:
               message: "No issues detected"
 ```
 
-2. **Run with problem description:**
-
+Run with problem description:
 ```bash
-# Interactive mode (prompts for problem description)
-kubectl support-bundle ./your-spec.yaml
-
-# With problem description flag
-kubectl support-bundle ./your-spec.yaml --problem-description "My pods keep crashing and restarting"
+./bin/support-bundle spec.yaml --problem-description "App keeps crashing"
 ```
 
-### Re-analyzing Existing Bundles
-
-You can re-analyze previously collected support bundles with different problem descriptions:
-
+Or re-analyze existing bundles:
 ```bash
-# Interactive prompt for problem description
-kubectl support-bundle analyze --bundle support-bundle-2024-01-20T10-30-00.tar.gz
-
-# With specific problem description
-kubectl support-bundle analyze --bundle support-bundle-2024-01-20T10-30-00.tar.gz \
-  --problem-description "Application performance is degraded"
+./bin/analyze bundle.tar.gz --analyzers spec.yaml
 ```
-
-### Configuration Options
-
-- **model**: AI model to use (default: gpt-4o-mini, others: gpt-5, gpt-4o, etc.)
-- **maxFiles**: Maximum number of files to analyze (default: 20)
-- **maxSize**: Maximum total size of files in KB (default: 1024KB/1MB)
-- **fileName**: Pattern to match files (e.g., "*.log", "error-*")
-- **collectorName**: Name of the collector to analyze files from
-- **exclude**: Boolean to exclude this analyzer (default: false)
-
-#### Smart File Selection (New)
-- **priorityPatterns**: Keywords to prioritize (default: error, fatal, exception, panic, crash, OOM)
-- **skipPatterns**: File patterns to skip (default: images and archives)
-- **preferRecent**: Prioritize recent files based on timestamps (default: false)
-
-#### Structured Output (New)
-- **useStructuredOutput**: Use OpenAI's structured outputs for guaranteed valid JSON (default: true for gpt-4o/gpt-4o-mini, false for older models)
-
-#### Advanced Configuration
-- **problemDescription**: Set problem description in the analyzer spec instead of using CLI flag
-- **apiEndpoint**: Override API endpoint for testing, proxies, or different regions (default: https://api.openai.com/v1/chat/completions)
 
 ### Model Selection Guide
 
