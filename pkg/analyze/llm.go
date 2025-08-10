@@ -87,11 +87,11 @@ func (a *AnalyzeLLM) Analyze(getFile getCollectedFileContents, findFiles getChil
 func (a *AnalyzeLLM) collectFiles(getFile getCollectedFileContents, findFiles getChildCollectedFileContents) (map[string]string, error) {
 	files := make(map[string]string)
 	totalSize := 0
-	maxSize := 500 * 1024 // 500KB default
+	maxSize := 1024 * 1024 // 1MB default
 	if a.analyzer.MaxSize > 0 {
 		maxSize = a.analyzer.MaxSize * 1024 // Convert from KB to bytes
 	}
-	maxFiles := 10
+	maxFiles := 20 // Increased default for more comprehensive analysis
 	if a.analyzer.MaxFiles > 0 {
 		maxFiles = a.analyzer.MaxFiles
 	}
@@ -208,16 +208,16 @@ func (a *AnalyzeLLM) callLLM(apiKey, problemDescription string, files map[string
 
 	for path, content := range files {
 		promptBuilder.WriteString(fmt.Sprintf("=== %s ===\n", path))
-		// Truncate very long files
-		if len(content) > 10000 {
-			content = content[:10000] + "\n... (truncated)"
+		// Truncate very long files (20K chars for more context)
+		if len(content) > 20000 {
+			content = content[:20000] + "\n... (truncated)"
 		}
 		promptBuilder.WriteString(content)
 		promptBuilder.WriteString("\n\n")
 	}
 
-	// Determine model
-	model := "gpt-5"
+	// Determine model (default to cost-effective option)
+	model := "gpt-4o-mini"
 	if a.analyzer.Model != "" {
 		model = a.analyzer.Model
 	}

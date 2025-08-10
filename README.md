@@ -73,8 +73,8 @@ spec:
         checkName: "AI Problem Detection"
         collectorName: "pod-logs"
         fileName: "*.log"
-        model: "gpt-5"  # or gpt-4o-mini for cost efficiency
-        maxFiles: 10     # Limit files to prevent token overflow
+        # model defaults to gpt-4o-mini, override for specific needs:
+        # model: "gpt-5"  # For complex issues requiring advanced reasoning
         outcomes:
           - fail:
               when: "issue_found"
@@ -111,18 +111,18 @@ kubectl support-bundle analyze --bundle support-bundle-2024-01-20T10-30-00.tar.g
 
 ### Configuration Options
 
-- **model**: AI model to use (gpt-5, gpt-4o-mini, gpt-4o, etc.)
-- **maxFiles**: Maximum number of files to analyze (prevents token limits)
-- **maxSize**: Maximum total size of files in KB (default: 500KB)
+- **model**: AI model to use (default: gpt-4o-mini, others: gpt-5, gpt-4o, etc.)
+- **maxFiles**: Maximum number of files to analyze (default: 20)
+- **maxSize**: Maximum total size of files in KB (default: 1024KB/1MB)
 - **fileName**: Pattern to match files (e.g., "*.log", "error-*")
 - **collectorName**: Name of the collector to analyze files from
 - **exclude**: Boolean to exclude this analyzer (default: false)
 
 ### Model Selection Guide
 
-- **gpt-5**: Most capable, best for complex issues
-- **gpt-4o**: Good balance of capability and cost
-- **gpt-4o-mini**: Cost-effective with 128K context window
+- **gpt-4o-mini**: (Default) Cost-effective with 128K context window, recommended for most use cases
+- **gpt-5**: Most capable, best for complex issues requiring advanced reasoning
+- **gpt-4o**: Good balance of capability and cost for medium complexity
 - **gpt-3.5-turbo**: Budget option for simple analysis
 
 ### Examples

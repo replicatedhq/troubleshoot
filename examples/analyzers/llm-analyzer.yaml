@@ -76,8 +76,8 @@ spec:
         checkName: "Re-analysis with AI"
         collectorName: "pod-logs"
         fileName: "*.log"
-        model: "gpt-5"  # Use more powerful model for complex issues
-        maxFiles: 20
+        model: "gpt-5"  # Override default (gpt-4o-mini) for complex issues
+        maxFiles: 30  # Override default (20) for more files
         outcomes:
           - fail:
               when: "issue_found"

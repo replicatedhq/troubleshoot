@@ -216,7 +216,7 @@ func TestAnalyzeLLM_CallLLM_Success(t *testing.T) {
 		var req map[string]interface{}
 		err := json.NewDecoder(r.Body).Decode(&req)
 		require.NoError(t, err)
-		assert.Equal(t, "gpt-5", req["model"])
+		assert.Equal(t, "gpt-4o-mini", req["model"])
 
 		// Send mock response
 		response := openAIResponse{
