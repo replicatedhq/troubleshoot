@@ -24,6 +24,7 @@ require (
 	github.com/hashicorp/go-getter v1.7.8
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/jackc/pgx/v5 v5.7.5
+	github.com/joho/godotenv v1.5.1
 	github.com/longhorn/go-iscsi-helper v0.0.0-20210330030558-49a327fb024e
 	github.com/manifoldco/promptui v0.9.0
 	github.com/mattn/go-isatty v0.0.20

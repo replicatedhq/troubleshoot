@@ -12,9 +12,6 @@ Before starting the demo, ensure you have:
 
 ## Introduction (1 minute)
 
-**What to say:**
-> "Troubleshoot.sh now includes an AI-powered analyzer that uses Large Language Models to automatically identify issues in Kubernetes applications. Instead of writing complex rules or patterns, the LLM analyzer reads your logs, understands the context, and identifies root causes automatically."
-
 **Key points:**
 - No need to anticipate every failure mode
 - AI understands context and correlations
@@ -22,9 +19,6 @@ Before starting the demo, ensure you have:
 - Uses cost-effective models (gpt-4o-mini by default)
 
 ## Part 1: Setup (2 minutes)
-
-**What to say:**
-> "For this demo, I'm using the development build of Troubleshoot.sh with our new LLM analyzer. End users would install this as a kubectl plugin, but we're using the local binary to showcase the latest features."
 
 ### Build the project (if not already done)
 
@@ -56,13 +50,7 @@ echo "API key configured: ${OPENAI_API_KEY:0:10}..."
 kind create cluster --name demo-cluster
 ```
 
-**What to say:**
-> "That's all the setup required. The LLM analyzer is now ready to use."
-
 ## Part 2: Deploy a Failing Application (3 minutes)
-
-**What to say:**
-> "Let's deploy a sample application that has multiple issues - the kind of complex scenario that's difficult to debug manually."
 
 ### Deploy the demo application
 
@@ -88,13 +76,7 @@ kubectl logs -n demo-app -l app=web --tail=10
 kubectl logs -n demo-app -l app=db --tail=10
 ```
 
-**What to say:**
-> "We have multiple pods failing with different issues. The web app can't connect to the database, and the database is being OOMKilled. In a real scenario, these could be spread across many namespaces with hundreds of log lines."
-
 ## Part 3: Collect & Analyze with LLM (4 minutes)
-
-**What to say:**
-> "Now let's use Troubleshoot.sh with the LLM analyzer to automatically identify these issues."
 
 ### Create the support bundle specification
 
@@ -115,13 +97,13 @@ spec:
           maxLines: 1000
     - events:
         namespace: demo-app
-  
+
   analyzers:
     # AI-Powered Analyzer
     - llm:
         checkName: "AI Diagnostic Analysis"
         collectorName: "demo-logs"
-        fileName: "*"
+        fileName: "**/*.log"
         model: "gpt-4o-mini"
         maxFiles: 10
         priorityPatterns:
@@ -135,22 +117,22 @@ spec:
               message: |
                 AI Analysis Found Critical Issues:
                 {{.Summary}}
-                
+
                 Root Cause: {{.RootCause}}
                 Affected Components: {{.AffectedPods}}
           - pass:
               message: "No critical issues detected"
-    
+
     # Traditional analyzer for comparison
     - deploymentStatus:
-        name: demo-app
+        name: web-app
         namespace: demo-app
         outcomes:
           - fail:
               when: "< 1"
-              message: "Deployment has no ready replicas"
+              message: "Web app deployment has no ready replicas"
           - pass:
-              message: "Deployment is running"
+              message: "Web app deployment is running"
 EOF
 ```
 
@@ -179,13 +161,13 @@ Analyzing support bundle...
 
 FAIL: AI Diagnostic Analysis
 AI Analysis Found Critical Issues:
-Critical database and application failures detected. Database pod is experiencing 
-OOMKilled events due to insufficient memory limits (10Mi), preventing it from 
-starting. This causes the web application to fail as it cannot establish database 
+Critical database and application failures detected. Database pod is experiencing
+OOMKilled events due to insufficient memory limits (10Mi), preventing it from
+starting. This causes the web application to fail as it cannot establish database
 connections.
 
-Root Cause: Database container memory limit (10Mi) is insufficient for PostgreSQL 
-startup, causing immediate OOMKill. This cascades to web app failures due to 
+Root Cause: Database container memory limit (10Mi) is insufficient for PostgreSQL
+startup, causing immediate OOMKill. This cascades to web app failures due to
 missing database dependency.
 Affected Components: database-xxx, web-app-xxx, web-app-yyy
 
@@ -194,13 +176,7 @@ FAIL: Deployment has no ready replicas
 Support bundle written to support-bundle-2024-12-10T120000.tar.gz
 ```
 
-**What to say:**
-> "Notice how the LLM analyzer not only identified both issues but also understood the relationship between them. It recognized that the database OOM is the root cause that triggers the cascade of web app failures. Traditional analyzers would only report symptoms."
-
 ## Part 4: Re-analyze an Existing Bundle (3 minutes)
-
-**What to say:**
-> "One powerful feature is the ability to re-analyze existing bundles with different contexts or questions."
 
 ### Create an analyzer-only specification
 
@@ -224,7 +200,7 @@ spec:
               message: |
                 Memory Analysis Results:
                 {{.Summary}}
-                
+
                 Recommendations: {{.Solution}}
           - pass:
               message: "No memory issues found"
@@ -265,9 +241,6 @@ EOF
 ./bin/analyze support-bundle-*.tar.gz \
   --analyzers security-check.yaml
 ```
-
-**What to say:**
-> "The same bundle can be re-analyzed from different perspectives. Support teams can ask specific questions without re-collecting data from the cluster."
 
 ## Cleanup (30 seconds)
 

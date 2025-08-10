@@ -39,10 +39,11 @@ func (a *AnalyzeLLM) Analyze(getFile getCollectedFileContents, findFiles getChil
 	apiKey := os.Getenv("OPENAI_API_KEY")
 	
 	if apiKey == "" {
+		// Return an error result so it shows up in the output
 		return []*AnalyzeResult{{
 			Title:   a.Title(),
 			IsFail:  true,
-			Message: "OPENAI_API_KEY environment variable is required for LLM analyzer",
+			Message: "OPENAI_API_KEY environment variable is required for LLM analyzer. Please set: export OPENAI_API_KEY=your-key",
 		}}, nil
 	}
 
