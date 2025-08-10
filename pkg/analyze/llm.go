@@ -246,22 +246,27 @@ type llmAnalysis struct {
 func (a *AnalyzeLLM) callLLM(apiKey, problemDescription string, files map[string]string) (*llmAnalysis, error) {
 	// Build prompt
 	var promptBuilder strings.Builder
-	promptBuilder.WriteString("You are analyzing a Kubernetes support bundle to identify issues.\n\n")
-	promptBuilder.WriteString(fmt.Sprintf("Problem Description: %s\n\n", problemDescription))
-	promptBuilder.WriteString("Please analyze the following files and respond with a JSON object containing:\n")
-	promptBuilder.WriteString("- issue_found (boolean): whether an issue was identified\n")
-	promptBuilder.WriteString("- summary (string): brief summary of findings\n")
-	promptBuilder.WriteString("- issue (string): detailed description of the issue if found\n")
-	promptBuilder.WriteString("- solution (string): recommended solution if an issue was found\n")
-	promptBuilder.WriteString("- severity (string): 'critical', 'warning', or 'info'\n")
-	promptBuilder.WriteString("- confidence (number): confidence level from 0.0 to 1.0\n")
-	promptBuilder.WriteString("- commands (array): kubectl commands that could help resolve the issue\n")
-	promptBuilder.WriteString("- documentation (array): relevant Kubernetes documentation URLs\n")
-	promptBuilder.WriteString("- root_cause (string): the identified root cause of the problem\n")
-	promptBuilder.WriteString("- affected_pods (array): list of affected pod names\n")
-	promptBuilder.WriteString("- next_steps (array): ordered list of recommended actions\n")
-	promptBuilder.WriteString("- related_issues (array): other potential problems found\n\n")
-	promptBuilder.WriteString("Files to analyze:\n\n")
+	fmt.Fprintf(&promptBuilder, `You are analyzing a Kubernetes support bundle to identify issues.
+
+Problem Description: %s
+
+Please analyze the following files and respond with a JSON object containing:
+- issue_found (boolean): whether an issue was identified
+- summary (string): brief summary of findings
+- issue (string): detailed description of the issue if found
+- solution (string): recommended solution if an issue was found
+- severity (string): 'critical', 'warning', or 'info'
+- confidence (number): confidence level from 0.0 to 1.0
+- commands (array): kubectl commands that could help resolve the issue
+- documentation (array): relevant Kubernetes documentation URLs
+- root_cause (string): the identified root cause of the problem
+- affected_pods (array): list of affected pod names
+- next_steps (array): ordered list of recommended actions
+- related_issues (array): other potential problems found
+
+Files to analyze:
+
+`, problemDescription)
 
 	for path, content := range files {
 		promptBuilder.WriteString(fmt.Sprintf("=== %s ===\n", path))
