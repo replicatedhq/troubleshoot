@@ -1,0 +1,90 @@
+apiVersion: troubleshoot.sh/v1beta2
+kind: SupportBundle
+metadata:
+  name: llm-analyzer-example
+spec:
+  collectors:
+    # Standard collectors
+    - clusterInfo: {}
+    - clusterResources: {}
+    
+    # Collect pod logs
+    - logs:
+        name: pod-logs
+        namespace: ""
+        limits:
+          maxLines: 10000
+    
+    # Collect events
+    - events:
+        name: cluster-events
+        namespace: ""
+  
+  analyzers:
+    # LLM Analyzer - Uses AI to analyze logs and identify issues
+    - llm:
+        checkName: "AI-Powered Problem Analysis"
+        collectorName: "pod-logs"
+        fileName: "*"  # Analyze all files in the collector
+        model: "gpt-4o-mini"  # Cost-effective model with 128K context
+        maxFiles: 10  # Limit files to prevent token overflow
+        outcomes:
+          - fail:
+              when: "issue_found"
+              message: "Critical issue detected: {{.Summary}}"
+          - warn:
+              when: "potential_issue"
+              message: "Warning: {{.Summary}}"
+          - pass:
+              message: "No issues detected by AI analysis"
+    
+    # Traditional analyzers can work alongside LLM
+    - clusterVersion:
+        outcomes:
+          - fail:
+              when: "< 1.20.0"
+              message: "Kubernetes version is too old"
+          - warn:
+              when: "< 1.25.0"
+              message: "Consider upgrading Kubernetes"
+          - pass:
+              message: "Kubernetes version is supported"
+    
+    - deploymentStatus:
+        name: default
+        namespace: default
+        outcomes:
+          - fail:
+              when: "< 1"
+              message: "No replicas are running"
+          - warn:
+              when: "< 2"
+              message: "Only one replica is running"
+          - pass:
+              message: "Deployment is healthy"
+
+---
+# Analyzer-only spec for re-analyzing existing bundles
+apiVersion: troubleshoot.sh/v1beta2
+kind: Analyzer
+metadata:
+  name: llm-reanalyzer
+spec:
+  analyzers:
+    - llm:
+        checkName: "Re-analysis with AI"
+        collectorName: "pod-logs"
+        fileName: "*.log"
+        model: "gpt-5"  # Use more powerful model for complex issues
+        maxFiles: 20
+        outcomes:
+          - fail:
+              when: "issue_found"
+              message: |
+                AI Analysis Results:
+                {{.Summary}}
+                
+                Issue: {{.Issue}}
+                Solution: {{.Solution}}
+          - pass:
+              message: "AI analysis found no significant issues"

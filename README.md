@@ -45,6 +45,92 @@ For more details on creating the custom resource files that drive support-bundle
 
 And see our other tool [sbctl](https://github.com/replicatedhq/sbctl) that makes it easier to interact with support bundles using `kubectl` commands you already know
 
+## LLM Analyzer (AI-Powered Analysis)
+
+The LLM analyzer uses artificial intelligence to automatically analyze support bundle contents and identify issues without pre-written deterministic rules. This enables dynamic problem detection based on actual log patterns and system state.
+
+### Prerequisites
+
+- OpenAI API key set as environment variable: `export OPENAI_API_KEY=your-api-key`
+- Supported models: `gpt-5`, `gpt-4o-mini`, `gpt-4o`, `gpt-4-turbo`, `gpt-3.5-turbo`
+
+### Basic Usage
+
+1. **Add LLM analyzer to your spec:**
+
+```yaml
+apiVersion: troubleshoot.sh/v1beta2
+kind: SupportBundle
+metadata:
+  name: my-app-support
+spec:
+  collectors:
+    - logs:
+        name: pod-logs
+        namespace: default
+  analyzers:
+    - llm:
+        checkName: "AI Problem Detection"
+        collectorName: "pod-logs"
+        fileName: "*.log"
+        model: "gpt-5"  # or gpt-4o-mini for cost efficiency
+        maxFiles: 10     # Limit files to prevent token overflow
+        outcomes:
+          - fail:
+              when: "issue_found"
+              message: "Issue detected: {{.Summary}}"
+          - warn:
+              when: "potential_issue"
+              message: "Warning: {{.Summary}}"
+          - pass:
+              message: "No issues detected"
+```
+
+2. **Run with problem description:**
+
+```bash
+# Interactive mode (prompts for problem description)
+kubectl support-bundle ./your-spec.yaml
+
+# With problem description flag
+kubectl support-bundle ./your-spec.yaml --problem-description "My pods keep crashing and restarting"
+```
+
+### Re-analyzing Existing Bundles
+
+You can re-analyze previously collected support bundles with different problem descriptions:
+
+```bash
+# Interactive prompt for problem description
+kubectl support-bundle analyze --bundle support-bundle-2024-01-20T10-30-00.tar.gz
+
+# With specific problem description
+kubectl support-bundle analyze --bundle support-bundle-2024-01-20T10-30-00.tar.gz \
+  --problem-description "Application performance is degraded"
+```
+
+### Configuration Options
+
+- **model**: AI model to use (gpt-5, gpt-4o-mini, gpt-4o, etc.)
+- **maxFiles**: Maximum number of files to analyze (prevents token limits)
+- **fileName**: Pattern to match files (e.g., "*.log", "error-*")
+- **collectorName**: Name of the collector to analyze files from
+- **exclude**: Boolean to exclude this analyzer (default: false)
+
+### Model Selection Guide
+
+- **gpt-5**: Most capable, best for complex issues
+- **gpt-4o**: Good balance of capability and cost
+- **gpt-4o-mini**: Cost-effective with 128K context window
+- **gpt-3.5-turbo**: Budget option for simple analysis
+
+### Examples
+
+See [examples/analyzers/llm-analyzer.yaml](examples/analyzers/llm-analyzer.yaml) for complete examples including:
+- Using LLM analyzer alongside traditional analyzers
+- Re-analyzing existing bundles
+- Different model configurations
+
 # Community
 
 For questions about using Troubleshoot, how to contribute and engaging with the project in any other way, please refer to the following resources and channels.
