@@ -8,7 +8,7 @@ Before starting the demo, ensure you have:
 - A Kubernetes cluster (Kind, Minikube, or any cluster)
 - kubectl configured to access your cluster
 - The Troubleshoot project built locally (`make build`)
-- An OpenAI API key
+- An OpenAI API key in a `.env` file
 
 ## Introduction (1 minute)
 
@@ -30,18 +30,18 @@ make build
 ls -la ./bin/support-bundle ./bin/analyze
 ```
 
-### Set your OpenAI API key
+### Set your OpenAI API key (if not already done)
 
 ```bash
-# Set the API key as an environment variable
-export OPENAI_API_KEY="sk-..."
+# If you don't have a .env file, create one:
+echo 'OPENAI_API_KEY=your-actual-key-here' > .env
 
-# Or if you have a .env file
-source .env
-
-# Verify it's set
-echo "API key configured: ${OPENAI_API_KEY:0:10}..."
+# The tool automatically loads .env files - no need to source or export!
+# Verify it exists
+ls -la .env
 ```
+
+**Note:** Troubleshoot.sh now automatically reads `.env` files in the current directory, following modern CLI tool conventions.
 
 ### Create a test cluster (if needed)
 
