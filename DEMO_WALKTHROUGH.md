@@ -144,29 +144,6 @@ EOF
 
 **Note:** End users would use `kubectl support-bundle` after installing the plugin, but we're using the local binary.
 
-### Review the results
-
-**Expected output:**
-```
-Analyzing support bundle...
-
-FAIL: AI Diagnostic Analysis
-AI Analysis Found Critical Issues:
-Critical database and application failures detected. Database pod is experiencing
-OOMKilled events due to insufficient memory limits (10Mi), preventing it from
-starting. This causes the web application to fail as it cannot establish database
-connections.
-
-Root Cause: Database container memory limit (10Mi) is insufficient for PostgreSQL
-startup, causing immediate OOMKill. This cascades to web app failures due to
-missing database dependency.
-Affected Components: database-xxx, web-app-xxx, web-app-yyy
-
-FAIL: Deployment has no ready replicas
-
-Support bundle written to support-bundle-2024-12-10T120000.tar.gz
-```
-
 ## Part 4: Re-analyze an Existing Bundle (3 minutes)
 
 ### Create an analyzer-only specification
@@ -182,7 +159,7 @@ spec:
     - llm:
         checkName: "Memory Issue Deep Dive"
         collectorName: "demo-logs"
-        fileName: "*"
+        fileName: "**/*.log"
         model: "gpt-4o-mini"
         problemDescription: "Focus on memory and resource issues only"
         outcomes:
@@ -206,33 +183,6 @@ EOF
   --analyzers reanalyze.yaml
 ```
 
-**Alternative approach with different question:**
-```bash
-# Create another analyzer focusing on different aspects
-cat <<EOF > security-check.yaml
-apiVersion: troubleshoot.sh/v1beta2
-kind: Analyzer
-metadata:
-  name: security-analysis
-spec:
-  analyzers:
-    - llm:
-        checkName: "Security and Configuration Review"
-        collectorName: "demo-logs"
-        fileName: "*"
-        problemDescription: "Are there any security misconfigurations or concerns?"
-        outcomes:
-          - warn:
-              when: "issue_found"
-              message: "Security considerations: {{.Summary}}"
-          - pass:
-              message: "No security issues identified"
-EOF
-
-./bin/analyze support-bundle-*.tar.gz \
-  --analyzers security-check.yaml
-```
-
 ## Cleanup (30 seconds)
 
 ```bash
@@ -242,35 +192,3 @@ kubectl delete namespace demo-app
 # Remove temporary files
 rm demo-support-bundle.yaml reanalyze.yaml security-check.yaml
 ```
-
-## Key Takeaways
-
-**Summarize with these points:**
-
-1. **Simple Setup**: Just need kubectl plugin and OpenAI API key
-2. **No Configuration Required**: Works out of the box with sensible defaults
-3. **Natural Language**: Describe problems in plain English
-4. **Intelligent Analysis**: AI understands context and correlations
-5. **Cost Effective**: Uses gpt-4o-mini by default (~$0.01 per analysis)
-6. **Flexible**: Can re-analyze with different questions
-7. **Powerful**: Identifies root causes, not just symptoms
-
-**Closing statement:**
-> "The LLM analyzer transforms Kubernetes troubleshooting from a manual, expertise-heavy process into an automated, intelligent analysis that anyone can use. It's like having a Kubernetes expert review all your logs and tell you exactly what's wrong."
-
-## FAQ During Demo
-
-**Q: What about sensitive data?**
-A: Troubleshoot.sh already has redaction capabilities. Sensitive data is removed before sending to the LLM.
-
-**Q: How much does it cost?**
-A: With gpt-4o-mini, typically less than $0.01 per analysis. Most logs fit within a few thousand tokens.
-
-**Q: Can it work with other AI providers?**
-A: Currently OpenAI, but the architecture supports adding other providers.
-
-**Q: What if I don't have internet access?**
-A: You can use a proxy or private OpenAI deployment. Traditional analyzers still work offline.
-
-**Q: How accurate is it?**
-A: In testing, it identifies root causes that humans often miss, especially correlation between multiple issues.
