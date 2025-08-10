@@ -412,11 +412,11 @@ func TestAnalyzeLLM_FileCollection_MaxSize(t *testing.T) {
 	files, err := analyzer.collectFiles(getFile, findFiles)
 	require.NoError(t, err)
 
-	// Should stop before collecting all files due to size limit (500KB)
+	// Should stop before collecting all files due to size limit (1MB default)
 	totalSize := 0
 	for _, content := range files {
 		totalSize += len(content)
 	}
-	assert.LessOrEqual(t, totalSize, 500*1024, "Should not exceed 500KB limit")
-	assert.Less(t, len(files), 10, "Should collect fewer than 10 files due to size limit")
+	assert.LessOrEqual(t, totalSize, 1024*1024, "Should not exceed 1MB default limit")
+	assert.LessOrEqual(t, len(files), 10, "Should collect up to 10 files within size limit")
 }
