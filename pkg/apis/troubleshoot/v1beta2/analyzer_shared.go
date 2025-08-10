@@ -324,4 +324,8 @@ type LLMAnalyze struct {
 	PreferRecent     bool       `json:"preferRecent,omitempty" yaml:"preferRecent,omitempty"`
 	// Structured output control
 	UseStructuredOutput bool   `json:"useStructuredOutput,omitempty" yaml:"useStructuredOutput,omitempty"`
+	// Problem description can be set in the analyzer spec
+	ProblemDescription  string `json:"problemDescription,omitempty" yaml:"problemDescription,omitempty"`
+	// API endpoint override for testing/proxies
+	APIEndpoint         string `json:"apiEndpoint,omitempty" yaml:"apiEndpoint,omitempty"`
 }

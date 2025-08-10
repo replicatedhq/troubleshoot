@@ -34,6 +34,9 @@ spec:
         skipPatterns: ["*.png", "*.jpg", "debug-*", "*.gz"]
         preferRecent: true  # Analyze newer files first
         useStructuredOutput: true  # Use OpenAI's structured outputs for guaranteed JSON (default: true)
+        # Advanced configuration (optional)
+        # problemDescription: "Custom problem description"  # Override CLI/env problem description
+        # apiEndpoint: "https://api.openai.com/v1/chat/completions"  # Custom endpoint for proxies/testing
         outcomes:
           - fail:
               when: "issue_found"

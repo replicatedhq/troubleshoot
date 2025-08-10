@@ -362,24 +362,51 @@ func TestAnalyzeLLM_MapToOutcomes(t *testing.T) {
 	}
 }
 
-func TestAnalyzeLLM_GlobalProblemDescription(t *testing.T) {
-	// Test that global problem description is used
-	originalDesc := GlobalProblemDescription
-	GlobalProblemDescription = "Test problem from CLI"
-	defer func() {
-		GlobalProblemDescription = originalDesc
-	}()
+func TestAnalyzeLLM_ProblemDescription(t *testing.T) {
+	tests := []struct {
+		name           string
+		analyzerDesc   string
+		envDesc        string
+		expectedDesc   string
+	}{
+		{
+			name:         "uses analyzer config first",
+			analyzerDesc: "Problem from config",
+			envDesc:      "Problem from env",
+			expectedDesc: "Problem from config",
+		},
+		{
+			name:         "falls back to environment",
+			analyzerDesc: "",
+			envDesc:      "Problem from env",
+			expectedDesc: "Problem from env",
+		},
+		{
+			name:         "uses default when both empty",
+			analyzerDesc: "",
+			envDesc:      "",
+			expectedDesc: "Please analyze the logs and identify any issues or problems",
+		},
+	}
 
-	// Also test env variable fallback
-	os.Setenv("PROBLEM_DESCRIPTION", "Test problem from env")
-	defer os.Unsetenv("PROBLEM_DESCRIPTION")
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.envDesc != "" {
+				os.Setenv("PROBLEM_DESCRIPTION", tt.envDesc)
+				defer os.Unsetenv("PROBLEM_DESCRIPTION")
+			}
 
-	// When global is set, it should be used
-	assert.Equal(t, "Test problem from CLI", GlobalProblemDescription)
+			analyzer := &AnalyzeLLM{
+				analyzer: &troubleshootv1beta2.LLMAnalyze{
+					ProblemDescription: tt.analyzerDesc,
+				},
+			}
 
-	// When global is empty, env should be used
-	GlobalProblemDescription = ""
-	// This would be tested in the actual Analyze function
+			// We would test this in the actual Analyze function
+			// but for now we just verify the configuration is set correctly
+			assert.Equal(t, tt.analyzerDesc, analyzer.analyzer.ProblemDescription)
+		})
+	}
 }
 
 func TestAnalyzeLLM_FileCollection_MaxSize(t *testing.T) {

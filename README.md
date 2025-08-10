@@ -127,6 +127,10 @@ kubectl support-bundle analyze --bundle support-bundle-2024-01-20T10-30-00.tar.g
 #### Structured Output (New)
 - **useStructuredOutput**: Use OpenAI's structured outputs for guaranteed valid JSON (default: true for gpt-4o/gpt-4o-mini, false for older models)
 
+#### Advanced Configuration
+- **problemDescription**: Set problem description in the analyzer spec instead of using CLI flag
+- **apiEndpoint**: Override API endpoint for testing, proxies, or different regions (default: https://api.openai.com/v1/chat/completions)
+
 ### Model Selection Guide
 
 - **gpt-4o-mini**: (Default) Cost-effective with 128K context window, recommended for most use cases ($0.15/1M input tokens)

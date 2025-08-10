@@ -11,14 +11,12 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"text/template"
 	"time"
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 )
-
-// GlobalProblemDescription is set by the CLI when --problem-description is provided
-var GlobalProblemDescription string
 
 // AnalyzeLLM is the analyzer that uses an LLM to analyze support bundle contents
 type AnalyzeLLM struct {
@@ -47,9 +45,10 @@ func (a *AnalyzeLLM) Analyze(getFile getCollectedFileContents, findFiles getChil
 		}}, nil
 	}
 
-	// Get problem description from global variable (set by CLI) or environment
-	problemDescription := GlobalProblemDescription
+	// Get problem description from analyzer config, then environment as fallback
+	problemDescription := a.analyzer.ProblemDescription
 	if problemDescription == "" {
+		// Check for CLI-provided problem description via environment
 		problemDescription = os.Getenv("PROBLEM_DESCRIPTION")
 	}
 	if problemDescription == "" {
@@ -420,11 +419,17 @@ Files to analyze:
 		return nil, errors.Wrap(err, "failed to marshal request")
 	}
 
+	// Determine API endpoint (allow override for testing/proxies)
+	apiEndpoint := "https://api.openai.com/v1/chat/completions"
+	if a.analyzer.APIEndpoint != "" {
+		apiEndpoint = a.analyzer.APIEndpoint
+	}
+
 	// Create HTTP request with timeout (120s for large analyses)
 	ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
 	defer cancel()
 
-	req, err := http.NewRequestWithContext(ctx, "POST", "https://api.openai.com/v1/chat/completions", bytes.NewBuffer(jsonData))
+	req, err := http.NewRequestWithContext(ctx, "POST", apiEndpoint, bytes.NewBuffer(jsonData))
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create request")
 	}
@@ -750,54 +755,113 @@ func (a *AnalyzeLLM) shouldSkipFile(filePath string, skipPatterns []string) bool
 	return false
 }
 
-// isBinaryFile performs a simple check to see if content appears to be binary
+// isBinaryFile uses http.DetectContentType to determine if content is binary
 func isBinaryFile(content []byte) bool {
 	if len(content) == 0 {
 		return false
 	}
 	
-	// Check first 512 bytes for null bytes (common in binary files)
-	checkLen := 512
-	if len(content) < checkLen {
-		checkLen = len(content)
+	// Use http.DetectContentType for proper MIME type detection
+	// It examines up to the first 512 bytes
+	contentType := http.DetectContentType(content)
+	
+	// Check if it's a text type
+	if strings.HasPrefix(contentType, "text/") {
+		return false
 	}
 	
-	nullCount := 0
-	for i := 0; i < checkLen; i++ {
-		if content[i] == 0 {
-			nullCount++
+	// Check for specific text-based formats that might be misidentified
+	textTypes := []string{
+		"application/json",
+		"application/xml",
+		"application/yaml",
+		"application/x-yaml",
+		"application/javascript",
+	}
+	
+	for _, textType := range textTypes {
+		if strings.HasPrefix(contentType, textType) {
+			return false
 		}
 	}
 	
-	// If more than 10% null bytes, probably binary
-	return nullCount > checkLen/10
+	// If it's application/octet-stream, do additional checking
+	if contentType == "application/octet-stream" {
+		// Check for null bytes as a fallback heuristic
+		checkLen := 512
+		if len(content) < checkLen {
+			checkLen = len(content)
+		}
+		
+		nullCount := 0
+		for i := 0; i < checkLen; i++ {
+			if content[i] == 0 {
+				nullCount++
+			}
+		}
+		
+		// If more than 10% null bytes, probably binary
+		// This threshold is kept for backward compatibility
+		return nullCount > checkLen/10
+	}
+	
+	// Assume binary for all other content types
+	return true
 }
 
-// replaceTemplateVars replaces all template variables with actual values from analysis
-func (a *AnalyzeLLM) replaceTemplateVars(template string, analysis *llmAnalysis) string {
-	result := template
+// templateData provides data for template rendering with helper methods
+type templateData struct {
+	*llmAnalysis
+}
+
+// ConfidencePercent returns confidence as a percentage string
+func (t templateData) ConfidencePercent() string {
+	return fmt.Sprintf("%.0f%%", t.Confidence*100)
+}
+
+// CommandsList returns commands as a semicolon-separated string
+func (t templateData) CommandsList() string {
+	return strings.Join(t.Commands, "; ")
+}
+
+// AffectedPodsList returns affected pods as a comma-separated string
+func (t templateData) AffectedPodsList() string {
+	return strings.Join(t.AffectedPods, ", ")
+}
+
+// NextStepsList returns next steps as a semicolon-separated string
+func (t templateData) NextStepsList() string {
+	return strings.Join(t.NextSteps, "; ")
+}
+
+// RelatedIssuesList returns related issues as a semicolon-separated string
+func (t templateData) RelatedIssuesList() string {
+	return strings.Join(t.RelatedIssues, "; ")
+}
+
+// replaceTemplateVars uses Go's text/template for safe template rendering
+func (a *AnalyzeLLM) replaceTemplateVars(templateStr string, analysis *llmAnalysis) string {
+	// Create template with custom functions
+	tmpl, err := template.New("outcome").Funcs(template.FuncMap{
+		"join": strings.Join,
+	}).Parse(templateStr)
+	if err != nil {
+		// If template parsing fails, return the original string
+		// Log error for debugging
+		fmt.Fprintf(os.Stderr, "Warning: Failed to parse template: %v\n", err)
+		return templateStr
+	}
 	
-	// Replace basic fields
-	result = strings.ReplaceAll(result, "{{.Summary}}", analysis.Summary)
-	result = strings.ReplaceAll(result, "{{.Issue}}", analysis.Issue)
-	result = strings.ReplaceAll(result, "{{.Solution}}", analysis.Solution)
-	result = strings.ReplaceAll(result, "{{.RootCause}}", analysis.RootCause)
-	result = strings.ReplaceAll(result, "{{.Severity}}", analysis.Severity)
-	result = strings.ReplaceAll(result, "{{.Confidence}}", fmt.Sprintf("%.0f%%", analysis.Confidence*100))
+	// Prepare template data
+	data := templateData{llmAnalysis: analysis}
 	
-	// Replace array fields
-	if len(analysis.Commands) > 0 {
-		result = strings.ReplaceAll(result, "{{.Commands}}", strings.Join(analysis.Commands, "; "))
-	}
-	if len(analysis.AffectedPods) > 0 {
-		result = strings.ReplaceAll(result, "{{.AffectedPods}}", strings.Join(analysis.AffectedPods, ", "))
-	}
-	if len(analysis.NextSteps) > 0 {
-		result = strings.ReplaceAll(result, "{{.NextSteps}}", strings.Join(analysis.NextSteps, "; "))
-	}
-	if len(analysis.RelatedIssues) > 0 {
-		result = strings.ReplaceAll(result, "{{.RelatedIssues}}", strings.Join(analysis.RelatedIssues, "; "))
+	// Execute template
+	var buf bytes.Buffer
+	if err := tmpl.Execute(&buf, data); err != nil {
+		// If template execution fails, return the original string
+		fmt.Fprintf(os.Stderr, "Warning: Failed to execute template: %v\n", err)
+		return templateStr
 	}
 	
-	return result
+	return buf.String()
 }

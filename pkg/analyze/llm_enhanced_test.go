@@ -201,18 +201,33 @@ func TestAnalyzeLLM_TemplateVariableReplacement(t *testing.T) {
 		},
 		{
 			name:     "Root cause and severity",
-			template: "Root: {{.RootCause}}, Severity: {{.Severity}}, Confidence: {{.Confidence}}",
+			template: "Root: {{.RootCause}}, Severity: {{.Severity}}, Confidence: {{.ConfidencePercent}}",
 			expected: "Root: Test root cause, Severity: warning, Confidence: 75%",
 		},
 		{
-			name:     "Arrays",
-			template: "Commands: {{.Commands}}, Pods: {{.AffectedPods}}, Steps: {{.NextSteps}}",
+			name:     "Arrays with helper methods",
+			template: "Commands: {{.CommandsList}}, Pods: {{.AffectedPodsList}}, Steps: {{.NextStepsList}}",
 			expected: "Commands: cmd1; cmd2, Pods: pod1, pod2, Steps: step1; step2",
 		},
 		{
 			name:     "Related issues",
-			template: "Related: {{.RelatedIssues}}",
+			template: "Related: {{.RelatedIssuesList}}",
 			expected: "Related: issue1; issue2",
+		},
+		{
+			name:     "Template with conditions",
+			template: "{{if .IssueFound}}Issue found: {{.Summary}}{{else}}No issues{{end}}",
+			expected: "No issues", // IssueFound defaults to false
+		},
+		{
+			name:     "Template with range",
+			template: "Commands: {{range .Commands}}{{.}} {{end}}",
+			expected: "Commands: cmd1 cmd2 ",
+		},
+		{
+			name:     "Invalid template falls back to original",
+			template: "{{.InvalidField}}",
+			expected: "{{.InvalidField}}", // Should return original on error
 		},
 	}
 
@@ -302,14 +317,34 @@ func TestAnalyzeLLM_BinaryFileDetection(t *testing.T) {
 			isBinary: false,
 		},
 		{
+			name:     "JSON file",
+			content:  []byte(`{"key": "value", "nested": {"field": 123}}`),
+			isBinary: false,
+		},
+		{
+			name:     "XML file",
+			content:  []byte(`<?xml version="1.0"?><root><item>value</item></root>`),
+			isBinary: false,
+		},
+		{
+			name:     "PNG file header",
+			content:  []byte{0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A},
+			isBinary: true,
+		},
+		{
+			name:     "JPEG file header",
+			content:  []byte{0xFF, 0xD8, 0xFF, 0xE0},
+			isBinary: true,
+		},
+		{
 			name:     "Binary file with null bytes",
 			content:  []byte{0x00, 0x01, 0x02, 0x00, 0x00, 0x03, 0x00, 0x00},
 			isBinary: true,
 		},
 		{
-			name:     "Mixed content",
+			name:     "Mixed content with single null",
 			content:  []byte("Text" + string([]byte{0x00}) + "More text"),
-			isBinary: false, // Only one null byte, not enough
+			isBinary: false, // Text with minimal null bytes
 		},
 		{
 			name:     "Empty file",
@@ -327,12 +362,22 @@ func TestAnalyzeLLM_BinaryFileDetection(t *testing.T) {
 			}(),
 			isBinary: true,
 		},
+		{
+			name:     "HTML file",
+			content:  []byte(`<!DOCTYPE html><html><body>Hello</body></html>`),
+			isBinary: false,
+		},
+		{
+			name:     "ZIP file header",
+			content:  []byte{0x50, 0x4B, 0x03, 0x04},
+			isBinary: true,
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			result := isBinaryFile(tt.content)
-			assert.Equal(t, tt.isBinary, result)
+			assert.Equal(t, tt.isBinary, result, "Detection mismatch for %s", tt.name)
 		})
 	}
 }

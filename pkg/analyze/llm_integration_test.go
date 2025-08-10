@@ -87,8 +87,9 @@ func TestAnalyzeLLM_IntegrationWithMockAPI(t *testing.T) {
 	os.Setenv("OPENAI_API_KEY", "test-key")
 	defer os.Unsetenv("OPENAI_API_KEY")
 	
-	GlobalProblemDescription = "Pods are experiencing OOM issues"
-	defer func() { GlobalProblemDescription = "" }()
+	// Set problem description via environment for this test
+	os.Setenv("PROBLEM_DESCRIPTION", "Pods are experiencing OOM issues")
+	defer os.Unsetenv("PROBLEM_DESCRIPTION")
 	
 	// Create analyzer
 	analyzer := &AnalyzeLLM{
