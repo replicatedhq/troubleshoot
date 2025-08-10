@@ -29,6 +29,10 @@ spec:
         model: "gpt-4o-mini"  # Cost-effective model with 128K context
         maxFiles: 10  # Limit files to prevent token overflow
         maxSize: 1000  # Limit total size to 1MB
+        # Smart file selection (optional)
+        priorityPatterns: ["error", "fatal", "exception", "OOM", "crash", "panic"]
+        skipPatterns: ["*.png", "*.jpg", "debug-*", "*.gz"]
+        preferRecent: true  # Analyze newer files first
         outcomes:
           - fail:
               when: "issue_found"

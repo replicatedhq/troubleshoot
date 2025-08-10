@@ -118,6 +118,11 @@ kubectl support-bundle analyze --bundle support-bundle-2024-01-20T10-30-00.tar.g
 - **collectorName**: Name of the collector to analyze files from
 - **exclude**: Boolean to exclude this analyzer (default: false)
 
+#### Smart File Selection (New)
+- **priorityPatterns**: Keywords to prioritize (default: error, fatal, exception, panic, crash, OOM)
+- **skipPatterns**: File patterns to skip (default: images and archives)
+- **preferRecent**: Prioritize recent files based on timestamps (default: false)
+
 ### Model Selection Guide
 
 - **gpt-4o-mini**: (Default) Cost-effective with 128K context window, recommended for most use cases
@@ -125,12 +130,29 @@ kubectl support-bundle analyze --bundle support-bundle-2024-01-20T10-30-00.tar.g
 - **gpt-4o**: Good balance of capability and cost for medium complexity
 - **gpt-3.5-turbo**: Budget option for simple analysis
 
+### Enhanced Output
+
+The LLM analyzer now provides structured, actionable output including:
+- **Root Cause Analysis**: Identified root cause of the problem
+- **Recommended Commands**: kubectl commands to resolve issues
+- **Affected Resources**: List of impacted pods and services
+- **Next Steps**: Ordered action items
+- **Documentation Links**: Relevant Kubernetes documentation
+- **Related Issues**: Other potential problems found
+
+Template variables available in outcome messages:
+- `{{.Summary}}`, `{{.Issue}}`, `{{.Solution}}`, `{{.RootCause}}`
+- `{{.Commands}}`, `{{.AffectedPods}}`, `{{.NextSteps}}`
+- `{{.Severity}}`, `{{.Confidence}}`
+
 ### Examples
 
 See [examples/analyzers/llm-analyzer.yaml](examples/analyzers/llm-analyzer.yaml) for complete examples including:
 - Using LLM analyzer alongside traditional analyzers
 - Re-analyzing existing bundles
 - Different model configurations
+- Smart file selection with priority patterns
+- Enhanced output templates
 
 # Community
 
