@@ -32,16 +32,7 @@ ls -la ./bin/support-bundle ./bin/analyze
 
 ### Set your OpenAI API key (if not already done)
 
-```bash
-# If you don't have a .env file, create one:
-echo 'OPENAI_API_KEY=your-actual-key-here' > .env
-
-# The tool automatically loads .env files - no need to source or export!
-# Verify it exists
-ls -la .env
-```
-
-**Note:** Troubleshoot.sh now automatically reads `.env` files in the current directory, following modern CLI tool conventions.
+Troubleshoot.sh now automatically reads `.env` files in the current directory, following modern CLI tool conventions.
 
 ### Create a test cluster (if needed)
 
