@@ -52,7 +52,7 @@ The LLM analyzer uses OpenAI to automatically analyze Kubernetes logs and identi
 ### What's Different
 
 - **No rules to write** - AI understands logs and errors automatically
-- **Finds root causes** - Identifies why problems occur, not just symptoms  
+- **Finds root causes** - Identifies why problems occur, not just symptoms
 - **Correlates issues** - Understands relationships (e.g., DB crash → app failures)
 - **Natural language** - Describe problems in plain English
 
@@ -105,9 +105,6 @@ Or re-analyze existing bundles:
 
 - **gpt-4o-mini**: (Default) Cost-effective with 128K context window, recommended for most use cases ($0.15/1M input tokens)
 - **gpt-5**: Most advanced model for complex issues requiring cutting-edge reasoning (pricing TBD)
-- **gpt-4o**: Latest GPT-4 Omni model with 128K context, excellent for complex analysis ($2.50/1M input tokens)
-- **gpt-4-turbo**: Previous generation, still very capable ($10/1M input tokens)
-- **gpt-3.5-turbo**: Budget option for simple analysis ($0.50/1M input tokens) - Note: Does not support structured outputs
 
 ### Enhanced Output
 

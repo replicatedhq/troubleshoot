@@ -191,4 +191,7 @@ kubectl delete namespace demo-app
 
 # Remove temporary files
 rm demo-support-bundle.yaml reanalyze.yaml security-check.yaml
+
+# Delete the Kind cluster
+kind delete cluster --name demo-cluster
 ```
