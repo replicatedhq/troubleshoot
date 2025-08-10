@@ -1,0 +1,170 @@
+{
+  "kind": "ServiceAccountList",
+  "apiVersion": "v1",
+  "metadata": {
+    "resourceVersion": "8769"
+  },
+  "items": [
+    {
+      "kind": "ServiceAccount",
+      "apiVersion": "v1",
+      "metadata": {
+        "name": "default",
+        "namespace": "default",
+        "uid": "f0193ff8-9854-4778-b310-5271e76b1c4f",
+        "resourceVersion": "338",
+        "creationTimestamp": "2025-08-09T22:55:12Z"
+      }
+    },
+    {
+      "kind": "ServiceAccount",
+      "apiVersion": "v1",
+      "metadata": {
+        "name": "postgres-postgresql",
+        "namespace": "default",
+        "uid": "93224453-d10a-4bbf-ac7e-7711e736e091",
+        "resourceVersion": "513",
+        "creationTimestamp": "2025-08-09T22:55:33Z",
+        "labels": {
+          "app.kubernetes.io/instance": "postgres",
+          "app.kubernetes.io/managed-by": "Helm",
+          "app.kubernetes.io/name": "postgresql",
+          "app.kubernetes.io/version": "17.5.0",
+          "helm.sh/chart": "postgresql-16.7.24"
+        },
+        "annotations": {
+          "meta.helm.sh/release-name": "postgres",
+          "meta.helm.sh/release-namespace": "default"
+        },
+        "managedFields": [
+          {
+            "manager": "helm",
+            "operation": "Update",
+            "apiVersion": "v1",
+            "time": "2025-08-09T22:55:33Z",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:automountServiceAccountToken": {},
+              "f:metadata": {
+                "f:annotations": {
+                  ".": {},
+                  "f:meta.helm.sh/release-name": {},
+                  "f:meta.helm.sh/release-namespace": {}
+                },
+                "f:labels": {
+                  ".": {},
+                  "f:app.kubernetes.io/instance": {},
+                  "f:app.kubernetes.io/managed-by": {},
+                  "f:app.kubernetes.io/name": {},
+                  "f:app.kubernetes.io/version": {},
+                  "f:helm.sh/chart": {}
+                }
+              }
+            }
+          }
+        ]
+      },
+      "automountServiceAccountToken": false
+    },
+    {
+      "kind": "ServiceAccount",
+      "apiVersion": "v1",
+      "metadata": {
+        "name": "redis-master",
+        "namespace": "default",
+        "uid": "303f6936-e631-46d3-b5bf-75e47392df4d",
+        "resourceVersion": "619",
+        "creationTimestamp": "2025-08-09T22:55:57Z",
+        "labels": {
+          "app.kubernetes.io/instance": "redis",
+          "app.kubernetes.io/managed-by": "Helm",
+          "app.kubernetes.io/name": "redis",
+          "app.kubernetes.io/version": "8.2.0",
+          "helm.sh/chart": "redis-22.0.1"
+        },
+        "annotations": {
+          "meta.helm.sh/release-name": "redis",
+          "meta.helm.sh/release-namespace": "default"
+        },
+        "managedFields": [
+          {
+            "manager": "helm",
+            "operation": "Update",
+            "apiVersion": "v1",
+            "time": "2025-08-09T22:55:57Z",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:automountServiceAccountToken": {},
+              "f:metadata": {
+                "f:annotations": {
+                  ".": {},
+                  "f:meta.helm.sh/release-name": {},
+                  "f:meta.helm.sh/release-namespace": {}
+                },
+                "f:labels": {
+                  ".": {},
+                  "f:app.kubernetes.io/instance": {},
+                  "f:app.kubernetes.io/managed-by": {},
+                  "f:app.kubernetes.io/name": {},
+                  "f:app.kubernetes.io/version": {},
+                  "f:helm.sh/chart": {}
+                }
+              }
+            }
+          }
+        ]
+      },
+      "automountServiceAccountToken": false
+    },
+    {
+      "kind": "ServiceAccount",
+      "apiVersion": "v1",
+      "metadata": {
+        "name": "redis-replica",
+        "namespace": "default",
+        "uid": "c89f9b10-291f-476a-b321-1196b6e69dfd",
+        "resourceVersion": "618",
+        "creationTimestamp": "2025-08-09T22:55:57Z",
+        "labels": {
+          "app.kubernetes.io/instance": "redis",
+          "app.kubernetes.io/managed-by": "Helm",
+          "app.kubernetes.io/name": "redis",
+          "app.kubernetes.io/version": "8.2.0",
+          "helm.sh/chart": "redis-22.0.1"
+        },
+        "annotations": {
+          "meta.helm.sh/release-name": "redis",
+          "meta.helm.sh/release-namespace": "default"
+        },
+        "managedFields": [
+          {
+            "manager": "helm",
+            "operation": "Update",
+            "apiVersion": "v1",
+            "time": "2025-08-09T22:55:57Z",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:automountServiceAccountToken": {},
+              "f:metadata": {
+                "f:annotations": {
+                  ".": {},
+                  "f:meta.helm.sh/release-name": {},
+                  "f:meta.helm.sh/release-namespace": {}
+                },
+                "f:labels": {
+                  ".": {},
+                  "f:app.kubernetes.io/instance": {},
+                  "f:app.kubernetes.io/managed-by": {},
+                  "f:app.kubernetes.io/name": {},
+                  "f:app.kubernetes.io/version": {},
+                  "f:helm.sh/chart": {}
+                }
+              }
+            }
+          }
+        ]
+      },
+      "automountServiceAccountToken": false
+    }
+  ]
+}

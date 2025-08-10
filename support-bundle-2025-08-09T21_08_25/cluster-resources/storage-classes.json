@@ -1,0 +1,47 @@
+{
+  "kind": "StorageClassList",
+  "apiVersion": "storage.k8s.io/v1",
+  "metadata": {
+    "resourceVersion": "8768"
+  },
+  "items": [
+    {
+      "kind": "StorageClass",
+      "apiVersion": "storage.k8s.io/v1",
+      "metadata": {
+        "name": "standard",
+        "uid": "63996242-9be6-44a8-8269-a5d67361dd96",
+        "resourceVersion": "280",
+        "creationTimestamp": "2025-08-09T22:55:06Z",
+        "annotations": {
+          "kubectl.kubernetes.io/last-applied-configuration": "{\"apiVersion\":\"storage.k8s.io/v1\",\"kind\":\"StorageClass\",\"metadata\":{\"annotations\":{\"storageclass.kubernetes.io/is-default-class\":\"true\"},\"name\":\"standard\"},\"provisioner\":\"rancher.io/local-path\",\"reclaimPolicy\":\"Delete\",\"volumeBindingMode\":\"WaitForFirstConsumer\"}\n",
+          "storageclass.kubernetes.io/is-default-class": "true"
+        },
+        "managedFields": [
+          {
+            "manager": "kubectl-client-side-apply",
+            "operation": "Update",
+            "apiVersion": "storage.k8s.io/v1",
+            "time": "2025-08-09T22:55:06Z",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:metadata": {
+                "f:annotations": {
+                  ".": {},
+                  "f:kubectl.kubernetes.io/last-applied-configuration": {},
+                  "f:storageclass.kubernetes.io/is-default-class": {}
+                }
+              },
+              "f:provisioner": {},
+              "f:reclaimPolicy": {},
+              "f:volumeBindingMode": {}
+            }
+          }
+        ]
+      },
+      "provisioner": "rancher.io/local-path",
+      "reclaimPolicy": "Delete",
+      "volumeBindingMode": "WaitForFirstConsumer"
+    }
+  ]
+}

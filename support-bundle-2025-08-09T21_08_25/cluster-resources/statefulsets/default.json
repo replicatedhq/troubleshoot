@@ -1,0 +1,1810 @@
+{
+  "kind": "StatefulSetList",
+  "apiVersion": "apps/v1",
+  "metadata": {
+    "resourceVersion": "8767"
+  },
+  "items": [
+    {
+      "kind": "StatefulSet",
+      "apiVersion": "apps/v1",
+      "metadata": {
+        "name": "postgres-postgresql",
+        "namespace": "default",
+        "uid": "62169a94-e523-466f-854f-b5ce6c0118eb",
+        "resourceVersion": "604",
+        "generation": 1,
+        "creationTimestamp": "2025-08-09T22:55:33Z",
+        "labels": {
+          "app.kubernetes.io/component": "primary",
+          "app.kubernetes.io/instance": "postgres",
+          "app.kubernetes.io/managed-by": "Helm",
+          "app.kubernetes.io/name": "postgresql",
+          "app.kubernetes.io/version": "17.5.0",
+          "helm.sh/chart": "postgresql-16.7.24"
+        },
+        "annotations": {
+          "meta.helm.sh/release-name": "postgres",
+          "meta.helm.sh/release-namespace": "default"
+        },
+        "managedFields": [
+          {
+            "manager": "helm",
+            "operation": "Update",
+            "apiVersion": "apps/v1",
+            "time": "2025-08-09T22:55:33Z",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:metadata": {
+                "f:annotations": {
+                  ".": {},
+                  "f:meta.helm.sh/release-name": {},
+                  "f:meta.helm.sh/release-namespace": {}
+                },
+                "f:labels": {
+                  ".": {},
+                  "f:app.kubernetes.io/component": {},
+                  "f:app.kubernetes.io/instance": {},
+                  "f:app.kubernetes.io/managed-by": {},
+                  "f:app.kubernetes.io/name": {},
+                  "f:app.kubernetes.io/version": {},
+                  "f:helm.sh/chart": {}
+                }
+              },
+              "f:spec": {
+                "f:persistentVolumeClaimRetentionPolicy": {
+                  ".": {},
+                  "f:whenDeleted": {},
+                  "f:whenScaled": {}
+                },
+                "f:podManagementPolicy": {},
+                "f:replicas": {},
+                "f:revisionHistoryLimit": {},
+                "f:selector": {},
+                "f:serviceName": {},
+                "f:template": {
+                  "f:metadata": {
+                    "f:labels": {
+                      ".": {},
+                      "f:app.kubernetes.io/component": {},
+                      "f:app.kubernetes.io/instance": {},
+                      "f:app.kubernetes.io/managed-by": {},
+                      "f:app.kubernetes.io/name": {},
+                      "f:app.kubernetes.io/version": {},
+                      "f:helm.sh/chart": {}
+                    },
+                    "f:name": {}
+                  },
+                  "f:spec": {
+                    "f:affinity": {
+                      ".": {},
+                      "f:podAntiAffinity": {
+                        ".": {},
+                        "f:preferredDuringSchedulingIgnoredDuringExecution": {}
+                      }
+                    },
+                    "f:automountServiceAccountToken": {},
+                    "f:containers": {
+                      "k:{\"name\":\"postgresql\"}": {
+                        ".": {},
+                        "f:env": {
+                          ".": {},
+                          "k:{\"name\":\"BITNAMI_DEBUG\"}": {
+                            ".": {},
+                            "f:name": {},
+                            "f:value": {}
+                          },
+                          "k:{\"name\":\"PGDATA\"}": {
+                            ".": {},
+                            "f:name": {},
+                            "f:value": {}
+                          },
+                          "k:{\"name\":\"POSTGRESQL_CLIENT_MIN_MESSAGES\"}": {
+                            ".": {},
+                            "f:name": {},
+                            "f:value": {}
+                          },
+                          "k:{\"name\":\"POSTGRESQL_ENABLE_LDAP\"}": {
+                            ".": {},
+                            "f:name": {},
+                            "f:value": {}
+                          },
+                          "k:{\"name\":\"POSTGRESQL_ENABLE_TLS\"}": {
+                            ".": {},
+                            "f:name": {},
+                            "f:value": {}
+                          },
+                          "k:{\"name\":\"POSTGRESQL_LOG_CONNECTIONS\"}": {
+                            ".": {},
+                            "f:name": {},
+                            "f:value": {}
+                          },
+                          "k:{\"name\":\"POSTGRESQL_LOG_DISCONNECTIONS\"}": {
+                            ".": {},
+                            "f:name": {},
+                            "f:value": {}
+                          },
+                          "k:{\"name\":\"POSTGRESQL_LOG_HOSTNAME\"}": {
+                            ".": {},
+                            "f:name": {},
+                            "f:value": {}
+                          },
+                          "k:{\"name\":\"POSTGRESQL_PGAUDIT_LOG_CATALOG\"}": {
+                            ".": {},
+                            "f:name": {},
+                            "f:value": {}
+                          },
+                          "k:{\"name\":\"POSTGRESQL_PORT_NUMBER\"}": {
+                            ".": {},
+                            "f:name": {},
+                            "f:value": {}
+                          },
+                          "k:{\"name\":\"POSTGRESQL_SHARED_PRELOAD_LIBRARIES\"}": {
+                            ".": {},
+                            "f:name": {},
+                            "f:value": {}
+                          },
+                          "k:{\"name\":\"POSTGRESQL_VOLUME_DIR\"}": {
+                            ".": {},
+                            "f:name": {},
+                            "f:value": {}
+                          },
+                          "k:{\"name\":\"POSTGRES_DATABASE\"}": {
+                            ".": {},
+                            "f:name": {},
+                            "f:value": {}
+                          },
+                          "k:{\"name\":\"POSTGRES_PASSWORD_FILE\"}": {
+                            ".": {},
+                            "f:name": {},
+                            "f:value": {}
+                          }
+                        },
+                        "f:image": {},
+                        "f:imagePullPolicy": {},
+                        "f:livenessProbe": {
+                          ".": {},
+                          "f:exec": {
+                            ".": {},
+                            "f:command": {}
+                          },
+                          "f:failureThreshold": {},
+                          "f:initialDelaySeconds": {},
+                          "f:periodSeconds": {},
+                          "f:successThreshold": {},
+                          "f:timeoutSeconds": {}
+                        },
+                        "f:name": {},
+                        "f:ports": {
+                          ".": {},
+                          "k:{\"containerPort\":5432,\"protocol\":\"TCP\"}": {
+                            ".": {},
+                            "f:containerPort": {},
+                            "f:name": {},
+                            "f:protocol": {}
+                          }
+                        },
+                        "f:readinessProbe": {
+                          ".": {},
+                          "f:exec": {
+                            ".": {},
+                            "f:command": {}
+                          },
+                          "f:failureThreshold": {},
+                          "f:initialDelaySeconds": {},
+                          "f:periodSeconds": {},
+                          "f:successThreshold": {},
+                          "f:timeoutSeconds": {}
+                        },
+                        "f:resources": {
+                          ".": {},
+                          "f:limits": {
+                            ".": {},
+                            "f:cpu": {},
+                            "f:ephemeral-storage": {},
+                            "f:memory": {}
+                          },
+                          "f:requests": {
+                            ".": {},
+                            "f:cpu": {},
+                            "f:ephemeral-storage": {},
+                            "f:memory": {}
+                          }
+                        },
+                        "f:securityContext": {
+                          ".": {},
+                          "f:allowPrivilegeEscalation": {},
+                          "f:capabilities": {
+                            ".": {},
+                            "f:drop": {}
+                          },
+                          "f:privileged": {},
+                          "f:readOnlyRootFilesystem": {},
+                          "f:runAsGroup": {},
+                          "f:runAsNonRoot": {},
+                          "f:runAsUser": {},
+                          "f:seLinuxOptions": {},
+                          "f:seccompProfile": {
+                            ".": {},
+                            "f:type": {}
+                          }
+                        },
+                        "f:terminationMessagePath": {},
+                        "f:terminationMessagePolicy": {},
+                        "f:volumeMounts": {
+                          ".": {},
+                          "k:{\"mountPath\":\"/bitnami/postgresql\"}": {
+                            ".": {},
+                            "f:mountPath": {},
+                            "f:name": {}
+                          },
+                          "k:{\"mountPath\":\"/dev/shm\"}": {
+                            ".": {},
+                            "f:mountPath": {},
+                            "f:name": {}
+                          },
+                          "k:{\"mountPath\":\"/opt/bitnami/postgresql/conf\"}": {
+                            ".": {},
+                            "f:mountPath": {},
+                            "f:name": {},
+                            "f:subPath": {}
+                          },
+                          "k:{\"mountPath\":\"/opt/bitnami/postgresql/secrets/\"}": {
+                            ".": {},
+                            "f:mountPath": {},
+                            "f:name": {}
+                          },
+                          "k:{\"mountPath\":\"/opt/bitnami/postgresql/tmp\"}": {
+                            ".": {},
+                            "f:mountPath": {},
+                            "f:name": {},
+                            "f:subPath": {}
+                          },
+                          "k:{\"mountPath\":\"/tmp\"}": {
+                            ".": {},
+                            "f:mountPath": {},
+                            "f:name": {},
+                            "f:subPath": {}
+                          }
+                        }
+                      }
+                    },
+                    "f:dnsPolicy": {},
+                    "f:restartPolicy": {},
+                    "f:schedulerName": {},
+                    "f:securityContext": {
+                      ".": {},
+                      "f:fsGroup": {},
+                      "f:fsGroupChangePolicy": {}
+                    },
+                    "f:serviceAccount": {},
+                    "f:serviceAccountName": {},
+                    "f:terminationGracePeriodSeconds": {},
+                    "f:volumes": {
+                      ".": {},
+                      "k:{\"name\":\"dshm\"}": {
+                        ".": {},
+                        "f:emptyDir": {
+                          ".": {},
+                          "f:medium": {}
+                        },
+                        "f:name": {}
+                      },
+                      "k:{\"name\":\"empty-dir\"}": {
+                        ".": {},
+                        "f:emptyDir": {},
+                        "f:name": {}
+                      },
+                      "k:{\"name\":\"postgresql-password\"}": {
+                        ".": {},
+                        "f:name": {},
+                        "f:secret": {
+                          ".": {},
+                          "f:defaultMode": {},
+                          "f:secretName": {}
+                        }
+                      }
+                    }
+                  }
+                },
+                "f:updateStrategy": {
+                  "f:rollingUpdate": {
+                    ".": {},
+                    "f:partition": {}
+                  },
+                  "f:type": {}
+                },
+                "f:volumeClaimTemplates": {}
+              }
+            }
+          },
+          {
+            "manager": "kube-controller-manager",
+            "operation": "Update",
+            "apiVersion": "apps/v1",
+            "time": "2025-08-09T22:55:54Z",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:status": {
+                "f:availableReplicas": {},
+                "f:collisionCount": {},
+                "f:currentReplicas": {},
+                "f:currentRevision": {},
+                "f:observedGeneration": {},
+                "f:readyReplicas": {},
+                "f:replicas": {},
+                "f:updateRevision": {},
+                "f:updatedReplicas": {}
+              }
+            },
+            "subresource": "status"
+          }
+        ]
+      },
+      "spec": {
+        "replicas": 1,
+        "selector": {
+          "matchLabels": {
+            "app.kubernetes.io/component": "primary",
+            "app.kubernetes.io/instance": "postgres",
+            "app.kubernetes.io/name": "postgresql"
+          }
+        },
+        "template": {
+          "metadata": {
+            "name": "postgres-postgresql",
+            "creationTimestamp": null,
+            "labels": {
+              "app.kubernetes.io/component": "primary",
+              "app.kubernetes.io/instance": "postgres",
+              "app.kubernetes.io/managed-by": "Helm",
+              "app.kubernetes.io/name": "postgresql",
+              "app.kubernetes.io/version": "17.5.0",
+              "helm.sh/chart": "postgresql-16.7.24"
+            }
+          },
+          "spec": {
+            "volumes": [
+              {
+                "name": "empty-dir",
+                "emptyDir": {}
+              },
+              {
+                "name": "postgresql-password",
+                "secret": {
+                  "secretName": "postgres-postgresql",
+                  "defaultMode": 420
+                }
+              },
+              {
+                "name": "dshm",
+                "emptyDir": {
+                  "medium": "Memory"
+                }
+              }
+            ],
+            "containers": [
+              {
+                "name": "postgresql",
+                "image": "docker.io/bitnami/postgresql:17.5.0-debian-12-r20",
+                "ports": [
+                  {
+                    "name": "tcp-postgresql",
+                    "containerPort": 5432,
+                    "protocol": "TCP"
+                  }
+                ],
+                "env": [
+                  {
+                    "name": "BITNAMI_DEBUG",
+                    "value": "false"
+                  },
+                  {
+                    "name": "POSTGRESQL_PORT_NUMBER",
+                    "value": "5432"
+                  },
+                  {
+                    "name": "POSTGRESQL_VOLUME_DIR",
+                    "value": "/bitnami/postgresql"
+                  },
+                  {
+                    "name": "PGDATA",
+                    "value": "/bitnami/postgresql/data"
+                  },
+                  {
+                    "name": "POSTGRES_PASSWORD_FILE",
+                    "value": "***HIDDEN***"
+                  },
+                  {
+                    "name": "POSTGRES_DATABASE",
+                    "value": "***HIDDEN***"
+                  },
+                  {
+                    "name": "POSTGRESQL_ENABLE_LDAP",
+                    "value": "no"
+                  },
+                  {
+                    "name": "POSTGRESQL_ENABLE_TLS",
+                    "value": "no"
+                  },
+                  {
+                    "name": "POSTGRESQL_LOG_HOSTNAME",
+                    "value": "false"
+                  },
+                  {
+                    "name": "POSTGRESQL_LOG_CONNECTIONS",
+                    "value": "false"
+                  },
+                  {
+                    "name": "POSTGRESQL_LOG_DISCONNECTIONS",
+                    "value": "false"
+                  },
+                  {
+                    "name": "POSTGRESQL_PGAUDIT_LOG_CATALOG",
+                    "value": "off"
+                  },
+                  {
+                    "name": "POSTGRESQL_CLIENT_MIN_MESSAGES",
+                    "value": "error"
+                  },
+                  {
+                    "name": "POSTGRESQL_SHARED_PRELOAD_LIBRARIES",
+                    "value": "pgaudit"
+                  }
+                ],
+                "resources": {
+                  "limits": {
+                    "cpu": "150m",
+                    "ephemeral-storage": "2Gi",
+                    "memory": "192Mi"
+                  },
+                  "requests": {
+                    "cpu": "100m",
+                    "ephemeral-storage": "50Mi",
+                    "memory": "128Mi"
+                  }
+                },
+                "volumeMounts": [
+                  {
+                    "name": "empty-dir",
+                    "mountPath": "/tmp",
+                    "subPath": "tmp-dir"
+                  },
+                  {
+                    "name": "empty-dir",
+                    "mountPath": "/opt/bitnami/postgresql/conf",
+                    "subPath": "app-conf-dir"
+                  },
+                  {
+                    "name": "empty-dir",
+                    "mountPath": "/opt/bitnami/postgresql/tmp",
+                    "subPath": "app-tmp-dir"
+                  },
+                  {
+                    "name": "postgresql-password",
+                    "mountPath": "/opt/bitnami/postgresql/secrets/"
+                  },
+                  {
+                    "name": "dshm",
+                    "mountPath": "/dev/shm"
+                  },
+                  {
+                    "name": "data",
+                    "mountPath": "/bitnami/postgresql"
+                  }
+                ],
+                "livenessProbe": {
+                  "exec": {
+                    "command": [
+                      "/bin/sh",
+                      "-c",
+                      "exec pg_isready -U \"postgres\" -d \"dbname=myapp\" -h 127.0.0.1 -p 5432"
+                    ]
+                  },
+                  "initialDelaySeconds": 30,
+                  "timeoutSeconds": 5,
+                  "periodSeconds": 10,
+                  "successThreshold": 1,
+                  "failureThreshold": 6
+                },
+                "readinessProbe": {
+                  "exec": {
+                    "command": [
+                      "/bin/sh",
+                      "-c",
+                      "-e",
+                      "exec pg_isready -U \"postgres\" -d \"dbname=myapp\" -h 127.0.0.1 -p 5432\n[ -f /opt/bitnami/postgresql/tmp/.initialized ] || [ -f /bitnami/postgresql/.initialized ]\n"
+                    ]
+                  },
+                  "initialDelaySeconds": 5,
+                  "timeoutSeconds": 5,
+                  "periodSeconds": 10,
+                  "successThreshold": 1,
+                  "failureThreshold": 6
+                },
+                "terminationMessagePath": "/dev/termination-log",
+                "terminationMessagePolicy": "File",
+                "imagePullPolicy": "IfNotPresent",
+                "securityContext": {
+                  "capabilities": {
+                    "drop": [
+                      "ALL"
+                    ]
+                  },
+                  "privileged": false,
+                  "seLinuxOptions": {},
+                  "runAsUser": 1001,
+                  "runAsGroup": 1001,
+                  "runAsNonRoot": true,
+                  "readOnlyRootFilesystem": true,
+                  "allowPrivilegeEscalation": false,
+                  "seccompProfile": {
+                    "type": "RuntimeDefault"
+                  }
+                }
+              }
+            ],
+            "restartPolicy": "Always",
+            "terminationGracePeriodSeconds": 30,
+            "dnsPolicy": "ClusterFirst",
+            "serviceAccountName": "postgres-postgresql",
+            "serviceAccount": "postgres-postgresql",
+            "automountServiceAccountToken": false,
+            "securityContext": {
+              "fsGroup": 1001,
+              "fsGroupChangePolicy": "Always"
+            },
+            "affinity": {
+              "podAntiAffinity": {
+                "preferredDuringSchedulingIgnoredDuringExecution": [
+                  {
+                    "weight": 1,
+                    "podAffinityTerm": {
+                      "labelSelector": {
+                        "matchLabels": {
+                          "app.kubernetes.io/component": "primary",
+                          "app.kubernetes.io/instance": "postgres",
+                          "app.kubernetes.io/name": "postgresql"
+                        }
+                      },
+                      "topologyKey": "kubernetes.io/hostname"
+                    }
+                  }
+                ]
+              }
+            },
+            "schedulerName": "default-scheduler"
+          }
+        },
+        "volumeClaimTemplates": [
+          {
+            "metadata": {
+              "name": "data",
+              "creationTimestamp": null
+            },
+            "spec": {
+              "accessModes": [
+                "ReadWriteOnce"
+              ],
+              "resources": {
+                "requests": {
+                  "storage": "1Gi"
+                }
+              },
+              "volumeMode": "Filesystem"
+            },
+            "status": {
+              "phase": "Pending"
+            }
+          }
+        ],
+        "serviceName": "postgres-postgresql-hl",
+        "podManagementPolicy": "OrderedReady",
+        "updateStrategy": {
+          "type": "RollingUpdate",
+          "rollingUpdate": {
+            "partition": 0
+          }
+        },
+        "revisionHistoryLimit": 10,
+        "persistentVolumeClaimRetentionPolicy": {
+          "whenDeleted": "Retain",
+          "whenScaled": "Retain"
+        }
+      },
+      "status": {
+        "observedGeneration": 1,
+        "replicas": 1,
+        "readyReplicas": 1,
+        "currentReplicas": 1,
+        "updatedReplicas": 1,
+        "currentRevision": "postgres-postgresql-6788d44964",
+        "updateRevision": "postgres-postgresql-6788d44964",
+        "collisionCount": 0,
+        "availableReplicas": 1
+      }
+    },
+    {
+      "kind": "StatefulSet",
+      "apiVersion": "apps/v1",
+      "metadata": {
+        "name": "redis-master",
+        "namespace": "default",
+        "uid": "658ee511-3231-4a83-b518-14cff666cb87",
+        "resourceVersion": "777",
+        "generation": 1,
+        "creationTimestamp": "2025-08-09T22:55:57Z",
+        "labels": {
+          "app.kubernetes.io/component": "master",
+          "app.kubernetes.io/instance": "redis",
+          "app.kubernetes.io/managed-by": "Helm",
+          "app.kubernetes.io/name": "redis",
+          "app.kubernetes.io/version": "8.2.0",
+          "helm.sh/chart": "redis-22.0.1"
+        },
+        "annotations": {
+          "meta.helm.sh/release-name": "redis",
+          "meta.helm.sh/release-namespace": "default"
+        },
+        "managedFields": [
+          {
+            "manager": "helm",
+            "operation": "Update",
+            "apiVersion": "apps/v1",
+            "time": "2025-08-09T22:55:57Z",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:metadata": {
+                "f:annotations": {
+                  ".": {},
+                  "f:meta.helm.sh/release-name": {},
+                  "f:meta.helm.sh/release-namespace": {}
+                },
+                "f:labels": {
+                  ".": {},
+                  "f:app.kubernetes.io/component": {},
+                  "f:app.kubernetes.io/instance": {},
+                  "f:app.kubernetes.io/managed-by": {},
+                  "f:app.kubernetes.io/name": {},
+                  "f:app.kubernetes.io/version": {},
+                  "f:helm.sh/chart": {}
+                }
+              },
+              "f:spec": {
+                "f:persistentVolumeClaimRetentionPolicy": {
+                  ".": {},
+                  "f:whenDeleted": {},
+                  "f:whenScaled": {}
+                },
+                "f:podManagementPolicy": {},
+                "f:replicas": {},
+                "f:revisionHistoryLimit": {},
+                "f:selector": {},
+                "f:serviceName": {},
+                "f:template": {
+                  "f:metadata": {
+                    "f:annotations": {
+                      ".": {},
+                      "f:checksum/configmap": {},
+                      "f:checksum/health": {},
+                      "f:checksum/scripts": {},
+                      "f:checksum/secret": {}
+                    },
+                    "f:labels": {
+                      ".": {},
+                      "f:app.kubernetes.io/component": {},
+                      "f:app.kubernetes.io/instance": {},
+                      "f:app.kubernetes.io/managed-by": {},
+                      "f:app.kubernetes.io/name": {},
+                      "f:app.kubernetes.io/version": {},
+                      "f:helm.sh/chart": {}
+                    }
+                  },
+                  "f:spec": {
+                    "f:affinity": {
+                      ".": {},
+                      "f:podAntiAffinity": {
+                        ".": {},
+                        "f:preferredDuringSchedulingIgnoredDuringExecution": {}
+                      }
+                    },
+                    "f:automountServiceAccountToken": {},
+                    "f:containers": {
+                      "k:{\"name\":\"redis\"}": {
+                        ".": {},
+                        "f:args": {},
+                        "f:command": {},
+                        "f:env": {
+                          ".": {},
+                          "k:{\"name\":\"ALLOW_EMPTY_PASSWORD\"}": {
+                            ".": {},
+                            "f:name": {},
+                            "f:value": {}
+                          },
+                          "k:{\"name\":\"BITNAMI_DEBUG\"}": {
+                            ".": {},
+                            "f:name": {},
+                            "f:value": {}
+                          },
+                          "k:{\"name\":\"REDIS_PORT\"}": {
+                            ".": {},
+                            "f:name": {},
+                            "f:value": {}
+                          },
+                          "k:{\"name\":\"REDIS_REPLICATION_MODE\"}": {
+                            ".": {},
+                            "f:name": {},
+                            "f:value": {}
+                          },
+                          "k:{\"name\":\"REDIS_TLS_ENABLED\"}": {
+                            ".": {},
+                            "f:name": {},
+                            "f:value": {}
+                          }
+                        },
+                        "f:image": {},
+                        "f:imagePullPolicy": {},
+                        "f:livenessProbe": {
+                          ".": {},
+                          "f:exec": {
+                            ".": {},
+                            "f:command": {}
+                          },
+                          "f:failureThreshold": {},
+                          "f:initialDelaySeconds": {},
+                          "f:periodSeconds": {},
+                          "f:successThreshold": {},
+                          "f:timeoutSeconds": {}
+                        },
+                        "f:name": {},
+                        "f:ports": {
+                          ".": {},
+                          "k:{\"containerPort\":6379,\"protocol\":\"TCP\"}": {
+                            ".": {},
+                            "f:containerPort": {},
+                            "f:name": {},
+                            "f:protocol": {}
+                          }
+                        },
+                        "f:readinessProbe": {
+                          ".": {},
+                          "f:exec": {
+                            ".": {},
+                            "f:command": {}
+                          },
+                          "f:failureThreshold": {},
+                          "f:initialDelaySeconds": {},
+                          "f:periodSeconds": {},
+                          "f:successThreshold": {},
+                          "f:timeoutSeconds": {}
+                        },
+                        "f:resources": {
+                          ".": {},
+                          "f:limits": {
+                            ".": {},
+                            "f:cpu": {},
+                            "f:ephemeral-storage": {},
+                            "f:memory": {}
+                          },
+                          "f:requests": {
+                            ".": {},
+                            "f:cpu": {},
+                            "f:ephemeral-storage": {},
+                            "f:memory": {}
+                          }
+                        },
+                        "f:securityContext": {
+                          ".": {},
+                          "f:allowPrivilegeEscalation": {},
+                          "f:capabilities": {
+                            ".": {},
+                            "f:drop": {}
+                          },
+                          "f:readOnlyRootFilesystem": {},
+                          "f:runAsGroup": {},
+                          "f:runAsNonRoot": {},
+                          "f:runAsUser": {},
+                          "f:seLinuxOptions": {},
+                          "f:seccompProfile": {
+                            ".": {},
+                            "f:type": {}
+                          }
+                        },
+                        "f:terminationMessagePath": {},
+                        "f:terminationMessagePolicy": {},
+                        "f:volumeMounts": {
+                          ".": {},
+                          "k:{\"mountPath\":\"/data\"}": {
+                            ".": {},
+                            "f:mountPath": {},
+                            "f:name": {}
+                          },
+                          "k:{\"mountPath\":\"/health\"}": {
+                            ".": {},
+                            "f:mountPath": {},
+                            "f:name": {}
+                          },
+                          "k:{\"mountPath\":\"/opt/bitnami/redis/etc/\"}": {
+                            ".": {},
+                            "f:mountPath": {},
+                            "f:name": {},
+                            "f:subPath": {}
+                          },
+                          "k:{\"mountPath\":\"/opt/bitnami/redis/mounted-etc\"}": {
+                            ".": {},
+                            "f:mountPath": {},
+                            "f:name": {}
+                          },
+                          "k:{\"mountPath\":\"/opt/bitnami/scripts/start-scripts\"}": {
+                            ".": {},
+                            "f:mountPath": {},
+                            "f:name": {}
+                          },
+                          "k:{\"mountPath\":\"/tmp\"}": {
+                            ".": {},
+                            "f:mountPath": {},
+                            "f:name": {},
+                            "f:subPath": {}
+                          }
+                        }
+                      }
+                    },
+                    "f:dnsPolicy": {},
+                    "f:enableServiceLinks": {},
+                    "f:restartPolicy": {},
+                    "f:schedulerName": {},
+                    "f:securityContext": {
+                      ".": {},
+                      "f:fsGroup": {},
+                      "f:fsGroupChangePolicy": {}
+                    },
+                    "f:serviceAccount": {},
+                    "f:serviceAccountName": {},
+                    "f:terminationGracePeriodSeconds": {},
+                    "f:volumes": {
+                      ".": {},
+                      "k:{\"name\":\"config\"}": {
+                        ".": {},
+                        "f:configMap": {
+                          ".": {},
+                          "f:defaultMode": {},
+                          "f:name": {}
+                        },
+                        "f:name": {}
+                      },
+                      "k:{\"name\":\"empty-dir\"}": {
+                        ".": {},
+                        "f:emptyDir": {},
+                        "f:name": {}
+                      },
+                      "k:{\"name\":\"health\"}": {
+                        ".": {},
+                        "f:configMap": {
+                          ".": {},
+                          "f:defaultMode": {},
+                          "f:name": {}
+                        },
+                        "f:name": {}
+                      },
+                      "k:{\"name\":\"start-scripts\"}": {
+                        ".": {},
+                        "f:configMap": {
+                          ".": {},
+                          "f:defaultMode": {},
+                          "f:name": {}
+                        },
+                        "f:name": {}
+                      }
+                    }
+                  }
+                },
+                "f:updateStrategy": {
+                  "f:type": {}
+                },
+                "f:volumeClaimTemplates": {}
+              }
+            }
+          },
+          {
+            "manager": "kube-controller-manager",
+            "operation": "Update",
+            "apiVersion": "apps/v1",
+            "time": "2025-08-09T22:56:27Z",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:status": {
+                "f:availableReplicas": {},
+                "f:collisionCount": {},
+                "f:currentReplicas": {},
+                "f:currentRevision": {},
+                "f:observedGeneration": {},
+                "f:readyReplicas": {},
+                "f:replicas": {},
+                "f:updateRevision": {},
+                "f:updatedReplicas": {}
+              }
+            },
+            "subresource": "status"
+          }
+        ]
+      },
+      "spec": {
+        "replicas": 1,
+        "selector": {
+          "matchLabels": {
+            "app.kubernetes.io/component": "master",
+            "app.kubernetes.io/instance": "redis",
+            "app.kubernetes.io/name": "redis"
+          }
+        },
+        "template": {
+          "metadata": {
+            "creationTimestamp": null,
+            "labels": {
+              "app.kubernetes.io/component": "master",
+              "app.kubernetes.io/instance": "redis",
+              "app.kubernetes.io/managed-by": "Helm",
+              "app.kubernetes.io/name": "redis",
+              "app.kubernetes.io/version": "8.2.0",
+              "helm.sh/chart": "redis-22.0.1"
+            },
+            "annotations": {
+              "checksum/configmap": "2a9ab4a5432825504d910f022638674ce88eaefe9f9f595ad8bc107377d104fb",
+              "checksum/health": "aff24913d801436ea469d8d374b2ddb3ec4c43ee7ab24663d5f8ff1a1b6991a9",
+              "checksum/scripts": "a6ef2e5239621cfee95246aaaa0df9ddd0efff6aa7d0e5265a09fe78daa70755",
+              "checksum/secret": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+            }
+          },
+          "spec": {
+            "volumes": [
+              {
+                "name": "start-scripts",
+                "configMap": {
+                  "name": "redis-scripts",
+                  "defaultMode": 493
+                }
+              },
+              {
+                "name": "health",
+                "configMap": {
+                  "name": "redis-health",
+                  "defaultMode": 493
+                }
+              },
+              {
+                "name": "config",
+                "configMap": {
+                  "name": "redis-configuration",
+                  "defaultMode": 420
+                }
+              },
+              {
+                "name": "empty-dir",
+                "emptyDir": {}
+              }
+            ],
+            "containers": [
+              {
+                "name": "redis",
+                "image": "docker.io/bitnami/redis:8.2.0-debian-12-r0",
+                "command": [
+                  "/bin/bash"
+                ],
+                "args": [
+                  "-ec",
+                  "/opt/bitnami/scripts/start-scripts/start-master.sh"
+                ],
+                "ports": [
+                  {
+                    "name": "redis",
+                    "containerPort": 6379,
+                    "protocol": "TCP"
+                  }
+                ],
+                "env": [
+                  {
+                    "name": "BITNAMI_DEBUG",
+                    "value": "false"
+                  },
+                  {
+                    "name": "REDIS_REPLICATION_MODE",
+                    "value": "master"
+                  },
+                  {
+                    "name": "ALLOW_EMPTY_PASSWORD",
+                    "value": "***HIDDEN***"
+                  },
+                  {
+                    "name": "REDIS_TLS_ENABLED",
+                    "value": "no"
+                  },
+                  {
+                    "name": "REDIS_PORT",
+                    "value": "6379"
+                  }
+                ],
+                "resources": {
+                  "limits": {
+                    "cpu": "150m",
+                    "ephemeral-storage": "2Gi",
+                    "memory": "192Mi"
+                  },
+                  "requests": {
+                    "cpu": "100m",
+                    "ephemeral-storage": "50Mi",
+                    "memory": "128Mi"
+                  }
+                },
+                "volumeMounts": [
+                  {
+                    "name": "start-scripts",
+                    "mountPath": "/opt/bitnami/scripts/start-scripts"
+                  },
+                  {
+                    "name": "health",
+                    "mountPath": "/health"
+                  },
+                  {
+                    "name": "redis-data",
+                    "mountPath": "/data"
+                  },
+                  {
+                    "name": "config",
+                    "mountPath": "/opt/bitnami/redis/mounted-etc"
+                  },
+                  {
+                    "name": "empty-dir",
+                    "mountPath": "/opt/bitnami/redis/etc/",
+                    "subPath": "app-conf-dir"
+                  },
+                  {
+                    "name": "empty-dir",
+                    "mountPath": "/tmp",
+                    "subPath": "tmp-dir"
+                  }
+                ],
+                "livenessProbe": {
+                  "exec": {
+                    "command": [
+                      "/bin/bash",
+                      "-ec",
+                      "/health/ping_liveness_local.sh 5"
+                    ]
+                  },
+                  "initialDelaySeconds": 20,
+                  "timeoutSeconds": 6,
+                  "periodSeconds": 5,
+                  "successThreshold": 1,
+                  "failureThreshold": 5
+                },
+                "readinessProbe": {
+                  "exec": {
+                    "command": [
+                      "/bin/bash",
+                      "-ec",
+                      "/health/ping_readiness_local.sh 1"
+                    ]
+                  },
+                  "initialDelaySeconds": 20,
+                  "timeoutSeconds": 2,
+                  "periodSeconds": 5,
+                  "successThreshold": 1,
+                  "failureThreshold": 5
+                },
+                "terminationMessagePath": "/dev/termination-log",
+                "terminationMessagePolicy": "File",
+                "imagePullPolicy": "IfNotPresent",
+                "securityContext": {
+                  "capabilities": {
+                    "drop": [
+                      "ALL"
+                    ]
+                  },
+                  "seLinuxOptions": {},
+                  "runAsUser": 1001,
+                  "runAsGroup": 1001,
+                  "runAsNonRoot": true,
+                  "readOnlyRootFilesystem": true,
+                  "allowPrivilegeEscalation": false,
+                  "seccompProfile": {
+                    "type": "RuntimeDefault"
+                  }
+                }
+              }
+            ],
+            "restartPolicy": "Always",
+            "terminationGracePeriodSeconds": 30,
+            "dnsPolicy": "ClusterFirst",
+            "serviceAccountName": "redis-master",
+            "serviceAccount": "redis-master",
+            "automountServiceAccountToken": false,
+            "securityContext": {
+              "fsGroup": 1001,
+              "fsGroupChangePolicy": "Always"
+            },
+            "affinity": {
+              "podAntiAffinity": {
+                "preferredDuringSchedulingIgnoredDuringExecution": [
+                  {
+                    "weight": 1,
+                    "podAffinityTerm": {
+                      "labelSelector": {
+                        "matchLabels": {
+                          "app.kubernetes.io/component": "master",
+                          "app.kubernetes.io/instance": "redis",
+                          "app.kubernetes.io/name": "redis"
+                        }
+                      },
+                      "topologyKey": "kubernetes.io/hostname"
+                    }
+                  }
+                ]
+              }
+            },
+            "schedulerName": "default-scheduler",
+            "enableServiceLinks": true
+          }
+        },
+        "volumeClaimTemplates": [
+          {
+            "metadata": {
+              "name": "redis-data",
+              "creationTimestamp": null,
+              "labels": {
+                "app.kubernetes.io/component": "master",
+                "app.kubernetes.io/instance": "redis",
+                "app.kubernetes.io/name": "redis"
+              }
+            },
+            "spec": {
+              "accessModes": [
+                "ReadWriteOnce"
+              ],
+              "resources": {
+                "requests": {
+                  "storage": "1Gi"
+                }
+              },
+              "volumeMode": "Filesystem"
+            },
+            "status": {
+              "phase": "Pending"
+            }
+          }
+        ],
+        "serviceName": "redis-headless",
+        "podManagementPolicy": "OrderedReady",
+        "updateStrategy": {
+          "type": "RollingUpdate"
+        },
+        "revisionHistoryLimit": 10,
+        "persistentVolumeClaimRetentionPolicy": {
+          "whenDeleted": "Retain",
+          "whenScaled": "Retain"
+        }
+      },
+      "status": {
+        "observedGeneration": 1,
+        "replicas": 1,
+        "readyReplicas": 1,
+        "currentReplicas": 1,
+        "updatedReplicas": 1,
+        "currentRevision": "redis-master-967cdf498",
+        "updateRevision": "redis-master-967cdf498",
+        "collisionCount": 0,
+        "availableReplicas": 1
+      }
+    },
+    {
+      "kind": "StatefulSet",
+      "apiVersion": "apps/v1",
+      "metadata": {
+        "name": "redis-replicas",
+        "namespace": "default",
+        "uid": "aaf6157a-fd64-4484-9cf8-29e9f25c7e12",
+        "resourceVersion": "956",
+        "generation": 1,
+        "creationTimestamp": "2025-08-09T22:55:57Z",
+        "labels": {
+          "app.kubernetes.io/component": "replica",
+          "app.kubernetes.io/instance": "redis",
+          "app.kubernetes.io/managed-by": "Helm",
+          "app.kubernetes.io/name": "redis",
+          "app.kubernetes.io/version": "8.2.0",
+          "helm.sh/chart": "redis-22.0.1"
+        },
+        "annotations": {
+          "meta.helm.sh/release-name": "redis",
+          "meta.helm.sh/release-namespace": "default"
+        },
+        "managedFields": [
+          {
+            "manager": "helm",
+            "operation": "Update",
+            "apiVersion": "apps/v1",
+            "time": "2025-08-09T22:55:57Z",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:metadata": {
+                "f:annotations": {
+                  ".": {},
+                  "f:meta.helm.sh/release-name": {},
+                  "f:meta.helm.sh/release-namespace": {}
+                },
+                "f:labels": {
+                  ".": {},
+                  "f:app.kubernetes.io/component": {},
+                  "f:app.kubernetes.io/instance": {},
+                  "f:app.kubernetes.io/managed-by": {},
+                  "f:app.kubernetes.io/name": {},
+                  "f:app.kubernetes.io/version": {},
+                  "f:helm.sh/chart": {}
+                }
+              },
+              "f:spec": {
+                "f:persistentVolumeClaimRetentionPolicy": {
+                  ".": {},
+                  "f:whenDeleted": {},
+                  "f:whenScaled": {}
+                },
+                "f:podManagementPolicy": {},
+                "f:replicas": {},
+                "f:revisionHistoryLimit": {},
+                "f:selector": {},
+                "f:serviceName": {},
+                "f:template": {
+                  "f:metadata": {
+                    "f:annotations": {
+                      ".": {},
+                      "f:checksum/configmap": {},
+                      "f:checksum/health": {},
+                      "f:checksum/scripts": {},
+                      "f:checksum/secret": {}
+                    },
+                    "f:labels": {
+                      ".": {},
+                      "f:app.kubernetes.io/component": {},
+                      "f:app.kubernetes.io/instance": {},
+                      "f:app.kubernetes.io/managed-by": {},
+                      "f:app.kubernetes.io/name": {},
+                      "f:app.kubernetes.io/version": {},
+                      "f:helm.sh/chart": {}
+                    }
+                  },
+                  "f:spec": {
+                    "f:affinity": {
+                      ".": {},
+                      "f:podAntiAffinity": {
+                        ".": {},
+                        "f:preferredDuringSchedulingIgnoredDuringExecution": {}
+                      }
+                    },
+                    "f:automountServiceAccountToken": {},
+                    "f:containers": {
+                      "k:{\"name\":\"redis\"}": {
+                        ".": {},
+                        "f:args": {},
+                        "f:command": {},
+                        "f:env": {
+                          ".": {},
+                          "k:{\"name\":\"ALLOW_EMPTY_PASSWORD\"}": {
+                            ".": {},
+                            "f:name": {},
+                            "f:value": {}
+                          },
+                          "k:{\"name\":\"BITNAMI_DEBUG\"}": {
+                            ".": {},
+                            "f:name": {},
+                            "f:value": {}
+                          },
+                          "k:{\"name\":\"REDIS_MASTER_HOST\"}": {
+                            ".": {},
+                            "f:name": {},
+                            "f:value": {}
+                          },
+                          "k:{\"name\":\"REDIS_MASTER_PORT_NUMBER\"}": {
+                            ".": {},
+                            "f:name": {},
+                            "f:value": {}
+                          },
+                          "k:{\"name\":\"REDIS_PORT\"}": {
+                            ".": {},
+                            "f:name": {},
+                            "f:value": {}
+                          },
+                          "k:{\"name\":\"REDIS_REPLICATION_MODE\"}": {
+                            ".": {},
+                            "f:name": {},
+                            "f:value": {}
+                          },
+                          "k:{\"name\":\"REDIS_TLS_ENABLED\"}": {
+                            ".": {},
+                            "f:name": {},
+                            "f:value": {}
+                          }
+                        },
+                        "f:image": {},
+                        "f:imagePullPolicy": {},
+                        "f:livenessProbe": {
+                          ".": {},
+                          "f:exec": {
+                            ".": {},
+                            "f:command": {}
+                          },
+                          "f:failureThreshold": {},
+                          "f:initialDelaySeconds": {},
+                          "f:periodSeconds": {},
+                          "f:successThreshold": {},
+                          "f:timeoutSeconds": {}
+                        },
+                        "f:name": {},
+                        "f:ports": {
+                          ".": {},
+                          "k:{\"containerPort\":6379,\"protocol\":\"TCP\"}": {
+                            ".": {},
+                            "f:containerPort": {},
+                            "f:name": {},
+                            "f:protocol": {}
+                          }
+                        },
+                        "f:readinessProbe": {
+                          ".": {},
+                          "f:exec": {
+                            ".": {},
+                            "f:command": {}
+                          },
+                          "f:failureThreshold": {},
+                          "f:initialDelaySeconds": {},
+                          "f:periodSeconds": {},
+                          "f:successThreshold": {},
+                          "f:timeoutSeconds": {}
+                        },
+                        "f:resources": {
+                          ".": {},
+                          "f:limits": {
+                            ".": {},
+                            "f:cpu": {},
+                            "f:ephemeral-storage": {},
+                            "f:memory": {}
+                          },
+                          "f:requests": {
+                            ".": {},
+                            "f:cpu": {},
+                            "f:ephemeral-storage": {},
+                            "f:memory": {}
+                          }
+                        },
+                        "f:securityContext": {
+                          ".": {},
+                          "f:allowPrivilegeEscalation": {},
+                          "f:capabilities": {
+                            ".": {},
+                            "f:drop": {}
+                          },
+                          "f:readOnlyRootFilesystem": {},
+                          "f:runAsGroup": {},
+                          "f:runAsNonRoot": {},
+                          "f:runAsUser": {},
+                          "f:seLinuxOptions": {},
+                          "f:seccompProfile": {
+                            ".": {},
+                            "f:type": {}
+                          }
+                        },
+                        "f:startupProbe": {
+                          ".": {},
+                          "f:failureThreshold": {},
+                          "f:initialDelaySeconds": {},
+                          "f:periodSeconds": {},
+                          "f:successThreshold": {},
+                          "f:tcpSocket": {
+                            ".": {},
+                            "f:port": {}
+                          },
+                          "f:timeoutSeconds": {}
+                        },
+                        "f:terminationMessagePath": {},
+                        "f:terminationMessagePolicy": {},
+                        "f:volumeMounts": {
+                          ".": {},
+                          "k:{\"mountPath\":\"/data\"}": {
+                            ".": {},
+                            "f:mountPath": {},
+                            "f:name": {}
+                          },
+                          "k:{\"mountPath\":\"/health\"}": {
+                            ".": {},
+                            "f:mountPath": {},
+                            "f:name": {}
+                          },
+                          "k:{\"mountPath\":\"/opt/bitnami/redis/etc\"}": {
+                            ".": {},
+                            "f:mountPath": {},
+                            "f:name": {},
+                            "f:subPath": {}
+                          },
+                          "k:{\"mountPath\":\"/opt/bitnami/redis/mounted-etc\"}": {
+                            ".": {},
+                            "f:mountPath": {},
+                            "f:name": {}
+                          },
+                          "k:{\"mountPath\":\"/opt/bitnami/scripts/start-scripts\"}": {
+                            ".": {},
+                            "f:mountPath": {},
+                            "f:name": {}
+                          },
+                          "k:{\"mountPath\":\"/tmp\"}": {
+                            ".": {},
+                            "f:mountPath": {},
+                            "f:name": {},
+                            "f:subPath": {}
+                          }
+                        }
+                      }
+                    },
+                    "f:dnsPolicy": {},
+                    "f:enableServiceLinks": {},
+                    "f:restartPolicy": {},
+                    "f:schedulerName": {},
+                    "f:securityContext": {
+                      ".": {},
+                      "f:fsGroup": {},
+                      "f:fsGroupChangePolicy": {}
+                    },
+                    "f:serviceAccount": {},
+                    "f:serviceAccountName": {},
+                    "f:terminationGracePeriodSeconds": {},
+                    "f:volumes": {
+                      ".": {},
+                      "k:{\"name\":\"config\"}": {
+                        ".": {},
+                        "f:configMap": {
+                          ".": {},
+                          "f:defaultMode": {},
+                          "f:name": {}
+                        },
+                        "f:name": {}
+                      },
+                      "k:{\"name\":\"empty-dir\"}": {
+                        ".": {},
+                        "f:emptyDir": {},
+                        "f:name": {}
+                      },
+                      "k:{\"name\":\"health\"}": {
+                        ".": {},
+                        "f:configMap": {
+                          ".": {},
+                          "f:defaultMode": {},
+                          "f:name": {}
+                        },
+                        "f:name": {}
+                      },
+                      "k:{\"name\":\"start-scripts\"}": {
+                        ".": {},
+                        "f:configMap": {
+                          ".": {},
+                          "f:defaultMode": {},
+                          "f:name": {}
+                        },
+                        "f:name": {}
+                      }
+                    }
+                  }
+                },
+                "f:updateStrategy": {
+                  "f:type": {}
+                },
+                "f:volumeClaimTemplates": {}
+              }
+            }
+          },
+          {
+            "manager": "kube-controller-manager",
+            "operation": "Update",
+            "apiVersion": "apps/v1",
+            "time": "2025-08-09T22:57:25Z",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:status": {
+                "f:availableReplicas": {},
+                "f:collisionCount": {},
+                "f:currentReplicas": {},
+                "f:currentRevision": {},
+                "f:observedGeneration": {},
+                "f:readyReplicas": {},
+                "f:replicas": {},
+                "f:updateRevision": {},
+                "f:updatedReplicas": {}
+              }
+            },
+            "subresource": "status"
+          }
+        ]
+      },
+      "spec": {
+        "replicas": 3,
+        "selector": {
+          "matchLabels": {
+            "app.kubernetes.io/component": "replica",
+            "app.kubernetes.io/instance": "redis",
+            "app.kubernetes.io/name": "redis"
+          }
+        },
+        "template": {
+          "metadata": {
+            "creationTimestamp": null,
+            "labels": {
+              "app.kubernetes.io/component": "replica",
+              "app.kubernetes.io/instance": "redis",
+              "app.kubernetes.io/managed-by": "Helm",
+              "app.kubernetes.io/name": "redis",
+              "app.kubernetes.io/version": "8.2.0",
+              "helm.sh/chart": "redis-22.0.1"
+            },
+            "annotations": {
+              "checksum/configmap": "2a9ab4a5432825504d910f022638674ce88eaefe9f9f595ad8bc107377d104fb",
+              "checksum/health": "aff24913d801436ea469d8d374b2ddb3ec4c43ee7ab24663d5f8ff1a1b6991a9",
+              "checksum/scripts": "a6ef2e5239621cfee95246aaaa0df9ddd0efff6aa7d0e5265a09fe78daa70755",
+              "checksum/secret": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
+            }
+          },
+          "spec": {
+            "volumes": [
+              {
+                "name": "start-scripts",
+                "configMap": {
+                  "name": "redis-scripts",
+                  "defaultMode": 493
+                }
+              },
+              {
+                "name": "health",
+                "configMap": {
+                  "name": "redis-health",
+                  "defaultMode": 493
+                }
+              },
+              {
+                "name": "config",
+                "configMap": {
+                  "name": "redis-configuration",
+                  "defaultMode": 420
+                }
+              },
+              {
+                "name": "empty-dir",
+                "emptyDir": {}
+              }
+            ],
+            "containers": [
+              {
+                "name": "redis",
+                "image": "docker.io/bitnami/redis:8.2.0-debian-12-r0",
+                "command": [
+                  "/bin/bash"
+                ],
+                "args": [
+                  "-ec",
+                  "/opt/bitnami/scripts/start-scripts/start-replica.sh"
+                ],
+                "ports": [
+                  {
+                    "name": "redis",
+                    "containerPort": 6379,
+                    "protocol": "TCP"
+                  }
+                ],
+                "env": [
+                  {
+                    "name": "BITNAMI_DEBUG",
+                    "value": "false"
+                  },
+                  {
+                    "name": "REDIS_REPLICATION_MODE",
+                    "value": "replica"
+                  },
+                  {
+                    "name": "REDIS_MASTER_HOST",
+                    "value": "redis-master-0.redis-headless.default.svc.cluster.local"
+                  },
+                  {
+                    "name": "REDIS_MASTER_PORT_NUMBER",
+                    "value": "6379"
+                  },
+                  {
+                    "name": "ALLOW_EMPTY_PASSWORD",
+                    "value": "***HIDDEN***"
+                  },
+                  {
+                    "name": "REDIS_TLS_ENABLED",
+                    "value": "no"
+                  },
+                  {
+                    "name": "REDIS_PORT",
+                    "value": "6379"
+                  }
+                ],
+                "resources": {
+                  "limits": {
+                    "cpu": "150m",
+                    "ephemeral-storage": "2Gi",
+                    "memory": "192Mi"
+                  },
+                  "requests": {
+                    "cpu": "100m",
+                    "ephemeral-storage": "50Mi",
+                    "memory": "128Mi"
+                  }
+                },
+                "volumeMounts": [
+                  {
+                    "name": "start-scripts",
+                    "mountPath": "/opt/bitnami/scripts/start-scripts"
+                  },
+                  {
+                    "name": "health",
+                    "mountPath": "/health"
+                  },
+                  {
+                    "name": "redis-data",
+                    "mountPath": "/data"
+                  },
+                  {
+                    "name": "config",
+                    "mountPath": "/opt/bitnami/redis/mounted-etc"
+                  },
+                  {
+                    "name": "empty-dir",
+                    "mountPath": "/opt/bitnami/redis/etc",
+                    "subPath": "app-conf-dir"
+                  },
+                  {
+                    "name": "empty-dir",
+                    "mountPath": "/tmp",
+                    "subPath": "tmp-dir"
+                  }
+                ],
+                "livenessProbe": {
+                  "exec": {
+                    "command": [
+                      "/bin/bash",
+                      "-ec",
+                      "/health/ping_liveness_local_and_master.sh 5"
+                    ]
+                  },
+                  "initialDelaySeconds": 20,
+                  "timeoutSeconds": 6,
+                  "periodSeconds": 5,
+                  "successThreshold": 1,
+                  "failureThreshold": 5
+                },
+                "readinessProbe": {
+                  "exec": {
+                    "command": [
+                      "/bin/bash",
+                      "-ec",
+                      "/health/ping_readiness_local_and_master.sh 1"
+                    ]
+                  },
+                  "initialDelaySeconds": 20,
+                  "timeoutSeconds": 2,
+                  "periodSeconds": 5,
+                  "successThreshold": 1,
+                  "failureThreshold": 5
+                },
+                "startupProbe": {
+                  "tcpSocket": {
+                    "port": "redis"
+                  },
+                  "initialDelaySeconds": 10,
+                  "timeoutSeconds": 5,
+                  "periodSeconds": 10,
+                  "successThreshold": 1,
+                  "failureThreshold": 22
+                },
+                "terminationMessagePath": "/dev/termination-log",
+                "terminationMessagePolicy": "File",
+                "imagePullPolicy": "IfNotPresent",
+                "securityContext": {
+                  "capabilities": {
+                    "drop": [
+                      "ALL"
+                    ]
+                  },
+                  "seLinuxOptions": {},
+                  "runAsUser": 1001,
+                  "runAsGroup": 1001,
+                  "runAsNonRoot": true,
+                  "readOnlyRootFilesystem": true,
+                  "allowPrivilegeEscalation": false,
+                  "seccompProfile": {
+                    "type": "RuntimeDefault"
+                  }
+                }
+              }
+            ],
+            "restartPolicy": "Always",
+            "terminationGracePeriodSeconds": 30,
+            "dnsPolicy": "ClusterFirst",
+            "serviceAccountName": "redis-replica",
+            "serviceAccount": "redis-replica",
+            "automountServiceAccountToken": false,
+            "securityContext": {
+              "fsGroup": 1001,
+              "fsGroupChangePolicy": "Always"
+            },
+            "affinity": {
+              "podAntiAffinity": {
+                "preferredDuringSchedulingIgnoredDuringExecution": [
+                  {
+                    "weight": 1,
+                    "podAffinityTerm": {
+                      "labelSelector": {
+                        "matchLabels": {
+                          "app.kubernetes.io/component": "replica",
+                          "app.kubernetes.io/instance": "redis",
+                          "app.kubernetes.io/name": "redis"
+                        }
+                      },
+                      "topologyKey": "kubernetes.io/hostname"
+                    }
+                  }
+                ]
+              }
+            },
+            "schedulerName": "default-scheduler",
+            "enableServiceLinks": true
+          }
+        },
+        "volumeClaimTemplates": [
+          {
+            "metadata": {
+              "name": "redis-data",
+              "creationTimestamp": null,
+              "labels": {
+                "app.kubernetes.io/component": "replica",
+                "app.kubernetes.io/instance": "redis",
+                "app.kubernetes.io/name": "redis"
+              }
+            },
+            "spec": {
+              "accessModes": [
+                "ReadWriteOnce"
+              ],
+              "resources": {
+                "requests": {
+                  "storage": "8Gi"
+                }
+              },
+              "volumeMode": "Filesystem"
+            },
+            "status": {
+              "phase": "Pending"
+            }
+          }
+        ],
+        "serviceName": "redis-headless",
+        "podManagementPolicy": "OrderedReady",
+        "updateStrategy": {
+          "type": "RollingUpdate"
+        },
+        "revisionHistoryLimit": 10,
+        "persistentVolumeClaimRetentionPolicy": {
+          "whenDeleted": "Retain",
+          "whenScaled": "Retain"
+        }
+      },
+      "status": {
+        "observedGeneration": 1,
+        "replicas": 3,
+        "readyReplicas": 3,
+        "currentReplicas": 3,
+        "updatedReplicas": 3,
+        "currentRevision": "redis-replicas-7f55fcbd75",
+        "updateRevision": "redis-replicas-7f55fcbd75",
+        "collisionCount": 0,
+        "availableReplicas": 3
+      }
+    }
+  ]
+}

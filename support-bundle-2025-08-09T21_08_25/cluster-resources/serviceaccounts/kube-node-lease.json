@@ -1,0 +1,20 @@
+{
+  "kind": "ServiceAccountList",
+  "apiVersion": "v1",
+  "metadata": {
+    "resourceVersion": "8769"
+  },
+  "items": [
+    {
+      "kind": "ServiceAccount",
+      "apiVersion": "v1",
+      "metadata": {
+        "name": "default",
+        "namespace": "kube-node-lease",
+        "uid": "8dc3a3b5-2646-4e60-b0ac-28e788796d5b",
+        "resourceVersion": "339",
+        "creationTimestamp": "2025-08-09T22:55:12Z"
+      }
+    }
+  ]
+}

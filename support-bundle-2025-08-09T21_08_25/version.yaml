@@ -1,0 +1,4 @@
+apiVersion: troubleshoot.sh/v1beta2
+kind: SupportBundle
+spec:
+  versionNumber: ""

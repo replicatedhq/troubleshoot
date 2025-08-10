@@ -1,0 +1,18 @@
+============ Collectors summary =============
+Succeeded (S), eXcluded (X), Failed (F)
+=============================================
+cluster-resources (S)        : 1,468ms
+logs/app=connection-test (S) : 25ms
+logs/app=memory-hog (S)      : 18ms
+logs/app=crash-loop (S)      : 14ms
+cluster-info (S)             : 3ms
+
+============ Redactors summary =============
+In-cluster collectors : 491ms
+
+============= Analyzers summary =============
+Succeeded (S), eXcluded (X), Failed (F)
+=============================================
+LLM Analysis of Kubernetes Issues (S) : 1ms
+
+Duration: 2,054ms

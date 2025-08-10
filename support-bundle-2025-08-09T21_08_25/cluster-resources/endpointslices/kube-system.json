@@ -1,0 +1,129 @@
+{
+  "kind": "EndpointSliceList",
+  "apiVersion": "discovery.k8s.io/v1",
+  "metadata": {
+    "resourceVersion": "8769"
+  },
+  "items": [
+    {
+      "kind": "EndpointSlice",
+      "apiVersion": "discovery.k8s.io/v1",
+      "metadata": {
+        "name": "kube-dns-fbqml",
+        "generateName": "kube-dns-",
+        "namespace": "kube-system",
+        "uid": "9b898b2a-d90e-463a-a7ca-504b20fc7988",
+        "resourceVersion": "492",
+        "generation": 4,
+        "creationTimestamp": "2025-08-09T22:55:11Z",
+        "labels": {
+          "endpointslice.kubernetes.io/managed-by": "endpointslice-controller.k8s.io",
+          "k8s-app": "kube-dns",
+          "kubernetes.io/cluster-service": "true",
+          "kubernetes.io/name": "CoreDNS",
+          "kubernetes.io/service-name": "kube-dns"
+        },
+        "annotations": {
+          "endpoints.kubernetes.io/last-change-trigger-time": "2025-08-09T22:55:25Z"
+        },
+        "ownerReferences": [
+          {
+            "apiVersion": "v1",
+            "kind": "Service",
+            "name": "kube-dns",
+            "uid": "89fdb39c-a2e2-4c53-adb9-efa5315c2dc9",
+            "controller": true,
+            "blockOwnerDeletion": true
+          }
+        ],
+        "managedFields": [
+          {
+            "manager": "kube-controller-manager",
+            "operation": "Update",
+            "apiVersion": "discovery.k8s.io/v1",
+            "time": "2025-08-09T22:55:25Z",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:addressType": {},
+              "f:endpoints": {},
+              "f:metadata": {
+                "f:annotations": {
+                  ".": {},
+                  "f:endpoints.kubernetes.io/last-change-trigger-time": {}
+                },
+                "f:generateName": {},
+                "f:labels": {
+                  ".": {},
+                  "f:endpointslice.kubernetes.io/managed-by": {},
+                  "f:k8s-app": {},
+                  "f:kubernetes.io/cluster-service": {},
+                  "f:kubernetes.io/name": {},
+                  "f:kubernetes.io/service-name": {}
+                },
+                "f:ownerReferences": {
+                  ".": {},
+                  "k:{\"uid\":\"89fdb39c-a2e2-4c53-adb9-efa5315c2dc9\"}": {}
+                }
+              },
+              "f:ports": {}
+            }
+          }
+        ]
+      },
+      "addressType": "IPv4",
+      "endpoints": [
+        {
+          "addresses": [
+            "10.244.0.2"
+          ],
+          "conditions": {
+            "ready": true,
+            "serving": true,
+            "terminating": false
+          },
+          "targetRef": {
+            "kind": "Pod",
+            "namespace": "kube-system",
+            "name": "coredns-674b8bbfcf-rhhtc",
+            "uid": "9188e4b6-54ec-43b3-b1a9-4e356c4ab005"
+          },
+          "nodeName": "troubleshoot-test-control-plane"
+        },
+        {
+          "addresses": [
+            "10.244.0.4"
+          ],
+          "conditions": {
+            "ready": true,
+            "serving": true,
+            "terminating": false
+          },
+          "targetRef": {
+            "kind": "Pod",
+            "namespace": "kube-system",
+            "name": "coredns-674b8bbfcf-2w2lv",
+            "uid": "96f42272-88ed-452c-98f4-349aea3800f0"
+          },
+          "nodeName": "troubleshoot-test-control-plane"
+        }
+      ],
+      "ports": [
+        {
+          "name": "metrics",
+          "protocol": "TCP",
+          "port": 9153
+        },
+        {
+          "name": "dns",
+          "protocol": "UDP",
+          "port": 53
+        },
+        {
+          "name": "dns-tcp",
+          "protocol": "TCP",
+          "port": 53
+        }
+      ]
+    }
+  ]
+}

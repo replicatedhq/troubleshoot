@@ -1,0 +1,74 @@
+[
+  {
+    "verbs": [
+      "*"
+    ],
+    "apiGroups": [
+      "*"
+    ],
+    "resources": [
+      "*"
+    ]
+  },
+  {
+    "verbs": [
+      "create"
+    ],
+    "apiGroups": [
+      "authorization.k8s.io"
+    ],
+    "resources": [
+      "selfsubjectaccessreviews",
+      "selfsubjectrulesreviews"
+    ]
+  },
+  {
+    "verbs": [
+      "create"
+    ],
+    "apiGroups": [
+      "authentication.k8s.io"
+    ],
+    "resources": [
+      "selfsubjectreviews"
+    ]
+  },
+  {
+    "verbs": [
+      "get"
+    ],
+    "nonResourceURLs": [
+      "/healthz",
+      "/livez",
+      "/readyz",
+      "/version",
+      "/version/"
+    ]
+  },
+  {
+    "verbs": [
+      "*"
+    ],
+    "nonResourceURLs": [
+      "*"
+    ]
+  },
+  {
+    "verbs": [
+      "get"
+    ],
+    "nonResourceURLs": [
+      "/api",
+      "/api/*",
+      "/apis",
+      "/apis/*",
+      "/healthz",
+      "/livez",
+      "/openapi",
+      "/openapi/*",
+      "/readyz",
+      "/version",
+      "/version/"
+    ]
+  }
+]

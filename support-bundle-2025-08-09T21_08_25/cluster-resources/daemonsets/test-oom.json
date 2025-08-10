@@ -1,0 +1,8 @@
+{
+  "kind": "DaemonSetList",
+  "apiVersion": "apps/v1",
+  "metadata": {
+    "resourceVersion": "8767"
+  },
+  "items": null
+}

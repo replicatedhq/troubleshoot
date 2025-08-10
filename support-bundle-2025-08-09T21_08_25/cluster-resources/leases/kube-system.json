@@ -1,0 +1,124 @@
+{
+  "kind": "LeaseList",
+  "apiVersion": "coordination.k8s.io/v1",
+  "metadata": {
+    "resourceVersion": "8769"
+  },
+  "items": [
+    {
+      "kind": "Lease",
+      "apiVersion": "coordination.k8s.io/v1",
+      "metadata": {
+        "name": "apiserver-khpv3ig5ajmco6fwlth7ya7sxu",
+        "namespace": "kube-system",
+        "uid": "8017a46e-892a-4594-9051-904676cae033",
+        "resourceVersion": "8761",
+        "creationTimestamp": "2025-08-09T22:55:03Z",
+        "labels": {
+          "apiserver.kubernetes.io/identity": "kube-apiserver",
+          "kubernetes.io/hostname": "troubleshoot-test-control-plane"
+        },
+        "managedFields": [
+          {
+            "manager": "kube-apiserver",
+            "operation": "Update",
+            "apiVersion": "coordination.k8s.io/v1",
+            "time": "2025-08-10T02:08:23Z",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:metadata": {
+                "f:labels": {
+                  ".": {},
+                  "f:apiserver.kubernetes.io/identity": {},
+                  "f:kubernetes.io/hostname": {}
+                }
+              },
+              "f:spec": {
+                "f:holderIdentity": {},
+                "f:leaseDurationSeconds": {},
+                "f:renewTime": {}
+              }
+            }
+          }
+        ]
+      },
+      "spec": {
+        "holderIdentity": "apiserver-khpv3ig5ajmco6fwlth7ya7sxu_5b1f8e91-4fba-4862-a470-145471fd2d50",
+        "leaseDurationSeconds": 3600,
+        "renewTime": "2025-08-10T02:08:23.322698Z"
+      }
+    },
+    {
+      "kind": "Lease",
+      "apiVersion": "coordination.k8s.io/v1",
+      "metadata": {
+        "name": "kube-controller-manager",
+        "namespace": "kube-system",
+        "uid": "48059395-edc7-47f1-b90d-bc3de826895c",
+        "resourceVersion": "8767",
+        "creationTimestamp": "2025-08-09T22:55:06Z",
+        "managedFields": [
+          {
+            "manager": "kube-controller-manager",
+            "operation": "Update",
+            "apiVersion": "coordination.k8s.io/v1",
+            "time": "2025-08-10T02:08:25Z",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:spec": {
+                "f:acquireTime": {},
+                "f:holderIdentity": {},
+                "f:leaseDurationSeconds": {},
+                "f:leaseTransitions": {},
+                "f:renewTime": {}
+              }
+            }
+          }
+        ]
+      },
+      "spec": {
+        "holderIdentity": "troubleshoot-test-control-plane_4647217d-71d0-46fe-b56d-8358983ddf75",
+        "leaseDurationSeconds": 15,
+        "acquireTime": "2025-08-09T22:55:06.560685Z",
+        "renewTime": "2025-08-10T02:08:25.760408Z",
+        "leaseTransitions": 0
+      }
+    },
+    {
+      "kind": "Lease",
+      "apiVersion": "coordination.k8s.io/v1",
+      "metadata": {
+        "name": "kube-scheduler",
+        "namespace": "kube-system",
+        "uid": "cecdd794-3390-4bb5-99db-8c1de7d1320e",
+        "resourceVersion": "8769",
+        "creationTimestamp": "2025-08-09T22:55:07Z",
+        "managedFields": [
+          {
+            "manager": "kube-scheduler",
+            "operation": "Update",
+            "apiVersion": "coordination.k8s.io/v1",
+            "time": "2025-08-10T02:08:26Z",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:spec": {
+                "f:acquireTime": {},
+                "f:holderIdentity": {},
+                "f:leaseDurationSeconds": {},
+                "f:leaseTransitions": {},
+                "f:renewTime": {}
+              }
+            }
+          }
+        ]
+      },
+      "spec": {
+        "holderIdentity": "troubleshoot-test-control-plane_570f4e34-74c6-48e9-9a3f-1a83d7658b21",
+        "leaseDurationSeconds": 15,
+        "acquireTime": "2025-08-09T22:55:07.525944Z",
+        "renewTime": "2025-08-10T02:08:26.812472Z",
+        "leaseTransitions": 0
+      }
+    }
+  ]
+}

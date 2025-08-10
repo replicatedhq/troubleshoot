@@ -1,0 +1,38 @@
+apiVersion: troubleshoot.sh/v1beta2
+kind: SupportBundle
+metadata:
+  name: llm-test-bundle
+spec:
+  collectors:
+    - clusterInfo: {}
+    - clusterResources: {}
+    - logs:
+        selector:
+          - app=memory-hog
+        namespace: test-oom
+        name: oom-logs
+    - logs:
+        selector:
+          - app=crash-loop
+        namespace: test-crash
+        name: crash-loop-logs
+    - logs:
+        selector:
+          - app=connection-test
+        namespace: test-connection
+        name: connection-logs
+  analyzers:
+    - llm:
+        checkName: "LLM Analysis - OOM Issues"
+        collectorName: "oom-logs"
+        fileName: "*/*"
+        model: "gpt-4o-mini"
+        outcomes:
+          - fail:
+              when: "issue_found"
+              message: "Critical issue detected: {{.Summary}}"
+          - warn:
+              when: "potential_issue"  
+              message: "Warning: {{.Summary}}"
+          - pass:
+              message: "No issues detected by LLM"

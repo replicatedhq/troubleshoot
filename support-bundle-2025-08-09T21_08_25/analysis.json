@@ -1,0 +1,22 @@
+[
+    {
+        "name": "llm.analysis.of.kubernetes.issues",
+        "labels": {
+            "desiredPosition": "1",
+            "iconKey": "",
+            "iconUri": ""
+        },
+        "insight": {
+            "name": "llm.analysis.of.kubernetes.issues",
+            "labels": {
+                "iconKey": "",
+                "iconUri": ""
+            },
+            "primary": "LLM Analysis of Kubernetes Issues",
+            "detail": "No files found to analyze. Pattern: cluster-resources/pods/logs/*/*/*.log, Collector: ",
+            "severity": "warn"
+        },
+        "severity": "warn",
+        "analyzerSpec": ""
+    }
+]

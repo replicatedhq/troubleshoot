@@ -1,0 +1,229 @@
+{
+  "kind": "DeploymentList",
+  "apiVersion": "apps/v1",
+  "metadata": {
+    "resourceVersion": "8767"
+  },
+  "items": [
+    {
+      "kind": "Deployment",
+      "apiVersion": "apps/v1",
+      "metadata": {
+        "name": "crash-loop-app",
+        "namespace": "test-crash",
+        "uid": "8b0e3ff3-eed8-4860-b98e-3ed70db1b9fc",
+        "resourceVersion": "8740",
+        "generation": 1,
+        "creationTimestamp": "2025-08-09T22:57:54Z",
+        "labels": {
+          "app": "crash-loop"
+        },
+        "annotations": {
+          "deployment.kubernetes.io/revision": "1",
+          "kubectl.kubernetes.io/last-applied-configuration": "{\"apiVersion\":\"apps/v1\",\"kind\":\"Deployment\",\"metadata\":{\"annotations\":{},\"labels\":{\"app\":\"crash-loop\"},\"name\":\"crash-loop-app\",\"namespace\":\"test-crash\"},\"spec\":{\"replicas\":2,\"selector\":{\"matchLabels\":{\"app\":\"crash-loop\"}},\"template\":{\"metadata\":{\"labels\":{\"app\":\"crash-loop\"}},\"spec\":{\"containers\":[{\"args\":[\"-c\",\"echo 'Starting application...'; sleep 5; echo 'ERROR: Database connection failed!'; exit 1\"],\"command\":[\"/bin/sh\"],\"env\":[{\"name\":\"DATABASE_URL\",\"value\":\"***HIDDEN***\"},{\"name\":\"ENVIRONMENT\",\"value\":\"production\"}],\"image\":\"busybox\",\"name\":\"failing-app\"}]}}}}\n"
+        },
+        "managedFields": [
+          {
+            "manager": "kubectl-client-side-apply",
+            "operation": "Update",
+            "apiVersion": "apps/v1",
+            "time": "2025-08-09T22:57:54Z",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:metadata": {
+                "f:annotations": {
+                  ".": {},
+                  "f:kubectl.kubernetes.io/last-applied-configuration": {}
+                },
+                "f:labels": {
+                  ".": {},
+                  "f:app": {}
+                }
+              },
+              "f:spec": {
+                "f:progressDeadlineSeconds": {},
+                "f:replicas": {},
+                "f:revisionHistoryLimit": {},
+                "f:selector": {},
+                "f:strategy": {
+                  "f:rollingUpdate": {
+                    ".": {},
+                    "f:maxSurge": {},
+                    "f:maxUnavailable": {}
+                  },
+                  "f:type": {}
+                },
+                "f:template": {
+                  "f:metadata": {
+                    "f:labels": {
+                      ".": {},
+                      "f:app": {}
+                    }
+                  },
+                  "f:spec": {
+                    "f:containers": {
+                      "k:{\"name\":\"failing-app\"}": {
+                        ".": {},
+                        "f:args": {},
+                        "f:command": {},
+                        "f:env": {
+                          ".": {},
+                          "k:{\"name\":\"DATABASE_URL\"}": {
+                            ".": {},
+                            "f:name": {},
+                            "f:value": {}
+                          },
+                          "k:{\"name\":\"ENVIRONMENT\"}": {
+                            ".": {},
+                            "f:name": {},
+                            "f:value": {}
+                          }
+                        },
+                        "f:image": {},
+                        "f:imagePullPolicy": {},
+                        "f:name": {},
+                        "f:resources": {},
+                        "f:terminationMessagePath": {},
+                        "f:terminationMessagePolicy": {}
+                      }
+                    },
+                    "f:dnsPolicy": {},
+                    "f:restartPolicy": {},
+                    "f:schedulerName": {},
+                    "f:securityContext": {},
+                    "f:terminationGracePeriodSeconds": {}
+                  }
+                }
+              }
+            }
+          },
+          {
+            "manager": "kube-controller-manager",
+            "operation": "Update",
+            "apiVersion": "apps/v1",
+            "time": "2025-08-10T02:08:12Z",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:metadata": {
+                "f:annotations": {
+                  "f:deployment.kubernetes.io/revision": {}
+                }
+              },
+              "f:status": {
+                "f:conditions": {
+                  ".": {},
+                  "k:{\"type\":\"Available\"}": {
+                    ".": {},
+                    "f:lastTransitionTime": {},
+                    "f:lastUpdateTime": {},
+                    "f:message": {},
+                    "f:reason": {},
+                    "f:status": {},
+                    "f:type": {}
+                  },
+                  "k:{\"type\":\"Progressing\"}": {
+                    ".": {},
+                    "f:lastTransitionTime": {},
+                    "f:lastUpdateTime": {},
+                    "f:message": {},
+                    "f:reason": {},
+                    "f:status": {},
+                    "f:type": {}
+                  }
+                },
+                "f:observedGeneration": {},
+                "f:replicas": {},
+                "f:unavailableReplicas": {},
+                "f:updatedReplicas": {}
+              }
+            },
+            "subresource": "status"
+          }
+        ]
+      },
+      "spec": {
+        "replicas": 2,
+        "selector": {
+          "matchLabels": {
+            "app": "crash-loop"
+          }
+        },
+        "template": {
+          "metadata": {
+            "creationTimestamp": null,
+            "labels": {
+              "app": "crash-loop"
+            }
+          },
+          "spec": {
+            "containers": [
+              {
+                "name": "failing-app",
+                "image": "busybox",
+                "command": [
+                  "/bin/sh"
+                ],
+                "args": [
+                  "-c",
+                  "echo 'Starting application...'; sleep 5; echo 'ERROR: Database connection failed!'; exit 1"
+                ],
+                "env": [
+                  {
+                    "name": "DATABASE_URL",
+                    "value": "***HIDDEN***"
+                  },
+                  {
+                    "name": "ENVIRONMENT",
+                    "value": "production"
+                  }
+                ],
+                "resources": {},
+                "terminationMessagePath": "/dev/termination-log",
+                "terminationMessagePolicy": "File",
+                "imagePullPolicy": "Always"
+              }
+            ],
+            "restartPolicy": "Always",
+            "terminationGracePeriodSeconds": 30,
+            "dnsPolicy": "ClusterFirst",
+            "securityContext": {},
+            "schedulerName": "default-scheduler"
+          }
+        },
+        "strategy": {
+          "type": "RollingUpdate",
+          "rollingUpdate": {
+            "maxUnavailable": "25%",
+            "maxSurge": "25%"
+          }
+        },
+        "revisionHistoryLimit": 10,
+        "progressDeadlineSeconds": 600
+      },
+      "status": {
+        "observedGeneration": 1,
+        "replicas": 2,
+        "updatedReplicas": 2,
+        "unavailableReplicas": 2,
+        "conditions": [
+          {
+            "type": "Progressing",
+            "status": "True",
+            "lastUpdateTime": "2025-08-09T22:57:58Z",
+            "lastTransitionTime": "2025-08-09T22:57:54Z",
+            "reason": "NewReplicaSetAvailable",
+            "message": "ReplicaSet \"crash-loop-app-67586446fc\" has successfully progressed."
+          },
+          {
+            "type": "Available",
+            "status": "False",
+            "lastUpdateTime": "2025-08-10T02:08:11Z",
+            "lastTransitionTime": "2025-08-10T02:08:11Z",
+            "reason": "MinimumReplicasUnavailable",
+            "message": "Deployment does not have minimum availability."
+          }
+        ]
+      }
+    }
+  ]
+}

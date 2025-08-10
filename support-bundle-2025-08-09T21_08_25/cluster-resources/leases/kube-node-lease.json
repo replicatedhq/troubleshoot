@@ -1,0 +1,101 @@
+{
+  "kind": "LeaseList",
+  "apiVersion": "coordination.k8s.io/v1",
+  "metadata": {
+    "resourceVersion": "8769"
+  },
+  "items": [
+    {
+      "kind": "Lease",
+      "apiVersion": "coordination.k8s.io/v1",
+      "metadata": {
+        "name": "troubleshoot-test-control-plane",
+        "namespace": "kube-node-lease",
+        "uid": "311fec20-1392-4dd1-8d4e-63e88ea70552",
+        "resourceVersion": "8768",
+        "creationTimestamp": "2025-08-09T22:55:05Z",
+        "ownerReferences": [
+          {
+            "apiVersion": "v1",
+            "kind": "Node",
+            "name": "troubleshoot-test-control-plane",
+            "uid": "a362101a-d96d-4c98-a566-bc170c550505"
+          }
+        ],
+        "managedFields": [
+          {
+            "manager": "kubelet",
+            "operation": "Update",
+            "apiVersion": "coordination.k8s.io/v1",
+            "time": "2025-08-10T02:08:25Z",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:metadata": {
+                "f:ownerReferences": {
+                  ".": {},
+                  "k:{\"uid\":\"a362101a-d96d-4c98-a566-bc170c550505\"}": {}
+                }
+              },
+              "f:spec": {
+                "f:holderIdentity": {},
+                "f:leaseDurationSeconds": {},
+                "f:renewTime": {}
+              }
+            }
+          }
+        ]
+      },
+      "spec": {
+        "holderIdentity": "troubleshoot-test-control-plane",
+        "leaseDurationSeconds": 40,
+        "renewTime": "2025-08-10T02:08:25.850184Z"
+      }
+    },
+    {
+      "kind": "Lease",
+      "apiVersion": "coordination.k8s.io/v1",
+      "metadata": {
+        "name": "troubleshoot-test-worker",
+        "namespace": "kube-node-lease",
+        "uid": "ee8c0306-01f8-40ac-a834-b876b2db4475",
+        "resourceVersion": "8760",
+        "creationTimestamp": "2025-08-09T22:55:12Z",
+        "ownerReferences": [
+          {
+            "apiVersion": "v1",
+            "kind": "Node",
+            "name": "troubleshoot-test-worker",
+            "uid": "53c27559-628e-48f3-8b15-46bd0d44eaa7"
+          }
+        ],
+        "managedFields": [
+          {
+            "manager": "kubelet",
+            "operation": "Update",
+            "apiVersion": "coordination.k8s.io/v1",
+            "time": "2025-08-10T02:08:23Z",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:metadata": {
+                "f:ownerReferences": {
+                  ".": {},
+                  "k:{\"uid\":\"53c27559-628e-48f3-8b15-46bd0d44eaa7\"}": {}
+                }
+              },
+              "f:spec": {
+                "f:holderIdentity": {},
+                "f:leaseDurationSeconds": {},
+                "f:renewTime": {}
+              }
+            }
+          }
+        ]
+      },
+      "spec": {
+        "holderIdentity": "troubleshoot-test-worker",
+        "leaseDurationSeconds": 40,
+        "renewTime": "2025-08-10T02:08:23.042628Z"
+      }
+    }
+  ]
+}

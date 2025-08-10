@@ -1,0 +1,11 @@
+{
+  "default": "the server could not find the requested resource",
+  "ingress-nginx": "the server could not find the requested resource",
+  "kube-node-lease": "the server could not find the requested resource",
+  "kube-public": "the server could not find the requested resource",
+  "kube-system": "the server could not find the requested resource",
+  "local-path-storage": "the server could not find the requested resource",
+  "test-connection": "the server could not find the requested resource",
+  "test-crash": "the server could not find the requested resource",
+  "test-oom": "the server could not find the requested resource"
+}

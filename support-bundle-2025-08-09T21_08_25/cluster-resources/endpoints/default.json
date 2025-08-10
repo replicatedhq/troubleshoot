@@ -1,0 +1,484 @@
+{
+  "kind": "EndpointsList",
+  "apiVersion": "v1",
+  "metadata": {
+    "resourceVersion": "8768"
+  },
+  "items": [
+    {
+      "kind": "Endpoints",
+      "apiVersion": "v1",
+      "metadata": {
+        "name": "kubernetes",
+        "namespace": "default",
+        "uid": "259003cc-ca6b-4984-97d3-753d5ce7b10f",
+        "resourceVersion": "205",
+        "creationTimestamp": "2025-08-09T22:55:04Z",
+        "labels": {
+          "endpointslice.kubernetes.io/skip-mirror": "true"
+        },
+        "managedFields": [
+          {
+            "manager": "kube-apiserver",
+            "operation": "Update",
+            "apiVersion": "v1",
+            "time": "2025-08-09T22:55:04Z",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:metadata": {
+                "f:labels": {
+                  ".": {},
+                  "f:endpointslice.kubernetes.io/skip-mirror": {}
+                }
+              },
+              "f:subsets": {}
+            }
+          }
+        ]
+      },
+      "subsets": [
+        {
+          "addresses": [
+            {
+              "ip": "172.18.0.2"
+            }
+          ],
+          "ports": [
+            {
+              "name": "https",
+              "port": 6443,
+              "protocol": "TCP"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "Endpoints",
+      "apiVersion": "v1",
+      "metadata": {
+        "name": "postgres-postgresql",
+        "namespace": "default",
+        "uid": "c4cc4e8b-b78b-4b99-aa60-c3d4894e88fd",
+        "resourceVersion": "600",
+        "creationTimestamp": "2025-08-09T22:55:33Z",
+        "labels": {
+          "app.kubernetes.io/component": "primary",
+          "app.kubernetes.io/instance": "postgres",
+          "app.kubernetes.io/managed-by": "Helm",
+          "app.kubernetes.io/name": "postgresql",
+          "app.kubernetes.io/version": "17.5.0",
+          "endpoints.kubernetes.io/managed-by": "endpoint-controller",
+          "helm.sh/chart": "postgresql-16.7.24"
+        },
+        "annotations": {
+          "endpoints.kubernetes.io/last-change-trigger-time": "2025-08-09T22:55:54Z"
+        },
+        "managedFields": [
+          {
+            "manager": "kube-controller-manager",
+            "operation": "Update",
+            "apiVersion": "v1",
+            "time": "2025-08-09T22:55:54Z",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:metadata": {
+                "f:annotations": {
+                  ".": {},
+                  "f:endpoints.kubernetes.io/last-change-trigger-time": {}
+                },
+                "f:labels": {
+                  ".": {},
+                  "f:app.kubernetes.io/component": {},
+                  "f:app.kubernetes.io/instance": {},
+                  "f:app.kubernetes.io/managed-by": {},
+                  "f:app.kubernetes.io/name": {},
+                  "f:app.kubernetes.io/version": {},
+                  "f:endpoints.kubernetes.io/managed-by": {},
+                  "f:helm.sh/chart": {}
+                }
+              },
+              "f:subsets": {}
+            }
+          }
+        ]
+      },
+      "subsets": [
+        {
+          "addresses": [
+            {
+              "ip": "10.244.1.3",
+              "nodeName": "troubleshoot-test-worker",
+              "targetRef": {
+                "kind": "Pod",
+                "namespace": "default",
+                "name": "postgres-postgresql-0",
+                "uid": "a93b5e93-f6f5-4159-9890-10b9489de996"
+              }
+            }
+          ],
+          "ports": [
+            {
+              "name": "tcp-postgresql",
+              "port": 5432,
+              "protocol": "TCP"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "Endpoints",
+      "apiVersion": "v1",
+      "metadata": {
+        "name": "postgres-postgresql-hl",
+        "namespace": "default",
+        "uid": "963e2840-dcdb-4bf1-a097-e30a7d946be2",
+        "resourceVersion": "580",
+        "creationTimestamp": "2025-08-09T22:55:33Z",
+        "labels": {
+          "app.kubernetes.io/component": "primary",
+          "app.kubernetes.io/instance": "postgres",
+          "app.kubernetes.io/managed-by": "Helm",
+          "app.kubernetes.io/name": "postgresql",
+          "app.kubernetes.io/version": "17.5.0",
+          "endpoints.kubernetes.io/managed-by": "endpoint-controller",
+          "helm.sh/chart": "postgresql-16.7.24",
+          "service.kubernetes.io/headless": ""
+        },
+        "annotations": {
+          "endpoints.kubernetes.io/last-change-trigger-time": "2025-08-09T22:55:37Z"
+        },
+        "managedFields": [
+          {
+            "manager": "kube-controller-manager",
+            "operation": "Update",
+            "apiVersion": "v1",
+            "time": "2025-08-09T22:55:43Z",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:metadata": {
+                "f:annotations": {
+                  ".": {},
+                  "f:endpoints.kubernetes.io/last-change-trigger-time": {}
+                },
+                "f:labels": {
+                  ".": {},
+                  "f:app.kubernetes.io/component": {},
+                  "f:app.kubernetes.io/instance": {},
+                  "f:app.kubernetes.io/managed-by": {},
+                  "f:app.kubernetes.io/name": {},
+                  "f:app.kubernetes.io/version": {},
+                  "f:endpoints.kubernetes.io/managed-by": {},
+                  "f:helm.sh/chart": {},
+                  "f:service.kubernetes.io/headless": {}
+                }
+              },
+              "f:subsets": {}
+            }
+          }
+        ]
+      },
+      "subsets": [
+        {
+          "addresses": [
+            {
+              "ip": "10.244.1.3",
+              "hostname": "postgres-postgresql-0",
+              "nodeName": "troubleshoot-test-worker",
+              "targetRef": {
+                "kind": "Pod",
+                "namespace": "default",
+                "name": "postgres-postgresql-0",
+                "uid": "a93b5e93-f6f5-4159-9890-10b9489de996"
+              }
+            }
+          ],
+          "ports": [
+            {
+              "name": "tcp-postgresql",
+              "port": 5432,
+              "protocol": "TCP"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "Endpoints",
+      "apiVersion": "v1",
+      "metadata": {
+        "name": "redis-headless",
+        "namespace": "default",
+        "uid": "33db002e-9c8f-4b7f-8e38-820a5536edc0",
+        "resourceVersion": "951",
+        "creationTimestamp": "2025-08-09T22:55:57Z",
+        "labels": {
+          "app.kubernetes.io/instance": "redis",
+          "app.kubernetes.io/managed-by": "Helm",
+          "app.kubernetes.io/name": "redis",
+          "app.kubernetes.io/version": "8.2.0",
+          "endpoints.kubernetes.io/managed-by": "endpoint-controller",
+          "helm.sh/chart": "redis-22.0.1",
+          "service.kubernetes.io/headless": ""
+        },
+        "annotations": {
+          "endpoints.kubernetes.io/last-change-trigger-time": "2025-08-09T22:57:25Z"
+        },
+        "managedFields": [
+          {
+            "manager": "kube-controller-manager",
+            "operation": "Update",
+            "apiVersion": "v1",
+            "time": "2025-08-09T22:57:25Z",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:metadata": {
+                "f:annotations": {
+                  ".": {},
+                  "f:endpoints.kubernetes.io/last-change-trigger-time": {}
+                },
+                "f:labels": {
+                  ".": {},
+                  "f:app.kubernetes.io/instance": {},
+                  "f:app.kubernetes.io/managed-by": {},
+                  "f:app.kubernetes.io/name": {},
+                  "f:app.kubernetes.io/version": {},
+                  "f:endpoints.kubernetes.io/managed-by": {},
+                  "f:helm.sh/chart": {},
+                  "f:service.kubernetes.io/headless": {}
+                }
+              },
+              "f:subsets": {}
+            }
+          }
+        ]
+      },
+      "subsets": [
+        {
+          "addresses": [
+            {
+              "ip": "10.244.1.11",
+              "hostname": "redis-replicas-2",
+              "nodeName": "troubleshoot-test-worker",
+              "targetRef": {
+                "kind": "Pod",
+                "namespace": "default",
+                "name": "redis-replicas-2",
+                "uid": "9610db3b-5d32-495e-acb5-a9b2fb68fb84"
+              }
+            },
+            {
+              "ip": "10.244.1.6",
+              "hostname": "redis-replicas-0",
+              "nodeName": "troubleshoot-test-worker",
+              "targetRef": {
+                "kind": "Pod",
+                "namespace": "default",
+                "name": "redis-replicas-0",
+                "uid": "94ecc56c-5a6f-4000-9485-c38e6ec91929"
+              }
+            },
+            {
+              "ip": "10.244.1.7",
+              "hostname": "redis-master-0",
+              "nodeName": "troubleshoot-test-worker",
+              "targetRef": {
+                "kind": "Pod",
+                "namespace": "default",
+                "name": "redis-master-0",
+                "uid": "7cbdb7ca-36f0-4525-aeaf-8766ad755a8a"
+              }
+            },
+            {
+              "ip": "10.244.1.9",
+              "hostname": "redis-replicas-1",
+              "nodeName": "troubleshoot-test-worker",
+              "targetRef": {
+                "kind": "Pod",
+                "namespace": "default",
+                "name": "redis-replicas-1",
+                "uid": "ec217cae-ac0e-42ef-87af-c692afb0d988"
+              }
+            }
+          ],
+          "ports": [
+            {
+              "name": "tcp-redis",
+              "port": 6379,
+              "protocol": "TCP"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "Endpoints",
+      "apiVersion": "v1",
+      "metadata": {
+        "name": "redis-master",
+        "namespace": "default",
+        "uid": "13d4caf9-f439-4364-aa75-78746a1a0e61",
+        "resourceVersion": "772",
+        "creationTimestamp": "2025-08-09T22:55:57Z",
+        "labels": {
+          "app.kubernetes.io/component": "master",
+          "app.kubernetes.io/instance": "redis",
+          "app.kubernetes.io/managed-by": "Helm",
+          "app.kubernetes.io/name": "redis",
+          "app.kubernetes.io/version": "8.2.0",
+          "endpoints.kubernetes.io/managed-by": "endpoint-controller",
+          "helm.sh/chart": "redis-22.0.1"
+        },
+        "annotations": {
+          "endpoints.kubernetes.io/last-change-trigger-time": "2025-08-09T22:56:27Z"
+        },
+        "managedFields": [
+          {
+            "manager": "kube-controller-manager",
+            "operation": "Update",
+            "apiVersion": "v1",
+            "time": "2025-08-09T22:56:27Z",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:metadata": {
+                "f:annotations": {
+                  ".": {},
+                  "f:endpoints.kubernetes.io/last-change-trigger-time": {}
+                },
+                "f:labels": {
+                  ".": {},
+                  "f:app.kubernetes.io/component": {},
+                  "f:app.kubernetes.io/instance": {},
+                  "f:app.kubernetes.io/managed-by": {},
+                  "f:app.kubernetes.io/name": {},
+                  "f:app.kubernetes.io/version": {},
+                  "f:endpoints.kubernetes.io/managed-by": {},
+                  "f:helm.sh/chart": {}
+                }
+              },
+              "f:subsets": {}
+            }
+          }
+        ]
+      },
+      "subsets": [
+        {
+          "addresses": [
+            {
+              "ip": "10.244.1.7",
+              "nodeName": "troubleshoot-test-worker",
+              "targetRef": {
+                "kind": "Pod",
+                "namespace": "default",
+                "name": "redis-master-0",
+                "uid": "7cbdb7ca-36f0-4525-aeaf-8766ad755a8a"
+              }
+            }
+          ],
+          "ports": [
+            {
+              "name": "tcp-redis",
+              "port": 6379,
+              "protocol": "TCP"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "Endpoints",
+      "apiVersion": "v1",
+      "metadata": {
+        "name": "redis-replicas",
+        "namespace": "default",
+        "uid": "387f8821-b3a7-483d-9598-fdbbd6bc33d5",
+        "resourceVersion": "953",
+        "creationTimestamp": "2025-08-09T22:55:57Z",
+        "labels": {
+          "app.kubernetes.io/component": "replica",
+          "app.kubernetes.io/instance": "redis",
+          "app.kubernetes.io/managed-by": "Helm",
+          "app.kubernetes.io/name": "redis",
+          "app.kubernetes.io/version": "8.2.0",
+          "endpoints.kubernetes.io/managed-by": "endpoint-controller",
+          "helm.sh/chart": "redis-22.0.1"
+        },
+        "annotations": {
+          "endpoints.kubernetes.io/last-change-trigger-time": "2025-08-09T22:57:25Z"
+        },
+        "managedFields": [
+          {
+            "manager": "kube-controller-manager",
+            "operation": "Update",
+            "apiVersion": "v1",
+            "time": "2025-08-09T22:57:25Z",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:metadata": {
+                "f:annotations": {
+                  ".": {},
+                  "f:endpoints.kubernetes.io/last-change-trigger-time": {}
+                },
+                "f:labels": {
+                  ".": {},
+                  "f:app.kubernetes.io/component": {},
+                  "f:app.kubernetes.io/instance": {},
+                  "f:app.kubernetes.io/managed-by": {},
+                  "f:app.kubernetes.io/name": {},
+                  "f:app.kubernetes.io/version": {},
+                  "f:endpoints.kubernetes.io/managed-by": {},
+                  "f:helm.sh/chart": {}
+                }
+              },
+              "f:subsets": {}
+            }
+          }
+        ]
+      },
+      "subsets": [
+        {
+          "addresses": [
+            {
+              "ip": "10.244.1.11",
+              "nodeName": "troubleshoot-test-worker",
+              "targetRef": {
+                "kind": "Pod",
+                "namespace": "default",
+                "name": "redis-replicas-2",
+                "uid": "9610db3b-5d32-495e-acb5-a9b2fb68fb84"
+              }
+            },
+            {
+              "ip": "10.244.1.6",
+              "nodeName": "troubleshoot-test-worker",
+              "targetRef": {
+                "kind": "Pod",
+                "namespace": "default",
+                "name": "redis-replicas-0",
+                "uid": "94ecc56c-5a6f-4000-9485-c38e6ec91929"
+              }
+            },
+            {
+              "ip": "10.244.1.9",
+              "nodeName": "troubleshoot-test-worker",
+              "targetRef": {
+                "kind": "Pod",
+                "namespace": "default",
+                "name": "redis-replicas-1",
+                "uid": "ec217cae-ac0e-42ef-87af-c692afb0d988"
+              }
+            }
+          ],
+          "ports": [
+            {
+              "name": "tcp-redis",
+              "port": 6379,
+              "protocol": "TCP"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

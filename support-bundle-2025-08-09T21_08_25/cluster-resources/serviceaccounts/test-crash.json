@@ -1,0 +1,20 @@
+{
+  "kind": "ServiceAccountList",
+  "apiVersion": "v1",
+  "metadata": {
+    "resourceVersion": "8769"
+  },
+  "items": [
+    {
+      "kind": "ServiceAccount",
+      "apiVersion": "v1",
+      "metadata": {
+        "name": "default",
+        "namespace": "test-crash",
+        "uid": "da960f24-96d3-48b7-bb8c-982e904db7fa",
+        "resourceVersion": "1125",
+        "creationTimestamp": "2025-08-09T22:57:54Z"
+      }
+    }
+  ]
+}
