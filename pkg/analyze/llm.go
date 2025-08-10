@@ -214,7 +214,7 @@ func (a *AnalyzeLLM) callLLM(apiKey, problemDescription string, files map[string
 	}
 
 	// Determine model
-	model := "gpt-4o-mini"
+	model := "gpt-5"
 	if a.analyzer.Model != "" {
 		model = a.analyzer.Model
 	}

@@ -26,7 +26,7 @@ spec:
         checkName: "LLM Analysis - OOM Issues"
         collectorName: "oom-logs"
         fileName: "*/*"
-        model: "gpt-4o-mini"
+        model: "gpt-5"
         outcomes:
           - fail:
               when: "issue_found"
