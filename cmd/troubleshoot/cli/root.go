@@ -95,6 +95,7 @@ If no arguments are provided, specs are automatically loaded from the cluster by
 	cmd.Flags().StringP("output", "o", "", "specify the output file path for the support bundle")
 	cmd.Flags().Bool("debug", false, "enable debug logging. This is equivalent to --v=0")
 	cmd.Flags().Bool("dry-run", false, "print support bundle spec without collecting anything")
+	cmd.Flags().String("problem-description", "", "describe the problem for LLM analysis (interactive prompt if not provided)")
 
 	// hidden in favor of the `insecure-skip-tls-verify` flag
 	cmd.Flags().Bool("allow-insecure-connections", false, "when set, do not verify TLS certs when retrieving spec and reporting results")

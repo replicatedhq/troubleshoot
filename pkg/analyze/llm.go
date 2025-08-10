@@ -16,6 +16,9 @@ import (
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 )
 
+// GlobalProblemDescription is set by the CLI when --problem-description is provided
+var GlobalProblemDescription string
+
 // AnalyzeLLM is the analyzer that uses an LLM to analyze support bundle contents
 type AnalyzeLLM struct {
 	analyzer *troubleshootv1beta2.LLMAnalyze
@@ -43,9 +46,11 @@ func (a *AnalyzeLLM) Analyze(getFile getCollectedFileContents, findFiles getChil
 		}}, nil
 	}
 
-	// Get problem description from context (will be added in Phase 4)
-	// For now, use a default
-	problemDescription := os.Getenv("PROBLEM_DESCRIPTION")
+	// Get problem description from global variable (set by CLI) or environment
+	problemDescription := GlobalProblemDescription
+	if problemDescription == "" {
+		problemDescription = os.Getenv("PROBLEM_DESCRIPTION")
+	}
 	if problemDescription == "" {
 		problemDescription = "Please analyze the logs and identify any issues or problems"
 	}
