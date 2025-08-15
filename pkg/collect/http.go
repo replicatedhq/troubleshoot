@@ -49,6 +49,10 @@ func (c *CollectHTTP) IsExcluded() (bool, error) {
 	return isExcluded(c.Collector.Exclude)
 }
 
+func (c *CollectHTTP) SkipRedaction() bool {
+	return c.Collector.SkipRedaction
+}
+
 func (c *CollectHTTP) Collect(progressChan chan<- interface{}) (CollectorResult, error) {
 	var response *http.Response
 	var err error

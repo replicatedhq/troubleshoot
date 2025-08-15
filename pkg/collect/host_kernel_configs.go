@@ -41,6 +41,10 @@ func (c *CollectHostKernelConfigs) IsExcluded() (bool, error) {
 	return isExcluded(c.hostCollector.Exclude)
 }
 
+func (c *CollectHostKernelConfigs) SkipRedaction() bool {
+	return c.hostCollector.SkipRedaction
+}
+
 func (c *CollectHostKernelConfigs) Collect(progressChan chan<- interface{}) (map[string][]byte, error) {
 
 	kernelRelease, err := getKernelRelease()

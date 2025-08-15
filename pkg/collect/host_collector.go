@@ -23,6 +23,7 @@ import (
 type HostCollector interface {
 	Title() string
 	IsExcluded() (bool, error)
+	SkipRedaction() bool
 	Collect(progressChan chan<- interface{}) (map[string][]byte, error)
 }
 
