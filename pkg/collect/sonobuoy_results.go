@@ -46,6 +46,10 @@ func (c *CollectSonobuoyResults) IsExcluded() (bool, error) {
 	return isExcluded(c.Collector.Exclude)
 }
 
+func (c *CollectSonobuoyResults) SkipRedaction() bool {
+	return c.Collector.SkipRedaction
+}
+
 func (c *CollectSonobuoyResults) Collect(progressChan chan<- interface{}) (CollectorResult, error) {
 	namespace := DefaultSonobuoyNamespace
 	if c.Collector.Namespace != "" {

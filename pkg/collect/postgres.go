@@ -35,6 +35,10 @@ func (c *CollectPostgres) IsExcluded() (bool, error) {
 	return isExcluded(c.Collector.Exclude)
 }
 
+func (c *CollectPostgres) SkipRedaction() bool {
+	return c.Collector.SkipRedaction
+}
+
 func (c *CollectPostgres) createConnectConfig() (*pgx.ConnConfig, error) {
 	if c.Collector.URI == "" {
 		return nil, errors.New("postgres uri cannot be empty")

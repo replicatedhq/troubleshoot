@@ -48,9 +48,9 @@ func (a *AnalyzeNodeResources) Analyze(getFile getCollectedFileContents, findFil
 	return []*AnalyzeResult{result}, nil
 }
 
-func (a *AnalyzeNodeResources) analyzeNodeResources(analyzer *troubleshootv1beta2.NodeResources, getCollectedFileContents func(string) ([]byte, error)) (*AnalyzeResult, error) {
+func (a *AnalyzeNodeResources) analyzeNodeResources(analyzer *troubleshootv1beta2.NodeResources, getFile getCollectedFileContents) (*AnalyzeResult, error) {
 
-	collected, err := getCollectedFileContents(fmt.Sprintf("%s/%s.json", constants.CLUSTER_RESOURCES_DIR, constants.CLUSTER_RESOURCES_NODES))
+	collected, err := getFile(fmt.Sprintf("%s/%s.json", constants.CLUSTER_RESOURCES_DIR, constants.CLUSTER_RESOURCES_NODES))
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get contents of nodes.json")
 	}

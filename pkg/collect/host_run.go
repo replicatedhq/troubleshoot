@@ -38,6 +38,10 @@ func (c *CollectHostRun) IsExcluded() (bool, error) {
 	return isExcluded(c.hostCollector.Exclude)
 }
 
+func (c *CollectHostRun) SkipRedaction() bool {
+	return c.hostCollector.SkipRedaction
+}
+
 func (c *CollectHostRun) Collect(progressChan chan<- interface{}) (map[string][]byte, error) {
 	var (
 		cmdOutputTempDir         string
