@@ -10,9 +10,16 @@ import (
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
+	"github.com/replicatedhq/troubleshoot/pkg/k8sutil"
 	"helm.sh/helm/v3/pkg/action"
+	"k8s.io/apimachinery/pkg/api/meta"
+	"k8s.io/cli-runtime/pkg/genericclioptions"
+	"k8s.io/client-go/discovery"
+	"k8s.io/client-go/discovery/cached/memory"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	"k8s.io/client-go/restmapper"
+	"k8s.io/client-go/tools/clientcmd"
 	"k8s.io/klog/v2"
 )
 
@@ -45,6 +52,42 @@ type VersionInfo struct {
 	Values    map[string]interface{} `json:"values,omitempty"`
 }
 
+type configGetter struct {
+	restConfig *rest.Config
+}
+
+// ToDiscoveryClient implements genericclioptions.RESTClientGetter.
+func (c configGetter) ToDiscoveryClient() (discovery.CachedDiscoveryInterface, error) {
+	discoveryClient, err := discovery.NewDiscoveryClientForConfig(c.restConfig)
+	if err != nil {
+		return nil, err
+	}
+	cached := memory.NewMemCacheClient(discoveryClient)
+	return cached, nil
+}
+
+// ToRESTConfig implements genericclioptions.RESTClientGetter.
+func (c configGetter) ToRESTConfig() (*rest.Config, error) {
+	return c.restConfig, nil
+}
+
+// ToRESTMapper implements genericclioptions.RESTClientGetter.
+func (c configGetter) ToRESTMapper() (meta.RESTMapper, error) {
+	discoveryClient, err := c.ToDiscoveryClient()
+	if err != nil {
+		return nil, err
+	}
+	mapper := restmapper.NewDeferredDiscoveryRESTMapper(discoveryClient)
+	return mapper, nil
+}
+
+// ToRawKubeConfigLoader implements genericclioptions.RESTClientGetter.
+func (c configGetter) ToRawKubeConfigLoader() clientcmd.ClientConfig {
+	return k8sutil.GetKubeconfig()
+}
+
+var _ genericclioptions.RESTClientGetter = configGetter{}
+
 func (c *CollectHelm) Title() string {
 	return getCollectorName(c)
 }
@@ -57,7 +100,7 @@ func (c *CollectHelm) Collect(progressChan chan<- interface{}) (CollectorResult,
 
 	output := NewResult()
 
-	releaseInfos, err := helmReleaseHistoryCollector(c.Collector.ReleaseName, c.Collector.Namespace, c.Collector.CollectValues)
+	releaseInfos, err := helmReleaseHistoryCollector(c.ClientConfig, c.Collector.ReleaseName, c.Collector.Namespace, c.Collector.CollectValues)
 	if err != nil {
 		errsToMarhsal := []string{}
 		for _, e := range err {
@@ -88,12 +131,12 @@ func (c *CollectHelm) Collect(progressChan chan<- interface{}) (CollectorResult,
 	return output, nil
 }
 
-func helmReleaseHistoryCollector(releaseName string, namespace string, collectValues bool) ([]ReleaseInfo, []error) {
+func helmReleaseHistoryCollector(config *rest.Config, releaseName string, namespace string, collectValues bool) ([]ReleaseInfo, []error) {
 	var results []ReleaseInfo
 	error_list := []error{}
 
 	actionConfig := new(action.Configuration)
-	if err := actionConfig.Init(nil, namespace, "", klog.V(2).Infof); err != nil {
+	if err := actionConfig.Init(configGetter{config}, namespace, "", klog.V(2).Infof); err != nil {
 		return nil, []error{err}
 	}
 
