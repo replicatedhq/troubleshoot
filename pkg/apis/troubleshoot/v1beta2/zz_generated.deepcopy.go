@@ -2259,7 +2259,7 @@ func (in *HostCollectorList) DeepCopyInto(out *HostCollectorList) {
 	in.ListMeta.DeepCopyInto(&out.ListMeta)
 	if in.Items != nil {
 		in, out := &in.Items, &out.Items
-		*out = make([]Collector, len(*in))
+		*out = make([]HostCollector, len(*in))
 		for i := range *in {
 			(*in)[i].DeepCopyInto(&(*out)[i])
 		}

@@ -18,123 +18,32 @@ limitations under the License.
 package fake
 
 import (
-	"context"
-
 	v1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	labels "k8s.io/apimachinery/pkg/labels"
-	types "k8s.io/apimachinery/pkg/types"
-	watch "k8s.io/apimachinery/pkg/watch"
-	testing "k8s.io/client-go/testing"
+	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/client/troubleshootclientset/typed/troubleshoot/v1beta2"
+	gentype "k8s.io/client-go/gentype"
 )
 
-// FakeAnalyzers implements AnalyzerInterface
-type FakeAnalyzers struct {
+// fakeAnalyzers implements AnalyzerInterface
+type fakeAnalyzers struct {
+	*gentype.FakeClientWithList[*v1beta2.Analyzer, *v1beta2.AnalyzerList]
 	Fake *FakeTroubleshootV1beta2
-	ns   string
 }
 
-var analyzersResource = v1beta2.SchemeGroupVersion.WithResource("analyzers")
-
-var analyzersKind = v1beta2.SchemeGroupVersion.WithKind("Analyzer")
-
-// Get takes name of the analyzer, and returns the corresponding analyzer object, and an error if there is any.
-func (c *FakeAnalyzers) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1beta2.Analyzer, err error) {
-	obj, err := c.Fake.
-		Invokes(testing.NewGetAction(analyzersResource, c.ns, name), &v1beta2.Analyzer{})
-
-	if obj == nil {
-		return nil, err
+func newFakeAnalyzers(fake *FakeTroubleshootV1beta2, namespace string) troubleshootv1beta2.AnalyzerInterface {
+	return &fakeAnalyzers{
+		gentype.NewFakeClientWithList[*v1beta2.Analyzer, *v1beta2.AnalyzerList](
+			fake.Fake,
+			namespace,
+			v1beta2.SchemeGroupVersion.WithResource("analyzers"),
+			v1beta2.SchemeGroupVersion.WithKind("Analyzer"),
+			func() *v1beta2.Analyzer { return &v1beta2.Analyzer{} },
+			func() *v1beta2.AnalyzerList { return &v1beta2.AnalyzerList{} },
+			func(dst, src *v1beta2.AnalyzerList) { dst.ListMeta = src.ListMeta },
+			func(list *v1beta2.AnalyzerList) []*v1beta2.Analyzer { return gentype.ToPointerSlice(list.Items) },
+			func(list *v1beta2.AnalyzerList, items []*v1beta2.Analyzer) {
+				list.Items = gentype.FromPointerSlice(items)
+			},
+		),
+		fake,
 	}
-	return obj.(*v1beta2.Analyzer), err
-}
-
-// List takes label and field selectors, and returns the list of Analyzers that match those selectors.
-func (c *FakeAnalyzers) List(ctx context.Context, opts v1.ListOptions) (result *v1beta2.AnalyzerList, err error) {
-	obj, err := c.Fake.
-		Invokes(testing.NewListAction(analyzersResource, analyzersKind, c.ns, opts), &v1beta2.AnalyzerList{})
-
-	if obj == nil {
-		return nil, err
-	}
-
-	label, _, _ := testing.ExtractFromListOptions(opts)
-	if label == nil {
-		label = labels.Everything()
-	}
-	list := &v1beta2.AnalyzerList{ListMeta: obj.(*v1beta2.AnalyzerList).ListMeta}
-	for _, item := range obj.(*v1beta2.AnalyzerList).Items {
-		if label.Matches(labels.Set(item.Labels)) {
-			list.Items = append(list.Items, item)
-		}
-	}
-	return list, err
-}
-
-// Watch returns a watch.Interface that watches the requested analyzers.
-func (c *FakeAnalyzers) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
-	return c.Fake.
-		InvokesWatch(testing.NewWatchAction(analyzersResource, c.ns, opts))
-
-}
-
-// Create takes the representation of a analyzer and creates it.  Returns the server's representation of the analyzer, and an error, if there is any.
-func (c *FakeAnalyzers) Create(ctx context.Context, analyzer *v1beta2.Analyzer, opts v1.CreateOptions) (result *v1beta2.Analyzer, err error) {
-	obj, err := c.Fake.
-		Invokes(testing.NewCreateAction(analyzersResource, c.ns, analyzer), &v1beta2.Analyzer{})
-
-	if obj == nil {
-		return nil, err
-	}
-	return obj.(*v1beta2.Analyzer), err
-}
-
-// Update takes the representation of a analyzer and updates it. Returns the server's representation of the analyzer, and an error, if there is any.
-func (c *FakeAnalyzers) Update(ctx context.Context, analyzer *v1beta2.Analyzer, opts v1.UpdateOptions) (result *v1beta2.Analyzer, err error) {
-	obj, err := c.Fake.
-		Invokes(testing.NewUpdateAction(analyzersResource, c.ns, analyzer), &v1beta2.Analyzer{})
-
-	if obj == nil {
-		return nil, err
-	}
-	return obj.(*v1beta2.Analyzer), err
-}
-
-// UpdateStatus was generated because the type contains a Status member.
-// Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-func (c *FakeAnalyzers) UpdateStatus(ctx context.Context, analyzer *v1beta2.Analyzer, opts v1.UpdateOptions) (*v1beta2.Analyzer, error) {
-	obj, err := c.Fake.
-		Invokes(testing.NewUpdateSubresourceAction(analyzersResource, "status", c.ns, analyzer), &v1beta2.Analyzer{})
-
-	if obj == nil {
-		return nil, err
-	}
-	return obj.(*v1beta2.Analyzer), err
-}
-
-// Delete takes name of the analyzer and deletes it. Returns an error if one occurs.
-func (c *FakeAnalyzers) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
-	_, err := c.Fake.
-		Invokes(testing.NewDeleteActionWithOptions(analyzersResource, c.ns, name, opts), &v1beta2.Analyzer{})
-
-	return err
-}
-
-// DeleteCollection deletes a collection of objects.
-func (c *FakeAnalyzers) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
-	action := testing.NewDeleteCollectionAction(analyzersResource, c.ns, listOpts)
-
-	_, err := c.Fake.Invokes(action, &v1beta2.AnalyzerList{})
-	return err
-}
-
-// Patch applies the patch and returns the patched analyzer.
-func (c *FakeAnalyzers) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1beta2.Analyzer, err error) {
-	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceAction(analyzersResource, c.ns, name, pt, data, subresources...), &v1beta2.Analyzer{})
-
-	if obj == nil {
-		return nil, err
-	}
-	return obj.(*v1beta2.Analyzer), err
 }

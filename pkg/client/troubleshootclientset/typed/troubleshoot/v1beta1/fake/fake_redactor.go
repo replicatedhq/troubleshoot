@@ -18,123 +18,32 @@ limitations under the License.
 package fake
 
 import (
-	"context"
-
 	v1beta1 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta1"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	labels "k8s.io/apimachinery/pkg/labels"
-	types "k8s.io/apimachinery/pkg/types"
-	watch "k8s.io/apimachinery/pkg/watch"
-	testing "k8s.io/client-go/testing"
+	troubleshootv1beta1 "github.com/replicatedhq/troubleshoot/pkg/client/troubleshootclientset/typed/troubleshoot/v1beta1"
+	gentype "k8s.io/client-go/gentype"
 )
 
-// FakeRedactors implements RedactorInterface
-type FakeRedactors struct {
+// fakeRedactors implements RedactorInterface
+type fakeRedactors struct {
+	*gentype.FakeClientWithList[*v1beta1.Redactor, *v1beta1.RedactorList]
 	Fake *FakeTroubleshootV1beta1
-	ns   string
 }
 
-var redactorsResource = v1beta1.SchemeGroupVersion.WithResource("redactors")
-
-var redactorsKind = v1beta1.SchemeGroupVersion.WithKind("Redactor")
-
-// Get takes name of the redactor, and returns the corresponding redactor object, and an error if there is any.
-func (c *FakeRedactors) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1beta1.Redactor, err error) {
-	obj, err := c.Fake.
-		Invokes(testing.NewGetAction(redactorsResource, c.ns, name), &v1beta1.Redactor{})
-
-	if obj == nil {
-		return nil, err
+func newFakeRedactors(fake *FakeTroubleshootV1beta1, namespace string) troubleshootv1beta1.RedactorInterface {
+	return &fakeRedactors{
+		gentype.NewFakeClientWithList[*v1beta1.Redactor, *v1beta1.RedactorList](
+			fake.Fake,
+			namespace,
+			v1beta1.SchemeGroupVersion.WithResource("redactors"),
+			v1beta1.SchemeGroupVersion.WithKind("Redactor"),
+			func() *v1beta1.Redactor { return &v1beta1.Redactor{} },
+			func() *v1beta1.RedactorList { return &v1beta1.RedactorList{} },
+			func(dst, src *v1beta1.RedactorList) { dst.ListMeta = src.ListMeta },
+			func(list *v1beta1.RedactorList) []*v1beta1.Redactor { return gentype.ToPointerSlice(list.Items) },
+			func(list *v1beta1.RedactorList, items []*v1beta1.Redactor) {
+				list.Items = gentype.FromPointerSlice(items)
+			},
+		),
+		fake,
 	}
-	return obj.(*v1beta1.Redactor), err
-}
-
-// List takes label and field selectors, and returns the list of Redactors that match those selectors.
-func (c *FakeRedactors) List(ctx context.Context, opts v1.ListOptions) (result *v1beta1.RedactorList, err error) {
-	obj, err := c.Fake.
-		Invokes(testing.NewListAction(redactorsResource, redactorsKind, c.ns, opts), &v1beta1.RedactorList{})
-
-	if obj == nil {
-		return nil, err
-	}
-
-	label, _, _ := testing.ExtractFromListOptions(opts)
-	if label == nil {
-		label = labels.Everything()
-	}
-	list := &v1beta1.RedactorList{ListMeta: obj.(*v1beta1.RedactorList).ListMeta}
-	for _, item := range obj.(*v1beta1.RedactorList).Items {
-		if label.Matches(labels.Set(item.Labels)) {
-			list.Items = append(list.Items, item)
-		}
-	}
-	return list, err
-}
-
-// Watch returns a watch.Interface that watches the requested redactors.
-func (c *FakeRedactors) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
-	return c.Fake.
-		InvokesWatch(testing.NewWatchAction(redactorsResource, c.ns, opts))
-
-}
-
-// Create takes the representation of a redactor and creates it.  Returns the server's representation of the redactor, and an error, if there is any.
-func (c *FakeRedactors) Create(ctx context.Context, redactor *v1beta1.Redactor, opts v1.CreateOptions) (result *v1beta1.Redactor, err error) {
-	obj, err := c.Fake.
-		Invokes(testing.NewCreateAction(redactorsResource, c.ns, redactor), &v1beta1.Redactor{})
-
-	if obj == nil {
-		return nil, err
-	}
-	return obj.(*v1beta1.Redactor), err
-}
-
-// Update takes the representation of a redactor and updates it. Returns the server's representation of the redactor, and an error, if there is any.
-func (c *FakeRedactors) Update(ctx context.Context, redactor *v1beta1.Redactor, opts v1.UpdateOptions) (result *v1beta1.Redactor, err error) {
-	obj, err := c.Fake.
-		Invokes(testing.NewUpdateAction(redactorsResource, c.ns, redactor), &v1beta1.Redactor{})
-
-	if obj == nil {
-		return nil, err
-	}
-	return obj.(*v1beta1.Redactor), err
-}
-
-// UpdateStatus was generated because the type contains a Status member.
-// Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-func (c *FakeRedactors) UpdateStatus(ctx context.Context, redactor *v1beta1.Redactor, opts v1.UpdateOptions) (*v1beta1.Redactor, error) {
-	obj, err := c.Fake.
-		Invokes(testing.NewUpdateSubresourceAction(redactorsResource, "status", c.ns, redactor), &v1beta1.Redactor{})
-
-	if obj == nil {
-		return nil, err
-	}
-	return obj.(*v1beta1.Redactor), err
-}
-
-// Delete takes name of the redactor and deletes it. Returns an error if one occurs.
-func (c *FakeRedactors) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
-	_, err := c.Fake.
-		Invokes(testing.NewDeleteActionWithOptions(redactorsResource, c.ns, name, opts), &v1beta1.Redactor{})
-
-	return err
-}
-
-// DeleteCollection deletes a collection of objects.
-func (c *FakeRedactors) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
-	action := testing.NewDeleteCollectionAction(redactorsResource, c.ns, listOpts)
-
-	_, err := c.Fake.Invokes(action, &v1beta1.RedactorList{})
-	return err
-}
-
-// Patch applies the patch and returns the patched redactor.
-func (c *FakeRedactors) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1beta1.Redactor, err error) {
-	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceAction(redactorsResource, c.ns, name, pt, data, subresources...), &v1beta1.Redactor{})
-
-	if obj == nil {
-		return nil, err
-	}
-	return obj.(*v1beta1.Redactor), err
 }
