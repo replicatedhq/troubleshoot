@@ -26,6 +26,10 @@ func (c *CollectCollectd) IsExcluded() (bool, error) {
 	return isExcluded(c.Collector.Exclude)
 }
 
+func (c *CollectCollectd) SkipRedaction() bool {
+	return c.Collector.SkipRedaction
+}
+
 func (c *CollectCollectd) Collect(progressChan chan<- interface{}) (CollectorResult, error) {
 	copyFromHost := &troubleshootv1beta2.CopyFromHost{
 		CollectorMeta:   c.Collector.CollectorMeta,
