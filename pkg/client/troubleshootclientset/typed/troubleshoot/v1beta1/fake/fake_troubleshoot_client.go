@@ -28,23 +28,23 @@ type FakeTroubleshootV1beta1 struct {
 }
 
 func (c *FakeTroubleshootV1beta1) Analyzers(namespace string) v1beta1.AnalyzerInterface {
-	return &FakeAnalyzers{c, namespace}
+	return newFakeAnalyzers(c, namespace)
 }
 
 func (c *FakeTroubleshootV1beta1) Collectors(namespace string) v1beta1.CollectorInterface {
-	return &FakeCollectors{c, namespace}
+	return newFakeCollectors(c, namespace)
 }
 
 func (c *FakeTroubleshootV1beta1) Preflights(namespace string) v1beta1.PreflightInterface {
-	return &FakePreflights{c, namespace}
+	return newFakePreflights(c, namespace)
 }
 
 func (c *FakeTroubleshootV1beta1) Redactors(namespace string) v1beta1.RedactorInterface {
-	return &FakeRedactors{c, namespace}
+	return newFakeRedactors(c, namespace)
 }
 
 func (c *FakeTroubleshootV1beta1) SupportBundles(namespace string) v1beta1.SupportBundleInterface {
-	return &FakeSupportBundles{c, namespace}
+	return newFakeSupportBundles(c, namespace)
 }
 
 // RESTClient returns a RESTClient that is used to communicate
