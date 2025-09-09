@@ -154,6 +154,7 @@ require (
 	gopkg.in/evanphx/json-patch.v4 v4.12.0 // indirect
 	k8s.io/component-base v0.33.4 // indirect
 	k8s.io/kubectl v0.33.3 // indirect
+	k8s.io/kubernetes v1.33.4 // indirect
 	oras.land/oras-go/v2 v2.6.0 // indirect
 	sigs.k8s.io/randfill v1.0.0 // indirect
 )
