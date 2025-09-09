@@ -55,6 +55,7 @@ require (
 	k8s.io/cli-runtime v0.34.0
 	k8s.io/client-go v0.34.0
 	k8s.io/klog/v2 v2.130.1
+	k8s.io/kubernetes v1.33.4
 	oras.land/oras-go v1.2.6
 	sigs.k8s.io/controller-runtime v0.22.0
 	sigs.k8s.io/e2e-framework v0.6.0
@@ -154,7 +155,6 @@ require (
 	gopkg.in/evanphx/json-patch.v4 v4.12.0 // indirect
 	k8s.io/component-base v0.34.0 // indirect
 	k8s.io/kubectl v0.33.3 // indirect
-	k8s.io/kubernetes v1.33.4 // indirect
 	oras.land/oras-go/v2 v2.6.0 // indirect
 	sigs.k8s.io/randfill v1.0.0 // indirect
 	sigs.k8s.io/structured-merge-diff/v6 v6.3.0 // indirect
