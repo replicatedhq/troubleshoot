@@ -512,8 +512,8 @@ func pods(ctx context.Context, client *kubernetes.Clientset, namespaces []string
 	return podsByNamespace, errorsByNamespace, unhealthyPods
 }
 
-func getPodDisruptionBudgets(ctx context.Context, client *kubernetes.Clientset, namespaces []string) (map[string][]byte, map[string]string) {
-	ok, err := discovery.HasResource(client, "policy/v1", "PodDisruptionBudgets")
+func getPodDisruptionBudgets(ctx context.Context, client kubernetes.Interface, namespaces []string) (map[string][]byte, map[string]string) {
+	ok, err := discovery.HasResource(client.Discovery(), "policy/v1", "PodDisruptionBudget")
 	if err != nil {
 		return nil, map[string]string{"": err.Error()}
 	}
@@ -525,7 +525,7 @@ func getPodDisruptionBudgets(ctx context.Context, client *kubernetes.Clientset, 
 }
 
 // TODO: The below function (`pdbV1`) needs to be DRY'd and moved into the main `getPodDisruptionBudgets` function.
-func pdbV1(ctx context.Context, client *kubernetes.Clientset, namespaces []string) (map[string][]byte, map[string]string) {
+func pdbV1(ctx context.Context, client kubernetes.Interface, namespaces []string) (map[string][]byte, map[string]string) {
 	pdbByNamespace := make(map[string][]byte)
 	errorsByNamespace := make(map[string]string)
 
@@ -561,7 +561,7 @@ func pdbV1(ctx context.Context, client *kubernetes.Clientset, namespaces []strin
 }
 
 // This block/function can remain as is
-func pdbV1beta(ctx context.Context, client *kubernetes.Clientset, namespaces []string) (map[string][]byte, map[string]string) {
+func pdbV1beta(ctx context.Context, client kubernetes.Interface, namespaces []string) (map[string][]byte, map[string]string) {
 	pdbByNamespace := make(map[string][]byte)
 	errorsByNamespace := make(map[string]string)
 
