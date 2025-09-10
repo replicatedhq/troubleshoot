@@ -61,15 +61,18 @@ Examples:
 	return cmd
 }
 
-// PreflightDoc represents a preflight document with requirements
+// PreflightDoc supports both legacy (requirements) and beta3 (spec.analyzers)
 type PreflightDoc struct {
-	APIVersion   string                 `yaml:"apiVersion"`
-	Kind         string                 `yaml:"kind"`
-	Metadata     map[string]interface{} `yaml:"metadata"`
-	Requirements []Requirement          `yaml:"requirements"`
+	APIVersion string                 `yaml:"apiVersion"`
+	Kind       string                 `yaml:"kind"`
+	Metadata   map[string]interface{} `yaml:"metadata"`
+	Spec       struct {
+		Analyzers []map[string]interface{} `yaml:"analyzers"`
+	} `yaml:"spec"`
+	// Legacy (pre-beta3 drafts)
+	Requirements []Requirement `yaml:"requirements"`
 }
 
-// Requirement represents a requirement with its documentation
 type Requirement struct {
 	Name      string                   `yaml:"name"`
 	DocString string                   `yaml:"docString"`
@@ -80,7 +83,6 @@ func extractDocs(templateFiles []string, valuesFiles []string, setValues []strin
 	// Prepare the values map (merge all files, then apply sets)
 	values := make(map[string]interface{})
 
-	// Load values from files if provided
 	for _, valuesFile := range valuesFiles {
 		fileValues, err := loadValuesFile(valuesFile)
 		if err != nil {
@@ -89,34 +91,28 @@ func extractDocs(templateFiles []string, valuesFiles []string, setValues []strin
 		values = mergeMaps(values, fileValues)
 	}
 
-	// Normalize YAML maps to map[string]interface{} recursively before applying --set
+	// Normalize maps for Helm set merging
 	values = normalizeStringMaps(values)
 
-	// Apply --set values (Helm semantics)
 	for _, setValue := range setValues {
 		if err := applySetValue(values, setValue); err != nil {
 			return errors.Wrapf(err, "failed to apply set value: %s", setValue)
 		}
 	}
 
-	// Accumulate docs across all provided templates
 	var combinedDocs strings.Builder
 
 	for _, templateFile := range templateFiles {
-		// Read the template file
 		templateContent, err := os.ReadFile(templateFile)
 		if err != nil {
 			return errors.Wrapf(err, "failed to read template file %s", templateFile)
 		}
 
-		// Decide rendering engine. Try Helm when .Values is referenced; if it fails, fall back to legacy.
 		useHelm := shouldUseHelmEngine(string(templateContent))
-
 		var rendered string
 		if useHelm {
 			rendered, err = preflight.RenderWithHelmTemplate(string(templateContent), values)
 			if err != nil {
-				// Fall back to legacy with dual-context (root + Values) for mixed templates
 				execValues := legacyContext(values)
 				rendered, err = renderTemplate(string(templateContent), execValues)
 				if err != nil {
@@ -124,7 +120,6 @@ func extractDocs(templateFiles []string, valuesFiles []string, setValues []strin
 				}
 			}
 		} else {
-			// Legacy with dual-context (root + Values)
 			execValues := legacyContext(values)
 			rendered, err = renderTemplate(string(templateContent), execValues)
 			if err != nil {
@@ -132,7 +127,6 @@ func extractDocs(templateFiles []string, valuesFiles []string, setValues []strin
 			}
 		}
 
-		// Parse the rendered YAML to extract docStrings
 		docs, err := extractDocStrings(rendered)
 		if err != nil {
 			return errors.Wrap(err, "failed to extract documentation")
@@ -146,7 +140,6 @@ func extractDocs(templateFiles []string, valuesFiles []string, setValues []strin
 		}
 	}
 
-	// Output the result
 	if outputFile != "" {
 		if err := os.WriteFile(outputFile, []byte(combinedDocs.String()), 0644); err != nil {
 			return errors.Wrapf(err, "failed to write output file %s", outputFile)
@@ -159,12 +152,10 @@ func extractDocs(templateFiles []string, valuesFiles []string, setValues []strin
 	return nil
 }
 
-// shouldUseHelmEngine returns true if the template appears to use Helm's .Values
 func shouldUseHelmEngine(content string) bool {
 	return strings.Contains(content, ".Values")
 }
 
-// legacyContext returns a map that supports both .foo and .Values.foo lookups
 func legacyContext(values map[string]interface{}) map[string]interface{} {
 	ctx := make(map[string]interface{}, len(values)+1)
 	for k, v := range values {
@@ -174,7 +165,6 @@ func legacyContext(values map[string]interface{}) map[string]interface{} {
 	return ctx
 }
 
-// normalizeStringMaps converts any map[interface{}]interface{} into map[string]interface{} recursively
 func normalizeStringMaps(v interface{}) map[string]interface{} {
 	return normalizeMap(v).(map[string]interface{})
 }
@@ -206,15 +196,34 @@ func normalizeMap(v interface{}) interface{} {
 }
 
 func extractDocStrings(yamlContent string) (string, error) {
-	// Parse the YAML
 	var preflightDoc PreflightDoc
 	if err := yaml.Unmarshal([]byte(yamlContent), &preflightDoc); err != nil {
 		return "", errors.Wrap(err, "failed to parse YAML")
 	}
 
-	// Extract and format all docStrings as Markdown
 	var docs strings.Builder
 	first := true
+
+	// Prefer beta3 analyzers docStrings
+	if len(preflightDoc.Spec.Analyzers) > 0 {
+		for _, analyzer := range preflightDoc.Spec.Analyzers {
+			if raw, ok := analyzer["docString"]; ok {
+				text, _ := raw.(string)
+				text = strings.TrimSpace(text)
+				if text == "" {
+					continue
+				}
+				if !first {
+					docs.WriteString("\n\n")
+				}
+				first = false
+				writeMarkdownSection(&docs, text, "")
+			}
+		}
+		return docs.String(), nil
+	}
+
+	// Fallback: legacy requirements with docString
 	for _, req := range preflightDoc.Requirements {
 		if strings.TrimSpace(req.DocString) == "" {
 			continue
@@ -223,46 +232,43 @@ func extractDocStrings(yamlContent string) (string, error) {
 			docs.WriteString("\n\n")
 		}
 		first = false
-
-		// Parse the docString lines
-		lines := strings.Split(req.DocString, "\n")
-		title := strings.TrimSpace(req.Name)
-		contentStart := 0
-		for i, line := range lines {
-			trim := strings.TrimSpace(line)
-			if strings.HasPrefix(trim, "Title:") {
-				// Capture text after 'Title:'
-				parts := strings.SplitN(trim, ":", 2)
-				if len(parts) == 2 {
-					t := strings.TrimSpace(parts[1])
-					if t != "" {
-						title = t
-					}
-				}
-				contentStart = i + 1
-				break
-			}
-		}
-
-		// Write heading
-		docs.WriteString("### ")
-		docs.WriteString(strings.TrimSpace(title))
-		docs.WriteString("\n\n")
-
-		// Write remaining content (skip Title line if present)
-		remaining := strings.Join(lines[contentStart:], "\n")
-		remaining = strings.TrimSpace(remaining)
-		if remaining != "" {
-			docs.WriteString(remaining)
-			docs.WriteString("\n")
-		}
+		writeMarkdownSection(&docs, req.DocString, req.Name)
 	}
 
 	return docs.String(), nil
 }
 
-// The following functions are reused from template.go
-// In a real implementation, these would be exported from the preflight package
+// writeMarkdownSection prints a heading from Title: or name, then the rest
+func writeMarkdownSection(b *strings.Builder, docString string, fallbackName string) {
+	lines := strings.Split(docString, "\n")
+	title := strings.TrimSpace(fallbackName)
+	contentStart := 0
+	for i, line := range lines {
+		trim := strings.TrimSpace(line)
+		if strings.HasPrefix(trim, "Title:") {
+			parts := strings.SplitN(trim, ":", 2)
+			if len(parts) == 2 {
+				t := strings.TrimSpace(parts[1])
+				if t != "" {
+					title = t
+				}
+			}
+			contentStart = i + 1
+			break
+		}
+	}
+	if title != "" {
+		b.WriteString("### ")
+		b.WriteString(title)
+		b.WriteString("\n\n")
+	}
+	remaining := strings.Join(lines[contentStart:], "\n")
+	remaining = strings.TrimSpace(remaining)
+	if remaining != "" {
+		b.WriteString(remaining)
+		b.WriteString("\n")
+	}
+}
 
 // loadValuesFile loads values from a YAML file
 func loadValuesFile(filename string) (map[string]interface{}, error) {
@@ -281,7 +287,6 @@ func loadValuesFile(filename string) (map[string]interface{}, error) {
 
 // applySetValue applies a single --set value to the values map (Helm semantics)
 func applySetValue(values map[string]interface{}, setValue string) error {
-	// Normalize optional "Values." prefix
 	if idx := strings.Index(setValue, "="); idx > 0 {
 		key := setValue[:idx]
 		val := setValue[idx+1:]
@@ -296,19 +301,33 @@ func applySetValue(values map[string]interface{}, setValue string) error {
 	return nil
 }
 
-// mergeMaps recursively merges two maps
+// setNestedValue sets a value in a nested map structure
+func setNestedValue(m map[string]interface{}, keys []string, value interface{}) {
+	if len(keys) == 0 {
+		return
+	}
+	if len(keys) == 1 {
+		m[keys[0]] = value
+		return
+	}
+	if _, ok := m[keys[0]]; !ok {
+		m[keys[0]] = make(map[string]interface{})
+	}
+	if nextMap, ok := m[keys[0]].(map[string]interface{}); ok {
+		setNestedValue(nextMap, keys[1:], value)
+	} else {
+		m[keys[0]] = make(map[string]interface{})
+		setNestedValue(m[keys[0]].(map[string]interface{}), keys[1:], value)
+	}
+}
+
 func mergeMaps(base, overlay map[string]interface{}) map[string]interface{} {
 	result := make(map[string]interface{})
-
-	// Copy base map
 	for k, v := range base {
 		result[k] = v
 	}
-
-	// Overlay values
 	for k, v := range overlay {
 		if baseVal, exists := result[k]; exists {
-			// If both are maps, merge recursively
 			if baseMap, ok := baseVal.(map[string]interface{}); ok {
 				if overlayMap, ok := v.(map[string]interface{}); ok {
 					result[k] = mergeMaps(baseMap, overlayMap)
@@ -318,43 +337,29 @@ func mergeMaps(base, overlay map[string]interface{}) map[string]interface{} {
 		}
 		result[k] = v
 	}
-
 	return result
 }
 
-// renderTemplate processes the template with the provided values
 func renderTemplate(templateContent string, values map[string]interface{}) (string, error) {
-	// Create template with Sprig functions
 	tmpl := template.New("preflight").Funcs(sprig.FuncMap())
-
-	// Parse the template
 	tmpl, err := tmpl.Parse(templateContent)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to parse template")
 	}
-
-	// Execute the template
 	var buf bytes.Buffer
 	if err := tmpl.Execute(&buf, values); err != nil {
 		return "", errors.Wrap(err, "failed to execute template")
 	}
-
-	// Post-process to remove empty lines and clean up whitespace
 	result := cleanRenderedYAML(buf.String())
-
 	return result, nil
 }
 
-// cleanRenderedYAML removes empty lines and cleans up the rendered YAML
 func cleanRenderedYAML(content string) string {
 	lines := strings.Split(content, "\n")
 	var cleaned []string
 	var lastWasEmpty bool
-
 	for _, line := range lines {
 		trimmed := strings.TrimRight(line, " \t")
-
-		// Skip multiple consecutive empty lines
 		if trimmed == "" {
 			if !lastWasEmpty {
 				cleaned = append(cleaned, "")
@@ -365,11 +370,8 @@ func cleanRenderedYAML(content string) string {
 			lastWasEmpty = false
 		}
 	}
-
-	// Remove trailing empty lines
 	for len(cleaned) > 0 && cleaned[len(cleaned)-1] == "" {
 		cleaned = cleaned[:len(cleaned)-1]
 	}
-
 	return strings.Join(cleaned, "\n") + "\n"
 }
