@@ -8,6 +8,22 @@ gpu:
   cudaVersion: "12.0"
   minMemory: 40
 
+# Kubernetes version baseline
+kubernetes:
+  minVersion: v1.24.0
+
+# Cluster sizing (aggressive defaults for larger clusters)
+cluster:
+  minNodes: 5
+  recommendedNodes: 9
+  minCPU: 16
+  minMemory: 64
+
+# Operating system requirements (examples)
+os:
+  supported: ["Ubuntu 22.04 LTS", "RHEL 9", "Amazon Linux 2023"]
+  minKernel: "5.15"
+
 # ML Frameworks
 kubeflow:
   enabled: true
@@ -26,11 +42,15 @@ registry:
 
 # High-Performance Storage
 storage:
+  enabled: true
   datasetClass: "ultra-fast-nvme"
   modelClass: "replicated-ssd"
   sharedFS: "Lustre"
   minThroughput: 2000
   minIOPS: 50000
+
+a3:
+  enabled: false
 
 s3:
   enabled: true
@@ -100,3 +120,26 @@ autoscaling:
 
 # Target namespace
 targetNamespace: "ml-platform"
+
+# Optional services enabled in full profile
+postgres:
+  enabled: true
+  version: "14"
+  uri: "postgresql://postgres@postgres:5432/postgres"
+  storageClass: "default"
+  minMemory: 8
+  minCPU: 2
+
+redis:
+  enabled: true
+  version: "6.2"
+  uri: "redis://default:@redis:6379"
+
+ingress:
+  enabled: true
+  type: "Contour"
+  customDomain: "ml.example.com"
+
+test:
+  enabled: true
+  type: "Smoke"

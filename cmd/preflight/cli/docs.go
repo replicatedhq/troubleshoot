@@ -89,6 +89,9 @@ func extractDocs(templateFiles []string, valuesFiles []string, setValues []strin
 		values = mergeMaps(values, fileValues)
 	}
 
+	// Normalize YAML maps to map[string]interface{} recursively before applying --set
+	values = normalizeStringMaps(values)
+
 	// Apply --set values (Helm semantics)
 	for _, setValue := range setValues {
 		if err := applySetValue(values, setValue); err != nil {
@@ -171,6 +174,37 @@ func legacyContext(values map[string]interface{}) map[string]interface{} {
 	return ctx
 }
 
+// normalizeStringMaps converts any map[interface{}]interface{} into map[string]interface{} recursively
+func normalizeStringMaps(v interface{}) map[string]interface{} {
+	return normalizeMap(v).(map[string]interface{})
+}
+
+func normalizeMap(v interface{}) interface{} {
+	switch t := v.(type) {
+	case map[string]interface{}:
+		m := make(map[string]interface{}, len(t))
+		for k, val := range t {
+			m[k] = normalizeMap(val)
+		}
+		return m
+	case map[interface{}]interface{}:
+		m := make(map[string]interface{}, len(t))
+		for k, val := range t {
+			key := fmt.Sprintf("%v", k)
+			m[key] = normalizeMap(val)
+		}
+		return m
+	case []interface{}:
+		a := make([]interface{}, len(t))
+		for i, val := range t {
+			a[i] = normalizeMap(val)
+		}
+		return a
+	default:
+		return v
+	}
+}
+
 func extractDocStrings(yamlContent string) (string, error) {
 	// Parse the YAML
 	var preflightDoc PreflightDoc
@@ -178,19 +212,48 @@ func extractDocStrings(yamlContent string) (string, error) {
 		return "", errors.Wrap(err, "failed to parse YAML")
 	}
 
-	// Extract and combine all docStrings
+	// Extract and format all docStrings as Markdown
 	var docs strings.Builder
+	first := true
+	for _, req := range preflightDoc.Requirements {
+		if strings.TrimSpace(req.DocString) == "" {
+			continue
+		}
+		if !first {
+			docs.WriteString("\n\n")
+		}
+		first = false
 
-	for i, req := range preflightDoc.Requirements {
-		if req.DocString != "" {
-			// Add separator between requirements (except for the first one)
-			if i > 0 {
-				docs.WriteString("\n" + strings.Repeat("=", 80) + "\n\n")
+		// Parse the docString lines
+		lines := strings.Split(req.DocString, "\n")
+		title := strings.TrimSpace(req.Name)
+		contentStart := 0
+		for i, line := range lines {
+			trim := strings.TrimSpace(line)
+			if strings.HasPrefix(trim, "Title:") {
+				// Capture text after 'Title:'
+				parts := strings.SplitN(trim, ":", 2)
+				if len(parts) == 2 {
+					t := strings.TrimSpace(parts[1])
+					if t != "" {
+						title = t
+					}
+				}
+				contentStart = i + 1
+				break
 			}
+		}
 
-			// Clean up the docString (remove leading/trailing whitespace)
-			cleanedDoc := strings.TrimSpace(req.DocString)
-			docs.WriteString(cleanedDoc)
+		// Write heading
+		docs.WriteString("### ")
+		docs.WriteString(strings.TrimSpace(title))
+		docs.WriteString("\n\n")
+
+		// Write remaining content (skip Title line if present)
+		remaining := strings.Join(lines[contentStart:], "\n")
+		remaining = strings.TrimSpace(remaining)
+		if remaining != "" {
+			docs.WriteString(remaining)
 			docs.WriteString("\n")
 		}
 	}
@@ -231,31 +294,6 @@ func applySetValue(values map[string]interface{}, setValue string) error {
 		return fmt.Errorf("parsing --set: %w", err)
 	}
 	return nil
-}
-
-// setNestedValue sets a value in a nested map structure
-func setNestedValue(m map[string]interface{}, keys []string, value interface{}) {
-	if len(keys) == 0 {
-		return
-	}
-
-	if len(keys) == 1 {
-		m[keys[0]] = value
-		return
-	}
-
-	// Ensure intermediate maps exist
-	if _, ok := m[keys[0]]; !ok {
-		m[keys[0]] = make(map[string]interface{})
-	}
-
-	if nextMap, ok := m[keys[0]].(map[string]interface{}); ok {
-		setNestedValue(nextMap, keys[1:], value)
-	} else {
-		// If the intermediate value is not a map, replace it
-		m[keys[0]] = make(map[string]interface{})
-		setNestedValue(m[keys[0]].(map[string]interface{}), keys[1:], value)
-	}
 }
 
 // mergeMaps recursively merges two maps
