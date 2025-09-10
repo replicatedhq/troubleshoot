@@ -9,16 +9,18 @@ import (
 
 	"github.com/Masterminds/sprig/v3"
 	"github.com/pkg/errors"
+	"github.com/replicatedhq/troubleshoot/pkg/preflight"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"gopkg.in/yaml.v2"
+	"helm.sh/helm/v3/pkg/strvals"
 )
 
 func DocsCmd() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "docs [preflight-file]",
+		Use:   "docs [preflight-file...]",
 		Short: "Extract and display documentation from a preflight spec",
-		Long: `Extract all docString fields from enabled requirements in a preflight YAML file.
+		Long: `Extract all docString fields from enabled requirements in one or more preflight YAML files.
 This command processes templated preflight specs, evaluates conditionals, and outputs
 only the documentation for requirements that would be included based on the provided values.
 
@@ -26,24 +28,24 @@ Examples:
   # Extract docs with default values
   preflight docs ml-platform-preflight.yaml
 
-  # Extract docs with values from files
-  preflight docs ml-platform-preflight.yaml --values base-values.yaml --values prod-values.yaml
+  # Extract docs from multiple specs with values from files
+  preflight docs spec1.yaml spec2.yaml --values base-values.yaml --values prod-values.yaml
 
   # Extract docs with inline values
   preflight docs ml-platform-preflight.yaml --set jupyter.enabled=true --set monitoring.enabled=false
 
   # Extract docs and save to file
   preflight docs ml-platform-preflight.yaml --output requirements.md`,
-		Args: cobra.ExactArgs(1),
+		Args: cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			v := viper.GetViper()
 
-			templateFile := args[0]
+			templateFiles := args
 			valuesFiles := v.GetStringSlice("values")
 			outputFile := v.GetString("output")
 			setValues := v.GetStringSlice("set")
 
-			return extractDocs(templateFile, valuesFiles, setValues, outputFile)
+			return extractDocs(templateFiles, valuesFiles, setValues, outputFile)
 		},
 	}
 
@@ -69,19 +71,13 @@ type PreflightDoc struct {
 
 // Requirement represents a requirement with its documentation
 type Requirement struct {
-	Name      string                 `yaml:"name"`
-	DocString string                 `yaml:"docString"`
+	Name      string                   `yaml:"name"`
+	DocString string                   `yaml:"docString"`
 	Checks    []map[string]interface{} `yaml:"checks,omitempty"`
 }
 
-func extractDocs(templateFile string, valuesFiles []string, setValues []string, outputFile string) error {
-	// Read the template file
-	templateContent, err := os.ReadFile(templateFile)
-	if err != nil {
-		return errors.Wrapf(err, "failed to read template file %s", templateFile)
-	}
-
-	// Prepare the values map
+func extractDocs(templateFiles []string, valuesFiles []string, setValues []string, outputFile string) error {
+	// Prepare the values map (merge all files, then apply sets)
 	values := make(map[string]interface{})
 
 	// Load values from files if provided
@@ -93,55 +89,105 @@ func extractDocs(templateFile string, valuesFiles []string, setValues []string, 
 		values = mergeMaps(values, fileValues)
 	}
 
-	// Apply --set values
+	// Apply --set values (Helm semantics)
 	for _, setValue := range setValues {
 		if err := applySetValue(values, setValue); err != nil {
 			return errors.Wrapf(err, "failed to apply set value: %s", setValue)
 		}
 	}
 
-	// Process the template
-	rendered, err := renderTemplate(string(templateContent), values)
-	if err != nil {
-		return errors.Wrap(err, "failed to render template")
-	}
+	// Accumulate docs across all provided templates
+	var combinedDocs strings.Builder
 
-	// Parse the rendered YAML to extract docStrings
-	docs, err := extractDocStrings(rendered)
-	if err != nil {
-		return errors.Wrap(err, "failed to extract documentation")
+	for _, templateFile := range templateFiles {
+		// Read the template file
+		templateContent, err := os.ReadFile(templateFile)
+		if err != nil {
+			return errors.Wrapf(err, "failed to read template file %s", templateFile)
+		}
+
+		// Decide rendering engine. Try Helm when .Values is referenced; if it fails, fall back to legacy.
+		useHelm := shouldUseHelmEngine(string(templateContent))
+
+		var rendered string
+		if useHelm {
+			rendered, err = preflight.RenderWithHelmTemplate(string(templateContent), values)
+			if err != nil {
+				// Fall back to legacy with dual-context (root + Values) for mixed templates
+				execValues := legacyContext(values)
+				rendered, err = renderTemplate(string(templateContent), execValues)
+				if err != nil {
+					return errors.Wrap(err, "failed to render template (helm fallback also failed)")
+				}
+			}
+		} else {
+			// Legacy with dual-context (root + Values)
+			execValues := legacyContext(values)
+			rendered, err = renderTemplate(string(templateContent), execValues)
+			if err != nil {
+				return errors.Wrap(err, "failed to render template")
+			}
+		}
+
+		// Parse the rendered YAML to extract docStrings
+		docs, err := extractDocStrings(rendered)
+		if err != nil {
+			return errors.Wrap(err, "failed to extract documentation")
+		}
+
+		if strings.TrimSpace(docs) != "" {
+			if combinedDocs.Len() > 0 {
+				combinedDocs.WriteString("\n\n")
+			}
+			combinedDocs.WriteString(docs)
+		}
 	}
 
 	// Output the result
 	if outputFile != "" {
-		if err := os.WriteFile(outputFile, []byte(docs), 0644); err != nil {
+		if err := os.WriteFile(outputFile, []byte(combinedDocs.String()), 0644); err != nil {
 			return errors.Wrapf(err, "failed to write output file %s", outputFile)
 		}
 		fmt.Printf("Documentation extracted successfully to %s\n", outputFile)
 	} else {
-		fmt.Print(docs)
+		fmt.Print(combinedDocs.String())
 	}
 
 	return nil
 }
 
+// shouldUseHelmEngine returns true if the template appears to use Helm's .Values
+func shouldUseHelmEngine(content string) bool {
+	return strings.Contains(content, ".Values")
+}
+
+// legacyContext returns a map that supports both .foo and .Values.foo lookups
+func legacyContext(values map[string]interface{}) map[string]interface{} {
+	ctx := make(map[string]interface{}, len(values)+1)
+	for k, v := range values {
+		ctx[k] = v
+	}
+	ctx["Values"] = values
+	return ctx
+}
+
 func extractDocStrings(yamlContent string) (string, error) {
 	// Parse the YAML
-	var preflight PreflightDoc
-	if err := yaml.Unmarshal([]byte(yamlContent), &preflight); err != nil {
+	var preflightDoc PreflightDoc
+	if err := yaml.Unmarshal([]byte(yamlContent), &preflightDoc); err != nil {
 		return "", errors.Wrap(err, "failed to parse YAML")
 	}
 
 	// Extract and combine all docStrings
 	var docs strings.Builder
-	
-	for i, req := range preflight.Requirements {
+
+	for i, req := range preflightDoc.Requirements {
 		if req.DocString != "" {
 			// Add separator between requirements (except for the first one)
 			if i > 0 {
 				docs.WriteString("\n" + strings.Repeat("=", 80) + "\n\n")
 			}
-			
+
 			// Clean up the docString (remove leading/trailing whitespace)
 			cleanedDoc := strings.TrimSpace(req.DocString)
 			docs.WriteString(cleanedDoc)
@@ -170,48 +216,20 @@ func loadValuesFile(filename string) (map[string]interface{}, error) {
 	return values, nil
 }
 
-// applySetValue applies a single --set value to the values map
+// applySetValue applies a single --set value to the values map (Helm semantics)
 func applySetValue(values map[string]interface{}, setValue string) error {
-	parts := strings.SplitN(setValue, "=", 2)
-	if len(parts) != 2 {
-		return fmt.Errorf("invalid set value format: %s (expected key=value)", setValue)
-	}
-
-	key := parts[0]
-	value := parts[1]
-
-	// Parse the value to appropriate type
-	var parsedValue interface{}
-	
-	// Try to parse as boolean
-	if value == "true" {
-		parsedValue = true
-	} else if value == "false" {
-		parsedValue = false
-	} else if strings.HasPrefix(value, "[") && strings.HasSuffix(value, "]") {
-		// Try to parse as array
-		if err := yaml.Unmarshal([]byte(value), &parsedValue); err != nil {
-			parsedValue = value // Fall back to string
-		}
-	} else {
-		// Try to parse as number or keep as string
-		var numValue float64
-		if _, err := fmt.Sscanf(value, "%f", &numValue); err == nil {
-			// Check if it's an integer
-			if numValue == float64(int(numValue)) {
-				parsedValue = int(numValue)
-			} else {
-				parsedValue = numValue
-			}
-		} else {
-			parsedValue = value
+	// Normalize optional "Values." prefix
+	if idx := strings.Index(setValue, "="); idx > 0 {
+		key := setValue[:idx]
+		val := setValue[idx+1:]
+		if strings.HasPrefix(key, "Values.") {
+			key = strings.TrimPrefix(key, "Values.")
+			setValue = key + "=" + val
 		}
 	}
-
-	// Handle nested keys (e.g., postgres.enabled)
-	keys := strings.Split(key, ".")
-	setNestedValue(values, keys, parsedValue)
-
+	if err := strvals.ParseInto(setValue, values); err != nil {
+		return fmt.Errorf("parsing --set: %w", err)
+	}
 	return nil
 }
 
@@ -297,7 +315,7 @@ func cleanRenderedYAML(content string) string {
 
 	for _, line := range lines {
 		trimmed := strings.TrimRight(line, " \t")
-		
+
 		// Skip multiple consecutive empty lines
 		if trimmed == "" {
 			if !lastWasEmpty {
