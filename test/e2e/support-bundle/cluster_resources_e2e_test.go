@@ -58,13 +58,14 @@ func TestClusterResources(t *testing.T) {
 				"resource-quota",
 				"ingress",
 				"pods",
+				"pod-disruption-budgets",
 			},
 			expectType: "folder",
 		},
 	}
 
-	feature := features.New("Cluster Resouces Test").
-		Assess("check support bundle catch cluster resouces", func(ctx context.Context, t *testing.T, c *envconf.Config) context.Context {
+	feature := features.New("Cluster Resources Test").
+		Assess("check support bundle catch cluster resources", func(ctx context.Context, t *testing.T, c *envconf.Config) context.Context {
 			var out bytes.Buffer
 			supportBundleName := "cluster-resources"
 			tarPath := fmt.Sprintf("%s.tar.gz", supportBundleName)
