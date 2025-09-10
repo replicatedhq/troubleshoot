@@ -53,7 +53,12 @@ func (r literalRedactor) Redact(input io.Reader, path string) io.Reader {
 			lineNum++
 			line := scanner.Bytes()
 
-			clean := bytes.ReplaceAll(line, r.match, maskTextBytes)
+			replacement := maskTextBytes
+			if enableTokenization {
+				tok := tokenizeValue(r.match, inferTypeHint(r.redactName))
+				replacement = []byte(tok)
+			}
+			clean := bytes.ReplaceAll(line, r.match, replacement)
 
 			// Append newline since scanner strips it
 			err = writeBytes(writer, clean, NEW_LINE)

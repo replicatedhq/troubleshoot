@@ -95,6 +95,23 @@ func (r *MultiLineRedactor) Redact(input io.Reader, path string) io.Reader {
 			}
 			flushLastLine = false
 			clean := r.re2.ReplaceAll(line2, substStr)
+			if enableTokenization && !bytes.Equal(clean, line2) {
+				// Find the "mask" named group for tokenization
+				if matches := r.re2.FindSubmatch(line2); matches != nil {
+					// Find the mask group index
+					maskGroupIndex := -1
+					for i, name := range r.re2.SubexpNames() {
+						if name == "mask" {
+							maskGroupIndex = i
+							break
+						}
+					}
+					if maskGroupIndex > 0 && maskGroupIndex < len(matches) && len(matches[maskGroupIndex]) > 0 {
+						token := tokenizeValue(matches[maskGroupIndex], inferTypeHint(r.redactName))
+						clean = bytes.ReplaceAll(clean, []byte(r.maskText), []byte(token))
+					}
+				}
+			}
 
 			// Append newlines since scanner strips them
 			err = writeBytes(writer, line1, NEW_LINE, clean, NEW_LINE)

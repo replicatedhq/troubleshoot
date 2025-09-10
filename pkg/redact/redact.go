@@ -4,7 +4,9 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"os"
 	"regexp"
+	"strings"
 	"sync"
 
 	"github.com/gobwas/glob"
@@ -18,6 +20,10 @@ const (
 )
 
 var (
+	// tokenization controls (phase-1: local toggles; to be wired later)
+	enableTokenization = false
+	enableOwnerMapping = false
+
 	allRedactions     RedactionList
 	redactionListMut  sync.Mutex
 	pendingRedactions sync.WaitGroup
@@ -32,6 +38,10 @@ func init() {
 	allRedactions = RedactionList{
 		ByRedactor: map[string][]Redaction{},
 		ByFile:     map[string][]Redaction{},
+	}
+	// Enable tokenization only when explicitly requested to preserve legacy behavior/tests
+	if os.Getenv("TROUBLESHOOT_TOKENIZATION") == "1" {
+		enableTokenization = true
 	}
 }
 
@@ -211,6 +221,122 @@ func getRedactors(path string) ([]Redactor, error) {
 		regex LineRedactor
 		name  string
 	}{
+		// YAML/JSON key-value patterns for common secrets
+		{
+			regex: LineRedactor{
+				regex: `(?i)(\s*(?:password|pwd|pass)\s*:\s*["\']?)(?P<mask>[^"\'\s\n\r]+)(["\']?\s*$)`,
+				scan:  `password|pwd|pass`,
+			},
+			name: "Redact password values in YAML/JSON",
+		},
+		{
+			regex: LineRedactor{
+				regex: `(?i)(\s*(?:secret|secrets|.*[-_]?secret|.*[-_]?secrets)\s*:\s*["\']?)(?P<mask>[^"\'\s\n\r]+)(["\']?\s*$)`,
+				scan:  `secret`,
+			},
+			name: "Redact secret values in YAML/JSON (including openai-secret, stripe-secret, etc.)",
+		},
+		{
+			regex: LineRedactor{
+				regex: `(?i)(\s*(?:api[-_]?key|apikey|.*[-_]?key|.*[-_]?api[-_]?key)\s*:\s*["\']?)(?P<mask>[^"\'\s\n\r]+)(["\']?\s*$)`,
+				scan:  `key|api`,
+			},
+			name: "Redact API key values in YAML/JSON (including openai-key, stripe-key, etc.)",
+		},
+		{
+			regex: LineRedactor{
+				regex: `(?i)(\s*(?:token|auth[-_]?token|access[-_]?token|.*[-_]?token)\s*:\s*["\']?)(?P<mask>[^"\'\s\n\r]+)(["\']?\s*$)`,
+				scan:  `token`,
+			},
+			name: "Redact token values in YAML/JSON (including github-token, slack-token, etc.)",
+		},
+		{
+			regex: LineRedactor{
+				regex: `(?i)(\s*(?:client[-_]?secret|client[-_]?key)\s*:\s*["\']?)(?P<mask>[^"\'\s\n\r]+)(["\']?\s*$)`,
+				scan:  `client`,
+			},
+			name: "Redact client secret values in YAML/JSON",
+		},
+		{
+			regex: LineRedactor{
+				regex: `(?i)(\s*(?:private[-_]?key|privatekey)\s*:\s*["\']?)(?P<mask>[^"\'\s\n\r]+)(["\']?\s*$)`,
+				scan:  `private`,
+			},
+			name: "Redact private key values in YAML/JSON",
+		},
+		{
+			regex: LineRedactor{
+				regex: `(?i)(\s*(?:username|user|userid|user[-_]?id)\s*:\s*["\']?)(?P<mask>[^"\'\s\n\r]+)(["\']?\s*$)`,
+				scan:  `user`,
+			},
+			name: "Redact username values in YAML/JSON",
+		},
+		{
+			regex: LineRedactor{
+				regex: `(?i)(\s*(?:database|db|database[-_]?name|db[-_]?name)\s*:\s*["\']?)(?P<mask>[^"\'\s\n\r]+)(["\']?\s*$)`,
+				scan:  `database|db`,
+			},
+			name: "Redact database name values in YAML/JSON",
+		},
+		{
+			regex: LineRedactor{
+				regex: `(?i)(\s*(?:email|mail|smtp[-_]?user|smtp[-_]?username)\s*:\s*["\']?)(?P<mask>[^"\'\s\n\r]+)(["\']?\s*$)`,
+				scan:  `email|mail|smtp`,
+			},
+			name: "Redact email values in YAML/JSON",
+		},
+		// Environment variable patterns (KEY=value format)
+		{
+			regex: LineRedactor{
+				regex: `(?i)(^.*(?:password|pwd|pass).*=)(?P<mask>[^\s\n\r]+)(\s*$)`,
+				scan:  `password|pwd|pass`,
+			},
+			name: "Redact password environment variables (KEY=value format)",
+		},
+		{
+			regex: LineRedactor{
+				regex: `(?i)(^.*(?:secret|secrets).*=)(?P<mask>[^\s\n\r]+)(\s*$)`,
+				scan:  `secret`,
+			},
+			name: "Redact secret environment variables (KEY=value format)",
+		},
+		{
+			regex: LineRedactor{
+				regex: `(?i)(^.*(?:key|api|token).*=)(?P<mask>[^\s\n\r]+)(\s*$)`,
+				scan:  `key|api|token`,
+			},
+			name: "Redact key/API/token environment variables (KEY=value format)",
+		},
+		{
+			regex: LineRedactor{
+				regex: `(?i)(^.*(?:user|username|userid).*=)(?P<mask>[^\s\n\r]+)(\s*$)`,
+				scan:  `user`,
+			},
+			name: "Redact user environment variables (KEY=value format)",
+		},
+		{
+			regex: LineRedactor{
+				regex: `(?i)(^.*(?:database|db).*=)(?P<mask>[^\s\n\r]+)(\s*$)`,
+				scan:  `database|db`,
+			},
+			name: "Redact database environment variables (KEY=value format)",
+		},
+		// YAML environment variable value patterns (for env: - name/value format)
+		{
+			regex: LineRedactor{
+				regex: `(?i)(\s*value\s*:\s*["\']?)(?P<mask>[^"\'\s\n\r]+)(["\']?\s*$)`,
+				scan:  `value`,
+			},
+			name: "Redact environment variable values in YAML (value: format)",
+		},
+		// JSON environment variable patterns (unescaped quotes)
+		{
+			regex: LineRedactor{
+				regex: `(?i)("name":"[^"]*(?:password|secret|key|token)[^"]*","value":")(?P<mask>[^"]+)(")`,
+				scan:  `password|secret|key|token`,
+			},
+			name: "Redact JSON environment variable values (unescaped quotes)",
+		},
 		// aws secrets
 		{
 			regex: LineRedactor{
@@ -286,7 +412,7 @@ func getRedactors(path string) ([]Redactor, error) {
 		{
 			regex: LineRedactor{
 				regex: `\b(\w*:\/\/)(?P<mask>[^:\"\/]*){1}(:)(?P<mask>[^:\"\/]*){1}(@)(?P<mask>[^:\"\/]*){1}(?P<port>:[\d]*)?(\/)(?P<mask>[\w\d\S-_]+){1}\b`,
-				scan:  `\b(\w*:\/\/)([^:\"\/]*)(:)([^@\"\/]*)(@)([^:\"\/]*)(:[\d]*)?(\/)([\w\d\S-_]+)\b`,
+				scan:  `\b(\w*:\/\/)([^:\"\/]*){1}(:)([^@\"\/]*){1}(@)([^:\"\/]*){1}(:[\d]*)?(\/)([\w\d\S-_]+){1}\b`,
 			},
 			name: "Redact database connection strings that contain username and password",
 		},
@@ -482,7 +608,8 @@ func getReplacementPattern(re *regexp.Regexp, maskText string) string {
 		if name == "" {
 			substStr = fmt.Sprintf("%s$%d", substStr, i)
 		} else if name == "mask" {
-			substStr = fmt.Sprintf("%s%s", substStr, maskText)
+			// Insert a fixed placeholder; tokenization post-pass will swap it with a consistent token
+			substStr = fmt.Sprintf("%s%s", substStr, MASK_TEXT)
 		} else if name == "drop" {
 			// no-op, string is just dropped from result
 		} else {
@@ -525,4 +652,23 @@ func redactorName(redactorNum, withinRedactorNum int, redactorName, redactorType
 		return fmt.Sprintf("%s.%s.%d", redactorName, redactorType, withinRedactorNum)
 	}
 	return fmt.Sprintf("unnamed-%d.%s.%d", redactorNum, redactorType, withinRedactorNum)
+}
+
+// inferTypeHint extracts a coarse type from a redactor name for token prefixing.
+func inferTypeHint(name string) string {
+	n := strings.ToLower(name)
+	switch {
+	case strings.Contains(n, "password"):
+		return "PASSWORD"
+	case strings.Contains(n, "token"):
+		return "TOKEN"
+	case strings.Contains(n, "secret"):
+		return "SECRET"
+	case strings.Contains(n, "user"):
+		return "USER"
+	case strings.Contains(n, "database"):
+		return "DATABASE"
+	default:
+		return "SECRET"
+	}
 }

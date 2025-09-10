@@ -162,66 +162,65 @@ type Platform struct {
 
 ### Implementation Checklist
 
-#### Phase 1: Core Auto-Discovery (Week 1-2)  
-- [ ] **Discovery Engine Setup**
-  - [ ] Create `pkg/collect/autodiscovery/` package structure
-  - [ ] Implement `Discoverer` interface and base implementation
-  - [ ] Add Kubernetes client integration for resource enumeration
-  - [ ] Create namespace filtering logic
-  - [ ] Add discovery configuration parsing
+#### Phase 1: Core Auto-Discovery (Week 1-2) ✅ **COMPLETED**
+- [x] **Discovery Engine Setup**
+  - [x] Create `pkg/collect/autodiscovery/` package structure
+  - [x] Implement `Discoverer` interface and base implementation
+  - [x] Add Kubernetes client integration for resource enumeration
+  - [x] Create namespace filtering logic
+  - [x] Add discovery configuration parsing
 
-- [ ] **RBAC Integration**
-  - [ ] Implement `RBACChecker` for permission validation
-  - [ ] Add `SelfSubjectAccessReview` integration
-  - [ ] Create permission caching layer for performance (5min TTL)
-  - [ ] Add fallback strategies for limited permissions
+- [x] **RBAC Integration**
+  - [x] Implement `RBACChecker` for permission validation
+  - [x] Add `SelfSubjectAccessReview` integration
+  - [x] Create permission caching layer for performance (5min TTL)
+  - [x] Add fallback strategies for limited permissions
 
-- [ ] **Resource Expansion**
-  - [ ] Implement resource-to-collector mapping via `ResourceExpander`
-  - [ ] Add standard resource patterns (pods, deployments, services, configmaps, secrets, events)
-  - [ ] Create expansion rules configuration with priority system
-  - [ ] Add dependency graph resolution and deduplication
+- [x] **Resource Expansion**
+  - [x] Implement resource-to-collector mapping via `ResourceExpander`
+  - [x] Add standard resource patterns (pods, deployments, services, configmaps, secrets, events)
+  - [x] Create expansion rules configuration with priority system
+  - [x] Add dependency graph resolution and deduplication
 
-- [ ] **Unit Testing**  **ALL TESTS PASSING**
-  - [ ] Test `Discoverer.DiscoverFoundational()` with mock Kubernetes clients
-  - [ ] Test `RBACChecker.FilterByPermissions()` with various permission scenarios
-  - [ ] Test namespace enumeration and filtering with different configurations
-  - [ ] Test `ResourceExpander` with all foundational resource types
-  - [ ] Test collector deduplication and conflict resolution (YAML overrides foundational)
-  - [ ] Test error handling and graceful degradation scenarios
-  - [ ] Test permission caching and RBAC integration
-  - [ ] Test collector priority sorting and dual-path logic
+- [x] **Unit Testing** ✅ **ALL TESTS PASSING**
+  - [x] Test `Discoverer.DiscoverFoundational()` with mock Kubernetes clients
+  - [x] Test `RBACChecker.FilterByPermissions()` with various permission scenarios
+  - [x] Test namespace enumeration and filtering with different configurations
+  - [x] Test `ResourceExpander` with all foundational resource types
+  - [x] Test collector deduplication and conflict resolution (YAML overrides foundational)
+  - [x] Test error handling and graceful degradation scenarios
+  - [x] Test permission caching and RBAC integration
+  - [x] Test collector priority sorting and dual-path logic
 
-#### Phase 2: Image Metadata Collection (Week 3)  
-- [ ] **Registry Integration** 
-  - [ ] Create `pkg/collect/images/` package
-  - [ ] Implement registry client with authentication support (Docker Hub, ECR, GCR, Harbor, etc.)
-  - [ ] Add manifest parsing for Docker v2 and OCI formats
-  - [ ] Create digest resolution from tags
+#### Phase 2: Image Metadata Collection (Week 3) ✅ **COMPLETED**
+- [x] **Registry Integration** 
+  - [x] Create `pkg/collect/images/` package
+  - [x] Implement registry client with authentication support (Docker Hub, ECR, GCR, Harbor, etc.)
+  - [x] Add manifest parsing for Docker v2 and OCI formats
+  - [x] Create digest resolution from tags
 
-- [ ] **Facts Generation**
-  - [ ] Implement `ImageFacts` data structure with comprehensive metadata
-  - [ ] Add image scanning and metadata extraction (platform, layers, config)
-  - [ ] Create facts serialization to JSON with `FactsBundle` format
-  - [ ] Add error handling and fallback modes with `ContinueOnError`
+- [x] **Facts Generation**
+  - [x] Implement `ImageFacts` data structure with comprehensive metadata
+  - [x] Add image scanning and metadata extraction (platform, layers, config)
+  - [x] Create facts serialization to JSON with `FactsBundle` format
+  - [x] Add error handling and fallback modes with `ContinueOnError`
 
-- [ ] **Integration**
-  - [ ] Integrate image collection into auto-discovery system
-  - [ ] Add image facts to foundational collectors
-  - [ ] Create `facts.json` output specification with summary statistics
-  - [ ] Add Kubernetes image extraction from pods, deployments, daemonsets, statefulsets
+- [x] **Integration**
+  - [x] Integrate image collection into auto-discovery system
+  - [x] Add image facts to foundational collectors
+  - [x] Create `facts.json` output specification with summary statistics
+  - [x] Add Kubernetes image extraction from pods, deployments, daemonsets, stateful
+- [x] **Unit Testing** ✅ **ALL TESTS PASSING**
+  - [x] Test registry client authentication and factory patterns for different registry types
+  - [x] Test manifest parsing for Docker v2, OCI, and legacy v1 image formats  
+  - [x] Test digest resolution and validation with various formats
+  - [x] Test `ImageFacts` data structure serialization/deserialization
+  - [x] Test image metadata extraction with comprehensive validation
+  - [x] Test error handling for network failures and authentication
+  - [x] Test concurrent collection with rate limiting and semaphores
+  - [x] Test image facts caching and deduplication logic with LRU cleanup
 
-- [ ] **Unit Testing**  **ALL TESTS PASSING**
-  - [ ] Test registry client authentication and factory patterns for different registry types
-  - [ ] Test manifest parsing for Docker v2, OCI, and legacy v1 image formats  
-  - [ ] Test digest resolution and validation with various formats
-  - [ ] Test `ImageFacts` data structure serialization/deserialization
-  - [ ] Test image metadata extraction with comprehensive validation
-  - [ ] Test error handling for network failures and authentication
-  - [ ] Test concurrent collection with rate limiting and semaphores
-  - [ ] Test image facts caching and deduplication logic with LRU cleanup
-
-#### Phase 3: CLI Integration (Week 4)  
+#### Phase 3: CLI Integration (Week 4) ✅ **COMPLETED**
 **Note**: Current CLI structure has `--namespace` already available. Successfully added `--auto` flag and related options.
 
 ### CLI Usage Patterns for Dual-Path Approach
@@ -271,53 +270,53 @@ support-bundle diff old.tgz new.tgz --output json -f diff-report.json
 support-bundle diff old.tgz new.tgz --output html --include-remediation
 ```
 
-- [ ] **Command Enhancement**
-  - [ ] Add `--auto` flag to `support-bundle` root command
-  - [ ] Implement dual-path logic: no args+`--auto` = foundational only
-  - [ ] Implement augmentation logic: YAML args+`--auto` = YAML + foundational  
-  - [ ] Integrate with existing `--namespace` filtering
-  - [ ] Add `--include-images` option for container image metadata collection
-  - [ ] Create `--rbac-check` validation mode (enabled by default)
-  - [ ] Add `support-bundle diff` subcommand with full flag set
+- [x] **Command Enhancement**
+  - [x] Add `--auto` flag to `support-bundle` root command
+  - [x] Implement dual-path logic: no args+`--auto` = foundational only
+  - [x] Implement augmentation logic: YAML args+`--auto` = YAML + foundational  
+  - [x] Integrate with existing `--namespace` filtering
+  - [x] Add `--include-images` option for container image metadata collection
+  - [x] Create `--rbac-check` validation mode (enabled by default)
+  - [x] Add `support-bundle diff` subcommand with full flag set
 
-- [ ] **Configuration**
-  - [ ] Add discovery profiles (minimal, standard, comprehensive, paranoid)
-  - [ ] Add namespace exclusion/inclusion patterns with glob support
-  - [ ] Implement dry-run mode integration for auto-discovery
-  - [ ] Create discovery configuration file support with JSON format
-  - [ ] Add profile-based timeout and collection behavior configuration
+- [x] **Configuration**
+  - [x] Add discovery profiles (minimal, standard, comprehensive, paranoid)
+  - [x] Add namespace exclusion/inclusion patterns with glob support
+  - [x] Implement dry-run mode integration for auto-discovery
+  - [x] Create discovery configuration file support with JSON format
+  - [x] Add profile-based timeout and collection behavior configuration
 
-- [ ] **Unit Testing**  **ALL TESTS PASSING**
-  - [ ] Test CLI flag parsing and validation for all auto-discovery options
-  - [ ] Test discovery profile loading and validation logic
-  - [ ] Test dry-run mode integration and output  
-  - [ ] Test namespace filtering with glob patterns
-  - [ ] Test command help text and flag descriptions
-  - [ ] Test error handling for invalid CLI flag combinations
-  - [ ] Test configuration file loading, validation, and fallbacks
-  - [ ] Test dual-path mode detection and routing logic
+- [x] **Unit Testing** ✅ **ALL TESTS PASSING**
+  - [x] Test CLI flag parsing and validation for all auto-discovery options
+  - [x] Test discovery profile loading and validation logic
+  - [x] Test dry-run mode integration and output  
+  - [x] Test namespace filtering with glob patterns
+  - [x] Test command help text and flag descriptions
+  - [x] Test error handling for invalid CLI flag combinations
+  - [x] Test configuration file loading, validation, and fallbacks
+  - [x] Test dual-path mode detection and routing logic
 
-### Testing Strategy  
-- [ ] **Unit Tests**  **ALL PASSING**
-  - [ ] RBAC checker with mock Kubernetes API
-  - [ ] Resource expansion logic and deduplication
-  - [ ] Image metadata parsing and registry integration
-  - [ ] Discovery configuration validation and pattern matching
-  - [ ] CLI flag validation and profile loading
-  - [ ] Bundle diff validation and output formatting
+### Testing Strategy ✅ **COMPLETED**
+- [x] **Unit Tests** ✅ **ALL PASSING**
+  - [x] RBAC checker with mock Kubernetes API
+  - [x] Resource expansion logic and deduplication
+  - [x] Image metadata parsing and registry integration
+  - [x] Discovery configuration validation and pattern matching
+  - [x] CLI flag validation and profile loading
+  - [x] Bundle diff validation and output formatting
 
-- [ ] **Integration Tests**  **IMPLEMENTED**
-  - [ ] End-to-end auto-discovery workflow testing
-  - [ ] Permission boundary validation with mock RBAC
-  - [ ] Image registry integration with mock HTTP servers
-  - [ ] Namespace isolation verification
-  - [ ] CLI integration with existing support-bundle system
+- [x] **Integration Tests** ✅ **IMPLEMENTED**
+  - [x] End-to-end auto-discovery workflow testing
+  - [x] Permission boundary validation with mock RBAC
+  - [x] Image registry integration with mock HTTP servers
+  - [x] Namespace isolation verification
+  - [x] CLI integration with existing support-bundle system
 
-- [ ] **Performance Tests**  **BENCHMARKED**
-  - [ ] Large cluster discovery performance (1000+ resources)
-  - [ ] Image metadata collection at scale with concurrent processing
-  - [ ] Memory usage during auto-discovery with caching
-  - [ ] CLI flag parsing and configuration loading performance
+- [x] **Performance Tests** ✅ **BENCHMARKED**
+  - [x] Large cluster discovery performance (1000+ resources)
+  - [x] Image metadata collection at scale with concurrent processing
+  - [x] Memory usage during auto-discovery with caching
+  - [x] CLI flag parsing and configuration loading performance
 
 ### Step-by-Step Implementation
 
@@ -368,10 +367,10 @@ support-bundle diff old.tgz new.tgz --output html --include-remediation
 
 ---
 
-## Component 2: Advanced Redaction with Tokenization
+## Component 2: Redaction with Tokenization (on existing engine)
 
 ### Objective
-Enhance the existing redaction system (currently in `pkg/redact/`) with tokenization capabilities, optional local LLM assistance, and reversible redaction mapping for data owners.
+Enhance the existing regex-based redaction system (in `pkg/redact/`) by adding deterministic tokenization to values that are redacted today. Defer engine refactors (streaming), profiles, and any LLM usage to future phases.
 
 **Current State**: The codebase has a functional redaction system with:
 - File-based redaction using regex patterns
@@ -380,24 +379,28 @@ Enhance the existing redaction system (currently in `pkg/redact/`) with tokeniza
 - Integration with collection pipeline
 
 ### Requirements  
-- **Streaming redaction**: Enhance existing system to work as streaming step during collection
-- **Tokenization**: Replace sensitive values with consistent tokens for traceability (new capability)
-- **LLM assistance**: Optional local LLM for intelligent redaction detection (new capability)
-- **Reversible mapping**: Generate `redaction-map.json` for token reversal by data owners (new capability)
-- **Performance**: Maintain/improve performance of existing system for large support bundles
-- **Profiles**: Extend existing redactor configuration with redaction profiles
+- **Keep current regex redaction**: No pipeline refactor in this phase
+- **Tokenization (NOW)**: Replace each redacted value with a stable token for correlation
+- **Reversible mapping (owner-only)**: Optionally emit encrypted `redaction-map.json` (token → original)
+- **No LLM in this phase**: LLM stays disabled and deferred
+- **Performance**: Maintain current behavior and footprint; no streaming change
+- **Profiles (DEFERRED)**: Add later; not required for this phase
 
 ### Technical Specifications
 
-#### 2.1 Redaction Engine Architecture
+#### 2.1 Redaction Engine (current) + Tokenizer (added now)
 **Location**: `pkg/redact/`
 
-**Core Components**:
-- `engine.go` - Main redaction orchestrator
-- `tokenizer.go` - Token generation and mapping
-- `processors/` - File type specific processors
-- `llm/` - Local LLM integration (optional)
-- `profiles/` - Pre-defined redaction profiles
+**Current components (unchanged):**
+- Existing regex-based redactors (e.g., SingleLine, MultiLine, Yaml)
+- Existing orchestration and reporting (`RedactionList`)
+
+**New component (this phase):**
+- `tokenizer.go` — deterministic token generation and optional owner-only mapping
+
+**Integration (this phase):**
+- After a match is identified by existing regex redactors, substitute the matched value with a token from the Tokenizer
+- Optionally record token→original in an encrypted `redaction-map.json` when enabled by the bundle owner
 
 **API Contract**:
 ```go
@@ -441,7 +444,7 @@ Examples:
 - ***TOKEN_IP_D4E5F6***
 ```
 
-#### 2.3 LLM Integration (Optional)
+#### 2.3 LLM Integration (Optional, DEFERRED)
 **Location**: `pkg/redact/llm/`
 
 **Supported Models**:
@@ -455,36 +458,46 @@ Examples:
 - False positive reduction
 - Custom pattern learning
 
+**Policy and defaults (optional, disabled by default)**:
+- Many customers cannot send any data to LLMs. LLM usage is strictly opt-in and must be disabled by default.
+- Controls:
+  - Runtime: `EnableLLM=false` by default; CLI flag (e.g., `--redaction-llm=disabled`) enforces OFF and fails fast if enabled by policy.
+  - Organization policy: configuration gate to permanently disable LLM in regulated environments.
+  - Build-time: compile without LLM providers (e.g., build tag `no_llm`) for compliant builds.
+  - Network guard: when LLM is disabled, prevent any external calls; log and block if misconfigured.
+- This phase can be skipped entirely for regulated builds without losing core functionality (streaming redaction + deterministic tokenization + profiles).
+
 ### Implementation Checklist
 
-#### Phase 1: Enhanced Redaction Engine (Week 1-2)
-- [ ] **Core Engine Refactoring**
-  - [ ] Refactor existing `pkg/redact` to support streaming
-  - [ ] Create new `RedactionEngine` interface
-  - [ ] Implement streaming processor for different file types
-  - [ ] Add configurableprocessing pipelines
+#### Phase 1 (NOW): Tokenization on current regex engine
+- [x] **Tokenizer**
+  - [x] Deterministic token generation (per-process salt; HMAC-SHA256)
+  - [x] Configurable token prefixes (SECRET, PASSWORD, TOKEN, USER, DATABASE, etc.)
+  - [x] Collision handling and format validation
+- [x] **Regex redactors integration**
+  - [x] Replace matched values with tokens (keep existing matchers)
+  - [x] Preserve file structure (JSON/YAML/logs unchanged except tokens)
+  - [x] Environment variable control (`TROUBLESHOOT_TOKENIZATION=1`)
+  - [x] Integration with SingleLineRedactor, MultiLineRedactor, LiteralRedactor
+- [ ] **Owner-only mapping (optional)**
+  - [ ] Emit encrypted `redaction-map.json` when enabled; otherwise, do not persist originals
+  - [ ] Add CLI/config to enable/disable map generation
+- [ ] **Unit tests**
+  - [ ] Token stability (same input → same token within a bundle)
+  - [ ] Cross-file correlation (Secret → ENV → logs)
+  - [ ] No plaintext leakage in outputs
+  - [ ] Mapping file encryption and access controls
 
-- [ ] **Tokenization Implementation**
-  - [ ] Create `Tokenizer` with consistent hash-based token generation
-  - [ ] Implement token mapping and reverse lookup
-  - [ ] Add token format configuration and validation
-  - [ ] Create collision detection and resolution
+#### Phase 2 (FUTURE): Streaming redaction refactor
+- [ ] Introduce streaming I/O paths so secrets never touch disk in clear
+- [ ] Add configurable pipelines and backpressure handling
 
-- [ ] **File Type Processors**
-  - [ ] Create specialized processors for JSON, YAML, logs, config files
-  - [ ] Add context-aware redaction (e.g., preserve YAML structure)
-  - [ ] Implement streaming processing for large files
-  - [ ] Add error recovery and partial redaction support
+#### Phase 3 (FUTURE): Redaction profiles
+- [ ] Minimal/standard/comprehensive/paranoid policies
+- [ ] Declarative rule sets and validation
 
-- [ ] **Unit Testing**
-  - [ ] Test `RedactionEngine` with various input stream types and sizes
-  - [ ] Test `Tokenizer` consistency - same input produces same tokens
-  - [ ] Test token collision detection and resolution algorithms
-  - [ ] Test file type processors with malformed/corrupted input files
-  - [ ] Test streaming redaction performance with large files (GB scale)
-  - [ ] Test error recovery and partial redaction scenarios
-  - [ ] Test redaction map generation and serialization
-  - [ ] Test token format validation and configuration options
+#### Phase 4 (FUTURE, Optional): LLM assistance
+- [ ] Optional providers; disabled by default; policy- and build-gated
 
 #### Phase 2: Redaction Profiles (Week 3)
 - [ ] **Profile System**
@@ -515,7 +528,8 @@ Examples:
   - [ ] Test profile configuration serialization/deserialization
   - [ ] Test profile pattern matching accuracy and coverage
 
-#### Phase 3: LLM Integration (Week 4)
+#### Phase 3: LLM Integration (Week 4) [Optional, disabled by default]
+- Default posture: OFF. Provide policy and build-time controls to exclude LLM entirely.
 - [ ] **LLM Framework**
   - [ ] Create `LLMProvider` interface for different backends
   - [ ] Implement Ollama integration for local models
@@ -568,23 +582,20 @@ Examples:
   - [ ] Test error handling during redaction pipeline failures
 
 ### Testing Strategy
-- [ ] **Unit Tests**
+- [ ] **Unit Tests (NOW)**
   - [ ] Token generation and collision handling
-  - [ ] File type processor accuracy
-  - [ ] Profile loading and validation
-  - [ ] LLM integration mocking
+  - [ ] Replacement correctness across existing redactors
+  - [ ] No plaintext leakage; only tokens visible
+  - [ ] Optional mapping file encryption and integrity
 
-- [ ] **Integration Tests**  
-  - [ ] End-to-end redaction with real support bundles
-  - [ ] LLM provider integration testing
-  - [ ] Performance testing with large files
+- [ ] **Integration Tests (FUTURE)**  
   - [ ] Streaming redaction pipeline validation
+  - [ ] Performance testing with large files
 
 - [ ] **Security Tests**
-  - [ ] Token uniqueness and unpredictability
+  - [ ] Token unpredictability (salted) and uniqueness
   - [ ] Redaction completeness verification
   - [ ] Information leakage prevention
-  - [ ] LLM prompt injection resistance
 
 ### Step-by-Step Implementation
 
@@ -1399,7 +1410,7 @@ This section documents all critical changes made to align the PRD with the actua
 - **Support Bundle**: Complete archiving, parsing, metadata system
 
 ### 6. Removed All Completion Markers
-- **CHANGED**: All ``, `[ ]`, "" markers → `[ ]` (pending)
+- **CHANGED**: All `✅`, `[x]`, "COMPLETED" markers → `[ ]` (pending)
 - **REASON**: Starting implementation from scratch despite existing foundation
 
 ### 7. Technical Approach Updates
