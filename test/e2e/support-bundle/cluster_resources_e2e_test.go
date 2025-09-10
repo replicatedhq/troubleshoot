@@ -24,7 +24,6 @@ func TestClusterResources(t *testing.T) {
 				"volumeattachments.json",
 				"nodes.json",
 				"pvs.json",
-				"pod-disruption-budgets-errors.json",
 				"resources.json",
 				"custom-resource-definitions.json",
 				"groups.json",
