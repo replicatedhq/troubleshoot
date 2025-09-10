@@ -22,6 +22,26 @@ A comprehensive test file containing 200+ different types of secrets and sensiti
 ### `test_sample_secrets.go`
 A test program that demonstrates tokenization on the `sample_secrets.yaml` file.
 
+### `sample_profiles.yaml` ⭐ **NEW**
+A comprehensive test file specifically designed to demonstrate the redaction profile system. Contains carefully categorized test data for each profile level:
+
+- **Minimal Profile Data**: Basic passwords, API keys, tokens, client secrets
+- **Standard Profile Data**: + Email addresses, IP addresses, connection strings, service-specific secrets  
+- **Comprehensive Profile Data**: + Usernames, hostnames, file paths, certificates, monitoring keys
+- **Paranoid Profile Data**: + Long strings, UUIDs, base64 data, phone numbers, SSNs, credit cards
+- **Non-Sensitive Data**: Regular config values that should NOT be redacted
+- **Nested Structures**: Complex YAML with mixed sensitive/non-sensitive data
+
+### `test_profiles_demo.go` ⭐ **NEW**
+A comprehensive interactive demo program for the redaction profile system. This program:
+
+- Tests all 4 built-in profiles (minimal, standard, comprehensive, paranoid)
+- Shows profile escalation (how higher profiles catch more secrets)
+- Analyzes token types and provides detailed statistics
+- Saves redacted results for each profile to separate files
+- Generates a comprehensive summary report
+- Provides performance metrics and effectiveness ratings
+
 ## Usage
 
 ### Running the Test Program
@@ -37,6 +57,24 @@ go run test_sample_secrets.go
 TROUBLESHOOT_TOKENIZATION=1 go run test_sample_secrets.go
 ```
 
+### Testing the Profile System ⭐ **NEW**
+
+```bash
+# Navigate to the testdata directory
+cd pkg/redact/testdata
+
+# Test all redaction profiles with tokenization
+TROUBLESHOOT_TOKENIZATION=1 go run test_profiles_demo.go
+```
+
+This will:
+1. Load `sample_profiles.yaml` with categorized test data
+2. Test all 4 profiles (minimal → standard → comprehensive → paranoid)
+3. Show profile escalation and effectiveness ratings
+4. Generate detailed statistics and token type analysis
+5. Save redacted results for each profile to separate files
+6. Create a comprehensive summary report
+
 ### Expected Results
 
 **Without Tokenization:**
@@ -50,6 +88,12 @@ TROUBLESHOOT_TOKENIZATION=1 go run test_sample_secrets.go
 - Token types include: PASSWORD, SECRET, TOKEN, USER, DATABASE, etc.
 - Same values get same tokens (for correlation)
 - Different values get different tokens
+
+**Profile System Results:**
+- **Minimal**: ~10-15 tokens (basic secrets only)
+- **Standard**: ~25-35 tokens (+ IPs, emails, URLs)  
+- **Comprehensive**: ~40-50 tokens (+ usernames, hostnames, paths)
+- **Paranoid**: ~60+ tokens (+ long strings, UUIDs, phone numbers)
 
 ### Running Unit Tests
 
