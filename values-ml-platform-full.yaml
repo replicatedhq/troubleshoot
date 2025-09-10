@@ -1,0 +1,102 @@
+# Full ML Platform Configuration - All Features Enabled
+# For use with ml-platform-preflight.yaml
+
+# GPU Infrastructure
+gpu:
+  minNodes: 4
+  model: "NVIDIA A100"
+  cudaVersion: "12.0"
+  minMemory: 40
+
+# ML Frameworks
+kubeflow:
+  enabled: true
+
+pytorch:
+  enabled: true
+
+tensorflow:
+  enabled: true
+
+mlflow:
+  endpoint: "http://mlflow.ml-platform.svc.cluster.local:5000"
+
+registry:
+  type: "Harbor"
+
+# High-Performance Storage
+storage:
+  datasetClass: "ultra-fast-nvme"
+  modelClass: "replicated-ssd"
+  sharedFS: "Lustre"
+  minThroughput: 2000
+  minIOPS: 50000
+
+s3:
+  enabled: true
+  endpoint: "https://s3.ml-platform.local"
+  secretName: "minio-credentials"
+  namespace: "ml-platform"
+  accessKeyField: "access-key"
+
+# Network Performance
+network:
+  cni: "Cilium"
+  minBandwidth: 100
+  infiniband: true
+  istio: true
+
+# JupyterHub
+jupyter:
+  enabled: true
+  version: "4.0"
+  storagePerUser: "500Gi"
+  defaultImage: "jupyter/tensorflow-notebook:cuda12"
+  gpuEnabled: true
+  authProvider: "OAuth2"
+  namespace: "jupyterhub"
+
+# Compute Resource Pools
+pools:
+  cpu:
+    minNodes: 5
+  gpu:
+    minNodes: 4
+  spot:
+    enabled: true
+    minNodes: 10
+
+# ML Monitoring
+monitoring:
+  enabled: true
+  backend: "Prometheus + VictoriaMetrics"
+  namespace: "monitoring"
+  modelMetrics: "Seldon Core Analytics"
+  experiments: "MLflow + Weights & Biases"
+  dataDrift: true
+
+# Security
+security:
+  podSecurityLevel: "restricted"
+  scanning: true
+  secretsManager: "HashiCorp Vault"
+  auditLog: true
+
+# Backup
+backup:
+  enabled: true
+  solution: "Velero with Restic"
+  modelRetention: 90
+  datasets: true
+  storageLocation: "s3://ml-backups/production"
+
+# Autoscaling
+autoscaling:
+  provider: "AWS"
+  vpa: true
+  keda: true
+  scaleDownDelay: "30m"
+  maxNodes: 200
+
+# Target namespace
+targetNamespace: "ml-platform"

@@ -1,0 +1,82 @@
+# Minimal ML Platform Configuration
+# For use with ml-platform-preflight.yaml
+
+# GPU Infrastructure (basic)
+gpu:
+  minNodes: 2
+  model: "NVIDIA Tesla T4"
+  cudaVersion: "11.8"
+  minMemory: 16
+
+# ML Frameworks (only essentials)
+kubeflow:
+  enabled: false
+
+pytorch:
+  enabled: true
+
+tensorflow:
+  enabled: false
+
+mlflow:
+  endpoint: "http://mlflow.default.svc.cluster.local:5000"
+
+registry:
+  type: "Harbor"
+
+# Storage (standard performance)
+storage:
+  datasetClass: "fast-nvme"
+  modelClass: "replicated-ssd"
+  sharedFS: "NFS"
+  minThroughput: 500
+  minIOPS: 10000
+
+s3:
+  enabled: false
+
+# Network (basic)
+network:
+  cni: "Calico"
+  minBandwidth: 10
+  infiniband: false
+  istio: false
+
+# JupyterHub disabled
+jupyter:
+  enabled: false
+
+# Compute pools (minimal)
+pools:
+  cpu:
+    minNodes: 3
+  gpu:
+    minNodes: 2
+  spot:
+    enabled: false
+
+# Monitoring disabled
+monitoring:
+  enabled: false
+
+# Security (basic)
+security:
+  podSecurityLevel: "baseline"
+  scanning: false
+  secretsManager: "Kubernetes Secrets"
+  auditLog: false
+
+# Backup disabled
+backup:
+  enabled: false
+
+# Autoscaling (basic)
+autoscaling:
+  provider: "AWS"
+  vpa: false
+  keda: false
+  scaleDownDelay: "10m"
+  maxNodes: 50
+
+# Target namespace
+targetNamespace: "ml-platform"
