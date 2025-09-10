@@ -212,7 +212,26 @@ func redactMatchesPath(path string, redact *troubleshootv1beta2.Redact) (bool, e
 }
 
 func getRedactors(path string) ([]Redactor, error) {
-	// TODO: Make this configurable
+	// Use profile-based redaction if available
+	pm := GetProfileManager()
+	profile, err := pm.GetActiveProfile()
+	if err != nil {
+		// Fallback to legacy patterns if profile system fails
+		return getLegacyRedactors(path)
+	}
+
+	// Resolve profile with inheritance
+	resolvedProfile, err := pm.ResolveProfile(profile.Name)
+	if err != nil {
+		// Fallback to legacy patterns if profile resolution fails
+		return getLegacyRedactors(path)
+	}
+
+	return buildRedactorsFromProfile(resolvedProfile, path)
+}
+
+// getLegacyRedactors returns the original hardcoded redactors for backward compatibility
+func getLegacyRedactors(path string) ([]Redactor, error) {
 
 	// (?i) makes it case insensitive
 	// groups named with `?P<mask>` will be masked
@@ -593,6 +612,58 @@ func getRedactors(path string) ([]Redactor, error) {
 				filePath: fileglob,
 				maskPath: []string{"*", "metadata", "annotations", "kubectl.kubernetes.io/last-applied-configuration"},
 			})
+		}
+	}
+
+	return redactors, nil
+}
+
+// buildRedactorsFromProfile creates redactors from a resolved profile
+func buildRedactorsFromProfile(profile *RedactionProfile, path string) ([]Redactor, error) {
+	var redactors []Redactor
+
+	for _, pattern := range profile.Patterns {
+		// Skip disabled patterns
+		if !pattern.Enabled {
+			continue
+		}
+
+		// Create redactor based on pattern type
+		switch pattern.Type {
+		case "single-line":
+			lineRedactor := LineRedactor{
+				regex: pattern.Regex,
+				scan:  pattern.Scan,
+			}
+			r, err := NewSingleLineRedactor(lineRedactor, MASK_TEXT, path, pattern.Name, false)
+			if err != nil {
+				// Log error but continue with other patterns
+				continue
+			}
+			redactors = append(redactors, r)
+
+		case "multi-line":
+			selectorRedactor := LineRedactor{
+				regex: pattern.SelectorRegex,
+				scan:  pattern.Scan,
+			}
+			r, err := NewMultiLineRedactor(selectorRedactor, pattern.RedactorRegex, MASK_TEXT, path, pattern.Name, false)
+			if err != nil {
+				// Log error but continue with other patterns
+				continue
+			}
+			redactors = append(redactors, r)
+
+		case "yaml":
+			if pattern.FilePath == "" {
+				pattern.FilePath = path // Use current path if not specified
+			}
+			r := NewYamlRedactor(pattern.YamlPath, pattern.FilePath, pattern.Name)
+			redactors = append(redactors, r)
+
+		case "literal":
+			r := literalString([]byte(pattern.Match), path, pattern.Name)
+			redactors = append(redactors, r)
 		}
 	}
 

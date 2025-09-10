@@ -1,0 +1,274 @@
+# Sample Profile Test Data
+# This file contains test data designed to demonstrate the different redaction profile levels
+# and their escalating sensitivity detection capabilities.
+
+# =============================================================================
+# MINIMAL PROFILE TEST DATA
+# These secrets should be caught by ALL profiles (minimal, standard, comprehensive, paranoid)
+# =============================================================================
+
+# Basic password patterns
+basic_password: "super_secret_password_123"
+pwd: "my_password_456"
+pass: "simple_pass_789"
+database_password: "db_password_abc123"
+admin_password: "admin_secret_xyz789"
+
+# API keys and tokens
+api_key: "sk-1234567890abcdefghijklmnopqrstuvwxyz"
+apikey: "ak_live_1234567890abcdefghijklmnopqrstuvwxyz"
+secret_key: "secret_key_abcdef123456789"
+access_token: "access_token_ghijkl987654321"
+auth_token: "bearer_token_mnopqr555666777"
+
+# Client secrets and private keys
+client_secret: "oauth_client_secret_123456789"
+client_key: "client_key_abcdef987654321"
+private_key: "-----BEGIN PRIVATE KEY-----"
+privatekey: "private_key_content_here"
+
+# AWS credentials (multiline format)
+aws_credentials: |
+  "name": "AWS_SECRET_ACCESS_KEY"
+  "value": "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+
+# Environment variable format
+DATABASE_PASSWORD=env_db_password_123
+API_TOKEN=env_api_token_456
+SECRET_KEY=env_secret_key_789
+USER_PASSWORD=env_user_password_abc
+
+# =============================================================================
+# STANDARD PROFILE TEST DATA
+# These secrets should be caught by standard, comprehensive, and paranoid profiles
+# =============================================================================
+
+# Email addresses
+email: "admin@company.com"
+mail: "support@example.org"
+smtp_user: "noreply@service.com"
+smtp_username: "alerts@monitoring.io"
+
+# IP addresses
+server_ip: "192.168.1.100"
+database_host: "10.0.0.50"
+redis_server: "172.16.0.25"
+api_endpoint: "203.0.113.42"
+
+# Connection strings with credentials
+database_url: "mysql://dbuser:dbpass123@mysql.example.com:3306/production"
+redis_url: "redis://redisuser:redispass456@redis.example.com:6379/0"
+postgres_url: "postgresql://pguser:pgpass789@postgres.example.com:5432/maindb"
+mongodb_url: "mongodb://mongouser:mongopass@mongo.example.com:27017/appdb"
+
+# URLs with sensitive information
+webhook_url: "https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX"
+api_endpoint_url: "https://api.service.com/v1/webhook?token=secret_webhook_token_123"
+
+# YAML environment variable values (Kubernetes style)
+env:
+  - name: "DB_PASSWORD"
+    value: "yaml_env_db_password_123"
+  - name: "API_KEY"
+    value: "yaml_env_api_key_456"
+  - name: "SECRET_TOKEN"
+    value: "yaml_env_secret_token_789"
+
+# JSON environment variables (escaped)
+json_env_vars: |
+  {"name":"DATABASE_PASSWORD","value":"json_db_password_123456789abcdef"}
+  {"name":"API_KEY","value":"json_api_key_fedcba987654321"}
+  {"name":"AUTH_TOKEN","value":"json_auth_token_xyz123"}
+
+# Service-specific secrets
+openai_secret: "sk-openai1234567890abcdefghijklmnopqrstuvwxyz1234567890"
+stripe_secret: "sk_test_51234567890abcdefghijklmnopqrstuvwxyz"
+github_token: "ghp_github_personal_access_token_stu901"
+slack_webhook_secret: "webhook-secret-slack-123456789"
+
+# =============================================================================
+# COMPREHENSIVE PROFILE TEST DATA
+# These secrets should be caught by comprehensive and paranoid profiles
+# =============================================================================
+
+# Usernames
+username: "admin_user"
+user: "service_account"
+userid: "user_12345"
+user_id: "sa_production_67890"
+
+# Hostnames and domains
+hostname: "production-server.company.com"
+server: "db-primary.internal.corp"
+domain: "api.service.internal"
+host: "cache-cluster.region.cloud.com"
+
+# File paths (potentially sensitive)
+path: "/etc/ssl/private/server.key"
+file: "/var/secrets/application.conf"
+directory: "/opt/app/config/production"
+config_path: "/home/app/.ssh/id_rsa"
+
+# URLs with hostnames
+internal_url: "https://internal-api.company.corp/v1/admin"
+staging_url: "https://staging.service.dev/api/test"
+
+# Certificate data
+certificate: "-----BEGIN CERTIFICATE-----"
+cert_data: "-----BEGIN RSA PRIVATE KEY-----"
+
+# Database connection string variations
+sql_server_connection: "Data Source=sqlserver.company.com;User ID=dbadmin;password=sqlpass123;Database=production;"
+mysql_connection: "Server=mysql.company.com;Database=appdb;Uid=mysqluser;Pwd=mysqlpass456;"
+
+# Docker registry credentials
+registry_password: "docker_registry_password_123456789abcdef"
+docker_password: "harbor_password_987654321fedcba"
+
+# Monitoring service keys
+datadog_api_key: "datadog_api_key_123456789abcdefghijklmnopqrstuvwxyz"
+newrelic_key: "newrelic_license_key_abcdef123456789"
+sentry_dsn: "https://sentry_key@sentry.io/project_id"
+
+# =============================================================================
+# PARANOID PROFILE TEST DATA
+# These secrets should ONLY be caught by the paranoid profile
+# =============================================================================
+
+# Long alphanumeric strings (potential secrets)
+long_string: "a1b2c3d4e5f6789012345678901234567890abcdef"
+potential_secret: "AbCdEf123456789GhIjKl987654321MnOpQr"
+suspicious_value: "1234567890abcdefghijklmnopqrstuvwxyz"
+
+# UUIDs (might be sensitive identifiers)
+uuid_value: "550e8400-e29b-41d4-a716-446655440000"
+guid: "6ba7b810-9dad-11d1-80b4-00c04fd430c8"
+identifier: "123e4567-e89b-12d3-a456-426614174000"
+
+# Base64-like strings
+base64_data: "SGVsbG8gV29ybGQgdGhpcyBpcyBhIGxvbmcgYmFzZTY0IHN0cmluZw=="
+encoded_value: "VGhpcyBpcyBhIHNlY3JldCBtZXNzYWdlIGVuY29kZWQgaW4gYmFzZTY0"
+binary_data: "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=="
+
+# Hexadecimal strings (potential hashes or keys)
+hex_string: "deadbeef123456789abcdef0123456789abcdef"
+hash_value: "5d41402abc4b2a76b9719d911017c592"
+crypto_hash: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+
+# Phone numbers
+phone: "555-123-4567"
+mobile: "+1-800-555-0199"
+contact: "(555) 987-6543"
+
+# Social Security Numbers (test format only)
+ssn: "123-45-6789"
+social_security: "987-65-4321"
+
+# Credit card numbers (test format only)
+credit_card: "4111111111111111"
+visa_card: "4532015112830366"
+mastercard: "5555555555554444"
+
+# Secret-like patterns
+stripe_key: "sk_test_1234567890abcdef"
+github_pat: "ghp_abcdefghijklmnopqrstuvwxyz123456"
+gitlab_token: "glpat-xxxxxxxxxxxxxxxxxxxx"
+slack_token: "xoxb-1234567890-1234567890-abcdefghijklmnopqrstuvwx"
+aws_key: "AKIAIOSFODNN7EXAMPLE"
+
+# Long quoted values
+long_quoted: "this_is_a_very_long_quoted_value_that_might_be_sensitive_abcdef123456789"
+suspicious_quoted: "potentially_sensitive_configuration_value_xyz987654321"
+
+# =============================================================================
+# NON-SENSITIVE DATA (should NOT be redacted by any profile)
+# =============================================================================
+
+# Regular configuration values
+app_name: "my-application"
+version: "1.2.3"
+port: 8080
+debug: true
+timeout: 30
+
+# Short strings
+env: "prod"
+region: "us-east-1"
+zone: "a"
+
+# Common words
+message: "hello world"
+description: "This is a test application"
+title: "Sample Configuration"
+
+# Numbers and dates
+count: 42
+date: "2023-12-01"
+timestamp: 1701388800
+
+# =============================================================================
+# NESTED STRUCTURES
+# =============================================================================
+
+# Nested YAML with mixed sensitive and non-sensitive data
+application:
+  name: "production-app"
+  database:
+    host: "db.company.com"
+    port: 5432
+    username: "app_user"
+    password: "nested_db_password_123"
+    ssl_cert: "/etc/ssl/certs/db-client.crt"
+  
+  external_services:
+    openai:
+      api_key: "sk-openai-nested-key"
+      model: "gpt-4"
+    
+    stripe:
+      publishable_key: "pk_test_stripe123"
+      secret_key: "sk_test_stripe456"
+      webhook_secret: "whsec_stripe789"
+    
+    monitoring:
+      datadog:
+        api_key: "datadog_nested_key_123"
+        app_key: "datadog_app_key_456"
+      
+      sentry:
+        dsn: "https://sentry_key@sentry.io/123456"
+
+# Kubernetes-style configuration
+deployment:
+  metadata:
+    name: "my-app"
+    namespace: "production"
+  
+  spec:
+    containers:
+    - name: "app"
+      image: "myapp:v1.2.3"
+      env:
+      - name: "DATABASE_URL"
+        value: "postgresql://k8s_user:k8s_password@postgres:5432/k8s_db"
+      - name: "REDIS_URL"
+        value: "redis://k8s_redis_user:k8s_redis_pass@redis:6379"
+      - name: "API_KEY"
+        value: "k8s_api_key_123456789"
+
+# Docker Compose style
+services:
+  web:
+    image: "nginx:latest"
+    environment:
+      - "DB_HOST=database.internal"
+      - "DB_USER=webapp"
+      - "DB_PASS=docker_compose_password_123"
+      - "REDIS_URL=redis://redis_user:redis_password@redis:6379"
+  
+  database:
+    image: "postgres:13"
+    environment:
+      POSTGRES_USER: "postgres"
+      POSTGRES_PASSWORD: "postgres_admin_password_456"
+      POSTGRES_DB: "application"
