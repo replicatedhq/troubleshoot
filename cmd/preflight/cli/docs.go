@@ -166,7 +166,15 @@ func legacyContext(values map[string]interface{}) map[string]interface{} {
 }
 
 func normalizeStringMaps(v interface{}) map[string]interface{} {
-	return normalizeMap(v).(map[string]interface{})
+	// Avoid unsafe type assertion; normalizeMap may return non-map types.
+	if v == nil {
+		return map[string]interface{}{}
+	}
+	normalized := normalizeMap(v)
+	if m, ok := normalized.(map[string]interface{}); ok {
+		return m
+	}
+	return map[string]interface{}{}
 }
 
 func normalizeMap(v interface{}) interface{} {
