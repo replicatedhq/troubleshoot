@@ -82,6 +82,7 @@ If no arguments are provided, specs are automatically loaded from the cluster by
 
 	cmd.AddCommand(Analyze())
 	cmd.AddCommand(Redact())
+	cmd.AddCommand(Diff())
 	cmd.AddCommand(util.VersionCmd())
 
 	cmd.Flags().StringSlice("redactors", []string{}, "names of the additional redactors to use")
@@ -95,6 +96,15 @@ If no arguments are provided, specs are automatically loaded from the cluster by
 	cmd.Flags().StringP("output", "o", "", "specify the output file path for the support bundle")
 	cmd.Flags().Bool("debug", false, "enable debug logging. This is equivalent to --v=0")
 	cmd.Flags().Bool("dry-run", false, "print support bundle spec without collecting anything")
+	
+	// Auto-discovery flags
+	cmd.Flags().Bool("auto", false, "enable auto-discovery of foundational collectors. When used with YAML specs, adds foundational collectors to YAML collectors. When used alone, collects only foundational data")
+	cmd.Flags().Bool("include-images", false, "include container image metadata collection when using auto-discovery")
+	cmd.Flags().Bool("rbac-check", true, "enable RBAC permission checking for auto-discovered collectors")
+	cmd.Flags().String("discovery-profile", "standard", "auto-discovery profile: minimal, standard, comprehensive, or paranoid")
+	cmd.Flags().StringSlice("exclude-namespaces", []string{}, "namespaces to exclude from auto-discovery (supports glob patterns)")
+	cmd.Flags().StringSlice("include-namespaces", []string{}, "namespaces to include in auto-discovery (supports glob patterns). If specified, only these namespaces will be included")
+	cmd.Flags().Bool("include-system-namespaces", false, "include system namespaces (kube-system, etc.) in auto-discovery")
 
 	// hidden in favor of the `insecure-skip-tls-verify` flag
 	cmd.Flags().Bool("allow-insecure-connections", false, "when set, do not verify TLS certs when retrieving spec and reporting results")
