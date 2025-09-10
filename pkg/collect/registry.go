@@ -116,6 +116,9 @@ func imageExists(namespace string, clientConfig *rest.Config, registryCollector 
 	var lastErr error
 	for i := 0; i < 3; i++ {
 		err := func() error {
+			if deadline == 0 {
+				deadline = 10 * time.Second
+			}
 			ctx, cancel := context.WithTimeout(context.Background(), deadline)
 			defer cancel()
 			remoteImage, err := imageRef.NewImage(ctx, &sysCtx)
