@@ -8,7 +8,7 @@ requirements:
       Title: Kubernetes Control Plane Requirements
       Requirement:
         - Version:
-          - Minimum: {{ .kubernetes.minVersion | default "v1.22.0" }}
+          - Minimum: {{ .Values.kubernetes.minVersion | default "v1.22.0" }}
           - Supported: v1.22.x – v1.29.x (stable releases only)
         - APIs required (must be enabled, GA):
           - admissionregistration.k8s.io/v1
@@ -24,10 +24,10 @@ requirements:
           checkName: Kubernetes version
           outcomes:
             - fail:
-                when: '< {{ .kubernetes.minVersion | default "1.22.0" }}'
-                message: Requires Kubernetes >= {{ .kubernetes.minVersion | default "1.22.0" }}
+                when: '< {{ .Values.kubernetes.minVersion | default "1.22.0" }}'
+                message: Requires Kubernetes >= {{ .Values.kubernetes.minVersion | default "1.22.0" }}
             - pass:
-                when: '>= {{ .kubernetes.minVersion | default "1.22.0" }}'
+                when: '>= {{ .Values.kubernetes.minVersion | default "1.22.0" }}'
                 message: Kubernetes version is supported
 
   - name: Container Runtime
@@ -49,23 +49,23 @@ requirements:
             - fail:
                 message: Unsupported container runtime; containerd required
 
-  {{- if .storage.enabled }}
+  {{- if .Values.storage.enabled }}
   - name: Storage
     docString: |
       Title: Default StorageClass Requirements
       Requirement:
-        - A StorageClass named "{{ .storage.className | default "default" }}" must exist and be annotated as cluster default
+        - A StorageClass named "{{ .Values.storage.className | default "default" }}" must exist and be annotated as cluster default
         - AccessMode: ReadWriteOnce (RWO) required (RWX optional)
         - VolumeBindingMode: WaitForFirstConsumer preferred
         - allowVolumeExpansion: true recommended
         - Baseline performance per volume:
-          - Minimum: {{ .storage.minIOPS | default "1000" }} write IOPS, {{ .storage.minReadIOPS | default "3000" }} read IOPS
+          - Minimum: {{ .Values.storage.minIOPS | default "1000" }} write IOPS, {{ .Values.storage.minReadIOPS | default "3000" }} read IOPS
           - Recommended: 3000+ write IOPS, 6000+ read IOPS, 250+ MB/s throughput
-        - Encryption at rest: {{ if .storage.encryption }}enabled{{ else }}optional{{ end }}
+        - Encryption at rest: {{ if .Values.storage.encryption }}enabled{{ else }}optional{{ end }}
     checks:
       - storageClass:
           checkName: Default StorageClass
-          name: '{{ .storage.className | default "default" }}'
+          name: '{{ .Values.storage.className | default "default" }}'
           required: true
   {{- end }}
 
@@ -73,9 +73,9 @@ requirements:
     docString: |
       Title: Cluster Size and Aggregate Capacity
       Requirement:
-        - Node count: Minimum {{ .cluster.minNodes | default "3" }} nodes (HA baseline), Recommended {{ .cluster.recommendedNodes | default "5" }} nodes
-        - Total CPU: Minimum {{ .cluster.minCPU | default "4" }} vCPU, Recommended 8+ vCPU
-        - Total Memory: Minimum {{ .cluster.minMemory | default "16" }} GiB, Recommended 32+ GiB
+        - Node count: Minimum {{ .Values.cluster.minNodes | default "3" }} nodes (HA baseline), Recommended {{ .Values.cluster.recommendedNodes | default "5" }} nodes
+        - Total CPU: Minimum {{ .Values.cluster.minCPU | default "4" }} vCPU, Recommended 8+ vCPU
+        - Total Memory: Minimum {{ .Values.cluster.minMemory | default "16" }} GiB, Recommended 32+ GiB
         - Control plane sizing:
           - Managed control planes supported (EKS/GKE/AKS)
           - Self-managed: 3 control-plane nodes recommended
@@ -84,54 +84,54 @@ requirements:
           checkName: Cluster capacity
           outcomes:
             - fail:
-                when: 'count() < {{ .cluster.minNodes | default "3" }}'
-                message: Requires at least {{ .cluster.minNodes | default "3" }} nodes
+                when: 'count() < {{ .Values.cluster.minNodes | default "3" }}'
+                message: Requires at least {{ .Values.cluster.minNodes | default "3" }} nodes
             - warn:
-                when: 'count() < {{ .cluster.recommendedNodes | default "5" }}'
-                message: {{ .cluster.recommendedNodes | default "5" }} nodes recommended for headroom
+                when: 'count() < {{ .Values.cluster.recommendedNodes | default "5" }}'
+                message: {{ .Values.cluster.recommendedNodes | default "5" }} nodes recommended for headroom
             - pass:
                 message: Node count is sufficient
       - nodeResources:
           checkName: Cluster CPU total
           outcomes:
             - fail:
-                when: 'sum(cpuCapacity) < {{ .cluster.minCPU | default "4" }}'
-                message: Requires at least {{ .cluster.minCPU | default "4" }} vCPU total
+                when: 'sum(cpuCapacity) < {{ .Values.cluster.minCPU | default "4" }}'
+                message: Requires at least {{ .Values.cluster.minCPU | default "4" }} vCPU total
             - pass:
                 message: CPU total is sufficient
       - nodeResources:
           checkName: Cluster memory total
           outcomes:
             - fail:
-                when: 'sum(memoryCapacity) < {{ .cluster.minMemory | default "16" }}Gi'
-                message: Requires at least {{ .cluster.minMemory | default "16" }} GiB total memory
+                when: 'sum(memoryCapacity) < {{ .Values.cluster.minMemory | default "16" }}Gi'
+                message: Requires at least {{ .Values.cluster.minMemory | default "16" }} GiB total memory
             - pass:
                 message: Memory total is sufficient
 
-  {{- if .postgres.enabled }}
+  {{- if .Values.postgres.enabled }}
   - name: Postgres (Conditional)
     docString: |
       Title: Postgres Platform Requirements
       Requirement:
-        - Database: PostgreSQL {{ .postgres.version | default "14+" }}
-        - Connection: {{ .postgres.uri | default "postgresql://postgres@postgres:5432/postgres" }}
-        - StorageClass: {{ .postgres.storageClass | default "default" }} with:
+        - Database: PostgreSQL {{ .Values.postgres.version | default "14+" }}
+        - Connection: {{ .Values.postgres.uri | default "postgresql://postgres@postgres:5432/postgres" }}
+        - StorageClass: {{ .Values.postgres.storageClass | default "default" }} with:
           - Latency p99 ≤ 5 ms
           - ≥ 3000 read IOPS, ≥ 1000 write IOPS
           - allowVolumeExpansion: true
-        - Memory per node: Minimum {{ .postgres.minMemory | default "8" }} GiB; Recommended 32 GiB
-        - CPU per node: Minimum {{ .postgres.minCPU | default "2" }} vCPU; Recommended 4+ vCPU
+        - Memory per node: Minimum {{ .Values.postgres.minMemory | default "8" }} GiB; Recommended 32 GiB
+        - CPU per node: Minimum {{ .Values.postgres.minCPU | default "2" }} vCPU; Recommended 4+ vCPU
     checks:
       - storageClass:
           checkName: Postgres storage class
-          name: '{{ .postgres.storageClass | default "default" }}'
+          name: '{{ .Values.postgres.storageClass | default "default" }}'
           required: true
       - nodeResources:
           checkName: Postgres memory guidance
           outcomes:
             - fail:
-                when: 'min(memoryCapacity) < {{ .postgres.minMemory | default "8" }}Gi'
-                message: All nodes must have at least {{ .postgres.minMemory | default "8" }} GiB of memory for Postgres
+                when: 'min(memoryCapacity) < {{ .Values.postgres.minMemory | default "8" }}Gi'
+                message: All nodes must have at least {{ .Values.postgres.minMemory | default "8" }} GiB of memory for Postgres
             - warn:
                 when: "min(memoryCapacity) < 32Gi"
                 message: Nodes are recommended to have at least 32 GiB of memory for Postgres
@@ -139,16 +139,16 @@ requirements:
                 message: Nodes have sufficient memory for Postgres
   {{- end }}
 
-  {{- if .redis.enabled }}
+  {{- if .Values.redis.enabled }}
   - name: Redis (Conditional)
     docString: |
       Title: Redis Platform Requirements
       Requirement:
-        - Database: Redis {{ .redis.version | default "6.2+" }}
-        - Connection: {{ .redis.uri | default "redis://default:@redis:6379" }}
+        - Database: Redis {{ .Values.redis.version | default "6.2+" }}
+        - Connection: {{ .Values.redis.uri | default "redis://default:@redis:6379" }}
         - Ephemeral storage per node: Minimum 40 GiB; Recommended 100 GiB
         - If persistence enabled: SSD-backed StorageClass with low-latency reads/writes
-        - Memory per node: Baseline {{ .redis.minMemory | default "4" }} GiB; Recommended sized to dataset with 30% headroom
+        - Memory per node: Baseline {{ .Values.redis.minMemory | default "4" }} GiB; Recommended sized to dataset with 30% headroom
     checks:
       - nodeResources:
           checkName: Redis ephemeral storage
@@ -163,13 +163,13 @@ requirements:
                 message: Nodes have sufficient ephemeral storage for Redis
   {{- end }}
 
-  {{- if .ingress.enabled }}
+  {{- if .Values.ingress.enabled }}
   - name: Ingress and CRDs
     docString: |
       Title: Required CRDs and Ingress Capabilities
       Requirement:
-        - Ingress Controller: {{ .ingress.type | default "Contour" }}
-        {{- if eq (.ingress.type | default "Contour") "Contour" }}
+        - Ingress Controller: {{ .Values.ingress.type | default "Contour" }}
+        {{- if eq (.Values.ingress.type | default "Contour") "Contour" }}
         - CRD must be present:
           - Group: heptio.com
           - Kind: IngressRoute
@@ -178,11 +178,11 @@ requirements:
         - Ingress capability:
           - Layer-7 HTTP/HTTPS routing with TLS termination supported
           - Wildcard certificates permitted (optional)
-          {{- if .ingress.customDomain }}
-          - Custom domain: {{ .ingress.customDomain }}
+          {{- if .Values.ingress.customDomain }}
+          - Custom domain: {{ .Values.ingress.customDomain }}
           {{- end }}
     checks:
-      {{- if eq (.ingress.type | default "Contour") "Contour" }}
+      {{- if eq (.Values.ingress.type | default "Contour") "Contour" }}
       - customResourceDefinition:
           checkName: Contour IngressRoute CRD
           customResourceDefinitionName: ingressroutes.contour.heptio.com
@@ -194,28 +194,28 @@ requirements:
       {{- end }}
   {{- end }}
 
-  {{- if .monitoring.enabled }}
+  {{- if .Values.monitoring.enabled }}
   - name: Monitoring Stack
     docString: |
       Title: Monitoring and Observability Requirements
       Requirement:
-        - Monitoring: {{ .monitoring.type | default "Prometheus" }}
-        - Metrics retention: {{ .monitoring.retention | default "15 days" }}
-        - Storage required: {{ .monitoring.storageSize | default "50Gi" }}
+        - Monitoring: {{ .Values.monitoring.type | default "Prometheus" }}
+        - Metrics retention: {{ .Values.monitoring.retention | default "15 days" }}
+        - Storage required: {{ .Values.monitoring.storageSize | default "50Gi" }}
         - Components:
-          {{- if .monitoring.prometheus }}
+          {{- if .Values.monitoring.prometheus }}
           - Prometheus for metrics collection
           {{- end }}
-          {{- if .monitoring.grafana }}
+          {{- if .Values.monitoring.grafana }}
           - Grafana for visualization
           {{- end }}
-          {{- if .monitoring.alertmanager }}
+          {{- if .Values.monitoring.alertmanager }}
           - AlertManager for alerting
           {{- end }}
     checks:
       - storageClass:
           checkName: Monitoring storage
-          name: '{{ .monitoring.storageClass | default "default" }}'
+          name: '{{ .Values.monitoring.storageClass | default "default" }}'
           required: true
   {{- end }}
 
@@ -224,8 +224,16 @@ requirements:
       Title: OS and Kernel Requirements
       Requirement:
         - Nodes: Linux x86_64 (amd64) or arm64 on supported distributions
-        - Supported OS: {{ range .os.supported }}{{ . }}, {{ end }}
-        - Kernel: ≥ {{ .os.minKernel | default "5.4" }} with cgroups v1 or v2 (v2 preferred)
+        - Supported OS: {{ range .Values.os.supported }}{{ . }}, {{ end }}
+        - Kernel: ≥ {{ .Values.os.minKernel | default "5.4" }} with cgroups v1 or v2 (v2 preferred)
         - Time sync: chrony or systemd-timesyncd active; clock drift < 500 ms
         - Filesystems: ext4 or xfs for container layers and volumes
         - SELinux/AppArmor: enforcing/permissive accepted
+
+  {{- if .Values.test.enabled }}
+  - name: Test
+    docString: |
+      Title: Test Requirements
+      Requirement:
+        - Test: {{ .Values.test.type | default "Test" }}
+  {{- end }}

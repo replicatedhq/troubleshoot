@@ -10,6 +10,7 @@ import (
 	"github.com/Masterminds/sprig/v3"
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v2"
+	"helm.sh/helm/v3/pkg/strvals"
 )
 
 // RunTemplate processes a templated preflight spec file with provided values
@@ -35,17 +36,28 @@ func RunTemplate(templateFile string, valuesFiles []string, setValues []string, 
 		values = mergeMaps(values, fileValues)
 	}
 
-	// Apply --set values
+	// Apply --set values (Helm semantics)
 	for _, setValue := range setValues {
 		if err := applySetValue(values, setValue); err != nil {
 			return errors.Wrapf(err, "failed to apply set value: %s", setValue)
 		}
 	}
 
-	// Process the template
-	rendered, err := renderTemplate(string(templateContent), values)
-	if err != nil {
-		return errors.Wrap(err, "failed to render template")
+	// Choose engine based on apiVersion
+	apiVersion := detectAPIVersion(string(templateContent))
+	var rendered string
+	if strings.HasSuffix(apiVersion, "/v1beta3") || apiVersion == "v1beta3" {
+		// Helm for v1beta3
+		rendered, err = RenderWithHelmTemplate(string(templateContent), values)
+		if err != nil {
+			return errors.Wrap(err, "failed to render template using Helm")
+		}
+	} else {
+		// Legacy renderer for older API versions
+		rendered, err = renderLegacyTemplate(string(templateContent), values)
+		if err != nil {
+			return errors.Wrap(err, "failed to render template using legacy renderer")
+		}
 	}
 
 	// Output the result
@@ -76,49 +88,75 @@ func loadValuesFile(filename string) (map[string]interface{}, error) {
 	return values, nil
 }
 
-// applySetValue applies a single --set value to the values map
+// applySetValue applies a single --set value to the values map using Helm semantics
 func applySetValue(values map[string]interface{}, setValue string) error {
-	parts := strings.SplitN(setValue, "=", 2)
-	if len(parts) != 2 {
-		return fmt.Errorf("invalid set value format: %s (expected key=value)", setValue)
-	}
-
-	key := parts[0]
-	value := parts[1]
-
-	// Parse the value to appropriate type
-	var parsedValue interface{}
-
-	// Try to parse as boolean
-	if value == "true" {
-		parsedValue = true
-	} else if value == "false" {
-		parsedValue = false
-	} else if strings.HasPrefix(value, "[") && strings.HasSuffix(value, "]") {
-		// Try to parse as array
-		if err := yaml.Unmarshal([]byte(value), &parsedValue); err != nil {
-			parsedValue = value // Fall back to string
+	// Normalize optional "Values." prefix so both --set test.enabled and --set Values.test.enabled work
+	if idx := strings.Index(setValue, "="); idx > 0 {
+		key := setValue[:idx]
+		val := setValue[idx+1:]
+		if strings.HasPrefix(key, "Values.") {
+			key = strings.TrimPrefix(key, "Values.")
+			setValue = key + "=" + val
 		}
-	} else {
-		// Try to parse as number or keep as string
-		var numValue float64
-		if _, err := fmt.Sscanf(value, "%f", &numValue); err == nil {
-			// Check if it's an integer
-			if numValue == float64(int(numValue)) {
-				parsedValue = int(numValue)
-			} else {
-				parsedValue = numValue
+	}
+	if err := strvals.ParseInto(setValue, values); err != nil {
+		return fmt.Errorf("parsing --set: %w", err)
+	}
+	return nil
+}
+
+// detectAPIVersion attempts to read apiVersion from the raw YAML header
+func detectAPIVersion(content string) string {
+	lines := strings.Split(content, "\n")
+	for _, line := range lines {
+		l := strings.TrimSpace(line)
+		if strings.HasPrefix(l, "apiVersion:") {
+			parts := strings.SplitN(l, ":", 2)
+			if len(parts) == 2 {
+				return strings.TrimSpace(parts[1])
+			}
+		}
+		if strings.HasPrefix(l, "kind:") || strings.HasPrefix(l, "metadata:") {
+			break
+		}
+	}
+	return ""
+}
+
+// renderLegacyTemplate uses Go text/template with Sprig and passes values at root
+func renderLegacyTemplate(templateContent string, values map[string]interface{}) (string, error) {
+	tmpl := template.New("preflight").Funcs(sprig.FuncMap())
+	tmpl, err := tmpl.Parse(templateContent)
+	if err != nil {
+		return "", errors.Wrap(err, "failed to parse template")
+	}
+	var buf bytes.Buffer
+	if err := tmpl.Execute(&buf, values); err != nil {
+		return "", errors.Wrap(err, "failed to execute template")
+	}
+	return cleanRenderedYAML(buf.String()), nil
+}
+
+func cleanRenderedYAML(content string) string {
+	lines := strings.Split(content, "\n")
+	var cleaned []string
+	var lastWasEmpty bool
+	for _, line := range lines {
+		trimmed := strings.TrimRight(line, " \t")
+		if trimmed == "" {
+			if !lastWasEmpty {
+				cleaned = append(cleaned, "")
+				lastWasEmpty = true
 			}
 		} else {
-			parsedValue = value
+			cleaned = append(cleaned, trimmed)
+			lastWasEmpty = false
 		}
 	}
-
-	// Handle nested keys (e.g., postgres.enabled)
-	keys := strings.Split(key, ".")
-	setNestedValue(values, keys, parsedValue)
-
-	return nil
+	for len(cleaned) > 0 && cleaned[len(cleaned)-1] == "" {
+		cleaned = cleaned[:len(cleaned)-1]
+	}
+	return strings.Join(cleaned, "\n") + "\n"
 }
 
 // setNestedValue sets a value in a nested map structure
@@ -183,56 +221,4 @@ func mergeMaps(base, overlay map[string]interface{}) map[string]interface{} {
 	}
 
 	return result
-}
-
-// renderTemplate processes the template with the provided values
-func renderTemplate(templateContent string, values map[string]interface{}) (string, error) {
-	// Create template with Sprig functions
-	tmpl := template.New("preflight").Funcs(sprig.FuncMap())
-
-	// Parse the template
-	tmpl, err := tmpl.Parse(templateContent)
-	if err != nil {
-		return "", errors.Wrap(err, "failed to parse template")
-	}
-
-	// Execute the template
-	var buf bytes.Buffer
-	if err := tmpl.Execute(&buf, values); err != nil {
-		return "", errors.Wrap(err, "failed to execute template")
-	}
-
-	// Post-process to remove empty lines and clean up whitespace
-	result := cleanRenderedYAML(buf.String())
-
-	return result, nil
-}
-
-// cleanRenderedYAML removes empty lines and cleans up the rendered YAML
-func cleanRenderedYAML(content string) string {
-	lines := strings.Split(content, "\n")
-	var cleaned []string
-	var lastWasEmpty bool
-
-	for _, line := range lines {
-		trimmed := strings.TrimRight(line, " \t")
-
-		// Skip multiple consecutive empty lines
-		if trimmed == "" {
-			if !lastWasEmpty {
-				cleaned = append(cleaned, "")
-				lastWasEmpty = true
-			}
-		} else {
-			cleaned = append(cleaned, trimmed)
-			lastWasEmpty = false
-		}
-	}
-
-	// Remove trailing empty lines
-	for len(cleaned) > 0 && cleaned[len(cleaned)-1] == "" {
-		cleaned = cleaned[:len(cleaned)-1]
-	}
-
-	return strings.Join(cleaned, "\n") + "\n"
 }

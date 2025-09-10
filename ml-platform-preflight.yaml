@@ -42,10 +42,10 @@ requirements:
         - Kubeflow Operator: {{ if .kubeflow.enabled }}Required{{ else }}Optional{{ end }}
         - PyTorch Operator: {{ if .pytorch.enabled }}Required{{ else }}Optional{{ end }}
         - TensorFlow Operator: {{ if .tensorflow.enabled }}Required{{ else }}Optional{{ end }}
-        - MLflow tracking server: {{ .mlflow.endpoint | default "http://mlflow.default.svc.cluster.local:5000" }}
-        - Model registry: {{ .registry.type | default "Harbor" }} with OCI artifact support
+        - MLflow tracking server: {{ .Values.mlflow.endpoint | default "http://mlflow.default.svc.cluster.local:5000" }}
+        - Model registry: {{ .Values.registry.type | default "Harbor" }} with OCI artifact support
     checks:
-      {{- if .kubeflow.enabled }}
+      {{- if .Values.kubeflow.enabled }}
       - customResourceDefinition:
           checkName: Kubeflow Training Operator
           customResourceDefinitionName: pytorchjobs.kubeflow.org
@@ -55,7 +55,7 @@ requirements:
             - pass:
                 message: Kubeflow Training Operator available
       {{- end }}
-      {{- if .pytorch.enabled }}
+      {{- if .Values.pytorch.enabled }}
       - customResourceDefinition:
           checkName: PyTorch Job CRD
           customResourceDefinitionName: pytorchjobs.pytorch.org
@@ -102,10 +102,10 @@ requirements:
     docString: |
       Title: Network Requirements for Distributed Training
       Requirement:
-        - CNI Plugin: {{ .network.cni | default "Calico" }} with RDMA support preferred
-        - Network bandwidth: Minimum {{ .network.minBandwidth | default "10" }}Gbps between nodes
-        - InfiniBand: {{ if .network.infiniband }}Required{{ else }}Optional for best performance{{ end }}
-        - Service mesh: {{ if .network.istio }}Istio with telemetry disabled for training jobs{{ else }}Not required{{ end }}
+        - CNI Plugin: {{ .Values.network.cni | default "Calico" }} with RDMA support preferred
+        - Network bandwidth: Minimum {{ .Values.network.minBandwidth | default "10" }}Gbps between nodes
+        - InfiniBand: {{ if .Values.network.infiniband }}Required{{ else }}Optional for best performance{{ end }}
+        - Service mesh: {{ if .Values.network.istio }}Istio with telemetry disabled for training jobs{{ else }}Not required{{ end }}
         - Load balancer: Required for model serving endpoints
     checks:
       - clusterPods:
@@ -113,14 +113,14 @@ requirements:
             - kube-system
           selector:
             matchLabels:
-              k8s-app: '{{ .network.cni | default "calico" }}-node'
+              k8s-app: '{{ .Values.network.cni | default "calico" }}-node'
           outcomes:
             - fail:
                 when: "count() == 0"
                 message: CNI plugin {{ .network.cni | default "Calico" }} not detected
             - pass:
                 message: CNI plugin operational
-      {{- if .network.istio }}
+      {{- if .Values.network.istio }}
       - namespace:
           checkName: Istio system namespace
           namespace: istio-system
@@ -131,7 +131,7 @@ requirements:
                 message: Istio detected
       {{- end }}
 
-  {{- if .jupyter.enabled }}
+  {{- if .Values.jupyter.enabled }}
   - name: JupyterHub Requirements
     docString: |
       Title: JupyterHub Platform Requirements
@@ -145,7 +145,7 @@ requirements:
       - deployment:
           checkName: JupyterHub deployment
           name: jupyterhub
-          namespace: '{{ .jupyter.namespace | default "jupyterhub" }}'
+          namespace: '{{ .Values.jupyter.namespace | default "jupyterhub" }}'
           outcomes:
             - fail:
                 message: JupyterHub deployment not found
@@ -154,7 +154,7 @@ requirements:
       - configMap:
           checkName: JupyterHub configuration
           configMapName: jupyterhub-config
-          namespace: '{{ .jupyter.namespace | default "jupyterhub" }}'
+          namespace: '{{ .Values.jupyter.namespace | default "jupyterhub" }}'
           key: jupyterhub_config.py
           outcomes:
             - fail:
@@ -167,9 +167,9 @@ requirements:
     docString: |
       Title: Node Pool Requirements for ML Workloads
       Requirement:
-        - CPU-only pool: Minimum {{ .pools.cpu.minNodes | default "3" }} nodes for services
-        - GPU pool: Minimum {{ .pools.gpu.minNodes | default "2" }} nodes for training
-        - Spot/Preemptible pool: {{ if .pools.spot.enabled }}{{ .pools.spot.minNodes | default "5" }} nodes for batch jobs{{ else }}Not required{{ end }}
+        - CPU-only pool: Minimum {{ .Values.pools.cpu.minNodes | default "3" }} nodes for services
+        - GPU pool: Minimum {{ .Values.pools.gpu.minNodes | default "2" }} nodes for training
+        - Spot/Preemptible pool: {{ if .Values.pools.spot.enabled }}{{ .Values.pools.spot.minNodes | default "5" }} nodes for batch jobs{{ else }}Not required{{ end }}
         - Node labels:
           - workload-type: cpu-compute | gpu-compute | spot-compute
           - node-lifecycle: on-demand | spot
@@ -182,11 +182,11 @@ requirements:
                 workload-type: cpu-compute
           outcomes:
             - fail:
-                when: 'count() < {{ .pools.cpu.minNodes | default "3" }}'
-                message: Requires at least {{ .pools.cpu.minNodes | default "3" }} CPU compute nodes
+                when: 'count() < {{ .Values.pools.cpu.minNodes | default "3" }}'
+                message: Requires at least {{ .Values.pools.cpu.minNodes | default "3" }} CPU compute nodes
             - pass:
                 message: CPU compute pool sufficient
-      {{- if .pools.spot.enabled }}
+      {{- if .Values.pools.spot.enabled }}
       - nodeResources:
           checkName: Spot instance pool
           filters:
@@ -195,18 +195,18 @@ requirements:
                 node-lifecycle: spot
           outcomes:
             - warn:
-                when: 'count() < {{ .pools.spot.minNodes | default "5" }}'
+                when: 'count() < {{ .Values.pools.spot.minNodes | default "5" }}'
                 message: Spot pool has fewer than recommended nodes
             - pass:
                 message: Spot instance pool available
       {{- end }}
 
-  {{- if .monitoring.enabled }}
+  {{- if .Values.monitoring.enabled }}
   - name: ML Monitoring and Metrics
     docString: |
       Title: ML-Specific Monitoring Requirements
       Requirement:
-        - Metrics backend: {{ .monitoring.backend | default "Prometheus + VictoriaMetrics" }}
+        - Metrics backend: {{ .Values.monitoring.backend | default "Prometheus + VictoriaMetrics" }}
         - GPU metrics: dcgm-exporter required
         - Training metrics: TensorBoard server deployment
         - Model metrics: {{ .monitoring.modelMetrics | default "Seldon Core Analytics" }}
@@ -216,7 +216,7 @@ requirements:
       - daemonSet:
           checkName: DCGM Exporter for GPU metrics
           name: dcgm-exporter
-          namespace: '{{ .monitoring.namespace | default "gpu-operator-resources" }}'
+          namespace: '{{ .Values.monitoring.namespace | default "gpu-operator-resources" }}'
           outcomes:
             - warn:
                 message: DCGM exporter not found - GPU metrics unavailable
@@ -225,7 +225,7 @@ requirements:
       - deployment:
           checkName: TensorBoard server
           name: tensorboard
-          namespace: '{{ .monitoring.namespace | default "kubeflow" }}'
+          namespace: '{{ .Values.monitoring.namespace | default "kubeflow" }}'
           outcomes:
             - warn:
                 message: TensorBoard not deployed
@@ -237,22 +237,22 @@ requirements:
     docString: |
       Title: ML Platform Security Requirements
       Requirement:
-        - Pod Security Standards: {{ .security.podSecurityLevel | default "restricted" }} enforced
-        - Image scanning: {{ if .security.scanning }}Required with Trivy or Snyk{{ else }}Recommended{{ end }}
-        - Secrets management: {{ .security.secretsManager | default "Sealed Secrets" }} or external KMS
+        - Pod Security Standards: {{ .Values.security.podSecurityLevel | default "restricted" }} enforced
+        - Image scanning: {{ if .Values.security.scanning }}Required with Trivy or Snyk{{ else }}Recommended{{ end }}
+        - Secrets management: {{ .Values.security.secretsManager | default "Sealed Secrets" }} or external KMS
         - Network policies: Required for namespace isolation
-        - Audit logging: {{ if .security.auditLog }}Enabled with model access tracking{{ else }}Optional{{ end }}
+        - Audit logging: {{ if .Values.security.auditLog }}Enabled with model access tracking{{ else }}Optional{{ end }}
         - Data encryption: At-rest and in-transit required
     checks:
       - namespace:
           checkName: Pod Security Standards
-          namespace: '{{ .targetNamespace | default "ml-platform" }}'
+          namespace: '{{ .Values.targetNamespace | default "ml-platform" }}'
           outcomes:
             - fail:
                 message: Target namespace does not exist
             - pass:
                 message: Target namespace configured
-      {{- if .security.scanning }}
+      {{- if .Values.security.scanning }}
       - customResourceDefinition:
           checkName: Trivy Operator
           customResourceDefinitionName: vulnerabilityreports.aquasecurity.github.io
@@ -263,16 +263,16 @@ requirements:
                 message: Image vulnerability scanning enabled
       {{- end }}
 
-  {{- if .backup.enabled }}
+  {{- if .Values.backup.enabled }}
   - name: Backup and Disaster Recovery
     docString: |
       Title: Backup Requirements for ML Assets
       Requirement:
-        - Backup solution: {{ .backup.solution | default "Velero" }}
-        - Model snapshots: Daily backups with {{ .backup.modelRetention | default "30" }} day retention
-        - Dataset backups: {{ if .backup.datasets }}Incremental backups to object storage{{ else }}Not required{{ end }}
+        - Backup solution: {{ .Values.backup.solution | default "Velero" }}
+        - Model snapshots: Daily backups with {{ .Values.backup.modelRetention | default "30" }} day retention
+        - Dataset backups: {{ if .Values.backup.datasets }}Incremental backups to object storage{{ else }}Not required{{ end }}
         - Experiment tracking DB: Point-in-time recovery required
-        - Backup storage: {{ .backup.storageLocation | default "s3://ml-backups" }}
+        - Backup storage: {{ .Values.backup.storageLocation | default "s3://ml-backups" }}
     checks:
       - deployment:
           checkName: Velero backup controller
@@ -297,12 +297,12 @@ requirements:
     docString: |
       Title: Autoscaling Requirements for ML Workloads
       Requirement:
-        - Cluster Autoscaler: Required with {{ .autoscaling.provider | default "AWS" }} provider
+        - Cluster Autoscaler: Required with {{ .Values.autoscaling.provider | default "AWS" }} provider
         - HPA: Required for inference services
-        - VPA: {{ if .autoscaling.vpa }}Enabled for training jobs{{ else }}Optional{{ end }}
-        - KEDA: {{ if .autoscaling.keda }}Required for event-driven scaling{{ else }}Optional{{ end }}
-        - Scale-down delay: {{ .autoscaling.scaleDownDelay | default "10m" }} for GPU nodes
-        - Max cluster size: {{ .autoscaling.maxNodes | default "100" }} nodes
+        - VPA: {{ if .Values.autoscaling.vpa }}Enabled for training jobs{{ else }}Optional{{ end }}
+        - KEDA: {{ if .Values.autoscaling.keda }}Required for event-driven scaling{{ else }}Optional{{ end }}
+        - Scale-down delay: {{ .Values.autoscaling.scaleDownDelay | default "10m" }} for GPU nodes
+        - Max cluster size: {{ .Values.autoscaling.maxNodes | default "100" }} nodes
     checks:
       - deployment:
           checkName: Cluster Autoscaler
@@ -313,7 +313,7 @@ requirements:
                 message: Cluster autoscaler required but not found
             - pass:
                 message: Cluster autoscaler operational
-      {{- if .autoscaling.keda }}
+      {{- if .Values.autoscaling.keda }}
       - customResourceDefinition:
           checkName: KEDA ScaledObject
           customResourceDefinitionName: scaledobjects.keda.sh
