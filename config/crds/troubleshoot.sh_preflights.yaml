@@ -1837,10 +1837,14 @@ spec:
                           additionalProperties:
                             type: string
                           type: object
+                        backupCount:
+                          type: integer
                         checkName:
                           type: string
                         exclude:
                           type: BoolString
+                        restoreCount:
+                          type: integer
                         strict:
                           type: BoolString
                       type: object
