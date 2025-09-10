@@ -159,44 +159,6 @@ func cleanRenderedYAML(content string) string {
 	return strings.Join(cleaned, "\n") + "\n"
 }
 
-// setNestedValue sets a value in a nested map structure
-func setNestedValue(m map[string]interface{}, keys []string, value interface{}) {
-	if len(keys) == 0 {
-		return
-	}
-
-	if len(keys) == 1 {
-		m[keys[0]] = value
-		return
-	}
-
-	// Ensure intermediate maps exist or preserve existing ones
-	if existing, ok := m[keys[0]]; !ok {
-		m[keys[0]] = make(map[string]interface{})
-	} else {
-		// Check if it's any kind of map (could be map[interface{}]interface{} from YAML)
-		switch v := existing.(type) {
-		case map[string]interface{}:
-			// Already the right type, nothing to do
-		case map[interface{}]interface{}:
-			// Convert map[interface{}]interface{} to map[string]interface{}
-			converted := make(map[string]interface{})
-			for k, val := range v {
-				if strKey, ok := k.(string); ok {
-					converted[strKey] = val
-				}
-			}
-			m[keys[0]] = converted
-		default:
-			// If it exists but is not a map, replace it with a map
-			m[keys[0]] = make(map[string]interface{})
-		}
-	}
-
-	// Now we know m[keys[0]] is a map
-	setNestedValue(m[keys[0]].(map[string]interface{}), keys[1:], value)
-}
-
 // mergeMaps recursively merges two maps
 func mergeMaps(base, overlay map[string]interface{}) map[string]interface{} {
 	result := make(map[string]interface{})

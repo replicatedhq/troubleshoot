@@ -8,6 +8,22 @@ gpu:
   cudaVersion: "11.8"
   minMemory: 16
 
+# Kubernetes version baseline for control plane requirements
+kubernetes:
+  minVersion: v1.22.0
+
+# Cluster sizing defaults used in docs (safe defaults)
+cluster:
+  minNodes: 3
+  recommendedNodes: 5
+  minCPU: 4
+  minMemory: 16
+
+# Operating system requirements used in docs
+os:
+  supported: ["Ubuntu 20.04 LTS", "Ubuntu 22.04 LTS", "RHEL 8", "RHEL 9"]
+  minKernel: "5.4"
+
 # ML Frameworks (only essentials)
 kubeflow:
   enabled: false
@@ -26,6 +42,7 @@ registry:
 
 # Storage (standard performance)
 storage:
+  enabled: false
   datasetClass: "fast-nvme"
   modelClass: "replicated-ssd"
   sharedFS: "NFS"
@@ -80,3 +97,16 @@ autoscaling:
 
 # Target namespace
 targetNamespace: "ml-platform"
+
+# Optional services disabled by default (safe toggles for templated sections)
+postgres:
+  enabled: false
+redis:
+  enabled: false
+ingress:
+  enabled: false
+  type: "Contour"
+  customDomain: ""
+
+test:
+  enabled: false

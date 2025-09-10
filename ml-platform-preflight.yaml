@@ -7,10 +7,10 @@ requirements:
     docString: |
       Title: GPU and Accelerator Requirements
       Requirement:
-        - GPU Nodes: Minimum {{ .gpu.minNodes | default "2" }} nodes with NVIDIA GPUs
-        - GPU Model: {{ .gpu.model | default "NVIDIA Tesla T4" }} or newer
-        - CUDA Version: >= {{ .gpu.cudaVersion | default "11.8" }}
-        - GPU Memory per card: Minimum {{ .gpu.minMemory | default "16" }}GB
+        - GPU Nodes: Minimum {{ .Values.gpu.minNodes | default "2" }} nodes with NVIDIA GPUs
+        - GPU Model: {{ .Values.gpu.model | default "NVIDIA Tesla T4" }} or newer
+        - CUDA Version: >= {{ .Values.gpu.cudaVersion | default "11.8" }}
+        - GPU Memory per card: Minimum {{ .Values.gpu.minMemory | default "16" }}GB
         - NVIDIA GPU Operator: Required for automatic driver management
         - Device Plugin: nvidia-device-plugin-daemonset deployed
     checks:
@@ -22,8 +22,8 @@ requirements:
                 nvidia.com/gpu: "true"
           outcomes:
             - fail:
-                when: 'count() < {{ .gpu.minNodes | default "2" }}'
-                message: Requires at least {{ .gpu.minNodes | default "2" }} GPU nodes
+                when: 'count() < {{ .Values.gpu.minNodes | default "2" }}'
+                message: Requires at least {{ .Values.gpu.minNodes | default "2" }} GPU nodes
             - pass:
                 message: Sufficient GPU nodes available
       - customResourceDefinition:
@@ -39,9 +39,9 @@ requirements:
     docString: |
       Title: Machine Learning Framework Requirements
       Requirement:
-        - Kubeflow Operator: {{ if .kubeflow.enabled }}Required{{ else }}Optional{{ end }}
-        - PyTorch Operator: {{ if .pytorch.enabled }}Required{{ else }}Optional{{ end }}
-        - TensorFlow Operator: {{ if .tensorflow.enabled }}Required{{ else }}Optional{{ end }}
+        - Kubeflow Operator: {{ if .Values.kubeflow.enabled }}Required{{ else }}Optional{{ end }}
+        - PyTorch Operator: {{ if .Values.pytorch.enabled }}Required{{ else }}Optional{{ end }}
+        - TensorFlow Operator: {{ if .Values.tensorflow.enabled }}Required{{ else }}Optional{{ end }}
         - MLflow tracking server: {{ .Values.mlflow.endpoint | default "http://mlflow.default.svc.cluster.local:5000" }}
         - Model registry: {{ .Values.registry.type | default "Harbor" }} with OCI artifact support
     checks:
@@ -70,27 +70,27 @@ requirements:
     docString: |
       Title: Storage Requirements for ML Workloads
       Requirement:
-        - Dataset Storage Class: {{ .storage.datasetClass | default "fast-nvme" }}
-        - Model Storage Class: {{ .storage.modelClass | default "replicated-ssd" }}
-        - Shared filesystem: {{ .storage.sharedFS | default "NFS" }} or CSI driver with RWX
-        - Minimum throughput: {{ .storage.minThroughput | default "500" }}MB/s sequential read
-        - IOPS requirement: {{ .storage.minIOPS | default "10000" }} for training data
-        - S3-compatible object storage: {{ if .s3.enabled }}Required at {{ .s3.endpoint }}{{ else }}Optional{{ end }}
+        - Dataset Storage Class: {{ .Values.storage.datasetClass | default "fast-nvme" }}
+        - Model Storage Class: {{ .Values.storage.modelClass | default "replicated-ssd" }}
+        - Shared filesystem: {{ .Values.storage.sharedFS | default "NFS" }} or CSI driver with RWX
+        - Minimum throughput: {{ .Values.storage.minThroughput | default "500" }}MB/s sequential read
+        - IOPS requirement: {{ .Values.storage.minIOPS | default "10000" }} for training data
+        - S3-compatible object storage: {{ if .Values.s3.enabled }}Required at {{ .Values.s3.endpoint }}{{ else }}Optional{{ end }}
     checks:
       - storageClass:
           checkName: Dataset storage class
-          name: '{{ .storage.datasetClass | default "fast-nvme" }}'
+          name: '{{ .Values.storage.datasetClass | default "fast-nvme" }}'
           required: true
       - storageClass:
           checkName: Model storage class  
-          name: '{{ .storage.modelClass | default "replicated-ssd" }}'
+          name: '{{ .Values.storage.modelClass | default "replicated-ssd" }}'
           required: true
-      {{- if .s3.enabled }}
+      {{- if .Values.s3.enabled }}
       - secret:
           checkName: S3 credentials
-          secretName: '{{ .s3.secretName | default "s3-credentials" }}'
-          namespace: '{{ .s3.namespace | default "default" }}'
-          key: '{{ .s3.accessKeyField | default "access-key" }}'
+          secretName: '{{ .Values.s3.secretName | default "s3-credentials" }}'
+          namespace: '{{ .Values.s3.namespace | default "default" }}'
+          key: '{{ .Values.s3.accessKeyField | default "access-key" }}'
           outcomes:
             - fail:
                 message: S3 credentials secret not found
@@ -117,7 +117,7 @@ requirements:
           outcomes:
             - fail:
                 when: "count() == 0"
-                message: CNI plugin {{ .network.cni | default "Calico" }} not detected
+                message: CNI plugin {{ .Values.network.cni | default "Calico" }} not detected
             - pass:
                 message: CNI plugin operational
       {{- if .Values.network.istio }}
@@ -136,11 +136,11 @@ requirements:
     docString: |
       Title: JupyterHub Platform Requirements
       Requirement:
-        - JupyterHub version: >= {{ .jupyter.version | default "3.0" }}
-        - User storage: {{ .jupyter.storagePerUser | default "100Gi" }} per user workspace
-        - Default image: {{ .jupyter.defaultImage | default "jupyter/tensorflow-notebook:latest" }}
-        - GPU passthrough: {{ if .jupyter.gpuEnabled }}Enabled with scheduler hints{{ else }}Disabled{{ end }}
-        - OAuth provider: {{ .jupyter.authProvider | default "GitHub" }}
+        - JupyterHub version: >= {{ .Values.jupyter.version | default "3.0" }}
+        - User storage: {{ .Values.jupyter.storagePerUser | default "100Gi" }} per user workspace
+        - Default image: {{ .Values.jupyter.defaultImage | default "jupyter/tensorflow-notebook:latest" }}
+        - GPU passthrough: {{ if .Values.jupyter.gpuEnabled }}Enabled with scheduler hints{{ else }}Disabled{{ end }}
+        - OAuth provider: {{ .Values.jupyter.authProvider | default "GitHub" }}
     checks:
       - deployment:
           checkName: JupyterHub deployment
@@ -209,9 +209,9 @@ requirements:
         - Metrics backend: {{ .Values.monitoring.backend | default "Prometheus + VictoriaMetrics" }}
         - GPU metrics: dcgm-exporter required
         - Training metrics: TensorBoard server deployment
-        - Model metrics: {{ .monitoring.modelMetrics | default "Seldon Core Analytics" }}
-        - Experiment tracking: {{ .monitoring.experiments | default "MLflow" }}
-        - Data drift detection: {{ if .monitoring.dataDrift }}Enabled{{ else }}Optional{{ end }}
+        - Model metrics: {{ .Values.monitoring.modelMetrics | default "Seldon Core Analytics" }}
+        - Experiment tracking: {{ .Values.monitoring.experiments | default "MLflow" }}
+        - Data drift detection: {{ if .Values.monitoring.dataDrift }}Enabled{{ else }}Optional{{ end }}
     checks:
       - daemonSet:
           checkName: DCGM Exporter for GPU metrics
