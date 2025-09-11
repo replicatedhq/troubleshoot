@@ -111,7 +111,7 @@ func (c *CollectData) collectImageFacts(progressChan chan<- interface{}) (Collec
 	summaryPath := filepath.Join("image-facts", c.Namespace+"-summary.txt")
 	output.SaveResult(c.BundlePath, summaryPath, bytes.NewBuffer(summaryMsg))
 
-	klog.V(2).Infof("Image facts collection completed for namespace %s: %d images collected", 
+	klog.V(2).Infof("Image facts collection completed for namespace %s: %d images collected",
 		c.Namespace, len(factsBundle.ImageFacts))
 
 	return output, nil

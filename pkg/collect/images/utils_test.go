@@ -449,7 +449,7 @@ func TestImageCache(t *testing.T) {
 
 func TestImageCache_Cleanup(t *testing.T) {
 	cache := newImageCache(50 * time.Millisecond) // Very short TTL
-	cache.maxSize = 3 // Small max size for testing
+	cache.maxSize = 3                             // Small max size for testing
 
 	// Add more entries than max size
 	for i := 0; i < 5; i++ {

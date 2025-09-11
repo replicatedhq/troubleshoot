@@ -16,28 +16,28 @@ import (
 
 // DiffResult represents the result of comparing two support bundles
 type DiffResult struct {
-	Summary      DiffSummary   `json:"summary"`
-	Changes      []Change      `json:"changes"`
-	Metadata     DiffMetadata  `json:"metadata"`
-	Significance string        `json:"significance"`
+	Summary      DiffSummary  `json:"summary"`
+	Changes      []Change     `json:"changes"`
+	Metadata     DiffMetadata `json:"metadata"`
+	Significance string       `json:"significance"`
 }
 
 // DiffSummary provides high-level statistics about the diff
 type DiffSummary struct {
-	TotalChanges    int `json:"totalChanges"`
-	FilesAdded      int `json:"filesAdded"`
-	FilesRemoved    int `json:"filesRemoved"`
-	FilesModified   int `json:"filesModified"`
+	TotalChanges      int `json:"totalChanges"`
+	FilesAdded        int `json:"filesAdded"`
+	FilesRemoved      int `json:"filesRemoved"`
+	FilesModified     int `json:"filesModified"`
 	HighImpactChanges int `json:"highImpactChanges"`
 }
 
 // Change represents a single difference between bundles
 type Change struct {
-	Type        string                 `json:"type"`        // added, removed, modified
-	Category    string                 `json:"category"`    // resource, log, config, etc.
-	Path        string                 `json:"path"`        // file path or resource path
-	Impact      string                 `json:"impact"`      // high, medium, low, none
-	Details     map[string]interface{} `json:"details"`     // change-specific details
+	Type        string                 `json:"type"`     // added, removed, modified
+	Category    string                 `json:"category"` // resource, log, config, etc.
+	Path        string                 `json:"path"`     // file path or resource path
+	Impact      string                 `json:"impact"`   // high, medium, low, none
+	Details     map[string]interface{} `json:"details"`  // change-specific details
 	Remediation *RemediationStep       `json:"remediation,omitempty"`
 }
 
@@ -59,10 +59,10 @@ type DiffMetadata struct {
 
 // BundleMetadata contains metadata about a support bundle
 type BundleMetadata struct {
-	Path         string `json:"path"`
-	Size         int64  `json:"size"`
-	CreatedAt    string `json:"createdAt,omitempty"`
-	NumFiles     int    `json:"numFiles"`
+	Path      string `json:"path"`
+	Size      int64  `json:"size"`
+	CreatedAt string `json:"createdAt,omitempty"`
+	NumFiles  int    `json:"numFiles"`
 }
 
 func Diff() *cobra.Command {
@@ -141,7 +141,7 @@ func validateBundleFile(bundlePath string) error {
 	// Check if it's a valid archive format
 	ext := strings.ToLower(filepath.Ext(bundlePath))
 	validExtensions := []string{".tgz", ".tar.gz", ".zip"}
-	
+
 	isValid := false
 	for _, validExt := range validExtensions {
 		if strings.HasSuffix(bundlePath, validExt) {
@@ -192,7 +192,7 @@ func performBundleDiff(oldBundle, newBundle string, v *viper.Viper) (*DiffResult
 
 	// TODO: Implement actual diff logic in Phase 4 (Support Bundle Differencing)
 	klog.V(1).Info("Note: Full diff implementation will be completed in Phase 4")
-	
+
 	return result, nil
 }
 
@@ -271,7 +271,7 @@ func generateTextDiffReport(result *DiffResult) string {
 	} else {
 		report.WriteString("Changes:\n")
 		for i, change := range result.Changes {
-			report.WriteString(fmt.Sprintf("  %d. [%s] %s (%s impact)\n", 
+			report.WriteString(fmt.Sprintf("  %d. [%s] %s (%s impact)\n",
 				i+1, strings.ToUpper(change.Type), change.Path, change.Impact))
 			if change.Remediation != nil {
 				report.WriteString(fmt.Sprintf("     Remediation: %s\n", change.Remediation.Description))
@@ -313,7 +313,7 @@ func generateHTMLDiffReport(result *DiffResult) string {
     <h2>Changes</h2>
     %s
 </body>
-</html>`, 
+</html>`,
 		result.Metadata.GeneratedAt,
 		result.Metadata.OldBundle.Path,
 		result.Metadata.NewBundle.Path,
@@ -333,15 +333,15 @@ func generateHTMLChanges(changes []Change) string {
 	for _, change := range changes {
 		impactClass := fmt.Sprintf("impact-%s", change.Impact)
 		changeClass := change.Type
-		
+
 		html.WriteString(fmt.Sprintf(`<div class="change %s %s">`, changeClass, impactClass))
-		html.WriteString(fmt.Sprintf(`<strong>[%s]</strong> %s <em>(%s impact)</em>`, 
+		html.WriteString(fmt.Sprintf(`<strong>[%s]</strong> %s <em>(%s impact)</em>`,
 			strings.ToUpper(change.Type), change.Path, change.Impact))
-		
+
 		if change.Remediation != nil {
 			html.WriteString(fmt.Sprintf(`<br><strong>Remediation:</strong> %s`, change.Remediation.Description))
 		}
-		
+
 		html.WriteString("</div>")
 	}
 

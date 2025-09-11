@@ -55,16 +55,16 @@ type CollectorSpec struct {
 type CollectorType string
 
 const (
-	CollectorTypePods            CollectorType = "pods"
-	CollectorTypeDeployments     CollectorType = "deployments"
-	CollectorTypeServices        CollectorType = "services"
-	CollectorTypeConfigMaps      CollectorType = "configmaps"
-	CollectorTypeSecrets         CollectorType = "secrets"
-	CollectorTypeEvents          CollectorType = "events"
-	CollectorTypeLogs            CollectorType = "logs"
-	CollectorTypeClusterInfo     CollectorType = "clusterInfo"
+	CollectorTypePods             CollectorType = "pods"
+	CollectorTypeDeployments      CollectorType = "deployments"
+	CollectorTypeServices         CollectorType = "services"
+	CollectorTypeConfigMaps       CollectorType = "configmaps"
+	CollectorTypeSecrets          CollectorType = "secrets"
+	CollectorTypeEvents           CollectorType = "events"
+	CollectorTypeLogs             CollectorType = "logs"
+	CollectorTypeClusterInfo      CollectorType = "clusterInfo"
 	CollectorTypeClusterResources CollectorType = "clusterResources"
-	CollectorTypeImageFacts      CollectorType = "imageFacts"
+	CollectorTypeImageFacts       CollectorType = "imageFacts"
 )
 
 // CollectorSource indicates the origin of a collector
@@ -87,23 +87,23 @@ type Resource struct {
 // FoundationalCollectors represents the set of collectors that are always included
 type FoundationalCollectors struct {
 	// Core Kubernetes resources always collected
-	Pods           []CollectorSpec
-	Deployments    []CollectorSpec
-	Services       []CollectorSpec
-	ConfigMaps     []CollectorSpec
-	Secrets        []CollectorSpec
-	Events         []CollectorSpec
-	Logs           []CollectorSpec
-	ClusterInfo    []CollectorSpec
+	Pods             []CollectorSpec
+	Deployments      []CollectorSpec
+	Services         []CollectorSpec
+	ConfigMaps       []CollectorSpec
+	Secrets          []CollectorSpec
+	Events           []CollectorSpec
+	Logs             []CollectorSpec
+	ClusterInfo      []CollectorSpec
 	ClusterResources []CollectorSpec
 	// Container image metadata
-	ImageFacts     []CollectorSpec
+	ImageFacts []CollectorSpec
 }
 
 // ToTroubleshootCollect converts a CollectorSpec to a troubleshootv1beta2.Collect
 func (c CollectorSpec) ToTroubleshootCollect() (*troubleshootv1beta2.Collect, error) {
 	collect := &troubleshootv1beta2.Collect{}
-	
+
 	switch c.Type {
 	case CollectorTypeLogs:
 		if logs, ok := c.Spec.(*troubleshootv1beta2.Logs); ok {
@@ -129,9 +129,9 @@ func (c CollectorSpec) ToTroubleshootCollect() (*troubleshootv1beta2.Collect, er
 		if data, ok := c.Spec.(*troubleshootv1beta2.Data); ok {
 			collect.Data = data
 		}
-	// Add more cases as needed for other collector types
+		// Add more cases as needed for other collector types
 	}
-	
+
 	return collect, nil
 }
 

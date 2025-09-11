@@ -16,15 +16,15 @@ import (
 // DefaultImageCollector implements the ImageCollector interface
 type DefaultImageCollector struct {
 	registryFactory *RegistryClientFactory
-	cache          *imageCache
-	options        CollectionOptions
+	cache           *imageCache
+	options         CollectionOptions
 }
 
 // NewImageCollector creates a new image collector
 func NewImageCollector(options CollectionOptions) *DefaultImageCollector {
 	collector := &DefaultImageCollector{
 		registryFactory: NewRegistryClientFactory(options),
-		options:        options,
+		options:         options,
 	}
 
 	if options.EnableCache {
@@ -81,12 +81,12 @@ func (c *DefaultImageCollector) CollectImageFacts(ctx context.Context, imageRef 
 			// Return partial facts with error information
 			return &ImageFacts{
 				Repository:  imageRef.Repository,
-				Tag:        imageRef.Tag,
-				Digest:     imageRef.Digest,
-				Registry:   registry,
+				Tag:         imageRef.Tag,
+				Digest:      imageRef.Digest,
+				Registry:    registry,
 				CollectedAt: time.Now(),
-				Source:     "error-recovery",
-				Error:      err.Error(),
+				Source:      "error-recovery",
+				Error:       err.Error(),
 			}, nil
 		}
 		return nil, err
@@ -113,11 +113,11 @@ func (c *DefaultImageCollector) CollectMultipleImageFacts(ctx context.Context, i
 	if maxConcurrency <= 0 {
 		maxConcurrency = DefaultMaxConcurrency
 	}
-	
+
 	semaphore := make(chan struct{}, maxConcurrency)
 	var wg sync.WaitGroup
 	var mu sync.Mutex
-	
+
 	results := make([]ImageFacts, len(imageRefs))
 	var collectErrors []error
 
@@ -125,16 +125,16 @@ func (c *DefaultImageCollector) CollectMultipleImageFacts(ctx context.Context, i
 		wg.Add(1)
 		go func(index int, ref ImageReference) {
 			defer wg.Done()
-			
+
 			// Acquire semaphore
 			semaphore <- struct{}{}
 			defer func() { <-semaphore }()
 
 			facts, err := c.CollectImageFacts(ctx, ref)
-			
+
 			mu.Lock()
 			if err != nil {
-				collectErrors = append(collectErrors, 
+				collectErrors = append(collectErrors,
 					fmt.Errorf("image %s: %w", ref.String(), err))
 				if facts != nil {
 					results[index] = *facts // Store partial facts
@@ -156,7 +156,7 @@ func (c *DefaultImageCollector) CollectMultipleImageFacts(ctx context.Context, i
 		}
 	}
 
-	klog.V(2).Infof("Collected facts for %d/%d images (%d errors)", 
+	klog.V(2).Infof("Collected facts for %d/%d images (%d errors)",
 		len(finalResults), len(imageRefs), len(collectErrors))
 
 	if len(collectErrors) > 0 && !c.options.ContinueOnError {
@@ -171,7 +171,7 @@ func (c *DefaultImageCollector) SetCredentials(registry string, credentials Regi
 	if c.options.Credentials == nil {
 		c.options.Credentials = make(map[string]RegistryCredentials)
 	}
-	
+
 	c.options.Credentials[registry] = credentials
 	klog.V(3).Infof("Updated credentials for registry: %s", registry)
 	return nil
@@ -187,12 +187,12 @@ func (c *DefaultImageCollector) collectImageFactsFromRegistry(ctx context.Contex
 
 	facts := &ImageFacts{
 		Repository:    imageRef.Repository,
-		Tag:          imageRef.Tag,
-		Digest:       imageRef.Digest,
-		Registry:     imageRef.Registry,
-		MediaType:    manifest.GetMediaType(),
+		Tag:           imageRef.Tag,
+		Digest:        imageRef.Digest,
+		Registry:      imageRef.Registry,
+		MediaType:     manifest.GetMediaType(),
 		SchemaVersion: manifest.GetSchemaVersion(),
-		CollectedAt:  time.Now(),
+		CollectedAt:   time.Now(),
 	}
 
 	// Handle manifest lists (multi-platform images)
@@ -248,7 +248,7 @@ func (c *DefaultImageCollector) populateFactsFromManifest(ctx context.Context, c
 	// Get layers
 	layers := manifest.GetLayers()
 	facts.Layers = ConvertToLayerInfo(layers)
-	
+
 	// Calculate total size from layers
 	for _, layer := range facts.Layers {
 		facts.Size += layer.Size
@@ -289,7 +289,7 @@ func (c *DefaultImageCollector) populateConfigFacts(ctx context.Context, client 
 
 	// Update facts with config information
 	facts.Platform = ConvertToPlatform(
-		configBlob.Architecture, 
+		configBlob.Architecture,
 		configBlob.OS,
 		configBlob.Variant,
 		configBlob.OSVersion,
@@ -343,12 +343,12 @@ func ParseImageReference(imageStr string) (ImageReference, error) {
 		if len(parts) != 2 {
 			return ImageReference{}, fmt.Errorf("invalid digest reference: %s", imageStr)
 		}
-		
+
 		repoRef, err := parseRepositoryReference(parts[0])
 		if err != nil {
 			return ImageReference{}, err
 		}
-		
+
 		repoRef.Digest = parts[1]
 		return repoRef, nil
 	}
@@ -361,12 +361,12 @@ func ParseImageReference(imageStr string) (ImageReference, error) {
 func parseRepositoryReference(ref string) (ImageReference, error) {
 	imageRef := ImageReference{
 		Registry: DefaultRegistry,
-		Tag:     DefaultTag,
+		Tag:      DefaultTag,
 	}
 
 	// Split by ":"
 	parts := strings.Split(ref, ":")
-	
+
 	if len(parts) == 1 {
 		// No tag specified, use default
 		imageRef.Repository = ref
@@ -440,7 +440,7 @@ func CreateFactsBundle(namespace string, imageFacts []ImageFacts) *FactsBundle {
 		TotalImages:        len(imageFacts),
 		UniqueRegistries:   len(registries),
 		UniqueRepositories: len(repositories),
-		TotalSize:         totalSize,
+		TotalSize:          totalSize,
 		CollectionErrors:   errors,
 	}
 

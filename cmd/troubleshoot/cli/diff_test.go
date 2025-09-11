@@ -77,7 +77,7 @@ func TestGetBundleMetadata(t *testing.T) {
 	tempDir := t.TempDir()
 	testBundle := filepath.Join(tempDir, "test-bundle.tar.gz")
 	testContent := []byte("test bundle content")
-	
+
 	if err := os.WriteFile(testBundle, testContent, 0644); err != nil {
 		t.Fatalf("Failed to create test bundle: %v", err)
 	}
@@ -105,21 +105,21 @@ func TestGetBundleMetadata(t *testing.T) {
 func TestPerformBundleDiff(t *testing.T) {
 	// Create temporary test bundles
 	tempDir := t.TempDir()
-	
+
 	oldBundle := filepath.Join(tempDir, "old-bundle.tar.gz")
 	newBundle := filepath.Join(tempDir, "new-bundle.tar.gz")
-	
+
 	if err := os.WriteFile(oldBundle, []byte("old content"), 0644); err != nil {
 		t.Fatalf("Failed to create old bundle: %v", err)
 	}
-	
+
 	if err := os.WriteFile(newBundle, []byte("new content"), 0644); err != nil {
 		t.Fatalf("Failed to create new bundle: %v", err)
 	}
 
 	v := viper.New()
 	result, err := performBundleDiff(oldBundle, newBundle, v)
-	
+
 	if err != nil {
 		t.Fatalf("performBundleDiff() error = %v", err)
 	}
@@ -178,7 +178,7 @@ func TestGenerateTextDiffReport(t *testing.T) {
 				Size: 1024,
 			},
 			NewBundle: BundleMetadata{
-				Path: "/new/bundle.tar.gz", 
+				Path: "/new/bundle.tar.gz",
 				Size: 2048,
 			},
 			GeneratedAt: "2023-01-01T00:00:00Z",
@@ -214,9 +214,9 @@ func TestGenerateHTMLDiffReport(t *testing.T) {
 		},
 		Changes: []Change{
 			{
-				Type:     "added",
-				Path:     "/new-file.yaml",
-				Impact:   "low",
+				Type:   "added",
+				Path:   "/new-file.yaml",
+				Impact: "low",
 			},
 		},
 		Metadata: DiffMetadata{

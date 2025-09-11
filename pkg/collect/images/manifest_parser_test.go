@@ -59,7 +59,7 @@ func TestParseV2Manifest(t *testing.T) {
 				t.Errorf("parseV2Manifest() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			
+
 			if !tt.wantErr {
 				if manifest.GetMediaType() != tt.wantType {
 					t.Errorf("parseV2Manifest() mediaType = %v, want %v", manifest.GetMediaType(), tt.wantType)
@@ -99,9 +99,9 @@ func TestParseManifestList(t *testing.T) {
 	}`
 
 	tests := []struct {
-		name         string
-		data         []byte
-		wantErr      bool
+		name          string
+		data          []byte
+		wantErr       bool
 		wantManifests int
 	}{
 		{
@@ -130,11 +130,11 @@ func TestParseManifestList(t *testing.T) {
 				t.Errorf("parseManifestList() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			
+
 			if !tt.wantErr {
 				manifestList := manifest.(*ManifestList)
 				if len(manifestList.Manifests) != tt.wantManifests {
-					t.Errorf("parseManifestList() manifests count = %v, want %v", 
+					t.Errorf("parseManifestList() manifests count = %v, want %v",
 						len(manifestList.Manifests), tt.wantManifests)
 				}
 			}
@@ -211,7 +211,7 @@ func TestManifestList_GetManifestForPlatform(t *testing.T) {
 				t.Errorf("GetManifestForPlatform() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			
+
 			if !tt.wantErr && manifest.Digest != tt.wantDigest {
 				t.Errorf("GetManifestForPlatform() digest = %v, want %v", manifest.Digest, tt.wantDigest)
 			}
@@ -268,12 +268,12 @@ func TestParseImageConfig(t *testing.T) {
 				t.Errorf("ParseImageConfig() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			
+
 			if !tt.wantErr {
 				if config == nil {
 					t.Error("ParseImageConfig() returned nil config")
 				}
-				
+
 				// For valid config, verify some fields
 				if string(tt.data) == validConfig {
 					if config.Architecture != "amd64" {
@@ -336,7 +336,7 @@ func TestConvertToPlatform(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := ConvertToPlatform(tt.arch, tt.os, tt.variant, tt.osVersion, tt.osFeatures)
-			
+
 			if got.Architecture != tt.want.Architecture {
 				t.Errorf("ConvertToPlatform() architecture = %v, want %v", got.Architecture, tt.want.Architecture)
 			}
@@ -370,11 +370,11 @@ func TestConvertToImageConfig(t *testing.T) {
 	if imageConfig.User != configDetails.User {
 		t.Errorf("ConvertToImageConfig() user = %v, want %v", imageConfig.User, configDetails.User)
 	}
-	
+
 	if len(imageConfig.Env) != len(configDetails.Env) {
 		t.Errorf("ConvertToImageConfig() env length = %v, want %v", len(imageConfig.Env), len(configDetails.Env))
 	}
-	
+
 	if imageConfig.WorkingDir != configDetails.WorkingDir {
 		t.Errorf("ConvertToImageConfig() workingDir = %v, want %v", imageConfig.WorkingDir, configDetails.WorkingDir)
 	}
@@ -415,11 +415,11 @@ func TestConvertToLayerInfo(t *testing.T) {
 
 func TestGetDefaultPlatform(t *testing.T) {
 	platform := GetDefaultPlatform()
-	
+
 	if platform.Architecture != "amd64" {
 		t.Errorf("GetDefaultPlatform() architecture = %v, want amd64", platform.Architecture)
 	}
-	
+
 	if platform.OS != "linux" {
 		t.Errorf("GetDefaultPlatform() os = %v, want linux", platform.OS)
 	}
@@ -479,7 +479,7 @@ func TestNormalizePlatform(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := NormalizePlatform(tt.platform)
-			
+
 			if got.Architecture != tt.want.Architecture {
 				t.Errorf("NormalizePlatform() architecture = %v, want %v", got.Architecture, tt.want.Architecture)
 			}

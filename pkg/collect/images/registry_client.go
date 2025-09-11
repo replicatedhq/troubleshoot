@@ -67,7 +67,7 @@ func (c *DefaultRegistryClient) GetManifest(ctx context.Context, imageRef ImageR
 	klog.V(3).Infof("Getting manifest for image: %s", imageRef.String())
 
 	// Build manifest URL
-	manifestURL := fmt.Sprintf("%s/v2/%s/manifests/%s", 
+	manifestURL := fmt.Sprintf("%s/v2/%s/manifests/%s",
 		c.registry, imageRef.Repository, c.getReference(imageRef))
 
 	req, err := http.NewRequestWithContext(ctx, "GET", manifestURL, nil)
@@ -123,7 +123,7 @@ func (c *DefaultRegistryClient) GetBlob(ctx context.Context, imageRef ImageRefer
 	klog.V(3).Infof("Getting blob %s for image: %s", digest, imageRef.String())
 
 	// Build blob URL
-	blobURL := fmt.Sprintf("%s/v2/%s/blobs/%s", 
+	blobURL := fmt.Sprintf("%s/v2/%s/blobs/%s",
 		c.registry, imageRef.Repository, digest)
 
 	req, err := http.NewRequestWithContext(ctx, "GET", blobURL, nil)
@@ -162,7 +162,7 @@ func (c *DefaultRegistryClient) SetCredentials(credentials RegistryCredentials) 
 // Ping tests connectivity to the registry
 func (c *DefaultRegistryClient) Ping(ctx context.Context) error {
 	pingURL := fmt.Sprintf("%s/v2/", c.registry)
-	
+
 	req, err := http.NewRequestWithContext(ctx, "GET", pingURL, nil)
 	if err != nil {
 		return errors.Wrap(err, "failed to create ping request")
@@ -229,15 +229,15 @@ func (c *DefaultRegistryClient) addAuth(req *http.Request, repository string) er
 
 // isDockerHub checks if this is Docker Hub registry
 func (c *DefaultRegistryClient) isDockerHub() bool {
-	return strings.Contains(c.registry, "docker.io") || 
-		   strings.Contains(c.registry, "registry-1.docker.io")
+	return strings.Contains(c.registry, "docker.io") ||
+		strings.Contains(c.registry, "registry-1.docker.io")
 }
 
 // getDockerHubToken gets an anonymous token for Docker Hub
 func (c *DefaultRegistryClient) getDockerHubToken(ctx context.Context, repository string) (string, error) {
 	// Docker Hub token URL
 	tokenURL := fmt.Sprintf("https://auth.docker.io/token?service=registry.docker.io&scope=repository:%s:pull", repository)
-	
+
 	req, err := http.NewRequestWithContext(ctx, "GET", tokenURL, nil)
 	if err != nil {
 		return "", err
@@ -312,7 +312,7 @@ func NewRegistryClientFactory(options CollectionOptions) *RegistryClientFactory 
 func (f *RegistryClientFactory) CreateClient(registry string, credentials RegistryCredentials) (RegistryClient, error) {
 	// Use factory default options merged with any specific credentials
 	options := f.defaultOptions
-	
+
 	// Apply registry-specific configurations
 	switch {
 	case strings.Contains(registry, "amazonaws.com"):
@@ -335,7 +335,7 @@ func (f *RegistryClientFactory) GetSupportedRegistries() []string {
 		"docker.io",
 		"registry-1.docker.io",
 		"gcr.io",
-		"us.gcr.io", 
+		"us.gcr.io",
 		"eu.gcr.io",
 		"asia.gcr.io",
 		"*.amazonaws.com", // ECR

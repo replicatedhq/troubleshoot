@@ -11,15 +11,15 @@ import (
 func TestNewFactsBuilder(t *testing.T) {
 	options := GetDefaultCollectionOptions()
 	builder := NewFactsBuilder(options)
-	
+
 	if builder == nil {
 		t.Error("NewFactsBuilder() returned nil")
 	}
-	
+
 	if builder.collector == nil {
 		t.Error("NewFactsBuilder() collector is nil")
 	}
-	
+
 	if builder.resolver == nil {
 		t.Error("NewFactsBuilder() resolver is nil")
 	}
@@ -64,16 +64,16 @@ func TestFactsBuilder_BuildFactsFromImageStrings(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
 			facts, err := builder.BuildFactsFromImageStrings(ctx, tt.imageStrs, tt.source)
-			
+
 			if (err != nil) != tt.wantErr {
 				t.Errorf("BuildFactsFromImageStrings() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			
+
 			if len(facts) != tt.wantCount {
 				t.Errorf("BuildFactsFromImageStrings() returned %d facts, want %d", len(facts), tt.wantCount)
 			}
-			
+
 			// Verify source is set correctly
 			for _, fact := range facts {
 				if fact.Source != tt.source {
@@ -93,7 +93,7 @@ func TestFactsBuilder_DeduplicateImageFacts(t *testing.T) {
 		wantCount int
 	}{
 		{
-			name:      "no duplicates",
+			name: "no duplicates",
 			facts: []ImageFacts{
 				{Repository: "nginx", Tag: "1.20", Registry: "docker.io"},
 				{Repository: "redis", Tag: "alpine", Registry: "docker.io"},
@@ -101,7 +101,7 @@ func TestFactsBuilder_DeduplicateImageFacts(t *testing.T) {
 			wantCount: 2,
 		},
 		{
-			name:      "duplicate by digest",
+			name: "duplicate by digest",
 			facts: []ImageFacts{
 				{Repository: "nginx", Tag: "1.20", Digest: "sha256:abc123", Registry: "docker.io"},
 				{Repository: "nginx", Tag: "latest", Digest: "sha256:abc123", Registry: "docker.io"},
@@ -109,7 +109,7 @@ func TestFactsBuilder_DeduplicateImageFacts(t *testing.T) {
 			wantCount: 1, // Should deduplicate by digest
 		},
 		{
-			name:      "duplicate by repo:tag",
+			name: "duplicate by repo:tag",
 			facts: []ImageFacts{
 				{Repository: "nginx", Tag: "1.20", Registry: "docker.io"},
 				{Repository: "nginx", Tag: "1.20", Registry: "docker.io"},
@@ -122,7 +122,7 @@ func TestFactsBuilder_DeduplicateImageFacts(t *testing.T) {
 			wantCount: 0,
 		},
 		{
-			name:      "single item",
+			name: "single item",
 			facts: []ImageFacts{
 				{Repository: "nginx", Tag: "1.20", Registry: "docker.io"},
 			},
@@ -133,7 +133,7 @@ func TestFactsBuilder_DeduplicateImageFacts(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			deduplicated := builder.DeduplicateImageFacts(tt.facts)
-			
+
 			if len(deduplicated) != tt.wantCount {
 				t.Errorf("DeduplicateImageFacts() returned %d facts, want %d", len(deduplicated), tt.wantCount)
 			}
@@ -404,9 +404,9 @@ func TestFactsBuilder_GetLargestImages(t *testing.T) {
 	builder := NewFactsBuilder(GetDefaultCollectionOptions())
 
 	imageFacts := []ImageFacts{
-		{Repository: "small", Size: 10 * 1024 * 1024},   // 10MB
-		{Repository: "large", Size: 100 * 1024 * 1024},  // 100MB
-		{Repository: "medium", Size: 50 * 1024 * 1024},  // 50MB
+		{Repository: "small", Size: 10 * 1024 * 1024},  // 10MB
+		{Repository: "large", Size: 100 * 1024 * 1024}, // 100MB
+		{Repository: "medium", Size: 50 * 1024 * 1024}, // 50MB
 	}
 
 	tests := []struct {
@@ -443,15 +443,15 @@ func TestFactsBuilder_GetLargestImages(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			largest := builder.GetLargestImages(imageFacts, tt.count)
-			
+
 			if len(largest) != tt.wantCount {
 				t.Errorf("GetLargestImages() returned %d images, want %d", len(largest), tt.wantCount)
 			}
-			
+
 			if tt.wantCount > 0 && largest[0].Repository != tt.wantFirst {
 				t.Errorf("GetLargestImages() first image = %v, want %v", largest[0].Repository, tt.wantFirst)
 			}
-			
+
 			// Verify sorted by size (largest first)
 			for i := 1; i < len(largest); i++ {
 				if largest[i-1].Size < largest[i].Size {
@@ -572,18 +572,18 @@ func TestFactsBuilder_FilterImageFactsByRegistry(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			filtered := builder.FilterImageFactsByRegistry(imageFacts, tt.allowedRegistries)
-			
+
 			if len(filtered) != tt.wantCount {
 				t.Errorf("FilterImageFactsByRegistry() returned %d facts, want %d", len(filtered), tt.wantCount)
 			}
-			
+
 			// Verify all returned facts are from allowed registries
 			if len(tt.allowedRegistries) > 0 {
 				allowedSet := make(map[string]bool)
 				for _, reg := range tt.allowedRegistries {
 					allowedSet[reg] = true
 				}
-				
+
 				for _, fact := range filtered {
 					if !allowedSet[fact.Registry] {
 						t.Errorf("FilterImageFactsByRegistry() returned fact from disallowed registry: %s", fact.Registry)

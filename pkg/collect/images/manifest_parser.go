@@ -10,9 +10,9 @@ import (
 
 // V2Manifest represents a Docker v2 or OCI manifest
 type V2Manifest struct {
-	SchemaVersion int         `json:"schemaVersion"`
-	MediaType     string      `json:"mediaType"`
-	Config        Descriptor  `json:"config"`
+	SchemaVersion int          `json:"schemaVersion"`
+	MediaType     string       `json:"mediaType"`
+	Config        Descriptor   `json:"config"`
 	Layers        []Descriptor `json:"layers"`
 }
 
@@ -48,8 +48,8 @@ func (m *V2Manifest) Marshal() ([]byte, error) {
 
 // ManifestList represents a Docker manifest list or OCI image index
 type ManifestList struct {
-	SchemaVersion int                 `json:"schemaVersion"`
-	MediaType     string              `json:"mediaType"`
+	SchemaVersion int                  `json:"schemaVersion"`
+	MediaType     string               `json:"mediaType"`
 	Manifests     []ManifestDescriptor `json:"manifests"`
 }
 
@@ -97,9 +97,9 @@ func (m *ManifestList) GetManifestForPlatform(targetPlatform Platform) (*Manifes
 
 	// First try exact match
 	for _, manifest := range m.Manifests {
-		if manifest.Platform != nil && 
-		   manifest.Platform.Architecture == targetPlatform.Architecture &&
-		   manifest.Platform.OS == targetPlatform.OS {
+		if manifest.Platform != nil &&
+			manifest.Platform.Architecture == targetPlatform.Architecture &&
+			manifest.Platform.OS == targetPlatform.OS {
 			if targetPlatform.Variant == "" || manifest.Platform.Variant == targetPlatform.Variant {
 				return &manifest, nil
 			}
@@ -109,8 +109,8 @@ func (m *ManifestList) GetManifestForPlatform(targetPlatform Platform) (*Manifes
 	// Fallback to first linux/amd64 if available
 	for _, manifest := range m.Manifests {
 		if manifest.Platform != nil &&
-		   manifest.Platform.OS == "linux" &&
-		   manifest.Platform.Architecture == "amd64" {
+			manifest.Platform.OS == "linux" &&
+			manifest.Platform.Architecture == "amd64" {
 			return &manifest, nil
 		}
 	}
@@ -176,28 +176,28 @@ func (m *V1Manifest) Marshal() ([]byte, error) {
 
 // ImageConfigBlob represents the image configuration blob
 type ImageConfigBlob struct {
-	Architecture string    `json:"architecture"`
-	OS           string    `json:"os"`
-	OSVersion    string    `json:"os.version,omitempty"`
-	OSFeatures   []string  `json:"os.features,omitempty"`
-	Variant      string    `json:"variant,omitempty"`
+	Architecture string        `json:"architecture"`
+	OS           string        `json:"os"`
+	OSVersion    string        `json:"os.version,omitempty"`
+	OSFeatures   []string      `json:"os.features,omitempty"`
+	Variant      string        `json:"variant,omitempty"`
 	Config       ConfigDetails `json:"config"`
-	RootFS       RootFS    `json:"rootfs"`
-	History      []History `json:"history"`
-	Created      time.Time `json:"created"`
-	Author       string    `json:"author,omitempty"`
+	RootFS       RootFS        `json:"rootfs"`
+	History      []History     `json:"history"`
+	Created      time.Time     `json:"created"`
+	Author       string        `json:"author,omitempty"`
 }
 
 // ConfigDetails contains the runtime configuration
 type ConfigDetails struct {
-	User         string            `json:"User,omitempty"`
+	User         string              `json:"User,omitempty"`
 	ExposedPorts map[string]struct{} `json:"ExposedPorts,omitempty"`
-	Env          []string          `json:"Env,omitempty"`
-	Entrypoint   []string          `json:"Entrypoint,omitempty"`
-	Cmd          []string          `json:"Cmd,omitempty"`
+	Env          []string            `json:"Env,omitempty"`
+	Entrypoint   []string            `json:"Entrypoint,omitempty"`
+	Cmd          []string            `json:"Cmd,omitempty"`
 	Volumes      map[string]struct{} `json:"Volumes,omitempty"`
-	WorkingDir   string            `json:"WorkingDir,omitempty"`
-	Labels       map[string]string `json:"Labels,omitempty"`
+	WorkingDir   string              `json:"WorkingDir,omitempty"`
+	Labels       map[string]string   `json:"Labels,omitempty"`
 }
 
 // RootFS contains information about the root filesystem
@@ -282,10 +282,10 @@ func ParseImageConfig(data []byte) (*ImageConfigBlob, error) {
 func ConvertToPlatform(arch, os, variant, osVersion string, osFeatures []string) Platform {
 	return Platform{
 		Architecture: arch,
-		OS:          os,
-		Variant:     variant,
-		OSVersion:   osVersion,
-		OSFeatures:  osFeatures,
+		OS:           os,
+		Variant:      variant,
+		OSVersion:    osVersion,
+		OSFeatures:   osFeatures,
 	}
 }
 

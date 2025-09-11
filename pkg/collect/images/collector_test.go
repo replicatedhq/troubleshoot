@@ -260,12 +260,12 @@ func setupMockRegistry() *httptest.Server {
 		case r.URL.Path == "/v2/":
 			// Ping endpoint
 			w.WriteHeader(http.StatusOK)
-			
+
 		case strings.Contains(r.URL.Path, "/manifests/"):
 			// Manifest endpoint
 			w.Header().Set("Content-Type", DockerManifestSchema2)
 			w.Header().Set("Docker-Content-Digest", "sha256:1234567890abcdef")
-			
+
 			// Return a minimal v2 manifest
 			manifest := `{
 				"schemaVersion": 2,
@@ -285,7 +285,7 @@ func setupMockRegistry() *httptest.Server {
 			}`
 			w.WriteHeader(http.StatusOK)
 			w.Write([]byte(manifest))
-			
+
 		case strings.Contains(r.URL.Path, "/blobs/"):
 			// Blob endpoint (for config)
 			if strings.Contains(r.URL.Path, "sha256:config123") {
@@ -303,7 +303,7 @@ func setupMockRegistry() *httptest.Server {
 			} else {
 				w.WriteHeader(http.StatusNotFound)
 			}
-			
+
 		default:
 			w.WriteHeader(http.StatusNotFound)
 		}
@@ -329,7 +329,7 @@ func TestDefaultImageCollector_CollectImageFacts_Integration(t *testing.T) {
 
 	ctx := context.Background()
 	facts, err := collector.CollectImageFacts(ctx, imageRef)
-	
+
 	if err != nil {
 		t.Fatalf("CollectImageFacts() error = %v", err)
 	}
@@ -382,7 +382,7 @@ func TestDefaultImageCollector_CollectMultipleImageFacts(t *testing.T) {
 
 	ctx := context.Background()
 	factsList, err := collector.CollectMultipleImageFacts(ctx, imageRefs)
-	
+
 	if err != nil {
 		t.Fatalf("CollectMultipleImageFacts() error = %v", err)
 	}

@@ -278,7 +278,7 @@ func TestRBACChecker_getAPIVersion(t *testing.T) {
 	checker := &RBACChecker{}
 
 	tests := []struct {
-		apiVersion string
+		apiVersion  string
 		wantVersion string
 	}{
 		{

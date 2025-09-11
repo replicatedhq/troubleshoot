@@ -66,7 +66,7 @@ func (ke *KubernetesImageExtractor) ExtractImagesFromNamespace(ctx context.Conte
 	// Deduplicate images
 	uniqueImages := deduplicateImageReferences(allImages)
 
-	klog.V(2).Infof("Extracted %d unique images from %d total references in namespace %s", 
+	klog.V(2).Infof("Extracted %d unique images from %d total references in namespace %s",
 		len(uniqueImages), len(allImages), namespace)
 
 	return uniqueImages, nil
@@ -188,9 +188,9 @@ func deduplicateImageReferences(refs []ImageReference) []ImageReference {
 
 // NamespaceImageCollector collects image facts for an entire namespace
 type NamespaceImageCollector struct {
-	extractor     *KubernetesImageExtractor
+	extractor      *KubernetesImageExtractor
 	imageCollector *DefaultImageCollector
-	factsBuilder  *FactsBuilder
+	factsBuilder   *FactsBuilder
 }
 
 // NewNamespaceImageCollector creates a new namespace-level image collector
@@ -255,7 +255,7 @@ func CreateImageFactsCollector(namespace string, options CollectionOptions) (*tr
 // ProcessImageFactsCollectionResult processes the result of image facts collection
 func ProcessImageFactsCollectionResult(ctx context.Context, namespace string, client kubernetes.Interface, options CollectionOptions) ([]byte, error) {
 	collector := NewNamespaceImageCollector(client, options)
-	
+
 	factsBundle, err := collector.CollectNamespaceImageFacts(ctx, namespace)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to collect namespace image facts")

@@ -121,7 +121,7 @@ func (fb *FactsBuilder) DeduplicateImageFacts(imageFacts []ImageFacts) []ImageFa
 		}
 	}
 
-	klog.V(3).Infof("Deduplicated %d image facts to %d unique images", 
+	klog.V(3).Infof("Deduplicated %d image facts to %d unique images",
 		len(imageFacts), len(deduplicated))
 
 	return deduplicated
@@ -216,7 +216,7 @@ func (fb *FactsBuilder) ValidateImageFacts(facts ImageFacts) error {
 // SerializeFactsToJSON serializes image facts to JSON
 func (fb *FactsBuilder) SerializeFactsToJSON(imageFacts []ImageFacts, namespace string) ([]byte, error) {
 	bundle := CreateFactsBundle(namespace, imageFacts)
-	
+
 	data, err := json.MarshalIndent(bundle, "", "  ")
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to marshal facts bundle")
@@ -272,7 +272,7 @@ func (fb *FactsBuilder) GetImageFactsSummary(imageFacts []ImageFacts) FactsSumma
 		TotalImages:        len(imageFacts),
 		UniqueRegistries:   len(registries),
 		UniqueRepositories: len(repositories),
-		TotalSize:         totalSize,
+		TotalSize:          totalSize,
 		CollectionErrors:   errors,
 	}
 }

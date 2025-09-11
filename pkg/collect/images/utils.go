@@ -211,8 +211,8 @@ func ExtractRepositoryHost(repository string) string {
 // IsOfficialImage checks if an image is an official Docker Hub image
 func IsOfficialImage(registry, repository string) bool {
 	// Official images are on Docker Hub in the "library" namespace
-	return (registry == DefaultRegistry || registry == "docker.io") && 
-		   strings.HasPrefix(repository, "library/")
+	return (registry == DefaultRegistry || registry == "docker.io") &&
+		strings.HasPrefix(repository, "library/")
 }
 
 // GetImageShortName returns a shortened version of the image name for display
@@ -259,9 +259,9 @@ func FormatSize(bytes int64) string {
 func ParseSize(sizeStr string) (int64, error) {
 	// This is a simplified implementation
 	// In a real implementation, you'd want to handle various formats like "1.5GB", "500MB", etc.
-	
+
 	sizeStr = strings.TrimSpace(strings.ToUpper(sizeStr))
-	
+
 	multipliers := map[string]int64{
 		"B":   1,
 		"KB":  1024,

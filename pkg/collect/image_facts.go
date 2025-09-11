@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"path/filepath"
 
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
@@ -40,7 +41,7 @@ func (c *CollectImageFacts) Collect(progressChan chan<- interface{}) (CollectorR
 	options := images.GetDefaultCollectionOptions()
 	options.ContinueOnError = true
 	options.IncludeConfig = true
-	options.IncludeLayers = false // Don't include layers for faster collection
+	options.IncludeLayers = false     // Don't include layers for faster collection
 	options.Timeout = 30 * 1000000000 // 30 seconds
 
 	// Create namespace image collector
@@ -97,7 +98,7 @@ Generated at: %s`,
 	summaryPath := filepath.Join("image-facts", fmt.Sprintf("%s-summary.txt", c.Namespace))
 	output.SaveResult(c.BundlePath, summaryPath, &FakeReader{data: []byte(summaryMsg)})
 
-	klog.V(2).Infof("Image facts collection completed for namespace %s: %d images collected", 
+	klog.V(2).Infof("Image facts collection completed for namespace %s: %d images collected",
 		c.Namespace, len(factsBundle.ImageFacts))
 
 	return output, nil
@@ -111,16 +112,16 @@ type FakeReader struct {
 
 func (f *FakeReader) Read(p []byte) (n int, err error) {
 	if f.pos >= len(f.data) {
-		return 0, fmt.Errorf("EOF")
+		return 0, io.EOF
 	}
-	
+
 	n = copy(p, f.data[f.pos:])
 	f.pos += n
-	
+
 	if f.pos >= len(f.data) {
-		err = fmt.Errorf("EOF")
+		err = io.EOF
 	}
-	
+
 	return n, err
 }
 

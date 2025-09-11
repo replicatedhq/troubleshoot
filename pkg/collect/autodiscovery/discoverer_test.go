@@ -88,10 +88,10 @@ func TestDiscoverer_DiscoverFoundational(t *testing.T) {
 	}
 
 	tests := []struct {
-		name                string
-		opts                DiscoveryOptions
-		wantCollectorTypes  map[CollectorType]int // type -> expected count
-		wantMinCollectors   int
+		name               string
+		opts               DiscoveryOptions
+		wantCollectorTypes map[CollectorType]int // type -> expected count
+		wantMinCollectors  int
 		wantErr            bool
 	}{
 		{
@@ -110,7 +110,7 @@ func TestDiscoverer_DiscoverFoundational(t *testing.T) {
 				CollectorTypeSecrets:          1,
 			},
 			wantMinCollectors: 5,
-			wantErr:          false,
+			wantErr:           false,
 		},
 		{
 			name: "with images",
@@ -129,7 +129,7 @@ func TestDiscoverer_DiscoverFoundational(t *testing.T) {
 				CollectorTypeImageFacts:       1,
 			},
 			wantMinCollectors: 6,
-			wantErr:          false,
+			wantErr:           false,
 		},
 		{
 			name: "multiple namespaces",
@@ -140,7 +140,7 @@ func TestDiscoverer_DiscoverFoundational(t *testing.T) {
 				Timeout:       10 * time.Second,
 			},
 			wantMinCollectors: 8, // 2 cluster + 3*2 namespace collectors
-			wantErr:          false,
+			wantErr:           false,
 		},
 		{
 			name: "no namespaces specified",
@@ -151,7 +151,7 @@ func TestDiscoverer_DiscoverFoundational(t *testing.T) {
 				Timeout:       10 * time.Second,
 			},
 			wantMinCollectors: 2, // At least cluster collectors
-			wantErr:          false,
+			wantErr:           false,
 		},
 	}
 
@@ -167,7 +167,7 @@ func TestDiscoverer_DiscoverFoundational(t *testing.T) {
 
 			if err == nil {
 				if len(collectors) < tt.wantMinCollectors {
-					t.Errorf("DiscoverFoundational() returned %d collectors, want at least %d", 
+					t.Errorf("DiscoverFoundational() returned %d collectors, want at least %d",
 						len(collectors), tt.wantMinCollectors)
 				}
 
@@ -180,7 +180,7 @@ func TestDiscoverer_DiscoverFoundational(t *testing.T) {
 
 					for expectedType, expectedCount := range tt.wantCollectorTypes {
 						if collectorCounts[expectedType] != expectedCount {
-							t.Errorf("DiscoverFoundational() got %d collectors of type %s, want %d", 
+							t.Errorf("DiscoverFoundational() got %d collectors of type %s, want %d",
 								collectorCounts[expectedType], expectedType, expectedCount)
 						}
 					}
@@ -189,7 +189,7 @@ func TestDiscoverer_DiscoverFoundational(t *testing.T) {
 				// Verify all collectors have foundational source
 				for _, collector := range collectors {
 					if collector.Source != SourceFoundational {
-						t.Errorf("DiscoverFoundational() collector %s has source %s, want %s", 
+						t.Errorf("DiscoverFoundational() collector %s has source %s, want %s",
 							collector.Name, collector.Source, SourceFoundational)
 					}
 				}
@@ -261,7 +261,7 @@ func TestDiscoverer_AugmentWithFoundational(t *testing.T) {
 
 			if err == nil {
 				if len(collectors) < tt.wantMinCount {
-					t.Errorf("AugmentWithFoundational() returned %d collectors, want at least %d", 
+					t.Errorf("AugmentWithFoundational() returned %d collectors, want at least %d",
 						len(collectors), tt.wantMinCount)
 				}
 
@@ -278,7 +278,7 @@ func TestDiscoverer_AugmentWithFoundational(t *testing.T) {
 				}
 
 				if yamlCount != len(tt.yamlCollectors) {
-					t.Errorf("AugmentWithFoundational() preserved %d YAML collectors, want %d", 
+					t.Errorf("AugmentWithFoundational() preserved %d YAML collectors, want %d",
 						yamlCount, len(tt.yamlCollectors))
 				}
 
@@ -349,7 +349,7 @@ func TestDiscoverer_getTargetNamespaces(t *testing.T) {
 				if len(tt.requestedNamespaces) > 0 {
 					// For specific namespaces, check exact match
 					if len(namespaces) != len(tt.wantNamespaces) {
-						t.Errorf("getTargetNamespaces() returned %d namespaces, want %d", 
+						t.Errorf("getTargetNamespaces() returned %d namespaces, want %d",
 							len(namespaces), len(tt.wantNamespaces))
 					}
 				} else {
@@ -371,10 +371,10 @@ func TestDiscoverer_generateFoundationalCollectors(t *testing.T) {
 	}
 
 	tests := []struct {
-		name           string
-		namespaces     []string
-		opts           DiscoveryOptions
-		wantMinCount   int
+		name             string
+		namespaces       []string
+		opts             DiscoveryOptions
+		wantMinCount     int
 		wantClusterLevel bool
 	}{
 		{
@@ -412,7 +412,7 @@ func TestDiscoverer_generateFoundationalCollectors(t *testing.T) {
 			collectors := discoverer.generateFoundationalCollectors(tt.namespaces, tt.opts)
 
 			if len(collectors) < tt.wantMinCount {
-				t.Errorf("generateFoundationalCollectors() returned %d collectors, want at least %d", 
+				t.Errorf("generateFoundationalCollectors() returned %d collectors, want at least %d",
 					len(collectors), tt.wantMinCount)
 			}
 
@@ -460,11 +460,11 @@ func TestDiscoverer_mergeAndDeduplicateCollectors(t *testing.T) {
 	}
 
 	tests := []struct {
-		name                 string
-		yamlCollectors      []CollectorSpec
+		name                   string
+		yamlCollectors         []CollectorSpec
 		foundationalCollectors []CollectorSpec
-		wantCount           int
-		wantYAMLPreferred   bool
+		wantCount              int
+		wantYAMLPreferred      bool
 	}{
 		{
 			name: "no conflicts",
@@ -518,7 +518,7 @@ func TestDiscoverer_mergeAndDeduplicateCollectors(t *testing.T) {
 			merged := discoverer.mergeAndDeduplicateCollectors(tt.yamlCollectors, tt.foundationalCollectors)
 
 			if len(merged) != tt.wantCount {
-				t.Errorf("mergeAndDeduplicateCollectors() returned %d collectors, want %d", 
+				t.Errorf("mergeAndDeduplicateCollectors() returned %d collectors, want %d",
 					len(merged), tt.wantCount)
 			}
 

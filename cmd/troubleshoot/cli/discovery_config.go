@@ -14,16 +14,16 @@ import (
 
 // DiscoveryConfig represents the configuration for auto-discovery
 type DiscoveryConfig struct {
-	Version  string                        `json:"version" yaml:"version"`
-	Profiles map[string]DiscoveryProfile   `json:"profiles" yaml:"profiles"`
-	Patterns DiscoveryPatterns            `json:"patterns" yaml:"patterns"`
+	Version  string                      `json:"version" yaml:"version"`
+	Profiles map[string]DiscoveryProfile `json:"profiles" yaml:"profiles"`
+	Patterns DiscoveryPatterns           `json:"patterns" yaml:"patterns"`
 }
 
 // DiscoveryPatterns defines inclusion/exclusion patterns for discovery
 type DiscoveryPatterns struct {
-	NamespacePatterns      PatternConfig   `json:"namespacePatterns" yaml:"namespacePatterns"`
-	ResourceTypePatterns   PatternConfig   `json:"resourceTypePatterns" yaml:"resourceTypePatterns"`
-	RegistryPatterns       PatternConfig   `json:"registryPatterns" yaml:"registryPatterns"`
+	NamespacePatterns    PatternConfig `json:"namespacePatterns" yaml:"namespacePatterns"`
+	ResourceTypePatterns PatternConfig `json:"resourceTypePatterns" yaml:"resourceTypePatterns"`
+	RegistryPatterns     PatternConfig `json:"registryPatterns" yaml:"registryPatterns"`
 }
 
 // PatternConfig defines include/exclude patterns
@@ -75,7 +75,7 @@ func getDefaultDiscoveryConfig() *DiscoveryConfig {
 				Include: []string{"*"}, // Include all by default
 				Exclude: []string{
 					"kube-system",
-					"kube-public", 
+					"kube-public",
 					"kube-node-lease",
 					"kubernetes-dashboard",
 					"cattle-*",
@@ -228,7 +228,7 @@ func GetDiscoveryConfigPath() string {
 	if err != nil {
 		return "./troubleshoot-discovery.json"
 	}
-	
+
 	return filepath.Join(homeDir, ".troubleshoot", "discovery.json")
 }
 

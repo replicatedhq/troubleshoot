@@ -12,14 +12,14 @@ import (
 // DigestResolver handles conversion of image tags to digests
 type DigestResolver struct {
 	registryFactory *RegistryClientFactory
-	options        CollectionOptions
+	options         CollectionOptions
 }
 
 // NewDigestResolver creates a new digest resolver
 func NewDigestResolver(options CollectionOptions) *DigestResolver {
 	return &DigestResolver{
 		registryFactory: NewRegistryClientFactory(options),
-		options:        options,
+		options:         options,
 	}
 }
 
@@ -87,7 +87,7 @@ func (dr *DigestResolver) ResolveBulkTagsToDigests(ctx context.Context, imageRef
 	klog.V(2).Infof("Resolving %d image tags to digests", len(imageRefs))
 
 	resolved := make([]ImageReference, len(imageRefs))
-	
+
 	for i, ref := range imageRefs {
 		if ref.Digest != "" {
 			// Already has digest
@@ -144,7 +144,7 @@ func (dr *DigestResolver) ValidateDigest(digest string) error {
 
 	// Validate hex length
 	if len(hex) != expectedLength {
-		return fmt.Errorf("invalid digest hex length for %s: expected %d, got %d", 
+		return fmt.Errorf("invalid digest hex length for %s: expected %d, got %d",
 			algorithm, expectedLength, len(hex))
 	}
 

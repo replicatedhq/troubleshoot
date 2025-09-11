@@ -3,6 +3,7 @@ package autodiscovery
 import (
 	"context"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -68,7 +69,7 @@ func (r *RBACChecker) FilterByPermissions(ctx context.Context, resources []Resou
 
 			allowed, err := r.CheckPermission(ctx, res)
 			if err != nil {
-				klog.Warningf("Permission check failed for %s/%s in namespace %s: %v", 
+				klog.Warningf("Permission check failed for %s/%s in namespace %s: %v",
 					res.APIVersion, res.Kind, res.Namespace, err)
 				// On error, be permissive and allow the resource
 				allowed = true
@@ -79,7 +80,7 @@ func (r *RBACChecker) FilterByPermissions(ctx context.Context, resources []Resou
 				allowedResources = append(allowedResources, res)
 				mu.Unlock()
 			} else {
-				klog.V(4).Infof("Access denied for resource %s/%s in namespace %s", 
+				klog.V(4).Infof("Access denied for resource %s/%s in namespace %s",
 					res.APIVersion, res.Kind, res.Namespace)
 			}
 		}(resource)
@@ -131,7 +132,7 @@ func (r *RBACChecker) CheckPermission(ctx context.Context, resource Resource) (b
 	// Cache the result
 	r.cache.set(cacheKey, allowed)
 
-	klog.V(4).Infof("RBAC check for %s: allowed=%t (reason: %s)", 
+	klog.V(4).Infof("RBAC check for %s: allowed=%t (reason: %s)",
 		cacheKey, allowed, result.Status.Reason)
 
 	return allowed, nil
@@ -140,7 +141,7 @@ func (r *RBACChecker) CheckPermission(ctx context.Context, resource Resource) (b
 // CheckBulkPermissions checks multiple permissions efficiently using batch operations
 func (r *RBACChecker) CheckBulkPermissions(ctx context.Context, resources []Resource) (map[string]bool, error) {
 	results := make(map[string]bool)
-	
+
 	for _, resource := range resources {
 		allowed, err := r.CheckPermission(ctx, resource)
 		if err != nil {
@@ -148,7 +149,7 @@ func (r *RBACChecker) CheckBulkPermissions(ctx context.Context, resources []Reso
 			// Be permissive on error
 			allowed = true
 		}
-		
+
 		key := r.getCacheKey(resource)
 		results[key] = allowed
 	}
@@ -158,7 +159,7 @@ func (r *RBACChecker) CheckBulkPermissions(ctx context.Context, resources []Reso
 
 // getCacheKey generates a cache key for a resource
 func (r *RBACChecker) getCacheKey(resource Resource) string {
-	return fmt.Sprintf("%s/%s/%s/%s", 
+	return fmt.Sprintf("%s/%s/%s/%s",
 		resource.APIVersion, resource.Kind, resource.Namespace, resource.Name)
 }
 
@@ -185,7 +186,7 @@ func (r *RBACChecker) getAPIGroup(apiVersion string) string {
 	if apiVersion == "v1" {
 		return "" // Core API group is empty string
 	}
-	
+
 	// Split "group/version" format
 	parts := make([]string, 2)
 	for i, part := range []string{apiVersion} {
@@ -207,7 +208,7 @@ func (r *RBACChecker) getAPIGroup(apiVersion string) string {
 			}
 		}
 	}
-	
+
 	return parts[0]
 }
 
@@ -216,22 +217,14 @@ func (r *RBACChecker) getAPIVersion(apiVersion string) string {
 	if apiVersion == "v1" {
 		return "v1"
 	}
-	
-	// For "group/version" format, return the version part
-	parts := make([]string, 2)
-	if slash := -1; slash < len(apiVersion) {
-		for i, c := range apiVersion {
-			if c == '/' {
-				slash = i
-				break
-			}
-		}
-		if slash >= 0 {
-			parts[1] = apiVersion[slash+1:]
-			return parts[1]
-		}
+
+	// Split "group/version" format
+	parts := strings.Split(apiVersion, "/")
+	if len(parts) == 2 {
+		return parts[1] // Return the version part
 	}
-	
+
+	// If no slash found, return the entire string (it's the version)
 	return apiVersion
 }
 

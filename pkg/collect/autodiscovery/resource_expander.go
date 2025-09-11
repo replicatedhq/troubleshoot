@@ -37,10 +37,10 @@ type ResourcePermission struct {
 
 // ExpansionContext provides context for resource expansion
 type ExpansionContext struct {
-	Namespace   string
-	Options     DiscoveryOptions
-	Resources   []Resource
-	Metadata    map[string]interface{}
+	Namespace string
+	Options   DiscoveryOptions
+	Resources []Resource
+	Metadata  map[string]interface{}
 }
 
 // NewResourceExpander creates a new resource expander with default rules
@@ -243,9 +243,9 @@ func (re *ResourceExpander) generateNamespaceCollectors(ctx context.Context, nam
 func (re *ResourceExpander) expandClusterInfo(ctx context.Context, context ExpansionContext) ([]CollectorSpec, error) {
 	return []CollectorSpec{
 		{
-			Type: CollectorTypeClusterInfo,
-			Name: "cluster-info",
-			Spec: &troubleshootv1beta2.ClusterInfo{},
+			Type:     CollectorTypeClusterInfo,
+			Name:     "cluster-info",
+			Spec:     &troubleshootv1beta2.ClusterInfo{},
 			Priority: 100,
 			Source:   SourceFoundational,
 		},
@@ -255,9 +255,9 @@ func (re *ResourceExpander) expandClusterInfo(ctx context.Context, context Expan
 func (re *ResourceExpander) expandClusterResources(ctx context.Context, context ExpansionContext) ([]CollectorSpec, error) {
 	return []CollectorSpec{
 		{
-			Type: CollectorTypeClusterResources,
-			Name: "cluster-resources",
-			Spec: &troubleshootv1beta2.ClusterResources{},
+			Type:     CollectorTypeClusterResources,
+			Name:     "cluster-resources",
+			Spec:     &troubleshootv1beta2.ClusterResources{},
 			Priority: 95,
 			Source:   SourceFoundational,
 		},
@@ -330,8 +330,8 @@ func (re *ResourceExpander) expandSecrets(ctx context.Context, context Expansion
 				},
 				Namespace:      context.Namespace,
 				Selector:       []string{"*"}, // Select all secrets in namespace
-				IncludeValue:   false,      // Don't include secret values by default for security
-				IncludeAllData: false,      // Don't include secret data by default for security
+				IncludeValue:   false,         // Don't include secret values by default for security
+				IncludeAllData: false,         // Don't include secret data by default for security
 			},
 			Priority: 75,
 			Source:   SourceFoundational,
@@ -409,7 +409,7 @@ func (re *ResourceExpander) ValidateCollectorDependencies(collectors []Collector
 		if rule, exists := re.expansionRules[collector.Type]; exists {
 			for _, dependency := range rule.Dependencies {
 				if !collectorTypes[dependency] {
-					return fmt.Errorf("collector %s requires dependency %s which is not present", 
+					return fmt.Errorf("collector %s requires dependency %s which is not present",
 						collector.Type, dependency)
 				}
 			}
@@ -478,7 +478,7 @@ func (re *ResourceExpander) GetCollectorTypesForNamespace(namespace string, opts
 	var types []CollectorType
 
 	// Standard namespace-scoped collectors
-	types = append(types, 
+	types = append(types,
 		CollectorTypeLogs,
 		CollectorTypeConfigMaps,
 		CollectorTypeSecrets,

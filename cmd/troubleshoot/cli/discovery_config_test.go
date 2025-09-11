@@ -283,7 +283,7 @@ func TestMatchPattern(t *testing.T) {
 
 func TestSaveDiscoveryConfig(t *testing.T) {
 	config := getDefaultDiscoveryConfig()
-	
+
 	tempDir := t.TempDir()
 	configPath := filepath.Join(tempDir, "test-config.json")
 
@@ -310,7 +310,7 @@ func TestSaveDiscoveryConfig(t *testing.T) {
 
 func TestGetDiscoveryConfigPath(t *testing.T) {
 	path := GetDiscoveryConfigPath()
-	
+
 	if path == "" {
 		t.Error("GetDiscoveryConfigPath() should not return empty string")
 	}
@@ -331,7 +331,7 @@ func TestValidateDiscoveryConfig(t *testing.T) {
 		{
 			name: "valid config",
 			config: &DiscoveryConfig{
-				Version: "v1",
+				Version:  "v1",
 				Profiles: GetDiscoveryProfiles(),
 			},
 			wantErr: false,

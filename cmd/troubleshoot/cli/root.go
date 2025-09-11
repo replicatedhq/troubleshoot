@@ -96,7 +96,7 @@ If no arguments are provided, specs are automatically loaded from the cluster by
 	cmd.Flags().StringP("output", "o", "", "specify the output file path for the support bundle")
 	cmd.Flags().Bool("debug", false, "enable debug logging. This is equivalent to --v=0")
 	cmd.Flags().Bool("dry-run", false, "print support bundle spec without collecting anything")
-	
+
 	// Auto-discovery flags
 	cmd.Flags().Bool("auto", false, "enable auto-discovery of foundational collectors. When used with YAML specs, adds foundational collectors to YAML collectors. When used alone, collects only foundational data")
 	cmd.Flags().Bool("include-images", false, "include container image metadata collection when using auto-discovery")

@@ -12,12 +12,12 @@ import (
 
 func TestGetAutoDiscoveryConfig(t *testing.T) {
 	tests := []struct {
-		name         string
-		viperSetup   func(*viper.Viper)
-		wantEnabled  bool
-		wantImages   bool
-		wantRBAC     bool
-		wantProfile  string
+		name        string
+		viperSetup  func(*viper.Viper)
+		wantEnabled bool
+		wantImages  bool
+		wantRBAC    bool
+		wantProfile string
 	}{
 		{
 			name: "default config",
@@ -77,11 +77,11 @@ func TestGetAutoDiscoveryConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			v := viper.New()
-			
+
 			// Set defaults
 			v.SetDefault("rbac-check", true)
 			v.SetDefault("discovery-profile", "standard")
-			
+
 			// Apply test-specific setup
 			tt.viperSetup(v)
 
@@ -181,11 +181,11 @@ func TestValidateAutoDiscoveryFlags(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			v := viper.New()
-			
+
 			// Set defaults
 			v.SetDefault("rbac-check", true)
 			v.SetDefault("discovery-profile", "standard")
-			
+
 			// Apply test setup
 			tt.viperSetup(v)
 
@@ -296,8 +296,8 @@ func TestGetAutoDiscoveryMode(t *testing.T) {
 
 func TestCreateImageCollectionOptions(t *testing.T) {
 	tests := []struct {
-		name   string
-		config AutoDiscoveryConfig
+		name      string
+		config    AutoDiscoveryConfig
 		checkFunc func(t *testing.T, opts images.CollectionOptions)
 	}{
 		{

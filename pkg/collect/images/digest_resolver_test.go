@@ -7,11 +7,11 @@ import (
 func TestNewDigestResolver(t *testing.T) {
 	options := GetDefaultCollectionOptions()
 	resolver := NewDigestResolver(options)
-	
+
 	if resolver == nil {
 		t.Error("NewDigestResolver() returned nil")
 	}
-	
+
 	if resolver.registryFactory == nil {
 		t.Error("NewDigestResolver() registryFactory is nil")
 	}
@@ -137,7 +137,7 @@ func TestDigestResolver_NormalizeImageReference(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := resolver.NormalizeImageReference(tt.ref)
-			
+
 			if got.Registry != tt.want.Registry {
 				t.Errorf("NormalizeImageReference() registry = %v, want %v", got.Registry, tt.want.Registry)
 			}
@@ -162,7 +162,7 @@ func TestDigestResolver_getCredentialsForRegistry(t *testing.T) {
 			Password: "gcr-pass",
 		},
 		"https://registry-1.docker.io": {
-			Username: "docker-user", 
+			Username: "docker-user",
 			Password: "docker-pass",
 		},
 	}
@@ -266,7 +266,7 @@ func BenchmarkDigestResolver_ValidateDigest(b *testing.B) {
 
 func BenchmarkDigestResolver_NormalizeImageReference(b *testing.B) {
 	resolver := NewDigestResolver(GetDefaultCollectionOptions())
-	
+
 	refs := []ImageReference{
 		{Repository: "nginx"},
 		{Registry: "gcr.io", Repository: "project/app", Tag: "v1.0"},
