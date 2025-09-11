@@ -371,6 +371,9 @@ func (re *ResourceExpander) expandImageFacts(ctx context.Context, context Expans
 		return nil, fmt.Errorf("namespace required for image facts collector")
 	}
 
+	// Create placeholder data that indicates this will contain image facts JSON
+	placeholderData := fmt.Sprintf(`{"namespace": "%s", "description": "Container image facts and metadata", "type": "image-facts"}`, context.Namespace)
+
 	return []CollectorSpec{
 		{
 			Type:      CollectorTypeImageFacts,
@@ -381,7 +384,7 @@ func (re *ResourceExpander) expandImageFacts(ctx context.Context, context Expans
 					CollectorName: fmt.Sprintf("image-facts/%s", context.Namespace),
 				},
 				Name: fmt.Sprintf("image-facts-%s", context.Namespace),
-				Data: fmt.Sprintf("Image facts collection for namespace %s", context.Namespace),
+				Data: placeholderData,
 			},
 			Priority: 60,
 			Source:   SourceFoundational,

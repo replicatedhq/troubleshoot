@@ -233,10 +233,18 @@ func (nc *NamespaceImageCollector) CollectNamespaceImageFacts(ctx context.Contex
 
 // CreateImageFactsCollector creates a troubleshoot collector for image facts
 func CreateImageFactsCollector(namespace string, options CollectionOptions) (*troubleshootv1beta2.Collect, error) {
-	// Serialize the options for the collector
-	optionsData, err := json.Marshal(options)
+	// Create structured placeholder data that indicates this will contain image facts
+	placeholderData := map[string]interface{}{
+		"namespace":   namespace,
+		"description": "Container image facts and metadata for namespace " + namespace,
+		"type":        "image-facts",
+		"options":     options,
+	}
+
+	// Serialize the placeholder data to JSON
+	dataJSON, err := json.Marshal(placeholderData)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to serialize collection options")
+		return nil, errors.Wrap(err, "failed to serialize placeholder data")
 	}
 
 	collect := &troubleshootv1beta2.Collect{
@@ -245,7 +253,7 @@ func CreateImageFactsCollector(namespace string, options CollectionOptions) (*tr
 				CollectorName: fmt.Sprintf("image-facts/%s", namespace),
 			},
 			Name: fmt.Sprintf("image-facts-%s", namespace),
-			Data: fmt.Sprintf("Image facts collection options: %s", string(optionsData)),
+			Data: string(dataJSON),
 		},
 	}
 
