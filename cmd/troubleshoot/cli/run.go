@@ -364,7 +364,7 @@ func loadSpecs(ctx context.Context, args []string, client kubernetes.Interface) 
 	if vp.GetBool("auto") && len(kinds.SupportBundlesV1Beta2) == 0 {
 		defaultSupportBundle := troubleshootv1beta2.SupportBundle{
 			TypeMeta: metav1.TypeMeta{
-				APIVersion: "troubleshoot.replicated.com/v1beta2",
+				APIVersion: "troubleshoot.sh/v1beta2",
 				Kind:       "SupportBundle",
 			},
 			ObjectMeta: metav1.ObjectMeta{

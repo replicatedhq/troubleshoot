@@ -17,7 +17,7 @@ import (
 
 // AutoDiscoveryConfig contains configuration for auto-discovery
 type AutoDiscoveryConfig struct {
-	Enabled                  bool
+	Enabled                 bool
 	IncludeImages           bool
 	RBACCheck               bool
 	Profile                 string
@@ -29,18 +29,18 @@ type AutoDiscoveryConfig struct {
 
 // DiscoveryProfile defines different levels of auto-discovery
 type DiscoveryProfile struct {
-	Name         string
-	Description  string
+	Name          string
+	Description   string
 	IncludeImages bool
-	RBACCheck    bool
-	MaxDepth     int
-	Timeout      time.Duration
+	RBACCheck     bool
+	MaxDepth      int
+	Timeout       time.Duration
 }
 
 // GetAutoDiscoveryConfig extracts auto-discovery configuration from viper
 func GetAutoDiscoveryConfig(v *viper.Viper) AutoDiscoveryConfig {
 	return AutoDiscoveryConfig{
-		Enabled:                  v.GetBool("auto"),
+		Enabled:                 v.GetBool("auto"),
 		IncludeImages:           v.GetBool("include-images"),
 		RBACCheck:               v.GetBool("rbac-check"),
 		Profile:                 v.GetString("discovery-profile"),
@@ -55,42 +55,42 @@ func GetAutoDiscoveryConfig(v *viper.Viper) AutoDiscoveryConfig {
 func GetDiscoveryProfiles() map[string]DiscoveryProfile {
 	return map[string]DiscoveryProfile{
 		"minimal": {
-			Name:         "minimal",
-			Description:  "Minimal collection: cluster info, basic logs",
+			Name:          "minimal",
+			Description:   "Minimal collection: cluster info, basic logs",
 			IncludeImages: false,
-			RBACCheck:    true,
-			MaxDepth:     1,
-			Timeout:      15 * time.Second,
+			RBACCheck:     true,
+			MaxDepth:      1,
+			Timeout:       15 * time.Second,
 		},
 		"standard": {
-			Name:         "standard",
-			Description:  "Standard collection: logs, configs, secrets, events",
+			Name:          "standard",
+			Description:   "Standard collection: logs, configs, secrets, events",
 			IncludeImages: false,
-			RBACCheck:    true,
-			MaxDepth:     2,
-			Timeout:      30 * time.Second,
+			RBACCheck:     true,
+			MaxDepth:      2,
+			Timeout:       30 * time.Second,
 		},
 		"comprehensive": {
-			Name:         "comprehensive",
-			Description:  "Comprehensive collection: everything + image metadata",
+			Name:          "comprehensive",
+			Description:   "Comprehensive collection: everything + image metadata",
 			IncludeImages: true,
-			RBACCheck:    true,
-			MaxDepth:     3,
-			Timeout:      60 * time.Second,
+			RBACCheck:     true,
+			MaxDepth:      3,
+			Timeout:       60 * time.Second,
 		},
 		"paranoid": {
-			Name:         "paranoid",
-			Description:  "Paranoid collection: maximum data with extended timeouts",
+			Name:          "paranoid",
+			Description:   "Paranoid collection: maximum data with extended timeouts",
 			IncludeImages: true,
-			RBACCheck:    true,
-			MaxDepth:     5,
-			Timeout:      120 * time.Second,
+			RBACCheck:     true,
+			MaxDepth:      5,
+			Timeout:       120 * time.Second,
 		},
 	}
 }
 
 // ApplyAutoDiscovery applies auto-discovery to the support bundle spec
-func ApplyAutoDiscovery(ctx context.Context, client kubernetes.Interface, restConfig *rest.Config, 
+func ApplyAutoDiscovery(ctx context.Context, client kubernetes.Interface, restConfig *rest.Config,
 	mainBundle *troubleshootv1beta2.SupportBundle, config AutoDiscoveryConfig, namespace string) error {
 
 	if !config.Enabled {
@@ -128,10 +128,24 @@ func ApplyAutoDiscovery(ctx context.Context, client kubernetes.Interface, restCo
 		discoveryOpts.Namespaces = []string{namespace}
 	} else {
 		// Use include/exclude patterns if specified
-		if len(config.IncludeNamespaces) > 0 {
-			discoveryOpts.Namespaces = config.IncludeNamespaces
+		if len(config.IncludeNamespaces) > 0 || len(config.ExcludeNamespaces) > 0 {
+			// Create namespace scanner to resolve include/exclude patterns
+			nsScanner := autodiscovery.NewNamespaceScanner(client)
+			scanOpts := autodiscovery.ScanOptions{
+				IncludePatterns:         config.IncludeNamespaces,
+				ExcludePatterns:         config.ExcludeNamespaces,
+				IncludeSystemNamespaces: config.IncludeSystemNamespaces,
+			}
+
+			targetNamespaces, err := nsScanner.GetTargetNamespaces(ctx, nil, scanOpts)
+			if err != nil {
+				klog.Warningf("Failed to resolve namespace patterns, using all accessible namespaces: %v", err)
+				// Continue with empty namespace list (all namespaces)
+			} else {
+				discoveryOpts.Namespaces = targetNamespaces
+				klog.V(2).Infof("Resolved namespace patterns to %d namespaces: %v", len(targetNamespaces), targetNamespaces)
+			}
 		}
-		// TODO: Apply exclude patterns in the discoverer
 	}
 
 	// Create autodiscovery instance
@@ -148,7 +162,7 @@ func ApplyAutoDiscovery(ctx context.Context, client kubernetes.Interface, restCo
 	if hasYAMLCollectors {
 		// Path 2: Augment existing YAML collectors with foundational collectors
 		klog.V(2).Info("Auto-discovery: Augmenting YAML collectors with foundational collectors (Path 2)")
-		
+
 		// Convert existing collectors to autodiscovery format
 		yamlCollectors, err := convertToCollectorSpecs(mainBundle.Spec.Collectors)
 		if err != nil {
@@ -163,7 +177,7 @@ func ApplyAutoDiscovery(ctx context.Context, client kubernetes.Interface, restCo
 	} else {
 		// Path 1: Pure foundational discovery
 		klog.V(2).Info("Auto-discovery: Collecting foundational data only (Path 1)")
-		
+
 		discoveryOpts.FoundationalOnly = true
 		autoCollectors, err = discoverer.DiscoverFoundational(ctx, discoveryOpts)
 		if err != nil {
@@ -272,7 +286,7 @@ func ValidateAutoDiscoveryFlags(v *viper.Viper) error {
 	// Validate namespace patterns
 	includeNS := v.GetStringSlice("include-namespaces")
 	excludeNS := v.GetStringSlice("exclude-namespaces")
-	
+
 	if len(includeNS) > 0 && len(excludeNS) > 0 {
 		klog.Warning("Both include-namespaces and exclude-namespaces specified. Include patterns take precedence")
 	}
@@ -284,7 +298,7 @@ func ValidateAutoDiscoveryFlags(v *viper.Viper) error {
 func ShouldUseAutoDiscovery(v *viper.Viper, args []string) bool {
 	// Auto-discovery is enabled by the --auto flag
 	autoEnabled := v.GetBool("auto")
-	
+
 	if !autoEnabled {
 		return false
 	}
@@ -309,7 +323,7 @@ func GetAutoDiscoveryMode(args []string, autoEnabled bool) string {
 // CreateImageCollectionOptions creates image collection options from CLI config
 func CreateImageCollectionOptions(config AutoDiscoveryConfig) images.CollectionOptions {
 	options := images.GetDefaultCollectionOptions()
-	
+
 	// Configure based on profile and flags
 	profiles := GetDiscoveryProfiles()
 	if profile, exists := profiles[config.Profile]; exists {
@@ -326,7 +340,7 @@ func CreateImageCollectionOptions(config AutoDiscoveryConfig) images.CollectionO
 	// For auto-discovery, always continue on error to maximize collection
 	options.ContinueOnError = true
 	options.EnableCache = true
-	
+
 	return options
 }
 
@@ -337,22 +351,22 @@ func PrintAutoDiscoveryInfo(config AutoDiscoveryConfig, mode string) {
 	}
 
 	fmt.Printf("Auto-discovery enabled (mode: %s, profile: %s)\n", mode, config.Profile)
-	
+
 	if config.IncludeImages {
 		fmt.Println("  - Container image metadata collection enabled")
 	}
-	
+
 	if len(config.IncludeNamespaces) > 0 {
 		fmt.Printf("  - Including namespaces: %v\n", config.IncludeNamespaces)
 	}
-	
+
 	if len(config.ExcludeNamespaces) > 0 {
 		fmt.Printf("  - Excluding namespaces: %v\n", config.ExcludeNamespaces)
 	}
-	
+
 	if config.IncludeSystemNamespaces {
 		fmt.Println("  - System namespaces included")
 	}
-	
+
 	fmt.Printf("  - RBAC checking: %t\n", config.RBACCheck)
 }

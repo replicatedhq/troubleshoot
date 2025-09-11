@@ -101,7 +101,7 @@ func (d *Discoverer) AugmentWithFoundational(ctx context.Context, yamlCollectors
 	// Merge and deduplicate collectors
 	mergedCollectors := d.mergeAndDeduplicateCollectors(yamlSpecs, foundationalCollectors)
 
-	klog.V(2).Infof("Merged result: %d total collectors (%d YAML + %d foundational, deduplicated)", 
+	klog.V(2).Infof("Merged result: %d total collectors (%d YAML + %d foundational, deduplicated)",
 		len(mergedCollectors), len(yamlSpecs), len(foundationalCollectors))
 
 	return mergedCollectors, nil
@@ -164,9 +164,9 @@ func (d *Discoverer) generateClusterInfoCollectors() []CollectorSpec {
 			Source:   SourceFoundational,
 		},
 		{
-			Type: CollectorTypeClusterResources,
-			Name: "cluster-resources",
-			Spec: &troubleshootv1beta2.ClusterResources{},
+			Type:     CollectorTypeClusterResources,
+			Name:     "cluster-resources",
+			Spec:     &troubleshootv1beta2.ClusterResources{},
 			Priority: 100,
 			Source:   SourceFoundational,
 		},
@@ -215,36 +215,36 @@ func (d *Discoverer) generateNamespacedCollectors(namespace string, opts Discove
 		Type:      CollectorTypeSecrets,
 		Name:      fmt.Sprintf("secrets-%s", namespace),
 		Namespace: namespace,
-			Spec: &troubleshootv1beta2.Secret{
-				CollectorMeta: troubleshootv1beta2.CollectorMeta{
-					CollectorName: fmt.Sprintf("secrets/%s", namespace),
-				},
-				Namespace:      namespace,
-				Selector:       []string{"*"}, // Select all secrets in namespace
-				IncludeValue:   false,      // Don't include secret values by default
-				IncludeAllData: false,      // Don't include secret data by default for security
+		Spec: &troubleshootv1beta2.Secret{
+			CollectorMeta: troubleshootv1beta2.CollectorMeta{
+				CollectorName: fmt.Sprintf("secrets/%s", namespace),
 			},
+			Namespace:      namespace,
+			Selector:       []string{"*"}, // Select all secrets in namespace
+			IncludeValue:   false,         // Don't include secret values by default
+			IncludeAllData: false,         // Don't include secret data by default for security
+		},
 		Priority: 70,
 		Source:   SourceFoundational,
 	})
 
-		// Add image facts collector if requested
-		if opts.IncludeImages {
-			collectors = append(collectors, CollectorSpec{
-				Type:      CollectorTypeImageFacts,
-				Name:      fmt.Sprintf("image-facts-%s", namespace),
-				Namespace: namespace,
-				Spec: &troubleshootv1beta2.Data{
-					CollectorMeta: troubleshootv1beta2.CollectorMeta{
-						CollectorName: fmt.Sprintf("image-facts/%s", namespace),
-					},
-					Name: fmt.Sprintf("image-facts-%s", namespace),
-					Data: fmt.Sprintf("Image facts collection for namespace %s", namespace),
+	// Add image facts collector if requested
+	if opts.IncludeImages {
+		collectors = append(collectors, CollectorSpec{
+			Type:      CollectorTypeImageFacts,
+			Name:      fmt.Sprintf("image-facts-%s", namespace),
+			Namespace: namespace,
+			Spec: &troubleshootv1beta2.Data{
+				CollectorMeta: troubleshootv1beta2.CollectorMeta{
+					CollectorName: fmt.Sprintf("image-facts/%s", namespace),
 				},
-				Priority: 60,
-				Source:   SourceFoundational,
-			})
-		}
+				Name: fmt.Sprintf("image-facts-%s", namespace),
+				Data: "", // Empty - actual image facts JSON data will be collected at runtime
+			},
+			Priority: 60,
+			Source:   SourceFoundational,
+		})
+	}
 
 	return collectors
 }
@@ -357,4 +357,3 @@ func (d *Discoverer) mergeAndDeduplicateCollectors(yamlCollectors, foundationalC
 
 	return result
 }
-
