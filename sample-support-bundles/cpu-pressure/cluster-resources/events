@@ -1,0 +1,41 @@
+[
+  {
+    "type": "Warning",
+    "reason": "FailedScheduling",
+    "message": "0/1 nodes are available: 1 Insufficient cpu.",
+    "involvedObject": {
+      "kind": "Pod",
+      "name": "cpu-hog-deployment-abc123",
+      "namespace": "production"
+    },
+    "firstTimestamp": "2023-10-15T14:45:00Z",
+    "lastTimestamp": "2023-10-15T14:55:00Z",
+    "count": 25
+  },
+  {
+    "type": "Warning", 
+    "reason": "Killing",
+    "message": "Stopping container web-container",
+    "involvedObject": {
+      "kind": "Pod",
+      "name": "web-app-7c8b9d4f2-xyz12",
+      "namespace": "production"
+    },
+    "firstTimestamp": "2023-10-15T14:32:20Z",
+    "lastTimestamp": "2023-10-15T14:32:21Z",
+    "count": 1
+  },
+  {
+    "type": "Warning",
+    "reason": "BackOff", 
+    "message": "Back-off restarting failed container",
+    "involvedObject": {
+      "kind": "Pod",
+      "name": "web-app-7c8b9d4f2-xyz12",
+      "namespace": "production"
+    },
+    "firstTimestamp": "2023-10-15T14:40:00Z",
+    "lastTimestamp": "2023-10-15T14:50:00Z",
+    "count": 8
+  }
+]

@@ -1,0 +1,71 @@
+[
+  {
+    "apiVersion": "v1",
+    "kind": "Pod",
+    "metadata": {
+      "name": "backend-api-5f8d9c7b-qr89s",
+      "namespace": "app-prod",
+      "labels": {
+        "app": "backend-api",
+        "version": "v3.2.1"
+      }
+    },
+    "spec": {
+      "containers": [
+        {
+          "name": "api-server",
+          "image": "mycompany/backend-api:v3.2.1",
+          "env": [
+            {
+              "name": "DATABASE_URL",
+              "valueFrom": {
+                "secretKeyRef": {
+                  "name": "db-credentials",
+                  "key": "url"
+                }
+              }
+            },
+            {
+              "name": "REDIS_HOST",
+              "value": "redis-service.cache"
+            }
+          ],
+          "resources": {
+            "requests": {
+              "cpu": "500m",
+              "memory": "1Gi"
+            },
+            "limits": {
+              "cpu": "1000m", 
+              "memory": "2Gi"
+            }
+          }
+        }
+      ]
+    },
+    "status": {
+      "phase": "Running",
+      "containerStatuses": [
+        {
+          "name": "api-server",
+          "ready": false,
+          "restartCount": 47,
+          "state": {
+            "waiting": {
+              "reason": "CrashLoopBackOff",
+              "message": "back-off 5m0s restarting failed container=api-server pod=backend-api-5f8d9c7b-qr89s_app-prod(12345678-abcd-1234-5678-123456789abc)"
+            }
+          },
+          "lastState": {
+            "terminated": {
+              "reason": "Error", 
+              "exitCode": 1,
+              "startedAt": "2023-10-15T15:42:30Z",
+              "finishedAt": "2023-10-15T15:42:35Z"
+            }
+          }
+        }
+      ]
+    }
+  }
+]

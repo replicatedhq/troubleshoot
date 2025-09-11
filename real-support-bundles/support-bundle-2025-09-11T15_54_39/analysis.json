@@ -1,0 +1,240 @@
+[
+    {
+        "name": "required.kubernetes.version",
+        "labels": {
+            "desiredPosition": "1",
+            "iconKey": "kubernetes_cluster_version",
+            "iconUri": "https://troubleshoot.sh/images/analyzer-icons/kubernetes.svg?w=16\u0026h=16"
+        },
+        "insight": {
+            "name": "required.kubernetes.version",
+            "labels": {
+                "iconKey": "kubernetes_cluster_version",
+                "iconUri": "https://troubleshoot.sh/images/analyzer-icons/kubernetes.svg?w=16\u0026h=16"
+            },
+            "primary": "Required Kubernetes Version",
+            "detail": "Kubernetes version is supported",
+            "severity": "debug"
+        },
+        "severity": "debug",
+        "analyzerSpec": ""
+    },
+    {
+        "name": "pod.default.backend.api.75fb46b7bd.xtkrh.status",
+        "labels": {
+            "desiredPosition": "1",
+            "iconKey": "",
+            "iconUri": ""
+        },
+        "insight": {
+            "name": "pod.default.backend.api.75fb46b7bd.xtkrh.status",
+            "labels": {
+                "iconKey": "",
+                "iconUri": ""
+            },
+            "primary": "Pod default/backend-api-75fb46b7bd-xtkrh status",
+            "detail": "Pod is in CrashLoopBackOff state",
+            "severity": "error"
+        },
+        "severity": "error",
+        "analyzerSpec": "",
+        "error": "Pod is in CrashLoopBackOff state",
+        "involvedObject": {
+            "kind": "Pod",
+            "namespace": "default",
+            "name": "backend-api-75fb46b7bd-xtkrh",
+            "apiVersion": "v1"
+        }
+    },
+    {
+        "name": "pod.default.cpu.intensive.app.7bcfc5d944.9479r.status",
+        "labels": {
+            "desiredPosition": "1",
+            "iconKey": "",
+            "iconUri": ""
+        },
+        "insight": {
+            "name": "pod.default.cpu.intensive.app.7bcfc5d944.9479r.status",
+            "labels": {
+                "iconKey": "",
+                "iconUri": ""
+            },
+            "primary": "Pod default/cpu-intensive-app-7bcfc5d944-9479r status",
+            "detail": "Pods are running successfully",
+            "severity": "debug"
+        },
+        "severity": "debug",
+        "analyzerSpec": "",
+        "involvedObject": {
+            "kind": "Pod",
+            "namespace": "default",
+            "name": "cpu-intensive-app-7bcfc5d944-9479r",
+            "apiVersion": "v1"
+        }
+    },
+    {
+        "name": "pod.default.cpu.intensive.app.7bcfc5d944.hw2vc.status",
+        "labels": {
+            "desiredPosition": "1",
+            "iconKey": "",
+            "iconUri": ""
+        },
+        "insight": {
+            "name": "pod.default.cpu.intensive.app.7bcfc5d944.hw2vc.status",
+            "labels": {
+                "iconKey": "",
+                "iconUri": ""
+            },
+            "primary": "Pod default/cpu-intensive-app-7bcfc5d944-hw2vc status",
+            "detail": "Pod is pending scheduling",
+            "severity": "warn"
+        },
+        "severity": "warn",
+        "analyzerSpec": "",
+        "involvedObject": {
+            "kind": "Pod",
+            "namespace": "default",
+            "name": "cpu-intensive-app-7bcfc5d944-hw2vc",
+            "apiVersion": "v1"
+        }
+    },
+    {
+        "name": "pod.default.cpu.intensive.app.7bcfc5d944.n79rt.status",
+        "labels": {
+            "desiredPosition": "1",
+            "iconKey": "",
+            "iconUri": ""
+        },
+        "insight": {
+            "name": "pod.default.cpu.intensive.app.7bcfc5d944.n79rt.status",
+            "labels": {
+                "iconKey": "",
+                "iconUri": ""
+            },
+            "primary": "Pod default/cpu-intensive-app-7bcfc5d944-n79rt status",
+            "detail": "Pod is pending scheduling",
+            "severity": "warn"
+        },
+        "severity": "warn",
+        "analyzerSpec": "",
+        "involvedObject": {
+            "kind": "Pod",
+            "namespace": "default",
+            "name": "cpu-intensive-app-7bcfc5d944-n79rt",
+            "apiVersion": "v1"
+        }
+    },
+    {
+        "name": "pod.default.memory.hungry.app.59c695fbfb.4vnq4.status",
+        "labels": {
+            "desiredPosition": "1",
+            "iconKey": "",
+            "iconUri": ""
+        },
+        "insight": {
+            "name": "pod.default.memory.hungry.app.59c695fbfb.4vnq4.status",
+            "labels": {
+                "iconKey": "",
+                "iconUri": ""
+            },
+            "primary": "Pod default/memory-hungry-app-59c695fbfb-4vnq4 status",
+            "detail": "Pods are running successfully",
+            "severity": "debug"
+        },
+        "severity": "debug",
+        "analyzerSpec": "",
+        "involvedObject": {
+            "kind": "Pod",
+            "namespace": "default",
+            "name": "memory-hungry-app-59c695fbfb-4vnq4",
+            "apiVersion": "v1"
+        }
+    },
+    {
+        "name": "pod.default.memory.hungry.app.59c695fbfb.xsvn8.status",
+        "labels": {
+            "desiredPosition": "1",
+            "iconKey": "",
+            "iconUri": ""
+        },
+        "insight": {
+            "name": "pod.default.memory.hungry.app.59c695fbfb.xsvn8.status",
+            "labels": {
+                "iconKey": "",
+                "iconUri": ""
+            },
+            "primary": "Pod default/memory-hungry-app-59c695fbfb-xsvn8 status",
+            "detail": "Pods are running successfully",
+            "severity": "debug"
+        },
+        "severity": "debug",
+        "analyzerSpec": "",
+        "involvedObject": {
+            "kind": "Pod",
+            "namespace": "default",
+            "name": "memory-hungry-app-59c695fbfb-xsvn8",
+            "apiVersion": "v1"
+        }
+    },
+    {
+        "name": "backend.api.status",
+        "labels": {
+            "desiredPosition": "1",
+            "iconKey": "kubernetes_deployment_status",
+            "iconUri": "https://troubleshoot.sh/images/analyzer-icons/deployment-status.svg?w=17\u0026h=17"
+        },
+        "insight": {
+            "name": "backend.api.status",
+            "labels": {
+                "iconKey": "kubernetes_deployment_status",
+                "iconUri": "https://troubleshoot.sh/images/analyzer-icons/deployment-status.svg?w=17\u0026h=17"
+            },
+            "primary": "backend-api Status",
+            "detail": "Backend API deployment has no available replicas",
+            "severity": "error"
+        },
+        "severity": "error",
+        "analyzerSpec": "",
+        "error": "Backend API deployment has no available replicas"
+    },
+    {
+        "name": "memory.hungry.app.status",
+        "labels": {
+            "desiredPosition": "1",
+            "iconKey": "kubernetes_deployment_status",
+            "iconUri": "https://troubleshoot.sh/images/analyzer-icons/deployment-status.svg?w=17\u0026h=17"
+        },
+        "insight": {
+            "name": "memory.hungry.app.status",
+            "labels": {
+                "iconKey": "kubernetes_deployment_status",
+                "iconUri": "https://troubleshoot.sh/images/analyzer-icons/deployment-status.svg?w=17\u0026h=17"
+            },
+            "primary": "memory-hungry-app Status",
+            "detail": "Memory test app deployment is healthy",
+            "severity": "debug"
+        },
+        "severity": "debug",
+        "analyzerSpec": ""
+    },
+    {
+        "name": "cpu.intensive.app.status",
+        "labels": {
+            "desiredPosition": "1",
+            "iconKey": "kubernetes_deployment_status",
+            "iconUri": "https://troubleshoot.sh/images/analyzer-icons/deployment-status.svg?w=17\u0026h=17"
+        },
+        "insight": {
+            "name": "cpu.intensive.app.status",
+            "labels": {
+                "iconKey": "kubernetes_deployment_status",
+                "iconUri": "https://troubleshoot.sh/images/analyzer-icons/deployment-status.svg?w=17\u0026h=17"
+            },
+            "primary": "cpu-intensive-app Status",
+            "detail": "CPU intensive app is below desired replicas - possible resource constraints",
+            "severity": "warn"
+        },
+        "severity": "warn",
+        "analyzerSpec": ""
+    }
+]

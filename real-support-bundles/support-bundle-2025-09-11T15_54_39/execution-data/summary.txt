@@ -1,0 +1,27 @@
+============ Collectors summary =============
+Succeeded (S), eXcluded (X), Failed (F)
+=============================================
+cluster-resources (S)         : 34,494ms
+logs/app=cpu-hog (S)          : 1,486ms
+logs/app=memory-test (S)      : 1,188ms
+exec (S)                      : 961ms
+logs/app=backend-api (S)      : 881ms
+cluster-info (S)              : 189ms
+exec/name=metrics-server* (S) : 152ms
+configmap (S)                 : 0ms
+secret (S)                    : 0ms
+
+============ Redactors summary =============
+In-cluster collectors : 551ms
+
+============= Analyzers summary =============
+Succeeded (S), eXcluded (X), Failed (F)
+=============================================
+Cluster Pod Status (S)                          : 3ms
+Node Resource Usage (F)                         : 0ms
+default/backend-api Deployment Status (S)       : 0ms
+default/cpu-intensive-app Deployment Status (S) : 0ms
+default/memory-hungry-app Deployment Status (S) : 0ms
+Required Kubernetes Version (S)                 : 0ms
+
+Duration: 43,188ms

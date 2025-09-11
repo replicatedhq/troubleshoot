@@ -1,0 +1,15 @@
+2023-10-15T14:30:15.123Z [INFO] Starting nginx web server
+2023-10-15T14:30:15.845Z [INFO] Listening on port 80
+2023-10-15T14:31:22.442Z [WARN] High request volume detected: 1250 req/s
+2023-10-15T14:31:45.889Z [ERROR] Memory allocation failed: cannot allocate 64MB
+2023-10-15T14:31:46.001Z [WARN] GC pressure increasing, heap size: 89% of limit
+2023-10-15T14:32:10.234Z [ERROR] Request timeout: upstream server not responding
+2023-10-15T14:32:15.567Z [ERROR] Fatal: Out of memory
+2023-10-15T14:32:20.123Z [INFO] Received SIGTERM, shutting down gracefully
+2023-10-15T14:32:21.000Z [INFO] Process terminated
+2023-10-15T14:33:05.456Z [INFO] Starting nginx web server
+2023-10-15T14:33:05.789Z [INFO] Listening on port 80
+2023-10-15T14:33:45.234Z [WARN] High request volume detected: 1180 req/s
+2023-10-15T14:34:12.567Z [ERROR] Memory allocation failed: cannot allocate 48MB
+2023-10-15T14:34:55.890Z [ERROR] Fatal: Out of memory
+2023-10-15T14:35:01.123Z [INFO] Received SIGTERM, shutting down gracefully

@@ -1,0 +1,64 @@
+{
+  "kind": "StorageClassList",
+  "apiVersion": "storage.k8s.io/v1",
+  "metadata": {
+    "resourceVersion": "1454"
+  },
+  "items": [
+    {
+      "kind": "StorageClass",
+      "apiVersion": "storage.k8s.io/v1",
+      "metadata": {
+        "name": "local-path",
+        "uid": "adab6ca8-55b9-44d7-8cc9-8f5c01c42579",
+        "resourceVersion": "292",
+        "creationTimestamp": "2025-09-11T20:39:42Z",
+        "labels": {
+          "objectset.rio.cattle.io/hash": "183f35c65ffbc3064603f43f1580d8c68a2dabd4"
+        },
+        "annotations": {
+          "defaultVolumeType": "local",
+          "objectset.rio.cattle.io/applied": "H4sIAAAAAAAA/4yRz47UMAyHXwX53JYpnamqSBxg0V4QEhJoObuJOzVN4ypxi0areXeUMqDhwJ9j8ov9xZ+fARd+ophYAhhIKhHPVE1dqlhebjUUMHFwYODTj+jBY0pQwEyKDhXBPAOGIIrKElI+Ohpw9fokfp3p82UhMODFoocCpP9KVhNpFVkqi6qeMokz4i+5fAsUy/M2gYGpSXfJVhcv3nNwr984J+GfLQLOv/5T3sb9r6K0oM2V09pTmS5JaYbipzCbrVQ5ioGUdnmcypuJco/BgMaV4FqAx5787upP3BHTCAbqrhmak21Pw9Db5tAe20MzHJuhPnUH19m2w1cOe3fMTX+bbEEd8+USZeO8XIpgIGKwI8UMuHtWQMwD8PxRPNsLGHhHnjRr2fYdvuXgOJw/iMuAL8j6KPGRY9IHCWmdKcL1ewAAAP//KQ1Ko0kCAAA",
+          "objectset.rio.cattle.io/id": "",
+          "objectset.rio.cattle.io/owner-gvk": "k3s.cattle.io/v1, Kind=Addon",
+          "objectset.rio.cattle.io/owner-name": "local-storage",
+          "objectset.rio.cattle.io/owner-namespace": "kube-system",
+          "storageclass.kubernetes.io/is-default-class": "true"
+        },
+        "managedFields": [
+          {
+            "manager": "deploy@c9b7eea91",
+            "operation": "Update",
+            "apiVersion": "storage.k8s.io/v1",
+            "time": "2025-09-11T20:39:42Z",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:metadata": {
+                "f:annotations": {
+                  ".": {},
+                  "f:defaultVolumeType": {},
+                  "f:objectset.rio.cattle.io/applied": {},
+                  "f:objectset.rio.cattle.io/id": {},
+                  "f:objectset.rio.cattle.io/owner-gvk": {},
+                  "f:objectset.rio.cattle.io/owner-name": {},
+                  "f:objectset.rio.cattle.io/owner-namespace": {},
+                  "f:storageclass.kubernetes.io/is-default-class": {}
+                },
+                "f:labels": {
+                  ".": {},
+                  "f:objectset.rio.cattle.io/hash": {}
+                }
+              },
+              "f:provisioner": {},
+              "f:reclaimPolicy": {},
+              "f:volumeBindingMode": {}
+            }
+          }
+        ]
+      },
+      "provisioner": "rancher.io/local-path",
+      "reclaimPolicy": "Delete",
+      "volumeBindingMode": "WaitForFirstConsumer"
+    }
+  ]
+}

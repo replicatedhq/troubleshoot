@@ -1,0 +1,3 @@
+[
+  "invalid resource name \"kube-system/coredns\": [may not contain '/']"
+]

@@ -1,0 +1,23 @@
+2023-10-15T15:42:30.123Z [INFO] Starting Backend API Server v3.2.1
+2023-10-15T15:42:30.456Z [INFO] Loading configuration...
+2023-10-15T15:42:30.789Z [INFO] Environment: production
+2023-10-15T15:42:31.012Z [INFO] Initializing database connection...
+2023-10-15T15:42:31.234Z [ERROR] Failed to connect to database: dial tcp 10.96.1.45:5432: connect: connection refused
+2023-10-15T15:42:31.567Z [ERROR] Database connection failed after 3 retries
+2023-10-15T15:42:31.890Z [INFO] Attempting Redis connection...
+2023-10-15T15:42:32.123Z [ERROR] Failed to resolve Redis host: redis-service.cache: no such host
+2023-10-15T15:42:32.456Z [ERROR] Redis connection failed
+2023-10-15T15:42:32.789Z [FATAL] Cannot start server: required dependencies unavailable
+2023-10-15T15:42:32.890Z [ERROR] Startup failed - exiting with code 1
+--- Container Restart #47 ---
+2023-10-15T15:47:35.123Z [INFO] Starting Backend API Server v3.2.1
+2023-10-15T15:47:35.456Z [INFO] Loading configuration...
+2023-10-15T15:47:35.789Z [INFO] Environment: production
+2023-10-15T15:47:36.012Z [INFO] Initializing database connection...
+2023-10-15T15:47:36.234Z [ERROR] Failed to connect to database: dial tcp 10.96.1.45:5432: connect: connection refused
+2023-10-15T15:47:36.567Z [ERROR] Database connection failed after 3 retries
+2023-10-15T15:47:36.890Z [INFO] Attempting Redis connection...
+2023-10-15T15:47:37.123Z [ERROR] Failed to resolve Redis host: redis-service.cache: no such host
+2023-10-15T15:47:37.456Z [ERROR] Redis connection failed
+2023-10-15T15:47:37.789Z [FATAL] Cannot start server: required dependencies unavailable
+2023-10-15T15:47:37.890Z [ERROR] Startup failed - exiting with code 1

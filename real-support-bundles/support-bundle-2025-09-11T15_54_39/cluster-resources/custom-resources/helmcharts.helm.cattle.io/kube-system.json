@@ -1,0 +1,255 @@
+[
+  {
+    "apiVersion": "helm.cattle.io/v1",
+    "kind": "HelmChart",
+    "metadata": {
+      "annotations": {
+        "helmcharts.cattle.io/managed-by": "helm-controller",
+        "objectset.rio.cattle.io/applied": "H4sIAAAAAAAA/4yRX6vTQBDFv0oYuE+mSds0tnfBh3otKBdErn+eCjLJTpo1m90lM6mUku8uGwUVsfq2f87+ztk5V8BgPtHAxjtQ0JLtsxpFLGXG5+cVpNAZp0HBa7L9Q4uDQAo9CWoUBHUFdM4LivGO49ZXX6gWJskG439BmciA9K/3/qujYXE6d6CgK/i3EGnyaJx+sdfau38iHPYECmRAakz3X3IOWMc33VjRgi8s1MOUgsWK7M1PtcgtKNDlBota0+6+rNcNloVeVuVqU+5wi7S6XxfbYkvN8yJC/4h3IwAHqqN9PY9dQSsSWOX53fXx48vD09vDh8P7z/t3b6a7nGMFdT4rOf9BXxSbbJ2tno1hXiwhBSaJxJP1Fdrsu9UranC08kQnwzJcYk9TCme0I/GDd0IummsK1l96cqKOLkmC1/ufzc9HSRIG35O0NHKcTvCDqOQIu+VufYRZAdP0LQAA//+aWOIucgIAAA",
+        "objectset.rio.cattle.io/id": "",
+        "objectset.rio.cattle.io/owner-gvk": "k3s.cattle.io/v1, Kind=Addon",
+        "objectset.rio.cattle.io/owner-name": "traefik",
+        "objectset.rio.cattle.io/owner-namespace": "kube-system"
+      },
+      "creationTimestamp": "2025-09-11T20:39:43Z",
+      "finalizers": [
+        "wrangler.cattle.io/on-helm-chart-remove"
+      ],
+      "generation": 1,
+      "labels": {
+        "objectset.rio.cattle.io/hash": "d54a3cde895c2fa53d0b51458a7ae1923737ef63"
+      },
+      "managedFields": [
+        {
+          "apiVersion": "helm.cattle.io/v1",
+          "fieldsType": "FieldsV1",
+          "fieldsV1": {
+            "f:metadata": {
+              "f:annotations": {
+                ".": {},
+                "f:objectset.rio.cattle.io/applied": {},
+                "f:objectset.rio.cattle.io/id": {},
+                "f:objectset.rio.cattle.io/owner-gvk": {},
+                "f:objectset.rio.cattle.io/owner-name": {},
+                "f:objectset.rio.cattle.io/owner-namespace": {}
+              },
+              "f:labels": {
+                ".": {},
+                "f:objectset.rio.cattle.io/hash": {}
+              }
+            },
+            "f:spec": {
+              ".": {},
+              "f:chart": {},
+              "f:failurePolicy": {},
+              "f:set": {
+                ".": {},
+                "f:global.systemDefaultRegistry": {}
+              },
+              "f:valuesContent": {}
+            }
+          },
+          "manager": "deploy@c9b7eea91",
+          "operation": "Update",
+          "time": "2025-09-11T20:39:43Z"
+        },
+        {
+          "apiVersion": "helm.cattle.io/v1",
+          "fieldsType": "FieldsV1",
+          "fieldsV1": {
+            "f:metadata": {
+              "f:annotations": {
+                "f:helmcharts.cattle.io/managed-by": {}
+              },
+              "f:finalizers": {
+                ".": {},
+                "v:\"wrangler.cattle.io/on-helm-chart-remove\"": {}
+              }
+            }
+          },
+          "manager": "helm-controller@c9b7eea91",
+          "operation": "Update",
+          "time": "2025-09-11T20:39:43Z"
+        },
+        {
+          "apiVersion": "helm.cattle.io/v1",
+          "fieldsType": "FieldsV1",
+          "fieldsV1": {
+            "f:status": {
+              ".": {},
+              "f:conditions": {
+                ".": {},
+                "k:{\"type\":\"Failed\"}": {
+                  ".": {},
+                  "f:status": {},
+                  "f:type": {}
+                },
+                "k:{\"type\":\"JobCreated\"}": {
+                  ".": {},
+                  "f:message": {},
+                  "f:reason": {},
+                  "f:status": {},
+                  "f:type": {}
+                }
+              },
+              "f:jobName": {}
+            }
+          },
+          "manager": "helm-controller@c9b7eea91",
+          "operation": "Update",
+          "subresource": "status",
+          "time": "2025-09-11T20:39:43Z"
+        }
+      ],
+      "name": "traefik",
+      "namespace": "kube-system",
+      "resourceVersion": "385",
+      "uid": "7ff8964c-73d4-438f-ba77-3748364a3be3"
+    },
+    "spec": {
+      "chart": "https://%{KUBERNETES_API}%/static/charts/traefik-34.2.1+up34.2.0.tgz",
+      "failurePolicy": "reinstall",
+      "set": {
+        "global.systemDefaultRegistry": ""
+      },
+      "valuesContent": "deployment:\n  podAnnotations:\n    prometheus.io/port: \"8082\"\n    prometheus.io/scrape: \"true\"\nproviders:\n  kubernetesIngress:\n    publishedService:\n      enabled: true\npriorityClassName: \"system-cluster-critical\"\nimage:\n  repository: \"rancher/mirrored-library-traefik\"\n  tag: \"3.3.6\"\ntolerations:\n- key: \"CriticalAddonsOnly\"\n  operator: \"Exists\"\n- key: \"node-role.kubernetes.io/control-plane\"\n  operator: \"Exists\"\n  effect: \"NoSchedule\"\n- key: \"node-role.kubernetes.io/master\"\n  operator: \"Exists\"\n  effect: \"NoSchedule\"\nservice:\n  ipFamilyPolicy: \"PreferDualStack\""
+    },
+    "status": {
+      "conditions": [
+        {
+          "message": "Applying HelmChart using Job kube-system/helm-install-traefik",
+          "reason": "Job created",
+          "status": "True",
+          "type": "JobCreated"
+        },
+        {
+          "status": "False",
+          "type": "Failed"
+        }
+      ],
+      "jobName": "helm-install-traefik"
+    }
+  },
+  {
+    "apiVersion": "helm.cattle.io/v1",
+    "kind": "HelmChart",
+    "metadata": {
+      "annotations": {
+        "helmcharts.cattle.io/managed-by": "helm-controller",
+        "objectset.rio.cattle.io/applied": "H4sIAAAAAAAA/4yRTU/DMAyG/wqytBP9oEvLtkgcBpoEmoQQX1fkJh4NbZOq8YZQ1f+OMi7bYcAxyZvHj+0BsDOv1HvjLEioqGkThcwNJcaluwwiqI3VIOGWmvamwp4hgpYYNTKCHACtdYxsnPXh6MoPUuyJk964A5QJDIhOvrtPS338vqtBQi38kUR0tjZWXy21dvZPhMWWQAL3SBtT/yvuO1ThT70tKfZfnqmFMYIGS2p+bapCX4EEXeQolKb5olDTDRZCX5RFlhdznCFli6mYiRltLkWAHuvFqtfwc3lCwnekgoLaj15Cxdx5maaTYf1yvXq8Xz2vnt6WD3fjJPVhDSrdJ316UCEWeTJNsvNtJ3IYx+8AAAD//y0sY6z0AQAA",
+        "objectset.rio.cattle.io/id": "",
+        "objectset.rio.cattle.io/owner-gvk": "k3s.cattle.io/v1, Kind=Addon",
+        "objectset.rio.cattle.io/owner-name": "traefik",
+        "objectset.rio.cattle.io/owner-namespace": "kube-system"
+      },
+      "creationTimestamp": "2025-09-11T20:39:43Z",
+      "finalizers": [
+        "wrangler.cattle.io/on-helm-chart-remove"
+      ],
+      "generation": 1,
+      "labels": {
+        "objectset.rio.cattle.io/hash": "d54a3cde895c2fa53d0b51458a7ae1923737ef63"
+      },
+      "managedFields": [
+        {
+          "apiVersion": "helm.cattle.io/v1",
+          "fieldsType": "FieldsV1",
+          "fieldsV1": {
+            "f:metadata": {
+              "f:annotations": {
+                ".": {},
+                "f:objectset.rio.cattle.io/applied": {},
+                "f:objectset.rio.cattle.io/id": {},
+                "f:objectset.rio.cattle.io/owner-gvk": {},
+                "f:objectset.rio.cattle.io/owner-name": {},
+                "f:objectset.rio.cattle.io/owner-namespace": {}
+              },
+              "f:labels": {
+                ".": {},
+                "f:objectset.rio.cattle.io/hash": {}
+              }
+            },
+            "f:spec": {
+              ".": {},
+              "f:chart": {},
+              "f:failurePolicy": {}
+            }
+          },
+          "manager": "deploy@c9b7eea91",
+          "operation": "Update",
+          "time": "2025-09-11T20:39:43Z"
+        },
+        {
+          "apiVersion": "helm.cattle.io/v1",
+          "fieldsType": "FieldsV1",
+          "fieldsV1": {
+            "f:metadata": {
+              "f:annotations": {
+                "f:helmcharts.cattle.io/managed-by": {}
+              },
+              "f:finalizers": {
+                ".": {},
+                "v:\"wrangler.cattle.io/on-helm-chart-remove\"": {}
+              }
+            }
+          },
+          "manager": "helm-controller@c9b7eea91",
+          "operation": "Update",
+          "time": "2025-09-11T20:39:43Z"
+        },
+        {
+          "apiVersion": "helm.cattle.io/v1",
+          "fieldsType": "FieldsV1",
+          "fieldsV1": {
+            "f:status": {
+              ".": {},
+              "f:conditions": {
+                ".": {},
+                "k:{\"type\":\"Failed\"}": {
+                  ".": {},
+                  "f:status": {},
+                  "f:type": {}
+                },
+                "k:{\"type\":\"JobCreated\"}": {
+                  ".": {},
+                  "f:message": {},
+                  "f:reason": {},
+                  "f:status": {},
+                  "f:type": {}
+                }
+              },
+              "f:jobName": {}
+            }
+          },
+          "manager": "helm-controller@c9b7eea91",
+          "operation": "Update",
+          "subresource": "status",
+          "time": "2025-09-11T20:39:43Z"
+        }
+      ],
+      "name": "traefik-crd",
+      "namespace": "kube-system",
+      "resourceVersion": "386",
+      "uid": "23f11719-76b9-432e-b150-667c5b341084"
+    },
+    "spec": {
+      "chart": "https://%{KUBERNETES_API}%/static/charts/traefik-crd-34.2.1+up34.2.0.tgz",
+      "failurePolicy": "reinstall"
+    },
+    "status": {
+      "conditions": [
+        {
+          "message": "Applying HelmChart using Job kube-system/helm-install-traefik-crd",
+          "reason": "Job created",
+          "status": "True",
+          "type": "JobCreated"
+        },
+        {
+          "status": "False",
+          "type": "Failed"
+        }
+      ],
+      "jobName": "helm-install-traefik-crd"
+    }
+  }
+]

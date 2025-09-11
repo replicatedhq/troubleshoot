@@ -1,0 +1,6 @@
+Starting Backend API Server v3.2.1
+Environment: production
+Initializing database connection...
+nc: bad address 'postgres-service.database'
+ERROR: Failed to connect to database: connection refused
+Database connection failed after 3 retries

@@ -1,0 +1,391 @@
+{
+  "kind": "ConfigMapList",
+  "apiVersion": "v1",
+  "metadata": {
+    "resourceVersion": "1459"
+  },
+  "items": [
+    {
+      "kind": "ConfigMap",
+      "apiVersion": "v1",
+      "metadata": {
+        "name": "chart-content-traefik",
+        "namespace": "kube-system",
+        "uid": "cd159565-ee1c-4104-b281-03280228c29a",
+        "resourceVersion": "374",
+        "creationTimestamp": "2025-09-11T20:39:43Z",
+        "labels": {
+          "objectset.rio.cattle.io/hash": "c0f97ea7a25e3dec71957c7a3241a38f3e5fae5f"
+        },
+        "annotations": {
+          "objectset.rio.cattle.io/applied": "H4sIAAAAAAAA/4yST4vbMBDFv0qZs5TWkR05gp7SQ6GUQim9lB7G8ihWLUtGUlKW4O++2Bs2YUN296g/85s3780JcLS/KSYbPCg4FsCgt74FBbvgjd1/xxEYDJSxxYygToDeh4zZBp/mY2j+kc6J8irasNKYs6OVDR/tzOjIDVwHn2NwjiLXHcbMI+1tynFhALtLCP89Rb4/9mfQ1dOxYB++Wd9+/kpu2M3QNzkeBwIFOSIZ27/rexpRzzX9oSGeHlKmASYGOtIi/ZcdKGUcRlD+4BwDhw25V03pMHWgQH8yW0kocV2RaEnLYltJLVGsywJFbQRVBqkyc7ez7ifnZivJZ36Z4p5OBsscP8lQJK8pgfrzIuwbT4FB44Luf8yVX8jREpAy6BIxuMT4fHXelOsQbmw+LIsgjam3m1JzKdqSl6I2vEEpuZBlLTYlioYETH+n6TEAAP//uR72cJECAAA",
+          "objectset.rio.cattle.io/id": "helm-controller-chart-registration",
+          "objectset.rio.cattle.io/owner-gvk": "helm.cattle.io/v1, Kind=HelmChart",
+          "objectset.rio.cattle.io/owner-name": "traefik",
+          "objectset.rio.cattle.io/owner-namespace": "kube-system"
+        },
+        "ownerReferences": [
+          {
+            "apiVersion": "helm.cattle.io/v1",
+            "kind": "HelmChart",
+            "name": "traefik",
+            "uid": "7ff8964c-73d4-438f-ba77-3748364a3be3",
+            "controller": false,
+            "blockOwnerDeletion": false
+          }
+        ],
+        "managedFields": [
+          {
+            "manager": "helm-controller@c9b7eea91",
+            "operation": "Update",
+            "apiVersion": "v1",
+            "time": "2025-09-11T20:39:43Z",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:metadata": {
+                "f:annotations": {
+                  ".": {},
+                  "f:objectset.rio.cattle.io/applied": {},
+                  "f:objectset.rio.cattle.io/id": {},
+                  "f:objectset.rio.cattle.io/owner-gvk": {},
+                  "f:objectset.rio.cattle.io/owner-name": {},
+                  "f:objectset.rio.cattle.io/owner-namespace": {}
+                },
+                "f:labels": {
+                  ".": {},
+                  "f:objectset.rio.cattle.io/hash": {}
+                },
+                "f:ownerReferences": {
+                  ".": {},
+                  "k:{\"uid\":\"7ff8964c-73d4-438f-ba77-3748364a3be3\"}": {}
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "ConfigMap",
+      "apiVersion": "v1",
+      "metadata": {
+        "name": "chart-content-traefik-crd",
+        "namespace": "kube-system",
+        "uid": "2533379b-6849-462d-ba49-0f2ac0b83621",
+        "resourceVersion": "376",
+        "creationTimestamp": "2025-09-11T20:39:43Z",
+        "labels": {
+          "objectset.rio.cattle.io/hash": "48ff3d5c3117b372fcdca509795f9f2702af0592"
+        },
+        "annotations": {
+          "objectset.rio.cattle.io/applied": "H4sIAAAAAAAA/4ySze7TMBDEXwXt2S5xPprGEqdyQEIICSEuiMPaWTcmjh3ZbhGq8u4ooYLyUfgfbWt+np3ZK+BsP1BMNniQcBHAYLS+BwnH4I09vcEZGEyUsceMIK+A3oeM2Qaf1mNQn0nnRHkXbdhpzNnRzobndmUM5Caug88xOEeR6wFj5pFONuW4MYA9JIQvniI/XcYb6O7pItiz19b3L16Rm44r9L8cjxOBhByRjB25jv2TJGlGverGsyKevqZMEywMdKTN/ns7Uco4zSD92TkGDhW5fwYzYBpAQn0wpuobXQnRqqotje41NkXXdo3pTNkWJZqi6cr1t5v37+mtcZLP/NdJHnllsM3yjgxF8poSyI+/lf5HtsBAuaDHt6vyJTnaipIGXSIGP+v8cXXbmPsy/hr3eVuKsjJCtKLj7V51vK5K4ko0Bd/vW92oqhbFoYbl07J8CwAA//8P4YoQnQIAAA",
+          "objectset.rio.cattle.io/id": "helm-controller-chart-registration",
+          "objectset.rio.cattle.io/owner-gvk": "helm.cattle.io/v1, Kind=HelmChart",
+          "objectset.rio.cattle.io/owner-name": "traefik-crd",
+          "objectset.rio.cattle.io/owner-namespace": "kube-system"
+        },
+        "ownerReferences": [
+          {
+            "apiVersion": "helm.cattle.io/v1",
+            "kind": "HelmChart",
+            "name": "traefik-crd",
+            "uid": "23f11719-76b9-432e-b150-667c5b341084",
+            "controller": false,
+            "blockOwnerDeletion": false
+          }
+        ],
+        "managedFields": [
+          {
+            "manager": "helm-controller@c9b7eea91",
+            "operation": "Update",
+            "apiVersion": "v1",
+            "time": "2025-09-11T20:39:43Z",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:metadata": {
+                "f:annotations": {
+                  ".": {},
+                  "f:objectset.rio.cattle.io/applied": {},
+                  "f:objectset.rio.cattle.io/id": {},
+                  "f:objectset.rio.cattle.io/owner-gvk": {},
+                  "f:objectset.rio.cattle.io/owner-name": {},
+                  "f:objectset.rio.cattle.io/owner-namespace": {}
+                },
+                "f:labels": {
+                  ".": {},
+                  "f:objectset.rio.cattle.io/hash": {}
+                },
+                "f:ownerReferences": {
+                  ".": {},
+                  "k:{\"uid\":\"23f11719-76b9-432e-b150-667c5b341084\"}": {}
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "kind": "ConfigMap",
+      "apiVersion": "v1",
+      "metadata": {
+        "name": "cluster-dns",
+        "namespace": "kube-system",
+        "uid": "c12d0f23-cc1a-4e18-b2f5-692cd331d10f",
+        "resourceVersion": "249",
+        "creationTimestamp": "2025-09-11T20:39:40Z",
+        "managedFields": [
+          {
+            "manager": "k3s-supervisor@c9b7eea91",
+            "operation": "Update",
+            "apiVersion": "v1",
+            "time": "2025-09-11T20:39:40Z",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:data": {
+                ".": {},
+                "f:clusterDNS": {},
+                "f:clusterDomain": {}
+              }
+            }
+          }
+        ]
+      },
+      "data": {
+        "clusterDNS": "10.43.0.10",
+        "clusterDomain": "cluster.local"
+      }
+    },
+    {
+      "kind": "ConfigMap",
+      "apiVersion": "v1",
+      "metadata": {
+        "name": "coredns",
+        "namespace": "kube-system",
+        "uid": "a7b665b6-4c61-4da3-9762-5c857c628250",
+        "resourceVersion": "403",
+        "creationTimestamp": "2025-09-11T20:39:42Z",
+        "labels": {
+          "objectset.rio.cattle.io/hash": "bce283298811743a0386ab510f2f67ef74240c57"
+        },
+        "annotations": {
+          "objectset.rio.cattle.io/applied": "H4sIAAAAAAAA/4yQwWrzMBCEX0Xs2fEf20nsX9BDybH02lMva2kdq1Z2g6SkBJN3L8IUCiVtbyNGOzvfzoAn90IhOmHQcKmgAIsJQc+wl0CD8wQaSr1t1PzKSilFIUiIix4JfRoXHQjtdZHTuafAlCgq488xUSi9wK2AybEFDXvhwR2e8QQFHCnh50ZkloTJCcf8lP6NTIqUyuCkNJiSp9LJP5czoLjryztTWB0uE2iYmvjFuVSFenJsHx6tFf41gvGY6Y0Eshz/9D2e0OSZfIJVvMZExwzusSf/I9SIcQQNvaG6a+r/XVdV7abBddPtsN9W66Eedi0N7aberM22zaHf6t0tcPsIAAD//8Ix+PfoAQAA",
+          "objectset.rio.cattle.io/id": "",
+          "objectset.rio.cattle.io/owner-gvk": "k3s.cattle.io/v1, Kind=Addon",
+          "objectset.rio.cattle.io/owner-name": "coredns",
+          "objectset.rio.cattle.io/owner-namespace": "kube-system"
+        },
+        "managedFields": [
+          {
+            "manager": "deploy@c9b7eea91",
+            "operation": "Update",
+            "apiVersion": "v1",
+            "time": "2025-09-11T20:39:42Z",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:data": {
+                ".": {},
+                "f:Corefile": {}
+              },
+              "f:metadata": {
+                "f:annotations": {
+                  ".": {},
+                  "f:objectset.rio.cattle.io/applied": {},
+                  "f:objectset.rio.cattle.io/id": {},
+                  "f:objectset.rio.cattle.io/owner-gvk": {},
+                  "f:objectset.rio.cattle.io/owner-name": {},
+                  "f:objectset.rio.cattle.io/owner-namespace": {}
+                },
+                "f:labels": {
+                  ".": {},
+                  "f:objectset.rio.cattle.io/hash": {}
+                }
+              }
+            }
+          },
+          {
+            "manager": "k3s-supervisor@c9b7eea91",
+            "operation": "Update",
+            "apiVersion": "v1",
+            "time": "2025-09-11T20:39:44Z",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:data": {
+                "f:NodeHosts": {}
+              }
+            }
+          }
+        ]
+      },
+      "data": {
+        "Corefile": ".:53 {\n    errors\n    health\n    ready\n    kubernetes cluster.local in-addr.arpa ip6.arpa {\n      pods insecure\n      fallthrough in-addr.arpa ip6.arpa\n    }\n    hosts /etc/coredns/NodeHosts {\n      ttl 60\n      reload 15s\n      fallthrough\n    }\n    prometheus :9153\n    forward . /etc/resolv.conf\n    cache 30\n    loop\n    reload\n    loadbalance\n    import /etc/coredns/custom/*.override\n}\nimport /etc/coredns/custom/*.server\n",
+        "NodeHosts": "10.0.0.11 c9b7eea91\n"
+      }
+    },
+    {
+      "kind": "ConfigMap",
+      "apiVersion": "v1",
+      "metadata": {
+        "name": "extension-apiserver-authentication",
+        "namespace": "kube-system",
+        "uid": "2e1342ac-314d-40ab-bf4e-778d30f6805f",
+        "resourceVersion": "21",
+        "creationTimestamp": "2025-09-11T20:39:37Z",
+        "managedFields": [
+          {
+            "manager": "k3s",
+            "operation": "Update",
+            "apiVersion": "v1",
+            "time": "2025-09-11T20:39:37Z",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:data": {
+                ".": {},
+                "f:client-ca-file": {},
+                "f:requestheader-allowed-names": {},
+                "f:requestheader-client-ca-file": {},
+                "f:requestheader-extra-headers-prefix": {},
+                "f:requestheader-group-headers": {},
+                "f:requestheader-username-headers": {}
+              }
+            }
+          }
+        ]
+      },
+      "data": {
+        "client-ca-file": "-----BEGIN CERTIFICATE-----\nMIIBeDCCAR2gAwIBAgIBADAKBggqhkjOPQQDAjAjMSEwHwYDVQQDDBhrM3MtY2xp\nZW50LWNhQDE3NTc2MjMxNzEwHhcNMjUwOTExMjAzOTMxWhcNMzUwOTA5MjAzOTMx\nWjAjMSEwHwYDVQQDDBhrM3MtY2xpZW50LWNhQDE3NTc2MjMxNzEwWTATBgcqhkjO\nPQIBBggqhkjOPQMBBwNCAAQ0PkM/7IsMgYT9XL86UYzJoglxGWb4ukJa/wQYWFgV\n8Axh4QhWY7uQakVMSyKRXTMRJc2P1h3y8oGgmUnCyRFUo0IwQDAOBgNVHQ8BAf8E\nBAMCAqQwDwYDVR0TAQH/BAUwAwEB/zAdBgNVHQ4EFgQUEWQuP0NhXrYHgdOiWBCS\nNLM9GVowCgYIKoZIzj0EAwIDSQAwRgIhAM62S+reGu/9p6doKmlnYB6bzul/vUpX\n1whUOaZzTOY6AiEA/RW2hxdjvIMhvNzTRnXTe0RynNoL2x04+Dherovhhzk=\n-----END CERTIFICATE-----\n",
+        "requestheader-allowed-names": "[\"system:auth-proxy\"]",
+        "requestheader-client-ca-file": "-----BEGIN CERTIFICATE-----\nMIIBiDCCAS2gAwIBAgIBADAKBggqhkjOPQQDAjArMSkwJwYDVQQDDCBrM3MtcmVx\ndWVzdC1oZWFkZXItY2FAMTc1NzYyMzE3MTAeFw0yNTA5MTEyMDM5MzFaFw0zNTA5\nMDkyMDM5MzFaMCsxKTAnBgNVBAMMIGszcy1yZXF1ZXN0LWhlYWRlci1jYUAxNzU3\nNjIzMTcxMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEPllYI2njePMxc0FAwgP9\n3vjO6pfMwIP57EXYm0xxhvHS4T3hsRRWDCGtWoCM+3Qgh+W2rCIhVP4eQtDke3/z\nyaNCMEAwDgYDVR0PAQH/BAQDAgKkMA8GA1UdEwEB/wQFMAMBAf8wHQYDVR0OBBYE\nFF8sKF5iVyRz4XBtD1UtrtWzVr9wMAoGCCqGSM49BAMCA0kAMEYCIQDTelwDVx7g\nnsywwPDVzu6PmSXd+6G9Vli9J80USrNYcQIhANNQidoBYZeIh/OKSL7XmpVFDbxA\nDqQDN/wSWMAYafSd\n-----END CERTIFICATE-----\n",
+        "requestheader-extra-headers-prefix": "[\"X-Remote-Extra-\"]",
+        "requestheader-group-headers": "[\"X-Remote-Group\"]",
+        "requestheader-username-headers": "[\"X-Remote-User\"]"
+      }
+    },
+    {
+      "kind": "ConfigMap",
+      "apiVersion": "v1",
+      "metadata": {
+        "name": "kube-apiserver-legacy-service-account-token-tracking",
+        "namespace": "kube-system",
+        "uid": "7a2a5bd3-1a97-449a-85c6-64bd4181737d",
+        "resourceVersion": "8",
+        "creationTimestamp": "2025-09-11T20:39:37Z",
+        "managedFields": [
+          {
+            "manager": "k3s",
+            "operation": "Update",
+            "apiVersion": "v1",
+            "time": "2025-09-11T20:39:37Z",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:data": {
+                ".": {},
+                "f:since": {}
+              }
+            }
+          }
+        ]
+      },
+      "data": {
+        "since": "2025-09-11"
+      }
+    },
+    {
+      "kind": "ConfigMap",
+      "apiVersion": "v1",
+      "metadata": {
+        "name": "kube-root-ca.crt",
+        "namespace": "kube-system",
+        "uid": "9ed54bc4-0a36-4f82-a287-48791b5a1330",
+        "resourceVersion": "446",
+        "creationTimestamp": "2025-09-11T20:39:45Z",
+        "annotations": {
+          "kubernetes.io/description": "Contains a CA bundle that can be used to verify the kube-apiserver when using internal endpoints such as the internal service IP or kubernetes.default.svc. No other usage is guaranteed across distributions of Kubernetes clusters."
+        },
+        "managedFields": [
+          {
+            "manager": "k3s",
+            "operation": "Update",
+            "apiVersion": "v1",
+            "time": "2025-09-11T20:39:45Z",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:data": {
+                ".": {},
+                "f:ca.crt": {}
+              },
+              "f:metadata": {
+                "f:annotations": {
+                  ".": {},
+                  "f:kubernetes.io/description": {}
+                }
+              }
+            }
+          }
+        ]
+      },
+      "data": {
+        "ca.crt": "-----BEGIN CERTIFICATE-----\nMIIBdjCCAR2gAwIBAgIBADAKBggqhkjOPQQDAjAjMSEwHwYDVQQDDBhrM3Mtc2Vy\ndmVyLWNhQDE3NTc2MjMxNzEwHhcNMjUwOTExMjAzOTMxWhcNMzUwOTA5MjAzOTMx\nWjAjMSEwHwYDVQQDDBhrM3Mtc2VydmVyLWNhQDE3NTc2MjMxNzEwWTATBgcqhkjO\nPQIBBggqhkjOPQMBBwNCAATs8QVXqOSQ79p2DAWRiKQvKwtBU3BJFkiAlyuqnOW6\nin+DX1MBaU8eS2r+/CFhT3JjxN4y/CIT0Scyrct1gcSBo0IwQDAOBgNVHQ8BAf8E\nBAMCAqQwDwYDVR0TAQH/BAUwAwEB/zAdBgNVHQ4EFgQUozKi4C2qrfR+SPzjOdAt\n9KkCUJgwCgYIKoZIzj0EAwIDRwAwRAIgT0t6HUnBRGhPnW2CbaoqigfRWILN13n7\n5X+YbB2HxDkCICwJu/iE8dbIdKav8IHZhkclNl0DW+ImU2A2V0VoLqda\n-----END CERTIFICATE-----\n"
+      }
+    },
+    {
+      "kind": "ConfigMap",
+      "apiVersion": "v1",
+      "metadata": {
+        "name": "local-path-config",
+        "namespace": "kube-system",
+        "uid": "6549604a-a8a3-4707-aaf2-91bfdc43ab25",
+        "resourceVersion": "293",
+        "creationTimestamp": "2025-09-11T20:39:42Z",
+        "labels": {
+          "objectset.rio.cattle.io/hash": "183f35c65ffbc3064603f43f1580d8c68a2dabd4"
+        },
+        "annotations": {
+          "objectset.rio.cattle.io/applied": "H4sIAAAAAAAA/4ySX2vbMBTFv4p2t0c7deb8Q7CHsLSsLG1Cl/VlAnMtybFq+0pYSkoJ+e5DCYFurNsepR/n6JyDDoDOPOreG0vAYT+EBBQGBH4Aaaky28GTP6GDIMYEkFV6jaG+QyeA/4iXJ3JhAriAxfXN/PtyU6znmy/FzeqhuF/dF8vbb5vrRQEJ1Lp1ul9bNXjBrgX+KgNn+6GgxpDibG2VoE4HjIF4fISw05yd5amL2DstT0haSMDrsHPA4f27q9LQla8FeR1YqneCukaZnqUdy6bTKUsdE/Dh8LhaFovbh6MAQbLurGLTLLsQSCBo7JV9pjc8+46lffWbExwTiAWAw+fTgnfoIIFLkbgsEtmAwVjy8WjLJy2D12HQGzuQGEKrB8ZemegByZvcPpPu0+2+AQ5N7l+R/TBhXw2pT3OlLP3TIu4KHForsU19sD1u9X+JvEMZlc2u1Kl/8UF3sX6LpW7/Wq1GXwOH4Syv8rGcjKuqlHk2GU2yvBrl1XA8y9RMTmb4UWGpRtH0l5AOQ52ePyic0R+jHH8GAAD//7kWEdfgAgAA",
+          "objectset.rio.cattle.io/id": "",
+          "objectset.rio.cattle.io/owner-gvk": "k3s.cattle.io/v1, Kind=Addon",
+          "objectset.rio.cattle.io/owner-name": "local-storage",
+          "objectset.rio.cattle.io/owner-namespace": "kube-system"
+        },
+        "managedFields": [
+          {
+            "manager": "deploy@c9b7eea91",
+            "operation": "Update",
+            "apiVersion": "v1",
+            "time": "2025-09-11T20:39:42Z",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:data": {
+                ".": {},
+                "f:config.json": {},
+                "f:helperPod.yaml": {},
+                "f:setup": {},
+                "f:teardown": {}
+              },
+              "f:metadata": {
+                "f:annotations": {
+                  ".": {},
+                  "f:objectset.rio.cattle.io/applied": {},
+                  "f:objectset.rio.cattle.io/id": {},
+                  "f:objectset.rio.cattle.io/owner-gvk": {},
+                  "f:objectset.rio.cattle.io/owner-name": {},
+                  "f:objectset.rio.cattle.io/owner-namespace": {}
+                },
+                "f:labels": {
+                  ".": {},
+                  "f:objectset.rio.cattle.io/hash": {}
+                }
+              }
+            }
+          }
+        ]
+      },
+      "data": {
+        "config.json": "{\n  \"nodePathMap\":[\n  {\n    \"node\":\"DEFAULT_PATH_FOR_NON_LISTED_NODES\",\n    \"paths\":[\"/var/lib/rancher/k3s/storage\"]\n  }\n  ]\n}",
+        "helperPod.yaml": "apiVersion: v1\nkind: Pod\nmetadata:\n  name: helper-pod\nspec:\n  containers:\n  - name: helper-pod\n    image: \"rancher/mirrored-library-busybox:1.36.1\"\n    imagePullPolicy: IfNotPresent",
+        "setup": "#!/bin/sh\nset -eu\nmkdir -m 0777 -p \"${VOL_DIR}\"\nchmod 700 \"${VOL_DIR}/..\"",
+        "teardown": "#!/bin/sh\nset -eu\nrm -rf \"${VOL_DIR}\""
+      }
+    }
+  ]
+}

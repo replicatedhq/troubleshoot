@@ -1,0 +1,243 @@
+{
+  "kind": "EndpointsList",
+  "apiVersion": "v1",
+  "metadata": {
+    "resourceVersion": "1458"
+  },
+  "items": [
+    {
+      "kind": "Endpoints",
+      "apiVersion": "v1",
+      "metadata": {
+        "name": "backend-api-service",
+        "namespace": "default",
+        "uid": "66f1f4d7-e6fd-4082-911f-34497a62ccb9",
+        "resourceVersion": "1259",
+        "creationTimestamp": "2025-09-11T20:50:20Z",
+        "labels": {
+          "endpoints.kubernetes.io/managed-by": "endpoint-controller"
+        },
+        "managedFields": [
+          {
+            "manager": "k3s",
+            "operation": "Update",
+            "apiVersion": "v1",
+            "time": "2025-09-11T20:50:21Z",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:metadata": {
+                "f:labels": {
+                  ".": {},
+                  "f:endpoints.kubernetes.io/managed-by": {}
+                }
+              },
+              "f:subsets": {}
+            }
+          }
+        ]
+      },
+      "subsets": [
+        {
+          "notReadyAddresses": [
+            {
+              "ip": "10.42.0.16",
+              "nodeName": "c9b7eea91",
+              "targetRef": {
+                "kind": "Pod",
+                "namespace": "default",
+                "name": "backend-api-75fb46b7bd-xtkrh",
+                "uid": "0f6b8526-3587-433e-91fd-1d10ead72f88"
+              }
+            }
+          ],
+          "ports": [
+            {
+              "port": 8080,
+              "protocol": "TCP"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "Endpoints",
+      "apiVersion": "v1",
+      "metadata": {
+        "name": "cpu-hog-service",
+        "namespace": "default",
+        "uid": "c76c9fae-406c-45b2-b198-48b37fd10ffe",
+        "resourceVersion": "1309",
+        "creationTimestamp": "2025-09-11T20:50:21Z",
+        "labels": {
+          "endpoints.kubernetes.io/managed-by": "endpoint-controller"
+        },
+        "annotations": {
+          "endpoints.kubernetes.io/last-change-trigger-time": "2025-09-11T20:50:23Z"
+        },
+        "managedFields": [
+          {
+            "manager": "k3s",
+            "operation": "Update",
+            "apiVersion": "v1",
+            "time": "2025-09-11T20:50:23Z",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:metadata": {
+                "f:annotations": {
+                  ".": {},
+                  "f:endpoints.kubernetes.io/last-change-trigger-time": {}
+                },
+                "f:labels": {
+                  ".": {},
+                  "f:endpoints.kubernetes.io/managed-by": {}
+                }
+              },
+              "f:subsets": {}
+            }
+          }
+        ]
+      },
+      "subsets": [
+        {
+          "addresses": [
+            {
+              "ip": "10.42.0.17",
+              "nodeName": "c9b7eea91",
+              "targetRef": {
+                "kind": "Pod",
+                "namespace": "default",
+                "name": "cpu-intensive-app-7bcfc5d944-9479r",
+                "uid": "17c37b20-d39c-49eb-ae3c-51a0f7371c01"
+              }
+            }
+          ],
+          "ports": [
+            {
+              "port": 8080,
+              "protocol": "TCP"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "Endpoints",
+      "apiVersion": "v1",
+      "metadata": {
+        "name": "kubernetes",
+        "namespace": "default",
+        "uid": "be8da7bc-6ce5-4e8e-979e-08428a07b99f",
+        "resourceVersion": "53",
+        "creationTimestamp": "2025-09-11T20:39:37Z",
+        "labels": {
+          "endpointslice.kubernetes.io/skip-mirror": "true"
+        },
+        "managedFields": [
+          {
+            "manager": "k3s",
+            "operation": "Update",
+            "apiVersion": "v1",
+            "time": "2025-09-11T20:39:37Z",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:metadata": {
+                "f:labels": {
+                  ".": {},
+                  "f:endpointslice.kubernetes.io/skip-mirror": {}
+                }
+              },
+              "f:subsets": {}
+            }
+          }
+        ]
+      },
+      "subsets": [
+        {
+          "addresses": [
+            {
+              "ip": "10.0.0.11"
+            }
+          ],
+          "ports": [
+            {
+              "name": "https",
+              "port": 6443,
+              "protocol": "TCP"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "Endpoints",
+      "apiVersion": "v1",
+      "metadata": {
+        "name": "memory-test-service",
+        "namespace": "default",
+        "uid": "d6102afd-56a2-49fd-a96b-a3917e11c674",
+        "resourceVersion": "1324",
+        "creationTimestamp": "2025-09-11T20:50:18Z",
+        "labels": {
+          "endpoints.kubernetes.io/managed-by": "endpoint-controller"
+        },
+        "annotations": {
+          "endpoints.kubernetes.io/last-change-trigger-time": "2025-09-11T20:50:33Z"
+        },
+        "managedFields": [
+          {
+            "manager": "k3s",
+            "operation": "Update",
+            "apiVersion": "v1",
+            "time": "2025-09-11T20:50:33Z",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:metadata": {
+                "f:annotations": {
+                  ".": {},
+                  "f:endpoints.kubernetes.io/last-change-trigger-time": {}
+                },
+                "f:labels": {
+                  ".": {},
+                  "f:endpoints.kubernetes.io/managed-by": {}
+                }
+              },
+              "f:subsets": {}
+            }
+          }
+        ]
+      },
+      "subsets": [
+        {
+          "addresses": [
+            {
+              "ip": "10.42.0.14",
+              "nodeName": "c9b7eea91",
+              "targetRef": {
+                "kind": "Pod",
+                "namespace": "default",
+                "name": "memory-hungry-app-59c695fbfb-4vnq4",
+                "uid": "de2b495e-6f7f-4619-9ade-4c177bb2a083"
+              }
+            },
+            {
+              "ip": "10.42.0.15",
+              "nodeName": "c9b7eea91",
+              "targetRef": {
+                "kind": "Pod",
+                "namespace": "default",
+                "name": "memory-hungry-app-59c695fbfb-xsvn8",
+                "uid": "3097d17a-b693-4c8c-9b4b-4c296082ef2d"
+              }
+            }
+          ],
+          "ports": [
+            {
+              "port": 8080,
+              "protocol": "TCP"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

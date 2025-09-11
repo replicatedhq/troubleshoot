@@ -1,0 +1,58 @@
+{
+  "nodes": [
+    {
+      "name": "worker-1",
+      "cpu": {
+        "usage": "7650m",
+        "percentage": 95.6,
+        "capacity": "8000m"
+      },
+      "memory": {
+        "usage": "28Gi", 
+        "percentage": 87.5,
+        "capacity": "32Gi"
+      }
+    }
+  ],
+  "pods": [
+    {
+      "name": "web-app-7c8b9d4f2-xyz12",
+      "namespace": "production",
+      "containers": [
+        {
+          "name": "web-container",
+          "cpu": {
+            "usage": "195m",
+            "request": "100m",
+            "limit": "200m",
+            "percentage_of_request": 195,
+            "percentage_of_limit": 97.5
+          },
+          "memory": {
+            "usage": "245Mi",
+            "request": "128Mi", 
+            "limit": "256Mi",
+            "percentage_of_request": 191,
+            "percentage_of_limit": 95.7
+          }
+        }
+      ]
+    },
+    {
+      "name": "monitoring-agent-xyz",
+      "namespace": "kube-system",
+      "containers": [
+        {
+          "name": "agent",
+          "cpu": {
+            "usage": "3200m",
+            "request": "100m",
+            "limit": "500m",
+            "percentage_of_request": 3200,
+            "percentage_of_limit": 640
+          }
+        }
+      ]
+    }
+  ]
+}

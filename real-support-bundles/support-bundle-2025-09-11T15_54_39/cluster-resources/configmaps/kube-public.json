@@ -1,0 +1,47 @@
+{
+  "kind": "ConfigMapList",
+  "apiVersion": "v1",
+  "metadata": {
+    "resourceVersion": "1459"
+  },
+  "items": [
+    {
+      "kind": "ConfigMap",
+      "apiVersion": "v1",
+      "metadata": {
+        "name": "kube-root-ca.crt",
+        "namespace": "kube-public",
+        "uid": "20f24313-d217-432e-a748-29cfd0afb598",
+        "resourceVersion": "445",
+        "creationTimestamp": "2025-09-11T20:39:45Z",
+        "annotations": {
+          "kubernetes.io/description": "Contains a CA bundle that can be used to verify the kube-apiserver when using internal endpoints such as the internal service IP or kubernetes.default.svc. No other usage is guaranteed across distributions of Kubernetes clusters."
+        },
+        "managedFields": [
+          {
+            "manager": "k3s",
+            "operation": "Update",
+            "apiVersion": "v1",
+            "time": "2025-09-11T20:39:45Z",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:data": {
+                ".": {},
+                "f:ca.crt": {}
+              },
+              "f:metadata": {
+                "f:annotations": {
+                  ".": {},
+                  "f:kubernetes.io/description": {}
+                }
+              }
+            }
+          }
+        ]
+      },
+      "data": {
+        "ca.crt": "-----BEGIN CERTIFICATE-----\nMIIBdjCCAR2gAwIBAgIBADAKBggqhkjOPQQDAjAjMSEwHwYDVQQDDBhrM3Mtc2Vy\ndmVyLWNhQDE3NTc2MjMxNzEwHhcNMjUwOTExMjAzOTMxWhcNMzUwOTA5MjAzOTMx\nWjAjMSEwHwYDVQQDDBhrM3Mtc2VydmVyLWNhQDE3NTc2MjMxNzEwWTATBgcqhkjO\nPQIBBggqhkjOPQMBBwNCAATs8QVXqOSQ79p2DAWRiKQvKwtBU3BJFkiAlyuqnOW6\nin+DX1MBaU8eS2r+/CFhT3JjxN4y/CIT0Scyrct1gcSBo0IwQDAOBgNVHQ8BAf8E\nBAMCAqQwDwYDVR0TAQH/BAUwAwEB/zAdBgNVHQ4EFgQUozKi4C2qrfR+SPzjOdAt\n9KkCUJgwCgYIKoZIzj0EAwIDRwAwRAIgT0t6HUnBRGhPnW2CbaoqigfRWILN13n7\n5X+YbB2HxDkCICwJu/iE8dbIdKav8IHZhkclNl0DW+ImU2A2V0VoLqda\n-----END CERTIFICATE-----\n"
+      }
+    }
+  ]
+}

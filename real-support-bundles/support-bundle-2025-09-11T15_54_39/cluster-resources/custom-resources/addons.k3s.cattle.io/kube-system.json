@@ -1,0 +1,535 @@
+[
+  {
+    "apiVersion": "k3s.cattle.io/v1",
+    "kind": "Addon",
+    "metadata": {
+      "annotations": {
+        "addon.k3s.cattle.io/gvks": "rbac.authorization.k8s.io/v1, Kind=ClusterRole"
+      },
+      "creationTimestamp": "2025-09-11T20:39:42Z",
+      "generation": 2,
+      "managedFields": [
+        {
+          "apiVersion": "k3s.cattle.io/v1",
+          "fieldsType": "FieldsV1",
+          "fieldsV1": {
+            "f:metadata": {
+              "f:annotations": {
+                ".": {},
+                "f:addon.k3s.cattle.io/gvks": {}
+              }
+            },
+            "f:spec": {
+              ".": {},
+              "f:checksum": {},
+              "f:source": {}
+            }
+          },
+          "manager": "deploy@c9b7eea91",
+          "operation": "Update",
+          "time": "2025-09-11T20:39:43Z"
+        }
+      ],
+      "name": "aggregated-metrics-reader",
+      "namespace": "kube-system",
+      "resourceVersion": "300",
+      "uid": "29328215-ba9d-4877-a585-844cd79bdc49"
+    },
+    "spec": {
+      "checksum": "63b058ebe88b8179b459777318be49b591fefe629d9258b10974aeed224b5530",
+      "source": "/var/lib/rancher/k3s/server/manifests/metrics-server/aggregated-metrics-reader.yaml"
+    }
+  },
+  {
+    "apiVersion": "k3s.cattle.io/v1",
+    "kind": "Addon",
+    "metadata": {
+      "annotations": {
+        "addon.k3s.cattle.io/gvks": "rbac.authorization.k8s.io/v1, Kind=ClusterRoleBinding"
+      },
+      "creationTimestamp": "2025-09-11T20:39:43Z",
+      "generation": 2,
+      "managedFields": [
+        {
+          "apiVersion": "k3s.cattle.io/v1",
+          "fieldsType": "FieldsV1",
+          "fieldsV1": {
+            "f:metadata": {
+              "f:annotations": {
+                ".": {},
+                "f:addon.k3s.cattle.io/gvks": {}
+              }
+            },
+            "f:spec": {
+              ".": {},
+              "f:checksum": {},
+              "f:source": {}
+            }
+          },
+          "manager": "deploy@c9b7eea91",
+          "operation": "Update",
+          "time": "2025-09-11T20:39:43Z"
+        }
+      ],
+      "name": "auth-delegator",
+      "namespace": "kube-system",
+      "resourceVersion": "305",
+      "uid": "280373ed-063f-4958-b9cc-1b0e7f25422c"
+    },
+    "spec": {
+      "checksum": "f55fee16219349d1d803b7025f9fde2b6fca741e3900bfedcf64f34dc1c23786",
+      "source": "/var/lib/rancher/k3s/server/manifests/metrics-server/auth-delegator.yaml"
+    }
+  },
+  {
+    "apiVersion": "k3s.cattle.io/v1",
+    "kind": "Addon",
+    "metadata": {
+      "annotations": {
+        "addon.k3s.cattle.io/gvks": "rbac.authorization.k8s.io/v1, Kind=RoleBinding"
+      },
+      "creationTimestamp": "2025-09-11T20:39:43Z",
+      "generation": 2,
+      "managedFields": [
+        {
+          "apiVersion": "k3s.cattle.io/v1",
+          "fieldsType": "FieldsV1",
+          "fieldsV1": {
+            "f:metadata": {
+              "f:annotations": {
+                ".": {},
+                "f:addon.k3s.cattle.io/gvks": {}
+              }
+            },
+            "f:spec": {
+              ".": {},
+              "f:checksum": {},
+              "f:source": {}
+            }
+          },
+          "manager": "deploy@c9b7eea91",
+          "operation": "Update",
+          "time": "2025-09-11T20:39:43Z"
+        }
+      ],
+      "name": "auth-reader",
+      "namespace": "kube-system",
+      "resourceVersion": "310",
+      "uid": "f66503db-89ce-4e6d-8b5e-645d8aca5ef0"
+    },
+    "spec": {
+      "checksum": "97a74f054fe2972fcc6ffb909224d9cb27f136cc152983c9ac96ff45579015c2",
+      "source": "/var/lib/rancher/k3s/server/manifests/metrics-server/auth-reader.yaml"
+    }
+  },
+  {
+    "apiVersion": "k3s.cattle.io/v1",
+    "kind": "Addon",
+    "metadata": {
+      "annotations": {
+        "addon.k3s.cattle.io/gvks": "rbac.authorization.k8s.io/v1, Kind=ClusterRole;rbac.authorization.k8s.io/v1, Kind=ClusterRoleBinding;rbac.authorization.k8s.io/v1, Kind=RoleBinding"
+      },
+      "creationTimestamp": "2025-09-11T20:39:42Z",
+      "generation": 2,
+      "managedFields": [
+        {
+          "apiVersion": "k3s.cattle.io/v1",
+          "fieldsType": "FieldsV1",
+          "fieldsV1": {
+            "f:metadata": {
+              "f:annotations": {
+                ".": {},
+                "f:addon.k3s.cattle.io/gvks": {}
+              }
+            },
+            "f:spec": {
+              ".": {},
+              "f:checksum": {},
+              "f:source": {}
+            }
+          },
+          "manager": "deploy@c9b7eea91",
+          "operation": "Update",
+          "time": "2025-09-11T20:39:42Z"
+        }
+      ],
+      "name": "ccm",
+      "namespace": "kube-system",
+      "resourceVersion": "270",
+      "uid": "093a41ce-5014-4432-aa03-3d936f9193d6"
+    },
+    "spec": {
+      "checksum": "15c8482702cd79ec145e960ab92791a0e73b6e7577df7729ae8b523483e3cc93",
+      "source": "/var/lib/rancher/k3s/server/manifests/ccm.yaml"
+    }
+  },
+  {
+    "apiVersion": "k3s.cattle.io/v1",
+    "kind": "Addon",
+    "metadata": {
+      "annotations": {
+        "addon.k3s.cattle.io/gvks": "/v1, Kind=ServiceAccount;rbac.authorization.k8s.io/v1, Kind=ClusterRole;rbac.authorization.k8s.io/v1, Kind=ClusterRoleBinding;/v1, Kind=ConfigMap;apps/v1, Kind=Deployment;/v1, Kind=Service"
+      },
+      "creationTimestamp": "2025-09-11T20:39:42Z",
+      "generation": 3,
+      "managedFields": [
+        {
+          "apiVersion": "k3s.cattle.io/v1",
+          "fieldsType": "FieldsV1",
+          "fieldsV1": {
+            "f:metadata": {
+              "f:annotations": {
+                ".": {},
+                "f:addon.k3s.cattle.io/gvks": {}
+              }
+            },
+            "f:spec": {
+              ".": {},
+              "f:checksum": {},
+              "f:source": {}
+            }
+          },
+          "manager": "deploy@c9b7eea91",
+          "operation": "Update",
+          "time": "2025-09-11T20:40:02Z"
+        }
+      ],
+      "name": "coredns",
+      "namespace": "kube-system",
+      "resourceVersion": "513",
+      "uid": "22a3f640-e066-4b74-b0e7-ab83ae91e516"
+    },
+    "spec": {
+      "checksum": "3b03f9a8344f9dab9b1b02c839be942e4324f4d5771267849b2202a00f922de4",
+      "source": "/var/lib/rancher/k3s/server/manifests/coredns.yaml"
+    }
+  },
+  {
+    "apiVersion": "k3s.cattle.io/v1",
+    "kind": "Addon",
+    "metadata": {
+      "annotations": {
+        "addon.k3s.cattle.io/gvks": "/v1, Kind=ServiceAccount;rbac.authorization.k8s.io/v1, Kind=ClusterRole;rbac.authorization.k8s.io/v1, Kind=ClusterRoleBinding;apps/v1, Kind=Deployment;storage.k8s.io/v1, Kind=StorageClass;/v1, Kind=ConfigMap"
+      },
+      "creationTimestamp": "2025-09-11T20:39:42Z",
+      "generation": 2,
+      "managedFields": [
+        {
+          "apiVersion": "k3s.cattle.io/v1",
+          "fieldsType": "FieldsV1",
+          "fieldsV1": {
+            "f:metadata": {
+              "f:annotations": {
+                ".": {},
+                "f:addon.k3s.cattle.io/gvks": {}
+              }
+            },
+            "f:spec": {
+              ".": {},
+              "f:checksum": {},
+              "f:source": {}
+            }
+          },
+          "manager": "deploy@c9b7eea91",
+          "operation": "Update",
+          "time": "2025-09-11T20:39:42Z"
+        }
+      ],
+      "name": "local-storage",
+      "namespace": "kube-system",
+      "resourceVersion": "295",
+      "uid": "d55bb7f4-a0d2-4347-86b6-179973cb124d"
+    },
+    "spec": {
+      "checksum": "95a587e641bed9d12223d9204d73fb251b065b5a73f8dc63f30997bd56663850",
+      "source": "/var/lib/rancher/k3s/server/manifests/local-storage.yaml"
+    }
+  },
+  {
+    "apiVersion": "k3s.cattle.io/v1",
+    "kind": "Addon",
+    "metadata": {
+      "annotations": {
+        "addon.k3s.cattle.io/gvks": "apiregistration.k8s.io/v1, Kind=APIService"
+      },
+      "creationTimestamp": "2025-09-11T20:39:43Z",
+      "generation": 2,
+      "managedFields": [
+        {
+          "apiVersion": "k3s.cattle.io/v1",
+          "fieldsType": "FieldsV1",
+          "fieldsV1": {
+            "f:metadata": {
+              "f:annotations": {
+                ".": {},
+                "f:addon.k3s.cattle.io/gvks": {}
+              }
+            },
+            "f:spec": {
+              ".": {},
+              "f:checksum": {},
+              "f:source": {}
+            }
+          },
+          "manager": "deploy@c9b7eea91",
+          "operation": "Update",
+          "time": "2025-09-11T20:39:43Z"
+        }
+      ],
+      "name": "metrics-apiservice",
+      "namespace": "kube-system",
+      "resourceVersion": "316",
+      "uid": "96f46e93-870b-4939-a72f-b1c4ce5aa620"
+    },
+    "spec": {
+      "checksum": "03266df7891b56dfffebb855a031b524ed20c6736846417ccd491dd91c6c0ec3",
+      "source": "/var/lib/rancher/k3s/server/manifests/metrics-server/metrics-apiservice.yaml"
+    }
+  },
+  {
+    "apiVersion": "k3s.cattle.io/v1",
+    "kind": "Addon",
+    "metadata": {
+      "annotations": {
+        "addon.k3s.cattle.io/gvks": "/v1, Kind=ServiceAccount;apps/v1, Kind=Deployment"
+      },
+      "creationTimestamp": "2025-09-11T20:39:43Z",
+      "generation": 3,
+      "managedFields": [
+        {
+          "apiVersion": "k3s.cattle.io/v1",
+          "fieldsType": "FieldsV1",
+          "fieldsV1": {
+            "f:metadata": {
+              "f:annotations": {
+                ".": {},
+                "f:addon.k3s.cattle.io/gvks": {}
+              }
+            },
+            "f:spec": {
+              ".": {},
+              "f:checksum": {},
+              "f:source": {}
+            }
+          },
+          "manager": "deploy@c9b7eea91",
+          "operation": "Update",
+          "time": "2025-09-11T20:40:03Z"
+        }
+      ],
+      "name": "metrics-server-deployment",
+      "namespace": "kube-system",
+      "resourceVersion": "532",
+      "uid": "3e4e320a-e6f4-4775-ad34-1561d4295493"
+    },
+    "spec": {
+      "checksum": "841b7be38dacbfbf4a05f1dc341c2c871e60a5379ac81ed1f4497d9b30c261e6",
+      "source": "/var/lib/rancher/k3s/server/manifests/metrics-server/metrics-server-deployment.yaml"
+    }
+  },
+  {
+    "apiVersion": "k3s.cattle.io/v1",
+    "kind": "Addon",
+    "metadata": {
+      "annotations": {
+        "addon.k3s.cattle.io/gvks": "/v1, Kind=Service"
+      },
+      "creationTimestamp": "2025-09-11T20:39:43Z",
+      "generation": 2,
+      "managedFields": [
+        {
+          "apiVersion": "k3s.cattle.io/v1",
+          "fieldsType": "FieldsV1",
+          "fieldsV1": {
+            "f:metadata": {
+              "f:annotations": {
+                ".": {},
+                "f:addon.k3s.cattle.io/gvks": {}
+              }
+            },
+            "f:spec": {
+              ".": {},
+              "f:checksum": {},
+              "f:source": {}
+            }
+          },
+          "manager": "deploy@c9b7eea91",
+          "operation": "Update",
+          "time": "2025-09-11T20:39:43Z"
+        }
+      ],
+      "name": "metrics-server-service",
+      "namespace": "kube-system",
+      "resourceVersion": "329",
+      "uid": "1796e0b2-b92a-41bf-9eef-62bcb99ca8db"
+    },
+    "spec": {
+      "checksum": "0ba8f8a9133f38c226e33384b8019a882440480cb8b7b45b0cd9f62bebb06a6d",
+      "source": "/var/lib/rancher/k3s/server/manifests/metrics-server/metrics-server-service.yaml"
+    }
+  },
+  {
+    "apiVersion": "k3s.cattle.io/v1",
+    "kind": "Addon",
+    "metadata": {
+      "annotations": {
+        "addon.k3s.cattle.io/gvks": "rbac.authorization.k8s.io/v1, Kind=ClusterRole;rbac.authorization.k8s.io/v1, Kind=ClusterRoleBinding"
+      },
+      "creationTimestamp": "2025-09-11T20:39:43Z",
+      "generation": 2,
+      "managedFields": [
+        {
+          "apiVersion": "k3s.cattle.io/v1",
+          "fieldsType": "FieldsV1",
+          "fieldsV1": {
+            "f:metadata": {
+              "f:annotations": {
+                ".": {},
+                "f:addon.k3s.cattle.io/gvks": {}
+              }
+            },
+            "f:spec": {
+              ".": {},
+              "f:checksum": {},
+              "f:source": {}
+            }
+          },
+          "manager": "deploy@c9b7eea91",
+          "operation": "Update",
+          "time": "2025-09-11T20:39:43Z"
+        }
+      ],
+      "name": "resource-reader",
+      "namespace": "kube-system",
+      "resourceVersion": "336",
+      "uid": "7546266b-1f7c-4dee-89dd-55639963c902"
+    },
+    "spec": {
+      "checksum": "d7e21b07d9edf7a1d4e169342f470405970621de59864f998dd84c2048fb9e64",
+      "source": "/var/lib/rancher/k3s/server/manifests/metrics-server/resource-reader.yaml"
+    }
+  },
+  {
+    "apiVersion": "k3s.cattle.io/v1",
+    "kind": "Addon",
+    "metadata": {
+      "annotations": {
+        "addon.k3s.cattle.io/gvks": "rbac.authorization.k8s.io/v1, Kind=ClusterRoleBinding;rbac.authorization.k8s.io/v1, Kind=ClusterRole"
+      },
+      "creationTimestamp": "2025-09-11T20:39:43Z",
+      "generation": 2,
+      "managedFields": [
+        {
+          "apiVersion": "k3s.cattle.io/v1",
+          "fieldsType": "FieldsV1",
+          "fieldsV1": {
+            "f:metadata": {
+              "f:annotations": {
+                ".": {},
+                "f:addon.k3s.cattle.io/gvks": {}
+              }
+            },
+            "f:spec": {
+              ".": {},
+              "f:checksum": {},
+              "f:source": {}
+            }
+          },
+          "manager": "deploy@c9b7eea91",
+          "operation": "Update",
+          "time": "2025-09-11T20:39:43Z"
+        }
+      ],
+      "name": "rolebindings",
+      "namespace": "kube-system",
+      "resourceVersion": "347",
+      "uid": "fb3b8225-94b4-4e1e-8de3-a4433275f3fd"
+    },
+    "spec": {
+      "checksum": "6b4dc430eb4c8fc1a94efd18efa74647f561326923254c23b3001ef488457c1f",
+      "source": "/var/lib/rancher/k3s/server/manifests/rolebindings.yaml"
+    }
+  },
+  {
+    "apiVersion": "k3s.cattle.io/v1",
+    "kind": "Addon",
+    "metadata": {
+      "annotations": {
+        "addon.k3s.cattle.io/gvks": "node.k8s.io/v1, Kind=RuntimeClass"
+      },
+      "creationTimestamp": "2025-09-11T20:39:43Z",
+      "generation": 2,
+      "managedFields": [
+        {
+          "apiVersion": "k3s.cattle.io/v1",
+          "fieldsType": "FieldsV1",
+          "fieldsV1": {
+            "f:metadata": {
+              "f:annotations": {
+                ".": {},
+                "f:addon.k3s.cattle.io/gvks": {}
+              }
+            },
+            "f:spec": {
+              ".": {},
+              "f:checksum": {},
+              "f:source": {}
+            }
+          },
+          "manager": "deploy@c9b7eea91",
+          "operation": "Update",
+          "time": "2025-09-11T20:39:43Z"
+        }
+      ],
+      "name": "runtimes",
+      "namespace": "kube-system",
+      "resourceVersion": "361",
+      "uid": "74becdcb-70db-4cb2-ac67-f16a422fbc2c"
+    },
+    "spec": {
+      "checksum": "4ea3be58c76250c61e65a257c8279b42d11568f913233eda98ac0d77ef2a8e37",
+      "source": "/var/lib/rancher/k3s/server/manifests/runtimes.yaml"
+    }
+  },
+  {
+    "apiVersion": "k3s.cattle.io/v1",
+    "kind": "Addon",
+    "metadata": {
+      "annotations": {
+        "addon.k3s.cattle.io/gvks": "helm.cattle.io/v1, Kind=HelmChart"
+      },
+      "creationTimestamp": "2025-09-11T20:39:43Z",
+      "generation": 2,
+      "managedFields": [
+        {
+          "apiVersion": "k3s.cattle.io/v1",
+          "fieldsType": "FieldsV1",
+          "fieldsV1": {
+            "f:metadata": {
+              "f:annotations": {
+                ".": {},
+                "f:addon.k3s.cattle.io/gvks": {}
+              }
+            },
+            "f:spec": {
+              ".": {},
+              "f:checksum": {},
+              "f:source": {}
+            }
+          },
+          "manager": "deploy@c9b7eea91",
+          "operation": "Update",
+          "time": "2025-09-11T20:39:43Z"
+        }
+      ],
+      "name": "traefik",
+      "namespace": "kube-system",
+      "resourceVersion": "369",
+      "uid": "d84f8abb-e2f5-4c3f-b4fd-9f59666b91de"
+    },
+    "spec": {
+      "checksum": "0e44580d7b16b7c1c3c46b5c197700c56898fcbc7b4f77acf17628ac7f749f31",
+      "source": "/var/lib/rancher/k3s/server/manifests/traefik.yaml"
+    }
+  }
+]

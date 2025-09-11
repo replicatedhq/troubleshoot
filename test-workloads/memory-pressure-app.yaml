@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: memory-hungry-app
+  namespace: default
+  labels:
+    app: memory-test
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: memory-test
+  template:
+    metadata:
+      labels:
+        app: memory-test
+    spec:
+      containers:
+      - name: memory-hog
+        image: alpine:latest
+        command: ["/bin/sh"]
+        args: 
+          - -c
+          - |
+            echo "Starting memory-hungry application..."
+            # Allocate memory progressively to cause OOMKill
+            dd if=/dev/zero of=/dev/shm/fill bs=1M count=400 2>/dev/null || true
+            sleep 30
+            # Try to allocate even more
+            dd if=/dev/zero of=/dev/shm/fill2 bs=1M count=200 2>/dev/null || true
+            sleep 300
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "100m"
+          limits:
+            memory: "128Mi"  # This will cause OOMKill
+            cpu: "200m"
+        readinessProbe:
+          exec:
+            command: ["echo", "ready"]
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        livenessProbe:
+          exec:
+            command: ["echo", "alive"]
+          initialDelaySeconds: 10
+          periodSeconds: 20
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: memory-test-service
+  namespace: default
+spec:
+  selector:
+    app: memory-test
+  ports:
+  - port: 80
+    targetPort: 8080
+  type: ClusterIP

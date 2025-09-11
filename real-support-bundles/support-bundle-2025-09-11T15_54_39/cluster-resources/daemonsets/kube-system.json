@@ -1,0 +1,389 @@
+{
+  "kind": "DaemonSetList",
+  "apiVersion": "apps/v1",
+  "metadata": {
+    "resourceVersion": "1451"
+  },
+  "items": [
+    {
+      "kind": "DaemonSet",
+      "apiVersion": "apps/v1",
+      "metadata": {
+        "name": "svclb-traefik-9ce4920b",
+        "namespace": "kube-system",
+        "uid": "8cf6339c-2e4b-4a16-b497-0ee27baeae61",
+        "resourceVersion": "901",
+        "generation": 1,
+        "creationTimestamp": "2025-09-11T20:40:24Z",
+        "labels": {
+          "objectset.rio.cattle.io/hash": "836fcbce022d5dae5b36694fe1eaf389c93af7dc",
+          "svccontroller.k3s.cattle.io/nodeselector": "false",
+          "svccontroller.k3s.cattle.io/svcname": "traefik",
+          "svccontroller.k3s.cattle.io/svcnamespace": "kube-system"
+        },
+        "annotations": {
+          "deprecated.daemonset.template.generation": "1",
+          "objectset.rio.cattle.io/applied": "H4sIAAAAAAAA/8RVwW7jNhD9lWLOsixHTmoL6CFIgiJo1zFsby8LIxhRo5g1RRLkSBsj0L8XlJ2s0rWToEB34YNBcuZx+N7ozROglX+R89JoyACt9cNmBBFspS4gg2ukyuglMURQEWOBjJA9AWptGFka7cPS5H+TYE8cO2ligcyKYmmGMmBAdPLcfNXkBg/NFjIYNqPolz+kLn5bkmukoHfzNFYEGbBDKuX2Q+Heogg52zqngd95pgraCISj7jErWZFnrCxkulYqAoU5qTefuEG/gQwm6UUpckHJ2VlxXiCd5+nFxXRc0oiwTCdTMU2x/LUQEIFvhDCanVGKXLxNfQ9Nm4I8KRJsHGRQovL0TopvxHdEfCD+BBMHKN8IlQ8OgIOpoPH0LMlhf34i1VsSgalv9T9BhSw2f76QiNaeBm/bCJgqq5Cpy+312wcEehP7x1HYIwJrNpWpNR8a+lKIsFqZLWnIOm0jCJeg1OQ8ZF+egHTT/R/qWS6u7ud3ixVE0KCqw9YkgTZ6FbC4nP1+s+yFJHH3G76KvL5Zru7ni7vVXS9ydTX/Puat+7qI23n/tlESj9N4dJ7GZ+cjaNcRyAofwolDLTbkhlslrSU3UHnWJPE4HqVwCJrXSs2NkmIHGdyWM8NzR540w0srBjmFHUwSiMAax3ueXmibG8eQTZIINsbzt9WxbGfYCKOe372OwJE3tRMUOigoR6J2kndXRjM9ctd5aDGXSrKkfZsVBWRfYHazur+8/nQ7g3XbBn7eF248Tn+scv+68KdJF+p4Q7vxOO2L1y2PAvxv8q0DuDRdqkLvZwcT7D7pQfDkgXCSpUAFR2/xOy9Y+X4DaOJY2mYcS3tfGvcVXdEnHtp1V3DfGGY974UI2ChyzzM2WENZkmDIYGaWYkNFrcJo2FLgv6vRGUVxMCOnickHp6rQM7kwGm3A6obKzaP07LvO+C+QB1ccWIWaTiLvMa4OrF0WhdH+Tqvd8YR1sM3aFsi0ZIdMD7tAazBfqR8+dwf7cfL4WWODUmGuCLJRGBk7G1hbvIrtbJiR6050UTtHmmd1lZN7fmgBWRJBQV46Ko4d6W7vk/T+yPaCsNhBlrTtPwEAAP//37G8u0MJAAA",
+          "objectset.rio.cattle.io/id": "",
+          "objectset.rio.cattle.io/owner-gvk": "/v1, Kind=Service",
+          "objectset.rio.cattle.io/owner-name": "traefik",
+          "objectset.rio.cattle.io/owner-namespace": "kube-system"
+        },
+        "managedFields": [
+          {
+            "manager": "k3s",
+            "operation": "Update",
+            "apiVersion": "apps/v1",
+            "time": "2025-09-11T20:40:24Z",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:metadata": {
+                "f:annotations": {
+                  ".": {},
+                  "f:deprecated.daemonset.template.generation": {},
+                  "f:objectset.rio.cattle.io/applied": {},
+                  "f:objectset.rio.cattle.io/id": {},
+                  "f:objectset.rio.cattle.io/owner-gvk": {},
+                  "f:objectset.rio.cattle.io/owner-name": {},
+                  "f:objectset.rio.cattle.io/owner-namespace": {}
+                },
+                "f:labels": {
+                  ".": {},
+                  "f:objectset.rio.cattle.io/hash": {},
+                  "f:svccontroller.k3s.cattle.io/nodeselector": {},
+                  "f:svccontroller.k3s.cattle.io/svcname": {},
+                  "f:svccontroller.k3s.cattle.io/svcnamespace": {}
+                }
+              },
+              "f:spec": {
+                "f:revisionHistoryLimit": {},
+                "f:selector": {},
+                "f:template": {
+                  "f:metadata": {
+                    "f:labels": {
+                      ".": {},
+                      "f:app": {},
+                      "f:svccontroller.k3s.cattle.io/svcname": {},
+                      "f:svccontroller.k3s.cattle.io/svcnamespace": {}
+                    }
+                  },
+                  "f:spec": {
+                    "f:automountServiceAccountToken": {},
+                    "f:containers": {
+                      "k:{\"name\":\"lb-tcp-443\"}": {
+                        ".": {},
+                        "f:env": {
+                          ".": {},
+                          "k:{\"name\":\"DEST_IPS\"}": {
+                            ".": {},
+                            "f:name": {},
+                            "f:value": {}
+                          },
+                          "k:{\"name\":\"DEST_PORT\"}": {
+                            ".": {},
+                            "f:name": {},
+                            "f:value": {}
+                          },
+                          "k:{\"name\":\"DEST_PROTO\"}": {
+                            ".": {},
+                            "f:name": {},
+                            "f:value": {}
+                          },
+                          "k:{\"name\":\"SRC_PORT\"}": {
+                            ".": {},
+                            "f:name": {},
+                            "f:value": {}
+                          },
+                          "k:{\"name\":\"SRC_RANGES\"}": {
+                            ".": {},
+                            "f:name": {},
+                            "f:value": {}
+                          }
+                        },
+                        "f:image": {},
+                        "f:imagePullPolicy": {},
+                        "f:name": {},
+                        "f:ports": {
+                          ".": {},
+                          "k:{\"containerPort\":443,\"protocol\":\"TCP\"}": {
+                            ".": {},
+                            "f:containerPort": {},
+                            "f:hostPort": {},
+                            "f:name": {},
+                            "f:protocol": {}
+                          }
+                        },
+                        "f:resources": {},
+                        "f:securityContext": {
+                          ".": {},
+                          "f:capabilities": {
+                            ".": {},
+                            "f:add": {}
+                          }
+                        },
+                        "f:terminationMessagePath": {},
+                        "f:terminationMessagePolicy": {}
+                      },
+                      "k:{\"name\":\"lb-tcp-80\"}": {
+                        ".": {},
+                        "f:env": {
+                          ".": {},
+                          "k:{\"name\":\"DEST_IPS\"}": {
+                            ".": {},
+                            "f:name": {},
+                            "f:value": {}
+                          },
+                          "k:{\"name\":\"DEST_PORT\"}": {
+                            ".": {},
+                            "f:name": {},
+                            "f:value": {}
+                          },
+                          "k:{\"name\":\"DEST_PROTO\"}": {
+                            ".": {},
+                            "f:name": {},
+                            "f:value": {}
+                          },
+                          "k:{\"name\":\"SRC_PORT\"}": {
+                            ".": {},
+                            "f:name": {},
+                            "f:value": {}
+                          },
+                          "k:{\"name\":\"SRC_RANGES\"}": {
+                            ".": {},
+                            "f:name": {},
+                            "f:value": {}
+                          }
+                        },
+                        "f:image": {},
+                        "f:imagePullPolicy": {},
+                        "f:name": {},
+                        "f:ports": {
+                          ".": {},
+                          "k:{\"containerPort\":80,\"protocol\":\"TCP\"}": {
+                            ".": {},
+                            "f:containerPort": {},
+                            "f:hostPort": {},
+                            "f:name": {},
+                            "f:protocol": {}
+                          }
+                        },
+                        "f:resources": {},
+                        "f:securityContext": {
+                          ".": {},
+                          "f:capabilities": {
+                            ".": {},
+                            "f:add": {}
+                          }
+                        },
+                        "f:terminationMessagePath": {},
+                        "f:terminationMessagePolicy": {}
+                      }
+                    },
+                    "f:dnsPolicy": {},
+                    "f:priorityClassName": {},
+                    "f:restartPolicy": {},
+                    "f:schedulerName": {},
+                    "f:securityContext": {
+                      ".": {},
+                      "f:sysctls": {}
+                    },
+                    "f:serviceAccount": {},
+                    "f:serviceAccountName": {},
+                    "f:terminationGracePeriodSeconds": {},
+                    "f:tolerations": {}
+                  }
+                },
+                "f:updateStrategy": {
+                  "f:rollingUpdate": {
+                    ".": {},
+                    "f:maxSurge": {},
+                    "f:maxUnavailable": {}
+                  },
+                  "f:type": {}
+                }
+              }
+            }
+          },
+          {
+            "manager": "k3s",
+            "operation": "Update",
+            "apiVersion": "apps/v1",
+            "time": "2025-09-11T20:40:26Z",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:status": {
+                "f:currentNumberScheduled": {},
+                "f:desiredNumberScheduled": {},
+                "f:numberAvailable": {},
+                "f:numberReady": {},
+                "f:observedGeneration": {},
+                "f:updatedNumberScheduled": {}
+              }
+            },
+            "subresource": "status"
+          }
+        ]
+      },
+      "spec": {
+        "selector": {
+          "matchLabels": {
+            "app": "svclb-traefik-9ce4920b"
+          }
+        },
+        "template": {
+          "metadata": {
+            "creationTimestamp": null,
+            "labels": {
+              "app": "svclb-traefik-9ce4920b",
+              "svccontroller.k3s.cattle.io/svcname": "traefik",
+              "svccontroller.k3s.cattle.io/svcnamespace": "kube-system"
+            }
+          },
+          "spec": {
+            "containers": [
+              {
+                "name": "lb-tcp-80",
+                "image": "rancher/klipper-lb:v0.4.13",
+                "ports": [
+                  {
+                    "name": "lb-tcp-80",
+                    "hostPort": 80,
+                    "containerPort": 80,
+                    "protocol": "TCP"
+                  }
+                ],
+                "env": [
+                  {
+                    "name": "SRC_PORT",
+                    "value": "80"
+                  },
+                  {
+                    "name": "SRC_RANGES",
+                    "value": "0.0.0.0/0"
+                  },
+                  {
+                    "name": "DEST_PROTO",
+                    "value": "TCP"
+                  },
+                  {
+                    "name": "DEST_PORT",
+                    "value": "80"
+                  },
+                  {
+                    "name": "DEST_IPS",
+                    "value": "10.43.153.251"
+                  }
+                ],
+                "resources": {},
+                "terminationMessagePath": "/dev/termination-log",
+                "terminationMessagePolicy": "File",
+                "imagePullPolicy": "IfNotPresent",
+                "securityContext": {
+                  "capabilities": {
+                    "add": [
+                      "NET_ADMIN"
+                    ]
+                  }
+                }
+              },
+              {
+                "name": "lb-tcp-443",
+                "image": "rancher/klipper-lb:v0.4.13",
+                "ports": [
+                  {
+                    "name": "lb-tcp-443",
+                    "hostPort": 443,
+                    "containerPort": 443,
+                    "protocol": "TCP"
+                  }
+                ],
+                "env": [
+                  {
+                    "name": "SRC_PORT",
+                    "value": "443"
+                  },
+                  {
+                    "name": "SRC_RANGES",
+                    "value": "0.0.0.0/0"
+                  },
+                  {
+                    "name": "DEST_PROTO",
+                    "value": "TCP"
+                  },
+                  {
+                    "name": "DEST_PORT",
+                    "value": "443"
+                  },
+                  {
+                    "name": "DEST_IPS",
+                    "value": "10.43.153.251"
+                  }
+                ],
+                "resources": {},
+                "terminationMessagePath": "/dev/termination-log",
+                "terminationMessagePolicy": "File",
+                "imagePullPolicy": "IfNotPresent",
+                "securityContext": {
+                  "capabilities": {
+                    "add": [
+                      "NET_ADMIN"
+                    ]
+                  }
+                }
+              }
+            ],
+            "restartPolicy": "Always",
+            "terminationGracePeriodSeconds": 30,
+            "dnsPolicy": "ClusterFirst",
+            "serviceAccountName": "svclb",
+            "serviceAccount": "svclb",
+            "automountServiceAccountToken": false,
+            "securityContext": {
+              "sysctls": [
+                {
+                  "name": "net.ipv4.ip_forward",
+                  "value": "1"
+                }
+              ]
+            },
+            "schedulerName": "default-scheduler",
+            "tolerations": [
+              {
+                "key": "node-role.kubernetes.io/master",
+                "operator": "Exists",
+                "effect": "NoSchedule"
+              },
+              {
+                "key": "node-role.kubernetes.io/control-plane",
+                "operator": "Exists",
+                "effect": "NoSchedule"
+              },
+              {
+                "key": "CriticalAddonsOnly",
+                "operator": "Exists"
+              }
+            ],
+            "priorityClassName": "system-node-critical"
+          }
+        },
+        "updateStrategy": {
+          "type": "RollingUpdate",
+          "rollingUpdate": {
+            "maxUnavailable": 1,
+            "maxSurge": 0
+          }
+        },
+        "revisionHistoryLimit": 10
+      },
+      "status": {
+        "currentNumberScheduled": 1,
+        "numberMisscheduled": 0,
+        "desiredNumberScheduled": 1,
+        "numberReady": 1,
+        "observedGeneration": 1,
+        "updatedNumberScheduled": 1,
+        "numberAvailable": 1
+      }
+    }
+  ]
+}

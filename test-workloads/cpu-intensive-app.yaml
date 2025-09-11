@@ -1,0 +1,55 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cpu-intensive-app
+  namespace: default
+  labels:
+    app: cpu-hog
+spec:
+  replicas: 3  # This will likely not all schedule due to resource constraints
+  selector:
+    matchLabels:
+      app: cpu-hog
+  template:
+    metadata:
+      labels:
+        app: cpu-hog
+    spec:
+      containers:
+      - name: cpu-burner
+        image: alpine:latest
+        command: ["/bin/sh"]
+        args:
+          - -c
+          - |
+            echo "Starting CPU-intensive workload..."
+            # Create multiple CPU-burning processes
+            for i in 1 2 3 4; do
+              (while true; do echo "CPU burner $i running"; done) &
+            done
+            
+            # Keep the main process alive
+            while true; do
+              echo "CPU usage should be high now..."
+              sleep 30
+            done
+        resources:
+          requests:
+            cpu: "800m"      # High CPU request
+            memory: "100Mi"
+          limits:
+            cpu: "1000m"     # This will likely exceed node capacity when replicated
+            memory: "200Mi"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cpu-hog-service
+  namespace: default
+spec:
+  selector:
+    app: cpu-hog
+  ports:
+  - port: 80
+    targetPort: 8080
+  type: ClusterIP

@@ -1,0 +1,6 @@
+{
+  "default": "the server could not find the requested resource",
+  "kube-node-lease": "the server could not find the requested resource",
+  "kube-public": "the server could not find the requested resource",
+  "kube-system": "the server could not find the requested resource"
+}

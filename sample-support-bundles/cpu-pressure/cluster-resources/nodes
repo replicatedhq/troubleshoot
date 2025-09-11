@@ -1,0 +1,42 @@
+[
+  {
+    "apiVersion": "v1",
+    "kind": "Node",
+    "metadata": {
+      "name": "worker-1",
+      "labels": {
+        "kubernetes.io/arch": "amd64",
+        "kubernetes.io/os": "linux",
+        "node-role.kubernetes.io/worker": ""
+      }
+    },
+    "status": {
+      "conditions": [
+        {
+          "type": "MemoryPressure",
+          "status": "False"
+        },
+        {
+          "type": "DiskPressure", 
+          "status": "False"
+        },
+        {
+          "type": "PIDPressure",
+          "status": "False"
+        },
+        {
+          "type": "Ready",
+          "status": "True"
+        }
+      ],
+      "allocatable": {
+        "cpu": "7800m",
+        "memory": "29Gi"
+      },
+      "capacity": {
+        "cpu": "8000m", 
+        "memory": "32Gi"
+      }
+    }
+  }
+]

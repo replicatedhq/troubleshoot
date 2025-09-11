@@ -1,0 +1,1035 @@
+{
+  "kind": "JobList",
+  "apiVersion": "batch/v1",
+  "metadata": {
+    "resourceVersion": "1451"
+  },
+  "items": [
+    {
+      "kind": "Job",
+      "apiVersion": "batch/v1",
+      "metadata": {
+        "name": "helm-install-traefik",
+        "namespace": "kube-system",
+        "uid": "d7fcb918-a3e3-4fb7-817f-6397e15835f9",
+        "resourceVersion": "913",
+        "generation": 1,
+        "creationTimestamp": "2025-09-11T20:39:43Z",
+        "labels": {
+          "helmcharts.helm.cattle.io/chart": "traefik",
+          "objectset.rio.cattle.io/hash": "c0f97ea7a25e3dec71957c7a3241a38f3e5fae5f"
+        },
+        "annotations": {
+          "objectset.rio.cattle.io/applied": "H4sIAAAAAAAA/6xWUW/ivBL9K1eW9ukmISFA2kj7kNJwy10KEbDVvVpVyJgJ+MOxI9thF1X890920jYs3W5X+t6IM+dkZs6ZMU8Il/QBpKKCoxitsSa7ziFADtpTvkEx+q9YIwcVoPEGa4ziJ4Q5FxprKrgyj2L9FxCtQHuSCo9grRl4VHSoQe+AFS4RXEvBGEiX7LDUroQtVVpaDuT8kkF85yDd7WHfELVeHQLnX18o33y+A1YMDelveTguAMVISww53X8oXJWYGMy+WoOrjkpDgU4OIhJs6ktagNK4KFHMK8YcxPAamG2KSdfWqryfMrenH8pjh9UOxYj4+XUEOMLdPoQbIFFw3Y9IhMNuL8DhVR5CP8fQz01mTY2265QrjRlzXz/0q5IcZEueQw4SOAGF4m8/+eKi/chBaybIfmaQt8DAahnnmClw0KviL0eNndp6XShSWc9EeX51PegRNwo3PbcXXuXuGkeRG0a9q3DQw+EaQnR6PDlIlUBMt9eY7EWeT2hBNYoD3/cdpKEoGdZg3r/j3neEEjyn27tahMVd0u0PPl9FQZT0u+mgH0RBdNO/8dPR9fD65mrQGwz7o6EfDIPbxB9Ft+FoMEpvkrAbjIb9aPSP2+bUKt90G1MOshFObs0P1BgAOch1FWhXaUn5Fjloy8QaM69W/xZyXDE9r0fy+Bk9Ogj4wTI1Ak2T+xQ56IBZ1dbr5LxEPKTzxXg2bR/N02zWfr5LJ/er2/n4IZ23uBQQCbodN7xL5suV+eQiS4bt755P4TmgFbbTulRxp/Pp6cvXm3Q+TZfpYpVk49OnjjLCk7qXqtPU4YY9r+sF/65K+8O/SPqN4pbJ/D/pH2WZfF3erbJksVgN5+ltOl2Ok8miBbNT0gaMp4t0+HWerhZfxtlqOVmYPMaj/7+HySbJeLq6Wy6z96Kms1U2n/2vzeSpA3E8wiqlQXpMEMycwPd6Xc/3/E4wsA9h89DmGiXjiUkym03GwzajhGf7nR4dRAu8taeYkx3Izp7RsgTpGpPHB9+79q7cdUXZput3+37kX6MGk1WMZYJRcjQtyadCZxIU8Nb6MBzIQRKUqKRdXk9mNoBUkurjUHANP7SdfMbE90zSA2WwhVQRzPD51sIlXlNGNbUsaCNFaQYpmUyQWTcS8GbG2XEuhB5RBo3KsZYVnBx0EKwq4F5UXNeDWJifGdZmgXR2ooCzujtek3lTR/udbfHv4ASTHVzi6+MPEdgN9wZDfX5BoYuytbWL8jLiZ0brBvVG3PkNYBaY0fT0aMzCxQYWwIBoIY0MZqIkBw3K3s4KxYhRXv1AVhKlsdQvFpnxEaaskqYvb1hAVjxRU8GNgrVuNoyIosykyCmz14U+lnaDVVzTApoFWW9ckAdKICHEVDNt3bavl1htg9oBUJT6eEtlfQltaFWgGN1DIeSxdV1fKP9nsFfB/xD3KvPHgM+Sn4vroFIK8w8GNgb+MoXfnp63e/yEqIaiPtvDsf034MGSDBsDOKisHVJzu77r+777EuyeRXtHXNTr5dlGNqaBvl6UjyeTdF3tPS5NOmeAxn2viLd8adXXWFd2v5z+DgAA///s47ufNwsAAA",
+          "objectset.rio.cattle.io/id": "helm-controller-chart-registration",
+          "objectset.rio.cattle.io/owner-gvk": "helm.cattle.io/v1, Kind=HelmChart",
+          "objectset.rio.cattle.io/owner-name": "traefik",
+          "objectset.rio.cattle.io/owner-namespace": "kube-system"
+        },
+        "ownerReferences": [
+          {
+            "apiVersion": "helm.cattle.io/v1",
+            "kind": "HelmChart",
+            "name": "traefik",
+            "uid": "7ff8964c-73d4-438f-ba77-3748364a3be3",
+            "controller": false,
+            "blockOwnerDeletion": false
+          }
+        ],
+        "managedFields": [
+          {
+            "manager": "helm-controller@c9b7eea91",
+            "operation": "Update",
+            "apiVersion": "batch/v1",
+            "time": "2025-09-11T20:39:43Z",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:metadata": {
+                "f:annotations": {
+                  ".": {},
+                  "f:objectset.rio.cattle.io/applied": {},
+                  "f:objectset.rio.cattle.io/id": {},
+                  "f:objectset.rio.cattle.io/owner-gvk": {},
+                  "f:objectset.rio.cattle.io/owner-name": {},
+                  "f:objectset.rio.cattle.io/owner-namespace": {}
+                },
+                "f:labels": {
+                  ".": {},
+                  "f:helmcharts.helm.cattle.io/chart": {},
+                  "f:objectset.rio.cattle.io/hash": {}
+                },
+                "f:ownerReferences": {
+                  ".": {},
+                  "k:{\"uid\":\"7ff8964c-73d4-438f-ba77-3748364a3be3\"}": {}
+                }
+              },
+              "f:spec": {
+                "f:backoffLimit": {},
+                "f:completionMode": {},
+                "f:completions": {},
+                "f:manualSelector": {},
+                "f:parallelism": {},
+                "f:podReplacementPolicy": {},
+                "f:suspend": {},
+                "f:template": {
+                  "f:metadata": {
+                    "f:annotations": {
+                      ".": {},
+                      "f:helmcharts.helm.cattle.io/configHash": {}
+                    },
+                    "f:labels": {
+                      ".": {},
+                      "f:helmcharts.helm.cattle.io/chart": {}
+                    }
+                  },
+                  "f:spec": {
+                    "f:containers": {
+                      "k:{\"name\":\"helm\"}": {
+                        ".": {},
+                        "f:args": {},
+                        "f:env": {
+                          ".": {},
+                          "k:{\"name\":\"AUTH_PASS_CREDENTIALS\"}": {
+                            ".": {},
+                            "f:name": {},
+                            "f:value": {}
+                          },
+                          "k:{\"name\":\"CHART\"}": {
+                            ".": {},
+                            "f:name": {},
+                            "f:value": {}
+                          },
+                          "k:{\"name\":\"CHART_NAMESPACE\"}": {
+                            ".": {},
+                            "f:name": {},
+                            "f:value": {}
+                          },
+                          "k:{\"name\":\"FAILURE_POLICY\"}": {
+                            ".": {},
+                            "f:name": {},
+                            "f:value": {}
+                          },
+                          "k:{\"name\":\"HELM_DRIVER\"}": {
+                            ".": {},
+                            "f:name": {},
+                            "f:value": {}
+                          },
+                          "k:{\"name\":\"HELM_VERSION\"}": {
+                            ".": {},
+                            "f:name": {}
+                          },
+                          "k:{\"name\":\"INSECURE_SKIP_TLS_VERIFY\"}": {
+                            ".": {},
+                            "f:name": {},
+                            "f:value": {}
+                          },
+                          "k:{\"name\":\"NAME\"}": {
+                            ".": {},
+                            "f:name": {},
+                            "f:value": {}
+                          },
+                          "k:{\"name\":\"NO_PROXY\"}": {
+                            ".": {},
+                            "f:name": {},
+                            "f:value": {}
+                          },
+                          "k:{\"name\":\"PLAIN_HTTP\"}": {
+                            ".": {},
+                            "f:name": {},
+                            "f:value": {}
+                          },
+                          "k:{\"name\":\"REPO\"}": {
+                            ".": {},
+                            "f:name": {}
+                          },
+                          "k:{\"name\":\"TARGET_NAMESPACE\"}": {
+                            ".": {},
+                            "f:name": {},
+                            "f:value": {}
+                          },
+                          "k:{\"name\":\"VERSION\"}": {
+                            ".": {},
+                            "f:name": {}
+                          }
+                        },
+                        "f:image": {},
+                        "f:imagePullPolicy": {},
+                        "f:name": {},
+                        "f:resources": {},
+                        "f:securityContext": {
+                          ".": {},
+                          "f:allowPrivilegeEscalation": {},
+                          "f:capabilities": {
+                            ".": {},
+                            "f:drop": {}
+                          },
+                          "f:readOnlyRootFilesystem": {}
+                        },
+                        "f:terminationMessagePath": {},
+                        "f:terminationMessagePolicy": {},
+                        "f:volumeMounts": {
+                          ".": {},
+                          "k:{\"mountPath\":\"/chart\"}": {
+                            ".": {},
+                            "f:mountPath": {},
+                            "f:name": {}
+                          },
+                          "k:{\"mountPath\":\"/config\"}": {
+                            ".": {},
+                            "f:mountPath": {},
+                            "f:name": {}
+                          },
+                          "k:{\"mountPath\":\"/home/klipper-helm/.cache\"}": {
+                            ".": {},
+                            "f:mountPath": {},
+                            "f:name": {}
+                          },
+                          "k:{\"mountPath\":\"/home/klipper-helm/.config\"}": {
+                            ".": {},
+                            "f:mountPath": {},
+                            "f:name": {}
+                          },
+                          "k:{\"mountPath\":\"/home/klipper-helm/.helm\"}": {
+                            ".": {},
+                            "f:mountPath": {},
+                            "f:name": {}
+                          },
+                          "k:{\"mountPath\":\"/tmp\"}": {
+                            ".": {},
+                            "f:mountPath": {},
+                            "f:name": {}
+                          }
+                        }
+                      }
+                    },
+                    "f:dnsPolicy": {},
+                    "f:nodeSelector": {},
+                    "f:restartPolicy": {},
+                    "f:schedulerName": {},
+                    "f:securityContext": {
+                      ".": {},
+                      "f:runAsNonRoot": {},
+                      "f:seccompProfile": {
+                        ".": {},
+                        "f:type": {}
+                      }
+                    },
+                    "f:serviceAccount": {},
+                    "f:serviceAccountName": {},
+                    "f:terminationGracePeriodSeconds": {},
+                    "f:volumes": {
+                      ".": {},
+                      "k:{\"name\":\"content\"}": {
+                        ".": {},
+                        "f:configMap": {
+                          ".": {},
+                          "f:defaultMode": {},
+                          "f:name": {}
+                        },
+                        "f:name": {}
+                      },
+                      "k:{\"name\":\"klipper-cache\"}": {
+                        ".": {},
+                        "f:emptyDir": {
+                          ".": {},
+                          "f:medium": {}
+                        },
+                        "f:name": {}
+                      },
+                      "k:{\"name\":\"klipper-config\"}": {
+                        ".": {},
+                        "f:emptyDir": {
+                          ".": {},
+                          "f:medium": {}
+                        },
+                        "f:name": {}
+                      },
+                      "k:{\"name\":\"klipper-helm\"}": {
+                        ".": {},
+                        "f:emptyDir": {
+                          ".": {},
+                          "f:medium": {}
+                        },
+                        "f:name": {}
+                      },
+                      "k:{\"name\":\"tmp\"}": {
+                        ".": {},
+                        "f:emptyDir": {
+                          ".": {},
+                          "f:medium": {}
+                        },
+                        "f:name": {}
+                      },
+                      "k:{\"name\":\"values\"}": {
+                        ".": {},
+                        "f:name": {},
+                        "f:projected": {
+                          ".": {},
+                          "f:defaultMode": {},
+                          "f:sources": {}
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          {
+            "manager": "k3s",
+            "operation": "Update",
+            "apiVersion": "batch/v1",
+            "time": "2025-09-11T20:40:27Z",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:status": {
+                "f:completionTime": {},
+                "f:conditions": {},
+                "f:ready": {},
+                "f:startTime": {},
+                "f:succeeded": {},
+                "f:terminating": {},
+                "f:uncountedTerminatedPods": {}
+              }
+            },
+            "subresource": "status"
+          }
+        ]
+      },
+      "spec": {
+        "parallelism": 1,
+        "completions": 1,
+        "backoffLimit": 1000,
+        "selector": {
+          "matchLabels": {
+            "batch.kubernetes.io/controller-uid": "d7fcb918-a3e3-4fb7-817f-6397e15835f9"
+          }
+        },
+        "manualSelector": false,
+        "template": {
+          "metadata": {
+            "creationTimestamp": null,
+            "labels": {
+              "batch.kubernetes.io/controller-uid": "d7fcb918-a3e3-4fb7-817f-6397e15835f9",
+              "batch.kubernetes.io/job-name": "helm-install-traefik",
+              "controller-uid": "d7fcb918-a3e3-4fb7-817f-6397e15835f9",
+              "helmcharts.helm.cattle.io/chart": "traefik",
+              "job-name": "helm-install-traefik"
+            },
+            "annotations": {
+              "helmcharts.helm.cattle.io/configHash": "SHA256=8717A52E651717B5B0EF9C9B8646C5FC01C1DA0F7D3F6FEBA321FC57FE9A012A"
+            }
+          },
+          "spec": {
+            "volumes": [
+              {
+                "name": "klipper-helm",
+                "emptyDir": {
+                  "medium": "Memory"
+                }
+              },
+              {
+                "name": "klipper-cache",
+                "emptyDir": {
+                  "medium": "Memory"
+                }
+              },
+              {
+                "name": "klipper-config",
+                "emptyDir": {
+                  "medium": "Memory"
+                }
+              },
+              {
+                "name": "tmp",
+                "emptyDir": {
+                  "medium": "Memory"
+                }
+              },
+              {
+                "name": "values",
+                "projected": {
+                  "sources": [
+                    {
+                      "secret": {
+                        "name": "chart-values-traefik",
+                        "items": [
+                          {
+                            "key": "HelmChartValuesContent",
+                            "path": "values-0-000-HelmChart-ValuesContent.yaml"
+                          }
+                        ]
+                      }
+                    }
+                  ],
+                  "defaultMode": 420
+                }
+              },
+              {
+                "name": "content",
+                "configMap": {
+                  "name": "chart-content-traefik",
+                  "defaultMode": 420
+                }
+              }
+            ],
+            "containers": [
+              {
+                "name": "helm",
+                "image": "rancher/klipper-helm:v0.9.8-build20250709",
+                "args": [
+                  "install",
+                  "--set-string",
+                  "global.systemDefaultRegistry="
+                ],
+                "env": [
+                  {
+                    "name": "NAME",
+                    "value": "traefik"
+                  },
+                  {
+                    "name": "VERSION"
+                  },
+                  {
+                    "name": "REPO"
+                  },
+                  {
+                    "name": "HELM_DRIVER",
+                    "value": "secret"
+                  },
+                  {
+                    "name": "CHART_NAMESPACE",
+                    "value": "kube-system"
+                  },
+                  {
+                    "name": "CHART",
+                    "value": "https://%{KUBERNETES_API}%/static/charts/traefik-34.2.1+up34.2.0.tgz"
+                  },
+                  {
+                    "name": "HELM_VERSION"
+                  },
+                  {
+                    "name": "TARGET_NAMESPACE",
+                    "value": "kube-system"
+                  },
+                  {
+                    "name": "AUTH_PASS_CREDENTIALS",
+                    "value": "false"
+                  },
+                  {
+                    "name": "INSECURE_SKIP_TLS_VERIFY",
+                    "value": "false"
+                  },
+                  {
+                    "name": "PLAIN_HTTP",
+                    "value": "false"
+                  },
+                  {
+                    "name": "NO_PROXY",
+                    "value": ".svc,.cluster.local,10.42.0.0/16,10.43.0.0/16"
+                  },
+                  {
+                    "name": "FAILURE_POLICY",
+                    "value": "reinstall"
+                  }
+                ],
+                "resources": {},
+                "volumeMounts": [
+                  {
+                    "name": "klipper-helm",
+                    "mountPath": "/home/klipper-helm/.helm"
+                  },
+                  {
+                    "name": "klipper-cache",
+                    "mountPath": "/home/klipper-helm/.cache"
+                  },
+                  {
+                    "name": "klipper-config",
+                    "mountPath": "/home/klipper-helm/.config"
+                  },
+                  {
+                    "name": "tmp",
+                    "mountPath": "/tmp"
+                  },
+                  {
+                    "name": "values",
+                    "mountPath": "/config"
+                  },
+                  {
+                    "name": "content",
+                    "mountPath": "/chart"
+                  }
+                ],
+                "terminationMessagePath": "/dev/termination-log",
+                "terminationMessagePolicy": "File",
+                "imagePullPolicy": "IfNotPresent",
+                "securityContext": {
+                  "capabilities": {
+                    "drop": [
+                      "ALL"
+                    ]
+                  },
+                  "readOnlyRootFilesystem": true,
+                  "allowPrivilegeEscalation": false
+                }
+              }
+            ],
+            "restartPolicy": "OnFailure",
+            "terminationGracePeriodSeconds": 30,
+            "dnsPolicy": "ClusterFirst",
+            "nodeSelector": {
+              "kubernetes.io/os": "linux"
+            },
+            "serviceAccountName": "helm-traefik",
+            "serviceAccount": "helm-traefik",
+            "securityContext": {
+              "runAsNonRoot": true,
+              "seccompProfile": {
+                "type": "RuntimeDefault"
+              }
+            },
+            "schedulerName": "default-scheduler"
+          }
+        },
+        "completionMode": "NonIndexed",
+        "suspend": false,
+        "podReplacementPolicy": "TerminatingOrFailed"
+      },
+      "status": {
+        "conditions": [
+          {
+            "type": "SuccessCriteriaMet",
+            "status": "True",
+            "lastProbeTime": "2025-09-11T20:40:27Z",
+            "lastTransitionTime": "2025-09-11T20:40:27Z",
+            "reason": "CompletionsReached",
+            "message": "Reached expected number of succeeded pods"
+          },
+          {
+            "type": "Complete",
+            "status": "True",
+            "lastProbeTime": "2025-09-11T20:40:27Z",
+            "lastTransitionTime": "2025-09-11T20:40:27Z",
+            "reason": "CompletionsReached",
+            "message": "Reached expected number of succeeded pods"
+          }
+        ],
+        "startTime": "2025-09-11T20:39:44Z",
+        "completionTime": "2025-09-11T20:40:27Z",
+        "succeeded": 1,
+        "terminating": 0,
+        "uncountedTerminatedPods": {},
+        "ready": 0
+      }
+    },
+    {
+      "kind": "Job",
+      "apiVersion": "batch/v1",
+      "metadata": {
+        "name": "helm-install-traefik-crd",
+        "namespace": "kube-system",
+        "uid": "1c2a467f-43b4-4545-a3b6-ee8da13d2b16",
+        "resourceVersion": "810",
+        "generation": 1,
+        "creationTimestamp": "2025-09-11T20:39:43Z",
+        "labels": {
+          "helmcharts.helm.cattle.io/chart": "traefik-crd",
+          "objectset.rio.cattle.io/hash": "48ff3d5c3117b372fcdca509795f9f2702af0592"
+        },
+        "annotations": {
+          "objectset.rio.cattle.io/applied": "H4sIAAAAAAAA/7RW34/aPBb9V1aW+rRJSEKASaQ+ZJiwsGUgAlrtqhohY24Gfzh2ZDu0aMT//skOnYZhOp0+fG/4xzm5957je3lCuKJfQCoqOErQBmuy6xwC5KA95VuUoP+KDXJQCRpvscYoeUKYc6GxpoIrsxSbv4BoBdqTVHgEa83Ao6JDDXoHrHSJ4FoKxkC6ZIeldiU8UqWl5UDOLxnENw7SfTzsz0Sto0Pg/OsT5duPY2Dl0JD+lofjElCCtMRQ0L1L5PZdEFVhYnD7egOuOioNJTo5iEiw4a9oCUrjskIJrxlzEMMbYLYwJmSbr/JeRG933x3LDqsdSlB0UxTdbY90g2Cw6Q7CgmwJ7vnxIO4VcREO/BAXfi8OTXTnXG31KVcaM+ZefuxXqTnIpr6AAiRwAgolX1945EoK5KANE2Q/N8g7YGB1TQrMFDjop/rPW2drtbV7VZ3aeijsFkEwCGJ30N/EbtQNwd0EPd/t9wekt+lGgX8TodPDyUGqAmIqv8FkL4piSkuqURL4vu8gDWXFsAZz/oab3xBN8II+jhsxluM07PU/Zt1bfxhFYXwzGgbDIIrT0e0oGt7EcX90G4dROEizKMiifhTfxt1omEZxL46D28E/YqFTqwSm6phykGcB5aP5gc5mQA8OAn6wR+fKz9L7DDnogFn9UoiT83zrS7ZYTuaz9tYiy+ft9Tib3q/vFpMv2aLFp4BI0O17w3G6WK3NZ5d5Omx/+/KpXQJa13ZaVyrpdD48ffp8my1m2SpbrtN8cvrQUUZR0hRJdVq5uN3IC73g33XVja6CfiW5Vbr4T/ZHUaafV+N1ni6X6+Eiu8tmq0k6XbZg9gm0AZPZMht+XmTr5adJvl5NlyaOyej/b2HyaTqZrcerVf7Wrdl8nS/m/2szeepAHI+wWmmQHhMEMyfwvSj0fM/vBH276J4Xba5ROpmaIPP5dDJsM0r44anTg4NoiR/tLuZkB7KzZ7SqQLrGvcnB92Lvxt3UlG1DP+z5Az9GZ0xeM5YLRsnRlKSYCZ1LUMBbvcFwIAdJUKKWtjM9GcMDqSXVx6HgGr5r+6QZE99ySQ+UwSNkimCGL1sSrvCGMqqpZUFbKSrzOtLpFJk+IgFv55wdF0LoEWVwVjnRsoaTgw6C1SXci5rr5nWV5meOtekMnZ0o4SLvjneO/JxH+8yW+HdwgskOrvHN9rsIbOt6haHZv6LQZdVqyWV1feMlo3WDeuXeZXs3XcloenowZuFiC0tgQLSQRgbzoiQHDcqOYIUSxCivvyMridJY6meLzPkIU1ZLU5dXLCBrnqqZ4EbBRjd7jYiyyqUoKLNzQB8r28FqrmkJd1DgmummjYI8UAIpISabWWucXk6oxgqNC6Cs9PGOymbCbGldogTdQynksTWTr9T/M9hP0f8Q91Pq9wF/yH4psIMqKczfFNga+PNL/Pr0o8Mnz5Dmv14DdC/n1MPJUDcx3ePqCnT2ySXqNRdZrTTWte0Gp78DAAD//2S5eJ3OCgAA",
+          "objectset.rio.cattle.io/id": "helm-controller-chart-registration",
+          "objectset.rio.cattle.io/owner-gvk": "helm.cattle.io/v1, Kind=HelmChart",
+          "objectset.rio.cattle.io/owner-name": "traefik-crd",
+          "objectset.rio.cattle.io/owner-namespace": "kube-system"
+        },
+        "ownerReferences": [
+          {
+            "apiVersion": "helm.cattle.io/v1",
+            "kind": "HelmChart",
+            "name": "traefik-crd",
+            "uid": "23f11719-76b9-432e-b150-667c5b341084",
+            "controller": false,
+            "blockOwnerDeletion": false
+          }
+        ],
+        "managedFields": [
+          {
+            "manager": "helm-controller@c9b7eea91",
+            "operation": "Update",
+            "apiVersion": "batch/v1",
+            "time": "2025-09-11T20:39:43Z",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:metadata": {
+                "f:annotations": {
+                  ".": {},
+                  "f:objectset.rio.cattle.io/applied": {},
+                  "f:objectset.rio.cattle.io/id": {},
+                  "f:objectset.rio.cattle.io/owner-gvk": {},
+                  "f:objectset.rio.cattle.io/owner-name": {},
+                  "f:objectset.rio.cattle.io/owner-namespace": {}
+                },
+                "f:labels": {
+                  ".": {},
+                  "f:helmcharts.helm.cattle.io/chart": {},
+                  "f:objectset.rio.cattle.io/hash": {}
+                },
+                "f:ownerReferences": {
+                  ".": {},
+                  "k:{\"uid\":\"23f11719-76b9-432e-b150-667c5b341084\"}": {}
+                }
+              },
+              "f:spec": {
+                "f:backoffLimit": {},
+                "f:completionMode": {},
+                "f:completions": {},
+                "f:manualSelector": {},
+                "f:parallelism": {},
+                "f:podReplacementPolicy": {},
+                "f:suspend": {},
+                "f:template": {
+                  "f:metadata": {
+                    "f:annotations": {
+                      ".": {},
+                      "f:helmcharts.helm.cattle.io/configHash": {}
+                    },
+                    "f:labels": {
+                      ".": {},
+                      "f:helmcharts.helm.cattle.io/chart": {}
+                    }
+                  },
+                  "f:spec": {
+                    "f:containers": {
+                      "k:{\"name\":\"helm\"}": {
+                        ".": {},
+                        "f:args": {},
+                        "f:env": {
+                          ".": {},
+                          "k:{\"name\":\"AUTH_PASS_CREDENTIALS\"}": {
+                            ".": {},
+                            "f:name": {},
+                            "f:value": {}
+                          },
+                          "k:{\"name\":\"CHART\"}": {
+                            ".": {},
+                            "f:name": {},
+                            "f:value": {}
+                          },
+                          "k:{\"name\":\"CHART_NAMESPACE\"}": {
+                            ".": {},
+                            "f:name": {},
+                            "f:value": {}
+                          },
+                          "k:{\"name\":\"FAILURE_POLICY\"}": {
+                            ".": {},
+                            "f:name": {},
+                            "f:value": {}
+                          },
+                          "k:{\"name\":\"HELM_DRIVER\"}": {
+                            ".": {},
+                            "f:name": {},
+                            "f:value": {}
+                          },
+                          "k:{\"name\":\"HELM_VERSION\"}": {
+                            ".": {},
+                            "f:name": {}
+                          },
+                          "k:{\"name\":\"INSECURE_SKIP_TLS_VERIFY\"}": {
+                            ".": {},
+                            "f:name": {},
+                            "f:value": {}
+                          },
+                          "k:{\"name\":\"NAME\"}": {
+                            ".": {},
+                            "f:name": {},
+                            "f:value": {}
+                          },
+                          "k:{\"name\":\"NO_PROXY\"}": {
+                            ".": {},
+                            "f:name": {},
+                            "f:value": {}
+                          },
+                          "k:{\"name\":\"PLAIN_HTTP\"}": {
+                            ".": {},
+                            "f:name": {},
+                            "f:value": {}
+                          },
+                          "k:{\"name\":\"REPO\"}": {
+                            ".": {},
+                            "f:name": {}
+                          },
+                          "k:{\"name\":\"TARGET_NAMESPACE\"}": {
+                            ".": {},
+                            "f:name": {},
+                            "f:value": {}
+                          },
+                          "k:{\"name\":\"VERSION\"}": {
+                            ".": {},
+                            "f:name": {}
+                          }
+                        },
+                        "f:image": {},
+                        "f:imagePullPolicy": {},
+                        "f:name": {},
+                        "f:resources": {},
+                        "f:securityContext": {
+                          ".": {},
+                          "f:allowPrivilegeEscalation": {},
+                          "f:capabilities": {
+                            ".": {},
+                            "f:drop": {}
+                          },
+                          "f:readOnlyRootFilesystem": {}
+                        },
+                        "f:terminationMessagePath": {},
+                        "f:terminationMessagePolicy": {},
+                        "f:volumeMounts": {
+                          ".": {},
+                          "k:{\"mountPath\":\"/chart\"}": {
+                            ".": {},
+                            "f:mountPath": {},
+                            "f:name": {}
+                          },
+                          "k:{\"mountPath\":\"/config\"}": {
+                            ".": {},
+                            "f:mountPath": {},
+                            "f:name": {}
+                          },
+                          "k:{\"mountPath\":\"/home/klipper-helm/.cache\"}": {
+                            ".": {},
+                            "f:mountPath": {},
+                            "f:name": {}
+                          },
+                          "k:{\"mountPath\":\"/home/klipper-helm/.config\"}": {
+                            ".": {},
+                            "f:mountPath": {},
+                            "f:name": {}
+                          },
+                          "k:{\"mountPath\":\"/home/klipper-helm/.helm\"}": {
+                            ".": {},
+                            "f:mountPath": {},
+                            "f:name": {}
+                          },
+                          "k:{\"mountPath\":\"/tmp\"}": {
+                            ".": {},
+                            "f:mountPath": {},
+                            "f:name": {}
+                          }
+                        }
+                      }
+                    },
+                    "f:dnsPolicy": {},
+                    "f:nodeSelector": {},
+                    "f:restartPolicy": {},
+                    "f:schedulerName": {},
+                    "f:securityContext": {
+                      ".": {},
+                      "f:runAsNonRoot": {},
+                      "f:seccompProfile": {
+                        ".": {},
+                        "f:type": {}
+                      }
+                    },
+                    "f:serviceAccount": {},
+                    "f:serviceAccountName": {},
+                    "f:terminationGracePeriodSeconds": {},
+                    "f:volumes": {
+                      ".": {},
+                      "k:{\"name\":\"content\"}": {
+                        ".": {},
+                        "f:configMap": {
+                          ".": {},
+                          "f:defaultMode": {},
+                          "f:name": {}
+                        },
+                        "f:name": {}
+                      },
+                      "k:{\"name\":\"klipper-cache\"}": {
+                        ".": {},
+                        "f:emptyDir": {
+                          ".": {},
+                          "f:medium": {}
+                        },
+                        "f:name": {}
+                      },
+                      "k:{\"name\":\"klipper-config\"}": {
+                        ".": {},
+                        "f:emptyDir": {
+                          ".": {},
+                          "f:medium": {}
+                        },
+                        "f:name": {}
+                      },
+                      "k:{\"name\":\"klipper-helm\"}": {
+                        ".": {},
+                        "f:emptyDir": {
+                          ".": {},
+                          "f:medium": {}
+                        },
+                        "f:name": {}
+                      },
+                      "k:{\"name\":\"tmp\"}": {
+                        ".": {},
+                        "f:emptyDir": {
+                          ".": {},
+                          "f:medium": {}
+                        },
+                        "f:name": {}
+                      },
+                      "k:{\"name\":\"values\"}": {
+                        ".": {},
+                        "f:name": {},
+                        "f:projected": {
+                          ".": {},
+                          "f:defaultMode": {},
+                          "f:sources": {}
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          {
+            "manager": "k3s",
+            "operation": "Update",
+            "apiVersion": "batch/v1",
+            "time": "2025-09-11T20:40:13Z",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:status": {
+                "f:completionTime": {},
+                "f:conditions": {},
+                "f:ready": {},
+                "f:startTime": {},
+                "f:succeeded": {},
+                "f:terminating": {},
+                "f:uncountedTerminatedPods": {}
+              }
+            },
+            "subresource": "status"
+          }
+        ]
+      },
+      "spec": {
+        "parallelism": 1,
+        "completions": 1,
+        "backoffLimit": 1000,
+        "selector": {
+          "matchLabels": {
+            "batch.kubernetes.io/controller-uid": "1c2a467f-43b4-4545-a3b6-ee8da13d2b16"
+          }
+        },
+        "manualSelector": false,
+        "template": {
+          "metadata": {
+            "creationTimestamp": null,
+            "labels": {
+              "batch.kubernetes.io/controller-uid": "1c2a467f-43b4-4545-a3b6-ee8da13d2b16",
+              "batch.kubernetes.io/job-name": "helm-install-traefik-crd",
+              "controller-uid": "1c2a467f-43b4-4545-a3b6-ee8da13d2b16",
+              "helmcharts.helm.cattle.io/chart": "traefik-crd",
+              "job-name": "helm-install-traefik-crd"
+            },
+            "annotations": {
+              "helmcharts.helm.cattle.io/configHash": "SHA256=E3B0C44298FC1C149AFBF4C8996FB92427AE41E4649B934CA495991B7852B855"
+            }
+          },
+          "spec": {
+            "volumes": [
+              {
+                "name": "klipper-helm",
+                "emptyDir": {
+                  "medium": "Memory"
+                }
+              },
+              {
+                "name": "klipper-cache",
+                "emptyDir": {
+                  "medium": "Memory"
+                }
+              },
+              {
+                "name": "klipper-config",
+                "emptyDir": {
+                  "medium": "Memory"
+                }
+              },
+              {
+                "name": "tmp",
+                "emptyDir": {
+                  "medium": "Memory"
+                }
+              },
+              {
+                "name": "values",
+                "projected": {
+                  "sources": [
+                    {
+                      "secret": {
+                        "name": "chart-values-traefik-crd"
+                      }
+                    }
+                  ],
+                  "defaultMode": 420
+                }
+              },
+              {
+                "name": "content",
+                "configMap": {
+                  "name": "chart-content-traefik-crd",
+                  "defaultMode": 420
+                }
+              }
+            ],
+            "containers": [
+              {
+                "name": "helm",
+                "image": "rancher/klipper-helm:v0.9.8-build20250709",
+                "args": [
+                  "install"
+                ],
+                "env": [
+                  {
+                    "name": "NAME",
+                    "value": "traefik-crd"
+                  },
+                  {
+                    "name": "VERSION"
+                  },
+                  {
+                    "name": "REPO"
+                  },
+                  {
+                    "name": "HELM_DRIVER",
+                    "value": "secret"
+                  },
+                  {
+                    "name": "CHART_NAMESPACE",
+                    "value": "kube-system"
+                  },
+                  {
+                    "name": "CHART",
+                    "value": "https://%{KUBERNETES_API}%/static/charts/traefik-crd-34.2.1+up34.2.0.tgz"
+                  },
+                  {
+                    "name": "HELM_VERSION"
+                  },
+                  {
+                    "name": "TARGET_NAMESPACE",
+                    "value": "kube-system"
+                  },
+                  {
+                    "name": "AUTH_PASS_CREDENTIALS",
+                    "value": "false"
+                  },
+                  {
+                    "name": "INSECURE_SKIP_TLS_VERIFY",
+                    "value": "false"
+                  },
+                  {
+                    "name": "PLAIN_HTTP",
+                    "value": "false"
+                  },
+                  {
+                    "name": "NO_PROXY",
+                    "value": ".svc,.cluster.local,10.42.0.0/16,10.43.0.0/16"
+                  },
+                  {
+                    "name": "FAILURE_POLICY",
+                    "value": "reinstall"
+                  }
+                ],
+                "resources": {},
+                "volumeMounts": [
+                  {
+                    "name": "klipper-helm",
+                    "mountPath": "/home/klipper-helm/.helm"
+                  },
+                  {
+                    "name": "klipper-cache",
+                    "mountPath": "/home/klipper-helm/.cache"
+                  },
+                  {
+                    "name": "klipper-config",
+                    "mountPath": "/home/klipper-helm/.config"
+                  },
+                  {
+                    "name": "tmp",
+                    "mountPath": "/tmp"
+                  },
+                  {
+                    "name": "values",
+                    "mountPath": "/config"
+                  },
+                  {
+                    "name": "content",
+                    "mountPath": "/chart"
+                  }
+                ],
+                "terminationMessagePath": "/dev/termination-log",
+                "terminationMessagePolicy": "File",
+                "imagePullPolicy": "IfNotPresent",
+                "securityContext": {
+                  "capabilities": {
+                    "drop": [
+                      "ALL"
+                    ]
+                  },
+                  "readOnlyRootFilesystem": true,
+                  "allowPrivilegeEscalation": false
+                }
+              }
+            ],
+            "restartPolicy": "OnFailure",
+            "terminationGracePeriodSeconds": 30,
+            "dnsPolicy": "ClusterFirst",
+            "nodeSelector": {
+              "kubernetes.io/os": "linux"
+            },
+            "serviceAccountName": "helm-traefik-crd",
+            "serviceAccount": "helm-traefik-crd",
+            "securityContext": {
+              "runAsNonRoot": true,
+              "seccompProfile": {
+                "type": "RuntimeDefault"
+              }
+            },
+            "schedulerName": "default-scheduler"
+          }
+        },
+        "completionMode": "NonIndexed",
+        "suspend": false,
+        "podReplacementPolicy": "TerminatingOrFailed"
+      },
+      "status": {
+        "conditions": [
+          {
+            "type": "SuccessCriteriaMet",
+            "status": "True",
+            "lastProbeTime": "2025-09-11T20:40:13Z",
+            "lastTransitionTime": "2025-09-11T20:40:13Z",
+            "reason": "CompletionsReached",
+            "message": "Reached expected number of succeeded pods"
+          },
+          {
+            "type": "Complete",
+            "status": "True",
+            "lastProbeTime": "2025-09-11T20:40:13Z",
+            "lastTransitionTime": "2025-09-11T20:40:13Z",
+            "reason": "CompletionsReached",
+            "message": "Reached expected number of succeeded pods"
+          }
+        ],
+        "startTime": "2025-09-11T20:39:44Z",
+        "completionTime": "2025-09-11T20:40:13Z",
+        "succeeded": 1,
+        "terminating": 0,
+        "uncountedTerminatedPods": {},
+        "ready": 0
+      }
+    }
+  ]
+}

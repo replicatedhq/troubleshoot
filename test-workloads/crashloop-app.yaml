@@ -1,0 +1,84 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend-api
+  namespace: default
+  labels:
+    app: backend-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend-api
+  template:
+    metadata:
+      labels:
+        app: backend-api
+    spec:
+      containers:
+      - name: api-server
+        image: alpine:latest
+        command: ["/bin/sh"]
+        args:
+          - -c
+          - |
+            echo "Starting Backend API Server v3.2.1"
+            echo "Environment: production"
+            echo "Initializing database connection..."
+            
+            # Try to connect to non-existent database
+            nc -z postgres-service.database 5432 || {
+              echo "ERROR: Failed to connect to database: connection refused"
+              echo "Database connection failed after 3 retries"
+              exit 1
+            }
+            
+            echo "Attempting Redis connection..."
+            nc -z redis-service.cache 6379 || {
+              echo "ERROR: Failed to resolve Redis host: redis-service.cache: no such host"
+              echo "Redis connection failed"
+              exit 1
+            }
+            
+            echo "FATAL: Cannot start server: required dependencies unavailable"
+            echo "Startup failed - exiting with code 1"
+            exit 1
+        env:
+        - name: DATABASE_URL
+          value: "postgresql://user:pass@postgres-service.database:5432/mydb"
+        - name: REDIS_HOST
+          value: "redis-service.cache"
+        - name: APP_ENV
+          value: "production"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /health  
+            port: 8080
+          initialDelaySeconds: 15
+          periodSeconds: 20
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend-api-service
+  namespace: default
+spec:
+  selector:
+    app: backend-api
+  ports:
+  - port: 80
+    targetPort: 8080
+  type: ClusterIP

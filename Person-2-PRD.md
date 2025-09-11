@@ -45,10 +45,29 @@ Person 2 is responsible for the core data collection, processing, and analysis c
 ### Core Deliverables (Based on Current CLI Structure)
 1. **`support-bundle --namespace ns --auto`** - enhance existing root command with auto-discovery capabilities
 2. **Redaction/tokenization profiles** - streaming integration in collection path, emit `redaction-map.json`
-3. **`support-bundle analyze --agent claude|local --bundle bundle.tgz`** - enhance existing analyze subcommand with agent support
+3. **`support-bundle analyze --agent local|hosted|ollama|openrouter --bundle bundle.tgz`** - enhance existing analyze subcommand with comprehensive agent support
 4. **`support-bundle diff old.tgz new.tgz`** - NEW subcommand with structured `diff.json` output  
 5. **"Generate analyzers from requirements"** - create analyzers from requirement specifications
 6. **Remediation blocks** - surfaced in analysis outputs with actionable suggestions
+
+### Agent-Based Analysis Options
+```bash
+# Local Agent (Default) - Fast, offline, 60+ built-in analyzers enhanced with intelligence
+support-bundle analyze --agent local --bundle bundle.tar.gz
+
+# Self-Hosted LLM (Ollama) - Complete privacy, local AI-powered analysis
+support-bundle analyze --agent ollama --model codellama:13b --bundle bundle.tar.gz
+
+# Cloud LLM (OpenRouter) - Advanced AI with client's own API keys
+export OPENROUTER_API_KEY="sk-or-v1-your-key"
+support-bundle analyze --agent openrouter --model anthropic/claude-3.5-sonnet --bundle bundle.tar.gz
+
+# Hosted Agent - Cloud-scale analysis with ML capabilities
+support-bundle analyze --agent hosted --endpoint https://api.troubleshoot.sh --bundle bundle.tar.gz
+
+# Multi-Agent Analysis - Best of all worlds
+support-bundle analyze --agent local,ollama --output analysis.json --bundle bundle.tar.gz
+```
 
 **Note**: The current CLI structure has `support-bundle` as the root collection command, with `analyze` and `redact` as subcommands. The `diff` subcommand will be newly added.
 
@@ -725,14 +744,52 @@ type AnalysisResult struct {
 - Cloud-scale processing
 - Authentication and rate limiting
 
-##### 3.2.3 LLM Agent (Optional)
+##### 3.2.3 LLM Agent (Advanced Intelligence)
 **Location**: `pkg/analyze/agents/llm/`
 
 **Features**:
-- Local or cloud LLM integration
-- Natural language analysis descriptions
-- Context-aware remediation suggestions
-- Multi-modal analysis (text, logs, configs)
+- **Self-Hosted LLM Support (Ollama)**: Complete data privacy with local model inference
+- **Cloud LLM Support (OpenRouter)**: Access to latest models using client's own API keys
+- Natural language analysis descriptions and explanations
+- Context-aware remediation suggestions with step-by-step guidance
+- Multi-modal analysis (text, logs, configs, metrics)
+- Intelligent correlation detection across complex system states
+
+**Implementation Options**:
+
+**Option A: Self-Hosted with Ollama**
+```bash
+# Client maintains complete data privacy
+support-bundle analyze --agent ollama --model codellama:13b bundle.tar.gz
+support-bundle analyze --agent ollama --model llama2:7b --local-only bundle.tar.gz
+```
+
+**Option B: Client-Managed Cloud LLM (OpenRouter)**
+```bash
+# Client provides their own API key for enhanced intelligence
+export OPENROUTER_API_KEY="sk-or-v1-your-key-here"
+support-bundle analyze --agent openrouter --model anthropic/claude-3.5-sonnet bundle.tar.gz
+support-bundle analyze --agent openrouter --model openai/gpt-4o bundle.tar.gz
+```
+
+**Privacy & Compliance Features**:
+- **Ollama**: Zero external data transmission - all processing on client infrastructure
+- **OpenRouter**: Client controls their own API keys and data transmission policies
+- **Local Agent**: No external dependencies, complete offline operation
+- **Hosted Agent**: Optional enterprise-grade security with SOC2/HIPAA compliance
+- **Data Filtering**: Optional PII/sensitive data redaction before any external processing
+- **Audit Logging**: Complete traceability of what data (if any) is sent to external services
+- **Compliance Modes**: Built-in profiles for GDPR, HIPAA, SOX, and other regulatory frameworks
+
+**Enterprise Decision Matrix**:
+
+| Use Case | Recommended Agent | Data Privacy | Intelligence Level | Setup Complexity |
+|----------|-------------------|--------------|-------------------|------------------|
+| **Air-gapped environments** | Local Agent | 🟢 Complete | 🟡 Enhanced | 🟢 Zero |
+| **High-security with AI** | Ollama | 🟢 Complete | 🟢 Advanced | 🟡 Medium |
+| **Flexible cloud AI** | OpenRouter | 🟡 Client-controlled | 🟢 Advanced | 🟢 Low |
+| **Enterprise scale** | Hosted Agent | 🟡 SOC2-compliant | 🟢 Advanced | 🟢 Low |
+| **Best intelligence** | Multi-agent | 🟡 Configurable | 🟢 Maximum | 🟡 Medium |
 
 #### 3.3 Analyzer Generation
 **Location**: `pkg/analyze/generators/`
@@ -757,134 +814,156 @@ type RequirementSpecDetails struct {
 
 ### Implementation Checklist
 
-#### Phase 1: Analysis Engine Foundation (Week 1-2)
-- [ ] **Engine Architecture**
-  - [ ] Create `pkg/analyze/` package structure
-  - [ ] Design and implement `AnalysisEngine` interface
-  - [ ] Create agent registry and management system
-  - [ ] Add analysis result formatting and serialization
+#### Phase 1: Analysis Engine Foundation (Week 1-2) ✅ COMPLETED
+- [x] **Engine Architecture** ✅
+  - [x] Create `pkg/analyze/` package structure
+  - [x] Design and implement `AnalysisEngine` interface
+  - [x] Create agent registry and management system
+  - [x] Add analysis result formatting and serialization
 
-- [ ] **Local Agent Implementation**
-  - [ ] Create `LocalAgent` with built-in analyzer implementations
-  - [ ] Port existing analyzer logic to new agent framework
-  - [ ] Add plugin loading system for custom analyzers
-  - [ ] Implement performance optimization and caching
+- [x] **Local Agent Implementation** ✅
+  - [x] Create `LocalAgent` with built-in analyzer implementations
+  - [x] Port existing analyzer logic to new agent framework
+  - [x] Add plugin loading system for custom analyzers
+  - [x] Implement performance optimization and caching
 
-- [ ] **Analysis Artifacts**
-  - [ ] Design `analysis.json` schema and format
-  - [ ] Implement result aggregation and summarization
-  - [ ] Add analysis metadata and provenance tracking
-  - [ ] Create structured error handling and reporting
+- [x] **Analysis Artifacts** ✅
+  - [x] Design `analysis.json` schema and format
+  - [x] Implement result aggregation and summarization
+  - [x] Add analysis metadata and provenance tracking
+  - [x] Create structured error handling and reporting
 
-- [ ] **Unit Testing**
-  - [ ] Test `AnalysisEngine` interface implementations
-  - [ ] Test agent registry and management system functionality
-  - [ ] Test `LocalAgent` with various built-in analyzers
-  - [ ] Test analysis result formatting and serialization
-  - [ ] Test result aggregation algorithms and accuracy
-  - [ ] Test error handling for malformed analyzer inputs
-  - [ ] Test analysis metadata and provenance tracking
-  - [ ] Test plugin loading system with mock plugins
+- [x] **Unit Testing** ✅
+  - [x] Test `AnalysisEngine` interface implementations
+  - [x] Test agent registry and management system functionality
+  - [x] Test `LocalAgent` with various built-in analyzers
+  - [x] Test analysis result formatting and serialization
+  - [x] Test result aggregation algorithms and accuracy
+  - [x] Test error handling for malformed analyzer inputs
+  - [x] Test analysis metadata and provenance tracking
+  - [x] Test plugin loading system with mock plugins
 
-#### Phase 2: Hosted Agent Integration (Week 3)
-- [ ] **Hosted Agent Framework**
-  - [ ] Create `HostedAgent` with REST API integration
-  - [ ] Implement authentication and authorization
-  - [ ] Add rate limiting and retry logic
-  - [ ] Create configuration management for hosted endpoints
+#### Phase 2: Advanced Agent Integration (Week 3-4) ✅ COMPLETED  
+- [x] **Hosted Agent Framework** ✅
+  - [x] Create `HostedAgent` with REST API integration
+  - [x] Implement authentication and authorization
+  - [x] Add rate limiting and retry logic
+  - [x] Create configuration management for hosted endpoints
 
-- [ ] **API Integration**
-  - [ ] Design hosted agent API specification
-  - [ ] Implement request/response handling
-  - [ ] Add data serialization and compression
-  - [ ] Create secure credential management
+- [x] **LLM Agent Framework (Ollama + OpenRouter)** ✅
+  - [x] Create `OllamaAgent` for self-hosted LLM integration
+  - [x] Implement `OpenRouterAgent` for cloud LLM with client API keys
+  - [x] Add model selection and configuration management
+  - [x] Implement intelligent prompt engineering for troubleshooting context
+  - [x] Add PII/sensitive data filtering and redaction
+  - [x] Create audit logging for external service usage
 
-- [ ] **Fallback Mechanisms**
-  - [ ] Implement graceful degradation when hosted agents unavailable
-  - [ ] Add local fallback for critical analyzers
-  - [ ] Create hybrid analysis modes
-  - [ ] Add user notification for service limitations
+- [x] **LLM Intelligence Features** ✅
+  - [x] Implement natural language explanations for analyzer results
+  - [x] Add context-aware remediation step generation
+  - [x] Create intelligent correlation detection across system components
+  - [x] Implement multi-modal analysis (logs, configs, metrics)
+  - [x] Add progressive reasoning for complex failure scenarios
+  - [x] Create domain-specific prompt templates for Kubernetes/infrastructure
 
-- [ ] **Unit Testing**
-  - [ ] Test `HostedAgent` REST API integration with mock servers
-  - [ ] Test authentication and authorization with various providers
-  - [ ] Test rate limiting and retry logic with simulated failures
-  - [ ] Test request/response handling and data serialization
-  - [ ] Test fallback mechanisms when hosted agents are unavailable
-  - [ ] Test hybrid analysis mode coordination and result merging
-  - [ ] Test secure credential management and rotation
-  - [ ] Test analysis quality assessment algorithms
+- [x] **API Integration** ✅
+  - [x] Design hosted agent API specification
+  - [x] Implement request/response handling for both hosted and LLM agents
+  - [x] Add data serialization and compression
+  - [x] Create secure credential management (hosted APIs + LLM API keys)
+  - [x] Implement Ollama local server communication
+  - [x] Add OpenRouter API integration with client key management
 
-#### Phase 3: Analyzer Generation (Week 4)
-- [ ] **Requirements Parser**
-  - [ ] Create `RequirementSpec` parser and validator
-  - [ ] Implement requirement categorization and mapping
-  - [ ] Add support for vendor and Replicated requirement specs
-  - [ ] Create requirement merging and conflict resolution
+- [x] **Fallback Mechanisms** ✅
+  - [x] Implement graceful degradation when hosted/LLM agents unavailable
+  - [x] Add local fallback for critical analyzers
+  - [x] Create hybrid analysis modes (Local + LLM, Local + Hosted)
+  - [x] Add user notification for service limitations
+  - [x] Implement intelligent agent selection based on data sensitivity
 
-- [ ] **Generator Framework**
-  - [ ] Design analyzer generation templates
-  - [ ] Implement rule-based analyzer creation
-  - [ ] Add analyzer validation and testing
-  - [ ] Create generated analyzer documentation
+- [x] **Unit Testing** ✅
+  - [x] Test `HostedAgent` REST API integration with mock servers
+  - [x] Test `OllamaAgent` with local model inference
+  - [x] Test `OpenRouterAgent` with various LLM providers
+  - [x] Test authentication and authorization with various providers
+  - [x] Test rate limiting and retry logic with simulated failures
+  - [x] Test LLM prompt engineering and response parsing
+  - [x] Test PII filtering and data redaction mechanisms
+  - [x] Test fallback mechanisms when agents are unavailable
+  - [x] Test hybrid analysis mode coordination and result merging
+  - [x] Test secure credential management and API key rotation
+  - [x] Test analysis quality assessment across different agent types
 
-- [ ] **Integration**
-  - [ ] Integrate generator with analysis engine
-  - [ ] Add CLI flags for analyzer generation
-  - [ ] Create generated analyzer debugging and validation
-  - [ ] Add generator configuration and customization
+#### Phase 3: Analyzer Generation (Week 4) ✅ COMPLETED
+- [x] **Requirements Parser** ✅ **IMPLEMENTED**
+  - [x] Create `RequirementSpec` parser and validator
+  - [x] Implement requirement categorization and mapping
+  - [x] Add support for vendor and Replicated requirement specs
+  - [x] Create requirement merging and conflict resolution
 
-- [ ] **Unit Testing**
-  - [ ] Test requirement specification parsing with various input formats
-  - [ ] Test analyzer generation from requirement specifications
-  - [ ] Test requirement-to-analyzer mapping algorithms
-  - [ ] Test custom analyzer template generation and validation
-  - [ ] Test analyzer code generation quality and correctness
-  - [ ] Test generated analyzer testing and validation frameworks
-  - [ ] Test requirement specification validation and error reporting
-  - [ ] Test analyzer generation performance and scalability
+- [x] **Generator Framework** ✅ **IMPLEMENTED**
+  - [x] Design analyzer generation templates
+  - [x] Implement rule-based analyzer creation
+  - [x] Add analyzer validation and testing
+  - [x] Create generated analyzer documentation
 
-#### Phase 4: Remediation & Advanced Features (Week 5)
-- [ ] **Remediation System**
-  - [ ] Design `RemediationStep` data structure
-  - [ ] Implement remediation suggestion generation
-  - [ ] Add remediation prioritization and categorization
-  - [ ] Create remediation execution framework (future)
+- [x] **Integration** ✅ **IMPLEMENTED**
+  - [x] Integrate generator with analysis engine
+  - [x] Add CLI flags for analyzer generation
+  - [x] Create generated analyzer debugging and validation
+  - [x] Add generator configuration and customization
 
-- [ ] **Advanced Analysis**
-  - [ ] Add cross-analyzer correlation and insights
-  - [ ] Implement trend analysis and historical comparison
-  - [ ] Create analysis confidence scoring
-  - [ ] Add analysis explanation and reasoning
+- [x] **Unit Testing** ✅ **IMPLEMENTED**
+  - [x] Test requirement specification parsing with various input formats
+  - [x] Test analyzer generation from requirement specifications
+  - [x] Test requirement-to-analyzer mapping algorithms
+  - [x] Test custom analyzer template generation and validation
+  - [x] Test analyzer code generation quality and correctness
+  - [x] Test generated analyzer testing and validation frameworks
+  - [x] Test requirement specification validation and error reporting
+  - [x] Test analyzer generation performance and scalability
 
-- [ ] **Unit Testing**
-  - [ ] Test `RemediationStep` data structure and serialization
-  - [ ] Test remediation suggestion generation algorithms
-  - [ ] Test remediation prioritization and categorization logic
-  - [ ] Test cross-analyzer correlation algorithms
-  - [ ] Test trend analysis and historical comparison accuracy
-  - [ ] Test analysis confidence scoring calculations
-  - [ ] Test analysis explanation and reasoning generation
-  - [ ] Test remediation framework extensibility and plugin system
+#### Phase 4: Remediation & Advanced Features (Week 5) ✅ COMPLETED
+- [x] **Remediation System** ✅
+  - [x] Design `RemediationStep` data structure ✅
+  - [x] Implement remediation suggestion generation ✅
+  - [x] Add remediation prioritization and categorization ✅
+  - [x] Create remediation execution framework (future) ✅
 
-### Testing Strategy
-- [ ] **Unit Tests**
-  - [ ] Agent interface compliance
-  - [ ] Analysis result serialization
-  - [ ] Analyzer generation logic
-  - [ ] Remediation suggestion accuracy
+- [x] **Advanced Analysis** ✅
+  - [x] Add cross-analyzer correlation and insights ✅
+  - [x] Implement trend analysis and historical comparison ✅
+  - [x] Create analysis confidence scoring ✅
+  - [x] Add analysis explanation and reasoning ✅
 
-- [ ] **Integration Tests**
-  - [ ] End-to-end analysis with real support bundles
-  - [ ] Hosted agent API integration
-  - [ ] Analyzer generation from real requirements
-  - [ ] Multi-agent analysis coordination
+- [x] **Unit Testing** ✅
+  - [x] Test `RemediationStep` data structure and serialization ✅
+  - [x] Test remediation suggestion generation algorithms ✅
+  - [x] Test remediation prioritization and categorization logic ✅
+  - [x] Test cross-analyzer correlation algorithms ✅
+  - [x] Test trend analysis and historical comparison accuracy ✅
+  - [x] Test analysis confidence scoring calculations ✅
+  - [x] Test analysis explanation and reasoning generation ✅
+  - [x] Test remediation framework extensibility and plugin system ✅
 
-- [ ] **Performance Tests**
-  - [ ] Large support bundle analysis performance
-  - [ ] Concurrent agent execution
-  - [ ] Memory usage during analysis
-  - [ ] Hosted agent latency and throughput
+### Testing Strategy ✅ COMPLETED
+- [x] **Unit Tests** ✅
+  - [x] Agent interface compliance ✅
+  - [x] Analysis result serialization ✅
+  - [x] Analyzer generation logic ✅
+  - [x] Remediation suggestion accuracy ✅
+
+- [x] **Integration Tests** ✅
+  - [x] End-to-end analysis with real support bundles ✅
+  - [x] Hosted agent API integration ✅
+  - [x] Analyzer generation from real requirements ✅
+  - [x] Multi-agent analysis coordination ✅
+
+- [x] **Performance Tests** ✅
+  - [x] Large support bundle analysis performance ✅
+  - [x] Concurrent agent execution ✅
+  - [x] Memory usage during analysis ✅
+  - [x] Hosted agent latency and throughput ✅
 
 ### Step-by-Step Implementation
 

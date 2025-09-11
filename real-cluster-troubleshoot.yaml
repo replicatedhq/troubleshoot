@@ -1,0 +1,144 @@
+apiVersion: troubleshoot.sh/v1beta2
+kind: SupportBundle
+metadata:
+  name: real-cluster-analysis
+spec:
+  collectors:
+    - clusterInfo: {}
+    - clusterResources: {}
+    - logs:
+        selector:
+          - app=memory-test
+        namespace: default
+        name: memory-test-logs
+    - logs:
+        selector:
+          - app=backend-api
+        namespace: default
+        name: backend-api-logs
+    - logs:
+        selector:
+          - app=cpu-hog
+        namespace: default
+        name: cpu-hog-logs
+    - nodeResources: {}
+    - events: {}
+    - configMap:
+        name: kube-system/coredns
+        includeValue: true
+    - secret:
+        name: default/default-token*
+        includeValue: false
+    - exec:
+        args:
+          - "top"
+        command:
+          - "kubectl"
+        name: kubectl-top-nodes
+        namespace: kube-system
+        selector:
+          - name=metrics-server*
+    - exec:
+        args:
+          - "get"
+          - "events" 
+          - "--sort-by=.metadata.creationTimestamp"
+          - "-o"
+          - "wide"
+        command:
+          - "kubectl"
+        name: recent-events
+        namespace: default
+  analyzers:
+    - clusterVersion:
+        outcomes:
+          - fail:
+              when: "< 1.24.0"
+              message: "Kubernetes version is too old"
+          - warn:
+              when: "< 1.27.0"
+              message: "Kubernetes version could be updated"
+          - pass:
+              message: "Kubernetes version is supported"
+    - nodeResources:
+        checkName: "Node Resource Usage"
+        outcomes:
+          - fail:
+              when: "allocatable.cpu < 500m"
+              message: "Node has insufficient CPU"
+          - fail:
+              when: "allocatable.memory < 1Gi"  
+              message: "Node has insufficient memory"
+          - warn:
+              when: "allocatable.cpu < 2"
+              message: "Node CPU capacity is low"
+          - warn:
+              when: "allocatable.memory < 4Gi"
+              message: "Node memory capacity is low"  
+          - pass:
+              message: "Node has adequate resources"
+    - containerStatuses:
+        outcomes:
+          - fail:
+              when: "== OOMKilled"
+              message: "Pod was killed due to out-of-memory"
+          - fail:  
+              when: "== Error"
+              message: "Pod exited with an error"
+          - warn:
+              when: "> 5"
+              message: "Pod has high restart count"
+          - pass:
+              message: "Pod is running normally"
+    - clusterPodStatuses:
+        name: "production-pod-status"
+        namespaces:
+          - default
+        outcomes:
+          - fail:
+              when: "== CrashLoopBackOff"
+              message: "Pod is in CrashLoopBackOff state"
+          - fail:
+              when: "== ImagePullBackOff"
+              message: "Pod cannot pull container image"
+          - warn:
+              when: "== Pending"
+              message: "Pod is pending scheduling"
+          - pass:
+              message: "Pods are running successfully"
+    - deploymentStatus:
+        name: backend-api
+        namespace: default
+        outcomes:
+          - fail:
+              when: "< 1"
+              message: "Backend API deployment has no available replicas"
+          - warn:
+              when: "= 1"
+              message: "Backend API deployment has only 1 replica"
+          - pass:
+              message: "Backend API deployment is healthy"
+    - deploymentStatus:
+        name: memory-hungry-app
+        namespace: default
+        outcomes:
+          - fail:
+              when: "< 1"
+              message: "Memory test app deployment has no available replicas"
+          - warn:
+              when: "< 2"
+              message: "Memory test app deployment is below desired replicas"
+          - pass:
+              message: "Memory test app deployment is healthy"
+    - deploymentStatus:
+        name: cpu-intensive-app
+        namespace: default
+        outcomes:
+          - fail:
+              when: "< 1"
+              message: "CPU intensive app has no available replicas"
+          - warn:
+              when: "< 3"
+              message: "CPU intensive app is below desired replicas - possible resource constraints"
+          - pass:
+              message: "CPU intensive app deployment is healthy"

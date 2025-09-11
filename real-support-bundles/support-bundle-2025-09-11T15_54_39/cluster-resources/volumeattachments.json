@@ -1,0 +1,8 @@
+{
+  "kind": "VolumeAttachmentList",
+  "apiVersion": "storage.k8s.io/v1",
+  "metadata": {
+    "resourceVersion": "1459"
+  },
+  "items": null
+}

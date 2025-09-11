@@ -271,13 +271,13 @@ require (
 	golang.org/x/sys v0.36.0
 	golang.org/x/term v0.35.0 // indirect
 	golang.org/x/text v0.29.0
-	golang.org/x/time v0.11.0 // indirect
+	golang.org/x/time v0.11.0
 	google.golang.org/api v0.218.0 // indirect
 	google.golang.org/genproto v0.0.0-20241118233622-e639e219e697 // indirect
 	google.golang.org/grpc v1.72.2 // indirect
 	google.golang.org/protobuf v1.36.6 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
-	gopkg.in/yaml.v3 v3.0.1 // indirect
+	gopkg.in/yaml.v3 v3.0.1
 	helm.sh/helm/v3 v3.18.6
 	k8s.io/kube-openapi v0.0.0-20250710124328-f3f2b991d03b // indirect
 	k8s.io/kubelet v0.34.1

@@ -1,0 +1,333 @@
+{
+  "kind": "EndpointSliceList",
+  "apiVersion": "discovery.k8s.io/v1",
+  "metadata": {
+    "resourceVersion": "1458"
+  },
+  "items": [
+    {
+      "kind": "EndpointSlice",
+      "apiVersion": "discovery.k8s.io/v1",
+      "metadata": {
+        "name": "backend-api-service-jfx42",
+        "generateName": "backend-api-service-",
+        "namespace": "default",
+        "uid": "1c42268a-78d2-4d0a-8604-beaa3bcdfa0c",
+        "resourceVersion": "1260",
+        "generation": 2,
+        "creationTimestamp": "2025-09-11T20:50:20Z",
+        "labels": {
+          "endpointslice.kubernetes.io/managed-by": "endpointslice-controller.k8s.io",
+          "kubernetes.io/service-name": "backend-api-service"
+        },
+        "ownerReferences": [
+          {
+            "apiVersion": "v1",
+            "kind": "Service",
+            "name": "backend-api-service",
+            "uid": "e679b75f-562a-4343-bf3d-9ec31785cdf0",
+            "controller": true,
+            "blockOwnerDeletion": true
+          }
+        ],
+        "managedFields": [
+          {
+            "manager": "k3s",
+            "operation": "Update",
+            "apiVersion": "discovery.k8s.io/v1",
+            "time": "2025-09-11T20:50:21Z",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:addressType": {},
+              "f:endpoints": {},
+              "f:metadata": {
+                "f:generateName": {},
+                "f:labels": {
+                  ".": {},
+                  "f:endpointslice.kubernetes.io/managed-by": {},
+                  "f:kubernetes.io/service-name": {}
+                },
+                "f:ownerReferences": {
+                  ".": {},
+                  "k:{\"uid\":\"e679b75f-562a-4343-bf3d-9ec31785cdf0\"}": {}
+                }
+              },
+              "f:ports": {}
+            }
+          }
+        ]
+      },
+      "addressType": "IPv4",
+      "endpoints": [
+        {
+          "addresses": [
+            "10.42.0.16"
+          ],
+          "conditions": {
+            "ready": false,
+            "serving": false,
+            "terminating": false
+          },
+          "targetRef": {
+            "kind": "Pod",
+            "namespace": "default",
+            "name": "backend-api-75fb46b7bd-xtkrh",
+            "uid": "0f6b8526-3587-433e-91fd-1d10ead72f88"
+          },
+          "nodeName": "c9b7eea91"
+        }
+      ],
+      "ports": [
+        {
+          "name": "",
+          "protocol": "TCP",
+          "port": 8080
+        }
+      ]
+    },
+    {
+      "kind": "EndpointSlice",
+      "apiVersion": "discovery.k8s.io/v1",
+      "metadata": {
+        "name": "cpu-hog-service-8cxpw",
+        "generateName": "cpu-hog-service-",
+        "namespace": "default",
+        "uid": "f864564f-3d5a-4c1d-9150-2fae717530d4",
+        "resourceVersion": "1308",
+        "generation": 2,
+        "creationTimestamp": "2025-09-11T20:50:21Z",
+        "labels": {
+          "endpointslice.kubernetes.io/managed-by": "endpointslice-controller.k8s.io",
+          "kubernetes.io/service-name": "cpu-hog-service"
+        },
+        "annotations": {
+          "endpoints.kubernetes.io/last-change-trigger-time": "2025-09-11T20:50:23Z"
+        },
+        "ownerReferences": [
+          {
+            "apiVersion": "v1",
+            "kind": "Service",
+            "name": "cpu-hog-service",
+            "uid": "acee358b-0b2b-4b03-aee9-c58ccd9e2af0",
+            "controller": true,
+            "blockOwnerDeletion": true
+          }
+        ],
+        "managedFields": [
+          {
+            "manager": "k3s",
+            "operation": "Update",
+            "apiVersion": "discovery.k8s.io/v1",
+            "time": "2025-09-11T20:50:23Z",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:addressType": {},
+              "f:endpoints": {},
+              "f:metadata": {
+                "f:annotations": {
+                  ".": {},
+                  "f:endpoints.kubernetes.io/last-change-trigger-time": {}
+                },
+                "f:generateName": {},
+                "f:labels": {
+                  ".": {},
+                  "f:endpointslice.kubernetes.io/managed-by": {},
+                  "f:kubernetes.io/service-name": {}
+                },
+                "f:ownerReferences": {
+                  ".": {},
+                  "k:{\"uid\":\"acee358b-0b2b-4b03-aee9-c58ccd9e2af0\"}": {}
+                }
+              },
+              "f:ports": {}
+            }
+          }
+        ]
+      },
+      "addressType": "IPv4",
+      "endpoints": [
+        {
+          "addresses": [
+            "10.42.0.17"
+          ],
+          "conditions": {
+            "ready": true,
+            "serving": true,
+            "terminating": false
+          },
+          "targetRef": {
+            "kind": "Pod",
+            "namespace": "default",
+            "name": "cpu-intensive-app-7bcfc5d944-9479r",
+            "uid": "17c37b20-d39c-49eb-ae3c-51a0f7371c01"
+          },
+          "nodeName": "c9b7eea91"
+        }
+      ],
+      "ports": [
+        {
+          "name": "",
+          "protocol": "TCP",
+          "port": 8080
+        }
+      ]
+    },
+    {
+      "kind": "EndpointSlice",
+      "apiVersion": "discovery.k8s.io/v1",
+      "metadata": {
+        "name": "kubernetes",
+        "namespace": "default",
+        "uid": "0562695a-6044-4b5c-aed3-91c3743d8d47",
+        "resourceVersion": "57",
+        "generation": 1,
+        "creationTimestamp": "2025-09-11T20:39:37Z",
+        "labels": {
+          "kubernetes.io/service-name": "kubernetes"
+        },
+        "managedFields": [
+          {
+            "manager": "k3s",
+            "operation": "Update",
+            "apiVersion": "discovery.k8s.io/v1",
+            "time": "2025-09-11T20:39:37Z",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:addressType": {},
+              "f:endpoints": {},
+              "f:metadata": {
+                "f:labels": {
+                  ".": {},
+                  "f:kubernetes.io/service-name": {}
+                }
+              },
+              "f:ports": {}
+            }
+          }
+        ]
+      },
+      "addressType": "IPv4",
+      "endpoints": [
+        {
+          "addresses": [
+            "10.0.0.11"
+          ],
+          "conditions": {
+            "ready": true
+          }
+        }
+      ],
+      "ports": [
+        {
+          "name": "https",
+          "protocol": "TCP",
+          "port": 6443
+        }
+      ]
+    },
+    {
+      "kind": "EndpointSlice",
+      "apiVersion": "discovery.k8s.io/v1",
+      "metadata": {
+        "name": "memory-test-service-bctlk",
+        "generateName": "memory-test-service-",
+        "namespace": "default",
+        "uid": "cb9f1dfb-a6af-4d3b-a748-479d674b025c",
+        "resourceVersion": "1326",
+        "generation": 5,
+        "creationTimestamp": "2025-09-11T20:50:18Z",
+        "labels": {
+          "endpointslice.kubernetes.io/managed-by": "endpointslice-controller.k8s.io",
+          "kubernetes.io/service-name": "memory-test-service"
+        },
+        "annotations": {
+          "endpoints.kubernetes.io/last-change-trigger-time": "2025-09-11T20:50:33Z"
+        },
+        "ownerReferences": [
+          {
+            "apiVersion": "v1",
+            "kind": "Service",
+            "name": "memory-test-service",
+            "uid": "69a9bdb8-e72b-40be-800f-7993dccfcc9c",
+            "controller": true,
+            "blockOwnerDeletion": true
+          }
+        ],
+        "managedFields": [
+          {
+            "manager": "k3s",
+            "operation": "Update",
+            "apiVersion": "discovery.k8s.io/v1",
+            "time": "2025-09-11T20:50:33Z",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:addressType": {},
+              "f:endpoints": {},
+              "f:metadata": {
+                "f:annotations": {
+                  ".": {},
+                  "f:endpoints.kubernetes.io/last-change-trigger-time": {}
+                },
+                "f:generateName": {},
+                "f:labels": {
+                  ".": {},
+                  "f:endpointslice.kubernetes.io/managed-by": {},
+                  "f:kubernetes.io/service-name": {}
+                },
+                "f:ownerReferences": {
+                  ".": {},
+                  "k:{\"uid\":\"69a9bdb8-e72b-40be-800f-7993dccfcc9c\"}": {}
+                }
+              },
+              "f:ports": {}
+            }
+          }
+        ]
+      },
+      "addressType": "IPv4",
+      "endpoints": [
+        {
+          "addresses": [
+            "10.42.0.14"
+          ],
+          "conditions": {
+            "ready": true,
+            "serving": true,
+            "terminating": false
+          },
+          "targetRef": {
+            "kind": "Pod",
+            "namespace": "default",
+            "name": "memory-hungry-app-59c695fbfb-4vnq4",
+            "uid": "de2b495e-6f7f-4619-9ade-4c177bb2a083"
+          },
+          "nodeName": "c9b7eea91"
+        },
+        {
+          "addresses": [
+            "10.42.0.15"
+          ],
+          "conditions": {
+            "ready": true,
+            "serving": true,
+            "terminating": false
+          },
+          "targetRef": {
+            "kind": "Pod",
+            "namespace": "default",
+            "name": "memory-hungry-app-59c695fbfb-xsvn8",
+            "uid": "3097d17a-b693-4c8c-9b4b-4c296082ef2d"
+          },
+          "nodeName": "c9b7eea91"
+        }
+      ],
+      "ports": [
+        {
+          "name": "",
+          "protocol": "TCP",
+          "port": 8080
+        }
+      ]
+    }
+  ]
+}

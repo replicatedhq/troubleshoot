@@ -1,0 +1,8 @@
+{
+  "kind": "PersistentVolumeClaimList",
+  "apiVersion": "v1",
+  "metadata": {
+    "resourceVersion": "1458"
+  },
+  "items": null
+}

@@ -1,0 +1,8 @@
+{
+  "kind": "EndpointSliceList",
+  "apiVersion": "discovery.k8s.io/v1",
+  "metadata": {
+    "resourceVersion": "1458"
+  },
+  "items": null
+}

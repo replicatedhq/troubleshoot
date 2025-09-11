@@ -1,0 +1,8 @@
+{
+  "kind": "LimitRangeList",
+  "apiVersion": "v1",
+  "metadata": {
+    "resourceVersion": "1457"
+  },
+  "items": null
+}

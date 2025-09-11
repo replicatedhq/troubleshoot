@@ -1,0 +1,55 @@
+{
+  "kind": "LeaseList",
+  "apiVersion": "coordination.k8s.io/v1",
+  "metadata": {
+    "resourceVersion": "1458"
+  },
+  "items": [
+    {
+      "kind": "Lease",
+      "apiVersion": "coordination.k8s.io/v1",
+      "metadata": {
+        "name": "c9b7eea91",
+        "namespace": "kube-node-lease",
+        "uid": "9c789d09-da9d-4644-80e7-33a72766af6a",
+        "resourceVersion": "1457",
+        "creationTimestamp": "2025-09-11T20:39:50Z",
+        "ownerReferences": [
+          {
+            "apiVersion": "v1",
+            "kind": "Node",
+            "name": "c9b7eea91",
+            "uid": "7fb9efab-fcf9-41a2-b4db-eb38e47cf6f7"
+          }
+        ],
+        "managedFields": [
+          {
+            "manager": "k3s",
+            "operation": "Update",
+            "apiVersion": "coordination.k8s.io/v1",
+            "time": "2025-09-11T20:55:09Z",
+            "fieldsType": "FieldsV1",
+            "fieldsV1": {
+              "f:metadata": {
+                "f:ownerReferences": {
+                  ".": {},
+                  "k:{\"uid\":\"7fb9efab-fcf9-41a2-b4db-eb38e47cf6f7\"}": {}
+                }
+              },
+              "f:spec": {
+                "f:holderIdentity": {},
+                "f:leaseDurationSeconds": {},
+                "f:renewTime": {}
+              }
+            }
+          }
+        ]
+      },
+      "spec": {
+        "holderIdentity": "c9b7eea91",
+        "leaseDurationSeconds": 40,
+        "renewTime": "2025-09-11T20:55:09.139040Z"
+      }
+    }
+  ]
+}

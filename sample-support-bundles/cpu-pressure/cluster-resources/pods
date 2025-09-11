@@ -1,0 +1,89 @@
+[
+  {
+    "apiVersion": "v1",
+    "kind": "Pod",
+    "metadata": {
+      "name": "web-app-7c8b9d4f2-xyz12",
+      "namespace": "production",
+      "labels": {
+        "app": "web-app",
+        "version": "v2.1.3"
+      }
+    },
+    "spec": {
+      "containers": [
+        {
+          "name": "web-container",
+          "image": "nginx:1.21",
+          "resources": {
+            "requests": {
+              "cpu": "100m",
+              "memory": "128Mi"
+            },
+            "limits": {
+              "cpu": "200m",
+              "memory": "256Mi"
+            }
+          }
+        }
+      ]
+    },
+    "status": {
+      "phase": "Running",
+      "containerStatuses": [
+        {
+          "name": "web-container",
+          "ready": true,
+          "restartCount": 15,
+          "lastState": {
+            "terminated": {
+              "reason": "OOMKilled",
+              "exitCode": 137,
+              "finishedAt": "2023-10-15T14:32:21Z"
+            }
+          }
+        }
+      ]
+    }
+  },
+  {
+    "apiVersion": "v1",
+    "kind": "Pod",
+    "metadata": {
+      "name": "cpu-hog-deployment-abc123",
+      "namespace": "production",
+      "labels": {
+        "app": "cpu-intensive-app"
+      }
+    },
+    "spec": {
+      "containers": [
+        {
+          "name": "worker",
+          "image": "alpine:latest",
+          "resources": {
+            "requests": {
+              "cpu": "4000m",
+              "memory": "1Gi"
+            },
+            "limits": {
+              "cpu": "6000m",
+              "memory": "2Gi"
+            }
+          }
+        }
+      ]
+    },
+    "status": {
+      "phase": "Pending",
+      "conditions": [
+        {
+          "type": "PodScheduled",
+          "status": "False",
+          "reason": "Unschedulable",
+          "message": "0/1 nodes are available: 1 Insufficient cpu."
+        }
+      ]
+    }
+  }
+]
