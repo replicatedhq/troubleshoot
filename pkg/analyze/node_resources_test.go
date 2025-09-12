@@ -848,7 +848,7 @@ func Test_nodeMatchesFilters(t *testing.T) {
 					Taints: []corev1.Taint{},
 				},
 			},
-			filters: &troubleshootv1beta2.NodeResourceFilters{},
+			filters:      &troubleshootv1beta2.NodeResourceFilters{},
 			expectResult: true,
 		},
 		{
