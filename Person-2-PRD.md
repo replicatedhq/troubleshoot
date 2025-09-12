@@ -161,7 +161,6 @@ type Platform struct {
 ```
 
 ### Implementation Checklist
-
 #### Phase 1: Core Auto-Discovery (Week 1-2) ✅ **COMPLETED**
 - [x] **Discovery Engine Setup**
   - [x] Create `pkg/collect/autodiscovery/` package structure
@@ -367,6 +366,7 @@ support-bundle diff old.tgz new.tgz --output html --include-remediation
 
 ---
 
+
 ## Component 2: Redaction with Tokenization (on existing engine)
 
 ### Objective
@@ -379,6 +379,7 @@ Enhance the existing regex-based redaction system (in `pkg/redact/`) by adding d
 - Integration with collection pipeline
 
 ### Requirements  
+
 - **Keep current regex redaction**: No pipeline refactor in this phase
 - **Tokenization (NOW)**: Replace each redacted value with a stable token for correlation
 - **Reversible mapping (owner-only)**: Optionally emit encrypted `redaction-map.json` (token → original)
@@ -401,6 +402,7 @@ Enhance the existing regex-based redaction system (in `pkg/redact/`) by adding d
 **Integration (this phase):**
 - After a match is identified by existing regex redactors, substitute the matched value with a token from the Tokenizer
 - Optionally record token→original in an encrypted `redaction-map.json` when enabled by the bundle owner
+
 
 **API Contract**:
 ```go
@@ -538,6 +540,7 @@ Examples:
 
 #### Phase 3: LLM Integration (Week 4) [Optional, disabled by default]
 - Default posture: OFF. Provide policy and build-time controls to exclude LLM entirely.
+
 - [ ] **LLM Framework**
   - [ ] Create `LLMProvider` interface for different backends
   - [ ] Implement Ollama integration for local models
@@ -604,6 +607,7 @@ Examples:
   - [ ] Token unpredictability (salted) and uniqueness
   - [ ] Redaction completeness verification
   - [ ] Information leakage prevention
+
 
 ### Step-by-Step Implementation
 
@@ -1418,6 +1422,7 @@ This section documents all critical changes made to align the PRD with the actua
 - **Support Bundle**: Complete archiving, parsing, metadata system
 
 ### 6. Removed All Completion Markers
+
 - **CHANGED**: All `✅`, `[x]`, "COMPLETED" markers → `[ ]` (pending)
 - **REASON**: Starting implementation from scratch despite existing foundation
 
