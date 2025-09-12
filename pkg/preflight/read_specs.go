@@ -29,10 +29,16 @@ func readSpecs(args []string) (*loader.TroubleshootKinds, error) {
 	}
 
 	// Pre-process v1beta3 specs with templates if values are provided
-	processedArgs, err := preprocessV1Beta3Specs(args)
+	processedArgs, tempFiles, err := preprocessV1Beta3Specs(args)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to preprocess v1beta3 specs")
 	}
+	// Ensure any temp files created during preprocessing are cleaned up
+	defer func() {
+		for _, f := range tempFiles {
+			_ = os.Remove(f)
+		}
+	}()
 
 	ctx := context.Background()
 	kinds, err := specs.LoadFromCLIArgs(ctx, client, processedArgs, viper.GetViper())
@@ -78,13 +84,13 @@ func readSpecs(args []string) (*loader.TroubleshootKinds, error) {
 }
 
 // preprocessV1Beta3Specs processes v1beta3 specs with template rendering if values are provided
-func preprocessV1Beta3Specs(args []string) ([]string, error) {
+func preprocessV1Beta3Specs(args []string) ([]string, []string, error) {
 	valuesFiles := viper.GetStringSlice("values")
 	setValues := viper.GetStringSlice("set")
 
 	// If no values provided, return args unchanged
 	if len(valuesFiles) == 0 && len(setValues) == 0 {
-		return args, nil
+		return args, nil, nil
 	}
 
 	// Load values from files and --set flags
@@ -95,12 +101,12 @@ func preprocessV1Beta3Specs(args []string) ([]string, error) {
 		}
 		data, err := os.ReadFile(valuesFile)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to read values file %s", valuesFile)
+			return nil, nil, errors.Wrapf(err, "failed to read values file %s", valuesFile)
 		}
 
 		var fileValues map[string]interface{}
 		if err := yaml.Unmarshal(data, &fileValues); err != nil {
-			return nil, errors.Wrapf(err, "failed to parse values file %s", valuesFile)
+			return nil, nil, errors.Wrapf(err, "failed to parse values file %s", valuesFile)
 		}
 
 		values = mergeMaps(values, fileValues)
@@ -109,12 +115,13 @@ func preprocessV1Beta3Specs(args []string) ([]string, error) {
 	// Apply --set values
 	for _, setValue := range setValues {
 		if err := strvals.ParseInto(setValue, values); err != nil {
-			return nil, errors.Wrapf(err, "failed to parse --set value: %s", setValue)
+			return nil, nil, errors.Wrapf(err, "failed to parse --set value: %s", setValue)
 		}
 	}
 
 	// Process each arg
 	processedArgs := make([]string, 0, len(args))
+	tempFiles := make([]string, 0)
 	for _, arg := range args {
 		// Skip non-file arguments (like URLs, stdin, etc.)
 		if arg == "-" || strings.HasPrefix(arg, "http://") || strings.HasPrefix(arg, "https://") ||
@@ -132,7 +139,7 @@ func preprocessV1Beta3Specs(args []string) ([]string, error) {
 		// Read the file
 		content, err := os.ReadFile(arg)
 		if err != nil {
-			return nil, errors.Wrapf(err, "failed to read file %s", arg)
+			return nil, nil, errors.Wrapf(err, "failed to read file %s", arg)
 		}
 
 		// Check if it's a v1beta3 spec with templates
@@ -145,20 +152,21 @@ func preprocessV1Beta3Specs(args []string) ([]string, error) {
 				// It's a v1beta3 template, render it
 				rendered, err := RenderWithHelmTemplate(contentStr, values)
 				if err != nil {
-					return nil, errors.Wrapf(err, "failed to render v1beta3 template %s", arg)
+					return nil, nil, errors.Wrapf(err, "failed to render v1beta3 template %s", arg)
 				}
 				// Write to temp file
 				tmpFile, err := os.CreateTemp("", "preflight-rendered-*.yaml")
 				if err != nil {
-					return nil, errors.Wrap(err, "failed to create temp file")
+					return nil, nil, errors.Wrap(err, "failed to create temp file")
 				}
 				if _, err := tmpFile.WriteString(rendered); err != nil {
 					tmpFile.Close()
 					os.Remove(tmpFile.Name())
-					return nil, errors.Wrap(err, "failed to write rendered template")
+					return nil, nil, errors.Wrap(err, "failed to write rendered template")
 				}
 				tmpFile.Close()
 				processedArgs = append(processedArgs, tmpFile.Name())
+				tempFiles = append(tempFiles, tmpFile.Name())
 			} else {
 				processedArgs = append(processedArgs, arg)
 			}
@@ -170,20 +178,21 @@ func preprocessV1Beta3Specs(args []string) ([]string, error) {
 					// It's a v1beta3 template, render it
 					rendered, err := RenderWithHelmTemplate(contentStr, values)
 					if err != nil {
-						return nil, errors.Wrapf(err, "failed to render v1beta3 template %s", arg)
+						return nil, nil, errors.Wrapf(err, "failed to render v1beta3 template %s", arg)
 					}
 					// Write to temp file
 					tmpFile, err := os.CreateTemp("", "preflight-rendered-*.yaml")
 					if err != nil {
-						return nil, errors.Wrap(err, "failed to create temp file")
+						return nil, nil, errors.Wrap(err, "failed to create temp file")
 					}
 					if _, err := tmpFile.WriteString(rendered); err != nil {
 						tmpFile.Close()
 						os.Remove(tmpFile.Name())
-						return nil, errors.Wrap(err, "failed to write rendered template")
+						return nil, nil, errors.Wrap(err, "failed to write rendered template")
 					}
 					tmpFile.Close()
 					processedArgs = append(processedArgs, tmpFile.Name())
+					tempFiles = append(tempFiles, tmpFile.Name())
 				} else {
 					// v1beta3 but no templates
 					processedArgs = append(processedArgs, arg)
@@ -195,5 +204,5 @@ func preprocessV1Beta3Specs(args []string) ([]string, error) {
 		}
 	}
 
-	return processedArgs, nil
+	return processedArgs, tempFiles, nil
 }
