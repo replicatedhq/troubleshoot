@@ -460,6 +460,23 @@ func TestSampleSecretsTokenTypes(t *testing.T) {
 	os.Setenv("TROUBLESHOOT_TOKENIZATION", "1")
 	enableTokenization = true
 
+	// Set comprehensive profile to ensure we get USER tokens from username patterns
+	err := SetRedactionProfile("comprehensive")
+	if err != nil {
+		t.Fatalf("Failed to set comprehensive profile: %v", err)
+	}
+
+	// Verify profile is set correctly
+	pm := GetProfileManager()
+	profile, err := pm.GetActiveProfile()
+	if err != nil {
+		t.Fatalf("Failed to get active profile: %v", err)
+	}
+	t.Logf("Active profile: %s", profile.Name)
+	if profile.Name != "comprehensive" {
+		t.Fatalf("Expected comprehensive profile, got %s", profile.Name)
+	}
+
 	// Load the comprehensive sample secrets file
 	sampleFile := filepath.Join("testdata", "sample_secrets.yaml")
 	data, err := os.ReadFile(sampleFile)
@@ -520,4 +537,9 @@ func TestSampleSecretsTokenTypes(t *testing.T) {
 	}
 
 	t.Logf("Total tokens generated from sample secrets: %d", totalTokens)
+
+	// Clean up environment variables and reset profile
+	os.Unsetenv("TROUBLESHOOT_TOKENIZATION")
+	os.Unsetenv("TROUBLESHOOT_REDACTION_PROFILE")
+	SetRedactionProfile("standard") // Reset to default
 }
