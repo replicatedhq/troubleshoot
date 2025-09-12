@@ -53,7 +53,7 @@ that a cluster meets the requirements to run an application.`,
 					_ = updater.CheckAndUpdate(cmd.Context(), updater.Options{
 						BinaryName:  "preflight",
 						CurrentPath: exe,
-						Printf:      func(f string, a ...interface{}) { klog.V(1).Infof(f, a...) },
+						Printf:      func(f string, a ...interface{}) { fmt.Fprintf(os.Stderr, f, a...) },
 					})
 				}
 			}
