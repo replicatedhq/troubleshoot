@@ -86,6 +86,8 @@ that a cluster meets the requirements to run an application.`,
 
 	cmd.AddCommand(util.VersionCmd())
 	cmd.AddCommand(OciFetchCmd())
+	cmd.AddCommand(TemplateCmd())
+	cmd.AddCommand(DocsCmd())
 	preflight.AddFlags(cmd.PersistentFlags())
 
 	// Dry run flag should be in cmd.PersistentFlags() flags made available to all subcommands
