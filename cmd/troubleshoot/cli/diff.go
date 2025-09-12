@@ -1,8 +1,11 @@
 package cli
 
 import (
+	"archive/tar"
+	"compress/gzip"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -206,10 +209,56 @@ func getBundleMetadata(bundlePath string) BundleMetadata {
 		metadata.CreatedAt = stat.ModTime().Format(time.RFC3339)
 	}
 
-	// TODO: Get actual file count from bundle
-	metadata.NumFiles = 0
+	// Get actual file count from bundle
+	fileCount, err := getFileCountFromBundle(bundlePath)
+	if err != nil {
+		klog.V(2).Infof("Failed to get file count for bundle %s: %v", bundlePath, err)
+		metadata.NumFiles = 0
+	} else {
+		metadata.NumFiles = fileCount
+	}
 
 	return metadata
+}
+
+// getFileCountFromBundle counts the number of files in a support bundle archive
+func getFileCountFromBundle(bundlePath string) (int, error) {
+	file, err := os.Open(bundlePath)
+	if err != nil {
+		return 0, errors.Wrap(err, "failed to open bundle file")
+	}
+	defer file.Close()
+
+	// Check if it's a gzipped tar file
+	var reader io.Reader = file
+	if strings.HasSuffix(bundlePath, ".gz") || strings.HasSuffix(bundlePath, ".tgz") {
+		gzipReader, err := gzip.NewReader(file)
+		if err != nil {
+			return 0, errors.Wrap(err, "failed to create gzip reader")
+		}
+		defer gzipReader.Close()
+		reader = gzipReader
+	}
+
+	tarReader := tar.NewReader(reader)
+	fileCount := 0
+
+	for {
+		header, err := tarReader.Next()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return 0, errors.Wrap(err, "failed to read tar entry")
+		}
+
+		// Count regular files (not directories)
+		if header.Typeflag == tar.TypeReg {
+			fileCount++
+		}
+	}
+
+	return fileCount, nil
 }
 
 func outputDiffResult(result *DiffResult, v *viper.Viper) error {

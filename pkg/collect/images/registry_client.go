@@ -3,6 +3,7 @@ package images
 import (
 	"context"
 	"crypto/tls"
+	"crypto/x509"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -35,16 +36,22 @@ func NewRegistryClient(registry string, credentials RegistryCredentials, options
 	}
 
 	// Configure HTTP client
-	transport := &http.Transport{
-		TLSClientConfig: &tls.Config{
-			InsecureSkipVerify: options.SkipTLSVerify,
-		},
+	tlsConfig := &tls.Config{
+		InsecureSkipVerify: options.SkipTLSVerify,
 	}
 
 	// Add custom CA cert if provided
 	if credentials.CACert != "" {
-		// TODO: Implement custom CA cert loading
-		klog.V(2).Info("Custom CA cert support not yet implemented")
+		caCertPool := x509.NewCertPool()
+		if ok := caCertPool.AppendCertsFromPEM([]byte(credentials.CACert)); !ok {
+			return nil, errors.New("failed to parse CA certificate")
+		}
+		tlsConfig.RootCAs = caCertPool
+		klog.V(2).Info("Custom CA certificate loaded successfully")
+	}
+
+	transport := &http.Transport{
+		TLSClientConfig: tlsConfig,
 	}
 
 	httpClient := &http.Client{
