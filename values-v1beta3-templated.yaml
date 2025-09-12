@@ -1,0 +1,66 @@
+# Values for v1beta3-templated-from-v1beta2.yaml
+
+kubernetes:
+  enabled: true
+  minVersion: "1.22.0"
+  recommendedVersion: "1.29.0"
+
+storage:
+  enabled: true
+  className: "default"
+
+cluster:
+  minNodes: 3
+  recommendedNodes: 5
+  minCPU: 4
+
+node:
+  minMemoryGi: 8
+  recommendedMemoryGi: 32
+  minEphemeralGi: 40
+  recommendedEphemeralGi: 100
+
+ingress:
+  enabled: true
+  type: "Contour"
+  contour:
+    crdName: "ingressroutes.contour.heptio.com"
+    crdGroup: "heptio.com"
+    crdKind: "IngressRoute"
+    crdVersion: "v1beta1 or later served version"
+
+runtime:
+  enabled: true
+  name: "containerd"
+  cgroupDriver: "systemd"
+  criSocket: "/run/containerd/containerd.sock"
+
+distribution:
+  enabled: true
+  unsupported:
+    - docker-desktop
+    - microk8s
+    - minikube
+  supported:
+    - eks
+    - gke
+    - aks
+    - kurl
+    - digitalocean
+    - rke2
+    - k3s
+    - oke
+    - kind
+
+nodeChecks:
+  enabled: true
+  count:
+    enabled: true
+  cpu:
+    enabled: true
+  memory:
+    enabled: true
+  ephemeral:
+    enabled: true
+
+

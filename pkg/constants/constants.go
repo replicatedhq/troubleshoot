@@ -80,6 +80,7 @@ const (
 	PreflightKey2          = "preflight-spec"
 
 	// Troubleshoot spec constants
+	Troubleshootv1beta3Kind = "troubleshoot.sh/v1beta3"
 	Troubleshootv1beta2Kind = "troubleshoot.sh/v1beta2"
 	Troubleshootv1beta1Kind = "troubleshoot.replicated.com/v1beta1"
 
