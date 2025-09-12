@@ -200,7 +200,7 @@ func (l *specLoader) loadFromStrings(rawSpecs ...string) (*TroubleshootKinds, er
 			default:
 				return nil, types.NewExitCodeError(constants.EXIT_CODE_SPEC_ISSUES, errors.Errorf("%T type is not a Secret or ConfigMap", v))
 			}
-		} else if parsed.APIVersion == constants.Troubleshootv1beta2Kind || parsed.APIVersion == constants.Troubleshootv1beta1Kind {
+		} else if parsed.APIVersion == constants.Troubleshootv1beta3Kind || parsed.APIVersion == constants.Troubleshootv1beta2Kind || parsed.APIVersion == constants.Troubleshootv1beta1Kind {
 			// If it's not a configmap or secret, just append it to the splitdocs
 			splitdocs = append(splitdocs, rawDoc)
 		} else {

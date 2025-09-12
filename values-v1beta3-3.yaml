@@ -1,0 +1,26 @@
+ingress:
+  enabled: true
+  type: "Contour"
+
+runtime:
+  enabled: true
+
+distribution:
+  enabled: true
+
+nodeChecks:
+  enabled: true
+  count:
+    enabled: true
+  cpu:
+    enabled: true
+  memory:
+    enabled: true
+  ephemeral:
+    enabled: true
+
+
+kubernetes:
+  enabled: false
+  minVersion: "1.22.0"
+  recommendedVersion: "1.29.0"
