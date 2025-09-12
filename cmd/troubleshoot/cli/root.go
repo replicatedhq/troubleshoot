@@ -9,6 +9,7 @@ import (
 	"github.com/replicatedhq/troubleshoot/internal/traces"
 	"github.com/replicatedhq/troubleshoot/pkg/k8sutil"
 	"github.com/replicatedhq/troubleshoot/pkg/logger"
+	"github.com/replicatedhq/troubleshoot/pkg/updater"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"k8s.io/klog/v2"
@@ -39,6 +40,25 @@ If no arguments are provided, specs are automatically loaded from the cluster by
 
 			if err := util.StartProfiling(); err != nil {
 				klog.Errorf("Failed to start profiling: %v", err)
+			}
+
+			// Auto-update support-bundle unless disabled by flag or env
+			envAuto := os.Getenv("TROUBLESHOOT_AUTO_UPDATE")
+			autoFromEnv := true
+			if envAuto != "" {
+				if strings.EqualFold(envAuto, "0") || strings.EqualFold(envAuto, "false") {
+					autoFromEnv = false
+				}
+			}
+			if v.GetBool("auto-update") && autoFromEnv {
+				exe, err := os.Executable()
+				if err == nil {
+					_ = updater.CheckAndUpdate(cmd.Context(), updater.Options{
+						BinaryName:  "support-bundle",
+						CurrentPath: exe,
+						Printf:      func(f string, a ...interface{}) { klog.V(1).Infof(f, a...) },
+					})
+				}
 			}
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -95,6 +115,7 @@ If no arguments are provided, specs are automatically loaded from the cluster by
 	cmd.Flags().StringP("output", "o", "", "specify the output file path for the support bundle")
 	cmd.Flags().Bool("debug", false, "enable debug logging. This is equivalent to --v=0")
 	cmd.Flags().Bool("dry-run", false, "print support bundle spec without collecting anything")
+	cmd.Flags().Bool("auto-update", true, "enable automatic binary self-update check and install")
 
 	// hidden in favor of the `insecure-skip-tls-verify` flag
 	cmd.Flags().Bool("allow-insecure-connections", false, "when set, do not verify TLS certs when retrieving spec and reporting results")
