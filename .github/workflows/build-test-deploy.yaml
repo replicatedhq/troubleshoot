@@ -8,10 +8,10 @@ on:
       - synchronize
       - ready_for_review
     branches:
-      - main
+      - v1beta3
   push:
     branches:
-      - "main"
+      - "v1beta3"
     tags:
       - "v*.*.*"
 
