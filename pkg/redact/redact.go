@@ -243,35 +243,35 @@ func getLegacyRedactors(path string) ([]Redactor, error) {
 		// YAML/JSON key-value patterns for common secrets
 		{
 			regex: LineRedactor{
-				regex: `(?i)(\s*(?:password|pwd|pass)\s*:\s*["\']?)(?P<mask>[^"\'\s\n\r]+)(["\']?(?:\s|$))`,
+				regex: `(?i)(\s*(?:password|pwd|pass)\s*[=:]\s*["\']?)(?P<mask>[^"\'\s\n\r;,]+)(["\']?(?:\s|[;,]|$))`,
 				scan:  `password|pwd|pass`,
 			},
 			name: "Redact password values in YAML/JSON",
 		},
 		{
 			regex: LineRedactor{
-				regex: `(?i)(\s*(?:secret|secrets|.*[-_]?secret|.*[-_]?secrets)\s*:\s*["\']?)(?P<mask>[^"\'\s\n\r]+)(["\']?(?:\s|$))`,
+				regex: `(?i)(\s*(?:secret|secrets|.*[-_]?secret|.*[-_]?secrets)\s*[=:]\s*["\']?)(?P<mask>[^"\'\s\n\r;,]+)(["\']?(?:\s|[;,]|$))`,
 				scan:  `secret`,
 			},
 			name: "Redact secret values in YAML/JSON (including openai-secret, stripe-secret, etc.)",
 		},
 		{
 			regex: LineRedactor{
-				regex: `(?i)(\s*(?:api[-_]?key|apikey|.*[-_]?key|.*[-_]?api[-_]?key)\s*:\s*["\']?)(?P<mask>[^"\'\s\n\r]+)(["\']?(?:\s|$))`,
+				regex: `(?i)(\s*(?:api[-_]?key|apikey|.*[-_]?key|.*[-_]?api[-_]?key)\s*[=:]\s*["\']?)(?P<mask>[^"\'\s\n\r;,]+)(["\']?(?:\s|[;,]|$))`,
 				scan:  `key|api`,
 			},
 			name: "Redact API key values in YAML/JSON (including openai-key, stripe-key, etc.)",
 		},
 		{
 			regex: LineRedactor{
-				regex: `(?i)(\s*(?:token|auth[-_]?token|access[-_]?token|.*[-_]?token)\s*:\s*["\']?)(?P<mask>[^"\'\s\n\r]+)(["\']?(?:\s|$))`,
+				regex: `(?i)(\s*(?:token|auth[-_]?token|access[-_]?token|.*[-_]?token)\s*[=:]\s*["\']?)(?P<mask>[^"\'\s\n\r;,]+)(["\']?(?:\s|[;,]|$))`,
 				scan:  `token`,
 			},
 			name: "Redact token values in YAML/JSON (including github-token, slack-token, etc.)",
 		},
 		{
 			regex: LineRedactor{
-				regex: `(?i)(\s*(?:client[-_]?secret|client[-_]?key)\s*:\s*["\']?)(?P<mask>[^"\'\s\n\r]+)(["\']?(?:\s|$))`,
+				regex: `(?i)(\s*(?:client[-_]?secret|client[-_]?key)\s*[=:]\s*["\']?)(?P<mask>[^"\'\s\n\r;,]+)(["\']?(?:\s|[;,]|$))`,
 				scan:  `client`,
 			},
 			name: "Redact client secret values in YAML/JSON",
@@ -307,7 +307,7 @@ func getLegacyRedactors(path string) ([]Redactor, error) {
 		// Environment variable patterns (KEY=value format)
 		{
 			regex: LineRedactor{
-				regex: `(?i)(^.*(?:password|pwd|pass).*=)(?P<mask>[^\s\n\r]+)(\s*$)`,
+				regex: `(?i)(^.*(?:password|pwd|pass).*=)(?P<mask>[^;\s\n\r]+)(;?\s*$)`,
 				scan:  `password|pwd|pass`,
 			},
 			name: "Redact password environment variables (KEY=value format)",
