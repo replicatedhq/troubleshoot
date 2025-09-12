@@ -66,6 +66,9 @@ func TestDeploymentPod(t *testing.T) {
 				t.Fatal(err)
 			}
 
+			// Look for analysis results that mention our deployment's pods
+			// Pod names will be like "test-pod-deployment-{replicaset-hash}-{pod-hash}"
+			// so we check if any result detail contains the deployment name as a prefix
 			for _, result := range results {
 				if strings.Contains(result.Insight.Detail, deploymentName) {
 					return ctx

@@ -209,12 +209,12 @@ func TestTokenUniqueness(t *testing.T) {
 	enableTokenization = true
 
 	testData := `
-password1: "secret123"
-password2: "secret456"
-password3: "secret123"
-api-key1: "key-abc"
-api-key2: "key-def"
-api-key3: "key-abc"
+password: "secret123"
+pwd: "secret456"
+pass: "secret123"
+api-key: "key-abc"
+apikey: "key-def"
+secret-key: "key-abc"
 `
 
 	input := strings.NewReader(testData)
@@ -248,9 +248,9 @@ api-key3: "key-abc"
 	}
 
 	// Verify that same values get same tokens
-	// password1 and password3 should have the same token (both "secret123")
-	// api-key1 and api-key3 should have the same token (both "key-abc")
-	// password2 and api-key2 should have different tokens
+	// password and pass should have the same token (both "secret123")
+	// api-key and secret-key should have the same token (both "key-abc")
+	// pwd and apikey should have different tokens
 
 	if len(tokens) < 2 {
 		t.Errorf("Expected at least 2 unique tokens, got %d", len(tokens))

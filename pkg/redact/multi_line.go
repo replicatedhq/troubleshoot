@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"io"
 	"regexp"
+	"strings"
 )
 
 type MultiLineRedactor struct {
@@ -97,7 +98,7 @@ func (r *MultiLineRedactor) Redact(input io.Reader, path string) io.Reader {
 			clean := r.re2.ReplaceAll(line2, substStr)
 			if enableTokenization && !bytes.Equal(clean, line2) {
 				// Find the "mask" named group for tokenization
-				if matches := r.re2.FindSubmatch(line2); matches != nil {
+				if matches := r.re2.FindAllStringSubmatch(string(line2), -1); matches != nil {
 					// Find the mask group index
 					maskGroupIndex := -1
 					for i, name := range r.re2.SubexpNames() {
@@ -106,9 +107,30 @@ func (r *MultiLineRedactor) Redact(input io.Reader, path string) io.Reader {
 							break
 						}
 					}
-					if maskGroupIndex > 0 && maskGroupIndex < len(matches) && len(matches[maskGroupIndex]) > 0 {
-						token := tokenizeValue(matches[maskGroupIndex], inferTypeHint(r.redactName))
-						clean = bytes.ReplaceAll(clean, []byte(r.maskText), []byte(token))
+					if maskGroupIndex > 0 && maskGroupIndex < len(matches[0]) {
+						// Build map of unique sensitive values to tokens
+						tokensGenerated := make(map[string]string)
+						for _, match := range matches {
+							if len(match[maskGroupIndex]) > 0 {
+								sensitiveValue := match[maskGroupIndex]
+								if _, exists := tokensGenerated[sensitiveValue]; !exists {
+									token := tokenizeValue([]byte(sensitiveValue), inferTypeHint(r.redactName))
+									tokensGenerated[sensitiveValue] = token
+								}
+							}
+						}
+
+						// Replace each MASK_TEXT with corresponding unique token
+						cleanStr := string(clean)
+						for _, match := range matches {
+							if len(match[maskGroupIndex]) > 0 {
+								sensitiveValue := match[maskGroupIndex]
+								token := tokensGenerated[sensitiveValue]
+								// Replace first occurrence of maskText with token
+								cleanStr = strings.Replace(cleanStr, r.maskText, token, 1)
+							}
+						}
+						clean = []byte(cleanStr)
 					}
 				}
 			}
