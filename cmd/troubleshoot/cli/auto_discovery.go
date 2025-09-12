@@ -14,7 +14,7 @@ import (
 	"k8s.io/client-go/rest"
 	"k8s.io/klog/v2"
 )
-
+ 
 // AutoDiscoveryConfig contains configuration for auto-discovery
 type AutoDiscoveryConfig struct {
 	Enabled                 bool
