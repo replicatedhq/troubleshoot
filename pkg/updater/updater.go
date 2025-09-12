@@ -17,6 +17,7 @@ import (
 	"time"
 
 	hv "github.com/hashicorp/go-version"
+	"github.com/replicatedhq/troubleshoot/pkg/updater/pkgmgr"
 	"github.com/replicatedhq/troubleshoot/pkg/version"
 )
 
@@ -47,6 +48,8 @@ func (o *Options) client() *http.Client {
 
 // CheckAndUpdate checks GitHub releases for a newer version and, if newer, downloads
 // the corresponding tar.gz asset, extracts the binary, and atomically replaces CurrentPath.
+// If the binary was installed via a package manager (brew, krew), it will display the
+// appropriate upgrade command instead of performing the update.
 func CheckAndUpdate(ctx context.Context, o Options) error {
 	if o.Skip {
 		return nil
@@ -77,6 +80,15 @@ func CheckAndUpdate(ctx context.Context, o Options) error {
 	latest := strings.TrimPrefix(latestTag, "v")
 	newer, err := isNewer(latest, current)
 	if err != nil || !newer {
+		return nil
+	}
+
+	// Check if installed via package manager - only show message if newer version exists
+	if pkgMgr := detectPackageManager(o.BinaryName); pkgMgr != nil {
+		if o.Printf != nil {
+			o.Printf("A newer version (%s) is available. Please run: %s\n", 
+				latest, pkgMgr.UpgradeCommand())
+		}
 		return nil
 	}
 
@@ -258,4 +270,63 @@ func sanityCheckBinary(path string) error {
 	}
 	_ = hex.EncodeToString(h.Sum(nil))
 	return nil
+}
+
+// detectPackageManager checks if the binary was installed via a known package manager
+func detectPackageManager(binaryName string) pkgmgr.PackageManager {
+	// Map binary names to their package manager formula/plugin names
+	formulaName := getHomebrewFormulaName(binaryName)
+	pluginName := getKrewPluginName(binaryName)
+	
+	// List of package managers to check
+	packageManagers := []pkgmgr.PackageManager{
+		pkgmgr.NewHomebrewPackageManager(formulaName),
+		pkgmgr.NewKrewPackageManager(pluginName),
+	}
+
+	for _, pm := range packageManagers {
+		installed, err := pm.IsInstalled()
+		if err != nil {
+			// Continue checking other package managers if one fails
+			continue
+		}
+		if installed {
+			return pm
+		}
+	}
+
+	// No package manager detected
+	return nil
+}
+
+// getHomebrewFormulaName maps binary names to Homebrew formula names
+func getHomebrewFormulaName(binaryName string) string {
+	formulaMap := map[string]string{
+		"preflight":      "preflight",
+		"support-bundle": "support-bundle",
+		"troubleshoot":   "troubleshoot",
+	}
+
+	if formula, exists := formulaMap[binaryName]; exists {
+		return formula
+	}
+
+	// Default to the binary name if not in the map
+	return binaryName
+}
+
+// getKrewPluginName maps binary names to krew plugin names
+func getKrewPluginName(binaryName string) string {
+	pluginMap := map[string]string{
+		"preflight":      "preflight",
+		"support-bundle": "support-bundle",
+		"troubleshoot":   "troubleshoot",
+	}
+
+	if plugin, exists := pluginMap[binaryName]; exists {
+		return plugin
+	}
+
+	// Default to the binary name
+	return binaryName
 }
