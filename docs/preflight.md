@@ -10,7 +10,7 @@ that a cluster meets the requirements to run an application.
 ```
 preflight [url] [flags]
 ```
-
+ 
 ### Auto-update
 
 Preflight includes a built-in self-updater.
