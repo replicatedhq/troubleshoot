@@ -96,6 +96,10 @@ that a cluster meets the requirements to run an application.`,
 	cmd.Flags().Bool("no-uri", false, "When this flag is used, Preflight does not attempt to retrieve the spec referenced by the uri: field`")
 	cmd.Flags().Bool("auto-update", true, "enable automatic binary self-update check and install")
 
+	// Template values for v1beta3 specs
+	cmd.Flags().StringSlice("values", []string{}, "Path to YAML files containing template values for v1beta3 specs (can be used multiple times)")
+	cmd.Flags().StringSlice("set", []string{}, "Set template values on the command line for v1beta3 specs (can be used multiple times)")
+
 	k8sutil.AddFlags(cmd.Flags())
 
 	// Initialize klog flags
