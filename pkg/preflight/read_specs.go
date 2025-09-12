@@ -12,9 +12,9 @@ import (
 	"github.com/replicatedhq/troubleshoot/pkg/k8sutil"
 	"github.com/replicatedhq/troubleshoot/pkg/loader"
 	"github.com/spf13/viper"
-	"gopkg.in/yaml.v2"
 	"helm.sh/helm/v3/pkg/strvals"
 	"k8s.io/client-go/kubernetes"
+	yaml "sigs.k8s.io/yaml"
 )
 
 func readSpecs(args []string) (*loader.TroubleshootKinds, error) {
@@ -81,12 +81,12 @@ func readSpecs(args []string) (*loader.TroubleshootKinds, error) {
 func preprocessV1Beta3Specs(args []string) ([]string, error) {
 	valuesFiles := viper.GetStringSlice("values")
 	setValues := viper.GetStringSlice("set")
-	
+
 	// If no values provided, return args unchanged
 	if len(valuesFiles) == 0 && len(setValues) == 0 {
 		return args, nil
 	}
-	
+
 	// Load values from files and --set flags
 	values := make(map[string]interface{})
 	for _, valuesFile := range valuesFiles {
@@ -97,51 +97,51 @@ func preprocessV1Beta3Specs(args []string) ([]string, error) {
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to read values file %s", valuesFile)
 		}
-		
+
 		var fileValues map[string]interface{}
 		if err := yaml.Unmarshal(data, &fileValues); err != nil {
 			return nil, errors.Wrapf(err, "failed to parse values file %s", valuesFile)
 		}
-		
+
 		values = mergeMaps(values, fileValues)
 	}
-	
+
 	// Apply --set values
 	for _, setValue := range setValues {
 		if err := strvals.ParseInto(setValue, values); err != nil {
 			return nil, errors.Wrapf(err, "failed to parse --set value: %s", setValue)
 		}
 	}
-	
+
 	// Process each arg
 	processedArgs := make([]string, 0, len(args))
 	for _, arg := range args {
 		// Skip non-file arguments (like URLs, stdin, etc.)
-		if arg == "-" || strings.HasPrefix(arg, "http://") || strings.HasPrefix(arg, "https://") || 
-		   strings.HasPrefix(arg, "secret/") || strings.HasPrefix(arg, "configmap/") {
+		if arg == "-" || strings.HasPrefix(arg, "http://") || strings.HasPrefix(arg, "https://") ||
+			strings.HasPrefix(arg, "secret/") || strings.HasPrefix(arg, "configmap/") {
 			processedArgs = append(processedArgs, arg)
 			continue
 		}
-		
+
 		// Check if file exists
 		if _, err := os.Stat(arg); err != nil {
 			processedArgs = append(processedArgs, arg)
 			continue
 		}
-		
+
 		// Read the file
 		content, err := os.ReadFile(arg)
 		if err != nil {
 			return nil, errors.Wrapf(err, "failed to read file %s", arg)
 		}
-		
+
 		// Check if it's a v1beta3 spec with templates
 		var parsed map[string]interface{}
 		if err := yaml.Unmarshal(content, &parsed); err != nil {
 			// Not valid YAML, might be templated - try to detect v1beta3
 			contentStr := string(content)
-			if strings.Contains(contentStr, "apiVersion: troubleshoot.sh/v1beta3") && 
-			   strings.Contains(contentStr, "{{") && strings.Contains(contentStr, "}}") {
+			if strings.Contains(contentStr, "apiVersion: troubleshoot.sh/v1beta3") &&
+				strings.Contains(contentStr, "{{") && strings.Contains(contentStr, "}}") {
 				// It's a v1beta3 template, render it
 				rendered, err := RenderWithHelmTemplate(contentStr, values)
 				if err != nil {
@@ -194,7 +194,6 @@ func preprocessV1Beta3Specs(args []string) ([]string, error) {
 			}
 		}
 	}
-	
+
 	return processedArgs, nil
 }
-

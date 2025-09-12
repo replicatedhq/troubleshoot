@@ -1,0 +1,10 @@
+cluster:
+  minNodes: 3
+  recommendedNodes: 3
+  minCPU: 4
+
+node:
+  minMemoryGi: 8
+  recommendedMemoryGi: 16
+  minEphemeralGi: 40
+  recommendedEphemeralGi: 40
