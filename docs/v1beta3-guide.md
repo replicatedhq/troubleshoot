@@ -25,11 +25,11 @@ The examples use Go templates with the standard Sprig function set. Values can b
   - docString: |
       Title: Default StorageClass Requirements
       Requirement:
-        - A StorageClass named "{{ .Values.storage.className | default "default" }}" must exist
+        - A StorageClass named "{{ .Values.storage.className }}" must exist
       ...
     storageClass:
       checkName: Default StorageClass
-      storageClassName: '{{ .Values.storage.className | default "default" }}'
+      storageClassName: '{{ .Values.storage.className }}'
       outcomes:
         - fail:
             message: Default StorageClass not found
@@ -38,15 +38,15 @@ The examples use Go templates with the standard Sprig function set. Values can b
   {{- end }}
   ```
 
-- **Defaults**: use `| default` so templates render even without a values file.
+- **Values**: template expressions directly use values from your values files.
   ```yaml
-  {{ .Values.kubernetes.minVersion | default "1.20.0" }}
+  {{ .Values.kubernetes.minVersion }}
   ```
 
 - **Nested conditionals**: further constrain checks (e.g., only when a specific ingress type is used).
   ```yaml
   {{- if .Values.ingress.enabled }}
-  {{- if eq (.Values.ingress.type | default "Contour") "Contour" }}
+  {{- if eq .Values.ingress.type "Contour" }}
   - docString: |
       Title: Required CRDs and Ingress Capabilities
       ...
@@ -100,13 +100,13 @@ Use the analyzer that matches the requirement, and enumerate `outcomes` with cle
     checkName: Kubernetes version
     outcomes:
       - fail:
-          when: '< {{ .Values.kubernetes.minVersion | default "1.20.0" }}'
-          message: This application requires at least Kubernetes {{ .Values.kubernetes.minVersion | default "1.20.0" }}.
+          when: '< {{ .Values.kubernetes.minVersion }}'
+          message: This application requires at least Kubernetes {{ .Values.kubernetes.minVersion }}.
       - warn:
-          when: '< {{ .Values.kubernetes.recommendedVersion | default "1.22.0" }}'
-          message: Recommended version is {{ .Values.kubernetes.recommendedVersion | default "1.22.0" }} or later.
+          when: '< {{ .Values.kubernetes.recommendedVersion }}'
+          message: Recommended version is {{ .Values.kubernetes.recommendedVersion }} or later.
       - pass:
-          when: '>= {{ .Values.kubernetes.recommendedVersion | default "1.22.0" }}'
+          when: '>= {{ .Values.kubernetes.recommendedVersion }}'
           message: Your cluster meets the recommended and required versions of Kubernetes.
   ```
 
@@ -137,7 +137,7 @@ Use the analyzer that matches the requirement, and enumerate `outcomes` with cle
   ```yaml
   storageClass:
     checkName: Default StorageClass
-    storageClassName: '{{ .Values.storage.className | default "default" }}'
+    storageClassName: '{{ .Values.storage.className }}'
     outcomes:
       - fail:
           message: Default StorageClass not found
@@ -166,11 +166,11 @@ Use the analyzer that matches the requirement, and enumerate `outcomes` with cle
     checkName: Node count
     outcomes:
       - fail:
-          when: 'count() < {{ .Values.cluster.minNodes | default "3" }}'
-          message: This application requires at least {{ .Values.cluster.minNodes | default "3" }} nodes.
+          when: 'count() < {{ .Values.cluster.minNodes }}'
+          message: This application requires at least {{ .Values.cluster.minNodes }} nodes.
       - warn:
-          when: 'count() < {{ .Values.cluster.recommendedNodes | default "5" }}'
-          message: This application recommends at least {{ .Values.cluster.recommendedNodes | default "5" }} nodes.
+          when: 'count() < {{ .Values.cluster.recommendedNodes }}'
+          message: This application recommends at least {{ .Values.cluster.recommendedNodes }} nodes.
       - pass:
           message: This cluster has enough nodes.
 
@@ -179,36 +179,36 @@ Use the analyzer that matches the requirement, and enumerate `outcomes` with cle
     checkName: Cluster CPU total
     outcomes:
       - fail:
-          when: 'sum(cpuCapacity) < {{ .Values.cluster.minCPU | default "4" }}'
-          message: The cluster must contain at least {{ .Values.cluster.minCPU | default "4" }} cores
+          when: 'sum(cpuCapacity) < {{ .Values.cluster.minCPU }}'
+          message: The cluster must contain at least {{ .Values.cluster.minCPU }} cores
       - pass:
-          message: There are at least {{ .Values.cluster.minCPU | default "4" }} cores in the cluster
+          message: There are at least {{ .Values.cluster.minCPU }} cores in the cluster
 
   # Per-node memory (Gi)
   nodeResources:
     checkName: Per-node memory requirement
     outcomes:
       - fail:
-          when: 'min(memoryCapacity) < {{ .Values.node.minMemoryGi | default "8" }}Gi'
-          message: All nodes must have at least {{ .Values.node.minMemoryGi | default "8" }} GiB of memory.
+          when: 'min(memoryCapacity) < {{ .Values.node.minMemoryGi }}Gi'
+          message: All nodes must have at least {{ .Values.node.minMemoryGi }} GiB of memory.
       - warn:
-          when: 'min(memoryCapacity) < {{ .Values.node.recommendedMemoryGi | default "32" }}Gi'
-          message: All nodes are recommended to have at least {{ .Values.node.recommendedMemoryGi | default "32" }} GiB of memory.
+          when: 'min(memoryCapacity) < {{ .Values.node.recommendedMemoryGi }}Gi'
+          message: All nodes are recommended to have at least {{ .Values.node.recommendedMemoryGi }} GiB of memory.
       - pass:
-          message: All nodes have at least {{ .Values.node.recommendedMemoryGi | default "32" }} GiB of memory.
+          message: All nodes have at least {{ .Values.node.recommendedMemoryGi }} GiB of memory.
 
   # Per-node ephemeral storage (Gi)
   nodeResources:
     checkName: Per-node ephemeral storage requirement
     outcomes:
       - fail:
-          when: 'min(ephemeralStorageCapacity) < {{ .Values.node.minEphemeralGi | default "40" }}Gi'
-          message: All nodes must have at least {{ .Values.node.minEphemeralGi | default "40" }} GiB of ephemeral storage.
+          when: 'min(ephemeralStorageCapacity) < {{ .Values.node.minEphemeralGi }}Gi'
+          message: All nodes must have at least {{ .Values.node.minEphemeralGi }} GiB of ephemeral storage.
       - warn:
-          when: 'min(ephemeralStorageCapacity) < {{ .Values.node.recommendedEphemeralGi | default "100" }}Gi'
-          message: All nodes are recommended to have at least {{ .Values.node.recommendedEphemeralGi | default "100" }} GiB of ephemeral storage.
+          when: 'min(ephemeralStorageCapacity) < {{ .Values.node.recommendedEphemeralGi }}Gi'
+          message: All nodes are recommended to have at least {{ .Values.node.recommendedEphemeralGi }} GiB of ephemeral storage.
       - pass:
-          message: All nodes have at least {{ .Values.node.recommendedEphemeralGi | default "100" }} GiB of ephemeral storage.
+          message: All nodes have at least {{ .Values.node.recommendedEphemeralGi }} GiB of ephemeral storage.
   ```
 
 
@@ -219,6 +219,7 @@ Use the analyzer that matches the requirement, and enumerate `outcomes` with cle
 - **Prefer `fail` for unmet hard requirements**, `warn` for soft requirements, and `pass` with a direct, affirmative message.
 - **Attach `uri`** to outcomes when helpful for remediation.
 - **Keep docString in sync** with the actual checks; avoid drift by templating values into both the docs and the analyzer.
+- **Ensure values files contain all required fields** since templates now directly use values without fallback defaults.
 
 
 ### Values files: shape and examples
@@ -310,7 +311,8 @@ Notes:
 
 - Add `docString` with Title, Requirement bullets, rationale, and links.
 - Gate optional analyzers with `{{- if .Values.<feature>.enabled }}`.
-- Parameterize thresholds and names with `.Values` and reasonable `| default` fallbacks.
+- Parameterize thresholds and names with `.Values` expressions.
+- Ensure all required values are present in your values files since there are no fallback defaults.
 - Use precise, user-actionable `message` text for each outcome; add `uri` where helpful.
 - Prefer a minimal values file with everything disabled, and a full values file enabling most checks.
 - Test with `preflight template` (no values, minimal, full) and verify `preflight docs` output reads well.
@@ -330,20 +332,20 @@ spec:
         Title: Kubernetes Control Plane Requirements
         Requirement:
           - Version:
-            - Minimum: {{ .Values.kubernetes.minVersion | default "1.20.0" }}
-            - Recommended: {{ .Values.kubernetes.recommendedVersion | default "1.22.0" }}
+            - Minimum: {{ .Values.kubernetes.minVersion }}
+            - Recommended: {{ .Values.kubernetes.recommendedVersion }}
         Running below minimum may remove GA APIs and critical fixes.
       clusterVersion:
         checkName: Kubernetes version
         outcomes:
           - fail:
-              when: '< {{ .Values.kubernetes.minVersion | default "1.20.0" }}'
-              message: Requires Kubernetes >= {{ .Values.kubernetes.minVersion | default "1.20.0" }}.
+              when: '< {{ .Values.kubernetes.minVersion }}'
+              message: Requires Kubernetes >= {{ .Values.kubernetes.minVersion }}.
           - warn:
-              when: '< {{ .Values.kubernetes.recommendedVersion | default "1.22.0" }}'
-              message: Recommended {{ .Values.kubernetes.recommendedVersion | default "1.22.0" }} or later.
+              when: '< {{ .Values.kubernetes.recommendedVersion }}'
+              message: Recommended {{ .Values.kubernetes.recommendedVersion }} or later.
           - pass:
-              when: '>= {{ .Values.kubernetes.recommendedVersion | default "1.22.0" }}'
+              when: '>= {{ .Values.kubernetes.recommendedVersion }}'
               message: Meets recommended and required versions.
     {{- end }}
 
@@ -351,10 +353,10 @@ spec:
     - docString: |
         Title: Default StorageClass Requirements
         Requirement:
-          - A StorageClass named "{{ .Values.storage.className | default "default" }}" must exist
+          - A StorageClass named "{{ .Values.storage.className }}" must exist
       storageClass:
         checkName: Default StorageClass
-        storageClassName: '{{ .Values.storage.className | default "default" }}'
+        storageClassName: '{{ .Values.storage.className }}'
         outcomes:
           - fail:
               message: Default StorageClass not found
