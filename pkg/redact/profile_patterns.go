@@ -226,6 +226,18 @@ func getStandardPatterns() []RedactionPattern {
 			Severity:    "high",
 			Tags:        []string{"json", "environment", "credentials"},
 		},
+
+		// OpenAI API keys (common pattern in service configs)
+		{
+			Name:        "openai-api-keys",
+			Description: "Redact OpenAI API keys (sk- prefix)",
+			Type:        "single-line",
+			Enabled:     true,
+			Regex:       `\b(?P<mask>sk-[A-Za-z0-9_-]{8,})\b`,
+			Scan:        `sk-`,
+			Severity:    "critical",
+			Tags:        []string{"openai", "api-key", "service-specific"},
+		},
 	}
 
 	return append(patterns, standardPatterns...)
@@ -460,11 +472,11 @@ func getParanoidPatterns() []RedactionPattern {
 		// Any string that looks like a secret (common patterns)
 		{
 			Name:        "secret-like-patterns",
-			Description: "Redact strings that look like secrets (sk_, ghp_, etc.)",
+			Description: "Redact strings that look like secrets (sk_, sk-, ghp_, etc.)",
 			Type:        "single-line",
 			Enabled:     true,
-			Regex:       `\b(?P<mask>(?:sk_|ghp_|glpat-|xoxb-|AKIA)[A-Za-z0-9_-]{8,})\b`,
-			Scan:        `(?:sk_|ghp_|glpat-|xoxb-|AKIA)[A-Za-z0-9_-]{8,}`,
+			Regex:       `\b(?P<mask>(?:sk[_-]|ghp_|glpat-|xoxb-|AKIA)[A-Za-z0-9_-]{8,})\b`,
+			Scan:        `(?:sk[_-]|ghp_|glpat-|xoxb-|AKIA)[A-Za-z0-9_-]{8,}`,
 			Severity:    "high",
 			Tags:        []string{"paranoid", "secret-pattern", "api-key"},
 		},
