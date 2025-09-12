@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"regexp"
+	"strings"
 
 	"github.com/replicatedhq/troubleshoot/pkg/constants"
 	"k8s.io/klog/v2"
@@ -93,6 +94,44 @@ func (r *SingleLineRedactor) Redact(input io.Reader, path string) io.Reader {
 			}
 
 			clean := r.re.ReplaceAll(line, substStr)
+			if enableTokenization && !bytes.Equal(clean, line) {
+				// Find the "mask" named group for tokenization
+				if matches := r.re.FindAllStringSubmatch(string(line), -1); matches != nil {
+					// Find the mask group index
+					maskGroupIndex := -1
+					for i, name := range r.re.SubexpNames() {
+						if name == "mask" {
+							maskGroupIndex = i
+							break
+						}
+					}
+					if maskGroupIndex > 0 && maskGroupIndex < len(matches[0]) {
+						// Build map of unique sensitive values to tokens
+						tokensGenerated := make(map[string]string)
+						for _, match := range matches {
+							if len(match[maskGroupIndex]) > 0 {
+								sensitiveValue := match[maskGroupIndex]
+								if _, exists := tokensGenerated[sensitiveValue]; !exists {
+									token := tokenizeValue([]byte(sensitiveValue), inferTypeHint(r.redactName))
+									tokensGenerated[sensitiveValue] = token
+								}
+							}
+						}
+
+						// Replace each MASK_TEXT with corresponding unique token
+						cleanStr := string(clean)
+						for _, match := range matches {
+							if len(match[maskGroupIndex]) > 0 {
+								sensitiveValue := match[maskGroupIndex]
+								token := tokensGenerated[sensitiveValue]
+								// Replace first occurrence of maskText with token
+								cleanStr = strings.Replace(cleanStr, r.maskText, token, 1)
+							}
+						}
+						clean = []byte(cleanStr)
+					}
+				}
+			}
 			// Append newline since scanner strips it
 			err = writeBytes(writer, clean, NEW_LINE)
 			if err != nil {
