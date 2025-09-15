@@ -188,28 +188,12 @@ func (r *RBACChecker) getAPIGroup(apiVersion string) string {
 	}
 
 	// Split "group/version" format
-	parts := make([]string, 2)
-	for i, part := range []string{apiVersion} {
-		if i == 0 && len(part) > 0 {
-			// Handle "group/version" or just "version"
-			if groupVersion := part; len(groupVersion) > 0 {
-				if slash := 0; slash < len(groupVersion) {
-					for j, c := range groupVersion {
-						if c == '/' {
-							parts[0] = groupVersion[:j]
-							parts[1] = groupVersion[j+1:]
-							break
-						}
-					}
-					if parts[0] == "" {
-						parts[0] = groupVersion
-					}
-				}
-			}
-		}
+	if idx := strings.Index(apiVersion, "/"); idx != -1 {
+		return apiVersion[:idx] // Return the group part
 	}
 
-	return parts[0]
+	// If no slash found, it's just a version (like "v1beta1"), so no group
+	return ""
 }
 
 // getAPIVersion extracts the version from APIVersion
