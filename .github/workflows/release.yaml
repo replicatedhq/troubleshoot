@@ -1,0 +1,47 @@
+name: release
+
+on:
+  push:
+    tags:
+      - 'v*'
+      - '!v*-*'  # Exclude prerelease tags like v1.0.1-beta, v1.0.1-alpha, etc.
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false  # Don't cancel releases
+
+jobs:
+  goreleaser:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - uses: azure/docker-login@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USER }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: 'go.mod'
+
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          version: "v1.x"  # Binary version to install
+          args: release --clean --config deploy/.goreleaser.yaml
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update new preflight version in krew-index
+        uses: rajatjindal/krew-release-bot@v0.0.47
+        with:
+          krew_template_file: deploy/krew/preflight.yaml
+
+      - name: Update new support-bundle version in krew-index
+        uses: rajatjindal/krew-release-bot@v0.0.47
+        with:
+          krew_template_file: deploy/krew/support-bundle.yaml
