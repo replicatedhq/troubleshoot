@@ -10,7 +10,7 @@ Comprehensive unit tests covering all critical components and interfaces:
 
 #### Agent Interface Compliance Tests
 - **File**: `pkg/analyze/agents/interface_test.go`
-- **Coverage**: Tests all agent implementations (Local, Hosted, Ollama, OpenRouter)
+- **Coverage**: Tests all agent implementations (Local, Hosted, Ollama)
 - **Features**:
   - Interface compliance validation for all agent types
   - Method consistency and thread-safety testing

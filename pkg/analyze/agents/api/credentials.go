@@ -292,9 +292,6 @@ func NewEnvironmentCredentialStore() *EnvironmentCredentialStore {
 				UsernameVar: "AUTH_USERNAME",
 				PasswordVar: "AUTH_PASSWORD",
 			},
-			"openrouter": {
-				APIKeyVar: "OPENROUTER_API_KEY",
-			},
 			"hosted": {
 				TokenVar:  "HOSTED_AUTH_TOKEN",
 				ExpiryVar: "HOSTED_AUTH_EXPIRY",

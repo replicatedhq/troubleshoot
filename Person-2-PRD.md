@@ -45,7 +45,7 @@ Person 2 is responsible for the core data collection, processing, and analysis c
 ### Core Deliverables (Based on Current CLI Structure)
 1. **`support-bundle --namespace ns --auto`** - enhance existing root command with auto-discovery capabilities
 2. **Redaction/tokenization profiles** - streaming integration in collection path, emit `redaction-map.json`
-3. **`support-bundle analyze --agent local|hosted|ollama|openrouter --bundle bundle.tgz`** - enhance existing analyze subcommand with comprehensive agent support
+3. **`support-bundle analyze --agent local|hosted|ollama --bundle bundle.tgz`** - enhance existing analyze subcommand with comprehensive agent support
 4. **`support-bundle diff old.tgz new.tgz`** - NEW subcommand with structured `diff.json` output  
 5. **"Generate analyzers from requirements"** - create analyzers from requirement specifications
 6. **Remediation blocks** - surfaced in analysis outputs with actionable suggestions
@@ -58,9 +58,7 @@ support-bundle analyze --agent local --bundle bundle.tar.gz
 # Self-Hosted LLM (Ollama) - Complete privacy, local AI-powered analysis
 support-bundle analyze --agent ollama --model codellama:13b --bundle bundle.tar.gz
 
-# Cloud LLM (OpenRouter) - Advanced AI with client's own API keys
-export OPENROUTER_API_KEY="sk-or-v1-your-key"
-support-bundle analyze --agent openrouter --model anthropic/claude-3.5-sonnet --bundle bundle.tar.gz
+# Note: Cloud LLM support removed - use Ollama for AI-powered analysis
 
 # Hosted Agent - Cloud-scale analysis with ML capabilities
 support-bundle analyze --agent hosted --endpoint https://api.troubleshoot.sh --bundle bundle.tar.gz
@@ -749,7 +747,6 @@ type AnalysisResult struct {
 
 **Features**:
 - **Self-Hosted LLM Support (Ollama)**: Complete data privacy with local model inference
-- **Cloud LLM Support (OpenRouter)**: Access to latest models using client's own API keys
 - Natural language analysis descriptions and explanations
 - Context-aware remediation suggestions with step-by-step guidance
 - Multi-modal analysis (text, logs, configs, metrics)
@@ -764,17 +761,14 @@ support-bundle analyze --agent ollama --model codellama:13b bundle.tar.gz
 support-bundle analyze --agent ollama --model llama2:7b --local-only bundle.tar.gz
 ```
 
-**Option B: Client-Managed Cloud LLM (OpenRouter)**
+**Option B: Cloud LLM Support Removed**
 ```bash
-# Client provides their own API key for enhanced intelligence
-export OPENROUTER_API_KEY="sk-or-v1-your-key-here"
-support-bundle analyze --agent openrouter --model anthropic/claude-3.5-sonnet bundle.tar.gz
-support-bundle analyze --agent openrouter --model openai/gpt-4o bundle.tar.gz
+# Cloud LLM support has been removed - use Ollama for AI-powered analysis instead
+# See Option A above for Ollama setup
 ```
 
 **Privacy & Compliance Features**:
 - **Ollama**: Zero external data transmission - all processing on client infrastructure
-- **OpenRouter**: Client controls their own API keys and data transmission policies
 - **Local Agent**: No external dependencies, complete offline operation
 - **Hosted Agent**: Optional enterprise-grade security with SOC2/HIPAA compliance
 - **Data Filtering**: Optional PII/sensitive data redaction before any external processing
@@ -787,7 +781,6 @@ support-bundle analyze --agent openrouter --model openai/gpt-4o bundle.tar.gz
 |----------|-------------------|--------------|-------------------|------------------|
 | **Air-gapped environments** | Local Agent | 🟢 Complete | 🟡 Enhanced | 🟢 Zero |
 | **High-security with AI** | Ollama | 🟢 Complete | 🟢 Advanced | 🟡 Medium |
-| **Flexible cloud AI** | OpenRouter | 🟡 Client-controlled | 🟢 Advanced | 🟢 Low |
 | **Enterprise scale** | Hosted Agent | 🟡 SOC2-compliant | 🟢 Advanced | 🟢 Low |
 | **Best intelligence** | Multi-agent | 🟡 Configurable | 🟢 Maximum | 🟡 Medium |
 
@@ -850,9 +843,8 @@ type RequirementSpecDetails struct {
   - [x] Add rate limiting and retry logic
   - [x] Create configuration management for hosted endpoints
 
-- [x] **LLM Agent Framework (Ollama + OpenRouter)** ✅
+- [x] **LLM Agent Framework (Ollama)** ✅
   - [x] Create `OllamaAgent` for self-hosted LLM integration
-  - [x] Implement `OpenRouterAgent` for cloud LLM with client API keys
   - [x] Add model selection and configuration management
   - [x] Implement intelligent prompt engineering for troubleshooting context
   - [x] Add PII/sensitive data filtering and redaction
@@ -872,7 +864,6 @@ type RequirementSpecDetails struct {
   - [x] Add data serialization and compression
   - [x] Create secure credential management (hosted APIs + LLM API keys)
   - [x] Implement Ollama local server communication
-  - [x] Add OpenRouter API integration with client key management
 
 - [x] **Fallback Mechanisms** ✅
   - [x] Implement graceful degradation when hosted/LLM agents unavailable
@@ -884,7 +875,6 @@ type RequirementSpecDetails struct {
 - [x] **Unit Testing** ✅
   - [x] Test `HostedAgent` REST API integration with mock servers
   - [x] Test `OllamaAgent` with local model inference
-  - [x] Test `OpenRouterAgent` with various LLM providers
   - [x] Test authentication and authorization with various providers
   - [x] Test rate limiting and retry logic with simulated failures
   - [x] Test LLM prompt engineering and response parsing

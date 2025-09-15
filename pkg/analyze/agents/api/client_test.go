@@ -119,7 +119,7 @@ func TestHTTPClient_Do_BasicRequest(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, resp)
 	assert.Equal(t, http.StatusOK, resp.StatusCode)
-	assert.Equal(t, "OK", resp.Status)
+	assert.Equal(t, "200 OK", resp.Status)
 	assert.Contains(t, resp.Headers, "Content-Type")
 	assert.Equal(t, `{"status": "success"}`, string(resp.Body))
 	assert.Equal(t, "test-request-1", resp.RequestID)

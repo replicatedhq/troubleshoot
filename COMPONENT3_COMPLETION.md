@@ -41,14 +41,13 @@ We have successfully transformed the troubleshoot analysis system from basic pas
 
 **Key Deliverables**:
 - **Hosted Agent Framework**: REST API integration with authentication and rate limiting
-- **LLM Agent Support**: Ollama (self-hosted) and OpenRouter (cloud) integrations
+- **LLM Agent Support**: Ollama (self-hosted) integration
 - **Advanced API Client**: Retry policies, rate limiting, and secure credential management
 - **Fallback Mechanisms**: Intelligent agent selection and graceful degradation
 
 **Major Files Created**:
 - `pkg/analyze/agents/hosted/agent.go` (535 lines) - Hosted agent implementation
 - `pkg/analyze/agents/llm/ollama.go` - Self-hosted LLM integration
-- `pkg/analyze/agents/llm/openrouter.go` - Cloud LLM integration
 - `pkg/analyze/agents/api/client.go` (494 lines) - Advanced HTTP client
 - `PHASE2_COMPLETION.md` - Implementation summary
 
@@ -112,7 +111,6 @@ pkg/analyze/
 │   ├── hosted/agent.go         # External API integration
 │   ├── llm/
 │   │   ├── ollama.go          # Self-hosted LLM integration
-│   │   └── openrouter.go      # Cloud LLM integration
 │   └── api/
 │       ├── client.go          # Advanced HTTP client
 │       └── credentials.go     # Secure credential management
@@ -135,7 +133,6 @@ pkg/analyze/
 | **Local Agent** | Built-in analyzers, offline, fast | Standard troubleshooting, air-gapped environments | Complete local control |
 | **Hosted Agent** | Cloud-scale processing, advanced ML | Complex analysis, enterprise features | API-based, configurable |
 | **Ollama Agent** | Self-hosted LLM, natural language | Intelligent explanations, local AI | Full local control |
-| **OpenRouter Agent** | Cloud LLM with client keys | Advanced AI features, flexible models | Client-controlled API access |
 
 ## Key Features Delivered
 

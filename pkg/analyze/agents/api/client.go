@@ -225,7 +225,11 @@ func (c *HTTPClient) executeWithRetries(ctx context.Context, req *Request) (*Res
 		}
 
 		// Don't retry if the error/response is not retryable
-		if !retryPolicy.ShouldRetry(response.StatusCode, err) {
+		statusCode := 0
+		if response != nil {
+			statusCode = response.StatusCode
+		}
+		if !retryPolicy.ShouldRetry(statusCode, err) {
 			break
 		}
 	}

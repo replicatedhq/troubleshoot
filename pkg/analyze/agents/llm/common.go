@@ -14,8 +14,7 @@ import (
 type LLMProvider string
 
 const (
-	ProviderOllama     LLMProvider = "ollama"
-	ProviderOpenRouter LLMProvider = "openrouter"
+	ProviderOllama LLMProvider = "ollama"
 )
 
 // LLMConfig contains common configuration for LLM agents
