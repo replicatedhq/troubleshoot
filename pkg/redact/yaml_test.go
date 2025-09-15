@@ -3,6 +3,7 @@ package redact
 import (
 	"bytes"
 	"io/ioutil"
+	"os"
 	"strings"
 	"testing"
 
@@ -10,6 +11,10 @@ import (
 )
 
 func TestNewYamlRedactor(t *testing.T) {
+	// Ensure tokenization is disabled for backward compatibility tests
+	os.Unsetenv("TROUBLESHOOT_TOKENIZATION")
+	ResetGlobalTokenizer()
+	defer ResetRedactionList() // Clean up global redaction list
 	tests := []struct {
 		name           string
 		path           []string
@@ -291,6 +296,7 @@ xyz:
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			ResetRedactionList() // Clean up between subtests
 			req := require.New(t)
 			yamlRunner := NewYamlRedactor(strings.Join(tt.path, "."), "testfile", tt.name)
 

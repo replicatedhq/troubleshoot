@@ -58,12 +58,11 @@ func (r *SingleLineRedactor) Redact(input io.Reader, path string) io.Reader {
 			}
 		}()
 
-		substStr := []byte(getReplacementPattern(r.re, r.maskText))
-
 		buf := make([]byte, constants.BUF_INIT_SIZE)
 		scanner := bufio.NewScanner(input)
 		scanner.Buffer(buf, constants.SCANNER_MAX_SIZE)
 
+		tokenizer := GetGlobalTokenizer()
 		lineNum := 0
 		for scanner.Scan() {
 			lineNum++
@@ -92,7 +91,16 @@ func (r *SingleLineRedactor) Redact(input io.Reader, path string) io.Reader {
 				continue
 			}
 
-			clean := r.re.ReplaceAll(line, substStr)
+			var clean []byte
+			if tokenizer.IsEnabled() {
+				// Use tokenized replacement - context comes from the redactor name which often indicates the secret type
+				context := r.redactName
+				clean = getTokenizedReplacementPatternWithPath(r.re, line, context, r.filePath)
+			} else {
+				// Use original masking behavior
+				substStr := []byte(getReplacementPattern(r.re, r.maskText))
+				clean = r.re.ReplaceAll(line, substStr)
+			}
 			// Append newline since scanner strips it
 			err = writeBytes(writer, clean, NEW_LINE)
 			if err != nil {

@@ -3,12 +3,17 @@ package redact
 import (
 	"bytes"
 	"io"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 )
 
 func TestNewSingleLineRedactor(t *testing.T) {
+	// Ensure tokenization is disabled for backward compatibility tests
+	os.Unsetenv("TROUBLESHOOT_TOKENIZATION")
+	ResetGlobalTokenizer()
+	defer ResetRedactionList() // Clean up global redaction list
 	tests := []struct {
 		name           string
 		re             string

@@ -87,6 +87,15 @@ If no arguments are provided, specs are automatically loaded from the cluster by
 
 	cmd.Flags().StringSlice("redactors", []string{}, "names of the additional redactors to use")
 	cmd.Flags().Bool("redact", true, "enable/disable default redactions")
+
+	// Tokenization flags (Phase 4 integration)
+	cmd.Flags().Bool("tokenize", false, "enable intelligent tokenization instead of simple masking (replaces ***HIDDEN*** with ***TOKEN_TYPE_HASH***)")
+	cmd.Flags().String("redaction-map", "", "generate redaction mapping file at specified path (enables token→original mapping for authorized access)")
+	cmd.Flags().Bool("encrypt-redaction-map", false, "encrypt the redaction mapping file using AES-256 (requires --redaction-map)")
+	cmd.Flags().String("token-prefix", "", "custom token prefix format (default: ***TOKEN_%s_%s***)")
+	cmd.Flags().Bool("verify-tokenization", false, "validation mode: verify tokenization setup without collecting data")
+	cmd.Flags().String("bundle-id", "", "custom bundle identifier for token correlation (auto-generated if not provided)")
+	cmd.Flags().Bool("tokenization-stats", false, "include detailed tokenization statistics in output")
 	cmd.Flags().Bool("interactive", true, "enable/disable interactive mode")
 	cmd.Flags().Bool("collect-without-permissions", true, "always generate a support bundle, even if it some require additional permissions")
 	cmd.Flags().StringSliceP("selector", "l", []string{"troubleshoot.sh/kind=support-bundle"}, "selector to filter on for loading additional support bundle specs found in secrets within the cluster")

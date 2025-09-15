@@ -10,6 +10,7 @@ import (
 	"os/signal"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"sync"
 	"time"
 
@@ -27,6 +28,7 @@ import (
 	"github.com/replicatedhq/troubleshoot/pkg/httputil"
 	"github.com/replicatedhq/troubleshoot/pkg/k8sutil"
 	"github.com/replicatedhq/troubleshoot/pkg/loader"
+	"github.com/replicatedhq/troubleshoot/pkg/redact"
 	"github.com/replicatedhq/troubleshoot/pkg/supportbundle"
 	"github.com/replicatedhq/troubleshoot/pkg/types"
 	"github.com/spf13/viper"
@@ -58,6 +60,16 @@ func runTroubleshoot(v *viper.Viper, args []string) error {
 	// Validate auto-discovery flags
 	if err := ValidateAutoDiscoveryFlags(v); err != nil {
 		return errors.Wrap(err, "invalid auto-discovery configuration")
+	}
+
+	// Validate tokenization flags
+	if err := ValidateTokenizationFlags(v); err != nil {
+		return errors.Wrap(err, "invalid tokenization configuration")
+	}
+
+	// Validate tokenization flags
+	if err := ValidateTokenizationFlags(v); err != nil {
+		return errors.Wrap(err, "invalid tokenization configuration")
 	}
 
 	// Apply auto-discovery if enabled
@@ -205,6 +217,15 @@ func runTroubleshoot(v *viper.Viper, args []string) error {
 		Redact:                    v.GetBool("redact"),
 		FromCLI:                   true,
 		RunHostCollectorsInPod:    mainBundle.Spec.RunHostCollectorsInPod,
+
+		// Phase 4: Tokenization options
+		Tokenize:            v.GetBool("tokenize"),
+		RedactionMapPath:    v.GetString("redaction-map"),
+		EncryptRedactionMap: v.GetBool("encrypt-redaction-map"),
+		TokenPrefix:         v.GetString("token-prefix"),
+		VerifyTokenization:  v.GetBool("verify-tokenization"),
+		BundleID:            v.GetString("bundle-id"),
+		TokenizationStats:   v.GetBool("tokenization-stats"),
 	}
 
 	nonInteractiveOutput := analysisOutput{}
@@ -485,4 +506,107 @@ func (a *analysisOutput) FormattedAnalysisOutput() (outputJson string, err error
 		return "", fmt.Errorf("\r * Failed to format analysis: %v\n", err)
 	}
 	return string(formatted), nil
+}
+
+// ValidateTokenizationFlags validates tokenization flag combinations
+func ValidateTokenizationFlags(v *viper.Viper) error {
+	// Verify tokenization mode early (before collection starts)
+	if v.GetBool("verify-tokenization") {
+		if err := VerifyTokenizationSetup(v); err != nil {
+			return errors.Wrap(err, "tokenization verification failed")
+		}
+		fmt.Println("✅ Tokenization verification passed")
+		os.Exit(0) // Exit after verification
+	}
+
+	// Encryption requires redaction map
+	if v.GetBool("encrypt-redaction-map") && v.GetString("redaction-map") == "" {
+		return errors.New("--encrypt-redaction-map requires --redaction-map to be specified")
+	}
+
+	// Redaction map requires tokenization or redaction to be enabled
+	if v.GetString("redaction-map") != "" {
+		if !v.GetBool("tokenize") && !v.GetBool("redact") {
+			return errors.New("--redaction-map requires either --tokenize or --redact to be enabled")
+		}
+	}
+
+	// Custom token prefix requires tokenization
+	if v.GetString("token-prefix") != "" && !v.GetBool("tokenize") {
+		return errors.New("--token-prefix requires --tokenize to be enabled")
+	}
+
+	// Bundle ID requires tokenization
+	if v.GetString("bundle-id") != "" && !v.GetBool("tokenize") {
+		return errors.New("--bundle-id requires --tokenize to be enabled")
+	}
+
+	// Tokenization stats requires tokenization
+	if v.GetBool("tokenization-stats") && !v.GetBool("tokenize") {
+		return errors.New("--tokenization-stats requires --tokenize to be enabled")
+	}
+
+	return nil
+}
+
+// VerifyTokenizationSetup verifies tokenization configuration without collecting data
+func VerifyTokenizationSetup(v *viper.Viper) error {
+	fmt.Println("🔍 Verifying tokenization setup...")
+
+	// Test 1: Environment variable check
+	if v.GetBool("tokenize") {
+		os.Setenv("TROUBLESHOOT_TOKENIZATION", "true")
+		defer os.Unsetenv("TROUBLESHOOT_TOKENIZATION")
+	}
+
+	// Test 2: Tokenizer initialization
+	redact.ResetGlobalTokenizer()
+	tokenizer := redact.GetGlobalTokenizer()
+
+	if v.GetBool("tokenize") && !tokenizer.IsEnabled() {
+		return errors.New("tokenizer is not enabled despite --tokenize flag")
+	}
+
+	if !v.GetBool("tokenize") && tokenizer.IsEnabled() {
+		return errors.New("tokenizer is enabled despite --tokenize flag being false")
+	}
+
+	fmt.Printf("  ✅ Tokenizer state: %v\n", tokenizer.IsEnabled())
+
+	// Test 3: Token generation
+	if tokenizer.IsEnabled() {
+		testToken := tokenizer.TokenizeValue("test-secret", "verification")
+		if !tokenizer.ValidateToken(testToken) {
+			return errors.Errorf("generated test token is invalid: %s", testToken)
+		}
+		fmt.Printf("  ✅ Test token generated: %s\n", testToken)
+	}
+
+	// Test 4: Custom token prefix validation
+	if customPrefix := v.GetString("token-prefix"); customPrefix != "" {
+		if !strings.Contains(customPrefix, "%s") {
+			return errors.Errorf("custom token prefix must contain %%s placeholders: %s", customPrefix)
+		}
+		fmt.Printf("  ✅ Custom token prefix validated: %s\n", customPrefix)
+	}
+
+	// Test 5: Redaction map path validation
+	if mapPath := v.GetString("redaction-map"); mapPath != "" {
+		// Check if directory exists
+		dir := filepath.Dir(mapPath)
+		if _, err := os.Stat(dir); os.IsNotExist(err) {
+			return errors.Errorf("redaction map directory does not exist: %s", dir)
+		}
+		fmt.Printf("  ✅ Redaction map path validated: %s\n", mapPath)
+
+		// Test file creation (and cleanup)
+		testFile := mapPath + ".test"
+		if err := os.WriteFile(testFile, []byte("test"), 0600); err != nil {
+			return errors.Errorf("cannot create redaction map file: %v", err)
+		}
+		os.Remove(testFile)
+		fmt.Printf("  ✅ File creation permissions verified\n")
+	}
+
+	return nil
 }
