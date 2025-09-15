@@ -2,20 +2,26 @@ package cli
 
 import (
 	"archive/tar"
+	"bufio"
 	"compress/gzip"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
 	"os"
-	"path/filepath"
+	"sort"
 	"strings"
 	"time"
 
 	"github.com/pkg/errors"
+	"github.com/pmezard/go-difflib/difflib"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"k8s.io/klog/v2"
 )
+
+const maxInlineDiffBytes = 256 * 1024
 
 // DiffResult represents the result of comparing two support bundles
 type DiffResult struct {
@@ -70,12 +76,12 @@ type BundleMetadata struct {
 
 func Diff() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "diff <old-bundle.tgz> <new-bundle.tgz>",
+		Use:   "diff <old-bundle.(tar.gz|tgz)> <new-bundle.(tar.gz|tgz)>",
 		Args:  cobra.ExactArgs(2),
 		Short: "Compare two support bundles and identify changes",
 		Long: `Compare two support bundles to identify changes over time.
 This command analyzes differences between two support bundle archives and generates
-a detailed report showing what has changed, including:
+a human-readable report showing what has changed, including:
 
 - Added, removed, or modified files
 - Configuration changes
@@ -83,8 +89,7 @@ a detailed report showing what has changed, including:
 - Resource status changes
 - Performance metric changes
 
-The output can be formatted as JSON for programmatic consumption or as
-human-readable text for manual review.`,
+Use -o to write the report to a file; otherwise it prints to stdout.`,
 		PreRun: func(cmd *cobra.Command, args []string) {
 			viper.BindPFlags(cmd.Flags())
 		},
@@ -94,14 +99,13 @@ human-readable text for manual review.`,
 		},
 	}
 
-	cmd.Flags().String("output", "text", "output format: text, json, html")
-	cmd.Flags().StringP("output-file", "f", "", "write diff output to file instead of stdout")
-	cmd.Flags().Bool("ignore-timestamps", true, "ignore timestamp differences in logs and events")
-	cmd.Flags().Bool("ignore-order", true, "ignore ordering differences in arrays and lists")
-	cmd.Flags().StringSlice("ignore-paths", []string{}, "file paths to ignore in diff (supports glob patterns)")
-	cmd.Flags().String("significance-threshold", "medium", "minimum significance level to report: low, medium, high")
-	cmd.Flags().Bool("include-remediation", true, "include remediation suggestions in diff output")
-	cmd.Flags().Bool("verbose", false, "include detailed diff information")
+	cmd.Flags().StringP("output", "o", "", "file path of where to save the diff report (default prints to stdout)")
+	cmd.Flags().Int("max-diff-lines", 200, "maximum total lines to include in an inline diff for a single file")
+	cmd.Flags().Int("max-diff-files", 50, "maximum number of files to include inline diffs for; additional modified files will omit inline diffs")
+	cmd.Flags().Bool("include-log-diffs", false, "include inline diffs for log files as well")
+	cmd.Flags().Int("diff-context", 3, "number of context lines to include around changes in unified diffs")
+	cmd.Flags().Bool("hide-inline-diffs", false, "hide inline unified diffs in the report")
+	cmd.Flags().String("format", "", "output format; set to 'json' to emit machine-readable JSON to stdout or -o")
 
 	return cmd
 }
@@ -141,62 +145,486 @@ func validateBundleFile(bundlePath string) error {
 		return fmt.Errorf("bundle file not found: %s", bundlePath)
 	}
 
-	// Check if it's a valid archive format
-	ext := strings.ToLower(filepath.Ext(bundlePath))
-	validExtensions := []string{".tgz", ".tar.gz", ".zip"}
-
-	isValid := false
-	for _, validExt := range validExtensions {
-		if strings.HasSuffix(bundlePath, validExt) {
-			isValid = true
-			break
-		}
-	}
-
-	if !isValid {
-		return fmt.Errorf("unsupported bundle format. Expected: %v, got: %s", validExtensions, ext)
+	// Support .tar.gz and .tgz bundles
+	lower := strings.ToLower(bundlePath)
+	if !(strings.HasSuffix(lower, ".tar.gz") || strings.HasSuffix(lower, ".tgz")) {
+		return fmt.Errorf("unsupported bundle format. Expected path to end with .tar.gz or .tgz")
 	}
 
 	return nil
 }
 
 func performBundleDiff(oldBundle, newBundle string, v *viper.Viper) (*DiffResult, error) {
-	// This is a placeholder implementation
-	// In the full implementation, this would:
-	// 1. Extract both bundles to temporary directories
-	// 2. Compare files and contents
-	// 3. Generate change analysis
-	// 4. Create remediation suggestions
+	klog.V(2).Info("Performing bundle diff analysis (streaming)...")
 
-	klog.V(2).Info("Performing bundle diff analysis...")
-
-	// Get bundle metadata
-	oldMeta := getBundleMetadata(oldBundle)
-	newMeta := getBundleMetadata(newBundle)
-
-	// Create placeholder diff result
-	result := &DiffResult{
-		Summary: DiffSummary{
-			TotalChanges:      0,
-			FilesAdded:        0,
-			FilesRemoved:      0,
-			FilesModified:     0,
-			HighImpactChanges: 0,
-		},
-		Changes: []Change{},
-		Metadata: DiffMetadata{
-			OldBundle:   oldMeta,
-			NewBundle:   newMeta,
-			GeneratedAt: fmt.Sprintf("%v", time.Now().Format(time.RFC3339)),
-			Version:     "v1",
-		},
-		Significance: "none",
+	// Stream inventories
+	oldInv, err := buildInventoryFromTarGz(oldBundle)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to inventory old bundle")
+	}
+	newInv, err := buildInventoryFromTarGz(newBundle)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to inventory new bundle")
 	}
 
-	// TODO: Implement actual diff logic in Phase 4 (Support Bundle Differencing)
-	klog.V(1).Info("Note: Full diff implementation will be completed in Phase 4")
+	var changes []Change
+	inlineDiffsIncluded := 0
+	maxDiffLines := v.GetInt("max-diff-lines")
+	if maxDiffLines <= 0 {
+		maxDiffLines = 200
+	}
+	maxDiffFiles := v.GetInt("max-diff-files")
+	if maxDiffFiles <= 0 {
+		maxDiffFiles = 50
+	}
+	includeLogDiffs := v.GetBool("include-log-diffs")
+	diffContext := v.GetInt("diff-context")
+	if diffContext <= 0 {
+		diffContext = 3
+	}
 
+	// Added files
+	for p, nf := range newInv {
+		if _, ok := oldInv[p]; !ok {
+			ch := Change{
+				Type:     "added",
+				Category: categorizePath(p),
+				Path:     "/" + p,
+				Impact:   estimateImpact("added", p),
+				Details: map[string]interface{}{
+					"size": nf.Size,
+				},
+			}
+			if rem := suggestRemediation(ch.Type, p); rem != nil {
+				ch.Remediation = rem
+			}
+			changes = append(changes, ch)
+		}
+	}
+
+	// Removed files
+	for p, of := range oldInv {
+		if _, ok := newInv[p]; !ok {
+			ch := Change{
+				Type:     "removed",
+				Category: categorizePath(p),
+				Path:     "/" + p,
+				Impact:   estimateImpact("removed", p),
+				Details: map[string]interface{}{
+					"size": of.Size,
+				},
+			}
+			if rem := suggestRemediation(ch.Type, p); rem != nil {
+				ch.Remediation = rem
+			}
+			changes = append(changes, ch)
+		}
+	}
+
+	// Modified files
+	for p, of := range oldInv {
+		if nf, ok := newInv[p]; ok {
+			if of.Digest != nf.Digest {
+				ch := Change{
+					Type:     "modified",
+					Category: categorizePath(p),
+					Path:     "/" + p,
+					Impact:   estimateImpact("modified", p),
+					Details:  map[string]interface{}{},
+				}
+				if rem := suggestRemediation(ch.Type, p); rem != nil {
+					ch.Remediation = rem
+				}
+				changes = append(changes, ch)
+			}
+		}
+	}
+
+	// Sort changes deterministically: type, then path
+	sort.Slice(changes, func(i, j int) bool {
+		if changes[i].Type == changes[j].Type {
+			return changes[i].Path < changes[j].Path
+		}
+		return changes[i].Type < changes[j].Type
+	})
+
+	// Populate inline diffs lazily for the first N eligible modified files using streaming approach
+	for i := range changes {
+		if inlineDiffsIncluded >= maxDiffFiles {
+			break
+		}
+		ch := &changes[i]
+		if ch.Type != "modified" {
+			continue
+		}
+		allowLogs := includeLogDiffs || ch.Category != "logs"
+		if !allowLogs {
+			continue
+		}
+		// Use streaming diff generation to avoid loading large files into memory
+		if d := generateStreamingUnifiedDiff(oldBundle, newBundle, ch.Path, diffContext, maxDiffLines); d != "" {
+			if ch.Details == nil {
+				ch.Details = map[string]interface{}{}
+			}
+			ch.Details["diff"] = d
+			inlineDiffsIncluded++
+		}
+	}
+
+	// Summaries
+	summary := DiffSummary{}
+	for _, c := range changes {
+		switch c.Type {
+		case "added":
+			summary.FilesAdded++
+		case "removed":
+			summary.FilesRemoved++
+		case "modified":
+			summary.FilesModified++
+		}
+		if c.Impact == "high" {
+			summary.HighImpactChanges++
+		}
+	}
+	summary.TotalChanges = summary.FilesAdded + summary.FilesRemoved + summary.FilesModified
+
+	oldMeta := getBundleMetadataWithCount(oldBundle, len(oldInv))
+	newMeta := getBundleMetadataWithCount(newBundle, len(newInv))
+
+	result := &DiffResult{
+		Summary:      summary,
+		Changes:      changes,
+		Metadata:     DiffMetadata{OldBundle: oldMeta, NewBundle: newMeta, GeneratedAt: time.Now().Format(time.RFC3339), Version: "v1"},
+		Significance: computeOverallSignificance(changes),
+	}
 	return result, nil
+}
+
+type inventoryFile struct {
+	Size   int64
+	Digest string
+}
+
+func buildInventoryFromTarGz(bundlePath string) (map[string]inventoryFile, error) {
+	f, err := os.Open(bundlePath)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to open bundle")
+	}
+	defer f.Close()
+
+	gz, err := gzip.NewReader(f)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to create gzip reader")
+	}
+	defer gz.Close()
+
+	tr := tar.NewReader(gz)
+	inv := make(map[string]inventoryFile)
+
+	for {
+		hdr, err := tr.Next()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to read tar entry")
+		}
+		if !hdr.FileInfo().Mode().IsRegular() {
+			continue
+		}
+
+		norm := normalizePath(hdr.Name)
+		if norm == "" {
+			continue
+		}
+
+		h := sha256.New()
+		var copied int64
+		buf := make([]byte, 32*1024)
+		for copied < hdr.Size {
+			toRead := int64(len(buf))
+			if remain := hdr.Size - copied; remain < toRead {
+				toRead = remain
+			}
+			n, rerr := io.ReadFull(tr, buf[:toRead])
+			if n > 0 {
+				_, _ = h.Write(buf[:n])
+				copied += int64(n)
+			}
+			if rerr == io.EOF || rerr == io.ErrUnexpectedEOF {
+				break
+			}
+			if rerr != nil {
+				return nil, errors.Wrap(rerr, "failed to read file content")
+			}
+		}
+
+		digest := hex.EncodeToString(h.Sum(nil))
+		inv[norm] = inventoryFile{Size: hdr.Size, Digest: digest}
+	}
+
+	return inv, nil
+}
+
+func normalizePath(name string) string {
+	name = strings.TrimPrefix(name, "./")
+	if name == "" {
+		return name
+	}
+	i := strings.IndexByte(name, '/')
+	if i < 0 {
+		return name
+	}
+	first := name[:i]
+	rest := name[i+1:]
+
+	// Known domain roots we do not strip
+	domainRoots := map[string]bool{
+		"cluster-resources": true,
+		"all-logs":          true,
+		"cluster-info":      true,
+		"execution-data":    true,
+	}
+	if domainRoots[first] {
+		return name
+	}
+	// Strip only known container prefixes
+	if first == "root" || strings.HasPrefix(strings.ToLower(first), "support-bundle") {
+		return rest
+	}
+	return name
+}
+
+func isProbablyText(sample []byte) bool {
+	if len(sample) == 0 {
+		return false
+	}
+	for _, b := range sample {
+		if b == 0x00 {
+			return false
+		}
+		if b < 0x09 {
+			return false
+		}
+	}
+	return true
+}
+
+func normalizeNewlines(s string) string {
+	return strings.ReplaceAll(s, "\r\n", "\n")
+}
+
+// generateStreamingUnifiedDiff creates a unified diff by streaming files line-by-line to avoid loading large files into memory
+func generateStreamingUnifiedDiff(oldBundle, newBundle, path string, context, maxTotalLines int) string {
+	oldReader, err := createTarFileReader(oldBundle, strings.TrimPrefix(path, "/"))
+	if err != nil {
+		return ""
+	}
+	defer oldReader.Close()
+
+	newReader, err := createTarFileReader(newBundle, strings.TrimPrefix(path, "/"))
+	if err != nil {
+		return ""
+	}
+	defer newReader.Close()
+
+	// Read files line by line
+	oldLines, err := readLinesFromReader(oldReader, maxInlineDiffBytes)
+	if err != nil {
+		return ""
+	}
+
+	newLines, err := readLinesFromReader(newReader, maxInlineDiffBytes)
+	if err != nil {
+		return ""
+	}
+
+	// Generate diff using the existing difflib
+	ud := difflib.UnifiedDiff{
+		A:        oldLines,
+		B:        newLines,
+		FromFile: "old:" + path,
+		ToFile:   "new:" + path,
+		Context:  context,
+	}
+	s, err := difflib.GetUnifiedDiffString(ud)
+	if err != nil || s == "" {
+		return ""
+	}
+
+	lines := strings.Split(s, "\n")
+	if maxTotalLines > 0 && len(lines) > maxTotalLines {
+		lines = append(lines[:maxTotalLines], "... (diff truncated)")
+	}
+	if len(lines) > 0 && lines[len(lines)-1] == "" {
+		lines = lines[:len(lines)-1]
+	}
+	return strings.Join(lines, "\n")
+}
+
+// readLinesFromReader reads lines from a reader up to maxBytes total, returning normalized lines
+func readLinesFromReader(reader io.Reader, maxBytes int) ([]string, error) {
+	var lines []string
+	var totalBytes int
+	scanner := bufio.NewScanner(reader)
+
+	for scanner.Scan() {
+		line := normalizeNewlines(scanner.Text())
+		lineBytes := len(line) + 1 // +1 for newline
+
+		if totalBytes+lineBytes > maxBytes {
+			lines = append(lines, "... (content truncated due to size)")
+			break
+		}
+
+		lines = append(lines, line)
+		totalBytes += lineBytes
+	}
+
+	if err := scanner.Err(); err != nil {
+		return nil, err
+	}
+
+	return lines, nil
+}
+
+// generateUnifiedDiff builds a unified diff with headers and context, then truncates to maxTotalLines
+func generateUnifiedDiff(a, b string, path string, context, maxTotalLines int) string {
+	ud := difflib.UnifiedDiff{
+		A:        difflib.SplitLines(a),
+		B:        difflib.SplitLines(b),
+		FromFile: "old:" + path,
+		ToFile:   "new:" + path,
+		Context:  context,
+	}
+	s, err := difflib.GetUnifiedDiffString(ud)
+	if err != nil || s == "" {
+		return ""
+	}
+	lines := strings.Split(s, "\n")
+	if maxTotalLines > 0 && len(lines) > maxTotalLines {
+		lines = append(lines[:maxTotalLines], "... (diff truncated)")
+	}
+	if len(lines) > 0 && lines[len(lines)-1] == "" {
+		lines = lines[:len(lines)-1]
+	}
+	return strings.Join(lines, "\n")
+}
+
+func categorizePath(p string) string {
+	if strings.HasPrefix(p, "cluster-resources/pods/logs/") || strings.Contains(p, "/logs/") || strings.HasPrefix(p, "all-logs/") || strings.HasPrefix(p, "logs/") {
+		return "logs"
+	}
+	if strings.HasPrefix(p, "cluster-resources/") {
+		rest := strings.TrimPrefix(p, "cluster-resources/")
+		seg := rest
+		if i := strings.IndexByte(rest, '/'); i >= 0 {
+			seg = rest[:i]
+		}
+		if seg == "" {
+			return "resources"
+		}
+		return "resources:" + seg
+	}
+	if strings.HasPrefix(p, "config/") || strings.HasSuffix(p, ".yaml") || strings.HasSuffix(p, ".yml") || strings.HasSuffix(p, ".json") {
+		return "config"
+	}
+	return "files"
+}
+
+// estimateImpact determines impact based on change type and path patterns
+func estimateImpact(changeType, p string) string {
+	// High impact cases
+	if strings.HasPrefix(p, "cluster-resources/custom-resource-definitions") {
+		if changeType == "removed" || changeType == "modified" {
+			return "high"
+		}
+	}
+	if strings.HasPrefix(p, "cluster-resources/clusterrole") || strings.HasPrefix(p, "cluster-resources/clusterrolebindings") || strings.Contains(p, "/rolebindings/") {
+		if changeType != "added" { // reductions or changes can break access
+			return "high"
+		}
+	}
+	if strings.Contains(p, "/secrets/") || strings.HasSuffix(p, "-secrets.json") {
+		if changeType != "added" {
+			return "high"
+		}
+	}
+	if strings.HasPrefix(p, "cluster-resources/nodes") {
+		if changeType != "added" { // node status changes can be severe
+			return "high"
+		}
+	}
+	if strings.Contains(p, "/network-policy/") || strings.HasSuffix(p, "/networkpolicies.json") {
+		if changeType != "added" {
+			return "high"
+		}
+	}
+	if strings.HasPrefix(p, "cluster-resources/") && strings.Contains(p, "/kube-system") {
+		if changeType != "added" {
+			return "high"
+		}
+	}
+	// Medium default for cluster resources
+	if strings.HasPrefix(p, "cluster-resources/") {
+		return "medium"
+	}
+	// Logs and others default low
+	if strings.Contains(p, "/logs/") || strings.HasPrefix(p, "all-logs/") {
+		return "low"
+	}
+	return "low"
+}
+
+// suggestRemediation returns a basic remediation suggestion based on category and change
+func suggestRemediation(changeType, p string) *RemediationStep {
+	// RBAC
+	if strings.HasPrefix(p, "cluster-resources/clusterrole") || strings.HasPrefix(p, "cluster-resources/clusterrolebindings") || strings.Contains(p, "/rolebindings/") {
+		return &RemediationStep{Description: "Validate RBAC permissions and recent changes", Command: "kubectl auth can-i --list"}
+	}
+	// CRDs
+	if strings.HasPrefix(p, "cluster-resources/custom-resource-definitions") {
+		return &RemediationStep{Description: "Check CRD presence and reconcile operator status", Command: "kubectl get crds"}
+	}
+	// Nodes
+	if strings.HasPrefix(p, "cluster-resources/nodes") {
+		return &RemediationStep{Description: "Inspect node conditions and recent events", Command: "kubectl describe nodes"}
+	}
+	// Network policy
+	if strings.Contains(p, "/network-policy/") || strings.HasSuffix(p, "/networkpolicies.json") {
+		return &RemediationStep{Description: "Validate connectivity and recent NetworkPolicy changes", Command: "kubectl get networkpolicy -A"}
+	}
+	// Secrets/Config
+	if strings.Contains(p, "/secrets/") || strings.HasPrefix(p, "config/") {
+		return &RemediationStep{Description: "Review configuration or secret changes for correctness"}
+	}
+	// Workloads
+	if strings.Contains(p, "/deployments/") || strings.Contains(p, "/statefulsets/") || strings.Contains(p, "/daemonsets/") {
+		return &RemediationStep{Description: "Check rollout and pod status", Command: "kubectl rollout status -n <ns> <kind>/<name>"}
+	}
+	return nil
+}
+
+func computeOverallSignificance(changes []Change) string {
+	high, medium := 0, 0
+	for _, c := range changes {
+		switch c.Impact {
+		case "high":
+			high++
+		case "medium":
+			medium++
+		}
+	}
+	if high > 0 {
+		return "high"
+	}
+	if medium > 0 {
+		return "medium"
+	}
+	if len(changes) > 0 {
+		return "low"
+	}
+	return "none"
 }
 
 func getBundleMetadata(bundlePath string) BundleMetadata {
@@ -209,85 +637,38 @@ func getBundleMetadata(bundlePath string) BundleMetadata {
 		metadata.CreatedAt = stat.ModTime().Format(time.RFC3339)
 	}
 
-	// Get actual file count from bundle
-	fileCount, err := getFileCountFromBundle(bundlePath)
-	if err != nil {
-		klog.V(2).Infof("Failed to get file count for bundle %s: %v", bundlePath, err)
-		metadata.NumFiles = 0
-	} else {
-		metadata.NumFiles = fileCount
-	}
-
 	return metadata
 }
 
-// getFileCountFromBundle counts the number of files in a support bundle archive
-func getFileCountFromBundle(bundlePath string) (int, error) {
-	file, err := os.Open(bundlePath)
-	if err != nil {
-		return 0, errors.Wrap(err, "failed to open bundle file")
-	}
-	defer file.Close()
-
-	// Check if it's a gzipped tar file
-	var reader io.Reader = file
-	if strings.HasSuffix(bundlePath, ".gz") || strings.HasSuffix(bundlePath, ".tgz") {
-		gzipReader, err := gzip.NewReader(file)
-		if err != nil {
-			return 0, errors.Wrap(err, "failed to create gzip reader")
-		}
-		defer gzipReader.Close()
-		reader = gzipReader
-	}
-
-	tarReader := tar.NewReader(reader)
-	fileCount := 0
-
-	for {
-		header, err := tarReader.Next()
-		if err == io.EOF {
-			break
-		}
-		if err != nil {
-			return 0, errors.Wrap(err, "failed to read tar entry")
-		}
-
-		// Count regular files (not directories)
-		if header.Typeflag == tar.TypeReg {
-			fileCount++
-		}
-	}
-
-	return fileCount, nil
+// getBundleMetadataWithCount sets NumFiles directly to avoid re-reading the archive
+func getBundleMetadataWithCount(bundlePath string, numFiles int) BundleMetadata {
+	md := getBundleMetadata(bundlePath)
+	md.NumFiles = numFiles
+	return md
 }
 
 func outputDiffResult(result *DiffResult, v *viper.Viper) error {
-	outputFormat := v.GetString("output")
-	outputFile := v.GetString("output-file")
+	outputPath := v.GetString("output")
+	showInlineDiffs := !v.GetBool("hide-inline-diffs")
+	formatMode := strings.ToLower(v.GetString("format"))
 
 	var output []byte
-	var err error
-
-	switch outputFormat {
-	case "json":
-		output, err = json.MarshalIndent(result, "", "  ")
+	if formatMode == "json" {
+		data, err := json.MarshalIndent(result, "", "  ")
 		if err != nil {
 			return errors.Wrap(err, "failed to marshal diff result to JSON")
 		}
-	case "html":
-		output = []byte(generateHTMLDiffReport(result))
-	case "text":
-		fallthrough
-	default:
-		output = []byte(generateTextDiffReport(result))
+		output = data
+	} else {
+		output = []byte(generateTextDiffReport(result, showInlineDiffs))
 	}
 
-	if outputFile != "" {
+	if outputPath != "" {
 		// Write to file
-		if err := os.WriteFile(outputFile, output, 0644); err != nil {
+		if err := os.WriteFile(outputPath, output, 0644); err != nil {
 			return errors.Wrap(err, "failed to write diff output to file")
 		}
-		fmt.Printf("Diff report written to: %s\n", outputFile)
+		fmt.Printf("Diff report written to: %s\n", outputPath)
 	} else {
 		// Write to stdout
 		fmt.Print(string(output))
@@ -296,7 +677,7 @@ func outputDiffResult(result *DiffResult, v *viper.Viper) error {
 	return nil
 }
 
-func generateTextDiffReport(result *DiffResult) string {
+func generateTextDiffReport(result *DiffResult, showInlineDiffs bool) string {
 	var report strings.Builder
 
 	report.WriteString("Support Bundle Diff Report\n")
@@ -325,76 +706,18 @@ func generateTextDiffReport(result *DiffResult) string {
 			if change.Remediation != nil {
 				report.WriteString(fmt.Sprintf("     Remediation: %s\n", change.Remediation.Description))
 			}
+			if showInlineDiffs {
+				if diffStr, ok := change.Details["diff"].(string); ok && diffStr != "" {
+					report.WriteString("     Diff:\n")
+					for _, line := range strings.Split(diffStr, "\n") {
+						report.WriteString("       " + line + "\n")
+					}
+				}
+			}
 		}
 	}
 
 	return report.String()
-}
-
-func generateHTMLDiffReport(result *DiffResult) string {
-	// Basic HTML report template
-	html := fmt.Sprintf(`<!DOCTYPE html>
-<html>
-<head>
-    <title>Support Bundle Diff Report</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 40px; }
-        .summary { background: #f5f5f5; padding: 20px; border-radius: 5px; margin-bottom: 20px; }
-        .change { margin: 10px 0; padding: 10px; border-left: 4px solid #ccc; }
-        .change.added { border-color: #28a745; }
-        .change.removed { border-color: #dc3545; }
-        .change.modified { border-color: #ffc107; }
-        .impact-high { background: #f8d7da; }
-        .impact-medium { background: #fff3cd; }
-        .impact-low { background: #d1ecf1; }
-    </style>
-</head>
-<body>
-    <h1>Support Bundle Diff Report</h1>
-    <div class="summary">
-        <h2>Summary</h2>
-        <p><strong>Generated:</strong> %s</p>
-        <p><strong>Old Bundle:</strong> %s</p>
-        <p><strong>New Bundle:</strong> %s</p>
-        <p><strong>Total Changes:</strong> %d</p>
-        <p><strong>Significance:</strong> %s</p>
-    </div>
-    <h2>Changes</h2>
-    %s
-</body>
-</html>`,
-		result.Metadata.GeneratedAt,
-		result.Metadata.OldBundle.Path,
-		result.Metadata.NewBundle.Path,
-		result.Summary.TotalChanges,
-		result.Significance,
-		generateHTMLChanges(result.Changes))
-
-	return html
-}
-
-func generateHTMLChanges(changes []Change) string {
-	if len(changes) == 0 {
-		return "<p>No changes detected between bundles.</p>"
-	}
-
-	var html strings.Builder
-	for _, change := range changes {
-		impactClass := fmt.Sprintf("impact-%s", change.Impact)
-		changeClass := change.Type
-
-		html.WriteString(fmt.Sprintf(`<div class="change %s %s">`, changeClass, impactClass))
-		html.WriteString(fmt.Sprintf(`<strong>[%s]</strong> %s <em>(%s impact)</em>`,
-			strings.ToUpper(change.Type), change.Path, change.Impact))
-
-		if change.Remediation != nil {
-			html.WriteString(fmt.Sprintf(`<br><strong>Remediation:</strong> %s`, change.Remediation.Description))
-		}
-
-		html.WriteString("</div>")
-	}
-
-	return html.String()
 }
 
 func formatSize(bytes int64) string {
@@ -408,4 +731,117 @@ func formatSize(bytes int64) string {
 		exp++
 	}
 	return fmt.Sprintf("%.1f %ciB", float64(bytes)/float64(div), "KMGTPE"[exp])
+}
+
+// tarFileReader provides a streaming interface to read a specific file from a tar.gz archive
+type tarFileReader struct {
+	file   *os.File
+	gz     *gzip.Reader
+	tr     *tar.Reader
+	found  bool
+	header *tar.Header
+}
+
+// createTarFileReader creates a streaming reader for a specific file in a tar.gz archive
+func createTarFileReader(bundlePath, normalizedPath string) (*tarFileReader, error) {
+	f, err := os.Open(bundlePath)
+	if err != nil {
+		return nil, err
+	}
+
+	gz, err := gzip.NewReader(f)
+	if err != nil {
+		f.Close()
+		return nil, err
+	}
+
+	tr := tar.NewReader(gz)
+
+	// Find the target file
+	for {
+		hdr, err := tr.Next()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			gz.Close()
+			f.Close()
+			return nil, err
+		}
+		if !hdr.FileInfo().Mode().IsRegular() {
+			continue
+		}
+		if normalizePath(hdr.Name) == normalizedPath {
+			// Check if file is probably text
+			sample := make([]byte, 512)
+			n, _ := io.ReadFull(tr, sample[:])
+			if n > 0 && !isProbablyText(sample[:n]) {
+				gz.Close()
+				f.Close()
+				return nil, fmt.Errorf("file is not text")
+			}
+
+			// Reopen to start from beginning of file
+			gz.Close()
+			f.Close()
+
+			f, err = os.Open(bundlePath)
+			if err != nil {
+				return nil, err
+			}
+			gz, err = gzip.NewReader(f)
+			if err != nil {
+				f.Close()
+				return nil, err
+			}
+			tr = tar.NewReader(gz)
+
+			// Find the file again
+			for {
+				hdr, err = tr.Next()
+				if err == io.EOF {
+					gz.Close()
+					f.Close()
+					return nil, fmt.Errorf("file not found on second pass")
+				}
+				if err != nil {
+					gz.Close()
+					f.Close()
+					return nil, err
+				}
+				if normalizePath(hdr.Name) == normalizedPath {
+					return &tarFileReader{
+						file:   f,
+						gz:     gz,
+						tr:     tr,
+						found:  true,
+						header: hdr,
+					}, nil
+				}
+			}
+		}
+	}
+
+	gz.Close()
+	f.Close()
+	return nil, fmt.Errorf("file not found: %s", normalizedPath)
+}
+
+// Read implements io.Reader interface
+func (r *tarFileReader) Read(p []byte) (n int, err error) {
+	if !r.found {
+		return 0, io.EOF
+	}
+	return r.tr.Read(p)
+}
+
+// Close closes the underlying file handles
+func (r *tarFileReader) Close() error {
+	if r.gz != nil {
+		r.gz.Close()
+	}
+	if r.file != nil {
+		return r.file.Close()
+	}
+	return nil
 }
