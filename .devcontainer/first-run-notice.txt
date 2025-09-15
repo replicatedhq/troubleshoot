@@ -1,9 +1,0 @@
-👋 Welcome to your Replicated Codespace!
-
-There's a local Kubernetes cluster set up for you.
-
-Drivers Manual:
-* `k` alias is available for `kubectl` with auto-completion for your pleasure
-* This is a `zsh` terminal with Oh My Zsh installed. Just thought you should know.
-
-
