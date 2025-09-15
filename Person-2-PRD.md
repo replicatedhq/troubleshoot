@@ -18,23 +18,25 @@ This PRD now focuses on **EXTENDING** existing systems rather than building from
 - **Auto-collectors**: NEW package `pkg/collect/autodiscovery/` extending existing collection
 - **Redaction tokenization**: ENHANCE existing `pkg/redact/` system  
 - **Agent-based analysis**: WRAP existing `pkg/analyze/` system with agent abstraction
-- **Bundle differencing**: COMPLETELY NEW `pkg/supportbundle/diff/` capability
+- **Preflight gating**: COMPLETELY NEW `pkg/preflight/gating/` capability
 
 ## Overview
 
-Person 2 is responsible for the core data collection, processing, and analysis capabilities of the troubleshoot project. This involves implementing auto-collectors, advanced redaction with tokenization, agent-based analysis, support bundle differencing, and remediation suggestions.
+Person 2 is responsible for the core data collection, processing, and analysis capabilities of the troubleshoot project. This involves implementing auto-collectors, advanced redaction with tokenization, agent-based analysis, preflight gating system, and remediation suggestions.
 
 ## Scope & Responsibilities
 
 - **Auto-collectors** (namespace-scoped, RBAC-aware), include image digests & tags
 - **Redaction** with tokenization (optional local LLM-assisted pass), emit `redaction-map.json`
 - **Analyzer** via agents (local/hosted) and "generate analyzers from requirements"
-- **Support bundle diffs** and remediation suggestions
+- **Preflight gating** system to prevent installation if requirements not met
+- **Remediation suggestions** surfaced in analysis outputs
 
 ### Primary Code Areas
 - `pkg/collect` - Collection engine and auto-collectors (extending existing collection system)
 - `pkg/redact` - Redaction engine with tokenization (enhancing existing redaction system)
 - `pkg/analyze` - Analysis engine and agent integration (extending existing analysis system)
+- `pkg/preflight/gating` - NEW: Preflight validation and installation gating system
 - `pkg/supportbundle` - Bundle readers/writers and artifact management (extending existing support bundle system)
 - `examples/*` - Reference implementations and test cases
 
@@ -46,9 +48,10 @@ Person 2 is responsible for the core data collection, processing, and analysis c
 1. **`support-bundle --namespace ns --auto`** - enhance existing root command with auto-discovery capabilities
 2. **Redaction/tokenization profiles** - streaming integration in collection path, emit `redaction-map.json`
 3. **`support-bundle analyze --agent local|hosted|ollama --bundle bundle.tgz`** - enhance existing analyze subcommand with comprehensive agent support
-4. **`support-bundle diff old.tgz new.tgz`** - NEW subcommand with structured `diff.json` output  
+4. **`preflight validate --spec requirements.yaml`** - NEW gating system to prevent installation if preflight checks fail
 5. **"Generate analyzers from requirements"** - create analyzers from requirement specifications
 6. **Remediation blocks** - surfaced in analysis outputs with actionable suggestions
+7. **Installation gating integration** - prevent software downloads/installs without passing preflight checks
 
 ### Agent-Based Analysis Options
 ```bash
@@ -67,7 +70,7 @@ support-bundle analyze --agent hosted --endpoint https://api.troubleshoot.sh --b
 support-bundle analyze --agent local,ollama --output analysis.json --bundle bundle.tar.gz
 ```
 
-**Note**: The current CLI structure has `support-bundle` as the root collection command, with `analyze` and `redact` as subcommands. The `diff` subcommand will be newly added.
+**Note**: The current CLI structure has `support-bundle` as the root collection command, with `analyze` and `redact` as subcommands. The preflight gating system will enhance the `preflight` binary with validation commands.
 
 ### Critical Implementation Constraints
 - **NO schema alterations**: Person 2 consumes but never modifies schemas/types from Person 1
@@ -275,16 +278,16 @@ support-bundle vendor-spec.yaml --auto --exclude-namespaces "kube-*,cattle-*"
 support-bundle vendor-spec.yaml
 ```
 
-**New Diff Command**:
+**New Preflight Gating Commands**:
 ```bash
-# Compare two support bundles
-support-bundle diff old-bundle.tgz new-bundle.tgz
+# Validate preflight requirements before installation
+preflight validate --spec requirements.yaml
 
-# Output to JSON file
-support-bundle diff old.tgz new.tgz --output json -f diff-report.json
+# Check gate status for specific software version
+preflight gate-status --identifier myapp-v1.2.3
 
-# Generate HTML report with remediation
-support-bundle diff old.tgz new.tgz --output html --include-remediation
+# Override gate with proper authorization and justification
+preflight override --identifier myapp-v1.2.3 --reason "Emergency deployment" --user admin@company.com
 ```
 
 - [ ] **Command Enhancement**
@@ -294,7 +297,7 @@ support-bundle diff old.tgz new.tgz --output html --include-remediation
   - [ ] Integrate with existing `--namespace` filtering
   - [ ] Add `--include-images` option for container image metadata collection
   - [ ] Create `--rbac-check` validation mode (enabled by default)
-  - [ ] Add `support-bundle diff` subcommand with full flag set
+  - [ ] Add preflight gating commands (`validate`, `override`, `gate-status`)
 
 - [ ] **Configuration**
   - [ ] Add discovery profiles (minimal, standard, comprehensive, paranoid)
@@ -320,7 +323,7 @@ support-bundle diff old.tgz new.tgz --output html --include-remediation
   - [ ] Image metadata parsing and registry integration
   - [ ] Discovery configuration validation and pattern matching
   - [ ] CLI flag validation and profile loading
-  - [ ] Bundle diff validation and output formatting
+  - [ ] Preflight gate validation and policy enforcement
 
 - [ ] **Integration Tests** ✅ **IMPLEMENTED**
   - [ ] End-to-end auto-discovery workflow testing
@@ -1043,210 +1046,274 @@ type RequirementSpecDetails struct {
 
 ---
 
-## Component 4: Support Bundle Differencing
+## Component 4: Preflight Gating System
 
 ### Objective
-Implement comprehensive support bundle comparison and differencing capabilities to track changes over time and identify issues through comparison. This is a completely NEW capability not present in the current codebase.
+Implement a comprehensive preflight validation and gating system that prevents software installation if preflight checks have not been run or are not passing. This ensures customers meet all requirements before deployment and provides a seamless gate/override workflow.
 
-**Current State**: The codebase has support bundle parsing utilities in `pkg/supportbundle/parse.go` that can extract and read bundle contents, but no comparison or differencing capabilities.
+**Current State**: The codebase has preflight checks that can be run independently, but no gating mechanism to prevent installations based on preflight results.
 
 ### Requirements
-- **Bundle comparison**: Compare two support bundles with detailed diff output (completely new)
-- **Change categorization**: Categorize changes by type and impact (new)
-- **Diff artifacts**: Generate structured `diff.json` for programmatic consumption (new)
-- **Visualization**: Human-readable diff reports (new)
-- **Performance**: Handle large bundles efficiently using existing parsing utilities
+- **Preflight validation**: Verify preflight checks have been run and are passing
+- **Installation gating**: Block software installation/download if requirements not met
+- **Gate bypass**: Allow authorized users to override gates with proper justification
+- **Result tracking**: Maintain preflight result history and validation status
+- **Portal integration**: Support both local validation and remote portal-based gating
 
 ### Technical Specifications
 
-#### 4.1 Diff Engine Architecture
-**Location**: `pkg/supportbundle/diff/`
+#### 4.1 Preflight Gating Engine Architecture
+**Location**: `pkg/preflight/gating/`
 
 **Core Components**:
-- `engine.go` - Main diff orchestrator
-- `comparators/` - Type-specific comparison logic
-- `formatters/` - Output formatting (JSON, HTML, text)
-- `filters/` - Diff filtering and noise reduction
+- `gate.go` - Main gating orchestrator
+- `validators/` - Preflight result validation logic
+- `storage/` - Result storage and history tracking
+- `portal/` - Remote portal integration for enterprise gating
 
 **API Contract**:
 ```go
-type DiffEngine interface {
-    Compare(ctx context.Context, oldBundle, newBundle *SupportBundle, opts DiffOptions) (*BundleDiff, error)
-    GenerateReport(ctx context.Context, diff *BundleDiff, format string) (io.Reader, error)
+type PreflightGate interface {
+    ValidateInstallation(ctx context.Context, opts GateOptions) (*GateResult, error)
+    StorePreflightResult(ctx context.Context, result *PreflightResult) error
+    CheckGateStatus(ctx context.Context, identifier string) (*GateStatus, error)
+    Override(ctx context.Context, identifier string, override *GateOverride) error
 }
 
-type BundleDiff struct {
-    Summary      DiffSummary         `json:"summary"`
-    Changes      []Change            `json:"changes"`
-    Metadata     DiffMetadata        `json:"metadata"`
-    Significance SignificanceReport  `json:"significance"`
+type GateResult struct {
+    Allowed     bool              `json:"allowed"`
+    Status      GateStatus        `json:"status"`
+    Reasons     []GateReason      `json:"reasons"`
+    Metadata    GateMetadata      `json:"metadata"`
+    Override    *GateOverride     `json:"override,omitempty"`
 }
 
-type Change struct {
-    Type        ChangeType         `json:"type"`        // added, removed, modified
-    Category    string             `json:"category"`    // resource, log, config, etc.
-    Path        string             `json:"path"`        // file path or resource path
-    Impact      ImpactLevel        `json:"impact"`      // high, medium, low, none
-    Details     map[string]any     `json:"details"`     // change-specific details
-    Remediation *RemediationStep   `json:"remediation,omitempty"`
+type GateStatus struct {
+    PreflightRun    bool          `json:"preflightRun"`
+    PreflightPassed bool          `json:"preflightPassed"`
+    LastCheck       time.Time     `json:"lastCheck"`
+    Results         []CheckResult `json:"results"`
+    RequiredChecks  []string      `json:"requiredChecks"`
+    FailedChecks    []string      `json:"failedChecks"`
+}
+
+type GateOverride struct {
+    Authorized  bool      `json:"authorized"`
+    Reason      string    `json:"reason"`
+    User        string    `json:"user"`
+    Timestamp   time.Time `json:"timestamp"`
+    Expiry      time.Time `json:"expiry,omitempty"`
 }
 ```
 
-#### 4.2 Comparison Types
+#### 4.2 Gating Mechanisms
 
-##### 4.2.1 Resource Comparisons
-- Kubernetes resource specifications
-- Resource status and health changes
-- Configuration drift detection
-- RBAC and security policy changes
+##### 4.2.1 Local Gating
+- Local preflight result validation
+- File-based result storage and tracking
+- Offline validation capabilities
+- Development environment support
 
-##### 4.2.2 Log Comparisons
-- Error pattern analysis
-- Log volume and frequency changes
-- New error types and patterns
-- Performance metric changes
+##### 4.2.2 Portal Gating
+- Remote preflight result submission
+- Centralized compliance tracking
+- Enterprise policy enforcement
+- Audit logging and reporting
 
-##### 4.2.3 Configuration Comparisons
-- Configuration file changes
-- Environment variable differences
-- Secret and ConfigMap modifications
-- Application configuration drift
+##### 4.2.3 Hybrid Gating
+- Local validation with portal sync
+- Fallback modes for connectivity issues
+- Cached gate decisions for performance
+- Multi-environment coordination
 
 ### Implementation Checklist
 
-#### Phase 1: Diff Engine Foundation (Week 1-2)
-- [ ] **Core Engine**
-  - [ ] Create `pkg/supportbundle/diff/` package structure
-  - [ ] Implement `DiffEngine` interface and base implementation
-  - [ ] Create bundle loading and parsing utilities
-  - [ ] Add diff metadata and tracking
+#### Phase 1: Gating Engine Foundation (Week 1-2)
+- [ ] **Core Gate Engine**
+  - [ ] Create `pkg/preflight/gating/` package structure
+  - [ ] Implement `PreflightGate` interface and base implementation
+  - [ ] Create preflight result storage and retrieval system
+  - [ ] Add gate decision logic and validation
 
-- [ ] **Change Detection**
-  - [ ] Implement file-level change detection
-  - [ ] Create content comparison utilities
-  - [ ] Add change categorization and classification
-  - [ ] Implement impact assessment algorithms
+- [ ] **Result Validation**
+  - [ ] Implement preflight result parsing and validation
+  - [ ] Create requirement matching and compliance checking
+  - [ ] Add result freshness and expiry validation
+  - [ ] Implement gate decision algorithms
 
-- [ ] **Data Structures**
-  - [ ] Define `BundleDiff` and related data structures
-  - [ ] Create change serialization and deserialization
-  - [ ] Add diff statistics and summary generation
-  - [ ] Implement diff validation and consistency checks
-
-- [ ] **Unit Testing**
-  - [ ] Test `DiffEngine` with various support bundle pairs
-  - [ ] Test bundle loading and parsing utilities with different formats
-  - [ ] Test file-level change detection algorithms
-  - [ ] Test content comparison utilities with binary and text files
-  - [ ] Test change categorization and classification accuracy
-  - [ ] Test `BundleDiff` data structure serialization/deserialization
-  - [ ] Test diff statistics calculation and accuracy
-  - [ ] Test diff validation and consistency check algorithms
-
-#### Phase 2: Specialized Comparators (Week 3)
-- [ ] **Resource Comparator**
-  - [ ] Create Kubernetes resource diff logic
-  - [ ] Add YAML/JSON structural comparison
-  - [ ] Implement semantic resource analysis
-  - [ ] Add resource health status comparison
-
-- [ ] **Log Comparator**
-  - [ ] Create log file comparison utilities
-  - [ ] Add error pattern extraction and comparison
-  - [ ] Implement log volume analysis
-  - [ ] Create performance metric comparison
-
-- [ ] **Configuration Comparator**
-  - [ ] Add configuration file diff logic
-  - [ ] Create environment variable comparison
-  - [ ] Implement secret and sensitive data handling
-  - [ ] Add configuration drift detection
+- [ ] **Local Storage**
+  - [ ] Define local preflight result storage format
+  - [ ] Create file-based result persistence
+  - [ ] Add result history tracking and cleanup
+  - [ ] Implement concurrent access handling
 
 - [ ] **Unit Testing**
-  - [ ] Test Kubernetes resource diff logic with various resource types
-  - [ ] Test YAML/JSON structural comparison algorithms
-  - [ ] Test semantic resource analysis and health status comparison
-  - [ ] Test log file comparison utilities with different log formats
-  - [ ] Test error pattern extraction and comparison accuracy
-  - [ ] Test log volume analysis algorithms
-  - [ ] Test configuration file diff logic with various config formats
-  - [ ] Test sensitive data handling in configuration comparisons
+  - [ ] Test `PreflightGate` interface implementations
+  - [ ] Test preflight result validation with various result formats
+  - [ ] Test gate decision logic with pass/fail/warn scenarios
+  - [ ] Test local storage operations (read/write/cleanup)
+  - [ ] Test result freshness validation and expiry handling
+  - [ ] Test concurrent access to gate storage
+  - [ ] Test gate metadata generation and tracking
+  - [ ] Test error handling for malformed preflight results
 
-#### Phase 3: Output and Visualization (Week 4)
-- [ ] **Diff Artifacts**
-  - [ ] Implement `diff.json` generation and format
-  - [ ] Add diff metadata and provenance
-  - [ ] Create diff validation and schema
-  - [ ] Add diff compression and storage
+#### Phase 2: Portal Integration (Week 3)
+- [ ] **Portal Client**
+  - [ ] Create portal API client for result submission
+  - [ ] Implement authentication and authorization
+  - [ ] Add result upload and validation endpoints
+  - [ ] Create portal gate status checking
 
-- [ ] **Report Generation**
-  - [ ] Create HTML diff reports with visualization
-  - [ ] Add interactive diff navigation and filtering
-  - [ ] Implement diff report customization and theming
-  - [ ] Create diff report export and sharing capabilities
+- [ ] **Enterprise Features**
+  - [ ] Implement organization-wide policy enforcement
+  - [ ] Add role-based access control for overrides
+  - [ ] Create audit logging for all gate decisions
+  - [ ] Add compliance reporting and tracking
+
+- [ ] **Hybrid Mode**
+  - [ ] Create local + portal synchronization
+  - [ ] Implement fallback modes for connectivity issues
+  - [ ] Add cached gate decisions for performance
+  - [ ] Create conflict resolution for local vs portal results
 
 - [ ] **Unit Testing**
-  - [ ] Test `diff.json` generation and format validation
-  - [ ] Test diff metadata and provenance tracking
-  - [ ] Test diff compression and storage mechanisms
-  - [ ] Test HTML diff report generation with various diff types
-  - [ ] Test interactive diff navigation functionality
-  - [ ] Test diff report customization and theming options
-  - [ ] Test diff visualization accuracy and clarity
-  - [ ] Test diff report export formats and compatibility
-  - [ ] Add text-based diff output
-  - [ ] Implement diff filtering and noise reduction
-  - [ ] Create diff summary and executive reports
+  - [ ] Test portal API client with mock servers
+  - [ ] Test authentication and authorization flows
+  - [ ] Test result upload and validation with various payload types
+  - [ ] Test portal gate status checking and caching
+  - [ ] Test organization policy enforcement scenarios
+  - [ ] Test role-based override authorization
+  - [ ] Test audit logging completeness and format
+  - [ ] Test hybrid synchronization and conflict resolution
+
+#### Phase 3: Gate Bypass and Override (Week 4)
+- [ ] **Override System**
+  - [ ] Implement authorized gate bypass mechanism
+  - [ ] Create justification and approval workflow
+  - [ ] Add time-limited override capabilities
+  - [ ] Create override audit trail and reporting
+
+- [ ] **Authorization**
+  - [ ] Design role-based override permissions
+  - [ ] Implement override approval workflow
+  - [ ] Add emergency bypass for critical situations
+  - [ ] Create override notification system
+
+- [ ] **Compliance**
+  - [ ] Add compliance mode enforcement (no overrides)
+  - [ ] Create audit trail for all gate decisions
+  - [ ] Implement regulatory compliance reporting
+  - [ ] Add gate policy configuration and validation
+
+- [ ] **Unit Testing**
+  - [ ] Test override authorization with various user roles
+  - [ ] Test justification validation and approval workflows
+  - [ ] Test time-limited override expiry and cleanup
+  - [ ] Test override audit trail generation and format
+  - [ ] Test emergency bypass scenarios and limitations
+  - [ ] Test compliance mode enforcement (override blocking)
+  - [ ] Test audit trail completeness and retention
+  - [ ] Test gate policy configuration validation
 
 #### Phase 4: CLI Integration (Week 5)
-- [ ] **Command Implementation**
-  - [ ] Add `support-bundle diff` command
-  - [ ] Implement command-line argument parsing
-  - [ ] Add progress reporting and user feedback
-  - [ ] Create diff command validation and error handling
+- [ ] **Installation Commands**
+  - [ ] Add `preflight validate` command for installation gating
+  - [ ] Implement `--check-gate` flag for installation tools
+  - [ ] Add `preflight override` command for authorized bypass
+  - [ ] Create `preflight gate-status` for current gate state
+
+- [ ] **Integration Points**
+  - [ ] Integrate with installer scripts and package managers
+  - [ ] Add webhook endpoints for CI/CD integration
+  - [ ] Create SDK for third-party installation tools
+  - [ ] Add gate validation to existing installation flows
 
 - [ ] **Configuration**
-  - [ ] Add diff configuration and profiles
-  - [ ] Create diff ignore patterns and filters
-  - [ ] Implement diff output customization
-  - [ ] Add diff performance optimization options
+  - [ ] Add gate configuration and policy management
+  - [ ] Create gate profile templates (strict, permissive, development)
+  - [ ] Implement gate policy inheritance and overrides
+  - [ ] Add gate debugging and troubleshooting tools
 
 ### Step-by-Step Implementation
 
-#### Step 1: Diff Engine Foundation
-1. Create package structure: `pkg/supportbundle/diff/`
-2. Design `DiffEngine` interface and core data structures
-3. Implement basic bundle loading and parsing
-4. Create change detection algorithms
+#### Step 1: Gating Engine Foundation
+1. Create package structure: `pkg/preflight/gating/`
+2. Design `PreflightGate` interface and core data structures
+3. Implement basic preflight result loading and validation
+4. Create gate decision algorithms
 5. Add comprehensive unit tests
 
-#### Step 2: Change Detection and Classification
-1. Implement file-level change detection
-2. Create content comparison utilities with different strategies
-3. Add change categorization and impact assessment
-4. Create change significance scoring
-5. Add comprehensive classification testing
+#### Step 2: Result Storage and Tracking
+1. Implement local result storage format and persistence
+2. Create result history tracking and cleanup mechanisms
+3. Add result freshness validation and expiry handling
+4. Create concurrent access protection
+5. Add comprehensive storage testing
 
-#### Step 3: Specialized Comparators
-1. Create comparator interface and registry
-2. Implement resource comparator with semantic analysis
-3. Add log comparator with pattern analysis
-4. Create configuration comparator with drift detection
-5. Add comprehensive comparator testing
+#### Step 3: Portal Integration
+1. Create portal API client interface and implementation
+2. Implement authentication and result submission
+3. Add portal gate status checking and caching
+4. Create hybrid synchronization modes
+5. Add comprehensive portal integration testing
 
-#### Step 4: Output Generation
-1. Implement `diff.json` schema and serialization
-2. Create HTML report generation with visualization
-3. Add text-based diff formatting
-4. Create diff filtering and noise reduction
-5. Add comprehensive output validation
+#### Step 4: Override and Bypass System
+1. Implement authorized override mechanism with justification
+2. Create role-based override permissions and approval workflow
+3. Add time-limited override capabilities and audit trail
+4. Create compliance mode enforcement
+5. Add comprehensive override testing
 
 #### Step 5: CLI Integration
-1. Add `diff` command to support-bundle CLI
-2. Implement argument parsing and validation
-3. Add progress reporting and user experience
+1. Add preflight gating commands (`validate`, `override`, `gate-status`)
+2. Implement integration with installation tools and package managers
+3. Add gate configuration and policy management
 4. Create comprehensive CLI testing
 5. Add documentation and examples
+
+### Usage Examples
+
+#### Basic Installation Gating
+```bash
+# Check if preflight requirements are met before installation
+preflight validate --spec requirements.yaml
+# Output: PASS - All requirements met, installation allowed
+# Output: FAIL - Requirements not met, installation blocked
+
+# Install with automatic gate check
+./install.sh --check-preflight
+# Will automatically run preflight validation before proceeding
+
+# Check current gate status
+preflight gate-status --identifier myapp-v1.2.3
+```
+
+#### Enterprise Portal Integration
+```bash
+# Submit preflight results to portal for centralized tracking
+preflight run --upload --portal https://portal.company.com
+
+# Check portal gate status
+preflight validate --portal --identifier myapp-v1.2.3
+
+# Override gate with justification (requires authorization)
+preflight override --identifier myapp-v1.2.3 --reason "Emergency deployment" --user admin@company.com
+```
+
+#### CI/CD Integration
+```bash
+# In CI/CD pipeline - block deployment if preflight fails
+preflight validate --spec .preflight/requirements.yaml --fail-on-warn
+if [ $? -ne 0 ]; then
+  echo "❌ Deployment blocked - preflight requirements not met"
+  exit 1
+fi
+
+# Webhook integration for automated gating
+curl -X POST https://api.company.com/preflight/gate \
+  -H "Content-Type: application/json" \
+  -d '{"identifier": "myapp-v1.2.3", "results": "preflight-results.json"}'
+```
 
 ---
 
@@ -1269,7 +1336,7 @@ type Change struct {
 **CRITICAL UPDATE**: Based on current CLI structure analysis:
 - **Current Structure**: `support-bundle` (root/collect), `support-bundle analyze`, `support-bundle redact`
 - **Existing Flags**: `--namespace`, `--redact`, `--collect-without-permissions`, etc. already available
-- **NEW Commands to Add**: `support-bundle diff` (completely new)
+- **NEW Commands to Add**: preflight gating commands (`validate`, `override`, `gate-status`)
 - **NEW Flags to Add**: `--auto`, `--include-images`, `--rbac-check`, `--agent` 
 - **NO changes** to existing CLI surface area, help text, or command structure
 - Must integrate new capabilities into existing command structure
@@ -1381,7 +1448,7 @@ func AnalyzeWithRemediation(ctx context.Context, bundle *SupportBundle) (*Analys
 - [ ] **Collection Guide**: How to use auto-collectors and namespace scoping
 - [ ] **Redaction Guide**: Redaction profiles, tokenization, and LLM integration
 - [ ] **Analysis Guide**: Agent configuration and remediation interpretation  
-- [ ] **Diff Guide**: Bundle comparison workflows and interpretation
+- [ ] **Gating Guide**: Preflight validation workflows and installation blocking
 
 ### Developer Documentation
 - [ ] **API Documentation**: Go doc comments for all public APIs
@@ -1404,7 +1471,7 @@ func AnalyzeWithRemediation(ctx context.Context, bundle *SupportBundle) (*Analys
 
 ### Month 2: Advanced Features
 - **Week 5-6**: Agent-based analysis system
-- **Week 7-8**: Support bundle differencing
+- **Week 7-8**: Preflight gating system
 
 ### Month 3: Integration & Polish
 - **Week 9-10**: Cross-component integration and testing
@@ -1414,7 +1481,7 @@ func AnalyzeWithRemediation(ctx context.Context, bundle *SupportBundle) (*Analys
 - [ ] **M1**: Auto-discovery working with RBAC (Week 2)
 - [ ] **M2**: Streaming redaction with tokenization (Week 4)  
 - [ ] **M3**: Local and hosted agents functional (Week 6)
-- [ ] **M4**: Bundle diffing and remediation (Week 8)
+- [ ] **M4**: Preflight gating and compliance (Week 8)
 - [ ] **M5**: Full integration and testing complete (Week 10)
 - [ ] **M6**: Documentation and release ready (Week 12)
 
@@ -1426,13 +1493,13 @@ func AnalyzeWithRemediation(ctx context.Context, bundle *SupportBundle) (*Analys
 - [ ] `support-bundle collect --namespace ns --auto` produces complete bundles
 - [ ] Redaction with tokenization works with streaming pipeline
 - [ ] Analysis generates structured results with remediation
-- [ ] Bundle diffing produces actionable comparison reports
+- [ ] Preflight gating blocks installations when requirements not met
 
 ### Performance Requirements
 - [ ] Auto-discovery completes in <30 seconds for typical clusters
 - [ ] Redaction processes 1GB+ bundles without memory issues
 - [ ] Analysis completes in <2 minutes for standard bundles
-- [ ] Diff generation completes in <1 minute for bundle pairs
+- [ ] Preflight validation completes in <30 seconds for typical requirements
 
 ### Quality Requirements
 - [ ] >80% code coverage with comprehensive tests
@@ -1459,7 +1526,7 @@ After all components are implemented and unit tested, conduct comprehensive inte
 - [ ] Test auto-discovery integration with image metadata collection
 - [ ] Test streaming redaction integration with collection pipeline
 - [ ] Test analysis engine integration with auto-discovered collectors and redacted data
-- [ ] Test support bundle diff functionality with complete bundles
+- [ ] Test preflight gating functionality with complete validation workflows
 - [ ] Test remediation suggestions integration with analysis results
 
 #### **3. Real-World Scenario Testing**
@@ -1513,9 +1580,9 @@ This section documents all critical changes made to align the PRD with the actua
 - **IMPACT**: Faster implementation, better integration, lower risk
 
 ### 3. CLI Structure Alignment
-- **CHANGED**: Command structure from `support-bundle collect/analyze/diff` → enhance existing `support-bundle` root + subcommands
-- **REASON**: Current structure already has `support-bundle` (collect), `support-bundle analyze`, `support-bundle redact`
-- **NEW**: Only `support-bundle diff` is completely new
+- **CHANGED**: Command structure from `support-bundle collect/analyze` + preflight enhancements → enhance existing binaries
+- **REASON**: Current structure already has `support-bundle` (collect), `support-bundle analyze`, `support-bundle redact`, and `preflight` binary
+- **NEW**: Preflight gating commands are completely new
 
 ### 4. Binary Architecture Reality
 - **DISCOVERED**: Multiple binaries already exist (`preflight`, `support-bundle`, `collect`, `analyze`)
@@ -1536,7 +1603,7 @@ This section documents all critical changes made to align the PRD with the actua
 - **Auto-collectors**: NEW package extending existing collection framework with dual-path approach
 - **Redaction**: ENHANCE existing system with tokenization and streaming
 - **Analysis**: WRAP existing analyzers with agent abstraction layer  
-- **Diff**: COMPLETELY NEW capability using existing bundle parsing
+- **Preflight Gating**: COMPLETELY NEW capability using existing preflight framework
 
 ### 8. Auto-Collectors Foundational Data Definition
 
