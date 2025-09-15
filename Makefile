@@ -44,7 +44,7 @@ TESTFLAGS ?= -v -coverprofile cover.out
 all: clean build test
 
 .PHONY: test
-test: generate fmt vet
+test: fmt vet
 	if [ -n $(RUN) ]; then \
 		go test ${BUILDFLAGS} ${BUILDPATHS} ${TESTFLAGS} -run $(RUN); \
 	else \
@@ -54,7 +54,7 @@ test: generate fmt vet
 # Go tests that require a K8s instance
 # TODOLATER: merge with test, so we get unified coverage reports? it'll add 21~sec to the test job though...
 .PHONY: test-integration
-test-integration: generate fmt vet
+test-integration: fmt vet
 	go test -v --tags="integration exclude_graphdriver_devicemapper exclude_graphdriver_btrfs" ${BUILDPATHS}
 
 .PHONY: preflight-e2e-test
