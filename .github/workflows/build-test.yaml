@@ -48,18 +48,6 @@ jobs:
       # test-integration includes unit tests
       - run: make test-integration
 
-  ensure-schemas-are-generated:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v5
-        with:
-          fetch-depth: 0
-      - uses: actions/setup-go@v6
-        with:
-          go-version-file: 'go.mod'
-      - run: |
-          make check-schemas
-
   compile-preflight:
     runs-on: ubuntu-latest
     steps:
@@ -67,7 +55,7 @@ jobs:
       - uses: actions/setup-go@v6
         with:
           go-version-file: 'go.mod'
-      - run: make generate preflight
+      - run: make preflight
       - uses: actions/upload-artifact@v4
         with:
           name: preflight
@@ -103,7 +91,7 @@ jobs:
       - uses: actions/setup-go@v6
         with:
           go-version-file: 'go.mod'
-      - run: make generate support-bundle
+      - run: make support-bundle
       - uses: actions/upload-artifact@v4
         with:
           name: support-bundle
@@ -156,7 +144,6 @@ jobs:
       - validate-preflight-e2e
       - validate-supportbundle-e2e
       - validate-supportbundle-e2e-go
-      - ensure-schemas-are-generated
     if: always()
     steps:
       # Check if all required jobs succeeded
