@@ -4,18 +4,7 @@ Compare two support bundles and identify changes
 
 ### Synopsis
 
-Compare two support bundles to identify changes over time.
-This command analyzes differences between two support bundle archives and generates
-a detailed report showing what has changed, including:
-
-- Added, removed, or modified files
-- Configuration changes
-- Log differences
-- Resource status changes
-- Performance metric changes
-
-The output can be formatted as JSON for programmatic consumption or as
-human-readable text for manual review.
+Compare two support bundle archives to identify changes over time. The command outputs a human-readable report by default and can also emit machine-readable JSON.
 
 ```
 support-bundle diff <old-bundle.(tar.gz|tgz)> <new-bundle.(tar.gz|tgz)> [flags]
