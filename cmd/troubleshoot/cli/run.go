@@ -67,11 +67,6 @@ func runTroubleshoot(v *viper.Viper, args []string) error {
 		return errors.Wrap(err, "invalid tokenization configuration")
 	}
 
-	// Validate tokenization flags
-	if err := ValidateTokenizationFlags(v); err != nil {
-		return errors.Wrap(err, "invalid tokenization configuration")
-	}
-
 	// Apply auto-discovery if enabled
 	autoConfig := GetAutoDiscoveryConfig(v)
 	if autoConfig.Enabled {
