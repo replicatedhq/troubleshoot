@@ -19,6 +19,16 @@ If no arguments are provided, specs are automatically loaded from the cluster by
 support-bundle [urls...] [flags]
 ```
 
+### Auto-update
+
+Support-bundle includes a built-in self-updater.
+
+- Default behavior: On startup, it checks the latest release on `replicatedhq/troubleshoot`. If a newer version exists, it downloads and atomically replaces the running binary. Dev builds without a version skip auto-update.
+- Control via flag: `--auto-update` (default true). Disable with `--auto-update=false`.
+- Control via env: `TROUBLESHOOT_AUTO_UPDATE=true|false` (empty = default true).
+- Logging: use `--v=1` to see updater messages (e.g., "Updating …", "Update complete.").
+- Airgap/network errors: if the release API or download is unreachable, it continues without updating.
+
 ### Options
 
 ```
