@@ -6,6 +6,16 @@ import (
 	"time"
 )
 
+// contains checks if a slice contains a specific string
+func contains(slice []string, item string) bool {
+	for _, s := range slice {
+		if s == item {
+			return true
+		}
+	}
+	return false
+}
+
 // ConfidenceScorer calculates confidence scores for remediation steps and analysis results
 type ConfidenceScorer struct {
 	factors []ConfidenceFactor
@@ -599,7 +609,7 @@ func (cs *ConfidenceScorer) calculateRiskAssessment(step RemediationStep, contex
 	}
 
 	// Critical priority increases risk
-	if step.Priority == PriorityCritical {
+	if step.Priority == "critical" {
 		risk += 0.1
 	}
 

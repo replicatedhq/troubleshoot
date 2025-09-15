@@ -244,7 +244,7 @@ func TestValidateResourceRequirements(t *testing.T) {
 			requirements: ResourceRequirements{
 				CPU:    CPURequirement{MinCores: 2.0, MaxUtilization: 0.8},
 				Memory: MemoryRequirement{MinBytes: 4294967296, MaxUtilization: 0.9},
-				Nodes:  NodeRequirement{MinNodes: 3, MaxNodes: 10},
+				Nodes:  NodeRequirements{MinNodes: 3, MaxNodes: 10},
 			},
 			expectErrors: 0,
 		},
@@ -279,14 +279,14 @@ func TestValidateResourceRequirements(t *testing.T) {
 		{
 			name: "negative nodes",
 			requirements: ResourceRequirements{
-				Nodes: NodeRequirement{MinNodes: -1},
+				Nodes: NodeRequirements{MinNodes: -1},
 			},
 			expectErrors: 1,
 		},
 		{
 			name: "invalid node range",
 			requirements: ResourceRequirements{
-				Nodes: NodeRequirement{MinNodes: 10, MaxNodes: 5},
+				Nodes: NodeRequirements{MinNodes: 10, MaxNodes: 5},
 			},
 			expectErrors: 1,
 		},

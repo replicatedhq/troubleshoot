@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"math"
 	"sort"
+	"strings"
 	"time"
 
-	"github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 )
 
 // TrendAnalyzer performs trend analysis and historical comparison on analysis data
@@ -24,17 +24,49 @@ type HistoryStore interface {
 	Search(query HistoryQuery) ([]HistoricalAnalysisResult, error)
 }
 
+// EnvironmentInfo contains information about the environment where analysis was performed
+type EnvironmentInfo struct {
+	ClusterVersion string            `json:"cluster_version"`
+	NodeCount      int               `json:"node_count"`
+	Namespace      string            `json:"namespace"`
+	Labels         map[string]string `json:"labels"`
+	Platform       string            `json:"platform"`
+	CloudProvider  string            `json:"cloud_provider"`
+	Region         string            `json:"region"`
+	Version        string            `json:"version"`
+}
+
+// AnalysisMetadata contains metadata about the analysis
+type AnalysisMetadata struct {
+	Version     string            `json:"version"`
+	Source      string            `json:"source"`
+	Tags        []string          `json:"tags"`
+	Annotations map[string]string `json:"annotations"`
+}
+
+
+// InsightType represents the type of insight
+type InsightType string
+
+const (
+	InsightTypePerformance InsightType = "performance"
+	InsightTypeReliability InsightType = "reliability"
+	InsightTypeSecurity    InsightType = "security"
+	InsightTypeResource    InsightType = "resource"
+	InsightTypeTrend       InsightType = "trend"
+)
+
 // HistoricalAnalysisResult represents a historical analysis result
 type HistoricalAnalysisResult struct {
-	ID           string                  `json:"id"`
-	Timestamp    time.Time               `json:"timestamp"`
-	Environment  EnvironmentInfo         `json:"environment"`
-	Results      []v1beta2.AnalyzeResult `json:"results"`
-	Remediation  []RemediationStep       `json:"remediation,omitempty"`
-	Metadata     AnalysisMetadata        `json:"metadata"`
-	Duration     time.Duration           `json:"duration"`
-	Success      bool                    `json:"success"`
-	ErrorMessage string                  `json:"error_message,omitempty"`
+	ID           string            `json:"id"`
+	Timestamp    time.Time         `json:"timestamp"`
+	Environment  EnvironmentInfo   `json:"environment"`
+	Results      []string          `json:"results"` // Changed from v1beta2.AnalyzeResult to string
+	Remediation  []RemediationStep `json:"remediation,omitempty"`
+	Metadata     AnalysisMetadata  `json:"metadata"`
+	Duration     time.Duration     `json:"duration"`
+	Success      bool              `json:"success"`
+	ErrorMessage string            `json:"error_message,omitempty"`
 }
 
 // HistoryQuery defines query parameters for searching historical data
@@ -212,7 +244,7 @@ type SignificantChange struct {
 type TrendRecommendation struct {
 	ID          string                  `json:"id"`
 	Type        TrendRecommendationType `json:"type"`
-	Priority    Priority                `json:"priority"`
+	Priority    RemediationPriority     `json:"priority"`
 	Title       string                  `json:"title"`
 	Description string                  `json:"description"`
 	Impact      string                  `json:"impact"`
@@ -417,9 +449,9 @@ func (ta *TrendAnalyzer) calculateTrendSummary(data []HistoricalAnalysisResult, 
 	if len(healthScores) >= 2 {
 		recent := healthScores[len(healthScores)-2:]
 		if recent[1] > recent[0] {
-			healthTrend = TrendIncreasing
+			healthTrend = TrendImproving
 		} else if recent[1] < recent[0] {
-			healthTrend = TrendDecreasing
+			healthTrend = TrendDegrading
 		} else {
 			healthTrend = TrendStable
 		}
@@ -617,7 +649,7 @@ func (ta *TrendAnalyzer) analyzeSystemTrends(data []HistoricalAnalysisResult) Sy
 
 // Helper methods for trend analysis
 
-func (ta *TrendAnalyzer) calculateHealthScore(results []v1beta2.AnalyzeResult) float64 {
+func (ta *TrendAnalyzer) calculateHealthScore(results []string) float64 {
 	if len(results) == 0 {
 		return 1.0
 	}
@@ -629,19 +661,19 @@ func (ta *TrendAnalyzer) calculateHealthScore(results []v1beta2.AnalyzeResult) f
 		weight := 1.0
 
 		// Weight critical issues more heavily
-		if result.IsWarn {
+		if strings.Contains(strings.ToLower(result), "warn") {
 			weight = 2.0
 		}
-		if result.IsFail {
+		if strings.Contains(strings.ToLower(result), "fail") {
 			weight = 3.0
 		}
 
 		var score float64
-		if result.IsPass {
+		if strings.Contains(strings.ToLower(result), "pass") {
 			score = 1.0
-		} else if result.IsWarn {
+		} else if strings.Contains(strings.ToLower(result), "warn") {
 			score = 0.5
-		} else if result.IsFail {
+		} else if strings.Contains(strings.ToLower(result), "fail") {
 			score = 0.0
 		} else {
 			score = 0.5 // Unknown status
@@ -658,24 +690,22 @@ func (ta *TrendAnalyzer) calculateHealthScore(results []v1beta2.AnalyzeResult) f
 	return weightedScore / totalWeight
 }
 
-func (ta *TrendAnalyzer) getAnalyzerName(result v1beta2.AnalyzeResult) string {
-	if result.Title != "" {
-		return result.Title
-	}
-	if result.IconKey != "" {
-		return result.IconKey
+func (ta *TrendAnalyzer) getAnalyzerName(result string) string {
+	// Since result is now a string, just return it or a default
+	if result != "" {
+		return result
 	}
 	return "unknown"
 }
 
-func (ta *TrendAnalyzer) calculateAnalyzerFailureRate(analyzerName string, results []v1beta2.AnalyzeResult) float64 {
+func (ta *TrendAnalyzer) calculateAnalyzerFailureRate(analyzerName string, results []string) float64 {
 	total := 0
 	failures := 0
 
 	for _, result := range results {
 		if ta.getAnalyzerName(result) == analyzerName {
 			total++
-			if result.IsFail {
+			if strings.Contains(strings.ToLower(result), "fail") {
 				failures++
 			}
 		}
@@ -688,22 +718,12 @@ func (ta *TrendAnalyzer) calculateAnalyzerFailureRate(analyzerName string, resul
 	return float64(failures) / float64(total)
 }
 
-func (ta *TrendAnalyzer) countByStatus(results []v1beta2.AnalyzeResult, status string) int {
+func (ta *TrendAnalyzer) countByStatus(results []string, status string) int {
 	count := 0
 	for _, result := range results {
-		switch status {
-		case "pass":
-			if result.IsPass {
-				count++
-			}
-		case "warn":
-			if result.IsWarn {
-				count++
-			}
-		case "fail":
-			if result.IsFail {
-				count++
-			}
+		// Since result is now a string, do a simple string comparison
+		if strings.Contains(strings.ToLower(result), strings.ToLower(status)) {
+			count++
 		}
 	}
 	return count
@@ -825,9 +845,9 @@ func (ta *TrendAnalyzer) detectTrend(values []float64, timestamps []time.Time) (
 	if math.Abs(slope) < slopeThreshold {
 		return TrendStable, confidence
 	} else if slope > 0 {
-		return TrendIncreasing, confidence
+		return TrendImproving, confidence
 	} else {
-		return TrendDecreasing, confidence
+		return TrendDegrading, confidence
 	}
 }
 
@@ -1221,7 +1241,7 @@ func (ta *TrendAnalyzer) generateTrendRecommendations(analyzerTrends []AnalyzerT
 	var recommendations []TrendRecommendation
 
 	// Add recommendations based on trends
-	if summary.HealthTrend == TrendDecreasing && summary.TrendConfidence > 0.7 {
+	if summary.HealthTrend == TrendDegrading && summary.TrendConfidence > 0.7 {
 		recommendations = append(recommendations, TrendRecommendation{
 			ID:          "health-degradation",
 			Type:        RecommendationInvestigation,

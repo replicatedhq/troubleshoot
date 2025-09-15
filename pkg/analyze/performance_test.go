@@ -1,4 +1,4 @@
-package analyzer
+package analyzer_test
 
 import (
 	"context"
@@ -12,6 +12,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	analyzer "github.com/replicatedhq/troubleshoot/pkg/analyze"
 	"github.com/replicatedhq/troubleshoot/pkg/analyze/agents/local"
 )
 
@@ -31,7 +32,7 @@ func BenchmarkAnalysisEngine(b *testing.B) {
 	err = loadBundleFiles(bundle)
 	require.NoError(b, err)
 
-	engine := NewAnalysisEngine()
+	engine := analyzer.NewAnalysisEngine()
 	localAgent := local.NewLocalAgent()
 	err = engine.RegisterAgent(localAgent)
 	require.NoError(b, err)
@@ -86,7 +87,7 @@ func BenchmarkAnalysisWithDifferentBundleSizes(b *testing.B) {
 			err = loadBundleFiles(bundle)
 			require.NoError(b, err)
 
-			engine := NewAnalysisEngine()
+			engine := analyzer.NewAnalysisEngine()
 			localAgent := local.NewLocalAgent()
 			err = engine.RegisterAgent(localAgent)
 			require.NoError(b, err)
@@ -141,7 +142,7 @@ func BenchmarkConcurrentAnalysis(b *testing.B) {
 				bundles[i] = bundle
 			}
 
-			engine := NewAnalysisEngine()
+			engine := analyzer.NewAnalysisEngine()
 			localAgent := local.NewLocalAgent()
 			err := engine.RegisterAgent(localAgent)
 			require.NoError(b, err)
@@ -257,7 +258,7 @@ func TestAnalysisLatency(t *testing.T) {
 			err = loadBundleFiles(bundle)
 			require.NoError(t, err)
 
-			engine := NewAnalysisEngine()
+			engine := analyzer.NewAnalysisEngine()
 			localAgent := local.NewLocalAgent()
 			err = engine.RegisterAgent(localAgent)
 			require.NoError(t, err)
@@ -320,7 +321,7 @@ func TestMemoryUsageUnderLoad(t *testing.T) {
 	err = loadBundleFiles(bundle)
 	require.NoError(t, err)
 
-	engine := NewAnalysisEngine()
+	engine := analyzer.NewAnalysisEngine()
 	localAgent := local.NewLocalAgent()
 	err = engine.RegisterAgent(localAgent)
 	require.NoError(t, err)
@@ -384,7 +385,7 @@ func TestTimeoutHandling(t *testing.T) {
 	err = loadBundleFiles(bundle)
 	require.NoError(t, err)
 
-	engine := NewAnalysisEngine()
+	engine := analyzer.NewAnalysisEngine()
 	localAgent := local.NewLocalAgent()
 	err = engine.RegisterAgent(localAgent)
 	require.NoError(t, err)
@@ -438,7 +439,7 @@ func TestResourceUtilization(t *testing.T) {
 	err = loadBundleFiles(bundle)
 	require.NoError(t, err)
 
-	engine := NewAnalysisEngine()
+	engine := analyzer.NewAnalysisEngine()
 	localAgent := local.NewLocalAgent()
 	err = engine.RegisterAgent(localAgent)
 	require.NoError(t, err)
@@ -552,7 +553,7 @@ func BenchmarkMemoryAllocations(b *testing.B) {
 	err = loadBundleFiles(bundle)
 	require.NoError(b, err)
 
-	engine := NewAnalysisEngine()
+	engine := analyzer.NewAnalysisEngine()
 	localAgent := local.NewLocalAgent()
 	err = engine.RegisterAgent(localAgent)
 	require.NoError(b, err)
@@ -613,7 +614,7 @@ func TestScalability(t *testing.T) {
 			err = loadBundleFiles(bundle)
 			require.NoError(t, err)
 
-			engine := NewAnalysisEngine()
+			engine := analyzer.NewAnalysisEngine()
 			localAgent := local.NewLocalAgent()
 			err = engine.RegisterAgent(localAgent)
 			require.NoError(t, err)

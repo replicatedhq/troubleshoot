@@ -140,7 +140,7 @@ func (a *{{.Name}}) Title() string {
 	}
 
 	for _, expected := range expectedContent {
-		if !contains(result, []string{expected}) {
+		if !contains(result, expected) {
 			t.Errorf("expected result to contain %q, got: %s", expected, result)
 		}
 	}

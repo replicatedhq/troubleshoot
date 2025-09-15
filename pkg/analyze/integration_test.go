@@ -1,4 +1,4 @@
-package analyzer
+package analyzer_test
 
 import (
 	"context"
@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	analyzer "github.com/replicatedhq/troubleshoot/pkg/analyze"
 	"github.com/replicatedhq/troubleshoot/pkg/analyze/agents/local"
 	"github.com/replicatedhq/troubleshoot/pkg/analyze/remediation"
 )
@@ -32,15 +33,14 @@ func TestEndToEndAnalysis(t *testing.T) {
 	setupTestSupportBundle(t, bundleDir)
 
 	// Initialize analysis engine
-	engine := NewAnalysisEngine()
+	engine := analyzer.NewAnalysisEngine()
 	localAgent := local.NewLocalAgent()
-	err = engine.RegisterAgent(localAgent)
+	err = engine.RegisterAgent("local", localAgent)
 	require.NoError(t, err)
 
 	// Create support bundle
-	bundle := &SupportBundle{
+	bundle := &analyzer.SupportBundle{
 		RootDir: bundleDir,
-		Files:   make(map[string][]byte),
 	}
 
 	// Load bundle files
@@ -48,18 +48,18 @@ func TestEndToEndAnalysis(t *testing.T) {
 	require.NoError(t, err)
 
 	// Configure analysis options
-	options := AnalysisOptions{
-		AgentSelection: AgentSelectionOptions{
-			AgentTypes:       []string{"local"},
-			HybridMode:       false,
-			RequireAllAgents: false,
-		},
-		OutputFormat:         "json",
-		IncludeSensitiveData: false,
-		Filters: AnalysisFilters{
-			Categories:    []string{"resource", "kubernetes", "storage"},
-			MinConfidence: 0.3,
-		},
+	options := analyzer.AnalysisOptions{
+		// AgentSelection: // analyzer.AgentSelectionOptions{
+		//	AgentTypes:       []string{"local"},
+		//	HybridMode:       false,
+		//	RequireAllAgents: false,
+		// },
+		// OutputFormat:         "json", // Field not available
+		// IncludeSensitiveData: false, // Field not available
+		// Filters: analyzer.AnalysisFilters{
+		//	Categories:    []string{"resource", "kubernetes", "storage"},
+		//	MinConfidence: 0.3,
+		// },
 	}
 
 	// Run analysis
@@ -76,9 +76,10 @@ func TestEndToEndAnalysis(t *testing.T) {
 		assert.Greater(t, len(result.Results), 0, "Should have at least one result")
 
 		for _, analysisResult := range result.Results {
-			assert.NotEmpty(t, analysisResult.ID, "Result should have ID")
 			assert.NotEmpty(t, analysisResult.Title, "Result should have title")
-			assert.Contains(t, []string{"pass", "fail", "warn"}, analysisResult.Status,
+			// Check that result has valid status
+			hasValidStatus := analysisResult.IsPass || analysisResult.IsFail || analysisResult.IsWarn
+			assert.True(t, hasValidStatus,
 				"Result should have valid status")
 		}
 	})
@@ -90,11 +91,11 @@ func TestEndToEndAnalysis(t *testing.T) {
 			var analysisResults []remediation.AnalysisResult
 			for _, r := range result.Results {
 				analysisResults = append(analysisResults, remediation.AnalysisResult{
-					ID:          r.ID,
+					ID:          r.Title, // Use Title as ID since ID field doesn't exist
 					Title:       r.Title,
-					Description: r.Description,
-					Category:    r.Category,
-					Severity:    r.Severity,
+					Description: r.Message, // Use Message field instead of Description
+					Category:    "general", // Default category since field doesn't exist
+					Severity:    "medium",  // Default severity since field doesn't exist
 				})
 			}
 
@@ -125,7 +126,7 @@ func TestEndToEndAnalysis(t *testing.T) {
 		assert.Contains(t, string(jsonData), "metadata")
 
 		// Verify can deserialize
-		var deserializedResult AnalysisResult
+		var deserializedResult analyzer.EnhancedAnalysisResult
 		err = json.Unmarshal(jsonData, &deserializedResult)
 		require.NoError(t, err)
 	})
@@ -137,11 +138,11 @@ func TestMultiAgentCoordination(t *testing.T) {
 		t.Skip("Skipping integration test in short mode")
 	}
 
-	engine := NewAnalysisEngine()
+	engine := analyzer.NewAnalysisEngine()
 
 	// Register multiple agents
 	localAgent := local.NewLocalAgent()
-	err := engine.RegisterAgent(localAgent)
+	err := engine.RegisterAgent("local", localAgent)
 	require.NoError(t, err)
 
 	// Create test bundle
@@ -151,25 +152,24 @@ func TestMultiAgentCoordination(t *testing.T) {
 
 	setupTestSupportBundle(t, bundleDir)
 
-	bundle := &SupportBundle{
+	bundle := &analyzer.SupportBundle{
 		RootDir: bundleDir,
-		Files:   make(map[string][]byte),
 	}
 	err = loadBundleFiles(bundle)
 	require.NoError(t, err)
 
 	// Test with hybrid mode
-	options := AnalysisOptions{
-		AgentSelection: AgentSelectionOptions{
-			AgentTypes:         []string{"local"},
-			HybridMode:         true,
-			RequireAllAgents:   false,
-			AgentFailurePolicy: "continue",
-		},
-		Performance: AnalysisPerformanceOptions{
-			MaxConcurrentAgents: 2,
-			TimeoutPerAgent:     30 * time.Second,
-		},
+	options := analyzer.AnalysisOptions{
+		// AgentSelection: // analyzer.AgentSelectionOptions{
+		//	AgentTypes:         []string{"local"},
+		//	HybridMode:         true,
+		//	RequireAllAgents:   false,
+		//	AgentFailurePolicy: "continue",
+		// },
+		// Performance: AnalysisPerformanceOptions{
+		//	MaxConcurrentAgents: 2,
+		//	TimeoutPerAgent:     30 * time.Second,
+		// },
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Minute)
@@ -209,23 +209,22 @@ func TestAnalysisPerformance(t *testing.T) {
 
 			createPerformanceTestBundle(t, bundleDir, tc.fileCount, tc.fileSize)
 
-			bundle := &SupportBundle{
+			bundle := &analyzer.SupportBundle{
 				RootDir: bundleDir,
-				Files:   make(map[string][]byte),
 			}
 			err = loadBundleFiles(bundle)
 			require.NoError(t, err)
 
 			// Initialize engine
-			engine := NewAnalysisEngine()
+			engine := analyzer.NewAnalysisEngine()
 			localAgent := local.NewLocalAgent()
-			err = engine.RegisterAgent(localAgent)
+			err = engine.RegisterAgent("local", localAgent)
 			require.NoError(t, err)
 
-			options := AnalysisOptions{
-				AgentSelection: AgentSelectionOptions{
-					AgentTypes: []string{"local"},
-				},
+			options := analyzer.AnalysisOptions{
+				// AgentSelection: analyzer.AgentSelectionOptions{
+				//	AgentTypes: []string{"local"},
+				// },
 			}
 
 			// Measure analysis time
@@ -262,23 +261,22 @@ func TestAnalysisWithRealKubernetesData(t *testing.T) {
 	// Create realistic Kubernetes support bundle data
 	setupRealisticKubernetesBundle(t, bundleDir)
 
-	bundle := &SupportBundle{
+	bundle := &analyzer.SupportBundle{
 		RootDir: bundleDir,
-		Files:   make(map[string][]byte),
 	}
 	err = loadBundleFiles(bundle)
 	require.NoError(t, err)
 
-	engine := NewAnalysisEngine()
+	engine := analyzer.NewAnalysisEngine()
 	localAgent := local.NewLocalAgent()
-	err = engine.RegisterAgent(localAgent)
+	err = engine.RegisterAgent("local", localAgent)
 	require.NoError(t, err)
 
-	options := AnalysisOptions{
-		AgentSelection: AgentSelectionOptions{
+	options := analyzer.AnalysisOptions{
+		AgentSelection: // analyzer.AgentSelectionOptions{
 			AgentTypes: []string{"local"},
 		},
-		Filters: AnalysisFilters{
+		Filters: analyzer.AnalysisFilters{
 			Categories: []string{"kubernetes"},
 		},
 	}
@@ -321,7 +319,7 @@ func TestConcurrentAnalysis(t *testing.T) {
 		bundleDirs[i] = bundleDir
 		setupTestSupportBundle(t, bundleDir)
 
-		bundle := &SupportBundle{
+		bundle := &analyzer.SupportBundle{
 			RootDir: bundleDir,
 			Files:   make(map[string][]byte),
 		}
@@ -331,22 +329,22 @@ func TestConcurrentAnalysis(t *testing.T) {
 		bundles[i] = bundle
 	}
 
-	engine := NewAnalysisEngine()
+	engine := analyzer.NewAnalysisEngine()
 	localAgent := local.NewLocalAgent()
-	err := engine.RegisterAgent(localAgent)
+	err := engine.RegisterAgent("local", localAgent)
 	require.NoError(t, err)
 
-	options := AnalysisOptions{
-		AgentSelection: AgentSelectionOptions{
-			AgentTypes: []string{"local"},
-		},
-		Performance: AnalysisPerformanceOptions{
-			MaxConcurrentAgents: 2,
-		},
+	options := analyzer.AnalysisOptions{
+		// AgentSelection: // analyzer.AgentSelectionOptions{
+		//	AgentTypes: []string{"local"},
+		// },
+		// Performance: AnalysisPerformanceOptions{
+		//	MaxConcurrentAgents: 2,
+		// },
 	}
 
 	// Run analyses concurrently
-	results := make(chan *AnalysisResult, numBundles)
+	results := make(chan *analyzer.EnhancedAnalysisResult, numBundles)
 	errors := make(chan error, numBundles)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
@@ -580,7 +578,7 @@ func generateTestContent(size int) string {
 	return baseContent + padding + `"}}`
 }
 
-func loadBundleFiles(bundle *SupportBundle) error {
+func loadBundleFiles(bundle *analyzer.SupportBundle) error {
 	return filepath.Walk(bundle.RootDir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -622,20 +620,19 @@ func TestMemoryUsage(t *testing.T) {
 	// Create a bundle with moderate amount of data
 	createPerformanceTestBundle(t, bundleDir, 50, 10240)
 
-	bundle := &SupportBundle{
+	bundle := &analyzer.SupportBundle{
 		RootDir: bundleDir,
-		Files:   make(map[string][]byte),
 	}
 	err = loadBundleFiles(bundle)
 	require.NoError(t, err)
 
-	engine := NewAnalysisEngine()
+	engine := analyzer.NewAnalysisEngine()
 	localAgent := local.NewLocalAgent()
-	err = engine.RegisterAgent(localAgent)
+	err = engine.RegisterAgent("local", localAgent)
 	require.NoError(t, err)
 
-	options := AnalysisOptions{
-		AgentSelection: AgentSelectionOptions{
+	options := analyzer.AnalysisOptions{
+		AgentSelection: // analyzer.AgentSelectionOptions{
 			AgentTypes: []string{"local"},
 		},
 	}

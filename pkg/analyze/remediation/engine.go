@@ -93,7 +93,7 @@ type RemediationGenerationResult struct {
 // RemediationInsight represents an insight about remediation opportunities
 type RemediationInsight struct {
 	ID          string            `json:"id"`
-	Type        InsightType       `json:"type"`
+	Type        string            `json:"type"`
 	Title       string            `json:"title"`
 	Description string            `json:"description"`
 	Impact      RemediationImpact `json:"impact"`
@@ -635,7 +635,7 @@ func (e *RemediationEngine) generatePatternInsights(results []AnalysisResult, st
 		if len(categoryResults) > 2 { // Pattern detected
 			insights = append(insights, RemediationInsight{
 				ID:          uuid.New().String(),
-				Type:        InsightPattern,
+				Type:        "pattern",
 				Title:       fmt.Sprintf("Multiple %s Issues Detected", category),
 				Description: fmt.Sprintf("Found %d issues in the %s category, suggesting a systemic problem", len(categoryResults), category),
 				Impact:      ImpactHigh,
@@ -657,7 +657,7 @@ func (e *RemediationEngine) generateCorrelationInsights(correlations []Correlati
 		if correlation.Strength > 0.7 { // Strong correlation
 			insights = append(insights, RemediationInsight{
 				ID:          uuid.New().String(),
-				Type:        InsightCorrelation,
+				Type:        "correlation",
 				Title:       "Related Issues Identified",
 				Description: correlation.Description,
 				Impact:      ImpactMedium,
@@ -686,7 +686,7 @@ func (e *RemediationEngine) generateOptimizationInsights(results []AnalysisResul
 	if resourceIssues > 1 {
 		insights = append(insights, RemediationInsight{
 			ID:          uuid.New().String(),
-			Type:        InsightOptimization,
+			Type:        "optimization",
 			Title:       "Resource Optimization Opportunity",
 			Description: "Multiple resource-related issues suggest opportunities for resource optimization",
 			Impact:      ImpactMedium,
@@ -826,10 +826,24 @@ func NewRemediationPrioritizer() *RemediationPrioritizer {
 	}
 }
 
+// PrioritizeSteps prioritizes remediation steps based on rules
+func (p *RemediationPrioritizer) PrioritizeSteps(steps []RemediationStep, ctx RemediationContext) []RemediationStep {
+	// Simple implementation - just return steps as-is for now
+	// TODO: Implement actual prioritization logic
+	return steps
+}
+
 func NewRemediationCategorizer() *RemediationCategorizer {
 	return &RemediationCategorizer{
 		categories: getDefaultCategoryInfo(),
 	}
+}
+
+// CategorizeSteps categorizes remediation steps
+func (c *RemediationCategorizer) CategorizeSteps(steps []RemediationStep) []RemediationStep {
+	// Simple implementation - just return steps as-is for now
+	// TODO: Implement actual categorization logic
+	return steps
 }
 
 func NewRemediationExecutor() *RemediationExecutor {

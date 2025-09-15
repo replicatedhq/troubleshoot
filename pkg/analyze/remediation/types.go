@@ -351,12 +351,6 @@ const (
 	TrendUnknown   TrendDirection = "unknown"
 )
 
-// TimeRange defines a time range for trend analysis
-type TimeRange struct {
-	Start time.Time `json:"start"`
-	End   time.Time `json:"end"`
-}
-
 // AnalysisSummary provides a summary of analysis results
 type AnalysisSummary struct {
 	TotalIssues      int            `json:"total_issues"`

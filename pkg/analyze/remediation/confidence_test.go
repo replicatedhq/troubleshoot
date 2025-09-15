@@ -44,11 +44,10 @@ func TestConfidenceScorer_ScoreStep(t *testing.T) {
 	}
 
 	context := RemediationContext{
-		Environment: EnvironmentInfo{
+		Environment: EnvironmentContext{
 			Platform:      "kubernetes",
 			CloudProvider: "aws",
 			Version:       "1.21",
-			Capabilities:  []string{"kubectl", "helm"},
 		},
 		UserPreferences: UserPreferences{
 			SkillLevel: SkillIntermediate,
@@ -92,7 +91,7 @@ func TestConfidenceScorer_CalculateConfidence(t *testing.T) {
 	}
 
 	context := RemediationContext{
-		Environment: EnvironmentInfo{
+		Environment: EnvironmentContext{
 			Platform:     "kubernetes",
 			Capabilities: []string{"kubectl"},
 		},
@@ -230,7 +229,7 @@ func TestSourceReliabilityFactor(t *testing.T) {
 	}
 
 	context := RemediationContext{
-		Environment: EnvironmentInfo{
+		Environment: EnvironmentContext{
 			Platform: "kubernetes",
 		},
 	}
@@ -250,10 +249,9 @@ func TestContextMatchFactor(t *testing.T) {
 	}
 
 	context := RemediationContext{
-		Environment: EnvironmentInfo{
+		Environment: EnvironmentContext{
 			Platform:      "kubernetes",
 			CloudProvider: "aws",
-			Capabilities:  []string{"kubectl", "helm"},
 		},
 	}
 
@@ -489,12 +487,3 @@ func TestFactorWeights(t *testing.T) {
 	}
 }
 
-// Helper function for testing
-func contains(slice []string, item string) bool {
-	for _, s := range slice {
-		if s == item {
-			return true
-		}
-	}
-	return false
-}
