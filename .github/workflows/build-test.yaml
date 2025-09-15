@@ -146,19 +146,6 @@ jobs:
       - run: chmod +x bin/preflight
       - run: make support-bundle-e2e-go-test
 
-  compile-collect:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-go@v6
-        with:
-          go-version-file: 'go.mod'
-      - run: make generate collect
-      - uses: actions/upload-artifact@v4
-        with:
-          name: collect
-          path: bin/collect
-
   # Summary job - all tests must pass for this to succeed
   validate-success:
     runs-on: ubuntu-latest
@@ -166,7 +153,6 @@ jobs:
       - tidy-check
       - test-integration
       - run-examples
-      - compile-collect
       - validate-preflight-e2e
       - validate-supportbundle-e2e
       - validate-supportbundle-e2e-go
