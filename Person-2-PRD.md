@@ -1,4 +1,4 @@
-at pop# Person 2 PRD: Collectors, Redaction, Analysis, Diff, Remediation
+# Person 2 PRD: Collectors, Redaction, Analysis, Diff, Remediation
 
 ## CRITICAL CODEBASE ANALYSIS UPDATE
 
@@ -705,7 +705,7 @@ Examples:
 #### Step 6: Integration and Artifacts
 1. Integrate redaction engine into support bundle collection
 2. Implement `redaction-map.json` generation and format
-3. Add CLI flags for redaction options and profiles
+3. Add CLI flags for redaction options and profiles.
 4. Create comprehensive documentation and examples
 5. Add performance monitoring and optimization
 
