@@ -470,14 +470,15 @@ func readLinesFromReader(reader io.Reader, maxBytes int) ([]string, error) {
 
 	for scanner.Scan() {
 		line := normalizeNewlines(scanner.Text())
-		lineBytes := len(line) + 1 // +1 for newline
+		lineWithNL := line + "\n"
+		lineBytes := len(lineWithNL)
 
 		if totalBytes+lineBytes > maxBytes {
-			lines = append(lines, "... (content truncated due to size)")
+			lines = append(lines, "... (content truncated due to size)\n")
 			break
 		}
 
-		lines = append(lines, line)
+		lines = append(lines, lineWithNL)
 		totalBytes += lineBytes
 	}
 
