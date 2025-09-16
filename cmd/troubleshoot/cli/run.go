@@ -220,15 +220,11 @@ func runTroubleshoot(v *viper.Viper, args []string) error {
 	// Auto-upload if requested
 	if v.GetBool("auto-upload") {
 		endpoint := v.GetString("upload-endpoint")
-		token := v.GetString("upload-token")
 		appID := v.GetString("app-id")
-
-		if token == "" {
-			token = os.Getenv("TROUBLESHOOT_TOKEN")
-		}
+		token := os.Getenv("TROUBLESHOOT_TOKEN")
 
 		if endpoint == "" || token == "" || appID == "" {
-			fmt.Fprintf(os.Stderr, "Warning: auto-upload requires --upload-endpoint, --upload-token, and --app-id\n")
+			fmt.Fprintf(os.Stderr, "Warning: auto-upload requires --upload-endpoint, --app-id, and TROUBLESHOOT_TOKEN environment variable\n")
 		} else {
 			fmt.Fprintf(os.Stderr, "Uploading bundle to %s...\n", endpoint)
 			if err := supportbundle.UploadToVandoor(response.ArchivePath, endpoint, token, appID); err != nil {

@@ -103,6 +103,7 @@ If no arguments are provided, specs are automatically loaded from the cluster by
 	cmd.AddCommand(Analyze())
 	cmd.AddCommand(Redact())
 	cmd.AddCommand(Diff())
+	cmd.AddCommand(UploadCmd())
 	cmd.AddCommand(util.VersionCmd())
 
 	cmd.Flags().StringSlice("redactors", []string{}, "names of the additional redactors to use")
@@ -119,9 +120,8 @@ If no arguments are provided, specs are automatically loaded from the cluster by
 	cmd.Flags().Bool("auto-update", true, "enable automatic binary self-update check and install")
 
 	// Auto-upload flags
-	cmd.Flags().Bool("auto-upload", false, "automatically upload bundle after generation")
-	cmd.Flags().String("upload-endpoint", "", "vandoor API endpoint (e.g. https://api.replicated.com)")
-	cmd.Flags().String("upload-token", "", "API token for authentication (or set TROUBLESHOOT_TOKEN env var)")
+	cmd.Flags().Bool("auto-upload", false, "automatically upload bundle after generation (requires upload-endpoint and app-id)")
+	cmd.Flags().String("upload-endpoint", "", "API endpoint for auto-upload (e.g. https://api.replicated.com/vendor)")
 	cmd.Flags().String("app-id", "", "app ID to associate the bundle with (required for auto-upload)")
 
 	// Auto-discovery flags
