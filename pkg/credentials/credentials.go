@@ -98,12 +98,21 @@ func readTokenFromDisk() (string, error) {
 		return c.APIToken, nil
 	}
 	// Fallback: extremely simple YAML (token: value)
-	// We avoid adding yaml.v3; parse a single key manually if present.
+	// We avoid adding yaml.v3; parse "key: value" manually and compare key case-insensitively.
 	content := string(b)
 	for _, line := range strings.Split(content, "\n") {
 		line = strings.TrimSpace(line)
-		if strings.HasPrefix(strings.ToLower(line), "token:") {
-			return strings.TrimSpace(strings.TrimPrefix(line, "token:")), nil
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		idx := strings.IndexRune(line, ':')
+		if idx <= 0 {
+			continue
+		}
+		key := strings.TrimSpace(line[:idx])
+		val := strings.TrimSpace(line[idx+1:])
+		if strings.EqualFold(key, "token") {
+			return val, nil
 		}
 	}
 	return "", nil
