@@ -185,9 +185,9 @@ func runTroubleshoot(v *viper.Viper, args []string) error {
 					}
 				case <-time.After(time.Millisecond * 100):
 					if currentDir == "" {
-						fmt.Printf("\r%s \033[36mCollecting support bundle\033[m %s", cursor.ClearEntireLine(), s.Next())
+						fmt.Printf("\r%s \u001b[36mCollecting support bundle\u001b[m %s", cursor.ClearEntireLine(), s.Next())
 					} else {
-						fmt.Printf("\r%s \033[36mCollecting support bundle\033[m %s %s", cursor.ClearEntireLine(), s.Next(), currentDir)
+						fmt.Printf("\r%s \u001b[36mCollecting support bundle\u001b[m %s %s", cursor.ClearEntireLine(), s.Next(), currentDir)
 					}
 				}
 			}
@@ -220,11 +220,14 @@ func runTroubleshoot(v *viper.Viper, args []string) error {
 	// Auto-upload if requested
 	if v.GetBool("auto-upload") {
 		endpoint := v.GetString("upload-endpoint")
+		if endpoint == "" {
+			endpoint = "https://api.replicated.com/vendor"
+		}
 		appID := v.GetString("app-id")
 		token := os.Getenv("TROUBLESHOOT_TOKEN")
 
-		if endpoint == "" || token == "" || appID == "" {
-			fmt.Fprintf(os.Stderr, "Warning: auto-upload requires --upload-endpoint, --app-id, and TROUBLESHOOT_TOKEN environment variable\n")
+		if token == "" || appID == "" {
+			fmt.Fprintf(os.Stderr, "Warning: auto-upload requires --app-id and TROUBLESHOOT_TOKEN environment variable\n")
 		} else {
 			fmt.Fprintf(os.Stderr, "Uploading bundle to %s...\n", endpoint)
 			if err := supportbundle.UploadToVandoor(response.ArchivePath, endpoint, token, appID); err != nil {

@@ -120,8 +120,8 @@ If no arguments are provided, specs are automatically loaded from the cluster by
 	cmd.Flags().Bool("auto-update", true, "enable automatic binary self-update check and install")
 
 	// Auto-upload flags
-	cmd.Flags().Bool("auto-upload", false, "automatically upload bundle after generation (requires upload-endpoint and app-id)")
-	cmd.Flags().String("upload-endpoint", "", "API endpoint for auto-upload (e.g. https://api.replicated.com/vendor)")
+	cmd.Flags().Bool("auto-upload", false, "automatically upload bundle after generation (requires app-id and token)")
+	cmd.Flags().String("upload-endpoint", "https://api.replicated.com/vendor", "API endpoint for auto-upload (default: https://api.replicated.com/vendor)")
 	cmd.Flags().String("app-id", "", "app ID to associate the bundle with (required for auto-upload)")
 
 	// Auto-discovery flags

@@ -20,14 +20,14 @@ func UploadCmd() *cobra.Command {
 This command takes an existing support bundle .tar.gz file and uploads it to the specified vendor portal endpoint.
 
 Examples:
-  # Upload a bundle to production
-  support-bundle upload --endpoint https://api.replicated.com/vendor --app-id my-app support-bundle.tar.gz
+  # Upload a bundle to production (default endpoint)
+  support-bundle upload --app-id my-app support-bundle.tar.gz
 
   # Upload to staging with custom token
   support-bundle upload --endpoint https://api.staging.replicated.com/vendor --token my-token --app-id my-app support-bundle.tar.gz
 
   # Upload using environment variable for token
-  TROUBLESHOOT_TOKEN=my-token support-bundle upload --endpoint https://api.replicated.com/vendor --app-id my-app support-bundle.tar.gz`,
+  TROUBLESHOOT_TOKEN=my-token support-bundle upload --app-id my-app support-bundle.tar.gz`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			v := viper.GetViper()
 			bundlePath := args[0]
@@ -43,9 +43,6 @@ Examples:
 			}
 
 			// Validate required parameters
-			if endpoint == "" {
-				return errors.New("--endpoint is required")
-			}
 			if token == "" {
 				return errors.New("--token is required (or set TROUBLESHOOT_TOKEN environment variable)")
 			}
@@ -69,11 +66,11 @@ Examples:
 		},
 	}
 
-	cmd.Flags().String("endpoint", "", "vendor API endpoint (e.g. https://api.replicated.com/vendor)")
+	cmd.Flags().String("endpoint", "https://api.replicated.com/vendor", "vendor API endpoint (default: https://api.replicated.com/vendor)")
 	cmd.Flags().String("token", "", "API token for authentication (or set TROUBLESHOOT_TOKEN env var)")
 	cmd.Flags().String("app-id", "", "app ID to associate the bundle with")
 
-	cmd.MarkFlagRequired("endpoint")
+	// endpoint defaults to production; can be overridden
 	cmd.MarkFlagRequired("app-id")
 
 	return cmd
