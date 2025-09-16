@@ -1,0 +1,227 @@
+apiVersion: troubleshoot.sh/v1beta3
+kind: Preflight
+metadata:
+  name: templated-requirements-example
+spec:
+  analyzers:
+    - docString: |
+        Title: Kubernetes Control Plane Requirements
+        Requirement:
+          - Version:
+            - Minimum: {{ .Values.kubernetes.minVersion | default "v1.22.0" }}
+            - Supported: v1.22.x – v1.29.x (stable releases only)
+          - APIs required (must be enabled, GA):
+            - admissionregistration.k8s.io/v1
+            - apiextensions.k8s.io/v1
+            - apps/v1
+            - batch/v1
+            - networking.k8s.io/v1
+            - policy/v1
+            - rbac.authorization.k8s.io/v1
+            - storage.k8s.io/v1
+      clusterVersion:
+        checkName: Kubernetes version
+        outcomes:
+          - fail:
+              when: '< {{ .Values.kubernetes.minVersion | default "1.22.0" }}'
+              message: Requires Kubernetes >= {{ .Values.kubernetes.minVersion | default "1.22.0" }}
+          - pass:
+              when: '>= {{ .Values.kubernetes.minVersion | default "1.22.0" }}'
+              message: Kubernetes version is supported
+
+    - docString: |
+        Title: Container Runtime Requirements
+        Requirement:
+          - Runtime: containerd (CRI) version ≥ 1.5
+          - Kubelet cgroup driver: systemd
+          - CRI socket path: /run/containerd/containerd.sock
+          - Security hardening:
+            - Seccomp: enabled (default profiles permitted)
+            - AppArmor: enabled where supported
+      containerRuntime:
+        outcomes:
+          - pass:
+              when: '== containerd'
+              message: containerd runtime detected
+          - fail:
+              message: Unsupported container runtime; containerd required
+
+    {{- if .Values.storage.enabled }}
+    - docString: |
+        Title: Default StorageClass Requirements
+        Requirement:
+          - A StorageClass named "{{ .Values.storage.className | default "default" }}" must exist and be annotated as cluster default
+          - AccessMode: ReadWriteOnce (RWO) required (RWX optional)
+          - VolumeBindingMode: WaitForFirstConsumer preferred
+          - allowVolumeExpansion: true recommended
+          - Baseline performance per volume:
+            - Minimum: {{ .Values.storage.minIOPS | default "1000" }} write IOPS, {{ .Values.storage.minReadIOPS | default "3000" }} read IOPS
+            - Recommended: 3000+ write IOPS, 6000+ read IOPS, 250+ MB/s throughput
+          - Encryption at rest: {{ if .Values.storage.encryption }}enabled{{ else }}optional{{ end }}
+      storageClass:
+        checkName: Default StorageClass
+        storageClassName: '{{ .Values.storage.className | default "default" }}'
+        outcomes:
+          - fail:
+              message: Default StorageClass not found
+          - pass:
+              message: Default StorageClass present
+    {{- end }}
+
+    - docString: |
+        Title: Cluster Size and Aggregate Capacity
+        Requirement:
+          - Node count: Minimum {{ .Values.cluster.minNodes | default "3" }} nodes (HA baseline), Recommended {{ .Values.cluster.recommendedNodes | default "5" }} nodes
+          - Total CPU: Minimum {{ .Values.cluster.minCPU | default "4" }} vCPU, Recommended 8+ vCPU
+          - Total Memory: Minimum {{ .Values.cluster.minMemory | default "16" }} GiB, Recommended 32+ GiB
+          - Control plane sizing:
+            - Managed control planes supported (EKS/GKE/AKS)
+            - Self-managed: 3 control-plane nodes recommended
+      nodeResources:
+        checkName: Cluster capacity
+        outcomes:
+          - fail:
+              when: 'count() < {{ .Values.cluster.minNodes | default "3" }}'
+              message: Requires at least {{ .Values.cluster.minNodes | default "3" }} nodes
+          - warn:
+              when: 'count() < {{ .Values.cluster.recommendedNodes | default "5" }}'
+              message: {{ .Values.cluster.recommendedNodes | default "5" }} nodes recommended for headroom
+          - pass:
+              message: Node count is sufficient
+      nodeResources:
+        checkName: Cluster CPU total
+        outcomes:
+          - fail:
+              when: 'sum(cpuCapacity) < {{ .Values.cluster.minCPU | default "4" }}'
+              message: Requires at least {{ .Values.cluster.minCPU | default "4" }} vCPU total
+          - pass:
+              message: CPU total is sufficient
+      nodeResources:
+        checkName: Cluster memory total
+        outcomes:
+          - fail:
+              when: 'sum(memoryCapacity) < {{ .Values.cluster.minMemory | default "16" }}Gi'
+              message: Requires at least {{ .Values.cluster.minMemory | default "16" }} GiB total memory
+          - pass:
+              message: Memory total is sufficient
+
+    {{- if .Values.postgres.enabled }}
+    - docString: |
+        Title: Postgres Platform Requirements
+        Requirement:
+          - Database: PostgreSQL {{ .Values.postgres.version | default "14+" }}
+          - Connection: {{ .Values.postgres.uri | default "postgresql://postgres@postgres:5432/postgres" }}
+          - StorageClass: {{ .Values.postgres.storageClass | default "default" }} with:
+            - Latency p99 ≤ 5 ms
+            - ≥ 3000 read IOPS, ≥ 1000 write IOPS
+            - allowVolumeExpansion: true
+          - Memory per node: Minimum {{ .Values.postgres.minMemory | default "8" }} GiB; Recommended 32 GiB
+          - CPU per node: Minimum {{ .Values.postgres.minCPU | default "2" }} vCPU; Recommended 4+ vCPU
+      storageClass:
+        checkName: Postgres storage class
+        storageClassName: '{{ .Values.postgres.storageClass | default "default" }}'
+        outcomes:
+          - fail:
+              message: Postgres StorageClass not found
+          - pass:
+              message: Postgres StorageClass present
+      nodeResources:
+        checkName: Postgres memory guidance
+        outcomes:
+          - fail:
+              when: 'min(memoryCapacity) < {{ .Values.postgres.minMemory | default "8" }}Gi'
+              message: All nodes must have at least {{ .Values.postgres.minMemory | default "8" }} GiB of memory for Postgres
+          - warn:
+              when: 'min(memoryCapacity) < 32Gi'
+              message: Nodes are recommended to have at least 32 GiB of memory for Postgres
+          - pass:
+              message: Nodes have sufficient memory for Postgres
+    {{- end }}
+
+    {{- if .Values.redis.enabled }}
+    - docString: |
+        Title: Redis Platform Requirements
+        Requirement:
+          - Database: Redis {{ .Values.redis.version | default "6.2+" }}
+          - Connection: {{ .Values.redis.uri | default "redis://default:@redis:6379" }}
+          - Ephemeral storage per node: Minimum 40 GiB; Recommended 100 GiB
+          - If persistence enabled: SSD-backed StorageClass with low-latency reads/writes
+          - Memory per node: Baseline {{ .Values.redis.minMemory | default "4" }} GiB; Recommended sized to dataset with 30% headroom
+      nodeResources:
+        checkName: Redis ephemeral storage
+        outcomes:
+          - fail:
+              when: 'min(ephemeralStorageCapacity) < 40Gi'
+              message: Each node must have at least 40 GiB ephemeral storage for Redis
+          - warn:
+              when: 'min(ephemeralStorageCapacity) < 100Gi'
+              message: 100 GiB per node recommended for Redis
+          - pass:
+              message: Nodes have sufficient ephemeral storage for Redis
+    {{- end }}
+
+    {{- if .Values.ingress.enabled }}
+    - docString: |
+        Title: Required CRDs and Ingress Capabilities
+        Requirement:
+          - Ingress Controller: {{ .Values.ingress.type | default "Contour" }}
+          {{- if eq (.Values.ingress.type | default "Contour") "Contour" }}
+          - CRD must be present:
+            - Group: heptio.com
+            - Kind: IngressRoute
+            - Version: v1beta1 or later served version
+          {{- end }}
+          - Ingress capability:
+            - Layer-7 HTTP/HTTPS routing with TLS termination supported
+            - Wildcard certificates permitted (optional)
+            {{- if .Values.ingress.customDomain }}
+            - Custom domain: {{ .Values.ingress.customDomain }}
+            {{- end }}
+      {{- if eq (.Values.ingress.type | default "Contour") "Contour" }}
+      customResourceDefinition:
+        checkName: Contour IngressRoute CRD
+        customResourceDefinitionName: ingressroutes.contour.heptio.com
+        outcomes:
+          - fail:
+              message: Contour IngressRoute CRD not found; required for ingress routing
+          - pass:
+              message: Contour IngressRoute CRD present
+      {{- end }}
+    {{- end }}
+
+    {{- if .Values.monitoring.enabled }}
+    - docString: |
+        Title: Monitoring and Observability Requirements
+        Requirement:
+          - Monitoring: {{ .Values.monitoring.type | default "Prometheus" }}
+          - Metrics retention: {{ .Values.monitoring.retention | default "15 days" }}
+          - Storage required: {{ .Values.monitoring.storageSize | default "50Gi" }}
+          - Components:
+            {{- if .Values.monitoring.prometheus }}
+            - Prometheus for metrics collection
+            {{- end }}
+            {{- if .Values.monitoring.grafana }}
+            - Grafana for visualization
+            {{- end }}
+            {{- if .Values.monitoring.alertmanager }}
+            - AlertManager for alerting
+            {{- end }}
+      storageClass:
+        checkName: Monitoring storage
+        storageClassName: '{{ .Values.monitoring.storageClass | default "default" }}'
+        outcomes:
+          - fail:
+              message: Monitoring StorageClass not found
+          - pass:
+              message: Monitoring StorageClass present
+    {{- end }}
+
+    - docString: |
+        Title: OS and Kernel Requirements
+        Requirement:
+          - Nodes: Linux x86_64 (amd64) or arm64 on supported distributions
+          - Supported OS: {{ range $i, $v := .Values.os.supported }}{{ if $i }}, {{ end }}{{ $v }}{{ end }}
+          - Kernel: ≥ {{ .Values.os.minKernel | default "5.4" }} with cgroups v1 or v2 (v2 preferred)
+          - Time sync: chrony or systemd-timesyncd active; clock drift < 500 ms
+          - Filesystems: ext4 or xfs for container layers and volumes
+          - SELinux/AppArmor: enforcing/permissive accepted
