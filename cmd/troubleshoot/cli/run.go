@@ -217,6 +217,28 @@ func runTroubleshoot(v *viper.Viper, args []string) error {
 	close(progressChan) // this removes the spinner in interactive mode
 	isProgressChanClosed = true
 
+	// Auto-upload if requested
+	if v.GetBool("auto-upload") {
+		endpoint := v.GetString("upload-endpoint")
+		token := v.GetString("upload-token")
+		appID := v.GetString("app-id")
+
+		if token == "" {
+			token = os.Getenv("TROUBLESHOOT_TOKEN")
+		}
+
+		if endpoint == "" || token == "" || appID == "" {
+			fmt.Fprintf(os.Stderr, "Warning: auto-upload requires --upload-endpoint, --upload-token, and --app-id\n")
+		} else {
+			fmt.Fprintf(os.Stderr, "Uploading bundle to %s...\n", endpoint)
+			if err := supportbundle.UploadToVandoor(response.ArchivePath, endpoint, token, appID); err != nil {
+				fmt.Fprintf(os.Stderr, "Upload failed: %v\n", err)
+			} else {
+				fmt.Fprintf(os.Stderr, "Bundle uploaded successfully!\n")
+			}
+		}
+	}
+
 	if len(response.AnalyzerResults) > 0 {
 		if interactive {
 			if err := showInteractiveResults(mainBundle.Name, response.AnalyzerResults, response.ArchivePath); err != nil {

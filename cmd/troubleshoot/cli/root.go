@@ -118,6 +118,12 @@ If no arguments are provided, specs are automatically loaded from the cluster by
 	cmd.Flags().Bool("dry-run", false, "print support bundle spec without collecting anything")
 	cmd.Flags().Bool("auto-update", true, "enable automatic binary self-update check and install")
 
+	// Auto-upload flags
+	cmd.Flags().Bool("auto-upload", false, "automatically upload bundle after generation")
+	cmd.Flags().String("upload-endpoint", "", "vandoor API endpoint (e.g. https://api.replicated.com)")
+	cmd.Flags().String("upload-token", "", "API token for authentication (or set TROUBLESHOOT_TOKEN env var)")
+	cmd.Flags().String("app-id", "", "app ID to associate the bundle with (required for auto-upload)")
+
 	// Auto-discovery flags
 	cmd.Flags().Bool("auto", false, "enable auto-discovery of foundational collectors. When used with YAML specs, adds foundational collectors to YAML collectors. When used alone, collects only foundational data")
 	cmd.Flags().Bool("include-images", false, "include container image metadata collection when using auto-discovery")
