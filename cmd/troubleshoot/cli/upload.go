@@ -5,6 +5,7 @@ import (
 	"os"
 
 	"github.com/pkg/errors"
+	"github.com/replicatedhq/troubleshoot/pkg/credentials"
 	"github.com/replicatedhq/troubleshoot/pkg/supportbundle"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -37,14 +38,17 @@ Examples:
 			token := v.GetString("token")
 			appID := v.GetString("app-id")
 
-			// Check for token in environment if not provided
+			// Resolve token: flag -> env -> saved credentials
 			if token == "" {
-				token = os.Getenv("TROUBLESHOOT_TOKEN")
+				creds, cerr := credentials.GetCurrentCredentials()
+				if cerr == nil {
+					token = creds.APIToken
+				} else if cerr != credentials.ErrCredentialsNotFound {
+					return cerr
+				}
 			}
-
-			// Validate required parameters
 			if token == "" {
-				return errors.New("--token is required (or set TROUBLESHOOT_TOKEN environment variable)")
+				return errors.New("authentication required: run 'support-bundle login' or provide --token (or set TROUBLESHOOT_TOKEN)")
 			}
 			if appID == "" {
 				return errors.New("--app-id is required")
