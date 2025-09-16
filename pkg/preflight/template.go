@@ -9,8 +9,8 @@ import (
 
 	"github.com/Masterminds/sprig/v3"
 	"github.com/pkg/errors"
-	"gopkg.in/yaml.v2"
 	"helm.sh/helm/v3/pkg/strvals"
+	yaml "sigs.k8s.io/yaml"
 )
 
 // RunTemplate processes a templated preflight spec file with provided values
