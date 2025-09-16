@@ -3,10 +3,13 @@ package analyzer
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/pkg/errors"
+	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -466,4 +469,222 @@ func TestAnalysisResult_JSON(t *testing.T) {
 	assert.Len(t, unmarshaled.Remediation, 1)
 	assert.Equal(t, result.Summary.TotalAnalyzers, unmarshaled.Summary.TotalAnalyzers)
 	assert.Equal(t, result.Metadata.EngineVersion, unmarshaled.Metadata.EngineVersion)
+}
+
+func TestAnalysisEngine_ConvertAnalyzerToSpec_ErrorHandling(t *testing.T) {
+	engine := NewAnalysisEngine()
+
+	tests := []struct {
+		name          string
+		analyzer      *troubleshootv1beta2.Analyze
+		expectError   bool
+		expectedError string
+	}{
+		{
+			name:          "nil analyzer",
+			analyzer:      nil,
+			expectError:   true,
+			expectedError: "analyzer cannot be nil",
+		},
+		{
+			name: "supported ClusterVersion analyzer",
+			analyzer: &troubleshootv1beta2.Analyze{
+				ClusterVersion: &troubleshootv1beta2.ClusterVersion{
+					Outcomes: []*troubleshootv1beta2.Outcome{},
+				},
+			},
+			expectError: false,
+		},
+		{
+			name: "supported DeploymentStatus analyzer",
+			analyzer: &troubleshootv1beta2.Analyze{
+				DeploymentStatus: &troubleshootv1beta2.DeploymentStatus{
+					Name:     "test-deployment",
+					Outcomes: []*troubleshootv1beta2.Outcome{},
+				},
+			},
+			expectError: false,
+		},
+		{
+			name: "now supported TextAnalyze analyzer",
+			analyzer: &troubleshootv1beta2.Analyze{
+				TextAnalyze: &troubleshootv1beta2.TextAnalyze{
+					CollectorName: "test-logs",
+					FileName:      "test.log",
+				},
+			},
+			expectError: false,
+		},
+		{
+			name: "now supported NodeResources analyzer",
+			analyzer: &troubleshootv1beta2.Analyze{
+				NodeResources: &troubleshootv1beta2.NodeResources{},
+			},
+			expectError: false,
+		},
+		{
+			name: "supported Postgres analyzer",
+			analyzer: &troubleshootv1beta2.Analyze{
+				Postgres: &troubleshootv1beta2.DatabaseAnalyze{
+					CollectorName: "postgres",
+					FileName:      "postgres.json",
+				},
+			},
+			expectError: false,
+		},
+		{
+			name: "supported YamlCompare analyzer",
+			analyzer: &troubleshootv1beta2.Analyze{
+				YamlCompare: &troubleshootv1beta2.YamlCompare{
+					CollectorName: "config",
+					FileName:      "config.yaml",
+					Path:          "data",
+					Value:         "expected",
+				},
+			},
+			expectError: false,
+		},
+		{
+			name:          "completely unknown analyzer type",
+			analyzer:      &troubleshootv1beta2.Analyze{},
+			expectError:   true,
+			expectedError: "unknown analyzer type - this should not happen as all known types are now supported",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			spec, err := engine.(*DefaultAnalysisEngine).convertAnalyzerToSpec(tt.analyzer)
+
+			if tt.expectError {
+				assert.Error(t, err)
+				assert.Contains(t, err.Error(), tt.expectedError)
+				assert.Empty(t, spec.Name) // Should have empty spec on error
+			} else {
+				assert.NoError(t, err)
+				assert.NotEmpty(t, spec.Name)
+				assert.NotEmpty(t, spec.Type)
+				assert.NotNil(t, spec.Config)
+			}
+		})
+	}
+}
+
+func TestAnalysisEngine_Analyze_ComprehensiveAnalyzerSupport(t *testing.T) {
+	engine := NewAnalysisEngine()
+
+	// Register a mock agent
+	mockAgent := &mockAgent{
+		name:      "test-agent",
+		available: true,
+		healthy:   true,
+		results: []*AnalyzerResult{
+			{IsPass: true, Title: "Test Result", Message: "Success"},
+		},
+		duration: 100 * time.Millisecond,
+	}
+
+	err := engine.RegisterAgent("test-agent", mockAgent)
+	require.NoError(t, err)
+
+	// Create a mock bundle
+	bundle := &SupportBundle{
+		Metadata: &SupportBundleMetadata{
+			CreatedAt: time.Now(),
+			Version:   "test",
+		},
+		Files: make(map[string][]byte),
+	}
+
+	// Create analysis options with comprehensive analyzer types (all now supported!)
+	opts := AnalysisOptions{
+		Agents: []string{"test-agent"},
+		CustomAnalyzers: []*troubleshootv1beta2.Analyze{
+			// Cluster analyzers
+			{
+				ClusterVersion: &troubleshootv1beta2.ClusterVersion{
+					Outcomes: []*troubleshootv1beta2.Outcome{},
+				},
+			},
+			{
+				NodeResources: &troubleshootv1beta2.NodeResources{},
+			},
+			// Workload analyzers
+			{
+				DeploymentStatus: &troubleshootv1beta2.DeploymentStatus{
+					Name:     "test-deployment",
+					Outcomes: []*troubleshootv1beta2.Outcome{},
+				},
+			},
+			{
+				StatefulsetStatus: &troubleshootv1beta2.StatefulsetStatus{
+					Name:     "test-statefulset",
+					Outcomes: []*troubleshootv1beta2.Outcome{},
+				},
+			},
+			// Data analyzers
+			{
+				TextAnalyze: &troubleshootv1beta2.TextAnalyze{
+					CollectorName: "test-logs",
+					FileName:      "test.log",
+				},
+			},
+			{
+				YamlCompare: &troubleshootv1beta2.YamlCompare{
+					CollectorName: "config",
+					FileName:      "config.yaml",
+					Path:          "data",
+					Value:         "test",
+				},
+			},
+			// Database analyzers
+			{
+				Postgres: &troubleshootv1beta2.DatabaseAnalyze{
+					CollectorName: "postgres",
+					FileName:      "postgres.json",
+				},
+			},
+		},
+	}
+
+	// Run analysis - all analyzers should now be supported!
+	result, err := engine.Analyze(context.Background(), bundle, opts)
+
+	// Verify analysis completes successfully
+	assert.NoError(t, err)
+	assert.NotNil(t, result)
+
+	// Should have results: 1 from mock agent + 7 analyzer results (all converted successfully)
+	expectedResults := len(opts.CustomAnalyzers) + 1 // 7 analyzers + 1 mock agent result
+	assert.Len(t, result.Results, expectedResults, "Expected results from mock agent + all %d analyzer conversions", len(opts.CustomAnalyzers))
+
+	// Count results by type
+	mockResults := 0
+	analyzerResults := 0
+	failureResults := 0
+
+	for _, res := range result.Results {
+		if res.Message == "Success" {
+			mockResults++
+		} else if res.AgentName == "local" {
+			analyzerResults++
+		} else if res.IsFail && strings.Contains(res.Title, "Conversion Failed") {
+			failureResults++
+		}
+	}
+
+	assert.Equal(t, 1, mockResults, "Should have 1 mock agent result")
+	// Note: analyzerResults may be 0 if traditional analyzers fail due to missing files (expected)
+	// The important thing is that we get results (success or failure) for all analyzers, not silent skips
+	assert.Equal(t, 0, failureResults, "Should have no conversion failures - all analyzer types now supported")
+
+	// Verify agent was used
+	assert.Contains(t, result.Summary.AgentsUsed, "test-agent")
+
+	// No fatal errors should be recorded
+	assert.Equal(t, 0, len(result.Errors))
+
+	// The key success metric: All analyzers produced results (not silently skipped)
+	// Whether they pass/warn/fail depends on data availability, but they all get processed
+	fmt.Printf("✅ SUCCESS: All %d analyzers processed and accounted for!\n", len(opts.CustomAnalyzers))
 }

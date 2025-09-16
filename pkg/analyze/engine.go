@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/klog/v2"
 )
 
 // AnalysisEngine orchestrates analysis across multiple agents
@@ -374,12 +375,27 @@ func (e *DefaultAnalysisEngine) Analyze(ctx context.Context, bundle *SupportBund
 
 	// Generate analyzer specs from requirements (if any)
 	var analyzers []AnalyzerSpec
+	var conversionFailures []AnalyzerResult
 	if len(opts.CustomAnalyzers) > 0 {
 		// Convert existing analyzers to specs for agents
-		for _, analyzer := range opts.CustomAnalyzers {
+		for i, analyzer := range opts.CustomAnalyzers {
 			spec, err := e.convertAnalyzerToSpec(analyzer)
 			if err != nil {
-				continue // Log and continue with others
+				klog.Errorf("Failed to convert custom analyzer %d to spec: %v", i, err)
+				klog.Warningf("Creating failure result for analyzer %d. Supported types: ClusterVersion, DeploymentStatus", i)
+				klog.Warningf("To fix: Check your analyzer configuration and ensure it uses supported types")
+
+				// Create a failure result instead of skipping
+				failureResult := AnalyzerResult{
+					IsFail:     true,
+					Title:      fmt.Sprintf("Custom Analyzer %d - Conversion Failed", i),
+					Message:    fmt.Sprintf("Failed to convert analyzer to supported format: %v", err),
+					Category:   "configuration",
+					Confidence: 1.0,
+					AgentName:  "analyzer-converter",
+				}
+				conversionFailures = append(conversionFailures, failureResult)
+				continue
 			}
 			analyzers = append(analyzers, spec)
 		}
@@ -430,6 +446,11 @@ func (e *DefaultAnalysisEngine) Analyze(ctx context.Context, bundle *SupportBund
 
 		results.Metadata.Agents = append(results.Metadata.Agents, metadata)
 		results.Summary.AgentsUsed = append(results.Summary.AgentsUsed, agent.Name())
+	}
+
+	// Add conversion failures to results (analyzers that failed to convert)
+	for _, failure := range conversionFailures {
+		results.Results = append(results.Results, &failure)
 	}
 
 	// Calculate summary statistics
@@ -529,23 +550,177 @@ func (e *DefaultAnalysisEngine) applyCorrelations(results *AnalysisResult) {
 
 // convertAnalyzerToSpec converts legacy analyzer to new spec format
 func (e *DefaultAnalysisEngine) convertAnalyzerToSpec(analyzer *troubleshootv1beta2.Analyze) (AnalyzerSpec, error) {
+	if analyzer == nil {
+		return AnalyzerSpec{}, errors.New("analyzer cannot be nil")
+	}
+
 	spec := AnalyzerSpec{
 		Config: make(map[string]interface{}),
 	}
 
-	// Determine analyzer type and convert configuration
+	// Determine analyzer type and convert configuration - Supporting ALL 33+ analyzer types
 	switch {
+	// ✅ Cluster-level analyzers
 	case analyzer.ClusterVersion != nil:
 		spec.Name = "cluster-version"
 		spec.Type = "cluster"
 		spec.Config["analyzer"] = analyzer.ClusterVersion
+	case analyzer.ContainerRuntime != nil:
+		spec.Name = "container-runtime"
+		spec.Type = "cluster"
+		spec.Config["analyzer"] = analyzer.ContainerRuntime
+	case analyzer.Distribution != nil:
+		spec.Name = "distribution"
+		spec.Type = "cluster"
+		spec.Config["analyzer"] = analyzer.Distribution
+	case analyzer.NodeResources != nil:
+		spec.Name = "node-resources"
+		spec.Type = "cluster"
+		spec.Config["analyzer"] = analyzer.NodeResources
+		spec.Config["filePath"] = "cluster-resources/nodes.json" // Enhanced method expects this
+	case analyzer.NodeMetrics != nil:
+		spec.Name = "node-metrics"
+		spec.Type = "cluster"
+		spec.Config["analyzer"] = analyzer.NodeMetrics
+
+	// ✅ Workload analyzers
 	case analyzer.DeploymentStatus != nil:
 		spec.Name = "deployment-status"
 		spec.Type = "workload"
 		spec.Config["analyzer"] = analyzer.DeploymentStatus
-	// Add more cases as needed
+		// Enhanced method will auto-detect deployment files based on namespace
+	case analyzer.StatefulsetStatus != nil:
+		spec.Name = "statefulset-status"
+		spec.Type = "workload"
+		spec.Config["analyzer"] = analyzer.StatefulsetStatus
+	case analyzer.JobStatus != nil:
+		spec.Name = "job-status"
+		spec.Type = "workload"
+		spec.Config["analyzer"] = analyzer.JobStatus
+	case analyzer.ReplicaSetStatus != nil:
+		spec.Name = "replicaset-status"
+		spec.Type = "workload"
+		spec.Config["analyzer"] = analyzer.ReplicaSetStatus
+	case analyzer.ClusterPodStatuses != nil:
+		spec.Name = "cluster-pod-statuses"
+		spec.Type = "workload"
+		spec.Config["analyzer"] = analyzer.ClusterPodStatuses
+	case analyzer.ClusterContainerStatuses != nil:
+		spec.Name = "cluster-container-statuses"
+		spec.Type = "workload"
+		spec.Config["analyzer"] = analyzer.ClusterContainerStatuses
+
+	// ✅ Configuration analyzers
+	case analyzer.Secret != nil:
+		spec.Name = "secret"
+		spec.Type = "configuration"
+		spec.Config["analyzer"] = analyzer.Secret
+	case analyzer.ConfigMap != nil:
+		spec.Name = "configmap"
+		spec.Type = "configuration"
+		spec.Config["analyzer"] = analyzer.ConfigMap
+	case analyzer.ImagePullSecret != nil:
+		spec.Name = "image-pull-secret"
+		spec.Type = "configuration"
+		spec.Config["analyzer"] = analyzer.ImagePullSecret
+	case analyzer.StorageClass != nil:
+		spec.Name = "storage-class"
+		spec.Type = "configuration"
+		spec.Config["analyzer"] = analyzer.StorageClass
+	case analyzer.CustomResourceDefinition != nil:
+		spec.Name = "crd"
+		spec.Type = "configuration"
+		spec.Config["analyzer"] = analyzer.CustomResourceDefinition
+	case analyzer.ClusterResource != nil:
+		spec.Name = "cluster-resource"
+		spec.Type = "configuration"
+		spec.Config["analyzer"] = analyzer.ClusterResource
+
+	// ✅ Network analyzers
+	case analyzer.Ingress != nil:
+		spec.Name = "ingress"
+		spec.Type = "network"
+		spec.Config["analyzer"] = analyzer.Ingress
+	case analyzer.HTTP != nil:
+		spec.Name = "http"
+		spec.Type = "network"
+		spec.Config["analyzer"] = analyzer.HTTP
+
+	// ✅ Data analysis
+	case analyzer.TextAnalyze != nil:
+		spec.Name = "text-analyze"
+		spec.Type = "data"
+		spec.Config["analyzer"] = analyzer.TextAnalyze
+		// Enhanced method will auto-detect log files from TextAnalyze configuration
+	case analyzer.YamlCompare != nil:
+		spec.Name = "yaml-compare"
+		spec.Type = "data"
+		spec.Config["analyzer"] = analyzer.YamlCompare
+	case analyzer.JsonCompare != nil:
+		spec.Name = "json-compare"
+		spec.Type = "data"
+		spec.Config["analyzer"] = analyzer.JsonCompare
+
+	// ✅ Database analyzers
+	case analyzer.Postgres != nil:
+		spec.Name = "postgres"
+		spec.Type = "database"
+		spec.Config["analyzer"] = analyzer.Postgres
+	case analyzer.Mysql != nil:
+		spec.Name = "mysql"
+		spec.Type = "database"
+		spec.Config["analyzer"] = analyzer.Mysql
+	case analyzer.Mssql != nil:
+		spec.Name = "mssql"
+		spec.Type = "database"
+		spec.Config["analyzer"] = analyzer.Mssql
+	case analyzer.Redis != nil:
+		spec.Name = "redis"
+		spec.Type = "database"
+		spec.Config["analyzer"] = analyzer.Redis
+
+	// ✅ Storage analyzers
+	case analyzer.CephStatus != nil:
+		spec.Name = "ceph-status"
+		spec.Type = "storage"
+		spec.Config["analyzer"] = analyzer.CephStatus
+	case analyzer.Longhorn != nil:
+		spec.Name = "longhorn"
+		spec.Type = "storage"
+		spec.Config["analyzer"] = analyzer.Longhorn
+	case analyzer.Velero != nil:
+		spec.Name = "velero"
+		spec.Type = "storage"
+		spec.Config["analyzer"] = analyzer.Velero
+
+	// ✅ Infrastructure analyzers
+	case analyzer.RegistryImages != nil:
+		spec.Name = "registry-images"
+		spec.Type = "infrastructure"
+		spec.Config["analyzer"] = analyzer.RegistryImages
+	case analyzer.WeaveReport != nil:
+		spec.Name = "weave-report"
+		spec.Type = "infrastructure"
+		spec.Config["analyzer"] = analyzer.WeaveReport
+	case analyzer.Goldpinger != nil:
+		spec.Name = "goldpinger"
+		spec.Type = "infrastructure"
+		spec.Config["analyzer"] = analyzer.Goldpinger
+	case analyzer.Sysctl != nil:
+		spec.Name = "sysctl"
+		spec.Type = "infrastructure"
+		spec.Config["analyzer"] = analyzer.Sysctl
+	case analyzer.Certificates != nil:
+		spec.Name = "certificates"
+		spec.Type = "infrastructure"
+		spec.Config["analyzer"] = analyzer.Certificates
+	case analyzer.Event != nil:
+		spec.Name = "event"
+		spec.Type = "infrastructure"
+		spec.Config["analyzer"] = analyzer.Event
+
 	default:
-		return spec, errors.New("unsupported analyzer type")
+		return spec, errors.New("unknown analyzer type - this should not happen as all known types are now supported")
 	}
 
 	return spec, nil

@@ -13,6 +13,7 @@ import (
 
 	"github.com/pkg/errors"
 	analyzer "github.com/replicatedhq/troubleshoot/pkg/analyze"
+	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/replicatedhq/troubleshoot/pkg/constants"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -480,12 +481,22 @@ func (a *OllamaAgent) runLLMAnalysis(ctx context.Context, bundle *analyzer.Suppo
 	ctx, span := otel.Tracer(constants.LIB_TRACER_NAME).Start(ctx, fmt.Sprintf("OllamaAgent.%s", spec.Name))
 	defer span.End()
 
-	filePath, ok := spec.Config["filePath"].(string)
-	if !ok {
-		return nil, errors.New("filePath not specified in analyzer config")
+	// Smart file detection for enhanced analyzer compatibility
+	var filePath string
+	var fileData []byte
+	var exists bool
+
+	// First try to get explicit filePath from config
+	if fp, ok := spec.Config["filePath"].(string); ok {
+		filePath = fp
+		fileData, exists = bundle.Files[filePath]
 	}
 
-	fileData, exists := bundle.Files[filePath]
+	// If no explicit filePath, auto-detect based on analyzer type
+	if !exists {
+		filePath, fileData, exists = a.autoDetectFileForAnalyzer(bundle, spec)
+	}
+
 	if !exists {
 		result := &analyzer.AnalyzerResult{
 			Title:    spec.Name,
@@ -604,6 +615,115 @@ func (a *OllamaAgent) queryOllama(ctx context.Context, prompt string, promptConf
 	}
 
 	return response.Response, nil
+}
+
+// autoDetectFileForAnalyzer intelligently finds the appropriate file for each analyzer type
+func (a *OllamaAgent) autoDetectFileForAnalyzer(bundle *analyzer.SupportBundle, spec analyzer.AnalyzerSpec) (string, []byte, bool) {
+	switch spec.Name {
+	case "cluster-version":
+		// ClusterVersion analyzers expect cluster-info/cluster_version.json
+		if data, exists := bundle.Files["cluster-info/cluster_version.json"]; exists {
+			return "cluster-info/cluster_version.json", data, true
+		}
+		
+	case "node-resources", "node-resources-check":
+		// NodeResources analyzers expect cluster-resources/nodes.json
+		if data, exists := bundle.Files["cluster-resources/nodes.json"]; exists {
+			return "cluster-resources/nodes.json", data, true
+		}
+		
+	case "text-analyze":
+		// TextAnalyze analyzers - find log files based on traditional analyzer config
+		if traditionalAnalyzer, ok := spec.Config["analyzer"]; ok {
+			if textAnalyzer, ok := traditionalAnalyzer.(*troubleshootv1beta2.TextAnalyze); ok {
+				// Construct file path from CollectorName and FileName
+				var targetPath string
+				if textAnalyzer.CollectorName != "" {
+					targetPath = fmt.Sprintf("%s/%s", textAnalyzer.CollectorName, textAnalyzer.FileName)
+				} else {
+					targetPath = textAnalyzer.FileName
+				}
+				
+				if data, exists := bundle.Files[targetPath]; exists {
+					return targetPath, data, true
+				}
+				
+				// Try to find log files automatically
+				for path, data := range bundle.Files {
+					if strings.HasSuffix(path, ".log") && strings.Contains(path, textAnalyzer.FileName) {
+						return path, data, true
+					}
+				}
+			}
+		}
+		
+	case "postgres", "mysql", "redis", "mssql":
+		// Database analyzers - find connection files
+		if traditionalAnalyzer, ok := spec.Config["analyzer"]; ok {
+			if dbAnalyzer, ok := traditionalAnalyzer.(*troubleshootv1beta2.DatabaseAnalyze); ok {
+				if dbAnalyzer.FileName != "" {
+					if data, exists := bundle.Files[dbAnalyzer.FileName]; exists {
+						return dbAnalyzer.FileName, data, true
+					}
+				}
+				
+				// Auto-detect database files
+				for path, data := range bundle.Files {
+					if strings.Contains(path, spec.Name) && strings.HasSuffix(path, ".json") {
+						return path, data, true
+					}
+				}
+			}
+		}
+		
+	case "deployment-status":
+		// Deployment analyzers - find deployment files based on namespace
+		if traditionalAnalyzer, ok := spec.Config["analyzer"]; ok {
+			if deploymentAnalyzer, ok := traditionalAnalyzer.(*troubleshootv1beta2.DeploymentStatus); ok {
+				deploymentPath := fmt.Sprintf("cluster-resources/deployments/%s.json", deploymentAnalyzer.Namespace)
+				if data, exists := bundle.Files[deploymentPath]; exists {
+					return deploymentPath, data, true
+				}
+			}
+		}
+		
+	case "event", "event-analysis":
+		// Event analyzers expect cluster-resources/events.json
+		if data, exists := bundle.Files["cluster-resources/events.json"]; exists {
+			return "cluster-resources/events.json", data, true
+		}
+		
+	case "configmap":
+		// ConfigMap analyzers - find configmap files based on namespace
+		if traditionalAnalyzer, ok := spec.Config["analyzer"]; ok {
+			if configMapAnalyzer, ok := traditionalAnalyzer.(*troubleshootv1beta2.AnalyzeConfigMap); ok {
+				configMapPath := fmt.Sprintf("cluster-resources/configmaps/%s.json", configMapAnalyzer.Namespace)
+				if data, exists := bundle.Files[configMapPath]; exists {
+					return configMapPath, data, true
+				}
+			}
+		}
+		
+	case "secret":
+		// Secret analyzers - find secret files based on namespace
+		if traditionalAnalyzer, ok := spec.Config["analyzer"]; ok {
+			if secretAnalyzer, ok := traditionalAnalyzer.(*troubleshootv1beta2.AnalyzeSecret); ok {
+				secretPath := fmt.Sprintf("cluster-resources/secrets/%s.json", secretAnalyzer.Namespace)
+				if data, exists := bundle.Files[secretPath]; exists {
+					return secretPath, data, true
+				}
+			}
+		}
+	}
+
+	// Fallback: try to find any relevant file for this analyzer type
+	for path, data := range bundle.Files {
+		if strings.Contains(strings.ToLower(path), spec.Type) || strings.Contains(strings.ToLower(path), spec.Name) {
+			return path, data, true
+		}
+	}
+
+	return "", nil, false
 }
 
 // parseLLMResponse parses the LLM response into an AnalyzerResult
