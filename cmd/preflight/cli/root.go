@@ -88,6 +88,8 @@ that a cluster meets the requirements to run an application.`,
 	cmd.AddCommand(OciFetchCmd())
 	cmd.AddCommand(TemplateCmd())
 	cmd.AddCommand(DocsCmd())
+	cmd.AddCommand(ConvertCmd())
+
 	preflight.AddFlags(cmd.PersistentFlags())
 
 	// Dry run flag should be in cmd.PersistentFlags() flags made available to all subcommands
@@ -95,6 +97,10 @@ that a cluster meets the requirements to run an application.`,
 	cmd.Flags().Bool("dry-run", false, "print the preflight spec without running preflight checks")
 	cmd.Flags().Bool("no-uri", false, "When this flag is used, Preflight does not attempt to retrieve the spec referenced by the uri: field`")
 	cmd.Flags().Bool("auto-update", true, "enable automatic binary self-update check and install")
+
+	// Template values for v1beta3 specs
+	cmd.Flags().StringSlice("values", []string{}, "Path to YAML files containing template values for v1beta3 specs (can be used multiple times)")
+	cmd.Flags().StringSlice("set", []string{}, "Set template values on the command line for v1beta3 specs (can be used multiple times)")
 
 	k8sutil.AddFlags(cmd.Flags())
 
