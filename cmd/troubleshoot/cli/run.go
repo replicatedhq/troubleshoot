@@ -220,9 +220,10 @@ func runTroubleshoot(v *viper.Viper, args []string) error {
 	// Auto-upload if requested
 	if v.GetBool("auto-upload") {
 		licenseID := v.GetString("license-id")
+		appSlug := v.GetString("app-slug")
 
 		fmt.Fprintf(os.Stderr, "Auto-uploading bundle to replicated.app...\n")
-		if err := supportbundle.UploadBundleAutoDetect(response.ArchivePath, licenseID); err != nil {
+		if err := supportbundle.UploadBundleAutoDetect(response.ArchivePath, licenseID, appSlug); err != nil {
 			fmt.Fprintf(os.Stderr, "Auto-upload failed: %v\n", err)
 			fmt.Fprintf(os.Stderr, "You can manually upload the bundle using: support-bundle upload %s\n", response.ArchivePath)
 		}

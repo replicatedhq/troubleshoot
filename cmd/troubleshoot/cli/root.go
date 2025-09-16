@@ -120,8 +120,9 @@ If no arguments are provided, specs are automatically loaded from the cluster by
 	cmd.Flags().Bool("auto-update", true, "enable automatic binary self-update check and install")
 
 	// Auto-upload flags
-	cmd.Flags().Bool("auto-upload", false, "automatically upload bundle after generation (auto-detects license from bundle)")
+	cmd.Flags().Bool("auto-upload", false, "automatically upload bundle after generation (auto-detects license and app from bundle)")
 	cmd.Flags().String("license-id", "", "license ID for upload (auto-detected from bundle if not provided)")
+	cmd.Flags().String("app-slug", "", "application slug for upload (auto-detected from bundle if not provided)")
 
 	// Auto-discovery flags
 	cmd.Flags().Bool("auto", false, "enable auto-discovery of foundational collectors. When used with YAML specs, adds foundational collectors to YAML collectors. When used alone, collects only foundational data")

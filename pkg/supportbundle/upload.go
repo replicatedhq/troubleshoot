@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"strings"
 
 	"github.com/pkg/errors"
 )
@@ -53,21 +52,30 @@ func UploadToReplicatedApp(bundlePath, licenseID, appSlug string) error {
 	return nil
 }
 
-// UploadBundleAutoDetect uploads a support bundle with automatic license detection
-func UploadBundleAutoDetect(bundlePath string, providedLicenseID string) error {
+// UploadBundleAutoDetect uploads a support bundle with automatic license and app slug detection
+func UploadBundleAutoDetect(bundlePath string, providedLicenseID, providedAppSlug string) error {
 	licenseID := providedLicenseID
-	var appSlug string
 
-	// Try to extract license from bundle if not provided
+	// Always extract from bundle to get app slug (and license if not provided)
+	extractedLicense, extractedAppSlug, err := ExtractLicenseFromBundle(bundlePath)
+	if err != nil {
+		return errors.Wrap(err, "failed to extract data from bundle")
+	}
+
+	// Use provided license ID if given, otherwise use extracted one
 	if licenseID == "" {
-		extractedLicense, extractedAppSlug, err := ExtractLicenseFromBundle(bundlePath)
-		if err != nil {
-			return errors.Wrap(err, "failed to extract license from bundle")
-		}
 		if extractedLicense == "" {
 			return errors.New("could not find license ID in bundle. Please provide --license-id")
 		}
 		licenseID = extractedLicense
+	}
+
+	// Use provided app slug if given, otherwise use extracted one
+	appSlug := providedAppSlug
+	if appSlug == "" {
+		if extractedAppSlug == "" {
+			return errors.New("could not determine app slug from bundle. Please provide --app-slug")
+		}
 		appSlug = extractedAppSlug
 	}
 

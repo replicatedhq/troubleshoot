@@ -16,14 +16,17 @@ func UploadCmd() *cobra.Command {
 		Short: "Upload a support bundle to replicated.app",
 		Long: `Upload a support bundle to replicated.app for analysis and troubleshooting.
 
-This command automatically extracts the license ID from the bundle if not provided.
+This command automatically extracts the license ID and app slug from the bundle if not provided.
 
 Examples:
-  # Auto-detect license from bundle
+  # Auto-detect license and app from bundle
   support-bundle upload bundle.tar.gz
 
   # Specify license ID explicitly
-  support-bundle upload bundle.tar.gz --license-id YOUR_LICENSE_ID`,
+  support-bundle upload bundle.tar.gz --license-id YOUR_LICENSE_ID
+
+  # Specify both license and app
+  support-bundle upload bundle.tar.gz --license-id YOUR_LICENSE_ID --app-slug my-app`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			v := viper.GetViper()
 			bundlePath := args[0]
@@ -35,9 +38,10 @@ Examples:
 
 			// Get upload parameters
 			licenseID := v.GetString("license-id")
+			appSlug := v.GetString("app-slug")
 
 			// Use auto-detection for uploads
-			if err := supportbundle.UploadBundleAutoDetect(bundlePath, licenseID); err != nil {
+			if err := supportbundle.UploadBundleAutoDetect(bundlePath, licenseID, appSlug); err != nil {
 				return errors.Wrap(err, "upload failed")
 			}
 
@@ -46,6 +50,7 @@ Examples:
 	}
 
 	cmd.Flags().String("license-id", "", "license ID for authentication (auto-detected from bundle if not provided)")
+	cmd.Flags().String("app-slug", "", "application slug (auto-detected from bundle if not provided)")
 
 	return cmd
 }
