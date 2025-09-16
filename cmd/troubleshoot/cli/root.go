@@ -104,8 +104,6 @@ If no arguments are provided, specs are automatically loaded from the cluster by
 	cmd.AddCommand(Redact())
 	cmd.AddCommand(Diff())
 	cmd.AddCommand(UploadCmd())
-	cmd.AddCommand(LoginCmd())
-	cmd.AddCommand(LogoutCmd())
 	cmd.AddCommand(util.VersionCmd())
 
 	cmd.Flags().StringSlice("redactors", []string{}, "names of the additional redactors to use")
@@ -122,9 +120,8 @@ If no arguments are provided, specs are automatically loaded from the cluster by
 	cmd.Flags().Bool("auto-update", true, "enable automatic binary self-update check and install")
 
 	// Auto-upload flags
-	cmd.Flags().Bool("auto-upload", false, "automatically upload bundle after generation (requires app-id and token)")
-	cmd.Flags().String("upload-endpoint", "https://api.replicated.com/vendor", "API endpoint for auto-upload (default: https://api.replicated.com/vendor)")
-	cmd.Flags().String("app-id", "", "app ID to associate the bundle with (required for auto-upload)")
+	cmd.Flags().Bool("auto-upload", false, "automatically upload bundle after generation (auto-detects license from bundle)")
+	cmd.Flags().String("license-id", "", "license ID for upload (auto-detected from bundle if not provided)")
 
 	// Auto-discovery flags
 	cmd.Flags().Bool("auto", false, "enable auto-discovery of foundational collectors. When used with YAML specs, adds foundational collectors to YAML collectors. When used alone, collects only foundational data")

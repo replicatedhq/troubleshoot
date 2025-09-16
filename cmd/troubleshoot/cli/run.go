@@ -24,7 +24,6 @@ import (
 	"github.com/replicatedhq/troubleshoot/pkg/collect"
 	"github.com/replicatedhq/troubleshoot/pkg/constants"
 	"github.com/replicatedhq/troubleshoot/pkg/convert"
-	"github.com/replicatedhq/troubleshoot/pkg/credentials"
 	"github.com/replicatedhq/troubleshoot/pkg/httputil"
 	"github.com/replicatedhq/troubleshoot/pkg/k8sutil"
 	"github.com/replicatedhq/troubleshoot/pkg/loader"
@@ -220,25 +219,12 @@ func runTroubleshoot(v *viper.Viper, args []string) error {
 
 	// Auto-upload if requested
 	if v.GetBool("auto-upload") {
-		endpoint := v.GetString("upload-endpoint")
-		if endpoint == "" {
-			endpoint = "https://api.replicated.com/vendor"
-		}
-		appID := v.GetString("app-id")
-		var token string
-		if creds, cerr := credentials.GetCurrentCredentials(); cerr == nil {
-			token = creds.APIToken
-		}
+		licenseID := v.GetString("license-id")
 
-		if token == "" || appID == "" {
-			fmt.Fprintf(os.Stderr, "Warning: auto-upload requires --app-id and authentication (run 'support-bundle login' or set TROUBLESHOOT_TOKEN)\n")
-		} else {
-			fmt.Fprintf(os.Stderr, "Uploading bundle to %s...\n", endpoint)
-			if err := supportbundle.UploadToVandoor(response.ArchivePath, endpoint, token, appID); err != nil {
-				fmt.Fprintf(os.Stderr, "Upload failed: %v\n", err)
-			} else {
-				fmt.Fprintf(os.Stderr, "Bundle uploaded successfully!\n")
-			}
+		fmt.Fprintf(os.Stderr, "Auto-uploading bundle to replicated.app...\n")
+		if err := supportbundle.UploadBundleAutoDetect(response.ArchivePath, licenseID); err != nil {
+			fmt.Fprintf(os.Stderr, "Auto-upload failed: %v\n", err)
+			fmt.Fprintf(os.Stderr, "You can manually upload the bundle using: support-bundle upload %s\n", response.ArchivePath)
 		}
 	}
 

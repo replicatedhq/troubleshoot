@@ -1,11 +1,9 @@
 package cli
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/pkg/errors"
-	"github.com/replicatedhq/troubleshoot/pkg/credentials"
 	"github.com/replicatedhq/troubleshoot/pkg/supportbundle"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -15,67 +13,39 @@ func UploadCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "upload [bundle-file]",
 		Args:  cobra.ExactArgs(1),
-		Short: "Upload an existing support bundle to a vendor portal",
-		Long: `Upload a support bundle archive to a vendor portal.
+		Short: "Upload a support bundle to replicated.app",
+		Long: `Upload a support bundle to replicated.app for analysis and troubleshooting.
 
-This command takes an existing support bundle .tar.gz file and uploads it to the specified vendor portal endpoint.
+This command automatically extracts the license ID from the bundle if not provided.
 
 Examples:
-  # Upload a bundle to production (default endpoint)
-  support-bundle upload --app-id my-app support-bundle.tar.gz
+  # Auto-detect license from bundle
+  support-bundle upload bundle.tar.gz
 
-  # Upload to staging with custom token
-  support-bundle upload --endpoint https://api.staging.replicated.com/vendor --token my-token --app-id my-app support-bundle.tar.gz
-
-  # Upload using environment variable for token
-  TROUBLESHOOT_TOKEN=my-token support-bundle upload --app-id my-app support-bundle.tar.gz`,
+  # Specify license ID explicitly
+  support-bundle upload bundle.tar.gz --license-id YOUR_LICENSE_ID`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			v := viper.GetViper()
 			bundlePath := args[0]
-
-			// Get upload parameters
-			endpoint := v.GetString("endpoint")
-			token := v.GetString("token")
-			appID := v.GetString("app-id")
-
-			// Resolve token: flag -> env -> saved credentials
-			if token == "" {
-				creds, cerr := credentials.GetCurrentCredentials()
-				if cerr == nil {
-					token = creds.APIToken
-				} else if cerr != credentials.ErrCredentialsNotFound {
-					return cerr
-				}
-			}
-			if token == "" {
-				return errors.New("authentication required: run 'support-bundle login' or provide --token (or set TROUBLESHOOT_TOKEN)")
-			}
-			if appID == "" {
-				return errors.New("--app-id is required")
-			}
 
 			// Check if bundle file exists
 			if _, err := os.Stat(bundlePath); os.IsNotExist(err) {
 				return errors.Errorf("bundle file does not exist: %s", bundlePath)
 			}
 
-			// Upload the bundle
-			fmt.Fprintf(os.Stderr, "Uploading bundle %s to %s...\n", bundlePath, endpoint)
-			if err := supportbundle.UploadToVandoor(bundlePath, endpoint, token, appID); err != nil {
+			// Get upload parameters
+			licenseID := v.GetString("license-id")
+
+			// Use auto-detection for uploads
+			if err := supportbundle.UploadBundleAutoDetect(bundlePath, licenseID); err != nil {
 				return errors.Wrap(err, "upload failed")
 			}
 
-			fmt.Fprintf(os.Stderr, "Bundle uploaded successfully!\n")
 			return nil
 		},
 	}
 
-	cmd.Flags().String("endpoint", "https://api.replicated.com/vendor", "vendor API endpoint (default: https://api.replicated.com/vendor)")
-	cmd.Flags().String("token", "", "API token for authentication (or set TROUBLESHOOT_TOKEN env var)")
-	cmd.Flags().String("app-id", "", "app ID to associate the bundle with")
-
-	// endpoint defaults to production; can be overridden
-	cmd.MarkFlagRequired("app-id")
+	cmd.Flags().String("license-id", "", "license ID for authentication (auto-detected from bundle if not provided)")
 
 	return cmd
 }

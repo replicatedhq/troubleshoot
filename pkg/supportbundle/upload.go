@@ -1,132 +1,83 @@
 package supportbundle
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/pkg/errors"
 )
 
-type VandoorUploadResponse struct {
-	BundleID string `json:"bundleId"`
-	URL      string `json:"url"`
-}
-
-// UploadToVandoor uploads a support bundle to vandoor using the 3-step process:
-// 1. Get presigned URL from vandoor API
-// 2. Upload file to S3 using presigned URL
-// 3. Mark bundle as uploaded in vandoor API
-func UploadToVandoor(bundlePath, endpoint, token, appID string) error {
-	// Step 1: Get presigned URL
-	uploadResp, err := getVandoorUploadURL(endpoint, token)
-	if err != nil {
-		return errors.Wrap(err, "get upload URL")
-	}
-
-	// Step 2: Upload file to S3
-	if err := uploadFileToS3(bundlePath, uploadResp.URL); err != nil {
-		return errors.Wrap(err, "upload to S3")
-	}
-
-	// Step 3: Mark as uploaded
-	return markVandoorBundleUploaded(endpoint, token, uploadResp.BundleID, appID)
-}
-
-// getVandoorUploadURL calls GET /v3/supportbundle/upload-url
-func getVandoorUploadURL(endpoint, token string) (*VandoorUploadResponse, error) {
-	req, err := http.NewRequest("GET", endpoint+"/v3/supportbundle/upload-url", nil)
-	if err != nil {
-		return nil, errors.Wrap(err, "create request")
-	}
-
-	req.Header.Set("Authorization", token)
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, errors.Wrap(err, "execute request")
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode >= 300 {
-		return nil, fmt.Errorf("API request failed: HTTP %d", resp.StatusCode)
-	}
-
-	var uploadResp VandoorUploadResponse
-	if err := json.NewDecoder(resp.Body).Decode(&uploadResp); err != nil {
-		return nil, errors.Wrap(err, "decode response")
-	}
-
-	return &uploadResp, nil
-}
-
-// uploadFileToS3 uploads the bundle file to the presigned S3 URL
-func uploadFileToS3(bundlePath, s3URL string) error {
+// UploadToReplicatedApp uploads a support bundle directly to replicated.app
+// using the app slug as the upload path
+func UploadToReplicatedApp(bundlePath, licenseID, appSlug string) error {
+	// Open the bundle file
 	file, err := os.Open(bundlePath)
 	if err != nil {
-		return errors.Wrap(err, "open file")
+		return errors.Wrap(err, "failed to open bundle file")
 	}
 	defer file.Close()
 
 	stat, err := file.Stat()
 	if err != nil {
-		return errors.Wrap(err, "stat file")
+		return errors.Wrap(err, "failed to stat file")
 	}
 
-	req, err := http.NewRequest("PUT", s3URL, file)
+	// Build the upload URL using the app slug
+	uploadURL := fmt.Sprintf("https://replicated.app/supportbundle/upload/%s", appSlug)
+
+	// Create the request
+	req, err := http.NewRequest("POST", uploadURL, file)
 	if err != nil {
-		return errors.Wrap(err, "create request")
+		return errors.Wrap(err, "failed to create request")
 	}
 
+	// Set headers
+	req.Header.Set("Authorization", licenseID)
 	req.Header.Set("Content-Type", "application/gzip")
 	req.ContentLength = stat.Size()
 
+	// Execute the request
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		return errors.Wrap(err, "execute request")
+		return errors.Wrap(err, "failed to upload bundle")
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode >= 300 {
-		return fmt.Errorf("S3 upload failed: HTTP %d", resp.StatusCode)
+		return fmt.Errorf("upload failed with status: %d", resp.StatusCode)
 	}
 
 	return nil
 }
 
-// markVandoorBundleUploaded calls POST /v3/supportbundle/{bundleId}/uploaded
-func markVandoorBundleUploaded(endpoint, token, bundleID, appID string) error {
-	body := map[string]string{
-		"app_id": appID,
-	}
-	jsonBody, err := json.Marshal(body)
-	if err != nil {
-		return errors.Wrap(err, "marshal body")
-	}
+// UploadBundleAutoDetect uploads a support bundle with automatic license detection
+func UploadBundleAutoDetect(bundlePath string, providedLicenseID string) error {
+	licenseID := providedLicenseID
+	var appSlug string
 
-	url := endpoint + "/v3/supportbundle/" + bundleID + "/uploaded"
-	req, err := http.NewRequest("POST", url, bytes.NewReader(jsonBody))
-	if err != nil {
-		return errors.Wrap(err, "create request")
-	}
-
-	req.Header.Set("Authorization", token)
-	req.Header.Set("Content-Type", "application/json")
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return errors.Wrap(err, "execute request")
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode >= 300 {
-		return fmt.Errorf("mark uploaded failed: HTTP %d", resp.StatusCode)
+	// Try to extract license from bundle if not provided
+	if licenseID == "" {
+		extractedLicense, extractedAppSlug, err := ExtractLicenseFromBundle(bundlePath)
+		if err != nil {
+			return errors.Wrap(err, "failed to extract license from bundle")
+		}
+		if extractedLicense == "" {
+			return errors.New("could not find license ID in bundle. Please provide --license-id")
+		}
+		licenseID = extractedLicense
+		appSlug = extractedAppSlug
 	}
 
+	// Upload the bundle
+	fmt.Printf("Uploading support bundle to replicated.app...\n")
+	if err := UploadToReplicatedApp(bundlePath, licenseID, appSlug); err != nil {
+		return errors.Wrap(err, "failed to upload bundle")
+	}
+
+	fmt.Printf("Successfully uploaded support bundle\n")
 	return nil
 }
+
