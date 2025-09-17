@@ -111,6 +111,8 @@ func extractDocs(templateFiles []string, valuesFiles []string, setValues []strin
 		useHelm := shouldUseHelmEngine(string(templateContent))
 		var rendered string
 		if useHelm {
+			// Seed default-false for referenced boolean values to avoid nil map errors
+			preflight.SeedDefaultBooleans(string(templateContent), values)
 			rendered, err = preflight.RenderWithHelmTemplate(string(templateContent), values)
 			if err != nil {
 				execValues := legacyContext(values)
