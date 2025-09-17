@@ -1,0 +1,229 @@
+clusterVersion:
+  enabled: true
+  minVersion: "1.24.0"
+  recommendedVersion: "1.28.0"
+
+crd:
+  enabled: true
+  name: "samples.mycompany.com"
+
+ingress:
+  enabled: true
+  namespace: "default"
+  name: "example"
+
+secret:
+  enabled: true
+  namespace: "default"
+  name: "my-secret"
+  key: ""
+
+configMap:
+  enabled: true
+  namespace: "kube-public"
+  name: "cluster-info"
+  key: ""
+
+imagePullSecret:
+  enabled: true
+  registry: "registry.example.com"
+
+workloads:
+  deployments:
+    enabled: true
+    namespace: "default"
+    name: "example-deploy"
+    minReady: 1
+  statefulsets:
+    enabled: true
+    namespace: "default"
+    name: "example-sts"
+    minReady: 1
+  jobs:
+    enabled: true
+    namespace: "default"
+    name: "example-job"
+  replicasets:
+    enabled: true
+    namespace: "default"
+    name: "example-rs"
+    minReady: 1
+
+clusterPodStatuses:
+  enabled: true
+  namespaces:
+    - "default"
+    - "kube-system"
+
+clusterContainerStatuses:
+  enabled: true
+  namespaces:
+    - "default"
+    - "kube-system"
+  restartCount: 3
+
+containerRuntime:
+  enabled: true
+
+distribution:
+  enabled: true
+  supported: ["eks", "gke", "aks", "kubeadm"]
+  unsupported: []
+
+nodeResources:
+  count:
+    enabled: true
+    min: 1
+    recommended: 3
+  cpu:
+    enabled: true
+    min: "4"
+  memory:
+    enabled: true
+    minGi: 8
+    recommendedGi: 16
+  ephemeral:
+    enabled: true
+    minGi: 20
+    recommendedGi: 50
+
+textAnalyze:
+  enabled: true
+  fileName: "logs/*.log"
+  regex: "error"
+
+yamlCompare:
+  enabled: true
+  fileName: "kube-system/sample.yaml"
+  path: "spec.replicas"
+  value: "3"
+
+jsonCompare:
+  enabled: true
+  fileName: "custom/sample.json"
+  jsonPath: "$.items[0].status"
+  value: "Running"
+
+databases:
+  postgres:
+    enabled: true
+    collectorName: "postgres"
+    uri: "postgres://user:pass@postgres:5432/db?sslmode=disable"
+    tls:
+      skipVerify: true
+      secret:
+        name: ""
+        namespace: ""
+  mssql:
+    enabled: true
+    collectorName: "mssql"
+    uri: "sqlserver://user:pass@mssql:1433?database=db"
+  mysql:
+    enabled: true
+    collectorName: "mysql"
+    uri: "mysql://user:pass@tcp(mysql:3306)/db"
+  redis:
+    enabled: true
+    collectorName: "redis"
+    uri: "redis://redis:6379"
+
+cephStatus:
+  enabled: true
+  namespace: "rook-ceph"
+  timeout: "30s"
+
+velero:
+  enabled: true
+
+longhorn:
+  enabled: true
+  namespace: "longhorn-system"
+  timeout: "30s"
+
+registryImages:
+  enabled: true
+  collectorName: "images"
+  namespace: "default"
+  imagePullSecret:
+    name: ""
+    data: {}
+  images:
+    - "alpine:3.19"
+    - "busybox:1.36"
+
+http:
+  enabled: true
+  collectorName: "http"
+  get:
+    url: "https://example.com/healthz"
+    timeout: "10s"
+    insecureSkipVerify: true
+    headers: {}
+  post:
+    url: ""
+    timeout: ""
+    insecureSkipVerify: true
+    headers: {}
+    body: ""
+
+weaveReport:
+  enabled: true
+  reportFileGlob: "weave/*.json"
+
+sysctl:
+  enabled: true
+  namespace: "default"
+  image: "busybox:1.36"
+  imagePullPolicy: "IfNotPresent"
+
+clusterResource:
+  enabled: true
+  kind: "Deployment"
+  clusterScoped: true
+  namespace: "default"
+  name: "example-deploy"
+  yamlPath: "spec.replicas"
+  expectedValue: "3"
+  regex: ""
+
+certificates:
+  enabled: true
+  secrets:
+    - name: ""
+      namespaces: []
+  configMaps:
+    - name: ""
+      namespaces: []
+
+goldpinger:
+  enabled: true
+  collectorName: "goldpinger"
+  filePath: "goldpinger/check-all.json"
+  namespace: "default"
+  collectDelay: "30s"
+  podLaunch:
+    namespace: ""
+    image: ""
+    imagePullSecret:
+      name: ""
+    serviceAccountName: ""
+
+event:
+  enabled: true
+  collectorName: "events"
+  namespace: "default"
+  kind: "Pod"
+  reason: "Unhealthy"
+  regex: ""
+
+nodeMetrics:
+  enabled: true
+  collectorName: "node-metrics"
+  filters:
+    pvc:
+      nameRegex: ""
+      namespace: ""
+  nodeNames: []
+  selector: []
+
+

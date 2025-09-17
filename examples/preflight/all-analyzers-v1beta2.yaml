@@ -1,0 +1,483 @@
+apiVersion: troubleshoot.sh/v1beta2
+kind: Preflight
+metadata:
+  name: all-analyzers-v1beta2
+spec:
+  collectors:
+    # Generic cluster resources (used by several analyzers like events)
+    - clusterResources:
+        collectorName: cluster-resources
+
+    # Text/YAML/JSON inputs for textAnalyze/yamlCompare/jsonCompare
+    - data:
+        name: config/replicas.txt
+        data: "5"
+    - data:
+        name: files/example.yaml
+        data: |
+          apiVersion: v1
+          kind: ConfigMap
+          metadata:
+            name: sample
+          data:
+            key: value
+    - data:
+        name: files/example.json
+        data: '{"foo": {"bar": "baz"}}'
+
+    # Database connection collectors (postgres, mssql, mysql, redis)
+    - postgres:
+        collectorName: pg
+        uri: postgresql://user:password@hostname:5432/defaultdb?sslmode=disable
+    - mssql:
+        collectorName: mssql
+        uri: sqlserver://user:password@hostname:1433/master
+    - mysql:
+        collectorName: mysql
+        uri: mysql://user:password@hostname:3306/defaultdb
+    - redis:
+        collectorName: redis
+        uri: redis://:password@hostname:6379
+
+    # Registry images (used by registryImages analyzer)
+    - registryImages:
+        collectorName: registry-images
+        namespace: default
+        images:
+          - nginx:1.25
+          - alpine:3.19
+
+    # HTTP checks (used by http analyzer)
+    - http:
+        collectorName: http-check
+        get:
+          url: https://example.com/healthz
+          timeout: 5s
+
+    # Node metrics (used by nodeMetrics analyzer)
+    - nodeMetrics:
+        collectorName: node-metrics
+
+    # Sysctl (used by sysctl analyzer)
+    - sysctl:
+        collectorName: sysctl
+        namespace: default
+        image: busybox
+
+    # Certificates (used by certificates analyzer)
+    - certificates:
+        collectorName: certs
+        secrets:
+          - namespaces: ["default"]
+        configMaps:
+          - namespaces: ["default"]
+
+    # Goldpinger (used by goldpinger analyzer)
+    - goldpinger:
+        collectorName: goldpinger
+        namespace: default
+        collectDelay: 10s
+
+  analyzers:
+    # Kubernetes version
+    - clusterVersion:
+        checkName: Kubernetes version
+        outcomes:
+          - fail:
+              when: "< 1.20.0"
+              message: Requires at least Kubernetes 1.20.0
+          - warn:
+              when: "< 1.22.0"
+              message: Recommended to use Kubernetes 1.22.0 or later
+          - pass:
+              when: ">= 1.22.0"
+              message: Meets recommended and required versions
+
+    # StorageClass
+    - storageClass:
+        checkName: Default StorageClass
+        storageClassName: "default"
+        outcomes:
+          - fail:
+              message: Default StorageClass not found
+          - pass:
+              message: Default StorageClass present
+
+    # CustomResourceDefinition
+    - customResourceDefinition:
+        checkName: Required CRD
+        customResourceDefinitionName: widgets.example.com
+        outcomes:
+          - fail:
+              message: Required CRD not found
+          - pass:
+              message: Required CRD present
+
+    # Ingress
+    - ingress:
+        checkName: Ingress exists
+        namespace: default
+        ingressName: my-app-ingress
+        outcomes:
+          - fail:
+              message: Expected ingress not found
+          - pass:
+              message: Expected ingress present
+
+    # Secret
+    - secret:
+        checkName: Required secret
+        namespace: default
+        secretName: my-secret
+        outcomes:
+          - fail:
+              message: Required secret not found
+          - pass:
+              message: Required secret present
+
+    # ConfigMap
+    - configMap:
+        checkName: Required ConfigMap
+        namespace: default
+        configMapName: my-config
+        outcomes:
+          - fail:
+              message: Required ConfigMap not found
+          - pass:
+              message: Required ConfigMap present
+
+    # ImagePullSecret presence
+    - imagePullSecret:
+        checkName: Registry credentials
+        registryName: quay.io
+        outcomes:
+          - fail:
+              message: Cannot pull from registry; credentials missing
+          - pass:
+              message: Found credentials for registry
+
+    # Deployment status
+    - deploymentStatus:
+        checkName: Deployment ready
+        namespace: default
+        name: my-deployment
+        outcomes:
+          - fail:
+              when: absent
+              message: Deployment not found
+          - fail:
+              when: "< 1"
+              message: Deployment has insufficient ready replicas
+          - pass:
+              when: ">= 1"
+              message: Deployment has sufficient ready replicas
+
+    # StatefulSet status
+    - statefulsetStatus:
+        checkName: StatefulSet ready
+        namespace: default
+        name: my-statefulset
+        outcomes:
+          - fail:
+              when: absent
+              message: StatefulSet not found
+          - fail:
+              when: "< 1"
+              message: StatefulSet has insufficient ready replicas
+          - pass:
+              when: ">= 1"
+              message: StatefulSet has sufficient ready replicas
+
+    # Job status
+    - jobStatus:
+        checkName: Job completed
+        namespace: default
+        name: my-job
+        outcomes:
+          - fail:
+              when: absent
+              message: Job not found
+          - fail:
+              when: "= 0"
+              message: Job has no successful completions
+          - pass:
+              when: "> 0"
+              message: Job completed successfully
+
+    # ReplicaSet status
+    - replicasetStatus:
+        checkName: ReplicaSet ready
+        namespace: default
+        name: my-replicaset
+        outcomes:
+          - fail:
+              message: ReplicaSet is not ready
+          - pass:
+              when: ">= 1"
+              message: ReplicaSet has sufficient ready replicas
+
+    # Cluster pod statuses
+    - clusterPodStatuses:
+        checkName: Pod statuses
+        namespaces:
+          - kube-system
+        outcomes:
+          - warn:
+              message: Some pods are not ready
+          - pass:
+              message: All pods are ready
+
+    # Cluster container statuses (restarts)
+    - clusterContainerStatuses:
+        checkName: Container restarts
+        namespaces:
+          - kube-system
+        restartCount: 3
+        outcomes:
+          - warn:
+              message: One or more containers exceed restart threshold
+          - pass:
+              message: Container restarts are within thresholds
+
+    # Container runtime
+    - containerRuntime:
+        checkName: Runtime must be containerd
+        outcomes:
+          - pass:
+              when: "== containerd"
+              message: containerd runtime detected
+          - fail:
+              message: Unsupported container runtime; containerd required
+
+    # Distribution
+    - distribution:
+        checkName: Supported distribution
+        outcomes:
+          - fail:
+              when: "== docker-desktop"
+              message: Docker Desktop is not supported
+          - pass:
+              when: "== eks"
+              message: EKS is supported
+          - warn:
+              message: Unable to determine the distribution
+
+    # Node resources - cluster size
+    - nodeResources:
+        checkName: Node count
+        outcomes:
+          - fail:
+              when: "count() < 3"
+              message: Requires at least 3 nodes
+          - warn:
+              when: "count() < 5"
+              message: Recommended at least 5 nodes
+          - pass:
+              message: Cluster has sufficient nodes
+
+    # Node resources - per-node memory
+    - nodeResources:
+        checkName: Per-node memory
+        outcomes:
+          - fail:
+              when: "min(memoryCapacity) < 8Gi"
+              message: All nodes must have at least 8 GiB
+          - pass:
+              message: All nodes meet recommended memory
+
+    # Text analyze (regex on collected file)
+    - textAnalyze:
+        checkName: Text analyze
+        fileName: config/replicas.txt
+        regexGroups: '(?P<Replicas>\d+)'
+        outcomes:
+          - fail:
+              when: "Replicas < 5"
+              message: Not enough replicas
+          - pass:
+              message: Replica count is sufficient
+
+    # YAML compare
+    - yamlCompare:
+        checkName: YAML compare
+        fileName: files/example.yaml
+        path: data.key
+        value: value
+        outcomes:
+          - fail:
+              message: YAML value does not match expected
+          - pass:
+              message: YAML value matches expected
+
+    # JSON compare
+    - jsonCompare:
+        checkName: JSON compare
+        fileName: files/example.json
+        jsonPath: $.foo.bar
+        value: baz
+        outcomes:
+          - fail:
+              message: JSON value does not match expected
+          - pass:
+              message: JSON value matches expected
+
+    # Postgres
+    - postgres:
+        checkName: Postgres checks
+        collectorName: pg
+        outcomes:
+          - fail:
+              when: "connected == false"
+              message: Cannot connect to postgres server
+          - pass:
+              message: Postgres connection checks out
+
+    # MSSQL
+    - mssql:
+        checkName: MSSQL checks
+        collectorName: mssql
+        outcomes:
+          - fail:
+              when: "connected == false"
+              message: Cannot connect to SQL Server
+          - pass:
+              message: MSSQL connection checks out
+
+    # MySQL
+    - mysql:
+        checkName: MySQL checks
+        collectorName: mysql
+        outcomes:
+          - fail:
+              when: "connected == false"
+              message: Cannot connect to MySQL server
+          - pass:
+              message: MySQL connection checks out
+
+    # Redis
+    - redis:
+        checkName: Redis checks
+        collectorName: redis
+        outcomes:
+          - fail:
+              when: "connected == false"
+              message: Cannot connect to Redis server
+          - pass:
+              message: Redis connection checks out
+
+    # Ceph status
+    - cephStatus:
+        checkName: Ceph cluster health
+        namespace: rook-ceph
+        outcomes:
+          - fail:
+              message: Ceph is not healthy
+          - pass:
+              message: Ceph is healthy
+
+    # Velero
+    - velero:
+        checkName: Velero installed
+
+    # Longhorn
+    - longhorn:
+        checkName: Longhorn health
+        namespace: longhorn-system
+        outcomes:
+          - fail:
+              message: Longhorn is not healthy
+          - pass:
+              message: Longhorn is healthy
+
+    # Registry images availability
+    - registryImages:
+        checkName: Registry image availability
+        collectorName: registry-images
+        outcomes:
+          - fail:
+              message: One or more images are not available
+          - pass:
+              message: All images are available
+
+    # Weave report (expects weave report files to be present if collected)
+    - weaveReport:
+        checkName: Weave report
+        reportFileGlob: kots/kurl/weave/kube-system/*/weave-report-stdout.txt
+
+    # Sysctl (cluster-level)
+    - sysctl:
+        checkName: Sysctl settings
+        outcomes:
+          - warn:
+              message: One or more sysctl values do not meet recommendations
+          - pass:
+              message: Sysctl values meet recommendations
+
+    # Cluster resource YAML field compare
+    - clusterResource:
+        checkName: Cluster resource value
+        kind: Namespace
+        clusterScoped: true
+        name: kube-system
+        yamlPath: metadata.name
+        expectedValue: kube-system
+        outcomes:
+          - fail:
+              message: Cluster resource field does not match expected value
+          - pass:
+              message: Cluster resource field matches expected value
+
+    # Certificates analyzer
+    - certificates:
+        checkName: Certificates validity
+        outcomes:
+          - warn:
+              message: One or more certificates may be invalid or expiring soon
+          - pass:
+              message: Certificates are valid
+
+    # Goldpinger analyzer
+    - goldpinger:
+        checkName: Goldpinger report
+        collectorName: goldpinger
+        filePath: goldpinger/report.json
+        outcomes:
+          - fail:
+              message: Goldpinger indicates network issues
+          - pass:
+              message: Goldpinger indicates healthy networking
+
+    # Event analyzer (requires events in clusterResources)
+    - event:
+        checkName: Events
+        collectorName: cluster-resources
+        namespace: default
+        reason: Failed
+        regex: ".*"
+        outcomes:
+          - fail:
+              message: Critical events detected
+          - pass:
+              message: No critical events detected
+
+    # Node metrics analyzer
+    - nodeMetrics:
+        checkName: Node metrics thresholds
+        collectorName: node-metrics
+        outcomes:
+          - warn:
+              message: Node metrics exceed warning thresholds
+          - pass:
+              message: Node metrics within thresholds
+
+    # HTTP analyzer (cluster)
+    - http:
+        checkName: HTTP checks
+        collectorName: http-check
+        outcomes:
+          - fail:
+              message: One or more HTTP checks failed
+          - pass:
+              message: All HTTP checks passed
+
+

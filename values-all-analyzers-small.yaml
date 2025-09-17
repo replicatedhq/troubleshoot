@@ -1,0 +1,4 @@
+clusterVersion:
+  enabled: true
+  minVersion: "1.24.0"
+  recommendedVersion: "1.28.0"
