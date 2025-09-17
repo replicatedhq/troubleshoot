@@ -8,3 +8,9 @@ kubernetes:
 storage:
   enabled: true
   className: "default"
+
+  nodeChecks:
+  cpu:
+    enabled: false
+  ephemeral:
+    enabled: false

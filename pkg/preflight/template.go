@@ -47,6 +47,12 @@ func RunTemplate(templateFile string, valuesFiles []string, setValues []string, 
 	apiVersion := detectAPIVersion(string(templateContent))
 	var rendered string
 	if strings.HasSuffix(apiVersion, "/v1beta3") || apiVersion == "v1beta3" {
+		// For v1beta3 templates, pre-seed default false values for any referenced
+		// .Values.*.(enabled|create) booleans to avoid nil pointer dereferences.
+		SeedDefaultBooleans(string(templateContent), values)
+		// Also ensure parent maps exist for all .Values.<path> references so nested lookups
+		// don't panic when optional maps are omitted from values files.
+		SeedParentMapsForValueRefs(string(templateContent), values)
 		// Helm for v1beta3
 		rendered, err = RenderWithHelmTemplate(string(templateContent), values)
 		if err != nil {

@@ -1,7 +1,7 @@
 # Values for v1beta3-templated-from-v1beta2.yaml
 
 kubernetes:
-  enabled: false
+  enabled: true
   minVersion: "1.22.0"
   recommendedVersion: "1.29.0"
 

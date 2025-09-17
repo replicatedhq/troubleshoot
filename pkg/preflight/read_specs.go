@@ -150,6 +150,10 @@ func preprocessV1Beta3Specs(args []string) ([]string, []string, error) {
 			if strings.Contains(contentStr, "apiVersion: troubleshoot.sh/v1beta3") &&
 				strings.Contains(contentStr, "{{") && strings.Contains(contentStr, "}}") {
 				// It's a v1beta3 template, render it
+				// Seed default-false for referenced boolean flags and create parent maps for any
+				// .Values.* paths so missing values behave as empty and blocks can be omitted.
+				SeedDefaultBooleans(contentStr, values)
+				SeedParentMapsForValueRefs(contentStr, values)
 				rendered, err := RenderWithHelmTemplate(contentStr, values)
 				if err != nil {
 					return nil, nil, errors.Wrapf(err, "failed to render v1beta3 template %s", arg)
@@ -176,6 +180,9 @@ func preprocessV1Beta3Specs(args []string) ([]string, []string, error) {
 				contentStr := string(content)
 				if strings.Contains(contentStr, "{{") && strings.Contains(contentStr, "}}") {
 					// It's a v1beta3 template, render it
+					// Seed default-false for referenced boolean flags and create parent maps for .Values.* paths
+					SeedDefaultBooleans(contentStr, values)
+					SeedParentMapsForValueRefs(contentStr, values)
 					rendered, err := RenderWithHelmTemplate(contentStr, values)
 					if err != nil {
 						return nil, nil, errors.Wrapf(err, "failed to render v1beta3 template %s", arg)
