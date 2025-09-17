@@ -32,7 +32,7 @@ at specified times using standard cron syntax.`,
 // createCommand creates the create subcommand
 func createCommand() *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "create [job-name] --cron [schedule] --namespace [ns]",
+		Use:   "create [job-name] --cron [schedule] [--namespace ns]",
 		Short: "Create a scheduled support bundle job",
 		Long: `Create a new scheduled job to automatically collect support bundles.
 
@@ -49,8 +49,8 @@ Examples:
 			auto, _ := cmd.Flags().GetBool("auto")
 			upload, _ := cmd.Flags().GetString("upload")
 
-			if cronSchedule == "" || namespace == "" {
-				return fmt.Errorf("--cron and --namespace are required")
+			if cronSchedule == "" {
+				return fmt.Errorf("--cron is required")
 			}
 
 			manager, err := NewManager()
@@ -80,11 +80,10 @@ Examples:
 	}
 
 	cmd.Flags().StringP("cron", "c", "", "Cron expression (required)")
-	cmd.Flags().StringP("namespace", "n", "", "Kubernetes namespace (required)")
+	cmd.Flags().StringP("namespace", "n", "", "Kubernetes namespace (optional)")
 	cmd.Flags().Bool("auto", false, "Enable auto-discovery")
 	cmd.Flags().String("upload", "", "Enable auto-upload to vendor portal (any non-empty value enables auto-upload)")
 	cmd.MarkFlagRequired("cron")
-	cmd.MarkFlagRequired("namespace")
 
 	return cmd
 }

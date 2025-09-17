@@ -233,6 +233,9 @@ func (d *Daemon) executeJob(job *Job) {
 		// }
 	}
 
+	// Disable auto-update for scheduled jobs
+	args = append(args, "--auto-update=false")
+
 	// Find support-bundle binary
 	supportBundleBinary, err := findSupportBundleBinary()
 	if err != nil {
@@ -240,16 +243,24 @@ func (d *Daemon) executeJob(job *Job) {
 		return
 	}
 
-	// Execute support-bundle command directly
+	// Execute support-bundle command directly with output capture
 	cmd := exec.Command(supportBundleBinary, args...)
-	err = cmd.Run()
+
+	// Capture both stdout and stderr
+	output, err := cmd.CombinedOutput()
 
 	if err != nil {
 		fmt.Printf("❌ Job failed: %s - %v\n", job.Name, err)
+		if len(output) > 0 {
+			fmt.Printf("Command output:\n%s\n", string(output))
+		}
 		return
 	}
 
 	fmt.Printf("✅ Job completed: %s\n", job.Name)
+	if len(output) > 0 {
+		fmt.Printf("Command output:\n%s\n", string(output))
+	}
 
 	// Update job stats only on success
 	job.RunCount++

@@ -51,10 +51,6 @@ func (m *Manager) CreateJob(name, schedule, namespace string, auto bool, upload 
 		return nil, fmt.Errorf("job name cannot be empty")
 	}
 
-	if strings.TrimSpace(namespace) == "" {
-		return nil, fmt.Errorf("namespace cannot be empty")
-	}
-
 	// Sanitize job name for filesystem safety
 	name = strings.TrimSpace(name)
 	if len(name) > 100 {
