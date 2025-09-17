@@ -103,6 +103,7 @@ If no arguments are provided, specs are automatically loaded from the cluster by
 	cmd.AddCommand(Analyze())
 	cmd.AddCommand(Redact())
 	cmd.AddCommand(Diff())
+	cmd.AddCommand(UploadCmd())
 	cmd.AddCommand(util.VersionCmd())
 
 	cmd.Flags().StringSlice("redactors", []string{}, "names of the additional redactors to use")
@@ -117,6 +118,11 @@ If no arguments are provided, specs are automatically loaded from the cluster by
 	cmd.Flags().Bool("debug", false, "enable debug logging. This is equivalent to --v=0")
 	cmd.Flags().Bool("dry-run", false, "print support bundle spec without collecting anything")
 	cmd.Flags().Bool("auto-update", true, "enable automatic binary self-update check and install")
+
+	// Auto-upload flags
+	cmd.Flags().Bool("auto-upload", false, "automatically upload bundle after generation (auto-detects license and app from bundle)")
+	cmd.Flags().String("license-id", "", "license ID for upload (auto-detected from bundle if not provided)")
+	cmd.Flags().String("app-slug", "", "application slug for upload (auto-detected from bundle if not provided)")
 
 	// Auto-discovery flags
 	cmd.Flags().Bool("auto", false, "enable auto-discovery of foundational collectors. When used with YAML specs, adds foundational collectors to YAML collectors. When used alone, collects only foundational data")
