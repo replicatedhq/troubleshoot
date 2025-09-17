@@ -106,8 +106,10 @@ func (d *Daemon) shouldJobRun(job *Job, now time.Time) bool {
 		return false
 	}
 
-	// Prevent running in the same minute (avoid duplicates)
-	if !job.LastRun.IsZero() && now.Sub(job.LastRun) < 30*time.Second {
+	// Prevent running multiple times in the same minute (avoid duplicates)
+	// Use 90-second cooldown to ensure we don't run more than once per minute
+	// even with slight timing variations in the daemon's check cycle
+	if !job.LastRun.IsZero() && now.Sub(job.LastRun) < 90*time.Second {
 		return false
 	}
 
@@ -173,28 +175,28 @@ func matchesCronField(field string, currentValue int) bool {
 	return false
 }
 
-// findTroubleshootBinary finds the troubleshoot binary path
-func findTroubleshootBinary() (string, error) {
+// findSupportBundleBinary finds the support-bundle binary path
+func findSupportBundleBinary() (string, error) {
 	// First try current directory
-	if _, err := os.Stat("./troubleshoot"); err == nil {
-		abs, _ := filepath.Abs("./troubleshoot")
+	if _, err := os.Stat("./support-bundle"); err == nil {
+		abs, _ := filepath.Abs("./support-bundle")
 		return abs, nil
 	}
 
 	// Try relative to current binary location
 	if execPath, err := os.Executable(); err == nil {
-		troubleshootPath := filepath.Join(filepath.Dir(execPath), "troubleshoot")
-		if _, err := os.Stat(troubleshootPath); err == nil {
-			return troubleshootPath, nil
+		supportBundlePath := filepath.Join(filepath.Dir(execPath), "support-bundle")
+		if _, err := os.Stat(supportBundlePath); err == nil {
+			return supportBundlePath, nil
 		}
 	}
 
 	// Try PATH
-	if path, err := exec.LookPath("troubleshoot"); err == nil {
+	if path, err := exec.LookPath("support-bundle"); err == nil {
 		return path, nil
 	}
 
-	return "", fmt.Errorf("troubleshoot binary not found")
+	return "", fmt.Errorf("support-bundle binary not found")
 }
 
 // executeJob runs a support bundle collection
@@ -212,8 +214,8 @@ func (d *Daemon) executeJob(job *Job) {
 
 	fmt.Printf("🔄 Executing job: %s\n", job.Name)
 
-	// Build command arguments for support-bundle subcommand
-	args := []string{"support-bundle"}
+	// Build command arguments (no subcommand needed - binary IS support-bundle)
+	args := []string{}
 	if job.Namespace != "" {
 		args = append(args, "--namespace", job.Namespace)
 	}
@@ -224,15 +226,15 @@ func (d *Daemon) executeJob(job *Job) {
 		args = append(args, "--upload", job.Upload)
 	}
 
-	// Find troubleshoot binary
-	troubleshootBinary, err := findTroubleshootBinary()
+	// Find support-bundle binary
+	supportBundleBinary, err := findSupportBundleBinary()
 	if err != nil {
-		fmt.Printf("❌ Job failed: %s - cannot find troubleshoot binary: %v\n", job.Name, err)
+		fmt.Printf("❌ Job failed: %s - cannot find support-bundle binary: %v\n", job.Name, err)
 		return
 	}
 
-	// Execute troubleshoot support-bundle command
-	cmd := exec.Command(troubleshootBinary, args...)
+	// Execute support-bundle command directly
+	cmd := exec.Command(supportBundleBinary, args...)
 	err = cmd.Run()
 
 	if err != nil {

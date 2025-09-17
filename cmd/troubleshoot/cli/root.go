@@ -43,21 +43,28 @@ If no arguments are provided, specs are automatically loaded from the cluster by
 			}
 
 			// Auto-update support-bundle unless disabled by flag or env
-			envAuto := os.Getenv("TROUBLESHOOT_AUTO_UPDATE")
-			autoFromEnv := true
-			if envAuto != "" {
-				if strings.EqualFold(envAuto, "0") || strings.EqualFold(envAuto, "false") {
-					autoFromEnv = false
+			// Only run auto-update for the root support-bundle command, not subcommands
+			if cmd.Name() == "support-bundle" && !cmd.HasParent() {
+				envAuto := os.Getenv("TROUBLESHOOT_AUTO_UPDATE")
+				autoFromEnv := true
+				if envAuto != "" {
+					if strings.EqualFold(envAuto, "0") || strings.EqualFold(envAuto, "false") {
+						autoFromEnv = false
+					}
 				}
-			}
-			if v.GetBool("auto-update") && autoFromEnv {
-				exe, err := os.Executable()
-				if err == nil {
-					_ = updater.CheckAndUpdate(cmd.Context(), updater.Options{
-						BinaryName:  "support-bundle",
-						CurrentPath: exe,
-						Printf:      func(f string, a ...interface{}) { klog.V(1).Infof(f, a...) },
-					})
+				if v.GetBool("auto-update") && autoFromEnv {
+					exe, err := os.Executable()
+					if err != nil {
+						klog.V(1).Infof("Failed to get executable path for auto-update: %v", err)
+					} else {
+						if err := updater.CheckAndUpdate(cmd.Context(), updater.Options{
+							BinaryName:  "support-bundle",
+							CurrentPath: exe,
+							Printf:      func(f string, a ...interface{}) { klog.V(1).Infof(f, a...) },
+						}); err != nil {
+							klog.V(1).Infof("Auto-update failed: %v", err)
+						}
+					}
 				}
 			}
 		},
