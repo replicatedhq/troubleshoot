@@ -21,13 +21,14 @@ You create scheduled jobs → Daemon watches jobs → Jobs run automatically
 support-bundle schedule create daily-health-check \
   --cron "0 2 * * *" \
   --namespace production \
-  --upload s3://my-diagnostics-bucket
+  --auto \
+  --upload enabled
 ```
 
 **What this creates:**
 - A job definition stored on disk
 - Schedule: "Run daily at 2:00 AM"
-- Task: "Collect support bundle from production namespace and upload to S3"
+- Task: "Collect support bundle from production namespace with auto-discovery and auto-upload to vendor portal"
 
 ### 2. You Start the Daemon (One Time Setup)
 ```bash
@@ -74,14 +75,14 @@ support-bundle --namespace production
 ### With Scheduling (Automatic)
 ```bash
 # Set it up once
-support-bundle schedule create daily-check --cron "0 2 * * *" --namespace production --upload s3://bucket
+support-bundle schedule create daily-check --cron "0 2 * * *" --namespace production --auto --upload enabled
 
 # Start daemon once  
 support-bundle schedule daemon start
 
 # Now it happens automatically forever:
-# ✓ Collects support bundle daily at 2 AM
-# ✓ Uploads to S3 automatically
+# ✓ Collects support bundle daily at 2 AM with auto-discovery
+# ✓ Auto-uploads to vendor portal automatically  
 # ✓ Never forgets
 # ✓ You can sleep peacefully!
 ```

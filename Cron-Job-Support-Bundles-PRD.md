@@ -4,7 +4,7 @@
 
 **Cron Job Support Bundles** introduces automated, scheduled collection of support bundles to transform troubleshooting from reactive to proactive. Instead of manually running `support-bundle` commands when issues occur, users can schedule automatic collection at regular intervals, enabling continuous monitoring, trend analysis, and proactive issue detection.
 
-This feature pairs with Noah's auto-upload functionality to create a complete automation pipeline: **schedule → collect → upload → analyze → alert**.
+This feature pairs with the auto-upload functionality to create a complete automation pipeline: **schedule → collect → upload → analyze → alert**.
 
 ## Problem Statement
 
@@ -42,7 +42,7 @@ This feature pairs with Noah's auto-upload functionality to create a complete au
 - **Core Scheduling Engine**: Cron-syntax scheduling with persistent job storage
 - **CLI Management Interface**: Commands to create, list, modify, and delete scheduled jobs
 - **Daemon Mode**: Background service for continuous operation
-- **Integration with Auto-Upload**: Seamless handoff to Noah's upload functionality
+- **Integration with Auto-Upload**: Seamless handoff to the auto-upload functionality
 - **Job Persistence**: Survive process restarts and system reboots
 - **Configuration Management**: Flexible configuration for different environments
 - **Security & Compliance**: RBAC integration and audit logging
@@ -90,7 +90,7 @@ This feature pairs with Noah's auto-upload functionality to create a complete au
                                                         ▼
                                               ┌─────────────────┐
                                               │  Auto-Upload    │
-                                              │   (Noah's)      │
+                                              │   (auto-upload) │
                                               └─────────────────┘
 ```
 
@@ -573,7 +573,7 @@ Examples:
   support-bundle schedule create daily-check --cron "0 2 * * *" --namespace myapp
   
   # Every 6 hours with auto-discovery
-  support-bundle schedule create frequent-check --cron "0 */6 * * *" --auto --upload s3://bucket
+  support-bundle schedule create frequent-check --cron "0 */6 * * *" --auto --upload enabled
   
   # Weekly collection with custom spec
   support-bundle schedule create weekly-deep --cron "0 0 * * 1" --spec myapp.yaml --analyze`,
@@ -594,7 +594,7 @@ Examples:
     cmd.Flags().Bool("redact", true, "Enable redaction")
     cmd.Flags().Bool("analyze", false, "Run analysis after collection")
     
-    // Upload options (integrate with Noah's work)
+    // Upload options (integrate with auto-upload)
     cmd.Flags().String("upload", "", "Upload destination (s3://bucket, https://endpoint)")
     cmd.Flags().StringToString("upload-options", nil, "Additional upload options")
     cmd.Flags().String("upload-credentials", "", "Credentials file or environment variable")
@@ -872,9 +872,9 @@ func CollectScheduledSupportBundle(job *ScheduledJob, execution *JobExecution) e
 }
 ```
 
-##### 5.1.2 Auto-Upload Integration (Noah's Work)
+##### 5.1.2 Auto-Upload Integration
 ```go
-// Interface for Noah's auto-upload functionality
+// Interface for auto-upload functionality
 type AutoUploader interface {
     Upload(bundlePath string, config *UploadConfig) (*UploadResult, error)
     ValidateConfig(config *UploadConfig) error
@@ -887,7 +887,7 @@ func (je *JobExecutor) integrateAutoUpload(execution *JobExecution) error {
         return nil
     }
     
-    uploader := GetAutoUploader()  // Noah's implementation
+    uploader := GetAutoUploader()  // auto-upload implementation
     result, err := uploader.Upload(execution.BundlePath, execution.Job.Upload)
     if err != nil {
         return fmt.Errorf("upload failed: %w", err)
@@ -1063,7 +1063,7 @@ support-bundle schedule create daily-check \
   --cron "0 2 * * *" \                       # Customer chooses 2 AM
   --namespace myapp \                         # Customer's application namespace
   --auto \                                   # Auto-discover customer's resources
-  --upload s3://customer-troubleshoot-bucket # Customer's S3 bucket
+  --upload enabled # Auto-upload to vendor portal
 ```
 
 ### 2. Customer starts the scheduler daemon on their infrastructure
@@ -1101,24 +1101,21 @@ support-bundle schedule history daily-check
 ```bash
 # Customer configures upload to their own S3 bucket
 support-bundle schedule create customer-job \
-  --upload s3://customer-bucket/diagnostics/ \
-  --upload-options region=us-west-2,sse=AES256
+  --upload enabled # Auto-upload to vendor portal
 ```
 
 ### Customer's Google Cloud Storage
 ```bash
 # Customer uses their own GCS bucket and service account
 support-bundle schedule create customer-job \
-  --upload gs://customer-bucket/troubleshoot/ \
-  --upload-credentials /path/to/customer-service-account.json
+  --upload enabled # Auto-upload to vendor portal
 ```
 
 ### Customer's Custom HTTP Endpoint
 ```bash
 # Customer uploads to their own API endpoint
 support-bundle schedule create customer-job \
-  --upload https://customer-api.example.com/upload \
-  --upload-options auth=bearer,token=${CUSTOMER_UPLOAD_TOKEN}
+  --upload enabled # Auto-upload to vendor portal
 ```
 
 ## Customer Resource Limits
@@ -1459,8 +1456,8 @@ support-bundle schedule cleanup --repair --older-than 30d
 - [x] **Analysis integration** - Integrated with `pkg/analyze/` system for post-collection analysis
 - [x] **Progress reporting** - Real-time progress updates with execution context and logging
 
-#### 5.2 Auto-Upload Integration (Noah's Work) ✅ **INTERFACE READY**
-- [x] **Upload interface** - Comprehensive `AutoUploader` interface defined for Noah's implementation
+#### 5.2 Auto-Upload Integration ✅ **INTERFACE READY**
+- [x] **Upload interface** - Comprehensive `AutoUploader` interface defined for auto-upload implementation
 - [x] **Configuration mapping** - Full mapping from scheduled job upload config to upload system
 - [x] **Error handling** - Comprehensive retry logic with exponential backoff and error classification
 - [x] **Progress tracking** - Upload progress tracking with duration and size metrics
@@ -1558,7 +1555,7 @@ support-bundle schedule cleanup --repair --older-than 30d
 
 The Cron Job Support Bundles feature transforms troubleshooting from reactive to proactive by enabling automated, scheduled collection of diagnostic data. With comprehensive scheduling capabilities, robust error handling, and seamless integration with existing systems, this feature provides the foundation for continuous monitoring and proactive issue detection.
 
-The implementation leverages existing troubleshoot infrastructure while adding minimal complexity, ensuring reliable operation and easy adoption. Combined with Noah's auto-upload functionality, it creates a complete automation pipeline that reduces manual intervention and improves troubleshooting effectiveness.
+The implementation leverages existing troubleshoot infrastructure while adding minimal complexity, ensuring reliable operation and easy adoption. Combined with the auto-upload functionality, it creates a complete automation pipeline that reduces manual intervention and improves troubleshooting effectiveness.
 
 ## Current Implementation Status
 
@@ -1650,7 +1647,7 @@ Phase 4 (CLI Interface): 2,076 lines ✅ COMPLETE
 
 Phase 5 (Integration & Testing): 200+ lines ✅ COMPLETE
 ├── Enhanced system integration
-├── Upload interface for Noah's work
+├── Upload interface for auto-upload
 ├── Comprehensive end-to-end testing
 
 Total Tests: 1,500+ lines ✅ ALL PASSING
@@ -1682,7 +1679,7 @@ support-bundle schedule create production-daily \
   --auto \                          # Auto-discovery collection
   --redact \                        # Tokenized redaction
   --analyze \                       # Automatic analysis
-  --upload s3://customer-bucket/    # Customer's storage
+  --upload enabled                  # Auto-upload to vendor portal
 
 # Customer starts daemon (runs all the automation)
 support-bundle schedule daemon start
