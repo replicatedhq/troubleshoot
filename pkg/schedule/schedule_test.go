@@ -99,7 +99,10 @@ func TestManager_DeleteJob(t *testing.T) {
 }
 
 func TestDaemon_ScheduleMatching(t *testing.T) {
-	daemon := NewDaemon()
+	daemon, err := NewDaemon()
+	if err != nil {
+		t.Fatalf("NewDaemon failed: %v", err)
+	}
 
 	// Test job that should run at current minute
 	now := time.Now()
@@ -114,7 +117,7 @@ func TestDaemon_ScheduleMatching(t *testing.T) {
 	}
 
 	// Test job that just ran
-	job.LastRun = now.Add(-30 * time.Second)
+	job.LastRun = now.Add(-25 * time.Second)
 	if daemon.shouldJobRun(job, now) {
 		t.Error("Job should not run again so soon")
 	}

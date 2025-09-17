@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -29,20 +30,48 @@ type Manager struct {
 }
 
 // NewManager creates a new job manager
-func NewManager() *Manager {
-	homeDir, _ := os.UserHomeDir()
-	storageDir := filepath.Join(homeDir, ".troubleshoot", "scheduled-jobs")
-	os.MkdirAll(storageDir, 0755)
+func NewManager() (*Manager, error) {
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get user home directory: %w", err)
+	}
 
-	return &Manager{storageDir: storageDir}
+	storageDir := filepath.Join(homeDir, ".troubleshoot", "scheduled-jobs")
+	if err := os.MkdirAll(storageDir, 0755); err != nil {
+		return nil, fmt.Errorf("failed to create storage directory %s: %w", storageDir, err)
+	}
+
+	return &Manager{storageDir: storageDir}, nil
 }
 
 // CreateJob creates a new scheduled job
 func (m *Manager) CreateJob(name, schedule, namespace string, auto bool, upload string) (*Job, error) {
-	// Basic cron validation (just check it has 5 parts)
-	parts := strings.Fields(schedule)
-	if len(parts) != 5 {
-		return nil, fmt.Errorf("invalid cron schedule format, expected 5 fields")
+	// Input validation
+	if strings.TrimSpace(name) == "" {
+		return nil, fmt.Errorf("job name cannot be empty")
+	}
+
+	if strings.TrimSpace(namespace) == "" {
+		return nil, fmt.Errorf("namespace cannot be empty")
+	}
+
+	// Sanitize job name for filesystem safety
+	name = strings.TrimSpace(name)
+	if len(name) > 100 {
+		return nil, fmt.Errorf("job name too long, maximum 100 characters")
+	}
+
+	// Check for invalid filename characters
+	invalidChars := []string{"/", "\\", ":", "*", "?", "\"", "<", ">", "|", "\x00"}
+	for _, char := range invalidChars {
+		if strings.Contains(name, char) {
+			return nil, fmt.Errorf("job name contains invalid character: %s", char)
+		}
+	}
+
+	// Cron validation - check it has 5 parts and basic field validation
+	if err := validateCronSchedule(schedule); err != nil {
+		return nil, fmt.Errorf("invalid cron schedule: %w", err)
 	}
 
 	job := &Job{
@@ -130,6 +159,55 @@ func (m *Manager) loadJobFromFile(filename string) (*Job, error) {
 	var job Job
 	err = json.Unmarshal(data, &job)
 	return &job, err
+}
+
+// validateCronSchedule performs basic cron schedule validation
+func validateCronSchedule(schedule string) error {
+	parts := strings.Fields(schedule)
+	if len(parts) != 5 {
+		return fmt.Errorf("expected 5 fields (minute hour day-of-month month day-of-week), got %d", len(parts))
+	}
+
+	// Validate each field has reasonable values
+	fieldNames := []string{"minute", "hour", "day-of-month", "month", "day-of-week"}
+	fieldRanges := [][2]int{{0, 59}, {0, 23}, {1, 31}, {1, 12}, {0, 6}}
+
+	for i, field := range parts {
+		if err := validateCronField(field, fieldRanges[i][0], fieldRanges[i][1], fieldNames[i]); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// validateCronField validates a single cron field
+func validateCronField(field string, min, max int, fieldName string) error {
+	if field == "*" {
+		return nil
+	}
+
+	// Handle */N syntax
+	if strings.HasPrefix(field, "*/") {
+		intervalStr := strings.TrimPrefix(field, "*/")
+		if interval, err := strconv.Atoi(intervalStr); err != nil || interval <= 0 || interval > max {
+			return fmt.Errorf("invalid %s interval: %s", fieldName, intervalStr)
+		}
+		return nil
+	}
+
+	// Handle exact values (including comma-separated lists)
+	values := strings.Split(field, ",")
+	for _, val := range values {
+		val = strings.TrimSpace(val)
+		if fieldValue, err := strconv.Atoi(val); err != nil {
+			return fmt.Errorf("invalid %s value: %s", fieldName, val)
+		} else if fieldValue < min || fieldValue > max {
+			return fmt.Errorf("%s value %d out of range [%d-%d]", fieldName, fieldValue, min, max)
+		}
+	}
+
+	return nil
 }
 
 // generateJobID generates a simple job ID

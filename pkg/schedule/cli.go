@@ -53,7 +53,10 @@ Examples:
 				return fmt.Errorf("--cron and --namespace are required")
 			}
 
-			manager := NewManager()
+			manager, err := NewManager()
+			if err != nil {
+				return err
+			}
 			job, err := manager.CreateJob(args[0], cronSchedule, namespace, auto, upload)
 			if err != nil {
 				return err
@@ -92,7 +95,10 @@ func listCommand() *cobra.Command {
 		Use:   "list",
 		Short: "List all scheduled jobs",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			manager := NewManager()
+			manager, err := NewManager()
+			if err != nil {
+				return err
+			}
 			jobs, err := manager.ListJobs()
 			if err != nil {
 				return err
@@ -127,7 +133,10 @@ func deleteCommand() *cobra.Command {
 		Short: "Delete a scheduled job",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			manager := NewManager()
+			manager, err := NewManager()
+			if err != nil {
+				return err
+			}
 
 			if err := manager.DeleteJob(args[0]); err != nil {
 				return err
@@ -151,7 +160,10 @@ func daemonCommand() *cobra.Command {
 		Short: "Start the scheduler daemon",
 		Long:  "Start the daemon to automatically execute scheduled jobs",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			daemon := NewDaemon()
+			daemon, err := NewDaemon()
+			if err != nil {
+				return err
+			}
 			return daemon.Start()
 		},
 	}

@@ -8,22 +8,31 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 )
 
 // Daemon runs scheduled jobs
 type Daemon struct {
-	manager *Manager
-	running bool
+	manager     *Manager
+	running     bool
+	jobMutex    sync.Mutex
+	runningJobs map[string]bool // Track running jobs to prevent concurrent execution
 }
 
 // NewDaemon creates a new daemon
-func NewDaemon() *Daemon {
-	return &Daemon{
-		manager: NewManager(),
-		running: false,
+func NewDaemon() (*Daemon, error) {
+	manager, err := NewManager()
+	if err != nil {
+		return nil, fmt.Errorf("failed to create job manager: %w", err)
 	}
+
+	return &Daemon{
+		manager:     manager,
+		running:     false,
+		runningJobs: make(map[string]bool),
+	}, nil
 }
 
 // Start starts the daemon to monitor and execute jobs
@@ -33,6 +42,9 @@ func (d *Daemon) Start() error {
 	// Setup signal handling
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+
+	// Ensure signal handling is cleaned up
+	defer signal.Stop(sigChan)
 
 	fmt.Println("✓ Scheduler daemon started")
 	fmt.Println("Monitoring scheduled jobs every minute...")
@@ -69,7 +81,20 @@ func (d *Daemon) checkAndExecuteJobs() {
 
 	now := time.Now()
 	for _, job := range jobs {
+		if job == nil {
+			continue // Skip nil jobs
+		}
+
 		if job.Enabled && d.shouldJobRun(job, now) {
+			// Check if job is already running to prevent concurrent execution
+			d.jobMutex.Lock()
+			if d.runningJobs[job.ID] {
+				d.jobMutex.Unlock()
+				continue // Skip if already running
+			}
+			d.runningJobs[job.ID] = true
+			d.jobMutex.Unlock()
+
 			go d.executeJob(job)
 		}
 	}
@@ -77,12 +102,16 @@ func (d *Daemon) checkAndExecuteJobs() {
 
 // shouldJobRun checks if a job should run based on its schedule
 func (d *Daemon) shouldJobRun(job *Job, now time.Time) bool {
+	if job == nil {
+		return false
+	}
+
 	// Prevent running in the same minute (avoid duplicates)
 	if !job.LastRun.IsZero() && now.Sub(job.LastRun) < 30*time.Second {
 		return false
 	}
 
-	// Parse cron schedule (simplified)
+	// Parse cron schedule (minute hour day-of-month month day-of-week)
 	parts := strings.Fields(job.Schedule)
 	if len(parts) != 5 {
 		return false
@@ -90,12 +119,25 @@ func (d *Daemon) shouldJobRun(job *Job, now time.Time) bool {
 
 	minute := parts[0]
 	hour := parts[1]
+	dayOfMonth := parts[2]
+	month := parts[3]
+	dayOfWeek := parts[4]
 
-	// Check if current time matches schedule (with */N support)
+	// Check if current time matches all cron fields
 	if !matchesCronField(minute, now.Minute()) {
 		return false
 	}
 	if !matchesCronField(hour, now.Hour()) {
+		return false
+	}
+	if !matchesCronField(dayOfMonth, now.Day()) {
+		return false
+	}
+	if !matchesCronField(month, int(now.Month())) {
+		return false
+	}
+	// Day of week: Sunday = 0, Monday = 1, etc.
+	if !matchesCronField(dayOfWeek, int(now.Weekday())) {
 		return false
 	}
 
@@ -114,11 +156,18 @@ func matchesCronField(field string, currentValue int) bool {
 		if interval, err := strconv.Atoi(intervalStr); err == nil && interval > 0 {
 			return currentValue%interval == 0
 		}
+		return false // Invalid interval format
 	}
 
-	// Handle exact matches
-	if fieldValue, err := strconv.Atoi(field); err == nil {
-		return currentValue == fieldValue
+	// Handle comma-separated lists (e.g., "1,15,30")
+	values := strings.Split(field, ",")
+	for _, val := range values {
+		val = strings.TrimSpace(val)
+		if fieldValue, err := strconv.Atoi(val); err == nil {
+			if currentValue == fieldValue {
+				return true
+			}
+		}
 	}
 
 	return false
@@ -150,10 +199,21 @@ func findTroubleshootBinary() (string, error) {
 
 // executeJob runs a support bundle collection
 func (d *Daemon) executeJob(job *Job) {
+	if job == nil {
+		return
+	}
+
+	// Ensure we mark the job as not running when done
+	defer func() {
+		d.jobMutex.Lock()
+		delete(d.runningJobs, job.ID)
+		d.jobMutex.Unlock()
+	}()
+
 	fmt.Printf("🔄 Executing job: %s\n", job.Name)
 
-	// Build command arguments
-	args := []string{}
+	// Build command arguments for support-bundle subcommand
+	args := []string{"support-bundle"}
 	if job.Namespace != "" {
 		args = append(args, "--namespace", job.Namespace)
 	}
@@ -171,18 +231,21 @@ func (d *Daemon) executeJob(job *Job) {
 		return
 	}
 
-	// Execute troubleshoot binary directly (it IS the support-bundle command)
+	// Execute troubleshoot support-bundle command
 	cmd := exec.Command(troubleshootBinary, args...)
 	err = cmd.Run()
 
-	// Update job stats
-	job.RunCount++
-	job.LastRun = time.Now()
-	d.manager.saveJob(job)
-
 	if err != nil {
 		fmt.Printf("❌ Job failed: %s - %v\n", job.Name, err)
-	} else {
-		fmt.Printf("✅ Job completed: %s\n", job.Name)
+		return
+	}
+
+	fmt.Printf("✅ Job completed: %s\n", job.Name)
+
+	// Update job stats only on success
+	job.RunCount++
+	job.LastRun = time.Now()
+	if err := d.manager.saveJob(job); err != nil {
+		fmt.Printf("⚠️  Warning: Failed to save job statistics for %s: %v\n", job.Name, err)
 	}
 }
