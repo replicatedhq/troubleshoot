@@ -2,6 +2,7 @@ package schedule
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -19,6 +20,8 @@ type Daemon struct {
 	running     bool
 	jobMutex    sync.Mutex
 	runningJobs map[string]bool // Track running jobs to prevent concurrent execution
+	logger      *log.Logger
+	logFile     *os.File
 }
 
 // NewDaemon creates a new daemon
@@ -28,10 +31,31 @@ func NewDaemon() (*Daemon, error) {
 		return nil, fmt.Errorf("failed to create job manager: %w", err)
 	}
 
+	// Setup persistent logging
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return nil, fmt.Errorf("failed to get user home directory: %w", err)
+	}
+
+	logDir := filepath.Join(homeDir, ".troubleshoot")
+	if err := os.MkdirAll(logDir, 0755); err != nil {
+		return nil, fmt.Errorf("failed to create log directory %s: %w", logDir, err)
+	}
+
+	logPath := filepath.Join(logDir, "scheduler.log")
+	logFile, err := os.OpenFile(logPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open log file %s: %w", logPath, err)
+	}
+
+	logger := log.New(logFile, "", log.LstdFlags)
+
 	return &Daemon{
 		manager:     manager,
 		running:     false,
 		runningJobs: make(map[string]bool),
+		logger:      logger,
+		logFile:     logFile,
 	}, nil
 }
 
@@ -43,11 +67,16 @@ func (d *Daemon) Start() error {
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 
-	// Ensure signal handling is cleaned up
-	defer signal.Stop(sigChan)
+	// Ensure signal handling is cleaned up and close log file
+	defer func() {
+		signal.Stop(sigChan)
+		if d.logFile != nil {
+			d.logFile.Close()
+		}
+	}()
 
-	fmt.Println("✓ Scheduler daemon started")
-	fmt.Println("Monitoring scheduled jobs every minute...")
+	d.logInfo("Scheduler daemon started")
+	d.logInfo("Monitoring scheduled jobs every minute...")
 
 	ticker := time.NewTicker(1 * time.Minute)
 	defer ticker.Stop()
@@ -57,12 +86,12 @@ func (d *Daemon) Start() error {
 		case <-ticker.C:
 			d.checkAndExecuteJobs()
 		case sig := <-sigChan:
-			fmt.Printf("\nReceived signal %v, shutting down...\n", sig)
+			d.logInfo(fmt.Sprintf("Received signal %v, shutting down...", sig))
 			d.running = false
 		}
 	}
 
-	fmt.Println("✓ Scheduler daemon stopped")
+	d.logInfo("Scheduler daemon stopped")
 	return nil
 }
 
@@ -75,7 +104,7 @@ func (d *Daemon) Stop() {
 func (d *Daemon) checkAndExecuteJobs() {
 	jobs, err := d.manager.ListJobs()
 	if err != nil {
-		fmt.Printf("Error loading jobs: %v\n", err)
+		d.logError(fmt.Sprintf("Error loading jobs: %v", err))
 		return
 	}
 
@@ -212,7 +241,7 @@ func (d *Daemon) executeJob(job *Job) {
 		d.jobMutex.Unlock()
 	}()
 
-	fmt.Printf("🔄 Executing job: %s\n", job.Name)
+	d.logInfo(fmt.Sprintf("Executing job: %s", job.Name))
 
 	// Build command arguments (no subcommand needed - binary IS support-bundle)
 	args := []string{}
@@ -239,7 +268,7 @@ func (d *Daemon) executeJob(job *Job) {
 	// Find support-bundle binary
 	supportBundleBinary, err := findSupportBundleBinary()
 	if err != nil {
-		fmt.Printf("❌ Job failed: %s - cannot find support-bundle binary: %v\n", job.Name, err)
+		d.logError(fmt.Sprintf("Job failed: %s - cannot find support-bundle binary: %v", job.Name, err))
 		return
 	}
 
@@ -250,22 +279,64 @@ func (d *Daemon) executeJob(job *Job) {
 	output, err := cmd.CombinedOutput()
 
 	if err != nil {
-		fmt.Printf("❌ Job failed: %s - %v\n", job.Name, err)
+		d.logError(fmt.Sprintf("Job failed: %s - %v", job.Name, err))
 		if len(output) > 0 {
-			fmt.Printf("Command output:\n%s\n", string(output))
+			d.logError(fmt.Sprintf("Command output for %s:\n%s", job.Name, string(output)))
 		}
 		return
 	}
 
-	fmt.Printf("✅ Job completed: %s\n", job.Name)
+	d.logInfo(fmt.Sprintf("Job completed: %s", job.Name))
+
+	// Log key information but skip verbose JSON output
 	if len(output) > 0 {
-		fmt.Printf("Command output:\n%s\n", string(output))
+		outputStr := string(output)
+
+		// Extract and log only the important parts
+		if strings.Contains(outputStr, "Successfully uploaded support bundle") {
+			d.logInfo(fmt.Sprintf("Upload successful for job: %s", job.Name))
+		}
+		if strings.Contains(outputStr, "Auto-upload failed:") {
+			// Log upload failures in detail
+			lines := strings.Split(outputStr, "\n")
+			for _, line := range lines {
+				if strings.Contains(line, "Auto-upload failed:") {
+					d.logError(fmt.Sprintf("Upload failed for job %s: %s", job.Name, strings.TrimSpace(line)))
+				}
+			}
+		}
+		if strings.Contains(outputStr, "archivePath") {
+			// Extract just the archive name
+			lines := strings.Split(outputStr, "\n")
+			for _, line := range lines {
+				if strings.Contains(line, "archivePath") {
+					d.logInfo(fmt.Sprintf("Archive created for job %s: %s", job.Name, strings.TrimSpace(line)))
+					break
+				}
+			}
+		}
 	}
 
 	// Update job stats only on success
 	job.RunCount++
 	job.LastRun = time.Now()
 	if err := d.manager.saveJob(job); err != nil {
-		fmt.Printf("⚠️  Warning: Failed to save job statistics for %s: %v\n", job.Name, err)
+		d.logError(fmt.Sprintf("Warning: Failed to save job statistics for %s: %v", job.Name, err))
+	}
+}
+
+// logInfo logs an info message to both console and file
+func (d *Daemon) logInfo(message string) {
+	fmt.Printf("✓ %s\n", message)
+	if d.logger != nil {
+		d.logger.Printf("INFO: %s", message)
+	}
+}
+
+// logError logs an error message to both console and file
+func (d *Daemon) logError(message string) {
+	fmt.Printf("❌ %s\n", message)
+	if d.logger != nil {
+		d.logger.Printf("ERROR: %s", message)
 	}
 }
