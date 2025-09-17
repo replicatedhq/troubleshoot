@@ -185,9 +185,9 @@ func runTroubleshoot(v *viper.Viper, args []string) error {
 					}
 				case <-time.After(time.Millisecond * 100):
 					if currentDir == "" {
-						fmt.Printf("\r%s \033[36mCollecting support bundle\033[m %s", cursor.ClearEntireLine(), s.Next())
+						fmt.Printf("\r%s \u001b[36mCollecting support bundle\u001b[m %s", cursor.ClearEntireLine(), s.Next())
 					} else {
-						fmt.Printf("\r%s \033[36mCollecting support bundle\033[m %s %s", cursor.ClearEntireLine(), s.Next(), currentDir)
+						fmt.Printf("\r%s \u001b[36mCollecting support bundle\u001b[m %s %s", cursor.ClearEntireLine(), s.Next(), currentDir)
 					}
 				}
 			}
@@ -216,6 +216,18 @@ func runTroubleshoot(v *viper.Viper, args []string) error {
 
 	close(progressChan) // this removes the spinner in interactive mode
 	isProgressChanClosed = true
+
+	// Auto-upload if requested
+	if v.GetBool("auto-upload") {
+		licenseID := v.GetString("license-id")
+		appSlug := v.GetString("app-slug")
+
+		fmt.Fprintf(os.Stderr, "Auto-uploading bundle to replicated.app...\n")
+		if err := supportbundle.UploadBundleAutoDetect(response.ArchivePath, licenseID, appSlug); err != nil {
+			fmt.Fprintf(os.Stderr, "Auto-upload failed: %v\n", err)
+			fmt.Fprintf(os.Stderr, "You can manually upload the bundle using: support-bundle upload %s\n", response.ArchivePath)
+		}
+	}
 
 	if len(response.AnalyzerResults) > 0 {
 		if interactive {
