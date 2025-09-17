@@ -186,7 +186,7 @@ func validateCronField(field string, min, max int, fieldName string) error {
 	// Handle */N syntax
 	if strings.HasPrefix(field, "*/") {
 		intervalStr := strings.TrimPrefix(field, "*/")
-		if interval, err := strconv.Atoi(intervalStr); err != nil || interval <= 0 || interval > max {
+		if interval, err := strconv.Atoi(intervalStr); err != nil || interval <= 0 {
 			return fmt.Errorf("invalid %s interval: %s", fieldName, intervalStr)
 		}
 		return nil
