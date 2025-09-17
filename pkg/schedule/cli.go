@@ -40,8 +40,8 @@ Examples:
   # Daily at 2 AM
   support-bundle schedule create daily-check --cron "0 2 * * *" --namespace production
 
-  # Every 6 hours with auto-discovery and upload
-  support-bundle schedule create frequent --cron "0 */6 * * *" --namespace app --auto --upload s3://bucket`,
+  # Every 6 hours with auto-discovery and auto-upload to vendor portal
+  support-bundle schedule create frequent --cron "0 */6 * * *" --namespace app --auto --upload enabled`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cronSchedule, _ := cmd.Flags().GetString("cron")
@@ -69,7 +69,7 @@ Examples:
 				fmt.Printf("  Auto-discovery: enabled\n")
 			}
 			if upload != "" {
-				fmt.Printf("  Upload: %s\n", upload)
+				fmt.Printf("  Auto-upload: enabled (uploads to vendor portal)\n")
 			}
 
 			fmt.Printf("\n💡 To activate, start the daemon:\n")
@@ -82,7 +82,7 @@ Examples:
 	cmd.Flags().StringP("cron", "c", "", "Cron expression (required)")
 	cmd.Flags().StringP("namespace", "n", "", "Kubernetes namespace (required)")
 	cmd.Flags().Bool("auto", false, "Enable auto-discovery")
-	cmd.Flags().String("upload", "", "Upload destination (s3://bucket, https://endpoint)")
+	cmd.Flags().String("upload", "", "Enable auto-upload to vendor portal (any non-empty value enables auto-upload)")
 	cmd.MarkFlagRequired("cron")
 	cmd.MarkFlagRequired("namespace")
 
@@ -110,12 +110,12 @@ func listCommand() *cobra.Command {
 			}
 
 			w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', 0)
-			fmt.Fprintln(w, "NAME\tSCHEDULE\tNAMESPACE\tAUTO\tUPLOAD\tRUNS")
+			fmt.Fprintln(w, "NAME\tSCHEDULE\tNAMESPACE\tAUTO\tAUTO-UPLOAD\tRUNS")
 
 			for _, job := range jobs {
-				upload := job.Upload
-				if upload == "" {
-					upload = "none"
+				upload := "none"
+				if job.Upload != "" {
+					upload = "enabled"
 				}
 				fmt.Fprintf(w, "%s\t%s\t%s\t%t\t%s\t%d\n",
 					job.Name, job.Schedule, job.Namespace, job.Auto, upload, job.RunCount)

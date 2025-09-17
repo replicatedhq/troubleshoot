@@ -54,3 +54,4 @@ troubleshoot
 troubleshoot-test
 cmd/troubleshoot/troubleshoot
 cmd/*/troubleshoot
+support-bundle

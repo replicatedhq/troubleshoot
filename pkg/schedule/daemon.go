@@ -223,7 +223,14 @@ func (d *Daemon) executeJob(job *Job) {
 		args = append(args, "--auto")
 	}
 	if job.Upload != "" {
-		args = append(args, "--upload", job.Upload)
+		args = append(args, "--auto-upload")
+		// Add license and app flags if available in the future
+		// if job.LicenseID != "" {
+		//     args = append(args, "--license-id", job.LicenseID)
+		// }
+		// if job.AppSlug != "" {
+		//     args = append(args, "--app-slug", job.AppSlug)
+		// }
 	}
 
 	// Find support-bundle binary
