@@ -13,6 +13,7 @@ import (
 	"github.com/replicatedhq/troubleshoot/pkg/logger"
 	"github.com/replicatedhq/troubleshoot/pkg/preflight"
 	"github.com/replicatedhq/troubleshoot/pkg/types"
+	"github.com/replicatedhq/troubleshoot/pkg/updater"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"k8s.io/klog/v2"
@@ -36,6 +37,25 @@ that a cluster meets the requirements to run an application.`,
 
 			if err := util.StartProfiling(); err != nil {
 				klog.Errorf("Failed to start profiling: %v", err)
+			}
+
+			// Auto-update preflight unless disabled by flag or env
+			envAuto := os.Getenv("PREFLIGHT_AUTO_UPDATE")
+			autoFromEnv := true
+			if envAuto != "" {
+				if strings.EqualFold(envAuto, "0") || strings.EqualFold(envAuto, "false") {
+					autoFromEnv = false
+				}
+			}
+			if v.GetBool("auto-update") && autoFromEnv {
+				exe, err := os.Executable()
+				if err == nil {
+					_ = updater.CheckAndUpdate(cmd.Context(), updater.Options{
+						BinaryName:  "preflight",
+						CurrentPath: exe,
+						Printf:      func(f string, a ...interface{}) { klog.V(1).Infof(f, a...) },
+					})
+				}
 			}
 		},
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -66,12 +86,21 @@ that a cluster meets the requirements to run an application.`,
 
 	cmd.AddCommand(util.VersionCmd())
 	cmd.AddCommand(OciFetchCmd())
+	cmd.AddCommand(TemplateCmd())
+	cmd.AddCommand(DocsCmd())
+	cmd.AddCommand(ConvertCmd())
+
 	preflight.AddFlags(cmd.PersistentFlags())
 
 	// Dry run flag should be in cmd.PersistentFlags() flags made available to all subcommands
 	// Adding here to avoid that
 	cmd.Flags().Bool("dry-run", false, "print the preflight spec without running preflight checks")
 	cmd.Flags().Bool("no-uri", false, "When this flag is used, Preflight does not attempt to retrieve the spec referenced by the uri: field`")
+	cmd.Flags().Bool("auto-update", true, "enable automatic binary self-update check and install")
+
+	// Template values for v1beta3 specs
+	cmd.Flags().StringSlice("values", []string{}, "Path to YAML files containing template values for v1beta3 specs (can be used multiple times)")
+	cmd.Flags().StringSlice("set", []string{}, "Set template values on the command line for v1beta3 specs (can be used multiple times)")
 
 	k8sutil.AddFlags(cmd.Flags())
 

@@ -62,7 +62,7 @@ func (c *CollectRegistry) Collect(progressChan chan<- interface{}) (CollectorRes
 	}
 
 	for _, image := range c.Collector.Images {
-		exists, err := imageExists(c.Namespace, c.ClientConfig, c.Collector, image)
+		exists, err := imageExists(c.Namespace, c.ClientConfig, c.Collector, image, 10*time.Second)
 		if err != nil {
 			registryInfo.Images[image] = RegistryImage{
 				Error: err.Error(),
@@ -90,7 +90,7 @@ func (c *CollectRegistry) Collect(progressChan chan<- interface{}) (CollectorRes
 	return output, nil
 }
 
-func imageExists(namespace string, clientConfig *rest.Config, registryCollector *troubleshootv1beta2.RegistryImages, image string) (bool, error) {
+func imageExists(namespace string, clientConfig *rest.Config, registryCollector *troubleshootv1beta2.RegistryImages, image string, deadline time.Duration) (bool, error) {
 	imageRef, err := alltransports.ParseImageName(fmt.Sprintf("docker://%s", image))
 	if err != nil {
 		return false, errors.Wrapf(err, "failed to parse image name %s", image)
@@ -102,27 +102,44 @@ func imageExists(namespace string, clientConfig *rest.Config, registryCollector 
 		return false, errors.Wrap(err, "failed to get auth config")
 	}
 
+	sysCtx := types.SystemContext{
+		DockerDisableV1Ping:         true,
+		DockerInsecureSkipTLSVerify: types.OptionalBoolTrue,
+	}
+	if authConfig != nil {
+		sysCtx.DockerAuthConfig = &types.DockerAuthConfig{
+			Username: authConfig.username,
+			Password: authConfig.password,
+		}
+	}
+
+	if deadline == 0 {
+		deadline = 10 * time.Second
+	}
+
 	var lastErr error
 	for i := 0; i < 3; i++ {
-		sysCtx := types.SystemContext{
-			DockerDisableV1Ping:         true,
-			DockerInsecureSkipTLSVerify: types.OptionalBoolTrue,
-		}
-		if authConfig != nil {
-			sysCtx.DockerAuthConfig = &types.DockerAuthConfig{
-				Username: authConfig.username,
-				Password: authConfig.password,
+		err := func() error {
+			ctx, cancel := context.WithTimeout(context.Background(), deadline)
+			defer cancel()
+			remoteImage, err := imageRef.NewImage(ctx, &sysCtx)
+			if err != nil {
+				return err
 			}
-		}
-
-		remoteImage, err := imageRef.NewImage(context.Background(), &sysCtx)
+			remoteImage.Close()
+			return nil
+		}()
 		if err == nil {
 			klog.V(2).Infof("image %s exists", image)
-			remoteImage.Close()
 			return true, nil
 		}
 
 		klog.Errorf("failed to get image %s: %v", image, err)
+
+		// if this is a context timeout, stop here so we dont run this check for too long
+		if errors.Is(err, context.DeadlineExceeded) {
+			return false, errors.Wrap(err, "failed to get image manifest")
+		}
 
 		if strings.Contains(err.Error(), "no image found in manifest list for architecture") {
 			// manifest was downloaded, but no matching architecture found in manifest

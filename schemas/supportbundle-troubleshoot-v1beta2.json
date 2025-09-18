@@ -1960,6 +1960,33 @@
                             }
                           }
                         }
+                      },
+                      "taint": {
+                        "description": "The node this Taint is attached to has the \"effect\" on\nany pod that does not tolerate the Taint.",
+                        "type": "object",
+                        "required": [
+                          "effect",
+                          "key"
+                        ],
+                        "properties": {
+                          "effect": {
+                            "description": "Required. The effect of the taint on pods\nthat do not tolerate the taint.\nValid effects are NoSchedule, PreferNoSchedule and NoExecute.",
+                            "type": "string"
+                          },
+                          "key": {
+                            "description": "Required. The taint key to be applied to a node.",
+                            "type": "string"
+                          },
+                          "timeAdded": {
+                            "description": "TimeAdded represents the time at which the taint was added.",
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "value": {
+                            "description": "The taint value corresponding to the taint key.",
+                            "type": "string"
+                          }
+                        }
                       }
                     }
                   },
