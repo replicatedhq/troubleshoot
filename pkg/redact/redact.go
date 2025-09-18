@@ -492,6 +492,57 @@ func getReplacementPattern(re *regexp.Regexp, maskText string) string {
 	return substStr
 }
 
+// getTokenizedReplacementPattern creates a replacement pattern that tokenizes matched groups
+func getTokenizedReplacementPattern(re *regexp.Regexp, line []byte, context string) []byte {
+	return getTokenizedReplacementPatternWithPath(re, line, context, "")
+}
+
+// getTokenizedReplacementPatternWithPath creates a replacement pattern that tokenizes matched groups with file path tracking
+func getTokenizedReplacementPatternWithPath(re *regexp.Regexp, line []byte, context, filePath string) []byte {
+	tokenizer := GetGlobalTokenizer()
+	if !tokenizer.IsEnabled() {
+		// Fallback to original behavior
+		return []byte(getReplacementPattern(re, MASK_TEXT))
+	}
+
+	// Find all matches and their submatches
+	matches := re.FindSubmatch(line)
+	if matches == nil {
+		return line // No match found
+	}
+
+	substStr := ""
+	for i, name := range re.SubexpNames() {
+		if i == 0 { // index 0 is the entire string
+			continue
+		}
+		if i >= len(matches) {
+			continue
+		}
+
+		if name == "" {
+			// Unnamed group - preserve as is
+			substStr = fmt.Sprintf("%s$%d", substStr, i)
+		} else if name == "mask" {
+			// This is the group to be tokenized
+			secretValue := string(matches[i])
+			if secretValue != "" {
+				// Use the path-aware tokenization method
+				token := tokenizer.TokenizeValueWithPath(secretValue, context, filePath)
+				substStr = fmt.Sprintf("%s%s", substStr, token)
+			} else {
+				substStr = fmt.Sprintf("%s%s", substStr, MASK_TEXT)
+			}
+		} else if name == "drop" {
+			// no-op, string is just dropped from result
+		} else {
+			// Named group - preserve as is
+			substStr = fmt.Sprintf("%s${%s}", substStr, name)
+		}
+	}
+	return re.ReplaceAll(line, []byte(substStr))
+}
+
 func readLine(r *bufio.Reader) ([]byte, error) {
 	var completeLine []byte
 	for {

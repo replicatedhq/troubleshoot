@@ -3,6 +3,7 @@ package redact
 import (
 	"io"
 	"io/ioutil"
+	"os"
 	"strings"
 	"testing"
 
@@ -11,6 +12,10 @@ import (
 )
 
 func Test_Redactors(t *testing.T) {
+	// Ensure tokenization is disabled for backward compatibility tests
+	os.Unsetenv("TROUBLESHOOT_TOKENIZATION")
+	ResetGlobalTokenizer()
+	defer ResetRedactionList() // Clean up global redaction list
 	original := `[
 		{
 		  "metadata": {
@@ -1724,6 +1729,7 @@ func Test_Redactors(t *testing.T) {
 
 	t.Run("test default redactors", func(t *testing.T) {
 		req := require.New(t)
+		ResetRedactionList() // Clean up before test
 		redactors, err := getRedactors("testpath")
 		req.NoError(err)
 

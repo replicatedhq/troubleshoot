@@ -53,7 +53,18 @@ func (r literalRedactor) Redact(input io.Reader, path string) io.Reader {
 			lineNum++
 			line := scanner.Bytes()
 
-			clean := bytes.ReplaceAll(line, r.match, maskTextBytes)
+			var clean []byte
+			tokenizer := GetGlobalTokenizer()
+			if tokenizer.IsEnabled() {
+				// For literal redaction, we tokenize the matched value
+				matchStr := string(r.match)
+				context := r.redactName
+				token := tokenizer.TokenizeValueWithPath(matchStr, context, r.filePath)
+				clean = bytes.ReplaceAll(line, r.match, []byte(token))
+			} else {
+				// Use original masking behavior
+				clean = bytes.ReplaceAll(line, r.match, maskTextBytes)
+			}
 
 			// Append newline since scanner strips it
 			err = writeBytes(writer, clean, NEW_LINE)

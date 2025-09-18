@@ -3,6 +3,7 @@ package redact
 import (
 	"bytes"
 	"io"
+	"os"
 	"strings"
 	"testing"
 
@@ -11,6 +12,10 @@ import (
 )
 
 func Test_NewMultiLineRedactor(t *testing.T) {
+	// Ensure tokenization is disabled for backward compatibility tests
+	os.Unsetenv("TROUBLESHOOT_TOKENIZATION")
+	ResetGlobalTokenizer()
+	defer ResetRedactionList() // Clean up global redaction list
 	tests := []struct {
 		name        string
 		selector    LineRedactor
