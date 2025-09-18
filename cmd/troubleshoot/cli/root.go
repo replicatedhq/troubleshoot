@@ -56,7 +56,7 @@ If no arguments are provided, specs are automatically loaded from the cluster by
 					_ = updater.CheckAndUpdate(cmd.Context(), updater.Options{
 						BinaryName:  "support-bundle",
 						CurrentPath: exe,
-						Printf:      func(f string, a ...interface{}) { klog.V(1).Infof(f, a...) },
+						Printf:      func(f string, a ...interface{}) { fmt.Fprintf(os.Stderr, f, a...) },
 					})
 				}
 			}
