@@ -47,7 +47,7 @@ func (r *MultiLineRedactor) Redact(input io.Reader, path string) io.Reader {
 			writer.CloseWithError(err)
 		}()
 
-		substStr := []byte(getReplacementPattern(r.re2, r.maskText))
+		tokenizer := GetGlobalTokenizer()
 
 		reader := bufio.NewReader(input)
 		line1, line2, err := getNextTwoLines(reader, nil)
@@ -94,7 +94,16 @@ func (r *MultiLineRedactor) Redact(input io.Reader, path string) io.Reader {
 				continue
 			}
 			flushLastLine = false
-			clean := r.re2.ReplaceAll(line2, substStr)
+			var clean []byte
+			if tokenizer.IsEnabled() {
+				// Use tokenized replacement for line2 based on line1 context
+				context := r.redactName
+				clean = getTokenizedReplacementPatternWithPath(r.re2, line2, context, r.filePath)
+			} else {
+				// Use original masking behavior
+				substStr := []byte(getReplacementPattern(r.re2, r.maskText))
+				clean = r.re2.ReplaceAll(line2, substStr)
+			}
 
 			// Append newlines since scanner strips them
 			err = writeBytes(writer, line1, NEW_LINE, clean, NEW_LINE)

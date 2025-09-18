@@ -64,6 +64,11 @@ func runHostCollectors(ctx context.Context, hostCollectors []*troubleshootv1beta
 	}
 
 	if opts.Redact {
+		// Phase 4: Enable tokenization if requested
+		if opts.Tokenize {
+			os.Setenv("TROUBLESHOOT_TOKENIZATION", "true")
+		}
+
 		_, span := otel.Tracer(constants.LIB_TRACER_NAME).Start(ctx, "Host collectors")
 		span.SetAttributes(attribute.String("type", "Redactors"))
 		err := collect.RedactResult(bundlePath, collectResult, globalRedactors)
@@ -73,6 +78,11 @@ func runHostCollectors(ctx context.Context, hostCollectors []*troubleshootv1beta
 			return collectResult, err
 		}
 		span.End()
+
+		// Reset tokenization environment after redaction
+		if opts.Tokenize {
+			os.Unsetenv("TROUBLESHOOT_TOKENIZATION")
+		}
 	}
 
 	return collectResult, nil
@@ -186,6 +196,11 @@ func runCollectors(ctx context.Context, collectors []*troubleshootv1beta2.Collec
 	}
 
 	if opts.Redact {
+		// Phase 4: Enable tokenization if requested
+		if opts.Tokenize {
+			os.Setenv("TROUBLESHOOT_TOKENIZATION", "true")
+		}
+
 		// TODO: Should we record how long each redactor takes?
 		_, span := otel.Tracer(constants.LIB_TRACER_NAME).Start(ctx, "In-cluster collectors")
 		span.SetAttributes(attribute.String("type", "Redactors"))
@@ -197,6 +212,11 @@ func runCollectors(ctx context.Context, collectors []*troubleshootv1beta2.Collec
 			return collectResult, err
 		}
 		span.End()
+
+		// Reset tokenization environment after redaction
+		if opts.Tokenize {
+			os.Unsetenv("TROUBLESHOOT_TOKENIZATION")
+		}
 	}
 
 	return collectResult, nil

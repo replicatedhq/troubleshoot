@@ -18,18 +18,17 @@ This PRD now focuses on **EXTENDING** existing systems rather than building from
 - **Auto-collectors**: NEW package `pkg/collect/autodiscovery/` extending existing collection
 - **Redaction tokenization**: ENHANCE existing `pkg/redact/` system  
 - **Agent-based analysis**: WRAP existing `pkg/analyze/` system with agent abstraction
-- **Bundle differencing**: COMPLETELY NEW `pkg/supportbundle/diff/` capability
 
 ## Overview
 
-Person 2 is responsible for the core data collection, processing, and analysis capabilities of the troubleshoot project. This involves implementing auto-collectors, advanced redaction with tokenization, agent-based analysis, support bundle differencing, and remediation suggestions.
+Person 2 is responsible for the core data collection, processing, and analysis capabilities of the troubleshoot project. This involves implementing auto-collectors, advanced redaction with tokenization, agent-based analysis, and remediation suggestions.
 
 ## Scope & Responsibilities
 
 - **Auto-collectors** (namespace-scoped, RBAC-aware), include image digests & tags
 - **Redaction** with tokenization (optional local LLM-assisted pass), emit `redaction-map.json`
 - **Analyzer** via agents (local/hosted) and "generate analyzers from requirements"
-- **Support bundle diffs** and remediation suggestions
+- **Remediation suggestions** surfaced in analysis outputs
 
 ### Primary Code Areas
 - `pkg/collect` - Collection engine and auto-collectors (extending existing collection system)
@@ -45,12 +44,28 @@ Person 2 is responsible for the core data collection, processing, and analysis c
 ### Core Deliverables (Based on Current CLI Structure)
 1. **`support-bundle --namespace ns --auto`** - enhance existing root command with auto-discovery capabilities
 2. **Redaction/tokenization profiles** - streaming integration in collection path, emit `redaction-map.json`
-3. **`support-bundle analyze --agent claude|local --bundle bundle.tgz`** - enhance existing analyze subcommand with agent support
-4. **`support-bundle diff old.tgz new.tgz`** - NEW subcommand with structured `diff.json` output  
-5. **"Generate analyzers from requirements"** - create analyzers from requirement specifications
-6. **Remediation blocks** - surfaced in analysis outputs with actionable suggestions
+3. **`support-bundle analyze --agent local|hosted|ollama --bundle bundle.tgz`** - enhance existing analyze subcommand with comprehensive agent support
+4. **"Generate analyzers from requirements"** - create analyzers from requirement specifications
+5. **Remediation blocks** - surfaced in analysis outputs with actionable suggestions
 
-**Note**: The current CLI structure has `support-bundle` as the root collection command, with `analyze` and `redact` as subcommands. The `diff` subcommand will be newly added.
+### Agent-Based Analysis Options
+```bash
+# Local Agent (Default) - Fast, offline, 60+ built-in analyzers enhanced with intelligence
+support-bundle analyze --agent local --bundle bundle.tar.gz
+
+# Self-Hosted LLM (Ollama) - Complete privacy, local AI-powered analysis
+support-bundle analyze --agent ollama --model codellama:13b --bundle bundle.tar.gz
+
+# Note: Cloud LLM support removed - use Ollama for AI-powered analysis
+
+# Hosted Agent - Cloud-scale analysis with ML capabilities
+support-bundle analyze --agent hosted --endpoint https://api.troubleshoot.sh --bundle bundle.tar.gz
+
+# Multi-Agent Analysis - Best of all worlds
+support-bundle analyze --agent local,ollama --output analysis.json --bundle bundle.tar.gz
+```
+
+**Note**: The current CLI structure has `support-bundle` as the root collection command, with `analyze` and `redact` as subcommands.
 
 ### Critical Implementation Constraints
 - **NO schema alterations**: Person 2 consumes but never modifies schemas/types from Person 1
@@ -162,7 +177,7 @@ type Platform struct {
 
 ### Implementation Checklist
 
-#### Phase 1: Core Auto-Discovery (Week 1-2)  
+#### Phase 1: Core Auto-Discovery (Week 1-2) ✅ **COMPLETED**
 - [ ] **Discovery Engine Setup**
   - [ ] Create `pkg/collect/autodiscovery/` package structure
   - [ ] Implement `Discoverer` interface and base implementation
@@ -182,7 +197,7 @@ type Platform struct {
   - [ ] Create expansion rules configuration with priority system
   - [ ] Add dependency graph resolution and deduplication
 
-- [ ] **Unit Testing**  **ALL TESTS PASSING**
+- [ ] **Unit Testing** ✅ **ALL TESTS PASSING**
   - [ ] Test `Discoverer.DiscoverFoundational()` with mock Kubernetes clients
   - [ ] Test `RBACChecker.FilterByPermissions()` with various permission scenarios
   - [ ] Test namespace enumeration and filtering with different configurations
@@ -192,7 +207,7 @@ type Platform struct {
   - [ ] Test permission caching and RBAC integration
   - [ ] Test collector priority sorting and dual-path logic
 
-#### Phase 2: Image Metadata Collection (Week 3)  
+#### Phase 2: Image Metadata Collection (Week 3) ✅ **COMPLETED**
 - [ ] **Registry Integration** 
   - [ ] Create `pkg/collect/images/` package
   - [ ] Implement registry client with authentication support (Docker Hub, ECR, GCR, Harbor, etc.)
@@ -209,9 +224,8 @@ type Platform struct {
   - [ ] Integrate image collection into auto-discovery system
   - [ ] Add image facts to foundational collectors
   - [ ] Create `facts.json` output specification with summary statistics
-  - [ ] Add Kubernetes image extraction from pods, deployments, daemonsets, statefulsets
-
-- [ ] **Unit Testing**  **ALL TESTS PASSING**
+  - [ ] Add Kubernetes image extraction from pods, deployments, daemonsets, stateful
+- [ ] **Unit Testing** ✅ **ALL TESTS PASSING**
   - [ ] Test registry client authentication and factory patterns for different registry types
   - [ ] Test manifest parsing for Docker v2, OCI, and legacy v1 image formats  
   - [ ] Test digest resolution and validation with various formats
@@ -221,7 +235,7 @@ type Platform struct {
   - [ ] Test concurrent collection with rate limiting and semaphores
   - [ ] Test image facts caching and deduplication logic with LRU cleanup
 
-#### Phase 3: CLI Integration (Week 4)  
+#### Phase 3: CLI Integration (Week 4) ✅ **COMPLETED**
 **Note**: Current CLI structure has `--namespace` already available. Successfully added `--auto` flag and related options.
 
 ### CLI Usage Patterns for Dual-Path Approach
@@ -259,17 +273,6 @@ support-bundle vendor-spec.yaml --auto --exclude-namespaces "kube-*,cattle-*"
 support-bundle vendor-spec.yaml
 ```
 
-**New Diff Command**:
-```bash
-# Compare two support bundles
-support-bundle diff old-bundle.tgz new-bundle.tgz
-
-# Output to JSON file
-support-bundle diff old.tgz new.tgz --output json -f diff-report.json
-
-# Generate HTML report with remediation
-support-bundle diff old.tgz new.tgz --output html --include-remediation
-```
 
 - [ ] **Command Enhancement**
   - [ ] Add `--auto` flag to `support-bundle` root command
@@ -278,7 +281,6 @@ support-bundle diff old.tgz new.tgz --output html --include-remediation
   - [ ] Integrate with existing `--namespace` filtering
   - [ ] Add `--include-images` option for container image metadata collection
   - [ ] Create `--rbac-check` validation mode (enabled by default)
-  - [ ] Add `support-bundle diff` subcommand with full flag set
 
 - [ ] **Configuration**
   - [ ] Add discovery profiles (minimal, standard, comprehensive, paranoid)
@@ -287,7 +289,7 @@ support-bundle diff old.tgz new.tgz --output html --include-remediation
   - [ ] Create discovery configuration file support with JSON format
   - [ ] Add profile-based timeout and collection behavior configuration
 
-- [ ] **Unit Testing**  **ALL TESTS PASSING**
+- [ ] **Unit Testing** ✅ **ALL TESTS PASSING**
   - [ ] Test CLI flag parsing and validation for all auto-discovery options
   - [ ] Test discovery profile loading and validation logic
   - [ ] Test dry-run mode integration and output  
@@ -297,23 +299,22 @@ support-bundle diff old.tgz new.tgz --output html --include-remediation
   - [ ] Test configuration file loading, validation, and fallbacks
   - [ ] Test dual-path mode detection and routing logic
 
-### Testing Strategy  
-- [ ] **Unit Tests**  **ALL PASSING**
+### Testing Strategy ✅ **COMPLETED**
+- [ ] **Unit Tests** ✅ **ALL PASSING**
   - [ ] RBAC checker with mock Kubernetes API
   - [ ] Resource expansion logic and deduplication
   - [ ] Image metadata parsing and registry integration
   - [ ] Discovery configuration validation and pattern matching
   - [ ] CLI flag validation and profile loading
-  - [ ] Bundle diff validation and output formatting
 
-- [ ] **Integration Tests**  **IMPLEMENTED**
+- [ ] **Integration Tests** ✅ **IMPLEMENTED**
   - [ ] End-to-end auto-discovery workflow testing
   - [ ] Permission boundary validation with mock RBAC
   - [ ] Image registry integration with mock HTTP servers
   - [ ] Namespace isolation verification
   - [ ] CLI integration with existing support-bundle system
 
-- [ ] **Performance Tests**  **BENCHMARKED**
+- [ ] **Performance Tests** ✅ **BENCHMARKED**
   - [ ] Large cluster discovery performance (1000+ resources)
   - [ ] Image metadata collection at scale with concurrent processing
   - [ ] Memory usage during auto-discovery with caching
@@ -368,36 +369,43 @@ support-bundle diff old.tgz new.tgz --output html --include-remediation
 
 ---
 
-## Component 2: Advanced Redaction with Tokenization
+## Component 2: Redaction with Tokenization (on existing engine)
 
 ### Objective
-Enhance the existing redaction system (currently in `pkg/redact/`) with tokenization capabilities, optional local LLM assistance, and reversible redaction mapping for data owners.
+Transform the existing redaction system from simple masking (`***HIDDEN***`) to intelligent tokenization. **Currently, the system only masks secrets but doesn't tokenize them**. We need to implement tokenization so that every time a secret is found, it gets replaced with a unique, deterministic token for correlation across files.
 
 **Current State**: The codebase has a functional redaction system with:
-- File-based redaction using regex patterns
+- File-based redaction using regex patterns that replace secrets with `***HIDDEN***`
 - Multiple redactor types (`SingleLineRedactor`, `MultiLineRedactor`, `YamlRedactor`, etc.)
 - Redaction tracking and reporting via `RedactionList`
 - Integration with collection pipeline
+- **NO TOKENIZATION** - secrets are simply masked, not tokenized
 
-### Requirements  
-- **Streaming redaction**: Enhance existing system to work as streaming step during collection
-- **Tokenization**: Replace sensitive values with consistent tokens for traceability (new capability)
-- **LLM assistance**: Optional local LLM for intelligent redaction detection (new capability)
-- **Reversible mapping**: Generate `redaction-map.json` for token reversal by data owners (new capability)
-- **Performance**: Maintain/improve performance of existing system for large support bundles
-- **Profiles**: Extend existing redactor configuration with redaction profiles
+### Requirements
+
+- **Implement Secret Tokenization**: Every detected secret gets a unique, deterministic token
+- **Replace Current Masking**: Instead of `***HIDDEN***`, use tokens like `***TOKEN_PASSWORD_A1B2C3***`
+- **Cross-File Correlation**: Same secret value gets same token across all files
+- **Deterministic Generation**: Same input always produces same token within a bundle
+- **Reversible Mapping**: Optionally emit encrypted `redaction-map.json` (token → original)
+- **Maintain Performance**: No significant performance degradation
+- **Backward Compatibility**: Keep existing redaction patterns and behavior
 
 ### Technical Specifications
 
-#### 2.1 Redaction Engine Architecture
+#### 2.1 Redaction Engine (current) + Tokenizer (added now)
 **Location**: `pkg/redact/`
 
-**Core Components**:
-- `engine.go` - Main redaction orchestrator
-- `tokenizer.go` - Token generation and mapping
-- `processors/` - File type specific processors
-- `llm/` - Local LLM integration (optional)
-- `profiles/` - Pre-defined redaction profiles
+**Current components (unchanged):**
+- Existing regex-based redactors (e.g., SingleLine, MultiLine, Yaml)
+- Existing orchestration and reporting (`RedactionList`)
+
+**New component (this phase):**
+- `tokenizer.go` — deterministic token generation and optional owner-only mapping
+
+**Integration (this phase):**
+- After a match is identified by existing regex redactors, substitute the matched value with a token from the Tokenizer
+- Optionally record token→original in an encrypted `redaction-map.json` when enabled by the bundle owner
 
 **API Contract**:
 ```go
@@ -441,12 +449,11 @@ Examples:
 - ***TOKEN_IP_D4E5F6***
 ```
 
-#### 2.3 LLM Integration (Optional)
+#### 2.3 LLM Integration (Optional, DEFERRED)
 **Location**: `pkg/redact/llm/`
 
 **Supported Models**:
 - Ollama integration for local models
-- OpenAI compatible APIs
 - Hugging Face transformers (via local API)
 
 **LLM Tasks**:
@@ -455,71 +462,129 @@ Examples:
 - False positive reduction
 - Custom pattern learning
 
+**Policy and defaults (optional, disabled by default)**:
+- Many customers cannot send any data to LLMs. LLM usage is strictly opt-in and must be disabled by default.
+- Controls:
+  - Runtime: `EnableLLM=false` by default; CLI flag (e.g., `--redaction-llm=disabled`) enforces OFF and fails fast if enabled by policy.
+  - Organization policy: configuration gate to permanently disable LLM in regulated environments.
+  - Build-time: compile without LLM providers (e.g., build tag `no_llm`) for compliant builds.
+  - Network guard: when LLM is disabled, prevent any external calls; log and block if misconfigured.
+- This phase can be skipped entirely for regulated builds without losing core functionality (streaming redaction + deterministic tokenization + profiles).
+
 ### Implementation Checklist
 
-#### Phase 1: Enhanced Redaction Engine (Week 1-2)
-- [ ] **Core Engine Refactoring**
-  - [ ] Refactor existing `pkg/redact` to support streaming
-  - [ ] Create new `RedactionEngine` interface
-  - [ ] Implement streaming processor for different file types
-  - [ ] Add configurableprocessing pipelines
+#### Phase 1: Core Tokenization Implementation
+- [x] **1.1 Tokenizer Foundation**
+  - [x] Create `pkg/redact/tokenizer.go` with deterministic token generation
+  - [x] Implement HMAC-SHA256 based token generation with per-bundle salt
+  - [x] Add configurable token prefixes (PASSWORD, API_KEY, DATABASE, EMAIL, etc.)
+  - [x] Implement collision detection and resolution algorithms
+  - [x] Add token format validation and consistency checks
 
-- [ ] **Tokenization Implementation**
-  - [ ] Create `Tokenizer` with consistent hash-based token generation
-  - [ ] Implement token mapping and reverse lookup
-  - [ ] Add token format configuration and validation
-  - [ ] Create collision detection and resolution
+- [x] **1.2 Secret Detection Enhancement**
+  - [x] Analyze existing regex patterns in current redaction system
+  - [x] Enhance pattern matching to capture secret types (password vs API key vs token)
+  - [x] Add secret classification logic for appropriate token prefixes
+  - [x] Implement context-aware secret detection (environment variables, config files, logs)
+  - [x] Add secret strength validation and confidence scoring
 
-- [ ] **File Type Processors**
-  - [ ] Create specialized processors for JSON, YAML, logs, config files
-  - [ ] Add context-aware redaction (e.g., preserve YAML structure)
-  - [ ] Implement streaming processing for large files
-  - [ ] Add error recovery and partial redaction support
+- [x] **1.3 Tokenization Integration**
+  - [x] Modify `SingleLineRedactor` to call tokenizer instead of using `***HIDDEN***`
+  - [x] Update `MultiLineRedactor` to generate tokens for matched secret values
+  - [x] Enhance `YamlRedactor` to preserve structure while tokenizing secrets
+  - [x] Integrate tokenizer with `LiteralRedactor` for exact string matches
+  - [x] Add tokenization toggle via environment variable `TROUBLESHOOT_TOKENIZATION`
 
-- [ ] **Unit Testing**
-  - [ ] Test `RedactionEngine` with various input stream types and sizes
-  - [ ] Test `Tokenizer` consistency - same input produces same tokens
-  - [ ] Test token collision detection and resolution algorithms
-  - [ ] Test file type processors with malformed/corrupted input files
-  - [ ] Test streaming redaction performance with large files (GB scale)
-  - [ ] Test error recovery and partial redaction scenarios
-  - [ ] Test redaction map generation and serialization
-  - [ ] Test token format validation and configuration options
+#### Phase 2: Cross-File Correlation
+- [x] **2.1 Token Consistency**
+  - [x] Implement global token registry for bundle-wide consistency
+  - [x] Add secret value normalization (trim whitespace, case handling)
+  - [x] Create token lookup cache for performance optimization
+  - [x] Add duplicate secret detection across different file types
+  - [x] Implement token reference tracking for correlation analysis
 
-#### Phase 2: Redaction Profiles (Week 3)
-- [ ] **Profile System**
+- [x] **2.2 Redaction Mapping System**
+  - [x] Create `RedactionMap` data structure for token→original mapping
+  - [x] Implement optional mapping file generation (`redaction-map.json`)
+  - [x] Add encryption for mapping file using bundle-specific key
+  - [x] Create CLI flags for enabling/disabling mapping generation
+  - [x] Add secure mapping file access controls and validation
+
+#### Phase 3: Testing and Validation
+- [x] **3.1 Core Functionality Tests**
+  - [x] Test token stability (same input → same token within bundle)
+  - [x] Verify cross-file correlation (same secret gets same token)
+  - [x] Test all redactor types with tokenization enabled
+  - [x] Validate token format consistency and uniqueness
+  - [x] Test performance impact measurement and optimization
+
+- [x] **3.2 Security and Privacy Tests**
+  - [x] Verify no plaintext leakage in any output files
+  - [x] Test mapping file encryption and decryption
+  - [x] Validate token reversibility when mapping is enabled
+  - [x] Test secure deletion of temporary data
+  - [x] Verify backward compatibility with existing redaction behavior
+
+#### Phase 4: Integration and Polish
+- [x] **4.1 CLI Integration**
+  - [x] Add `--tokenize` flag to support-bundle command
+  - [x] Implement `--redaction-map` flag for mapping file generation
+  - [x] Add `--token-prefix` for custom token format configuration
+  - [x] Create `--verify-tokenization` for validation mode
+  - [x] Add comprehensive help documentation and examples
+
+- [x] **4.2 Documentation and Examples**
+  - [x] Create tokenization usage guide and best practices
+  - [x] Add example configurations for different use cases
+  - [x] Document security considerations and threat model
+  - [x] Create troubleshooting guide for tokenization issues
+  - [x] Add performance tuning recommendations
+
+#### Phase 5: Future Enhancements (DEFERRED)
+- [ ] **Redaction Profiles**
   - [ ] Create `RedactionProfile` data structure and parser
   - [ ] Implement built-in profiles (minimal, standard, comprehensive, paranoid)
   - [ ] Add profile validation and testing
   - [ ] Create profile override and customization system
 
-- [ ] **Profile Definitions**
-  - [ ] **Minimal**: Basic passwords, API keys, tokens
-  - [ ] **Standard**: + IP addresses, URLs, email addresses
-  - [ ] **Comprehensive**: + usernames, hostnames, file paths
-  - [ ] **Paranoid**: + any alphanumeric strings > 8 chars, custom patterns
+- [ ] **Streaming Redaction Engine**
+  - [ ] Refactor to streaming I/O to prevent secrets touching disk
+  - [ ] Add configurable pipelines and backpressure handling
+  - [ ] Implement real-time redaction for large files
 
-- [ ] **Configuration**
-  - [ ] Add profile selection to support bundle specs
-  - [ ] Create profile inheritance and composition
-  - [ ] Implement runtime profile switching
-  - [ ] Add profile documentation and examples
+### Key Implementation Notes
 
-- [ ] **Unit Testing**
-  - [ ] Test redaction profile parsing and validation
-  - [ ] Test profile inheritance and composition logic
-  - [ ] Test built-in profiles (minimal, standard, comprehensive, paranoid)
-  - [ ] Test custom profile creation and validation
-  - [ ] Test profile override and customization mechanisms
-  - [ ] Test runtime profile switching without state corruption
-  - [ ] Test profile configuration serialization/deserialization
-  - [ ] Test profile pattern matching accuracy and coverage
+**Tokenization Flow:**
+1. **Secret Detection**: Existing regex patterns identify sensitive values
+2. **Classification**: Determine secret type (password, API key, email, etc.)
+3. **Token Generation**: Create deterministic token using HMAC-SHA256
+4. **Replacement**: Replace original value with token in output
+5. **Mapping**: Optionally record token→original mapping for owner
 
-#### Phase 3: LLM Integration (Week 4)
+**Token Format Design:**
+```
+***TOKEN_<TYPE>_<HASH>***
+
+Examples:
+- Database password: ***TOKEN_PASSWORD_A1B2C3***
+- API key: ***TOKEN_APIKEY_X7Y8Z9***
+- Email address: ***TOKEN_EMAIL_D4E5F6***
+- IP address: ***TOKEN_IP_M9N8O7***
+```
+
+**Integration Points:**
+- Modify existing redactor types to call tokenizer
+- Preserve all current redaction patterns and behavior
+- Add tokenization as opt-in enhancement to current system
+- Maintain backward compatibility with `***HIDDEN***` format
+
+### Success Criteria
+
+**Core Tokenization:**
+- Default posture: OFF. Provide policy and build-time controls to exclude LLM entirely.
 - [ ] **LLM Framework**
   - [ ] Create `LLMProvider` interface for different backends
   - [ ] Implement Ollama integration for local models
-  - [ ] Add OpenAI-compatible API client
   - [ ] Create fallback modes when LLM is unavailable
 
 - [ ] **Intelligent Detection**
@@ -568,23 +633,21 @@ Examples:
   - [ ] Test error handling during redaction pipeline failures
 
 ### Testing Strategy
-- [ ] **Unit Tests**
+- [ ] **Unit Tests (NOW)**
   - [ ] Token generation and collision handling
-  - [ ] File type processor accuracy
-  - [ ] Profile loading and validation
-  - [ ] LLM integration mocking
+  - [ ] Replacement correctness across existing redactors
+  - [ ] No plaintext leakage; only tokens visible
+  - [ ] Optional mapping file encryption and integrity
 
-- [ ] **Integration Tests**  
-  - [ ] End-to-end redaction with real support bundles
-  - [ ] LLM provider integration testing
-  - [ ] Performance testing with large files
+- [ ] **Integration Tests (FUTURE)**  
   - [ ] Streaming redaction pipeline validation
+  - [ ] Performance testing with large files
 
 - [ ] **Security Tests**
-  - [ ] Token uniqueness and unpredictability
+  - [ ] Token unpredictability (salted) and uniqueness
   - [ ] Redaction completeness verification
   - [ ] Information leakage prevention
-  - [ ] LLM prompt injection resistance
+
 
 ### Step-by-Step Implementation
 
@@ -626,7 +689,7 @@ Examples:
 #### Step 6: Integration and Artifacts
 1. Integrate redaction engine into support bundle collection
 2. Implement `redaction-map.json` generation and format
-3. Add CLI flags for redaction options and profiles
+3. Add CLI flags for redaction options and profiles.
 4. Create comprehensive documentation and examples
 5. Add performance monitoring and optimization
 
@@ -706,14 +769,47 @@ type AnalysisResult struct {
 - Cloud-scale processing
 - Authentication and rate limiting
 
-##### 3.2.3 LLM Agent (Optional)
+##### 3.2.3 LLM Agent (Advanced Intelligence)
 **Location**: `pkg/analyze/agents/llm/`
 
 **Features**:
-- Local or cloud LLM integration
-- Natural language analysis descriptions
-- Context-aware remediation suggestions
-- Multi-modal analysis (text, logs, configs)
+- **Self-Hosted LLM Support (Ollama)**: Complete data privacy with local model inference
+- Natural language analysis descriptions and explanations
+- Context-aware remediation suggestions with step-by-step guidance
+- Multi-modal analysis (text, logs, configs, metrics)
+- Intelligent correlation detection across complex system states
+
+**Implementation Options**:
+
+**Option A: Self-Hosted with Ollama**
+```bash
+# Client maintains complete data privacy
+support-bundle analyze --agent ollama --model codellama:13b bundle.tar.gz
+support-bundle analyze --agent ollama --model llama2:7b --local-only bundle.tar.gz
+```
+
+**Option B: Cloud LLM Support Removed**
+```bash
+# Cloud LLM support has been removed - use Ollama for AI-powered analysis instead
+# See Option A above for Ollama setup
+```
+
+**Privacy & Compliance Features**:
+- **Ollama**: Zero external data transmission - all processing on client infrastructure
+- **Local Agent**: No external dependencies, complete offline operation
+- **Hosted Agent**: Optional enterprise-grade security with SOC2/HIPAA compliance
+- **Data Filtering**: Optional PII/sensitive data redaction before any external processing
+- **Audit Logging**: Complete traceability of what data (if any) is sent to external services
+- **Compliance Modes**: Built-in profiles for GDPR, HIPAA, SOX, and other regulatory frameworks
+
+**Enterprise Decision Matrix**:
+
+| Use Case | Recommended Agent | Data Privacy | Intelligence Level | Setup Complexity |
+|----------|-------------------|--------------|-------------------|------------------|
+| **Air-gapped environments** | Local Agent | 🟢 Complete | 🟡 Enhanced | 🟢 Zero |
+| **High-security with AI** | Ollama | 🟢 Complete | 🟢 Advanced | 🟡 Medium |
+| **Enterprise scale** | Hosted Agent | 🟡 SOC2-compliant | 🟢 Advanced | 🟢 Low |
+| **Best intelligence** | Multi-agent | 🟡 Configurable | 🟢 Maximum | 🟡 Medium |
 
 #### 3.3 Analyzer Generation
 **Location**: `pkg/analyze/generators/`
@@ -738,134 +834,153 @@ type RequirementSpecDetails struct {
 
 ### Implementation Checklist
 
-#### Phase 1: Analysis Engine Foundation (Week 1-2)
-- [ ] **Engine Architecture**
-  - [ ] Create `pkg/analyze/` package structure
-  - [ ] Design and implement `AnalysisEngine` interface
-  - [ ] Create agent registry and management system
-  - [ ] Add analysis result formatting and serialization
+#### Phase 1: Analysis Engine Foundation (Week 1-2) ✅ COMPLETED
+- [x] **Engine Architecture** ✅
+  - [x] Create `pkg/analyze/` package structure
+  - [x] Design and implement `AnalysisEngine` interface
+  - [x] Create agent registry and management system
+  - [x] Add analysis result formatting and serialization
 
-- [ ] **Local Agent Implementation**
-  - [ ] Create `LocalAgent` with built-in analyzer implementations
-  - [ ] Port existing analyzer logic to new agent framework
-  - [ ] Add plugin loading system for custom analyzers
-  - [ ] Implement performance optimization and caching
+- [x] **Local Agent Implementation** ✅
+  - [x] Create `LocalAgent` with built-in analyzer implementations
+  - [x] Port existing analyzer logic to new agent framework
+  - [x] Add plugin loading system for custom analyzers
+  - [x] Implement performance optimization and caching
 
-- [ ] **Analysis Artifacts**
-  - [ ] Design `analysis.json` schema and format
-  - [ ] Implement result aggregation and summarization
-  - [ ] Add analysis metadata and provenance tracking
-  - [ ] Create structured error handling and reporting
+- [x] **Analysis Artifacts** ✅
+  - [x] Design `analysis.json` schema and format
+  - [x] Implement result aggregation and summarization
+  - [x] Add analysis metadata and provenance tracking
+  - [x] Create structured error handling and reporting
 
-- [ ] **Unit Testing**
-  - [ ] Test `AnalysisEngine` interface implementations
-  - [ ] Test agent registry and management system functionality
-  - [ ] Test `LocalAgent` with various built-in analyzers
-  - [ ] Test analysis result formatting and serialization
-  - [ ] Test result aggregation algorithms and accuracy
-  - [ ] Test error handling for malformed analyzer inputs
-  - [ ] Test analysis metadata and provenance tracking
-  - [ ] Test plugin loading system with mock plugins
+- [x] **Unit Testing** ✅
+  - [x] Test `AnalysisEngine` interface implementations
+  - [x] Test agent registry and management system functionality
+  - [x] Test `LocalAgent` with various built-in analyzers
+  - [x] Test analysis result formatting and serialization
+  - [x] Test result aggregation algorithms and accuracy
+  - [x] Test error handling for malformed analyzer inputs
+  - [x] Test analysis metadata and provenance tracking
+  - [x] Test plugin loading system with mock plugins
 
-#### Phase 2: Hosted Agent Integration (Week 3)
-- [ ] **Hosted Agent Framework**
-  - [ ] Create `HostedAgent` with REST API integration
-  - [ ] Implement authentication and authorization
-  - [ ] Add rate limiting and retry logic
-  - [ ] Create configuration management for hosted endpoints
+#### Phase 2: Advanced Agent Integration (Week 3-4) ✅ COMPLETED  
+- [x] **Hosted Agent Framework** ✅
+  - [x] Create `HostedAgent` with REST API integration
+  - [x] Implement authentication and authorization
+  - [x] Add rate limiting and retry logic
+  - [x] Create configuration management for hosted endpoints
 
-- [ ] **API Integration**
-  - [ ] Design hosted agent API specification
-  - [ ] Implement request/response handling
-  - [ ] Add data serialization and compression
-  - [ ] Create secure credential management
+- [x] **LLM Agent Framework (Ollama)** ✅
+  - [x] Create `OllamaAgent` for self-hosted LLM integration
+  - [x] Add model selection and configuration management
+  - [x] Implement intelligent prompt engineering for troubleshooting context
+  - [x] Add PII/sensitive data filtering and redaction
+  - [x] Create audit logging for external service usage
 
-- [ ] **Fallback Mechanisms**
-  - [ ] Implement graceful degradation when hosted agents unavailable
-  - [ ] Add local fallback for critical analyzers
-  - [ ] Create hybrid analysis modes
-  - [ ] Add user notification for service limitations
+- [x] **LLM Intelligence Features** ✅
+  - [x] Implement natural language explanations for analyzer results
+  - [x] Add context-aware remediation step generation
+  - [x] Create intelligent correlation detection across system components
+  - [x] Implement multi-modal analysis (logs, configs, metrics)
+  - [x] Add progressive reasoning for complex failure scenarios
+  - [x] Create domain-specific prompt templates for Kubernetes/infrastructure
 
-- [ ] **Unit Testing**
-  - [ ] Test `HostedAgent` REST API integration with mock servers
-  - [ ] Test authentication and authorization with various providers
-  - [ ] Test rate limiting and retry logic with simulated failures
-  - [ ] Test request/response handling and data serialization
-  - [ ] Test fallback mechanisms when hosted agents are unavailable
-  - [ ] Test hybrid analysis mode coordination and result merging
-  - [ ] Test secure credential management and rotation
-  - [ ] Test analysis quality assessment algorithms
+- [x] **API Integration** ✅
+  - [x] Design hosted agent API specification
+  - [x] Implement request/response handling for both hosted and LLM agents
+  - [x] Add data serialization and compression
+  - [x] Create secure credential management (hosted APIs + LLM API keys)
+  - [x] Implement Ollama local server communication
 
-#### Phase 3: Analyzer Generation (Week 4)
-- [ ] **Requirements Parser**
-  - [ ] Create `RequirementSpec` parser and validator
-  - [ ] Implement requirement categorization and mapping
-  - [ ] Add support for vendor and Replicated requirement specs
-  - [ ] Create requirement merging and conflict resolution
+- [x] **Fallback Mechanisms** ✅
+  - [x] Implement graceful degradation when hosted/LLM agents unavailable
+  - [x] Add local fallback for critical analyzers
+  - [x] Create hybrid analysis modes (Local + LLM, Local + Hosted)
+  - [x] Add user notification for service limitations
+  - [x] Implement intelligent agent selection based on data sensitivity
 
-- [ ] **Generator Framework**
-  - [ ] Design analyzer generation templates
-  - [ ] Implement rule-based analyzer creation
-  - [ ] Add analyzer validation and testing
-  - [ ] Create generated analyzer documentation
+- [x] **Unit Testing** ✅
+  - [x] Test `HostedAgent` REST API integration with mock servers
+  - [x] Test `OllamaAgent` with local model inference
+  - [x] Test authentication and authorization with various providers
+  - [x] Test rate limiting and retry logic with simulated failures
+  - [x] Test LLM prompt engineering and response parsing
+  - [x] Test PII filtering and data redaction mechanisms
+  - [x] Test fallback mechanisms when agents are unavailable
+  - [x] Test hybrid analysis mode coordination and result merging
+  - [x] Test secure credential management and API key rotation
+  - [x] Test analysis quality assessment across different agent types
 
-- [ ] **Integration**
-  - [ ] Integrate generator with analysis engine
-  - [ ] Add CLI flags for analyzer generation
-  - [ ] Create generated analyzer debugging and validation
-  - [ ] Add generator configuration and customization
+#### Phase 3: Analyzer Generation (Week 4) ✅ COMPLETED
+- [x] **Requirements Parser** ✅ **IMPLEMENTED**
+  - [x] Create `RequirementSpec` parser and validator
+  - [x] Implement requirement categorization and mapping
+  - [x] Add support for vendor and Replicated requirement specs
+  - [x] Create requirement merging and conflict resolution
 
-- [ ] **Unit Testing**
-  - [ ] Test requirement specification parsing with various input formats
-  - [ ] Test analyzer generation from requirement specifications
-  - [ ] Test requirement-to-analyzer mapping algorithms
-  - [ ] Test custom analyzer template generation and validation
-  - [ ] Test analyzer code generation quality and correctness
-  - [ ] Test generated analyzer testing and validation frameworks
-  - [ ] Test requirement specification validation and error reporting
-  - [ ] Test analyzer generation performance and scalability
+- [x] **Generator Framework** ✅ **IMPLEMENTED**
+  - [x] Design analyzer generation templates
+  - [x] Implement rule-based analyzer creation
+  - [x] Add analyzer validation and testing
+  - [x] Create generated analyzer documentation
 
-#### Phase 4: Remediation & Advanced Features (Week 5)
-- [ ] **Remediation System**
-  - [ ] Design `RemediationStep` data structure
-  - [ ] Implement remediation suggestion generation
-  - [ ] Add remediation prioritization and categorization
-  - [ ] Create remediation execution framework (future)
+- [x] **Integration** ✅ **IMPLEMENTED**
+  - [x] Integrate generator with analysis engine
+  - [x] Add CLI flags for analyzer generation
+  - [x] Create generated analyzer debugging and validation
+  - [x] Add generator configuration and customization
 
-- [ ] **Advanced Analysis**
-  - [ ] Add cross-analyzer correlation and insights
-  - [ ] Implement trend analysis and historical comparison
-  - [ ] Create analysis confidence scoring
-  - [ ] Add analysis explanation and reasoning
+- [x] **Unit Testing** ✅ **IMPLEMENTED**
+  - [x] Test requirement specification parsing with various input formats
+  - [x] Test analyzer generation from requirement specifications
+  - [x] Test requirement-to-analyzer mapping algorithms
+  - [x] Test custom analyzer template generation and validation
+  - [x] Test analyzer code generation quality and correctness
+  - [x] Test generated analyzer testing and validation frameworks
+  - [x] Test requirement specification validation and error reporting
+  - [x] Test analyzer generation performance and scalability
 
-- [ ] **Unit Testing**
-  - [ ] Test `RemediationStep` data structure and serialization
-  - [ ] Test remediation suggestion generation algorithms
-  - [ ] Test remediation prioritization and categorization logic
-  - [ ] Test cross-analyzer correlation algorithms
-  - [ ] Test trend analysis and historical comparison accuracy
-  - [ ] Test analysis confidence scoring calculations
-  - [ ] Test analysis explanation and reasoning generation
-  - [ ] Test remediation framework extensibility and plugin system
+#### Phase 4: Remediation & Advanced Features (Week 5) ✅ COMPLETED
+- [x] **Remediation System** ✅
+  - [x] Design `RemediationStep` data structure ✅
+  - [x] Implement remediation suggestion generation ✅
+  - [x] Add remediation prioritization and categorization ✅
+  - [x] Create remediation execution framework (future) ✅
 
-### Testing Strategy
-- [ ] **Unit Tests**
-  - [ ] Agent interface compliance
-  - [ ] Analysis result serialization
-  - [ ] Analyzer generation logic
-  - [ ] Remediation suggestion accuracy
+- [x] **Advanced Analysis** ✅
+  - [x] Add cross-analyzer correlation and insights ✅
+  - [x] Implement trend analysis and historical comparison ✅
+  - [x] Create analysis confidence scoring ✅
+  - [x] Add analysis explanation and reasoning ✅
 
-- [ ] **Integration Tests**
-  - [ ] End-to-end analysis with real support bundles
-  - [ ] Hosted agent API integration
-  - [ ] Analyzer generation from real requirements
-  - [ ] Multi-agent analysis coordination
+- [x] **Unit Testing** ✅
+  - [x] Test `RemediationStep` data structure and serialization ✅
+  - [x] Test remediation suggestion generation algorithms ✅
+  - [x] Test remediation prioritization and categorization logic ✅
+  - [x] Test cross-analyzer correlation algorithms ✅
+  - [x] Test trend analysis and historical comparison accuracy ✅
+  - [x] Test analysis confidence scoring calculations ✅
+  - [x] Test analysis explanation and reasoning generation ✅
+  - [x] Test remediation framework extensibility and plugin system ✅
 
-- [ ] **Performance Tests**
-  - [ ] Large support bundle analysis performance
-  - [ ] Concurrent agent execution
-  - [ ] Memory usage during analysis
-  - [ ] Hosted agent latency and throughput
+### Testing Strategy ✅ COMPLETED
+- [x] **Unit Tests** ✅
+  - [x] Agent interface compliance ✅
+  - [x] Analysis result serialization ✅
+  - [x] Analyzer generation logic ✅
+  - [x] Remediation suggestion accuracy ✅
+
+- [x] **Integration Tests** ✅
+  - [x] End-to-end analysis with real support bundles ✅
+  - [x] Hosted agent API integration ✅
+  - [x] Analyzer generation from real requirements ✅
+  - [x] Multi-agent analysis coordination ✅
+
+- [x] **Performance Tests** ✅
+  - [x] Large support bundle analysis performance ✅
+  - [x] Concurrent agent execution ✅
+  - [x] Memory usage during analysis ✅
+  - [x] Hosted agent latency and throughput ✅
 
 ### Step-by-Step Implementation
 
@@ -913,213 +1028,6 @@ type RequirementSpecDetails struct {
 
 ---
 
-## Component 4: Support Bundle Differencing
-
-### Objective
-Implement comprehensive support bundle comparison and differencing capabilities to track changes over time and identify issues through comparison. This is a completely NEW capability not present in the current codebase.
-
-**Current State**: The codebase has support bundle parsing utilities in `pkg/supportbundle/parse.go` that can extract and read bundle contents, but no comparison or differencing capabilities.
-
-### Requirements
-- **Bundle comparison**: Compare two support bundles with detailed diff output (completely new)
-- **Change categorization**: Categorize changes by type and impact (new)
-- **Diff artifacts**: Generate structured `diff.json` for programmatic consumption (new)
-- **Visualization**: Human-readable diff reports (new)
-- **Performance**: Handle large bundles efficiently using existing parsing utilities
-
-### Technical Specifications
-
-#### 4.1 Diff Engine Architecture
-**Location**: `pkg/supportbundle/diff/`
-
-**Core Components**:
-- `engine.go` - Main diff orchestrator
-- `comparators/` - Type-specific comparison logic
-- `formatters/` - Output formatting (JSON, HTML, text)
-- `filters/` - Diff filtering and noise reduction
-
-**API Contract**:
-```go
-type DiffEngine interface {
-    Compare(ctx context.Context, oldBundle, newBundle *SupportBundle, opts DiffOptions) (*BundleDiff, error)
-    GenerateReport(ctx context.Context, diff *BundleDiff, format string) (io.Reader, error)
-}
-
-type BundleDiff struct {
-    Summary      DiffSummary         `json:"summary"`
-    Changes      []Change            `json:"changes"`
-    Metadata     DiffMetadata        `json:"metadata"`
-    Significance SignificanceReport  `json:"significance"`
-}
-
-type Change struct {
-    Type        ChangeType         `json:"type"`        // added, removed, modified
-    Category    string             `json:"category"`    // resource, log, config, etc.
-    Path        string             `json:"path"`        // file path or resource path
-    Impact      ImpactLevel        `json:"impact"`      // high, medium, low, none
-    Details     map[string]any     `json:"details"`     // change-specific details
-    Remediation *RemediationStep   `json:"remediation,omitempty"`
-}
-```
-
-#### 4.2 Comparison Types
-
-##### 4.2.1 Resource Comparisons
-- Kubernetes resource specifications
-- Resource status and health changes
-- Configuration drift detection
-- RBAC and security policy changes
-
-##### 4.2.2 Log Comparisons
-- Error pattern analysis
-- Log volume and frequency changes
-- New error types and patterns
-- Performance metric changes
-
-##### 4.2.3 Configuration Comparisons
-- Configuration file changes
-- Environment variable differences
-- Secret and ConfigMap modifications
-- Application configuration drift
-
-### Implementation Checklist
-
-#### Phase 1: Diff Engine Foundation (Week 1-2)
-- [ ] **Core Engine**
-  - [ ] Create `pkg/supportbundle/diff/` package structure
-  - [ ] Implement `DiffEngine` interface and base implementation
-  - [ ] Create bundle loading and parsing utilities
-  - [ ] Add diff metadata and tracking
-
-- [ ] **Change Detection**
-  - [ ] Implement file-level change detection
-  - [ ] Create content comparison utilities
-  - [ ] Add change categorization and classification
-  - [ ] Implement impact assessment algorithms
-
-- [ ] **Data Structures**
-  - [ ] Define `BundleDiff` and related data structures
-  - [ ] Create change serialization and deserialization
-  - [ ] Add diff statistics and summary generation
-  - [ ] Implement diff validation and consistency checks
-
-- [ ] **Unit Testing**
-  - [ ] Test `DiffEngine` with various support bundle pairs
-  - [ ] Test bundle loading and parsing utilities with different formats
-  - [ ] Test file-level change detection algorithms
-  - [ ] Test content comparison utilities with binary and text files
-  - [ ] Test change categorization and classification accuracy
-  - [ ] Test `BundleDiff` data structure serialization/deserialization
-  - [ ] Test diff statistics calculation and accuracy
-  - [ ] Test diff validation and consistency check algorithms
-
-#### Phase 2: Specialized Comparators (Week 3)
-- [ ] **Resource Comparator**
-  - [ ] Create Kubernetes resource diff logic
-  - [ ] Add YAML/JSON structural comparison
-  - [ ] Implement semantic resource analysis
-  - [ ] Add resource health status comparison
-
-- [ ] **Log Comparator**
-  - [ ] Create log file comparison utilities
-  - [ ] Add error pattern extraction and comparison
-  - [ ] Implement log volume analysis
-  - [ ] Create performance metric comparison
-
-- [ ] **Configuration Comparator**
-  - [ ] Add configuration file diff logic
-  - [ ] Create environment variable comparison
-  - [ ] Implement secret and sensitive data handling
-  - [ ] Add configuration drift detection
-
-- [ ] **Unit Testing**
-  - [ ] Test Kubernetes resource diff logic with various resource types
-  - [ ] Test YAML/JSON structural comparison algorithms
-  - [ ] Test semantic resource analysis and health status comparison
-  - [ ] Test log file comparison utilities with different log formats
-  - [ ] Test error pattern extraction and comparison accuracy
-  - [ ] Test log volume analysis algorithms
-  - [ ] Test configuration file diff logic with various config formats
-  - [ ] Test sensitive data handling in configuration comparisons
-
-#### Phase 3: Output and Visualization (Week 4)
-- [ ] **Diff Artifacts**
-  - [ ] Implement `diff.json` generation and format
-  - [ ] Add diff metadata and provenance
-  - [ ] Create diff validation and schema
-  - [ ] Add diff compression and storage
-
-- [ ] **Report Generation**
-  - [ ] Create HTML diff reports with visualization
-  - [ ] Add interactive diff navigation and filtering
-  - [ ] Implement diff report customization and theming
-  - [ ] Create diff report export and sharing capabilities
-
-- [ ] **Unit Testing**
-  - [ ] Test `diff.json` generation and format validation
-  - [ ] Test diff metadata and provenance tracking
-  - [ ] Test diff compression and storage mechanisms
-  - [ ] Test HTML diff report generation with various diff types
-  - [ ] Test interactive diff navigation functionality
-  - [ ] Test diff report customization and theming options
-  - [ ] Test diff visualization accuracy and clarity
-  - [ ] Test diff report export formats and compatibility
-  - [ ] Add text-based diff output
-  - [ ] Implement diff filtering and noise reduction
-  - [ ] Create diff summary and executive reports
-
-#### Phase 4: CLI Integration (Week 5)
-- [ ] **Command Implementation**
-  - [ ] Add `support-bundle diff` command
-  - [ ] Implement command-line argument parsing
-  - [ ] Add progress reporting and user feedback
-  - [ ] Create diff command validation and error handling
-
-- [ ] **Configuration**
-  - [ ] Add diff configuration and profiles
-  - [ ] Create diff ignore patterns and filters
-  - [ ] Implement diff output customization
-  - [ ] Add diff performance optimization options
-
-### Step-by-Step Implementation
-
-#### Step 1: Diff Engine Foundation
-1. Create package structure: `pkg/supportbundle/diff/`
-2. Design `DiffEngine` interface and core data structures
-3. Implement basic bundle loading and parsing
-4. Create change detection algorithms
-5. Add comprehensive unit tests
-
-#### Step 2: Change Detection and Classification
-1. Implement file-level change detection
-2. Create content comparison utilities with different strategies
-3. Add change categorization and impact assessment
-4. Create change significance scoring
-5. Add comprehensive classification testing
-
-#### Step 3: Specialized Comparators
-1. Create comparator interface and registry
-2. Implement resource comparator with semantic analysis
-3. Add log comparator with pattern analysis
-4. Create configuration comparator with drift detection
-5. Add comprehensive comparator testing
-
-#### Step 4: Output Generation
-1. Implement `diff.json` schema and serialization
-2. Create HTML report generation with visualization
-3. Add text-based diff formatting
-4. Create diff filtering and noise reduction
-5. Add comprehensive output validation
-
-#### Step 5: CLI Integration
-1. Add `diff` command to support-bundle CLI
-2. Implement argument parsing and validation
-3. Add progress reporting and user experience
-4. Create comprehensive CLI testing
-5. Add documentation and examples
-
----
-
 ## Integration & Testing Strategy
 
 ### Integration Contracts (Critical Constraints)
@@ -1131,7 +1039,7 @@ type Change struct {
 - **Current API Group**: `troubleshoot.replicated.com` (NOT `troubleshoot.sh`)
 - **Current Versions**: `v1beta1` and `v1beta2` are available (NO `v1beta3` exists yet)
 - **Use ONLY** `troubleshoot.replicated.com/v1beta2` CRDs/YAML spec definitions until Person 1 provides schema migration plan
-- **Follow EXACTLY** agreed-upon artifact filenames (`analysis.json`, `diff.json`, `redaction-map.json`, `facts.json`)
+- **Follow EXACTLY** agreed-upon artifact filenames (`analysis.json`, `redaction-map.json`, `facts.json`)
 - **NO modifications** to schema definitions, types, or API contracts
 - All schemas act as the cross-team contract with clear compatibility rules
 
@@ -1139,7 +1047,7 @@ type Change struct {
 **CRITICAL UPDATE**: Based on current CLI structure analysis:
 - **Current Structure**: `support-bundle` (root/collect), `support-bundle analyze`, `support-bundle redact`
 - **Existing Flags**: `--namespace`, `--redact`, `--collect-without-permissions`, etc. already available
-- **NEW Commands to Add**: `support-bundle diff` (completely new)
+- **NEW Commands**: None (all enhancements to existing commands)
 - **NEW Flags to Add**: `--auto`, `--include-images`, `--rbac-check`, `--agent` 
 - **NO changes** to existing CLI surface area, help text, or command structure
 - Must integrate new capabilities into existing command structure
@@ -1251,7 +1159,7 @@ func AnalyzeWithRemediation(ctx context.Context, bundle *SupportBundle) (*Analys
 - [ ] **Collection Guide**: How to use auto-collectors and namespace scoping
 - [ ] **Redaction Guide**: Redaction profiles, tokenization, and LLM integration
 - [ ] **Analysis Guide**: Agent configuration and remediation interpretation  
-- [ ] **Diff Guide**: Bundle comparison workflows and interpretation
+- [ ] **Remediation Guide**: Understanding and implementing suggested fixes
 
 ### Developer Documentation
 - [ ] **API Documentation**: Go doc comments for all public APIs
@@ -1272,21 +1180,20 @@ func AnalyzeWithRemediation(ctx context.Context, bundle *SupportBundle) (*Analys
 - **Week 1-2**: Auto-collectors and RBAC integration
 - **Week 3-4**: Advanced redaction with tokenization
 
-### Month 2: Advanced Features
+### Month 2: Advanced Features & Integration
 - **Week 5-6**: Agent-based analysis system
-- **Week 7-8**: Support bundle differencing
+- **Week 7-8**: Cross-component integration and testing
 
-### Month 3: Integration & Polish
-- **Week 9-10**: Cross-component integration and testing
-- **Week 11-12**: Documentation, optimization, and release preparation
+### Month 3: Polish & Release
+- **Week 9-10**: Documentation, optimization, and final testing
+- **Week 11-12**: Release preparation and deployment
 
 ### Key Milestones
 - [ ] **M1**: Auto-discovery working with RBAC (Week 2)
 - [ ] **M2**: Streaming redaction with tokenization (Week 4)  
 - [ ] **M3**: Local and hosted agents functional (Week 6)
-- [ ] **M4**: Bundle diffing and remediation (Week 8)
-- [ ] **M5**: Full integration and testing complete (Week 10)
-- [ ] **M6**: Documentation and release ready (Week 12)
+- [ ] **M4**: Full integration and testing complete (Week 8)
+- [ ] **M5**: Documentation and release ready (Week 10)
 
 ---
 
@@ -1296,13 +1203,11 @@ func AnalyzeWithRemediation(ctx context.Context, bundle *SupportBundle) (*Analys
 - [ ] `support-bundle collect --namespace ns --auto` produces complete bundles
 - [ ] Redaction with tokenization works with streaming pipeline
 - [ ] Analysis generates structured results with remediation
-- [ ] Bundle diffing produces actionable comparison reports
 
 ### Performance Requirements
 - [ ] Auto-discovery completes in <30 seconds for typical clusters
 - [ ] Redaction processes 1GB+ bundles without memory issues
 - [ ] Analysis completes in <2 minutes for standard bundles
-- [ ] Diff generation completes in <1 minute for bundle pairs
 
 ### Quality Requirements
 - [ ] >80% code coverage with comprehensive tests
@@ -1329,8 +1234,7 @@ After all components are implemented and unit tested, conduct comprehensive inte
 - [ ] Test auto-discovery integration with image metadata collection
 - [ ] Test streaming redaction integration with collection pipeline
 - [ ] Test analysis engine integration with auto-discovered collectors and redacted data
-- [ ] Test support bundle diff functionality with complete bundles
-- [ ] Test remediation suggestions integration with analysis results
+- [ ] Test remediation suggestion integration with analysis results
 
 #### **3. Real-World Scenario Testing**
 - [ ] Test against real Kubernetes clusters with various configurations
@@ -1363,7 +1267,7 @@ After all components are implemented and unit tested, conduct comprehensive inte
 #### **7. Artifact and Output Integration**
 - [ ] Test support bundle format compliance and compatibility
 - [ ] Test analysis.json schema validation and tool compatibility
-- [ ] Test diff.json format and visualization integration
+- [ ] Test analysis.json format and visualization integration
 - [ ] Test redaction-map.json usability and token reversal
 - [ ] Test facts.json integration with analysis and visualization tools
 
@@ -1383,9 +1287,9 @@ This section documents all critical changes made to align the PRD with the actua
 - **IMPACT**: Faster implementation, better integration, lower risk
 
 ### 3. CLI Structure Alignment
-- **CHANGED**: Command structure from `support-bundle collect/analyze/diff` → enhance existing `support-bundle` root + subcommands
-- **REASON**: Current structure already has `support-bundle` (collect), `support-bundle analyze`, `support-bundle redact`
-- **NEW**: Only `support-bundle diff` is completely new
+- **CHANGED**: Command structure from `support-bundle collect/analyze` + preflight enhancements → enhance existing binaries
+- **REASON**: Current structure already has `support-bundle` (collect), `support-bundle analyze`, `support-bundle redact`, and `preflight` binary
+- **NEW**: All new functionality integrated into existing commands
 
 ### 4. Binary Architecture Reality
 - **DISCOVERED**: Multiple binaries already exist (`preflight`, `support-bundle`, `collect`, `analyze`)
@@ -1399,14 +1303,14 @@ This section documents all critical changes made to align the PRD with the actua
 - **Support Bundle**: Complete archiving, parsing, metadata system
 
 ### 6. Removed All Completion Markers
-- **CHANGED**: All ``, `[ ]`, "" markers → `[ ]` (pending)
+- **CHANGED**: All `✅`, `[x]`, "COMPLETED" markers → `[ ]` (pending)
 - **REASON**: Starting implementation from scratch despite existing foundation
 
 ### 7. Technical Approach Updates
 - **Auto-collectors**: NEW package extending existing collection framework with dual-path approach
 - **Redaction**: ENHANCE existing system with tokenization and streaming
 - **Analysis**: WRAP existing analyzers with agent abstraction layer  
-- **Diff**: COMPLETELY NEW capability using existing bundle parsing
+- **Remediation**: ENHANCED capability integrated into analysis system
 
 ### 8. Auto-Collectors Foundational Data Definition
 
