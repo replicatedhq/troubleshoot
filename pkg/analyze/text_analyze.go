@@ -37,9 +37,23 @@ func analyzeTextAnalyze(
 	analyzer *troubleshootv1beta2.TextAnalyze, getCollectedFileContents getChildCollectedFileContents, title string,
 ) ([]*AnalyzeResult, error) {
 	fullPath := filepath.Join(analyzer.CollectorName, analyzer.FileName)
+
+	// Auto-handle exec collector output files which are nested deeper than expected
+	// Exec collectors store files in: {collectorName}/{namespace}/{podName}/{fileName}
+	// But textAnalyze expects: {collectorName}/{fileName}
+	// If the fileName looks like exec output and doesn't already have wildcards, make it work automatically
+	if isLikelyExecOutput(analyzer.FileName) && !containsWildcards(analyzer.FileName) && !containsWildcards(fullPath) {
+		fullPath = filepath.Join(analyzer.CollectorName, "*", "*", analyzer.FileName)
+	}
+
 	excludeFiles := []string{}
 	for _, excludeFile := range analyzer.ExcludeFiles {
-		excludeFiles = append(excludeFiles, filepath.Join(analyzer.CollectorName, excludeFile))
+		excludePath := filepath.Join(analyzer.CollectorName, excludeFile)
+		// Apply same logic to exclude files
+		if isLikelyExecOutput(excludeFile) && !containsWildcards(excludeFile) && !containsWildcards(excludePath) {
+			excludePath = filepath.Join(analyzer.CollectorName, "*", "*", excludeFile)
+		}
+		excludeFiles = append(excludeFiles, excludePath)
 	}
 
 	collected, err := getCollectedFileContents(fullPath, excludeFiles)
@@ -106,6 +120,20 @@ func analyzeTextAnalyze(
 			Message: "Invalid analyzer",
 		},
 	}, nil
+}
+
+// isLikelyExecOutput checks if a filename looks like exec collector output
+func isLikelyExecOutput(fileName string) bool {
+	return strings.HasSuffix(fileName, "-stdout.txt") ||
+		strings.HasSuffix(fileName, "-stderr.txt") ||
+		strings.HasSuffix(fileName, "-errors.json")
+}
+
+// containsWildcards checks if a path contains glob wildcards
+func containsWildcards(path string) bool {
+	return strings.Contains(path, "*") ||
+		strings.Contains(path, "?") ||
+		strings.Contains(path, "[")
 }
 
 func analyzeRegexPattern(pattern string, collected []byte, outcomes []*troubleshootv1beta2.Outcome, checkName string) (*AnalyzeResult, error) {

@@ -776,6 +776,106 @@ func Test_textAnalyze(t *testing.T) {
 				"text-collector-1/cfile-2.txt":        []byte("Yes it all succeeded"),
 			},
 		},
+		{
+			name: "exec collector auto-path matching for stdout",
+			analyzer: troubleshootv1beta2.TextAnalyze{
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							Message: "Command output found",
+						},
+					},
+					{
+						Fail: &troubleshootv1beta2.SingleOutcome{
+							Message: "Command output not found",
+						},
+					},
+				},
+				CollectorName: "netbox-branch-check",
+				FileName:      "netbox-branch-check-stdout.txt", // Simple filename, but file is nested deeper
+				RegexPattern:  "success",
+			},
+			expectResult: []AnalyzeResult{
+				{
+					IsPass:  true,
+					IsWarn:  false,
+					IsFail:  false,
+					Title:   "netbox-branch-check",
+					Message: "Command output found",
+					IconKey: "kubernetes_text_analyze",
+					IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg",
+				},
+			},
+			files: map[string][]byte{
+				// File is stored in exec-style nested path: {collector}/{namespace}/{pod}/{collector}-stdout.txt
+				"netbox-branch-check/netbox-enterprise/netbox-enterprise-858bcb8d4-cdgk7/netbox-branch-check-stdout.txt": []byte("operation success completed"),
+			},
+		},
+		{
+			name: "exec collector auto-path matching for stderr",
+			analyzer: troubleshootv1beta2.TextAnalyze{
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							Message: "No errors in stderr",
+							When:    "false",
+						},
+					},
+					{
+						Fail: &troubleshootv1beta2.SingleOutcome{
+							Message: "Error found in stderr",
+							When:    "true",
+						},
+					},
+				},
+				CollectorName: "my-exec-collector",
+				FileName:      "my-exec-collector-stderr.txt",
+				RegexPattern:  "error",
+			},
+			expectResult: []AnalyzeResult{
+				{
+					IsPass:  false,
+					IsWarn:  false,
+					IsFail:  true,
+					Title:   "my-exec-collector",
+					Message: "Error found in stderr",
+					IconKey: "kubernetes_text_analyze",
+					IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg",
+				},
+			},
+			files: map[string][]byte{
+				"my-exec-collector/default/my-pod-12345/my-exec-collector-stderr.txt": []byte("connection error occurred"),
+			},
+		},
+		{
+			name: "exec collector no auto-match when wildcards already present",
+			analyzer: troubleshootv1beta2.TextAnalyze{
+				Outcomes: []*troubleshootv1beta2.Outcome{
+					{
+						Pass: &troubleshootv1beta2.SingleOutcome{
+							Message: "Found with existing wildcard",
+						},
+					},
+				},
+				CollectorName: "test-collector",
+				FileName:      "*/test-collector-stdout.txt", // Already has wildcard, should not be modified
+				RegexPattern:  "output",
+			},
+			expectResult: []AnalyzeResult{
+				{
+					IsPass:  true,
+					IsWarn:  false,
+					IsFail:  false,
+					Title:   "test-collector",
+					Message: "Found with existing wildcard",
+					IconKey: "kubernetes_text_analyze",
+					IconURI: "https://troubleshoot.sh/images/analyzer-icons/text-analyze.svg",
+				},
+			},
+			files: map[string][]byte{
+				"test-collector/something/test-collector-stdout.txt": []byte("some output here"),
+			},
+		},
 	}
 
 	for _, test := range tests {
