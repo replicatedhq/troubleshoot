@@ -702,6 +702,191 @@ func Test_nodeMatchesFilters(t *testing.T) {
 			},
 			expectResult: false,
 		},
+		{
+			name: "true when taint exists",
+			node: corev1.Node{
+				Spec: corev1.NodeSpec{
+					Taints: []corev1.Taint{
+						{
+							Key:    "node.kubernetes.io/not-ready",
+							Value:  "",
+							Effect: corev1.TaintEffectNoSchedule,
+						},
+					},
+				},
+			},
+			filters: &troubleshootv1beta2.NodeResourceFilters{
+				Taint: &corev1.Taint{
+					Key:    "node.kubernetes.io/not-ready",
+					Effect: corev1.TaintEffectNoSchedule,
+				},
+			},
+			expectResult: true,
+		},
+		{
+			name: "true when taint exists with value match",
+			node: corev1.Node{
+				Spec: corev1.NodeSpec{
+					Taints: []corev1.Taint{
+						{
+							Key:    "dedicated",
+							Value:  "gpu",
+							Effect: corev1.TaintEffectNoSchedule,
+						},
+					},
+				},
+			},
+			filters: &troubleshootv1beta2.NodeResourceFilters{
+				Taint: &corev1.Taint{
+					Key:    "dedicated",
+					Value:  "gpu",
+					Effect: corev1.TaintEffectNoSchedule,
+				},
+			},
+			expectResult: true,
+		},
+		{
+			name: "false when taint key does not exist",
+			node: corev1.Node{
+				Spec: corev1.NodeSpec{
+					Taints: []corev1.Taint{
+						{
+							Key:    "node.kubernetes.io/not-ready",
+							Value:  "",
+							Effect: corev1.TaintEffectNoSchedule,
+						},
+					},
+				},
+			},
+			filters: &troubleshootv1beta2.NodeResourceFilters{
+				Taint: &corev1.Taint{
+					Key:    "different-key",
+					Effect: corev1.TaintEffectNoSchedule,
+				},
+			},
+			expectResult: false,
+		},
+		{
+			name: "false when taint effect does not match",
+			node: corev1.Node{
+				Spec: corev1.NodeSpec{
+					Taints: []corev1.Taint{
+						{
+							Key:    "node.kubernetes.io/not-ready",
+							Value:  "",
+							Effect: corev1.TaintEffectNoSchedule,
+						},
+					},
+				},
+			},
+			filters: &troubleshootv1beta2.NodeResourceFilters{
+				Taint: &corev1.Taint{
+					Key:    "node.kubernetes.io/not-ready",
+					Effect: corev1.TaintEffectNoExecute,
+				},
+			},
+			expectResult: false,
+		},
+		{
+			name: "true when taint value does not match but key and effect do (TaintExists only matches key and effect)",
+			node: corev1.Node{
+				Spec: corev1.NodeSpec{
+					Taints: []corev1.Taint{
+						{
+							Key:    "dedicated",
+							Value:  "gpu",
+							Effect: corev1.TaintEffectNoSchedule,
+						},
+					},
+				},
+			},
+			filters: &troubleshootv1beta2.NodeResourceFilters{
+				Taint: &corev1.Taint{
+					Key:    "dedicated",
+					Value:  "cpu",
+					Effect: corev1.TaintEffectNoSchedule,
+				},
+			},
+			expectResult: true,
+		},
+		{
+			name: "true when node has multiple taints and filter matches one",
+			node: corev1.Node{
+				Spec: corev1.NodeSpec{
+					Taints: []corev1.Taint{
+						{
+							Key:    "node.kubernetes.io/not-ready",
+							Value:  "",
+							Effect: corev1.TaintEffectNoSchedule,
+						},
+						{
+							Key:    "dedicated",
+							Value:  "gpu",
+							Effect: corev1.TaintEffectNoSchedule,
+						},
+						{
+							Key:    "example.com/special-hardware",
+							Value:  "true",
+							Effect: corev1.TaintEffectNoExecute,
+						},
+					},
+				},
+			},
+			filters: &troubleshootv1beta2.NodeResourceFilters{
+				Taint: &corev1.Taint{
+					Key:    "dedicated",
+					Value:  "gpu",
+					Effect: corev1.TaintEffectNoSchedule,
+				},
+			},
+			expectResult: true,
+		},
+		{
+			name: "true when node has no taints but no taint filter is specified",
+			node: corev1.Node{
+				Spec: corev1.NodeSpec{
+					Taints: []corev1.Taint{},
+				},
+			},
+			filters: &troubleshootv1beta2.NodeResourceFilters{},
+			expectResult: true,
+		},
+		{
+			name: "false when node has no taints but taint filter is specified",
+			node: corev1.Node{
+				Spec: corev1.NodeSpec{
+					Taints: []corev1.Taint{},
+				},
+			},
+			filters: &troubleshootv1beta2.NodeResourceFilters{
+				Taint: &corev1.Taint{
+					Key:    "node.kubernetes.io/not-ready",
+					Effect: corev1.TaintEffectNoSchedule,
+				},
+			},
+			expectResult: false,
+		},
+		{
+			name: "true when matching taint with PreferNoSchedule effect",
+			node: corev1.Node{
+				Spec: corev1.NodeSpec{
+					Taints: []corev1.Taint{
+						{
+							Key:    "node.kubernetes.io/memory-pressure",
+							Value:  "",
+							Effect: corev1.TaintEffectPreferNoSchedule,
+						},
+					},
+				},
+			},
+			filters: &troubleshootv1beta2.NodeResourceFilters{
+				Taint: &corev1.Taint{
+					Key:    "node.kubernetes.io/memory-pressure",
+					Effect: corev1.TaintEffectPreferNoSchedule,
+				},
+			},
+			expectResult: true,
+		},
 	}
 
 	for _, test := range tests {

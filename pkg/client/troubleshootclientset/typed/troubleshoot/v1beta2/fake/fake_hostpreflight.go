@@ -18,123 +18,34 @@ limitations under the License.
 package fake
 
 import (
-	"context"
-
 	v1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	labels "k8s.io/apimachinery/pkg/labels"
-	types "k8s.io/apimachinery/pkg/types"
-	watch "k8s.io/apimachinery/pkg/watch"
-	testing "k8s.io/client-go/testing"
+	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/client/troubleshootclientset/typed/troubleshoot/v1beta2"
+	gentype "k8s.io/client-go/gentype"
 )
 
-// FakeHostPreflights implements HostPreflightInterface
-type FakeHostPreflights struct {
+// fakeHostPreflights implements HostPreflightInterface
+type fakeHostPreflights struct {
+	*gentype.FakeClientWithList[*v1beta2.HostPreflight, *v1beta2.HostPreflightList]
 	Fake *FakeTroubleshootV1beta2
-	ns   string
 }
 
-var hostpreflightsResource = v1beta2.SchemeGroupVersion.WithResource("hostpreflights")
-
-var hostpreflightsKind = v1beta2.SchemeGroupVersion.WithKind("HostPreflight")
-
-// Get takes name of the hostPreflight, and returns the corresponding hostPreflight object, and an error if there is any.
-func (c *FakeHostPreflights) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1beta2.HostPreflight, err error) {
-	obj, err := c.Fake.
-		Invokes(testing.NewGetAction(hostpreflightsResource, c.ns, name), &v1beta2.HostPreflight{})
-
-	if obj == nil {
-		return nil, err
+func newFakeHostPreflights(fake *FakeTroubleshootV1beta2, namespace string) troubleshootv1beta2.HostPreflightInterface {
+	return &fakeHostPreflights{
+		gentype.NewFakeClientWithList[*v1beta2.HostPreflight, *v1beta2.HostPreflightList](
+			fake.Fake,
+			namespace,
+			v1beta2.SchemeGroupVersion.WithResource("hostpreflights"),
+			v1beta2.SchemeGroupVersion.WithKind("HostPreflight"),
+			func() *v1beta2.HostPreflight { return &v1beta2.HostPreflight{} },
+			func() *v1beta2.HostPreflightList { return &v1beta2.HostPreflightList{} },
+			func(dst, src *v1beta2.HostPreflightList) { dst.ListMeta = src.ListMeta },
+			func(list *v1beta2.HostPreflightList) []*v1beta2.HostPreflight {
+				return gentype.ToPointerSlice(list.Items)
+			},
+			func(list *v1beta2.HostPreflightList, items []*v1beta2.HostPreflight) {
+				list.Items = gentype.FromPointerSlice(items)
+			},
+		),
+		fake,
 	}
-	return obj.(*v1beta2.HostPreflight), err
-}
-
-// List takes label and field selectors, and returns the list of HostPreflights that match those selectors.
-func (c *FakeHostPreflights) List(ctx context.Context, opts v1.ListOptions) (result *v1beta2.HostPreflightList, err error) {
-	obj, err := c.Fake.
-		Invokes(testing.NewListAction(hostpreflightsResource, hostpreflightsKind, c.ns, opts), &v1beta2.HostPreflightList{})
-
-	if obj == nil {
-		return nil, err
-	}
-
-	label, _, _ := testing.ExtractFromListOptions(opts)
-	if label == nil {
-		label = labels.Everything()
-	}
-	list := &v1beta2.HostPreflightList{ListMeta: obj.(*v1beta2.HostPreflightList).ListMeta}
-	for _, item := range obj.(*v1beta2.HostPreflightList).Items {
-		if label.Matches(labels.Set(item.Labels)) {
-			list.Items = append(list.Items, item)
-		}
-	}
-	return list, err
-}
-
-// Watch returns a watch.Interface that watches the requested hostPreflights.
-func (c *FakeHostPreflights) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
-	return c.Fake.
-		InvokesWatch(testing.NewWatchAction(hostpreflightsResource, c.ns, opts))
-
-}
-
-// Create takes the representation of a hostPreflight and creates it.  Returns the server's representation of the hostPreflight, and an error, if there is any.
-func (c *FakeHostPreflights) Create(ctx context.Context, hostPreflight *v1beta2.HostPreflight, opts v1.CreateOptions) (result *v1beta2.HostPreflight, err error) {
-	obj, err := c.Fake.
-		Invokes(testing.NewCreateAction(hostpreflightsResource, c.ns, hostPreflight), &v1beta2.HostPreflight{})
-
-	if obj == nil {
-		return nil, err
-	}
-	return obj.(*v1beta2.HostPreflight), err
-}
-
-// Update takes the representation of a hostPreflight and updates it. Returns the server's representation of the hostPreflight, and an error, if there is any.
-func (c *FakeHostPreflights) Update(ctx context.Context, hostPreflight *v1beta2.HostPreflight, opts v1.UpdateOptions) (result *v1beta2.HostPreflight, err error) {
-	obj, err := c.Fake.
-		Invokes(testing.NewUpdateAction(hostpreflightsResource, c.ns, hostPreflight), &v1beta2.HostPreflight{})
-
-	if obj == nil {
-		return nil, err
-	}
-	return obj.(*v1beta2.HostPreflight), err
-}
-
-// UpdateStatus was generated because the type contains a Status member.
-// Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-func (c *FakeHostPreflights) UpdateStatus(ctx context.Context, hostPreflight *v1beta2.HostPreflight, opts v1.UpdateOptions) (*v1beta2.HostPreflight, error) {
-	obj, err := c.Fake.
-		Invokes(testing.NewUpdateSubresourceAction(hostpreflightsResource, "status", c.ns, hostPreflight), &v1beta2.HostPreflight{})
-
-	if obj == nil {
-		return nil, err
-	}
-	return obj.(*v1beta2.HostPreflight), err
-}
-
-// Delete takes name of the hostPreflight and deletes it. Returns an error if one occurs.
-func (c *FakeHostPreflights) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
-	_, err := c.Fake.
-		Invokes(testing.NewDeleteActionWithOptions(hostpreflightsResource, c.ns, name, opts), &v1beta2.HostPreflight{})
-
-	return err
-}
-
-// DeleteCollection deletes a collection of objects.
-func (c *FakeHostPreflights) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
-	action := testing.NewDeleteCollectionAction(hostpreflightsResource, c.ns, listOpts)
-
-	_, err := c.Fake.Invokes(action, &v1beta2.HostPreflightList{})
-	return err
-}
-
-// Patch applies the patch and returns the patched hostPreflight.
-func (c *FakeHostPreflights) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1beta2.HostPreflight, err error) {
-	obj, err := c.Fake.
-		Invokes(testing.NewPatchSubresourceAction(hostpreflightsResource, c.ns, name, pt, data, subresources...), &v1beta2.HostPreflight{})
-
-	if obj == nil {
-		return nil, err
-	}
-	return obj.(*v1beta2.HostPreflight), err
 }

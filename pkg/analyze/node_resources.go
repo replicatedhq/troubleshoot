@@ -12,6 +12,7 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/kubernetes/pkg/util/taints"
 
 	"github.com/replicatedhq/troubleshoot/internal/util"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
@@ -449,6 +450,10 @@ func nodeMatchesFilters(node corev1.Node, filters *troubleshootv1beta2.NodeResou
 		if !found {
 			return false, nil
 		}
+	}
+
+	if filters.Taint != nil {
+		return taints.TaintExists(node.Spec.Taints, filters.Taint), nil
 	}
 
 	if filters.CPUArchitecture != "" {

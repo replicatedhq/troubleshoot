@@ -606,8 +606,7 @@ func TestToYaml(t *testing.T) {
 	require.NoError(t, err)
 	assert.Contains(t, string(y), `apiVersion: troubleshoot.sh/v1beta2
 kind: SupportBundle
-metadata:
-  creationTimestamp: null
+metadata: {}
 spec:
   collectors:
   - clusterResources:

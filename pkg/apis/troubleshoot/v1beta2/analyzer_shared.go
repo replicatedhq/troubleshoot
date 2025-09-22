@@ -1,6 +1,7 @@
 package v1beta2
 
 import (
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/replicatedhq/troubleshoot/pkg/multitype"
@@ -142,6 +143,7 @@ type NodeResourceFilters struct {
 	ResourceName                string                 `json:"resourceName,omitempty" yaml:"resourceName,omitempty"`
 	ResourceAllocatable         string                 `json:"resourceAllocatable,omitempty" yaml:"resourceAllocatable,omitempty"`
 	ResourceCapacity            string                 `json:"resourceCapacity,omitempty" yaml:"resourceCapacity,omitempty"`
+	Taint                       *corev1.Taint          `json:"taint,omitempty" yaml:"taint,omitempty"`
 }
 
 type NodeResourceSelectors struct {

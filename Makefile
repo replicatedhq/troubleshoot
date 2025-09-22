@@ -152,15 +152,15 @@ generate: controller-gen client-gen
 	$(CONTROLLER_GEN) \
 		object:headerFile=./hack/boilerplate.go.txt paths=./pkg/apis/...
 	$(CLIENT_GEN) \
-		--output-base=. \
-		--output-package=github.com/replicatedhq/troubleshoot/pkg/client \
+		--output-dir=. \
+		--output-pkg=github.com/replicatedhq/troubleshoot/pkg/client \
 		--clientset-name troubleshootclientset \
 		--input-base github.com/replicatedhq/troubleshoot/pkg/apis \
 		--input troubleshoot/v1beta1 \
 		--input troubleshoot/v1beta2 \
-		-h ./hack/boilerplate.go.txt
-	cp -r github.com/replicatedhq/troubleshoot/pkg/client/troubleshootclientset pkg/client
-	rm -rf github.com
+		--go-header-file ./hack/boilerplate.go.txt
+	cp -r troubleshootclientset pkg/client
+	rm -rf troubleshootclientset
 
 .PHONY: openapischema
 openapischema: controller-gen
@@ -189,12 +189,12 @@ bin/docsgen:
 	go build ${LDFLAGS} -o bin/docsgen github.com/replicatedhq/troubleshoot/cmd/docsgen
 
 controller-gen:
-	go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.16.2
+	go install sigs.k8s.io/controller-tools/cmd/controller-gen@v0.19.0
 CONTROLLER_GEN=$(shell which controller-gen)
 
 .PHONY: client-gen
 client-gen:
-	go install k8s.io/code-generator/cmd/client-gen@v0.28.13
+	go install k8s.io/code-generator/cmd/client-gen@v0.34.0
 CLIENT_GEN=$(shell which client-gen)
 
 .PHONY: release

@@ -18,15 +18,14 @@ limitations under the License.
 package v1beta2
 
 import (
-	"context"
-	"time"
+	context "context"
 
-	v1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
+	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	scheme "github.com/replicatedhq/troubleshoot/pkg/client/troubleshootclientset/scheme"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
-	rest "k8s.io/client-go/rest"
+	gentype "k8s.io/client-go/gentype"
 )
 
 // HostPreflightsGetter has a method to return a HostPreflightInterface.
@@ -37,158 +36,34 @@ type HostPreflightsGetter interface {
 
 // HostPreflightInterface has methods to work with HostPreflight resources.
 type HostPreflightInterface interface {
-	Create(ctx context.Context, hostPreflight *v1beta2.HostPreflight, opts v1.CreateOptions) (*v1beta2.HostPreflight, error)
-	Update(ctx context.Context, hostPreflight *v1beta2.HostPreflight, opts v1.UpdateOptions) (*v1beta2.HostPreflight, error)
-	UpdateStatus(ctx context.Context, hostPreflight *v1beta2.HostPreflight, opts v1.UpdateOptions) (*v1beta2.HostPreflight, error)
+	Create(ctx context.Context, hostPreflight *troubleshootv1beta2.HostPreflight, opts v1.CreateOptions) (*troubleshootv1beta2.HostPreflight, error)
+	Update(ctx context.Context, hostPreflight *troubleshootv1beta2.HostPreflight, opts v1.UpdateOptions) (*troubleshootv1beta2.HostPreflight, error)
+	// Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
+	UpdateStatus(ctx context.Context, hostPreflight *troubleshootv1beta2.HostPreflight, opts v1.UpdateOptions) (*troubleshootv1beta2.HostPreflight, error)
 	Delete(ctx context.Context, name string, opts v1.DeleteOptions) error
 	DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error
-	Get(ctx context.Context, name string, opts v1.GetOptions) (*v1beta2.HostPreflight, error)
-	List(ctx context.Context, opts v1.ListOptions) (*v1beta2.HostPreflightList, error)
+	Get(ctx context.Context, name string, opts v1.GetOptions) (*troubleshootv1beta2.HostPreflight, error)
+	List(ctx context.Context, opts v1.ListOptions) (*troubleshootv1beta2.HostPreflightList, error)
 	Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error)
-	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1beta2.HostPreflight, err error)
+	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *troubleshootv1beta2.HostPreflight, err error)
 	HostPreflightExpansion
 }
 
 // hostPreflights implements HostPreflightInterface
 type hostPreflights struct {
-	client rest.Interface
-	ns     string
+	*gentype.ClientWithList[*troubleshootv1beta2.HostPreflight, *troubleshootv1beta2.HostPreflightList]
 }
 
 // newHostPreflights returns a HostPreflights
 func newHostPreflights(c *TroubleshootV1beta2Client, namespace string) *hostPreflights {
 	return &hostPreflights{
-		client: c.RESTClient(),
-		ns:     namespace,
+		gentype.NewClientWithList[*troubleshootv1beta2.HostPreflight, *troubleshootv1beta2.HostPreflightList](
+			"hostpreflights",
+			c.RESTClient(),
+			scheme.ParameterCodec,
+			namespace,
+			func() *troubleshootv1beta2.HostPreflight { return &troubleshootv1beta2.HostPreflight{} },
+			func() *troubleshootv1beta2.HostPreflightList { return &troubleshootv1beta2.HostPreflightList{} },
+		),
 	}
-}
-
-// Get takes name of the hostPreflight, and returns the corresponding hostPreflight object, and an error if there is any.
-func (c *hostPreflights) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1beta2.HostPreflight, err error) {
-	result = &v1beta2.HostPreflight{}
-	err = c.client.Get().
-		Namespace(c.ns).
-		Resource("hostpreflights").
-		Name(name).
-		VersionedParams(&options, scheme.ParameterCodec).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// List takes label and field selectors, and returns the list of HostPreflights that match those selectors.
-func (c *hostPreflights) List(ctx context.Context, opts v1.ListOptions) (result *v1beta2.HostPreflightList, err error) {
-	var timeout time.Duration
-	if opts.TimeoutSeconds != nil {
-		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
-	}
-	result = &v1beta2.HostPreflightList{}
-	err = c.client.Get().
-		Namespace(c.ns).
-		Resource("hostpreflights").
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Timeout(timeout).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// Watch returns a watch.Interface that watches the requested hostPreflights.
-func (c *hostPreflights) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
-	var timeout time.Duration
-	if opts.TimeoutSeconds != nil {
-		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
-	}
-	opts.Watch = true
-	return c.client.Get().
-		Namespace(c.ns).
-		Resource("hostpreflights").
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Timeout(timeout).
-		Watch(ctx)
-}
-
-// Create takes the representation of a hostPreflight and creates it.  Returns the server's representation of the hostPreflight, and an error, if there is any.
-func (c *hostPreflights) Create(ctx context.Context, hostPreflight *v1beta2.HostPreflight, opts v1.CreateOptions) (result *v1beta2.HostPreflight, err error) {
-	result = &v1beta2.HostPreflight{}
-	err = c.client.Post().
-		Namespace(c.ns).
-		Resource("hostpreflights").
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Body(hostPreflight).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// Update takes the representation of a hostPreflight and updates it. Returns the server's representation of the hostPreflight, and an error, if there is any.
-func (c *hostPreflights) Update(ctx context.Context, hostPreflight *v1beta2.HostPreflight, opts v1.UpdateOptions) (result *v1beta2.HostPreflight, err error) {
-	result = &v1beta2.HostPreflight{}
-	err = c.client.Put().
-		Namespace(c.ns).
-		Resource("hostpreflights").
-		Name(hostPreflight.Name).
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Body(hostPreflight).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// UpdateStatus was generated because the type contains a Status member.
-// Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-func (c *hostPreflights) UpdateStatus(ctx context.Context, hostPreflight *v1beta2.HostPreflight, opts v1.UpdateOptions) (result *v1beta2.HostPreflight, err error) {
-	result = &v1beta2.HostPreflight{}
-	err = c.client.Put().
-		Namespace(c.ns).
-		Resource("hostpreflights").
-		Name(hostPreflight.Name).
-		SubResource("status").
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Body(hostPreflight).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// Delete takes name of the hostPreflight and deletes it. Returns an error if one occurs.
-func (c *hostPreflights) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
-	return c.client.Delete().
-		Namespace(c.ns).
-		Resource("hostpreflights").
-		Name(name).
-		Body(&opts).
-		Do(ctx).
-		Error()
-}
-
-// DeleteCollection deletes a collection of objects.
-func (c *hostPreflights) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
-	var timeout time.Duration
-	if listOpts.TimeoutSeconds != nil {
-		timeout = time.Duration(*listOpts.TimeoutSeconds) * time.Second
-	}
-	return c.client.Delete().
-		Namespace(c.ns).
-		Resource("hostpreflights").
-		VersionedParams(&listOpts, scheme.ParameterCodec).
-		Timeout(timeout).
-		Body(&opts).
-		Do(ctx).
-		Error()
-}
-
-// Patch applies the patch and returns the patched hostPreflight.
-func (c *hostPreflights) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1beta2.HostPreflight, err error) {
-	result = &v1beta2.HostPreflight{}
-	err = c.client.Patch(pt).
-		Namespace(c.ns).
-		Resource("hostpreflights").
-		Name(name).
-		SubResource(subresources...).
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Body(data).
-		Do(ctx).
-		Into(result)
-	return
 }

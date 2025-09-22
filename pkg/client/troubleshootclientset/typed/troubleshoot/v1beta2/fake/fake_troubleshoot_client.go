@@ -28,35 +28,35 @@ type FakeTroubleshootV1beta2 struct {
 }
 
 func (c *FakeTroubleshootV1beta2) Analyzers(namespace string) v1beta2.AnalyzerInterface {
-	return &FakeAnalyzers{c, namespace}
+	return newFakeAnalyzers(c, namespace)
 }
 
 func (c *FakeTroubleshootV1beta2) Collectors(namespace string) v1beta2.CollectorInterface {
-	return &FakeCollectors{c, namespace}
+	return newFakeCollectors(c, namespace)
 }
 
 func (c *FakeTroubleshootV1beta2) HostCollectors(namespace string) v1beta2.HostCollectorInterface {
-	return &FakeHostCollectors{c, namespace}
+	return newFakeHostCollectors(c, namespace)
 }
 
 func (c *FakeTroubleshootV1beta2) HostPreflights(namespace string) v1beta2.HostPreflightInterface {
-	return &FakeHostPreflights{c, namespace}
+	return newFakeHostPreflights(c, namespace)
 }
 
 func (c *FakeTroubleshootV1beta2) Preflights(namespace string) v1beta2.PreflightInterface {
-	return &FakePreflights{c, namespace}
+	return newFakePreflights(c, namespace)
 }
 
 func (c *FakeTroubleshootV1beta2) Redactors(namespace string) v1beta2.RedactorInterface {
-	return &FakeRedactors{c, namespace}
+	return newFakeRedactors(c, namespace)
 }
 
 func (c *FakeTroubleshootV1beta2) RemoteCollectors(namespace string) v1beta2.RemoteCollectorInterface {
-	return &FakeRemoteCollectors{c, namespace}
+	return newFakeRemoteCollectors(c, namespace)
 }
 
 func (c *FakeTroubleshootV1beta2) SupportBundles(namespace string) v1beta2.SupportBundleInterface {
-	return &FakeSupportBundles{c, namespace}
+	return newFakeSupportBundles(c, namespace)
 }
 
 // RESTClient returns a RESTClient that is used to communicate

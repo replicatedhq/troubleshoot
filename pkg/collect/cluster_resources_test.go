@@ -13,9 +13,13 @@ import (
 	"github.com/stretchr/testify/require"
 	v1 "k8s.io/api/coordination/v1"
 	corev1 "k8s.io/api/core/v1"
+	policyv1 "k8s.io/api/policy/v1"
+	policyv1beta1 "k8s.io/api/policy/v1beta1"
 	storagev1 "k8s.io/api/storage/v1"
 	apixfake "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/fake"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/util/intstr"
+	fakediscovery "k8s.io/client-go/discovery/fake"
 	testdynamicclient "k8s.io/client-go/dynamic/fake"
 	"k8s.io/client-go/kubernetes"
 	testclient "k8s.io/client-go/kubernetes/fake"
@@ -522,4 +526,174 @@ func fromJSON(t *testing.T, dat []byte) troubleshootv1beta2.SupportBundle {
 	require.NoError(t, err)
 	require.Equal(t, 1, len(sb))
 	return sb[0]
+}
+
+func Test_getPodDisruptionBudgets(t *testing.T) {
+	tests := []struct {
+		name       string
+		pdbNames   []string
+		namespaces []string
+	}{
+		{
+			name:       "single namespace",
+			pdbNames:   []string{"test-pdb"},
+			namespaces: []string{"default"},
+		},
+		{
+			name:       "multiple namespaces",
+			pdbNames:   []string{"test-pdb"},
+			namespaces: []string{"default", "test"},
+		},
+		{
+			name:       "multiple pdbs in different namespaces",
+			pdbNames:   []string{"test-pdb", "another-pdb"},
+			namespaces: []string{"default", "test"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			client := testclient.NewClientset()
+			ctx := context.Background()
+			err := createTestPodDisruptionBudgets(client, tt.pdbNames, tt.namespaces)
+			assert.NoError(t, err)
+
+			fakeDiscovery, ok := client.Discovery().(*fakediscovery.FakeDiscovery)
+			if !ok {
+				t.Fatalf("could not convert Discovery() to *FakeDiscovery")
+			}
+			fakeDiscovery.Resources = []*metav1.APIResourceList{
+				{
+					GroupVersion: "policy/v1",
+					APIResources: []metav1.APIResource{
+						{
+							Kind: "PodDisruptionBudget",
+						},
+					},
+				},
+			}
+
+			pdbs, errors := getPodDisruptionBudgets(ctx, client, tt.namespaces)
+			assert.Empty(t, errors)
+			assert.Equal(t, len(tt.namespaces), len(pdbs))
+
+			for _, ns := range tt.namespaces {
+				assert.NotEmpty(t, pdbs[ns+".json"])
+				var pdbList policyv1.PodDisruptionBudgetList
+				err := json.Unmarshal(pdbs[ns+".json"], &pdbList)
+				assert.NoError(t, err)
+				assert.Equal(t, len(tt.pdbNames), len(pdbList.Items))
+				for _, pdb := range pdbList.Items {
+					assert.Contains(t, tt.pdbNames, pdb.ObjectMeta.Name)
+				}
+			}
+		})
+	}
+}
+
+func Test_getPodDisruptionBudgets_v1beta1(t *testing.T) {
+	tests := []struct {
+		name       string
+		pdbNames   []string
+		namespaces []string
+	}{
+		{
+			name:       "single namespace v1beta1",
+			pdbNames:   []string{"test-pdb-beta"},
+			namespaces: []string{"default"},
+		},
+		{
+			name:       "multiple namespaces v1beta1",
+			pdbNames:   []string{"test-pdb-beta"},
+			namespaces: []string{"default", "test"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			client := testclient.NewClientset()
+			ctx := context.Background()
+			err := createTestPodDisruptionBudgetsV1beta1(client, tt.pdbNames, tt.namespaces)
+			assert.NoError(t, err)
+
+			fakeDiscovery, ok := client.Discovery().(*fakediscovery.FakeDiscovery)
+			if !ok {
+				t.Fatalf("could not convert Discovery() to *FakeDiscovery")
+			}
+			// Mock discovery to only have v1beta1 PodDisruptionBudget
+			fakeDiscovery.Resources = []*metav1.APIResourceList{
+				{
+					GroupVersion: "policy/v1beta1",
+					APIResources: []metav1.APIResource{
+						{
+							Kind: "PodDisruptionBudget",
+						},
+					},
+				},
+			}
+
+			pdbs, errors := getPodDisruptionBudgets(ctx, client, tt.namespaces)
+			assert.Empty(t, errors)
+			assert.Equal(t, len(tt.namespaces), len(pdbs))
+
+			for _, ns := range tt.namespaces {
+				assert.NotEmpty(t, pdbs[ns+".json"])
+				var pdbList policyv1beta1.PodDisruptionBudgetList
+				err := json.Unmarshal(pdbs[ns+".json"], &pdbList)
+				assert.NoError(t, err)
+				assert.Equal(t, len(tt.pdbNames), len(pdbList.Items))
+				for _, pdb := range pdbList.Items {
+					assert.Contains(t, tt.pdbNames, pdb.ObjectMeta.Name)
+				}
+			}
+		})
+	}
+}
+
+func createTestPodDisruptionBudgets(client kubernetes.Interface, pdbNames []string, namespaces []string) error {
+	for _, ns := range namespaces {
+		for _, pdbName := range pdbNames {
+			minAvailable := intstr.FromInt32(1)
+			_, err := client.PolicyV1().PodDisruptionBudgets(ns).Create(context.Background(), &policyv1.PodDisruptionBudget{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: pdbName,
+				},
+				Spec: policyv1.PodDisruptionBudgetSpec{
+					MinAvailable: &minAvailable,
+					Selector: &metav1.LabelSelector{
+						MatchLabels: map[string]string{
+							"app": "test-app",
+						},
+					},
+				},
+			}, metav1.CreateOptions{})
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func createTestPodDisruptionBudgetsV1beta1(client kubernetes.Interface, pdbNames []string, namespaces []string) error {
+	for _, ns := range namespaces {
+		for _, pdbName := range pdbNames {
+			minAvailable := intstr.FromInt32(1)
+			_, err := client.PolicyV1beta1().PodDisruptionBudgets(ns).Create(context.Background(), &policyv1beta1.PodDisruptionBudget{
+				ObjectMeta: metav1.ObjectMeta{
+					Name: pdbName,
+				},
+				Spec: policyv1beta1.PodDisruptionBudgetSpec{
+					MinAvailable: &minAvailable,
+					Selector: &metav1.LabelSelector{
+						MatchLabels: map[string]string{
+							"app": "test-app",
+						},
+					},
+				},
+			}, metav1.CreateOptions{})
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }

@@ -18,15 +18,14 @@ limitations under the License.
 package v1beta2
 
 import (
-	"context"
-	"time"
+	context "context"
 
-	v1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
+	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	scheme "github.com/replicatedhq/troubleshoot/pkg/client/troubleshootclientset/scheme"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
 	watch "k8s.io/apimachinery/pkg/watch"
-	rest "k8s.io/client-go/rest"
+	gentype "k8s.io/client-go/gentype"
 )
 
 // RemoteCollectorsGetter has a method to return a RemoteCollectorInterface.
@@ -37,158 +36,34 @@ type RemoteCollectorsGetter interface {
 
 // RemoteCollectorInterface has methods to work with RemoteCollector resources.
 type RemoteCollectorInterface interface {
-	Create(ctx context.Context, remoteCollector *v1beta2.RemoteCollector, opts v1.CreateOptions) (*v1beta2.RemoteCollector, error)
-	Update(ctx context.Context, remoteCollector *v1beta2.RemoteCollector, opts v1.UpdateOptions) (*v1beta2.RemoteCollector, error)
-	UpdateStatus(ctx context.Context, remoteCollector *v1beta2.RemoteCollector, opts v1.UpdateOptions) (*v1beta2.RemoteCollector, error)
+	Create(ctx context.Context, remoteCollector *troubleshootv1beta2.RemoteCollector, opts v1.CreateOptions) (*troubleshootv1beta2.RemoteCollector, error)
+	Update(ctx context.Context, remoteCollector *troubleshootv1beta2.RemoteCollector, opts v1.UpdateOptions) (*troubleshootv1beta2.RemoteCollector, error)
+	// Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
+	UpdateStatus(ctx context.Context, remoteCollector *troubleshootv1beta2.RemoteCollector, opts v1.UpdateOptions) (*troubleshootv1beta2.RemoteCollector, error)
 	Delete(ctx context.Context, name string, opts v1.DeleteOptions) error
 	DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error
-	Get(ctx context.Context, name string, opts v1.GetOptions) (*v1beta2.RemoteCollector, error)
-	List(ctx context.Context, opts v1.ListOptions) (*v1beta2.RemoteCollectorList, error)
+	Get(ctx context.Context, name string, opts v1.GetOptions) (*troubleshootv1beta2.RemoteCollector, error)
+	List(ctx context.Context, opts v1.ListOptions) (*troubleshootv1beta2.RemoteCollectorList, error)
 	Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error)
-	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1beta2.RemoteCollector, err error)
+	Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *troubleshootv1beta2.RemoteCollector, err error)
 	RemoteCollectorExpansion
 }
 
 // remoteCollectors implements RemoteCollectorInterface
 type remoteCollectors struct {
-	client rest.Interface
-	ns     string
+	*gentype.ClientWithList[*troubleshootv1beta2.RemoteCollector, *troubleshootv1beta2.RemoteCollectorList]
 }
 
 // newRemoteCollectors returns a RemoteCollectors
 func newRemoteCollectors(c *TroubleshootV1beta2Client, namespace string) *remoteCollectors {
 	return &remoteCollectors{
-		client: c.RESTClient(),
-		ns:     namespace,
+		gentype.NewClientWithList[*troubleshootv1beta2.RemoteCollector, *troubleshootv1beta2.RemoteCollectorList](
+			"remotecollectors",
+			c.RESTClient(),
+			scheme.ParameterCodec,
+			namespace,
+			func() *troubleshootv1beta2.RemoteCollector { return &troubleshootv1beta2.RemoteCollector{} },
+			func() *troubleshootv1beta2.RemoteCollectorList { return &troubleshootv1beta2.RemoteCollectorList{} },
+		),
 	}
-}
-
-// Get takes name of the remoteCollector, and returns the corresponding remoteCollector object, and an error if there is any.
-func (c *remoteCollectors) Get(ctx context.Context, name string, options v1.GetOptions) (result *v1beta2.RemoteCollector, err error) {
-	result = &v1beta2.RemoteCollector{}
-	err = c.client.Get().
-		Namespace(c.ns).
-		Resource("remotecollectors").
-		Name(name).
-		VersionedParams(&options, scheme.ParameterCodec).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// List takes label and field selectors, and returns the list of RemoteCollectors that match those selectors.
-func (c *remoteCollectors) List(ctx context.Context, opts v1.ListOptions) (result *v1beta2.RemoteCollectorList, err error) {
-	var timeout time.Duration
-	if opts.TimeoutSeconds != nil {
-		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
-	}
-	result = &v1beta2.RemoteCollectorList{}
-	err = c.client.Get().
-		Namespace(c.ns).
-		Resource("remotecollectors").
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Timeout(timeout).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// Watch returns a watch.Interface that watches the requested remoteCollectors.
-func (c *remoteCollectors) Watch(ctx context.Context, opts v1.ListOptions) (watch.Interface, error) {
-	var timeout time.Duration
-	if opts.TimeoutSeconds != nil {
-		timeout = time.Duration(*opts.TimeoutSeconds) * time.Second
-	}
-	opts.Watch = true
-	return c.client.Get().
-		Namespace(c.ns).
-		Resource("remotecollectors").
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Timeout(timeout).
-		Watch(ctx)
-}
-
-// Create takes the representation of a remoteCollector and creates it.  Returns the server's representation of the remoteCollector, and an error, if there is any.
-func (c *remoteCollectors) Create(ctx context.Context, remoteCollector *v1beta2.RemoteCollector, opts v1.CreateOptions) (result *v1beta2.RemoteCollector, err error) {
-	result = &v1beta2.RemoteCollector{}
-	err = c.client.Post().
-		Namespace(c.ns).
-		Resource("remotecollectors").
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Body(remoteCollector).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// Update takes the representation of a remoteCollector and updates it. Returns the server's representation of the remoteCollector, and an error, if there is any.
-func (c *remoteCollectors) Update(ctx context.Context, remoteCollector *v1beta2.RemoteCollector, opts v1.UpdateOptions) (result *v1beta2.RemoteCollector, err error) {
-	result = &v1beta2.RemoteCollector{}
-	err = c.client.Put().
-		Namespace(c.ns).
-		Resource("remotecollectors").
-		Name(remoteCollector.Name).
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Body(remoteCollector).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// UpdateStatus was generated because the type contains a Status member.
-// Add a +genclient:noStatus comment above the type to avoid generating UpdateStatus().
-func (c *remoteCollectors) UpdateStatus(ctx context.Context, remoteCollector *v1beta2.RemoteCollector, opts v1.UpdateOptions) (result *v1beta2.RemoteCollector, err error) {
-	result = &v1beta2.RemoteCollector{}
-	err = c.client.Put().
-		Namespace(c.ns).
-		Resource("remotecollectors").
-		Name(remoteCollector.Name).
-		SubResource("status").
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Body(remoteCollector).
-		Do(ctx).
-		Into(result)
-	return
-}
-
-// Delete takes name of the remoteCollector and deletes it. Returns an error if one occurs.
-func (c *remoteCollectors) Delete(ctx context.Context, name string, opts v1.DeleteOptions) error {
-	return c.client.Delete().
-		Namespace(c.ns).
-		Resource("remotecollectors").
-		Name(name).
-		Body(&opts).
-		Do(ctx).
-		Error()
-}
-
-// DeleteCollection deletes a collection of objects.
-func (c *remoteCollectors) DeleteCollection(ctx context.Context, opts v1.DeleteOptions, listOpts v1.ListOptions) error {
-	var timeout time.Duration
-	if listOpts.TimeoutSeconds != nil {
-		timeout = time.Duration(*listOpts.TimeoutSeconds) * time.Second
-	}
-	return c.client.Delete().
-		Namespace(c.ns).
-		Resource("remotecollectors").
-		VersionedParams(&listOpts, scheme.ParameterCodec).
-		Timeout(timeout).
-		Body(&opts).
-		Do(ctx).
-		Error()
-}
-
-// Patch applies the patch and returns the patched remoteCollector.
-func (c *remoteCollectors) Patch(ctx context.Context, name string, pt types.PatchType, data []byte, opts v1.PatchOptions, subresources ...string) (result *v1beta2.RemoteCollector, err error) {
-	result = &v1beta2.RemoteCollector{}
-	err = c.client.Patch(pt).
-		Namespace(c.ns).
-		Resource("remotecollectors").
-		Name(name).
-		SubResource(subresources...).
-		VersionedParams(&opts, scheme.ParameterCodec).
-		Body(data).
-		Do(ctx).
-		Into(result)
-	return
 }

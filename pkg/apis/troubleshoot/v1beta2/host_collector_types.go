@@ -50,7 +50,7 @@ type HostCollector struct {
 type HostCollectorList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []Collector `json:"items"`
+	Items           []HostCollector `json:"items"`
 }
 
 func init() {
