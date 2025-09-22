@@ -55,7 +55,12 @@ type configGetter struct {
 
 // ToDiscoveryClient implements genericclioptions.RESTClientGetter.
 func (c configGetter) ToDiscoveryClient() (discovery.CachedDiscoveryInterface, error) {
-	return nil, nil
+	discoveryClient, err := discovery.NewDiscoveryClientForConfig(c.restConfig)
+	if err != nil {
+		return nil, err
+	}
+	cached := memory.NewMemCacheClient(discoveryClient)
+	return cached, nil
 }
 
 // ToRESTConfig implements genericclioptions.RESTClientGetter.
@@ -65,12 +70,17 @@ func (c configGetter) ToRESTConfig() (*rest.Config, error) {
 
 // ToRESTMapper implements genericclioptions.RESTClientGetter.
 func (c configGetter) ToRESTMapper() (meta.RESTMapper, error) {
-	return nil, nil
+	discoveryClient, err := c.ToDiscoveryClient()
+	if err != nil {
+		return nil, err
+	}
+	mapper := restmapper.NewDeferredDiscoveryRESTMapper(discoveryClient)
+	return mapper, nil
 }
 
 // ToRawKubeConfigLoader implements genericclioptions.RESTClientGetter.
 func (c configGetter) ToRawKubeConfigLoader() clientcmd.ClientConfig {
-	return nil
+	return k8sutil.GetKubeconfig()
 }
 
 var _ genericclioptions.RESTClientGetter = configGetter{}
