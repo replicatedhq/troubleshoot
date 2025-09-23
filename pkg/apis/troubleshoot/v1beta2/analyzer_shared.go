@@ -202,7 +202,9 @@ type CephStatusAnalyze struct {
 }
 
 type VeleroAnalyze struct {
-	AnalyzeMeta `json:",inline" yaml:",inline"`
+	AnalyzeMeta   `json:",inline" yaml:",inline"`
+	BackupsCount  int `json:"backupCount,omitempty" yaml:"backupCount,omitempty"`
+	RestoresCount int `json:"restoreCount,omitempty" yaml:"restoreCount,omitempty"`
 }
 
 type LonghornAnalyze struct {
