@@ -19,6 +19,8 @@ type Discoverer struct {
 	client       kubernetes.Interface
 	rbacChecker  *RBACChecker
 	expander     *ResourceExpander
+	kotsDetector *KotsDetector
+	rbacReporter *RBACReporter
 }
 
 // NewDiscoverer creates a new autodiscovery discoverer
@@ -36,12 +38,16 @@ func NewDiscoverer(clientConfig *rest.Config, client kubernetes.Interface) (*Dis
 	}
 
 	expander := NewResourceExpander()
+	kotsDetector := NewKotsDetector(client)
+	rbacReporter := NewRBACReporter()
 
 	return &Discoverer{
 		clientConfig: clientConfig,
 		client:       client,
 		rbacChecker:  rbacChecker,
 		expander:     expander,
+		kotsDetector: kotsDetector,
+		rbacReporter: rbacReporter,
 	}, nil
 }
 
@@ -75,6 +81,13 @@ func (d *Discoverer) DiscoverFoundational(ctx context.Context, opts DiscoveryOpt
 		} else {
 			foundationalCollectors = filteredCollectors
 		}
+	}
+
+	// Generate RBAC remediation report if there were permission issues
+	if d.rbacReporter.HasWarnings() {
+		d.rbacReporter.GeneratePermissionSummary()
+		d.rbacReporter.GenerateRemediationReport()
+		d.rbacReporter.SummarizeCollectionResults(len(foundationalCollectors) + d.rbacReporter.GetFilteredCollectorCount())
 	}
 
 	klog.V(2).Infof("Discovered %d foundational collectors", len(foundationalCollectors))
@@ -144,6 +157,35 @@ func (d *Discoverer) generateFoundationalCollectors(namespaces []string, opts Di
 
 	// Always include cluster-level info
 	collectors = append(collectors, d.generateClusterInfoCollectors()...)
+
+	// KOTS-aware discovery: Detect and add KOTS-specific collectors
+	ctx := context.Background()
+	if kotsApps, err := d.kotsDetector.DetectKotsApplications(ctx); err == nil && len(kotsApps) > 0 {
+		klog.Infof("Found %d KOTS applications, generating KOTS-specific collectors", len(kotsApps))
+		kotsCollectors := d.kotsDetector.GenerateKotsCollectors(kotsApps)
+		collectors = append(collectors, kotsCollectors...)
+
+		// Log the KOTS collectors for debugging
+		for _, kotsCollector := range kotsCollectors {
+			klog.V(2).Infof("Added KOTS collector: %s (type: %s, namespace: %s)",
+				kotsCollector.Name, kotsCollector.Type, kotsCollector.Namespace)
+		}
+	} else if err != nil {
+		klog.V(2).Infof("KOTS detection failed (non-fatal): %v", err)
+	} else {
+		klog.V(2).Info("No KOTS applications detected in cluster")
+	}
+
+	// ALWAYS generate standard KOTS diagnostic collectors for troubleshooting
+	// These attempt to collect expected KOTS resources even if no apps are detected
+	// This creates valuable error files when resources are missing (important for support)
+	standardKotsCollectors := d.kotsDetector.GenerateStandardKotsCollectors(ctx)
+	collectors = append(collectors, standardKotsCollectors...)
+
+	klog.V(2).Infof("Added %d standard KOTS diagnostic collectors", len(standardKotsCollectors))
+	for _, stdCollector := range standardKotsCollectors {
+		klog.V(2).Infof("Added standard KOTS collector: %s (creates error file if missing)", stdCollector.Name)
+	}
 
 	// Add namespace-scoped collectors for each target namespace
 	for _, namespace := range namespaces {
@@ -287,7 +329,9 @@ func (d *Discoverer) applyRBACFiltering(ctx context.Context, collectors []Collec
 		if allowedKeys[key] {
 			filteredCollectors = append(filteredCollectors, collector)
 		} else {
-			klog.V(3).Infof("Filtered out collector %s due to RBAC permissions", collector.Name)
+			// FIXED: Replace silent filtering with user-visible warnings
+			d.rbacReporter.ReportFilteredCollector(collector, "insufficient RBAC permissions")
+			d.rbacReporter.ReportMissingPermission(resource.Kind, resource.Namespace, "get,list", collector.Name)
 		}
 	}
 
