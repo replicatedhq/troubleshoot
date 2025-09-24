@@ -50,6 +50,8 @@ type RateLimiter struct {
 	tokens    chan struct{}
 	interval  time.Duration
 	lastReset time.Time
+	stopCh    chan struct{}
+	stopped   bool
 }
 
 // RetryConfig defines retry behavior
@@ -188,6 +190,8 @@ func NewRateLimiter(requestsPerMinute int) *RateLimiter {
 		tokens:    tokens,
 		interval:  interval,
 		lastReset: time.Now(),
+		stopCh:    make(chan struct{}),
+		stopped:   false,
 	}
 
 	// Start token replenishment goroutine
@@ -201,12 +205,18 @@ func (rl *RateLimiter) replenishTokens() {
 	ticker := time.NewTicker(rl.interval)
 	defer ticker.Stop()
 
-	for range ticker.C {
+	for {
 		select {
-		case rl.tokens <- struct{}{}:
-			// Token added successfully
-		default:
-			// Bucket is full, skip
+		case <-rl.stopCh:
+			// Stop signal received, exit goroutine
+			return
+		case <-ticker.C:
+			select {
+			case rl.tokens <- struct{}{}:
+				// Token added successfully
+			default:
+				// Bucket is full, skip
+			}
 		}
 	}
 }
@@ -218,6 +228,14 @@ func (rl *RateLimiter) waitForToken(ctx context.Context) error {
 		return nil
 	case <-ctx.Done():
 		return ctx.Err()
+	}
+}
+
+// Stop cleanly shuts down the rate limiter and stops the replenishment goroutine
+func (rl *RateLimiter) Stop() {
+	if !rl.stopped {
+		rl.stopped = true
+		close(rl.stopCh)
 	}
 }
 
@@ -459,6 +477,13 @@ func isNonRetryableError(err error) bool {
 // SetEnabled enables or disables the hosted agent
 func (a *HostedAgent) SetEnabled(enabled bool) {
 	a.enabled = enabled
+}
+
+// Stop cleanly shuts down the hosted agent and stops background goroutines
+func (a *HostedAgent) Stop() {
+	if a.rateLimiter != nil {
+		a.rateLimiter.Stop()
+	}
 }
 
 // UpdateCredentials updates the API key for authentication
