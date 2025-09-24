@@ -71,7 +71,7 @@ func (d *Discoverer) DiscoverFoundational(ctx context.Context, opts DiscoveryOpt
 	}
 
 	// Generate foundational collectors
-	foundationalCollectors := d.generateFoundationalCollectors(namespaces, opts)
+	foundationalCollectors := d.generateFoundationalCollectors(discoveryCtx, namespaces, opts)
 
 	// Apply RBAC filtering if enabled
 	if opts.RBACCheck {
@@ -152,14 +152,13 @@ func (d *Discoverer) getTargetNamespaces(ctx context.Context, requestedNamespace
 }
 
 // generateFoundationalCollectors creates the standard set of foundational collectors
-func (d *Discoverer) generateFoundationalCollectors(namespaces []string, opts DiscoveryOptions) []CollectorSpec {
+func (d *Discoverer) generateFoundationalCollectors(ctx context.Context, namespaces []string, opts DiscoveryOptions) []CollectorSpec {
 	var collectors []CollectorSpec
 
 	// Always include cluster-level info
 	collectors = append(collectors, d.generateClusterInfoCollectors()...)
 
 	// KOTS-aware discovery: Detect and add KOTS-specific collectors
-	ctx := context.Background()
 	if kotsApps, err := d.kotsDetector.DetectKotsApplications(ctx); err == nil && len(kotsApps) > 0 {
 		klog.Infof("Found %d KOTS applications, generating KOTS-specific collectors", len(kotsApps))
 		kotsCollectors := d.kotsDetector.GenerateKotsCollectors(kotsApps)

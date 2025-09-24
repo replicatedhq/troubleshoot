@@ -441,7 +441,7 @@ func (k *KotsDetector) detectClusterID(ctx context.Context) string {
 		}
 
 		// Check node name patterns (like your cluster f5ee12d1)
-		if len(node.Name) > 6 && node.Name != "localhost" {
+		if len(node.Name) >= 8 && node.Name != "localhost" {
 			// Extract potential cluster ID from node name
 			return node.Name[:8] // First 8 chars usually contain cluster ID
 		}
