@@ -334,7 +334,7 @@ func (a *OllamaAgent) HealthCheck(ctx context.Context) error {
 	// Check if our model is available
 	modelFound := false
 	for _, model := range modelsResp.Models {
-		if strings.HasPrefix(model.Name, strings.Split(a.model, ":")[0]) {
+		if model.Name == a.model {
 			modelFound = true
 			break
 		}

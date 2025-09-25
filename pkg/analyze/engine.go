@@ -588,7 +588,12 @@ func (e *DefaultAnalysisEngine) convertAnalyzerToSpec(analyzer *troubleshootv1be
 		spec.Name = "deployment-status"
 		spec.Type = "workload"
 		spec.Config["analyzer"] = analyzer.DeploymentStatus
-		// Enhanced method will auto-detect deployment files based on namespace
+		// Set default filePath based on namespace if available
+		if analyzer.DeploymentStatus.Namespace != "" {
+			spec.Config["filePath"] = fmt.Sprintf("cluster-resources/deployments/%s.json", analyzer.DeploymentStatus.Namespace)
+		} else {
+			spec.Config["filePath"] = "cluster-resources/deployments.json"
+		}
 	case analyzer.StatefulsetStatus != nil:
 		spec.Name = "statefulset-status"
 		spec.Type = "workload"
