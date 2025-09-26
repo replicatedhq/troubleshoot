@@ -433,15 +433,49 @@ func (a *LocalAgent) analyzeDeploymentStatus(ctx context.Context, bundle *analyz
 		Confidence: 0.9,
 	}
 
-	filePath, ok := spec.Config["filePath"].(string)
+	// Extract traditional analyzer configuration
+	traditionalAnalyzer, ok := spec.Config["analyzer"]
 	if !ok {
-		return nil, errors.New("filePath not specified in analyzer config")
+		// Fallback to delegation for proper configuration
+		return a.delegateToTraditionalAnalyzer(ctx, bundle, spec, "deployment-status")
+	}
+
+	deploymentAnalyzer, ok := traditionalAnalyzer.(*troubleshootv1beta2.DeploymentStatus)
+	if !ok {
+		return a.delegateToTraditionalAnalyzer(ctx, bundle, spec, "deployment-status")
+	}
+
+	// Construct file path based on namespace
+	var filePath string
+	if deploymentAnalyzer.Namespace != "" {
+		filePath = fmt.Sprintf("cluster-resources/deployments/%s.json", deploymentAnalyzer.Namespace)
+	} else {
+		filePath = "cluster-resources/deployments.json"
 	}
 
 	deploymentData, exists := bundle.Files[filePath]
 	if !exists {
+		// Try alternative paths
+		for path := range bundle.Files {
+			if strings.Contains(path, "deployments") && strings.HasSuffix(path, ".json") {
+				deploymentData = bundle.Files[path]
+				filePath = path
+				exists = true
+				break
+			}
+		}
+	}
+
+	if !exists {
 		result.IsWarn = true
-		result.Message = fmt.Sprintf("Deployment data file not found: %s", filePath)
+		result.Message = fmt.Sprintf("No deployment data found (checked for: %s)", filePath)
+		result.Remediation = &analyzer.RemediationStep{
+			Description:   "Ensure deployments are collected in the support bundle",
+			Command:       "kubectl get deployments -A  # Check if deployments exist",
+			Priority:      5,
+			Category:      "data-collection",
+			IsAutomatable: false,
+		}
 		return result, nil
 	}
 
@@ -528,13 +562,13 @@ func (a *LocalAgent) analyzeCluster(ctx context.Context, bundle *analyzer.Suppor
 
 	switch spec.Name {
 	case "cluster-version":
-		return a.analyzeClusterVersionEnhanced(ctx, bundle, spec)
+		return a.analyzeClusterVersionContextual(ctx, bundle, spec)
 	case "container-runtime":
-		return a.analyzeContainerRuntimeEnhanced(ctx, bundle, spec)
+		return a.delegateToTraditionalAnalyzer(ctx, bundle, spec, "container-runtime")
 	case "distribution":
-		return a.analyzeDistributionEnhanced(ctx, bundle, spec)
+		return a.analyzeDistributionContextual(ctx, bundle, spec)
 	case "node-resources", "node-resources-check":
-		return a.analyzeNodeResources(ctx, bundle, spec)
+		return a.analyzeNodeResourcesContextual(ctx, bundle, spec)
 	case "node-metrics":
 		return a.analyzeNodeMetricsEnhanced(ctx, bundle, spec)
 	case "event", "event-analysis":
@@ -761,16 +795,21 @@ func (a *LocalAgent) analyzeEvents(ctx context.Context, bundle *analyzer.Support
 
 // analyzeNetwork analyzes network-related resources
 func (a *LocalAgent) analyzeNetwork(ctx context.Context, bundle *analyzer.SupportBundle, spec analyzer.AnalyzerSpec) (*analyzer.AnalyzerResult, error) {
-	result := &analyzer.AnalyzerResult{
-		Title:      fmt.Sprintf("Network Analysis: %s", spec.Name),
-		Category:   spec.Category,
-		Confidence: 0.7,
+	switch spec.Name {
+	case "ingress":
+		return a.delegateToTraditionalAnalyzer(ctx, bundle, spec, "ingress")
+	case "http":
+		return a.delegateToTraditionalAnalyzer(ctx, bundle, spec, "http")
+	default:
+		result := &analyzer.AnalyzerResult{
+			Title:      fmt.Sprintf("Network Analysis: %s", spec.Name),
+			Category:   spec.Category,
+			Confidence: 0.7,
+			IsWarn:     true,
+			Message:    fmt.Sprintf("Network analyzer %s not implemented yet", spec.Name),
+		}
+		return result, nil
 	}
-
-	// Placeholder for network analysis
-	result.IsWarn = true
-	result.Message = fmt.Sprintf("Network analyzer %s not implemented yet", spec.Name)
-	return result, nil
 }
 
 // analyzeLogs analyzes log files for issues
@@ -2755,5 +2794,274 @@ func (a *LocalAgent) analyzeCustom(ctx context.Context, bundle *analyzer.Support
 	// Placeholder for custom analysis
 	result.IsWarn = true
 	result.Message = fmt.Sprintf("Custom analyzer %s not implemented yet", spec.Name)
+	return result, nil
+}
+
+// CONTEXTUAL ANALYZERS - Enhanced analysis with current vs required comparison
+
+// analyzeClusterVersionContextual provides contextual version analysis showing current vs required
+func (a *LocalAgent) analyzeClusterVersionContextual(ctx context.Context, bundle *analyzer.SupportBundle, spec analyzer.AnalyzerSpec) (*analyzer.AnalyzerResult, error) {
+	// First get traditional analyzer result for proper pass/fail evaluation
+	traditionalResult, err := a.delegateToTraditionalAnalyzer(ctx, bundle, spec, "cluster-version")
+	if err != nil {
+		return traditionalResult, err
+	}
+
+	// Extract current cluster version for contextual display
+	clusterVersionData, exists := bundle.Files["cluster-info/cluster_version.json"]
+	if !exists {
+		return traditionalResult, nil // Fall back to traditional if no data
+	}
+
+	var versionInfo map[string]interface{}
+	var currentVersion, currentPlatform string
+
+	if err := json.Unmarshal(clusterVersionData, &versionInfo); err == nil {
+		if info, ok := versionInfo["info"].(map[string]interface{}); ok {
+			if gitVer, ok := info["gitVersion"].(string); ok {
+				currentVersion = gitVer
+			}
+			if platform, ok := info["platform"].(string); ok {
+				currentPlatform = platform
+			}
+		}
+		if versionStr, ok := versionInfo["string"].(string); ok && currentVersion == "" {
+			currentVersion = versionStr
+		}
+	}
+
+	// Extract analyzer requirements from traditional analyzer
+	var requiredVersion string
+	if traditionalAnalyzer, ok := spec.Config["analyzer"]; ok {
+		if cvAnalyzer, ok := traditionalAnalyzer.(*troubleshootv1beta2.ClusterVersion); ok {
+			for _, outcome := range cvAnalyzer.Outcomes {
+				if outcome.Fail != nil && outcome.Fail.When != "" {
+					condition := strings.TrimSpace(outcome.Fail.When)
+					if strings.HasPrefix(condition, "<") {
+						requiredVersion = strings.TrimSpace(strings.TrimPrefix(condition, "<"))
+						break
+					}
+				}
+			}
+		}
+	}
+
+	// Build enhanced contextual result
+	result := &analyzer.AnalyzerResult{
+		Title:      "Cluster Version Analysis",
+		IsPass:     traditionalResult.IsPass,
+		IsFail:     traditionalResult.IsFail,
+		IsWarn:     traditionalResult.IsWarn,
+		Category:   "cluster",
+		Confidence: 0.95,
+		AgentName:  a.name,
+	}
+
+	if traditionalResult.IsFail {
+		result.Message = fmt.Sprintf("❌ Current: %s (%s)\n📋 Required: %s or higher\n💥 Impact: Version too old for this application",
+			currentVersion, currentPlatform, requiredVersion)
+
+		result.Remediation = &analyzer.RemediationStep{
+			Description:   fmt.Sprintf("Upgrade Kubernetes from %s to %s or higher", currentVersion, requiredVersion),
+			Command:       fmt.Sprintf("kubeadm upgrade plan\nkubeadm upgrade apply %s", requiredVersion),
+			Documentation: "https://kubernetes.io/docs/tasks/administer-cluster/kubeadm/kubeadm-upgrade/",
+			Priority:      9,
+			Category:      "critical-upgrade",
+			IsAutomatable: false,
+		}
+
+		result.Insights = []string{
+			fmt.Sprintf("Version gap: %s → %s upgrade required", currentVersion, requiredVersion),
+			"Upgrading will provide security patches and API compatibility",
+			"Plan maintenance window for cluster upgrade",
+			"Backup cluster state before upgrading",
+		}
+	} else if traditionalResult.IsWarn {
+		result.Message = fmt.Sprintf("⚠️  Current: %s (%s)\n💡 Recommended: %s or higher\n📈 Benefit: %s",
+			currentVersion, currentPlatform, requiredVersion, traditionalResult.Message)
+
+		result.Remediation = &analyzer.RemediationStep{
+			Description:   fmt.Sprintf("Consider upgrading from %s to %s for improved features", currentVersion, requiredVersion),
+			Command:       "kubeadm upgrade plan  # Preview available upgrades",
+			Documentation: "https://kubernetes.io/docs/reference/setup-tools/kubeadm/kubeadm-upgrade/",
+			Priority:      5,
+			Category:      "improvement",
+			IsAutomatable: false,
+		}
+
+		result.Insights = []string{
+			fmt.Sprintf("Current %s meets minimum but %s+ recommended", currentVersion, requiredVersion),
+			"Upgrade would provide enhanced security and features",
+		}
+	} else {
+		result.Message = fmt.Sprintf("✅ Current: %s (%s)\n📋 Status: Meets requirements\n🎯 Assessment: %s",
+			currentVersion, currentPlatform, traditionalResult.Message)
+
+		result.Insights = []string{
+			fmt.Sprintf("Kubernetes %s is current and supported", currentVersion),
+			"Version meets all application requirements",
+			"No immediate upgrade required",
+		}
+	}
+
+	result.Context = map[string]interface{}{
+		"currentVersion":    currentVersion,
+		"currentPlatform":   currentPlatform,
+		"requiredVersion":   requiredVersion,
+		"traditionalResult": traditionalResult.Message,
+	}
+
+	return result, nil
+}
+
+// analyzeDistributionContextual provides contextual distribution analysis
+func (a *LocalAgent) analyzeDistributionContextual(ctx context.Context, bundle *analyzer.SupportBundle, spec analyzer.AnalyzerSpec) (*analyzer.AnalyzerResult, error) {
+	// First get traditional analyzer result
+	traditionalResult, err := a.delegateToTraditionalAnalyzer(ctx, bundle, spec, "distribution")
+	if err != nil {
+		return traditionalResult, err
+	}
+
+	// Extract current distribution info
+	nodesData, exists := bundle.Files["cluster-resources/nodes.json"]
+	var currentDistribution string
+
+	if exists {
+		var nodeInfo map[string]interface{}
+		if err := json.Unmarshal(nodesData, &nodeInfo); err == nil {
+			if items, ok := nodeInfo["items"].([]interface{}); ok && len(items) > 0 {
+				if node, ok := items[0].(map[string]interface{}); ok {
+					if metadata, ok := node["metadata"].(map[string]interface{}); ok {
+						if labels, ok := metadata["labels"].(map[string]interface{}); ok {
+							if instanceType, ok := labels["beta.kubernetes.io/instance-type"].(string); ok {
+								currentDistribution = instanceType
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	result := &analyzer.AnalyzerResult{
+		Title:      "Kubernetes Distribution Analysis",
+		IsPass:     traditionalResult.IsPass,
+		IsFail:     traditionalResult.IsFail,
+		IsWarn:     traditionalResult.IsWarn,
+		Category:   "cluster",
+		Confidence: 0.95,
+		AgentName:  a.name,
+	}
+
+	if traditionalResult.IsFail {
+		result.Message = fmt.Sprintf("❌ Current: %s\n📋 Required: Production-grade platform\n💥 Impact: %s",
+			currentDistribution, traditionalResult.Message)
+
+		result.Remediation = &analyzer.RemediationStep{
+			Description:   fmt.Sprintf("Migrate from %s to production Kubernetes platform", currentDistribution),
+			Command:       "# Consider managed Kubernetes:\n# AWS: eksctl create cluster\n# GCP: gcloud container clusters create\n# Azure: az aks create",
+			Documentation: "https://kubernetes.io/docs/setup/production-environment/",
+			Priority:      8,
+			Category:      "platform-migration",
+			IsAutomatable: false,
+		}
+
+		result.Insights = []string{
+			fmt.Sprintf("Currently running %s - not recommended for production", currentDistribution),
+			"Consider managed Kubernetes services (EKS, GKE, AKS) for production reliability",
+			"Migration provides enterprise support, SLA, and automated updates",
+		}
+	} else {
+		result.Message = fmt.Sprintf("✅ Current: %s\n📋 Status: %s",
+			currentDistribution, traditionalResult.Message)
+
+		result.Insights = []string{
+			fmt.Sprintf("%s distribution is appropriate for your use case", currentDistribution),
+			"Platform meets production requirements",
+		}
+	}
+
+	result.Context = map[string]interface{}{
+		"currentDistribution": currentDistribution,
+		"traditionalResult":   traditionalResult.Message,
+	}
+
+	return result, nil
+}
+
+// analyzeNodeResourcesContextual provides contextual node analysis
+func (a *LocalAgent) analyzeNodeResourcesContextual(ctx context.Context, bundle *analyzer.SupportBundle, spec analyzer.AnalyzerSpec) (*analyzer.AnalyzerResult, error) {
+	// First get traditional analyzer result
+	traditionalResult, err := a.delegateToTraditionalAnalyzer(ctx, bundle, spec, "node-resources")
+	if err != nil {
+		return traditionalResult, err
+	}
+
+	// Extract current node information
+	nodesData, exists := bundle.Files["cluster-resources/nodes.json"]
+	var currentNodeCount int
+	var nodeNames []string
+
+	if exists {
+		var nodeInfo map[string]interface{}
+		if err := json.Unmarshal(nodesData, &nodeInfo); err == nil {
+			if items, ok := nodeInfo["items"].([]interface{}); ok {
+				currentNodeCount = len(items)
+				for _, item := range items {
+					if node, ok := item.(map[string]interface{}); ok {
+						if metadata, ok := node["metadata"].(map[string]interface{}); ok {
+							if name, ok := metadata["name"].(string); ok {
+								nodeNames = append(nodeNames, name)
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	result := &analyzer.AnalyzerResult{
+		Title:      "Node Resources Analysis",
+		IsPass:     traditionalResult.IsPass,
+		IsFail:     traditionalResult.IsFail,
+		IsWarn:     traditionalResult.IsWarn,
+		Category:   "cluster",
+		Confidence: 0.95,
+		AgentName:  a.name,
+	}
+
+	if traditionalResult.IsFail {
+		result.Message = fmt.Sprintf("❌ Current: %d nodes (%s)\n📋 Required: 3+ nodes for HA\n💥 Impact: %s",
+			currentNodeCount, strings.Join(nodeNames, ", "), traditionalResult.Message)
+
+		result.Remediation = &analyzer.RemediationStep{
+			Description:   fmt.Sprintf("Scale cluster from %d to 3+ nodes for high availability", currentNodeCount),
+			Command:       "# Add nodes:\n# kubectl get nodes  # Check current\n# aws ec2 run-instances  # Add AWS nodes\n# gcloud compute instances create  # Add GCP nodes",
+			Documentation: "https://kubernetes.io/docs/concepts/architecture/nodes/",
+			Priority:      8,
+			Category:      "scaling",
+			IsAutomatable: false,
+		}
+
+		result.Insights = []string{
+			fmt.Sprintf("Single node (%s) creates single point of failure", strings.Join(nodeNames, "")),
+			"Need 3+ nodes for production high availability",
+			"Additional nodes provide redundancy and load distribution",
+		}
+	} else {
+		result.Message = fmt.Sprintf("✅ Current: %d nodes (%s)\n📋 Status: %s",
+			currentNodeCount, strings.Join(nodeNames, ", "), traditionalResult.Message)
+
+		result.Insights = []string{
+			fmt.Sprintf("Cluster has %d nodes providing good availability", currentNodeCount),
+		}
+	}
+
+	result.Context = map[string]interface{}{
+		"currentNodeCount":  currentNodeCount,
+		"nodeNames":         nodeNames,
+		"traditionalResult": traditionalResult.Message,
+	}
+
 	return result, nil
 }

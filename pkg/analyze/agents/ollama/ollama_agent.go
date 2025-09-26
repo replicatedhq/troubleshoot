@@ -625,13 +625,13 @@ func (a *OllamaAgent) autoDetectFileForAnalyzer(bundle *analyzer.SupportBundle, 
 		if data, exists := bundle.Files["cluster-info/cluster_version.json"]; exists {
 			return "cluster-info/cluster_version.json", data, true
 		}
-		
+
 	case "node-resources", "node-resources-check":
 		// NodeResources analyzers expect cluster-resources/nodes.json
 		if data, exists := bundle.Files["cluster-resources/nodes.json"]; exists {
 			return "cluster-resources/nodes.json", data, true
 		}
-		
+
 	case "text-analyze":
 		// TextAnalyze analyzers - find log files based on traditional analyzer config
 		if traditionalAnalyzer, ok := spec.Config["analyzer"]; ok {
@@ -643,11 +643,11 @@ func (a *OllamaAgent) autoDetectFileForAnalyzer(bundle *analyzer.SupportBundle, 
 				} else {
 					targetPath = textAnalyzer.FileName
 				}
-				
+
 				if data, exists := bundle.Files[targetPath]; exists {
 					return targetPath, data, true
 				}
-				
+
 				// Try to find log files automatically
 				for path, data := range bundle.Files {
 					if strings.HasSuffix(path, ".log") && strings.Contains(path, textAnalyzer.FileName) {
@@ -656,7 +656,7 @@ func (a *OllamaAgent) autoDetectFileForAnalyzer(bundle *analyzer.SupportBundle, 
 				}
 			}
 		}
-		
+
 	case "postgres", "mysql", "redis", "mssql":
 		// Database analyzers - find connection files
 		if traditionalAnalyzer, ok := spec.Config["analyzer"]; ok {
@@ -666,7 +666,7 @@ func (a *OllamaAgent) autoDetectFileForAnalyzer(bundle *analyzer.SupportBundle, 
 						return dbAnalyzer.FileName, data, true
 					}
 				}
-				
+
 				// Auto-detect database files
 				for path, data := range bundle.Files {
 					if strings.Contains(path, spec.Name) && strings.HasSuffix(path, ".json") {
@@ -675,7 +675,7 @@ func (a *OllamaAgent) autoDetectFileForAnalyzer(bundle *analyzer.SupportBundle, 
 				}
 			}
 		}
-		
+
 	case "deployment-status":
 		// Deployment analyzers - find deployment files based on namespace
 		if traditionalAnalyzer, ok := spec.Config["analyzer"]; ok {
@@ -686,13 +686,13 @@ func (a *OllamaAgent) autoDetectFileForAnalyzer(bundle *analyzer.SupportBundle, 
 				}
 			}
 		}
-		
+
 	case "event", "event-analysis":
 		// Event analyzers expect cluster-resources/events.json
 		if data, exists := bundle.Files["cluster-resources/events.json"]; exists {
 			return "cluster-resources/events.json", data, true
 		}
-		
+
 	case "configmap":
 		// ConfigMap analyzers - find configmap files based on namespace
 		if traditionalAnalyzer, ok := spec.Config["analyzer"]; ok {
@@ -703,7 +703,7 @@ func (a *OllamaAgent) autoDetectFileForAnalyzer(bundle *analyzer.SupportBundle, 
 				}
 			}
 		}
-		
+
 	case "secret":
 		// Secret analyzers - find secret files based on namespace
 		if traditionalAnalyzer, ok := spec.Config["analyzer"]; ok {
@@ -712,6 +712,146 @@ func (a *OllamaAgent) autoDetectFileForAnalyzer(bundle *analyzer.SupportBundle, 
 				if data, exists := bundle.Files[secretPath]; exists {
 					return secretPath, data, true
 				}
+			}
+		}
+		
+	case "crd", "customResourceDefinition":
+		// CRD analyzers - look for custom resource files
+		if traditionalAnalyzer, ok := spec.Config["analyzer"]; ok {
+			if crdAnalyzer, ok := traditionalAnalyzer.(*troubleshootv1beta2.CustomResourceDefinition); ok {
+				// Look for specific CRD name in custom-resources directory
+				crdName := crdAnalyzer.CustomResourceDefinitionName
+				for path, data := range bundle.Files {
+					if strings.Contains(path, "custom-resources") && 
+					   (strings.Contains(strings.ToLower(path), strings.ToLower(crdName)) || 
+					    strings.Contains(strings.ToLower(path), "crd")) {
+						return path, data, true
+					}
+				}
+			}
+		}
+		
+	case "container-runtime":
+		// Container runtime analyzers - look for node information
+		if data, exists := bundle.Files["cluster-resources/nodes.json"]; exists {
+			return "cluster-resources/nodes.json", data, true
+		}
+		
+	case "distribution":
+		// Distribution analyzers - primarily use node information
+		if data, exists := bundle.Files["cluster-resources/nodes.json"]; exists {
+			return "cluster-resources/nodes.json", data, true
+		}
+		// Also check cluster info as backup
+		if data, exists := bundle.Files["cluster-info/cluster_version.json"]; exists {
+			return "cluster-info/cluster_version.json", data, true
+		}
+		
+	case "storage-class":
+		// Storage class analyzers - look for storage class resources
+		for path, data := range bundle.Files {
+			if strings.Contains(path, "storage") && strings.HasSuffix(path, ".json") {
+				return path, data, true
+			}
+		}
+		
+	case "ingress":
+		// Ingress analyzers - look for ingress resources
+		for path, data := range bundle.Files {
+			if strings.Contains(path, "ingress") && strings.HasSuffix(path, ".json") {
+				return path, data, true
+			}
+		}
+		
+	case "http":
+		// HTTP analyzers can work with any network-related data
+		for path, data := range bundle.Files {
+			if strings.Contains(path, "services") || strings.Contains(path, "ingress") {
+				return path, data, true
+			}
+		}
+		
+	case "job-status":
+		// Job analyzers - look for job resources
+		for path, data := range bundle.Files {
+			if strings.Contains(path, "jobs") && strings.HasSuffix(path, ".json") {
+				return path, data, true
+			}
+		}
+		
+	case "statefulset-status":
+		// StatefulSet analyzers
+		for path, data := range bundle.Files {
+			if strings.Contains(path, "statefulsets") && strings.HasSuffix(path, ".json") {
+				return path, data, true
+			}
+		}
+		
+	case "replicaset-status":
+		// ReplicaSet analyzers
+		for path, data := range bundle.Files {
+			if strings.Contains(path, "replicasets") && strings.HasSuffix(path, ".json") {
+				return path, data, true
+			}
+		}
+		
+	case "cluster-pod-statuses":
+		// Pod status analyzers
+		for path, data := range bundle.Files {
+			if strings.Contains(path, "pods") && strings.HasSuffix(path, ".json") {
+				return path, data, true
+			}
+		}
+		
+	case "image-pull-secret":
+		// Image pull secret analyzers
+		for path, data := range bundle.Files {
+			if strings.Contains(path, "secrets") && strings.HasSuffix(path, ".json") {
+				return path, data, true
+			}
+		}
+		
+	case "yaml-compare", "json-compare":
+		// Comparison analyzers - can work with any structured data
+		for path, data := range bundle.Files {
+			if strings.HasSuffix(path, ".json") || strings.HasSuffix(path, ".yaml") {
+				return path, data, true
+			}
+		}
+		
+	case "certificates":
+		// Certificate analyzers
+		for path, data := range bundle.Files {
+			if strings.Contains(path, "cert") || strings.Contains(path, "tls") {
+				return path, data, true
+			}
+		}
+		
+	case "velero", "longhorn", "ceph-status":
+		// Storage system analyzers
+		for path, data := range bundle.Files {
+			if strings.Contains(strings.ToLower(path), spec.Name) {
+				return path, data, true
+			}
+		}
+		
+	case "sysctl", "goldpinger", "weave-report", "registry-images":
+		// Infrastructure analyzers
+		for path, data := range bundle.Files {
+			if strings.Contains(strings.ToLower(path), strings.ToLower(spec.Name)) {
+				return path, data, true
+			}
+		}
+		
+	case "cluster-resource":
+		// Generic cluster resource analyzer - can work with any cluster data
+		if data, exists := bundle.Files["cluster-resources/nodes.json"]; exists {
+			return "cluster-resources/nodes.json", data, true
+		}
+		// Fallback to any cluster resource
+		for path, data := range bundle.Files {
+			if strings.Contains(path, "cluster-resources") && strings.HasSuffix(path, ".json") {
+				return path, data, true
 			}
 		}
 	}
@@ -728,63 +868,152 @@ func (a *OllamaAgent) autoDetectFileForAnalyzer(bundle *analyzer.SupportBundle, 
 
 // parseLLMResponse parses the LLM response into an AnalyzerResult
 func (a *OllamaAgent) parseLLMResponse(response string, spec analyzer.AnalyzerSpec) (*analyzer.AnalyzerResult, error) {
-	// Try to extract JSON from the response
+	// First try JSON parsing
 	jsonStart := strings.Index(response, "{")
 	jsonEnd := strings.LastIndex(response, "}")
 
-	if jsonStart == -1 || jsonEnd == -1 || jsonEnd <= jsonStart {
-		return nil, errors.New("no valid JSON found in response")
+	if jsonStart != -1 && jsonEnd != -1 && jsonEnd > jsonStart {
+		jsonStr := response[jsonStart : jsonEnd+1]
+
+		var llmResult struct {
+			Status      string   `json:"status"`
+			Title       string   `json:"title"`
+			Message     string   `json:"message"`
+			Insights    []string `json:"insights"`
+			Remediation struct {
+				Description string `json:"description"`
+				Action      string `json:"action"`
+				Command     string `json:"command"`
+				Priority    int    `json:"priority"`
+			} `json:"remediation"`
+		}
+
+		if err := json.Unmarshal([]byte(jsonStr), &llmResult); err == nil {
+			// Successfully parsed JSON
+			result := &analyzer.AnalyzerResult{
+				Title:    llmResult.Title,
+				Message:  llmResult.Message,
+				Category: spec.Category,
+				Insights: llmResult.Insights,
+			}
+
+			switch strings.ToLower(llmResult.Status) {
+			case "pass":
+				result.IsPass = true
+			case "warn":
+				result.IsWarn = true
+			case "fail":
+				result.IsFail = true
+			default:
+				result.IsWarn = true
+			}
+
+			if llmResult.Remediation.Description != "" {
+				result.Remediation = &analyzer.RemediationStep{
+					Description:   llmResult.Remediation.Description,
+					Action:        llmResult.Remediation.Action,
+					Command:       llmResult.Remediation.Command,
+					Priority:      llmResult.Remediation.Priority,
+					Category:      "ai-suggested",
+					IsAutomatable: false,
+				}
+			}
+
+			return result, nil
+		}
 	}
 
-	jsonStr := response[jsonStart : jsonEnd+1]
+	// Fall back to markdown parsing when JSON fails
+	return a.parseMarkdownResponse(response, spec)
+}
 
-	// Parse the JSON response
-	var llmResult struct {
-		Status      string   `json:"status"`
-		Title       string   `json:"title"`
-		Message     string   `json:"message"`
-		Insights    []string `json:"insights"`
-		Remediation struct {
-			Description string `json:"description"`
-			Action      string `json:"action"`
-			Command     string `json:"command"`
-			Priority    int    `json:"priority"`
-		} `json:"remediation"`
-	}
+// parseMarkdownResponse handles markdown-formatted LLM responses
+func (a *OllamaAgent) parseMarkdownResponse(response string, spec analyzer.AnalyzerSpec) (*analyzer.AnalyzerResult, error) {
+	lines := strings.Split(response, "\n")
 
-	if err := json.Unmarshal([]byte(jsonStr), &llmResult); err != nil {
-		return nil, errors.Wrap(err, "failed to parse LLM JSON response")
-	}
-
-	// Convert to AnalyzerResult
 	result := &analyzer.AnalyzerResult{
-		Title:    llmResult.Title,
-		Message:  llmResult.Message,
+		Title:    fmt.Sprintf("AI Analysis: %s", spec.Name),
 		Category: spec.Category,
-		Insights: llmResult.Insights,
+		Insights: []string{},
 	}
 
-	// Set status based on LLM response
-	switch strings.ToLower(llmResult.Status) {
-	case "pass":
-		result.IsPass = true
-	case "warn":
-		result.IsWarn = true
-	case "fail":
+	var title, message string
+	var insights []string
+	var recommendations []string
+
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+
+		// Extract title
+		if strings.HasPrefix(line, "**Title:**") || strings.HasPrefix(line, "Title:") {
+			title = strings.TrimSpace(strings.TrimPrefix(strings.TrimPrefix(line, "**Title:**"), "Title:"))
+		}
+
+		// Extract message/assessment
+		if strings.HasPrefix(line, "**Message:**") || strings.HasPrefix(line, "Message:") {
+			message = strings.TrimSpace(strings.TrimPrefix(strings.TrimPrefix(line, "**Message:**"), "Message:"))
+		}
+
+		// Extract insights (numbered or bulleted lists)
+		if strings.Contains(line, ". ") && (strings.Contains(strings.ToLower(line), "issue") ||
+			strings.Contains(strings.ToLower(line), "problem") ||
+			strings.Contains(strings.ToLower(line), "warning") ||
+			strings.Contains(strings.ToLower(line), "outdated") ||
+			strings.Contains(strings.ToLower(line), "inconsistent")) {
+			insight := strings.TrimSpace(line)
+			if len(insight) > 10 { // Only add substantial insights
+				insights = append(insights, insight)
+			}
+		}
+
+		// Extract recommendations
+		if strings.Contains(strings.ToLower(line), "recommend") ||
+			strings.Contains(strings.ToLower(line), "upgrade") ||
+			strings.Contains(strings.ToLower(line), "update") ||
+			strings.Contains(strings.ToLower(line), "ensure") {
+			recommendation := strings.TrimSpace(line)
+			if len(recommendation) > 15 {
+				recommendations = append(recommendations, recommendation)
+			}
+		}
+	}
+
+	// Build result
+	if title != "" {
+		result.Title = title
+	}
+
+	if message != "" {
+		result.Message = message
+	} else {
+		// Create summary from insights
+		if len(insights) > 0 {
+			result.Message = fmt.Sprintf("AI analysis identified %d potential issues or observations", len(insights))
+		} else {
+			result.Message = "AI analysis completed successfully"
+		}
+	}
+
+	result.Insights = insights
+
+	// Determine status based on content
+	if strings.Contains(strings.ToLower(response), "critical") ||
+		strings.Contains(strings.ToLower(response), "error") ||
+		strings.Contains(strings.ToLower(response), "fail") {
 		result.IsFail = true
-	default:
-		result.IsWarn = true // Default to warn for uncertain cases
+	} else if len(insights) > 0 || strings.Contains(strings.ToLower(response), "warn") {
+		result.IsWarn = true
+	} else {
+		result.IsPass = true
 	}
 
-	// Add remediation if provided
-	if llmResult.Remediation.Description != "" {
+	// Add remediation from recommendations
+	if len(recommendations) > 0 {
 		result.Remediation = &analyzer.RemediationStep{
-			Description:   llmResult.Remediation.Description,
-			Action:        llmResult.Remediation.Action,
-			Command:       llmResult.Remediation.Command,
-			Priority:      llmResult.Remediation.Priority,
+			Description:   strings.Join(recommendations[:1], ". "), // Use first recommendation
 			Category:      "ai-suggested",
-			IsAutomatable: false, // AI suggestions should be reviewed
+			Priority:      5,
+			IsAutomatable: false,
 		}
 	}
 
