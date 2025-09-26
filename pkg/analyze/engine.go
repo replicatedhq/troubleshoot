@@ -381,14 +381,16 @@ func (e *DefaultAnalysisEngine) Analyze(ctx context.Context, bundle *SupportBund
 		for i, analyzer := range opts.CustomAnalyzers {
 			spec, err := e.convertAnalyzerToSpec(analyzer)
 			if err != nil {
-				klog.Errorf("Failed to convert custom analyzer %d to spec: %v", i, err)
-				klog.Warningf("Creating failure result for analyzer %d. Supported types: ClusterVersion, DeploymentStatus", i)
+				// Create local copy of index to avoid loop variable capture
+				analyzerIndex := i
+				klog.Errorf("Failed to convert custom analyzer %d to spec: %v", analyzerIndex, err)
+				klog.Warningf("Creating failure result for analyzer %d. Supported types: ClusterVersion, DeploymentStatus", analyzerIndex)
 				klog.Warningf("To fix: Check your analyzer configuration and ensure it uses supported types")
 
 				// Create a failure result instead of skipping
 				failureResult := AnalyzerResult{
 					IsFail:     true,
-					Title:      fmt.Sprintf("Custom Analyzer %d - Conversion Failed", i),
+					Title:      fmt.Sprintf("Custom Analyzer %d - Conversion Failed", analyzerIndex),
 					Message:    fmt.Sprintf("Failed to convert analyzer to supported format: %v", err),
 					Category:   "configuration",
 					Confidence: 1.0,
@@ -439,9 +441,23 @@ func (e *DefaultAnalysisEngine) Analyze(ctx context.Context, bundle *SupportBund
 				Timestamp:   time.Now(),
 				Recoverable: true,
 			})
-		} else {
+		} else if agentResult != nil {
 			metadata.ResultCount = len(agentResult.Results)
 			results.Results = append(results.Results, agentResult.Results...)
+
+			// Collect individual analyzer errors from successful agents
+			if len(agentResult.Errors) > 0 {
+				metadata.ErrorCount = len(agentResult.Errors)
+				for _, agentErr := range agentResult.Errors {
+					results.Errors = append(results.Errors, AnalysisError{
+						Agent:       agent.Name(),
+						Error:       agentErr,
+						Category:    "analyzer_execution",
+						Timestamp:   time.Now(),
+						Recoverable: true,
+					})
+				}
+			}
 		}
 
 		results.Metadata.Agents = append(results.Metadata.Agents, metadata)
@@ -733,7 +749,7 @@ func (e *DefaultAnalysisEngine) convertAnalyzerToSpec(analyzer *troubleshootv1be
 
 // GenerateAnalyzers creates analyzers from requirement specifications
 func (e *DefaultAnalysisEngine) GenerateAnalyzers(ctx context.Context, requirements *RequirementSpec) ([]AnalyzerSpec, error) {
-	ctx, span := otel.Tracer(constants.LIB_TRACER_NAME).Start(ctx, "AnalysisEngine.GenerateAnalyzers")
+	_, span := otel.Tracer(constants.LIB_TRACER_NAME).Start(ctx, "AnalysisEngine.GenerateAnalyzers")
 	defer span.End()
 
 	if requirements == nil {

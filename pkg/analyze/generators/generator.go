@@ -970,5 +970,10 @@ func (g *AnalyzerGenerator) validateCustomRequirement(req *analyzer.CustomRequir
 		return validator(req)
 	}
 
+	// Check if we have a template with validator for this type
+	if template, exists := g.templates[req.Type]; exists && template.Validator != nil {
+		return template.Validator(req)
+	}
+
 	return nil
 }
