@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/pkg/errors"
@@ -52,6 +53,7 @@ type RateLimiter struct {
 	lastReset time.Time
 	stopCh    chan struct{}
 	stopped   bool
+	mu        sync.Mutex
 }
 
 // RetryConfig defines retry behavior
@@ -233,6 +235,9 @@ func (rl *RateLimiter) waitForToken(ctx context.Context) error {
 
 // Stop cleanly shuts down the rate limiter and stops the replenishment goroutine
 func (rl *RateLimiter) Stop() {
+	rl.mu.Lock()
+	defer rl.mu.Unlock()
+
 	if !rl.stopped {
 		rl.stopped = true
 		close(rl.stopCh)
