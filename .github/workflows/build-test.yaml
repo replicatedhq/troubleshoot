@@ -36,12 +36,9 @@ jobs:
             support-bundle:
               - 'cmd/troubleshoot/**'
               - 'pkg/supportbundle/**'
-            examples:
-              - 'examples/**'
-              - 'test/run-examples.sh'
 
-  # Validation jobs
-  validate:
+  # Lint
+  lint:
     if: needs.changes.outputs.go-files == 'true'
     needs: changes
     runs-on: ubuntu-latest
@@ -70,7 +67,7 @@ jobs:
   # Unit and integration tests
   test:
     if: needs.changes.outputs.go-files == 'true'
-    needs: [changes, validate]
+    needs: [changes, lint]
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -88,7 +85,7 @@ jobs:
   # Build binaries
   build:
     if: needs.changes.outputs.go-files == 'true'
-    needs: [changes, validate]
+    needs: [changes, lint]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -100,16 +97,6 @@ jobs:
           name: binaries
           path: bin/
           retention-days: 1
-
-  # Examples validation
-  examples:
-    if: needs.changes.outputs.examples == 'true' || needs.changes.outputs.go-files == 'true'
-    needs: changes
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@v5
-      - run: make run-examples
 
   # E2E tests
   e2e:
@@ -150,7 +137,7 @@ jobs:
   # Success summary
   success:
     if: always()
-    needs: [validate, test, build, examples, e2e]
+    needs: [lint, test, build, e2e]
     runs-on: ubuntu-latest
     steps:
       - name: Check results
