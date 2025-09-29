@@ -54,8 +54,8 @@ func ExtractLicenseFromBundle(bundlePath string) (string, string, error) {
 
 		// Process .yaml, .yml, and .json files
 		if !strings.HasSuffix(header.Name, ".yaml") &&
-		   !strings.HasSuffix(header.Name, ".yml") &&
-		   !strings.HasSuffix(header.Name, ".json") {
+			!strings.HasSuffix(header.Name, ".yml") &&
+			!strings.HasSuffix(header.Name, ".json") {
 			continue
 		}
 
@@ -158,7 +158,7 @@ func extractLicenseWithRegex(content string) string {
 		`"licenseID":\s*"([a-zA-Z0-9]{20,30})"`,
 		`"license_id":\s*"([a-zA-Z0-9]{20,30})"`,
 		`"license":\s*"([a-zA-Z0-9]{20,30})"`,
-		`licenseID: ([a-zA-Z0-9]{20,30})`, // YAML format without quotes
+		`licenseID: ([a-zA-Z0-9]{20,30})`,    // YAML format without quotes
 		`\\nlicenseID: ([a-zA-Z0-9]{20,30})`, // With escaped newline
 	}
 
@@ -282,8 +282,8 @@ func ExtractAppSlugFromBundle(bundlePath string) (string, error) {
 
 		// Process .yaml, .yml, and .json files
 		if !strings.HasSuffix(header.Name, ".yaml") &&
-		   !strings.HasSuffix(header.Name, ".yml") &&
-		   !strings.HasSuffix(header.Name, ".json") {
+			!strings.HasSuffix(header.Name, ".yml") &&
+			!strings.HasSuffix(header.Name, ".json") {
 			continue
 		}
 
@@ -306,7 +306,7 @@ func ExtractAppSlugFromBundle(bundlePath string) (string, error) {
 
 		// Skip common Kubernetes configmaps
 		if filename == "kube-root-ca.crt" || strings.HasPrefix(filename, "kube-") ||
-		   strings.HasPrefix(filename, "kotsadm-") {
+			strings.HasPrefix(filename, "kotsadm-") {
 			continue
 		}
 
@@ -327,7 +327,7 @@ func extractAppSlugFromContent(content string) string {
 		`app_slug:\s*["']?([a-zA-Z0-9\-]+)["']?`,
 		`"appSlug":\s*"([a-zA-Z0-9\-]+)"`,
 		`"app_slug":\s*"([a-zA-Z0-9\-]+)"`,
-		`appSlug: ([a-zA-Z0-9\-]+)`, // YAML format without quotes
+		`appSlug: ([a-zA-Z0-9\-]+)`,    // YAML format without quotes
 		`\\nappSlug: ([a-zA-Z0-9\-]+)`, // With escaped newline
 	}
 

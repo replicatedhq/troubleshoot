@@ -86,7 +86,7 @@ func CheckAndUpdate(ctx context.Context, o Options) error {
 	// Check if installed via package manager - only show message if newer version exists
 	if pkgMgr := detectPackageManager(o.BinaryName); pkgMgr != nil {
 		if o.Printf != nil {
-			o.Printf("A newer version (%s) is available. Please run: %s\n", 
+			o.Printf("A newer version (%s) is available. Please run: %s\n",
 				latest, pkgMgr.UpgradeCommand())
 		}
 		return nil
@@ -277,7 +277,7 @@ func detectPackageManager(binaryName string) pkgmgr.PackageManager {
 	// Map binary names to their package manager formula/plugin names
 	formulaName := getHomebrewFormulaName(binaryName)
 	pluginName := getKrewPluginName(binaryName)
-	
+
 	// List of package managers to check
 	packageManagers := []pkgmgr.PackageManager{
 		pkgmgr.NewHomebrewPackageManager(formulaName),
