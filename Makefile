@@ -38,7 +38,7 @@ BUILDTAGS = "netgo containers_image_ostree_stub exclude_graphdriver_devicemapper
 BUILDFLAGS = -tags ${BUILDTAGS} -installsuffix netgo
 BUILDPATHS = ./pkg/... ./cmd/... ./internal/...
 E2EPATHS = ./test/e2e/...
-TESTFLAGS ?= -v -coverprofile cover.out
+TESTFLAGS ?=
 
 .DEFAULT_GOAL := all
 all: clean build test
