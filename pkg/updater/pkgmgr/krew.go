@@ -7,7 +7,7 @@ import (
 )
 
 // KrewPackageManager detects if a binary was installed via kubectl krew
-type KrewPackageManager struct{
+type KrewPackageManager struct {
 	pluginName string
 }
 
@@ -66,4 +66,3 @@ func (k *KrewPackageManager) IsInstalled() (bool, error) {
 func (k *KrewPackageManager) UpgradeCommand() string {
 	return fmt.Sprintf("kubectl krew upgrade %s", k.pluginName)
 }
-
