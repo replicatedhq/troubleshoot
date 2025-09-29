@@ -4,11 +4,10 @@ on:
   push:
     tags:
       - 'v*'
-      - '!v*-*'  # Exclude prerelease tags like v1.0.1-beta, v1.0.1-alpha, etc.
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: false  # Don't cancel releases
+  cancel-in-progress: false
 
 jobs:
   goreleaser:
@@ -34,14 +33,16 @@ jobs:
           version: "v1.x"  # Binary version to install
           args: release --clean --config deploy/.goreleaser.yaml
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.HOMEBREW_GITHUB_TOKEN }}
 
       - name: Update new preflight version in krew-index
+        if: ${{ !contains(github.ref_name, '-') }}
         uses: rajatjindal/krew-release-bot@v0.0.47
         with:
           krew_template_file: deploy/krew/preflight.yaml
 
       - name: Update new support-bundle version in krew-index
+        if: ${{ !contains(github.ref_name, '-') }}
         uses: rajatjindal/krew-release-bot@v0.0.47
         with:
           krew_template_file: deploy/krew/support-bundle.yaml
