@@ -48,29 +48,6 @@ builds:
     flags: -tags netgo -tags containers_image_ostree_stub -tags exclude_graphdriver_devicemapper -tags exclude_graphdriver_btrfs -tags containers_image_openpgp -installsuffix netgo
     binary: support-bundle
     hooks: {}
-  - id: collect
-    goos:
-      - linux
-      - darwin
-    goarch:
-      - amd64
-      - arm
-      - arm64
-      - riscv64
-    ignore:
-      - goos: windows
-        goarch: arm
-    env:
-      - CGO_ENABLED=0
-    main: cmd/collect/main.go
-    ldflags: -s -w
-      -X github.com/replicatedhq/troubleshoot/pkg/version.version={{.Version}}
-      -X github.com/replicatedhq/troubleshoot/pkg/version.gitSHA={{.Commit}}
-      -X github.com/replicatedhq/troubleshoot/pkg/version.buildTime={{.Date}}
-      -extldflags "-static"
-    flags: -tags netgo -tags containers_image_ostree_stub -tags exclude_graphdriver_devicemapper -tags exclude_graphdriver_btrfs -tags containers_image_openpgp -installsuffix netgo
-    binary: collect
-    hooks: {}
 archives:
   - id: preflight
     builds:
@@ -112,26 +89,6 @@ archives:
       - src: 'sbom/assets/*'
         dst: .
         strip_parent: true # this is needed to make up for the way unzips work in krew v0.4.1
-  - id: collect
-    builds:
-      - collect
-    format: tar.gz
-    format_overrides:
-      - goos: windows
-        format: zip
-    name_template: 'collect_{{ .Os }}_{{ .Arch }}'
-    files:
-      - licence*
-      - LICENCE*
-      - license*
-      - LICENSE*
-      - readme*
-      - README*
-      - changelog*
-      - CHANGELOG*
-      - src: 'sbom/assets/*'
-        dst: .
-        strip_parent: true # this is needed to make up for the way unzips work in krew v0.4.1
 dockers:
   - dockerfile: ./deploy/Dockerfile.troubleshoot
     image_templates:
@@ -142,7 +99,6 @@ dockers:
     ids:
       - support-bundle
       - preflight
-      - collect
   - dockerfile: ./deploy/Dockerfile.troubleshoot
     image_templates:
       - "replicated/preflight:latest"
@@ -152,4 +108,35 @@ dockers:
     ids:
       - support-bundle
       - preflight
-      - collect
+universal_binaries:
+  - ids:
+      - preflight
+    replace: true
+    name_template: preflight
+  - ids:
+      - support-bundle
+    replace: true
+    name_template: support-bundle
+brews:
+  - name: preflight
+    ids:
+      - preflight
+    homepage: https://docs.replicated.com/reference/preflight-overview/
+    description: "A preflight checker and conformance test for Kubernetes clusters."
+    repository:
+      name: homebrew-replicated
+      owner: replicatedhq
+      branch: main
+    install: bin.install "preflight"
+    directory: HomebrewFormula
+  - name: support-bundle
+    ids:
+      - support-bundle
+    homepage: https://docs.replicated.com/reference/support-bundle-overview/
+    description: "Collect and redact support bundles for Kubernetes clusters."
+    repository:
+      name: homebrew-replicated
+      owner: replicatedhq
+      branch: main
+    install: bin.install "support-bundle"
+    directory: HomebrewFormula
