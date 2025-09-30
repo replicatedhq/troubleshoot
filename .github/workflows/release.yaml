@@ -360,22 +360,21 @@ jobs:
           ref: main
           fetch-depth: 0
 
-      - name: Update Formula files
+      - name: Create preflight formula
         working-directory: tap
         shell: bash
         run: |
-          set -euo pipefail
           TAG="${{ github.ref_name }}"
           BASE="${{ steps.urls.outputs.base }}"
-          cat > Formula/preflight.rb <<'RUBY'
+          cat > Formula/preflight.rb << 'EOF'
           class Preflight < Formula
             desc "A preflight checker and conformance test for Kubernetes clusters."
             homepage "https://docs.replicated.com/reference/preflight-overview/"
-            version "#{TAG.sub(/^v/, '')}"
+            version "PLACEHOLDER_TAG"
 
             on_macos do
-              url "#{BASE}/preflight_darwin_all.tar.gz"
-              sha256 "#{SHA_P_DARWIN_ALL}"
+              url "PLACEHOLDER_BASE/preflight_darwin_all.tar.gz"
+              sha256 "PLACEHOLDER_SHA_P_DARWIN_ALL"
               def install
                 bin.install "preflight"
               end
@@ -383,27 +382,34 @@ jobs:
 
             on_linux do
               if Hardware::CPU.arm?
-                url "#{BASE}/preflight_linux_arm64.tar.gz"
-                sha256 "#{SHA_P_LINUX_ARM64}"
+                url "PLACEHOLDER_BASE/preflight_linux_arm64.tar.gz"
+                sha256 "PLACEHOLDER_SHA_P_LINUX_ARM64"
               else
-                url "#{BASE}/preflight_linux_amd64.tar.gz"
-                sha256 "#{SHA_P_LINUX_AMD64}"
+                url "PLACEHOLDER_BASE/preflight_linux_amd64.tar.gz"
+                sha256 "PLACEHOLDER_SHA_P_LINUX_AMD64"
               end
               def install
                 bin.install "preflight"
               end
             end
           end
-RUBY
-          cat > Formula/support-bundle.rb <<'RUBY'
+          EOF
+
+      - name: Create support-bundle formula
+        working-directory: tap
+        shell: bash
+        run: |
+          TAG="${{ github.ref_name }}"
+          BASE="${{ steps.urls.outputs.base }}"
+          cat > Formula/support-bundle.rb << 'EOF'
           class SupportBundle < Formula
             desc "Collect and redact support bundles for Kubernetes clusters."
             homepage "https://docs.replicated.com/reference/support-bundle-overview/"
-            version "#{TAG.sub(/^v/, '')}"
+            version "PLACEHOLDER_TAG"
 
             on_macos do
-              url "#{BASE}/support-bundle_darwin_all.tar.gz"
-              sha256 "#{SHA_S_DARWIN_ALL}"
+              url "PLACEHOLDER_BASE/support-bundle_darwin_all.tar.gz"
+              sha256 "PLACEHOLDER_SHA_S_DARWIN_ALL"
               def install
                 bin.install "support-bundle"
               end
@@ -411,28 +417,34 @@ RUBY
 
             on_linux do
               if Hardware::CPU.arm?
-                url "#{BASE}/support-bundle_linux_arm64.tar.gz"
-                sha256 "#{SHA_S_LINUX_ARM64}"
+                url "PLACEHOLDER_BASE/support-bundle_linux_arm64.tar.gz"
+                sha256 "PLACEHOLDER_SHA_S_LINUX_ARM64"
               else
-                url "#{BASE}/support-bundle_linux_amd64.tar.gz"
-                sha256 "#{SHA_S_LINUX_AMD64}"
+                url "PLACEHOLDER_BASE/support-bundle_linux_amd64.tar.gz"
+                sha256 "PLACEHOLDER_SHA_S_LINUX_AMD64"
               end
               def install
                 bin.install "support-bundle"
               end
             end
           end
-RUBY
-          # inject shas/urls into templates
+          EOF
+
+      - name: Update formulas with actual values
+        working-directory: tap
+        shell: bash
+        run: |
+          TAG="${{ github.ref_name }}"
+          BASE="${{ steps.urls.outputs.base }}"
           sed -i.bak \
-            -e "s|#{TAG}|${TAG}|g" \
-            -e "s|#{BASE}|${BASE}|g" \
-            -e "s|#{SHA_P_DARWIN_ALL}|${{ steps.shas.outputs.p_darwin_all }}|g" \
-            -e "s|#{SHA_S_DARWIN_ALL}|${{ steps.shas.outputs.s_darwin_all }}|g" \
-            -e "s|#{SHA_P_LINUX_AMD64}|${{ steps.shas.outputs.p_linux_amd64 }}|g" \
-            -e "s|#{SHA_P_LINUX_ARM64}|${{ steps.shas.outputs.p_linux_arm64 }}|g" \
-            -e "s|#{SHA_S_LINUX_AMD64}|${{ steps.shas.outputs.s_linux_amd64 }}|g" \
-            -e "s|#{SHA_S_LINUX_ARM64}|${{ steps.shas.outputs.s_linux_arm64 }}|g" \
+            -e "s|PLACEHOLDER_TAG|${TAG#v}|g" \
+            -e "s|PLACEHOLDER_BASE|${BASE}|g" \
+            -e "s|PLACEHOLDER_SHA_P_DARWIN_ALL|${{ steps.shas.outputs.p_darwin_all }}|g" \
+            -e "s|PLACEHOLDER_SHA_S_DARWIN_ALL|${{ steps.shas.outputs.s_darwin_all }}|g" \
+            -e "s|PLACEHOLDER_SHA_P_LINUX_AMD64|${{ steps.shas.outputs.p_linux_amd64 }}|g" \
+            -e "s|PLACEHOLDER_SHA_P_LINUX_ARM64|${{ steps.shas.outputs.p_linux_arm64 }}|g" \
+            -e "s|PLACEHOLDER_SHA_S_LINUX_AMD64|${{ steps.shas.outputs.s_linux_amd64 }}|g" \
+            -e "s|PLACEHOLDER_SHA_S_LINUX_ARM64|${{ steps.shas.outputs.s_linux_arm64 }}|g" \
             Formula/preflight.rb Formula/support-bundle.rb
           rm -f Formula/*.bak
 
