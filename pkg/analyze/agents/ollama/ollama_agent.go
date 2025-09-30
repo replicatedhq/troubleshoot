@@ -920,6 +920,9 @@ func (a *OllamaAgent) parseLLMResponse(response string, spec analyzer.AnalyzerSp
 			}
 
 			return result, nil
+		} else {
+			// JSON was found but malformed
+			return nil, errors.Wrap(err, "failed to parse LLM JSON response")
 		}
 	}
 
@@ -1014,6 +1017,15 @@ func (a *OllamaAgent) parseMarkdownResponse(response string, spec analyzer.Analy
 			Category:      "ai-suggested",
 			Priority:      5,
 			IsAutomatable: false,
+		}
+	}
+
+	// Check if we found any meaningful content to parse
+	if title == "" && message == "" && len(insights) == 0 && len(recommendations) == 0 {
+		// If nothing meaningful was found, return an error
+		if !strings.Contains(response, "**") && !strings.Contains(response, "Title:") && 
+		   !strings.Contains(response, "Message:") && !strings.Contains(response, "{") {
+			return nil, errors.New("no valid JSON found in LLM response and no parseable markdown content")
 		}
 	}
 
