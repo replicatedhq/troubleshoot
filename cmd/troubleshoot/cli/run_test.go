@@ -140,10 +140,11 @@ func Test_loadSupportBundleSpecsFromURIs_TimeoutError(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	// Set the timeout on the http client to 10ms
+	// Set the timeout on the http client to 500ms
+	// The server sleeps for 2 seconds, so this should still timeout
 	// supportbundle.LoadSupportBundleSpec does not yet use the context
 	before := httputil.GetHttpClient().Timeout
-	httputil.GetHttpClient().Timeout = 10 * time.Millisecond
+	httputil.GetHttpClient().Timeout = 500 * time.Millisecond
 	defer func() {
 		// Reinstate the original timeout. Its a global var so we need to reset it
 		httputil.GetHttpClient().Timeout = before
