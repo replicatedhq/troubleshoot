@@ -34,6 +34,7 @@ jobs:
           args: release --clean --config deploy/.goreleaser.yaml
         env:
           GITHUB_TOKEN: ${{ secrets.HOMEBREW_GITHUB_TOKEN }}
+          GORELEASER_LOG: "debug"
 
       - name: Update new preflight version in krew-index
         if: ${{ !contains(github.ref_name, '-') }}
