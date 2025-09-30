@@ -249,9 +249,9 @@ func detailedCephMessage(outcomeMessage string, status CephStatus) string {
 	}
 
 	if status.OsdMap.OsdMap.Full {
-		msg = append(msg, fmt.Sprintf("OSD disk is full"))
+		msg = append(msg, "OSD disk is full")
 	} else if status.OsdMap.OsdMap.NearFull {
-		msg = append(msg, fmt.Sprintf("OSD disk is nearly full"))
+		msg = append(msg, "OSD disk is nearly full")
 	}
 
 	if status.PgMap.TotalBytes > 0 {

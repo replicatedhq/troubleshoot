@@ -77,7 +77,7 @@ func (a *AnalyzeHostKernelConfigs) analyzeSingleNode(content collectedContent, c
 	for _, config := range hostAnalyzer.SelectedConfigs {
 		matches := kConfigRegex.FindStringSubmatch(config)
 		// zero tolerance for invalid kernel config
-		if matches == nil || len(matches) < 3 {
+		if len(matches) < 3 {
 			return nil, errors.Errorf("invalid kernel config: %s", config)
 		}
 

@@ -714,7 +714,7 @@ func (a *OllamaAgent) autoDetectFileForAnalyzer(bundle *analyzer.SupportBundle, 
 				}
 			}
 		}
-		
+
 	case "crd", "customResourceDefinition":
 		// CRD analyzers - look for custom resource files
 		if traditionalAnalyzer, ok := spec.Config["analyzer"]; ok {
@@ -722,21 +722,21 @@ func (a *OllamaAgent) autoDetectFileForAnalyzer(bundle *analyzer.SupportBundle, 
 				// Look for specific CRD name in custom-resources directory
 				crdName := crdAnalyzer.CustomResourceDefinitionName
 				for path, data := range bundle.Files {
-					if strings.Contains(path, "custom-resources") && 
-					   (strings.Contains(strings.ToLower(path), strings.ToLower(crdName)) || 
-					    strings.Contains(strings.ToLower(path), "crd")) {
+					if strings.Contains(path, "custom-resources") &&
+						(strings.Contains(strings.ToLower(path), strings.ToLower(crdName)) ||
+							strings.Contains(strings.ToLower(path), "crd")) {
 						return path, data, true
 					}
 				}
 			}
 		}
-		
+
 	case "container-runtime":
 		// Container runtime analyzers - look for node information
 		if data, exists := bundle.Files["cluster-resources/nodes.json"]; exists {
 			return "cluster-resources/nodes.json", data, true
 		}
-		
+
 	case "distribution":
 		// Distribution analyzers - primarily use node information
 		if data, exists := bundle.Files["cluster-resources/nodes.json"]; exists {
@@ -746,7 +746,7 @@ func (a *OllamaAgent) autoDetectFileForAnalyzer(bundle *analyzer.SupportBundle, 
 		if data, exists := bundle.Files["cluster-info/cluster_version.json"]; exists {
 			return "cluster-info/cluster_version.json", data, true
 		}
-		
+
 	case "storage-class":
 		// Storage class analyzers - look for storage class resources
 		for path, data := range bundle.Files {
@@ -754,7 +754,7 @@ func (a *OllamaAgent) autoDetectFileForAnalyzer(bundle *analyzer.SupportBundle, 
 				return path, data, true
 			}
 		}
-		
+
 	case "ingress":
 		// Ingress analyzers - look for ingress resources
 		for path, data := range bundle.Files {
@@ -762,7 +762,7 @@ func (a *OllamaAgent) autoDetectFileForAnalyzer(bundle *analyzer.SupportBundle, 
 				return path, data, true
 			}
 		}
-		
+
 	case "http":
 		// HTTP analyzers can work with any network-related data
 		for path, data := range bundle.Files {
@@ -770,7 +770,7 @@ func (a *OllamaAgent) autoDetectFileForAnalyzer(bundle *analyzer.SupportBundle, 
 				return path, data, true
 			}
 		}
-		
+
 	case "job-status":
 		// Job analyzers - look for job resources
 		for path, data := range bundle.Files {
@@ -778,7 +778,7 @@ func (a *OllamaAgent) autoDetectFileForAnalyzer(bundle *analyzer.SupportBundle, 
 				return path, data, true
 			}
 		}
-		
+
 	case "statefulset-status":
 		// StatefulSet analyzers
 		for path, data := range bundle.Files {
@@ -786,7 +786,7 @@ func (a *OllamaAgent) autoDetectFileForAnalyzer(bundle *analyzer.SupportBundle, 
 				return path, data, true
 			}
 		}
-		
+
 	case "replicaset-status":
 		// ReplicaSet analyzers
 		for path, data := range bundle.Files {
@@ -794,7 +794,7 @@ func (a *OllamaAgent) autoDetectFileForAnalyzer(bundle *analyzer.SupportBundle, 
 				return path, data, true
 			}
 		}
-		
+
 	case "cluster-pod-statuses":
 		// Pod status analyzers
 		for path, data := range bundle.Files {
@@ -802,7 +802,7 @@ func (a *OllamaAgent) autoDetectFileForAnalyzer(bundle *analyzer.SupportBundle, 
 				return path, data, true
 			}
 		}
-		
+
 	case "image-pull-secret":
 		// Image pull secret analyzers
 		for path, data := range bundle.Files {
@@ -810,7 +810,7 @@ func (a *OllamaAgent) autoDetectFileForAnalyzer(bundle *analyzer.SupportBundle, 
 				return path, data, true
 			}
 		}
-		
+
 	case "yaml-compare", "json-compare":
 		// Comparison analyzers - can work with any structured data
 		for path, data := range bundle.Files {
@@ -818,7 +818,7 @@ func (a *OllamaAgent) autoDetectFileForAnalyzer(bundle *analyzer.SupportBundle, 
 				return path, data, true
 			}
 		}
-		
+
 	case "certificates":
 		// Certificate analyzers
 		for path, data := range bundle.Files {
@@ -826,7 +826,7 @@ func (a *OllamaAgent) autoDetectFileForAnalyzer(bundle *analyzer.SupportBundle, 
 				return path, data, true
 			}
 		}
-		
+
 	case "velero", "longhorn", "ceph-status":
 		// Storage system analyzers
 		for path, data := range bundle.Files {
@@ -834,7 +834,7 @@ func (a *OllamaAgent) autoDetectFileForAnalyzer(bundle *analyzer.SupportBundle, 
 				return path, data, true
 			}
 		}
-		
+
 	case "sysctl", "goldpinger", "weave-report", "registry-images":
 		// Infrastructure analyzers
 		for path, data := range bundle.Files {
@@ -842,7 +842,7 @@ func (a *OllamaAgent) autoDetectFileForAnalyzer(bundle *analyzer.SupportBundle, 
 				return path, data, true
 			}
 		}
-		
+
 	case "cluster-resource":
 		// Generic cluster resource analyzer - can work with any cluster data
 		if data, exists := bundle.Files["cluster-resources/nodes.json"]; exists {

@@ -35,11 +35,11 @@ func runAnalyzers(v *viper.Viper, bundlePath string) error {
 	if v.GetBool("check-ollama") {
 		return handleOllamaStatus(v)
 	}
-	
+
 	if v.GetBool("list-models") {
 		return handleListModels(v)
 	}
-	
+
 	if v.GetBool("pull-model") {
 		return handlePullModel(v)
 	}
@@ -50,11 +50,11 @@ func runAnalyzers(v *viper.Viper, bundlePath string) error {
 	}
 
 	// Check if advanced analysis is requested
-	useAdvanced := v.GetBool("advanced-analysis") || 
-		v.GetBool("enable-ollama") || 
-		v.GetBool("disable-ollama") ||  // ← FIX: disable-ollama should still use advanced engine
-		(len(v.GetStringSlice("agents")) > 1 || 
-		 (len(v.GetStringSlice("agents")) == 1 && v.GetStringSlice("agents")[0] != "local"))
+	useAdvanced := v.GetBool("advanced-analysis") ||
+		v.GetBool("enable-ollama") ||
+		v.GetBool("disable-ollama") || // ← FIX: disable-ollama should still use advanced engine
+		(len(v.GetStringSlice("agents")) > 1 ||
+			(len(v.GetStringSlice("agents")) == 1 && v.GetStringSlice("agents")[0] != "local"))
 
 	if useAdvanced {
 		return runAdvancedAnalysis(v, bundlePath)
@@ -485,7 +485,7 @@ func loadSupportBundle(bundlePath string) (*analyzer.SupportBundle, error) {
 
 	// Create bundle structure
 	bundle := &analyzer.SupportBundle{
-		Files:    make(map[string][]byte),
+		Files: make(map[string][]byte),
 		Metadata: &analyzer.SupportBundleMetadata{
 			CreatedAt:   time.Now(),
 			Version:     "1.0.0",
@@ -526,7 +526,7 @@ func loadSupportBundle(bundlePath string) (*analyzer.SupportBundle, error) {
 	}
 
 	klog.Infof("Successfully loaded support bundle with %d files", len(bundle.Files))
-	
+
 	return bundle, nil
 }
 

@@ -16,8 +16,8 @@ import (
 // validateArgs allows certain flags to run without requiring bundle arguments
 func validateArgs(cmd *cobra.Command, args []string) error {
 	// Special flags that don't require bundle arguments
-	if cmd.Flags().Changed("check-ollama") || cmd.Flags().Changed("setup-ollama") || 
-	   cmd.Flags().Changed("list-models") || cmd.Flags().Changed("pull-model") {
+	if cmd.Flags().Changed("check-ollama") || cmd.Flags().Changed("setup-ollama") ||
+		cmd.Flags().Changed("list-models") || cmd.Flags().Changed("pull-model") {
 		return nil
 	}
 
