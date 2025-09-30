@@ -15,6 +15,10 @@ import (
 
 // repoPath returns a path relative to the repository root from within pkg/preflight tests
 func repoPath(rel string) string {
+	if rel == "v1beta3.yaml" {
+		// Use an existing v1beta3 example file for testing
+		return filepath.Join("..", "..", "examples", "preflight", "simple-v1beta3.yaml")
+	}
 	return filepath.Join("..", "..", rel)
 }
 
@@ -212,7 +216,7 @@ func TestRender_V1Beta3_CLI_ValuesAndSetFlags(t *testing.T) {
 		}
 	}
 	require.NotNil(t, clusterVersionAnalyzer, "cluster version analyzer should be present")
-	
+
 	// Check that our --set values are used in the rendered outcomes
 	foundMinVersion := false
 	foundRecommendedVersion := false
@@ -261,7 +265,7 @@ spec:
 	vals := map[string]interface{}{}
 	rendered, err := RenderWithHelmTemplate(invalidYaml, vals)
 	require.NoError(t, err, "template rendering should succeed even with malformed YAML")
-	
+
 	// But loading the spec should fail due to invalid YAML structure
 	_, err = loader.LoadSpecs(context.Background(), loader.LoadOptions{RawSpec: rendered, Strict: true})
 	assert.Error(t, err, "loading malformed YAML should produce an error")

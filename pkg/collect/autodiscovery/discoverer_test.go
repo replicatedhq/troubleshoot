@@ -409,7 +409,7 @@ func TestDiscoverer_generateFoundationalCollectors(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			collectors := discoverer.generateFoundationalCollectors(tt.namespaces, tt.opts)
+			collectors := discoverer.generateFoundationalCollectors(context.Background(), tt.namespaces, tt.opts)
 
 			if len(collectors) < tt.wantMinCount {
 				t.Errorf("generateFoundationalCollectors() returned %d collectors, want at least %d",
