@@ -88,4 +88,3 @@ func UploadBundleAutoDetect(bundlePath string, providedLicenseID, providedAppSlu
 	fmt.Printf("Successfully uploaded support bundle\n")
 	return nil
 }
-

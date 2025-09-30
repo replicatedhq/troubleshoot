@@ -7,7 +7,7 @@ import (
 )
 
 // HomebrewPackageManager detects if a binary was installed via Homebrew
-type HomebrewPackageManager struct{
+type HomebrewPackageManager struct {
 	formula string
 }
 
@@ -15,9 +15,9 @@ var _ PackageManager = (*HomebrewPackageManager)(nil)
 
 type homebrewInfoOutput struct {
 	Installed []struct {
-		Version      string `json:"version"`
-		InstalledOn  bool   `json:"installed_on_request"`
-		LinkedKeg    string `json:"linked_keg"`
+		Version     string `json:"version"`
+		InstalledOn bool   `json:"installed_on_request"`
+		LinkedKeg   string `json:"linked_keg"`
 	} `json:"installed"`
 }
 
@@ -71,4 +71,3 @@ func (h *HomebrewPackageManager) IsInstalled() (bool, error) {
 func (h *HomebrewPackageManager) UpgradeCommand() string {
 	return fmt.Sprintf("brew upgrade %s", h.formula)
 }
-

@@ -12,8 +12,8 @@ import (
 
 // V1Beta2ToV1Beta3Result holds the conversion results
 type V1Beta2ToV1Beta3Result struct {
-	TemplatedSpec string            `yaml:"-"`
-	ValuesFile    string            `yaml:"-"`
+	TemplatedSpec string                 `yaml:"-"`
+	ValuesFile    string                 `yaml:"-"`
 	Values        map[string]interface{} `yaml:"-"`
 }
 
@@ -134,9 +134,9 @@ func (c *v1beta3Converter) convert() (string, error) {
 
 func (c *v1beta3Converter) initializeValues() {
 	c.values["kubernetes"] = map[string]interface{}{
-		"enabled":             false,
-		"minVersion":          "1.20.0",
-		"recommendedVersion":  "1.22.0",
+		"enabled":            false,
+		"minVersion":         "1.20.0",
+		"recommendedVersion": "1.22.0",
 	}
 
 	c.values["storage"] = map[string]interface{}{
@@ -151,9 +151,9 @@ func (c *v1beta3Converter) initializeValues() {
 	}
 
 	c.values["node"] = map[string]interface{}{
-		"minMemoryGi":         8,
-		"recommendedMemoryGi": 32,
-		"minEphemeralGi":      40,
+		"minMemoryGi":            8,
+		"recommendedMemoryGi":    32,
+		"minEphemeralGi":         40,
 		"recommendedEphemeralGi": 100,
 	}
 
@@ -630,4 +630,3 @@ func (c *v1beta3Converter) setNestedValue(path string, value interface{}) {
 
 	current[parts[len(parts)-1]] = value
 }
-
