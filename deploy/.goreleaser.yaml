@@ -9,7 +9,7 @@ builds:
     main: ./cmd/preflight/main.go
     env: [CGO_ENABLED=0]
     goos: [linux, darwin]
-    goarch: [amd64, arm, arm64, riscv64]
+    goarch: [amd64, arm, arm64]
     ignore:
       - goos: windows
         goarch: arm
@@ -32,7 +32,7 @@ builds:
     main: ./cmd/troubleshoot/main.go
     env: [CGO_ENABLED=0]
     goos: [linux, darwin]
-    goarch: [amd64, arm, arm64, riscv64]
+    goarch: [amd64, arm, arm64]
     ignore:
       - goos: windows
         goarch: arm
