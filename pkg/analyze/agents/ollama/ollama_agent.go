@@ -1023,8 +1023,8 @@ func (a *OllamaAgent) parseMarkdownResponse(response string, spec analyzer.Analy
 	// Check if we found any meaningful content to parse
 	if title == "" && message == "" && len(insights) == 0 && len(recommendations) == 0 {
 		// If nothing meaningful was found, return an error
-		if !strings.Contains(response, "**") && !strings.Contains(response, "Title:") && 
-		   !strings.Contains(response, "Message:") && !strings.Contains(response, "{") {
+		if !strings.Contains(response, "**") && !strings.Contains(response, "Title:") &&
+			!strings.Contains(response, "Message:") && !strings.Contains(response, "{") {
 			return nil, errors.New("no valid JSON found in LLM response and no parseable markdown content")
 		}
 	}

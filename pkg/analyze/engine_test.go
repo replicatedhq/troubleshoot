@@ -374,8 +374,27 @@ func (m *mockAgent) Analyze(ctx context.Context, data []byte, analyzers []Analyz
 		return nil, errors.New("agent not available")
 	}
 
+	// Create results for each analyzer provided, plus the pre-configured results
+	allResults := make([]*AnalyzerResult, 0, len(m.results)+len(analyzers))
+
+	// Add pre-configured results (e.g., the "Success" result)
+	allResults = append(allResults, m.results...)
+
+	// Add a result for each analyzer spec provided
+	for i, analyzer := range analyzers {
+		result := &AnalyzerResult{
+			IsPass:     true,
+			Title:      fmt.Sprintf("Mock Analysis: %s", analyzer.Name),
+			Message:    fmt.Sprintf("Mock agent processed analyzer %d successfully", i),
+			Category:   analyzer.Category,
+			Confidence: 0.9,
+			AgentName:  m.name,
+		}
+		allResults = append(allResults, result)
+	}
+
 	return &AgentResult{
-		Results: m.results,
+		Results: allResults,
 		Metadata: AgentResultMetadata{
 			Duration:      m.duration,
 			AnalyzerCount: len(analyzers),

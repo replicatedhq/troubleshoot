@@ -52,7 +52,6 @@ func runAnalyzers(v *viper.Viper, bundlePath string) error {
 	// Check if advanced analysis is requested
 	useAdvanced := v.GetBool("advanced-analysis") ||
 		v.GetBool("enable-ollama") ||
-		v.GetBool("disable-ollama") || // ← FIX: disable-ollama should still use advanced engine
 		(len(v.GetStringSlice("agents")) > 1 ||
 			(len(v.GetStringSlice("agents")) == 1 && v.GetStringSlice("agents")[0] != "local"))
 
