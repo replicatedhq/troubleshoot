@@ -7,9 +7,9 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	"github.com/replicatedhq/troubleshoot/pkg/convert"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"github.com/replicatedhq/troubleshoot/pkg/convert"
 )
 
 func ConvertCmd() *cobra.Command {

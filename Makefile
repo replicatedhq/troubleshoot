@@ -38,7 +38,7 @@ BUILDTAGS = "netgo containers_image_ostree_stub exclude_graphdriver_devicemapper
 BUILDFLAGS = -tags ${BUILDTAGS} -installsuffix netgo
 BUILDPATHS = ./pkg/... ./cmd/... ./internal/...
 E2EPATHS = ./test/e2e/...
-TESTFLAGS ?= -v -coverprofile cover.out
+TESTFLAGS ?=
 
 .DEFAULT_GOAL := all
 all: clean build test
@@ -60,10 +60,6 @@ test-integration: fmt vet
 .PHONY: preflight-e2e-test
 preflight-e2e-test:
 	./test/validate-preflight-e2e.sh
-
-.PHONY: run-examples
-run-examples:
-	./test/run-examples.sh
 
 .PHONY: support-bundle-e2e-test
 support-bundle-e2e-test:
@@ -114,14 +110,3 @@ fmt:
 .PHONY: vet
 vet:
 	go vet ${BUILDFLAGS} ${BUILDPATHS}
-
-.PHONY: release
-release: export GITHUB_TOKEN = $(shell echo ${GITHUB_TOKEN_TROUBLESHOOT})
-release:
-	curl -sL https://git.io/goreleaser | bash -s -- --rm-dist --config deploy/.goreleaser.yml
-
-.PHONY: snapshot-release
-snapshot-release:
-	curl -sL https://git.io/goreleaser | bash -s -- --rm-dist --snapshot --config deploy/.goreleaser.snapshot.yml
-	docker push replicated/troubleshoot:alpha
-	docker push replicated/preflight:alpha
