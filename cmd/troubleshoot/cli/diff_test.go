@@ -513,14 +513,14 @@ func TestReadLinesFromReader(t *testing.T) {
 			content:  "line1\nline2\nline3\n",
 			maxBytes: 1000,
 			wantLen:  3,
-			wantLast: "line3",
+			wantLast: "line3\n",
 		},
 		{
 			name:     "content exceeds limit",
 			content:  "line1\nline2\nline3\nline4\nline5\n",
 			maxBytes: 15, // Only allows first 2 lines plus truncation marker
 			wantLen:  3,
-			wantLast: "... (content truncated due to size)",
+			wantLast: "... (content truncated due to size)\n",
 		},
 		{
 			name:     "empty content",
