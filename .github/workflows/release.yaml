@@ -2,48 +2,450 @@ name: release
 
 on:
   push:
-    tags:
-      - 'v*'
+    tags: ['v*']
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: false
 
-jobs:
-  goreleaser:
-    runs-on: troubleshoot-release
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v5
-        with:
-          fetch-depth: 0
+permissions:
+  contents: write
+  packages: write
+  pull-requests: write
 
-      - uses: azure/docker-login@v2
-        with:
-          username: ${{ secrets.DOCKERHUB_USER }}
-          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+env:
+  VERSION: ${{ github.ref_name }}
+
+jobs:
+  # ---------------------------
+  # Linux builds (amd64, arm64, arm)
+  # ---------------------------
+  build-linux:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [amd64, arm64, arm]
+    steps:
+      - uses: actions/checkout@v5
+        with: { fetch-depth: 0 }
 
       - uses: actions/setup-go@v6
-        with:
-          go-version-file: 'go.mod'
+        with: { go-version-file: go.mod }
 
-      - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v6
-        with:
-          version: "v2.12.3"
-          args: release --clean --config deploy/.goreleaser.yaml
+      - name: Build linux/${{ matrix.arch }}
         env:
-          GITHUB_TOKEN: ${{ secrets.HOMEBREW_GITHUB_TOKEN }}
-          GORELEASER_LOG: "debug"
+          GOOS: linux
+          GOARCH: ${{ matrix.arch }}
+          CGO_ENABLED: 0
+        run: |
+          set -euxo pipefail
+          NAME1=preflight
+          NAME2=support-bundle
+          LDFLAGS="-s -w \
+            -X github.com/replicatedhq/troubleshoot/pkg/version.version=${VERSION} \
+            -X github.com/replicatedhq/troubleshoot/pkg/version.gitSHA=${GITHUB_SHA} \
+            -X github.com/replicatedhq/troubleshoot/pkg/version.buildTime=$(date -u +%Y-%m-%dT%H:%M:%SZ) \
+            -extldflags '-static'"
+          TAGS="netgo,containers_image_ostree_stub,exclude_graphdriver_devicemapper,exclude_graphdriver_btrfs,containers_image_openpgp"
+          mkdir -p dist/${NAME1}_linux_${GOARCH} dist/${NAME2}_linux_${GOARCH}
+          go build -trimpath -tags "${TAGS}" -installsuffix netgo -ldflags "${LDFLAGS}" -o dist/${NAME1}_linux_${GOARCH}/${NAME1} ./cmd/preflight
+          go build -trimpath -tags "${TAGS}" -installsuffix netgo -ldflags "${LDFLAGS}" -o dist/${NAME2}_linux_${GOARCH}/${NAME2} ./cmd/troubleshoot
 
-      - name: Update new preflight version in krew-index
-        if: ${{ !contains(github.ref_name, '-') }}
-        uses: rajatjindal/krew-release-bot@v0.0.47
+      - uses: actions/upload-artifact@v4
         with:
-          krew_template_file: deploy/krew/preflight.yaml
+          name: bins-linux-${{ matrix.arch }}
+          path: |
+            dist/preflight_linux_${{ matrix.arch }}/preflight
+            dist/support-bundle_linux_${{ matrix.arch }}/support-bundle
 
-      - name: Update new support-bundle version in krew-index
-        if: ${{ !contains(github.ref_name, '-') }}
-        uses: rajatjindal/krew-release-bot@v0.0.47
+  # ---------------------------
+  # macOS builds (amd64, arm64)
+  # ---------------------------
+  build-darwin:
+    runs-on: macos-13
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [amd64, arm64]
+    steps:
+      - uses: actions/checkout@v5
+        with: { fetch-depth: 0 }
+
+      - uses: actions/setup-go@v6
+        with: { go-version-file: go.mod }
+
+      - name: Build darwin/${{ matrix.arch }}
+        env:
+          GOOS: darwin
+          GOARCH: ${{ matrix.arch }}
+          CGO_ENABLED: 0
+        run: |
+          set -euxo pipefail
+          NAME1=preflight
+          NAME2=support-bundle
+          LDFLAGS="-s -w \
+            -X github.com/replicatedhq/troubleshoot/pkg/version.version=${VERSION} \
+            -X github.com/replicatedhq/troubleshoot/pkg/version.gitSHA=${GITHUB_SHA} \
+            -X github.com/replicatedhq/troubleshoot/pkg/version.buildTime=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+          TAGS="netgo,containers_image_ostree_stub,exclude_graphdriver_devicemapper,exclude_graphdriver_btrfs,containers_image_openpgp"
+          mkdir -p dist/${NAME1}_darwin_${GOARCH} dist/${NAME2}_darwin_${GOARCH}
+          go build -trimpath -tags "${TAGS}" -ldflags "${LDFLAGS}" -o dist/${NAME1}_darwin_${GOARCH}/${NAME1} ./cmd/preflight
+          go build -trimpath -tags "${TAGS}" -ldflags "${LDFLAGS}" -o dist/${NAME2}_darwin_${GOARCH}/${NAME2} ./cmd/troubleshoot
+
+      - uses: actions/upload-artifact@v4
         with:
-          krew_template_file: deploy/krew/support-bundle.yaml
+          name: bins-darwin-${{ matrix.arch }}
+          path: |
+            dist/preflight_darwin_${{ matrix.arch }}/preflight
+            dist/support-bundle_darwin_${{ matrix.arch }}/support-bundle
+
+  # ---------------------------
+  # Create universal (fat) macOS binaries
+  # ---------------------------
+  darwin-universal:
+    runs-on: macos-13
+    needs: [build-darwin]
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+
+      - name: Make universal binaries
+        run: |
+          set -euxo pipefail
+          mkdir -p dist/preflight-universal_darwin_all dist/support-bundle-universal_darwin_all
+          lipo -create \
+            dist/bins-darwin-amd64/preflight_darwin_amd64/preflight \
+            dist/bins-darwin-arm64/preflight_darwin_arm64/preflight \
+            -output dist/preflight-universal_darwin_all/preflight
+          lipo -create \
+            dist/bins-darwin-amd64/support-bundle_darwin_amd64/support-bundle \
+            dist/bins-darwin-arm64/support-bundle_darwin_arm64/support-bundle \
+            -output dist/support-bundle-universal_darwin_all/support-bundle
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: bins-darwin-universal
+          path: |
+            dist/preflight-universal_darwin_all/preflight
+            dist/support-bundle-universal_darwin_all/support-bundle
+
+  # ---------------------------
+  # Package + checksums
+  # ---------------------------
+  package:
+    runs-on: ubuntu-latest
+    needs: [build-linux, build-darwin, darwin-universal]
+    steps:
+      - uses: actions/checkout@v5
+        with: { fetch-depth: 0 }
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+
+      - name: Tar up and checksum
+        shell: bash
+        run: |
+          set -euxo pipefail
+          shopt -s nullglob
+          mkdir -p release
+
+          add_optional() {
+            for pat in LICEN[SC]E* README* CHANGELOG*; do
+              [ -e "$pat" ] && cp -a "$pat" "$1"/ || true
+            done
+            if [ -d sbom/assets ]; then cp -a sbom/assets/* "$1"/ 2>/dev/null || true; fi
+          }
+
+          # Linux & macOS arch-specific
+          for d in $(find dist -type d -name "preflight_*_*" -o -name "support-bundle_*_*"); do
+            base=$(basename "$d")
+            name="${base%%_*}"; rest="${base#${name}_}"; os="${rest%%_*}"; arch="${rest#*_}"
+            work="work_${name}_${os}_${arch}"
+            mkdir -p "$work"
+            cp -a "$d/"* "$work"/
+            add_optional "$work"
+            tar -C "$work" -czf "release/${name}_${os}_${arch}.tar.gz" .
+            rm -rf "$work"
+          done
+
+          # macOS universal
+          for d in dist/*-universal_darwin_all; do
+            [ -d "$d" ] || continue
+            name=$(basename "$d" | cut -d- -f1)
+            work="work_${name}_darwin_all"
+            mkdir -p "$work"
+            cp -a "$d/"* "$work"/
+            add_optional "$work"
+            tar -C "$work" -czf "release/${name}_darwin_all.tar.gz" .
+            rm -rf "$work"
+          done
+
+          (cd release && shasum -a 256 *.tar.gz > checksums.txt)
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-bundles
+          path: release/
+
+  # ---------------------------
+  # GitHub Release with assets
+  # ---------------------------
+  gh-release:
+    runs-on: ubuntu-latest
+    needs: [package]
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-bundles
+          path: release
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            release/*.tar.gz
+            release/checksums.txt
+          generate_release_notes: true
+
+  # ---------------------------
+  # Docker images (amd64 + arm64)
+  # ---------------------------
+  docker:
+  runs-on: ubuntu-latest
+  needs: [gh-release]   # assets exist on the release
+  steps:
+    - uses: actions/checkout@v5
+
+    - name: Compute tags
+      id: tags
+      shell: bash
+      run: |
+        set -euo pipefail
+        V="${{ github.ref_name }}"; V="${V#v}"
+        IFS='.' read -r MAJOR MINOR PATCH <<< "$V"
+        echo "version=$V" >> $GITHUB_OUTPUT
+        echo "major=$MAJOR" >> $GITHUB_OUTPUT
+        echo "minor=${MAJOR}.${MINOR}" >> $GITHUB_OUTPUT
+        echo "patch=${MAJOR}.${MINOR}.${PATCH}" >> $GITHUB_OUTPUT
+
+    - name: Prep buildx
+      uses: docker/setup-buildx-action@v3
+      with: { install: true }
+
+    - name: Login Docker Hub
+      uses: docker/login-action@v3
+      with:
+        registry: docker.io
+        username: ${{ secrets.DOCKERHUB_USER }}
+        password: ${{ secrets.DOCKERHUB_PASSWORD }}
+
+    # --- Build amd64 (pull binaries from the GitHub Release) ---
+    - name: Fetch linux/amd64 binaries
+      run: |
+        set -euxo pipefail
+        BASE="https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}"
+        mkdir -p dockerctx
+        curl -sSL "${BASE}/preflight_linux_amd64.tar.gz" | tar -xz -C dockerctx preflight
+        curl -sSL "${BASE}/support-bundle_linux_amd64.tar.gz" | tar -xz -C dockerctx support-bundle
+
+    - name: Build & push amd64 images
+      run: |
+        set -euxo pipefail
+        cp deploy/Dockerfile.troubleshoot dockerctx/Dockerfile
+        docker buildx build \
+          --platform linux/amd64 \
+          --build-arg VERSION=${{ steps.tags.outputs.version }} \
+          --build-arg COMMIT=${{ github.sha }} \
+          --build-arg DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ) \
+          -t replicated/troubleshoot:${{ steps.tags.outputs.patch }}-amd64 \
+          -t replicated/preflight:${{ steps.tags.outputs.patch }}-amd64 \
+          --push dockerctx
+
+    # --- Build arm64 ---
+    - name: Fetch linux/arm64 binaries
+      run: |
+        set -euxo pipefail
+        BASE="https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}"
+        rm -rf dockerctx && mkdir -p dockerctx
+        curl -sSL "${BASE}/preflight_linux_arm64.tar.gz" | tar -xz -C dockerctx preflight
+        curl -sSL "${BASE}/support-bundle_linux_arm64.tar.gz" | tar -xz -C dockerctx support-bundle
+
+    - name: Build & push arm64 images
+      run: |
+        set -euxo pipefail
+        cp deploy/Dockerfile.troubleshoot dockerctx/Dockerfile
+        docker buildx build \
+          --platform linux/arm64 \
+          --build-arg VERSION=${{ steps.tags.outputs.version }} \
+          --build-arg COMMIT=${{ github.sha }} \
+          --build-arg DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ) \
+          -t replicated/troubleshoot:${{ steps.tags.outputs.patch }}-arm64 \
+          -t replicated/preflight:${{ steps.tags.outputs.patch }}-arm64 \
+          --push dockerctx
+
+    # --- Create multi-arch manifests for each tag line ---
+    - name: Create and push manifests
+      shell: bash
+      run: |
+        set -euxo pipefail
+        mk_manifest() {
+          local repo="$1"; local tag="$2"
+          docker buildx imagetools create \
+            -t ${repo}:${tag} \
+            ${repo}:${{ steps.tags.outputs.patch }}-amd64 \
+            ${repo}:${{ steps.tags.outputs.patch }}-arm64
+        }
+        # patch tag already exists per-arch; aggregate into MAJOR.MINOR.PATCH, MAJOR.MINOR, MAJOR, latest
+        mk_manifest replicated/troubleshoot  ${{ steps.tags.outputs.patch }}
+        mk_manifest replicated/troubleshoot  ${{ steps.tags.outputs.minor }}
+        mk_manifest replicated/troubleshoot  ${{ steps.tags.outputs.major }}
+        mk_manifest replicated/troubleshoot  latest
+
+        mk_manifest replicated/preflight     ${{ steps.tags.outputs.patch }}
+        mk_manifest replicated/preflight     ${{ steps.tags.outputs.minor }}
+        mk_manifest replicated/preflight     ${{ steps.tags.outputs.major }}
+        mk_manifest replicated/preflight     latest
+
+  # ---------------------------
+  # Homebrew tap PR (Formula)
+  # ---------------------------
+  homebrew:
+    runs-on: ubuntu-latest
+    needs: [gh-release]
+    steps:
+      - name: Figure asset URLs
+        id: urls
+        shell: bash
+        run: |
+          set -euo pipefail
+          REPO="${GITHUB_REPOSITORY}"
+          TAG="${{ github.ref_name }}"
+          BASE="https://github.com/${REPO}/releases/download/${TAG}"
+          echo "base=${BASE}" >> $GITHUB_OUTPUT
+
+      - name: Compute shas (download release assets)
+        id: shas
+        shell: bash
+        run: |
+          set -euxo pipefail
+          BASE="${{ steps.urls.outputs.base }}"
+
+          dl_sha () { curl -L "$1" | shasum -a 256 | awk '{print $1}'; }
+
+          # macOS universal
+          P_DARWIN_ALL="${BASE}/preflight_darwin_all.tar.gz"
+          S_DARWIN_ALL="${BASE}/support-bundle_darwin_all.tar.gz"
+          echo "p_darwin_all=$(dl_sha ${P_DARWIN_ALL})" >> $GITHUB_OUTPUT
+          echo "s_darwin_all=$(dl_sha ${S_DARWIN_ALL})" >> $GITHUB_OUTPUT
+
+          # Linux amd64/arm64
+          P_LIN_AMD64="${BASE}/preflight_linux_amd64.tar.gz"
+          P_LIN_ARM64="${BASE}/preflight_linux_arm64.tar.gz"
+          S_LIN_AMD64="${BASE}/support-bundle_linux_amd64.tar.gz"
+          S_LIN_ARM64="${BASE}/support-bundle_linux_arm64.tar.gz"
+          echo "p_linux_amd64=$(dl_sha ${P_LIN_AMD64})" >> $GITHUB_OUTPUT
+          echo "p_linux_arm64=$(dl_sha ${P_LIN_ARM64})" >> $GITHUB_OUTPUT
+          echo "s_linux_amd64=$(dl_sha ${S_LIN_AMD64})" >> $GITHUB_OUTPUT
+          echo "s_linux_arm64=$(dl_sha ${S_LIN_ARM64})" >> $GITHUB_OUTPUT
+
+      - name: Checkout tap repo
+        uses: actions/checkout@v5
+        with:
+          repository: replicatedhq/homebrew-replicated
+          token: ${{ secrets.HOMEBREW_GITHUB_TOKEN }}
+          path: tap
+          ref: main
+          fetch-depth: 0
+
+      - name: Update Formula files
+        working-directory: tap
+        shell: bash
+        run: |
+          set -euo pipefail
+          TAG="${{ github.ref_name }}"
+          BASE="${{ steps.urls.outputs.base }}"
+          cat > Formula/preflight.rb <<'RUBY'
+          class Preflight < Formula
+            desc "A preflight checker and conformance test for Kubernetes clusters."
+            homepage "https://docs.replicated.com/reference/preflight-overview/"
+            version "#{TAG.sub(/^v/, '')}"
+
+            on_macos do
+              url "#{BASE}/preflight_darwin_all.tar.gz"
+              sha256 "#{SHA_P_DARWIN_ALL}"
+              def install
+                bin.install "preflight"
+              end
+            end
+
+            on_linux do
+              if Hardware::CPU.arm?
+                url "#{BASE}/preflight_linux_arm64.tar.gz"
+                sha256 "#{SHA_P_LINUX_ARM64}"
+              else
+                url "#{BASE}/preflight_linux_amd64.tar.gz"
+                sha256 "#{SHA_P_LINUX_AMD64}"
+              end
+              def install
+                bin.install "preflight"
+              end
+            end
+          end
+RUBY
+          cat > Formula/support-bundle.rb <<'RUBY'
+          class SupportBundle < Formula
+            desc "Collect and redact support bundles for Kubernetes clusters."
+            homepage "https://docs.replicated.com/reference/support-bundle-overview/"
+            version "#{TAG.sub(/^v/, '')}"
+
+            on_macos do
+              url "#{BASE}/support-bundle_darwin_all.tar.gz"
+              sha256 "#{SHA_S_DARWIN_ALL}"
+              def install
+                bin.install "support-bundle"
+              end
+            end
+
+            on_linux do
+              if Hardware::CPU.arm?
+                url "#{BASE}/support-bundle_linux_arm64.tar.gz"
+                sha256 "#{SHA_S_LINUX_ARM64}"
+              else
+                url "#{BASE}/support-bundle_linux_amd64.tar.gz"
+                sha256 "#{SHA_S_LINUX_AMD64}"
+              end
+              def install
+                bin.install "support-bundle"
+              end
+            end
+          end
+RUBY
+          # inject shas/urls into templates
+          sed -i.bak \
+            -e "s|#{TAG}|${TAG}|g" \
+            -e "s|#{BASE}|${BASE}|g" \
+            -e "s|#{SHA_P_DARWIN_ALL}|${{ steps.shas.outputs.p_darwin_all }}|g" \
+            -e "s|#{SHA_S_DARWIN_ALL}|${{ steps.shas.outputs.s_darwin_all }}|g" \
+            -e "s|#{SHA_P_LINUX_AMD64}|${{ steps.shas.outputs.p_linux_amd64 }}|g" \
+            -e "s|#{SHA_P_LINUX_ARM64}|${{ steps.shas.outputs.p_linux_arm64 }}|g" \
+            -e "s|#{SHA_S_LINUX_AMD64}|${{ steps.shas.outputs.s_linux_amd64 }}|g" \
+            -e "s|#{SHA_S_LINUX_ARM64}|${{ steps.shas.outputs.s_linux_arm64 }}|g" \
+            Formula/preflight.rb Formula/support-bundle.rb
+          rm -f Formula/*.bak
+
+      - name: Create PR to tap
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.HOMEBREW_GITHUB_TOKEN }}
+          path: tap
+          commit-message: "chore(brew): bump preflight/support-bundle to ${{
+            github.ref_name }}"
+          branch: bump/${{ github.ref_name }}
+          title: "Bump preflight/support-bundle to ${{ github.ref_name }}"
+          body: |
+            Automated bump to ${{ github.ref_name }}.
+          labels: |
+            automated
