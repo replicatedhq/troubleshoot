@@ -1,0 +1,142 @@
+version: 2
+project_name: troubleshoot
+
+builds:
+  - id: preflight
+    main: ./cmd/preflight/main.go
+    env: [CGO_ENABLED=0]
+    goos: [linux, darwin]
+    goarch: [amd64, arm, arm64, riscv64]
+    ignore:
+      - goos: windows
+        goarch: arm
+    ldflags:
+      - -s -w
+      - -X github.com/replicatedhq/troubleshoot/pkg/version.version={{ .Version }}
+      - -X github.com/replicatedhq/troubleshoot/pkg/version.gitSHA={{ .Commit }}
+      - -X github.com/replicatedhq/troubleshoot/pkg/version.buildTime={{ .Date }}
+      - -extldflags "-static"
+    flags:
+      - -tags=netgo
+      - -tags=containers_image_ostree_stub
+      - -tags=exclude_graphdriver_devicemapper
+      - -tags=exclude_graphdriver_btrfs
+      - -tags=containers_image_openpgp
+      - -installsuffix=netgo
+    binary: preflight
+
+  - id: support-bundle
+    main: ./cmd/troubleshoot/main.go
+    env: [CGO_ENABLED=0]
+    goos: [linux, darwin]
+    goarch: [amd64, arm, arm64, riscv64]
+    ignore:
+      - goos: windows
+        goarch: arm
+    ldflags:
+      - -s -w
+      - -X github.com/replicatedhq/troubleshoot/pkg/version.version={{ .Version }}
+      - -X github.com/replicatedhq/troubleshoot/pkg/version.gitSHA={{ .Commit }}
+      - -X github.com/replicatedhq/troubleshoot/pkg/version.buildTime={{ .Date }}
+      - -extldflags "-static"
+    flags:
+      - -tags=netgo
+      - -tags=containers_image_ostree_stub
+      - -tags=exclude_graphdriver_devicemapper
+      - -tags=exclude_graphdriver_btrfs
+      - -tags=containers_image_openpgp
+      - -installsuffix=netgo
+    binary: support-bundle
+
+archives:
+  - id: preflight
+    ids: [preflight]
+    formats: [tar.gz]
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+    name_template: "preflight_{{ .Os }}_{{ .Arch }}"
+    files:
+      - licence*
+      - LICENCE*
+      - license*
+      - LICENSE*
+      - readme*
+      - README*
+      - changelog*
+      - CHANGELOG*
+      - src: "sbom/assets/*"
+        dst: .
+        strip_parent: true
+  - id: support-bundle
+    ids: [support-bundle]
+    formats: [tar.gz]
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+    name_template: "support-bundle_{{ .Os }}_{{ .Arch }}"
+    files:
+      - licence*
+      - LICENCE*
+      - license*
+      - LICENSE*
+      - readme*
+      - README*
+      - changelog*
+      - CHANGELOG*
+      - src: "sbom/assets/*"
+        dst: .
+        strip_parent: true
+
+dockers:
+  - dockerfile: ./deploy/Dockerfile.troubleshoot
+    image_templates:
+      - "replicated/troubleshoot:latest"
+      - "replicated/troubleshoot:{{ .Major }}"
+      - "replicated/troubleshoot:{{ .Major }}.{{ .Minor }}"
+      - "replicated/troubleshoot:{{ .Major }}.{{ .Minor }}.{{ .Patch }}"
+    ids:
+      - support-bundle
+      - preflight
+    skip_push: true
+  - dockerfile: ./deploy/Dockerfile.troubleshoot
+    image_templates:
+      - "replicated/preflight:latest"
+      - "replicated/preflight:{{ .Major }}"
+      - "replicated/preflight:{{ .Major }}.{{ .Minor }}"
+      - "replicated/preflight:{{ .Major }}.{{ .Minor }}.{{ .Patch }}"
+    ids:
+      - support-bundle
+      - preflight
+    skip_push: true
+
+universal_binaries:
+  - id: preflight-universal
+    ids: [preflight]        # refers to the build id above
+    replace: true
+    name_template: preflight
+
+  - id: support-bundle-universal
+    ids: [support-bundle]   # refers to the build id above
+    replace: true
+    name_template: support-bundle
+
+homebrew_casks:
+  - name: preflight
+    ids: [preflight]
+    homepage: https://docs.replicated.com/reference/preflight-overview/
+    description: "A preflight checker and conformance test for Kubernetes clusters."
+    repository:
+      owner: replicatedhq
+      name: homebrew-replicated
+      branch: main
+    binary: preflight
+  - name: support-bundle
+    ids: [support-bundle]
+    homepage: https://docs.replicated.com/reference/support-bundle-overview/
+    description: "Collect and redact support bundles for Kubernetes clusters."
+    repository:
+      owner: replicatedhq
+      name: homebrew-replicated
+      branch: main
+    binary: support-bundle
