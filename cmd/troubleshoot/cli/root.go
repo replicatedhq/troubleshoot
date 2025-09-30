@@ -43,21 +43,25 @@ If no arguments are provided, specs are automatically loaded from the cluster by
 			}
 
 			// Auto-update support-bundle unless disabled by flag or env
-			envAuto := os.Getenv("TROUBLESHOOT_AUTO_UPDATE")
-			autoFromEnv := true
-			if envAuto != "" {
-				if strings.EqualFold(envAuto, "0") || strings.EqualFold(envAuto, "false") {
-					autoFromEnv = false
+			// Only run auto-update for the root support-bundle command, not subcommands
+			if cmd.Name() == "support-bundle" && !cmd.HasParent() {
+				envAuto := os.Getenv("TROUBLESHOOT_AUTO_UPDATE")
+				autoFromEnv := true
+				if envAuto != "" {
+					if strings.EqualFold(envAuto, "0") || strings.EqualFold(envAuto, "false") {
+						autoFromEnv = false
+					}
 				}
-			}
-			if v.GetBool("auto-update") && autoFromEnv {
-				exe, err := os.Executable()
-				if err == nil {
-					_ = updater.CheckAndUpdate(cmd.Context(), updater.Options{
-						BinaryName:  "support-bundle",
-						CurrentPath: exe,
-						Printf:      func(f string, a ...interface{}) { fmt.Fprintf(os.Stderr, f, a...) },
-					})
+
+				if v.GetBool("auto-update") && autoFromEnv {
+					exe, err := os.Executable()
+					if err == nil {
+						_ = updater.CheckAndUpdate(cmd.Context(), updater.Options{
+							BinaryName:  "support-bundle",
+							CurrentPath: exe,
+							Printf:      func(f string, a ...interface{}) { fmt.Fprintf(os.Stderr, f, a...) },
+						})
+					}
 				}
 			}
 		},
@@ -103,11 +107,13 @@ If no arguments are provided, specs are automatically loaded from the cluster by
 	cmd.AddCommand(Analyze())
 	cmd.AddCommand(Redact())
 	cmd.AddCommand(Diff())
+	cmd.AddCommand(Schedule())
 	cmd.AddCommand(UploadCmd())
 	cmd.AddCommand(util.VersionCmd())
 
 	cmd.Flags().StringSlice("redactors", []string{}, "names of the additional redactors to use")
 	cmd.Flags().Bool("redact", true, "enable/disable default redactions")
+
 	cmd.Flags().Bool("interactive", true, "enable/disable interactive mode")
 	cmd.Flags().Bool("collect-without-permissions", true, "always generate a support bundle, even if it some require additional permissions")
 	cmd.Flags().StringSliceP("selector", "l", []string{"troubleshoot.sh/kind=support-bundle"}, "selector to filter on for loading additional support bundle specs found in secrets within the cluster")
