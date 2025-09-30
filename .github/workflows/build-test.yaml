@@ -142,8 +142,22 @@ jobs:
     steps:
       - name: Check results
         run: |
-          if [[ "${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}" == "true" ]]; then
+          # Check if any required jobs failed
+          if [[ "${{ needs.lint.result }}" == "failure" ]] || \
+             [[ "${{ needs.test.result }}" == "failure" ]] || \
+             [[ "${{ needs.build.result }}" == "failure" ]] || \
+             [[ "${{ needs.e2e.result }}" == "failure" ]]; then
             echo "::error::Some jobs failed or were cancelled"
             exit 1
           fi
+          
+          # Check if any required jobs were cancelled  
+          if [[ "${{ needs.lint.result }}" == "cancelled" ]] || \
+             [[ "${{ needs.test.result }}" == "cancelled" ]] || \
+             [[ "${{ needs.build.result }}" == "cancelled" ]] || \
+             [[ "${{ needs.e2e.result }}" == "cancelled" ]]; then
+            echo "::error::Some jobs failed or were cancelled"
+            exit 1
+          fi
+          
           echo "✅ All tests passed!"
