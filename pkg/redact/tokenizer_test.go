@@ -1,7 +1,6 @@
 package redact
 
 import (
-	"os"
 	"strings"
 	"testing"
 )
@@ -64,17 +63,17 @@ func TestTokenizer_TokenizeValue(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			token := tokenizer.TokenizeValue(tt.value, tt.context)
-			
+
 			// Validate token format
 			if !tokenizer.ValidateToken(token) {
 				t.Errorf("Generated token %q is not valid", token)
 			}
-			
+
 			// Check if token contains expected prefix
 			if !strings.Contains(token, tt.expectedPrefix) {
 				t.Errorf("Expected token to contain prefix %q, got %q", tt.expectedPrefix, token)
 			}
-			
+
 			// Test determinism - same value should produce same token
 			token2 := tokenizer.TokenizeValue(tt.value, tt.context)
 			if token != token2 {
@@ -97,12 +96,12 @@ func TestTokenizer_CollisionResolution(t *testing.T) {
 	// Generate tokens for different values that might collide
 	token1 := tokenizer.TokenizeValue("value1", "test")
 	token2 := tokenizer.TokenizeValue("value2", "test")
-	
+
 	// Tokens should be different even with short hash
 	if token1 == token2 {
 		t.Errorf("Expected different tokens for different values, got %q for both", token1)
 	}
-	
+
 	// Same value should produce same token
 	token1_again := tokenizer.TokenizeValue("value1", "test")
 	if token1 != token1_again {
@@ -167,7 +166,7 @@ func TestTokenizer_DisabledBehavior(t *testing.T) {
 	tokenizer := NewTokenizer(config)
 
 	token := tokenizer.TokenizeValue("secret-password", "password")
-	
+
 	// Should return original mask text when disabled
 	if token != MASK_TEXT {
 		t.Errorf("Expected %q when tokenization disabled, got %q", MASK_TEXT, token)
@@ -175,15 +174,15 @@ func TestTokenizer_DisabledBehavior(t *testing.T) {
 }
 
 func TestTokenizer_EnvironmentToggle(t *testing.T) {
-	// Test with environment variable enabled
-	os.Setenv("TROUBLESHOOT_TOKENIZATION", "true")
-	defer os.Unsetenv("TROUBLESHOOT_TOKENIZATION")
-	
+	// Test with explicit tokenization enabled
+	EnableTokenization()
+	defer DisableTokenization()
+
 	globalTokenizer := GetGlobalTokenizer()
 	if !globalTokenizer.IsEnabled() {
-		t.Error("Expected tokenization to be enabled when TROUBLESHOOT_TOKENIZATION=true")
+		t.Error("Expected tokenization to be enabled when explicitly enabled")
 	}
-	
+
 	// Test tokenization works
 	token := globalTokenizer.TokenizeValue("test-secret", "password")
 	if token == MASK_TEXT {
@@ -207,28 +206,28 @@ func TestTokenizer_GetRedactionMap(t *testing.T) {
 	tokenizer.TokenizeValue("user@example.com", "email")
 
 	redactionMap := tokenizer.GetRedactionMap("test-profile")
-	
+
 	// Validate redaction map
 	if redactionMap.Profile != "test-profile" {
 		t.Errorf("Expected profile 'test-profile', got %q", redactionMap.Profile)
 	}
-	
+
 	if redactionMap.Stats.TotalSecrets != 3 {
 		t.Errorf("Expected 3 total secrets, got %d", redactionMap.Stats.TotalSecrets)
 	}
-	
+
 	if redactionMap.Stats.UniqueSecrets != 3 {
 		t.Errorf("Expected 3 unique secrets, got %d", redactionMap.Stats.UniqueSecrets)
 	}
-	
+
 	if redactionMap.Stats.TokensGenerated != 3 {
 		t.Errorf("Expected 3 tokens generated, got %d", redactionMap.Stats.TokensGenerated)
 	}
-	
+
 	if len(redactionMap.Tokens) != 3 {
 		t.Errorf("Expected 3 tokens in map, got %d", len(redactionMap.Tokens))
 	}
-	
+
 	// Verify reverse mapping works
 	for token, original := range redactionMap.Tokens {
 		if !tokenizer.ValidateToken(token) {
@@ -244,10 +243,10 @@ func TestTokenizer_ClassifySecret(t *testing.T) {
 	tokenizer := NewTokenizer(TokenizerConfig{})
 
 	tests := []struct {
-		name            string
-		context         string
-		value           string
-		expectedPrefix  TokenPrefix
+		name           string
+		context        string
+		value          string
+		expectedPrefix TokenPrefix
 	}{
 		{
 			name:           "password context",
@@ -274,7 +273,7 @@ func TestTokenizer_ClassifySecret(t *testing.T) {
 			expectedPrefix: TokenPrefixEmail,
 		},
 		{
-			name:           "IP value detection", 
+			name:           "IP value detection",
 			context:        "unknown",
 			value:          "10.0.0.1",
 			expectedPrefix: TokenPrefixIP,
@@ -307,18 +306,18 @@ func TestTokenizer_Reset(t *testing.T) {
 	// Generate some tokens
 	tokenizer.TokenizeValue("secret1", "context1")
 	tokenizer.TokenizeValue("secret2", "context2")
-	
+
 	if tokenizer.GetTokenCount() != 2 {
 		t.Errorf("Expected 2 tokens before reset, got %d", tokenizer.GetTokenCount())
 	}
-	
+
 	// Reset tokenizer
 	tokenizer.Reset()
-	
+
 	if tokenizer.GetTokenCount() != 0 {
 		t.Errorf("Expected 0 tokens after reset, got %d", tokenizer.GetTokenCount())
 	}
-	
+
 	// Verify maps are cleared
 	redactionMap := tokenizer.GetRedactionMap("test")
 	if len(redactionMap.Tokens) != 0 {

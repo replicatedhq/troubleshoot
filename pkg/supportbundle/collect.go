@@ -18,6 +18,7 @@ import (
 	"github.com/replicatedhq/troubleshoot/pkg/collect"
 	"github.com/replicatedhq/troubleshoot/pkg/constants"
 	"github.com/replicatedhq/troubleshoot/pkg/convert"
+	"github.com/replicatedhq/troubleshoot/pkg/redact"
 	"github.com/replicatedhq/troubleshoot/pkg/version"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -64,9 +65,10 @@ func runHostCollectors(ctx context.Context, hostCollectors []*troubleshootv1beta
 	}
 
 	if opts.Redact {
-		// Phase 4: Enable tokenization if requested
+		// Enable tokenization if requested (safer than environment variables)
 		if opts.Tokenize {
-			os.Setenv("TROUBLESHOOT_TOKENIZATION", "true")
+			redact.EnableTokenization()
+			defer redact.DisableTokenization() // Always cleanup, even on error
 		}
 
 		_, span := otel.Tracer(constants.LIB_TRACER_NAME).Start(ctx, "Host collectors")
@@ -78,11 +80,6 @@ func runHostCollectors(ctx context.Context, hostCollectors []*troubleshootv1beta
 			return collectResult, err
 		}
 		span.End()
-
-		// Reset tokenization environment after redaction
-		if opts.Tokenize {
-			os.Unsetenv("TROUBLESHOOT_TOKENIZATION")
-		}
 	}
 
 	return collectResult, nil
@@ -196,9 +193,10 @@ func runCollectors(ctx context.Context, collectors []*troubleshootv1beta2.Collec
 	}
 
 	if opts.Redact {
-		// Phase 4: Enable tokenization if requested
+		// Enable tokenization if requested (safer than environment variables)
 		if opts.Tokenize {
-			os.Setenv("TROUBLESHOOT_TOKENIZATION", "true")
+			redact.EnableTokenization()
+			defer redact.DisableTokenization() // Always cleanup, even on error
 		}
 
 		// TODO: Should we record how long each redactor takes?
@@ -212,11 +210,6 @@ func runCollectors(ctx context.Context, collectors []*troubleshootv1beta2.Collec
 			return collectResult, err
 		}
 		span.End()
-
-		// Reset tokenization environment after redaction
-		if opts.Tokenize {
-			os.Unsetenv("TROUBLESHOOT_TOKENIZATION")
-		}
 	}
 
 	return collectResult, nil

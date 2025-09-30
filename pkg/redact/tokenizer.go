@@ -10,7 +10,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"os"
 	"regexp"
 	"strings"
 	"sync"
@@ -195,15 +194,24 @@ func NewTokenizer(config TokenizerConfig) *Tokenizer {
 // GetGlobalTokenizer returns the global tokenizer instance
 func GetGlobalTokenizer() *Tokenizer {
 	tokenizerOnce.Do(func() {
-		enabled := os.Getenv("TROUBLESHOOT_TOKENIZATION") == "true" ||
-			os.Getenv("TROUBLESHOOT_TOKENIZATION") == "1" ||
-			os.Getenv("TROUBLESHOOT_TOKENIZATION") == "enabled"
-
 		globalTokenizer = NewTokenizer(TokenizerConfig{
-			Enabled: enabled,
+			Enabled: false, // Will be set explicitly by calling code
 		})
 	})
+
 	return globalTokenizer
+}
+
+// EnableTokenization enables tokenization on the global tokenizer
+func EnableTokenization() {
+	globalTokenizer := GetGlobalTokenizer()
+	globalTokenizer.config.Enabled = true
+}
+
+// DisableTokenization disables tokenization on the global tokenizer
+func DisableTokenization() {
+	globalTokenizer := GetGlobalTokenizer()
+	globalTokenizer.config.Enabled = false
 }
 
 // IsEnabled returns whether tokenization is enabled
@@ -324,6 +332,11 @@ func (t *Tokenizer) resolveCollision(baseToken, value string) string {
 
 	// If we still have collisions after 100 tries, use timestamp
 	timestamp := time.Now().UnixNano()
+	// Insert counter before the final *** to match ValidateToken regex
+	if strings.HasSuffix(baseToken, "***") {
+		base := strings.TrimSuffix(baseToken, "***")
+		return fmt.Sprintf("%s_%d***", base, timestamp%10000)
+	}
 	return fmt.Sprintf("%s_%d", baseToken, timestamp%10000)
 }
 

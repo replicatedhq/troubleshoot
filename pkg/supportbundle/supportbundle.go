@@ -295,9 +295,9 @@ func ProcessSupportBundleAfterCollection(spec *troubleshootv1beta2.SupportBundle
 func processTokenizationFeatures(opts SupportBundleCreateOpts, bundlePath string, response *SupportBundleResponse) error {
 	// Configure tokenization if enabled
 	if opts.Tokenize {
-		// Set environment variable to enable tokenization
-		os.Setenv("TROUBLESHOOT_TOKENIZATION", "true")
-		defer os.Unsetenv("TROUBLESHOOT_TOKENIZATION")
+		// Enable tokenization directly (safer than environment variables)
+		redact.EnableTokenization()
+		defer redact.DisableTokenization() // Always cleanup, even on error
 
 		// Configure custom tokenizer if needed
 		if err := configureTokenizer(opts); err != nil {
