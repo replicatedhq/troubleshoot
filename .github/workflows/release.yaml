@@ -13,13 +13,6 @@ jobs:
   goreleaser:
     runs-on: ubuntu-latest
     steps:
-      - name: Verify release branch
-        run: |
-          if [[ "${{ github.ref }}" != refs/heads/v1beta3 ]]; then
-            echo "::error::Releases can only be created from the v1beta3 branch"
-            echo "Current ref: ${{ github.ref }}"
-            exit 1
-          fi
       - name: Checkout
         uses: actions/checkout@v5
         with:
