@@ -33,6 +33,8 @@ type DiscoveryOptions struct {
 	AugmentMode bool
 	// Timeout for discovery operations
 	Timeout time.Duration
+	// TestMode disables KOTS diagnostic collectors for cleaner testing
+	TestMode bool
 }
 
 // CollectorSpec represents a collector specification that can be converted to troubleshootv1beta2.Collect
@@ -65,6 +67,7 @@ const (
 	CollectorTypeClusterInfo      CollectorType = "clusterInfo"
 	CollectorTypeClusterResources CollectorType = "clusterResources"
 	CollectorTypeImageFacts       CollectorType = "imageFacts"
+	CollectorTypeData             CollectorType = "data"
 )
 
 // CollectorSource indicates the origin of a collector
@@ -74,6 +77,7 @@ const (
 	SourceFoundational CollectorSource = "foundational"
 	SourceYAML         CollectorSource = "yaml"
 	SourceAugmented    CollectorSource = "augmented"
+	SourceKOTS         CollectorSource = "kots"
 )
 
 // Resource represents a Kubernetes resource for RBAC checking
@@ -126,6 +130,10 @@ func (c CollectorSpec) ToTroubleshootCollect() (*troubleshootv1beta2.Collect, er
 			collect.ConfigMap = configMap
 		}
 	case CollectorTypeImageFacts:
+		if data, ok := c.Spec.(*troubleshootv1beta2.Data); ok {
+			collect.Data = data
+		}
+	case CollectorTypeData:
 		if data, ok := c.Spec.(*troubleshootv1beta2.Data); ok {
 			collect.Data = data
 		}
