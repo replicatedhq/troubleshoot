@@ -1,6 +1,9 @@
 version: 2
 project_name: troubleshoot
 
+release:
+  prerelease: auto
+
 builds:
   - id: preflight
     main: ./cmd/preflight/main.go
@@ -121,7 +124,7 @@ universal_binaries:
     replace: true
     name_template: support-bundle
 
-homebrew_casks:
+brews:
   - name: preflight
     ids: [preflight]
     homepage: https://docs.replicated.com/reference/preflight-overview/
@@ -130,7 +133,8 @@ homebrew_casks:
       owner: replicatedhq
       name: homebrew-replicated
       branch: main
-    binary: preflight
+    install: |
+      bin.install "preflight"
   - name: support-bundle
     ids: [support-bundle]
     homepage: https://docs.replicated.com/reference/support-bundle-overview/
@@ -139,4 +143,5 @@ homebrew_casks:
       owner: replicatedhq
       name: homebrew-replicated
       branch: main
-    binary: support-bundle
+    install: |
+      bin.install "support-bundle"
