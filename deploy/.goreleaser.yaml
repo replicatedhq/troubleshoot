@@ -1,62 +1,61 @@
+version: 2
 project_name: troubleshoot
+
 builds:
   - id: preflight
-    # NOTE: if you add any additional goos/goarch values, ensure you update ../.github/workflows/build-test-deploy.yaml
-    # specifically the matrix values for goreleaser-test
-    goos:
-      - linux
-      - darwin
-    goarch:
-      - amd64
-      - arm
-      - arm64
-      - riscv64
+    main: ./cmd/preflight/main.go
+    env: [CGO_ENABLED=0]
+    goos: [linux, darwin]
+    goarch: [amd64, arm, arm64, riscv64]
     ignore:
       - goos: windows
         goarch: arm
-    env:
-      - CGO_ENABLED=0
-    main: cmd/preflight/main.go
-    ldflags: -s -w
-      -X github.com/replicatedhq/troubleshoot/pkg/version.version={{.Version}}
-      -X github.com/replicatedhq/troubleshoot/pkg/version.gitSHA={{.Commit}}
-      -X github.com/replicatedhq/troubleshoot/pkg/version.buildTime={{.Date}}
-      -extldflags "-static"
-    flags: -tags netgo -tags containers_image_ostree_stub -tags exclude_graphdriver_devicemapper -tags exclude_graphdriver_btrfs -tags containers_image_openpgp -installsuffix netgo
+    ldflags:
+      - -s -w
+      - -X github.com/replicatedhq/troubleshoot/pkg/version.version={{ .Version }}
+      - -X github.com/replicatedhq/troubleshoot/pkg/version.gitSHA={{ .Commit }}
+      - -X github.com/replicatedhq/troubleshoot/pkg/version.buildTime={{ .Date }}
+      - -extldflags "-static"
+    flags:
+      - -tags=netgo
+      - -tags=containers_image_ostree_stub
+      - -tags=exclude_graphdriver_devicemapper
+      - -tags=exclude_graphdriver_btrfs
+      - -tags=containers_image_openpgp
+      - -installsuffix=netgo
     binary: preflight
-    hooks: {}
+
   - id: support-bundle
-    goos:
-      - linux
-      - darwin
-    goarch:
-      - amd64
-      - arm
-      - arm64
-      - riscv64
+    main: ./cmd/troubleshoot/main.go
+    env: [CGO_ENABLED=0]
+    goos: [linux, darwin]
+    goarch: [amd64, arm, arm64, riscv64]
     ignore:
       - goos: windows
         goarch: arm
-    env:
-      - CGO_ENABLED=0
-    main: cmd/troubleshoot/main.go
-    ldflags: -s -w
-      -X github.com/replicatedhq/troubleshoot/pkg/version.version={{.Version}}
-      -X github.com/replicatedhq/troubleshoot/pkg/version.gitSHA={{.Commit}}
-      -X github.com/replicatedhq/troubleshoot/pkg/version.buildTime={{.Date}}
-      -extldflags "-static"
-    flags: -tags netgo -tags containers_image_ostree_stub -tags exclude_graphdriver_devicemapper -tags exclude_graphdriver_btrfs -tags containers_image_openpgp -installsuffix netgo
+    ldflags:
+      - -s -w
+      - -X github.com/replicatedhq/troubleshoot/pkg/version.version={{ .Version }}
+      - -X github.com/replicatedhq/troubleshoot/pkg/version.gitSHA={{ .Commit }}
+      - -X github.com/replicatedhq/troubleshoot/pkg/version.buildTime={{ .Date }}
+      - -extldflags "-static"
+    flags:
+      - -tags=netgo
+      - -tags=containers_image_ostree_stub
+      - -tags=exclude_graphdriver_devicemapper
+      - -tags=exclude_graphdriver_btrfs
+      - -tags=containers_image_openpgp
+      - -installsuffix=netgo
     binary: support-bundle
-    hooks: {}
+
 archives:
   - id: preflight
-    builds:
-      - preflight
-    format: tar.gz
+    ids: [preflight]
+    formats: [tar.gz]
     format_overrides:
       - goos: windows
-        format: zip
-    name_template: 'preflight_{{ .Os }}_{{ .Arch }}'
+        formats: [zip]
+    name_template: "preflight_{{ .Os }}_{{ .Arch }}"
     files:
       - licence*
       - LICENCE*
@@ -66,17 +65,16 @@ archives:
       - README*
       - changelog*
       - CHANGELOG*
-      - src: 'sbom/assets/*'
+      - src: "sbom/assets/*"
         dst: .
-        strip_parent: true  # this is needed to make up for the way unzips work in krew v0.4.1
+        strip_parent: true
   - id: support-bundle
-    builds:
-      - support-bundle
-    format: tar.gz
+    ids: [support-bundle]
+    formats: [tar.gz]
     format_overrides:
       - goos: windows
-        format: zip
-    name_template: 'support-bundle_{{ .Os }}_{{ .Arch }}'
+        formats: [zip]
+    name_template: "support-bundle_{{ .Os }}_{{ .Arch }}"
     files:
       - licence*
       - LICENCE*
@@ -86,57 +84,71 @@ archives:
       - README*
       - changelog*
       - CHANGELOG*
-      - src: 'sbom/assets/*'
+      - src: "sbom/assets/*"
         dst: .
-        strip_parent: true # this is needed to make up for the way unzips work in krew v0.4.1
-dockers:
-  - dockerfile: ./deploy/Dockerfile.troubleshoot
-    image_templates:
-      - "replicated/troubleshoot:latest"
-      - "replicated/troubleshoot:{{ .Major }}"
-      - "replicated/troubleshoot:{{ .Major }}.{{ .Minor }}"
-      - "replicated/troubleshoot:{{ .Major }}.{{ .Minor }}.{{ .Patch }}"
-    ids:
-      - support-bundle
-      - preflight
-  - dockerfile: ./deploy/Dockerfile.troubleshoot
-    image_templates:
-      - "replicated/preflight:latest"
-      - "replicated/preflight:{{ .Major }}"
-      - "replicated/preflight:{{ .Major }}.{{ .Minor }}"
-      - "replicated/preflight:{{ .Major }}.{{ .Minor }}.{{ .Patch }}"
-    ids:
-      - support-bundle
-      - preflight
+        strip_parent: true
+
+dockers_v2:
+  - id: troubleshoot
+    dockerfile: ./deploy/Dockerfile.troubleshoot
+    # binaries/packages to COPY in the Dockerfile:
+    ids: [support-bundle, preflight]
+    images:
+      - "replicated/troubleshoot"
+    tags:
+      - "latest"
+      - "{{ .Major }}"
+      - "{{ .Major }}.{{ .Minor }}"
+      - "{{ .Major }}.{{ .Minor }}.{{ .Patch }}"
+    platforms:
+      - linux/amd64
+      - linux/arm64
+      - linux/arm/v7
+      - linux/riscv64
+
+  - id: preflight
+    dockerfile: ./deploy/Dockerfile.troubleshoot
+    ids: [support-bundle, preflight]
+    images:
+      - "replicated/preflight"
+    tags:
+      - "latest"
+      - "{{ .Major }}"
+      - "{{ .Major }}.{{ .Minor }}"
+      - "{{ .Major }}.{{ .Minor }}.{{ .Patch }}"
+    platforms:
+      - linux/amd64
+      - linux/arm64
+      - linux/arm/v7
+      - linux/riscv64
+
 universal_binaries:
-  - ids:
-      - preflight
+  - id: preflight-universal
+    ids: [preflight]        # refers to the build id above
     replace: true
     name_template: preflight
-  - ids:
-      - support-bundle
+
+  - id: support-bundle-universal
+    ids: [support-bundle]   # refers to the build id above
     replace: true
     name_template: support-bundle
-brews:
+
+homebrew_casks:
   - name: preflight
-    ids:
-      - preflight
+    ids: [preflight]
     homepage: https://docs.replicated.com/reference/preflight-overview/
     description: "A preflight checker and conformance test for Kubernetes clusters."
     repository:
-      name: homebrew-replicated
       owner: replicatedhq
+      name: homebrew-replicated
       branch: main
-    install: bin.install "preflight"
-    directory: HomebrewFormula
+    binary: preflight
   - name: support-bundle
-    ids:
-      - support-bundle
+    ids: [support-bundle]
     homepage: https://docs.replicated.com/reference/support-bundle-overview/
     description: "Collect and redact support bundles for Kubernetes clusters."
     repository:
-      name: homebrew-replicated
       owner: replicatedhq
+      name: homebrew-replicated
       branch: main
-    install: bin.install "support-bundle"
-    directory: HomebrewFormula
+    binary: support-bundle
