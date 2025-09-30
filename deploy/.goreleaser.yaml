@@ -104,7 +104,6 @@ dockers_v2:
       - linux/amd64
       - linux/arm64
       - linux/arm/v7
-      - linux/riscv64
 
   - id: preflight
     dockerfile: ./deploy/Dockerfile.troubleshoot
@@ -120,7 +119,6 @@ dockers_v2:
       - linux/amd64
       - linux/arm64
       - linux/arm/v7
-      - linux/riscv64
 
 universal_binaries:
   - id: preflight-universal
