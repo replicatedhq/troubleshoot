@@ -214,100 +214,100 @@ jobs:
   # Docker images (amd64 + arm64)
   # ---------------------------
   docker:
-  runs-on: ubuntu-latest
-  needs: [gh-release]   # assets exist on the release
-  steps:
-    - uses: actions/checkout@v5
+    runs-on: ubuntu-latest
+    needs: [gh-release]   # assets exist on the release
+    steps:
+      - uses: actions/checkout@v5
 
-    - name: Compute tags
-      id: tags
-      shell: bash
-      run: |
-        set -euo pipefail
-        V="${{ github.ref_name }}"; V="${V#v}"
-        IFS='.' read -r MAJOR MINOR PATCH <<< "$V"
-        echo "version=$V" >> $GITHUB_OUTPUT
-        echo "major=$MAJOR" >> $GITHUB_OUTPUT
-        echo "minor=${MAJOR}.${MINOR}" >> $GITHUB_OUTPUT
-        echo "patch=${MAJOR}.${MINOR}.${PATCH}" >> $GITHUB_OUTPUT
+      - name: Compute tags
+        id: tags
+        shell: bash
+        run: |
+          set -euo pipefail
+          V="${{ github.ref_name }}"; V="${V#v}"
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$V"
+          echo "version=$V" >> $GITHUB_OUTPUT
+          echo "major=$MAJOR" >> $GITHUB_OUTPUT
+          echo "minor=${MAJOR}.${MINOR}" >> $GITHUB_OUTPUT
+          echo "patch=${MAJOR}.${MINOR}.${PATCH}" >> $GITHUB_OUTPUT
 
-    - name: Prep buildx
-      uses: docker/setup-buildx-action@v3
-      with: { install: true }
+      - name: Prep buildx
+        uses: docker/setup-buildx-action@v3
+        with: { install: true }
 
-    - name: Login Docker Hub
-      uses: docker/login-action@v3
-      with:
-        registry: docker.io
-        username: ${{ secrets.DOCKERHUB_USER }}
-        password: ${{ secrets.DOCKERHUB_PASSWORD }}
+      - name: Login Docker Hub
+        uses: docker/login-action@v3
+        with:
+          registry: docker.io
+          username: ${{ secrets.DOCKERHUB_USER }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
 
-    # --- Build amd64 (pull binaries from the GitHub Release) ---
-    - name: Fetch linux/amd64 binaries
-      run: |
-        set -euxo pipefail
-        BASE="https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}"
-        mkdir -p dockerctx
-        curl -sSL "${BASE}/preflight_linux_amd64.tar.gz" | tar -xz -C dockerctx preflight
-        curl -sSL "${BASE}/support-bundle_linux_amd64.tar.gz" | tar -xz -C dockerctx support-bundle
+      # --- Build amd64 (pull binaries from the GitHub Release) ---
+      - name: Fetch linux/amd64 binaries
+        run: |
+          set -euxo pipefail
+          BASE="https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}"
+          mkdir -p dockerctx
+          curl -sSL "${BASE}/preflight_linux_amd64.tar.gz" | tar -xz -C dockerctx preflight
+          curl -sSL "${BASE}/support-bundle_linux_amd64.tar.gz" | tar -xz -C dockerctx support-bundle
 
-    - name: Build & push amd64 images
-      run: |
-        set -euxo pipefail
-        cp deploy/Dockerfile.troubleshoot dockerctx/Dockerfile
-        docker buildx build \
-          --platform linux/amd64 \
-          --build-arg VERSION=${{ steps.tags.outputs.version }} \
-          --build-arg COMMIT=${{ github.sha }} \
-          --build-arg DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ) \
-          -t replicated/troubleshoot:${{ steps.tags.outputs.patch }}-amd64 \
-          -t replicated/preflight:${{ steps.tags.outputs.patch }}-amd64 \
-          --push dockerctx
+      - name: Build & push amd64 images
+        run: |
+          set -euxo pipefail
+          cp deploy/Dockerfile.troubleshoot dockerctx/Dockerfile
+          docker buildx build \
+            --platform linux/amd64 \
+            --build-arg VERSION=${{ steps.tags.outputs.version }} \
+            --build-arg COMMIT=${{ github.sha }} \
+            --build-arg DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ) \
+            -t replicated/troubleshoot:${{ steps.tags.outputs.patch }}-amd64 \
+            -t replicated/preflight:${{ steps.tags.outputs.patch }}-amd64 \
+            --push dockerctx
 
-    # --- Build arm64 ---
-    - name: Fetch linux/arm64 binaries
-      run: |
-        set -euxo pipefail
-        BASE="https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}"
-        rm -rf dockerctx && mkdir -p dockerctx
-        curl -sSL "${BASE}/preflight_linux_arm64.tar.gz" | tar -xz -C dockerctx preflight
-        curl -sSL "${BASE}/support-bundle_linux_arm64.tar.gz" | tar -xz -C dockerctx support-bundle
+      # --- Build arm64 ---
+      - name: Fetch linux/arm64 binaries
+        run: |
+          set -euxo pipefail
+          BASE="https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}"
+          rm -rf dockerctx && mkdir -p dockerctx
+          curl -sSL "${BASE}/preflight_linux_arm64.tar.gz" | tar -xz -C dockerctx preflight
+          curl -sSL "${BASE}/support-bundle_linux_arm64.tar.gz" | tar -xz -C dockerctx support-bundle
 
-    - name: Build & push arm64 images
-      run: |
-        set -euxo pipefail
-        cp deploy/Dockerfile.troubleshoot dockerctx/Dockerfile
-        docker buildx build \
-          --platform linux/arm64 \
-          --build-arg VERSION=${{ steps.tags.outputs.version }} \
-          --build-arg COMMIT=${{ github.sha }} \
-          --build-arg DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ) \
-          -t replicated/troubleshoot:${{ steps.tags.outputs.patch }}-arm64 \
-          -t replicated/preflight:${{ steps.tags.outputs.patch }}-arm64 \
-          --push dockerctx
+      - name: Build & push arm64 images
+        run: |
+          set -euxo pipefail
+          cp deploy/Dockerfile.troubleshoot dockerctx/Dockerfile
+          docker buildx build \
+            --platform linux/arm64 \
+            --build-arg VERSION=${{ steps.tags.outputs.version }} \
+            --build-arg COMMIT=${{ github.sha }} \
+            --build-arg DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ) \
+            -t replicated/troubleshoot:${{ steps.tags.outputs.patch }}-arm64 \
+            -t replicated/preflight:${{ steps.tags.outputs.patch }}-arm64 \
+            --push dockerctx
 
-    # --- Create multi-arch manifests for each tag line ---
-    - name: Create and push manifests
-      shell: bash
-      run: |
-        set -euxo pipefail
-        mk_manifest() {
-          local repo="$1"; local tag="$2"
-          docker buildx imagetools create \
-            -t ${repo}:${tag} \
-            ${repo}:${{ steps.tags.outputs.patch }}-amd64 \
-            ${repo}:${{ steps.tags.outputs.patch }}-arm64
-        }
-        # patch tag already exists per-arch; aggregate into MAJOR.MINOR.PATCH, MAJOR.MINOR, MAJOR, latest
-        mk_manifest replicated/troubleshoot  ${{ steps.tags.outputs.patch }}
-        mk_manifest replicated/troubleshoot  ${{ steps.tags.outputs.minor }}
-        mk_manifest replicated/troubleshoot  ${{ steps.tags.outputs.major }}
-        mk_manifest replicated/troubleshoot  latest
+      # --- Create multi-arch manifests for each tag line ---
+      - name: Create and push manifests
+        shell: bash
+        run: |
+          set -euxo pipefail
+          mk_manifest() {
+            local repo="$1"; local tag="$2"
+            docker buildx imagetools create \
+              -t ${repo}:${tag} \
+              ${repo}:${{ steps.tags.outputs.patch }}-amd64 \
+              ${repo}:${{ steps.tags.outputs.patch }}-arm64
+          }
+          # patch tag already exists per-arch; aggregate into MAJOR.MINOR.PATCH, MAJOR.MINOR, MAJOR, latest
+          mk_manifest replicated/troubleshoot  ${{ steps.tags.outputs.patch }}
+          mk_manifest replicated/troubleshoot  ${{ steps.tags.outputs.minor }}
+          mk_manifest replicated/troubleshoot  ${{ steps.tags.outputs.major }}
+          mk_manifest replicated/troubleshoot  latest
 
-        mk_manifest replicated/preflight     ${{ steps.tags.outputs.patch }}
-        mk_manifest replicated/preflight     ${{ steps.tags.outputs.minor }}
-        mk_manifest replicated/preflight     ${{ steps.tags.outputs.major }}
-        mk_manifest replicated/preflight     latest
+          mk_manifest replicated/preflight     ${{ steps.tags.outputs.patch }}
+          mk_manifest replicated/preflight     ${{ steps.tags.outputs.minor }}
+          mk_manifest replicated/preflight     ${{ steps.tags.outputs.major }}
+          mk_manifest replicated/preflight     latest
 
   # ---------------------------
   # Homebrew tap PR (Formula)
