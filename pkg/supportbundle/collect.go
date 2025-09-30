@@ -18,6 +18,7 @@ import (
 	"github.com/replicatedhq/troubleshoot/pkg/collect"
 	"github.com/replicatedhq/troubleshoot/pkg/constants"
 	"github.com/replicatedhq/troubleshoot/pkg/convert"
+	"github.com/replicatedhq/troubleshoot/pkg/redact"
 	"github.com/replicatedhq/troubleshoot/pkg/version"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -64,6 +65,12 @@ func runHostCollectors(ctx context.Context, hostCollectors []*troubleshootv1beta
 	}
 
 	if opts.Redact {
+		// Enable tokenization if requested (safer than environment variables)
+		if opts.Tokenize {
+			redact.EnableTokenization()
+			defer redact.DisableTokenization() // Always cleanup, even on error
+		}
+
 		_, span := otel.Tracer(constants.LIB_TRACER_NAME).Start(ctx, "Host collectors")
 		span.SetAttributes(attribute.String("type", "Redactors"))
 		err := collect.RedactResult(bundlePath, collectResult, globalRedactors)
@@ -186,6 +193,12 @@ func runCollectors(ctx context.Context, collectors []*troubleshootv1beta2.Collec
 	}
 
 	if opts.Redact {
+		// Enable tokenization if requested (safer than environment variables)
+		if opts.Tokenize {
+			redact.EnableTokenization()
+			defer redact.DisableTokenization() // Always cleanup, even on error
+		}
+
 		// TODO: Should we record how long each redactor takes?
 		_, span := otel.Tracer(constants.LIB_TRACER_NAME).Start(ctx, "In-cluster collectors")
 		span.SetAttributes(attribute.String("type", "Redactors"))
