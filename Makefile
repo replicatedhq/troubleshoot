@@ -110,7 +110,3 @@ fmt:
 .PHONY: vet
 vet:
 	go vet ${BUILDFLAGS} ${BUILDPATHS}
-
-.PHONY: snapshot-release
-snapshot-release:
-	goreleaser release --snapshot --clean --config deploy/.goreleaser.yaml
