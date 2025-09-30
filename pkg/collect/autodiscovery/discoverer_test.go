@@ -101,6 +101,7 @@ func TestDiscoverer_DiscoverFoundational(t *testing.T) {
 				IncludeImages: false,
 				RBACCheck:     false,
 				Timeout:       10 * time.Second,
+				TestMode:      true,
 			},
 			wantCollectorTypes: map[CollectorType]int{
 				CollectorTypeClusterInfo:      1,
@@ -119,6 +120,7 @@ func TestDiscoverer_DiscoverFoundational(t *testing.T) {
 				IncludeImages: true,
 				RBACCheck:     false,
 				Timeout:       10 * time.Second,
+				TestMode:      true,
 			},
 			wantCollectorTypes: map[CollectorType]int{
 				CollectorTypeClusterInfo:      1,
@@ -138,6 +140,7 @@ func TestDiscoverer_DiscoverFoundational(t *testing.T) {
 				IncludeImages: false,
 				RBACCheck:     false,
 				Timeout:       10 * time.Second,
+				TestMode:      true,
 			},
 			wantMinCollectors: 8, // 2 cluster + 3*2 namespace collectors
 			wantErr:           false,
@@ -149,6 +152,7 @@ func TestDiscoverer_DiscoverFoundational(t *testing.T) {
 				IncludeImages: false,
 				RBACCheck:     false,
 				Timeout:       10 * time.Second,
+				TestMode:      true,
 			},
 			wantMinCollectors: 2, // At least cluster collectors
 			wantErr:           false,

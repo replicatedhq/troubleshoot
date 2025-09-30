@@ -33,6 +33,8 @@ type DiscoveryOptions struct {
 	AugmentMode bool
 	// Timeout for discovery operations
 	Timeout time.Duration
+	// TestMode disables KOTS diagnostic collectors for cleaner testing
+	TestMode bool
 }
 
 // CollectorSpec represents a collector specification that can be converted to troubleshootv1beta2.Collect

@@ -277,13 +277,102 @@ func (k *KotsDetector) isKotsadmImage(image string) bool {
 	}
 
 	for _, kotsImage := range kotsadmImages {
-		if image == kotsImage ||
-			(len(image) > len(kotsImage) && image[:len(kotsImage)] == kotsImage) {
+		// Check for exact match (handles cases like "kotsadm/kotsadm")
+		if image == kotsImage {
+			return true
+		}
+
+		// Check if image contains the kots image as a proper component
+		// This handles private registries like "registry.company.com/kotsadm/kotsadm:v1.0.0"
+		if containsImageComponent(image, kotsImage) {
 			return true
 		}
 	}
 
 	return false
+}
+
+// containsImageComponent checks if an image path contains a component properly delimited
+func containsImageComponent(image, component string) bool {
+	// Split image by '/' to get path components
+	imageParts := splitImagePath(image)
+	componentParts := splitImagePath(component)
+
+	// For single component like "kotsadm-api", check if it appears as a repository name
+	if len(componentParts) == 1 {
+		for _, part := range imageParts {
+			// Remove tag/digest from the part
+			repoName := removeTagAndDigest(part)
+			if repoName == component {
+				return true
+			}
+		}
+		return false
+	}
+
+	// For multi-component like "kotsadm/kotsadm", look for consecutive matches
+	if len(componentParts) <= len(imageParts) {
+		for i := 0; i <= len(imageParts)-len(componentParts); i++ {
+			match := true
+			for j := 0; j < len(componentParts); j++ {
+				imageRepo := removeTagAndDigest(imageParts[i+j])
+				if imageRepo != componentParts[j] {
+					match = false
+					break
+				}
+			}
+			if match {
+				return true
+			}
+		}
+	}
+
+	return false
+}
+
+// splitImagePath splits an image path by '/' but preserves registry:port
+func splitImagePath(image string) []string {
+	parts := []string{}
+	current := ""
+
+	for i, char := range image {
+		if char == '/' {
+			if current != "" {
+				parts = append(parts, current)
+				current = ""
+			}
+		} else {
+			current += string(char)
+		}
+
+		// Handle final part
+		if i == len(image)-1 && current != "" {
+			parts = append(parts, current)
+		}
+	}
+
+	return parts
+}
+
+// removeTagAndDigest removes :tag and @digest from image component
+func removeTagAndDigest(component string) string {
+	// Remove tag (:tag)
+	for i := len(component) - 1; i >= 0; i-- {
+		if component[i] == ':' {
+			component = component[:i]
+			break
+		}
+	}
+
+	// Remove digest (@sha256:...)
+	for i := len(component) - 1; i >= 0; i-- {
+		if component[i] == '@' {
+			component = component[:i]
+			break
+		}
+	}
+
+	return component
 }
 
 // extractAppName attempts to extract the application name from a kotsadm deployment

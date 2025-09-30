@@ -175,15 +175,19 @@ func (d *Discoverer) generateFoundationalCollectors(ctx context.Context, namespa
 		klog.V(2).Info("No KOTS applications detected in cluster")
 	}
 
-	// ALWAYS generate standard KOTS diagnostic collectors for troubleshooting
+	// Generate standard KOTS diagnostic collectors for troubleshooting (when not in test mode)
 	// These attempt to collect expected KOTS resources even if no apps are detected
 	// This creates valuable error files when resources are missing (important for support)
-	standardKotsCollectors := d.kotsDetector.GenerateStandardKotsCollectors(ctx)
-	collectors = append(collectors, standardKotsCollectors...)
+	if !opts.TestMode {
+		standardKotsCollectors := d.kotsDetector.GenerateStandardKotsCollectors(ctx)
+		collectors = append(collectors, standardKotsCollectors...)
 
-	klog.V(2).Infof("Added %d standard KOTS diagnostic collectors", len(standardKotsCollectors))
-	for _, stdCollector := range standardKotsCollectors {
-		klog.V(2).Infof("Added standard KOTS collector: %s (creates error file if missing)", stdCollector.Name)
+		klog.V(2).Infof("Added %d standard KOTS diagnostic collectors", len(standardKotsCollectors))
+		for _, stdCollector := range standardKotsCollectors {
+			klog.V(2).Infof("Added standard KOTS collector: %s (creates error file if missing)", stdCollector.Name)
+		}
+	} else {
+		klog.V(2).Info("Skipping standard KOTS collectors in test mode")
 	}
 
 	// Add namespace-scoped collectors for each target namespace
