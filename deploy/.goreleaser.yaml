@@ -133,6 +133,7 @@ brews:
       owner: replicatedhq
       name: homebrew-replicated
       branch: main
+    directory: HomebrewFormula
     install: |
       bin.install "preflight"
   - name: support-bundle
@@ -143,5 +144,6 @@ brews:
       owner: replicatedhq
       name: homebrew-replicated
       branch: main
+    directory: HomebrewFormula
     install: |
       bin.install "support-bundle"
