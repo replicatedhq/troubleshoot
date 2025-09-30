@@ -56,7 +56,7 @@ If no arguments are provided, specs are automatically loaded from the cluster by
 					_ = updater.CheckAndUpdate(cmd.Context(), updater.Options{
 						BinaryName:  "support-bundle",
 						CurrentPath: exe,
-						Printf:      func(f string, a ...interface{}) { fmt.Fprintf(os.Stderr, f, a...) },
+						Printf:      func(f string, a ...interface{}) { klog.V(1).Infof(f, a...) },
 					})
 				}
 			}
@@ -103,11 +103,19 @@ If no arguments are provided, specs are automatically loaded from the cluster by
 	cmd.AddCommand(Analyze())
 	cmd.AddCommand(Redact())
 	cmd.AddCommand(Diff())
-	cmd.AddCommand(UploadCmd())
 	cmd.AddCommand(util.VersionCmd())
 
 	cmd.Flags().StringSlice("redactors", []string{}, "names of the additional redactors to use")
 	cmd.Flags().Bool("redact", true, "enable/disable default redactions")
+
+	// Tokenization flags (Phase 4 integration)
+	cmd.Flags().Bool("tokenize", false, "enable intelligent tokenization instead of simple masking (replaces ***HIDDEN*** with ***TOKEN_TYPE_HASH***)")
+	cmd.Flags().String("redaction-map", "", "generate redaction mapping file at specified path (enables token→original mapping for authorized access)")
+	cmd.Flags().Bool("encrypt-redaction-map", false, "encrypt the redaction mapping file using AES-256 (requires --redaction-map)")
+	cmd.Flags().String("token-prefix", "", "custom token prefix format (default: ***TOKEN_%s_%s***)")
+	cmd.Flags().Bool("verify-tokenization", false, "validation mode: verify tokenization setup without collecting data")
+	cmd.Flags().String("bundle-id", "", "custom bundle identifier for token correlation (auto-generated if not provided)")
+	cmd.Flags().Bool("tokenization-stats", false, "include detailed tokenization statistics in output")
 	cmd.Flags().Bool("interactive", true, "enable/disable interactive mode")
 	cmd.Flags().Bool("collect-without-permissions", true, "always generate a support bundle, even if it some require additional permissions")
 	cmd.Flags().StringSliceP("selector", "l", []string{"troubleshoot.sh/kind=support-bundle"}, "selector to filter on for loading additional support bundle specs found in secrets within the cluster")
@@ -118,11 +126,6 @@ If no arguments are provided, specs are automatically loaded from the cluster by
 	cmd.Flags().Bool("debug", false, "enable debug logging. This is equivalent to --v=0")
 	cmd.Flags().Bool("dry-run", false, "print support bundle spec without collecting anything")
 	cmd.Flags().Bool("auto-update", true, "enable automatic binary self-update check and install")
-
-	// Auto-upload flags
-	cmd.Flags().Bool("auto-upload", false, "automatically upload bundle after generation (auto-detects license and app from bundle)")
-	cmd.Flags().String("license-id", "", "license ID for upload (auto-detected from bundle if not provided)")
-	cmd.Flags().String("app-slug", "", "application slug for upload (auto-detected from bundle if not provided)")
 
 	// Auto-discovery flags
 	cmd.Flags().Bool("auto", false, "enable auto-discovery of foundational collectors. When used with YAML specs, adds foundational collectors to YAML collectors. When used alone, collects only foundational data")
