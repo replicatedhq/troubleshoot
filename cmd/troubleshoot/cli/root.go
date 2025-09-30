@@ -52,15 +52,16 @@ If no arguments are provided, specs are automatically loaded from the cluster by
 						autoFromEnv = false
 					}
 				}
-			}
-			if v.GetBool("auto-update") && autoFromEnv {
-				exe, err := os.Executable()
-				if err == nil {
-					_ = updater.CheckAndUpdate(cmd.Context(), updater.Options{
-						BinaryName:  "support-bundle",
-						CurrentPath: exe,
-						Printf:      func(f string, a ...interface{}) { fmt.Fprintf(os.Stderr, f, a...) },
-					})
+
+				if v.GetBool("auto-update") && autoFromEnv {
+					exe, err := os.Executable()
+					if err == nil {
+						_ = updater.CheckAndUpdate(cmd.Context(), updater.Options{
+							BinaryName:  "support-bundle",
+							CurrentPath: exe,
+							Printf:      func(f string, a ...interface{}) { fmt.Fprintf(os.Stderr, f, a...) },
+						})
+					}
 				}
 			}
 		},
