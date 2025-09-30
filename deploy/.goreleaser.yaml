@@ -91,6 +91,40 @@ archives:
         dst: .
         strip_parent: true
 
+  - id: preflight-universal
+    ids: [preflight-universal]
+    formats: [tar.gz]
+    name_template: "preflight_{{ .Os }}_{{ .Arch }}"
+    files:
+      - licence*
+      - LICENCE*
+      - license*
+      - LICENSE*
+      - readme*
+      - README*
+      - changelog*
+      - CHANGELOG*
+      - src: "sbom/assets/*"
+        dst: .
+        strip_parent: true
+
+  - id: support-bundle-universal
+    ids: [support-bundle-universal]
+    formats: [tar.gz]
+    name_template: "support-bundle_{{ .Os }}_{{ .Arch }}"
+    files:
+      - licence*
+      - LICENCE*
+      - license*
+      - LICENSE*
+      - readme*
+      - README*
+      - changelog*
+      - CHANGELOG*
+      - src: "sbom/assets/*"
+        dst: .
+        strip_parent: true
+
 dockers:
   - dockerfile: ./deploy/Dockerfile.troubleshoot
     image_templates:
@@ -126,7 +160,7 @@ universal_binaries:
 
 brews:
   - name: preflight
-    ids: [preflight]
+    ids: [preflight, preflight-universal]
     homepage: https://docs.replicated.com/reference/preflight-overview/
     description: "A preflight checker and conformance test for Kubernetes clusters."
     repository:
@@ -134,10 +168,9 @@ brews:
       name: homebrew-replicated
       branch: main
     directory: HomebrewFormula
-    install: |
-      bin.install "preflight"
+    install: bin.install "preflight"
   - name: support-bundle
-    ids: [support-bundle]
+    ids: [support-bundle, support-bundle-universal]
     homepage: https://docs.replicated.com/reference/support-bundle-overview/
     description: "Collect and redact support bundles for Kubernetes clusters."
     repository:
@@ -145,5 +178,4 @@ brews:
       name: homebrew-replicated
       branch: main
     directory: HomebrewFormula
-    install: |
-      bin.install "support-bundle"
+    install: bin.install "support-bundle"
