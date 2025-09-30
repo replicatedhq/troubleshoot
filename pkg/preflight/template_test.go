@@ -341,6 +341,10 @@ func createTempFile(t *testing.T, content string, filename string) string {
 
 // repoPath returns a path relative to the repository root from within pkg/preflight tests
 func repoPath(rel string) string {
+	if rel == "v1beta3.yaml" {
+		// Use an existing v1beta3 example file for testing
+		return filepath.Join("..", "..", "examples", "preflight", "simple-v1beta3.yaml")
+	}
 	return filepath.Join("..", "..", rel)
 }
 
