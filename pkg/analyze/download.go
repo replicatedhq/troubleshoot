@@ -91,7 +91,15 @@ func DownloadAndAnalyze(bundleURL string, analyzersSpec string) ([]*AnalyzeResul
 }
 
 func DownloadAndExtractSupportBundle(bundleURL string) (string, string, error) {
-	tmpDir, err := os.MkdirTemp("", "troubleshoot-k8s")
+	// Create temp directory in current working directory instead of system temp
+	// This prevents Windows file locking issues with antivirus scanning
+	cwd, err := os.Getwd()
+	if err != nil {
+		// Fallback to system temp if getting cwd fails
+		cwd = ""
+	}
+	
+	tmpDir, err := os.MkdirTemp(cwd, "troubleshoot-k8s-")
 	if err != nil {
 		return "", "", errors.Wrap(err, "failed to create temp dir")
 	}
@@ -132,7 +140,12 @@ func downloadTroubleshootBundle(bundleURL string, destDir string) error {
 		return errors.Wrap(err, "failed to get workdir")
 	}
 
-	tmpDir, err := os.MkdirTemp("", "troubleshoot")
+	// Use current working directory for temp files to avoid Windows file locking
+	cwd, err := os.Getwd()
+	if err != nil {
+		cwd = "" // Fallback to system temp
+	}
+	tmpDir, err := os.MkdirTemp(cwd, "troubleshoot-")
 	if err != nil {
 		return errors.Wrap(err, "failed to create tmp dir")
 	}
