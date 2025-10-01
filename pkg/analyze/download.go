@@ -8,6 +8,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"runtime"
 
 	getter "github.com/hashicorp/go-getter"
 	"github.com/pkg/errors"
@@ -91,7 +92,21 @@ func DownloadAndAnalyze(bundleURL string, analyzersSpec string) ([]*AnalyzeResul
 }
 
 func DownloadAndExtractSupportBundle(bundleURL string) (string, string, error) {
-	tmpDir, err := os.MkdirTemp("", "troubleshoot-k8s")
+	// Windows-only: Use working directory to avoid antivirus file locking
+	// Linux/macOS: Use system temp (original behavior)
+	var tempDir string
+	if runtime.GOOS == "windows" {
+		cwd, err := os.Getwd()
+		if err != nil {
+			tempDir = "" // Fallback to system temp
+		} else {
+			tempDir = cwd
+		}
+	} else {
+		tempDir = "" // Linux/macOS: system temp (unchanged)
+	}
+
+	tmpDir, err := os.MkdirTemp(tempDir, "troubleshoot-k8s-")
 	if err != nil {
 		return "", "", errors.Wrap(err, "failed to create temp dir")
 	}
@@ -132,7 +147,16 @@ func downloadTroubleshootBundle(bundleURL string, destDir string) error {
 		return errors.Wrap(err, "failed to get workdir")
 	}
 
-	tmpDir, err := os.MkdirTemp("", "troubleshoot")
+	// Windows-only: Use working directory to avoid antivirus file locking
+	// Linux/macOS: Use system temp (original behavior)
+	var tempDir string
+	if runtime.GOOS == "windows" {
+		tempDir = pwd // Use working directory for Windows
+	} else {
+		tempDir = "" // Linux/macOS: system temp (unchanged)
+	}
+
+	tmpDir, err := os.MkdirTemp(tempDir, "troubleshoot-")
 	if err != nil {
 		return errors.Wrap(err, "failed to create tmp dir")
 	}
