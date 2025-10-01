@@ -462,6 +462,15 @@ func replaceFileWindows(srcPath, dstPath string) error {
 	klog.V(2).Infof("Windows file replacement: %s -> %s", srcPath, dstPath)
 
 	for attempt := 0; attempt < maxRetries; attempt++ {
+		// On Windows, we often need to delete the target file first before rename
+		if _, err := os.Stat(dstPath); err == nil {
+			// Target file exists, try to delete it first
+			if removeErr := os.Remove(dstPath); removeErr != nil {
+				klog.V(2).Infof("Failed to remove existing target file: %v", removeErr)
+				// Continue anyway, rename might still work
+			}
+		}
+
 		err := os.Rename(srcPath, dstPath)
 		if err == nil {
 			if attempt > 0 {
@@ -475,7 +484,7 @@ func replaceFileWindows(srcPath, dstPath string) error {
 			if attempt < maxRetries-1 {
 				// Exponential backoff: 50ms, 100ms, 200ms, 400ms, 800ms
 				delay := baseDelay * time.Duration(1<<attempt)
-				klog.V(2).Infof("Windows file lock detected (attempt %d/%d): %v - retrying in %v",
+				klog.V(2).Infof("Windows file lock detected (attempt %d/%d): %v - retrying in %v", 
 					attempt+1, maxRetries, err, delay)
 				time.Sleep(delay)
 				continue
