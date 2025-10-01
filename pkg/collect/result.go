@@ -456,22 +456,14 @@ func replaceFileWithRetry(srcPath, dstPath string) error {
 
 // replaceFileWindows handles Windows-specific file replacement with retry logic for file locking issues
 func replaceFileWindows(srcPath, dstPath string) error {
-	const maxRetries = 5
-	const baseDelay = 50 * time.Millisecond
+	const maxRetries = 15                    // Much more patient for Windows Defender
+	const baseDelay = 100 * time.Millisecond // Longer initial delay
 
 	klog.V(2).Infof("Windows file replacement: %s -> %s", srcPath, dstPath)
 
 	for attempt := 0; attempt < maxRetries; attempt++ {
-		// On Windows, we often need to delete the target file first before rename
-		if _, err := os.Stat(dstPath); err == nil {
-			// Target file exists, try to delete it first
-			if removeErr := os.Remove(dstPath); removeErr != nil {
-				klog.V(2).Infof("Failed to remove existing target file: %v", removeErr)
-				// Continue anyway, rename might still work
-			}
-		}
-
-		err := os.Rename(srcPath, dstPath)
+		// On Windows, try copy + delete approach which is more reliable than rename
+		err := copyAndDeleteWindows(srcPath, dstPath)
 		if err == nil {
 			if attempt > 0 {
 				klog.V(1).Infof("Windows file replacement succeeded after %d retries", attempt+1)
@@ -484,7 +476,7 @@ func replaceFileWindows(srcPath, dstPath string) error {
 			if attempt < maxRetries-1 {
 				// Exponential backoff: 50ms, 100ms, 200ms, 400ms, 800ms
 				delay := baseDelay * time.Duration(1<<attempt)
-				klog.V(2).Infof("Windows file lock detected (attempt %d/%d): %v - retrying in %v", 
+				klog.V(2).Infof("Windows file lock detected (attempt %d/%d): %v - retrying in %v",
 					attempt+1, maxRetries, err, delay)
 				time.Sleep(delay)
 				continue
@@ -500,6 +492,58 @@ func replaceFileWindows(srcPath, dstPath string) error {
 	}
 
 	return errors.New("file replacement failed after maximum retries")
+}
+
+// copyAndDeleteWindows performs file replacement using copy + delete instead of rename
+// This is more reliable on Windows systems with aggressive file scanning
+func copyAndDeleteWindows(srcPath, dstPath string) error {
+	// Delete target file if it exists
+	if _, err := os.Stat(dstPath); err == nil {
+		if removeErr := os.Remove(dstPath); removeErr != nil {
+			return errors.Wrap(removeErr, "failed to remove existing target file")
+		}
+	}
+
+	// Copy source to destination
+	srcFile, err := os.Open(srcPath)
+	if err != nil {
+		return errors.Wrap(err, "failed to open source file")
+	}
+	defer srcFile.Close()
+
+	dstFile, err := os.Create(dstPath)
+	if err != nil {
+		return errors.Wrap(err, "failed to create destination file")
+	}
+	defer dstFile.Close()
+
+	// Copy data
+	_, err = io.Copy(dstFile, srcFile)
+	if err != nil {
+		dstFile.Close()
+		os.Remove(dstPath) // Clean up on failure
+		return errors.Wrap(err, "failed to copy file data")
+	}
+
+	// Ensure data is written
+	if err := dstFile.Sync(); err != nil {
+		return errors.Wrap(err, "failed to sync file data")
+	}
+
+	if err := dstFile.Close(); err != nil {
+		return errors.Wrap(err, "failed to close destination file")
+	}
+
+	if err := srcFile.Close(); err != nil {
+		return errors.Wrap(err, "failed to close source file")
+	}
+
+	// Delete source file
+	if err := os.Remove(srcPath); err != nil {
+		return errors.Wrap(err, "failed to remove source file")
+	}
+
+	return nil
 }
 
 // isWindowsFileLockError detects Windows-specific file locking errors that can be retried

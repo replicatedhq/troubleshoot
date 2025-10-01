@@ -98,7 +98,7 @@ func DownloadAndExtractSupportBundle(bundleURL string) (string, string, error) {
 		// Fallback to system temp if getting cwd fails
 		cwd = ""
 	}
-	
+
 	tmpDir, err := os.MkdirTemp(cwd, "troubleshoot-k8s-")
 	if err != nil {
 		return "", "", errors.Wrap(err, "failed to create temp dir")
