@@ -9,7 +9,9 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"runtime"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
@@ -188,8 +190,18 @@ func (r CollectorResult) ReplaceResult(bundlePath string, relativePath string, r
 		return nil
 	}
 
-	// Create a temporary file in the same directory as the target file to prevent cross-device issues
-	tmpFile, err := os.CreateTemp("", "replace-")
+	// Create temp file in DESTINATION directory to prevent cross-device issues
+	// This follows the same pattern as pkg/updater/updater.go for Windows compatibility
+	finalPath := filepath.Join(bundlePath, relativePath)
+	destDir := filepath.Dir(finalPath)
+
+	// Ensure destination directory exists
+	if err := os.MkdirAll(destDir, 0755); err != nil {
+		return errors.Wrap(err, "failed to create destination directory")
+	}
+
+	// Create temporary file in destination directory (not system temp)
+	tmpFile, err := os.CreateTemp(destDir, "replace-")
 	if err != nil {
 		return errors.Wrap(err, "failed to create temp file")
 	}
@@ -197,18 +209,33 @@ func (r CollectorResult) ReplaceResult(bundlePath string, relativePath string, r
 	// Write data to the temporary file
 	_, err = io.Copy(tmpFile, reader)
 	if err != nil {
+		tmpFile.Close()
+		// Clean up temp file on write failure
+		if removeErr := os.Remove(tmpFile.Name()); removeErr != nil {
+			klog.V(2).Infof("Failed to cleanup temp file %s: %v", tmpFile.Name(), removeErr)
+		}
 		return errors.Wrap(err, "failed to write tmp file")
 	}
 
 	// Close the file to ensure all data is written
-	tmpFile.Close()
-
-	// This rename should always be in /tmp, so no cross-partition copying will happen
-	err = os.Rename(tmpFile.Name(), filepath.Join(bundlePath, relativePath))
-	if err != nil {
-		return errors.Wrap(err, "failed to rename tmp file")
+	if err := tmpFile.Close(); err != nil {
+		// Clean up temp file on close failure
+		if removeErr := os.Remove(tmpFile.Name()); removeErr != nil {
+			klog.V(2).Infof("Failed to cleanup temp file %s: %v", tmpFile.Name(), removeErr)
+		}
+		return errors.Wrap(err, "failed to close tmp file")
 	}
 
+	// Use Windows-aware file replacement with retry logic
+	if err := replaceFileWithRetry(tmpFile.Name(), finalPath); err != nil {
+		// Clean up temp file on replacement failure
+		if removeErr := os.Remove(tmpFile.Name()); removeErr != nil {
+			klog.V(2).Infof("Failed to cleanup temp file %s after replacement failure: %v", tmpFile.Name(), removeErr)
+		}
+		return errors.Wrap(err, "failed to replace file")
+	}
+
+	klog.V(3).Infof("Successfully replaced file: %s", relativePath)
 	return nil
 }
 
@@ -416,4 +443,64 @@ func CollectorResultFromBundle(bundleDir string) (CollectorResult, error) {
 func TarSupportBundleDir(bundlePath string, input CollectorResult, outputFilename string) error {
 	// Is this used anywhere external anyway?
 	return input.ArchiveBundle(bundlePath, outputFilename)
+}
+
+// replaceFileWithRetry provides platform-aware file replacement with retry logic for Windows
+func replaceFileWithRetry(srcPath, dstPath string) error {
+	if runtime.GOOS == "windows" {
+		return replaceFileWindows(srcPath, dstPath)
+	}
+	// Unix/Linux - simple rename
+	return os.Rename(srcPath, dstPath)
+}
+
+// replaceFileWindows handles Windows-specific file replacement with retry logic for file locking issues
+func replaceFileWindows(srcPath, dstPath string) error {
+	const maxRetries = 5
+	const baseDelay = 50 * time.Millisecond
+
+	klog.V(2).Infof("Windows file replacement: %s -> %s", srcPath, dstPath)
+
+	for attempt := 0; attempt < maxRetries; attempt++ {
+		err := os.Rename(srcPath, dstPath)
+		if err == nil {
+			if attempt > 0 {
+				klog.V(1).Infof("Windows file replacement succeeded after %d retries", attempt+1)
+			}
+			return nil // Success!
+		}
+
+		// Check if it's a Windows file locking error
+		if isWindowsFileLockError(err) {
+			if attempt < maxRetries-1 {
+				// Exponential backoff: 50ms, 100ms, 200ms, 400ms, 800ms
+				delay := baseDelay * time.Duration(1<<attempt)
+				klog.V(2).Infof("Windows file lock detected (attempt %d/%d): %v - retrying in %v",
+					attempt+1, maxRetries, err, delay)
+				time.Sleep(delay)
+				continue
+			} else {
+				// Max retries reached with file lock error
+				return errors.Wrap(err, "file temporarily locked (antivirus/Windows Defender scanning) - max retries exceeded")
+			}
+		}
+
+		// Non-retryable error
+		klog.V(2).Infof("Non-retryable error on Windows: %v", err)
+		return err
+	}
+
+	return errors.New("file replacement failed after maximum retries")
+}
+
+// isWindowsFileLockError detects Windows-specific file locking errors that can be retried
+func isWindowsFileLockError(err error) bool {
+	if err == nil {
+		return false
+	}
+	errStr := strings.ToLower(err.Error())
+	return strings.Contains(errStr, "access is denied") ||
+		strings.Contains(errStr, "being used by another process") ||
+		strings.Contains(errStr, "sharing violation") ||
+		strings.Contains(errStr, "the process cannot access the file")
 }
