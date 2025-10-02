@@ -11,7 +11,6 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
-	"time"
 
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
@@ -191,7 +190,18 @@ func (r CollectorResult) ReplaceResult(bundlePath string, relativePath string, r
 	}
 
 	// Create a temporary file in the same directory as the target file to prevent cross-device issues
-	tmpFile, err := os.CreateTemp("", "replace-")
+	var tmpFile *os.File
+	var err error
+
+	if runtime.GOOS == "windows" {
+		// Windows-only: Use destination directory to avoid antivirus issues
+		destDir := filepath.Dir(filepath.Join(bundlePath, relativePath))
+		os.MkdirAll(destDir, 0755)
+		tmpFile, err = os.CreateTemp(destDir, "replace-")
+	} else {
+		// Linux/macOS: EXACT original behavior - system temp
+		tmpFile, err = os.CreateTemp("", "replace-")
+	}
 	if err != nil {
 		return errors.Wrap(err, "failed to create temp file")
 	}
@@ -205,13 +215,19 @@ func (r CollectorResult) ReplaceResult(bundlePath string, relativePath string, r
 	// Close the file to ensure all data is written
 	tmpFile.Close()
 
-	// Use Windows-specific file replacement to handle file locking issues
-	finalPath := filepath.Join(bundlePath, relativePath)
+	// This rename should always be in /tmp, so no cross-partition copying will happen
 	if runtime.GOOS == "windows" {
-		err = replaceFileWindows(tmpFile.Name(), finalPath)
+		// Windows-specific handling with delete-first approach
+		finalPath := filepath.Join(bundlePath, relativePath)
+
+		// Delete target file first (Windows requirement)
+		os.Remove(finalPath)
+
+		// Windows: Use copy+delete instead of rename (more reliable)
+		err = copyFileWindows(tmpFile.Name(), finalPath)
 	} else {
-		// Linux/macOS: Keep original behavior (rename in /tmp, no cross-partition copying)
-		err = os.Rename(tmpFile.Name(), finalPath)
+		// Linux/macOS: EXACT original behavior - DO NOT CHANGE
+		err = os.Rename(tmpFile.Name(), filepath.Join(bundlePath, relativePath))
 	}
 	if err != nil {
 		return errors.Wrap(err, "failed to rename tmp file")
@@ -426,93 +442,27 @@ func TarSupportBundleDir(bundlePath string, input CollectorResult, outputFilenam
 	return input.ArchiveBundle(bundlePath, outputFilename)
 }
 
-// replaceFileWindows handles Windows-specific file replacement using copy+delete strategy
-// This approach is more reliable than os.Rename() on Windows systems with aggressive file scanning
-func replaceFileWindows(srcPath, dstPath string) error {
-	const maxRetries = 15
-	const baseDelay = 100 * time.Millisecond
-
-	klog.V(2).Infof("Windows file replacement (copy+delete): %s -> %s", srcPath, dstPath)
-
-	for attempt := 0; attempt < maxRetries; attempt++ {
-		// Copy + delete approach for Windows file locking compatibility
-		err := copyAndDeleteWindows(srcPath, dstPath)
-		if err == nil {
-			if attempt > 0 {
-				klog.V(1).Infof("Windows file replacement succeeded after %d retries", attempt+1)
-			}
-			return nil // Success!
-		}
-
-		// Check if it's a retryable Windows file locking error
-		if isWindowsFileLockError(err) {
-			if attempt < maxRetries-1 {
-				// Exponential backoff: 100ms, 200ms, 400ms, 800ms, 1600ms...
-				delay := baseDelay * time.Duration(1<<attempt)
-				klog.V(2).Infof("Windows file lock detected (attempt %d/%d): %v - retrying in %v", 
-					attempt+1, maxRetries, err, delay)
-				time.Sleep(delay)
-				continue
-			}
-		}
-
-		// Non-retryable error or max retries reached
-		klog.V(2).Infof("Windows file operation failed: %v", err)
-		return errors.Wrap(err, "Windows file replacement failed")
-	}
-
-	return errors.New("Windows file replacement failed after maximum retries")
-}
-
-// copyAndDeleteWindows performs file replacement using copy + delete instead of rename
-func copyAndDeleteWindows(srcPath, dstPath string) error {
-	// Delete target file if it exists
-	if _, err := os.Stat(dstPath); err == nil {
-		if removeErr := os.Remove(dstPath); removeErr != nil {
-			return errors.Wrap(removeErr, "failed to remove existing target file")
-		}
-	}
-
-	// Copy source to destination
-	srcFile, err := os.Open(srcPath)
+// copyFileWindows performs copy+delete for Windows file operations
+func copyFileWindows(src, dst string) error {
+	srcFile, err := os.Open(src)
 	if err != nil {
-		return errors.Wrap(err, "failed to open source file")
+		return err
 	}
 	defer srcFile.Close()
 
-	dstFile, err := os.Create(dstPath)
+	dstFile, err := os.Create(dst)
 	if err != nil {
-		return errors.Wrap(err, "failed to create destination file")
+		return err
 	}
+	defer dstFile.Close()
 
-	// Copy data with proper cleanup on failure
 	_, err = io.Copy(dstFile, srcFile)
-	closeErr := dstFile.Close()
 	if err != nil {
-		os.Remove(dstPath) // Clean up on copy failure
-		return errors.Wrap(err, "failed to copy file data")
-	}
-	if closeErr != nil {
-		os.Remove(dstPath) // Clean up on close failure
-		return errors.Wrap(closeErr, "failed to close destination file")
+		return err
 	}
 
-	// Delete source file
-	if err := os.Remove(srcPath); err != nil {
-		return errors.Wrap(err, "failed to remove source file")
-	}
+	dstFile.Close()
+	srcFile.Close()
 
-	return nil
-}
-
-// isWindowsFileLockError detects Windows-specific file locking errors
-func isWindowsFileLockError(err error) bool {
-	if err == nil {
-		return false
-	}
-	errStr := strings.ToLower(err.Error())
-	return strings.Contains(errStr, "access is denied") ||
-		strings.Contains(errStr, "being used by another process") ||
-		strings.Contains(errStr, "sharing violation") ||
-		strings.Contains(errStr, "the process cannot access the file")
+	return os.Remove(src)
 }
