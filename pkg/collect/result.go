@@ -196,7 +196,9 @@ func (r CollectorResult) ReplaceResult(bundlePath string, relativePath string, r
 	if runtime.GOOS == "windows" {
 		// Windows-only: Use destination directory to avoid antivirus issues
 		destDir := filepath.Dir(filepath.Join(bundlePath, relativePath))
-		os.MkdirAll(destDir, 0755)
+		if err := os.MkdirAll(destDir, 0755); err != nil {
+			return errors.Wrap(err, "failed to create destination directory")
+		}
 		tmpFile, err = os.CreateTemp(destDir, "replace-")
 	} else {
 		// Linux/macOS: EXACT original behavior - system temp
@@ -223,14 +225,14 @@ func (r CollectorResult) ReplaceResult(bundlePath string, relativePath string, r
 		// Delete target file first (Windows requirement)
 		os.Remove(finalPath)
 
-		// Windows: Use copy+delete instead of rename (more reliable)
+		// Use copy+delete instead of rename (more reliable on Windows)
 		err = copyFileWindows(tmpFile.Name(), finalPath)
 	} else {
 		// Linux/macOS: EXACT original behavior - DO NOT CHANGE
 		err = os.Rename(tmpFile.Name(), filepath.Join(bundlePath, relativePath))
 	}
 	if err != nil {
-		return errors.Wrap(err, "failed to rename tmp file")
+		return errors.Wrap(err, "failed to replace file")
 	}
 
 	return nil
@@ -442,27 +444,30 @@ func TarSupportBundleDir(bundlePath string, input CollectorResult, outputFilenam
 	return input.ArchiveBundle(bundlePath, outputFilename)
 }
 
-// copyFileWindows performs copy+delete for Windows file operations
+// copyFileWindows performs simple copy+delete for Windows (no rename operations)
 func copyFileWindows(src, dst string) error {
 	srcFile, err := os.Open(src)
 	if err != nil {
 		return err
 	}
-	defer srcFile.Close()
 
 	dstFile, err := os.Create(dst)
 	if err != nil {
+		srcFile.Close()
 		return err
 	}
-	defer dstFile.Close()
 
+	// Copy data
 	_, err = io.Copy(dstFile, srcFile)
+
+	// Explicitly close files before removing source
+	srcFile.Close()
+	dstFile.Close()
+
 	if err != nil {
 		return err
 	}
 
-	dstFile.Close()
-	srcFile.Close()
-
+	// Now safe to remove source file (handles are closed)
 	return os.Remove(src)
 }
