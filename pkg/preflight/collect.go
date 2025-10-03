@@ -402,15 +402,13 @@ func CollectRemoteWithContext(ctx context.Context, opts CollectOpts, p *troubles
 			}
 			if errorJSON, marshalErr := json.Marshal(errorInfo); marshalErr == nil {
 				errorPath := fmt.Sprintf("collector-errors/%s-error.json", collector.GetDisplayName())
+				// Always store bytes in-memory for consistency
+				allCollectedData[errorPath] = errorJSON
+				// Best-effort write to disk if bundlePath provided
 				if opts.BundlePath != "" {
 					if writeErr := os.MkdirAll(filepath.Join(opts.BundlePath, "collector-errors"), 0755); writeErr == nil {
-						if writeErr := os.WriteFile(filepath.Join(opts.BundlePath, errorPath), errorJSON, 0644); writeErr == nil {
-							allCollectedData[errorPath] = nil // Mark file as written to disk
-						}
+						_ = os.WriteFile(filepath.Join(opts.BundlePath, errorPath), errorJSON, 0644)
 					}
-				} else {
-					// Memory-only bundle
-					allCollectedData[errorPath] = errorJSON
 				}
 			}
 

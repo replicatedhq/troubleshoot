@@ -187,10 +187,11 @@ func runCollectors(ctx context.Context, collectors []*troubleshootv1beta2.Collec
 			}
 			if errorJSON, marshalErr := json.Marshal(errorInfo); marshalErr == nil {
 				errorPath := fmt.Sprintf("collector-errors/%s-error.json", collector.Title())
+				// Always store bytes in-memory for consistency with memory-only bundles
+				allCollectedData[errorPath] = errorJSON
+				// Also attempt to persist to disk best-effort
 				if writeErr := os.MkdirAll(filepath.Join(bundlePath, "collector-errors"), 0755); writeErr == nil {
-					if writeErr := os.WriteFile(filepath.Join(bundlePath, errorPath), errorJSON, 0644); writeErr == nil {
-						allCollectedData[errorPath] = nil // Mark file as written to disk
-					}
+					_ = os.WriteFile(filepath.Join(bundlePath, errorPath), errorJSON, 0644)
 				}
 			}
 		}
