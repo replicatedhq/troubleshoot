@@ -4,6 +4,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
+	"path/filepath"
 	"reflect"
 	"time"
 
@@ -391,6 +393,27 @@ func CollectRemoteWithContext(ctx context.Context, opts CollectOpts, p *troubles
 				TotalCount:     len(collectors),
 				Collectors:     collectorList,
 			}
+
+			// Save collector error to bundle (write to disk if bundlePath exists)
+			errorInfo := map[string]string{
+				"collector": collector.GetDisplayName(),
+				"error":     err.Error(),
+				"timestamp": time.Now().Format(time.RFC3339),
+			}
+			if errorJSON, marshalErr := json.Marshal(errorInfo); marshalErr == nil {
+				errorPath := fmt.Sprintf("collector-errors/%s-error.json", collector.GetDisplayName())
+				if opts.BundlePath != "" {
+					if writeErr := os.MkdirAll(filepath.Join(opts.BundlePath, "collector-errors"), 0755); writeErr == nil {
+						if writeErr := os.WriteFile(filepath.Join(opts.BundlePath, errorPath), errorJSON, 0644); writeErr == nil {
+							allCollectedData[errorPath] = nil // Mark file as written to disk
+						}
+					}
+				} else {
+					// Memory-only bundle
+					allCollectedData[errorPath] = errorJSON
+				}
+			}
+
 			span.SetStatus(codes.Error, err.Error())
 			span.End()
 			continue

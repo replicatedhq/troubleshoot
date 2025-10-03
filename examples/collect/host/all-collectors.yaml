@@ -1,0 +1,85 @@
+apiVersion: troubleshoot.sh/v1beta2
+kind: SupportBundle
+metadata:
+  name: all-collectors-test
+spec:
+  hostCollectors:
+    # System Info Collectors
+    - cpu: {}
+    - memory: {}
+    - time: {}
+    - hostOS: {}
+    - ipv4Interfaces: {}
+    - blockDevices: {}
+    - hostServices: {}
+
+    # Kernel Collectors
+    - kernelModules: {}
+    - kernelConfigs: {}
+    - sysctl: {}
+    - cgroups: {}
+
+    # System Packages
+    - systemPackages: {}
+
+    # Journald Logs
+    - journald:
+        collectorName: journald-system
+        system: true
+    - journald:
+        collectorName: journald-dmesg
+        dmesg: true
+
+    # Disk Usage
+    - diskUsage:
+        collectorName: root
+        path: /
+    - diskUsage:
+        collectorName: tmp
+        path: /tmp
+
+    # Filesystem Performance (requires sudo)
+    - filesystemPerformance:
+        collectorName: filesystem-latency
+        timeout: 1m
+        directory: /var/tmp
+        fileSize: 10Mi
+        operationSizeBytes: 2300
+
+    # Certificate
+    - certificate:
+        collectorName: test-cert
+        certificatePath: /etc/ssl/certs/ca-certificates.crt
+
+    # Network Tests
+    - tcpPortStatus:
+        collectorName: ssh-port
+        port: 22
+    - tcpConnect:
+        collectorName: localhost-ssh
+        address: 127.0.0.1:22
+    - http:
+        collectorName: google
+        get:
+          url: https://www.google.com
+    - dns:
+        collectorName: dns-google
+        hostname: google.com
+
+    # Custom Commands
+    - run:
+        collectorName: uname
+        command: "uname"
+        args: ["-a"]
+    - run:
+        collectorName: df
+        command: "df"
+        args: ["-h"]
+
+    # Copy Files
+    - copy:
+        collectorName: hosts-file
+        path: /etc/hosts
+    - copy:
+        collectorName: resolv-conf
+        path: /etc/resolv.conf

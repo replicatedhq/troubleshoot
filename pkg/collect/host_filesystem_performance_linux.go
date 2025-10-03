@@ -153,6 +153,7 @@ func backgroundIOPS(ctx context.Context, opts backgroundIOPSOpts, done chan bool
 			f, err := os.OpenFile(filename, os.O_RDWR|os.O_CREATE|os.O_TRUNC|syscall.O_DIRECT, 0600)
 			if err != nil {
 				log.Printf("Failed to create temp file for background IOPS job: %v", err)
+				wg.Done()  // Signal that this job's initialization is complete (even though it failed)
 				done <- true
 				return
 			}
@@ -173,6 +174,7 @@ func backgroundIOPS(ctx context.Context, opts backgroundIOPSOpts, done chan bool
 				_, err := io.Copy(f, io.LimitReader(r, fileSize))
 				if err != nil {
 					log.Printf("Failed to write temp file for background read IOPS jobs: %v", err)
+					wg.Done()  // Signal that this job's initialization is complete (even though it failed)
 					return
 				}
 			} else {

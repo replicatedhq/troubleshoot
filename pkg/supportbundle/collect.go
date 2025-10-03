@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"reflect"
 	"strings"
 	"sync"
@@ -177,6 +178,21 @@ func runCollectors(ctx context.Context, collectors []*troubleshootv1beta2.Collec
 		if err != nil {
 			span.SetStatus(codes.Error, err.Error())
 			opts.ProgressChan <- errors.Errorf("failed to run collector: %s: %v", collector.Title(), err)
+
+			// Save collector error to bundle (write to disk)
+			errorInfo := map[string]string{
+				"collector": collector.Title(),
+				"error":     err.Error(),
+				"timestamp": time.Now().Format(time.RFC3339),
+			}
+			if errorJSON, marshalErr := json.Marshal(errorInfo); marshalErr == nil {
+				errorPath := fmt.Sprintf("collector-errors/%s-error.json", collector.Title())
+				if writeErr := os.MkdirAll(filepath.Join(bundlePath, "collector-errors"), 0755); writeErr == nil {
+					if writeErr := os.WriteFile(filepath.Join(bundlePath, errorPath), errorJSON, 0644); writeErr == nil {
+						allCollectedData[errorPath] = nil // Mark file as written to disk
+					}
+				}
+			}
 		}
 
 		for k, v := range result {
@@ -273,6 +289,21 @@ func runLocalHostCollectors(ctx context.Context, hostCollectors []*troubleshootv
 		if err != nil {
 			span.SetStatus(codes.Error, err.Error())
 			opts.ProgressChan <- errors.Errorf("failed to run host collector: %s: %v", collector.Title(), err)
+
+			// Save collector error to bundle (write to disk)
+			errorInfo := map[string]string{
+				"collector": collector.Title(),
+				"error":     err.Error(),
+				"timestamp": time.Now().Format(time.RFC3339),
+			}
+			if errorJSON, marshalErr := json.Marshal(errorInfo); marshalErr == nil {
+				errorPath := fmt.Sprintf("host-collectors/errors/%s-error.json", collector.Title())
+				if writeErr := os.MkdirAll(filepath.Join(bundlePath, "host-collectors/errors"), 0755); writeErr == nil {
+					if writeErr := os.WriteFile(filepath.Join(bundlePath, errorPath), errorJSON, 0644); writeErr == nil {
+						allCollectedData[errorPath] = nil // Mark file as written to disk
+					}
+				}
+			}
 		}
 		span.End()
 		for k, v := range result {
