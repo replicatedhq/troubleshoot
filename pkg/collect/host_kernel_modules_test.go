@@ -16,11 +16,11 @@ type mockKernelModulesCollector struct {
 	err    error
 }
 
-func (m mockKernelModulesCollector) collect(kernelRelease string) (map[string]KernelModuleInfo, error) {
+func (m mockKernelModulesCollector) collect(kernelRelease string) (map[string]KernelModuleInfo, []byte, error) {
 	if m.err != nil {
-		return nil, m.err
+		return nil, nil, m.err
 	}
-	return m.result, nil
+	return m.result, nil, nil
 }
 
 var testKernelModuleErr = errors.New("error collecting modules")
@@ -328,7 +328,7 @@ kernel/builtin2.ko
 			l := kernelModulesLoaded{
 				fs: tt.fs,
 			}
-			got, err := l.collect(tt.kernelRelease)
+			got, _, err := l.collect(tt.kernelRelease)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("kernelModulesLoaded.collect() error = %v, wantErr %v", err, tt.wantErr)
 				return
