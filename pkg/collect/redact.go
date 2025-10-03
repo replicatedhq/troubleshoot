@@ -135,7 +135,9 @@ func RedactResult(bundlePath string, input CollectorResult, additionalRedactors 
 				return
 			}
 
-			redacted, err := redact.Redact(reader, file, additionalRedactors)
+			// Normalize the path for redaction (convert Windows backslashes to forward slashes)
+			normalizedFile := filepath.ToSlash(file)
+			redacted, err := redact.Redact(reader, normalizedFile, additionalRedactors)
 			if err != nil {
 				errorCh <- errors.Wrap(err, "failed to redact io stream")
 				return

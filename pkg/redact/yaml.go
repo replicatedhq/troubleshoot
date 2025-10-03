@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"io"
+	"path"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -22,20 +23,22 @@ type YamlRedactor struct {
 
 func NewYamlRedactor(yamlPath, filePath, name string) *YamlRedactor {
 	pathComponents := strings.Split(yamlPath, ".")
-	return &YamlRedactor{maskPath: pathComponents, filePath: filePath, redactName: name}
+	return &YamlRedactor{maskPath: pathComponents, filePath: filepath.ToSlash(filePath), redactName: name}
 }
 
-func (r *YamlRedactor) Redact(input io.Reader, path string) io.Reader {
+func (r *YamlRedactor) Redact(input io.Reader, targetPath string) io.Reader {
 	if r.filePath != "" {
-		match, err := filepath.Match(r.filePath, path)
+		normalizedTarget := filepath.ToSlash(targetPath)
+		match, err := path.Match(r.filePath, normalizedTarget)
 		if err != nil {
-			klog.Errorf("Failed to match %q and %q: %v", r.filePath, path, err)
+			klog.Errorf("Failed to match %q and %q: %v", r.filePath, normalizedTarget, err)
 			return input
 		}
 		if !match {
 			return input
 		}
 	}
+	r.foundMatch = false
 	reader, writer := io.Pipe()
 	go func() {
 		var err error
@@ -59,7 +62,8 @@ func (r *YamlRedactor) Redact(input io.Reader, path string) io.Reader {
 			return
 		}
 
-		newYaml := r.redactYaml(yamlInterface, r.maskPath)
+		processedPath := filepath.ToSlash(targetPath)
+		newYaml := r.redactYaml(yamlInterface, r.maskPath, processedPath)
 		if !r.foundMatch {
 			// no match found, so make no changes
 			buf := bytes.NewBuffer(doc)
@@ -80,14 +84,14 @@ func (r *YamlRedactor) Redact(input io.Reader, path string) io.Reader {
 			RedactorName:      r.redactName,
 			CharactersRemoved: len(doc) - len(newBytes),
 			Line:              0, // line 0 because we have no way to tell what line was impacted
-			File:              path,
+			File:              targetPath,
 			IsDefaultRedactor: r.isDefault,
 		})
 	}()
 	return reader
 }
 
-func (r *YamlRedactor) redactYaml(in interface{}, path []string) interface{} {
+func (r *YamlRedactor) redactYaml(in interface{}, path []string, targetPath string) interface{} {
 	if len(path) == 0 {
 		r.foundMatch = true
 
@@ -97,7 +101,7 @@ func (r *YamlRedactor) redactYaml(in interface{}, path []string) interface{} {
 			// Convert the value to string and tokenize it
 			if valueStr, ok := in.(string); ok && valueStr != "" {
 				context := r.redactName
-				return tokenizer.TokenizeValueWithPath(valueStr, context, r.filePath)
+				return tokenizer.TokenizeValueWithPath(valueStr, context, targetPath)
 			}
 		}
 
@@ -109,7 +113,7 @@ func (r *YamlRedactor) redactYaml(in interface{}, path []string) interface{} {
 		if path[0] == "*" {
 			var newArr []interface{}
 			for _, child := range typed {
-				newChild := r.redactYaml(child, path[1:])
+				newChild := r.redactYaml(child, path[1:], targetPath)
 				newArr = append(newArr, newChild)
 			}
 			return newArr
@@ -121,7 +125,7 @@ func (r *YamlRedactor) redactYaml(in interface{}, path []string) interface{} {
 		}
 		if len(typed) > pathIdx {
 			child := typed[pathIdx]
-			typed[pathIdx] = r.redactYaml(child, path[1:])
+			typed[pathIdx] = r.redactYaml(child, path[1:], targetPath)
 			return typed
 		}
 		return typed
@@ -129,14 +133,14 @@ func (r *YamlRedactor) redactYaml(in interface{}, path []string) interface{} {
 		if path[0] == "*" && len(typed) > 0 {
 			newMap := map[interface{}]interface{}{}
 			for key, child := range typed {
-				newMap[key] = r.redactYaml(child, path[1:])
+				newMap[key] = r.redactYaml(child, path[1:], targetPath)
 			}
 			return newMap
 		}
 
 		child, ok := typed[path[0]]
 		if ok {
-			newChild := r.redactYaml(child, path[1:])
+			newChild := r.redactYaml(child, path[1:], targetPath)
 			typed[path[0]] = newChild
 		}
 		return typed

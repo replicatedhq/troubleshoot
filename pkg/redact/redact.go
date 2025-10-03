@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"path/filepath"
 	"regexp"
 	"sync"
 
@@ -170,6 +171,8 @@ func buildAdditionalRedactors(path string, redacts []*troubleshootv1beta2.Redact
 }
 
 func redactMatchesPath(path string, redact *troubleshootv1beta2.Redact) (bool, error) {
+	normalizedPath := filepath.ToSlash(path)
+
 	if redact.FileSelector.File == "" && len(redact.FileSelector.Files) == 0 {
 		return true, nil
 	}
@@ -177,7 +180,8 @@ func redactMatchesPath(path string, redact *troubleshootv1beta2.Redact) (bool, e
 	globs := []glob.Glob{}
 
 	if redact.FileSelector.File != "" {
-		newGlob, err := glob.Compile(redact.FileSelector.File, '/')
+		normalizedGlob := filepath.ToSlash(redact.FileSelector.File)
+		newGlob, err := glob.Compile(normalizedGlob, '/')
 		if err != nil {
 			return false, errors.Wrapf(err, "invalid file glob string %q", redact.FileSelector.File)
 		}
@@ -185,7 +189,8 @@ func redactMatchesPath(path string, redact *troubleshootv1beta2.Redact) (bool, e
 	}
 
 	for i, fileGlobString := range redact.FileSelector.Files {
-		newGlob, err := glob.Compile(fileGlobString, '/')
+		normalizedGlob := filepath.ToSlash(fileGlobString)
+		newGlob, err := glob.Compile(normalizedGlob, '/')
 		if err != nil {
 			return false, errors.Wrapf(err, "invalid file glob string %d %q", i, fileGlobString)
 		}
@@ -193,7 +198,7 @@ func redactMatchesPath(path string, redact *troubleshootv1beta2.Redact) (bool, e
 	}
 
 	for _, thisGlob := range globs {
-		if thisGlob.Match(path) {
+		if thisGlob.Match(normalizedPath) {
 			return true, nil
 		}
 	}
