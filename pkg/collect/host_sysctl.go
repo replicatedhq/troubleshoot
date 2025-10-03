@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"os/exec"
 	"regexp"
+	"strings"
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
@@ -36,17 +37,24 @@ func (c *CollectHostSysctl) IsExcluded() (bool, error) {
 
 func (c *CollectHostSysctl) Collect(progressChan chan<- interface{}) (map[string][]byte, error) {
 	klog.V(2).Info("Running sysctl collector")
+
+	// Capture both stdout and stderr
 	cmd := execCommand("sysctl", "-a")
-	out, err := cmd.Output()
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+
+	err := cmd.Run()
 	if err != nil {
 		klog.V(2).ErrorS(err, "failed to run sysctl")
 		if exitErr, ok := err.(*exec.ExitError); ok {
-			return nil, errors.Wrapf(err, "failed to run sysctl exit-code=%d stderr=%s", exitErr.ExitCode(), exitErr.Stderr)
+			return nil, errors.Wrapf(err, "failed to run sysctl exit-code=%d stderr=%s", exitErr.ExitCode(), stderr.String())
 		} else {
 			return nil, errors.Wrap(err, "failed to run sysctl")
 		}
 	}
-	values := parseSysctlParameters(out)
+
+	values := parseSysctlParameters(stdout.Bytes())
 
 	payload, err := json.Marshal(values)
 	if err != nil {
@@ -57,6 +65,14 @@ func (c *CollectHostSysctl) Collect(progressChan chan<- interface{}) (map[string
 	output := NewResult()
 	output.SaveResult(c.BundlePath, HostSysctlPath, bytes.NewBuffer(payload))
 	klog.V(2).Info("Finished writing JSON output")
+
+	// Save stderr if present (captures permission errors even on success)
+	if stderr.Len() > 0 {
+		stderrPath := strings.TrimSuffix(HostSysctlPath, ".json") + "-stderr.txt"
+		klog.V(2).Infof("Saving sysctl stderr to %q in bundle", stderrPath)
+		output.SaveResult(c.BundlePath, stderrPath, bytes.NewBuffer(stderr.Bytes()))
+	}
+
 	return output, nil
 }
 

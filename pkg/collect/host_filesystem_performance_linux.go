@@ -10,12 +10,14 @@ import (
 	"math/rand"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"syscall"
 	"time"
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
+	"k8s.io/klog/v2"
 )
 
 // Today we only care about checking for write latency so the options struct
@@ -84,10 +86,11 @@ func collectHostFilesystemPerformance(hostCollector *troubleshootv1beta2.Filesys
 	}
 
 	var fioResult *FioResult
+	var fioStderr []byte
 	errCh := make(chan error, 1)
 	go func() {
 		var err error
-		fioResult, err = collectFioResults(collectCtx, hostCollector)
+		fioResult, fioStderr, err = collectFioResults(collectCtx, hostCollector)
 		errCh <- err
 	}()
 
@@ -108,9 +111,14 @@ func collectHostFilesystemPerformance(hostCollector *troubleshootv1beta2.Filesys
 	output := NewResult()
 	output.SaveResult(bundlePath, name, bytes.NewBuffer(b))
 
-	return map[string][]byte{
-		name: b,
-	}, nil
+	// Save stderr if present (captures permission errors and warnings)
+	if len(fioStderr) > 0 {
+		stderrPath := strings.TrimSuffix(name, filepath.Ext(name)) + "-stderr.txt"
+		klog.V(2).Infof("Saving filesystem performance stderr to %q in bundle", stderrPath)
+		output.SaveResult(bundlePath, stderrPath, bytes.NewBuffer(fioStderr))
+	}
+
+	return output, nil
 }
 
 type backgroundIOPSOpts struct {
