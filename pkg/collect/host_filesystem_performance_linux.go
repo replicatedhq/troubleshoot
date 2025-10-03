@@ -150,18 +150,18 @@ func backgroundIOPS(ctx context.Context, opts backgroundIOPSOpts, done chan bool
 				filename = fmt.Sprintf("background-read-%d", i)
 			}
 			filename = filepath.Join(opts.directory, filename)
+			// Ensure we signal completion exactly once per job
+			defer func() { done <- true }()
 			f, err := os.OpenFile(filename, os.O_RDWR|os.O_CREATE|os.O_TRUNC|syscall.O_DIRECT, 0600)
 			if err != nil {
 				log.Printf("Failed to create temp file for background IOPS job: %v", err)
-				wg.Done()  // Signal that this job's initialization is complete (even though it failed)
-				done <- true
+				wg.Done() // Signal that this job's initialization is complete (even though it failed)
 				return
 			}
 			defer func() {
 				if err := os.Remove(filename); err != nil {
 					log.Println(err.Error())
 				}
-				done <- true
 			}()
 
 			// For O_DIRECT I/O must be aligned on the sector size of the underlying block device.
@@ -174,7 +174,7 @@ func backgroundIOPS(ctx context.Context, opts backgroundIOPSOpts, done chan bool
 				_, err := io.Copy(f, io.LimitReader(r, fileSize))
 				if err != nil {
 					log.Printf("Failed to write temp file for background read IOPS jobs: %v", err)
-					wg.Done()  // Signal that this job's initialization is complete (even though it failed)
+					wg.Done() // Signal that this job's initialization is complete (even though it failed)
 					return
 				}
 			} else {
