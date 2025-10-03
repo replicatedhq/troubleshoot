@@ -27,7 +27,6 @@ import (
 	"golang.org/x/sync/errgroup"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/api/core/v1"
 	kuberneteserrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -299,10 +298,11 @@ func runLocalHostCollectors(ctx context.Context, hostCollectors []*troubleshootv
 			}
 			if errorJSON, marshalErr := json.Marshal(errorInfo); marshalErr == nil {
 				errorPath := fmt.Sprintf("host-collectors/errors/%s-error.json", collector.Title())
-				if writeErr := os.MkdirAll(filepath.Join(bundlePath, "host-collectors/errors"), 0755); writeErr == nil {
-					if writeErr := os.WriteFile(filepath.Join(bundlePath, errorPath), errorJSON, 0644); writeErr == nil {
-						allCollectedData[errorPath] = nil // Mark file as written to disk
-					}
+				// Always store bytes in-memory for consistency with memory-only bundles
+				allCollectedData[errorPath] = errorJSON
+				// Also attempt to persist to disk best-effort
+				if mkErr := os.MkdirAll(filepath.Join(bundlePath, "host-collectors/errors"), 0755); mkErr == nil {
+					_ = os.WriteFile(filepath.Join(bundlePath, errorPath), errorJSON, 0644)
 				}
 			}
 		}
@@ -586,7 +586,7 @@ func createHostCollectorDS(ctx context.Context, clientset kubernetes.Interface, 
 					},
 				},
 			},
-			Template: v1.PodTemplateSpec{
+			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: labels,
 				},
