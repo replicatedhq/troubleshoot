@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"reflect"
 	"strings"
 	"sync"
@@ -26,7 +27,6 @@ import (
 	"golang.org/x/sync/errgroup"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
-	v1 "k8s.io/api/core/v1"
 	kuberneteserrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -177,6 +177,22 @@ func runCollectors(ctx context.Context, collectors []*troubleshootv1beta2.Collec
 		if err != nil {
 			span.SetStatus(codes.Error, err.Error())
 			opts.ProgressChan <- errors.Errorf("failed to run collector: %s: %v", collector.Title(), err)
+
+			// Save collector error to bundle (write to disk)
+			errorInfo := map[string]string{
+				"collector": collector.Title(),
+				"error":     err.Error(),
+				"timestamp": time.Now().Format(time.RFC3339),
+			}
+			if errorJSON, marshalErr := json.Marshal(errorInfo); marshalErr == nil {
+				errorPath := fmt.Sprintf("collector-errors/%s-error.json", collector.Title())
+				// Always store bytes in-memory for consistency with memory-only bundles
+				allCollectedData[errorPath] = errorJSON
+				// Also attempt to persist to disk best-effort
+				if writeErr := os.MkdirAll(filepath.Join(bundlePath, "collector-errors"), 0755); writeErr == nil {
+					_ = os.WriteFile(filepath.Join(bundlePath, errorPath), errorJSON, 0644)
+				}
+			}
 		}
 
 		for k, v := range result {
@@ -273,6 +289,22 @@ func runLocalHostCollectors(ctx context.Context, hostCollectors []*troubleshootv
 		if err != nil {
 			span.SetStatus(codes.Error, err.Error())
 			opts.ProgressChan <- errors.Errorf("failed to run host collector: %s: %v", collector.Title(), err)
+
+			// Save collector error to bundle (write to disk)
+			errorInfo := map[string]string{
+				"collector": collector.Title(),
+				"error":     err.Error(),
+				"timestamp": time.Now().Format(time.RFC3339),
+			}
+			if errorJSON, marshalErr := json.Marshal(errorInfo); marshalErr == nil {
+				errorPath := fmt.Sprintf("host-collectors/errors/%s-error.json", collector.Title())
+				// Always store bytes in-memory for consistency with memory-only bundles
+				allCollectedData[errorPath] = errorJSON
+				// Also attempt to persist to disk best-effort
+				if mkErr := os.MkdirAll(filepath.Join(bundlePath, "host-collectors/errors"), 0755); mkErr == nil {
+					_ = os.WriteFile(filepath.Join(bundlePath, errorPath), errorJSON, 0644)
+				}
+			}
 		}
 		span.End()
 		for k, v := range result {
@@ -554,7 +586,7 @@ func createHostCollectorDS(ctx context.Context, clientset kubernetes.Interface, 
 					},
 				},
 			},
-			Template: v1.PodTemplateSpec{
+			Template: corev1.PodTemplateSpec{
 				ObjectMeta: metav1.ObjectMeta{
 					Labels: labels,
 				},

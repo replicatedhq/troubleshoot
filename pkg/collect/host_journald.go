@@ -94,6 +94,13 @@ func (c *CollectHostJournald) Collect(progressChan chan<- interface{}) (map[stri
 	klog.V(2).Infof("Saving journalctl output to %q in bundle", outputFileName)
 	output.SaveResult(c.BundlePath, outputFileName, bytes.NewBuffer(stdout.Bytes()))
 
+	// Save stderr if present (even on success)
+	if stderr.Len() > 0 {
+		stderrFileName := filepath.Join(HostJournaldPath, collectorName+"-stderr.txt")
+		klog.V(2).Infof("Saving journalctl stderr to %q in bundle", stderrFileName)
+		output.SaveResult(c.BundlePath, stderrFileName, bytes.NewBuffer(stderr.Bytes()))
+	}
+
 	return output, nil
 }
 

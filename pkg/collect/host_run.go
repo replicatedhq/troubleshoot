@@ -161,6 +161,14 @@ func (c *CollectHostRun) Collect(progressChan chan<- interface{}) (map[string][]
 
 	output.SaveResult(c.BundlePath, resultInfo, bytes.NewBuffer(b))
 	output.SaveResult(c.BundlePath, result, bytes.NewBuffer(stdout.Bytes()))
+
+	// Save stderr if present (even on success)
+	if stderr.Len() > 0 {
+		stderrResult := filepath.Join("host-collectors/run-host", collectorName+"-stderr.txt")
+		klog.V(2).Infof("Saving command stderr to %q in bundle", stderrResult)
+		output.SaveResult(c.BundlePath, stderrResult, bytes.NewBuffer(stderr.Bytes()))
+	}
+
 	// walkthrough the output directory and save result for each file
 	if runHostCollector.OutputDir != "" {
 		runInfo.OutputDir = runHostCollector.OutputDir
