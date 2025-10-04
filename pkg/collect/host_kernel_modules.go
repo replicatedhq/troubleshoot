@@ -39,7 +39,7 @@ const HostKernelModulesPath = `host-collectors/system/kernel_modules.json`
 // kernelModuleCollector defines the interface used to collect modules from the
 // underlying host.
 type kernelModuleCollector interface {
-	collect(kernelRelease string) (map[string]KernelModuleInfo, error)
+	collect(kernelRelease string) (map[string]KernelModuleInfo, []byte, error)
 }
 
 // CollectHostKernelModules is responsible for collecting kernel module status
@@ -86,14 +86,14 @@ func (c *CollectHostKernelModules) Collect(progressChan chan<- interface{}) (map
 	}
 	kernelRelease := strings.TrimSpace(string(out))
 
-	modules, err := c.loadable.collect(kernelRelease)
+	modules, loadableStderr, err := c.loadable.collect(kernelRelease)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to read loadable kernel modules")
 	}
 	if modules == nil {
 		modules = map[string]KernelModuleInfo{}
 	}
-	loaded, err := c.loaded.collect(kernelRelease)
+	loaded, _, err := c.loaded.collect(kernelRelease)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to read loaded kernel modules")
 	}
@@ -111,9 +111,14 @@ func (c *CollectHostKernelModules) Collect(progressChan chan<- interface{}) (map
 	output := NewResult()
 	output.SaveResult(c.BundlePath, HostKernelModulesPath, bytes.NewBuffer(b))
 
-	return map[string][]byte{
-		HostKernelModulesPath: b,
-	}, nil
+	// Save stderr from loadable modules collection if present (captures permission errors)
+	if len(loadableStderr) > 0 {
+		stderrPath := strings.TrimSuffix(HostKernelModulesPath, ".json") + "-stderr.txt"
+		klog.V(2).Infof("Saving kernel modules stderr to %q in bundle", stderrPath)
+		output.SaveResult(c.BundlePath, stderrPath, bytes.NewBuffer(loadableStderr))
+	}
+
+	return output, nil
 }
 
 // kernelModulesLoadable retrieves the list of modules that can be loaded by
@@ -121,7 +126,7 @@ func (c *CollectHostKernelModules) Collect(progressChan chan<- interface{}) (map
 type kernelModulesLoadable struct{}
 
 // collect the list of modules that can be loaded by the kernel.
-func (l kernelModulesLoadable) collect(kernelRelease string) (map[string]KernelModuleInfo, error) {
+func (l kernelModulesLoadable) collect(kernelRelease string) (map[string]KernelModuleInfo, []byte, error) {
 	modules := make(map[string]KernelModuleInfo)
 
 	kernelPath := filepath.Join("/lib/modules", kernelRelease)
@@ -130,16 +135,22 @@ func (l kernelModulesLoadable) collect(kernelRelease string) (map[string]KernelM
 		if _, err := os.Stat(kernelPath); os.IsNotExist(err) {
 			kernelPath = filepath.Join("/lib/modules", kernelRelease)
 			klog.V(2).Infof("kernel modules are not loadable because path %q does not exist, assuming we are in a container", kernelPath)
-			return modules, nil
+			return modules, nil, nil
 		}
 	}
 
+	// Capture both stdout and stderr
 	cmd := exec.Command("/usr/bin/find", kernelPath, "-type", "f", "-name", "*.ko*")
-	stdout, err := cmd.Output()
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+
+	err := cmd.Run()
 	if err != nil {
-		return nil, err
+		return nil, stderr.Bytes(), err
 	}
-	buf := bytes.NewBuffer(stdout)
+
+	buf := bytes.NewBuffer(stdout.Bytes())
 	scanner := bufio.NewScanner(buf)
 
 	for scanner.Scan() {
@@ -154,7 +165,7 @@ func (l kernelModulesLoadable) collect(kernelRelease string) (map[string]KernelM
 			Status: KernelModuleLoadable,
 		}
 	}
-	return modules, nil
+	return modules, stderr.Bytes(), nil
 }
 
 // kernelModulesLoaded retrieves the list of modules that the kernel is aware of.  The
@@ -164,15 +175,15 @@ type kernelModulesLoaded struct {
 }
 
 // collect the list of modules that the kernel is aware of.
-func (l kernelModulesLoaded) collect(kernelRelease string) (map[string]KernelModuleInfo, error) {
+func (l kernelModulesLoaded) collect(kernelRelease string) (map[string]KernelModuleInfo, []byte, error) {
 	modules, err := l.collectProc()
 	if err != nil {
-		return nil, fmt.Errorf("proc: %w", err)
+		return nil, nil, fmt.Errorf("proc: %w", err)
 	}
 
 	builtin, err := l.collectBuiltin(kernelRelease)
 	if err != nil {
-		return nil, fmt.Errorf("builtin: %w", err)
+		return nil, nil, fmt.Errorf("builtin: %w", err)
 	}
 
 	for name, module := range builtin {
@@ -181,7 +192,8 @@ func (l kernelModulesLoaded) collect(kernelRelease string) (map[string]KernelMod
 		}
 	}
 
-	return modules, nil
+	// kernelModulesLoaded doesn't use exec commands, so no stderr to return
+	return modules, nil, nil
 }
 
 func (l kernelModulesLoaded) collectProc() (map[string]KernelModuleInfo, error) {
