@@ -1,6 +1,7 @@
 package collect
 
 import (
+	"encoding/json"
 	"net"
 	"os"
 	"strconv"
@@ -30,9 +31,11 @@ func TestCollectHostUDPPortStatus_Collect(t *testing.T) {
 	}
 
 	tests := []struct {
-		name    string
-		getPort func(t *testing.T) (port int, closeFn func() error)
-		want    map[string][]byte
+		name           string
+		getPort        func(t *testing.T) (port int, closeFn func() error)
+		wantStatus     string
+		wantMsgContain string
+		wantErr        bool
 	}{
 		{
 			name: "connected",
@@ -42,9 +45,9 @@ func TestCollectHostUDPPortStatus_Collect(t *testing.T) {
 				conn.Close()
 				return port, nil
 			},
-			want: map[string][]byte{
-				"host-collectors/udpPortStatus/udpPortStatus.json": []byte(`{"status":"connected","message":""}`),
-			},
+			wantStatus:     "connected",
+			wantMsgContain: "",
+			wantErr:        false,
 		},
 		{
 			name: "address-in-use",
@@ -53,9 +56,9 @@ func TestCollectHostUDPPortStatus_Collect(t *testing.T) {
 				require.NoError(t, err)
 				return port, conn.Close
 			},
-			want: map[string][]byte{
-				"host-collectors/udpPortStatus/udpPortStatus.json": []byte(`{"status":"address-in-use","message":""}`),
-			},
+			wantStatus:     "address-in-use",
+			wantMsgContain: "address already in use",
+			wantErr:        true,
 		},
 	}
 	for _, tt := range tests {
@@ -82,9 +85,23 @@ func TestCollectHostUDPPortStatus_Collect(t *testing.T) {
 				}
 			}()
 			got, err := c.Collect(progresChan)
+			if tt.wantErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+
+			require.Len(t, got, 1)
+			var result NetworkStatusResult
+			err = json.Unmarshal(got["host-collectors/udpPortStatus/udpPortStatus.json"], &result)
 			require.NoError(t, err)
 
-			assert.Equal(t, tt.want, got)
+			assert.Equal(t, tt.wantStatus, string(result.Status))
+			if tt.wantMsgContain != "" {
+				assert.Contains(t, result.Message, tt.wantMsgContain)
+			} else {
+				assert.Empty(t, result.Message)
+			}
 		})
 	}
 }

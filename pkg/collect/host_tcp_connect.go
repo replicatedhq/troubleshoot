@@ -37,8 +37,10 @@ func (c *CollectHostTCPConnect) Collect(progressChan chan<- interface{}) (map[st
 		}
 	}
 
+	status, message := attemptConnect(address, timeout)
 	result := NetworkStatusResult{
-		Status: attemptConnect(address, timeout),
+		Status:  status,
+		Message: message,
 	}
 
 	b, err := json.Marshal(result)
@@ -55,25 +57,31 @@ func (c *CollectHostTCPConnect) Collect(progressChan chan<- interface{}) (map[st
 	output := NewResult()
 	output.SaveResult(c.BundlePath, name, bytes.NewBuffer(b))
 
+	var collectorErr error
+	if status != NetworkStatusConnected && message != "" {
+		collectorErr = errors.Errorf("failed to connect to %s: %s", address, message)
+	}
+
 	return map[string][]byte{
 		name: b,
-	}, nil
+	}, collectorErr
 }
 
-func attemptConnect(address string, timeout time.Duration) NetworkStatus {
+func attemptConnect(address string, timeout time.Duration) (NetworkStatus, string) {
 	conn, err := net.DialTimeout("tcp", address, timeout)
 	if err != nil {
+		errorMessage := err.Error()
 		if strings.Contains(err.Error(), "i/o timeout") {
-			return NetworkStatusConnectionTimeout
+			return NetworkStatusConnectionTimeout, errorMessage
 		}
 		if strings.Contains(err.Error(), "connection refused") {
-			return NetworkStatusConnectionRefused
+			return NetworkStatusConnectionRefused, errorMessage
 		}
-		return NetworkStatusErrorOther
+		return NetworkStatusErrorOther, errorMessage
 	}
 
 	conn.Close()
-	return NetworkStatusConnected
+	return NetworkStatusConnected, ""
 }
 
 func (c *CollectHostTCPConnect) RemoteCollect(progressChan chan<- interface{}) (map[string][]byte, error) {

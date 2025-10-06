@@ -1,0 +1,170 @@
+apiVersion: troubleshoot.sh/v1beta2
+kind: SupportBundle
+metadata:
+  name: all-kubernetes-collectors
+spec:
+  collectors:
+    # Cluster Info Collectors (2)
+    - clusterInfo: {}
+    - clusterResources: {}
+
+    # Metrics Collectors (2)
+    - customMetrics:
+        collectorName: custom-metrics
+        metricRequests:
+          - resourceMetricName: example-metric
+    - nodeMetrics: {}
+
+    # ConfigMap and Secret Collectors (2)
+    - configMap:
+        collectorName: example-configmap
+        name: example-configmap
+        namespace: default
+        includeValue: false
+    - secret:
+        collectorName: example-secret
+        name: example-secret
+        namespace: default
+        includeValue: false
+
+    # Logs Collector (1)
+    - logs:
+        collectorName: example-logs
+        selector:
+          - app=example
+        namespace: default
+        limits:
+          maxAge: 720h
+          maxLines: 10000
+
+    # Pod Execution Collectors (4)
+    - run:
+        collectorName: run-example
+        name: run-example
+        namespace: default
+        image: busybox:latest
+        command: ["echo"]
+        args: ["hello from run"]
+    - runPod:
+        collectorName: run-pod-example
+        name: run-pod-example
+        namespace: default
+        podSpec:
+          containers:
+            - name: example
+              image: busybox:latest
+              command: ["echo", "hello from runPod"]
+    - runDaemonSet:
+        collectorName: run-daemonset-example
+        name: run-daemonset-example
+        namespace: default
+        podSpec:
+          containers:
+            - name: example
+              image: busybox:latest
+              command: ["echo", "hello from runDaemonSet"]
+    - exec:
+        collectorName: exec-example
+        name: exec-example
+        selector:
+          - app=example
+        namespace: default
+        command: ["echo"]
+        args: ["hello from exec"]
+
+    # Data Collector (1)
+    - data:
+        collectorName: static-data
+        name: static-data.txt
+        data: "This is static data"
+
+    # Copy Collectors (2)
+    - copy:
+        collectorName: copy-example
+        selector:
+          - app=example
+        namespace: default
+        containerPath: /tmp
+    - copyFromHost:
+        collectorName: copy-from-host-example
+        name: copy-from-host-example
+        namespace: default
+        image: busybox:latest
+        hostPath: /tmp/example
+
+    # HTTP Collector (1)
+    - http:
+        collectorName: http-get-example
+        get:
+          url: https://www.google.com
+          insecureSkipVerify: false
+
+    # Database Collectors (4)
+    - postgres:
+        collectorName: postgres-example
+        uri: postgresql://user:password@localhost:5432/dbname
+    - mysql:
+        collectorName: mysql-example
+        uri: user:password@tcp(localhost:3306)/dbname
+    - mssql:
+        collectorName: mssql-example
+        uri: sqlserver://user:password@localhost:1433?database=dbname
+    - redis:
+        collectorName: redis-example
+        uri: redis://localhost:6379
+
+    # Storage and System Collectors (3)
+    - collectd:
+        collectorName: collectd-example
+        namespace: default
+        image: busybox:latest
+        hostPath: /var/lib/collectd
+    - ceph:
+        collectorName: ceph-example
+        namespace: rook-ceph
+    - longhorn:
+        collectorName: longhorn-example
+        namespace: longhorn-system
+
+    # Registry and Image Collector (1)
+    - registryImages:
+        collectorName: registry-images-example
+        namespace: default
+        images:
+          - busybox:latest
+
+    # Sysctl Collector (1)
+    - sysctl:
+        collectorName: sysctl-example
+        name: sysctl-example
+        namespace: default
+        image: busybox:latest
+
+    # Certificate Collector (1)
+    - certificates:
+        collectorName: certificates-example
+        secrets:
+          - name: tls-secret
+            namespaces:
+              - default
+
+    # Application-Specific Collectors (3)
+    - helm:
+        collectorName: helm-example
+        namespace: default
+        releaseName: example-release
+        collectValues: false
+    - goldpinger:
+        collectorName: goldpinger-example
+        namespace: default
+    - sonobuoy:
+        collectorName: sonobuoy-example
+        namespace: sonobuoy
+
+    # DNS and Network Collectors (2)
+    - dns:
+        collectorName: dns-example
+        timeout: 10s
+    - etcd:
+        collectorName: etcd-example
+        image: quay.io/coreos/etcd:latest
