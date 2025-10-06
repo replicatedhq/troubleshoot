@@ -497,8 +497,9 @@ func copyFileWindows(src, dst string) error {
 		}
 	}
 
-	// All retries failed - clean up both temp files
+	// All retries failed - clean up dst temp file but keep src
+	// We intentionally leave src (the source temp file) to prevent data loss
+	// It will be cleaned up when the parent temp directory is removed
 	os.Remove(tmpDst)
-	os.Remove(src) // Always clean up source temp file to prevent leaks
 	return errors.Wrap(err, "failed to replace file after retries")
 }
