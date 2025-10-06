@@ -476,8 +476,8 @@ func copyFileWindows(src, dst string) error {
 	}
 
 	// Step 2: Replace original with temp (with retry for file locking)
-	// Try up to 3 times with small delays for antivirus/locking issues
-	maxRetries := 3
+	// Try up to 5 times with increasing delays for antivirus/locking issues
+	maxRetries := 5
 	for attempt := 0; attempt < maxRetries; attempt++ {
 		// Delete original to release locks
 		os.Remove(dst)
@@ -490,13 +490,15 @@ func copyFileWindows(src, dst string) error {
 			return nil
 		}
 
-		// If not last attempt, wait briefly and retry
+		// If not last attempt, wait with exponential backoff
 		if attempt < maxRetries-1 {
-			time.Sleep(10 * time.Millisecond)
+			delay := time.Duration(10*(attempt+1)) * time.Millisecond
+			time.Sleep(delay)
 		}
 	}
 
-	// All retries failed - clean up temp file
+	// All retries failed - clean up both temp files
 	os.Remove(tmpDst)
+	os.Remove(src) // Always clean up source temp file to prevent leaks
 	return errors.Wrap(err, "failed to replace file after retries")
 }
