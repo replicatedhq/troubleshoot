@@ -48,11 +48,11 @@ func (c *CollectHostCopy) Collect(progressChan chan<- interface{}) (map[string][
 		klog.Errorf("Failed to copy files from %q to %q: %v", c.hostCollector.Path, "<bundle>/"+bundleRelPath, err)
 		fileName := fmt.Sprintf("%s/errors.json", c.relBundlePath(bundlePathDest))
 		output := NewResult()
-		err := output.SaveResult(c.BundlePath, fileName, marshalErrors([]string{err.Error()}))
-		if err != nil {
-			return nil, err
+		saveErr := output.SaveResult(c.BundlePath, fileName, marshalErrors([]string{err.Error()}))
+		if saveErr != nil {
+			return nil, saveErr
 		}
-		return output, nil
+		return output, err
 	}
 
 	return result, nil

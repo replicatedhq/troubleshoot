@@ -44,11 +44,11 @@ func (c *CollectHostTCPLoadBalancer) Collect(progressChan chan<- interface{}) (m
 			return nil, errors.Wrap(err, "failed to parse duration")
 		}
 	}
-	networkStatus, err := checkTCPConnection(progressChan, listenAddress, dialAddress, timeout)
+	networkStatus, errorMessage, err := checkTCPConnection(progressChan, listenAddress, dialAddress, timeout)
 	if err != nil {
 		result := NetworkStatusResult{
 			Status:  networkStatus,
-			Message: err.Error(),
+			Message: errorMessage,
 		}
 		b, err := json.Marshal(result)
 		if err != nil {
@@ -62,7 +62,8 @@ func (c *CollectHostTCPLoadBalancer) Collect(progressChan chan<- interface{}) (m
 		}, err
 	}
 	result := NetworkStatusResult{
-		Status: networkStatus,
+		Status:  networkStatus,
+		Message: errorMessage,
 	}
 
 	b, err := json.Marshal(result)

@@ -2,6 +2,7 @@ package collect
 
 import (
 	"bytes"
+	"fmt"
 	"net"
 	"regexp"
 	"strconv"
@@ -70,19 +71,20 @@ func isValidLoadBalancerAddress(address string) bool {
 	return len(errs) == 0
 }
 
-func checkTCPConnection(progressChan chan<- interface{}, listenAddress string, dialAddress string, timeout time.Duration) (NetworkStatus, error) {
+func checkTCPConnection(progressChan chan<- interface{}, listenAddress string, dialAddress string, timeout time.Duration) (NetworkStatus, string, error) {
 
 	if !isValidLoadBalancerAddress(dialAddress) {
-		return NetworkStatusInvalidAddress, errors.Errorf("Invalid Load Balancer Address: %v", dialAddress)
+		errMsg := fmt.Sprintf("Invalid Load Balancer Address: %v", dialAddress)
+		return NetworkStatusInvalidAddress, errMsg, errors.New(errMsg)
 	}
 
 	lstn, err := net.Listen("tcp", listenAddress)
 	if err != nil {
 		if strings.Contains(err.Error(), "address already in use") {
-			return NetworkStatusAddressInUse, nil
+			return NetworkStatusAddressInUse, err.Error(), errors.Wrap(err, "failed to create listener")
 		}
 
-		return NetworkStatusErrorOther, errors.Wrap(err, "failed to create listener")
+		return NetworkStatusErrorOther, err.Error(), errors.Wrap(err, "failed to create listener")
 	}
 	defer lstn.Close()
 
@@ -110,7 +112,7 @@ func checkTCPConnection(progressChan chan<- interface{}, listenAddress string, d
 		if time.Now().After(stopAfter) {
 			debug.Printf("Timeout")
 
-			return NetworkStatusConnectionTimeout, nil
+			return NetworkStatusConnectionTimeout, "", errors.New("connection timeout")
 		}
 
 		conn, err := net.DialTimeout("tcp", dialAddress, 50*time.Millisecond)
@@ -124,13 +126,13 @@ func checkTCPConnection(progressChan chan<- interface{}, listenAddress string, d
 				continue
 			}
 			if strings.Contains(err.Error(), "connection refused") {
-				return NetworkStatusConnectionRefused, nil
+				return NetworkStatusConnectionRefused, err.Error(), errors.Wrap(err, "failed to dial")
 			}
-			return NetworkStatusErrorOther, errors.Wrap(err, "failed to dial")
+			return NetworkStatusErrorOther, err.Error(), errors.Wrap(err, "failed to dial")
 		}
 
 		if verifyConnectionToServer(conn, requestToken, responseToken) {
-			return NetworkStatusConnected, nil
+			return NetworkStatusConnected, "", nil
 		}
 
 		progressChan <- errors.New("failed to verify connection to server")

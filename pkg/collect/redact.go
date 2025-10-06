@@ -141,7 +141,24 @@ func RedactResult(bundlePath string, input CollectorResult, additionalRedactors 
 				return
 			}
 
-			err = input.ReplaceResult(bundlePath, file, redacted)
+			// Fully consume the redacted reader into a buffer while the source file is still open
+			// This is required on Windows where we can't delete a file that's open
+			var redactedBuf bytes.Buffer
+			_, err = io.Copy(&redactedBuf, redacted)
+			if err != nil {
+				errorCh <- errors.Wrap(err, "failed to read redacted data")
+				return
+			}
+
+			// Close the reader now that we've consumed all the data
+			if err := readerCloseFn(); err != nil {
+				klog.Warningf("Failed to close reader for %s: %v", file, err)
+				errorCh <- errors.Wrap(err, "failed to close reader")
+				return
+			}
+
+			// Now replace the file with the buffered redacted content
+			err = input.ReplaceResult(bundlePath, file, &redactedBuf)
 			if err != nil {
 				errorCh <- errors.Wrap(err, "failed to create redacted result")
 				return

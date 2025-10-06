@@ -188,11 +188,28 @@ func (r CollectorResult) ReplaceResult(bundlePath string, relativePath string, r
 		return nil
 	}
 
+	targetPath := filepath.Join(bundlePath, relativePath)
+	targetDir := filepath.Dir(targetPath)
+
+	// Ensure the target directory exists
+	if err := os.MkdirAll(targetDir, 0755); err != nil {
+		return errors.Wrap(err, "failed to create target directory")
+	}
+
 	// Create a temporary file in the same directory as the target file to prevent cross-device issues
-	tmpFile, err := os.CreateTemp("", "replace-")
+	tmpFile, err := os.CreateTemp(targetDir, "replace-*.tmp")
 	if err != nil {
 		return errors.Wrap(err, "failed to create temp file")
 	}
+	tmpFileName := tmpFile.Name()
+
+	// Ensure cleanup of temp file on error
+	defer func() {
+		if tmpFile != nil {
+			tmpFile.Close()
+			os.Remove(tmpFileName)
+		}
+	}()
 
 	// Write data to the temporary file
 	_, err = io.Copy(tmpFile, reader)
@@ -201,10 +218,19 @@ func (r CollectorResult) ReplaceResult(bundlePath string, relativePath string, r
 	}
 
 	// Close the file to ensure all data is written
-	tmpFile.Close()
+	if err = tmpFile.Close(); err != nil {
+		return errors.Wrap(err, "failed to close tmp file")
+	}
+	tmpFile = nil // Prevent defer from closing again
 
-	// This rename should always be in /tmp, so no cross-partition copying will happen
-	err = os.Rename(tmpFile.Name(), filepath.Join(bundlePath, relativePath))
+	// On Windows, we need to remove the target file first before renaming
+	// On Unix, os.Rename will atomically replace the file
+	if err := os.Remove(targetPath); err != nil && !os.IsNotExist(err) {
+		return errors.Wrap(err, "failed to remove existing file")
+	}
+
+	// Rename temp file to target
+	err = os.Rename(tmpFileName, targetPath)
 	if err != nil {
 		return errors.Wrap(err, "failed to rename tmp file")
 	}
@@ -318,7 +344,8 @@ func (r CollectorResult) ArchiveBundle(bundlePath string, outputFilename string)
 			return errors.Wrap(err, "failed to create relative file name")
 		}
 		// Use the relative path of the file so as to retain directory hierachy
-		hdr.Name = nameInArchive
+		// Convert to forward slashes for tar archive (required for cross-platform compatibility)
+		hdr.Name = filepath.ToSlash(nameInArchive)
 
 		if fileMode.Type() == os.ModeSymlink {
 			linkTarget, err := os.Readlink(filename)
@@ -339,7 +366,8 @@ func (r CollectorResult) ArchiveBundle(bundlePath string, outputFilename string)
 				return errors.Wrap(err, "failed to create relative path of symlink target file")
 			}
 
-			hdr.Linkname = relLinkPath
+			// Convert to forward slashes for tar archive (required for cross-platform compatibility)
+			hdr.Linkname = filepath.ToSlash(relLinkPath)
 		}
 
 		err = tarWriter.WriteHeader(hdr)

@@ -43,8 +43,12 @@ func (c *CollectHostUDPPortStatus) Collect(progressChan chan<- interface{}) (map
 	}
 
 	var networkStatus NetworkStatus
+	var errorMessage string
+	var listenErr error
 	lstn, err := net.ListenUDP("udp", &listenAddress)
 	if err != nil {
+		errorMessage = err.Error()
+		listenErr = errors.Wrap(err, "failed to listen on UDP port")
 		if strings.Contains(err.Error(), "address already in use") {
 			networkStatus = NetworkStatusAddressInUse
 		} else {
@@ -56,7 +60,8 @@ func (c *CollectHostUDPPortStatus) Collect(progressChan chan<- interface{}) (map
 	}
 
 	result := NetworkStatusResult{
-		Status: networkStatus,
+		Status:  networkStatus,
+		Message: errorMessage,
 	}
 	b, err := json.Marshal(result)
 	if err != nil {
@@ -74,7 +79,7 @@ func (c *CollectHostUDPPortStatus) Collect(progressChan chan<- interface{}) (map
 
 	return map[string][]byte{
 		name: b,
-	}, nil
+	}, listenErr
 }
 
 func (c *CollectHostUDPPortStatus) RemoteCollect(progressChan chan<- interface{}) (map[string][]byte, error) {

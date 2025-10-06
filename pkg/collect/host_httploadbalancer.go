@@ -80,11 +80,15 @@ func (c *CollectHostHTTPLoadBalancer) Collect(progressChan chan<- interface{}) (
 	}()
 
 	var networkStatus NetworkStatus
+	var errorMessage string
+	var collectorErr error
 
 	stopAfter := time.Now().Add(timeout)
 	for {
 		if len(listenErr) > 0 {
 			err := <-listenErr
+			errorMessage = err.Error()
+			collectorErr = errors.Wrap(err, "failed to listen on HTTP port")
 			if strings.Contains(err.Error(), "address already in use") {
 				networkStatus = NetworkStatusAddressInUse
 				break
@@ -113,7 +117,8 @@ func (c *CollectHostHTTPLoadBalancer) Collect(progressChan chan<- interface{}) (
 	}
 
 	result := NetworkStatusResult{
-		Status: networkStatus,
+		Status:  networkStatus,
+		Message: errorMessage,
 	}
 
 	b, err := json.Marshal(result)
@@ -132,7 +137,7 @@ func (c *CollectHostHTTPLoadBalancer) Collect(progressChan chan<- interface{}) (
 
 	return map[string][]byte{
 		name: b,
-	}, nil
+	}, collectorErr
 }
 
 func attemptPOST(address string, request []byte, response []byte) NetworkStatus {

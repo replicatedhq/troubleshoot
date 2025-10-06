@@ -50,13 +50,14 @@ func (c *CollectHostTCPPortStatus) Collect(progressChan chan<- interface{}) (map
 		dialAddress = fmt.Sprintf("%s:%d", ip, c.hostCollector.Port)
 	}
 
-	networkStatus, err := checkTCPConnection(progressChan, listenAddress, dialAddress, 10*time.Second)
+	networkStatus, errorMessage, err := checkTCPConnection(progressChan, listenAddress, dialAddress, 10*time.Second)
 	if err != nil {
 		return nil, err
 	}
 
 	result := NetworkStatusResult{
-		Status: networkStatus,
+		Status:  networkStatus,
+		Message: errorMessage,
 	}
 	b, err := json.Marshal(result)
 	if err != nil {
