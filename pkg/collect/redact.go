@@ -93,6 +93,17 @@ func RedactResult(bundlePath string, input CollectorResult, additionalRedactors 
 				readerCloseFn = func() error { return nil } // No-op for in-memory data
 			}
 
+			// Ensure the reader is eventually closed even on error paths.
+			// This defer is guarded by setting readerCloseFn to nil after any explicit close
+			// to prevent double-closing (notably when we must close before rewriting files on Windows).
+			defer func() {
+				if readerCloseFn != nil {
+					if err := readerCloseFn(); err != nil {
+						klog.Warningf("Failed to close reader for %s: %v", file, err)
+					}
+				}
+			}()
+
 			// If the file is .tar, .tgz or .tar.gz, it must not be redacted. Instead it is
 			// decompressed and each file inside the tar redacted and compressed back into the archive.
 			if filepath.Ext(file) == ".tar" || filepath.Ext(file) == ".tgz" || strings.HasSuffix(file, ".tar.gz") {
@@ -109,12 +120,13 @@ func RedactResult(bundlePath string, input CollectorResult, additionalRedactors 
 					return
 				}
 
-				// Ensure the reader is closed after processing
+				// Close the reader before we write back to the same file path (Windows safety)
 				if err := readerCloseFn(); err != nil {
 					klog.Warningf("Failed to close reader for %s: %v", file, err)
 					errorCh <- errors.Wrap(err, "failed to close reader")
 					return
 				}
+				readerCloseFn = nil
 
 				err = RedactResult(tmpDir, subResult, additionalRedactors)
 				if err != nil {
@@ -150,12 +162,13 @@ func RedactResult(bundlePath string, input CollectorResult, additionalRedactors 
 				return
 			}
 
-			// Close the reader now that we've consumed all the data
+			// Close the reader now that we've consumed all the data (Windows safety)
 			if err := readerCloseFn(); err != nil {
 				klog.Warningf("Failed to close reader for %s: %v", file, err)
 				errorCh <- errors.Wrap(err, "failed to close reader")
 				return
 			}
+			readerCloseFn = nil
 
 			// Now replace the file with the buffered redacted content
 			err = input.ReplaceResult(bundlePath, file, &redactedBuf)
