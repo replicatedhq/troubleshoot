@@ -204,10 +204,15 @@ func (r CollectorResult) ReplaceResult(bundlePath string, relativePath string, r
 	tmpFileName := tmpFile.Name()
 
 	// Ensure cleanup of temp file on error
+	cleanupNeeded := true
 	defer func() {
 		if tmpFile != nil {
-			tmpFile.Close()
-			os.Remove(tmpFileName)
+			// Best-effort close in defer; ignore close errors here
+			_ = tmpFile.Close()
+		}
+		if cleanupNeeded {
+			// Best-effort remove of temp file if we didn't successfully rename it
+			_ = os.Remove(tmpFileName)
 		}
 	}()
 
@@ -234,6 +239,8 @@ func (r CollectorResult) ReplaceResult(bundlePath string, relativePath string, r
 	if err != nil {
 		return errors.Wrap(err, "failed to rename tmp file")
 	}
+	// If rename succeeded, no need to clean up the temp file path
+	cleanupNeeded = false
 
 	return nil
 }
@@ -375,7 +382,7 @@ func (r CollectorResult) ArchiveBundle(bundlePath string, outputFilename string)
 			return errors.Wrap(err, "failed to write tar header")
 		}
 
-		func() error {
+		err = func() error {
 			if fileMode.Type() == os.ModeSymlink {
 				// Don't copy the symlink, just write the header which
 				// will create a symlink in the tarball

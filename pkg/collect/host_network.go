@@ -112,7 +112,8 @@ func checkTCPConnection(progressChan chan<- interface{}, listenAddress string, d
 		if time.Now().After(stopAfter) {
 			debug.Printf("Timeout")
 
-			return NetworkStatusConnectionTimeout, "", errors.New("connection timeout")
+			errMsg := "connection timeout"
+			return NetworkStatusConnectionTimeout, errMsg, errors.New(errMsg)
 		}
 
 		conn, err := net.DialTimeout("tcp", dialAddress, 50*time.Millisecond)
