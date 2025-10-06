@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path/filepath"
 	"reflect"
 	"strings"
 	"time"
@@ -137,18 +138,27 @@ func LoadFromCLIArgs(ctx context.Context, client kubernetes.Interface, args []st
 					rawSpecs = append(rawSpecs, spec)
 				}
 			}
+		} else if v == "-" {
+			b, err := io.ReadAll(os.Stdin)
+			if err != nil {
+				return nil, types.NewExitCodeError(constants.EXIT_CODE_CATCH_ALL, err)
+			}
+			rawSpecs = append(rawSpecs, string(b))
+		} else if filepath.IsAbs(v) {
+			// Check if it's an absolute path (handles both Unix and Windows paths)
+			// This must come before URL parsing because Windows paths like C:\...
+			// would be parsed as having scheme "c" by url.Parse
+			b, err := os.ReadFile(v)
+			if err != nil {
+				return nil, types.NewExitCodeError(constants.EXIT_CODE_SPEC_ISSUES, err)
+			}
+			rawSpecs = append(rawSpecs, string(b))
 		} else if _, err := os.Stat(v); err == nil {
 			b, err := os.ReadFile(v)
 			if err != nil {
 				return nil, types.NewExitCodeError(constants.EXIT_CODE_SPEC_ISSUES, err)
 			}
 
-			rawSpecs = append(rawSpecs, string(b))
-		} else if v == "-" {
-			b, err := io.ReadAll(os.Stdin)
-			if err != nil {
-				return nil, types.NewExitCodeError(constants.EXIT_CODE_CATCH_ALL, err)
-			}
 			rawSpecs = append(rawSpecs, string(b))
 		} else {
 			u, err := url.Parse(v)

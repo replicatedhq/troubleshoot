@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"time"
 
 	"github.com/pkg/errors"
 	"k8s.io/klog/v2"
@@ -222,7 +223,7 @@ func (r CollectorResult) ReplaceResult(bundlePath string, relativePath string, r
 		// Windows-specific handling with delete-first approach
 		finalPath := filepath.Join(bundlePath, relativePath)
 
-		// Delete target file first (Windows requirement)
+		// Delete target file first (Windows requirement to release locks)
 		os.Remove(finalPath)
 
 		// Use copy+delete instead of rename (more reliable on Windows)
@@ -444,30 +445,58 @@ func TarSupportBundleDir(bundlePath string, input CollectorResult, outputFilenam
 	return input.ArchiveBundle(bundlePath, outputFilename)
 }
 
-// copyFileWindows performs simple copy+delete for Windows (no rename operations)
+// copyFileWindows performs safer file replacement for Windows
+// It writes to a temporary file first to avoid data loss if copy fails
 func copyFileWindows(src, dst string) error {
+	// Step 1: Write to temp file with unique name (not touching original)
+	tmpDst := dst + ".tmp"
+
 	srcFile, err := os.Open(src)
 	if err != nil {
 		return err
 	}
 
-	dstFile, err := os.Create(dst)
+	tmpFile, err := os.Create(tmpDst)
 	if err != nil {
 		srcFile.Close()
 		return err
 	}
 
-	// Copy data
-	_, err = io.Copy(dstFile, srcFile)
+	// Copy data to temp file
+	_, err = io.Copy(tmpFile, srcFile)
 
-	// Explicitly close files before removing source
+	// Close both files explicitly
 	srcFile.Close()
-	dstFile.Close()
+	tmpFile.Close()
 
 	if err != nil {
+		// Copy failed - original file is still intact!
+		os.Remove(tmpDst)
 		return err
 	}
 
-	// Now safe to remove source file (handles are closed)
-	return os.Remove(src)
+	// Step 2: Replace original with temp (with retry for file locking)
+	// Try up to 3 times with small delays for antivirus/locking issues
+	maxRetries := 3
+	for attempt := 0; attempt < maxRetries; attempt++ {
+		// Delete original to release locks
+		os.Remove(dst)
+
+		// Rename temp to final
+		err = os.Rename(tmpDst, dst)
+		if err == nil {
+			// Success! Clean up source
+			os.Remove(src)
+			return nil
+		}
+
+		// If not last attempt, wait briefly and retry
+		if attempt < maxRetries-1 {
+			time.Sleep(10 * time.Millisecond)
+		}
+	}
+
+	// All retries failed - clean up temp file
+	os.Remove(tmpDst)
+	return errors.Wrap(err, "failed to replace file after retries")
 }
