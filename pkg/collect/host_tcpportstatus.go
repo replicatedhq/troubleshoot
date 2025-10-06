@@ -50,13 +50,11 @@ func (c *CollectHostTCPPortStatus) Collect(progressChan chan<- interface{}) (map
 		dialAddress = fmt.Sprintf("%s:%d", ip, c.hostCollector.Port)
 	}
 
-	networkStatus, err := checkTCPConnection(progressChan, listenAddress, dialAddress, 10*time.Second)
-	if err != nil {
-		return nil, err
-	}
+	networkStatus, errorMessage, checkErr := checkTCPConnection(progressChan, listenAddress, dialAddress, 10*time.Second)
 
 	result := NetworkStatusResult{
-		Status: networkStatus,
+		Status:  networkStatus,
+		Message: errorMessage,
 	}
 	b, err := json.Marshal(result)
 	if err != nil {
@@ -74,7 +72,7 @@ func (c *CollectHostTCPPortStatus) Collect(progressChan chan<- interface{}) (map
 
 	return map[string][]byte{
 		name: b,
-	}, nil
+	}, checkErr
 }
 
 func getIPv4FromInterface(iface *net.Interface) (net.IP, error) {
