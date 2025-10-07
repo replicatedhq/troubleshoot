@@ -124,6 +124,8 @@ class BundleComparator:
                 "copy-from-host-example/*/**",  # Node IDs vary between clusters (with subdirs)
                 "copy-from-host-example/*/*",  # Node IDs vary between clusters
                 "run-daemonset-example/*.log",  # Node IDs vary between clusters
+                "goldpinger/*.json",  # Goldpinger may fail due to timing
+                "cluster-resources/pods/logs/**/*.log",  # Pod logs vary (ephemeral pods)
             ]
 
             for file in sorted(missing_in_current):
@@ -218,12 +220,13 @@ class BundleComparator:
     def _get_comparison_mode(self, rel_path: str) -> str:
         """Determine comparison mode for a file based on rules."""
         # Check exact match patterns
-        for pattern in self.rules.get("exact_match", []):
+        for pattern in self.rules.get("exact_match", []) or []:
             if fnmatch.fnmatch(rel_path, pattern) or rel_path == pattern:
                 return "exact"
 
         # Check structural comparison patterns
-        for pattern in self.rules.get("structural_compare", {}).keys():
+        structural_rules = self.rules.get("structural_compare", {}) or {}
+        for pattern in structural_rules.keys():
             if fnmatch.fnmatch(rel_path, pattern):
                 return "structural"
 
@@ -232,7 +235,8 @@ class BundleComparator:
 
     def _get_structural_comparator(self, rel_path: str) -> str:
         """Get the structural comparator name for a file."""
-        for pattern, comparator in self.rules.get("structural_compare", {}).items():
+        structural_rules = self.rules.get("structural_compare", {}) or {}
+        for pattern, comparator in structural_rules.items():
             if fnmatch.fnmatch(rel_path, pattern):
                 return comparator
         return "unknown"
