@@ -1,0 +1,11 @@
+kind: Preflight
+metadata:
+  name: missing-apiversion
+spec:
+  analyzers:
+    - clusterVersion:
+        checkName: Kubernetes version
+        outcomes:
+          - pass:
+              when: '>= 1.19.0'
+              message: Kubernetes version is supported

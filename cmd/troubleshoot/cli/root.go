@@ -109,6 +109,7 @@ If no arguments are provided, specs are automatically loaded from the cluster by
 	cmd.AddCommand(Schedule())
 	cmd.AddCommand(UploadCmd())
 	cmd.AddCommand(util.VersionCmd())
+	cmd.AddCommand(LintCmd())
 
 	cmd.Flags().StringSlice("redactors", []string{}, "names of the additional redactors to use")
 	cmd.Flags().Bool("redact", true, "enable/disable default redactions")
