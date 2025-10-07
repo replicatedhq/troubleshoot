@@ -1,0 +1,121 @@
+# Comparison rules for regression testing
+# Defines how different collector outputs should be compared
+
+# Global configuration (applies to both preflight and supportbundle)
+global:
+  # Files that should be compared exactly (byte-for-byte)
+  exact_match:
+    - "static-data.txt/static-data"
+    # Note: version.yaml is NOT here - versionNumber varies between builds
+
+  # Default behavior for unknown files
+  non_empty_default: true
+
+# Preflight-specific rules
+preflight:
+  # Files that should be compared exactly
+  exact_match:
+    - "static-data.txt/static-data"
+    - "files/example.yaml"      # From data collector in v1beta2
+    - "files/example.json"       # From data collector in v1beta2
+    - "config/replicas.txt"      # From data collector in v1beta2
+    # Note: version.yaml is NOT here - it uses non-empty check (versionNumber varies)
+
+  # Files that need structural/field-specific comparison
+  # Format: "pattern": "comparator_function_name"
+  structural_compare:
+    # Database collectors - compare isConnected boolean only
+    "postgres/*.json": "database_connection"
+    "mysql/*.json": "database_connection"
+    "mssql/*.json": "database_connection"
+    "redis/*.json": "database_connection"
+
+    # DNS collector - compare structure, not exact values
+    "dns/debug.json": "dns_structure"
+
+    # Registry collector - compare exists boolean per image
+    "registry/*.json": "registry_exists"
+    "registry-images/*.json": "registry_exists"
+
+    # HTTP collector - compare status code only
+    "http/*.json": "http_status"
+    "http-*.json": "http_status"
+
+    # Cluster info - compare major/minor version, ignore build details
+    "cluster-info/cluster_version.json": "cluster_version"
+
+    # Analysis results - compare analyzer names and severity levels only
+    "analysis.json": "analysis_results"
+
+  # Everything else uses non-empty check by default
+  # This includes:
+  # - cluster-resources/**/*.json (UIDs, timestamps vary)
+  # - node-metrics/**/*.json (all values vary)
+  # - goldpinger/**/*.json (latencies vary)
+  # - run*/**/* (pod names, output vary)
+  # - ceph/**/* (status/metrics vary or not installed)
+  # - longhorn/**/* (status/metrics vary or not installed)
+  # - certificates/**/*.json (validity time-based)
+  # - configmaps/**/*.json (can have dynamic values)
+  # - secrets/**/*.json (can have dynamic values)
+  # - sysctl/**/* (some counters vary)
+  # - collectd/**/* (time-series data)
+  # - helm/**/*.json (timestamps, revisions vary)
+  # - logs/**/*.log (timestamps in every line)
+  # - copy*/**/* (content depends on what's copied)
+
+# Support bundle-specific rules
+supportbundle:
+  # Files that should be compared exactly
+  exact_match:
+    - "static-data.txt/static-data"
+    # Note: version.yaml is NOT here - it uses non-empty check (versionNumber varies)
+
+  # Files that need structural comparison
+  structural_compare:
+    # Database collectors
+    "postgres/*.json": "database_connection"
+    "mysql/*.json": "database_connection"
+    "mssql/*.json": "database_connection"
+    "redis/*.json": "database_connection"
+
+    # DNS collector
+    "dns/debug.json": "dns_structure"
+
+    # Registry collector
+    "registry/*.json": "registry_exists"
+    "registry-images/*.json": "registry_exists"
+
+    # HTTP collector
+    "http*.json": "http_status"
+
+    # Cluster info
+    "cluster-info/cluster_version.json": "cluster_version"
+
+  # Everything else uses non-empty check (see list above in preflight section)
+
+# Notes on comparison strategies:
+#
+# EXACT MATCH:
+# - Use for static data that should never change between runs
+# - Byte-for-byte comparison
+# - Any difference is a regression
+#
+# STRUCTURAL COMPARISON:
+# - Use for semi-deterministic output with consistent structure but variable values
+# - Compare specific fields only (e.g., status codes, booleans)
+# - Ignore timing-dependent or environment-specific values
+#
+# NON-EMPTY CHECK (default):
+# - Use for highly variable output where exact comparison is impractical
+# - Verifies file exists and is not empty
+# - For JSON files, also validates JSON is parseable
+# - Appropriate for:
+#   * Kubernetes resources (UIDs, resourceVersions, timestamps)
+#   * Metrics (all values constantly change)
+#   * Logs (timestamps, dynamic content)
+#   * Generated pod/resource names
+#   * Runtime state (pod status, replica counts)
+#
+# This strategy catches major regressions (collectors breaking, files missing)
+# while avoiding false positives from expected variability.
