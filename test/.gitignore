@@ -1,0 +1,10 @@
+# Ignore test outputs (bundles are large, should be in artifacts)
+output/
+
+# Ignore extracted bundle contents during local testing
+extracted/
+tmp/
+*.tmp
+
+# Ignore local test runs
+local-test-*/

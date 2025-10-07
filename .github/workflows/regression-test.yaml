@@ -1,0 +1,280 @@
+name: Regression Test Suite
+
+on:
+  push:
+    branches: [main, v1beta3]
+  pull_request:
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+    inputs:
+      update_baselines:
+        description: 'Update baselines after run (use with caution)'
+        type: boolean
+        default: false
+
+jobs:
+  regression-test:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 25
+
+    steps:
+      # 1. SETUP
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Create k3s cluster
+        id: create-cluster
+        uses: replicatedhq/compatibility-actions/create-cluster@v1
+        with:
+          api-token: ${{ secrets.REPLICATED_API_TOKEN }}
+          kubernetes-distribution: k3s
+          kubernetes-version: v1.28.3
+          cluster-name: regression-${{ github.run_id }}-${{ github.run_attempt }}
+          ttl: 25m
+          timeout-minutes: 5
+
+      - name: Configure kubeconfig
+        run: |
+          echo "${{ steps.create-cluster.outputs.cluster-kubeconfig }}" > $GITHUB_WORKSPACE/kubeconfig.yaml
+          echo "KUBECONFIG=$GITHUB_WORKSPACE/kubeconfig.yaml" >> $GITHUB_ENV
+          kubectl get nodes -o wide
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Build binaries
+        run: |
+          echo "Building preflight and support-bundle binaries..."
+          make bin/preflight bin/support-bundle
+          ./bin/preflight version
+          ./bin/support-bundle version
+
+      - name: Setup Python for comparison
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install Python dependencies
+        run: |
+          pip install pyyaml deepdiff
+
+      # 2. EXECUTE SPECS
+      - name: Run preflight v1beta3 (complex)
+        continue-on-error: true
+        run: |
+          echo "Running preflight v1beta3 spec with values file..."
+          ./bin/preflight \
+            examples/preflight/complex-v1beta3.yaml \
+            --values examples/preflight/values-complex-full.yaml \
+            --interactive=false \
+            --format=json \
+            --output=test/output/preflight-results-v1beta3.json || true
+
+          # Find and rename the most recent bundle
+          BUNDLE=$(ls -t preflightbundle-*.tar.gz 2>/dev/null | head -1)
+          if [ -n "$BUNDLE" ]; then
+            echo "Found bundle: $BUNDLE"
+            mv "$BUNDLE" test/output/preflight-v1beta3-bundle.tar.gz
+            echo "✓ v1beta3 bundle saved"
+          else
+            echo "⚠ No v1beta3 bundle found"
+            exit 1
+          fi
+
+      - name: Run preflight v1beta2 (all-analyzers)
+        continue-on-error: true
+        run: |
+          echo "Running preflight v1beta2 spec..."
+          ./bin/preflight \
+            examples/preflight/all-analyzers-v1beta2.yaml \
+            --interactive=false \
+            --format=json \
+            --output=test/output/preflight-results-v1beta2.json || true
+
+          # Find and rename the most recent bundle
+          BUNDLE=$(ls -t preflightbundle-*.tar.gz 2>/dev/null | head -1)
+          if [ -n "$BUNDLE" ]; then
+            echo "Found bundle: $BUNDLE"
+            mv "$BUNDLE" test/output/preflight-v1beta2-bundle.tar.gz
+            echo "✓ v1beta2 bundle saved"
+          else
+            echo "⚠ No v1beta2 bundle found"
+            exit 1
+          fi
+
+      - name: Run support bundle (all-kubernetes-collectors)
+        continue-on-error: true
+        run: |
+          echo "Running support bundle spec..."
+          ./bin/support-bundle \
+            examples/collect/host/all-kubernetes-collectors.yaml \
+            --interactive=false \
+            --output=test/output/supportbundle.tar.gz || true
+
+          if [ -f test/output/supportbundle.tar.gz ]; then
+            echo "✓ Support bundle saved"
+          else
+            echo "⚠ No support bundle found"
+            exit 1
+          fi
+
+      # 3. COMPARE BUNDLES
+      - name: Compare preflight v1beta3 bundle
+        id: compare-v1beta3
+        continue-on-error: true
+        run: |
+          echo "Comparing v1beta3 preflight bundle against baseline..."
+          if [ ! -f test/baselines/preflight-v1beta3/baseline.tar.gz ]; then
+            echo "⚠ No baseline found for v1beta3 - skipping comparison"
+            echo "baseline_missing=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          python3 scripts/compare_bundles.py \
+            --baseline test/baselines/preflight-v1beta3/baseline.tar.gz \
+            --current test/output/preflight-v1beta3-bundle.tar.gz \
+            --rules scripts/compare_rules.yaml \
+            --report test/output/diff-report-v1beta3.json \
+            --spec-type preflight
+
+      - name: Compare preflight v1beta2 bundle
+        id: compare-v1beta2
+        continue-on-error: true
+        run: |
+          echo "Comparing v1beta2 preflight bundle against baseline..."
+          if [ ! -f test/baselines/preflight-v1beta2/baseline.tar.gz ]; then
+            echo "⚠ No baseline found for v1beta2 - skipping comparison"
+            echo "baseline_missing=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          python3 scripts/compare_bundles.py \
+            --baseline test/baselines/preflight-v1beta2/baseline.tar.gz \
+            --current test/output/preflight-v1beta2-bundle.tar.gz \
+            --rules scripts/compare_rules.yaml \
+            --report test/output/diff-report-v1beta2.json \
+            --spec-type preflight
+
+      - name: Compare support bundle
+        id: compare-supportbundle
+        continue-on-error: true
+        run: |
+          echo "Comparing support bundle against baseline..."
+          if [ ! -f test/baselines/supportbundle/baseline.tar.gz ]; then
+            echo "⚠ No baseline found for support bundle - skipping comparison"
+            echo "baseline_missing=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          python3 scripts/compare_bundles.py \
+            --baseline test/baselines/supportbundle/baseline.tar.gz \
+            --current test/output/supportbundle.tar.gz \
+            --rules scripts/compare_rules.yaml \
+            --report test/output/diff-report-supportbundle.json \
+            --spec-type supportbundle
+
+      # 4. REPORT RESULTS
+      - name: Generate summary report
+        if: always()
+        run: |
+          python3 scripts/generate_summary.py \
+            --reports test/output/diff-report-*.json \
+            --output-file $GITHUB_STEP_SUMMARY \
+            --output-console
+
+      - name: Upload test artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: regression-test-results-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            test/output/*.tar.gz
+            test/output/*.json
+          retention-days: 30
+
+      - name: Check for regressions
+        if: always()
+        run: |
+          echo "Checking comparison results..."
+
+          # Check if any comparisons failed
+          FAILURES=0
+
+          if [ "${{ steps.compare-v1beta3.outcome }}" == "failure" ] && [ "${{ steps.compare-v1beta3.outputs.baseline_missing }}" != "true" ]; then
+            echo "❌ v1beta3 comparison failed"
+            FAILURES=$((FAILURES + 1))
+          fi
+
+          if [ "${{ steps.compare-v1beta2.outcome }}" == "failure" ] && [ "${{ steps.compare-v1beta2.outputs.baseline_missing }}" != "true" ]; then
+            echo "❌ v1beta2 comparison failed"
+            FAILURES=$((FAILURES + 1))
+          fi
+
+          if [ "${{ steps.compare-supportbundle.outcome }}" == "failure" ] && [ "${{ steps.compare-supportbundle.outputs.baseline_missing }}" != "true" ]; then
+            echo "❌ Support bundle comparison failed"
+            FAILURES=$((FAILURES + 1))
+          fi
+
+          if [ $FAILURES -gt 0 ]; then
+            echo ""
+            echo "❌ $FAILURES regression(s) detected!"
+            echo "Review the comparison reports in the artifacts."
+            exit 1
+          else
+            echo "✅ All comparisons passed or skipped (no baseline)"
+          fi
+
+      # 5. UPDATE BASELINES (optional, manual trigger only)
+      - name: Update baselines
+        if: github.event.inputs.update_baselines == 'true' && github.event_name == 'workflow_dispatch'
+        run: |
+          echo "Updating baselines with current bundles..."
+
+          # Copy new bundles as baselines
+          if [ -f test/output/preflight-v1beta3-bundle.tar.gz ]; then
+            mkdir -p test/baselines/preflight-v1beta3
+            cp test/output/preflight-v1beta3-bundle.tar.gz test/baselines/preflight-v1beta3/baseline.tar.gz
+            echo "✓ Updated v1beta3 baseline"
+          fi
+
+          if [ -f test/output/preflight-v1beta2-bundle.tar.gz ]; then
+            mkdir -p test/baselines/preflight-v1beta2
+            cp test/output/preflight-v1beta2-bundle.tar.gz test/baselines/preflight-v1beta2/baseline.tar.gz
+            echo "✓ Updated v1beta2 baseline"
+          fi
+
+          if [ -f test/output/supportbundle.tar.gz ]; then
+            mkdir -p test/baselines/supportbundle
+            cp test/output/supportbundle.tar.gz test/baselines/supportbundle/baseline.tar.gz
+            echo "✓ Updated support bundle baseline"
+          fi
+
+          # Create metadata file
+          cat > test/baselines/metadata.json <<EOF
+          {
+            "updated_at": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "git_sha": "${{ github.sha }}",
+            "k8s_version": "v1.28.3",
+            "workflow_run": "${{ github.run_id }}"
+          }
+          EOF
+
+          # Commit and push
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add test/baselines/
+          git commit -m "chore: update regression test baselines from run ${{ github.run_id }}"
+          git push
+
+      # 6. CLEANUP
+      - name: Remove cluster
+        if: always()
+        uses: replicatedhq/compatibility-actions/remove-cluster@v1
+        continue-on-error: true
+        with:
+          api-token: ${{ secrets.REPLICATED_API_TOKEN }}
+          cluster-id: ${{ steps.create-cluster.outputs.cluster-id }}
