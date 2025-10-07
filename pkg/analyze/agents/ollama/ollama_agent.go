@@ -573,15 +573,39 @@ func (a *OllamaAgent) aggregatePodFiles(bundle *analyzer.SupportBundle, filePath
 			namespace = strings.TrimSuffix(parts[len(parts)-1], ".json")
 		}
 
-		// Parse pod list
+		// Parse pod data - handle both PodList and single Pod objects
 		var podList map[string]interface{}
 		if err := json.Unmarshal(data, &podList); err != nil {
 			continue
 		}
 
+		// Check if this is a List object with items array
 		items, ok := podList["items"].([]interface{})
 		if !ok {
-			namespaceStats[namespace] = 0
+			// Check if this is a single Pod object (has "kind": "Pod")
+			if kind, exists := podList["kind"].(string); exists && kind == "Pod" {
+				// Single pod - count as 1
+				namespaceStats[namespace] = 1
+				totalPods++
+				// Extract status for single pod
+				if status, ok := podList["status"].(map[string]interface{}); ok {
+					if phase, ok := status["phase"].(string); ok {
+						switch phase {
+						case "Running":
+							runningPods++
+						case "Pending":
+							pendingPods++
+						case "Failed":
+							failedPods++
+						case "Succeeded":
+							succeededPods++
+						}
+					}
+				}
+			} else {
+				// Not a pod list or single pod, skip
+				namespaceStats[namespace] = 0
+			}
 			continue
 		}
 
@@ -663,14 +687,24 @@ func (a *OllamaAgent) aggregateDeploymentFiles(bundle *analyzer.SupportBundle, f
 			namespace = strings.TrimSuffix(parts[len(parts)-1], ".json")
 		}
 
+		// Parse deployment data - handle both DeploymentList and single Deployment objects
 		var deploymentList map[string]interface{}
 		if err := json.Unmarshal(data, &deploymentList); err != nil {
 			continue
 		}
 
+		// Check if this is a List object with items array
 		items, ok := deploymentList["items"].([]interface{})
 		if !ok {
-			namespaceStats[namespace] = 0
+			// Check if this is a single Deployment object (has "kind": "Deployment")
+			if kind, exists := deploymentList["kind"].(string); exists && kind == "Deployment" {
+				// Single deployment - count as 1
+				namespaceStats[namespace] = 1
+				totalDeployments++
+			} else {
+				// Not a deployment list or single deployment, skip
+				namespaceStats[namespace] = 0
+			}
 			continue
 		}
 
@@ -710,21 +744,23 @@ func (a *OllamaAgent) aggregateEventFiles(bundle *analyzer.SupportBundle, filePa
 			continue
 		}
 
+		// Parse event data - handle both EventList and single Event objects
 		var eventList map[string]interface{}
 		if err := json.Unmarshal(data, &eventList); err != nil {
 			continue
 		}
 
+		// Check if this is a List object with items array
 		items, ok := eventList["items"].([]interface{})
 		if ok {
 			itemCount := len(items)
 			totalEvents += itemCount
-			// Include actual event data for AI analysis (limited)
+			// Include actual event data for AI analysis (limited to 50 events max)
 			// Only include if we haven't reached the limit and the data is reasonable size
 			if itemCount > 0 && eventsIncluded < 50 {
 				dataStr := string(data)
-				// Only include if data size is reasonable and we won't exceed limit too much
-				if len(dataStr) < 2000 && (eventsIncluded+itemCount) <= 100 {
+				// Only include if data size is reasonable and won't exceed 50 event limit
+				if len(dataStr) < 2000 && (eventsIncluded+itemCount) <= 50 {
 					summary.WriteString(fmt.Sprintf("\n--- Events from %s ---\n", filePath))
 					summary.WriteString(dataStr)
 					summary.WriteString("\n")
@@ -769,7 +805,7 @@ func (a *OllamaAgent) runLLMAnalysis(ctx context.Context, bundle *analyzer.Suppo
 	// Check if this is an aggregated analyzer (multiple files)
 	if aggregated, ok := spec.Config["aggregated"].(bool); ok && aggregated {
 		// Handle aggregated files
-		if filePaths, ok := spec.Config["filePaths"].([]string); ok {
+		if filePaths, ok := spec.Config["filePaths"].([]string); ok && len(filePaths) > 0 {
 			aggregatedData, err := a.aggregateFiles(bundle, filePaths, spec.Category)
 			if err != nil {
 				return &analyzer.AnalyzerResult{
@@ -780,6 +816,14 @@ func (a *OllamaAgent) runLLMAnalysis(ctx context.Context, bundle *analyzer.Suppo
 				}, nil
 			}
 			dataStr = aggregatedData
+		} else {
+			// Missing or invalid filePaths for aggregated analyzer
+			return &analyzer.AnalyzerResult{
+				Title:    spec.Name,
+				IsWarn:   true,
+				Message:  "Aggregated analyzer missing valid filePaths configuration",
+				Category: spec.Category,
+			}, nil
 		}
 	} else {
 		// Smart file detection for enhanced analyzer compatibility (single file)
