@@ -719,11 +719,12 @@ func (a *OllamaAgent) aggregateEventFiles(bundle *analyzer.SupportBundle, filePa
 		if ok {
 			itemCount := len(items)
 			totalEvents += itemCount
-			// Include actual event data for AI analysis (limited per file, not cumulative)
-			// Include up to 50 total events from all files combined
+			// Include actual event data for AI analysis (limited)
+			// Only include if we haven't reached the limit and the data is reasonable size
 			if itemCount > 0 && eventsIncluded < 50 {
 				dataStr := string(data)
-				if len(dataStr) < 2000 {
+				// Only include if data size is reasonable and we won't exceed limit too much
+				if len(dataStr) < 2000 && (eventsIncluded+itemCount) <= 100 {
 					summary.WriteString(fmt.Sprintf("\n--- Events from %s ---\n", filePath))
 					summary.WriteString(dataStr)
 					summary.WriteString("\n")
