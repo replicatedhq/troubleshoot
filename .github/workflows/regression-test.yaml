@@ -21,6 +21,11 @@ jobs:
       # 1. SETUP
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history for git describe to work
+
+      - name: Create output directory
+        run: mkdir -p test/output
 
       - name: Create k3s cluster
         id: create-cluster
