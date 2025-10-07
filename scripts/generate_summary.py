@@ -14,32 +14,33 @@ from pathlib import Path
 from typing import List, Dict
 
 
-def load_reports(report_pattern: str) -> List[Dict]:
-    """Load all report JSON files matching pattern."""
+def load_reports(report_files: List[str]) -> List[Dict]:
+    """Load all report JSON files."""
     reports = []
 
-    # Handle glob pattern
-    if '*' in report_pattern:
-        report_dir = Path(report_pattern).parent
-        pattern = Path(report_pattern).name
+    for report_file in report_files:
+        # Handle glob pattern if not already expanded
+        if '*' in report_file:
+            report_dir = Path(report_file).parent
+            pattern = Path(report_file).name
 
-        for report_file in sorted(report_dir.glob(pattern)):
+            for path in sorted(report_dir.glob(pattern)):
+                try:
+                    with open(path) as f:
+                        report = json.load(f)
+                        report['_filename'] = path.name
+                        reports.append(report)
+                except (json.JSONDecodeError, FileNotFoundError) as e:
+                    print(f"Warning: Could not load {path}: {e}", file=sys.stderr)
+        else:
+            # Single file
             try:
                 with open(report_file) as f:
                     report = json.load(f)
-                    report['_filename'] = report_file.name
+                    report['_filename'] = Path(report_file).name
                     reports.append(report)
             except (json.JSONDecodeError, FileNotFoundError) as e:
                 print(f"Warning: Could not load {report_file}: {e}", file=sys.stderr)
-    else:
-        # Single file
-        try:
-            with open(report_pattern) as f:
-                report = json.load(f)
-                report['_filename'] = Path(report_pattern).name
-                reports.append(report)
-        except (json.JSONDecodeError, FileNotFoundError) as e:
-            print(f"Warning: Could not load {report_pattern}: {e}", file=sys.stderr)
 
     return reports
 
@@ -233,8 +234,9 @@ def main():
     )
     parser.add_argument(
         "--reports",
+        nargs='+',
         required=True,
-        help="Report file(s) pattern (e.g., 'test/output/diff-report-*.json')"
+        help="Report file(s) or pattern (e.g., 'test/output/diff-report-*.json' or multiple files)"
     )
     parser.add_argument(
         "--output-file",
@@ -248,7 +250,7 @@ def main():
 
     args = parser.parse_args()
 
-    # Load reports
+    # Load reports (args.reports is now a list)
     reports = load_reports(args.reports)
 
     if not reports:
