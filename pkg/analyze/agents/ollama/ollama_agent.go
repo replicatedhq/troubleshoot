@@ -703,6 +703,7 @@ func (a *OllamaAgent) aggregateEventFiles(bundle *analyzer.SupportBundle, filePa
 	summary.WriteString("CLUSTER-WIDE EVENT ANALYSIS\n")
 	summary.WriteString("Analyzing events across all namespaces:\n\n")
 
+	eventsIncluded := 0
 	for _, filePath := range filePaths {
 		data, exists := bundle.Files[filePath]
 		if !exists {
@@ -716,14 +717,17 @@ func (a *OllamaAgent) aggregateEventFiles(bundle *analyzer.SupportBundle, filePa
 
 		items, ok := eventList["items"].([]interface{})
 		if ok {
-			totalEvents += len(items)
-			// Include actual event data for AI analysis (limited)
-			if len(items) > 0 && totalEvents < 50 {
+			itemCount := len(items)
+			totalEvents += itemCount
+			// Include actual event data for AI analysis (limited per file, not cumulative)
+			// Include up to 50 total events from all files combined
+			if itemCount > 0 && eventsIncluded < 50 {
 				dataStr := string(data)
 				if len(dataStr) < 2000 {
 					summary.WriteString(fmt.Sprintf("\n--- Events from %s ---\n", filePath))
 					summary.WriteString(dataStr)
 					summary.WriteString("\n")
+					eventsIncluded += itemCount
 				}
 			}
 		}

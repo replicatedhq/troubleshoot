@@ -206,7 +206,10 @@ func TestOllamaAgent_discoverAnalyzers(t *testing.T) {
 		assert.NotNil(t, spec.Config)
 
 		// Verify AI-specific config
-		assert.Contains(t, spec.Config, "filePath")
+		// Aggregated analyzers use "filePaths", single-file analyzers use "filePath"
+		hasFilePath := spec.Config["filePath"] != nil
+		hasFilePaths := spec.Config["filePaths"] != nil
+		assert.True(t, hasFilePath || hasFilePaths, "spec must have either filePath or filePaths")
 		assert.Contains(t, spec.Config, "promptType")
 	}
 
