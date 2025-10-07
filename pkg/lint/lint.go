@@ -72,6 +72,17 @@ func lintFile(filePath string, fix bool) (LintResult, error) {
 			Message: fmt.Sprintf("File must contain apiVersion: %s", constants.Troubleshootv1beta3Kind),
 			Field:   "apiVersion",
 		})
+		// Try to fix wrong apiVersion
+		if fix {
+			fixed, err := applyFixes(filePath, string(content), result)
+			if err != nil {
+				return result, err
+			}
+			if fixed {
+				// Re-lint to verify fixes
+				return lintFile(filePath, false)
+			}
+		}
 		return result, nil
 	}
 
@@ -80,18 +91,42 @@ func lintFile(filePath string, fix bool) (LintResult, error) {
 
 	// Validate YAML syntax (but be lenient with templated files)
 	var parsed map[string]interface{}
-	if err := yaml.Unmarshal(content, &parsed); err != nil {
+	yamlParseErr := yaml.Unmarshal(content, &parsed)
+	if yamlParseErr != nil {
 		// If the file has templates, YAML parsing may fail - that's expected
 		// We'll still try to validate what we can
 		if !hasTemplates {
 			result.Errors = append(result.Errors, LintError{
-				Line:    extractLineFromError(err),
-				Message: fmt.Sprintf("YAML syntax error: %s", err.Error()),
+				Line:    extractLineFromError(yamlParseErr),
+				Message: fmt.Sprintf("YAML syntax error: %s", yamlParseErr.Error()),
 			})
+			// Don't return yet - we want to try to fix this error
+			// Continue to applyFixes at the end
+			if fix {
+				fixed, err := applyFixes(filePath, string(content), result)
+				if err != nil {
+					return result, err
+				}
+				if fixed {
+					// Re-lint to verify fixes
+					return lintFile(filePath, false)
+				}
+			}
 			return result, nil
 		}
 		// For templated files, we can't parse YAML strictly, so just check template syntax
 		result.Errors = append(result.Errors, checkTemplateSyntax(string(content))...)
+		// Continue to applyFixes for templates too
+		if fix {
+			fixed, err := applyFixes(filePath, string(content), result)
+			if err != nil {
+				return result, err
+			}
+			if fixed {
+				// Re-lint to verify fixes
+				return lintFile(filePath, false)
+			}
+		}
 		return result, nil
 	}
 
@@ -388,12 +423,23 @@ func applyFixes(filePath, content string, result LintResult) (bool, error) {
 
 		for _, err := range errs {
 			// Fix 1: Add missing colon
+			// YAML parsers often report the error on the line AFTER the actual problem
 			if strings.Contains(err.Message, "could not find expected ':'") {
+				// Check current line first
 				if !strings.Contains(line, ":") {
 					trimmed := strings.TrimSpace(line)
 					indent := line[:len(line)-len(strings.TrimLeft(line, " \t"))]
 					line = indent + trimmed + ":"
 					fixed = true
+				} else if lineNum > 1 {
+					// Check previous line (where the colon is likely missing)
+					prevLine := lines[lineNum-2]
+					if !strings.Contains(prevLine, ":") && strings.TrimSpace(prevLine) != "" {
+						trimmed := strings.TrimSpace(prevLine)
+						indent := prevLine[:len(prevLine)-len(strings.TrimLeft(prevLine, " \t"))]
+						lines[lineNum-2] = indent + trimmed + ":"
+						fixed = true
+					}
 				}
 			}
 
