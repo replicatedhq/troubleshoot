@@ -36,7 +36,9 @@ jobs:
         run: |
           echo "${{ steps.create-cluster.outputs.cluster-kubeconfig }}" > $GITHUB_WORKSPACE/kubeconfig.yaml
           echo "KUBECONFIG=$GITHUB_WORKSPACE/kubeconfig.yaml" >> $GITHUB_ENV
-          kubectl get nodes -o wide
+
+      - name: Verify cluster access
+        run: kubectl get nodes -o wide
 
       - name: Setup Go
         uses: actions/setup-go@v5
