@@ -421,39 +421,31 @@ func (a *OllamaAgent) Analyze(ctx context.Context, data []byte, analyzers []anal
 func (a *OllamaAgent) discoverAnalyzers(bundle *analyzer.SupportBundle) []analyzer.AnalyzerSpec {
 	var specs []analyzer.AnalyzerSpec
 
+	// Collect files by type for aggregation
+	podFiles := []string{}
+	deploymentFiles := []string{}
+	eventFiles := []string{}
+	nodeFiles := []string{}
+
 	// Analyze bundle contents to determine what types of analysis to perform
 	for filePath := range bundle.Files {
-		filePath = strings.ToLower(filePath)
+		filePathLower := strings.ToLower(filePath)
 
 		switch {
-		case strings.Contains(filePath, "pods") && strings.HasSuffix(filePath, ".json"):
-			specs = append(specs, analyzer.AnalyzerSpec{
-				Name:     "ai-pod-analysis",
-				Type:     "ai-workload",
-				Category: "pods",
-				Priority: 10,
-				Config:   map[string]interface{}{"filePath": filePath, "promptType": "pod-analysis"},
-			})
+		case strings.Contains(filePathLower, "pods") && strings.HasSuffix(filePathLower, ".json"):
+			podFiles = append(podFiles, filePath)
 
-		case strings.Contains(filePath, "deployments") && strings.HasSuffix(filePath, ".json"):
-			specs = append(specs, analyzer.AnalyzerSpec{
-				Name:     "ai-deployment-analysis",
-				Type:     "ai-workload",
-				Category: "deployments",
-				Priority: 9,
-				Config:   map[string]interface{}{"filePath": filePath, "promptType": "deployment-analysis"},
-			})
+		case strings.Contains(filePathLower, "deployments") && strings.HasSuffix(filePathLower, ".json"):
+			deploymentFiles = append(deploymentFiles, filePath)
 
-		case strings.Contains(filePath, "events") && strings.HasSuffix(filePath, ".json"):
-			specs = append(specs, analyzer.AnalyzerSpec{
-				Name:     "ai-event-analysis",
-				Type:     "ai-events",
-				Category: "events",
-				Priority: 8,
-				Config:   map[string]interface{}{"filePath": filePath, "promptType": "event-analysis"},
-			})
+		case strings.Contains(filePathLower, "events") && strings.HasSuffix(filePathLower, ".json"):
+			eventFiles = append(eventFiles, filePath)
 
-		case strings.Contains(filePath, "logs") && strings.HasSuffix(filePath, ".log"):
+		case strings.Contains(filePathLower, "nodes") && strings.HasSuffix(filePathLower, ".json"):
+			nodeFiles = append(nodeFiles, filePath)
+
+		case strings.Contains(filePathLower, "logs") && strings.HasSuffix(filePathLower, ".log"):
+			// Logs are analyzed separately per file (not aggregated)
 			specs = append(specs, analyzer.AnalyzerSpec{
 				Name:     "ai-log-analysis",
 				Type:     "ai-logs",
@@ -461,19 +453,305 @@ func (a *OllamaAgent) discoverAnalyzers(bundle *analyzer.SupportBundle) []analyz
 				Priority: 7,
 				Config:   map[string]interface{}{"filePath": filePath, "promptType": "log-analysis"},
 			})
-
-		case strings.Contains(filePath, "nodes") && strings.HasSuffix(filePath, ".json"):
-			specs = append(specs, analyzer.AnalyzerSpec{
-				Name:     "ai-resource-analysis",
-				Type:     "ai-resources",
-				Category: "nodes",
-				Priority: 8,
-				Config:   map[string]interface{}{"filePath": filePath, "promptType": "resource-analysis"},
-			})
 		}
 	}
 
+	// Create aggregated analyzer for ALL pod files (cluster-wide view)
+	if len(podFiles) > 0 {
+		specs = append(specs, analyzer.AnalyzerSpec{
+			Name:     "ai-pod-analysis-cluster",
+			Type:     "ai-workload",
+			Category: "pods",
+			Priority: 10,
+			Config: map[string]interface{}{
+				"filePaths":  podFiles,
+				"promptType": "pod-analysis",
+				"aggregated": true,
+			},
+		})
+	}
+
+	// Create aggregated analyzer for ALL deployment files (cluster-wide view)
+	if len(deploymentFiles) > 0 {
+		specs = append(specs, analyzer.AnalyzerSpec{
+			Name:     "ai-deployment-analysis-cluster",
+			Type:     "ai-workload",
+			Category: "deployments",
+			Priority: 9,
+			Config: map[string]interface{}{
+				"filePaths":  deploymentFiles,
+				"promptType": "deployment-analysis",
+				"aggregated": true,
+			},
+		})
+	}
+
+	// Create aggregated analyzer for ALL event files (cluster-wide view)
+	if len(eventFiles) > 0 {
+		specs = append(specs, analyzer.AnalyzerSpec{
+			Name:     "ai-event-analysis-cluster",
+			Type:     "ai-events",
+			Category: "events",
+			Priority: 8,
+			Config: map[string]interface{}{
+				"filePaths":  eventFiles,
+				"promptType": "event-analysis",
+				"aggregated": true,
+			},
+		})
+	}
+
+	// Create aggregated analyzer for ALL node files (cluster-wide view)
+	if len(nodeFiles) > 0 {
+		specs = append(specs, analyzer.AnalyzerSpec{
+			Name:     "ai-resource-analysis-cluster",
+			Type:     "ai-resources",
+			Category: "nodes",
+			Priority: 8,
+			Config: map[string]interface{}{
+				"filePaths":  nodeFiles,
+				"promptType": "resource-analysis",
+				"aggregated": true,
+			},
+		})
+	}
+
 	return specs
+}
+
+// aggregateFiles combines multiple files of the same type into a single summary for analysis
+func (a *OllamaAgent) aggregateFiles(bundle *analyzer.SupportBundle, filePaths []string, category string) (string, error) {
+	var summary strings.Builder
+
+	switch category {
+	case "pods":
+		return a.aggregatePodFiles(bundle, filePaths)
+	case "deployments":
+		return a.aggregateDeploymentFiles(bundle, filePaths)
+	case "events":
+		return a.aggregateEventFiles(bundle, filePaths)
+	case "nodes":
+		return a.aggregateNodeFiles(bundle, filePaths)
+	default:
+		// For other types, just concatenate the files
+		summary.WriteString(fmt.Sprintf("Aggregated analysis of %d files:\n\n", len(filePaths)))
+		for _, filePath := range filePaths {
+			if data, exists := bundle.Files[filePath]; exists {
+				summary.WriteString(fmt.Sprintf("--- File: %s ---\n", filePath))
+				summary.Write(data)
+				summary.WriteString("\n\n")
+			}
+		}
+	}
+
+	return summary.String(), nil
+}
+
+// aggregatePodFiles creates a cluster-wide summary of pods from multiple namespace files
+func (a *OllamaAgent) aggregatePodFiles(bundle *analyzer.SupportBundle, filePaths []string) (string, error) {
+	var summary strings.Builder
+	totalPods := 0
+	runningPods := 0
+	pendingPods := 0
+	failedPods := 0
+	succeededPods := 0
+	namespaceStats := make(map[string]int)
+
+	summary.WriteString("CLUSTER-WIDE POD ANALYSIS\n")
+	summary.WriteString("Analyzing pods across all namespaces:\n\n")
+
+	for _, filePath := range filePaths {
+		data, exists := bundle.Files[filePath]
+		if !exists {
+			continue
+		}
+
+		// Extract namespace from path (e.g., "cluster-resources/pods/kube-system.json")
+		parts := strings.Split(filePath, "/")
+		namespace := "unknown"
+		if len(parts) >= 3 {
+			namespace = strings.TrimSuffix(parts[len(parts)-1], ".json")
+		}
+
+		// Parse pod list
+		var podList map[string]interface{}
+		if err := json.Unmarshal(data, &podList); err != nil {
+			continue
+		}
+
+		items, ok := podList["items"].([]interface{})
+		if !ok {
+			namespaceStats[namespace] = 0
+			continue
+		}
+
+		podCount := len(items)
+		namespaceStats[namespace] = podCount
+		totalPods += podCount
+
+		// Count pod statuses
+		for _, item := range items {
+			pod, ok := item.(map[string]interface{})
+			if !ok {
+				continue
+			}
+
+			status, ok := pod["status"].(map[string]interface{})
+			if !ok {
+				continue
+			}
+
+			phase, ok := status["phase"].(string)
+			if !ok {
+				continue
+			}
+
+			switch phase {
+			case "Running":
+				runningPods++
+			case "Pending":
+				pendingPods++
+			case "Failed":
+				failedPods++
+			case "Succeeded":
+				succeededPods++
+			}
+		}
+	}
+
+	summary.WriteString(fmt.Sprintf("Total pods in cluster: %d\n", totalPods))
+	summary.WriteString(fmt.Sprintf("  - Running: %d\n", runningPods))
+	summary.WriteString(fmt.Sprintf("  - Pending: %d\n", pendingPods))
+	summary.WriteString(fmt.Sprintf("  - Failed: %d\n", failedPods))
+	summary.WriteString(fmt.Sprintf("  - Succeeded: %d\n", succeededPods))
+	summary.WriteString("\nPods by namespace:\n")
+
+	for namespace, count := range namespaceStats {
+		if count > 0 {
+			summary.WriteString(fmt.Sprintf("  - %s: %d pods\n", namespace, count))
+		} else {
+			summary.WriteString(fmt.Sprintf("  - %s: empty (no pods)\n", namespace))
+		}
+	}
+
+	summary.WriteString("\nIMPORTANT CONTEXT:\n")
+	summary.WriteString("- Empty namespaces are NORMAL in Kubernetes\n")
+	summary.WriteString("- Only report issues if there are actual pod failures or critical problems\n")
+	summary.WriteString("- The presence of empty namespaces is not a problem\n")
+
+	return summary.String(), nil
+}
+
+// aggregateDeploymentFiles creates a cluster-wide summary of deployments
+func (a *OllamaAgent) aggregateDeploymentFiles(bundle *analyzer.SupportBundle, filePaths []string) (string, error) {
+	var summary strings.Builder
+	totalDeployments := 0
+	namespaceStats := make(map[string]int)
+
+	summary.WriteString("CLUSTER-WIDE DEPLOYMENT ANALYSIS\n")
+	summary.WriteString("Analyzing deployments across all namespaces:\n\n")
+
+	for _, filePath := range filePaths {
+		data, exists := bundle.Files[filePath]
+		if !exists {
+			continue
+		}
+
+		parts := strings.Split(filePath, "/")
+		namespace := "unknown"
+		if len(parts) >= 3 {
+			namespace = strings.TrimSuffix(parts[len(parts)-1], ".json")
+		}
+
+		var deploymentList map[string]interface{}
+		if err := json.Unmarshal(data, &deploymentList); err != nil {
+			continue
+		}
+
+		items, ok := deploymentList["items"].([]interface{})
+		if !ok {
+			namespaceStats[namespace] = 0
+			continue
+		}
+
+		deployCount := len(items)
+		namespaceStats[namespace] = deployCount
+		totalDeployments += deployCount
+	}
+
+	summary.WriteString(fmt.Sprintf("Total deployments in cluster: %d\n", totalDeployments))
+	summary.WriteString("\nDeployments by namespace:\n")
+
+	for namespace, count := range namespaceStats {
+		if count > 0 {
+			summary.WriteString(fmt.Sprintf("  - %s: %d deployments\n", namespace, count))
+		} else {
+			summary.WriteString(fmt.Sprintf("  - %s: no deployments\n", namespace))
+		}
+	}
+
+	summary.WriteString("\nIMPORTANT: Empty namespaces are normal. Only flag actual deployment issues.\n")
+
+	return summary.String(), nil
+}
+
+// aggregateEventFiles creates a cluster-wide summary of events
+func (a *OllamaAgent) aggregateEventFiles(bundle *analyzer.SupportBundle, filePaths []string) (string, error) {
+	var summary strings.Builder
+	totalEvents := 0
+
+	summary.WriteString("CLUSTER-WIDE EVENT ANALYSIS\n")
+	summary.WriteString("Analyzing events across all namespaces:\n\n")
+
+	for _, filePath := range filePaths {
+		data, exists := bundle.Files[filePath]
+		if !exists {
+			continue
+		}
+
+		var eventList map[string]interface{}
+		if err := json.Unmarshal(data, &eventList); err != nil {
+			continue
+		}
+
+		items, ok := eventList["items"].([]interface{})
+		if ok {
+			totalEvents += len(items)
+			// Include actual event data for AI analysis (limited)
+			if len(items) > 0 && totalEvents < 50 {
+				dataStr := string(data)
+				if len(dataStr) < 2000 {
+					summary.WriteString(fmt.Sprintf("\n--- Events from %s ---\n", filePath))
+					summary.WriteString(dataStr)
+					summary.WriteString("\n")
+				}
+			}
+		}
+	}
+
+	summary.WriteString(fmt.Sprintf("\nTotal events collected: %d\n", totalEvents))
+
+	return summary.String(), nil
+}
+
+// aggregateNodeFiles creates a cluster-wide summary of nodes
+func (a *OllamaAgent) aggregateNodeFiles(bundle *analyzer.SupportBundle, filePaths []string) (string, error) {
+	var summary strings.Builder
+
+	summary.WriteString("CLUSTER-WIDE NODE ANALYSIS\n\n")
+
+	for _, filePath := range filePaths {
+		data, exists := bundle.Files[filePath]
+		if !exists {
+			continue
+		}
+
+		summary.WriteString(fmt.Sprintf("--- Nodes data from %s ---\n", filePath))
+		summary.Write(data)
+		summary.WriteString("\n\n")
+	}
+
+	return summary.String(), nil
 }
 
 // runLLMAnalysis executes analysis using LLM for a specific analyzer spec
@@ -481,30 +759,51 @@ func (a *OllamaAgent) runLLMAnalysis(ctx context.Context, bundle *analyzer.Suppo
 	ctx, span := otel.Tracer(constants.LIB_TRACER_NAME).Start(ctx, fmt.Sprintf("OllamaAgent.%s", spec.Name))
 	defer span.End()
 
-	// Smart file detection for enhanced analyzer compatibility
-	var filePath string
-	var fileData []byte
-	var exists bool
+	var dataStr string
 
-	// First try to get explicit filePath from config
-	if fp, ok := spec.Config["filePath"].(string); ok {
-		filePath = fp
-		fileData, exists = bundle.Files[filePath]
-	}
-
-	// If no explicit filePath, auto-detect based on analyzer type
-	if !exists {
-		filePath, fileData, exists = a.autoDetectFileForAnalyzer(bundle, spec)
-	}
-
-	if !exists {
-		result := &analyzer.AnalyzerResult{
-			Title:    spec.Name,
-			IsWarn:   true,
-			Message:  fmt.Sprintf("File not found: %s", filePath),
-			Category: spec.Category,
+	// Check if this is an aggregated analyzer (multiple files)
+	if aggregated, ok := spec.Config["aggregated"].(bool); ok && aggregated {
+		// Handle aggregated files
+		if filePaths, ok := spec.Config["filePaths"].([]string); ok {
+			aggregatedData, err := a.aggregateFiles(bundle, filePaths, spec.Category)
+			if err != nil {
+				return &analyzer.AnalyzerResult{
+					Title:    spec.Name,
+					IsWarn:   true,
+					Message:  fmt.Sprintf("Failed to aggregate files: %v", err),
+					Category: spec.Category,
+				}, nil
+			}
+			dataStr = aggregatedData
 		}
-		return result, nil
+	} else {
+		// Smart file detection for enhanced analyzer compatibility (single file)
+		var filePath string
+		var fileData []byte
+		var exists bool
+
+		// First try to get explicit filePath from config
+		if fp, ok := spec.Config["filePath"].(string); ok {
+			filePath = fp
+			fileData, exists = bundle.Files[filePath]
+		}
+
+		// If no explicit filePath, auto-detect based on analyzer type
+		if !exists {
+			filePath, fileData, exists = a.autoDetectFileForAnalyzer(bundle, spec)
+		}
+
+		if !exists {
+			result := &analyzer.AnalyzerResult{
+				Title:    spec.Name,
+				IsWarn:   true,
+				Message:  fmt.Sprintf("File not found: %s", filePath),
+				Category: spec.Category,
+			}
+			return result, nil
+		}
+
+		dataStr = string(fileData)
 	}
 
 	promptType, _ := spec.Config["promptType"].(string)
@@ -519,7 +818,6 @@ func (a *OllamaAgent) runLLMAnalysis(ctx context.Context, bundle *analyzer.Suppo
 	}
 
 	// Prepare data for analysis (truncate if too large)
-	dataStr := string(fileData)
 	if len(dataStr) > 4000 { // Limit input size
 		if promptType == "log-analysis" {
 			// For logs, take the last N lines
