@@ -119,8 +119,10 @@ class BundleComparator:
                 "*-previous.log",  # Previous container logs (only exist after restart)
                 "node-metrics/*.json",  # Node IDs vary between clusters
                 "sysctl/*",  # Node IDs vary between clusters
-                "collectd/rrd/*",  # Node IDs vary between clusters
-                "copy-from-host-example/*",  # Node IDs vary between clusters
+                "collectd/rrd/*/**",  # Node IDs vary between clusters (with subdirs)
+                "collectd/rrd/*/*",  # Node IDs vary between clusters
+                "copy-from-host-example/*/**",  # Node IDs vary between clusters (with subdirs)
+                "copy-from-host-example/*/*",  # Node IDs vary between clusters
                 "run-daemonset-example/*.log",  # Node IDs vary between clusters
             ]
 
