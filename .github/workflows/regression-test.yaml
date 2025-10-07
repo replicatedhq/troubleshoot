@@ -28,7 +28,6 @@ jobs:
         with:
           api-token: ${{ secrets.REPLICATED_API_TOKEN }}
           kubernetes-distribution: k3s
-          kubernetes-version: v1.28.3
           cluster-name: regression-${{ github.run_id }}-${{ github.run_attempt }}
           ttl: 25m
           timeout-minutes: 5
