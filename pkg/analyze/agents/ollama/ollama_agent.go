@@ -608,7 +608,7 @@ func (a *OllamaAgent) aggregatePodFiles(bundle *analyzer.SupportBundle, filePath
 		}
 
 		podCount := len(items)
-		namespaceStats[namespace] = podCount
+		namespaceStats[namespace] += podCount
 		totalPods += podCount
 
 		// Count pod statuses
@@ -705,7 +705,7 @@ func (a *OllamaAgent) aggregateDeploymentFiles(bundle *analyzer.SupportBundle, f
 		}
 
 		deployCount := len(items)
-		namespaceStats[namespace] = deployCount
+		namespaceStats[namespace] += deployCount
 		totalDeployments += deployCount
 	}
 
@@ -751,20 +751,16 @@ func (a *OllamaAgent) aggregateEventFiles(bundle *analyzer.SupportBundle, filePa
 		if ok {
 			itemCount := len(items)
 			totalEvents += itemCount
-			// Include actual event data for AI analysis (limited to 50 events max)
+			// Include actual event data for AI analysis (limited to 50 events max for the summary)
 			// Only include if we haven't reached the limit and the data is reasonable size
 			if itemCount > 0 && eventsIncluded < 50 {
 				dataStr := string(data)
-				// Include file if data size is reasonable, even if it partially exceeds limit
+				// Include file if data size is reasonable
 				if len(dataStr) < 2000 {
 					summary.WriteString(fmt.Sprintf("\n--- Events from %s ---\n", filePath))
 					summary.WriteString(dataStr)
 					summary.WriteString("\n")
 					eventsIncluded += itemCount
-					// Stop including more files once we've included enough events
-					if eventsIncluded >= 50 {
-						break
-					}
 				}
 			}
 		}
