@@ -581,7 +581,47 @@ func (a *OllamaAgent) aggregatePodFiles(bundle *analyzer.SupportBundle, filePath
 
 		// Check if this is a List object with items array
 		items, ok := podList["items"].([]interface{})
-		if !ok {
+		if ok {
+			// Handle PodList - process all pods in the list
+			// Initialize namespace for valid PodList (ensures empty namespaces are tracked)
+			if _, exists := namespaceStats[namespace]; !exists {
+				namespaceStats[namespace] = 0
+			}
+
+			podCount := len(items)
+			namespaceStats[namespace] += podCount
+			totalPods += podCount
+
+			// Count pod statuses
+			for _, item := range items {
+				pod, ok := item.(map[string]interface{})
+				if !ok {
+					continue
+				}
+
+				status, ok := pod["status"].(map[string]interface{})
+				if !ok {
+					continue
+				}
+
+				phase, ok := status["phase"].(string)
+				if !ok {
+					continue
+				}
+
+				switch phase {
+				case "Running":
+					runningPods++
+				case "Pending":
+					pendingPods++
+				case "Failed":
+					failedPods++
+				case "Succeeded":
+					succeededPods++
+				}
+			}
+		} else {
+			// Handle single Pod object (not a list)
 			// Check if this is a single Pod object (has "kind": "Pod")
 			if kind, exists := podList["kind"].(string); exists && kind == "Pod" {
 				// Initialize namespace only for valid pod data
@@ -607,46 +647,8 @@ func (a *OllamaAgent) aggregatePodFiles(bundle *analyzer.SupportBundle, filePath
 					}
 				}
 			}
-			// If not a valid pod/podlist, just skip without modifying namespace stats
+			// Skip to next file after processing single pod or invalid data
 			continue
-		}
-
-		// Initialize namespace for valid PodList (ensures empty namespaces are tracked)
-		if _, exists := namespaceStats[namespace]; !exists {
-			namespaceStats[namespace] = 0
-		}
-
-		podCount := len(items)
-		namespaceStats[namespace] += podCount
-		totalPods += podCount
-
-		// Count pod statuses
-		for _, item := range items {
-			pod, ok := item.(map[string]interface{})
-			if !ok {
-				continue
-			}
-
-			status, ok := pod["status"].(map[string]interface{})
-			if !ok {
-				continue
-			}
-
-			phase, ok := status["phase"].(string)
-			if !ok {
-				continue
-			}
-
-			switch phase {
-			case "Running":
-				runningPods++
-			case "Pending":
-				pendingPods++
-			case "Failed":
-				failedPods++
-			case "Succeeded":
-				succeededPods++
-			}
 		}
 	}
 
@@ -702,7 +704,18 @@ func (a *OllamaAgent) aggregateDeploymentFiles(bundle *analyzer.SupportBundle, f
 
 		// Check if this is a List object with items array
 		items, ok := deploymentList["items"].([]interface{})
-		if !ok {
+		if ok {
+			// Handle DeploymentList - process all deployments in the list
+			// Initialize namespace for valid DeploymentList (ensures empty namespaces are tracked)
+			if _, exists := namespaceStats[namespace]; !exists {
+				namespaceStats[namespace] = 0
+			}
+
+			deployCount := len(items)
+			namespaceStats[namespace] += deployCount
+			totalDeployments += deployCount
+		} else {
+			// Handle single Deployment object (not a list)
 			// Check if this is a single Deployment object (has "kind": "Deployment")
 			if kind, exists := deploymentList["kind"].(string); exists && kind == "Deployment" {
 				// Initialize namespace only for valid deployment data
@@ -713,18 +726,9 @@ func (a *OllamaAgent) aggregateDeploymentFiles(bundle *analyzer.SupportBundle, f
 				namespaceStats[namespace]++
 				totalDeployments++
 			}
-			// If not a valid deployment/deploymentlist, just skip without modifying namespace stats
+			// Skip to next file after processing single deployment or invalid data
 			continue
 		}
-
-		// Initialize namespace for valid DeploymentList (ensures empty namespaces are tracked)
-		if _, exists := namespaceStats[namespace]; !exists {
-			namespaceStats[namespace] = 0
-		}
-
-		deployCount := len(items)
-		namespaceStats[namespace] += deployCount
-		totalDeployments += deployCount
 	}
 
 	summary.WriteString(fmt.Sprintf("Total deployments in cluster: %d\n", totalDeployments))
