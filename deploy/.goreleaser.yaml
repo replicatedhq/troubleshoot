@@ -150,12 +150,12 @@ dockers:
 universal_binaries:
   - id: preflight-universal
     ids: [preflight]        # refers to the build id above
-    replace: true
+    replace: false
     name_template: preflight
 
   - id: support-bundle-universal
     ids: [support-bundle]   # refers to the build id above
-    replace: true
+    replace: false
     name_template: support-bundle
 
 brews:
