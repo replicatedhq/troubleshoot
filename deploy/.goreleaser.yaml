@@ -3,7 +3,6 @@ project_name: troubleshoot
 
 release:
   prerelease: auto
-  mode: keep-existing
 
 builds:
   - id: preflight
