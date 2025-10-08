@@ -13,6 +13,8 @@ builds:
     ignore:
       - goos: windows
         goarch: arm
+      - goos: darwin
+        goarch: arm
     ldflags:
       - -s -w
       - -X github.com/replicatedhq/troubleshoot/pkg/version.version={{ .Version }}
@@ -35,6 +37,8 @@ builds:
     goarch: [amd64, arm, arm64]
     ignore:
       - goos: windows
+        goarch: arm
+      - goos: darwin
         goarch: arm
     ldflags:
       - -s -w
