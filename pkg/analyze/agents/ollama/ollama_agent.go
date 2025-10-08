@@ -573,6 +573,11 @@ func (a *OllamaAgent) aggregatePodFiles(bundle *analyzer.SupportBundle, filePath
 			namespace = strings.TrimSuffix(parts[len(parts)-1], ".json")
 		}
 
+		// Initialize namespace in stats map (ensures empty namespaces are tracked)
+		if _, exists := namespaceStats[namespace]; !exists {
+			namespaceStats[namespace] = 0
+		}
+
 		// Parse pod data - handle both PodList and single Pod objects
 		var podList map[string]interface{}
 		if err := json.Unmarshal(data, &podList); err != nil {
@@ -683,6 +688,11 @@ func (a *OllamaAgent) aggregateDeploymentFiles(bundle *analyzer.SupportBundle, f
 		namespace := "unknown"
 		if len(parts) >= 3 {
 			namespace = strings.TrimSuffix(parts[len(parts)-1], ".json")
+		}
+
+		// Initialize namespace in stats map (ensures empty namespaces are tracked)
+		if _, exists := namespaceStats[namespace]; !exists {
+			namespaceStats[namespace] = 0
 		}
 
 		// Parse deployment data - handle both DeploymentList and single Deployment objects
