@@ -573,15 +573,15 @@ func (a *OllamaAgent) aggregatePodFiles(bundle *analyzer.SupportBundle, filePath
 			namespace = strings.TrimSuffix(parts[len(parts)-1], ".json")
 		}
 
-		// Initialize namespace in stats map (ensures empty namespaces are tracked)
-		if _, exists := namespaceStats[namespace]; !exists {
-			namespaceStats[namespace] = 0
-		}
-
 		// Parse pod data - handle both PodList and single Pod objects
 		var podList map[string]interface{}
 		if err := json.Unmarshal(data, &podList); err != nil {
 			continue
+		}
+
+		// Initialize namespace in stats map AFTER successful parsing (ensures empty namespaces are tracked)
+		if _, exists := namespaceStats[namespace]; !exists {
+			namespaceStats[namespace] = 0
 		}
 
 		// Check if this is a List object with items array
@@ -690,15 +690,15 @@ func (a *OllamaAgent) aggregateDeploymentFiles(bundle *analyzer.SupportBundle, f
 			namespace = strings.TrimSuffix(parts[len(parts)-1], ".json")
 		}
 
-		// Initialize namespace in stats map (ensures empty namespaces are tracked)
-		if _, exists := namespaceStats[namespace]; !exists {
-			namespaceStats[namespace] = 0
-		}
-
 		// Parse deployment data - handle both DeploymentList and single Deployment objects
 		var deploymentList map[string]interface{}
 		if err := json.Unmarshal(data, &deploymentList); err != nil {
 			continue
+		}
+
+		// Initialize namespace in stats map AFTER successful parsing (ensures empty namespaces are tracked)
+		if _, exists := namespaceStats[namespace]; !exists {
+			namespaceStats[namespace] = 0
 		}
 
 		// Check if this is a List object with items array
@@ -762,8 +762,8 @@ func (a *OllamaAgent) aggregateEventFiles(bundle *analyzer.SupportBundle, filePa
 			itemCount := len(items)
 			totalEvents += itemCount
 			// Include actual event data for AI analysis (limited to 50 events max for the summary)
-			// Only include if we haven't reached the limit and the data is reasonable size
-			if itemCount > 0 && eventsIncluded < 50 {
+			// Only include if adding this file wouldn't significantly exceed the limit
+			if itemCount > 0 && eventsIncluded < 50 && (eventsIncluded+itemCount) <= 60 {
 				dataStr := string(data)
 				// Include file if data size is reasonable
 				if len(dataStr) < 2000 {
