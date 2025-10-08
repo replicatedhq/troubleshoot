@@ -579,16 +579,15 @@ func (a *OllamaAgent) aggregatePodFiles(bundle *analyzer.SupportBundle, filePath
 			continue
 		}
 
-		// Initialize namespace in stats map AFTER successful parsing (ensures empty namespaces are tracked)
-		if _, exists := namespaceStats[namespace]; !exists {
-			namespaceStats[namespace] = 0
-		}
-
 		// Check if this is a List object with items array
 		items, ok := podList["items"].([]interface{})
 		if !ok {
 			// Check if this is a single Pod object (has "kind": "Pod")
 			if kind, exists := podList["kind"].(string); exists && kind == "Pod" {
+				// Initialize namespace only for valid pod data
+				if _, exists := namespaceStats[namespace]; !exists {
+					namespaceStats[namespace] = 0
+				}
 				// Single pod - increment count for this namespace
 				namespaceStats[namespace]++
 				totalPods++
@@ -610,6 +609,11 @@ func (a *OllamaAgent) aggregatePodFiles(bundle *analyzer.SupportBundle, filePath
 			}
 			// If not a valid pod/podlist, just skip without modifying namespace stats
 			continue
+		}
+
+		// Initialize namespace for valid PodList (ensures empty namespaces are tracked)
+		if _, exists := namespaceStats[namespace]; !exists {
+			namespaceStats[namespace] = 0
 		}
 
 		podCount := len(items)
@@ -696,22 +700,26 @@ func (a *OllamaAgent) aggregateDeploymentFiles(bundle *analyzer.SupportBundle, f
 			continue
 		}
 
-		// Initialize namespace in stats map AFTER successful parsing (ensures empty namespaces are tracked)
-		if _, exists := namespaceStats[namespace]; !exists {
-			namespaceStats[namespace] = 0
-		}
-
 		// Check if this is a List object with items array
 		items, ok := deploymentList["items"].([]interface{})
 		if !ok {
 			// Check if this is a single Deployment object (has "kind": "Deployment")
 			if kind, exists := deploymentList["kind"].(string); exists && kind == "Deployment" {
+				// Initialize namespace only for valid deployment data
+				if _, exists := namespaceStats[namespace]; !exists {
+					namespaceStats[namespace] = 0
+				}
 				// Single deployment - increment count for this namespace
 				namespaceStats[namespace]++
 				totalDeployments++
 			}
 			// If not a valid deployment/deploymentlist, just skip without modifying namespace stats
 			continue
+		}
+
+		// Initialize namespace for valid DeploymentList (ensures empty namespaces are tracked)
+		if _, exists := namespaceStats[namespace]; !exists {
+			namespaceStats[namespace] = 0
 		}
 
 		deployCount := len(items)
