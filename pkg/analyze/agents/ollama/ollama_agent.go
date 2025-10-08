@@ -1213,6 +1213,182 @@ func (a *OllamaAgent) autoDetectFileForAnalyzer(bundle *analyzer.SupportBundle, 
 	return "", nil, false
 }
 
+// normalizeInsights converts various JSON formats into a []string array
+func (a *OllamaAgent) normalizeInsights(raw json.RawMessage) []string {
+	if len(raw) == 0 {
+		return []string{}
+	}
+
+	// Try parsing as array of strings first (expected format)
+	var arrayInsights []string
+	if err := json.Unmarshal(raw, &arrayInsights); err == nil {
+		return arrayInsights
+	}
+
+	// Try parsing as single string
+	var stringInsight string
+	if err := json.Unmarshal(raw, &stringInsight); err == nil {
+		if stringInsight != "" {
+			return []string{stringInsight}
+		}
+		return []string{}
+	}
+
+	// Try parsing as array of objects/maps (common LLM format)
+	var arrayOfMaps []map[string]interface{}
+	if err := json.Unmarshal(raw, &arrayOfMaps); err == nil {
+		insights := []string{}
+		for _, obj := range arrayOfMaps {
+			// Extract meaningful text from each object
+			insightText := a.formatMapAsInsight(obj)
+			if insightText != "" {
+				insights = append(insights, insightText)
+			}
+		}
+		return insights
+	}
+
+	// Try parsing as object/map and extract meaningful text
+	var objInsights map[string]interface{}
+	if err := json.Unmarshal(raw, &objInsights); err == nil {
+		insights := []string{}
+		for key, value := range objInsights {
+			// Extract meaningful insights from object structure
+			insightText := a.extractInsightText(key, value)
+			if insightText != "" {
+				insights = append(insights, insightText)
+			}
+		}
+		return insights
+	}
+
+	// If all parsing fails, return empty array
+	return []string{}
+}
+
+// formatMapAsInsight converts a map/object into a readable insight string
+func (a *OllamaAgent) formatMapAsInsight(obj map[string]interface{}) string {
+	// Common patterns in LLM responses for insights
+	// Try to extract description, pattern, message, etc.
+
+	// Priority 1: Look for description field
+	if desc, ok := obj["description"].(string); ok && desc != "" {
+		if pattern, ok := obj["pattern"].(string); ok && pattern != "" {
+			return fmt.Sprintf("%s: %s", pattern, desc)
+		}
+		return desc
+	}
+
+	// Priority 2: Look for message field
+	if msg, ok := obj["message"].(string); ok && msg != "" {
+		return msg
+	}
+
+	// Priority 3: Look for explanation/implication field
+	if expl, ok := obj["explanation"].(string); ok && expl != "" {
+		return expl
+	}
+	if impl, ok := obj["implication"].(string); ok && impl != "" {
+		return impl
+	}
+
+	// Priority 4: Combine all string fields
+	parts := []string{}
+	for key, value := range obj {
+		if str, ok := value.(string); ok && str != "" {
+			parts = append(parts, fmt.Sprintf("%s: %s", key, str))
+		}
+	}
+
+	if len(parts) > 0 {
+		return strings.Join(parts, ", ")
+	}
+
+	return ""
+}
+
+// extractInsightText extracts readable text from nested JSON structures
+func (a *OllamaAgent) extractInsightText(key string, value interface{}) string {
+	switch v := value.(type) {
+	case string:
+		if v != "" {
+			return fmt.Sprintf("%s: %s", key, v)
+		}
+	case map[string]interface{}:
+		// For nested objects, create a summary
+		parts := []string{}
+		for subKey, subValue := range v {
+			if str, ok := subValue.(string); ok && str != "" {
+				parts = append(parts, fmt.Sprintf("%s=%s", subKey, str))
+			}
+		}
+		if len(parts) > 0 {
+			return fmt.Sprintf("%s: %s", key, strings.Join(parts, ", "))
+		}
+	case []interface{}:
+		// For arrays, join elements
+		parts := []string{}
+		for _, item := range v {
+			if str, ok := item.(string); ok && str != "" {
+				parts = append(parts, str)
+			}
+		}
+		if len(parts) > 0 {
+			return fmt.Sprintf("%s: %s", key, strings.Join(parts, ", "))
+		}
+	case float64, int, bool:
+		return fmt.Sprintf("%s: %v", key, v)
+	}
+	return ""
+}
+
+// getStringField extracts a string field from a map, trying multiple key variants
+func (a *OllamaAgent) getStringField(m map[string]interface{}, keys ...string) string {
+	for _, key := range keys {
+		if val, ok := m[key]; ok {
+			if str, ok := val.(string); ok {
+				return str
+			}
+		}
+	}
+	return ""
+}
+
+// extractRemediation extracts remediation info from various JSON structures
+func (a *OllamaAgent) extractRemediation(result *analyzer.AnalyzerResult, remData interface{}) {
+	switch rem := remData.(type) {
+	case map[string]interface{}:
+		// Single remediation object
+		desc := a.getStringField(rem, "description", "Description")
+		action := a.getStringField(rem, "action", "Action")
+		command := a.getStringField(rem, "command", "Command")
+		priority := 5 // default priority
+		if p, ok := rem["priority"].(float64); ok {
+			priority = int(p)
+		} else if p, ok := rem["Priority"].(float64); ok {
+			priority = int(p)
+		}
+
+		if desc != "" || action != "" {
+			result.Remediation = &analyzer.RemediationStep{
+				Description:   desc,
+				Action:        action,
+				Command:       command,
+				Priority:      priority,
+				Category:      "ai-suggested",
+				IsAutomatable: false,
+			}
+		}
+	case []interface{}:
+		// Array of remediation suggestions - use the first one
+		if len(rem) > 0 {
+			if firstRem, ok := rem[0].(map[string]interface{}); ok {
+				a.extractRemediation(result, firstRem)
+			}
+		}
+	}
+}
+
 // parseLLMResponse parses the LLM response into an AnalyzerResult
 func (a *OllamaAgent) parseLLMResponse(response string, spec analyzer.AnalyzerSpec) (*analyzer.AnalyzerResult, error) {
 	// First try JSON parsing
@@ -1222,55 +1398,53 @@ func (a *OllamaAgent) parseLLMResponse(response string, spec analyzer.AnalyzerSp
 	if jsonStart != -1 && jsonEnd != -1 && jsonEnd > jsonStart {
 		jsonStr := response[jsonStart : jsonEnd+1]
 
-		var llmResult struct {
-			Status      string   `json:"status"`
-			Title       string   `json:"title"`
-			Message     string   `json:"message"`
-			Insights    []string `json:"insights"`
-			Remediation struct {
-				Description string `json:"description"`
-				Action      string `json:"action"`
-				Command     string `json:"command"`
-				Priority    int    `json:"priority"`
-			} `json:"remediation"`
-		}
-
-		if err := json.Unmarshal([]byte(jsonStr), &llmResult); err == nil {
-			// Successfully parsed JSON
-			result := &analyzer.AnalyzerResult{
-				Title:    llmResult.Title,
-				Message:  llmResult.Message,
-				Category: spec.Category,
-				Insights: llmResult.Insights,
-			}
-
-			switch strings.ToLower(llmResult.Status) {
-			case "pass":
-				result.IsPass = true
-			case "warn":
-				result.IsWarn = true
-			case "fail":
-				result.IsFail = true
-			default:
-				result.IsWarn = true
-			}
-
-			if llmResult.Remediation.Description != "" {
-				result.Remediation = &analyzer.RemediationStep{
-					Description:   llmResult.Remediation.Description,
-					Action:        llmResult.Remediation.Action,
-					Command:       llmResult.Remediation.Command,
-					Priority:      llmResult.Remediation.Priority,
-					Category:      "ai-suggested",
-					IsAutomatable: false,
-				}
-			}
-
-			return result, nil
-		} else {
-			// JSON was found but malformed
+		// Try with a flexible map first to handle case-insensitive fields
+		var jsonMap map[string]interface{}
+		if err := json.Unmarshal([]byte(jsonStr), &jsonMap); err != nil {
 			return nil, errors.Wrap(err, "failed to parse LLM JSON response")
 		}
+
+		// Extract fields in a case-insensitive way
+		status := a.getStringField(jsonMap, "status", "Status")
+		title := a.getStringField(jsonMap, "title", "Title")
+		message := a.getStringField(jsonMap, "message", "Message")
+
+		// Get insights field (try both lowercase and uppercase)
+		var insightsRaw json.RawMessage
+		if insights, ok := jsonMap["insights"]; ok {
+			insightsRaw, _ = json.Marshal(insights)
+		} else if insights, ok := jsonMap["Insights"]; ok {
+			insightsRaw, _ = json.Marshal(insights)
+		}
+
+		insights := a.normalizeInsights(insightsRaw)
+
+		result := &analyzer.AnalyzerResult{
+			Title:    title,
+			Message:  message,
+			Category: spec.Category,
+			Insights: insights,
+		}
+
+		switch strings.ToLower(status) {
+		case "pass":
+			result.IsPass = true
+		case "warn":
+			result.IsWarn = true
+		case "fail":
+			result.IsFail = true
+		default:
+			result.IsWarn = true
+		}
+
+		// Handle remediation (try both cases)
+		if rem, ok := jsonMap["remediation"]; ok {
+			a.extractRemediation(result, rem)
+		} else if rem, ok := jsonMap["Remediation"]; ok {
+			a.extractRemediation(result, rem)
+		}
+
+		return result, nil
 	}
 
 	// Fall back to markdown parsing when JSON fails
