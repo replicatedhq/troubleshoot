@@ -584,8 +584,8 @@ func (a *OllamaAgent) aggregatePodFiles(bundle *analyzer.SupportBundle, filePath
 		if !ok {
 			// Check if this is a single Pod object (has "kind": "Pod")
 			if kind, exists := podList["kind"].(string); exists && kind == "Pod" {
-				// Single pod - count as 1
-				namespaceStats[namespace] = 1
+				// Single pod - increment count for this namespace
+				namespaceStats[namespace]++
 				totalPods++
 				// Extract status for single pod
 				if status, ok := podList["status"].(map[string]interface{}); ok {
@@ -602,10 +602,8 @@ func (a *OllamaAgent) aggregatePodFiles(bundle *analyzer.SupportBundle, filePath
 						}
 					}
 				}
-			} else {
-				// Not a pod list or single pod, skip
-				namespaceStats[namespace] = 0
 			}
+			// If not a valid pod/podlist, just skip without modifying namespace stats
 			continue
 		}
 
@@ -698,13 +696,11 @@ func (a *OllamaAgent) aggregateDeploymentFiles(bundle *analyzer.SupportBundle, f
 		if !ok {
 			// Check if this is a single Deployment object (has "kind": "Deployment")
 			if kind, exists := deploymentList["kind"].(string); exists && kind == "Deployment" {
-				// Single deployment - count as 1
-				namespaceStats[namespace] = 1
+				// Single deployment - increment count for this namespace
+				namespaceStats[namespace]++
 				totalDeployments++
-			} else {
-				// Not a deployment list or single deployment, skip
-				namespaceStats[namespace] = 0
 			}
+			// If not a valid deployment/deploymentlist, just skip without modifying namespace stats
 			continue
 		}
 
@@ -759,12 +755,16 @@ func (a *OllamaAgent) aggregateEventFiles(bundle *analyzer.SupportBundle, filePa
 			// Only include if we haven't reached the limit and the data is reasonable size
 			if itemCount > 0 && eventsIncluded < 50 {
 				dataStr := string(data)
-				// Only include if data size is reasonable and won't exceed 50 event limit
-				if len(dataStr) < 2000 && (eventsIncluded+itemCount) <= 50 {
+				// Include file if data size is reasonable, even if it partially exceeds limit
+				if len(dataStr) < 2000 {
 					summary.WriteString(fmt.Sprintf("\n--- Events from %s ---\n", filePath))
 					summary.WriteString(dataStr)
 					summary.WriteString("\n")
 					eventsIncluded += itemCount
+					// Stop including more files once we've included enough events
+					if eventsIncluded >= 50 {
+						break
+					}
 				}
 			}
 		}
