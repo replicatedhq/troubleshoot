@@ -1,0 +1,48 @@
+name: release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  goreleaser:
+    runs-on: troubleshoot_release
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - uses: azure/docker-login@v2
+        with:
+          username: ${{ secrets.DOCKERHUB_USER }}
+          password: ${{ secrets.DOCKERHUB_PASSWORD }}
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: 'go.mod'
+
+      - name: Run GoReleaser
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          version: "v2.12.3"
+          args: release --clean --config deploy/.goreleaser.yaml
+        env:
+          GITHUB_TOKEN: ${{ secrets.HOMEBREW_GITHUB_TOKEN }}
+
+      - name: Update new preflight version in krew-index
+        if: ${{ !contains(github.ref_name, '-') }}
+        uses: rajatjindal/krew-release-bot@v0.0.47
+        with:
+          krew_template_file: deploy/krew/preflight.yaml
+
+      - name: Update new support-bundle version in krew-index
+        if: ${{ !contains(github.ref_name, '-') }}
+        uses: rajatjindal/krew-release-bot@v0.0.47
+        with:
+          krew_template_file: deploy/krew/support-bundle.yaml

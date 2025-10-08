@@ -1,0 +1,111 @@
+apiVersion: troubleshoot.sh/v1beta2
+kind: SupportBundle
+metadata:
+  name: all-host-collectors
+spec:
+  hostCollectors:
+    # System Info Collectors
+    - cpu: {}
+    - memory: {}
+    - time: {}
+    - hostOS: {}
+    - ipv4Interfaces: {}
+    - blockDevices: {}
+    - hostServices: {}
+
+    # Kernel Collectors
+    - kernelModules: {}
+    - kernelConfigs: {}
+    - sysctl: {}
+    - cgroups: {}
+
+    # System Packages
+    - systemPackages: {}
+
+    # Journald Logs
+    - journald:
+        collectorName: journald-system
+        system: true
+    - journald:
+        collectorName: journald-dmesg
+        dmesg: true
+
+    # Disk Usage
+    - diskUsage:
+        collectorName: root
+        path: /
+    - diskUsage:
+        collectorName: tmp
+        path: /tmp
+
+    # Filesystem Performance (requires sudo)
+    - filesystemPerformance:
+        collectorName: filesystem-latency
+        timeout: 1m
+        directory: /var/tmp
+        fileSize: 10Mi
+        operationSizeBytes: 2300
+
+    # Certificate Collectors
+    - certificate:
+        collectorName: test-cert
+        certificatePath: /etc/ssl/certs/ca-certificates.crt
+    - certificatesCollection:
+        collectorName: certs-collection
+        paths:
+          - /etc/ssl/certs
+
+    # Network Tests
+    - tcpPortStatus:
+        collectorName: ssh-port
+        port: 22
+    - udpPortStatus:
+        collectorName: dns-port
+        port: 53
+    - tcpConnect:
+        collectorName: localhost-ssh
+        address: 127.0.0.1:22
+    - tcpLoadBalancer:
+        collectorName: lb-test
+        address: 127.0.0.1
+        port: 80
+    - httpLoadBalancer:
+        collectorName: http-lb-test
+        address: 127.0.0.1
+        port: 80
+        path: /healthz
+    - http:
+        collectorName: google
+        get:
+          url: https://www.google.com
+    - dns:
+        collectorName: dns-google
+        hostnames:
+          - google.com
+    - subnetAvailable:
+        collectorName: subnet-check
+        CIDRRangeAlloc: 10.0.0.0/16
+        desiredCIDR: 24
+    - networkNamespaceConnectivity:
+        collectorName: netns-connectivity
+        fromCIDR: 10.0.0.0/8
+        toCIDR: 192.168.0.0/16
+        port: 80
+
+    # Custom Commands
+    - run:
+        collectorName: uname
+        command: "uname"
+        args: ["-a"]
+    - run:
+        collectorName: df
+        command: "df"
+        args: ["-h"]
+
+    # Copy Files
+    - copy:
+        collectorName: hosts-file
+        path: /etc/hosts
+    - copy:
+        collectorName: resolv-conf
+        path: /etc/resolv.conf

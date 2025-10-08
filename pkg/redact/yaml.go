@@ -90,6 +90,17 @@ func (r *YamlRedactor) Redact(input io.Reader, path string) io.Reader {
 func (r *YamlRedactor) redactYaml(in interface{}, path []string) interface{} {
 	if len(path) == 0 {
 		r.foundMatch = true
+
+		// Use tokenization if enabled
+		tokenizer := GetGlobalTokenizer()
+		if tokenizer.IsEnabled() {
+			// Convert the value to string and tokenize it
+			if valueStr, ok := in.(string); ok && valueStr != "" {
+				context := r.redactName
+				return tokenizer.TokenizeValueWithPath(valueStr, context, r.filePath)
+			}
+		}
+
 		return MASK_TEXT
 	}
 	switch typed := in.(type) {

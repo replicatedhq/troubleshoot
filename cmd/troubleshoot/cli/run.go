@@ -10,6 +10,7 @@ import (
 	"os/signal"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"sync"
 	"time"
 
@@ -27,6 +28,7 @@ import (
 	"github.com/replicatedhq/troubleshoot/pkg/httputil"
 	"github.com/replicatedhq/troubleshoot/pkg/k8sutil"
 	"github.com/replicatedhq/troubleshoot/pkg/loader"
+	"github.com/replicatedhq/troubleshoot/pkg/redact"
 	"github.com/replicatedhq/troubleshoot/pkg/supportbundle"
 	"github.com/replicatedhq/troubleshoot/pkg/types"
 	"github.com/spf13/viper"
@@ -53,6 +55,30 @@ func runTroubleshoot(v *viper.Viper, args []string) error {
 	mainBundle, additionalRedactors, err := loadSpecs(ctx, args, client)
 	if err != nil {
 		return err
+	}
+
+	// Validate auto-discovery flags
+	if err := ValidateAutoDiscoveryFlags(v); err != nil {
+		return errors.Wrap(err, "invalid auto-discovery configuration")
+	}
+
+	// Validate tokenization flags
+	if err := ValidateTokenizationFlags(v); err != nil {
+		return errors.Wrap(err, "invalid tokenization configuration")
+	}
+	// Apply auto-discovery if enabled
+	autoConfig := GetAutoDiscoveryConfig(v)
+	if autoConfig.Enabled {
+		mode := GetAutoDiscoveryMode(args, autoConfig.Enabled)
+		if !v.GetBool("quiet") {
+			PrintAutoDiscoveryInfo(autoConfig, mode)
+		}
+
+		// Apply auto-discovery to the main bundle
+		namespace := v.GetString("namespace")
+		if err := ApplyAutoDiscovery(ctx, client, restConfig, mainBundle, autoConfig, namespace); err != nil {
+			return errors.Wrap(err, "auto-discovery failed")
+		}
 	}
 
 	// For --dry-run, we want to print the yaml and exit
@@ -185,6 +211,15 @@ func runTroubleshoot(v *viper.Viper, args []string) error {
 		Redact:                    v.GetBool("redact"),
 		FromCLI:                   true,
 		RunHostCollectorsInPod:    mainBundle.Spec.RunHostCollectorsInPod,
+
+		// Phase 4: Tokenization options
+		Tokenize:            v.GetBool("tokenize"),
+		RedactionMapPath:    v.GetString("redaction-map"),
+		EncryptRedactionMap: v.GetBool("encrypt-redaction-map"),
+		TokenPrefix:         v.GetString("token-prefix"),
+		VerifyTokenization:  v.GetBool("verify-tokenization"),
+		BundleID:            v.GetString("bundle-id"),
+		TokenizationStats:   v.GetBool("tokenization-stats"),
 	}
 
 	nonInteractiveOutput := analysisOutput{}
@@ -314,10 +349,12 @@ func loadSpecs(ctx context.Context, args []string, client kubernetes.Interface) 
 	}
 
 	// Check if we have any collectors to run in the troubleshoot specs
-	// TODO: Do we use the RemoteCollectors anymore?
+	// Skip this check if auto-discovery is enabled, as collectors will be added later
+	// Note: RemoteCollectors are still actively used in preflights and host preflights
 	if len(kinds.CollectorsV1Beta2) == 0 &&
 		len(kinds.HostCollectorsV1Beta2) == 0 &&
-		len(kinds.SupportBundlesV1Beta2) == 0 {
+		len(kinds.SupportBundlesV1Beta2) == 0 &&
+		!vp.GetBool("auto") {
 		return nil, nil, types.NewExitCodeError(
 			constants.EXIT_CODE_CATCH_ALL,
 			errors.New("no collectors specified to run. Use --debug and/or -v=2 to see more information"),
@@ -335,6 +372,25 @@ func loadSpecs(ctx context.Context, args []string, client kubernetes.Interface) 
 		ObjectMeta: metav1.ObjectMeta{
 			Name: "merged-support-bundle-spec",
 		},
+	}
+
+	// If auto-discovery is enabled and no support bundle specs were loaded,
+	// create a minimal default support bundle spec for auto-discovery to work with
+	if vp.GetBool("auto") && len(kinds.SupportBundlesV1Beta2) == 0 {
+		defaultSupportBundle := troubleshootv1beta2.SupportBundle{
+			TypeMeta: metav1.TypeMeta{
+				APIVersion: "troubleshoot.replicated.com/v1beta2",
+				Kind:       "SupportBundle",
+			},
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "auto-discovery-default",
+			},
+			Spec: troubleshootv1beta2.SupportBundleSpec{
+				Collectors: []*troubleshootv1beta2.Collect{}, // Empty collectors - will be populated by auto-discovery
+			},
+		}
+		kinds.SupportBundlesV1Beta2 = append(kinds.SupportBundlesV1Beta2, defaultSupportBundle)
+		klog.V(2).Info("Created default support bundle spec for auto-discovery")
 	}
 
 	var enableRunHostCollectorsInPod bool
@@ -357,8 +413,9 @@ func loadSpecs(ctx context.Context, args []string, client kubernetes.Interface) 
 		mainBundle.Spec.HostCollectors = util.Append(mainBundle.Spec.HostCollectors, hc.Spec.Collectors)
 	}
 
-	if !(len(mainBundle.Spec.HostCollectors) > 0 && len(mainBundle.Spec.Collectors) == 0) {
-		// Always add default collectors unless we only have host collectors
+	// Don't add default collectors if auto-discovery is enabled, as auto-discovery will add them
+	if !(len(mainBundle.Spec.HostCollectors) > 0 && len(mainBundle.Spec.Collectors) == 0) && !vp.GetBool("auto") {
+		// Always add default collectors unless we only have host collectors or auto-discovery is enabled
 		// We need to add them here so when we --dry-run, these collectors
 		// are included. supportbundle.runCollectors duplicates this bit.
 		// We'll need to refactor it out later when its clearer what other
@@ -375,7 +432,7 @@ func loadSpecs(ctx context.Context, args []string, client kubernetes.Interface) 
 
 	additionalRedactors := &troubleshootv1beta2.Redactor{
 		TypeMeta: metav1.TypeMeta{
-			APIVersion: "troubleshoot.sh/v1beta2",
+			APIVersion: "troubleshoot.replicated.com/v1beta2",
 			Kind:       "Redactor",
 		},
 		ObjectMeta: metav1.ObjectMeta{
@@ -443,4 +500,107 @@ func (a *analysisOutput) FormattedAnalysisOutput() (outputJson string, err error
 		return "", fmt.Errorf("\r * Failed to format analysis: %v\n", err)
 	}
 	return string(formatted), nil
+}
+
+// ValidateTokenizationFlags validates tokenization flag combinations
+func ValidateTokenizationFlags(v *viper.Viper) error {
+	// Verify tokenization mode early (before collection starts)
+	if v.GetBool("verify-tokenization") {
+		if err := VerifyTokenizationSetup(v); err != nil {
+			return errors.Wrap(err, "tokenization verification failed")
+		}
+		fmt.Println("✅ Tokenization verification passed")
+		os.Exit(0) // Exit after verification
+	}
+
+	// Encryption requires redaction map
+	if v.GetBool("encrypt-redaction-map") && v.GetString("redaction-map") == "" {
+		return errors.New("--encrypt-redaction-map requires --redaction-map to be specified")
+	}
+
+	// Redaction map requires tokenization or redaction to be enabled
+	if v.GetString("redaction-map") != "" {
+		if !v.GetBool("tokenize") && !v.GetBool("redact") {
+			return errors.New("--redaction-map requires either --tokenize or --redact to be enabled")
+		}
+	}
+
+	// Custom token prefix requires tokenization
+	if v.GetString("token-prefix") != "" && !v.GetBool("tokenize") {
+		return errors.New("--token-prefix requires --tokenize to be enabled")
+	}
+
+	// Bundle ID requires tokenization
+	if v.GetString("bundle-id") != "" && !v.GetBool("tokenize") {
+		return errors.New("--bundle-id requires --tokenize to be enabled")
+	}
+
+	// Tokenization stats requires tokenization
+	if v.GetBool("tokenization-stats") && !v.GetBool("tokenize") {
+		return errors.New("--tokenization-stats requires --tokenize to be enabled")
+	}
+
+	return nil
+}
+
+// VerifyTokenizationSetup verifies tokenization configuration without collecting data
+func VerifyTokenizationSetup(v *viper.Viper) error {
+	fmt.Println("🔍 Verifying tokenization setup...")
+
+	// Test 1: Environment variable check
+	if v.GetBool("tokenize") {
+		os.Setenv("TROUBLESHOOT_TOKENIZATION", "true")
+		defer os.Unsetenv("TROUBLESHOOT_TOKENIZATION")
+	}
+
+	// Test 2: Tokenizer initialization
+	redact.ResetGlobalTokenizer()
+	tokenizer := redact.GetGlobalTokenizer()
+
+	if v.GetBool("tokenize") && !tokenizer.IsEnabled() {
+		return errors.New("tokenizer is not enabled despite --tokenize flag")
+	}
+
+	if !v.GetBool("tokenize") && tokenizer.IsEnabled() {
+		return errors.New("tokenizer is enabled despite --tokenize flag being false")
+	}
+
+	fmt.Printf("  ✅ Tokenizer state: %v\n", tokenizer.IsEnabled())
+
+	// Test 3: Token generation
+	if tokenizer.IsEnabled() {
+		testToken := tokenizer.TokenizeValue("test-secret", "verification")
+		if !tokenizer.ValidateToken(testToken) {
+			return errors.Errorf("generated test token is invalid: %s", testToken)
+		}
+		fmt.Printf("  ✅ Test token generated: %s\n", testToken)
+	}
+
+	// Test 4: Custom token prefix validation
+	if customPrefix := v.GetString("token-prefix"); customPrefix != "" {
+		if !strings.Contains(customPrefix, "%s") {
+			return errors.Errorf("custom token prefix must contain %%s placeholders: %s", customPrefix)
+		}
+		fmt.Printf("  ✅ Custom token prefix validated: %s\n", customPrefix)
+	}
+
+	// Test 5: Redaction map path validation
+	if mapPath := v.GetString("redaction-map"); mapPath != "" {
+		// Check if directory exists
+		dir := filepath.Dir(mapPath)
+		if _, err := os.Stat(dir); os.IsNotExist(err) {
+			return errors.Errorf("redaction map directory does not exist: %s", dir)
+		}
+		fmt.Printf("  ✅ Redaction map path validated: %s\n", mapPath)
+
+		// Test file creation (and cleanup)
+		testFile := mapPath + ".test"
+		if err := os.WriteFile(testFile, []byte("test"), 0600); err != nil {
+			return errors.Errorf("cannot create redaction map file: %v", err)
+		}
+		os.Remove(testFile)
+		fmt.Printf("  ✅ File creation permissions verified\n")
+	}
+
+	return nil
 }

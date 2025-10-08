@@ -32,9 +32,11 @@ func (c *CollectHostCertificate) IsExcluded() (bool, error) {
 
 func (c *CollectHostCertificate) Collect(progressChan chan<- interface{}) (map[string][]byte, error) {
 	var result = KeyPairValid
+	var collectorErr error
 
 	_, err := tls.LoadX509KeyPair(c.hostCollector.CertificatePath, c.hostCollector.KeyPath)
 	if err != nil {
+		collectorErr = err
 		if strings.Contains(err.Error(), "no such file") {
 			result = KeyPairMissing
 		} else if strings.Contains(err.Error(), "PEM inputs may have been switched") {
@@ -67,7 +69,7 @@ func (c *CollectHostCertificate) Collect(progressChan chan<- interface{}) (map[s
 
 	return map[string][]byte{
 		name: b,
-	}, nil
+	}, collectorErr
 }
 
 func isEncryptedKey(filename string) (bool, error) {

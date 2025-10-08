@@ -48,3 +48,11 @@ sbom/
 # Ignore generated support bundles
 *.tar.gz
 !testdata/supportbundle/*.tar.gz
+!test/baselines/**/baseline.tar.gz
+
+# Ignore built binaries
+troubleshoot
+troubleshoot-test
+cmd/troubleshoot/troubleshoot
+cmd/*/troubleshoot
+support-bundle

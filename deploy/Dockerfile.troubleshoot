@@ -7,7 +7,6 @@ RUN apt-get -qq update \
 
 COPY support-bundle /troubleshoot/support-bundle
 COPY preflight /troubleshoot/preflight
-COPY collect /troubleshoot/collect
 
 ENV PATH="/troubleshoot:${PATH}"
 

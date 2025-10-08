@@ -1,0 +1,16 @@
+# Minimal values for v1beta3-templated-from-v1beta2.yaml
+
+kubernetes:
+  enabled: true
+  minVersion: "1.22.0"
+  recommendedVersion: "1.29.0"
+
+storage:
+  enabled: true
+  className: "default"
+
+  nodeChecks:
+  cpu:
+    enabled: false
+  ephemeral:
+    enabled: false

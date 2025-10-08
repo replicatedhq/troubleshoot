@@ -1,0 +1,905 @@
+apiVersion: troubleshoot.sh/v1beta3
+kind: Preflight
+metadata:
+  name: all-analyzers
+spec:
+  {{- /* Determine if we need explicit collectors beyond always-on clusterResources */}}
+  {{- $needExtraCollectors := or (or (or .Values.databases.postgres.enabled .Values.databases.mssql.enabled) (or .Values.databases.mysql.enabled .Values.databases.redis.enabled)) (or (or (or .Values.registryImages.enabled .Values.http.enabled) (or .Values.nodeMetrics.enabled (or .Values.sysctl.enabled .Values.certificates.enabled))) (or (or .Values.goldpinger.enabled .Values.cephStatus.enabled) .Values.longhorn.enabled)) }}
+
+  collectors:
+    # Always collect cluster resources to support core analyzers (deployments, secrets, pods, events, etc.)
+    - clusterResources: {}
+
+    {{- if .Values.databases.postgres.enabled }}
+    - postgres:
+        collectorName: '{{ .Values.databases.postgres.collectorName }}'
+        uri: '{{ .Values.databases.postgres.uri }}'
+        {{- if .Values.databases.postgres.tls }}
+        tls:
+          skipVerify: {{ .Values.databases.postgres.tls.skipVerify | default false }}
+          {{- if .Values.databases.postgres.tls.secret }}
+          secret:
+            name: '{{ .Values.databases.postgres.tls.secret.name }}'
+            namespace: '{{ .Values.databases.postgres.tls.secret.namespace }}'
+          {{- end }}
+        {{- end }}
+    {{- end }}
+
+    {{- if .Values.databases.mssql.enabled }}
+    - mssql:
+        collectorName: '{{ .Values.databases.mssql.collectorName }}'
+        uri: '{{ .Values.databases.mssql.uri }}'
+    {{- end }}
+
+    {{- if .Values.databases.mysql.enabled }}
+    - mysql:
+        collectorName: '{{ .Values.databases.mysql.collectorName }}'
+        uri: '{{ .Values.databases.mysql.uri }}'
+    {{- end }}
+
+    {{- if .Values.databases.redis.enabled }}
+    - redis:
+        collectorName: '{{ .Values.databases.redis.collectorName }}'
+        uri: '{{ .Values.databases.redis.uri }}'
+    {{- end }}
+
+    {{- if .Values.registryImages.enabled }}
+    - registryImages:
+        collectorName: '{{ .Values.registryImages.collectorName }}'
+        namespace: '{{ .Values.registryImages.namespace }}'
+        {{- if .Values.registryImages.imagePullSecret }}
+        imagePullSecret:
+          name: '{{ .Values.registryImages.imagePullSecret.name }}'
+          {{- if .Values.registryImages.imagePullSecret.data }}
+          data:
+            {{- range $k, $v := .Values.registryImages.imagePullSecret.data }}
+            {{ $k }}: '{{ $v }}'
+            {{- end }}
+          {{- end }}
+        {{- end }}
+        images:
+          {{- range .Values.registryImages.images }}
+          - '{{ . }}'
+          {{- end }}
+    {{- end }}
+
+    {{- if .Values.http.enabled }}
+    - http:
+        collectorName: '{{ .Values.http.collectorName }}'
+        {{- if .Values.http.get }}
+        get:
+          url: '{{ .Values.http.get.url }}'
+          {{- if .Values.http.get.timeout }}
+          timeout: '{{ .Values.http.get.timeout }}'
+          {{- end }}
+          {{- if .Values.http.get.insecureSkipVerify }}
+          insecureSkipVerify: {{ .Values.http.get.insecureSkipVerify }}
+          {{- end }}
+          {{- if .Values.http.get.headers }}
+          headers:
+            {{- range $k, $v := .Values.http.get.headers }}
+            {{ $k }}: '{{ $v }}'
+            {{- end }}
+          {{- end }}
+        {{- end }}
+        {{- if .Values.http.post }}
+        post:
+          url: '{{ .Values.http.post.url }}'
+          {{- if .Values.http.post.timeout }}
+          timeout: '{{ .Values.http.post.timeout }}'
+          {{- end }}
+          {{- if .Values.http.post.insecureSkipVerify }}
+          insecureSkipVerify: {{ .Values.http.post.insecureSkipVerify }}
+          {{- end }}
+          {{- if .Values.http.post.headers }}
+          headers:
+            {{- range $k, $v := .Values.http.post.headers }}
+            {{ $k }}: '{{ $v }}'
+            {{- end }}
+          {{- end }}
+          {{- if .Values.http.post.body }}
+          body: '{{ .Values.http.post.body }}'
+          {{- end }}
+        {{- end }}
+    {{- end }}
+
+    {{- if .Values.nodeMetrics.enabled }}
+    - nodeMetrics:
+        collectorName: '{{ .Values.nodeMetrics.collectorName }}'
+        {{- if .Values.nodeMetrics.nodeNames }}
+        nodeNames:
+          {{- range .Values.nodeMetrics.nodeNames }}
+          - '{{ . }}'
+          {{- end }}
+        {{- end }}
+        {{- if .Values.nodeMetrics.selector }}
+        selector:
+          {{- range .Values.nodeMetrics.selector }}
+          - '{{ . }}'
+          {{- end }}
+        {{- end }}
+    {{- end }}
+
+    {{- if .Values.sysctl.enabled }}
+    - sysctl:
+        collectorName: 'sysctl'
+        namespace: '{{ .Values.sysctl.namespace }}'
+        image: '{{ .Values.sysctl.image }}'
+        {{- if .Values.sysctl.imagePullPolicy }}
+        imagePullPolicy: '{{ .Values.sysctl.imagePullPolicy }}'
+        {{- end }}
+    {{- end }}
+
+    {{- if .Values.certificates.enabled }}
+    - certificates:
+        collectorName: 'certs'
+        {{- if .Values.certificates.secrets }}
+        secrets:
+          {{- range .Values.certificates.secrets }}
+          - name: '{{ .name }}'
+            namespaces:
+              {{- range .namespaces }}
+              - '{{ . }}'
+              {{- end }}
+          {{- end }}
+        {{- end }}
+        {{- if .Values.certificates.configMaps }}
+        configMaps:
+          {{- range .Values.certificates.configMaps }}
+          - name: '{{ .name }}'
+            namespaces:
+              {{- range .namespaces }}
+              - '{{ . }}'
+              {{- end }}
+          {{- end }}
+        {{- end }}
+    {{- end }}
+
+    {{- if .Values.longhorn.enabled }}
+    - longhorn:
+        collectorName: 'longhorn'
+        namespace: '{{ .Values.longhorn.namespace }}'
+        {{- if .Values.longhorn.timeout }}
+        timeout: '{{ .Values.longhorn.timeout }}'
+        {{- end }}
+    {{- end }}
+
+    {{- if .Values.cephStatus.enabled }}
+    - ceph:
+        collectorName: 'ceph'
+        namespace: '{{ .Values.cephStatus.namespace }}'
+        {{- if .Values.cephStatus.timeout }}
+        timeout: '{{ .Values.cephStatus.timeout }}'
+        {{- end }}
+    {{- end }}
+
+    {{- if .Values.goldpinger.enabled }}
+    - goldpinger:
+        collectorName: '{{ .Values.goldpinger.collectorName }}'
+        namespace: '{{ .Values.goldpinger.namespace }}'
+        {{- if .Values.goldpinger.collectDelay }}
+        collectDelay: '{{ .Values.goldpinger.collectDelay }}'
+        {{- end }}
+        {{- if .Values.goldpinger.podLaunch }}
+        podLaunchOptions:
+          {{- if .Values.goldpinger.podLaunch.namespace }}
+          namespace: '{{ .Values.goldpinger.podLaunch.namespace }}'
+          {{- end }}
+          {{- if .Values.goldpinger.podLaunch.image }}
+          image: '{{ .Values.goldpinger.podLaunch.image }}'
+          {{- end }}
+          {{- if .Values.goldpinger.podLaunch.imagePullSecret }}
+          imagePullSecret:
+            name: '{{ .Values.goldpinger.podLaunch.imagePullSecret.name }}'
+          {{- end }}
+          {{- if .Values.goldpinger.podLaunch.serviceAccountName }}
+          serviceAccountName: '{{ .Values.goldpinger.podLaunch.serviceAccountName }}'
+          {{- end }}
+        {{- end }}
+    {{- end }}
+
+  analyzers:
+    {{- if .Values.clusterVersion.enabled }}
+    - docString: |
+        Title: Kubernetes Control Plane Requirements
+        Requirement:
+          - Version:
+              - Minimum: {{ .Values.clusterVersion.minVersion }}
+              - Recommended: {{ .Values.clusterVersion.recommendedVersion }}
+        Running below the minimum can remove or alter required GA APIs and lacks critical CVE fixes. The recommended version aligns with CI coverage and provides safer upgrades and operational guidance.
+      clusterVersion:
+        checkName: Kubernetes version
+        outcomes:
+          - fail:
+              when: '< {{ .Values.clusterVersion.minVersion }}'
+              message: Requires at least Kubernetes {{ .Values.clusterVersion.minVersion }}.
+          - warn:
+              when: '< {{ .Values.clusterVersion.recommendedVersion }}'
+              message: Recommended to use Kubernetes {{ .Values.clusterVersion.recommendedVersion }} or later.
+          - pass:
+              when: '>= {{ .Values.clusterVersion.recommendedVersion }}'
+              message: Meets recommended and required Kubernetes versions.
+    {{- end }}
+
+    {{- if .Values.storageClass.enabled }}
+    - docString: |
+        Title: Default StorageClass Requirements
+        Requirement:
+          - A StorageClass named "{{ .Values.storageClass.className }}" must exist
+        A default StorageClass enables dynamic PVC provisioning without manual intervention. Missing or misnamed defaults cause PVCs to remain Pending and block workloads.
+      storageClass:
+        checkName: Default StorageClass
+        storageClassName: '{{ .Values.storageClass.className }}'
+        outcomes:
+          - fail:
+              message: Default StorageClass not found
+          - pass:
+              message: Default StorageClass present
+    {{- end }}
+
+    {{- if .Values.crd.enabled }}
+    - docString: |
+        Title: Required CRD Presence
+        Requirement:
+          - CRD must exist: {{ .Values.crd.name }}
+        Controllers depending on this CRD cannot reconcile without it, leading to missing resources and degraded functionality.
+      customResourceDefinition:
+        checkName: Required CRD
+        customResourceDefinitionName: '{{ .Values.crd.name }}'
+        outcomes:
+          - fail:
+              message: Required CRD not found
+          - pass:
+              message: Required CRD present
+    {{- end }}
+
+    {{- if .Values.ingress.enabled }}
+    - docString: |
+        Title: Ingress Object Presence
+        Requirement:
+          - Ingress exists: {{ .Values.ingress.namespace }}/{{ .Values.ingress.name }}
+        Ensures external routing is configured to reach the application. Missing ingress prevents user traffic from reaching services.
+      ingress:
+        checkName: Ingress exists
+        namespace: '{{ .Values.ingress.namespace }}'
+        ingressName: '{{ .Values.ingress.name }}'
+        outcomes:
+          - fail:
+              message: Expected ingress not found
+          - pass:
+              message: Expected ingress present
+    {{- end }}
+
+    {{- if .Values.secret.enabled }}
+    - docString: |
+        Title: Required Secret Presence
+        Requirement:
+          - Secret exists: {{ .Values.secret.namespace }}/{{ .Values.secret.name }}{{ if .Values.secret.key }} (key: {{ .Values.secret.key }}){{ end }}
+        Secrets commonly provide credentials or TLS material. Absence blocks components from authenticating or decrypting traffic.
+      secret:
+        checkName: Required secret
+        namespace: '{{ .Values.secret.namespace }}'
+        secretName: '{{ .Values.secret.name }}'
+        {{- if .Values.secret.key }}
+        key: '{{ .Values.secret.key }}'
+        {{- end }}
+        outcomes:
+          - fail:
+              message: Required secret not found
+          - pass:
+              message: Required secret present
+    {{- end }}
+
+    {{- if .Values.configMap.enabled }}
+    - docString: |
+        Title: Required ConfigMap Presence
+        Requirement:
+          - ConfigMap exists: {{ .Values.configMap.namespace }}/{{ .Values.configMap.name }}{{ if .Values.configMap.key }} (key: {{ .Values.configMap.key }}){{ end }}
+        Required for bootstrapping configuration. Missing keys lead to defaulting or startup failure.
+      configMap:
+        checkName: Required ConfigMap
+        namespace: '{{ .Values.configMap.namespace }}'
+        configMapName: '{{ .Values.configMap.name }}'
+        {{- if .Values.configMap.key }}
+        key: '{{ .Values.configMap.key }}'
+        {{- end }}
+        outcomes:
+          - fail:
+              message: Required ConfigMap not found
+          - pass:
+              message: Required ConfigMap present
+    {{- end }}
+
+    {{- if .Values.imagePullSecret.enabled }}
+    - docString: |
+        Title: Container Registry Credentials
+        Requirement:
+          - Credentials present for registry: {{ .Values.imagePullSecret.registry }}
+        Ensures images can be pulled from private registries. Missing secrets cause ImagePullBackOff and prevent workloads from starting.
+      imagePullSecret:
+        checkName: Registry credentials
+        registryName: '{{ .Values.imagePullSecret.registry }}'
+        outcomes:
+          - fail:
+              message: Cannot pull from registry; credentials missing
+          - pass:
+              message: Found credentials for registry
+    {{- end }}
+
+    {{- if .Values.workloads.deployments.enabled }}
+    - docString: |
+        Title: Deployment Ready
+        Requirement:
+          - Deployment ready: {{ .Values.workloads.deployments.namespace }}/{{ .Values.workloads.deployments.name }} (minReady: {{ .Values.workloads.deployments.minReady }})
+        Validates rollout completed and enough replicas are Ready to serve traffic.
+      deploymentStatus:
+        checkName: Deployment ready
+        namespace: '{{ .Values.workloads.deployments.namespace }}'
+        name: '{{ .Values.workloads.deployments.name }}'
+        outcomes:
+          - fail:
+              when: absent
+              message: Deployment not found
+          - fail:
+              when: '< {{ .Values.workloads.deployments.minReady }}'
+              message: Deployment has insufficient ready replicas
+          - pass:
+              when: '>= {{ .Values.workloads.deployments.minReady }}'
+              message: Deployment has sufficient ready replicas
+    {{- end }}
+
+    {{- if .Values.workloads.statefulsets.enabled }}
+    - docString: |
+        Title: StatefulSet Ready
+        Requirement:
+          - StatefulSet ready: {{ .Values.workloads.statefulsets.namespace }}/{{ .Values.workloads.statefulsets.name }} (minReady: {{ .Values.workloads.statefulsets.minReady }})
+        Confirms ordered, persistent workloads have reached readiness before proceeding.
+      statefulsetStatus:
+        checkName: StatefulSet ready
+        namespace: '{{ .Values.workloads.statefulsets.namespace }}'
+        name: '{{ .Values.workloads.statefulsets.name }}'
+        outcomes:
+          - fail:
+              when: absent
+              message: StatefulSet not found
+          - fail:
+              when: '< {{ .Values.workloads.statefulsets.minReady }}'
+              message: StatefulSet has insufficient ready replicas
+          - pass:
+              when: '>= {{ .Values.workloads.statefulsets.minReady }}'
+              message: StatefulSet has sufficient ready replicas
+    {{- end }}
+
+    {{- if .Values.workloads.jobs.enabled }}
+    - docString: |
+        Title: Job Completion
+        Requirement:
+          - Job completed: {{ .Values.workloads.jobs.namespace }}/{{ .Values.workloads.jobs.name }}
+        Verifies one-off tasks have succeeded; failures indicate setup or migration problems.
+      jobStatus:
+        checkName: Job completed
+        namespace: '{{ .Values.workloads.jobs.namespace }}'
+        name: '{{ .Values.workloads.jobs.name }}'
+        outcomes:
+          - fail:
+              when: absent
+              message: Job not found
+          - fail:
+              when: '= 0'
+              message: Job has no successful completions
+          - pass:
+              when: '> 0'
+              message: Job completed successfully
+    {{- end }}
+
+    {{- if .Values.workloads.replicasets.enabled }}
+    - docString: |
+        Title: ReplicaSet Ready
+        Requirement:
+          - ReplicaSet ready: {{ .Values.workloads.replicasets.namespace }}/{{ .Values.workloads.replicasets.name }} (minReady: {{ .Values.workloads.replicasets.minReady }})
+        Ensures underlying ReplicaSet has produced the required number of Ready pods for upstream controllers.
+      replicasetStatus:
+        checkName: ReplicaSet ready
+        namespace: '{{ .Values.workloads.replicasets.namespace }}'
+        name: '{{ .Values.workloads.replicasets.name }}'
+        outcomes:
+          - fail:
+              message: ReplicaSet is not ready
+          - pass:
+              when: '>= {{ .Values.workloads.replicasets.minReady }}'
+              message: ReplicaSet has sufficient ready replicas
+    {{- end }}
+
+    {{- if .Values.clusterPodStatuses.enabled }}
+    - docString: |
+        Title: Cluster Pod Readiness by Namespace
+        Requirement:
+          - Namespaces checked: {{ toYaml .Values.clusterPodStatuses.namespaces | nindent 10 }}
+        Highlights unhealthy pods across critical namespaces to surface rollout or configuration issues.
+      clusterPodStatuses:
+        checkName: Pod statuses
+        namespaces: {{ toYaml .Values.clusterPodStatuses.namespaces | nindent 8 }}
+        outcomes:
+          - warn:
+              message: Some pods are not ready
+          - pass:
+              message: All pods are ready
+    {{- end }}
+
+    {{- if .Values.clusterContainerStatuses.enabled }}
+    - docString: |
+        Title: Container Restart Thresholds
+        Requirement:
+          - Namespaces checked: {{ toYaml .Values.clusterContainerStatuses.namespaces | nindent 10 }}
+          - Restart threshold: {{ .Values.clusterContainerStatuses.restartCount }}
+        Elevated restart counts often indicate crash loops, resource pressure, or image/runtime issues.
+      clusterContainerStatuses:
+        checkName: Container restarts
+        namespaces: {{ toYaml .Values.clusterContainerStatuses.namespaces | nindent 8 }}
+        restartCount: {{ .Values.clusterContainerStatuses.restartCount }}
+        outcomes:
+          - warn:
+              message: One or more containers exceed restart threshold
+          - pass:
+              message: Container restarts are within thresholds
+    {{- end }}
+
+    {{- if .Values.containerRuntime.enabled }}
+    - docString: |
+        Title: Container Runtime Compatibility
+        Requirement:
+          - Runtime must be: containerd
+        containerd with CRI provides stable semantics; other runtimes are unsupported and may break image, cgroup, and networking expectations.
+      containerRuntime:
+        checkName: Runtime must be containerd
+        outcomes:
+          - pass:
+              when: '== containerd'
+              message: containerd runtime detected
+          - fail:
+              message: Unsupported container runtime; containerd required
+    {{- end }}
+
+    {{- if .Values.distribution.enabled }}
+    - docString: |
+        Title: Supported Kubernetes Distributions
+        Requirement:
+          - Unsupported: {{ toYaml .Values.distribution.unsupported | nindent 12 }}
+          - Supported: {{ toYaml .Values.distribution.supported | nindent 12 }}
+        Production-tier assumptions (RBAC, admission, networking, storage) are validated on supported distros. Unsupported environments commonly diverge and reduce reliability.
+      distribution:
+        checkName: Supported distribution
+        outcomes:
+          {{- range $d := .Values.distribution.unsupported }}
+          - fail:
+              when: '== {{ $d }}'
+              message: '{{ $d }} is not supported'
+          {{- end }}
+          {{- range $d := .Values.distribution.supported }}
+          - pass:
+              when: '== {{ $d }}'
+              message: '{{ $d }} is a supported distribution'
+          {{- end }}
+          - warn:
+              message: Unable to determine the distribution
+    {{- end }}
+
+    {{- if .Values.nodeResources.count.enabled }}
+    - docString: |
+        Title: Node Count Requirement
+        Requirement:
+          - Minimum nodes: {{ .Values.nodeResources.count.min }}
+          - Recommended nodes: {{ .Values.nodeResources.count.recommended }}
+        Ensures capacity and disruption tolerance for upgrades and failures; too few nodes yields scheduling pressure and risk during maintenance.
+      nodeResources:
+        checkName: Node count
+        outcomes:
+          - fail:
+              when: 'count() < {{ .Values.nodeResources.count.min }}'
+              message: Requires at least {{ .Values.nodeResources.count.min }} nodes
+          - warn:
+              when: 'count() < {{ .Values.nodeResources.count.recommended }}'
+              message: Recommended at least {{ .Values.nodeResources.count.recommended }} nodes
+          - pass:
+              message: Cluster has sufficient nodes
+    {{- end }}
+
+    {{- if .Values.nodeResources.cpu.enabled }}
+    - docString: |
+        Title: Cluster CPU Capacity
+        Requirement:
+          - Total vCPU minimum: {{ .Values.nodeResources.cpu.min }}
+        Aggregate CPU must cover control plane, system daemons, and application workloads; insufficient CPU causes scheduling delays and degraded throughput.
+      nodeResources:
+        checkName: Cluster CPU total
+        outcomes:
+          - fail:
+              when: 'sum(cpuCapacity) < {{ .Values.nodeResources.cpu.min }}'
+              message: Requires at least {{ .Values.nodeResources.cpu.min }} cores
+          - pass:
+              message: Cluster CPU capacity meets requirement
+    {{- end }}
+
+    {{- if .Values.nodeResources.memory.enabled }}
+    - docString: |
+        Title: Per-node Memory Requirement
+        Requirement:
+          - Minimum per-node: {{ .Values.nodeResources.memory.minGi }} GiB
+          - Recommended per-node: {{ .Values.nodeResources.memory.recommendedGi }} GiB
+        Memory headroom avoids OOMKills and evictions during spikes and upgrades; recommended capacity supports stable operations.
+      nodeResources:
+        checkName: Per-node memory
+        outcomes:
+          - fail:
+              when: 'min(memoryCapacity) < {{ .Values.nodeResources.memory.minGi }}Gi'
+              message: All nodes must have at least {{ .Values.nodeResources.memory.minGi }} GiB
+          - warn:
+              when: 'min(memoryCapacity) < {{ .Values.nodeResources.memory.recommendedGi }}Gi'
+              message: Recommended {{ .Values.nodeResources.memory.recommendedGi }} GiB per node
+          - pass:
+              message: All nodes meet recommended memory
+    {{- end }}
+
+    {{- if .Values.nodeResources.ephemeral.enabled }}
+    - docString: |
+        Title: Per-node Ephemeral Storage Requirement
+        Requirement:
+          - Minimum per-node: {{ .Values.nodeResources.ephemeral.minGi }} GiB
+          - Recommended per-node: {{ .Values.nodeResources.ephemeral.recommendedGi }} GiB
+        Ephemeral storage backs images, container filesystems, and logs; insufficient capacity triggers disk pressure and failed pulls.
+      nodeResources:
+        checkName: Per-node ephemeral storage
+        outcomes:
+          - fail:
+              when: 'min(ephemeralStorageCapacity) < {{ .Values.nodeResources.ephemeral.minGi }}Gi'
+              message: All nodes must have at least {{ .Values.nodeResources.ephemeral.minGi }} GiB
+          - warn:
+              when: 'min(ephemeralStorageCapacity) < {{ .Values.nodeResources.ephemeral.recommendedGi }}Gi'
+              message: Recommended {{ .Values.nodeResources.ephemeral.recommendedGi }} GiB per node
+          - pass:
+              message: All nodes meet recommended ephemeral storage
+    {{- end }}
+
+    {{- if .Values.textAnalyze.enabled }}
+    - docString: |
+        Title: Text Analyze Pattern Check
+        Requirement:
+          - File(s): {{ .Values.textAnalyze.fileName }}
+          - Regex: {{ .Values.textAnalyze.regex }}
+        Surfaces error patterns in collected logs or text files that indicate configuration or runtime issues.
+      textAnalyze:
+        checkName: Text analyze
+        collectorName: 'cluster-resources'
+        fileName: '{{ .Values.textAnalyze.fileName }}'
+        regex: '{{ .Values.textAnalyze.regex }}'
+        ignoreIfNoFiles: true
+        outcomes:
+          - fail:
+              message: Pattern matched in files
+          - pass:
+              message: Pattern not found
+    {{- end }}
+
+    {{- if .Values.yamlCompare.enabled }}
+    - docString: |
+        Title: YAML Field Comparison
+        Requirement:
+          - File: {{ .Values.yamlCompare.fileName }}
+          - Path: {{ .Values.yamlCompare.path }}
+          - Expected: {{ .Values.yamlCompare.value }}
+        Validates rendered object fields match required configuration to ensure correct behavior.
+      yamlCompare:
+        checkName: YAML compare
+        collectorName: 'cluster-resources'
+        fileName: '{{ .Values.yamlCompare.fileName }}'
+        path: '{{ .Values.yamlCompare.path }}'
+        value: '{{ .Values.yamlCompare.value }}'
+        outcomes:
+          - fail:
+              message: YAML value does not match expected
+          - pass:
+              message: YAML value matches expected
+    {{- end }}
+
+    {{- if .Values.jsonCompare.enabled }}
+    - docString: |
+        Title: JSON Field Comparison
+        Requirement:
+          - File: {{ .Values.jsonCompare.fileName }}
+          - JSONPath: {{ .Values.jsonCompare.jsonPath }}
+          - Expected: {{ .Values.jsonCompare.value }}
+        Ensures collected JSON metrics or resources match required values.
+      jsonCompare:
+        checkName: JSON compare
+        collectorName: 'cluster-resources'
+        fileName: '{{ .Values.jsonCompare.fileName }}'
+        jsonPath: '{{ .Values.jsonCompare.jsonPath }}'
+        value: '{{ .Values.jsonCompare.value }}'
+        outcomes:
+          - fail:
+              message: JSON value does not match expected
+          - pass:
+              message: JSON value matches expected
+    {{- end }}
+
+    {{- if .Values.databases.postgres.enabled }}
+    - docString: |
+        Title: Postgres Connectivity and Health
+        Requirement:
+          - Collector: {{ .Values.databases.postgres.collectorName }}
+        Validates database availability and credentials to avoid boot failures or runtime errors.
+      postgres:
+        checkName: Postgres checks
+        collectorName: '{{ .Values.databases.postgres.collectorName }}'
+        outcomes:
+          - fail:
+              message: Postgres checks failed
+          - pass:
+              message: Postgres checks passed
+    {{- end }}
+
+    {{- if .Values.databases.mssql.enabled }}
+    - docString: |
+        Title: MSSQL Connectivity and Health
+        Requirement:
+          - Collector: {{ .Values.databases.mssql.collectorName }}
+        Ensures connectivity and credentials to Microsoft SQL Server are valid prior to workload startup.
+      mssql:
+        checkName: MSSQL checks
+        collectorName: '{{ .Values.databases.mssql.collectorName }}'
+        outcomes:
+          - fail:
+              message: MSSQL checks failed
+          - pass:
+              message: MSSQL checks passed
+    {{- end }}
+
+    {{- if .Values.databases.mysql.enabled }}
+    - docString: |
+        Title: MySQL Connectivity and Health
+        Requirement:
+          - Collector: {{ .Values.databases.mysql.collectorName }}
+        Verifies MySQL reachability and credentials to prevent configuration-time failures.
+      mysql:
+        checkName: MySQL checks
+        collectorName: '{{ .Values.databases.mysql.collectorName }}'
+        outcomes:
+          - fail:
+              message: MySQL checks failed
+          - pass:
+              message: MySQL checks passed
+    {{- end }}
+
+    {{- if .Values.databases.redis.enabled }}
+    - docString: |
+        Title: Redis Connectivity and Health
+        Requirement:
+          - Collector: {{ .Values.databases.redis.collectorName }}
+        Validates cache availability; failures cause timeouts, degraded performance, or startup errors.
+      redis:
+        checkName: Redis checks
+        collectorName: '{{ .Values.databases.redis.collectorName }}'
+        outcomes:
+          - fail:
+              message: Redis checks failed
+          - pass:
+              message: Redis checks passed
+    {{- end }}
+
+    {{- if .Values.cephStatus.enabled }}
+    - docString: |
+        Title: Ceph Cluster Health
+        Requirement:
+          - Namespace: {{ .Values.cephStatus.namespace }}
+        Ensures Ceph reports healthy status before depending on it for storage operations.
+      cephStatus:
+        checkName: Ceph cluster health
+        namespace: '{{ .Values.cephStatus.namespace }}'
+        outcomes:
+          - fail:
+              message: Ceph is not healthy
+          - pass:
+              message: Ceph is healthy
+    {{- end }}
+
+    {{- if .Values.velero.enabled }}
+    - docString: |
+        Title: Velero Installed
+        Requirement:
+          - Velero controllers installed and discoverable
+        Backup/restore operations require Velero components to be present.
+      velero:
+        checkName: Velero installed
+    {{- end }}
+
+    {{- if .Values.longhorn.enabled }}
+    - docString: |
+        Title: Longhorn Health
+        Requirement:
+          - Namespace: {{ .Values.longhorn.namespace }}
+        Verifies Longhorn is healthy to ensure persistent volumes remain available and replicas are in sync.
+      longhorn:
+        checkName: Longhorn health
+        namespace: '{{ .Values.longhorn.namespace }}'
+        outcomes:
+          - fail:
+              message: Longhorn is not healthy
+          - pass:
+              message: Longhorn is healthy
+    {{- end }}
+
+    {{- if .Values.registryImages.enabled }}
+    - docString: |
+        Title: Registry Image Availability
+        Requirement:
+          - Collector: {{ .Values.registryImages.collectorName }}
+          - Images: {{ toYaml .Values.registryImages.images | nindent 12 }}
+        Ensures required images are available and pullable with provided credentials.
+      registryImages:
+        checkName: Registry image availability
+        collectorName: '{{ .Values.registryImages.collectorName }}'
+        outcomes:
+          - fail:
+              message: One or more images are not available
+          - pass:
+              message: All images are available
+    {{- end }}
+
+    {{- if .Values.weaveReport.enabled }}
+    - docString: |
+        Title: Weave Net Report Presence
+        Requirement:
+          - Report files: {{ .Values.weaveReport.reportFileGlob }}
+        Validates networking diagnostics are collected for analysis of connectivity issues.
+      weaveReport:
+        checkName: Weave report
+        reportFileGlob: '{{ .Values.weaveReport.reportFileGlob }}'
+    {{- end }}
+
+    {{- if .Values.sysctl.enabled }}
+    - docString: |
+        Title: Sysctl Settings Validation
+        Requirement:
+          - Namespace: {{ .Values.sysctl.namespace }}
+          - Image: {{ .Values.sysctl.image }}
+        Checks kernel parameter configuration that impacts networking, file descriptors, and memory behavior.
+      sysctl:
+        checkName: Sysctl settings
+        outcomes:
+          - warn:
+              message: One or more sysctl values do not meet recommendations
+          - pass:
+              message: Sysctl values meet recommendations
+    {{- end }}
+
+    {{- if .Values.clusterResource.enabled }}
+    - docString: |
+        Title: Cluster Resource Field Requirement
+        Requirement:
+          - Kind: {{ .Values.clusterResource.kind }}
+          - Name: {{ .Values.clusterResource.name }}{{ if not .Values.clusterResource.clusterScoped }} (ns: {{ .Values.clusterResource.namespace }}){{ end }}
+          - YAML path: {{ .Values.clusterResource.yamlPath }}{{ if .Values.clusterResource.expectedValue }} (expected: {{ .Values.clusterResource.expectedValue }}){{ end }}
+        Ensures critical configuration on a Kubernetes object matches expected value to guarantee correct behavior.
+      clusterResource:
+        checkName: Cluster resource value
+        kind: '{{ .Values.clusterResource.kind }}'
+        clusterScoped: {{ .Values.clusterResource.clusterScoped }}
+        {{- if not .Values.clusterResource.clusterScoped }}
+        namespace: '{{ .Values.clusterResource.namespace }}'
+        {{- end }}
+        name: '{{ .Values.clusterResource.name }}'
+        yamlPath: '{{ .Values.clusterResource.yamlPath }}'
+        {{- if .Values.clusterResource.expectedValue }}
+        expectedValue: '{{ .Values.clusterResource.expectedValue }}'
+        {{- end }}
+        {{- if .Values.clusterResource.regex }}
+        regex: '{{ .Values.clusterResource.regex }}'
+        {{- end }}
+        outcomes:
+          - fail:
+              message: Cluster resource field does not match expected value
+          - pass:
+              message: Cluster resource field matches expected value
+    {{- end }}
+
+    {{- if .Values.certificates.enabled }}
+    - docString: |
+        Title: Certificates Validity and Expiry
+        Requirement:
+          - Check certificate material in referenced secrets/configmaps
+        Identifies expired or soon-to-expire certificates that would break TLS handshakes.
+      certificates:
+        checkName: Certificates validity
+        outcomes:
+          - warn:
+              message: One or more certificates may be invalid or expiring soon
+          - pass:
+              message: Certificates are valid
+    {{- end }}
+
+    {{- if .Values.goldpinger.enabled }}
+    - docString: |
+        Title: Goldpinger Network Health
+        Requirement:
+          - Collector: {{ .Values.goldpinger.collectorName }}
+          - Report path: {{ .Values.goldpinger.filePath }}
+        Uses Goldpinger probes to detect DNS, network, and kube-proxy issues across the cluster.
+      goldpinger:
+        checkName: Goldpinger report
+        collectorName: '{{ .Values.goldpinger.collectorName }}'
+        filePath: '{{ .Values.goldpinger.filePath }}'
+        outcomes:
+          - fail:
+              message: Goldpinger indicates network issues
+          - pass:
+              message: Goldpinger indicates healthy networking
+    {{- end }}
+
+    {{- if .Values.event.enabled }}
+    - docString: |
+        Title: Kubernetes Events Scan
+        Requirement:
+          - Namespace: {{ .Values.event.namespace }}
+          - Reason: {{ .Values.event.reason }}{{ if .Values.event.kind }} (kind: {{ .Values.event.kind }}){{ end }}{{ if .Values.event.regex }} (regex: {{ .Values.event.regex }}){{ end }}
+        Surfaces critical events that often correlate with configuration issues, crash loops, or cluster instability.
+      event:
+        checkName: Events
+        collectorName: '{{ .Values.event.collectorName }}'
+        namespace: '{{ .Values.event.namespace }}'
+        {{- if .Values.event.kind }}
+        kind: '{{ .Values.event.kind }}'
+        {{- end }}
+        reason: '{{ .Values.event.reason }}'
+        {{- if .Values.event.regex }}
+        regex: '{{ .Values.event.regex }}'
+        {{- end }}
+        outcomes:
+          - fail:
+              when: 'true'
+              message: Critical events detected
+          - pass:
+              when: 'false'
+              message: No critical events detected
+    {{- end }}
+
+    {{- if .Values.nodeMetrics.enabled }}
+    - docString: |
+        Title: Node Metrics Thresholds
+        Requirement:
+          - Filters: PVC nameRegex={{ .Values.nodeMetrics.filters.pvc.nameRegex }}{{ if .Values.nodeMetrics.filters.pvc.namespace }}, namespace={{ .Values.nodeMetrics.filters.pvc.namespace }}{{ end }}
+        Evaluates node-level metrics to detect capacity pressure and performance bottlenecks.
+      nodeMetrics:
+        checkName: Node metrics thresholds
+        collectorName: '{{ .Values.nodeMetrics.collectorName }}'
+        {{- if .Values.nodeMetrics.filters.pvc.nameRegex }}
+        filters:
+          pvc:
+            nameRegex: '{{ .Values.nodeMetrics.filters.pvc.nameRegex }}'
+            {{- if .Values.nodeMetrics.filters.pvc.namespace }}
+            namespace: '{{ .Values.nodeMetrics.filters.pvc.namespace }}'
+            {{- end }}
+        {{- end }}
+        outcomes:
+          - warn:
+              message: Node metrics exceed warning thresholds
+          - pass:
+              message: Node metrics within thresholds
+    {{- end }}
+
+    {{- if .Values.http.enabled }}
+    - docString: |
+        Title: HTTP Endpoint Health Checks
+        Requirement:
+          - Collected results: {{ .Values.http.collectorName }}
+        Validates availability of service HTTP endpoints used by the application.
+      http:
+        checkName: HTTP checks
+        collectorName: '{{ .Values.http.collectorName }}'
+        outcomes:
+          - fail:
+              message: One or more HTTP checks failed
+          - pass:
+              message: All HTTP checks passed
+    {{- end }}
+
+

@@ -1,0 +1,905 @@
+# Spec to run when a kURL cluster is down and in-cluster specs can't be run
+apiVersion: troubleshoot.sh/v1beta2
+kind: SupportBundle
+metadata:
+  name: default
+spec:
+  uri: https://raw.githubusercontent.com/replicatedhq/troubleshoot-specs/main/host/default.yaml
+  hostCollectors:
+    # System Info Collectors
+    - blockDevices: {}
+    - cpu: {}
+    - hostOS: {}
+    - hostServices: {}
+    - ipv4Interfaces: {}
+    - memory: {}
+    - time: {}
+    - ipv4Interfaces: {}
+    # Certificate Info for ETCD and K8s API
+    - certificate:
+        collectorName: k8s-api-keypair
+        certificatePath: /etc/kubernetes/pki/apiserver.crt
+        keyPath: /etc/kubernetes/pki/apiserver.key
+    - certificate:
+        collectorName: etcd-keypair
+        certificatePath: /etc/kubernetes/pki/etcd/server.crt
+        keyPath: /etc/kubernetes/pki/etcd/server.key
+    # Disk usage for commonly used directories in kURL installs
+    - diskUsage:
+        collectorName: root
+        path: /
+    - diskUsage:
+        collectorName: tmp
+        path: /tmp
+    - diskUsage:
+        collectorName: var-lib-kubelet
+        path: /var/lib/kubelet
+    - diskUsage:
+        collectorName: var-lib-docker
+        path: /var/lib/docker
+    - diskUsage:
+        collectorName: var-lib-containerd
+        path: /var/lib/containerd
+    - diskUsage:
+        collectorName: var-lib-rook
+        path: /var/lib/rook
+    - diskUsage:
+        collectorName: opt-replicated
+        path: /opt/replicated
+    - diskUsage:
+        collectorName: var-openebs
+        path: /var/openebs
+    - http:
+        collectorName: curl-k8s-api-6443
+        get:
+          url: https://localhost:6443/healthz
+          insecureSkipVerify: true
+    # Run collectors for system information
+    - run:
+        collectorName: k8s-api-healthz-6443
+        command: "curl"
+        args: ["-k", "https://localhost:6443/healthz?verbose"]
+    - run:
+        collectorName: curl-etcd-health-2379
+        command: "curl"
+        args: ["-ki", "https://localhost:2379/health", "--cert", "/etc/kubernetes/pki/etcd/healthcheck-client.crt", "--key", "/etc/kubernetes/pki/etcd/healthcheck-client.key"]
+    - run:
+        collectorName: "free"
+        command: "free"
+        args: ["-m"]
+    - run:
+        collectorName: "top"
+        command: "top"
+        args: ["-b", "-n", "1"]
+    - run:
+        collectorName: "uptime"
+        command: "uptime"
+        args: []
+    - run:
+        collectorName: "uname"
+        command: "uname"
+        args: ["-a"]
+    - run:
+        collectorName: "df"
+        command: "df"
+        args: ["-h"]
+    - run:
+        collectorName: "iostat"
+        command: "iostat"
+        args: ["-x"]
+    - run:
+        collectorName: "pidstat-disk-io"
+        command: "pidstat"
+        args: ["d"]
+    - run:
+        collectorName: "iotop"
+        command: "iotop"
+        args: ["-n", "1", "-b"]
+    # SELinux status
+    - run:
+        collectorName: "sestatus"
+        command: "sestatus"
+        args: []
+    - run:
+        collectorName: "apparmor-status"
+        command: "apparmor_status"
+        args: []
+    - run:
+        collectorName: "docker-info"
+        command: "docker"
+        args: ["info"]
+    - run:
+        collectorName: "crictl-info"
+        command: "crictl"
+        args: ["info"]
+    - run:
+        collectorName: "crictl-ps"
+        command: "crictl"
+        args: ["ps", "-a"]
+    - run:
+        collectorName: "docker-ps"
+        command: "docker"
+        args: ["ps", "-a"]
+    - run:
+        collectorName: "docker-system-df"
+        command: "docker"
+        args: ["system", "df", "-v"]
+    - run:
+        collectorName: "iptables"
+        command: "iptables"
+        args: ["-L", "-v"]
+    - run:
+        collectorName: "iptables-save"
+        command: "iptables-save"
+    - run:
+        collectorName: "iptables-version"
+        command: "iptables"
+        args: ["-V"]
+    - run:
+        collectorName: "nftables-list"
+        command: "nft"
+        args: ["list", "table", "filter"]
+    - run:
+        collectorName: "ipvsadm"
+        command: "ipvsadm"
+        args: ["-l", "-n"]
+    - run:
+        collectorName: "lsblk"
+        command: "lsblk"
+        args: ["--fs"]
+    - run:
+        collectorName: "netstat-ports"
+        command: "netstat"
+        args: ["-t", "-u", "-l", "-p", "-n"]
+    - run:
+        collectorName: "netstat-route-table"
+        command: "netstat"
+        args: ["-r", "-n"]
+    - run:
+        collectorName: "resolvectl-status"
+        command: "resolvectl"
+        args: ["status"]
+    - run:
+        collectorName: "resolv-conf"
+        command: "cat"
+        args: ["/etc/resolv.conf"]
+    - run:
+        collectorName: "systemd-resolved-conf"
+        command: "cat"
+        args: ["/etc/systemd/resolved.conf"]
+    - run:
+        collectorName: "nsswitch-conf"
+        command: "cat"
+        args: ["/etc/nsswitch.conf"]
+    - run:
+        collectorName: "hosts"
+        command: "cat"
+        args: ["/etc/hosts"]
+    - run:
+        collectorName: "ip-interface-stats"
+        command: "ip"
+        args: ["-s", "link"]
+    - run:
+        collectorName: "ip-route-table"
+        command: "ip"
+        args: ["route"]
+    - run:
+        collectorName: "sysctl"
+        command: "sysctl"
+        args: ["-a"]
+    # Static Manifests
+    - run:
+        collectorName: "manifest-etcd"
+        command: "cat"
+        args: ["/etc/kubernetes/manifests/etcd.yaml"]
+    - run:
+        collectorName: "manifest-kube-apiserver"
+        command: "cat"
+        args: ["/etc/kubernetes/manifests/kube-apiserver.yaml"]
+    - run:
+        collectorName: "manifest-kube-controller-manager"
+        command: "cat"
+        args: ["/etc/kubernetes/manifests/kube-controller-manager.yaml"]
+    - run:
+        collectorName: "manifest-kube-scheduler"
+        command: "cat"
+        args: ["/etc/kubernetes/manifests/kube-scheduler.yaml"]
+    # Systemctl service statuses for CRI, Kubelet, and Firewall
+    - run:
+        collectorName: "systemctl-firewalld-status"
+        command: "systemctl"
+        args: ["status", "firewalld"]
+    - run:
+        collectorName: "systemctl-resolved-status"
+        command: "systemctl"
+        args: ["status", "systemd-resolved"]
+    - run:
+        collectorName: "systemctl-docker-status"
+        command: "systemctl"
+        args: ["status", "docker"]
+    - run:
+        collectorName: "systemctl-kubelet-status"
+        command: "systemctl"
+        args: ["status", "kubelet"]
+    - run:
+        collectorName: "systemctl-containerd-status"
+        command: "systemctl"
+        args: ["status", "containerd"]
+    # Systemd Service Configurations for CRI, Kubelet
+    - run:
+        collectorName: "systemctl-cat-journald"
+        command: "systemctl"
+        args: ["cat", "systemd-journald"]
+    - run:
+        collectorName: "systemctl-cat-resolved"
+        command: "systemctl"
+        args: ["cat", "systemd-resolved"]
+    - run:
+        collectorName: "systemctl-cat-docker"
+        command: "systemctl"
+        args: ["cat", "docker"]
+    - run:
+        collectorName: "systemctl-cat-containerd"
+        command: "systemctl"
+        args: ["cat", "containerd"]
+    - run:
+        collectorName: "systemctl-cat-kubelet"
+        command: "systemctl"
+        args: ["cat", "kubelet"]
+    # Logs for CRI, Kubelet, Kernel
+    - run:
+        collectorName: "journalctl-containerd"
+        command: "journalctl"
+        args: ["-u", "containerd", "--no-pager", "-S", "7 days ago"]
+    - run:
+        collectorName: "journalctl-kubelet"
+        command: "journalctl"
+        args: ["-u", "kubelet", "--no-pager", "-S", "7 days ago"]
+    - run:
+        collectorName: "journalctl-docker"
+        command: "journalctl"
+        args: ["-u", "docker", "--no-pager", "-S", "7 days ago"]
+    - run:
+        collectorName: "journalctl-dmesg"
+        command: "journalctl"
+        args: ["--dmesg", "--no-pager", "-S", "7 days ago"]
+    - copy:
+        collectorName: "syslog"
+        path: /var/log/syslog
+    - copy:
+        collectorName: "audit-logs"
+        path: /var/log/audit/audit.log
+    - copy:
+        collectorName: "syslog" # Copy the previous syslog file as well in case the current one is rotated
+        path: /var/log/syslog.1
+    # Docker logs for K8s Control Plane
+    - run:
+        collectorName: "docker-logs-apiserver"
+        command: "sh"
+        args: ["-c", "docker logs $(docker ps -a --filter label=io.kubernetes.container.name=kube-apiserver -q -l) 2>&1"]
+    - run:
+        collectorName: "docker-logs-kube-scheduler"
+        command: "sh"
+        args: ["-c", "docker logs $(docker ps -a --filter label=io.kubernetes.container.name=kube-scheduler -q -l) 2>&1"]
+    - run:
+        collectorName: "docker-logs-kube-controller-manager"
+        command: "sh"
+        args: ["-c", "docker logs $(docker ps -a --filter label=io.kubernetes.container.name=kube-controller-manager -q -l) 2>&1"]
+    - run:
+        collectorName: "docker-logs-etcd"
+        command: "sh"
+        args: ["-c", "docker logs $(docker ps -a --filter label=io.kubernetes.container.name=etcd -q -l) 2>&1"]
+    # Docker logs for haproxy (Used by kURL's internal load balancing feature)
+    - run:
+        collectorName: "docker-logs-haproxy"
+        command: "sh"
+        args: ["-c", "docker logs $(docker ps -a --filter label=io.kubernetes.container.name=haproxy -q -l) 2>&1"]
+    # Containerd logs for K8s Control Plane
+    - run:
+        collectorName: "crictl-logs-apiserver"
+        command: "sh"
+        args: ["-c", "crictl logs $(crictl ps -a --name apiserver -l --quiet) 2>&1"]
+    - run:
+        collectorName: "crictl-logs-apiserver-previous"
+        command: "sh"
+        args: ["-c", "crictl logs -p $(crictl ps -a --name apiserver -l --quiet) 2>&1"]
+    - run:
+        collectorName: "crictl-logs-etcd"
+        command: "sh"
+        args: ["-c", "crictl logs $(crictl ps -a --name etcd -l --quiet) 2>&1"]
+    - run:
+        collectorName: "crictl-logs-etcd-previous"
+        command: "sh"
+        args: ["-c", "crictl logs -p $(crictl ps -a --name etcd -l --quiet) 2>&1"]
+    - run:
+        collectorName: "crictl-logs-kube-controller-manager"
+        command: "sh"
+        args: ["-c", "crictl logs $(crictl ps -a --name kube-controller-manager -l --quiet) 2>&1"]
+    - run:
+        collectorName: "crictl-logs-kube-controller-manager-previous"
+        command: "sh"
+        args: ["-c", "crictl logs -p $(crictl ps -a --name kube-controller-manager -l --quiet) 2>&1"]
+    - run:
+        collectorName: "crictl-logs-kube-scheduler"
+        command: "sh"
+        args: ["-c", "crictl logs $(crictl ps -a --name kube-scheduler -l --quiet) 2>&1"]
+    - run:
+        collectorName: "crictl-logs-kube-scheduler-previous"
+        command: "sh"
+        args: ["-c", "crictl logs -p $(crictl ps -a --name kube-scheduler -l --quiet) 2>&1"]
+    # Logs for kube-flannel
+    - run:
+        collectorName: "crictl-logs-kube-flannel"
+        command: "sh"
+        args: ["-c", "crictl logs $(crictl ps -a --name kube-flannel -l --quiet) 2>&1"]
+    - run:
+        collectorName: "crictl-logs-kube-flannel-previous"
+        command: "sh"
+        args: ["-c", "crictl logs -p $(crictl ps -a --name kube-flannel -l --quiet) 2>&1"]
+    # Logs for kube-proxy
+    - run:
+        collectorName: "crictl-logs-kube-proxy"
+        command: "sh"
+        args: ["-c", "crictl logs $(crictl ps -a --name kube-proxy -l --quiet) 2>&1"]
+    - run:
+        collectorName: "crictl-logs-kube-proxy-previous"
+        command: "sh"
+        args: ["-c", "crictl logs -p $(crictl ps -a --name kube-proxy -l --quiet) 2>&1"]
+    # Logs for haproxy (Used by kURL's internal load balancing feature)
+    - run:
+        collectorName: "crictl-logs-haproxy"
+        command: "sh"
+        args: ["-c", "crictl logs $(crictl ps -a --name haproxy -l --quiet) 2>&1"]
+    - run:
+        collectorName: "crictl-logs-haproxy-previous"
+        command: "sh"
+        args: ["-c", "crictl logs -p $(crictl ps -a --name haproxy -l --quiet) 2>&1"]
+    # Logs from ekco (Used by kURL to rotate certs and other tasks)
+    - run:
+        collectorName: "crictl-logs-ekco"
+        command: "sh"
+        args: ["-c", "crictl logs $(crictl ps -a --name ekc-operator -l --quiet) 2>&1"]
+    - run:
+        collectorName: "crictl-logs-ekco-previous"
+        command: "sh"
+        args: ["-c", "crictl logs -p $(crictl ps -a --name ekc-operator -l --quiet) 2>&1"]
+    # sysctl parameters
+    - run:
+        collectorName: "sysctl-all"
+        command: "sh"
+        args: ["-c", "sysctl --all 2>/dev/null"]
+    # Gathering hostname info to help troubleshoot scenarios where the hostname mismatch
+    - run:
+        collectorName: "hostnames"
+        command: "sh"
+        args:
+          - -c
+          - |
+            echo "hostname = $(hostname)"
+            echo "/proc/sys/kernel/hostname = $(cat /proc/sys/kernel/hostname)"
+            echo "uname -n = $(uname -n)"
+    # Collect apiserver audit logs
+    # Note: apiserver logs are owned by root so for this collector
+    # to succeed it requires sudo privileges for the user
+    - copy:
+        collectorName: "apiserver-audit-logs"
+        path: /var/log/apiserver/k8s-audit.log
+    # Collect kURL installer logs
+    - copy:
+        collectorName: "kurl-logs"
+        path: /var/log/kurl/*
+    - run:
+        collectorName: "kubeadm.conf"
+        command: "cat"
+        args: ["/opt/replicated/kubeadm.conf"]
+    - run:
+        collectorName: "kubeadm-init-raw.yaml"
+        command: "cat"
+        args: ["/opt/replicated/kubeadm-init-raw.yaml"]
+    - run:
+        collectorName: "kubeadm-flags.env"
+        command: "cat"
+        args: ["/var/lib/kubelet/kubeadm-flags.env"]
+    - run:
+        collectorName: "kurl-host-preflights"
+        command: "tail"
+        args: ["-n", "+1", "/var/lib/kurl/host-preflights/*"]
+    - run:
+        collectorName: "kubeadm-kustomize-patches"
+        command: "sh"
+        args: ["-c", "find /var/lib/kurl/kustomize -type f -exec tail -n +1 {} +;"]
+    - run:
+        collectorName: "tmp-kubeadm.conf"
+        command: "cat"
+        args: ["/var/lib/kubelet/tmp-kubeadm.conf"]
+    - http:
+        collectorName: curl-api-replicated-com
+        get:
+          url: https://api.replicated.com/healthz
+    - http:
+        collectorName: get-proxy-replicated-com
+        get:
+          url: https://proxy.replicated.com/
+    - http:
+        collectorName: curl-get-replicated-com
+        get:
+          url: https://get.replicated.com/healthz
+    - http:
+        collectorName: curl-registry-replicated-com
+        get:
+          url: https://registry.replicated.com/healthz
+    - http:
+        collectorName: curl-proxy-replicated-com
+        get:
+          url: https://proxy.replicated.com/healthz
+    - http:
+        collectorName: curl-k8s-kurl-sh
+        get:
+          url: https://k8s.kurl.sh/healthz
+    - http:
+        collectorName: curl-replicated-app
+        get:
+          url: https://replicated.app/healthz
+    # System Info Collectors
+    - run:
+        collectorName: "du-root"
+        command: "sh"
+        args: ["-c", "du -Shax / --exclude /proc | sort -rh | head -20"]
+    - run:
+        collectorName: "mount"
+        command: "mount"
+        args: ["-l"]
+    - run:
+        collectorName: "vmstat"
+        command: "vmstat"
+        args: ["-w"]
+    - run:
+        collectorName: "ps-high-load"
+        command: "sh"
+        args: ["-c", "ps -eo s,user,cmd | grep ^[RD] | sort | uniq -c | sort -nbr | head -20"]
+    - run:
+        collectorName: "ps-detect-antivirus-and-security-tools"
+        command: "sh"
+        args: [-c, "ps -ef | grep -E 'clamav|sophos|esets_daemon|fsav|symantec|mfend|ds_agent|kav|bdagent|s1agent|falcon|illumio|xagt|wdavdaemon|mdatp' | grep -v grep"]
+    - systemPackages:
+        collectorName: security-tools-packages
+        rhel:
+          - sdcss-kmod
+          - sdcss
+          - sdcss-scripts
+    - filesystemPerformance:
+        collectorName: filesystem-latency-two-minute-benchmark
+        timeout: 2m
+        directory: /var/lib/etcd
+        fileSize: 22Mi
+        operationSizeBytes: 2300
+        datasync: true
+        enableBackgroundIOPS: true
+        backgroundIOPSWarmupSeconds: 10
+        backgroundWriteIOPS: 300
+        backgroundWriteIOPSJobs: 6
+        backgroundReadIOPS: 50
+        backgroundReadIOPSJobs: 1
+    - run:
+        collectorName: "localhost-ips"
+        command: "sh"
+        args: ["-c", "host localhost"]
+    - run:
+        collectorName: "ip-address-stats"
+        command: "ip"
+        args: ["-s", "-s", "address"]
+    - run:
+        collectorName: "ethool-info"
+        command: "sh"
+        args:
+          - -c
+          - >
+            interfaces=$(ls /sys/class/net);
+            for iface in $interfaces; do
+              echo "==============================================";
+              echo "Interface: $iface";
+              echo "==============================================";
+
+              echo
+              echo "--- Basic Info ---"
+              ethtool "$iface"
+
+              echo
+              echo "--- Features (Offloads) ---"
+              ethtool -k "$iface"
+
+              echo
+              echo "--- Pause Parameters ---"
+              ethtool -a "$iface"
+
+              echo
+              echo "--- Ring Parameters ---"
+              ethtool -g "$iface"
+
+              echo
+              echo "--- Coalesce Settings ---"
+              ethtool -c "$iface"
+
+              echo
+              echo "--- Driver Info ---"
+              ethtool -i "$iface"
+
+              echo
+              echo
+            done
+  hostAnalyzers:
+    - certificate:
+        collectorName: k8s-api-keypair
+        outcomes:
+          - fail:
+              when: "key-pair-missing"
+              message: Certificate key pair not found in /etc/kubernetes/pki/apiserver.*
+          - fail:
+              when: "key-pair-switched"
+              message: Cert and key pair are switched
+          - fail:
+              when: "key-pair-encrypted"
+              message: Private key is encrypted
+          - fail:
+              when: "key-pair-mismatch"
+              message: Cert and key do not match
+          - fail:
+              when: "key-pair-invalid"
+              message: Certificate key pair is invalid
+          - pass:
+              when: "key-pair-valid"
+              message: Certificate key pair is valid
+    - certificate:
+        collectorName: etcd-keypair
+        outcomes:
+          - fail:
+              when: "key-pair-missing"
+              message: Certificate key pair not found in /etc/kubernetes/pki/etcd/server.*
+          - fail:
+              when: "key-pair-switched"
+              message: Cert and key pair are switched
+          - fail:
+              when: "key-pair-encrypted"
+              message: Private key is encrypted
+          - fail:
+              when: "key-pair-mismatch"
+              message: Cert and key do not match
+          - fail:
+              when: "key-pair-invalid"
+              message: Certificate key pair is invalid
+          - pass:
+              when: "key-pair-valid"
+              message: Certificate key pair is valid
+    - cpu:
+        checkName: "Number of CPUs"
+        outcomes:
+          - warn:
+              when: "count < 4"
+              message: At least 4 CPU cores are recommended for kURL https://kurl.sh/docs/install-with-kurl/system-requirements
+          - pass:
+              message: This server has at least 4 CPU cores
+    - memory:
+        checkName: "Amount of Memory"
+        outcomes:
+          - warn:
+              when: "< 8G"
+              message: At least 8G of memory is recommended for kURL https://kurl.sh/docs/install-with-kurl/system-requirements
+          - pass:
+              message: The system has at least 8G of memory
+    - time:
+        checkName: "ntp-status"
+        outcomes:
+          - fail:
+              when: "ntp == unsynchronized+inactive"
+              message: "System clock is not synchronized"
+          - warn:
+              when: "ntp == unsynchronized+active"
+              message: System clock not yet synchronized
+          - pass:
+              when: "ntp == synchronized+active"
+              message: "System clock is synchronized"
+    - diskUsage:
+        checkName: "root"
+        collectorName: "root"
+        outcomes:
+          - fail:
+              when: "total < 40Gi"
+              message: The disk containing directory / has less than 40Gi of total space
+          - warn:
+              when: "used/total > 80%"
+              message: The disk containing directory / is more than 80% full
+          - warn:
+              when: "available < 10Gi"
+              message: The disk containing directory / has less than 10Gi of disk space available
+          - pass:
+              message: The disk containing directory / has sufficient space
+    - diskUsage:
+        checkName: "tmp"
+        collectorName: "tmp"
+        outcomes:
+          - warn:
+              when: "total < 8Gi"
+              message: The disk containing directory /tmp has less than 8Gi of total space
+          - warn:
+              when: "used/total > 80%"
+              message: The disk containing directory /tmp is more than 80% full
+          - warn:
+              when: "available < 2Gi"
+              message: The disk containing directory /tmp has less than 2Gi of disk space available
+          - pass:
+              message: The disk containing directory /tmp has sufficient space
+    - diskUsage:
+        checkName: "var-lib-kubelet"
+        collectorName: "var-lib-kubelet"
+        outcomes:
+          - warn:
+              when: "used/total > 80%"
+              message: The disk containing directory /var/lib/kubelet is more than 80% full
+          - warn:
+              when: "available < 10Gi"
+              message: The disk containing directory /var/lib/kubelet has less than 10Gi of disk space available
+          - pass:
+              message: The disk containing directory /var/lib/kubelet has sufficient space
+    - diskUsage:
+        checkName: "var-lib-docker"
+        collectorName: "var-lib-docker"
+        outcomes:
+          - warn:
+              when: "used/total > 80%"
+              message: The disk containing directory /var/lib/docker is more than 80% full
+          - warn:
+              when: "available < 10Gi"
+              message: The disk containing directory /var/lib/docker has less than 10Gi of disk space available
+          - pass:
+              message: The disk containing directory /var/lib/docker has sufficient space
+    - diskUsage:
+        checkName: "var-lib-containerd"
+        collectorName: "var-lib-containerd"
+        outcomes:
+          - warn:
+              when: "used/total > 80%"
+              message: The disk containing directory /var/lib/containerd is more than 80% full
+          - warn:
+              when: "available < 10Gi"
+              message: The disk containing directory /var/lib/containerd has less than 10Gi of disk space available
+          - pass:
+              message: The disk containing directory /var/lib/containerd has sufficient space
+    - diskUsage:
+        checkName: "var-lib-rook"
+        collectorName: "var-lib-rook"
+        outcomes:
+          - warn:
+              when: "used/total > 80%"
+              message: The disk containing directory /var/lib/rook is more than 80% full
+          - warn:
+              when: "available < 10Gi"
+              message: The disk containing directory /var/lib/rook has less than 10Gi of disk space available
+          - pass:
+              message: The disk containing directory /var/lib/rook has sufficient space
+    - diskUsage:
+        checkName: "opt-replicated"
+        collectorName: "opt-replicated"
+        outcomes:
+          - warn:
+              when: "used/total > 80%"
+              message: The disk containing directory /opt/replicated is more than 80% full
+          - warn:
+              when: "available < 10Gi"
+              message: The disk containing directory /opt/replicated has less than 10Gi of disk space available
+          - pass:
+              message: The disk containing directory /opt/replicated has sufficient space
+    - diskUsage:
+        checkName: "var-openebs"
+        collectorName: "var-openebs"
+        outcomes:
+          - warn:
+              when: "used/total > 80%"
+              message: The disk containing directory /var/openebs is more than 80% full
+          - warn:
+              when: "available < 10Gi"
+              message: The disk containing directory /var/openebs has less than 10Gi of disk space available
+          - pass:
+              message: The disk containing directory /var/openebs has sufficient space
+    - http:
+        checkName: curl-k8s-api-6443
+        collectorName: curl-k8s-api-6443
+        outcomes:
+          - warn:
+              when: "error"
+              message: Unable to curl https://localhost:6443/healthz. Please, run `curl -k https://localhost:6443/healthz` to check further information.
+          - pass:
+              when: "statusCode == 200"
+              message: curl -k https://localhost:6443/healthz returned HTTP CODE response 200.
+          - warn:
+              message: "Unexpected response. HTTP CODE response is not 200. Please, run `curl -ki https://localhost:6443/healthz` to check further information."
+    - http:
+        checkName: curl-api-replicated-com
+        collectorName: curl-api-replicated-com
+        outcomes:
+          - warn:
+              when: "error"
+              message: Error connecting to https://api.replicated.com/healthz
+          - pass:
+              when: "statusCode == 200"
+              message: Connected to https://api.replicated.com/healthz
+          - warn:
+              message: "Unexpected response"
+    - http:
+        checkName: get-proxy-replicated-com
+        collectorName: get-proxy-replicated-com
+        outcomes:
+          - warn:
+              when: "error"
+              message: Error connecting to https://proxy.replicated.com
+          - pass:
+              when: "statusCode == 401"
+              message: Connected to https://proxy.replicated.com
+          - warn:
+              message: "Unexpected response"
+    - http:
+        checkName: curl-get-replicated-com
+        collectorName: curl-get-replicated-com
+        outcomes:
+          - warn:
+              when: "error"
+              message: Error connecting to https://get.replicated.com/healthz
+          - pass:
+              when: "statusCode == 200"
+              message: Connected to https://get.replicated.com/healthz
+          - warn:
+              message: "Unexpected response"
+    - http:
+        checkName: curl-registry-replicated-com
+        collectorName: curl-registry-replicated-com
+        outcomes:
+          - warn:
+              when: "error"
+              message: Error connecting to https://registry.replicated.com/healthz
+          - pass:
+              when: "statusCode == 200"
+              message: Connected to https://registry.replicated.com/healthz
+          - warn:
+              message: "Unexpected response"
+    - http:
+        checkName: curl-proxy-replicated-com
+        collectorName: curl-proxy-replicated-com
+        outcomes:
+          - warn:
+              when: "error"
+              message: Error connecting to https://proxy.replicated.com/healthz
+          - pass:
+              when: "statusCode == 200"
+              message: Connected to https://proxy.replicated.com/healthz
+          - warn:
+              message: "Unexpected response"
+    - http:
+        checkName: curl-k8s-kurl-sh
+        collectorName: curl-k8s-kurl-sh
+        outcomes:
+          - warn:
+              when: "error"
+              message: Error connecting to https://k8s.kurl.sh/healthz
+          - pass:
+              when: "statusCode == 200"
+              message: Connected to https://k8s.kurl.sh/healthz
+          - warn:
+              message: "Unexpected response"
+    - http:
+        checkName: curl-replicated-app
+        collectorName: curl-replicated-app
+        outcomes:
+          - warn:
+              when: "error"
+              message: Error connecting to https://replicated.app/healthz
+          - pass:
+              when: "statusCode == 200"
+              message: Connected to https://replicated.app/healthz
+          - warn:
+              message: "Unexpected response"
+    - filesystemPerformance:
+        collectorName: filesystem-latency-two-minute-benchmark
+        outcomes:
+          - pass:
+              when: "p99 < 10ms"
+              message: "Write latency is ok (p99 target < 10ms)"
+          - warn:
+              message: "Write latency is high. p99 target >= 10ms)"
+  analyzers:
+    - textAnalyze:
+        checkName: Hostname Mismatch
+        fileName: host-collectors/run-host/journalctl-kubelet.txt
+        regex: ".*can only access node lease with the same name as the requesting node.*"
+        outcomes:
+          - fail:
+              when: "true"
+              message: "Possible hostname change. Verify that the current hostname matches what's expected by the k8s control plane"
+          - pass:
+              when: "false"
+              message: "No signs of hostname changes found"
+    - textAnalyze:
+        checkName: "Check for CNI 'not ready' messages"
+        fileName: host-collectors/run-host/journalctl-kubelet.txt
+        regex: "Container runtime network not ready.*cni plugin not initialized"
+        outcomes:
+          - pass:
+              when: "false"
+              message: "CNI is initialized"
+          - fail:
+              when: "true"
+              message: "CNI plugin not initialized: there may be a problem with the CNI configuration on the host, check /etc/cni/net.d/*.conflist against a known good configuration"
+    - textAnalyze:
+        checkName: Kubernetes API health check
+        fileName: host-collectors/run-host/k8s-api-healthz-6443.txt
+        regex: ".*healthz check passed*"
+        outcomes:
+          - fail:
+              when: "false"
+              message: "Kubernetes API health check did not pass. One or more components are not working."
+          - pass:
+              when: "true"
+              message: "Kubernetes API health check passed"
+    - textAnalyze:
+        checkName: ETCD Kubernetes API health check
+        fileName: host-collectors/run-host/k8s-api-healthz-6443.txt
+        regex: ".*etcd ok*"
+        outcomes:
+          - fail:
+              when: "false"
+              message: "ETCD is unhealthy"
+          - pass:
+              when: "true"
+              message: "ETCD healthz check using Kubernetes API is OK"
+    - textAnalyze:
+        checkName: ETCD API Health
+        fileName: host-collectors/run-host/curl-etcd-health-2379.txt
+        regex: ".*\"health\":\"true\"*"
+        outcomes:
+          - fail:
+              when: "false"
+              message: "ETCD status returned: unhealthy"
+          - pass:
+              when: "true"
+              message: "ETCD status returned: healthy"
+    - textAnalyze:
+        checkName: Check if localhost resolves to 127.0.0.1
+        fileName: host-collectors/run-host/localhost-ips.txt
+        regex: 'localhost has address 127.0.0.1'
+        outcomes:
+          - fail:
+              when: "false"
+              message: "'localhost' does not resolve to 127.0.0.1 ip address"
+          - pass:
+              when: "true"
+              message: "'localhost' resolves to 127.0.0.1 ip address"
+    - textAnalyze:
+        checkName: Check if SELinux is enabled
+        fileName: host-collectors/run-host/sestatus.txt
+        regex: '(?m)^Current mode:\s+enforcing'
+        ignoreIfNoFiles: true
+        outcomes:
+          - fail:
+              when: "true"
+              message: "SELinux is enabled when it should be disabled for kubernetes to work properly"
+          - pass:
+              when: "false"
+              message: "SELinux is disabled as expected"
+    - textAnalyze:
+        checkName: "Detect Threat Management and Network Security Tools"
+        fileName: host-collectors/run-host/ps-detect-antivirus-and-security-tools.txt
+        regex: '\b(clamav|sophos|esets_daemon|fsav|symantec|mfend|ds_agent|kav|bdagent|s1agent|falcon|illumio|xagt|wdavdaemon|mdatp)\b'
+        ignoreIfNoFiles: true
+        outcomes:
+          - fail:
+              when: "true"
+              message: "Antivirus or Network Security tools detected. These tools can interfere with kubernetes operation."
+          - pass:
+              when: "false"
+              message: "No Antivirus or Network Security tools detected."
+    - systemPackages:
+        collectorName: security-tools-packages
+        outcomes:
+          - fail:
+              when: '{{ .IsInstalled }}'
+              message: Package {{ .Name }} is installed. This tool can interfere with kubernetes operation.
+          - pass:
+              message: Package {{ .Name }} is not installed

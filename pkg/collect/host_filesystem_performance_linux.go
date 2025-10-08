@@ -10,12 +10,14 @@ import (
 	"math/rand"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"syscall"
 	"time"
 
 	"github.com/pkg/errors"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
+	"k8s.io/klog/v2"
 )
 
 // Today we only care about checking for write latency so the options struct
@@ -84,10 +86,11 @@ func collectHostFilesystemPerformance(hostCollector *troubleshootv1beta2.Filesys
 	}
 
 	var fioResult *FioResult
+	var fioStderr []byte
 	errCh := make(chan error, 1)
 	go func() {
 		var err error
-		fioResult, err = collectFioResults(collectCtx, hostCollector)
+		fioResult, fioStderr, err = collectFioResults(collectCtx, hostCollector)
 		errCh <- err
 	}()
 
@@ -108,9 +111,14 @@ func collectHostFilesystemPerformance(hostCollector *troubleshootv1beta2.Filesys
 	output := NewResult()
 	output.SaveResult(bundlePath, name, bytes.NewBuffer(b))
 
-	return map[string][]byte{
-		name: b,
-	}, nil
+	// Save stderr if present (captures permission errors and warnings)
+	if len(fioStderr) > 0 {
+		stderrPath := strings.TrimSuffix(name, filepath.Ext(name)) + "-stderr.txt"
+		klog.V(2).Infof("Saving filesystem performance stderr to %q in bundle", stderrPath)
+		output.SaveResult(bundlePath, stderrPath, bytes.NewBuffer(fioStderr))
+	}
+
+	return output, nil
 }
 
 type backgroundIOPSOpts struct {
@@ -142,17 +150,18 @@ func backgroundIOPS(ctx context.Context, opts backgroundIOPSOpts, done chan bool
 				filename = fmt.Sprintf("background-read-%d", i)
 			}
 			filename = filepath.Join(opts.directory, filename)
+			// Ensure we signal completion exactly once per job
+			defer func() { done <- true }()
 			f, err := os.OpenFile(filename, os.O_RDWR|os.O_CREATE|os.O_TRUNC|syscall.O_DIRECT, 0600)
 			if err != nil {
 				log.Printf("Failed to create temp file for background IOPS job: %v", err)
-				done <- true
+				wg.Done() // Signal that this job's initialization is complete (even though it failed)
 				return
 			}
 			defer func() {
 				if err := os.Remove(filename); err != nil {
 					log.Println(err.Error())
 				}
-				done <- true
 			}()
 
 			// For O_DIRECT I/O must be aligned on the sector size of the underlying block device.
@@ -165,6 +174,7 @@ func backgroundIOPS(ctx context.Context, opts backgroundIOPSOpts, done chan bool
 				_, err := io.Copy(f, io.LimitReader(r, fileSize))
 				if err != nil {
 					log.Printf("Failed to write temp file for background read IOPS jobs: %v", err)
+					wg.Done() // Signal that this job's initialization is complete (even though it failed)
 					return
 				}
 			} else {

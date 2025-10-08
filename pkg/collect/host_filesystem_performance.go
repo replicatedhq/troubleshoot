@@ -428,37 +428,44 @@ func buildFioCommand(opts FioJobOptions) []string {
 	return command
 }
 
-func collectFioResults(ctx context.Context, hostCollector *troubleshootv1beta2.FilesystemPerformance) (*FioResult, error) {
+func collectFioResults(ctx context.Context, hostCollector *troubleshootv1beta2.FilesystemPerformance) (*FioResult, []byte, error) {
 
 	command, opts, err := parseCollectorOptions(hostCollector)
 
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to parse collector options")
+		return nil, nil, errors.Wrap(err, "failed to parse collector options")
 	}
 
 	klog.V(2).Infof("collecting fio results: %s", strings.Join(command, " "))
-	output, err := exec.CommandContext(ctx, command[0], command[1:]...).Output() // #nosec G204
+
+	// Capture both stdout and stderr
+	cmd := exec.CommandContext(ctx, command[0], command[1:]...) // #nosec G204
+	var stdout, stderr bytes.Buffer
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+
+	err = cmd.Run()
 	if err != nil {
 		if exitErr, ok := err.(*exec.ExitError); ok {
 			if exitErr.ExitCode() == 1 {
-				return nil, errors.Wrapf(err, "fio failed; permission denied opening %s.  ensure this collector runs as root", opts.Directory)
+				return nil, stderr.Bytes(), errors.Wrapf(err, "fio failed; permission denied opening %s.  ensure this collector runs as root", opts.Directory)
 			} else {
-				return nil, errors.Wrapf(err, "fio failed with exit status %d", exitErr.ExitCode())
+				return nil, stderr.Bytes(), errors.Wrapf(err, "fio failed with exit status %d", exitErr.ExitCode())
 			}
 		} else if e, ok := err.(*exec.Error); ok && e.Err == exec.ErrNotFound {
-			return nil, errors.Wrapf(err, "command not found: %v. ensure fio is installed", command)
+			return nil, stderr.Bytes(), errors.Wrapf(err, "command not found: %v. ensure fio is installed", command)
 		} else {
-			return nil, errors.Wrapf(err, "failed to run command: %v", command)
+			return nil, stderr.Bytes(), errors.Wrapf(err, "failed to run command: %v", command)
 		}
 	}
 
 	var result FioResult
-	err = json.Unmarshal([]byte(output), &result)
+	err = json.Unmarshal(stdout.Bytes(), &result)
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to unmarshal fio result")
+		return nil, stderr.Bytes(), errors.Wrap(err, "failed to unmarshal fio result")
 	}
 
-	return &result, nil
+	return &result, stderr.Bytes(), nil
 }
 
 func (c *CollectHostFilesystemPerformance) RemoteCollect(progressChan chan<- interface{}) (map[string][]byte, error) {
