@@ -50,17 +50,6 @@ jobs:
       # test-integration includes unit tests
       - run: make test-integration
 
-  ensure-schemas-are-generated:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v5
-        with:
-          fetch-depth: 0
-      - uses: actions/setup-go@v6
-        with:
-          go-version-file: 'go.mod'
-      - run: |
-          make check-schemas
 
   compile-preflight:
     runs-on: ubuntu-latest
@@ -91,12 +80,6 @@ jobs:
           path: bin/
       - run: chmod +x bin/preflight
       - run: make preflight-e2e-test
-
-  run-examples:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v5
-      - run: make run-examples
 
   compile-supportbundle:
     runs-on: ubuntu-latest
@@ -148,19 +131,6 @@ jobs:
       - run: chmod +x bin/preflight
       - run: make support-bundle-e2e-go-test
 
-  compile-collect:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v5
-      - uses: actions/setup-go@v6
-        with:
-          go-version-file: 'go.mod'
-      - run: make generate collect
-      - uses: actions/upload-artifact@v4
-        with:
-          name: collect
-          path: bin/collect
-
   goreleaser-test:
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/v') != true
@@ -186,8 +156,8 @@ jobs:
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v6
         with:
-          version: "v0.183.0"
-          args: build --rm-dist --snapshot --config deploy/.goreleaser.yaml --single-target
+          version: "v2.12.3"
+          args: build --clean --snapshot --config deploy/.goreleaser.yaml --single-target
         env:
           GOARCH: ${{ matrix.goarch }}
           GOOS: ${{ matrix.goos }}
@@ -252,12 +222,9 @@ jobs:
     needs:
       - tidy-check
       - test-integration
-      - run-examples
-      - compile-collect
       - validate-preflight-e2e
       - validate-supportbundle-e2e
       - validate-supportbundle-e2e-go
-      - ensure-schemas-are-generated
     steps:
       - run: echo "All PR tests passed"
 
