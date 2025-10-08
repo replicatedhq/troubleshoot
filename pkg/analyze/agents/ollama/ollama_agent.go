@@ -421,39 +421,31 @@ func (a *OllamaAgent) Analyze(ctx context.Context, data []byte, analyzers []anal
 func (a *OllamaAgent) discoverAnalyzers(bundle *analyzer.SupportBundle) []analyzer.AnalyzerSpec {
 	var specs []analyzer.AnalyzerSpec
 
+	// Collect files by type for aggregation
+	podFiles := []string{}
+	deploymentFiles := []string{}
+	eventFiles := []string{}
+	nodeFiles := []string{}
+
 	// Analyze bundle contents to determine what types of analysis to perform
 	for filePath := range bundle.Files {
-		filePath = strings.ToLower(filePath)
+		filePathLower := strings.ToLower(filePath)
 
 		switch {
-		case strings.Contains(filePath, "pods") && strings.HasSuffix(filePath, ".json"):
-			specs = append(specs, analyzer.AnalyzerSpec{
-				Name:     "ai-pod-analysis",
-				Type:     "ai-workload",
-				Category: "pods",
-				Priority: 10,
-				Config:   map[string]interface{}{"filePath": filePath, "promptType": "pod-analysis"},
-			})
+		case strings.Contains(filePathLower, "pods") && strings.HasSuffix(filePathLower, ".json"):
+			podFiles = append(podFiles, filePath)
 
-		case strings.Contains(filePath, "deployments") && strings.HasSuffix(filePath, ".json"):
-			specs = append(specs, analyzer.AnalyzerSpec{
-				Name:     "ai-deployment-analysis",
-				Type:     "ai-workload",
-				Category: "deployments",
-				Priority: 9,
-				Config:   map[string]interface{}{"filePath": filePath, "promptType": "deployment-analysis"},
-			})
+		case strings.Contains(filePathLower, "deployments") && strings.HasSuffix(filePathLower, ".json"):
+			deploymentFiles = append(deploymentFiles, filePath)
 
-		case strings.Contains(filePath, "events") && strings.HasSuffix(filePath, ".json"):
-			specs = append(specs, analyzer.AnalyzerSpec{
-				Name:     "ai-event-analysis",
-				Type:     "ai-events",
-				Category: "events",
-				Priority: 8,
-				Config:   map[string]interface{}{"filePath": filePath, "promptType": "event-analysis"},
-			})
+		case strings.Contains(filePathLower, "events") && strings.HasSuffix(filePathLower, ".json"):
+			eventFiles = append(eventFiles, filePath)
 
-		case strings.Contains(filePath, "logs") && strings.HasSuffix(filePath, ".log"):
+		case strings.Contains(filePathLower, "nodes") && strings.HasSuffix(filePathLower, ".json"):
+			nodeFiles = append(nodeFiles, filePath)
+
+		case strings.Contains(filePathLower, "logs") && strings.HasSuffix(filePathLower, ".log"):
+			// Logs are analyzed separately per file (not aggregated)
 			specs = append(specs, analyzer.AnalyzerSpec{
 				Name:     "ai-log-analysis",
 				Type:     "ai-logs",
@@ -461,19 +453,364 @@ func (a *OllamaAgent) discoverAnalyzers(bundle *analyzer.SupportBundle) []analyz
 				Priority: 7,
 				Config:   map[string]interface{}{"filePath": filePath, "promptType": "log-analysis"},
 			})
-
-		case strings.Contains(filePath, "nodes") && strings.HasSuffix(filePath, ".json"):
-			specs = append(specs, analyzer.AnalyzerSpec{
-				Name:     "ai-resource-analysis",
-				Type:     "ai-resources",
-				Category: "nodes",
-				Priority: 8,
-				Config:   map[string]interface{}{"filePath": filePath, "promptType": "resource-analysis"},
-			})
 		}
 	}
 
+	// Create aggregated analyzer for ALL pod files (cluster-wide view)
+	if len(podFiles) > 0 {
+		specs = append(specs, analyzer.AnalyzerSpec{
+			Name:     "ai-pod-analysis-cluster",
+			Type:     "ai-workload",
+			Category: "pods",
+			Priority: 10,
+			Config: map[string]interface{}{
+				"filePaths":  podFiles,
+				"promptType": "pod-analysis",
+				"aggregated": true,
+			},
+		})
+	}
+
+	// Create aggregated analyzer for ALL deployment files (cluster-wide view)
+	if len(deploymentFiles) > 0 {
+		specs = append(specs, analyzer.AnalyzerSpec{
+			Name:     "ai-deployment-analysis-cluster",
+			Type:     "ai-workload",
+			Category: "deployments",
+			Priority: 9,
+			Config: map[string]interface{}{
+				"filePaths":  deploymentFiles,
+				"promptType": "deployment-analysis",
+				"aggregated": true,
+			},
+		})
+	}
+
+	// Create aggregated analyzer for ALL event files (cluster-wide view)
+	if len(eventFiles) > 0 {
+		specs = append(specs, analyzer.AnalyzerSpec{
+			Name:     "ai-event-analysis-cluster",
+			Type:     "ai-events",
+			Category: "events",
+			Priority: 8,
+			Config: map[string]interface{}{
+				"filePaths":  eventFiles,
+				"promptType": "event-analysis",
+				"aggregated": true,
+			},
+		})
+	}
+
+	// Create aggregated analyzer for ALL node files (cluster-wide view)
+	if len(nodeFiles) > 0 {
+		specs = append(specs, analyzer.AnalyzerSpec{
+			Name:     "ai-resource-analysis-cluster",
+			Type:     "ai-resources",
+			Category: "nodes",
+			Priority: 8,
+			Config: map[string]interface{}{
+				"filePaths":  nodeFiles,
+				"promptType": "resource-analysis",
+				"aggregated": true,
+			},
+		})
+	}
+
 	return specs
+}
+
+// aggregateFiles combines multiple files of the same type into a single summary for analysis
+func (a *OllamaAgent) aggregateFiles(bundle *analyzer.SupportBundle, filePaths []string, category string) (string, error) {
+	var summary strings.Builder
+
+	switch category {
+	case "pods":
+		return a.aggregatePodFiles(bundle, filePaths)
+	case "deployments":
+		return a.aggregateDeploymentFiles(bundle, filePaths)
+	case "events":
+		return a.aggregateEventFiles(bundle, filePaths)
+	case "nodes":
+		return a.aggregateNodeFiles(bundle, filePaths)
+	default:
+		// For other types, just concatenate the files
+		summary.WriteString(fmt.Sprintf("Aggregated analysis of %d files:\n\n", len(filePaths)))
+		for _, filePath := range filePaths {
+			if data, exists := bundle.Files[filePath]; exists {
+				summary.WriteString(fmt.Sprintf("--- File: %s ---\n", filePath))
+				summary.Write(data)
+				summary.WriteString("\n\n")
+			}
+		}
+	}
+
+	return summary.String(), nil
+}
+
+// aggregatePodFiles creates a cluster-wide summary of pods from multiple namespace files
+func (a *OllamaAgent) aggregatePodFiles(bundle *analyzer.SupportBundle, filePaths []string) (string, error) {
+	var summary strings.Builder
+	totalPods := 0
+	runningPods := 0
+	pendingPods := 0
+	failedPods := 0
+	succeededPods := 0
+	namespaceStats := make(map[string]int)
+
+	summary.WriteString("CLUSTER-WIDE POD ANALYSIS\n")
+	summary.WriteString("Analyzing pods across all namespaces:\n\n")
+
+	for _, filePath := range filePaths {
+		data, exists := bundle.Files[filePath]
+		if !exists {
+			continue
+		}
+
+		// Extract namespace from path (e.g., "cluster-resources/pods/kube-system.json")
+		parts := strings.Split(filePath, "/")
+		namespace := "unknown"
+		if len(parts) >= 3 {
+			namespace = strings.TrimSuffix(parts[len(parts)-1], ".json")
+		}
+
+		// Parse pod data - handle both PodList and single Pod objects
+		var podList map[string]interface{}
+		if err := json.Unmarshal(data, &podList); err != nil {
+			continue
+		}
+
+		// Check if this is a List object with items array
+		items, ok := podList["items"].([]interface{})
+		if ok {
+			// Handle PodList - process all pods in the list
+			// Initialize namespace for valid PodList (ensures empty namespaces are tracked)
+			if _, exists := namespaceStats[namespace]; !exists {
+				namespaceStats[namespace] = 0
+			}
+
+			podCount := len(items)
+			namespaceStats[namespace] += podCount
+			totalPods += podCount
+
+			// Count pod statuses
+			for _, item := range items {
+				pod, ok := item.(map[string]interface{})
+				if !ok {
+					continue
+				}
+
+				status, ok := pod["status"].(map[string]interface{})
+				if !ok {
+					continue
+				}
+
+				phase, ok := status["phase"].(string)
+				if !ok {
+					continue
+				}
+
+				switch phase {
+				case "Running":
+					runningPods++
+				case "Pending":
+					pendingPods++
+				case "Failed":
+					failedPods++
+				case "Succeeded":
+					succeededPods++
+				}
+			}
+		} else {
+			// Handle single Pod object (not a list)
+			// Check if this is a single Pod object (has "kind": "Pod")
+			if kind, exists := podList["kind"].(string); exists && kind == "Pod" {
+				// Initialize namespace only for valid pod data
+				if _, exists := namespaceStats[namespace]; !exists {
+					namespaceStats[namespace] = 0
+				}
+				// Single pod - increment count for this namespace
+				namespaceStats[namespace]++
+				totalPods++
+				// Extract status for single pod
+				if status, ok := podList["status"].(map[string]interface{}); ok {
+					if phase, ok := status["phase"].(string); ok {
+						switch phase {
+						case "Running":
+							runningPods++
+						case "Pending":
+							pendingPods++
+						case "Failed":
+							failedPods++
+						case "Succeeded":
+							succeededPods++
+						}
+					}
+				}
+			}
+			// Skip to next file after processing single pod or invalid data
+			continue
+		}
+	}
+
+	summary.WriteString(fmt.Sprintf("Total pods in cluster: %d\n", totalPods))
+	summary.WriteString(fmt.Sprintf("  - Running: %d\n", runningPods))
+	summary.WriteString(fmt.Sprintf("  - Pending: %d\n", pendingPods))
+	summary.WriteString(fmt.Sprintf("  - Failed: %d\n", failedPods))
+	summary.WriteString(fmt.Sprintf("  - Succeeded: %d\n", succeededPods))
+	summary.WriteString("\nPods by namespace:\n")
+
+	for namespace, count := range namespaceStats {
+		if count > 0 {
+			summary.WriteString(fmt.Sprintf("  - %s: %d pods\n", namespace, count))
+		} else {
+			summary.WriteString(fmt.Sprintf("  - %s: empty (no pods)\n", namespace))
+		}
+	}
+
+	summary.WriteString("\nIMPORTANT CONTEXT:\n")
+	summary.WriteString("- Empty namespaces are NORMAL in Kubernetes\n")
+	summary.WriteString("- Only report issues if there are actual pod failures or critical problems\n")
+	summary.WriteString("- The presence of empty namespaces is not a problem\n")
+
+	return summary.String(), nil
+}
+
+// aggregateDeploymentFiles creates a cluster-wide summary of deployments
+func (a *OllamaAgent) aggregateDeploymentFiles(bundle *analyzer.SupportBundle, filePaths []string) (string, error) {
+	var summary strings.Builder
+	totalDeployments := 0
+	namespaceStats := make(map[string]int)
+
+	summary.WriteString("CLUSTER-WIDE DEPLOYMENT ANALYSIS\n")
+	summary.WriteString("Analyzing deployments across all namespaces:\n\n")
+
+	for _, filePath := range filePaths {
+		data, exists := bundle.Files[filePath]
+		if !exists {
+			continue
+		}
+
+		parts := strings.Split(filePath, "/")
+		namespace := "unknown"
+		if len(parts) >= 3 {
+			namespace = strings.TrimSuffix(parts[len(parts)-1], ".json")
+		}
+
+		// Parse deployment data - handle both DeploymentList and single Deployment objects
+		var deploymentList map[string]interface{}
+		if err := json.Unmarshal(data, &deploymentList); err != nil {
+			continue
+		}
+
+		// Check if this is a List object with items array
+		items, ok := deploymentList["items"].([]interface{})
+		if ok {
+			// Handle DeploymentList - process all deployments in the list
+			// Initialize namespace for valid DeploymentList (ensures empty namespaces are tracked)
+			if _, exists := namespaceStats[namespace]; !exists {
+				namespaceStats[namespace] = 0
+			}
+
+			deployCount := len(items)
+			namespaceStats[namespace] += deployCount
+			totalDeployments += deployCount
+		} else {
+			// Handle single Deployment object (not a list)
+			// Check if this is a single Deployment object (has "kind": "Deployment")
+			if kind, exists := deploymentList["kind"].(string); exists && kind == "Deployment" {
+				// Initialize namespace only for valid deployment data
+				if _, exists := namespaceStats[namespace]; !exists {
+					namespaceStats[namespace] = 0
+				}
+				// Single deployment - increment count for this namespace
+				namespaceStats[namespace]++
+				totalDeployments++
+			}
+			// Skip to next file after processing single deployment or invalid data
+			continue
+		}
+	}
+
+	summary.WriteString(fmt.Sprintf("Total deployments in cluster: %d\n", totalDeployments))
+	summary.WriteString("\nDeployments by namespace:\n")
+
+	for namespace, count := range namespaceStats {
+		if count > 0 {
+			summary.WriteString(fmt.Sprintf("  - %s: %d deployments\n", namespace, count))
+		} else {
+			summary.WriteString(fmt.Sprintf("  - %s: no deployments\n", namespace))
+		}
+	}
+
+	summary.WriteString("\nIMPORTANT: Empty namespaces are normal. Only flag actual deployment issues.\n")
+
+	return summary.String(), nil
+}
+
+// aggregateEventFiles creates a cluster-wide summary of events
+func (a *OllamaAgent) aggregateEventFiles(bundle *analyzer.SupportBundle, filePaths []string) (string, error) {
+	var summary strings.Builder
+	totalEvents := 0
+
+	summary.WriteString("CLUSTER-WIDE EVENT ANALYSIS\n")
+	summary.WriteString("Analyzing events across all namespaces:\n\n")
+
+	eventsIncluded := 0
+	for _, filePath := range filePaths {
+		data, exists := bundle.Files[filePath]
+		if !exists {
+			continue
+		}
+
+		// Parse event data - handle both EventList and single Event objects
+		var eventList map[string]interface{}
+		if err := json.Unmarshal(data, &eventList); err != nil {
+			continue
+		}
+
+		// Check if this is a List object with items array
+		items, ok := eventList["items"].([]interface{})
+		if ok {
+			itemCount := len(items)
+			totalEvents += itemCount
+			// Include actual event data for AI analysis (limited to 50 events max for the summary)
+			// Only include if adding this file wouldn't significantly exceed the limit
+			if itemCount > 0 && eventsIncluded < 50 && (eventsIncluded+itemCount) <= 60 {
+				dataStr := string(data)
+				// Include file if data size is reasonable
+				if len(dataStr) < 2000 {
+					summary.WriteString(fmt.Sprintf("\n--- Events from %s ---\n", filePath))
+					summary.WriteString(dataStr)
+					summary.WriteString("\n")
+					eventsIncluded += itemCount
+				}
+			}
+		}
+	}
+
+	summary.WriteString(fmt.Sprintf("\nTotal events collected: %d\n", totalEvents))
+
+	return summary.String(), nil
+}
+
+// aggregateNodeFiles creates a cluster-wide summary of nodes
+func (a *OllamaAgent) aggregateNodeFiles(bundle *analyzer.SupportBundle, filePaths []string) (string, error) {
+	var summary strings.Builder
+
+	summary.WriteString("CLUSTER-WIDE NODE ANALYSIS\n\n")
+
+	for _, filePath := range filePaths {
+		data, exists := bundle.Files[filePath]
+		if !exists {
+			continue
+		}
+
+		summary.WriteString(fmt.Sprintf("--- Nodes data from %s ---\n", filePath))
+		summary.Write(data)
+		summary.WriteString("\n\n")
+	}
+
+	return summary.String(), nil
 }
 
 // runLLMAnalysis executes analysis using LLM for a specific analyzer spec
@@ -481,30 +818,59 @@ func (a *OllamaAgent) runLLMAnalysis(ctx context.Context, bundle *analyzer.Suppo
 	ctx, span := otel.Tracer(constants.LIB_TRACER_NAME).Start(ctx, fmt.Sprintf("OllamaAgent.%s", spec.Name))
 	defer span.End()
 
-	// Smart file detection for enhanced analyzer compatibility
-	var filePath string
-	var fileData []byte
-	var exists bool
+	var dataStr string
 
-	// First try to get explicit filePath from config
-	if fp, ok := spec.Config["filePath"].(string); ok {
-		filePath = fp
-		fileData, exists = bundle.Files[filePath]
-	}
-
-	// If no explicit filePath, auto-detect based on analyzer type
-	if !exists {
-		filePath, fileData, exists = a.autoDetectFileForAnalyzer(bundle, spec)
-	}
-
-	if !exists {
-		result := &analyzer.AnalyzerResult{
-			Title:    spec.Name,
-			IsWarn:   true,
-			Message:  fmt.Sprintf("File not found: %s", filePath),
-			Category: spec.Category,
+	// Check if this is an aggregated analyzer (multiple files)
+	if aggregated, ok := spec.Config["aggregated"].(bool); ok && aggregated {
+		// Handle aggregated files
+		if filePaths, ok := spec.Config["filePaths"].([]string); ok && len(filePaths) > 0 {
+			aggregatedData, err := a.aggregateFiles(bundle, filePaths, spec.Category)
+			if err != nil {
+				return &analyzer.AnalyzerResult{
+					Title:    spec.Name,
+					IsWarn:   true,
+					Message:  fmt.Sprintf("Failed to aggregate files: %v", err),
+					Category: spec.Category,
+				}, nil
+			}
+			dataStr = aggregatedData
+		} else {
+			// Missing or invalid filePaths for aggregated analyzer
+			return &analyzer.AnalyzerResult{
+				Title:    spec.Name,
+				IsWarn:   true,
+				Message:  "Aggregated analyzer missing valid filePaths configuration",
+				Category: spec.Category,
+			}, nil
 		}
-		return result, nil
+	} else {
+		// Smart file detection for enhanced analyzer compatibility (single file)
+		var filePath string
+		var fileData []byte
+		var exists bool
+
+		// First try to get explicit filePath from config
+		if fp, ok := spec.Config["filePath"].(string); ok {
+			filePath = fp
+			fileData, exists = bundle.Files[filePath]
+		}
+
+		// If no explicit filePath, auto-detect based on analyzer type
+		if !exists {
+			filePath, fileData, exists = a.autoDetectFileForAnalyzer(bundle, spec)
+		}
+
+		if !exists {
+			result := &analyzer.AnalyzerResult{
+				Title:    spec.Name,
+				IsWarn:   true,
+				Message:  fmt.Sprintf("File not found: %s", filePath),
+				Category: spec.Category,
+			}
+			return result, nil
+		}
+
+		dataStr = string(fileData)
 	}
 
 	promptType, _ := spec.Config["promptType"].(string)
@@ -519,7 +885,6 @@ func (a *OllamaAgent) runLLMAnalysis(ctx context.Context, bundle *analyzer.Suppo
 	}
 
 	// Prepare data for analysis (truncate if too large)
-	dataStr := string(fileData)
 	if len(dataStr) > 4000 { // Limit input size
 		if promptType == "log-analysis" {
 			// For logs, take the last N lines
@@ -866,6 +1231,182 @@ func (a *OllamaAgent) autoDetectFileForAnalyzer(bundle *analyzer.SupportBundle, 
 	return "", nil, false
 }
 
+// normalizeInsights converts various JSON formats into a []string array
+func (a *OllamaAgent) normalizeInsights(raw json.RawMessage) []string {
+	if len(raw) == 0 {
+		return []string{}
+	}
+
+	// Try parsing as array of strings first (expected format)
+	var arrayInsights []string
+	if err := json.Unmarshal(raw, &arrayInsights); err == nil {
+		return arrayInsights
+	}
+
+	// Try parsing as single string
+	var stringInsight string
+	if err := json.Unmarshal(raw, &stringInsight); err == nil {
+		if stringInsight != "" {
+			return []string{stringInsight}
+		}
+		return []string{}
+	}
+
+	// Try parsing as array of objects/maps (common LLM format)
+	var arrayOfMaps []map[string]interface{}
+	if err := json.Unmarshal(raw, &arrayOfMaps); err == nil {
+		insights := []string{}
+		for _, obj := range arrayOfMaps {
+			// Extract meaningful text from each object
+			insightText := a.formatMapAsInsight(obj)
+			if insightText != "" {
+				insights = append(insights, insightText)
+			}
+		}
+		return insights
+	}
+
+	// Try parsing as object/map and extract meaningful text
+	var objInsights map[string]interface{}
+	if err := json.Unmarshal(raw, &objInsights); err == nil {
+		insights := []string{}
+		for key, value := range objInsights {
+			// Extract meaningful insights from object structure
+			insightText := a.extractInsightText(key, value)
+			if insightText != "" {
+				insights = append(insights, insightText)
+			}
+		}
+		return insights
+	}
+
+	// If all parsing fails, return empty array
+	return []string{}
+}
+
+// formatMapAsInsight converts a map/object into a readable insight string
+func (a *OllamaAgent) formatMapAsInsight(obj map[string]interface{}) string {
+	// Common patterns in LLM responses for insights
+	// Try to extract description, pattern, message, etc.
+
+	// Priority 1: Look for description field
+	if desc, ok := obj["description"].(string); ok && desc != "" {
+		if pattern, ok := obj["pattern"].(string); ok && pattern != "" {
+			return fmt.Sprintf("%s: %s", pattern, desc)
+		}
+		return desc
+	}
+
+	// Priority 2: Look for message field
+	if msg, ok := obj["message"].(string); ok && msg != "" {
+		return msg
+	}
+
+	// Priority 3: Look for explanation/implication field
+	if expl, ok := obj["explanation"].(string); ok && expl != "" {
+		return expl
+	}
+	if impl, ok := obj["implication"].(string); ok && impl != "" {
+		return impl
+	}
+
+	// Priority 4: Combine all string fields
+	parts := []string{}
+	for key, value := range obj {
+		if str, ok := value.(string); ok && str != "" {
+			parts = append(parts, fmt.Sprintf("%s: %s", key, str))
+		}
+	}
+
+	if len(parts) > 0 {
+		return strings.Join(parts, ", ")
+	}
+
+	return ""
+}
+
+// extractInsightText extracts readable text from nested JSON structures
+func (a *OllamaAgent) extractInsightText(key string, value interface{}) string {
+	switch v := value.(type) {
+	case string:
+		if v != "" {
+			return fmt.Sprintf("%s: %s", key, v)
+		}
+	case map[string]interface{}:
+		// For nested objects, create a summary
+		parts := []string{}
+		for subKey, subValue := range v {
+			if str, ok := subValue.(string); ok && str != "" {
+				parts = append(parts, fmt.Sprintf("%s=%s", subKey, str))
+			}
+		}
+		if len(parts) > 0 {
+			return fmt.Sprintf("%s: %s", key, strings.Join(parts, ", "))
+		}
+	case []interface{}:
+		// For arrays, join elements
+		parts := []string{}
+		for _, item := range v {
+			if str, ok := item.(string); ok && str != "" {
+				parts = append(parts, str)
+			}
+		}
+		if len(parts) > 0 {
+			return fmt.Sprintf("%s: %s", key, strings.Join(parts, ", "))
+		}
+	case float64, int, bool:
+		return fmt.Sprintf("%s: %v", key, v)
+	}
+	return ""
+}
+
+// getStringField extracts a string field from a map, trying multiple key variants
+func (a *OllamaAgent) getStringField(m map[string]interface{}, keys ...string) string {
+	for _, key := range keys {
+		if val, ok := m[key]; ok {
+			if str, ok := val.(string); ok {
+				return str
+			}
+		}
+	}
+	return ""
+}
+
+// extractRemediation extracts remediation info from various JSON structures
+func (a *OllamaAgent) extractRemediation(result *analyzer.AnalyzerResult, remData interface{}) {
+	switch rem := remData.(type) {
+	case map[string]interface{}:
+		// Single remediation object
+		desc := a.getStringField(rem, "description", "Description")
+		action := a.getStringField(rem, "action", "Action")
+		command := a.getStringField(rem, "command", "Command")
+		priority := 5 // default priority
+		if p, ok := rem["priority"].(float64); ok {
+			priority = int(p)
+		} else if p, ok := rem["Priority"].(float64); ok {
+			priority = int(p)
+		}
+
+		if desc != "" || action != "" {
+			result.Remediation = &analyzer.RemediationStep{
+				Description:   desc,
+				Action:        action,
+				Command:       command,
+				Priority:      priority,
+				Category:      "ai-suggested",
+				IsAutomatable: false,
+			}
+		}
+	case []interface{}:
+		// Array of remediation suggestions - use the first one
+		if len(rem) > 0 {
+			if firstRem, ok := rem[0].(map[string]interface{}); ok {
+				a.extractRemediation(result, firstRem)
+			}
+		}
+	}
+}
+
 // parseLLMResponse parses the LLM response into an AnalyzerResult
 func (a *OllamaAgent) parseLLMResponse(response string, spec analyzer.AnalyzerSpec) (*analyzer.AnalyzerResult, error) {
 	// First try JSON parsing
@@ -875,55 +1416,53 @@ func (a *OllamaAgent) parseLLMResponse(response string, spec analyzer.AnalyzerSp
 	if jsonStart != -1 && jsonEnd != -1 && jsonEnd > jsonStart {
 		jsonStr := response[jsonStart : jsonEnd+1]
 
-		var llmResult struct {
-			Status      string   `json:"status"`
-			Title       string   `json:"title"`
-			Message     string   `json:"message"`
-			Insights    []string `json:"insights"`
-			Remediation struct {
-				Description string `json:"description"`
-				Action      string `json:"action"`
-				Command     string `json:"command"`
-				Priority    int    `json:"priority"`
-			} `json:"remediation"`
-		}
-
-		if err := json.Unmarshal([]byte(jsonStr), &llmResult); err == nil {
-			// Successfully parsed JSON
-			result := &analyzer.AnalyzerResult{
-				Title:    llmResult.Title,
-				Message:  llmResult.Message,
-				Category: spec.Category,
-				Insights: llmResult.Insights,
-			}
-
-			switch strings.ToLower(llmResult.Status) {
-			case "pass":
-				result.IsPass = true
-			case "warn":
-				result.IsWarn = true
-			case "fail":
-				result.IsFail = true
-			default:
-				result.IsWarn = true
-			}
-
-			if llmResult.Remediation.Description != "" {
-				result.Remediation = &analyzer.RemediationStep{
-					Description:   llmResult.Remediation.Description,
-					Action:        llmResult.Remediation.Action,
-					Command:       llmResult.Remediation.Command,
-					Priority:      llmResult.Remediation.Priority,
-					Category:      "ai-suggested",
-					IsAutomatable: false,
-				}
-			}
-
-			return result, nil
-		} else {
-			// JSON was found but malformed
+		// Try with a flexible map first to handle case-insensitive fields
+		var jsonMap map[string]interface{}
+		if err := json.Unmarshal([]byte(jsonStr), &jsonMap); err != nil {
 			return nil, errors.Wrap(err, "failed to parse LLM JSON response")
 		}
+
+		// Extract fields in a case-insensitive way
+		status := a.getStringField(jsonMap, "status", "Status")
+		title := a.getStringField(jsonMap, "title", "Title")
+		message := a.getStringField(jsonMap, "message", "Message")
+
+		// Get insights field (try both lowercase and uppercase)
+		var insightsRaw json.RawMessage
+		if insights, ok := jsonMap["insights"]; ok {
+			insightsRaw, _ = json.Marshal(insights)
+		} else if insights, ok := jsonMap["Insights"]; ok {
+			insightsRaw, _ = json.Marshal(insights)
+		}
+
+		insights := a.normalizeInsights(insightsRaw)
+
+		result := &analyzer.AnalyzerResult{
+			Title:    title,
+			Message:  message,
+			Category: spec.Category,
+			Insights: insights,
+		}
+
+		switch strings.ToLower(status) {
+		case "pass":
+			result.IsPass = true
+		case "warn":
+			result.IsWarn = true
+		case "fail":
+			result.IsFail = true
+		default:
+			result.IsWarn = true
+		}
+
+		// Handle remediation (try both cases)
+		if rem, ok := jsonMap["remediation"]; ok {
+			a.extractRemediation(result, rem)
+		} else if rem, ok := jsonMap["Remediation"]; ok {
+			a.extractRemediation(result, rem)
+		}
+
+		return result, nil
 	}
 
 	// Fall back to markdown parsing when JSON fails
