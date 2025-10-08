@@ -42,7 +42,7 @@ spec:
       matchLabels:
         os: darwin
         arch: amd64
-    {{addURIAndSha "https://github.com/replicatedhq/troubleshoot/releases/download/{{ .TagName }}/preflight_darwin_amd64.tar.gz" .TagName }}
+    {{addURIAndSha "https://github.com/replicatedhq/troubleshoot/releases/download/{{ .TagName }}/preflight_darwin_all.tar.gz" .TagName }}
     files:
     - from: preflight
       to: .
@@ -53,7 +53,7 @@ spec:
       matchLabels:
         os: darwin
         arch: arm64
-    {{addURIAndSha "https://github.com/replicatedhq/troubleshoot/releases/download/{{ .TagName }}/preflight_darwin_arm64.tar.gz" .TagName }}
+    {{addURIAndSha "https://github.com/replicatedhq/troubleshoot/releases/download/{{ .TagName }}/preflight_darwin_all.tar.gz" .TagName }}
     files:
     - from: preflight
       to: .

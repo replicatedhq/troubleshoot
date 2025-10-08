@@ -3,6 +3,7 @@ project_name: troubleshoot
 
 release:
   prerelease: auto
+  mode: keep-existing
 
 builds:
   - id: preflight
@@ -12,8 +13,6 @@ builds:
     goarch: [amd64, arm, arm64]
     ignore:
       - goos: windows
-        goarch: arm
-      - goos: darwin
         goarch: arm
     ldflags:
       - -s -w
@@ -37,8 +36,6 @@ builds:
     goarch: [amd64, arm, arm64]
     ignore:
       - goos: windows
-        goarch: arm
-      - goos: darwin
         goarch: arm
     ldflags:
       - -s -w
@@ -95,7 +92,39 @@ archives:
         dst: .
         strip_parent: true
 
-  
+  - id: preflight-universal
+    ids: [preflight-universal]
+    formats: [tar.gz]
+    name_template: "preflight_{{ .Os }}_{{ .Arch }}"
+    files:
+      - licence*
+      - LICENCE*
+      - license*
+      - LICENSE*
+      - readme*
+      - README*
+      - changelog*
+      - CHANGELOG*
+      - src: "sbom/assets/*"
+        dst: .
+        strip_parent: true
+
+  - id: support-bundle-universal
+    ids: [support-bundle-universal]
+    formats: [tar.gz]
+    name_template: "support-bundle_{{ .Os }}_{{ .Arch }}"
+    files:
+      - licence*
+      - LICENCE*
+      - license*
+      - LICENSE*
+      - readme*
+      - README*
+      - changelog*
+      - CHANGELOG*
+      - src: "sbom/assets/*"
+        dst: .
+        strip_parent: true
 
 dockers:
   - dockerfile: ./deploy/Dockerfile.troubleshoot
@@ -119,11 +148,20 @@ dockers:
       - preflight
     skip_push: true
 
- 
+universal_binaries:
+  - id: preflight-universal
+    ids: [preflight]        # refers to the build id above
+    replace: true
+    name_template: preflight
+
+  - id: support-bundle-universal
+    ids: [support-bundle]   # refers to the build id above
+    replace: true
+    name_template: support-bundle
 
 brews:
   - name: preflight
-    ids: [preflight]
+    ids: [preflight, preflight-universal]
     homepage: https://docs.replicated.com/reference/preflight-overview/
     description: "A preflight checker and conformance test for Kubernetes clusters."
     repository:
@@ -133,7 +171,7 @@ brews:
     directory: HomebrewFormula
     install: bin.install "preflight"
   - name: support-bundle
-    ids: [support-bundle]
+    ids: [support-bundle, support-bundle-universal]
     homepage: https://docs.replicated.com/reference/support-bundle-overview/
     description: "Collect and redact support bundles for Kubernetes clusters."
     repository:
