@@ -9,6 +9,7 @@ spec:
         data: "5"
     - runPod:
         collectorName: "static-hi-1"
+        allowImagePullRetries: true
         podSpec:
           containers:
           - name: static-hi
@@ -17,6 +18,7 @@ spec:
     ## This collector is intentionally duplicated to test same pod should be terminated after success
     - runPod:
         collectorName: "static-hi-2"
+        allowImagePullRetries: true
         podSpec:
           containers:
           - name: static-hi
