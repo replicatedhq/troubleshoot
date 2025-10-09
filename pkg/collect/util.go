@@ -80,7 +80,18 @@ func DeterministicIDForCollector(collector *troubleshootv1beta2.Collect) string 
 }
 
 func selectorToString(selector []string) string {
-	return strings.Replace(strings.Join(selector, "-"), "=", "-", -1)
+	result := strings.Replace(strings.Join(selector, "-"), "=", "-", -1)
+	// Sanitize characters that are invalid in Windows filenames: < > : " / \ | ? *
+	// Replace them with underscores to ensure cross-platform compatibility
+	result = strings.ReplaceAll(result, "*", "all")
+	result = strings.ReplaceAll(result, "?", "_")
+	result = strings.ReplaceAll(result, ":", "_")
+	result = strings.ReplaceAll(result, "<", "_")
+	result = strings.ReplaceAll(result, ">", "_")
+	result = strings.ReplaceAll(result, "|", "_")
+	result = strings.ReplaceAll(result, "\"", "_")
+	result = strings.ReplaceAll(result, "\\", "_")
+	return result
 }
 
 func pathToString(path string) string {
