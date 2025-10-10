@@ -242,6 +242,20 @@ func runTroubleshoot(v *viper.Viper, args []string) error {
 		}
 	}
 
+	// Attempt auto-upload before any early returns
+	if v.GetBool("auto-upload") && !response.FileUploaded {
+		licenseID := v.GetString("license-id")
+		appSlug := v.GetString("app-slug")
+
+		fmt.Fprintf(os.Stderr, "Auto-uploading bundle to replicated.app...\n")
+		if err := supportbundle.UploadBundleAutoDetect(response.ArchivePath, licenseID, appSlug); err != nil {
+			fmt.Fprintf(os.Stderr, "Auto-upload failed: %v\n", err)
+			fmt.Fprintf(os.Stderr, "You can manually upload the bundle using: support-bundle upload %s\n", response.ArchivePath)
+		} else {
+			response.FileUploaded = true
+		}
+	}
+
 	if !response.FileUploaded {
 		if appName := mainBundle.Labels["applicationName"]; appName != "" {
 			f := `A support bundle for %s has been created in this directory
@@ -269,11 +283,12 @@ the %s Admin Console to begin analysis.`
 		fmt.Printf("\r%s\r", cursor.ClearEntireLine())
 	}
 	if response.FileUploaded {
-		fmt.Printf("A support bundle has been created and uploaded to your cluster for analysis. Please visit the Troubleshoot page to continue.\n")
+		fmt.Printf("A support bundle has been created and uploaded to replicated.app for analysis.\n")
 		fmt.Printf("A copy of this support bundle was written to the current directory, named %q\n", response.ArchivePath)
 	} else {
 		fmt.Printf("A support bundle has been created in the current directory named %q\n", response.ArchivePath)
 	}
+
 	return nil
 }
 
@@ -497,7 +512,7 @@ func (a *analysisOutput) FormattedAnalysisOutput() (outputJson string, err error
 
 	formatted, err := json.MarshalIndent(o, "", "    ")
 	if err != nil {
-		return "", fmt.Errorf("\r * Failed to format analysis: %v\n", err)
+		return "", fmt.Errorf("\r * Failed to format analysis: %v", err)
 	}
 	return string(formatted), nil
 }
