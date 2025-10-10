@@ -1,0 +1,92 @@
+name: Affected Go Tests
+
+on:
+  workflow_run:
+    workflows: ["build-test"]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  test-affected:
+    # Only run if the build-test workflow succeeded and it's not a draft PR
+    if: |
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'pull_request' &&
+      github.event.workflow_run.pull_requests[0].draft == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # Check out the PR merge commit
+          ref: ${{ github.event.workflow_run.head_sha }}
+          fetch-depth: 0
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Go Mod Download
+        run: go mod download
+
+      - name: Get PR Base SHA
+        id: pr-info
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # Get the PR number from the workflow run
+          PR_NUMBER="${{ github.event.workflow_run.pull_requests[0].number }}"
+          echo "PR Number: ${PR_NUMBER}"
+
+          # Get the base SHA for this PR
+          BASE_SHA=$(gh pr view ${PR_NUMBER} --json baseRefOid -q .baseRefOid)
+          echo "BASE_SHA=${BASE_SHA}" >> "$GITHUB_OUTPUT"
+          echo "Base SHA: ${BASE_SHA}"
+
+      - name: Compute affected packages
+        id: affected
+        env:
+          BASE_SHA: ${{ steps.pr-info.outputs.BASE_SHA }}
+        run: |
+          set -euo pipefail
+          echo "Base SHA: ${BASE_SHA}"
+          # Generate affected package list to a file for reuse in subsequent steps
+          go run ./scripts/affected-packages.go -base "${BASE_SHA}" > /tmp/affected.txt
+          echo "Affected packages:" || true
+          if [ -s /tmp/affected.txt ]; then
+            cat /tmp/affected.txt
+          else
+            echo "(none)"
+          fi
+          # Expose whether we have any packages to test
+          if [ -s /tmp/affected.txt ]; then
+            echo "has_changes=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_changes=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Run unit tests for affected packages
+        if: steps.affected.outputs.has_changes == 'true'
+        run: |
+          set -euo pipefail
+          # If the script output contains './...' then run all tests
+          if grep -qx "./..." /tmp/affected.txt; then
+            echo "Module files changed; running all tests"
+            go test -race -count=1 ./...
+          else
+            echo "Running tests for affected packages"
+            # xargs will pass the package list as arguments to go test
+            xargs -a /tmp/affected.txt go test -race -count=1 -v
+          fi
+
+      - name: No affected packages — skip tests
+        if: steps.affected.outputs.has_changes != 'true'
+        run: echo "No Go packages affected by this PR; skipping tests."
+
+
