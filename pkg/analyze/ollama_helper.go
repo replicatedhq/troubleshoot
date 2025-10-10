@@ -146,7 +146,6 @@ func (h *OllamaHelper) downloadAndInstallWindows() error {
 		return errors.Wrap(err, "failed to create temporary file")
 	}
 	defer os.Remove(tmpFile.Name())
-	defer tmpFile.Close()
 
 	// Download installer
 	resp, err := http.Get(h.downloadURL)
