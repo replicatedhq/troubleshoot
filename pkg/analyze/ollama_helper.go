@@ -165,6 +165,9 @@ func (h *OllamaHelper) downloadAndInstallWindows() error {
 		return errors.Wrap(err, "failed to write installer")
 	}
 
+	// Close the file before executing it (required on Windows)
+	tmpFile.Close()
+
 	// Run installer
 	klog.Info("Running Ollama installer...")
 	cmd := exec.Command(tmpFile.Name())
