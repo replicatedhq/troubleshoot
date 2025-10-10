@@ -25,6 +25,8 @@ var decoder runtime.Decoder
 func init() {
 	// Allow serializing Secrets and ConfigMaps
 	_ = v1.AddToScheme(scheme.Scheme)
+	// Ensure v1beta3 Troubleshoot types are registered for decoding
+	_ = troubleshootv1beta3.AddToScheme(scheme.Scheme)
 	decoder = scheme.Codecs.UniversalDeserializer()
 }
 
