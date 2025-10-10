@@ -320,7 +320,7 @@ func (l *specLoader) loadV1Beta3Spec(doc string, kinds *TroubleshootKinds) error
 		if requiresClient && l.client == nil {
 			return types.NewExitCodeError(
 				constants.EXIT_CODE_SPEC_ISSUES,
-				errors.New("this v1beta3 SupportBundle uses secret/configmap references and must be run in a cluster or with a kubeconfig (provide --kubeconfig)"),
+				errors.New("kubernetes client required"),
 			)
 		}
 
