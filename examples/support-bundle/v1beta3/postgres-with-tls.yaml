@@ -1,0 +1,47 @@
+apiVersion: troubleshoot.sh/v1beta3
+kind: SupportBundle
+metadata:
+  name: postgres-tls-support-bundle
+spec:
+  collectors:
+    - postgres:
+        collectorName: secure-database
+        uri:
+          valueFrom:
+            secretKeyRef:
+              name: postgres-connection
+              key: connection-uri
+        tls:
+          cacert:
+            valueFrom:
+              secretKeyRef:
+                name: postgres-tls
+                key: ca.crt
+          clientCert:
+            valueFrom:
+              secretKeyRef:
+                name: postgres-tls
+                key: tls.crt
+          clientKey:
+            valueFrom:
+              secretKeyRef:
+                name: postgres-tls
+                key: tls.key
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: postgres-connection
+type: Opaque
+stringData:
+  connection-uri: "postgresql://myuser:mypassword@postgres.default.svc:5432/mydb?sslmode=verify-full"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: postgres-tls
+type: kubernetes.io/tls
+data:
+  ca.crt: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCi4uLgotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0t
+  tls.crt: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCi4uLgotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0t
+  tls.key: LS0tLS1CRUdJTiBQUklWQVRFIEtFWS0tLS0tCi4uLgotLS0tLUVORCBQUklWQVRFIEtFWS0tLS0t
