@@ -50,9 +50,9 @@ sbom/
 !testdata/supportbundle/*.tar.gz
 !test/baselines/**/baseline.tar.gz
 
-# Ignore built binaries
-troubleshoot
-troubleshoot-test
+# Ignore built binaries (use / prefix to avoid catching source files)
+/troubleshoot
+/troubleshoot-test
 cmd/troubleshoot/troubleshoot
 cmd/*/troubleshoot
-support-bundle
+/support-bundle

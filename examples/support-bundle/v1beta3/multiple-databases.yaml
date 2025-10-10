@@ -1,0 +1,78 @@
+apiVersion: troubleshoot.sh/v1beta3
+kind: SupportBundle
+metadata:
+  name: multi-database-support-bundle
+spec:
+  collectors:
+    # PostgreSQL with secret reference
+    - postgres:
+        collectorName: primary-db
+        uri:
+          valueFrom:
+            secretKeyRef:
+              name: postgres-primary
+              key: connection-uri
+
+    # PostgreSQL replica with secret reference
+    - postgres:
+        collectorName: replica-db
+        uri:
+          valueFrom:
+            secretKeyRef:
+              name: postgres-replica
+              key: connection-uri
+
+    # Redis cache with secret reference
+    - redis:
+        collectorName: cache
+        uri:
+          valueFrom:
+            secretKeyRef:
+              name: redis-creds
+              key: uri
+
+    # MySQL with literal value (for development/testing)
+    - mysql:
+        collectorName: local-mysql
+        uri: "mysql://root:password@localhost:3306/testdb"
+
+    # MSSQL with secret reference
+    - mssql:
+        collectorName: legacy-db
+        uri:
+          valueFrom:
+            secretKeyRef:
+              name: mssql-connection
+              key: dsn
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: postgres-primary
+type: Opaque
+stringData:
+  connection-uri: "postgresql://app:secret123@postgres-primary.default.svc:5432/appdb"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: postgres-replica
+type: Opaque
+stringData:
+  connection-uri: "postgresql://app:secret123@postgres-replica.default.svc:5432/appdb"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: redis-creds
+type: Opaque
+stringData:
+  uri: "redis://:cachesecret@redis.default.svc:6379/0"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: mssql-connection
+type: Opaque
+stringData:
+  dsn: "sqlserver://sa:Str0ngP@ssw0rd@mssql.default.svc:1433?database=legacy"
