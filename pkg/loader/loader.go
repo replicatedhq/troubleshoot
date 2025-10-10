@@ -8,12 +8,14 @@ import (
 	"github.com/pkg/errors"
 	"github.com/replicatedhq/troubleshoot/internal/util"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
+	troubleshootv1beta3 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta3"
 	"github.com/replicatedhq/troubleshoot/pkg/client/troubleshootclientset/scheme"
 	"github.com/replicatedhq/troubleshoot/pkg/constants"
 	"github.com/replicatedhq/troubleshoot/pkg/docrewrite"
 	"github.com/replicatedhq/troubleshoot/pkg/types"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/klog/v2"
 	"sigs.k8s.io/yaml"
 )
@@ -40,6 +42,14 @@ type LoadOptions struct {
 	// If true, the loader will return an error if any of the specs are not valid
 	// else the invalid specs will be ignored
 	Strict bool
+
+	// Client is the kubernetes client used for resolving v1beta3 StringOrValueFrom fields
+	// If not provided, v1beta3 specs with secretKeyRef will fail to load
+	Client kubernetes.Interface
+
+	// Namespace is the default namespace for resolving v1beta3 secret references
+	// Defaults to "default" if not provided
+	Namespace string
 }
 
 // TODO: Additional requirements needed in this package
@@ -64,8 +74,18 @@ type LoadOptions struct {
 // the documents are not valid, else the invalid documents will be ignored.
 func LoadSpecs(ctx context.Context, opt LoadOptions) (*TroubleshootKinds, error) {
 	opt.RawSpecs = append(opt.RawSpecs, opt.RawSpec)
+
+	// Default namespace to "default" if not provided
+	namespace := opt.Namespace
+	if namespace == "" {
+		namespace = "default"
+	}
+
 	l := specLoader{
-		strict: opt.Strict,
+		strict:    opt.Strict,
+		client:    opt.Client,
+		namespace: namespace,
+		ctx:       ctx,
 	}
 
 	return l.loadFromStrings(opt.RawSpecs...)
@@ -140,7 +160,10 @@ func NewTroubleshootKinds() *TroubleshootKinds {
 }
 
 type specLoader struct {
-	strict bool
+	strict    bool
+	client    kubernetes.Interface
+	namespace string
+	ctx       context.Context
 }
 
 // loadFromStrings accepts a list of strings (exploded) which should be yaml documents
@@ -216,6 +239,21 @@ func (l *specLoader) loadFromSplitDocs(splitdocs []string) (*TroubleshootKinds, 
 	kinds := NewTroubleshootKinds()
 
 	for _, doc := range splitdocs {
+		// Check if this is a v1beta3 spec
+		var parsed parsedDoc
+		if err := yaml.Unmarshal([]byte(doc), &parsed); err == nil && parsed.APIVersion == constants.Troubleshootv1beta3Kind {
+			// Handle v1beta3 with secret resolution
+			if err := l.loadV1Beta3Spec(doc, kinds); err != nil {
+				if !l.strict {
+					klog.Warningf("failed to load v1beta3 spec: %v", err)
+					continue
+				}
+				return nil, err
+			}
+			continue
+		}
+
+		// Handle v1beta2 and v1beta1 specs
 		converted, err := docrewrite.ConvertToV1Beta2([]byte(doc))
 		if err != nil {
 			if !l.strict {
@@ -261,6 +299,52 @@ func (l *specLoader) loadFromSplitDocs(splitdocs []string) (*TroubleshootKinds, 
 	klog.V(2).Infof("Loaded %d troubleshoot specs successfully", kinds.Len())
 
 	return kinds, nil
+}
+
+// loadV1Beta3Spec handles loading and resolving v1beta3 specs
+func (l *specLoader) loadV1Beta3Spec(doc string, kinds *TroubleshootKinds) error {
+	// Unmarshal to v1beta3 types
+	obj, _, err := decoder.Decode([]byte(doc), nil, nil)
+	if err != nil {
+		return types.NewExitCodeError(constants.EXIT_CODE_SPEC_ISSUES,
+			errors.Wrapf(err, "failed to decode v1beta3 spec: '%s'", doc),
+		)
+	}
+
+	switch v3spec := obj.(type) {
+	case *troubleshootv1beta3.SupportBundle:
+		// Resolve secrets and convert to v1beta2
+		if l.client == nil {
+			return types.NewExitCodeError(constants.EXIT_CODE_SPEC_ISSUES,
+				errors.New("kubernetes client required to resolve v1beta3 specs with secretKeyRef"),
+			)
+		}
+
+		v2spec, err := troubleshootv1beta3.ConvertToV1Beta2WithResolution(l.ctx, &v3spec.Spec, l.client, l.namespace)
+		if err != nil {
+			return types.NewExitCodeError(constants.EXIT_CODE_SPEC_ISSUES,
+				errors.Wrap(err, "failed to resolve and convert v1beta3 support bundle spec"),
+			)
+		}
+
+		// Create v1beta2 support bundle
+		v2bundle := troubleshootv1beta2.SupportBundle{
+			TypeMeta:   v3spec.TypeMeta,
+			ObjectMeta: v3spec.ObjectMeta,
+			Spec:       *v2spec,
+		}
+		// Update apiVersion to v1beta2
+		v2bundle.APIVersion = constants.Troubleshootv1beta2Kind
+		kinds.SupportBundlesV1Beta2 = append(kinds.SupportBundlesV1Beta2, v2bundle)
+
+	// TODO: Add other v1beta3 types as they are implemented
+	default:
+		return types.NewExitCodeError(constants.EXIT_CODE_SPEC_ISSUES,
+			errors.Errorf("unsupported v1beta3 kind: %T", v3spec),
+		)
+	}
+
+	return nil
 }
 
 func isSecret(parsedDocHead parsedDoc) bool {
