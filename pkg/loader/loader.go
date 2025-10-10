@@ -242,15 +242,20 @@ func (l *specLoader) loadFromSplitDocs(splitdocs []string) (*TroubleshootKinds, 
 		// Check if this is a v1beta3 spec
 		var parsed parsedDoc
 		if err := yaml.Unmarshal([]byte(doc), &parsed); err == nil && parsed.APIVersion == constants.Troubleshootv1beta3Kind {
-			// Handle v1beta3 with secret resolution
-			if err := l.loadV1Beta3Spec(doc, kinds); err != nil {
-				if !l.strict {
-					klog.Warningf("failed to load v1beta3 spec: %v", err)
-					continue
+			// Only handle v1beta3 SupportBundle specially (to resolve valueFrom and convert)
+			if strings.EqualFold(parsed.Kind, "SupportBundle") {
+				if err := l.loadV1Beta3Spec(doc, kinds); err != nil {
+					if !l.strict {
+						klog.Warningf("failed to load v1beta3 support bundle spec: %v", err)
+						continue
+					}
+					return nil, err
 				}
-				return nil, err
+				// handled as support bundle; move to next doc
+				continue
 			}
-			continue
+			// For other v1beta3 kinds (e.g., Preflight), fall through to the generic
+			// v1beta3->v1beta2 conversion path below to preserve prior behavior.
 		}
 
 		// Handle v1beta2 and v1beta1 specs
@@ -314,9 +319,10 @@ func (l *specLoader) loadV1Beta3Spec(doc string, kinds *TroubleshootKinds) error
 	switch v3spec := obj.(type) {
 	case *troubleshootv1beta3.SupportBundle:
 		// Resolve secrets and convert to v1beta2
-		if l.client == nil {
+		requiresClient := v1beta3SpecRequiresClient(&v3spec.Spec)
+		if requiresClient && l.client == nil {
 			return types.NewExitCodeError(constants.EXIT_CODE_SPEC_ISSUES,
-				errors.New("kubernetes client required to resolve v1beta3 specs with secretKeyRef"),
+				errors.New("kubernetes client required to resolve v1beta3 specs with secret/configmap references"),
 			)
 		}
 
@@ -345,6 +351,63 @@ func (l *specLoader) loadV1Beta3Spec(doc string, kinds *TroubleshootKinds) error
 	}
 
 	return nil
+}
+
+// v1beta3SpecRequiresClient returns true if the v1beta3 spec contains any
+// StringOrValueFrom references that require fetching from the cluster.
+func v1beta3SpecRequiresClient(spec *troubleshootv1beta3.SupportBundleSpec) bool {
+	if spec == nil || spec.Collectors == nil {
+		return false
+	}
+
+	for _, c := range spec.Collectors {
+		if c == nil {
+			continue
+		}
+
+		// Database collectors
+		if c.Postgres != nil && databaseRequiresClient(c.Postgres) {
+			return true
+		}
+		if c.Mysql != nil && databaseRequiresClient(c.Mysql) {
+			return true
+		}
+		if c.Mssql != nil && databaseRequiresClient(c.Mssql) {
+			return true
+		}
+		if c.Redis != nil && databaseRequiresClient(c.Redis) {
+			return true
+		}
+	}
+
+	return false
+}
+
+func databaseRequiresClient(db *troubleshootv1beta3.Database) bool {
+	if db == nil {
+		return false
+	}
+
+	if stringOrValueFromHasRef(db.URI) {
+		return true
+	}
+
+	if db.TLS != nil {
+		if stringOrValueFromHasRef(db.TLS.CACert) ||
+			stringOrValueFromHasRef(db.TLS.ClientCert) ||
+			stringOrValueFromHasRef(db.TLS.ClientKey) {
+			return true
+		}
+	}
+
+	return false
+}
+
+func stringOrValueFromHasRef(s troubleshootv1beta3.StringOrValueFrom) bool {
+	if s.ValueFrom == nil {
+		return false
+	}
+	return s.ValueFrom.SecretKeyRef != nil || s.ValueFrom.ConfigMapKeyRef != nil
 }
 
 func isSecret(parsedDocHead parsedDoc) bool {
