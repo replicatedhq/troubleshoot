@@ -243,12 +243,9 @@ func (l *specLoader) loadFromSplitDocs(splitdocs []string) (*TroubleshootKinds, 
 		var parsed parsedDoc
 		if err := yaml.Unmarshal([]byte(doc), &parsed); err == nil && parsed.APIVersion == constants.Troubleshootv1beta3Kind {
 			// Only handle v1beta3 SupportBundle specially (to resolve valueFrom and convert)
-			if strings.EqualFold(parsed.Kind, "SupportBundle") {
+			if parsed.Kind == "SupportBundle" {
 				if err := l.loadV1Beta3Spec(doc, kinds); err != nil {
-					if !l.strict {
-						klog.Warningf("failed to load v1beta3 support bundle spec: %v", err)
-						continue
-					}
+					// Always surface v1beta3 SupportBundle errors so users get actionable guidance
 					return nil, err
 				}
 				// handled as support bundle; move to next doc
@@ -321,13 +318,22 @@ func (l *specLoader) loadV1Beta3Spec(doc string, kinds *TroubleshootKinds) error
 		// Resolve secrets and convert to v1beta2
 		requiresClient := v1beta3SpecRequiresClient(&v3spec.Spec)
 		if requiresClient && l.client == nil {
-			return types.NewExitCodeError(constants.EXIT_CODE_SPEC_ISSUES,
-				errors.New("kubernetes client required to resolve v1beta3 specs with secret/configmap references"),
+			return types.NewExitCodeError(
+				constants.EXIT_CODE_SPEC_ISSUES,
+				errors.New("this v1beta3 SupportBundle uses secret/configmap references and must be run in a cluster or with a kubeconfig (provide --kubeconfig)"),
 			)
 		}
 
 		v2spec, err := troubleshootv1beta3.ConvertToV1Beta2WithResolution(l.ctx, &v3spec.Spec, l.client, l.namespace)
 		if err != nil {
+			// When secret/configmap references are present, show a clear guidance message
+			// instead of leaking underlying RBAC or lookup errors.
+			if requiresClient {
+				return types.NewExitCodeError(
+					constants.EXIT_CODE_SPEC_ISSUES,
+					errors.New("this v1beta3 SupportBundle uses secret/configmap references and must be run in a cluster"),
+				)
+			}
 			return types.NewExitCodeError(constants.EXIT_CODE_SPEC_ISSUES,
 				errors.Wrap(err, "failed to resolve and convert v1beta3 support bundle spec"),
 			)
