@@ -283,7 +283,7 @@ the %s Admin Console to begin analysis.`
 		fmt.Printf("\r%s\r", cursor.ClearEntireLine())
 	}
 	if response.FileUploaded {
-		fmt.Printf("A support bundle has been created and uploaded to your cluster for analysis. Please visit the Troubleshoot page to continue.\n")
+		fmt.Printf("A support bundle has been created and uploaded to replicated.app for analysis.\n")
 		fmt.Printf("A copy of this support bundle was written to the current directory, named %q\n", response.ArchivePath)
 	} else {
 		fmt.Printf("A support bundle has been created in the current directory named %q\n", response.ArchivePath)
