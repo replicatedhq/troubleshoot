@@ -90,6 +90,7 @@ func selectorToString(selector []string) string {
 	result = strings.ReplaceAll(result, ">", "_")
 	result = strings.ReplaceAll(result, "|", "_")
 	result = strings.ReplaceAll(result, "\"", "_")
+	result = strings.ReplaceAll(result, "/", "_")
 	result = strings.ReplaceAll(result, "\\", "_")
 	return result
 }
