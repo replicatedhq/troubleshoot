@@ -190,12 +190,45 @@ func main() {
 	printAllOnChanges := flag.Bool("all-on-mod-change", true, "Run all tests if go.mod or go.sum changed")
 	verbose := flag.Bool("v", false, "Enable verbose diagnostics to stderr")
 	mode := flag.String("mode", "packages", "Output mode: 'packages' to print import paths; 'suites' to print e2e suite names")
+	changedFilesCSV := flag.String("changed-files", "", "Comma-separated paths to treat as changed (bypass git)")
+	changedFilesFile := flag.String("changed-files-file", "", "File with newline-separated paths to treat as changed")
 	flag.Parse()
 
-	files, err := changedFiles(*baseRef)
-	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(2)
+	// Determine the set of changed files: explicit list if provided, otherwise via git diff.
+	var files []string
+	if *changedFilesCSV != "" || *changedFilesFile != "" {
+		if *changedFilesCSV != "" {
+			parts := strings.Split(*changedFilesCSV, ",")
+			for _, p := range parts {
+				if s := strings.TrimSpace(p); s != "" {
+					files = append(files, s)
+				}
+			}
+		}
+		if *changedFilesFile != "" {
+			b, err := os.ReadFile(*changedFilesFile)
+			if err != nil {
+				fmt.Fprintln(os.Stderr, err)
+				os.Exit(2)
+			}
+			scanner := bufio.NewScanner(bytes.NewReader(b))
+			for scanner.Scan() {
+				if s := strings.TrimSpace(scanner.Text()); s != "" {
+					files = append(files, s)
+				}
+			}
+			if err := scanner.Err(); err != nil {
+				fmt.Fprintln(os.Stderr, err)
+				os.Exit(2)
+			}
+		}
+	} else {
+		var err error
+		files, err = changedFiles(*baseRef)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(2)
+		}
 	}
 	if *verbose {
 		fmt.Fprintln(os.Stderr, "Changed files vs base:")
