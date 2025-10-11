@@ -8,9 +8,11 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 )
@@ -185,6 +187,44 @@ func computeAffectedPackages(directPkgs map[string]struct{}) (map[string]struct{
 	return affected, nil
 }
 
+// listTestFunctions scans a directory for Go test files and returns names of functions
+// that match the pattern `func TestXxx(t *testing.T)`.
+func listTestFunctions(dir string) ([]string, error) {
+	var tests []string
+	// Regex to capture test function names. This is a simple heuristic suitable for our codebase.
+	testFuncRe := regexp.MustCompile(`^func\s+(Test[\w\d_]+)\s*\(`)
+
+	walkFn := func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() {
+			return nil
+		}
+		if !strings.HasSuffix(d.Name(), "_test.go") {
+			return nil
+		}
+		b, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		scanner := bufio.NewScanner(bytes.NewReader(b))
+		for scanner.Scan() {
+			line := strings.TrimSpace(scanner.Text())
+			if m := testFuncRe.FindStringSubmatch(line); m != nil {
+				tests = append(tests, m[1])
+			}
+		}
+		return scanner.Err()
+	}
+
+	if err := filepath.WalkDir(dir, walkFn); err != nil {
+		return nil, err
+	}
+	sort.Strings(tests)
+	return tests, nil
+}
+
 func main() {
 	baseRef := flag.String("base", "origin/main", "Git base ref to diff against (e.g., origin/main)")
 	printAllOnChanges := flag.Bool("all-on-mod-change", true, "Run all tests if go.mod or go.sum changed")
@@ -241,26 +281,21 @@ func main() {
 		}
 	}
 
-	// If module files changed, be conservative.
+	// Track module change to drive conservative behavior.
+	moduleChanged := false
 	if *printAllOnChanges {
 		for _, f := range files {
 			if f == "go.mod" || f == "go.sum" {
-				if *mode == "packages" {
-					if *verbose {
-						fmt.Fprintln(os.Stderr, "Detected module file change (go.mod/go.sum); selecting all packages ./...")
-					}
-					fmt.Println("./...")
-					return
-				}
-				if *mode == "suites" {
-					if *verbose {
-						fmt.Fprintln(os.Stderr, "Detected module file change (go.mod/go.sum); selecting all e2e suites")
-					}
-					fmt.Println("preflight")
-					fmt.Println("support-bundle")
-					return
-				}
+				moduleChanged = true
+				break
 			}
+		}
+		if moduleChanged && *mode == "packages" {
+			if *verbose {
+				fmt.Fprintln(os.Stderr, "Detected module file change (go.mod/go.sum); selecting all packages ./...")
+			}
+			fmt.Println("./...")
+			return
 		}
 	}
 
@@ -317,7 +352,7 @@ func main() {
 			fmt.Println(p)
 		}
 	case "suites":
-		// Determine if preflight and/or support-bundle regression suites should run
+		// Determine impacted suites by dependency mapping, then print exact test names for those suites.
 		preflightRoot := "github.com/replicatedhq/troubleshoot/cmd/preflight"
 		supportRoot := "github.com/replicatedhq/troubleshoot/cmd/troubleshoot"
 
@@ -354,11 +389,50 @@ func main() {
 			fmt.Fprintf(os.Stderr, "  preflight: %v\n", preflightHit)
 			fmt.Fprintf(os.Stderr, "  support-bundle: %v\n", supportHit)
 		}
-		if preflightHit {
-			fmt.Println("preflight")
+
+		// If module files changed, conservatively select all tests for both suites.
+		if moduleChanged {
+			preTests, err := listTestFunctions("test/e2e/preflight")
+			if err != nil {
+				fmt.Fprintln(os.Stderr, err)
+				os.Exit(2)
+			}
+			for _, tname := range preTests {
+				fmt.Printf("preflight:%s\n", tname)
+			}
+			sbTests, err := listTestFunctions("test/e2e/support-bundle")
+			if err != nil {
+				fmt.Fprintln(os.Stderr, err)
+				os.Exit(2)
+			}
+			for _, tname := range sbTests {
+				fmt.Printf("support-bundle:%s\n", tname)
+			}
+			return
 		}
-		if supportHit {
-			fmt.Println("support-bundle")
+
+		// Collect tests for impacted suites and print as `<suite>:<TestName>`
+		if preflightHit || supportHit {
+			if preflightHit {
+				preTests, err := listTestFunctions("test/e2e/preflight")
+				if err != nil {
+					fmt.Fprintln(os.Stderr, err)
+					os.Exit(2)
+				}
+				for _, tname := range preTests {
+					fmt.Printf("preflight:%s\n", tname)
+				}
+			}
+			if supportHit {
+				sbTests, err := listTestFunctions("test/e2e/support-bundle")
+				if err != nil {
+					fmt.Fprintln(os.Stderr, err)
+					os.Exit(2)
+				}
+				for _, tname := range sbTests {
+					fmt.Printf("support-bundle:%s\n", tname)
+				}
+			}
 		}
 	default:
 		fmt.Fprintln(os.Stderr, "unknown mode; use 'packages' or 'suites'")

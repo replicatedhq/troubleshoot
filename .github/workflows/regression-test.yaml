@@ -3,8 +3,6 @@ name: Regression Test Suite
 on:
   push:
     branches: [main, v1beta3]
-  pull_request:
-    types: [opened, synchronize, reopened]
   workflow_dispatch:
     inputs:
       update_baselines:
@@ -14,6 +12,7 @@ on:
 
 jobs:
   regression-test:
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-22.04
     timeout-minutes: 25
 

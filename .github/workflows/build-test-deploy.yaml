@@ -37,7 +37,8 @@ jobs:
       - run: make tidy-diff
 
   test-integration:
-    runs-on: ubuntu-latest
+  if: github.event_name == 'push'
+  runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
       - uses: actions/setup-go@v6
@@ -65,7 +66,8 @@ jobs:
           path: bin/preflight
 
   validate-preflight-e2e:
-    runs-on: ubuntu-latest
+  if: github.event_name == 'push'
+  runs-on: ubuntu-latest
     needs: compile-preflight
     steps:
       - uses: actions/checkout@v5
@@ -95,7 +97,8 @@ jobs:
           path: bin/support-bundle
 
   validate-supportbundle-e2e:
-    runs-on: ubuntu-latest
+  if: github.event_name == 'push'
+  runs-on: ubuntu-latest
     needs: compile-supportbundle
     steps:
       - uses: actions/checkout@v5
@@ -113,7 +116,8 @@ jobs:
 
   # Additional e2e tests for support bundle that run in Go, these create a Kind cluster
   validate-supportbundle-e2e-go:
-     runs-on: ubuntu-latest
+   if: github.event_name == 'push'
+   runs-on: ubuntu-latest
      needs: compile-supportbundle
      steps:
       - uses: actions/checkout@v5

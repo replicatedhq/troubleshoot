@@ -35,6 +35,18 @@ jobs:
       - name: Go Mod Download
         run: go mod download
 
+      # 1) Build and compile tests only (no execution)
+      - name: Build (compile-only)
+        run: go build ./...
+
+      - name: Compile tests (no execution)
+        shell: bash
+        run: |
+          set -euo pipefail
+          while read -r pkg; do
+            go test -c -o /dev/null "$pkg" || exit 1
+          done < <(go list ./...)
+
       - name: Get PR Base SHA
         id: pr-info
         env:
@@ -49,6 +61,7 @@ jobs:
           echo "BASE_SHA=${BASE_SHA}" >> "$GITHUB_OUTPUT"
           echo "Base SHA: ${BASE_SHA}"
 
+      # 2) Detect relevant unit packages and e2e tests
       - name: Compute affected packages
         id: affected
         env:
@@ -71,6 +84,22 @@ jobs:
             echo "has_changes=false" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Compute affected e2e tests
+        id: affected_e2e
+        env:
+          BASE_SHA: ${{ steps.pr-info.outputs.BASE_SHA }}
+        run: |
+          set -euo pipefail
+          go run ./scripts/affected-packages.go -mode=suites -base "${BASE_SHA}" > /tmp/affected-e2e.txt
+          awk -F: '$1=="preflight"{print $2}' /tmp/affected-e2e.txt > /tmp/preflight-tests.txt
+          awk -F: '$1=="support-bundle"{print $2}' /tmp/affected-e2e.txt > /tmp/support-tests.txt
+          if [ -s /tmp/preflight-tests.txt ] || [ -s /tmp/support-tests.txt ]; then
+            echo "has_changes=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_changes=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      # 3) Run filtered tests only
       - name: Run unit tests for affected packages
         if: steps.affected.outputs.has_changes == 'true'
         run: |
@@ -83,6 +112,28 @@ jobs:
             echo "Running tests for affected packages"
             # xargs will pass the package list as arguments to go test
             xargs -a /tmp/affected.txt go test -race -count=1 -v
+          fi
+
+      - name: Run preflight e2e (filtered)
+        if: steps.affected_e2e.outputs.has_changes == 'true'
+        run: |
+          set -euo pipefail
+          if [ -s /tmp/preflight-tests.txt ]; then
+            regex="$(tr '\n' '|' < /tmp/preflight-tests.txt | sed 's/|$//')"
+            go test -v -count=1 ./test/e2e/preflight -run "^((${regex}))$"
+          else
+            echo "No preflight e2e changes"
+          fi
+
+      - name: Run support-bundle e2e (filtered)
+        if: steps.affected_e2e.outputs.has_changes == 'true'
+        run: |
+          set -euo pipefail
+          if [ -s /tmp/support-tests.txt ]; then
+            regex="$(tr '\n' '|' < /tmp/support-tests.txt | sed 's/|$//')"
+            go test -v -count=1 ./test/e2e/support-bundle -run "^((${regex}))$"
+          else
+            echo "No support-bundle e2e changes"
           fi
 
       - name: No affected packages — skip tests
