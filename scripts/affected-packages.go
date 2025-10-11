@@ -352,7 +352,8 @@ func main() {
 			fmt.Println(p)
 		}
 	case "suites":
-		// Determine impacted suites by dependency mapping, then print exact test names for those suites.
+		// Determine impacted suites by dependency mapping and direct e2e test changes,
+		// then print exact test names for those suites.
 		preflightRoot := "github.com/replicatedhq/troubleshoot/cmd/preflight"
 		supportRoot := "github.com/replicatedhq/troubleshoot/cmd/troubleshoot"
 
@@ -369,6 +370,54 @@ func main() {
 
 		preflightHit := false
 		supportHit := false
+
+		// Track whether e2e test files were directly changed per suite and collect specific test names
+		changedPreflightTests := make(map[string]struct{})
+		changedSupportTests := make(map[string]struct{})
+		preflightE2EChangedNonGo := false
+		supportE2EChangedNonGo := false
+		for _, f := range files {
+			if strings.HasPrefix(f, "test/e2e/preflight/") {
+				if strings.HasSuffix(f, "_test.go") {
+					// Extract test names from just this file
+					b, err := os.ReadFile(f)
+					if err == nil { // ignore read errors; they will be caught later if needed
+						scanner := bufio.NewScanner(bytes.NewReader(b))
+						re := regexp.MustCompile(`^func\s+(Test[\w\d_]+)\s*\(`)
+						for scanner.Scan() {
+							line := strings.TrimSpace(scanner.Text())
+							if m := re.FindStringSubmatch(line); m != nil {
+								changedPreflightTests[m[1]] = struct{}{}
+							}
+						}
+					}
+					preflightHit = true
+				} else {
+					// Non-go change under preflight e2e; run whole suite
+					preflightE2EChangedNonGo = true
+					preflightHit = true
+				}
+			}
+			if strings.HasPrefix(f, "test/e2e/support-bundle/") {
+				if strings.HasSuffix(f, "_test.go") {
+					b, err := os.ReadFile(f)
+					if err == nil {
+						scanner := bufio.NewScanner(bytes.NewReader(b))
+						re := regexp.MustCompile(`^func\s+(Test[\w\d_]+)\s*\(`)
+						for scanner.Scan() {
+							line := strings.TrimSpace(scanner.Text())
+							if m := re.FindStringSubmatch(line); m != nil {
+								changedSupportTests[m[1]] = struct{}{}
+							}
+						}
+					}
+					supportHit = true
+				} else {
+					supportE2EChangedNonGo = true
+					supportHit = true
+				}
+			}
+		}
 		for changed := range directPkgs {
 			if !preflightHit {
 				if _, ok := preflightDeps[changed]; ok {
@@ -414,22 +463,53 @@ func main() {
 		// Collect tests for impacted suites and print as `<suite>:<TestName>`
 		if preflightHit || supportHit {
 			if preflightHit {
-				preTests, err := listTestFunctions("test/e2e/preflight")
-				if err != nil {
-					fmt.Fprintln(os.Stderr, err)
-					os.Exit(2)
+				toPrint := make(map[string]struct{})
+				if preflightE2EChangedNonGo || len(changedPreflightTests) == 0 {
+					// Run full suite if e2e non-go assets changed or no specific test names collected
+					preTests, err := listTestFunctions("test/e2e/preflight")
+					if err != nil {
+						fmt.Fprintln(os.Stderr, err)
+						os.Exit(2)
+					}
+					for _, t := range preTests {
+						toPrint[t] = struct{}{}
+					}
+				} else {
+					for t := range changedPreflightTests {
+						toPrint[t] = struct{}{}
+					}
 				}
-				for _, tname := range preTests {
+				var list []string
+				for t := range toPrint {
+					list = append(list, t)
+				}
+				sort.Strings(list)
+				for _, tname := range list {
 					fmt.Printf("preflight:%s\n", tname)
 				}
 			}
 			if supportHit {
-				sbTests, err := listTestFunctions("test/e2e/support-bundle")
-				if err != nil {
-					fmt.Fprintln(os.Stderr, err)
-					os.Exit(2)
+				toPrint := make(map[string]struct{})
+				if supportE2EChangedNonGo || len(changedSupportTests) == 0 {
+					sbTests, err := listTestFunctions("test/e2e/support-bundle")
+					if err != nil {
+						fmt.Fprintln(os.Stderr, err)
+						os.Exit(2)
+					}
+					for _, t := range sbTests {
+						toPrint[t] = struct{}{}
+					}
+				} else {
+					for t := range changedSupportTests {
+						toPrint[t] = struct{}{}
+					}
 				}
-				for _, tname := range sbTests {
+				var list []string
+				for t := range toPrint {
+					list = append(list, t)
+				}
+				sort.Strings(list)
+				for _, tname := range list {
 					fmt.Printf("support-bundle:%s\n", tname)
 				}
 			}

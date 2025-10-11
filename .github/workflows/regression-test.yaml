@@ -2,7 +2,7 @@ name: Regression Test Suite
 
 on:
   push:
-    branches: [main, v1beta3]
+    branches: [main]
   workflow_dispatch:
     inputs:
       update_baselines:
