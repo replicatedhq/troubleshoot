@@ -281,18 +281,26 @@ func main() {
 		}
 	}
 
-	// Track module change to drive conservative behavior.
+	// Track module change and CI configuration changes to drive conservative behavior.
 	moduleChanged := false
+	ciChanged := false
 	if *printAllOnChanges {
 		for _, f := range files {
 			if f == "go.mod" || f == "go.sum" {
 				moduleChanged = true
-				break
+			}
+			if strings.HasPrefix(f, "scripts/") || strings.HasPrefix(f, ".github/workflows/") {
+				ciChanged = true
 			}
 		}
-		if moduleChanged && *mode == "packages" {
+		if (moduleChanged || ciChanged) && *mode == "packages" {
 			if *verbose {
-				fmt.Fprintln(os.Stderr, "Detected module file change (go.mod/go.sum); selecting all packages ./...")
+				if moduleChanged {
+					fmt.Fprintln(os.Stderr, "Detected module file change (go.mod/go.sum); selecting all packages ./...")
+				}
+				if ciChanged {
+					fmt.Fprintln(os.Stderr, "Detected CI/detector change (scripts/ or .github/workflows/); selecting all packages ./...")
+				}
 			}
 			fmt.Println("./...")
 			return
@@ -439,8 +447,8 @@ func main() {
 			fmt.Fprintf(os.Stderr, "  support-bundle: %v\n", supportHit)
 		}
 
-		// If module files changed, conservatively select all tests for both suites.
-		if moduleChanged {
+		// If module files or CI/detector changed, conservatively select all tests for both suites.
+		if moduleChanged || ciChanged {
 			preTests, err := listTestFunctions("test/e2e/preflight")
 			if err != nil {
 				fmt.Fprintln(os.Stderr, err)
