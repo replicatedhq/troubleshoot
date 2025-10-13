@@ -27,6 +27,10 @@ jobs:
       - name: Go Mod Download
         run: go mod download
 
+      - name: Build e2e binaries
+        run: |
+          make bin/preflight bin/support-bundle
+
       - name: Compute base ref
         id: pr-info
         run: |
