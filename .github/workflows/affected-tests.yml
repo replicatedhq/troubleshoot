@@ -2,7 +2,7 @@ name: Affected Go Tests
 
 on:
   workflow_run:
-    workflows: ["build-test"]
+    workflows: ["build"]
     types: [completed]
     branches: [main]
 
@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   test-affected:
-    # Only run if the build-test workflow succeeded and it's not a draft PR
+    # Only run if the build workflow succeeded and it's not a draft PR
     if: |
       github.event.workflow_run.conclusion == 'success' &&
       github.event.workflow_run.event == 'pull_request' &&
