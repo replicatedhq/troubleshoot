@@ -86,11 +86,11 @@ support-bundle-e2e-test:
 
 .PHONY: preflight-e2e-go-test
 preflight-e2e-go-test: bin/preflight
-    if [ -n "$(RUN)" ]; then \
-        go test ${BUILDFLAGS} ${E2EPATHS} -v -run "$(RUN)"; \
-    else \
-        go test ${BUILDFLAGS} ${E2EPATHS} -v; \
-    fi
+	if [ -n "$(RUN)" ]; then \
+		go test ${BUILDFLAGS} ${E2EPATHS} -v -run "$(RUN)"; \
+	else \
+		go test ${BUILDFLAGS} ${E2EPATHS} -v; \
+	fi
 
 .PHONY: support-bundle-e2e-go-test
 support-bundle-e2e-go-test: bin/support-bundle
