@@ -1,0 +1,57 @@
+apiVersion: troubleshoot.sh/v1beta3
+kind: SupportBundle
+metadata:
+  name: configmap-example
+spec:
+  collectors:
+    # Database URI from ConfigMap (non-sensitive connection string)
+    - postgres:
+        collectorName: dev-database
+        uri:
+          valueFrom:
+            configMapKeyRef:
+              name: database-config
+              key: dev-connection-uri
+
+    # Redis URI from ConfigMap
+    - redis:
+        collectorName: dev-redis
+        uri:
+          valueFrom:
+            configMapKeyRef:
+              name: cache-config
+              key: redis-uri
+
+    # Mixed: URI from ConfigMap, password from Secret
+    # Note: This shows the limitation - you can't compose values from multiple sources
+    # The full connection string must be in one place
+    - mysql:
+        collectorName: staging-mysql
+        uri:
+          valueFrom:
+            secretKeyRef:
+              name: mysql-secret
+              key: complete-connection-string
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: database-config
+data:
+  dev-connection-uri: "postgresql://devuser@dev-postgres.default.svc:5432/devdb"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cache-config
+data:
+  redis-uri: "redis://dev-redis.default.svc:6379/0"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: mysql-secret
+type: Opaque
+stringData:
+  # Complete connection string with password included
+  complete-connection-string: "mysql://staging:stagingpass@staging-mysql:3306/stagingdb"

@@ -191,7 +191,9 @@ func LoadFromCLIArgs(ctx context.Context, client kubernetes.Interface, args []st
 
 				// load URL spec first to remove URI key from the spec
 				urlSpec, err := loader.LoadSpecs(ctx, loader.LoadOptions{
-					RawSpec: rawURLSpec,
+					RawSpec:   rawURLSpec,
+					Client:    client,
+					Namespace: vp.GetString("namespace"),
 				})
 				if err != nil {
 					fmt.Println(color.YellowString("failed to load spec from URI %q: %v\n", v, err))
@@ -209,7 +211,9 @@ func LoadFromCLIArgs(ctx context.Context, client kubernetes.Interface, args []st
 	}
 
 	kinds, err := loader.LoadSpecs(ctx, loader.LoadOptions{
-		RawSpecs: rawSpecs,
+		RawSpecs:  rawSpecs,
+		Client:    client,
+		Namespace: vp.GetString("namespace"),
 	})
 	if err != nil {
 		return nil, err
@@ -363,7 +367,9 @@ func LoadFromCluster(ctx context.Context, client kubernetes.Interface, selectors
 
 	// Load troubleshoot specs from the raw specs
 	return loader.LoadSpecs(ctx, loader.LoadOptions{
-		RawSpecs: rawSpecs,
+		RawSpecs:  rawSpecs,
+		Client:    client,
+		Namespace: ns,
 	})
 }
 
