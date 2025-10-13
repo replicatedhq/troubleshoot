@@ -1,28 +1,21 @@
 name: Affected Go Tests
 
 on:
-  workflow_run:
-    workflows: ["build"]
-    types: [completed]
+  pull_request:
+    types: [opened, reopened, synchronize, ready_for_review]
 
 permissions:
   contents: read
 
 jobs:
   test-affected:
-    # Only run if the build-test workflow succeeded and it's not a draft PR
-    if: |
-      github.event.workflow_run.conclusion == 'success' &&
-      github.event.workflow_run.event == 'pull_request' &&
-      github.event.workflow_run.pull_requests[0].draft == false
+    if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          # Check out the PR merge commit
-          ref: ${{ github.event.workflow_run.head_sha }}
           fetch-depth: 0
 
       - name: Setup Go
@@ -46,30 +39,20 @@ jobs:
             go test -c -o /dev/null "$pkg" || exit 1
           done < <(go list ./...)
 
-      - name: Get PR Base SHA
+      - name: Compute base ref
         id: pr-info
-        env:
-          GH_TOKEN: ${{ github.token }}
         run: |
-          # Get the PR number from the workflow run
-          PR_NUMBER="${{ github.event.workflow_run.pull_requests[0].number }}"
-          echo "PR Number: ${PR_NUMBER}"
-
-          # Get the base SHA for this PR
-          BASE_SHA=$(gh pr view ${PR_NUMBER} --json baseRefOid -q .baseRefOid)
-          echo "BASE_SHA=${BASE_SHA}" >> "$GITHUB_OUTPUT"
-          echo "Base SHA: ${BASE_SHA}"
+          echo "BASE_REF=origin/${{ github.base_ref }}" >> "$GITHUB_OUTPUT"
+          echo "Base ref: origin/${{ github.base_ref }}"
 
       # 2) Detect relevant unit packages and e2e tests
       - name: Compute affected packages
         id: affected
-        env:
-          BASE_SHA: ${{ steps.pr-info.outputs.BASE_SHA }}
         run: |
           set -euo pipefail
-          echo "Base SHA: ${BASE_SHA}"
+          echo "Base: ${{ steps.pr-info.outputs.BASE_REF }}"
           # Generate affected package list to a file for reuse in subsequent steps
-          go run ./scripts/affected-packages.go -base "${BASE_SHA}" > /tmp/affected.txt
+          go run ./scripts/affected-packages.go -base "${{ steps.pr-info.outputs.BASE_REF }}" > /tmp/affected.txt
           echo "Affected packages:" || true
           if [ -s /tmp/affected.txt ]; then
             cat /tmp/affected.txt
@@ -85,11 +68,9 @@ jobs:
 
       - name: Compute affected e2e tests
         id: affected_e2e
-        env:
-          BASE_SHA: ${{ steps.pr-info.outputs.BASE_SHA }}
         run: |
           set -euo pipefail
-          go run ./scripts/affected-packages.go -mode=suites -base "${BASE_SHA}" > /tmp/affected-e2e.txt
+          go run ./scripts/affected-packages.go -mode=suites -base "${{ steps.pr-info.outputs.BASE_REF }}" > /tmp/affected-e2e.txt
           awk -F: '$1=="preflight"{print $2}' /tmp/affected-e2e.txt > /tmp/preflight-tests.txt
           awk -F: '$1=="support-bundle"{print $2}' /tmp/affected-e2e.txt > /tmp/support-tests.txt
           if [ -s /tmp/preflight-tests.txt ] || [ -s /tmp/support-tests.txt ]; then
