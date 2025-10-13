@@ -126,7 +126,7 @@ jobs:
           if [ -s /tmp/preflight-tests.txt ]; then
             regex="$(grep -v '^$' /tmp/preflight-tests.txt | tr '\n' '|' | sed 's/|$//')"
             if [ -n "$regex" ]; then
-              RUN="^(${regex})$" make preflight-e2e-go-test
+              RUN="^(${regex})$" make preflight-e2e-test
             else
               echo "No valid preflight tests matched after filtering"
             fi
