@@ -1,4 +1,4 @@
-name: build-test
+name: build
 
 on:
   pull_request:
@@ -78,22 +78,7 @@ jobs:
           make vet
 
   # Unit and integration tests
-  test:
-    if: github.event_name == 'push' && needs.changes.outputs.go-files == 'true'
-    needs: [changes, lint]
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    steps:
-      - uses: actions/checkout@v5
-      - uses: ./.github/actions/setup-go
-
-      - name: Setup K3s
-        uses: replicatedhq/action-k3s@main
-        with:
-          version: v1.31.2-k3s1
-
-      - name: Run tests
-        run: make test-integration
+  # (moved to push-full-tests.yml)
 
   # Build binaries
   build:
@@ -124,64 +109,26 @@ jobs:
           path: bin/
           retention-days: 1
 
-  # E2E tests
-  e2e:
-    if: github.event_name == 'push'
-    needs: [changes, build]
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - name: preflight
-            target: preflight-e2e-test
-            needs-k3s: true
-          - name: support-bundle-shell
-            target: support-bundle-e2e-test
-            needs-k3s: true
-          - name: support-bundle-go
-            target: support-bundle-e2e-go-test
-            needs-k3s: false
-    steps:
-      - uses: actions/checkout@v5
-
-      - name: Setup K3s
-        if: matrix.needs-k3s
-        uses: replicatedhq/action-k3s@main
-        with:
-          version: v1.31.2-k3s1
-
-      - uses: actions/download-artifact@v4
-        with:
-          name: binaries
-          path: bin/
-
-      - run: chmod +x bin/*
-      - run: make ${{ matrix.target }}
+  # (moved to push-full-tests.yml)
 
   # Success summary
   success:
     if: always()
-    needs: [lint, test, build, e2e]
+    needs: [lint, build]
     runs-on: ubuntu-latest
     steps:
       - name: Check results
         run: |
           # Check if any required jobs failed
           if [[ "${{ needs.lint.result }}" == "failure" ]] || \
-             [[ "${{ needs.test.result }}" == "failure" ]] || \
-             [[ "${{ needs.build.result }}" == "failure" ]] || \
-             [[ "${{ needs.e2e.result }}" == "failure" ]]; then
+             [[ "${{ needs.build.result }}" == "failure" ]]; then
             echo "::error::Some jobs failed or were cancelled"
             exit 1
           fi
           
           # Check if any required jobs were cancelled  
           if [[ "${{ needs.lint.result }}" == "cancelled" ]] || \
-             [[ "${{ needs.test.result }}" == "cancelled" ]] || \
-             [[ "${{ needs.build.result }}" == "cancelled" ]] || \
-             [[ "${{ needs.e2e.result }}" == "cancelled" ]]; then
+             [[ "${{ needs.build.result }}" == "cancelled" ]]; then
             echo "::error::Some jobs failed or were cancelled"
             exit 1
           fi
