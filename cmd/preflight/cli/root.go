@@ -89,7 +89,6 @@ that a cluster meets the requirements to run an application.`,
 	cmd.AddCommand(TemplateCmd())
 	cmd.AddCommand(DocsCmd())
 	cmd.AddCommand(ConvertCmd())
-	cmd.AddCommand(LintCmd())
 
 	preflight.AddFlags(cmd.PersistentFlags())
 

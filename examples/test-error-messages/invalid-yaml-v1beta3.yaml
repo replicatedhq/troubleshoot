@@ -1,8 +1,0 @@
-apiVersion: troubleshoot.sh/v1beta3
-kind: Preflight
-metadata
-  name: invalid-yaml
-spec:
-  analyzers:
-    - clusterVersion:
-        checkName: Kubernetes version
