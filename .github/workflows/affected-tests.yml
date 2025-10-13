@@ -104,6 +104,11 @@ jobs:
           echo "${{ steps.create-cluster.outputs.cluster-kubeconfig }}" > $GITHUB_WORKSPACE/kubeconfig.yaml
           echo "KUBECONFIG=$GITHUB_WORKSPACE/kubeconfig.yaml" >> $GITHUB_ENV
 
+      - name: Build binaries for script-based e2e
+        if: steps.affected_e2e.outputs.has_changes == 'true'
+        run: |
+          make bin/preflight bin/support-bundle
+
       # 3) Run filtered tests only
       - name: Run unit tests for affected packages
         if: steps.affected.outputs.has_changes == 'true'
