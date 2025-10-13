@@ -146,7 +146,10 @@ jobs:
           if [ -s /tmp/support-tests.txt ]; then
             regex="$(grep -v '^$' /tmp/support-tests.txt | tr '\n' '|' | sed 's/|$//')"
             if [ -n "$regex" ]; then
-              RUN="^(${regex})$" make support-bundle-e2e-go-test
+              # Ensure no stale kind cluster from previous steps
+              docker rm -f kind-cluster-control-plane 2>/dev/null || true
+              # Scope to support-bundle suite only to avoid preflight kind interactions
+              E2EPATHS=./test/e2e/support-bundle RUN="^(${regex})$" make support-bundle-e2e-go-test
             else
               echo "No valid support-bundle tests matched after filtering"
             fi
