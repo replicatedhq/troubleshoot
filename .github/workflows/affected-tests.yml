@@ -77,13 +77,14 @@ jobs:
             else
               echo "- (none)";
             fi;
-            echo "\n### Affected e2e tests";
+            echo;
+            echo "### Affected e2e tests";
             if [ -s /tmp/affected-e2e.txt ]; then
               sed 's/^/- /' /tmp/affected-e2e.txt;
             else
               echo "- (none)";
             fi;
-          } >> "$GITHUB_STEP_SUMMARY"
+          } | tee -a "$GITHUB_STEP_SUMMARY"
 
       # 3) Run filtered tests only
       - name: Run unit tests for affected packages
@@ -93,11 +94,11 @@ jobs:
           # If the script output contains './...' then run all tests
           if grep -qx "./..." /tmp/affected.txt; then
             echo "Module files changed; running all tests"
-            go test -race -count=1 ./...
+            make test
           else
             echo "Running tests for affected packages"
-            # xargs will pass the package list as arguments to go test
-            xargs -a /tmp/affected.txt go test -race -count=1 -v
+            pkgs=$(tr '\n' ' ' < /tmp/affected.txt)
+            PACKAGES="$pkgs" make test-packages
           fi
 
       - name: Run preflight e2e (filtered)
@@ -106,7 +107,7 @@ jobs:
           set -euo pipefail
           if [ -s /tmp/preflight-tests.txt ]; then
             regex="$(tr '\n' '|' < /tmp/preflight-tests.txt | sed 's/|$//')"
-            go test -v -count=1 ./test/e2e/preflight -run "^((${regex}))$"
+            RUN="^((${regex}))$" make support-bundle-e2e-go-test
           else
             echo "No preflight e2e changes"
           fi
@@ -117,7 +118,7 @@ jobs:
           set -euo pipefail
           if [ -s /tmp/support-tests.txt ]; then
             regex="$(tr '\n' '|' < /tmp/support-tests.txt | sed 's/|$//')"
-            go test -v -count=1 ./test/e2e/support-bundle -run "^((${regex}))$"
+            RUN="^((${regex}))$" make support-bundle-e2e-go-test
           else
             echo "No support-bundle e2e changes"
           fi

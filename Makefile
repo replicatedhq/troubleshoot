@@ -55,6 +55,17 @@ test: generate fmt vet
 		go test ${BUILDFLAGS} ${BUILDPATHS} ${TESTFLAGS}; \
 	fi
 
+# Run unit tests only for a provided list of packages.
+# Usage: make test-packages PACKAGES="pkg/a pkg/b cmd/foo"
+.PHONY: test-packages
+test-packages:
+	@if [ -z "$(PACKAGES)" ]; then \
+		echo "No PACKAGES provided; nothing to test."; \
+		exit 0; \
+	fi
+	@echo "Running unit tests for packages: $(PACKAGES)"
+	go test ${BUILDFLAGS} $(PACKAGES) ${TESTFLAGS}
+
 # Go tests that require a K8s instance
 # TODOLATER: merge with test, so we get unified coverage reports? it'll add 21~sec to the test job though...
 .PHONY: test-integration
