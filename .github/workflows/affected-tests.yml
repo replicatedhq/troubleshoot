@@ -91,21 +91,6 @@ jobs:
           } | tee -a "$GITHUB_STEP_SUMMARY"
 
 
-      # 3) Run filtered tests only
-      - name: Run unit tests for affected packages
-        if: steps.affected.outputs.has_changes == 'true'
-        run: |
-          set -euo pipefail
-          # If the script output contains './...' then run all tests
-          if grep -qx "./..." /tmp/affected.txt; then
-            echo "Module files changed; running all tests"
-            make test
-          else
-            echo "Running tests for affected packages"
-            pkgs=$(tr '\n' ' ' < /tmp/affected.txt)
-            PACKAGES="$pkgs" make test-packages
-          fi
-
       - name: No affected packages — skip tests
         if: steps.affected.outputs.has_changes != 'true'
         run: echo "No Go packages affected by this PR; skipping tests."
@@ -118,7 +103,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        suite: [preflight, support-bundle]
+        suite: [unit, preflight, support-bundle]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -140,6 +125,14 @@ jobs:
           echo "BASE_REF=origin/${{ github.base_ref }}" >> "$GITHUB_OUTPUT"
           echo "Base ref: origin/${{ github.base_ref }}"
 
+      - name: Compute affected packages
+        id: affected
+        run: |
+          set -euo pipefail
+          echo "Base: ${{ steps.pr-info.outputs.BASE_REF }}"
+          go run ./scripts/affected-packages.go -base "${{ steps.pr-info.outputs.BASE_REF }}" > /tmp/affected.txt
+          if [ -s /tmp/affected.txt ]; then echo "has_changes=true" >> "$GITHUB_OUTPUT"; else echo "has_changes=false" >> "$GITHUB_OUTPUT"; fi
+
       - name: Compute affected e2e tests
         id: affected_e2e
         run: |
@@ -153,8 +146,26 @@ jobs:
             echo "has_changes=false" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Run unit tests (filtered)
+        if: matrix.suite == 'unit' && steps.affected.outputs.has_changes == 'true'
+        run: |
+          set -euo pipefail
+          if grep -qx "./..." /tmp/affected.txt; then
+            echo "Module files changed; running all unit tests"
+            make test
+          else
+            echo "Running unit tests for affected packages"
+            pkgs=$(tr '\n' ' ' < /tmp/affected.txt)
+            PACKAGES="$pkgs" make test-packages
+          fi
+
+      - name: Build e2e binaries
+        if: matrix.suite != 'unit'
+        run: |
+          make bin/preflight bin/support-bundle
+
       - name: Run e2e (filtered) - ${{ matrix.suite }}
-        if: steps.affected_e2e.outputs.has_changes == 'true'
+        if: matrix.suite != 'unit' && steps.affected_e2e.outputs.has_changes == 'true'
         run: |
           set -euo pipefail
           docker rm -f kind-cluster-control-plane 2>/dev/null || true

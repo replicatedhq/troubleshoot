@@ -37,7 +37,7 @@ endef
 BUILDTAGS = "netgo containers_image_ostree_stub exclude_graphdriver_devicemapper exclude_graphdriver_btrfs containers_image_openpgp"
 BUILDFLAGS = -tags ${BUILDTAGS} -installsuffix netgo
 BUILDPATHS = ./pkg/... ./cmd/... ./internal/...
-E2EPATHS = ./test/e2e/...
+E2EPATHS ?= ./test/e2e/...
 TESTFLAGS ?= -v -coverprofile cover.out
 
 .DEFAULT_GOAL := all
@@ -85,7 +85,7 @@ support-bundle-e2e-test:
 	./test/validate-support-bundle-e2e.sh
 
 .PHONY: support-bundle-e2e-go-test
-support-bundle-e2e-go-test:
+support-bundle-e2e-go-test: bin/preflight bin/support-bundle
 	if [ -n "$(RUN)" ]; then \
 		go test ${BUILDFLAGS} ${E2EPATHS} -v -run "$(RUN)"; \
 	else \
