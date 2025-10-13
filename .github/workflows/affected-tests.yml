@@ -115,7 +115,7 @@ jobs:
           if [ -s /tmp/preflight-tests.txt ]; then
             regex="$(grep -v '^$' /tmp/preflight-tests.txt | tr '\n' '|' | sed 's/|$//')"
             if [ -n "$regex" ]; then
-              RUN="^(${regex})$" make preflight-e2e-go-only-test
+              RUN="^(${regex})$" make support-bundle-e2e-go-test
             else
               echo "No valid preflight tests matched after filtering"
             fi
@@ -130,7 +130,7 @@ jobs:
           if [ -s /tmp/support-tests.txt ]; then
             regex="$(grep -v '^$' /tmp/support-tests.txt | tr '\n' '|' | sed 's/|$//')"
             if [ -n "$regex" ]; then
-              RUN="^(${regex})$" make support-bundle-e2e-go-only-test
+              RUN="^(${regex})$" make support-bundle-e2e-go-test
             else
               echo "No valid support-bundle tests matched after filtering"
             fi

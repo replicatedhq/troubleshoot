@@ -55,9 +55,9 @@ BUILD_TAGS='netgo containers_image_ostree_stub exclude_graphdriver_devicemapper 
 
 if [ -n "${PRE}" ]; then
   echo "Running preflight e2e: ${PRE}"
-  go test -tags "${BUILD_TAGS}" -installsuffix netgo -v -count=1 ./test/e2e/preflight -run "^(("${PRE}")$)" || true
+  go test -tags "${BUILD_TAGS}" -installsuffix netgo -v -count=1 ./test/e2e/preflight -run "^(${PRE})$" || true
 fi
 if [ -n "${SB}" ]; then
   echo "Running support-bundle e2e: ${SB}"
-  go test -tags "${BUILD_TAGS}" -installsuffix netgo -v -count=1 ./test/e2e/support-bundle -run "^(("${SB}")$)" || true
+  go test -tags "${BUILD_TAGS}" -installsuffix netgo -v -count=1 ./test/e2e/support-bundle -run "^(${SB})$" || true
 fi
