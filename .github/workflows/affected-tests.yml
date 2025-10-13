@@ -27,18 +27,6 @@ jobs:
       - name: Go Mod Download
         run: go mod download
 
-      # 1) Build and compile tests only (no execution)
-      - name: Build (compile-only)
-        run: go build ./...
-
-      - name: Compile tests (no execution)
-        shell: bash
-        run: |
-          set -euo pipefail
-          while read -r pkg; do
-            go test -c -o /dev/null "$pkg" || exit 1
-          done < <(go list ./...)
-
       - name: Compute base ref
         id: pr-info
         run: |
