@@ -86,28 +86,6 @@ jobs:
             fi;
           } | tee -a "$GITHUB_STEP_SUMMARY"
 
-      # Provision a Kubernetes cluster for e2e using Replicated compatibility actions
-      - name: Create k3s cluster
-        id: create-cluster
-        if: steps.affected_e2e.outputs.has_changes == 'true'
-        uses: replicatedhq/compatibility-actions/create-cluster@v1
-        with:
-          api-token: ${{ secrets.REPLICATED_API_TOKEN }}
-          kubernetes-distribution: k3s
-          cluster-name: pr-${{ github.run_id }}-${{ github.run_attempt }}
-          ttl: 25m
-          timeout-minutes: 5
-
-      - name: Configure kubeconfig
-        if: steps.affected_e2e.outputs.has_changes == 'true'
-        run: |
-          echo "${{ steps.create-cluster.outputs.cluster-kubeconfig }}" > $GITHUB_WORKSPACE/kubeconfig.yaml
-          echo "KUBECONFIG=$GITHUB_WORKSPACE/kubeconfig.yaml" >> $GITHUB_ENV
-
-      - name: Build binaries for script-based e2e
-        if: steps.affected_e2e.outputs.has_changes == 'true'
-        run: |
-          make bin/preflight bin/support-bundle
 
       # 3) Run filtered tests only
       - name: Run unit tests for affected packages
@@ -124,50 +102,74 @@ jobs:
             PACKAGES="$pkgs" make test-packages
           fi
 
-      - name: Run preflight e2e (filtered)
-        if: steps.affected_e2e.outputs.has_changes == 'true'
-        run: |
-          set -euo pipefail
-          if [ -s /tmp/preflight-tests.txt ]; then
-            regex="$(grep -v '^$' /tmp/preflight-tests.txt | tr '\n' '|' | sed 's/|$//')"
-            if [ -n "$regex" ]; then
-              RUN="^(${regex})$" make preflight-e2e-test
-            else
-              echo "No valid preflight tests matched after filtering"
-            fi
-          else
-            echo "No preflight e2e changes"
-          fi
-
-      - name: Run support-bundle e2e (filtered)
-        if: steps.affected_e2e.outputs.has_changes == 'true'
-        run: |
-          set -euo pipefail
-          if [ -s /tmp/support-tests.txt ]; then
-            regex="$(grep -v '^$' /tmp/support-tests.txt | tr '\n' '|' | sed 's/|$//')"
-            if [ -n "$regex" ]; then
-              # Ensure no stale kind cluster from previous steps
-              docker rm -f kind-cluster-control-plane 2>/dev/null || true
-              # Scope to support-bundle suite only to avoid preflight kind interactions
-              E2EPATHS=./test/e2e/support-bundle RUN="^(${regex})$" make support-bundle-e2e-go-test
-            else
-              echo "No valid support-bundle tests matched after filtering"
-            fi
-          else
-            echo "No support-bundle e2e changes"
-          fi
-
       - name: No affected packages — skip tests
         if: steps.affected.outputs.has_changes != 'true'
         run: echo "No Go packages affected by this PR; skipping tests."
 
-      # Cleanup cluster
-      - name: Remove cluster
-        if: always() && steps.affected_e2e.outputs.has_changes == 'true'
-        uses: replicatedhq/compatibility-actions/remove-cluster@v1
-        continue-on-error: true
+  e2e-affected:
+    needs: test-affected
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        suite: [preflight, support-bundle]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
         with:
-          api-token: ${{ secrets.REPLICATED_API_TOKEN }}
-          cluster-id: ${{ steps.create-cluster.outputs.cluster-id }}
+          fetch-depth: 0
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Go Mod Download
+        run: go mod download
+
+      - name: Compute base ref
+        id: pr-info
+        run: |
+          echo "BASE_REF=origin/${{ github.base_ref }}" >> "$GITHUB_OUTPUT"
+          echo "Base ref: origin/${{ github.base_ref }}"
+
+      - name: Compute affected e2e tests
+        id: affected_e2e
+        run: |
+          set -euo pipefail
+          go run ./scripts/affected-packages.go -mode=suites -base "${{ steps.pr-info.outputs.BASE_REF }}" > /tmp/affected-e2e.txt
+          awk -F: '$1=="preflight"{print $2}' /tmp/affected-e2e.txt > /tmp/preflight-tests.txt
+          awk -F: '$1=="support-bundle"{print $2}' /tmp/affected-e2e.txt > /tmp/support-tests.txt
+          if [ -s /tmp/preflight-tests.txt ] || [ -s /tmp/support-tests.txt ]; then
+            echo "has_changes=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_changes=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Run e2e (filtered) - ${{ matrix.suite }}
+        if: steps.affected_e2e.outputs.has_changes == 'true'
+        run: |
+          set -euo pipefail
+          docker rm -f kind-cluster-control-plane 2>/dev/null || true
+          if [ "${{ matrix.suite }}" = "preflight" ]; then
+            file=/tmp/preflight-tests.txt
+            path=./test/e2e/preflight
+          else
+            file=/tmp/support-tests.txt
+            path=./test/e2e/support-bundle
+          fi
+          if [ -s "$file" ]; then
+            regex="$(grep -v '^$' "$file" | tr '\n' '|' | sed 's/|$//')"
+            if [ -n "$regex" ]; then
+              E2EPATHS="$path" RUN="^(${regex})$" make support-bundle-e2e-go-test
+            else
+              echo "No valid ${{ matrix.suite }} tests matched after filtering"
+            fi
+          else
+            echo "No ${{ matrix.suite }} e2e changes"
+          fi
 
 
