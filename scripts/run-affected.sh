@@ -53,11 +53,15 @@ SB="$( echo "${E2E_OUT}" | awk -F: '$1=="support-bundle"{print $2}' | paste -sd'
 # Use direct go test with the same build tags as the Makefile to avoid RUN quoting issues locally
 BUILD_TAGS='netgo containers_image_ostree_stub exclude_graphdriver_devicemapper exclude_graphdriver_btrfs containers_image_openpgp'
 
+overall=0
+
 if [ -n "${PRE}" ]; then
   echo "Running preflight e2e: ${PRE}"
-  go test -tags "${BUILD_TAGS}" -installsuffix netgo -v -count=1 ./test/e2e/preflight -run "^(${PRE})$" || true
+  go test -tags "${BUILD_TAGS}" -installsuffix netgo -v -count=1 ./test/e2e/preflight -run "^(${PRE})$" || overall=1
 fi
 if [ -n "${SB}" ]; then
   echo "Running support-bundle e2e: ${SB}"
-  go test -tags "${BUILD_TAGS}" -installsuffix netgo -v -count=1 ./test/e2e/support-bundle -run "^(${SB})$" || true
+  go test -tags "${BUILD_TAGS}" -installsuffix netgo -v -count=1 ./test/e2e/support-bundle -run "^(${SB})$" || overall=1
 fi
+
+exit $overall

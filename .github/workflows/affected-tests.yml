@@ -86,12 +86,23 @@ jobs:
             fi;
           } | tee -a "$GITHUB_STEP_SUMMARY"
 
-      # Provision a Kubernetes cluster for e2e that depend on it (safe no-op for kind-based Go e2e)
-      - name: Setup K3s
+      # Provision a Kubernetes cluster for e2e using Replicated compatibility actions
+      - name: Create k3s cluster
+        id: create-cluster
         if: steps.affected_e2e.outputs.has_changes == 'true'
-        uses: replicatedhq/action-k3s@main
+        uses: replicatedhq/compatibility-actions/create-cluster@v1
         with:
-          version: v1.31.2-k3s1
+          api-token: ${{ secrets.REPLICATED_API_TOKEN }}
+          kubernetes-distribution: k3s
+          cluster-name: pr-${{ github.run_id }}-${{ github.run_attempt }}
+          ttl: 25m
+          timeout-minutes: 5
+
+      - name: Configure kubeconfig
+        if: steps.affected_e2e.outputs.has_changes == 'true'
+        run: |
+          echo "${{ steps.create-cluster.outputs.cluster-kubeconfig }}" > $GITHUB_WORKSPACE/kubeconfig.yaml
+          echo "KUBECONFIG=$GITHUB_WORKSPACE/kubeconfig.yaml" >> $GITHUB_ENV
 
       # 3) Run filtered tests only
       - name: Run unit tests for affected packages
@@ -141,5 +152,14 @@ jobs:
       - name: No affected packages — skip tests
         if: steps.affected.outputs.has_changes != 'true'
         run: echo "No Go packages affected by this PR; skipping tests."
+
+      # Cleanup cluster
+      - name: Remove cluster
+        if: always() && steps.affected_e2e.outputs.has_changes == 'true'
+        uses: replicatedhq/compatibility-actions/remove-cluster@v1
+        continue-on-error: true
+        with:
+          api-token: ${{ secrets.REPLICATED_API_TOKEN }}
+          cluster-id: ${{ steps.create-cluster.outputs.cluster-id }}
 
 
