@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   test-affected:
-    # Only run if the build workflow succeeded and it's not a draft PR
+    # Only run if the build-test workflow succeeded and it's not a draft PR
     if: |
       github.event.workflow_run.conclusion == 'success' &&
       github.event.workflow_run.event == 'pull_request' &&
@@ -98,6 +98,24 @@ jobs:
           else
             echo "has_changes=false" >> "$GITHUB_OUTPUT"
           fi
+
+      - name: Publish affected summary
+        if: always()
+        run: |
+          {
+            echo "### Affected unit packages";
+            if [ -s /tmp/affected.txt ]; then
+              sed 's/^/- /' /tmp/affected.txt;
+            else
+              echo "- (none)";
+            fi;
+            echo "\n### Affected e2e tests";
+            if [ -s /tmp/affected-e2e.txt ]; then
+              sed 's/^/- /' /tmp/affected-e2e.txt;
+            else
+              echo "- (none)";
+            fi;
+          } >> "$GITHUB_STEP_SUMMARY"
 
       # 3) Run filtered tests only
       - name: Run unit tests for affected packages
