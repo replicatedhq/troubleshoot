@@ -86,6 +86,13 @@ jobs:
             fi;
           } | tee -a "$GITHUB_STEP_SUMMARY"
 
+      # Provision a Kubernetes cluster for e2e that depend on it (safe no-op for kind-based Go e2e)
+      - name: Setup K3s
+        if: steps.affected_e2e.outputs.has_changes == 'true'
+        uses: replicatedhq/action-k3s@main
+        with:
+          version: v1.31.2-k3s1
+
       # 3) Run filtered tests only
       - name: Run unit tests for affected packages
         if: steps.affected.outputs.has_changes == 'true'
@@ -106,8 +113,12 @@ jobs:
         run: |
           set -euo pipefail
           if [ -s /tmp/preflight-tests.txt ]; then
-            regex="$(tr '\n' '|' < /tmp/preflight-tests.txt | sed 's/|$//')"
-            RUN="^((${regex}))$" make support-bundle-e2e-go-test
+            regex="$(grep -v '^$' /tmp/preflight-tests.txt | tr '\n' '|' | sed 's/|$//')"
+            if [ -n "$regex" ]; then
+              RUN="^(${regex})$" make preflight-e2e-go-only-test
+            else
+              echo "No valid preflight tests matched after filtering"
+            fi
           else
             echo "No preflight e2e changes"
           fi
@@ -117,8 +128,12 @@ jobs:
         run: |
           set -euo pipefail
           if [ -s /tmp/support-tests.txt ]; then
-            regex="$(tr '\n' '|' < /tmp/support-tests.txt | sed 's/|$//')"
-            RUN="^((${regex}))$" make support-bundle-e2e-go-test
+            regex="$(grep -v '^$' /tmp/support-tests.txt | tr '\n' '|' | sed 's/|$//')"
+            if [ -n "$regex" ]; then
+              RUN="^(${regex})$" make support-bundle-e2e-go-only-test
+            else
+              echo "No valid support-bundle tests matched after filtering"
+            fi
           else
             echo "No support-bundle e2e changes"
           fi

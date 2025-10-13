@@ -351,8 +351,28 @@ func main() {
 				}
 			}
 		}
-		var list []string
+		// Normalize and filter import paths:
+		// - Strip test variant suffixes like "pkg [pkg.test]"
+		// - Exclude e2e test packages (./test/e2e/...)
+		normalized := make(map[string]struct{})
 		for p := range affected {
+			// Trim Go test variant decorations that appear in `go list -test`
+			if idx := strings.Index(p, " ["); idx != -1 {
+				p = p[:idx]
+			}
+			// Exclude synthetic test packages like github.com/org/repo/pkg.name.test
+			if strings.HasSuffix(p, ".test") {
+				continue
+			}
+			if strings.Contains(p, "/test/e2e/") {
+				continue
+			}
+			if p != "" {
+				normalized[p] = struct{}{}
+			}
+		}
+		var list []string
+		for p := range normalized {
 			list = append(list, p)
 		}
 		sort.Strings(list)
