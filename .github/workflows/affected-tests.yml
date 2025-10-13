@@ -27,9 +27,6 @@ jobs:
       - name: Go Mod Download
         run: go mod download
 
-      - name: Build e2e binaries
-        run: |
-          make bin/preflight bin/support-bundle
 
       - name: Compute base ref
         id: pr-info
@@ -159,10 +156,6 @@ jobs:
             PACKAGES="$pkgs" make test-packages
           fi
 
-      - name: Build e2e binaries
-        if: matrix.suite != 'unit'
-        run: |
-          make bin/preflight bin/support-bundle
 
       - name: Run e2e (filtered) - ${{ matrix.suite }}
         if: matrix.suite != 'unit' && steps.affected_e2e.outputs.has_changes == 'true'
@@ -179,7 +172,11 @@ jobs:
           if [ -s "$file" ]; then
             regex="$(grep -v '^$' "$file" | tr '\n' '|' | sed 's/|$//')"
             if [ -n "$regex" ]; then
-              E2EPATHS="$path" RUN="^(${regex})$" make support-bundle-e2e-go-test
+              if [ "${{ matrix.suite }}" = "preflight" ]; then
+                E2EPATHS="$path" RUN="^(${regex})$" make preflight-e2e-go-test
+              else
+                E2EPATHS="$path" RUN="^(${regex})$" make support-bundle-e2e-go-test
+              fi
             else
               echo "No valid ${{ matrix.suite }} tests matched after filtering"
             fi
