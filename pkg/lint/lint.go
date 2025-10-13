@@ -2,9 +2,10 @@ package lint
 
 import (
 	"fmt"
-	"io/ioutil"
 	"regexp"
 	"strings"
+
+	"os"
 
 	"github.com/pkg/errors"
 	"github.com/replicatedhq/troubleshoot/pkg/constants"
@@ -60,30 +61,9 @@ func lintFile(filePath string, fix bool) (LintResult, error) {
 	}
 
 	// Read file
-	content, err := ioutil.ReadFile(filePath)
+	content, err := os.ReadFile(filePath)
 	if err != nil {
 		return result, errors.Wrapf(err, "failed to read file %s", filePath)
-	}
-
-	// Check for v1beta3 apiVersion
-	if !strings.Contains(string(content), constants.Troubleshootv1beta3Kind) {
-		result.Errors = append(result.Errors, LintError{
-			Line:    1,
-			Message: fmt.Sprintf("File must contain apiVersion: %s", constants.Troubleshootv1beta3Kind),
-			Field:   "apiVersion",
-		})
-		// Try to fix wrong apiVersion
-		if fix {
-			fixed, err := applyFixes(filePath, string(content), result)
-			if err != nil {
-				return result, err
-			}
-			if fixed {
-				// Re-lint to verify fixes
-				return lintFile(filePath, false)
-			}
-		}
-		return result, nil
 	}
 
 	// Check if file contains template expressions
@@ -102,6 +82,22 @@ func lintFile(filePath string, fix bool) (LintResult, error) {
 			})
 			// Don't return yet - we want to try to fix this error
 			// Continue to applyFixes at the end
+			// Try to surface apiVersion issues even if YAML failed to parse
+			// Detect via simple textual scan
+			avLine, avValue := findAPIVersionLineAndValue(string(content))
+			if avLine == 0 {
+				result.Errors = append(result.Errors, LintError{
+					Line:    0,
+					Field:   "apiVersion",
+					Message: "Missing or empty 'apiVersion' field",
+				})
+			} else if avValue != constants.Troubleshootv1beta2Kind && avValue != constants.Troubleshootv1beta3Kind {
+				result.Errors = append(result.Errors, LintError{
+					Line:    avLine,
+					Field:   "apiVersion",
+					Message: fmt.Sprintf("Invalid 'apiVersion' value %q; expected %s or %s", avValue, constants.Troubleshootv1beta2Kind, constants.Troubleshootv1beta3Kind),
+				})
+			}
 			if fix {
 				fixed, err := applyFixes(filePath, string(content), result)
 				if err != nil {
@@ -116,6 +112,21 @@ func lintFile(filePath string, fix bool) (LintResult, error) {
 		}
 		// For templated files, we can't parse YAML strictly, so just check template syntax
 		result.Errors = append(result.Errors, checkTemplateSyntax(string(content))...)
+		// Surface apiVersion issues via textual scan for templated files
+		avLine, avValue := findAPIVersionLineAndValue(string(content))
+		if avLine == 0 {
+			result.Errors = append(result.Errors, LintError{
+				Line:    0,
+				Field:   "apiVersion",
+				Message: "Missing or empty 'apiVersion' field",
+			})
+		} else if avValue != constants.Troubleshootv1beta2Kind && avValue != constants.Troubleshootv1beta3Kind {
+			result.Errors = append(result.Errors, LintError{
+				Line:    avLine,
+				Field:   "apiVersion",
+				Message: fmt.Sprintf("Invalid 'apiVersion' value %q; expected %s or %s", avValue, constants.Troubleshootv1beta2Kind, constants.Troubleshootv1beta3Kind),
+			})
+		}
 		// Continue to applyFixes for templates too
 		if fix {
 			fixed, err := applyFixes(filePath, string(content), result)
@@ -143,6 +154,17 @@ func lintFile(filePath string, fix bool) (LintResult, error) {
 			result.Errors = append(result.Errors, checkPreflightSpec(parsed, string(content))...)
 		case "SupportBundle":
 			result.Errors = append(result.Errors, checkSupportBundleSpec(parsed, string(content))...)
+		}
+	}
+
+	// Validate apiVersion value if present
+	if apiVersion, ok := parsed["apiVersion"].(string); ok && apiVersion != "" {
+		if apiVersion != constants.Troubleshootv1beta2Kind && apiVersion != constants.Troubleshootv1beta3Kind {
+			result.Errors = append(result.Errors, LintError{
+				Line:    findLineNumber(string(content), "apiVersion"),
+				Field:   "apiVersion",
+				Message: fmt.Sprintf("Invalid 'apiVersion' value %q; expected %s or %s", apiVersion, constants.Troubleshootv1beta2Kind, constants.Troubleshootv1beta3Kind),
+			})
 		}
 	}
 
@@ -404,6 +426,14 @@ func applyFixes(filePath, content string, result LintResult) (bool, error) {
 	newContent := content
 	lines := strings.Split(newContent, "\n")
 
+	// Determine desired apiVersion for fixes
+	hasTemplates := strings.Contains(content, "{{") && strings.Contains(content, "}}")
+	hasDocStrings := strings.Contains(content, "docString:")
+	desiredAPIVersion := constants.Troubleshootv1beta2Kind
+	if hasTemplates || hasDocStrings {
+		desiredAPIVersion = constants.Troubleshootv1beta3Kind
+	}
+
 	// Sort errors by line number (descending) to avoid line number shifts when editing
 	errorsByLine := make(map[int][]LintError)
 	for _, err := range result.Errors {
@@ -461,12 +491,11 @@ func applyFixes(filePath, content string, result LintResult) (bool, error) {
 				}
 			}
 
-			// Fix 3: Fix wrong apiVersion
-			if strings.Contains(err.Message, "File must contain apiVersion:") && err.Field == "apiVersion" {
-				if strings.Contains(line, "apiVersion:") && !strings.Contains(line, constants.Troubleshootv1beta3Kind) {
-					// Replace existing apiVersion with correct one
+			// Fix 3: Replace invalid apiVersion value with desiredAPIVersion
+			if strings.Contains(err.Message, "Invalid 'apiVersion' value") && err.Field == "apiVersion" {
+				if strings.Contains(line, "apiVersion:") {
 					indent := line[:len(line)-len(strings.TrimLeft(line, " \t"))]
-					line = indent + "apiVersion: " + constants.Troubleshootv1beta3Kind
+					line = indent + "apiVersion: " + desiredAPIVersion
 					fixed = true
 				}
 			}
@@ -481,8 +510,14 @@ func applyFixes(filePath, content string, result LintResult) (bool, error) {
 	// Fix 4: Add missing required top-level fields
 	for _, err := range result.Errors {
 		if err.Field == "apiVersion" && strings.Contains(err.Message, "Missing or empty 'apiVersion'") {
-			// Add apiVersion at the beginning
-			lines = append([]string{"apiVersion: " + constants.Troubleshootv1beta3Kind}, lines...)
+			// Replace existing empty apiVersion line if present; otherwise prepend
+			if avLine, avVal := findAPIVersionLineAndValue(newContent); avLine > 0 && strings.TrimSpace(avVal) == "" {
+				line := lines[avLine-1]
+				indent := line[:len(line)-len(strings.TrimLeft(line, " \t"))]
+				lines[avLine-1] = indent + "apiVersion: " + desiredAPIVersion
+			} else {
+				lines = append([]string{"apiVersion: " + desiredAPIVersion}, lines...)
+			}
 			fixed = true
 		} else if err.Field == "kind" && strings.Contains(err.Message, "Missing or empty 'kind'") {
 			// Try to determine if it should be Preflight or SupportBundle based on filename
@@ -526,7 +561,7 @@ func applyFixes(filePath, content string, result LintResult) (bool, error) {
 	// Write fixed content back to file if changes were made
 	if fixed {
 		newContent = strings.Join(lines, "\n")
-		if err := ioutil.WriteFile(filePath, []byte(newContent), 0644); err != nil {
+		if err := os.WriteFile(filePath, []byte(newContent), 0644); err != nil {
 			return false, errors.Wrapf(err, "failed to write fixed content to %s", filePath)
 		}
 	}
@@ -542,6 +577,25 @@ func findLineNumber(content, search string) int {
 		}
 	}
 	return 0
+}
+
+// findAPIVersionLineAndValue locates the first line that declares apiVersion and returns its
+// 1-based line number and the trimmed value to the right of the colon. Returns (0, "") if not found.
+func findAPIVersionLineAndValue(content string) (int, string) {
+	lines := strings.Split(content, "\n")
+	for i, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if strings.HasPrefix(trimmed, "apiVersion:") {
+			// extract value after the first colon
+			parts := strings.SplitN(trimmed, ":", 2)
+			if len(parts) == 2 {
+				value := strings.TrimSpace(parts[1])
+				return i + 1, value
+			}
+			return i + 1, ""
+		}
+	}
+	return 0, ""
 }
 
 func findAnalyzerLine(content string, index int) int {

@@ -15,18 +15,23 @@ func LintCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "lint [spec-files...]",
 		Args:  cobra.MinimumNArgs(1),
-		Short: "Lint v1beta3 preflight specs for syntax and structural errors",
-		Long: `Lint v1beta3 preflight specs for syntax and structural errors.
+		Short: "Lint preflight specs for syntax and structural errors",
+		Long: `Lint preflight specs for syntax and structural errors.
 
-This command validates v1beta3 preflight specs and checks for:
-- YAML syntax errors
+This command validates troubleshoot specs and checks for:
+- YAML syntax errors (missing colons, invalid structure)
 - Missing required fields (apiVersion, kind, metadata, spec)
-- Invalid template syntax ({{ .Values.* }})
+- Invalid template syntax ({{ .Values.* }}, {{ .Release.* }}, etc.)
 - Missing analyzers or collectors
 - Common structural issues
 - Missing docStrings (warning)
 
-The linter only validates v1beta3 specs. For v1beta2 specs, use the 'convert' command first.
+Both v1beta2 and v1beta3 apiVersions are supported. Use 'convert' if you need a full structural conversion between schema versions.
+
+The --fix flag can automatically repair:
+- Missing colons in YAML (e.g., "metadata" → "metadata:")
+- Missing or malformed apiVersion line. If templating ({{ }}) or docString fields are detected, apiVersion is set to v1beta3; otherwise v1beta2.
+- Template expressions missing leading dot (e.g., "{{ Values.x }}" → "{{ .Values.x }}")
 
 Examples:
   # Lint a single spec file
@@ -35,7 +40,7 @@ Examples:
   # Lint multiple spec files
   preflight lint spec1.yaml spec2.yaml spec3.yaml
 
-  # Lint with automatic fixes
+  # Lint with automatic fixes (may need to run multiple times for complex issues)
   preflight lint --fix my-preflight.yaml
 
   # Lint and output as JSON for CI/CD integration
