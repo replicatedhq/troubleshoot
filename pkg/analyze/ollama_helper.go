@@ -146,7 +146,7 @@ func (h *OllamaHelper) downloadAndInstallWindows() error {
 		return errors.Wrap(err, "failed to create temporary file")
 	}
 	defer os.Remove(tmpFile.Name())
-	defer tmpFile.Close()
+	defer tmpFile.Close() // Ensures file is closed in error paths
 
 	// Download installer
 	resp, err := http.Get(h.downloadURL)
@@ -163,6 +163,13 @@ func (h *OllamaHelper) downloadAndInstallWindows() error {
 	_, err = io.Copy(tmpFile, resp.Body)
 	if err != nil {
 		return errors.Wrap(err, "failed to write installer")
+	}
+
+	// Close the file before executing it (required on Windows)
+	// Note: This will be called twice (here and via defer), but that's safe
+	// The defer ensures cleanup on error paths, this ensures closure before execution
+	if err := tmpFile.Close(); err != nil {
+		return errors.Wrap(err, "failed to close installer file")
 	}
 
 	// Run installer
