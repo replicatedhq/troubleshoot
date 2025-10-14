@@ -7,6 +7,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/replicatedhq/troubleshoot/pkg/constants"
 	"github.com/replicatedhq/troubleshoot/pkg/lint"
+	"github.com/replicatedhq/troubleshoot/pkg/types"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -88,7 +89,7 @@ func runLint(opts lint.LintOptions) error {
 
 	// Return appropriate exit code
 	if lint.HasErrors(results) {
-		os.Exit(constants.EXIT_CODE_SPEC_ISSUES)
+		return types.NewExitCodeError(constants.EXIT_CODE_SPEC_ISSUES, nil)
 	}
 
 	return nil
