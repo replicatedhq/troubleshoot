@@ -13,11 +13,11 @@ func TestLintMultipleFiles(t *testing.T) {
 	testDir := filepath.Join(projectRoot, "examples", "test-error-messages")
 
 	tests := []struct {
-		name          string
-		files         []string
-		expectErrors  map[string][]string // filename -> expected error substrings
+		name           string
+		files          []string
+		expectErrors   map[string][]string // filename -> expected error substrings
 		expectWarnings map[string][]string // filename -> expected warning substrings
-		expectPass    map[string]bool     // filename -> should pass without errors
+		expectPass     map[string]bool     // filename -> should pass without errors
 	}{
 		{
 			name: "valid v1beta3 with templates",
@@ -224,9 +224,9 @@ func TestLintWithFix(t *testing.T) {
 	defer os.RemoveAll(tmpDir)
 
 	tests := []struct {
-		name        string
-		content     string
-		expectFix   bool
+		name         string
+		content      string
+		expectFix    bool
 		fixedContent string // substring that should appear after fix
 	}{
 		{
@@ -242,7 +242,7 @@ spec:
           - pass:
               when: '>= 1.19.0'
               message: OK`,
-			expectFix:   true,
+			expectFix:    true,
 			fixedContent: "apiVersion: troubleshoot.sh/v1beta3",
 		},
 		{
@@ -258,7 +258,7 @@ spec:
           - pass:
               when: '>= 1.19.0'
               message: OK`,
-			expectFix:   true,
+			expectFix:    true,
 			fixedContent: "{{ .Values.name }}",
 		},
 	}
