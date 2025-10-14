@@ -13,24 +13,16 @@ on:
         default: false
 
 jobs:
-  regression-test:
-    # Run on push, manual dispatch, and internal PRs (skip fork PRs due to secrets)
+  create-cluster:
+    # Create a shared cluster for the matrix; skip on fork PRs due to secrets
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false
     runs-on: ubuntu-22.04
-    timeout-minutes: 25
-
+    outputs:
+      kubeconfig: ${{ steps.create.outputs.cluster-kubeconfig }}
+      cluster-id: ${{ steps.create.outputs.cluster-id }}
     steps:
-      # 1. SETUP
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0  # Fetch all history for git describe to work
-
-      - name: Create output directory
-        run: mkdir -p test/output
-
       - name: Create k3s cluster
-        id: create-cluster
+        id: create
         uses: replicatedhq/compatibility-actions/create-cluster@v1
         with:
           api-token: ${{ secrets.REPLICATED_API_TOKEN }}
@@ -39,13 +31,21 @@ jobs:
           ttl: 25m
           timeout-minutes: 5
 
-      - name: Configure kubeconfig
-        run: |
-          echo "${{ steps.create-cluster.outputs.cluster-kubeconfig }}" > $GITHUB_WORKSPACE/kubeconfig.yaml
-          echo "KUBECONFIG=$GITHUB_WORKSPACE/kubeconfig.yaml" >> $GITHUB_ENV
-
-      - name: Verify cluster access
-        run: kubectl get nodes -o wide
+  regression:
+    # Run on push, manual dispatch, and internal PRs (skip fork PRs)
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false
+    needs: create-cluster
+    runs-on: ubuntu-22.04
+    timeout-minutes: 25
+    strategy:
+      fail-fast: false
+      matrix:
+        suite: [preflight-v1beta3, preflight-v1beta2, support-bundle]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Go
         uses: actions/setup-go@v5
@@ -53,13 +53,6 @@ jobs:
           go-version-file: go.mod
           cache: true
           cache-dependency-path: go.sum
-
-      - name: Build binaries
-        run: |
-          echo "Building preflight and support-bundle binaries..."
-          make bin/preflight bin/support-bundle
-          ./bin/preflight version
-          ./bin/support-bundle version
 
       - name: Setup Python for comparison
         uses: actions/setup-python@v5
@@ -70,225 +63,123 @@ jobs:
         run: |
           pip install pyyaml deepdiff
 
-      # 2. EXECUTE SPECS (in parallel)
-      - name: Run all specs in parallel
-        continue-on-error: true
+      - name: Configure kubeconfig (support-bundle only)
+        if: matrix.suite == 'support-bundle'
         run: |
-          echo "Running all 3 specs in parallel..."
+          echo "${{ needs.create-cluster.outputs.kubeconfig }}" > $GITHUB_WORKSPACE/kubeconfig.yaml
+          echo "KUBECONFIG=$GITHUB_WORKSPACE/kubeconfig.yaml" >> $GITHUB_ENV
 
-          # Run v1beta3 in background
-          (
-            echo "Starting preflight v1beta3..."
-            ./bin/preflight \
-              examples/preflight/complex-v1beta3.yaml \
-              --values examples/preflight/values-complex-full.yaml \
-              --interactive=false \
-              --format=json \
-              --output=test/output/preflight-results-v1beta3.json 2>&1 | tee test/output/v1beta3.log || true
+      - name: Verify cluster access (support-bundle only)
+        if: matrix.suite == 'support-bundle'
+        run: kubectl get nodes -o wide
 
-            BUNDLE=$(ls -t preflightbundle-*.tar.gz 2>/dev/null | head -1)
-            if [ -n "$BUNDLE" ]; then
-              mv "$BUNDLE" test/output/preflight-v1beta3-bundle.tar.gz
-              echo "✓ v1beta3 bundle saved"
-            fi
-          ) &
-          PID_V1BETA3=$!
-
-          # Run v1beta2 in background
-          (
-            echo "Starting preflight v1beta2..."
-            ./bin/preflight \
-              examples/preflight/all-analyzers-v1beta2.yaml \
-              --interactive=false \
-              --format=json \
-              --output=test/output/preflight-results-v1beta2.json 2>&1 | tee test/output/v1beta2.log || true
-
-            BUNDLE=$(ls -t preflightbundle-*.tar.gz 2>/dev/null | head -1)
-            if [ -n "$BUNDLE" ]; then
-              mv "$BUNDLE" test/output/preflight-v1beta2-bundle.tar.gz
-              echo "✓ v1beta2 bundle saved"
-            fi
-          ) &
-          PID_V1BETA2=$!
-
-          # Run support bundle in background
-          (
-            echo "Starting support bundle..."
-            ./bin/support-bundle \
-              examples/collect/host/all-kubernetes-collectors.yaml \
-              --interactive=false \
-              --output=test/output/supportbundle.tar.gz 2>&1 | tee test/output/supportbundle.log || true
-
-            if [ -f test/output/supportbundle.tar.gz ]; then
-              echo "✓ Support bundle saved"
-            fi
-          ) &
-          PID_SUPPORTBUNDLE=$!
-
-          # Wait for all to complete
-          echo "Waiting for all specs to complete..."
-          wait $PID_V1BETA3
-          wait $PID_V1BETA2
-          wait $PID_SUPPORTBUNDLE
-
-          echo "All specs completed!"
-
-          # Verify bundles exist
-          ls -lh test/output/*.tar.gz || echo "Warning: Some bundles may be missing"
-
-      # 3. COMPARE BUNDLES
-      - name: Compare preflight v1beta3 bundle
-        id: compare-v1beta3
-        continue-on-error: true
+      - name: Build binary for suite
         run: |
-          echo "Comparing v1beta3 preflight bundle against baseline..."
-          if [ ! -f test/baselines/preflight-v1beta3/baseline.tar.gz ]; then
-            echo "⚠ No baseline found for v1beta3 - skipping comparison"
-            echo "baseline_missing=true" >> $GITHUB_OUTPUT
-            exit 0
-          fi
+          case "${{ matrix.suite }}" in
+            preflight-*)
+              make bin/preflight
+              ./bin/preflight version
+              ;;
+            support-bundle)
+              make bin/support-bundle
+              ./bin/support-bundle version
+              ;;
+          esac
 
-          python3 scripts/compare_bundles.py \
-            --baseline test/baselines/preflight-v1beta3/baseline.tar.gz \
-            --current test/output/preflight-v1beta3-bundle.tar.gz \
-            --rules scripts/compare_rules.yaml \
-            --report test/output/diff-report-v1beta3.json \
-            --spec-type preflight
-
-      - name: Compare preflight v1beta2 bundle
-        id: compare-v1beta2
-        continue-on-error: true
+      - name: Run suite
         run: |
-          echo "Comparing v1beta2 preflight bundle against baseline..."
-          if [ ! -f test/baselines/preflight-v1beta2/baseline.tar.gz ]; then
-            echo "⚠ No baseline found for v1beta2 - skipping comparison"
-            echo "baseline_missing=true" >> $GITHUB_OUTPUT
-            exit 0
-          fi
+          mkdir -p test/output
+          case "${{ matrix.suite }}" in
+            preflight-v1beta3)
+              ./bin/preflight \
+                examples/preflight/complex-v1beta3.yaml \
+                --values examples/preflight/values-complex-full.yaml \
+                --interactive=false \
+                --format=json \
+                --output=test/output/preflight-results-v1beta3.json
+              BUNDLE=$(ls -t preflightbundle-*.tar.gz 2>/dev/null | head -1)
+              if [ -n "$BUNDLE" ]; then
+                mv "$BUNDLE" test/output/preflight-v1beta3-bundle.tar.gz
+              fi
+              ;;
+            preflight-v1beta2)
+              ./bin/preflight \
+                examples/preflight/all-analyzers-v1beta2.yaml \
+                --interactive=false \
+                --format=json \
+                --output=test/output/preflight-results-v1beta2.json
+              BUNDLE=$(ls -t preflightbundle-*.tar.gz 2>/dev/null | head -1)
+              if [ -n "$BUNDLE" ]; then
+                mv "$BUNDLE" test/output/preflight-v1beta2-bundle.tar.gz
+              fi
+              ;;
+            support-bundle)
+              ./bin/support-bundle \
+                examples/collect/host/all-kubernetes-collectors.yaml \
+                --interactive=false \
+                --output=test/output/supportbundle.tar.gz
+              ;;
+          esac
 
-          python3 scripts/compare_bundles.py \
-            --baseline test/baselines/preflight-v1beta2/baseline.tar.gz \
-            --current test/output/preflight-v1beta2-bundle.tar.gz \
-            --rules scripts/compare_rules.yaml \
-            --report test/output/diff-report-v1beta2.json \
-            --spec-type preflight
-
-      - name: Compare support bundle
-        id: compare-supportbundle
-        continue-on-error: true
+      - name: Compare against baselines
         run: |
-          echo "Comparing support bundle against baseline..."
-          if [ ! -f test/baselines/supportbundle/baseline.tar.gz ]; then
-            echo "⚠ No baseline found for support bundle - skipping comparison"
-            echo "baseline_missing=true" >> $GITHUB_OUTPUT
-            exit 0
-          fi
+          case "${{ matrix.suite }}" in
+            preflight-v1beta3)
+              if [ -f test/baselines/preflight-v1beta3/baseline.tar.gz ]; then
+                python3 scripts/compare_bundles.py \
+                  --baseline test/baselines/preflight-v1beta3/baseline.tar.gz \
+                  --current test/output/preflight-v1beta3-bundle.tar.gz \
+                  --rules scripts/compare_rules.yaml \
+                  --report test/output/diff-report-v1beta3.json \
+                  --spec-type preflight
+              else
+                echo "No baseline for v1beta3; skipping comparison"
+              fi
+              ;;
+            preflight-v1beta2)
+              if [ -f test/baselines/preflight-v1beta2/baseline.tar.gz ]; then
+                python3 scripts/compare_bundles.py \
+                  --baseline test/baselines/preflight-v1beta2/baseline.tar.gz \
+                  --current test/output/preflight-v1beta2-bundle.tar.gz \
+                  --rules scripts/compare_rules.yaml \
+                  --report test/output/diff-report-v1beta2.json \
+                  --spec-type preflight
+              else
+                echo "No baseline for v1beta2; skipping comparison"
+              fi
+              ;;
+            support-bundle)
+              if [ -f test/baselines/supportbundle/baseline.tar.gz ]; then
+                python3 scripts/compare_bundles.py \
+                  --baseline test/baselines/supportbundle/baseline.tar.gz \
+                  --current test/output/supportbundle.tar.gz \
+                  --rules scripts/compare_rules.yaml \
+                  --report test/output/diff-report-supportbundle.json \
+                  --spec-type supportbundle
+              else
+                echo "No baseline for support bundle; skipping comparison"
+              fi
+              ;;
+          esac
 
-          python3 scripts/compare_bundles.py \
-            --baseline test/baselines/supportbundle/baseline.tar.gz \
-            --current test/output/supportbundle.tar.gz \
-            --rules scripts/compare_rules.yaml \
-            --report test/output/diff-report-supportbundle.json \
-            --spec-type supportbundle
-
-      # 4. REPORT RESULTS
-      - name: Generate summary report
-        if: always()
-        run: |
-          python3 scripts/generate_summary.py \
-            --reports test/output/diff-report-*.json \
-            --output-file $GITHUB_STEP_SUMMARY \
-            --output-console
-
-      - name: Upload test artifacts
+      - name: Upload artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: regression-test-results-${{ github.run_id }}-${{ github.run_attempt }}
+          name: regression-${{ matrix.suite }}-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
             test/output/*.tar.gz
             test/output/*.json
           retention-days: 30
 
-      - name: Check for regressions
-        if: always()
-        run: |
-          echo "Checking comparison results..."
-
-          # Check if any comparisons failed
-          FAILURES=0
-
-          if [ "${{ steps.compare-v1beta3.outcome }}" == "failure" ] && [ "${{ steps.compare-v1beta3.outputs.baseline_missing }}" != "true" ]; then
-            echo "❌ v1beta3 comparison failed"
-            FAILURES=$((FAILURES + 1))
-          fi
-
-          if [ "${{ steps.compare-v1beta2.outcome }}" == "failure" ] && [ "${{ steps.compare-v1beta2.outputs.baseline_missing }}" != "true" ]; then
-            echo "❌ v1beta2 comparison failed"
-            FAILURES=$((FAILURES + 1))
-          fi
-
-          if [ "${{ steps.compare-supportbundle.outcome }}" == "failure" ] && [ "${{ steps.compare-supportbundle.outputs.baseline_missing }}" != "true" ]; then
-            echo "❌ Support bundle comparison failed"
-            FAILURES=$((FAILURES + 1))
-          fi
-
-          if [ $FAILURES -gt 0 ]; then
-            echo ""
-            echo "❌ $FAILURES regression(s) detected!"
-            echo "Review the comparison reports in the artifacts."
-            exit 1
-          else
-            echo "✅ All comparisons passed or skipped (no baseline)"
-          fi
-
-      # 5. UPDATE BASELINES (optional, manual trigger only)
-      - name: Update baselines
-        if: github.event.inputs.update_baselines == 'true' && github.event_name == 'workflow_dispatch'
-        run: |
-          echo "Updating baselines with current bundles..."
-
-          # Copy new bundles as baselines
-          if [ -f test/output/preflight-v1beta3-bundle.tar.gz ]; then
-            mkdir -p test/baselines/preflight-v1beta3
-            cp test/output/preflight-v1beta3-bundle.tar.gz test/baselines/preflight-v1beta3/baseline.tar.gz
-            echo "✓ Updated v1beta3 baseline"
-          fi
-
-          if [ -f test/output/preflight-v1beta2-bundle.tar.gz ]; then
-            mkdir -p test/baselines/preflight-v1beta2
-            cp test/output/preflight-v1beta2-bundle.tar.gz test/baselines/preflight-v1beta2/baseline.tar.gz
-            echo "✓ Updated v1beta2 baseline"
-          fi
-
-          if [ -f test/output/supportbundle.tar.gz ]; then
-            mkdir -p test/baselines/supportbundle
-            cp test/output/supportbundle.tar.gz test/baselines/supportbundle/baseline.tar.gz
-            echo "✓ Updated support bundle baseline"
-          fi
-
-          # Create metadata file
-          cat > test/baselines/metadata.json <<EOF
-          {
-            "updated_at": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
-            "git_sha": "${{ github.sha }}",
-            "k8s_version": "v1.28.3",
-            "workflow_run": "${{ github.run_id }}"
-          }
-          EOF
-
-          # Commit and push
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add test/baselines/
-          git commit -m "chore: update regression test baselines from run ${{ github.run_id }}"
-          git push
-
-      # 6. CLEANUP
+  cleanup:
+    if: always() && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false)
+    needs: [create-cluster, regression]
+    runs-on: ubuntu-22.04
+    steps:
       - name: Remove cluster
-        if: always()
         uses: replicatedhq/compatibility-actions/remove-cluster@v1
         continue-on-error: true
         with:
           api-token: ${{ secrets.REPLICATED_API_TOKEN }}
-          cluster-id: ${{ steps.create-cluster.outputs.cluster-id }}
+          cluster-id: ${{ needs.create-cluster.outputs.cluster-id }}
