@@ -71,6 +71,13 @@ jobs:
       - name: Verify cluster access
         run: kubectl get nodes -o wide
 
+      - name: Prepare namespace (preflight only)
+        if: startsWith(matrix.suite, 'preflight-')
+        run: |
+          ns="ts-${{ matrix.suite }}-${{ github.run_id }}-${{ github.run_attempt }}"
+          echo "E2E_NS=$ns" >> $GITHUB_ENV
+          kubectl create namespace "$ns"
+
       - name: Build binary for suite
         run: |
           case "${{ matrix.suite }}" in
@@ -94,7 +101,9 @@ jobs:
                 --values examples/preflight/values-complex-full.yaml \
                 --interactive=false \
                 --format=json \
+                --auto-update=false \
                 --kubeconfig=$GITHUB_WORKSPACE/kubeconfig.yaml \
+                -n "$E2E_NS" \
                 --output=test/output/preflight-results-v1beta3.json
               BUNDLE=$(ls -t preflightbundle-*.tar.gz 2>/dev/null | head -1)
               if [ -n "$BUNDLE" ]; then
@@ -106,7 +115,9 @@ jobs:
                 examples/preflight/all-analyzers-v1beta2.yaml \
                 --interactive=false \
                 --format=json \
+                --auto-update=false \
                 --kubeconfig=$GITHUB_WORKSPACE/kubeconfig.yaml \
+                -n "$E2E_NS" \
                 --output=test/output/preflight-results-v1beta2.json
               BUNDLE=$(ls -t preflightbundle-*.tar.gz 2>/dev/null | head -1)
               if [ -n "$BUNDLE" ]; then
