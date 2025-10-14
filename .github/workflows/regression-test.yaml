@@ -63,14 +63,12 @@ jobs:
         run: |
           pip install pyyaml deepdiff
 
-      - name: Configure kubeconfig (support-bundle only)
-        if: matrix.suite == 'support-bundle'
+      - name: Configure kubeconfig
         run: |
           echo "${{ needs.create-cluster.outputs.kubeconfig }}" > $GITHUB_WORKSPACE/kubeconfig.yaml
           echo "KUBECONFIG=$GITHUB_WORKSPACE/kubeconfig.yaml" >> $GITHUB_ENV
 
-      - name: Verify cluster access (support-bundle only)
-        if: matrix.suite == 'support-bundle'
+      - name: Verify cluster access
         run: kubectl get nodes -o wide
 
       - name: Build binary for suite
@@ -96,6 +94,7 @@ jobs:
                 --values examples/preflight/values-complex-full.yaml \
                 --interactive=false \
                 --format=json \
+                --kubeconfig=$GITHUB_WORKSPACE/kubeconfig.yaml \
                 --output=test/output/preflight-results-v1beta3.json
               BUNDLE=$(ls -t preflightbundle-*.tar.gz 2>/dev/null | head -1)
               if [ -n "$BUNDLE" ]; then
@@ -107,6 +106,7 @@ jobs:
                 examples/preflight/all-analyzers-v1beta2.yaml \
                 --interactive=false \
                 --format=json \
+                --kubeconfig=$GITHUB_WORKSPACE/kubeconfig.yaml \
                 --output=test/output/preflight-results-v1beta2.json
               BUNDLE=$(ls -t preflightbundle-*.tar.gz 2>/dev/null | head -1)
               if [ -n "$BUNDLE" ]; then
@@ -117,6 +117,7 @@ jobs:
               ./bin/support-bundle \
                 examples/collect/host/all-kubernetes-collectors.yaml \
                 --interactive=false \
+                --kubeconfig=$GITHUB_WORKSPACE/kubeconfig.yaml \
                 --output=test/output/supportbundle.tar.gz
               ;;
           esac
