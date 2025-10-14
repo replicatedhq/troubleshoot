@@ -1,0 +1,33 @@
+apiVersion: troubleshoot.sh/v1beta3
+kind: Preflight
+metadata:
+  name: helm-builtins-example
+  labels:
+    release: {{ .Release.Name }}
+spec:
+  analyzers:
+    - docString: |
+        Title: Example using Helm builtin objects
+        Requirement: Demonstrates .Values, .Release, .Chart, etc.
+
+        Supported Helm builtin objects:
+        - .Values.* - User-provided values
+        - .Release.Name - Release name (default: "preflight")
+        - .Release.Namespace - Release namespace (default: "default")
+        - .Release.IsInstall - Whether this is an install (true)
+        - .Release.IsUpgrade - Whether this is an upgrade (false)
+        - .Release.Revision - Release revision (1)
+        - .Chart.Name - Chart name
+        - .Chart.Version - Chart version
+        - .Capabilities.KubeVersion - Kubernetes version capabilities
+      clusterVersion:
+        checkName: Kubernetes version check in {{ .Release.Namespace }}
+        outcomes:
+          - fail:
+              when: '< {{ .Values.minVersion | default "1.19.0" }}'
+              message: |
+                Release {{ .Release.Name }} requires Kubernetes {{ .Values.minVersion | default "1.19.0" }} or later.
+                Chart: {{ .Chart.Name }}
+          - pass:
+              when: '>= {{ .Values.minVersion | default "1.19.0" }}'
+              message: Kubernetes version is supported for release {{ .Release.Name }}

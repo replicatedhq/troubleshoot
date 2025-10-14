@@ -1,0 +1,12 @@
+apiVersion: troubleshoot.sh/v1beta2
+kind: Preflight
+metadata:
+  name: wrong-version
+spec:
+  analyzers:
+    - clusterVersion:
+        checkName: Kubernetes version
+        outcomes:
+          - pass:
+              when: '>= 1.19.0'
+              message: Kubernetes version is supported
