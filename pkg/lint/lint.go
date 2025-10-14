@@ -7,10 +7,12 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"sync"
 
 	"encoding/json"
 
 	"github.com/pkg/errors"
+	"github.com/replicatedhq/troubleshoot/internal/util"
 	"github.com/replicatedhq/troubleshoot/pkg/constants"
 	"sigs.k8s.io/yaml"
 )
@@ -49,154 +51,229 @@ func LintFiles(opts LintOptions) ([]LintResult, error) {
 	ensureKnownTypesLoaded()
 
 	for _, filePath := range opts.FilePaths {
-		result, err := lintFile(filePath, opts.Fix)
-		if err != nil {
-			return nil, err
+		// Read entire file once
+		fileBytes, readErr := os.ReadFile(filePath)
+		if readErr != nil {
+			return nil, errors.Wrapf(readErr, "failed to read file %s", filePath)
 		}
-		results = append(results, result)
+		fileContent := string(fileBytes)
+
+		// Split into YAML documents
+		docs := util.SplitYAML(fileContent)
+
+		// Pre-compute starting line number for each doc within the file (1-based)
+		docStarts := make([]int, len(docs))
+		runningStart := 1
+		for i, d := range docs {
+			docStarts[i] = runningStart
+			// Count lines in this doc
+			runningStart += util.EstimateNumberOfLines(d)
+			// Account for the '---' separator line between documents
+			if i < len(docs)-1 {
+				runningStart += 1
+			}
+		}
+
+		// Lint each document, in parallel
+		type docOutcome struct {
+			errs    []LintError
+			warns   []LintWarning
+			newDoc  string
+			changed bool
+		}
+		outcomes := make([]docOutcome, len(docs))
+		var wg sync.WaitGroup
+		wg.Add(len(docs))
+		for i := range docs {
+			i := i
+			go func() {
+				defer wg.Done()
+				// Compute lint result for this doc, optionally applying fixes in-memory
+				res, finalDoc, _ /*changed*/, _ := lintContentInMemory(docs[i], opts.Fix)
+
+				// Adjust line numbers to file coordinates
+				lineOffset := docStarts[i] - 1
+				for idx := range res.Errors {
+					if res.Errors[idx].Line > 0 {
+						res.Errors[idx].Line += lineOffset
+					}
+				}
+				for idx := range res.Warnings {
+					if res.Warnings[idx].Line > 0 {
+						res.Warnings[idx].Line += lineOffset
+					}
+				}
+
+				changed := finalDoc != docs[i]
+				outcomes[i] = docOutcome{
+					errs:    res.Errors,
+					warns:   res.Warnings,
+					newDoc:  finalDoc,
+					changed: changed,
+				}
+			}()
+		}
+		wg.Wait()
+
+		// Assemble per-file result
+		fileResult := LintResult{FilePath: filePath}
+		writeNeeded := false
+		newDocs := make([]string, len(docs))
+		for i, oc := range outcomes {
+			fileResult.Errors = append(fileResult.Errors, oc.errs...)
+			fileResult.Warnings = append(fileResult.Warnings, oc.warns...)
+			if oc.changed {
+				writeNeeded = true
+			}
+			if oc.newDoc == "" {
+				newDocs[i] = docs[i]
+			} else {
+				newDocs[i] = oc.newDoc
+			}
+		}
+
+		if writeNeeded {
+			// Reassemble with the same delimiter used by util.SplitYAML
+			updated := strings.Join(newDocs, "\n---\n")
+			if writeErr := os.WriteFile(filePath, []byte(updated), 0644); writeErr != nil {
+				return nil, errors.Wrapf(writeErr, "failed to write fixed content to %s", filePath)
+			}
+		}
+
+		results = append(results, fileResult)
 	}
 
 	return results, nil
 }
 
-func lintFile(filePath string, fix bool) (LintResult, error) {
-	result := LintResult{
-		FilePath: filePath,
-		Errors:   []LintError{},
-		Warnings: []LintWarning{},
-	}
+func lintContentInMemory(content string, fix bool) (LintResult, string, bool, error) {
+	// Compute result for the provided content
+	compute := func(body string) LintResult {
+		res := LintResult{Errors: []LintError{}, Warnings: []LintWarning{}}
 
-	// Read file
-	content, err := os.ReadFile(filePath)
-	if err != nil {
-		return result, errors.Wrapf(err, "failed to read file %s", filePath)
-	}
+		// Check if content contains template expressions
+		hasTemplates := strings.Contains(body, "{{") && strings.Contains(body, "}}")
 
-	// Check if file contains template expressions
-	hasTemplates := strings.Contains(string(content), "{{") && strings.Contains(string(content), "}}")
+		// Validate YAML syntax (but be lenient with templated files)
+		var parsed map[string]interface{}
+		if err := yaml.Unmarshal([]byte(body), &parsed); err != nil {
+			// If the content has templates, YAML parsing may fail - that's expected for v1beta3 only
+			if !hasTemplates {
+				res.Errors = append(res.Errors, LintError{
+					Line:    extractLineFromError(err),
+					Message: fmt.Sprintf("YAML syntax error: %s", err.Error()),
+				})
+				return res
+			}
 
-	// Validate YAML syntax (but be lenient with templated files)
-	var parsed map[string]interface{}
-	if err := yaml.Unmarshal(content, &parsed); err != nil {
-		// If the file has templates, YAML parsing may fail - that's expected for v1beta3 only
-		if !hasTemplates {
-			result.Errors = append(result.Errors, LintError{
-				Line:    extractLineFromError(err),
-				Message: fmt.Sprintf("YAML syntax error: %s", err.Error()),
-			})
-			return result, nil
+			// Attempt to detect apiVersion from raw content
+			detectedAPIVersion := detectAPIVersionFromContent(body)
+			if detectedAPIVersion == "" {
+				res.Errors = append(res.Errors, LintError{
+					Line:    findLineNumber(body, "apiVersion"),
+					Field:   "apiVersion",
+					Message: "Missing or unreadable 'apiVersion' field",
+				})
+				return res
+			}
+
+			if detectedAPIVersion == constants.Troubleshootv1beta2Kind {
+				// v1beta2 does not support templating
+				addTemplatingErrorsForAllLines(&res, body)
+				return res
+			}
+
+			// For v1beta3 with templates, we can't parse YAML strictly, so just check template syntax
+			templateErrors, templateValueRefs := checkTemplateSyntax(body)
+			res.Errors = append(res.Errors, templateErrors...)
+
+			// Add warning about template values for v1beta3
+			if detectedAPIVersion == constants.Troubleshootv1beta3Kind && len(templateValueRefs) > 0 {
+				res.Warnings = append(res.Warnings, LintWarning{
+					Line:    1,
+					Field:   "template-values",
+					Message: fmt.Sprintf("Template values that must be provided at runtime: %s", strings.Join(templateValueRefs, ", ")),
+				})
+			}
+
+			return res
 		}
 
-		// Attempt to detect apiVersion from raw content
-		detectedAPIVersion := detectAPIVersionFromContent(string(content))
-		if detectedAPIVersion == "" {
-			result.Errors = append(result.Errors, LintError{
-				Line:    findLineNumber(string(content), "apiVersion"),
+		// Determine apiVersion from parsed YAML
+		apiVersion := ""
+		if v, ok := parsed["apiVersion"].(string); ok {
+			apiVersion = v
+		}
+		if apiVersion == "" {
+			res.Errors = append(res.Errors, LintError{
+				Line:    findLineNumber(body, "apiVersion"),
 				Field:   "apiVersion",
-				Message: "Missing or unreadable 'apiVersion' field",
+				Message: "Missing or empty 'apiVersion' field",
 			})
-			return result, nil
+			return res
 		}
 
-		if detectedAPIVersion == constants.Troubleshootv1beta2Kind {
-			// v1beta2 does not support templating
-			addTemplatingErrorsForAllLines(&result, string(content))
-			return result, nil
+		// Templating policy: only v1beta3 supports templating
+		if apiVersion == constants.Troubleshootv1beta2Kind && hasTemplates {
+			addTemplatingErrorsForAllLines(&res, body)
 		}
 
-		// For v1beta3 with templates, we can't parse YAML strictly, so just check template syntax
-		templateErrors, templateValueRefs := checkTemplateSyntax(string(content))
-		result.Errors = append(result.Errors, templateErrors...)
+		// Check required fields
+		res.Errors = append(res.Errors, checkRequiredFields(parsed, body)...)
 
-		// Add warning about template values for v1beta3
-		if detectedAPIVersion == constants.Troubleshootv1beta3Kind && len(templateValueRefs) > 0 {
-			result.Warnings = append(result.Warnings, LintWarning{
-				Line:    1,
-				Field:   "template-values",
-				Message: fmt.Sprintf("Template values that must be provided at runtime: %s", strings.Join(templateValueRefs, ", ")),
-			})
+		// Check template syntax and collect template value references
+		templateErrors, templateValueRefs := checkTemplateSyntax(body)
+		res.Errors = append(res.Errors, templateErrors...)
+
+		// Check for kind-specific requirements
+		if kind, ok := parsed["kind"].(string); ok {
+			switch kind {
+			case "Preflight":
+				res.Errors = append(res.Errors, checkPreflightSpec(parsed, body)...)
+				// Validate analyzer entries
+				res.Errors = append(res.Errors, validateAnalyzers(parsed, body)...)
+			case "SupportBundle":
+				res.Errors = append(res.Errors, checkSupportBundleSpec(parsed, body)...)
+				// Validate analyzers if present in SupportBundle specs as well
+				res.Errors = append(res.Errors, validateAnalyzers(parsed, body)...)
+				// Validate collector entries (collectors and hostCollectors)
+				res.Errors = append(res.Errors, validateCollectors(parsed, body, "collectors")...)
+				res.Errors = append(res.Errors, validateCollectors(parsed, body, "hostCollectors")...)
+			}
 		}
 
-		return result, nil
+		// Check for common issues
+		res.Warnings = append(res.Warnings, checkCommonIssues(parsed, body, apiVersion, templateValueRefs)...)
+
+		return res
 	}
 
-	// Determine apiVersion from parsed YAML
-	apiVersion := ""
-	if v, ok := parsed["apiVersion"].(string); ok {
-		apiVersion = v
-	}
-	if apiVersion == "" {
-		result.Errors = append(result.Errors, LintError{
-			Line:    findLineNumber(string(content), "apiVersion"),
-			Field:   "apiVersion",
-			Message: "Missing or empty 'apiVersion' field",
-		})
-		return result, nil
-	}
+	// Initial lint
+	result := compute(content)
 
-	// Templating policy: only v1beta3 supports templating
-	if apiVersion == constants.Troubleshootv1beta2Kind && hasTemplates {
-		addTemplatingErrorsForAllLines(&result, string(content))
-	}
-
-	// Check required fields
-	result.Errors = append(result.Errors, checkRequiredFields(parsed, string(content))...)
-
-	// Check template syntax and collect template value references
-	templateErrors, templateValueRefs := checkTemplateSyntax(string(content))
-	result.Errors = append(result.Errors, templateErrors...)
-
-	// Check for kind-specific requirements
-	if kind, ok := parsed["kind"].(string); ok {
-		switch kind {
-		case "Preflight":
-			result.Errors = append(result.Errors, checkPreflightSpec(parsed, string(content))...)
-			// Validate analyzer entries
-			result.Errors = append(result.Errors, validateAnalyzers(parsed, string(content))...)
-		case "SupportBundle":
-			result.Errors = append(result.Errors, checkSupportBundleSpec(parsed, string(content))...)
-			// Validate analyzers if present in SupportBundle specs as well
-			result.Errors = append(result.Errors, validateAnalyzers(parsed, string(content))...)
-			// Validate collector entries (collectors and hostCollectors)
-			result.Errors = append(result.Errors, validateCollectors(parsed, string(content), "collectors")...)
-			result.Errors = append(result.Errors, validateCollectors(parsed, string(content), "hostCollectors")...)
-		}
-	}
-
-	// Check for common issues
-	result.Warnings = append(result.Warnings, checkCommonIssues(parsed, string(content), apiVersion, templateValueRefs)...)
-
-	// Apply fixes if requested (multi-pass within a single invocation)
+	// Apply fixes if requested (multi-pass within a single invocation), in-memory
+	changed := false
 	if fix && (len(result.Errors) > 0 || len(result.Warnings) > 0) {
 		const maxFixPasses = 3
 		for pass := 0; pass < maxFixPasses; pass++ {
-			fixed, err := applyFixes(filePath, string(content), result)
+			updatedContent, fixed, err := applyFixesInMemory(content, result)
 			if err != nil {
-				return result, err
+				return result, content, changed, err
 			}
 			if !fixed {
 				break
 			}
-			// Reload updated content and re-lint (without applying fixes) for the next pass
-			updated, readErr := os.ReadFile(filePath)
-			if readErr == nil {
-				content = updated
-			}
-			newResult, relintErr := lintFile(filePath, false)
-			if relintErr != nil {
-				// Fall back to previous result if re-lint fails unexpectedly
-				break
-			}
-			result = newResult
-			// If no more errors remain, stop
+			changed = true
+			content = updatedContent
+			// Recompute without applying fixes in this cycle
+			result = compute(content)
 			if len(result.Errors) == 0 && len(result.Warnings) == 0 {
 				break
 			}
 		}
-		return result, nil
 	}
 
-	return result, nil
+	return result, content, changed, nil
 }
 
 func checkRequiredFields(parsed map[string]interface{}, content string) []LintError {
@@ -634,7 +711,22 @@ func validateTypedList(
 			})
 			continue
 		}
-		if len(m) != 1 {
+		// Count non-docString keys (docString is metadata in v1beta3, not a type)
+		typeCount := 0
+		var typ string
+		var body interface{}
+		for k, v := range m {
+			if k == "docString" {
+				// docString is metadata, not a type - skip it
+				continue
+			} else {
+				typeCount++
+				typ, body = k, v
+			}
+		}
+
+		// Check that we have exactly one type (excluding docString)
+		if typeCount != 1 {
 			errs = append(errs, LintError{
 				Line:    findListItemLine(content, listKey, i),
 				Field:   fmt.Sprintf("spec.%s[%d]", listKey, i),
@@ -642,10 +734,10 @@ func validateTypedList(
 			})
 			continue
 		}
-		var typ string
-		var body interface{}
-		for k, v := range m {
-			typ, body = k, v
+
+		// If no actual type was found (only docString), skip further validation
+		if typ == "" {
+			continue
 		}
 		if len(knownTypes) > 0 {
 			if _, ok := knownTypes[typ]; !ok {
@@ -708,20 +800,11 @@ func checkCommonIssues(parsed map[string]interface{}, content string, apiVersion
 	if analyzers, ok := spec["analyzers"].([]interface{}); ok {
 		for _, analyzer := range analyzers {
 			if analyzerMap, ok := analyzer.(map[string]interface{}); ok {
-				// Get the actual analyzer type (first key-value pair)
-				for _, analyzerSpec := range analyzerMap {
-					if specMap, ok := analyzerSpec.(map[string]interface{}); ok {
-						if _, hasDocString := specMap["docString"]; !hasDocString {
-							analyzersMissingDocString = true
-							break
-						}
-					}
-					// Only check the first key since analyzers have single type
+				// Check if docString exists at the analyzer level (v1beta3)
+				if _, hasDocString := analyzerMap["docString"]; !hasDocString {
+					analyzersMissingDocString = true
 					break
 				}
-			}
-			if analyzersMissingDocString {
-				break
 			}
 		}
 	}
@@ -782,7 +865,7 @@ func checkCommonIssues(parsed map[string]interface{}, content string, apiVersion
 	return warnings
 }
 
-func applyFixes(filePath, content string, result LintResult) (bool, error) {
+func applyFixesInMemory(content string, result LintResult) (string, bool, error) {
 	fixed := false
 	newContent := content
 	lines := strings.Split(newContent, "\n")
@@ -954,15 +1037,13 @@ func applyFixes(filePath, content string, result LintResult) (bool, error) {
 		}
 	}
 
-	// Write fixed content back to file if changes were made
+	// Return fixed content if changes were made
 	if fixed {
 		newContent = strings.Join(lines, "\n")
-		if err := os.WriteFile(filePath, []byte(newContent), 0644); err != nil {
-			return false, errors.Wrapf(err, "failed to write fixed content to %s", filePath)
-		}
+		return newContent, true, nil
 	}
 
-	return fixed, nil
+	return content, false, nil
 }
 
 // wrapFirstChildAsList prefixes the first child mapping line under the given key with '- '
