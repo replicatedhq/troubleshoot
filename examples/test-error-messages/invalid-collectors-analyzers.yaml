@@ -1,0 +1,19 @@
+apiVersion: troubleshoot.sh/v1beta3
+kind: SupportBundle
+metadata:
+  name: invalid-collectors
+spec:
+  collectors:
+    # Unknown collector type
+    - notACollector: {}
+    # Known collector but missing required fields (e.g., ceph requires namespace)
+    - ceph: {}
+  # Field exists but wrong type (should be a list)
+  hostCollectors: "not-a-list"
+  analyzers:
+    # Unknown analyzer type
+    - notAnAnalyzer: {}
+    # Known analyzer missing required 'outcomes'
+    - cephStatus:
+        namespace: default
+

@@ -5,10 +5,14 @@ import (
 	"os"
 	"strings"
 
+	"errors"
+
 	"github.com/replicatedhq/troubleshoot/cmd/internal/util"
 	"github.com/replicatedhq/troubleshoot/internal/traces"
+	"github.com/replicatedhq/troubleshoot/pkg/constants"
 	"github.com/replicatedhq/troubleshoot/pkg/k8sutil"
 	"github.com/replicatedhq/troubleshoot/pkg/logger"
+	"github.com/replicatedhq/troubleshoot/pkg/types"
 	"github.com/replicatedhq/troubleshoot/pkg/updater"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -108,6 +112,7 @@ If no arguments are provided, specs are automatically loaded from the cluster by
 	cmd.AddCommand(Diff())
 	cmd.AddCommand(Schedule())
 	cmd.AddCommand(UploadCmd())
+	cmd.AddCommand(LintCmd())
 	cmd.AddCommand(util.VersionCmd())
 
 	cmd.Flags().StringSlice("redactors", []string{}, "names of the additional redactors to use")
@@ -166,7 +171,16 @@ If no arguments are provided, specs are automatically loaded from the cluster by
 }
 
 func InitAndExecute() {
-	if err := RootCmd().Execute(); err != nil {
+	cmd := RootCmd()
+	if err := cmd.Execute(); err != nil {
+		var exitErr types.ExitError
+		if errors.As(err, &exitErr) {
+			if exitErr.ExitStatus() != constants.EXIT_CODE_FAIL && exitErr.ExitStatus() != constants.EXIT_CODE_WARN {
+				cmd.PrintErrln("Error:", err.Error())
+			}
+			os.Exit(exitErr.ExitStatus())
+		}
+		cmd.PrintErrln("Error:", err.Error())
 		os.Exit(1)
 	}
 }
