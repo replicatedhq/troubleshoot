@@ -48,6 +48,8 @@ Examples:
 			namespace, _ := cmd.Flags().GetString("namespace")
 			auto, _ := cmd.Flags().GetBool("auto")
 			upload, _ := cmd.Flags().GetString("upload")
+			licenseID, _ := cmd.Flags().GetString("license-id")
+			appSlug, _ := cmd.Flags().GetString("app-slug")
 
 			if cronSchedule == "" {
 				return fmt.Errorf("--cron is required")
@@ -57,7 +59,7 @@ Examples:
 			if err != nil {
 				return err
 			}
-			job, err := manager.CreateJob(args[0], cronSchedule, namespace, auto, upload)
+			job, err := manager.CreateJobWithCredentials(args[0], cronSchedule, namespace, auto, upload, licenseID, appSlug)
 			if err != nil {
 				return err
 			}
@@ -71,6 +73,12 @@ Examples:
 			if upload != "" {
 				fmt.Printf("  Auto-upload: enabled (uploads to vendor portal)\n")
 			}
+			if licenseID != "" {
+				fmt.Printf("  License ID: %s\n", licenseID)
+			}
+			if appSlug != "" {
+				fmt.Printf("  App Slug: %s\n", appSlug)
+			}
 
 			fmt.Printf("\n💡 To activate, start the daemon:\n")
 			fmt.Printf("   support-bundle schedule daemon start\n")
@@ -83,6 +91,8 @@ Examples:
 	cmd.Flags().StringP("namespace", "n", "", "Kubernetes namespace (optional)")
 	cmd.Flags().Bool("auto", false, "Enable auto-discovery")
 	cmd.Flags().String("upload", "", "Enable auto-upload to vendor portal (any non-empty value enables auto-upload)")
+	cmd.Flags().String("license-id", "", "License ID for auto-upload")
+	cmd.Flags().String("app-slug", "", "Application slug for auto-upload")
 	cmd.MarkFlagRequired("cron")
 
 	return cmd

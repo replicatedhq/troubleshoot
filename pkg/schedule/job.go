@@ -18,6 +18,8 @@ type Job struct {
 	Namespace string    `json:"namespace"`
 	Auto      bool      `json:"auto"` // Auto-discovery
 	Upload    string    `json:"upload,omitempty"`
+	LicenseID string    `json:"licenseId,omitempty"`
+	AppSlug   string    `json:"appSlug,omitempty"`
 	Enabled   bool      `json:"enabled"`
 	RunCount  int       `json:"runCount"`
 	LastRun   time.Time `json:"lastRun,omitempty"`
@@ -77,10 +79,32 @@ func (m *Manager) CreateJob(name, schedule, namespace string, auto bool, upload 
 		Namespace: namespace,
 		Auto:      auto,
 		Upload:    upload,
+		LicenseID: "", // Will be set by CreateJobWithCredentials
+		AppSlug:   "", // Will be set by CreateJobWithCredentials
 		Enabled:   true,
 		Created:   time.Now(),
 	}
 
+	if err := m.saveJob(job); err != nil {
+		return nil, err
+	}
+
+	return job, nil
+}
+
+// CreateJobWithCredentials creates a new scheduled job with license credentials
+func (m *Manager) CreateJobWithCredentials(name, schedule, namespace string, auto bool, upload, licenseID, appSlug string) (*Job, error) {
+	// Use the existing CreateJob function for validation and basic setup
+	job, err := m.CreateJob(name, schedule, namespace, auto, upload)
+	if err != nil {
+		return nil, err
+	}
+
+	// Add the license credentials
+	job.LicenseID = licenseID
+	job.AppSlug = appSlug
+
+	// Save the updated job
 	if err := m.saveJob(job); err != nil {
 		return nil, err
 	}
