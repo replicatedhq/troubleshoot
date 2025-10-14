@@ -3,6 +3,8 @@ name: Regression Test Suite
 on:
   push:
     branches: [main]
+  pull_request:
+    types: [opened, reopened, synchronize, ready_for_review]
   workflow_dispatch:
     inputs:
       update_baselines:
@@ -12,7 +14,8 @@ on:
 
 jobs:
   regression-test:
-    if: github.event_name != 'pull_request'
+    # Run on push, manual dispatch, and internal PRs (skip fork PRs due to secrets)
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false
     runs-on: ubuntu-22.04
     timeout-minutes: 25
 
