@@ -12,6 +12,9 @@ jobs:
     if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    outputs:
+      unit_has_changes: ${{ steps.affected.outputs.has_changes }}
+      e2e_has_changes: ${{ steps.affected_e2e.outputs.has_changes }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -87,6 +90,23 @@ jobs:
             fi;
           } | tee -a "$GITHUB_STEP_SUMMARY"
 
+      - name: Upload affected unit packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: affected-unit
+          path: /tmp/affected.txt
+          if-no-files-found: warn
+
+      - name: Upload affected e2e artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: affected-e2e
+          path: |
+            /tmp/affected-e2e.txt
+            /tmp/preflight-tests.txt
+            /tmp/support-tests.txt
+          if-no-files-found: warn
+
 
       - name: No affected packages — skip tests
         if: steps.affected.outputs.has_changes != 'true'
@@ -116,35 +136,20 @@ jobs:
       - name: Go Mod Download
         run: go mod download
 
-      - name: Compute base ref
-        id: pr-info
-        run: |
-          echo "BASE_REF=origin/${{ github.base_ref }}" >> "$GITHUB_OUTPUT"
-          echo "Base ref: origin/${{ github.base_ref }}"
+      - name: Download affected unit packages
+        uses: actions/download-artifact@v4
+        with:
+          name: affected-unit
+          path: /tmp
 
-      - name: Compute affected packages
-        id: affected
-        run: |
-          set -euo pipefail
-          echo "Base: ${{ steps.pr-info.outputs.BASE_REF }}"
-          go run ./scripts/affected-packages.go -base "${{ steps.pr-info.outputs.BASE_REF }}" > /tmp/affected.txt
-          if [ -s /tmp/affected.txt ]; then echo "has_changes=true" >> "$GITHUB_OUTPUT"; else echo "has_changes=false" >> "$GITHUB_OUTPUT"; fi
-
-      - name: Compute affected e2e tests
-        id: affected_e2e
-        run: |
-          set -euo pipefail
-          go run ./scripts/affected-packages.go -mode=suites -base "${{ steps.pr-info.outputs.BASE_REF }}" > /tmp/affected-e2e.txt
-          awk -F: '$1=="preflight"{print $2}' /tmp/affected-e2e.txt > /tmp/preflight-tests.txt
-          awk -F: '$1=="support-bundle"{print $2}' /tmp/affected-e2e.txt > /tmp/support-tests.txt
-          if [ -s /tmp/preflight-tests.txt ] || [ -s /tmp/support-tests.txt ]; then
-            echo "has_changes=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "has_changes=false" >> "$GITHUB_OUTPUT"
-          fi
+      - name: Download affected e2e artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: affected-e2e
+          path: /tmp
 
       - name: Run unit tests (filtered)
-        if: matrix.suite == 'unit' && steps.affected.outputs.has_changes == 'true'
+        if: matrix.suite == 'unit' && needs.test-affected.outputs.unit_has_changes == 'true'
         run: |
           set -euo pipefail
           if grep -qx "./..." /tmp/affected.txt; then
@@ -158,7 +163,7 @@ jobs:
 
 
       - name: Run e2e (filtered) - ${{ matrix.suite }}
-        if: matrix.suite != 'unit' && steps.affected_e2e.outputs.has_changes == 'true'
+        if: matrix.suite != 'unit' && needs.test-affected.outputs.e2e_has_changes == 'true'
         run: |
           set -euo pipefail
           docker rm -f kind-cluster-control-plane 2>/dev/null || true
