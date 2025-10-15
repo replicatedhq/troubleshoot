@@ -2185,7 +2185,8 @@ func storeCustomResource(name string, objects any, m map[string][]byte) error {
 }
 
 // replicatedLicense searches for the replicated secret across namespaces,
-// extracts the config.yaml field, decodes it from base64, and extracts the licenseID and appSlug.
+// extracts the config.yaml field, and extracts the licenseID and appSlug.
+// Note: secret.Data already contains decoded bytes; no base64 decoding is required.
 func replicatedLicense(ctx context.Context, client *kubernetes.Clientset, namespaces []string) ([]byte, error) {
 	// Structure to parse the config.yaml content
 	type ConfigYAML struct {
@@ -2215,19 +2216,20 @@ func replicatedLicense(ctx context.Context, client *kubernetes.Clientset, namesp
 			continue
 		}
 
-		// Decode from base64
-		configYAMLBytes := configYAMLBase64 // In Kubernetes, secret.Data already contains decoded bytes
+		configYAMLBytes := configYAMLBase64
 
 		// Parse the YAML to extract the license field
 		var config ConfigYAML
 		if err := yaml.Unmarshal(configYAMLBytes, &config); err != nil {
-			return nil, fmt.Errorf("failed to parse config.yaml from replicated secret in namespace %s: %w", namespace, err)
+			// Malformed config in this namespace; try the next namespace
+			continue
 		}
 
 		// Parse the license field (which is a YAML string) to extract licenseID and appSlug
 		var license License
 		if err := yaml.Unmarshal([]byte(config.License), &license); err != nil {
-			return nil, fmt.Errorf("failed to parse license from config.yaml in namespace %s: %w", namespace, err)
+			// Malformed license in this namespace; try the next namespace
+			continue
 		}
 
 		// Return both licenseID and appSlug as JSON
@@ -2243,6 +2245,6 @@ func replicatedLicense(ctx context.Context, client *kubernetes.Clientset, namesp
 		return licenseJSON, nil
 	}
 
-	// No replicated secret found in any namespace
-	return nil, fmt.Errorf("replicated secret not found in any namespace")
+	// No replicated secret with a parsable license found in any namespace
+	return nil, fmt.Errorf("replicated secret with parsable license not found in any namespace")
 }
