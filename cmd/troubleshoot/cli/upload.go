@@ -26,7 +26,10 @@ Examples:
   support-bundle upload bundle.tar.gz --license-id YOUR_LICENSE_ID
 
   # Specify both license and app
-  support-bundle upload bundle.tar.gz --license-id YOUR_LICENSE_ID --app-slug my-app`,
+  support-bundle upload bundle.tar.gz --license-id YOUR_LICENSE_ID --app-slug my-app
+
+  # Upload to a custom domain (e.g., development environment)
+  support-bundle upload bundle.tar.gz --upload-domain replicated-app-dev.example.com`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			v := viper.GetViper()
 			bundlePath := args[0]
