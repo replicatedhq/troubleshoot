@@ -39,9 +39,10 @@ Examples:
 			// Get upload parameters
 			licenseID := v.GetString("license-id")
 			appSlug := v.GetString("app-slug")
+			uploadDomain := v.GetString("upload-domain")
 
 			// Use auto-detection for uploads
-			if err := supportbundle.UploadBundleAutoDetect(bundlePath, licenseID, appSlug); err != nil {
+			if err := supportbundle.UploadBundleAutoDetect(bundlePath, licenseID, appSlug, uploadDomain); err != nil {
 				return errors.Wrap(err, "upload failed")
 			}
 
@@ -51,6 +52,7 @@ Examples:
 
 	cmd.Flags().String("license-id", "", "license ID for authentication (auto-detected from bundle if not provided)")
 	cmd.Flags().String("app-slug", "", "application slug (auto-detected from bundle if not provided)")
+	cmd.Flags().String("upload-domain", "", "custom domain for upload (default: replicated.app)")
 
 	return cmd
 }

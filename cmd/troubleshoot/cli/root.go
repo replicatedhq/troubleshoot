@@ -136,6 +136,7 @@ If no arguments are provided, specs are automatically loaded from the cluster by
 	cmd.Flags().Bool("auto-upload", false, "automatically upload resulting bundle to replicated.app")
 	cmd.Flags().String("license-id", "", "license ID for authentication when uploading (auto-detected from bundle if not provided)")
 	cmd.Flags().String("app-slug", "", "application slug when uploading (auto-detected from bundle if not provided)")
+	cmd.Flags().String("upload-domain", "", "custom domain for upload (default: replicated.app)")
 
 	// Auto-discovery flags
 	cmd.Flags().Bool("auto", false, "enable auto-discovery of foundational collectors. When used with YAML specs, adds foundational collectors to YAML collectors. When used alone, collects only foundational data")

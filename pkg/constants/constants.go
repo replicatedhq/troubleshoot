@@ -61,6 +61,7 @@ const (
 	CLUSTER_RESOURCES_LEASES                      = "leases"
 	CLUSTER_RESOURCES_VOLUME_ATTACHMENTS          = "volumeattachments"
 	CLUSTER_RESOURCES_CONFIGMAPS                  = "configmaps"
+	CLUSTER_RESOURCES_REPLICATED_LICENSE          = "license.json"
 
 	// SelfSubjectRulesReview evaluation responses
 	SELFSUBJECTRULESREVIEW_ERROR_AUTHORIZATION_WEBHOOK_UNSUPPORTED = "webhook authorizer does not support user rule resolution"

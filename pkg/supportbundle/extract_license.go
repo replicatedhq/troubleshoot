@@ -16,8 +16,9 @@ import (
 )
 
 // ExtractLicenseFromBundle extracts the license ID from a support bundle
-// It looks in cluster-resources/configmaps/* for a license field
-// Returns both the license ID and the app slug (from the filename where license was found)
+// It first looks for cluster-resources/license.json, then falls back to searching
+// cluster-resources/configmaps/* for a license field
+// Returns both the license ID and the app slug
 func ExtractLicenseFromBundle(bundlePath string) (string, string, error) {
 	file, err := os.Open(bundlePath)
 	if err != nil {
@@ -42,7 +43,27 @@ func ExtractLicenseFromBundle(bundlePath string) (string, string, error) {
 			return "", "", errors.Wrap(err, "failed to read tar header")
 		}
 
-		// Only process files in cluster-resources/configmaps/ (may be nested under bundle directory)
+		// First priority: check for the new license.json file
+		if strings.Contains(header.Name, "cluster-resources/license.json") && header.Typeflag == tar.TypeReg {
+			content := make([]byte, header.Size)
+			if _, err := io.ReadFull(tarReader, content); err != nil {
+				continue
+			}
+
+			// Parse the license.json file
+			var licenseData struct {
+				LicenseID string `json:"licenseID"`
+				AppSlug   string `json:"appSlug"`
+			}
+			if err := json.Unmarshal(content, &licenseData); err == nil {
+				if licenseData.LicenseID != "" && licenseData.AppSlug != "" {
+					return licenseData.LicenseID, licenseData.AppSlug, nil
+				}
+			}
+			continue
+		}
+
+		// Fallback: process files in cluster-resources/configmaps/
 		if !strings.Contains(header.Name, "cluster-resources/configmaps/") {
 			continue
 		}
