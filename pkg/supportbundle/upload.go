@@ -10,7 +10,7 @@ import (
 
 // UploadToReplicatedApp uploads a support bundle directly to replicated.app
 // using the app slug as the upload path
-func UploadToReplicatedApp(bundlePath, licenseID, appSlug string) error {
+func UploadToReplicatedApp(bundlePath, licenseID, appSlug, uploadDomain string) error {
 	// Open the bundle file
 	file, err := os.Open(bundlePath)
 	if err != nil {
@@ -23,8 +23,14 @@ func UploadToReplicatedApp(bundlePath, licenseID, appSlug string) error {
 		return errors.Wrap(err, "failed to stat file")
 	}
 
+	// Use custom domain if provided, otherwise default to replicated.app
+	domain := uploadDomain
+	if domain == "" {
+		domain = "replicated.app"
+	}
+
 	// Build the upload URL using the app slug
-	uploadURL := fmt.Sprintf("https://replicated.app/supportbundle/upload/%s", appSlug)
+	uploadURL := fmt.Sprintf("https://%s/supportbundle/upload/%s", domain, appSlug)
 
 	// Create the request
 	req, err := http.NewRequest("POST", uploadURL, file)
@@ -53,7 +59,7 @@ func UploadToReplicatedApp(bundlePath, licenseID, appSlug string) error {
 }
 
 // UploadBundleAutoDetect uploads a support bundle with automatic license and app slug detection
-func UploadBundleAutoDetect(bundlePath string, providedLicenseID, providedAppSlug string) error {
+func UploadBundleAutoDetect(bundlePath string, providedLicenseID, providedAppSlug, uploadDomain string) error {
 	licenseID := providedLicenseID
 
 	// Always extract from bundle to get app slug (and license if not provided)
@@ -79,9 +85,15 @@ func UploadBundleAutoDetect(bundlePath string, providedLicenseID, providedAppSlu
 		appSlug = extractedAppSlug
 	}
 
+	// Determine target domain for upload message
+	targetDomain := uploadDomain
+	if targetDomain == "" {
+		targetDomain = "replicated.app"
+	}
+
 	// Upload the bundle
-	fmt.Printf("Uploading support bundle to replicated.app...\n")
-	if err := UploadToReplicatedApp(bundlePath, licenseID, appSlug); err != nil {
+	fmt.Printf("Uploading support bundle to %s...\n", targetDomain)
+	if err := UploadToReplicatedApp(bundlePath, licenseID, appSlug, uploadDomain); err != nil {
 		return errors.Wrap(err, "failed to upload bundle")
 	}
 

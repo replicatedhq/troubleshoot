@@ -400,6 +400,13 @@ func (c *CollectClusterResources) Collect(progressChan chan<- interface{}) (Coll
 	}
 
 	output.SaveResult(c.BundlePath, path.Join(constants.CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s-errors.json", constants.CLUSTER_RESOURCES_CONFIGMAPS)), marshalErrors(configMapsErrors))
+
+	// Replicated License
+	licenseData, licenseErr := replicatedLicense(ctx, client, namespaceNames)
+	if licenseErr == nil {
+		output.SaveResult(c.BundlePath, path.Join(constants.CLUSTER_RESOURCES_DIR, constants.CLUSTER_RESOURCES_REPLICATED_LICENSE), bytes.NewBuffer(licenseData))
+	}
+
 	return output, nil
 }
 
@@ -2175,4 +2182,69 @@ func storeCustomResource(name string, objects any, m map[string][]byte) error {
 	m[fmt.Sprintf("%s.json", name)] = j
 	m[fmt.Sprintf("%s.yaml", name)] = y
 	return nil
+}
+
+// replicatedLicense searches for the replicated secret across namespaces,
+// extracts the config.yaml field, and extracts the licenseID and appSlug.
+// Note: secret.Data already contains decoded bytes; no base64 decoding is required.
+func replicatedLicense(ctx context.Context, client *kubernetes.Clientset, namespaces []string) ([]byte, error) {
+	// Structure to parse the config.yaml content
+	type ConfigYAML struct {
+		License string `yaml:"license"` // This is a YAML string containing the License object
+	}
+
+	type LicenseSpec struct {
+		LicenseID string `yaml:"licenseID"`
+		AppSlug   string `yaml:"appSlug"`
+	}
+
+	type License struct {
+		Spec LicenseSpec `yaml:"spec"`
+	}
+
+	// Search through all namespaces for the replicated secret
+	for _, namespace := range namespaces {
+		secret, err := client.CoreV1().Secrets(namespace).Get(ctx, "replicated", metav1.GetOptions{})
+		if err != nil {
+			// Secret not found in this namespace, continue to next
+			continue
+		}
+
+		// Extract the config.yaml field from the secret data
+		configYAMLBase64, exists := secret.Data["config.yaml"]
+		if !exists {
+			continue
+		}
+
+		configYAMLBytes := configYAMLBase64
+
+		// Parse the YAML to extract the license field
+		var config ConfigYAML
+		if err := yaml.Unmarshal(configYAMLBytes, &config); err != nil {
+			// Malformed config in this namespace; try the next namespace
+			continue
+		}
+
+		// Parse the license field (which is a YAML string) to extract licenseID and appSlug
+		var license License
+		if err := yaml.Unmarshal([]byte(config.License), &license); err != nil {
+			// Malformed license in this namespace; try the next namespace
+			continue
+		}
+
+		// Return both licenseID and appSlug as JSON
+		licenseData := map[string]string{
+			"licenseID": license.Spec.LicenseID,
+			"appSlug":   license.Spec.AppSlug,
+		}
+		licenseJSON, err := json.Marshal(licenseData)
+		if err != nil {
+			return nil, fmt.Errorf("failed to marshal license data: %w", err)
+		}
+
+		return licenseJSON, nil
+	}
+
+	// No replicated secret with a parsable license found in any namespace
+	return nil, fmt.Errorf("replicated secret with parsable license not found in any namespace")
 }
