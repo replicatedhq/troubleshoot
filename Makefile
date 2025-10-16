@@ -37,7 +37,7 @@ endef
 BUILDTAGS = "netgo containers_image_ostree_stub exclude_graphdriver_devicemapper exclude_graphdriver_btrfs containers_image_openpgp"
 BUILDFLAGS = -tags ${BUILDTAGS} -installsuffix netgo
 BUILDPATHS = ./pkg/... ./cmd/... ./internal/...
-E2EPATHS = ./test/e2e/...
+E2EPATHS ?= ./test/e2e/...
 TESTFLAGS ?= -v -coverprofile cover.out
 
 .DEFAULT_GOAL := all
@@ -49,11 +49,22 @@ ffi: fmt vet
 
 .PHONY: test
 test: generate fmt vet
-	if [ -n $(RUN) ]; then \
-		go test ${BUILDFLAGS} ${BUILDPATHS} ${TESTFLAGS} -run $(RUN); \
+	if [ -n "$(RUN)" ]; then \
+		go test ${BUILDFLAGS} ${BUILDPATHS} ${TESTFLAGS} -run "$(RUN)"; \
 	else \
 		go test ${BUILDFLAGS} ${BUILDPATHS} ${TESTFLAGS}; \
 	fi
+
+# Run unit tests only for a provided list of packages.
+# Usage: make test-packages PACKAGES="pkg/a pkg/b cmd/foo"
+.PHONY: test-packages
+test-packages:
+	@if [ -z "$(PACKAGES)" ]; then \
+		echo "No PACKAGES provided; nothing to test."; \
+		exit 0; \
+	fi
+	@echo "Running unit tests for packages: $(PACKAGES)"
+	go test ${BUILDFLAGS} $(PACKAGES) ${TESTFLAGS}
 
 # Go tests that require a K8s instance
 # TODOLATER: merge with test, so we get unified coverage reports? it'll add 21~sec to the test job though...
@@ -73,10 +84,18 @@ run-examples:
 support-bundle-e2e-test:
 	./test/validate-support-bundle-e2e.sh
 
+.PHONY: preflight-e2e-go-test
+preflight-e2e-go-test: bin/preflight
+	if [ -n "$(RUN)" ]; then \
+		go test ${BUILDFLAGS} ${E2EPATHS} -v -run "$(RUN)"; \
+	else \
+		go test ${BUILDFLAGS} ${E2EPATHS} -v; \
+	fi
+
 .PHONY: support-bundle-e2e-go-test
-support-bundle-e2e-go-test:
-	if [ -n $(RUN) ]; then \
-		go test ${BUILDFLAGS} ${E2EPATHS} -v -run $(RUN); \
+support-bundle-e2e-go-test: bin/support-bundle
+	if [ -n "$(RUN)" ]; then \
+		go test ${BUILDFLAGS} ${E2EPATHS} -v -run "$(RUN)"; \
 	else \
 		go test ${BUILDFLAGS} ${E2EPATHS} -v; \
 	fi

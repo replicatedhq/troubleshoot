@@ -1,0 +1,77 @@
+name: push-full-tests
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  unit-integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ./.github/actions/setup-go
+      - name: Setup K3s
+        uses: replicatedhq/action-k3s@main
+        with:
+          version: v1.31.2-k3s1
+      - name: Run tests
+        run: make test-integration
+
+  build-binaries:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: ./.github/actions/setup-go
+      - name: Cache Go build and modules
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+      - name: Go mod download
+        run: go mod download
+      - name: Build binaries
+        run: make build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: binaries
+          path: bin/
+          retention-days: 1
+
+  e2e:
+    needs: [unit-integration, build-binaries]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: preflight
+            target: preflight-e2e-test
+            needs-k3s: true
+          - name: support-bundle-shell
+            target: support-bundle-e2e-test
+            needs-k3s: true
+          - name: support-bundle-go
+            target: support-bundle-e2e-go-test
+            needs-k3s: false
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/download-artifact@v4
+        with:
+          name: binaries
+          path: bin/
+      - run: chmod +x bin/*
+      - name: Setup K3s
+        if: matrix.needs-k3s
+        uses: replicatedhq/action-k3s@main
+        with:
+          version: v1.31.2-k3s1
+      - run: make ${{ matrix.target }}
+
+
