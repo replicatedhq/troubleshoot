@@ -8,7 +8,7 @@ builds:
   - id: preflight
     main: ./cmd/preflight/main.go
     env: [CGO_ENABLED=0]
-    goos: [linux, darwin]
+    goos: [linux, darwin, windows]
     goarch: [amd64, arm, arm64]
     ignore:
       - goos: windows
@@ -31,7 +31,7 @@ builds:
   - id: support-bundle
     main: ./cmd/troubleshoot/main.go
     env: [CGO_ENABLED=0]
-    goos: [linux, darwin]
+    goos: [linux, darwin, windows]
     goarch: [amd64, arm, arm64]
     ignore:
       - goos: windows
