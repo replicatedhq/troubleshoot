@@ -23,9 +23,11 @@ type LintWarning struct {
 }
 
 type LintOptions struct {
-	FilePaths []string
-	Fix       bool
-	Format    string // "text" or "json"
+	FilePaths   []string
+	Fix         bool
+	Format      string   // "text" or "json"
+	ValuesFiles []string // Path to YAML files with template values (for v1beta3)
+	SetValues   []string // Template values from command line (for v1beta3)
 }
 
 // HasErrors returns true if any of the results contain errors

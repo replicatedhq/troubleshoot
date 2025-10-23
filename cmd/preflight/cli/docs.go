@@ -88,7 +88,7 @@ func extractDocs(templateFiles []string, valuesFiles []string, setValues []strin
 		if err != nil {
 			return errors.Wrapf(err, "failed to load values file %s", valuesFile)
 		}
-		values = mergeMaps(values, fileValues)
+		values = preflight.MergeMaps(values, fileValues)
 	}
 
 	// Normalize maps for Helm set merging
@@ -329,25 +329,6 @@ func setNestedValue(m map[string]interface{}, keys []string, value interface{}) 
 		m[keys[0]] = make(map[string]interface{})
 		setNestedValue(m[keys[0]].(map[string]interface{}), keys[1:], value)
 	}
-}
-
-func mergeMaps(base, overlay map[string]interface{}) map[string]interface{} {
-	result := make(map[string]interface{})
-	for k, v := range base {
-		result[k] = v
-	}
-	for k, v := range overlay {
-		if baseVal, exists := result[k]; exists {
-			if baseMap, ok := baseVal.(map[string]interface{}); ok {
-				if overlayMap, ok := v.(map[string]interface{}); ok {
-					result[k] = mergeMaps(baseMap, overlayMap)
-					continue
-				}
-			}
-		}
-		result[k] = v
-	}
-	return result
 }
 
 func renderTemplate(templateContent string, values map[string]interface{}) (string, error) {

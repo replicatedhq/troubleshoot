@@ -9,6 +9,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/replicatedhq/troubleshoot/internal/util"
 	"github.com/replicatedhq/troubleshoot/pkg/constants"
+	"github.com/replicatedhq/troubleshoot/pkg/preflight"
+	"helm.sh/helm/v3/pkg/strvals"
 	"sigs.k8s.io/yaml"
 )
 
@@ -26,6 +28,72 @@ func LintFiles(opts LintOptions) ([]LintResult, error) {
 			return nil, errors.Wrapf(readErr, "failed to read file %s", filePath)
 		}
 		fileContent := string(fileBytes)
+
+		// Check if this is a v1beta3 spec
+		isV1Beta3 := detectAPIVersionFromContent(fileContent) == constants.Troubleshootv1beta3Kind
+		isV1Beta2 := detectAPIVersionFromContent(fileContent) == constants.Troubleshootv1beta2Kind
+
+		// Check if the content has Helm templates (for preflight v1beta3)
+		hasTemplates := strings.Contains(fileContent, "{{") && strings.Contains(fileContent, "}}")
+
+		// Track if we should add a warning about unused values for v1beta2
+		hasUnusedValuesWarning := isV1Beta2 && (len(opts.ValuesFiles) > 0 || len(opts.SetValues) > 0)
+
+		// If v1beta3 with templates, require values and render the template
+		if isV1Beta3 && hasTemplates {
+			if len(opts.ValuesFiles) == 0 && len(opts.SetValues) == 0 {
+				return nil, errors.New("v1beta3 specs with Helm templates require a values file. Please provide values using --values or --set flags")
+			}
+
+			// Load values from files and --set flags
+			values := make(map[string]interface{})
+			for _, valuesFile := range opts.ValuesFiles {
+				if valuesFile == "" {
+					continue
+				}
+				data, err := os.ReadFile(valuesFile)
+				if err != nil {
+					return nil, errors.Wrapf(err, "failed to read values file %s", valuesFile)
+				}
+
+				var fileValues map[string]interface{}
+				if err := yaml.Unmarshal(data, &fileValues); err != nil {
+					return nil, errors.Wrapf(err, "failed to parse values file %s", valuesFile)
+				}
+
+				values = preflight.MergeMaps(values, fileValues)
+			}
+
+			// Apply --set values
+			for _, setValue := range opts.SetValues {
+				if err := strvals.ParseInto(setValue, values); err != nil {
+					return nil, errors.Wrapf(err, "failed to parse --set value: %s", setValue)
+				}
+			}
+
+			// Render the template
+			preflight.SeedDefaultBooleans(fileContent, values)
+			preflight.SeedParentMapsForValueRefs(fileContent, values)
+			rendered, err := preflight.RenderWithHelmTemplate(fileContent, values)
+			if err != nil {
+				// If rendering fails, create a result with the render error
+				// This allows us to report template syntax errors
+				results = append(results, LintResult{
+					FilePath: filePath,
+					Errors: []LintError{
+						{
+							Line:    1,
+							Message: fmt.Sprintf("Failed to render v1beta3 template: %v", err),
+							Field:   "template",
+						},
+					},
+				})
+				continue
+			}
+
+			// Use the rendered content for linting
+			fileContent = rendered
+		}
 
 		// Split into YAML documents
 		docs := util.SplitYAML(fileContent)
@@ -99,6 +167,17 @@ func LintFiles(opts LintOptions) ([]LintResult, error) {
 			} else {
 				newDocs[i] = oc.newDoc
 			}
+		}
+
+		// Add warning if values were provided for a v1beta2 spec
+		if hasUnusedValuesWarning {
+			fileResult.Warnings = append([]LintWarning{
+				{
+					Line:    1,
+					Message: "Values files provided but this is a v1beta2 spec. Values are only used with v1beta3 specs. Did you mean to use apiVersion: troubleshoot.sh/v1beta3?",
+					Field:   "apiVersion",
+				},
+			}, fileResult.Warnings...)
 		}
 
 		if writeNeeded {
