@@ -8,6 +8,7 @@ import (
 	"github.com/replicatedhq/troubleshoot/internal/testutils"
 	troubleshootv1beta2 "github.com/replicatedhq/troubleshoot/pkg/apis/troubleshoot/v1beta2"
 	"github.com/replicatedhq/troubleshoot/pkg/loader"
+	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -409,4 +410,76 @@ func singleTestPreflightSpecsRead(t *testing.T, tt *PreflightSpecsReadTest) (*lo
 	}
 
 	return kinds, err
+}
+
+func TestPreprocessV1Beta3Specs_RequiresValues(t *testing.T) {
+	// Save and restore viper state
+	oldValues := viper.Get("values")
+	oldSet := viper.Get("set")
+	defer func() {
+		viper.Set("values", oldValues)
+		viper.Set("set", oldSet)
+	}()
+
+	t.Run("v1beta3 without values should error", func(t *testing.T) {
+		// Clear viper values
+		viper.Set("values", []string{})
+		viper.Set("set", []string{})
+
+		v1beta3File := filepath.Join(testutils.FileDir(), "../../examples/preflight/simple-v1beta3.yaml")
+		_, _, err := preprocessV1Beta3Specs([]string{v1beta3File})
+
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "v1beta3 specs with Helm templates require a values file")
+	})
+
+	t.Run("v1beta3 with values file should succeed", func(t *testing.T) {
+		valuesFile := filepath.Join(testutils.FileDir(), "../../examples/preflight/values-v1beta3-1.yaml")
+		viper.Set("values", []string{valuesFile})
+		viper.Set("set", []string{})
+
+		v1beta3File := filepath.Join(testutils.FileDir(), "../../examples/preflight/simple-v1beta3.yaml")
+		processedArgs, tempFiles, err := preprocessV1Beta3Specs([]string{v1beta3File})
+
+		// Clean up temp files
+		defer func() {
+			for _, f := range tempFiles {
+				_ = os.Remove(f)
+			}
+		}()
+
+		require.NoError(t, err)
+		assert.NotNil(t, processedArgs)
+	})
+
+	t.Run("v1beta3 with --set values should succeed", func(t *testing.T) {
+		viper.Set("values", []string{})
+		viper.Set("set", []string{"kubernetes.enabled=true"})
+
+		v1beta3File := filepath.Join(testutils.FileDir(), "../../examples/preflight/simple-v1beta3.yaml")
+		processedArgs, tempFiles, err := preprocessV1Beta3Specs([]string{v1beta3File})
+
+		// Clean up temp files
+		defer func() {
+			for _, f := range tempFiles {
+				_ = os.Remove(f)
+			}
+		}()
+
+		require.NoError(t, err)
+		assert.NotNil(t, processedArgs)
+	})
+
+	t.Run("v1beta2 without values should succeed", func(t *testing.T) {
+		viper.Set("values", []string{})
+		viper.Set("set", []string{})
+
+		v1beta2File := filepath.Join(testutils.FileDir(), "../../testdata/preflightspec/troubleshoot_v1beta2_preflight_gotest.yaml")
+		processedArgs, tempFiles, err := preprocessV1Beta3Specs([]string{v1beta2File})
+
+		require.NoError(t, err)
+		assert.NotNil(t, processedArgs)
+		assert.Empty(t, tempFiles)
+		assert.Equal(t, []string{v1beta2File}, processedArgs)
+	})
 }

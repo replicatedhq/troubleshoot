@@ -54,9 +54,11 @@ Exit codes:
 			v := viper.GetViper()
 
 			opts := lint.LintOptions{
-				FilePaths: args,
-				Fix:       v.GetBool("fix"),
-				Format:    v.GetString("format"),
+				FilePaths:   args,
+				Fix:         v.GetBool("fix"),
+				Format:      v.GetString("format"),
+				ValuesFiles: v.GetStringSlice("values"),
+				SetValues:   v.GetStringSlice("set"),
 			}
 
 			return runLint(opts)
@@ -65,6 +67,8 @@ Exit codes:
 
 	cmd.Flags().Bool("fix", false, "Automatically fix issues where possible")
 	cmd.Flags().String("format", "text", "Output format: text or json")
+	cmd.Flags().StringSlice("values", []string{}, "Path to YAML files with template values (required for v1beta3 specs)")
+	cmd.Flags().StringSlice("set", []string{}, "Set template values via command line (e.g., --set key=value)")
 
 	return cmd
 }

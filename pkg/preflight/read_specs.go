@@ -88,6 +88,52 @@ func preprocessV1Beta3Specs(args []string) ([]string, []string, error) {
 	valuesFiles := viper.GetStringSlice("values")
 	setValues := viper.GetStringSlice("set")
 
+	// Check if any args contain v1beta3 specs
+	hasV1Beta3 := false
+	for _, arg := range args {
+		// Skip non-file arguments
+		if arg == "-" || strings.HasPrefix(arg, "http://") || strings.HasPrefix(arg, "https://") ||
+			strings.HasPrefix(arg, "secret/") || strings.HasPrefix(arg, "configmap/") {
+			continue
+		}
+
+		// Check if file exists
+		if _, err := os.Stat(arg); err != nil {
+			continue
+		}
+
+		// Read the file
+		content, err := os.ReadFile(arg)
+		if err != nil {
+			continue
+		}
+
+		// Check if it's a v1beta3 spec with templates
+		contentStr := string(content)
+		var parsed map[string]interface{}
+		if err := yaml.Unmarshal(content, &parsed); err == nil {
+			if apiVersion, ok := parsed["apiVersion"]; ok && apiVersion == constants.Troubleshootv1beta3Kind {
+				// Only require values if the spec has Helm templates
+				if strings.Contains(contentStr, "{{") && strings.Contains(contentStr, "}}") {
+					hasV1Beta3 = true
+					break
+				}
+			}
+		} else {
+			// If YAML parsing fails, check raw content for v1beta3 with templates
+			if strings.Contains(contentStr, "apiVersion: troubleshoot.sh/v1beta3") &&
+				strings.Contains(contentStr, "{{") && strings.Contains(contentStr, "}}") {
+				hasV1Beta3 = true
+				break
+			}
+		}
+	}
+
+	// If v1beta3 spec with templates found but no values provided, return error
+	if hasV1Beta3 && len(valuesFiles) == 0 && len(setValues) == 0 {
+		return nil, nil, errors.New("v1beta3 specs with Helm templates require a values file. Please provide values using --values or --set flags")
+	}
+
 	// If no values provided, return args unchanged
 	if len(valuesFiles) == 0 && len(setValues) == 0 {
 		return args, nil, nil
@@ -109,7 +155,7 @@ func preprocessV1Beta3Specs(args []string) ([]string, []string, error) {
 			return nil, nil, errors.Wrapf(err, "failed to parse values file %s", valuesFile)
 		}
 
-		values = mergeMaps(values, fileValues)
+		values = MergeMaps(values, fileValues)
 	}
 
 	// Apply --set values

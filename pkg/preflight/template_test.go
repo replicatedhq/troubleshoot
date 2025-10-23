@@ -430,7 +430,7 @@ func TestRender_V1Beta3_MergeMultipleValuesFiles_And_SetPrecedence(t *testing.T)
 	for _, f := range []string{minimalFile, file1, file3} {
 		m, err := loadValuesFile(f)
 		require.NoError(t, err)
-		vals = mergeMaps(vals, m)
+		vals = MergeMaps(vals, m)
 	}
 
 	// First render without --set; expect NO kubernetes analyzer

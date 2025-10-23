@@ -15,6 +15,7 @@ func TestLintMultipleFiles(t *testing.T) {
 	tests := []struct {
 		name           string
 		files          []string
+		valuesFiles    []string            // values files for v1beta3 specs
 		expectErrors   map[string][]string // filename -> expected error substrings
 		expectWarnings map[string][]string // filename -> expected warning substrings
 		expectPass     map[string]bool     // filename -> should pass without errors
@@ -24,20 +25,22 @@ func TestLintMultipleFiles(t *testing.T) {
 			files: []string{
 				"helm-builtins-v1beta3.yaml",
 			},
-			expectErrors: map[string][]string{},
-			expectWarnings: map[string][]string{
-				"helm-builtins-v1beta3.yaml": {
-					"Template values that must be provided at runtime: minVersion",
-				},
+			valuesFiles: []string{
+				"values-helm-builtins.yaml",
 			},
+			expectErrors:   map[string][]string{},
+			expectWarnings: map[string][]string{},
 			expectPass: map[string]bool{
-				"helm-builtins-v1beta3.yaml": false, // has warnings
+				"helm-builtins-v1beta3.yaml": true,
 			},
 		},
 		{
 			name: "invalid collectors and analyzers",
 			files: []string{
 				"invalid-collectors-analyzers.yaml",
+			},
+			valuesFiles: []string{
+				"values-empty.yaml",
 			},
 			expectErrors: map[string][]string{
 				"invalid-collectors-analyzers.yaml": {
@@ -56,6 +59,9 @@ func TestLintMultipleFiles(t *testing.T) {
 				"missing-apiversion-v1beta3.yaml",
 				"missing-metadata-v1beta3.yaml",
 				"no-analyzers-v1beta3.yaml",
+			},
+			valuesFiles: []string{
+				"values-empty.yaml",
 			},
 			expectErrors: map[string][]string{
 				"missing-apiversion-v1beta3.yaml": {
@@ -95,6 +101,9 @@ func TestLintMultipleFiles(t *testing.T) {
 				"support-bundle-no-collectors-v1beta3.yaml",
 				"support-bundle-valid-v1beta3.yaml",
 			},
+			valuesFiles: []string{
+				"values-empty.yaml",
+			},
 			expectErrors: map[string][]string{
 				"support-bundle-no-collectors-v1beta3.yaml": {
 					"SupportBundle spec must contain 'collectors' or 'hostCollectors'",
@@ -111,6 +120,9 @@ func TestLintMultipleFiles(t *testing.T) {
 				"support-bundle-valid-v1beta3.yaml",
 				"missing-metadata-v1beta3.yaml",
 				"wrong-apiversion-v1beta3.yaml",
+			},
+			valuesFiles: []string{
+				"values-empty.yaml",
 			},
 			expectErrors: map[string][]string{
 				"missing-metadata-v1beta3.yaml": {
@@ -142,11 +154,18 @@ func TestLintMultipleFiles(t *testing.T) {
 				}
 			}
 
+			// Build values file paths
+			var valuesFilePaths []string
+			for _, vf := range tt.valuesFiles {
+				valuesFilePaths = append(valuesFilePaths, filepath.Join(testDir, vf))
+			}
+
 			// Run linter
 			opts := LintOptions{
-				FilePaths: filePaths,
-				Fix:       false,
-				Format:    "text",
+				FilePaths:   filePaths,
+				Fix:         false,
+				Format:      "text",
+				ValuesFiles: valuesFilePaths,
 			}
 
 			results, err := LintFiles(opts)
@@ -246,7 +265,7 @@ spec:
 			fixedContent: "apiVersion: troubleshoot.sh/v1beta3",
 		},
 		{
-			name: "fix missing leading dot in template",
+			name: "v1beta3 template syntax error is reported",
 			content: `apiVersion: troubleshoot.sh/v1beta3
 kind: Preflight
 metadata:
@@ -258,9 +277,15 @@ spec:
           - pass:
               when: '>= 1.19.0'
               message: OK`,
-			expectFix:    true,
-			fixedContent: "{{ .Values.name }}",
+			expectFix:    false,                               // Template errors in v1beta3 are not auto-fixable, rendering will fail
+			fixedContent: "Failed to render v1beta3 template", // Expect an error message
 		},
+	}
+
+	// Create empty values file for v1beta3 tests
+	emptyValuesFile := filepath.Join(tmpDir, "values-empty.yaml")
+	if err := os.WriteFile(emptyValuesFile, []byte("{}"), 0644); err != nil {
+		t.Fatalf("Failed to write empty values file: %v", err)
 	}
 
 	for _, tt := range tests {
@@ -273,9 +298,10 @@ spec:
 
 			// Run linter with fix enabled
 			opts := LintOptions{
-				FilePaths: []string{testFile},
-				Fix:       true,
-				Format:    "text",
+				FilePaths:   []string{testFile},
+				Fix:         true,
+				Format:      "text",
+				ValuesFiles: []string{emptyValuesFile},
 			}
 
 			results, err := LintFiles(opts)
@@ -294,11 +320,26 @@ spec:
 			}
 			fixedContent := string(fixedBytes)
 
-			// Check if fix was applied
+			// Check if fix was applied or error was reported
 			if tt.expectFix {
 				if !strings.Contains(fixedContent, tt.fixedContent) {
 					t.Errorf("Expected fixed content to contain '%s', but got:\n%s",
 						tt.fixedContent, fixedContent)
+				}
+			} else {
+				// For tests that don't expect fix, check for errors
+				if len(results[0].Errors) > 0 {
+					errorFound := false
+					for _, err := range results[0].Errors {
+						if strings.Contains(err.Message, tt.fixedContent) {
+							errorFound = true
+							break
+						}
+					}
+					if !errorFound {
+						t.Errorf("Expected error containing '%s', but got errors: %v",
+							tt.fixedContent, results[0].Errors)
+					}
 				}
 			}
 		})

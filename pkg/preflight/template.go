@@ -33,7 +33,7 @@ func RunTemplate(templateFile string, valuesFiles []string, setValues []string, 
 		if err != nil {
 			return errors.Wrapf(err, "failed to load values file %s", valuesFile)
 		}
-		values = mergeMaps(values, fileValues)
+		values = MergeMaps(values, fileValues)
 	}
 
 	// Apply --set values (Helm semantics)
@@ -165,8 +165,8 @@ func cleanRenderedYAML(content string) string {
 	return strings.Join(cleaned, "\n") + "\n"
 }
 
-// mergeMaps recursively merges two maps
-func mergeMaps(base, overlay map[string]interface{}) map[string]interface{} {
+// MergeMaps recursively merges two maps, with overlay taking precedence
+func MergeMaps(base, overlay map[string]interface{}) map[string]interface{} {
 	result := make(map[string]interface{})
 
 	// Copy base map
@@ -180,7 +180,7 @@ func mergeMaps(base, overlay map[string]interface{}) map[string]interface{} {
 			// If both are maps, merge recursively
 			if baseMap, ok := baseVal.(map[string]interface{}); ok {
 				if overlayMap, ok := v.(map[string]interface{}); ok {
-					result[k] = mergeMaps(baseMap, overlayMap)
+					result[k] = MergeMaps(baseMap, overlayMap)
 					continue
 				}
 			}
