@@ -28,7 +28,7 @@ func TestLintMultipleFiles(t *testing.T) {
 			valuesFiles: []string{
 				"values-helm-builtins.yaml",
 			},
-			expectErrors: map[string][]string{},
+			expectErrors:   map[string][]string{},
 			expectWarnings: map[string][]string{},
 			expectPass: map[string]bool{
 				"helm-builtins-v1beta3.yaml": true,
@@ -277,7 +277,7 @@ spec:
           - pass:
               when: '>= 1.19.0'
               message: OK`,
-			expectFix:    false, // Template errors in v1beta3 are not auto-fixable, rendering will fail
+			expectFix:    false,                               // Template errors in v1beta3 are not auto-fixable, rendering will fail
 			fixedContent: "Failed to render v1beta3 template", // Expect an error message
 		},
 	}
