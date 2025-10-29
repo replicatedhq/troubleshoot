@@ -74,7 +74,7 @@ jobs:
         with:
           version: v1.31.2-k3s1
       - name: Download preflight binary
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
           name: preflight
           path: bin/
@@ -104,7 +104,7 @@ jobs:
         with:
           version: v1.31.2-k3s1
       - name: Download support bundle binary
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
           name: support-bundle
           path: bin/
@@ -118,13 +118,13 @@ jobs:
      steps:
       - uses: actions/checkout@v5
       - name: Download support bundle binary
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
           name: support-bundle
           path: bin/
       - run: chmod +x bin/support-bundle
       - name: Download preflight binary
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
           name: preflight
           path: bin/
