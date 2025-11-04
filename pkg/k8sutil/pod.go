@@ -25,6 +25,26 @@ const (
 	PodStatusReasonInitCrashLoopBackOff PodStatusReason = "Init:CrashLoopBackOff"
 )
 
+// isNativeSidecar checks if an init container is a native sidecar.
+// Native sidecars are init containers with restartPolicy: Always (Kubernetes 1.28+).
+// They run continuously alongside main containers, unlike traditional init containers
+// which must complete before main containers start.
+func isNativeSidecar(pod *corev1.Pod, initContainerIndex int) bool {
+	// Bounds check - ensure the index is valid
+	if initContainerIndex >= len(pod.Spec.InitContainers) {
+		return false
+	}
+
+	initContainer := pod.Spec.InitContainers[initContainerIndex]
+
+	// Check if RestartPolicy is set to Always
+	if initContainer.RestartPolicy != nil && *initContainer.RestartPolicy == corev1.ContainerRestartPolicyAlways {
+		return true
+	}
+
+	return false
+}
+
 // reference: https://github.com/kubernetes/kubernetes/blob/e8fcd0de98d50f4019561a6b7a0287f5c059267a/pkg/printers/internalversion/printers.go#L741
 func GetPodStatusReason(pod *corev1.Pod) (string, string) {
 	reason := string(pod.Status.Phase)
@@ -55,6 +75,11 @@ func GetPodStatusReason(pod *corev1.Pod) (string, string) {
 		case container.State.Waiting != nil && len(container.State.Waiting.Reason) > 0 && container.State.Waiting.Reason != "PodInitializing":
 			reason = "Init:" + container.State.Waiting.Reason
 			initializing = true
+		case isNativeSidecar(pod, i) && container.State.Running != nil:
+			// Native sidecar running - this is expected, not stuck initializing.
+			// Native sidecars (init containers with restartPolicy: Always) are designed
+			// to run continuously, so a Running state means successful initialization.
+			continue
 		default:
 			reason = fmt.Sprintf("Init:%d/%d", i, len(pod.Spec.InitContainers))
 			initializing = true
