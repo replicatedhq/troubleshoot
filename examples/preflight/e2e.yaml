@@ -92,7 +92,7 @@ spec:
     - nodeResources:
         checkName: Must have 1 node with 2Gi (available) memory and at least 2 cores (on a single node)
         filters:
-          allocatableMemory: 2Gi
+          memoryAllocatable: 2Gi
           cpuCapacity: "2"
         outcomes:
           - pass:

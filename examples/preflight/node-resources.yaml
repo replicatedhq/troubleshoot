@@ -28,7 +28,7 @@ spec:
     - nodeResources:
         checkName: Must have 1 node with 16 GB (available) memory and 10 cores (on a single node)
         filters:
-          allocatableMemory: 16Gi
+          memoryAllocatable: 16Gi
           cpuCapacity: "10"
         outcomes:
           - fail:
@@ -39,7 +39,7 @@ spec:
     - nodeResources:
         checkName: Must have 1 node with 16 GB (available) memory and 4 cores of amd64 arch (on a single node)
         filters:
-          allocatableMemory: 16Gi
+          memoryAllocatable: 16Gi
           cpuArchitecture: amd64
           cpuCapacity: "4"
         outcomes:
@@ -54,7 +54,7 @@ spec:
           selector:
             matchLabel:
               node-role.kubernetes.io/master: ""
-          allocatableMemory: 16Gi
+          memoryAllocatable: 16Gi
           cpuArchitecture: amd64
           cpuCapacity: "6"
         outcomes:
