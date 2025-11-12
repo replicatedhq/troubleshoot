@@ -8,8 +8,8 @@ require (
 	github.com/apparentlymart/go-cidr v1.1.0
 	github.com/blang/semver/v4 v4.0.0
 	github.com/casbin/govaluate v1.10.0
-	github.com/cilium/ebpf v0.19.0
-	github.com/containerd/cgroups/v3 v3.1.0
+	github.com/cilium/ebpf v0.20.0
+	github.com/containerd/cgroups/v3 v3.1.1
 	github.com/containers/image/v5 v5.36.2
 	github.com/distribution/distribution/v3 v3.0.0
 	github.com/fatih/color v1.18.0
@@ -21,7 +21,7 @@ require (
 	github.com/google/gofuzz v1.2.0
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/handlers v1.5.2
-	github.com/hashicorp/go-getter v1.8.2
+	github.com/hashicorp/go-getter v1.8.3
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/jackc/pgx/v5 v5.7.6
 	github.com/longhorn/go-iscsi-helper v0.0.0-20210330030558-49a327fb024e
@@ -33,7 +33,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/replicatedhq/termui/v3 v3.1.1-0.20200811145416-f40076d26851
 	github.com/segmentio/ksuid v1.0.4
-	github.com/shirou/gopsutil/v4 v4.25.9
+	github.com/shirou/gopsutil/v4 v4.25.10
 	github.com/spf13/cobra v1.10.1
 	github.com/spf13/pflag v1.0.10
 	github.com/spf13/viper v1.21.0
@@ -41,12 +41,12 @@ require (
 	github.com/tj/go-spin v1.1.0
 	github.com/vishvananda/netlink v1.3.1
 	github.com/vishvananda/netns v0.0.5
-	github.com/vmware-tanzu/velero v1.17.0
+	github.com/vmware-tanzu/velero v1.17.1
 	go.opentelemetry.io/otel v1.38.0
 	go.opentelemetry.io/otel/sdk v1.38.0
 	golang.org/x/exp v0.0.0-20241217172543-b2144cdd0a67
 	golang.org/x/mod v0.29.0
-	golang.org/x/sync v0.17.0
+	golang.org/x/sync v0.18.0
 	gopkg.in/yaml.v2 v2.4.0
 	k8s.io/api v0.34.1
 	k8s.io/apiextensions-apiserver v0.34.1
@@ -57,7 +57,7 @@ require (
 	k8s.io/klog/v2 v2.130.1
 	k8s.io/kubernetes v1.34.1
 	oras.land/oras-go v1.2.7
-	sigs.k8s.io/controller-runtime v0.22.3
+	sigs.k8s.io/controller-runtime v0.22.4
 	sigs.k8s.io/e2e-framework v0.6.0
 )
 
@@ -167,7 +167,7 @@ require (
 	go.opentelemetry.io/otel/trace v1.38.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.2 // indirect
 	go.yaml.in/yaml/v3 v3.0.4 // indirect
-	golang.org/x/tools v0.37.0 // indirect
+	golang.org/x/tools v0.38.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20250603155806-513f23925822 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250603155806-513f23925822 // indirect
 	gopkg.in/evanphx/json-patch.v4 v4.12.0 // indirect
@@ -244,7 +244,7 @@ require (
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/nsf/termbox-go v0.0.0-20190121233118-02980233997d // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
-	github.com/opencontainers/runtime-spec v1.2.1
+	github.com/opencontainers/runtime-spec v1.3.0
 	github.com/opencontainers/selinux v1.12.0 // indirect
 	github.com/pelletier/go-toml/v2 v2.2.4 // indirect
 	github.com/peterbourgon/diskv v2.0.1+incompatible // indirect
@@ -264,9 +264,9 @@ require (
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	golang.org/x/crypto v0.43.0 // indirect
-	golang.org/x/net v0.45.0
+	golang.org/x/net v0.46.0
 	golang.org/x/oauth2 v0.30.0 // indirect
-	golang.org/x/sys v0.37.0
+	golang.org/x/sys v0.38.0
 	golang.org/x/term v0.36.0 // indirect
 	golang.org/x/text v0.30.0
 	golang.org/x/time v0.12.0 // indirect
