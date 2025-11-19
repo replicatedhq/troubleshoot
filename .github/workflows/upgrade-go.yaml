@@ -1,6 +1,10 @@
 name: Upgrade Go Version
 
 on:
+  # TEMPORARY: Trigger on push for testing
+  push:
+    branches:
+      - add-upgrade-go-action
   # Run manually when needed
   workflow_dispatch:
   # Run weekly on Mondays at 8am UTC
