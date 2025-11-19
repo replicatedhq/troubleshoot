@@ -1,0 +1,23 @@
+name: Upgrade Go Version
+
+on:
+  # Run manually when needed
+  workflow_dispatch:
+  # Run weekly on Mondays at 8am UTC
+  schedule:
+    - cron: "0 8 * * MON"
+
+jobs:
+  upgrade-go:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Check for Go updates
+        uses: StefMa/Upgrade-Go-Action@v1
+        with:
+          base-branch: 'main'
