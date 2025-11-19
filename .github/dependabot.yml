@@ -13,6 +13,9 @@ updates:
       - "type::security"
     schedule:
       interval: "weekly"
+    # Enable Go toolchain updates to catch stdlib CVEs
+    allow:
+      - dependency-type: "all"
     groups:
       security:
         update-types:
@@ -26,6 +29,9 @@ updates:
       - "type::security"
     schedule:
       interval: "weekly"
+    # Enable Go toolchain updates to catch stdlib CVEs
+    allow:
+      - dependency-type: "all"
     groups:
       security:
         update-types:
