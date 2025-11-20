@@ -5,6 +5,7 @@ package namespaces
 import (
 	"fmt"
 	"net"
+	"strconv"
 	"time"
 )
 
@@ -51,7 +52,7 @@ func (n *NamespacePinger) PingUDP(dst net.IP) error {
 func (n *NamespacePinger) PingTCP(dst net.IP) error {
 	n.cfg.Logf("reaching to %q from %q with tcp", dst, n.InternalIP)
 	pinger := func() error {
-		addr := fmt.Sprintf("%s:%d", dst, n.cfg.Port)
+		addr := net.JoinHostPort(dst.String(), strconv.Itoa(n.cfg.Port))
 		conn, err := net.DialTimeout("tcp", addr, n.cfg.Timeout)
 		if err != nil {
 			return fmt.Errorf("error dialing tcp: %w", err)
@@ -90,7 +91,7 @@ func (n *NamespacePinger) StartTCPEchoServer(errors chan error) {
 // received, the server ends. Callers must wait until the ready channel is
 // closed before they can start sending packets.
 func (n *NamespacePinger) startTCPEchoServer(ready chan struct{}) (err error) {
-	addr := fmt.Sprintf("%s:%d", n.InternalIP, n.cfg.Port)
+	addr := net.JoinHostPort(n.InternalIP.String(), strconv.Itoa(n.cfg.Port))
 	n.cfg.Logf("starting tcp echo server on namespace %q(%q)", n.name, addr)
 
 	if err = n.Join(); err != nil {
