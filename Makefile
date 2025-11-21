@@ -200,17 +200,17 @@ CLIENT_GEN=$(shell which client-gen)
 .PHONY: release
 release: export GITHUB_TOKEN = $(shell echo ${GITHUB_TOKEN_TROUBLESHOOT})
 release:
-	curl -sL https://git.io/goreleaser | bash -s -- --rm-dist --config deploy/.goreleaser.yml
+	curl -sL https://git.io/goreleaser | bash -s -- --clean --config deploy/.goreleaser.yml
 
 .PHONY: snapshot-release
 snapshot-release:
-	curl -sL https://git.io/goreleaser | bash -s -- --rm-dist --snapshot --config deploy/.goreleaser.snapshot.yml
+	curl -sL https://git.io/goreleaser | bash -s -- --clean --snapshot --config deploy/.goreleaser.snapshot.yml
 	docker push replicated/troubleshoot:alpha
 	docker push replicated/preflight:alpha
 
 .PHONY: local-release
 local-release:
-	curl -sL https://git.io/goreleaser | bash -s -- --rm-dist --snapshot --config deploy/.goreleaser.yaml
+	curl -sL https://git.io/goreleaser | bash -s -- --clean --snapshot --config deploy/.goreleaser.yaml
 	docker tag replicated/troubleshoot:alpha localhost:32000/troubleshoot:alpha
 	docker tag replicated/preflight:alpha localhost:32000/preflight:alpha
 	docker push localhost:32000/troubleshoot:alpha
