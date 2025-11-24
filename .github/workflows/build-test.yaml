@@ -45,7 +45,9 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v5
-      - uses: ./.github/actions/setup-go
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: 'go.mod'
 
       - name: Check go mod tidy
         run: |
@@ -72,7 +74,9 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v5
-      - uses: ./.github/actions/setup-go
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: 'go.mod'
 
       - name: Setup K3s
         uses: replicatedhq/action-k3s@main
@@ -90,7 +94,9 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v5
-      - uses: ./.github/actions/setup-go
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: 'go.mod'
       - run: make build
       - uses: actions/upload-artifact@v5
         with:
