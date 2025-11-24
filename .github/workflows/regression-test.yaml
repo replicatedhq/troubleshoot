@@ -29,19 +29,10 @@ jobs:
         run: mkdir -p test/output
 
       - name: Create k3s cluster
-        id: create-cluster
-        uses: replicatedhq/compatibility-actions/create-cluster@v1
+        id: k3s
+        uses: replicatedhq/action-k3s@main
         with:
-          api-token: ${{ secrets.REPLICATED_API_TOKEN }}
-          kubernetes-distribution: k3s
-          cluster-name: regression-${{ github.run_id }}-${{ github.run_attempt }}
-          ttl: 25m
-          timeout-minutes: 5
-
-      - name: Configure kubeconfig
-        run: |
-          echo "${{ steps.create-cluster.outputs.cluster-kubeconfig }}" > $GITHUB_WORKSPACE/kubeconfig.yaml
-          echo "KUBECONFIG=$GITHUB_WORKSPACE/kubeconfig.yaml" >> $GITHUB_ENV
+          version: v1.31.2-k3s1
 
       - name: Verify cluster access
         run: kubectl get nodes -o wide
@@ -284,10 +275,4 @@ jobs:
           git push
 
       # 6. CLEANUP
-      - name: Remove cluster
-        if: always()
-        uses: replicatedhq/compatibility-actions/remove-cluster@v1
-        continue-on-error: true
-        with:
-          api-token: ${{ secrets.REPLICATED_API_TOKEN }}
-          cluster-id: ${{ steps.create-cluster.outputs.cluster-id }}
+      # Note: k3s cluster cleanup is handled automatically by the action
