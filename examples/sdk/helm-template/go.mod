@@ -1,6 +1,6 @@
 module helm-template
 
-go 1.24.6
+go 1.25.4
 
 // Always use the local version of troubleshoot so as to build using
 // the latest version of the library. This will ensure the example
@@ -9,7 +9,7 @@ replace github.com/replicatedhq/troubleshoot v0.0.0 => ../../../
 
 require (
 	github.com/replicatedhq/troubleshoot v0.0.0
-	helm.sh/helm/v3 v3.19.0
+	helm.sh/helm/v3 v3.19.2
 	sigs.k8s.io/yaml v1.6.0
 )
 
@@ -19,7 +19,7 @@ require (
 	github.com/Masterminds/goutils v1.1.1 // indirect
 	github.com/Masterminds/semver/v3 v3.4.0 // indirect
 	github.com/Masterminds/sprig/v3 v3.3.0 // indirect
-	github.com/cyphar/filepath-securejoin v0.4.1 // indirect
+	github.com/cyphar/filepath-securejoin v0.6.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/emicklei/go-restful/v3 v3.12.2 // indirect
 	github.com/fxamacker/cbor/v2 v2.9.0 // indirect
