@@ -1,7 +1,7 @@
 {
-  "updated_at": "2025-11-25T21:37:55Z",
-  "git_sha": "13f63e439abc83ee93e760984176944cdc9528cf",
-  "workflow_run_id": "19684723539",
+  "updated_at": "2025-11-25T21:54:16Z",
+  "git_sha": "7caba50d3489c87eb875feedc3ae915b00d187e1",
+  "workflow_run_id": "19685157847",
   "k8s_version": "v1.28.3",
   "updated_by": "Ethan Mosbaugh <ethan@replicated.com>"
 }
