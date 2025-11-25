@@ -13,7 +13,7 @@ on:
         default: false
 
 jobs:
-  # Build binaries once (parallel with cluster creation)
+  # Build binaries once (shared by all test jobs)
   build-binaries:
     if: github.actor != 'dependabot[bot]'
     runs-on: ubuntu-22.04
