@@ -71,6 +71,7 @@ jobs:
             --values examples/preflight/values-complex-full.yaml \
             --interactive=false \
             --format=json \
+            --auto-update=false \
             --output=test/output/preflight-results-v1beta3.json 2>&1 | tee test/output/v1beta3.log || true
 
           BUNDLE=$(ls -t preflightbundle-*.tar.gz 2>/dev/null | head -1)
@@ -85,6 +86,7 @@ jobs:
             examples/preflight/all-analyzers-v1beta2.yaml \
             --interactive=false \
             --format=json \
+            --auto-update=false \
             --output=test/output/preflight-results-v1beta2.json 2>&1 | tee test/output/v1beta2.log || true
 
           BUNDLE=$(ls -t preflightbundle-*.tar.gz 2>/dev/null | head -1)
@@ -98,6 +100,7 @@ jobs:
           ./bin/support-bundle \
             examples/collect/host/all-kubernetes-collectors.yaml \
             --interactive=false \
+            --auto-update=false \
             --output=test/output/supportbundle.tar.gz 2>&1 | tee test/output/supportbundle.log || true
 
           if [ -f test/output/supportbundle.tar.gz ]; then
