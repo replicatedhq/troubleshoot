@@ -17,7 +17,6 @@ import (
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
-	kerrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
@@ -192,21 +191,21 @@ func (c *CollectGoldpinger) DiscoverOrCreateGoldpinger(ns string) (string, creat
 	if serviceAccountName == "" {
 		serviceAccountName = "ts-goldpinger-serviceaccount"
 
-		svcAcc, err := c.ensureGoldpingerServiceAccount(ns, serviceAccountName)
+		svcAcc, err := c.createGoldpingerServiceAccount(ns, serviceAccountName)
 		if err != nil {
 			return "", ret, errors.Wrap(err, "failed to create goldpinger service account")
 		}
 		ret.ServiceAccnt = svcAcc
 		klog.V(2).Infof("%s ServiceAccount created", svcAcc.Name)
 
-		r, err := c.ensureGoldpingerRole(ns)
+		r, err := c.createGoldpingerRole(ns)
 		if err != nil {
 			return "", ret, errors.Wrap(err, "failed to create goldpinger role")
 		}
 		ret.Role = r
 		klog.V(2).Infof("%s Role created", r.Name)
 
-		rb, err := c.ensureGoldpingerRoleBinding(ns)
+		rb, err := c.createGoldpingerRoleBinding(ns)
 		if err != nil {
 			return "", ret, errors.Wrap(err, "failed to create goldpinger role binding")
 		}
@@ -218,7 +217,7 @@ func (c *CollectGoldpinger) DiscoverOrCreateGoldpinger(ns string) (string, creat
 		}
 	}
 
-	ds, err := c.ensureGoldpingerDaemonSet(ns, serviceAccountName)
+	ds, err := c.createGoldpingerDaemonSet(ns, serviceAccountName)
 	if err != nil {
 		return "", ret, errors.Wrap(err, "failed to create goldpinger daemonset")
 	}
@@ -237,7 +236,7 @@ func (c *CollectGoldpinger) DiscoverOrCreateGoldpinger(ns string) (string, creat
 
 	time.Sleep(delay)
 
-	svc, err := c.ensureGoldpingerService(ns)
+	svc, err := c.createGoldpingerService(ns)
 	if err != nil {
 		return "", ret, errors.Wrap(err, "failed to create goldpinger service")
 	}
@@ -247,7 +246,7 @@ func (c *CollectGoldpinger) DiscoverOrCreateGoldpinger(ns string) (string, creat
 	return getUrlFromService(svc), ret, nil
 }
 
-func (c *CollectGoldpinger) ensureGoldpingerServiceAccount(ns, name string) (*corev1.ServiceAccount, error) {
+func (c *CollectGoldpinger) createGoldpingerServiceAccount(ns, name string) (*corev1.ServiceAccount, error) {
 	svcAcc := &corev1.ServiceAccount{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
@@ -255,20 +254,10 @@ func (c *CollectGoldpinger) ensureGoldpingerServiceAccount(ns, name string) (*co
 		},
 	}
 
-	created, err := c.Client.CoreV1().ServiceAccounts(ns).Create(c.Context, svcAcc, metav1.CreateOptions{})
-	if err != nil && !kerrors.IsAlreadyExists(err) {
-		return nil, err
-	}
-
-	// If the service account already exists, retrieve it
-	if kerrors.IsAlreadyExists(err) {
-		return c.Client.CoreV1().ServiceAccounts(ns).Get(c.Context, name, metav1.GetOptions{})
-	}
-
-	return created, nil
+	return c.Client.CoreV1().ServiceAccounts(ns).Create(c.Context, svcAcc, metav1.CreateOptions{})
 }
 
-func (c *CollectGoldpinger) ensureGoldpingerRole(ns string) (*rbacv1.Role, error) {
+func (c *CollectGoldpinger) createGoldpingerRole(ns string) (*rbacv1.Role, error) {
 	role := &rbacv1.Role{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "ts-goldpinger-role",
@@ -283,20 +272,10 @@ func (c *CollectGoldpinger) ensureGoldpingerRole(ns string) (*rbacv1.Role, error
 		},
 	}
 
-	created, err := c.Client.RbacV1().Roles(ns).Create(c.Context, role, metav1.CreateOptions{})
-	if err != nil && !kerrors.IsAlreadyExists(err) {
-		return nil, err
-	}
-
-	// If the role already exists, retrieve it
-	if kerrors.IsAlreadyExists(err) {
-		return c.Client.RbacV1().Roles(ns).Get(c.Context, role.Name, metav1.GetOptions{})
-	}
-
-	return created, nil
+	return c.Client.RbacV1().Roles(ns).Create(c.Context, role, metav1.CreateOptions{})
 }
 
-func (c *CollectGoldpinger) ensureGoldpingerRoleBinding(ns string) (*rbacv1.RoleBinding, error) {
+func (c *CollectGoldpinger) createGoldpingerRoleBinding(ns string) (*rbacv1.RoleBinding, error) {
 	roleBinding := &rbacv1.RoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "ts-goldpinger-rolebinding",
@@ -316,20 +295,10 @@ func (c *CollectGoldpinger) ensureGoldpingerRoleBinding(ns string) (*rbacv1.Role
 		},
 	}
 
-	created, err := c.Client.RbacV1().RoleBindings(ns).Create(c.Context, roleBinding, metav1.CreateOptions{})
-	if err != nil && !kerrors.IsAlreadyExists(err) {
-		return nil, err
-	}
-
-	// If the role binding already exists, retrieve it
-	if kerrors.IsAlreadyExists(err) {
-		return c.Client.RbacV1().RoleBindings(ns).Get(c.Context, roleBinding.Name, metav1.GetOptions{})
-	}
-
-	return created, nil
+	return c.Client.RbacV1().RoleBindings(ns).Create(c.Context, roleBinding, metav1.CreateOptions{})
 }
 
-func (c *CollectGoldpinger) ensureGoldpingerDaemonSet(ns, svcAccName string) (*appsv1.DaemonSet, error) {
+func (c *CollectGoldpinger) createGoldpingerDaemonSet(ns, svcAccName string) (*appsv1.DaemonSet, error) {
 	ds := &appsv1.DaemonSet{}
 
 	if c.Collector.Image != "" {
@@ -442,20 +411,10 @@ func (c *CollectGoldpinger) ensureGoldpingerDaemonSet(ns, svcAccName string) (*a
 		},
 	}
 
-	created, err := c.Client.AppsV1().DaemonSets(ns).Create(c.Context, ds, metav1.CreateOptions{})
-	if err != nil && !kerrors.IsAlreadyExists(err) {
-		return nil, err
-	}
-
-	// If the daemonset already exists, retrieve it
-	if kerrors.IsAlreadyExists(err) {
-		return c.Client.AppsV1().DaemonSets(ns).Get(c.Context, ds.Name, metav1.GetOptions{})
-	}
-
-	return created, nil
+	return c.Client.AppsV1().DaemonSets(ns).Create(c.Context, ds, metav1.CreateOptions{})
 }
 
-func (c *CollectGoldpinger) ensureGoldpingerService(ns string) (*corev1.Service, error) {
+func (c *CollectGoldpinger) createGoldpingerService(ns string) (*corev1.Service, error) {
 	svc := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "ts-goldpinger",
@@ -476,17 +435,7 @@ func (c *CollectGoldpinger) ensureGoldpingerService(ns string) (*corev1.Service,
 		},
 	}
 
-	created, err := c.Client.CoreV1().Services(ns).Create(c.Context, svc, metav1.CreateOptions{})
-	if err != nil && !kerrors.IsAlreadyExists(err) {
-		return nil, err
-	}
-
-	// If the service already exists, retrieve it
-	if kerrors.IsAlreadyExists(err) {
-		return c.Client.CoreV1().Services(ns).Get(c.Context, svc.Name, metav1.GetOptions{})
-	}
-
-	return created, nil
+	return c.Client.CoreV1().Services(ns).Create(c.Context, svc, metav1.CreateOptions{})
 }
 
 func (c *CollectGoldpinger) getGoldpingerService(ns string) (*corev1.Service, error) {
