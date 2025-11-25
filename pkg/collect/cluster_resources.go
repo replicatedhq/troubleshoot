@@ -232,7 +232,7 @@ func (c *CollectClusterResources) Collect(progressChan chan<- interface{}) (Coll
 	// replicasets
 	replicasets, replicasetsErrors := replicasets(ctx, client, namespaceNames)
 	for k, v := range replicasets {
-		output.SaveResult(c.BundlePath, path.Join(constants.CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s-errors.json", constants.CLUSTER_RESOURCES_STATEFULSETS), k), bytes.NewBuffer(v))
+		output.SaveResult(c.BundlePath, path.Join(constants.CLUSTER_RESOURCES_DIR, constants.CLUSTER_RESOURCES_REPLICASETS, k), bytes.NewBuffer(v))
 	}
 	output.SaveResult(c.BundlePath, path.Join(constants.CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s-errors.json", constants.CLUSTER_RESOURCES_REPLICASETS)), marshalErrors(replicasetsErrors))
 
@@ -370,9 +370,9 @@ func (c *CollectClusterResources) Collect(progressChan chan<- interface{}) (Coll
 	// endpointslices
 	endpointslices, endpointslicesErrors := endpointslices(ctx, client, namespaceNames)
 	for k, v := range endpointslices {
-		_ = output.SaveResult(c.BundlePath, path.Join(constants.CLUSTER_RESOURCES_DIR, constants.CLUSTER_RESOURCES_ENDPOINTSICES, k), bytes.NewBuffer(v))
+		_ = output.SaveResult(c.BundlePath, path.Join(constants.CLUSTER_RESOURCES_DIR, constants.CLUSTER_RESOURCES_ENDPOINTSLICES, k), bytes.NewBuffer(v))
 	}
-	_ = output.SaveResult(c.BundlePath, path.Join(constants.CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s-errors.json", constants.CLUSTER_RESOURCES_ENDPOINTSICES)), marshalErrors(endpointslicesErrors))
+	_ = output.SaveResult(c.BundlePath, path.Join(constants.CLUSTER_RESOURCES_DIR, fmt.Sprintf("%s-errors.json", constants.CLUSTER_RESOURCES_ENDPOINTSLICES)), marshalErrors(endpointslicesErrors))
 
 	// Service Accounts
 	servicesAccounts, servicesAccountsErrors := serviceAccounts(ctx, client, namespaceNames)

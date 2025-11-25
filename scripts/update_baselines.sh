@@ -49,11 +49,11 @@ trap "rm -rf $TEMP_DIR" EXIT
 echo -e "\n${BLUE}Step 1: Downloading artifacts...${NC}"
 
 # Download artifacts from the run
-cd "$TEMP_DIR"
-if ! gh run download "$RUN_ID" --name "regression-test-results-${RUN_ID}-1" 2>/dev/null; then
+if ! gh run download "$RUN_ID" --name "regression-test-results-${RUN_ID}-1" --dir "$TEMP_DIR" 2>/dev/null; then
     # Try without attempt suffix
-    if ! gh run download "$RUN_ID" 2>/dev/null; then
+    if ! gh run download "$RUN_ID" --dir "$TEMP_DIR" 2>/dev/null; then
         echo -e "${RED}Error: Failed to download artifacts from run ${RUN_ID}${NC}"
+        gh run download "$RUN_ID" --dir "$TEMP_DIR"
         exit 1
     fi
 fi
@@ -67,18 +67,18 @@ V1BETA3_BUNDLE=""
 V1BETA2_BUNDLE=""
 SUPPORTBUNDLE=""
 
-if [ -f "preflight-v1beta3-bundle.tar.gz" ] || [ -f "test/output/preflight-v1beta3-bundle.tar.gz" ]; then
-    V1BETA3_BUNDLE=$(find . -name "preflight-v1beta3-bundle.tar.gz" | head -1)
+if [ -f "$TEMP_DIR/preflight-v1beta3-bundle.tar.gz" ] || [ -f "$TEMP_DIR/test/output/preflight-v1beta3-bundle.tar.gz" ]; then
+    V1BETA3_BUNDLE=$(find "$TEMP_DIR" -name "preflight-v1beta3-bundle.tar.gz" | head -1)
     echo -e "${GREEN}✓${NC} Found v1beta3 preflight bundle"
 fi
 
-if [ -f "preflight-v1beta2-bundle.tar.gz" ] || [ -f "test/output/preflight-v1beta2-bundle.tar.gz" ]; then
-    V1BETA2_BUNDLE=$(find . -name "preflight-v1beta2-bundle.tar.gz" | head -1)
+if [ -f "$TEMP_DIR/preflight-v1beta2-bundle.tar.gz" ] || [ -f "$TEMP_DIR/test/output/preflight-v1beta2-bundle.tar.gz" ]; then
+    V1BETA2_BUNDLE=$(find "$TEMP_DIR" -name "preflight-v1beta2-bundle.tar.gz" | head -1)
     echo -e "${GREEN}✓${NC} Found v1beta2 preflight bundle"
 fi
 
-if [ -f "supportbundle.tar.gz" ] || [ -f "test/output/supportbundle.tar.gz" ]; then
-    SUPPORTBUNDLE=$(find . -name "supportbundle.tar.gz" | head -1)
+if [ -f "$TEMP_DIR/supportbundle.tar.gz" ] || [ -f "$TEMP_DIR/test/output/supportbundle.tar.gz" ]; then
+    SUPPORTBUNDLE=$(find "$TEMP_DIR" -name "supportbundle.tar.gz" | head -1)
     echo -e "${GREEN}✓${NC} Found support bundle"
 fi
 
@@ -101,30 +101,26 @@ if [ "$CONFIRM" != "y" ] && [ "$CONFIRM" != "Y" ]; then
     exit 0
 fi
 
-# Get project root (assuming script is in scripts/)
-PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-cd "$PROJECT_ROOT"
-
 echo -e "\n${BLUE}Step 3: Updating baselines...${NC}"
 
 # Update v1beta3 baseline
 if [ -n "$V1BETA3_BUNDLE" ]; then
     mkdir -p test/baselines/preflight-v1beta3
-    cp "$TEMP_DIR/$V1BETA3_BUNDLE" test/baselines/preflight-v1beta3/baseline.tar.gz
+    cp "$V1BETA3_BUNDLE" test/baselines/preflight-v1beta3/baseline.tar.gz
     echo -e "${GREEN}✓${NC} Updated preflight-v1beta3 baseline"
 fi
 
 # Update v1beta2 baseline
 if [ -n "$V1BETA2_BUNDLE" ]; then
     mkdir -p test/baselines/preflight-v1beta2
-    cp "$TEMP_DIR/$V1BETA2_BUNDLE" test/baselines/preflight-v1beta2/baseline.tar.gz
+    cp "$V1BETA2_BUNDLE" test/baselines/preflight-v1beta2/baseline.tar.gz
     echo -e "${GREEN}✓${NC} Updated preflight-v1beta2 baseline"
 fi
 
 # Update support bundle baseline
 if [ -n "$SUPPORTBUNDLE" ]; then
     mkdir -p test/baselines/supportbundle
-    cp "$TEMP_DIR/$SUPPORTBUNDLE" test/baselines/supportbundle/baseline.tar.gz
+    cp "$SUPPORTBUNDLE" test/baselines/supportbundle/baseline.tar.gz
     echo -e "${GREEN}✓${NC} Updated supportbundle baseline"
 fi
 
