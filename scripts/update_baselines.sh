@@ -101,6 +101,10 @@ if [ "$CONFIRM" != "y" ] && [ "$CONFIRM" != "Y" ]; then
     exit 0
 fi
 
+# Get project root (assuming script is in scripts/)
+PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+cd "$PROJECT_ROOT"
+
 echo -e "\n${BLUE}Step 3: Updating baselines...${NC}"
 
 # Update v1beta3 baseline
