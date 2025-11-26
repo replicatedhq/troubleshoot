@@ -183,6 +183,7 @@ func CollectWithContext(ctx context.Context, opts CollectOpts, p *troubleshootv1
 	}
 
 	allCollectorsMap := make(map[reflect.Type][]collect.Collector)
+	collectorTypeOrder := make([]reflect.Type, 0) // Preserve order of collector types
 	allCollectedData := make(map[string][]byte)
 
 	for _, desiredCollector := range collectSpecs {
@@ -193,6 +194,9 @@ func CollectWithContext(ctx context.Context, opts CollectOpts, p *troubleshootv1
 					return nil, errors.Wrap(err, "failed to check RBAC for collectors")
 				}
 				collectorType := reflect.TypeOf(collector)
+				if _, exists := allCollectorsMap[collectorType]; !exists {
+					collectorTypeOrder = append(collectorTypeOrder, collectorType)
+				}
 				allCollectorsMap[collectorType] = append(allCollectorsMap[collectorType], collector)
 			}
 		}
@@ -200,7 +204,9 @@ func CollectWithContext(ctx context.Context, opts CollectOpts, p *troubleshootv1
 
 	collectorList := map[string]CollectorStatus{}
 
-	for _, collectors := range allCollectorsMap {
+	// Iterate over collector types in the order they appeared in collectSpecs
+	for _, collectorType := range collectorTypeOrder {
+		collectors := allCollectorsMap[collectorType]
 		if mergeCollector, ok := collectors[0].(collect.MergeableCollector); ok {
 			mergedCollectors, err := mergeCollector.Merge(collectors)
 			if err != nil {
