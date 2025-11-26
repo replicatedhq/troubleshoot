@@ -56,8 +56,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
-        with:
-          fetch-depth: 0
 
       - name: Create output directory
         run: mkdir -p test/output
@@ -155,8 +153,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
-        with:
-          fetch-depth: 0
 
       - name: Create output directory
         run: mkdir -p test/output
@@ -253,8 +249,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v5
-        with:
-          fetch-depth: 0
 
       - name: Create output directory
         run: mkdir -p test/output
