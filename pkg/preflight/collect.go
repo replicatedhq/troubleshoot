@@ -184,6 +184,9 @@ func CollectWithContext(ctx context.Context, opts CollectOpts, p *troubleshootv1
 
 	allCollectorsMap := make(map[reflect.Type][]collect.Collector)
 	allCollectedData := make(map[string][]byte)
+	// Track the order in which we first see each collector type
+	collectorTypeOrder := []reflect.Type{}
+	seenTypes := make(map[reflect.Type]bool)
 
 	for _, desiredCollector := range collectSpecs {
 		if collectorInterface, ok := collect.GetCollector(desiredCollector, opts.BundlePath, opts.Namespace, opts.KubernetesRestConfig, k8sClient, nil); ok {
@@ -194,13 +197,21 @@ func CollectWithContext(ctx context.Context, opts CollectOpts, p *troubleshootv1
 				}
 				collectorType := reflect.TypeOf(collector)
 				allCollectorsMap[collectorType] = append(allCollectorsMap[collectorType], collector)
+
+				// Track first appearance of each type to preserve order
+				if !seenTypes[collectorType] {
+					collectorTypeOrder = append(collectorTypeOrder, collectorType)
+					seenTypes[collectorType] = true
+				}
 			}
 		}
 	}
 
 	collectorList := map[string]CollectorStatus{}
 
-	for _, collectors := range allCollectorsMap {
+	// Iterate in the order collectors were first seen (preserves EnsureClusterResourcesFirst ordering)
+	for _, collectorType := range collectorTypeOrder {
+		collectors := allCollectorsMap[collectorType]
 		if mergeCollector, ok := collectors[0].(collect.MergeableCollector); ok {
 			mergedCollectors, err := mergeCollector.Merge(collectors)
 			if err != nil {
