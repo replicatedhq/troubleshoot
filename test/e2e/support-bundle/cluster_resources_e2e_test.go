@@ -47,7 +47,7 @@ func TestClusterResources(t *testing.T) {
 				"roles",
 				"events",
 				"rolebindings",
-				"statefulsets-errors.json",
+				"replicasets",
 				"jobs",
 				"serviceaccounts",
 				"configmaps",

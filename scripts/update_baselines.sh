@@ -48,14 +48,12 @@ trap "rm -rf $TEMP_DIR" EXIT
 
 echo -e "\n${BLUE}Step 1: Downloading artifacts...${NC}"
 
-# Download artifacts from the run
-cd "$TEMP_DIR"
-if ! gh run download "$RUN_ID" --name "regression-test-results-${RUN_ID}-1" 2>/dev/null; then
-    # Try without attempt suffix
-    if ! gh run download "$RUN_ID" 2>/dev/null; then
-        echo -e "${RED}Error: Failed to download artifacts from run ${RUN_ID}${NC}"
-        exit 1
-    fi
+# Download all test-results artifacts from the run
+# Try downloading all artifacts (will download test-results-v1beta3-*, test-results-v1beta2-*, test-results-supportbundle-*)
+if ! gh run download "$RUN_ID" --dir "$TEMP_DIR" 2>/dev/null; then
+    echo -e "${RED}Error: Failed to download artifacts from run ${RUN_ID}${NC}"
+    echo "Make sure the workflow run completed successfully."
+    exit 1
 fi
 
 echo -e "${GREEN}✓ Artifacts downloaded${NC}"
@@ -63,27 +61,29 @@ echo -e "${GREEN}✓ Artifacts downloaded${NC}"
 # Check which bundles are present
 echo -e "\n${BLUE}Step 2: Checking available bundles...${NC}"
 
-V1BETA3_BUNDLE=""
-V1BETA2_BUNDLE=""
-SUPPORTBUNDLE=""
+# Use find to locate bundles in artifact subdirectories
+V1BETA3_BUNDLE=$(find "$TEMP_DIR" -name "preflight-v1beta3-bundle.tar.gz" | head -1)
+V1BETA2_BUNDLE=$(find "$TEMP_DIR" -name "preflight-v1beta2-bundle.tar.gz" | head -1)
+SUPPORTBUNDLE=$(find "$TEMP_DIR" -name "supportbundle.tar.gz" | head -1)
 
-if [ -f "preflight-v1beta3-bundle.tar.gz" ] || [ -f "test/output/preflight-v1beta3-bundle.tar.gz" ]; then
-    V1BETA3_BUNDLE=$(find . -name "preflight-v1beta3-bundle.tar.gz" | head -1)
+if [ -n "$V1BETA3_BUNDLE" ]; then
     echo -e "${GREEN}✓${NC} Found v1beta3 preflight bundle"
 fi
 
-if [ -f "preflight-v1beta2-bundle.tar.gz" ] || [ -f "test/output/preflight-v1beta2-bundle.tar.gz" ]; then
-    V1BETA2_BUNDLE=$(find . -name "preflight-v1beta2-bundle.tar.gz" | head -1)
+if [ -n "$V1BETA2_BUNDLE" ]; then
     echo -e "${GREEN}✓${NC} Found v1beta2 preflight bundle"
 fi
 
-if [ -f "supportbundle.tar.gz" ] || [ -f "test/output/supportbundle.tar.gz" ]; then
-    SUPPORTBUNDLE=$(find . -name "supportbundle.tar.gz" | head -1)
+if [ -n "$SUPPORTBUNDLE" ]; then
     echo -e "${GREEN}✓${NC} Found support bundle"
 fi
 
 if [ -z "$V1BETA3_BUNDLE" ] && [ -z "$V1BETA2_BUNDLE" ] && [ -z "$SUPPORTBUNDLE" ]; then
     echo -e "${RED}Error: No bundles found in artifacts${NC}"
+    echo "Downloaded artifacts:"
+    ls -la "$TEMP_DIR"
+    echo -e "\nSearching for bundles:"
+    find "$TEMP_DIR" -name "*.tar.gz" -o -name "*.json"
     exit 1
 fi
 
@@ -110,21 +110,21 @@ echo -e "\n${BLUE}Step 3: Updating baselines...${NC}"
 # Update v1beta3 baseline
 if [ -n "$V1BETA3_BUNDLE" ]; then
     mkdir -p test/baselines/preflight-v1beta3
-    cp "$TEMP_DIR/$V1BETA3_BUNDLE" test/baselines/preflight-v1beta3/baseline.tar.gz
+    cp "$V1BETA3_BUNDLE" test/baselines/preflight-v1beta3/baseline.tar.gz
     echo -e "${GREEN}✓${NC} Updated preflight-v1beta3 baseline"
 fi
 
 # Update v1beta2 baseline
 if [ -n "$V1BETA2_BUNDLE" ]; then
     mkdir -p test/baselines/preflight-v1beta2
-    cp "$TEMP_DIR/$V1BETA2_BUNDLE" test/baselines/preflight-v1beta2/baseline.tar.gz
+    cp "$V1BETA2_BUNDLE" test/baselines/preflight-v1beta2/baseline.tar.gz
     echo -e "${GREEN}✓${NC} Updated preflight-v1beta2 baseline"
 fi
 
 # Update support bundle baseline
 if [ -n "$SUPPORTBUNDLE" ]; then
     mkdir -p test/baselines/supportbundle
-    cp "$TEMP_DIR/$SUPPORTBUNDLE" test/baselines/supportbundle/baseline.tar.gz
+    cp "$SUPPORTBUNDLE" test/baselines/supportbundle/baseline.tar.gz
     echo -e "${GREEN}✓${NC} Updated supportbundle baseline"
 fi
 
@@ -139,7 +139,7 @@ cat > test/baselines/metadata.json <<EOF
   "updated_at": "$CURRENT_DATE",
   "git_sha": "$GIT_SHA",
   "workflow_run_id": "$RUN_ID",
-  "k8s_version": "v1.28.3",
+  "k8s_version": "v1.31.2-k3s1",
   "updated_by": "$(git config user.name) <$(git config user.email)>"
 }
 EOF
