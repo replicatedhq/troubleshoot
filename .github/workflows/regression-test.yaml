@@ -68,6 +68,13 @@ jobs:
       - name: Verify cluster access
         run: kubectl get nodes -o wide
 
+      - name: Wait for all pods to be ready
+        run: |
+          echo "Waiting for all pods to be running..."
+          kubectl get pods --all-namespaces
+          kubectl wait --for=condition=Ready pods --all --all-namespaces --timeout=300s || true
+          kubectl get pods --all-namespaces
+
       - name: Download binaries
         uses: actions/download-artifact@v5
         with:
@@ -165,6 +172,13 @@ jobs:
       - name: Verify cluster access
         run: kubectl get nodes -o wide
 
+      - name: Wait for all pods to be ready
+        run: |
+          echo "Waiting for all pods to be running..."
+          kubectl get pods --all-namespaces
+          kubectl wait --for=condition=Ready pods --all --all-namespaces --timeout=300s || true
+          kubectl get pods --all-namespaces
+
       - name: Download binaries
         uses: actions/download-artifact@v5
         with:
@@ -260,6 +274,13 @@ jobs:
 
       - name: Verify cluster access
         run: kubectl get nodes -o wide
+
+      - name: Wait for all pods to be ready
+        run: |
+          echo "Waiting for all pods to be running..."
+          kubectl get pods --all-namespaces
+          kubectl wait --for=condition=Ready pods --all --all-namespaces --timeout=300s || true
+          kubectl get pods --all-namespaces
 
       - name: Download binaries
         uses: actions/download-artifact@v5
