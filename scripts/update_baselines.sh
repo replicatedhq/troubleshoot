@@ -139,7 +139,7 @@ cat > test/baselines/metadata.json <<EOF
   "updated_at": "$CURRENT_DATE",
   "git_sha": "$GIT_SHA",
   "workflow_run_id": "$RUN_ID",
-  "k8s_version": "v1.28.3",
+  "k8s_version": "v1.31.2-k3s1",
   "updated_by": "$(git config user.name) <$(git config user.email)>"
 }
 EOF
