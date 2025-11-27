@@ -56,7 +56,7 @@ const (
 	CLUSTER_RESOURCES_CLUSTER_ROLE_BINDINGS       = "clusterrolebindings"
 	CLUSTER_RESOURCES_PRIORITY_CLASS              = "priorityclasses"
 	CLUSTER_RESOURCES_ENDPOINTS                   = "endpoints"
-	CLUSTER_RESOURCES_ENDPOINTSICES               = "endpointslices"
+	CLUSTER_RESOURCES_ENDPOINTSLICES              = "endpointslices"
 	CLUSTER_RESOURCES_SERVICE_ACCOUNTS            = "serviceaccounts"
 	CLUSTER_RESOURCES_LEASES                      = "leases"
 	CLUSTER_RESOURCES_VOLUME_ATTACHMENTS          = "volumeattachments"
