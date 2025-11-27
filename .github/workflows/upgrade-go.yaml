@@ -15,7 +15,7 @@ jobs:
       pull-requests: write
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Check for Go updates
         uses: StefMa/Upgrade-Go-Action@v1
